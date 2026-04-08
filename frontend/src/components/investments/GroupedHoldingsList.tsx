@@ -22,7 +22,7 @@ export function GroupedHoldingsList({
   onCashClick,
 }: GroupedHoldingsListProps) {
   const { formatCurrency: formatCurrencyBase, numberFormat } = useNumberFormat();
-  const { convertToDefault, defaultCurrency } = useExchangeRates();
+  const { convert, convertToDefault, defaultCurrency } = useExchangeRates();
 
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(
     new Set(holdingsByAccount.map((a) => a.accountId)),
@@ -224,6 +224,8 @@ export function GroupedHoldingsList({
                           key={holding.id}
                           holding={holding}
                           defaultCurrency={defaultCurrency}
+                          accountCurrency={account.currencyCode}
+                          convert={convert}
                           formatCurrency={formatCurrency}
                           formatCurrencyWithCode={formatCurrencyBase}
                           formatPrice={formatPrice}
@@ -320,6 +322,8 @@ export function GroupedHoldingsList({
 interface HoldingRowProps {
   holding: HoldingWithMarketValue;
   defaultCurrency: string;
+  accountCurrency: string;
+  convert: (amount: number, fromCurrency: string, toCurrency?: string) => number;
   formatCurrency: (value: number | null) => string;
   formatCurrencyWithCode: (value: number, currencyCode: string) => string;
   formatPrice: (value: number | null, currencyCode?: string) => string;
@@ -333,6 +337,8 @@ interface HoldingRowProps {
 const HoldingRow = memo(function HoldingRow({
   holding,
   defaultCurrency,
+  accountCurrency,
+  convert,
   formatCurrency,
   formatCurrencyWithCode,
   formatPrice,
@@ -343,6 +349,8 @@ const HoldingRow = memo(function HoldingRow({
   onSymbolClick,
 }: HoldingRowProps) {
   const isForeign = holding.currencyCode && holding.currencyCode !== defaultCurrency;
+  const isForeignToAccount =
+    holding.currencyCode && holding.currencyCode !== accountCurrency;
 
   const fmtVal = (value: number | null) => {
     if (value === null) return '-';
@@ -354,6 +362,25 @@ const HoldingRow = memo(function HoldingRow({
     if (value === null) return '-';
     if (isForeign) return `${formatPrice(value, holding.currencyCode)} ${holding.currencyCode}`;
     return formatPrice(value);
+  };
+
+  // Cost basis in account currency comes from the backend using historical
+  // exchange rates stored on each BUY transaction. Market value uses the
+  // current rate (shares are worth what the market says today), so the
+  // gain/loss line below it is derived from those two values — keeping the
+  // displayed rows aligned with the account total row beneath the table.
+  const marketValueAcct =
+    holding.marketValue !== null
+      ? convert(holding.marketValue, holding.currencyCode, accountCurrency)
+      : null;
+  const gainLossAcct =
+    marketValueAcct !== null
+      ? marketValueAcct - holding.costBasisAccountCurrency
+      : null;
+
+  const fmtAcctConverted = (value: number | null) => {
+    if (value === null || !isForeignToAccount) return null;
+    return `\u2248 ${formatCurrencyWithCode(value, accountCurrency)} ${accountCurrency}`;
   };
 
   return (
@@ -382,15 +409,30 @@ const HoldingRow = memo(function HoldingRow({
         {fmtPrice(holding.currentPrice)}
       </td>
       <td className="px-1.5 sm:px-4 py-3 whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100">
-        {fmtVal(holding.costBasis)}
+        <div>{fmtVal(holding.costBasis)}</div>
+        {isForeignToAccount && (
+          <div className="text-xs font-normal text-gray-400 dark:text-gray-500">
+            {fmtAcctConverted(holding.costBasisAccountCurrency)}
+          </div>
+        )}
       </td>
       <td className="px-1.5 sm:px-4 py-3 whitespace-nowrap text-right text-sm font-medium text-gray-900 dark:text-gray-100">
-        {fmtVal(holding.marketValue)}
+        <div>{fmtVal(holding.marketValue)}</div>
+        {isForeignToAccount && (
+          <div className="text-xs font-normal text-gray-400 dark:text-gray-500">
+            {fmtAcctConverted(marketValueAcct)}
+          </div>
+        )}
       </td>
       <td className="px-1.5 sm:px-4 py-3 whitespace-nowrap text-right">
         <div className={`text-sm font-medium ${getGainLossColor(holding.gainLoss)}`}>
           {fmtVal(holding.gainLoss)}
         </div>
+        {isForeignToAccount && (
+          <div className="text-xs font-normal text-gray-400 dark:text-gray-500">
+            {fmtAcctConverted(gainLossAcct)}
+          </div>
+        )}
         <div className={`text-xs ${getGainLossColor(holding.gainLossPercent)}`}>
           {formatPercent(holding.gainLossPercent)}
         </div>

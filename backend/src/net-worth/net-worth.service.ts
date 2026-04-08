@@ -578,11 +578,20 @@ export class NetWorthService {
       d.setDate(d.getDate() + 1);
     }
 
-    // Currency conversion setup
+    // Currency conversion setup: include both account currencies (for cash
+    // balances) and security currencies (for holdings market value). Prices in
+    // security_prices.close_price are stored in the security's native currency,
+    // so market value must be converted from security currency -> default
+    // currency, not account currency -> default currency.
     const currencies = new Set<string>();
     for (const a of investAccounts) {
       if (a.currency_code !== defaultCurrency) {
         currencies.add(a.currency_code);
+      }
+    }
+    for (const sec of securities) {
+      if (sec.currencyCode && sec.currencyCode !== defaultCurrency) {
+        currencies.add(sec.currencyCode);
       }
     }
     const rateIndex = await this.buildRateIndex(
@@ -592,7 +601,7 @@ export class NetWorthService {
       end,
     );
 
-    // Build account currency map
+    // Build account currency map (used for cash balance conversion)
     const acctCurrency = new Map<string, string>();
     for (const a of investAccounts) {
       acctCurrency.set(a.id, a.currency_code);
@@ -639,12 +648,13 @@ export class NetWorthService {
         txIdx++;
       }
 
-      // Compute market value per account and convert to default currency
+      // Compute market value per holding and convert from security currency
+      // to default currency. Security prices are stored in the security's
+      // native currency, so we must convert each holding individually rather
+      // than treating the total as being in the account's currency.
       let totalValue = 0;
 
-      for (const [acctId, acctHoldings] of holdingsByAccount) {
-        let acctMarketValue = 0;
-
+      for (const [, acctHoldings] of holdingsByAccount) {
         for (const [secId, qty] of acctHoldings) {
           if (Math.abs(qty) < 0.00000001) continue;
 
@@ -666,19 +676,17 @@ export class NetWorthService {
           }
 
           if (price != null) {
-            acctMarketValue += qty * price;
+            const valueInSecCurrency = qty * price;
+            const secCurrency = security?.currencyCode || defaultCurrency;
+            totalValue += this.convertCurrency(
+              valueInSecCurrency,
+              secCurrency,
+              defaultCurrency,
+              dateStr,
+              rateIndex,
+            );
           }
         }
-
-        // Convert the entire account's market value from its currency
-        const currency = acctCurrency.get(acctId) || defaultCurrency;
-        totalValue += this.convertCurrency(
-          acctMarketValue,
-          currency,
-          defaultCurrency,
-          dateStr,
-          rateIndex,
-        );
       }
 
       // Add cash balances for INVESTMENT_CASH and standalone accounts
@@ -891,6 +899,29 @@ export class NetWorthService {
       ]);
     }
 
+    // Build a rate index for security currencies -> account currency so that
+    // per-holding market values (which are stored in the security's native
+    // currency) can be converted to the account's currency before being
+    // written to monthly_account_balances.market_value. The read path in
+    // getMonthlyInvestments converts the stored value from account currency
+    // to the user's display currency, so the stored value must be in the
+    // account currency.
+    const secCurrencies = new Set<string>();
+    for (const sec of securities) {
+      if (sec.currencyCode && sec.currencyCode !== account.currencyCode) {
+        secCurrencies.add(sec.currencyCode);
+      }
+    }
+    const mvRateIndex =
+      secCurrencies.size > 0 && months.length > 0
+        ? await this.buildRateIndex(
+            secCurrencies,
+            account.currencyCode,
+            months[0],
+            months[months.length - 1],
+          )
+        : new Map();
+
     // Replay holdings month by month
     const holdings = new Map<string, number>();
     let txIdx = 0;
@@ -927,8 +958,11 @@ export class NetWorthService {
         txIdx++;
       }
 
-      // Compute market value from holdings
+      // Compute market value from holdings. Each holding's value is in the
+      // security's native currency; convert to the account's currency at the
+      // month-end exchange rate before summing.
       let marketValue = 0;
+      const monthEndStr = this.monthEndDate(monthStr);
       for (const [secId, qty] of holdings) {
         if (Math.abs(qty) < 0.00000001) continue;
 
@@ -942,7 +976,15 @@ export class NetWorthService {
         }
 
         if (price != null) {
-          marketValue += qty * price;
+          const valueInSecCurrency = qty * price;
+          const secCurrency = security?.currencyCode || account.currencyCode;
+          marketValue += this.convertCurrency(
+            valueInSecCurrency,
+            secCurrency,
+            account.currencyCode,
+            monthEndStr,
+            mvRateIndex,
+          );
         }
       }
 

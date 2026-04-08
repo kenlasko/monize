@@ -309,9 +309,9 @@ describe("BudgetActivityReportsService", () => {
       periodsRepository.findOne.mockResolvedValueOnce(null);
 
       const directQb = createMockQueryBuilder({
-        getRawMany: jest.fn().mockResolvedValue([
-          { date: "2026-02-03", total: "25.00" },
-        ]),
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ date: "2026-02-03", total: "25.00" }]),
       });
       const splitQb = createMockQueryBuilder({
         getRawMany: jest.fn().mockResolvedValue([]),
@@ -325,10 +325,7 @@ describe("BudgetActivityReportsService", () => {
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({ date: "2026-02-03", amount: 25 });
       // Verify the budget's periodStart was used (fallback path)
-      expect(budgetsService.findOne).toHaveBeenCalledWith(
-        "user-1",
-        "budget-1",
-      );
+      expect(budgetsService.findOne).toHaveBeenCalledWith("user-1", "budget-1");
     });
 
     it("should merge direct and split spending on the same date", async () => {
@@ -390,9 +387,9 @@ describe("BudgetActivityReportsService", () => {
       periodsRepository.findOne.mockResolvedValueOnce(openPeriod);
 
       const directQb = createMockQueryBuilder({
-        getRawMany: jest.fn().mockResolvedValue([
-          { date: "2026-02-05", total: "100.00" },
-        ]),
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ date: "2026-02-05", total: "100.00" }]),
       });
       const splitQb = createMockQueryBuilder({
         getRawMany: jest.fn().mockResolvedValue([]),
@@ -413,7 +410,9 @@ describe("BudgetActivityReportsService", () => {
       const result = await service.getDailySpending("user-1", "budget-1");
 
       // 3 queries should have been created
-      expect(transactionsRepository.createQueryBuilder).toHaveBeenCalledTimes(2);
+      expect(transactionsRepository.createQueryBuilder).toHaveBeenCalledTimes(
+        2,
+      );
       expect(splitsRepository.createQueryBuilder).toHaveBeenCalledTimes(1);
       expect(result).toHaveLength(2);
       // Feb 5: 100 direct + 200 transfer = 300
@@ -457,19 +456,19 @@ describe("BudgetActivityReportsService", () => {
       periodsRepository.findOne.mockResolvedValueOnce(openPeriod);
 
       const transferQb = createMockQueryBuilder({
-        getRawMany: jest.fn().mockResolvedValue([
-          { date: "2026-02-20", total: "150.00" },
-        ]),
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ date: "2026-02-20", total: "150.00" }]),
       });
 
-      transactionsRepository.createQueryBuilder.mockReturnValueOnce(
-        transferQb,
-      );
+      transactionsRepository.createQueryBuilder.mockReturnValueOnce(transferQb);
 
       const result = await service.getDailySpending("user-1", "budget-1");
 
       // Only the transfer query should be created (no direct/split queries)
-      expect(transactionsRepository.createQueryBuilder).toHaveBeenCalledTimes(1);
+      expect(transactionsRepository.createQueryBuilder).toHaveBeenCalledTimes(
+        1,
+      );
       expect(splitsRepository.createQueryBuilder).not.toHaveBeenCalled();
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({ date: "2026-02-20", amount: 150 });
@@ -499,9 +498,9 @@ describe("BudgetActivityReportsService", () => {
       });
 
       const directQb = createMockQueryBuilder({
-        getRawMany: jest.fn().mockResolvedValue([
-          { date: "2026-02-05", total: null },
-        ]),
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ date: "2026-02-05", total: null }]),
       });
       const splitQb = createMockQueryBuilder({
         getRawMany: jest.fn().mockResolvedValue([]),
@@ -556,9 +555,9 @@ describe("BudgetActivityReportsService", () => {
       });
 
       const directQb = createMockQueryBuilder({
-        getRawMany: jest.fn().mockResolvedValue([
-          { date: "2026-02-05", total: "33.335" },
-        ]),
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([{ date: "2026-02-05", total: "33.335" }]),
       });
       const splitQb = createMockQueryBuilder({
         getRawMany: jest.fn().mockResolvedValue([]),
@@ -596,9 +595,11 @@ describe("BudgetActivityReportsService", () => {
       });
 
       const directQb = createMockQueryBuilder({
-        getRawMany: jest.fn().mockResolvedValue([
-          { date: "2026-02-05T00:00:00.000Z", total: "10.00" },
-        ]),
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([
+            { date: "2026-02-05T00:00:00.000Z", total: "10.00" },
+          ]),
       });
       const splitQb = createMockQueryBuilder({
         getRawMany: jest.fn().mockResolvedValue([]),
@@ -681,9 +682,7 @@ describe("BudgetActivityReportsService", () => {
       budgetsService.getSummary.mockResolvedValueOnce({
         budget: {
           ...mockBudget,
-          categories: [
-            { ...mockBudgetCategory, amount: 0 },
-          ],
+          categories: [{ ...mockBudgetCategory, amount: 0 }],
         },
         totalBudgeted: 0,
         totalSpent: 0,
@@ -787,14 +786,18 @@ describe("BudgetActivityReportsService", () => {
 
     it("should merge split spending with direct spending", async () => {
       const directQb = createMockQueryBuilder({
-        getRawMany: jest.fn().mockResolvedValue([
-          { categoryId: "cat-1", year: 2025, month: 3, total: "100" },
-        ]),
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([
+            { categoryId: "cat-1", year: 2025, month: 3, total: "100" },
+          ]),
       });
       const splitQb = createMockQueryBuilder({
-        getRawMany: jest.fn().mockResolvedValue([
-          { categoryId: "cat-1", year: 2025, month: 3, total: "50" },
-        ]),
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([
+            { categoryId: "cat-1", year: 2025, month: 3, total: "50" },
+          ]),
       });
 
       transactionsRepository.createQueryBuilder.mockReturnValueOnce(directQb);
@@ -880,9 +883,11 @@ describe("BudgetActivityReportsService", () => {
       budgetsService.findOne.mockResolvedValueOnce(budgetWithChild);
 
       const directQb = createMockQueryBuilder({
-        getRawMany: jest.fn().mockResolvedValue([
-          { categoryId: "cat-1", year: 2025, month: 6, total: "100" },
-        ]),
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([
+            { categoryId: "cat-1", year: 2025, month: 6, total: "100" },
+          ]),
       });
       const splitQb = createMockQueryBuilder({
         getRawMany: jest.fn().mockResolvedValue([]),

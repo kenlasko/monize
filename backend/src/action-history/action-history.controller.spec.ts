@@ -49,10 +49,7 @@ describe("ActionHistoryController", () => {
 
       await controller.getHistory(mockReq, {});
 
-      expect(mockService.getHistory).toHaveBeenCalledWith(
-        "user-1",
-        undefined,
-      );
+      expect(mockService.getHistory).toHaveBeenCalledWith("user-1", undefined);
     });
   });
 

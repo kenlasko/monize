@@ -1147,18 +1147,14 @@ describe("YahooFinanceService", () => {
       });
 
       it("should rank all preferred exchanges above default tiers", () => {
-        const preferred = service.getExchangePriority("VOD.L", "LSE", [
-          "LSE",
-        ]);
+        const preferred = service.getExchangePriority("VOD.L", "LSE", ["LSE"]);
         const defaultCA = service.getExchangePriority("RY.TO", "Toronto");
         expect(preferred).toBeLessThan(defaultCA);
       });
 
       it("should fall back to default priority for non-preferred exchanges", () => {
         // ASX not in preferred list, should get default priority 3
-        expect(
-          service.getExchangePriority("CBA.AX", "ASX", ["LSE"]),
-        ).toBe(3);
+        expect(service.getExchangePriority("CBA.AX", "ASX", ["LSE"])).toBe(3);
       });
 
       it("should match preferred exchange by suffix", () => {

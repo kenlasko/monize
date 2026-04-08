@@ -61,9 +61,14 @@ export class CategoriesService {
       entityId: saved.id,
       action: "create",
       afterData: {
-        id: saved.id, name: saved.name, description: saved.description,
-        icon: saved.icon, color: saved.color, isIncome: saved.isIncome,
-        parentId: saved.parentId, isSystem: saved.isSystem,
+        id: saved.id,
+        name: saved.name,
+        description: saved.description,
+        icon: saved.icon,
+        color: saved.color,
+        isIncome: saved.isIncome,
+        parentId: saved.parentId,
+        isSystem: saved.isSystem,
       },
       description: `Created category "${saved.name}"`,
     });
@@ -249,9 +254,12 @@ export class CategoriesService {
   ): Promise<Category> {
     const category = await this.findOne(userId, id);
     const beforeData = {
-      name: category.name, description: category.description,
-      icon: category.icon, color: category.color,
-      isIncome: category.isIncome, parentId: category.parentId,
+      name: category.name,
+      description: category.description,
+      icon: category.icon,
+      color: category.color,
+      isIncome: category.isIncome,
+      parentId: category.parentId,
     };
 
     if (category.isSystem) {
@@ -305,7 +313,11 @@ export class CategoriesService {
     const saved = await this.categoriesRepository.save(category);
 
     // Cascade type change to all descendant subcategories
-    if (!category.parentId && updateCategoryDto.isIncome !== undefined && updateCategoryDto.isIncome !== beforeData.isIncome) {
+    if (
+      !category.parentId &&
+      updateCategoryDto.isIncome !== undefined &&
+      updateCategoryDto.isIncome !== beforeData.isIncome
+    ) {
       await this.updateDescendantTypes(userId, id, saved.isIncome);
     }
     this.actionHistoryService.record(userId, {
@@ -314,9 +326,12 @@ export class CategoriesService {
       action: "update",
       beforeData,
       afterData: {
-        name: saved.name, description: saved.description,
-        icon: saved.icon, color: saved.color,
-        isIncome: saved.isIncome, parentId: saved.parentId,
+        name: saved.name,
+        description: saved.description,
+        icon: saved.icon,
+        color: saved.color,
+        isIncome: saved.isIncome,
+        parentId: saved.parentId,
       },
       description: `Updated category "${saved.name}"`,
     });
@@ -377,9 +392,13 @@ export class CategoriesService {
     );
 
     const beforeData = {
-      id: category.id, name: category.name, description: category.description,
-      icon: category.icon, color: category.color,
-      isIncome: category.isIncome, parentId: category.parentId,
+      id: category.id,
+      name: category.name,
+      description: category.description,
+      icon: category.icon,
+      color: category.color,
+      isIncome: category.isIncome,
+      parentId: category.parentId,
       isSystem: category.isSystem,
     };
     await this.categoriesRepository.remove(category);

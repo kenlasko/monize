@@ -325,9 +325,7 @@ describe("AuthEmailService", () => {
       // Advance time so the first entry expires
       const realDateNow = Date.now;
       const originalNow = Date.now();
-      Date.now = jest
-        .fn()
-        .mockReturnValue(originalNow + 60 * 60 * 1000 + 1);
+      Date.now = jest.fn().mockReturnValue(originalNow + 60 * 60 * 1000 + 1);
 
       try {
         // Add a fresh entry at the new time
@@ -339,8 +337,9 @@ describe("AuthEmailService", () => {
         // expired@example.com should be cleaned up, fresh should remain
         // Verify by checking that expired@example.com starts fresh (allowed)
         // and reaches limit normally
-        const result =
-          service.checkForgotPasswordEmailLimit("expired@example.com");
+        const result = service.checkForgotPasswordEmailLimit(
+          "expired@example.com",
+        );
         expect(result).toBe(true);
       } finally {
         Date.now = realDateNow;

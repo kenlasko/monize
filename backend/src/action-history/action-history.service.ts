@@ -1108,10 +1108,9 @@ export class ActionHistoryService {
     queryRunner: QueryRunner,
   ): Promise<void> {
     // Delete existing holdings for this account
-    await queryRunner.query(
-      `DELETE FROM holdings WHERE account_id = $1`,
-      [accountId],
-    );
+    await queryRunner.query(`DELETE FROM holdings WHERE account_id = $1`, [
+      accountId,
+    ]);
 
     // Rebuild from investment transactions
     const invTransactions = await queryRunner.query(

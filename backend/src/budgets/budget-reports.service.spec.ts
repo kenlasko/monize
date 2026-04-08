@@ -1705,10 +1705,7 @@ describe("BudgetReportsService", () => {
       }));
       budgetsService.findOne.mockResolvedValueOnce({
         ...mockBudget,
-        categories: [
-          ...mockBudget.categories,
-          ...extraCategories,
-        ],
+        categories: [...mockBudget.categories, ...extraCategories],
       });
 
       const periods: Partial<BudgetPeriod>[] = [
@@ -1882,17 +1879,15 @@ describe("BudgetReportsService", () => {
         if (txCallCount === 1) {
           // direct income
           return createMockQueryBuilder({
-            getRawMany: jest.fn().mockResolvedValue([
-              { month: currentMonthKey, total: "5000" },
-            ]),
+            getRawMany: jest
+              .fn()
+              .mockResolvedValue([{ month: currentMonthKey, total: "5000" }]),
           });
         }
         if (txCallCount === 2) {
           // direct expenses
           return createMockQueryBuilder({
-            getRawMany: jest
-              .fn()
-              .mockResolvedValue(directExpenseRows),
+            getRawMany: jest.fn().mockResolvedValue(directExpenseRows),
           });
         }
         return createMockQueryBuilder();

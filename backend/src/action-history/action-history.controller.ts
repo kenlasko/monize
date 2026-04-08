@@ -21,9 +21,7 @@ import { ActionHistoryQueryDto } from "./dto/action-history-response.dto";
 @UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()
 export class ActionHistoryController {
-  constructor(
-    private readonly actionHistoryService: ActionHistoryService,
-  ) {}
+  constructor(private readonly actionHistoryService: ActionHistoryService) {}
 
   @Get()
   @ApiOperation({ summary: "Get recent action history for the user" })

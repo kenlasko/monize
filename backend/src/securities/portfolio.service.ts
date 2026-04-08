@@ -29,7 +29,17 @@ export interface HoldingWithMarketValue {
   currencyCode: string;
   quantity: number;
   averageCost: number;
+  /**
+   * Cost basis in the security's native currency (quantity * averageCost).
+   */
   costBasis: number;
+  /**
+   * Cost basis converted to the holding account's currency using the
+   * historical exchange rates stored on the original BUY transactions.
+   * When no transaction history is available, this falls back to a
+   * current-rate conversion of `costBasis`.
+   */
+  costBasisAccountCurrency: number;
   currentPrice: number | null;
   marketValue: number | null;
   gainLoss: number | null;
@@ -179,6 +189,7 @@ export class PortfolioService {
     // Calculate holdings with market values
     const holdingsResult =
       await this.calculationService.calculateHoldingsWithValues(
+        userId,
         categorised.holdingsAccountIds,
         defaultCurrency,
         rateCache,
@@ -285,7 +296,9 @@ export class PortfolioService {
       relations: ["security"],
     });
     const activeHoldings = holdings.filter(
-      (h) => Math.abs(Number(h.quantity)) >= 0.0001 && h.security?.isActive !== false,
+      (h) =>
+        Math.abs(Number(h.quantity)) >= 0.0001 &&
+        h.security?.isActive !== false,
     );
     if (activeHoldings.length === 0) return [];
 
@@ -388,7 +401,9 @@ export class PortfolioService {
       relations: ["security"],
     });
     const activeHoldings = holdings.filter(
-      (h) => Math.abs(Number(h.quantity)) >= 0.0001 && h.security?.isActive !== false,
+      (h) =>
+        Math.abs(Number(h.quantity)) >= 0.0001 &&
+        h.security?.isActive !== false,
     );
     if (activeHoldings.length === 0) return [];
 

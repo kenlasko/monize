@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, In } from "typeorm";
+import { Repository, In, LessThanOrEqual } from "typeorm";
 import { Holding } from "./entities/holding.entity";
 import { SecurityPrice } from "./entities/security-price.entity";
 import {
@@ -131,7 +131,7 @@ export class PortfolioCalculationService {
 
     const accounts = await this.accountsRepository.find({
       where: { id: In(accountIds) },
-      select: ['id', 'currentBalance'],
+      select: ["id", "currentBalance"],
     });
     for (const account of accounts) {
       effectiveBalances.set(
@@ -171,6 +171,13 @@ export class PortfolioCalculationService {
   /**
    * Compute per-account investment transaction sums (BUYs, SELLs, Income)
    * for Net Invested calculation.
+   *
+   * `total_amount` is stored in the security's native currency, so each row
+   * is multiplied by its `exchange_rate` (security currency -> cash account
+   * currency) to keep the returned figures in the holding account's cash
+   * currency. This matches the units of the per-account `cashBalance` used
+   * by `buildHoldingsByAccount`, preventing a USD + CAD mix-up when the
+   * security and the account use different currencies.
    */
   async computeInvestmentFlows(
     userId: string,
@@ -189,9 +196,9 @@ export class PortfolioCalculationService {
       income: string;
     }[] = await this.accountsRepository.query(
       `SELECT account_id,
-                COALESCE(SUM(CASE WHEN action = 'BUY' THEN total_amount ELSE 0 END), 0) as buys,
-                COALESCE(SUM(CASE WHEN action = 'SELL' THEN total_amount ELSE 0 END), 0) as sells,
-                COALESCE(SUM(CASE WHEN action IN ('DIVIDEND','INTEREST','CAPITAL_GAIN') THEN total_amount ELSE 0 END), 0) as income
+                COALESCE(SUM(CASE WHEN action = 'BUY' THEN total_amount * exchange_rate ELSE 0 END), 0) as buys,
+                COALESCE(SUM(CASE WHEN action = 'SELL' THEN total_amount * exchange_rate ELSE 0 END), 0) as sells,
+                COALESCE(SUM(CASE WHEN action IN ('DIVIDEND','INTEREST','CAPITAL_GAIN') THEN total_amount * exchange_rate ELSE 0 END), 0) as income
          FROM investment_transactions
          WHERE user_id = $1
            AND account_id = ANY($2)
@@ -214,13 +221,123 @@ export class PortfolioCalculationService {
   // ---------------------------------------------------------------------------
 
   /**
+   * Compute historical cost basis in each holding's account currency by
+   * walking the investment transaction history chronologically and applying
+   * each transaction's stored exchange rate.
+   *
+   * For BUY-like actions (BUY/REINVEST/TRANSFER_IN), cost basis increases by
+   * `quantity * price * exchangeRate` — the amount actually spent in the cash
+   * account's currency at that point in time.
+   *
+   * For SELL-like actions (SELL/TRANSFER_OUT), cost basis is reduced
+   * proportionally using the running average (cost / quantity) so that
+   * subsequent gains are calculated against the remaining shares.
+   *
+   * Quantity-only actions (ADD_SHARES/REMOVE_SHARES) do not change cost basis;
+   * SPLIT scales the tracked quantity so the per-share average adjusts.
+   *
+   * @returns Map keyed by `${accountId}:${securityId}` -> cost basis in the
+   *          holding account's currency.
+   */
+  async calculateCostBasesInAccountCurrency(
+    userId: string,
+    holdingsAccountIds: string[],
+  ): Promise<Map<string, number>> {
+    const result = new Map<string, number>();
+    if (holdingsAccountIds.length === 0) return result;
+
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+    const transactions = await this.investmentTransactionRepository.find({
+      where: {
+        userId,
+        accountId: In(holdingsAccountIds),
+        transactionDate: LessThanOrEqual(today),
+      },
+      order: { transactionDate: "ASC", createdAt: "ASC" },
+    });
+
+    const state = new Map<string, { quantity: number; costBasis: number }>();
+
+    for (const tx of transactions) {
+      if (!tx.securityId) continue;
+
+      const key = `${tx.accountId}:${tx.securityId}`;
+      let entry = state.get(key);
+      if (!entry) {
+        entry = { quantity: 0, costBasis: 0 };
+        state.set(key, entry);
+      }
+
+      const quantity = Number(tx.quantity) || 0;
+
+      switch (tx.action) {
+        case InvestmentAction.BUY:
+        case InvestmentAction.REINVEST:
+        case InvestmentAction.TRANSFER_IN: {
+          const price = Number(tx.price) || 0;
+          const exchangeRate = Number(tx.exchangeRate) || 1;
+          entry.costBasis += quantity * price * exchangeRate;
+          entry.quantity += quantity;
+          break;
+        }
+        case InvestmentAction.SELL:
+        case InvestmentAction.TRANSFER_OUT: {
+          if (entry.quantity > 0) {
+            const avgCostPerShare = entry.costBasis / entry.quantity;
+            const sellQty = Math.min(quantity, entry.quantity);
+            entry.costBasis -= sellQty * avgCostPerShare;
+            entry.quantity -= sellQty;
+          }
+          break;
+        }
+        case InvestmentAction.ADD_SHARES:
+          entry.quantity += quantity;
+          break;
+        case InvestmentAction.REMOVE_SHARES:
+          entry.quantity -= quantity;
+          break;
+        case InvestmentAction.SPLIT: {
+          const splitRatio = quantity || 1;
+          if (splitRatio > 0) {
+            entry.quantity *= splitRatio;
+          }
+          break;
+        }
+        // DIVIDEND / INTEREST / CAPITAL_GAIN: cash only, no impact on cost basis
+      }
+
+      // Snap near-zero quantities to exactly zero so precision drift doesn't
+      // leave a stale residual cost basis on fully-closed positions.
+      if (Math.abs(entry.quantity) < 0.0001) {
+        entry.quantity = 0;
+        entry.costBasis = 0;
+      }
+    }
+
+    for (const [key, entry] of state) {
+      result.set(key, Math.round(entry.costBasis * 10000) / 10000);
+    }
+
+    return result;
+  }
+
+  /**
    * Fetch holdings for the given account IDs, compute per-holding market value,
    * gain/loss, and accumulate totals (converted to defaultCurrency).
+   *
+   * Each holding is also annotated with `costBasisAccountCurrency`, the
+   * historical cost basis in the holding account's currency derived from the
+   * exchange rates stored on the original BUY transactions. Holdings that lack
+   * matching transaction history (e.g. imported positions) fall back to
+   * converting the current security-currency cost basis with the latest rate.
    *
    * @param getLatestPrices - callback to fetch latest prices by security IDs
    * Returns the enriched holdings array plus the converted totals.
    */
   async calculateHoldingsWithValues(
+    userId: string,
     holdingsAccountIds: string[],
     defaultCurrency: string,
     rateCache: Map<string, number>,
@@ -235,13 +352,19 @@ export class PortfolioCalculationService {
     if (holdingsAccountIds.length > 0) {
       holdings = await this.holdingsRepository.find({
         where: { accountId: In(holdingsAccountIds) },
-        relations: ["security"],
+        relations: ["security", "account"],
       });
     }
 
     // Get latest prices for all securities in holdings
     const securityIds = [...new Set(holdings.map((h) => h.securityId))];
     const priceMap = await getLatestPrices(securityIds);
+
+    // Historical cost basis in each holding's account currency
+    const historicalCostBasis = await this.calculateCostBasesInAccountCurrency(
+      userId,
+      holdingsAccountIds,
+    );
 
     let totalCostBasis = 0;
     let totalHoldingsValue = 0;
@@ -263,9 +386,25 @@ export class PortfolioCalculationService {
           : null;
 
       const holdingCurrency = h.security.currencyCode;
+      const accountCurrency = h.account?.currencyCode ?? holdingCurrency;
+
+      // Prefer the historical cost basis derived from transaction exchange
+      // rates; fall back to current-rate conversion when no transaction
+      // history is available (e.g. holdings imported without transactions).
+      const historicalKey = `${h.accountId}:${h.securityId}`;
+      let costBasisAccountCurrency = historicalCostBasis.get(historicalKey);
+      if (costBasisAccountCurrency === undefined) {
+        costBasisAccountCurrency = await this.convertToDefault(
+          costBasis,
+          holdingCurrency,
+          accountCurrency,
+          rateCache,
+        );
+      }
+
       totalCostBasis += await this.convertToDefault(
-        costBasis,
-        holdingCurrency,
+        costBasisAccountCurrency,
+        accountCurrency,
         defaultCurrency,
         rateCache,
       );
@@ -289,6 +428,7 @@ export class PortfolioCalculationService {
         quantity,
         averageCost,
         costBasis,
+        costBasisAccountCurrency,
         currentPrice,
         marketValue,
         gainLoss,
@@ -353,17 +493,15 @@ export class PortfolioCalculationService {
           brokerageAccount.linkedAccountId === c.id,
       );
 
-      // Calculate account totals (convert each holding to account currency)
+      // Calculate account totals. Cost basis uses the historical (stored)
+      // exchange rate from each originating transaction, while market value
+      // uses the current exchange rate so unrealised gains reflect today's
+      // valuation vs. the price actually paid when shares were bought.
       const acctCurrency = brokerageAccount.currencyCode;
       let accountCostBasis = 0;
       let accountMarketValue = 0;
       for (const h of accountHoldings) {
-        accountCostBasis += await this.convertToDefault(
-          h.costBasis,
-          h.currencyCode,
-          acctCurrency,
-          rateCache,
-        );
+        accountCostBasis += h.costBasisAccountCurrency;
         accountMarketValue += await this.convertToDefault(
           h.marketValue ?? 0,
           h.currencyCode,
@@ -410,17 +548,13 @@ export class PortfolioCalculationService {
       const accountHoldings =
         holdingsByAccountMap.get(standaloneAccount.id) || [];
 
-      // Calculate account totals (convert each holding to account currency)
+      // Calculate account totals — historical cost basis + current-rate
+      // market value, same treatment as brokerage accounts above.
       const standaloneCurrency = standaloneAccount.currencyCode;
       let accountCostBasis = 0;
       let accountMarketValue = 0;
       for (const h of accountHoldings) {
-        accountCostBasis += await this.convertToDefault(
-          h.costBasis,
-          h.currencyCode,
-          standaloneCurrency,
-          rateCache,
-        );
+        accountCostBasis += h.costBasisAccountCurrency;
         accountMarketValue += await this.convertToDefault(
           h.marketValue ?? 0,
           h.currencyCode,

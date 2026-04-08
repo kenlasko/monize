@@ -17,7 +17,7 @@ import {
 import { Transaction } from '@/types/transaction';
 import { Category } from '@/types/category';
 import { Payee } from '@/types/payee';
-import { usePriceRefresh, setRefreshInProgress } from '@/hooks/usePriceRefresh';
+import { usePriceRefresh } from '@/hooks/usePriceRefresh';
 import { useFormModal } from '@/hooks/useFormModal';
 import { createLogger } from '@/lib/logger';
 import { PAGE_SIZE } from '@/lib/constants';
@@ -41,14 +41,7 @@ export function useInvestmentData() {
     openCreate, openEdit, close, isEditing: _isEditing,
     modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef,
   } = useFormModal<InvestmentTransaction>();
-  const [isRefreshingPrices, setIsRefreshingPrices] = useState(false);
   const [lastPriceUpdate, setLastPriceUpdate] = useState<string | null>(null);
-  const [refreshResult, setRefreshResult] = useState<{
-    updated: number;
-    failed: number;
-    results?: Array<{ symbol: string; success: boolean; price?: number; error?: string }>;
-  } | null>(null);
-  const [showRefreshDetails, setShowRefreshDetails] = useState(false);
   const [transactionFilters, setTransactionFilters] = useState<TransactionFilters>({});
 
   // Cash transaction state
@@ -147,48 +140,12 @@ export function useInvestmentData() {
     }
   }, []);
 
-  const { triggerAutoRefresh } = usePriceRefresh({
+  const { isRefreshing: isRefreshingPrices, triggerManualRefresh: handleRefreshPrices, triggerAutoRefresh } = usePriceRefresh({
     onRefreshComplete: () => {
       loadAllPortfolioData(selectedAccountIds, currentPage, transactionFilters);
       loadPriceStatus();
     },
   });
-
-  const handleRefreshPrices = async () => {
-    setIsRefreshingPrices(true);
-    setRefreshInProgress(true);
-    setRefreshResult(null);
-    setShowRefreshDetails(false);
-    try {
-      const summary = await investmentsApi.getPortfolioSummary();
-      const securityIds = [...new Set(
-        summary.holdings.filter(h => h.quantity !== 0).map(h => h.securityId)
-      )];
-
-      if (securityIds.length === 0) {
-        setRefreshResult({ updated: 0, failed: 0, results: [] });
-        setTimeout(() => setRefreshResult(null), 3000);
-        return;
-      }
-
-      const result = await investmentsApi.refreshSelectedPrices(securityIds);
-      setRefreshResult({ updated: result.updated, failed: result.failed, results: result.results });
-      setLastPriceUpdate(result.lastUpdated);
-      loadAllPortfolioData(selectedAccountIds, currentPage, transactionFilters);
-      if (result.failed > 0) setShowRefreshDetails(true);
-      setTimeout(() => {
-        setRefreshResult(null);
-        setShowRefreshDetails(false);
-      }, result.failed > 0 ? 15000 : 5000);
-    } catch (error) {
-      logger.error('Failed to refresh prices:', error);
-      setRefreshResult({ updated: 0, failed: -1 });
-      setTimeout(() => setRefreshResult(null), 5000);
-    } finally {
-      setRefreshInProgress(false);
-      setIsRefreshingPrices(false);
-    }
-  };
 
   const loadPortfolioSummary = useCallback(async (accountIds: string[]) => {
     try {
@@ -504,8 +461,7 @@ export function useInvestmentData() {
     getSelectedBrokerageAccountId,
 
     // Price refresh
-    isRefreshingPrices, lastPriceUpdate, refreshResult, showRefreshDetails,
-    setShowRefreshDetails, handleRefreshPrices,
+    isRefreshingPrices, lastPriceUpdate, handleRefreshPrices,
 
     // Cash transactions
     cashAccountIds, cashTransactions, cashPagination, cashCurrentPage,

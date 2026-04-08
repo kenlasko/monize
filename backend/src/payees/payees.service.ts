@@ -97,8 +97,11 @@ export class PayeesService {
       entityId: saved.id,
       action: "create",
       afterData: {
-        id: saved.id, name: saved.name, notes: saved.notes,
-        defaultCategoryId: saved.defaultCategoryId, isActive: saved.isActive,
+        id: saved.id,
+        name: saved.name,
+        notes: saved.notes,
+        defaultCategoryId: saved.defaultCategoryId,
+        isActive: saved.isActive,
       },
       description: `Created payee "${saved.name}"`,
     });
@@ -277,8 +280,10 @@ export class PayeesService {
   ): Promise<Payee & { aliasCount: number; transactionCount: number }> {
     const payee = await this.findOne(userId, id);
     const beforeData = {
-      name: payee.name, notes: payee.notes,
-      defaultCategoryId: payee.defaultCategoryId, isActive: payee.isActive,
+      name: payee.name,
+      notes: payee.notes,
+      defaultCategoryId: payee.defaultCategoryId,
+      isActive: payee.isActive,
     };
 
     // Check for name conflicts if name is being updated
@@ -341,8 +346,10 @@ export class PayeesService {
       action: "update",
       beforeData,
       afterData: {
-        name: refreshed.name, notes: refreshed.notes,
-        defaultCategoryId: refreshed.defaultCategoryId, isActive: refreshed.isActive,
+        name: refreshed.name,
+        notes: refreshed.notes,
+        defaultCategoryId: refreshed.defaultCategoryId,
+        isActive: refreshed.isActive,
       },
       description: `Updated payee "${refreshed.name}"`,
     });
@@ -352,8 +359,11 @@ export class PayeesService {
   async remove(userId: string, id: string): Promise<void> {
     const payee = await this.findOne(userId, id);
     const beforeData = {
-      id: payee.id, name: payee.name, notes: payee.notes,
-      defaultCategoryId: payee.defaultCategoryId, isActive: payee.isActive,
+      id: payee.id,
+      name: payee.name,
+      notes: payee.notes,
+      defaultCategoryId: payee.defaultCategoryId,
+      isActive: payee.isActive,
     };
     await this.payeesRepository.remove(payee);
     this.actionHistoryService.record(userId, {

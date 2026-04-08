@@ -520,5 +520,4 @@ export class ImportInvestmentProcessorService {
 
     await ctx.queryRunner.manager.save(holding);
   }
-
 }

@@ -754,10 +754,7 @@ export class BackupService {
     // Tables that have a BEFORE UPDATE trigger which auto-sets updated_at.
     // We must disable these triggers during deferred FK restoration to
     // preserve the original timestamps from the backup.
-    const tablesWithUpdatedAtTrigger = new Set([
-      "accounts",
-      "transactions",
-    ]);
+    const tablesWithUpdatedAtTrigger = new Set(["accounts", "transactions"]);
 
     // Collect tables that will actually be updated AND have the trigger
     const triggersToDisable = new Set<string>();

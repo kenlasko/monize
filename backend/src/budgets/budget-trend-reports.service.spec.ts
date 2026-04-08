@@ -260,9 +260,7 @@ describe("BudgetTrendReportsService", () => {
       ],
     }).compile();
 
-    service = module.get<BudgetTrendReportsService>(
-      BudgetTrendReportsService,
-    );
+    service = module.get<BudgetTrendReportsService>(BudgetTrendReportsService);
   });
 
   describe("getTrend", () => {
@@ -387,10 +385,7 @@ describe("BudgetTrendReportsService", () => {
       const result = await service.getTrend("user-1", "budget-1", 3);
 
       expect(result).toHaveLength(3);
-      expect(budgetsService.findOne).toHaveBeenCalledWith(
-        "user-1",
-        "budget-1",
-      );
+      expect(budgetsService.findOne).toHaveBeenCalledWith("user-1", "budget-1");
     });
 
     it("should return empty when no categories and no transfers in live mode", async () => {
@@ -504,9 +499,7 @@ describe("BudgetTrendReportsService", () => {
         getRawOne: jest.fn().mockResolvedValue({ total: "-175" }),
       });
 
-      transactionsRepository.createQueryBuilder.mockReturnValueOnce(
-        transferQb,
-      );
+      transactionsRepository.createQueryBuilder.mockReturnValueOnce(transferQb);
 
       const result = await service.getTrend("user-1", "budget-1", 6);
 
@@ -628,9 +621,7 @@ describe("BudgetTrendReportsService", () => {
           .mockResolvedValue([{ month: monthKey, total: "180" }]),
       });
 
-      transactionsRepository.createQueryBuilder.mockReturnValueOnce(
-        transferQb,
-      );
+      transactionsRepository.createQueryBuilder.mockReturnValueOnce(transferQb);
 
       const result = await service.getTrend("user-1", "budget-1", 3);
 
@@ -705,11 +696,7 @@ describe("BudgetTrendReportsService", () => {
 
       periodsRepository.find.mockResolvedValueOnce(periods);
 
-      const result = await service.getCategoryTrend(
-        "user-1",
-        "budget-1",
-        6,
-      );
+      const result = await service.getCategoryTrend("user-1", "budget-1", 6);
 
       expect(result).toHaveLength(1);
       expect(result[0].categoryId).toBe("cat-1");
@@ -743,11 +730,7 @@ describe("BudgetTrendReportsService", () => {
 
       periodsRepository.find.mockResolvedValueOnce(periods);
 
-      const result = await service.getCategoryTrend(
-        "user-1",
-        "budget-1",
-        6,
-      );
+      const result = await service.getCategoryTrend("user-1", "budget-1", 6);
 
       expect(result).toHaveLength(1);
       expect(result[0].categoryName).toBe("Food: Fast Food");
@@ -778,11 +761,7 @@ describe("BudgetTrendReportsService", () => {
 
       periodsRepository.find.mockResolvedValueOnce(periods);
 
-      const result = await service.getCategoryTrend(
-        "user-1",
-        "budget-1",
-        6,
-      );
+      const result = await service.getCategoryTrend("user-1", "budget-1", 6);
 
       expect(result).toHaveLength(1);
       expect(result[0].categoryName).toBe("Uncategorized");
@@ -823,12 +802,9 @@ describe("BudgetTrendReportsService", () => {
 
       periodsRepository.find.mockResolvedValueOnce(periods);
 
-      const result = await service.getCategoryTrend(
-        "user-1",
-        "budget-1",
-        6,
-        ["cat-1"],
-      );
+      const result = await service.getCategoryTrend("user-1", "budget-1", 6, [
+        "cat-1",
+      ]);
 
       expect(result).toHaveLength(1);
       expect(result[0].categoryId).toBe("cat-1");
@@ -867,11 +843,7 @@ describe("BudgetTrendReportsService", () => {
       transactionsRepository.createQueryBuilder.mockReturnValueOnce(directQb);
       splitsRepository.createQueryBuilder.mockReturnValueOnce(splitQb);
 
-      const result = await service.getCategoryTrend(
-        "user-1",
-        "budget-1",
-        6,
-      );
+      const result = await service.getCategoryTrend("user-1", "budget-1", 6);
 
       expect(result).toHaveLength(1);
       expect(result[0].data[0].actual).toBe(325);
@@ -882,11 +854,7 @@ describe("BudgetTrendReportsService", () => {
     it("should fall back to live category trend when no periods exist", async () => {
       periodsRepository.find.mockResolvedValueOnce([]);
 
-      const result = await service.getCategoryTrend(
-        "user-1",
-        "budget-1",
-        3,
-      );
+      const result = await service.getCategoryTrend("user-1", "budget-1", 3);
 
       // Should invoke computeLiveCategoryTrend which uses budget categories
       // mockBudget has 2 expense categories: cat-1, cat-2
@@ -901,12 +869,9 @@ describe("BudgetTrendReportsService", () => {
     it("should fall back to live category trend with category filter", async () => {
       periodsRepository.find.mockResolvedValueOnce([]);
 
-      const result = await service.getCategoryTrend(
-        "user-1",
-        "budget-1",
-        3,
-        ["cat-1"],
-      );
+      const result = await service.getCategoryTrend("user-1", "budget-1", 3, [
+        "cat-1",
+      ]);
 
       expect(result).toHaveLength(1);
       expect(result[0].categoryId).toBe("cat-1");
@@ -921,11 +886,7 @@ describe("BudgetTrendReportsService", () => {
       });
       periodsRepository.find.mockResolvedValueOnce([]);
 
-      const result = await service.getCategoryTrend(
-        "user-1",
-        "budget-1",
-        3,
-      );
+      const result = await service.getCategoryTrend("user-1", "budget-1", 3);
 
       expect(result).toEqual([]);
     });
@@ -933,12 +894,9 @@ describe("BudgetTrendReportsService", () => {
     it("should return empty when filtered categories yield no matches", async () => {
       periodsRepository.find.mockResolvedValueOnce([]);
 
-      const result = await service.getCategoryTrend(
-        "user-1",
-        "budget-1",
-        3,
-        ["nonexistent-cat"],
-      );
+      const result = await service.getCategoryTrend("user-1", "budget-1", 3, [
+        "nonexistent-cat",
+      ]);
 
       expect(result).toEqual([]);
     });
@@ -956,19 +914,17 @@ describe("BudgetTrendReportsService", () => {
         ]),
       });
       const splitQb = createMockQueryBuilder({
-        getRawMany: jest.fn().mockResolvedValue([
-          { categoryId: "cat-1", month: monthKey, total: "50" },
-        ]),
+        getRawMany: jest
+          .fn()
+          .mockResolvedValue([
+            { categoryId: "cat-1", month: monthKey, total: "50" },
+          ]),
       });
 
       transactionsRepository.createQueryBuilder.mockReturnValueOnce(directQb);
       splitsRepository.createQueryBuilder.mockReturnValueOnce(splitQb);
 
-      const result = await service.getCategoryTrend(
-        "user-1",
-        "budget-1",
-        3,
-      );
+      const result = await service.getCategoryTrend("user-1", "budget-1", 3);
 
       expect(result).toHaveLength(2);
 
@@ -1000,11 +956,7 @@ describe("BudgetTrendReportsService", () => {
       });
       periodsRepository.find.mockResolvedValueOnce([]);
 
-      const result = await service.getCategoryTrend(
-        "user-1",
-        "budget-1",
-        2,
-      );
+      const result = await service.getCategoryTrend("user-1", "budget-1", 2);
 
       expect(result).toHaveLength(1);
       expect(result[0].categoryName).toBe("Food: Fast Food");
@@ -1023,11 +975,7 @@ describe("BudgetTrendReportsService", () => {
       });
       periodsRepository.find.mockResolvedValueOnce([]);
 
-      const result = await service.getCategoryTrend(
-        "user-1",
-        "budget-1",
-        2,
-      );
+      const result = await service.getCategoryTrend("user-1", "budget-1", 2);
 
       expect(result).toHaveLength(1);
       expect(result[0].categoryName).toBe("Uncategorized");
@@ -1044,11 +992,7 @@ describe("BudgetTrendReportsService", () => {
       });
       periodsRepository.find.mockResolvedValueOnce([]);
 
-      const result = await service.getCategoryTrend(
-        "user-1",
-        "budget-1",
-        2,
-      );
+      const result = await service.getCategoryTrend("user-1", "budget-1", 2);
 
       expect(result).toHaveLength(1);
       for (const point of result[0].data) {
@@ -1066,11 +1010,7 @@ describe("BudgetTrendReportsService", () => {
         createMockQueryBuilder({ getRawMany: jest.fn().mockResolvedValue([]) }),
       );
 
-      const result = await service.getCategoryTrend(
-        "user-1",
-        "budget-1",
-        3,
-      );
+      const result = await service.getCategoryTrend("user-1", "budget-1", 3);
 
       expect(result).toHaveLength(2);
       for (const series of result) {

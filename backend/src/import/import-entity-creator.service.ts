@@ -265,7 +265,7 @@ export class ImportEntityCreatorService {
     for (const loanMapping of loanAccountsToCreate) {
       const loanAmount = loanMapping.newLoanAmount || 0;
       const loanType =
-        loanMapping.newLoanType === 'MORTGAGE'
+        loanMapping.newLoanType === "MORTGAGE"
           ? AccountType.MORTGAGE
           : AccountType.LOAN;
       const newLoanAccount = queryRunner.manager.create(Account, {

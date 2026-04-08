@@ -64,7 +64,13 @@ export interface HoldingWithMarketValue {
   currencyCode: string;
   quantity: number;
   averageCost: number;
+  /** Cost basis in the security's native currency. */
   costBasis: number;
+  /**
+   * Cost basis in the holding account's currency, calculated using the
+   * historical exchange rates stored on the original BUY transactions.
+   */
+  costBasisAccountCurrency: number;
   currentPrice: number | null;
   marketValue: number | null;
   gainLoss: number | null;

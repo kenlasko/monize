@@ -1461,7 +1461,12 @@ export class TransactionsService {
           );
           await queryRunner.commitTransaction();
           this.netWorthService.triggerDebouncedRecalc(accountId, userId);
-          this.recordTransactionAction(userId, { ...transaction, ...beforeSnapshot } as Transaction, "delete", beforeSnapshot);
+          this.recordTransactionAction(
+            userId,
+            { ...transaction, ...beforeSnapshot } as Transaction,
+            "delete",
+            beforeSnapshot,
+          );
           return;
         } else {
           await this.accountsService.updateBalance(
@@ -1482,7 +1487,12 @@ export class TransactionsService {
     }
 
     this.netWorthService.triggerDebouncedRecalc(accountId, userId);
-    this.recordTransactionAction(userId, { ...transaction, ...beforeSnapshot } as Transaction, "delete", beforeSnapshot);
+    this.recordTransactionAction(
+      userId,
+      { ...transaction, ...beforeSnapshot } as Transaction,
+      "delete",
+      beforeSnapshot,
+    );
   }
 
   private async removeParentTransaction(
@@ -1811,9 +1821,7 @@ export class TransactionsService {
     return this.bulkUpdateService.bulkDelete(userId, bulkDeleteDto);
   }
 
-  private snapshotTransaction(
-    tx: Transaction,
-  ): Record<string, any> {
+  private snapshotTransaction(tx: Transaction): Record<string, any> {
     return {
       id: tx.id,
       accountId: tx.accountId,
@@ -1851,7 +1859,8 @@ export class TransactionsService {
     action: "create" | "update" | "delete",
     beforeData?: Record<string, any>,
   ): void {
-    const snapshot = action === "delete" ? beforeData : this.snapshotTransaction(tx);
+    const snapshot =
+      action === "delete" ? beforeData : this.snapshotTransaction(tx);
     this.actionHistoryService.record(userId, {
       entityType: "transaction",
       entityId: tx.id,

@@ -18,6 +18,7 @@ import { SecuritiesService } from "./securities.service";
 import { SecurityPriceService } from "./security-price.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
+import { CurrenciesService } from "../currencies/currencies.service";
 import { DataSource } from "typeorm";
 import { ActionHistoryService } from "../action-history/action-history.service";
 import { isTransactionInFuture } from "../common/date-utils";
@@ -40,6 +41,7 @@ describe("InvestmentTransactionsService", () => {
   let securityPriceService: Record<string, jest.Mock>;
   let netWorthService: Record<string, jest.Mock>;
   let exchangeRateService: Record<string, jest.Mock>;
+  let currenciesService: Record<string, jest.Mock>;
   let dataSource: Record<string, jest.Mock>;
   let mockQueryRunner: Record<string, any>;
   let mockActionHistoryService: Record<string, jest.Mock>;
@@ -242,6 +244,20 @@ describe("InvestmentTransactionsService", () => {
       getLatestRate: jest.fn().mockResolvedValue(1),
     };
 
+    currenciesService = {
+      findOne: jest.fn().mockImplementation((code: string) =>
+        Promise.resolve({
+          code,
+          name: code,
+          symbol: "$",
+          decimalPlaces: 2,
+          isActive: true,
+          createdByUserId: null,
+          createdAt: new Date(),
+        }),
+      ),
+    };
+
     mockQueryRunner = {
       connect: jest.fn(),
       startTransaction: jest.fn(),
@@ -337,6 +353,10 @@ describe("InvestmentTransactionsService", () => {
         {
           provide: ExchangeRateService,
           useValue: exchangeRateService,
+        },
+        {
+          provide: CurrenciesService,
+          useValue: currenciesService,
         },
       ],
     }).compile();
@@ -3143,6 +3163,87 @@ describe("InvestmentTransactionsService", () => {
       expect(transactionRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           transactionDate: "2025-06-15",
+        }),
+      );
+    });
+
+    it("rounds cash amount to the currency's precision to prevent sub-cent drift", async () => {
+      // Regression: 0.1985 shares * $50.01 = $9.926985, which previously
+      // was rounded to 4 decimals ($9.9270) and stored as the cash amount.
+      // Over repeated transactions where the user also received a clean
+      // $9.93 dividend, the sub-cent residue accumulated as a visible
+      // 1-cent drift in the displayed cash balance. Cash should only ever
+      // move in whole cents (for 2-decimal currencies).
+      await service.create(userId, {
+        accountId,
+        securityId,
+        action: InvestmentAction.BUY,
+        transactionDate: "2025-01-15",
+        quantity: 0.1985,
+        price: 50.01,
+        commission: 0,
+      });
+
+      // Cash transaction amount is rounded to 2 decimals for USD
+      expect(transactionRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amount: -9.93,
+        }),
+      );
+
+      // Balance update uses the same rounded amount, so the cash balance
+      // cleanly mirrors what the user sees (e.g. $1.51 + $9.93 - $9.93 = $1.51)
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        cashAccountId,
+        -9.93,
+        expect.anything(),
+      );
+    });
+
+    it("honours a 3-decimal currency (BHD) when rounding cash amounts", async () => {
+      // BHD has decimalPlaces=3, so the cash amount should retain 3 decimals
+      // instead of being over-rounded to 2.
+      const bhdCashAccount = { ...mockCashAccount, currencyCode: "BHD" };
+      const bhdInvestmentAccount = {
+        ...mockInvestmentAccount,
+        currencyCode: "BHD",
+      };
+      const bhdSecurity = { ...mockSecurity, currencyCode: "BHD" };
+
+      accountsService.findOne.mockImplementation(
+        (_uid: string, aid: string) => {
+          if (aid === accountId) return Promise.resolve(bhdInvestmentAccount);
+          if (aid === cashAccountId) return Promise.resolve(bhdCashAccount);
+          return Promise.reject(new NotFoundException("Account not found"));
+        },
+      );
+      securitiesService.findOne.mockResolvedValue(bhdSecurity);
+      currenciesService.findOne.mockImplementation((code: string) =>
+        Promise.resolve({
+          code,
+          name: code,
+          symbol: code,
+          decimalPlaces: code === "BHD" ? 3 : 2,
+          isActive: true,
+          createdByUserId: null,
+          createdAt: new Date(),
+        }),
+      );
+
+      await service.create(userId, {
+        accountId,
+        securityId,
+        action: InvestmentAction.BUY,
+        transactionDate: "2025-01-15",
+        quantity: 0.1985,
+        price: 50.01,
+        commission: 0,
+      });
+
+      // 0.1985 * 50.01 = 9.926985 -> rounded to 3 decimals = 9.927
+      expect(transactionRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amount: -9.927,
         }),
       );
     });

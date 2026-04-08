@@ -517,9 +517,11 @@ describe("SecuritiesService", () => {
           leftJoin: jest.fn().mockReturnThis(),
           where: jest.fn().mockReturnThis(),
           andWhere: jest.fn().mockReturnThis(),
-          getMany: jest.fn().mockResolvedValue([
-            { id: "h-1", securityId: "sec-1", quantity: 0.000000001 },
-          ]),
+          getMany: jest
+            .fn()
+            .mockResolvedValue([
+              { id: "h-1", securityId: "sec-1", quantity: 0.000000001 },
+            ]),
         });
       investmentTransactionsRepository.createQueryBuilder.mockReturnValue({
         where: jest.fn().mockReturnThis(),
@@ -577,10 +579,9 @@ describe("SecuritiesService", () => {
 
   describe("getSecurityIdsWithTransactions", () => {
     it("returns security IDs that have transactions", async () => {
-      const getRawMany = jest.fn().mockResolvedValue([
-        { securityId: "sec-1" },
-        { securityId: "sec-2" },
-      ]);
+      const getRawMany = jest
+        .fn()
+        .mockResolvedValue([{ securityId: "sec-1" }, { securityId: "sec-2" }]);
       investmentTransactionsRepository.createQueryBuilder.mockReturnValue({
         select: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),

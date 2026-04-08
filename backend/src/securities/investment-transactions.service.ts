@@ -19,6 +19,7 @@ import { SecuritiesService } from "./securities.service";
 import { SecurityPriceService } from "./security-price.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
+import { CurrenciesService } from "../currencies/currencies.service";
 import { roundToDecimals } from "../common/round.util";
 import {
   Transaction,
@@ -46,6 +47,7 @@ export class InvestmentTransactionsService {
     private netWorthService: NetWorthService,
     private actionHistoryService: ActionHistoryService,
     private exchangeRateService: ExchangeRateService,
+    private currenciesService: CurrenciesService,
   ) {}
 
   private static readonly PRICE_ACTIONS: ReadonlySet<InvestmentAction> =
@@ -245,7 +247,17 @@ export class InvestmentTransactionsService {
     const exchangeRate = Number(investmentTransaction.exchangeRate) || 1;
     // Convert the signed source amount (security currency) into the cash
     // account's currency so balance updates reflect the correct amount.
-    const cashAmount = roundToDecimals(sourceAmount * exchangeRate, 4);
+    // Round to the cash account's currency precision (typically 2 decimals)
+    // rather than 4, so sub-cent residue from quantity * price (e.g. 0.1985 *
+    // 50.01 = 9.9270) doesn't accumulate as visible drift in the displayed
+    // cash balance. Cash in the real world only moves in whole cents.
+    const cashCurrency = await this.currenciesService.findOne(
+      cashAccount.currencyCode,
+    );
+    const cashAmount = roundToDecimals(
+      sourceAmount * exchangeRate,
+      cashCurrency.decimalPlaces,
+    );
 
     const cashTransaction = queryRunner.manager.create(Transaction, {
       userId,

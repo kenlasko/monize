@@ -172,7 +172,10 @@ describe("CategoriesService", () => {
           useValue: scheduledSplitsRepository,
         },
         { provide: DataSource, useValue: mockDataSource },
-        { provide: ActionHistoryService, useValue: { record: jest.fn().mockResolvedValue(null) } },
+        {
+          provide: ActionHistoryService,
+          useValue: { record: jest.fn().mockResolvedValue(null) },
+        },
       ],
     }).compile();
 
@@ -772,10 +775,7 @@ describe("CategoriesService", () => {
       // Second call: grandchildren of child-1 (none)
       // Third call: grandchildren of child-2 (none)
       categoriesRepository.find
-        .mockResolvedValueOnce([
-          { id: "child-1" },
-          { id: "child-2" },
-        ])
+        .mockResolvedValueOnce([{ id: "child-1" }, { id: "child-2" }])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([]);
 

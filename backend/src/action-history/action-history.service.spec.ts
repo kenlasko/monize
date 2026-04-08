@@ -292,7 +292,7 @@ describe("ActionHistoryService", () => {
       expect(result.description).toContain("Undone");
       expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.query).toHaveBeenCalledWith(
-        expect.stringContaining("INSERT INTO \"custom_reports\""),
+        expect.stringContaining('INSERT INTO "custom_reports"'),
         expect.any(Array),
       );
     });
@@ -351,9 +351,7 @@ describe("ActionHistoryService", () => {
         entityId: "tag-1",
       };
       mockRepository.findOne.mockResolvedValue(createAction);
-      mockQueryRunner.manager.delete.mockRejectedValue(
-        new Error("DB error"),
-      );
+      mockQueryRunner.manager.delete.mockRejectedValue(new Error("DB error"));
 
       await expect(service.undo(userId)).rejects.toThrow("DB error");
       expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
@@ -422,8 +420,7 @@ describe("ActionHistoryService", () => {
       expect(result.description).toContain("Undone");
       expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
     });
-
-});
+  });
 
   describe("undo transaction delete", () => {
     it("should re-insert the transaction from snapshot", async () => {
@@ -656,7 +653,8 @@ describe("ActionHistoryService", () => {
       // Should recalculate balance for both accounts
       const balanceQueries = mockQueryRunner.query.mock.calls.filter(
         (call: any[]) =>
-          typeof call[0] === "string" && call[0].includes("UPDATE accounts SET current_balance"),
+          typeof call[0] === "string" &&
+          call[0].includes("UPDATE accounts SET current_balance"),
       );
       expect(balanceQueries.length).toBe(2);
     });
@@ -752,7 +750,8 @@ describe("ActionHistoryService", () => {
       // Should insert transaction + 2 splits
       const insertCalls = mockQueryRunner.query.mock.calls.filter(
         (call: any[]) =>
-          typeof call[0] === "string" && call[0].includes("INSERT INTO transaction_splits"),
+          typeof call[0] === "string" &&
+          call[0].includes("INSERT INTO transaction_splits"),
       );
       expect(insertCalls.length).toBe(2);
     });
@@ -846,7 +845,8 @@ describe("ActionHistoryService", () => {
       // Should insert two transactions
       const insertCalls = mockQueryRunner.query.mock.calls.filter(
         (call: any[]) =>
-          typeof call[0] === "string" && call[0].includes("INSERT INTO transactions"),
+          typeof call[0] === "string" &&
+          call[0].includes("INSERT INTO transactions"),
       );
       expect(insertCalls.length).toBe(2);
       // Should re-link them
@@ -1228,12 +1228,14 @@ describe("ActionHistoryService", () => {
 
       const deleteCalls = mockQueryRunner.query.mock.calls.filter(
         (call: any[]) =>
-          typeof call[0] === "string" && call[0].includes("DELETE FROM holdings"),
+          typeof call[0] === "string" &&
+          call[0].includes("DELETE FROM holdings"),
       );
       expect(deleteCalls.length).toBe(1);
       const insertCalls = mockQueryRunner.query.mock.calls.filter(
         (call: any[]) =>
-          typeof call[0] === "string" && call[0].includes("INSERT INTO holdings"),
+          typeof call[0] === "string" &&
+          call[0].includes("INSERT INTO holdings"),
       );
       expect(insertCalls.length).toBe(1);
       // Verify no references to the wrong table name
@@ -1283,7 +1285,8 @@ describe("ActionHistoryService", () => {
       expect(result.description).toContain("Undone");
       const insertCalls = mockQueryRunner.query.mock.calls.filter(
         (call: any[]) =>
-          typeof call[0] === "string" && call[0].includes("INSERT INTO transactions"),
+          typeof call[0] === "string" &&
+          call[0].includes("INSERT INTO transactions"),
       );
       expect(insertCalls.length).toBe(2);
     });
@@ -1404,7 +1407,7 @@ describe("ActionHistoryService", () => {
 
       expect(result.description).toContain("Undone");
       expect(mockQueryRunner.query).toHaveBeenCalledWith(
-        expect.stringContaining("INSERT INTO \"scheduled_transactions\""),
+        expect.stringContaining('INSERT INTO "scheduled_transactions"'),
         expect.any(Array),
       );
     });
@@ -1462,7 +1465,7 @@ describe("ActionHistoryService", () => {
 
       expect(result.description).toContain("Undone");
       expect(mockQueryRunner.query).toHaveBeenCalledWith(
-        expect.stringContaining("INSERT INTO \"budgets\""),
+        expect.stringContaining('INSERT INTO "budgets"'),
         expect.any(Array),
       );
     });
@@ -1670,7 +1673,8 @@ describe("ActionHistoryService", () => {
       // Should NOT try to update balance when no result
       const balanceUpdateCalls = mockQueryRunner.query.mock.calls.filter(
         (call: any[]) =>
-          typeof call[0] === "string" && call[0].includes("UPDATE accounts SET current_balance"),
+          typeof call[0] === "string" &&
+          call[0].includes("UPDATE accounts SET current_balance"),
       );
       expect(balanceUpdateCalls.length).toBe(0);
     });
@@ -1682,10 +1686,7 @@ describe("ActionHistoryService", () => {
       mockRepository.create.mockReturnValue(mockAction);
       mockRepository.save.mockResolvedValue(mockAction);
       mockRepository.count.mockResolvedValue(150);
-      mockRepository.find.mockResolvedValue([
-        { id: "old-1" },
-        { id: "old-2" },
-      ]);
+      mockRepository.find.mockResolvedValue([{ id: "old-1" }, { id: "old-2" }]);
 
       await service.record(userId, {
         entityType: "tag",

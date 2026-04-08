@@ -113,6 +113,7 @@ export function InvestmentTransactionForm({
   const { defaultCurrency, formatCurrency } = useNumberFormat();
   const [isLoading, setIsLoading] = useState(false);
   const [securities, setSecurities] = useState<Security[]>([]);
+  const [securitiesLoaded, setSecuritiesLoaded] = useState(false);
   const [showSecurityModal, setShowSecurityModal] = useState(false);
 
   // Filter to only show brokerage accounts (sorted)
@@ -258,7 +259,15 @@ export function InvestmentTransactionForm({
   // Auto-fill the exchange rate with the latest market rate whenever the
   // currency pair changes, unless the user is editing an existing transaction
   // (in which case we keep the stored rate) or has manually edited the field.
+  //
+  // Wait until securities have loaded before running: otherwise, when editing
+  // an existing cross-currency transaction, the security isn't in the list
+  // yet so transactionCurrency falls back to the account currency, making
+  // needsConversion transiently false. Without this guard we'd clobber the
+  // stored exchangeRate to 1 here, then replace it with the market default
+  // on the next render after securities finish loading.
   useEffect(() => {
+    if (!securitiesLoaded) return;
     if (!needsConversion) {
       // When no conversion is needed, keep the rate at 1 implicitly so the
       // backend falls back cleanly.
@@ -279,6 +288,7 @@ export function InvestmentTransactionForm({
       });
     }
   }, [
+    securitiesLoaded,
     needsConversion,
     transactionCurrency,
     cashCurrency,
@@ -311,6 +321,8 @@ export function InvestmentTransactionForm({
         setSecurities(data);
       } catch (error) {
         logger.error('Failed to load securities:', error);
+      } finally {
+        setSecuritiesLoaded(true);
       }
     };
     loadSecurities();

@@ -142,10 +142,7 @@ export class OidcService implements OnModuleInit {
    * Checks that the token is a valid JWT, issued by the configured provider,
    * intended for our client, not expired, and belongs to the expected subject.
    */
-  verifyIdTokenClaims(
-    idToken: string,
-    expectedSubject: string,
-  ): boolean {
+  verifyIdTokenClaims(idToken: string, expectedSubject: string): boolean {
     try {
       const parts = idToken.split(".");
       if (parts.length !== 3) return false;

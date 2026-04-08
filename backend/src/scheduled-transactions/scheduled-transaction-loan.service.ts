@@ -74,9 +74,7 @@ export class ScheduledTransactionLoanService {
         s.memo?.toLowerCase().includes("extra"),
     );
     const principalSplit = splits.find(
-      (s) =>
-        s.transferAccountId === loanAccountId &&
-        s !== extraPrincipalSplit,
+      (s) => s.transferAccountId === loanAccountId && s !== extraPrincipalSplit,
     );
     const interestSplit = splits.find(
       (s) => s.categoryId && !s.transferAccountId,

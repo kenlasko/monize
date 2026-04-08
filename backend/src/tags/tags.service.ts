@@ -67,7 +67,12 @@ export class TagsService {
       entityType: "tag",
       entityId: saved.id,
       action: "create",
-      afterData: { id: saved.id, name: saved.name, color: saved.color, icon: saved.icon },
+      afterData: {
+        id: saved.id,
+        name: saved.name,
+        color: saved.color,
+        icon: saved.icon,
+      },
       description: `Created tag "${saved.name}"`,
     });
     return saved;
@@ -110,7 +115,12 @@ export class TagsService {
 
   async remove(userId: string, id: string): Promise<void> {
     const tag = await this.findOne(userId, id);
-    const beforeData = { id: tag.id, name: tag.name, color: tag.color, icon: tag.icon };
+    const beforeData = {
+      id: tag.id,
+      name: tag.name,
+      color: tag.color,
+      icon: tag.icon,
+    };
     await this.tagsRepository.remove(tag);
     this.actionHistoryService.record(userId, {
       entityType: "tag",

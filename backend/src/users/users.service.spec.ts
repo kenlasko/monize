@@ -851,9 +851,7 @@ describe("UsersService", () => {
         true,
       );
       expect(
-        queries.some((q: string) =>
-          q.includes("DELETE FROM action_history"),
-        ),
+        queries.some((q: string) => q.includes("DELETE FROM action_history")),
       ).toBe(true);
     });
 

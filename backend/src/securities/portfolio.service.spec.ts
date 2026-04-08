@@ -92,7 +92,7 @@ describe("PortfolioService", () => {
     isActive: true,
   };
 
-  // -- Mock holdings --
+  // -- Mock holdings (account relation mirrors the brokerage/standalone) --
   const mockHoldingAAPL: Partial<Holding> = {
     id: "hold-1",
     accountId: "acct-brokerage-1",
@@ -100,6 +100,7 @@ describe("PortfolioService", () => {
     quantity: 10 as any,
     averageCost: 150 as any,
     security: mockSecurityAAPL as any,
+    account: mockBrokerageAccount as any,
   };
 
   const mockHoldingVFV: Partial<Holding> = {
@@ -109,6 +110,7 @@ describe("PortfolioService", () => {
     quantity: 50 as any,
     averageCost: 80 as any,
     security: mockSecurityVFV as any,
+    account: mockBrokerageAccount as any,
   };
 
   const mockHoldingXIC: Partial<Holding> = {
@@ -118,6 +120,7 @@ describe("PortfolioService", () => {
     quantity: 100 as any,
     averageCost: 30 as any,
     security: mockSecurityXIC as any,
+    account: mockStandaloneAccount as any,
   };
 
   // -- Mock user preference --
@@ -784,6 +787,159 @@ describe("PortfolioService", () => {
         // No exchange rate lookups needed
         expect(exchangeRateService.getLatestRate).not.toHaveBeenCalled();
         expect(result.totalHoldingsValue).toBe(50 * 95);
+      });
+    });
+
+    describe("historical cost basis from transaction exchange rates", () => {
+      beforeEach(() => {
+        prefRepository.findOne.mockResolvedValue(mockPref);
+        accountsRepository.find.mockResolvedValue([
+          mockBrokerageAccount,
+          mockCashAccount,
+        ]);
+        holdingsRepository.find.mockResolvedValue([mockHoldingAAPL]);
+        securityPriceRepository.query.mockResolvedValue([
+          {
+            security_id: "sec-1",
+            close_price: "175",
+            price_date: "2026-02-07",
+          },
+        ]);
+        // Current USD->CAD rate used for market value conversion
+        exchangeRateService.getLatestRate.mockImplementation(
+          (from: string, to: string) => {
+            if (from === "USD" && to === "CAD") return Promise.resolve(1.35);
+            return Promise.resolve(null);
+          },
+        );
+      });
+
+      it("uses the stored exchange rate from BUY transactions for account cost basis", async () => {
+        // 10 shares of AAPL bought for 150 USD/share at a historical rate of 1.25
+        investmentTransactionRepository.find.mockResolvedValue([
+          {
+            id: "tx-1",
+            userId,
+            accountId: "acct-brokerage-1",
+            securityId: "sec-1",
+            action: InvestmentAction.BUY,
+            transactionDate: "2025-06-01",
+            quantity: 10,
+            price: 150,
+            totalAmount: 1500,
+            exchangeRate: 1.25,
+          },
+        ]);
+
+        const result = await service.getPortfolioSummary(userId);
+
+        const acct = result.holdingsByAccount[0];
+        // Historical cost basis: 10 * 150 * 1.25 = 1875 CAD (NOT 2025 CAD at
+        // current 1.35 rate)
+        expect(acct.totalCostBasis).toBeCloseTo(1875, 2);
+        // Market value uses the current rate: 10 * 175 * 1.35 = 2362.5 CAD
+        expect(acct.totalMarketValue).toBeCloseTo(2362.5, 2);
+        // Gain/loss is derived: 2362.5 - 1875 = 487.5 CAD
+        expect(acct.totalGainLoss).toBeCloseTo(487.5, 2);
+
+        // Holdings include the historical cost basis in account currency
+        const holding = acct.holdings[0];
+        expect(holding.costBasisAccountCurrency).toBeCloseTo(1875, 2);
+        // The security-currency cost basis is still quantity * averageCost
+        expect(holding.costBasis).toBe(1500);
+      });
+
+      it("reduces cost basis proportionally on SELL transactions", async () => {
+        // Buy 10 @ 150 USD with 1.25 rate = 1875 CAD total cost
+        // Sell 4 @ 180 USD — cost basis reduces by 4/10 = 750 CAD
+        // Remaining cost basis = 1125 CAD for 6 shares
+        investmentTransactionRepository.find.mockResolvedValue([
+          {
+            id: "tx-1",
+            userId,
+            accountId: "acct-brokerage-1",
+            securityId: "sec-1",
+            action: InvestmentAction.BUY,
+            transactionDate: "2025-06-01",
+            quantity: 10,
+            price: 150,
+            totalAmount: 1500,
+            exchangeRate: 1.25,
+          },
+          {
+            id: "tx-2",
+            userId,
+            accountId: "acct-brokerage-1",
+            securityId: "sec-1",
+            action: InvestmentAction.SELL,
+            transactionDate: "2025-08-01",
+            quantity: 4,
+            price: 180,
+            totalAmount: 720,
+            exchangeRate: 1.3,
+          },
+        ]);
+        // Holding reflects remaining 6 shares
+        holdingsRepository.find.mockResolvedValue([
+          { ...mockHoldingAAPL, quantity: 6 as any },
+        ]);
+
+        const result = await service.getPortfolioSummary(userId);
+
+        const holding = result.holdingsByAccount[0].holdings[0];
+        expect(holding.costBasisAccountCurrency).toBeCloseTo(1125, 2);
+      });
+
+      it("combines BUYs at different historical rates using a running weighted average", async () => {
+        // Buy 10 @ 150 USD * 1.20 rate = 1800 CAD cost basis
+        // Buy 10 @ 200 USD * 1.40 rate = 2800 CAD cost basis
+        // Total: 20 shares, 4600 CAD cost basis
+        investmentTransactionRepository.find.mockResolvedValue([
+          {
+            id: "tx-1",
+            userId,
+            accountId: "acct-brokerage-1",
+            securityId: "sec-1",
+            action: InvestmentAction.BUY,
+            transactionDate: "2025-01-01",
+            quantity: 10,
+            price: 150,
+            totalAmount: 1500,
+            exchangeRate: 1.2,
+          },
+          {
+            id: "tx-2",
+            userId,
+            accountId: "acct-brokerage-1",
+            securityId: "sec-1",
+            action: InvestmentAction.BUY,
+            transactionDate: "2025-06-01",
+            quantity: 10,
+            price: 200,
+            totalAmount: 2000,
+            exchangeRate: 1.4,
+          },
+        ]);
+        holdingsRepository.find.mockResolvedValue([
+          { ...mockHoldingAAPL, quantity: 20 as any },
+        ]);
+
+        const result = await service.getPortfolioSummary(userId);
+
+        const holding = result.holdingsByAccount[0].holdings[0];
+        expect(holding.costBasisAccountCurrency).toBeCloseTo(4600, 2);
+      });
+
+      it("falls back to current-rate conversion when no transactions exist", async () => {
+        // No transactions fetched — fall back to quantity * averageCost
+        // converted at the current exchange rate.
+        investmentTransactionRepository.find.mockResolvedValue([]);
+
+        const result = await service.getPortfolioSummary(userId);
+
+        const holding = result.holdingsByAccount[0].holdings[0];
+        // 1500 USD * 1.35 = 2025 CAD
+        expect(holding.costBasisAccountCurrency).toBeCloseTo(2025, 2);
       });
     });
 
@@ -1849,6 +2005,101 @@ describe("PortfolioService", () => {
 
       expect(result).toHaveProperty("totalNetInvested");
       expect(result).toHaveProperty("cagr");
+    });
+
+    it("sums investment flows in the cash account currency via total_amount * exchange_rate", async () => {
+      accountsRepository.find.mockResolvedValue([
+        mockBrokerageAccount,
+        mockCashAccount,
+      ]);
+      holdingsRepository.find.mockResolvedValue([]);
+      securityPriceRepository.query.mockResolvedValue([]);
+      accountsRepository.query.mockResolvedValue([]);
+
+      await service.getPortfolioSummary(userId);
+
+      // The flows sum must convert each row from the security's currency into
+      // the cash account's currency by multiplying total_amount * exchange_rate,
+      // otherwise netInvested would mix USD and CAD for cross-currency holdings.
+      const flowsCall = accountsRepository.query.mock.calls.find(
+        (call) =>
+          typeof call[0] === "string" &&
+          call[0].includes("investment_transactions"),
+      );
+      expect(flowsCall).toBeDefined();
+      expect(flowsCall![0]).toContain("total_amount * exchange_rate");
+    });
+
+    it("computes netInvested correctly for a USD security held in a CAD account", async () => {
+      // Scenario: CAD brokerage with 50,000 CAD opening balance.
+      // User buys 100 shares of a USD stock at 27.16 USD while USD->CAD = 1.35.
+      //   Cash debited: 2716 USD * 1.35 = 3666.60 CAD
+      //   Remaining cash: 46,333.40 CAD
+      //   total_amount on the BUY row: 2716 (USD, stored raw)
+      // The SQL query multiplies total_amount * exchange_rate, so flows.buys
+      // comes back already in CAD (3666.60), matching the cash balance's units.
+      //
+      // Expected netInvested = cash(46,333.40) + buys(3666.60) = 50,000 CAD,
+      // i.e. the original opening balance, which is what "money I put in"
+      // should show.
+      accountsRepository.find.mockResolvedValue([
+        mockBrokerageAccount,
+        { ...mockCashAccount, currentBalance: 46333.4 },
+      ]);
+      holdingsRepository.find.mockResolvedValue([
+        {
+          ...mockHoldingAAPL,
+          quantity: 100 as any,
+          averageCost: 27.16 as any,
+        },
+      ]);
+      securityPriceRepository.query.mockResolvedValue([
+        {
+          security_id: "sec-1",
+          close_price: "25.6750",
+          price_date: "2026-02-07",
+        },
+      ]);
+      exchangeRateService.getLatestRate.mockImplementation(
+        (from: string, to: string) => {
+          if (from === "USD" && to === "CAD") return Promise.resolve(1.35);
+          return Promise.resolve(null);
+        },
+      );
+
+      let queryCallCount = 0;
+      accountsRepository.query.mockImplementation(() => {
+        queryCallCount++;
+        if (queryCallCount === 1) {
+          // With the fix, the query returns flows already in CAD:
+          //   buys = 2716 * 1.35 = 3666.60
+          return [
+            {
+              account_id: "acct-brokerage-1",
+              buys: "3666.60",
+              sells: "0",
+              income: "0",
+            },
+          ];
+        }
+        return [{ earliest: "2025-01-15" }];
+      });
+
+      const result = await service.getPortfolioSummary(userId);
+
+      // Opening balance preserved -> 50,000 CAD net invested.
+      expect(result.holdingsByAccount[0].netInvested).toBeCloseTo(50000, 2);
+      expect(result.totalNetInvested).toBeCloseTo(50000, 2);
+
+      // Portfolio value: cash 46333.40 + holdings (100 * 25.675 * 1.35 = 3466.125)
+      //                = 49,799.525 CAD
+      expect(result.totalPortfolioValue).toBeCloseTo(49799.525, 2);
+
+      // Total Gain (portfolio - netInvested) must be negative because the
+      // USD price dropped between purchase and today.
+      const totalGain = result.totalPortfolioValue - result.totalNetInvested;
+      expect(totalGain).toBeLessThan(0);
+      expect(totalGain).toBeCloseTo(-200.475, 2);
     });
   });
 

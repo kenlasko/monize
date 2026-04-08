@@ -611,6 +611,66 @@ describe("NetWorthService", () => {
         expect(insertCalls[0][1][4]).toBe(0);
       });
 
+      it("stores market value in account currency for USD security held in a CAD account", async () => {
+        // Scenario: CAD brokerage holding 100 shares of a USD-denominated
+        // security priced at $25.675 USD, with a USD->CAD rate of 1.35 at
+        // month end. Stored market_value must be in CAD (account currency)
+        // so that getMonthlyInvestments can correctly convert it to the
+        // user's display currency.
+        accountRepository.findOne.mockResolvedValue({
+          ...mockBrokerageAccount,
+          currencyCode: "CAD",
+        });
+        dataSource.query
+          .mockResolvedValueOnce([{ earliest: null }])
+          .mockResolvedValueOnce([{ inv_earliest: "2025-02-01" }])
+          .mockResolvedValueOnce([{ month: "2025-02-01", balance: 0 }])
+          // loadSecurityPrices query
+          .mockResolvedValueOnce([
+            {
+              security_id: "sec-usd",
+              price_date: "2025-02-28",
+              close_price: 25.675,
+            },
+          ])
+          // buildRateIndex query (USD -> CAD)
+          .mockResolvedValueOnce([
+            {
+              from_currency: "USD",
+              to_currency: "CAD",
+              rate: "1.35",
+              rate_date: "2025-02-28",
+            },
+          ]);
+
+        invTxRepository.find.mockResolvedValue([
+          {
+            securityId: "sec-usd",
+            action: InvestmentAction.BUY,
+            quantity: 100,
+            transactionDate: "2025-02-01",
+          },
+        ]);
+        securityRepository.findByIds.mockResolvedValue([
+          {
+            id: "sec-usd",
+            symbol: "FOO",
+            skipPriceUpdates: false,
+            currencyCode: "USD",
+          } as Partial<Security>,
+        ]);
+
+        await service.recalculateAccount("user-1", "brokerage-1");
+
+        const insertCalls = mockQueryRunner.query.mock.calls.filter(
+          (call: any[]) =>
+            typeof call[0] === "string" && call[0].includes("INSERT"),
+        );
+        // 100 shares * $25.675 USD = $2,567.50 USD
+        // $2,567.50 USD * 1.35 = $3,466.125 CAD
+        expect(insertCalls[0][1][4]).toBeCloseTo(3466.125, 4);
+      });
+
       it("rolls back on error during brokerage recalculation", async () => {
         accountRepository.findOne.mockResolvedValue({
           ...mockBrokerageAccount,
@@ -1642,9 +1702,9 @@ describe("NetWorthService", () => {
         },
       ]);
 
-      // securities
+      // securities (CAD-denominated security)
       securityRepository.findByIds.mockResolvedValue([
-        { id: "sec-1", skipPriceUpdates: false },
+        { id: "sec-1", skipPriceUpdates: false, currencyCode: "CAD" },
       ]);
 
       // security prices
@@ -1711,9 +1771,9 @@ describe("NetWorthService", () => {
         },
       ]);
 
-      // securities
+      // securities (CAD-denominated security)
       securityRepository.findByIds.mockResolvedValue([
-        { id: "sec-1", skipPriceUpdates: false },
+        { id: "sec-1", skipPriceUpdates: false, currencyCode: "CAD" },
       ]);
 
       // security prices
@@ -1780,9 +1840,9 @@ describe("NetWorthService", () => {
         },
       ]);
 
-      // securities
+      // securities (EUR-denominated security)
       securityRepository.findByIds.mockResolvedValue([
-        { id: "sec-eur", skipPriceUpdates: false },
+        { id: "sec-eur", skipPriceUpdates: false, currencyCode: "EUR" },
       ]);
 
       // security prices
@@ -1863,10 +1923,10 @@ describe("NetWorthService", () => {
         },
       ]);
 
-      // securities
+      // securities (each denominated in its respective account's currency)
       securityRepository.findByIds.mockResolvedValue([
-        { id: "sec-cad", skipPriceUpdates: false },
-        { id: "sec-usd", skipPriceUpdates: false },
+        { id: "sec-cad", skipPriceUpdates: false, currencyCode: "CAD" },
+        { id: "sec-usd", skipPriceUpdates: false, currencyCode: "USD" },
       ]);
 
       // security prices
@@ -2048,6 +2108,72 @@ describe("NetWorthService", () => {
       );
 
       expect(result).toEqual([]);
+    });
+
+    it("converts a USD security held in a CAD account to the default currency using the security's native currency", async () => {
+      // Scenario: user has a CAD brokerage account holding a USD-denominated
+      // security. Prices in security_prices are stored in USD, so they must
+      // be converted from USD -> CAD (the default), not CAD -> CAD.
+      prefRepository.findOne.mockResolvedValue({
+        defaultCurrency: "CAD",
+      });
+
+      // accounts query: CAD brokerage
+      dataSource.query.mockResolvedValueOnce([
+        {
+          id: "brok-cad",
+          account_type: "INVESTMENT",
+          account_sub_type: "INVESTMENT_BROKERAGE",
+          currency_code: "CAD",
+          opening_balance: 50000,
+        },
+      ]);
+
+      // investment transactions: 100 shares @ $27.16 USD
+      dataSource.query.mockResolvedValueOnce([
+        {
+          account_id: "brok-cad",
+          security_id: "sec-usd",
+          action: "BUY",
+          quantity: "100",
+          transaction_date: "2025-02-01",
+        },
+      ]);
+
+      // securities (USD-denominated)
+      securityRepository.findByIds.mockResolvedValue([
+        { id: "sec-usd", skipPriceUpdates: false, currencyCode: "USD" },
+      ]);
+
+      // security prices (in USD)
+      dataSource.query.mockResolvedValueOnce([
+        {
+          security_id: "sec-usd",
+          price_date: "2025-03-01",
+          close_price: "25.675",
+        },
+      ]);
+
+      // exchange rates (USD -> CAD)
+      dataSource.query.mockResolvedValueOnce([
+        {
+          from_currency: "USD",
+          to_currency: "CAD",
+          rate: "1.35",
+          rate_date: "2025-02-28",
+        },
+      ]);
+
+      const result = await service.getDailyInvestments(
+        "user-1",
+        "2025-03-01",
+        "2025-03-01",
+      );
+
+      // 100 shares * $25.675 USD = $2,567.50 USD
+      // $2,567.50 USD * 1.35 = $3,466.125 CAD -> rounded to 3466
+      expect(result).toHaveLength(1);
+      expect(result[0].value).toBe(3466);
     });
   });
 });

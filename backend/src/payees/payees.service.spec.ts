@@ -166,7 +166,10 @@ describe("PayeesService", () => {
           useValue: categoriesRepository,
         },
         { provide: DataSource, useValue: mockDataSource },
-        { provide: ActionHistoryService, useValue: { record: jest.fn().mockResolvedValue(null) } },
+        {
+          provide: ActionHistoryService,
+          useValue: { record: jest.fn().mockResolvedValue(null) },
+        },
       ],
     }).compile();
 

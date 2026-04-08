@@ -26,7 +26,6 @@ import { Account } from '@/types/account';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PAGE_SIZE } from '@/lib/constants';
 import { formatRelativeTime } from '@/lib/format';
-import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 const TransactionForm = dynamic(() => import('@/components/transactions/TransactionForm').then(m => m.TransactionForm), { ssr: false });
 
@@ -41,7 +40,6 @@ export default function InvestmentsPage() {
 }
 
 function InvestmentsContent() {
-  const { formatCurrency } = useNumberFormat();
   const data = useInvestmentData();
   const { loadAllPortfolioData, selectedAccountIds, currentPage, transactionFilters } = data;
   const handleUndoRedo = useCallback(() => {
@@ -149,83 +147,35 @@ function InvestmentsContent() {
                       }))}
                     />
                   </div>
-                  <div className="relative">
-                    <Button
-                      variant="outline"
-                      onClick={data.handleRefreshPrices}
-                      disabled={data.isRefreshingPrices}
-                      className="whitespace-nowrap h-full"
-                      title={data.lastPriceUpdate ? `Last updated: ${formatRelativeTime(data.lastPriceUpdate)}` : 'Never updated'}
-                    >
-                      {data.isRefreshingPrices ? (
-                        <>
-                          <svg className="animate-spin sm:-ml-1 sm:mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          <span className="hidden sm:inline">Updating...</span>
-                        </>
-                      ) : (
-                        <>
-                          <svg className="sm:mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                          </svg>
-                          <span className="hidden sm:inline">Refresh</span>
-                          {!data.refreshResult && data.lastPriceUpdate && (
-                            <span className="hidden sm:inline ml-1.5 text-xs text-gray-500 dark:text-gray-400">
-                              ({formatRelativeTime(data.lastPriceUpdate)})
-                            </span>
-                          )}
-                        </>
-                      )}
-                    </Button>
-                    {data.refreshResult && (
-                      <div className="absolute top-full right-0 mt-1 z-50">
-                        <button
-                          onClick={() => data.refreshResult!.failed > 0 && data.setShowRefreshDetails(!data.showRefreshDetails)}
-                          className={`text-xs whitespace-nowrap ${data.refreshResult.failed === -1 ? 'text-red-600 dark:text-red-400' : data.refreshResult.failed > 0 ? 'text-yellow-600 dark:text-yellow-400 hover:underline cursor-pointer' : 'text-green-600 dark:text-green-400'}`}
-                        >
-                          {data.refreshResult.failed === -1 ? 'Error refreshing' : `${data.refreshResult.updated} updated${data.refreshResult.failed > 0 ? `, ${data.refreshResult.failed} failed` : ''}`}
-                          {data.refreshResult.failed > 0 && (
-                            <svg className="inline-block ml-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={data.showRefreshDetails ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
-                            </svg>
-                          )}
-                        </button>
-                        {data.showRefreshDetails && data.refreshResult.results && (
-                          <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 min-w-64 max-w-md">
-                            <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Price Update Results</div>
-                            <div className="max-h-48 overflow-y-auto space-y-1">
-                              {data.refreshResult.results
-                                .filter(r => !r.success)
-                                .map((r, i) => (
-                                  <div key={i} className="flex items-start gap-2 text-xs">
-                                    <span className="text-red-500 dark:text-red-400 flex-shrink-0">&#10007;</span>
-                                    <span className="font-medium text-gray-800 dark:text-gray-200">{r.symbol}</span>
-                                    <span className="text-gray-500 dark:text-gray-400 truncate">{r.error}</span>
-                                  </div>
-                                ))}
-                              {data.refreshResult.results
-                                .filter(r => r.success)
-                                .map((r, i) => (
-                                  <div key={i} className="flex items-start gap-2 text-xs">
-                                    <span className="text-green-500 dark:text-green-400 flex-shrink-0">&#10003;</span>
-                                    <span className="font-medium text-gray-800 dark:text-gray-200">{r.symbol}</span>
-                                    <span className="text-gray-500 dark:text-gray-400">{r.price != null ? formatCurrency(r.price) : ''}</span>
-                                  </div>
-                                ))}
-                            </div>
-                            <button
-                              onClick={() => data.setShowRefreshDetails(false)}
-                              className="mt-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                            >
-                              Close
-                            </button>
-                          </div>
+                  <Button
+                    variant="outline"
+                    onClick={data.handleRefreshPrices}
+                    disabled={data.isRefreshingPrices}
+                    className="whitespace-nowrap h-full"
+                    title={data.lastPriceUpdate ? `Last updated: ${formatRelativeTime(data.lastPriceUpdate)}` : 'Never updated'}
+                  >
+                    {data.isRefreshingPrices ? (
+                      <>
+                        <svg className="animate-spin sm:-ml-1 sm:mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span className="hidden sm:inline">Updating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="sm:mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span className="hidden sm:inline">Refresh</span>
+                        {data.lastPriceUpdate && (
+                          <span className="hidden sm:inline ml-1.5 text-xs text-gray-500 dark:text-gray-400">
+                            ({formatRelativeTime(data.lastPriceUpdate)})
+                          </span>
                         )}
-                      </div>
+                      </>
                     )}
-                  </div>
+                  </Button>
                 </div>
                 <Button onClick={data.handleNewTransaction} className="whitespace-nowrap">+ New Transaction</Button>
               </>

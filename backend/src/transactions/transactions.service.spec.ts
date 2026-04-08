@@ -204,7 +204,10 @@ describe("TransactionsService", () => {
         },
         { provide: NetWorthService, useValue: netWorthService },
         { provide: DataSource, useValue: mockDataSource },
-        { provide: ActionHistoryService, useValue: { record: jest.fn().mockResolvedValue(null) } },
+        {
+          provide: ActionHistoryService,
+          useValue: { record: jest.fn().mockResolvedValue(null) },
+        },
         TransactionSplitService,
         TransactionTransferService,
         TransactionReconciliationService,

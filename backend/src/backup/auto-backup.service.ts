@@ -32,8 +32,7 @@ const WEEKLY_FILE_PATTERN =
   /^monize-backup-weekly-(\d{4}-\d{2}-\d{2})\.json\.gz$/;
 
 // Matches monthly backups: monize-backup-monthly-YY-MM.json.gz
-const MONTHLY_FILE_PATTERN =
-  /^monize-backup-monthly-(\d{2}-\d{2})\.json\.gz$/;
+const MONTHLY_FILE_PATTERN = /^monize-backup-monthly-(\d{2}-\d{2})\.json\.gz$/;
 
 const WEEKLY_DAYS = [7, 14, 21, 28];
 
@@ -467,13 +466,9 @@ export class AutoBackupService {
         this.safePath(folderPath, dailyFilename),
         this.safePath(folderPath, weeklyFilename),
       );
-      this.logger.log(
-        `Copied daily backup to weekly: ${weeklyFilename}`,
-      );
+      this.logger.log(`Copied daily backup to weekly: ${weeklyFilename}`);
     } catch (err) {
-      this.logger.warn(
-        `Failed to copy daily to weekly: ${err.message}`,
-      );
+      this.logger.warn(`Failed to copy daily to weekly: ${err.message}`);
     }
   }
 
@@ -501,13 +496,9 @@ export class AutoBackupService {
         this.safePath(folderPath, dailyFilename),
         this.safePath(folderPath, monthlyFilename),
       );
-      this.logger.log(
-        `Copied daily backup to monthly: ${monthlyFilename}`,
-      );
+      this.logger.log(`Copied daily backup to monthly: ${monthlyFilename}`);
     } catch (err) {
-      this.logger.warn(
-        `Failed to copy daily to monthly: ${err.message}`,
-      );
+      this.logger.warn(`Failed to copy daily to monthly: ${err.message}`);
     }
   }
 
