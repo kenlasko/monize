@@ -2006,6 +2006,101 @@ describe("PortfolioService", () => {
       expect(result).toHaveProperty("totalNetInvested");
       expect(result).toHaveProperty("cagr");
     });
+
+    it("sums investment flows in the cash account currency via total_amount * exchange_rate", async () => {
+      accountsRepository.find.mockResolvedValue([
+        mockBrokerageAccount,
+        mockCashAccount,
+      ]);
+      holdingsRepository.find.mockResolvedValue([]);
+      securityPriceRepository.query.mockResolvedValue([]);
+      accountsRepository.query.mockResolvedValue([]);
+
+      await service.getPortfolioSummary(userId);
+
+      // The flows sum must convert each row from the security's currency into
+      // the cash account's currency by multiplying total_amount * exchange_rate,
+      // otherwise netInvested would mix USD and CAD for cross-currency holdings.
+      const flowsCall = accountsRepository.query.mock.calls.find(
+        (call) =>
+          typeof call[0] === "string" &&
+          call[0].includes("investment_transactions"),
+      );
+      expect(flowsCall).toBeDefined();
+      expect(flowsCall![0]).toContain("total_amount * exchange_rate");
+    });
+
+    it("computes netInvested correctly for a USD security held in a CAD account", async () => {
+      // Scenario: CAD brokerage with 50,000 CAD opening balance.
+      // User buys 100 shares of a USD stock at 27.16 USD while USD->CAD = 1.35.
+      //   Cash debited: 2716 USD * 1.35 = 3666.60 CAD
+      //   Remaining cash: 46,333.40 CAD
+      //   total_amount on the BUY row: 2716 (USD, stored raw)
+      // The SQL query multiplies total_amount * exchange_rate, so flows.buys
+      // comes back already in CAD (3666.60), matching the cash balance's units.
+      //
+      // Expected netInvested = cash(46,333.40) + buys(3666.60) = 50,000 CAD,
+      // i.e. the original opening balance, which is what "money I put in"
+      // should show.
+      accountsRepository.find.mockResolvedValue([
+        mockBrokerageAccount,
+        { ...mockCashAccount, currentBalance: 46333.4 },
+      ]);
+      holdingsRepository.find.mockResolvedValue([
+        {
+          ...mockHoldingAAPL,
+          quantity: 100 as any,
+          averageCost: 27.16 as any,
+        },
+      ]);
+      securityPriceRepository.query.mockResolvedValue([
+        {
+          security_id: "sec-1",
+          close_price: "25.6750",
+          price_date: "2026-02-07",
+        },
+      ]);
+      exchangeRateService.getLatestRate.mockImplementation(
+        (from: string, to: string) => {
+          if (from === "USD" && to === "CAD") return Promise.resolve(1.35);
+          return Promise.resolve(null);
+        },
+      );
+
+      let queryCallCount = 0;
+      accountsRepository.query.mockImplementation(() => {
+        queryCallCount++;
+        if (queryCallCount === 1) {
+          // With the fix, the query returns flows already in CAD:
+          //   buys = 2716 * 1.35 = 3666.60
+          return [
+            {
+              account_id: "acct-brokerage-1",
+              buys: "3666.60",
+              sells: "0",
+              income: "0",
+            },
+          ];
+        }
+        return [{ earliest: "2025-01-15" }];
+      });
+
+      const result = await service.getPortfolioSummary(userId);
+
+      // Opening balance preserved -> 50,000 CAD net invested.
+      expect(result.holdingsByAccount[0].netInvested).toBeCloseTo(50000, 2);
+      expect(result.totalNetInvested).toBeCloseTo(50000, 2);
+
+      // Portfolio value: cash 46333.40 + holdings (100 * 25.675 * 1.35 = 3466.125)
+      //                = 49,799.525 CAD
+      expect(result.totalPortfolioValue).toBeCloseTo(49799.525, 2);
+
+      // Total Gain (portfolio - netInvested) must be negative because the
+      // USD price dropped between purchase and today.
+      const totalGain = result.totalPortfolioValue - result.totalNetInvested;
+      expect(totalGain).toBeLessThan(0);
+      expect(totalGain).toBeCloseTo(-200.475, 2);
+    });
   });
 
   describe("CAGR calculation (via getPortfolioSummary)", () => {

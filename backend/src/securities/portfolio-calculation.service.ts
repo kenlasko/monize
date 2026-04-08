@@ -171,6 +171,13 @@ export class PortfolioCalculationService {
   /**
    * Compute per-account investment transaction sums (BUYs, SELLs, Income)
    * for Net Invested calculation.
+   *
+   * `total_amount` is stored in the security's native currency, so each row
+   * is multiplied by its `exchange_rate` (security currency -> cash account
+   * currency) to keep the returned figures in the holding account's cash
+   * currency. This matches the units of the per-account `cashBalance` used
+   * by `buildHoldingsByAccount`, preventing a USD + CAD mix-up when the
+   * security and the account use different currencies.
    */
   async computeInvestmentFlows(
     userId: string,
@@ -189,9 +196,9 @@ export class PortfolioCalculationService {
       income: string;
     }[] = await this.accountsRepository.query(
       `SELECT account_id,
-                COALESCE(SUM(CASE WHEN action = 'BUY' THEN total_amount ELSE 0 END), 0) as buys,
-                COALESCE(SUM(CASE WHEN action = 'SELL' THEN total_amount ELSE 0 END), 0) as sells,
-                COALESCE(SUM(CASE WHEN action IN ('DIVIDEND','INTEREST','CAPITAL_GAIN') THEN total_amount ELSE 0 END), 0) as income
+                COALESCE(SUM(CASE WHEN action = 'BUY' THEN total_amount * exchange_rate ELSE 0 END), 0) as buys,
+                COALESCE(SUM(CASE WHEN action = 'SELL' THEN total_amount * exchange_rate ELSE 0 END), 0) as sells,
+                COALESCE(SUM(CASE WHEN action IN ('DIVIDEND','INTEREST','CAPITAL_GAIN') THEN total_amount * exchange_rate ELSE 0 END), 0) as income
          FROM investment_transactions
          WHERE user_id = $1
            AND account_id = ANY($2)
