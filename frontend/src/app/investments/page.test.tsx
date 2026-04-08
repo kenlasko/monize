@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import toast from 'react-hot-toast';
 import { render, screen, waitFor, fireEvent, act } from '@/test/render';
 import InvestmentsPage from './page';
 
@@ -184,9 +185,34 @@ vi.mock('@/hooks/useLocalStorage', () => {
 });
 
 vi.mock('@/hooks/usePriceRefresh', () => ({
-  usePriceRefresh: () => ({
+  usePriceRefresh: ({ onRefreshComplete }: { onRefreshComplete?: () => void | Promise<void> } = {}) => ({
     isRefreshing: false,
     triggerAutoRefresh: vi.fn(),
+    triggerManualRefresh: async () => {
+      try {
+        const summary = await mockGetPortfolioSummary();
+        const securityIds = [
+          ...new Set(
+            summary.holdings
+              .filter((h: { quantity: number }) => h.quantity !== 0)
+              .map((h: { securityId: string }) => h.securityId),
+          ),
+        ];
+        if (securityIds.length === 0) {
+          toast.success('No securities to update');
+          return;
+        }
+        const result = await mockRefreshSelectedPrices(securityIds);
+        if (result.failed > 0) {
+          toast.error(`Prices updated: ${result.updated} succeeded, ${result.failed} failed`);
+        } else {
+          toast.success(`${result.updated} security price${result.updated !== 1 ? 's' : ''} updated`);
+        }
+        if (onRefreshComplete) await onRefreshComplete();
+      } catch {
+        toast.error('Failed to refresh prices');
+      }
+    },
   }),
   setRefreshInProgress: vi.fn(),
 }));
@@ -545,7 +571,7 @@ describe('InvestmentsPage', () => {
       await waitFor(() => expect(screen.getByText(/Refresh/)).toBeInTheDocument());
       fireEvent.click(screen.getByText(/Refresh/));
       await waitFor(() => {
-        expect(screen.getByText(/1 updated, 1 failed/)).toBeInTheDocument();
+        expect(toast.error).toHaveBeenCalledWith('Prices updated: 1 succeeded, 1 failed');
       });
     });
 
@@ -556,7 +582,7 @@ describe('InvestmentsPage', () => {
       await waitFor(() => expect(screen.getByText(/Refresh/)).toBeInTheDocument());
       fireEvent.click(screen.getByText(/Refresh/));
       await waitFor(() => {
-        expect(screen.getByText('Error refreshing')).toBeInTheDocument();
+        expect(toast.error).toHaveBeenCalledWith('Failed to refresh prices');
       });
     });
 
