@@ -111,6 +111,28 @@ describe('BalanceHistoryChart', () => {
     expect(screen.queryByText('Ending')).not.toBeInTheDocument();
   });
 
+  it('does not show Ending balance when end date filter is in the future but no future transactions exist', () => {
+    // The backend returns one row per day in the filtered range, so when the
+    // user sets an end date in the future the chart has points after today
+    // with the balance carried forward unchanged. "Ending" should not appear.
+    render(
+      <BalanceHistoryChart
+        data={[
+          { date: '2026-01-01', balance: 1000 },
+          { date: '2026-03-01', balance: 1500 },
+          { date: '2026-04-09', balance: 1500 },
+          { date: '2026-06-01', balance: 1500 },
+          { date: '2026-12-31', balance: 1500 },
+        ]}
+        isLoading={false}
+      />
+    );
+
+    expect(screen.getByText('Starting')).toBeInTheDocument();
+    expect(screen.getByText('Current')).toBeInTheDocument();
+    expect(screen.queryByText('Ending')).not.toBeInTheDocument();
+  });
+
   it('shows Current as today balance and Ending as last future data point', () => {
     // All values must be unique to avoid getByText collisions
     // Data: start=2000, dip=1500, current(today)=1800, ending=1900

@@ -105,18 +105,31 @@ export function BalanceHistoryChart({
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     let currentBalance = endBalance;
+    let todayAnchorIdx = -1;
     for (let i = chartData.length - 1; i >= 0; i--) {
       if (chartData[i].date <= todayStr) {
         currentBalance = chartData[i].balance;
+        todayAnchorIdx = i;
         break;
       }
-      if (i === 0) {
-        // All data points are in the future
-        currentBalance = startBalance;
-      }
+    }
+    if (todayAnchorIdx === -1) {
+      // All data points are in the future
+      currentBalance = startBalance;
     }
 
-    const hasFutureData = chartData[chartData.length - 1].date > todayStr;
+    // The backend returns one data point per day in the filtered range, so
+    // chart points strictly after today do NOT necessarily mean future
+    // transactions exist — the balance simply carries forward on days with
+    // no activity. Only consider the range as having future data when at
+    // least one post-today point differs from the current balance.
+    let hasFutureData = false;
+    for (let i = todayAnchorIdx + 1; i < chartData.length; i++) {
+      if (chartData[i].balance !== currentBalance) {
+        hasFutureData = true;
+        break;
+      }
+    }
 
     let minBalance = startBalance;
     for (const point of chartData) {
