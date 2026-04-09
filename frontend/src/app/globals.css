@@ -71,18 +71,28 @@ body {
 [type='url'],
 [type='password'],
 [type='number'],
-[type='date'],
-[type='datetime-local'],
-[type='month'],
 [type='search'],
 [type='tel'],
-[type='time'],
-[type='week'],
 [multiple],
 textarea,
 select {
   @apply w-full rounded-md border border-gray-300 shadow-sm px-3 py-2 text-base font-sans;
   appearance: none;
+  background-color: #fff;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Date and time inputs must keep their native appearance so the picker
+   opens correctly on iOS WebKit (iPad Safari/Chrome/Firefox all use WebKit).
+   Applying `appearance: none` makes the input behave like a plain text field
+   on iPadOS, so tapping it does nothing -- the native calendar/wheel picker
+   never appears. */
+[type='date'],
+[type='datetime-local'],
+[type='month'],
+[type='time'],
+[type='week'] {
+  @apply w-full rounded-md border border-gray-300 shadow-sm px-3 py-2 text-base font-sans;
   background-color: #fff;
   font-family: 'Inter', system-ui, sans-serif;
 }

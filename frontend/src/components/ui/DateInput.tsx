@@ -150,6 +150,12 @@ function isTouchDevice(): boolean {
   return typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
 }
 
+const calendarIconSvg = (
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+  </svg>
+);
+
 type InputMode = 'desktop-formatted' | 'desktop-browser' | 'touch-formatted' | 'touch-browser';
 
 function getInputMode(dateFormat: string): InputMode {
@@ -301,21 +307,6 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       setShowCalendar(false);
     }, []);
 
-    // Touch mode: open the native date picker when the display is tapped
-    const handleTouchTap = useCallback(() => {
-      const picker = nativeDateRef.current;
-      if (!picker) return;
-      // Sync current value to native input before opening
-      picker.value = isoValue;
-      if (typeof picker.showPicker === 'function') {
-        picker.showPicker();
-      } else {
-        // Fallback for older browsers: focus triggers the picker
-        picker.focus();
-        picker.click();
-      }
-    }, [isoValue]);
-
     // Touch mode: handle native picker selection
     const handleNativeDateChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
       const val = e.target.value;
@@ -337,39 +328,54 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     );
 
     // --- Touch + custom format mode ---
-    // Shows the formatted date in a tappable display; tapping opens a hidden
-    // native date picker so the user gets both their preferred format AND the
-    // native calendar/wheel UI.
+    // The user sees the date in their preferred format, but the actual
+    // interactive element is a transparent native date input layered on top.
+    // Letting the user tap directly into the native input is the only reliable
+    // way to open the picker on iPad WebKit -- programmatic showPicker() on a
+    // hidden input fails silently there.
     if (mode === 'touch-formatted') {
       return (
         <div className="w-full">
           {labelBlock}
           <div className="relative">
-            {/* Visible formatted display the user sees and taps */}
-            <button
-              type="button"
-              id={inputId}
-              onClick={handleTouchTap}
+            {/* Visible formatted display, decorative only */}
+            <div
+              aria-hidden="true"
               className={cn(
                 inputBaseClasses,
-                'border px-3 py-2 focus:ring-1 focus:outline-none text-left',
+                'border px-3 py-2 pr-10 min-h-[42px] flex items-center',
+                'focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500',
                 props.error && inputErrorClasses,
                 !displayValue && 'text-gray-400 dark:text-gray-500',
               )}
             >
               {displayValue || dateFormat}
-            </button>
-            {/* Hidden native date input for the picker.
-                Positioned to overlap the button so the popup anchors correctly. */}
+            </div>
+            {/* Calendar icon overlay (visual only, taps pass through) */}
+            <span
+              aria-hidden="true"
+              className="absolute inset-y-0 right-3 flex items-center text-gray-400 dark:text-gray-500 pointer-events-none"
+            >
+              {calendarIconSvg}
+            </span>
+            {/* Native date input overlays the display. Transparent but
+                interactive so the user's tap opens the native picker via a
+                real user gesture. */}
             <input
               ref={nativeDateRef}
+              id={inputId}
               type="date"
-              tabIndex={-1}
-              aria-hidden="true"
-              className="absolute inset-0 opacity-0 pointer-events-none"
-              onChange={handleNativeDateChange}
+              aria-label={label}
+              value={isoValue}
+              onChange={(e) => {
+                handleNativeDateChange(e);
+                externalOnChange?.(e);
+              }}
+              onBlur={externalOnBlur}
+              onKeyDown={handleKeyDown}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
-            {/* Hidden input for react-hook-form ref/value management */}
+            {/* Hidden input bound to react-hook-form for value/ref management */}
             <input
               ref={mergedRef}
               type="hidden"
@@ -394,9 +400,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
         aria-label="Open date picker"
         className="absolute top-px bottom-px right-px z-10 flex items-center pr-2.5 pl-1 bg-white dark:bg-gray-800 rounded-r-md text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
       >
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
-        </svg>
+        {calendarIconSvg}
       </button>
     );
 
@@ -442,19 +446,30 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
 
     // --- Touch browser mode ---
     // Native date input using the browser's locale format with native picker.
+    // The calendar icon is a visual overlay only -- pointer-events-none lets
+    // taps fall through to the input, which opens the picker via user gesture.
     return (
       <div className="w-full">
         {labelBlock}
-        <Input
-          ref={ref}
-          id={inputId}
-          type="date"
-          value={externalValue}
-          onChange={externalOnChange}
-          onBlur={externalOnBlur}
-          onKeyDown={handleKeyDown}
-          {...props}
-        />
+        <div className="relative">
+          <Input
+            ref={ref}
+            id={inputId}
+            type="date"
+            value={externalValue}
+            onChange={externalOnChange}
+            onBlur={externalOnBlur}
+            onKeyDown={handleKeyDown}
+            className="pr-10"
+            {...props}
+          />
+          <span
+            aria-hidden="true"
+            className="absolute inset-y-0 right-3 flex items-center text-gray-400 dark:text-gray-500 pointer-events-none"
+          >
+            {calendarIconSvg}
+          </span>
+        </div>
       </div>
     );
   }

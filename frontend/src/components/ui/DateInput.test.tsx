@@ -303,7 +303,7 @@ describe('DateInput', () => {
       expect(onDateChange).toHaveBeenCalledWith('2025-06-25');
     });
 
-    it('shows formatted date in tappable display on touch devices', () => {
+    it('shows formatted date in display on touch devices', () => {
       // Simulate a touch device by temporarily overriding matchMedia
       const originalMatchMedia = window.matchMedia;
       window.matchMedia = vi.fn().mockImplementation((query: string) => ({
@@ -317,17 +317,15 @@ describe('DateInput', () => {
         dispatchEvent: vi.fn(),
       }));
 
-      const { getByLabelText } = renderDateInput('2025-06-15');
-      const display = getByLabelText('Date');
-      // Touch mode renders a button with the formatted date
-      expect(display.tagName).toBe('BUTTON');
-      expect(display.textContent).toBe('15/06/2025');
+      const { getByText } = renderDateInput('2025-06-15');
+      // Touch mode renders the formatted date in a decorative display
+      expect(getByText('15/06/2025')).toBeInTheDocument();
 
       // Restore the original mock
       window.matchMedia = originalMatchMedia;
     });
 
-    it('opens native picker on tap in touch mode', () => {
+    it('renders native date input as tappable overlay in touch mode', () => {
       const originalMatchMedia = window.matchMedia;
       window.matchMedia = vi.fn().mockImplementation((query: string) => ({
         matches: query === '(pointer: coarse)',
@@ -340,15 +338,16 @@ describe('DateInput', () => {
         dispatchEvent: vi.fn(),
       }));
 
-      const { getByLabelText, container } = renderDateInput('2025-06-15');
-      const display = getByLabelText('Date');
-      const nativeInput = container.querySelector('input[type="date"]') as HTMLInputElement;
-
-      // Mock showPicker
-      nativeInput.showPicker = vi.fn();
-      fireEvent.click(display);
-      expect(nativeInput.showPicker).toHaveBeenCalled();
+      const { getByLabelText } = renderDateInput('2025-06-15');
+      // The native date input is the labelled, interactive element. Tapping it
+      // opens the iOS native picker via real user gesture (no showPicker needed).
+      const nativeInput = getByLabelText('Date') as HTMLInputElement;
+      expect(nativeInput.tagName).toBe('INPUT');
+      expect(nativeInput.getAttribute('type')).toBe('date');
       expect(nativeInput.value).toBe('2025-06-15');
+      // Positioned to overlay the formatted display so taps reach it directly
+      expect(nativeInput.className).toContain('absolute');
+      expect(nativeInput.className).toContain('opacity-0');
 
       window.matchMedia = originalMatchMedia;
     });
@@ -366,15 +365,14 @@ describe('DateInput', () => {
         dispatchEvent: vi.fn(),
       }));
 
-      const { getByLabelText, container } = renderDateInput('2025-06-15');
-      const nativeInput = container.querySelector('input[type="date"]') as HTMLInputElement;
+      const { getByLabelText, getByText } = renderDateInput('2025-06-15');
+      const nativeInput = getByLabelText('Date');
 
       // Simulate picking a new date from the native picker
       fireEvent.change(nativeInput, { target: { value: '2025-12-25' } });
 
       expect(onDateChange).toHaveBeenCalledWith('2025-12-25');
-      const display = getByLabelText('Date');
-      expect(display.textContent).toBe('25/12/2025');
+      expect(getByText('25/12/2025')).toBeInTheDocument();
 
       window.matchMedia = originalMatchMedia;
     });
