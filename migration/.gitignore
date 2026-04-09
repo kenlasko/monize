@@ -1,0 +1,6 @@
+node_modules/
+dist/
+*.mdb
+*.mny
+*.jar
+.env
