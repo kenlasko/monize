@@ -1,3 +1,4 @@
+import Cookies from 'js-cookie';
 import apiClient from './api';
 import type {
   AiProviderConfig,
@@ -57,11 +58,12 @@ export const aiApi = {
   queryStream: (query: string, callbacks: StreamCallbacks): AbortController => {
     const controller = new AbortController();
 
-    // Get CSRF token from cookie
-    const csrfToken = document.cookie
-      .split('; ')
-      .find((row) => row.startsWith('csrf_token='))
-      ?.split('=')[1] || '';
+    // Get CSRF token from cookie. Use js-cookie (not raw document.cookie) so
+    // the value is URL-decoded — the backend stores `${nonce}:${hmac}`, which
+    // Express serializes with `%3A` in place of the colon. Sending the raw
+    // encoded value would fail the backend's timing-safe comparison against
+    // the cookie-parser-decoded cookie.
+    const csrfToken = Cookies.get('csrf_token') || '';
 
     fetch('/api/v1/ai/query/stream', {
       method: 'POST',
