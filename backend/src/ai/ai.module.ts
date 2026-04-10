@@ -12,6 +12,7 @@ import { AiService } from "./ai.service";
 import { AiUsageService } from "./ai-usage.service";
 import { AiEncryptionService } from "./ai-encryption.service";
 import { AiProviderFactory } from "./ai-provider.factory";
+import { AiStartupValidator } from "./ai-startup.validator";
 import { AiController } from "./ai.controller";
 import { FinancialContextBuilder } from "./context/financial-context.builder";
 import { AiQueryService } from "./query/ai-query.service";
@@ -52,6 +53,7 @@ import { BudgetsModule } from "../budgets/budgets.module";
     AiUsageService,
     AiEncryptionService,
     AiProviderFactory,
+    AiStartupValidator,
     FinancialContextBuilder,
     AiQueryService,
     ToolExecutorService,
