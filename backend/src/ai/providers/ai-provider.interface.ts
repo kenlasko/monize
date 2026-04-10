@@ -62,6 +62,23 @@ export interface AiToolResponse {
   stopReason: "end_turn" | "tool_use" | "max_tokens";
 }
 
+/**
+ * Streaming chunk produced by `streamWithTools()`. Providers emit zero or more
+ * `text` chunks as the model generates output, followed by exactly one `done`
+ * chunk that carries the fully-assembled tool calls (if any), final usage
+ * counters, model id, and stop reason.
+ */
+export type AiToolStreamChunk =
+  | { type: "text"; text: string }
+  | {
+      type: "done";
+      content: string;
+      toolCalls: AiToolCall[];
+      usage: { inputTokens: number; outputTokens: number };
+      model: string;
+      stopReason: "end_turn" | "tool_use" | "max_tokens";
+    };
+
 export interface AiProvider {
   readonly name: string;
   readonly supportsStreaming: boolean;
@@ -75,6 +92,17 @@ export interface AiProvider {
     request: AiCompletionRequest,
     tools: AiToolDefinition[],
   ): Promise<AiToolResponse>;
+
+  /**
+   * Streaming variant of `completeWithTools()` that yields the model's text
+   * output incrementally so the caller can surface realtime feedback.
+   * Optional — providers that haven't implemented it will fall back to
+   * `completeWithTools()` in the query service.
+   */
+  streamWithTools?(
+    request: AiCompletionRequest,
+    tools: AiToolDefinition[],
+  ): AsyncIterable<AiToolStreamChunk>;
 
   isAvailable(): Promise<boolean>;
 }

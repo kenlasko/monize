@@ -206,5 +206,140 @@ describe("AiQueryController", () => {
         "My spending?",
       );
     });
+
+    it("emits SSE comment heartbeats every 15s during quiet streams", async () => {
+      // The Next.js dev proxy uses undici with a 5 min default bodyTimeout.
+      // Heartbeats keep the upstream stream alive when the model is silent
+      // for long stretches (e.g. CPU-only Ollama generating tokens).
+      jest.useFakeTimers();
+      try {
+        // A stream that yields nothing for a while, then ends — gives the
+        // heartbeat interval room to fire before the generator resolves.
+        let resolveStream: () => void;
+        const blocker = new Promise<void>((resolve) => {
+          resolveStream = resolve;
+        });
+        mockQueryService.executeQueryStream.mockReturnValue(
+          (async function* () {
+            await blocker;
+            if (false as boolean) yield { type: "noop" };
+          })(),
+        );
+
+        const written: string[] = [];
+        const mockRes = {
+          setHeader: jest.fn(),
+          flushHeaders: jest.fn(),
+          write: jest.fn((data: string) => written.push(data)),
+          end: jest.fn(),
+          on: jest.fn(),
+          writableEnded: false,
+        };
+
+        const streamPromise = controller.streamQuery(
+          mockRequest,
+          { query: "slow query" },
+          mockRes as any,
+        );
+
+        // Advance through three heartbeat intervals (45 s)
+        await jest.advanceTimersByTimeAsync(15_000);
+        await jest.advanceTimersByTimeAsync(15_000);
+        await jest.advanceTimersByTimeAsync(15_000);
+
+        const heartbeatLines = written.filter((line) =>
+          line.startsWith(": heartbeat"),
+        );
+        expect(heartbeatLines.length).toBeGreaterThanOrEqual(3);
+
+        // Release the stream so the controller finishes
+        resolveStream!();
+        await streamPromise;
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it("clears the heartbeat interval after stream completes", async () => {
+      jest.useFakeTimers();
+      try {
+        const events = [{ type: "content", text: "done" }];
+        mockQueryService.executeQueryStream.mockReturnValue(
+          (async function* () {
+            for (const event of events) {
+              yield event;
+            }
+          })(),
+        );
+
+        const written: string[] = [];
+        const mockRes = {
+          setHeader: jest.fn(),
+          flushHeaders: jest.fn(),
+          write: jest.fn((data: string) => written.push(data)),
+          end: jest.fn(),
+          on: jest.fn(),
+          writableEnded: false,
+        };
+
+        await controller.streamQuery(
+          mockRequest,
+          { query: "fast" },
+          mockRes as any,
+        );
+
+        // Advance well past the heartbeat interval; nothing new should be
+        // written because the interval was cleared in the finally block.
+        const writesBefore = written.length;
+        await jest.advanceTimersByTimeAsync(60_000);
+        expect(written.length).toBe(writesBefore);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it("does not write a heartbeat after the response is ended", async () => {
+      jest.useFakeTimers();
+      try {
+        let resolveStream: () => void;
+        const blocker = new Promise<void>((resolve) => {
+          resolveStream = resolve;
+        });
+        mockQueryService.executeQueryStream.mockReturnValue(
+          (async function* () {
+            await blocker;
+            if (false as boolean) yield { type: "noop" };
+          })(),
+        );
+
+        const written: string[] = [];
+        const mockRes = {
+          setHeader: jest.fn(),
+          flushHeaders: jest.fn(),
+          write: jest.fn((data: string) => written.push(data)),
+          end: jest.fn(),
+          on: jest.fn(),
+          writableEnded: true, // simulate response already closed
+        };
+
+        const streamPromise = controller.streamQuery(
+          mockRequest,
+          { query: "slow" },
+          mockRes as any,
+        );
+
+        await jest.advanceTimersByTimeAsync(30_000);
+        // Heartbeat callback skips writing when writableEnded === true
+        const heartbeatLines = written.filter((line) =>
+          line.startsWith(": heartbeat"),
+        );
+        expect(heartbeatLines).toHaveLength(0);
+
+        resolveStream!();
+        await streamPromise;
+      } finally {
+        jest.useRealTimers();
+      }
+    });
   });
 });

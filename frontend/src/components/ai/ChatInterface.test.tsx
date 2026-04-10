@@ -319,6 +319,113 @@ describe('ChatInterface', () => {
       });
     });
 
+    it('shows live streamed text from assistant_text events in the thinking panel', async () => {
+      await renderChat();
+
+      const textarea = screen.getByPlaceholderText(
+        'Ask about your finances...',
+      );
+      fireEvent.change(textarea, { target: { value: 'Test' } });
+      fireEvent.click(screen.getByTitle('Send'));
+
+      // Simulate three text deltas streaming in
+      act(() => {
+        capturedCallbacks?.onEvent({ type: 'assistant_text', text: 'Looking ' });
+      });
+      act(() => {
+        capturedCallbacks?.onEvent({ type: 'assistant_text', text: 'at ' });
+      });
+      act(() => {
+        capturedCallbacks?.onEvent({
+          type: 'assistant_text',
+          text: 'your accounts.',
+        });
+      });
+
+      await waitFor(() => {
+        // Live thinking text accumulates the deltas
+        expect(
+          screen.getByText('Looking at your accounts.'),
+        ).toBeInTheDocument();
+      });
+    });
+
+    it('clears the live thinking text when a new tool_start fires', async () => {
+      await renderChat();
+
+      const textarea = screen.getByPlaceholderText(
+        'Ask about your finances...',
+      );
+      fireEvent.change(textarea, { target: { value: 'Test' } });
+      fireEvent.click(screen.getByTitle('Send'));
+
+      act(() => {
+        capturedCallbacks?.onEvent({
+          type: 'assistant_text',
+          text: 'I will check the database.',
+        });
+      });
+
+      await waitFor(() => {
+        expect(
+          screen.getByText('I will check the database.'),
+        ).toBeInTheDocument();
+      });
+
+      // Tool start should reset the live text buffer for the next iteration
+      act(() => {
+        capturedCallbacks?.onEvent({
+          type: 'tool_start',
+          name: 'get_account_balances',
+        });
+      });
+
+      await waitFor(() => {
+        expect(
+          screen.queryByText('I will check the database.'),
+        ).not.toBeInTheDocument();
+      });
+    });
+
+    it('promotes streamed text to a finalized message bubble on content event', async () => {
+      await renderChat();
+
+      const textarea = screen.getByPlaceholderText(
+        'Ask about your finances...',
+      );
+      fireEvent.change(textarea, { target: { value: 'Test' } });
+      fireEvent.click(screen.getByTitle('Send'));
+
+      act(() => {
+        capturedCallbacks?.onEvent({
+          type: 'assistant_text',
+          text: 'Your balance is $5,000.',
+        });
+      });
+
+      // The streamed text appears live in the thinking panel
+      await waitFor(() => {
+        expect(
+          screen.getByText('Your balance is $5,000.'),
+        ).toBeInTheDocument();
+      });
+
+      // The final content event finalizes it; the same text now lives in
+      // the proper assistant message bubble (still in the document).
+      act(() => {
+        capturedCallbacks?.onEvent({
+          type: 'content',
+          text: 'Your balance is $5,000.',
+        });
+      });
+
+      await waitFor(() => {
+        expect(
+          screen.getByText('Your balance is $5,000.'),
+        ).toBeInTheDocument();
+      });
+    });
+
     it('finishes loading after done event', async () => {
       await renderChat();
 

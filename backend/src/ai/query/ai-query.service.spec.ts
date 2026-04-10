@@ -585,4 +585,251 @@ describe("AiQueryService", () => {
       );
     });
   });
+
+  // ==========================================================================
+  // Streaming-with-tools path
+  //
+  // When the configured provider implements `streamWithTools()` (Ollama,
+  // Anthropic, OpenAI, openai-compatible), the query service uses it
+  // preferentially so the model's text deltas are surfaced live as
+  // `assistant_text` events. The tests below cover that path with a
+  // dedicated mock provider whose stream mock supplies a sequence of chunks.
+  // ==========================================================================
+  describe("executeQueryStream() — streaming provider path", () => {
+    /**
+     * Build a streamWithTools mock that yields the supplied chunks. The mock
+     * is shaped like an async iterable so the service's `for await` loop
+     * consumes it the same way it would a real provider.
+     */
+    function makeStreamingProvider(
+      chunkSequences: Array<Array<Record<string, unknown>>>,
+    ): {
+      name: string;
+      supportsToolUse: boolean;
+      streamWithTools: jest.Mock;
+    } {
+      const streamWithTools = jest.fn();
+      for (const chunks of chunkSequences) {
+        streamWithTools.mockReturnValueOnce({
+          [Symbol.asyncIterator]: () => {
+            let i = 0;
+            return {
+              next: () =>
+                i < chunks.length
+                  ? Promise.resolve({ value: chunks[i++], done: false })
+                  : Promise.resolve({ value: undefined, done: true }),
+            };
+          },
+        });
+      }
+      return {
+        name: "ollama",
+        supportsToolUse: true,
+        streamWithTools,
+      };
+    }
+
+    it("emits assistant_text events for each text chunk before final content", async () => {
+      const streamingProvider = makeStreamingProvider([
+        [
+          { type: "text", text: "Looking " },
+          { type: "text", text: "at " },
+          { type: "text", text: "your accounts." },
+          {
+            type: "done",
+            content: "Looking at your accounts.",
+            toolCalls: [],
+            usage: { inputTokens: 50, outputTokens: 10 },
+            model: "llama3",
+            stopReason: "end_turn",
+          },
+        ],
+      ]);
+      mockAiService.getToolUseProvider.mockResolvedValueOnce(streamingProvider);
+
+      const events = await collectEvents(userId, "What are my balances?");
+
+      const textEvents = events.filter((e) => e.type === "assistant_text");
+      expect(textEvents.map((e) => e.text)).toEqual([
+        "Looking ",
+        "at ",
+        "your accounts.",
+      ]);
+
+      const contentEvent = events.find((e) => e.type === "content");
+      expect(contentEvent).toBeDefined();
+      expect(contentEvent!.text).toBe("Looking at your accounts.");
+
+      const doneEvent = events.find((e) => e.type === "done");
+      expect(doneEvent).toBeDefined();
+      expect((doneEvent!.usage as { inputTokens: number }).inputTokens).toBe(
+        50,
+      );
+    });
+
+    it("processes tool calls between streaming iterations", async () => {
+      const streamingProvider = makeStreamingProvider([
+        [
+          { type: "text", text: "Let me check that for you." },
+          {
+            type: "done",
+            content: "Let me check that for you.",
+            toolCalls: [
+              { id: "tc-1", name: "get_account_balances", input: {} },
+            ],
+            usage: { inputTokens: 80, outputTokens: 20 },
+            model: "llama3",
+            stopReason: "tool_use",
+          },
+        ],
+        [
+          { type: "text", text: "Your balance " },
+          { type: "text", text: "is $5,000." },
+          {
+            type: "done",
+            content: "Your balance is $5,000.",
+            toolCalls: [],
+            usage: { inputTokens: 150, outputTokens: 25 },
+            model: "llama3",
+            stopReason: "end_turn",
+          },
+        ],
+      ]);
+      mockAiService.getToolUseProvider.mockResolvedValueOnce(streamingProvider);
+
+      const events = await collectEvents(userId, "What's my balance?");
+
+      // Two iterations of assistant_text with a tool execution between them
+      const textEvents = events.filter((e) => e.type === "assistant_text");
+      expect(textEvents.map((e) => e.text)).toEqual([
+        "Let me check that for you.",
+        "Your balance ",
+        "is $5,000.",
+      ]);
+
+      const toolStartEvent = events.find((e) => e.type === "tool_start");
+      expect(toolStartEvent).toBeDefined();
+      expect(toolStartEvent!.name).toBe("get_account_balances");
+
+      const toolResultEvent = events.find((e) => e.type === "tool_result");
+      expect(toolResultEvent).toBeDefined();
+
+      const contentEvent = events.find((e) => e.type === "content");
+      expect(contentEvent!.text).toBe("Your balance is $5,000.");
+
+      // streamWithTools called twice, completeWithTools never
+      expect(streamingProvider.streamWithTools).toHaveBeenCalledTimes(2);
+
+      // Total input/output tokens should aggregate across both iterations
+      const doneEvent = events.find((e) => e.type === "done");
+      expect((doneEvent!.usage as { inputTokens: number }).inputTokens).toBe(
+        230,
+      );
+      expect((doneEvent!.usage as { outputTokens: number }).outputTokens).toBe(
+        45,
+      );
+      expect((doneEvent!.usage as { toolCalls: number }).toolCalls).toBe(1);
+    });
+
+    it("yields error event when streaming provider throws mid-iteration", async () => {
+      const streamingProvider = {
+        name: "ollama",
+        supportsToolUse: true,
+        streamWithTools: jest.fn().mockReturnValue({
+          [Symbol.asyncIterator]: () => ({
+            next: () => Promise.reject(new Error("connection reset")),
+          }),
+        }),
+      };
+      mockAiService.getToolUseProvider.mockResolvedValueOnce(streamingProvider);
+
+      const events = await collectEvents(userId, "What's up?");
+
+      const errorEvent = events.find((e) => e.type === "error");
+      expect(errorEvent).toBeDefined();
+      expect(errorEvent!.message).toContain("AI provider encountered an error");
+    });
+
+    it("falls back to completeWithTools when provider lacks streamWithTools", async () => {
+      // Default mockProvider in this suite only has completeWithTools.
+      // Verify the fallback emits a single assistant_text with the full text
+      // so the UI still shows live feedback before the final content event.
+      const events = await collectEvents(userId, "How am I doing?");
+
+      const textEvents = events.filter((e) => e.type === "assistant_text");
+      expect(textEvents).toHaveLength(1);
+      expect(textEvents[0].text).toBe("Here is your financial summary.");
+      expect(mockProvider.completeWithTools).toHaveBeenCalled();
+    });
+
+    it("emits no assistant_text in fallback path when content is empty", async () => {
+      (mockProvider.completeWithTools as jest.Mock).mockResolvedValueOnce({
+        content: "",
+        toolCalls: [],
+        usage: { inputTokens: 10, outputTokens: 0 },
+        model: "claude-sonnet-4-20250514",
+        provider: "anthropic",
+        stopReason: "end_turn",
+      });
+
+      const events = await collectEvents(userId, "ping");
+
+      const textEvents = events.filter((e) => e.type === "assistant_text");
+      expect(textEvents).toHaveLength(0);
+    });
+
+    it("yields error when provider has neither streamWithTools nor completeWithTools", async () => {
+      mockAiService.getToolUseProvider.mockResolvedValueOnce({
+        name: "broken",
+        supportsToolUse: true,
+      });
+
+      const events = await collectEvents(userId, "ping");
+      const errorEvent = events.find((e) => e.type === "error");
+      expect(errorEvent).toBeDefined();
+    });
+  });
+
+  // ==========================================================================
+  // executeQuery() aggregation when the streaming path is in use
+  // ==========================================================================
+  describe("executeQuery() with streaming provider", () => {
+    it("joins assistant_text deltas via the final content event", async () => {
+      mockAiService.getToolUseProvider.mockResolvedValueOnce({
+        name: "ollama",
+        supportsToolUse: true,
+        streamWithTools: jest.fn().mockReturnValue({
+          [Symbol.asyncIterator]: () => {
+            const chunks = [
+              { type: "text", text: "Hello " },
+              { type: "text", text: "world." },
+              {
+                type: "done",
+                content: "Hello world.",
+                toolCalls: [],
+                usage: { inputTokens: 5, outputTokens: 3 },
+                model: "llama3",
+                stopReason: "end_turn",
+              },
+            ];
+            let i = 0;
+            return {
+              next: () =>
+                i < chunks.length
+                  ? Promise.resolve({ value: chunks[i++], done: false })
+                  : Promise.resolve({ value: undefined, done: true }),
+            };
+          },
+        }),
+      });
+
+      const result = await service.executeQuery(userId, "ping");
+      // executeQuery joins all `content` events into the final answer.
+      // The streaming path emits a single canonical `content` event after
+      // the assistant_text deltas, so the answer matches the joined text.
+      expect(result.answer).toBe("Hello world.");
+      expect(result.usage.inputTokens).toBe(5);
+      expect(result.usage.outputTokens).toBe(3);
+    });
+  });
 });

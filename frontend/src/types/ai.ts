@@ -100,7 +100,15 @@ export interface QueryResult {
 }
 
 export interface StreamEvent {
-  type: 'thinking' | 'tool_start' | 'tool_result' | 'content' | 'sources' | 'done' | 'error';
+  type:
+    | 'thinking'
+    | 'assistant_text'
+    | 'tool_start'
+    | 'tool_result'
+    | 'content'
+    | 'sources'
+    | 'done'
+    | 'error';
   message?: string;
   name?: string;
   description?: string;

@@ -1,4 +1,5 @@
 import { OpenAiProvider } from "./openai.provider";
+import type { AiToolStreamChunk } from "./ai-provider.interface";
 
 const mockCreate = jest.fn();
 const mockListModels = jest.fn().mockResolvedValue({ data: [] });
@@ -314,6 +315,247 @@ describe("OpenAiProvider", () => {
       expect(messages[3].role).toBe("tool");
       expect(messages[3].tool_call_id).toBe("call_1");
       expect(messages[3].content).toBe('{"balance": 5000}');
+    });
+  });
+
+  describe("streamWithTools()", () => {
+    type Chunk = Record<string, unknown>;
+
+    const mockStreamReturn = (chunks: Chunk[]) => {
+      mockCreate.mockResolvedValueOnce({
+        [Symbol.asyncIterator]: () => {
+          let idx = 0;
+          return {
+            next: () => {
+              if (idx < chunks.length) {
+                return Promise.resolve({ value: chunks[idx++], done: false });
+              }
+              return Promise.resolve({ value: undefined, done: true });
+            },
+          };
+        },
+      });
+    };
+
+    const tools = [
+      {
+        name: "get_balance",
+        description: "Get balance",
+        inputSchema: { type: "object", properties: {} },
+      },
+    ];
+
+    it("yields text deltas as text chunks then a done chunk with end_turn", async () => {
+      mockStreamReturn([
+        {
+          model: "gpt-4o",
+          choices: [{ delta: { content: "Your " }, finish_reason: null }],
+        },
+        {
+          model: "gpt-4o",
+          choices: [
+            { delta: { content: "balance is $5,000." }, finish_reason: null },
+          ],
+        },
+        { model: "gpt-4o", choices: [{ delta: {}, finish_reason: "stop" }] },
+        {
+          model: "gpt-4o",
+          choices: [],
+          usage: { prompt_tokens: 30, completion_tokens: 12 },
+        },
+      ]);
+
+      const chunks: AiToolStreamChunk[] = [];
+      for await (const chunk of provider.streamWithTools(
+        {
+          systemPrompt: "Be brief.",
+          messages: [{ role: "user", content: "balance?" }],
+        },
+        tools,
+      )) {
+        chunks.push(chunk);
+      }
+
+      const textChunks = chunks.filter((c) => c.type === "text");
+      expect(textChunks).toHaveLength(2);
+      expect((textChunks[0] as { text: string }).text).toBe("Your ");
+      expect((textChunks[1] as { text: string }).text).toBe(
+        "balance is $5,000.",
+      );
+
+      const doneChunk = chunks[chunks.length - 1];
+      expect(doneChunk.type).toBe("done");
+      if (doneChunk.type === "done") {
+        expect(doneChunk.content).toBe("Your balance is $5,000.");
+        expect(doneChunk.toolCalls).toEqual([]);
+        expect(doneChunk.stopReason).toBe("end_turn");
+        expect(doneChunk.usage.inputTokens).toBe(30);
+        expect(doneChunk.usage.outputTokens).toBe(12);
+        expect(doneChunk.model).toBe("gpt-4o");
+      }
+    });
+
+    it("accumulates incrementally streamed tool call args by index", async () => {
+      // OpenAI streams tool call args as JSON deltas spread across chunks.
+      mockStreamReturn([
+        {
+          model: "gpt-4o",
+          choices: [
+            {
+              delta: {
+                tool_calls: [
+                  {
+                    index: 0,
+                    id: "call_abc",
+                    function: { name: "get_balance", arguments: "" },
+                  },
+                ],
+              },
+              finish_reason: null,
+            },
+          ],
+        },
+        {
+          model: "gpt-4o",
+          choices: [
+            {
+              delta: {
+                tool_calls: [{ index: 0, function: { arguments: '{"days":' } }],
+              },
+              finish_reason: null,
+            },
+          ],
+        },
+        {
+          model: "gpt-4o",
+          choices: [
+            {
+              delta: {
+                tool_calls: [{ index: 0, function: { arguments: "30}" } }],
+              },
+              finish_reason: null,
+            },
+          ],
+        },
+        {
+          model: "gpt-4o",
+          choices: [{ delta: {}, finish_reason: "tool_calls" }],
+        },
+        {
+          model: "gpt-4o",
+          choices: [],
+          usage: { prompt_tokens: 25, completion_tokens: 18 },
+        },
+      ]);
+
+      const chunks: AiToolStreamChunk[] = [];
+      for await (const chunk of provider.streamWithTools(
+        {
+          systemPrompt: "test",
+          messages: [{ role: "user", content: "balance?" }],
+        },
+        tools,
+      )) {
+        chunks.push(chunk);
+      }
+
+      const doneChunk = chunks[chunks.length - 1];
+      expect(doneChunk.type).toBe("done");
+      if (doneChunk.type === "done") {
+        expect(doneChunk.stopReason).toBe("tool_use");
+        expect(doneChunk.toolCalls).toEqual([
+          { id: "call_abc", name: "get_balance", input: { days: 30 } },
+        ]);
+      }
+    });
+
+    it("falls back to empty input on malformed tool call JSON", async () => {
+      mockStreamReturn([
+        {
+          model: "gpt-4o",
+          choices: [
+            {
+              delta: {
+                tool_calls: [
+                  {
+                    index: 0,
+                    id: "call_bad",
+                    function: { name: "get_balance", arguments: "{not json" },
+                  },
+                ],
+              },
+              finish_reason: null,
+            },
+          ],
+        },
+        {
+          model: "gpt-4o",
+          choices: [{ delta: {}, finish_reason: "tool_calls" }],
+        },
+      ]);
+
+      const chunks: AiToolStreamChunk[] = [];
+      for await (const chunk of provider.streamWithTools(
+        { systemPrompt: "test", messages: [{ role: "user", content: "hi" }] },
+        tools,
+      )) {
+        chunks.push(chunk);
+      }
+
+      const doneChunk = chunks[chunks.length - 1];
+      if (doneChunk.type === "done") {
+        expect(doneChunk.toolCalls).toEqual([
+          { id: "call_bad", name: "get_balance", input: {} },
+        ]);
+      }
+    });
+
+    it("maps finish_reason length to max_tokens", async () => {
+      mockStreamReturn([
+        {
+          model: "gpt-4o",
+          choices: [{ delta: { content: "Truncated" }, finish_reason: null }],
+        },
+        {
+          model: "gpt-4o",
+          choices: [{ delta: {}, finish_reason: "length" }],
+        },
+      ]);
+
+      const chunks: AiToolStreamChunk[] = [];
+      for await (const chunk of provider.streamWithTools(
+        { systemPrompt: "test", messages: [{ role: "user", content: "hi" }] },
+        tools,
+      )) {
+        chunks.push(chunk);
+      }
+
+      const doneChunk = chunks[chunks.length - 1];
+      if (doneChunk.type === "done") {
+        expect(doneChunk.stopReason).toBe("max_tokens");
+        expect(doneChunk.content).toBe("Truncated");
+      }
+    });
+
+    it("requests stream:true and passes tools in the body", async () => {
+      mockStreamReturn([
+        { model: "gpt-4o", choices: [{ delta: {}, finish_reason: "stop" }] },
+      ]);
+
+      const gen = provider.streamWithTools(
+        { systemPrompt: "test", messages: [{ role: "user", content: "hi" }] },
+        tools,
+      );
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      for await (const _chunk of gen) {
+        // consume
+      }
+
+      const callArg = mockCreate.mock.calls[0][0];
+      expect(callArg.stream).toBe(true);
+      expect(callArg.tools).toBeDefined();
+      expect(callArg.tools[0].function.name).toBe("get_balance");
+      expect(callArg.stream_options).toEqual({ include_usage: true });
     });
   });
 

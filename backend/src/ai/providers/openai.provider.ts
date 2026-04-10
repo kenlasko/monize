@@ -6,6 +6,7 @@ import {
   AiStreamChunk,
   AiToolDefinition,
   AiToolResponse,
+  AiToolStreamChunk,
   AiMessage,
 } from "./ai-provider.interface";
 
@@ -195,6 +196,111 @@ export class OpenAiProvider implements AiProvider {
       },
       model: response.model,
       provider: this.name,
+      stopReason,
+    };
+  }
+
+  async *streamWithTools(
+    request: AiCompletionRequest,
+    tools: AiToolDefinition[],
+  ): AsyncIterable<AiToolStreamChunk> {
+    const messages = this.toOpenAiMessages(
+      request.messages,
+      request.systemPrompt,
+    );
+
+    const stream = await this.client.chat.completions.create({
+      model: this.modelId,
+      messages,
+      max_tokens: request.maxTokens || 4096,
+      stream: true,
+      stream_options: { include_usage: true },
+      tools: tools.map((tool) => ({
+        type: "function" as const,
+        function: {
+          name: tool.name,
+          description: tool.description,
+          parameters: tool.inputSchema,
+        },
+      })),
+      ...(request.temperature !== undefined && {
+        temperature: request.temperature,
+      }),
+    });
+
+    let accumulatedContent = "";
+    // Per choice index → per tool-call index → accumulator
+    const toolBuffers = new Map<
+      number,
+      { id: string; name: string; argsBuffer: string }
+    >();
+    let finishReason: string | null = null;
+    let inputTokens = 0;
+    let outputTokens = 0;
+    let modelId = this.modelId;
+
+    for await (const chunk of stream) {
+      if (chunk.model) modelId = chunk.model;
+      if (chunk.usage) {
+        inputTokens = chunk.usage.prompt_tokens || 0;
+        outputTokens = chunk.usage.completion_tokens || 0;
+      }
+
+      const choice = chunk.choices[0];
+      if (!choice) continue;
+
+      const delta = choice.delta;
+      if (delta?.content) {
+        accumulatedContent += delta.content;
+        yield { type: "text", text: delta.content };
+      }
+
+      if (delta?.tool_calls) {
+        for (const tcDelta of delta.tool_calls) {
+          const idx = tcDelta.index;
+          let buffer = toolBuffers.get(idx);
+          if (!buffer) {
+            buffer = { id: "", name: "", argsBuffer: "" };
+            toolBuffers.set(idx, buffer);
+          }
+          if (tcDelta.id) buffer.id = tcDelta.id;
+          if (tcDelta.function?.name) buffer.name = tcDelta.function.name;
+          if (tcDelta.function?.arguments) {
+            buffer.argsBuffer += tcDelta.function.arguments;
+          }
+        }
+      }
+
+      if (choice.finish_reason) {
+        finishReason = choice.finish_reason;
+      }
+    }
+
+    const toolCalls = Array.from(toolBuffers.values()).map((buf) => {
+      let input: Record<string, unknown> = {};
+      try {
+        input = buf.argsBuffer
+          ? (JSON.parse(buf.argsBuffer) as Record<string, unknown>)
+          : {};
+      } catch {
+        input = {};
+      }
+      return { id: buf.id, name: buf.name, input };
+    });
+
+    const stopReason: "end_turn" | "tool_use" | "max_tokens" =
+      finishReason === "tool_calls"
+        ? "tool_use"
+        : finishReason === "length"
+          ? "max_tokens"
+          : "end_turn";
+
+    yield {
+      type: "done",
+      content: accumulatedContent,
+      toolCalls,
+      usage: { inputTokens, outputTokens },
+      model: modelId,
       stopReason,
     };
   }

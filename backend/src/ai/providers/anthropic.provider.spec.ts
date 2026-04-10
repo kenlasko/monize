@@ -1,4 +1,5 @@
 import { AnthropicProvider } from "./anthropic.provider";
+import type { AiToolStreamChunk } from "./ai-provider.interface";
 
 const mockCreate = jest.fn().mockResolvedValue({
   content: [{ type: "text", text: "Hello from Claude" }],
@@ -233,6 +234,208 @@ describe("AnthropicProvider", () => {
           content: '{"balance": 5000}',
         },
       ]);
+    });
+  });
+
+  describe("streamWithTools()", () => {
+    type AnthropicEvent = Record<string, unknown>;
+    type FinalMessage = Record<string, unknown>;
+
+    const buildStream = (
+      events: AnthropicEvent[],
+      finalMessage: FinalMessage,
+    ) => {
+      const stream = {
+        [Symbol.asyncIterator]: () => {
+          let idx = 0;
+          return {
+            next: () => {
+              if (idx < events.length) {
+                return Promise.resolve({ value: events[idx++], done: false });
+              }
+              return Promise.resolve({ value: undefined, done: true });
+            },
+          };
+        },
+        finalMessage: jest.fn().mockResolvedValue(finalMessage),
+      };
+      return stream;
+    };
+
+    const tools = [
+      {
+        name: "get_account_balances",
+        description: "Get balances",
+        inputSchema: { type: "object", properties: {} },
+      },
+    ];
+
+    it("yields text deltas as text chunks then a done chunk with end_turn", async () => {
+      mockStream.mockReturnValueOnce(
+        buildStream(
+          [
+            {
+              type: "content_block_start",
+              index: 0,
+              content_block: { type: "text", text: "" },
+            },
+            {
+              type: "content_block_delta",
+              index: 0,
+              delta: { type: "text_delta", text: "Your " },
+            },
+            {
+              type: "content_block_delta",
+              index: 0,
+              delta: { type: "text_delta", text: "balance is $5,000." },
+            },
+            { type: "content_block_stop", index: 0 },
+            { type: "message_stop" },
+          ],
+          {
+            content: [{ type: "text", text: "Your balance is $5,000." }],
+            usage: { input_tokens: 30, output_tokens: 12 },
+            model: "claude-sonnet-4-20250514",
+            stop_reason: "end_turn",
+          },
+        ),
+      );
+
+      const chunks: AiToolStreamChunk[] = [];
+      for await (const chunk of provider.streamWithTools(
+        {
+          systemPrompt: "Be brief.",
+          messages: [{ role: "user", content: "balance?" }],
+        },
+        tools,
+      )) {
+        chunks.push(chunk);
+      }
+
+      expect(
+        chunks
+          .filter((c) => c.type === "text")
+          .map((c) => (c.type === "text" ? c.text : "")),
+      ).toEqual(["Your ", "balance is $5,000."]);
+      const doneChunk = chunks[chunks.length - 1];
+      expect(doneChunk.type).toBe("done");
+      if (doneChunk.type === "done") {
+        expect(doneChunk.content).toBe("Your balance is $5,000.");
+        expect(doneChunk.toolCalls).toEqual([]);
+        expect(doneChunk.stopReason).toBe("end_turn");
+        expect(doneChunk.usage.inputTokens).toBe(30);
+        expect(doneChunk.usage.outputTokens).toBe(12);
+      }
+    });
+
+    it("emits accumulated tool calls from finalMessage with tool_use stop reason", async () => {
+      mockStream.mockReturnValueOnce(
+        buildStream(
+          [
+            {
+              type: "content_block_start",
+              index: 0,
+              content_block: { type: "text", text: "" },
+            },
+            {
+              type: "content_block_delta",
+              index: 0,
+              delta: { type: "text_delta", text: "Let me check." },
+            },
+            { type: "content_block_stop", index: 0 },
+            {
+              type: "content_block_start",
+              index: 1,
+              content_block: {
+                type: "tool_use",
+                id: "tu_1",
+                name: "get_account_balances",
+                input: {},
+              },
+            },
+            {
+              type: "content_block_delta",
+              index: 1,
+              delta: { type: "input_json_delta", partial_json: '{"days":' },
+            },
+            {
+              type: "content_block_delta",
+              index: 1,
+              delta: { type: "input_json_delta", partial_json: "30}" },
+            },
+            { type: "content_block_stop", index: 1 },
+            { type: "message_stop" },
+          ],
+          {
+            content: [
+              { type: "text", text: "Let me check." },
+              {
+                type: "tool_use",
+                id: "tu_1",
+                name: "get_account_balances",
+                input: { days: 30 },
+              },
+            ],
+            usage: { input_tokens: 25, output_tokens: 18 },
+            model: "claude-sonnet-4-20250514",
+            stop_reason: "tool_use",
+          },
+        ),
+      );
+
+      const chunks: AiToolStreamChunk[] = [];
+      for await (const chunk of provider.streamWithTools(
+        {
+          systemPrompt: "test",
+          messages: [{ role: "user", content: "balance?" }],
+        },
+        tools,
+      )) {
+        chunks.push(chunk);
+      }
+
+      const doneChunk = chunks[chunks.length - 1];
+      expect(doneChunk.type).toBe("done");
+      if (doneChunk.type === "done") {
+        expect(doneChunk.stopReason).toBe("tool_use");
+        expect(doneChunk.toolCalls).toEqual([
+          { id: "tu_1", name: "get_account_balances", input: { days: 30 } },
+        ]);
+        expect(doneChunk.content).toBe("Let me check.");
+      }
+    });
+
+    it("maps stop_reason max_tokens correctly", async () => {
+      mockStream.mockReturnValueOnce(
+        buildStream(
+          [
+            {
+              type: "content_block_delta",
+              index: 0,
+              delta: { type: "text_delta", text: "truncated" },
+            },
+          ],
+          {
+            content: [{ type: "text", text: "truncated" }],
+            usage: { input_tokens: 10, output_tokens: 4096 },
+            model: "claude-sonnet-4-20250514",
+            stop_reason: "max_tokens",
+          },
+        ),
+      );
+
+      const chunks: AiToolStreamChunk[] = [];
+      for await (const chunk of provider.streamWithTools(
+        { systemPrompt: "test", messages: [{ role: "user", content: "hi" }] },
+        tools,
+      )) {
+        chunks.push(chunk);
+      }
+
+      const doneChunk = chunks[chunks.length - 1];
+      if (doneChunk.type === "done") {
+        expect(doneChunk.stopReason).toBe("max_tokens");
+      }
     });
   });
 

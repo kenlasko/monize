@@ -4,7 +4,11 @@ import { AiUsageService } from "../ai-usage.service";
 import { FinancialContextBuilder } from "../context/financial-context.builder";
 import { ToolExecutorService } from "./tool-executor.service";
 import { FINANCIAL_TOOLS } from "./tool-definitions";
-import { AiMessage, AiProvider } from "../providers/ai-provider.interface";
+import {
+  AiMessage,
+  AiProvider,
+  AiToolCall,
+} from "../providers/ai-provider.interface";
 import { assessInjectionRisk } from "../context/prompt-injection-detector";
 import { QUERY_SAFETY_REMINDER } from "../context/prompt-templates";
 import { sanitizeToolResultStrings } from "../context/prompt-sanitize";
@@ -16,12 +20,15 @@ const MAX_TOOL_CALLS = 15;
 
 /**
  * LLM04-F2: Overall query timeout in milliseconds.
- * This is independent of the per-provider timeout (e.g., Ollama's 10-min timeout).
- * The Ollama provider timeout remains untouched so scheduled tasks
+ * This is independent of the per-provider timeout (e.g., Ollama's 15-min
+ * timeout). The Ollama provider timeout remains untouched so scheduled tasks
  * (insights/forecasts) that call the provider directly can still use the
  * full provider timeout window.
+ *
+ * Bumped from 5 min to 20 min so slow CPU-only Ollama inference can finish
+ * a multi-step query.
  */
-const QUERY_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+const QUERY_TIMEOUT_MS = 20 * 60 * 1000; // 20 minutes
 
 /** LLM04-F3: Maximum cumulative input tokens before aborting the query. */
 const MAX_INPUT_TOKENS = 200_000;
@@ -39,6 +46,7 @@ export interface QueryResult {
 export interface StreamEvent {
   type:
     | "thinking"
+    | "assistant_text"
     | "tool_start"
     | "tool_result"
     | "content"
@@ -201,17 +209,63 @@ export class AiQueryService {
         break;
       }
 
-      let response;
+      let iterationContent = "";
+      let iterationToolCalls: AiToolCall[] = [];
+      let iterationStopReason: "end_turn" | "tool_use" | "max_tokens" =
+        "end_turn";
+      let iterationModel = "unknown";
+      let iterationInputTokens = 0;
+      let iterationOutputTokens = 0;
+
       try {
-        response = await provider.completeWithTools!(
-          {
-            systemPrompt,
-            messages,
-            maxTokens: 4096,
-            temperature: 0.1,
-          },
-          FINANCIAL_TOOLS,
-        );
+        if (provider.streamWithTools) {
+          // Streaming path: emit assistant_text deltas as the model generates
+          // them so the UI shows the thinking in realtime.
+          for await (const chunk of provider.streamWithTools(
+            {
+              systemPrompt,
+              messages,
+              maxTokens: 4096,
+              temperature: 0.1,
+            },
+            FINANCIAL_TOOLS,
+          )) {
+            if (chunk.type === "text") {
+              yield { type: "assistant_text", text: chunk.text };
+            } else {
+              iterationContent = chunk.content;
+              iterationToolCalls = chunk.toolCalls;
+              iterationStopReason = chunk.stopReason;
+              iterationModel = chunk.model;
+              iterationInputTokens = chunk.usage.inputTokens;
+              iterationOutputTokens = chunk.usage.outputTokens;
+            }
+          }
+        } else if (provider.completeWithTools) {
+          // Non-streaming fallback for providers that don't implement
+          // streamWithTools yet. Emit the full text as a single delta so
+          // the UI still shows the thinking buffer populated.
+          const response = await provider.completeWithTools(
+            {
+              systemPrompt,
+              messages,
+              maxTokens: 4096,
+              temperature: 0.1,
+            },
+            FINANCIAL_TOOLS,
+          );
+          iterationContent = response.content;
+          iterationToolCalls = response.toolCalls;
+          iterationStopReason = response.stopReason;
+          iterationModel = response.model;
+          iterationInputTokens = response.usage.inputTokens;
+          iterationOutputTokens = response.usage.outputTokens;
+          if (iterationContent) {
+            yield { type: "assistant_text", text: iterationContent };
+          }
+        } else {
+          throw new Error("Configured AI provider does not support tool use");
+        }
       } catch (error) {
         const rawMessage =
           error instanceof Error ? error.message : "AI provider error";
@@ -226,15 +280,16 @@ export class AiQueryService {
         return;
       }
 
-      totalInputTokens += response.usage.inputTokens;
-      totalOutputTokens += response.usage.outputTokens;
+      totalInputTokens += iterationInputTokens;
+      totalOutputTokens += iterationOutputTokens;
 
       if (
-        response.stopReason !== "tool_use" ||
-        response.toolCalls.length === 0
+        iterationStopReason !== "tool_use" ||
+        iterationToolCalls.length === 0
       ) {
-        // Final answer
-        yield { type: "content", text: response.content };
+        // Final answer — emit canonical content event so the UI promotes the
+        // streamed thinking text into the assistant message bubble.
+        yield { type: "content", text: iterationContent };
 
         if (allSources.length > 0) {
           yield { type: "sources", sources: allSources };
@@ -244,7 +299,7 @@ export class AiQueryService {
         await this.logUsage(
           userId,
           provider.name,
-          response.model,
+          iterationModel,
           totalInputTokens,
           totalOutputTokens,
           durationMs,
@@ -264,12 +319,12 @@ export class AiQueryService {
       // Process tool calls
       const assistantMessage: AiMessage = {
         role: "assistant",
-        content: response.content,
-        toolCalls: response.toolCalls,
+        content: iterationContent,
+        toolCalls: iterationToolCalls,
       };
       messages.push(assistantMessage);
 
-      for (const toolCall of response.toolCalls) {
+      for (const toolCall of iterationToolCalls) {
         totalToolCalls++;
 
         yield {

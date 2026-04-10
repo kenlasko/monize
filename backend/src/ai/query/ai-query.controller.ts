@@ -52,6 +52,18 @@ export class AiQueryController {
     const abortController = new AbortController();
     res.on("close", () => abortController.abort());
 
+    // Send a periodic SSE comment as a keepalive. The Next.js dev proxy uses
+    // undici, whose `bodyTimeout` defaults to 5 minutes — without this, an
+    // idle interval (e.g. while a slow CPU model is generating tokens) will
+    // terminate the upstream stream and surface as "Error in input stream"
+    // in the browser. Comment lines (`: ...`) are silently ignored by SSE
+    // consumers but reset the body timeout.
+    const heartbeat = setInterval(() => {
+      if (!abortController.signal.aborted && !res.writableEnded) {
+        res.write(`: heartbeat ${Date.now()}\n\n`);
+      }
+    }, 15_000);
+
     try {
       for await (const event of this.queryService.executeQueryStream(
         req.user.id,
@@ -71,6 +83,8 @@ export class AiQueryController {
           `data: ${JSON.stringify({ type: "error", message: "An unexpected error occurred while processing your query." })}\n\n`,
         );
       }
+    } finally {
+      clearInterval(heartbeat);
     }
 
     if (!abortController.signal.aborted) {

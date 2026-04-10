@@ -5,6 +5,7 @@ import {
   AiStreamChunk,
   AiToolDefinition,
   AiToolResponse,
+  AiToolStreamChunk,
   AiMessage,
 } from "./ai-provider.interface";
 import { randomUUID } from "crypto";
@@ -205,6 +206,40 @@ export class OllamaProvider implements AiProvider {
     request: AiCompletionRequest,
     tools: AiToolDefinition[],
   ): Promise<AiToolResponse> {
+    let content = "";
+    let toolCalls: {
+      id: string;
+      name: string;
+      input: Record<string, unknown>;
+    }[] = [];
+    let usage = { inputTokens: 0, outputTokens: 0 };
+    let stopReason: "end_turn" | "tool_use" | "max_tokens" = "end_turn";
+
+    for await (const chunk of this.streamWithTools(request, tools)) {
+      if (chunk.type === "text") {
+        content += chunk.text;
+      } else {
+        content = chunk.content;
+        toolCalls = chunk.toolCalls;
+        usage = chunk.usage;
+        stopReason = chunk.stopReason;
+      }
+    }
+
+    return {
+      content,
+      toolCalls,
+      usage,
+      model: this.modelId,
+      provider: this.name,
+      stopReason,
+    };
+  }
+
+  async *streamWithTools(
+    request: AiCompletionRequest,
+    tools: AiToolDefinition[],
+  ): AsyncIterable<AiToolStreamChunk> {
     const messages = this.toOllamaMessages(
       request.messages,
       request.systemPrompt,
@@ -219,11 +254,12 @@ export class OllamaProvider implements AiProvider {
       },
     }));
 
+    // H14: Timeout covers both fetch and stream consumption
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10 * 60 * 1000);
-    let response: Response;
+    const timeout = setTimeout(() => controller.abort(), 15 * 60 * 1000); // 15 minutes for CPU inference
+
     try {
-      response = await fetch(`${this.baseUrl}/api/chat`, {
+      const response = await fetch(`${this.baseUrl}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal: controller.signal,
@@ -231,43 +267,91 @@ export class OllamaProvider implements AiProvider {
           model: this.modelId,
           messages,
           tools: ollamaTools,
-          stream: false,
+          stream: true,
           ...(request.temperature !== undefined && {
             options: { temperature: request.temperature },
           }),
         }),
       });
+
+      if (!response.ok) {
+        throw new Error(
+          `Ollama request failed: ${response.status} ${response.statusText}`,
+        );
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("No response body from Ollama");
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let accumulatedContent = "";
+      const accumulatedToolCalls: {
+        id: string;
+        name: string;
+        input: Record<string, unknown>;
+      }[] = [];
+      let promptTokens = 0;
+      let outputTokens = 0;
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            let chunk: OllamaChatResponse;
+            try {
+              chunk = JSON.parse(line) as OllamaChatResponse;
+            } catch {
+              continue;
+            }
+
+            const delta = chunk.message?.content;
+            if (delta) {
+              accumulatedContent += delta;
+              yield { type: "text", text: delta };
+            }
+
+            // Ollama emits tool_calls in any chunk; collect them as they appear.
+            if (chunk.message?.tool_calls) {
+              for (const tc of chunk.message.tool_calls) {
+                accumulatedToolCalls.push({
+                  id: randomUUID(),
+                  name: tc.function.name,
+                  input: tc.function.arguments,
+                });
+              }
+            }
+
+            if (chunk.done) {
+              promptTokens = chunk.prompt_eval_count || 0;
+              outputTokens = chunk.eval_count || 0;
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+
+      yield {
+        type: "done",
+        content: accumulatedContent,
+        toolCalls: accumulatedToolCalls,
+        usage: { inputTokens: promptTokens, outputTokens },
+        model: this.modelId,
+        stopReason: accumulatedToolCalls.length > 0 ? "tool_use" : "end_turn",
+      };
     } finally {
       clearTimeout(timeout);
     }
-
-    if (!response.ok) {
-      throw new Error(
-        `Ollama request failed: ${response.status} ${response.statusText}`,
-      );
-    }
-
-    const data = (await response.json()) as OllamaChatResponse;
-
-    const toolCalls = (data.message?.tool_calls || []).map((tc) => ({
-      id: randomUUID(),
-      name: tc.function.name,
-      input: tc.function.arguments,
-    }));
-
-    const hasToolCalls = toolCalls.length > 0;
-
-    return {
-      content: data.message?.content || "",
-      toolCalls,
-      usage: {
-        inputTokens: data.prompt_eval_count || 0,
-        outputTokens: data.eval_count || 0,
-      },
-      model: this.modelId,
-      provider: this.name,
-      stopReason: hasToolCalls ? "tool_use" : "end_turn",
-    };
   }
 
   private toOllamaMessages(

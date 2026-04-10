@@ -21,4 +21,16 @@ describe("OpenAiCompatibleProvider", () => {
     expect(provider.supportsStreaming).toBe(true);
     expect(provider.supportsToolUse).toBe(true);
   });
+
+  it("inherits streamWithTools from OpenAiProvider", () => {
+    const provider = new OpenAiCompatibleProvider(
+      "test-key",
+      "https://api.groq.com/openai/v1",
+      "mixtral-8x7b",
+    );
+    // streamWithTools is the realtime feedback path; openai-compatible should
+    // pick it up through inheritance so any OpenAI-API-compatible backend
+    // (Groq, vLLM, LM Studio, etc.) gets streaming for free.
+    expect(typeof provider.streamWithTools).toBe("function");
+  });
 });

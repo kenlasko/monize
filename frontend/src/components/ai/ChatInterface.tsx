@@ -21,6 +21,10 @@ interface Message {
 interface ThinkingState {
   active: boolean;
   message: string;
+  // Live streamed text from the model — accumulates per iteration as the
+  // backend emits assistant_text deltas. Reset on each new tool_start so the
+  // user sees the next "thinking" pass cleanly.
+  liveText: string;
   tools: Array<{ name: string; status: 'running' | 'done'; summary?: string }>;
 }
 
@@ -33,6 +37,7 @@ export function ChatInterface() {
   const [thinking, setThinking] = useState<ThinkingState>({
     active: false,
     message: '',
+    liveText: '',
     tools: [],
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -75,7 +80,12 @@ export function ChatInterface() {
         { id: userMsgId, role: 'user', content: query },
       ]);
 
-      setThinking({ active: true, message: 'Analyzing your question...', tools: [] });
+      setThinking({
+        active: true,
+        message: 'Analyzing your question...',
+        liveText: '',
+        tools: [],
+      });
 
       const toolsUsed: Array<{ name: string; summary: string }> = [];
       let sources: Array<{ type: string; description: string; dateRange?: string }> = [];
@@ -92,10 +102,24 @@ export function ChatInterface() {
               }));
               break;
 
+            case 'assistant_text':
+              // Streaming text delta from the model — append to the live
+              // thinking buffer so the user sees realtime feedback while
+              // the model generates its next step.
+              setThinking((prev) => ({
+                ...prev,
+                liveText: prev.liveText + (event.text || ''),
+              }));
+              break;
+
             case 'tool_start':
+              // The model decided to use a tool. Lock in any live text as
+              // "thinking we already saw" by clearing the buffer for the
+              // next iteration, and add the tool to the indicator list.
               setThinking((prev) => ({
                 ...prev,
                 message: `Looking up ${event.name?.replace(/_/g, ' ')}...`,
+                liveText: '',
                 tools: [
                   ...prev.tools,
                   { name: event.name || '', status: 'running' },
@@ -121,7 +145,7 @@ export function ChatInterface() {
             case 'content':
               if (!hasStartedContent) {
                 hasStartedContent = true;
-                setThinking({ active: false, message: '', tools: [] });
+                setThinking({ active: false, message: '', liveText: '', tools: [] });
                 setMessages((prev) => [
                   ...prev,
                   {
@@ -133,7 +157,7 @@ export function ChatInterface() {
                   },
                 ]);
               }
-              contentBuffer += event.text || '';
+              contentBuffer = event.text || '';
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantMsgId
@@ -156,11 +180,11 @@ export function ChatInterface() {
                 ),
               );
               setIsLoading(false);
-              setThinking({ active: false, message: '', tools: [] });
+              setThinking({ active: false, message: '', liveText: '', tools: [] });
               break;
 
             case 'error':
-              setThinking({ active: false, message: '', tools: [] });
+              setThinking({ active: false, message: '', liveText: '', tools: [] });
               if (hasStartedContent) {
                 setMessages((prev) =>
                   prev.map((m) =>
@@ -186,10 +210,10 @@ export function ChatInterface() {
         },
         onDone: () => {
           setIsLoading(false);
-          setThinking({ active: false, message: '', tools: [] });
+          setThinking({ active: false, message: '', liveText: '', tools: [] });
         },
         onError: (error) => {
-          setThinking({ active: false, message: '', tools: [] });
+          setThinking({ active: false, message: '', liveText: '', tools: [] });
           setIsLoading(false);
           toast.error(error.message || 'Failed to get response');
           if (!hasStartedContent) {
@@ -221,7 +245,7 @@ export function ChatInterface() {
   const handleCancel = () => {
     abortControllerRef.current?.abort();
     setIsLoading(false);
-    setThinking({ active: false, message: '', tools: [] });
+    setThinking({ active: false, message: '', liveText: '', tools: [] });
   };
 
   // Auto-resize textarea
@@ -303,6 +327,11 @@ export function ChatInterface() {
                       </svg>
                       {thinking.message}
                     </div>
+                    {thinking.liveText && (
+                      <div className="mt-2 text-sm text-gray-600 dark:text-gray-300 italic whitespace-pre-wrap break-words">
+                        {thinking.liveText}
+                      </div>
+                    )}
                     {thinking.tools.length > 0 && (
                       <div className="mt-2 space-y-1">
                         {thinking.tools.map((tool, i) => (

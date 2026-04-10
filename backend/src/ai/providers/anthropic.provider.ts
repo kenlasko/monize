@@ -6,6 +6,7 @@ import {
   AiStreamChunk,
   AiToolDefinition,
   AiToolResponse,
+  AiToolStreamChunk,
   AiMessage,
 } from "./ai-provider.interface";
 
@@ -196,6 +197,87 @@ export class AnthropicProvider implements AiProvider {
       },
       model: response.model,
       provider: this.name,
+      stopReason,
+    };
+  }
+
+  async *streamWithTools(
+    request: AiCompletionRequest,
+    tools: AiToolDefinition[],
+  ): AsyncIterable<AiToolStreamChunk> {
+    const stream = this.client.messages.stream({
+      model: this.modelId,
+      max_tokens: request.maxTokens || 4096,
+      system: request.systemPrompt,
+      messages: this.toAnthropicMessages(request.messages),
+      tools: tools.map((tool) => ({
+        name: tool.name,
+        description: tool.description,
+        input_schema: tool.inputSchema as Anthropic.Tool.InputSchema,
+      })),
+      ...(request.temperature !== undefined && {
+        temperature: request.temperature,
+      }),
+    });
+
+    let accumulatedContent = "";
+    // Per content block index: tool-use metadata + accumulated JSON arg string
+    const toolBlocks = new Map<
+      number,
+      { id: string; name: string; jsonBuffer: string }
+    >();
+
+    for await (const event of stream) {
+      if (event.type === "content_block_start") {
+        if (event.content_block.type === "tool_use") {
+          toolBlocks.set(event.index, {
+            id: event.content_block.id,
+            name: event.content_block.name,
+            jsonBuffer: "",
+          });
+        }
+      } else if (event.type === "content_block_delta") {
+        if (event.delta.type === "text_delta") {
+          accumulatedContent += event.delta.text;
+          yield { type: "text", text: event.delta.text };
+        } else if (event.delta.type === "input_json_delta") {
+          const block = toolBlocks.get(event.index);
+          if (block) {
+            block.jsonBuffer += event.delta.partial_json;
+          }
+        }
+      }
+    }
+
+    // Use the SDK helper to get the final message with all metadata.
+    const finalMessage = await stream.finalMessage();
+
+    const toolCalls = finalMessage.content
+      .filter(
+        (block): block is Anthropic.ToolUseBlock => block.type === "tool_use",
+      )
+      .map((block) => ({
+        id: block.id,
+        name: block.name,
+        input: block.input as Record<string, unknown>,
+      }));
+
+    const stopReason: "end_turn" | "tool_use" | "max_tokens" =
+      finalMessage.stop_reason === "tool_use"
+        ? "tool_use"
+        : finalMessage.stop_reason === "max_tokens"
+          ? "max_tokens"
+          : "end_turn";
+
+    yield {
+      type: "done",
+      content: accumulatedContent,
+      toolCalls,
+      usage: {
+        inputTokens: finalMessage.usage.input_tokens,
+        outputTokens: finalMessage.usage.output_tokens,
+      },
+      model: finalMessage.model,
       stopReason,
     };
   }
