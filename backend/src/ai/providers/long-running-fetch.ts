@@ -1,4 +1,4 @@
-import { Agent } from "undici";
+import { Agent, fetch as undiciFetch } from "undici";
 
 /**
  * Shared dispatcher used for long-running AI provider requests.
@@ -21,12 +21,25 @@ export const longRunningAgent = new Agent({
 });
 
 /**
- * fetch wrapper that injects {@link longRunningAgent} as the dispatcher.
- * Use this when constructing AI SDK clients that take a `fetch` option,
- * so the SDK's internal HTTP calls inherit the disabled timeouts.
+ * fetch wrapper that calls undici's fetch directly with our long-running
+ * dispatcher. We MUST call `undici.fetch` (from the npm package) rather
+ * than `globalThis.fetch` — Node bundles its own internal copy of undici,
+ * and its built-in fetch silently ignores or rejects a `dispatcher` option
+ * that came from a separately-installed undici package, because the two
+ * `Agent` classes have different internal identities. Using undici's own
+ * fetch guarantees the dispatcher is honored.
+ *
+ * The signature is widened to `typeof fetch` so SDK clients (Anthropic,
+ * OpenAI) that accept a `fetch` option can use this drop-in replacement.
+ * undici's Response type is structurally compatible with the global one
+ * but TS sees them as distinct (Symbol.dispose), so we cast through
+ * unknown.
  */
-export const longRunningFetch: typeof fetch = (input, init) =>
-  fetch(input, {
+export const longRunningFetch: typeof fetch = ((
+  input: Parameters<typeof undiciFetch>[0],
+  init?: Parameters<typeof undiciFetch>[1],
+) =>
+  undiciFetch(input, {
     ...init,
     dispatcher: longRunningAgent,
-  } as RequestInit);
+  })) as unknown as typeof fetch;

@@ -1,6 +1,25 @@
-import { OllamaProvider } from "./ollama.provider";
 import type { AiToolStreamChunk } from "./ai-provider.interface";
-import { longRunningAgent } from "./long-running-fetch";
+
+// Mock the long-running-fetch helper so tests can keep using `global.fetch`.
+// In production, longRunningFetch calls undici.fetch directly with our
+// long-running dispatcher (so timeouts are disabled). For tests, we route
+// it through globalThis.fetch so the existing test setups (which assign
+// jest.fn() to global.fetch) keep working unchanged.
+const mockLongRunningFetch = jest.fn(
+  async (
+    input: Parameters<typeof fetch>[0],
+    init?: Parameters<typeof fetch>[1],
+  ) => global.fetch(input, init),
+);
+jest.mock("./long-running-fetch", () => ({
+  longRunningAgent: { __mock: "agent" },
+  longRunningFetch: (
+    input: Parameters<typeof fetch>[0],
+    init?: Parameters<typeof fetch>[1],
+  ) => mockLongRunningFetch(input, init),
+}));
+
+import { OllamaProvider } from "./ollama.provider";
 
 describe("OllamaProvider", () => {
   let provider: OllamaProvider;
@@ -78,9 +97,12 @@ describe("OllamaProvider", () => {
       ).rejects.toThrow("Ollama request failed: 500 Internal Server Error");
     });
 
-    it("passes the long-running undici dispatcher to fetch", async () => {
-      // Regression: see streamWithTools spec for context. complete() also
-      // makes a long-running fetch and must inject the same dispatcher.
+    it("calls longRunningFetch (not raw global fetch) so undici timeouts are disabled", async () => {
+      // Regression: Node's globalThis.fetch silently rejects an Agent from a
+      // separately-installed undici package because the two Agent classes
+      // have different identities. The provider must call longRunningFetch
+      // which uses undici.fetch directly so the dispatcher is honored.
+      mockLongRunningFetch.mockClear();
       const encoder = new TextEncoder();
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
@@ -105,8 +127,11 @@ describe("OllamaProvider", () => {
         messages: [{ role: "user", content: "hi" }],
       });
 
-      const initArg = (global.fetch as jest.Mock).mock.calls[0][1];
-      expect(initArg.dispatcher).toBe(longRunningAgent);
+      expect(mockLongRunningFetch).toHaveBeenCalledTimes(1);
+      expect(mockLongRunningFetch).toHaveBeenCalledWith(
+        "http://localhost:11434/api/chat",
+        expect.objectContaining({ method: "POST" }),
+      );
     });
   });
 
@@ -460,14 +485,12 @@ describe("OllamaProvider", () => {
       expect(bodyArg).toContain('"get_account_balances"');
     });
 
-    it("passes the long-running undici dispatcher to fetch", async () => {
+    it("calls longRunningFetch (not raw global fetch) so undici timeouts are disabled", async () => {
       // Regression: Node fetch (undici) defaults bodyTimeout to 5 minutes,
-      // which kills slow CPU inference. The Ollama provider must inject the
-      // shared longRunningAgent dispatcher so the request can run for as
-      // long as the model needs to produce its first token.
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { longRunningAgent } = require("./long-running-fetch");
-
+      // which kills slow CPU inference. The Ollama provider must call
+      // longRunningFetch (which uses undici.fetch directly) instead of
+      // globalThis.fetch, so the long-running dispatcher is honored.
+      mockLongRunningFetch.mockClear();
       global.fetch = mockStreamingFetch([
         '{"message":{"content":""},"done":true}\n',
       ]);
@@ -481,8 +504,11 @@ describe("OllamaProvider", () => {
         // consume
       }
 
-      const initArg = (global.fetch as jest.Mock).mock.calls[0][1];
-      expect(initArg.dispatcher).toBe(longRunningAgent);
+      expect(mockLongRunningFetch).toHaveBeenCalledTimes(1);
+      expect(mockLongRunningFetch).toHaveBeenCalledWith(
+        "http://localhost:11434/api/chat",
+        expect.objectContaining({ method: "POST" }),
+      );
     });
 
     it("throws on non-ok response", async () => {
