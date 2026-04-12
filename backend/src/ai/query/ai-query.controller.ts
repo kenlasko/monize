@@ -49,8 +49,21 @@ export class AiQueryController {
     res.setHeader("X-Accel-Buffering", "no");
     res.flushHeaders();
 
+    const streamStart = Date.now();
+    const userId = req.user.id;
+    this.logger.log(
+      `SSE stream open user=${userId} queryLen=${dto.query.length}`,
+    );
+
     const abortController = new AbortController();
-    res.on("close", () => abortController.abort());
+    res.on("close", () => {
+      if (!abortController.signal.aborted) {
+        this.logger.warn(
+          `SSE client disconnected user=${userId} after=${Date.now() - streamStart}ms`,
+        );
+      }
+      abortController.abort();
+    });
 
     // Send a periodic SSE comment as a keepalive. The Next.js dev proxy uses
     // undici, whose `bodyTimeout` defaults to 5 minutes — without this, an
@@ -64,13 +77,15 @@ export class AiQueryController {
       }
     }, 15_000);
 
+    let eventCount = 0;
     try {
       for await (const event of this.queryService.executeQueryStream(
-        req.user.id,
+        userId,
         dto.query,
       )) {
         if (abortController.signal.aborted) break;
         if (event) {
+          eventCount++;
           res.write(`data: ${JSON.stringify(event)}\n\n`);
         }
       }
@@ -78,7 +93,10 @@ export class AiQueryController {
       if (!abortController.signal.aborted) {
         const rawMessage =
           error instanceof Error ? error.message : "Unknown error";
-        this.logger.error(`SSE query stream error: ${rawMessage}`);
+        this.logger.error(
+          `SSE query stream error user=${userId} after=${Date.now() - streamStart}ms events=${eventCount}: ${rawMessage}`,
+          error instanceof Error ? error.stack : undefined,
+        );
         res.write(
           `data: ${JSON.stringify({ type: "error", message: "An unexpected error occurred while processing your query." })}\n\n`,
         );
@@ -86,6 +104,10 @@ export class AiQueryController {
     } finally {
       clearInterval(heartbeat);
     }
+
+    this.logger.log(
+      `SSE stream close user=${userId} totalMs=${Date.now() - streamStart} events=${eventCount} aborted=${abortController.signal.aborted}`,
+    );
 
     if (!abortController.signal.aborted) {
       res.end();

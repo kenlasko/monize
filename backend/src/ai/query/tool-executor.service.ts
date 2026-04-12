@@ -62,7 +62,7 @@ export class ToolExecutorService {
     const validation = validateToolInput(toolName, input);
     if (!validation.success) {
       this.logger.warn(
-        `Tool ${toolName} input validation failed: ${validation.error}`,
+        `Tool ${toolName} input validation failed user=${userId}: ${validation.error}`,
       );
       return {
         data: { error: validation.error },
@@ -72,32 +72,53 @@ export class ToolExecutorService {
     }
     const validatedInput = validation.data;
 
+    const start = Date.now();
+    this.logger.log(
+      `execute tool=${toolName} user=${userId} inputKeys=[${Object.keys(validatedInput).join(",")}]`,
+    );
+
     try {
+      let result: ToolResult;
       switch (toolName) {
         case "query_transactions":
-          return await this.queryTransactions(userId, validatedInput);
+          result = await this.queryTransactions(userId, validatedInput);
+          break;
         case "get_account_balances":
-          return await this.getAccountBalances(userId, validatedInput);
+          result = await this.getAccountBalances(userId, validatedInput);
+          break;
         case "get_spending_by_category":
-          return await this.getSpendingByCategory(userId, validatedInput);
+          result = await this.getSpendingByCategory(userId, validatedInput);
+          break;
         case "get_income_summary":
-          return await this.getIncomeSummary(userId, validatedInput);
+          result = await this.getIncomeSummary(userId, validatedInput);
+          break;
         case "get_net_worth_history":
-          return await this.getNetWorthHistory(userId, validatedInput);
+          result = await this.getNetWorthHistory(userId, validatedInput);
+          break;
         case "compare_periods":
-          return await this.comparePeriods(userId, validatedInput);
+          result = await this.comparePeriods(userId, validatedInput);
+          break;
         case "get_budget_status":
-          return await this.getBudgetStatus(userId, validatedInput);
+          result = await this.getBudgetStatus(userId, validatedInput);
+          break;
         default:
+          this.logger.warn(`execute unknown tool=${toolName} user=${userId}`);
           return {
             data: null,
             summary: `Unknown tool: ${toolName}`,
             sources: [],
           };
       }
+      this.logger.log(
+        `execute done tool=${toolName} user=${userId} ms=${Date.now() - start} sources=${result.sources.length}`,
+      );
+      return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
-      this.logger.warn(`Tool ${toolName} failed: ${message}`);
+      this.logger.error(
+        `execute failed tool=${toolName} user=${userId} ms=${Date.now() - start}: ${message}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       return {
         data: { error: "An error occurred while retrieving data." },
         summary: `Error executing ${toolName}: unable to retrieve data.`,

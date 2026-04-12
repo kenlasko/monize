@@ -1,8 +1,11 @@
 'use client';
 
+import { useState } from 'react';
+
 interface ToolInfo {
   name: string;
   summary: string;
+  input?: Record<string, unknown>;
 }
 
 interface SourceInfo {
@@ -27,7 +30,84 @@ const TOOL_LABELS: Record<string, string> = {
   get_income_summary: 'Income Summary',
   get_net_worth_history: 'Net Worth History',
   compare_periods: 'Period Comparison',
+  get_budget_status: 'Budget Status',
 };
+
+function ToolDetails({ tool }: { tool: ToolInfo }) {
+  const [expanded, setExpanded] = useState(false);
+  const label = TOOL_LABELS[tool.name] || tool.name;
+  const hasInput = tool.input && Object.keys(tool.input).length > 0;
+  const hasSummary = !!tool.summary;
+  const hasDetails = hasInput || hasSummary;
+
+  return (
+    <div className="rounded-lg border border-blue-100 dark:border-blue-900/50 bg-blue-50/60 dark:bg-blue-900/20 overflow-hidden">
+      <button
+        type="button"
+        onClick={() => hasDetails && setExpanded((v) => !v)}
+        disabled={!hasDetails}
+        aria-expanded={expanded}
+        className="w-full flex items-center justify-between gap-2 px-2.5 py-1.5 text-left text-xs text-blue-700 dark:text-blue-300 hover:bg-blue-100/60 dark:hover:bg-blue-900/30 disabled:cursor-default disabled:hover:bg-transparent transition-colors"
+      >
+        <span className="flex items-center gap-1.5 min-w-0">
+          <svg
+            className="w-3 h-3 flex-shrink-0"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4.5 12.75l6 6 9-13.5"
+            />
+          </svg>
+          <span className="font-medium truncate">{label}</span>
+        </span>
+        {hasDetails && (
+          <svg
+            className={`w-3 h-3 flex-shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+            />
+          </svg>
+        )}
+      </button>
+      {expanded && hasDetails && (
+        <div className="border-t border-blue-100 dark:border-blue-900/50 px-2.5 py-2 space-y-2 bg-white/40 dark:bg-black/20">
+          {hasInput && (
+            <div>
+              <div className="text-[10px] uppercase tracking-wide text-blue-600 dark:text-blue-400 font-semibold mb-0.5">
+                Input
+              </div>
+              <pre className="text-[11px] text-gray-700 dark:text-gray-200 whitespace-pre-wrap break-words font-mono">
+                {JSON.stringify(tool.input, null, 2)}
+              </pre>
+            </div>
+          )}
+          {hasSummary && (
+            <div>
+              <div className="text-[10px] uppercase tracking-wide text-blue-600 dark:text-blue-400 font-semibold mb-0.5">
+                Result
+              </div>
+              <p className="text-[11px] text-gray-700 dark:text-gray-200 whitespace-pre-wrap break-words">
+                {tool.summary}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function ChatMessage({
   role,
@@ -50,30 +130,11 @@ export function ChatMessage({
   return (
     <div className="flex justify-start mb-4">
       <div className="max-w-[85%]">
-        {/* Tool badges */}
+        {/* Tool calls — click to expand and see input/result */}
         {toolsUsed && toolsUsed.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-2">
+          <div className="flex flex-col gap-1 mb-2">
             {toolsUsed.map((tool, i) => (
-              <span
-                key={i}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
-                title={tool.summary}
-              >
-                <svg
-                  className="w-3 h-3"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4.5 12.75l6 6 9-13.5"
-                  />
-                </svg>
-                {TOOL_LABELS[tool.name] || tool.name}
-              </span>
+              <ToolDetails key={i} tool={tool} />
             ))}
           </div>
         )}

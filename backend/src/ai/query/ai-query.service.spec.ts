@@ -172,6 +172,12 @@ describe("AiQueryService", () => {
       const toolStart = events.find((e) => e.type === "tool_start");
       expect(toolStart).toBeDefined();
       expect(toolStart!.name).toBe("query_transactions");
+      // tool_start must include the model's tool input so the UI can show
+      // the user what the model actually queried for.
+      expect(toolStart!.input).toEqual({
+        startDate: "2026-01-01",
+        endDate: "2026-01-31",
+      });
 
       const toolResult = events.find((e) => e.type === "tool_result");
       expect(toolResult).toBeDefined();

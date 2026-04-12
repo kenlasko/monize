@@ -8,11 +8,17 @@ import type { AiStatus, StreamEvent } from '@/types/ai';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
+interface ToolCallRecord {
+  name: string;
+  summary: string;
+  input?: Record<string, unknown>;
+}
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  toolsUsed?: Array<{ name: string; summary: string }>;
+  toolsUsed?: ToolCallRecord[];
   sources?: Array<{ type: string; description: string; dateRange?: string }>;
   isStreaming?: boolean;
   error?: string;
@@ -87,7 +93,7 @@ export function ChatInterface() {
         tools: [],
       });
 
-      const toolsUsed: Array<{ name: string; summary: string }> = [];
+      const toolsUsed: ToolCallRecord[] = [];
       let sources: Array<{ type: string; description: string; dateRange?: string }> = [];
       let contentBuffer = '';
       let hasStartedContent = false;
@@ -116,6 +122,13 @@ export function ChatInterface() {
               // The model decided to use a tool. Lock in any live text as
               // "thinking we already saw" by clearing the buffer for the
               // next iteration, and add the tool to the indicator list.
+              // Capture the input now so it's available for the expandable
+              // detail view even if the tool result never arrives.
+              toolsUsed.push({
+                name: event.name || '',
+                summary: '',
+                input: event.input,
+              });
               setThinking((prev) => ({
                 ...prev,
                 message: `Looking up ${event.name?.replace(/_/g, ' ')}...`,
@@ -127,11 +140,21 @@ export function ChatInterface() {
               }));
               break;
 
-            case 'tool_result':
-              toolsUsed.push({
-                name: event.name || '',
-                summary: event.summary || '',
-              });
+            case 'tool_result': {
+              // Backfill the summary onto the most recent matching tool entry
+              // (model can call the same tool multiple times in a query).
+              for (let i = toolsUsed.length - 1; i >= 0; i--) {
+                if (
+                  toolsUsed[i].name === event.name &&
+                  !toolsUsed[i].summary
+                ) {
+                  toolsUsed[i] = {
+                    ...toolsUsed[i],
+                    summary: event.summary || '',
+                  };
+                  break;
+                }
+              }
               setThinking((prev) => ({
                 ...prev,
                 tools: prev.tools.map((t) =>
@@ -141,6 +164,7 @@ export function ChatInterface() {
                 ),
               }));
               break;
+            }
 
             case 'content':
               if (!hasStartedContent) {

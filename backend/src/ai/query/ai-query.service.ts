@@ -119,6 +119,7 @@ export class AiQueryService {
     yield { type: "thinking", message: "Analyzing your question..." };
 
     const startTime = Date.now();
+    this.logger.log(`Query start user=${userId} queryLen=${query.length}`);
 
     // Assess prompt injection risk before proceeding
     const riskAssessment = assessInjectionRisk(query);
@@ -138,11 +139,19 @@ export class AiQueryService {
     }
 
     let systemPrompt: string;
+    const contextStart = Date.now();
     try {
       systemPrompt = await this.contextBuilder.buildQueryContext(userId);
+      this.logger.log(
+        `Context built user=${userId} chars=${systemPrompt.length} in ${Date.now() - contextStart}ms`,
+      );
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to build context";
+      this.logger.error(
+        `Context build failed user=${userId}: ${message}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       yield { type: "error", message };
       return;
     }
@@ -150,9 +159,13 @@ export class AiQueryService {
     let provider: AiProvider;
     try {
       provider = await this.aiService.getToolUseProvider(userId);
+      this.logger.log(
+        `Provider selected user=${userId} provider=${provider.name} streaming=${!!provider.streamWithTools}`,
+      );
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "No AI provider available";
+      this.logger.warn(`Provider selection failed user=${userId}: ${message}`);
       yield { type: "error", message };
       return;
     }
@@ -173,6 +186,9 @@ export class AiQueryService {
     let totalToolCalls = 0;
 
     for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
+      this.logger.log(
+        `Iteration ${iteration} start user=${userId} provider=${provider.name} messages=${messages.length} inputTokensSoFar=${totalInputTokens} toolCallsSoFar=${totalToolCalls}`,
+      );
       // LLM04-F2: Enforce overall query timeout
       if (Date.now() - startTime > QUERY_TIMEOUT_MS) {
         this.logger.warn(
@@ -216,6 +232,8 @@ export class AiQueryService {
       let iterationModel = "unknown";
       let iterationInputTokens = 0;
       let iterationOutputTokens = 0;
+      const providerCallStart = Date.now();
+      let firstChunkAt: number | null = null;
 
       try {
         if (provider.streamWithTools) {
@@ -231,6 +249,12 @@ export class AiQueryService {
             FINANCIAL_TOOLS,
           )) {
             if (chunk.type === "text") {
+              if (firstChunkAt === null) {
+                firstChunkAt = Date.now();
+                this.logger.log(
+                  `Provider first chunk user=${userId} provider=${provider.name} iteration=${iteration} ttfb=${firstChunkAt - providerCallStart}ms`,
+                );
+              }
               yield { type: "assistant_text", text: chunk.text };
             } else {
               iterationContent = chunk.content;
@@ -269,8 +293,22 @@ export class AiQueryService {
       } catch (error) {
         const rawMessage =
           error instanceof Error ? error.message : "AI provider error";
-        this.logger.warn(
-          `AI query failed on iteration ${iteration}: ${rawMessage}`,
+        const providerCallMs = Date.now() - providerCallStart;
+        this.logger.error(
+          `AI query failed user=${userId} provider=${provider.name} iteration=${iteration} after=${providerCallMs}ms: ${rawMessage}`,
+          error instanceof Error ? error.stack : undefined,
+        );
+        // Record the failed attempt in the usage log so failures show up
+        // alongside successful queries instead of leaving the dashboard
+        // looking idle when AI calls are silently erroring.
+        await this.logUsage(
+          userId,
+          provider.name,
+          iterationModel,
+          totalInputTokens,
+          totalOutputTokens,
+          Date.now() - startTime,
+          rawMessage,
         );
         yield {
           type: "error",
@@ -279,6 +317,11 @@ export class AiQueryService {
         };
         return;
       }
+
+      const providerCallMs = Date.now() - providerCallStart;
+      this.logger.log(
+        `Provider call done user=${userId} provider=${provider.name} model=${iterationModel} iteration=${iteration} ms=${providerCallMs} stopReason=${iterationStopReason} inputTokens=${iterationInputTokens} outputTokens=${iterationOutputTokens} toolCalls=${iterationToolCalls.length}`,
+      );
 
       totalInputTokens += iterationInputTokens;
       totalOutputTokens += iterationOutputTokens;
@@ -296,6 +339,9 @@ export class AiQueryService {
         }
 
         const durationMs = Date.now() - startTime;
+        this.logger.log(
+          `Query complete user=${userId} provider=${provider.name} model=${iterationModel} totalMs=${durationMs} iterations=${iteration + 1} totalInputTokens=${totalInputTokens} totalOutputTokens=${totalOutputTokens} totalToolCalls=${totalToolCalls}`,
+        );
         await this.logUsage(
           userId,
           provider.name,
@@ -327,16 +373,26 @@ export class AiQueryService {
       for (const toolCall of iterationToolCalls) {
         totalToolCalls++;
 
+        const toolStart = Date.now();
+        this.logger.log(
+          `Tool call start user=${userId} tool=${toolCall.name} iteration=${iteration} totalToolCalls=${totalToolCalls} inputKeys=[${Object.keys(toolCall.input).join(",")}]`,
+        );
+
         yield {
           type: "tool_start",
           name: toolCall.name,
           description: this.getToolDescription(toolCall.name),
+          input: toolCall.input,
         };
 
         const result = await this.toolExecutor.execute(
           userId,
           toolCall.name,
           toolCall.input,
+        );
+
+        this.logger.log(
+          `Tool call done user=${userId} tool=${toolCall.name} ms=${Date.now() - toolStart} sources=${result.sources.length}`,
         );
 
         allToolsUsed.push({ name: toolCall.name, summary: result.summary });
@@ -368,6 +424,9 @@ export class AiQueryService {
     }
 
     // Max iterations reached - request a final answer without tools
+    this.logger.warn(
+      `Max iterations reached user=${userId} provider=${provider.name} totalToolCalls=${totalToolCalls} totalInputTokens=${totalInputTokens}`,
+    );
     yield {
       type: "content",
       text: "I've gathered the data but reached the maximum number of analysis steps. Here's what I found based on the data collected so far.",
@@ -378,6 +437,9 @@ export class AiQueryService {
     }
 
     const durationMs = Date.now() - startTime;
+    this.logger.log(
+      `Query incomplete user=${userId} provider=${provider.name} totalMs=${durationMs} totalInputTokens=${totalInputTokens} totalOutputTokens=${totalOutputTokens} totalToolCalls=${totalToolCalls}`,
+    );
     await this.logUsage(
       userId,
       provider.name,
@@ -409,6 +471,7 @@ export class AiQueryService {
     inputTokens: number,
     outputTokens: number,
     durationMs: number,
+    error?: string,
   ): Promise<void> {
     try {
       await this.usageService.logUsage({
@@ -419,9 +482,15 @@ export class AiQueryService {
         inputTokens,
         outputTokens,
         durationMs,
+        ...(error && { error }),
       });
-    } catch (error) {
-      this.logger.warn(`Failed to log usage: ${error}`);
+      this.logger.log(
+        `Usage logged user=${userId} provider=${provider} model=${model} inputTokens=${inputTokens} outputTokens=${outputTokens} ms=${durationMs}${error ? ` error="${error}"` : ""}`,
+      );
+    } catch (logErr) {
+      this.logger.warn(
+        `Failed to log usage user=${userId}: ${logErr instanceof Error ? logErr.message : logErr}`,
+      );
     }
   }
 }

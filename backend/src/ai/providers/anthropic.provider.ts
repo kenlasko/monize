@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { Logger } from "@nestjs/common";
 import {
   AiProvider,
   AiCompletionRequest,
@@ -16,6 +17,7 @@ export class AnthropicProvider implements AiProvider {
   readonly supportsStreaming = true;
   readonly supportsToolUse = true;
 
+  private readonly logger = new Logger(AnthropicProvider.name);
   private readonly client: Anthropic;
   private readonly modelId: string;
 
@@ -211,48 +213,77 @@ export class AnthropicProvider implements AiProvider {
     request: AiCompletionRequest,
     tools: AiToolDefinition[],
   ): AsyncIterable<AiToolStreamChunk> {
-    const stream = this.client.messages.stream({
-      model: this.modelId,
-      max_tokens: request.maxTokens || 4096,
-      system: request.systemPrompt,
-      messages: this.toAnthropicMessages(request.messages),
-      tools: tools.map((tool) => ({
-        name: tool.name,
-        description: tool.description,
-        input_schema: tool.inputSchema as Anthropic.Tool.InputSchema,
-      })),
-      ...(request.temperature !== undefined && {
-        temperature: request.temperature,
-      }),
-    });
+    const requestStart = Date.now();
+    this.logger.log(
+      `streamWithTools request model=${this.modelId} messages=${request.messages.length} tools=${tools.length}`,
+    );
+
+    let stream: ReturnType<Anthropic["messages"]["stream"]>;
+    try {
+      stream = this.client.messages.stream({
+        model: this.modelId,
+        max_tokens: request.maxTokens || 4096,
+        system: request.systemPrompt,
+        messages: this.toAnthropicMessages(request.messages),
+        tools: tools.map((tool) => ({
+          name: tool.name,
+          description: tool.description,
+          input_schema: tool.inputSchema as Anthropic.Tool.InputSchema,
+        })),
+        ...(request.temperature !== undefined && {
+          temperature: request.temperature,
+        }),
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `streamWithTools open failed model=${this.modelId} after=${Date.now() - requestStart}ms: ${message}`,
+      );
+      throw error;
+    }
 
     let accumulatedContent = "";
+    let firstTokenAt: number | null = null;
     // Per content block index: tool-use metadata + accumulated JSON arg string
     const toolBlocks = new Map<
       number,
       { id: string; name: string; jsonBuffer: string }
     >();
 
-    for await (const event of stream) {
-      if (event.type === "content_block_start") {
-        if (event.content_block.type === "tool_use") {
-          toolBlocks.set(event.index, {
-            id: event.content_block.id,
-            name: event.content_block.name,
-            jsonBuffer: "",
-          });
-        }
-      } else if (event.type === "content_block_delta") {
-        if (event.delta.type === "text_delta") {
-          accumulatedContent += event.delta.text;
-          yield { type: "text", text: event.delta.text };
-        } else if (event.delta.type === "input_json_delta") {
-          const block = toolBlocks.get(event.index);
-          if (block) {
-            block.jsonBuffer += event.delta.partial_json;
+    try {
+      for await (const event of stream) {
+        if (event.type === "content_block_start") {
+          if (event.content_block.type === "tool_use") {
+            toolBlocks.set(event.index, {
+              id: event.content_block.id,
+              name: event.content_block.name,
+              jsonBuffer: "",
+            });
+          }
+        } else if (event.type === "content_block_delta") {
+          if (event.delta.type === "text_delta") {
+            if (firstTokenAt === null) {
+              firstTokenAt = Date.now();
+              this.logger.log(
+                `streamWithTools first token model=${this.modelId} ttft=${firstTokenAt - requestStart}ms`,
+              );
+            }
+            accumulatedContent += event.delta.text;
+            yield { type: "text", text: event.delta.text };
+          } else if (event.delta.type === "input_json_delta") {
+            const block = toolBlocks.get(event.index);
+            if (block) {
+              block.jsonBuffer += event.delta.partial_json;
+            }
           }
         }
       }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `streamWithTools stream failed model=${this.modelId} after=${Date.now() - requestStart}ms: ${message}`,
+      );
+      throw error;
     }
 
     // Use the SDK helper to get the final message with all metadata.
@@ -274,6 +305,10 @@ export class AnthropicProvider implements AiProvider {
         : finalMessage.stop_reason === "max_tokens"
           ? "max_tokens"
           : "end_turn";
+
+    this.logger.log(
+      `streamWithTools done model=${finalMessage.model} totalMs=${Date.now() - requestStart} contentChars=${accumulatedContent.length} toolCalls=${toolCalls.length} inputTokens=${finalMessage.usage.input_tokens} outputTokens=${finalMessage.usage.output_tokens} stopReason=${stopReason}`,
+    );
 
     yield {
       type: "done",

@@ -1,3 +1,4 @@
+import { Logger } from "@nestjs/common";
 import {
   AiProvider,
   AiCompletionRequest,
@@ -10,6 +11,14 @@ import {
 } from "./ai-provider.interface";
 import { randomUUID } from "crypto";
 import { longRunningFetch } from "./long-running-fetch";
+
+/**
+ * How often to emit a progress log line during a long-running stream so
+ * operators can tell whether tokens are still flowing or the stream stalled.
+ * 30s is short enough to surface a stall quickly while not spamming the log
+ * during normal CPU-only inference (where ttft alone can be a minute+).
+ */
+const PROGRESS_LOG_INTERVAL_MS = 30_000;
 
 interface OllamaToolCall {
   function: { name: string; arguments: Record<string, unknown> };
@@ -31,6 +40,7 @@ export class OllamaProvider implements AiProvider {
   readonly supportsStreaming = true;
   readonly supportsToolUse = true;
 
+  private readonly logger = new Logger(OllamaProvider.name);
   private readonly baseUrl: string;
   private readonly modelId: string;
 
@@ -52,23 +62,47 @@ export class OllamaProvider implements AiProvider {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 20 * 60 * 1000); // 20 minutes for CPU inference
 
+    const requestStart = Date.now();
+    const url = `${this.baseUrl}/api/chat`;
+    const requestBody = JSON.stringify({
+      model: this.modelId,
+      messages,
+      stream: true,
+      ...(request.responseFormat === "json" && { format: "json" }),
+      ...(request.temperature !== undefined && {
+        options: { temperature: request.temperature },
+      }),
+    });
+    this.logger.log(
+      `complete request url=${url} model=${this.modelId} messages=${messages.length} bodyBytes=${requestBody.length} format=${request.responseFormat ?? "text"} temperature=${request.temperature ?? "default"}`,
+    );
+
     try {
-      const response = await longRunningFetch(`${this.baseUrl}/api/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
-        body: JSON.stringify({
-          model: this.modelId,
-          messages,
-          stream: true,
-          ...(request.responseFormat === "json" && { format: "json" }),
-          ...(request.temperature !== undefined && {
-            options: { temperature: request.temperature },
-          }),
-        }),
-      });
+      let response: Response;
+      try {
+        response = await longRunningFetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: requestBody,
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.error(
+          `complete fetch failed url=${url} after=${Date.now() - requestStart}ms: ${message}`,
+        );
+        throw error;
+      }
+
+      this.logger.log(
+        `complete response url=${url} status=${response.status} ttfb=${Date.now() - requestStart}ms`,
+      );
 
       if (!response.ok) {
+        const bodyText = await this.safeReadBody(response);
+        this.logger.error(
+          `complete non-OK url=${url} status=${response.status} body=${bodyText.substring(0, 500)}`,
+        );
         throw new Error(
           `Ollama request failed: ${response.status} ${response.statusText}`,
         );
@@ -84,6 +118,10 @@ export class OllamaProvider implements AiProvider {
       const contentParts: string[] = [];
       let promptTokens = 0;
       let outputTokens = 0;
+      let firstTokenAt: number | null = null;
+      let chunkCount = 0;
+      let contentChars = 0;
+      let lastProgressLogAt = Date.now();
 
       try {
         while (true) {
@@ -102,18 +140,39 @@ export class OllamaProvider implements AiProvider {
             } catch {
               continue;
             }
+            chunkCount++;
             if (chunk.message?.content) {
+              if (firstTokenAt === null) {
+                firstTokenAt = Date.now();
+                this.logger.log(
+                  `complete first token url=${url} model=${this.modelId} ttft=${firstTokenAt - requestStart}ms`,
+                );
+              }
               contentParts.push(chunk.message.content);
+              contentChars += chunk.message.content.length;
             }
             if (chunk.done) {
               promptTokens = chunk.prompt_eval_count || 0;
               outputTokens = chunk.eval_count || 0;
             }
           }
+
+          // Periodic progress log so we can tell whether a long-running
+          // inference is still trickling tokens or has fully stalled.
+          if (Date.now() - lastProgressLogAt >= PROGRESS_LOG_INTERVAL_MS) {
+            this.logger.log(
+              `complete progress url=${url} model=${this.modelId} elapsedMs=${Date.now() - requestStart} chunks=${chunkCount} contentChars=${contentChars}`,
+            );
+            lastProgressLogAt = Date.now();
+          }
         }
       } finally {
         reader.releaseLock();
       }
+
+      this.logger.log(
+        `complete done url=${url} model=${this.modelId} totalMs=${Date.now() - requestStart} chunks=${chunkCount} contentChars=${contentChars} promptTokens=${promptTokens} outputTokens=${outputTokens}`,
+      );
 
       return {
         content: contentParts.join(""),
@@ -124,6 +183,12 @@ export class OllamaProvider implements AiProvider {
         model: this.modelId,
         provider: this.name,
       };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `complete aborted url=${url} after=${Date.now() - requestStart}ms aborted=${controller.signal.aborted} error=${message}`,
+      );
+      throw error;
     } finally {
       clearTimeout(timeout);
     }
@@ -259,23 +324,47 @@ export class OllamaProvider implements AiProvider {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 20 * 60 * 1000); // 20 minutes for CPU inference
 
+    const requestStart = Date.now();
+    const url = `${this.baseUrl}/api/chat`;
+    const requestBody = JSON.stringify({
+      model: this.modelId,
+      messages,
+      tools: ollamaTools,
+      stream: true,
+      ...(request.temperature !== undefined && {
+        options: { temperature: request.temperature },
+      }),
+    });
+    this.logger.log(
+      `streamWithTools request url=${url} model=${this.modelId} messages=${messages.length} tools=${ollamaTools.length} bodyBytes=${requestBody.length} temperature=${request.temperature ?? "default"}`,
+    );
+
     try {
-      const response = await longRunningFetch(`${this.baseUrl}/api/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
-        body: JSON.stringify({
-          model: this.modelId,
-          messages,
-          tools: ollamaTools,
-          stream: true,
-          ...(request.temperature !== undefined && {
-            options: { temperature: request.temperature },
-          }),
-        }),
-      });
+      let response: Response;
+      try {
+        response = await longRunningFetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: requestBody,
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.error(
+          `streamWithTools fetch failed url=${url} after=${Date.now() - requestStart}ms: ${message}`,
+        );
+        throw error;
+      }
+
+      this.logger.log(
+        `streamWithTools response url=${url} status=${response.status} ttfb=${Date.now() - requestStart}ms`,
+      );
 
       if (!response.ok) {
+        const bodyText = await this.safeReadBody(response);
+        this.logger.error(
+          `streamWithTools non-OK url=${url} status=${response.status} body=${bodyText.substring(0, 500)}`,
+        );
         throw new Error(
           `Ollama request failed: ${response.status} ${response.statusText}`,
         );
@@ -296,6 +385,9 @@ export class OllamaProvider implements AiProvider {
       }[] = [];
       let promptTokens = 0;
       let outputTokens = 0;
+      let chunkCount = 0;
+      let firstTokenAt: number | null = null;
+      let lastProgressLogAt = Date.now();
 
       try {
         while (true) {
@@ -314,9 +406,16 @@ export class OllamaProvider implements AiProvider {
             } catch {
               continue;
             }
+            chunkCount++;
 
             const delta = chunk.message?.content;
             if (delta) {
+              if (firstTokenAt === null) {
+                firstTokenAt = Date.now();
+                this.logger.log(
+                  `streamWithTools first token url=${url} model=${this.modelId} ttft=${firstTokenAt - requestStart}ms`,
+                );
+              }
               accumulatedContent += delta;
               yield { type: "text", text: delta };
             }
@@ -337,10 +436,23 @@ export class OllamaProvider implements AiProvider {
               outputTokens = chunk.eval_count || 0;
             }
           }
+
+          // Periodic progress log so we can tell whether a long-running
+          // inference is still trickling tokens or has fully stalled.
+          if (Date.now() - lastProgressLogAt >= PROGRESS_LOG_INTERVAL_MS) {
+            this.logger.log(
+              `streamWithTools progress url=${url} model=${this.modelId} elapsedMs=${Date.now() - requestStart} chunks=${chunkCount} contentChars=${accumulatedContent.length} toolCalls=${accumulatedToolCalls.length}`,
+            );
+            lastProgressLogAt = Date.now();
+          }
         }
       } finally {
         reader.releaseLock();
       }
+
+      this.logger.log(
+        `streamWithTools done url=${url} model=${this.modelId} totalMs=${Date.now() - requestStart} chunks=${chunkCount} contentChars=${accumulatedContent.length} toolCalls=${accumulatedToolCalls.length} promptTokens=${promptTokens} outputTokens=${outputTokens}`,
+      );
 
       yield {
         type: "done",
@@ -350,8 +462,28 @@ export class OllamaProvider implements AiProvider {
         model: this.modelId,
         stopReason: accumulatedToolCalls.length > 0 ? "tool_use" : "end_turn",
       };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `streamWithTools aborted url=${url} after=${Date.now() - requestStart}ms aborted=${controller.signal.aborted} error=${message}`,
+      );
+      throw error;
     } finally {
       clearTimeout(timeout);
+    }
+  }
+
+  /**
+   * Best-effort body read for diagnostic logging on non-OK responses.
+   * Defensive against responses that lack a usable .text() (e.g. test mocks)
+   * or whose body has already been consumed.
+   */
+  private async safeReadBody(response: Response): Promise<string> {
+    try {
+      if (typeof response.text !== "function") return "<unreadable>";
+      return await response.text();
+    } catch {
+      return "<unreadable>";
     }
   }
 

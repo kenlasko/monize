@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { fireEvent } from '@testing-library/react';
 import { render, screen } from '@/test/render';
 import { ChatMessage } from './ChatMessage';
 
@@ -165,7 +166,7 @@ describe('ChatMessage', () => {
       expect(screen.queryByText('Transactions')).not.toBeInTheDocument();
     });
 
-    it('shows tool summary in title attribute', () => {
+    it('expands to reveal input and result when the tool button is clicked', () => {
       render(
         <ChatMessage
           role="assistant"
@@ -174,15 +175,44 @@ describe('ChatMessage', () => {
             {
               name: 'query_transactions',
               summary: 'Found 45 transactions from Jan to Feb',
+              input: {
+                startDate: '2026-01-01',
+                endDate: '2026-02-28',
+              },
             },
           ]}
         />,
       );
 
-      const badge = screen.getByText('Transactions');
-      expect(badge.closest('[title]')?.getAttribute('title')).toBe(
-        'Found 45 transactions from Jan to Feb',
+      // Collapsed by default — details are not in the DOM yet
+      expect(screen.queryByText('Input')).not.toBeInTheDocument();
+      expect(screen.queryByText('Result')).not.toBeInTheDocument();
+
+      const toggle = screen.getByRole('button', { name: /Transactions/i });
+      expect(toggle).toHaveAttribute('aria-expanded', 'false');
+
+      fireEvent.click(toggle);
+
+      expect(toggle).toHaveAttribute('aria-expanded', 'true');
+      expect(screen.getByText('Input')).toBeInTheDocument();
+      expect(screen.getByText('Result')).toBeInTheDocument();
+      expect(screen.getByText(/2026-01-01/)).toBeInTheDocument();
+      expect(
+        screen.getByText('Found 45 transactions from Jan to Feb'),
+      ).toBeInTheDocument();
+    });
+
+    it('disables expand toggle when there is no input and no summary', () => {
+      render(
+        <ChatMessage
+          role="assistant"
+          content="Results."
+          toolsUsed={[{ name: 'query_transactions', summary: '' }]}
+        />,
       );
+
+      const toggle = screen.getByRole('button', { name: /Transactions/i });
+      expect(toggle).toBeDisabled();
     });
   });
 

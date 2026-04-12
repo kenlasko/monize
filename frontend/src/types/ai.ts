@@ -114,6 +114,9 @@ export interface StreamEvent {
   description?: string;
   summary?: string;
   text?: string;
+  // Tool arguments the model passed to the tool. Present on tool_start so
+  // the UI can show the user what the model actually queried for.
+  input?: Record<string, unknown>;
   sources?: Array<{ type: string; description: string; dateRange?: string }>;
   usage?: { inputTokens: number; outputTokens: number; toolCalls: number };
 }
