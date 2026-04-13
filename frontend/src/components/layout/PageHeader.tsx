@@ -10,13 +10,15 @@ interface PageHeaderProps {
   actions?: ReactNode;
   /** URL to the wiki help page for this feature */
   helpUrl?: string;
+  /** Optional badge (e.g. "Beta") shown next to the title */
+  badge?: string;
 }
 
 /**
  * Inline page header with title, subtitle, and action buttons.
  * Renders directly in the content area without a separate background bar.
  */
-export function PageHeader({ title, subtitle, actions, helpUrl }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, actions, helpUrl, badge }: PageHeaderProps) {
   return (
     <div className={`${actions ? 'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4' : ''} mb-6`}>
       <div>
@@ -24,6 +26,11 @@ export function PageHeader({ title, subtitle, actions, helpUrl }: PageHeaderProp
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {title}
           </h1>
+          {badge && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
+              {badge}
+            </span>
+          )}
           {helpUrl && (
             <a
               href={helpUrl}

@@ -87,6 +87,7 @@ function AiSettingsContent() {
 
         <PageHeader
           title="AI Settings"
+          badge="Beta"
           subtitle="Configure AI providers for intelligent financial features"
         />
 

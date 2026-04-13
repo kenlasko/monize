@@ -28,10 +28,13 @@ const toolsLinks: { href: string; label: string; badge?: string }[] = [
   { href: '/import', label: 'Import Transactions' },
 ];
 
-const aiLinks = [
-  { href: '/insights', label: 'Insights' },
-  { href: '/ai', label: 'AI Assistant' },
+const aiLinks: { href: string; label: string; badge?: string }[] = [
+  { href: '/insights', label: 'Insights', badge: 'Beta' },
+  { href: '/ai', label: 'AI Assistant', badge: 'Beta' },
 ];
+
+const BETA_BADGE_CLASSES =
+  'ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300';
 
 export function AppHeader() {
   const router = useRouter();
@@ -141,8 +144,9 @@ export function AppHeader() {
                     <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
 
                     {/* AI section header */}
-                    <div className="px-4 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <div className="px-4 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
                       AI
+                      <span className={BETA_BADGE_CLASSES}>Beta</span>
                     </div>
 
                     {/* AI links */}
@@ -157,6 +161,7 @@ export function AppHeader() {
                         }`}
                       >
                         {link.label}
+                        {link.badge && <span className={BETA_BADGE_CLASSES}>{link.badge}</span>}
                       </button>
                     ))}
 
@@ -260,6 +265,7 @@ export function AppHeader() {
                   }`}
                 >
                   AI
+                  <span className={BETA_BADGE_CLASSES}>Beta</span>
                   <svg
                     className={`w-4 h-4 transition-transform ${aiOpen ? 'rotate-180' : ''}`}
                     fill="none"
@@ -287,6 +293,7 @@ export function AppHeader() {
                           }`}
                         >
                           {link.label}
+                          {link.badge && <span className={BETA_BADGE_CLASSES}>{link.badge}</span>}
                         </button>
                       ))}
                     </div>

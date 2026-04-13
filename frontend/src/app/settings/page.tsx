@@ -32,7 +32,7 @@ const ALL_SETTINGS_SECTIONS: readonly (SettingsSection & { demoVisible?: boolean
   { id: 'notifications', label: 'Notifications', demoVisible: true },
   { id: 'security', label: 'Security' },
   { id: 'api-access', label: 'API Access' },
-  { id: 'ai-settings', label: 'AI Settings', href: '/settings/ai' },
+  { id: 'ai-settings', label: 'AI Settings', href: '/settings/ai', badge: 'Beta' },
   { id: 'backup-restore', label: 'Backup & Restore' },
   { id: 'auto-backup', label: 'Automatic Backup' },
   { id: 'danger-zone', label: 'Danger Zone' },
@@ -207,8 +207,11 @@ function SettingsContent() {
                   href="/settings/ai"
                   className="block bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1 flex items-center">
                     AI Settings
+                    <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
+                      Beta
+                    </span>
                   </h2>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     Configure AI providers, manage API keys, and view usage statistics.

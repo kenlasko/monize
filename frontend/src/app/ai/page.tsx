@@ -12,6 +12,7 @@ export default function AiPage() {
         <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
           <PageHeader
             title="AI Assistant"
+            badge="Beta"
             subtitle="Ask questions about your finances in natural language"
             helpUrl="https://github.com/kenlasko/monize/wiki/AI"
           />

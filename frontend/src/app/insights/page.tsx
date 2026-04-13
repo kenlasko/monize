@@ -12,6 +12,7 @@ export default function InsightsPage() {
         <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
           <PageHeader
             title="Spending Insights"
+            badge="Beta"
             subtitle="AI-powered analysis of your spending patterns and anomalies"
           />
           <div className="max-w-4xl mx-auto">
