@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import type { AiUsageSummary } from '@/types/ai';
+import type { AiUsageSummary, AiProviderConfig, AiProviderType } from '@/types/ai';
+import { AI_PROVIDER_LABELS } from '@/types/ai';
 
 interface UsageDashboardProps {
   usage: AiUsageSummary;
+  configs: AiProviderConfig[];
   onPeriodChange: (days?: number) => void;
 }
 
@@ -26,7 +28,47 @@ function formatCost(cost: number | null): string {
   return cost === null ? '-' : costFormatter.format(cost);
 }
 
-export function UsageDashboard({ usage, onPeriodChange }: UsageDashboardProps) {
+function providerLabel(provider: string): string {
+  return AI_PROVIDER_LABELS[provider as AiProviderType] ?? provider;
+}
+
+/**
+ * Resolve a log's provider+model to the user's display name.
+ * Falls back to the human-readable provider label, then the raw type.
+ */
+function resolveLogName(
+  provider: string,
+  model: string,
+  configs: AiProviderConfig[],
+): string {
+  const exact = configs.find(
+    (c) => c.provider === provider && c.model === model && c.displayName,
+  );
+  if (exact?.displayName) return exact.displayName;
+  const byProvider = configs.find(
+    (c) => c.provider === provider && c.displayName,
+  );
+  if (byProvider?.displayName) return byProvider.displayName;
+  return providerLabel(provider);
+}
+
+/**
+ * Resolve a provider-level aggregation row's display name.
+ * If the user has exactly one config for that provider, use its display name.
+ * Otherwise fall back to the human-readable provider label.
+ */
+function resolveProviderName(
+  provider: string,
+  configs: AiProviderConfig[],
+): string {
+  const matches = configs.filter((c) => c.provider === provider);
+  if (matches.length === 1 && matches[0].displayName) {
+    return matches[0].displayName;
+  }
+  return providerLabel(provider);
+}
+
+export function UsageDashboard({ usage, configs, onPeriodChange }: UsageDashboardProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<number | undefined>(30);
 
   const handlePeriodChange = (days: number | undefined) => {
@@ -109,7 +151,7 @@ export function UsageDashboard({ usage, onPeriodChange }: UsageDashboardProps) {
               <tbody>
                 {usage.byProvider.map((row) => (
                   <tr key={row.provider} className="border-b border-gray-100 dark:border-gray-700/50">
-                    <td className="py-2 text-gray-900 dark:text-white">{row.provider}</td>
+                    <td className="py-2 text-gray-900 dark:text-white">{resolveProviderName(row.provider, configs)}</td>
                     <td className="py-2 text-right text-gray-600 dark:text-gray-300">{row.requests.toLocaleString()}</td>
                     <td className="py-2 text-right text-gray-600 dark:text-gray-300">{row.inputTokens.toLocaleString()}</td>
                     <td className="py-2 text-right text-gray-600 dark:text-gray-300">{row.outputTokens.toLocaleString()}</td>
@@ -144,7 +186,7 @@ export function UsageDashboard({ usage, onPeriodChange }: UsageDashboardProps) {
                     <td className="py-2 text-gray-600 dark:text-gray-300">
                       {new Date(log.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="py-2 text-gray-900 dark:text-white">{log.provider}</td>
+                    <td className="py-2 text-gray-900 dark:text-white">{resolveLogName(log.provider, log.model, configs)}</td>
                     <td className="py-2 text-gray-600 dark:text-gray-300">{log.feature}</td>
                     <td className="py-2 text-right text-gray-600 dark:text-gray-300">
                       {(log.inputTokens + log.outputTokens).toLocaleString()}
