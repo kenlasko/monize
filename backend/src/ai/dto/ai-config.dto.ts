@@ -5,8 +5,6 @@ import {
   IsInt,
   IsIn,
   IsObject,
-  IsNumber,
-  Matches,
   MaxLength,
   Min,
   Max,
@@ -85,40 +83,6 @@ export class CreateAiConfigDto {
   @IsObject()
   @IsSafeConfigObject()
   config?: Record<string, unknown>;
-
-  @ApiPropertyOptional({
-    example: 3,
-    description:
-      "User-defined input cost per 1,000,000 tokens (for usage cost estimation). Set to null to clear.",
-  })
-  @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4 })
-  @Min(0)
-  @Max(1000000)
-  inputCostPer1M?: number | null;
-
-  @ApiPropertyOptional({
-    example: 15,
-    description:
-      "User-defined output cost per 1,000,000 tokens (for usage cost estimation). Set to null to clear.",
-  })
-  @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4 })
-  @Min(0)
-  @Max(1000000)
-  outputCostPer1M?: number | null;
-
-  @ApiPropertyOptional({
-    example: "USD",
-    description:
-      "ISO 4217 currency code for the cost rates (e.g. USD, EUR). Defaults to USD.",
-  })
-  @IsOptional()
-  @IsString()
-  @Matches(/^[A-Z]{3}$/, {
-    message: "costCurrency must be a 3-letter ISO 4217 currency code",
-  })
-  costCurrency?: string;
 }
 
 export class UpdateAiConfigDto {
@@ -184,38 +148,4 @@ export class UpdateAiConfigDto {
   @IsObject()
   @IsSafeConfigObject()
   config?: Record<string, unknown>;
-
-  @ApiPropertyOptional({
-    example: 3,
-    description:
-      "User-defined input cost per 1,000,000 tokens (for usage cost estimation). Pass null to clear.",
-  })
-  @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4 })
-  @Min(0)
-  @Max(1000000)
-  inputCostPer1M?: number | null;
-
-  @ApiPropertyOptional({
-    example: 15,
-    description:
-      "User-defined output cost per 1,000,000 tokens (for usage cost estimation). Pass null to clear.",
-  })
-  @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 4 })
-  @Min(0)
-  @Max(1000000)
-  outputCostPer1M?: number | null;
-
-  @ApiPropertyOptional({
-    example: "USD",
-    description:
-      "ISO 4217 currency code for the cost rates (e.g. USD, EUR).",
-  })
-  @IsOptional()
-  @IsString()
-  @Matches(/^[A-Z]{3}$/, {
-    message: "costCurrency must be a 3-letter ISO 4217 currency code",
-  })
-  costCurrency?: string;
 }

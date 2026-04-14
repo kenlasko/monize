@@ -115,7 +115,6 @@ function AiSettingsContent() {
         {usage && (
           <UsageDashboard
             usage={usage}
-            configs={configs}
             onPeriodChange={handlePeriodChange}
           />
         )}

@@ -1,19 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import type {
-  AiUsageSummary,
-  AiProviderConfig,
-  AiProviderType,
-  EstimatedCostByCurrency,
-} from '@/types/ai';
-import { AI_PROVIDER_LABELS } from '@/types/ai';
-import { useExchangeRates } from '@/hooks/useExchangeRates';
-import { usePreferencesStore } from '@/store/preferencesStore';
+import { useState } from 'react';
+import type { AiUsageSummary } from '@/types/ai';
 
 interface UsageDashboardProps {
   usage: AiUsageSummary;
-  configs: AiProviderConfig[];
   onPeriodChange: (days?: number) => void;
 }
 
@@ -24,128 +15,13 @@ const PERIOD_OPTIONS = [
   { label: 'All time', value: undefined },
 ];
 
-function currencyFormatter(currency: string): Intl.NumberFormat {
-  // Guard against any invalid currency code; fall back to USD so formatting
-  // never throws for users with exotic codes.
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 4,
-    });
-  } catch {
-    return new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 4,
-    });
-  }
-}
-
-function providerLabel(provider: string): string {
-  return AI_PROVIDER_LABELS[provider as AiProviderType] ?? provider;
-}
-
-/** Resolve a log's provider+model to the user's display name. */
-function resolveLogName(
-  provider: string,
-  model: string,
-  configs: AiProviderConfig[],
-): string {
-  const exact = configs.find(
-    (c) => c.provider === provider && c.model === model && c.displayName,
-  );
-  if (exact?.displayName) return exact.displayName;
-  const byProvider = configs.find(
-    (c) => c.provider === provider && c.displayName,
-  );
-  if (byProvider?.displayName) return byProvider.displayName;
-  return providerLabel(provider);
-}
-
-/** Display name for a provider-level aggregation row. */
-function resolveProviderName(
-  provider: string,
-  configs: AiProviderConfig[],
-): string {
-  const matches = configs.filter((c) => c.provider === provider);
-  if (matches.length === 1 && matches[0].displayName) {
-    return matches[0].displayName;
-  }
-  return providerLabel(provider);
-}
-
-/** True when the per-currency bucket contains at least one positive amount. */
-function hasAnyCost(bucket: EstimatedCostByCurrency): boolean {
-  return Object.values(bucket).some((v) => v > 0);
-}
-
-export function UsageDashboard({ usage, configs, onPeriodChange }: UsageDashboardProps) {
+export function UsageDashboard({ usage, onPeriodChange }: UsageDashboardProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<number | undefined>(30);
-  const [showInHomeCurrency, setShowInHomeCurrency] = useState(true);
-  const { convert } = useExchangeRates();
-  const homeCurrency =
-    usePreferencesStore((state) => state.preferences?.defaultCurrency) || 'USD';
 
   const handlePeriodChange = (days: number | undefined) => {
     setSelectedPeriod(days);
     onPeriodChange(days);
   };
-
-  // Collect all distinct cost currencies that appear in the response so we
-  // can decide whether to show the currency-mode toggle.
-  const currenciesInUse = useMemo(() => {
-    const set = new Set<string>();
-    Object.keys(usage.totalEstimatedCostByCurrency).forEach((c) => set.add(c));
-    usage.byProvider.forEach((row) =>
-      Object.keys(row.estimatedCostByCurrency).forEach((c) => set.add(c)),
-    );
-    usage.recentLogs.forEach((log) => {
-      if (log.costCurrency) set.add(log.costCurrency);
-    });
-    return set;
-  }, [usage]);
-
-  const hasForeignCurrency = useMemo(() => {
-    for (const c of currenciesInUse) {
-      if (c !== homeCurrency) return true;
-    }
-    return false;
-  }, [currenciesInUse, homeCurrency]);
-
-  // Format a bucket either as a single converted home-currency amount or as
-  // one line per provider currency.
-  const renderBucket = (bucket: EstimatedCostByCurrency): string => {
-    if (!hasAnyCost(bucket)) return '-';
-    if (showInHomeCurrency || !hasForeignCurrency) {
-      let total = 0;
-      for (const [currency, amount] of Object.entries(bucket)) {
-        total += convert(amount, currency, homeCurrency);
-      }
-      return currencyFormatter(homeCurrency).format(total);
-    }
-    return Object.entries(bucket)
-      .filter(([, amount]) => amount > 0)
-      .map(([currency, amount]) => currencyFormatter(currency).format(amount))
-      .join(' + ');
-  };
-
-  const renderLogCost = (
-    cost: number | null,
-    costCurrency: string | null,
-  ): string => {
-    if (cost === null || !costCurrency) return '-';
-    if (showInHomeCurrency) {
-      return currencyFormatter(homeCurrency).format(
-        convert(cost, costCurrency, homeCurrency),
-      );
-    }
-    return currencyFormatter(costCurrency).format(cost);
-  };
-
-  const totalHasCost = hasAnyCost(usage.totalEstimatedCostByCurrency);
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6">
@@ -168,37 +44,8 @@ export function UsageDashboard({ usage, configs, onPeriodChange }: UsageDashboar
         </div>
       </div>
 
-      {hasForeignCurrency && (
-        <div className="flex justify-end mb-3">
-          <div className="inline-flex rounded-md border border-gray-200 dark:border-gray-700 text-xs overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setShowInHomeCurrency(true)}
-              className={`px-3 py-1 ${
-                showInHomeCurrency
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
-                  : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
-              }`}
-            >
-              In {homeCurrency}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowInHomeCurrency(false)}
-              className={`px-3 py-1 ${
-                !showInHomeCurrency
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
-                  : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
-              }`}
-            >
-              In provider currency
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
           <p className="text-xs text-gray-500 dark:text-gray-400">Total Requests</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -217,20 +64,6 @@ export function UsageDashboard({ usage, configs, onPeriodChange }: UsageDashboar
             {usage.totalOutputTokens.toLocaleString()}
           </p>
         </div>
-        <div
-          className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4"
-          title="Estimated using the cost rates you configured on each provider. Excludes any activity where no matching rate is set."
-        >
-          <p className="text-xs text-gray-500 dark:text-gray-400">Est. Cost</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {totalHasCost ? renderBucket(usage.totalEstimatedCostByCurrency) : '-'}
-          </p>
-          {!totalHasCost && (
-            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">
-              Set rates on a provider to enable
-            </p>
-          )}
-        </div>
       </div>
 
       {/* By Provider */}
@@ -245,17 +78,15 @@ export function UsageDashboard({ usage, configs, onPeriodChange }: UsageDashboar
                   <th className="pb-2 font-medium text-right">Requests</th>
                   <th className="pb-2 font-medium text-right">Input Tokens</th>
                   <th className="pb-2 font-medium text-right">Output Tokens</th>
-                  <th className="pb-2 font-medium text-right">Est. Cost</th>
                 </tr>
               </thead>
               <tbody>
                 {usage.byProvider.map((row) => (
                   <tr key={row.provider} className="border-b border-gray-100 dark:border-gray-700/50">
-                    <td className="py-2 text-gray-900 dark:text-white">{resolveProviderName(row.provider, configs)}</td>
+                    <td className="py-2 text-gray-900 dark:text-white">{row.provider}</td>
                     <td className="py-2 text-right text-gray-600 dark:text-gray-300">{row.requests.toLocaleString()}</td>
                     <td className="py-2 text-right text-gray-600 dark:text-gray-300">{row.inputTokens.toLocaleString()}</td>
                     <td className="py-2 text-right text-gray-600 dark:text-gray-300">{row.outputTokens.toLocaleString()}</td>
-                    <td className="py-2 text-right text-gray-600 dark:text-gray-300">{renderBucket(row.estimatedCostByCurrency)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -277,7 +108,6 @@ export function UsageDashboard({ usage, configs, onPeriodChange }: UsageDashboar
                   <th className="pb-2 font-medium">Feature</th>
                   <th className="pb-2 font-medium text-right">Tokens</th>
                   <th className="pb-2 font-medium text-right">Duration</th>
-                  <th className="pb-2 font-medium text-right">Est. Cost</th>
                 </tr>
               </thead>
               <tbody>
@@ -286,16 +116,13 @@ export function UsageDashboard({ usage, configs, onPeriodChange }: UsageDashboar
                     <td className="py-2 text-gray-600 dark:text-gray-300">
                       {new Date(log.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="py-2 text-gray-900 dark:text-white">{resolveLogName(log.provider, log.model, configs)}</td>
+                    <td className="py-2 text-gray-900 dark:text-white">{log.provider}</td>
                     <td className="py-2 text-gray-600 dark:text-gray-300">{log.feature}</td>
                     <td className="py-2 text-right text-gray-600 dark:text-gray-300">
                       {(log.inputTokens + log.outputTokens).toLocaleString()}
                     </td>
                     <td className="py-2 text-right text-gray-600 dark:text-gray-300">
                       {log.durationMs}ms
-                    </td>
-                    <td className="py-2 text-right text-gray-600 dark:text-gray-300">
-                      {renderLogCost(log.estimatedCost, log.costCurrency)}
                     </td>
                   </tr>
                 ))}

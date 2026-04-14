@@ -9,13 +9,6 @@ import {
 } from "typeorm";
 import { User } from "../../users/entities/user.entity";
 
-const numericTransformer = {
-  to: (value: number | null | undefined): number | null =>
-    value === null || value === undefined ? null : value,
-  from: (value: string | null): number | null =>
-    value === null ? null : Number(value),
-};
-
 export const AI_PROVIDERS = [
   "anthropic",
   "openai",
@@ -71,34 +64,6 @@ export class AiProviderConfig {
 
   @Column({ type: "jsonb", default: {} })
   config: Record<string, unknown>;
-
-  @Column({
-    type: "numeric",
-    precision: 12,
-    scale: 4,
-    name: "input_cost_per_1m",
-    nullable: true,
-    transformer: numericTransformer,
-  })
-  inputCostPer1M: number | null;
-
-  @Column({
-    type: "numeric",
-    precision: 12,
-    scale: 4,
-    name: "output_cost_per_1m",
-    nullable: true,
-    transformer: numericTransformer,
-  })
-  outputCostPer1M: number | null;
-
-  @Column({
-    type: "varchar",
-    length: 3,
-    name: "cost_currency",
-    default: "USD",
-  })
-  costCurrency: string;
 
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;

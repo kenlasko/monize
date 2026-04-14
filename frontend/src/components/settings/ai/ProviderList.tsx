@@ -134,15 +134,10 @@ export function ProviderList({ configs, encryptionAvailable, onConfigsChanged, h
                       Priority: {config.priority}
                     </span>
                   </div>
-                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="mt-1 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
                     {config.model && <span>Model: {config.model}</span>}
                     {config.apiKeyMasked && <span>Key: {config.apiKeyMasked}</span>}
                     {config.baseUrl && <span className="truncate max-w-xs">URL: {config.baseUrl}</span>}
-                    {(config.inputCostPer1M != null || config.outputCostPer1M != null) && (
-                      <span>
-                        Cost/1M ({config.costCurrency}): {config.inputCostPer1M ?? 0} in / {config.outputCostPer1M ?? 0} out
-                      </span>
-                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

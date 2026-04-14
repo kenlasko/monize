@@ -46,9 +46,6 @@ const mockConfig: AiProviderConfig = {
   apiKeyMasked: '****abcd',
   baseUrl: null,
   config: {},
-  inputCostPer1M: null,
-  outputCostPer1M: null,
-  costCurrency: 'USD',
   createdAt: '2024-01-01T00:00:00.000Z',
   updatedAt: '2024-01-01T00:00:00.000Z',
 };

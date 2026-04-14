@@ -145,9 +145,6 @@ export class AiService {
       baseUrl: dto.baseUrl || null,
       priority: dto.priority ?? 0,
       config: dto.config || {},
-      inputCostPer1M: dto.inputCostPer1M ?? null,
-      outputCostPer1M: dto.outputCostPer1M ?? null,
-      costCurrency: dto.costCurrency || "USD",
       isActive: true,
     });
 
@@ -184,11 +181,6 @@ export class AiService {
     if (dto.priority !== undefined) config.priority = dto.priority;
     if (dto.isActive !== undefined) config.isActive = dto.isActive;
     if (dto.config !== undefined) config.config = dto.config;
-    if (dto.inputCostPer1M !== undefined)
-      config.inputCostPer1M = dto.inputCostPer1M;
-    if (dto.outputCostPer1M !== undefined)
-      config.outputCostPer1M = dto.outputCostPer1M;
-    if (dto.costCurrency !== undefined) config.costCurrency = dto.costCurrency;
 
     if (dto.apiKey !== undefined) {
       if (dto.apiKey) {
@@ -409,9 +401,6 @@ export class AiService {
       apiKeyMasked,
       baseUrl: config.baseUrl,
       config: config.config,
-      inputCostPer1M: config.inputCostPer1M,
-      outputCostPer1M: config.outputCostPer1M,
-      costCurrency: config.costCurrency ?? "USD",
       createdAt: config.createdAt.toISOString(),
       updatedAt: config.updatedAt.toISOString(),
     };

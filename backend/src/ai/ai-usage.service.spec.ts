@@ -2,12 +2,10 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { AiUsageService } from "./ai-usage.service";
 import { AiUsageLog } from "./entities/ai-usage-log.entity";
-import { AiProviderConfig } from "./entities/ai-provider-config.entity";
 
 describe("AiUsageService", () => {
   let service: AiUsageService;
   let mockRepository: Record<string, jest.Mock>;
-  let mockConfigRepository: Record<string, jest.Mock>;
 
   const mockQueryBuilder = {
     select: jest.fn().mockReturnThis(),
@@ -15,7 +13,6 @@ describe("AiUsageService", () => {
     where: jest.fn().mockReturnThis(),
     andWhere: jest.fn().mockReturnThis(),
     groupBy: jest.fn().mockReturnThis(),
-    addGroupBy: jest.fn().mockReturnThis(),
     getRawMany: jest.fn().mockResolvedValue([]),
     getRawOne: jest.fn().mockResolvedValue({
       totalRequests: "0",
@@ -41,20 +38,12 @@ describe("AiUsageService", () => {
       createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
     };
 
-    mockConfigRepository = {
-      find: jest.fn().mockResolvedValue([]),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AiUsageService,
         {
           provide: getRepositoryToken(AiUsageLog),
           useValue: mockRepository,
-        },
-        {
-          provide: getRepositoryToken(AiProviderConfig),
-          useValue: mockConfigRepository,
         },
       ],
     }).compile();
@@ -116,7 +105,6 @@ describe("AiUsageService", () => {
         totalRequests: 0,
         totalInputTokens: 0,
         totalOutputTokens: 0,
-        totalEstimatedCostByCurrency: {},
         byProvider: [],
         byFeature: [],
         recentLogs: [],
@@ -153,8 +141,6 @@ describe("AiUsageService", () => {
         inputTokens: 100,
         outputTokens: 50,
         durationMs: 1200,
-        estimatedCost: null,
-        costCurrency: null,
         createdAt: "2024-06-15T12:00:00.000Z",
       });
     });
@@ -164,7 +150,6 @@ describe("AiUsageService", () => {
         .mockResolvedValueOnce([
           {
             provider: "anthropic",
-            model: "claude-sonnet-4-20250514",
             requests: "5",
             inputTokens: "500",
             outputTokens: "250",
@@ -173,8 +158,6 @@ describe("AiUsageService", () => {
         .mockResolvedValueOnce([
           {
             feature: "categorize",
-            provider: "anthropic",
-            model: "claude-sonnet-4-20250514",
             requests: "3",
             inputTokens: "300",
             outputTokens: "150",
@@ -191,14 +174,12 @@ describe("AiUsageService", () => {
       expect(summary.totalRequests).toBe(5);
       expect(summary.totalInputTokens).toBe(500);
       expect(summary.totalOutputTokens).toBe(250);
-      expect(summary.totalEstimatedCostByCurrency).toEqual({});
       expect(summary.byProvider).toEqual([
         {
           provider: "anthropic",
           requests: 5,
           inputTokens: 500,
           outputTokens: 250,
-          estimatedCostByCurrency: {},
         },
       ]);
       expect(summary.byFeature).toEqual([
@@ -207,136 +188,8 @@ describe("AiUsageService", () => {
           requests: 3,
           inputTokens: 300,
           outputTokens: 150,
-          estimatedCostByCurrency: {},
         },
       ]);
-    });
-
-    it("computes estimated cost from configured rates", async () => {
-      // User configured Anthropic Sonnet with $3 input / $15 output per 1M tokens.
-      mockConfigRepository.find.mockResolvedValueOnce([
-        {
-          provider: "anthropic",
-          model: "claude-sonnet-4-20250514",
-          inputCostPer1M: 3,
-          outputCostPer1M: 15,
-          costCurrency: "USD",
-        },
-      ]);
-      mockQueryBuilder.getRawMany
-        .mockResolvedValueOnce([
-          {
-            provider: "anthropic",
-            model: "claude-sonnet-4-20250514",
-            requests: "2",
-            // 1,000,000 input tokens * $3 + 500,000 output tokens * $15 / 1M = $3 + $7.5 = $10.5
-            inputTokens: "1000000",
-            outputTokens: "500000",
-          },
-        ])
-        .mockResolvedValueOnce([]);
-      mockQueryBuilder.getRawOne.mockResolvedValueOnce({
-        totalRequests: "2",
-        totalInputTokens: "1000000",
-        totalOutputTokens: "500000",
-      });
-      mockRepository.find.mockResolvedValueOnce([
-        {
-          id: "log-1",
-          provider: "anthropic",
-          model: "claude-sonnet-4-20250514",
-          feature: "query",
-          inputTokens: 1000000,
-          outputTokens: 500000,
-          durationMs: 1200,
-          createdAt: new Date("2024-06-15T12:00:00Z"),
-        },
-      ]);
-
-      const summary = await service.getUsageSummary("user-1");
-
-      expect(summary.totalEstimatedCostByCurrency).toEqual({ USD: 10.5 });
-      expect(summary.byProvider[0].estimatedCostByCurrency).toEqual({
-        USD: 10.5,
-      });
-      expect(summary.recentLogs[0].estimatedCost).toBe(10.5);
-      expect(summary.recentLogs[0].costCurrency).toBe("USD");
-    });
-
-    it("buckets estimated cost by configured rate currency", async () => {
-      // Two configs with different billing currencies -- costs should not merge.
-      mockConfigRepository.find.mockResolvedValueOnce([
-        {
-          provider: "anthropic",
-          model: "claude-sonnet-4-20250514",
-          inputCostPer1M: 3,
-          outputCostPer1M: 15,
-          costCurrency: "USD",
-        },
-        {
-          provider: "openai",
-          model: "gpt-4o",
-          inputCostPer1M: 2,
-          outputCostPer1M: 8,
-          costCurrency: "EUR",
-        },
-      ]);
-      mockQueryBuilder.getRawMany
-        .mockResolvedValueOnce([
-          {
-            provider: "anthropic",
-            model: "claude-sonnet-4-20250514",
-            requests: "1",
-            // 1M input * $3 + 0 = $3
-            inputTokens: "1000000",
-            outputTokens: "0",
-          },
-          {
-            provider: "openai",
-            model: "gpt-4o",
-            requests: "1",
-            // 1M input * €2 + 0 = €2
-            inputTokens: "1000000",
-            outputTokens: "0",
-          },
-        ])
-        .mockResolvedValueOnce([]);
-
-      const summary = await service.getUsageSummary("user-1");
-
-      expect(summary.totalEstimatedCostByCurrency).toEqual({
-        USD: 3,
-        EUR: 2,
-      });
-    });
-
-    it("returns empty bucket when provider/model has no configured rate", async () => {
-      mockConfigRepository.find.mockResolvedValueOnce([
-        {
-          provider: "anthropic",
-          model: "claude-opus-4-20250514",
-          inputCostPer1M: 15,
-          outputCostPer1M: 75,
-          costCurrency: "USD",
-        },
-      ]);
-      // Log uses a different model than the configured one -- no match, no cost.
-      mockQueryBuilder.getRawMany
-        .mockResolvedValueOnce([
-          {
-            provider: "anthropic",
-            model: "claude-sonnet-4-20250514",
-            requests: "1",
-            inputTokens: "1000",
-            outputTokens: "500",
-          },
-        ])
-        .mockResolvedValueOnce([]);
-
-      const summary = await service.getUsageSummary("user-1");
-
-      expect(summary.totalEstimatedCostByCurrency).toEqual({});
-      expect(summary.byProvider[0].estimatedCostByCurrency).toEqual({});
     });
   });
 

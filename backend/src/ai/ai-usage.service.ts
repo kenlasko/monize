@@ -3,52 +3,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { LessThan, Repository } from "typeorm";
 import { Cron } from "@nestjs/schedule";
 import { AiUsageLog } from "./entities/ai-usage-log.entity";
-import { AiProviderConfig } from "./entities/ai-provider-config.entity";
-import {
-  AiUsageSummary,
-  EstimatedCostByCurrency,
-} from "./dto/ai-response.dto";
-
-interface CostRate {
-  inputCostPer1M: number | null;
-  outputCostPer1M: number | null;
-  currency: string;
-}
-
-const TOKENS_PER_UNIT = 1_000_000;
-
-function rateKey(provider: string, model: string | null): string {
-  return `${provider}::${model ?? ""}`;
-}
-
-function computeCost(
-  inputTokens: number,
-  outputTokens: number,
-  rate: CostRate | undefined,
-): number | null {
-  if (!rate) return null;
-  if (rate.inputCostPer1M === null && rate.outputCostPer1M === null) {
-    return null;
-  }
-  const inputCost =
-    rate.inputCostPer1M !== null
-      ? (inputTokens / TOKENS_PER_UNIT) * rate.inputCostPer1M
-      : 0;
-  const outputCost =
-    rate.outputCostPer1M !== null
-      ? (outputTokens / TOKENS_PER_UNIT) * rate.outputCostPer1M
-      : 0;
-  return Math.round((inputCost + outputCost) * 10000) / 10000;
-}
-
-function addCostToBucket(
-  bucket: EstimatedCostByCurrency,
-  currency: string,
-  cost: number,
-): void {
-  const prev = bucket[currency] ?? 0;
-  bucket[currency] = Math.round((prev + cost) * 10000) / 10000;
-}
+import { AiUsageSummary } from "./dto/ai-response.dto";
 
 interface LogUsageParams {
   userId: string;
@@ -68,8 +23,6 @@ export class AiUsageService {
   constructor(
     @InjectRepository(AiUsageLog)
     private readonly usageLogRepository: Repository<AiUsageLog>,
-    @InjectRepository(AiProviderConfig)
-    private readonly providerConfigRepository: Repository<AiProviderConfig>,
   ) {}
 
   @Cron("0 4 * * *")
@@ -111,214 +64,96 @@ export class AiUsageService {
     userId: string,
     days?: number,
   ): Promise<AiUsageSummary> {
-    const [byProviderModel, byFeatureModel, recentLogs, totals, userConfigs] =
-      await Promise.all([
-        // Group by provider AND model so we can look up per-model cost rates.
-        this.usageLogRepository
-          .createQueryBuilder("log")
-          .select("log.provider", "provider")
-          .addSelect("log.model", "model")
-          .addSelect("COUNT(*)", "requests")
-          .addSelect("SUM(log.input_tokens)", "inputTokens")
-          .addSelect("SUM(log.output_tokens)", "outputTokens")
-          .where("log.user_id = :userId", { userId })
-          .andWhere(
-            days
-              ? "log.created_at >= NOW() - make_interval(days => :days)"
-              : "1=1",
-            { days },
-          )
-          .groupBy("log.provider")
-          .addGroupBy("log.model")
-          .getRawMany(),
+    const qb = this.usageLogRepository
+      .createQueryBuilder("log")
+      .where("log.user_id = :userId", { userId });
 
-        this.usageLogRepository
-          .createQueryBuilder("log")
-          .select("log.feature", "feature")
-          .addSelect("log.provider", "provider")
-          .addSelect("log.model", "model")
-          .addSelect("COUNT(*)", "requests")
-          .addSelect("SUM(log.input_tokens)", "inputTokens")
-          .addSelect("SUM(log.output_tokens)", "outputTokens")
-          .where("log.user_id = :userId", { userId })
-          .andWhere(
-            days
-              ? "log.created_at >= NOW() - make_interval(days => :days)"
-              : "1=1",
-            { days },
-          )
-          .groupBy("log.feature")
-          .addGroupBy("log.provider")
-          .addGroupBy("log.model")
-          .getRawMany(),
-
-        this.usageLogRepository.find({
-          where: { userId },
-          order: { createdAt: "DESC" },
-          take: 20,
-        }),
-
-        this.usageLogRepository
-          .createQueryBuilder("log")
-          .select("COUNT(*)", "totalRequests")
-          .addSelect("COALESCE(SUM(log.input_tokens), 0)", "totalInputTokens")
-          .addSelect("COALESCE(SUM(log.output_tokens), 0)", "totalOutputTokens")
-          .where("log.user_id = :userId", { userId })
-          .andWhere(
-            days
-              ? "log.created_at >= NOW() - make_interval(days => :days)"
-              : "1=1",
-            { days },
-          )
-          .getRawOne(),
-
-        this.providerConfigRepository.find({
-          where: { userId },
-          select: [
-            "provider",
-            "model",
-            "inputCostPer1M",
-            "outputCostPer1M",
-            "costCurrency",
-          ] as (keyof AiProviderConfig)[],
-        }),
-      ]);
-
-    // Build (provider, model) -> rate lookup from the user's configured providers.
-    const rateMap = new Map<string, CostRate>();
-    for (const cfg of userConfigs) {
-      rateMap.set(rateKey(cfg.provider, cfg.model), {
-        inputCostPer1M: cfg.inputCostPer1M,
-        outputCostPer1M: cfg.outputCostPer1M,
-        currency: cfg.costCurrency || "USD",
+    if (days) {
+      qb.andWhere("log.created_at >= NOW() - make_interval(days => :days)", {
+        days,
       });
     }
 
-    // Collapse (provider, model) aggregates into byProvider, bucketing costs
-    // by each config's cost currency so we can display/convert per-currency.
-    const providerAgg = new Map<
-      string,
-      {
-        provider: string;
-        requests: number;
-        inputTokens: number;
-        outputTokens: number;
-        costs: EstimatedCostByCurrency;
-      }
-    >();
+    const [byProvider, byFeature, recentLogs, totals] = await Promise.all([
+      this.usageLogRepository
+        .createQueryBuilder("log")
+        .select("log.provider", "provider")
+        .addSelect("COUNT(*)", "requests")
+        .addSelect("SUM(log.input_tokens)", "inputTokens")
+        .addSelect("SUM(log.output_tokens)", "outputTokens")
+        .where("log.user_id = :userId", { userId })
+        .andWhere(
+          days
+            ? "log.created_at >= NOW() - make_interval(days => :days)"
+            : "1=1",
+          { days },
+        )
+        .groupBy("log.provider")
+        .getRawMany(),
 
-    for (const row of byProviderModel as Record<string, string | null>[]) {
-      const provider = row.provider as string;
-      const model = row.model as string | null;
-      const requests = parseInt(row.requests as string, 10) || 0;
-      const inputTokens = parseInt(row.inputTokens as string, 10) || 0;
-      const outputTokens = parseInt(row.outputTokens as string, 10) || 0;
-      const rate = rateMap.get(rateKey(provider, model));
-      const cost = computeCost(inputTokens, outputTokens, rate);
+      this.usageLogRepository
+        .createQueryBuilder("log")
+        .select("log.feature", "feature")
+        .addSelect("COUNT(*)", "requests")
+        .addSelect("SUM(log.input_tokens)", "inputTokens")
+        .addSelect("SUM(log.output_tokens)", "outputTokens")
+        .where("log.user_id = :userId", { userId })
+        .andWhere(
+          days
+            ? "log.created_at >= NOW() - make_interval(days => :days)"
+            : "1=1",
+          { days },
+        )
+        .groupBy("log.feature")
+        .getRawMany(),
 
-      let existing = providerAgg.get(provider);
-      if (!existing) {
-        existing = {
-          provider,
-          requests: 0,
-          inputTokens: 0,
-          outputTokens: 0,
-          costs: {},
-        };
-        providerAgg.set(provider, existing);
-      }
-      existing.requests += requests;
-      existing.inputTokens += inputTokens;
-      existing.outputTokens += outputTokens;
-      if (cost !== null && rate) {
-        addCostToBucket(existing.costs, rate.currency, cost);
-      }
-    }
+      this.usageLogRepository.find({
+        where: { userId },
+        order: { createdAt: "DESC" },
+        take: 20,
+      }),
 
-    // Same pattern for byFeature.
-    const featureAgg = new Map<
-      string,
-      {
-        feature: string;
-        requests: number;
-        inputTokens: number;
-        outputTokens: number;
-        costs: EstimatedCostByCurrency;
-      }
-    >();
-
-    for (const row of byFeatureModel as Record<string, string | null>[]) {
-      const feature = row.feature as string;
-      const provider = row.provider as string;
-      const model = row.model as string | null;
-      const requests = parseInt(row.requests as string, 10) || 0;
-      const inputTokens = parseInt(row.inputTokens as string, 10) || 0;
-      const outputTokens = parseInt(row.outputTokens as string, 10) || 0;
-      const rate = rateMap.get(rateKey(provider, model));
-      const cost = computeCost(inputTokens, outputTokens, rate);
-
-      let existing = featureAgg.get(feature);
-      if (!existing) {
-        existing = {
-          feature,
-          requests: 0,
-          inputTokens: 0,
-          outputTokens: 0,
-          costs: {},
-        };
-        featureAgg.set(feature, existing);
-      }
-      existing.requests += requests;
-      existing.inputTokens += inputTokens;
-      existing.outputTokens += outputTokens;
-      if (cost !== null && rate) {
-        addCostToBucket(existing.costs, rate.currency, cost);
-      }
-    }
-
-    // Sum all provider buckets to produce the totals-by-currency.
-    const totalEstimatedCostByCurrency: EstimatedCostByCurrency = {};
-    for (const agg of providerAgg.values()) {
-      for (const [currency, amount] of Object.entries(agg.costs)) {
-        addCostToBucket(totalEstimatedCostByCurrency, currency, amount);
-      }
-    }
+      this.usageLogRepository
+        .createQueryBuilder("log")
+        .select("COUNT(*)", "totalRequests")
+        .addSelect("COALESCE(SUM(log.input_tokens), 0)", "totalInputTokens")
+        .addSelect("COALESCE(SUM(log.output_tokens), 0)", "totalOutputTokens")
+        .where("log.user_id = :userId", { userId })
+        .andWhere(
+          days
+            ? "log.created_at >= NOW() - make_interval(days => :days)"
+            : "1=1",
+          { days },
+        )
+        .getRawOne(),
+    ]);
 
     return {
       totalRequests: parseInt(totals.totalRequests, 10) || 0,
       totalInputTokens: parseInt(totals.totalInputTokens, 10) || 0,
       totalOutputTokens: parseInt(totals.totalOutputTokens, 10) || 0,
-      totalEstimatedCostByCurrency,
-      byProvider: Array.from(providerAgg.values()).map((agg) => ({
-        provider: agg.provider,
-        requests: agg.requests,
-        inputTokens: agg.inputTokens,
-        outputTokens: agg.outputTokens,
-        estimatedCostByCurrency: agg.costs,
+      byProvider: byProvider.map((row: Record<string, string>) => ({
+        provider: row.provider,
+        requests: parseInt(row.requests, 10) || 0,
+        inputTokens: parseInt(row.inputTokens, 10) || 0,
+        outputTokens: parseInt(row.outputTokens, 10) || 0,
       })),
-      byFeature: Array.from(featureAgg.values()).map((agg) => ({
-        feature: agg.feature,
-        requests: agg.requests,
-        inputTokens: agg.inputTokens,
-        outputTokens: agg.outputTokens,
-        estimatedCostByCurrency: agg.costs,
+      byFeature: byFeature.map((row: Record<string, string>) => ({
+        feature: row.feature,
+        requests: parseInt(row.requests, 10) || 0,
+        inputTokens: parseInt(row.inputTokens, 10) || 0,
+        outputTokens: parseInt(row.outputTokens, 10) || 0,
       })),
-      recentLogs: recentLogs.map((log) => {
-        const rate = rateMap.get(rateKey(log.provider, log.model));
-        const cost = computeCost(log.inputTokens, log.outputTokens, rate);
-        return {
-          id: log.id,
-          provider: log.provider,
-          model: log.model,
-          feature: log.feature,
-          inputTokens: log.inputTokens,
-          outputTokens: log.outputTokens,
-          durationMs: log.durationMs,
-          estimatedCost: cost,
-          costCurrency: cost !== null && rate ? rate.currency : null,
-          createdAt: log.createdAt.toISOString(),
-        };
-      }),
+      recentLogs: recentLogs.map((log) => ({
+        id: log.id,
+        provider: log.provider,
+        model: log.model,
+        feature: log.feature,
+        inputTokens: log.inputTokens,
+        outputTokens: log.outputTokens,
+        durationMs: log.durationMs,
+        createdAt: log.createdAt.toISOString(),
+      })),
     };
   }
 }
