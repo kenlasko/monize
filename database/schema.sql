@@ -378,7 +378,7 @@ CREATE INDEX idx_sched_txn_overrides_orig ON scheduled_transaction_overrides(sch
 -- Securities (stocks, bonds, mutual funds, ETFs)
 CREATE TABLE securities (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     symbol VARCHAR(20) NOT NULL, -- ticker symbol (unique per user)
     name VARCHAR(255) NOT NULL,
     security_type VARCHAR(50), -- 'STOCK', 'ETF', 'MUTUAL_FUND', 'BOND', etc
