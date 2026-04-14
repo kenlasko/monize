@@ -111,6 +111,9 @@ export class AiInsightsService {
 
   async generateInsights(userId: string): Promise<InsightsListResponse> {
     if (this.generatingUsers.has(userId)) {
+      this.logger.log(
+        `Insights generation already in progress user=${userId}; returning current list`,
+      );
       return this.getInsights(userId);
     }
 
@@ -125,10 +128,15 @@ export class AiInsightsService {
       .getOne();
 
     if (recentInsight) {
+      this.logger.log(
+        `Insights generation skipped user=${userId}: last run within ${MIN_GENERATION_INTERVAL_HOURS}h cooldown`,
+      );
       return this.getInsights(userId);
     }
 
     this.generatingUsers.add(userId);
+    const startTime = Date.now();
+    this.logger.log(`Insights generation start user=${userId}`);
 
     try {
       const preferences = await this.prefRepo.findOne({
@@ -137,10 +145,18 @@ export class AiInsightsService {
       const currency = preferences?.defaultCurrency || "USD";
 
       let aggregates: SpendingAggregates;
+      const aggregateStart = Date.now();
       try {
         aggregates = await this.aggregatorService.computeAggregates(
           userId,
           currency,
+        );
+        this.logger.log(
+          `Insights aggregates built user=${userId} currency=${currency} ` +
+            `categories=${aggregates.categorySpending.length} ` +
+            `months=${aggregates.monthlySpending.length} ` +
+            `recurring=${aggregates.recurringCharges.length} ` +
+            `in ${Date.now() - aggregateStart}ms`,
         );
       } catch (error) {
         const message =
@@ -155,12 +171,19 @@ export class AiInsightsService {
         aggregates.categorySpending.length === 0 &&
         aggregates.monthlySpending.length === 0
       ) {
+        this.logger.log(
+          `Insights generation skipped user=${userId}: no spending data to analyze`,
+        );
         return this.getInsights(userId);
       }
 
       const prompt = this.buildInsightsPrompt(aggregates);
 
       try {
+        const providerCallStart = Date.now();
+        this.logger.log(
+          `Insights provider call start user=${userId} promptChars=${prompt.length}`,
+        );
         const response = await this.aiService.complete(
           userId,
           {
@@ -172,14 +195,33 @@ export class AiInsightsService {
           },
           "insight",
         );
+        const providerCallMs = Date.now() - providerCallStart;
+        this.logger.log(
+          `Insights provider call done user=${userId} ` +
+            `model=${response.model} ms=${providerCallMs} ` +
+            `inputTokens=${response.usage.inputTokens} ` +
+            `outputTokens=${response.usage.outputTokens} ` +
+            `contentChars=${response.content.length}`,
+        );
 
-        const rawInsights = this.parseInsightsResponse(response.content);
+        const rawInsights = this.parseInsightsResponse(
+          response.content,
+          userId,
+        );
         await this.saveInsights(userId, rawInsights);
+        this.logger.log(
+          `Insights generation complete user=${userId} ` +
+            `totalMs=${Date.now() - startTime} ` +
+            `parsed=${rawInsights.length} ` +
+            `inputTokens=${response.usage.inputTokens} ` +
+            `outputTokens=${response.usage.outputTokens}`,
+        );
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Unknown error";
         this.logger.warn(
-          `Failed to generate AI insights for user ${userId}: ${message}`,
+          `Failed to generate AI insights for user ${userId} ` +
+            `after ${Date.now() - startTime}ms: ${message}`,
         );
       }
 
@@ -407,65 +449,146 @@ export class AiInsightsService {
     return sections.join("\n");
   }
 
-  private parseInsightsResponse(content: string): RawInsight[] {
-    const trimmed = content.trim();
-    // LLM02-F1: Use non-greedy regex and enforce size limit
-    const jsonMatch = trimmed.match(/\[[\s\S]*?\]/);
-    if (!jsonMatch) {
-      this.logger.warn("AI response did not contain a JSON array");
-      return [];
-    }
-
+  private parseInsightsResponse(
+    content: string,
+    userId: string,
+  ): RawInsight[] {
     const MAX_JSON_SIZE = 100 * 1024; // 100KB
-    if (jsonMatch[0].length > MAX_JSON_SIZE) {
+    const trimmed = content.trim();
+    const preview = trimmed.slice(0, 500).replace(/\s+/g, " ");
+
+    // Some providers (notably OpenAI-compatible endpoints like Cloudflare)
+    // wrap JSON output in markdown code fences even when asked not to.
+    // Strip them before attempting JSON extraction.
+    const stripped = this.stripMarkdownFences(trimmed);
+
+    const insightsArray = this.extractInsightsArray(stripped);
+    if (!insightsArray) {
       this.logger.warn(
-        `AI insights JSON too large (${jsonMatch[0].length} bytes, limit ${MAX_JSON_SIZE})`,
+        `AI response did not contain a JSON insights array user=${userId} ` +
+          `contentChars=${content.length} preview="${preview}"`,
       );
       return [];
     }
 
-    try {
-      const parsed = JSON.parse(jsonMatch[0]);
-      if (!Array.isArray(parsed)) {
-        this.logger.warn("Parsed AI response is not an array");
-        return [];
-      }
-
-      const validTypes = new Set([
-        "anomaly",
-        "trend",
-        "subscription",
-        "budget_pace",
-        "seasonal",
-        "new_recurring",
-      ]);
-      const validSeverities = new Set(["info", "warning", "alert"]);
-
-      return parsed
-        .filter((item: unknown) => {
-          if (!item || typeof item !== "object") return false;
-          const obj = item as Record<string, unknown>;
-          return (
-            typeof obj.type === "string" &&
-            validTypes.has(obj.type) &&
-            typeof obj.title === "string" &&
-            typeof obj.description === "string" &&
-            typeof obj.severity === "string" &&
-            validSeverities.has(obj.severity)
-          );
-        })
-        .map((item: Record<string, unknown>) => ({
-          type: item.type as string,
-          title: String(item.title).substring(0, 255),
-          description: String(item.description).substring(0, 5000),
-          severity: item.severity as string,
-          data: this.sanitizeData(item.data),
-        }));
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      this.logger.warn(`Failed to parse AI insights response: ${message}`);
+    // Serialized-size guard on the extracted array (defense in depth).
+    if (JSON.stringify(insightsArray).length > MAX_JSON_SIZE) {
+      this.logger.warn(
+        `AI insights JSON too large user=${userId} ` +
+          `items=${insightsArray.length} limit=${MAX_JSON_SIZE}`,
+      );
       return [];
     }
+
+    const validTypes = new Set([
+      "anomaly",
+      "trend",
+      "subscription",
+      "budget_pace",
+      "seasonal",
+      "new_recurring",
+    ]);
+    const validSeverities = new Set(["info", "warning", "alert"]);
+
+    const rawCount = insightsArray.length;
+    const validated = insightsArray
+      .filter((item: unknown) => {
+        if (!item || typeof item !== "object") return false;
+        const obj = item as Record<string, unknown>;
+        return (
+          typeof obj.type === "string" &&
+          validTypes.has(obj.type) &&
+          typeof obj.title === "string" &&
+          typeof obj.description === "string" &&
+          typeof obj.severity === "string" &&
+          validSeverities.has(obj.severity)
+        );
+      })
+      .map((item) => {
+        const obj = item as Record<string, unknown>;
+        return {
+          type: obj.type as string,
+          title: String(obj.title).substring(0, 255),
+          description: String(obj.description).substring(0, 5000),
+          severity: obj.severity as string,
+          data: this.sanitizeData(obj.data),
+        };
+      });
+
+    if (rawCount !== validated.length) {
+      this.logger.warn(
+        `Filtered invalid insights user=${userId} ` +
+          `raw=${rawCount} valid=${validated.length} ` +
+          `dropped=${rawCount - validated.length}`,
+      );
+    }
+
+    return validated;
+  }
+
+  private stripMarkdownFences(text: string): string {
+    const fenceMatch = text.match(/^```(?:json)?\s*\n?([\s\S]*?)\n?```\s*$/i);
+    if (fenceMatch) {
+      return fenceMatch[1].trim();
+    }
+    return text;
+  }
+
+  /**
+   * Extract the insights array from the model output. Accepts the
+   * strict contract ({"insights": [...]}) as well as legacy/tolerant shapes
+   * (a bare array, or an object with the array under a commonly-seen key).
+   * Returns null if no insights array can be recovered.
+   */
+  private extractInsightsArray(text: string): unknown[] | null {
+    if (!text) return null;
+
+    // 1. Try to parse the whole thing as JSON first (strict-shape path).
+    const direct = this.safeJsonParse(text);
+    if (direct !== undefined) {
+      const arr = this.findInsightsArrayIn(direct);
+      if (arr) return arr;
+    }
+
+    // 2. Fall back to regex-extracting the first object blob, for models
+    //    that emit preamble/trailing text around the JSON.
+    const objectMatch = text.match(/\{[\s\S]*\}/);
+    if (objectMatch) {
+      const parsed = this.safeJsonParse(objectMatch[0]);
+      if (parsed !== undefined) {
+        const arr = this.findInsightsArrayIn(parsed);
+        if (arr) return arr;
+      }
+    }
+
+    // 3. Legacy/tolerant: accept a bare array (pre-wrapper contract).
+    //    LLM02-F1: non-greedy regex bounds the match size.
+    const arrayMatch = text.match(/\[[\s\S]*?\]/);
+    if (arrayMatch) {
+      const parsed = this.safeJsonParse(arrayMatch[0]);
+      if (Array.isArray(parsed)) return parsed;
+    }
+
+    return null;
+  }
+
+  private safeJsonParse(text: string): unknown | undefined {
+    try {
+      return JSON.parse(text);
+    } catch {
+      return undefined;
+    }
+  }
+
+  private findInsightsArrayIn(value: unknown): unknown[] | null {
+    if (Array.isArray(value)) return value;
+    if (!value || typeof value !== "object") return null;
+    const obj = value as Record<string, unknown>;
+    if (Array.isArray(obj.insights)) return obj.insights;
+    // Some models emit alternate key names; accept the common ones.
+    if (Array.isArray(obj.results)) return obj.results;
+    if (Array.isArray(obj.data)) return obj.data;
+    return null;
   }
 
   private async saveInsights(

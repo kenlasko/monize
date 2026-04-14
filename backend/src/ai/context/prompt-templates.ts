@@ -58,21 +58,29 @@ IMPORTANT RULES:
 14. CRITICAL: The data labels ABOVE/BELOW are pre-computed and authoritative. If the data says "BELOW average", the current amount IS lower than the average -- do NOT say "above". If the data says "ABOVE average", the current amount IS higher. Always verify: if current < average, it MUST be "below"; if current > average, it MUST be "above". Get this right.
 15. When the current month is still in progress (days elapsed < days in month), acknowledge that partial-month data may not reflect the full picture. Do NOT treat partial-month totals as if they represent the full month.
 
-Respond with ONLY a valid JSON array of insight objects, no other text. Example format:
-[
-  {
-    "type": "anomaly",
-    "title": "Unusually high spending on Dining",
-    "description": "Your dining spending this month is $450, which is 80% above your 6-month average of $250. This is the highest dining spending in the past 6 months.",
-    "severity": "warning",
-    "data": {
-      "categoryName": "Dining",
-      "currentAmount": 450.00,
-      "averageAmount": 250.00,
-      "percentAboveAverage": 80
+OUTPUT FORMAT (STRICT):
+- Respond with ONLY a single valid JSON object. No preamble, no explanation, no trailing text.
+- Do NOT wrap the response in markdown code fences (no triple backticks, no "json" language tag).
+- The JSON object MUST have exactly one top-level key: "insights", whose value is an array of insight objects.
+- Start your response with { and end it with }. If you have no insights, return {"insights": []}.
+
+Example format:
+{
+  "insights": [
+    {
+      "type": "anomaly",
+      "title": "Unusually high spending on Dining",
+      "description": "Your dining spending this month is $450, which is 80% above your 6-month average of $250. This is the highest dining spending in the past 6 months.",
+      "severity": "warning",
+      "data": {
+        "categoryName": "Dining",
+        "currentAmount": 450.00,
+        "averageAmount": 250.00,
+        "percentAboveAverage": 80
+      }
     }
-  }
-]`;
+  ]
+}`;
 
 export const FORECAST_SYSTEM_PROMPT = `You are a financial forecasting analyst for the Monize personal finance application. Your job is to analyze a user's transaction history, scheduled transactions, and account balances to produce a detailed cash flow forecast.
 

@@ -98,6 +98,9 @@ export class OpenAiProvider implements AiProvider {
       ...(request.temperature !== undefined && {
         temperature: request.temperature,
       }),
+      ...(request.responseFormat === "json" && {
+        response_format: { type: "json_object" as const },
+      }),
     });
 
     const choice = response.choices[0];
@@ -126,6 +129,9 @@ export class OpenAiProvider implements AiProvider {
       stream: true,
       ...(request.temperature !== undefined && {
         temperature: request.temperature,
+      }),
+      ...(request.responseFormat === "json" && {
+        response_format: { type: "json_object" as const },
       }),
     });
 
