@@ -4,65 +4,30 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { aiApi } from '@/lib/ai';
 import { SuggestedQueries } from './SuggestedQueries';
 import { ChatMessage } from './ChatMessage';
-import type { AiStatus, StreamEvent } from '@/types/ai';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
-import toast from 'react-hot-toast';
+import type { AiStatus } from '@/types/ai';
+import {
+  useAiChatStore,
+  AI_CHAT_STORAGE_KEY,
+} from '@/store/aiChatStore';
 import Link from 'next/link';
 
-// Key for persisting the AI conversation in the browser's localStorage.
-// Cleared on logout via authStore so conversations don't leak between accounts.
-export const AI_CHAT_STORAGE_KEY = 'monize:ai-chat-messages';
-
-interface ToolCallRecord {
-  name: string;
-  summary: string;
-  input?: Record<string, unknown>;
-  isError?: boolean;
-}
-
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  toolsUsed?: ToolCallRecord[];
-  sources?: Array<{ type: string; description: string; dateRange?: string }>;
-  isStreaming?: boolean;
-  error?: string;
-}
-
-interface ThinkingState {
-  active: boolean;
-  message: string;
-  // Live streamed text from the model — accumulates per iteration as the
-  // backend emits assistant_text deltas. Reset on each new tool_start so the
-  // user sees the next "thinking" pass cleanly.
-  liveText: string;
-  tools: Array<{
-    name: string;
-    status: 'running' | 'done';
-    summary?: string;
-    isError?: boolean;
-  }>;
-}
+// Re-exported for tests and other call sites that previously imported the key
+// from the component module.
+export { AI_CHAT_STORAGE_KEY };
 
 export function ChatInterface() {
-  const [messages, setMessages] = useLocalStorage<Message[]>(
-    AI_CHAT_STORAGE_KEY,
-    [],
-  );
+  const messages = useAiChatStore((s) => s.messages);
+  const isLoading = useAiChatStore((s) => s.isLoading);
+  const thinking = useAiChatStore((s) => s.thinking);
+  const submit = useAiChatStore((s) => s.submit);
+  const cancel = useAiChatStore((s) => s.cancel);
+  const clear = useAiChatStore((s) => s.clear);
+
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [aiStatus, setAiStatus] = useState<AiStatus | null>(null);
   const [statusLoading, setStatusLoading] = useState(true);
-  const [thinking, setThinking] = useState<ThinkingState>({
-    active: false,
-    message: '',
-    liveText: '',
-    tools: [],
-  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     aiApi.getStatus().then((status) => {
@@ -72,29 +37,6 @@ export function ChatInterface() {
       setStatusLoading(false);
     });
   }, []);
-
-  // If the user navigated away mid-stream, the persisted message will still
-  // be flagged isStreaming and the last assistant entry may be flagged as an
-  // in-flight error. On mount, sanitize those flags so the restored
-  // conversation renders as a completed exchange.
-  useEffect(() => {
-    setMessages((prev) => {
-      if (!prev.some((m) => m.isStreaming)) return prev;
-      return prev.map((m) =>
-        m.isStreaming ? { ...m, isStreaming: false } : m,
-      );
-    });
-    // Run once on mount — setMessages is stable and we only want to heal
-    // flags that were persisted from a previous session.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleClearConversation = useCallback(() => {
-    abortControllerRef.current?.abort();
-    setMessages([]);
-    setThinking({ active: false, message: '', liveText: '', tools: [] });
-    setIsLoading(false);
-  }, [setMessages]);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -107,215 +49,13 @@ export function ChatInterface() {
   }, [messages, thinking, scrollToBottom]);
 
   const handleSubmit = useCallback(
-    async (queryText?: string) => {
-      const query = queryText || input.trim();
-      if (!query || isLoading) return;
-
+    (queryText?: string) => {
+      const query = queryText || input;
+      if (!query.trim() || isLoading) return;
       setInput('');
-      setIsLoading(true);
-
-      // Add user message
-      const userMsgId = `user-${Date.now()}`;
-      const assistantMsgId = `assistant-${Date.now()}`;
-
-      setMessages((prev) => [
-        ...prev,
-        { id: userMsgId, role: 'user', content: query },
-      ]);
-
-      setThinking({
-        active: true,
-        message: 'Analyzing your question...',
-        liveText: '',
-        tools: [],
-      });
-
-      const toolsUsed: ToolCallRecord[] = [];
-      let sources: Array<{ type: string; description: string; dateRange?: string }> = [];
-      let contentBuffer = '';
-      let hasStartedContent = false;
-
-      const controller = aiApi.queryStream(query, {
-        onEvent: (event: StreamEvent) => {
-          switch (event.type) {
-            case 'thinking':
-              setThinking((prev) => ({
-                ...prev,
-                message: event.message || 'Thinking...',
-              }));
-              break;
-
-            case 'assistant_text':
-              // Streaming text delta from the model — append to the live
-              // thinking buffer so the user sees realtime feedback while
-              // the model generates its next step.
-              setThinking((prev) => ({
-                ...prev,
-                liveText: prev.liveText + (event.text || ''),
-              }));
-              break;
-
-            case 'tool_start':
-              // The model decided to use a tool. Lock in any live text as
-              // "thinking we already saw" by clearing the buffer for the
-              // next iteration, and add the tool to the indicator list.
-              // Capture the input now so it's available for the expandable
-              // detail view even if the tool result never arrives.
-              toolsUsed.push({
-                name: event.name || '',
-                summary: '',
-                input: event.input,
-              });
-              setThinking((prev) => ({
-                ...prev,
-                message: `Looking up ${event.name?.replace(/_/g, ' ')}...`,
-                liveText: '',
-                tools: [
-                  ...prev.tools,
-                  { name: event.name || '', status: 'running' },
-                ],
-              }));
-              break;
-
-            case 'tool_result': {
-              // Backfill the summary onto the most recent matching tool entry
-              // (model can call the same tool multiple times in a query).
-              // Find the first entry (by call order) matching the name that
-              // hasn't been resolved yet — this is the call this result
-              // belongs to.
-              for (let i = 0; i < toolsUsed.length; i++) {
-                if (
-                  toolsUsed[i].name === event.name &&
-                  !toolsUsed[i].summary &&
-                  toolsUsed[i].isError === undefined
-                ) {
-                  toolsUsed[i] = {
-                    ...toolsUsed[i],
-                    summary: event.summary || '',
-                    isError: event.isError === true,
-                  };
-                  break;
-                }
-              }
-              setThinking((prev) => {
-                // Update only the first still-running tool with this name so
-                // repeated calls to the same tool don't overwrite each
-                // other's pass/fail state.
-                let updated = false;
-                return {
-                  ...prev,
-                  tools: prev.tools.map((t) => {
-                    if (
-                      !updated &&
-                      t.name === event.name &&
-                      t.status === 'running'
-                    ) {
-                      updated = true;
-                      return {
-                        ...t,
-                        status: 'done',
-                        summary: event.summary,
-                        isError: event.isError === true,
-                      };
-                    }
-                    return t;
-                  }),
-                };
-              });
-              break;
-            }
-
-            case 'content':
-              if (!hasStartedContent) {
-                hasStartedContent = true;
-                setThinking({ active: false, message: '', liveText: '', tools: [] });
-                setMessages((prev) => [
-                  ...prev,
-                  {
-                    id: assistantMsgId,
-                    role: 'assistant',
-                    content: event.text || '',
-                    toolsUsed: [...toolsUsed],
-                    isStreaming: true,
-                  },
-                ]);
-              }
-              contentBuffer = event.text || '';
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === assistantMsgId
-                    ? { ...m, content: contentBuffer, toolsUsed: [...toolsUsed] }
-                    : m,
-                ),
-              );
-              break;
-
-            case 'sources':
-              sources = (event.sources as typeof sources) || [];
-              break;
-
-            case 'done':
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === assistantMsgId
-                    ? { ...m, isStreaming: false, sources }
-                    : m,
-                ),
-              );
-              setIsLoading(false);
-              setThinking({ active: false, message: '', liveText: '', tools: [] });
-              break;
-
-            case 'error':
-              setThinking({ active: false, message: '', liveText: '', tools: [] });
-              if (hasStartedContent) {
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantMsgId
-                      ? { ...m, isStreaming: false, error: event.message as string }
-                      : m,
-                  ),
-                );
-              } else {
-                setMessages((prev) => [
-                  ...prev,
-                  {
-                    id: assistantMsgId,
-                    role: 'assistant',
-                    content: '',
-                    error: (event.message as string) || 'An error occurred',
-                  },
-                ]);
-              }
-              setIsLoading(false);
-              break;
-          }
-        },
-        onDone: () => {
-          setIsLoading(false);
-          setThinking({ active: false, message: '', liveText: '', tools: [] });
-        },
-        onError: (error) => {
-          setThinking({ active: false, message: '', liveText: '', tools: [] });
-          setIsLoading(false);
-          toast.error(error.message || 'Failed to get response');
-          if (!hasStartedContent) {
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: assistantMsgId,
-                role: 'assistant',
-                content: '',
-                error: error.message || 'Failed to connect to the AI service.',
-              },
-            ]);
-          }
-        },
-      });
-
-      abortControllerRef.current = controller;
+      submit(query);
     },
-    [input, isLoading, setMessages],
+    [input, isLoading, submit],
   );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -323,12 +63,6 @@ export function ChatInterface() {
       e.preventDefault();
       handleSubmit();
     }
-  };
-
-  const handleCancel = () => {
-    abortControllerRef.current?.abort();
-    setIsLoading(false);
-    setThinking({ active: false, message: '', liveText: '', tools: [] });
   };
 
   // Auto-resize textarea
@@ -373,7 +107,7 @@ export function ChatInterface() {
           </p>
           <button
             type="button"
-            onClick={handleClearConversation}
+            onClick={clear}
             className="text-xs text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-colors"
           >
             Clear conversation
@@ -516,7 +250,7 @@ export function ChatInterface() {
           />
           {isLoading ? (
             <button
-              onClick={handleCancel}
+              onClick={cancel}
               className="flex-shrink-0 p-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-colors"
               title="Cancel"
             >
