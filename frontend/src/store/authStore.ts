@@ -58,6 +58,14 @@ export const useAuthStore = create<AuthState>()(
         import('@/store/preferencesStore').then(({ usePreferencesStore }) => {
           usePreferencesStore.getState().clearPreferences();
         });
+        // SECURITY: Clear AI chat history so conversations don't leak across accounts
+        try {
+          if (typeof window !== 'undefined') {
+            window.localStorage.removeItem('monize:ai-chat-messages');
+          }
+        } catch {
+          // localStorage unavailable — nothing to do
+        }
         set({
           user: null,
           token: null,

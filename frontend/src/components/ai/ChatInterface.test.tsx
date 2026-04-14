@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@/test/render';
-import { ChatInterface } from './ChatInterface';
+import { ChatInterface, AI_CHAT_STORAGE_KEY } from './ChatInterface';
 import type { StreamCallbacks } from '@/types/ai';
 
 // Capture the callbacks from queryStream calls
@@ -33,6 +33,10 @@ describe('ChatInterface', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     capturedCallbacks = null;
+    // Chat now persists to localStorage. The test setup's mock is shared across
+    // tests, so clear the key to prevent messages from one test bleeding into
+    // the next.
+    window.localStorage.removeItem(AI_CHAT_STORAGE_KEY);
   });
 
   it('shows suggested queries when no messages', async () => {
@@ -464,5 +468,95 @@ describe('ChatInterface', () => {
     fireEvent.click(screen.getByTitle('Send'));
 
     expect(aiApi.queryStream).not.toHaveBeenCalled();
+  });
+
+  describe('conversation persistence', () => {
+    it('restores prior conversation from localStorage on mount', async () => {
+      window.localStorage.setItem(
+        AI_CHAT_STORAGE_KEY,
+        JSON.stringify([
+          { id: 'user-1', role: 'user', content: 'What did I spend?' },
+          { id: 'assistant-1', role: 'assistant', content: 'You spent $42.' },
+        ]),
+      );
+
+      await renderChat();
+
+      expect(screen.getByText('What did I spend?')).toBeInTheDocument();
+      expect(screen.getByText('You spent $42.')).toBeInTheDocument();
+    });
+
+    it('persists new messages to localStorage', async () => {
+      await renderChat();
+
+      const textarea = screen.getByPlaceholderText(
+        'Ask about your finances...',
+      );
+      fireEvent.change(textarea, { target: { value: 'Balance?' } });
+      fireEvent.click(screen.getByTitle('Send'));
+
+      const stored = window.localStorage.getItem(AI_CHAT_STORAGE_KEY);
+      expect(stored).not.toBeNull();
+      const parsed = JSON.parse(stored as string);
+      expect(parsed).toHaveLength(1);
+      expect(parsed[0]).toMatchObject({ role: 'user', content: 'Balance?' });
+    });
+
+    it('heals stuck isStreaming flag from an interrupted session', async () => {
+      window.localStorage.setItem(
+        AI_CHAT_STORAGE_KEY,
+        JSON.stringify([
+          { id: 'user-1', role: 'user', content: 'Q' },
+          {
+            id: 'assistant-1',
+            role: 'assistant',
+            content: 'Partial answer',
+            isStreaming: true,
+          },
+        ]),
+      );
+
+      await renderChat();
+
+      // The "Send" button is shown (not the in-flight "Cancel" button),
+      // confirming the restored state isn't treated as an active request.
+      expect(screen.getByTitle('Send')).toBeInTheDocument();
+      expect(screen.queryByTitle('Cancel')).not.toBeInTheDocument();
+
+      const stored = JSON.parse(
+        window.localStorage.getItem(AI_CHAT_STORAGE_KEY) as string,
+      );
+      expect(stored[1].isStreaming).toBe(false);
+    });
+
+    it('clears the conversation when Clear conversation is clicked', async () => {
+      window.localStorage.setItem(
+        AI_CHAT_STORAGE_KEY,
+        JSON.stringify([
+          { id: 'user-1', role: 'user', content: 'Hello' },
+          { id: 'assistant-1', role: 'assistant', content: 'Hi there' },
+        ]),
+      );
+
+      await renderChat();
+      expect(screen.getByText('Hello')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText('Clear conversation'));
+
+      expect(screen.queryByText('Hello')).not.toBeInTheDocument();
+      expect(screen.queryByText('Hi there')).not.toBeInTheDocument();
+      const stored = JSON.parse(
+        window.localStorage.getItem(AI_CHAT_STORAGE_KEY) as string,
+      );
+      expect(stored).toEqual([]);
+    });
+
+    it('does not show the conversation header when there are no messages', async () => {
+      await renderChat();
+      expect(
+        screen.queryByText('Conversation saved in your browser'),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByText('Clear conversation')).not.toBeInTheDocument();
+    });
   });
 });

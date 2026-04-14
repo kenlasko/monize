@@ -5,8 +5,13 @@ import { aiApi } from '@/lib/ai';
 import { SuggestedQueries } from './SuggestedQueries';
 import { ChatMessage } from './ChatMessage';
 import type { AiStatus, StreamEvent } from '@/types/ai';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
+
+// Key for persisting the AI conversation in the browser's localStorage.
+// Cleared on logout via authStore so conversations don't leak between accounts.
+export const AI_CHAT_STORAGE_KEY = 'monize:ai-chat-messages';
 
 interface ToolCallRecord {
   name: string;
@@ -41,7 +46,10 @@ interface ThinkingState {
 }
 
 export function ChatInterface() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useLocalStorage<Message[]>(
+    AI_CHAT_STORAGE_KEY,
+    [],
+  );
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [aiStatus, setAiStatus] = useState<AiStatus | null>(null);
@@ -64,6 +72,29 @@ export function ChatInterface() {
       setStatusLoading(false);
     });
   }, []);
+
+  // If the user navigated away mid-stream, the persisted message will still
+  // be flagged isStreaming and the last assistant entry may be flagged as an
+  // in-flight error. On mount, sanitize those flags so the restored
+  // conversation renders as a completed exchange.
+  useEffect(() => {
+    setMessages((prev) => {
+      if (!prev.some((m) => m.isStreaming)) return prev;
+      return prev.map((m) =>
+        m.isStreaming ? { ...m, isStreaming: false } : m,
+      );
+    });
+    // Run once on mount — setMessages is stable and we only want to heal
+    // flags that were persisted from a previous session.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleClearConversation = useCallback(() => {
+    abortControllerRef.current?.abort();
+    setMessages([]);
+    setThinking({ active: false, message: '', liveText: '', tools: [] });
+    setIsLoading(false);
+  }, [setMessages]);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -284,7 +315,7 @@ export function ChatInterface() {
 
       abortControllerRef.current = controller;
     },
-    [input, isLoading],
+    [input, isLoading, setMessages],
   );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -331,6 +362,22 @@ export function ChatInterface() {
               </p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Conversation header with clear action */}
+      {messages.length > 0 && (
+        <div className="flex items-center justify-between px-2 pb-2 border-b border-gray-200 dark:border-gray-700">
+          <p className="text-xs text-gray-400 dark:text-gray-500">
+            Conversation saved in your browser
+          </p>
+          <button
+            type="button"
+            onClick={handleClearConversation}
+            className="text-xs text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-colors"
+          >
+            Clear conversation
+          </button>
         </div>
       )}
 

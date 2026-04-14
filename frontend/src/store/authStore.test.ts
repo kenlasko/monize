@@ -57,6 +57,19 @@ describe('authStore', () => {
       expect(state.error).toBeNull();
       expect(state.isLoading).toBe(false);
     });
+
+    it('clears persisted AI chat history so it does not leak across accounts', () => {
+      window.localStorage.setItem(
+        'monize:ai-chat-messages',
+        JSON.stringify([{ id: '1', role: 'user', content: 'private' }]),
+      );
+
+      useAuthStore.getState().logout();
+
+      expect(
+        window.localStorage.getItem('monize:ai-chat-messages'),
+      ).toBeNull();
+    });
   });
 
   describe('setUser', () => {
