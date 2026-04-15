@@ -134,27 +134,33 @@ describe('BalanceHistoryChart', () => {
   });
 
   it('shows Current as today balance and Ending as last future data point', () => {
-    // All values must be unique to avoid getByText collisions
-    // Data: start=2000, dip=1500, current(today)=1800, ending=1900
-    // Min balance = 1500
-    render(
-      <BalanceHistoryChart
-        data={[
-          { date: '2026-03-01', balance: 2000 },
-          { date: '2026-03-10', balance: 1500 },
-          { date: '2026-04-01', balance: 1800 },
-          { date: '2026-04-15', balance: 1900 },
-        ]}
-        isLoading={false}
-      />
-    );
+    // Lock "today" so the test is not date-dependent. With today = 2026-04-10,
+    // data: start=2000, dip=1500, current(today-anchor=2026-04-01)=1800, ending=1900.
+    // Min balance = 1500.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-04-10T12:00:00Z'));
+    try {
+      render(
+        <BalanceHistoryChart
+          data={[
+            { date: '2026-03-01', balance: 2000 },
+            { date: '2026-03-10', balance: 1500 },
+            { date: '2026-04-01', balance: 1800 },
+            { date: '2026-04-15', balance: 1900 },
+          ]}
+          isLoading={false}
+        />
+      );
 
-    expect(screen.getByText('Ending')).toBeInTheDocument();
-    // Starting = 2000, Current = 1800 (today or before), Ending = 1900, Min = 1500
-    expect(screen.getByText('$2000.00')).toBeInTheDocument();
-    expect(screen.getByText('$1800.00')).toBeInTheDocument();
-    expect(screen.getByText('$1900.00')).toBeInTheDocument();
-    expect(screen.getByText('$1500.00')).toBeInTheDocument();
+      expect(screen.getByText('Ending')).toBeInTheDocument();
+      // Starting = 2000, Current = 1800 (today or before), Ending = 1900, Min = 1500
+      expect(screen.getByText('$2000.00')).toBeInTheDocument();
+      expect(screen.getByText('$1800.00')).toBeInTheDocument();
+      expect(screen.getByText('$1900.00')).toBeInTheDocument();
+      expect(screen.getByText('$1500.00')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('passes currencyCode to formatting functions', () => {
