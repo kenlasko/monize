@@ -42,6 +42,7 @@ import { SkipPasswordCheck } from "./decorators/skip-password-check.decorator";
 import { DemoRestricted } from "../common/decorators/demo-restricted.decorator";
 import { DemoModeService } from "../common/demo-mode.service";
 import { generateCsrfToken, getCsrfCookieOptions } from "../common/csrf.util";
+import { encrypt, decrypt, derivePurposeKey } from "./crypto.util";
 
 @ApiTags("Authentication")
 @Controller("auth")
@@ -52,6 +53,7 @@ export class AuthController {
   private registrationEnabled: boolean;
   private force2fa: boolean;
   private useSecureCookies: boolean;
+  private trustedDeviceCookieKey: string;
 
   constructor(
     private authService: AuthService,
@@ -84,6 +86,33 @@ export class AuthController {
     this.useSecureCookies =
       this.configService.get<string>("NODE_ENV") === "production" &&
       !disableHttpsHeaders;
+
+    // Purpose-derived key for encrypting the trusted-device cookie value
+    // (CWE-312). The cookie carries the AES-256-GCM ciphertext of the
+    // trusted-device reference; the server decrypts on each login before
+    // using the value to look up the device record (by hash) in the DB.
+    const jwtSecret = this.configService.get<string>("JWT_SECRET")!;
+    this.trustedDeviceCookieKey = derivePurposeKey(
+      jwtSecret,
+      "trusted-device-cookie",
+    );
+  }
+
+  private encryptTrustedDeviceCookie(ref: string): string {
+    return encrypt(ref, this.trustedDeviceCookieKey);
+  }
+
+  private decryptTrustedDeviceCookie(
+    encryptedValue: string | undefined,
+  ): string | undefined {
+    if (!encryptedValue) return undefined;
+    try {
+      return decrypt(encryptedValue, this.trustedDeviceCookieKey);
+    } catch {
+      // Malformed or legacy unencrypted cookie: treat as absent and force
+      // the user through the normal 2FA flow on this login.
+      return undefined;
+    }
   }
 
   private getAccessCookieOptions() {
@@ -189,7 +218,9 @@ export class AuthController {
         "Local authentication is disabled. Please use OIDC to sign in.",
       );
     }
-    const trustedDeviceRef = req.cookies?.["trusted_device"];
+    const trustedDeviceRef = this.decryptTrustedDeviceCookie(
+      req.cookies?.["trusted_device"],
+    );
     const userAgent = req.headers?.["user-agent"];
     const result = await this.authService.login(
       loginDto,
@@ -462,13 +493,16 @@ export class AuthController {
 
     if (result.trustedDeviceRef) {
       // The trusted-device reference is a 64-byte random opaque identifier
-      // (see TwoFactorService.createTrustedDevice). The server persists only
-      // a SHA-256 hash of it; the cookie carries the raw reference used to
-      // look up the hash. This matches CodeQL's own recommended pattern for
-      // CWE-312: "store in the cookie a key that can be used to look up the
-      // sensitive information". The cookie is httpOnly, Secure (in
+      // (see TwoFactorService.createTrustedDevice). Before placing it in the
+      // cookie we AES-256-GCM-encrypt it with a purpose-derived key, so the
+      // cookie carries only ciphertext (CWE-312). The server decrypts on
+      // each login to recover the reference, then looks up the stored
+      // SHA-256 hash in the DB. The cookie is httpOnly, Secure (in
       // production), SameSite=Lax, and expires after 14 days.
-      res.cookie("trusted_device", result.trustedDeviceRef, {
+      const encryptedCookie = this.encryptTrustedDeviceCookie(
+        result.trustedDeviceRef,
+      );
+      res.cookie("trusted_device", encryptedCookie, {
         httpOnly: true,
         secure: this.useSecureCookies,
         sameSite: "lax",

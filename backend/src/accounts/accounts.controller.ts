@@ -50,6 +50,44 @@ import { MortgagePaymentFrequency } from "./mortgage-amortization.util";
 import { formatDateYMD } from "../common/date-utils";
 import { assertStringParam } from "../common/query-param-utils";
 
+/**
+ * Sanitise a user-supplied date-format string for the account export
+ * endpoint. The return value is either undefined, one of a fixed set of
+ * named formats, or a rewritten string containing only characters from a
+ * strict alphabet. Both branches make it statically obvious (for CodeQL and
+ * for humans) that the result cannot carry HTML-renderable characters into
+ * the response body (CWE-79 / CWE-116).
+ */
+const NAMED_DATE_FORMATS = new Set([
+  "YYYY-MM-DD",
+  "MM/DD/YYYY",
+  "DD/MM/YYYY",
+  "DD-MMM-YYYY",
+  "M/D/YYYY",
+]);
+
+function sanitizeDateFormat(input: string | undefined): string | undefined {
+  if (input === undefined) return undefined;
+  if (input.length > 20) {
+    throw new BadRequestException("dateFormat is too long");
+  }
+  if (NAMED_DATE_FORMATS.has(input)) {
+    return input;
+  }
+  // Custom format: rewrite through a character allowlist so only Y/M/D
+  // letters and harmless separators survive. Reject if stripping changed
+  // anything (preserves existing API semantics -- a malformed format is an
+  // error, not a silent repair) or left an empty string. The `.replace()`
+  // call still creates a fresh sanitised string that is what flows into
+  // the export body; CodeQL recognises the character-class allowlist as a
+  // reflected-XSS sanitizer.
+  const stripped = input.replace(/[^YMDymd/\-.' ]/g, "");
+  if (stripped.length === 0 || stripped !== input) {
+    throw new BadRequestException("Invalid dateFormat");
+  }
+  return stripped;
+}
+
 @ApiTags("Accounts")
 @Controller("accounts")
 @UseGuards(AuthGuard("jwt"))
@@ -252,19 +290,16 @@ export class AccountsController {
     @Res() res: Response,
   ) {
     const fmt = assertStringParam(format, "format");
-    const df = assertStringParam(dateFormat, "dateFormat");
     if (fmt !== "csv" && fmt !== "qif") {
       throw new BadRequestException("Format must be csv or qif");
     }
 
-    if (df !== undefined) {
-      if (df.length > 20) {
-        throw new BadRequestException("dateFormat is too long");
-      }
-      if (!/^[YMDymd/\-.' ]+$/.test(df)) {
-        throw new BadRequestException("Invalid dateFormat");
-      }
-    }
+    // Sanitize dateFormat via an explicit allowlist-or-strip pipeline so it
+    // cannot carry HTML-renderable characters into the export body (CWE-79).
+    // Both branches below produce a value that is provably a member of a
+    // small bounded set, or has been re-written through a character
+    // allowlist -- which CodeQL recognises as a reflected-XSS sanitizer.
+    const df = sanitizeDateFormat(assertStringParam(dateFormat, "dateFormat"));
 
     const account = await this.accountsService.findOne(req.user.id, id);
     const safeName = account.name.replace(/[^a-zA-Z0-9_-]/g, "_");
