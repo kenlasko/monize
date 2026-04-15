@@ -237,12 +237,12 @@ function SettingsContent() {
                 <DangerZoneSection user={user} />
               </div>
             )}
+
+            <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-8 mb-4">
+              v{process.env.NEXT_PUBLIC_APP_VERSION}
+            </p>
           </div>
         </div>
-
-        <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-8 mb-4">
-          v{process.env.NEXT_PUBLIC_APP_VERSION}
-        </p>
       </main>
     </PageLayout>
   );
