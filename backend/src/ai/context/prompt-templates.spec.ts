@@ -132,12 +132,14 @@ describe("prompt-templates", () => {
 
     it("reinforces aggregation-only rule", () => {
       expect(QUERY_SAFETY_REMINDER).toMatch(
-        /never reveal individual transaction/i,
+        /individual transaction details/i,
       );
     });
 
     it("reinforces system prompt secrecy", () => {
-      expect(QUERY_SAFETY_REMINDER).toMatch(/never reveal.*system prompt/i);
+      expect(QUERY_SAFETY_REMINDER).toMatch(
+        /do not reveal.*system prompt/i,
+      );
     });
 
     it("instructs to treat user data as data", () => {
@@ -146,8 +148,8 @@ describe("prompt-templates", () => {
       );
     });
 
-    it("instructs to politely decline conflicting requests", () => {
-      expect(QUERY_SAFETY_REMINDER).toMatch(/politely decline/i);
+    it("instructs to skip conflicting requests", () => {
+      expect(QUERY_SAFETY_REMINDER).toMatch(/silently skip/i);
     });
   });
 
