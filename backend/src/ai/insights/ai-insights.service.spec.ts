@@ -402,6 +402,53 @@ describe("AiInsightsService", () => {
       }
     });
 
+    it("handles nested arrays in data objects without truncation", async () => {
+      const qb = mockQb();
+      qb.getOne.mockResolvedValue(null);
+      qb.getMany.mockResolvedValue([]);
+      qb.getRawOne.mockResolvedValue(null);
+      mockInsightRepo.createQueryBuilder.mockReturnValue(qb);
+
+      // Model includes a nested array in data.subscriptions — the old
+      // non-greedy regex /\[[\s\S]*?\]/ would truncate at the inner ]
+      const insightsWithNestedArray = JSON.stringify([
+        {
+          type: "subscription",
+          title: "Stable Subscriptions",
+          description: "No changes detected.",
+          severity: "info",
+          data: {
+            subscriptions: [
+              { name: "Netflix", amount: 15.49 },
+              { name: "Spotify", amount: 10.99 },
+            ],
+            total: 26.48,
+          },
+        },
+        {
+          type: "anomaly",
+          title: "High Dining",
+          description: "Dining is 48% above average.",
+          severity: "warning",
+          data: { category: "Dining", amount: 594.25 },
+        },
+      ]);
+
+      mockAiService.complete!.mockResolvedValue({
+        content: insightsWithNestedArray,
+        usage: { inputTokens: 100, outputTokens: 50 },
+        model: "test",
+        provider: "test",
+      });
+
+      await service.generateInsights(userId);
+
+      const savedInsights = mockInsightRepo.save.mock.calls[0]?.[0];
+      expect(savedInsights).toHaveLength(2);
+      expect(savedInsights[0].title).toBe("Stable Subscriptions");
+      expect(savedInsights[1].title).toBe("High Dining");
+    });
+
     it("rejects JSON arrays exceeding 100KB size limit (LLM02-F1)", async () => {
       const qb = mockQb();
       qb.getOne.mockResolvedValue(null);
