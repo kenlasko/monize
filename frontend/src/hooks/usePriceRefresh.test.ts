@@ -135,19 +135,24 @@ describe('usePriceRefresh', () => {
     expect(investmentsApi.refreshSelectedPrices).toHaveBeenCalledWith(['s-1']);
   });
 
-  it('calls onRefreshComplete callback', async () => {
+  it('calls onRefreshComplete callback with lastUpdated from the refresh result', async () => {
     const onRefreshComplete = vi.fn();
     vi.mocked(investmentsApi.getPortfolioSummary).mockResolvedValue({
       holdings: [{ securityId: 's-1', quantity: 10 }],
     } as any);
     vi.mocked(investmentsApi.refreshSelectedPrices).mockResolvedValue({
-      updated: 1, failed: 0, totalSecurities: 1, skipped: 0, results: [], lastUpdated: '',
+      updated: 1,
+      failed: 0,
+      totalSecurities: 1,
+      skipped: 0,
+      results: [],
+      lastUpdated: '2026-04-15T14:06:00Z',
     });
 
     const { result } = renderHook(() => usePriceRefresh({ onRefreshComplete }));
     await act(async () => {
       await result.current.triggerManualRefresh();
     });
-    expect(onRefreshComplete).toHaveBeenCalled();
+    expect(onRefreshComplete).toHaveBeenCalledWith('2026-04-15T14:06:00Z');
   });
 });

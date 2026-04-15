@@ -141,9 +141,17 @@ export function useInvestmentData() {
   }, []);
 
   const { isRefreshing: isRefreshingPrices, triggerManualRefresh: handleRefreshPrices, triggerAutoRefresh } = usePriceRefresh({
-    onRefreshComplete: () => {
+    onRefreshComplete: (lastUpdated) => {
       loadAllPortfolioData(selectedAccountIds, currentPage, transactionFilters);
-      loadPriceStatus();
+      // Prefer the refresh result's timestamp: savePriceData UPDATEs existing
+      // rows in place, so the DB-backed lastUpdated (createdAt) wouldn't advance
+      // on same-day refreshes. Fall back to the DB value if the result didn't
+      // carry one (e.g. when no securities to refresh).
+      if (lastUpdated) {
+        setLastPriceUpdate(lastUpdated);
+      } else {
+        loadPriceStatus();
+      }
     },
   });
 

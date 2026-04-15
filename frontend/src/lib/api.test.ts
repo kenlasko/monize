@@ -281,6 +281,66 @@ describe('apiClient', () => {
       expect(mockSetBackendDown).toHaveBeenCalled();
     });
 
+    it('does NOT set backend down on client-side timeout (ECONNABORTED)', async () => {
+      mockSetBackendDown.mockClear();
+      vi.resetModules();
+
+      vi.doMock('@/store/connectionStore', () => ({
+        useConnectionStore: {
+          getState: () => ({
+            setBackendDown: mockSetBackendDown,
+          }),
+        },
+      }));
+
+      const { apiClient: freshClient } = await import('@/lib/api');
+      const interceptors = freshClient.interceptors.response as any;
+      const handlers = interceptors.handlers;
+      const errorHandler = handlers.find((h: any) => h?.rejected);
+
+      const mockError = {
+        code: 'ECONNABORTED',
+        message: 'timeout of 10000ms exceeded',
+        config: {
+          headers: new AxiosHeaders(),
+        },
+        // No response property -- but this is a client-side timeout,
+        // not an actual backend outage.
+      };
+
+      await expect(errorHandler.rejected(mockError)).rejects.toEqual(mockError);
+      expect(mockSetBackendDown).not.toHaveBeenCalled();
+    });
+
+    it('does NOT set backend down on client-side cancellation (ERR_CANCELED)', async () => {
+      mockSetBackendDown.mockClear();
+      vi.resetModules();
+
+      vi.doMock('@/store/connectionStore', () => ({
+        useConnectionStore: {
+          getState: () => ({
+            setBackendDown: mockSetBackendDown,
+          }),
+        },
+      }));
+
+      const { apiClient: freshClient } = await import('@/lib/api');
+      const interceptors = freshClient.interceptors.response as any;
+      const handlers = interceptors.handlers;
+      const errorHandler = handlers.find((h: any) => h?.rejected);
+
+      const mockError = {
+        code: 'ERR_CANCELED',
+        message: 'canceled',
+        config: {
+          headers: new AxiosHeaders(),
+        },
+      };
+
+      await expect(errorHandler.rejected(mockError)).rejects.toEqual(mockError);
+      expect(mockSetBackendDown).not.toHaveBeenCalled();
+    });
+
     it('does not attempt CSRF or token refresh on 502', async () => {
       mockSetBackendDown.mockClear();
       const axiosGetSpy = vi.spyOn(axios, 'get');

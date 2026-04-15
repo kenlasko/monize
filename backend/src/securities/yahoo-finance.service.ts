@@ -66,7 +66,7 @@ const YAHOO_SECTOR_NAMES: Record<string, string> = {
 export class YahooFinanceService {
   private readonly logger = new Logger(YahooFinanceService.name);
 
-  private static readonly FETCH_TIMEOUT_MS = 30000;
+  private static readonly FETCH_TIMEOUT_MS = 10000;
   private static readonly USER_AGENT =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 

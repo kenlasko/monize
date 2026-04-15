@@ -88,8 +88,16 @@ apiClient.interceptors.response.use(
       _authRetried?: boolean;
     };
 
-    // Handle 502 (backend unavailable) or network errors (no response at all)
-    if (error.response?.status === 502 || !error.response) {
+    // Handle 502 (backend unavailable) or network errors (no response at all).
+    // A client-side timeout (axios code ECONNABORTED / ERR_CANCELED) means the
+    // backend was simply slow to answer this specific request; it does NOT
+    // indicate the backend is down, so skip the banner in that case.
+    const isClientTimeout =
+      error.code === 'ECONNABORTED' || error.code === 'ERR_CANCELED';
+    if (
+      !isClientTimeout &&
+      (error.response?.status === 502 || !error.response)
+    ) {
       const { useConnectionStore } = await import('@/store/connectionStore');
       useConnectionStore.getState().setBackendDown();
       return Promise.reject(error);

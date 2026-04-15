@@ -106,23 +106,17 @@ export class SecurityPriceService {
       symbolGroups.set(key, group);
     }
 
-    for (const group of symbolGroups.values()) {
-      const representative = group[0];
-      const yahooSymbol = this.yahooFinance.getYahooSymbol(
-        representative.symbol,
-        representative.exchange,
-      );
-      let quote = await this.yahooFinance.fetchQuote(yahooSymbol);
+    // Fetch all quotes in parallel so one slow symbol doesn't block the others
+    const groups = [...symbolGroups.values()];
+    const quotes = await Promise.all(
+      groups.map((group) =>
+        this.fetchQuoteWithFallback(group[0].symbol, group[0].exchange),
+      ),
+    );
 
-      if (!quote && yahooSymbol === representative.symbol) {
-        const alternateSymbols = this.yahooFinance.getAlternateSymbols(
-          representative.symbol,
-        );
-        for (const altSymbol of alternateSymbols) {
-          quote = await this.yahooFinance.fetchQuote(altSymbol);
-          if (quote) break;
-        }
-      }
+    for (let i = 0; i < groups.length; i++) {
+      const group = groups[i];
+      const quote = quotes[i];
 
       if (!quote || quote.regularMarketPrice === undefined) {
         for (const security of group) {
@@ -199,22 +193,16 @@ export class SecurityPriceService {
     let updated = 0;
     let failed = 0;
 
-    for (const security of securities) {
-      const yahooSymbol = this.yahooFinance.getYahooSymbol(
-        security.symbol,
-        security.exchange,
-      );
-      let quote = await this.yahooFinance.fetchQuote(yahooSymbol);
+    // Fetch all quotes in parallel so one slow symbol doesn't block the others
+    const quotes = await Promise.all(
+      securities.map((security) =>
+        this.fetchQuoteWithFallback(security.symbol, security.exchange),
+      ),
+    );
 
-      if (!quote && yahooSymbol === security.symbol) {
-        const alternateSymbols = this.yahooFinance.getAlternateSymbols(
-          security.symbol,
-        );
-        for (const altSymbol of alternateSymbols) {
-          quote = await this.yahooFinance.fetchQuote(altSymbol);
-          if (quote) break;
-        }
-      }
+    for (let i = 0; i < securities.length; i++) {
+      const security = securities[i];
+      const quote = quotes[i];
 
       if (!quote || quote.regularMarketPrice === undefined) {
         results.push({
@@ -348,6 +336,29 @@ export class SecurityPriceService {
       order: { createdAt: "DESC" },
     });
     return latest?.createdAt ?? null;
+  }
+
+  /**
+   * Fetch a current quote with alternate-symbol fallback.
+   * Tries the primary Yahoo symbol, then Canadian suffix variants (.TO/.V/.CN)
+   * when the security had no exchange-based suffix.
+   */
+  private async fetchQuoteWithFallback(
+    symbol: string,
+    exchange: string | null,
+  ): Promise<YahooQuoteResult | null> {
+    const yahooSymbol = this.yahooFinance.getYahooSymbol(symbol, exchange);
+    let quote = await this.yahooFinance.fetchQuote(yahooSymbol);
+
+    if (!quote && yahooSymbol === symbol) {
+      const alternateSymbols = this.yahooFinance.getAlternateSymbols(symbol);
+      for (const altSymbol of alternateSymbols) {
+        quote = await this.yahooFinance.fetchQuote(altSymbol);
+        if (quote) break;
+      }
+    }
+
+    return quote;
   }
 
   /**

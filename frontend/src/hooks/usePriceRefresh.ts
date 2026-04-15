@@ -45,7 +45,7 @@ export function setRefreshInProgress(value: boolean): void {
 }
 
 interface UsePriceRefreshOptions {
-  onRefreshComplete?: () => Promise<void> | void;
+  onRefreshComplete?: (lastUpdated?: string) => Promise<void> | void;
 }
 
 interface UsePriceRefreshReturn {
@@ -81,7 +81,7 @@ export function usePriceRefresh({ onRefreshComplete }: UsePriceRefreshOptions = 
           toast.success(`${result.updated} security price${result.updated !== 1 ? 's' : ''} updated`);
         }
       }
-      await onRefreshComplete?.();
+      await onRefreshComplete?.(result.lastUpdated);
     } catch (error) {
       logger.error('Failed to refresh prices:', error);
       if (!silent) toast.error(getErrorMessage(error, 'Failed to refresh prices'));
