@@ -7,6 +7,8 @@ import { TransactionAnalyticsService } from "../../transactions/transaction-anal
 import { NetWorthService } from "../../net-worth/net-worth.service";
 import { BudgetsService } from "../../budgets/budgets.service";
 import { BudgetReportsService } from "../../budgets/budget-reports.service";
+import { PortfolioService } from "../../securities/portfolio.service";
+import { AccountType } from "../../accounts/entities/account.entity";
 import {
   getCurrentMonthPeriodDates,
   getPreviousMonthPeriodDates,
@@ -48,6 +50,7 @@ export class ToolExecutorService {
     private readonly budgetsService: BudgetsService,
     @Inject(forwardRef(() => BudgetReportsService))
     private readonly budgetReportsService: BudgetReportsService,
+    private readonly portfolioService: PortfolioService,
     @InjectRepository(Transaction)
     private readonly transactionRepo: Repository<Transaction>,
     @InjectRepository(Category)
@@ -360,6 +363,13 @@ export class ToolExecutorService {
     const allAccounts = await this.accountsService.findAll(userId, false);
     const summary = await this.accountsService.getSummary(userId);
 
+    // Brokerage (and standalone investment) accounts carry securities, not
+    // cash, so `currentBalance` is 0 for them — the real value lives in
+    // `holdings.quantity * latest price`. Pull per-account market values so
+    // both the per-account list and the totals reflect reality.
+    const marketValues =
+      await this.portfolioService.getAccountMarketValues(userId);
+
     let accounts = allAccounts;
     if (accountNames && accountNames.length > 0) {
       const lowerNames = new Set(accountNames.map((n) => n.toLowerCase()));
@@ -368,24 +378,42 @@ export class ToolExecutorService {
       );
     }
 
-    const accountList = accounts.map((a) => ({
-      name: a.name,
-      type: a.accountType,
-      balance: Number(a.currentBalance),
-      currency: a.currencyCode,
-    }));
+    const accountList = accounts.map((a) => {
+      const cashBalance = Number(a.currentBalance);
+      const marketValue = marketValues.get(a.id) ?? 0;
+      return {
+        name: a.name,
+        type: a.accountType,
+        balance: cashBalance + marketValue,
+        currency: a.currencyCode,
+      };
+    });
+
+    // The base summary only sums `currentBalance`, so investment accounts with
+    // holdings contribute 0 to totalAssets / netWorth. Add in each excluded-
+    // from-net-worth-respecting investment account's market value here so the
+    // AI sees accurate totals.
+    let extraInvestmentAssets = 0;
+    for (const account of allAccounts) {
+      if (account.accountType !== AccountType.INVESTMENT) continue;
+      if (account.excludeFromNetWorth) continue;
+      const marketValue = marketValues.get(account.id);
+      if (marketValue) extraInvestmentAssets += marketValue;
+    }
+    const totalAssets = summary.totalAssets + extraInvestmentAssets;
+    const netWorth = totalAssets - summary.totalLiabilities;
 
     const data = {
       accounts: accountList,
-      totalAssets: summary.totalAssets,
+      totalAssets,
       totalLiabilities: summary.totalLiabilities,
-      netWorth: summary.netWorth,
+      netWorth,
       totalAccounts: summary.totalAccounts,
     };
 
     return {
       data,
-      summary: `${accounts.length} accounts. Net worth: ${summary.netWorth.toFixed(2)}, Assets: ${summary.totalAssets.toFixed(2)}, Liabilities: ${summary.totalLiabilities.toFixed(2)}`,
+      summary: `${accounts.length} accounts. Net worth: ${netWorth.toFixed(2)}, Assets: ${totalAssets.toFixed(2)}, Liabilities: ${summary.totalLiabilities.toFixed(2)}`,
       sources: [
         {
           type: "accounts",

@@ -488,6 +488,64 @@ export class PortfolioService {
   }
 
   /**
+   * Compute per-account holdings market value in each account's own currency.
+   *
+   * Lightweight alternative to getPortfolioSummary() for callers that only need
+   * "how much are the holdings worth in this account?" without TWR/CAGR/cost
+   * basis. Useful for balance-style queries where an account's current balance
+   * should reflect its holdings, not just the cash side.
+   *
+   * Only brokerage and standalone investment accounts contribute; cash-only
+   * accounts are omitted. Accounts whose holdings have no current price are
+   * also omitted (caller should treat "missing" as "no market-value info
+   * available" rather than zero).
+   */
+  async getAccountMarketValues(userId: string): Promise<Map<string, number>> {
+    const accounts = await this.getInvestmentAccounts(userId);
+    const { holdingsAccountIds } =
+      this.calculationService.categoriseAccounts(accounts);
+    if (holdingsAccountIds.length === 0) return new Map();
+
+    const holdings = await this.holdingsRepository.find({
+      where: { accountId: In(holdingsAccountIds) },
+      relations: ["security"],
+    });
+    if (holdings.length === 0) return new Map();
+
+    const securityIds = [...new Set(holdings.map((h) => h.securityId))];
+    const priceMap = await this.getLatestPrices(securityIds);
+
+    const accountCurrency = new Map<string, string>();
+    for (const a of accounts) accountCurrency.set(a.id, a.currencyCode);
+
+    const rateCache = new Map<string, number>();
+    const result = new Map<string, number>();
+    for (const h of holdings) {
+      if (Math.abs(Number(h.quantity)) < 0.0001) continue;
+      const price = priceMap.get(h.securityId);
+      if (price == null) continue;
+
+      const marketValue = Number(h.quantity) * price;
+      const securityCurrency = h.security.currencyCode;
+      const acctCurrency = accountCurrency.get(h.accountId) ?? securityCurrency;
+
+      const valueInAccountCurrency =
+        await this.calculationService.convertToDefault(
+          marketValue,
+          securityCurrency,
+          acctCurrency,
+          rateCache,
+        );
+
+      result.set(
+        h.accountId,
+        (result.get(h.accountId) ?? 0) + valueInAccountCurrency,
+      );
+    }
+    return result;
+  }
+
+  /**
    * Get asset allocation breakdown
    * Note: This now just extracts the pre-computed allocation from getPortfolioSummary
    * to maintain backwards compatibility. Prefer using summary.allocation directly.

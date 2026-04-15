@@ -29,6 +29,7 @@ import { CategoriesModule } from "../categories/categories.module";
 import { TransactionsModule } from "../transactions/transactions.module";
 import { NetWorthModule } from "../net-worth/net-worth.module";
 import { BudgetsModule } from "../budgets/budgets.module";
+import { SecuritiesModule } from "../securities/securities.module";
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { BudgetsModule } from "../budgets/budgets.module";
     forwardRef(() => TransactionsModule),
     forwardRef(() => NetWorthModule),
     forwardRef(() => BudgetsModule),
+    SecuritiesModule,
   ],
   providers: [
     AiService,

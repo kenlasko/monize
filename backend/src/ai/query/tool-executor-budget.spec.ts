@@ -7,6 +7,7 @@ import { TransactionAnalyticsService } from "../../transactions/transaction-anal
 import { NetWorthService } from "../../net-worth/net-worth.service";
 import { BudgetsService } from "../../budgets/budgets.service";
 import { BudgetReportsService } from "../../budgets/budget-reports.service";
+import { PortfolioService } from "../../securities/portfolio.service";
 import { Transaction } from "../../transactions/entities/transaction.entity";
 import { Category } from "../../categories/entities/category.entity";
 import {
@@ -195,6 +196,12 @@ describe("ToolExecutorService - get_budget_status", () => {
         },
         { provide: BudgetsService, useValue: mockBudgetsService },
         { provide: BudgetReportsService, useValue: mockBudgetReportsService },
+        {
+          provide: PortfolioService,
+          useValue: {
+            getAccountMarketValues: jest.fn().mockResolvedValue(new Map()),
+          },
+        },
         {
           provide: getRepositoryToken(Transaction),
           useValue: {
