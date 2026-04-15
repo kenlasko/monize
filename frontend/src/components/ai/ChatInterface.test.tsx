@@ -1,7 +1,27 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@/test/render';
 import { ChatInterface, AI_CHAT_STORAGE_KEY } from './ChatInterface';
+import { useAiChatStore, type ChatMessage } from '@/store/aiChatStore';
 import type { StreamCallbacks } from '@/types/ai';
+
+// The Zustand persist middleware wraps state as { state: {...}, version: 0 }.
+// Helpers let tests seed and inspect the persisted blob without mirroring that
+// shape inline everywhere.
+function seedPersistedMessages(messages: ChatMessage[]) {
+  window.localStorage.setItem(
+    AI_CHAT_STORAGE_KEY,
+    JSON.stringify({ state: { messages }, version: 0 }),
+  );
+  // Push the same messages into the live store so the component renders them
+  // without waiting for rehydration on a remounted store.
+  useAiChatStore.setState({ messages });
+}
+
+function readPersistedMessages(): ChatMessage[] | null {
+  const raw = window.localStorage.getItem(AI_CHAT_STORAGE_KEY);
+  if (!raw) return null;
+  return JSON.parse(raw).state.messages;
+}
 
 // Capture the callbacks from queryStream calls
 let capturedCallbacks: StreamCallbacks | null = null;
@@ -33,10 +53,17 @@ describe('ChatInterface', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     capturedCallbacks = null;
-    // Chat now persists to localStorage. The test setup's mock is shared across
-    // tests, so clear the key to prevent messages from one test bleeding into
-    // the next.
+    // Chat state lives in a Zustand store that survives across tests (singleton)
+    // and persists to a shared localStorage mock — reset both so messages from
+    // one test don't bleed into the next.
     window.localStorage.removeItem(AI_CHAT_STORAGE_KEY);
+    useAiChatStore.setState({
+      messages: [],
+      isLoading: false,
+      thinking: { active: false, message: '', liveText: '', tools: [] },
+      _abortController: null,
+      _activeAssistantId: null,
+    });
   });
 
   it('shows suggested queries when no messages', async () => {
@@ -471,14 +498,11 @@ describe('ChatInterface', () => {
   });
 
   describe('conversation persistence', () => {
-    it('restores prior conversation from localStorage on mount', async () => {
-      window.localStorage.setItem(
-        AI_CHAT_STORAGE_KEY,
-        JSON.stringify([
-          { id: 'user-1', role: 'user', content: 'What did I spend?' },
-          { id: 'assistant-1', role: 'assistant', content: 'You spent $42.' },
-        ]),
-      );
+    it('restores prior conversation from the store on mount', async () => {
+      seedPersistedMessages([
+        { id: 'user-1', role: 'user', content: 'What did I spend?' },
+        { id: 'assistant-1', role: 'assistant', content: 'You spent $42.' },
+      ]);
 
       await renderChat();
 
@@ -495,48 +519,93 @@ describe('ChatInterface', () => {
       fireEvent.change(textarea, { target: { value: 'Balance?' } });
       fireEvent.click(screen.getByTitle('Send'));
 
-      const stored = window.localStorage.getItem(AI_CHAT_STORAGE_KEY);
+      const stored = readPersistedMessages();
       expect(stored).not.toBeNull();
-      const parsed = JSON.parse(stored as string);
-      expect(parsed).toHaveLength(1);
-      expect(parsed[0]).toMatchObject({ role: 'user', content: 'Balance?' });
+      expect(stored).toHaveLength(1);
+      expect(stored?.[0]).toMatchObject({ role: 'user', content: 'Balance?' });
+    });
+
+    it('keeps streaming into the store after the component unmounts', async () => {
+      // Simulates the user navigating away mid-query. The store keeps writing
+      // to messages and localStorage even with no component subscribed, so
+      // when they return the assistant response is fully there.
+      const { unmount } = await renderChat();
+
+      const textarea = screen.getByPlaceholderText(
+        'Ask about your finances...',
+      );
+      fireEvent.change(textarea, { target: { value: 'Q' } });
+      fireEvent.click(screen.getByTitle('Send'));
+
+      // User leaves the AI page
+      unmount();
+
+      // Stream completes in the background
+      act(() => {
+        capturedCallbacks?.onEvent({
+          type: 'content',
+          text: 'Backgrounded answer.',
+        });
+        capturedCallbacks?.onEvent({
+          type: 'done',
+          usage: { inputTokens: 10, outputTokens: 5, toolCalls: 0 },
+        });
+      });
+
+      const stored = readPersistedMessages();
+      expect(stored).toHaveLength(2);
+      expect(stored?.[1]).toMatchObject({
+        role: 'assistant',
+        content: 'Backgrounded answer.',
+        isStreaming: false,
+      });
+
+      // User returns to the AI page — the answer is shown, no spinner.
+      await renderChat();
+      expect(screen.getByText('Backgrounded answer.')).toBeInTheDocument();
+      expect(screen.getByTitle('Send')).toBeInTheDocument();
+      expect(screen.queryByTitle('Cancel')).not.toBeInTheDocument();
     });
 
     it('heals stuck isStreaming flag from an interrupted session', async () => {
+      // Simulate a previous tab that was killed mid-stream — the Zustand
+      // persist middleware would have written messages with isStreaming:true.
       window.localStorage.setItem(
         AI_CHAT_STORAGE_KEY,
-        JSON.stringify([
-          { id: 'user-1', role: 'user', content: 'Q' },
-          {
-            id: 'assistant-1',
-            role: 'assistant',
-            content: 'Partial answer',
-            isStreaming: true,
+        JSON.stringify({
+          state: {
+            messages: [
+              { id: 'user-1', role: 'user', content: 'Q' },
+              {
+                id: 'assistant-1',
+                role: 'assistant',
+                content: 'Partial answer',
+                isStreaming: true,
+              },
+            ],
           },
-        ]),
+          version: 0,
+        }),
       );
+      // Force the store to rehydrate from the seeded payload.
+      await useAiChatStore.persist.rehydrate();
 
       await renderChat();
 
-      // The "Send" button is shown (not the in-flight "Cancel" button),
-      // confirming the restored state isn't treated as an active request.
+      // Send button (not Cancel) confirms the restored state isn't treated
+      // as an in-flight request.
       expect(screen.getByTitle('Send')).toBeInTheDocument();
       expect(screen.queryByTitle('Cancel')).not.toBeInTheDocument();
 
-      const stored = JSON.parse(
-        window.localStorage.getItem(AI_CHAT_STORAGE_KEY) as string,
-      );
-      expect(stored[1].isStreaming).toBe(false);
+      const stored = readPersistedMessages();
+      expect(stored?.[1].isStreaming).toBe(false);
     });
 
     it('clears the conversation when Clear conversation is clicked', async () => {
-      window.localStorage.setItem(
-        AI_CHAT_STORAGE_KEY,
-        JSON.stringify([
-          { id: 'user-1', role: 'user', content: 'Hello' },
-          { id: 'assistant-1', role: 'assistant', content: 'Hi there' },
-        ]),
-      );
+      seedPersistedMessages([
+        { id: 'user-1', role: 'user', content: 'Hello' },
+        { id: 'assistant-1', role: 'assistant', content: 'Hi there' },
+      ]);
 
       await renderChat();
       expect(screen.getByText('Hello')).toBeInTheDocument();
@@ -545,10 +614,7 @@ describe('ChatInterface', () => {
 
       expect(screen.queryByText('Hello')).not.toBeInTheDocument();
       expect(screen.queryByText('Hi there')).not.toBeInTheDocument();
-      const stored = JSON.parse(
-        window.localStorage.getItem(AI_CHAT_STORAGE_KEY) as string,
-      );
-      expect(stored).toEqual([]);
+      expect(readPersistedMessages()).toEqual([]);
     });
 
     it('does not show the conversation header when there are no messages', async () => {
