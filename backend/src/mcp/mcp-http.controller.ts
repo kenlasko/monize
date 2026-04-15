@@ -295,11 +295,13 @@ export class McpHttpController implements OnModuleDestroy {
 
   private destroySession(sessionId: string) {
     const transport = this.transports.get(sessionId);
-    if (transport) transport.close().catch(() => {});
+    // Delete from maps BEFORE calling close() to prevent re-entrant loop:
+    // close() fires transport.onclose → destroySession() → close() → stack overflow
     this.transports.delete(sessionId);
     this.servers.delete(sessionId);
     this.sessionUsers.delete(sessionId);
     this.sessionCreatedAt.delete(sessionId);
+    if (transport) transport.close().catch(() => {});
   }
 
   private async validatePat(req: Request): Promise<McpUserContext | null> {
