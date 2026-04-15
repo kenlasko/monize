@@ -4,7 +4,7 @@
 
 # Monize
 > [!CAUTION] 
-> This project is 100% written by AI. I've done practically zero manual changes. I have spent hours prompting Claude Code for features, updates, fixes and tweaks. I have taken steps to ensure this is secure as it can be. I've performed numerous security audits and have implemented best-practice security measures as much as I can (including 2FA and OIDC support), but I can't personally guarantee the security of this code. YOU HAVE BEEN WARNED. 
+> This project is 100% written by AI. I've done practically zero manual changes. I am not a programmer by trade, but have dabbled in various languages over the years. This gives me high-level awareness on coding practices, but **I AM NOT SKILLED IN THE LANGUAGES USED IN THIS PRODUCT**. I have spent months prompting Claude Code for features, updates, fixes and tweaks. I have taken steps to ensure this is secure as it can be, given the constraints. I've performed numerous security audits (both AI-prompted and 3rd party) and have implemented best-practice security measures as much as I can (including 2FA and OIDC support). Every build must pass NPM audits and security scans before publishing. However, I can't personally guarantee the security of this code. **YOU HAVE BEEN WARNED**. 
 
 <div align="center">
 <table>
@@ -23,7 +23,7 @@
 </table>
 </div>
 
-A comprehensive personal finance management application built with NestJS and Next.js. Designed as a replacement for Microsoft Money. 100% built using farm-fresh, free-range Claude Code.
+A comprehensive personal finance management application built with NestJS and Next.js. Designed as a replacement for Microsoft Money and Intuit Quicken. 100% built using farm-fresh, free-range Claude Code.
 
 <div align="center">
 
