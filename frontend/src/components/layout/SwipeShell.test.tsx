@@ -37,6 +37,13 @@ vi.mock('./SwipeIndicator', () => ({
   ),
 }));
 
+// Mock UpdateAvailableBanner
+vi.mock('./UpdateAvailableBanner', () => ({
+  UpdateAvailableBanner: () => (
+    <div data-testid="update-available-banner">UpdateAvailableBanner</div>
+  ),
+}));
+
 describe('SwipeShell', () => {
   it('renders AppHeader and children on app pages', () => {
     mockPathname = '/dashboard';

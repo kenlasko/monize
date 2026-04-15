@@ -7,6 +7,7 @@ import { BackendDownBanner } from './BackendDownBanner';
 import { DemoModeBanner } from './DemoModeBanner';
 import { HttpWarningBanner } from './HttpWarningBanner';
 import { SwipeIndicator } from './SwipeIndicator';
+import { UpdateAvailableBanner } from './UpdateAvailableBanner';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 
 const AUTH_ROUTES = ['/login', '/register', '/forgot-password', '/reset-password', '/setup-2fa', '/change-password'];
@@ -38,6 +39,7 @@ export function SwipeShell({ children, httpsHeadersActive = false }: SwipeShellP
       <HttpWarningBanner httpsHeadersActive={httpsHeadersActive} />
       <BackendDownBanner httpsHeadersActive={httpsHeadersActive} />
       <DemoModeBanner />
+      <UpdateAvailableBanner />
       <SwipeIndicator currentIndex={currentIndex} totalPages={totalPages} isSwipePage={isSwipePage} />
       <div ref={contentRef}>
         {children}

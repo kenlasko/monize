@@ -77,6 +77,14 @@ export class UserPreference {
   })
   preferredExchanges: string[];
 
+  @Column({
+    name: "dismissed_update_version",
+    type: "varchar",
+    length: 50,
+    nullable: true,
+  })
+  dismissedUpdateVersion: string | null;
+
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;
 

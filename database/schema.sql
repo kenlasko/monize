@@ -491,6 +491,7 @@ CREATE TABLE user_preferences (
     show_created_at BOOLEAN DEFAULT false,
     time_format VARCHAR(10) DEFAULT '24h',
     preferred_exchanges TEXT[] DEFAULT '{}',
+    dismissed_update_version VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

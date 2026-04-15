@@ -912,9 +912,7 @@ describe("AuthController", () => {
       // the plaintext is not leaked.
       expect(res.cookie).toHaveBeenCalledWith(
         "trusted_device",
-        expect.stringMatching(
-          /^[0-9a-f]+:[0-9a-f]+:[0-9a-f]+:[0-9a-f]+$/i,
-        ),
+        expect.stringMatching(/^[0-9a-f]+:[0-9a-f]+:[0-9a-f]+:[0-9a-f]+$/i),
         expect.objectContaining({
           httpOnly: true,
           sameSite: "lax",

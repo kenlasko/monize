@@ -41,6 +41,7 @@ import { BudgetsModule } from "./budgets/budgets.module";
 import { TagsModule } from "./tags/tags.module";
 import { BackupModule } from "./backup/backup.module";
 import { ActionHistoryModule } from "./action-history/action-history.module";
+import { UpdatesModule } from "./updates/updates.module";
 
 @Module({
   imports: [
@@ -114,6 +115,7 @@ import { ActionHistoryModule } from "./action-history/action-history.module";
     TagsModule,
     BackupModule,
     ActionHistoryModule,
+    UpdatesModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },
