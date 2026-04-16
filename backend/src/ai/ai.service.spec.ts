@@ -321,6 +321,55 @@ describe("AiService", () => {
         "Connection test failed. Check your provider settings.",
       );
     });
+
+    it("reports modelAvailable: true when verifyModel succeeds", async () => {
+      const config = makeConfig();
+      mockConfigRepository.findOne.mockResolvedValue(config);
+      mockProviderFactory.createProvider!.mockReturnValue({
+        isAvailable: jest.fn().mockResolvedValue(true),
+        verifyModel: jest
+          .fn()
+          .mockResolvedValue({ ok: true, model: "claude-sonnet-4-20250514" }),
+      });
+
+      const result = await service.testConnection(userId, "config-1");
+      expect(result.available).toBe(true);
+      expect(result.modelAvailable).toBe(true);
+      expect(result.model).toBe("claude-sonnet-4-20250514");
+    });
+
+    it("reports modelAvailable: false with the provider-supplied reason when the model is missing", async () => {
+      const config = makeConfig();
+      mockConfigRepository.findOne.mockResolvedValue(config);
+      mockProviderFactory.createProvider!.mockReturnValue({
+        isAvailable: jest.fn().mockResolvedValue(true),
+        verifyModel: jest.fn().mockResolvedValue({
+          ok: false,
+          model: "claude-sonnet-4-20250514",
+          reason: 'Model "claude-sonnet-4-20250514" was not found.',
+        }),
+      });
+
+      const result = await service.testConnection(userId, "config-1");
+      expect(result.available).toBe(true);
+      expect(result.modelAvailable).toBe(false);
+      expect(result.modelError).toBe(
+        'Model "claude-sonnet-4-20250514" was not found.',
+      );
+    });
+
+    it("skips model verification when the provider doesn't implement verifyModel", async () => {
+      const config = makeConfig();
+      mockConfigRepository.findOne.mockResolvedValue(config);
+      mockProviderFactory.createProvider!.mockReturnValue({
+        isAvailable: jest.fn().mockResolvedValue(true),
+        // no verifyModel method
+      });
+
+      const result = await service.testConnection(userId, "config-1");
+      expect(result.available).toBe(true);
+      expect(result.modelAvailable).toBeUndefined();
+    });
   });
 
   describe("complete()", () => {

@@ -8,6 +8,7 @@ import {
   AiToolResponse,
   AiToolStreamChunk,
   AiMessage,
+  ModelVerificationResult,
 } from "./ai-provider.interface";
 import { randomUUID } from "crypto";
 import { longRunningFetch } from "./long-running-fetch";
@@ -615,6 +616,59 @@ export class OllamaProvider implements AiProvider {
       }
     } catch {
       return false;
+    }
+  }
+
+  async verifyModel(): Promise<ModelVerificationResult> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    try {
+      const response = await fetch(`${this.baseUrl}/api/tags`, {
+        signal: controller.signal,
+        headers: this.getAuthHeaders(),
+      });
+      if (!response.ok) {
+        return {
+          ok: false,
+          model: this.modelId,
+          reason: `Provider /api/tags returned ${response.status}`,
+        };
+      }
+      const body = (await response.json()) as {
+        models?: Array<{ name?: string; model?: string }>;
+      };
+      const names = new Set<string>();
+      for (const m of body.models ?? []) {
+        if (typeof m.name === "string") names.add(m.name);
+        if (typeof m.model === "string") names.add(m.model);
+      }
+      // Ollama treats "llama3" and "llama3:latest" as the same tag; try
+      // both so a user who omits the tag suffix still validates.
+      if (
+        names.has(this.modelId) ||
+        names.has(`${this.modelId}:latest`) ||
+        (this.modelId.endsWith(":latest") &&
+          names.has(this.modelId.replace(/:latest$/, "")))
+      ) {
+        return { ok: true, model: this.modelId };
+      }
+      return {
+        ok: false,
+        model: this.modelId,
+        reason:
+          names.size === 0
+            ? "No models are installed on this Ollama host."
+            : `Model "${this.modelId}" is not installed. Available: ${[...names].slice(0, 5).join(", ")}${names.size > 5 ? ", ..." : ""}.`,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return {
+        ok: false,
+        model: this.modelId,
+        reason: `Could not reach provider to verify model: ${message}`,
+      };
+    } finally {
+      clearTimeout(timeout);
     }
   }
 }

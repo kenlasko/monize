@@ -9,6 +9,7 @@ import {
   AiToolResponse,
   AiToolStreamChunk,
   AiMessage,
+  ModelVerificationResult,
 } from "./ai-provider.interface";
 import { longRunningFetch } from "./long-running-fetch";
 
@@ -338,6 +339,41 @@ export class AnthropicProvider implements AiProvider {
       }
     } catch {
       return false;
+    }
+  }
+
+  async verifyModel(): Promise<ModelVerificationResult> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    try {
+      await this.client.models.retrieve(this.modelId, undefined, {
+        signal: controller.signal,
+      });
+      return { ok: true, model: this.modelId };
+    } catch (error) {
+      const status = (error as { status?: number })?.status;
+      const raw = error instanceof Error ? error.message : String(error);
+      if (status === 404) {
+        return {
+          ok: false,
+          model: this.modelId,
+          reason: `Model "${this.modelId}" was not found. Check the model id for typos (e.g. claude-sonnet-4-20250514).`,
+        };
+      }
+      if (status === 401 || status === 403) {
+        return {
+          ok: false,
+          model: this.modelId,
+          reason: `Authentication failed (${status}). The API key may be invalid or lack access to this model.`,
+        };
+      }
+      return {
+        ok: false,
+        model: this.modelId,
+        reason: `Could not verify model: ${raw}`,
+      };
+    } finally {
+      clearTimeout(timeout);
     }
   }
 }

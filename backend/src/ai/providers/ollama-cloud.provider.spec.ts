@@ -175,4 +175,36 @@ describe("OllamaCloudProvider", () => {
       }),
     );
   });
+
+  describe("verifyModel()", () => {
+    it("returns ok when the configured model is in /api/tags", async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            models: [{ name: "qwen3:30b-cloud" }, { name: "other:cloud" }],
+          }),
+      });
+
+      const result = await provider.verifyModel();
+      expect(result).toEqual({ ok: true, model: "qwen3:30b-cloud" });
+    });
+
+    it("returns a helpful reason when the model is not in the catalogue", async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            models: [{ name: "qwen3:8b-cloud" }, { name: "other:cloud" }],
+          }),
+      });
+
+      const result = await provider.verifyModel();
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.model).toBe("qwen3:30b-cloud");
+        expect(result.reason).toMatch(/not installed/i);
+      }
+    });
+  });
 });

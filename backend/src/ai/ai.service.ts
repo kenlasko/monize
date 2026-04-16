@@ -218,10 +218,9 @@ export class AiService {
   ): Promise<AiConnectionTestResponse> {
     const config = await this.getConfig(userId, configId);
 
+    let provider;
     try {
-      const provider = this.providerFactory.createProvider(config);
-      const available = await provider.isAvailable();
-      return { available };
+      provider = this.providerFactory.createProvider(config);
     } catch (error) {
       const rawMessage =
         error instanceof Error ? error.message : "Unknown error";
@@ -231,6 +230,61 @@ export class AiService {
       return {
         available: false,
         error: "Connection test failed. Check your provider settings.",
+      };
+    }
+
+    let available: boolean;
+    try {
+      available = await provider.isAvailable();
+    } catch (error) {
+      const rawMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      this.logger.warn(
+        `Test connection failed for config ${configId}: ${rawMessage}`,
+      );
+      return {
+        available: false,
+        error: "Connection test failed. Check your provider settings.",
+      };
+    }
+
+    if (!available) {
+      return { available: false };
+    }
+
+    // Server is reachable -- now verify the configured model actually
+    // works so we can warn the user about typos, un-pulled Ollama
+    // models, or keys that lack access to the requested model.
+    if (!provider.verifyModel || !config.model) {
+      return { available: true, model: config.model ?? undefined };
+    }
+
+    try {
+      const verification = await provider.verifyModel();
+      if (verification.ok) {
+        return {
+          available: true,
+          modelAvailable: true,
+          model: verification.model,
+        };
+      }
+      return {
+        available: true,
+        modelAvailable: false,
+        model: verification.model,
+        modelError: verification.reason,
+      };
+    } catch (error) {
+      const rawMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      this.logger.warn(
+        `Model verification failed for config ${configId}: ${rawMessage}`,
+      );
+      return {
+        available: true,
+        modelAvailable: false,
+        model: config.model ?? undefined,
+        modelError: "Could not verify the configured model.",
       };
     }
   }

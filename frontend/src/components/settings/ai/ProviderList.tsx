@@ -25,18 +25,41 @@ export function ProviderList({ configs, encryptionAvailable, onConfigsChanged, h
   const [editingConfig, setEditingConfig] = useState<AiProviderConfig | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  const runPostSaveTest = async (configId: string) => {
+    // Fire-and-forget background check so the form can close immediately
+    // even when the test takes a few seconds (a 1-token inference can
+    // be slow on Ollama / CPU-only backends).
+    try {
+      const result = await aiApi.testConnection(configId);
+      if (!result.available) {
+        toast.error(result.error || 'Saved, but the provider could not be reached. Double-check the URL/API key.', { duration: 7000 });
+      } else if (result.modelAvailable === false) {
+        toast.error(
+          result.modelError || `Saved, but model "${result.model ?? 'unknown'}" is not available on this provider.`,
+          { duration: 7000 },
+        );
+      } else if (result.modelAvailable) {
+        toast.success(`Model "${result.model}" is ready.`);
+      }
+    } catch {
+      // Non-fatal: the save itself already succeeded. Skip the noise.
+    }
+  };
+
   const handleCreate = async (data: CreateAiProviderConfig | UpdateAiProviderConfig) => {
-    await aiApi.createConfig(data as CreateAiProviderConfig);
+    const created = await aiApi.createConfig(data as CreateAiProviderConfig);
     toast.success('Provider added');
     onConfigsChanged();
+    void runPostSaveTest(created.id);
   };
 
   const handleUpdate = async (data: CreateAiProviderConfig | UpdateAiProviderConfig) => {
     if (!editingConfig) return;
-    await aiApi.updateConfig(editingConfig.id, data as UpdateAiProviderConfig);
+    const updated = await aiApi.updateConfig(editingConfig.id, data as UpdateAiProviderConfig);
     toast.success('Provider updated');
     setEditingConfig(null);
     onConfigsChanged();
+    void runPostSaveTest(updated.id);
   };
 
   const handleDelete = async (id: string) => {

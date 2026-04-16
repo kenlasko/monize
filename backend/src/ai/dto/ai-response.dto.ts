@@ -72,6 +72,18 @@ export interface AiStatusResponse {
 }
 
 export interface AiConnectionTestResponse {
+  /** True when the provider endpoint itself is reachable. */
   available: boolean;
+  /** Generic connection error, surfaced to the user. */
   error?: string;
+  /**
+   * True when the configured model responded to a probe. Absent when the
+   * provider doesn't implement model verification (treat as "unknown"),
+   * or when `available` is false (can't reach the server to check).
+   */
+  modelAvailable?: boolean;
+  /** The model id that was checked (for display in the UI). */
+  model?: string;
+  /** Specific model-level failure, e.g. "Model ... is not installed". */
+  modelError?: string;
 }

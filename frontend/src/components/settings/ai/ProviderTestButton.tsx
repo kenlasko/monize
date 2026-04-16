@@ -28,12 +28,22 @@ export function ProviderTestButton({ configId, disabled }: ProviderTestButtonPro
     setStatus('testing');
     try {
       const testResult = await aiApi.testConnection(configId);
-      if (testResult.available) {
-        setStatus('success');
-        toast.success('Connection successful');
-      } else {
+      if (!testResult.available) {
         setStatus('error');
         toast.error(testResult.error || 'Connection failed');
+      } else if (testResult.modelAvailable === false) {
+        // Server reachable but the configured model won't work. This is
+        // the most common failure mode (typo, model not pulled, etc.)
+        // so surface the specific reason instead of a generic "failed".
+        setStatus('error');
+        toast.error(testResult.modelError || `Model "${testResult.model ?? 'unknown'}" is not available on this provider.`, { duration: 6000 });
+      } else {
+        setStatus('success');
+        toast.success(
+          testResult.modelAvailable
+            ? `Connection successful. Model "${testResult.model}" is ready.`
+            : 'Connection successful',
+        );
       }
     } catch (error) {
       setStatus('error');

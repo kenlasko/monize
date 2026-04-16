@@ -105,4 +105,26 @@ export interface AiProvider {
   ): AsyncIterable<AiToolStreamChunk>;
 
   isAvailable(): Promise<boolean>;
+
+  /**
+   * Verify that the configured model exists and can be invoked by this
+   * provider. Implementations should prefer a cheap probe (e.g. listing
+   * available models or retrieving model metadata) over a full inference
+   * call, but a minimal 1-token completion is acceptable when the
+   * backend doesn't expose a catalogue endpoint.
+   *
+   * Returning `{ ok: true }` means the configured model works. Returning
+   * `{ ok: false, reason }` means the server is reachable but the model
+   * won't respond (e.g. typo, model not pulled on an Ollama host, API
+   * key lacks access to that model, etc.). The `reason` is surfaced to
+   * the user and should be short and actionable.
+   *
+   * Optional -- callers treat a missing implementation as "can't
+   * verify" and skip the model check.
+   */
+  verifyModel?(): Promise<ModelVerificationResult>;
 }
+
+export type ModelVerificationResult =
+  | { ok: true; model: string }
+  | { ok: false; model: string; reason: string };

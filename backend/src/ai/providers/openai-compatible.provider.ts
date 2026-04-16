@@ -5,6 +5,7 @@ import {
   AiToolDefinition,
   AiToolResponse,
   AiToolStreamChunk,
+  ModelVerificationResult,
 } from "./ai-provider.interface";
 import { OpenAiProvider } from "./openai.provider";
 
@@ -315,6 +316,54 @@ export class OpenAiCompatibleProvider extends OpenAiProvider {
       }
     } catch {
       return false;
+    }
+  }
+
+  /**
+   * Many OpenAI-compatible backends (Cloudflare Workers AI, LM Studio,
+   * etc.) either don't implement `/models/:id` or implement it
+   * inconsistently. Instead of probing the catalogue, issue a 1-token
+   * chat completion with the configured model and treat success as
+   * verification. 404 / "model not found" errors are surfaced so the
+   * user knows to fix the model id.
+   */
+  override async verifyModel(): Promise<ModelVerificationResult> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    try {
+      await this.client.chat.completions.create(
+        {
+          model: this.modelId,
+          messages: [{ role: "user", content: "ping" }],
+          max_tokens: 1,
+        },
+        { signal: controller.signal },
+      );
+      return { ok: true, model: this.modelId };
+    } catch (error) {
+      const status = (error as { status?: number })?.status;
+      const raw = error instanceof Error ? error.message : String(error);
+      if (status === 404 || /model.*(not found|does not exist)/i.test(raw)) {
+        return {
+          ok: false,
+          model: this.modelId,
+          reason: `Model "${this.modelId}" was not found at this endpoint. Check the model id and that your key has access to it.`,
+        };
+      }
+      if (status === 401 || status === 403) {
+        return {
+          ok: false,
+          model: this.modelId,
+          reason: `Authentication failed (${status}). The API key may be invalid or lack access to this model.`,
+        };
+      }
+      return {
+        ok: false,
+        model: this.modelId,
+        reason: `Could not verify model: ${raw}`,
+      };
+    } finally {
+      clearTimeout(timeout);
     }
   }
 }

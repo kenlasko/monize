@@ -94,6 +94,15 @@ export interface AiStatus {
 export interface AiConnectionTestResult {
   available: boolean;
   error?: string;
+  /**
+   * True when the configured model responded to a probe. Absent when
+   * the provider doesn't verify models or the server wasn't reachable.
+   */
+  modelAvailable?: boolean;
+  /** The model id that was checked, for display. */
+  model?: string;
+  /** Specific model-level failure message for display to the user. */
+  modelError?: string;
 }
 
 export const AI_PROVIDER_LABELS: Record<AiProviderType, string> = {
