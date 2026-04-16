@@ -512,4 +512,56 @@ describe("OpenAiCompatibleProvider", () => {
       expect(result).toBe(false);
     });
   });
+
+  describe("verifyModel()", () => {
+    it("returns ok when the probe completion succeeds", async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: "ok" } }],
+      });
+      const result = await provider.verifyModel();
+      expect(result).toEqual({
+        ok: true,
+        model: "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      });
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          model: "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+          max_tokens: 1,
+        }),
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      );
+    });
+
+    it("reports a not-found reason when the probe returns 404", async () => {
+      const err = Object.assign(new Error("model not found"), { status: 404 });
+      mockCreate.mockRejectedValueOnce(err);
+      const result = await provider.verifyModel();
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.reason).toMatch(/not found/i);
+      }
+    });
+
+    it("reports a not-found reason when the error body mentions 'model does not exist'", async () => {
+      // Some backends return 400 with a body like 'the model ... does not exist'.
+      mockCreate.mockRejectedValueOnce(
+        new Error("the model `foo` does not exist"),
+      );
+      const result = await provider.verifyModel();
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.reason).toMatch(/not found/i);
+      }
+    });
+
+    it("reports an auth-failure reason on 401", async () => {
+      const err = Object.assign(new Error("unauthorized"), { status: 401 });
+      mockCreate.mockRejectedValueOnce(err);
+      const result = await provider.verifyModel();
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.reason).toMatch(/authentication/i);
+      }
+    });
+  });
 });

@@ -34,6 +34,7 @@ const mockStream = jest.fn().mockReturnValue({
 });
 
 const mockList = jest.fn().mockResolvedValue({ data: [] });
+const mockRetrieve = jest.fn();
 
 jest.mock("@anthropic-ai/sdk", () => ({
   __esModule: true,
@@ -44,6 +45,7 @@ jest.mock("@anthropic-ai/sdk", () => ({
     },
     models: {
       list: mockList,
+      retrieve: mockRetrieve,
     },
   })),
 }));
@@ -462,6 +464,52 @@ describe("AnthropicProvider", () => {
       mockList.mockRejectedValueOnce(new Error("Unauthorized"));
       const result = await provider.isAvailable();
       expect(result).toBe(false);
+    });
+  });
+
+  describe("verifyModel()", () => {
+    it("returns ok when models.retrieve succeeds", async () => {
+      mockRetrieve.mockResolvedValueOnce({ id: "claude-sonnet-4-20250514" });
+      const result = await provider.verifyModel();
+      expect(result).toEqual({
+        ok: true,
+        model: "claude-sonnet-4-20250514",
+      });
+      expect(mockRetrieve).toHaveBeenCalledWith(
+        "claude-sonnet-4-20250514",
+        undefined,
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      );
+    });
+
+    it("reports a not-found reason when retrieve returns 404", async () => {
+      const err = Object.assign(new Error("not found"), { status: 404 });
+      mockRetrieve.mockRejectedValueOnce(err);
+      const result = await provider.verifyModel();
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.model).toBe("claude-sonnet-4-20250514");
+        expect(result.reason).toMatch(/not found/i);
+      }
+    });
+
+    it("reports an auth-failure reason on 401", async () => {
+      const err = Object.assign(new Error("Unauthorized"), { status: 401 });
+      mockRetrieve.mockRejectedValueOnce(err);
+      const result = await provider.verifyModel();
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.reason).toMatch(/authentication/i);
+      }
+    });
+
+    it("falls back to a generic reason for other errors", async () => {
+      mockRetrieve.mockRejectedValueOnce(new Error("connect ECONNREFUSED"));
+      const result = await provider.verifyModel();
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.reason).toContain("ECONNREFUSED");
+      }
     });
   });
 });

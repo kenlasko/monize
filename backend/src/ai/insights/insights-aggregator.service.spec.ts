@@ -300,5 +300,21 @@ describe("InsightsAggregatorService", () => {
 
       expect(result.recurringCharges).toHaveLength(0);
     });
+
+    it("excludes investment-linked cash debits from recurring-charge detection", async () => {
+      // Regular BUY activity can repeat monthly (e.g. DRIP) and would
+      // otherwise be flagged as a subscription-like recurring charge.
+      const qb = mockQueryBuilder();
+      mockTransactionRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.computeAggregates(userId, "USD");
+
+      const andWhereCalls = qb.andWhere.mock.calls.map(
+        (c: unknown[]) => c[0] as string,
+      );
+      expect(andWhereCalls).toContain(
+        "NOT EXISTS (SELECT 1 FROM investment_transactions it WHERE it.transaction_id = t.id)",
+      );
+    });
   });
 });

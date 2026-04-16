@@ -236,6 +236,57 @@ describe("TransactionAnalyticsService", () => {
       });
     });
 
+    describe("excludeInvestmentLinked flag", () => {
+      const INVESTMENT_EXCLUSION =
+        "NOT EXISTS (SELECT 1 FROM investment_transactions it WHERE it.transaction_id = transaction.id)";
+
+      it("does not apply the investment-linked exclusion by default", async () => {
+        await service.getSummary(userId);
+
+        expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith(
+          INVESTMENT_EXCLUSION,
+        );
+      });
+
+      it("applies the investment-linked exclusion when the flag is true", async () => {
+        await service.getSummary(
+          userId,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          true,
+        );
+
+        expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+          INVESTMENT_EXCLUSION,
+        );
+      });
+
+      it("does not apply the exclusion when the flag is explicitly false", async () => {
+        await service.getSummary(
+          userId,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          false,
+        );
+
+        expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith(
+          INVESTMENT_EXCLUSION,
+        );
+      });
+    });
+
     describe("accountIds filter", () => {
       it("applies accountIds filter when provided", async () => {
         await service.getSummary(userId, ["acc-1", "acc-2"]);

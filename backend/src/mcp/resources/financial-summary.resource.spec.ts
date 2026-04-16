@@ -78,4 +78,23 @@ describe("McpFinancialSummaryResource", () => {
     expect(parsed.currentMonth.totalIncome).toBe(5000);
     expect(parsed.currentMonth.period).toBeDefined();
   });
+
+  it("excludes investment-linked cash transactions from the MCP summary", async () => {
+    resolve.mockReturnValue({ userId: "u1", scopes: "read" });
+    accountsService.getSummary.mockResolvedValue({
+      totalAssets: 0,
+      totalLiabilities: 0,
+      netWorth: 0,
+    });
+    analyticsService.getSummary.mockResolvedValue({
+      totalIncome: 0,
+      totalExpenses: 0,
+    });
+
+    await handler("monize://financial-summary", { sessionId: "s1" });
+
+    // 10th positional arg is excludeInvestmentLinked.
+    const args = analyticsService.getSummary.mock.calls[0];
+    expect(args[9]).toBe(true);
+  });
 });

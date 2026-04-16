@@ -282,6 +282,26 @@ describe("ForecastAggregatorService", () => {
       expect(andWhereCalls).toContain("t.parentTransactionId IS NULL");
     });
 
+    it("excludes investment-linked cash transactions from every forecast query", async () => {
+      // Forecast queries touch monthly history, income patterns, and
+      // recurring-charge detection. All three must strip out BUY/SELL/
+      // DIVIDEND cash side-effects so they don't skew the forecast.
+      const qb = mockQueryBuilder();
+      mockTransactionRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.computeAggregates(userId, "USD");
+
+      const andWhereCalls = qb.andWhere.mock.calls.map(
+        (c: unknown[]) => c[0] as string,
+      );
+      const investmentExclusion =
+        "NOT EXISTS (SELECT 1 FROM investment_transactions it WHERE it.transaction_id = t.id)";
+      const matches = andWhereCalls.filter((c) => c === investmentExclusion);
+      // Must be applied by every forecast query builder
+      // (getMonthlyHistory, getIncomePatterns, getRecurringCharges).
+      expect(matches.length).toBeGreaterThanOrEqual(3);
+    });
+
     it("handles empty account list", async () => {
       mockAccountsService.findAll.mockResolvedValue([]);
 

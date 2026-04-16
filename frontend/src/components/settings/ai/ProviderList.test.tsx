@@ -6,25 +6,29 @@ import type { AiProviderConfig } from '@/types/ai';
 const mockDeleteConfig = vi.fn();
 const mockUpdateConfig = vi.fn();
 const mockCreateConfig = vi.fn();
+const mockTestConnection = vi.fn();
 
 vi.mock('@/lib/ai', () => ({
   aiApi: {
     deleteConfig: (...args: unknown[]) => mockDeleteConfig(...args),
     updateConfig: (...args: unknown[]) => mockUpdateConfig(...args),
     createConfig: (...args: unknown[]) => mockCreateConfig(...args),
-    testConnection: vi.fn().mockResolvedValue({ available: true }),
+    testConnection: (...args: unknown[]) => mockTestConnection(...args),
   },
 }));
+
+const mockToastSuccess = vi.fn();
+const mockToastError = vi.fn();
 
 vi.mock('react-hot-toast', () => ({
   __esModule: true,
   default: {
-    success: vi.fn(),
-    error: vi.fn(),
+    success: (...args: unknown[]) => mockToastSuccess(...args),
+    error: (...args: unknown[]) => mockToastError(...args),
   },
   toast: {
-    success: vi.fn(),
-    error: vi.fn(),
+    success: (...args: unknown[]) => mockToastSuccess(...args),
+    error: (...args: unknown[]) => mockToastError(...args),
   },
 }));
 
@@ -58,6 +62,7 @@ describe('ProviderList', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockTestConnection.mockResolvedValue({ available: true });
   });
 
   it('renders empty state when no configs', () => {
@@ -113,6 +118,124 @@ describe('ProviderList', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Edit Provider')).toBeInTheDocument();
+    });
+  });
+
+  describe('auto-test after save', () => {
+    it('runs testConnection against the newly-created provider id', async () => {
+      mockCreateConfig.mockResolvedValueOnce({ ...mockConfig, id: 'new-id' });
+      mockTestConnection.mockResolvedValueOnce({
+        available: true,
+        modelAvailable: true,
+        model: 'claude-sonnet-4-20250514',
+      });
+
+      const { container } = render(
+        <ProviderList
+          configs={[]}
+          encryptionAvailable={true}
+          onConfigsChanged={onConfigsChanged}
+        />,
+      );
+      // Invoke the create handler directly via an internal form submission
+      // is fiddly; reach into the component by clicking "Add Provider"
+      // then trigger the form's submit path via the hidden Modal.
+      fireEvent.click(screen.getByRole('button', { name: /add provider/i }));
+      const form = container.querySelector('form');
+      expect(form).not.toBeNull();
+      fireEvent.submit(form!);
+
+      await waitFor(() => {
+        expect(mockTestConnection).toHaveBeenCalledWith('new-id');
+      });
+      await waitFor(() => {
+        expect(mockToastSuccess).toHaveBeenCalledWith(
+          'Model "claude-sonnet-4-20250514" is ready.',
+        );
+      });
+    });
+
+    it('surfaces a warning toast when the saved config reaches the provider but the model is missing', async () => {
+      mockUpdateConfig.mockResolvedValueOnce({ ...mockConfig });
+      mockTestConnection.mockResolvedValueOnce({
+        available: true,
+        modelAvailable: false,
+        model: 'typo-4o',
+        modelError: 'Model "typo-4o" was not found.',
+      });
+
+      const { container } = render(
+        <ProviderList
+          configs={[mockConfig]}
+          encryptionAvailable={true}
+          onConfigsChanged={onConfigsChanged}
+        />,
+      );
+      fireEvent.click(screen.getByRole('button', { name: /edit/i }));
+      const form = container.querySelector('form');
+      expect(form).not.toBeNull();
+      fireEvent.submit(form!);
+
+      await waitFor(() => {
+        expect(mockToastError).toHaveBeenCalledWith(
+          'Model "typo-4o" was not found.',
+          expect.objectContaining({ duration: 7000 }),
+        );
+      });
+    });
+
+    it('surfaces a warning toast when the saved provider is unreachable', async () => {
+      mockCreateConfig.mockResolvedValueOnce({ ...mockConfig, id: 'new-id' });
+      mockTestConnection.mockResolvedValueOnce({
+        available: false,
+        error: 'Connection test failed. Check your provider settings.',
+      });
+
+      const { container } = render(
+        <ProviderList
+          configs={[]}
+          encryptionAvailable={true}
+          onConfigsChanged={onConfigsChanged}
+        />,
+      );
+      fireEvent.click(screen.getByRole('button', { name: /add provider/i }));
+      const form = container.querySelector('form');
+      fireEvent.submit(form!);
+
+      await waitFor(() => {
+        expect(mockToastError).toHaveBeenCalledWith(
+          'Connection test failed. Check your provider settings.',
+          expect.objectContaining({ duration: 7000 }),
+        );
+      });
+    });
+
+    it('stays silent when the post-save test itself throws (non-fatal)', async () => {
+      mockCreateConfig.mockResolvedValueOnce({ ...mockConfig, id: 'new-id' });
+      mockTestConnection.mockRejectedValueOnce(new Error('network down'));
+
+      const { container } = render(
+        <ProviderList
+          configs={[]}
+          encryptionAvailable={true}
+          onConfigsChanged={onConfigsChanged}
+        />,
+      );
+      fireEvent.click(screen.getByRole('button', { name: /add provider/i }));
+      const form = container.querySelector('form');
+      fireEvent.submit(form!);
+
+      await waitFor(() => {
+        expect(mockTestConnection).toHaveBeenCalled();
+      });
+      // Save already succeeded; we swallow post-save test errors so the
+      // user isn't spammed with a scary-looking toast for a non-fatal probe.
+      const errorToasts = mockToastError.mock.calls as unknown[][];
+      expect(
+        errorToasts.some(
+          (args) => typeof args[0] === 'string' && args[0].includes('network down'),
+        ),
+      ).toBe(false);
     });
   });
 });

@@ -3,6 +3,7 @@ import type { AiToolStreamChunk } from "./ai-provider.interface";
 
 const mockCreate = jest.fn();
 const mockListModels = jest.fn().mockResolvedValue({ data: [] });
+const mockRetrieveModel = jest.fn();
 
 jest.mock("openai", () => ({
   __esModule: true,
@@ -14,6 +15,7 @@ jest.mock("openai", () => ({
     },
     models: {
       list: mockListModels,
+      retrieve: mockRetrieveModel,
     },
   })),
 }));
@@ -582,6 +584,60 @@ describe("OpenAiProvider", () => {
       mockListModels.mockRejectedValueOnce(new Error("Unauthorized"));
       const result = await provider.isAvailable();
       expect(result).toBe(false);
+    });
+  });
+
+  describe("verifyModel()", () => {
+    it("returns ok when models.retrieve succeeds", async () => {
+      mockRetrieveModel.mockResolvedValueOnce({ id: "gpt-4o" });
+      const result = await provider.verifyModel();
+      expect(result).toEqual({ ok: true, model: "gpt-4o" });
+      expect(mockRetrieveModel).toHaveBeenCalledWith(
+        "gpt-4o",
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      );
+    });
+
+    it("reports a not-found reason when retrieve returns 404", async () => {
+      const err = Object.assign(new Error("not found"), { status: 404 });
+      mockRetrieveModel.mockRejectedValueOnce(err);
+      const result = await provider.verifyModel();
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.model).toBe("gpt-4o");
+        expect(result.reason).toMatch(/not found/i);
+      }
+    });
+
+    it("reports an auth-failure reason on 401", async () => {
+      const err = Object.assign(new Error("Unauthorized"), { status: 401 });
+      mockRetrieveModel.mockRejectedValueOnce(err);
+      const result = await provider.verifyModel();
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.reason).toMatch(/authentication/i);
+      }
+    });
+
+    it("reports an auth-failure reason on 403", async () => {
+      const err = Object.assign(new Error("Forbidden"), { status: 403 });
+      mockRetrieveModel.mockRejectedValueOnce(err);
+      const result = await provider.verifyModel();
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.reason).toMatch(/authentication/i);
+      }
+    });
+
+    it("falls back to a generic reason for other errors", async () => {
+      mockRetrieveModel.mockRejectedValueOnce(
+        new Error("connect ECONNREFUSED"),
+      );
+      const result = await provider.verifyModel();
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.reason).toContain("ECONNREFUSED");
+      }
     });
   });
 });

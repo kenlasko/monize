@@ -425,6 +425,27 @@ describe("ToolExecutorService", () => {
       expect(breakdown[0].total).toBe(1500);
     });
 
+    it("excludes INVESTMENT_BROKERAGE accounts and investment-linked cash transactions from the breakdown", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValueOnce([]);
+
+      await service.execute(userId, "query_transactions", {
+        startDate: "2026-01-01",
+        endDate: "2026-01-31",
+        groupBy: "category",
+      });
+
+      // The breakdown QueryBuilder must apply both the account-subtype
+      // exclusion and the NOT EXISTS (investment_transactions ...) clause,
+      // otherwise BUY/SELL cash debits in the linked cash account leak
+      // into the uncategorised-expense totals.
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "(breakdownAccount.accountSubType IS NULL OR breakdownAccount.accountSubType != 'INVESTMENT_BROKERAGE')",
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "NOT EXISTS (SELECT 1 FROM investment_transactions it WHERE it.transaction_id = t.id)",
+      );
+    });
+
     it("formats summary with date range and amounts", async () => {
       const result = await service.execute(userId, "query_transactions", {
         startDate: "2026-01-01",
@@ -645,6 +666,22 @@ describe("ToolExecutorService", () => {
       expect(data.totalSpending).toBe(0);
       expect((data.categories as unknown[]).length).toBe(0);
     });
+
+    it("excludes investment-linked cash debits from spending totals", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValueOnce([]);
+
+      await service.execute(userId, "get_spending_by_category", {
+        startDate: "2026-01-01",
+        endDate: "2026-01-31",
+      });
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "(spendingAccount.accountSubType IS NULL OR spendingAccount.accountSubType != 'INVESTMENT_BROKERAGE')",
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "NOT EXISTS (SELECT 1 FROM investment_transactions it WHERE it.transaction_id = t.id)",
+      );
+    });
   });
 
   describe("get_income_summary", () => {
@@ -703,6 +740,22 @@ describe("ToolExecutorService", () => {
       const data = result.data as Record<string, unknown>;
       expect(data.groupedBy).toBe("month");
       expect(data.totalIncome).toBe(10200);
+    });
+
+    it("excludes investment-linked cash credits from income totals", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValueOnce([]);
+
+      await service.execute(userId, "get_income_summary", {
+        startDate: "2026-01-01",
+        endDate: "2026-01-31",
+      });
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "(incomeAccount.accountSubType IS NULL OR incomeAccount.accountSubType != 'INVESTMENT_BROKERAGE')",
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "NOT EXISTS (SELECT 1 FROM investment_transactions it WHERE it.transaction_id = t.id)",
+      );
     });
   });
 
@@ -811,6 +864,26 @@ describe("ToolExecutorService", () => {
 
       expect(result.sources[0].dateRange).toContain("2025-12-01");
       expect(result.sources[0].dateRange).toContain("2026-01-31");
+    });
+
+    it("excludes investment-linked cash transactions from period comparisons", async () => {
+      mockQueryBuilder.getRawMany
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      await service.execute(userId, "compare_periods", {
+        period1Start: "2025-12-01",
+        period1End: "2025-12-31",
+        period2Start: "2026-01-01",
+        period2End: "2026-01-31",
+      });
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "(periodAccount.accountSubType IS NULL OR periodAccount.accountSubType != 'INVESTMENT_BROKERAGE')",
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "NOT EXISTS (SELECT 1 FROM investment_transactions it WHERE it.transaction_id = t.id)",
+      );
     });
   });
 

@@ -85,4 +85,22 @@ describe("McpRecentTransactionsResource", () => {
     expect(parsed.recentTransactions).toHaveLength(1);
     expect(parsed.total).toBe(1);
   });
+
+  it("excludes investment-linked cash transactions from the MCP summary", async () => {
+    resolve.mockReturnValue({ userId: "u1", scopes: "read" });
+    transactionsService.findAll.mockResolvedValue({
+      data: [],
+      pagination: { total: 0, hasMore: false },
+    });
+    analyticsService.getSummary.mockResolvedValue({
+      totalIncome: 0,
+      totalExpenses: 0,
+    });
+
+    await handler("monize://recent-transactions", { sessionId: "s1" });
+
+    // 10th positional arg is excludeInvestmentLinked.
+    const args = analyticsService.getSummary.mock.calls[0];
+    expect(args[9]).toBe(true);
+  });
 });
