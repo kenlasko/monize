@@ -12,7 +12,7 @@ import { Modal } from '@/components/ui/Modal';
 import type { AiProviderConfig, AiProviderType, CreateAiProviderConfig, UpdateAiProviderConfig } from '@/types/ai';
 import { AI_PROVIDER_LABELS, AI_PROVIDER_DEFAULT_MODELS } from '@/types/ai';
 
-const AI_PROVIDER_TYPES = ['anthropic', 'openai', 'ollama', 'openai-compatible'] as const;
+const AI_PROVIDER_TYPES = ['anthropic', 'openai', 'ollama', 'ollama-cloud', 'openai-compatible'] as const;
 
 const costField = z
   .string()
@@ -84,7 +84,10 @@ export function ProviderConfigForm({ isOpen, onClose, onSubmit, editConfig }: Pr
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const provider = watch('provider');
-  const needsBaseUrl = provider === 'ollama' || provider === 'openai-compatible';
+  const needsBaseUrl =
+    provider === 'ollama' ||
+    provider === 'ollama-cloud' ||
+    provider === 'openai-compatible';
   const needsApiKey = provider !== 'ollama';
   const modelSuggestions = AI_PROVIDER_DEFAULT_MODELS[provider] || [];
 
@@ -196,11 +199,17 @@ export function ProviderConfigForm({ isOpen, onClose, onSubmit, editConfig }: Pr
                 label="Base URL"
                 {...register('baseUrl')}
                 error={errors.baseUrl?.message}
-                placeholder={provider === 'ollama' ? 'http://localhost:11434' : 'https://api.example.com/v1'}
+                placeholder={
+                  provider === 'ollama'
+                    ? 'http://localhost:11434'
+                    : provider === 'ollama-cloud'
+                      ? 'https://ollama.com'
+                      : 'https://api.example.com/v1'
+                }
               />
-              {provider === 'openai-compatible' && (
+              {provider === 'ollama-cloud' && (
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  For Ollama Cloud use <code>https://ollama.com/v1</code> and paste your Ollama Cloud API key in the API Key field. The model name must include the <code>-cloud</code> suffix (e.g. <code>qwen3:30b-cloud</code>).
+                  Leave blank to use the default <code>https://ollama.com</code> endpoint. Paste your Ollama Cloud API key in the API Key field. Model names must include the <code>-cloud</code> suffix (e.g. <code>qwen3:30b-cloud</code>).
                 </p>
               )}
             </div>

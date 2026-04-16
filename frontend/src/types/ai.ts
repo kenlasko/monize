@@ -1,4 +1,4 @@
-export type AiProviderType = 'anthropic' | 'openai' | 'ollama' | 'openai-compatible';
+export type AiProviderType = 'anthropic' | 'openai' | 'ollama' | 'ollama-cloud' | 'openai-compatible';
 
 export interface AiProviderConfig {
   id: string;
@@ -100,6 +100,7 @@ export const AI_PROVIDER_LABELS: Record<AiProviderType, string> = {
   anthropic: 'Anthropic (Claude)',
   openai: 'OpenAI (GPT)',
   ollama: 'Ollama (Local)',
+  'ollama-cloud': 'Ollama Cloud',
   'openai-compatible': 'OpenAI-Compatible',
 };
 
@@ -111,6 +112,12 @@ export const AI_PROVIDER_DEFAULT_MODELS: Record<AiProviderType, string[]> = {
     'qwen3:30b',
     'gpt-oss:20b',
     'MFDoom/deepseek-r1-tool-calling:8b',
+  ],
+  'ollama-cloud': [
+    'qwen3:30b-cloud',
+    'gpt-oss:120b-cloud',
+    'gpt-oss:20b-cloud',
+    'deepseek-v3.1:671b-cloud',
   ],
   'openai-compatible': [],
 };

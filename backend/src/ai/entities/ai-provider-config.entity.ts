@@ -20,6 +20,7 @@ export const AI_PROVIDERS = [
   "anthropic",
   "openai",
   "ollama",
+  "ollama-cloud",
   "openai-compatible",
 ] as const;
 

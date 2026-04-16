@@ -78,6 +78,7 @@ describe("CreateAiConfigDto", () => {
       "anthropic",
       "openai",
       "ollama",
+      "ollama-cloud",
       "openai-compatible",
     ]) {
       const dto = createDto({ provider });
@@ -85,6 +86,16 @@ describe("CreateAiConfigDto", () => {
       const providerErrors = errors.find((e) => e.property === "provider");
       expect(providerErrors).toBeUndefined();
     }
+  });
+
+  it("accepts valid ollama-cloud config", async () => {
+    const dto = createDto({
+      provider: "ollama-cloud",
+      apiKey: "ollama-test-key",
+      model: "qwen3:30b-cloud",
+    });
+    const errors = await validate(dto);
+    expect(errors).toHaveLength(0);
   });
 
   it("rejects displayName exceeding 100 characters", async () => {

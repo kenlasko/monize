@@ -5,6 +5,7 @@ import { AiProvider } from "./providers/ai-provider.interface";
 import { AnthropicProvider } from "./providers/anthropic.provider";
 import { OpenAiProvider } from "./providers/openai.provider";
 import { OllamaProvider } from "./providers/ollama.provider";
+import { OllamaCloudProvider } from "./providers/ollama-cloud.provider";
 import { OpenAiCompatibleProvider } from "./providers/openai-compatible.provider";
 
 @Injectable()
@@ -29,6 +30,18 @@ export class AiProviderFactory {
 
       case "ollama":
         return new OllamaProvider(
+          config.baseUrl || undefined,
+          config.model || undefined,
+        );
+
+      case "ollama-cloud":
+        if (!apiKey) {
+          throw new BadRequestException(
+            "apiKey is required for ollama-cloud provider",
+          );
+        }
+        return new OllamaCloudProvider(
+          apiKey,
           config.baseUrl || undefined,
           config.model || undefined,
         );

@@ -62,7 +62,7 @@ interface OllamaChatResponse {
 }
 
 export class OllamaProvider implements AiProvider {
-  readonly name = "ollama";
+  readonly name: string = "ollama";
   readonly supportsStreaming = true;
   readonly supportsToolUse = true;
 
@@ -73,6 +73,15 @@ export class OllamaProvider implements AiProvider {
   constructor(baseUrl?: string, model?: string) {
     this.baseUrl = (baseUrl || "http://localhost:11434").replace(/\/+$/, "");
     this.modelId = model || "llama3";
+  }
+
+  /**
+   * Hook for subclasses (e.g. Ollama Cloud) that need to inject auth headers
+   * on every request. Self-hosted Ollama requires no auth, so the default is
+   * an empty set.
+   */
+  protected getAuthHeaders(): Record<string, string> {
+    return {};
   }
 
   async complete(request: AiCompletionRequest): Promise<AiCompletionResponse> {
@@ -108,7 +117,10 @@ export class OllamaProvider implements AiProvider {
       try {
         response = await longRunningFetch(url, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...this.getAuthHeaders(),
+          },
           signal: controller.signal,
           body: requestBody,
         });
@@ -233,7 +245,10 @@ export class OllamaProvider implements AiProvider {
     try {
       const response = await longRunningFetch(`${this.baseUrl}/api/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...this.getAuthHeaders(),
+        },
         signal: controller.signal,
         body: JSON.stringify({
           model: this.modelId,
@@ -370,7 +385,10 @@ export class OllamaProvider implements AiProvider {
       try {
         response = await longRunningFetch(url, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...this.getAuthHeaders(),
+          },
           signal: controller.signal,
           body: requestBody,
         });
@@ -589,6 +607,7 @@ export class OllamaProvider implements AiProvider {
       try {
         const response = await fetch(`${this.baseUrl}/api/tags`, {
           signal: controller.signal,
+          headers: this.getAuthHeaders(),
         });
         return response.ok;
       } finally {

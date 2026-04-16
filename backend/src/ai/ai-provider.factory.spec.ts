@@ -5,6 +5,7 @@ import { AiProviderConfig } from "./entities/ai-provider-config.entity";
 import { AnthropicProvider } from "./providers/anthropic.provider";
 import { OpenAiProvider } from "./providers/openai.provider";
 import { OllamaProvider } from "./providers/ollama.provider";
+import { OllamaCloudProvider } from "./providers/ollama-cloud.provider";
 import { OpenAiCompatibleProvider } from "./providers/openai-compatible.provider";
 
 describe("AiProviderFactory", () => {
@@ -68,6 +69,23 @@ describe("AiProviderFactory", () => {
     expect(provider).toBeInstanceOf(OllamaProvider);
     expect(provider.name).toBe("ollama");
     expect(mockEncryptionService.decrypt).not.toHaveBeenCalled();
+  });
+
+  it("creates OllamaCloudProvider for ollama-cloud", () => {
+    const provider = factory.createProvider(
+      makeConfig({ provider: "ollama-cloud" }),
+    );
+    expect(provider).toBeInstanceOf(OllamaCloudProvider);
+    expect(provider.name).toBe("ollama-cloud");
+    expect(mockEncryptionService.decrypt).toHaveBeenCalledWith("encrypted-key");
+  });
+
+  it("throws BadRequestException for ollama-cloud without apiKey", () => {
+    expect(() =>
+      factory.createProvider(
+        makeConfig({ provider: "ollama-cloud", apiKeyEnc: null }),
+      ),
+    ).toThrow(BadRequestException);
   });
 
   it("creates OpenAiCompatibleProvider for openai-compatible", () => {

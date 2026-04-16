@@ -60,7 +60,7 @@ export class CreateAiConfigDto {
   @ApiPropertyOptional({
     example: "https://api.example.com",
     description:
-      "Base URL for the provider (required for Ollama and OpenAI-compatible). Self-hosted providers allow private/local URLs.",
+      "Base URL for the provider (required for Ollama and OpenAI-compatible; optional for Ollama Cloud, defaults to https://ollama.com). Self-hosted providers allow private/local URLs.",
   })
   @IsOptional()
   @IsString()
