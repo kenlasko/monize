@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { act, fireEvent } from '@testing-library/react';
 import { render, screen } from '@/test/render';
 import { ResultChart } from './ResultChart';
 
@@ -24,6 +25,11 @@ vi.mock('recharts', () => ({
     <div data-testid="area-chart">{children}</div>
   ),
   Area: () => null,
+}));
+
+const captureSvgAsImageMock = vi.fn();
+vi.mock('@/lib/pdf-export-charts', () => ({
+  captureSvgAsImage: (...args: unknown[]) => captureSvgAsImageMock(...args),
 }));
 
 const sampleData = [
@@ -87,5 +93,48 @@ describe('ResultChart', () => {
     );
     expect(screen.getByText('Single')).toBeInTheDocument();
     expect(screen.getByTestId('bar-chart')).toBeInTheDocument();
+  });
+
+  it('renders a download button', () => {
+    render(<ResultChart type="bar" title="Test" data={sampleData} />);
+    expect(
+      screen.getByRole('button', { name: /download chart as png/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('triggers a PNG download when the download button is clicked', async () => {
+    captureSvgAsImageMock.mockResolvedValueOnce({
+      dataUrl: 'data:image/png;base64,AAAA',
+      width: 400,
+      height: 256,
+    });
+
+    const clickSpy = vi.fn();
+    const originalCreateElement = document.createElement.bind(document);
+    const createElementSpy = vi
+      .spyOn(document, 'createElement')
+      .mockImplementation((tag: string) => {
+        const el = originalCreateElement(tag) as HTMLElement;
+        if (tag === 'a') {
+          (el as HTMLAnchorElement).click = clickSpy;
+        }
+        return el;
+      });
+
+    render(
+      <ResultChart type="bar" title="My Spending Report" data={sampleData} />,
+    );
+
+    const button = screen.getByRole('button', {
+      name: /download chart as png/i,
+    });
+    await act(async () => {
+      fireEvent.click(button);
+    });
+
+    expect(captureSvgAsImageMock).toHaveBeenCalled();
+    expect(clickSpy).toHaveBeenCalled();
+
+    createElementSpy.mockRestore();
   });
 });
