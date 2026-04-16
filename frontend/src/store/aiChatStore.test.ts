@@ -98,6 +98,102 @@ describe('aiChatStore', () => {
     });
   });
 
+  describe('chart events', () => {
+    const chart1 = {
+      type: 'bar' as const,
+      title: 'Spending by Category',
+      data: [
+        { label: 'Groceries', value: 500 },
+        { label: 'Dining', value: 250 },
+      ],
+    };
+    const chart2 = {
+      type: 'line' as const,
+      title: 'Net Worth',
+      data: [
+        { label: 'Jan', value: 10000 },
+        { label: 'Feb', value: 10500 },
+      ],
+    };
+
+    it('attaches a chart emitted before content to the assistant message', () => {
+      useAiChatStore.getState().submit('Chart my spending');
+
+      capturedCallbacks?.onEvent({ type: 'chart', chart: chart1 });
+      capturedCallbacks?.onEvent({ type: 'content', text: 'Here it is.' });
+      capturedCallbacks?.onEvent({
+        type: 'done',
+        usage: { inputTokens: 1, outputTokens: 1, toolCalls: 1 },
+      });
+
+      const messages = useAiChatStore.getState().messages;
+      expect(messages).toHaveLength(2);
+      expect(messages[1].charts).toEqual([chart1]);
+      expect(messages[1].isStreaming).toBe(false);
+    });
+
+    it('attaches a chart emitted after content mid-stream', () => {
+      useAiChatStore.getState().submit('Chart my spending');
+
+      capturedCallbacks?.onEvent({ type: 'content', text: 'Streaming...' });
+      capturedCallbacks?.onEvent({ type: 'chart', chart: chart1 });
+      capturedCallbacks?.onEvent({
+        type: 'done',
+        usage: { inputTokens: 1, outputTokens: 1, toolCalls: 1 },
+      });
+
+      const messages = useAiChatStore.getState().messages;
+      expect(messages[1].charts).toEqual([chart1]);
+    });
+
+    it('preserves multiple charts in emission order', () => {
+      useAiChatStore.getState().submit('Two charts');
+
+      capturedCallbacks?.onEvent({ type: 'chart', chart: chart1 });
+      capturedCallbacks?.onEvent({ type: 'chart', chart: chart2 });
+      capturedCallbacks?.onEvent({ type: 'content', text: 'Two.' });
+      capturedCallbacks?.onEvent({
+        type: 'done',
+        usage: { inputTokens: 1, outputTokens: 1, toolCalls: 2 },
+      });
+
+      const messages = useAiChatStore.getState().messages;
+      expect(messages[1].charts).toEqual([chart1, chart2]);
+    });
+
+    it('leaves charts undefined when no chart events arrive', () => {
+      useAiChatStore.getState().submit('No chart');
+
+      capturedCallbacks?.onEvent({ type: 'content', text: 'Plain answer.' });
+      capturedCallbacks?.onEvent({
+        type: 'done',
+        usage: { inputTokens: 1, outputTokens: 1, toolCalls: 0 },
+      });
+
+      const messages = useAiChatStore.getState().messages;
+      expect(messages[1].charts).toBeUndefined();
+    });
+
+    it('persists charts across localStorage rehydration', () => {
+      useAiChatStore.getState().submit('Chart my spending');
+
+      capturedCallbacks?.onEvent({ type: 'chart', chart: chart1 });
+      capturedCallbacks?.onEvent({ type: 'content', text: 'Here.' });
+      capturedCallbacks?.onEvent({
+        type: 'done',
+        usage: { inputTokens: 1, outputTokens: 1, toolCalls: 1 },
+      });
+
+      const raw = window.localStorage.getItem(AI_CHAT_STORAGE_KEY);
+      expect(raw).not.toBeNull();
+      const persisted = JSON.parse(raw as string);
+      const assistant = persisted.state.messages.find(
+        (m: { role: string }) => m.role === 'assistant',
+      );
+      expect(assistant.charts).toEqual([chart1]);
+    });
+  });
+
   describe('cancel', () => {
     it('aborts the in-flight controller and resets loading state', () => {
       useAiChatStore.getState().submit('Q');

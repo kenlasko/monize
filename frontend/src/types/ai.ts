@@ -124,12 +124,21 @@ export interface QueryResult {
   usage: { inputTokens: number; outputTokens: number; toolCalls: number };
 }
 
+export type ChartType = 'bar' | 'pie' | 'line' | 'area';
+
+export interface ChartPayload {
+  type: ChartType;
+  title: string;
+  data: Array<{ label: string; value: number }>;
+}
+
 export interface StreamEvent {
   type:
     | 'thinking'
     | 'assistant_text'
     | 'tool_start'
     | 'tool_result'
+    | 'chart'
     | 'content'
     | 'sources'
     | 'done'
@@ -147,6 +156,10 @@ export interface StreamEvent {
   input?: Record<string, unknown>;
   sources?: Array<{ type: string; description: string; dateRange?: string }>;
   usage?: { inputTokens: number; outputTokens: number; toolCalls: number };
+  // Emitted by the backend when the model calls the render_chart tool with a
+  // valid payload. The frontend attaches these to the active assistant
+  // message so <ResultChart> can render them with recharts.
+  chart?: ChartPayload;
 }
 
 export interface StreamCallbacks {

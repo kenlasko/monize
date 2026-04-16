@@ -128,6 +128,7 @@ export function ChatInterface() {
                 content={msg.content}
                 toolsUsed={msg.toolsUsed}
                 sources={msg.sources}
+                charts={msg.charts}
                 isStreaming={msg.isStreaming}
                 error={msg.error}
               />
