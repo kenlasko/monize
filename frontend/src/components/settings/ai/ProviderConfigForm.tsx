@@ -256,6 +256,11 @@ export function ProviderConfigForm({ isOpen, onClose, onSubmit, editConfig }: Pr
                 ))}
               </div>
             )}
+            {provider === 'ollama-cloud' && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Model names must include the <code>-cloud</code> suffix (e.g. <code>gpt-oss:20b-cloud</code>).
+              </p>
+            )}
           </div>
 
           {needsApiKey && (
@@ -284,7 +289,7 @@ export function ProviderConfigForm({ isOpen, onClose, onSubmit, editConfig }: Pr
               />
               {provider === 'ollama-cloud' && (
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Leave blank to use the default <code>https://ollama.com</code> endpoint. Paste your Ollama Cloud API key in the API Key field. Model names must include the <code>-cloud</code> suffix (e.g. <code>qwen3:30b-cloud</code>).
+                  Leave blank to use the default <code>https://ollama.com</code> endpoint.
                 </p>
               )}
             </div>
