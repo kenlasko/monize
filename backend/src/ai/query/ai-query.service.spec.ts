@@ -565,6 +565,101 @@ describe("AiQueryService", () => {
       expect(toolMessage.content.length).toBeLessThanOrEqual(50100);
       expect(toolMessage.content).toContain("[truncated");
     });
+
+    it("emits a chart event after tool_result when render_chart succeeds", async () => {
+      const chartPayload = {
+        type: "pie",
+        title: "Spending by Category",
+        data: [
+          { label: "Groceries", value: 500 },
+          { label: "Dining", value: 250 },
+        ],
+      };
+      mockToolExecutor.execute.mockResolvedValueOnce({
+        data: chartPayload,
+        summary:
+          'Rendered pie chart "Spending by Category" with 2 data points.',
+        sources: [],
+      });
+      (mockProvider.completeWithTools as jest.Mock)
+        .mockResolvedValueOnce({
+          content: "",
+          toolCalls: [
+            { id: "tc-1", name: "render_chart", input: chartPayload },
+          ],
+          usage: { inputTokens: 80, outputTokens: 20 },
+          model: "claude-sonnet-4-20250514",
+          provider: "anthropic",
+          stopReason: "tool_use",
+        })
+        .mockResolvedValueOnce({
+          content: "Groceries was your biggest category.",
+          toolCalls: [],
+          usage: { inputTokens: 200, outputTokens: 30 },
+          model: "claude-sonnet-4-20250514",
+          provider: "anthropic",
+          stopReason: "end_turn",
+        });
+
+      const events = await collectEvents(userId, "Chart my spending");
+
+      const chartEvent = events.find((e) => e.type === "chart");
+      expect(chartEvent).toBeDefined();
+      expect(chartEvent!.chart).toEqual(chartPayload);
+
+      // Event order: tool_start -> tool_result -> chart
+      const chartIdx = events.findIndex((e) => e.type === "chart");
+      const toolResultIdx = events.findIndex((e) => e.type === "tool_result");
+      const toolStartIdx = events.findIndex((e) => e.type === "tool_start");
+      expect(toolStartIdx).toBeLessThan(toolResultIdx);
+      expect(toolResultIdx).toBeLessThan(chartIdx);
+
+      // The model still sees a confirmation tool_result in its message history
+      const toolResult = events.find((e) => e.type === "tool_result");
+      expect(toolResult!.name).toBe("render_chart");
+    });
+
+    it("does not emit a chart event when render_chart returns an error", async () => {
+      mockToolExecutor.execute.mockResolvedValueOnce({
+        data: { error: "Invalid input: data array cannot be empty" },
+        summary: "Invalid input for render_chart: data cannot be empty",
+        sources: [],
+        isError: true,
+      });
+      (mockProvider.completeWithTools as jest.Mock)
+        .mockResolvedValueOnce({
+          content: "",
+          toolCalls: [
+            {
+              id: "tc-1",
+              name: "render_chart",
+              input: { type: "bar", title: "Empty", data: [] },
+            },
+          ],
+          usage: { inputTokens: 80, outputTokens: 20 },
+          model: "claude-sonnet-4-20250514",
+          provider: "anthropic",
+          stopReason: "tool_use",
+        })
+        .mockResolvedValueOnce({
+          content: "I was unable to build the chart.",
+          toolCalls: [],
+          usage: { inputTokens: 200, outputTokens: 30 },
+          model: "claude-sonnet-4-20250514",
+          provider: "anthropic",
+          stopReason: "end_turn",
+        });
+
+      const events = await collectEvents(userId, "Bad chart");
+
+      const chartEvent = events.find((e) => e.type === "chart");
+      expect(chartEvent).toBeUndefined();
+
+      // tool_result is still emitted with isError=true
+      const toolResult = events.find((e) => e.type === "tool_result");
+      expect(toolResult).toBeDefined();
+      expect(toolResult!.isError).toBe(true);
+    });
   });
 
   describe("executeQuery()", () => {

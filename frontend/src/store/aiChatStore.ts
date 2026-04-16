@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { aiApi } from '@/lib/ai';
-import type { StreamEvent } from '@/types/ai';
+import type { ChartPayload, StreamEvent } from '@/types/ai';
 
 // Key for persisting the AI conversation in the browser's localStorage.
 // Cleared on logout via authStore so conversations don't leak between accounts.
@@ -20,6 +20,10 @@ export interface ChatMessage {
   content: string;
   toolsUsed?: ToolCallRecord[];
   sources?: Array<{ type: string; description: string; dateRange?: string }>;
+  // Charts the assistant rendered via the render_chart tool. Populated as
+  // `chart` SSE events arrive during streaming; rendered inline in
+  // <ChatMessage> below the text content.
+  charts?: ChartPayload[];
   isStreaming?: boolean;
   error?: string;
 }
@@ -99,6 +103,7 @@ export const useAiChatStore = create<AiChatState>()(
         // Per-request mutable state. Lives in this closure for the lifetime
         // of the stream, independent of any React component.
         const toolsUsed: ToolCallRecord[] = [];
+        const charts: ChartPayload[] = [];
         let sources: ChatMessage['sources'] = [];
         let contentBuffer = '';
         let hasStartedContent = false;
@@ -197,6 +202,25 @@ export const useAiChatStore = create<AiChatState>()(
                 break;
               }
 
+              case 'chart':
+                if (event.chart) {
+                  charts.push(event.chart);
+                  // If the assistant message already exists (chart event
+                  // arriving after content started), attach immediately so
+                  // the chart shows up mid-stream. Otherwise we'll pick it
+                  // up when 'content' creates the message.
+                  if (hasStartedContent) {
+                    set((state) => ({
+                      messages: state.messages.map((m) =>
+                        m.id === assistantMsgId
+                          ? { ...m, charts: [...charts] }
+                          : m,
+                      ),
+                    }));
+                  }
+                }
+                break;
+
               case 'content':
                 if (!hasStartedContent) {
                   hasStartedContent = true;
@@ -209,6 +233,7 @@ export const useAiChatStore = create<AiChatState>()(
                         role: 'assistant',
                         content: event.text || '',
                         toolsUsed: [...toolsUsed],
+                        charts: charts.length > 0 ? [...charts] : undefined,
                         isStreaming: true,
                       },
                     ],
@@ -222,6 +247,7 @@ export const useAiChatStore = create<AiChatState>()(
                           ...m,
                           content: contentBuffer,
                           toolsUsed: [...toolsUsed],
+                          charts: charts.length > 0 ? [...charts] : m.charts,
                         }
                       : m,
                   ),
@@ -237,7 +263,12 @@ export const useAiChatStore = create<AiChatState>()(
                 set((state) => ({
                   messages: state.messages.map((m) =>
                     m.id === assistantMsgId
-                      ? { ...m, isStreaming: false, sources }
+                      ? {
+                          ...m,
+                          isStreaming: false,
+                          sources,
+                          charts: charts.length > 0 ? [...charts] : m.charts,
+                        }
                       : m,
                   ),
                   isLoading: false,

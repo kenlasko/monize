@@ -51,6 +51,7 @@ export interface StreamEvent {
     | "assistant_text"
     | "tool_start"
     | "tool_result"
+    | "chart"
     | "content"
     | "sources"
     | "done"
@@ -432,6 +433,21 @@ export class AiQueryService {
           summary: result.summary,
           isError: result.isError === true,
         };
+
+        // Chart tool: emit the structured payload as a separate event so the
+        // frontend can render it with recharts. Keeping this distinct from
+        // tool_result means the existing tools-used pill list still populates
+        // for render_chart without any store-reducer changes.
+        if (
+          toolCall.name === "render_chart" &&
+          result.isError !== true &&
+          result.data
+        ) {
+          yield {
+            type: "chart",
+            chart: result.data,
+          };
+        }
 
         // Add tool result message with sanitized string values
         const sanitizedData = sanitizeToolResultStrings(result.data);

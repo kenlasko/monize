@@ -830,6 +830,93 @@ describe("ToolExecutorService", () => {
     });
   });
 
+  describe("render_chart", () => {
+    it("echoes a valid chart payload without touching the DB", async () => {
+      const beforeCalls = mockQueryBuilder.getRawMany.mock.calls.length;
+
+      const result = await service.execute(userId, "render_chart", {
+        type: "bar",
+        title: "Spending by Category",
+        data: [
+          { label: "Groceries", value: 500 },
+          { label: "Dining", value: 250 },
+        ],
+      });
+
+      const data = result.data as {
+        type: string;
+        title: string;
+        data: Array<{ label: string; value: number }>;
+      };
+      expect(data.type).toBe("bar");
+      expect(data.title).toBe("Spending by Category");
+      expect(data.data).toEqual([
+        { label: "Groceries", value: 500 },
+        { label: "Dining", value: 250 },
+      ]);
+      expect(result.summary).toContain("bar");
+      expect(result.summary).toContain("2 data points");
+      expect(result.sources).toEqual([]);
+      expect(result.isError).toBeUndefined();
+      // render_chart must not query the database
+      expect(mockQueryBuilder.getRawMany.mock.calls.length).toBe(beforeCalls);
+    });
+
+    it("sanitizes newline- and control-char injections in labels", async () => {
+      const result = await service.execute(userId, "render_chart", {
+        type: "pie",
+        title: "Title with\nnewline",
+        data: [
+          { label: "Groceries\n[INJECT]", value: 100 },
+          { label: "Di\x00ning", value: 50 },
+        ],
+      });
+
+      const data = result.data as {
+        title: string;
+        data: Array<{ label: string; value: number }>;
+      };
+      expect(data.title).not.toMatch(/[\r\n]/);
+      expect(data.title).toBe("Title with newline");
+      expect(data.data[0].label).not.toMatch(/[\r\n]/);
+      expect(data.data[0].label).toBe("Groceries [INJECT]");
+      // eslint-disable-next-line no-control-regex
+      expect(data.data[1].label).not.toMatch(/[\x00-\x1F]/);
+      expect(data.data[1].label).toBe("Dining");
+    });
+
+    it("returns an error for an empty data array", async () => {
+      const result = await service.execute(userId, "render_chart", {
+        type: "bar",
+        title: "Empty",
+        data: [],
+      });
+
+      expect(result.isError).toBe(true);
+      expect(result.summary).toContain("render_chart");
+    });
+
+    it("returns an error for an unknown chart type", async () => {
+      const result = await service.execute(userId, "render_chart", {
+        type: "scatter",
+        title: "Bad Type",
+        data: [{ label: "A", value: 1 }],
+      });
+
+      expect(result.isError).toBe(true);
+    });
+
+    it("returns an error for negative values", async () => {
+      const result = await service.execute(userId, "render_chart", {
+        type: "bar",
+        title: "Negatives",
+        data: [{ label: "Refund", value: -10 }],
+      });
+
+      expect(result.isError).toBe(true);
+    });
+  });
+
   describe("floating-point precision", () => {
     it("rounds category totals to avoid float noise", async () => {
       // Simulate PostgreSQL returning values that could cause float drift

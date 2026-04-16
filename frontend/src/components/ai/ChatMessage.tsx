@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { ResultChart } from './ResultChart';
 
 interface ToolInfo {
   name: string;
@@ -15,11 +16,18 @@ interface SourceInfo {
   dateRange?: string;
 }
 
+interface ChartInfo {
+  type: 'bar' | 'pie' | 'line' | 'area';
+  title: string;
+  data: Array<{ label: string; value: number }>;
+}
+
 interface ChatMessageProps {
   role: 'user' | 'assistant';
   content: string;
   toolsUsed?: ToolInfo[];
   sources?: SourceInfo[];
+  charts?: ChartInfo[];
   isStreaming?: boolean;
   error?: string;
 }
@@ -32,6 +40,8 @@ const TOOL_LABELS: Record<string, string> = {
   get_net_worth_history: 'Net Worth History',
   compare_periods: 'Period Comparison',
   get_budget_status: 'Budget Status',
+  calculate: 'Calculation',
+  render_chart: 'Chart',
 };
 
 function ToolDetails({ tool }: { tool: ToolInfo }) {
@@ -145,6 +155,7 @@ export function ChatMessage({
   content,
   toolsUsed,
   sources,
+  charts,
   isStreaming,
   error,
 }: ChatMessageProps) {
@@ -183,6 +194,20 @@ export function ChatMessage({
             </div>
           )}
         </div>
+
+        {/* Charts emitted by the render_chart tool */}
+        {charts && charts.length > 0 && (
+          <div className="mt-2 flex flex-col gap-2">
+            {charts.map((chart, i) => (
+              <ResultChart
+                key={i}
+                type={chart.type}
+                title={chart.title}
+                data={chart.data}
+              />
+            ))}
+          </div>
+        )}
 
         {/* Sources */}
         {sources && sources.length > 0 && (

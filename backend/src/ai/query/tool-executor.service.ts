@@ -18,6 +18,7 @@ import { Transaction } from "../../transactions/entities/transaction.entity";
 import { Category } from "../../categories/entities/category.entity";
 import { validateToolInput } from "./tool-input-schemas";
 import { executeCalculation, CalculateInput } from "./calculate-tool";
+import { sanitizePromptValue } from "../context/prompt-sanitize";
 
 /**
  * Safe money summation using integer arithmetic (4 decimal places)
@@ -123,6 +124,9 @@ export class ToolExecutorService {
           break;
         case "calculate":
           result = this.calculate(validatedInput);
+          break;
+        case "render_chart":
+          result = this.renderChart(validatedInput);
           break;
         default:
           this.logger.warn(`execute unknown tool=${toolName} user=${userId}`);
@@ -938,6 +942,33 @@ export class ToolExecutorService {
           description: `${calcResult.operation} calculation`,
         },
       ],
+    };
+  }
+
+  /**
+   * render_chart is a presentation-only tool: it does not touch the database
+   * and simply echoes the LLM-assembled payload back. The query service picks
+   * up the returned data and emits it as a dedicated `chart` SSE event so the
+   * frontend can render it with recharts. Zod has already validated shape and
+   * caps; we additionally sanitize label and title strings because this data
+   * flows straight to the browser, bypassing the main tool-result sanitization
+   * step in ai-query.service.ts.
+   */
+  private renderChart(input: Record<string, unknown>): ToolResult {
+    const type = input.type as "bar" | "pie" | "line" | "area";
+    const rawTitle = input.title as string;
+    const rawData = input.data as Array<{ label: string; value: number }>;
+
+    const title = sanitizePromptValue(rawTitle);
+    const data = rawData.map((point) => ({
+      label: sanitizePromptValue(point.label),
+      value: point.value,
+    }));
+
+    return {
+      data: { type, title, data },
+      summary: `Rendered ${type} chart "${title}" with ${data.length} data point${data.length === 1 ? "" : "s"}.`,
+      sources: [],
     };
   }
 

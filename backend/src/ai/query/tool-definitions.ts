@@ -217,4 +217,49 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
       required: ["operation", "values"],
     },
   },
+  {
+    name: "render_chart",
+    description:
+      "Render a chart in the chat so the user can see the data visually. Call this AFTER gathering numbers with another tool (query_transactions, get_spending_by_category, get_net_worth_history, compare_periods, etc.). Choose the chart type that fits the data: 'pie' for category breakdowns with 6 or fewer slices, 'bar' for larger breakdowns or period comparisons, 'line' or 'area' for time series (months or weeks). Pass a compact subset of the data (at most 10-15 data points) and aggregate the long tail into an 'Other' bucket. Values must be positive numbers (use absolute values for expenses). Do not narrate the chart's existence in your reply; just render it and summarize the findings.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        type: {
+          type: "string",
+          enum: ["bar", "pie", "line", "area"],
+          description:
+            "Chart type. 'bar' and 'pie' for categorical breakdowns; 'line' and 'area' for time series.",
+        },
+        title: {
+          type: "string",
+          description:
+            "Short, human-readable chart title (for example, 'Spending by Category — March 2026'). Max 120 characters.",
+        },
+        data: {
+          type: "array",
+          minItems: 1,
+          maxItems: 20,
+          items: {
+            type: "object",
+            properties: {
+              label: {
+                type: "string",
+                description:
+                  "Data point label (category name, month, period, etc.). Max 80 characters.",
+              },
+              value: {
+                type: "number",
+                description:
+                  "Non-negative numeric value for this data point. Use absolute values for expenses.",
+              },
+            },
+            required: ["label", "value"],
+          },
+          description:
+            "Data points to chart. Keep to 10-15 entries for readability; aggregate the tail into an 'Other' bucket.",
+        },
+      },
+      required: ["type", "title", "data"],
+    },
+  },
 ];

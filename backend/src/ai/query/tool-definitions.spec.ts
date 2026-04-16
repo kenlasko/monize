@@ -1,8 +1,8 @@
 import { FINANCIAL_TOOLS } from "./tool-definitions";
 
 describe("FINANCIAL_TOOLS", () => {
-  it("defines exactly 8 tools", () => {
-    expect(FINANCIAL_TOOLS).toHaveLength(8);
+  it("defines exactly 9 tools", () => {
+    expect(FINANCIAL_TOOLS).toHaveLength(9);
   });
 
   it("has unique tool names", () => {
@@ -19,6 +19,7 @@ describe("FINANCIAL_TOOLS", () => {
     "compare_periods",
     "get_budget_status",
     "calculate",
+    "render_chart",
   ];
 
   it.each(expectedTools)("includes the %s tool", (toolName) => {
@@ -183,6 +184,36 @@ describe("FINANCIAL_TOOLS", () => {
       >;
       expect(props.label).toBeDefined();
       expect(props.label.type).toBe("string");
+    });
+  });
+
+  describe("render_chart", () => {
+    it("requires type, title, and data", () => {
+      const tool = FINANCIAL_TOOLS.find((t) => t.name === "render_chart")!;
+      expect(tool.inputSchema.required).toEqual(["type", "title", "data"]);
+    });
+
+    it("supports the four recharts-compatible chart types", () => {
+      const tool = FINANCIAL_TOOLS.find((t) => t.name === "render_chart")!;
+      const props = tool.inputSchema.properties as Record<
+        string,
+        Record<string, unknown>
+      >;
+      expect(props.type.enum).toEqual(["bar", "pie", "line", "area"]);
+    });
+
+    it("caps data at 20 points with labeled objects", () => {
+      const tool = FINANCIAL_TOOLS.find((t) => t.name === "render_chart")!;
+      const props = tool.inputSchema.properties as Record<
+        string,
+        Record<string, unknown>
+      >;
+      expect(props.data.type).toBe("array");
+      expect(props.data.maxItems).toBe(20);
+      expect(props.data.minItems).toBe(1);
+      const items = props.data.items as Record<string, unknown>;
+      expect(items.type).toBe("object");
+      expect(items.required).toEqual(["label", "value"]);
     });
   });
 

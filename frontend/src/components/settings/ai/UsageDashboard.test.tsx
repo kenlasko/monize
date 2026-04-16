@@ -25,7 +25,6 @@ vi.mock('@/hooks/useExchangeRates', () => ({
 }));
 
 // Import after mocks are registered.
-// eslint-disable-next-line import/first
 import { UsageDashboard } from './UsageDashboard';
 
 const noConfigs: AiProviderConfig[] = [];

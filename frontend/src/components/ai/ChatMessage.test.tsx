@@ -1,7 +1,32 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { fireEvent } from '@testing-library/react';
 import { render, screen } from '@/test/render';
 import { ChatMessage } from './ChatMessage';
+
+// Mock recharts so the ResultChart rendered indirectly by ChatMessage does
+// not attempt to lay out SVG in jsdom. Matches the mocks in ResultChart.test.
+vi.mock('recharts', () => ({
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="responsive-container">{children}</div>
+  ),
+  BarChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="bar-chart">{children}</div>
+  ),
+  Bar: () => null,
+  PieChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="pie-chart">{children}</div>
+  ),
+  Pie: () => null,
+  Cell: () => null,
+  XAxis: () => null,
+  YAxis: () => null,
+  CartesianGrid: () => null,
+  Tooltip: () => null,
+  AreaChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="area-chart">{children}</div>
+  ),
+  Area: () => null,
+}));
 
 describe('ChatMessage', () => {
   describe('user messages', () => {
@@ -316,6 +341,94 @@ describe('ChatMessage', () => {
       expect(
         screen.getByText('All account balances'),
       ).toBeInTheDocument();
+    });
+  });
+
+  describe('charts', () => {
+    const sampleChart = {
+      type: 'bar' as const,
+      title: 'Spending by Category',
+      data: [
+        { label: 'Groceries', value: 500 },
+        { label: 'Dining', value: 250 },
+      ],
+    };
+
+    it('renders a ResultChart when charts are provided', () => {
+      render(
+        <ChatMessage
+          role="assistant"
+          content="Here is the breakdown."
+          charts={[sampleChart]}
+        />,
+      );
+
+      expect(screen.getByText('Spending by Category')).toBeInTheDocument();
+      expect(screen.getByTestId('bar-chart')).toBeInTheDocument();
+    });
+
+    it('renders multiple charts in order', () => {
+      render(
+        <ChatMessage
+          role="assistant"
+          content="Two views."
+          charts={[
+            { ...sampleChart, type: 'pie', title: 'Pie View' },
+            { ...sampleChart, type: 'area', title: 'Trend View' },
+          ]}
+        />,
+      );
+
+      expect(screen.getByText('Pie View')).toBeInTheDocument();
+      expect(screen.getByText('Trend View')).toBeInTheDocument();
+      expect(screen.getByTestId('pie-chart')).toBeInTheDocument();
+      expect(screen.getByTestId('area-chart')).toBeInTheDocument();
+    });
+
+    it('does not render a chart container when charts is empty', () => {
+      render(
+        <ChatMessage role="assistant" content="No chart." charts={[]} />,
+      );
+
+      expect(screen.queryByTestId('bar-chart')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('pie-chart')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('area-chart')).not.toBeInTheDocument();
+    });
+
+    it('does not render a chart container when charts is undefined', () => {
+      render(<ChatMessage role="assistant" content="No chart." />);
+
+      expect(screen.queryByTestId('bar-chart')).not.toBeInTheDocument();
+    });
+
+    it('does not render charts for user messages', () => {
+      render(
+        <ChatMessage
+          role="user"
+          content="My query"
+          charts={[sampleChart]}
+        />,
+      );
+
+      expect(screen.queryByTestId('bar-chart')).not.toBeInTheDocument();
+      expect(screen.queryByText('Spending by Category')).not.toBeInTheDocument();
+    });
+
+    it('renders the render_chart tool badge label correctly', () => {
+      render(
+        <ChatMessage
+          role="assistant"
+          content="Chart rendered."
+          toolsUsed={[
+            {
+              name: 'render_chart',
+              summary: 'Rendered bar chart "Spending" with 5 data points.',
+            },
+          ]}
+        />,
+      );
+
+      expect(screen.getByText('Chart')).toBeInTheDocument();
     });
   });
 });
