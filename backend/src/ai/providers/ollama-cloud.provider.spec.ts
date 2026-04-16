@@ -62,7 +62,10 @@ describe("OllamaCloudProvider", () => {
     );
   });
 
-  it("honors a custom baseUrl when provided", async () => {
+  it("ignores a user-supplied baseUrl (SSRF guard)", async () => {
+    // Ollama Cloud is a fixed SaaS endpoint. Allowing a user-supplied
+    // baseUrl to override that would be a pure SSRF vector with no
+    // legitimate use case, so the constructor must silently drop it.
     const custom = new OllamaCloudProvider(
       "k",
       "https://alt.ollama.example",
@@ -91,7 +94,7 @@ describe("OllamaCloudProvider", () => {
     });
 
     expect(global.fetch).toHaveBeenCalledWith(
-      "https://alt.ollama.example/api/chat",
+      "https://ollama.com/api/chat",
       expect.anything(),
     );
   });

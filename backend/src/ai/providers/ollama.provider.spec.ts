@@ -35,6 +35,44 @@ describe("OllamaProvider", () => {
     expect(provider.supportsToolUse).toBe(true);
   });
 
+  describe("constructor baseUrl validation", () => {
+    // Defence-in-depth: the service layer validates the URL before it
+    // reaches this constructor, but the provider still rejects anything
+    // that isn't a plain http(s) origin so a malformed value can never
+    // reach fetch(). CodeQL needs this inline guard to see the SSRF
+    // sink as safe.
+    it("rejects non-http(s) protocols", () => {
+      expect(() => new OllamaProvider("file:///etc/passwd")).toThrow(
+        /Invalid Ollama baseUrl/,
+      );
+      expect(() => new OllamaProvider("javascript:alert(1)")).toThrow(
+        /Invalid Ollama baseUrl/,
+      );
+    });
+
+    it("rejects URLs with embedded credentials", () => {
+      expect(
+        () => new OllamaProvider("http://attacker:pw@localhost:11434"),
+      ).toThrow(/Invalid Ollama baseUrl/);
+    });
+
+    it("rejects malformed URLs", () => {
+      expect(() => new OllamaProvider("not a url")).toThrow(
+        /Invalid Ollama baseUrl/,
+      );
+    });
+
+    it("normalises valid URLs to the origin", () => {
+      const p = new OllamaProvider(
+        "http://localhost:11434/some/path?x=1",
+        "llama3",
+      );
+      expect((p as unknown as { baseUrl: string }).baseUrl).toBe(
+        "http://localhost:11434",
+      );
+    });
+  });
+
   describe("complete()", () => {
     it("returns formatted response on success", async () => {
       const encoder = new TextEncoder();

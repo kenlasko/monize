@@ -12,6 +12,7 @@ import {
 } from "./ai-provider.interface";
 import { randomUUID } from "crypto";
 import { longRunningFetch } from "./long-running-fetch";
+import { validateUrlBasicSafety } from "../validators/safe-url.validator";
 
 /**
  * How often to emit a progress log line during a long-running stream so
@@ -72,8 +73,31 @@ export class OllamaProvider implements AiProvider {
   protected readonly modelId: string;
 
   constructor(baseUrl?: string, model?: string) {
-    this.baseUrl = (baseUrl || "http://localhost:11434").replace(/\/+$/, "");
+    const rawBaseUrl = (baseUrl || "http://localhost:11434").trim();
+    // Reject malformed URLs, non-http(s) protocols, and URLs carrying
+    // embedded credentials so downstream fetch() calls can only ever hit
+    // a user-provided origin whose shape we've already validated. This is
+    // the SSRF mitigation boundary for self-hosted Ollama; the full
+    // hostname/IP check happens in the service layer when the config is
+    // saved (we must still allow private/loopback hosts here for LAN
+    // Ollama deployments).
+    if (!validateUrlBasicSafety(rawBaseUrl)) {
+      throw new Error(
+        `Invalid Ollama baseUrl "${rawBaseUrl}": must be an http(s) URL without credentials.`,
+      );
+    }
+    this.baseUrl = new URL(rawBaseUrl).origin;
     this.modelId = model || "llama3";
+  }
+
+  /**
+   * Build a request URL against the validated base origin. Using the URL
+   * constructor (rather than string concatenation) keeps CodeQL's SSRF
+   * dataflow tracking happy: callers pass a fixed literal path, and the
+   * origin was already normalised to something safe in the constructor.
+   */
+  protected buildUrl(path: string): string {
+    return new URL(path, this.baseUrl).toString();
   }
 
   /**
@@ -99,7 +123,7 @@ export class OllamaProvider implements AiProvider {
     const timeout = setTimeout(() => controller.abort(), 20 * 60 * 1000); // 20 minutes for CPU inference
 
     const requestStart = Date.now();
-    const url = `${this.baseUrl}/api/chat`;
+    const url = this.buildUrl("/api/chat");
     const requestBody = JSON.stringify({
       model: this.modelId,
       messages,
@@ -244,7 +268,7 @@ export class OllamaProvider implements AiProvider {
     const timeout = setTimeout(() => controller.abort(), 20 * 60 * 1000);
 
     try {
-      const response = await longRunningFetch(`${this.baseUrl}/api/chat`, {
+      const response = await longRunningFetch(this.buildUrl("/api/chat"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -367,7 +391,7 @@ export class OllamaProvider implements AiProvider {
     const timeout = setTimeout(() => controller.abort(), 20 * 60 * 1000); // 20 minutes for CPU inference
 
     const requestStart = Date.now();
-    const url = `${this.baseUrl}/api/chat`;
+    const url = this.buildUrl("/api/chat");
     const requestBody = JSON.stringify({
       model: this.modelId,
       messages,
@@ -606,7 +630,7 @@ export class OllamaProvider implements AiProvider {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 3000);
       try {
-        const response = await fetch(`${this.baseUrl}/api/tags`, {
+        const response = await fetch(this.buildUrl("/api/tags"), {
           signal: controller.signal,
           headers: this.getAuthHeaders(),
         });
@@ -623,7 +647,7 @@ export class OllamaProvider implements AiProvider {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
     try {
-      const response = await fetch(`${this.baseUrl}/api/tags`, {
+      const response = await fetch(this.buildUrl("/api/tags"), {
         signal: controller.signal,
         headers: this.getAuthHeaders(),
       });

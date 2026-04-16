@@ -89,10 +89,11 @@ export function ProviderConfigForm({ isOpen, onClose, onSubmit, editConfig }: Pr
   });
 
   const provider = watch('provider');
+  // Ollama Cloud intentionally has no Base URL field: the backend pins it
+  // to https://ollama.com to close an SSRF vector, so exposing the input
+  // would just confuse the user (the value would be silently dropped).
   const needsBaseUrl =
-    provider === 'ollama' ||
-    provider === 'ollama-cloud' ||
-    provider === 'openai-compatible';
+    provider === 'ollama' || provider === 'openai-compatible';
   const needsApiKey = provider !== 'ollama';
   const modelSuggestions = AI_PROVIDER_DEFAULT_MODELS[provider] || [];
 
@@ -274,25 +275,16 @@ export function ProviderConfigForm({ isOpen, onClose, onSubmit, editConfig }: Pr
           )}
 
           {needsBaseUrl && (
-            <div>
-              <Input
-                label="Base URL"
-                {...register('baseUrl')}
-                error={errors.baseUrl?.message}
-                placeholder={
-                  provider === 'ollama'
-                    ? 'http://localhost:11434'
-                    : provider === 'ollama-cloud'
-                      ? 'https://ollama.com'
-                      : 'https://api.example.com/v1'
-                }
-              />
-              {provider === 'ollama-cloud' && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Leave blank to use the default <code>https://ollama.com</code> endpoint.
-                </p>
-              )}
-            </div>
+            <Input
+              label="Base URL"
+              {...register('baseUrl')}
+              error={errors.baseUrl?.message}
+              placeholder={
+                provider === 'ollama'
+                  ? 'http://localhost:11434'
+                  : 'https://api.example.com/v1'
+              }
+            />
           )}
 
           <Input

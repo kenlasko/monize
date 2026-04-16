@@ -40,9 +40,11 @@ export class AiProviderFactory {
             "apiKey is required for ollama-cloud provider",
           );
         }
+        // Ollama Cloud uses a fixed SaaS endpoint; any user-supplied
+        // baseUrl is intentionally dropped here to close an SSRF vector.
         return new OllamaCloudProvider(
           apiKey,
-          config.baseUrl || undefined,
+          undefined,
           config.model || undefined,
         );
 

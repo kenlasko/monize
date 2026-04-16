@@ -18,13 +18,19 @@ import { OllamaProvider } from "./ollama.provider";
  * backends -- that flattening actively breaks tool calling against Ollama
  * Cloud, which would otherwise handle the native shape correctly.
  */
+const OLLAMA_CLOUD_BASE_URL = "https://ollama.com";
+
 export class OllamaCloudProvider extends OllamaProvider {
   override readonly name = "ollama-cloud";
 
   private readonly apiKey: string;
 
-  constructor(apiKey: string, baseUrl?: string, model?: string) {
-    super(baseUrl || "https://ollama.com", model);
+  // The baseUrl argument is intentionally ignored: Ollama Cloud is a fixed
+  // SaaS endpoint, so accepting a user-supplied URL here would be a pure
+  // SSRF vector with no upside. Kept in the signature so factory callers
+  // don't need a special case.
+  constructor(apiKey: string, _baseUrl?: string, model?: string) {
+    super(OLLAMA_CLOUD_BASE_URL, model);
     this.apiKey = apiKey;
   }
 
@@ -48,7 +54,7 @@ export class OllamaCloudProvider extends OllamaProvider {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
     const model = this.modelId;
-    const url = `${this.baseUrl}/api/chat`;
+    const url = this.buildUrl("/api/chat");
     try {
       const response = await fetch(url, {
         method: "POST",
