@@ -74,6 +74,52 @@ export function billReminderTemplate(
   `;
 }
 
+interface MortgageReminderData {
+  name: string;
+  termEndDate: string;
+  daysUntilRenewal: number;
+}
+
+export function mortgageReminderTemplate(
+  firstName: string,
+  mortgages: MortgageReminderData[],
+  appUrl: string,
+): string {
+  const safeName = escapeHtml(firstName || "there");
+  const mortgageRows = mortgages
+    .map(
+      (m) =>
+        `<tr>
+          <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb;">${escapeHtml(m.name)}</td>
+          <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb;">${escapeHtml(m.termEndDate)}</td>
+          <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right; color: ${m.daysUntilRenewal <= 30 ? "#dc2626" : "#d97706"}; font-weight: 500;">${m.daysUntilRenewal} day${m.daysUntilRenewal === 1 ? "" : "s"}</td>
+        </tr>`,
+    )
+    .join("");
+
+  return `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2 style="color: #1f2937;">Mortgage Renewal Reminder</h2>
+      <p style="color: #374151;">Hi ${safeName},</p>
+      <p style="color: #374151;">You have ${mortgages.length} mortgage${mortgages.length === 1 ? "" : "s"} with an upcoming term renewal. Contact your lender to discuss renewal options before the term ends:</p>
+      <table style="width: 100%; border-collapse: collapse; margin: 16px 0; border: 1px solid #e5e7eb; border-radius: 8px;">
+        <thead>
+          <tr style="background: #f3f4f6;">
+            <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: #374151;">Mortgage</th>
+            <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: #374151;">Term End Date</th>
+            <th style="padding: 10px 12px; text-align: right; font-weight: 600; color: #374151;">Time Remaining</th>
+          </tr>
+        </thead>
+        <tbody>${mortgageRows}</tbody>
+      </table>
+      <p style="margin-top: 20px;">
+        <a href="${appUrl}/accounts" style="display: inline-block; padding: 10px 20px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">View Accounts</a>
+      </p>
+      <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- Monize</p>
+    </div>
+  `;
+}
+
 interface BudgetAlertData {
   title: string;
   message: string;

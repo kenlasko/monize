@@ -3,6 +3,7 @@ import {
   billReminderTemplate,
   passwordResetTemplate,
   budgetMonthlySummaryTemplate,
+  mortgageReminderTemplate,
 } from "./email-templates";
 
 describe("Email Templates", () => {
@@ -648,6 +649,156 @@ describe("Email Templates", () => {
 
       expect(html).toContain("#dc2626");
       expect(html).toContain("40/100");
+    });
+  });
+
+  describe("mortgageReminderTemplate()", () => {
+    const sampleMortgages = [
+      {
+        name: "Home Mortgage",
+        termEndDate: "2026-06-15",
+        daysUntilRenewal: 45,
+      },
+      {
+        name: "Cottage Mortgage",
+        termEndDate: "2026-05-01",
+        daysUntilRenewal: 15,
+      },
+    ];
+
+    it("renders the greeting with the provided name", () => {
+      const html = mortgageReminderTemplate(
+        "Alice",
+        sampleMortgages,
+        "https://monize.app",
+      );
+
+      expect(html).toContain("Hi Alice,");
+    });
+
+    it("renders mortgage rows with name, term end date, and days", () => {
+      const html = mortgageReminderTemplate(
+        "Alice",
+        sampleMortgages,
+        "https://monize.app",
+      );
+
+      expect(html).toContain("Home Mortgage");
+      expect(html).toContain("2026-06-15");
+      expect(html).toContain("45 days");
+      expect(html).toContain("Cottage Mortgage");
+      expect(html).toContain("2026-05-01");
+      expect(html).toContain("15 days");
+    });
+
+    it("includes the Mortgage Renewal Reminder heading", () => {
+      const html = mortgageReminderTemplate(
+        "Alice",
+        sampleMortgages,
+        "https://monize.app",
+      );
+
+      expect(html).toContain("Mortgage Renewal Reminder");
+    });
+
+    it("uses plural grammar for multiple mortgages", () => {
+      const html = mortgageReminderTemplate(
+        "Alice",
+        sampleMortgages,
+        "https://monize.app",
+      );
+
+      expect(html).toContain("2 mortgages");
+    });
+
+    it("uses singular grammar for a single mortgage", () => {
+      const html = mortgageReminderTemplate(
+        "Alice",
+        [sampleMortgages[0]],
+        "https://monize.app",
+      );
+
+      expect(html).toContain("1 mortgage with an upcoming term renewal");
+    });
+
+    it("uses singular day for 1 day remaining", () => {
+      const html = mortgageReminderTemplate(
+        "Alice",
+        [{ name: "Home", termEndDate: "2026-04-17", daysUntilRenewal: 1 }],
+        "https://monize.app",
+      );
+
+      expect(html).toContain("1 day<");
+      expect(html).not.toContain("1 days");
+    });
+
+    it("uses red color for mortgages within 30 days", () => {
+      const html = mortgageReminderTemplate(
+        "Alice",
+        [{ name: "Urgent", termEndDate: "2026-05-01", daysUntilRenewal: 15 }],
+        "https://monize.app",
+      );
+
+      expect(html).toContain("#dc2626");
+    });
+
+    it("uses amber color for mortgages between 31 and 60 days", () => {
+      const html = mortgageReminderTemplate(
+        "Alice",
+        [{ name: "Soon", termEndDate: "2026-06-15", daysUntilRenewal: 45 }],
+        "https://monize.app",
+      );
+
+      expect(html).toContain("#d97706");
+    });
+
+    it("includes the appUrl link to the accounts page", () => {
+      const html = mortgageReminderTemplate(
+        "Alice",
+        sampleMortgages,
+        "https://monize.app",
+      );
+
+      expect(html).toContain('href="https://monize.app/accounts"');
+      expect(html).toContain("View Accounts");
+    });
+
+    it('falls back to "there" when firstName is empty', () => {
+      const html = mortgageReminderTemplate(
+        "",
+        sampleMortgages,
+        "https://monize.app",
+      );
+
+      expect(html).toContain("Hi there,");
+    });
+
+    it("escapes HTML in mortgage names", () => {
+      const html = mortgageReminderTemplate(
+        "Alice",
+        [
+          {
+            name: '<script>alert("xss")</script>',
+            termEndDate: "2026-06-15",
+            daysUntilRenewal: 45,
+          },
+        ],
+        "https://monize.app",
+      );
+
+      expect(html).not.toContain("<script>");
+      expect(html).toContain("&lt;script&gt;");
+    });
+
+    it("escapes HTML in firstName", () => {
+      const html = mortgageReminderTemplate(
+        '<img src=x onerror="alert(1)">',
+        sampleMortgages,
+        "https://monize.app",
+      );
+
+      expect(html).not.toContain("<img");
+      expect(html).toContain("&lt;img");
     });
   });
 });

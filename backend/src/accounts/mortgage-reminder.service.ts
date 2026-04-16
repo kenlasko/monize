@@ -2,15 +2,21 @@ import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, IsNull, Not } from "typeorm";
+import { ConfigService } from "@nestjs/config";
 import { Account, AccountType } from "./entities/account.entity";
+import { User } from "../users/entities/user.entity";
+import { UserPreference } from "../users/entities/user-preference.entity";
+import { EmailService } from "../notifications/email.service";
+import { mortgageReminderTemplate } from "../notifications/email-templates";
 import { formatDateYMD } from "../common/date-utils";
 
 /**
  * Service for handling mortgage term renewal reminders
  *
- * Runs daily to check for mortgages with term end dates approaching
- * and logs reminders. When a full notification system is implemented,
- * this will create actual user notifications.
+ * Runs daily to check for mortgages with term end dates approaching and
+ * sends an email reminder to each affected user (respecting their
+ * notificationEmail preference). Also logs each detected renewal so ops
+ * can see what was processed even when SMTP is unavailable.
  */
 @Injectable()
 export class MortgageReminderService {
@@ -19,6 +25,12 @@ export class MortgageReminderService {
   constructor(
     @InjectRepository(Account)
     private accountsRepository: Repository<Account>,
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
+    @InjectRepository(UserPreference)
+    private preferencesRepository: Repository<UserPreference>,
+    private emailService: EmailService,
+    private configService: ConfigService,
   ) {}
 
   /**
@@ -41,20 +53,80 @@ export class MortgageReminderService {
         `Mortgage renewal reminder: ${mortgage.name} (User: ${mortgage.userId}) ` +
           `- Term ends in ${daysUntilRenewal} days on ${formatDateYMD(mortgage.termEndDate!)}`,
       );
-
-      // TODO: When notification system is implemented, create a notification here
-      // await this.notificationsService.create({
-      //   userId: mortgage.userId,
-      //   type: 'MORTGAGE_RENEWAL',
-      //   title: 'Mortgage Term Renewal Approaching',
-      //   message: `Your mortgage term for "${mortgage.name}" ends on ${mortgage.termEndDate.toLocaleDateString()}. Contact your lender to discuss renewal options.`,
-      //   accountId: mortgage.id,
-      //   expiresAt: new Date(mortgage.termEndDate.getTime() + 30 * 24 * 60 * 60 * 1000), // Expire 30 days after term end
-      // });
     }
 
     this.logger.log(
       `Found ${upcomingRenewals.length} mortgage(s) with upcoming renewals`,
+    );
+
+    if (!this.emailService.getStatus().configured) {
+      this.logger.debug(
+        "SMTP not configured, skipping mortgage renewal emails",
+      );
+      return;
+    }
+
+    // Group mortgages by userId so each user receives a single email
+    const mortgagesByUser = new Map<string, Account[]>();
+    for (const mortgage of upcomingRenewals) {
+      const existing = mortgagesByUser.get(mortgage.userId) || [];
+      existing.push(mortgage);
+      mortgagesByUser.set(mortgage.userId, existing);
+    }
+
+    const appUrl = this.configService.get<string>(
+      "PUBLIC_APP_URL",
+      "http://localhost:3000",
+    );
+    let sentCount = 0;
+    let skipCount = 0;
+
+    for (const [userId, mortgages] of mortgagesByUser) {
+      try {
+        const prefs = await this.preferencesRepository.findOne({
+          where: { userId },
+        });
+        if (prefs && !prefs.notificationEmail) {
+          skipCount++;
+          continue;
+        }
+
+        const user = await this.usersRepository.findOne({
+          where: { id: userId },
+        });
+        if (!user || !user.email) {
+          skipCount++;
+          continue;
+        }
+
+        const mortgageData = mortgages.map((m) => ({
+          name: m.name,
+          termEndDate: formatDateYMD(m.termEndDate!),
+          daysUntilRenewal: this.getDaysUntilDate(m.termEndDate!),
+        }));
+
+        const html = mortgageReminderTemplate(
+          user.firstName || "",
+          mortgageData,
+          appUrl,
+        );
+        const subject =
+          mortgages.length === 1
+            ? "Monize: 1 upcoming mortgage renewal"
+            : `Monize: ${mortgages.length} upcoming mortgage renewals`;
+
+        await this.emailService.sendMail(user.email, subject, html);
+        sentCount++;
+      } catch (error) {
+        this.logger.error(
+          `Failed to send mortgage reminder to user ${userId}`,
+          error instanceof Error ? error.stack : error,
+        );
+      }
+    }
+
+    this.logger.log(
+      `Mortgage reminders complete: ${sentCount} sent, ${skipCount} skipped`,
     );
   }
 

@@ -4,6 +4,8 @@ import { Account } from "./entities/account.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { InvestmentTransaction } from "../securities/entities/investment-transaction.entity";
 import { Category } from "../categories/entities/category.entity";
+import { User } from "../users/entities/user.entity";
+import { UserPreference } from "../users/entities/user-preference.entity";
 import { AccountsService } from "./accounts.service";
 import { AccountExportService } from "./account-export.service";
 import { LoanMortgageAccountService } from "./loan-mortgage-account.service";
@@ -15,6 +17,7 @@ import { CategoriesModule } from "../categories/categories.module";
 import { ScheduledTransactionsModule } from "../scheduled-transactions/scheduled-transactions.module";
 import { NetWorthModule } from "../net-worth/net-worth.module";
 import { ActionHistoryModule } from "../action-history/action-history.module";
+import { NotificationsModule } from "../notifications/notifications.module";
 
 @Module({
   imports: [
@@ -23,11 +26,14 @@ import { ActionHistoryModule } from "../action-history/action-history.module";
       Transaction,
       InvestmentTransaction,
       Category,
+      User,
+      UserPreference,
     ]),
     forwardRef(() => CategoriesModule),
     forwardRef(() => ScheduledTransactionsModule),
     forwardRef(() => NetWorthModule),
     ActionHistoryModule,
+    NotificationsModule,
   ],
   providers: [
     AccountsService,
