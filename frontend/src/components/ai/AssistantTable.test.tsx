@@ -66,7 +66,7 @@ describe('AssistantTable', () => {
 
     expect(exportToCsvMock).toHaveBeenCalledTimes(1);
     expect(exportToCsvMock).toHaveBeenCalledWith(
-      'ai-table',
+      'category',
       ['Category', 'Amount'],
       [
         ['Food', '$100'],
@@ -98,9 +98,70 @@ describe('AssistantTable', () => {
     );
 
     expect(exportToCsvMock).toHaveBeenCalledWith(
-      'ai-table',
+      'metric',
       ['Metric', 'Value'],
       [['Net Worth', '$10,000']],
+    );
+  });
+
+  it('uses a preceding heading as the CSV filename', () => {
+    render(
+      <div>
+        <h2>Spending by Category</h2>
+        <AssistantTable>
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Food</td>
+              <td>$100</td>
+            </tr>
+          </tbody>
+        </AssistantTable>
+      </div>,
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /download table as csv/i }),
+    );
+
+    expect(exportToCsvMock).toHaveBeenCalledWith(
+      'spending-by-category',
+      ['Category', 'Amount'],
+      [['Food', '$100']],
+    );
+  });
+
+  it('falls back to "ai-table" when neither heading nor header cell is available', () => {
+    render(
+      <AssistantTable>
+        <thead>
+          <tr>
+            <th></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>A</td>
+            <td>B</td>
+          </tr>
+        </tbody>
+      </AssistantTable>,
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /download table as csv/i }),
+    );
+
+    expect(exportToCsvMock).toHaveBeenCalledWith(
+      'ai-table',
+      ['', ''],
+      [['A', 'B']],
     );
   });
 });

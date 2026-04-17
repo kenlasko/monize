@@ -8,7 +8,40 @@ interface AssistantTableProps {
   children: ReactNode;
 }
 
+function sanitizeFilename(name: string): string {
+  const cleaned = name
+    .replace(/[^a-z0-9]+/gi, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60);
+  return cleaned.toLowerCase() || 'ai-table';
+}
+
+/**
+ * Derive a filename-appropriate label for the table. Prefers the nearest
+ * preceding heading (matches how the markdown author introduces the table),
+ * then falls back to the first header cell so the CSV name reflects the
+ * table's subject rather than a generic placeholder.
+ */
+function deriveTableName(
+  wrapper: HTMLElement | null,
+  table: HTMLTableElement,
+): string {
+  const heading = wrapper?.previousElementSibling;
+  if (
+    heading &&
+    /^(H[1-6]|P)$/.test(heading.tagName) &&
+    heading.textContent?.trim()
+  ) {
+    return heading.textContent.trim();
+  }
+  const firstHeader = table
+    .querySelector('thead th')
+    ?.textContent?.trim();
+  return firstHeader || '';
+}
+
 export function AssistantTable({ children }: AssistantTableProps) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLTableElement>(null);
 
   const handleDownload = () => {
@@ -29,11 +62,14 @@ export function AssistantTable({ children }: AssistantTableProps) {
       return;
     }
 
-    exportToCsv('ai-table', headers, rows);
+    const filename = sanitizeFilename(
+      deriveTableName(wrapperRef.current, table),
+    );
+    exportToCsv(filename, headers, rows);
   };
 
   return (
-    <div className="my-2">
+    <div ref={wrapperRef} className="my-2">
       <div className="flex justify-end">
         <button
           type="button"
