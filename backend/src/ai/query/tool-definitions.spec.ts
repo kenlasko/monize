@@ -1,8 +1,8 @@
 import { FINANCIAL_TOOLS } from "./tool-definitions";
 
 describe("FINANCIAL_TOOLS", () => {
-  it("defines exactly 9 tools", () => {
-    expect(FINANCIAL_TOOLS).toHaveLength(9);
+  it("defines exactly 10 tools", () => {
+    expect(FINANCIAL_TOOLS).toHaveLength(10);
   });
 
   it("has unique tool names", () => {
@@ -17,6 +17,7 @@ describe("FINANCIAL_TOOLS", () => {
     "get_income_summary",
     "get_net_worth_history",
     "compare_periods",
+    "get_transfers",
     "get_budget_status",
     "calculate",
     "render_chart",
@@ -136,6 +137,23 @@ describe("FINANCIAL_TOOLS", () => {
         Record<string, unknown>
       >;
       expect(props.groupBy.enum).toEqual(["category", "payee"]);
+    });
+  });
+
+  describe("get_transfers", () => {
+    it("requires startDate and endDate", () => {
+      const tool = FINANCIAL_TOOLS.find((t) => t.name === "get_transfers")!;
+      expect(tool.inputSchema.required).toEqual(["startDate", "endDate"]);
+    });
+
+    it("supports optional accountNames filter", () => {
+      const tool = FINANCIAL_TOOLS.find((t) => t.name === "get_transfers")!;
+      const props = tool.inputSchema.properties as Record<
+        string,
+        Record<string, unknown>
+      >;
+      expect(props.accountNames).toBeDefined();
+      expect(props.accountNames.type).toBe("array");
     });
   });
 

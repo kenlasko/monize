@@ -169,6 +169,31 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
     },
   },
   {
+    name: "get_transfers",
+    description:
+      "Get transfer activity between the user's own accounts for a date range. Returns per-account inbound (money received from another account), outbound (money sent to another account), net movement, and transfer count. Transfers are deliberately excluded from spending and income tools because they net to zero across accounts; use this tool for questions like 'how much did I move into my savings', 'what went out of chequing to other accounts', or 'what are my transfers between accounts'.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        startDate: {
+          type: "string",
+          description: "Start date (YYYY-MM-DD)",
+        },
+        endDate: {
+          type: "string",
+          description: "End date (YYYY-MM-DD)",
+        },
+        accountNames: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Optional: filter to specific account names. Use exact names from the user's account list.",
+        },
+      },
+      required: ["startDate", "endDate"],
+    },
+  },
+  {
     name: "get_budget_status",
     description:
       "Get budget status for a specific period. Returns total budgeted vs actual spending, per-category breakdowns, spending velocity, safe daily spend, and health score. Use for questions like 'how am I doing on my budget?', 'which categories am I overspending in?', or 'how much can I still spend this month?'.",

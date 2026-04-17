@@ -64,6 +64,7 @@ describe("ToolExecutorService", () => {
       select: jest.fn().mockReturnThis(),
       addSelect: jest.fn().mockReturnThis(),
       groupBy: jest.fn().mockReturnThis(),
+      addGroupBy: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
       getRawMany: jest.fn().mockResolvedValue([]),
     };
@@ -198,6 +199,16 @@ describe("ToolExecutorService", () => {
       expect(result.data).toBeDefined();
       expect(result.summary).toContain("Net worth history");
       expect(result.sources[0].type).toBe("net_worth");
+    });
+
+    it("routes to get_transfers tool", async () => {
+      const result = await service.execute(userId, "get_transfers", {
+        startDate: "2026-01-01",
+        endDate: "2026-01-31",
+      });
+
+      expect(result.data).toBeDefined();
+      expect(result.sources[0].type).toBe("transfers");
     });
 
     it("routes to compare_periods tool", async () => {
@@ -882,6 +893,120 @@ describe("ToolExecutorService", () => {
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         "NOT EXISTS (SELECT 1 FROM investment_transactions it WHERE it.transaction_id = t.id)",
       );
+    });
+  });
+
+  describe("get_transfers", () => {
+    it("filters transactions to transfers in the requested date range", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValueOnce([]);
+
+      await service.execute(userId, "get_transfers", {
+        startDate: "2026-01-01",
+        endDate: "2026-01-31",
+      });
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "t.isTransfer = true",
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "t.transactionDate >= :startDate",
+        { startDate: "2026-01-01" },
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "t.transactionDate <= :endDate",
+        { endDate: "2026-01-31" },
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "t.status != 'VOID'",
+      );
+    });
+
+    it("aggregates inbound and outbound amounts per account", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValueOnce([
+        {
+          accountName: "Checking",
+          currencyCode: "USD",
+          inbound: "0",
+          outbound: "1500",
+          count: "3",
+        },
+        {
+          accountName: "Savings",
+          currencyCode: "USD",
+          inbound: "1500",
+          outbound: "0",
+          count: "3",
+        },
+      ]);
+
+      const result = await service.execute(userId, "get_transfers", {
+        startDate: "2026-01-01",
+        endDate: "2026-01-31",
+      });
+
+      const data = result.data as Record<string, unknown>;
+      const accounts = data.accounts as Array<Record<string, unknown>>;
+      expect(accounts).toHaveLength(2);
+      expect(accounts[0]).toMatchObject({
+        accountName: "Checking",
+        inbound: 0,
+        outbound: 1500,
+        net: -1500,
+        transferCount: 3,
+      });
+      expect(accounts[1]).toMatchObject({
+        accountName: "Savings",
+        inbound: 1500,
+        outbound: 0,
+        net: 1500,
+        transferCount: 3,
+      });
+      expect(data.totalInbound).toBe(1500);
+      expect(data.totalOutbound).toBe(1500);
+      expect(data.transferCount).toBe(6);
+    });
+
+    it("resolves accountNames filter to account IDs", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValueOnce([]);
+
+      await service.execute(userId, "get_transfers", {
+        startDate: "2026-01-01",
+        endDate: "2026-01-31",
+        accountNames: ["Savings"],
+      });
+
+      expect(mockAccountsService.findAll).toHaveBeenCalledWith(userId, false);
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "t.accountId IN (:...accountIds)",
+        { accountIds: ["acc-2"] },
+      );
+    });
+
+    it("produces a human-readable summary and source metadata", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValueOnce([
+        {
+          accountName: "Savings",
+          currencyCode: "USD",
+          inbound: "500",
+          outbound: "0",
+          count: "1",
+        },
+      ]);
+
+      const result = await service.execute(userId, "get_transfers", {
+        startDate: "2026-01-01",
+        endDate: "2026-01-31",
+        accountNames: ["Savings"],
+      });
+
+      expect(result.summary).toContain("1 transfer transactions");
+      expect(result.summary).toContain("Inbound: 500.00");
+      expect(result.sources).toHaveLength(1);
+      expect(result.sources[0]).toMatchObject({
+        type: "transfers",
+        description: "Transfer activity for Savings",
+        dateRange: "2026-01-01 to 2026-01-31",
+      });
     });
   });
 

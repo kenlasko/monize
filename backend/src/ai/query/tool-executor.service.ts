@@ -126,6 +126,9 @@ export class ToolExecutorService {
         case "compare_periods":
           result = await this.comparePeriods(userId, validatedInput);
           break;
+        case "get_transfers":
+          result = await this.getTransfers(userId, validatedInput);
+          break;
         case "get_budget_status":
           result = await this.getBudgetStatus(userId, validatedInput);
           break;
@@ -826,6 +829,89 @@ export class ToolExecutorService {
     }
 
     return items.map((r) => ({ label: r.label, total: r.total }));
+  }
+
+  private async getTransfers(
+    userId: string,
+    input: Record<string, unknown>,
+  ): Promise<ToolResult> {
+    const startDate = input.startDate as string;
+    const endDate = input.endDate as string;
+    const accountNames = input.accountNames as string[] | undefined;
+    const accountIds = await this.resolveAccountIds(userId, accountNames);
+
+    // Transfers are stored as two linked transactions (one per side). A row
+    // with amount > 0 represents money received into that account; amount < 0
+    // represents money sent out. We aggregate per account so the answer
+    // mirrors "money in / money out" as the user thinks about it.
+    const qb = this.transactionRepo
+      .createQueryBuilder("t")
+      .leftJoin("t.account", "transferAccount")
+      .select("transferAccount.name", "accountName")
+      .addSelect("t.currencyCode", "currencyCode")
+      .addSelect(
+        "SUM(CASE WHEN t.amount > 0 THEN t.amount ELSE 0 END)",
+        "inbound",
+      )
+      .addSelect(
+        "SUM(CASE WHEN t.amount < 0 THEN ABS(t.amount) ELSE 0 END)",
+        "outbound",
+      )
+      .addSelect("COUNT(*)", "count")
+      .where("t.userId = :userId", { userId })
+      .andWhere("t.isTransfer = true")
+      .andWhere("t.transactionDate >= :startDate", { startDate })
+      .andWhere("t.transactionDate <= :endDate", { endDate })
+      .andWhere("t.status != 'VOID'")
+      .groupBy("transferAccount.id")
+      .addGroupBy("transferAccount.name")
+      .addGroupBy("t.currencyCode")
+      .orderBy("transferAccount.name", "ASC");
+
+    if (accountIds && accountIds.length > 0) {
+      qb.andWhere("t.accountId IN (:...accountIds)", { accountIds });
+    }
+
+    const rows = await qb.getRawMany();
+
+    const accounts = rows.map((r) => {
+      const inbound = roundMoney(Number(r.inbound) || 0);
+      const outbound = roundMoney(Number(r.outbound) || 0);
+      return {
+        accountName: r.accountName,
+        currency: r.currencyCode,
+        inbound,
+        outbound,
+        net: roundMoney(inbound - outbound),
+        transferCount: Number(r.count) || 0,
+      };
+    });
+
+    // totalInbound and totalOutbound count both sides of every transfer, so
+    // when no account filter is applied they're equal (modulo multi-currency
+    // conversions). That's intentional -- it lets the user see gross movement.
+    const totalInbound = sumMoney(accounts.map((a) => a.inbound));
+    const totalOutbound = sumMoney(accounts.map((a) => a.outbound));
+    const transferCount = accounts.reduce((s, a) => s + a.transferCount, 0);
+
+    return {
+      data: {
+        accounts,
+        totalInbound,
+        totalOutbound,
+        transferCount,
+      },
+      summary: `${transferCount} transfer transactions across ${accounts.length} account${accounts.length === 1 ? "" : "s"} from ${startDate} to ${endDate}. Inbound: ${totalInbound.toFixed(2)}, Outbound: ${totalOutbound.toFixed(2)}.`,
+      sources: [
+        {
+          type: "transfers",
+          description: accountNames
+            ? `Transfer activity for ${accountNames.join(", ")}`
+            : "Transfer activity across all accounts",
+          dateRange: `${startDate} to ${endDate}`,
+        },
+      ],
+    };
   }
 
   private async getBudgetStatus(
