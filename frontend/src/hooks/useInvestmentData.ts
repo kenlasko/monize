@@ -395,6 +395,9 @@ export function useInvestmentData() {
   const handleCashFormSuccess = () => {
     closeCash();
     loadCashTransactions(cashAccountIds, cashCurrentPage, cashFiltersObj);
+    // The portfolio summary drives the Holdings by Account section's cash
+    // balances, so refresh it when a cash transaction changes.
+    loadPortfolioSummary(selectedAccountIds);
   };
 
   const refreshCashTransactions = useCallback(() => {

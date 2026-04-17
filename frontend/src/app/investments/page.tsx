@@ -23,6 +23,7 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useInvestmentData } from '@/hooks/useInvestmentData';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { Account } from '@/types/account';
+import { buildAccountFilterLabel } from '@/lib/account-utils';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PAGE_SIZE } from '@/lib/constants';
 import { formatRelativeTime } from '@/lib/format';
@@ -124,6 +125,15 @@ function InvestmentsContent() {
     return account.name;
   };
 
+  // Summary/allocation/chart titles show which accounts the filter covers.
+  const accountFilterLabel = useMemo(() => {
+    return buildAccountFilterLabel(
+      data.selectedAccountIds,
+      data.selectableAccounts,
+      (a) => getAccountDisplayName(a as Account),
+    );
+  }, [data.selectedAccountIds, data.selectableAccounts]);
+
   return (
     <PageLayout>
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
@@ -192,6 +202,7 @@ function InvestmentsContent() {
                   ? data.accounts.find(a => a.id === data.selectedAccountIds[0])?.currencyCode ?? null
                   : null
               }
+              titleSuffix={accountFilterLabel}
             />
             <AssetAllocationChart
               allocation={data.portfolioSummary ? { allocation: data.portfolioSummary.allocation, totalValue: data.portfolioSummary.totalPortfolioValue } : null}
@@ -202,6 +213,7 @@ function InvestmentsContent() {
                   : null
               }
               holdingsByAccount={data.portfolioSummary?.holdingsByAccount}
+              titleSuffix={accountFilterLabel}
             />
           </div>
 
@@ -214,6 +226,7 @@ function InvestmentsContent() {
                   ? data.accounts.find(a => a.id === data.selectedAccountIds[0])?.currencyCode ?? null
                   : null
               }
+              titleSuffix={accountFilterLabel}
             />
           </div>
 

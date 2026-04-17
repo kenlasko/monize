@@ -29,12 +29,14 @@ interface PortfolioSummaryCardProps {
   summary: PortfolioSummary | null;
   isLoading: boolean;
   singleAccountCurrency?: string | null;
+  titleSuffix?: string;
 }
 
 export function PortfolioSummaryCard({
   summary,
   isLoading,
   singleAccountCurrency,
+  titleSuffix,
 }: PortfolioSummaryCardProps) {
   const { formatCurrency } = useNumberFormat();
   const { convertToDefault, defaultCurrency } = useExchangeRates();
@@ -113,7 +115,7 @@ export function PortfolioSummaryCard({
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          Portfolio Summary
+          Portfolio Summary{titleSuffix ? ` (${titleSuffix})` : ''}
         </h3>
         <div className="space-y-3">
           {[1, 2, 3, 4, 5].map((i) => (
@@ -131,7 +133,7 @@ export function PortfolioSummaryCard({
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          Portfolio Summary
+          Portfolio Summary{titleSuffix ? ` (${titleSuffix})` : ''}
         </h3>
         <p className="text-gray-500 dark:text-gray-400">
           No investment data available.
@@ -148,7 +150,7 @@ export function PortfolioSummaryCard({
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-        Portfolio Summary
+        Portfolio Summary{titleSuffix ? ` (${titleSuffix})` : ''}
       </h3>
 
       <div className="space-y-4">

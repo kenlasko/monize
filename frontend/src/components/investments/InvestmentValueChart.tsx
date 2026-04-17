@@ -26,9 +26,10 @@ const DAILY_RANGES = new Set(['1w', '1m', '3m', 'ytd', '1y']);
 interface InvestmentValueChartProps {
   accountIds?: string[];
   displayCurrency?: string | null;
+  titleSuffix?: string;
 }
 
-export function InvestmentValueChart({ accountIds, displayCurrency }: InvestmentValueChartProps) {
+export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix }: InvestmentValueChartProps) {
   const { formatCurrencyCompact, formatCurrencyAxis } = useNumberFormat();
   const { defaultCurrency } = useExchangeRates();
   const [chartPoints, setChartPoints] = useState<Array<{ name: string; Value: number }>>([]);
@@ -160,7 +161,7 @@ export function InvestmentValueChart({ accountIds, displayCurrency }: Investment
       {/* Header with title and date range buttons */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Portfolio Value Over Time
+          Portfolio Value Over Time{titleSuffix ? ` (${titleSuffix})` : ''}
         </h3>
         <DateRangeSelector
           ranges={['1w', '1m', '3m', 'ytd', '1y', '2y', '5y', 'all']}
