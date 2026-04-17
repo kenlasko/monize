@@ -34,7 +34,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
         },
         groupBy: {
           type: "string",
-          enum: ["category", "payee", "month", "week"],
+          enum: ["category", "payee", "year", "month", "week"],
           description: "How to group results for breakdown",
         },
         direction: {

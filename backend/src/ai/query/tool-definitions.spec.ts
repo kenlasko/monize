@@ -49,6 +49,7 @@ describe("FINANCIAL_TOOLS", () => {
       expect(props.groupBy.enum).toEqual([
         "category",
         "payee",
+        "year",
         "month",
         "week",
       ]);

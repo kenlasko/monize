@@ -22,7 +22,7 @@ export const queryTransactionsSchema = z.object({
   categoryNames: z.array(z.string().max(100)).optional(),
   accountNames: z.array(z.string().max(100)).optional(),
   searchText: z.string().max(200).optional(),
-  groupBy: z.enum(["category", "payee", "month", "week"]).optional(),
+  groupBy: z.enum(["category", "payee", "year", "month", "week"]).optional(),
   direction: directionSchema.optional(),
 });
 

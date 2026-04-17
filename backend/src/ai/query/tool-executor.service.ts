@@ -20,6 +20,7 @@ import { validateToolInput } from "./tool-input-schemas";
 import { executeCalculation, CalculateInput } from "./calculate-tool";
 import { sanitizePromptValue } from "../../common/sanitization.util";
 import { applyInvestmentTransactionFilters } from "../../common/investment-filter.util";
+import { getAllCategoryIdsWithChildren } from "../../common/category-tree.util";
 import {
   joinSplitsForAnalytics,
   SPLIT_AMOUNT,
@@ -189,9 +190,18 @@ export class ToolExecutorService {
       allCategories.map((c) => [c.name.toLowerCase(), c.id]),
     );
 
-    return categoryNames
+    const matchedIds = categoryNames
       .map((name) => nameMap.get(name.toLowerCase()))
       .filter((id): id is string => id !== undefined);
+
+    if (matchedIds.length === 0) return matchedIds;
+
+    // Expand parents to include their descendants. When the user asks about
+    // "Food" and Food has subcategories (Groceries, Dining Out), the
+    // grouped breakdown's `IN (:...categoryIds)` filter would otherwise
+    // skip every transaction tagged with the subcategory. `getSummary`
+    // does its own expansion; passing the expanded list there is a no-op.
+    return getAllCategoryIdsWithChildren(this.categoryRepo, userId, matchedIds);
   }
 
   private async queryTransactions(
@@ -369,6 +379,21 @@ export class ToolExecutorService {
             count: Number(r.count),
           })),
         );
+      }
+
+      case "year": {
+        qb.select("TO_CHAR(t.transactionDate, 'YYYY')", "year")
+          .addSelect(`SUM(ABS(${SPLIT_AMOUNT}))`, "total")
+          .addSelect("COUNT(*)", "count")
+          .groupBy("TO_CHAR(t.transactionDate, 'YYYY')")
+          .orderBy("year", "ASC");
+
+        const rows = await qb.getRawMany();
+        return rows.map((r) => ({
+          year: r.year,
+          total: roundMoney(Number(r.total)),
+          count: Number(r.count),
+        }));
       }
 
       case "month": {
