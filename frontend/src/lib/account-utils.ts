@@ -69,3 +69,40 @@ export const formatAccountType = (type: AccountType): string => {
 export const isInvestmentBrokerageAccount = (account: Account): boolean => {
   return account.accountSubType === 'INVESTMENT_BROKERAGE';
 };
+
+/**
+ * Build a human-readable label describing which accounts are currently in
+ * a filter, for use in section headers.
+ *
+ * - No selection (or empty): "All Accounts"
+ * - Selection covers more than half of the available accounts: "All but X, Y"
+ *   (names are the accounts that are NOT selected)
+ * - Otherwise: "X, Y" (names are the accounts that ARE selected)
+ */
+export function buildAccountFilterLabel(
+  selectedIds: string[],
+  availableAccounts: { id: string; name: string }[],
+  getDisplayName: (account: { id: string; name: string }) => string = (a) => a.name,
+): string {
+  if (availableAccounts.length === 0 || selectedIds.length === 0) {
+    return 'All Accounts';
+  }
+
+  const selectedSet = new Set(selectedIds);
+  const selected = availableAccounts.filter((a) => selectedSet.has(a.id));
+
+  if (selected.length === 0) {
+    return 'All Accounts';
+  }
+
+  if (selected.length === availableAccounts.length) {
+    return 'All Accounts';
+  }
+
+  if (selected.length > availableAccounts.length / 2) {
+    const unselected = availableAccounts.filter((a) => !selectedSet.has(a.id));
+    return `All but ${unselected.map(getDisplayName).join(', ')}`;
+  }
+
+  return selected.map(getDisplayName).join(', ');
+}

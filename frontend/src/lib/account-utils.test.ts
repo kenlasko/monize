@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { buildAccountDropdownOptions, formatAccountType, isInvestmentBrokerageAccount } from './account-utils';
+import {
+  buildAccountDropdownOptions,
+  buildAccountFilterLabel,
+  formatAccountType,
+  isInvestmentBrokerageAccount,
+} from './account-utils';
 import { Account } from '@/types/account';
 
 function makeAccount(overrides: Partial<Account> & { id: string; name: string }): Account {
@@ -202,5 +207,65 @@ describe('isInvestmentBrokerageAccount', () => {
   it('returns false for null subtype', () => {
     const account = makeAccount({ id: '1', name: 'Regular' });
     expect(isInvestmentBrokerageAccount(account)).toBe(false);
+  });
+});
+
+describe('buildAccountFilterLabel', () => {
+  const accounts = [
+    { id: '1', name: 'Alpha' },
+    { id: '2', name: 'Beta' },
+    { id: '3', name: 'Gamma' },
+    { id: '4', name: 'Delta' },
+  ];
+
+  it('returns "All Accounts" when no selection is applied', () => {
+    expect(buildAccountFilterLabel([], accounts)).toBe('All Accounts');
+  });
+
+  it('returns "All Accounts" when every account is selected', () => {
+    expect(
+      buildAccountFilterLabel(['1', '2', '3', '4'], accounts),
+    ).toBe('All Accounts');
+  });
+
+  it('returns "All Accounts" when the available account list is empty', () => {
+    expect(buildAccountFilterLabel(['1'], [])).toBe('All Accounts');
+  });
+
+  it('lists selected names when half or fewer are selected', () => {
+    expect(buildAccountFilterLabel(['1', '2'], accounts)).toBe('Alpha, Beta');
+  });
+
+  it('lists a single selected name', () => {
+    expect(buildAccountFilterLabel(['3'], accounts)).toBe('Gamma');
+  });
+
+  it('inverts to "All but ..." when more than half are selected', () => {
+    expect(
+      buildAccountFilterLabel(['1', '2', '3'], accounts),
+    ).toBe('All but Delta');
+  });
+
+  it('inverts to "All but ..." with multiple unselected names', () => {
+    const five = [...accounts, { id: '5', name: 'Epsilon' }];
+    // 3 of 5 is more than half (3 > 2.5), so invert.
+    expect(buildAccountFilterLabel(['1', '2', '3'], five)).toBe(
+      'All but Delta, Epsilon',
+    );
+  });
+
+  it('uses the display-name override when provided', () => {
+    const brokerages = [
+      { id: '1', name: 'TFSA - Brokerage' },
+      { id: '2', name: 'RRSP - Brokerage' },
+    ];
+    const result = buildAccountFilterLabel(['1'], brokerages, (a) =>
+      a.name.replace(' - Brokerage', ''),
+    );
+    expect(result).toBe('TFSA');
+  });
+
+  it('ignores selections for accounts not in the available list', () => {
+    expect(buildAccountFilterLabel(['99'], accounts)).toBe('All Accounts');
   });
 });

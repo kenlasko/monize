@@ -45,6 +45,7 @@ interface AssetAllocationChartProps {
   isLoading: boolean;
   singleAccountCurrency?: string | null;
   holdingsByAccount?: AccountHoldings[];
+  titleSuffix?: string;
 }
 
 export function AssetAllocationChart({
@@ -52,6 +53,7 @@ export function AssetAllocationChart({
   isLoading,
   singleAccountCurrency,
   holdingsByAccount,
+  titleSuffix,
 }: AssetAllocationChartProps) {
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
   const { defaultCurrency } = useExchangeRates();
@@ -92,7 +94,7 @@ export function AssetAllocationChart({
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          Asset Allocation
+          Asset Allocation{titleSuffix ? ` (${titleSuffix})` : ''}
         </h3>
         <div className="h-64 flex items-center justify-center">
           <div className="animate-pulse w-48 h-48 rounded-full bg-gray-200 dark:bg-gray-700" />
@@ -105,7 +107,7 @@ export function AssetAllocationChart({
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          Asset Allocation
+          Asset Allocation{titleSuffix ? ` (${titleSuffix})` : ''}
         </h3>
         <p className="text-gray-500 dark:text-gray-400">
           No allocation data available.
