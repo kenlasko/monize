@@ -221,7 +221,8 @@ export class ToolExecutorService {
     // Get summary totals. Exclude investment-linked cash transactions so
     // BUY/SELL/DIVIDEND cash movements don't appear as "expenses" or
     // "income" -- they're transfers between cash and securities, not
-    // spending.
+    // spending. Also exclude transfers so the summary matches the
+    // grouped breakdown, which already filters `isTransfer = false`.
     const summary = await this.analyticsService.getSummary(
       userId,
       accountIds,
@@ -232,6 +233,7 @@ export class ToolExecutorService {
       sanitizedSearchText,
       undefined,
       undefined,
+      true,
       true,
     );
 

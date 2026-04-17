@@ -227,11 +227,63 @@ describe("TransactionAnalyticsService", () => {
         );
       });
 
-      it("does not exclude transfers", async () => {
+      it("does not exclude transfers by default", async () => {
         await service.getSummary(userId);
 
         expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith(
           "transaction.isTransfer = false",
+        );
+      });
+    });
+
+    describe("excludeTransfers flag", () => {
+      const TRANSFER_EXCLUSION = "transaction.isTransfer = false";
+
+      it("does not apply the transfer exclusion by default", async () => {
+        await service.getSummary(userId);
+
+        expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith(
+          TRANSFER_EXCLUSION,
+        );
+      });
+
+      it("applies the transfer exclusion when the flag is true", async () => {
+        await service.getSummary(
+          userId,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          true,
+        );
+
+        expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+          TRANSFER_EXCLUSION,
+        );
+      });
+
+      it("does not apply the exclusion when the flag is explicitly false", async () => {
+        await service.getSummary(
+          userId,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          false,
+        );
+
+        expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith(
+          TRANSFER_EXCLUSION,
         );
       });
     });

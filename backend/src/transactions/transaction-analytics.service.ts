@@ -25,6 +25,7 @@ export class TransactionAnalyticsService {
     amountFrom?: number,
     amountTo?: number,
     excludeInvestmentLinked?: boolean,
+    excludeTransfers?: boolean,
   ): Promise<{
     totalIncome: number;
     totalExpenses: number;
@@ -73,6 +74,15 @@ export class TransactionAnalyticsService {
       queryBuilder.andWhere(
         "NOT EXISTS (SELECT 1 FROM investment_transactions it WHERE it.transaction_id = transaction.id)",
       );
+    }
+
+    // Optionally exclude transfers between own accounts. These net to
+    // zero across both sides but inflate per-side income/expense totals,
+    // so AI and analytics callers asking "how much did I spend" want
+    // them out. Callers that include "transfer" as a pseudo-category
+    // below must not set this flag, or the OR clause will match nothing.
+    if (excludeTransfers) {
+      queryBuilder.andWhere("transaction.isTransfer = false");
     }
 
     if (accountIds && accountIds.length > 0) {

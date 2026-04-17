@@ -304,6 +304,7 @@ describe("ToolExecutorService", () => {
         undefined, // amountFrom
         undefined, // amountTo
         true, // excludeInvestmentLinked
+        true, // excludeTransfers
       );
     });
 
@@ -325,6 +326,7 @@ describe("ToolExecutorService", () => {
         undefined,
         undefined,
         undefined,
+        true,
         true,
       );
     });
@@ -351,6 +353,7 @@ describe("ToolExecutorService", () => {
         undefined,
         undefined,
         true,
+        true,
       );
     });
 
@@ -371,6 +374,7 @@ describe("ToolExecutorService", () => {
         "Walmart",
         undefined,
         undefined,
+        true,
         true,
       );
     });
