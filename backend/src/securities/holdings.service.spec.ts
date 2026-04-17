@@ -515,6 +515,78 @@ describe("HoldingsService", () => {
       // The tiny residual (0.00005) should be snapped to exactly 0
       expect(result.quantity).toBe(0);
     });
+
+    it("rejects when selling more than held by default", async () => {
+      const existingHolding = {
+        id: "hold-1",
+        accountId: "acc-1",
+        securityId: "sec-1",
+        quantity: 0,
+        averageCost: 150,
+      };
+      holdingsRepository.findOne.mockResolvedValue(existingHolding);
+
+      await expect(
+        service.createOrUpdate("user-1", "acc-1", "sec-1", -100, 150),
+      ).rejects.toThrow(/Insufficient shares/);
+    });
+
+    it("allows negative intermediate state when allowNegative=true", async () => {
+      const existingHolding = {
+        id: "hold-1",
+        accountId: "acc-1",
+        securityId: "sec-1",
+        quantity: 0,
+        averageCost: 150,
+      };
+      holdingsRepository.findOne.mockResolvedValue(existingHolding);
+      holdingsRepository.save.mockImplementation((data) =>
+        Promise.resolve(data),
+      );
+
+      const result = await service.createOrUpdate(
+        "user-1",
+        "acc-1",
+        "sec-1",
+        -100,
+        150,
+        undefined,
+        true,
+      );
+
+      expect(result.quantity).toBe(-100);
+    });
+
+    it("does not update averageCost while running quantity stays non-positive", async () => {
+      // Reverse of a past BUY can leave quantity at -100 with the original
+      // avg cost of 50. Applying a new BUY(150 @ 60) bringing quantity to 50
+      // should inherit the new trade's price as the avg cost rather than
+      // producing a distorted blended value.
+      const existingHolding = {
+        id: "hold-1",
+        accountId: "acc-1",
+        securityId: "sec-1",
+        quantity: -100,
+        averageCost: 50,
+      };
+      holdingsRepository.findOne.mockResolvedValue(existingHolding);
+      holdingsRepository.save.mockImplementation((data) =>
+        Promise.resolve(data),
+      );
+
+      const result = await service.createOrUpdate(
+        "user-1",
+        "acc-1",
+        "sec-1",
+        150,
+        60,
+        undefined,
+        true,
+      );
+
+      expect(result.quantity).toBe(50);
+      expect(result.averageCost).toBe(60);
+    });
   });
 
   describe("updateHolding", () => {
@@ -1262,6 +1334,201 @@ describe("HoldingsService", () => {
         }),
       );
       expect(result.holdingsCreated).toBe(1);
+    });
+  });
+
+  describe("validateNoNegativeHoldingsHistory", () => {
+    it("returns silently when user has no brokerage accounts", async () => {
+      accountsRepository.find.mockResolvedValue([]);
+
+      await expect(
+        service.validateNoNegativeHoldingsHistory("user-1"),
+      ).resolves.toBeUndefined();
+      expect(investmentTransactionsRepository.find).not.toHaveBeenCalled();
+    });
+
+    it("allows a buy-then-sell sequence that ends at zero", async () => {
+      accountsRepository.find.mockResolvedValue([mockAccount]);
+      investmentTransactionsRepository.find.mockResolvedValue([
+        {
+          accountId: "acc-1",
+          securityId: "sec-1",
+          action: InvestmentAction.BUY,
+          quantity: 100,
+          transactionDate: "2024-01-01",
+          security: { symbol: "AAPL" },
+        },
+        {
+          accountId: "acc-1",
+          securityId: "sec-1",
+          action: InvestmentAction.SELL,
+          quantity: 100,
+          transactionDate: "2024-06-01",
+          security: { symbol: "AAPL" },
+        },
+      ]);
+
+      await expect(
+        service.validateNoNegativeHoldingsHistory("user-1"),
+      ).resolves.toBeUndefined();
+    });
+
+    it("throws when a SELL at some date would drop holdings below zero", async () => {
+      accountsRepository.find.mockResolvedValue([mockAccount]);
+      investmentTransactionsRepository.find.mockResolvedValue([
+        {
+          accountId: "acc-1",
+          securityId: "sec-1",
+          action: InvestmentAction.BUY,
+          quantity: 50,
+          transactionDate: "2024-01-01",
+          security: { symbol: "AAPL" },
+        },
+        {
+          accountId: "acc-1",
+          securityId: "sec-1",
+          action: InvestmentAction.SELL,
+          quantity: 100,
+          transactionDate: "2024-06-01",
+          security: { symbol: "AAPL" },
+        },
+      ]);
+
+      await expect(
+        service.validateNoNegativeHoldingsHistory("user-1"),
+      ).rejects.toThrow(/negative/i);
+    });
+
+    it("does not count a later BUY to cover an earlier oversold SELL", async () => {
+      // Transactions are ordered by date, so an oversell on 2024-06-01 must
+      // throw even though a subsequent BUY on 2024-09-01 would restore the
+      // final balance.
+      accountsRepository.find.mockResolvedValue([mockAccount]);
+      investmentTransactionsRepository.find.mockResolvedValue([
+        {
+          accountId: "acc-1",
+          securityId: "sec-1",
+          action: InvestmentAction.BUY,
+          quantity: 10,
+          transactionDate: "2024-01-01",
+          security: { symbol: "AAPL" },
+        },
+        {
+          accountId: "acc-1",
+          securityId: "sec-1",
+          action: InvestmentAction.SELL,
+          quantity: 50,
+          transactionDate: "2024-06-01",
+          security: { symbol: "AAPL" },
+        },
+        {
+          accountId: "acc-1",
+          securityId: "sec-1",
+          action: InvestmentAction.BUY,
+          quantity: 100,
+          transactionDate: "2024-09-01",
+          security: { symbol: "AAPL" },
+        },
+      ]);
+
+      await expect(
+        service.validateNoNegativeHoldingsHistory("user-1"),
+      ).rejects.toThrow(/AAPL/);
+    });
+
+    it("tracks different securities independently", async () => {
+      accountsRepository.find.mockResolvedValue([mockAccount]);
+      investmentTransactionsRepository.find.mockResolvedValue([
+        {
+          accountId: "acc-1",
+          securityId: "sec-1",
+          action: InvestmentAction.BUY,
+          quantity: 100,
+          transactionDate: "2024-01-01",
+          security: { symbol: "AAPL" },
+        },
+        {
+          accountId: "acc-1",
+          securityId: "sec-2",
+          action: InvestmentAction.SELL,
+          quantity: 10,
+          transactionDate: "2024-02-01",
+          security: { symbol: "MSFT" },
+        },
+      ]);
+
+      await expect(
+        service.validateNoNegativeHoldingsHistory("user-1"),
+      ).rejects.toThrow(/MSFT/);
+    });
+
+    it("applies SPLIT as a multiplier on running quantity", async () => {
+      accountsRepository.find.mockResolvedValue([mockAccount]);
+      investmentTransactionsRepository.find.mockResolvedValue([
+        {
+          accountId: "acc-1",
+          securityId: "sec-1",
+          action: InvestmentAction.BUY,
+          quantity: 10,
+          transactionDate: "2024-01-01",
+          security: { symbol: "AAPL" },
+        },
+        {
+          accountId: "acc-1",
+          securityId: "sec-1",
+          action: InvestmentAction.SPLIT,
+          quantity: 4,
+          transactionDate: "2024-02-01",
+          security: { symbol: "AAPL" },
+        },
+        {
+          accountId: "acc-1",
+          securityId: "sec-1",
+          action: InvestmentAction.SELL,
+          quantity: 30,
+          transactionDate: "2024-03-01",
+          security: { symbol: "AAPL" },
+        },
+      ]);
+
+      // After BUY 10 + 4-for-1 SPLIT = 40 shares, SELL 30 leaves 10. Valid.
+      await expect(
+        service.validateNoNegativeHoldingsHistory("user-1"),
+      ).resolves.toBeUndefined();
+    });
+
+    it("ignores DIVIDEND/INTEREST/CAPITAL_GAIN transactions", async () => {
+      accountsRepository.find.mockResolvedValue([mockAccount]);
+      investmentTransactionsRepository.find.mockResolvedValue([
+        {
+          accountId: "acc-1",
+          securityId: "sec-1",
+          action: InvestmentAction.BUY,
+          quantity: 10,
+          transactionDate: "2024-01-01",
+          security: { symbol: "AAPL" },
+        },
+        {
+          accountId: "acc-1",
+          securityId: "sec-1",
+          action: InvestmentAction.DIVIDEND,
+          quantity: 0,
+          transactionDate: "2024-02-01",
+          security: { symbol: "AAPL" },
+        },
+        {
+          accountId: "acc-1",
+          securityId: "sec-1",
+          action: InvestmentAction.SELL,
+          quantity: 10,
+          transactionDate: "2024-03-01",
+          security: { symbol: "AAPL" },
+        },
+      ]);
+
+      await expect(
+        service.validateNoNegativeHoldingsHistory("user-1"),
+      ).resolves.toBeUndefined();
     });
   });
 

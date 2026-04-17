@@ -90,6 +90,7 @@ export class HoldingsService {
     quantityChange: number,
     pricePerShare: number,
     queryRunner?: QueryRunner,
+    allowNegative: boolean = false,
   ): Promise<Holding> {
     // Verify account ownership
     await this.accountsService.findOne(userId, accountId);
@@ -123,18 +124,28 @@ export class HoldingsService {
       const newQuantity = currentQuantity + quantityChange;
 
       if (quantityChange > 0) {
-        // Buying shares - calculate new average cost
-        const totalCostBefore = currentQuantity * currentAvgCost;
-        const totalCostAdded = quantityChange * pricePerShare;
-        const newAvgCost = (totalCostBefore + totalCostAdded) / newQuantity;
-        holding.averageCost = newAvgCost;
-      } else {
-        // Selling shares - keep same average cost
-        // Average cost doesn't change when selling
+        if (currentQuantity <= 0 && newQuantity > 0) {
+          // Coming out of a zero-or-negative balance (e.g. reverse-apply
+          // of a past buy): treat this purchase as establishing the new
+          // cost basis rather than blending against a phantom negative
+          // cost basis.
+          holding.averageCost = pricePerShare;
+        } else if (currentQuantity > 0 && newQuantity > 0) {
+          // Blend the purchase into existing positive holdings.
+          const totalCostBefore = currentQuantity * currentAvgCost;
+          const totalCostAdded = quantityChange * pricePerShare;
+          const newAvgCost = (totalCostBefore + totalCostAdded) / newQuantity;
+          holding.averageCost = newAvgCost;
+        }
       }
 
-      // Guard against negative holdings from overselling
-      if (newQuantity < -0.00000001) {
+      // Guard against negative holdings from overselling. Skipped when
+      // allowNegative is true, which the investment-transaction update and
+      // remove flows use to permit intermediate negative states during
+      // reverse/re-apply. The caller is responsible for running
+      // validateHoldingsHistory afterward so oversells at any historical
+      // date are still caught.
+      if (!allowNegative && newQuantity < -0.00000001) {
         throw new BadRequestException(
           `Insufficient shares: cannot reduce by ${Math.abs(quantityChange)}, only ${currentQuantity} held`,
         );
@@ -154,6 +165,7 @@ export class HoldingsService {
     quantityDelta: number,
     price: number,
     queryRunner?: QueryRunner,
+    allowNegative: boolean = false,
   ): Promise<Holding> {
     return this.createOrUpdate(
       userId,
@@ -162,6 +174,7 @@ export class HoldingsService {
       quantityDelta,
       price,
       queryRunner,
+      allowNegative,
     );
   }
 
@@ -242,6 +255,96 @@ export class HoldingsService {
     }
 
     await this.holdingsRepository.remove(holding);
+  }
+
+  /**
+   * Replay the user's investment transactions in chronological order and
+   * throw BadRequestException if any (account, security) pair would have a
+   * negative running quantity at any date. Used after editing or deleting a
+   * past investment transaction to ensure the change does not retroactively
+   * cause an oversell on any historical date.
+   */
+  async validateNoNegativeHoldingsHistory(
+    userId: string,
+    queryRunner?: QueryRunner,
+  ): Promise<void> {
+    const accountsRepo = queryRunner
+      ? queryRunner.manager.getRepository(Account)
+      : this.accountsRepository;
+    const txRepo = queryRunner
+      ? queryRunner.manager.getRepository(InvestmentTransaction)
+      : this.investmentTransactionsRepository;
+
+    const investmentAccounts = await accountsRepo.find({
+      where: {
+        userId,
+        accountType: AccountType.INVESTMENT,
+      },
+    });
+
+    const eligibleAccountIds = investmentAccounts
+      .filter(
+        (a) =>
+          a.accountSubType === AccountSubType.INVESTMENT_BROKERAGE ||
+          !a.accountSubType,
+      )
+      .map((a) => a.id);
+
+    if (eligibleAccountIds.length === 0) {
+      return;
+    }
+
+    const transactions = await txRepo.find({
+      where: {
+        userId,
+        accountId: In(eligibleAccountIds),
+      },
+      relations: ["security"],
+      order: {
+        transactionDate: "ASC",
+        createdAt: "ASC",
+      },
+    });
+
+    const balances = new Map<string, number>();
+
+    for (const tx of transactions) {
+      if (!tx.securityId) continue;
+
+      const key = `${tx.accountId}:${tx.securityId}`;
+      const current = balances.get(key) || 0;
+      const quantity = Number(tx.quantity) || 0;
+
+      let next = current;
+      switch (tx.action) {
+        case InvestmentAction.BUY:
+        case InvestmentAction.REINVEST:
+        case InvestmentAction.TRANSFER_IN:
+        case InvestmentAction.ADD_SHARES:
+          next = current + quantity;
+          break;
+        case InvestmentAction.SELL:
+        case InvestmentAction.TRANSFER_OUT:
+        case InvestmentAction.REMOVE_SHARES:
+          next = current - quantity;
+          break;
+        case InvestmentAction.SPLIT:
+          next = current * quantity;
+          break;
+        default:
+          continue;
+      }
+
+      if (next < -0.00000001) {
+        const symbol = tx.security?.symbol || "this security";
+        throw new BadRequestException(
+          `This change would cause holdings of ${symbol} to go negative on ${tx.transactionDate}. ` +
+            `A ${tx.action} transaction on that date would reduce the balance below zero.`,
+        );
+      }
+
+      balances.set(key, next);
+    }
   }
 
   /**

@@ -469,6 +469,7 @@ export class InvestmentTransactionsService {
     queryRunner: QueryRunner,
     userId: string,
     transaction: InvestmentTransaction,
+    allowNegative: boolean = false,
   ): Promise<void> {
     if (isTransactionInFuture(transaction.transactionDate)) {
       return;
@@ -504,6 +505,7 @@ export class InvestmentTransactionsService {
           Number(quantity),
           Number(price),
           queryRunner,
+          allowNegative,
         );
         cashTransactionId = await this.createCashTransactionInTransaction(
           queryRunner,
@@ -522,6 +524,7 @@ export class InvestmentTransactionsService {
           -Number(quantity),
           Number(price),
           queryRunner,
+          allowNegative,
         );
         cashTransactionId = await this.createCashTransactionInTransaction(
           queryRunner,
@@ -553,6 +556,7 @@ export class InvestmentTransactionsService {
             Number(quantity),
             Number(price),
             queryRunner,
+            allowNegative,
           );
         }
         break;
@@ -592,6 +596,7 @@ export class InvestmentTransactionsService {
             Number(quantity),
             Number(price),
             queryRunner,
+            allowNegative,
           );
         }
         break;
@@ -605,6 +610,7 @@ export class InvestmentTransactionsService {
             -Number(quantity),
             Number(price),
             queryRunner,
+            allowNegative,
           );
         }
         break;
@@ -853,11 +859,21 @@ export class InvestmentTransactionsService {
       const saved = await queryRunner.manager.save(transaction);
       savedId = saved.id;
 
-      // Apply the new transaction effects
+      // Apply the new transaction effects. Allow intermediate negative
+      // holdings so editing a past transaction is not blocked by the
+      // current (possibly zero) balance. Correctness is enforced by the
+      // history check below, which replays all transactions in
+      // chronological order.
       await this.processTransactionEffectsInTransaction(
         queryRunner,
         userId,
         saved,
+        true,
+      );
+
+      await this.holdingsService.validateNoNegativeHoldingsHistory(
+        userId,
+        queryRunner,
       );
 
       await queryRunner.commitTransaction();
@@ -942,6 +958,12 @@ export class InvestmentTransactionsService {
       );
     }
 
+    // Reversing a past transaction can make the running Holding balance
+    // temporarily negative (e.g. reversing a BUY when the user has since
+    // sold the position). Allow that intermediate state; the update/remove
+    // callers validate the full transaction history before commit.
+    const allowNegative = true;
+
     switch (action) {
       case InvestmentAction.BUY:
         if (securityId) {
@@ -952,6 +974,7 @@ export class InvestmentTransactionsService {
             -Number(quantity),
             Number(price),
             queryRunner,
+            allowNegative,
           );
         }
         break;
@@ -965,6 +988,7 @@ export class InvestmentTransactionsService {
             Number(quantity),
             Number(price),
             queryRunner,
+            allowNegative,
           );
         }
         break;
@@ -983,6 +1007,7 @@ export class InvestmentTransactionsService {
             -Number(quantity),
             Number(price),
             queryRunner,
+            allowNegative,
           );
         }
         break;
@@ -996,6 +1021,7 @@ export class InvestmentTransactionsService {
             -Number(quantity),
             Number(price),
             queryRunner,
+            allowNegative,
           );
         }
         break;
@@ -1009,6 +1035,7 @@ export class InvestmentTransactionsService {
             Number(quantity),
             Number(price),
             queryRunner,
+            allowNegative,
           );
         }
         break;
@@ -1066,6 +1093,11 @@ export class InvestmentTransactionsService {
       );
 
       await queryRunner.manager.remove(transaction);
+
+      await this.holdingsService.validateNoNegativeHoldingsHistory(
+        userId,
+        queryRunner,
+      );
 
       await queryRunner.commitTransaction();
     } catch (error) {

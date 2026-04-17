@@ -225,6 +225,7 @@ describe("InvestmentTransactionsService", () => {
       updateHolding: jest.fn().mockResolvedValue(undefined),
       adjustQuantity: jest.fn().mockResolvedValue(undefined),
       removeAllForUser: jest.fn().mockResolvedValue(5),
+      validateNoNegativeHoldingsHistory: jest.fn().mockResolvedValue(undefined),
     };
 
     securitiesService = {
@@ -429,6 +430,7 @@ describe("InvestmentTransactionsService", () => {
         10,
         150,
         expect.anything(),
+        false,
       );
     });
 
@@ -521,6 +523,7 @@ describe("InvestmentTransactionsService", () => {
         -5,
         160,
         expect.anything(),
+        false,
       );
     });
 
@@ -732,6 +735,7 @@ describe("InvestmentTransactionsService", () => {
         2,
         150,
         expect.anything(),
+        false,
       );
       // No cash transaction for REINVEST
       expect(transactionRepository.create).not.toHaveBeenCalled();
@@ -778,6 +782,7 @@ describe("InvestmentTransactionsService", () => {
         20,
         100,
         expect.anything(),
+        false,
       );
       expect(transactionRepository.create).not.toHaveBeenCalled();
     });
@@ -822,6 +827,7 @@ describe("InvestmentTransactionsService", () => {
         -10,
         100,
         expect.anything(),
+        false,
       );
       expect(transactionRepository.create).not.toHaveBeenCalled();
     });
@@ -1570,6 +1576,7 @@ describe("InvestmentTransactionsService", () => {
         -10, // Reverse: remove original 10 shares
         150,
         expect.anything(),
+        true,
       );
 
       // Then apply new effects
@@ -1580,7 +1587,70 @@ describe("InvestmentTransactionsService", () => {
         expect.any(Number), // New quantity applied
         expect.any(Number),
         expect.anything(),
+        true,
       );
+    });
+
+    it("allows editing a past transaction when current holdings are zero", async () => {
+      // Regression: previously the update flow rejected any edit to a past
+      // BUY transaction when current holdings were zero because reversing
+      // the original BUY drove the running balance negative. The fix passes
+      // allowNegative=true through reverse+apply and validates the full
+      // history after instead.
+      const existingTx = { ...mockBuyTransaction };
+      const firstFindQB = createMockQueryBuilder(existingTx);
+      const secondFindQB = createMockQueryBuilder({
+        ...existingTx,
+        quantity: 15,
+        totalAmount: 2259.99,
+      });
+
+      investmentTransactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(firstFindQB)
+        .mockReturnValueOnce(secondFindQB);
+
+      transactionRepository.findOne.mockResolvedValue({
+        id: cashTransactionId,
+        userId,
+        accountId: cashAccountId,
+        amount: -1509.99,
+      });
+
+      await expect(
+        service.update(userId, transactionId, { quantity: 15 }),
+      ).resolves.toBeDefined();
+
+      expect(
+        holdingsService.validateNoNegativeHoldingsHistory,
+      ).toHaveBeenCalledWith(userId, expect.anything());
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.rollbackTransaction).not.toHaveBeenCalled();
+    });
+
+    it("rolls back when the edit would cause negative holdings on some date", async () => {
+      const existingTx = { ...mockBuyTransaction };
+      const firstFindQB = createMockQueryBuilder(existingTx);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValueOnce(
+        firstFindQB,
+      );
+
+      transactionRepository.findOne.mockResolvedValue({
+        id: cashTransactionId,
+        userId,
+        accountId: cashAccountId,
+        amount: -1509.99,
+      });
+
+      holdingsService.validateNoNegativeHoldingsHistory.mockRejectedValueOnce(
+        new BadRequestException("Negative holdings of AAPL on 2024-06-01"),
+      );
+
+      await expect(
+        service.update(userId, transactionId, { quantity: 1 }),
+      ).rejects.toThrow(/Negative holdings/);
+
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();
     });
 
     it("recalculates totalAmount when quantity changes", async () => {
@@ -1967,6 +2037,7 @@ describe("InvestmentTransactionsService", () => {
         -10,
         150,
         expect.anything(),
+        true,
       );
 
       // Should delete cash transaction and reverse balance
@@ -2005,6 +2076,7 @@ describe("InvestmentTransactionsService", () => {
         5, // Add back the sold shares
         160,
         expect.anything(),
+        true,
       );
     });
 
@@ -2031,6 +2103,7 @@ describe("InvestmentTransactionsService", () => {
         -3,
         150,
         expect.anything(),
+        true,
       );
     });
 
@@ -2057,6 +2130,7 @@ describe("InvestmentTransactionsService", () => {
         -20,
         100,
         expect.anything(),
+        true,
       );
     });
 
@@ -2083,6 +2157,7 @@ describe("InvestmentTransactionsService", () => {
         10,
         100,
         expect.anything(),
+        true,
       );
     });
 
