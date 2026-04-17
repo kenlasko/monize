@@ -100,24 +100,45 @@ export class McpTransactionsTools {
             false,
             args.query,
           );
-          const transactions = result.data
-            .filter((t: any) => {
-              if (args.minAmount !== undefined && t.amount < args.minAmount)
+          const transactions = result.data.flatMap((t: any) => {
+            // Expand split transactions so each split appears as its own row
+            // with its real category. The parent of a split has categoryId
+            // NULL by design; reporting it as-is makes the AI think it is
+            // uncategorized.
+            const rows =
+              t.isSplit && Array.isArray(t.splits) && t.splits.length > 0
+                ? t.splits.map((s: any) => ({
+                    id: t.id,
+                    splitId: s.id,
+                    date: t.transactionDate,
+                    payeeName: t.payeeName,
+                    categoryName: s.category?.name,
+                    amount: Number(s.amount),
+                    accountName: t.account?.name,
+                    description: s.memo ?? t.description,
+                    status: t.status,
+                    isSplit: true,
+                  }))
+                : [
+                    {
+                      id: t.id,
+                      date: t.transactionDate,
+                      payeeName: t.payeeName,
+                      categoryName: t.category?.name,
+                      amount: Number(t.amount),
+                      accountName: t.account?.name,
+                      description: t.description,
+                      status: t.status,
+                    },
+                  ];
+            return rows.filter((row: any) => {
+              if (args.minAmount !== undefined && row.amount < args.minAmount)
                 return false;
-              if (args.maxAmount !== undefined && t.amount > args.maxAmount)
+              if (args.maxAmount !== undefined && row.amount > args.maxAmount)
                 return false;
               return true;
-            })
-            .map((t: any) => ({
-              id: t.id,
-              date: t.transactionDate,
-              payeeName: t.payeeName,
-              categoryName: t.category?.name,
-              amount: t.amount,
-              accountName: t.account?.name,
-              description: t.description,
-              status: t.status,
-            }));
+            });
+          });
           return toolResult({
             transactions,
             total: result.pagination.total,

@@ -86,6 +86,52 @@ describe("McpRecentTransactionsResource", () => {
     expect(parsed.total).toBe(1);
   });
 
+  it("expands split transactions into per-split rows", async () => {
+    resolve.mockReturnValue({ userId: "u1", scopes: "read" });
+    transactionsService.findAll.mockResolvedValue({
+      data: [
+        {
+          transactionDate: "2025-01-15",
+          payeeName: "Costco",
+          category: null,
+          amount: -150,
+          account: { name: "Checking" },
+          isSplit: true,
+          splits: [
+            { id: "s1", amount: -100, category: { name: "Groceries" } },
+            { id: "s2", amount: -50, category: { name: "Household" } },
+          ],
+        },
+        {
+          transactionDate: "2025-01-14",
+          payeeName: "Coffee",
+          category: { name: "Dining" },
+          amount: -5,
+          account: { name: "Checking" },
+          isSplit: false,
+        },
+      ],
+      pagination: { total: 2, hasMore: false },
+    });
+    analyticsService.getSummary.mockResolvedValue({});
+
+    const result = await handler("monize://recent-transactions", {
+      sessionId: "s1",
+    });
+    const parsed = JSON.parse(result.contents[0].text);
+    expect(parsed.recentTransactions).toHaveLength(3);
+    const groceries = parsed.recentTransactions.find(
+      (r: any) => r.categoryName === "Groceries",
+    );
+    expect(groceries.amount).toBe(-100);
+    expect(groceries.isSplit).toBe(true);
+    const plain = parsed.recentTransactions.find(
+      (r: any) => r.payeeName === "Coffee",
+    );
+    expect(plain.categoryName).toBe("Dining");
+    expect(plain.isSplit).toBeUndefined();
+  });
+
   it("excludes investment-linked cash transactions from the MCP summary", async () => {
     resolve.mockReturnValue({ userId: "u1", scopes: "read" });
     transactionsService.findAll.mockResolvedValue({

@@ -83,15 +83,34 @@ export class McpRecentTransactionsResource {
                   {
                     period: { startDate: startDateStr, endDate },
                     summary,
+                    // Expand split transactions so each split appears as its
+                    // own row with its real category. Split parents have
+                    // categoryId NULL by design; returning the parent would
+                    // make the AI treat the transaction as uncategorized.
                     recentTransactions: result.data
                       .slice(0, 50)
-                      .map((t: any) => ({
-                        date: t.transactionDate,
-                        payeeName: t.payeeName,
-                        categoryName: t.category?.name,
-                        amount: t.amount,
-                        accountName: t.account?.name,
-                      })),
+                      .flatMap((t: any) =>
+                        t.isSplit &&
+                        Array.isArray(t.splits) &&
+                        t.splits.length > 0
+                          ? t.splits.map((s: any) => ({
+                              date: t.transactionDate,
+                              payeeName: t.payeeName,
+                              categoryName: s.category?.name,
+                              amount: Number(s.amount),
+                              accountName: t.account?.name,
+                              isSplit: true,
+                            }))
+                          : [
+                              {
+                                date: t.transactionDate,
+                                payeeName: t.payeeName,
+                                categoryName: t.category?.name,
+                                amount: Number(t.amount),
+                                accountName: t.account?.name,
+                              },
+                            ],
+                      ),
                     total: result.pagination.total,
                   },
                   null,
