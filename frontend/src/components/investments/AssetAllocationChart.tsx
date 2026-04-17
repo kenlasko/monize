@@ -119,7 +119,7 @@ export function AssetAllocationChart({
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-        Asset Allocation
+        Asset Allocation{titleSuffix ? ` (${titleSuffix})` : ''}
       </h3>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%" minWidth={0}>
