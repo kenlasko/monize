@@ -522,32 +522,28 @@ describe("ToolExecutorService", () => {
       expect(result.sources[0].description).toBe("All account balances");
     });
 
-    it("adds holdings market value to brokerage account balances", async () => {
+    it("shows market value as the per-account balance for INVESTMENT_BROKERAGE accounts", async () => {
       const accountsWithBrokerage = [
         {
           id: "acc-1",
           name: "Checking",
-          accountType: "checking",
+          accountType: "CHEQUING",
+          accountSubType: null,
           currencyCode: "USD",
           currentBalance: "5000.00",
-          excludeFromNetWorth: false,
+          futureTransactionsSum: 0,
         },
         {
           id: "acc-brokerage",
           name: "Brokerage",
           accountType: "INVESTMENT",
+          accountSubType: "INVESTMENT_BROKERAGE",
           currencyCode: "USD",
           currentBalance: "0.00",
-          excludeFromNetWorth: false,
+          futureTransactionsSum: 0,
         },
       ];
       mockAccountsService.findAll.mockResolvedValue(accountsWithBrokerage);
-      mockAccountsService.getSummary.mockResolvedValue({
-        totalAssets: 5000,
-        totalLiabilities: 0,
-        netWorth: 5000,
-        totalAccounts: 2,
-      });
       mockPortfolioService.getAccountMarketValues.mockResolvedValue(
         new Map([["acc-brokerage", 75000]]),
       );
@@ -559,60 +555,52 @@ describe("ToolExecutorService", () => {
       const brokerage = accounts.find((a) => a.name === "Brokerage");
       expect(brokerage).toBeDefined();
       expect(brokerage!.balance).toBe(75000);
-      expect(data.totalAssets).toBe(80000);
-      expect(data.netWorth).toBe(80000);
     });
 
-    it("excludes holdings from totalAssets when account is excludeFromNetWorth", async () => {
-      const accountsWithBrokerage = [
+    it("includes future-dated transactions in non-brokerage account balances", async () => {
+      const accountsWithFuture = [
         {
           id: "acc-1",
           name: "Checking",
-          accountType: "checking",
+          accountType: "CHEQUING",
+          accountSubType: null,
           currencyCode: "USD",
           currentBalance: "5000.00",
-          excludeFromNetWorth: false,
-        },
-        {
-          id: "acc-excluded",
-          name: "Excluded Brokerage",
-          accountType: "INVESTMENT",
-          currencyCode: "USD",
-          currentBalance: "0.00",
-          excludeFromNetWorth: true,
+          futureTransactionsSum: 250,
         },
       ];
-      mockAccountsService.findAll.mockResolvedValue(accountsWithBrokerage);
-      mockAccountsService.getSummary.mockResolvedValue({
-        totalAssets: 5000,
-        totalLiabilities: 0,
-        netWorth: 5000,
-        totalAccounts: 2,
-      });
-      mockPortfolioService.getAccountMarketValues.mockResolvedValue(
-        new Map([["acc-excluded", 50000]]),
-      );
+      mockAccountsService.findAll.mockResolvedValue(accountsWithFuture);
 
       const result = await service.execute(userId, "get_account_balances", {});
       const data = result.data as Record<string, unknown>;
       const accounts = data.accounts as Array<Record<string, unknown>>;
 
-      // The per-account balance still reflects market value
-      const excluded = accounts.find((a) => a.name === "Excluded Brokerage");
-      expect(excluded!.balance).toBe(50000);
-      // But totals respect the excludeFromNetWorth flag
-      expect(data.totalAssets).toBe(5000);
-      expect(data.netWorth).toBe(5000);
+      expect(accounts[0].balance).toBe(5250);
     });
 
-    it("leaves balances untouched when there are no holdings", async () => {
-      // Default mockPortfolioService returns an empty map
+    it("uses getMonthlyNetWorth totals so the AI matches the Net Worth widget and report", async () => {
+      mockNetWorthService.getMonthlyNetWorth.mockResolvedValue([
+        { month: "2026-01", assets: 90000, liabilities: 2500, netWorth: 87500 },
+        { month: "2026-02", assets: 95000, liabilities: 2000, netWorth: 93000 },
+      ]);
+
       const result = await service.execute(userId, "get_account_balances", {});
       const data = result.data as Record<string, unknown>;
-      const accounts = data.accounts as Array<Record<string, unknown>>;
 
-      expect(accounts[0].balance).toBe(5000);
-      expect(data.totalAssets).toBe(20000);
+      expect(data.totalAssets).toBe(95000);
+      expect(data.totalLiabilities).toBe(2000);
+      expect(data.netWorth).toBe(93000);
+    });
+
+    it("returns zeroed totals when there are no net worth snapshots yet", async () => {
+      mockNetWorthService.getMonthlyNetWorth.mockResolvedValue([]);
+
+      const result = await service.execute(userId, "get_account_balances", {});
+      const data = result.data as Record<string, unknown>;
+
+      expect(data.totalAssets).toBe(0);
+      expect(data.totalLiabilities).toBe(0);
+      expect(data.netWorth).toBe(0);
     });
   });
 

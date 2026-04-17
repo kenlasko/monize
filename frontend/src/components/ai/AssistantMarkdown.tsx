@@ -2,6 +2,7 @@
 
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { AssistantTable } from './AssistantTable';
 
 interface AssistantMarkdownProps {
   content: string;
@@ -78,11 +79,7 @@ export function AssistantMarkdown({ content }: AssistantMarkdownProps) {
             {children}
           </a>
         ),
-        table: ({ children }) => (
-          <div className="overflow-x-auto my-2">
-            <table className="text-xs border-collapse">{children}</table>
-          </div>
-        ),
+        table: ({ children }) => <AssistantTable>{children}</AssistantTable>,
         th: ({ children }) => (
           <th className="border border-gray-300 dark:border-gray-600 px-2 py-1 font-semibold bg-gray-200/60 dark:bg-gray-800/60 text-left">
             {children}

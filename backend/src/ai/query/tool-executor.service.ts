@@ -8,7 +8,7 @@ import { NetWorthService } from "../../net-worth/net-worth.service";
 import { BudgetsService } from "../../budgets/budgets.service";
 import { BudgetReportsService } from "../../budgets/budget-reports.service";
 import { PortfolioService } from "../../securities/portfolio.service";
-import { AccountType } from "../../accounts/entities/account.entity";
+import { AccountSubType } from "../../accounts/entities/account.entity";
 import {
   getCurrentMonthPeriodDates,
   getPreviousMonthPeriodDates,
@@ -441,12 +441,10 @@ export class ToolExecutorService {
     const accountNames = input.accountNames as string[] | undefined;
 
     const allAccounts = await this.accountsService.findAll(userId, false);
-    const summary = await this.accountsService.getSummary(userId);
 
-    // Brokerage (and standalone investment) accounts carry securities, not
-    // cash, so `currentBalance` is 0 for them — the real value lives in
-    // `holdings.quantity * latest price`. Pull per-account market values so
-    // both the per-account list and the totals reflect reality.
+    // Brokerage accounts carry securities, not cash, so `currentBalance` is 0
+    // for them — the real value lives in `holdings.quantity * latest price`.
+    // Pull per-account market values to mirror the Account List UI.
     const marketValues =
       await this.portfolioService.getAccountMarketValues(userId);
 
@@ -458,42 +456,45 @@ export class ToolExecutorService {
       );
     }
 
+    // Match the Account List / Account Balances report per-account balance:
+    // - INVESTMENT_BROKERAGE shows market value of holdings
+    // - Every other account shows currentBalance + futureTransactionsSum
     const accountList = accounts.map((a) => {
-      const cashBalance = Number(a.currentBalance);
-      const marketValue = marketValues.get(a.id) ?? 0;
+      const balance =
+        a.accountSubType === AccountSubType.INVESTMENT_BROKERAGE
+          ? (marketValues.get(a.id) ?? 0)
+          : Number(a.currentBalance) + Number(a.futureTransactionsSum ?? 0);
       return {
         name: a.name,
         type: a.accountType,
-        balance: roundMoney(cashBalance + marketValue),
+        balance: roundMoney(balance),
         currency: a.currencyCode,
       };
     });
 
-    // The base summary only sums `currentBalance`, so investment accounts with
-    // holdings contribute 0 to totalAssets / netWorth. Add in each excluded-
-    // from-net-worth-respecting investment account's market value here so the
-    // AI sees accurate totals.
-    let extraInvestmentAssets = 0;
-    for (const account of allAccounts) {
-      if (account.accountType !== AccountType.INVESTMENT) continue;
-      if (account.excludeFromNetWorth) continue;
-      const marketValue = marketValues.get(account.id);
-      if (marketValue) extraInvestmentAssets += marketValue;
-    }
-    const totalAssets = roundMoney(summary.totalAssets + extraInvestmentAssets);
-    const netWorth = roundMoney(totalAssets - summary.totalLiabilities);
+    // Use the same source as the dashboard Net Worth widget and Net Worth
+    // report so all three surfaces agree. getMonthlyNetWorth reads from
+    // monthly_account_balances, respects excludeFromNetWorth, applies
+    // currency conversion to the user's default currency, and handles
+    // brokerage vs standalone investment accounts correctly. The latest
+    // month's snapshot is what the widget/report display as "current".
+    const monthly = await this.netWorthService.getMonthlyNetWorth(userId);
+    const latest = monthly[monthly.length - 1];
+    const totalAssets = roundMoney(latest?.assets ?? 0);
+    const totalLiabilities = roundMoney(latest?.liabilities ?? 0);
+    const netWorth = roundMoney(latest?.netWorth ?? 0);
 
     const data = {
       accounts: accountList,
       totalAssets,
-      totalLiabilities: summary.totalLiabilities,
+      totalLiabilities,
       netWorth,
-      totalAccounts: summary.totalAccounts,
+      totalAccounts: allAccounts.length,
     };
 
     return {
       data,
-      summary: `${accounts.length} accounts. Net worth: ${netWorth.toFixed(2)}, Assets: ${totalAssets.toFixed(2)}, Liabilities: ${summary.totalLiabilities.toFixed(2)}`,
+      summary: `${accounts.length} accounts. Net worth: ${netWorth.toFixed(2)}, Assets: ${totalAssets.toFixed(2)}, Liabilities: ${totalLiabilities.toFixed(2)}`,
       sources: [
         {
           type: "accounts",
