@@ -9,7 +9,7 @@ import {
   ForecastAggregates,
 } from "./forecast-aggregator.service";
 import { FORECAST_SYSTEM_PROMPT } from "../context/prompt-templates";
-import { sanitizePromptValue } from "../context/prompt-sanitize";
+import { sanitizePromptValue } from "../../common/sanitization.util";
 import { formatCurrencyAmount } from "../../common/format-currency.util";
 import { UserPreference } from "../../users/entities/user-preference.entity";
 import {

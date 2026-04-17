@@ -12,7 +12,7 @@ import {
 import { OllamaModelDoesNotSupportToolsError } from "../providers/ollama.provider";
 import { assessInjectionRisk } from "../context/prompt-injection-detector";
 import { QUERY_SAFETY_REMINDER } from "../context/prompt-templates";
-import { sanitizeToolResultStrings } from "../context/prompt-sanitize";
+import { sanitizeToolResultStrings } from "../../common/sanitization.util";
 import { MAX_HISTORY_MESSAGES } from "./dto/ai-query.dto";
 
 const MAX_ITERATIONS = 5;

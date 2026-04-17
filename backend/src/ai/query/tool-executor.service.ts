@@ -18,7 +18,13 @@ import { Transaction } from "../../transactions/entities/transaction.entity";
 import { Category } from "../../categories/entities/category.entity";
 import { validateToolInput } from "./tool-input-schemas";
 import { executeCalculation, CalculateInput } from "./calculate-tool";
-import { sanitizePromptValue } from "../context/prompt-sanitize";
+import { sanitizePromptValue } from "../../common/sanitization.util";
+import { applyInvestmentTransactionFilters } from "../../common/investment-filter.util";
+import {
+  joinSplitsForAnalytics,
+  SPLIT_AMOUNT,
+  SPLIT_CATEGORY_NAME,
+} from "../../common/transaction-split-query.util";
 
 /**
  * Safe money summation using integer arithmetic (4 decimal places)
@@ -298,24 +304,15 @@ export class ToolExecutorService {
       .andWhere("t.transactionDate <= :endDate", { endDate })
       .andWhere("t.status != 'VOID'")
       .andWhere("t.isTransfer = false")
-      .andWhere("t.parentTransactionId IS NULL")
-      // Mirror TransactionAnalyticsService.getSummary(): exclude
-      // INVESTMENT_BROKERAGE accounts and the cash-side transactions
-      // that investment BUY/SELL/DIVIDEND creates in the linked cash
-      // account. Without these filters, investment purchases appear as
-      // "Uncategorised" expenses even when the user's accountNames
-      // filter includes only non-investment accounts.
-      .andWhere(
-        "(breakdownAccount.accountSubType IS NULL OR breakdownAccount.accountSubType != 'INVESTMENT_BROKERAGE')",
-      )
-      .andWhere(
-        "NOT EXISTS (SELECT 1 FROM investment_transactions it WHERE it.transaction_id = t.id)",
-      );
+      .andWhere("t.parentTransactionId IS NULL");
+
+    joinSplitsForAnalytics(qb);
+    applyInvestmentTransactionFilters(qb, "breakdownAccount", "t");
 
     if (direction === "expenses") {
-      qb.andWhere("t.amount < 0");
+      qb.andWhere(`${SPLIT_AMOUNT} < 0`);
     } else if (direction === "income") {
-      qb.andWhere("t.amount > 0");
+      qb.andWhere(`${SPLIT_AMOUNT} > 0`);
     }
 
     if (accountIds && accountIds.length > 0) {
@@ -323,12 +320,17 @@ export class ToolExecutorService {
     }
 
     if (categoryIds && categoryIds.length > 0) {
-      qb.andWhere("t.categoryId IN (:...categoryIds)", { categoryIds });
+      qb.andWhere(
+        "COALESCE(ts.categoryId, t.categoryId) IN (:...categoryIds)",
+        {
+          categoryIds,
+        },
+      );
     }
 
     if (safeSearchText) {
       qb.andWhere(
-        "(t.description ILIKE :search OR t.payeeName ILIKE :search)",
+        "(t.description ILIKE :search OR t.payeeName ILIKE :search OR ts.memo ILIKE :search)",
         { search: `%${safeSearchText}%` },
       );
     }
@@ -336,10 +338,10 @@ export class ToolExecutorService {
     switch (groupBy) {
       case "category": {
         qb.leftJoin("t.category", "cat")
-          .select("COALESCE(cat.name, 'Uncategorized')", "label")
-          .addSelect("SUM(ABS(t.amount))", "total")
+          .select(SPLIT_CATEGORY_NAME, "label")
+          .addSelect(`SUM(ABS(${SPLIT_AMOUNT}))`, "total")
           .addSelect("COUNT(*)", "count")
-          .groupBy("cat.name");
+          .groupBy(SPLIT_CATEGORY_NAME);
 
         const rows = await qb.getRawMany();
         return rows
@@ -353,7 +355,7 @@ export class ToolExecutorService {
 
       case "payee": {
         qb.select("COALESCE(t.payeeName, 'Unknown')", "label")
-          .addSelect("SUM(ABS(t.amount))", "total")
+          .addSelect(`SUM(ABS(${SPLIT_AMOUNT}))`, "total")
           .addSelect("COUNT(*)", "count")
           .groupBy("t.payeeName");
 
@@ -369,7 +371,7 @@ export class ToolExecutorService {
 
       case "month": {
         qb.select("TO_CHAR(t.transactionDate, 'YYYY-MM')", "month")
-          .addSelect("SUM(ABS(t.amount))", "total")
+          .addSelect(`SUM(ABS(${SPLIT_AMOUNT}))`, "total")
           .addSelect("COUNT(*)", "count")
           .groupBy("TO_CHAR(t.transactionDate, 'YYYY-MM')")
           .orderBy("month", "ASC");
@@ -387,7 +389,7 @@ export class ToolExecutorService {
           "TO_CHAR(DATE_TRUNC('week', t.transactionDate), 'YYYY-MM-DD')",
           "week",
         )
-          .addSelect("SUM(ABS(t.amount))", "total")
+          .addSelect(`SUM(ABS(${SPLIT_AMOUNT}))`, "total")
           .addSelect("COUNT(*)", "count")
           .groupBy("DATE_TRUNC('week', t.transactionDate)")
           .orderBy("week", "ASC");
@@ -488,27 +490,21 @@ export class ToolExecutorService {
       .createQueryBuilder("t")
       .leftJoin("t.category", "cat")
       .leftJoin("t.account", "spendingAccount")
-      .select("COALESCE(cat.name, 'Uncategorized')", "category")
-      .addSelect("SUM(ABS(t.amount))", "total")
+      .select(SPLIT_CATEGORY_NAME, "category")
+      .addSelect(`SUM(ABS(${SPLIT_AMOUNT}))`, "total")
       .addSelect("COUNT(*)", "count")
       .where("t.userId = :userId", { userId })
       .andWhere("t.transactionDate >= :startDate", { startDate })
       .andWhere("t.transactionDate <= :endDate", { endDate })
-      .andWhere("t.amount < 0")
+      .andWhere(`${SPLIT_AMOUNT} < 0`)
       .andWhere("t.status != 'VOID'")
       .andWhere("t.isTransfer = false")
       .andWhere("t.parentTransactionId IS NULL")
-      // Exclude INVESTMENT_BROKERAGE accounts and investment-linked cash
-      // transactions so BUY/SELL/DIVIDEND side-effects don't leak into
-      // "spending" breakdowns as uncategorised expenses.
-      .andWhere(
-        "(spendingAccount.accountSubType IS NULL OR spendingAccount.accountSubType != 'INVESTMENT_BROKERAGE')",
-      )
-      .andWhere(
-        "NOT EXISTS (SELECT 1 FROM investment_transactions it WHERE it.transaction_id = t.id)",
-      )
-      .groupBy("cat.name")
+      .groupBy(SPLIT_CATEGORY_NAME)
       .orderBy("total", "DESC");
+
+    joinSplitsForAnalytics(qb);
+    applyInvestmentTransactionFilters(qb, "spendingAccount", "t");
 
     const rows = await qb.getRawMany();
     const totalSpending = sumMoney(rows.map((r) => Number(r.total)));
@@ -557,26 +553,20 @@ export class ToolExecutorService {
       .where("t.userId = :userId", { userId })
       .andWhere("t.transactionDate >= :startDate", { startDate })
       .andWhere("t.transactionDate <= :endDate", { endDate })
-      .andWhere("t.amount > 0")
+      .andWhere(`${SPLIT_AMOUNT} > 0`)
       .andWhere("t.status != 'VOID'")
       .andWhere("t.isTransfer = false")
-      .andWhere("t.parentTransactionId IS NULL")
-      // Exclude INVESTMENT_BROKERAGE accounts and investment-linked cash
-      // transactions so SELL/DIVIDEND side-effects don't leak into
-      // "income" summaries as uncategorised income.
-      .andWhere(
-        "(incomeAccount.accountSubType IS NULL OR incomeAccount.accountSubType != 'INVESTMENT_BROKERAGE')",
-      )
-      .andWhere(
-        "NOT EXISTS (SELECT 1 FROM investment_transactions it WHERE it.transaction_id = t.id)",
-      );
+      .andWhere("t.parentTransactionId IS NULL");
+
+    joinSplitsForAnalytics(qb);
+    applyInvestmentTransactionFilters(qb, "incomeAccount", "t");
 
     let items: { label: string; amount: number; count: number }[];
 
     switch (groupBy) {
       case "payee": {
         qb.select("COALESCE(t.payeeName, 'Unknown')", "label")
-          .addSelect("SUM(t.amount)", "total")
+          .addSelect(`SUM(${SPLIT_AMOUNT})`, "total")
           .addSelect("COUNT(*)", "count")
           .groupBy("t.payeeName")
           .orderBy("total", "DESC");
@@ -586,13 +576,12 @@ export class ToolExecutorService {
           amount: roundMoney(Number(r.total)),
           count: Number(r.count),
         }));
-        // Enforce aggregation threshold for payee-level data
         items = this.enforceAggregationThresholdLabeled(payeeItems);
         break;
       }
       case "month": {
         qb.select("TO_CHAR(t.transactionDate, 'YYYY-MM')", "label")
-          .addSelect("SUM(t.amount)", "total")
+          .addSelect(`SUM(${SPLIT_AMOUNT})`, "total")
           .addSelect("COUNT(*)", "count")
           .groupBy("TO_CHAR(t.transactionDate, 'YYYY-MM')")
           .orderBy("label", "ASC");
@@ -605,12 +594,11 @@ export class ToolExecutorService {
         break;
       }
       default: {
-        // category
         qb.leftJoin("t.category", "cat")
-          .select("COALESCE(cat.name, 'Uncategorized')", "label")
-          .addSelect("SUM(t.amount)", "total")
+          .select(SPLIT_CATEGORY_NAME, "label")
+          .addSelect(`SUM(${SPLIT_AMOUNT})`, "total")
           .addSelect("COUNT(*)", "count")
-          .groupBy("cat.name")
+          .groupBy(SPLIT_CATEGORY_NAME)
           .orderBy("total", "DESC");
         const rows = await qb.getRawMany();
         items = rows.map((r) => ({
@@ -756,35 +744,29 @@ export class ToolExecutorService {
       .andWhere("t.transactionDate <= :endDate", { endDate })
       .andWhere("t.status != 'VOID'")
       .andWhere("t.isTransfer = false")
-      .andWhere("t.parentTransactionId IS NULL")
-      // Exclude INVESTMENT_BROKERAGE accounts and investment-linked cash
-      // transactions so BUY/SELL/DIVIDEND movements don't skew
-      // period-over-period comparisons.
-      .andWhere(
-        "(periodAccount.accountSubType IS NULL OR periodAccount.accountSubType != 'INVESTMENT_BROKERAGE')",
-      )
-      .andWhere(
-        "NOT EXISTS (SELECT 1 FROM investment_transactions it WHERE it.transaction_id = t.id)",
-      );
+      .andWhere("t.parentTransactionId IS NULL");
+
+    joinSplitsForAnalytics(qb);
+    applyInvestmentTransactionFilters(qb, "periodAccount", "t");
 
     if (direction === "expenses") {
-      qb.andWhere("t.amount < 0");
+      qb.andWhere(`${SPLIT_AMOUNT} < 0`);
     } else if (direction === "income") {
-      qb.andWhere("t.amount > 0");
+      qb.andWhere(`${SPLIT_AMOUNT} > 0`);
     }
 
     if (groupBy === "payee") {
       qb.select("COALESCE(t.payeeName, 'Unknown')", "label")
-        .addSelect("SUM(ABS(t.amount))", "total")
+        .addSelect(`SUM(ABS(${SPLIT_AMOUNT}))`, "total")
         .addSelect("COUNT(*)", "count")
         .groupBy("t.payeeName")
         .orderBy("total", "DESC");
     } else {
       qb.leftJoin("t.category", "cat")
-        .select("COALESCE(cat.name, 'Uncategorized')", "label")
-        .addSelect("SUM(ABS(t.amount))", "total")
+        .select(SPLIT_CATEGORY_NAME, "label")
+        .addSelect(`SUM(ABS(${SPLIT_AMOUNT}))`, "total")
         .addSelect("COUNT(*)", "count")
-        .groupBy("cat.name")
+        .groupBy(SPLIT_CATEGORY_NAME)
         .orderBy("total", "DESC");
     }
 

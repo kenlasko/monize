@@ -1,3 +1,5 @@
+import { sanitizeToolResultStrings } from "../common/sanitization.util";
+
 export interface McpUserContext {
   userId: string;
   scopes: string;
@@ -72,7 +74,10 @@ export function safeToolError(err: unknown) {
 }
 
 export function toolResult(data: unknown) {
+  const sanitized = sanitizeToolResultStrings(data);
   return {
-    content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
+    content: [
+      { type: "text" as const, text: JSON.stringify(sanitized, null, 2) },
+    ],
   };
 }

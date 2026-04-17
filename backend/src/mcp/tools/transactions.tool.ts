@@ -11,16 +11,7 @@ import {
   safeToolError,
 } from "../mcp-context";
 import { McpWriteLimiter } from "../mcp-write-limiter";
-
-/**
- * LLM07-F3: Strip HTML angle brackets from string values.
- * MCP tools bypass the DTO layer's @SanitizeHtml() decorator,
- * so we apply the same sanitization inline.
- */
-function stripHtml(value: string | undefined): string | undefined {
-  if (value === undefined || value === null) return value;
-  return value.replace(/[<>]/g, "");
-}
+import { stripHtml } from "../../common/sanitization.util";
 
 @Injectable()
 export class McpTransactionsTools {

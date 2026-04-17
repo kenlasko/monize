@@ -632,8 +632,10 @@ describe("ToolExecutorService", () => {
       expect(categories[0].percentage).toBeCloseTo(65.22, 1);
       expect(data.totalSpending).toBe(2300);
 
-      // Verify query filters for expenses (amount < 0)
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith("t.amount < 0");
+      // Verify query filters for expenses using split-aware amount
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "COALESCE(ts.amount, t.amount) < 0",
+      );
     });
 
     it("limits results when topN specified", async () => {
@@ -702,8 +704,10 @@ describe("ToolExecutorService", () => {
       const items = data.items as Array<Record<string, unknown>>;
       expect(items).toHaveLength(2);
 
-      // Verify query filters for income (amount > 0)
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith("t.amount > 0");
+      // Verify query filters for income using split-aware amount
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "COALESCE(ts.amount, t.amount) > 0",
+      );
     });
 
     it("groups by payee when specified", async () => {
@@ -841,8 +845,10 @@ describe("ToolExecutorService", () => {
         period2End: "2026-01-31",
       });
 
-      // Expenses filter: amount < 0
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith("t.amount < 0");
+      // Expenses filter: split-aware amount < 0
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "COALESCE(ts.amount, t.amount) < 0",
+      );
       // Category join
       expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith(
         "t.category",

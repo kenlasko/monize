@@ -1,7 +1,24 @@
 import {
   sanitizePromptValue,
   sanitizeToolResultStrings,
-} from "./prompt-sanitize";
+  stripHtml,
+} from "./sanitization.util";
+
+describe("stripHtml", () => {
+  it("strips angle brackets", () => {
+    expect(stripHtml("<script>alert(1)</script>")).toBe(
+      "scriptalert(1)/script",
+    );
+  });
+
+  it("passes undefined through", () => {
+    expect(stripHtml(undefined)).toBeUndefined();
+  });
+
+  it("leaves safe strings unchanged", () => {
+    expect(stripHtml("Store name")).toBe("Store name");
+  });
+});
 
 describe("sanitizePromptValue", () => {
   it("returns normal text unchanged", () => {

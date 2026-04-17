@@ -5,7 +5,7 @@ import { AccountsService } from "../../accounts/accounts.service";
 import { CategoriesService } from "../../categories/categories.service";
 import { UserPreference } from "../../users/entities/user-preference.entity";
 import { QUERY_SYSTEM_PROMPT } from "./prompt-templates";
-import { sanitizePromptValue } from "./prompt-sanitize";
+import { sanitizePromptValue } from "../../common/sanitization.util";
 
 interface CategoryNode {
   id: string;

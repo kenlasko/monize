@@ -15,7 +15,7 @@ import {
   SpendingAggregates,
 } from "./insights-aggregator.service";
 import { INSIGHT_SYSTEM_PROMPT } from "../context/prompt-templates";
-import { sanitizePromptValue } from "../context/prompt-sanitize";
+import { sanitizePromptValue } from "../../common/sanitization.util";
 import { UserPreference } from "../../users/entities/user-preference.entity";
 import { AiInsightResponse, InsightsListResponse } from "./dto/ai-insights.dto";
 
