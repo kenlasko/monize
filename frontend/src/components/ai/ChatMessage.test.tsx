@@ -100,6 +100,53 @@ describe('ChatMessage', () => {
       expect(screen.getByText('Error occurred')).toBeInTheDocument();
       expect(screen.queryByText('Some content')).not.toBeInTheDocument();
     });
+
+    it('renders markdown formatting in assistant content', () => {
+      const { container } = render(
+        <ChatMessage
+          role="assistant"
+          content="You spent **$3,000** on *groceries* last month."
+        />,
+      );
+      const strong = container.querySelector('strong');
+      const em = container.querySelector('em');
+      expect(strong?.textContent).toBe('$3,000');
+      expect(em?.textContent).toBe('groceries');
+    });
+
+    it('renders markdown lists in assistant content', () => {
+      const { container } = render(
+        <ChatMessage
+          role="assistant"
+          content={'Top categories:\n\n- Groceries\n- Dining\n- Gas'}
+        />,
+      );
+      const ul = container.querySelector('ul');
+      expect(ul).not.toBeNull();
+      expect(container.querySelectorAll('li')).toHaveLength(3);
+    });
+
+    it('does not apply markdown formatting to user messages', () => {
+      const { container } = render(
+        <ChatMessage role="user" content="I want **bold** text" />,
+      );
+      expect(container.querySelector('strong')).toBeNull();
+      expect(
+        screen.getByText('I want **bold** text'),
+      ).toBeInTheDocument();
+    });
+
+    it('still shows streaming cursor alongside markdown content', () => {
+      const { container } = render(
+        <ChatMessage
+          role="assistant"
+          content="**Loading**"
+          isStreaming
+        />,
+      );
+      expect(container.querySelector('strong')?.textContent).toBe('Loading');
+      expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
+    });
   });
 
   describe('tool badges', () => {

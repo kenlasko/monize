@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { AssistantMarkdown } from './AssistantMarkdown';
 import { ResultChart } from './ResultChart';
 
 interface ToolInfo {
@@ -186,8 +187,8 @@ export function ChatMessage({
           {error ? (
             <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
           ) : (
-            <div className="text-sm whitespace-pre-wrap leading-relaxed">
-              {content}
+            <div className="text-sm leading-relaxed">
+              <AssistantMarkdown content={content} />
               {isStreaming && (
                 <span className="inline-block w-1.5 h-4 ml-0.5 bg-gray-400 dark:bg-gray-500 animate-pulse" />
               )}
