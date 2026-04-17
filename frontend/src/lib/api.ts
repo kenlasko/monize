@@ -80,6 +80,10 @@ async function attemptTokenRefresh(): Promise<boolean> {
   }
 }
 
+// Exported for non-axios callers (e.g. `fetch`-based SSE streams) so they can
+// match the axios interceptor's 401 refresh-and-retry behavior.
+export { attemptTokenRefresh };
+
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {

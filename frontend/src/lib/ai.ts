@@ -1,5 +1,5 @@
 import Cookies from 'js-cookie';
-import apiClient from './api';
+import apiClient, { attemptTokenRefresh } from './api';
 import type {
   AiProviderConfig,
   CreateAiProviderConfig,
@@ -80,24 +80,40 @@ export const aiApi = {
   ): AbortController => {
     const controller = new AbortController();
 
-    // Get CSRF token from cookie. Use js-cookie (not raw document.cookie) so
-    // the value is URL-decoded — the backend stores `${nonce}:${hmac}`, which
-    // Express serializes with `%3A` in place of the colon. Sending the raw
-    // encoded value would fail the backend's timing-safe comparison against
-    // the cookie-parser-decoded cookie.
-    const csrfToken = Cookies.get('csrf_token') || '';
+    // Open the stream. Re-read the CSRF cookie each call so a retry after
+    // token refresh picks up the rotated value. js-cookie URL-decodes the
+    // cookie — the backend stores `${nonce}:${hmac}` which Express
+    // serializes with `%3A`, and the raw encoded value would fail the
+    // backend's timing-safe comparison.
+    const openStream = (): Promise<Response> => {
+      const csrfToken = Cookies.get('csrf_token') || '';
+      return fetch('/api/v1/ai/query/stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken,
+        },
+        body: JSON.stringify({ query, conversationHistory }),
+        credentials: 'include',
+        signal: controller.signal,
+      });
+    };
 
-    fetch('/api/v1/ai/query/stream', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': csrfToken,
-      },
-      body: JSON.stringify({ query, conversationHistory }),
-      credentials: 'include',
-      signal: controller.signal,
-    })
-      .then(async (response) => {
+    (async () => {
+      try {
+        let response = await openStream();
+
+        // The access token is 15m. If the user sat in the conversation long
+        // enough for it to expire, the first POST returns 401. The axios
+        // interceptor that normally refreshes doesn't fire for `fetch()`,
+        // so replicate its refresh-and-retry here.
+        if (response.status === 401) {
+          const refreshed = await attemptTokenRefresh();
+          if (refreshed) {
+            response = await openStream();
+          }
+        }
+
         if (!response.ok) {
           const text = await response.text();
           let message = `Request failed: ${response.status}`;
@@ -146,12 +162,12 @@ export const aiApi = {
         }
 
         callbacks.onDone?.();
-      })
-      .catch((error) => {
-        if (error.name !== 'AbortError') {
-          callbacks.onError?.(error);
+      } catch (error) {
+        if ((error as Error).name !== 'AbortError') {
+          callbacks.onError?.(error as Error);
         }
-      });
+      }
+    })();
 
     return controller;
   },
