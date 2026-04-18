@@ -68,6 +68,32 @@ describe('AccountBalancesBarChart', () => {
     expect(screen.getByText('Accounts')).toBeInTheDocument();
   });
 
+  it('renders a download button when data is present, titled after the chart', () => {
+    render(
+      <AccountBalancesBarChart
+        data={[
+          { accountId: 'a1', accountName: 'Checking', balance: 1000 },
+          { accountId: 'a2', accountName: 'Savings', balance: 2500 },
+        ]}
+        isLoading={false}
+      />
+    );
+
+    expect(
+      screen.getByRole('button', { name: /download account balances as png/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('hides the download button in loading and empty states', () => {
+    const { rerender } = render(
+      <AccountBalancesBarChart data={[]} isLoading={true} />,
+    );
+    expect(screen.queryByRole('button', { name: /download/i })).not.toBeInTheDocument();
+
+    rerender(<AccountBalancesBarChart data={[]} isLoading={false} />);
+    expect(screen.queryByRole('button', { name: /download/i })).not.toBeInTheDocument();
+  });
+
   it('shows correct summary values for positive and negative balances', () => {
     render(
       <AccountBalancesBarChart

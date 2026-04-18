@@ -217,6 +217,12 @@ vi.mock('@/components/transactions/TransactionFilterPanel', () => ({
       <button data-testid="set-account-filter" onClick={() => {
         props.handleArrayFilterChange(props.setFilterAccountIds, ['acc-1']);
       }}>Set Account Filter</button>
+      <button data-testid="set-account-status-active" onClick={() => {
+        props.setFilterAccountStatus('active');
+      }}>Show Active Accounts</button>
+      <button data-testid="set-account-status-closed" onClick={() => {
+        props.setFilterAccountStatus('closed');
+      }}>Show Closed Accounts</button>
       <button data-testid="set-category-filter" onClick={() => {
         props.handleArrayFilterChange(props.setFilterCategoryIds, ['cat-1']);
       }}>Set Category Filter</button>
@@ -789,6 +795,54 @@ describe('TransactionsPage', () => {
         expect(screen.getByTestId('chart-balance-history')).toBeInTheDocument();
       });
       expect(screen.queryByTestId('chart-account-balances')).not.toBeInTheDocument();
+    });
+
+    it('forwards the Show Accounts filter (active) to the daily-balances chart query', async () => {
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('filter-panel')).toBeInTheDocument();
+      });
+
+      mockGetDailyBalances.mockClear();
+      fireEvent.click(screen.getByTestId('set-account-status-active'));
+
+      await waitFor(() => {
+        expect(mockGetDailyBalances).toHaveBeenCalled();
+      });
+
+      // Non-brokerage active accounts in the mock are acc-1 and acc-2.
+      // acc-3 is closed and acc-4 is a brokerage account (excluded from the
+      // transactions filter). The chart query must receive the same account
+      // list the transaction list uses so the Account Balances chart only
+      // shows accounts the transaction list is actually showing.
+      const callArgs = mockGetDailyBalances.mock.calls.at(-1)?.[0];
+      expect(callArgs).toBeDefined();
+      const accountIds = (callArgs.accountIds as string).split(',').sort();
+      expect(accountIds).toEqual(['acc-1', 'acc-2']);
+    });
+
+    it('forwards the Show Accounts filter (closed) to the daily-balances chart query', async () => {
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('filter-panel')).toBeInTheDocument();
+      });
+
+      mockGetDailyBalances.mockClear();
+      fireEvent.click(screen.getByTestId('set-account-status-closed'));
+
+      await waitFor(() => {
+        expect(mockGetDailyBalances).toHaveBeenCalled();
+      });
+
+      const callArgs = mockGetDailyBalances.mock.calls.at(-1)?.[0];
+      expect(callArgs).toBeDefined();
+      expect((callArgs.accountIds as string).split(',')).toEqual(['acc-3']);
     });
 
     it('renders Monthly Totals chart when a category filter is active, even with multiple accounts', async () => {

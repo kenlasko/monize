@@ -141,7 +141,10 @@ function TransactionsContent() {
       const chartParams: { startDate?: string; endDate?: string; accountIds?: string } = {};
       if (filters.filterStartDate) chartParams.startDate = filters.filterStartDate;
       if (filters.filterEndDate) chartParams.endDate = filters.filterEndDate;
-      if (filters.filterAccountIds.length > 0) chartParams.accountIds = filters.filterAccountIds.join(',');
+      // Mirror the Show Accounts filter (Active/Closed/All) into the chart query
+      // so the Account Balances and Balance History charts only include accounts
+      // that the transaction list is actually showing.
+      if (accountIdsForQuery) chartParams.accountIds = accountIdsForQuery.join(',');
 
       const parsedAmountFrom = filters.filterAmountFrom ? parseFloat(filters.filterAmountFrom) : undefined;
       const parsedAmountTo = filters.filterAmountTo ? parseFloat(filters.filterAmountTo) : undefined;

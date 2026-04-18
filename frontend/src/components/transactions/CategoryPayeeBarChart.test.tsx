@@ -62,6 +62,29 @@ describe('CategoryPayeeBarChart', () => {
     expect(screen.getByText('Transactions')).toBeInTheDocument();
   });
 
+  it('renders a download button titled after the chart when data is present', () => {
+    render(
+      <CategoryPayeeBarChart
+        data={[{ month: '2025-01', total: -500, count: 10 }]}
+        isLoading={false}
+      />
+    );
+
+    expect(
+      screen.getByRole('button', { name: /download monthly totals as png/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('hides the download button in loading and empty states', () => {
+    const { rerender } = render(
+      <CategoryPayeeBarChart data={[]} isLoading={true} />,
+    );
+    expect(screen.queryByRole('button', { name: /download/i })).not.toBeInTheDocument();
+
+    rerender(<CategoryPayeeBarChart data={[]} isLoading={false} />);
+    expect(screen.queryByRole('button', { name: /download/i })).not.toBeInTheDocument();
+  });
+
   it('shows correct summary values', () => {
     render(
       <CategoryPayeeBarChart

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import {
   BarChart,
   Bar,
@@ -13,6 +13,9 @@ import {
   Cell,
 } from 'recharts';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { ChartDownloadButton } from '@/components/ui/ChartDownloadButton';
+
+const CHART_TITLE = 'Account Balances';
 
 interface AccountBalancesBarChartProps {
   data: Array<{ accountId: string; accountName: string; balance: number }>;
@@ -66,6 +69,7 @@ export function AccountBalancesBarChart({
   onAccountClick,
 }: AccountBalancesBarChartProps) {
   const { formatCurrency: formatCurrencyFull, formatCurrencyAxis } = useNumberFormat();
+  const chartRef = useRef<HTMLDivElement>(null);
 
   const formatCurrency = useCallback(
     (value: number) => formatCurrencyFull(value, currencyCode),
@@ -101,7 +105,7 @@ export function AccountBalancesBarChart({
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 mb-6">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          Account Balances
+          {CHART_TITLE}
         </h3>
         <div className="h-72 flex items-center justify-center">
           <div className="animate-pulse w-full h-full bg-gray-200 dark:bg-gray-700 rounded" />
@@ -114,7 +118,7 @@ export function AccountBalancesBarChart({
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 mb-6">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          Account Balances
+          {CHART_TITLE}
         </h3>
         <div className="h-72 flex items-center justify-center text-gray-500 dark:text-gray-400">
           <p>No account balance data available</p>
@@ -125,11 +129,14 @@ export function AccountBalancesBarChart({
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 mb-6">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-        Account Balances
-      </h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          {CHART_TITLE}
+        </h3>
+        <ChartDownloadButton chartRef={chartRef} filename={CHART_TITLE} />
+      </div>
 
-      <div className="h-72" style={{ minHeight: 288 }}>
+      <div ref={chartRef} className="h-72" style={{ minHeight: 288 }}>
         <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <BarChart
             data={chartData}
