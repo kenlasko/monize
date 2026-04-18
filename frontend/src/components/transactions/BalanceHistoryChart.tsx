@@ -22,6 +22,8 @@ interface BalanceHistoryChartProps {
   data: Array<{ date: string; balance: number }>;
   isLoading: boolean;
   currencyCode?: string;
+  /** Account name to append to the download filename, e.g. "Checking". */
+  accountName?: string;
 }
 
 interface ChartPoint {
@@ -65,9 +67,11 @@ export function BalanceHistoryChart({
   data,
   isLoading,
   currencyCode,
+  accountName,
 }: BalanceHistoryChartProps) {
   const { formatCurrency: formatCurrencyFull, formatCurrencyAxis } = useNumberFormat();
   const chartRef = useRef<HTMLDivElement>(null);
+  const downloadFilename = accountName ? `${CHART_TITLE} - ${accountName}` : CHART_TITLE;
 
   const formatCurrency = useCallback(
     (value: number) => formatCurrencyFull(value, currencyCode),
@@ -174,7 +178,7 @@ export function BalanceHistoryChart({
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           {CHART_TITLE}
         </h3>
-        <ChartDownloadButton chartRef={chartRef} filename={CHART_TITLE} />
+        <ChartDownloadButton chartRef={chartRef} filename={downloadFilename} />
       </div>
 
       <div ref={chartRef} className="h-72" style={{ minHeight: 288 }}>

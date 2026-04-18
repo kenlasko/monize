@@ -469,10 +469,37 @@ function TransactionsContent() {
         accountName: accountNameById.get(accountId) ?? 'Unknown',
         balance: isSingleCurrency ? info.balance : convertToDefault(info.balance, info.currencyCode),
       }))
+      // Hide zero-balance accounts -- they add no information to the chart.
+      // Compare at 4-decimal precision to match decimal(20,4) storage.
+      .filter((a) => Math.round(a.balance * 10000) !== 0)
       .sort((a, b) => b.balance - a.balance);
 
     return { chartBalances: aggregated, chartCurrency: displayCurrency, accountBalances: perAccount };
   }, [dailyBalances, accounts, defaultCurrency, convertToDefault]);
+
+  // Label appended to the Monthly Totals download filename so it reflects
+  // which category/payee/tag/search the chart is scoped to.
+  const monthlyTotalsFilterLabel = useMemo(() => {
+    const parts: string[] = [
+      ...filters.selectedCategories.map((c) => c.name),
+      ...filters.selectedPayees.map((p) => p.name),
+      ...filters.selectedTags.map((t) => t.name),
+    ];
+    if (filters.filterSearch) parts.push(`"${filters.filterSearch}"`);
+    return parts.length > 0 ? parts.join(', ') : undefined;
+  }, [filters.selectedCategories, filters.selectedPayees, filters.selectedTags, filters.filterSearch]);
+
+  // Name of the single account behind the Balance History chart, used as the
+  // download filename suffix. Falls back to the accounts list when there are
+  // no chart rows yet but the user has narrowed down to one account.
+  const balanceHistoryAccountName = useMemo(() => {
+    if (accountBalances.length === 1) return accountBalances[0].accountName;
+    if (filters.filterAccountIds.length === 1) {
+      const id = filters.filterAccountIds[0];
+      return accounts.find((a) => a.id === id)?.name;
+    }
+    return undefined;
+  }, [accountBalances, filters.filterAccountIds, accounts]);
 
   const selection = useTransactionSelection(
     transactions,
@@ -618,12 +645,17 @@ function TransactionsContent() {
           actions={<Button onClick={handleCreateNew}>+ New Transaction</Button>}
         />
         {filters.filterCategoryIds.length > 0 || filters.filterPayeeIds.length > 0 || filters.filterTagIds.length > 0 || filters.filterSearch.length > 0 ? (
-          <CategoryPayeeBarChart data={monthlyTotals} isLoading={isLoading} onMonthClick={(startDate, endDate) => {
-            filters.isFilterChange.current = true;
-            filters.setFilterStartDate(startDate);
-            filters.setFilterEndDate(endDate);
-            filters.setFilterTimePeriod('custom');
-          }} />
+          <CategoryPayeeBarChart
+            data={monthlyTotals}
+            isLoading={isLoading}
+            filterLabel={monthlyTotalsFilterLabel}
+            onMonthClick={(startDate, endDate) => {
+              filters.isFilterChange.current = true;
+              filters.setFilterStartDate(startDate);
+              filters.setFilterEndDate(endDate);
+              filters.setFilterTimePeriod('custom');
+            }}
+          />
         ) : accountBalances.length > 1 ? (
           <AccountBalancesBarChart
             data={accountBalances}
@@ -632,7 +664,12 @@ function TransactionsContent() {
             onAccountClick={filters.handleAccountFilterClick}
           />
         ) : (
-          <BalanceHistoryChart data={chartBalances} isLoading={isLoading} currencyCode={chartCurrency} />
+          <BalanceHistoryChart
+            data={chartBalances}
+            isLoading={isLoading}
+            currencyCode={chartCurrency}
+            accountName={balanceHistoryAccountName}
+          />
         )}
 
         {/* Form Modal */}

@@ -24,6 +24,8 @@ interface CategoryPayeeBarChartProps {
   data: MonthlyTotal[];
   isLoading: boolean;
   onMonthClick?: (startDate: string, endDate: string) => void;
+  /** Category/payee/tag/search descriptor appended to the download filename. */
+  filterLabel?: string;
 }
 
 interface ChartDataPoint {
@@ -71,9 +73,11 @@ export function CategoryPayeeBarChart({
   data,
   isLoading,
   onMonthClick,
+  filterLabel,
 }: CategoryPayeeBarChartProps) {
   const { formatCurrency, formatCurrencyAxis } = useNumberFormat();
   const chartRef = useRef<HTMLDivElement>(null);
+  const downloadFilename = filterLabel ? `${CHART_TITLE} - ${filterLabel}` : CHART_TITLE;
 
   const chartData = useMemo(() => {
     return data.map((d) => {
@@ -128,7 +132,7 @@ export function CategoryPayeeBarChart({
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           {CHART_TITLE}
         </h3>
-        <ChartDownloadButton chartRef={chartRef} filename={CHART_TITLE} />
+        <ChartDownloadButton chartRef={chartRef} filename={downloadFilename} />
       </div>
 
       <div ref={chartRef} className="h-72" style={{ minHeight: 288 }}>

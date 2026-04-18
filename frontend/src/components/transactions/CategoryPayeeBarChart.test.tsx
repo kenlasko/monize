@@ -85,6 +85,20 @@ describe('CategoryPayeeBarChart', () => {
     expect(screen.queryByRole('button', { name: /download/i })).not.toBeInTheDocument();
   });
 
+  it('appends the filter label to the download button filename when provided', () => {
+    render(
+      <CategoryPayeeBarChart
+        data={[{ month: '2025-01', total: -500, count: 10 }]}
+        isLoading={false}
+        filterLabel="Groceries, Walmart"
+      />
+    );
+
+    expect(
+      screen.getByRole('button', { name: /download monthly totals - groceries, walmart as png/i }),
+    ).toBeInTheDocument();
+  });
+
   it('shows correct summary values', () => {
     render(
       <CategoryPayeeBarChart
