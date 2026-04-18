@@ -37,7 +37,7 @@ import { ActionHistoryModule } from "../action-history/action-history.module";
       UserPreference,
     ]),
     forwardRef(() => AccountsModule),
-    TransactionsModule,
+    forwardRef(() => TransactionsModule),
     forwardRef(() => CurrenciesModule),
     NetWorthModule,
     ActionHistoryModule,

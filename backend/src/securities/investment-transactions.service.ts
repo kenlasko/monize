@@ -43,6 +43,7 @@ export class InvestmentTransactionsService {
     private dataSource: DataSource,
     @Inject(forwardRef(() => AccountsService))
     private accountsService: AccountsService,
+    @Inject(forwardRef(() => TransactionsService))
     private transactionsService: TransactionsService,
     private holdingsService: HoldingsService,
     private securitiesService: SecuritiesService,
