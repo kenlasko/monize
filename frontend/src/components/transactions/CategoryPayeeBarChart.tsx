@@ -145,7 +145,7 @@ export function CategoryPayeeBarChart({
         <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <BarChart
             data={chartData}
-            margin={{ top: 20, right: isMobile ? 16 : 5, left: -10, bottom: 0 }}
+            margin={{ top: isMobile ? 32 : 20, right: isMobile ? 16 : 5, left: -10, bottom: 0 }}
             onClick={onMonthClick ? (state: any) => {
               const month = state?.activeLabel;
               if (!month) return;
@@ -191,14 +191,22 @@ export function CategoryPayeeBarChart({
                   fill={entry.total >= 0 ? '#22c55e' : '#ef4444'}
                 />
               ))}
-              {!isMobile && (
-                <LabelList
-                  dataKey="total"
-                  position="top"
-                  formatter={(value: unknown) => formatCurrency(Number(value))}
-                  style={{ fill: '#6b7280', fontSize: 11, fontWeight: 500 }}
-                />
-              )}
+              <LabelList
+                dataKey="total"
+                position="top"
+                angle={isMobile ? -90 : 0}
+                offset={isMobile ? 14 : 5}
+                formatter={(value: unknown) =>
+                  isMobile
+                    ? formatCurrencyAxis(Number(value))
+                    : formatCurrency(Number(value))
+                }
+                style={{
+                  fill: '#6b7280',
+                  fontSize: isMobile ? 10 : 11,
+                  fontWeight: 500,
+                }}
+              />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
