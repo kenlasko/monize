@@ -64,6 +64,7 @@ describe("ToolExecutorService", () => {
       select: jest.fn().mockReturnThis(),
       addSelect: jest.fn().mockReturnThis(),
       groupBy: jest.fn().mockReturnThis(),
+      addGroupBy: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
       getRawMany: jest.fn().mockResolvedValue([]),
     };
@@ -90,6 +91,12 @@ describe("ToolExecutorService", () => {
         transactionCount: 45,
         byCurrency: { USD: { income: 5000, expenses: -3000 } },
       }),
+      getTransfersByAccount: jest.fn().mockResolvedValue({
+        accounts: [],
+        totalInbound: 0,
+        totalOutbound: 0,
+        transferCount: 0,
+      }),
     };
 
     mockNetWorthService = {
@@ -111,6 +118,19 @@ describe("ToolExecutorService", () => {
 
     mockPortfolioService = {
       getAccountMarketValues: jest.fn().mockResolvedValue(new Map()),
+      getLlmSummary: jest.fn().mockResolvedValue({
+        holdingCount: 0,
+        totalCashValue: 0,
+        totalHoldingsValue: 0,
+        totalCostBasis: 0,
+        totalPortfolioValue: 0,
+        totalGainLoss: 0,
+        totalGainLossPercent: 0,
+        timeWeightedReturn: null,
+        cagr: null,
+        holdings: [],
+        allocation: [],
+      }),
     };
 
     mockTransactionRepo = {
@@ -198,6 +218,23 @@ describe("ToolExecutorService", () => {
       expect(result.data).toBeDefined();
       expect(result.summary).toContain("Net worth history");
       expect(result.sources[0].type).toBe("net_worth");
+    });
+
+    it("routes to get_transfers tool", async () => {
+      const result = await service.execute(userId, "get_transfers", {
+        startDate: "2026-01-01",
+        endDate: "2026-01-31",
+      });
+
+      expect(result.data).toBeDefined();
+      expect(result.sources[0].type).toBe("transfers");
+    });
+
+    it("routes to get_portfolio_summary tool", async () => {
+      const result = await service.execute(userId, "get_portfolio_summary", {});
+
+      expect(result.data).toBeDefined();
+      expect(result.sources[0].type).toBe("portfolio");
     });
 
     it("routes to compare_periods tool", async () => {
@@ -882,6 +919,191 @@ describe("ToolExecutorService", () => {
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         "NOT EXISTS (SELECT 1 FROM investment_transactions it WHERE it.transaction_id = t.id)",
       );
+    });
+  });
+
+  describe("get_transfers", () => {
+    it("delegates to the shared analytics service", async () => {
+      mockAnalyticsService.getTransfersByAccount.mockResolvedValueOnce({
+        accounts: [
+          {
+            accountName: "Checking",
+            currency: "USD",
+            inbound: 0,
+            outbound: 1500,
+            net: -1500,
+            transferCount: 3,
+          },
+          {
+            accountName: "Savings",
+            currency: "USD",
+            inbound: 1500,
+            outbound: 0,
+            net: 1500,
+            transferCount: 3,
+          },
+        ],
+        totalInbound: 1500,
+        totalOutbound: 1500,
+        transferCount: 6,
+      });
+
+      const result = await service.execute(userId, "get_transfers", {
+        startDate: "2026-01-01",
+        endDate: "2026-01-31",
+      });
+
+      expect(mockAnalyticsService.getTransfersByAccount).toHaveBeenCalledWith(
+        userId,
+        "2026-01-01",
+        "2026-01-31",
+        undefined,
+      );
+
+      const data = result.data as Record<string, unknown>;
+      expect((data.accounts as unknown[]).length).toBe(2);
+      expect(data.totalInbound).toBe(1500);
+      expect(data.totalOutbound).toBe(1500);
+      expect(data.transferCount).toBe(6);
+    });
+
+    it("resolves accountNames to IDs before delegating", async () => {
+      mockAnalyticsService.getTransfersByAccount.mockResolvedValueOnce({
+        accounts: [],
+        totalInbound: 0,
+        totalOutbound: 0,
+        transferCount: 0,
+      });
+
+      await service.execute(userId, "get_transfers", {
+        startDate: "2026-01-01",
+        endDate: "2026-01-31",
+        accountNames: ["Savings"],
+      });
+
+      expect(mockAccountsService.findAll).toHaveBeenCalledWith(userId, false);
+      expect(mockAnalyticsService.getTransfersByAccount).toHaveBeenCalledWith(
+        userId,
+        "2026-01-01",
+        "2026-01-31",
+        ["acc-2"],
+      );
+    });
+
+    it("produces a human-readable summary and source metadata", async () => {
+      mockAnalyticsService.getTransfersByAccount.mockResolvedValueOnce({
+        accounts: [
+          {
+            accountName: "Savings",
+            currency: "USD",
+            inbound: 500,
+            outbound: 0,
+            net: 500,
+            transferCount: 1,
+          },
+        ],
+        totalInbound: 500,
+        totalOutbound: 0,
+        transferCount: 1,
+      });
+
+      const result = await service.execute(userId, "get_transfers", {
+        startDate: "2026-01-01",
+        endDate: "2026-01-31",
+        accountNames: ["Savings"],
+      });
+
+      expect(result.summary).toContain("1 transfer transactions");
+      expect(result.summary).toContain("Inbound: 500.00");
+      expect(result.sources).toHaveLength(1);
+      expect(result.sources[0]).toMatchObject({
+        type: "transfers",
+        description: "Transfer activity for Savings",
+        dateRange: "2026-01-01 to 2026-01-31",
+      });
+    });
+  });
+
+  describe("get_portfolio_summary", () => {
+    it("delegates to the shared portfolio LLM summary method", async () => {
+      mockPortfolioService.getLlmSummary.mockResolvedValueOnce({
+        holdingCount: 2,
+        totalCashValue: 100,
+        totalHoldingsValue: 9900,
+        totalCostBasis: 9000,
+        totalPortfolioValue: 10000,
+        totalGainLoss: 900,
+        totalGainLossPercent: 10,
+        timeWeightedReturn: 8.5,
+        cagr: 7.2,
+        holdings: [
+          {
+            symbol: "AAPL",
+            name: "Apple Inc.",
+            securityType: "STOCK",
+            currency: "USD",
+            quantity: 10,
+            averageCost: 150,
+            costBasis: 1500,
+            marketValue: 1800,
+            gainLoss: 300,
+            gainLossPercent: 20,
+          },
+        ],
+        allocation: [
+          {
+            name: "AAPL",
+            symbol: "AAPL",
+            type: "security",
+            value: 1800,
+            percentage: 18,
+          },
+        ],
+      });
+
+      const result = await service.execute(userId, "get_portfolio_summary", {});
+
+      expect(mockPortfolioService.getLlmSummary).toHaveBeenCalledWith(
+        userId,
+        undefined,
+      );
+      const data = result.data as Record<string, unknown>;
+      expect(data.totalPortfolioValue).toBe(10000);
+      expect(data.totalGainLoss).toBe(900);
+      expect((data.holdings as unknown[]).length).toBe(1);
+      expect(result.sources[0].type).toBe("portfolio");
+    });
+
+    it("resolves accountNames to IDs before delegating", async () => {
+      await service.execute(userId, "get_portfolio_summary", {
+        accountNames: ["Checking"],
+      });
+
+      expect(mockAccountsService.findAll).toHaveBeenCalledWith(userId, false);
+      expect(mockPortfolioService.getLlmSummary).toHaveBeenCalledWith(userId, [
+        "acc-1",
+      ]);
+    });
+
+    it("formats gain/loss with a + sign when positive", async () => {
+      mockPortfolioService.getLlmSummary.mockResolvedValueOnce({
+        holdingCount: 1,
+        totalCashValue: 0,
+        totalHoldingsValue: 1200,
+        totalCostBasis: 1000,
+        totalPortfolioValue: 1200,
+        totalGainLoss: 200,
+        totalGainLossPercent: 20,
+        timeWeightedReturn: null,
+        cagr: null,
+        holdings: [],
+        allocation: [],
+      });
+
+      const result = await service.execute(userId, "get_portfolio_summary", {});
+
+      expect(result.summary).toContain("+200.00");
+      expect(result.summary).toContain("+20.00%");
     });
   });
 

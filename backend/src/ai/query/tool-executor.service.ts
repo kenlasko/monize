@@ -126,6 +126,12 @@ export class ToolExecutorService {
         case "compare_periods":
           result = await this.comparePeriods(userId, validatedInput);
           break;
+        case "get_portfolio_summary":
+          result = await this.getPortfolioSummary(userId, validatedInput);
+          break;
+        case "get_transfers":
+          result = await this.getTransfers(userId, validatedInput);
+          break;
         case "get_budget_status":
           result = await this.getBudgetStatus(userId, validatedInput);
           break;
@@ -826,6 +832,61 @@ export class ToolExecutorService {
     }
 
     return items.map((r) => ({ label: r.label, total: r.total }));
+  }
+
+  private async getPortfolioSummary(
+    userId: string,
+    input: Record<string, unknown>,
+  ): Promise<ToolResult> {
+    const accountNames = input.accountNames as string[] | undefined;
+    const accountIds = await this.resolveAccountIds(userId, accountNames);
+
+    const data = await this.portfolioService.getLlmSummary(userId, accountIds);
+
+    const sign = data.totalGainLoss >= 0 ? "+" : "";
+    return {
+      data,
+      summary: `${data.holdingCount} holding${data.holdingCount === 1 ? "" : "s"}, total portfolio value ${data.totalPortfolioValue.toFixed(2)}, unrealized gain/loss ${sign}${data.totalGainLoss.toFixed(2)} (${sign}${data.totalGainLossPercent.toFixed(2)}%).`,
+      sources: [
+        {
+          type: "portfolio",
+          description: accountNames
+            ? `Portfolio summary for ${accountNames.join(", ")}`
+            : "Portfolio summary across all investment accounts",
+        },
+      ],
+    };
+  }
+
+  private async getTransfers(
+    userId: string,
+    input: Record<string, unknown>,
+  ): Promise<ToolResult> {
+    const startDate = input.startDate as string;
+    const endDate = input.endDate as string;
+    const accountNames = input.accountNames as string[] | undefined;
+    const accountIds = await this.resolveAccountIds(userId, accountNames);
+
+    const data = await this.analyticsService.getTransfersByAccount(
+      userId,
+      startDate,
+      endDate,
+      accountIds,
+    );
+
+    return {
+      data,
+      summary: `${data.transferCount} transfer transactions across ${data.accounts.length} account${data.accounts.length === 1 ? "" : "s"} from ${startDate} to ${endDate}. Inbound: ${data.totalInbound.toFixed(2)}, Outbound: ${data.totalOutbound.toFixed(2)}.`,
+      sources: [
+        {
+          type: "transfers",
+          description: accountNames
+            ? `Transfer activity for ${accountNames.join(", ")}`
+            : "Transfer activity across all accounts",
+          dateRange: `${startDate} to ${endDate}`,
+        },
+      ],
+    };
   }
 
   private async getBudgetStatus(

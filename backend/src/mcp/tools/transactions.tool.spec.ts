@@ -5,6 +5,7 @@ import { MCP_DAILY_WRITE_LIMIT } from "../mcp-write-limiter";
 describe("McpTransactionsTools", () => {
   let tool: McpTransactionsTools;
   let transactionsService: Record<string, jest.Mock>;
+  let analyticsService: Record<string, jest.Mock>;
   let accountsService: Record<string, jest.Mock>;
   let server: { registerTool: jest.Mock };
   let resolve: jest.MockedFunction<UserContextResolver>;
@@ -17,12 +18,17 @@ describe("McpTransactionsTools", () => {
       update: jest.fn(),
     };
 
+    analyticsService = {
+      getTransfersByAccount: jest.fn(),
+    };
+
     accountsService = {
       findOne: jest.fn(),
     };
 
     tool = new McpTransactionsTools(
       transactionsService as any,
+      analyticsService as any,
       accountsService as any,
     );
 
@@ -36,8 +42,78 @@ describe("McpTransactionsTools", () => {
     tool.register(server as any, resolve);
   });
 
-  it("should register 3 tools", () => {
-    expect(server.registerTool).toHaveBeenCalledTimes(3);
+  it("should register 4 tools", () => {
+    expect(server.registerTool).toHaveBeenCalledTimes(4);
+  });
+
+  describe("get_transfers", () => {
+    it("delegates to shared analytics service", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "read" });
+      analyticsService.getTransfersByAccount.mockResolvedValue({
+        accounts: [
+          {
+            accountName: "Savings",
+            currency: "USD",
+            inbound: 1500,
+            outbound: 0,
+            net: 1500,
+            transferCount: 3,
+          },
+        ],
+        totalInbound: 1500,
+        totalOutbound: 0,
+        transferCount: 3,
+      });
+
+      const result = await handlers["get_transfers"](
+        { startDate: "2026-01-01", endDate: "2026-01-31" },
+        { sessionId: "s1" },
+      );
+
+      expect(analyticsService.getTransfersByAccount).toHaveBeenCalledWith(
+        "u1",
+        "2026-01-01",
+        "2026-01-31",
+        undefined,
+      );
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.totalInbound).toBe(1500);
+      expect(parsed.accounts).toHaveLength(1);
+    });
+
+    it("requires read scope", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "write" });
+      const result = await handlers["get_transfers"](
+        { startDate: "2026-01-01", endDate: "2026-01-31" },
+        { sessionId: "s1" },
+      );
+      expect(result.isError).toBe(true);
+    });
+
+    it("passes accountIds filter through", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "read" });
+      analyticsService.getTransfersByAccount.mockResolvedValue({
+        accounts: [],
+        totalInbound: 0,
+        totalOutbound: 0,
+        transferCount: 0,
+      });
+
+      await handlers["get_transfers"](
+        {
+          startDate: "2026-01-01",
+          endDate: "2026-01-31",
+          accountIds: ["00000000-0000-0000-0000-000000000001"],
+        },
+        { sessionId: "s1" },
+      );
+      expect(analyticsService.getTransfersByAccount).toHaveBeenCalledWith(
+        "u1",
+        "2026-01-01",
+        "2026-01-31",
+        ["00000000-0000-0000-0000-000000000001"],
+      );
+    });
   });
 
   describe("search_transactions", () => {
@@ -380,6 +456,7 @@ describe("McpTransactionsTools", () => {
       // and manually filling up the limiter
       const freshTool = new McpTransactionsTools(
         transactionsService as any,
+        analyticsService as any,
         accountsService as any,
       );
       const freshHandlers: Record<string, (...args: any[]) => any> = {};
@@ -432,6 +509,7 @@ describe("McpTransactionsTools", () => {
 
       const freshTool = new McpTransactionsTools(
         transactionsService as any,
+        analyticsService as any,
         accountsService as any,
       );
       const freshHandlers: Record<string, (...args: any[]) => any> = {};

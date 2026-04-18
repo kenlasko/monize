@@ -6,6 +6,8 @@ import {
   getIncomeSummarySchema,
   getNetWorthHistorySchema,
   comparePeriodsSchema,
+  getPortfolioSummarySchema,
+  getTransfersSchema,
   getBudgetStatusSchema,
   calculateSchema,
   renderChartSchema,
@@ -300,6 +302,70 @@ describe("tool-input-schemas", () => {
         direction: "income",
       });
       expect(result.success).toBe(true);
+    });
+  });
+
+  describe("getPortfolioSummarySchema", () => {
+    it("accepts empty input", () => {
+      const result = getPortfolioSummarySchema.safeParse({});
+      expect(result.success).toBe(true);
+    });
+
+    it("accepts accountNames filter", () => {
+      const result = getPortfolioSummarySchema.safeParse({
+        accountNames: ["Brokerage", "TFSA"],
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects account names over 100 chars", () => {
+      const result = getPortfolioSummarySchema.safeParse({
+        accountNames: ["a".repeat(101)],
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("getTransfersSchema", () => {
+    it("accepts valid input with only required fields", () => {
+      const result = getTransfersSchema.safeParse({
+        startDate: "2026-01-01",
+        endDate: "2026-01-31",
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("accepts optional accountNames filter", () => {
+      const result = getTransfersSchema.safeParse({
+        startDate: "2026-01-01",
+        endDate: "2026-01-31",
+        accountNames: ["Chequing", "Savings"],
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects missing required date fields", () => {
+      const result = getTransfersSchema.safeParse({
+        accountNames: ["Chequing"],
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects invalid date format", () => {
+      const result = getTransfersSchema.safeParse({
+        startDate: "not-a-date",
+        endDate: "2026-01-31",
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects account names over 100 chars", () => {
+      const result = getTransfersSchema.safeParse({
+        startDate: "2026-01-01",
+        endDate: "2026-01-31",
+        accountNames: ["a".repeat(101)],
+      });
+      expect(result.success).toBe(false);
     });
   });
 

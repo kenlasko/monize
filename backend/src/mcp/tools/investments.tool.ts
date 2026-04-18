@@ -23,18 +23,27 @@ export class McpInvestmentsTools {
       "get_portfolio_summary",
       {
         description:
-          "Get investment portfolio overview with holdings, gains/losses, and allocation",
-        inputSchema: {},
+          "Get investment portfolio overview with holdings, gains/losses, and allocation. Returns the same compact, LLM-friendly shape as the AI Assistant's tool.",
+        inputSchema: {
+          accountIds: z
+            .array(z.string().uuid())
+            .max(50)
+            .optional()
+            .describe(
+              "Optional investment account IDs to filter to. Omit to cover all investment accounts.",
+            ),
+        },
       },
-      async (_args, extra) => {
+      async (args, extra) => {
         const ctx = resolve(extra.sessionId);
         if (!ctx) return toolError("No user context");
         const check = requireScope(ctx.scopes, "read");
         if (check.error) return check.result;
 
         try {
-          const summary = await this.portfolioService.getPortfolioSummary(
+          const summary = await this.portfolioService.getLlmSummary(
             ctx.userId,
+            args.accountIds,
           );
           return toolResult(summary);
         } catch (err: unknown) {

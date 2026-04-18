@@ -5,6 +5,22 @@ import { Transaction } from "./entities/transaction.entity";
 import { Category } from "../categories/entities/category.entity";
 import { getAllCategoryIdsWithChildren } from "../common/category-tree.util";
 
+export interface TransferAccountSummary {
+  accountName: string;
+  currency: string;
+  inbound: number;
+  outbound: number;
+  net: number;
+  transferCount: number;
+}
+
+export interface TransfersByAccountResult {
+  accounts: TransferAccountSummary[];
+  totalInbound: number;
+  totalOutbound: number;
+  transferCount: number;
+}
+
 @Injectable()
 export class TransactionAnalyticsService {
   constructor(
@@ -13,6 +29,76 @@ export class TransactionAnalyticsService {
     @InjectRepository(Category)
     private categoriesRepository: Repository<Category>,
   ) {}
+
+  /**
+   * Per-account transfer activity between the user's own accounts for a date
+   * range. Shared by the AI Assistant's tool executor and the MCP server so
+   * both surfaces return the same shape. `inbound` counts positive-sign
+   * transfer rows (money received), `outbound` counts the absolute value of
+   * negative-sign rows (money sent). When no account filter is applied,
+   * `totalInbound` equals `totalOutbound` (modulo multi-currency conversions)
+   * because every transfer is stored as two linked rows, one on each side.
+   */
+  async getTransfersByAccount(
+    userId: string,
+    startDate: string,
+    endDate: string,
+    accountIds?: string[],
+  ): Promise<TransfersByAccountResult> {
+    const qb = this.transactionsRepository
+      .createQueryBuilder("t")
+      .leftJoin("t.account", "transferAccount")
+      .select("transferAccount.name", "accountName")
+      .addSelect("t.currencyCode", "currencyCode")
+      .addSelect(
+        "SUM(CASE WHEN t.amount > 0 THEN t.amount ELSE 0 END)",
+        "inbound",
+      )
+      .addSelect(
+        "SUM(CASE WHEN t.amount < 0 THEN ABS(t.amount) ELSE 0 END)",
+        "outbound",
+      )
+      .addSelect("COUNT(*)", "count")
+      .where("t.userId = :userId", { userId })
+      .andWhere("t.isTransfer = true")
+      .andWhere("t.transactionDate >= :startDate", { startDate })
+      .andWhere("t.transactionDate <= :endDate", { endDate })
+      .andWhere("t.status != 'VOID'")
+      .groupBy("transferAccount.id")
+      .addGroupBy("transferAccount.name")
+      .addGroupBy("t.currencyCode")
+      .orderBy("transferAccount.name", "ASC");
+
+    if (accountIds && accountIds.length > 0) {
+      qb.andWhere("t.accountId IN (:...accountIds)", { accountIds });
+    }
+
+    const rows = await qb.getRawMany();
+
+    const roundMoney = (v: number): number => Math.round(v * 10000) / 10000;
+    const sumMoney = (values: number[]): number =>
+      values.reduce((s, v) => s + Math.round(v * 10000), 0) / 10000;
+
+    const accounts: TransferAccountSummary[] = rows.map((r) => {
+      const inbound = roundMoney(Number(r.inbound) || 0);
+      const outbound = roundMoney(Number(r.outbound) || 0);
+      return {
+        accountName: r.accountName,
+        currency: r.currencyCode,
+        inbound,
+        outbound,
+        net: roundMoney(inbound - outbound),
+        transferCount: Number(r.count) || 0,
+      };
+    });
+
+    return {
+      accounts,
+      totalInbound: sumMoney(accounts.map((a) => a.inbound)),
+      totalOutbound: sumMoney(accounts.map((a) => a.outbound)),
+      transferCount: accounts.reduce((s, a) => s + a.transferCount, 0),
+    };
+  }
 
   async getSummary(
     userId: string,

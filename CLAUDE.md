@@ -78,6 +78,12 @@ database/
 - Organize by feature/domain, not by type
 - Always update `database/schema.sql` alongside any migration
 
+### Shared AI tools (AI Assistant + MCP server)
+- Every AI tool that reads or aggregates data must share its implementation between the AI Assistant (`backend/src/ai/query/tool-executor.service.ts`) and the MCP server (`backend/src/mcp/tools/*.tool.ts`).
+- Put the shared logic on the relevant domain service (e.g., `PortfolioService.getLlmSummary`, `TransactionAnalyticsService.getTransfersByAccount`). The two tool layers become thin adapters that call it.
+- Both surfaces must return the same data shape. The AI tool executor wraps it with `{ summary, sources }`; MCP just `toolResult(data)`s it.
+- Adding a new AI tool means wiring it into both layers in the same PR -- never ship a tool to only one of the two.
+
 ### Code Style
 - No emojis in code, comments, or documentation
 - Immutability always -- never mutate objects or arrays

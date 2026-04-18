@@ -90,6 +90,47 @@ export interface AssetAllocation {
   totalValue: number;
 }
 
+/**
+ * Compact portfolio view shared by the AI Assistant's tool executor and the
+ * MCP server. Mirrors `PortfolioSummary` but drops internal UUIDs, rounds
+ * monetary and percentage values, and keeps only the fields the model needs
+ * to answer holdings questions.
+ */
+export interface LlmPortfolioHolding {
+  symbol: string;
+  name: string;
+  securityType: string;
+  currency: string;
+  quantity: number;
+  averageCost: number | null;
+  costBasis: number;
+  marketValue: number | null;
+  gainLoss: number | null;
+  gainLossPercent: number | null;
+}
+
+export interface LlmPortfolioAllocation {
+  name: string;
+  symbol: string | null;
+  type: "cash" | "security";
+  value: number;
+  percentage: number;
+}
+
+export interface LlmPortfolioSummary {
+  holdingCount: number;
+  totalCashValue: number;
+  totalHoldingsValue: number;
+  totalCostBasis: number;
+  totalPortfolioValue: number;
+  totalGainLoss: number;
+  totalGainLossPercent: number;
+  timeWeightedReturn: number | null;
+  cagr: number | null;
+  holdings: LlmPortfolioHolding[];
+  allocation: LlmPortfolioAllocation[];
+}
+
 @Injectable()
 export class PortfolioService {
   constructor(
@@ -275,6 +316,65 @@ export class PortfolioService {
       cagr,
       holdings: sortedHoldings,
       holdingsByAccount,
+      allocation,
+    };
+  }
+
+  /**
+   * Compact portfolio summary for LLM / AI consumers. Called by both the AI
+   * Assistant's tool executor and the MCP server's `get_portfolio_summary`
+   * tool so the two surfaces return the same shape. Monetary values are
+   * rounded to 4 decimal places; percentages to 2.
+   */
+  async getLlmSummary(
+    userId: string,
+    accountIds?: string[],
+  ): Promise<LlmPortfolioSummary> {
+    const summary = await this.getPortfolioSummary(userId, accountIds);
+
+    const roundMoney = (v: number | null | undefined): number =>
+      v === null || v === undefined ? 0 : Math.round(Number(v) * 10000) / 10000;
+    const roundMoneyNullable = (v: number | null | undefined): number | null =>
+      v === null || v === undefined
+        ? null
+        : Math.round(Number(v) * 10000) / 10000;
+    const roundPct = (v: number | null | undefined): number | null =>
+      v === null || v === undefined ? null : Math.round(Number(v) * 100) / 100;
+
+    const holdings: LlmPortfolioHolding[] = summary.holdings.map((h) => ({
+      symbol: h.symbol,
+      name: h.name,
+      securityType: h.securityType,
+      currency: h.currencyCode,
+      quantity: h.quantity,
+      averageCost: roundMoneyNullable(h.averageCost),
+      costBasis: roundMoney(h.costBasis),
+      marketValue: roundMoneyNullable(h.marketValue),
+      gainLoss: roundMoneyNullable(h.gainLoss),
+      gainLossPercent: roundPct(h.gainLossPercent),
+    }));
+
+    const allocation: LlmPortfolioAllocation[] = summary.allocation.map(
+      (a) => ({
+        name: a.name,
+        symbol: a.symbol,
+        type: a.type,
+        value: roundMoney(a.value),
+        percentage: roundPct(a.percentage) ?? 0,
+      }),
+    );
+
+    return {
+      holdingCount: holdings.length,
+      totalCashValue: roundMoney(summary.totalCashValue),
+      totalHoldingsValue: roundMoney(summary.totalHoldingsValue),
+      totalCostBasis: roundMoney(summary.totalCostBasis),
+      totalPortfolioValue: roundMoney(summary.totalPortfolioValue),
+      totalGainLoss: roundMoney(summary.totalGainLoss),
+      totalGainLossPercent: roundPct(summary.totalGainLossPercent) ?? 0,
+      timeWeightedReturn: roundPct(summary.timeWeightedReturn),
+      cagr: roundPct(summary.cagr),
+      holdings,
       allocation,
     };
   }

@@ -12,6 +12,7 @@ describe("McpInvestmentsTools", () => {
   beforeEach(() => {
     portfolioService = {
       getPortfolioSummary: jest.fn(),
+      getLlmSummary: jest.fn(),
     };
 
     holdingsService = {
@@ -47,19 +48,46 @@ describe("McpInvestmentsTools", () => {
       expect(result.isError).toBe(true);
     });
 
-    it("should return portfolio summary", async () => {
+    it("should return portfolio summary via shared getLlmSummary", async () => {
       resolve.mockReturnValue({ userId: "u1", scopes: "read" });
-      portfolioService.getPortfolioSummary.mockResolvedValue({
-        totalValue: 10000,
-        totalGain: 500,
+      portfolioService.getLlmSummary.mockResolvedValue({
+        holdingCount: 2,
+        totalPortfolioValue: 10000,
+        totalGainLoss: 500,
+        holdings: [],
+        allocation: [],
       });
 
       const result = await handlers["get_portfolio_summary"](
         {},
         { sessionId: "s1" },
       );
+      expect(portfolioService.getLlmSummary).toHaveBeenCalledWith(
+        "u1",
+        undefined,
+      );
       const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.totalValue).toBe(10000);
+      expect(parsed.totalPortfolioValue).toBe(10000);
+      expect(parsed.totalGainLoss).toBe(500);
+    });
+
+    it("passes accountIds filter through to getLlmSummary", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "read" });
+      portfolioService.getLlmSummary.mockResolvedValue({
+        holdingCount: 0,
+        totalPortfolioValue: 0,
+        totalGainLoss: 0,
+        holdings: [],
+        allocation: [],
+      });
+
+      await handlers["get_portfolio_summary"](
+        { accountIds: ["00000000-0000-0000-0000-000000000001"] },
+        { sessionId: "s1" },
+      );
+      expect(portfolioService.getLlmSummary).toHaveBeenCalledWith("u1", [
+        "00000000-0000-0000-0000-000000000001",
+      ]);
     });
   });
 

@@ -38,6 +38,7 @@ describe("TransactionAnalyticsService", () => {
       }),
       leftJoin: jest.fn().mockReturnValue(mockQueryBuilder),
       groupBy: jest.fn().mockReturnValue(mockQueryBuilder),
+      addGroupBy: jest.fn().mockReturnValue(mockQueryBuilder),
       orderBy: jest.fn().mockReturnValue(mockQueryBuilder),
       setParameter: jest.fn().mockReturnValue(mockQueryBuilder),
       getRawMany: jest.fn().mockResolvedValue([]),
@@ -949,6 +950,96 @@ describe("TransactionAnalyticsService", () => {
         expect(ids).not.toContain("cat-2");
         expect(ids).not.toContain("cat-2-child");
       });
+    });
+  });
+
+  describe("getTransfersByAccount", () => {
+    it("filters to transfer rows in the requested date range", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([]);
+
+      await service.getTransfersByAccount(userId, "2026-01-01", "2026-01-31");
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "t.isTransfer = true",
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "t.transactionDate >= :startDate",
+        { startDate: "2026-01-01" },
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "t.transactionDate <= :endDate",
+        { endDate: "2026-01-31" },
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "t.status != 'VOID'",
+      );
+    });
+
+    it("aggregates inbound, outbound, net, and count per account", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        {
+          accountName: "Chequing",
+          currencyCode: "USD",
+          inbound: "0",
+          outbound: "1500",
+          count: "3",
+        },
+        {
+          accountName: "Savings",
+          currencyCode: "USD",
+          inbound: "1500",
+          outbound: "0",
+          count: "3",
+        },
+      ]);
+
+      const result = await service.getTransfersByAccount(
+        userId,
+        "2026-01-01",
+        "2026-01-31",
+      );
+
+      expect(result.accounts).toHaveLength(2);
+      expect(result.accounts[0]).toMatchObject({
+        accountName: "Chequing",
+        currency: "USD",
+        inbound: 0,
+        outbound: 1500,
+        net: -1500,
+        transferCount: 3,
+      });
+      expect(result.totalInbound).toBe(1500);
+      expect(result.totalOutbound).toBe(1500);
+      expect(result.transferCount).toBe(6);
+    });
+
+    it("applies accountIds filter when provided", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([]);
+
+      await service.getTransfersByAccount(userId, "2026-01-01", "2026-01-31", [
+        "acc-1",
+        "acc-2",
+      ]);
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "t.accountId IN (:...accountIds)",
+        { accountIds: ["acc-1", "acc-2"] },
+      );
+    });
+
+    it("returns zeroed totals when there are no transfers", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([]);
+
+      const result = await service.getTransfersByAccount(
+        userId,
+        "2026-01-01",
+        "2026-01-31",
+      );
+
+      expect(result.accounts).toEqual([]);
+      expect(result.totalInbound).toBe(0);
+      expect(result.totalOutbound).toBe(0);
+      expect(result.transferCount).toBe(0);
     });
   });
 

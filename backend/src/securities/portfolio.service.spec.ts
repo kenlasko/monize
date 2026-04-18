@@ -1257,6 +1257,146 @@ describe("PortfolioService", () => {
     });
   });
 
+  describe("getLlmSummary", () => {
+    it("maps raw holdings into the compact LLM shape and rounds monetary and percentage values", async () => {
+      const getPortfolioSummary = jest
+        .spyOn(service, "getPortfolioSummary")
+        .mockResolvedValue({
+          totalCashValue: 100.12345,
+          totalHoldingsValue: 9900.56789,
+          totalCostBasis: 9000.1234,
+          totalNetInvested: 9000,
+          totalPortfolioValue: 10000.6913,
+          totalGainLoss: 900.5544,
+          totalGainLossPercent: 10.123456,
+          timeWeightedReturn: 8.56789,
+          cagr: null,
+          holdings: [
+            {
+              id: "h1",
+              accountId: "a1",
+              securityId: "s1",
+              symbol: "AAPL",
+              name: "Apple Inc.",
+              securityType: "STOCK",
+              currencyCode: "USD",
+              quantity: 10,
+              averageCost: 150.0,
+              costBasis: 1500.0,
+              costBasisAccountCurrency: 1500.0,
+              currentPrice: 180.0,
+              marketValue: 1800.12345,
+              gainLoss: 300.12345,
+              gainLossPercent: 20.567,
+            },
+          ],
+          holdingsByAccount: [],
+          allocation: [
+            {
+              name: "AAPL",
+              symbol: "AAPL",
+              type: "security",
+              value: 1800.12345,
+              percentage: 18.56789,
+            },
+          ],
+        });
+
+      const result = await service.getLlmSummary("user-1");
+
+      expect(getPortfolioSummary).toHaveBeenCalledWith("user-1", undefined);
+      expect(result.holdingCount).toBe(1);
+      expect(result.totalCashValue).toBe(100.1235);
+      expect(result.totalHoldingsValue).toBe(9900.5679);
+      expect(result.totalPortfolioValue).toBe(10000.6913);
+      expect(result.totalGainLoss).toBe(900.5544);
+      expect(result.totalGainLossPercent).toBe(10.12);
+      expect(result.timeWeightedReturn).toBe(8.57);
+      expect(result.cagr).toBeNull();
+      expect(result.holdings[0]).toMatchObject({
+        symbol: "AAPL",
+        name: "Apple Inc.",
+        securityType: "STOCK",
+        currency: "USD",
+        quantity: 10,
+        averageCost: 150,
+        costBasis: 1500,
+        marketValue: 1800.1235,
+        gainLoss: 300.1235,
+        gainLossPercent: 20.57,
+      });
+      expect(result.allocation[0]).toMatchObject({
+        name: "AAPL",
+        symbol: "AAPL",
+        type: "security",
+        value: 1800.1235,
+        percentage: 18.57,
+      });
+    });
+
+    it("passes accountIds filter through to getPortfolioSummary", async () => {
+      const spy = jest.spyOn(service, "getPortfolioSummary").mockResolvedValue({
+        totalCashValue: 0,
+        totalHoldingsValue: 0,
+        totalCostBasis: 0,
+        totalNetInvested: 0,
+        totalPortfolioValue: 0,
+        totalGainLoss: 0,
+        totalGainLossPercent: 0,
+        timeWeightedReturn: null,
+        cagr: null,
+        holdings: [],
+        holdingsByAccount: [],
+        allocation: [],
+      });
+
+      await service.getLlmSummary("user-1", ["acc-1", "acc-2"]);
+
+      expect(spy).toHaveBeenCalledWith("user-1", ["acc-1", "acc-2"]);
+    });
+
+    it("preserves null averageCost", async () => {
+      jest.spyOn(service, "getPortfolioSummary").mockResolvedValue({
+        totalCashValue: 0,
+        totalHoldingsValue: 100,
+        totalCostBasis: 0,
+        totalNetInvested: 0,
+        totalPortfolioValue: 100,
+        totalGainLoss: 0,
+        totalGainLossPercent: 0,
+        timeWeightedReturn: null,
+        cagr: null,
+        holdings: [
+          {
+            id: "h1",
+            accountId: "a1",
+            securityId: "s1",
+            symbol: "ACB",
+            name: "Aurora",
+            securityType: "STOCK",
+            currencyCode: "CAD",
+            quantity: 5,
+            averageCost: null as unknown as number,
+            costBasis: 0,
+            costBasisAccountCurrency: 0,
+            currentPrice: 20,
+            marketValue: 100,
+            gainLoss: null,
+            gainLossPercent: null,
+          },
+        ],
+        holdingsByAccount: [],
+        allocation: [],
+      });
+
+      const result = await service.getLlmSummary("user-1");
+
+      expect(result.holdings[0].averageCost).toBeNull();
+      expect(result.holdings[0].gainLoss).toBeNull();
+      expect(result.holdings[0].gainLossPercent).toBeNull();
+    });
+  });
+
   describe("getTopMovers", () => {
     describe("when user has active holdings with price history", () => {
       beforeEach(() => {

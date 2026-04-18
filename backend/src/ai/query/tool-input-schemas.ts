@@ -56,6 +56,16 @@ export const comparePeriodsSchema = z.object({
   direction: directionSchema.optional(),
 });
 
+export const getPortfolioSummarySchema = z.object({
+  accountNames: z.array(z.string().max(100)).optional(),
+});
+
+export const getTransfersSchema = z.object({
+  startDate: isoDateSchema,
+  endDate: isoDateSchema,
+  accountNames: z.array(z.string().max(100)).optional(),
+});
+
 export const getBudgetStatusSchema = z.object({
   period: z.string().max(20).optional(),
   budgetName: z.string().max(100).optional(),
@@ -94,6 +104,8 @@ export const toolInputSchemas: Record<string, z.ZodSchema> = {
   get_income_summary: getIncomeSummarySchema,
   get_net_worth_history: getNetWorthHistorySchema,
   compare_periods: comparePeriodsSchema,
+  get_portfolio_summary: getPortfolioSummarySchema,
+  get_transfers: getTransfersSchema,
   get_budget_status: getBudgetStatusSchema,
   calculate: calculateSchema,
   render_chart: renderChartSchema,

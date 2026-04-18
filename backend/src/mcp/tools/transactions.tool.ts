@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { TransactionsService } from "../../transactions/transactions.service";
+import { TransactionAnalyticsService } from "../../transactions/transaction-analytics.service";
 import { AccountsService } from "../../accounts/accounts.service";
 import {
   UserContextResolver,
@@ -19,6 +20,7 @@ export class McpTransactionsTools {
 
   constructor(
     private readonly transactionsService: TransactionsService,
+    private readonly analyticsService: TransactionAnalyticsService,
     private readonly accountsService: AccountsService,
   ) {}
 
@@ -135,6 +137,43 @@ export class McpTransactionsTools {
             total: result.pagination.total,
             hasMore: result.pagination.hasMore,
           });
+        } catch (err: unknown) {
+          return safeToolError(err);
+        }
+      },
+    );
+
+    server.registerTool(
+      "get_transfers",
+      {
+        description:
+          "Get transfer activity between the user's own accounts for a date range. Returns per-account inbound, outbound, net, and count. Transfers are deliberately excluded from other transaction queries because they net to zero across accounts. Returns the same shape as the AI Assistant's get_transfers tool.",
+        inputSchema: {
+          startDate: z.string().max(10).describe("Start date (YYYY-MM-DD)"),
+          endDate: z.string().max(10).describe("End date (YYYY-MM-DD)"),
+          accountIds: z
+            .array(z.string().uuid())
+            .max(50)
+            .optional()
+            .describe(
+              "Optional account IDs to filter to. Omit to cover all accounts.",
+            ),
+        },
+      },
+      async (args, extra) => {
+        const ctx = resolve(extra.sessionId);
+        if (!ctx) return toolError("No user context");
+        const check = requireScope(ctx.scopes, "read");
+        if (check.error) return check.result;
+
+        try {
+          const result = await this.analyticsService.getTransfersByAccount(
+            ctx.userId,
+            args.startDate,
+            args.endDate,
+            args.accountIds,
+          );
+          return toolResult(result);
         } catch (err: unknown) {
           return safeToolError(err);
         }
