@@ -169,7 +169,8 @@ export function CategoryPayeeBarChart({
               interval={isMobile ? 'preserveStartEnd' : 0}
               angle={isMobile ? -35 : 0}
               textAnchor={isMobile ? 'end' : 'middle'}
-              height={isMobile ? 60 : 30}
+              tickMargin={isMobile ? 12 : 0}
+              height={isMobile ? 72 : 30}
             />
             <YAxis
               tick={{ fill: '#6b7280', fontSize: 11 }}
