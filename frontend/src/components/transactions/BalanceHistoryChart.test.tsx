@@ -60,6 +60,49 @@ describe('BalanceHistoryChart', () => {
     expect(screen.getByText('$750.00')).toBeInTheDocument();
   });
 
+  it('renders a download button titled after the chart when data is present', () => {
+    render(
+      <BalanceHistoryChart
+        data={[
+          { date: '2025-01-01', balance: 1000 },
+          { date: '2025-01-02', balance: 900 },
+        ]}
+        isLoading={false}
+      />
+    );
+
+    expect(
+      screen.getByRole('button', { name: /download balance history as png/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('hides the download button in loading and empty states', () => {
+    const { rerender } = render(
+      <BalanceHistoryChart data={[]} isLoading={true} />,
+    );
+    expect(screen.queryByRole('button', { name: /download/i })).not.toBeInTheDocument();
+
+    rerender(<BalanceHistoryChart data={[]} isLoading={false} />);
+    expect(screen.queryByRole('button', { name: /download/i })).not.toBeInTheDocument();
+  });
+
+  it('appends the account name to the download button filename when provided', () => {
+    render(
+      <BalanceHistoryChart
+        data={[
+          { date: '2025-01-01', balance: 1000 },
+          { date: '2025-01-02', balance: 900 },
+        ]}
+        isLoading={false}
+        accountName="Checking"
+      />
+    );
+
+    expect(
+      screen.getByRole('button', { name: /download balance history - checking as png/i }),
+    ).toBeInTheDocument();
+  });
+
   it('shows "Lowest" label and warning when balance goes negative', () => {
     render(
       <BalanceHistoryChart

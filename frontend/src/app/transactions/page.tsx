@@ -17,6 +17,7 @@ const PayeeForm = dynamic(() => import('@/components/payees/PayeeForm').then(m =
 const BulkUpdateModal = dynamic(() => import('@/components/transactions/BulkUpdateModal').then(m => m.BulkUpdateModal), { ssr: false });
 const BalanceHistoryChart = dynamic(() => import('@/components/transactions/BalanceHistoryChart').then(m => m.BalanceHistoryChart), { ssr: false });
 const CategoryPayeeBarChart = dynamic(() => import('@/components/transactions/CategoryPayeeBarChart').then(m => m.CategoryPayeeBarChart), { ssr: false });
+const AccountBalancesBarChart = dynamic(() => import('@/components/transactions/AccountBalancesBarChart').then(m => m.AccountBalancesBarChart), { ssr: false });
 import { transactionsApi } from '@/lib/transactions';
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
@@ -140,7 +141,10 @@ function TransactionsContent() {
       const chartParams: { startDate?: string; endDate?: string; accountIds?: string } = {};
       if (filters.filterStartDate) chartParams.startDate = filters.filterStartDate;
       if (filters.filterEndDate) chartParams.endDate = filters.filterEndDate;
-      if (filters.filterAccountIds.length > 0) chartParams.accountIds = filters.filterAccountIds.join(',');
+      // Mirror the Show Accounts filter (Active/Closed/All) into the chart query
+      // so the Account Balances and Balance History charts only include accounts
+      // that the transaction list is actually showing.
+      if (accountIdsForQuery) chartParams.accountIds = accountIdsForQuery.join(',');
 
       const parsedAmountFrom = filters.filterAmountFrom ? parseFloat(filters.filterAmountFrom) : undefined;
       const parsedAmountTo = filters.filterAmountTo ? parseFloat(filters.filterAmountTo) : undefined;
@@ -428,26 +432,93 @@ function TransactionsContent() {
     return f;
   }, [filters.filterAccountIds, filters.filterAccountStatus, filters.filteredAccounts, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterTagIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch, filters.filterAmountFrom, filters.filterAmountTo]);
 
-  // Derive chart currency and aggregate per-account daily balances
-  const { chartBalances, chartCurrency } = useMemo(() => {
-    if (dailyBalances.length === 0) return { chartBalances: [] as Array<{ date: string; balance: number }>, chartCurrency: defaultCurrency };
+  // Derive chart currency, aggregated per-date balances, and latest per-account balances
+  const { chartBalances, chartCurrency, accountBalances } = useMemo(() => {
+    if (dailyBalances.length === 0) {
+      return {
+        chartBalances: [] as Array<{ date: string; balance: number }>,
+        chartCurrency: defaultCurrency,
+        accountBalances: [] as Array<{ accountId: string; accountName: string; balance: number }>,
+      };
+    }
 
     const currencies = new Set(dailyBalances.map((r) => r.currencyCode));
     const isSingleCurrency = currencies.size === 1;
     const displayCurrency = isSingleCurrency ? [...currencies][0] : defaultCurrency;
 
     const byDate = new Map<string, number>();
+    const latestByAccount = new Map<string, { date: string; balance: number; currencyCode: string }>();
     for (const row of dailyBalances) {
       const amount = isSingleCurrency ? row.balance : convertToDefault(row.balance, row.currencyCode);
       byDate.set(row.date, (byDate.get(row.date) ?? 0) + amount);
+
+      const existing = latestByAccount.get(row.accountId);
+      if (!existing || existing.date < row.date) {
+        latestByAccount.set(row.accountId, { date: row.date, balance: row.balance, currencyCode: row.currencyCode });
+      }
     }
 
     const aggregated = [...byDate.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, balance]) => ({ date, balance }));
 
-    return { chartBalances: aggregated, chartCurrency: displayCurrency };
-  }, [dailyBalances, defaultCurrency, convertToDefault]);
+    const accountNameById = new Map(accounts.map((a) => [a.id, a.name]));
+    const perAccount = [...latestByAccount.entries()]
+      .map(([accountId, info]) => ({
+        accountId,
+        accountName: accountNameById.get(accountId) ?? 'Unknown',
+        balance: isSingleCurrency ? info.balance : convertToDefault(info.balance, info.currencyCode),
+      }))
+      // Hide zero-balance accounts -- they add no information to the chart.
+      // Compare at 4-decimal precision to match decimal(20,4) storage.
+      .filter((a) => Math.round(a.balance * 10000) !== 0)
+      .sort((a, b) => b.balance - a.balance);
+
+    return { chartBalances: aggregated, chartCurrency: displayCurrency, accountBalances: perAccount };
+  }, [dailyBalances, accounts, defaultCurrency, convertToDefault]);
+
+  // Label appended to the Monthly Totals download filename so it reflects
+  // which category/payee/tag/search the chart is scoped to. When a full list
+  // of names would push the filename past MAX_FILENAME_LENGTH we collapse
+  // any multi-selection into a "multiple X" descriptor while keeping single
+  // selections as-is, so a user with one specific category plus many payees
+  // still sees the category name in the filename.
+  const monthlyTotalsFilterLabel = useMemo(() => {
+    const MAX_FILENAME_LENGTH = 100;
+    const FILENAME_PREFIX = 'Monthly Totals - ';
+
+    const cats = filters.selectedCategories.map((c) => c.name);
+    const pays = filters.selectedPayees.map((p) => p.name);
+    const tgs = filters.selectedTags.map((t) => t.name);
+    const search = filters.filterSearch ? [`"${filters.filterSearch}"`] : [];
+
+    if (cats.length + pays.length + tgs.length + search.length === 0) return undefined;
+
+    const preferred = [...cats, ...pays, ...tgs, ...search].join(', ');
+    if ((FILENAME_PREFIX + preferred).length <= MAX_FILENAME_LENGTH) return preferred;
+
+    const compactParts: string[] = [];
+    if (cats.length === 1) compactParts.push(cats[0]);
+    else if (cats.length > 1) compactParts.push('multiple categories');
+    if (pays.length === 1) compactParts.push(pays[0]);
+    else if (pays.length > 1) compactParts.push('multiple payees');
+    if (tgs.length === 1) compactParts.push(tgs[0]);
+    else if (tgs.length > 1) compactParts.push('multiple tags');
+    if (search.length) compactParts.push(search[0]);
+    return compactParts.join(', ');
+  }, [filters.selectedCategories, filters.selectedPayees, filters.selectedTags, filters.filterSearch]);
+
+  // Name of the single account behind the Balance History chart, used as the
+  // download filename suffix. Falls back to the accounts list when there are
+  // no chart rows yet but the user has narrowed down to one account.
+  const balanceHistoryAccountName = useMemo(() => {
+    if (accountBalances.length === 1) return accountBalances[0].accountName;
+    if (filters.filterAccountIds.length === 1) {
+      const id = filters.filterAccountIds[0];
+      return accounts.find((a) => a.id === id)?.name;
+    }
+    return undefined;
+  }, [accountBalances, filters.filterAccountIds, accounts]);
 
   const selection = useTransactionSelection(
     transactions,
@@ -593,14 +664,31 @@ function TransactionsContent() {
           actions={<Button onClick={handleCreateNew}>+ New Transaction</Button>}
         />
         {filters.filterCategoryIds.length > 0 || filters.filterPayeeIds.length > 0 || filters.filterTagIds.length > 0 || filters.filterSearch.length > 0 ? (
-          <CategoryPayeeBarChart data={monthlyTotals} isLoading={isLoading} onMonthClick={(startDate, endDate) => {
-            filters.isFilterChange.current = true;
-            filters.setFilterStartDate(startDate);
-            filters.setFilterEndDate(endDate);
-            filters.setFilterTimePeriod('custom');
-          }} />
+          <CategoryPayeeBarChart
+            data={monthlyTotals}
+            isLoading={isLoading}
+            filterLabel={monthlyTotalsFilterLabel}
+            onMonthClick={(startDate, endDate) => {
+              filters.isFilterChange.current = true;
+              filters.setFilterStartDate(startDate);
+              filters.setFilterEndDate(endDate);
+              filters.setFilterTimePeriod('custom');
+            }}
+          />
+        ) : accountBalances.length > 1 ? (
+          <AccountBalancesBarChart
+            data={accountBalances}
+            isLoading={isLoading}
+            currencyCode={chartCurrency}
+            onAccountClick={filters.handleAccountFilterClick}
+          />
         ) : (
-          <BalanceHistoryChart data={chartBalances} isLoading={isLoading} currencyCode={chartCurrency} />
+          <BalanceHistoryChart
+            data={chartBalances}
+            isLoading={isLoading}
+            currencyCode={chartCurrency}
+            accountName={balanceHistoryAccountName}
+          />
         )}
 
         {/* Form Modal */}

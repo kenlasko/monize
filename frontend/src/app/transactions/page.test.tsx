@@ -22,6 +22,37 @@ vi.mock('next/dynamic', () => ({
       if (props.selectionCount !== undefined) {
         return <div data-testid="dynamic-bulk-update-modal">BulkUpdateModal</div>;
       }
+      // Chart components all receive `data` + `isLoading`; distinguish by their
+      // unique click handlers / currency code prop.
+      if (props.onMonthClick !== undefined) {
+        return (
+          <div data-testid="chart-monthly-totals">
+            <span data-testid="chart-monthly-totals-filter-label">
+              {props.filterLabel ?? ''}
+            </span>
+          </div>
+        );
+      }
+      if (props.onAccountClick !== undefined) {
+        return (
+          <div data-testid="chart-account-balances">
+            {Array.isArray(props.data) && props.data.map((a: any) => (
+              <span key={a.accountId} data-testid={`chart-account-${a.accountId}`}>
+                {a.accountName}:{a.balance}
+              </span>
+            ))}
+          </div>
+        );
+      }
+      if (props.currencyCode !== undefined || Array.isArray(props.data)) {
+        return (
+          <div data-testid="chart-balance-history">
+            <span data-testid="chart-balance-history-account-name">
+              {props.accountName ?? ''}
+            </span>
+          </div>
+        );
+      }
       return <div data-testid="dynamic-component">DynamicComponent</div>;
     };
     return DynamicComponent;
@@ -198,12 +229,25 @@ vi.mock('@/components/transactions/TransactionFilterPanel', () => ({
       <button data-testid="set-account-filter" onClick={() => {
         props.handleArrayFilterChange(props.setFilterAccountIds, ['acc-1']);
       }}>Set Account Filter</button>
+      <button data-testid="set-account-status-active" onClick={() => {
+        props.setFilterAccountStatus('active');
+      }}>Show Active Accounts</button>
+      <button data-testid="set-account-status-closed" onClick={() => {
+        props.setFilterAccountStatus('closed');
+      }}>Show Closed Accounts</button>
       <button data-testid="set-category-filter" onClick={() => {
         props.handleArrayFilterChange(props.setFilterCategoryIds, ['cat-1']);
       }}>Set Category Filter</button>
       <button data-testid="set-payee-filter" onClick={() => {
         props.handleArrayFilterChange(props.setFilterPayeeIds, ['payee-1']);
       }}>Set Payee Filter</button>
+      <button data-testid="set-many-long-categories" onClick={() => {
+        props.handleArrayFilterChange(props.setFilterCategoryIds, ['long-cat-1', 'long-cat-2', 'long-cat-3']);
+      }}>Set Many Long Categories</button>
+      <button data-testid="set-single-cat-and-many-long-payees" onClick={() => {
+        props.handleArrayFilterChange(props.setFilterCategoryIds, ['long-cat-1']);
+        props.handleArrayFilterChange(props.setFilterPayeeIds, ['long-pay-1', 'long-pay-2', 'long-pay-3']);
+      }}>Single Cat + Many Payees</button>
       <button data-testid="set-date-filter" onClick={() => {
         props.handleFilterChange(props.setFilterStartDate, '2026-01-01');
         props.handleFilterChange(props.setFilterEndDate, '2026-01-31');
@@ -364,6 +408,21 @@ const mockCategories = [
 const mockPayees = [
   { id: 'payee-1', name: 'Store', defaultCategoryId: null },
   { id: 'payee-2', name: 'Employer', defaultCategoryId: 'cat-1' },
+];
+
+// Long-named fixtures used to exercise the filename-length fallback in the
+// Monthly Totals filter label (page.tsx `monthlyTotalsFilterLabel`). Three
+// ~30-char names joined with ", " plus the "Monthly Totals - " prefix easily
+// exceeds the 100-character threshold.
+const mockLongCategories = [
+  { id: 'long-cat-1', name: 'Food and Groceries and Restaurants', parentId: null },
+  { id: 'long-cat-2', name: 'Transportation Expenses and Fuel', parentId: null },
+  { id: 'long-cat-3', name: 'Health Insurance and Medical Costs', parentId: null },
+];
+const mockLongPayees = [
+  { id: 'long-pay-1', name: 'Grocery Chain Supermarket Location One', defaultCategoryId: null },
+  { id: 'long-pay-2', name: 'Grocery Chain Supermarket Location Two', defaultCategoryId: null },
+  { id: 'long-pay-3', name: 'Grocery Chain Supermarket Location Three', defaultCategoryId: null },
 ];
 
 describe('TransactionsPage', () => {
@@ -696,6 +755,391 @@ describe('TransactionsPage', () => {
       await waitFor(() => {
         expect(mockGetMonthlyTotals).toHaveBeenCalled();
       }, { timeout: 3000 });
+    });
+  });
+
+  describe('Chart switching', () => {
+    beforeEach(() => {
+      // useTransactionFilters persists filter state to localStorage, which is
+      // a shared mock across tests in this file. Clear it so each test starts
+      // with no filters active.
+      window.localStorage.clear();
+    });
+
+    it('renders Account Balances chart when no category/payee/tag filter is active and multiple accounts have transactions', async () => {
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+      mockGetDailyBalances.mockResolvedValue([
+        { date: '2026-02-01', balance: 1000, accountId: 'acc-1', currencyCode: 'USD' },
+        { date: '2026-02-15', balance: 1500, accountId: 'acc-1', currencyCode: 'USD' },
+        { date: '2026-02-01', balance: 5000, accountId: 'acc-2', currencyCode: 'USD' },
+        { date: '2026-02-15', balance: 5200, accountId: 'acc-2', currencyCode: 'USD' },
+      ]);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('chart-account-balances')).toBeInTheDocument();
+      });
+      expect(screen.queryByTestId('chart-balance-history')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('chart-monthly-totals')).not.toBeInTheDocument();
+    });
+
+    it('excludes zero-balance accounts from the Account Balances chart', async () => {
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+      mockGetDailyBalances.mockResolvedValue([
+        { date: '2026-02-01', balance: 1000, accountId: 'acc-1', currencyCode: 'USD' },
+        { date: '2026-02-15', balance: 1500, accountId: 'acc-1', currencyCode: 'USD' },
+        { date: '2026-02-01', balance: 5000, accountId: 'acc-2', currencyCode: 'USD' },
+        { date: '2026-02-15', balance: 5200, accountId: 'acc-2', currencyCode: 'USD' },
+        // acc-3's latest balance rounds to 0 at 4-decimal precision -- it must
+        // be hidden even though it had an earlier non-zero balance.
+        { date: '2026-02-01', balance: 800, accountId: 'acc-3', currencyCode: 'USD' },
+        { date: '2026-02-15', balance: 0, accountId: 'acc-3', currencyCode: 'USD' },
+      ]);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('chart-account-balances')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('chart-account-acc-1')).toBeInTheDocument();
+      expect(screen.getByTestId('chart-account-acc-2')).toBeInTheDocument();
+      expect(screen.queryByTestId('chart-account-acc-3')).not.toBeInTheDocument();
+    });
+
+    it('falls back to Balance History when filtering zeros leaves only one account', async () => {
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+      mockGetDailyBalances.mockResolvedValue([
+        { date: '2026-02-01', balance: 1000, accountId: 'acc-1', currencyCode: 'USD' },
+        { date: '2026-02-15', balance: 1500, accountId: 'acc-1', currencyCode: 'USD' },
+        // acc-2 has a zero balance throughout -- after filtering only acc-1
+        // remains, so there is nothing to compare in a bar chart and we should
+        // fall back to the single-account history view.
+        { date: '2026-02-01', balance: 0, accountId: 'acc-2', currencyCode: 'USD' },
+        { date: '2026-02-15', balance: 0, accountId: 'acc-2', currencyCode: 'USD' },
+      ]);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('chart-balance-history')).toBeInTheDocument();
+      });
+      expect(screen.queryByTestId('chart-account-balances')).not.toBeInTheDocument();
+    });
+
+    it('keeps accounts whose balance is small but non-zero at 4-decimal precision', async () => {
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+      mockGetDailyBalances.mockResolvedValue([
+        { date: '2026-02-01', balance: 1000, accountId: 'acc-1', currencyCode: 'USD' },
+        { date: '2026-02-15', balance: 1000, accountId: 'acc-1', currencyCode: 'USD' },
+        // 0.0001 is the smallest representable balance -- it must NOT be filtered.
+        { date: '2026-02-01', balance: 0.0001, accountId: 'acc-2', currencyCode: 'USD' },
+        { date: '2026-02-15', balance: 0.0001, accountId: 'acc-2', currencyCode: 'USD' },
+      ]);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('chart-account-balances')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('chart-account-acc-2')).toBeInTheDocument();
+    });
+
+    it('passes the latest-per-account balance and the account name to the Account Balances chart', async () => {
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+      mockGetDailyBalances.mockResolvedValue([
+        { date: '2026-02-01', balance: 1000, accountId: 'acc-1', currencyCode: 'USD' },
+        { date: '2026-02-15', balance: 1500, accountId: 'acc-1', currencyCode: 'USD' },
+        { date: '2026-02-01', balance: 5000, accountId: 'acc-2', currencyCode: 'USD' },
+        { date: '2026-02-15', balance: 5200, accountId: 'acc-2', currencyCode: 'USD' },
+      ]);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('chart-account-balances')).toBeInTheDocument();
+      });
+      // Latest date per account wins, and the account name comes from the accounts state.
+      expect(screen.getByTestId('chart-account-acc-1')).toHaveTextContent('Checking:1500');
+      expect(screen.getByTestId('chart-account-acc-2')).toHaveTextContent('Savings:5200');
+    });
+
+    it('renders Balance History chart when only one account has transactions', async () => {
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+      mockGetDailyBalances.mockResolvedValue([
+        { date: '2026-02-01', balance: 1000, accountId: 'acc-1', currencyCode: 'USD' },
+        { date: '2026-02-15', balance: 1500, accountId: 'acc-1', currencyCode: 'USD' },
+      ]);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('chart-balance-history')).toBeInTheDocument();
+      });
+      expect(screen.queryByTestId('chart-account-balances')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('chart-monthly-totals')).not.toBeInTheDocument();
+    });
+
+    it('renders Balance History chart when there are no daily balance rows', async () => {
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+      mockGetDailyBalances.mockResolvedValue([]);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('chart-balance-history')).toBeInTheDocument();
+      });
+      expect(screen.queryByTestId('chart-account-balances')).not.toBeInTheDocument();
+    });
+
+    it('forwards the Show Accounts filter (active) to the daily-balances chart query', async () => {
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('filter-panel')).toBeInTheDocument();
+      });
+
+      mockGetDailyBalances.mockClear();
+      fireEvent.click(screen.getByTestId('set-account-status-active'));
+
+      await waitFor(() => {
+        expect(mockGetDailyBalances).toHaveBeenCalled();
+      });
+
+      // Non-brokerage active accounts in the mock are acc-1 and acc-2.
+      // acc-3 is closed and acc-4 is a brokerage account (excluded from the
+      // transactions filter). The chart query must receive the same account
+      // list the transaction list uses so the Account Balances chart only
+      // shows accounts the transaction list is actually showing.
+      const callArgs = mockGetDailyBalances.mock.calls.at(-1)?.[0];
+      expect(callArgs).toBeDefined();
+      const accountIds = (callArgs.accountIds as string).split(',').sort();
+      expect(accountIds).toEqual(['acc-1', 'acc-2']);
+    });
+
+    it('forwards the Show Accounts filter (closed) to the daily-balances chart query', async () => {
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('filter-panel')).toBeInTheDocument();
+      });
+
+      mockGetDailyBalances.mockClear();
+      fireEvent.click(screen.getByTestId('set-account-status-closed'));
+
+      await waitFor(() => {
+        expect(mockGetDailyBalances).toHaveBeenCalled();
+      });
+
+      const callArgs = mockGetDailyBalances.mock.calls.at(-1)?.[0];
+      expect(callArgs).toBeDefined();
+      expect((callArgs.accountIds as string).split(',')).toEqual(['acc-3']);
+    });
+
+    it('forwards a filter label to Monthly Totals chart built from selected category/payee/tag names', async () => {
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+      mockGetAllCategories.mockResolvedValue(mockCategories);
+      mockGetAllPayees.mockResolvedValue(mockPayees);
+      mockGetMonthlyTotals.mockResolvedValue([
+        { month: '2026-02', total: -300, count: 5 },
+      ]);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('filter-panel')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('set-category-filter'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('chart-monthly-totals')).toBeInTheDocument();
+      });
+      // The mock's set-category-filter picks cat-1 (Salary), so the filter label
+      // should surface that name so the download filename describes the chart.
+      expect(screen.getByTestId('chart-monthly-totals-filter-label')).toHaveTextContent('Salary');
+    });
+
+    it('collapses multi-selections to "multiple X" when the filename would exceed 100 chars', async () => {
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+      mockGetAllCategories.mockResolvedValue(mockLongCategories);
+      mockGetAllPayees.mockResolvedValue(mockPayees);
+      mockGetMonthlyTotals.mockResolvedValue([
+        { month: '2026-02', total: -300, count: 5 },
+      ]);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('filter-panel')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('set-many-long-categories'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('chart-monthly-totals')).toBeInTheDocument();
+      });
+
+      await waitFor(() => {
+        expect(
+          screen.getByTestId('chart-monthly-totals-filter-label'),
+        ).toHaveTextContent('multiple categories');
+      });
+      // The specific names must not leak through once we fall back.
+      expect(
+        screen.getByTestId('chart-monthly-totals-filter-label'),
+      ).not.toHaveTextContent('Food and Groceries');
+    });
+
+    it('keeps single selections alongside "multiple X" fallbacks in the label', async () => {
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+      mockGetAllCategories.mockResolvedValue(mockLongCategories);
+      mockGetAllPayees.mockResolvedValue(mockLongPayees);
+      mockGetMonthlyTotals.mockResolvedValue([
+        { month: '2026-02', total: -300, count: 5 },
+      ]);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('filter-panel')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('set-single-cat-and-many-long-payees'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('chart-monthly-totals')).toBeInTheDocument();
+      });
+
+      await waitFor(() => {
+        const label = screen.getByTestId('chart-monthly-totals-filter-label');
+        // Single category name is preserved, but the 3 long payees collapse.
+        expect(label).toHaveTextContent('Food and Groceries and Restaurants');
+        expect(label).toHaveTextContent('multiple payees');
+        expect(label).not.toHaveTextContent('Grocery Chain Supermarket Location');
+      });
+    });
+
+    it('keeps all specific names when the combined label fits within 100 chars', async () => {
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+      mockGetAllCategories.mockResolvedValue(mockCategories);
+      mockGetAllPayees.mockResolvedValue(mockPayees);
+      mockGetMonthlyTotals.mockResolvedValue([
+        { month: '2026-02', total: -300, count: 5 },
+      ]);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('filter-panel')).toBeInTheDocument();
+      });
+
+      // set-category-filter picks cat-1 (Salary), set-payee-filter picks payee-1
+      // (Store). Combined with the "Monthly Totals - " prefix this is ~30
+      // chars, well under the 100-char threshold.
+      fireEvent.click(screen.getByTestId('set-category-filter'));
+      fireEvent.click(screen.getByTestId('set-payee-filter'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('chart-monthly-totals')).toBeInTheDocument();
+      });
+
+      await waitFor(() => {
+        const label = screen.getByTestId('chart-monthly-totals-filter-label');
+        expect(label).toHaveTextContent('Salary');
+        expect(label).toHaveTextContent('Store');
+        expect(label).not.toHaveTextContent('multiple');
+      });
+    });
+
+    it('includes the search term in the Monthly Totals filter label', async () => {
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+      mockGetAllCategories.mockResolvedValue(mockCategories);
+      mockGetAllPayees.mockResolvedValue(mockPayees);
+      mockGetMonthlyTotals.mockResolvedValue([
+        { month: '2026-02', total: -300, count: 5 },
+      ]);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('filter-panel')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('set-search'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('chart-monthly-totals')).toBeInTheDocument();
+      }, { timeout: 3000 });
+
+      await waitFor(() => {
+        expect(
+          screen.getByTestId('chart-monthly-totals-filter-label'),
+        ).toHaveTextContent('"test search"');
+      });
+    });
+
+    it('passes the single account name to the Balance History chart', async () => {
+      // With only one account in the daily balances, the chart falls back to
+      // Balance History. The account name should flow through so the download
+      // filename describes which account is shown.
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+      mockGetDailyBalances.mockResolvedValue([
+        { date: '2026-02-01', balance: 1000, accountId: 'acc-1', currencyCode: 'USD' },
+        { date: '2026-02-15', balance: 1500, accountId: 'acc-1', currencyCode: 'USD' },
+      ]);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('chart-balance-history')).toBeInTheDocument();
+      });
+      expect(
+        screen.getByTestId('chart-balance-history-account-name'),
+      ).toHaveTextContent('Checking');
+    });
+
+    it('does not pass an account name when the Balance History chart spans zero rows', async () => {
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+      mockGetDailyBalances.mockResolvedValue([]);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('chart-balance-history')).toBeInTheDocument();
+      });
+      // No data and no explicit account filter -- filename stays generic.
+      expect(
+        screen.getByTestId('chart-balance-history-account-name'),
+      ).toHaveTextContent('');
+    });
+
+    it('renders Monthly Totals chart when a category filter is active, even with multiple accounts', async () => {
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+      mockGetDailyBalances.mockResolvedValue([
+        { date: '2026-02-01', balance: 1000, accountId: 'acc-1', currencyCode: 'USD' },
+        { date: '2026-02-01', balance: 5000, accountId: 'acc-2', currencyCode: 'USD' },
+      ]);
+      mockGetMonthlyTotals.mockResolvedValue([
+        { month: '2026-02', total: -300, count: 5 },
+      ]);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('filter-panel')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('set-category-filter'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('chart-monthly-totals')).toBeInTheDocument();
+      });
+      expect(screen.queryByTestId('chart-account-balances')).not.toBeInTheDocument();
     });
   });
 
