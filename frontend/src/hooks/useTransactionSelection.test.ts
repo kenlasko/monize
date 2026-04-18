@@ -136,6 +136,37 @@ describe('useTransactionSelection', () => {
     expect(result.current.selectionCount).toBe(2);
   });
 
+  it('keeps isAllOnPageSelected true after page change while selectAllMatching', () => {
+    const page1 = [createTransaction('tx-1'), createTransaction('tx-2')];
+    const page2 = [createTransaction('tx-3'), createTransaction('tx-4')];
+
+    const { result, rerender } = renderHook(
+      ({ txs }) => useTransactionSelection(txs, 100, emptyFilters),
+      { initialProps: { txs: page1 } }
+    );
+
+    act(() => result.current.selectAllMatchingTransactions());
+    expect(result.current.isAllOnPageSelected).toBe(true);
+
+    rerender({ txs: page2 });
+    expect(result.current.selectAllMatching).toBe(true);
+    expect(result.current.isAllOnPageSelected).toBe(true);
+  });
+
+  it('toggleAllOnPage clears all selection when in selectAllMatching mode', () => {
+    const { result } = renderHook(() =>
+      useTransactionSelection(transactions, 100, emptyFilters)
+    );
+
+    act(() => result.current.selectAllMatchingTransactions());
+    expect(result.current.selectionCount).toBe(100);
+
+    act(() => result.current.toggleAllOnPage());
+    expect(result.current.selectAllMatching).toBe(false);
+    expect(result.current.selectedIds.size).toBe(0);
+    expect(result.current.isAllOnPageSelected).toBe(false);
+  });
+
   it('clears selection when filters change', () => {
     const filters1: BulkUpdateFilters = { search: 'foo' };
     const filters2: BulkUpdateFilters = { search: 'bar' };

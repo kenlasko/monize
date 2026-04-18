@@ -53,8 +53,9 @@ export function useTransactionSelection(
 
   const isAllOnPageSelected = useMemo(() => {
     if (transactions.length === 0) return false;
+    if (selectAllMatching) return true;
     return transactions.every(t => selectedIds.has(t.id));
-  }, [transactions, selectedIds]);
+  }, [transactions, selectedIds, selectAllMatching]);
 
   const selectionCount = selectAllMatching
     ? totalMatching
@@ -85,14 +86,19 @@ export function useTransactionSelection(
 
   const toggleAllOnPage = useCallback(() => {
     if (isAllOnPageSelected) {
-      // Deselect all on page
-      setSelectedIds(prev => {
-        const next = new Set(prev);
-        for (const t of transactions) {
-          next.delete(t.id);
-        }
-        return next;
-      });
+      // Deselect all on page. If selectAllMatching is active, fully clear
+      // selection to avoid leaving stale IDs from earlier pages.
+      if (selectAllMatching) {
+        setSelectedIds(new Set());
+      } else {
+        setSelectedIds(prev => {
+          const next = new Set(prev);
+          for (const t of transactions) {
+            next.delete(t.id);
+          }
+          return next;
+        });
+      }
       setSelectAllMatching(false);
     } else {
       // Select all on page
@@ -104,7 +110,7 @@ export function useTransactionSelection(
         return next;
       });
     }
-  }, [isAllOnPageSelected, transactions]);
+  }, [isAllOnPageSelected, selectAllMatching, transactions]);
 
   const selectAllMatchingTransactions = useCallback(() => {
     setSelectAllMatching(true);

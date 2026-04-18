@@ -42,6 +42,7 @@ interface TransactionListProps {
   onPageChange?: (page: number) => void;
   selectionMode?: boolean;
   selectedIds?: Set<string>;
+  selectAllMatching?: boolean;
   onToggleSelection?: (id: string) => void;
   onToggleAllOnPage?: () => void;
   isAllOnPageSelected?: boolean;
@@ -78,6 +79,7 @@ export function TransactionList({
   onPageChange,
   selectionMode,
   selectedIds,
+  selectAllMatching,
   onToggleSelection,
   onToggleAllOnPage,
   isAllOnPageSelected,
@@ -480,7 +482,7 @@ export function TransactionList({
                     onScheduleRecurring={onScheduleRecurring}
                     onDeleteClick={handleDeleteClick}
                     selectionMode={selectionMode}
-                    isSelected={selectionMode ? selectedIds?.has(transaction.id) : undefined}
+                    isSelected={selectionMode ? (selectAllMatching || selectedIds?.has(transaction.id) || false) : undefined}
                     onToggleSelection={selectionMode ? () => onToggleSelection?.(transaction.id) : undefined}
                     categoryColorMap={categoryColorMap}
                     budgetStatusMap={budgetStatusMap}

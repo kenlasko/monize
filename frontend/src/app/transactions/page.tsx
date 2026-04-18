@@ -848,6 +848,7 @@ function TransactionsContent() {
               isSingleAccountView={filters.filterAccountIds.length === 1}
               selectionMode={bulkSelectMode}
               selectedIds={selection.selectedIds}
+              selectAllMatching={selection.selectAllMatching}
               onToggleSelection={selection.toggleTransaction}
               onToggleAllOnPage={selection.toggleAllOnPage}
               isAllOnPageSelected={selection.isAllOnPageSelected}
