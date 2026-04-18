@@ -2435,6 +2435,258 @@ describe("InvestmentTransactionsService", () => {
     });
   });
 
+  describe("getLlmInvestmentTransactions", () => {
+    const buy = {
+      ...mockBuyTransaction,
+      action: InvestmentAction.BUY,
+      transactionDate: "2026-03-10",
+      quantity: 10,
+      price: 150,
+      commission: 9.99,
+      totalAmount: 1509.99,
+      account: { ...mockInvestmentAccount, currencyCode: "USD" },
+      security: mockSecurity,
+    };
+    const sell = {
+      ...mockSellTransaction,
+      action: InvestmentAction.SELL,
+      transactionDate: "2026-03-20",
+      quantity: 5,
+      price: 160,
+      commission: 9.99,
+      totalAmount: 790.01,
+      account: { ...mockInvestmentAccount, currencyCode: "USD" },
+      security: mockSecurity,
+    };
+    const dividend = {
+      ...mockDividendTransaction,
+      action: InvestmentAction.DIVIDEND,
+      transactionDate: "2026-03-15",
+      quantity: null,
+      price: null,
+      commission: 0,
+      totalAmount: 25,
+      account: { ...mockInvestmentAccount, currencyCode: "USD" },
+      security: mockSecurity,
+    };
+
+    it("returns aggregate totals, action counts, and transactions list", async () => {
+      const rows = [sell, dividend, buy];
+      const mockQB = createMockQueryBuilder(rows, rows.length);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
+
+      const result = await service.getLlmInvestmentTransactions(userId, {});
+
+      expect(result.transactionCount).toBe(3);
+      expect(result.totalAmount).toBeCloseTo(2325, 2);
+      expect(result.totalCommission).toBeCloseTo(19.98, 2);
+      expect(result.totalQuantity).toBeCloseTo(15, 8);
+      expect(result.actionCounts).toEqual({ BUY: 1, SELL: 1, DIVIDEND: 1 });
+      expect(result.groupedBy).toBeNull();
+      expect(result.groups).toBeNull();
+      expect(result.truncatedTransactionList).toBe(false);
+      expect(result.transactions).toHaveLength(3);
+      expect(result.transactions[0]).toEqual({
+        transactionDate: "2026-03-20",
+        action: "SELL",
+        accountName: "Brokerage Account",
+        symbol: "AAPL",
+        securityName: "Apple Inc.",
+        quantity: 5,
+        price: 160,
+        commission: 9.99,
+        totalAmount: 790.01,
+        currency: "USD",
+        description: "Sell AAPL",
+      });
+    });
+
+    it("applies date, symbol, action and accountId filters", async () => {
+      const mockQB = createMockQueryBuilder([], 0);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
+      accountsService.findByIds.mockResolvedValue([
+        { ...mockInvestmentAccount, linkedAccountId: cashAccountId },
+      ]);
+
+      await service.getLlmInvestmentTransactions(userId, {
+        startDate: "2026-01-01",
+        endDate: "2026-03-31",
+        accountIds: [accountId],
+        symbols: ["aapl"],
+        actions: [InvestmentAction.BUY, InvestmentAction.SELL],
+      });
+
+      expect(accountsService.findByIds).toHaveBeenCalledWith(userId, [
+        accountId,
+      ]);
+      // Base userId filter + 5 andWhere calls (accountIds, startDate, endDate, symbols, actions)
+      expect(mockQB.andWhere).toHaveBeenCalledWith(
+        "it.accountId IN (:...allIds)",
+        { allIds: expect.arrayContaining([accountId, cashAccountId]) },
+      );
+      expect(mockQB.andWhere).toHaveBeenCalledWith(
+        "it.transactionDate >= :startDate",
+        { startDate: "2026-01-01" },
+      );
+      expect(mockQB.andWhere).toHaveBeenCalledWith(
+        "it.transactionDate <= :endDate",
+        { endDate: "2026-03-31" },
+      );
+      expect(mockQB.andWhere).toHaveBeenCalledWith(
+        "UPPER(security.symbol) IN (:...upperSymbols)",
+        { upperSymbols: ["AAPL"] },
+      );
+      expect(mockQB.andWhere).toHaveBeenCalledWith(
+        "it.action IN (:...actions)",
+        { actions: [InvestmentAction.BUY, InvestmentAction.SELL] },
+      );
+    });
+
+    it("groups by security symbol with per-group totals", async () => {
+      const tsla = {
+        ...buy,
+        id: "tx-tsla",
+        totalAmount: 500,
+        quantity: 2,
+        commission: 1,
+        security: { ...mockSecurity, id: "sec-tsla", symbol: "TSLA" },
+      };
+      const rows = [buy, sell, dividend, tsla];
+      const mockQB = createMockQueryBuilder(rows, rows.length);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
+
+      const result = await service.getLlmInvestmentTransactions(userId, {
+        groupBy: "security",
+      });
+
+      expect(result.groupedBy).toBe("security");
+      expect(result.groups).not.toBeNull();
+      const aapl = result.groups!.find((g) => g.key === "AAPL");
+      const tslaGroup = result.groups!.find((g) => g.key === "TSLA");
+      expect(aapl).toBeDefined();
+      expect(tslaGroup).toBeDefined();
+      expect(aapl!.transactionCount).toBe(3);
+      expect(aapl!.totalAmount).toBeCloseTo(2325, 2);
+      expect(aapl!.totalCommission).toBeCloseTo(19.98, 2);
+      expect(aapl!.totalQuantity).toBeCloseTo(15, 8);
+      expect(tslaGroup!.transactionCount).toBe(1);
+      expect(tslaGroup!.totalAmount).toBeCloseTo(500, 2);
+      // Sorted by totalAmount descending (non-date grouping)
+      expect(result.groups![0].key).toBe("AAPL");
+    });
+
+    it("groups by date with date-descending ordering", async () => {
+      const rows = [buy, sell, dividend];
+      const mockQB = createMockQueryBuilder(rows, rows.length);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
+
+      const result = await service.getLlmInvestmentTransactions(userId, {
+        groupBy: "date",
+      });
+
+      expect(result.groupedBy).toBe("date");
+      expect(result.groups!.map((g) => g.key)).toEqual([
+        "2026-03-20",
+        "2026-03-15",
+        "2026-03-10",
+      ]);
+    });
+
+    it("groups by action type", async () => {
+      const rows = [buy, sell, dividend];
+      const mockQB = createMockQueryBuilder(rows, rows.length);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
+
+      const result = await service.getLlmInvestmentTransactions(userId, {
+        groupBy: "action",
+      });
+
+      expect(result.groupedBy).toBe("action");
+      expect(new Set(result.groups!.map((g) => g.key))).toEqual(
+        new Set(["BUY", "SELL", "DIVIDEND"]),
+      );
+    });
+
+    it("groups by account name", async () => {
+      const otherAccountTx = {
+        ...buy,
+        id: "tx-other",
+        accountId: "acc-2",
+        account: {
+          ...mockInvestmentAccount,
+          id: "acc-2",
+          name: "TFSA",
+        },
+      };
+      const rows = [buy, otherAccountTx];
+      const mockQB = createMockQueryBuilder(rows, rows.length);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
+
+      const result = await service.getLlmInvestmentTransactions(userId, {
+        groupBy: "account",
+      });
+
+      expect(result.groupedBy).toBe("account");
+      expect(new Set(result.groups!.map((g) => g.key))).toEqual(
+        new Set(["Brokerage Account", "TFSA"]),
+      );
+    });
+
+    it("truncates the transactions list at 100 but preserves full aggregate totals", async () => {
+      const rows = Array.from({ length: 150 }, (_, i) => ({
+        ...buy,
+        id: `tx-${i}`,
+        totalAmount: 10,
+        commission: 1,
+        quantity: 1,
+      }));
+      const mockQB = createMockQueryBuilder(rows, rows.length);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
+
+      const result = await service.getLlmInvestmentTransactions(userId, {});
+
+      expect(result.transactionCount).toBe(150);
+      expect(result.transactions).toHaveLength(100);
+      expect(result.truncatedTransactionList).toBe(true);
+      expect(result.totalAmount).toBeCloseTo(1500, 2);
+      expect(result.totalCommission).toBeCloseTo(150, 2);
+    });
+
+    it("handles empty result set cleanly", async () => {
+      const mockQB = createMockQueryBuilder([], 0);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
+
+      const result = await service.getLlmInvestmentTransactions(userId, {
+        groupBy: "action",
+      });
+
+      expect(result.transactionCount).toBe(0);
+      expect(result.totalAmount).toBe(0);
+      expect(result.totalCommission).toBe(0);
+      expect(result.totalQuantity).toBe(0);
+      expect(result.actionCounts).toEqual({});
+      expect(result.groups).toEqual([]);
+      expect(result.transactions).toEqual([]);
+      expect(result.truncatedTransactionList).toBe(false);
+    });
+  });
+
   describe("removeAll", () => {
     it("deletes all transactions, holdings, and resets account balances", async () => {
       const transactions = [mockBuyTransaction, mockSellTransaction];

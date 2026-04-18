@@ -185,6 +185,63 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
     },
   },
   {
+    name: "query_investment_transactions",
+    description:
+      "Query the user's brokerage investment-account transactions (buys, sells, dividends, interest, capital gains, splits, transfers, reinvestments, share adjustments). Returns aggregate totals (count, total amount, total commission, action breakdown) and a capped list of matching transactions. Optionally group the results by account, date, security (symbol), or transaction type (action). Use this for questions like 'what did I buy last month', 'show my AAPL trades', 'how much did I pay in commissions', or 'what dividends did I receive'. Do not use for the current portfolio holdings or unrealized gains — use get_portfolio_summary for that.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        startDate: {
+          type: "string",
+          description: "Optional start date (YYYY-MM-DD).",
+        },
+        endDate: {
+          type: "string",
+          description: "Optional end date (YYYY-MM-DD).",
+        },
+        accountNames: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Optional: filter to specific investment account names. Use exact names from the user's account list.",
+        },
+        symbols: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            'Optional: filter to specific security ticker symbols (e.g., ["AAPL", "MSFT"]). Case insensitive.',
+        },
+        actions: {
+          type: "array",
+          items: {
+            type: "string",
+            enum: [
+              "BUY",
+              "SELL",
+              "DIVIDEND",
+              "INTEREST",
+              "CAPITAL_GAIN",
+              "SPLIT",
+              "TRANSFER_IN",
+              "TRANSFER_OUT",
+              "REINVEST",
+              "ADD_SHARES",
+              "REMOVE_SHARES",
+            ],
+          },
+          description:
+            "Optional: filter to specific transaction types. Values must be UPPER_SNAKE_CASE exactly as listed.",
+        },
+        groupBy: {
+          type: "string",
+          enum: ["account", "date", "security", "action"],
+          description:
+            "Optional: group the results by account name, transaction date, security symbol, or action type.",
+        },
+      },
+    },
+  },
+  {
     name: "get_transfers",
     description:
       "Get transfer activity between the user's own accounts for a date range. Returns per-account inbound (money received from another account), outbound (money sent to another account), net movement, and transfer count. Transfers are deliberately excluded from spending and income tools because they net to zero across accounts; use this tool for questions like 'how much did I move into my savings', 'what went out of chequing to other accounts', or 'what are my transfers between accounts'.",

@@ -5,6 +5,7 @@ describe("McpInvestmentsTools", () => {
   let tool: McpInvestmentsTools;
   let portfolioService: Record<string, jest.Mock>;
   let holdingsService: Record<string, jest.Mock>;
+  let investmentTransactionsService: Record<string, jest.Mock>;
   let server: { registerTool: jest.Mock };
   let resolve: jest.MockedFunction<UserContextResolver>;
   const handlers: Record<string, (...args: any[]) => any> = {};
@@ -19,9 +20,14 @@ describe("McpInvestmentsTools", () => {
       findAll: jest.fn(),
     };
 
+    investmentTransactionsService = {
+      getLlmInvestmentTransactions: jest.fn(),
+    };
+
     tool = new McpInvestmentsTools(
       portfolioService as any,
       holdingsService as any,
+      investmentTransactionsService as any,
     );
 
     server = {
@@ -34,8 +40,8 @@ describe("McpInvestmentsTools", () => {
     tool.register(server as any, resolve);
   });
 
-  it("should register 2 tools", () => {
-    expect(server.registerTool).toHaveBeenCalledTimes(2);
+  it("should register 3 tools", () => {
+    expect(server.registerTool).toHaveBeenCalledTimes(3);
   });
 
   describe("get_portfolio_summary", () => {
@@ -88,6 +94,112 @@ describe("McpInvestmentsTools", () => {
       expect(portfolioService.getLlmSummary).toHaveBeenCalledWith("u1", [
         "00000000-0000-0000-0000-000000000001",
       ]);
+    });
+  });
+
+  describe("query_investment_transactions", () => {
+    it("returns error when no user context", async () => {
+      resolve.mockReturnValue(undefined);
+      const result = await handlers["query_investment_transactions"](
+        {},
+        { sessionId: "s1" },
+      );
+      expect(result.isError).toBe(true);
+    });
+
+    it("delegates to shared getLlmInvestmentTransactions with all filters", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "read" });
+      investmentTransactionsService.getLlmInvestmentTransactions.mockResolvedValue(
+        {
+          transactionCount: 2,
+          totalAmount: 1000,
+          totalCommission: 9.99,
+          totalQuantity: 10,
+          actionCounts: { BUY: 2 },
+          groupedBy: "security",
+          groups: [
+            {
+              key: "AAPL",
+              transactionCount: 2,
+              totalQuantity: 10,
+              totalAmount: 1000,
+              totalCommission: 9.99,
+            },
+          ],
+          transactions: [],
+          truncatedTransactionList: false,
+        },
+      );
+
+      const result = await handlers["query_investment_transactions"](
+        {
+          startDate: "2026-01-01",
+          endDate: "2026-03-31",
+          accountIds: ["00000000-0000-0000-0000-000000000001"],
+          symbols: ["AAPL"],
+          actions: ["BUY"],
+          groupBy: "security",
+        },
+        { sessionId: "s1" },
+      );
+
+      expect(
+        investmentTransactionsService.getLlmInvestmentTransactions,
+      ).toHaveBeenCalledWith("u1", {
+        startDate: "2026-01-01",
+        endDate: "2026-03-31",
+        accountIds: ["00000000-0000-0000-0000-000000000001"],
+        symbols: ["AAPL"],
+        actions: ["BUY"],
+        groupBy: "security",
+      });
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.transactionCount).toBe(2);
+      expect(parsed.groupedBy).toBe("security");
+      expect(parsed.groups[0].key).toBe("AAPL");
+    });
+
+    it("passes undefined filters when no args provided", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "read" });
+      investmentTransactionsService.getLlmInvestmentTransactions.mockResolvedValue(
+        {
+          transactionCount: 0,
+          totalAmount: 0,
+          totalCommission: 0,
+          totalQuantity: 0,
+          actionCounts: {},
+          groupedBy: null,
+          groups: null,
+          transactions: [],
+          truncatedTransactionList: false,
+        },
+      );
+
+      await handlers["query_investment_transactions"]({}, { sessionId: "s1" });
+
+      expect(
+        investmentTransactionsService.getLlmInvestmentTransactions,
+      ).toHaveBeenCalledWith("u1", {
+        startDate: undefined,
+        endDate: undefined,
+        accountIds: undefined,
+        symbols: undefined,
+        actions: undefined,
+        groupBy: undefined,
+      });
+    });
+
+    it("returns a safe error on service failure", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "read" });
+      investmentTransactionsService.getLlmInvestmentTransactions.mockRejectedValue(
+        new Error("boom"),
+      );
+
+      const result = await handlers["query_investment_transactions"](
+        {},
+        { sessionId: "s1" },
+      );
+      expect(result.isError).toBe(true);
     });
   });
 

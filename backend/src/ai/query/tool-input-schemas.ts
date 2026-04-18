@@ -60,6 +60,34 @@ export const getPortfolioSummarySchema = z.object({
   accountNames: z.array(z.string().max(100)).optional(),
 });
 
+export const INVESTMENT_ACTIONS = [
+  "BUY",
+  "SELL",
+  "DIVIDEND",
+  "INTEREST",
+  "CAPITAL_GAIN",
+  "SPLIT",
+  "TRANSFER_IN",
+  "TRANSFER_OUT",
+  "REINVEST",
+  "ADD_SHARES",
+  "REMOVE_SHARES",
+] as const;
+
+const investmentActionSchema = z.preprocess(
+  (val) => (typeof val === "string" ? val.toUpperCase().trim() : val),
+  z.enum(INVESTMENT_ACTIONS),
+);
+
+export const queryInvestmentTransactionsSchema = z.object({
+  startDate: isoDateSchema.optional(),
+  endDate: isoDateSchema.optional(),
+  accountNames: z.array(z.string().max(100)).max(50).optional(),
+  symbols: z.array(z.string().min(1).max(20)).max(50).optional(),
+  actions: z.array(investmentActionSchema).max(11).optional(),
+  groupBy: z.enum(["account", "date", "security", "action"]).optional(),
+});
+
 export const getTransfersSchema = z.object({
   startDate: isoDateSchema,
   endDate: isoDateSchema,
@@ -105,6 +133,7 @@ export const toolInputSchemas: Record<string, z.ZodSchema> = {
   get_net_worth_history: getNetWorthHistorySchema,
   compare_periods: comparePeriodsSchema,
   get_portfolio_summary: getPortfolioSummarySchema,
+  query_investment_transactions: queryInvestmentTransactionsSchema,
   get_transfers: getTransfersSchema,
   get_budget_status: getBudgetStatusSchema,
   calculate: calculateSchema,

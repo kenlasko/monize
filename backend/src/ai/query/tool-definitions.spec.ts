@@ -1,8 +1,8 @@
 import { FINANCIAL_TOOLS } from "./tool-definitions";
 
 describe("FINANCIAL_TOOLS", () => {
-  it("defines exactly 11 tools", () => {
-    expect(FINANCIAL_TOOLS).toHaveLength(11);
+  it("defines exactly 12 tools", () => {
+    expect(FINANCIAL_TOOLS).toHaveLength(12);
   });
 
   it("has unique tool names", () => {
@@ -18,6 +18,7 @@ describe("FINANCIAL_TOOLS", () => {
     "get_net_worth_history",
     "compare_periods",
     "get_portfolio_summary",
+    "query_investment_transactions",
     "get_transfers",
     "get_budget_status",
     "calculate",
@@ -159,6 +160,67 @@ describe("FINANCIAL_TOOLS", () => {
       >;
       expect(props.accountNames).toBeDefined();
       expect(props.accountNames.type).toBe("array");
+    });
+  });
+
+  describe("query_investment_transactions", () => {
+    it("has no required fields", () => {
+      const tool = FINANCIAL_TOOLS.find(
+        (t) => t.name === "query_investment_transactions",
+      )!;
+      expect(tool.inputSchema.required).toBeUndefined();
+    });
+
+    it("supports groupBy with account, date, security, and action", () => {
+      const tool = FINANCIAL_TOOLS.find(
+        (t) => t.name === "query_investment_transactions",
+      )!;
+      const props = tool.inputSchema.properties as Record<
+        string,
+        Record<string, unknown>
+      >;
+      expect(props.groupBy.enum).toEqual([
+        "account",
+        "date",
+        "security",
+        "action",
+      ]);
+    });
+
+    it("exposes the full set of investment actions in the actions enum", () => {
+      const tool = FINANCIAL_TOOLS.find(
+        (t) => t.name === "query_investment_transactions",
+      )!;
+      const props = tool.inputSchema.properties as Record<
+        string,
+        Record<string, unknown>
+      >;
+      const items = props.actions.items as Record<string, unknown>;
+      expect(items.enum).toEqual([
+        "BUY",
+        "SELL",
+        "DIVIDEND",
+        "INTEREST",
+        "CAPITAL_GAIN",
+        "SPLIT",
+        "TRANSFER_IN",
+        "TRANSFER_OUT",
+        "REINVEST",
+        "ADD_SHARES",
+        "REMOVE_SHARES",
+      ]);
+    });
+
+    it("supports optional accountNames and symbols array filters", () => {
+      const tool = FINANCIAL_TOOLS.find(
+        (t) => t.name === "query_investment_transactions",
+      )!;
+      const props = tool.inputSchema.properties as Record<
+        string,
+        Record<string, unknown>
+      >;
+      expect(props.accountNames.type).toBe("array");
+      expect(props.symbols.type).toBe("array");
     });
   });
 

@@ -31,6 +31,42 @@ import { Account, AccountSubType } from "../accounts/entities/account.entity";
 import { isTransactionInFuture } from "../common/date-utils";
 import { ActionHistoryService } from "../action-history/action-history.service";
 
+export type LlmInvestmentTxGroupBy = "account" | "date" | "security" | "action";
+
+export interface LlmInvestmentTxRow {
+  transactionDate: string;
+  action: string;
+  accountName: string | null;
+  symbol: string | null;
+  securityName: string | null;
+  quantity: number | null;
+  price: number | null;
+  commission: number;
+  totalAmount: number;
+  currency: string | null;
+  description: string | null;
+}
+
+export interface LlmInvestmentTxGroup {
+  key: string;
+  transactionCount: number;
+  totalQuantity: number;
+  totalAmount: number;
+  totalCommission: number;
+}
+
+export interface LlmInvestmentTransactionsResult {
+  transactionCount: number;
+  totalAmount: number;
+  totalCommission: number;
+  totalQuantity: number;
+  actionCounts: Record<string, number>;
+  groupedBy: LlmInvestmentTxGroupBy | null;
+  groups: LlmInvestmentTxGroup[] | null;
+  transactions: LlmInvestmentTxRow[];
+  truncatedTransactionList: boolean;
+}
+
 @Injectable()
 export class InvestmentTransactionsService {
   private readonly logger = new Logger(InvestmentTransactionsService.name);
@@ -1149,6 +1185,185 @@ export class InvestmentTransactionsService {
       beforeData,
       description: `Deleted ${beforeData.action} transaction`,
     });
+  }
+
+  /**
+   * Compact investment-transaction query for LLM / AI consumers. Called by
+   * both the AI Assistant's tool executor and the MCP server's
+   * `query_investment_transactions` tool so the two surfaces return the same
+   * shape. Monetary values are rounded to 4 decimals, quantities to 8.
+   *
+   * Filters: account, security symbol, action, and date range.
+   * Grouping: by account, date, security (symbol), or action. When grouped,
+   * each bucket carries per-group totals; when not grouped, a capped list of
+   * the most recent matching transactions is returned alongside aggregate
+   * totals so the LLM can cite individual rows.
+   */
+  async getLlmInvestmentTransactions(
+    userId: string,
+    options: {
+      startDate?: string;
+      endDate?: string;
+      accountIds?: string[];
+      symbols?: string[];
+      actions?: InvestmentAction[];
+      groupBy?: LlmInvestmentTxGroupBy;
+    },
+  ): Promise<LlmInvestmentTransactionsResult> {
+    const query = this.investmentTransactionsRepository
+      .createQueryBuilder("it")
+      .leftJoinAndSelect("it.account", "account")
+      .leftJoinAndSelect("it.security", "security")
+      .where("it.userId = :userId", { userId });
+
+    if (options.accountIds && options.accountIds.length > 0) {
+      const resolvedIds = new Set<string>(options.accountIds);
+      const accounts = await this.accountsService.findByIds(
+        userId,
+        options.accountIds,
+      );
+      for (const acct of accounts) {
+        if (acct.linkedAccountId) resolvedIds.add(acct.linkedAccountId);
+      }
+      const allIds = [...resolvedIds];
+      query.andWhere("it.accountId IN (:...allIds)", { allIds });
+    }
+
+    if (options.startDate) {
+      query.andWhere("it.transactionDate >= :startDate", {
+        startDate: options.startDate,
+      });
+    }
+    if (options.endDate) {
+      query.andWhere("it.transactionDate <= :endDate", {
+        endDate: options.endDate,
+      });
+    }
+    if (options.symbols && options.symbols.length > 0) {
+      const upperSymbols = options.symbols.map((s) => s.toUpperCase());
+      query.andWhere("UPPER(security.symbol) IN (:...upperSymbols)", {
+        upperSymbols,
+      });
+    }
+    if (options.actions && options.actions.length > 0) {
+      query.andWhere("it.action IN (:...actions)", {
+        actions: options.actions,
+      });
+    }
+
+    query.orderBy("it.transactionDate", "DESC");
+
+    const rows = await query.getMany();
+
+    const round4 = (n: number): number => Math.round(n * 10000) / 10000;
+    const round8 = (n: number): number => Math.round(n * 1e8) / 1e8;
+
+    let totalAmountScaled = 0;
+    let totalCommissionScaled = 0;
+    let totalQuantityScaled = 0;
+    const actionCounts: Record<string, number> = {};
+
+    for (const r of rows) {
+      totalAmountScaled += Math.round(Number(r.totalAmount) * 10000);
+      totalCommissionScaled += Math.round(Number(r.commission || 0) * 10000);
+      if (r.quantity !== null && r.quantity !== undefined) {
+        totalQuantityScaled += Math.round(Number(r.quantity) * 1e8);
+      }
+      actionCounts[r.action] = (actionCounts[r.action] || 0) + 1;
+    }
+
+    const MAX_LISTED = 100;
+    const transactions: LlmInvestmentTxRow[] = rows
+      .slice(0, MAX_LISTED)
+      .map((r) => ({
+        transactionDate: r.transactionDate,
+        action: r.action,
+        accountName: r.account?.name ?? null,
+        symbol: r.security?.symbol ?? null,
+        securityName: r.security?.name ?? null,
+        quantity:
+          r.quantity !== null && r.quantity !== undefined
+            ? round8(Number(r.quantity))
+            : null,
+        price:
+          r.price !== null && r.price !== undefined
+            ? round4(Number(r.price))
+            : null,
+        commission: round4(Number(r.commission || 0)),
+        totalAmount: round4(Number(r.totalAmount)),
+        currency: r.account?.currencyCode ?? null,
+        description: r.description ?? null,
+      }));
+
+    let groups: LlmInvestmentTxGroup[] | null = null;
+    if (options.groupBy) {
+      const buckets = new Map<
+        string,
+        {
+          amountScaled: number;
+          commissionScaled: number;
+          quantityScaled: number;
+          count: number;
+        }
+      >();
+      for (const r of rows) {
+        const key = this.getLlmInvestmentGroupKey(r, options.groupBy);
+        const b = buckets.get(key) ?? {
+          amountScaled: 0,
+          commissionScaled: 0,
+          quantityScaled: 0,
+          count: 0,
+        };
+        b.amountScaled += Math.round(Number(r.totalAmount) * 10000);
+        b.commissionScaled += Math.round(Number(r.commission || 0) * 10000);
+        if (r.quantity !== null && r.quantity !== undefined) {
+          b.quantityScaled += Math.round(Number(r.quantity) * 1e8);
+        }
+        b.count += 1;
+        buckets.set(key, b);
+      }
+      groups = [...buckets.entries()]
+        .map(([key, b]) => ({
+          key,
+          transactionCount: b.count,
+          totalQuantity: round8(b.quantityScaled / 1e8),
+          totalAmount: round4(b.amountScaled / 10000),
+          totalCommission: round4(b.commissionScaled / 10000),
+        }))
+        .sort((a, b) =>
+          options.groupBy === "date"
+            ? b.key.localeCompare(a.key)
+            : b.totalAmount - a.totalAmount,
+        );
+    }
+
+    return {
+      transactionCount: rows.length,
+      totalAmount: round4(totalAmountScaled / 10000),
+      totalCommission: round4(totalCommissionScaled / 10000),
+      totalQuantity: round8(totalQuantityScaled / 1e8),
+      actionCounts,
+      groupedBy: options.groupBy ?? null,
+      groups,
+      transactions,
+      truncatedTransactionList: rows.length > MAX_LISTED,
+    };
+  }
+
+  private getLlmInvestmentGroupKey(
+    row: InvestmentTransaction,
+    groupBy: LlmInvestmentTxGroupBy,
+  ): string {
+    switch (groupBy) {
+      case "account":
+        return row.account?.name ?? row.accountId;
+      case "date":
+        return row.transactionDate;
+      case "security":
+        return row.security?.symbol ?? "(no security)";
+      case "action":
+        return row.action;
+    }
   }
 
   async getSummary(userId: string, accountIds?: string[]) {

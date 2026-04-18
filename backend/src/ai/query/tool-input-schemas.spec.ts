@@ -7,6 +7,7 @@ import {
   getNetWorthHistorySchema,
   comparePeriodsSchema,
   getPortfolioSummarySchema,
+  queryInvestmentTransactionsSchema,
   getTransfersSchema,
   getBudgetStatusSchema,
   calculateSchema,
@@ -323,6 +324,88 @@ describe("tool-input-schemas", () => {
         accountNames: ["a".repeat(101)],
       });
       expect(result.success).toBe(false);
+    });
+  });
+
+  describe("queryInvestmentTransactionsSchema", () => {
+    it("accepts empty input (all filters optional)", () => {
+      const result = queryInvestmentTransactionsSchema.safeParse({});
+      expect(result.success).toBe(true);
+    });
+
+    it("accepts all optional filters", () => {
+      const result = queryInvestmentTransactionsSchema.safeParse({
+        startDate: "2026-01-01",
+        endDate: "2026-03-31",
+        accountNames: ["Brokerage"],
+        symbols: ["AAPL", "MSFT"],
+        actions: ["BUY", "SELL", "DIVIDEND"],
+        groupBy: "security",
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("uppercases action inputs via preprocess", () => {
+      const result = queryInvestmentTransactionsSchema.safeParse({
+        actions: ["buy", " sell ", "Dividend"],
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.actions).toEqual(["BUY", "SELL", "DIVIDEND"]);
+      }
+    });
+
+    it("rejects an unknown action value", () => {
+      const result = queryInvestmentTransactionsSchema.safeParse({
+        actions: ["NOT_REAL"],
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects an invalid groupBy value", () => {
+      const result = queryInvestmentTransactionsSchema.safeParse({
+        groupBy: "category",
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects an invalid date format", () => {
+      const result = queryInvestmentTransactionsSchema.safeParse({
+        startDate: "Jan 1 2026",
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects empty symbol strings", () => {
+      const result = queryInvestmentTransactionsSchema.safeParse({
+        symbols: [""],
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects symbols longer than 20 chars", () => {
+      const result = queryInvestmentTransactionsSchema.safeParse({
+        symbols: ["a".repeat(21)],
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("accepts every groupBy enum value", () => {
+      for (const groupBy of ["account", "date", "security", "action"]) {
+        const result = queryInvestmentTransactionsSchema.safeParse({ groupBy });
+        expect(result.success).toBe(true);
+      }
+    });
+
+    it("routes through validateToolInput", () => {
+      const result = validateToolInput("query_investment_transactions", {
+        symbols: ["aapl"],
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        // symbols not uppercased by schema; preprocessing only applies to actions
+        expect(result.data.symbols).toEqual(["aapl"]);
+      }
     });
   });
 

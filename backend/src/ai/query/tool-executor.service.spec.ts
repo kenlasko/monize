@@ -5,6 +5,7 @@ import { TransactionAnalyticsService } from "../../transactions/transaction-anal
 import { NetWorthService } from "../../net-worth/net-worth.service";
 import { BudgetReportsService } from "../../budgets/budget-reports.service";
 import { PortfolioService } from "../../securities/portfolio.service";
+import { InvestmentTransactionsService } from "../../securities/investment-transactions.service";
 
 describe("ToolExecutorService", () => {
   let service: ToolExecutorService;
@@ -13,6 +14,7 @@ describe("ToolExecutorService", () => {
   let netWorth: Record<string, jest.Mock>;
   let budgetReports: Record<string, jest.Mock>;
   let portfolio: Record<string, jest.Mock>;
+  let investmentTransactions: Record<string, jest.Mock>;
 
   const userId = "user-1";
 
@@ -104,6 +106,20 @@ describe("ToolExecutorService", () => {
       }),
     };
 
+    investmentTransactions = {
+      getLlmInvestmentTransactions: jest.fn().mockResolvedValue({
+        transactionCount: 3,
+        totalAmount: 2325,
+        totalCommission: 19.98,
+        totalQuantity: 15,
+        actionCounts: { BUY: 1, SELL: 1, DIVIDEND: 1 },
+        groupedBy: null,
+        groups: null,
+        transactions: [],
+        truncatedTransactionList: false,
+      }),
+    };
+
     portfolio = {
       getLlmSummary: jest.fn().mockResolvedValue({
         holdingCount: 0,
@@ -128,6 +144,10 @@ describe("ToolExecutorService", () => {
         { provide: NetWorthService, useValue: netWorth },
         { provide: BudgetReportsService, useValue: budgetReports },
         { provide: PortfolioService, useValue: portfolio },
+        {
+          provide: InvestmentTransactionsService,
+          useValue: investmentTransactions,
+        },
       ],
     }).compile();
 
@@ -273,6 +293,80 @@ describe("ToolExecutorService", () => {
 
       expect(portfolio.getLlmSummary).toHaveBeenCalledWith(userId, undefined);
       expect(result.sources[0].type).toBe("portfolio");
+    });
+
+    it("query_investment_transactions delegates to investmentTransactions.getLlmInvestmentTransactions", async () => {
+      investmentTransactions.getLlmInvestmentTransactions.mockResolvedValueOnce(
+        {
+          transactionCount: 3,
+          totalAmount: 2325,
+          totalCommission: 19.98,
+          totalQuantity: 15,
+          actionCounts: { BUY: 1, SELL: 1 },
+          groupedBy: "security",
+          groups: [
+            {
+              key: "AAPL",
+              transactionCount: 3,
+              totalQuantity: 15,
+              totalAmount: 2325,
+              totalCommission: 19.98,
+            },
+          ],
+          transactions: [],
+          truncatedTransactionList: false,
+        },
+      );
+      const result = await service.execute(
+        userId,
+        "query_investment_transactions",
+        {
+          startDate: "2026-01-01",
+          endDate: "2026-03-31",
+          symbols: ["AAPL"],
+          actions: ["BUY", "SELL"],
+          groupBy: "security",
+        },
+      );
+
+      expect(
+        investmentTransactions.getLlmInvestmentTransactions,
+      ).toHaveBeenCalledWith(userId, {
+        startDate: "2026-01-01",
+        endDate: "2026-03-31",
+        accountIds: undefined,
+        symbols: ["AAPL"],
+        actions: ["BUY", "SELL"],
+        groupBy: "security",
+      });
+      expect(result.sources[0].type).toBe("investment_transactions");
+      expect(result.sources[0].dateRange).toBe("2026-01-01 to 2026-03-31");
+      expect(result.summary).toContain("3 investment transactions");
+      expect(result.summary).toContain("grouped by security");
+    });
+
+    it("query_investment_transactions resolves account names to IDs", async () => {
+      await service.execute(userId, "query_investment_transactions", {
+        accountNames: ["Checking"],
+      });
+
+      expect(accounts.findAll).toHaveBeenCalledWith(userId, false);
+      expect(
+        investmentTransactions.getLlmInvestmentTransactions,
+      ).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({ accountIds: ["acc-1"] }),
+      );
+    });
+
+    it("query_investment_transactions handles all-dates summary", async () => {
+      const result = await service.execute(
+        userId,
+        "query_investment_transactions",
+        {},
+      );
+
+      expect(result.sources[0].dateRange).toBe("all dates");
     });
 
     it("get_transfers delegates to analytics.getTransfersByAccount", async () => {

@@ -4,6 +4,11 @@ import { TransactionAnalyticsService } from "../../transactions/transaction-anal
 import { NetWorthService } from "../../net-worth/net-worth.service";
 import { BudgetReportsService } from "../../budgets/budget-reports.service";
 import { PortfolioService } from "../../securities/portfolio.service";
+import {
+  InvestmentTransactionsService,
+  LlmInvestmentTxGroupBy,
+} from "../../securities/investment-transactions.service";
+import { InvestmentAction } from "../../securities/entities/investment-transaction.entity";
 import { validateToolInput } from "./tool-input-schemas";
 import { executeCalculation, CalculateInput } from "./calculate-tool";
 import { sanitizePromptValue } from "../../common/sanitization.util";
@@ -29,6 +34,7 @@ export class ToolExecutorService {
     @Inject(forwardRef(() => BudgetReportsService))
     private readonly budgetReportsService: BudgetReportsService,
     private readonly portfolioService: PortfolioService,
+    private readonly investmentTransactionsService: InvestmentTransactionsService,
   ) {}
 
   async execute(
@@ -79,6 +85,12 @@ export class ToolExecutorService {
           break;
         case "get_portfolio_summary":
           result = await this.getPortfolioSummary(userId, validatedInput);
+          break;
+        case "query_investment_transactions":
+          result = await this.queryInvestmentTransactions(
+            userId,
+            validatedInput,
+          );
           break;
         case "get_transfers":
           result = await this.getTransfers(userId, validatedInput);
@@ -355,6 +367,60 @@ export class ToolExecutorService {
           description: accountNames
             ? `Portfolio summary for ${accountNames.join(", ")}`
             : "Portfolio summary across all investment accounts",
+        },
+      ],
+    };
+  }
+
+  private async queryInvestmentTransactions(
+    userId: string,
+    input: Record<string, unknown>,
+  ): Promise<ToolResult> {
+    const startDate = input.startDate as string | undefined;
+    const endDate = input.endDate as string | undefined;
+    const accountNames = input.accountNames as string[] | undefined;
+    const symbols = input.symbols as string[] | undefined;
+    const actions = input.actions as InvestmentAction[] | undefined;
+    const groupBy = input.groupBy as LlmInvestmentTxGroupBy | undefined;
+
+    const accountIds = await this.resolveAccountIds(userId, accountNames);
+
+    const data =
+      await this.investmentTransactionsService.getLlmInvestmentTransactions(
+        userId,
+        { startDate, endDate, accountIds, symbols, actions, groupBy },
+      );
+
+    const rangeParts: string[] = [];
+    if (startDate && endDate) rangeParts.push(`${startDate} to ${endDate}`);
+    else if (startDate) rangeParts.push(`from ${startDate}`);
+    else if (endDate) rangeParts.push(`through ${endDate}`);
+    const range = rangeParts.length > 0 ? rangeParts[0] : "all dates";
+
+    const filterDescParts: string[] = [];
+    if (accountNames?.length) filterDescParts.push(accountNames.join(", "));
+    if (symbols?.length) filterDescParts.push(symbols.join(", "));
+    if (actions?.length) filterDescParts.push(actions.join(", "));
+    const filterDesc =
+      filterDescParts.length > 0 ? ` (${filterDescParts.join("; ")})` : "";
+
+    const summaryParts = [
+      `${data.transactionCount} investment transaction${data.transactionCount === 1 ? "" : "s"}${filterDesc}`,
+      `total amount ${data.totalAmount.toFixed(2)}`,
+      `commissions ${data.totalCommission.toFixed(2)}`,
+    ];
+    if (groupBy && data.groups) {
+      summaryParts.push(`grouped by ${groupBy} (${data.groups.length} groups)`);
+    }
+
+    return {
+      data,
+      summary: `${summaryParts.join(", ")}.`,
+      sources: [
+        {
+          type: "investment_transactions",
+          description: `Investment transactions${filterDesc}`,
+          dateRange: range,
         },
       ],
     };
