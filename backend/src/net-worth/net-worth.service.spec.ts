@@ -113,7 +113,7 @@ describe("NetWorthService", () => {
   beforeEach(async () => {
     mabRepository = {
       count: jest.fn().mockResolvedValue(0),
-      find: jest.fn(),
+      find: jest.fn().mockResolvedValue([]),
       save: jest.fn(),
     };
 
@@ -788,12 +788,48 @@ describe("NetWorthService", () => {
       });
     });
 
-    it("does not recalculate when mab data already exists", async () => {
+    it("does not recalculate when all accounts have a current-month snapshot", async () => {
       mabRepository.count.mockResolvedValue(10);
+      accountRepository.find.mockResolvedValue([{ id: "account-1" }]);
+      mabRepository.find.mockResolvedValue([{ accountId: "account-1" }]);
 
       await service.ensurePopulated("user-1");
 
-      expect(accountRepository.find).not.toHaveBeenCalled();
+      expect(accountRepository.findOne).not.toHaveBeenCalled();
+      expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
+    });
+
+    it("refreshes only accounts missing a current-month snapshot", async () => {
+      mabRepository.count.mockResolvedValue(10);
+      accountRepository.find.mockResolvedValue([
+        { id: "account-1" },
+        { id: "account-2" },
+        { id: "account-3" },
+      ]);
+      // account-1 has a current-month row; the other two are stale.
+      mabRepository.find.mockResolvedValue([{ accountId: "account-1" }]);
+      // recalculateAccount loads each account; pretend they were deleted
+      // so the recalc returns early and we just verify the lookups happened.
+      accountRepository.findOne.mockResolvedValue(null);
+
+      await service.ensurePopulated("user-1");
+
+      expect(accountRepository.findOne).toHaveBeenCalledTimes(2);
+      expect(accountRepository.findOne).toHaveBeenCalledWith({
+        where: { id: "account-2", userId: "user-1" },
+      });
+      expect(accountRepository.findOne).toHaveBeenCalledWith({
+        where: { id: "account-3", userId: "user-1" },
+      });
+    });
+
+    it("does not query for stale accounts when mab is empty (delegates to full recalc)", async () => {
+      mabRepository.count.mockResolvedValue(0);
+      accountRepository.find.mockResolvedValue([]);
+
+      await service.ensurePopulated("user-1");
+
+      expect(mabRepository.find).not.toHaveBeenCalled();
     });
   });
 

@@ -110,7 +110,54 @@ export class NetWorthService {
     const count = await this.mabRepo.count({ where: { userId } });
     if (count === 0) {
       await this.recalculateAllAccounts(userId);
+      return;
     }
+
+    await this.refreshStaleAccountsForCurrentMonth(userId);
+  }
+
+  /**
+   * Per-account recalc is debounced and only runs when an account's
+   * transactions change. When the calendar rolls into a new month, accounts
+   * that haven't been touched still have snapshots ending in the previous
+   * month, so they don't contribute to the new month's aggregate -- causing
+   * the chart to drop to whatever subset of accounts had a transaction post
+   * since the month rolled over. Detect those stale accounts and refresh them.
+   */
+  private async refreshStaleAccountsForCurrentMonth(
+    userId: string,
+  ): Promise<void> {
+    const now = new Date();
+    const currentMonthStr = `${now.getFullYear()}-${String(
+      now.getMonth() + 1,
+    ).padStart(2, "0")}-01`;
+
+    const accounts = await this.accountRepo.find({
+      where: { userId },
+      select: ["id"],
+    });
+    if (accounts.length === 0) return;
+
+    const populated = await this.mabRepo.find({
+      where: { userId, month: currentMonthStr as any },
+      select: ["accountId"],
+    });
+    const populatedIds = new Set(populated.map((p) => p.accountId));
+
+    const staleIds = accounts
+      .map((a) => a.id)
+      .filter((id) => !populatedIds.has(id));
+    if (staleIds.length === 0) return;
+
+    await Promise.all(
+      staleIds.map((id) =>
+        this.recalculateAccount(userId, id).catch((err) =>
+          this.logger.warn(
+            `Failed to refresh stale net worth for account ${id}: ${err.message}`,
+          ),
+        ),
+      ),
+    );
   }
 
   /**
