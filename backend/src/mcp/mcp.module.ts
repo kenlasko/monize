@@ -9,6 +9,7 @@ import { NetWorthModule } from "../net-worth/net-worth.module";
 import { SecuritiesModule } from "../securities/securities.module";
 import { BudgetsModule } from "../budgets/budgets.module";
 import { BuiltInReportsModule } from "../built-in-reports/built-in-reports.module";
+import { OAuthModule } from "../oauth/oauth.module";
 
 import { McpServerService } from "./mcp-server.service";
 import { McpHttpController } from "./mcp-http.controller";
@@ -46,6 +47,7 @@ import { McpSpendingAnalysisPrompt } from "./prompts/spending-analysis.prompt";
     SecuritiesModule,
     forwardRef(() => BudgetsModule),
     BuiltInReportsModule,
+    OAuthModule,
   ],
   providers: [
     McpServerService,

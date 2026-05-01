@@ -39,6 +39,7 @@ import { HealthModule } from "./health/health.module";
 import { AdminModule } from "./admin/admin.module";
 import { AiModule } from "./ai/ai.module";
 import { McpModule } from "./mcp/mcp.module";
+import { OAuthModule } from "./oauth/oauth.module";
 import { BudgetsModule } from "./budgets/budgets.module";
 import { TagsModule } from "./tags/tags.module";
 import { BackupModule } from "./backup/backup.module";
@@ -117,6 +118,7 @@ import { UpdatesModule } from "./updates/updates.module";
     AdminModule,
     AiModule,
     McpModule,
+    OAuthModule,
     BudgetsModule,
     TagsModule,
     BackupModule,

@@ -19,6 +19,8 @@ import { SKIP_PASSWORD_CHECK_KEY } from "../auth/guards/must-change-password.gua
 import { McpServerService } from "./mcp-server.service";
 import { PatService } from "../auth/pat.service";
 import { McpUserContext } from "./mcp-context";
+import { OAuthProviderService } from "../oauth/oauth-provider.service";
+import { ConfigService } from "@nestjs/config";
 
 const SkipPasswordCheck = () => SetMetadata(SKIP_PASSWORD_CHECK_KEY, true);
 
@@ -41,6 +43,8 @@ export class McpHttpController implements OnModuleDestroy {
   constructor(
     private readonly mcpServerService: McpServerService,
     private readonly patService: PatService,
+    private readonly oauthProviderService: OAuthProviderService,
+    private readonly configService: ConfigService,
   ) {
     this.cleanupTimer = setInterval(
       () => this.cleanupExpiredSessions(),
@@ -92,11 +96,7 @@ export class McpHttpController implements OnModuleDestroy {
   async handlePost(@Req() req: Request, @Res() res: Response) {
     const authResult = await this.validatePat(req);
     if (!authResult) {
-      res.status(401).json({
-        jsonrpc: "2.0",
-        error: { code: -32001, message: "Unauthorized" },
-        id: null,
-      });
+      this.sendUnauthorized(res);
       return;
     }
 
@@ -185,11 +185,7 @@ export class McpHttpController implements OnModuleDestroy {
   async handleGet(@Req() req: Request, @Res() res: Response) {
     const authResult = await this.validatePat(req);
     if (!authResult) {
-      res.status(401).json({
-        jsonrpc: "2.0",
-        error: { code: -32001, message: "Unauthorized" },
-        id: null,
-      });
+      this.sendUnauthorized(res);
       return;
     }
 
@@ -241,11 +237,7 @@ export class McpHttpController implements OnModuleDestroy {
   async handleDelete(@Req() req: Request, @Res() res: Response) {
     const authResult = await this.validatePat(req);
     if (!authResult) {
-      res.status(401).json({
-        jsonrpc: "2.0",
-        error: { code: -32001, message: "Unauthorized" },
-        id: null,
-      });
+      this.sendUnauthorized(res);
       return;
     }
 
@@ -306,16 +298,46 @@ export class McpHttpController implements OnModuleDestroy {
 
   private async validatePat(req: Request): Promise<McpUserContext | null> {
     const auth = req.headers.authorization;
-    if (!auth || !auth.startsWith("Bearer pat_")) {
+    if (!auth || !auth.startsWith("Bearer ")) {
       return null;
+    }
+    const token = auth.substring(7);
+
+    // PAT bearer tokens (legacy / advanced users)
+    if (token.startsWith("pat_")) {
+      try {
+        const result = await this.patService.validateToken(token);
+        return { userId: result.userId, scopes: result.scopes };
+      } catch {
+        return null;
+      }
     }
 
-    try {
-      const token = auth.substring(7);
-      const result = await this.patService.validateToken(token);
-      return { userId: result.userId, scopes: result.scopes };
-    } catch {
-      return null;
+    // OAuth 2.1 access tokens (issued via /oauth for MCP clients like
+    // Claude Desktop's "Add Connector" flow). Audience-bound to the MCP
+    // resource URL by the provider's resourceIndicators config.
+    const oauthResult =
+      await this.oauthProviderService.validateAccessToken(token);
+    if (oauthResult) {
+      return { userId: oauthResult.userId, scopes: oauthResult.scopes };
     }
+
+    return null;
+  }
+
+  private sendUnauthorized(res: Response): void {
+    const publicUrl =
+      this.configService.get<string>("PUBLIC_APP_URL")?.replace(/\/$/, "") ??
+      "";
+    const resourceMetadata = `${publicUrl}/.well-known/oauth-protected-resource`;
+    res.setHeader(
+      "WWW-Authenticate",
+      `Bearer realm="monize", resource_metadata="${resourceMetadata}"`,
+    );
+    res.status(401).json({
+      jsonrpc: "2.0",
+      error: { code: -32001, message: "Unauthorized" },
+      id: null,
+    });
   }
 }

@@ -906,3 +906,23 @@ CREATE TABLE action_history (
 
 CREATE INDEX idx_action_history_user_created ON action_history(user_id, created_at DESC);
 CREATE INDEX idx_action_history_user_undone ON action_history(user_id, is_undone, created_at DESC);
+
+
+-- OAuth 2.1 Authorization Server payloads (node-oidc-provider adapter)
+CREATE TABLE oauth_payloads (
+    id VARCHAR(255) NOT NULL,
+    model VARCHAR(50) NOT NULL,
+    payload JSONB NOT NULL,
+    grant_id VARCHAR(255),
+    user_code VARCHAR(255),
+    uid VARCHAR(255),
+    expires_at TIMESTAMP,
+    consumed_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id, model)
+);
+
+CREATE INDEX idx_oauth_payloads_grant ON oauth_payloads(grant_id) WHERE grant_id IS NOT NULL;
+CREATE INDEX idx_oauth_payloads_uid ON oauth_payloads(uid) WHERE uid IS NOT NULL;
+CREATE INDEX idx_oauth_payloads_user_code ON oauth_payloads(user_code) WHERE user_code IS NOT NULL;
+CREATE INDEX idx_oauth_payloads_expires ON oauth_payloads(expires_at) WHERE expires_at IS NOT NULL;

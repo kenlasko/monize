@@ -1,12 +1,16 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { ConfigService } from "@nestjs/config";
 import { McpHttpController } from "./mcp-http.controller";
 import { McpServerService } from "./mcp-server.service";
 import { PatService } from "../auth/pat.service";
+import { OAuthProviderService } from "../oauth/oauth-provider.service";
 
 describe("McpHttpController", () => {
   let controller: McpHttpController;
   let patService: Record<string, jest.Mock>;
   let mcpServerService: Record<string, jest.Mock>;
+  let oauthProviderService: Record<string, jest.Mock>;
+  let configService: Record<string, jest.Mock>;
 
   beforeEach(async () => {
     patService = {
@@ -19,11 +23,21 @@ describe("McpHttpController", () => {
       }),
     };
 
+    oauthProviderService = {
+      validateAccessToken: jest.fn().mockResolvedValue(null),
+    };
+
+    configService = {
+      get: jest.fn().mockReturnValue("https://app.monize.test"),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [McpHttpController],
       providers: [
         { provide: McpServerService, useValue: mcpServerService },
         { provide: PatService, useValue: patService },
+        { provide: OAuthProviderService, useValue: oauthProviderService },
+        { provide: ConfigService, useValue: configService },
       ],
     }).compile();
 
@@ -47,6 +61,7 @@ describe("McpHttpController", () => {
       const res = {
         status: jest.fn().mockReturnThis(),
         json: jest.fn(),
+        setHeader: jest.fn(),
       } as any;
 
       await controller.handlePost(req, res);
@@ -69,6 +84,7 @@ describe("McpHttpController", () => {
       const res = {
         status: jest.fn().mockReturnThis(),
         json: jest.fn(),
+        setHeader: jest.fn(),
       } as any;
 
       await controller.handlePost(req, res);
@@ -84,11 +100,68 @@ describe("McpHttpController", () => {
       const res = {
         status: jest.fn().mockReturnThis(),
         json: jest.fn(),
+        setHeader: jest.fn(),
       } as any;
 
       await controller.handlePost(req, res);
 
       expect(res.status).toHaveBeenCalledWith(401);
+    });
+
+    it("emits WWW-Authenticate header with resource_metadata on 401", async () => {
+      const req = { headers: {}, body: {} } as any;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+        setHeader: jest.fn(),
+      } as any;
+
+      await controller.handlePost(req, res);
+
+      expect(res.setHeader).toHaveBeenCalledWith(
+        "WWW-Authenticate",
+        expect.stringContaining(
+          "/.well-known/oauth-protected-resource",
+        ),
+      );
+    });
+
+    it("accepts OAuth bearer tokens validated by the provider", async () => {
+      oauthProviderService.validateAccessToken.mockResolvedValue({
+        userId: "oauth-user-1",
+        scopes: "monize:read",
+      });
+
+      const req = {
+        headers: {
+          authorization: "Bearer abc123opaque",
+          accept: "application/json, text/event-stream",
+        },
+        body: { jsonrpc: "2.0", method: "initialize", id: 1 },
+      } as any;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+        setHeader: jest.fn(),
+        on: jest.fn(),
+      } as any;
+
+      // The transport requires a real handleRequest; just confirm we got past
+      // auth (i.e. no 401 + setHeader call for WWW-Authenticate).
+      try {
+        await controller.handlePost(req, res);
+      } catch {
+        // Transport may throw because we're not providing a full mock; auth
+        // path is what we're testing here.
+      }
+
+      expect(oauthProviderService.validateAccessToken).toHaveBeenCalledWith(
+        "abc123opaque",
+      );
+      expect(res.setHeader).not.toHaveBeenCalledWith(
+        "WWW-Authenticate",
+        expect.anything(),
+      );
     });
 
     it("should return 404 for an expired session", async () => {
@@ -126,6 +199,7 @@ describe("McpHttpController", () => {
       const res = {
         status: jest.fn().mockReturnThis(),
         json: jest.fn(),
+        setHeader: jest.fn(),
       } as any;
 
       await controller.handlePost(req, res);
@@ -170,6 +244,7 @@ describe("McpHttpController", () => {
       const res = {
         status: jest.fn().mockReturnThis(),
         json: jest.fn(),
+        setHeader: jest.fn(),
       } as any;
 
       await controller.handlePost(req, res);
@@ -191,6 +266,7 @@ describe("McpHttpController", () => {
       const res = {
         status: jest.fn().mockReturnThis(),
         json: jest.fn(),
+        setHeader: jest.fn(),
       } as any;
 
       await controller.handleGet(req, res);
@@ -215,6 +291,7 @@ describe("McpHttpController", () => {
       const res = {
         status: jest.fn().mockReturnThis(),
         json: jest.fn(),
+        setHeader: jest.fn(),
       } as any;
 
       await controller.handleGet(req, res);
@@ -237,6 +314,7 @@ describe("McpHttpController", () => {
       const res = {
         status: jest.fn().mockReturnThis(),
         json: jest.fn(),
+        setHeader: jest.fn(),
       } as any;
 
       await controller.handleGet(req, res);
@@ -278,6 +356,7 @@ describe("McpHttpController", () => {
       const res = {
         status: jest.fn().mockReturnThis(),
         json: jest.fn(),
+        setHeader: jest.fn(),
       } as any;
 
       await controller.handleGet(req, res);
@@ -329,6 +408,7 @@ describe("McpHttpController", () => {
       const res = {
         status: jest.fn().mockReturnThis(),
         json: jest.fn(),
+        setHeader: jest.fn(),
       } as any;
 
       await controller.handleGet(req, res);
@@ -348,6 +428,7 @@ describe("McpHttpController", () => {
       const res = {
         status: jest.fn().mockReturnThis(),
         json: jest.fn(),
+        setHeader: jest.fn(),
       } as any;
 
       await controller.handleDelete(req, res);
@@ -372,6 +453,7 @@ describe("McpHttpController", () => {
       const res = {
         status: jest.fn().mockReturnThis(),
         json: jest.fn(),
+        setHeader: jest.fn(),
       } as any;
 
       await controller.handleDelete(req, res);
@@ -413,6 +495,7 @@ describe("McpHttpController", () => {
       const res = {
         status: jest.fn().mockReturnThis(),
         json: jest.fn(),
+        setHeader: jest.fn(),
       } as any;
 
       await controller.handleDelete(req, res);
@@ -463,6 +546,7 @@ describe("McpHttpController", () => {
       const res = {
         status: jest.fn().mockReturnThis(),
         json: jest.fn(),
+        setHeader: jest.fn(),
       } as any;
 
       await controller.handleDelete(req, res);
@@ -519,6 +603,7 @@ describe("McpHttpController", () => {
       const res = {
         status: jest.fn().mockReturnThis(),
         json: jest.fn(),
+        setHeader: jest.fn(),
       } as any;
 
       await controller.handlePost(req, res);
@@ -562,6 +647,7 @@ describe("McpHttpController", () => {
       const res = {
         status: jest.fn().mockReturnThis(),
         json: jest.fn(),
+        setHeader: jest.fn(),
       } as any;
 
       await controller.handlePost(req, res);
@@ -656,6 +742,7 @@ describe("McpHttpController", () => {
       const res = {
         status: jest.fn().mockReturnThis(),
         json: jest.fn(),
+        setHeader: jest.fn(),
       } as any;
 
       await controller.handleDelete(req, res);

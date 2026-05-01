@@ -855,11 +855,7 @@ describe("NetWorthService", () => {
 
       await service.getLlmHistory("user-1", "2024-01-01", "2024-12-31");
 
-      expect(spy).toHaveBeenCalledWith(
-        "user-1",
-        "2024-01-01",
-        "2024-12-31",
-      );
+      expect(spy).toHaveBeenCalledWith("user-1", "2024-01-01", "2024-12-31");
       spy.mockRestore();
     });
 

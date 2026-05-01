@@ -1,11 +1,12 @@
 import { NestFactory } from "@nestjs/core";
-import { Logger, ValidationPipe } from "@nestjs/common";
+import { Logger, RequestMethod, ValidationPipe } from "@nestjs/common";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import helmet from "helmet";
 import * as express from "express";
 import * as cookieParser from "cookie-parser";
 import * as pg from "pg";
 import { AppModule } from "./app.module";
+import { OAuthProviderService } from "./oauth/oauth-provider.service";
 
 // Configure pg to return DATE types as strings instead of Date objects
 // This prevents timezone-related date shifting issues
@@ -147,8 +148,27 @@ async function bootstrap() {
     }),
   );
 
-  // API prefix
-  app.setGlobalPrefix("api/v1");
+  // API prefix — OAuth interaction and discovery routes live at the root
+  // because they must match the issuer/resource URLs advertised in OAuth
+  // metadata (RFC 8414 / RFC 9728), which MCP clients fetch from fixed
+  // well-known paths.
+  app.setGlobalPrefix("api/v1", {
+    exclude: [
+      { path: "oauth-consent/(.*)", method: RequestMethod.ALL },
+      {
+        path: ".well-known/oauth-protected-resource",
+        method: RequestMethod.GET,
+      },
+    ],
+  });
+
+  // Mount node-oidc-provider as Express middleware at /oauth. This serves the
+  // authorization, token, registration, JWKS, revocation, and discovery
+  // endpoints. Helmet's restrictive CSP doesn't apply here because the
+  // provider sets its own headers and renders no HTML of its own (we render
+  // the consent page in the interaction controller).
+  const oauthProviderService = app.get(OAuthProviderService);
+  app.use("/oauth", oauthProviderService.getProvider().callback());
 
   // Swagger documentation (disabled in production)
   if (process.env.NODE_ENV !== "production") {
