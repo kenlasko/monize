@@ -14,6 +14,18 @@ describe("OAuthInteractionController", () => {
     const provider = {
       interactionDetails: overrides.interactionDetails,
       interactionFinished,
+      Client: {
+        find: jest.fn().mockImplementation((id: string) => {
+          if (id === "claude-desktop") {
+            return Promise.resolve({
+              clientId: "claude-desktop",
+              clientName: "Claude Desktop",
+              clientUri: null,
+            });
+          }
+          return Promise.resolve(null);
+        }),
+      },
       Grant:
         overrides.Grant ??
         class MockGrant {

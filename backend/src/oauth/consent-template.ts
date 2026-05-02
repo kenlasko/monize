@@ -72,6 +72,28 @@ export function renderConsentPage(params: ConsentParams): string {
     --text: #0f172a;
     --muted: #64748b;
     --border: #e2e8f0;
+    --meta-bg: #f1f5f9;
+    --secondary-bg: #ffffff;
+    --secondary-hover: #f1f5f9;
+  }
+  /* Track the OS-level theme. The wider Monize app supports an explicit
+     three-way (light / dark / system) preference, but the consent page
+     is a one-screen flyway that loads with no client-side state — there
+     is nowhere to retrieve the user's selection from, and the page never
+     re-renders. Following prefers-color-scheme is the right tradeoff. */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --primary: #38bdf8;
+      --primary-hover: #0ea5e9;
+      --bg: #0f172a;
+      --card: #1f2937;
+      --text: #f3f4f6;
+      --muted: #9ca3af;
+      --border: #374151;
+      --meta-bg: #111827;
+      --secondary-bg: #1f2937;
+      --secondary-hover: #374151;
+    }
   }
   * { box-sizing: border-box; }
   body {
@@ -108,7 +130,7 @@ export function renderConsentPage(params: ConsentParams): string {
   li.scope strong { display: block; font-size: 14px; }
   li.scope p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
   .meta {
-    background: #f1f5f9;
+    background: var(--meta-bg);
     border-radius: 8px;
     padding: 10px 12px;
     font-size: 12px;
@@ -129,8 +151,8 @@ export function renderConsentPage(params: ConsentParams): string {
   }
   button.primary { background: var(--primary); color: #fff; }
   button.primary:hover { background: var(--primary-hover); }
-  button.secondary { background: #fff; color: var(--text); border: 1px solid var(--border); }
-  button.secondary:hover { background: #f1f5f9; }
+  button.secondary { background: var(--secondary-bg); color: var(--text); border: 1px solid var(--border); }
+  button.secondary:hover { background: var(--secondary-hover); }
   .user { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
   .brand { font-size: 14px; font-weight: 600; color: var(--primary); margin-bottom: 16px; }
 </style>

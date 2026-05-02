@@ -88,11 +88,18 @@ export class OAuthInteractionController {
         (MCP_RESOURCE_SCOPES as readonly string[]).includes(s),
       );
 
+      // Look up the registered client so we can display its human-readable
+      // name (e.g. "Claude") instead of the opaque DCR-generated client_id.
+      // The auth request params only carry client_id; client_name lives on
+      // the persisted client record from the Dynamic Client Registration.
+      const clientInfo = await this.lookupClient(
+        params.client_id as string,
+      );
+
       const html = renderConsentPage({
         uid,
-        clientName: this.formatClientName(params),
-        clientUri:
-          typeof params.client_uri === "string" ? params.client_uri : null,
+        clientName: clientInfo.name,
+        clientUri: clientInfo.uri,
         userEmail: user.email ?? user.id,
         scopes: validScopes,
         resource:
@@ -222,11 +229,30 @@ export class OAuthInteractionController {
     return `${base}/login?${params.toString()}`;
   }
 
-  private formatClientName(params: Record<string, unknown>): string {
-    const name = params.client_name;
-    if (typeof name === "string" && name.length > 0) return name;
-    const id = params.client_id;
-    return typeof id === "string" ? id : "Unknown application";
+  private async lookupClient(
+    clientId: string,
+  ): Promise<{ name: string; uri: string | null }> {
+    if (!clientId) {
+      return { name: "Unknown application", uri: null };
+    }
+    try {
+      const provider = this.providerService.getProvider();
+      const client = await provider.Client.find(clientId);
+      const name =
+        (client && typeof client.clientName === "string"
+          ? client.clientName
+          : null) || clientId;
+      const uri =
+        client && typeof client.clientUri === "string"
+          ? client.clientUri
+          : null;
+      return { name, uri };
+    } catch (err) {
+      this.logger.warn(
+        `lookupClient failed for ${clientId}: ${(err as Error).message}`,
+      );
+      return { name: clientId, uri: null };
+    }
   }
 
   private normalizeScopes(input: string | string[] | undefined): string[] {

@@ -286,7 +286,18 @@ export class OAuthProviderService implements OnModuleInit {
         : aud === expectedAudience;
       if (!audMatches) return null;
 
-      const scopes = token.scope ?? "";
+      const rawScopes = token.scope ?? "";
+      // Translate the OAuth-issued scope set ("monize:read monize:write")
+      // into the comma-separated bare-name format the existing MCP tool
+      // layer expects ("read,write"). The PAT path already supplies
+      // scopes in that shape, so this normalisation lets every tool's
+      // requireScope() / hasScope() check work transparently for both
+      // PAT and OAuth callers without touching the tool implementations.
+      const scopes = rawScopes
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((s) => (s.startsWith("monize:") ? s.slice("monize:".length) : s))
+        .join(",");
       return { userId: token.accountId, scopes };
     } catch (err) {
       this.logger.warn(
