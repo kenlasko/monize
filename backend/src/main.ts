@@ -69,9 +69,20 @@ async function bootstrap() {
     express.raw({ limit: "100mb", type: "application/gzip" }),
   );
 
-  // Default body size limit for regular endpoints (QIF imports, etc.)
-  app.use(express.json({ limit: "10mb" }));
-  app.use(express.urlencoded({ limit: "10mb", extended: true }));
+  // Default body size limit for regular endpoints (QIF imports, etc.).
+  // Skip body parsing for /oauth/* so node-oidc-provider parses requests
+  // itself — otherwise it logs "already parsed request body detected" on
+  // every DCR/token POST. The interaction routes under /api/v1/oauth-consent/*
+  // need parsed bodies for @Body(), so they go through normal parsing.
+  const skipForProvider = (parser: express.RequestHandler): express.RequestHandler =>
+    (req, res, next) => {
+      if (req.path === "/oauth" || req.path.startsWith("/oauth/")) {
+        return next();
+      }
+      return parser(req, res, next);
+    };
+  app.use(skipForProvider(express.json({ limit: "10mb" })));
+  app.use(skipForProvider(express.urlencoded({ limit: "10mb", extended: true })));
 
   // Cookie parser for OIDC state/nonce and auth tokens
   app.use(cookieParser());
