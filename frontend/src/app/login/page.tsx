@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import '@/lib/zodConfig';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -28,8 +28,23 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
+/**
+ * Validate a `returnTo` query parameter so we can safely redirect after login.
+ * Restricts to same-origin path-only values to prevent open-redirect abuse via
+ * absolute URLs, protocol-relative URLs, or backslash tricks.
+ */
+function safeReturnTo(value: string | null): string | null {
+  if (!value) return null;
+  if (!value.startsWith('/') || value.startsWith('//') || value.startsWith('/\\')) {
+    return null;
+  }
+  return value;
+}
+
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = safeReturnTo(searchParams?.get('returnTo') ?? null);
   const { login } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [twoFactorState, setTwoFactorState] = useState<{ tempToken: string } | null>(null);
@@ -91,6 +106,10 @@ export default function LoginPage() {
       }
       if (response.user!.mustChangePassword) {
         router.push('/change-password');
+      } else if (returnTo) {
+        // Full-page navigation so server-side OAuth interaction routes see
+        // the freshly issued auth_token cookie on the very next request.
+        window.location.href = returnTo;
       } else {
         router.push('/dashboard');
       }
@@ -111,6 +130,8 @@ export default function LoginPage() {
     }
     if (user.mustChangePassword) {
       router.push('/change-password');
+    } else if (returnTo) {
+      window.location.href = returnTo;
     } else {
       router.push('/dashboard');
     }

@@ -37,6 +37,21 @@ function nextWithCsp(request: NextRequest): NextResponse {
   return response;
 }
 
+// OAuth 2.1 endpoints exposed at the application root for the MCP remote
+// connector flow. These live outside /api because OAuth issuer URLs and the
+// RFC 9728 protected-resource metadata path are fixed by the spec; clients
+// (Claude Desktop, mcp-remote, etc.) probe them at exact, well-known URLs.
+function isOAuthPath(pathname: string): boolean {
+  return (
+    pathname === '/oauth' ||
+    pathname.startsWith('/oauth/') ||
+    pathname.startsWith('/oauth-consent/') ||
+    pathname === '/.well-known/oauth-protected-resource' ||
+    pathname === '/.well-known/oauth-authorization-server' ||
+    pathname.startsWith('/.well-known/oauth-authorization-server/')
+  );
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -46,7 +61,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // Handle API proxying to backend
-  if (pathname.startsWith('/api/')) {
+  if (pathname.startsWith('/api/') || isOAuthPath(pathname)) {
     const apiUrl = process.env.INTERNAL_API_URL || 'http://localhost:3001';
     const url = new URL(pathname + request.nextUrl.search, apiUrl);
     logger.debug(`${request.method} ${pathname} -> ${apiUrl}`);
