@@ -18,10 +18,10 @@ describe("renderConsentPage", () => {
     expect(html).toContain('value="monize:read"');
     expect(html).toContain('value="monize:write"');
     expect(html).toContain(
-      'action="/oauth-consent/abc-123/confirm"',
+      'action="/api/v1/oauth-consent/abc-123/confirm"',
     );
     expect(html).toContain(
-      'formaction="/oauth-consent/abc-123/abort"',
+      'formaction="/api/v1/oauth-consent/abc-123/abort"',
     );
   });
 

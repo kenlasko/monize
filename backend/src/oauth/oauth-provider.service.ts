@@ -127,11 +127,14 @@ export class OAuthProviderService implements OnModuleInit {
         backchannelLogout: { enabled: false },
       },
       interactions: {
-        // Routes live outside the /oauth mount because the provider
-        // middleware 404s any path it doesn't own (it runs as a Koa app
-        // and never calls next()), so unrelated routes can't be nested
-        // under it.
-        url: (_ctx, interaction) => `/oauth-consent/${interaction.uid}`,
+        // Mount under /api/v1 so it goes through the existing frontend
+        // proxy (which only forwards /api/*) without needing a global-
+        // prefix exclusion. The provider middleware itself sits at /oauth
+        // (which is also forwarded), but the interaction routes can't
+        // nest under /oauth because the provider middleware is a Koa app
+        // that 404s any path it doesn't own.
+        url: (_ctx, interaction) =>
+          `/api/v1/oauth-consent/${interaction.uid}`,
       },
       ttl: {
         AccessToken: 60 * 60, // 1 hour

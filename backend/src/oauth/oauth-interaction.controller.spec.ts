@@ -95,7 +95,7 @@ describe("OAuthInteractionController", () => {
       });
       const req = {
         cookies: {},
-        originalUrl: "/oauth-consent/u",
+        originalUrl: "/api/v1/oauth-consent/u",
       } as any;
       const res = makeRes();
 
@@ -104,7 +104,7 @@ describe("OAuthInteractionController", () => {
       expect(res.redirect).toHaveBeenCalledWith(
         302,
         expect.stringContaining(
-          "/login?returnTo=%2Foauth-consent%2Fu",
+          "/login?returnTo=%2Fapi%2Fv1%2Foauth-consent%2Fu",
         ),
       );
     });

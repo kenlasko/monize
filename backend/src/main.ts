@@ -89,7 +89,7 @@ async function bootstrap() {
     oauthDebugLogger("as-meta"),
   );
   app.use("/oauth", oauthDebugLogger("provider"));
-  app.use("/oauth-consent", oauthDebugLogger("consent"));
+  app.use("/api/v1/oauth-consent", oauthDebugLogger("consent"));
 
   // Security middleware
   const disableHttpsHeaders = process.env.DISABLE_HTTPS_HEADERS === "true";
@@ -138,7 +138,7 @@ async function bootstrap() {
       path.startsWith("/api/v1/mcp/") ||
       path === "/oauth" ||
       path.startsWith("/oauth/") ||
-      path.startsWith("/oauth-consent/") ||
+      path.startsWith("/api/v1/oauth-consent/") ||
       path === "/.well-known/oauth-protected-resource" ||
       path === "/.well-known/oauth-authorization-server" ||
       path.startsWith("/.well-known/oauth-authorization-server/");
@@ -196,13 +196,13 @@ async function bootstrap() {
     }),
   );
 
-  // API prefix — OAuth interaction and discovery routes live at the root
-  // because they must match the issuer/resource URLs advertised in OAuth
-  // metadata (RFC 8414 / RFC 9728), which MCP clients fetch from fixed
-  // well-known paths.
+  // API prefix. The protected-resource metadata route (RFC 9728) is the
+  // only NestJS-controller path that must live at the application root
+  // because the spec fixes its URL. The interaction controller lives
+  // under the normal /api/v1 prefix so it goes through the regular
+  // /api/* forwarding path on the frontend proxy.
   app.setGlobalPrefix("api/v1", {
     exclude: [
-      { path: "oauth-consent/(.*)", method: RequestMethod.ALL },
       {
         path: ".well-known/oauth-protected-resource",
         method: RequestMethod.GET,

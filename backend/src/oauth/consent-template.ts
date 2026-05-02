@@ -142,11 +142,11 @@ export function renderConsentPage(params: ConsentParams): string {
     <p class="subtitle">${clientLink} is requesting access to your Monize account.</p>
     <p class="user">Signed in as <strong>${escape(userEmail)}</strong></p>
 
-    <form method="POST" action="/oauth-consent/${escape(uid)}/confirm" autocomplete="off">
+    <form method="POST" action="/api/v1/oauth-consent/${escape(uid)}/confirm" autocomplete="off">
       <ul class="scopes">${scopeRows}</ul>
       <div class="meta">Resource: ${escape(resource)}</div>
       <div class="actions">
-        <button type="submit" formaction="/oauth-consent/${escape(uid)}/abort" class="secondary">Deny</button>
+        <button type="submit" formaction="/api/v1/oauth-consent/${escape(uid)}/abort" class="secondary">Deny</button>
         <button type="submit" class="primary">Allow access</button>
       </div>
     </form>
