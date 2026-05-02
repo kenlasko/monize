@@ -174,6 +174,27 @@ describe("OAuthInteractionController", () => {
       );
     });
 
+    it("renders a friendly completed page when the interaction is stale (consumed/expired)", async () => {
+      const { controller } = makeController({
+        interactionDetails: jest
+          .fn()
+          .mockRejectedValue(
+            Object.assign(new Error("invalid_request"), {
+              name: "SessionNotFound",
+            }),
+          ),
+      });
+      const req = { cookies: {} } as any;
+      const res = makeRes();
+
+      await controller.render(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.send).toHaveBeenCalledWith(
+        expect.stringContaining("authorization is already complete"),
+      );
+    });
+
     it("rejects unknown prompt names", async () => {
       const { controller } = makeController({
         interactionDetails: jest.fn().mockResolvedValue({
@@ -192,6 +213,27 @@ describe("OAuthInteractionController", () => {
   });
 
   describe("POST /oauth-consent/:uid/confirm", () => {
+    it("renders a friendly completed page when the interaction is already consumed", async () => {
+      const { controller } = makeController({
+        interactionDetails: jest
+          .fn()
+          .mockRejectedValue(
+            Object.assign(new Error("invalid_request"), {
+              name: "SessionNotFound",
+            }),
+          ),
+      });
+      const req = { cookies: { auth_token: "v" }, body: {} } as any;
+      const res = makeRes();
+
+      await controller.confirm(req, res, { scopes: ["monize:read"] });
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.send).toHaveBeenCalledWith(
+        expect.stringContaining("authorization is already complete"),
+      );
+    });
+
     it("returns 401 when user not authenticated", async () => {
       const { controller } = makeController({
         interactionDetails: jest.fn().mockResolvedValue({

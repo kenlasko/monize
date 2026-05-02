@@ -39,7 +39,19 @@ export class OAuthInteractionController {
   @Throttle({ default: { ttl: 60_000, limit: 30 } })
   async render(@Req() req: Request, @Res() res: Response) {
     const provider = this.providerService.getProvider();
-    const interaction = await provider.interactionDetails(req, res);
+    let interaction;
+    try {
+      interaction = await provider.interactionDetails(req, res);
+    } catch (err) {
+      // Stale/consumed/expired interaction (e.g. user clicked back, or
+      // the consent was already submitted). Render a friendly page
+      // instead of bubbling SessionNotFound up to a 500.
+      this.logger.log(
+        `interaction.render no live interaction (${(err as Error).name}: ${(err as Error).message}) — rendering completed page`,
+      );
+      this.respondWithCompletedPage(res);
+      return;
+    }
     const { prompt, params, uid } = interaction;
     this.logger.log(
       `interaction.render uid=${uid} prompt=${prompt.name} client=${params.client_id} scope="${params.scope}"`,
@@ -125,7 +137,20 @@ export class OAuthInteractionController {
     @Body() body: InteractionFormBody,
   ) {
     const provider = this.providerService.getProvider();
-    const interaction = await provider.interactionDetails(req, res);
+    let interaction;
+    try {
+      interaction = await provider.interactionDetails(req, res);
+    } catch (err) {
+      // Duplicate / stale form submission (back button, double-click,
+      // or claude.ai re-prompting after the first submit had already
+      // succeeded). The interaction has been consumed; render a
+      // friendly "completed" page instead of a 500.
+      this.logger.log(
+        `interaction.confirm no live interaction (${(err as Error).name}: ${(err as Error).message}) — rendering completed page`,
+      );
+      this.respondWithCompletedPage(res);
+      return;
+    }
     const { prompt, params, session } = interaction;
 
     if (prompt.name !== "consent") {
@@ -190,15 +215,66 @@ export class OAuthInteractionController {
   @Throttle({ default: { ttl: 60_000, limit: 10 } })
   async abort(@Req() req: Request, @Res() res: Response) {
     const provider = this.providerService.getProvider();
-    await provider.interactionFinished(
-      req,
-      res,
-      {
-        error: "access_denied",
-        error_description: "User denied access",
-      },
-      { mergeWithLastSubmission: false },
-    );
+    try {
+      await provider.interactionFinished(
+        req,
+        res,
+        {
+          error: "access_denied",
+          error_description: "User denied access",
+        },
+        { mergeWithLastSubmission: false },
+      );
+    } catch (err) {
+      // Stale uid (back button, retry after the original abort already
+      // landed). Render a friendly closed-window page instead of 500.
+      this.logger.log(
+        `interaction.abort no live interaction (${(err as Error).name}: ${(err as Error).message}) — rendering completed page`,
+      );
+      this.respondWithCompletedPage(res);
+    }
+  }
+
+  private respondWithCompletedPage(res: Response): void {
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Cache-Control", "no-store");
+    res.status(200).send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>Authorization complete — Monize</title>
+<style>
+  :root {
+    --bg: #f8fafc; --card: #ffffff; --text: #0f172a;
+    --muted: #64748b; --border: #e2e8f0; --primary: #0284c7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f172a; --card: #1f2937; --text: #f3f4f6;
+      --muted: #9ca3af; --border: #374151; --primary: #38bdf8;
+    }
+  }
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: var(--bg); color: var(--text); padding: 24px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08); width: 100%; max-width: 460px;
+    padding: 32px; text-align: center; }
+  .brand { color: var(--primary); font-weight: 600; font-size: 14px; margin-bottom: 12px; }
+  h1 { margin: 0 0 12px; font-size: 20px; }
+  p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+</style>
+</head>
+<body>
+  <main class="card">
+    <div class="brand">Monize</div>
+    <h1>This authorization is already complete</h1>
+    <p>You can safely close this window and return to the application that requested access.</p>
+  </main>
+</body>
+</html>`);
   }
 
   private async resolveCookieUser(
