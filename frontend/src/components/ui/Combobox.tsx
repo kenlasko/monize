@@ -97,7 +97,9 @@ export function Combobox({
   // Read selectedLabel via ref so the value-sync effect can inspect it without
   // depending on it (and re-firing in feedback loops with state it sets itself).
   const selectedLabelRef = useRef(selectedLabel);
-  selectedLabelRef.current = selectedLabel;
+  useEffect(() => {
+    selectedLabelRef.current = selectedLabel;
+  });
 
   // Find selected option label when value changes (only if not currently typing)
   /* eslint-disable react-hooks/set-state-in-effect -- syncing display state from prop changes */
