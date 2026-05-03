@@ -94,6 +94,11 @@ export function Combobox({
     };
   }, [isOpen, usePortal]);
 
+  // Read selectedLabel via ref so the value-sync effect can inspect it without
+  // depending on it (and re-firing in feedback loops with state it sets itself).
+  const selectedLabelRef = useRef(selectedLabel);
+  selectedLabelRef.current = selectedLabel;
+
   // Find selected option label when value changes (only if not currently typing)
   /* eslint-disable react-hooks/set-state-in-effect -- syncing display state from prop changes */
   useEffect(() => {
@@ -123,13 +128,13 @@ export function Combobox({
       setInputValue(initialDisplayValue);
       setSelectedLabel(initialDisplayValue);
       setHasInitialized(true);
-    } else if (selectedLabel && options.some(opt => opt.label === selectedLabel)) {
+    } else if (selectedLabelRef.current && options.some(opt => opt.label === selectedLabelRef.current)) {
       // Programmatic clear: value is empty but the displayed label was a known
       // option (not a user-typed custom value), so sync the display to empty.
       setSelectedLabel('');
       setInputValue('');
     }
-  }, [value, options, isTyping, allowCustomValue, initialDisplayValue, hasInitialized, selectedLabel]);
+  }, [value, options, isTyping, allowCustomValue, initialDisplayValue, hasInitialized]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Close dropdown when clicking outside
