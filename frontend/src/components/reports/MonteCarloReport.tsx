@@ -148,11 +148,19 @@ export function MonteCarloReport() {
       .historicalStats(form.accountIds)
       .then((stats) => {
         if (cancelled) return;
+        // NaN serializes to JSON null; guard against that and any other
+        // non-numeric server quirks so we never feed null into a required
+        // numeric form field.
+        const safe =
+          typeof stats.currentBalance === 'number' &&
+          Number.isFinite(stats.currentBalance)
+            ? stats.currentBalance
+            : 0;
         setForm((prev) =>
           prev.useCurrentBalance &&
           prev.accountIds.length > 0 &&
           prev.accountIds.every((id) => form.accountIds.includes(id))
-            ? { ...prev, startingValue: stats.currentBalance }
+            ? { ...prev, startingValue: safe }
             : prev,
         );
       })
@@ -204,26 +212,36 @@ export function MonteCarloReport() {
 
   // Backend `@IsOptional()` decorators expect omission, not explicit null.
   // Build the payload without nullable fields when they have no value.
+  // Coerce any non-finite numbers (NaN, ±Infinity, null/undefined leaking in
+  // from API responses) to 0 so we never POST something class-validator will
+  // reject as "not a number".
+  const num = (v: unknown): number =>
+    typeof v === 'number' && Number.isFinite(v) ? v : 0;
+
   const inputsFromForm = (f: FormState): MonteCarloScenarioInputs => {
     const base = {
       accountIds: f.accountIds,
-      startingValue: f.startingValue,
+      startingValue: num(f.startingValue),
       useCurrentBalance: f.useCurrentBalance,
-      yearsToRetirement: f.yearsToRetirement,
-      annualContribution: f.annualContribution,
-      contributionGrowthRate: f.contributionGrowthRate,
-      yearsInRetirement: f.yearsInRetirement,
-      annualWithdrawal: f.annualWithdrawal,
-      expectedReturn: f.expectedReturn,
-      volatility: f.volatility,
-      inflationRate: f.inflationRate,
+      yearsToRetirement: num(f.yearsToRetirement),
+      annualContribution: num(f.annualContribution),
+      contributionGrowthRate: num(f.contributionGrowthRate),
+      yearsInRetirement: num(f.yearsInRetirement),
+      annualWithdrawal: num(f.annualWithdrawal),
+      expectedReturn: num(f.expectedReturn),
+      volatility: num(f.volatility),
+      inflationRate: num(f.inflationRate),
       showRealValues: f.showRealValues,
       useHistoricalReturns: f.useHistoricalReturns,
-      simulationCount: f.simulationCount,
+      simulationCount: num(f.simulationCount),
     };
+    const targetValue =
+      f.targetValue != null && Number.isFinite(f.targetValue)
+        ? f.targetValue
+        : null;
     return {
       ...base,
-      ...(f.targetValue != null ? { targetValue: f.targetValue } : {}),
+      ...(targetValue != null ? { targetValue } : {}),
       ...(f.randomSeed ? { randomSeed: f.randomSeed } : {}),
     } as MonteCarloScenarioInputs;
   };

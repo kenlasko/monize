@@ -495,7 +495,12 @@ export class MonteCarloService {
         userId,
         accountIds,
       );
-      return summary.totalPortfolioValue;
+      // NaN serializes to JSON null and would break the frontend form. Clamp
+      // any non-finite portfolio value (e.g. caused by a missing exchange
+      // rate) to 0.
+      return Number.isFinite(summary.totalPortfolioValue)
+        ? summary.totalPortfolioValue
+        : 0;
     } catch (err) {
       this.logger.warn(
         `Failed to compute current portfolio value for accounts ${accountIds.join(",")}: ${
