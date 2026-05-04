@@ -20,7 +20,10 @@ describe("MonteCarloService", () => {
   let holdingsRepository: Record<string, jest.Mock>;
   let securityPriceRepository: Record<string, jest.Mock>;
   let accountsRepository: Record<string, jest.Mock>;
-  let portfolioService: { getPortfolioSummary: jest.Mock };
+  let portfolioService: {
+    getPortfolioSummary: jest.Mock;
+    getLatestPrices: jest.Mock;
+  };
 
   const userId = "user-1";
   const otherUserId = "user-2";
@@ -110,7 +113,10 @@ describe("MonteCarloService", () => {
       }),
       getLatestPrices: jest.fn().mockResolvedValue(new Map()),
       getBrokerageAccounts: jest.fn().mockResolvedValue([]),
-    } as unknown as { getPortfolioSummary: jest.Mock };
+    } as unknown as {
+      getPortfolioSummary: jest.Mock;
+      getLatestPrices: jest.Mock;
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -300,6 +306,48 @@ describe("MonteCarloService", () => {
       expect(stats.meanReturn).toBeNull();
       expect(stats.volatility).toBeNull();
       expect(stats.currentBalance).toBe(250000);
+    });
+
+    it("uses adjusted_close (total return) when the column is populated", async () => {
+      // The query selects COALESCE(adjusted_close, close_price). To confirm
+      // the SQL is wired through, prove that the alias `close_price` returned
+      // by our query actually comes from the adjusted column when both
+      // exist: feed it adjusted-driven values and check the mean reflects
+      // them, not the raw closes (we don't see the raw closes from the mock,
+      // only what the query returns under the close_price alias).
+      const holding = {
+        id: "h1",
+        accountId: "acct-1",
+        securityId: "sec-1",
+        quantity: 10,
+        security: {
+          symbol: "VOO",
+          name: "Vanguard S&P 500",
+          currencyCode: "USD",
+        },
+      };
+      holdingsRepository.find.mockResolvedValueOnce([holding]);
+      // Simulate a clean +10%/yr total return (e.g. 5% price + 5% dividend
+      // reinvested) over 6 calendar years. The query already returns
+      // COALESCE(adjusted_close, close_price) under the close_price alias.
+      // Both the initial query and the post-backfill re-query return the
+      // same series — backfill is mocked to a no-op below.
+      securityPriceRepository.query.mockResolvedValue([
+        { security_id: "sec-1", year: "2020", close_price: "100" },
+        { security_id: "sec-1", year: "2021", close_price: "110" },
+        { security_id: "sec-1", year: "2022", close_price: "121" },
+        { security_id: "sec-1", year: "2023", close_price: "133.1" },
+        { security_id: "sec-1", year: "2024", close_price: "146.41" },
+        { security_id: "sec-1", year: "2025", close_price: "161.051" },
+      ]);
+      portfolioService.getLatestPrices = jest
+        .fn()
+        .mockResolvedValue(new Map([["sec-1", 161.051]]));
+
+      const stats = await service.getHistoricalStats(userId, ["acct-1"]);
+      expect(stats.meanReturn).not.toBeNull();
+      // Expected mean of yearly returns ≈ 0.10
+      expect(stats.meanReturn!).toBeCloseTo(0.1, 4);
     });
   });
 

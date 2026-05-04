@@ -321,6 +321,40 @@ describe("YahooFinanceService", () => {
       expect(result![0].low).toBe(178);
       expect(result![0].volume).toBe(50000000);
       expect(result![0].date).toBeInstanceOf(Date);
+      // No adjclose series in this response → adjClose should be null
+      expect(result![0].adjClose).toBeNull();
+    });
+
+    it("extracts adjusted close (split + dividend adjusted) when present", async () => {
+      mockFetchResponse({
+        chart: {
+          result: [
+            {
+              timestamp: [1700000000, 1700100000],
+              indicators: {
+                quote: [
+                  {
+                    open: [180, 182],
+                    high: [185, 187],
+                    low: [178, 180],
+                    close: [183, 186],
+                    volume: [50000000, 45000000],
+                  },
+                ],
+                adjclose: [{ adjclose: [181, 184] }],
+              },
+            },
+          ],
+        },
+      });
+
+      const result = await service.fetchHistorical("AAPL");
+
+      expect(result).not.toBeNull();
+      expect(result![0].close).toBe(183);
+      expect(result![0].adjClose).toBe(181);
+      expect(result![1].close).toBe(186);
+      expect(result![1].adjClose).toBe(184);
     });
 
     it("should use range=max for historical data", async () => {

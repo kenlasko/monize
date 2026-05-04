@@ -24,6 +24,11 @@ export interface HistoricalPrice {
   high: number | null;
   low: number | null;
   close: number;
+  /**
+   * Total-return adjusted close (split + dividend adjusted) when the
+   * provider exposes one. null when the provider only returns raw closes.
+   */
+  adjClose: number | null;
   volume: number | null;
 }
 

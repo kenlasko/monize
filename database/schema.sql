@@ -412,6 +412,7 @@ CREATE TABLE security_prices (
     high_price NUMERIC(20, 6),
     low_price NUMERIC(20, 6),
     close_price NUMERIC(20, 6) NOT NULL,
+    adjusted_close NUMERIC(20, 6),
     volume BIGINT,
     source VARCHAR(50), -- yahoo_finance, msn_finance, manual, or transaction action (buy, sell, reinvest, transfer_in, transfer_out)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

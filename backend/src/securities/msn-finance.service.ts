@@ -1107,6 +1107,8 @@ export class MsnFinanceService implements QuoteProvider {
         high: convert(pt.high ?? pt.High),
         low: convert(pt.low ?? pt.Low),
         close: shouldConvertGbx ? convertGbxToGbp(close) : close,
+        // MSN doesn't expose a dividend-adjusted close in the chart series.
+        adjClose: null,
         volume: pt.volume ?? pt.Volume ?? null,
       });
     }

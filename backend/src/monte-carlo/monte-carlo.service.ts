@@ -530,6 +530,10 @@ export class MonteCarloService {
   private async queryYearlyReturns(
     securityIds: string[],
   ): Promise<Map<string, Map<number, number>>> {
+    // Prefer adjusted_close so dividends are reflected in the return; fall
+    // back to raw close_price for providers / older rows that don't have it
+    // populated. Net effect: total return when we have it, price-only when
+    // we don't.
     const yearEndRows: Array<{
       security_id: string;
       year: string;
@@ -538,7 +542,7 @@ export class MonteCarloService {
       `SELECT DISTINCT ON (security_id, EXTRACT(YEAR FROM price_date))
          security_id,
          EXTRACT(YEAR FROM price_date)::text AS year,
-         close_price
+         COALESCE(adjusted_close, close_price)::text AS close_price
        FROM security_prices
        WHERE security_id = ANY($1)
        ORDER BY security_id, EXTRACT(YEAR FROM price_date), price_date DESC`,

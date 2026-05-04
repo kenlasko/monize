@@ -905,8 +905,8 @@ export class SecurityPriceService {
       const batch = prices.slice(i, i + batchSize);
       const values = batch
         .map((_, idx) => {
-          const offset = idx * 8;
-          return `($${offset + 1}::UUID, $${offset + 2}::DATE, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8})`;
+          const offset = idx * 9;
+          return `($${offset + 1}::UUID, $${offset + 2}::DATE, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8}, $${offset + 9})`;
         })
         .join(", ");
 
@@ -919,19 +919,24 @@ export class SecurityPriceService {
           p.high,
           p.low,
           p.close,
+          p.adjClose,
           p.volume,
           source,
         );
       }
 
+      // Only overwrite adjusted_close on conflict when the new payload has a
+      // non-null value, so providers without adjclose support (MSN today)
+      // don't blow away a previously-stored Yahoo value.
       await this.dataSource.query(
-        `INSERT INTO security_prices (security_id, price_date, open_price, high_price, low_price, close_price, volume, source)
+        `INSERT INTO security_prices (security_id, price_date, open_price, high_price, low_price, close_price, adjusted_close, volume, source)
          VALUES ${values}
          ON CONFLICT (security_id, price_date) DO UPDATE SET
            close_price = EXCLUDED.close_price,
            open_price = EXCLUDED.open_price,
            high_price = EXCLUDED.high_price,
            low_price = EXCLUDED.low_price,
+           adjusted_close = COALESCE(EXCLUDED.adjusted_close, security_prices.adjusted_close),
            volume = EXCLUDED.volume,
            source = EXCLUDED.source`,
         params,

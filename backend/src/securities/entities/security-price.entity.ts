@@ -73,6 +73,21 @@ export class SecurityPrice {
   @Column({ type: "decimal", precision: 20, scale: 6, name: "close_price" })
   closePrice: number;
 
+  /**
+   * Total-return adjusted close (split + dividend adjusted). Populated from
+   * provider data when available. Used for historical mean / volatility
+   * calculations so dividends are reflected in the return.
+   */
+  @ApiProperty({ required: false })
+  @Column({
+    type: "decimal",
+    precision: 20,
+    scale: 6,
+    name: "adjusted_close",
+    nullable: true,
+  })
+  adjustedClose: number | null;
+
   @ApiProperty({ required: false })
   @Column({ type: "bigint", nullable: true })
   volume: number;

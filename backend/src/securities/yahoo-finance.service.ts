@@ -327,6 +327,10 @@ export class YahooFinanceService implements QuoteProvider {
 
       const timestamps: number[] = result.timestamp;
       const quote = result.indicators.quote[0];
+      // Total-return adjusted close (split + dividend adjusted). Yahoo
+      // returns this as a parallel array under indicators.adjclose[0].
+      const adjcloseSeries: (number | null | undefined)[] | undefined =
+        result.indicators?.adjclose?.[0]?.adjclose;
       const prices: HistoricalPrice[] = [];
 
       for (let i = 0; i < timestamps.length; i++) {
@@ -336,12 +340,21 @@ export class YahooFinanceService implements QuoteProvider {
         const date = new Date(timestamps[i] * 1000);
         date.setHours(0, 0, 0, 0);
 
+        const adjRaw = adjcloseSeries?.[i];
+        const adjClose =
+          adjRaw == null || isNaN(adjRaw)
+            ? null
+            : gbx
+              ? convertGbxToGbp(adjRaw)
+              : adjRaw;
+
         prices.push({
           date,
           open: convertPrice(quote.open?.[i]) ?? null,
           high: convertPrice(quote.high?.[i]) ?? null,
           low: convertPrice(quote.low?.[i]) ?? null,
           close: gbx ? convertGbxToGbp(close) : close,
+          adjClose,
           volume: quote.volume?.[i] ?? null,
         });
       }
