@@ -950,6 +950,7 @@ CREATE TABLE monte_carlo_scenarios (
 
     inflation_rate NUMERIC(8, 6) NOT NULL DEFAULT 0.025,
     show_real_values BOOLEAN NOT NULL DEFAULT FALSE,
+    use_historical_returns BOOLEAN NOT NULL DEFAULT FALSE,
 
     simulation_count INTEGER NOT NULL DEFAULT 5000,
     target_value NUMERIC(20, 4),

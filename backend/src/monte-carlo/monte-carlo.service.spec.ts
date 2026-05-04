@@ -4,14 +4,16 @@ import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { MonteCarloService } from "./monte-carlo.service";
 import { MonteCarloSimulationService } from "./monte-carlo-simulation.service";
 import { MonteCarloScenario } from "./entities/monte-carlo-scenario.entity";
-import { InvestmentTransaction } from "../securities/entities/investment-transaction.entity";
+import { Holding } from "../securities/entities/holding.entity";
+import { SecurityPrice } from "../securities/entities/security-price.entity";
 import { PortfolioService } from "../securities/portfolio.service";
 import { CreateScenarioDto } from "./dto/create-scenario.dto";
 
 describe("MonteCarloService", () => {
   let service: MonteCarloService;
   let scenariosRepository: Record<string, jest.Mock>;
-  let investmentTxRepository: Record<string, jest.Mock>;
+  let holdingsRepository: Record<string, jest.Mock>;
+  let securityPriceRepository: Record<string, jest.Mock>;
   let portfolioService: { getPortfolioSummary: jest.Mock };
 
   const userId = "user-1";
@@ -40,6 +42,7 @@ describe("MonteCarloService", () => {
       simulationCount: 200,
       targetValue: null,
       randomSeed: "1",
+      useHistoricalReturns: false,
       isFavourite: false,
       lastRunAt: null,
       createdAt: new Date(),
@@ -61,6 +64,7 @@ describe("MonteCarloService", () => {
     volatility: 0.15,
     inflationRate: 0.025,
     showRealValues: false,
+    useHistoricalReturns: false,
     simulationCount: 200,
     targetValue: null,
     randomSeed: "1",
@@ -74,14 +78,19 @@ describe("MonteCarloService", () => {
       findOne: jest.fn(),
       remove: jest.fn(),
     };
-    investmentTxRepository = {
+    holdingsRepository = {
       find: jest.fn().mockResolvedValue([]),
+    };
+    securityPriceRepository = {
+      query: jest.fn().mockResolvedValue([]),
     };
     portfolioService = {
       getPortfolioSummary: jest.fn().mockResolvedValue({
         totalPortfolioValue: 250000,
       }),
-    };
+      getLatestPrices: jest.fn().mockResolvedValue(new Map()),
+      getBrokerageAccounts: jest.fn().mockResolvedValue([]),
+    } as unknown as { getPortfolioSummary: jest.Mock };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -92,8 +101,12 @@ describe("MonteCarloService", () => {
           useValue: scenariosRepository,
         },
         {
-          provide: getRepositoryToken(InvestmentTransaction),
-          useValue: investmentTxRepository,
+          provide: getRepositoryToken(Holding),
+          useValue: holdingsRepository,
+        },
+        {
+          provide: getRepositoryToken(SecurityPrice),
+          useValue: securityPriceRepository,
         },
         {
           provide: PortfolioService,
@@ -213,8 +226,8 @@ describe("MonteCarloService", () => {
       ).rejects.toBeInstanceOf(BadRequestException);
     });
 
-    it("returns null stats when there is no transaction history", async () => {
-      investmentTxRepository.find.mockResolvedValueOnce([]);
+    it("returns null stats when there are no holdings", async () => {
+      holdingsRepository.find.mockResolvedValueOnce([]);
       const stats = await service.getHistoricalStats(userId, ["acct-1"]);
       expect(stats.meanReturn).toBeNull();
       expect(stats.volatility).toBeNull();

@@ -62,18 +62,25 @@ export class MonteCarloSimulationService {
 
       for (let t = 1; t <= totalYears; t++) {
         const inAccumulation = t <= params.yearsToRetirement;
-        const cashFlow = inAccumulation
+        const desiredCashFlow = inAccumulation
           ? params.annualContribution *
             Math.pow(1 + params.contributionGrowthRate, t - 1)
           : -params.annualWithdrawal;
 
-        const r = params.expectedReturn + params.volatility * normal();
+        // Clamp withdrawals to the available balance so a depleted path stays
+        // at zero rather than silently going negative for the rest of the run.
+        const cashFlow =
+          desiredCashFlow < 0
+            ? Math.max(desiredCashFlow, -value)
+            : desiredCashFlow;
 
+        // We "wanted" desiredCashFlow but took only cashFlow — if those differ
+        // for a withdrawal, the path couldn't fund the full withdrawal.
+        if (cashFlow > desiredCashFlow) pathDepleted = true;
+
+        const r = params.expectedReturn + params.volatility * normal();
         value = (value + cashFlow) * (1 + r);
-        if (value < 0) {
-          value = 0;
-          pathDepleted = true;
-        }
+        if (value < 0) value = 0;
 
         let reported = value;
         if (params.showRealValues) {

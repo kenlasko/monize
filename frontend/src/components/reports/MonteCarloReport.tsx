@@ -12,8 +12,6 @@ import {
   ComposedChart,
   Legend,
 } from 'recharts';
-import { investmentsApi } from '@/lib/investments';
-import { Account } from '@/types/account';
 import {
   monteCarloApi,
   MonteCarloScenario,
@@ -23,9 +21,16 @@ import {
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { Button } from '@/components/ui/Button';
 import { NumericInput } from '@/components/ui/NumericInput';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { MultiSelect } from '@/components/ui/MultiSelect';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { createLogger } from '@/lib/logger';
+
+interface BrokerageAccount {
+  id: string;
+  name: string;
+  currencyCode: string;
+}
 
 const logger = createLogger('MonteCarloReport');
 
@@ -42,6 +47,7 @@ const DEFAULT_INPUTS: MonteCarloScenarioInputs = {
   volatility: 0.15,
   inflationRate: 0.025,
   showRealValues: false,
+  useHistoricalReturns: false,
   simulationCount: 5000,
 };
 
@@ -62,7 +68,7 @@ const EMPTY_FORM: FormState = {
 
 export function MonteCarloReport() {
   const { formatCurrency, formatCurrencyLabel, defaultCurrency } = useNumberFormat();
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accounts, setAccounts] = useState<BrokerageAccount[]>([]);
   const [scenarios, setScenarios] = useState<MonteCarloScenario[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
@@ -83,7 +89,7 @@ export function MonteCarloReport() {
     const load = async () => {
       try {
         const [accs, scns] = await Promise.all([
-          investmentsApi.getInvestmentAccounts(),
+          monteCarloApi.brokerageAccounts(),
           monteCarloApi.list(),
         ]);
         setAccounts(accs);
@@ -122,6 +128,7 @@ export function MonteCarloReport() {
       volatility: Number(s.volatility),
       inflationRate: Number(s.inflationRate),
       showRealValues: s.showRealValues,
+      useHistoricalReturns: s.useHistoricalReturns,
       simulationCount: s.simulationCount,
       targetValue: s.targetValue == null ? null : Number(s.targetValue),
       randomSeed: s.randomSeed,
@@ -133,26 +140,6 @@ export function MonteCarloReport() {
     setActiveId(null);
     setForm(EMPTY_FORM);
     setResult(null);
-  };
-
-  const useHistorical = async () => {
-    if (form.accountIds.length === 0) {
-      setError('Select at least one account first.');
-      return;
-    }
-    try {
-      const stats = await monteCarloApi.historicalStats(form.accountIds);
-      setForm((prev) => ({
-        ...prev,
-        startingValue: stats.currentBalance,
-        useCurrentBalance: true,
-        ...(stats.meanReturn != null ? { expectedReturn: stats.meanReturn } : {}),
-        ...(stats.volatility != null ? { volatility: stats.volatility } : {}),
-      }));
-    } catch (err) {
-      logger.error('Failed to fetch historical stats:', err);
-      setError(extractError(err, 'Could not load historical stats for selected accounts.'));
-    }
   };
 
   // Backend `@IsOptional()` decorators expect omission, not explicit null.
@@ -171,6 +158,7 @@ export function MonteCarloReport() {
       volatility: f.volatility,
       inflationRate: f.inflationRate,
       showRealValues: f.showRealValues,
+      useHistoricalReturns: f.useHistoricalReturns,
       simulationCount: f.simulationCount,
     };
     return {
@@ -335,12 +323,12 @@ export function MonteCarloReport() {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <NumericInput
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CurrencyInput
               label="Starting value"
               value={form.startingValue}
               onChange={(v) => updateField('startingValue', v ?? 0)}
-              decimalPlaces={2}
+              allowNegative={false}
               prefix={defaultCurrency}
               disabled={form.useCurrentBalance}
             />
@@ -356,30 +344,25 @@ export function MonteCarloReport() {
                 Use current balance on each run
               </label>
             </div>
-            <div className="flex items-end pb-2">
-              <Button variant="outline" size="sm" onClick={useHistorical}>
-                Use historical (mean / vol)
-              </Button>
-            </div>
           </div>
 
           <fieldset className="border border-gray-200 dark:border-gray-700 rounded-md p-4">
             <legend className="px-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-              Accumulation
+              Contribution phase
             </legend>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <NumericInput
-                label="Years to retirement"
+                label="Years"
                 value={form.yearsToRetirement}
                 onChange={(v) => updateField('yearsToRetirement', Math.max(0, v ?? 0))}
                 decimalPlaces={0}
                 min={0}
               />
-              <NumericInput
+              <CurrencyInput
                 label="Annual contribution"
                 value={form.annualContribution}
                 onChange={(v) => updateField('annualContribution', v ?? 0)}
-                decimalPlaces={2}
+                allowNegative={false}
                 prefix={defaultCurrency}
               />
               <NumericInput
@@ -397,28 +380,28 @@ export function MonteCarloReport() {
 
           <fieldset className="border border-gray-200 dark:border-gray-700 rounded-md p-4">
             <legend className="px-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-              Retirement drawdown
+              Withdrawal phase
             </legend>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <NumericInput
-                label="Years in retirement"
+                label="Years"
                 value={form.yearsInRetirement}
                 onChange={(v) => updateField('yearsInRetirement', Math.max(0, v ?? 0))}
                 decimalPlaces={0}
                 min={0}
               />
-              <NumericInput
+              <CurrencyInput
                 label="Annual withdrawal"
                 value={form.annualWithdrawal}
                 onChange={(v) => updateField('annualWithdrawal', v ?? 0)}
-                decimalPlaces={2}
+                allowNegative={false}
                 prefix={defaultCurrency}
               />
-              <NumericInput
+              <CurrencyInput
                 label="Target portfolio"
                 value={form.targetValue ?? undefined}
                 onChange={(v) => updateField('targetValue', v ?? null)}
-                decimalPlaces={2}
+                allowNegative={false}
                 prefix={defaultCurrency}
               />
             </div>
@@ -428,6 +411,33 @@ export function MonteCarloReport() {
             <legend className="px-2 text-sm font-medium text-gray-700 dark:text-gray-300">
               Return assumptions
             </legend>
+            <div className="flex flex-wrap gap-4 mb-3">
+              <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <input
+                  type="radio"
+                  name="returnMode"
+                  checked={!form.useHistoricalReturns}
+                  onChange={() => updateField('useHistoricalReturns', false)}
+                />
+                Specify expected return
+              </label>
+              <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <input
+                  type="radio"
+                  name="returnMode"
+                  checked={form.useHistoricalReturns}
+                  onChange={() => updateField('useHistoricalReturns', true)}
+                />
+                Use historical returns from selected accounts
+              </label>
+            </div>
+            {form.useHistoricalReturns && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                Mean and volatility are recomputed from the year-over-year price
+                history of the holdings in the selected accounts each time you
+                run. Inflation and simulation count below still apply.
+              </p>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <NumericInput
                 label="Expected return"
@@ -436,6 +446,7 @@ export function MonteCarloReport() {
                 decimalPlaces={2}
                 allowNegative
                 suffix="%"
+                disabled={form.useHistoricalReturns}
               />
               <NumericInput
                 label="Volatility"
@@ -443,6 +454,7 @@ export function MonteCarloReport() {
                 onChange={(v) => updateField('volatility', (v ?? 0) / 100)}
                 decimalPlaces={2}
                 suffix="%"
+                disabled={form.useHistoricalReturns}
               />
               <NumericInput
                 label="Inflation"

@@ -185,6 +185,19 @@ export class PortfolioService {
   }
 
   /**
+   * Get the subset of investment accounts that can hold securities — brokerage
+   * and standalone accounts. Cash siblings of brokerage pairs are excluded so
+   * UIs that need a single "where the holdings live" picker don't show two
+   * rows per brokerage.
+   */
+  async getBrokerageAccounts(userId: string): Promise<Account[]> {
+    const accounts = await this.getInvestmentAccounts(userId);
+    const { brokerageAccounts, standaloneAccounts } =
+      this.calculationService.categoriseAccounts(accounts);
+    return [...brokerageAccounts, ...standaloneAccounts];
+  }
+
+  /**
    * Get portfolio summary for a user, optionally filtered by account
    */
   async getPortfolioSummary(

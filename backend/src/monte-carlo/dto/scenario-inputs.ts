@@ -71,6 +71,14 @@ export class ScenarioInputs {
   @IsBoolean()
   showRealValues: boolean;
 
+  /**
+   * When true, the backend recomputes mean return and volatility from the
+   * selected accounts' transaction history at run time and ignores
+   * `expectedReturn` / `volatility` in the request.
+   */
+  @IsBoolean()
+  useHistoricalReturns: boolean;
+
   @IsInt()
   @Min(100)
   @Max(50000)

@@ -13,7 +13,8 @@ import { RunScenarioDto } from "./dto/run-scenario.dto";
 import { MonteCarloSimulationService } from "./monte-carlo-simulation.service";
 import { SimulationResult } from "./dto/simulation-result.dto";
 import { PortfolioService } from "../securities/portfolio.service";
-import { InvestmentTransaction } from "../securities/entities/investment-transaction.entity";
+import { Holding } from "../securities/entities/holding.entity";
+import { SecurityPrice } from "../securities/entities/security-price.entity";
 
 export interface HistoricalStats {
   /** Number of full calendar years of data used to compute the stats. */
@@ -33,8 +34,10 @@ export class MonteCarloService {
   constructor(
     @InjectRepository(MonteCarloScenario)
     private scenariosRepository: Repository<MonteCarloScenario>,
-    @InjectRepository(InvestmentTransaction)
-    private investmentTxRepository: Repository<InvestmentTransaction>,
+    @InjectRepository(Holding)
+    private holdingsRepository: Repository<Holding>,
+    @InjectRepository(SecurityPrice)
+    private securityPriceRepository: Repository<SecurityPrice>,
     private simulationService: MonteCarloSimulationService,
     private portfolioService: PortfolioService,
   ) {}
@@ -59,6 +62,7 @@ export class MonteCarloService {
       volatility: dto.volatility,
       inflationRate: dto.inflationRate,
       showRealValues: dto.showRealValues,
+      useHistoricalReturns: dto.useHistoricalReturns,
       simulationCount: dto.simulationCount,
       targetValue: dto.targetValue ?? null,
       randomSeed: dto.randomSeed ?? null,
@@ -116,6 +120,8 @@ export class MonteCarloService {
       scenario.inflationRate = dto.inflationRate;
     if (dto.showRealValues !== undefined)
       scenario.showRealValues = dto.showRealValues;
+    if (dto.useHistoricalReturns !== undefined)
+      scenario.useHistoricalReturns = dto.useHistoricalReturns;
     if (dto.simulationCount !== undefined)
       scenario.simulationCount = dto.simulationCount;
     if (dto.targetValue !== undefined)
@@ -135,13 +141,18 @@ export class MonteCarloService {
   async runSaved(userId: string, id: string): Promise<SimulationResult> {
     const scenario = await this.findOne(userId, id);
 
-    let startingValue = scenario.startingValue;
-    if (scenario.useCurrentBalance && scenario.accountIds.length > 0) {
-      startingValue = await this.computeCurrentValue(
-        userId,
-        scenario.accountIds,
-      );
-    }
+    const startingValue =
+      scenario.useCurrentBalance && scenario.accountIds.length > 0
+        ? await this.computeCurrentValue(userId, scenario.accountIds)
+        : scenario.startingValue;
+
+    const { expectedReturn, volatility } = await this.resolveReturns(
+      userId,
+      scenario.accountIds,
+      scenario.useHistoricalReturns,
+      scenario.expectedReturn,
+      scenario.volatility,
+    );
 
     const result = this.simulationService.run({
       startingValue,
@@ -150,8 +161,8 @@ export class MonteCarloService {
       contributionGrowthRate: scenario.contributionGrowthRate,
       yearsInRetirement: scenario.yearsInRetirement,
       annualWithdrawal: scenario.annualWithdrawal,
-      expectedReturn: scenario.expectedReturn,
-      volatility: scenario.volatility,
+      expectedReturn,
+      volatility,
       inflationRate: scenario.inflationRate,
       showRealValues: scenario.showRealValues,
       simulationCount: scenario.simulationCount,
@@ -169,10 +180,18 @@ export class MonteCarloService {
     userId: string,
     dto: RunScenarioDto,
   ): Promise<SimulationResult> {
-    let startingValue = dto.startingValue;
-    if (dto.useCurrentBalance && dto.accountIds.length > 0) {
-      startingValue = await this.computeCurrentValue(userId, dto.accountIds);
-    }
+    const startingValue =
+      dto.useCurrentBalance && dto.accountIds.length > 0
+        ? await this.computeCurrentValue(userId, dto.accountIds)
+        : dto.startingValue;
+
+    const { expectedReturn, volatility } = await this.resolveReturns(
+      userId,
+      dto.accountIds,
+      dto.useHistoricalReturns,
+      dto.expectedReturn,
+      dto.volatility,
+    );
 
     return this.simulationService.run({
       startingValue,
@@ -181,14 +200,42 @@ export class MonteCarloService {
       contributionGrowthRate: dto.contributionGrowthRate,
       yearsInRetirement: dto.yearsInRetirement,
       annualWithdrawal: dto.annualWithdrawal,
-      expectedReturn: dto.expectedReturn,
-      volatility: dto.volatility,
+      expectedReturn,
+      volatility,
       inflationRate: dto.inflationRate,
       showRealValues: dto.showRealValues,
       simulationCount: dto.simulationCount,
       targetValue: dto.targetValue,
       randomSeed: dto.randomSeed,
     });
+  }
+
+  /**
+   * If `useHistorical` is true and the selected accounts have enough history,
+   * substitute computed mean/volatility for the supplied values. Falls back
+   * silently to the supplied values when historical data is insufficient.
+   */
+  private async resolveReturns(
+    userId: string,
+    accountIds: string[],
+    useHistorical: boolean,
+    fallbackReturn: number,
+    fallbackVolatility: number,
+  ): Promise<{ expectedReturn: number; volatility: number }> {
+    if (!useHistorical || accountIds.length === 0) {
+      return { expectedReturn: fallbackReturn, volatility: fallbackVolatility };
+    }
+    const stats = await this.getHistoricalStats(userId, accountIds);
+    return {
+      expectedReturn: stats.meanReturn ?? fallbackReturn,
+      volatility: stats.volatility ?? fallbackVolatility,
+    };
+  }
+
+  /** Brokerage and standalone investment accounts only — what UIs that drive
+   * holdings-based simulations should show in their account picker. */
+  async getBrokerageAccounts(userId: string) {
+    return this.portfolioService.getBrokerageAccounts(userId);
   }
 
   /**
@@ -215,12 +262,18 @@ export class MonteCarloService {
 
     const currentBalance = await this.computeCurrentValue(userId, accountIds);
 
-    const txs = await this.investmentTxRepository.find({
-      where: { userId, accountId: In(accountIds) },
-      order: { transactionDate: "ASC" },
+    // Build a value-weighted series of yearly returns from the price history
+    // of currently held securities. This answers "what would my current mix
+    // have returned year-over-year", which is what users expect when they
+    // pick 'Use historical' on this report.
+    const holdings = await this.holdingsRepository.find({
+      where: { accountId: In(accountIds) },
+      relations: ["security"],
     });
-
-    if (txs.length === 0) {
+    const active = holdings.filter(
+      (h) => Math.abs(Number(h.quantity)) > 0.0001,
+    );
+    if (active.length === 0) {
       return {
         yearsObserved: 0,
         meanReturn: null,
@@ -229,68 +282,101 @@ export class MonteCarloService {
       };
     }
 
-    // Group net cash flows by year. For investment transactions:
-    //   BUY/REINVEST/ADD_SHARES → outflow from cash, but value stays in portfolio
-    //   SELL/REMOVE_SHARES      → inflow to cash, value leaves portfolio
-    //   DIVIDEND/INTEREST/CAPITAL_GAIN → return events, not external flows
-    //   TRANSFER_IN             → external addition
-    //   TRANSFER_OUT            → external removal
-    // For Monte Carlo we want **external** flows (transfers in/out) only.
-    // Approximating with totalAmount sign on TRANSFER_* and treating
-    // BUY/SELL as internal reallocations.
-    const flowsByYear = new Map<number, number>();
-    const firstYear = new Date(txs[0].transactionDate).getFullYear();
-    const currentYear = new Date().getFullYear();
+    const securityIds = [...new Set(active.map((h) => h.securityId))];
+    const yearEndRows: Array<{
+      security_id: string;
+      year: string;
+      close_price: string;
+    }> = await this.securityPriceRepository.query(
+      `SELECT DISTINCT ON (security_id, EXTRACT(YEAR FROM price_date))
+         security_id,
+         EXTRACT(YEAR FROM price_date)::text AS year,
+         close_price
+       FROM security_prices
+       WHERE security_id = ANY($1)
+       ORDER BY security_id, EXTRACT(YEAR FROM price_date), price_date DESC`,
+      [securityIds],
+    );
 
-    for (const tx of txs) {
-      const year = new Date(tx.transactionDate).getFullYear();
-      if (tx.action === "TRANSFER_IN") {
-        flowsByYear.set(
-          year,
-          (flowsByYear.get(year) ?? 0) + Number(tx.totalAmount),
-        );
-      } else if (tx.action === "TRANSFER_OUT") {
-        flowsByYear.set(
-          year,
-          (flowsByYear.get(year) ?? 0) - Number(tx.totalAmount),
-        );
-      }
+    // securityId → ordered [{year, price}]
+    const pricesBySecurity = new Map<
+      string,
+      Array<{ year: number; price: number }>
+    >();
+    for (const row of yearEndRows) {
+      const arr = pricesBySecurity.get(row.security_id) ?? [];
+      arr.push({ year: Number(row.year), price: Number(row.close_price) });
+      pricesBySecurity.set(row.security_id, arr);
     }
 
-    // We don't have full year-end snapshots historically, so we fall back to
-    // a simple CAGR-derived volatility estimate: use overall CAGR for mean
-    // and the user-provided default volatility as a placeholder. To keep the
-    // helper genuinely useful, we compute a rough yearly geometric return
-    // sequence by spreading observed price-driven gains uniformly (out of
-    // scope for a richer estimate).
-    const yearsObserved = Math.max(0, currentYear - firstYear);
-    if (yearsObserved < 2) {
+    // securityId → year → return (decimal, e.g. 0.07)
+    const yearlyReturns = new Map<string, Map<number, number>>();
+    for (const [secId, prices] of pricesBySecurity) {
+      prices.sort((a, b) => a.year - b.year);
+      const returns = new Map<number, number>();
+      for (let i = 1; i < prices.length; i++) {
+        const prev = prices[i - 1].price;
+        const curr = prices[i].price;
+        if (prev > 0) returns.set(prices[i].year, (curr - prev) / prev);
+      }
+      yearlyReturns.set(secId, returns);
+    }
+
+    // Weight each security by its current market value (sum across accounts).
+    const currentPrices =
+      await this.portfolioService.getLatestPrices(securityIds);
+    const weightBySec = new Map<string, number>();
+    for (const h of active) {
+      const price = currentPrices.get(h.securityId);
+      if (price == null) continue;
+      const value = Number(h.quantity) * price;
+      weightBySec.set(
+        h.securityId,
+        (weightBySec.get(h.securityId) ?? 0) + value,
+      );
+    }
+
+    // Compute portfolio yearly returns by combining per-security returns
+    // weighted by current value. Years where no securities have data are
+    // skipped.
+    const allYears = new Set<number>();
+    for (const r of yearlyReturns.values())
+      for (const y of r.keys()) allYears.add(y);
+
+    const portfolioReturns: number[] = [];
+    for (const year of [...allYears].sort()) {
+      let weightedReturn = 0;
+      let totalWeight = 0;
+      for (const [secId, returns] of yearlyReturns) {
+        const r = returns.get(year);
+        const w = weightBySec.get(secId);
+        if (r === undefined || w === undefined || w <= 0) continue;
+        weightedReturn += r * w;
+        totalWeight += w;
+      }
+      if (totalWeight > 0) portfolioReturns.push(weightedReturn / totalWeight);
+    }
+
+    if (portfolioReturns.length < 2) {
       return {
-        yearsObserved,
+        yearsObserved: portfolioReturns.length,
         meanReturn: null,
         volatility: null,
         currentBalance,
       };
     }
 
-    // Net external flow over the period.
-    let netExternal = 0;
-    for (const v of flowsByYear.values()) netExternal += v;
+    const mean =
+      portfolioReturns.reduce((a, b) => a + b, 0) / portfolioReturns.length;
+    const variance =
+      portfolioReturns.reduce((a, r) => a + (r - mean) ** 2, 0) /
+      (portfolioReturns.length - 1);
+    const stdev = Math.sqrt(variance);
 
-    const adjustedStart = Math.max(netExternal, 1); // treat as money in
-    const cagr =
-      currentBalance > 0 && adjustedStart > 0
-        ? Math.pow(currentBalance / adjustedStart, 1 / yearsObserved) - 1
-        : null;
-
-    // Without per-year snapshots we can't compute true stdev. Return mean
-    // only (volatility = null), letting the UI keep its existing volatility
-    // input. This is honest about the data we have.
     return {
-      yearsObserved,
-      meanReturn:
-        cagr === null ? null : Math.round(cagr * 1_000_000) / 1_000_000,
-      volatility: null,
+      yearsObserved: portfolioReturns.length,
+      meanReturn: Math.round(mean * 1_000_000) / 1_000_000,
+      volatility: Math.round(stdev * 1_000_000) / 1_000_000,
       currentBalance,
     };
   }

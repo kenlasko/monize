@@ -16,6 +16,7 @@ export interface MonteCarloScenario {
   volatility: number;
   inflationRate: number;
   showRealValues: boolean;
+  useHistoricalReturns: boolean;
   simulationCount: number;
   targetValue: number | null;
   randomSeed: string | null;
@@ -121,6 +122,16 @@ export const monteCarloApi = {
 
   run: async (input: MonteCarloScenarioInputs): Promise<SimulationResult> => {
     const r = await apiClient.post<SimulationResult>('/monte-carlo/run', input);
+    return r.data;
+  },
+
+  /** Brokerage and standalone investment accounts only (no cash siblings). */
+  brokerageAccounts: async (): Promise<
+    Array<{ id: string; name: string; currencyCode: string }>
+  > => {
+    const r = await apiClient.get<
+      Array<{ id: string; name: string; currencyCode: string }>
+    >('/monte-carlo/accounts');
     return r.data;
   },
 

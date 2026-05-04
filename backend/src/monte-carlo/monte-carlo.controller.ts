@@ -80,4 +80,11 @@ export class MonteCarloController {
     const ids = parseUuids(accountIds) ?? [];
     return this.monteCarloService.getHistoricalStats(req.user.id, ids);
   }
+
+  /** Brokerage and standalone investment accounts only — use this to populate
+   * the account picker (excludes the cash sibling of brokerage pairs). */
+  @Get("accounts")
+  brokerageAccounts(@Request() req: AuthRequest) {
+    return this.monteCarloService.getBrokerageAccounts(req.user.id);
+  }
 }

@@ -117,6 +117,9 @@ export class MonteCarloScenario {
   @Column({ name: "show_real_values", default: false })
   showRealValues: boolean;
 
+  @Column({ name: "use_historical_returns", default: false })
+  useHistoricalReturns: boolean;
+
   @Column({ type: "integer", name: "simulation_count", default: 5000 })
   simulationCount: number;
 
