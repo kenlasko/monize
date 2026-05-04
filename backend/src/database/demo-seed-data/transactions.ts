@@ -337,11 +337,12 @@ export function generateTransactions(referenceDate: Date): DemoTransaction[] {
       const amount = isCostco
         ? randomBetween(rand, 180, 320)
         : randomBetween(rand, 75, 220);
-      const splitRand = rand();
+      // Reserved rand draw kept to preserve the seeded random sequence.
+      rand();
       const accountRand = rand();
 
       if (groceryDate <= referenceDate && groceryDate >= startDate) {
-        if (isCostco && splitRand > 0.5) {
+        if (isCostco) {
           // Split transaction for Costco
           const groceryAmt = Math.round(amount * 0.7 * 100) / 100;
           const homeGoodsAmt = Math.round((amount - groceryAmt) * 100) / 100;
