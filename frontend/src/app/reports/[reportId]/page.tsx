@@ -35,6 +35,7 @@ const reportComponents: Record<string, React.LazyExoticComponent<React.Component
   'dividend-yield-growth': lazy(() => import('@/components/reports/DividendYieldGrowthReport').then(m => ({ default: m.DividendYieldGrowthReport }))),
   'security-performance': lazy(() => import('@/components/reports/SecurityPerformanceReport').then(m => ({ default: m.SecurityPerformanceReport }))),
   'currency-exposure': lazy(() => import('@/components/reports/CurrencyExposureReport').then(m => ({ default: m.CurrencyExposureReport }))),
+  'monte-carlo-simulation': lazy(() => import('@/components/reports/MonteCarloReport').then(m => ({ default: m.MonteCarloReport }))),
   // Behavioral Insights
   'recurring-expenses': lazy(() => import('@/components/reports/RecurringExpensesReport').then(m => ({ default: m.RecurringExpensesReport }))),
   'spending-anomalies': lazy(() => import('@/components/reports/SpendingAnomaliesReport').then(m => ({ default: m.SpendingAnomaliesReport }))),
@@ -84,6 +85,7 @@ const reportNames: Record<string, string> = {
   'dividend-yield-growth': 'Dividend Yield & Growth',
   'security-performance': 'Individual Security Performance',
   'currency-exposure': 'Currency Exposure',
+  'monte-carlo-simulation': 'Monte Carlo Simulation',
   // Behavioral Insights
   'recurring-expenses': 'Recurring Expenses Tracker',
   'spending-anomalies': 'Spending Anomalies',
@@ -131,6 +133,7 @@ const reportDescriptions: Record<string, string> = {
   'dividend-yield-growth': 'Track dividend yield, per-security yields, year-over-year growth, and payment frequency analysis.',
   'security-performance': 'Deep dive into individual security performance with price history, transactions, and returns.',
   'currency-exposure': 'Understand currency risk with portfolio allocation by currency and exchange rate details.',
+  'monte-carlo-simulation': 'Project future portfolio outcomes with thousands of randomized return paths and a saved-scenario library.',
   'recurring-expenses': 'Identify and monitor subscriptions, memberships, and recurring charges.',
   'spending-anomalies': 'Detect unusually large transactions and spending spikes that need attention.',
   'weekend-weekday-spending': 'Analyze your spending patterns based on day of week to understand habits.',

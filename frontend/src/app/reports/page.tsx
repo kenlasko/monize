@@ -312,6 +312,18 @@ const reports: Report[] = [
       </svg>
     ),
   },
+  {
+    id: 'monte-carlo-simulation',
+    name: 'Monte Carlo Simulation',
+    description: 'Project future portfolio outcomes with thousands of randomized return paths and a saved-scenario library.',
+    category: 'investment',
+    color: 'bg-emerald-500',
+    icon: (
+      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3v18h18M7 14l3-3 4 4 5-5" />
+      </svg>
+    ),
+  },
   // Behavioral Insights
   {
     id: 'recurring-expenses',

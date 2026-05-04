@@ -45,6 +45,7 @@ import { TagsModule } from "./tags/tags.module";
 import { BackupModule } from "./backup/backup.module";
 import { ActionHistoryModule } from "./action-history/action-history.module";
 import { UpdatesModule } from "./updates/updates.module";
+import { MonteCarloModule } from "./monte-carlo/monte-carlo.module";
 
 @Module({
   imports: [
@@ -124,6 +125,7 @@ import { UpdatesModule } from "./updates/updates.module";
     BackupModule,
     ActionHistoryModule,
     UpdatesModule,
+    MonteCarloModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },
