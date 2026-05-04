@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Area,
   Line,
@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
   ComposedChart,
   Legend,
+  ReferenceDot,
 } from 'recharts';
 import {
   monteCarloApi,
@@ -27,6 +28,7 @@ import { showErrorToast } from '@/lib/errors';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { NumericInput } from '@/components/ui/NumericInput';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { MultiSelect } from '@/components/ui/MultiSelect';
@@ -111,6 +113,8 @@ export function MonteCarloReport() {
   const [isRunning, setIsRunning] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
+  const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -472,6 +476,170 @@ export function MonteCarloReport() {
     }));
   }, [result]);
 
+  // Cash-flow markers: for each user-defined event, plot one dot at the
+  // first year it fires and (for recurring events with a defined end) one
+  // dot at the last year. Plotted on the median line so they sit visually
+  // on the trajectory.
+  type CashFlowMarker = {
+    year: string;
+    yValue: number;
+    role: 'start' | 'end';
+    income: boolean;
+    name: string;
+    amount: number;
+    flowType: CashFlowType;
+    startYear: number;
+    endYear?: number | null;
+    inflationAdjust: boolean;
+  };
+  const cashFlowMarkers = useMemo<CashFlowMarker[]>(() => {
+    if (!result) return [];
+    const totalYears = result.yearLabels.length;
+    const markers: CashFlowMarker[] = [];
+    for (const cf of form.cashFlows) {
+      if (!Number.isFinite(cf.amount) || cf.amount === 0) continue;
+      const start = Math.max(1, num(cf.startYear) || 1);
+      if (start > totalYears) continue;
+      const startIdx = start - 1;
+      const startLabel = result.yearLabels[startIdx];
+      const startY = result.percentiles.p50[startIdx];
+      const income = cf.amount > 0;
+      const base: Omit<CashFlowMarker, 'role' | 'year' | 'yValue'> = {
+        income,
+        name: cf.name?.trim() || 'Cash flow',
+        amount: cf.amount,
+        flowType: cf.flowType,
+        startYear: start,
+        endYear: cf.endYear ?? null,
+        inflationAdjust: cf.inflationAdjust,
+      };
+      markers.push({ ...base, role: 'start', year: startLabel, yValue: startY });
+      if (cf.flowType === 'RECURRING') {
+        const endRaw = cf.endYear == null ? totalYears : cf.endYear;
+        const end = Math.min(totalYears, Math.max(start, endRaw));
+        if (end > start) {
+          const endIdx = end - 1;
+          markers.push({
+            ...base,
+            role: 'end',
+            year: result.yearLabels[endIdx],
+            yValue: result.percentiles.p50[endIdx],
+          });
+        }
+      }
+    }
+    return markers;
+  }, [result, form.cashFlows]);
+
+  const tableRows = useMemo(() => {
+    if (!result) return [];
+    return result.yearLabels.map((label, i) => ({
+      year: label,
+      p10: result.percentiles.p10[i],
+      p25: result.percentiles.p25[i],
+      p50: result.percentiles.p50[i],
+      p75: result.percentiles.p75[i],
+      p90: result.percentiles.p90[i],
+      events: cashFlowMarkers.filter((m) => m.year === label),
+    }));
+  }, [result, cashFlowMarkers]);
+
+  const handleExportCsv = useCallback(() => {
+    if (!result) return;
+    const header = [
+      'Year',
+      '10th percentile',
+      '25th percentile',
+      'Median (50th)',
+      '75th percentile',
+      '90th percentile',
+      'Events',
+    ];
+    const eventLabel = (m: CashFlowMarker) =>
+      `${m.role === 'start' ? 'Start' : 'End'}: ${m.name} (${
+        m.income ? '+' : ''
+      }${m.amount}${m.flowType === 'RECURRING' ? '/yr' : ''})`;
+    const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
+    const lines = [
+      header.map(escape).join(','),
+      ...tableRows.map((row) =>
+        [
+          row.year,
+          row.p10.toFixed(2),
+          row.p25.toFixed(2),
+          row.p50.toFixed(2),
+          row.p75.toFixed(2),
+          row.p90.toFixed(2),
+          escape(row.events.map(eventLabel).join('; ')),
+        ].join(','),
+      ),
+    ];
+    const blob = new Blob(['﻿' + lines.join('\n')], {
+      type: 'text/csv;charset=utf-8;',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `monte-carlo-${(form.name || 'scenario').toLowerCase().replace(/\s+/g, '-')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [result, tableRows, form.name]);
+
+  const handleExportPdf = useCallback(async () => {
+    if (!result) return;
+    const { exportToPdf } = await import('@/lib/pdf-export');
+    await exportToPdf({
+      title: `Monte Carlo: ${form.name || 'Scenario'}`,
+      subtitle: result.realValues
+        ? `In ${defaultCurrency} (today's value)`
+        : `In ${defaultCurrency} (nominal)`,
+      summaryCards: [
+        {
+          label: 'Median final',
+          value: formatCurrency(result.finalDistribution.median),
+          color: '#111827',
+        },
+        {
+          label: '10th–90th',
+          value: `${formatCurrency(
+            result.percentiles.p10[result.percentiles.p10.length - 1] ?? 0,
+          )} – ${formatCurrency(
+            result.percentiles.p90[result.percentiles.p90.length - 1] ?? 0,
+          )}`,
+          color: '#111827',
+        },
+        {
+          label: 'Depletion rate',
+          value: `${(result.finalDistribution.depletionRate * 100).toFixed(1)}%`,
+          color: '#dc2626',
+        },
+        {
+          label: 'Above target',
+          value:
+            result.successRate == null
+              ? '—'
+              : `${(result.successRate * 100).toFixed(1)}%`,
+          color: '#16a34a',
+        },
+      ],
+      chartContainer: viewMode === 'chart' ? chartRef.current : null,
+      tableData: {
+        headers: ['Year', '10%', '25%', 'Median', '75%', '90%'],
+        rows: tableRows.map((r) => [
+          r.year,
+          formatCurrency(r.p10),
+          formatCurrency(r.p25),
+          formatCurrency(r.p50),
+          formatCurrency(r.p75),
+          formatCurrency(r.p90),
+        ]),
+      },
+      filename: `monte-carlo-${(form.name || 'scenario').toLowerCase().replace(/\s+/g, '-')}`,
+    });
+  }, [result, form.name, viewMode, formatCurrency, defaultCurrency, tableRows]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -797,7 +965,7 @@ export function MonteCarloReport() {
                 />
               </>
             )}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className={form.useHistoricalReturns ? 'opacity-50' : ''}>
                 <NumericInput
                   label="Expected return"
@@ -837,15 +1005,18 @@ export function MonteCarloReport() {
                 min={100}
               />
             </div>
-            <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 mt-3">
+            <label className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300 mt-3">
               <input
                 type="checkbox"
+                className="mt-0.5 shrink-0"
                 checked={form.showRealValues}
                 onChange={(e) => updateField('showRealValues', e.target.checked)}
               />
-              Show in today&apos;s value (real, inflation-adjusted) —
-              <span className="text-gray-500 dark:text-gray-400 ml-1">
-                applies after the next Run
+              <span className="flex-1">
+                Show in today&apos;s value (real, inflation-adjusted)
+                <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  Applies after the next Run.
+                </span>
               </span>
             </label>
           </fieldset>
@@ -885,7 +1056,7 @@ export function MonteCarloReport() {
 
         {result && (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <SummaryStat
                 label="Median final"
                 value={formatCurrency(result.finalDistribution.median)}
@@ -913,80 +1084,156 @@ export function MonteCarloReport() {
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-              <h3 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">
-                Projected portfolio value{' '}
-                <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
-                  (in {defaultCurrency},{' '}
-                  {result.realValues ? "real / today's value" : 'nominal / future value'})
-                </span>
-              </h3>
-              <div className="h-80 w-full">
-                <ResponsiveContainer>
-                  <ComposedChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="year" />
-                    <YAxis
-                      tickFormatter={(v) => formatCurrencyLabel(Number(v))}
-                      width={70}
-                    />
-                    <Tooltip
-                      content={(props) => (
-                        <FanChartTooltip
-                          active={props.active}
-                          payload={
-                            props.payload as Array<{
-                              payload?: Record<string, number>;
-                            }>
-                          }
-                          label={String(props.label ?? '')}
-                          fmt={formatCurrency}
-                        />
-                      )}
-                    />
-                    <Legend />
-                    <Area
-                      type="monotone"
-                      dataKey="p10"
-                      stackId="band"
-                      stroke="none"
-                      fill="transparent"
-                      name="10th percentile"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="band10to25"
-                      stackId="band"
-                      stroke="none"
-                      fill="#bfdbfe"
-                      name="10–25%"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="band25to75"
-                      stackId="band"
-                      stroke="none"
-                      fill="#60a5fa"
-                      name="25–75%"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="band75to90"
-                      stackId="band"
-                      stroke="none"
-                      fill="#bfdbfe"
-                      name="75–90%"
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="p50"
-                      stroke="#1d4ed8"
-                      strokeWidth={2}
-                      dot={false}
-                      name="Median"
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                  Projected portfolio value{' '}
+                  <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
+                    (in {defaultCurrency},{' '}
+                    {result.realValues
+                      ? "real / today's value"
+                      : 'nominal / future value'}
+                    )
+                  </span>
+                </h3>
+                <div className="ml-auto flex items-center gap-2">
+                  <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden text-xs">
+                    {(['chart', 'table'] as const).map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => setViewMode(m)}
+                        className={`px-3 py-1 ${
+                          viewMode === m
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        {m === 'chart' ? 'Chart' : 'Table'}
+                      </button>
+                    ))}
+                  </div>
+                  <ExportDropdown
+                    onExportCsv={handleExportCsv}
+                    onExportPdf={handleExportPdf}
+                  />
+                </div>
               </div>
+
+              {viewMode === 'chart' ? (
+                <div className="h-80 w-full" ref={chartRef}>
+                  <ResponsiveContainer>
+                    <ComposedChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="year" />
+                      <YAxis
+                        tickFormatter={(v) => formatCurrencyLabel(Number(v))}
+                        width={70}
+                      />
+                      <Tooltip
+                        content={(props) => (
+                          <FanChartTooltip
+                            active={props.active}
+                            payload={
+                              props.payload as Array<{
+                                payload?: Record<string, number>;
+                              }>
+                            }
+                            label={String(props.label ?? '')}
+                            fmt={formatCurrency}
+                            events={cashFlowMarkers.filter(
+                              (m) => m.year === String(props.label ?? ''),
+                            )}
+                          />
+                        )}
+                      />
+                      <Legend />
+                      <Area
+                        type="monotone"
+                        dataKey="p10"
+                        stackId="band"
+                        stroke="none"
+                        fill="transparent"
+                        name="10th percentile"
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="band10to25"
+                        stackId="band"
+                        stroke="none"
+                        fill="#bfdbfe"
+                        name="10–25%"
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="band25to75"
+                        stackId="band"
+                        stroke="none"
+                        fill="#60a5fa"
+                        name="25–75%"
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="band75to90"
+                        stackId="band"
+                        stroke="none"
+                        fill="#bfdbfe"
+                        name="75–90%"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="p50"
+                        stroke="#1d4ed8"
+                        strokeWidth={2}
+                        dot={false}
+                        name="Median"
+                      />
+                      {cashFlowMarkers.map((m, i) => (
+                        <ReferenceDot
+                          key={`mk-${i}`}
+                          x={m.year}
+                          y={m.yValue}
+                          r={6}
+                          shape={(props: { cx?: number; cy?: number }) => (
+                            <CashFlowMarker
+                              cx={props.cx ?? 0}
+                              cy={props.cy ?? 0}
+                              role={m.role}
+                              income={m.income}
+                            />
+                          )}
+                          ifOverflow="extendDomain"
+                        />
+                      ))}
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <ResultsTable
+                  rows={tableRows}
+                  formatCurrency={formatCurrency}
+                />
+              )}
+
+              {cashFlowMarkers.length > 0 && (
+                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-400">
+                  <span className="inline-flex items-center gap-1">
+                    <CashFlowLegendSwatch role="start" income />
+                    Income starts
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <CashFlowLegendSwatch role="end" income />
+                    Income ends
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <CashFlowLegendSwatch role="start" income={false} />
+                    Expense starts
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <CashFlowLegendSwatch role="end" income={false} />
+                    Expense ends
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1006,16 +1253,29 @@ export function MonteCarloReport() {
   );
 }
 
+interface CashFlowEvent {
+  role: 'start' | 'end';
+  income: boolean;
+  name: string;
+  amount: number;
+  flowType: CashFlowType;
+  startYear: number;
+  endYear?: number | null;
+  inflationAdjust: boolean;
+}
+
 function FanChartTooltip({
   active,
   payload,
   label,
   fmt,
+  events,
 }: {
   active?: boolean;
   payload?: Array<{ payload?: Record<string, number> }>;
   label?: string;
   fmt: (v: number) => string;
+  events?: CashFlowEvent[];
 }) {
   if (!active || !payload?.length) return null;
   const row = payload[0]?.payload;
@@ -1028,7 +1288,7 @@ function FanChartTooltip({
     ['10th percentile', row.p10],
   ];
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 text-sm">
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 text-sm max-w-xs">
       <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">{label}</p>
       {rows.map(([name, value]) => (
         <p
@@ -1041,6 +1301,149 @@ function FanChartTooltip({
           </span>
         </p>
       ))}
+      {events && events.length > 0 && (
+        <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 space-y-1.5">
+          {events.map((e, i) => (
+            <div key={i} className="flex items-start gap-2">
+              <CashFlowLegendSwatch role={e.role} income={e.income} />
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-gray-900 dark:text-gray-100">
+                  {e.role === 'start' ? 'Starts' : 'Ends'}: {e.name}
+                </div>
+                <div
+                  className={
+                    e.income
+                      ? 'text-emerald-700 dark:text-emerald-400'
+                      : 'text-red-700 dark:text-red-400'
+                  }
+                >
+                  {e.income ? '+' : ''}
+                  {fmt(e.amount)}
+                  {e.flowType === 'RECURRING' ? ' / yr' : ''}
+                  {e.inflationAdjust ? ' (inflated)' : ''}
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  {e.flowType === 'ONE_TIME'
+                    ? 'One-time'
+                    : `Recurring · year ${e.startYear}${
+                        e.endYear ? `–${e.endYear}` : '+'
+                      }`}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CashFlowMarker({
+  cx,
+  cy,
+  role,
+  income,
+}: {
+  cx: number;
+  cy: number;
+  role: 'start' | 'end';
+  income: boolean;
+}) {
+  const fill = income ? '#16a34a' : '#dc2626';
+  const stroke = '#ffffff';
+  // Triangle pointing up = start, pointing down = end. Income green, expense red.
+  const size = 7;
+  const points =
+    role === 'start'
+      ? `${cx},${cy - size} ${cx - size},${cy + size} ${cx + size},${cy + size}`
+      : `${cx},${cy + size} ${cx - size},${cy - size} ${cx + size},${cy - size}`;
+  return <polygon points={points} fill={fill} stroke={stroke} strokeWidth={1.5} />;
+}
+
+function CashFlowLegendSwatch({
+  role,
+  income,
+}: {
+  role: 'start' | 'end';
+  income: boolean;
+}) {
+  const fill = income ? '#16a34a' : '#dc2626';
+  const points =
+    role === 'start' ? '7,1 1,11 13,11' : '7,11 1,1 13,1';
+  return (
+    <svg width={14} height={12} viewBox="0 0 14 12" className="shrink-0">
+      <polygon points={points} fill={fill} stroke="#ffffff" strokeWidth={1} />
+    </svg>
+  );
+}
+
+function ResultsTable({
+  rows,
+  formatCurrency,
+}: {
+  rows: Array<{
+    year: string;
+    p10: number;
+    p25: number;
+    p50: number;
+    p75: number;
+    p90: number;
+    events: CashFlowEvent[];
+  }>;
+  formatCurrency: (v: number) => string;
+}) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="min-w-full text-xs">
+        <thead className="bg-gray-50 dark:bg-gray-900/40 text-gray-500 dark:text-gray-400">
+          <tr>
+            <th className="px-3 py-2 text-left font-medium">Year</th>
+            <th className="px-3 py-2 text-right font-medium">10th</th>
+            <th className="px-3 py-2 text-right font-medium">25th</th>
+            <th className="px-3 py-2 text-right font-medium">Median</th>
+            <th className="px-3 py-2 text-right font-medium">75th</th>
+            <th className="px-3 py-2 text-right font-medium">90th</th>
+            <th className="px-3 py-2 text-left font-medium">Events</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+          {rows.map((r) => (
+            <tr key={r.year}>
+              <td className="px-3 py-1.5 font-mono text-gray-900 dark:text-gray-100">
+                {r.year}
+              </td>
+              <td className="px-3 py-1.5 text-right">{formatCurrency(r.p10)}</td>
+              <td className="px-3 py-1.5 text-right">{formatCurrency(r.p25)}</td>
+              <td className="px-3 py-1.5 text-right font-medium text-gray-900 dark:text-gray-100">
+                {formatCurrency(r.p50)}
+              </td>
+              <td className="px-3 py-1.5 text-right">{formatCurrency(r.p75)}</td>
+              <td className="px-3 py-1.5 text-right">{formatCurrency(r.p90)}</td>
+              <td className="px-3 py-1.5">
+                {r.events.length === 0 ? (
+                  <span className="text-gray-400 dark:text-gray-500">—</span>
+                ) : (
+                  <div className="flex flex-col gap-0.5">
+                    {r.events.map((e, i) => (
+                      <span
+                        key={i}
+                        className={`inline-flex items-center gap-1 ${
+                          e.income
+                            ? 'text-emerald-700 dark:text-emerald-400'
+                            : 'text-red-700 dark:text-red-400'
+                        }`}
+                      >
+                        <CashFlowLegendSwatch role={e.role} income={e.income} />
+                        {e.role === 'start' ? 'Starts' : 'Ends'}: {e.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
