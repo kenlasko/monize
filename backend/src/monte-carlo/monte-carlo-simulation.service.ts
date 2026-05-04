@@ -5,6 +5,18 @@ import {
   SimulationResult,
 } from "./dto/simulation-result.dto";
 
+export interface CashFlowSpec {
+  /** Signed amount: positive = income, negative = expense. */
+  amount: number;
+  flowType: "ONE_TIME" | "RECURRING";
+  /** Year offset from "today" (1 = first simulated year). */
+  startYear: number;
+  /** Inclusive end year for RECURRING; null = until horizon ends. */
+  endYear?: number | null;
+  /** When true, scale amount by (1+inflation)^(yearsSinceStart). */
+  inflationAdjust: boolean;
+}
+
 export interface SimulationParams {
   startingValue: number;
   yearsToRetirement: number;
@@ -19,6 +31,9 @@ export interface SimulationParams {
   simulationCount: number;
   targetValue?: number | null;
   randomSeed?: string | null;
+  /** Optional one-time / recurring cash flows layered on top of the base
+   * contribution and withdrawal phases. */
+  cashFlows?: CashFlowSpec[];
 }
 
 /**
@@ -68,11 +83,20 @@ export class MonteCarloSimulationService {
         // user-supplied contribution-growth rate (often a salary raise rate,
         // not strictly inflation).
         const yearsSinceDrawdownStart = t - params.yearsToRetirement - 1;
-        const desiredCashFlow = inAccumulation
+        const baseCashFlow = inAccumulation
           ? params.annualContribution *
             Math.pow(1 + params.contributionGrowthRate, t - 1)
           : -params.annualWithdrawal *
             Math.pow(1 + params.inflationRate, yearsSinceDrawdownStart);
+
+        // Layer in any user-defined one-time / recurring cash flows.
+        const extraCashFlow = sumExtraCashFlows(
+          t,
+          totalYears,
+          params.inflationRate,
+          params.cashFlows,
+        );
+        const desiredCashFlow = baseCashFlow + extraCashFlow;
 
         // Clamp withdrawals to the available balance so a depleted path stays
         // at zero rather than silently going negative for the rest of the run.
@@ -264,4 +288,38 @@ export class MonteCarloSimulationService {
       return z0;
     };
   }
+}
+
+/**
+ * Sum every user-defined cash flow that fires in year `t`.
+ *
+ * - ONE_TIME: contributes `amount` only when `t === startYear`.
+ * - RECURRING: contributes `amount` for every `t` in
+ *   `[startYear, endYear ?? totalYears]`.
+ * - When `inflationAdjust` is true, the contribution scales by
+ *   `(1 + inflation)^(t - startYear)` so its real value stays flat.
+ */
+function sumExtraCashFlows(
+  t: number,
+  totalYears: number,
+  inflation: number,
+  flows?: CashFlowSpec[],
+): number {
+  if (!flows || flows.length === 0) return 0;
+  let total = 0;
+  for (const cf of flows) {
+    const start = Math.max(1, cf.startYear);
+    if (cf.flowType === "ONE_TIME") {
+      if (t !== start) continue;
+    } else {
+      const end = cf.endYear == null ? totalYears : cf.endYear;
+      if (t < start || t > end) continue;
+    }
+    const yearsSinceStart = t - start;
+    const factor = cf.inflationAdjust
+      ? Math.pow(1 + inflation, yearsSinceStart)
+      : 1;
+    total += cf.amount * factor;
+  }
+  return total;
 }

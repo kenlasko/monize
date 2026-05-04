@@ -7,10 +7,15 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { In, Repository } from "typeorm";
 import { MonteCarloScenario } from "./entities/monte-carlo-scenario.entity";
+import { MonteCarloCashFlow } from "./entities/monte-carlo-cash-flow.entity";
 import { CreateScenarioDto } from "./dto/create-scenario.dto";
 import { UpdateScenarioDto } from "./dto/update-scenario.dto";
 import { RunScenarioDto } from "./dto/run-scenario.dto";
-import { MonteCarloSimulationService } from "./monte-carlo-simulation.service";
+import { CashFlowDto } from "./dto/cash-flow.dto";
+import {
+  CashFlowSpec,
+  MonteCarloSimulationService,
+} from "./monte-carlo-simulation.service";
 import { SimulationResult } from "./dto/simulation-result.dto";
 import { PortfolioService } from "../securities/portfolio.service";
 import { SecurityPriceService } from "../securities/security-price.service";
@@ -55,6 +60,8 @@ export class MonteCarloService {
   constructor(
     @InjectRepository(MonteCarloScenario)
     private scenariosRepository: Repository<MonteCarloScenario>,
+    @InjectRepository(MonteCarloCashFlow)
+    private cashFlowsRepository: Repository<MonteCarloCashFlow>,
     @InjectRepository(Holding)
     private holdingsRepository: Repository<Holding>,
     @InjectRepository(SecurityPrice)
@@ -93,7 +100,9 @@ export class MonteCarloService {
       targetValue: dto.targetValue ?? null,
       randomSeed: dto.randomSeed ?? null,
     });
-    return this.scenariosRepository.save(scenario);
+    const saved = await this.scenariosRepository.save(scenario);
+    await this.replaceCashFlows(saved.id, dto.cashFlows);
+    return this.findOne(userId, saved.id);
   }
 
   async findAll(userId: string): Promise<MonteCarloScenario[]> {
@@ -106,11 +115,42 @@ export class MonteCarloService {
   async findOne(userId: string, id: string): Promise<MonteCarloScenario> {
     const scenario = await this.scenariosRepository.findOne({
       where: { id, userId },
+      relations: ["cashFlows"],
     });
     if (!scenario) {
       throw new NotFoundException(`Scenario ${id} not found`);
     }
+    if (scenario.cashFlows) {
+      scenario.cashFlows.sort((a, b) => a.sortOrder - b.sortOrder);
+    }
     return scenario;
+  }
+
+  /**
+   * Replace the cash-flow list on a scenario (delete-all + insert pattern,
+   * since clients send the full list each time). Skipped when `flows` is
+   * undefined so partial PATCH calls don't wipe the list accidentally.
+   */
+  private async replaceCashFlows(
+    scenarioId: string,
+    flows: CashFlowDto[] | undefined,
+  ): Promise<void> {
+    if (flows === undefined) return;
+    await this.cashFlowsRepository.delete({ scenarioId });
+    if (flows.length === 0) return;
+    const rows = flows.map((cf, idx) =>
+      this.cashFlowsRepository.create({
+        scenarioId,
+        name: cf.name,
+        amount: cf.amount,
+        flowType: cf.flowType,
+        startYear: cf.startYear,
+        endYear: cf.endYear ?? null,
+        inflationAdjust: cf.inflationAdjust,
+        sortOrder: idx,
+      }),
+    );
+    await this.cashFlowsRepository.save(rows);
   }
 
   async update(
@@ -156,7 +196,9 @@ export class MonteCarloService {
       scenario.randomSeed = dto.randomSeed ?? null;
     if (dto.isFavourite !== undefined) scenario.isFavourite = dto.isFavourite;
 
-    return this.scenariosRepository.save(scenario);
+    const saved = await this.scenariosRepository.save(scenario);
+    await this.replaceCashFlows(saved.id, dto.cashFlows);
+    return this.findOne(userId, saved.id);
   }
 
   async remove(userId: string, id: string): Promise<void> {
@@ -194,6 +236,7 @@ export class MonteCarloService {
       simulationCount: scenario.simulationCount,
       targetValue: scenario.targetValue,
       randomSeed: scenario.randomSeed,
+      cashFlows: (scenario.cashFlows ?? []).map(toCashFlowSpec),
     });
 
     scenario.lastRunAt = new Date();
@@ -233,6 +276,7 @@ export class MonteCarloService {
       simulationCount: dto.simulationCount,
       targetValue: dto.targetValue,
       randomSeed: dto.randomSeed,
+      cashFlows: (dto.cashFlows ?? []).map(toCashFlowSpec),
     });
   }
 
@@ -562,5 +606,21 @@ function computeMeanStdev(series: number[]): {
   return {
     mean: Math.round(mean * 1_000_000) / 1_000_000,
     stdev: Math.round(Math.sqrt(variance) * 1_000_000) / 1_000_000,
+  };
+}
+
+function toCashFlowSpec(cf: {
+  amount: number;
+  flowType: string;
+  startYear: number;
+  endYear?: number | null;
+  inflationAdjust: boolean;
+}): CashFlowSpec {
+  return {
+    amount: Number(cf.amount),
+    flowType: cf.flowType === "ONE_TIME" ? "ONE_TIME" : "RECURRING",
+    startYear: cf.startYear,
+    endYear: cf.endYear ?? null,
+    inflationAdjust: cf.inflationAdjust,
   };
 }

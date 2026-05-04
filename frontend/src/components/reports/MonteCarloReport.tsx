@@ -18,6 +18,8 @@ import {
   MonteCarloScenarioInputs,
   SimulationResult,
   AccountHoldingStats,
+  CashFlow,
+  CashFlowType,
 } from '@/lib/monte-carlo';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { getCurrencySymbol } from '@/lib/format';
@@ -55,11 +57,15 @@ const DEFAULT_INPUTS: MonteCarloScenarioInputs = {
   simulationCount: 5000,
 };
 
-type FormState = Omit<MonteCarloScenarioInputs, 'targetValue' | 'randomSeed'> & {
+type FormState = Omit<
+  MonteCarloScenarioInputs,
+  'targetValue' | 'randomSeed' | 'cashFlows'
+> & {
   name: string;
   description: string;
   targetValue: number | null;
   randomSeed: string | null;
+  cashFlows: CashFlow[];
 };
 
 const EMPTY_FORM: FormState = {
@@ -68,6 +74,7 @@ const EMPTY_FORM: FormState = {
   description: '',
   targetValue: null,
   randomSeed: null,
+  cashFlows: [],
 };
 
 export function MonteCarloReport() {
@@ -195,6 +202,14 @@ export function MonteCarloReport() {
       simulationCount: s.simulationCount,
       targetValue: s.targetValue == null ? null : Number(s.targetValue),
       randomSeed: s.randomSeed,
+      cashFlows: (s.cashFlows ?? []).map((cf) => ({
+        name: cf.name,
+        amount: Number(cf.amount),
+        flowType: cf.flowType,
+        startYear: cf.startYear,
+        endYear: cf.endYear ?? null,
+        inflationAdjust: cf.inflationAdjust,
+      })),
     });
     setResult(null);
   };
@@ -234,11 +249,58 @@ export function MonteCarloReport() {
       f.targetValue != null && Number.isFinite(f.targetValue)
         ? f.targetValue
         : null;
+    const cashFlows: CashFlow[] = f.cashFlows
+      .filter((cf) => cf.name.trim() && Number.isFinite(cf.amount))
+      .map((cf) => ({
+        name: cf.name.trim(),
+        amount: cf.amount,
+        flowType: cf.flowType,
+        startYear: Math.max(1, num(cf.startYear) || 1),
+        endYear:
+          cf.flowType === 'RECURRING' && cf.endYear != null && Number.isFinite(cf.endYear)
+            ? cf.endYear
+            : null,
+        inflationAdjust: !!cf.inflationAdjust,
+      }));
     return {
       ...base,
       ...(targetValue != null ? { targetValue } : {}),
       ...(f.randomSeed ? { randomSeed: f.randomSeed } : {}),
+      ...(cashFlows.length > 0 ? { cashFlows } : { cashFlows: [] }),
     } as MonteCarloScenarioInputs;
+  };
+
+  const addCashFlow = () => {
+    setForm((prev) => ({
+      ...prev,
+      cashFlows: [
+        ...prev.cashFlows,
+        {
+          name: '',
+          amount: 0,
+          flowType: 'ONE_TIME',
+          startYear: 1,
+          endYear: null,
+          inflationAdjust: true,
+        },
+      ],
+    }));
+  };
+
+  const updateCashFlow = (idx: number, patch: Partial<CashFlow>) => {
+    setForm((prev) => ({
+      ...prev,
+      cashFlows: prev.cashFlows.map((cf, i) =>
+        i === idx ? { ...cf, ...patch } : cf,
+      ),
+    }));
+  };
+
+  const removeCashFlow = (idx: number) => {
+    setForm((prev) => ({
+      ...prev,
+      cashFlows: prev.cashFlows.filter((_, i) => i !== idx),
+    }));
   };
 
   const run = async () => {
@@ -487,6 +549,129 @@ export function MonteCarloReport() {
               compared against each path&apos;s final value in today&apos;s
               terms.
             </p>
+          </fieldset>
+
+          <fieldset className="border border-gray-200 dark:border-gray-700 rounded-md p-4">
+            <legend className="px-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+              Additional cash flows
+            </legend>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+              One-time or recurring inflows / outflows that layer on top of
+              the base contribution and withdrawal phases. Use a positive
+              amount for income (pension, sale proceeds, inheritance) and a
+              negative amount for expenses (renovation, college, etc).
+            </p>
+            {form.cashFlows.length === 0 ? (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                No additional cash flows configured.
+              </p>
+            ) : (
+              <div className="space-y-2 mb-3">
+                {form.cashFlows.map((cf, idx) => (
+                  <div
+                    key={idx}
+                    className="border border-gray-200 dark:border-gray-700 rounded-md p-3 grid grid-cols-1 md:grid-cols-12 gap-2 items-end"
+                  >
+                    <div className="md:col-span-3">
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                        Name
+                      </label>
+                      <input
+                        type="text"
+                        value={cf.name}
+                        onChange={(e) =>
+                          updateCashFlow(idx, { name: e.target.value })
+                        }
+                        placeholder="e.g. Pension"
+                        className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm text-sm"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <CurrencyInput
+                        label="Amount"
+                        value={cf.amount}
+                        onChange={(v) =>
+                          updateCashFlow(idx, { amount: v ?? 0 })
+                        }
+                        allowNegative
+                        prefix={currencySymbol}
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                        Type
+                      </label>
+                      <select
+                        value={cf.flowType}
+                        onChange={(e) =>
+                          updateCashFlow(idx, {
+                            flowType: e.target.value as CashFlowType,
+                          })
+                        }
+                        className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm text-sm"
+                      >
+                        <option value="ONE_TIME">One-time</option>
+                        <option value="RECURRING">Recurring</option>
+                      </select>
+                    </div>
+                    <div className="md:col-span-2">
+                      <NumericInput
+                        label="Start year"
+                        value={cf.startYear}
+                        onChange={(v) =>
+                          updateCashFlow(idx, {
+                            startYear: Math.max(1, v ?? 1),
+                          })
+                        }
+                        decimalPlaces={0}
+                        min={1}
+                      />
+                    </div>
+                    {cf.flowType === 'RECURRING' && (
+                      <div className="md:col-span-2">
+                        <NumericInput
+                          label="End year (opt)"
+                          value={cf.endYear ?? undefined}
+                          onChange={(v) =>
+                            updateCashFlow(idx, {
+                              endYear: v == null ? null : Math.max(cf.startYear, v),
+                            })
+                          }
+                          decimalPlaces={0}
+                          min={cf.startYear}
+                        />
+                      </div>
+                    )}
+                    <div
+                      className={`flex items-center gap-2 ${cf.flowType === 'RECURRING' ? 'md:col-span-1' : 'md:col-span-3'}`}
+                    >
+                      <label className="inline-flex items-center gap-1 text-xs text-gray-700 dark:text-gray-300">
+                        <input
+                          type="checkbox"
+                          checked={cf.inflationAdjust}
+                          onChange={(e) =>
+                            updateCashFlow(idx, {
+                              inflationAdjust: e.target.checked,
+                            })
+                          }
+                        />
+                        Inflate
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => removeCashFlow(idx)}
+                        className="ml-auto text-xs text-red-600 dark:text-red-400 hover:underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <Button variant="outline" size="sm" onClick={addCashFlow}>
+              + Add cash flow
+            </Button>
           </fieldset>
 
           <fieldset className="border border-gray-200 dark:border-gray-700 rounded-md p-4">

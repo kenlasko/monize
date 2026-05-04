@@ -9,12 +9,14 @@ import { Security } from "../securities/entities/security.entity";
 import { SecurityPrice } from "../securities/entities/security-price.entity";
 import { Account } from "../accounts/entities/account.entity";
 import { SecurityPriceService } from "../securities/security-price.service";
+import { MonteCarloCashFlow } from "./entities/monte-carlo-cash-flow.entity";
 import { PortfolioService } from "../securities/portfolio.service";
 import { CreateScenarioDto } from "./dto/create-scenario.dto";
 
 describe("MonteCarloService", () => {
   let service: MonteCarloService;
   let scenariosRepository: Record<string, jest.Mock>;
+  let cashFlowsRepository: Record<string, jest.Mock>;
   let holdingsRepository: Record<string, jest.Mock>;
   let securityPriceRepository: Record<string, jest.Mock>;
   let accountsRepository: Record<string, jest.Mock>;
@@ -82,6 +84,11 @@ describe("MonteCarloService", () => {
       findOne: jest.fn(),
       remove: jest.fn(),
     };
+    cashFlowsRepository = {
+      create: jest.fn((entity) => entity),
+      save: jest.fn((rows) => Promise.resolve(rows)),
+      delete: jest.fn().mockResolvedValue({ affected: 0 }),
+    };
     holdingsRepository = {
       find: jest.fn().mockResolvedValue([]),
     };
@@ -112,6 +119,10 @@ describe("MonteCarloService", () => {
         {
           provide: getRepositoryToken(MonteCarloScenario),
           useValue: scenariosRepository,
+        },
+        {
+          provide: getRepositoryToken(MonteCarloCashFlow),
+          useValue: cashFlowsRepository,
         },
         {
           provide: getRepositoryToken(Holding),
@@ -145,11 +156,37 @@ describe("MonteCarloService", () => {
 
   describe("create", () => {
     it("persists the scenario with the user id", async () => {
+      // create() reloads via findOne after save to return relations; that
+      // second findOne needs to resolve to the newly-created scenario.
+      scenariosRepository.findOne.mockResolvedValueOnce(buildScenario());
       await service.create(userId, validInputs);
       expect(scenariosRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({ userId, name: "Test scenario" }),
       );
       expect(scenariosRepository.save).toHaveBeenCalled();
+    });
+
+    it("persists cash flows when provided", async () => {
+      scenariosRepository.findOne.mockResolvedValueOnce(buildScenario());
+      await service.create(userId, {
+        ...validInputs,
+        cashFlows: [
+          {
+            name: "Pension",
+            amount: 30000,
+            flowType: "RECURRING" as never,
+            startYear: 25,
+            inflationAdjust: true,
+          },
+        ],
+      });
+      expect(cashFlowsRepository.delete).toHaveBeenCalledWith({
+        scenarioId: "scn-1",
+      });
+      expect(cashFlowsRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "Pension", amount: 30000 }),
+      );
+      expect(cashFlowsRepository.save).toHaveBeenCalled();
     });
   });
 
@@ -161,6 +198,7 @@ describe("MonteCarloService", () => {
       );
       expect(scenariosRepository.findOne).toHaveBeenCalledWith({
         where: { id: "scn-1", userId },
+        relations: ["cashFlows"],
       });
     });
 
@@ -190,7 +228,12 @@ describe("MonteCarloService", () => {
   describe("update", () => {
     it("only updates whitelisted fields", async () => {
       const existing = buildScenario();
+      // First findOne loads, second findOne returns the saved scenario.
       scenariosRepository.findOne.mockResolvedValueOnce(existing);
+      scenariosRepository.findOne.mockResolvedValueOnce({
+        ...existing,
+        name: "Renamed",
+      });
       scenariosRepository.save.mockImplementationOnce((s) =>
         Promise.resolve(s),
       );

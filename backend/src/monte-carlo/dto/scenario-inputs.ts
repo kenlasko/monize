@@ -9,7 +9,10 @@ import {
   Max,
   MaxLength,
   Min,
+  ValidateNested,
 } from "class-validator";
+import { Type } from "class-transformer";
+import { CashFlowDto } from "./cash-flow.dto";
 
 /**
  * Shared input fields used by both `CreateScenarioDto` and the ad-hoc
@@ -94,4 +97,12 @@ export class ScenarioInputs {
   @IsString()
   @MaxLength(32)
   randomSeed?: string | null;
+
+  /** Optional one-time or recurring cash-flow events layered on top of the
+   * base contribution/withdrawal phases. */
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CashFlowDto)
+  cashFlows?: CashFlowDto[];
 }

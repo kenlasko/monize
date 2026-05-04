@@ -330,7 +330,8 @@ describe("MonteCarloSimulationService", () => {
       };
       const nominal = service.run({ ...params, showRealValues: false });
       const real = service.run({ ...params, showRealValues: true });
-      const lastNom = nominal.percentiles.p50[nominal.percentiles.p50.length - 1];
+      const lastNom =
+        nominal.percentiles.p50[nominal.percentiles.p50.length - 1];
       const lastReal = real.percentiles.p50[real.percentiles.p50.length - 1];
       expect(lastReal).toBeCloseTo(
         lastNom / Math.pow(1 + params.inflationRate, 10),
@@ -409,6 +410,229 @@ describe("MonteCarloSimulationService", () => {
 
       const result = service.run(params);
       expect(result.finalDistribution.median).toBeCloseTo(expected, 0);
+    });
+  });
+
+  describe("cash-flow events", () => {
+    it("a one-time inflow at year K bumps the final balance", () => {
+      const without = deterministic({ cashFlows: [] });
+      const with1 = deterministic({
+        cashFlows: [
+          {
+            amount: 100000,
+            flowType: "ONE_TIME",
+            startYear: 5,
+            inflationAdjust: false,
+          },
+        ],
+      });
+      // The year-5 inflow earns r at year 5 itself (post-flow multiplier)
+      // and again at years 6..10 — 6 years of compounding total.
+      const expectedDelta = 100000 * Math.pow(1 + baseParams.expectedReturn, 6);
+      const actualDelta =
+        with1.finalDistribution.median - without.finalDistribution.median;
+      expect(actualDelta).toBeCloseTo(expectedDelta, 0);
+    });
+
+    it("a one-time expense at year K reduces the final balance", () => {
+      const without = deterministic({ cashFlows: [] });
+      const expense = deterministic({
+        cashFlows: [
+          {
+            amount: -25000,
+            flowType: "ONE_TIME",
+            startYear: 3,
+            inflationAdjust: false,
+          },
+        ],
+      });
+      expect(expense.finalDistribution.median).toBeLessThan(
+        without.finalDistribution.median,
+      );
+    });
+
+    it("a one-time event outside the horizon has no effect", () => {
+      const a = deterministic({ cashFlows: [] });
+      const b = deterministic({
+        cashFlows: [
+          {
+            amount: 1000000,
+            flowType: "ONE_TIME",
+            startYear: 50, // baseParams.yearsToRetirement = 10
+            inflationAdjust: false,
+          },
+        ],
+      });
+      expect(b.finalDistribution.median).toBe(a.finalDistribution.median);
+    });
+
+    it("a recurring flow contributes for every year in its window", () => {
+      const without = deterministic({
+        cashFlows: [],
+        annualContribution: 0,
+      });
+      const recurring = deterministic({
+        cashFlows: [
+          {
+            amount: 1000,
+            flowType: "RECURRING",
+            startYear: 1,
+            endYear: 10,
+            inflationAdjust: false,
+          },
+        ],
+        annualContribution: 0,
+      });
+      // Closed-form annuity: c·(1+r)·((1+r)^N − 1) / r where c=1000, r=0.07, N=10.
+      const r = baseParams.expectedReturn;
+      const N = 10;
+      const expectedExtra = (1000 * (1 + r) * (Math.pow(1 + r, N) - 1)) / r;
+      const actualExtra =
+        recurring.finalDistribution.median - without.finalDistribution.median;
+      expect(actualExtra).toBeCloseTo(expectedExtra, 0);
+    });
+
+    it("a recurring flow with no endYear runs to the horizon", () => {
+      const finite = deterministic({
+        cashFlows: [
+          {
+            amount: 500,
+            flowType: "RECURRING",
+            startYear: 1,
+            endYear: 10,
+            inflationAdjust: false,
+          },
+        ],
+      });
+      const openEnded = deterministic({
+        cashFlows: [
+          {
+            amount: 500,
+            flowType: "RECURRING",
+            startYear: 1,
+            inflationAdjust: false,
+          },
+        ],
+      });
+      // baseParams horizon is 10 years (yearsToRetirement = 10), so the two
+      // should produce identical results when endYear === horizon.
+      expect(openEnded.finalDistribution.median).toBeCloseTo(
+        finite.finalDistribution.median,
+        2,
+      );
+    });
+
+    it("inflation-adjusted recurring flows compound vs flat amount", () => {
+      const flat = deterministic({
+        cashFlows: [
+          {
+            amount: 1000,
+            flowType: "RECURRING",
+            startYear: 1,
+            endYear: 10,
+            inflationAdjust: false,
+          },
+        ],
+      });
+      const inflated = deterministic({
+        cashFlows: [
+          {
+            amount: 1000,
+            flowType: "RECURRING",
+            startYear: 1,
+            endYear: 10,
+            inflationAdjust: true,
+          },
+        ],
+      });
+      // Inflated flows compound at (1+inflation)^t, so they sum to more in
+      // nominal terms than the flat $1000/yr stream.
+      expect(inflated.finalDistribution.median).toBeGreaterThan(
+        flat.finalDistribution.median,
+      );
+    });
+
+    it("a flow with startYear > horizon has no effect", () => {
+      const without = deterministic({ cashFlows: [] });
+      const future = deterministic({
+        cashFlows: [
+          {
+            amount: 50000,
+            flowType: "RECURRING",
+            startYear: 100,
+            inflationAdjust: false,
+          },
+        ],
+      });
+      expect(future.finalDistribution.median).toBe(
+        without.finalDistribution.median,
+      );
+    });
+
+    it("multiple flows compose additively", () => {
+      const inflowOnly = deterministic({
+        cashFlows: [
+          {
+            amount: 10000,
+            flowType: "ONE_TIME",
+            startYear: 5,
+            inflationAdjust: false,
+          },
+        ],
+      });
+      const both = deterministic({
+        cashFlows: [
+          {
+            amount: 10000,
+            flowType: "ONE_TIME",
+            startYear: 5,
+            inflationAdjust: false,
+          },
+          {
+            amount: -5000,
+            flowType: "ONE_TIME",
+            startYear: 5,
+            inflationAdjust: false,
+          },
+        ],
+      });
+      // Net effect should be roughly the same as a single +5000 inflow at
+      // year 5 — i.e. half the inflowOnly delta vs no-flows.
+      const noFlows = deterministic({ cashFlows: [] });
+      const inflowDelta =
+        inflowOnly.finalDistribution.median - noFlows.finalDistribution.median;
+      const bothDelta =
+        both.finalDistribution.median - noFlows.finalDistribution.median;
+      expect(bothDelta).toBeCloseTo(inflowDelta / 2, 0);
+    });
+
+    it("recurring withdrawal during drawdown phase reduces final value", () => {
+      // Run with extra recurring outflow during the drawdown phase only.
+      const params: SimulationParams = {
+        ...baseParams,
+        volatility: 0,
+        annualContribution: 0,
+        annualWithdrawal: 1000,
+        yearsToRetirement: 5,
+        yearsInRetirement: 5,
+        simulationCount: 100,
+      };
+      const without = service.run(params);
+      const withExtra = service.run({
+        ...params,
+        cashFlows: [
+          {
+            amount: -2000,
+            flowType: "RECURRING",
+            startYear: 6,
+            endYear: 10,
+            inflationAdjust: false,
+          },
+        ],
+      });
+      expect(withExtra.finalDistribution.median).toBeLessThan(
+        without.finalDistribution.median,
+      );
     });
   });
 

@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { MonteCarloScenario } from "./entities/monte-carlo-scenario.entity";
+import { MonteCarloCashFlow } from "./entities/monte-carlo-cash-flow.entity";
 import { Holding } from "../securities/entities/holding.entity";
 import { Security } from "../securities/entities/security.entity";
 import { SecurityPrice } from "../securities/entities/security-price.entity";
@@ -14,6 +15,7 @@ import { SecuritiesModule } from "../securities/securities.module";
   imports: [
     TypeOrmModule.forFeature([
       MonteCarloScenario,
+      MonteCarloCashFlow,
       Holding,
       Security,
       SecurityPrice,

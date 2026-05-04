@@ -5,9 +5,11 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from "typeorm";
 import { User } from "../../users/entities/user.entity";
+import { MonteCarloCashFlow } from "./monte-carlo-cash-flow.entity";
 
 const decimalTransformer = {
   from: (value: string | null): number | null => {
@@ -141,6 +143,11 @@ export class MonteCarloScenario {
 
   @Column({ type: "timestamp", name: "last_run_at", nullable: true })
   lastRunAt: Date | null;
+
+  @OneToMany(() => MonteCarloCashFlow, (cf) => cf.scenario, {
+    cascade: true,
+  })
+  cashFlows?: MonteCarloCashFlow[];
 
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;

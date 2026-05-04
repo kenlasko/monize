@@ -1,9 +1,25 @@
 import apiClient from './api';
 
+export type CashFlowType = 'ONE_TIME' | 'RECURRING';
+
+export interface CashFlow {
+  /** Display name (e.g. "Pension", "Roof renovation"). */
+  name: string;
+  /** Signed: positive = income, negative = expense. */
+  amount: number;
+  flowType: CashFlowType;
+  /** Year offset from today; 1 = first simulated year. */
+  startYear: number;
+  /** Inclusive end year for RECURRING; null/undefined = until horizon ends. */
+  endYear?: number | null;
+  inflationAdjust: boolean;
+}
+
 export interface MonteCarloScenario {
   id: string;
   name: string;
   description: string | null;
+  cashFlows?: CashFlow[];
   accountIds: string[];
   startingValue: number;
   useCurrentBalance: boolean;
@@ -38,9 +54,11 @@ export type MonteCarloScenarioInputs = Omit<
   | 'updatedAt'
   | 'targetValue'
   | 'randomSeed'
+  | 'cashFlows'
 > & {
   targetValue?: number;
   randomSeed?: string;
+  cashFlows?: CashFlow[];
 };
 
 export type MonteCarloScenarioCreateInput = MonteCarloScenarioInputs & {
