@@ -250,9 +250,10 @@ export function MonteCarloReport() {
     setError(null);
     setIsRunning(true);
     try {
-      const r = activeId
-        ? await monteCarloApi.runSaved(activeId)
-        : await monteCarloApi.run(inputsFromForm(form));
+      // Always run with the *current* form values, not the saved scenario.
+      // Otherwise editing a loaded scenario and clicking Run would silently
+      // re-simulate the saved (stale) values.
+      const r = await monteCarloApi.run(inputsFromForm(form));
       setResult(r);
     } catch (err) {
       logger.error('Simulation failed:', err);
