@@ -40,6 +40,7 @@ import { NumericInput } from '@/components/ui/NumericInput';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { MultiSelect } from '@/components/ui/MultiSelect';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import { createLogger } from '@/lib/logger';
 
 interface BrokerageAccount {
@@ -119,6 +120,13 @@ export function MonteCarloReport() {
   useEffect(() => {
     if (activeId && result) setCachedResult(activeId, result);
   }, [activeId, result]);
+  // Collapse the input form whenever a result exists so the simulation
+  // output is visible without scrolling. Re-expands when result is cleared
+  // (e.g. New scenario, or loading a scenario without a cached result).
+  const [inputsCollapsed, setInputsCollapsed] = useState(false);
+  useEffect(() => {
+    setInputsCollapsed(Boolean(result));
+  }, [result]);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [holdingStats, setHoldingStats] = useState<AccountHoldingStats[] | null>(null);
   const [holdingStatsLoading, setHoldingStatsLoading] = useState(false);
@@ -744,7 +752,58 @@ export function MonteCarloReport() {
 
       {/* Right: form + results */}
       <section className="space-y-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 space-y-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+          <div className="flex items-center justify-between gap-3 p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="min-w-0 flex-1">
+              {inputsCollapsed ? (
+                <div className="flex flex-col min-w-0">
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                    {form.name || 'Untitled scenario'}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
+                    <span>Start: {formatCurrency(form.startingValue)}</span>
+                    <span>
+                      {form.yearsToRetirement}y contrib /{' '}
+                      {form.yearsInRetirement}y withdrawal
+                    </span>
+                    <span>
+                      {form.useHistoricalReturns
+                        ? 'Historical returns'
+                        : `${(form.expectedReturn * 100).toFixed(1)}% return, ${(form.volatility * 100).toFixed(1)}% vol`}
+                    </span>
+                    <span>{form.simulationCount.toLocaleString()} runs</span>
+                  </div>
+                </div>
+              ) : (
+                <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Scenario inputs
+                </h2>
+              )}
+            </div>
+            {inputsCollapsed && (
+              <Button
+                onClick={run}
+                disabled={isRunning || form.accountIds.length === 0}
+                variant="primary"
+              >
+                {isRunning ? 'Running…' : 'Run again'}
+              </Button>
+            )}
+            <button
+              type="button"
+              onClick={() => setInputsCollapsed((v) => !v)}
+              aria-expanded={!inputsCollapsed}
+              aria-controls="mc-inputs-body"
+              className="inline-flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-2 py-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {inputsCollapsed ? 'Edit inputs' : 'Hide inputs'}
+              <ChevronDownIcon
+                className={`h-4 w-4 transition-transform ${inputsCollapsed ? '' : 'rotate-180'}`}
+              />
+            </button>
+          </div>
+          {!inputsCollapsed && (
+            <div id="mc-inputs-body" className="p-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -1131,6 +1190,8 @@ export function MonteCarloReport() {
               </Button>
             )}
           </div>
+            </div>
+          )}
         </div>
 
         {result && (

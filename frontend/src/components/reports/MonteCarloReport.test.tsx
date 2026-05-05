@@ -46,6 +46,8 @@ vi.mock('@/lib/format', async () => {
 });
 
 // Recharts is heavy and noisy in jsdom; stub the visual primitives we use.
+// The Tooltip and ReferenceDot stubs eagerly invoke their render-prop children
+// so the inner helper components (FanChartTooltip, CashFlowMarker) are exercised.
 vi.mock('recharts', () => {
   return {
     ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
@@ -57,12 +59,41 @@ vi.mock('recharts', () => {
     CartesianGrid: () => null,
     XAxis: () => null,
     YAxis: () => null,
-    Tooltip: () => null,
+    Tooltip: ({
+      content,
+    }: {
+      content?: (p: {
+        active: boolean;
+        payload: Array<{ payload: Record<string, number> }>;
+        label: string;
+      }) => React.ReactNode;
+    }) =>
+      content ? (
+        <div data-testid="rc-tooltip">
+          {content({
+            active: true,
+            payload: [
+              {
+                payload: { p10: 110, p25: 115, p50: 120, p75: 125, p90: 130 },
+              },
+            ],
+            label: '2027',
+          })}
+        </div>
+      ) : null,
     Legend: () => null,
     Area: () => null,
     Line: () => null,
-    ReferenceDot: ({ x }: { x: string }) => (
-      <div data-testid="reference-dot" data-x={x} />
+    ReferenceDot: ({
+      x,
+      shape,
+    }: {
+      x: string;
+      shape?: (p: { cx?: number; cy?: number }) => React.ReactNode;
+    }) => (
+      <div data-testid="reference-dot" data-x={x}>
+        {shape ? <svg>{shape({ cx: 10, cy: 10 })}</svg> : null}
+      </div>
     ),
     ReferenceLine: ({ x }: { x: string }) => (
       <div data-testid="reference-line" data-x={x} />
@@ -523,6 +554,869 @@ describe('MonteCarloReport', () => {
       await waitFor(() =>
         expect(mockApi.historicalStats).toHaveBeenCalledWith(['acc-1']),
       );
+    });
+  });
+
+  describe('Inputs collapse/expand', () => {
+    it('auto-collapses inputs after a successful run and shows summary chips', async () => {
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      // The form's full body is visible -- "Withdrawal phase" sits inside it.
+      expect(screen.getByText('Withdrawal phase')).toBeInTheDocument();
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      // Body legends are gone; collapsed header shows a "Run again" affordance.
+      await waitFor(() =>
+        expect(screen.queryByText('Withdrawal phase')).not.toBeInTheDocument(),
+      );
+      expect(
+        screen.getByRole('button', { name: /Run again/i }),
+      ).toBeInTheDocument();
+      // Summary chips: starting value, year breakdown, return/vol, runs.
+      expect(screen.getByText(/^Start:/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/25y contrib \/ 30y withdrawal/),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(/7\.0% return, 15\.0% vol/),
+      ).toBeInTheDocument();
+      expect(screen.getByText(/5,000 runs/)).toBeInTheDocument();
+    });
+
+    it('clicking Edit inputs re-expands while preserving form state', async () => {
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      // Set a scenario name so we can verify the value survives the toggle.
+      const nameField = screen.getByPlaceholderText('e.g. Aggressive 25-year');
+      fireEvent.change(nameField, { target: { value: 'My plan' } });
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      // Collapsed: Edit inputs button visible.
+      const edit = await screen.findByRole('button', { name: /Edit inputs/i });
+      await act(async () => {
+        fireEvent.click(edit);
+      });
+      // Expanded again -- form body returns and the name field still has our value.
+      const nameAgain = screen.getByPlaceholderText('e.g. Aggressive 25-year');
+      expect(nameAgain).toHaveValue('My plan');
+      // The toggle now reads "Hide inputs".
+      expect(
+        screen.getByRole('button', { name: /Hide inputs/i }),
+      ).toBeInTheDocument();
+    });
+
+    it('Run again in the collapsed header triggers a new simulation', async () => {
+      // Need a scenario with accountIds set, otherwise "Run again" stays disabled.
+      mockApi.list.mockResolvedValueOnce([
+        scenario({ accountIds: ['acc-1'] }),
+      ]);
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      const runAgain = await screen.findByRole('button', {
+        name: /Run again/i,
+      });
+      expect(runAgain).not.toBeDisabled();
+      await act(async () => {
+        fireEvent.click(runAgain);
+      });
+      expect(mockApi.run).toHaveBeenCalledTimes(2);
+    });
+
+    it('Run again is disabled when no accounts are selected', async () => {
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      // Default form has accountIds = [] so Run again should be disabled.
+      const runAgain = await screen.findByRole('button', {
+        name: /Run again/i,
+      });
+      expect(runAgain).toBeDisabled();
+    });
+
+    it('shows historical returns label in collapsed summary when toggled', async () => {
+      mockApi.list.mockResolvedValueOnce([
+        scenario({ accountIds: ['acc-1'], useHistoricalReturns: true }),
+      ]);
+      mockApi.run.mockResolvedValueOnce(simResult());
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      const runBtn = screen.getByRole('button', { name: /Run simulation/i });
+      await act(async () => {
+        fireEvent.click(runBtn);
+      });
+      expect(
+        await screen.findByText(/Historical returns/),
+      ).toBeInTheDocument();
+    });
+
+    it('clicking New scenario expands the inputs again', async () => {
+      mockApi.list.mockResolvedValueOnce([scenario()]);
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      // Confirm we're collapsed.
+      await screen.findByRole('button', { name: /Edit inputs/i });
+      // Click sidebar "New" button.
+      const newBtn = screen.getByRole('button', { name: /^New$/ });
+      await act(async () => {
+        fireEvent.click(newBtn);
+      });
+      // Form expanded -- legends visible again, form name cleared.
+      expect(
+        await screen.findByText('Withdrawal phase'),
+      ).toBeInTheDocument();
+      const nameField = screen.getByPlaceholderText('e.g. Aggressive 25-year');
+      expect(nameField).toHaveValue('');
+    });
+
+    it('starts collapsed when last-active scenario restores a cached result', async () => {
+      const saved = scenario({ id: 'cached', name: 'Cached scn' });
+      window.localStorage.setItem('monize-monte-carlo-active-id', 'cached');
+      // Pre-populate the result cache so the initial-load effect rehydrates it.
+      window.localStorage.setItem(
+        'monize:monte-carlo-results',
+        JSON.stringify({ cached: simResult() }),
+      );
+      mockApi.list.mockResolvedValueOnce([saved]);
+      await renderReport();
+      // Auto-collapsed: Edit inputs surfaces, full form body is hidden.
+      await waitFor(() => {
+        expect(
+          screen.queryByText('Contribution phase'),
+        ).not.toBeInTheDocument();
+        expect(
+          screen.getByRole('button', { name: /Edit inputs/i }),
+        ).toBeInTheDocument();
+      });
+    });
+
+    it('stays expanded when loading a scenario without a cached result', async () => {
+      mockApi.list.mockResolvedValueOnce([scenario()]);
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      // Form body still visible -- no cached result triggers the auto-collapse.
+      expect(
+        await screen.findByText('Withdrawal phase'),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /Edit inputs/i }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('does not collapse when a run fails', async () => {
+      mockApi.run.mockRejectedValueOnce(new Error('boom'));
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      // Body still rendered -- result never updated.
+      expect(screen.getByText('Withdrawal phase')).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /Edit inputs/i }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('Hide inputs from the expanded header collapses without running', async () => {
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      const hide = screen.getByRole('button', { name: /Hide inputs/i });
+      await act(async () => {
+        fireEvent.click(hide);
+      });
+      // Body hidden but no result -- "Run again" surfaces with default name.
+      expect(screen.queryByText('Withdrawal phase')).not.toBeInTheDocument();
+      expect(screen.getByText(/Untitled scenario/)).toBeInTheDocument();
+      expect(mockApi.run).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Save / update flows', () => {
+    it('updates an existing scenario via PATCH when activeId is set', async () => {
+      mockApi.list.mockResolvedValueOnce([scenario()]);
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      const saveBtn = await screen.findByRole('button', {
+        name: /Save changes/,
+      });
+      await act(async () => {
+        fireEvent.click(saveBtn);
+      });
+      expect(mockApi.update).toHaveBeenCalledWith(
+        'scn-1',
+        expect.objectContaining({ name: 'Retirement' }),
+      );
+      // Saved flash button reads "Saved!" briefly.
+      expect(
+        await screen.findByRole('button', { name: /Saved!/ }),
+      ).toBeInTheDocument();
+    });
+
+    it('shows an error toast when Save fails', async () => {
+      mockApi.create.mockRejectedValueOnce(new Error('nope'));
+      const toast = (await import('react-hot-toast')).default;
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      const nameField = screen.getByPlaceholderText('e.g. Aggressive 25-year');
+      fireEvent.change(nameField, { target: { value: 'Failing plan' } });
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Save scenario/ }));
+      });
+      // showErrorToast falls through to react-hot-toast.error.
+      expect(toast.error).toHaveBeenCalled();
+    });
+
+    it('shows an error toast when Run fails', async () => {
+      mockApi.run.mockRejectedValueOnce(new Error('crash'));
+      const toast = (await import('react-hot-toast')).default;
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      expect(toast.error).toHaveBeenCalled();
+    });
+
+    it('shows an error toast when Delete fails', async () => {
+      mockApi.list.mockResolvedValueOnce([scenario()]);
+      mockApi.remove.mockRejectedValueOnce(new Error('forbidden'));
+      const toast = (await import('react-hot-toast')).default;
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      const formDeleteBtn = await screen.findByRole('button', {
+        name: /^Delete$/,
+      });
+      fireEvent.click(formDeleteBtn);
+      await screen.findByText(/Delete scenario\?/);
+      const allDeletes = screen.getAllByRole('button', { name: /^Delete$/ });
+      const confirmBtn = allDeletes[allDeletes.length - 1];
+      await act(async () => {
+        fireEvent.click(confirmBtn);
+      });
+      expect(toast.error).toHaveBeenCalled();
+      // Dialog still closes via the finally block.
+      expect(
+        screen.queryByText(/Delete scenario\?/),
+      ).not.toBeInTheDocument();
+    });
+
+    it('Cancel in the delete dialog does not call remove', async () => {
+      mockApi.list.mockResolvedValueOnce([scenario()]);
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      const formDeleteBtn = await screen.findByRole('button', {
+        name: /^Delete$/,
+      });
+      fireEvent.click(formDeleteBtn);
+      await screen.findByText(/Delete scenario\?/);
+      const cancel = screen.getByRole('button', { name: /Cancel/i });
+      await act(async () => {
+        fireEvent.click(cancel);
+      });
+      expect(mockApi.remove).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Sidebar', () => {
+    it('shows a placeholder message when no scenarios exist', async () => {
+      mockApi.list.mockResolvedValueOnce([]);
+      await renderReport();
+      expect(
+        await screen.findByText(/No saved scenarios/i),
+      ).toBeInTheDocument();
+    });
+
+    it('clicking New clears active scenario and form fields', async () => {
+      mockApi.list.mockResolvedValueOnce([scenario({ name: 'Old plan' })]);
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Old plan/i });
+      fireEvent.click(item);
+      const nameField = screen.getByPlaceholderText('e.g. Aggressive 25-year');
+      expect(nameField).toHaveValue('Old plan');
+      const newBtn = screen.getByRole('button', { name: /^New$/ });
+      await act(async () => {
+        fireEvent.click(newBtn);
+      });
+      expect(
+        screen.getByPlaceholderText('e.g. Aggressive 25-year'),
+      ).toHaveValue('');
+      // Save button reverts to the create label.
+      expect(
+        screen.getByRole('button', { name: /Save scenario/ }),
+      ).toBeInTheDocument();
+    });
+  });
+
+  describe('Cash flow editing', () => {
+    it('changing flow type to Recurring reveals the End year input', async () => {
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole('button', { name: /Add cash flow/i }),
+        );
+      });
+      // The Type select offers One-time / Recurring; default is One-time so
+      // there's no End column initially.
+      expect(
+        screen.queryByLabelText(/^End$/i),
+      ).not.toBeInTheDocument();
+      const select = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(select, { target: { value: 'RECURRING' } });
+      });
+      // End column appears for recurring flows.
+      expect(screen.getByLabelText(/^End$/i)).toBeInTheDocument();
+    });
+
+    it('renders a phase-divider-free chart and a recurring-flow tooltip line', async () => {
+      // Use a saved scenario with a recurring cash flow so the markers render.
+      mockApi.list.mockResolvedValueOnce([
+        scenario({
+          yearsToRetirement: 1,
+          yearsInRetirement: 2,
+          cashFlows: [
+            {
+              name: 'Pension',
+              amount: 10000,
+              flowType: 'RECURRING',
+              startYear: 1,
+              endYear: 3,
+              inflationAdjust: true,
+            },
+          ],
+        }),
+      ]);
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole('button', { name: /Run simulation/i }),
+        );
+      });
+      // Two reference dots: the start marker and the end marker.
+      const dots = await screen.findAllByTestId('reference-dot');
+      expect(dots.length).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  describe('Return assumptions', () => {
+    it('toggles Show in today\'s value', async () => {
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      // The toggle has label "Show in today's value" via aria-label on switch.
+      const toggle = screen.getByRole('switch', {
+        name: /Show in today's value/i,
+      });
+      await act(async () => {
+        fireEvent.click(toggle);
+      });
+      // Switch is now checked.
+      expect(toggle).toHaveAttribute('aria-checked', 'true');
+    });
+  });
+
+  describe('Form field updates', () => {
+    it('updates contribution and withdrawal numeric fields', async () => {
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      // Both "Years" inputs share id="input-years" (NumericInput derives the id
+      // from the label). Pick the input directly inside each fieldset.
+      const contribFs = screen
+        .getByText('Contribution phase')
+        .closest('fieldset')!;
+      const withdrawFs = screen
+        .getByText('Withdrawal phase')
+        .closest('fieldset')!;
+      const yearsContrib = contribFs.querySelector(
+        'input[id="input-years"]',
+      ) as HTMLInputElement;
+      const yearsWithdraw = withdrawFs.querySelector(
+        'input[id="input-years"]',
+      ) as HTMLInputElement;
+      expect(yearsContrib).toBeTruthy();
+      expect(yearsWithdraw).toBeTruthy();
+      await act(async () => {
+        fireEvent.change(yearsContrib, { target: { value: '40' } });
+        fireEvent.blur(yearsContrib);
+        fireEvent.change(yearsWithdraw, { target: { value: '35' } });
+        fireEvent.blur(yearsWithdraw);
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      const arg = mockApi.run.mock.calls[0][0];
+      expect(arg.yearsToRetirement).toBe(40);
+      expect(arg.yearsInRetirement).toBe(35);
+    });
+
+    it('updates currency, growth, return, vol, inflation and simulation count', async () => {
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      const fire = (label: RegExp, value: string) => {
+        const el = screen.getByLabelText(label);
+        fireEvent.change(el, { target: { value } });
+        fireEvent.blur(el);
+      };
+      await act(async () => {
+        fire(/^Annual contribution$/i, '20000');
+        fire(/^Annual withdrawal$/i, '50000');
+        fire(/^Contribution growth$/i, '3');
+        fire(/^Expected return$/i, '8');
+        fire(/^Volatility$/i, '12');
+        fire(/^Inflation$/i, '2.5');
+        fire(/^Simulations$/i, '1000');
+      });
+      // CurrencyInput Target field — disambiguate from chip text by scoping.
+      const fs = screen.getByText('Withdrawal phase').closest('fieldset')!;
+      const target = within(fs).getByLabelText(/Target/i);
+      await act(async () => {
+        fireEvent.change(target, { target: { value: '750000' } });
+        fireEvent.blur(target);
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      const arg = mockApi.run.mock.calls[0][0];
+      expect(arg.annualContribution).toBe(20000);
+      expect(arg.annualWithdrawal).toBe(50000);
+      expect(arg.contributionGrowthRate).toBeCloseTo(0.03);
+      expect(arg.expectedReturn).toBeCloseTo(0.08);
+      expect(arg.volatility).toBeCloseTo(0.12);
+      expect(arg.inflationRate).toBeCloseTo(0.025);
+      expect(arg.simulationCount).toBe(1000);
+      expect(arg.targetValue).toBe(750000);
+    });
+
+    it('clamps simulation count between 100 and 50000', async () => {
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      const sims = screen.getByLabelText(/Simulations/i);
+      // Above the upper bound clamps to 50000.
+      await act(async () => {
+        fireEvent.change(sims, { target: { value: '999999' } });
+        fireEvent.blur(sims);
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      const arg = mockApi.run.mock.calls[0][0];
+      expect(arg.simulationCount).toBe(50000);
+    });
+
+    it('toggles Use current balance off and re-enables Starting value', async () => {
+      // Default form has useCurrentBalance = true (per EMPTY_FORM).
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      const useBal = screen.getByRole('switch', {
+        name: /Use current balance on each run/i,
+      });
+      const initial = useBal.getAttribute('aria-checked');
+      await act(async () => {
+        fireEvent.click(useBal);
+      });
+      // Toggled to the opposite state.
+      expect(useBal.getAttribute('aria-checked')).not.toBe(initial);
+    });
+
+    it('inflation toggle on a cash flow row stays on by default', async () => {
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole('button', { name: /Add cash flow/i }),
+        );
+      });
+      const inflate = screen.getByRole('switch', { name: /^Inflate$/i });
+      // Default is true.
+      expect(inflate).toHaveAttribute('aria-checked', 'true');
+      await act(async () => {
+        fireEvent.click(inflate);
+      });
+      expect(inflate).toHaveAttribute('aria-checked', 'false');
+    });
+
+    it('updates cash flow end year (recurring) and clamps below start year', async () => {
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole('button', { name: /Add cash flow/i }),
+        );
+      });
+      // Switch to RECURRING so the End column appears.
+      const select = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(select, { target: { value: 'RECURRING' } });
+      });
+      // Set start to 5 first.
+      const start = screen.getByLabelText(/^Start$/i);
+      await act(async () => {
+        fireEvent.change(start, { target: { value: '5' } });
+        fireEvent.blur(start);
+      });
+      const end = screen.getByLabelText(/^End$/i);
+      await act(async () => {
+        fireEvent.change(end, { target: { value: '10' } });
+        fireEvent.blur(end);
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      const sent = mockApi.run.mock.calls[0][0];
+      expect(sent.cashFlows[0]).toMatchObject({
+        startYear: 5,
+        endYear: 10,
+      });
+    });
+
+    it('switches from historical back to specified expected return', async () => {
+      mockApi.list.mockResolvedValueOnce([
+        scenario({ accountIds: ['acc-1'], useHistoricalReturns: true }),
+      ]);
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      const radio = screen.getByRole('radio', {
+        name: /Specify expected return/i,
+      });
+      await act(async () => {
+        fireEvent.click(radio);
+      });
+      // Now expected return input is editable.
+      const expected = screen.getByLabelText(/^Expected return$/i);
+      expect(expected).not.toBeDisabled();
+    });
+
+    it('updates Starting value when Use current balance is off', async () => {
+      // Pre-load a scenario with toggle off so Starting value field is enabled.
+      mockApi.list.mockResolvedValueOnce([
+        scenario({ useCurrentBalance: false, startingValue: 100000 }),
+      ]);
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      const starting = screen.getByLabelText(/Starting value/i);
+      await act(async () => {
+        fireEvent.change(starting, { target: { value: '250000' } });
+        fireEvent.blur(starting);
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      const arg = mockApi.run.mock.calls[0][0];
+      expect(arg.startingValue).toBe(250000);
+    });
+
+    it('updates the cash flow amount and start year', async () => {
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole('button', { name: /Add cash flow/i }),
+        );
+      });
+      const amount = screen.getByLabelText(/Amount/i);
+      const start = screen.getByLabelText(/^Start$/i);
+      await act(async () => {
+        fireEvent.change(amount, { target: { value: '5000' } });
+        fireEvent.blur(amount);
+        fireEvent.change(start, { target: { value: '5' } });
+        fireEvent.blur(start);
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      const sent = mockApi.run.mock.calls[0][0];
+      expect(sent.cashFlows[0]).toMatchObject({ amount: 5000, startYear: 5 });
+    });
+  });
+
+  describe('Sidebar load failures', () => {
+    it('shows an error toast when initial load fails', async () => {
+      mockApi.brokerageAccounts.mockRejectedValueOnce(new Error('offline'));
+      const toast = (await import('react-hot-toast')).default;
+      await renderReport();
+      await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    });
+
+    it('shows an error toast when holdingStats fetch fails', async () => {
+      mockApi.list.mockResolvedValueOnce([
+        scenario({ accountIds: ['acc-1'], useHistoricalReturns: true }),
+      ]);
+      mockApi.holdingStats.mockRejectedValueOnce(new Error('db down'));
+      const toast = (await import('react-hot-toast')).default;
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    });
+
+    it('shows an error toast when historicalStats fetch fails', async () => {
+      mockApi.list.mockResolvedValueOnce([
+        scenario({ accountIds: ['acc-1'], useCurrentBalance: true }),
+      ]);
+      mockApi.historicalStats.mockRejectedValueOnce(new Error('db down'));
+      const toast = (await import('react-hot-toast')).default;
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    });
+
+    it('drops a stale active-id when the matching scenario is gone', async () => {
+      window.localStorage.setItem(
+        'monize-monte-carlo-active-id',
+        'never-existed',
+      );
+      mockApi.list.mockResolvedValueOnce([scenario()]);
+      await renderReport();
+      // Form renders normally; active id was cleared so the stored id is gone.
+      await screen.findByText('Contribution phase');
+      expect(
+        window.localStorage.getItem('monize-monte-carlo-active-id'),
+      ).toBeNull();
+    });
+  });
+
+  describe('PDF export with cash flows', () => {
+    it('includes Starts/Ends prefixes for recurring flows in PDF table data', async () => {
+      const { exportToPdf } = await import('@/lib/pdf-export');
+      mockApi.list.mockResolvedValueOnce([
+        scenario({
+          cashFlows: [
+            {
+              name: 'Pension',
+              amount: 12000,
+              flowType: 'RECURRING',
+              startYear: 1,
+              endYear: 2,
+              inflationAdjust: false,
+            },
+            {
+              name: 'House',
+              amount: -50000,
+              flowType: 'ONE_TIME',
+              startYear: 2,
+              endYear: null,
+              inflationAdjust: false,
+            },
+          ],
+        }),
+      ]);
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole('button', { name: /Run simulation/i }),
+        );
+      });
+      fireEvent.click(screen.getByRole('button', { name: /^Export/i }));
+      const pdfOption = await screen.findByRole('button', { name: /^PDF$/ });
+      await act(async () => {
+        fireEvent.click(pdfOption);
+      });
+      const args = (exportToPdf as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      const events = args.tableData.rows
+        .map((r: string[]) => r[r.length - 1])
+        .join('\n');
+      expect(events).toMatch(/Starts: Pension/);
+      expect(events).toMatch(/Ends: Pension/);
+      expect(events).toMatch(/House/);
+    });
+  });
+
+  describe('CSV export with cash flows', () => {
+    it('encodes both one-time and recurring events in the CSV blob', async () => {
+      const captured: Blob[] = [];
+      const origCreate = global.URL.createObjectURL;
+      const origRevoke = global.URL.revokeObjectURL;
+      global.URL.createObjectURL = ((b: Blob) => {
+        captured.push(b);
+        return 'blob:url';
+      }) as never;
+      global.URL.revokeObjectURL = (() => undefined) as never;
+      mockApi.list.mockResolvedValueOnce([
+        scenario({
+          cashFlows: [
+            {
+              name: 'House',
+              amount: -50000,
+              flowType: 'ONE_TIME',
+              startYear: 1,
+              endYear: null,
+              inflationAdjust: false,
+            },
+            {
+              name: 'Pension',
+              amount: 12000,
+              flowType: 'RECURRING',
+              startYear: 1,
+              endYear: 2,
+              inflationAdjust: false,
+            },
+          ],
+        }),
+      ]);
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole('button', { name: /Run simulation/i }),
+        );
+      });
+      fireEvent.click(screen.getByRole('button', { name: /^Export/i }));
+      const csvOption = await screen.findByRole('button', { name: /^CSV$/ });
+      await act(async () => {
+        fireEvent.click(csvOption);
+      });
+      expect(captured.length).toBeGreaterThan(0);
+      const text = await captured[0].text();
+      // ONE_TIME entries get no "Start:" prefix, just the bare name.
+      expect(text).toMatch(/House/);
+      // RECURRING entries are labelled "Start:" / "End:".
+      expect(text).toMatch(/Start: Pension/);
+      expect(text).toMatch(/End: Pension/);
+      global.URL.createObjectURL = origCreate;
+      global.URL.revokeObjectURL = origRevoke;
+    });
+  });
+
+  describe('Chart tooltip', () => {
+    it('renders a percentile breakdown when the tooltip is active', async () => {
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole('button', { name: /Run simulation/i }),
+        );
+      });
+      // Tooltip mock invokes FanChartTooltip with sample percentile data.
+      const tooltips = await screen.findAllByTestId('rc-tooltip');
+      expect(tooltips.length).toBeGreaterThan(0);
+      // Percentile labels render inside the tooltip.
+      expect(screen.getByText(/^90th percentile$/)).toBeInTheDocument();
+      expect(screen.getByText(/^Median \(50th\)$/)).toBeInTheDocument();
+      expect(screen.getByText(/^10th percentile$/)).toBeInTheDocument();
+    });
+
+    it('shows event details in the tooltip when a cash flow fires that year', async () => {
+      // Recurring pension at year 1 -> the tooltip mock uses label '2027'
+      // (yearLabels[0]), so the start marker matches.
+      mockApi.list.mockResolvedValueOnce([
+        scenario({
+          cashFlows: [
+            {
+              name: 'Pension',
+              amount: 8000,
+              flowType: 'RECURRING',
+              startYear: 1,
+              endYear: 3,
+              inflationAdjust: true,
+            },
+          ],
+        }),
+      ]);
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole('button', { name: /Run simulation/i }),
+        );
+      });
+      // Tooltip's event row shows "Starts: Pension" plus inflated amount.
+      expect(
+        await screen.findAllByText(/Starts: Pension/),
+      ).not.toHaveLength(0);
+      // /yr suffix and (inflated) marker are rendered for recurring + adjust.
+      expect(screen.getAllByText(/\/ yr/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/inflated/i).length).toBeGreaterThan(0);
+    });
+
+    it('shows a one-time cash flow without a Starts prefix in the tooltip', async () => {
+      mockApi.list.mockResolvedValueOnce([
+        scenario({
+          cashFlows: [
+            {
+              name: 'House sale',
+              amount: 500000,
+              flowType: 'ONE_TIME',
+              startYear: 1,
+              endYear: null,
+              inflationAdjust: false,
+            },
+          ],
+        }),
+      ]);
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole('button', { name: /Run simulation/i }),
+        );
+      });
+      // The tooltip event header shows just the name (no Starts/Ends prefix).
+      const matches = await screen.findAllByText('House sale');
+      expect(matches.length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/One-time/i).length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Results table view', () => {
+    it('shows event labels in the table when cash flows exist', async () => {
+      mockApi.list.mockResolvedValueOnce([
+        scenario({
+          cashFlows: [
+            {
+              name: 'Pension',
+              amount: 10000,
+              flowType: 'RECURRING',
+              startYear: 1,
+              endYear: 2,
+              inflationAdjust: false,
+            },
+          ],
+        }),
+      ]);
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole('button', { name: /Run simulation/i }),
+        );
+      });
+      const tableTab = screen.getByRole('button', { name: /^Table$/ });
+      await act(async () => {
+        fireEvent.click(tableTab);
+      });
+      // Pension start/end labels render in the events column. They also
+      // render inside the (now-mocked-active) tooltip, so use getAllByText.
+      const starts = await screen.findAllByText(/Starts: Pension/);
+      expect(starts.length).toBeGreaterThan(0);
+      const ends = screen.getAllByText(/Ends: Pension/);
+      expect(ends.length).toBeGreaterThan(0);
     });
   });
 });

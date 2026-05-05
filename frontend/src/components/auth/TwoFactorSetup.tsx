@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import '@/lib/zodConfig';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -40,7 +40,7 @@ export function TwoFactorSetup({ onComplete, onSkip, isForced }: TwoFactorSetupP
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     formState: { isSubmitting },
   } = useForm<TotpCodeFormData>({
     resolver: zodResolver(totpCodeSchema),
@@ -49,7 +49,10 @@ export function TwoFactorSetup({ onComplete, onSkip, isForced }: TwoFactorSetupP
     },
   });
 
-  const codeValue = watch('code');
+  // useWatch is the React Compiler-friendly equivalent of watch() -- it lets
+  // the surrounding component be memoized (watch() returns a fresh function on
+  // every render, which the compiler can't optimize).
+  const codeValue = useWatch({ control, name: 'code', defaultValue: '' });
   const codeRef = register('code');
 
   const {
