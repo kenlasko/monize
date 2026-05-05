@@ -49,6 +49,7 @@ function ReconcileContent() {
   const [selectedTransactionIds, setSelectedTransactionIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [isReconciling, setIsReconciling] = useState(false);
+  const [allowPositiveBalance, setAllowPositiveBalance] = useState(false);
 
   // Load accounts
   useEffect(() => {
@@ -73,6 +74,19 @@ function ReconcileContent() {
   );
 
   const isLiability = selectedAccount ? LIABILITY_TYPES.has(selectedAccount.accountType) : false;
+
+  // Reset override when switching accounts
+  useEffect(() => {
+    setAllowPositiveBalance(false);
+  }, [selectedAccountId]);
+
+  const handleStatementBalanceChange = (value: number | undefined) => {
+    if (isLiability && !allowPositiveBalance && value !== undefined && value > 0) {
+      setStatementBalance(-value);
+    } else {
+      setStatementBalance(value);
+    }
+  };
 
   const handleStartReconciliation = async () => {
     if (!selectedAccountId || !statementDate || statementBalance === undefined) {
@@ -219,14 +233,30 @@ function ReconcileContent() {
           <CurrencyInput
             label="Statement Ending Balance"
             prefix={getCurrencySymbol(selectedAccount?.currencyCode || defaultCurrency)}
-            placeholder={isLiability ? '-0.00' : '0.00'}
+            placeholder={isLiability && !allowPositiveBalance ? '-0.00' : '0.00'}
             value={statementBalance}
-            onChange={setStatementBalance}
+            onChange={handleStatementBalanceChange}
           />
           {isLiability && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 -mt-2">
-              Liability accounts typically have a negative balance
-            </p>
+            <div className="-mt-2 space-y-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Liability accounts typically have a negative balance
+              </p>
+              <label className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={allowPositiveBalance}
+                  onChange={(e) => {
+                    setAllowPositiveBalance(e.target.checked);
+                    if (!e.target.checked && statementBalance !== undefined && statementBalance > 0) {
+                      setStatementBalance(-statementBalance);
+                    }
+                  }}
+                  className="h-3 w-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600"
+                />
+                Allow positive balance (e.g. credit)
+              </label>
+            </div>
           )}
         </div>
 

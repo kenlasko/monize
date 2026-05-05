@@ -414,6 +414,134 @@ describe('ReconcilePage', () => {
     });
   });
 
+  describe('Liability Account Auto-Negation', () => {
+    it('auto-negates a positive statement balance for a credit card account', async () => {
+      render(<ReconcilePage />);
+      await waitFor(() => expect(screen.getByText(/Visa/)).toBeInTheDocument());
+      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-2' } });
+      fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '500' } });
+      const input = screen.getByLabelText('Statement Ending Balance') as HTMLInputElement;
+      expect(Number(input.value)).toBe(-500);
+    });
+
+    it('leaves a negative statement balance unchanged for a liability account', async () => {
+      render(<ReconcilePage />);
+      await waitFor(() => expect(screen.getByText(/Visa/)).toBeInTheDocument());
+      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-2' } });
+      fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '-500' } });
+      const input = screen.getByLabelText('Statement Ending Balance') as HTMLInputElement;
+      expect(Number(input.value)).toBe(-500);
+    });
+
+    it('does not auto-negate for a non-liability account', async () => {
+      render(<ReconcilePage />);
+      await waitFor(() => expect(screen.getByText(/Checking/)).toBeInTheDocument());
+      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+      fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '1500' } });
+      const input = screen.getByLabelText('Statement Ending Balance') as HTMLInputElement;
+      expect(Number(input.value)).toBe(1500);
+    });
+
+    it('passes undefined through without negating for liability account', async () => {
+      render(<ReconcilePage />);
+      await waitFor(() => expect(screen.getByText(/Visa/)).toBeInTheDocument());
+      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-2' } });
+      fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '' } });
+      const input = screen.getByLabelText('Statement Ending Balance') as HTMLInputElement;
+      expect(input.value).toBe('');
+    });
+
+    it('shows the override checkbox for liability accounts', async () => {
+      render(<ReconcilePage />);
+      await waitFor(() => expect(screen.getByText(/Visa/)).toBeInTheDocument());
+      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-2' } });
+      expect(screen.getByLabelText(/Allow positive balance/i)).toBeInTheDocument();
+    });
+
+    it('does not show the override checkbox for non-liability accounts', async () => {
+      render(<ReconcilePage />);
+      await waitFor(() => expect(screen.getByText(/Checking/)).toBeInTheDocument());
+      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+      expect(screen.queryByLabelText(/Allow positive balance/i)).not.toBeInTheDocument();
+    });
+
+    it('allows a positive balance when the override checkbox is checked', async () => {
+      render(<ReconcilePage />);
+      await waitFor(() => expect(screen.getByText(/Visa/)).toBeInTheDocument());
+      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-2' } });
+      fireEvent.click(screen.getByLabelText(/Allow positive balance/i));
+      fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '500' } });
+      const input = screen.getByLabelText('Statement Ending Balance') as HTMLInputElement;
+      expect(Number(input.value)).toBe(500);
+    });
+
+    it('re-negates a positive balance when the override is unchecked', async () => {
+      render(<ReconcilePage />);
+      await waitFor(() => expect(screen.getByText(/Visa/)).toBeInTheDocument());
+      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-2' } });
+      // Enable override and set a positive balance
+      fireEvent.click(screen.getByLabelText(/Allow positive balance/i));
+      fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '500' } });
+      // Disable override — should negate the current positive balance
+      fireEvent.click(screen.getByLabelText(/Allow positive balance/i));
+      const input = screen.getByLabelText('Statement Ending Balance') as HTMLInputElement;
+      expect(Number(input.value)).toBe(-500);
+    });
+
+    it('does not re-negate when unchecking override if balance is already negative', async () => {
+      render(<ReconcilePage />);
+      await waitFor(() => expect(screen.getByText(/Visa/)).toBeInTheDocument());
+      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-2' } });
+      // Enable override and set a negative balance
+      fireEvent.click(screen.getByLabelText(/Allow positive balance/i));
+      fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '-500' } });
+      // Disable override — negative stays negative
+      fireEvent.click(screen.getByLabelText(/Allow positive balance/i));
+      const input = screen.getByLabelText('Statement Ending Balance') as HTMLInputElement;
+      expect(Number(input.value)).toBe(-500);
+    });
+
+    it('resets the override checkbox when switching to a different account', async () => {
+      render(<ReconcilePage />);
+      await waitFor(() => expect(screen.getByText(/Visa/)).toBeInTheDocument());
+      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-2' } });
+      // Enable override
+      const checkbox = screen.getByLabelText(/Allow positive balance/i) as HTMLInputElement;
+      fireEvent.click(checkbox);
+      expect(checkbox.checked).toBe(true);
+      // Switch to a non-liability account and back
+      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-2' } });
+      const freshCheckbox = screen.getByLabelText(/Allow positive balance/i) as HTMLInputElement;
+      expect(freshCheckbox.checked).toBe(false);
+    });
+
+    it('uses a negative placeholder for liability accounts without override', async () => {
+      render(<ReconcilePage />);
+      await waitFor(() => expect(screen.getByText(/Visa/)).toBeInTheDocument());
+      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-2' } });
+      const input = screen.getByLabelText('Statement Ending Balance') as HTMLInputElement;
+      expect(input.placeholder).toBe('-0.00');
+    });
+
+    it('uses a standard placeholder when override is checked', async () => {
+      render(<ReconcilePage />);
+      await waitFor(() => expect(screen.getByText(/Visa/)).toBeInTheDocument());
+      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-2' } });
+      fireEvent.click(screen.getByLabelText(/Allow positive balance/i));
+      const input = screen.getByLabelText('Statement Ending Balance') as HTMLInputElement;
+      expect(input.placeholder).toBe('0.00');
+    });
+
+    it('uses a standard placeholder for non-liability accounts', async () => {
+      render(<ReconcilePage />);
+      await waitFor(() => expect(screen.getByText(/Checking/)).toBeInTheDocument());
+      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+      const input = screen.getByLabelText('Statement Ending Balance') as HTMLInputElement;
+      expect(input.placeholder).toBe('0.00');
+    });
+  });
+
   describe('Error Handling', () => {
     it('shows error toast when accounts fail to load', async () => {
       const toast = await import('react-hot-toast');
