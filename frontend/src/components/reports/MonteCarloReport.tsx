@@ -122,17 +122,6 @@ export function MonteCarloReport() {
   useEffect(() => {
     if (activeId && result) setCachedResult(activeId, result);
   }, [activeId, result]);
-
-  useEffect(() => {
-    if (!saveMenuOpen) return;
-    const onClick = (e: MouseEvent) => {
-      if (saveMenuRef.current && !saveMenuRef.current.contains(e.target as Node)) {
-        setSaveMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
-  }, [saveMenuOpen]);
   // Collapse the input form whenever a result exists so the simulation
   // output is visible without scrolling. Re-expands when result is cleared
   // (e.g. New scenario, or loading a scenario without a cached result).
@@ -148,6 +137,16 @@ export function MonteCarloReport() {
   const [savedFlash, setSavedFlash] = useState(false);
   const [saveMenuOpen, setSaveMenuOpen] = useState(false);
   const saveMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!saveMenuOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (saveMenuRef.current && !saveMenuRef.current.contains(e.target as Node)) {
+        setSaveMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [saveMenuOpen]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
   const chartRef = useRef<HTMLDivElement>(null);
