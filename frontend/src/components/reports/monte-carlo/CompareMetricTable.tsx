@@ -38,7 +38,7 @@ export function CompareMetricTable({
   onRerun,
 }: CompareMetricTableProps) {
   return (
-    <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow">
+    <div className="overflow-x-auto isolate bg-white dark:bg-gray-800 rounded-lg shadow">
       <table className="min-w-full text-sm border-separate border-spacing-0">
         <thead>
           <tr>
@@ -51,7 +51,7 @@ export function CompareMetricTable({
             {columns.map((col) => (
               <th
                 key={col.id}
-                className="relative z-0 bg-gray-50 dark:bg-gray-900/40 px-3 py-3 text-left font-medium text-gray-700 dark:text-gray-200 min-w-[200px]"
+                className="bg-gray-50 dark:bg-gray-900/40 px-3 py-3 text-left font-medium text-gray-700 dark:text-gray-200 min-w-[200px]"
                 scope="col"
               >
                 <ColumnHeader
