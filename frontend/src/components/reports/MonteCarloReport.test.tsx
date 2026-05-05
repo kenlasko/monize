@@ -1683,6 +1683,153 @@ describe('MonteCarloReport', () => {
       ).toHaveValue('');
     });
 
+    it('Compare button is hidden when fewer than 2 scenarios exist', async () => {
+      mockApi.list.mockResolvedValueOnce([scenario({ id: 'a', name: 'Plan A' })]);
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      expect(
+        screen.queryByRole('button', { name: /^Compare$/ }),
+      ).toBeNull();
+    });
+
+    it('Compare opens select mode with checkboxes and a disabled action button', async () => {
+      mockApi.list.mockResolvedValueOnce([
+        scenario({ id: 'a', name: 'Plan A' }),
+        scenario({ id: 'b', name: 'Plan B' }),
+      ]);
+      await renderReport();
+      await act(async () => {
+        fireEvent.click(
+          await screen.findByRole('button', { name: /^Compare$/ }),
+        );
+      });
+      // Both scenarios now expose checkboxes.
+      const checkboxes = screen.getAllByRole('checkbox', {
+        name: /Select Plan [AB] for comparison/,
+      });
+      expect(checkboxes.length).toBe(2);
+      // Action button starts disabled.
+      const compareBtn = screen.getByRole('button', {
+        name: /Compare selected \(0\/4\)/,
+      });
+      expect(compareBtn).toBeDisabled();
+      // Selecting one keeps it disabled (need 2+).
+      await act(async () => {
+        fireEvent.click(checkboxes[0]);
+      });
+      expect(
+        screen.getByRole('button', { name: /Compare selected \(1\/4\)/ }),
+      ).toBeDisabled();
+    });
+
+    it('Compare button navigates to the compare route with selected ids', async () => {
+      mockApi.list.mockResolvedValueOnce([
+        scenario({ id: 'a', name: 'Plan A' }),
+        scenario({ id: 'b', name: 'Plan B' }),
+        scenario({ id: 'c', name: 'Plan C' }),
+      ]);
+      const nav = await import('next/navigation');
+      const push = vi.fn();
+      vi.spyOn(nav, 'useRouter').mockReturnValue({
+        push,
+        replace: vi.fn(),
+        back: vi.fn(),
+        prefetch: vi.fn(),
+        refresh: vi.fn(),
+        forward: vi.fn(),
+      } as ReturnType<typeof nav.useRouter>);
+
+      await renderReport();
+      await act(async () => {
+        fireEvent.click(
+          await screen.findByRole('button', { name: /^Compare$/ }),
+        );
+      });
+      const checkboxes = screen.getAllByRole('checkbox', {
+        name: /Select Plan [AB] for comparison/,
+      });
+      await act(async () => {
+        fireEvent.click(checkboxes[0]);
+      });
+      await act(async () => {
+        fireEvent.click(checkboxes[1]);
+      });
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole('button', { name: /Compare selected \(2\/4\)/ }),
+        );
+      });
+      expect(push).toHaveBeenCalledWith(
+        '/reports/monte-carlo-simulation/compare?ids=a,b',
+      );
+    });
+
+    it('blocks selecting a 5th scenario and shows a toast', async () => {
+      mockApi.list.mockResolvedValueOnce([
+        scenario({ id: 'a', name: 'Plan A' }),
+        scenario({ id: 'b', name: 'Plan B' }),
+        scenario({ id: 'c', name: 'Plan C' }),
+        scenario({ id: 'd', name: 'Plan D' }),
+        scenario({ id: 'e', name: 'Plan E' }),
+      ]);
+      const toast = (await import('react-hot-toast')).default;
+      await renderReport();
+      await act(async () => {
+        fireEvent.click(
+          await screen.findByRole('button', { name: /^Compare$/ }),
+        );
+      });
+      const boxes = screen.getAllByRole('checkbox', {
+        name: /Select Plan [A-E] for comparison/,
+      });
+      for (let i = 0; i < 4; i += 1) {
+        await act(async () => {
+          fireEvent.click(boxes[i]);
+        });
+      }
+      // 5th click should be blocked + emit a toast error.
+      await act(async () => {
+        fireEvent.click(boxes[4]);
+      });
+      expect(toast.error).toHaveBeenCalledWith(
+        'You can compare up to 4 scenarios.',
+      );
+      expect(boxes[4]).not.toBeChecked();
+    });
+
+    it('Cancel exits select mode and clears the selection', async () => {
+      mockApi.list.mockResolvedValueOnce([
+        scenario({ id: 'a', name: 'Plan A' }),
+        scenario({ id: 'b', name: 'Plan B' }),
+      ]);
+      await renderReport();
+      await act(async () => {
+        fireEvent.click(
+          await screen.findByRole('button', { name: /^Compare$/ }),
+        );
+      });
+      const checkboxes = screen.getAllByRole('checkbox', {
+        name: /Select Plan [AB] for comparison/,
+      });
+      await act(async () => {
+        fireEvent.click(checkboxes[0]);
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /^Cancel$/ }));
+      });
+      expect(screen.queryByRole('button', { name: /Compare selected/ })).toBeNull();
+      // Re-entering select mode shows unchecked boxes (selection cleared).
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole('button', { name: /^Compare$/ }),
+        );
+      });
+      const fresh = screen.getAllByRole('checkbox', {
+        name: /Select Plan [AB] for comparison/,
+      });
+      expect(fresh[0]).not.toBeChecked();
+    });
+
     it('reverts the local order when the API call fails', async () => {
       mockApi.list.mockResolvedValueOnce([
         scenario({ id: 'a', name: 'Plan A' }),

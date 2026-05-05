@@ -11,7 +11,7 @@ npm run lint               # ESLint
 npm run type-check         # tsc --noEmit
 npm run test               # Vitest (single run)
 npm run test:watch         # Vitest (watch mode)
-npm run test:cov           # Coverage report (65% lines minimum)
+npm run test:cov           # Coverage report (70% lines/stmts, 65% funcs/branches; goal 80%)
 ```
 
 ## Layout
@@ -22,7 +22,7 @@ npm run test:cov           # Coverage report (65% lines minimum)
 
 - **Path alias:** `@/*` maps to `src/*` (tsconfig + Vitest resolve alias)
 - **TypeScript:** ES2017 target, strict mode, bundler module resolution, React JSX
-- **Vitest:** jsdom environment, 30s timeout, V8 coverage provider; thresholds 65% lines/statements, 60% functions, 55% branches
+- **Vitest:** jsdom environment, 30s timeout, V8 coverage provider; thresholds 70% lines/statements, 65% functions/branches (raise toward 80% as coverage grows)
 - **Tailwind CSS v4:** Via `@tailwindcss/postcss` in `postcss.config.js`, `@import "tailwindcss"` in `globals.css`
 - **Next.js:** Standalone output (Docker), strict mode, security headers in `next.config.js`
 
