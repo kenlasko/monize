@@ -23,6 +23,11 @@ import {
   CashFlow,
   CashFlowType,
 } from '@/lib/monte-carlo';
+import {
+  getCachedResult,
+  setCachedResult,
+  clearCachedResult,
+} from '@/lib/monte-carlo-cache';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { getCurrencySymbol } from '@/lib/format';
 import { showErrorToast } from '@/lib/errors';
@@ -107,8 +112,14 @@ export function MonteCarloReport() {
       /* ignore quota / privacy errors */
     }
   }, [activeId]);
-  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  // Persist simulation results to localStorage so the user doesn't have to
+  // re-run the simulation after a page refresh. Only cache for saved scenarios
+  // -- ad-hoc/draft results have no stable key.
   const [result, setResult] = useState<SimulationResult | null>(null);
+  useEffect(() => {
+    if (activeId && result) setCachedResult(activeId, result);
+  }, [activeId, result]);
+  const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [holdingStats, setHoldingStats] = useState<AccountHoldingStats[] | null>(null);
   const [holdingStatsLoading, setHoldingStatsLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -170,6 +181,8 @@ export function MonteCarloReport() {
                 inflationAdjust: cf.inflationAdjust,
               })),
             });
+            const cached = getCachedResult(match.id);
+            if (cached) setResult(cached);
           } else {
             setActiveId(null);
           }
@@ -286,7 +299,7 @@ export function MonteCarloReport() {
         inflationAdjust: cf.inflationAdjust,
       })),
     });
-    setResult(null);
+    setResult(getCachedResult(s.id));
   };
 
   const newScenario = () => {
@@ -442,6 +455,7 @@ export function MonteCarloReport() {
     }
     try {
       await monteCarloApi.remove(activeId);
+      clearCachedResult(activeId);
       setScenarios((prev) => prev.filter((s) => s.id !== activeId));
       newScenario();
       toast.success('Scenario deleted.');

@@ -62,6 +62,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           if (typeof window !== 'undefined') {
             window.localStorage.removeItem('monize:ai-chat-messages');
+            window.localStorage.removeItem('monize:monte-carlo-results');
           }
         } catch {
           // localStorage unavailable — nothing to do
