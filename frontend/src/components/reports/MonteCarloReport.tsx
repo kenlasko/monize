@@ -35,6 +35,7 @@ import { showErrorToast } from '@/lib/errors';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { MonteCarloSaveAsDialog } from './MonteCarloSaveAsDialog';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { NumericInput } from '@/components/ui/NumericInput';
@@ -148,6 +149,10 @@ export function MonteCarloReport() {
     return () => document.removeEventListener('mousedown', onClick);
   }, [saveMenuOpen]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showSaveAsDialog, setShowSaveAsDialog] = useState(false);
+  const [pendingOverwriteName, setPendingOverwriteName] = useState<string | null>(
+    null,
+  );
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
   const chartRef = useRef<HTMLDivElement>(null);
 
@@ -465,23 +470,60 @@ export function MonteCarloReport() {
     }
   };
 
-  const saveAs = async () => {
-    const baseName = form.name.trim() || 'Untitled scenario';
-    const copyName = `Copy of ${baseName}`.slice(0, 255);
+  const openSaveAsDialog = () => {
+    setShowSaveAsDialog(true);
+  };
+
+  const performSaveAs = async (newName: string) => {
     try {
       const inputs = inputsFromForm(form);
       const created = await monteCarloApi.create({
         ...inputs,
-        name: copyName,
+        name: newName,
         description: form.description || undefined,
       });
       setScenarios((prev) => [created, ...prev]);
       setActiveId(created.id);
-      setForm((prev) => ({ ...prev, name: copyName }));
+      setForm((prev) => ({ ...prev, name: newName }));
       toast.success('Saved as new scenario.');
     } catch (err) {
       logger.error('Save as failed:', err);
       showErrorToast(err, 'Could not save as new scenario.');
+    }
+  };
+
+  const handleSaveAsSubmit = async (newName: string) => {
+    const activeScenario = scenarios.find((s) => s.id === activeId);
+    // Same name as the loaded scenario means the user wants to overwrite —
+    // raise a confirm before mutating the existing record.
+    if (activeScenario && newName === activeScenario.name) {
+      setPendingOverwriteName(newName);
+      return;
+    }
+    setShowSaveAsDialog(false);
+    await performSaveAs(newName);
+  };
+
+  const performOverwrite = async () => {
+    if (!activeId || !pendingOverwriteName) return;
+    try {
+      const inputs = inputsFromForm(form);
+      const updated = await monteCarloApi.update(activeId, {
+        ...inputs,
+        name: pendingOverwriteName,
+        description: form.description || undefined,
+      });
+      setScenarios((prev) =>
+        prev.map((s) => (s.id === updated.id ? updated : s)),
+      );
+      setForm((prev) => ({ ...prev, name: pendingOverwriteName }));
+      toast.success('Scenario overwritten.');
+    } catch (err) {
+      logger.error('Overwrite failed:', err);
+      showErrorToast(err, 'Could not overwrite scenario.');
+    } finally {
+      setPendingOverwriteName(null);
+      setShowSaveAsDialog(false);
     }
   };
 
@@ -1284,11 +1326,11 @@ export function MonteCarloReport() {
                       role="menuitem"
                       onClick={() => {
                         setSaveMenuOpen(false);
-                        void saveAs();
+                        openSaveAsDialog();
                       }}
                       className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md"
                     >
-                      Save as new...
+                      Save as...
                     </button>
                   </div>
                 )}
@@ -1591,6 +1633,25 @@ export function MonteCarloReport() {
         variant="danger"
         onConfirm={confirmDelete}
         onCancel={() => setShowDeleteConfirm(false)}
+      />
+
+      <MonteCarloSaveAsDialog
+        isOpen={showSaveAsDialog}
+        initialName={form.name}
+        onCancel={() => setShowSaveAsDialog(false)}
+        onSubmit={handleSaveAsSubmit}
+      />
+
+      <ConfirmDialog
+        isOpen={pendingOverwriteName !== null}
+        title="Overwrite existing scenario?"
+        message={`A scenario named "${pendingOverwriteName ?? ''}" already exists. Saving will replace its inputs and cash flows.`}
+        confirmLabel="Overwrite"
+        cancelLabel="Cancel"
+        variant="warning"
+        onConfirm={performOverwrite}
+        onCancel={() => setPendingOverwriteName(null)}
+        pushHistory
       />
     </div>
   );

@@ -12,6 +12,8 @@ interface ConfirmDialogProps {
   variant?: 'danger' | 'warning' | 'info';
   onConfirm: () => void;
   onCancel: () => void;
+  /** When true, integrates with browser history so the back button cancels. */
+  pushHistory?: boolean;
 }
 
 export function ConfirmDialog({
@@ -23,6 +25,7 @@ export function ConfirmDialog({
   variant = 'danger',
   onConfirm,
   onCancel,
+  pushHistory = false,
 }: ConfirmDialogProps) {
   const iconColors = {
     danger: 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900',
@@ -37,7 +40,13 @@ export function ConfirmDialog({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onCancel} maxWidth="md" className="p-6">
+    <Modal
+      isOpen={isOpen}
+      onClose={onCancel}
+      maxWidth="md"
+      className="p-6"
+      pushHistory={pushHistory}
+    >
       <div className="flex items-start">
         <div
           className={`flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full ${iconColors[variant]}`}
