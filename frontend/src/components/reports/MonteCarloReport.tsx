@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import {
   Area,
   Line,
@@ -16,113 +16,74 @@ import {
 } from 'recharts';
 import {
   monteCarloApi,
-  MonteCarloScenario,
-  MonteCarloScenarioInputs,
-  PerformanceSummary,
-  SimulationResult,
   AccountHoldingStats,
-  CashFlow,
   CashFlowType,
 } from '@/lib/monte-carlo';
-import {
-  getCachedResult,
-  setCachedResult,
-  clearCachedResult,
-} from '@/lib/monte-carlo-cache';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { getCurrencySymbol } from '@/lib/format';
 import { showErrorToast } from '@/lib/errors';
-import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { MonteCarloSaveAsDialog } from './MonteCarloSaveAsDialog';
+import {
+  CashFlowEvent,
+  CashFlowLegendSwatch,
+  CashFlowMarker,
+  FanChartTooltip,
+} from './MonteCarloChartParts';
+import { ResultsTable, SummaryStat } from './MonteCarloResultsTable';
+import {
+  PERFORMANCE_SUMMARY_HEADERS,
+  PerformanceSummaryTable,
+  buildPerformanceSummaryRows,
+  formatSummaryValue,
+} from './MonteCarloPerformanceSummary';
+import { HoldingStatsTable } from './MonteCarloHoldingStatsTable';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { NumericInput } from '@/components/ui/NumericInput';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { MultiSelect } from '@/components/ui/MultiSelect';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import { createLogger } from '@/lib/logger';
-
-interface BrokerageAccount {
-  id: string;
-  name: string;
-  currencyCode: string;
-}
+import { useMonteCarloScenarios } from './useMonteCarloScenarios';
 
 const logger = createLogger('MonteCarloReport');
-
-const DEFAULT_INPUTS: MonteCarloScenarioInputs = {
-  accountIds: [],
-  startingValue: 0,
-  useCurrentBalance: true,
-  yearsToRetirement: 25,
-  annualContribution: 12000,
-  contributionGrowthRate: 0.02,
-  yearsInRetirement: 30,
-  annualWithdrawal: 60000,
-  expectedReturn: 0.07,
-  volatility: 0.15,
-  inflationRate: 0.025,
-  showRealValues: false,
-  useHistoricalReturns: false,
-  simulationCount: 5000,
-};
-
-type FormState = Omit<
-  MonteCarloScenarioInputs,
-  'targetValue' | 'randomSeed' | 'cashFlows'
-> & {
-  name: string;
-  description: string;
-  targetValue: number | null;
-  randomSeed: string | null;
-  cashFlows: CashFlow[];
-};
-
-const EMPTY_FORM: FormState = {
-  ...DEFAULT_INPUTS,
-  name: '',
-  description: '',
-  targetValue: null,
-  randomSeed: null,
-  cashFlows: [],
-};
 
 export function MonteCarloReport() {
   const { formatCurrency, formatCurrencyLabel, defaultCurrency } = useNumberFormat();
   const currencySymbol = useMemo(() => getCurrencySymbol(defaultCurrency), [defaultCurrency]);
-  const [accounts, setAccounts] = useState<BrokerageAccount[]>([]);
-  const [scenarios, setScenarios] = useState<MonteCarloScenario[]>([]);
-  // Persist the last-active scenario id so a page refresh keeps the user
-  // on the same scenario instead of dumping them back to an empty form.
-  const ACTIVE_ID_KEY = 'monize-monte-carlo-active-id';
-  const [activeId, setActiveId] = useState<string | null>(() => {
-    if (typeof window === 'undefined') return null;
-    try {
-      return window.localStorage.getItem(ACTIVE_ID_KEY);
-    } catch {
-      return null;
-    }
-  });
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      if (activeId) window.localStorage.setItem(ACTIVE_ID_KEY, activeId);
-      else window.localStorage.removeItem(ACTIVE_ID_KEY);
-    } catch {
-      /* ignore quota / privacy errors */
-    }
-  }, [activeId]);
-  // Persist simulation results to localStorage so the user doesn't have to
-  // re-run the simulation after a page refresh. Only cache for saved scenarios
-  // -- ad-hoc/draft results have no stable key.
-  const [result, setResult] = useState<SimulationResult | null>(null);
-  useEffect(() => {
-    if (activeId && result) setCachedResult(activeId, result);
-  }, [activeId, result]);
+  const {
+    accounts,
+    scenarios,
+    activeId,
+    result,
+    form,
+    isLoading,
+    isRunning,
+    savedFlash,
+    showDeleteConfirm,
+    showSaveAsDialog,
+    pendingOverwriteName,
+    updateField,
+    addCashFlow,
+    updateCashFlow,
+    removeCashFlow,
+    loadScenario,
+    newScenario,
+    run: runScenario,
+    save,
+    openSaveAsDialog,
+    handleSaveAsSubmit,
+    cancelSaveAs,
+    performOverwrite,
+    cancelOverwrite,
+    requestDelete,
+    confirmDelete,
+    cancelDelete,
+  } = useMonteCarloScenarios();
+
   // The inputs panel collapses automatically after a fresh simulation run
   // (so the output is visible without scrolling) and after that respects the
   // user's manual toggle, persisted across scenario switches and reloads.
@@ -143,12 +104,9 @@ export function MonteCarloReport() {
       /* ignore quota / privacy errors */
     }
   }, [inputsCollapsed]);
-  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+
   const [holdingStats, setHoldingStats] = useState<AccountHoldingStats[] | null>(null);
   const [holdingStatsLoading, setHoldingStatsLoading] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRunning, setIsRunning] = useState(false);
-  const [savedFlash, setSavedFlash] = useState(false);
   const [saveMenuOpen, setSaveMenuOpen] = useState(false);
   const saveMenuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -161,81 +119,17 @@ export function MonteCarloReport() {
     document.addEventListener('mousedown', onClick);
     return () => document.removeEventListener('mousedown', onClick);
   }, [saveMenuOpen]);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showSaveAsDialog, setShowSaveAsDialog] = useState(false);
-  const [pendingOverwriteName, setPendingOverwriteName] = useState<string | null>(
-    null,
-  );
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
   const chartRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [accs, scns] = await Promise.all([
-          monteCarloApi.brokerageAccounts(),
-          monteCarloApi.list(),
-        ]);
-        setAccounts(accs);
-        setScenarios(scns);
-        // Auto-restore the last-active scenario after a page refresh so the
-        // user doesn't have to re-pick it from the sidebar each time. We
-        // read localStorage directly here (not state) because state may not
-        // have settled before this effect runs.
-        const savedId =
-          typeof window !== 'undefined'
-            ? window.localStorage.getItem(ACTIVE_ID_KEY)
-            : null;
-        if (savedId) {
-          const match = scns.find((s) => s.id === savedId);
-          if (match) {
-            // Inline hydrate (don't call hydrateFormFromScenario here so the
-            // effect doesn't capture it as a stale closure).
-            setActiveId(match.id);
-            setForm({
-              name: match.name,
-              description: match.description ?? '',
-              accountIds: match.accountIds,
-              startingValue: Number(match.startingValue),
-              useCurrentBalance: match.useCurrentBalance,
-              yearsToRetirement: match.yearsToRetirement,
-              annualContribution: Number(match.annualContribution),
-              contributionGrowthRate: Number(match.contributionGrowthRate),
-              yearsInRetirement: match.yearsInRetirement,
-              annualWithdrawal: Number(match.annualWithdrawal),
-              expectedReturn: Number(match.expectedReturn),
-              volatility: Number(match.volatility),
-              inflationRate: Number(match.inflationRate),
-              showRealValues: match.showRealValues,
-              useHistoricalReturns: match.useHistoricalReturns,
-              simulationCount: match.simulationCount,
-              targetValue:
-                match.targetValue == null ? null : Number(match.targetValue),
-              randomSeed: match.randomSeed,
-              cashFlows: (match.cashFlows ?? []).map((cf) => ({
-                name: cf.name,
-                amount: Number(cf.amount),
-                flowType: cf.flowType,
-                startYear: cf.startYear,
-                endYear: cf.endYear ?? null,
-                inflationAdjust: cf.inflationAdjust,
-              })),
-            });
-            const cached = getCachedResult(match.id);
-            if (cached) setResult(cached);
-          } else {
-            setActiveId(null);
-          }
-        }
-      } catch (err) {
-        logger.error('Failed to load Monte Carlo data:', err);
-        showErrorToast(err, 'Failed to load Monte Carlo data. Please refresh.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    load();
-  }, []);
+  const run = useCallback(async () => {
+    const ok = await runScenario();
+    // After a fresh run, surface the results without scrolling. Subsequent
+    // toggles by the user are persisted, so this only fires when they
+    // actively click Run.
+    if (ok) setInputsCollapsed(true);
+  }, [runScenario]);
+
 
   // Fetch per-holding historical stats for the selected accounts whenever the
   // user is in historical-returns mode. Cleared otherwise so the table doesn't
@@ -267,306 +161,9 @@ export function MonteCarloReport() {
     };
   }, [form.useHistoricalReturns, form.accountIds]);
 
-  // Auto-populate the starting value when "Use current balance" is on. Refetches
-  // when the selected accounts change so the displayed value matches what the
-  // simulation will actually use.
-  useEffect(() => {
-    if (!form.useCurrentBalance || form.accountIds.length === 0) return;
-    let cancelled = false;
-    monteCarloApi
-      .historicalStats(form.accountIds)
-      .then((stats) => {
-        if (cancelled) return;
-        // NaN serializes to JSON null; guard against that and any other
-        // non-numeric server quirks so we never feed null into a required
-        // numeric form field.
-        const safe =
-          typeof stats.currentBalance === 'number' &&
-          Number.isFinite(stats.currentBalance)
-            ? stats.currentBalance
-            : 0;
-        setForm((prev) =>
-          prev.useCurrentBalance &&
-          prev.accountIds.length > 0 &&
-          prev.accountIds.every((id) => form.accountIds.includes(id))
-            ? { ...prev, startingValue: safe }
-            : prev,
-        );
-      })
-      .catch((err) => {
-        logger.error('Failed to fetch current balance:', err);
-        showErrorToast(err, 'Failed to fetch the current portfolio value.');
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [form.useCurrentBalance, form.accountIds]);
 
-  const updateField = useCallback(
-    <K extends keyof FormState>(key: K, value: FormState[K]) => {
-      setForm((prev) => ({ ...prev, [key]: value }));
-    },
-    [],
-  );
-
-  const loadScenario = (s: MonteCarloScenario) => {
-    setActiveId(s.id);
-    setForm({
-      name: s.name,
-      description: s.description ?? '',
-      accountIds: s.accountIds,
-      startingValue: Number(s.startingValue),
-      useCurrentBalance: s.useCurrentBalance,
-      yearsToRetirement: s.yearsToRetirement,
-      annualContribution: Number(s.annualContribution),
-      contributionGrowthRate: Number(s.contributionGrowthRate),
-      yearsInRetirement: s.yearsInRetirement,
-      annualWithdrawal: Number(s.annualWithdrawal),
-      expectedReturn: Number(s.expectedReturn),
-      volatility: Number(s.volatility),
-      inflationRate: Number(s.inflationRate),
-      showRealValues: s.showRealValues,
-      useHistoricalReturns: s.useHistoricalReturns,
-      simulationCount: s.simulationCount,
-      targetValue: s.targetValue == null ? null : Number(s.targetValue),
-      randomSeed: s.randomSeed,
-      cashFlows: (s.cashFlows ?? []).map((cf) => ({
-        name: cf.name,
-        amount: Number(cf.amount),
-        flowType: cf.flowType,
-        startYear: cf.startYear,
-        endYear: cf.endYear ?? null,
-        inflationAdjust: cf.inflationAdjust,
-      })),
-    });
-    setResult(getCachedResult(s.id));
-  };
-
-  const newScenario = () => {
-    setActiveId(null);
-    setForm(EMPTY_FORM);
-    setResult(null);
-  };
-
-  // Backend `@IsOptional()` decorators expect omission, not explicit null.
-  // Build the payload without nullable fields when they have no value.
-  // Coerce any non-finite numbers (NaN, ±Infinity, null/undefined leaking in
-  // from API responses) to 0 so we never POST something class-validator will
-  // reject as "not a number".
   const num = (v: unknown): number =>
     typeof v === 'number' && Number.isFinite(v) ? v : 0;
-
-  const inputsFromForm = (f: FormState): MonteCarloScenarioInputs => {
-    const base = {
-      accountIds: f.accountIds,
-      startingValue: num(f.startingValue),
-      useCurrentBalance: f.useCurrentBalance,
-      yearsToRetirement: num(f.yearsToRetirement),
-      annualContribution: num(f.annualContribution),
-      contributionGrowthRate: num(f.contributionGrowthRate),
-      yearsInRetirement: num(f.yearsInRetirement),
-      annualWithdrawal: num(f.annualWithdrawal),
-      expectedReturn: num(f.expectedReturn),
-      volatility: num(f.volatility),
-      inflationRate: num(f.inflationRate),
-      showRealValues: f.showRealValues,
-      useHistoricalReturns: f.useHistoricalReturns,
-      simulationCount: num(f.simulationCount),
-    };
-    const targetValue =
-      f.targetValue != null && Number.isFinite(f.targetValue)
-        ? f.targetValue
-        : null;
-    // Keep every row the user has added; default the name when blank so the
-    // backend's @IsNotEmpty validator doesn't reject the row. Rows are only
-    // dropped when amount is non-numeric (e.g. mid-edit junk).
-    const cashFlows: CashFlow[] = f.cashFlows
-      .filter((cf) => Number.isFinite(cf.amount))
-      .map((cf, idx) => ({
-        name: cf.name.trim() || `Cash flow ${idx + 1}`,
-        amount: cf.amount,
-        flowType: cf.flowType,
-        startYear: Math.max(1, num(cf.startYear) || 1),
-        endYear:
-          cf.flowType === 'RECURRING' && cf.endYear != null && Number.isFinite(cf.endYear)
-            ? cf.endYear
-            : null,
-        inflationAdjust: !!cf.inflationAdjust,
-      }));
-    return {
-      ...base,
-      ...(targetValue != null ? { targetValue } : {}),
-      ...(f.randomSeed ? { randomSeed: f.randomSeed } : {}),
-      ...(cashFlows.length > 0 ? { cashFlows } : { cashFlows: [] }),
-    } as MonteCarloScenarioInputs;
-  };
-
-  const addCashFlow = () => {
-    setForm((prev) => ({
-      ...prev,
-      cashFlows: [
-        ...prev.cashFlows,
-        {
-          name: '',
-          amount: 0,
-          flowType: 'ONE_TIME',
-          startYear: 1,
-          endYear: null,
-          inflationAdjust: true,
-        },
-      ],
-    }));
-  };
-
-  const updateCashFlow = (idx: number, patch: Partial<CashFlow>) => {
-    setForm((prev) => ({
-      ...prev,
-      cashFlows: prev.cashFlows.map((cf, i) =>
-        i === idx ? { ...cf, ...patch } : cf,
-      ),
-    }));
-  };
-
-  const removeCashFlow = (idx: number) => {
-    setForm((prev) => ({
-      ...prev,
-      cashFlows: prev.cashFlows.filter((_, i) => i !== idx),
-    }));
-  };
-
-  const run = async () => {
-    setIsRunning(true);
-    try {
-      // Always run with the *current* form values, not the saved scenario.
-      // Otherwise editing a loaded scenario and clicking Run would silently
-      // re-simulate the saved (stale) values.
-      const r = await monteCarloApi.run(inputsFromForm(form));
-      setResult(r);
-      // After a fresh run, surface the results without scrolling. Subsequent
-      // toggles by the user are persisted, so this only fires when they
-      // actively click Run.
-      setInputsCollapsed(true);
-    } catch (err) {
-      logger.error('Simulation failed:', err);
-      showErrorToast(err, 'Simulation failed. Check inputs and try again.');
-    } finally {
-      setIsRunning(false);
-    }
-  };
-
-  const save = async () => {
-    if (!form.name.trim()) {
-      toast.error('Please enter a scenario name to save.');
-      return;
-    }
-    try {
-      const inputs = inputsFromForm(form);
-      const payload = {
-        ...inputs,
-        name: form.name,
-        description: form.description || undefined,
-      };
-      if (activeId) {
-        const updated = await monteCarloApi.update(activeId, payload);
-        setScenarios((prev) =>
-          prev.map((s) => (s.id === updated.id ? updated : s)),
-        );
-        toast.success('Scenario saved.');
-      } else {
-        const created = await monteCarloApi.create(payload);
-        setScenarios((prev) => [created, ...prev]);
-        setActiveId(created.id);
-        toast.success('Scenario created.');
-      }
-      // Flash the Save button green for ~2s as inline confirmation.
-      setSavedFlash(true);
-      window.setTimeout(() => setSavedFlash(false), 2000);
-    } catch (err) {
-      logger.error('Save failed:', err);
-      showErrorToast(err, 'Could not save scenario.');
-    }
-  };
-
-  const openSaveAsDialog = () => {
-    setShowSaveAsDialog(true);
-  };
-
-  const performSaveAs = async (newName: string) => {
-    try {
-      const inputs = inputsFromForm(form);
-      const created = await monteCarloApi.create({
-        ...inputs,
-        name: newName,
-        description: form.description || undefined,
-      });
-      setScenarios((prev) => [created, ...prev]);
-      setActiveId(created.id);
-      setForm((prev) => ({ ...prev, name: newName }));
-      toast.success('Saved as new scenario.');
-    } catch (err) {
-      logger.error('Save as failed:', err);
-      showErrorToast(err, 'Could not save as new scenario.');
-    }
-  };
-
-  const handleSaveAsSubmit = async (newName: string) => {
-    const activeScenario = scenarios.find((s) => s.id === activeId);
-    // Same name as the loaded scenario means the user wants to overwrite —
-    // raise a confirm before mutating the existing record.
-    if (activeScenario && newName === activeScenario.name) {
-      setPendingOverwriteName(newName);
-      return;
-    }
-    setShowSaveAsDialog(false);
-    await performSaveAs(newName);
-  };
-
-  const performOverwrite = async () => {
-    if (!activeId || !pendingOverwriteName) return;
-    try {
-      const inputs = inputsFromForm(form);
-      const updated = await monteCarloApi.update(activeId, {
-        ...inputs,
-        name: pendingOverwriteName,
-        description: form.description || undefined,
-      });
-      setScenarios((prev) =>
-        prev.map((s) => (s.id === updated.id ? updated : s)),
-      );
-      setForm((prev) => ({ ...prev, name: pendingOverwriteName }));
-      toast.success('Scenario overwritten.');
-    } catch (err) {
-      logger.error('Overwrite failed:', err);
-      showErrorToast(err, 'Could not overwrite scenario.');
-    } finally {
-      setPendingOverwriteName(null);
-      setShowSaveAsDialog(false);
-    }
-  };
-
-  const requestDelete = () => {
-    if (!activeId) return;
-    setShowDeleteConfirm(true);
-  };
-
-  const confirmDelete = async () => {
-    if (!activeId) {
-      setShowDeleteConfirm(false);
-      return;
-    }
-    try {
-      await monteCarloApi.remove(activeId);
-      clearCachedResult(activeId);
-      setScenarios((prev) => prev.filter((s) => s.id !== activeId));
-      newScenario();
-      toast.success('Scenario deleted.');
-    } catch (err) {
-      logger.error('Delete failed:', err);
-      showErrorToast(err, 'Could not delete scenario.');
-    } finally {
-      setShowDeleteConfirm(false);
-    }
-  };
 
   const accountOptions = useMemo(
     () =>
@@ -597,22 +194,11 @@ export function MonteCarloReport() {
   // first year it fires and (for recurring events with a defined end) one
   // dot at the last year. Plotted on the median line so they sit visually
   // on the trajectory.
-  type CashFlowMarker = {
-    year: string;
-    yValue: number;
-    role: 'start' | 'end';
-    income: boolean;
-    name: string;
-    amount: number;
-    flowType: CashFlowType;
-    startYear: number;
-    endYear?: number | null;
-    inflationAdjust: boolean;
-  };
-  const cashFlowMarkers = useMemo<CashFlowMarker[]>(() => {
+  type CashFlowMarkerData = CashFlowEvent & { year: string; yValue: number };
+  const cashFlowMarkers = useMemo<CashFlowMarkerData[]>(() => {
     if (!result) return [];
     const totalYears = result.yearLabels.length;
-    const markers: CashFlowMarker[] = [];
+    const markers: CashFlowMarkerData[] = [];
     for (const cf of form.cashFlows) {
       if (!Number.isFinite(cf.amount) || cf.amount === 0) continue;
       const start = Math.max(1, num(cf.startYear) || 1);
@@ -621,7 +207,7 @@ export function MonteCarloReport() {
       const startLabel = result.yearLabels[startIdx];
       const startY = result.percentiles.p50[startIdx];
       const income = cf.amount > 0;
-      const base: Omit<CashFlowMarker, 'role' | 'year' | 'yValue'> = {
+      const base: Omit<CashFlowMarkerData, 'role' | 'year' | 'yValue'> = {
         income,
         name: cf.name?.trim() || 'Cash flow',
         amount: cf.amount,
@@ -672,7 +258,7 @@ export function MonteCarloReport() {
       '90th percentile',
       'Events',
     ];
-    const eventLabel = (m: CashFlowMarker) => {
+    const eventLabel = (m: CashFlowMarkerData) => {
       // One-time events only ever produce a single marker (role 'start');
       // showing "Start:" reads weird for those, so just print the name.
       const prefix =
@@ -1649,13 +1235,13 @@ export function MonteCarloReport() {
         cancelLabel="Cancel"
         variant="danger"
         onConfirm={confirmDelete}
-        onCancel={() => setShowDeleteConfirm(false)}
+        onCancel={cancelDelete}
       />
 
       <MonteCarloSaveAsDialog
         isOpen={showSaveAsDialog}
         initialName={form.name}
-        onCancel={() => setShowSaveAsDialog(false)}
+        onCancel={cancelSaveAs}
         onSubmit={handleSaveAsSubmit}
       />
 
@@ -1667,486 +1253,9 @@ export function MonteCarloReport() {
         cancelLabel="Cancel"
         variant="warning"
         onConfirm={performOverwrite}
-        onCancel={() => setPendingOverwriteName(null)}
+        onCancel={cancelOverwrite}
         pushHistory
       />
-    </div>
-  );
-}
-
-interface CashFlowEvent {
-  role: 'start' | 'end';
-  income: boolean;
-  name: string;
-  amount: number;
-  flowType: CashFlowType;
-  startYear: number;
-  endYear?: number | null;
-  inflationAdjust: boolean;
-}
-
-function FanChartTooltip({
-  active,
-  payload,
-  label,
-  fmt,
-  events,
-}: {
-  active?: boolean;
-  payload?: Array<{ payload?: Record<string, number> }>;
-  label?: string;
-  fmt: (v: number) => string;
-  events?: CashFlowEvent[];
-}) {
-  if (!active || !payload?.length) return null;
-  const row = payload[0]?.payload;
-  if (!row) return null;
-  const rows: Array<[string, number]> = [
-    ['90th percentile', row.p90],
-    ['75th percentile', row.p75],
-    ['Median (50th)', row.p50],
-    ['25th percentile', row.p25],
-    ['10th percentile', row.p10],
-  ];
-  return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 text-sm max-w-xs">
-      <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">{label}</p>
-      {rows.map(([name, value]) => (
-        <p
-          key={name}
-          className="text-gray-700 dark:text-gray-300 flex justify-between gap-4"
-        >
-          <span>{name}</span>
-          <span className="font-medium text-gray-900 dark:text-gray-100">
-            {fmt(value)}
-          </span>
-        </p>
-      ))}
-      {events && events.length > 0 && (
-        <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 space-y-1.5">
-          {events.map((e, i) => (
-            <div key={i} className="flex items-start gap-2">
-              <CashFlowLegendSwatch role={e.role} income={e.income} />
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-gray-900 dark:text-gray-100">
-                  {e.flowType === 'ONE_TIME'
-                    ? e.name
-                    : `${e.role === 'start' ? 'Starts' : 'Ends'}: ${e.name}`}
-                </div>
-                <div
-                  className={
-                    e.income
-                      ? 'text-emerald-700 dark:text-emerald-400'
-                      : 'text-red-700 dark:text-red-400'
-                  }
-                >
-                  {e.income ? '+' : ''}
-                  {fmt(e.amount)}
-                  {e.flowType === 'RECURRING' ? ' / yr' : ''}
-                  {e.inflationAdjust ? ' (inflated)' : ''}
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  {e.flowType === 'ONE_TIME'
-                    ? 'One-time'
-                    : `Recurring · year ${e.startYear}${
-                        e.endYear ? `–${e.endYear}` : '+'
-                      }`}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function CashFlowMarker({
-  cx,
-  cy,
-  role,
-  income,
-}: {
-  cx: number;
-  cy: number;
-  role: 'start' | 'end';
-  income: boolean;
-}) {
-  const fill = income ? '#16a34a' : '#dc2626';
-  const stroke = '#ffffff';
-  // Triangle pointing up = start, pointing down = end. Income green, expense red.
-  const size = 7;
-  const points =
-    role === 'start'
-      ? `${cx},${cy - size} ${cx - size},${cy + size} ${cx + size},${cy + size}`
-      : `${cx},${cy + size} ${cx - size},${cy - size} ${cx + size},${cy - size}`;
-  return <polygon points={points} fill={fill} stroke={stroke} strokeWidth={1.5} />;
-}
-
-function CashFlowLegendSwatch({
-  role,
-  income,
-}: {
-  role: 'start' | 'end';
-  income: boolean;
-}) {
-  const fill = income ? '#16a34a' : '#dc2626';
-  const points =
-    role === 'start' ? '7,1 1,11 13,11' : '7,11 1,1 13,1';
-  return (
-    <svg width={14} height={12} viewBox="0 0 14 12" className="shrink-0">
-      <polygon points={points} fill={fill} stroke="#ffffff" strokeWidth={1} />
-    </svg>
-  );
-}
-
-function ResultsTable({
-  rows,
-  formatCurrency,
-}: {
-  rows: Array<{
-    year: string;
-    p10: number;
-    p25: number;
-    p50: number;
-    p75: number;
-    p90: number;
-    events: CashFlowEvent[];
-  }>;
-  formatCurrency: (v: number) => string;
-}) {
-  return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full text-xs">
-        <thead className="bg-gray-50 dark:bg-gray-900/40 text-gray-500 dark:text-gray-400">
-          <tr>
-            <th className="px-3 py-2 text-left font-medium">Year</th>
-            <th className="px-3 py-2 text-right font-medium">10th</th>
-            <th className="px-3 py-2 text-right font-medium">25th</th>
-            <th className="px-3 py-2 text-right font-medium">Median</th>
-            <th className="px-3 py-2 text-right font-medium">75th</th>
-            <th className="px-3 py-2 text-right font-medium">90th</th>
-            <th className="px-3 py-2 text-left font-medium">Events</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-          {rows.map((r) => (
-            <tr key={r.year}>
-              <td className="px-3 py-1.5 font-mono text-gray-900 dark:text-gray-100">
-                {r.year}
-              </td>
-              <td className="px-3 py-1.5 text-right">{formatCurrency(r.p10)}</td>
-              <td className="px-3 py-1.5 text-right">{formatCurrency(r.p25)}</td>
-              <td className="px-3 py-1.5 text-right font-medium text-gray-900 dark:text-gray-100">
-                {formatCurrency(r.p50)}
-              </td>
-              <td className="px-3 py-1.5 text-right">{formatCurrency(r.p75)}</td>
-              <td className="px-3 py-1.5 text-right">{formatCurrency(r.p90)}</td>
-              <td className="px-3 py-1.5">
-                {r.events.length === 0 ? (
-                  <span className="text-gray-400 dark:text-gray-500">—</span>
-                ) : (
-                  <div className="flex flex-col gap-0.5">
-                    {r.events.map((e, i) => (
-                      <span
-                        key={i}
-                        className={`inline-flex items-center gap-1 ${
-                          e.income
-                            ? 'text-emerald-700 dark:text-emerald-400'
-                            : 'text-red-700 dark:text-red-400'
-                        }`}
-                      >
-                        <CashFlowLegendSwatch role={e.role} income={e.income} />
-                        {e.flowType === 'ONE_TIME'
-                          ? e.name
-                          : `${e.role === 'start' ? 'Starts' : 'Ends'}: ${e.name}`}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-type SummaryRow = {
-  label: string;
-  description: string;
-  band: PerformanceSummary[keyof PerformanceSummary];
-  format: 'currency' | 'percent' | 'ratio';
-};
-
-function buildPerformanceSummaryRows(summary: PerformanceSummary): SummaryRow[] {
-  return [
-    {
-      label: 'Time Weighted Rate of Return (nominal)',
-      description:
-        'Geometric mean of the simulated annual returns. Ignores cash flows and is reported in nominal terms (not adjusted for inflation).',
-      band: summary.twrNominal,
-      format: 'percent',
-    },
-    {
-      label: 'Time Weighted Rate of Return (real)',
-      description:
-        'Geometric mean of the simulated annual returns, adjusted for inflation so the result is in today’s purchasing power.',
-      band: summary.twrReal,
-      format: 'percent',
-    },
-    {
-      label: 'Portfolio End Balance (nominal)',
-      description:
-        'Final portfolio value at the end of the simulation horizon, in future-dollar (nominal) terms.',
-      band: summary.endBalanceNominal,
-      format: 'currency',
-    },
-    {
-      label: 'Portfolio End Balance (real)',
-      description:
-        'Final portfolio value discounted back to today’s purchasing power using the inflation rate.',
-      band: summary.endBalanceReal,
-      format: 'currency',
-    },
-    {
-      label: 'Annual Mean Return (nominal)',
-      description:
-        'Arithmetic average of the simulated annual returns. Always greater than or equal to the time-weighted return when volatility is non-zero.',
-      band: summary.meanReturnNominal,
-      format: 'percent',
-    },
-    {
-      label: 'Annualized Volatility',
-      description:
-        'Standard deviation of the simulated annual returns — a measure of how much returns vary year-to-year.',
-      band: summary.annualizedVolatility,
-      format: 'percent',
-    },
-    {
-      label: 'Maximum Drawdown',
-      description:
-        'Largest peak-to-trough drop in portfolio value during the simulation, including the effect of contributions and withdrawals.',
-      band: summary.maxDrawdown,
-      format: 'percent',
-    },
-    {
-      label: 'Maximum Drawdown Excluding Cashflows',
-      description:
-        'Largest peak-to-trough drop driven purely by investment returns, ignoring contributions and withdrawals.',
-      band: summary.maxDrawdownExcludingCashflows,
-      format: 'percent',
-    },
-    {
-      label: 'Safe Withdrawal Rate',
-      description:
-        'Largest constant inflation-adjusted withdrawal, expressed as a percentage of the starting balance, that exactly depletes the portfolio at the end of the horizon.',
-      band: summary.safeWithdrawalRate,
-      format: 'percent',
-    },
-    {
-      label: 'Perpetual Withdrawal Rate',
-      description:
-        'Largest constant inflation-adjusted withdrawal, as a percentage of the starting balance, that preserves the real value of the portfolio at the end of the horizon.',
-      band: summary.perpetualWithdrawalRate,
-      format: 'percent',
-    },
-  ];
-}
-
-function formatSummaryValue(
-  v: number,
-  kind: SummaryRow['format'],
-  formatCurrency: (v: number) => string,
-): string {
-  if (!Number.isFinite(v)) return '—';
-  if (kind === 'currency') return formatCurrency(v);
-  if (kind === 'percent') return `${(v * 100).toFixed(2)}%`;
-  return v.toFixed(2);
-}
-
-const PERFORMANCE_SUMMARY_HEADERS = [
-  'Summary Statistics',
-  '10th Percentile',
-  '25th Percentile',
-  '50th Percentile',
-  '75th Percentile',
-  '90th Percentile',
-];
-
-function PerformanceSummaryTable({
-  summary,
-  formatCurrency,
-}: {
-  summary: PerformanceSummary;
-  formatCurrency: (v: number) => string;
-}) {
-  const rows = buildPerformanceSummaryRows(summary);
-  const formatValue = (v: number, kind: SummaryRow['format']): string =>
-    formatSummaryValue(v, kind, formatCurrency);
-
-  return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full text-xs">
-        <thead className="bg-gray-50 dark:bg-gray-900/40 text-gray-500 dark:text-gray-400">
-          <tr>
-            <th className="px-3 py-2 text-left font-medium">
-              Summary Statistics
-            </th>
-            <th className="px-3 py-2 text-right font-medium">10th Percentile</th>
-            <th className="px-3 py-2 text-right font-medium">25th Percentile</th>
-            <th className="px-3 py-2 text-right font-semibold text-gray-700 dark:text-gray-200 bg-blue-50 dark:bg-blue-900/30">
-              50th Percentile
-            </th>
-            <th className="px-3 py-2 text-right font-medium">75th Percentile</th>
-            <th className="px-3 py-2 text-right font-medium">90th Percentile</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-          {rows.map((row) => (
-            <tr key={row.label}>
-              <td className="px-3 py-1.5 text-gray-900 dark:text-gray-100">
-                {row.label}
-                <InfoTooltip text={row.description} />
-              </td>
-              <td className="px-3 py-1.5 text-right tabular-nums">
-                {formatValue(row.band.p10, row.format)}
-              </td>
-              <td className="px-3 py-1.5 text-right tabular-nums">
-                {formatValue(row.band.p25, row.format)}
-              </td>
-              <td className="px-3 py-1.5 text-right tabular-nums font-semibold text-gray-900 dark:text-gray-100 bg-blue-50 dark:bg-blue-900/30">
-                {formatValue(row.band.p50, row.format)}
-              </td>
-              <td className="px-3 py-1.5 text-right tabular-nums">
-                {formatValue(row.band.p75, row.format)}
-              </td>
-              <td className="px-3 py-1.5 text-right tabular-nums">
-                {formatValue(row.band.p90, row.format)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function HoldingStatsTable({
-  data,
-  loading,
-  formatCurrency,
-}: {
-  data: AccountHoldingStats[] | null;
-  loading: boolean;
-  formatCurrency: (v: number) => string;
-}) {
-  if (loading) {
-    return (
-      <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-        Loading holding stats…
-      </p>
-    );
-  }
-  if (!data || data.length === 0) {
-    return (
-      <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-        Select one or more accounts to see per-holding historical returns.
-      </p>
-    );
-  }
-
-  const fmtPct = (v: number | null) =>
-    v == null ? '—' : `${(v * 100).toFixed(2)}%`;
-
-  return (
-    <div className="space-y-3 mb-3">
-      {data.map((acct) => (
-        <div
-          key={acct.accountId}
-          className="border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden"
-        >
-          <div className="bg-gray-50 dark:bg-gray-900/50 px-3 py-2 text-sm font-medium text-gray-900 dark:text-gray-100">
-            {acct.accountName}{' '}
-            <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
-              ({acct.currencyCode})
-            </span>
-          </div>
-          {acct.holdings.length === 0 ? (
-            <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
-              No active holdings.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-xs">
-                <thead className="bg-gray-50 dark:bg-gray-900/30 text-gray-500 dark:text-gray-400">
-                  <tr>
-                    <th className="px-3 py-1.5 text-left font-medium">Symbol</th>
-                    {/* Name is decorative; hide on small screens so the
-                        numeric columns fit on a phone without horizontal
-                        scroll. */}
-                    <th className="px-3 py-1.5 text-left font-medium hidden sm:table-cell">
-                      Name
-                    </th>
-                    <th className="px-3 py-1.5 text-right font-medium">Value</th>
-                    <th className="px-3 py-1.5 text-right font-medium whitespace-nowrap">
-                      Mean
-                    </th>
-                    <th className="px-3 py-1.5 text-right font-medium">
-                      Volatility
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {acct.holdings.map((h) => (
-                    <tr key={`${acct.accountId}-${h.symbol}`}>
-                      <td className="px-3 py-1.5 font-mono text-gray-900 dark:text-gray-100 whitespace-nowrap">
-                        {h.symbol}
-                      </td>
-                      <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300 truncate max-w-[200px] hidden sm:table-cell">
-                        {h.name}
-                      </td>
-                      <td className="px-3 py-1.5 text-right text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                        {formatCurrency(h.marketValue)}
-                      </td>
-                      <td className="px-3 py-1.5 text-right text-gray-900 dark:text-gray-100 whitespace-nowrap">
-                        {fmtPct(h.meanReturn)}
-                      </td>
-                      <td className="px-3 py-1.5 text-right text-gray-900 dark:text-gray-100 whitespace-nowrap">
-                        {fmtPct(h.volatility)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function SummaryStat({
-  label,
-  value,
-  className,
-}: {
-  label: string;
-  value: string;
-  className?: string;
-}) {
-  return (
-    <div
-      className={`bg-white dark:bg-gray-800 rounded-lg shadow p-4 ${className ?? ''}`}
-    >
-      <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-        {label}
-      </div>
-      <div className="mt-1 text-xl font-semibold text-gray-900 dark:text-gray-100 break-words">
-        {value}
-      </div>
     </div>
   );
 }
