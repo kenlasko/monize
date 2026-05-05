@@ -39,7 +39,7 @@ export function CompareMetricTable({
 }: CompareMetricTableProps) {
   return (
     <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow">
-      <table className="min-w-full text-sm">
+      <table className="min-w-full text-sm border-separate border-spacing-0">
         <thead>
           <tr>
             <th
