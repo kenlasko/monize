@@ -1,6 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { ConfirmDialog } from './ConfirmDialog';
+import { __resetModalStateForTesting } from './Modal';
+
+const originalRAF = globalThis.requestAnimationFrame;
+const originalCAF = globalThis.cancelAnimationFrame;
 
 describe('ConfirmDialog', () => {
   const defaultProps = {
@@ -46,5 +50,37 @@ describe('ConfirmDialog', () => {
   it('renders nothing when not open', () => {
     const { container } = render(<ConfirmDialog {...defaultProps} isOpen={false} />);
     expect(container.firstChild).toBeNull();
+  });
+
+  describe('pushHistory', () => {
+    beforeEach(() => {
+      globalThis.requestAnimationFrame = (cb: FrameRequestCallback) => {
+        cb(0);
+        return 0;
+      };
+      globalThis.cancelAnimationFrame = vi.fn();
+      __resetModalStateForTesting();
+    });
+
+    afterEach(() => {
+      globalThis.requestAnimationFrame = originalRAF;
+      globalThis.cancelAnimationFrame = originalCAF;
+      document.body.style.overflow = '';
+    });
+
+    it('does not push a history entry by default', async () => {
+      const before = window.history.state;
+      await act(async () => {
+        render(<ConfirmDialog {...defaultProps} />);
+      });
+      expect(window.history.state).toEqual(before);
+    });
+
+    it('pushes a history entry when pushHistory is true', async () => {
+      await act(async () => {
+        render(<ConfirmDialog {...defaultProps} pushHistory />);
+      });
+      expect(window.history.state).toMatchObject({ modal: true });
+    });
   });
 });

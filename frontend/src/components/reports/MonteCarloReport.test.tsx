@@ -18,6 +18,7 @@ const mockApi = vi.hoisted(() => ({
   remove: vi.fn(),
   runSaved: vi.fn(),
   run: vi.fn(),
+  reorder: vi.fn(),
   historicalStats: vi.fn(),
   holdingStats: vi.fn(),
 }));
@@ -259,6 +260,7 @@ describe('MonteCarloReport', () => {
       currentBalance: 250000,
     });
     mockApi.holdingStats.mockResolvedValue(holdingStats());
+    mockApi.reorder.mockResolvedValue(undefined);
     window.localStorage.clear();
   });
 
@@ -703,7 +705,7 @@ describe('MonteCarloReport', () => {
       ).toBeInTheDocument();
     });
 
-    it('clicking New scenario expands the inputs again', async () => {
+    it('clicking New scenario preserves the inputs toggle state and clears the form', async () => {
       mockApi.list.mockResolvedValueOnce([scenario()]);
       await renderReport();
       const item = await screen.findByRole('button', { name: /Retirement/i });
@@ -711,22 +713,61 @@ describe('MonteCarloReport', () => {
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
       });
-      // Confirm we're collapsed.
+      // Confirm we're collapsed after Run.
       await screen.findByRole('button', { name: /Edit inputs/i });
       // Click sidebar "New" button.
       const newBtn = screen.getByRole('button', { name: /^New$/ });
       await act(async () => {
         fireEvent.click(newBtn);
       });
-      // Form expanded -- legends visible again, form name cleared.
+      // The collapsed toggle state is preserved (no auto-expand), but the
+      // form is cleared so the next save creates a fresh scenario.
       expect(
-        await screen.findByText('Withdrawal phase'),
+        screen.getByRole('button', { name: /Edit inputs/i }),
       ).toBeInTheDocument();
-      const nameField = screen.getByPlaceholderText('e.g. Aggressive 25-year');
-      expect(nameField).toHaveValue('');
+      expect(
+        screen.getByRole('button', { name: /Save scenario/ }),
+      ).toBeInTheDocument();
     });
 
-    it('starts collapsed when last-active scenario restores a cached result', async () => {
+    it('switching scenarios preserves the user’s Hide/Show inputs choice', async () => {
+      const a = scenario({ id: 'a', name: 'Plan A' });
+      const b = scenario({ id: 'b', name: 'Plan B' });
+      mockApi.list.mockResolvedValueOnce([a, b]);
+      await renderReport();
+      // Start expanded by default. User loads Plan A and runs to collapse.
+      const planA = await screen.findByRole('button', { name: /Plan A/ });
+      fireEvent.click(planA);
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      await screen.findByRole('button', { name: /Edit inputs/i });
+      // Switch to Plan B -- collapsed state must stick.
+      const planB = screen.getByRole('button', { name: /Plan B/ });
+      await act(async () => {
+        fireEvent.click(planB);
+      });
+      expect(
+        screen.getByRole('button', { name: /Edit inputs/i }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByText('Withdrawal phase'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('persists the Hide/Show inputs choice to localStorage', async () => {
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      const hide = screen.getByRole('button', { name: /Hide inputs/i });
+      await act(async () => {
+        fireEvent.click(hide);
+      });
+      expect(
+        window.localStorage.getItem('monize-monte-carlo-inputs-collapsed'),
+      ).toBe('1');
+    });
+
+    it('honours the persisted collapsed state on mount', async () => {
       const saved = scenario({ id: 'cached', name: 'Cached scn' });
       window.localStorage.setItem('monize-monte-carlo-active-id', 'cached');
       // Pre-populate the result cache so the initial-load effect rehydrates it.
@@ -734,9 +775,10 @@ describe('MonteCarloReport', () => {
         'monize:monte-carlo-results',
         JSON.stringify({ cached: simResult() }),
       );
+      // Persisted toggle state from a previous session.
+      window.localStorage.setItem('monize-monte-carlo-inputs-collapsed', '1');
       mockApi.list.mockResolvedValueOnce([saved]);
       await renderReport();
-      // Auto-collapsed: Edit inputs surfaces, full form body is hidden.
       await waitFor(() => {
         expect(
           screen.queryByText('Contribution phase'),
@@ -1466,6 +1508,205 @@ describe('MonteCarloReport', () => {
       expect(starts.length).toBeGreaterThan(0);
       const ends = screen.getAllByText(/Ends: Pension/);
       expect(ends.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Save As flow', () => {
+    async function openSaveAsMenu() {
+      const more = await screen.findByRole('button', {
+        name: /More save options/i,
+      });
+      await act(async () => {
+        fireEvent.click(more);
+      });
+      const saveAs = await screen.findByRole('menuitem', {
+        name: /Save as/i,
+      });
+      await act(async () => {
+        fireEvent.click(saveAs);
+      });
+    }
+
+    it('Save as... with a new name creates a fresh scenario', async () => {
+      mockApi.list.mockResolvedValueOnce([scenario()]);
+      mockApi.create.mockResolvedValueOnce(
+        scenario({ id: 'copy-1', name: 'Aggressive copy' }),
+      );
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      await openSaveAsMenu();
+
+      const input = await screen.findByLabelText(/^Name$/);
+      fireEvent.change(input, { target: { value: 'Aggressive copy' } });
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /^Save$/ }));
+      });
+
+      expect(mockApi.create).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'Aggressive copy' }),
+      );
+      expect(mockApi.update).not.toHaveBeenCalled();
+    });
+
+    it('Save as... with the same name prompts to overwrite the existing scenario', async () => {
+      mockApi.list.mockResolvedValueOnce([scenario()]);
+      mockApi.update.mockResolvedValueOnce(scenario());
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      await openSaveAsMenu();
+
+      // The dialog pre-fills with the active scenario's name; submit unchanged.
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /^Save$/ }));
+      });
+
+      // Stacked overwrite confirm appears.
+      await screen.findByText(/Overwrite existing scenario\?/);
+      expect(mockApi.create).not.toHaveBeenCalled();
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Overwrite/ }));
+      });
+      expect(mockApi.update).toHaveBeenCalledWith(
+        'scn-1',
+        expect.objectContaining({ name: 'Retirement' }),
+      );
+    });
+
+    it('cancelling the overwrite confirm leaves the Save As dialog open', async () => {
+      mockApi.list.mockResolvedValueOnce([scenario()]);
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      await openSaveAsMenu();
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /^Save$/ }));
+      });
+      await screen.findByText(/Overwrite existing scenario\?/);
+      const cancels = screen.getAllByRole('button', { name: /Cancel/i });
+      await act(async () => {
+        fireEvent.click(cancels[cancels.length - 1]);
+      });
+      // Overwrite confirm is gone, but the Save As dialog is still up.
+      expect(
+        screen.queryByText(/Overwrite existing scenario\?/),
+      ).not.toBeInTheDocument();
+      expect(screen.getByText(/Save scenario as/)).toBeInTheDocument();
+      expect(mockApi.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Reorder scenarios', () => {
+    it('Reorder toggle is hidden when only one scenario exists', async () => {
+      mockApi.list.mockResolvedValueOnce([scenario()]);
+      await renderReport();
+      await screen.findByRole('button', { name: /Retirement/i });
+      expect(
+        screen.queryByRole('button', { name: /^Reorder$/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('clicking Reorder reveals up/down arrows and Done hides them', async () => {
+      mockApi.list.mockResolvedValueOnce([
+        scenario({ id: 'a', name: 'Plan A' }),
+        scenario({ id: 'b', name: 'Plan B' }),
+      ]);
+      await renderReport();
+      const reorder = await screen.findByRole('button', { name: /^Reorder$/ });
+      await act(async () => {
+        fireEvent.click(reorder);
+      });
+      expect(screen.getAllByTitle(/Move up/).length).toBe(2);
+      expect(screen.getAllByTitle(/Move down/).length).toBe(2);
+      const done = screen.getByRole('button', { name: /^Done$/ });
+      await act(async () => {
+        fireEvent.click(done);
+      });
+      expect(screen.queryAllByTitle(/Move up/).length).toBe(0);
+    });
+
+    it('moving a scenario down calls reorder with the new id order', async () => {
+      mockApi.list.mockResolvedValueOnce([
+        scenario({ id: 'a', name: 'Plan A' }),
+        scenario({ id: 'b', name: 'Plan B' }),
+        scenario({ id: 'c', name: 'Plan C' }),
+      ]);
+      await renderReport();
+      await act(async () => {
+        fireEvent.click(
+          await screen.findByRole('button', { name: /^Reorder$/ }),
+        );
+      });
+      // Move "Plan A" down by one.
+      const downs = screen.getAllByTitle(/Move down/);
+      await act(async () => {
+        fireEvent.click(downs[0]);
+      });
+      expect(mockApi.reorder).toHaveBeenCalledWith(['b', 'a', 'c']);
+    });
+
+    it('Move up on the first row and Move down on the last row are disabled', async () => {
+      mockApi.list.mockResolvedValueOnce([
+        scenario({ id: 'a', name: 'Plan A' }),
+        scenario({ id: 'b', name: 'Plan B' }),
+      ]);
+      await renderReport();
+      await act(async () => {
+        fireEvent.click(
+          await screen.findByRole('button', { name: /^Reorder$/ }),
+        );
+      });
+      const ups = screen.getAllByTitle(/Move up/);
+      const downs = screen.getAllByTitle(/Move down/);
+      expect(ups[0]).toBeDisabled();
+      expect(downs[downs.length - 1]).toBeDisabled();
+    });
+
+    it('clicking a scenario row while reordering does not load it', async () => {
+      mockApi.list.mockResolvedValueOnce([
+        scenario({ id: 'a', name: 'Plan A' }),
+        scenario({ id: 'b', name: 'Plan B' }),
+      ]);
+      await renderReport();
+      await act(async () => {
+        fireEvent.click(
+          await screen.findByRole('button', { name: /^Reorder$/ }),
+        );
+      });
+      const planB = screen.getByRole('button', { name: /Plan B/ });
+      await act(async () => {
+        fireEvent.click(planB);
+      });
+      // Form name field still empty -- click was a no-op while reordering.
+      expect(
+        screen.getByPlaceholderText('e.g. Aggressive 25-year'),
+      ).toHaveValue('');
+    });
+
+    it('reverts the local order when the API call fails', async () => {
+      mockApi.list.mockResolvedValueOnce([
+        scenario({ id: 'a', name: 'Plan A' }),
+        scenario({ id: 'b', name: 'Plan B' }),
+      ]);
+      mockApi.reorder.mockRejectedValueOnce(new Error('forbidden'));
+      const toast = (await import('react-hot-toast')).default;
+      await renderReport();
+      await act(async () => {
+        fireEvent.click(
+          await screen.findByRole('button', { name: /^Reorder$/ }),
+        );
+      });
+      const downs = screen.getAllByTitle(/Move down/);
+      await act(async () => {
+        fireEvent.click(downs[0]);
+      });
+      expect(toast.error).toHaveBeenCalled();
+      // Original order restored: Plan A first, Plan B second.
+      const items = screen.getAllByRole('button', { name: /Plan [AB]/ });
+      expect(items[0]).toHaveTextContent('Plan A');
+      expect(items[1]).toHaveTextContent('Plan B');
     });
   });
 });
