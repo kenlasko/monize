@@ -1357,14 +1357,15 @@ export function MonteCarloReport() {
                         undefined && (
                         <ReferenceLine
                           x={result.yearLabels[form.yearsToRetirement - 1]}
-                          stroke="#6b7280"
-                          strokeDasharray="4 4"
-                          strokeWidth={1.5}
+                          stroke="#d97706"
+                          strokeDasharray="8 4"
+                          strokeWidth={2.5}
                           label={{
                             value: 'Withdrawal phase →',
                             position: 'insideTopRight',
-                            fill: '#6b7280',
-                            fontSize: 11,
+                            fill: '#d97706',
+                            fontSize: 12,
+                            fontWeight: 600,
                           }}
                         />
                       )}
