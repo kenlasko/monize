@@ -17,11 +17,13 @@ import {
 } from '@/lib/monte-carlo-cache';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
+import { exportToCsv } from '@/lib/csv-export';
 import { MAX_COMPARE_SCENARIOS } from '../useMonteCarloScenarios';
 import {
   CompareColumn,
   CompareMetricTable,
 } from './CompareMetricTable';
+import { ROW_GROUPS, formatCellValue } from './compareMetricRows';
 
 const logger = createLogger('MonteCarloCompare');
 
@@ -245,6 +247,36 @@ export function CompareScenariosView({ ids }: CompareScenariosViewProps) {
     };
   });
 
+  const exportableColumns = columns.filter(
+    (c) => c.status === 'ok' && c.scenario && c.result,
+  );
+  const canExport = exportableColumns.length >= 2;
+
+  const handleDownloadCsv = () => {
+    const headers = [
+      'Group',
+      'Metric',
+      ...exportableColumns.map((c) => c.scenario?.name ?? c.id),
+    ];
+    const rows: (string | number | boolean | null | undefined)[][] = [];
+    for (const group of ROW_GROUPS) {
+      for (const row of group.rows) {
+        rows.push([
+          group.label,
+          row.label,
+          ...exportableColumns.map((c) =>
+            formatCellValue(
+              row.accessor({ scenario: c.scenario!, result: c.result }),
+              row.format,
+              formatCurrency,
+            ),
+          ),
+        ]);
+      }
+    }
+    exportToCsv('monte-carlo-comparison', headers, rows);
+  };
+
   return (
     <div className="space-y-4">
       {truncated && (
@@ -253,6 +285,21 @@ export function CompareScenariosView({ ids }: CompareScenariosViewProps) {
           scenarios. You can compare up to {MAX_COMPARE_SCENARIOS} at a time.
         </div>
       )}
+      <div className="flex justify-end">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleDownloadCsv}
+          disabled={!canExport}
+          title={
+            canExport
+              ? 'Download the comparison as a CSV file'
+              : 'Wait for at least 2 scenarios to finish loading'
+          }
+        >
+          Download CSV
+        </Button>
+      </div>
       <CompareMetricTable
         columns={columns}
         formatCurrency={formatCurrency}

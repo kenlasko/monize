@@ -20,6 +20,8 @@ export type MetricRow = {
    * datum is not available (renders as `—`).
    */
   accessor: (ctx: ScenarioContext) => number | string | boolean | null;
+  /** Marks the row as the start of a new subgroup within the parent group. */
+  subgroupStart?: boolean;
 };
 
 export type RowGroup = {
@@ -125,12 +127,13 @@ const PERFORMANCE_METRICS: Array<{
 ];
 
 const performanceRows: MetricRow[] = PERFORMANCE_METRICS.flatMap(
-  ({ label, format, pick, keyBase }) =>
-    (['p10', 'p50', 'p90'] as const).map<MetricRow>((p) => ({
+  ({ label, format, pick, keyBase }, metricIdx) =>
+    (['p10', 'p50', 'p90'] as const).map<MetricRow>((p, pIdx) => ({
       key: `${keyBase}.${p}`,
       label: `${label} (${p})`,
       format,
       accessor: fromBand(pick, p),
+      subgroupStart: pIdx === 0 && metricIdx > 0,
     })),
 );
 

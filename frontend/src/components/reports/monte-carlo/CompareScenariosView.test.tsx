@@ -29,6 +29,9 @@ vi.mock('@/hooks/useNumberFormat', () => ({
   }),
 }));
 
+const mockExportToCsv = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/csv-export', () => ({ exportToCsv: mockExportToCsv }));
+
 const mockRouter = vi.hoisted(() => ({
   push: vi.fn(),
   replace: vi.fn(),
@@ -140,6 +143,7 @@ beforeEach(() => {
   mockApi.runSaved.mockImplementation(async () => result());
   mockRouter.push.mockReset();
   mockRouter.replace.mockReset();
+  mockExportToCsv.mockReset();
 });
 
 // ─── Tests ────────────────────────────────────────────────────────────
@@ -312,6 +316,66 @@ describe('CompareScenariosView', () => {
     expect(
       screen.getByRole('link', { name: 'Pick more scenarios' }),
     ).toBeInTheDocument();
+  });
+
+  it('disables Download CSV until at least 2 scenarios have loaded', async () => {
+    let releaseB: (r: SimulationResult) => void = () => undefined;
+    mockApi.runSaved.mockImplementation(async (id: string) => {
+      if (id === 'b') {
+        return new Promise<SimulationResult>((resolve) => {
+          releaseB = resolve;
+        });
+      }
+      return result();
+    });
+
+    await renderView(['a', 'b']);
+
+    await waitFor(() => {
+      expect(mockApi.runSaved).toHaveBeenCalledWith('a');
+    });
+    expect(
+      screen.getByRole('button', { name: 'Download CSV' }),
+    ).toBeDisabled();
+
+    await act(async () => {
+      releaseB(result());
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: 'Download CSV' }),
+      ).not.toBeDisabled();
+    });
+  });
+
+  it('downloads a CSV with one column per scenario when clicked', async () => {
+    await renderView(['a', 'b']);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: 'Download CSV' }),
+      ).not.toBeDisabled();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+    });
+
+    expect(mockExportToCsv).toHaveBeenCalledTimes(1);
+    const [filename, headers, rows] = mockExportToCsv.mock.calls[0];
+    expect(filename).toBe('monte-carlo-comparison');
+    expect(headers).toEqual(['Group', 'Metric', 'Plan a', 'Plan b']);
+    // Every row carries [group, metric, valueA, valueB].
+    for (const row of rows) {
+      expect(row.length).toBe(4);
+    }
+    // Spot-check a known row: Final distribution > Median, currency-formatted.
+    const median = (rows as string[][]).find(
+      (r) => r[0] === 'Final distribution' && r[1] === 'Median',
+    );
+    expect(median).toBeDefined();
+    expect(median![2]).toBe('$160');
   });
 
   it('handles non-404 fetch errors with an error column', async () => {

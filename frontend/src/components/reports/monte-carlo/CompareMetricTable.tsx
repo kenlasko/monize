@@ -163,7 +163,14 @@ function GroupBlock({
         </td>
       </tr>
       {group.rows.map((row) => (
-        <tr key={row.key}>
+        <tr
+          key={row.key}
+          className={
+            row.subgroupStart
+              ? 'border-t-2 border-gray-300 dark:border-gray-600'
+              : undefined
+          }
+        >
           <th
             scope="row"
             className="sticky left-0 z-10 bg-white dark:bg-gray-800 px-3 py-1.5 text-left font-normal text-gray-700 dark:text-gray-300"
