@@ -609,6 +609,9 @@ export function MonteCarloReport() {
             result.percentiles.p90[result.percentiles.p90.length - 1] ?? 0,
           )}`,
           color: '#111827',
+          // Currency-range value is much wider than the others; give it
+          // 3x the column width so it doesn't truncate in the PDF.
+          widthRatio: 3,
         },
         {
           label: 'Probability of Depletion',
@@ -1079,10 +1082,9 @@ export function MonteCarloReport() {
 
         {result && (
           <div className="space-y-4">
-            {/* 6-col grid so the wide 10th–90th value can breathe across
-                half the row. Probability cards stay narrow at 1 col each.
-                Mobile stacks into 1 column, tablets into 2. */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+            {/* 5-col grid: 1 + 2 + 1 + 1. Mobile stacks into 1 column,
+                tablets into 2. */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <SummaryStat
                 label="Median final"
                 value={formatCurrency(result.finalDistribution.median)}
@@ -1094,7 +1096,7 @@ export function MonteCarloReport() {
                 )} – ${formatCurrency(
                   result.percentiles.p90[result.percentiles.p90.length - 1] ?? 0,
                 )}`}
-                className="lg:col-span-3"
+                className="lg:col-span-2"
               />
               <SummaryStat
                 label="Probability of Depletion"

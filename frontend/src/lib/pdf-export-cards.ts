@@ -9,6 +9,12 @@ export interface PdfSummaryCard {
   label: string;
   value: string;
   color?: string;
+  /**
+   * Relative width of this card. Cards in the row are sized in proportion
+   * to their ratios; default is 1. e.g. ratios [1, 3, 1, 1] => the second
+   * card takes 3/6 of the row, each of the others 1/6.
+   */
+  widthRatio?: number;
 }
 
 interface CardLayoutOptions {
@@ -53,11 +59,17 @@ export function addSummaryCardsToPdf(
 
   const { startY, pageWidth, margin } = options;
   const availableWidth = pageWidth - margin * 2;
-  const cardWidth = (availableWidth - CARD_GAP * (cards.length - 1)) / cards.length;
+  const totalGap = CARD_GAP * (cards.length - 1);
+  // Sum the ratios so widths divide proportionally. Default ratio is 1
+  // when omitted, matching the legacy "all cards equal width" behaviour.
+  const ratios = cards.map((c) => Math.max(0.1, c.widthRatio ?? 1));
+  const totalRatio = ratios.reduce((a, b) => a + b, 0);
+  const widthPerRatio = (availableWidth - totalGap) / totalRatio;
 
+  let x = margin;
   for (let i = 0; i < cards.length; i++) {
     const card = cards[i];
-    const x = margin + i * (cardWidth + CARD_GAP);
+    const cardWidth = widthPerRatio * ratios[i];
 
     // Card background
     doc.setFillColor(...FILL_COLOR);
@@ -77,6 +89,8 @@ export function addSummaryCardsToPdf(
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...valueColor);
     doc.text(card.value, x + CARD_PADDING, startY + 14);
+
+    x += cardWidth + CARD_GAP;
   }
 
   return startY + CARD_HEIGHT + CARD_GAP;
