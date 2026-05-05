@@ -21,6 +21,8 @@ const logger = createLogger('useMonteCarloScenarios');
 
 const ACTIVE_ID_KEY = 'monize-monte-carlo-active-id';
 
+export const MAX_COMPARE_SCENARIOS = 4;
+
 export interface BrokerageAccount {
   id: string;
   name: string;
@@ -166,6 +168,10 @@ export function useMonteCarloScenarios() {
   const [showSaveAsDialog, setShowSaveAsDialog] = useState(false);
   const [pendingOverwriteName, setPendingOverwriteName] = useState<string | null>(
     null,
+  );
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedForCompare, setSelectedForCompare] = useState<Set<string>>(
+    () => new Set(),
   );
 
   useEffect(() => {
@@ -465,6 +471,33 @@ export function useMonteCarloScenarios() {
     setShowDeleteConfirm(false);
   }, []);
 
+  const toggleSelectMode = useCallback(() => {
+    setSelectMode((prev) => {
+      if (prev) setSelectedForCompare(new Set());
+      return !prev;
+    });
+  }, []);
+
+  const toggleForCompare = useCallback((id: string) => {
+    setSelectedForCompare((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+        return next;
+      }
+      if (next.size >= MAX_COMPARE_SCENARIOS) {
+        toast.error(`You can compare up to ${MAX_COMPARE_SCENARIOS} scenarios.`);
+        return prev;
+      }
+      next.add(id);
+      return next;
+    });
+  }, []);
+
+  const clearCompareSelection = useCallback(() => {
+    setSelectedForCompare(new Set());
+  }, []);
+
   const reorderScenarios = useCallback(
     async (orderedIds: string[]) => {
       // Optimistically apply the new order so the sidebar doesn't flicker
@@ -528,5 +561,11 @@ export function useMonteCarloScenarios() {
     confirmDelete,
     cancelDelete,
     reorderScenarios,
+    // multi-select for comparison
+    selectMode,
+    selectedForCompare,
+    toggleSelectMode,
+    toggleForCompare,
+    clearCompareSelection,
   };
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Area,
   Line,
@@ -47,7 +48,7 @@ import { MultiSelect } from '@/components/ui/MultiSelect';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import { createLogger } from '@/lib/logger';
-import { useMonteCarloScenarios } from './useMonteCarloScenarios';
+import { useMonteCarloScenarios, MAX_COMPARE_SCENARIOS } from './useMonteCarloScenarios';
 
 const logger = createLogger('MonteCarloReport');
 
@@ -83,7 +84,12 @@ export function MonteCarloReport() {
     confirmDelete,
     cancelDelete,
     reorderScenarios,
+    selectMode,
+    selectedForCompare,
+    toggleSelectMode,
+    toggleForCompare,
   } = useMonteCarloScenarios();
+  const router = useRouter();
   const [reordering, setReordering] = useState(false);
 
   const moveScenario = useCallback(
@@ -451,7 +457,7 @@ export function MonteCarloReport() {
         <div className="flex items-center justify-between mb-3 gap-2">
           <h3 className="font-semibold text-gray-900 dark:text-gray-100">Scenarios</h3>
           <div className="flex items-center gap-1">
-            {scenarios.length > 1 && (
+            {scenarios.length > 1 && !selectMode && (
               <button
                 type="button"
                 onClick={() => setReordering((v) => !v)}
@@ -465,9 +471,25 @@ export function MonteCarloReport() {
                 {reordering ? 'Done' : 'Reorder'}
               </button>
             )}
-            <Button size="sm" variant="outline" onClick={newScenario}>
-              New
-            </Button>
+            {scenarios.length > 1 && !reordering && (
+              <button
+                type="button"
+                onClick={toggleSelectMode}
+                className={`text-xs px-2 py-1 rounded transition-colors ${
+                  selectMode
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+                title={selectMode ? 'Cancel selection' : 'Select scenarios to compare'}
+              >
+                {selectMode ? 'Cancel' : 'Select'}
+              </button>
+            )}
+            {!selectMode && (
+              <Button size="sm" variant="outline" onClick={newScenario}>
+                New
+              </Button>
+            )}
           </div>
         </div>
         {scenarios.length === 0 ? (
@@ -504,28 +526,77 @@ export function MonteCarloReport() {
                     </button>
                   </div>
                 )}
-                <button
-                  onClick={() => !reordering && loadScenario(s)}
-                  className={`flex-1 text-left px-2 py-1.5 rounded text-sm ${
-                    reordering ? 'cursor-default' : ''
-                  } ${
-                    activeId === s.id
-                      ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-900 dark:text-blue-200'
-                      : reordering
-                        ? 'text-gray-700 dark:text-gray-300'
+                {selectMode ? (
+                  <label
+                    className={`flex-1 flex items-start gap-2 px-2 py-1.5 rounded text-sm cursor-pointer ${
+                      selectedForCompare.has(s.id)
+                        ? 'bg-emerald-50 dark:bg-emerald-900/20 text-gray-900 dark:text-gray-100'
                         : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
-                  }`}
-                >
-                  <div className="font-medium truncate">{s.name}</div>
-                  {s.lastRunAt && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      Last run {new Date(s.lastRunAt).toLocaleDateString()}
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="mt-1 flex-shrink-0"
+                      checked={selectedForCompare.has(s.id)}
+                      onChange={() => toggleForCompare(s.id)}
+                      aria-label={`Select ${s.name} for comparison`}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium truncate">{s.name}</div>
+                      {s.lastRunAt && (
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          Last run {new Date(s.lastRunAt).toLocaleDateString()}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </button>
+                  </label>
+                ) : (
+                  <button
+                    onClick={() => !reordering && loadScenario(s)}
+                    className={`flex-1 text-left px-2 py-1.5 rounded text-sm ${
+                      reordering ? 'cursor-default' : ''
+                    } ${
+                      activeId === s.id
+                        ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-900 dark:text-blue-200'
+                        : reordering
+                          ? 'text-gray-700 dark:text-gray-300'
+                          : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <div className="font-medium truncate">{s.name}</div>
+                    {s.lastRunAt && (
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        Last run {new Date(s.lastRunAt).toLocaleDateString()}
+                      </div>
+                    )}
+                  </button>
+                )}
               </li>
             ))}
           </ul>
+        )}
+        {selectMode && scenarios.length > 1 && (
+          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+            <Button
+              size="sm"
+              variant="primary"
+              className="w-full"
+              disabled={selectedForCompare.size < 2}
+              onClick={() => {
+                const ids = Array.from(selectedForCompare);
+                router.push(
+                  `/reports/monte-carlo-simulation/compare?ids=${ids.join(',')}`,
+                );
+              }}
+              title={
+                selectedForCompare.size < 2
+                  ? 'Select at least 2 scenarios'
+                  : 'Compare selected scenarios'
+              }
+            >
+              Compare selected ({selectedForCompare.size}/{MAX_COMPARE_SCENARIOS})
+            </Button>
+          </div>
         )}
       </aside>
 
