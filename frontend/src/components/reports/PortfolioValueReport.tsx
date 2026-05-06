@@ -29,6 +29,8 @@ import {
   readIntradayCache,
   writeIntradayCache,
   computeTightYAxisDomain,
+  renderChartFlagDot,
+  ChartFlagShadowFilter,
 } from '@/components/investments/portfolio-chart-utils';
 
 const logger = createLogger('PortfolioValueReport');
@@ -54,7 +56,7 @@ function CustomTooltip({ active, payload, fmtFull }: {
 }
 
 export function PortfolioValueReport() {
-  const { formatCurrencyCompact, formatCurrencyAxis, formatCurrency: formatCurrencyFull } = useNumberFormat();
+  const { formatCurrencyCompact, formatCurrencyAxis, formatCurrencyFlag, formatCurrency: formatCurrencyFull } = useNumberFormat();
   const { defaultCurrency } = useExchangeRates();
   const chartRef = useRef<HTMLDivElement>(null);
   const [chartPoints, setChartPoints] = useState<Array<{ name: string; Value: number }>>([]);
@@ -111,6 +113,13 @@ export function PortfolioValueReport() {
     if (foreignCurrency) return formatCurrencyAxis(value, foreignCurrency);
     return formatCurrencyAxis(value);
   }, [foreignCurrency, formatCurrencyAxis]);
+
+  // Flag bubble label: 2-decimal compact notation, more precise than the
+  // 1-decimal axis tick formatter.
+  const fmtFlag = useCallback((value: number) => {
+    if (foreignCurrency) return formatCurrencyFlag(value, foreignCurrency);
+    return formatCurrencyFlag(value);
+  }, [foreignCurrency, formatCurrencyFlag]);
 
   // Sequence number for the latest in-flight load. Lets us drop stale
   // results so quick range/account switches can't write out-of-order data.
@@ -206,7 +215,9 @@ export function PortfolioValueReport() {
           } catch (error) {
             logger.error('Failed to load intraday data:', error);
             if (loadSeqRef.current !== seq) return;
-            setChartPoints([]);
+            // Silently fall back to the daily-snapshot endpoint so the
+            // user still sees a chart instead of an empty card.
+            await loadDailyOrMonthly();
             return;
           }
 
@@ -219,6 +230,7 @@ export function PortfolioValueReport() {
             currency: response.currency,
             fallbackToDaily: response.fallbackToDaily,
             skippedSymbols: response.skippedSymbols,
+            failedSymbols: response.failedSymbols ?? [],
           });
 
           if (response.fallbackToDaily) {
@@ -275,15 +287,17 @@ export function PortfolioValueReport() {
   ]);
 
   const summary = useMemo(() => {
-    if (chartPoints.length === 0) return { current: 0, initial: 0, change: 0, changePercent: 0, high: 0, low: 0 };
+    if (chartPoints.length === 0) {
+      return { change: 0, changePercent: 0, highest: 0, lowest: 0 };
+    }
+    const values = chartPoints.map((d) => d.Value);
+    const highest = Math.max(...values);
+    const lowest = Math.min(...values);
     const current = chartPoints[chartPoints.length - 1]?.Value || 0;
     const initial = chartPoints[0]?.Value || 0;
     const change = current - initial;
     const changePercent = initial !== 0 ? (change / Math.abs(initial)) * 100 : 0;
-    const values = chartPoints.map((d) => d.Value);
-    const high = Math.max(...values);
-    const low = Math.min(...values);
-    return { current, initial, change, changePercent, high, low };
+    return { change, changePercent, highest, lowest };
   }, [chartPoints]);
 
   const xAxisTicks = useMemo(() => {
@@ -302,6 +316,24 @@ export function PortfolioValueReport() {
     [chartPoints],
   );
 
+  // Index of the first point at the highest / lowest value, for the
+  // bubble callouts. Suppress when the series is flat.
+  const highestIndex = useMemo(
+    () =>
+      chartPoints.length === 0
+        ? -1
+        : chartPoints.findIndex((p) => p.Value === summary.highest),
+    [chartPoints, summary.highest],
+  );
+  const lowestIndex = useMemo(
+    () =>
+      chartPoints.length === 0
+        ? -1
+        : chartPoints.findIndex((p) => p.Value === summary.lowest),
+    [chartPoints, summary.lowest],
+  );
+  const showFlags = summary.highest !== summary.lowest;
+
   const handleExportPdf = async () => {
     const { exportToPdf } = await import('@/lib/pdf-export');
     const accountLabel = selectedAccount
@@ -319,7 +351,8 @@ export function PortfolioValueReport() {
       title: 'Portfolio Value',
       subtitle: accountLabel,
       summaryCards: [
-        { label: 'Current Value', value: fmtVal(summary.current), color: '#111827' },
+        { label: 'Highest Value', value: fmtVal(summary.highest), color: '#111827' },
+        { label: 'Lowest Value', value: fmtVal(summary.lowest), color: '#111827' },
         { label: 'Period Change', value: `${summary.change >= 0 ? '+' : ''}${fmtVal(summary.change)}`, color: summary.change >= 0 ? '#16a34a' : '#dc2626' },
         { label: 'Period Return', value: `${summary.changePercent >= 0 ? '+' : ''}${summary.changePercent.toFixed(1)}%`, color: summary.changePercent >= 0 ? '#16a34a' : '#dc2626' },
       ],
@@ -352,9 +385,15 @@ export function PortfolioValueReport() {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
-          <div className="text-sm text-gray-500 dark:text-gray-400">Current Value</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">Highest Value</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
-            {fmtVal(summary.current)}
+            {fmtVal(summary.highest)}
+          </div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+          <div className="text-sm text-gray-500 dark:text-gray-400">Lowest Value</div>
+          <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
+            {fmtVal(summary.lowest)}
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
@@ -367,14 +406,6 @@ export function PortfolioValueReport() {
           <div className="text-sm text-gray-500 dark:text-gray-400">Period Return</div>
           <div className={`text-xl font-bold ${summary.changePercent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
             {summary.changePercent >= 0 ? '+' : ''}{summary.changePercent.toFixed(1)}%
-          </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
-          <div className="text-sm text-gray-500 dark:text-gray-400">Period High / Low</div>
-          <div className="text-sm font-bold text-gray-900 dark:text-gray-100">
-            <span className="text-green-600 dark:text-green-400">{fmtVal(summary.high)}</span>
-            {' / '}
-            <span className="text-red-600 dark:text-red-400">{fmtVal(summary.low)}</span>
           </div>
         </div>
       </div>
@@ -483,13 +514,14 @@ export function PortfolioValueReport() {
             }`}
           >
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <AreaChart data={chartPoints} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+              <AreaChart data={chartPoints} margin={{ top: 30, right: 30, left: 0, bottom: 30 }}>
                 <defs>
                   <linearGradient id="colorPortfolioValue" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
                     <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                   </linearGradient>
                 </defs>
+                <ChartFlagShadowFilter />
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis
                   dataKey="name"
@@ -526,6 +558,34 @@ export function PortfolioValueReport() {
                   fillOpacity={1}
                   fill="url(#colorPortfolioValue)"
                   name="Portfolio Value"
+                  isAnimationActive={false}
+                  dot={(props: { cx?: number; cy?: number; index?: number }) => {
+                    const { cx, cy, index } = props;
+                    if (cx == null || cy == null || index == null) {
+                      return <circle cx={0} cy={0} r={0} fill="none" />;
+                    }
+                    const isHighest = showFlags && index === highestIndex;
+                    const isLowest = showFlags && index === lowestIndex;
+                    if (!isHighest && !isLowest) {
+                      return <circle key={`dot-${index}`} cx={cx} cy={cy} r={0} fill="none" />;
+                    }
+                    const value = isHighest ? summary.highest : summary.lowest;
+                    // Place the bubble to the side of its dot (with a horizontal
+                    // connector) instead of above/below. This puts the bubble
+                    // in the chart's middle vertical band -- well clear of the
+                    // x-axis labels at the bottom and the top edge of the plot.
+                    // Side is auto-picked based on the dot's position so the
+                    // bubble stays inside the chart's left/right edges.
+                    const isLeftHalf = index < chartPoints.length / 2;
+                    return renderChartFlagDot({
+                      cx,
+                      cy,
+                      index,
+                      color: isHighest ? '#10b981' : '#ef4444',
+                      label: fmtFlag(value),
+                      side: isLeftHalf ? 'right' : 'left',
+                    });
+                  }}
                 />
               </AreaChart>
             </ResponsiveContainer>

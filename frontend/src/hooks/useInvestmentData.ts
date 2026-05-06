@@ -109,12 +109,22 @@ export function useInvestmentData() {
     }
   }, []);
 
+  // Track whether the initial load has completed so subsequent reloads
+  // (price refresh, account selection change, pagination, filter change)
+  // can run "in the background" while sections keep showing their existing
+  // data. Without this, every refresh flips isLoading=true and every
+  // skeleton-gated section re-mounts from blank -- which is the
+  // "everything redraws when prices refresh" bug. The Portfolio Value chart
+  // is unaffected because it already has its own keep-data-while-loading
+  // pattern; this generalises that behaviour to the rest of the page.
+  const hasLoadedRef = useRef(false);
+
   const loadAllPortfolioData = useCallback(async (
     accountIds: string[],
     page: number = 1,
     filters: TransactionFilters = {},
   ) => {
-    setIsLoading(true);
+    if (!hasLoadedRef.current) setIsLoading(true);
     try {
       const ids = accountIds.length > 0 ? accountIds : undefined;
       const [summaryData, txResponse] = await Promise.all([
@@ -138,7 +148,8 @@ export function useInvestmentData() {
       setTransactions([]);
       setPagination(null);
     } finally {
-      setIsLoading(false);
+      if (!hasLoadedRef.current) setIsLoading(false);
+      hasLoadedRef.current = true;
     }
   }, []);
 

@@ -63,6 +63,7 @@ vi.mock('@/lib/investments', () => ({
       range: '1d',
       fetchedAt: new Date().toISOString(),
       skippedSymbols: [],
+      failedSymbols: [],
       fallbackToDaily: false,
     }),
   },
@@ -116,8 +117,9 @@ describe('InvestmentValueChart', () => {
 
   it('renders summary cards after data loads', async () => {
     render(<InvestmentValueChart />);
-    const currentValue = await screen.findByText('Current Value');
-    expect(currentValue).toBeInTheDocument();
+    const highest = await screen.findByText('Highest Value');
+    expect(highest).toBeInTheDocument();
+    expect(screen.getByText('Lowest Value')).toBeInTheDocument();
     expect(screen.getByText('Change')).toBeInTheDocument();
     expect(screen.getByText('Change %')).toBeInTheDocument();
   });
@@ -131,8 +133,9 @@ describe('InvestmentValueChart', () => {
   it('displays computed summary values', async () => {
     render(<InvestmentValueChart />);
     await screen.findByText('Portfolio Value Over Time');
-    // current: $15000, initial: $10000, change: $5000, percent: +50.0%
+    // highest=15000, lowest=10000, change=+5000, percent=+50.0%
     expect(screen.getByText('$15000')).toBeInTheDocument();
+    expect(screen.getByText('$10000')).toBeInTheDocument();
     expect(screen.getByText('+$5000')).toBeInTheDocument();
     expect(screen.getByText('+50.0%')).toBeInTheDocument();
   });
@@ -217,6 +220,7 @@ describe('InvestmentValueChart', () => {
       range: '1d',
       fetchedAt: '2024-01-02T15:00:00.000Z',
       skippedSymbols: [],
+      failedSymbols: [],
       fallbackToDaily: false,
     });
     render(<InvestmentValueChart />);
@@ -236,6 +240,7 @@ describe('InvestmentValueChart', () => {
       range: '1d',
       fetchedAt: '2024-01-02T15:00:00.000Z',
       skippedSymbols: ['VFV.TO'],
+      failedSymbols: [],
       fallbackToDaily: true,
     });
     render(<InvestmentValueChart />);
@@ -254,6 +259,7 @@ describe('InvestmentValueChart', () => {
       range: '1w',
       fetchedAt: '2024-01-02T15:00:00.000Z',
       skippedSymbols: ['VFV.TO'],
+      failedSymbols: [],
       fallbackToDaily: true,
     });
     render(<InvestmentValueChart />);
@@ -291,6 +297,42 @@ describe('InvestmentValueChart', () => {
     });
   });
 
+  it('silently falls back to daily on 1w when the intraday request rejects', async () => {
+    dateRangeState.dateRange = '1w';
+    dateRangeState.resolvedRange = { start: '2023-12-25', end: '2024-01-01' };
+    vi.mocked(investmentsApi.getIntradayValue).mockRejectedValue(
+      new Error('Network error'),
+    );
+    vi.mocked(netWorthApi.getInvestmentsDaily).mockResolvedValue([
+      { date: '2023-12-25', value: 8000 },
+      { date: '2024-01-01', value: 9000 },
+    ]);
+    render(<InvestmentValueChart />);
+    await screen.findByText('Portfolio Value Over Time');
+    await waitFor(() => {
+      expect(netWorthApi.getInvestmentsDaily).toHaveBeenCalled();
+    });
+    expect(screen.queryByTestId('intraday-error-banner')).toBeNull();
+    expect(screen.getByText('$9000')).toBeInTheDocument();
+  });
+
+  it('silently falls back to daily on 1d when the intraday request rejects', async () => {
+    dateRangeState.dateRange = '1d';
+    dateRangeState.resolvedRange = { start: '2024-01-01', end: '2024-01-02' };
+    vi.mocked(investmentsApi.getIntradayValue).mockRejectedValue(
+      new Error('500 Internal Server Error'),
+    );
+    vi.mocked(netWorthApi.getInvestmentsDaily).mockResolvedValue([
+      { date: '2024-01-01', value: 7777 },
+    ]);
+    render(<InvestmentValueChart />);
+    await screen.findByText('Portfolio Value Over Time');
+    await waitFor(() => {
+      expect(netWorthApi.getInvestmentsDaily).toHaveBeenCalled();
+    });
+    expect(screen.queryByTestId('intraday-error-banner')).toBeNull();
+  });
+
   it('shows a warning icon next to the title when 1w falls back to daily', async () => {
     dateRangeState.dateRange = '1w';
     dateRangeState.resolvedRange = { start: '2023-12-25', end: '2024-01-01' };
@@ -301,6 +343,7 @@ describe('InvestmentValueChart', () => {
       range: '1w',
       fetchedAt: '2024-01-02T15:00:00.000Z',
       skippedSymbols: ['VFV.TO'],
+      failedSymbols: [],
       fallbackToDaily: true,
     });
     render(<InvestmentValueChart />);
@@ -320,6 +363,7 @@ describe('InvestmentValueChart', () => {
       range: '1w',
       fetchedAt: '2024-01-02T15:00:00.000Z',
       skippedSymbols: [],
+      failedSymbols: [],
       fallbackToDaily: false,
     });
     render(<InvestmentValueChart />);
@@ -336,6 +380,7 @@ describe('InvestmentValueChart', () => {
       range: '1d',
       fetchedAt: '2024-01-02T15:00:00.000Z',
       skippedSymbols: [],
+      failedSymbols: [],
       fallbackToDaily: false,
     });
     render(<InvestmentValueChart />);

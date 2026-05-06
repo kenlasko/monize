@@ -36,7 +36,7 @@ export interface IntradayValuePoint {
 
 export interface IntradayValueResponse {
   points: IntradayValuePoint[];
-  interval: "1m" | "5m" | "15m";
+  interval: "1m" | "2m" | "5m" | "15m" | "30m" | "60m" | "90m";
   currency: string;
   /** Range that was actually returned (echoes the request). */
   range: IntradayRangeKey;
@@ -48,11 +48,18 @@ export interface IntradayValueResponse {
    */
   skippedSymbols: string[];
   /**
-   * True when at least one holding's quote provider has no intraday support
-   * AND the requested range has a sensible daily-resolution fallback (1W/1M).
-   * The frontend should call the existing daily-snapshot endpoint instead of
-   * rendering this (partial) intraday series. 1D has no daily fallback so
-   * this stays false even when securities are skipped.
+   * Symbols whose intraday fetch failed at the provider level (network error,
+   * empty/invalid response, etc.) even though the provider does support
+   * intraday in principle. Distinguished from skippedSymbols so the frontend
+   * can show a distinct error message.
+   */
+  failedSymbols: string[];
+  /**
+   * True when the frontend must not render this intraday series and should
+   * instead use the daily-snapshot endpoint. Set when:
+   *   - any holding's quote provider has no intraday support (skippedSymbols),
+   *   - or any holding's intraday fetch failed (failedSymbols).
+   * In either case the points array is empty.
    */
   fallbackToDaily: boolean;
 }

@@ -174,6 +174,32 @@ describe('useInvestmentData – handleDeleteTransaction', () => {
     expect(result.current.portfolioSummary).toEqual(freshSummary);
   });
 
+  it('keeps isLoading=false on subsequent reloads so sections do not redraw from blank', async () => {
+    // Initial load completes -> isLoading=false. Subsequent reloads (e.g.
+    // from a price refresh) should NOT flip isLoading back to true; the
+    // sections should keep showing existing data while the fetch is in
+    // flight. Without this, every refresh causes the summary card,
+    // allocation chart, holdings list, and transaction list to revert to
+    // their skeleton state -- the bug the user reported as "every section
+    // except the chart redraws from blank when refreshing prices".
+    mockGetPortfolioSummary.mockResolvedValue(mockSummary);
+    mockGetTransactions.mockResolvedValue({ data: [], pagination: null });
+
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+
+    expect(result.current.isLoading).toBe(false);
+    const initialCalls = mockGetPortfolioSummary.mock.calls.length;
+
+    // Trigger a subsequent reload (the same path price-refresh uses).
+    await act(async () => {
+      await result.current.loadAllPortfolioData([], 1, {});
+    });
+
+    expect(mockGetPortfolioSummary.mock.calls.length).toBeGreaterThan(initialCalls);
+    expect(result.current.isLoading).toBe(false);
+  });
+
   it('does not call setIsLoading on successful delete (no full reload)', async () => {
     mockDeleteTransaction.mockResolvedValue(undefined);
 

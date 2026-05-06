@@ -156,11 +156,11 @@ describe('PortfolioValueReport', () => {
     ]);
     render(<PortfolioValueReport />);
     await waitFor(() => {
-      expect(screen.getByText('Current Value')).toBeInTheDocument();
+      expect(screen.getByText('Highest Value')).toBeInTheDocument();
     });
+    expect(screen.getByText('Lowest Value')).toBeInTheDocument();
     expect(screen.getByText('Period Change')).toBeInTheDocument();
     expect(screen.getByText('Period Return')).toBeInTheDocument();
-    expect(screen.getByText('Period High / Low')).toBeInTheDocument();
   });
 
   it('renders the area chart', async () => {

@@ -27,6 +27,8 @@ import {
   writeIntradayCache,
   clearAllIntradayCache,
   computeTightYAxisDomain,
+  renderChartFlagDot,
+  ChartFlagShadowFilter,
 } from './portfolio-chart-utils';
 
 const logger = createLogger('InvestmentChart');
@@ -48,7 +50,7 @@ interface InvestmentValueChartProps {
 }
 
 export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix }: InvestmentValueChartProps) {
-  const { formatCurrencyCompact, formatCurrencyAxis } = useNumberFormat();
+  const { formatCurrencyCompact, formatCurrencyAxis, formatCurrencyFlag } = useNumberFormat();
   const { defaultCurrency } = useExchangeRates();
   const [chartPoints, setChartPoints] = useState<Array<{ name: string; Value: number }>>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -97,6 +99,14 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix 
     if (foreignCurrency) return formatCurrencyAxis(value, foreignCurrency);
     return formatCurrencyAxis(value);
   }, [foreignCurrency, formatCurrencyAxis]);
+
+  // Flag bubble label: 2-decimal compact notation. Reads more precisely
+  // than the 1-decimal axis ticks so the highlighted high/low value can
+  // be picked out without squinting at the connector position.
+  const fmtFlag = useCallback((value: number) => {
+    if (foreignCurrency) return formatCurrencyFlag(value, foreignCurrency);
+    return formatCurrencyFlag(value);
+  }, [foreignCurrency, formatCurrencyFlag]);
 
   // Sequence number for the latest in-flight load. Lets us cancel stale
   // results that resolve out-of-order if the user clicks ranges quickly.
@@ -182,8 +192,9 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix 
           } catch (error) {
             logger.error('Failed to load intraday data:', error);
             if (loadSeqRef.current !== seq) return;
-            setChartPoints([]);
-            setIsLoading(false);
+            // Intraday fetch failed -- silently fall back to the
+            // daily-snapshot endpoint so the user still sees a chart.
+            await loadDailyOrMonthly(seq);
             return;
           }
 
@@ -196,6 +207,7 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix 
             currency: response.currency,
             fallbackToDaily: response.fallbackToDaily,
             skippedSymbols: response.skippedSymbols,
+            failedSymbols: response.failedSymbols ?? [],
           });
 
           if (response.fallbackToDaily) {
@@ -267,12 +279,17 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix 
   }, [isIntraday, loadData]);
 
   const summary = useMemo(() => {
-    if (chartPoints.length === 0) return { current: 0, change: 0, changePercent: 0 };
+    if (chartPoints.length === 0) {
+      return { highest: 0, lowest: 0, change: 0, changePercent: 0 };
+    }
+    const values = chartPoints.map((p) => p.Value);
+    const highest = Math.max(...values);
+    const lowest = Math.min(...values);
     const current = chartPoints[chartPoints.length - 1]?.Value || 0;
     const initial = chartPoints[0]?.Value || 0;
     const change = current - initial;
     const changePercent = initial !== 0 ? (change / Math.abs(initial)) * 100 : 0;
-    return { current, change, changePercent };
+    return { highest, lowest, change, changePercent };
   }, [chartPoints]);
 
   const xAxisTicks = useMemo(() => {
@@ -290,6 +307,25 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix 
     () => computeTightYAxisDomain(chartPoints.map((d) => d.Value)),
     [chartPoints],
   );
+
+  // Index of the first point at the highest / lowest value, for the
+  // bubble callouts. Suppress when the series is flat (highest === lowest)
+  // -- two stacked bubbles at the same point would just be visual noise.
+  const highestIndex = useMemo(
+    () =>
+      chartPoints.length === 0
+        ? -1
+        : chartPoints.findIndex((p) => p.Value === summary.highest),
+    [chartPoints, summary.highest],
+  );
+  const lowestIndex = useMemo(
+    () =>
+      chartPoints.length === 0
+        ? -1
+        : chartPoints.findIndex((p) => p.Value === summary.lowest),
+    [chartPoints, summary.lowest],
+  );
+  const showFlags = summary.highest !== summary.lowest;
 
   const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ value: number; payload: { name: string } }> }) => {
     if (active && payload && payload.length) {
@@ -385,11 +421,17 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix 
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
         <div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">Current Value</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">Highest Value</div>
           <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-            {fmtVal(summary.current)}
+            {fmtVal(summary.highest)}
+          </div>
+        </div>
+        <div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">Lowest Value</div>
+          <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
+            {fmtVal(summary.lowest)}
           </div>
         </div>
         <div>
@@ -436,13 +478,14 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix 
           }`}
         >
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-            <AreaChart data={chartPoints} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+            <AreaChart data={chartPoints} margin={{ top: 30, right: 30, left: 0, bottom: 30 }}>
               <defs>
                 <linearGradient id="colorInvestments" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
                   <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                 </linearGradient>
               </defs>
+              <ChartFlagShadowFilter />
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis
                 dataKey="name"
@@ -479,6 +522,36 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix 
                 fillOpacity={1}
                 fill="url(#colorInvestments)"
                 name="Portfolio Value"
+                isAnimationActive={false}
+                dot={(props: { cx?: number; cy?: number; index?: number }) => {
+                  const { cx, cy, index } = props;
+                  if (cx == null || cy == null || index == null) {
+                    return <circle cx={0} cy={0} r={0} fill="none" />;
+                  }
+                  const isHighest = showFlags && index === highestIndex;
+                  const isLowest = showFlags && index === lowestIndex;
+                  if (!isHighest && !isLowest) {
+                    return <circle key={`dot-${index}`} cx={cx} cy={cy} r={0} fill="none" />;
+                  }
+                  const value = isHighest ? summary.highest : summary.lowest;
+                  // Place the bubble to the side of its dot (with a horizontal
+                  // connector) instead of above/below. This puts the bubble
+                  // in the chart's middle vertical band -- well clear of the
+                  // x-axis labels at the bottom and the top edge of the plot,
+                  // regardless of whether the dot itself is at the top or
+                  // bottom of the data range. Side is auto-picked based on
+                  // the dot's position within the series so the bubble
+                  // doesn't get pushed off the chart's left or right edge.
+                  const isLeftHalf = index < chartPoints.length / 2;
+                  return renderChartFlagDot({
+                    cx,
+                    cy,
+                    index,
+                    color: isHighest ? '#10b981' : '#ef4444',
+                    label: fmtFlag(value),
+                    side: isLeftHalf ? 'right' : 'left',
+                  });
+                }}
               />
             </AreaChart>
           </ResponsiveContainer>

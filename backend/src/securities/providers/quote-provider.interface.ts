@@ -18,7 +18,14 @@ export interface QuoteResult {
   msnResolvedInstrumentId?: string;
 }
 
-export type IntradayInterval = "1m" | "5m" | "15m";
+export type IntradayInterval =
+  | "1m"
+  | "2m"
+  | "5m"
+  | "15m"
+  | "30m"
+  | "60m"
+  | "90m";
 export type IntradayRange = "1d" | "5d" | "1mo";
 
 export interface IntradayPoint {

@@ -157,6 +157,39 @@ const RANGE_TO_YAHOO: Record<
   "1m": { interval: "15m", range: "1mo" },
 };
 
+// Per-range fallback chain attempted (per holding, in order) when the
+// primary interval fails. Yahoo's narrowest intervals are the most
+// rate-limited and most likely to return empty responses for less-liquid
+// securities; each step up the ladder is more reliable. We try
+// progressively coarser bars at the same range until one works, then
+// only after the whole ladder fails do we fall back to the security's
+// latest daily close. The user sees no banner -- the chart silently
+// degrades to slightly coarser resolution instead.
+const RANGE_FALLBACKS: Record<
+  IntradayRangeKey,
+  Array<{ interval: IntradayInterval; range: IntradayRange }>
+> = {
+  "1d": [
+    { interval: "2m", range: "1d" },
+    { interval: "5m", range: "1d" },
+    { interval: "15m", range: "1d" },
+    { interval: "30m", range: "1d" },
+    { interval: "60m", range: "1d" },
+    { interval: "90m", range: "1d" },
+  ],
+  "1w": [
+    { interval: "15m", range: "5d" },
+    { interval: "30m", range: "5d" },
+    { interval: "60m", range: "5d" },
+    { interval: "90m", range: "5d" },
+  ],
+  "1m": [
+    { interval: "30m", range: "1mo" },
+    { interval: "60m", range: "1mo" },
+    { interval: "90m", range: "1mo" },
+  ],
+};
+
 const INTRADAY_CACHE_TTL_MS = 60_000;
 
 @Injectable()
@@ -745,7 +778,7 @@ export class PortfolioService {
     const yahooParams = RANGE_TO_YAHOO[range];
 
     const accounts = await this.resolveAccounts(userId, accountIds);
-    const { holdingsAccountIds } =
+    const { cashAccounts, standaloneAccounts, holdingsAccountIds } =
       this.calculationService.categoriseAccounts(accounts);
 
     let activeHoldings: Array<{
@@ -830,6 +863,7 @@ export class PortfolioService {
         range,
         fetchedAt,
         skippedSymbols,
+        failedSymbols: [],
         fallbackToDaily,
       };
       this.intradayCache.set(cacheKey, {
@@ -841,42 +875,58 @@ export class PortfolioService {
 
     const intradayHoldings = activeHoldings.filter((h) => h.hasIntraday);
     const seriesBySecurity = new Map<string, IntradayPoint[]>();
+    const failedSymbols: string[] = [];
+    const intervalCandidates = [yahooParams, ...RANGE_FALLBACKS[range]];
     await Promise.all(
       intradayHoldings.map(async (h) => {
-        try {
-          const points = await this.yahooFinanceService.fetchIntradaySeries(
-            h.symbol,
-            h.exchange,
-            yahooParams,
-          );
-          if (points && points.length > 0) {
-            seriesBySecurity.set(h.securityId, points);
+        // Try the primary interval first, then any range-specific
+        // fallbacks (e.g. 1m -> 5m for 1D). The first non-empty series
+        // wins; silently degrade to coarser bars rather than treating it
+        // as a failure when the primary interval is spotty.
+        let points: IntradayPoint[] | null = null;
+        for (const params of intervalCandidates) {
+          try {
+            points = await this.yahooFinanceService.fetchIntradaySeries(
+              h.symbol,
+              h.exchange,
+              params,
+            );
+            if (points && points.length > 0) break;
+          } catch (error) {
+            this.logger.warn(
+              `Failed to fetch intraday series for ${h.symbol} at ${params.interval}: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            );
           }
-        } catch (error) {
-          this.logger.warn(
-            `Failed to fetch intraday series for ${h.symbol}: ${
-              error instanceof Error ? error.message : String(error)
-            }`,
-          );
+        }
+        if (points && points.length > 0) {
+          seriesBySecurity.set(h.securityId, points);
+        } else {
+          failedSymbols.push(h.symbol);
         }
       }),
     );
 
-    if (seriesBySecurity.size === 0) {
-      const payload: IntradayValueResponse = {
+    // If literally every holding failed we have nothing to chart -- assume
+    // a real upstream outage and fall back to daily for the whole series.
+    // We deliberately do NOT cache this failure payload: caching it would
+    // leave the "Couldn't load intraday prices" banner pinned on screen
+    // even after the user clicks Refresh and the issue resolves.
+    if (
+      failedSymbols.length > 0 &&
+      failedSymbols.length === intradayHoldings.length
+    ) {
+      return {
         points: [],
         interval: yahooParams.interval,
         currency: displayCurrency,
         range,
         fetchedAt,
         skippedSymbols,
-        fallbackToDaily: false,
+        failedSymbols,
+        fallbackToDaily: true,
       };
-      this.intradayCache.set(cacheKey, {
-        expiresAt: now + INTRADAY_CACHE_TTL_MS,
-        payload,
-      });
-      return payload;
     }
 
     // Build the unified time grid from the union of all timestamps.
@@ -901,6 +951,53 @@ export class PortfolioService {
       );
     }
 
+    // Cash held in the user's investment cash and standalone accounts is
+    // part of the portfolio value just like holdings -- the daily-snapshot
+    // endpoint already includes it (see net-worth.service.getDailyInvestments)
+    // and we mirror that here so the 1D/1W/1M intraday chart agrees with
+    // longer-range views. Cash doesn't move intraday from price changes, so
+    // it's a constant additive offset across every grid point.
+    const cashAccountList = [...cashAccounts, ...standaloneAccounts];
+    const cashIds = cashAccountList.map((a) => a.id);
+    const effectiveBalances =
+      await this.calculationService.computeEffectiveBalances(cashIds);
+    const totalCashValue = await this.calculationService.computeTotalCashValue(
+      cashAccountList,
+      effectiveBalances,
+      displayCurrency,
+      rateCache,
+    );
+    const cashCents = Math.round(totalCashValue * 10000);
+
+    // For holdings whose intraday fetch failed (Yahoo errored, was
+    // rate-limited past the retry budget, or simply has no minute-resolution
+    // data for this security -- common for mutual funds and illiquid names),
+    // fall back to the security's latest known daily close. Treat that
+    // value as a constant additive offset, the same way cash is handled.
+    // Without this, a single mutual fund in the user's portfolio would
+    // either undercount the chart (if we ignored it) or pin the
+    // "Couldn't load intraday prices" banner permanently (if we treated
+    // it as a hard failure).
+    const failedHoldings = intradayHoldings.filter(
+      (h) => !seriesBySecurity.has(h.securityId),
+    );
+    let staleHoldingsCents = 0;
+    if (failedHoldings.length > 0) {
+      const latestPrices = await this.getLatestPrices(
+        failedHoldings.map((h) => h.securityId),
+      );
+      for (const h of failedHoldings) {
+        const lastClose = latestPrices.get(h.securityId);
+        if (lastClose == null) continue;
+        const fxRate =
+          rateCache.get(`${h.currencyCode}->${displayCurrency}`) ?? 1;
+        staleHoldingsCents += Math.round(
+          h.quantity * lastClose * fxRate * 10000,
+        );
+      }
+    }
+    const constantCents = cashCents + staleHoldingsCents;
+
     // Build per-security ordered timestamp/close arrays and a cursor-based
     // forward-fill so each grid point uses the latest known close.
     const sources = intradayHoldings
@@ -922,7 +1019,7 @@ export class PortfolioService {
     const points: IntradayValuePoint[] = [];
 
     for (const ts of timestamps) {
-      let totalCents = 0; // integer arithmetic to avoid float drift
+      let totalCents = constantCents; // integer arithmetic to avoid float drift
       for (let i = 0; i < sources.length; i++) {
         const src = sources[i];
         // Advance cursor to the latest sample at-or-before ts.
@@ -939,8 +1036,7 @@ export class PortfolioService {
         // unstarted series contributes 0 and the aggregate jumps up the
         // moment each one's first bar arrives — which is exactly the
         // "significant jump" the chart used to show on multi-account views.
-        const close =
-          cursors[i] < 0 ? src.closes[0] : src.closes[cursors[i]];
+        const close = cursors[i] < 0 ? src.closes[0] : src.closes[cursors[i]];
         const valueInDisplay = src.quantity * close * src.fxRate;
         totalCents += Math.round(valueInDisplay * 10000);
       }
@@ -957,6 +1053,7 @@ export class PortfolioService {
       range,
       fetchedAt,
       skippedSymbols,
+      failedSymbols: [],
       fallbackToDaily: false,
     };
     this.intradayCache.set(cacheKey, {

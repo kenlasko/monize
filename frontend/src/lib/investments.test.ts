@@ -143,16 +143,25 @@ describe('investmentsApi', () => {
   it('refreshPrices posts to /securities/prices/refresh', async () => {
     vi.mocked(apiClient.post).mockResolvedValue({ data: { updated: 5 } });
     const result = await investmentsApi.refreshPrices();
-    expect(apiClient.post).toHaveBeenCalledWith('/securities/prices/refresh');
+    // Per-request 120s timeout overrides the global 10s default; the
+    // refresh-all endpoint hits Yahoo for every active security and
+    // routinely takes longer than 10s on portfolios with many holdings.
+    expect(apiClient.post).toHaveBeenCalledWith(
+      '/securities/prices/refresh',
+      undefined,
+      { timeout: 120_000 },
+    );
     expect(result.updated).toBe(5);
   });
 
   it('refreshSelectedPrices posts with securityIds', async () => {
     vi.mocked(apiClient.post).mockResolvedValue({ data: { updated: 2 } });
     await investmentsApi.refreshSelectedPrices(['s-1', 's-2']);
-    expect(apiClient.post).toHaveBeenCalledWith('/securities/prices/refresh/selected', {
-      securityIds: ['s-1', 's-2'],
-    });
+    expect(apiClient.post).toHaveBeenCalledWith(
+      '/securities/prices/refresh/selected',
+      { securityIds: ['s-1', 's-2'] },
+      { timeout: 120_000 },
+    );
   });
 
   it('getPriceStatus fetches /securities/prices/status', async () => {

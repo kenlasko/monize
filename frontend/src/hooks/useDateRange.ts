@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { format, subMonths, subDays, subYears, subWeeks, startOfMonth, endOfMonth } from 'date-fns';
+import { format, subMonths, subDays, subYears, subWeeks, startOfMonth } from 'date-fns';
 
 interface UseDateRangeOptions {
   /** Which preset is selected by default. */
@@ -41,16 +41,23 @@ export function useDateRange(options: UseDateRangeOptions): UseDateRangeReturn {
 
       const now = new Date();
       const isMonth = alignment === 'month';
-      // Short-range presets always use today as end date (day-level precision).
-      // Long-range presets with month alignment snap to end of month.
-      const useDayLevel = ['1w', '1m', '3m', 'ytd', '1y'].includes(range);
-      const end = isMonth && !useDayLevel
-        ? format(endOfMonth(now), 'yyyy-MM-dd')
-        : format(now, 'yyyy-MM-dd');
+      // End date is always today: data only exists up to today, so snapping
+      // the end to end-of-month (the previous behaviour for long-range
+      // month-aligned presets like 2y/5y) just produced a flat-line tail
+      // from today through the rest of the month. Month alignment now
+      // affects the start date only.
+      const end = format(now, 'yyyy-MM-dd');
 
       let start: string;
 
       switch (range) {
+        case '1d':
+          // '1d' is an intraday-only preset; resolvedRange is consumed only
+          // when the chart falls back to the daily-snapshot endpoint. A
+          // single day's snapshot is just one point, so widen to a week so
+          // the fallback chart is still readable.
+          start = format(subWeeks(now, 1), 'yyyy-MM-dd');
+          break;
         case '1w':
           start = format(subWeeks(now, 1), 'yyyy-MM-dd');
           break;
@@ -69,9 +76,11 @@ export function useDateRange(options: UseDateRangeOptions): UseDateRangeReturn {
           start = format(subYears(now, 1), 'yyyy-MM-dd');
           break;
         case '2y':
-          start = isMonth
-            ? format(startOfMonth(subMonths(now, 23)), 'yyyy-MM-dd')
-            : format(subYears(now, 2), 'yyyy-MM-dd');
+          // Rolling 2 years = last 730 days. Same shape regardless of
+          // alignment: month alignment on the start was producing partial
+          // history at the leading edge (e.g. mid-month -> chart only
+          // showed 23.5 months back).
+          start = format(subDays(now, 730), 'yyyy-MM-dd');
           break;
         case '5y':
           start = isMonth
