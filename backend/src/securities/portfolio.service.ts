@@ -745,7 +745,7 @@ export class PortfolioService {
     const yahooParams = RANGE_TO_YAHOO[range];
 
     const accounts = await this.resolveAccounts(userId, accountIds);
-    const { holdingsAccountIds } =
+    const { cashAccounts, standaloneAccounts, holdingsAccountIds } =
       this.calculationService.categoriseAccounts(accounts);
 
     let activeHoldings: Array<{
@@ -910,6 +910,24 @@ export class PortfolioService {
       );
     }
 
+    // Cash held in the user's investment cash and standalone accounts is
+    // part of the portfolio value just like holdings -- the daily-snapshot
+    // endpoint already includes it (see net-worth.service.getDailyInvestments)
+    // and we mirror that here so the 1D/1W/1M intraday chart agrees with
+    // longer-range views. Cash doesn't move intraday from price changes, so
+    // it's a constant additive offset across every grid point.
+    const cashAccountList = [...cashAccounts, ...standaloneAccounts];
+    const cashIds = cashAccountList.map((a) => a.id);
+    const effectiveBalances =
+      await this.calculationService.computeEffectiveBalances(cashIds);
+    const totalCashValue = await this.calculationService.computeTotalCashValue(
+      cashAccountList,
+      effectiveBalances,
+      displayCurrency,
+      rateCache,
+    );
+    const cashCents = Math.round(totalCashValue * 10000);
+
     // Build per-security ordered timestamp/close arrays and a cursor-based
     // forward-fill so each grid point uses the latest known close.
     const sources = intradayHoldings
@@ -931,7 +949,7 @@ export class PortfolioService {
     const points: IntradayValuePoint[] = [];
 
     for (const ts of timestamps) {
-      let totalCents = 0; // integer arithmetic to avoid float drift
+      let totalCents = cashCents; // integer arithmetic to avoid float drift
       for (let i = 0; i < sources.length; i++) {
         const src = sources[i];
         // Advance cursor to the latest sample at-or-before ts.

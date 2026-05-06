@@ -2631,10 +2631,10 @@ describe("PortfolioService", () => {
       expect(result.points).toHaveLength(2);
       expect(result.interval).toBe("1m");
       expect(result.currency).toBe("CAD");
-      // ts1: 10 * 100 * 1.4 + 50 * 80 = 1400 + 4000 = 5400
-      expect(result.points[0].value).toBeCloseTo(5400, 4);
-      // ts2: 10 * 110 * 1.4 + 50 * 81 = 1540 + 4050 = 5590
-      expect(result.points[1].value).toBeCloseTo(5590, 4);
+      // ts1: 10 * 100 * 1.4 + 50 * 80 + 5000 cash = 1400 + 4000 + 5000 = 10400
+      expect(result.points[0].value).toBeCloseTo(10400, 4);
+      // ts2: 10 * 110 * 1.4 + 50 * 81 + 5000 cash = 1540 + 4050 + 5000 = 10590
+      expect(result.points[1].value).toBeCloseTo(10590, 4);
     });
 
     it("caches results for 60 seconds keyed by user/range/accounts/currency", async () => {
@@ -2787,9 +2787,54 @@ describe("PortfolioService", () => {
         range: "1d",
       });
 
-      // ts2 should still include AAPL at its last known price (100).
+      // ts2 should still include AAPL at its last known price (100). No
+      // cash account is in scope here so cash contributes 0.
       expect(result.points).toHaveLength(2);
       expect(result.points[1].value).toBeCloseTo(10 * 100 * 1.4 + 50 * 90, 4);
+    });
+
+    it("adds the cash balance of the investment cash account to every point", async () => {
+      // Repro for the bug where the 1D/1W/1M intraday chart undershot the
+      // daily-snapshot chart because the cash sleeve wasn't included.
+      accountsRepository.find.mockResolvedValue([
+        mockBrokerageAccount,
+        mockCashAccount, // currentBalance: 5000 CAD
+      ]);
+      holdingsRepository.find.mockResolvedValue([mockHoldingAAPL]);
+
+      const ts = new Date("2026-05-06T13:30:00.000Z");
+      yahooFinanceService.fetchIntradaySeries.mockResolvedValue([
+        { timestamp: ts, close: 100 },
+      ]);
+      exchangeRateService.getLatestRate.mockResolvedValue(1.4);
+
+      const result = await service.getIntradayValueSeries(userId, {
+        range: "1d",
+      });
+
+      // 10 * 100 * 1.4 (USD->CAD) + 5000 cash = 1400 + 5000 = 6400.
+      expect(result.points).toHaveLength(1);
+      expect(result.points[0].value).toBeCloseTo(6400, 4);
+    });
+
+    it("includes standalone-account cash balances in every point", async () => {
+      accountsRepository.find.mockResolvedValue([mockStandaloneAccount]);
+      holdingsRepository.find.mockResolvedValue([
+        { ...mockHoldingAAPL, accountId: "acct-standalone-1" } as any,
+      ]);
+
+      const ts = new Date("2026-05-06T13:30:00.000Z");
+      yahooFinanceService.fetchIntradaySeries.mockResolvedValue([
+        { timestamp: ts, close: 100 },
+      ]);
+      exchangeRateService.getLatestRate.mockResolvedValue(1.4);
+
+      const result = await service.getIntradayValueSeries(userId, {
+        range: "1d",
+      });
+
+      // 10 * 100 * 1.4 + 2000 standalone cash = 1400 + 2000 = 3400.
+      expect(result.points[0].value).toBeCloseTo(3400, 4);
     });
 
     it("returns fallbackToDaily=true with failedSymbols when any intraday fetch fails", async () => {
