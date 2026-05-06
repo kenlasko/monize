@@ -15,7 +15,7 @@ import {
   MergePayeeData,
   MergePayeeResult,
 } from '@/types/payee';
-import { getCached, setCache, invalidateCache } from './apiCache';
+import { dedupe, invalidateCache } from './apiCache';
 
 export const payeesApi = {
   // Create payee
@@ -28,15 +28,18 @@ export const payeesApi = {
   // Get all payees (optionally filtered by status)
   getAll: async (status?: PayeeStatusFilter): Promise<Payee[]> => {
     const cacheKey = `payees:all:${status || 'default'}`;
-    const cached = getCached<Payee[]>(cacheKey);
-    if (cached) return cached;
     const params: Record<string, string> = {};
     if (status) {
       params.status = status;
     }
-    const response = await apiClient.get<Payee[]>('/payees', { params });
-    setCache(cacheKey, response.data);
-    return response.data;
+    return dedupe(
+      cacheKey,
+      async () => {
+        const response = await apiClient.get<Payee[]>('/payees', { params });
+        return response.data;
+      },
+      300_000, // 5 min
+    );
   },
 
   // Get payee by ID

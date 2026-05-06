@@ -1,6 +1,6 @@
 import apiClient from './api';
 import { Category, CreateCategoryData, UpdateCategoryData } from '@/types/category';
-import { getCached, setCache, invalidateCache } from './apiCache';
+import { dedupe, invalidateCache } from './apiCache';
 
 export const categoriesApi = {
   // Create category
@@ -12,11 +12,14 @@ export const categoriesApi = {
 
   // Get all categories
   getAll: async (): Promise<Category[]> => {
-    const cached = getCached<Category[]>('categories:all');
-    if (cached) return cached;
-    const response = await apiClient.get<Category[]>('/categories');
-    setCache('categories:all', response.data);
-    return response.data;
+    return dedupe(
+      'categories:all',
+      async () => {
+        const response = await apiClient.get<Category[]>('/categories');
+        return response.data;
+      },
+      300_000, // 5 min - categories rarely change
+    );
   },
 
   // Get category by ID

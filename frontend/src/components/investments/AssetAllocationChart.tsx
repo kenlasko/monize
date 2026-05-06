@@ -92,7 +92,7 @@ export function AssetAllocationChart({
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[420px]">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           Asset Allocation{titleSuffix ? ` (${titleSuffix})` : ''}
         </h3>
@@ -105,7 +105,7 @@ export function AssetAllocationChart({
 
   if (!allocation || allocation.allocation.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[420px]">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           Asset Allocation{titleSuffix ? ` (${titleSuffix})` : ''}
         </h3>
@@ -117,7 +117,7 @@ export function AssetAllocationChart({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[420px]">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
         Asset Allocation{titleSuffix ? ` (${titleSuffix})` : ''}
       </h3>

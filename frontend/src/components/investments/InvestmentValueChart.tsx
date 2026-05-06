@@ -9,6 +9,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  ReferenceDot,
 } from 'recharts';
 import { format } from 'date-fns';
 import { netWorthApi } from '@/lib/net-worth';
@@ -523,36 +524,50 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix 
                 fill="url(#colorInvestments)"
                 name="Portfolio Value"
                 isAnimationActive={false}
-                dot={(props: { cx?: number; cy?: number; index?: number }) => {
-                  const { cx, cy, index } = props;
-                  if (cx == null || cy == null || index == null) {
-                    return <circle cx={0} cy={0} r={0} fill="none" />;
-                  }
-                  const isHighest = showFlags && index === highestIndex;
-                  const isLowest = showFlags && index === lowestIndex;
-                  if (!isHighest && !isLowest) {
-                    return <circle key={`dot-${index}`} cx={cx} cy={cy} r={0} fill="none" />;
-                  }
-                  const value = isHighest ? summary.highest : summary.lowest;
-                  // Place the bubble to the side of its dot (with a horizontal
-                  // connector) instead of above/below. This puts the bubble
-                  // in the chart's middle vertical band -- well clear of the
-                  // x-axis labels at the bottom and the top edge of the plot,
-                  // regardless of whether the dot itself is at the top or
-                  // bottom of the data range. Side is auto-picked based on
-                  // the dot's position within the series so the bubble
-                  // doesn't get pushed off the chart's left or right edge.
-                  const isLeftHalf = index < chartPoints.length / 2;
-                  return renderChartFlagDot({
-                    cx,
-                    cy,
-                    index,
-                    color: isHighest ? '#10b981' : '#ef4444',
-                    label: fmtFlag(value),
-                    side: isLeftHalf ? 'right' : 'left',
-                  });
-                }}
+                dot={false}
+                activeDot={{ r: 4, fill: '#10b981' }}
               />
+              {/* Highest / lowest flag callouts. Using ReferenceDot instead of
+                  a per-point dot renderer keeps the SVG to two extra elements
+                  rather than one zero-radius <circle> for every datapoint --
+                  on long ranges (e.g. 366 daily points) that single change
+                  drops hundreds of nodes from the chart layer. */}
+              {showFlags && highestIndex >= 0 && (
+                <ReferenceDot
+                  x={chartPoints[highestIndex].name}
+                  y={summary.highest}
+                  shape={(props: { cx?: number; cy?: number }) => {
+                    const { cx, cy } = props;
+                    if (cx == null || cy == null) return <g />;
+                    return renderChartFlagDot({
+                      cx,
+                      cy,
+                      index: highestIndex,
+                      color: '#10b981',
+                      label: fmtFlag(summary.highest),
+                      side: highestIndex < chartPoints.length / 2 ? 'right' : 'left',
+                    });
+                  }}
+                />
+              )}
+              {showFlags && lowestIndex >= 0 && (
+                <ReferenceDot
+                  x={chartPoints[lowestIndex].name}
+                  y={summary.lowest}
+                  shape={(props: { cx?: number; cy?: number }) => {
+                    const { cx, cy } = props;
+                    if (cx == null || cy == null) return <g />;
+                    return renderChartFlagDot({
+                      cx,
+                      cy,
+                      index: lowestIndex,
+                      color: '#ef4444',
+                      label: fmtFlag(summary.lowest),
+                      side: lowestIndex < chartPoints.length / 2 ? 'right' : 'left',
+                    });
+                  }}
+                />
+              )}
             </AreaChart>
           </ResponsiveContainer>
         </div>

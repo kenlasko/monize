@@ -478,8 +478,15 @@ export function InvestmentTransactionList({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Symbol Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Symbol</label>
+              <label
+                htmlFor="investment-tx-filter-symbol"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
+                Symbol
+              </label>
               <select
+                id="investment-tx-filter-symbol"
+                name="investment-tx-filter-symbol"
                 value={filters?.symbol || ''}
                 onChange={(e) => handleFilterChange('symbol', e.target.value)}
                 className="w-full text-sm font-sans border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
@@ -493,8 +500,15 @@ export function InvestmentTransactionList({
 
             {/* Action Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Action</label>
+              <label
+                htmlFor="investment-tx-filter-action"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
+                Action
+              </label>
               <select
+                id="investment-tx-filter-action"
+                name="investment-tx-filter-action"
                 value={filters?.action || ''}
                 onChange={(e) => handleFilterChange('action', e.target.value)}
                 className="w-full text-sm font-sans border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"

@@ -9,7 +9,7 @@ import {
   OverrideCheckResult,
   PostScheduledTransactionData,
 } from '@/types/scheduled-transaction';
-import { getCached, setCache, invalidateCache } from './apiCache';
+import { dedupe, invalidateCache } from './apiCache';
 
 export const scheduledTransactionsApi = {
   // Create a new scheduled transaction
@@ -21,11 +21,14 @@ export const scheduledTransactionsApi = {
 
   // Get all scheduled transactions
   getAll: async (): Promise<ScheduledTransaction[]> => {
-    const cached = getCached<ScheduledTransaction[]>('scheduled:all');
-    if (cached) return cached;
-    const response = await apiClient.get<ScheduledTransaction[]>('/scheduled-transactions');
-    setCache('scheduled:all', response.data);
-    return response.data;
+    return dedupe(
+      'scheduled:all',
+      async () => {
+        const response = await apiClient.get<ScheduledTransaction[]>('/scheduled-transactions');
+        return response.data;
+      },
+      120_000, // 2 min
+    );
   },
 
   // Get due scheduled transactions (past due date)

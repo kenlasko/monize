@@ -15,7 +15,7 @@ import {
   SetupLoanPaymentsData,
   SetupLoanPaymentsResponse,
 } from '@/types/account';
-import { getCached, setCache, invalidateCache } from './apiCache';
+import { dedupe, invalidateCache } from './apiCache';
 
 export const accountsApi = {
   // Create account
@@ -38,13 +38,16 @@ export const accountsApi = {
   // Get all accounts
   getAll: async (includeInactive: boolean = false): Promise<Account[]> => {
     const cacheKey = `accounts:all:${includeInactive}`;
-    const cached = getCached<Account[]>(cacheKey);
-    if (cached) return cached;
-    const response = await apiClient.get<Account[]>('/accounts', {
-      params: { includeInactive },
-    });
-    setCache(cacheKey, response.data);
-    return response.data;
+    return dedupe(
+      cacheKey,
+      async () => {
+        const response = await apiClient.get<Account[]>('/accounts', {
+          params: { includeInactive },
+        });
+        return response.data;
+      },
+      120_000, // 2 min
+    );
   },
 
   // Get account by ID
@@ -120,11 +123,21 @@ export const accountsApi = {
     endDate?: string;
     accountIds?: string;
   }): Promise<Array<{ date: string; balance: number; accountId: string; currencyCode: string }>> => {
-    const response = await apiClient.get<Array<{ date: string; balance: number; accountId: string; currencyCode: string }>>(
-      '/accounts/daily-balances',
-      { params },
+    // Dedupe so multiple components requesting the same range/accounts share
+    // a single network call. Daily balances roll forward as transactions
+    // change, so cache TTL is short.
+    const cacheKey = `accounts:daily-balances:${params?.startDate ?? ''}:${params?.endDate ?? ''}:${params?.accountIds ?? ''}`;
+    return dedupe(
+      cacheKey,
+      async () => {
+        const response = await apiClient.get<Array<{ date: string; balance: number; accountId: string; currencyCode: string }>>(
+          '/accounts/daily-balances',
+          { params },
+        );
+        return response.data;
+      },
+      30_000, // 30 sec
     );
-    return response.data;
   },
 
   // Preview loan amortization

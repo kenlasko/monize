@@ -23,7 +23,7 @@ import {
   GenerateBudgetResponse,
   ApplyGeneratedBudgetData,
 } from '@/types/budget';
-import { getCached, setCache, invalidateCache } from './apiCache';
+import { dedupe, getCached, setCache, invalidateCache } from './apiCache';
 
 export const budgetsApi = {
   // Budget CRUD
@@ -34,11 +34,14 @@ export const budgetsApi = {
   },
 
   getAll: async (): Promise<Budget[]> => {
-    const cached = getCached<Budget[]>('budgets:all');
-    if (cached) return cached;
-    const response = await apiClient.get<Budget[]>('/budgets');
-    setCache('budgets:all', response.data);
-    return response.data;
+    return dedupe(
+      'budgets:all',
+      async () => {
+        const response = await apiClient.get<Budget[]>('/budgets');
+        return response.data;
+      },
+      120_000, // 2 min
+    );
   },
 
   getById: async (id: string): Promise<Budget> => {
@@ -272,13 +275,15 @@ export const budgetsApi = {
 
   // Dashboard
   getDashboardSummary: async (): Promise<DashboardBudgetSummary | null> => {
-    const cached = getCached<DashboardBudgetSummary | null>('budgets:dashboard');
-    if (cached !== undefined) return cached;
-    const response = await apiClient.get<DashboardBudgetSummary | null>(
-      '/budgets/dashboard-summary',
+    return dedupe<DashboardBudgetSummary | null>(
+      'budgets:dashboard',
+      async () => {
+        const response = await apiClient.get<DashboardBudgetSummary | null>(
+          '/budgets/dashboard-summary',
+        );
+        return response.data;
+      },
     );
-    setCache('budgets:dashboard', response.data);
-    return response.data;
   },
 
   // Transaction context

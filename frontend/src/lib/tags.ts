@@ -1,6 +1,6 @@
 import apiClient from './api';
 import { Tag, CreateTagData, UpdateTagData } from '@/types/tag';
-import { getCached, setCache, invalidateCache } from './apiCache';
+import { dedupe, invalidateCache } from './apiCache';
 
 export const tagsApi = {
   create: async (data: CreateTagData): Promise<Tag> => {
@@ -10,11 +10,14 @@ export const tagsApi = {
   },
 
   getAll: async (): Promise<Tag[]> => {
-    const cached = getCached<Tag[]>('tags:all');
-    if (cached) return cached;
-    const response = await apiClient.get<Tag[]>('/tags');
-    setCache('tags:all', response.data);
-    return response.data;
+    return dedupe(
+      'tags:all',
+      async () => {
+        const response = await apiClient.get<Tag[]>('/tags');
+        return response.data;
+      },
+      300_000, // 5 min
+    );
   },
 
   getById: async (id: string): Promise<Tag> => {

@@ -1,5 +1,5 @@
 import apiClient from './api';
-import { getCached, setCache, invalidateCache } from './apiCache';
+import { dedupe, invalidateCache } from './apiCache';
 
 export interface ExchangeRate {
   id: number;
@@ -49,11 +49,16 @@ export interface CurrencyUsage {
 export const exchangeRatesApi = {
   // Exchange rates
   getLatestRates: async (): Promise<ExchangeRate[]> => {
-    const cached = getCached<ExchangeRate[]>('exchange-rates:latest');
-    if (cached) return cached;
-    const response = await apiClient.get<ExchangeRate[]>('/currencies/exchange-rates');
-    setCache('exchange-rates:latest', response.data, 300_000); // 5 min - rates change at most daily
-    return response.data;
+    // Rates change at most daily; dedupe in-flight requests so a page that
+    // mounts many components needing rates only makes one network round trip.
+    return dedupe(
+      'exchange-rates:latest',
+      async () => {
+        const response = await apiClient.get<ExchangeRate[]>('/currencies/exchange-rates');
+        return response.data;
+      },
+      3_600_000, // 1 hour
+    );
   },
 
   getRateHistory: async (startDate?: string, endDate?: string): Promise<ExchangeRate[]> => {
