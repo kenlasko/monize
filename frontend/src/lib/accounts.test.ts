@@ -159,7 +159,6 @@ describe('accountsApi', () => {
     let createObjectURL: any;
     let revokeObjectURL: any;
     let appendChildSpy: any;
-    let removeChildSpy: any;
     let clickSpy: any;
 
     beforeEach(() => {
@@ -183,9 +182,7 @@ describe('accountsApi', () => {
           }
           return node;
         });
-      removeChildSpy = vi
-        .spyOn(document.body, 'removeChild')
-        .mockImplementation((node: any) => node);
+      vi.spyOn(document.body, 'removeChild').mockImplementation((node: any) => node);
     });
 
     it('downloads CSV with default filename when no Content-Disposition', async () => {
