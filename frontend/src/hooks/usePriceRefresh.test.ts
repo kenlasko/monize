@@ -97,6 +97,34 @@ describe('usePriceRefresh', () => {
     expect(toast.success).toHaveBeenCalled();
   });
 
+  it('limits refresh to scopeSecurityIds when provided', async () => {
+    vi.mocked(investmentsApi.getSecurities).mockResolvedValue([
+      sec('s-1'),
+      sec('s-2'),
+      sec('s-3'),
+    ] as any);
+    vi.mocked(investmentsApi.refreshSelectedPrices).mockResolvedValue({
+      updated: 2, failed: 0, totalSecurities: 2, skipped: 0, results: [], lastUpdated: '',
+    });
+
+    const { result } = renderHook(() => usePriceRefresh());
+    await act(async () => {
+      await result.current.triggerManualRefresh(['s-1', 's-3']);
+    });
+    expect(investmentsApi.refreshSelectedPrices).toHaveBeenCalledWith(['s-1', 's-3']);
+  });
+
+  it('shows the no-securities toast when scope filters out everything', async () => {
+    vi.mocked(investmentsApi.getSecurities).mockResolvedValue([sec('s-1')] as any);
+
+    const { result } = renderHook(() => usePriceRefresh());
+    await act(async () => {
+      await result.current.triggerManualRefresh(['s-99']);
+    });
+    expect(investmentsApi.refreshSelectedPrices).not.toHaveBeenCalled();
+    expect(toast.success).toHaveBeenCalledWith('No securities to update');
+  });
+
   it('includes securities even when no holdings exist (newly-added securities)', async () => {
     // Regression: ATL8021 was being excluded because it wasn't in the
     // portfolio summary's holdings list. Now we send every active security.

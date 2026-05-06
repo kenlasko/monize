@@ -50,70 +50,88 @@ interface UsePriceRefreshOptions {
 
 interface UsePriceRefreshReturn {
   isRefreshing: boolean;
-  triggerManualRefresh: () => Promise<void>;
+  /**
+   * Manually refresh quote prices.
+   *
+   * @param scopeSecurityIds When provided, only securities whose ID is in
+   *   this list are refreshed (intersected with the usual eligibility
+   *   filter). The page passes the IDs of the holdings currently shown so
+   *   the Refresh button only re-fetches what the user is looking at,
+   *   instead of every active security in their catalog.
+   */
+  triggerManualRefresh: (scopeSecurityIds?: string[]) => Promise<void>;
   triggerAutoRefresh: () => void;
 }
 
 export function usePriceRefresh({ onRefreshComplete }: UsePriceRefreshOptions = {}): UsePriceRefreshReturn {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const doRefresh = useCallback(async (silent: boolean) => {
-    if (refreshInProgress) return;
-    refreshInProgress = true;
-    setIsRefreshing(true);
-    try {
-      // Refresh prices for every active security in the user's catalog, not
-      // just the ones they currently hold. Newly-added or temporarily-zero
-      // positions (e.g. fully-sold mutual funds) still need their price
-      // history kept current.
-      //
-      // Eligibility rule mirrors the backend's isRefreshEligible(): a
-      // security is eligible when skipPriceUpdates is false OR the user has
-      // explicitly opted in by setting a quoteProvider override or an MSN
-      // Instrument ID. The latter rescues QIF-imported securities (which are
-      // flagged skipPriceUpdates=true by default) once the user has pointed
-      // them at a provider.
-      const securities = await investmentsApi.getSecurities(false);
-      const securityIds = securities
-        .filter(
-          (s) =>
-            s.isActive &&
-            (!s.skipPriceUpdates || !!s.quoteProvider || !!s.msnInstrumentId),
-        )
-        .map((s) => s.id);
-      if (securityIds.length === 0) {
-        if (!silent) toast.success('No securities to update');
-        return;
-      }
-      const result = await investmentsApi.refreshSelectedPrices(securityIds);
-      lastRefreshTimestamp = Date.now();
-      if (!silent) {
-        if (result.failed > 0) {
-          const failedSymbols = result.results
-            .filter((r) => !r.success)
-            .map((r) => r.symbol);
-          const symbolList = failedSymbols.join(', ');
-          toast.error(
-            `Prices updated: ${result.updated} succeeded, ${result.failed} failed${symbolList ? ` (${symbolList})` : ''}`,
-            { duration: 8000 },
-          );
-        } else {
-          toast.success(`${result.updated} security price${result.updated !== 1 ? 's' : ''} updated`);
+  const doRefresh = useCallback(
+    async (silent: boolean, scopeSecurityIds?: string[]) => {
+      if (refreshInProgress) return;
+      refreshInProgress = true;
+      setIsRefreshing(true);
+      try {
+        // Refresh prices for every active security in the user's catalog
+        // unless the caller has narrowed the scope (e.g. the Investments
+        // page passes the IDs of the holdings currently visible).
+        //
+        // Eligibility rule mirrors the backend's isRefreshEligible(): a
+        // security is eligible when skipPriceUpdates is false OR the user has
+        // explicitly opted in by setting a quoteProvider override or an MSN
+        // Instrument ID. The latter rescues QIF-imported securities (which are
+        // flagged skipPriceUpdates=true by default) once the user has pointed
+        // them at a provider.
+        const securities = await investmentsApi.getSecurities(false);
+        const scopeSet = scopeSecurityIds
+          ? new Set(scopeSecurityIds)
+          : null;
+        const securityIds = securities
+          .filter(
+            (s) =>
+              s.isActive &&
+              (!s.skipPriceUpdates || !!s.quoteProvider || !!s.msnInstrumentId) &&
+              (scopeSet === null || scopeSet.has(s.id)),
+          )
+          .map((s) => s.id);
+        if (securityIds.length === 0) {
+          if (!silent) toast.success('No securities to update');
+          return;
         }
+        const result = await investmentsApi.refreshSelectedPrices(securityIds);
+        lastRefreshTimestamp = Date.now();
+        if (!silent) {
+          if (result.failed > 0) {
+            const failedSymbols = result.results
+              .filter((r) => !r.success)
+              .map((r) => r.symbol);
+            const symbolList = failedSymbols.join(', ');
+            toast.error(
+              `Prices updated: ${result.updated} succeeded, ${result.failed} failed${symbolList ? ` (${symbolList})` : ''}`,
+              { duration: 8000 },
+            );
+          } else {
+            toast.success(`${result.updated} security price${result.updated !== 1 ? 's' : ''} updated`);
+          }
+        }
+        await onRefreshComplete?.(result.lastUpdated);
+      } catch (error) {
+        logger.error('Failed to refresh prices:', error);
+        if (!silent) toast.error(getErrorMessage(error, 'Failed to refresh prices'));
+      } finally {
+        refreshInProgress = false;
+        setIsRefreshing(false);
       }
-      await onRefreshComplete?.(result.lastUpdated);
-    } catch (error) {
-      logger.error('Failed to refresh prices:', error);
-      if (!silent) toast.error(getErrorMessage(error, 'Failed to refresh prices'));
-    } finally {
-      refreshInProgress = false;
-      setIsRefreshing(false);
-    }
-  }, [onRefreshComplete]);
+    },
+    [onRefreshComplete],
+  );
 
-  const triggerManualRefresh = useCallback(async () => {
-    await doRefresh(false);
-  }, [doRefresh]);
+  const triggerManualRefresh = useCallback(
+    async (scopeSecurityIds?: string[]) => {
+      await doRefresh(false, scopeSecurityIds);
+    },
+    [doRefresh],
+  );
 
   const triggerAutoRefresh = useCallback(() => {
     if (!isMarketHours()) {

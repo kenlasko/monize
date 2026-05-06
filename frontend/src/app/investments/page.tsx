@@ -77,13 +77,27 @@ function InvestmentsContent() {
   }, [handleFormSuccess]);
 
   // The Refresh button has two effects: (a) refresh security prices in the DB
-  // (existing flow that drives daily snapshots and Portfolio Summary), and
+  // (existing flow that drives daily snapshots and Portfolio Summary) and
   // (b) tell the InvestmentValueChart to drop its sessionStorage entry and
   // re-fetch when it's currently rendering an intraday range. The chart
   // itself decides whether the event applies based on its active range.
+  //
+  // Scope the price refresh to the holdings currently visible on screen:
+  // when an account filter is active we only refresh the IDs that show up
+  // in portfolioSummary.holdings instead of every active security in the
+  // user's catalog. With no filter we leave scope undefined so the hook
+  // refreshes all eligible securities.
   const handleRefreshClick = useCallback(async () => {
     window.dispatchEvent(new Event(INVESTMENT_CHART_REFRESH_EVENT));
-    await data.handleRefreshPrices();
+    const scope =
+      data.selectedAccountIds.length > 0
+        ? [
+            ...new Set(
+              (data.portfolioSummary?.holdings ?? []).map((h) => h.securityId),
+            ),
+          ]
+        : undefined;
+    await data.handleRefreshPrices(scope);
   }, [data]);
 
   const handleTransactionViewChange = (view: TransactionViewType) => {
