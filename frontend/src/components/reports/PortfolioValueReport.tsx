@@ -56,7 +56,7 @@ function CustomTooltip({ active, payload, fmtFull }: {
 }
 
 export function PortfolioValueReport() {
-  const { formatCurrencyCompact, formatCurrencyAxis, formatCurrency: formatCurrencyFull } = useNumberFormat();
+  const { formatCurrencyCompact, formatCurrencyAxis, formatCurrencyFlag, formatCurrency: formatCurrencyFull } = useNumberFormat();
   const { defaultCurrency } = useExchangeRates();
   const chartRef = useRef<HTMLDivElement>(null);
   const [chartPoints, setChartPoints] = useState<Array<{ name: string; Value: number }>>([]);
@@ -113,6 +113,13 @@ export function PortfolioValueReport() {
     if (foreignCurrency) return formatCurrencyAxis(value, foreignCurrency);
     return formatCurrencyAxis(value);
   }, [foreignCurrency, formatCurrencyAxis]);
+
+  // Flag bubble label: 2-decimal compact notation, more precise than the
+  // 1-decimal axis tick formatter.
+  const fmtFlag = useCallback((value: number) => {
+    if (foreignCurrency) return formatCurrencyFlag(value, foreignCurrency);
+    return formatCurrencyFlag(value);
+  }, [foreignCurrency, formatCurrencyFlag]);
 
   // Sequence number for the latest in-flight load. Lets us drop stale
   // results so quick range/account switches can't write out-of-order data.
@@ -575,7 +582,7 @@ export function PortfolioValueReport() {
                       cy,
                       index,
                       color: isHighest ? '#10b981' : '#ef4444',
-                      label: Math.abs(value) >= 1000 ? fmtAxis(value) : fmtVal(value),
+                      label: fmtFlag(value),
                       side: isLeftHalf ? 'right' : 'left',
                     });
                   }}

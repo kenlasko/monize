@@ -127,5 +127,26 @@ export function useNumberFormat() {
     [numberFormat, defaultCurrency]
   );
 
-  return { formatCurrency, formatCurrencyCompact, formatCurrencyAxis, formatCurrencyLabel, formatNumber, formatPercent, defaultCurrency, numberFormat };
+  /** Compact currency for chart flag/callout bubbles: same K/M/B/T notation
+   *  as the axis ticks but with exactly 2 decimal places (e.g., "$1.50K",
+   *  "$2.34M") so the highlighted high/low values read more precisely than
+   *  the surrounding axis labels. */
+  const formatCurrencyFlag = useCallback(
+    (value: number, currencyCode?: string): string => {
+      const currency = currencyCode || defaultCurrency;
+      const locale = getEffectiveLocale(numberFormat);
+      return new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency,
+        currencyDisplay: 'narrowSymbol',
+        notation: 'compact',
+        compactDisplay: 'short',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(value);
+    },
+    [numberFormat, defaultCurrency]
+  );
+
+  return { formatCurrency, formatCurrencyCompact, formatCurrencyAxis, formatCurrencyFlag, formatCurrencyLabel, formatNumber, formatPercent, defaultCurrency, numberFormat };
 }

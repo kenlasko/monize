@@ -50,7 +50,7 @@ interface InvestmentValueChartProps {
 }
 
 export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix }: InvestmentValueChartProps) {
-  const { formatCurrencyCompact, formatCurrencyAxis } = useNumberFormat();
+  const { formatCurrencyCompact, formatCurrencyAxis, formatCurrencyFlag } = useNumberFormat();
   const { defaultCurrency } = useExchangeRates();
   const [chartPoints, setChartPoints] = useState<Array<{ name: string; Value: number }>>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -99,6 +99,14 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix 
     if (foreignCurrency) return formatCurrencyAxis(value, foreignCurrency);
     return formatCurrencyAxis(value);
   }, [foreignCurrency, formatCurrencyAxis]);
+
+  // Flag bubble label: 2-decimal compact notation. Reads more precisely
+  // than the 1-decimal axis ticks so the highlighted high/low value can
+  // be picked out without squinting at the connector position.
+  const fmtFlag = useCallback((value: number) => {
+    if (foreignCurrency) return formatCurrencyFlag(value, foreignCurrency);
+    return formatCurrencyFlag(value);
+  }, [foreignCurrency, formatCurrencyFlag]);
 
   // Sequence number for the latest in-flight load. Lets us cancel stale
   // results that resolve out-of-order if the user clicks ranges quickly.
@@ -540,7 +548,7 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix 
                     cy,
                     index,
                     color: isHighest ? '#10b981' : '#ef4444',
-                    label: Math.abs(value) >= 1000 ? fmtAxis(value) : fmtVal(value),
+                    label: fmtFlag(value),
                     side: isLeftHalf ? 'right' : 'left',
                   });
                 }}
