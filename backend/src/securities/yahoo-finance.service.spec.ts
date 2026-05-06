@@ -1491,4 +1491,151 @@ describe("YahooFinanceService", () => {
       expect(result).toBeNull();
     });
   });
+
+  describe("rate-limit handling (throttledFetch)", () => {
+    // Make backoff effectively zero so the retry path runs synchronously
+    // for tests; the real values are unit-tested elsewhere.
+    beforeEach(() => {
+      (YahooFinanceService as any).RETRY_INITIAL_DELAY_MS = 0;
+      (YahooFinanceService as any).INTER_REQUEST_GAP_MS = 0;
+    });
+
+    const okIntradayResponse = () => ({
+      ok: true,
+      status: 200,
+      headers: new Headers(),
+      text: () => Promise.resolve(""),
+      json: () =>
+        Promise.resolve({
+          chart: {
+            result: [
+              {
+                meta: { currency: "USD" },
+                timestamp: [1],
+                indicators: { quote: [{ close: [100] }] },
+              },
+            ],
+          },
+        }),
+    });
+
+    const throttledResponse = (status: number) => ({
+      ok: false,
+      status,
+      headers: new Headers(),
+      text: () => Promise.resolve(""),
+      json: () => Promise.resolve({}),
+    });
+
+    it("retries on a 429 response and succeeds on the next attempt", async () => {
+      const fetchMock = jest
+        .fn()
+        .mockResolvedValueOnce(throttledResponse(429))
+        .mockResolvedValueOnce(okIntradayResponse());
+      global.fetch = fetchMock as any;
+
+      const result = await service.fetchIntradaySeries("AAPL.TO", null, {
+        interval: "1m",
+        range: "1d",
+      });
+
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(result).toHaveLength(1);
+      expect(result![0].close).toBe(100);
+    });
+
+    it("retries on a 503 response and succeeds on the next attempt", async () => {
+      const fetchMock = jest
+        .fn()
+        .mockResolvedValueOnce(throttledResponse(503))
+        .mockResolvedValueOnce(okIntradayResponse());
+      global.fetch = fetchMock as any;
+
+      const result = await service.fetchIntradaySeries("AAPL.TO", null, {
+        interval: "1m",
+        range: "1d",
+      });
+
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(result).toHaveLength(1);
+    });
+
+    it("gives up after the configured retry budget and returns null", async () => {
+      // Intraday allows maxRetries=1 (so 2 total attempts) per service config.
+      const fetchMock = jest.fn().mockResolvedValue(throttledResponse(429));
+      global.fetch = fetchMock as any;
+
+      const result = await service.fetchIntradaySeries("AAPL.TO", null, {
+        interval: "1m",
+        range: "1d",
+      });
+
+      expect(result).toBeNull();
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it("does NOT retry non-throttled errors (e.g. 500)", async () => {
+      const fetchMock = jest.fn().mockResolvedValue(throttledResponse(500));
+      global.fetch = fetchMock as any;
+
+      const result = await service.fetchIntradaySeries("AAPL.TO", null, {
+        interval: "1m",
+        range: "1d",
+      });
+
+      expect(result).toBeNull();
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("caps concurrent in-flight requests", async () => {
+      // Drive 10 parallel intraday requests through a fetch that hangs until
+      // we count how many have started simultaneously.
+      let inFlight = 0;
+      let peak = 0;
+      const fetchMock = jest.fn().mockImplementation(async () => {
+        inFlight++;
+        peak = Math.max(peak, inFlight);
+        await new Promise((r) => setTimeout(r, 10));
+        inFlight--;
+        return okIntradayResponse();
+      });
+      global.fetch = fetchMock as any;
+
+      await Promise.all(
+        Array.from({ length: 10 }, (_, i) =>
+          service.fetchIntradaySeries(`SYM${i}.TO`, null, {
+            interval: "1m",
+            range: "1d",
+          }),
+        ),
+      );
+
+      expect(peak).toBeLessThanOrEqual(
+        (YahooFinanceService as any).MAX_CONCURRENT_REQUESTS,
+      );
+      expect(fetchMock).toHaveBeenCalledTimes(10);
+    });
+
+    it("honors the Retry-After header when the server provides one", async () => {
+      const fetchMock = jest
+        .fn()
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 429,
+          headers: new Headers({ "retry-after": "0" }),
+          text: () => Promise.resolve(""),
+          json: () => Promise.resolve({}),
+        })
+        .mockResolvedValueOnce(okIntradayResponse());
+      global.fetch = fetchMock as any;
+
+      const result = await service.fetchIntradaySeries("AAPL.TO", null, {
+        interval: "1m",
+        range: "1d",
+      });
+
+      expect(result).toHaveLength(1);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+  });
 });

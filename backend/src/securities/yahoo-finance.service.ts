@@ -57,11 +57,111 @@ export class YahooFinanceService implements QuoteProvider {
   private static readonly USER_AGENT =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
+  // Yahoo's public chart API doesn't publish a rate limit but returns 429
+  // (and occasionally 503) when we burst-fetch dozens of symbols during a
+  // catalog-wide price refresh. Cap concurrency and retry transparently on
+  // throttled responses so the caller doesn't have to think about it.
+  private static readonly MAX_CONCURRENT_REQUESTS = 5;
+  private static readonly INTER_REQUEST_GAP_MS = 100;
+  private static readonly MAX_RETRIES = 2;
+  private static readonly RETRY_INITIAL_DELAY_MS = 500;
+  private static readonly RETRY_MAX_DELAY_MS = 30_000;
+  private static readonly THROTTLED_STATUSES: ReadonlySet<number> = new Set([
+    429, 503,
+  ]);
+
+  // Simple async semaphore: at most MAX_CONCURRENT_REQUESTS fetches in flight
+  // at once. Anyone who calls acquireSlot() while the gate is full waits in
+  // a FIFO queue until releaseSlot() admits them.
+  private activeRequests = 0;
+  private readonly waitQueue: Array<() => void> = [];
+
   /** Cached crumb+cookie for v10 API authentication */
   private crumb: string | null = null;
   private cookie: string | null = null;
   private crumbExpiresAt = 0;
   private crumbPromise: Promise<boolean> | null = null;
+
+  private async acquireSlot(): Promise<void> {
+    if (this.activeRequests < YahooFinanceService.MAX_CONCURRENT_REQUESTS) {
+      this.activeRequests++;
+      return;
+    }
+    await new Promise<void>((resolve) => this.waitQueue.push(resolve));
+    this.activeRequests++;
+  }
+
+  private releaseSlot(): void {
+    this.activeRequests--;
+    const next = this.waitQueue.shift();
+    if (next) next();
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Fetch wrapper that:
+   *   - caps concurrency at MAX_CONCURRENT_REQUESTS,
+   *   - leaves a small inter-request gap so we don't burst the next slot,
+   *   - retries 429/503 with exponential backoff (honoring Retry-After).
+   *
+   * Non-throttled HTTP errors (4xx other than 429, 5xx other than 503) are
+   * returned to the caller untouched -- the helper only handles the
+   * "upstream is asking us to slow down" case. Network errors propagate.
+   */
+  private async throttledFetch(
+    url: string,
+    init: RequestInit = {},
+    opts: { maxRetries?: number; timeoutMs?: number } = {},
+  ): Promise<Response> {
+    const maxRetries = opts.maxRetries ?? YahooFinanceService.MAX_RETRIES;
+    const timeoutMs = opts.timeoutMs ?? YahooFinanceService.FETCH_TIMEOUT_MS;
+    await this.acquireSlot();
+    try {
+      let lastResponse: Response | null = null;
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        const response = await fetch(url, {
+          ...init,
+          signal: AbortSignal.timeout(timeoutMs),
+        });
+        lastResponse = response;
+        if (!YahooFinanceService.THROTTLED_STATUSES.has(response.status)) {
+          return response;
+        }
+        // Drain the body so the connection can be reused.
+        await response.text().catch(() => undefined);
+        if (attempt === maxRetries) return response;
+
+        // Honor Retry-After (delta-seconds) when the server provides one,
+        // otherwise back off exponentially with a touch of jitter so a herd
+        // of concurrent retries doesn't synchronize.
+        const retryAfter = response.headers.get("retry-after");
+        const retryAfterMs = retryAfter ? Number(retryAfter) * 1000 : 0;
+        const backoff =
+          YahooFinanceService.RETRY_INITIAL_DELAY_MS * 2 ** attempt;
+        const jitter = Math.floor(Math.random() * 250);
+        const delayMs = Math.min(
+          Math.max(retryAfterMs, backoff + jitter),
+          YahooFinanceService.RETRY_MAX_DELAY_MS,
+        );
+        this.logger.warn(
+          `Yahoo Finance returned ${response.status}; retrying in ${delayMs}ms (attempt ${attempt + 1}/${maxRetries})`,
+        );
+        await this.sleep(delayMs);
+      }
+      return lastResponse!;
+    } finally {
+      // Stagger slot release so the next request can't immediately follow
+      // the previous one back-to-back -- spreads load and helps avoid the
+      // 429 in the first place.
+      setTimeout(
+        () => this.releaseSlot(),
+        YahooFinanceService.INTER_REQUEST_GAP_MS,
+      );
+    }
+  }
 
   private async ensureCrumb(forceRefresh = false): Promise<boolean> {
     if (
@@ -170,12 +270,11 @@ export class YahooFinanceService implements QuoteProvider {
 
       let response: Response;
       try {
-        response = await fetch(fullUrl, {
+        response = await this.throttledFetch(fullUrl, {
           headers: {
             "User-Agent": YahooFinanceService.USER_AGENT,
             Cookie: this.cookie!,
           },
-          signal: AbortSignal.timeout(YahooFinanceService.FETCH_TIMEOUT_MS),
         });
       } catch (err) {
         this.logger.error(`Yahoo Finance v10 fetch error: ${err}`);
@@ -217,12 +316,11 @@ export class YahooFinanceService implements QuoteProvider {
     try {
       const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?interval=1d&range=1d`;
 
-      const response = await fetch(url, {
+      const response = await this.throttledFetch(url, {
         headers: {
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
-        signal: AbortSignal.timeout(YahooFinanceService.FETCH_TIMEOUT_MS),
       });
 
       if (!response.ok) {
@@ -301,13 +399,16 @@ export class YahooFinanceService implements QuoteProvider {
     try {
       const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?interval=1d&range=${encodeURIComponent(range)}`;
 
-      const response = await fetch(url, {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      const response = await this.throttledFetch(
+        url,
+        {
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          },
         },
-        signal: AbortSignal.timeout(60000),
-      });
+        { timeoutMs: 60_000 },
+      );
 
       if (!response.ok) {
         this.logger.warn(
@@ -397,10 +498,17 @@ export class YahooFinanceService implements QuoteProvider {
     try {
       const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?interval=${encodeURIComponent(interval)}&range=${encodeURIComponent(range)}`;
 
-      const response = await fetch(url, {
-        headers: { "User-Agent": YahooFinanceService.USER_AGENT },
-        signal: AbortSignal.timeout(YahooFinanceService.FETCH_TIMEOUT_MS),
-      });
+      // Intraday is called inline by the chart endpoint which has its own
+      // tight client timeout, so cap retries lower than the default to avoid
+      // exceeding it. If we're being throttled we'll get fallbackToDaily
+      // upstream anyway.
+      const response = await this.throttledFetch(
+        url,
+        {
+          headers: { "User-Agent": YahooFinanceService.USER_AGENT },
+        },
+        { maxRetries: 1 },
+      );
 
       if (!response.ok) {
         this.logger.warn(
@@ -460,12 +568,11 @@ export class YahooFinanceService implements QuoteProvider {
     try {
       const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=50&newsCount=0`;
 
-      const response = await fetch(url, {
+      const response = await this.throttledFetch(url, {
         headers: {
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
-        signal: AbortSignal.timeout(YahooFinanceService.FETCH_TIMEOUT_MS),
       });
 
       if (!response.ok) {
@@ -771,11 +878,10 @@ export class YahooFinanceService implements QuoteProvider {
     try {
       const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(yahooSymbol)}&quotesCount=5&newsCount=0`;
 
-      const response = await fetch(url, {
+      const response = await this.throttledFetch(url, {
         headers: {
           "User-Agent": YahooFinanceService.USER_AGENT,
         },
-        signal: AbortSignal.timeout(YahooFinanceService.FETCH_TIMEOUT_MS),
       });
 
       if (!response.ok) {
