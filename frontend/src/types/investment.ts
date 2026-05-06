@@ -202,7 +202,7 @@ export interface CreateSecurityData {
   securityType?: string;
   exchange?: string;
   currencyCode: string;
-  quoteProvider?: QuoteProviderName;
+  quoteProvider?: QuoteProviderName | null;
   msnInstrumentId?: string;
 }
 

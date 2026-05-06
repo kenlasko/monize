@@ -288,6 +288,20 @@ describe("SecuritiesService", () => {
       expect(saved.msnInstrumentId).toBe("a1u3p2");
     });
 
+    it("clears quoteProvider when explicitly set to null (Use Default)", async () => {
+      securitiesRepository.findOne.mockResolvedValue({
+        ...mockSecurity,
+        quoteProvider: "msn",
+      });
+
+      await service.update("user-1", "sec-1", {
+        quoteProvider: null as unknown as undefined,
+      });
+
+      const saved = securitiesRepository.save.mock.calls[0][0];
+      expect(saved.quoteProvider).toBeNull();
+    });
+
     it("records action history on update", async () => {
       securitiesRepository.findOne.mockResolvedValue({ ...mockSecurity });
 

@@ -222,7 +222,10 @@ export function SecurityForm({ security, onSubmit, onCancel, onDirtyChange, subm
       securityType: data.securityType || undefined,
       exchange: data.exchange?.trim() || undefined,
       currencyCode: data.currencyCode,
-      quoteProvider: data.quoteProvider === '' ? undefined : data.quoteProvider,
+      // Send null (not undefined) when the user picks "Use Default" so the
+      // backend clears any existing override. Undefined would be stripped by
+      // axios and treated as "no change", leaving the previous override in place.
+      quoteProvider: data.quoteProvider === '' ? null : data.quoteProvider,
       msnInstrumentId: data.msnInstrumentId?.trim() || undefined,
     };
     await onSubmit(cleanedData);
