@@ -15,6 +15,8 @@ import {
 } from "../accounts/entities/account.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
+import { YahooFinanceService } from "./yahoo-finance.service";
+import { QuoteProviderRegistry } from "./providers/quote-provider.registry";
 
 describe("PortfolioService", () => {
   let service: PortfolioService;
@@ -24,6 +26,8 @@ describe("PortfolioService", () => {
   let accountsRepository: Record<string, jest.Mock>;
   let prefRepository: Record<string, jest.Mock>;
   let exchangeRateService: Record<string, jest.Mock>;
+  let yahooFinanceService: Record<string, jest.Mock>;
+  let quoteProviderRegistry: { resolveForSecurity: jest.Mock };
 
   const userId = "user-1";
 
@@ -155,6 +159,21 @@ describe("PortfolioService", () => {
       getLatestRate: jest.fn(),
     };
 
+    yahooFinanceService = {
+      fetchIntradaySeries: jest.fn(),
+    };
+
+    // Default: every security resolves to a Yahoo-like provider that exposes
+    // fetchIntradaySeries. Tests for MSN override this per-security.
+    quoteProviderRegistry = {
+      resolveForSecurity: jest.fn().mockReturnValue([
+        {
+          name: "yahoo",
+          fetchIntradaySeries: yahooFinanceService.fetchIntradaySeries,
+        },
+      ]),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PortfolioService,
@@ -182,6 +201,14 @@ describe("PortfolioService", () => {
         {
           provide: ExchangeRateService,
           useValue: exchangeRateService,
+        },
+        {
+          provide: YahooFinanceService,
+          useValue: yahooFinanceService,
+        },
+        {
+          provide: QuoteProviderRegistry,
+          useValue: quoteProviderRegistry,
         },
       ],
     }).compile();
@@ -2536,6 +2563,186 @@ describe("PortfolioService", () => {
 
       const result = await service.getAccountMarketValues(userId);
       expect(result.get("acct-brokerage-1")).toBe(2000);
+    });
+  });
+
+  describe("getIntradayValueSeries", () => {
+    beforeEach(() => {
+      prefRepository.findOne.mockResolvedValue(mockPref);
+    });
+
+    it("returns empty series when user has no holdings", async () => {
+      accountsRepository.find.mockResolvedValue([mockBrokerageAccount]);
+      holdingsRepository.find.mockResolvedValue([]);
+
+      const result = await service.getIntradayValueSeries(userId, {
+        range: "1d",
+      });
+
+      expect(result.points).toEqual([]);
+      expect(result.interval).toBe("1m");
+      expect(result.currency).toBe("CAD");
+      expect(yahooFinanceService.fetchIntradaySeries).not.toHaveBeenCalled();
+    });
+
+    it("aggregates intraday bars across multiple holdings on the same time grid", async () => {
+      accountsRepository.find.mockResolvedValue([
+        mockBrokerageAccount,
+        mockCashAccount,
+      ]);
+      holdingsRepository.find.mockResolvedValue([
+        mockHoldingAAPL,
+        mockHoldingVFV,
+      ]);
+
+      const ts1 = new Date("2026-05-06T13:30:00.000Z");
+      const ts2 = new Date("2026-05-06T13:31:00.000Z");
+
+      yahooFinanceService.fetchIntradaySeries.mockImplementation(
+        async (symbol: string) => {
+          if (symbol === "AAPL") {
+            return [
+              { timestamp: ts1, close: 100 },
+              { timestamp: ts2, close: 110 },
+            ];
+          }
+          if (symbol === "VFV.TO") {
+            return [
+              { timestamp: ts1, close: 80 },
+              { timestamp: ts2, close: 81 },
+            ];
+          }
+          return null;
+        },
+      );
+
+      // USD->CAD = 1.4 for AAPL conversion; VFV.TO already CAD.
+      exchangeRateService.getLatestRate.mockImplementation(
+        async (from: string, to: string) => {
+          if (from === "USD" && to === "CAD") return 1.4;
+          return null;
+        },
+      );
+
+      const result = await service.getIntradayValueSeries(userId, {
+        range: "1d",
+      });
+
+      expect(result.points).toHaveLength(2);
+      expect(result.interval).toBe("1m");
+      expect(result.currency).toBe("CAD");
+      // ts1: 10 * 100 * 1.4 + 50 * 80 = 1400 + 4000 = 5400
+      expect(result.points[0].value).toBeCloseTo(5400, 4);
+      // ts2: 10 * 110 * 1.4 + 50 * 81 = 1540 + 4050 = 5590
+      expect(result.points[1].value).toBeCloseTo(5590, 4);
+    });
+
+    it("caches results for 60 seconds keyed by user/range/accounts/currency", async () => {
+      accountsRepository.find.mockResolvedValue([mockBrokerageAccount]);
+      holdingsRepository.find.mockResolvedValue([mockHoldingAAPL]);
+      yahooFinanceService.fetchIntradaySeries.mockResolvedValue([
+        { timestamp: new Date("2026-05-06T13:30:00.000Z"), close: 100 },
+      ]);
+      exchangeRateService.getLatestRate.mockResolvedValue(1.4);
+
+      await service.getIntradayValueSeries(userId, { range: "1d" });
+      await service.getIntradayValueSeries(userId, { range: "1d" });
+
+      expect(yahooFinanceService.fetchIntradaySeries).toHaveBeenCalledTimes(1);
+    });
+
+    it("falls back on 1D too when holdings mix Yahoo and MSN providers", async () => {
+      accountsRepository.find.mockResolvedValue([mockBrokerageAccount]);
+      holdingsRepository.find.mockResolvedValue([
+        mockHoldingAAPL,
+        mockHoldingVFV,
+      ]);
+
+      // VFV resolves to MSN (no fetchIntradaySeries); AAPL stays on Yahoo.
+      quoteProviderRegistry.resolveForSecurity.mockImplementation(
+        (sec: { id: string }) => {
+          if (sec.id === "sec-2") return [{ name: "msn" }];
+          return [
+            {
+              name: "yahoo",
+              fetchIntradaySeries: yahooFinanceService.fetchIntradaySeries,
+            },
+          ];
+        },
+      );
+
+      const result = await service.getIntradayValueSeries(userId, {
+        range: "1d",
+      });
+
+      // Mixed providers: do not render a partial intraday chart at all.
+      // For 1D the frontend will show a note instead.
+      expect(result.skippedSymbols).toEqual(["VFV.TO"]);
+      expect(result.fallbackToDaily).toBe(true);
+      expect(result.points).toEqual([]);
+      expect(yahooFinanceService.fetchIntradaySeries).not.toHaveBeenCalled();
+    });
+
+    it("returns fallbackToDaily=true on 1W when any holding is MSN-tracked", async () => {
+      accountsRepository.find.mockResolvedValue([mockBrokerageAccount]);
+      holdingsRepository.find.mockResolvedValue([
+        mockHoldingAAPL,
+        mockHoldingVFV,
+      ]);
+
+      quoteProviderRegistry.resolveForSecurity.mockImplementation(
+        (sec: { id: string }) => {
+          if (sec.id === "sec-2") return [{ name: "msn" }];
+          return [
+            {
+              name: "yahoo",
+              fetchIntradaySeries: yahooFinanceService.fetchIntradaySeries,
+            },
+          ];
+        },
+      );
+
+      const result = await service.getIntradayValueSeries(userId, {
+        range: "1w",
+      });
+
+      expect(result.fallbackToDaily).toBe(true);
+      expect(result.points).toEqual([]);
+      expect(result.skippedSymbols).toContain("VFV.TO");
+      // No Yahoo fetches happen when we're going to fall back anyway.
+      expect(yahooFinanceService.fetchIntradaySeries).not.toHaveBeenCalled();
+    });
+
+    it("forward-fills when one security misses a timestamp the other has", async () => {
+      accountsRepository.find.mockResolvedValue([mockBrokerageAccount]);
+      holdingsRepository.find.mockResolvedValue([
+        mockHoldingAAPL,
+        mockHoldingVFV,
+      ]);
+
+      const ts1 = new Date("2026-05-06T13:30:00.000Z");
+      const ts2 = new Date("2026-05-06T13:31:00.000Z");
+
+      yahooFinanceService.fetchIntradaySeries.mockImplementation(
+        async (symbol: string) => {
+          if (symbol === "AAPL") {
+            return [{ timestamp: ts1, close: 100 }];
+          }
+          return [
+            { timestamp: ts1, close: 80 },
+            { timestamp: ts2, close: 90 },
+          ];
+        },
+      );
+      exchangeRateService.getLatestRate.mockResolvedValue(1.4);
+
+      const result = await service.getIntradayValueSeries(userId, {
+        range: "1d",
+      });
+
+      // ts2 should still include AAPL at its last known price (100).
+      expect(result.points).toHaveLength(2);
+      expect(result.points[1].value).toBeCloseTo(10 * 100 * 1.4 + 50 * 90, 4);
     });
   });
 });

@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, In } from "typeorm";
 import { Holding } from "./entities/holding.entity";
@@ -6,6 +6,18 @@ import { SecurityPrice } from "./entities/security-price.entity";
 import { Account, AccountType } from "../accounts/entities/account.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { PortfolioCalculationService } from "./portfolio-calculation.service";
+import { YahooFinanceService } from "./yahoo-finance.service";
+import { QuoteProviderRegistry } from "./providers/quote-provider.registry";
+import {
+  IntradayInterval,
+  IntradayPoint,
+  IntradayRange,
+} from "./providers/quote-provider.interface";
+import {
+  IntradayRangeKey,
+  IntradayValuePoint,
+  IntradayValueResponse,
+} from "./dto/intraday-value.dto";
 
 export interface TopMover {
   securityId: string;
@@ -131,8 +143,27 @@ export interface LlmPortfolioSummary {
   allocation: LlmPortfolioAllocation[];
 }
 
+interface IntradayCacheEntry {
+  expiresAt: number;
+  payload: IntradayValueResponse;
+}
+
+const RANGE_TO_YAHOO: Record<
+  IntradayRangeKey,
+  { interval: IntradayInterval; range: IntradayRange }
+> = {
+  "1d": { interval: "1m", range: "1d" },
+  "1w": { interval: "5m", range: "5d" },
+  "1m": { interval: "15m", range: "1mo" },
+};
+
+const INTRADAY_CACHE_TTL_MS = 60_000;
+
 @Injectable()
 export class PortfolioService {
+  private readonly logger = new Logger(PortfolioService.name);
+  private readonly intradayCache = new Map<string, IntradayCacheEntry>();
+
   constructor(
     @InjectRepository(Holding)
     private holdingsRepository: Repository<Holding>,
@@ -143,6 +174,8 @@ export class PortfolioService {
     @InjectRepository(UserPreference)
     private prefRepository: Repository<UserPreference>,
     private calculationService: PortfolioCalculationService,
+    private yahooFinanceService: YahooFinanceService,
+    private quoteProviderRegistry: QuoteProviderRegistry,
   ) {}
 
   /**
@@ -672,6 +705,268 @@ export class PortfolioService {
       allocation: summary.allocation,
       totalValue: summary.totalPortfolioValue,
     };
+  }
+
+  /**
+   * Compute the intraday portfolio value series for the user's current
+   * holdings. Pulls live minute/hour bars from Yahoo Finance for each
+   * security, aligns them on a unified time grid, and converts each bar to
+   * the user's display currency.
+   *
+   * Results are cached in-memory for 60 seconds keyed by
+   * `userId|range|accountIds|currency` to absorb double clicks and the
+   * frontend's optimistic refresh.
+   */
+  async getIntradayValueSeries(
+    userId: string,
+    query: {
+      range: IntradayRangeKey;
+      accountIds?: string[];
+      displayCurrency?: string;
+    },
+  ): Promise<IntradayValueResponse> {
+    const { range, accountIds } = query;
+    const pref = await this.prefRepository.findOne({ where: { userId } });
+    const displayCurrency =
+      query.displayCurrency || pref?.defaultCurrency || "CAD";
+
+    const cacheKey = this.buildIntradayCacheKey(
+      userId,
+      range,
+      accountIds,
+      displayCurrency,
+    );
+    const now = Date.now();
+    const cached = this.intradayCache.get(cacheKey);
+    if (cached && cached.expiresAt > now) {
+      return cached.payload;
+    }
+
+    const yahooParams = RANGE_TO_YAHOO[range];
+
+    const accounts = await this.resolveAccounts(userId, accountIds);
+    const { holdingsAccountIds } =
+      this.calculationService.categoriseAccounts(accounts);
+
+    let activeHoldings: Array<{
+      securityId: string;
+      symbol: string;
+      exchange: string | null;
+      currencyCode: string;
+      quantity: number;
+      hasIntraday: boolean;
+    }> = [];
+
+    if (holdingsAccountIds.length > 0) {
+      const holdings = await this.holdingsRepository.find({
+        where: { accountId: In(holdingsAccountIds) },
+        relations: ["security"],
+      });
+
+      const userDefaultProvider = pref?.defaultQuoteProvider ?? null;
+
+      const aggregated = new Map<
+        string,
+        {
+          securityId: string;
+          symbol: string;
+          exchange: string | null;
+          currencyCode: string;
+          quantity: number;
+          hasIntraday: boolean;
+        }
+      >();
+      for (const h of holdings) {
+        const qty = Number(h.quantity);
+        if (!h.security || h.security.isActive === false) continue;
+        if (Math.abs(qty) < 0.0001) continue;
+        const existing = aggregated.get(h.securityId);
+        if (existing) {
+          existing.quantity += qty;
+        } else {
+          // Resolve the security's primary quote provider; only providers
+          // that implement fetchIntradaySeries can contribute to this chart.
+          // MSN Money does not expose intraday quotes — see the note in the
+          // user preferences UI under "Default Stock Quote Provider".
+          const [primaryProvider] =
+            this.quoteProviderRegistry.resolveForSecurity(
+              h.security,
+              userDefaultProvider,
+            );
+          const hasIntraday =
+            typeof primaryProvider.fetchIntradaySeries === "function";
+          aggregated.set(h.securityId, {
+            securityId: h.securityId,
+            symbol: h.security.symbol,
+            exchange: h.security.exchange,
+            currencyCode: h.security.currencyCode,
+            quantity: qty,
+            hasIntraday,
+          });
+        }
+      }
+      activeHoldings = [...aggregated.values()];
+    }
+
+    const fetchedAt = new Date().toISOString();
+    const skippedSymbols = activeHoldings
+      .filter((h) => !h.hasIntraday)
+      .map((h) => h.symbol);
+
+    // When any holding's provider lacks intraday support (MSN Money), do not
+    // render a partial intraday chart — it would hide a material chunk of the
+    // portfolio's value. The frontend uses this flag to:
+    //   - 1W / 1M: silently fall back to the existing daily-snapshot endpoint.
+    //   - 1D    : show a note explaining intraday is unavailable for this mix
+    //             of holdings (no sensible daily-resolution fallback for a
+    //             single day's series).
+    const fallbackToDaily = skippedSymbols.length > 0;
+
+    if (activeHoldings.length === 0 || fallbackToDaily) {
+      const payload: IntradayValueResponse = {
+        points: [],
+        interval: yahooParams.interval,
+        currency: displayCurrency,
+        range,
+        fetchedAt,
+        skippedSymbols,
+        fallbackToDaily,
+      };
+      this.intradayCache.set(cacheKey, {
+        expiresAt: now + INTRADAY_CACHE_TTL_MS,
+        payload,
+      });
+      return payload;
+    }
+
+    const intradayHoldings = activeHoldings.filter((h) => h.hasIntraday);
+    const seriesBySecurity = new Map<string, IntradayPoint[]>();
+    await Promise.all(
+      intradayHoldings.map(async (h) => {
+        try {
+          const points = await this.yahooFinanceService.fetchIntradaySeries(
+            h.symbol,
+            h.exchange,
+            yahooParams,
+          );
+          if (points && points.length > 0) {
+            seriesBySecurity.set(h.securityId, points);
+          }
+        } catch (error) {
+          this.logger.warn(
+            `Failed to fetch intraday series for ${h.symbol}: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        }
+      }),
+    );
+
+    if (seriesBySecurity.size === 0) {
+      const payload: IntradayValueResponse = {
+        points: [],
+        interval: yahooParams.interval,
+        currency: displayCurrency,
+        range,
+        fetchedAt,
+        skippedSymbols,
+        fallbackToDaily: false,
+      };
+      this.intradayCache.set(cacheKey, {
+        expiresAt: now + INTRADAY_CACHE_TTL_MS,
+        payload,
+      });
+      return payload;
+    }
+
+    // Build the unified time grid from the union of all timestamps.
+    const timestampSet = new Set<number>();
+    for (const series of seriesBySecurity.values()) {
+      for (const p of series) timestampSet.add(p.timestamp.getTime());
+    }
+    const timestamps = [...timestampSet].sort((a, b) => a - b);
+
+    // Pre-compute FX rates from each security currency to the display
+    // currency. Intraday FX moves are tiny relative to chart resolution and
+    // we already pay this latency once for the price fetches; reusing the
+    // latest spot rate is the same simplification used elsewhere.
+    const rateCache = new Map<string, number>();
+    const currencies = new Set(intradayHoldings.map((h) => h.currencyCode));
+    for (const c of currencies) {
+      await this.calculationService.convertToDefault(
+        1,
+        c,
+        displayCurrency,
+        rateCache,
+      );
+    }
+
+    // Build per-security ordered timestamp/close arrays and a cursor-based
+    // forward-fill so each grid point uses the latest known close.
+    const sources = intradayHoldings
+      .map((h) => {
+        const points = seriesBySecurity.get(h.securityId);
+        if (!points || points.length === 0) return null;
+        return {
+          quantity: h.quantity,
+          fxRate:
+            rateCache.get(`${h.currencyCode}->${displayCurrency}`) ??
+            (h.currencyCode === displayCurrency ? 1 : 1),
+          times: points.map((p) => p.timestamp.getTime()),
+          closes: points.map((p) => p.close),
+        };
+      })
+      .filter((s): s is NonNullable<typeof s> => s !== null);
+
+    const cursors = sources.map(() => -1);
+    const points: IntradayValuePoint[] = [];
+
+    for (const ts of timestamps) {
+      let totalCents = 0; // integer arithmetic to avoid float drift
+      for (let i = 0; i < sources.length; i++) {
+        const src = sources[i];
+        // Advance cursor to the latest sample at-or-before ts.
+        while (
+          cursors[i] + 1 < src.times.length &&
+          src.times[cursors[i] + 1] <= ts
+        ) {
+          cursors[i]++;
+        }
+        if (cursors[i] < 0) continue;
+        const close = src.closes[cursors[i]];
+        const valueInDisplay = src.quantity * close * src.fxRate;
+        totalCents += Math.round(valueInDisplay * 10000);
+      }
+      points.push({
+        timestamp: new Date(ts).toISOString(),
+        value: totalCents / 10000,
+      });
+    }
+
+    const payload: IntradayValueResponse = {
+      points,
+      interval: yahooParams.interval,
+      currency: displayCurrency,
+      range,
+      fetchedAt,
+      skippedSymbols,
+      fallbackToDaily: false,
+    };
+    this.intradayCache.set(cacheKey, {
+      expiresAt: now + INTRADAY_CACHE_TTL_MS,
+      payload,
+    });
+    return payload;
+  }
+
+  private buildIntradayCacheKey(
+    userId: string,
+    range: IntradayRangeKey,
+    accountIds: string[] | undefined,
+    displayCurrency: string,
+  ): string {
+    const acctPart = (accountIds ?? []).slice().sort().join(",");
+    return `${userId}|${range}|${acctPart}|${displayCurrency}`;
   }
 
   // ---------------------------------------------------------------------------

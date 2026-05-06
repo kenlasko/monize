@@ -53,6 +53,26 @@ export const investmentsApi = {
     return response.data;
   },
 
+  // Intraday portfolio value series (1D / 1W / 1M ranges).
+  // Bypasses apiCache; the chart caches in sessionStorage instead so a manual
+  // Refresh can selectively invalidate just the intraday entries.
+  getIntradayValue: async (params: {
+    range: '1d' | '1w' | '1m';
+    accountIds?: string;
+    displayCurrency?: string;
+  }): Promise<{
+    points: Array<{ timestamp: string; value: number }>;
+    interval: '1m' | '5m' | '15m';
+    currency: string;
+    range: '1d' | '1w' | '1m';
+    fetchedAt: string;
+    skippedSymbols: string[];
+    fallbackToDaily: boolean;
+  }> => {
+    const response = await apiClient.get('/portfolio/intraday-value', { params });
+    return response.data;
+  },
+
   // Get top movers (daily price changes)
   getTopMovers: async (): Promise<TopMover[]> => {
     const cacheKey = 'investments:topMovers';

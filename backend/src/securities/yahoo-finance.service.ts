@@ -8,6 +8,9 @@ import {
   QuoteResult,
   SecurityLookupResult,
   HistoricalPrice,
+  IntradayInterval,
+  IntradayPoint,
+  IntradayRange,
   StockSectorInfo,
   EtfSectorWeighting,
 } from "./providers/quote-provider.interface";
@@ -363,6 +366,79 @@ export class YahooFinanceService implements QuoteProvider {
     } catch (error) {
       this.logger.error(
         `Failed to fetch historical prices for ${yahooSymbol}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      return null;
+    }
+  }
+
+  async fetchIntradaySeries(
+    symbol: string,
+    exchange: string | null,
+    opts: { interval: IntradayInterval; range: IntradayRange },
+  ): Promise<IntradayPoint[] | null> {
+    const primary = this.getYahooSymbol(symbol, exchange);
+    const points = await this.fetchIntradayRaw(primary, opts);
+    if (points) return points;
+
+    if (primary === symbol) {
+      for (const altSymbol of this.getAlternateSymbols(symbol)) {
+        const alt = await this.fetchIntradayRaw(altSymbol, opts);
+        if (alt) return alt;
+      }
+    }
+    return null;
+  }
+
+  private async fetchIntradayRaw(
+    yahooSymbol: string,
+    { interval, range }: { interval: IntradayInterval; range: IntradayRange },
+  ): Promise<IntradayPoint[] | null> {
+    try {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?interval=${interval}&range=${range}`;
+
+      const response = await fetch(url, {
+        headers: { "User-Agent": YahooFinanceService.USER_AGENT },
+        signal: AbortSignal.timeout(YahooFinanceService.FETCH_TIMEOUT_MS),
+      });
+
+      if (!response.ok) {
+        this.logger.warn(
+          `Yahoo Finance intraday returned ${response.status} for ${yahooSymbol} (${interval}/${range})`,
+        );
+        return null;
+      }
+
+      const data = await response.json();
+      const result = data.chart?.result?.[0];
+      if (!result?.timestamp || !result.indicators?.quote?.[0]) {
+        return null;
+      }
+
+      const gbx = isGbxCurrency(result.meta?.currency);
+      const timestamps: number[] = result.timestamp;
+      const closes: (number | null | undefined)[] =
+        result.indicators.quote[0].close ?? [];
+
+      const points: IntradayPoint[] = [];
+      // Forward-fill nulls so multi-security alignment doesn't drop bars.
+      let lastClose: number | null = null;
+      for (let i = 0; i < timestamps.length; i++) {
+        const raw = closes[i];
+        if (raw != null && !isNaN(raw)) {
+          lastClose = gbx ? convertGbxToGbp(raw) : raw;
+        }
+        if (lastClose === null) continue;
+        points.push({
+          timestamp: new Date(timestamps[i] * 1000),
+          close: lastClose,
+        });
+      }
+
+      return points;
+    } catch (error) {
+      this.logger.error(
+        `Failed to fetch intraday series for ${yahooSymbol}`,
         error instanceof Error ? error.stack : undefined,
       );
       return null;

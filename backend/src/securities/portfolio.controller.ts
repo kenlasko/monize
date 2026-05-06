@@ -16,6 +16,7 @@ import {
 import { AuthGuard } from "@nestjs/passport";
 import { PortfolioService } from "./portfolio.service";
 import { SectorWeightingService } from "./sector-weighting.service";
+import { IntradayValueQueryDto } from "./dto/intraday-value.dto";
 
 @ApiTags("Portfolio")
 @Controller("portfolio")
@@ -108,6 +109,25 @@ export class PortfolioController {
   @ApiResponse({ status: 401, description: "Unauthorized" })
   getInvestmentAccounts(@Request() req) {
     return this.portfolioService.getInvestmentAccounts(req.user.id);
+  }
+
+  @Get("intraday-value")
+  @ApiOperation({
+    summary:
+      "Get intraday portfolio value series for the 1D / 1W / 1M chart ranges",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Intraday portfolio value retrieved successfully",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  getIntradayValue(@Request() req, @Query() query: IntradayValueQueryDto) {
+    const ids = this.parseUuidList(query.accountIds, "account");
+    return this.portfolioService.getIntradayValueSeries(req.user.id, {
+      range: query.range,
+      accountIds: ids,
+      displayCurrency: query.displayCurrency,
+    });
   }
 
   @Get("sector-weightings")

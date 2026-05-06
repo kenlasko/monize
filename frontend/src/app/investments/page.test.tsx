@@ -332,6 +332,7 @@ vi.mock('@/components/investments/InvestmentValueChart', () => ({
       {accountIds?.length > 0 ? `Filtered: ${accountIds.join(',')}` : 'All accounts'}
     </div>
   ),
+  INVESTMENT_CHART_REFRESH_EVENT: 'monize:investment-chart-refresh',
 }));
 
 const mockCashAccounts = [

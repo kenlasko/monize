@@ -1409,4 +1409,86 @@ describe("YahooFinanceService", () => {
       expect(result).toEqual([]);
     });
   });
+
+  describe("fetchIntradaySeries", () => {
+    it("parses timestamps and closes for the requested interval", async () => {
+      mockFetchResponse({
+        chart: {
+          result: [
+            {
+              meta: { currency: "USD" },
+              timestamp: [1714989000, 1714989060, 1714989120],
+              indicators: { quote: [{ close: [100, 101, 102] }] },
+            },
+          ],
+        },
+      });
+
+      const result = await service.fetchIntradaySeries("AAPL", null, {
+        interval: "1m",
+        range: "1d",
+      });
+
+      expect(result).toHaveLength(3);
+      expect(result![0].close).toBe(100);
+      expect(result![2].timestamp.getTime()).toBe(1714989120 * 1000);
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("interval=1m&range=1d"),
+        expect.any(Object),
+      );
+    });
+
+    it("forward-fills null closes so multi-security alignment works", async () => {
+      mockFetchResponse({
+        chart: {
+          result: [
+            {
+              meta: { currency: "USD" },
+              timestamp: [1, 2, 3, 4],
+              indicators: { quote: [{ close: [100, null, null, 105] }] },
+            },
+          ],
+        },
+      });
+
+      const result = await service.fetchIntradaySeries("AAPL", null, {
+        interval: "1m",
+        range: "1d",
+      });
+
+      expect(result!.map((p) => p.close)).toEqual([100, 100, 100, 105]);
+    });
+
+    it("converts GBX prices to GBP", async () => {
+      mockFetchResponse({
+        chart: {
+          result: [
+            {
+              meta: { currency: "GBX" },
+              timestamp: [1],
+              indicators: { quote: [{ close: [200] }] },
+            },
+          ],
+        },
+      });
+
+      const result = await service.fetchIntradaySeries("BARC.L", "LSE", {
+        interval: "1m",
+        range: "1d",
+      });
+
+      expect(result![0].close).toBe(2);
+    });
+
+    it("returns null when the API responds with an error status", async () => {
+      mockFetchResponse({}, false, 500);
+
+      const result = await service.fetchIntradaySeries("AAPL", null, {
+        interval: "1m",
+        range: "1d",
+      });
+
+      expect(result).toBeNull();
+    });
+  });
 });

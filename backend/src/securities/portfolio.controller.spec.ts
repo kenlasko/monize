@@ -19,6 +19,7 @@ describe("PortfolioController", () => {
       getAssetAllocation: jest.fn(),
       getTopMovers: jest.fn(),
       getInvestmentAccounts: jest.fn(),
+      getIntradayValueSeries: jest.fn(),
     };
 
     sectorWeightingService = {
@@ -158,6 +159,59 @@ describe("PortfolioController", () => {
         "user-1",
       );
       expect(result).toEqual(accounts);
+    });
+  });
+
+  describe("getIntradayValue", () => {
+    it("delegates to service with parsed account IDs", async () => {
+      portfolioService.getIntradayValueSeries.mockResolvedValue({
+        points: [],
+        interval: "1m",
+        currency: "CAD",
+        range: "1d",
+        fetchedAt: "2026-05-06T12:00:00.000Z",
+      });
+
+      await controller.getIntradayValue(req, {
+        range: "1d",
+        accountIds: `${UUID1},${UUID2}`,
+        displayCurrency: "USD",
+      });
+
+      expect(portfolioService.getIntradayValueSeries).toHaveBeenCalledWith(
+        "user-1",
+        {
+          range: "1d",
+          accountIds: [UUID1, UUID2],
+          displayCurrency: "USD",
+        },
+      );
+    });
+
+    it("passes undefined accountIds when not provided", async () => {
+      portfolioService.getIntradayValueSeries.mockResolvedValue({
+        points: [],
+        interval: "1m",
+        currency: "CAD",
+        range: "1d",
+        fetchedAt: "2026-05-06T12:00:00.000Z",
+      });
+
+      await controller.getIntradayValue(req, { range: "1w" });
+
+      expect(portfolioService.getIntradayValueSeries).toHaveBeenCalledWith(
+        "user-1",
+        { range: "1w", accountIds: undefined, displayCurrency: undefined },
+      );
+    });
+
+    it("rejects invalid UUIDs in accountIds", () => {
+      expect(() =>
+        controller.getIntradayValue(req, {
+          range: "1d",
+          accountIds: "not-a-uuid",
+        }),
+      ).toThrow(BadRequestException);
     });
   });
 

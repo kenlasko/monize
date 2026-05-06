@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { act } from 'react';
 import { render, screen, waitFor } from '@/test/render';
-import { InvestmentValueChart } from './InvestmentValueChart';
+import {
+  InvestmentValueChart,
+  INVESTMENT_CHART_REFRESH_EVENT,
+} from './InvestmentValueChart';
 import { netWorthApi } from '@/lib/net-worth';
+import { investmentsApi } from '@/lib/investments';
 
 const dateRangeState = { dateRange: '1y', resolvedRange: { start: '2023-01-01', end: '2024-01-01' } };
 
@@ -47,6 +52,24 @@ vi.mock('@/lib/net-worth', () => ({
     ]),
     getInvestmentsMonthly: vi.fn().mockResolvedValue([]),
   },
+}));
+
+vi.mock('@/lib/investments', () => ({
+  investmentsApi: {
+    getIntradayValue: vi.fn().mockResolvedValue({
+      points: [],
+      interval: '1m',
+      currency: 'CAD',
+      range: '1d',
+      fetchedAt: new Date().toISOString(),
+      skippedSymbols: [],
+      fallbackToDaily: false,
+    }),
+  },
+}));
+
+vi.mock('@/hooks/useLocalStorage', () => ({
+  useLocalStorage: (_key: string, initial: any) => [initial, vi.fn()],
 }));
 
 vi.mock('@/lib/utils', () => ({
@@ -152,7 +175,7 @@ describe('InvestmentValueChart', () => {
     render(<InvestmentValueChart />);
     await screen.findByText('Portfolio Value Over Time');
     const lastCall = mockDateRangeSelectorProps.mock.calls[mockDateRangeSelectorProps.mock.calls.length - 1][0];
-    expect(lastCall.ranges).toEqual(['1w', '1m', '3m', 'ytd', '1y', '2y', '5y', 'all']);
+    expect(lastCall.ranges).toEqual(['1d', '1w', '1m', '3m', 'ytd', '1y', '2y', '5y', 'all']);
   });
 
   it('shows negative change values correctly', async () => {
@@ -180,6 +203,88 @@ describe('InvestmentValueChart', () => {
     await screen.findByText('Portfolio Value Over Time');
     expect(netWorthApi.getInvestmentsDaily).toHaveBeenCalled();
     expect(netWorthApi.getInvestmentsMonthly).not.toHaveBeenCalled();
+  });
+
+  it('uses intraday API for 1d range', async () => {
+    dateRangeState.dateRange = '1d';
+    vi.mocked(investmentsApi.getIntradayValue).mockResolvedValue({
+      points: [
+        { timestamp: '2024-01-02T14:30:00.000Z', value: 9500 },
+        { timestamp: '2024-01-02T14:31:00.000Z', value: 9600 },
+      ],
+      interval: '1m',
+      currency: 'CAD',
+      range: '1d',
+      fetchedAt: '2024-01-02T15:00:00.000Z',
+      skippedSymbols: [],
+      fallbackToDaily: false,
+    });
+    render(<InvestmentValueChart />);
+    await screen.findByText('Portfolio Value Over Time');
+    expect(investmentsApi.getIntradayValue).toHaveBeenCalledWith(
+      expect.objectContaining({ range: '1d' }),
+    );
+    expect(netWorthApi.getInvestmentsDaily).not.toHaveBeenCalled();
+  });
+
+  it('shows the unavailable note on 1d when providers are mixed', async () => {
+    dateRangeState.dateRange = '1d';
+    vi.mocked(investmentsApi.getIntradayValue).mockResolvedValue({
+      points: [],
+      interval: '1m',
+      currency: 'CAD',
+      range: '1d',
+      fetchedAt: '2024-01-02T15:00:00.000Z',
+      skippedSymbols: ['VFV.TO'],
+      fallbackToDaily: true,
+    });
+    render(<InvestmentValueChart />);
+    expect(
+      await screen.findByText(/Intraday view unavailable/i),
+    ).toBeInTheDocument();
+  });
+
+  it('falls back to the daily endpoint on 1w when fallbackToDaily=true', async () => {
+    dateRangeState.dateRange = '1w';
+    dateRangeState.resolvedRange = { start: '2023-12-25', end: '2024-01-01' };
+    vi.mocked(investmentsApi.getIntradayValue).mockResolvedValue({
+      points: [],
+      interval: '5m',
+      currency: 'CAD',
+      range: '1w',
+      fetchedAt: '2024-01-02T15:00:00.000Z',
+      skippedSymbols: ['VFV.TO'],
+      fallbackToDaily: true,
+    });
+    render(<InvestmentValueChart />);
+    await screen.findByText('Portfolio Value Over Time');
+    await waitFor(() => {
+      expect(netWorthApi.getInvestmentsDaily).toHaveBeenCalled();
+    });
+  });
+
+  it('clears intraday cache and re-fetches when refresh event fires on 1d', async () => {
+    dateRangeState.dateRange = '1d';
+    vi.mocked(investmentsApi.getIntradayValue).mockResolvedValue({
+      points: [{ timestamp: '2024-01-02T14:30:00.000Z', value: 9500 }],
+      interval: '1m',
+      currency: 'CAD',
+      range: '1d',
+      fetchedAt: '2024-01-02T15:00:00.000Z',
+      skippedSymbols: [],
+      fallbackToDaily: false,
+    });
+    render(<InvestmentValueChart />);
+    await screen.findByText('Portfolio Value Over Time');
+    const initialCalls = vi.mocked(investmentsApi.getIntradayValue).mock.calls.length;
+    await act(async () => {
+      window.dispatchEvent(new Event(INVESTMENT_CHART_REFRESH_EVENT));
+    });
+    await waitFor(() => {
+      expect(
+        vi.mocked(investmentsApi.getIntradayValue).mock.calls.length,
+      ).toBeGreaterThan(initialCalls);
+    });
   });
 
   it('uses monthly API for 5y range (not in DAILY_RANGES)', async () => {

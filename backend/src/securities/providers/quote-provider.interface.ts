@@ -18,6 +18,16 @@ export interface QuoteResult {
   msnResolvedInstrumentId?: string;
 }
 
+export type IntradayInterval = "1m" | "5m" | "15m";
+export type IntradayRange = "1d" | "5d" | "1mo";
+
+export interface IntradayPoint {
+  /** Timestamp of the bar (UTC). */
+  timestamp: Date;
+  /** Close price at the bar (in the security's currency, GBX-converted to GBP). */
+  close: number;
+}
+
 export interface HistoricalPrice {
   date: Date;
   open: number | null;
@@ -76,6 +86,18 @@ export interface QuoteProvider {
     range?: string,
     opts?: QuoteProviderOptions,
   ): Promise<HistoricalPrice[] | null>;
+
+  /**
+   * Optional: fetch intraday price bars for a symbol. Used by the
+   * "Portfolio Value Over Time" intraday view (1D / 1W / 1M ranges).
+   * Providers that don't support intraday data may omit this method.
+   */
+  fetchIntradaySeries?(
+    symbol: string,
+    exchange: string | null,
+    opts: { interval: IntradayInterval; range: IntradayRange },
+    providerOpts?: QuoteProviderOptions,
+  ): Promise<IntradayPoint[] | null>;
 
   lookupSecurity(
     query: string,

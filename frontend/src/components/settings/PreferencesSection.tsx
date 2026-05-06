@@ -218,6 +218,9 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             Used when a security has no provider override. If the chosen provider fails, Monize automatically tries the other.
           </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Note: MSN Money does not provide intraday quote data, so the 1D / 1W / 1M ranges on the Portfolio Value Over Time chart are unavailable for MSN-tracked holdings.
+          </p>
           {defaultQuoteProvider === 'msn' && msnReady === false && (
             <p
               role="alert"

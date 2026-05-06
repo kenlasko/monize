@@ -17,7 +17,10 @@ import { AssetAllocationChart } from '@/components/investments/AssetAllocationCh
 import { InvestmentTransactionList } from '@/components/investments/InvestmentTransactionList';
 import { DensityLevel, nextDensity } from '@/hooks/useTableDensity';
 import { InvestmentTransactionForm } from '@/components/investments/InvestmentTransactionForm';
-import { InvestmentValueChart } from '@/components/investments/InvestmentValueChart';
+import {
+  InvestmentValueChart,
+  INVESTMENT_CHART_REFRESH_EVENT,
+} from '@/components/investments/InvestmentValueChart';
 import { TransactionList } from '@/components/transactions/TransactionList';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useInvestmentData } from '@/hooks/useInvestmentData';
@@ -72,6 +75,16 @@ function InvestmentsContent() {
     setInvestmentFormNeedsConversion(false);
     handleFormSuccess();
   }, [handleFormSuccess]);
+
+  // The Refresh button has two effects: (a) refresh security prices in the DB
+  // (existing flow that drives daily snapshots and Portfolio Summary), and
+  // (b) tell the InvestmentValueChart to drop its sessionStorage entry and
+  // re-fetch when it's currently rendering an intraday range. The chart
+  // itself decides whether the event applies based on its active range.
+  const handleRefreshClick = useCallback(async () => {
+    window.dispatchEvent(new Event(INVESTMENT_CHART_REFRESH_EVENT));
+    await data.handleRefreshPrices();
+  }, [data]);
 
   const handleTransactionViewChange = (view: TransactionViewType) => {
     setTransactionView(view);
@@ -159,7 +172,7 @@ function InvestmentsContent() {
                   </div>
                   <Button
                     variant="outline"
-                    onClick={data.handleRefreshPrices}
+                    onClick={handleRefreshClick}
                     disabled={data.isRefreshingPrices}
                     className="whitespace-nowrap h-full"
                     title={data.lastPriceUpdate ? `Last updated: ${formatRelativeTime(data.lastPriceUpdate)}` : 'Never updated'}
