@@ -49,7 +49,6 @@ function ReconcileContent() {
   const [selectedTransactionIds, setSelectedTransactionIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [isReconciling, setIsReconciling] = useState(false);
-  const [allowPositiveBalance, setAllowPositiveBalance] = useState(false);
 
   // Load accounts
   useEffect(() => {
@@ -75,17 +74,25 @@ function ReconcileContent() {
 
   const isLiability = selectedAccount ? LIABILITY_TYPES.has(selectedAccount.accountType) : false;
 
-  // Reset override when switching accounts
-  useEffect(() => {
-    setAllowPositiveBalance(false);
-  }, [selectedAccountId]);
-
+  // For liability accounts, auto-negate positive entries. If the user explicitly
+  // flips the sign (same absolute value), respect their choice -- mirrors the
+  // sign-handling pattern in TransactionForm.
   const handleStatementBalanceChange = (value: number | undefined) => {
-    if (isLiability && !allowPositiveBalance && value !== undefined && value > 0) {
-      setStatementBalance(-value);
-    } else {
+    if (value === undefined || value === 0 || !isLiability) {
       setStatementBalance(value);
+      return;
     }
+
+    const currentAbs = statementBalance !== undefined ? Math.abs(statementBalance) : 0;
+    const newAbs = Math.abs(value);
+    const isJustSignChange = currentAbs === newAbs && currentAbs !== 0;
+
+    if (isJustSignChange) {
+      setStatementBalance(value);
+      return;
+    }
+
+    setStatementBalance(value > 0 ? -value : value);
   };
 
   const handleStartReconciliation = async () => {
@@ -233,31 +240,10 @@ function ReconcileContent() {
           <CurrencyInput
             label="Statement Ending Balance"
             prefix={getCurrencySymbol(selectedAccount?.currencyCode || defaultCurrency)}
-            placeholder={isLiability && !allowPositiveBalance ? '-0.00' : '0.00'}
+            placeholder={isLiability ? '-0.00' : '0.00'}
             value={statementBalance}
             onChange={handleStatementBalanceChange}
           />
-          {isLiability && (
-            <div className="-mt-2 space-y-1">
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Liability accounts typically have a negative balance
-              </p>
-              <label className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={allowPositiveBalance}
-                  onChange={(e) => {
-                    setAllowPositiveBalance(e.target.checked);
-                    if (!e.target.checked && statementBalance !== undefined && statementBalance > 0) {
-                      setStatementBalance(-statementBalance);
-                    }
-                  }}
-                  className="h-3 w-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600"
-                />
-                Allow positive balance (e.g. credit)
-              </label>
-            </div>
-          )}
         </div>
 
         <div className="flex justify-between mt-6">
