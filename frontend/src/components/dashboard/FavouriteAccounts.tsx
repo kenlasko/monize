@@ -83,7 +83,7 @@ export function FavouriteAccounts({ accounts, brokerageMarketValues, isLoading, 
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[640px]">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           Favourite Accounts
         </h3>
@@ -98,7 +98,7 @@ export function FavouriteAccounts({ accounts, brokerageMarketValues, isLoading, 
 
   if (favouriteAccounts.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[640px]">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           Favourite Accounts
         </h3>
@@ -110,7 +110,7 @@ export function FavouriteAccounts({ accounts, brokerageMarketValues, isLoading, 
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[640px]">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           Favourite Accounts

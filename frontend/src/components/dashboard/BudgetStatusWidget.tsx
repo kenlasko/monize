@@ -43,7 +43,7 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
 
   if (isLoading || parentLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[390px]">
         <button
           onClick={() => router.push('/budgets')}
           className="text-lg font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-4"
@@ -61,7 +61,7 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
 
   if (hasError || !summary) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[390px]">
         <button
           onClick={() => router.push('/budgets')}
           className="text-lg font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-4"
@@ -82,7 +82,7 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[390px]">
       <div className="flex items-center justify-between mb-3">
         <button
           onClick={() => router.push(`/budgets/${summary.budgetId}`)}

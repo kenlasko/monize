@@ -155,7 +155,7 @@ export function ExpensesPieChart({
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 lg:min-h-[540px]">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           Expenses by Category
         </h3>
@@ -168,7 +168,7 @@ export function ExpensesPieChart({
 
   if (chartData.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 lg:min-h-[540px]">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           Expenses by Category
         </h3>
@@ -180,7 +180,7 @@ export function ExpensesPieChart({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 flex flex-col h-full">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 lg:min-h-[540px] flex flex-col h-full">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           Expenses by Category

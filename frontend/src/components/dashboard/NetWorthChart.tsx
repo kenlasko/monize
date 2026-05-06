@@ -81,7 +81,7 @@ export function NetWorthChart({ data, isLoading }: NetWorthChartProps) {
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[500px]">
         <button
           onClick={() => router.push('/reports/net-worth')}
           className="text-lg font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-4"
@@ -98,7 +98,7 @@ export function NetWorthChart({ data, isLoading }: NetWorthChartProps) {
 
   if (chartData.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[500px]">
         <button
           onClick={() => router.push('/reports/net-worth')}
           className="text-lg font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-4"
@@ -115,7 +115,7 @@ export function NetWorthChart({ data, isLoading }: NetWorthChartProps) {
   const isPositive = summary!.change >= 0;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 flex flex-col h-full">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[500px] flex flex-col h-full">
       <div className="flex items-center justify-between mb-1">
         <button
           onClick={() => router.push('/reports/net-worth')}
@@ -137,7 +137,7 @@ export function NetWorthChart({ data, isLoading }: NetWorthChartProps) {
           {isPositive ? '+' : ''}{formatCurrency(summary!.change)} ({isPositive ? '+' : ''}{summary!.changePercent.toFixed(1)}%)
         </div>
       </div>
-      <div className="h-40 flex-grow">
+      <div className="h-80">
         <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <AreaChart data={chartData} margin={{ top: 5, right: 20, left: 20, bottom: 0 }}>
             <defs>

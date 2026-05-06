@@ -176,7 +176,7 @@ export function IncomeExpensesBarChart({
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[540px]">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           Income vs Expenses
         </h3>
@@ -188,14 +188,14 @@ export function IncomeExpensesBarChart({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 flex flex-col h-full">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[540px] flex flex-col h-full">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           Income vs Expenses
         </h3>
         <span className="text-sm text-gray-500 dark:text-gray-400">Last 5 weeks</span>
       </div>
-      <div className="h-64 flex-grow">
+      <div className="h-64">
         <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <BarChart
             data={chartData}
