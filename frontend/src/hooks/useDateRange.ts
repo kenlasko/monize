@@ -43,7 +43,7 @@ export function useDateRange(options: UseDateRangeOptions): UseDateRangeReturn {
       const isMonth = alignment === 'month';
       // Short-range presets always use today as end date (day-level precision).
       // Long-range presets with month alignment snap to end of month.
-      const useDayLevel = ['1w', '1m', '3m', 'ytd', '1y'].includes(range);
+      const useDayLevel = ['1d', '1w', '1m', '3m', 'ytd', '1y'].includes(range);
       const end = isMonth && !useDayLevel
         ? format(endOfMonth(now), 'yyyy-MM-dd')
         : format(now, 'yyyy-MM-dd');
@@ -51,6 +51,13 @@ export function useDateRange(options: UseDateRangeOptions): UseDateRangeReturn {
       let start: string;
 
       switch (range) {
+        case '1d':
+          // '1d' is an intraday-only preset; resolvedRange is consumed only
+          // when the chart falls back to the daily-snapshot endpoint. A
+          // single day's snapshot is just one point, so widen to a week so
+          // the fallback chart is still readable.
+          start = format(subWeeks(now, 1), 'yyyy-MM-dd');
+          break;
         case '1w':
           start = format(subWeeks(now, 1), 'yyyy-MM-dd');
           break;

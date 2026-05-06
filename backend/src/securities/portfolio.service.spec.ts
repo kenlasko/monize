@@ -2824,6 +2824,34 @@ describe("PortfolioService", () => {
       expect(result.points).toEqual([]);
     });
 
+    it("does not cache the failure payload so a retry actually retries", async () => {
+      // Caching the failure for the usual 60s would leave the
+      // "Couldn't load intraday prices" banner stuck on screen even after
+      // the user clicks Refresh and the upstream blip resolves.
+      accountsRepository.find.mockResolvedValue([mockBrokerageAccount]);
+      holdingsRepository.find.mockResolvedValue([mockHoldingAAPL]);
+
+      yahooFinanceService.fetchIntradaySeries
+        .mockRejectedValueOnce(new Error("yahoo 500"))
+        .mockResolvedValueOnce([
+          { timestamp: new Date("2026-05-06T13:30:00.000Z"), close: 100 },
+        ]);
+      exchangeRateService.getLatestRate.mockResolvedValue(1.4);
+
+      const first = await service.getIntradayValueSeries(userId, {
+        range: "1d",
+      });
+      expect(first.fallbackToDaily).toBe(true);
+      expect(first.failedSymbols).toEqual(["AAPL"]);
+
+      const second = await service.getIntradayValueSeries(userId, {
+        range: "1d",
+      });
+      expect(second.fallbackToDaily).toBe(false);
+      expect(second.points).toHaveLength(1);
+      expect(yahooFinanceService.fetchIntradaySeries).toHaveBeenCalledTimes(2);
+    });
+
     it("returns fallbackToDaily=true with failedSymbols when a fetch returns no bars", async () => {
       accountsRepository.find.mockResolvedValue([mockBrokerageAccount]);
       holdingsRepository.find.mockResolvedValue([

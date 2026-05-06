@@ -18,6 +18,23 @@ describe('useDateRange', () => {
     expect(result.current.isValid).toBe(true);
   });
 
+  it('resolves 1d range as a one-week window with day-level end (intraday-fallback friendly)', () => {
+    // '1d' is an intraday-only preset; resolvedRange is consumed by the
+    // chart only when intraday fails and we fall back to daily snapshots.
+    // A single day's snapshot is one point, so the hook widens to a week.
+    const { result } = renderHook(() => useDateRange({ defaultRange: '1d' }));
+    expect(result.current.resolvedRange.start).toBe('2025-01-08');
+    expect(result.current.resolvedRange.end).toBe('2025-01-15');
+  });
+
+  it('resolves 1d range with month alignment still uses day-level dates', () => {
+    const { result } = renderHook(() =>
+      useDateRange({ defaultRange: '1d', alignment: 'month' }),
+    );
+    expect(result.current.resolvedRange.start).toBe('2025-01-08');
+    expect(result.current.resolvedRange.end).toBe('2025-01-15');
+  });
+
   it('resolves 1w range', () => {
     const { result } = renderHook(() => useDateRange({ defaultRange: '1w' }));
     expect(result.current.resolvedRange.start).toBe('2025-01-08');

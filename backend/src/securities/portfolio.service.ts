@@ -871,9 +871,12 @@ export class PortfolioService {
     // aggregate -- the failed holdings would silently contribute 0 and the
     // total would be materially lower than the actual portfolio value (the
     // 1D-vs-1W discrepancy users have reported). Bail out and let the
-    // frontend use the daily-snapshot endpoint instead.
+    // frontend use the daily-snapshot endpoint instead. We deliberately do
+    // NOT cache this failure payload: caching it for 60s would leave the
+    // "Couldn't load intraday prices" banner stuck on screen even after the
+    // user clicks Refresh and the underlying provider issue resolves.
     if (failedSymbols.length > 0) {
-      const payload: IntradayValueResponse = {
+      return {
         points: [],
         interval: yahooParams.interval,
         currency: displayCurrency,
@@ -883,11 +886,6 @@ export class PortfolioService {
         failedSymbols,
         fallbackToDaily: true,
       };
-      this.intradayCache.set(cacheKey, {
-        expiresAt: now + INTRADAY_CACHE_TTL_MS,
-        payload,
-      });
-      return payload;
     }
 
     // Build the unified time grid from the union of all timestamps.
