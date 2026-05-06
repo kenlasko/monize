@@ -20,95 +20,26 @@ import { useDateRange } from '@/hooks/useDateRange';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { createLogger } from '@/lib/logger';
+import {
+  INTRADAY_RANGES,
+  buildIntradayCacheKey,
+  readIntradayCache,
+  writeIntradayCache,
+  clearAllIntradayCache,
+  computeTightYAxisDomain,
+} from './portfolio-chart-utils';
 
 const logger = createLogger('InvestmentChart');
 
-// Ranges that pull intraday bars from the live quote provider. 1W/1M move
-// from daily-snapshot data to intraday bars when every holding's provider
-// supports it; otherwise the backend signals fallbackToDaily=true and we
-// switch back to the existing daily endpoint.
-const INTRADAY_RANGES = new Set(['1d', '1w', '1m']);
 const DAILY_RANGES = new Set(['1w', '1m', '3m', 'ytd', '1y', '2y']);
 
 /**
- * Frontend caches intraday responses in sessionStorage (per-tab). The
- * page-level Refresh button broadcasts this event so the chart can clear its
- * matching entry and re-fetch when the user is viewing an intraday range.
+ * The page-level Refresh button broadcasts this event so the chart can clear
+ * its sessionStorage cache and re-fetch when viewing an intraday range.
  */
 export const INVESTMENT_CHART_REFRESH_EVENT = 'monize:investment-chart-refresh';
 
 const RANGE_STORAGE_KEY = 'monize-investments-chart-range';
-const INTRADAY_CACHE_PREFIX = 'monize-intraday|';
-
-interface IntradayCachePayload {
-  fetchedAt: number;
-  points: Array<{ timestamp: string; value: number }>;
-  interval: '1m' | '5m' | '15m';
-  currency: string;
-  fallbackToDaily: boolean;
-  skippedSymbols: string[];
-}
-
-function buildIntradayCacheKey(
-  range: string,
-  accountIds: string[] | undefined,
-  currency: string,
-): string {
-  const accts = (accountIds ?? []).slice().sort().join(',');
-  return `${INTRADAY_CACHE_PREFIX}${range}|${accts}|${currency}`;
-}
-
-function readIntradayCache(key: string): IntradayCachePayload | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = window.sessionStorage.getItem(key);
-    if (!raw) return null;
-    return JSON.parse(raw) as IntradayCachePayload;
-  } catch {
-    return null;
-  }
-}
-
-function writeIntradayCache(key: string, payload: IntradayCachePayload): void {
-  if (typeof window === 'undefined') return;
-  try {
-    window.sessionStorage.setItem(key, JSON.stringify(payload));
-  } catch (error) {
-    logger.warn('Failed to write intraday cache:', error);
-  }
-}
-
-function clearAllIntradayCache(): void {
-  if (typeof window === 'undefined') return;
-  try {
-    const ss = window.sessionStorage;
-    const keys: string[] = [];
-    for (let i = 0; i < ss.length; i++) {
-      const k = ss.key(i);
-      if (k && k.startsWith(INTRADAY_CACHE_PREFIX)) keys.push(k);
-    }
-    keys.forEach((k) => ss.removeItem(k));
-  } catch (error) {
-    logger.warn('Failed to clear intraday cache:', error);
-  }
-}
-
-/**
- * Round `raw` up to a "nice" axis step (1, 2, 5 × 10^n). Used to pick a
- * y-axis tick interval so labels look clean at any scale.
- */
-function niceAxisStep(raw: number): number {
-  if (raw <= 0) return 1;
-  const exp = Math.floor(Math.log10(raw));
-  const magnitude = Math.pow(10, exp);
-  const f = raw / magnitude;
-  let nf: number;
-  if (f < 1.5) nf = 1;
-  else if (f < 3) nf = 2;
-  else if (f < 7) nf = 5;
-  else nf = 10;
-  return nf * magnitude;
-}
 
 interface InvestmentValueChartProps {
   accountIds?: string[];
@@ -355,48 +286,10 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix 
       .map((d) => d.name);
   }, [chartPoints, isIntraday, useDaily]);
 
-  const yAxisDomain = useMemo(() => {
-    if (chartPoints.length === 0) return [0, 'auto'] as [number, number | 'auto'];
-
-    const values = chartPoints.map((d) => d.Value);
-    const minValue = Math.min(...values);
-    const maxValue = Math.max(...values);
-    const range = maxValue - minValue;
-
-    // Flat line: pad ±1% (or ±1 unit, whichever is larger) so the line
-    // doesn't sit on the axis edge.
-    if (range === 0) {
-      const pad = Math.max(Math.abs(minValue) * 0.01, 1);
-      return [minValue - pad, maxValue + pad] as [number, number];
-    }
-
-    // If the values cross zero, anchor the lower bound at 0 — otherwise
-    // gain/loss directionality reads wrong.
-    const crossesZero = minValue < 0 && maxValue > 0;
-    if (crossesZero) {
-      const niceMaxStep = niceAxisStep((maxValue - 0) / 5);
-      const niceMax = Math.ceil(maxValue / niceMaxStep) * niceMaxStep;
-      const niceMinStep = niceAxisStep((0 - minValue) / 5);
-      const niceMin = Math.floor(minValue / niceMinStep) * niceMinStep;
-      return [niceMin, niceMax] as [number, number];
-    }
-
-    // Tight zoom around the data so percent-level moves are visible. 5%
-    // padding above and below, snapped to a "nice" round step.
-    const padding = range * 0.05;
-    const rawMin = minValue - padding;
-    const rawMax = maxValue + padding;
-    const step = niceAxisStep(range / 5);
-    const niceMin = Math.floor(rawMin / step) * step;
-    const niceMax = Math.ceil(rawMax / step) * step;
-
-    // Don't dive below zero just because of padding when the data is all
-    // positive (or all negative).
-    if (minValue >= 0) {
-      return [Math.max(0, niceMin), niceMax] as [number, number];
-    }
-    return [niceMin, Math.min(0, niceMax)] as [number, number];
-  }, [chartPoints]);
+  const yAxisDomain = useMemo(
+    () => computeTightYAxisDomain(chartPoints.map((d) => d.Value)),
+    [chartPoints],
+  );
 
   const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ value: number; payload: { name: string } }> }) => {
     if (active && payload && payload.length) {

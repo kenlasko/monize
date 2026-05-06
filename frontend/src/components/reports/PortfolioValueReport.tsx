@@ -19,13 +19,22 @@ import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useDateRange } from '@/hooks/useDateRange';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { createLogger } from '@/lib/logger';
+import {
+  INTRADAY_RANGES,
+  buildIntradayCacheKey,
+  readIntradayCache,
+  writeIntradayCache,
+  computeTightYAxisDomain,
+} from '@/components/investments/portfolio-chart-utils';
 
 const logger = createLogger('PortfolioValueReport');
 
 const DAILY_RANGES = new Set(['1w', '1m', '3m', 'ytd', '1y']);
+const RANGE_STORAGE_KEY = 'monize-reports-portfolio-value-range';
 
 function CustomTooltip({ active, payload, fmtFull }: {
   active?: boolean;
@@ -53,14 +62,40 @@ export function PortfolioValueReport() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
-  const { dateRange, setDateRange, resolvedRange, isValid } = useDateRange({ defaultRange: '2y', alignment: 'month' });
+  const [intradayUnavailable, setIntradayUnavailable] = useState<{
+    skipped: string[];
+  } | null>(null);
+  // Set when 1W/1M silently fall back to daily snapshots because one or more
+  // holdings use a quote provider (MSN Money) without intraday support. We
+  // surface a small warning icon next to the title so the user understands
+  // why the chart resolution is coarser than the button label suggests.
+  const [intradayFallbackNotice, setIntradayFallbackNotice] = useState<{
+    skipped: string[];
+  } | null>(null);
+  const [persistedRange, setPersistedRange] = useLocalStorage<string>(
+    RANGE_STORAGE_KEY,
+    '2y',
+  );
+  const { dateRange, setDateRange, resolvedRange, isValid } = useDateRange({
+    defaultRange: persistedRange,
+    alignment: 'month',
+  });
+  const handleRangeChange = useCallback(
+    (next: string) => {
+      setDateRange(next);
+      setPersistedRange(next);
+    },
+    [setDateRange, setPersistedRange],
+  );
 
-  const useDaily = DAILY_RANGES.has(dateRange);
+  const isIntraday = INTRADAY_RANGES.has(dateRange);
+  const useDaily = !isIntraday && DAILY_RANGES.has(dateRange);
 
   const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
   const foreignCurrency = selectedAccount?.currencyCode && selectedAccount.currencyCode !== defaultCurrency
     ? selectedAccount.currencyCode
     : null;
+  const effectiveCurrency = foreignCurrency || defaultCurrency || 'USD';
 
   const fmtVal = useCallback((value: number) => {
     if (foreignCurrency) return `${formatCurrencyCompact(value, foreignCurrency)} ${foreignCurrency}`;
@@ -77,53 +112,167 @@ export function PortfolioValueReport() {
     return formatCurrencyAxis(value);
   }, [foreignCurrency, formatCurrencyAxis]);
 
+  // Cancel-stale token so quick range/account switches can't write
+  // out-of-order results into state.
+  const loadTokenRef = useRef(0);
+
+  const formatIntradayLabel = useCallback(
+    (iso: string, range: string) => {
+      const d = new Date(iso);
+      return range === '1d' ? format(d, 'HH:mm') : format(d, 'MMM d HH:mm');
+    },
+    [],
+  );
+
   useEffect(() => {
     if (!isValid) return;
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        const { start, end } = resolvedRange;
-        const accountIds = selectedAccountId ? [selectedAccountId] : undefined;
+    const token = ++loadTokenRef.current;
 
-        const params = {
-          startDate: start,
-          endDate: end,
-          accountIds: accountIds?.join(','),
-          displayCurrency: foreignCurrency || undefined,
-        };
+    const accountIds = selectedAccountId ? [selectedAccountId] : undefined;
+    const accountIdsCsv = accountIds?.join(',');
 
-        const [investmentResult, portfolioResult, accountsResult] = await Promise.all([
-          useDaily
-            ? netWorthApi.getInvestmentsDaily(params)
-            : netWorthApi.getInvestmentsMonthly(params),
-          investmentsApi.getPortfolioSummary(accountIds),
-          investmentsApi.getInvestmentAccounts(),
-        ]);
-
-        if (useDaily) {
-          const dailyData = investmentResult as Array<{ date: string; value: number }>;
-          setChartPoints(dailyData.map((d) => ({
+    const loadDailyOrMonthly = async () => {
+      const { start, end } = resolvedRange;
+      const params = {
+        startDate: start,
+        endDate: end,
+        accountIds: accountIdsCsv,
+        displayCurrency: foreignCurrency || undefined,
+      };
+      if (useDaily || isIntraday) {
+        const data = await netWorthApi.getInvestmentsDaily(params);
+        if (loadTokenRef.current !== token) return;
+        setChartPoints(
+          data.map((d) => ({
             name: format(parseLocalDate(d.date), 'MMM d, yyyy'),
             Value: d.value,
-          })));
-        } else {
-          const monthlyData = investmentResult as Array<{ month: string; value: number }>;
-          setChartPoints(monthlyData.map((d) => ({
+          })),
+        );
+      } else {
+        const data = await netWorthApi.getInvestmentsMonthly(params);
+        if (loadTokenRef.current !== token) return;
+        setChartPoints(
+          data.map((d) => ({
             name: format(parseLocalDate(d.month), 'MMM yyyy'),
             Value: d.value,
-          })));
+          })),
+        );
+      }
+    };
+
+    const loadData = async () => {
+      setIsLoading(true);
+      setIntradayUnavailable(null);
+      setIntradayFallbackNotice(null);
+
+      try {
+        // Portfolio summary + accounts list always load in parallel — they
+        // drive the breakdown table and the account picker regardless of
+        // which chart endpoint we hit. Swallow rejections here so a chart
+        // fetch failure below doesn't leave this dangling as an unhandled
+        // promise rejection (the outer catch logs the chart error).
+        const summaryAndAccounts = Promise.all([
+          investmentsApi.getPortfolioSummary(accountIds),
+          investmentsApi.getInvestmentAccounts(),
+        ]).catch((error) => {
+          logger.error('Failed to load portfolio summary/accounts:', error);
+          return null;
+        });
+
+        if (isIntraday) {
+          const cacheKey = buildIntradayCacheKey(
+            dateRange,
+            accountIds,
+            effectiveCurrency,
+          );
+          const cached = readIntradayCache(cacheKey);
+          if (cached && !cached.fallbackToDaily) {
+            setChartPoints(
+              cached.points.map((p) => ({
+                name: formatIntradayLabel(p.timestamp, dateRange),
+                Value: p.value,
+              })),
+            );
+            setIsLoading(false);
+          }
+
+          let response;
+          try {
+            response = await investmentsApi.getIntradayValue({
+              range: dateRange as '1d' | '1w' | '1m',
+              accountIds: accountIdsCsv,
+              displayCurrency: foreignCurrency || undefined,
+            });
+          } catch (error) {
+            logger.error('Failed to load intraday data:', error);
+            if (loadTokenRef.current !== token) return;
+            setChartPoints([]);
+            return;
+          }
+
+          if (loadTokenRef.current !== token) return;
+
+          writeIntradayCache(cacheKey, {
+            fetchedAt: Date.now(),
+            points: response.points,
+            interval: response.interval,
+            currency: response.currency,
+            fallbackToDaily: response.fallbackToDaily,
+            skippedSymbols: response.skippedSymbols,
+          });
+
+          if (response.fallbackToDaily) {
+            if (dateRange === '1d') {
+              // No sensible daily fallback for a single-day chart.
+              setChartPoints([]);
+              setIntradayUnavailable({ skipped: response.skippedSymbols });
+            } else {
+              // 1W / 1M silently fall back to the daily endpoint, with a
+              // small warning icon next to the title so the user knows
+              // intraday detail isn't available for this account mix.
+              setIntradayFallbackNotice({ skipped: response.skippedSymbols });
+              await loadDailyOrMonthly();
+            }
+          } else {
+            setChartPoints(
+              response.points.map((p) => ({
+                name: formatIntradayLabel(p.timestamp, dateRange),
+                Value: p.value,
+              })),
+            );
+          }
+        } else {
+          await loadDailyOrMonthly();
         }
 
-        setPortfolio(portfolioResult);
-        setAccounts(accountsResult);
+        const summaryAndAccountsResult = await summaryAndAccounts;
+        if (loadTokenRef.current !== token) return;
+        if (summaryAndAccountsResult) {
+          const [portfolioResult, accountsResult] = summaryAndAccountsResult;
+          setPortfolio(portfolioResult);
+          setAccounts(accountsResult);
+        }
       } catch (error) {
         logger.error('Failed to load portfolio data:', error);
       } finally {
-        setIsLoading(false);
+        if (loadTokenRef.current === token) {
+          setIsLoading(false);
+        }
       }
     };
+
     loadData();
-  }, [selectedAccountId, resolvedRange, isValid, foreignCurrency, useDaily]);
+  }, [
+    selectedAccountId,
+    resolvedRange,
+    isValid,
+    foreignCurrency,
+    effectiveCurrency,
+    useDaily,
+    isIntraday,
+    dateRange,
+    formatIntradayLabel,
+  ]);
 
   const summary = useMemo(() => {
     if (chartPoints.length === 0) return { current: 0, initial: 0, change: 0, changePercent: 0, high: 0, low: 0 };
@@ -139,33 +288,19 @@ export function PortfolioValueReport() {
 
   const xAxisTicks = useMemo(() => {
     if (chartPoints.length <= 36) return undefined;
-    if (useDaily) {
+    if (isIntraday || useDaily) {
       const step = Math.ceil(chartPoints.length / 7);
-      return chartPoints.filter((_, i) => i % step === 0).map(d => d.name);
+      return chartPoints.filter((_, i) => i % step === 0).map((d) => d.name);
     }
     return chartPoints
       .filter((d) => d.name.startsWith('Jan '))
       .map((d) => d.name);
-  }, [chartPoints, useDaily]);
+  }, [chartPoints, isIntraday, useDaily]);
 
-  const yAxisDomain = useMemo(() => {
-    if (chartPoints.length === 0) return [0, 'auto'] as [number, 'auto'];
-
-    const values = chartPoints.map((d) => d.Value);
-    const minValue = Math.min(...values);
-    const maxValue = Math.max(...values);
-    const range = maxValue - minValue;
-
-    if (minValue > 0 && minValue > range * 0.2) {
-      const padding = range * 0.1;
-      const rawMin = minValue - padding;
-      const magnitude = Math.pow(10, Math.floor(Math.log10(Math.abs(rawMin))));
-      const niceMin = Math.floor(rawMin / magnitude) * magnitude;
-      return [niceMin, 'auto'] as [number, 'auto'];
-    }
-
-    return [Math.min(0, minValue), 'auto'] as [number, 'auto'];
-  }, [chartPoints]);
+  const yAxisDomain = useMemo(
+    () => computeTightYAxisDomain(chartPoints.map((d) => d.Value)),
+    [chartPoints],
+  );
 
   const handleExportPdf = async () => {
     const { exportToPdf } = await import('@/lib/pdf-export');
@@ -198,7 +333,10 @@ export function PortfolioValueReport() {
     });
   };
 
-  if (isLoading) {
+  // Only show the full-card skeleton on the very first paint. Subsequent
+  // range/account changes keep the existing chart on screen so Recharts can
+  // animate into the new data instead of unmounting and re-drawing.
+  if (isLoading && chartPoints.length === 0 && !intradayUnavailable) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
         <div className="animate-pulse space-y-4">
@@ -261,9 +399,9 @@ export function PortfolioValueReport() {
                 ))}
             </select>
             <DateRangeSelector
-              ranges={['1w', '1m', '3m', 'ytd', '1y', '2y', '5y', 'all']}
+              ranges={['1d', '1w', '1m', '3m', 'ytd', '1y', '2y', '5y', 'all']}
               value={dateRange}
-              onChange={setDateRange}
+              onChange={handleRangeChange}
               activeColour="bg-emerald-600"
             />
           </div>
@@ -273,15 +411,77 @@ export function PortfolioValueReport() {
 
       {/* Chart */}
       <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-1.5">
           Portfolio Value Over Time
+          {/* Background-load indicator: chart stays on screen during a
+              refetch so Recharts can animate into the new data, but a
+              portfolio with many securities can take a few seconds. */}
+          {isLoading && chartPoints.length > 0 && (
+            <span
+              className="inline-flex items-center gap-1.5 ml-2 text-xs font-normal text-gray-500 dark:text-gray-400"
+              role="status"
+              aria-live="polite"
+              data-testid="report-chart-loading-indicator"
+            >
+              <svg
+                className="animate-spin h-3.5 w-3.5"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+              Updating…
+            </span>
+          )}
+          {intradayFallbackNotice && (
+            <span
+              role="img"
+              aria-label="Detailed intraday pricing unavailable"
+              title={`Detailed intraday pricing isn't available because ${intradayFallbackNotice.skipped.length > 0 ? intradayFallbackNotice.skipped.join(', ') : 'one or more holdings'} use MSN Money, which doesn't expose intraday quotes. Showing daily snapshots instead.`}
+              className="inline-flex text-amber-500 dark:text-amber-400 cursor-help"
+              data-testid="report-intraday-fallback-warning"
+            >
+              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                <path
+                  fillRule="evenodd"
+                  d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.515 2.625H3.72c-1.345 0-2.188-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </span>
+          )}
         </h3>
-        {chartPoints.length === 0 ? (
+        {intradayUnavailable ? (
+          <div className="text-center py-12 px-4">
+            <p className="text-sm text-gray-700 dark:text-gray-200 font-medium mb-1">
+              Intraday view unavailable for this account mix
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              One or more holdings use a quote provider (MSN Money) that does
+              not expose intraday data
+              {intradayUnavailable.skipped.length > 0
+                ? `: ${intradayUnavailable.skipped.join(', ')}`
+                : ''}
+              . Switch to a longer range to see daily snapshots.
+            </p>
+          </div>
+        ) : chartPoints.length === 0 ? (
           <p className="text-gray-500 dark:text-gray-400 text-center py-8">
             No investment data for this period.
           </p>
         ) : (
-          <div className="h-80">
+          <div
+            className={`h-80 transition-opacity duration-200 ${
+              isLoading ? 'opacity-60' : 'opacity-100'
+            }`}
+          >
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <AreaChart data={chartPoints} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <defs>
@@ -296,6 +496,9 @@ export function PortfolioValueReport() {
                   tick={{ fontSize: 12 }}
                   {...(xAxisTicks ? { ticks: xAxisTicks } : {})}
                   tickFormatter={(value: string) => {
+                    if (isIntraday) {
+                      return value;
+                    }
                     if (useDaily) {
                       const parts = value.split(', ');
                       return parts[0] || value;

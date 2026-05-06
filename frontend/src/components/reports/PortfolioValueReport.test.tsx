@@ -235,7 +235,7 @@ describe('PortfolioValueReport', () => {
       expect(mockDateRangeSelectorProps).toHaveBeenCalled();
     });
     const lastCall = mockDateRangeSelectorProps.mock.calls[mockDateRangeSelectorProps.mock.calls.length - 1][0];
-    expect(lastCall.ranges).toEqual(['1w', '1m', '3m', 'ytd', '1y', '2y', '5y', 'all']);
+    expect(lastCall.ranges).toEqual(['1d', '1w', '1m', '3m', 'ytd', '1y', '2y', '5y', 'all']);
   });
 
   it('handles loadData error gracefully', async () => {
