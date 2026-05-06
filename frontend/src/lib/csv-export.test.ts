@@ -4,10 +4,7 @@ import { exportToCsv } from './csv-export';
 describe('exportToCsv', () => {
   let createObjectURL: any;
   let revokeObjectURL: any;
-  let appendChild: any;
-  let removeChild: any;
   let clickSpy: any;
-  let createElementSpy: any;
   let lastLink: HTMLAnchorElement | null;
 
   beforeEach(() => {
@@ -17,7 +14,8 @@ describe('exportToCsv', () => {
     Object.defineProperty(URL, 'createObjectURL', { value: createObjectURL, writable: true });
     Object.defineProperty(URL, 'revokeObjectURL', { value: revokeObjectURL, writable: true });
 
-    appendChild = vi.spyOn(document.body, 'appendChild').mockImplementation((node: any) => {
+    clickSpy = vi.fn();
+    vi.spyOn(document.body, 'appendChild').mockImplementation((node: any) => {
       lastLink = node;
       // Override click on the anchor element to capture downloads without
       // triggering a real navigation in jsdom.
@@ -26,9 +24,7 @@ describe('exportToCsv', () => {
       }
       return node;
     });
-    removeChild = vi.spyOn(document.body, 'removeChild').mockImplementation((node: any) => node);
-    clickSpy = vi.fn();
-    createElementSpy = vi.fn();
+    vi.spyOn(document.body, 'removeChild').mockImplementation((node: any) => node);
   });
 
   it('creates a csv blob with given headers and rows and triggers download', () => {

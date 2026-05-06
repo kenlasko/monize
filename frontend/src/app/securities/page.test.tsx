@@ -11,7 +11,7 @@ vi.mock('next/image', () => ({
 
 // Mock next/dynamic to return a stub that exposes the loaded component name
 vi.mock('next/dynamic', () => ({
-  default: (loader: any) => {
+  default: (_loader: any) => {
     // Return a generic component depending on what was loaded
     const Stub = (props: any) => {
       // Detect via props which dynamic component this is (PriceHistory takes 'security' prop and 'onClose')
