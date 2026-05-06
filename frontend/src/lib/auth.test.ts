@@ -104,4 +104,52 @@ describe('authApi', () => {
     expect(apiClient.delete).toHaveBeenCalledWith('/auth/2fa/trusted-devices');
     expect(result.count).toBe(3);
   });
+
+  it('generateBackupCodes posts code', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { codes: ['a', 'b'] } });
+    const result = await authApi.generateBackupCodes('123456');
+    expect(apiClient.post).toHaveBeenCalledWith('/auth/2fa/backup-codes', { code: '123456' });
+    expect(result.codes).toHaveLength(2);
+  });
+
+  it('initiateOidc redirects to backend', () => {
+    const originalLocation = window.location;
+    delete (window as any).location;
+    (window as any).location = { href: '' };
+    authApi.initiateOidc();
+    expect(window.location.href).toBe('/api/v1/auth/oidc');
+    (window as any).location = originalLocation;
+  });
+
+  it('verify2FA defaults rememberDevice to false', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { token: 'abc' } });
+    await authApi.verify2FA('temp', '123456');
+    expect(apiClient.post).toHaveBeenCalledWith('/auth/2fa/verify', {
+      tempToken: 'temp',
+      code: '123456',
+      rememberDevice: false,
+    });
+  });
+
+  it('getTokens fetches /auth/tokens', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [{ id: 'pat-1' }] });
+    const result = await authApi.getTokens();
+    expect(apiClient.get).toHaveBeenCalledWith('/auth/tokens');
+    expect(result).toHaveLength(1);
+  });
+
+  it('createToken posts new PAT', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { id: 'pat-1', token: 'abc' } });
+    await authApi.createToken({ name: 'CI', expiresAt: null } as any);
+    expect(apiClient.post).toHaveBeenCalledWith('/auth/tokens', {
+      name: 'CI',
+      expiresAt: null,
+    });
+  });
+
+  it('revokeToken deletes a PAT', async () => {
+    vi.mocked(apiClient.delete).mockResolvedValue({ data: { message: 'revoked' } });
+    await authApi.revokeToken('pat-1');
+    expect(apiClient.delete).toHaveBeenCalledWith('/auth/tokens/pat-1');
+  });
 });

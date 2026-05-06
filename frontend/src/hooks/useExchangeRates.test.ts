@@ -82,6 +82,49 @@ describe('useExchangeRates', () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.rates).toEqual([]);
   });
+
+  it('convertToDefault uses default currency', async () => {
+    vi.mocked(exchangeRatesApi.getLatestRates).mockResolvedValue([
+      { id: 1, fromCurrency: 'USD', toCurrency: 'CAD', rate: 1.5, rateDate: '2025-01-15', source: 'test' },
+    ]);
+    const { result } = renderHook(() => useExchangeRates());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.convertToDefault(100, 'USD')).toBeCloseTo(150, 1);
+  });
+
+  it('convert returns unconverted when no rate available (after load)', async () => {
+    vi.mocked(exchangeRatesApi.getLatestRates).mockResolvedValue([]);
+    const { result } = renderHook(() => useExchangeRates());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.convert(100, 'USD', 'GBP')).toBe(100);
+  });
+
+  it('getRate uses direct rate', async () => {
+    vi.mocked(exchangeRatesApi.getLatestRates).mockResolvedValue([
+      { id: 1, fromCurrency: 'USD', toCurrency: 'CAD', rate: 1.36, rateDate: '2025-01-15', source: 'test' },
+    ]);
+    const { result } = renderHook(() => useExchangeRates());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.getRate('USD', 'CAD')).toBe(1.36);
+  });
+
+  it('getRate uses inverse rate', async () => {
+    vi.mocked(exchangeRatesApi.getLatestRates).mockResolvedValue([
+      { id: 1, fromCurrency: 'USD', toCurrency: 'CAD', rate: 2, rateDate: '2025-01-15', source: 'test' },
+    ]);
+    const { result } = renderHook(() => useExchangeRates());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.getRate('CAD', 'USD')).toBe(0.5);
+  });
+
+  it('getRate uses default currency target when not provided', async () => {
+    vi.mocked(exchangeRatesApi.getLatestRates).mockResolvedValue([
+      { id: 1, fromCurrency: 'USD', toCurrency: 'CAD', rate: 1.36, rateDate: '2025-01-15', source: 'test' },
+    ]);
+    const { result } = renderHook(() => useExchangeRates());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.getRate('USD')).toBe(1.36);
+  });
 });
 
 describe('buildRateMap', () => {

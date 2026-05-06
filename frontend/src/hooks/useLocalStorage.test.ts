@@ -49,4 +49,18 @@ describe('useLocalStorage', () => {
     const { result } = renderHook(() => useLocalStorage('bad', 'fallback'));
     expect(result.current[0]).toBe('fallback');
   });
+
+  it('handles setItem errors gracefully', () => {
+    const original = window.localStorage.setItem;
+    (window.localStorage as any).setItem = vi.fn(() => {
+      throw new Error('storage full');
+    });
+    const { result } = renderHook(() => useLocalStorage('k2', 'a'));
+    act(() => {
+      result.current[1]('b');
+    });
+    // Even though setItem throws, state should still update
+    expect(result.current[0]).toBe('b');
+    (window.localStorage as any).setItem = original;
+  });
 });

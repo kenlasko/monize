@@ -35,6 +35,9 @@ describe("BudgetsController", () => {
       getAlerts: jest.fn(),
       markAlertRead: jest.fn(),
       markAllAlertsRead: jest.fn(),
+      getDashboardSummary: jest.fn(),
+      getCategoryBudgetStatus: jest.fn(),
+      deleteAlert: jest.fn(),
     };
 
     mockBudgetPeriodService = {
@@ -54,6 +57,9 @@ describe("BudgetsController", () => {
       getHealthScore: jest.fn(),
       getSeasonalPatterns: jest.fn(),
       getFlexGroupStatus: jest.fn(),
+      getDailySpending: jest.fn(),
+      getSavingsRate: jest.fn(),
+      getHealthScoreHistory: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -467,6 +473,130 @@ describe("BudgetsController", () => {
         "user-1",
         "budget-1",
       );
+    });
+  });
+
+  describe("getDashboardSummary()", () => {
+    it("delegates to budgetsService.getDashboardSummary", () => {
+      mockBudgetsService.getDashboardSummary!.mockReturnValue("summary");
+
+      const result = controller.getDashboardSummary(mockReq);
+
+      expect(result).toBe("summary");
+      expect(mockBudgetsService.getDashboardSummary).toHaveBeenCalledWith(
+        "user-1",
+      );
+    });
+  });
+
+  describe("getCategoryBudgetStatus()", () => {
+    it("converts the returned Map to a plain object", async () => {
+      const map = new Map<string, unknown>([
+        ["cat-1", { spent: 100 }],
+        ["cat-2", { spent: 200 }],
+      ]);
+      mockBudgetsService.getCategoryBudgetStatus!.mockResolvedValue(map);
+
+      const result = await controller.getCategoryBudgetStatus(mockReq, {
+        categoryIds: ["cat-1", "cat-2"],
+      } as any);
+
+      expect(mockBudgetsService.getCategoryBudgetStatus).toHaveBeenCalledWith(
+        "user-1",
+        ["cat-1", "cat-2"],
+      );
+      expect(result).toEqual({
+        "cat-1": { spent: 100 },
+        "cat-2": { spent: 200 },
+      });
+    });
+  });
+
+  describe("deleteAlert()", () => {
+    it("delegates to budgetsService.deleteAlert", () => {
+      mockBudgetsService.deleteAlert!.mockReturnValue("deleted");
+
+      const result = controller.deleteAlert(mockReq, "alert-1");
+
+      expect(result).toBe("deleted");
+      expect(mockBudgetsService.deleteAlert).toHaveBeenCalledWith(
+        "user-1",
+        "alert-1",
+      );
+    });
+  });
+
+  describe("getDailySpending()", () => {
+    it("delegates to budgetReportsService.getDailySpending", () => {
+      mockBudgetReportsService.getDailySpending!.mockReturnValue("daily");
+
+      const result = controller.getDailySpending(mockReq, "budget-1");
+
+      expect(result).toBe("daily");
+      expect(mockBudgetReportsService.getDailySpending).toHaveBeenCalledWith(
+        "user-1",
+        "budget-1",
+      );
+    });
+  });
+
+  describe("getSavingsRate()", () => {
+    it("uses the default 12 months when none specified", () => {
+      mockBudgetReportsService.getSavingsRate!.mockReturnValue("rate-12");
+
+      const result = controller.getSavingsRate(mockReq, "budget-1", {} as any);
+
+      expect(result).toBe("rate-12");
+      expect(mockBudgetReportsService.getSavingsRate).toHaveBeenCalledWith(
+        "user-1",
+        "budget-1",
+        12,
+      );
+    });
+
+    it("forwards specified months", () => {
+      mockBudgetReportsService.getSavingsRate!.mockReturnValue("rate-6");
+
+      const result = controller.getSavingsRate(mockReq, "budget-1", {
+        months: 6,
+      } as any);
+
+      expect(result).toBe("rate-6");
+      expect(mockBudgetReportsService.getSavingsRate).toHaveBeenCalledWith(
+        "user-1",
+        "budget-1",
+        6,
+      );
+    });
+  });
+
+  describe("getHealthScoreHistory()", () => {
+    it("uses the default 12 months when none specified", () => {
+      mockBudgetReportsService.getHealthScoreHistory!.mockReturnValue("hist");
+
+      const result = controller.getHealthScoreHistory(
+        mockReq,
+        "budget-1",
+        {} as any,
+      );
+
+      expect(result).toBe("hist");
+      expect(
+        mockBudgetReportsService.getHealthScoreHistory,
+      ).toHaveBeenCalledWith("user-1", "budget-1", 12);
+    });
+
+    it("forwards specified months", () => {
+      mockBudgetReportsService.getHealthScoreHistory!.mockReturnValue("h-3");
+
+      const result = controller.getHealthScoreHistory(mockReq, "budget-1", {
+        months: 3,
+      } as any);
+
+      expect(result).toBe("h-3");
+      expect(
+        mockBudgetReportsService.getHealthScoreHistory,
+      ).toHaveBeenCalledWith("user-1", "budget-1", 3);
     });
   });
 });

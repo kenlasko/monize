@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { captureSvgAsImage, captureAllChartsAsImages } from './pdf-export-charts';
 
 /**
@@ -88,5 +88,106 @@ describe('captureAllChartsAsImages', () => {
     const result = await captureAllChartsAsImages(container);
     // Should return empty -- main chart has no dimensions, legend SVG is excluded by selector
     expect(result).toEqual([]);
+  });
+});
+
+describe('captureSingleSvg via captureSvgAsImage (with mocked Image)', () => {
+  let originalImage: typeof Image;
+
+  beforeEach(() => {
+    originalImage = global.Image;
+    // Mock Image to immediately fire onload
+    class MockImage {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      _src = '';
+      get src() {
+        return this._src;
+      }
+      set src(value: string) {
+        this._src = value;
+        // Fire onload asynchronously to mimic browser behavior
+        setTimeout(() => this.onload?.(), 0);
+      }
+    }
+    (global as any).Image = MockImage;
+    // Mock canvas getContext since jsdom returns a usable but limited 2d ctx
+    HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
+      fillStyle: '',
+      fillRect: vi.fn(),
+      drawImage: vi.fn(),
+    }) as any;
+    HTMLCanvasElement.prototype.toDataURL = vi.fn().mockReturnValue('data:image/png;base64,test');
+  });
+
+  afterEach(() => {
+    (global as any).Image = originalImage;
+  });
+
+  it('captures an SVG with width/height attributes', async () => {
+    const container = document.createElement('div');
+    const wrapper = document.createElement('div');
+    wrapper.classList.add('recharts-wrapper');
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.classList.add('recharts-surface');
+    svg.setAttribute('width', '800');
+    svg.setAttribute('height', '400');
+    // Add text and line elements that should be normalized
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('fill', 'currentColor');
+    svg.appendChild(text);
+    const tspan = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+    svg.appendChild(tspan);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.classList.add('stroke-gray-200');
+    svg.appendChild(line);
+    wrapper.appendChild(svg);
+    container.appendChild(wrapper);
+
+    const result = await captureSvgAsImage(container);
+    expect(result).not.toBeNull();
+    expect(result?.width).toBe(800);
+    expect(result?.height).toBe(400);
+    expect(result?.dataUrl).toBe('data:image/png;base64,test');
+  });
+
+  it('captureAllChartsAsImages returns multiple captured charts', async () => {
+    const container = document.createElement('div');
+    for (let i = 0; i < 3; i++) {
+      const wrapper = document.createElement('div');
+      wrapper.classList.add('recharts-wrapper');
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.classList.add('recharts-surface');
+      svg.setAttribute('width', '800');
+      svg.setAttribute('height', '400');
+      wrapper.appendChild(svg);
+      container.appendChild(wrapper);
+    }
+    const result = await captureAllChartsAsImages(container);
+    expect(result).toHaveLength(3);
+  });
+
+  it('returns null when capture throws (Image error)', async () => {
+    class FailingImage {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      set src(_v: string) {
+        setTimeout(() => this.onerror?.(), 0);
+      }
+    }
+    (global as any).Image = FailingImage;
+
+    const container = document.createElement('div');
+    const wrapper = document.createElement('div');
+    wrapper.classList.add('recharts-wrapper');
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.classList.add('recharts-surface');
+    svg.setAttribute('width', '800');
+    svg.setAttribute('height', '400');
+    wrapper.appendChild(svg);
+    container.appendChild(wrapper);
+
+    const result = await captureSvgAsImage(container);
+    expect(result).toBeNull();
   });
 });

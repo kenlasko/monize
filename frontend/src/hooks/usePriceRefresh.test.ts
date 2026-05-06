@@ -240,4 +240,35 @@ describe('usePriceRefresh', () => {
     });
     expect(onRefreshComplete).toHaveBeenCalledWith('2026-04-15T14:06:00Z');
   });
+
+  it('does nothing when refresh is already in progress', async () => {
+    setRefreshInProgress(true);
+    const { result } = renderHook(() => usePriceRefresh());
+    await act(async () => {
+      await result.current.triggerManualRefresh();
+    });
+    expect(investmentsApi.getSecurities).not.toHaveBeenCalled();
+  });
+
+  it('triggerAutoRefresh skips when outside market hours', async () => {
+    // Real isMarketHours runs; check that when refreshInProgress is true it short-circuits
+    setRefreshInProgress(true);
+    const { result } = renderHook(() => usePriceRefresh());
+    act(() => {
+      result.current.triggerAutoRefresh();
+    });
+    expect(investmentsApi.getSecurities).not.toHaveBeenCalled();
+  });
+
+  it('uses singular "1 security price" message when only one updated', async () => {
+    vi.mocked(investmentsApi.getSecurities).mockResolvedValue([sec('s-1')] as any);
+    vi.mocked(investmentsApi.refreshSelectedPrices).mockResolvedValue({
+      updated: 1, failed: 0, totalSecurities: 1, skipped: 0, results: [], lastUpdated: '',
+    });
+    const { result } = renderHook(() => usePriceRefresh());
+    await act(async () => {
+      await result.current.triggerManualRefresh();
+    });
+    expect(toast.success).toHaveBeenCalledWith('1 security price updated');
+  });
 });

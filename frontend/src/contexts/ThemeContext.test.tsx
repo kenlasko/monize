@@ -124,4 +124,104 @@ describe('ThemeContext', () => {
 
     spy.mockRestore();
   });
+
+  it('ignores invalid stored theme values', () => {
+    localStorage.setItem('monize-theme', 'invalid-theme');
+    const { result } = renderHook(() => useTheme(), { wrapper: ThemeProvider });
+    expect(result.current.theme).toBe('system');
+  });
+
+  it('removes dark class when switching from dark to light', () => {
+    vi.mocked(window.matchMedia).mockImplementation((query: string) => ({
+      matches: query === '(prefers-color-scheme: dark)',
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+
+    const { result } = renderHook(() => useTheme(), { wrapper: ThemeProvider });
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
+
+    act(() => {
+      result.current.setTheme('light');
+    });
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+    expect(result.current.resolvedTheme).toBe('light');
+  });
+
+  it('reacts to system preference change while in system mode', () => {
+    let changeHandler: (() => void) | null = null;
+    vi.mocked(window.matchMedia).mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn((_event: string, handler: any) => {
+        changeHandler = handler;
+      }),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+
+    const { result } = renderHook(() => useTheme(), { wrapper: ThemeProvider });
+    expect(result.current.resolvedTheme).toBe('light');
+
+    // Simulate system change to dark by switching the matchMedia mock
+    vi.mocked(window.matchMedia).mockImplementation((query: string) => ({
+      matches: query === '(prefers-color-scheme: dark)',
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+    act(() => {
+      changeHandler?.();
+    });
+    expect(result.current.resolvedTheme).toBe('dark');
+  });
+
+  it('does not change resolvedTheme on system change when in non-system mode', () => {
+    let changeHandler: (() => void) | null = null;
+    vi.mocked(window.matchMedia).mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn((_event: string, handler: any) => {
+        changeHandler = handler;
+      }),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+
+    const { result } = renderHook(() => useTheme(), { wrapper: ThemeProvider });
+    act(() => {
+      result.current.setTheme('light');
+    });
+
+    // Switch matchMedia to dark
+    vi.mocked(window.matchMedia).mockImplementation((query: string) => ({
+      matches: query === '(prefers-color-scheme: dark)',
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+    act(() => {
+      changeHandler?.();
+    });
+    expect(result.current.resolvedTheme).toBe('light');
+  });
 });

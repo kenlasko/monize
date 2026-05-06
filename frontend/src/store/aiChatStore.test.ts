@@ -263,5 +263,142 @@ describe('aiChatStore', () => {
       const messages = useAiChatStore.getState().messages;
       expect(messages[1].isStreaming).toBe(false);
     });
+
+    it('is a no-op when no messages are streaming', () => {
+      useAiChatStore.setState({
+        messages: [{ id: 'u', role: 'user', content: 'Q' }],
+      });
+      const before = useAiChatStore.getState().messages;
+      useAiChatStore.getState()._heal();
+      // Reference equality preserved when no change is needed
+      expect(useAiChatStore.getState().messages).toBe(before);
+    });
+  });
+
+  describe('thinking & tool events', () => {
+    it('updates the thinking message on a thinking event', () => {
+      useAiChatStore.getState().submit('Q');
+      capturedCallbacks?.onEvent({ type: 'thinking', message: 'Working on it' });
+      expect(useAiChatStore.getState().thinking.message).toBe('Working on it');
+    });
+
+    it('falls back to "Thinking..." when no message is supplied', () => {
+      useAiChatStore.getState().submit('Q');
+      capturedCallbacks?.onEvent({ type: 'thinking' } as any);
+      expect(useAiChatStore.getState().thinking.message).toBe('Thinking...');
+    });
+
+    it('accumulates assistant_text into thinking.liveText', () => {
+      useAiChatStore.getState().submit('Q');
+      capturedCallbacks?.onEvent({ type: 'assistant_text', text: 'Hello, ' });
+      capturedCallbacks?.onEvent({ type: 'assistant_text', text: 'world.' });
+      expect(useAiChatStore.getState().thinking.liveText).toBe('Hello, world.');
+    });
+
+    it('records tool start and result events', () => {
+      useAiChatStore.getState().submit('Q');
+      capturedCallbacks?.onEvent({ type: 'tool_start', name: 'get_balances' });
+      let tools = useAiChatStore.getState().thinking.tools;
+      expect(tools[0]).toMatchObject({ name: 'get_balances', status: 'running' });
+
+      capturedCallbacks?.onEvent({
+        type: 'tool_result',
+        name: 'get_balances',
+        summary: '5 accounts',
+      });
+      tools = useAiChatStore.getState().thinking.tools;
+      expect(tools[0]).toMatchObject({
+        name: 'get_balances',
+        status: 'done',
+        summary: '5 accounts',
+      });
+
+      capturedCallbacks?.onEvent({ type: 'content', text: 'Done' });
+      capturedCallbacks?.onEvent({
+        type: 'done',
+        usage: { inputTokens: 1, outputTokens: 1, toolCalls: 1 },
+      });
+
+      const messages = useAiChatStore.getState().messages;
+      expect(messages[1].toolsUsed).toHaveLength(1);
+      expect(messages[1].toolsUsed?.[0].summary).toBe('5 accounts');
+    });
+
+    it('records tool errors via isError flag', () => {
+      useAiChatStore.getState().submit('Q');
+      capturedCallbacks?.onEvent({ type: 'tool_start', name: 'broken_tool' });
+      capturedCallbacks?.onEvent({
+        type: 'tool_result',
+        name: 'broken_tool',
+        summary: 'failed',
+        isError: true,
+      });
+      const tools = useAiChatStore.getState().thinking.tools;
+      expect(tools[0].isError).toBe(true);
+    });
+
+    it('forwards sources event into the assistant message on done', () => {
+      useAiChatStore.getState().submit('Q');
+      capturedCallbacks?.onEvent({ type: 'content', text: 'Answer' });
+      capturedCallbacks?.onEvent({
+        type: 'sources',
+        sources: [{ type: 'transactions', description: '5 rows' }],
+      });
+      capturedCallbacks?.onEvent({
+        type: 'done',
+        usage: { inputTokens: 1, outputTokens: 1, toolCalls: 0 },
+      });
+      const messages = useAiChatStore.getState().messages;
+      expect(messages[1].sources).toHaveLength(1);
+      expect(messages[1].sources?.[0].description).toBe('5 rows');
+    });
+
+    it('marks assistant message with error when error follows content', () => {
+      useAiChatStore.getState().submit('Q');
+      capturedCallbacks?.onEvent({ type: 'content', text: 'Partial...' });
+      capturedCallbacks?.onEvent({ type: 'error', message: 'Stream broke' });
+      const messages = useAiChatStore.getState().messages;
+      expect(messages[1].isStreaming).toBe(false);
+      expect(messages[1].error).toBe('Stream broke');
+      expect(useAiChatStore.getState().isLoading).toBe(false);
+    });
+  });
+
+  describe('onDone backstop', () => {
+    it('clears loading state when stream closes without a done event', () => {
+      useAiChatStore.getState().submit('Q');
+      capturedCallbacks?.onDone?.();
+      expect(useAiChatStore.getState().isLoading).toBe(false);
+      expect(useAiChatStore.getState().thinking.active).toBe(false);
+    });
+  });
+
+  describe('onError handling', () => {
+    it('preserves partial assistant message and resets loading on error after content', () => {
+      useAiChatStore.getState().submit('Q');
+      capturedCallbacks?.onEvent({ type: 'content', text: 'Half-' });
+      capturedCallbacks?.onError?.(new Error('boom'));
+
+      const state = useAiChatStore.getState();
+      expect(state.isLoading).toBe(false);
+      // Partial content remains; no extra error message appended
+      const assistant = state.messages.find((m) => m.role === 'assistant');
+      expect(assistant?.content).toBe('Half-');
+    });
+  });
+
+  describe('cancel edge cases', () => {
+    it('is a no-op when there is no active stream', () => {
+      // No prior submit
+      useAiChatStore.getState().cancel();
+      expect(useAiChatStore.getState().isLoading).toBe(false);
+    });
+  });
+
+  describe('clear edge cases', () => {
+    it('does not throw when there is no active controller', () => {
+      expect(() => useAiChatStore.getState().clear()).not.toThrow();
+      expect(useAiChatStore.getState().messages).toEqual([]);
+    });
   });
 });

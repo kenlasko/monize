@@ -192,4 +192,100 @@ describe('useUndoRedo', () => {
     expect(actionHistoryApi.undo).not.toHaveBeenCalled();
     document.body.removeChild(input);
   });
+
+  it('should not trigger from textarea', async () => {
+    renderHook(() => useUndoRedo());
+    const ta = document.createElement('textarea');
+    document.body.appendChild(ta);
+    ta.focus();
+    await act(async () => {
+      ta.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true }));
+      await new Promise((r) => setTimeout(r, 10));
+    });
+    expect(actionHistoryApi.undo).not.toHaveBeenCalled();
+    document.body.removeChild(ta);
+  });
+
+  it('should not trigger when no modifier key', async () => {
+    renderHook(() => useUndoRedo());
+    await act(async () => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', bubbles: true }));
+      await new Promise((r) => setTimeout(r, 10));
+    });
+    expect(actionHistoryApi.undo).not.toHaveBeenCalled();
+  });
+
+  it('should respond to Ctrl+Y for redo', async () => {
+    actionHistoryApi.redo.mockResolvedValue({ action: { id: 'a' }, description: 'Redo' });
+    renderHook(() => useUndoRedo());
+    await act(async () => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'y', ctrlKey: true, bubbles: true }));
+      await new Promise((r) => setTimeout(r, 10));
+    });
+    expect(actionHistoryApi.redo).toHaveBeenCalled();
+  });
+
+  it('should show success toast (not error) when nothing to redo', async () => {
+    actionHistoryApi.redo.mockRejectedValue({ response: { status: 404, data: { message: 'Nothing to redo' } } });
+    const { result } = renderHook(() => useUndoRedo());
+    await act(async () => {
+      await result.current.handleRedo();
+    });
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it('should show error toast on redo conflict', async () => {
+    actionHistoryApi.redo.mockRejectedValue({ response: { status: 409, data: { message: 'Conflict' } } });
+    const { result } = renderHook(() => useUndoRedo());
+    await act(async () => {
+      await result.current.handleRedo();
+    });
+    expect(toast.error).toHaveBeenCalledWith('Conflict');
+  });
+
+  it('should show generic error toast when undo fails unexpectedly', async () => {
+    actionHistoryApi.undo.mockRejectedValue({ response: { status: 500 } });
+    const { result } = renderHook(() => useUndoRedo());
+    await act(async () => {
+      await result.current.handleUndo();
+    });
+    expect(toast.error).toHaveBeenCalledWith('Undo failed');
+  });
+
+  it('should show generic error toast when redo fails unexpectedly', async () => {
+    actionHistoryApi.redo.mockRejectedValue(new Error('boom'));
+    const { result } = renderHook(() => useUndoRedo());
+    await act(async () => {
+      await result.current.handleRedo();
+    });
+    expect(toast.error).toHaveBeenCalledWith('Redo failed');
+  });
+
+  it('uses default messages when 409 has no message', async () => {
+    actionHistoryApi.undo.mockRejectedValue({ response: { status: 409, data: {} } });
+    const { result } = renderHook(() => useUndoRedo());
+    await act(async () => {
+      await result.current.handleUndo();
+    });
+    expect(toast.error).toHaveBeenCalledWith('Cannot undo this action');
+  });
+
+  it('does not start a second undo while one is pending', async () => {
+    let resolve!: (v: any) => void;
+    actionHistoryApi.undo.mockImplementation(
+      () => new Promise((res) => { resolve = res; }),
+    );
+    const { result } = renderHook(() => useUndoRedo());
+
+    const first = act(async () => {
+      await result.current.handleUndo();
+    });
+    // Second call while first pending
+    await act(async () => {
+      await result.current.handleUndo();
+    });
+    expect(actionHistoryApi.undo).toHaveBeenCalledTimes(1);
+    resolve({ description: 'done' });
+    await first;
+  });
 });

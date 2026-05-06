@@ -176,4 +176,40 @@ describe('payeesApi', () => {
     expect(apiClient.get).toHaveBeenCalledWith('/payees/inactive/match', { params: { name: 'Old Store' } });
     expect(result!.name).toBe('Old Store');
   });
+
+  it('getAliases fetches aliases for a payee', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
+    await payeesApi.getAliases('p-1');
+    expect(apiClient.get).toHaveBeenCalledWith('/payees/p-1/aliases');
+  });
+
+  it('getAllAliases fetches all aliases', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
+    await payeesApi.getAllAliases();
+    expect(apiClient.get).toHaveBeenCalledWith('/payees/aliases');
+  });
+
+  it('createAlias posts to /payees/aliases', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { id: 'a-1' } });
+    await payeesApi.createAlias({ payeeId: 'p-1', alias: 'GroceryStore' } as any);
+    expect(apiClient.post).toHaveBeenCalledWith('/payees/aliases', {
+      payeeId: 'p-1',
+      alias: 'GroceryStore',
+    });
+  });
+
+  it('deleteAlias removes an alias', async () => {
+    vi.mocked(apiClient.delete).mockResolvedValue({});
+    await payeesApi.deleteAlias('a-1');
+    expect(apiClient.delete).toHaveBeenCalledWith('/payees/aliases/a-1');
+  });
+
+  it('mergePayees posts merge data', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { merged: 1 } });
+    await payeesApi.mergePayees({ sourceId: 'p-1', targetId: 'p-2' } as any);
+    expect(apiClient.post).toHaveBeenCalledWith('/payees/merge', {
+      sourceId: 'p-1',
+      targetId: 'p-2',
+    });
+  });
 });

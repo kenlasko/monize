@@ -28,6 +28,10 @@ vi.mock('jspdf', () => {
     addPage = mockAddPage;
     setPage = mockSetPage;
     getNumberOfPages = mockGetNumberOfPages;
+    splitTextToSize = vi.fn((text: string) => [text]);
+    getTextWidth = vi.fn(() => 10);
+    setFillColor = vi.fn();
+    rect = vi.fn();
     internal = {
       pageSize: { getWidth: () => 297, getHeight: () => 210 },
     };
@@ -236,5 +240,172 @@ describe('exportToPdf', () => {
     });
 
     expect(mockAddSummaryCards).not.toHaveBeenCalled();
+  });
+
+  it('renders description paragraph when provided', async () => {
+    const { exportToPdf } = await import('./pdf-export');
+
+    await exportToPdf({
+      title: 'Report',
+      description: 'Long description text that should be split into lines for the PDF.',
+      filename: 'desc-report',
+    });
+
+    // splitTextToSize is invoked indirectly; ensure text rendered with the description
+    expect(mockText).toHaveBeenCalled();
+  });
+
+  it('renders chart legend when provided', async () => {
+    const { exportToPdf } = await import('./pdf-export');
+
+    await exportToPdf({
+      title: 'Report',
+      chartLegend: [
+        { color: '#ff0000', label: 'Red' },
+        { color: '#00ff00', label: 'Green' },
+      ],
+      filename: 'legend-report',
+    });
+
+    // Legend renders rect with fill colours and text labels
+    expect(mockText).toHaveBeenCalledWith('Red', expect.any(Number), expect.any(Number));
+    expect(mockText).toHaveBeenCalledWith('Green', expect.any(Number), expect.any(Number));
+  });
+
+  it('renders additional tables with section titles', async () => {
+    const { addTableToPdf } = await import('./pdf-export-tables');
+    const { exportToPdf } = await import('./pdf-export');
+
+    await exportToPdf({
+      title: 'Report',
+      additionalTables: [
+        {
+          title: 'Section A',
+          headers: ['Col1'],
+          rows: [['v1']],
+          totalRow: ['Total'],
+        },
+      ],
+      filename: 'add-tables',
+    });
+
+    expect(addTableToPdf).toHaveBeenCalled();
+    expect(mockText).toHaveBeenCalledWith('Section A', expect.any(Number), expect.any(Number));
+  });
+
+  it('skips additional tables that have empty headers or rows', async () => {
+    const { addTableToPdf } = await import('./pdf-export-tables');
+    vi.mocked(addTableToPdf).mockClear();
+
+    const { exportToPdf } = await import('./pdf-export');
+
+    await exportToPdf({
+      title: 'Report',
+      additionalTables: [
+        { headers: [], rows: [['x']] },
+        { headers: ['A'], rows: [] },
+      ],
+      filename: 'skip-empty',
+    });
+
+    expect(addTableToPdf).not.toHaveBeenCalled();
+  });
+
+  it('renders multi-column charts when chartColumns > 1', async () => {
+    const { captureAllChartsAsImages } = await import('./pdf-export-charts');
+    vi.mocked(captureAllChartsAsImages).mockResolvedValueOnce([
+      { dataUrl: 'data:image/png;base64,a', width: 400, height: 300 },
+      { dataUrl: 'data:image/png;base64,b', width: 400, height: 300 },
+    ]);
+
+    const { exportToPdf } = await import('./pdf-export');
+    const container = document.createElement('div');
+
+    await exportToPdf({
+      title: 'Two Charts',
+      chartContainer: container,
+      chartColumns: 2,
+      filename: 'two-cols',
+    });
+
+    expect(mockAddImage).toHaveBeenCalledTimes(2);
+  });
+
+  it('continues table-only PDF when chart capture throws', async () => {
+    const { captureAllChartsAsImages } = await import('./pdf-export-charts');
+    vi.mocked(captureAllChartsAsImages).mockRejectedValueOnce(new Error('capture failed'));
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const { exportToPdf } = await import('./pdf-export');
+    const container = document.createElement('div');
+
+    await exportToPdf({
+      title: 'Failing chart',
+      chartContainer: container,
+      tableData: { headers: ['A'], rows: [['1']] },
+      filename: 'fail-chart',
+    });
+
+    expect(warnSpy).toHaveBeenCalled();
+    expect(mockSave).toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  it('wraps legend onto a new line when items overflow available width', async () => {
+    const { exportToPdf } = await import('./pdf-export');
+
+    // Many items will overflow availableWidth (pageWidth - margin * 2 = 269)
+    // Each item width is roughly SWATCH_SIZE(3) + 1.5 + textWidth(10) + ITEM_GAP(3) = 17.5
+    // So 30 items >> 269 → wrap will occur
+    const legend = Array.from({ length: 30 }, (_, i) => ({
+      color: '#abcdef',
+      label: `Long Label ${i}`,
+    }));
+
+    await exportToPdf({
+      title: 'Wrap Legend',
+      chartLegend: legend,
+      filename: 'wrap-legend',
+    });
+
+    expect(mockText).toHaveBeenCalledWith('Long Label 0', expect.any(Number), expect.any(Number));
+  });
+
+  it('adds a page break before an additional table when not enough vertical space remains', async () => {
+    const { addTableToPdf } = await import('./pdf-export-tables');
+    // First call (main table) returns a Y close to pageHeight; the second call
+    // (additional table) should occur after the page-break branch fires.
+    vi.mocked(addTableToPdf).mockReturnValueOnce(180);
+
+    const { exportToPdf } = await import('./pdf-export');
+
+    await exportToPdf({
+      title: 'Need Page Break',
+      tableData: { headers: ['A'], rows: [['1']] },
+      additionalTables: [{ title: 'Section B', headers: ['X'], rows: [['v']] }],
+      filename: 'pagebreak',
+    });
+
+    expect(mockAddPage).toHaveBeenCalled();
+  });
+
+  it('drops the table on a new page when chart consumed too much height', async () => {
+    const { captureAllChartsAsImages } = await import('./pdf-export-charts');
+    vi.mocked(captureAllChartsAsImages).mockResolvedValueOnce([
+      { dataUrl: 'data:image/png;base64,a', width: 100, height: 1000 },
+    ]);
+
+    const { exportToPdf } = await import('./pdf-export');
+    const container = document.createElement('div');
+
+    await exportToPdf({
+      title: 'Tall Chart Then Table',
+      chartContainer: container,
+      tableData: { headers: ['A'], rows: [['1']] },
+      filename: 'chart-then-table',
+    });
+
+    expect(mockAddPage).toHaveBeenCalled();
   });
 });

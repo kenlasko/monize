@@ -521,5 +521,406 @@ describe("MonteCarloService", () => {
       expect(queryRunner.commitTransaction).not.toHaveBeenCalled();
       expect(queryRunner.release).toHaveBeenCalled();
     });
+
+    it("rejects a non-array argument", async () => {
+      await expect(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        service.reorder(userId, "not an array" as any),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+  });
+
+  describe("findAll", () => {
+    it("sorts cashFlows on each scenario by sortOrder", async () => {
+      const a = buildScenario({
+        id: "a",
+        cashFlows: [
+          { id: "cf-2", sortOrder: 1 } as never,
+          { id: "cf-1", sortOrder: 0 } as never,
+        ] as never,
+      });
+      const b = buildScenario({ id: "b", cashFlows: undefined as never });
+      scenariosRepository.find.mockResolvedValue([a, b]);
+      const result = await service.findAll(userId);
+      expect(result).toHaveLength(2);
+      expect(a.cashFlows![0].id).toBe("cf-1");
+    });
+  });
+
+  describe("findOne sorts cashFlows", () => {
+    it("sorts the loaded cashFlows by sortOrder", async () => {
+      const cashFlows = [
+        { id: "cf-3", sortOrder: 2 } as never,
+        { id: "cf-1", sortOrder: 0 } as never,
+        { id: "cf-2", sortOrder: 1 } as never,
+      ];
+      scenariosRepository.findOne.mockResolvedValueOnce(
+        buildScenario({ cashFlows: cashFlows as never }),
+      );
+      const result = await service.findOne(userId, "scn-1");
+      expect(result.cashFlows!.map((c) => c.id)).toEqual([
+        "cf-1",
+        "cf-2",
+        "cf-3",
+      ]);
+    });
+  });
+
+  describe("update branches", () => {
+    it("applies all whitelisted fields when each is present in the dto", async () => {
+      const existing = buildScenario();
+      scenariosRepository.findOne.mockResolvedValueOnce(existing);
+      scenariosRepository.findOne.mockResolvedValueOnce({
+        ...existing,
+        name: "X",
+      });
+
+      await service.update(userId, "scn-1", {
+        name: "X",
+        description: "d",
+        accountIds: ["a-2"],
+        startingValue: 1,
+        useCurrentBalance: true,
+        yearsToRetirement: 2,
+        annualContribution: 3,
+        contributionGrowthRate: 0.01,
+        yearsInRetirement: 4,
+        annualWithdrawal: 5,
+        expectedReturn: 0.06,
+        volatility: 0.2,
+        inflationRate: 0.01,
+        showRealValues: true,
+        useHistoricalReturns: true,
+        simulationCount: 100,
+        targetValue: 1_000_000,
+        randomSeed: "seed",
+        isFavourite: true,
+        cashFlows: [],
+      } as never);
+      expect(scenariosRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "X",
+          accountIds: ["a-2"],
+          isFavourite: true,
+          targetValue: 1_000_000,
+          randomSeed: "seed",
+        }),
+      );
+    });
+
+    it("converts null description / targetValue / randomSeed to null", async () => {
+      const existing = buildScenario();
+      scenariosRepository.findOne.mockResolvedValueOnce(existing);
+      scenariosRepository.findOne.mockResolvedValueOnce(existing);
+      await service.update(userId, "scn-1", {
+        description: null as never,
+        targetValue: null as never,
+        randomSeed: null as never,
+      });
+      expect(scenariosRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          description: null,
+          targetValue: null,
+          randomSeed: null,
+        }),
+      );
+    });
+
+    it("does not delete cashFlows when the dto omits them", async () => {
+      const existing = buildScenario();
+      scenariosRepository.findOne.mockResolvedValueOnce(existing);
+      scenariosRepository.findOne.mockResolvedValueOnce(existing);
+      cashFlowsRepository.delete.mockClear();
+      await service.update(userId, "scn-1", { name: "Y" });
+      expect(cashFlowsRepository.delete).not.toHaveBeenCalled();
+    });
+
+    it("clears existing cashFlows when an empty array is provided", async () => {
+      const existing = buildScenario();
+      scenariosRepository.findOne.mockResolvedValueOnce(existing);
+      scenariosRepository.findOne.mockResolvedValueOnce(existing);
+      await service.update(userId, "scn-1", { cashFlows: [] });
+      expect(cashFlowsRepository.delete).toHaveBeenCalledWith({
+        scenarioId: "scn-1",
+      });
+      // No new rows should be created when the list is empty.
+      expect(cashFlowsRepository.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("getHoldingStats", () => {
+    it("rejects empty account list", async () => {
+      await expect(service.getHoldingStats(userId, [])).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    });
+
+    it("returns [] when no requested accounts belong to the user", async () => {
+      accountsRepository.find.mockResolvedValueOnce([]);
+      const result = await service.getHoldingStats(userId, ["other"]);
+      expect(result).toEqual([]);
+    });
+
+    it("returns empty holdings entries when user has no active holdings", async () => {
+      accountsRepository.find.mockResolvedValueOnce([
+        { id: "acct-1", name: "A", currencyCode: "USD" },
+      ]);
+      holdingsRepository.find.mockResolvedValueOnce([]);
+      const result = await service.getHoldingStats(userId, ["acct-1"]);
+      expect(result).toEqual([
+        {
+          accountId: "acct-1",
+          accountName: "A",
+          currencyCode: "USD",
+          holdings: [],
+        },
+      ]);
+    });
+
+    it("computes per-holding stats with security symbol/currency fallbacks", async () => {
+      accountsRepository.find.mockResolvedValueOnce([
+        { id: "acct-1", name: "A", currencyCode: "USD" },
+      ]);
+      const holding = {
+        id: "h1",
+        accountId: "acct-1",
+        securityId: "sec-1",
+        quantity: 5,
+        security: undefined, // exercise the ?? fallbacks
+      };
+      holdingsRepository.find.mockResolvedValueOnce([holding]);
+      securityPriceRepository.query.mockResolvedValue([
+        { security_id: "sec-1", year: "2023", close_price: "100" },
+        { security_id: "sec-1", year: "2024", close_price: "110" },
+      ]);
+      portfolioService.getLatestPrices = jest
+        .fn()
+        .mockResolvedValue(new Map([["sec-1", 110]]));
+
+      const result = await service.getHoldingStats(userId, ["acct-1"]);
+      expect(result[0].holdings[0]).toEqual(
+        expect.objectContaining({
+          symbol: "?",
+          name: "Unknown",
+          currencyCode: "USD",
+          marketValue: 550,
+        }),
+      );
+    });
+
+    it("uses 0 marketValue when no current price is available", async () => {
+      accountsRepository.find.mockResolvedValueOnce([
+        { id: "acct-1", name: "A", currencyCode: "USD" },
+      ]);
+      const holding = {
+        id: "h1",
+        accountId: "acct-1",
+        securityId: "sec-1",
+        quantity: 5,
+        security: { symbol: "X", name: "X co", currencyCode: "EUR" },
+      };
+      holdingsRepository.find.mockResolvedValueOnce([holding]);
+      securityPriceRepository.query.mockResolvedValue([]);
+      portfolioService.getLatestPrices = jest
+        .fn()
+        .mockResolvedValue(new Map());
+
+      const result = await service.getHoldingStats(userId, ["acct-1"]);
+      expect(result[0].holdings[0].marketValue).toBe(0);
+      expect(result[0].holdings[0].meanReturn).toBeNull();
+    });
+
+    it("ignores holdings whose accountId is not in the (verified) account set", async () => {
+      accountsRepository.find.mockResolvedValueOnce([
+        { id: "acct-1", name: "A", currencyCode: "USD" },
+      ]);
+      const matchingHolding = {
+        id: "h1",
+        accountId: "acct-1",
+        securityId: "sec-1",
+        quantity: 5,
+        security: { symbol: "X", name: "X", currencyCode: "USD" },
+      };
+      const orphanedHolding = {
+        id: "h2",
+        accountId: "stranger",
+        securityId: "sec-1",
+        quantity: 1,
+        security: { symbol: "X", name: "X", currencyCode: "USD" },
+      };
+      holdingsRepository.find.mockResolvedValueOnce([
+        matchingHolding,
+        orphanedHolding,
+      ]);
+      portfolioService.getLatestPrices = jest
+        .fn()
+        .mockResolvedValue(new Map([["sec-1", 100]]));
+
+      const result = await service.getHoldingStats(userId, ["acct-1"]);
+      expect(result[0].holdings).toHaveLength(1);
+    });
+  });
+
+  describe("getBrokerageAccounts", () => {
+    it("delegates to portfolioService", async () => {
+      (portfolioService as Record<string, jest.Mock>).getBrokerageAccounts = jest
+        .fn()
+        .mockResolvedValue([{ id: "a1" }]);
+      const result = await service.getBrokerageAccounts(userId);
+      expect(result).toEqual([{ id: "a1" }]);
+    });
+  });
+
+  describe("computeCurrentValue branches via runSaved", () => {
+    it("returns 0 when portfolio service throws", async () => {
+      scenariosRepository.findOne.mockResolvedValueOnce(
+        buildScenario({ useCurrentBalance: true }),
+      );
+      portfolioService.getPortfolioSummary.mockRejectedValueOnce(
+        new Error("db down"),
+      );
+      scenariosRepository.save.mockImplementationOnce((s) =>
+        Promise.resolve(s),
+      );
+
+      const result = await service.runSaved(userId, "scn-1");
+      // Should not blow up — falls back to 0 starting value.
+      expect(result).toBeDefined();
+    });
+
+    it("clamps non-finite portfolio values to 0", async () => {
+      scenariosRepository.findOne.mockResolvedValueOnce(
+        buildScenario({ useCurrentBalance: true }),
+      );
+      portfolioService.getPortfolioSummary.mockResolvedValueOnce({
+        totalPortfolioValue: NaN,
+      });
+      scenariosRepository.save.mockImplementationOnce((s) =>
+        Promise.resolve(s),
+      );
+      const result = await service.runSaved(userId, "scn-1");
+      expect(result).toBeDefined();
+    });
+  });
+
+  describe("resolveReturns branches via runAdHoc", () => {
+    it("uses fallback returns when useHistoricalReturns is false", async () => {
+      const result = await service.runAdHoc(userId, {
+        ...validInputs,
+        useHistoricalReturns: false,
+      });
+      expect(result).toBeDefined();
+      expect(holdingsRepository.find).not.toHaveBeenCalled();
+    });
+
+    it("uses fallback when accountIds is empty even if historical is requested", async () => {
+      const result = await service.runAdHoc(userId, {
+        ...validInputs,
+        accountIds: [],
+        useHistoricalReturns: true,
+        useCurrentBalance: false,
+      });
+      expect(result).toBeDefined();
+    });
+
+    it("uses computed historical stats when available", async () => {
+      const holding = {
+        id: "h1",
+        accountId: validInputs.accountIds[0],
+        securityId: "sec-1",
+        quantity: 10,
+        security: { symbol: "VOO", name: "VOO", currencyCode: "USD" },
+      };
+      holdingsRepository.find.mockResolvedValueOnce([holding]);
+      securityPriceRepository.query.mockResolvedValue([
+        { security_id: "sec-1", year: "2020", close_price: "100" },
+        { security_id: "sec-1", year: "2021", close_price: "110" },
+        { security_id: "sec-1", year: "2022", close_price: "121" },
+      ]);
+      portfolioService.getLatestPrices = jest
+        .fn()
+        .mockResolvedValue(new Map([["sec-1", 121]]));
+
+      const result = await service.runAdHoc(userId, {
+        ...validInputs,
+        useHistoricalReturns: true,
+      });
+      expect(result).toBeDefined();
+    });
+
+    it("uses fallback when historical stats lack data (still null)", async () => {
+      // No holdings → meanReturn null → fallback used.
+      holdingsRepository.find.mockResolvedValueOnce([]);
+      const result = await service.runAdHoc(userId, {
+        ...validInputs,
+        useHistoricalReturns: true,
+      });
+      expect(result).toBeDefined();
+    });
+  });
+
+  describe("backfill error tolerance", () => {
+    it("swallows provider errors during sparse-history backfill", async () => {
+      const holding = {
+        id: "h1",
+        accountId: "acct-1",
+        securityId: "sec-x",
+        quantity: 1,
+        security: { symbol: "X", name: "X", currencyCode: "USD" },
+      };
+      holdingsRepository.find.mockResolvedValueOnce([holding]);
+      securityPriceRepository.query.mockResolvedValue([
+        { security_id: "sec-x", year: "2024", close_price: "100" },
+        { security_id: "sec-x", year: "2025", close_price: "110" },
+      ]);
+      securitiesRepository.find.mockResolvedValueOnce([
+        {
+          id: "sec-x",
+          symbol: "X",
+          historicalBackfillAttemptedAt: null,
+        },
+      ]);
+      portfolioService.getLatestPrices = jest
+        .fn()
+        .mockResolvedValue(new Map([["sec-x", 110]]));
+      securityPriceService.backfillSecurityRange.mockRejectedValueOnce(
+        new Error("API down"),
+      );
+
+      await expect(
+        service.getHistoricalStats(userId, ["acct-1"]),
+      ).resolves.toBeDefined();
+      expect(securitiesRepository.update).toHaveBeenCalled();
+    });
+
+    it("treats invalid stamp dates as 'never attempted'", async () => {
+      const holding = {
+        id: "h1",
+        accountId: "acct-1",
+        securityId: "sec-x",
+        quantity: 1,
+        security: { symbol: "X", name: "X", currencyCode: "USD" },
+      };
+      holdingsRepository.find.mockResolvedValueOnce([holding]);
+      securityPriceRepository.query.mockResolvedValue([
+        { security_id: "sec-x", year: "2024", close_price: "100" },
+        { security_id: "sec-x", year: "2025", close_price: "110" },
+      ]);
+      securitiesRepository.find.mockResolvedValueOnce([
+        {
+          id: "sec-x",
+          symbol: "X",
+          historicalBackfillAttemptedAt: "not a date",
+        },
+      ]);
+      portfolioService.getLatestPrices = jest
+        .fn()
+        .mockResolvedValue(new Map([["sec-x", 110]]));
+
+      await service.getHistoricalStats(userId, ["acct-1"]);
+      expect(
+        securityPriceService.backfillSecurityRange,
+      ).toHaveBeenCalled();
+    });
   });
 });

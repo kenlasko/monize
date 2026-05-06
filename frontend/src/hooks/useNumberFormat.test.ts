@@ -90,4 +90,52 @@ describe('useNumberFormat', () => {
     const formatted = result.current.formatCurrency(9.99999, 'USD', 4);
     expect(formatted).toContain('10.0000');
   });
+
+  it('formatCurrencyAxis treats numeric second arg as index (uses default currency)', () => {
+    const { result } = renderHook(() => useNumberFormat());
+    const formatted = result.current.formatCurrencyAxis(5000, 0);
+    expect(formatted).toMatch(/[KMB]/);
+  });
+
+  it('formatCurrencyAxis uses provided currency when string', () => {
+    const { result } = renderHook(() => useNumberFormat());
+    const formatted = result.current.formatCurrencyAxis(5000, 'EUR');
+    expect(formatted).toBeTruthy();
+  });
+
+  it('formatCurrencyLabel produces M suffix for millions', () => {
+    const { result } = renderHook(() => useNumberFormat());
+    expect(result.current.formatCurrencyLabel(2_500_000)).toContain('M');
+  });
+
+  it('formatCurrencyLabel produces B suffix for billions', () => {
+    const { result } = renderHook(() => useNumberFormat());
+    expect(result.current.formatCurrencyLabel(3_000_000_000)).toContain('B');
+  });
+
+  it('formatCurrencyLabel produces T suffix for trillions', () => {
+    const { result } = renderHook(() => useNumberFormat());
+    expect(result.current.formatCurrencyLabel(2_000_000_000_000)).toContain('T');
+  });
+
+  it('formatCurrencyLabel has no suffix for small values', () => {
+    const { result } = renderHook(() => useNumberFormat());
+    const formatted = result.current.formatCurrencyLabel(50);
+    expect(formatted).not.toMatch(/[KMBT]/);
+  });
+});
+
+describe('useNumberFormat with browser locale', () => {
+  it('treats "browser" numberFormat as undefined locale', async () => {
+    vi.resetModules();
+    vi.doMock('@/store/preferencesStore', () => ({
+      usePreferencesStore: (selector: any) =>
+        selector({ preferences: { numberFormat: 'browser', defaultCurrency: 'USD' } }),
+    }));
+    const { useNumberFormat: hook } = await import('./useNumberFormat');
+    const { result } = renderHook(() => hook());
+    expect(typeof result.current.formatNumber(1234)).toBe('string');
+    expect(typeof result.current.formatPercent(10)).toBe('string');
+    expect(typeof result.current.formatCurrency(100)).toBe('string');
+  });
 });

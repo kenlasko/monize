@@ -84,36 +84,23 @@ vi.mock('@/lib/categories', () => ({
   },
 }));
 
-// Track useFormModal state
-let mockOpenCreate: ReturnType<typeof vi.fn>;
-let mockOpenEdit: ReturnType<typeof vi.fn>;
-let mockClose: ReturnType<typeof vi.fn>;
-let mockSetFormDirty: ReturnType<typeof vi.fn>;
-let formModalState = {
-  showForm: false,
-  editingItem: undefined as any,
-  isEditing: false,
-};
-
+// Stateful useFormModal mock
 vi.mock('@/hooks/useFormModal', () => ({
   useFormModal: () => {
-    mockOpenCreate = vi.fn(() => {
-      formModalState = { showForm: true, editingItem: undefined, isEditing: false };
-    });
-    mockOpenEdit = vi.fn((item: any) => {
-      formModalState = { showForm: true, editingItem: item, isEditing: true };
-    });
-    mockClose = vi.fn(() => {
-      formModalState = { showForm: false, editingItem: undefined, isEditing: false };
-    });
-    mockSetFormDirty = vi.fn();
+    const [showForm, setShowForm] = useState(false);
+    const [editingItem, setEditingItem] = useState<any>(undefined);
+    const openCreate = () => { setEditingItem(undefined); setShowForm(true); };
+    const openEdit = (item: any) => { setEditingItem(item); setShowForm(true); };
+    const close = () => { setEditingItem(undefined); setShowForm(false); };
     return {
-      ...formModalState,
-      openCreate: mockOpenCreate,
-      openEdit: mockOpenEdit,
-      close: mockClose,
+      showForm,
+      editingItem,
+      openCreate,
+      openEdit,
+      close,
+      isEditing: !!editingItem,
       modalProps: { pushHistory: true, onBeforeClose: vi.fn() },
-      setFormDirty: mockSetFormDirty,
+      setFormDirty: vi.fn(),
       unsavedChangesDialog: { isOpen: false, onSave: vi.fn(), onDiscard: vi.fn(), onCancel: vi.fn() },
       formSubmitRef: { current: null },
     };
@@ -126,18 +113,26 @@ vi.mock('@/components/categories/CategoryForm', () => ({
     <div data-testid="category-form">
       CategoryForm
       {category && <span data-testid="editing-category">{category.name}</span>}
-      <button data-testid="submit-form" onClick={() => onSubmit({ name: 'Test', isIncome: false })}>Submit</button>
+      <button data-testid="submit-form" onClick={() => Promise.resolve(onSubmit({ name: 'Test', isIncome: false })).catch(() => {})}>Submit</button>
+      <button data-testid="submit-form-full" onClick={() => Promise.resolve(onSubmit({ name: 'Full', isIncome: true, parentId: 'cat-1', description: 'desc', icon: 'star', color: '#fff' })).catch(() => {})}>SubmitFull</button>
     </div>
   ),
 }));
 
 vi.mock('@/components/categories/CategoryList', () => ({
-  CategoryList: ({ categories, onEdit }: any) => (
+  CategoryList: ({ categories, onEdit, onRefresh, onDelete, sortField, sortDirection, onSort, density, onDensityChange }: any) => (
     <div data-testid="category-list">
+      <span data-testid="sort-info">{sortField} {sortDirection}</span>
+      <span data-testid="density-info">{density}</span>
+      <button data-testid="density-btn" onClick={() => onDensityChange('compact')}>Density</button>
+      <button data-testid="sort-name" onClick={() => onSort('name')}>SortByName</button>
+      <button data-testid="sort-count" onClick={() => onSort('count')}>SortByCount</button>
+      <button data-testid="refresh" onClick={() => onRefresh()}>Refresh</button>
       {categories.map((c: any) => (
         <div key={c.id} data-testid={`category-${c.id}`}>
           {c.name}
           <button data-testid={`edit-${c.id}`} onClick={() => onEdit(c)}>Edit</button>
+          <button data-testid={`delete-${c.id}`} onClick={() => onDelete(c.id)}>Delete</button>
         </div>
       ))}
     </div>
@@ -190,7 +185,6 @@ const mockCategories = [
 describe('CategoriesPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    formModalState = { showForm: false, editingItem: undefined, isEditing: false };
     mockGetAll.mockResolvedValue([]);
   });
 
@@ -467,6 +461,160 @@ describe('CategoriesPage', () => {
     render(<CategoriesPage />);
     await waitFor(() => {
       expect(screen.getByText(/The default set includes common income and expense categories/i)).toBeInTheDocument();
+    });
+  });
+
+  it('opens create modal when + New Category is clicked', async () => {
+    render(<CategoriesPage />);
+    await waitFor(() => expect(screen.getByText('+ New Category')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByText('+ New Category'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('New Category')).toBeInTheDocument();
+      expect(screen.getByTestId('category-form')).toBeInTheDocument();
+    });
+  });
+
+  it('opens edit modal when edit is clicked on category', async () => {
+    mockGetAll.mockResolvedValue(mockCategories);
+    render(<CategoriesPage />);
+    await waitFor(() => expect(screen.getByTestId('category-list')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('edit-cat-1'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Edit Category')).toBeInTheDocument();
+      expect(screen.getByTestId('editing-category')).toHaveTextContent('Salary');
+    });
+  });
+
+  it('opens create modal from empty state Create Your Own', async () => {
+    render(<CategoriesPage />);
+    await waitFor(() => expect(screen.getByText('Create Your Own')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByText('Create Your Own'));
+    });
+    await waitFor(() => expect(screen.getByText('New Category')).toBeInTheDocument());
+  });
+
+  it('creates category when form is submitted', async () => {
+    mockCreate.mockResolvedValue({ id: 'cat-new', name: 'Test', isIncome: false });
+    render(<CategoriesPage />);
+    await waitFor(() => expect(screen.getByText('+ New Category')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByText('+ New Category')); });
+    await waitFor(() => expect(screen.getByTestId('submit-form')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('submit-form')); });
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalledWith({ name: 'Test', isIncome: false, parentId: null, description: null, icon: null, color: null });
+      expect(toast.success).toHaveBeenCalledWith('Category created successfully');
+    });
+  });
+
+  it('preserves provided fields when creating category', async () => {
+    mockCreate.mockResolvedValue({ id: 'cat-new', name: 'Full' });
+    render(<CategoriesPage />);
+    await waitFor(() => expect(screen.getByText('+ New Category')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByText('+ New Category')); });
+    await waitFor(() => expect(screen.getByTestId('submit-form-full')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('submit-form-full')); });
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalledWith({ name: 'Full', isIncome: true, parentId: 'cat-1', description: 'desc', icon: 'star', color: '#fff' });
+    });
+  });
+
+  it('updates category when form is submitted in edit mode', async () => {
+    mockGetAll.mockResolvedValue(mockCategories);
+    mockUpdate.mockResolvedValue(mockCategories[0]);
+    render(<CategoriesPage />);
+    await waitFor(() => expect(screen.getByTestId('category-list')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('edit-cat-1')); });
+    await waitFor(() => expect(screen.getByTestId('submit-form')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('submit-form')); });
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalledWith('cat-1', expect.objectContaining({ name: 'Test', isIncome: false }));
+      expect(toast.success).toHaveBeenCalledWith('Category updated successfully');
+    });
+  });
+
+  it('shows error toast when create fails', async () => {
+    mockCreate.mockRejectedValueOnce(new Error('fail'));
+    render(<CategoriesPage />);
+    await waitFor(() => expect(screen.getByText('+ New Category')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByText('+ New Category')); });
+    await waitFor(() => expect(screen.getByTestId('submit-form')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('submit-form')); });
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to create category');
+    });
+  });
+
+  it('shows error toast when update fails', async () => {
+    mockGetAll.mockResolvedValue(mockCategories);
+    mockUpdate.mockRejectedValueOnce(new Error('fail'));
+    render(<CategoriesPage />);
+    await waitFor(() => expect(screen.getByTestId('category-list')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('edit-cat-1')); });
+    await waitFor(() => expect(screen.getByTestId('submit-form')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('submit-form')); });
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to update category');
+    });
+  });
+
+  it('toggles sort direction when clicking same sort field', async () => {
+    mockGetAll.mockResolvedValue(mockCategories);
+    render(<CategoriesPage />);
+    await waitFor(() => expect(screen.getByTestId('category-list')).toBeInTheDocument());
+    expect(screen.getByTestId('sort-info')).toHaveTextContent('name asc');
+    fireEvent.click(screen.getByTestId('sort-name'));
+    await waitFor(() => {
+      expect(screen.getByTestId('sort-info')).toHaveTextContent('name desc');
+    });
+  });
+
+  it('switches to count sort with desc default', async () => {
+    mockGetAll.mockResolvedValue(mockCategories);
+    render(<CategoriesPage />);
+    await waitFor(() => expect(screen.getByTestId('category-list')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('sort-count'));
+    await waitFor(() => {
+      expect(screen.getByTestId('sort-info')).toHaveTextContent('count desc');
+    });
+  });
+
+  it('refreshCategories handles error gracefully', async () => {
+    mockGetAll.mockResolvedValue(mockCategories);
+    render(<CategoriesPage />);
+    await waitFor(() => expect(screen.getByTestId('category-list')).toBeInTheDocument());
+    mockGetAll.mockRejectedValueOnce(new Error('Refresh fail'));
+    await act(async () => { fireEvent.click(screen.getByTestId('refresh')); });
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to load categories');
+    });
+  });
+
+  it('removes deleted category from list', async () => {
+    mockGetAll.mockResolvedValue(mockCategories);
+    render(<CategoriesPage />);
+    await waitFor(() => expect(screen.getByTestId('category-list')).toBeInTheDocument());
+    expect(screen.getByTestId('category-cat-2')).toBeInTheDocument();
+    await act(async () => { fireEvent.click(screen.getByTestId('delete-cat-2')); });
+    await waitFor(() => {
+      // cat-2 and cat-4 (its child) are removed
+      expect(screen.queryByTestId('category-cat-2')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('category-cat-4')).not.toBeInTheDocument();
+    });
+  });
+
+  it('updates list density when changed', async () => {
+    mockGetAll.mockResolvedValue(mockCategories);
+    render(<CategoriesPage />);
+    await waitFor(() => expect(screen.getByTestId('category-list')).toBeInTheDocument());
+    expect(screen.getByTestId('density-info')).toHaveTextContent('normal');
+    fireEvent.click(screen.getByTestId('density-btn'));
+    await waitFor(() => {
+      expect(screen.getByTestId('density-info')).toHaveTextContent('compact');
     });
   });
 });

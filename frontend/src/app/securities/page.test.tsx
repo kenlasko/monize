@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useState } from 'react';
-import { render, screen, waitFor, fireEvent } from '@/test/render';
+import { render, screen, waitFor, fireEvent, act } from '@/test/render';
 import SecuritiesPage from './page';
 import toast from 'react-hot-toast';
 
@@ -9,9 +9,32 @@ vi.mock('next/image', () => ({
   default: ({ priority, fill, ...props }: any) => <img alt="" {...props} />,
 }));
 
-// Mock next/dynamic
+// Mock next/dynamic to return a stub that exposes the loaded component name
 vi.mock('next/dynamic', () => ({
-  default: () => () => <div data-testid="security-form">SecurityForm</div>,
+  default: (loader: any) => {
+    // Return a generic component depending on what was loaded
+    const Stub = (props: any) => {
+      // Detect via props which dynamic component this is (PriceHistory takes 'security' prop and 'onClose')
+      if (props.onClose && props.security && !props.onSubmit) {
+        return (
+          <div data-testid="price-history">
+            PriceHistory
+            <button data-testid="price-history-close" onClick={props.onClose}>Close</button>
+          </div>
+        );
+      }
+      // SecurityForm
+      return (
+        <div data-testid="security-form">
+          SecurityForm
+          {props.security && <span data-testid="editing-security">{props.security.symbol}</span>}
+          <button data-testid="submit-form" onClick={() => Promise.resolve(props.onSubmit({ symbol: 'NEW', name: 'New Security', currencyCode: 'USD' })).catch(() => {})}>Submit</button>
+          <button data-testid="cancel-form" onClick={props.onCancel}>Cancel</button>
+        </div>
+      );
+    };
+    return Stub;
+  },
 }));
 
 // Mock logger
@@ -103,16 +126,26 @@ vi.mock('@/lib/investments', () => ({
 
 // Mock child components
 vi.mock('@/components/securities/SecurityList', () => ({
-  SecurityList: ({ securities, holdings, onEdit, onToggleActive, sortField, sortDirection, onSort }: any) => (
+  SecurityList: ({ securities, holdings, onEdit, onToggleActive, onDelete, onViewPrices, sortField, sortDirection, onSort, density, onDensityChange }: any) => (
     <div data-testid="security-list">
       {sortField && <span data-testid="sort-field">{sortField}</span>}
       {sortDirection && <span data-testid="sort-direction">{sortDirection}</span>}
+      {density && <span data-testid="density-info">{density}</span>}
+      <button data-testid="density-btn" onClick={() => onDensityChange('compact')}>Density</button>
       {onSort && <button data-testid="sort-trigger" onClick={() => onSort('name')}>Sort</button>}
+      {onSort && <button data-testid="sort-symbol" onClick={() => onSort('symbol')}>SortSymbol</button>}
+      {onSort && <button data-testid="sort-type" onClick={() => onSort('type')}>SortType</button>}
+      {onSort && <button data-testid="sort-exchange" onClick={() => onSort('exchange')}>SortExchange</button>}
+      {onSort && <button data-testid="sort-currency" onClick={() => onSort('currency')}>SortCurrency</button>}
+      {onSort && <button data-testid="sort-provider" onClick={() => onSort('provider')}>SortProvider</button>}
+      {onSort && <button data-testid="sort-source" onClick={() => onSort('source')}>SortSource</button>}
       {securities.map((s: any) => (
         <div key={s.id} data-testid={`security-row-${s.symbol}`}>
           {s.name}
           <button data-testid={`edit-${s.symbol}`} onClick={() => onEdit(s)}>Edit</button>
           <button data-testid={`toggle-${s.symbol}`} onClick={() => onToggleActive(s)}>Toggle</button>
+          <button data-testid={`delete-${s.symbol}`} onClick={() => onDelete(s)}>Delete</button>
+          <button data-testid={`view-prices-${s.symbol}`} onClick={() => onViewPrices(s)}>ViewPrices</button>
         </div>
       ))}
       <div data-testid="holdings-data">{JSON.stringify(holdings)}</div>
@@ -140,7 +173,23 @@ vi.mock('@/components/ui/SummaryCard', () => ({
 }));
 
 vi.mock('@/components/ui/Pagination', () => ({
-  Pagination: () => <div data-testid="pagination">Pagination</div>,
+  Pagination: ({ currentPage, totalPages, onPageChange }: any) => (
+    <div data-testid="pagination">
+      Pagination {currentPage}/{totalPages}
+      <button data-testid="next-page" onClick={() => onPageChange(currentPage + 1)}>Next</button>
+    </div>
+  ),
+}));
+
+vi.mock('@/components/ui/ConfirmDialog', () => ({
+  ConfirmDialog: ({ isOpen, onConfirm, onCancel, title, message }: any) => isOpen ? (
+    <div data-testid="confirm-dialog">
+      <span data-testid="dialog-title">{title}</span>
+      <span data-testid="dialog-message">{message}</span>
+      <button data-testid="confirm-btn" onClick={onConfirm}>Confirm</button>
+      <button data-testid="cancel-btn" onClick={onCancel}>Cancel</button>
+    </div>
+  ) : null,
 }));
 
 vi.mock('@/components/layout/PageLayout', () => ({
@@ -492,5 +541,202 @@ describe('SecuritiesPage', () => {
     await waitFor(() => {
       expect(screen.getByText(/1 security/i)).toBeInTheDocument();
     });
+  });
+
+  it('opens edit modal with security data', async () => {
+    render(<SecuritiesPage />);
+    await waitFor(() => expect(screen.getByTestId('security-list')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('edit-AAPL')); });
+    await waitFor(() => {
+      expect(screen.getByText('Edit Security')).toBeInTheDocument();
+      expect(screen.getByTestId('editing-security')).toHaveTextContent('AAPL');
+    });
+  });
+
+  it('creates a security on form submit', async () => {
+    mockCreateSecurity.mockResolvedValue({ id: 'new', symbol: 'NEW' });
+    render(<SecuritiesPage />);
+    await waitFor(() => expect(screen.getByText('+ New Security')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByText('+ New Security')); });
+    await waitFor(() => expect(screen.getByTestId('submit-form')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('submit-form')); });
+    await waitFor(() => {
+      expect(mockCreateSecurity).toHaveBeenCalled();
+      expect(toast.success).toHaveBeenCalledWith('Security created successfully');
+    });
+  });
+
+  it('updates a security on edit form submit', async () => {
+    mockUpdateSecurity.mockResolvedValue({ id: 's1', symbol: 'AAPL' });
+    render(<SecuritiesPage />);
+    await waitFor(() => expect(screen.getByTestId('security-list')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('edit-AAPL')); });
+    await waitFor(() => expect(screen.getByTestId('submit-form')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('submit-form')); });
+    await waitFor(() => {
+      expect(mockUpdateSecurity).toHaveBeenCalledWith('s1', expect.objectContaining({ symbol: 'NEW' }));
+      expect(toast.success).toHaveBeenCalledWith('Security updated successfully');
+    });
+  });
+
+  it('shows error toast when create fails', async () => {
+    mockCreateSecurity.mockRejectedValueOnce(new Error('fail'));
+    render(<SecuritiesPage />);
+    await waitFor(() => expect(screen.getByText('+ New Security')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByText('+ New Security')); });
+    await waitFor(() => expect(screen.getByTestId('submit-form')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('submit-form')); });
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to create security');
+    });
+  });
+
+  it('opens delete confirmation when delete clicked', async () => {
+    render(<SecuritiesPage />);
+    await waitFor(() => expect(screen.getByTestId('security-list')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('delete-AAPL')); });
+    await waitFor(() => {
+      expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument();
+      expect(screen.getByTestId('dialog-message')).toHaveTextContent(/AAPL/);
+    });
+  });
+
+  it('deletes security when confirmed', async () => {
+    render(<SecuritiesPage />);
+    await waitFor(() => expect(screen.getByTestId('security-list')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('delete-AAPL')); });
+    await waitFor(() => expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('confirm-btn')); });
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith('Security "AAPL" deleted');
+    });
+  });
+
+  it('cancels delete when cancel button is clicked', async () => {
+    render(<SecuritiesPage />);
+    await waitFor(() => expect(screen.getByTestId('security-list')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('delete-AAPL')); });
+    await waitFor(() => expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('cancel-btn')); });
+    expect(screen.queryByTestId('confirm-dialog')).not.toBeInTheDocument();
+  });
+
+  it('shows error toast when delete fails', async () => {
+    const { investmentsApi } = await import('@/lib/investments');
+    (investmentsApi.deleteSecurity as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('fail'));
+    render(<SecuritiesPage />);
+    await waitFor(() => expect(screen.getByTestId('security-list')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('delete-AAPL')); });
+    await waitFor(() => expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('confirm-btn')); });
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to delete security');
+    });
+  });
+
+  it('opens price history modal when view prices is clicked', async () => {
+    render(<SecuritiesPage />);
+    await waitFor(() => expect(screen.getByTestId('security-list')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('view-prices-AAPL')); });
+    await waitFor(() => expect(screen.getByTestId('price-history')).toBeInTheDocument());
+  });
+
+  it('closes price history modal', async () => {
+    render(<SecuritiesPage />);
+    await waitFor(() => expect(screen.getByTestId('security-list')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('view-prices-AAPL')); });
+    await waitFor(() => expect(screen.getByTestId('price-history')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('price-history-close')); });
+    expect(screen.queryByTestId('price-history')).not.toBeInTheDocument();
+  });
+
+  it('activates an inactive security when toggled', async () => {
+    mockActivateSecurity.mockResolvedValue(undefined);
+    render(<SecuritiesPage />);
+    await waitFor(() => expect(screen.getByTestId('security-list')).toBeInTheDocument());
+    fireEvent.click(screen.getByText(/Inactive \(1\)/));
+    await waitFor(() => expect(screen.getByTestId('security-row-BTC')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('toggle-BTC')); });
+    await waitFor(() => {
+      expect(mockActivateSecurity).toHaveBeenCalledWith('s3');
+      expect(toast.success).toHaveBeenCalledWith('Security activated');
+    });
+  });
+
+  it('shows toast when deactivating an active security', async () => {
+    mockDeactivateSecurity.mockResolvedValue(undefined);
+    render(<SecuritiesPage />);
+    await waitFor(() => expect(screen.getByTestId('security-list')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('toggle-AAPL')); });
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith('Security deactivated');
+    });
+  });
+
+  it('toggles sort direction when clicking same field', async () => {
+    render(<SecuritiesPage />);
+    await waitFor(() => expect(screen.getByTestId('security-list')).toBeInTheDocument());
+    expect(screen.getByTestId('sort-field')).toHaveTextContent('symbol');
+    expect(screen.getByTestId('sort-direction')).toHaveTextContent('asc');
+    await act(async () => { fireEvent.click(screen.getByTestId('sort-symbol')); });
+    await waitFor(() => {
+      expect(screen.getByTestId('sort-direction')).toHaveTextContent('desc');
+    });
+  });
+
+  it('sorts by type', async () => {
+    render(<SecuritiesPage />);
+    await waitFor(() => expect(screen.getByTestId('security-list')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('sort-type')); });
+    await waitFor(() => {
+      expect(screen.getByTestId('sort-field')).toHaveTextContent('type');
+    });
+  });
+
+  it('sorts by exchange', async () => {
+    render(<SecuritiesPage />);
+    await waitFor(() => expect(screen.getByTestId('security-list')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('sort-exchange')); });
+    await waitFor(() => {
+      expect(screen.getByTestId('sort-field')).toHaveTextContent('exchange');
+    });
+  });
+
+  it('sorts by currency', async () => {
+    render(<SecuritiesPage />);
+    await waitFor(() => expect(screen.getByTestId('security-list')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('sort-currency')); });
+    await waitFor(() => {
+      expect(screen.getByTestId('sort-field')).toHaveTextContent('currency');
+    });
+  });
+
+  it('sorts by provider', async () => {
+    render(<SecuritiesPage />);
+    await waitFor(() => expect(screen.getByTestId('security-list')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('sort-provider')); });
+    await waitFor(() => {
+      expect(screen.getByTestId('sort-field')).toHaveTextContent('provider');
+    });
+  });
+
+  it('sorts by source', async () => {
+    render(<SecuritiesPage />);
+    await waitFor(() => expect(screen.getByTestId('security-list')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('sort-source')); });
+    await waitFor(() => {
+      expect(screen.getByTestId('sort-field')).toHaveTextContent('source');
+    });
+  });
+
+  it('shows pagination when more than page size', async () => {
+    const many = Array.from({ length: 60 }, (_, i) => ({
+      id: `s${i}`, symbol: `SY${i}`, name: `Sec ${i}`, securityType: 'STOCK',
+      exchange: 'NYSE', currencyCode: 'USD', isActive: true, skipPriceUpdates: false,
+      createdAt: '2026-01-01', updatedAt: '2026-01-01',
+    }));
+    mockGetSecurities.mockResolvedValue(many);
+    render(<SecuritiesPage />);
+    await waitFor(() => expect(screen.getByTestId('pagination')).toBeInTheDocument());
   });
 });

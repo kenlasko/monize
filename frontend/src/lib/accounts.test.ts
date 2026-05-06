@@ -100,4 +100,142 @@ describe('accountsApi', () => {
     await accountsApi.previewLoanAmortization({ principal: 10000 } as any);
     expect(apiClient.post).toHaveBeenCalledWith('/accounts/loan-preview', { principal: 10000 });
   });
+
+  it('previewMortgageAmortization posts to /accounts/mortgage-preview', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { schedule: [] } });
+    await accountsApi.previewMortgageAmortization({ principal: 100000 } as any);
+    expect(apiClient.post).toHaveBeenCalledWith('/accounts/mortgage-preview', {
+      principal: 100000,
+    });
+  });
+
+  it('updateMortgageRate patches /accounts/:id/mortgage-rate', async () => {
+    vi.mocked(apiClient.patch).mockResolvedValue({ data: { id: 'acc-1' } });
+    await accountsApi.updateMortgageRate('acc-1', { rate: 0.04 } as any);
+    expect(apiClient.patch).toHaveBeenCalledWith('/accounts/acc-1/mortgage-rate', {
+      rate: 0.04,
+    });
+  });
+
+  it('detectLoanPayments fetches /accounts/:id/detect-loan-payments', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: null });
+    await accountsApi.detectLoanPayments('acc-1');
+    expect(apiClient.get).toHaveBeenCalledWith('/accounts/acc-1/detect-loan-payments');
+  });
+
+  it('setupLoanPayments posts to /accounts/:id/setup-loan-payments', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { created: 2 } });
+    await accountsApi.setupLoanPayments('acc-1', { paymentAmount: 100 } as any);
+    expect(apiClient.post).toHaveBeenCalledWith('/accounts/acc-1/setup-loan-payments', {
+      paymentAmount: 100,
+    });
+  });
+
+  it('reorderFavourites patches order', async () => {
+    vi.mocked(apiClient.patch).mockResolvedValue({});
+    await accountsApi.reorderFavourites(['a-1', 'a-2']);
+    expect(apiClient.patch).toHaveBeenCalledWith('/accounts/reorder-favourites', {
+      accountIds: ['a-1', 'a-2'],
+    });
+  });
+
+  it('getInvestmentPair fetches /accounts/:id/investment-pair', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: { cashAccount: {}, brokerageAccount: {} },
+    });
+    await accountsApi.getInvestmentPair('acc-1');
+    expect(apiClient.get).toHaveBeenCalledWith('/accounts/acc-1/investment-pair');
+  });
+
+  it('getDailyBalances fetches with params', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
+    await accountsApi.getDailyBalances({ startDate: '2025-01-01' });
+    expect(apiClient.get).toHaveBeenCalledWith('/accounts/daily-balances', {
+      params: { startDate: '2025-01-01' },
+    });
+  });
+
+  describe('exportAccount', () => {
+    let createObjectURL: any;
+    let revokeObjectURL: any;
+    let appendChildSpy: any;
+    let removeChildSpy: any;
+    let clickSpy: any;
+
+    beforeEach(() => {
+      createObjectURL = vi.fn().mockReturnValue('blob:mock');
+      revokeObjectURL = vi.fn();
+      Object.defineProperty(window.URL, 'createObjectURL', {
+        value: createObjectURL,
+        writable: true,
+      });
+      Object.defineProperty(window.URL, 'revokeObjectURL', {
+        value: revokeObjectURL,
+        writable: true,
+      });
+
+      clickSpy = vi.fn();
+      appendChildSpy = vi
+        .spyOn(document.body, 'appendChild')
+        .mockImplementation((node: any) => {
+          if (node?.tagName === 'A') {
+            (node as HTMLAnchorElement).click = clickSpy;
+          }
+          return node;
+        });
+      removeChildSpy = vi
+        .spyOn(document.body, 'removeChild')
+        .mockImplementation((node: any) => node);
+    });
+
+    it('downloads CSV with default filename when no Content-Disposition', async () => {
+      vi.mocked(apiClient.get).mockResolvedValue({
+        data: 'csv,data',
+        headers: { 'content-type': 'text/csv' },
+      });
+
+      await accountsApi.exportAccount('acc-1', 'csv');
+      expect(apiClient.get).toHaveBeenCalledWith('/accounts/acc-1/export', {
+        params: { format: 'csv' },
+        responseType: 'blob',
+      });
+      expect(clickSpy).toHaveBeenCalled();
+      expect(revokeObjectURL).toHaveBeenCalled();
+    });
+
+    it('uses filename from Content-Disposition header', async () => {
+      let capturedHref = '';
+      appendChildSpy.mockImplementation((node: any) => {
+        if (node?.tagName === 'A') {
+          capturedHref = node.download;
+          (node as HTMLAnchorElement).click = clickSpy;
+        }
+        return node;
+      });
+
+      vi.mocked(apiClient.get).mockResolvedValue({
+        data: 'data',
+        headers: { 'content-disposition': 'attachment; filename="my-export.qif"' },
+      });
+
+      await accountsApi.exportAccount('acc-1', 'qif');
+      expect(capturedHref).toBe('my-export.qif');
+    });
+
+    it('passes expandSplits=false and dateFormat options', async () => {
+      vi.mocked(apiClient.get).mockResolvedValue({
+        data: '',
+        headers: {},
+      });
+
+      await accountsApi.exportAccount('acc-1', 'csv', {
+        expandSplits: false,
+        dateFormat: 'YYYY-MM-DD',
+      });
+      expect(apiClient.get).toHaveBeenCalledWith('/accounts/acc-1/export', {
+        params: { format: 'csv', expandSplits: 'false', dateFormat: 'YYYY-MM-DD' },
+        responseType: 'blob',
+      });
+    });
+  });
 });

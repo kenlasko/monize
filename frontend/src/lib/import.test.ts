@@ -3,7 +3,7 @@ import api from './api';
 import { importApi, autoMatchCsvColumns } from './import';
 
 vi.mock('./api', () => ({
-  default: { post: vi.fn() },
+  default: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() },
 }));
 
 describe('importApi', () => {
@@ -26,6 +26,152 @@ describe('importApi', () => {
     const result = await importApi.importQif(data);
     expect(api.post).toHaveBeenCalledWith('/import/qif', data, { timeout: 300000 });
     expect(result.imported).toBe(5);
+  });
+
+  it('parseQifMultiAccount posts to /import/qif/multi-account/parse', async () => {
+    vi.mocked(api.post).mockResolvedValue({ data: { isMultiAccount: true, accounts: [] } });
+    await importApi.parseQifMultiAccount('!Account\n');
+    expect(api.post).toHaveBeenCalledWith(
+      '/import/qif/multi-account/parse',
+      { content: '!Account\n' },
+      { timeout: 60000 },
+    );
+  });
+
+  it('importQifMultiAccount posts to /import/qif/multi-account', async () => {
+    vi.mocked(api.post).mockResolvedValue({ data: { imported: 5 } });
+    await importApi.importQifMultiAccount({ content: 'qif', currencyCode: 'USD' });
+    expect(api.post).toHaveBeenCalledWith(
+      '/import/qif/multi-account',
+      { content: 'qif', currencyCode: 'USD' },
+      { timeout: 300000 },
+    );
+  });
+
+  it('parseOfx posts to /import/ofx/parse', async () => {
+    vi.mocked(api.post).mockResolvedValue({ data: { transactionCount: 1 } });
+    await importApi.parseOfx('<OFX>');
+    expect(api.post).toHaveBeenCalledWith(
+      '/import/ofx/parse',
+      { content: '<OFX>' },
+      { timeout: 60000 },
+    );
+  });
+
+  it('importOfx posts to /import/ofx', async () => {
+    vi.mocked(api.post).mockResolvedValue({ data: { imported: 1 } });
+    const data = { content: 'ofx', accountId: 'a1', categoryMappings: [], accountMappings: [] } as any;
+    await importApi.importOfx(data);
+    expect(api.post).toHaveBeenCalledWith('/import/ofx', data, { timeout: 300000 });
+  });
+
+  it('parseCsvHeaders posts content and delimiter', async () => {
+    vi.mocked(api.post).mockResolvedValue({ data: { headers: [], sampleRows: [], rowCount: 0 } });
+    await importApi.parseCsvHeaders('a,b\n1,2', ',');
+    expect(api.post).toHaveBeenCalledWith(
+      '/import/csv/headers',
+      { content: 'a,b\n1,2', delimiter: ',' },
+      { timeout: 60000 },
+    );
+  });
+
+  it('parseCsv posts content with column mapping and rules', async () => {
+    vi.mocked(api.post).mockResolvedValue({ data: { transactionCount: 1 } });
+    const mapping = { date: 0, dateFormat: 'YYYY-MM-DD', hasHeader: true, delimiter: ',' } as any;
+    await importApi.parseCsv('a,b\n1,2', mapping, []);
+    expect(api.post).toHaveBeenCalledWith(
+      '/import/csv/parse',
+      { content: 'a,b\n1,2', columnMapping: mapping, transferRules: [] },
+      { timeout: 60000 },
+    );
+  });
+
+  it('importCsv posts to /import/csv', async () => {
+    vi.mocked(api.post).mockResolvedValue({ data: { imported: 5 } });
+    const data = { content: 'csv', accountId: 'a1', columnMapping: {} } as any;
+    await importApi.importCsv(data);
+    expect(api.post).toHaveBeenCalledWith('/import/csv', data, { timeout: 300000 });
+  });
+});
+
+describe('importApi column mappings', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('getColumnMappings fetches saved mappings', async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: [] });
+    await importApi.getColumnMappings();
+    expect(api.get).toHaveBeenCalledWith('/import/column-mappings');
+  });
+
+  it('createColumnMapping posts new mapping', async () => {
+    vi.mocked(api.post).mockResolvedValue({ data: { id: 'm-1' } });
+    await importApi.createColumnMapping({ name: 'Bank', columnMappings: {} as any });
+    expect(api.post).toHaveBeenCalledWith('/import/column-mappings', {
+      name: 'Bank',
+      columnMappings: {},
+    });
+  });
+
+  it('updateColumnMapping puts to /import/column-mappings/:id', async () => {
+    vi.mocked(api.put).mockResolvedValue({ data: {} });
+    await importApi.updateColumnMapping('m-1', { name: 'Renamed' });
+    expect(api.put).toHaveBeenCalledWith('/import/column-mappings/m-1', {
+      name: 'Renamed',
+    });
+  });
+
+  it('deleteColumnMapping deletes mapping', async () => {
+    vi.mocked(api.delete).mockResolvedValue({});
+    await importApi.deleteColumnMapping('m-1');
+    expect(api.delete).toHaveBeenCalledWith('/import/column-mappings/m-1');
+  });
+});
+
+describe('detectCsvDateFormat', () => {
+  it('detects YYYY-MM-DD', async () => {
+    const { detectCsvDateFormat } = await import('./import');
+    expect(detectCsvDateFormat(['2025-01-15'])).toBe('YYYY-MM-DD');
+  });
+
+  it('detects YYYY-DD-MM when middle part is greater than 12', async () => {
+    const { detectCsvDateFormat } = await import('./import');
+    expect(detectCsvDateFormat(['2025-15-01'])).toBe('YYYY-DD-MM');
+  });
+
+  it('defaults YYYY-prefixed to YYYY-MM-DD when ambiguous', async () => {
+    const { detectCsvDateFormat } = await import('./import');
+    expect(detectCsvDateFormat(['2025-05-06'])).toBe('YYYY-MM-DD');
+  });
+
+  it('detects MM/DD/YYYY when first part is <= 12', async () => {
+    const { detectCsvDateFormat } = await import('./import');
+    expect(detectCsvDateFormat(['12/31/2025'])).toBe('MM/DD/YYYY');
+  });
+
+  it('detects DD/MM/YYYY when first part > 12', async () => {
+    const { detectCsvDateFormat } = await import('./import');
+    expect(detectCsvDateFormat(['31/12/2025'])).toBe('DD/MM/YYYY');
+  });
+
+  it('returns null for empty input', async () => {
+    const { detectCsvDateFormat } = await import('./import');
+    expect(detectCsvDateFormat([])).toBeNull();
+    expect(detectCsvDateFormat([''])).toBeNull();
+  });
+
+  it('returns null for unrecognized date pattern', async () => {
+    const { detectCsvDateFormat } = await import('./import');
+    expect(detectCsvDateFormat(['Q1 2025'])).toBeNull();
+  });
+
+  it('strips ISO time components', async () => {
+    const { detectCsvDateFormat } = await import('./import');
+    expect(detectCsvDateFormat(['2025-01-15T12:00:00Z'])).toBe('YYYY-MM-DD');
+  });
+
+  it('strips space-separated time components', async () => {
+    const { detectCsvDateFormat } = await import('./import');
+    expect(detectCsvDateFormat(['01/15/2025 14:30'])).toBe('MM/DD/YYYY');
   });
 });
 

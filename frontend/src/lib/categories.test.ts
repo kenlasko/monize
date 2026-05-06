@@ -40,4 +40,39 @@ describe('categoriesApi', () => {
     await categoriesApi.delete('cat-1');
     expect(apiClient.delete).toHaveBeenCalledWith('/categories/cat-1');
   });
+
+  it('getTransactionCount fetches count', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: 42 });
+    const result = await categoriesApi.getTransactionCount('cat-1');
+    expect(apiClient.get).toHaveBeenCalledWith('/categories/cat-1/transaction-count');
+    expect(result).toBe(42);
+  });
+
+  it('reassignTransactions posts reassignment', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({
+      data: { transactionsUpdated: 5, splitsUpdated: 1 },
+    });
+    const result = await categoriesApi.reassignTransactions('cat-1', 'cat-2');
+    expect(apiClient.post).toHaveBeenCalledWith('/categories/cat-1/reassign', {
+      toCategoryId: 'cat-2',
+    });
+    expect(result.transactionsUpdated).toBe(5);
+  });
+
+  it('reassignTransactions accepts null toCategoryId', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({
+      data: { transactionsUpdated: 1, splitsUpdated: 0 },
+    });
+    await categoriesApi.reassignTransactions('cat-1', null);
+    expect(apiClient.post).toHaveBeenCalledWith('/categories/cat-1/reassign', {
+      toCategoryId: null,
+    });
+  });
+
+  it('importDefaults posts to /categories/import-defaults', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { categoriesCreated: 10 } });
+    const result = await categoriesApi.importDefaults();
+    expect(apiClient.post).toHaveBeenCalledWith('/categories/import-defaults');
+    expect(result.categoriesCreated).toBe(10);
+  });
 });

@@ -12,6 +12,7 @@ import {
   filterCalculatorInput,
   hasCalculatorOperators,
   evaluateExpression,
+  formatRelativeTime,
 } from './format';
 
 describe('getCurrencySymbol', () => {
@@ -351,5 +352,43 @@ describe('evaluateExpression', () => {
   it('respects operator precedence', () => {
     expect(evaluateExpression('2+3*4')).toBe(14);
     expect(evaluateExpression('10-2*3')).toBe(4);
+  });
+});
+
+describe('formatRelativeTime', () => {
+  it('returns "Never" for null', () => {
+    expect(formatRelativeTime(null)).toBe('Never');
+  });
+
+  it('returns "Just now" for very recent times', () => {
+    const now = new Date(Date.now() - 30_000).toISOString();
+    expect(formatRelativeTime(now)).toBe('Just now');
+  });
+
+  it('returns minutes-ago format for recent times', () => {
+    const fiveMinAgo = new Date(Date.now() - 5 * 60_000).toISOString();
+    expect(formatRelativeTime(fiveMinAgo)).toBe('5m ago');
+  });
+
+  it('returns hours-ago format for hours-old times', () => {
+    const twoHoursAgo = new Date(Date.now() - 2 * 3_600_000).toISOString();
+    expect(formatRelativeTime(twoHoursAgo)).toBe('2h ago');
+  });
+
+  it('returns "Yesterday" for one-day-old times', () => {
+    const yesterday = new Date(Date.now() - 24 * 3_600_000 - 1_000).toISOString();
+    expect(formatRelativeTime(yesterday)).toBe('Yesterday');
+  });
+
+  it('returns d-ago for times within the last week', () => {
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 3_600_000).toISOString();
+    expect(formatRelativeTime(threeDaysAgo)).toBe('3d ago');
+  });
+
+  it('returns locale date for older times', () => {
+    const monthAgo = new Date(Date.now() - 30 * 24 * 3_600_000).toISOString();
+    const result = formatRelativeTime(monthAgo);
+    // Should not match relative format
+    expect(result).not.toMatch(/Just now|m ago|h ago|Yesterday|d ago/);
   });
 });

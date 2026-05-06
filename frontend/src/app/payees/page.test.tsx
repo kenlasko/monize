@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useState } from 'react';
-import { render, screen, waitFor, fireEvent } from '@/test/render';
+import { render, screen, waitFor, fireEvent, act } from '@/test/render';
 import PayeesPage from './page';
 import toast from 'react-hot-toast';
 
@@ -74,13 +74,21 @@ const mockGetAllPayees = vi.fn();
 const mockGetAllCategories = vi.fn();
 const mockCreatePayee = vi.fn();
 const mockUpdatePayee = vi.fn();
+const mockReactivatePayee = vi.fn();
+const mockCreateAlias = vi.fn();
 
 vi.mock('@/lib/payees', () => ({
   payeesApi: {
     getAll: (...args: any[]) => mockGetAllPayees(...args),
     create: (...args: any[]) => mockCreatePayee(...args),
     update: (...args: any[]) => mockUpdatePayee(...args),
+    reactivatePayee: (...args: any[]) => mockReactivatePayee(...args),
+    createAlias: (...args: any[]) => mockCreateAlias(...args),
   },
+}));
+
+vi.mock('@/lib/categoryUtils', () => ({
+  buildCategoryColorMap: () => new Map(),
 }));
 
 vi.mock('@/lib/categories', () => ({
@@ -90,18 +98,22 @@ vi.mock('@/lib/categories', () => ({
 }));
 
 vi.mock('@/hooks/useFormModal', () => ({
-  useFormModal: () => ({
-    showForm: false,
-    editingItem: null,
-    openCreate: vi.fn(),
-    openEdit: vi.fn(),
-    close: vi.fn(),
-    isEditing: false,
-    modalProps: {},
-    setFormDirty: vi.fn(),
-    unsavedChangesDialog: { isOpen: false, onConfirm: vi.fn(), onCancel: vi.fn() },
-    formSubmitRef: { current: null },
-  }),
+  useFormModal: () => {
+    const [showForm, setShowForm] = useState(false);
+    const [editingItem, setEditingItem] = useState<any>(null);
+    return {
+      showForm,
+      editingItem,
+      openCreate: () => { setEditingItem(null); setShowForm(true); },
+      openEdit: (item: any) => { setEditingItem(item); setShowForm(true); },
+      close: () => { setEditingItem(null); setShowForm(false); },
+      isEditing: !!editingItem,
+      modalProps: {},
+      setFormDirty: vi.fn(),
+      unsavedChangesDialog: { isOpen: false, onConfirm: vi.fn(), onCancel: vi.fn() },
+      formSubmitRef: { current: null },
+    };
+  },
 }));
 
 vi.mock('@/hooks/useLocalStorage', () => ({
@@ -144,23 +156,68 @@ vi.mock('@/components/ui/Pagination', () => ({
 }));
 
 vi.mock('@/components/payees/PayeeForm', () => ({
-  PayeeForm: () => <div data-testid="payee-form">PayeeForm</div>,
+  PayeeForm: ({ onSubmit, payee }: any) => (
+    <div data-testid="payee-form">
+      PayeeForm
+      {payee && <span data-testid="editing-payee">{payee.name}</span>}
+      <button data-testid="submit-form" onClick={() => Promise.resolve(onSubmit({ name: 'New Payee', defaultCategoryId: '', notes: '' })).catch(() => {})}>Submit</button>
+      <button data-testid="submit-with-aliases" onClick={() => Promise.resolve(onSubmit({ name: 'WithAliases', defaultCategoryId: 'cat-1', notes: 'note', pendingAliases: ['Alias1', 'Alias2'] })).catch(() => {})}>SubmitWithAliases</button>
+    </div>
+  ),
 }));
 
 vi.mock('@/components/payees/PayeeList', () => ({
-  PayeeList: ({ payees, sortField, sortDirection, onSort }: any) => (
+  PayeeList: ({ payees, sortField, sortDirection, onSort, onEdit, onDelete, onReactivate, onMerge, density, onDensityChange }: any) => (
     <div data-testid="payee-list">
-      {payees.map((p: any) => <div key={p.id} data-testid={`payee-${p.id}`}>{p.name}</div>)}
+      {payees.map((p: any) => (
+        <div key={p.id} data-testid={`payee-${p.id}`}>
+          {p.name}
+          <button data-testid={`edit-${p.id}`} onClick={() => onEdit(p)}>Edit</button>
+          <button data-testid={`delete-${p.id}`} onClick={() => onDelete(p.id)}>Delete</button>
+          <button data-testid={`reactivate-${p.id}`} onClick={() => onReactivate(p.id)}>Reactivate</button>
+          <button data-testid={`merge-${p.id}`} onClick={() => onMerge(p)}>Merge</button>
+        </div>
+      ))}
       <span data-testid="sort-info">{sortField} {sortDirection}</span>
+      <span data-testid="density-info">{density}</span>
+      <button data-testid="density-btn" onClick={() => onDensityChange('compact')}>Density</button>
       <button data-testid="sort-by-name" onClick={() => onSort('name')}>Sort Name</button>
       <button data-testid="sort-by-count" onClick={() => onSort('count')}>Sort Count</button>
       <button data-testid="sort-by-category" onClick={() => onSort('category')}>Sort Category</button>
+      <button data-testid="sort-by-aliases" onClick={() => onSort('aliases')}>Sort Aliases</button>
+      <button data-testid="sort-by-lastUsed" onClick={() => onSort('lastUsed')}>Sort LastUsed</button>
+      <button data-testid="sort-by-createdAt" onClick={() => onSort('createdAt')}>Sort CreatedAt</button>
     </div>
   ),
 }));
 
 vi.mock('@/components/payees/CategoryAutoAssignDialog', () => ({
-  CategoryAutoAssignDialog: ({ isOpen }: any) => isOpen ? <div data-testid="auto-assign-dialog">Auto-Assign</div> : null,
+  CategoryAutoAssignDialog: ({ isOpen, onClose, onSuccess }: any) => isOpen ? (
+    <div data-testid="auto-assign-dialog">
+      Auto-Assign
+      <button data-testid="auto-assign-close" onClick={onClose}>Close</button>
+      <button data-testid="auto-assign-success" onClick={onSuccess}>Success</button>
+    </div>
+  ) : null,
+}));
+
+vi.mock('@/components/payees/DeactivateUnusedPayeesDialog', () => ({
+  DeactivateUnusedPayeesDialog: ({ isOpen, onClose, onSuccess }: any) => isOpen ? (
+    <div data-testid="deactivate-dialog">
+      Deactivate
+      <button data-testid="deactivate-close" onClick={onClose}>Close</button>
+      <button data-testid="deactivate-success" onClick={onSuccess}>Success</button>
+    </div>
+  ) : null,
+}));
+
+vi.mock('@/components/payees/MergePayeeDialog', () => ({
+  MergePayeeDialog: ({ isOpen, onClose }: any) => isOpen ? (
+    <div data-testid="merge-dialog">
+      Merge
+      <button data-testid="merge-close" onClick={onClose}>Close</button>
+    </div>
+  ) : null,
 }));
 
 const mockPayees = [
@@ -362,6 +419,252 @@ describe('PayeesPage', () => {
         expect(screen.getByTestId('payee-list')).toBeInTheDocument();
       });
       expect(screen.queryByTestId('pagination')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Form Actions', () => {
+    it('opens create modal when + New Payee is clicked', async () => {
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByText('+ New Payee')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByText('+ New Payee')); });
+      await waitFor(() => {
+        expect(screen.getByTestId('modal')).toBeInTheDocument();
+        expect(screen.getByText('New Payee')).toBeInTheDocument();
+      });
+    });
+
+    it('opens edit modal with payee data', async () => {
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByTestId('payee-list')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByTestId('edit-p-1')); });
+      await waitFor(() => {
+        expect(screen.getByText('Edit Payee')).toBeInTheDocument();
+        expect(screen.getByTestId('editing-payee')).toHaveTextContent('Grocery Store');
+      });
+    });
+
+    it('creates a payee on form submit', async () => {
+      mockCreatePayee.mockResolvedValue({ id: 'p-new', name: 'New Payee' });
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByText('+ New Payee')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByText('+ New Payee')); });
+      await waitFor(() => expect(screen.getByTestId('submit-form')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByTestId('submit-form')); });
+      await waitFor(() => {
+        expect(mockCreatePayee).toHaveBeenCalledWith({ name: 'New Payee', defaultCategoryId: null, notes: undefined });
+        expect(toast.success).toHaveBeenCalledWith('Payee created successfully');
+      });
+    });
+
+    it('creates a payee with pending aliases', async () => {
+      mockCreatePayee.mockResolvedValue({ id: 'p-new', name: 'WithAliases' });
+      mockCreateAlias.mockResolvedValue({});
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByText('+ New Payee')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByText('+ New Payee')); });
+      await waitFor(() => expect(screen.getByTestId('submit-with-aliases')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByTestId('submit-with-aliases')); });
+      await waitFor(() => {
+        expect(mockCreateAlias).toHaveBeenCalledTimes(2);
+        expect(mockCreateAlias).toHaveBeenCalledWith({ payeeId: 'p-new', alias: 'Alias1' });
+      });
+    });
+
+    it('updates a payee on form submit in edit mode', async () => {
+      mockUpdatePayee.mockResolvedValue({ id: 'p-1', name: 'New Payee', defaultCategoryId: null });
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByTestId('payee-list')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByTestId('edit-p-1')); });
+      await waitFor(() => expect(screen.getByTestId('submit-form')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByTestId('submit-form')); });
+      await waitFor(() => {
+        expect(mockUpdatePayee).toHaveBeenCalledWith('p-1', { name: 'New Payee', defaultCategoryId: null, notes: undefined });
+        expect(toast.success).toHaveBeenCalledWith('Payee updated successfully');
+      });
+    });
+
+    it('shows error toast when create payee fails', async () => {
+      mockCreatePayee.mockRejectedValueOnce(new Error('fail'));
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByText('+ New Payee')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByText('+ New Payee')); });
+      await waitFor(() => expect(screen.getByTestId('submit-form')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByTestId('submit-form')); });
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith('Failed to create payee');
+      });
+    });
+
+    it('shows error toast when update payee fails', async () => {
+      mockUpdatePayee.mockRejectedValueOnce(new Error('fail'));
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByTestId('payee-list')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByTestId('edit-p-1')); });
+      await waitFor(() => expect(screen.getByTestId('submit-form')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByTestId('submit-form')); });
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith('Failed to update payee');
+      });
+    });
+  });
+
+  describe('Reactivation and Merge', () => {
+    it('reactivates a payee successfully', async () => {
+      mockReactivatePayee.mockResolvedValue({ id: 'p-1', name: 'Grocery Store', isActive: true });
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByTestId('payee-list')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByTestId('reactivate-p-1')); });
+      await waitFor(() => {
+        expect(mockReactivatePayee).toHaveBeenCalledWith('p-1');
+        expect(toast.success).toHaveBeenCalledWith('Payee "Grocery Store" reactivated');
+      });
+    });
+
+    it('shows error toast when reactivate fails', async () => {
+      mockReactivatePayee.mockRejectedValueOnce(new Error('fail'));
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByTestId('payee-list')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByTestId('reactivate-p-1')); });
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith('Failed to reactivate payee');
+      });
+    });
+
+    it('opens merge dialog when merge action is triggered', async () => {
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByTestId('payee-list')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByTestId('merge-p-1')); });
+      await waitFor(() => expect(screen.getByTestId('merge-dialog')).toBeInTheDocument());
+    });
+
+    it('closes merge dialog', async () => {
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByTestId('payee-list')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByTestId('merge-p-1')); });
+      await waitFor(() => expect(screen.getByTestId('merge-dialog')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByTestId('merge-close')); });
+      expect(screen.queryByTestId('merge-dialog')).not.toBeInTheDocument();
+    });
+
+    it('removes deleted payee from list', async () => {
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByTestId('payee-list')).toBeInTheDocument());
+      expect(screen.getByTestId('payee-p-1')).toBeInTheDocument();
+      await act(async () => { fireEvent.click(screen.getByTestId('delete-p-1')); });
+      await waitFor(() => {
+        expect(screen.queryByTestId('payee-p-1')).not.toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Status Filter', () => {
+    it('renders status filter buttons', async () => {
+      render(<PayeesPage />);
+      await waitFor(() => {
+        expect(screen.getByText(/All \(4\)/)).toBeInTheDocument();
+        expect(screen.getByText(/Active \(4\)/)).toBeInTheDocument();
+        expect(screen.getByText(/Inactive \(0\)/)).toBeInTheDocument();
+      });
+    });
+
+    it('shows all payees when All is selected', async () => {
+      const mixed = [
+        ...mockPayees,
+        { id: 'p-5', name: 'Inactive Co', defaultCategoryId: null, defaultCategory: null, transactionCount: 0, isActive: false },
+      ];
+      mockGetAllPayees.mockResolvedValue(mixed);
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByTestId('payee-list')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByText(/All \(5\)/)); });
+      await waitFor(() => {
+        expect(screen.getByTestId('payee-p-5')).toBeInTheDocument();
+      });
+    });
+
+    it('filters to inactive payees', async () => {
+      const mixed = [
+        ...mockPayees,
+        { id: 'p-5', name: 'Inactive Co', defaultCategoryId: null, defaultCategory: null, transactionCount: 0, isActive: false },
+      ];
+      mockGetAllPayees.mockResolvedValue(mixed);
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByTestId('payee-list')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByText(/Inactive \(1\)/)); });
+      await waitFor(() => {
+        expect(screen.queryByTestId('payee-p-1')).not.toBeInTheDocument();
+        expect(screen.getByTestId('payee-p-5')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Sorting', () => {
+    it('sorts by aliases', async () => {
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByTestId('payee-list')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByTestId('sort-by-aliases')); });
+      await waitFor(() => {
+        expect(screen.getByTestId('sort-info')).toHaveTextContent('aliases desc');
+      });
+    });
+
+    it('sorts by lastUsed', async () => {
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByTestId('payee-list')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByTestId('sort-by-lastUsed')); });
+      await waitFor(() => {
+        expect(screen.getByTestId('sort-info')).toHaveTextContent('lastUsed desc');
+      });
+    });
+
+    it('sorts by createdAt', async () => {
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByTestId('payee-list')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByTestId('sort-by-createdAt')); });
+      await waitFor(() => {
+        expect(screen.getByTestId('sort-info')).toHaveTextContent('createdAt desc');
+      });
+    });
+  });
+
+  describe('Deactivate Unused', () => {
+    it('opens deactivate dialog when Deactivate Unused button is clicked', async () => {
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByText('Deactivate Unused')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByText('Deactivate Unused')); });
+      await waitFor(() => expect(screen.getByTestId('deactivate-dialog')).toBeInTheDocument());
+    });
+
+    it('closes deactivate dialog', async () => {
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByText('Deactivate Unused')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByText('Deactivate Unused')); });
+      await waitFor(() => expect(screen.getByTestId('deactivate-dialog')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByTestId('deactivate-close')); });
+      expect(screen.queryByTestId('deactivate-dialog')).not.toBeInTheDocument();
+    });
+
+    it('triggers data reload via auto-assign success callback', async () => {
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByText('Auto-Assign Categories')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByText('Auto-Assign Categories')); });
+      await waitFor(() => expect(screen.getByTestId('auto-assign-dialog')).toBeInTheDocument());
+      mockGetAllPayees.mockClear();
+      await act(async () => { fireEvent.click(screen.getByTestId('auto-assign-success')); });
+      await waitFor(() => {
+        expect(mockGetAllPayees).toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('Density', () => {
+    it('updates list density when changed', async () => {
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByTestId('payee-list')).toBeInTheDocument());
+      expect(screen.getByTestId('density-info')).toHaveTextContent('normal');
+      fireEvent.click(screen.getByTestId('density-btn'));
+      await waitFor(() => {
+        expect(screen.getByTestId('density-info')).toHaveTextContent('compact');
+      });
     });
   });
 });

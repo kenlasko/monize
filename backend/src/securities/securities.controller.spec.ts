@@ -520,4 +520,222 @@ describe("SecuritiesController", () => {
       );
     });
   });
+
+  describe("lookupCandidates", () => {
+    beforeEach(() => {
+      securityPriceService.lookupSecurityCandidates = jest.fn();
+    });
+
+    it("delegates with parsed exchanges and provider 'auto'", async () => {
+      securityPriceService.lookupSecurityCandidates.mockResolvedValue([]);
+
+      await controller.lookupCandidates(req, "VOD", "LSE,NYSE", "auto");
+
+      expect(
+        securityPriceService.lookupSecurityCandidates,
+      ).toHaveBeenCalledWith("user-1", "VOD", ["LSE", "NYSE"], "auto");
+    });
+
+    it("ignores invalid provider and undefined exchanges", async () => {
+      securityPriceService.lookupSecurityCandidates.mockResolvedValue([]);
+
+      await controller.lookupCandidates(req, "AAPL");
+
+      expect(
+        securityPriceService.lookupSecurityCandidates,
+      ).toHaveBeenCalledWith("user-1", "AAPL", undefined, undefined);
+    });
+
+    it("forwards 'yahoo' provider choice", async () => {
+      securityPriceService.lookupSecurityCandidates.mockResolvedValue([]);
+
+      await controller.lookupCandidates(req, "AAPL", undefined, "yahoo");
+
+      expect(
+        securityPriceService.lookupSecurityCandidates,
+      ).toHaveBeenCalledWith("user-1", "AAPL", undefined, "yahoo");
+    });
+  });
+
+  describe("refreshAllPrices background recalc", () => {
+    it("triggers recalculateAllInvestmentSnapshots when updated > 0", async () => {
+      const summary = {
+        totalSecurities: 3,
+        updated: 2,
+        failed: 0,
+        skipped: 1,
+        results: [],
+        lastUpdated: new Date(),
+      };
+      securityPriceService.refreshAllPrices.mockResolvedValue(summary);
+
+      await controller.refreshAllPrices();
+
+      expect(
+        netWorthService.recalculateAllInvestmentSnapshots,
+      ).toHaveBeenCalled();
+    });
+
+    it("skips background recalc when no prices updated", async () => {
+      const summary = {
+        totalSecurities: 3,
+        updated: 0,
+        failed: 0,
+        skipped: 3,
+        results: [],
+        lastUpdated: new Date(),
+      };
+      securityPriceService.refreshAllPrices.mockResolvedValue(summary);
+
+      await controller.refreshAllPrices();
+
+      expect(
+        netWorthService.recalculateAllInvestmentSnapshots,
+      ).not.toHaveBeenCalled();
+    });
+
+    it("swallows background snapshot recalculation errors", async () => {
+      const summary = {
+        totalSecurities: 1,
+        updated: 1,
+        failed: 0,
+        skipped: 0,
+        results: [],
+        lastUpdated: new Date(),
+      };
+      securityPriceService.refreshAllPrices.mockResolvedValue(summary);
+      netWorthService.recalculateAllInvestmentSnapshots.mockRejectedValue(
+        new Error("recalc failed"),
+      );
+
+      await expect(controller.refreshAllPrices()).resolves.toEqual(summary);
+      // Allow the catch handler to run
+      await new Promise((r) => setImmediate(r));
+    });
+  });
+
+  describe("refreshSelectedPrices background hooks", () => {
+    it("triggers recalculateAllAccounts when updated > 0", async () => {
+      securitiesService.findOne.mockResolvedValue(mockSecurity);
+      const summary = {
+        totalSecurities: 1,
+        updated: 1,
+        failed: 0,
+        skipped: 0,
+        results: [],
+        lastUpdated: new Date(),
+      };
+      securityPriceService.refreshPricesForSecurities.mockResolvedValue(
+        summary,
+      );
+
+      await controller.refreshSelectedPrices(req, {
+        securityIds: ["sec-1"],
+      } as any);
+
+      expect(netWorthService.recalculateAllAccounts).toHaveBeenCalledWith(
+        "user-1",
+      );
+    });
+
+    it("swallows background recalc errors and sector update errors", async () => {
+      securitiesService.findOne.mockResolvedValue(mockSecurity);
+      const summary = {
+        totalSecurities: 1,
+        updated: 1,
+        failed: 0,
+        skipped: 0,
+        results: [],
+        lastUpdated: new Date(),
+      };
+      securityPriceService.refreshPricesForSecurities.mockResolvedValue(
+        summary,
+      );
+      netWorthService.recalculateAllAccounts.mockRejectedValue(
+        new Error("recalc failed"),
+      );
+      sectorWeightingService.ensureSectorDataByIds.mockRejectedValue(
+        new Error("sector failed"),
+      );
+
+      await expect(
+        controller.refreshSelectedPrices(req, {
+          securityIds: ["sec-1"],
+        } as any),
+      ).resolves.toEqual(summary);
+      await new Promise((r) => setImmediate(r));
+    });
+  });
+
+  describe("backfillTransactionPrices", () => {
+    it("delegates to securityPriceService.backfillTransactionPrices", async () => {
+      const summary = { totalSecurities: 2, successful: 2, failed: 0 };
+      securityPriceService.backfillTransactionPrices = jest
+        .fn()
+        .mockResolvedValue(summary);
+
+      const result = await controller.backfillTransactionPrices();
+
+      expect(
+        securityPriceService.backfillTransactionPrices,
+      ).toHaveBeenCalled();
+      expect(result).toEqual(summary);
+    });
+  });
+
+  describe("createPrice", () => {
+    it("verifies ownership before creating manual price", async () => {
+      securitiesService.findOne.mockResolvedValue(mockSecurity);
+      securityPriceService.createManualPrice.mockResolvedValue({
+        id: 1,
+        close: 100,
+      });
+
+      const dto = {
+        priceDate: "2025-01-01",
+        closePrice: 100,
+      } as any;
+      const result = await controller.createPrice(req, "sec-1", dto);
+
+      expect(securitiesService.findOne).toHaveBeenCalledWith("user-1", "sec-1");
+      expect(securityPriceService.createManualPrice).toHaveBeenCalledWith(
+        "sec-1",
+        dto,
+      );
+      expect(result).toEqual({ id: 1, close: 100 });
+    });
+  });
+
+  describe("updatePrice", () => {
+    it("verifies ownership before updating price", async () => {
+      securitiesService.findOne.mockResolvedValue(mockSecurity);
+      securityPriceService.updatePrice.mockResolvedValue({
+        id: 9,
+        close: 200,
+      });
+
+      const dto = { closePrice: 200 } as any;
+      const result = await controller.updatePrice(req, "sec-1", 9, dto);
+
+      expect(securitiesService.findOne).toHaveBeenCalledWith("user-1", "sec-1");
+      expect(securityPriceService.updatePrice).toHaveBeenCalledWith(
+        "sec-1",
+        9,
+        dto,
+      );
+      expect(result).toEqual({ id: 9, close: 200 });
+    });
+  });
+
+  describe("deletePrice", () => {
+    it("verifies ownership then deletes", async () => {
+      securitiesService.findOne.mockResolvedValue(mockSecurity);
+      securityPriceService.deletePrice.mockResolvedValue(undefined);
+
+      await controller.deletePrice(req, "sec-1", 9);
+
+      expect(securitiesService.findOne).toHaveBeenCalledWith("user-1", "sec-1");
+      expect(securityPriceService.deletePrice).toHaveBeenCalledWith("sec-1", 9);
+    });
+  });
 });

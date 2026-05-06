@@ -207,4 +207,57 @@ describe('transactionsApi', () => {
       reconciledDate: '2025-01-31',
     });
   });
+
+  it('getAll forwards tagIds as comma-separated string', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { items: [], total: 0 } });
+    await transactionsApi.getAll({ tagIds: ['t1', 't2'] });
+    const params = vi.mocked(apiClient.get).mock.calls[0][1]!.params;
+    expect(params.tagIds).toBe('t1,t2');
+  });
+
+  it('getRecent fetches /transactions/recent with default limit', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
+    await transactionsApi.getRecent();
+    expect(apiClient.get).toHaveBeenCalledWith('/transactions/recent', {
+      params: { limit: 5, payeeId: undefined, payeeName: undefined },
+    });
+  });
+
+  it('getRecent forwards payeeId and limit', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
+    await transactionsApi.getRecent({ limit: 10, payeeId: 'p-1' });
+    const params = vi.mocked(apiClient.get).mock.calls[0][1]!.params;
+    expect(params.limit).toBe(10);
+    expect(params.payeeId).toBe('p-1');
+  });
+
+  it('getRecent forwards payeeName', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
+    await transactionsApi.getRecent({ payeeName: 'Coffee' });
+    const params = vi.mocked(apiClient.get).mock.calls[0][1]!.params;
+    expect(params.payeeName).toBe('Coffee');
+  });
+
+  it('getSummary uses tagIds', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: {} });
+    await transactionsApi.getSummary({ tagIds: ['t1'] });
+    const params = vi.mocked(apiClient.get).mock.calls[0][1]!.params;
+    expect(params.tagIds).toBe('t1');
+  });
+
+  it('bulkUpdate posts to /transactions/bulk-update', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { updated: 5 } });
+    await transactionsApi.bulkUpdate({ transactionIds: ['tx-1'] } as any);
+    expect(apiClient.post).toHaveBeenCalledWith('/transactions/bulk-update', {
+      transactionIds: ['tx-1'],
+    });
+  });
+
+  it('bulkDelete posts to /transactions/bulk-delete', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { deleted: 3 } });
+    await transactionsApi.bulkDelete({ transactionIds: ['tx-1', 'tx-2', 'tx-3'] } as any);
+    expect(apiClient.post).toHaveBeenCalledWith('/transactions/bulk-delete', {
+      transactionIds: ['tx-1', 'tx-2', 'tx-3'],
+    });
+  });
 });

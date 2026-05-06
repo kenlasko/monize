@@ -202,6 +202,18 @@ describe("ScheduledTransactionsController", () => {
         "2024-03-01",
       );
     });
+
+    it("rejects an invalid date format with 400 BadRequestException", () => {
+      expect(() =>
+        controller.findOverrideByDate(mockReq, "st-1", "03/01/2024"),
+      ).toThrow(/YYYY-MM-DD/);
+    });
+
+    it("rejects an empty date string", () => {
+      expect(() => controller.findOverrideByDate(mockReq, "st-1", "")).toThrow(
+        /YYYY-MM-DD/,
+      );
+    });
   });
 
   describe("createOverride()", () => {

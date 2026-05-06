@@ -341,6 +341,92 @@ describe('apiClient', () => {
       expect(mockSetBackendDown).not.toHaveBeenCalled();
     });
 
+    it('retries the original request after a successful CSRF refresh', async () => {
+      const axiosGetSpy = vi.spyOn(axios, 'get').mockResolvedValue({} as any);
+
+      vi.resetModules();
+      vi.doMock('@/store/authStore', () => ({
+        useAuthStore: { getState: vi.fn(() => ({ logout: vi.fn() })) },
+      }));
+
+      const { apiClient: freshClient } = await import('@/lib/api');
+      const interceptors = freshClient.interceptors.response as any;
+      const errorHandler = interceptors.handlers.find((h: any) => h?.rejected);
+
+      // Stub the adapter so apiClient(originalRequest) does not perform a real
+      // network call; the interceptor's retry should hit this adapter.
+      const adapterSpy = vi.fn().mockResolvedValue({
+        data: { ok: true },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {},
+      });
+      freshClient.defaults.adapter = adapterSpy as any;
+
+      const mockError = {
+        response: { status: 403, data: { message: 'Invalid CSRF token' } },
+        config: {
+          headers: new AxiosHeaders(),
+          method: 'get',
+          url: '/test',
+          _csrfRetried: false,
+        },
+      };
+
+      await errorHandler.rejected(mockError);
+
+      expect(axiosGetSpy).toHaveBeenCalledWith('/api/v1/auth/csrf-refresh', {
+        withCredentials: true,
+      });
+      expect(adapterSpy).toHaveBeenCalled();
+
+      axiosGetSpy.mockRestore();
+    });
+
+    it('retries and processes queue after successful 401 token refresh', async () => {
+      const axiosPostSpy = vi.spyOn(axios, 'post').mockResolvedValue({} as any);
+
+      vi.resetModules();
+      vi.doMock('@/store/authStore', () => ({
+        useAuthStore: { getState: vi.fn(() => ({ logout: vi.fn() })) },
+      }));
+
+      const { apiClient: freshClient } = await import('@/lib/api');
+      const interceptors = freshClient.interceptors.response as any;
+      const errorHandler = interceptors.handlers.find((h: any) => h?.rejected);
+
+      const adapterSpy = vi.fn().mockResolvedValue({
+        data: { ok: true },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {},
+      });
+      freshClient.defaults.adapter = adapterSpy as any;
+
+      const mockError = {
+        response: { status: 401 },
+        config: {
+          headers: new AxiosHeaders(),
+          method: 'get',
+          url: '/test',
+          _authRetried: false,
+        },
+      };
+
+      await errorHandler.rejected(mockError);
+
+      expect(axiosPostSpy).toHaveBeenCalledWith(
+        '/api/v1/auth/refresh',
+        {},
+        { withCredentials: true },
+      );
+      expect(adapterSpy).toHaveBeenCalled();
+
+      axiosPostSpy.mockRestore();
+    });
+
     it('does not attempt CSRF or token refresh on 502', async () => {
       mockSetBackendDown.mockClear();
       const axiosGetSpy = vi.spyOn(axios, 'get');

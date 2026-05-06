@@ -1,5 +1,18 @@
 import { describe, it, expect } from 'vitest';
-import { cn, parseLocalDate, formatDate, resolveTimezone, isoToDatetimeLocal, datetimeLocalToIso, formatDatetimeLocal, parseDatetimeFromFormat, formatTime, parseTime } from './utils';
+import {
+  cn,
+  parseLocalDate,
+  formatDate,
+  resolveTimezone,
+  isoToDatetimeLocal,
+  datetimeLocalToIso,
+  formatDatetimeLocal,
+  parseDatetimeFromFormat,
+  formatTime,
+  parseTime,
+  getLocalDateString,
+  parseDateFromFormat,
+} from './utils';
 
 describe('cn', () => {
   it('merges class names', () => {
@@ -316,5 +329,72 @@ describe('parseDatetimeFromFormat', () => {
 
   it('returns null for empty input', () => {
     expect(parseDatetimeFromFormat('', 'MM/DD/YYYY')).toBeNull();
+  });
+});
+
+describe('getLocalDateString', () => {
+  it('returns YYYY-MM-DD for the given date', () => {
+    expect(getLocalDateString(new Date(2026, 0, 5))).toBe('2026-01-05');
+  });
+
+  it('pads single-digit months and days', () => {
+    expect(getLocalDateString(new Date(2026, 8, 9))).toBe('2026-09-09');
+  });
+
+  it('uses current date when called with no argument', () => {
+    const result = getLocalDateString();
+    expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+});
+
+describe('parseDateFromFormat', () => {
+  it('parses YYYY-MM-DD', () => {
+    expect(parseDateFromFormat('2026-01-15', 'YYYY-MM-DD')).toBe('2026-01-15');
+  });
+
+  it('parses MM/DD/YYYY', () => {
+    expect(parseDateFromFormat('01/15/2026', 'MM/DD/YYYY')).toBe('2026-01-15');
+  });
+
+  it('parses DD/MM/YYYY', () => {
+    expect(parseDateFromFormat('15/01/2026', 'DD/MM/YYYY')).toBe('2026-01-15');
+  });
+
+  it('parses DD-MMM-YYYY', () => {
+    expect(parseDateFromFormat('15-Jan-2026', 'DD-MMM-YYYY')).toBe('2026-01-15');
+    expect(parseDateFromFormat('15-jan-2026', 'DD-MMM-YYYY')).toBe('2026-01-15');
+  });
+
+  it('returns null for empty input', () => {
+    expect(parseDateFromFormat('', 'YYYY-MM-DD')).toBeNull();
+  });
+
+  it('returns null for invalid month abbreviation', () => {
+    expect(parseDateFromFormat('15-XYZ-2026', 'DD-MMM-YYYY')).toBeNull();
+  });
+
+  it('returns null for invalid format', () => {
+    expect(parseDateFromFormat('not-a-date', 'YYYY-MM-DD')).toBeNull();
+  });
+
+  it('returns null for impossible dates (Feb 30)', () => {
+    expect(parseDateFromFormat('2026-02-30', 'YYYY-MM-DD')).toBeNull();
+  });
+
+  it('returns null for month 0', () => {
+    expect(parseDateFromFormat('2026-00-15', 'YYYY-MM-DD')).toBeNull();
+  });
+
+  it('returns null for month > 12', () => {
+    expect(parseDateFromFormat('2026-13-15', 'YYYY-MM-DD')).toBeNull();
+  });
+
+  it('returns null for day 0', () => {
+    expect(parseDateFromFormat('2026-01-00', 'YYYY-MM-DD')).toBeNull();
+  });
+
+  it('falls back to YYYY-MM-DD for unknown formats', () => {
+    expect(parseDateFromFormat('2026-01-15', 'browser')).toBe('2026-01-15');
+    expect(parseDateFromFormat('not-iso', 'browser')).toBeNull();
   });
 });

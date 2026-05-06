@@ -88,39 +88,38 @@ vi.mock('@/lib/tags', () => ({
   },
 }));
 
-// Track useFormModal state
-let mockOpenCreate: ReturnType<typeof vi.fn>;
-let mockOpenEdit: ReturnType<typeof vi.fn>;
-let mockClose: ReturnType<typeof vi.fn>;
-let mockSetFormDirty: ReturnType<typeof vi.fn>;
-let formModalState = {
-  showForm: false,
-  editingItem: undefined as any,
-  isEditing: false,
-};
-
+// Stateful useFormModal mock that preserves state across renders within a single test
+const formModalRef: { current: any } = { current: null };
 vi.mock('@/hooks/useFormModal', () => ({
   useFormModal: () => {
-    mockOpenCreate = vi.fn(() => {
-      formModalState = { showForm: true, editingItem: undefined, isEditing: false };
-    });
-    mockOpenEdit = vi.fn((item: any) => {
-      formModalState = { showForm: true, editingItem: item, isEditing: true };
-    });
-    mockClose = vi.fn(() => {
-      formModalState = { showForm: false, editingItem: undefined, isEditing: false };
-    });
-    mockSetFormDirty = vi.fn();
-    return {
-      ...formModalState,
-      openCreate: mockOpenCreate,
-      openEdit: mockOpenEdit,
-      close: mockClose,
-      modalProps: { pushHistory: true, onBeforeClose: vi.fn() },
-      setFormDirty: mockSetFormDirty,
+    const [showForm, setShowForm] = useState(false);
+    const [editingItem, setEditingItem] = useState<any>(undefined);
+    const openCreate = () => {
+      setEditingItem(undefined);
+      setShowForm(true);
+    };
+    const openEdit = (item: any) => {
+      setEditingItem(item);
+      setShowForm(true);
+    };
+    const close = () => {
+      setEditingItem(undefined);
+      setShowForm(false);
+    };
+    const value = {
+      showForm,
+      editingItem,
+      openCreate,
+      openEdit,
+      close,
+      isEditing: !!editingItem,
+      modalProps: { pushHistory: false, onBeforeClose: vi.fn() },
+      setFormDirty: vi.fn(),
       unsavedChangesDialog: { isOpen: false, onSave: vi.fn(), onDiscard: vi.fn(), onCancel: vi.fn() },
       formSubmitRef: { current: null },
     };
+    formModalRef.current = value;
+    return value;
   },
 }));
 
@@ -130,23 +129,35 @@ vi.mock('@/components/tags/TagForm', () => ({
     <div data-testid="tag-form">
       TagForm
       {tag && <span data-testid="editing-tag">{tag.name}</span>}
-      <button data-testid="submit-form" onClick={() => onSubmit({ name: 'Test Tag' })}>Submit</button>
+      <button data-testid="submit-form" onClick={() => Promise.resolve(onSubmit({ name: 'Test Tag', color: '', icon: '' })).catch(() => {})}>Submit</button>
+      <button data-testid="submit-form-with-color" onClick={() => Promise.resolve(onSubmit({ name: 'New', color: '#ff0000', icon: 'star' })).catch(() => {})}>SubmitWithColor</button>
     </div>
   ),
 }));
 
+const mockOnSort = vi.fn();
 vi.mock('@/components/tags/TagList', () => ({
-  TagList: ({ tags, onEdit, onDelete }: any) => (
-    <div data-testid="tag-list">
-      {tags.map((t: any) => (
-        <div key={t.id} data-testid={`tag-${t.id}`}>
-          {t.name}
-          <button data-testid={`edit-${t.id}`} onClick={() => onEdit(t)}>Edit</button>
-          <button data-testid={`delete-${t.id}`} onClick={() => onDelete(t)}>Delete</button>
-        </div>
-      ))}
-    </div>
-  ),
+  TagList: ({ tags, onEdit, onDelete, onTagClick, onSort, sortField, sortDirection, density, onDensityChange }: any) => {
+    mockOnSort.mockImplementation((field: any) => onSort(field));
+    return (
+      <div data-testid="tag-list">
+        <span data-testid="sort-info">{sortField} {sortDirection}</span>
+        <span data-testid="density-info">{density}</span>
+        <button data-testid="density-btn" onClick={() => onDensityChange('compact')}>Density</button>
+        <button data-testid="sort-name" onClick={() => onSort('name')}>SortByName</button>
+        <button data-testid="sort-count" onClick={() => onSort('count')}>SortByCount</button>
+        <button data-testid="sort-created" onClick={() => onSort('createdAt')}>SortByCreated</button>
+        {tags.map((t: any) => (
+          <div key={t.id} data-testid={`tag-${t.id}`}>
+            {t.name}
+            <button data-testid={`edit-${t.id}`} onClick={() => onEdit(t)}>Edit</button>
+            <button data-testid={`delete-${t.id}`} onClick={() => onDelete(t)}>Delete</button>
+            <button data-testid={`click-${t.id}`} onClick={() => onTagClick(t)}>Click</button>
+          </div>
+        ))}
+      </div>
+    );
+  },
   DensityLevel: {},
 }));
 
@@ -162,7 +173,7 @@ vi.mock('@/components/ui/ConfirmDialog', () => ({
   ConfirmDialog: ({ isOpen, onConfirm, onCancel, message }: any) =>
     isOpen ? (
       <div data-testid="confirm-dialog">
-        <span>{message}</span>
+        <span data-testid="dialog-message">{message}</span>
         <button data-testid="confirm-delete" onClick={onConfirm}>Confirm</button>
         <button data-testid="cancel-delete" onClick={onCancel}>Cancel</button>
       </div>
@@ -196,42 +207,58 @@ vi.mock('@/hooks/useLocalStorage', () => ({
   useLocalStorage: (_key: string, defaultValue: any) => useState(defaultValue),
 }));
 
+const mockPush = vi.fn();
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: mockPush, replace: vi.fn(), back: vi.fn(), prefetch: vi.fn(), refresh: vi.fn() }),
+  usePathname: () => '/',
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 const mockTags = [
   { id: 'tag-1', userId: 'u1', name: 'Groceries', color: '#22c55e', icon: null, createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
   { id: 'tag-2', userId: 'u1', name: 'Urgent', color: null, icon: 'star', createdAt: '2024-01-02T00:00:00Z', updatedAt: '2024-01-02T00:00:00Z' },
   { id: 'tag-3', userId: 'u1', name: 'Recurring', color: '#3b82f6', icon: null, createdAt: '2024-01-03T00:00:00Z', updatedAt: '2024-01-03T00:00:00Z' },
 ];
 
+async function renderPage() {
+  let result: ReturnType<typeof render>;
+  await act(async () => {
+    result = render(<TagsPage />);
+  });
+  return result!;
+}
+
 describe('TagsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    formModalState = { showForm: false, editingItem: undefined, isEditing: false };
     mockGetAll.mockResolvedValue([]);
+    mockGetAllTransactionCounts.mockResolvedValue({});
+    mockGetTransactionCount.mockResolvedValue(0);
   });
 
   it('renders the page header with title', async () => {
-    render(<TagsPage />);
+    await renderPage();
     await waitFor(() => {
       expect(screen.getByText('Tags')).toBeInTheDocument();
     });
   });
 
   it('renders the subtitle', async () => {
-    render(<TagsPage />);
+    await renderPage();
     await waitFor(() => {
       expect(screen.getByText(/Label your transactions with custom tags/i)).toBeInTheDocument();
     });
   });
 
   it('renders within page layout', async () => {
-    render(<TagsPage />);
+    await renderPage();
     await waitFor(() => {
       expect(screen.getByTestId('page-layout')).toBeInTheDocument();
     });
   });
 
   it('renders summary cards', async () => {
-    render(<TagsPage />);
+    await renderPage();
     await waitFor(() => {
       expect(screen.getByTestId('summary-Total Tags')).toBeInTheDocument();
       expect(screen.getByTestId('summary-Tags with Colour')).toBeInTheDocument();
@@ -240,7 +267,7 @@ describe('TagsPage', () => {
   });
 
   it('shows empty state when no tags exist', async () => {
-    render(<TagsPage />);
+    await renderPage();
     await waitFor(() => {
       expect(screen.getByText(/No tags yet/i)).toBeInTheDocument();
     });
@@ -248,15 +275,13 @@ describe('TagsPage', () => {
 
   it('shows loading spinner while data is loading', async () => {
     mockGetAll.mockReturnValue(new Promise(() => {}));
-    render(<TagsPage />);
-    await waitFor(() => {
-      expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
-    });
+    await renderPage();
+    expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
   });
 
   it('shows correct summary counts with tags', async () => {
     mockGetAll.mockResolvedValue(mockTags);
-    render(<TagsPage />);
+    await renderPage();
     await waitFor(() => {
       expect(screen.getByTestId('summary-Total Tags')).toHaveTextContent('3');
       expect(screen.getByTestId('summary-Tags with Colour')).toHaveTextContent('2');
@@ -266,22 +291,20 @@ describe('TagsPage', () => {
 
   it('renders tag list when tags exist', async () => {
     mockGetAll.mockResolvedValue(mockTags);
-    render(<TagsPage />);
+    await renderPage();
     await waitFor(() => {
       expect(screen.getByTestId('tag-list')).toBeInTheDocument();
     });
   });
 
   it('renders + New Tag button', async () => {
-    render(<TagsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('+ New Tag')).toBeInTheDocument();
-    });
+    await renderPage();
+    expect(screen.getByText('+ New Tag')).toBeInTheDocument();
   });
 
   it('renders search input', async () => {
     mockGetAll.mockResolvedValue(mockTags);
-    render(<TagsPage />);
+    await renderPage();
     await waitFor(() => {
       expect(screen.getByPlaceholderText('Search tags...')).toBeInTheDocument();
     });
@@ -289,33 +312,24 @@ describe('TagsPage', () => {
 
   it('filters tags by search query', async () => {
     mockGetAll.mockResolvedValue(mockTags);
-    render(<TagsPage />);
-    await waitFor(() => {
-      expect(screen.getByTestId('tag-list')).toBeInTheDocument();
-    });
+    await renderPage();
+    await waitFor(() => expect(screen.getByTestId('tag-list')).toBeInTheDocument());
     fireEvent.change(screen.getByPlaceholderText('Search tags...'), { target: { value: 'Urgent' } });
-    await waitFor(() => {
-      expect(screen.getByTestId('tag-tag-2')).toBeInTheDocument();
-      expect(screen.queryByTestId('tag-tag-1')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('tag-tag-3')).not.toBeInTheDocument();
-    });
+    expect(screen.getByTestId('tag-tag-2')).toBeInTheDocument();
+    expect(screen.queryByTestId('tag-tag-1')).not.toBeInTheDocument();
   });
 
   it('search is case-insensitive', async () => {
     mockGetAll.mockResolvedValue(mockTags);
-    render(<TagsPage />);
-    await waitFor(() => {
-      expect(screen.getByTestId('tag-list')).toBeInTheDocument();
-    });
+    await renderPage();
+    await waitFor(() => expect(screen.getByTestId('tag-list')).toBeInTheDocument());
     fireEvent.change(screen.getByPlaceholderText('Search tags...'), { target: { value: 'groceries' } });
-    await waitFor(() => {
-      expect(screen.getByTestId('tag-tag-1')).toBeInTheDocument();
-    });
+    expect(screen.getByTestId('tag-tag-1')).toBeInTheDocument();
   });
 
   it('shows total count text for tags', async () => {
     mockGetAll.mockResolvedValue(mockTags);
-    render(<TagsPage />);
+    await renderPage();
     await waitFor(() => {
       expect(screen.getByText('3 tags')).toBeInTheDocument();
     });
@@ -323,7 +337,7 @@ describe('TagsPage', () => {
 
   it('shows singular "tag" for count of 1', async () => {
     mockGetAll.mockResolvedValue([mockTags[0]]);
-    render(<TagsPage />);
+    await renderPage();
     await waitFor(() => {
       expect(screen.getByText('1 tag')).toBeInTheDocument();
     });
@@ -331,38 +345,275 @@ describe('TagsPage', () => {
 
   it('handles API error gracefully and shows toast', async () => {
     mockGetAll.mockRejectedValueOnce(new Error('Network error'));
-    render(<TagsPage />);
+    await renderPage();
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('Failed to load tags');
     });
   });
 
   it('empty state shows Create Your First Tag button', async () => {
-    render(<TagsPage />);
+    await renderPage();
     await waitFor(() => {
       expect(screen.getByText('Create Your First Tag')).toBeInTheDocument();
     });
   });
 
   it('opens create modal when + New Tag is clicked', async () => {
-    render(<TagsPage />);
-    await waitFor(() => {
-      expect(screen.getByText('+ New Tag')).toBeInTheDocument();
-    });
+    await renderPage();
     await act(async () => {
       fireEvent.click(screen.getByText('+ New Tag'));
     });
-    expect(mockOpenCreate).toHaveBeenCalled();
+    expect(screen.getByTestId('modal')).toBeInTheDocument();
+    expect(screen.getByText('New Tag')).toBeInTheDocument();
   });
 
   it('opens create modal from empty state button', async () => {
-    render(<TagsPage />);
+    await renderPage();
     await waitFor(() => {
       expect(screen.getByText('Create Your First Tag')).toBeInTheDocument();
     });
     await act(async () => {
       fireEvent.click(screen.getByText('Create Your First Tag'));
     });
-    expect(mockOpenCreate).toHaveBeenCalled();
+    expect(screen.getByTestId('modal')).toBeInTheDocument();
+  });
+
+  it('opens edit modal when edit is clicked on a tag', async () => {
+    mockGetAll.mockResolvedValue(mockTags);
+    await renderPage();
+    await waitFor(() => expect(screen.getByTestId('tag-list')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('edit-tag-1'));
+    });
+    expect(screen.getByText('Edit Tag')).toBeInTheDocument();
+    expect(screen.getByTestId('editing-tag')).toHaveTextContent('Groceries');
+  });
+
+  it('creates a tag when form is submitted in create mode', async () => {
+    mockCreate.mockResolvedValue({ id: 'tag-new', name: 'Test Tag', color: null, icon: null });
+    await renderPage();
+    await act(async () => {
+      fireEvent.click(screen.getByText('+ New Tag'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('submit-form'));
+    });
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalledWith({ name: 'Test Tag', color: null, icon: null });
+      expect(toast.success).toHaveBeenCalledWith('Tag created successfully');
+    });
+  });
+
+  it('creates tag preserving non-empty color/icon', async () => {
+    mockCreate.mockResolvedValue({ id: 'tag-new', name: 'New', color: '#ff0000', icon: 'star' });
+    await renderPage();
+    await act(async () => {
+      fireEvent.click(screen.getByText('+ New Tag'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('submit-form-with-color'));
+    });
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalledWith({ name: 'New', color: '#ff0000', icon: 'star' });
+    });
+  });
+
+  it('updates a tag when form is submitted in edit mode', async () => {
+    mockGetAll.mockResolvedValue(mockTags);
+    mockUpdate.mockResolvedValue(mockTags[0]);
+    await renderPage();
+    await waitFor(() => expect(screen.getByTestId('tag-list')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('edit-tag-1'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('submit-form'));
+    });
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalledWith('tag-1', { name: 'Test Tag', color: null, icon: null });
+      expect(toast.success).toHaveBeenCalledWith('Tag updated successfully');
+    });
+  });
+
+  it('shows error toast when create fails', async () => {
+    mockCreate.mockRejectedValueOnce(new Error('Create failed'));
+    await renderPage();
+    await act(async () => {
+      fireEvent.click(screen.getByText('+ New Tag'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('submit-form'));
+    });
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to create tag');
+    });
+  });
+
+  it('shows error toast when update fails', async () => {
+    mockGetAll.mockResolvedValue(mockTags);
+    mockUpdate.mockRejectedValueOnce(new Error('Update failed'));
+    await renderPage();
+    await waitFor(() => expect(screen.getByTestId('tag-list')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('edit-tag-1'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('submit-form'));
+    });
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to update tag');
+    });
+  });
+
+  it('opens delete confirmation when delete is clicked', async () => {
+    mockGetAll.mockResolvedValue(mockTags);
+    mockGetTransactionCount.mockResolvedValue(0);
+    await renderPage();
+    await waitFor(() => expect(screen.getByTestId('tag-list')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('delete-tag-1'));
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument();
+    });
+  });
+
+  it('shows transaction count in delete dialog when tag is in use', async () => {
+    mockGetAll.mockResolvedValue(mockTags);
+    mockGetTransactionCount.mockResolvedValue(5);
+    await renderPage();
+    await waitFor(() => expect(screen.getByTestId('tag-list')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('delete-tag-1'));
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('dialog-message')).toHaveTextContent(/used on 5 transaction/);
+    });
+  });
+
+  it('shows singular "transaction" in delete dialog when count is 1', async () => {
+    mockGetAll.mockResolvedValue(mockTags);
+    mockGetTransactionCount.mockResolvedValue(1);
+    await renderPage();
+    await waitFor(() => expect(screen.getByTestId('tag-list')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('delete-tag-1'));
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('dialog-message')).toHaveTextContent(/used on 1 transaction\./);
+    });
+  });
+
+  it('handles getTransactionCount error gracefully', async () => {
+    mockGetAll.mockResolvedValue(mockTags);
+    mockGetTransactionCount.mockRejectedValueOnce(new Error('fail'));
+    await renderPage();
+    await waitFor(() => expect(screen.getByTestId('tag-list')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('delete-tag-1'));
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument();
+    });
+  });
+
+  it('deletes tag when confirmed', async () => {
+    mockGetAll.mockResolvedValue(mockTags);
+    mockDelete.mockResolvedValue(undefined);
+    await renderPage();
+    await waitFor(() => expect(screen.getByTestId('tag-list')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('delete-tag-1'));
+    });
+    await waitFor(() => expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('confirm-delete'));
+    });
+    await waitFor(() => {
+      expect(mockDelete).toHaveBeenCalledWith('tag-1');
+      expect(toast.success).toHaveBeenCalledWith('Tag deleted successfully');
+    });
+  });
+
+  it('cancels delete when cancel is clicked', async () => {
+    mockGetAll.mockResolvedValue(mockTags);
+    await renderPage();
+    await waitFor(() => expect(screen.getByTestId('tag-list')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('delete-tag-1'));
+    });
+    await waitFor(() => expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('cancel-delete'));
+    });
+    expect(screen.queryByTestId('confirm-dialog')).not.toBeInTheDocument();
+    expect(mockDelete).not.toHaveBeenCalled();
+  });
+
+  it('shows error toast when delete fails', async () => {
+    mockGetAll.mockResolvedValue(mockTags);
+    mockDelete.mockRejectedValueOnce(new Error('Delete failed'));
+    await renderPage();
+    await waitFor(() => expect(screen.getByTestId('tag-list')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('delete-tag-1'));
+    });
+    await waitFor(() => expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('confirm-delete'));
+    });
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to delete tag');
+    });
+  });
+
+  it('navigates to transactions page when tag is clicked', async () => {
+    mockGetAll.mockResolvedValue(mockTags);
+    await renderPage();
+    await waitFor(() => expect(screen.getByTestId('tag-list')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('click-tag-1'));
+    expect(mockPush).toHaveBeenCalledWith('/transactions?tagIds=tag-1');
+  });
+
+  it('toggles sort direction when clicking same sort field', async () => {
+    mockGetAll.mockResolvedValue(mockTags);
+    await renderPage();
+    await waitFor(() => expect(screen.getByTestId('tag-list')).toBeInTheDocument());
+    expect(screen.getByTestId('sort-info')).toHaveTextContent('name asc');
+    fireEvent.click(screen.getByTestId('sort-name'));
+    await waitFor(() => {
+      expect(screen.getByTestId('sort-info')).toHaveTextContent('name desc');
+    });
+  });
+
+  it('switches to count sort with asc default', async () => {
+    mockGetAll.mockResolvedValue(mockTags);
+    await renderPage();
+    await waitFor(() => expect(screen.getByTestId('tag-list')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('sort-count'));
+    await waitFor(() => {
+      expect(screen.getByTestId('sort-info')).toHaveTextContent('count asc');
+    });
+  });
+
+  it('switches to createdAt sort with desc default', async () => {
+    mockGetAll.mockResolvedValue(mockTags);
+    await renderPage();
+    await waitFor(() => expect(screen.getByTestId('tag-list')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('sort-created'));
+    await waitFor(() => {
+      expect(screen.getByTestId('sort-info')).toHaveTextContent('createdAt desc');
+    });
+  });
+
+  it('updates list density when changed', async () => {
+    mockGetAll.mockResolvedValue(mockTags);
+    await renderPage();
+    await waitFor(() => expect(screen.getByTestId('tag-list')).toBeInTheDocument());
+    expect(screen.getByTestId('density-info')).toHaveTextContent('normal');
+    fireEvent.click(screen.getByTestId('density-btn'));
+    await waitFor(() => {
+      expect(screen.getByTestId('density-info')).toHaveTextContent('compact');
+    });
   });
 });
