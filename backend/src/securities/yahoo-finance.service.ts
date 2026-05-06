@@ -395,7 +395,7 @@ export class YahooFinanceService implements QuoteProvider {
     { interval, range }: { interval: IntradayInterval; range: IntradayRange },
   ): Promise<IntradayPoint[] | null> {
     try {
-      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?interval=${interval}&range=${range}`;
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?interval=${encodeURIComponent(interval)}&range=${encodeURIComponent(range)}`;
 
       const response = await fetch(url, {
         headers: { "User-Agent": YahooFinanceService.USER_AGENT },
