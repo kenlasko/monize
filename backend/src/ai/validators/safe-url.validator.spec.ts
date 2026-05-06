@@ -2,6 +2,7 @@ import "reflect-metadata";
 import { validate } from "class-validator";
 import {
   IsSafeUrl,
+  IsSafeUrlConstraint,
   IsSafeProviderBaseUrlConstraint,
   validateUrlBasicSafety,
   validateUrlIsSafe,
@@ -385,5 +386,67 @@ describe("IsSafeProviderBaseUrlConstraint", () => {
     } as any);
     expect(ok).toBe(false);
     expect(c.defaultMessage()).toContain("external host");
+  });
+
+  // ─── Branch coverage extras ─────────────────────────────────────────
+
+  describe("normalizeIp branches via IsSafeUrlConstraint", () => {
+    it("rejects decimal-encoded loopback IP", async () => {
+      const c = new IsSafeUrlConstraint();
+      // 2130706433 = 127.0.0.1
+      expect(await c.validate("http://2130706433/")).toBe(false);
+    });
+
+    it("allows decimal-encoded public IP", async () => {
+      const c = new IsSafeUrlConstraint();
+      // 134744072 = 8.8.8.8
+      expect(await c.validate("http://134744072/")).toBe(true);
+    });
+
+    it("rejects hex-encoded loopback IP (0x7f000001 = 127.0.0.1)", async () => {
+      const c = new IsSafeUrlConstraint();
+      expect(await c.validate("http://0x7f000001/")).toBe(false);
+    });
+
+    it("allows hex-encoded public IP", async () => {
+      const c = new IsSafeUrlConstraint();
+      expect(await c.validate("http://0x08080808/")).toBe(true);
+    });
+
+    it("rejects octal-dotted loopback IP (0177.0.0.1)", async () => {
+      const c = new IsSafeUrlConstraint();
+      expect(await c.validate("http://0177.0.0.1/")).toBe(false);
+    });
+
+    it("allows octal-dotted public IP", async () => {
+      const c = new IsSafeUrlConstraint();
+      expect(await c.validate("http://0010.0010.0010.0010/")).toBe(true);
+    });
+
+    it("rejects URL with embedded credentials", async () => {
+      const c = new IsSafeUrlConstraint();
+      expect(await c.validate("http://user:pw@example.com/")).toBe(false);
+    });
+
+    it("returns false for non-string input", async () => {
+      const c = new IsSafeUrlConstraint();
+      expect(await c.validate(undefined as never)).toBe(false);
+      expect(await c.validate(123 as never)).toBe(false);
+    });
+
+    it("returns false for unparseable URL", async () => {
+      const c = new IsSafeUrlConstraint();
+      expect(await c.validate("not a url")).toBe(false);
+    });
+
+    it("returns false for non-http(s) protocol", async () => {
+      const c = new IsSafeUrlConstraint();
+      expect(await c.validate("ftp://example.com/")).toBe(false);
+    });
+
+    it("rejects 'localhost' hostname (in BLOCKED_HOSTNAMES)", async () => {
+      const c = new IsSafeUrlConstraint();
+      expect(await c.validate("http://localhost/")).toBe(false);
+    });
   });
 });

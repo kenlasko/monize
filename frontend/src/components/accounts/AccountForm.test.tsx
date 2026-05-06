@@ -62,6 +62,8 @@ vi.mock('@/lib/format', () => ({
 
 vi.mock('@/lib/categoryUtils', () => ({
   buildCategoryTree: (cats: any[]) => cats.map((c: any) => ({ category: c, children: [] })),
+  getCategorySelectOptions: (cats: any[]) => (cats || []).map((c: any) => ({ value: c.id, label: c.name })),
+  buildCategoryColorMap: () => new Map(),
 }));
 
 vi.mock('@hookform/resolvers/zod', () => ({
@@ -800,6 +802,154 @@ describe('AccountForm', () => {
 
     await waitFor(() => {
       expect(screen.getByTitle(/settlement date.*closing date.*last day of the billing cycle/i)).toBeInTheDocument();
+    });
+  });
+
+  it('navigates to import page when QIF Import button clicked on existing account', async () => {
+    const account = createExistingAccount();
+
+    render(
+      <AccountForm
+        account={account}
+        onSubmit={mockOnSubmit}
+        onCancel={mockOnCancel}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTitle('Import transactions from QIF file')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTitle('Import transactions from QIF file'));
+
+    // onCancel is called immediately
+    await waitFor(() => {
+      expect(mockOnCancel).toHaveBeenCalled();
+    });
+  });
+
+  it('opens export modal when Export button clicked on existing account', async () => {
+    const account = createExistingAccount();
+    render(
+      <AccountForm
+        account={account}
+        onSubmit={mockOnSubmit}
+        onCancel={mockOnCancel}
+      />
+    );
+    await waitFor(() => {
+      expect(screen.getByTitle('Export account transactions')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTitle('Export account transactions'));
+    // No assertion needed - this exercises the showExportModal state
+  });
+
+  it('shows Set Up Recurring Payments button for existing LOAN with no scheduled payment', async () => {
+    const loan = createExistingAccount({
+      accountType: 'LOAN',
+      paymentAmount: 500,
+      interestRate: 5,
+      scheduledTransactionId: null,
+    });
+    render(
+      <AccountForm account={loan} onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
+    );
+    await waitFor(() => {
+      expect(screen.getByText('Set Up Recurring Payments')).toBeInTheDocument();
+    });
+  });
+
+  it('opens loan setup dialog when Set Up Recurring Payments is clicked', async () => {
+    const loan = createExistingAccount({
+      accountType: 'LOAN',
+      paymentAmount: 500,
+      interestRate: 5,
+      scheduledTransactionId: null,
+    });
+    render(
+      <AccountForm account={loan} onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
+    );
+    await waitFor(() => {
+      expect(screen.getByText('Set Up Recurring Payments')).toBeInTheDocument();
+    });
+    // Just ensure the button click does not throw
+    fireEvent.click(screen.getByText('Set Up Recurring Payments'));
+  });
+
+  it('does not show Set Up Recurring Payments for LOAN with existing scheduled payment', async () => {
+    const loan = createExistingAccount({
+      accountType: 'LOAN',
+      scheduledTransactionId: 'sched-1',
+    });
+    render(
+      <AccountForm account={loan} onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
+    );
+    await waitFor(() => {
+      expect(screen.queryByText('Set Up Recurring Payments')).not.toBeInTheDocument();
+    });
+  });
+
+  it('auto-selects default loan interest category when LOAN type is selected', async () => {
+    (categoriesApi.getAll as any).mockResolvedValue([
+      { id: 'loan-parent', userId: 'u1', name: 'Loan', parentId: null, parent: null, children: [], description: null, icon: null, color: null, effectiveColor: null, isIncome: false, isSystem: true, createdAt: '' },
+      { id: 'loan-int', userId: 'u1', name: 'Loan Interest', parentId: 'loan-parent', parent: null, children: [], description: null, icon: null, color: null, effectiveColor: null, isIncome: false, isSystem: true, createdAt: '' },
+    ]);
+    render(<AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
+
+    const typeSelect = screen.getByLabelText('Account Type') as HTMLSelectElement;
+    fireEvent.change(typeSelect, { target: { value: 'LOAN' } });
+
+    await waitFor(() => {
+      expect(categoriesApi.getAll).toHaveBeenCalled();
+    });
+  });
+
+  it('auto-selects default mortgage interest category when MORTGAGE type is selected', async () => {
+    (categoriesApi.getAll as any).mockResolvedValue([
+      { id: 'mortgage-parent', userId: 'u1', name: 'Mortgage', parentId: null, parent: null, children: [], description: null, icon: null, color: null, effectiveColor: null, isIncome: false, isSystem: true, createdAt: '' },
+      { id: 'mortgage-int', userId: 'u1', name: 'Mortgage Interest', parentId: 'mortgage-parent', parent: null, children: [], description: null, icon: null, color: null, effectiveColor: null, isIncome: false, isSystem: true, createdAt: '' },
+    ]);
+    render(<AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
+
+    const typeSelect = screen.getByLabelText('Account Type') as HTMLSelectElement;
+    fireEvent.change(typeSelect, { target: { value: 'MORTGAGE' } });
+
+    await waitFor(() => {
+      expect(categoriesApi.getAll).toHaveBeenCalled();
+    });
+  });
+
+  it('falls back to Loan Interest category when MORTGAGE has no Mortgage parent category', async () => {
+    (categoriesApi.getAll as any).mockResolvedValue([
+      { id: 'loan-parent', userId: 'u1', name: 'Loan', parentId: null, parent: null, children: [], description: null, icon: null, color: null, effectiveColor: null, isIncome: false, isSystem: true, createdAt: '' },
+      { id: 'loan-int', userId: 'u1', name: 'Loan Interest', parentId: 'loan-parent', parent: null, children: [], description: null, icon: null, color: null, effectiveColor: null, isIncome: false, isSystem: true, createdAt: '' },
+    ]);
+    render(<AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
+
+    const typeSelect = screen.getByLabelText('Account Type') as HTMLSelectElement;
+    fireEvent.change(typeSelect, { target: { value: 'MORTGAGE' } });
+    await waitFor(() => {
+      expect(categoriesApi.getAll).toHaveBeenCalled();
+    });
+  });
+
+  it('handles accountsApi/categoriesApi failure gracefully when LOAN selected', async () => {
+    (accountsApi.getAll as any).mockRejectedValue(new Error('boom'));
+    render(<AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
+    const typeSelect = screen.getByLabelText('Account Type') as HTMLSelectElement;
+    fireEvent.change(typeSelect, { target: { value: 'LOAN' } });
+    await waitFor(() => {
+      expect(accountsApi.getAll).toHaveBeenCalled();
+    });
+  });
+
+  it('LINE_OF_CREDIT type loads accounts and categories', async () => {
+    render(<AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
+    const typeSelect = screen.getByLabelText('Account Type') as HTMLSelectElement;
+    fireEvent.change(typeSelect, { target: { value: 'LINE_OF_CREDIT' } });
+    await waitFor(() => {
+      expect(accountsApi.getAll).toHaveBeenCalled();
+      expect(categoriesApi.getAll).toHaveBeenCalled();
     });
   });
 

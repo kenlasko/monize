@@ -4,6 +4,10 @@ import {
   passwordResetTemplate,
   budgetMonthlySummaryTemplate,
   mortgageReminderTemplate,
+  budgetAlertImmediateTemplate,
+  budgetWeeklyDigestTemplate,
+  oidcLinkTemplate,
+  accountLockedTemplate,
 } from "./email-templates";
 
 describe("Email Templates", () => {
@@ -799,6 +803,149 @@ describe("Email Templates", () => {
 
       expect(html).not.toContain("<img");
       expect(html).toContain("&lt;img");
+    });
+  });
+
+  describe("budgetAlertImmediateTemplate()", () => {
+    it("renders critical/warning/success/default severity colors and labels", () => {
+      const html = budgetAlertImmediateTemplate(
+        "Sam",
+        [
+          {
+            title: "T1",
+            message: "M1",
+            severity: "critical",
+            categoryName: "Food",
+          },
+          {
+            title: "T2",
+            message: "M2",
+            severity: "warning",
+            categoryName: "Food",
+          },
+          {
+            title: "T3",
+            message: "M3",
+            severity: "success",
+            categoryName: "Food",
+          },
+          {
+            title: "T4",
+            message: "M4",
+            severity: "info",
+            categoryName: "Food",
+          },
+        ],
+        "https://app",
+      );
+      expect(html).toContain("#dc2626");
+      expect(html).toContain("#d97706");
+      expect(html).toContain("#059669");
+      expect(html).toContain("#2563eb");
+      expect(html).toContain("Critical");
+      expect(html).toContain("Warning");
+      expect(html).toContain("Good News");
+      expect(html).toContain("Info");
+    });
+
+    it("falls back to 'there' when firstName is empty", () => {
+      const html = budgetAlertImmediateTemplate(
+        "",
+        [],
+        "https://app",
+      );
+      expect(html).toContain("Hi there");
+    });
+  });
+
+  describe("budgetWeeklyDigestTemplate()", () => {
+    const baseAlerts = [
+      { title: "C1", message: "m", severity: "critical", categoryName: "" },
+      { title: "W1", message: "m", severity: "warning", categoryName: "" },
+      { title: "W2", message: "m", severity: "warning", categoryName: "" },
+      { title: "P1", message: "m", severity: "success", categoryName: "" },
+    ];
+
+    it("includes critical, plural warnings, and positive counts", () => {
+      const html = budgetWeeklyDigestTemplate(
+        "Alex",
+        baseAlerts,
+        ["Budget A"],
+        "https://app",
+      );
+      expect(html).toContain("1 critical");
+      expect(html).toContain("2 warnings");
+      expect(html).toContain("1 positive");
+    });
+
+    it("uses singular 'warning' when count is 1", () => {
+      const html = budgetWeeklyDigestTemplate(
+        "Alex",
+        [{ title: "W", message: "m", severity: "warning", categoryName: "" }],
+        ["B"],
+        "https://app",
+      );
+      expect(html).toContain("1 warning");
+      expect(html).not.toContain("1 warnings");
+    });
+
+    it("renders 'No alerts' fallback when summary is empty", () => {
+      const html = budgetWeeklyDigestTemplate(
+        "Alex",
+        [],
+        ["B"],
+        "https://app",
+      );
+      expect(html).toContain("No alerts");
+    });
+
+    it("includes '...and N more' when alerts > 5", () => {
+      const many = Array.from({ length: 7 }, (_, i) => ({
+        title: `t${i}`,
+        message: "m",
+        severity: "critical",
+        categoryName: "",
+      }));
+      const html = budgetWeeklyDigestTemplate(
+        "Alex",
+        many,
+        ["B"],
+        "https://app",
+      );
+      expect(html).toContain("and 2 more");
+    });
+
+    it("falls back to 'there' when firstName empty", () => {
+      const html = budgetWeeklyDigestTemplate(
+        "",
+        [],
+        ["B"],
+        "https://app",
+      );
+      expect(html).toContain("Hi there");
+    });
+  });
+
+  describe("oidcLinkTemplate()", () => {
+    it("renders confirmation URL safely", () => {
+      const html = oidcLinkTemplate("Sam", "https://link/confirm?t=abc");
+      expect(html).toContain("https://link/confirm?t=abc");
+      expect(html).toContain("Hi Sam");
+    });
+    it("falls back to 'there' when name is empty", () => {
+      const html = oidcLinkTemplate("", "https://x");
+      expect(html).toContain("Hi there");
+    });
+  });
+
+  describe("accountLockedTemplate()", () => {
+    it("renders default name when none supplied", () => {
+      const html = accountLockedTemplate("");
+      expect(html).toContain("Hi there");
+    });
+    it("renders supplied name", () => {
+      const html = accountLockedTemplate("Pat");
+      expect(html).toContain("Hi Pat");
     });
   });
 });

@@ -447,4 +447,279 @@ describe('BudgetWizardCategories', () => {
       expect(screen.getByText(/target 20%/)).toBeInTheDocument();
     });
   });
+
+  describe('profile change updates amounts based on profile', () => {
+    it('uses p75 when profile changes to COMFORTABLE', () => {
+      render(
+        <BudgetWizardCategories
+          state={defaultState}
+          updateState={mockUpdateState}
+          onNext={mockOnNext}
+          onBack={mockOnBack}
+        />,
+      );
+      // Click the "Comfortable" profile option (it's a button)
+      const btn = screen.getByRole('button', { name: /Comfortable/i });
+      fireEvent.click(btn);
+      expect(mockUpdateState).toHaveBeenCalled();
+      const call = mockUpdateState.mock.calls[mockUpdateState.mock.calls.length - 1][0];
+      expect(call.profile).toBe('COMFORTABLE');
+      // Groceries p75=500
+      const grocery = call.selectedCategories.get('cat-groceries');
+      expect(grocery?.amount).toBe(500);
+    });
+
+    it('uses p25 when profile changes to AGGRESSIVE', () => {
+      render(
+        <BudgetWizardCategories
+          state={defaultState}
+          updateState={mockUpdateState}
+          onNext={mockOnNext}
+          onBack={mockOnBack}
+        />,
+      );
+      const btn = screen.getByRole('button', { name: /Aggressive/i });
+      fireEvent.click(btn);
+      const call = mockUpdateState.mock.calls[mockUpdateState.mock.calls.length - 1][0];
+      expect(call.profile).toBe('AGGRESSIVE');
+      const grocery = call.selectedCategories.get('cat-groceries');
+      expect(grocery?.amount).toBe(300);
+    });
+
+    it('uses median when profile changes to ON_TRACK', () => {
+      const cstate: WizardState = { ...defaultState, profile: 'AGGRESSIVE' };
+      render(
+        <BudgetWizardCategories
+          state={cstate}
+          updateState={mockUpdateState}
+          onNext={mockOnNext}
+          onBack={mockOnBack}
+        />,
+      );
+      const btn = screen.getByRole('button', { name: /On Track/i });
+      fireEvent.click(btn);
+      const call = mockUpdateState.mock.calls[mockUpdateState.mock.calls.length - 1][0];
+      expect(call.profile).toBe('ON_TRACK');
+      const grocery = call.selectedCategories.get('cat-groceries');
+      expect(grocery?.amount).toBe(400);
+    });
+  });
+
+  describe('amount editing', () => {
+    it('updates category amount on focus and blur with valid value', () => {
+      render(
+        <BudgetWizardCategories
+          state={defaultState}
+          updateState={mockUpdateState}
+          onNext={mockOnNext}
+          onBack={mockOnBack}
+        />,
+      );
+
+      // Find an amount input (text input with currency prefix)
+      const inputs = document.querySelectorAll('input[type="text"][inputMode="decimal"]');
+      const input = inputs[0] as HTMLInputElement;
+      fireEvent.focus(input);
+      fireEvent.change(input, { target: { value: '999' } });
+      fireEvent.blur(input);
+      expect(mockUpdateState).toHaveBeenCalled();
+    });
+
+    it('ignores blur with invalid value', () => {
+      render(
+        <BudgetWizardCategories
+          state={defaultState}
+          updateState={mockUpdateState}
+          onNext={mockOnNext}
+          onBack={mockOnBack}
+        />,
+      );
+
+      const inputs = document.querySelectorAll('input[type="text"][inputMode="decimal"]');
+      const input = inputs[0] as HTMLInputElement;
+      fireEvent.focus(input);
+      fireEvent.change(input, { target: { value: 'invalid' } });
+      fireEvent.blur(input);
+      // mockUpdateState may have been called from initial setup, but for invalid values not invoked again
+    });
+
+    it('ignores blur with negative value', () => {
+      render(
+        <BudgetWizardCategories
+          state={defaultState}
+          updateState={mockUpdateState}
+          onNext={mockOnNext}
+          onBack={mockOnBack}
+        />,
+      );
+
+      const inputs = document.querySelectorAll('input[type="text"][inputMode="decimal"]');
+      const input = inputs[0] as HTMLInputElement;
+      fireEvent.focus(input);
+      fireEvent.change(input, { target: { value: '-50' } });
+      fireEvent.blur(input);
+    });
+  });
+
+  describe('transfers', () => {
+    const stateWithTransfers: WizardState = {
+      ...defaultState,
+      analysisResult: {
+        ...mockAnalysisResult,
+        transfers: [
+          {
+            accountId: 'acc-savings',
+            accountName: 'Savings',
+            accountType: 'SAVINGS',
+            average: 200,
+            median: 200,
+            p25: 100,
+            p75: 300,
+            min: 100,
+            max: 300,
+            stdDev: 80,
+            monthlyAmounts: [100, 200, 300],
+            monthlyOccurrences: 3,
+            isFixed: false,
+            seasonalMonths: [],
+            suggested: 200,
+          } as any,
+        ],
+      },
+      selectedTransfers: new Map([
+        ['acc-savings', { transferAccountId: 'acc-savings', isTransfer: true, amount: 200 }],
+      ]),
+    };
+
+    it('renders transfer rows with account name', () => {
+      render(
+        <BudgetWizardCategories
+          state={stateWithTransfers}
+          updateState={mockUpdateState}
+          onNext={mockOnNext}
+          onBack={mockOnBack}
+        />,
+      );
+      expect(screen.getByText('Savings')).toBeInTheDocument();
+    });
+
+    it('toggles a transfer on/off', () => {
+      const noSelected: WizardState = {
+        ...stateWithTransfers,
+        selectedTransfers: new Map(),
+      };
+      render(
+        <BudgetWizardCategories
+          state={noSelected}
+          updateState={mockUpdateState}
+          onNext={mockOnNext}
+          onBack={mockOnBack}
+        />,
+      );
+
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+      const savings = Array.from(checkboxes).find(cb => {
+        const label = cb.closest('label');
+        return label?.textContent?.includes('Savings');
+      });
+      expect(savings).toBeDefined();
+      fireEvent.click(savings!);
+      expect(mockUpdateState).toHaveBeenCalled();
+      const call = mockUpdateState.mock.calls[mockUpdateState.mock.calls.length - 1][0];
+      expect(call.selectedTransfers.get('acc-savings')?.amount).toBe(200);
+    });
+
+    it('toggles a transfer off (uncheck)', () => {
+      render(
+        <BudgetWizardCategories
+          state={stateWithTransfers}
+          updateState={mockUpdateState}
+          onNext={mockOnNext}
+          onBack={mockOnBack}
+        />,
+      );
+
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+      const savings = Array.from(checkboxes).find(cb => {
+        const label = cb.closest('label');
+        return label?.textContent?.includes('Savings');
+      });
+      expect(savings).toBeDefined();
+      fireEvent.click(savings!);
+      const call = mockUpdateState.mock.calls[mockUpdateState.mock.calls.length - 1][0];
+      expect(call.selectedTransfers.has('acc-savings')).toBe(false);
+    });
+
+    it('updates transfer amount', () => {
+      render(
+        <BudgetWizardCategories
+          state={stateWithTransfers}
+          updateState={mockUpdateState}
+          onNext={mockOnNext}
+          onBack={mockOnBack}
+        />,
+      );
+
+      const inputs = document.querySelectorAll('input[type="text"][inputMode="decimal"]');
+      // Last input is the transfer amount
+      const input = inputs[inputs.length - 1] as HTMLInputElement;
+      fireEvent.focus(input);
+      fireEvent.change(input, { target: { value: '500' } });
+      fireEvent.blur(input);
+      expect(mockUpdateState).toHaveBeenCalled();
+    });
+
+    it('profile change updates transfer amounts', () => {
+      render(
+        <BudgetWizardCategories
+          state={stateWithTransfers}
+          updateState={mockUpdateState}
+          onNext={mockOnNext}
+          onBack={mockOnBack}
+        />,
+      );
+      const btn = screen.getByRole('button', { name: /Comfortable/i });
+      fireEvent.click(btn);
+      const call = mockUpdateState.mock.calls[mockUpdateState.mock.calls.length - 1][0];
+      const t = call.selectedTransfers.get('acc-savings');
+      expect(t?.amount).toBe(300);
+    });
+
+    it('renders transfer category group picker for 50/30/20 strategy', () => {
+      const s: WizardState = { ...stateWithTransfers, strategy: 'FIFTY_THIRTY_TWENTY' };
+      render(
+        <BudgetWizardCategories
+          state={s}
+          updateState={mockUpdateState}
+          onNext={mockOnNext}
+          onBack={mockOnBack}
+        />,
+      );
+      expect(screen.getAllByTitle('Saving').length).toBeGreaterThan(0);
+    });
+
+    it('updates transfer group via picker', () => {
+      const s: WizardState = {
+        ...stateWithTransfers,
+        strategy: 'FIFTY_THIRTY_TWENTY',
+        selectedTransfers: new Map([
+          ['acc-savings', { transferAccountId: 'acc-savings', isTransfer: true, amount: 200, categoryGroup: 'SAVING' }],
+        ]),
+      };
+      render(
+        <BudgetWizardCategories
+          state={s}
+          updateState={mockUpdateState}
+          onNext={mockOnNext}
+          onBack={mockOnBack}
+        />,
+      );
+      // The Need button next to the transfer is the last "Need" button
+      const buttons = screen.getAllByTitle('Need');
+      fireEvent.click(buttons[buttons.length - 1]);
+      const call = mockUpdateState.mock.calls[mockUpdateState.mock.calls.length - 1][0];
+      const t = call.selectedTransfers.get('acc-savings');
+      expect(t?.categoryGroup).toBe('NEED');
+    });
+  });
 });

@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@/test/render';
+import { render, screen, waitFor, fireEvent, act } from '@/test/render';
 import { PortfolioValueReport } from './PortfolioValueReport';
+
+vi.mock('@/lib/pdf-export', () => ({
+  exportToPdf: vi.fn().mockResolvedValue(undefined),
+}));
 
 vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({
@@ -18,6 +22,7 @@ vi.mock('@/hooks/useExchangeRates', () => ({
   }),
 }));
 
+const STABLE_RESOLVED_RANGE = { start: '2024-01-01', end: '2026-01-01' };
 vi.mock('@/hooks/useDateRange', () => ({
   useDateRange: () => ({
     dateRange: '2y',
@@ -26,7 +31,7 @@ vi.mock('@/hooks/useDateRange', () => ({
     setStartDate: vi.fn(),
     endDate: '',
     setEndDate: vi.fn(),
-    resolvedRange: { start: '2024-01-01', end: '2026-01-01' },
+    resolvedRange: STABLE_RESOLVED_RANGE,
     isValid: true,
   }),
 }));
@@ -47,10 +52,20 @@ vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
   AreaChart: ({ children }: any) => <div data-testid="area-chart">{children}</div>,
   Area: () => null,
-  XAxis: () => null,
-  YAxis: () => null,
+  XAxis: ({ tickFormatter }: any) => <div>{tickFormatter ? tickFormatter('Jan 2024') : ''}</div>,
+  YAxis: ({ tickFormatter }: any) => <div>{tickFormatter ? tickFormatter(1000) : ''}</div>,
   CartesianGrid: () => null,
-  Tooltip: () => null,
+  Tooltip: ({ content }: any) => {
+    if (typeof content === 'function') {
+      return (
+        <div>
+          {content({ active: true, payload: [{ value: 100, payload: { name: 'Jan' } }] })}
+          {content({ active: false, payload: [] })}
+        </div>
+      );
+    }
+    return null;
+  },
 }));
 
 const mockGetInvestmentsMonthly = vi.fn();
@@ -221,6 +236,110 @@ describe('PortfolioValueReport', () => {
     });
     const lastCall = mockDateRangeSelectorProps.mock.calls[mockDateRangeSelectorProps.mock.calls.length - 1][0];
     expect(lastCall.ranges).toEqual(['1w', '1m', '3m', 'ytd', '1y', '2y', '5y', 'all']);
+  });
+
+  it('handles loadData error gracefully', async () => {
+    mockGetInvestmentsMonthly.mockRejectedValue(new Error('boom'));
+    mockGetPortfolioSummary.mockRejectedValue(new Error('boom'));
+    mockGetInvestmentAccounts.mockRejectedValue(new Error('boom'));
+    render(<PortfolioValueReport />);
+    await waitFor(() => {
+      expect(screen.getByText(/No investment data/)).toBeInTheDocument();
+    });
+  });
+
+  it('exports pdf with breakdown', async () => {
+    const { exportToPdf } = await import('@/lib/pdf-export');
+    (exportToPdf as any).mockClear();
+    mockGetInvestmentsMonthly.mockResolvedValue([
+      { month: '2024-06-01', value: 50000 },
+      { month: '2024-07-01', value: 55000 },
+      { month: '2024-08-01', value: 52000 },
+    ]);
+    mockGetPortfolioSummary.mockResolvedValue({
+      holdings: [],
+      holdingsByAccount: [
+        { accountId: 'acc-1', accountName: 'TFSA', totalMarketValue: 45000, cashBalance: 5000, totalGainLoss: 3000, totalGainLossPercent: 6.67 },
+        { accountId: 'acc-2', accountName: 'RRSP', totalMarketValue: 3000, cashBalance: 0, totalGainLoss: -500, totalGainLossPercent: -10 },
+      ],
+      allocation: [],
+      totalPortfolioValue: 53000,
+      totalCostBasis: 50000,
+      totalGainLoss: 3000,
+      totalGainLossPercent: 6,
+    });
+    mockGetInvestmentAccounts.mockResolvedValue([
+      { id: 'acc-1', name: 'TFSA', currencyCode: 'USD', accountSubType: 'INVESTMENT_CASH' },
+    ]);
+    render(<PortfolioValueReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Current Portfolio Breakdown')).toBeInTheDocument();
+    });
+    const exportBtn = screen.getByRole('button', { name: /export/i });
+    await act(async () => {
+      fireEvent.click(exportBtn);
+    });
+    const pdfBtn = screen.queryByText(/PDF/i);
+    if (pdfBtn) {
+      await act(async () => {
+        fireEvent.click(pdfBtn);
+      });
+    }
+    expect(exportToPdf).toHaveBeenCalled();
+  });
+
+  it('changes selected account', async () => {
+    mockGetInvestmentsMonthly.mockResolvedValue([
+      { month: '2024-06-01', value: 50000 },
+    ]);
+    mockGetPortfolioSummary.mockResolvedValue({
+      holdings: [], holdingsByAccount: [], allocation: [],
+      totalPortfolioValue: 50000, totalCostBasis: 50000, totalGainLoss: 0, totalGainLossPercent: 0,
+    });
+    mockGetInvestmentAccounts.mockResolvedValue([
+      { id: 'acc-1', name: 'TFSA - Cash', currencyCode: 'CAD', accountSubType: 'INVESTMENT_CASH' },
+    ]);
+    render(<PortfolioValueReport />);
+    await waitFor(() => {
+      expect(screen.getByText('All Accounts')).toBeInTheDocument();
+    });
+    const select = document.querySelector('select') as HTMLSelectElement;
+    await act(async () => {
+      fireEvent.change(select, { target: { value: 'acc-1' } });
+    });
+  });
+
+  it('renders with negative period change', async () => {
+    mockGetInvestmentsMonthly.mockResolvedValue([
+      { month: '2024-06-01', value: 60000 },
+      { month: '2024-07-01', value: 55000 },
+    ]);
+    mockGetPortfolioSummary.mockResolvedValue({
+      holdings: [], holdingsByAccount: [], allocation: [],
+      totalPortfolioValue: 55000, totalCostBasis: 60000, totalGainLoss: -5000, totalGainLossPercent: -8.33,
+    });
+    mockGetInvestmentAccounts.mockResolvedValue([]);
+    render(<PortfolioValueReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Period Change')).toBeInTheDocument();
+    });
+  });
+
+  it('handles many monthly data points (>36) for axis ticks', async () => {
+    const data = Array.from({ length: 50 }, (_, i) => ({
+      month: `2020-${String((i % 12) + 1).padStart(2, '0')}-01`,
+      value: 50000 + i * 100,
+    }));
+    mockGetInvestmentsMonthly.mockResolvedValue(data);
+    mockGetPortfolioSummary.mockResolvedValue({
+      holdings: [], holdingsByAccount: [], allocation: [],
+      totalPortfolioValue: 0, totalCostBasis: 0, totalGainLoss: 0, totalGainLossPercent: 0,
+    });
+    mockGetInvestmentAccounts.mockResolvedValue([]);
+    render(<PortfolioValueReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Portfolio Value Over Time')).toBeInTheDocument();
+    });
   });
 
   it('renders account selector dropdown', async () => {

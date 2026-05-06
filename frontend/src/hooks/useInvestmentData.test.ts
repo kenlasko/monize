@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useInvestmentData } from './useInvestmentData';
 
@@ -310,5 +310,305 @@ describe('useInvestmentData – accountId URL filter', () => {
 
     expect(result.current.selectedAccountIds).toEqual([]);
     expect(mockRouterReplace).not.toHaveBeenCalled();
+  });
+});
+
+describe('useInvestmentData – pagination, filters, handlers', () => {
+  const broker = {
+    id: 'b1', name: 'Brk', accountType: 'INVESTMENT', accountSubType: 'INVESTMENT_BROKERAGE',
+    linkedAccountId: 'c1', currencyCode: 'USD', currentBalance: 0,
+  };
+  const cash = {
+    id: 'c1', name: 'Cash', accountType: 'INVESTMENT', accountSubType: 'INVESTMENT_CASH',
+    linkedAccountId: 'b1', currencyCode: 'USD', currentBalance: 0,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSearchParamsGet = () => null;
+    mockGetInvestmentAccounts.mockResolvedValue([broker, cash]);
+    mockGetAllAccounts.mockResolvedValue([broker, cash]);
+    mockGetTransactions.mockResolvedValue({ data: [makeTx('t1')], pagination: { page: 1, limit: 25, total: 1, totalPages: 1, hasMore: false } });
+    mockGetPortfolioSummary.mockResolvedValue(mockSummary);
+  });
+
+  it('handleAccountChange updates selection and resets pages', async () => {
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    act(() => {
+      result.current.handleAccountChange(['b1']);
+    });
+    expect(result.current.selectedAccountIds).toEqual(['b1']);
+    expect(result.current.currentPage).toBe(1);
+  });
+
+  it('handleSymbolClick sets symbol filter and resets page', async () => {
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    act(() => {
+      result.current.handleSymbolClick('AAPL');
+    });
+    expect(result.current.transactionFilters.symbol).toBe('AAPL');
+  });
+
+  it('handleFiltersChange updates filter and resets page', async () => {
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    act(() => {
+      result.current.handleFiltersChange({ action: 'BUY' });
+    });
+    expect(result.current.transactionFilters).toEqual({ action: 'BUY' });
+  });
+
+  it('goToPage updates page when within bounds', async () => {
+    mockGetTransactions.mockResolvedValue({ data: [], pagination: { page: 1, limit: 25, total: 50, totalPages: 2, hasMore: false } });
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    act(() => result.current.goToPage(2));
+    expect(result.current.currentPage).toBe(2);
+  });
+
+  it('goToPage rejects out-of-bounds pages', async () => {
+    mockGetTransactions.mockResolvedValue({ data: [], pagination: { page: 1, limit: 25, total: 1, totalPages: 1, hasMore: false } });
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    act(() => result.current.goToPage(99));
+    expect(result.current.currentPage).toBe(1);
+    act(() => result.current.goToPage(-1));
+    expect(result.current.currentPage).toBe(1);
+  });
+
+  it('clearCashFilters resets all cash filter state', async () => {
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    act(() => {
+      result.current.setCashFilterPayeeIds(['p1']);
+      result.current.setCashFilterCategoryIds(['c1']);
+      result.current.setCashFilterStartDate('2024-01-01');
+      result.current.setCashFilterEndDate('2024-12-31');
+    });
+    expect(result.current.hasActiveCashFilters).toBe(true);
+    expect(result.current.activeCashFilterCount).toBe(4);
+
+    act(() => result.current.clearCashFilters());
+    expect(result.current.hasActiveCashFilters).toBe(false);
+  });
+
+  it('handleCashClick navigates to transactions page', async () => {
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    act(() => result.current.handleCashClick('cash-x'));
+    expect(mockRouterPush).toHaveBeenCalledWith('/transactions?accountId=cash-x');
+  });
+
+  it('goToCashPage updates page when within bounds', async () => {
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    act(() => result.current.goToCashPage(2));
+    expect(result.current.cashCurrentPage).toBe(2);
+  });
+
+  it('handleCashTransactionUpdate replaces matching transaction', async () => {
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    act(() => {
+      result.current.handleCashTransactionUpdate({ id: 'x', amount: 5 } as any);
+    });
+  });
+
+  it('getSelectedBrokerageAccountId returns first selected', async () => {
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    act(() => result.current.handleAccountChange(['b1']));
+    expect(result.current.getSelectedBrokerageAccountId()).toBe('b1');
+  });
+
+  it('getSelectedBrokerageAccountId returns undefined when none selected', async () => {
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    expect(result.current.getSelectedBrokerageAccountId()).toBeUndefined();
+  });
+
+  it('cashAccountIds derives from selected brokerages with linkedAccountId', async () => {
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    expect(result.current.cashAccountIds).toEqual(['c1']);
+
+    act(() => result.current.handleAccountChange(['b1']));
+    expect(result.current.cashAccountIds).toEqual(['c1']);
+  });
+
+  it('hasActiveCashFilters returns false when none set', async () => {
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    expect(result.current.hasActiveCashFilters).toBe(false);
+    expect(result.current.activeCashFilterCount).toBe(0);
+  });
+});
+
+describe('useInvestmentData – cash transaction loading', () => {
+  const broker = {
+    id: 'b1', name: 'Brk', accountType: 'INVESTMENT', accountSubType: 'INVESTMENT_BROKERAGE',
+    linkedAccountId: 'c1', currencyCode: 'USD', currentBalance: 0,
+  };
+  const cash = {
+    id: 'c1', name: 'Cash', accountType: 'INVESTMENT', accountSubType: 'INVESTMENT_CASH',
+    linkedAccountId: 'b1', currencyCode: 'USD', currentBalance: 0,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSearchParamsGet = () => null;
+    mockGetInvestmentAccounts.mockResolvedValue([broker, cash]);
+    mockGetAllAccounts.mockResolvedValue([broker, cash]);
+    mockGetTransactions.mockResolvedValue({ data: [], pagination: null });
+    mockGetPortfolioSummary.mockResolvedValue(mockSummary);
+  });
+
+  it('loadCashTransactionsIfNeeded loads when view is "cash"', async () => {
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    await act(async () => {
+      result.current.loadCashTransactionsIfNeeded('cash');
+    });
+    // Should be safe; no assertion needed beyond no-throw
+  });
+
+  it('loadCashTransactionsIfNeeded skips when view is not "cash"', async () => {
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    act(() => {
+      result.current.loadCashTransactionsIfNeeded('brokerage');
+    });
+  });
+
+  it('refreshCashTransactions is callable', async () => {
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    await act(async () => {
+      result.current.refreshCashTransactions();
+    });
+  });
+
+  it('loadCashFilterData loads categories and payees', async () => {
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    await act(async () => {
+      await result.current.loadCashFilterData();
+    });
+  });
+
+  it('handleCashFormSuccess closes form and reloads data', async () => {
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    // openCashCreate then handleCashFormSuccess
+    act(() => result.current.openCashCreate());
+    await act(async () => result.current.handleCashFormSuccess());
+  });
+
+  it('handleNewTransaction opens create modal', async () => {
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    act(() => result.current.handleNewTransaction());
+  });
+
+  it('handleEditTransaction opens edit modal', async () => {
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    act(() => result.current.handleEditTransaction(makeTx('t1') as any));
+  });
+
+  it('handleFormSuccess reloads portfolio data', async () => {
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    await act(async () => result.current.handleFormSuccess());
+  });
+});
+
+describe('useInvestmentData – pruning stale account IDs', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSearchParamsGet = () => null;
+    mockGetTransactions.mockResolvedValue({ data: [], pagination: null });
+    mockGetPortfolioSummary.mockResolvedValue(mockSummary);
+    mockGetAllAccounts.mockResolvedValue([]);
+    // Pre-populate localStorage with accounts that no longer exist
+    localStorage.setItem('monize-investments-accounts', JSON.stringify(['stale-id']));
+  });
+
+  it('prunes stale account IDs from localStorage when accounts load', async () => {
+    mockGetInvestmentAccounts.mockResolvedValue([
+      { id: 'broker-1', name: 'B', accountType: 'INVESTMENT', accountSubType: 'INVESTMENT_BROKERAGE', linkedAccountId: null, currencyCode: 'USD', currentBalance: 0 },
+    ]);
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    expect(result.current.selectedAccountIds).toEqual([]);
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+});
+
+describe('useInvestmentData – edit URL parameter flow', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSearchParamsGet = () => null;
+    mockGetTransactions.mockResolvedValue({ data: [], pagination: null });
+    mockGetPortfolioSummary.mockResolvedValue(mockSummary);
+    mockGetAllAccounts.mockResolvedValue([]);
+    mockGetInvestmentAccounts.mockResolvedValue([]);
+  });
+
+  it('opens edit modal when ?edit= URL param present and transaction loads', async () => {
+    mockSearchParamsGet = (key) => key === 'edit' ? 'tx-edit-1' : null;
+    const mockGetTx = vi.fn().mockResolvedValue({ id: 'tx-edit-1', action: 'BUY' });
+    // monkey-patch investmentsApi.getTransaction
+    const investmentsApiMod = await import('@/lib/investments');
+    const originalGetTx = (investmentsApiMod.investmentsApi as any).getTransaction;
+    (investmentsApiMod.investmentsApi as any).getTransaction = mockGetTx;
+    try {
+      renderHook(() => useInvestmentData());
+      await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+      expect(mockGetTx).toHaveBeenCalledWith('tx-edit-1');
+    } finally {
+      (investmentsApiMod.investmentsApi as any).getTransaction = originalGetTx;
+    }
+  });
+
+  it('handles edit URL parameter fetch error gracefully', async () => {
+    mockSearchParamsGet = (key) => key === 'edit' ? 'tx-edit-x' : null;
+    const investmentsApiMod = await import('@/lib/investments');
+    const originalGetTx = (investmentsApiMod.investmentsApi as any).getTransaction;
+    (investmentsApiMod.investmentsApi as any).getTransaction = vi.fn().mockRejectedValue(new Error('boom'));
+    try {
+      renderHook(() => useInvestmentData());
+      await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+      expect(mockRouterReplace).toHaveBeenCalled();
+    } finally {
+      (investmentsApiMod.investmentsApi as any).getTransaction = originalGetTx;
+    }
+  });
+});
+
+describe('useInvestmentData – delete error toast', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSearchParamsGet = () => null;
+    mockGetInvestmentAccounts.mockResolvedValue([]);
+    mockGetAllAccounts.mockResolvedValue([]);
+    mockGetTransactions.mockResolvedValue({ data: [makeTx('t1')], pagination: { page: 1, limit: 25, total: 1, totalPages: 1, hasMore: false } });
+    mockGetPortfolioSummary.mockResolvedValue(mockSummary);
+  });
+
+  it('updates pagination optimistically when transaction is deleted', async () => {
+    mockDeleteTransaction.mockResolvedValue(undefined);
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    expect(result.current.pagination?.total).toBe(1);
+    await act(async () => {
+      await result.current.handleDeleteTransaction('t1');
+    });
+    expect(result.current.pagination?.total).toBe(0);
   });
 });

@@ -783,5 +783,283 @@ describe("OllamaProvider", () => {
         expect(result.reason).toContain("ECONNREFUSED");
       }
     });
+
+    it("matches by model field (not just name)", async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ models: [{ model: "llama3" }] }),
+      });
+      const r = await provider.verifyModel();
+      expect(r.ok).toBe(true);
+    });
+
+    it("wraps non-Error exception as String", async () => {
+      global.fetch = jest.fn().mockRejectedValue("plain-string-error");
+      const result = await provider.verifyModel();
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.reason).toContain("plain-string-error");
+      }
+    });
+  });
+
+  describe("complete() body/format options", () => {
+    it("sends format:json when responseFormat=json and includes temperature option", async () => {
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        start(c) {
+          c.enqueue(
+            encoder.encode(
+              '{"message":{"role":"assistant","content":"hi"},"done":true,"prompt_eval_count":10,"eval_count":5}\n',
+            ),
+          );
+          c.close();
+        },
+      });
+      let bodyJson: Record<string, unknown> = {};
+      global.fetch = jest.fn().mockImplementation((_url, init) => {
+        bodyJson = JSON.parse(String(init?.body));
+        return Promise.resolve({ ok: true, body: stream });
+      });
+      await provider.complete({
+        systemPrompt: "sys",
+        messages: [{ role: "user", content: "hello" }],
+        responseFormat: "json",
+        temperature: 0.7,
+      });
+      expect(bodyJson.format).toBe("json");
+      expect(bodyJson.options).toEqual({ temperature: 0.7 });
+    });
+
+    it("complete throws and logs when fetch rejects (Error)", async () => {
+      global.fetch = jest
+        .fn()
+        .mockRejectedValue(new Error("connect refused"));
+      await expect(
+        provider.complete({
+          systemPrompt: "sys",
+          messages: [{ role: "user", content: "hi" }],
+        }),
+      ).rejects.toThrow("connect refused");
+    });
+
+    it("complete throws and logs when fetch rejects (non-Error)", async () => {
+      global.fetch = jest.fn().mockRejectedValue("plain-error");
+      await expect(
+        provider.complete({
+          systemPrompt: "sys",
+          messages: [{ role: "user", content: "hi" }],
+        }),
+      ).rejects.toBe("plain-error");
+    });
+  });
+
+  describe("toOllamaMessages role variants", () => {
+    it("relays assistant tool_calls and tool messages", async () => {
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        start(c) {
+          c.enqueue(
+            encoder.encode(
+              '{"message":{"role":"assistant","content":"ok"},"done":true,"prompt_eval_count":1,"eval_count":1}\n',
+            ),
+          );
+          c.close();
+        },
+      });
+      let body: Record<string, unknown> = {};
+      global.fetch = jest.fn().mockImplementation((_url, init) => {
+        body = JSON.parse(String(init?.body));
+        return Promise.resolve({ ok: true, body: stream });
+      });
+      await provider.complete({
+        systemPrompt: "sys",
+        messages: [
+          { role: "user", content: "u1" },
+          {
+            role: "assistant",
+            content: "a1",
+            toolCalls: [
+              { id: "tc1", name: "do_thing", input: { x: 1 } },
+            ],
+          },
+          {
+            role: "tool",
+            content: "result-text",
+            toolCallId: "tc1",
+            name: "do_thing",
+          },
+          { role: "assistant", content: "a2" },
+        ],
+      });
+      const msgs = body.messages as Array<{ role: string }>;
+      expect(msgs.find((m) => m.role === "tool")).toBeTruthy();
+      const assistant = msgs.find(
+        (m) => m.role === "assistant" && (m as { tool_calls?: unknown[] }).tool_calls,
+      );
+      expect(assistant).toBeTruthy();
+    });
+  });
+
+  describe("isAvailable false on non-ok response", () => {
+    it("returns false when response.ok is false", async () => {
+      global.fetch = jest.fn().mockResolvedValue({ ok: false });
+      const r = await provider.isAvailable();
+      expect(r).toBe(false);
+    });
+  });
+
+  describe("safeReadBody", () => {
+    it("returns <unreadable> when text() throws", async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: "Server Error",
+        text: () => Promise.reject(new Error("body consumed")),
+      });
+      await expect(
+        provider.complete({
+          systemPrompt: "sys",
+          messages: [{ role: "user", content: "x" }],
+        }),
+      ).rejects.toThrow();
+    });
+
+    it("returns <unreadable> when text not a function", async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: "Server Error",
+        // No text method
+      });
+      await expect(
+        provider.complete({
+          systemPrompt: "sys",
+          messages: [{ role: "user", content: "x" }],
+        }),
+      ).rejects.toThrow();
+    });
+  });
+
+  describe("isModelDoesNotSupportToolsBody parser branches", () => {
+    const enc = new TextEncoder();
+    it("parses JSON-encoded error.error string", async () => {
+      const respText = JSON.stringify({
+        error: "model does not support tools",
+      });
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        statusText: "Bad Request",
+        text: () => Promise.resolve(respText),
+      });
+      await expect(
+        (async () => {
+          const it = provider.streamWithTools(
+            {
+              systemPrompt: "s",
+              messages: [{ role: "user", content: "u" }],
+            },
+            [
+              {
+                name: "t",
+                description: "d",
+                inputSchema: { type: "object", properties: {} },
+              },
+            ],
+          );
+          for await (const _ of it) {
+            // consume
+            void _;
+          }
+        })(),
+      ).rejects.toThrow(OllamaModelDoesNotSupportToolsError);
+    });
+
+    it("returns false for non-JSON body that doesn't match phrase", async () => {
+      // Use a body that fails JSON parse and lacks the phrase
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: "Internal Server Error",
+        text: () => Promise.resolve("totally unrelated error"),
+      });
+      await expect(
+        (async () => {
+          const it = provider.streamWithTools(
+            {
+              systemPrompt: "s",
+              messages: [{ role: "user", content: "u" }],
+            },
+            [
+              {
+                name: "t",
+                description: "d",
+                inputSchema: { type: "object", properties: {} },
+              },
+            ],
+          );
+          for await (const _ of it) void _;
+        })(),
+      ).rejects.toThrow(/Ollama request failed/);
+    });
+    void enc;
+  });
+
+  describe("streamWithTools: include temperature option", () => {
+    it("sends options.temperature when temperature provided", async () => {
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        start(c) {
+          c.enqueue(
+            encoder.encode(
+              '{"message":{"role":"assistant","content":"hi"},"done":true,"prompt_eval_count":1,"eval_count":1}\n',
+            ),
+          );
+          c.close();
+        },
+      });
+      let body: Record<string, unknown> = {};
+      global.fetch = jest.fn().mockImplementation((_url, init) => {
+        body = JSON.parse(String(init?.body));
+        return Promise.resolve({ ok: true, body: stream });
+      });
+      const it = provider.streamWithTools(
+        {
+          systemPrompt: "sys",
+          messages: [{ role: "user", content: "hi" }],
+          temperature: 0.4,
+        },
+        [
+          {
+            name: "t",
+            description: "d",
+            inputSchema: { type: "object", properties: {} },
+          },
+        ],
+      );
+      const collected: AiToolStreamChunk[] = [];
+      for await (const c of it) collected.push(c);
+      expect(body.options).toEqual({ temperature: 0.4 });
+    });
+  });
+
+  describe("stream() error paths", () => {
+    it("throws on non-ok stream response", async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: "x",
+      });
+      await expect(
+        (async () => {
+          const it = provider.stream({
+            systemPrompt: "s",
+            messages: [{ role: "user", content: "u" }],
+          });
+          for await (const _ of it) void _;
+        })(),
+      ).rejects.toThrow(/Ollama request failed/);
+    });
   });
 });

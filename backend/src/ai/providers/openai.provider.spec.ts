@@ -639,5 +639,256 @@ describe("OpenAiProvider", () => {
         expect(result.reason).toContain("ECONNREFUSED");
       }
     });
+
+    it("falls back to String() for non-Error rejections", async () => {
+      mockRetrieveModel.mockRejectedValueOnce("plain-string");
+      const result = await provider.verifyModel();
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.reason).toContain("plain-string");
+      }
+    });
+
+    it("treats 403 status the same as 401", async () => {
+      const err = Object.assign(new Error("forbidden"), { status: 403 });
+      mockRetrieveModel.mockRejectedValueOnce(err);
+      const result = await provider.verifyModel();
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.reason).toMatch(/authentication/i);
+      }
+    });
+  });
+
+  // ─── Branch coverage extras ─────────────────────────────────────────
+
+  describe("complete() request shape branches", () => {
+    it("sends temperature and JSON response_format when both set", async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: "ok" } }],
+        usage: { prompt_tokens: 1, completion_tokens: 1 },
+        model: "gpt-4o",
+      });
+      await provider.complete({
+        systemPrompt: "s",
+        messages: [{ role: "user", content: "u" }],
+        temperature: 0.5,
+        responseFormat: "json",
+      });
+      const args = mockCreate.mock.calls[0][0];
+      expect(args.temperature).toBe(0.5);
+      expect(args.response_format).toEqual({ type: "json_object" });
+    });
+
+    it("falls back to defaults when no usage in response", async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: {} }],
+        model: "gpt-4o",
+      });
+      const r = await provider.complete({
+        systemPrompt: "s",
+        messages: [{ role: "user", content: "u" }],
+      });
+      expect(r.content).toBe("");
+      expect(r.usage.inputTokens).toBe(0);
+      expect(r.usage.outputTokens).toBe(0);
+    });
+  });
+
+  describe("stream() temperature/json", () => {
+    it("includes temperature and json response_format", async () => {
+      mockCreate.mockResolvedValueOnce({
+        [Symbol.asyncIterator]: () => ({
+          next: () => Promise.resolve({ done: true, value: undefined }),
+        }),
+      });
+      const collected: { content: string; done: boolean }[] = [];
+      for await (const c of provider.stream({
+        systemPrompt: "s",
+        messages: [{ role: "user", content: "u" }],
+        temperature: 0.5,
+        responseFormat: "json",
+      })) {
+        collected.push(c);
+      }
+      const args = mockCreate.mock.calls[0][0];
+      expect(args.temperature).toBe(0.5);
+      expect(args.response_format).toEqual({ type: "json_object" });
+    });
+  });
+
+  describe("toOpenAiMessages tool message branch", () => {
+    it("relays tool messages with tool_call_id", async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [
+          {
+            message: { content: "ok" },
+            finish_reason: "stop",
+          },
+        ],
+        usage: { prompt_tokens: 1, completion_tokens: 1 },
+        model: "gpt-4o",
+      });
+      await provider.completeWithTools(
+        {
+          systemPrompt: "s",
+          messages: [
+            {
+              role: "assistant",
+              content: "thinking",
+              toolCalls: [{ id: "t1", name: "n", input: { x: 1 } }],
+            },
+            { role: "tool", content: "result", toolCallId: "t1", name: "n" },
+          ],
+        },
+        [
+          {
+            name: "n",
+            description: "",
+            inputSchema: { type: "object", properties: {} },
+          },
+        ],
+      );
+      const args = mockCreate.mock.calls[0][0];
+      expect(args.messages.find((m: { role: string }) => m.role === "tool"))
+        .toBeTruthy();
+    });
+
+    it("uses simple assistant content path when no toolCalls", async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [
+          {
+            message: { content: "ok" },
+            finish_reason: "stop",
+          },
+        ],
+        usage: { prompt_tokens: 1, completion_tokens: 1 },
+        model: "gpt-4o",
+      });
+      await provider.completeWithTools(
+        {
+          systemPrompt: "s",
+          messages: [
+            { role: "assistant", content: "I'm ready" },
+          ],
+        },
+        [
+          {
+            name: "n",
+            description: "",
+            inputSchema: { type: "object", properties: {} },
+          },
+        ],
+      );
+      const args = mockCreate.mock.calls[0][0];
+      const a = args.messages.find(
+        (m: { role: string }) => m.role === "assistant",
+      );
+      expect(a.content).toBe("I'm ready");
+    });
+  });
+
+  describe("completeWithTools stop_reason mapping", () => {
+    it("maps length to max_tokens", async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: "x" }, finish_reason: "length" }],
+        usage: { prompt_tokens: 1, completion_tokens: 1 },
+        model: "gpt-4o",
+      });
+      const r = await provider.completeWithTools(
+        { systemPrompt: "s", messages: [{ role: "user", content: "u" }] },
+        [
+          {
+            name: "n",
+            description: "",
+            inputSchema: { type: "object", properties: {} },
+          },
+        ],
+      );
+      expect(r.stopReason).toBe("max_tokens");
+    });
+
+    it("falls back to end_turn for unknown finish_reason", async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: "x" }, finish_reason: "stop" }],
+        usage: { prompt_tokens: 1, completion_tokens: 1 },
+        model: "gpt-4o",
+      });
+      const r = await provider.completeWithTools(
+        { systemPrompt: "s", messages: [{ role: "user", content: "u" }] },
+        [
+          {
+            name: "n",
+            description: "",
+            inputSchema: { type: "object", properties: {} },
+          },
+        ],
+      );
+      expect(r.stopReason).toBe("end_turn");
+    });
+
+    it("ignores tool_calls with non-function type", async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              tool_calls: [
+                {
+                  id: "t1",
+                  type: "other",
+                  function: { name: "n", arguments: "{}" },
+                },
+              ],
+            },
+            finish_reason: "tool_calls",
+          },
+        ],
+        usage: { prompt_tokens: 1, completion_tokens: 1 },
+        model: "gpt-4o",
+      });
+      const r = await provider.completeWithTools(
+        { systemPrompt: "s", messages: [{ role: "user", content: "u" }] },
+        [
+          {
+            name: "n",
+            description: "",
+            inputSchema: { type: "object", properties: {} },
+          },
+        ],
+      );
+      expect(r.toolCalls).toEqual([]);
+    });
+
+    it("returns empty input when arguments JSON parse fails", async () => {
+      mockCreate.mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              tool_calls: [
+                {
+                  id: "t1",
+                  type: "function",
+                  function: { name: "n", arguments: "not-json" },
+                },
+              ],
+            },
+            finish_reason: "tool_calls",
+          },
+        ],
+        usage: { prompt_tokens: 1, completion_tokens: 1 },
+        model: "gpt-4o",
+      });
+      const r = await provider.completeWithTools(
+        { systemPrompt: "s", messages: [{ role: "user", content: "u" }] },
+        [
+          {
+            name: "n",
+            description: "",
+            inputSchema: { type: "object", properties: {} },
+          },
+        ],
+      );
+      expect(r.toolCalls[0].input).toEqual({});
+    });
   });
 });

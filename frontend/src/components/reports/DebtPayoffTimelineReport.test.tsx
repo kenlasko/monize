@@ -17,10 +17,29 @@ vi.mock('recharts', () => ({
   AreaChart: ({ children }: any) => <div data-testid="area-chart">{children}</div>,
   Bar: () => null,
   Area: () => null,
-  XAxis: () => null,
-  YAxis: () => null,
+  XAxis: ({ tickFormatter }: any) => <div data-testid="x-axis">{tickFormatter ? tickFormatter(100) : ''}</div>,
+  YAxis: ({ tickFormatter }: any) => <div data-testid="y-axis">{tickFormatter ? tickFormatter(1000) : ''}</div>,
   CartesianGrid: () => null,
-  Tooltip: () => null,
+  Tooltip: ({ content }: any) => {
+    if (typeof content === 'function') {
+      return (
+        <div data-testid="tooltip">
+          {content({ active: true, payload: [{ name: 'Remaining Balance', value: 100, color: '#000', dataKey: 'historicalBalance' }, { name: 'Remaining Balance', value: 100, color: '#000', dataKey: 'historicalBalance' }, { name: 'Other', value: undefined, color: '#000', dataKey: 'projectedBalance' }], label: 'Jan 2024' })}
+          {content({ active: false, payload: [], label: '' })}
+        </div>
+      );
+    }
+    if (content && content.type) {
+      const C = content.type;
+      return (
+        <div data-testid="tooltip">
+          <C active={true} payload={[{ name: 'Remaining Balance', value: 100, color: '#000', dataKey: 'historicalBalance' }, { name: 'Remaining Balance', value: 100, color: '#000', dataKey: 'historicalBalance' }, { name: 'Other', value: undefined, color: '#000', dataKey: 'projectedBalance' }]} label="Jan 2024" />
+          <C active={false} payload={[]} label="" />
+        </div>
+      );
+    }
+    return null;
+  },
   Legend: () => null,
   ReferenceLine: () => null,
 }));
@@ -38,6 +57,10 @@ vi.mock('@/lib/transactions', () => ({
   transactionsApi: {
     getAll: (...args: any[]) => mockGetAllTransactions(...args),
   },
+}));
+
+vi.mock('@/lib/pdf-export', () => ({
+  exportToPdf: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@/lib/logger', () => ({
@@ -572,6 +595,233 @@ describe('DebtPayoffTimelineReport', () => {
     render(<DebtPayoffTimelineReport />);
     await waitFor(() => {
       expect(screen.getByText('Not set')).toBeInTheDocument();
+    });
+  });
+
+  it('triggers PDF export when clicking export button', async () => {
+    mockGetAllAccounts.mockResolvedValue([
+      {
+        id: 'loan-1', name: 'Car Loan', accountType: 'LOAN',
+        currentBalance: -5000, openingBalance: -10000, interestRate: 5.0,
+        paymentAmount: 500, paymentFrequency: 'MONTHLY',
+        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+      },
+    ]);
+    mockGetAllTransactions.mockResolvedValue({
+      data: [
+        { id: 'tx-1', transactionDate: '2024-01-15', amount: 500, linkedTransaction: null },
+      ],
+      pagination: { hasMore: false },
+    });
+    render(<DebtPayoffTimelineReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Account Details')).toBeInTheDocument();
+    });
+    // Click export dropdown then PDF
+    const exportBtn = screen.getByRole('button', { name: /export/i });
+    await act(async () => {
+      fireEvent.click(exportBtn);
+    });
+    const pdfBtn = screen.queryByText(/PDF/i);
+    if (pdfBtn) {
+      await act(async () => {
+        fireEvent.click(pdfBtn);
+      });
+    }
+  });
+
+  it('handles error in loadAccounts gracefully', async () => {
+    mockGetAllAccounts.mockRejectedValue(new Error('network'));
+    render(<DebtPayoffTimelineReport />);
+    await waitFor(() => {
+      expect(screen.getByText(/No debt accounts found/)).toBeInTheDocument();
+    });
+  });
+
+  it('handles error in loadTransactions gracefully', async () => {
+    mockGetAllAccounts.mockResolvedValue([
+      {
+        id: 'loan-1', name: 'Loan', accountType: 'LOAN',
+        currentBalance: -5000, openingBalance: -10000, interestRate: 5.0,
+        paymentAmount: 300, paymentFrequency: 'MONTHLY',
+        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+      },
+    ]);
+    mockGetAllTransactions.mockRejectedValue(new Error('boom'));
+    render(<DebtPayoffTimelineReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Select Account')).toBeInTheDocument();
+    });
+  });
+
+  it('handles WEEKLY payment frequency in projections', async () => {
+    mockGetAllAccounts.mockResolvedValue([
+      {
+        id: 'loan-1', name: 'Loan', accountType: 'LOAN',
+        currentBalance: -2000, openingBalance: -5000, interestRate: 6.0,
+        paymentAmount: 100, paymentFrequency: 'WEEKLY',
+        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+      },
+    ]);
+    mockGetAllTransactions.mockResolvedValue({ data: [], pagination: { hasMore: false } });
+    render(<DebtPayoffTimelineReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Est. Payoff')).toBeInTheDocument();
+    });
+  });
+
+  it('handles BIWEEKLY frequency', async () => {
+    mockGetAllAccounts.mockResolvedValue([
+      {
+        id: 'loan-1', name: 'Loan', accountType: 'LOAN',
+        currentBalance: -3000, openingBalance: -5000, interestRate: 4.5,
+        paymentAmount: 200, paymentFrequency: 'BIWEEKLY',
+        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+      },
+    ]);
+    mockGetAllTransactions.mockResolvedValue({ data: [], pagination: { hasMore: false } });
+    render(<DebtPayoffTimelineReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Est. Payoff')).toBeInTheDocument();
+    });
+  });
+
+  it('handles SEMI_MONTHLY frequency', async () => {
+    mockGetAllAccounts.mockResolvedValue([
+      {
+        id: 'loan-1', name: 'Loan', accountType: 'LOAN',
+        currentBalance: -3000, openingBalance: -5000, interestRate: 4.5,
+        paymentAmount: 200, paymentFrequency: 'SEMI_MONTHLY',
+        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+      },
+    ]);
+    mockGetAllTransactions.mockResolvedValue({ data: [], pagination: { hasMore: false } });
+    render(<DebtPayoffTimelineReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Est. Payoff')).toBeInTheDocument();
+    });
+  });
+
+  it('handles QUARTERLY frequency', async () => {
+    mockGetAllAccounts.mockResolvedValue([
+      {
+        id: 'loan-1', name: 'Loan', accountType: 'LOAN',
+        currentBalance: -3000, openingBalance: -5000, interestRate: 4.5,
+        paymentAmount: 700, paymentFrequency: 'QUARTERLY',
+        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+      },
+    ]);
+    mockGetAllTransactions.mockResolvedValue({ data: [], pagination: { hasMore: false } });
+    render(<DebtPayoffTimelineReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Est. Payoff')).toBeInTheDocument();
+    });
+  });
+
+  it('handles YEARLY frequency', async () => {
+    mockGetAllAccounts.mockResolvedValue([
+      {
+        id: 'loan-1', name: 'Loan', accountType: 'LOAN',
+        currentBalance: -3000, openingBalance: -5000, interestRate: 4.5,
+        paymentAmount: 2500, paymentFrequency: 'YEARLY',
+        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+      },
+    ]);
+    mockGetAllTransactions.mockResolvedValue({ data: [], pagination: { hasMore: false } });
+    render(<DebtPayoffTimelineReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Est. Payoff')).toBeInTheDocument();
+    });
+  });
+
+  it('handles ACCELERATED_BIWEEKLY frequency', async () => {
+    mockGetAllAccounts.mockResolvedValue([
+      {
+        id: 'loan-1', name: 'Loan', accountType: 'LOAN',
+        currentBalance: -3000, openingBalance: -5000, interestRate: 4.5,
+        paymentAmount: 200, paymentFrequency: 'ACCELERATED_BIWEEKLY',
+        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+      },
+    ]);
+    mockGetAllTransactions.mockResolvedValue({ data: [], pagination: { hasMore: false } });
+    render(<DebtPayoffTimelineReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Est. Payoff')).toBeInTheDocument();
+    });
+  });
+
+  it('handles ACCELERATED_WEEKLY frequency and 0 interest rate', async () => {
+    mockGetAllAccounts.mockResolvedValue([
+      {
+        id: 'loan-1', name: 'Loan', accountType: 'LOAN',
+        currentBalance: -3000, openingBalance: -5000, interestRate: 0,
+        paymentAmount: 100, paymentFrequency: 'ACCELERATED_WEEKLY',
+        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+      },
+    ]);
+    mockGetAllTransactions.mockResolvedValue({ data: [], pagination: { hasMore: false } });
+    render(<DebtPayoffTimelineReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Est. Payoff')).toBeInTheDocument();
+    });
+  });
+
+  it('does not project when payment cannot cover interest', async () => {
+    mockGetAllAccounts.mockResolvedValue([
+      {
+        id: 'loan-1', name: 'Loan', accountType: 'LOAN',
+        currentBalance: -100000, openingBalance: -100000, interestRate: 50,
+        paymentAmount: 10, paymentFrequency: 'MONTHLY',
+        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+      },
+    ]);
+    mockGetAllTransactions.mockResolvedValue({ data: [], pagination: { hasMore: false } });
+    render(<DebtPayoffTimelineReport />);
+    await waitFor(() => {
+      expect(screen.getByText(/No payment history found/)).toBeInTheDocument();
+    });
+  });
+
+  it('samples large schedules to fit chart', async () => {
+    // Many transactions to trigger sampling
+    const txs = Array.from({ length: 80 }, (_, i) => {
+      const month = ((i % 12) + 1).toString().padStart(2, '0');
+      const year = 2020 + Math.floor(i / 12);
+      return { id: `tx-${i}`, transactionDate: `${year}-${month}-15`, amount: 100, linkedTransaction: null };
+    });
+    mockGetAllAccounts.mockResolvedValue([
+      {
+        id: 'loan-1', name: 'Loan', accountType: 'LOAN',
+        currentBalance: -2000, openingBalance: -10000, interestRate: 5.0,
+        paymentAmount: 100, paymentFrequency: 'MONTHLY',
+        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+      },
+    ]);
+    mockGetAllTransactions.mockResolvedValue({ data: txs, pagination: { hasMore: false } });
+    render(<DebtPayoffTimelineReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Account Details')).toBeInTheDocument();
+    });
+  });
+
+  it('uses calculated original balance when openingBalance is 0', async () => {
+    mockGetAllAccounts.mockResolvedValue([
+      {
+        id: 'loan-1', name: 'Loan', accountType: 'LOAN',
+        currentBalance: -5000, openingBalance: 0, interestRate: 5.0,
+        paymentAmount: 200, paymentFrequency: 'MONTHLY',
+        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+      },
+    ]);
+    mockGetAllTransactions.mockResolvedValue({
+      data: [
+        { id: 'tx-1', transactionDate: '2024-01-15', amount: 200, linkedTransaction: null },
+      ],
+      pagination: { hasMore: false },
+    });
+    render(<DebtPayoffTimelineReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Account Details')).toBeInTheDocument();
     });
   });
 

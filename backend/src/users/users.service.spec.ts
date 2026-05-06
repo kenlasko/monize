@@ -1069,5 +1069,30 @@ describe("UsersService", () => {
         }
       }
     });
+
+    it("falls back to 0 when query result[1] is undefined", async () => {
+      const hashedPassword = await bcrypt.hash("CorrectPass123!", 10);
+      usersRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        passwordHash: hashedPassword,
+      });
+      // Make every query return [null, undefined] so the ?? 0 right-hand side
+      // is exercised across all the deleted.<x> = result[1] ?? 0 lines.
+      mockQueryRunner.query.mockResolvedValue([null, undefined]);
+
+      const r = await service.deleteData("user-1", {
+        password: "CorrectPass123!",
+        deleteAccounts: true,
+        deleteCategories: true,
+        deletePayees: true,
+        deleteExchangeRates: true,
+      });
+
+      // When result[1] is undefined, the optional fields default to 0.
+      expect(r.deleted.payees).toBe(0);
+      expect(r.deleted.accounts).toBe(0);
+      expect(r.deleted.categories).toBe(0);
+      expect(r.deleted.exchangeRates).toBe(0);
+    });
   });
 });

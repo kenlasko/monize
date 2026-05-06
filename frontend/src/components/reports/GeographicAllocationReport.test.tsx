@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@/test/render';
+import { render, screen, waitFor, fireEvent, act } from '@/test/render';
 import { GeographicAllocationReport } from './GeographicAllocationReport';
+
+vi.mock('@/lib/pdf-export', () => ({
+  exportToPdf: vi.fn().mockResolvedValue(undefined),
+}));
 
 vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({
@@ -21,12 +25,29 @@ vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
   PieChart: ({ children }: any) => <div data-testid="pie-chart">{children}</div>,
   BarChart: ({ children }: any) => <div data-testid="bar-chart">{children}</div>,
-  Pie: () => null,
-  Bar: () => null,
+  Pie: ({ children }: any) => <div>{children}</div>,
+  Bar: ({ children }: any) => <div>{children}</div>,
   Cell: () => null,
-  XAxis: () => null,
+  XAxis: ({ tickFormatter }: any) => <div>{tickFormatter ? tickFormatter(100) : ''}</div>,
   YAxis: () => null,
-  Tooltip: () => null,
+  Tooltip: ({ content }: any) => {
+    if (content && content.props !== undefined && content.type) {
+      const C = content.type;
+      const baseProps = content.props || {};
+      try {
+        return (
+          <div>
+            <C {...baseProps} active={true} payload={[{ payload: { region: 'NA', marketValue: 100, percentage: 50, count: 2 } }]} />
+            <C {...baseProps} active={true} payload={[{ payload: { exchange: 'X', country: 'C', marketValue: 100, percentage: 50, count: 1 } }]} />
+            <C {...baseProps} active={false} payload={[]} />
+          </div>
+        );
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  },
   Legend: () => null,
 }));
 
@@ -182,6 +203,127 @@ describe('GeographicAllocationReport', () => {
       expect(screen.getByText('NASDAQ')).toBeInTheDocument();
     });
     expect(screen.getByText('TSX')).toBeInTheDocument();
+  });
+
+  it('handles error in static data load', async () => {
+    mockGetPortfolioSummary.mockResolvedValue({ holdings: [] });
+    mockGetInvestmentAccounts.mockRejectedValue(new Error('boom'));
+    mockGetSecurities.mockRejectedValue(new Error('boom'));
+    render(<GeographicAllocationReport />);
+    await waitFor(() => {
+      expect(screen.getByText(/No investment holdings/)).toBeInTheDocument();
+    });
+  });
+
+  it('handles error in loadData', async () => {
+    mockGetPortfolioSummary.mockRejectedValue(new Error('boom'));
+    mockGetInvestmentAccounts.mockResolvedValue([]);
+    mockGetSecurities.mockResolvedValue([]);
+    render(<GeographicAllocationReport />);
+    await waitFor(() => {
+      expect(screen.getByText(/No investment holdings/)).toBeInTheDocument();
+    });
+  });
+
+  it('opens account filter, toggles selection, and clears filters', async () => {
+    mockGetPortfolioSummary.mockResolvedValue({ holdings: mockHoldings });
+    mockGetInvestmentAccounts.mockResolvedValue([
+      { id: 'acc-1', name: 'TFSA', accountSubType: 'INVESTMENT_BROKERAGE' },
+      { id: 'acc-2', name: 'Cash Acc', accountSubType: 'INVESTMENT_CASH' },
+    ]);
+    mockGetSecurities.mockResolvedValue(mockSecurities);
+    render(<GeographicAllocationReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Total Portfolio')).toBeInTheDocument();
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText(/^Accounts/));
+    });
+    // Toggle TFSA
+    const checkbox = document.querySelector('input[type="checkbox"]') as HTMLInputElement;
+    if (checkbox) {
+      await act(async () => {
+        fireEvent.click(checkbox);
+      });
+    }
+    // Click outside to close (mousedown)
+    await act(async () => {
+      document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    });
+    // Re-open and clear
+    if (screen.queryByText(/^Accounts/)) {
+      // Clear Filters button
+      const clearBtn = screen.queryByText('Clear Filters');
+      if (clearBtn) {
+        await act(async () => { fireEvent.click(clearBtn); });
+      }
+    }
+  });
+
+  it('shows no investment accounts message when filter has none', async () => {
+    mockGetPortfolioSummary.mockResolvedValue({ holdings: mockHoldings });
+    mockGetInvestmentAccounts.mockResolvedValue([
+      { id: 'acc-1', name: 'Cash', accountSubType: 'INVESTMENT_CASH' },
+    ]);
+    mockGetSecurities.mockResolvedValue(mockSecurities);
+    render(<GeographicAllocationReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Total Portfolio')).toBeInTheDocument();
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText(/^Accounts/));
+    });
+    expect(screen.getByText('No investment accounts')).toBeInTheDocument();
+  });
+
+  it('exports pdf in region and exchange views', async () => {
+    const { exportToPdf } = await import('@/lib/pdf-export');
+    (exportToPdf as any).mockClear();
+    mockGetPortfolioSummary.mockResolvedValue({ holdings: mockHoldings });
+    mockGetInvestmentAccounts.mockResolvedValue([]);
+    mockGetSecurities.mockResolvedValue(mockSecurities);
+    render(<GeographicAllocationReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Total Portfolio')).toBeInTheDocument();
+    });
+    const exportBtn = screen.getByRole('button', { name: /export/i });
+    await act(async () => {
+      fireEvent.click(exportBtn);
+    });
+    const pdfBtn = screen.queryByText(/PDF/i);
+    if (pdfBtn) {
+      await act(async () => {
+        fireEvent.click(pdfBtn);
+      });
+    }
+    // Switch to exchange view and export again
+    fireEvent.click(screen.getByText('By Exchange'));
+    await act(async () => {
+      fireEvent.click(exportBtn);
+    });
+    const pdfBtn2 = screen.queryByText(/PDF/i);
+    if (pdfBtn2) {
+      await act(async () => {
+        fireEvent.click(pdfBtn2);
+      });
+    }
+    expect(exportToPdf).toHaveBeenCalled();
+  });
+
+  it('handles holding with unknown exchange', async () => {
+    mockGetPortfolioSummary.mockResolvedValue({
+      holdings: [
+        { ...mockHoldings[0], securityId: 's-x' },
+      ],
+    });
+    mockGetInvestmentAccounts.mockResolvedValue([]);
+    mockGetSecurities.mockResolvedValue([
+      { id: 's-x', symbol: 'X', name: 'X', exchange: undefined, isActive: true },
+    ]);
+    render(<GeographicAllocationReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Total Portfolio')).toBeInTheDocument();
+    });
   });
 
   it('renders table footer with totals', async () => {

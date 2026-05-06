@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@/test/render';
+import { render, screen, waitFor, fireEvent, act } from '@/test/render';
 import { SectorWeightingsReport } from './SectorWeightingsReport';
+
+vi.mock('@/lib/pdf-export', () => ({
+  exportToPdf: vi.fn().mockResolvedValue(undefined),
+}));
 
 vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({
@@ -17,9 +21,24 @@ vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
   BarChart: ({ children }: any) => <div data-testid="bar-chart">{children}</div>,
   Bar: () => null,
-  XAxis: () => null,
+  XAxis: ({ tickFormatter }: any) => <div>{tickFormatter ? tickFormatter(100) : ''}</div>,
   YAxis: () => null,
-  Tooltip: () => null,
+  Tooltip: ({ content }: any) => {
+    if (content && content.type) {
+      const C = content.type;
+      const baseProps = content.props || {};
+      try {
+        return (
+          <div>
+            <C {...baseProps} active={true} payload={[{ payload: { sector: 'Tech', direct: 100, etf: 50, total: 150, percentage: 50 } }]} />
+            <C {...baseProps} active={true} payload={[{ payload: { sector: 'Health', direct: 0, etf: 0, total: 50, percentage: 10 } }]} />
+            <C {...baseProps} active={false} payload={[]} />
+          </div>
+        );
+      } catch { return null; }
+    }
+    return null;
+  },
   Legend: () => null,
 }));
 
@@ -204,6 +223,49 @@ describe('SectorWeightingsReport', () => {
       expect(screen.getByText('Clear Filters')).toBeInTheDocument();
     });
     expect(screen.getByText('Accounts (1)')).toBeInTheDocument();
+  });
+
+  it('exports pdf', async () => {
+    const { exportToPdf } = await import('@/lib/pdf-export');
+    (exportToPdf as any).mockClear();
+    mockGetSectorWeightings.mockResolvedValue(mockWeightingsData);
+    mockGetInvestmentAccounts.mockResolvedValue(mockAccounts);
+    mockGetSecurities.mockResolvedValue(mockSecurities);
+    render(<SectorWeightingsReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Total Portfolio')).toBeInTheDocument();
+    });
+    const exportBtn = screen.getByRole('button', { name: /export/i });
+    await act(async () => { fireEvent.click(exportBtn); });
+    const pdfBtn = screen.queryByText(/PDF/i);
+    if (pdfBtn) { await act(async () => { fireEvent.click(pdfBtn); }); }
+    expect(exportToPdf).toHaveBeenCalled();
+  });
+
+  it('handles error in static load and weightings load', async () => {
+    mockGetSectorWeightings.mockRejectedValue(new Error('boom'));
+    mockGetInvestmentAccounts.mockRejectedValue(new Error('boom'));
+    mockGetSecurities.mockRejectedValue(new Error('boom'));
+    render(<SectorWeightingsReport />);
+    await waitFor(() => {
+      expect(screen.getByText(/No investment holdings/)).toBeInTheDocument();
+    });
+  });
+
+  it('clears filters', async () => {
+    mockGetSectorWeightings.mockResolvedValue(mockWeightingsData);
+    mockGetInvestmentAccounts.mockResolvedValue(mockAccounts);
+    mockGetSecurities.mockResolvedValue(mockSecurities);
+    render(<SectorWeightingsReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Accounts')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Accounts'));
+    fireEvent.click(screen.getByText('TFSA'));
+    await waitFor(() => {
+      expect(screen.getByText('Clear Filters')).toBeInTheDocument();
+    });
+    await act(async () => { fireEvent.click(screen.getByText('Clear Filters')); });
   });
 
   it('closes dropdown when clicking outside', async () => {

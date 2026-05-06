@@ -176,4 +176,195 @@ describe('LoanPaymentSetupDialog', () => {
 
     expect(defaultProps.onClose).toHaveBeenCalledTimes(1);
   });
+
+  it('toggles include extra principal checkbox and submits with extra principal', async () => {
+    mockDetectLoanPayments.mockResolvedValue(defaultDetected);
+    mockSetupLoanPayments.mockResolvedValue({} as any);
+    await renderDialog();
+
+    const checkbox = screen.getByLabelText(/Include extra payment to principal/i);
+    await act(async () => fireEvent.click(checkbox));
+    expect(checkbox).toBeChecked();
+
+    // Submit without extra > 0 should not include extraPrincipal
+    const submitButton = screen.getByRole('button', { name: /Set Up Payments/i });
+    await act(async () => fireEvent.click(submitButton));
+    expect(mockSetupLoanPayments).toHaveBeenCalled();
+  });
+
+  it('shows useDetectedSplit checkbox when last principal/interest amounts are detected', async () => {
+    mockDetectLoanPayments.mockResolvedValue({
+      ...defaultDetected,
+      lastPrincipalAmount: 100,
+      lastInterestAmount: 50,
+    });
+    await renderDialog();
+    expect(screen.getByText(/Use principal\/interest split from imported transactions/i)).toBeInTheDocument();
+  });
+
+  it('toggles useDetectedSplit checkbox', async () => {
+    mockDetectLoanPayments.mockResolvedValue({
+      ...defaultDetected,
+      lastPrincipalAmount: 100,
+      lastInterestAmount: 50,
+    });
+    await renderDialog();
+    const cb = screen.getByLabelText(/Use principal\/interest split/i);
+    await act(async () => fireEvent.click(cb));
+    expect(cb).toBeChecked();
+  });
+
+  it('shows extra principal info for detected extra payments', async () => {
+    mockDetectLoanPayments.mockResolvedValue({
+      ...defaultDetected,
+      extraPrincipalCount: 3,
+      averageExtraPrincipal: 100,
+    });
+    await renderDialog();
+    expect(screen.getByText(/3 extra principal payments detected/i)).toBeInTheDocument();
+  });
+
+  it('handles setupLoanPayments error and shows toast', async () => {
+    mockDetectLoanPayments.mockResolvedValue(defaultDetected);
+    mockSetupLoanPayments.mockRejectedValue({ response: { data: { message: 'API error' } } });
+    await renderDialog();
+
+    const submitButton = screen.getByRole('button', { name: /Set Up Payments/i });
+    await act(async () => fireEvent.click(submitButton));
+    expect(toast.error).toHaveBeenCalled();
+  });
+
+  it('handles setupLoanPayments generic error', async () => {
+    mockDetectLoanPayments.mockResolvedValue(defaultDetected);
+    mockSetupLoanPayments.mockRejectedValue(new Error('boom'));
+    await renderDialog();
+
+    const submitButton = screen.getByRole('button', { name: /Set Up Payments/i });
+    await act(async () => fireEvent.click(submitButton));
+    expect(toast.error).toHaveBeenCalled();
+  });
+
+  it('toggles canadian mortgage and variable rate checkboxes (mortgage only)', async () => {
+    mockDetectLoanPayments.mockResolvedValue(defaultDetected);
+    const mortgageProps = {
+      ...defaultProps,
+      loanAccount: { accountId: 'm-1', accountName: 'M', accountType: 'MORTGAGE', currencyCode: 'USD' },
+    };
+    await renderDialog(mortgageProps);
+
+    const canadianCb = screen.getByLabelText(/Canadian Mortgage/i);
+    await act(async () => fireEvent.click(canadianCb));
+    expect(canadianCb).toBeChecked();
+
+    const variableCb = screen.getByLabelText(/Variable Rate/i);
+    await act(async () => fireEvent.click(variableCb));
+    expect(variableCb).toBeChecked();
+  });
+
+  it('submits mortgage with mortgage-specific fields', async () => {
+    mockDetectLoanPayments.mockResolvedValue(defaultDetected);
+    mockSetupLoanPayments.mockResolvedValue({} as any);
+    const mortgageProps = {
+      ...defaultProps,
+      loanAccount: { accountId: 'm-1', accountName: 'M', accountType: 'MORTGAGE', currencyCode: 'USD' },
+    };
+    await renderDialog(mortgageProps);
+
+    const buttons = screen.getAllByRole('button', { name: /Set Up Payments/i });
+    await act(async () => fireEvent.click(buttons[buttons.length - 1]));
+    expect(mockSetupLoanPayments).toHaveBeenCalledWith('m-1', expect.objectContaining({
+      isCanadianMortgage: false,
+      isVariableRate: false,
+    }));
+  });
+
+  it('toggles auto-post checkbox', async () => {
+    mockDetectLoanPayments.mockResolvedValue(defaultDetected);
+    await renderDialog();
+
+    const cb = screen.getByLabelText(/Automatically post transactions when due/i);
+    await act(async () => fireEvent.click(cb));
+    expect(cb).toBeChecked();
+  });
+
+  it('updates payment amount via CurrencyInput', async () => {
+    mockDetectLoanPayments.mockResolvedValue(defaultDetected);
+    await renderDialog();
+
+    // Change frequency
+    const select = screen.getByLabelText(/Payment Frequency/i) as HTMLSelectElement;
+    fireEvent.change(select, { target: { value: 'WEEKLY' } });
+    expect(select.value).toBe('WEEKLY');
+  });
+
+  it('changes source account via select', async () => {
+    mockDetectLoanPayments.mockResolvedValue(defaultDetected);
+    await renderDialog();
+
+    const select = screen.getByLabelText(/Payment From Account/i) as HTMLSelectElement;
+    fireEvent.change(select, { target: { value: 'acc-1' } });
+    expect(select.value).toBe('acc-1');
+  });
+
+  it('updates interest rate via input', async () => {
+    mockDetectLoanPayments.mockResolvedValue(defaultDetected);
+    await renderDialog();
+
+    const input = screen.getByPlaceholderText('e.g., 5.5') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '4.5' } });
+    expect(input.value).toBe('4.5');
+
+    // Clear it
+    fireEvent.change(input, { target: { value: '' } });
+    expect(input.value).toBe('');
+  });
+
+  it('updates amortization and term inputs (mortgage only)', async () => {
+    mockDetectLoanPayments.mockResolvedValue(defaultDetected);
+    const mortgageProps = {
+      ...defaultProps,
+      loanAccount: { accountId: 'm-1', accountName: 'M', accountType: 'MORTGAGE', currencyCode: 'USD' },
+    };
+    await renderDialog(mortgageProps);
+
+    const amortInput = screen.getByPlaceholderText('e.g., 300') as HTMLInputElement;
+    fireEvent.change(amortInput, { target: { value: '360' } });
+    expect(amortInput.value).toBe('360');
+    fireEvent.change(amortInput, { target: { value: '' } });
+    expect(amortInput.value).toBe('');
+
+    const termInput = screen.getByPlaceholderText('e.g., 60') as HTMLInputElement;
+    fireEvent.change(termInput, { target: { value: '48' } });
+    expect(termInput.value).toBe('48');
+  });
+
+  it('shows Low confidence label for low-confidence detection', async () => {
+    mockDetectLoanPayments.mockResolvedValue({ ...defaultDetected, confidence: 0.2 });
+    await renderDialog();
+    expect(screen.getByText('Low')).toBeInTheDocument();
+  });
+
+  it('shows Medium confidence label', async () => {
+    mockDetectLoanPayments.mockResolvedValue({ ...defaultDetected, confidence: 0.5 });
+    await renderDialog();
+    expect(screen.getByText('Medium')).toBeInTheDocument();
+  });
+
+  it('shows form even when no detection (paymentCount=0)', async () => {
+    mockDetectLoanPayments.mockResolvedValue({ ...defaultDetected, paymentCount: 0 });
+    await renderDialog();
+    expect(screen.getByText('Set Up Loan Payments')).toBeInTheDocument();
+    expect(screen.queryByText(/Detected/)).not.toBeInTheDocument();
+  });
+
+  it('handles detection failure gracefully', async () => {
+    mockDetectLoanPayments.mockRejectedValue(new Error('API error'));
+    await renderDialog();
+    expect(screen.getByText('Set Up Loan Payments')).toBeInTheDocument();
+  });
+
+  it('does not run detection when isOpen is false', () => {
+    render(<LoanPaymentSetupDialog {...defaultProps} isOpen={false} />);
+    expect(mockDetectLoanPayments).not.toHaveBeenCalled();
+  });
 });

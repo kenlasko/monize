@@ -1478,4 +1478,530 @@ describe("AuthController", () => {
       );
     });
   });
+
+  // ─── Branch coverage extras ─────────────────────────────────────────
+
+  describe("oidcProvedMfa via callback", () => {
+    it("rejects when FORCE_2FA but IdP did not assert MFA (no amr/acr)", async () => {
+      configService.get.mockImplementation(
+        (key: string, defaultValue?: string) => {
+          const config: Record<string, string> = {
+            LOCAL_AUTH_ENABLED: "true",
+            REGISTRATION_ENABLED: "true",
+            FORCE_2FA: "true",
+            JWT_SECRET: "test-jwt-secret-for-spec-32-characters-min",
+            NODE_ENV: "test",
+            PUBLIC_APP_URL: "http://localhost:3000",
+          };
+          return config[key] ?? defaultValue;
+        },
+      );
+      const force2faModule: TestingModule = await Test.createTestingModule({
+        controllers: [AuthController],
+        providers: [
+          { provide: AuthService, useValue: authService },
+          {
+            provide: OidcService,
+            useValue: {
+              enabled: true,
+              handleCallback: jest.fn().mockResolvedValue({
+                amr: undefined,
+                acr: undefined,
+                access_token: "tok",
+                sub: "sub-1",
+              }),
+              getUserInfo: jest.fn(),
+              generateState: jest.fn(),
+              generateNonce: jest.fn(),
+              getAuthorizationUrl: jest.fn(),
+            },
+          },
+          { provide: ConfigService, useValue: configService },
+          { provide: EmailService, useValue: emailService },
+          { provide: DemoModeService, useValue: demoModeService },
+          {
+            provide: TokenService,
+            useValue: {
+              getRefreshExpiryMs: jest
+                .fn()
+                .mockReturnValue(7 * 24 * 60 * 60 * 1000),
+            },
+          },
+        ],
+      }).compile();
+      const c = force2faModule.get<AuthController>(AuthController);
+      const res = mockRes();
+      const req = { cookies: { oidc_state: "s", oidc_nonce: "n" } };
+      await c.oidcCallback({}, req as never, res as never);
+      expect(res.redirect).toHaveBeenCalledWith(
+        "http://localhost:3000/auth/callback?error=mfa_required",
+      );
+    });
+
+    it("accepts when FORCE_2FA and amr includes MFA value (otp)", async () => {
+      configService.get.mockImplementation(
+        (key: string, defaultValue?: string) => {
+          const config: Record<string, string> = {
+            LOCAL_AUTH_ENABLED: "true",
+            REGISTRATION_ENABLED: "true",
+            FORCE_2FA: "true",
+            JWT_SECRET: "test-jwt-secret-for-spec-32-characters-min",
+            NODE_ENV: "test",
+            PUBLIC_APP_URL: "http://localhost:3000",
+          };
+          return config[key] ?? defaultValue;
+        },
+      );
+      authService.findOrCreateOidcUser.mockResolvedValue({
+        user: { id: "user-2", email: "x@y.z" },
+        linkPending: false,
+      });
+      authService.generateTokenPair.mockResolvedValue({
+        accessToken: "a",
+        refreshToken: "r",
+      });
+      const force2faModule: TestingModule = await Test.createTestingModule({
+        controllers: [AuthController],
+        providers: [
+          { provide: AuthService, useValue: authService },
+          {
+            provide: OidcService,
+            useValue: {
+              enabled: true,
+              handleCallback: jest.fn().mockResolvedValue({
+                amr: ["pwd", "OTP"],
+                acr: undefined,
+                access_token: "tok",
+                sub: "sub-1",
+              }),
+              getUserInfo: jest.fn().mockResolvedValue({
+                email: "x@y.z",
+                sub: "sub-1",
+              }),
+              generateState: jest.fn(),
+              generateNonce: jest.fn(),
+              getAuthorizationUrl: jest.fn(),
+            },
+          },
+          { provide: ConfigService, useValue: configService },
+          { provide: EmailService, useValue: emailService },
+          { provide: DemoModeService, useValue: demoModeService },
+          {
+            provide: TokenService,
+            useValue: {
+              getRefreshExpiryMs: jest
+                .fn()
+                .mockReturnValue(7 * 24 * 60 * 60 * 1000),
+            },
+          },
+        ],
+      }).compile();
+      const c = force2faModule.get<AuthController>(AuthController);
+      const res = mockRes();
+      const req = { cookies: { oidc_state: "s", oidc_nonce: "n" } };
+      await c.oidcCallback({}, req as never, res as never);
+      expect(res.redirect).toHaveBeenCalledWith(
+        "http://localhost:3000/auth/callback?success=true",
+      );
+    });
+
+    it("accepts when FORCE_2FA and acr indicates MFA", async () => {
+      configService.get.mockImplementation(
+        (key: string, defaultValue?: string) => {
+          const config: Record<string, string> = {
+            LOCAL_AUTH_ENABLED: "true",
+            REGISTRATION_ENABLED: "true",
+            FORCE_2FA: "true",
+            JWT_SECRET: "test-jwt-secret-for-spec-32-characters-min",
+            NODE_ENV: "test",
+            PUBLIC_APP_URL: "http://localhost:3000",
+          };
+          return config[key] ?? defaultValue;
+        },
+      );
+      authService.findOrCreateOidcUser.mockResolvedValue({
+        user: { id: "user-2", email: "x@y.z" },
+        linkPending: false,
+      });
+      authService.generateTokenPair.mockResolvedValue({
+        accessToken: "a",
+        refreshToken: "r",
+      });
+      const acrCases = ["mfa", "level:2", "loa-3", "/2", "2"];
+      for (const acrVal of acrCases) {
+        const m: TestingModule = await Test.createTestingModule({
+          controllers: [AuthController],
+          providers: [
+            { provide: AuthService, useValue: authService },
+            {
+              provide: OidcService,
+              useValue: {
+                enabled: true,
+                handleCallback: jest.fn().mockResolvedValue({
+                  amr: undefined,
+                  acr: acrVal,
+                  access_token: "tok",
+                  sub: "sub-1",
+                }),
+                getUserInfo: jest.fn().mockResolvedValue({
+                  email: "x@y.z",
+                  sub: "sub-1",
+                }),
+                generateState: jest.fn(),
+                generateNonce: jest.fn(),
+                getAuthorizationUrl: jest.fn(),
+              },
+            },
+            { provide: ConfigService, useValue: configService },
+            { provide: EmailService, useValue: emailService },
+            { provide: DemoModeService, useValue: demoModeService },
+            {
+              provide: TokenService,
+              useValue: {
+                getRefreshExpiryMs: jest
+                  .fn()
+                  .mockReturnValue(7 * 24 * 60 * 60 * 1000),
+              },
+            },
+          ],
+        }).compile();
+        const c = m.get<AuthController>(AuthController);
+        const res = mockRes();
+        const req = { cookies: { oidc_state: "s", oidc_nonce: "n" } };
+        await c.oidcCallback({}, req as never, res as never);
+        expect(res.redirect).toHaveBeenCalledWith(
+          "http://localhost:3000/auth/callback?success=true",
+        );
+      }
+    });
+  });
+
+  describe("oidcCallback edge cases", () => {
+    it("redirects with error when query.error is present", async () => {
+      const m: TestingModule = await Test.createTestingModule({
+        controllers: [AuthController],
+        providers: [
+          { provide: AuthService, useValue: authService },
+          {
+            provide: OidcService,
+            useValue: {
+              enabled: true,
+              handleCallback: jest.fn(),
+              getUserInfo: jest.fn(),
+              generateState: jest.fn(),
+              generateNonce: jest.fn(),
+              getAuthorizationUrl: jest.fn(),
+            },
+          },
+          { provide: ConfigService, useValue: configService },
+          { provide: EmailService, useValue: emailService },
+          { provide: DemoModeService, useValue: demoModeService },
+          {
+            provide: TokenService,
+            useValue: {
+              getRefreshExpiryMs: jest
+                .fn()
+                .mockReturnValue(7 * 24 * 60 * 60 * 1000),
+            },
+          },
+        ],
+      }).compile();
+      const c = m.get<AuthController>(AuthController);
+      const res = mockRes();
+      const req = { cookies: { oidc_state: "s", oidc_nonce: "n" } };
+      await c.oidcCallback({ error: "access_denied" }, req as never, res as never);
+      expect(res.redirect).toHaveBeenCalledWith(
+        "http://localhost:3000/auth/callback?error=authentication_failed",
+      );
+    });
+
+    it("redirects with error_description fallback when no description provided", async () => {
+      const m: TestingModule = await Test.createTestingModule({
+        controllers: [AuthController],
+        providers: [
+          { provide: AuthService, useValue: authService },
+          {
+            provide: OidcService,
+            useValue: {
+              enabled: true,
+              handleCallback: jest.fn(),
+              getUserInfo: jest.fn(),
+              generateState: jest.fn(),
+              generateNonce: jest.fn(),
+              getAuthorizationUrl: jest.fn(),
+            },
+          },
+          { provide: ConfigService, useValue: configService },
+          { provide: EmailService, useValue: emailService },
+          { provide: DemoModeService, useValue: demoModeService },
+          {
+            provide: TokenService,
+            useValue: {
+              getRefreshExpiryMs: jest
+                .fn()
+                .mockReturnValue(7 * 24 * 60 * 60 * 1000),
+            },
+          },
+        ],
+      }).compile();
+      const c = m.get<AuthController>(AuthController);
+      const res = mockRes();
+      const req = { cookies: { oidc_state: "s", oidc_nonce: "n" } };
+      await c.oidcCallback(
+        { error: "x", error_description: "details" },
+        req as never,
+        res as never,
+      );
+      expect(res.redirect).toHaveBeenCalled();
+    });
+
+    it("redirects when linkPending is true", async () => {
+      authService.findOrCreateOidcUser.mockResolvedValue({
+        user: { id: "user-2" },
+        linkPending: true,
+      });
+      const m: TestingModule = await Test.createTestingModule({
+        controllers: [AuthController],
+        providers: [
+          { provide: AuthService, useValue: authService },
+          {
+            provide: OidcService,
+            useValue: {
+              enabled: true,
+              handleCallback: jest.fn().mockResolvedValue({
+                amr: undefined,
+                acr: undefined,
+                access_token: "tok",
+                sub: "sub-1",
+              }),
+              getUserInfo: jest.fn().mockResolvedValue({
+                email: "x@y.z",
+                sub: "sub-1",
+              }),
+              generateState: jest.fn(),
+              generateNonce: jest.fn(),
+              getAuthorizationUrl: jest.fn(),
+            },
+          },
+          { provide: ConfigService, useValue: configService },
+          { provide: EmailService, useValue: emailService },
+          { provide: DemoModeService, useValue: demoModeService },
+          {
+            provide: TokenService,
+            useValue: {
+              getRefreshExpiryMs: jest
+                .fn()
+                .mockReturnValue(7 * 24 * 60 * 60 * 1000),
+            },
+          },
+        ],
+      }).compile();
+      const c = m.get<AuthController>(AuthController);
+      const res = mockRes();
+      const req = { cookies: { oidc_state: "s", oidc_nonce: "n" } };
+      await c.oidcCallback({}, req as never, res as never);
+      expect(res.redirect).toHaveBeenCalledWith(
+        "http://localhost:3000/auth/callback?link=pending",
+      );
+    });
+
+    it("logs error when error is non-Error", async () => {
+      const m: TestingModule = await Test.createTestingModule({
+        controllers: [AuthController],
+        providers: [
+          { provide: AuthService, useValue: authService },
+          {
+            provide: OidcService,
+            useValue: {
+              enabled: true,
+              handleCallback: jest.fn().mockRejectedValue("string-error"),
+              getUserInfo: jest.fn(),
+              generateState: jest.fn(),
+              generateNonce: jest.fn(),
+              getAuthorizationUrl: jest.fn(),
+            },
+          },
+          { provide: ConfigService, useValue: configService },
+          { provide: EmailService, useValue: emailService },
+          { provide: DemoModeService, useValue: demoModeService },
+          {
+            provide: TokenService,
+            useValue: {
+              getRefreshExpiryMs: jest
+                .fn()
+                .mockReturnValue(7 * 24 * 60 * 60 * 1000),
+            },
+          },
+        ],
+      }).compile();
+      const c = m.get<AuthController>(AuthController);
+      const res = mockRes();
+      const req = { cookies: { oidc_state: "s", oidc_nonce: "n" } };
+      await c.oidcCallback({}, req as never, res as never);
+      expect(res.redirect).toHaveBeenCalledWith(
+        "http://localhost:3000/auth/callback?error=authentication_failed",
+      );
+    });
+  });
+
+  describe("getAuthMethods extras", () => {
+    it("hides force2fa and registration when in demo mode", async () => {
+      demoModeService.isDemo = true;
+      const r = await controller.getAuthMethods();
+      expect(r.demo).toBe(true);
+      expect(r.force2fa).toBe(false);
+      expect(r.registration).toBe(false);
+    });
+  });
+
+  describe("forgotPassword extras", () => {
+    it("returns success when checkForgotPasswordEmailLimit returns false", async () => {
+      authService.checkForgotPasswordEmailLimit.mockReturnValue(false);
+      const r = await controller.forgotPassword({
+        email: "x@y.z",
+      } as never);
+      expect(r.message).toContain("If an account exists");
+      expect(authService.generateResetToken).not.toHaveBeenCalled();
+    });
+
+    it("does not send email when SMTP not configured", async () => {
+      authService.generateResetToken.mockResolvedValue({
+        token: "t",
+        user: { email: "x@y.z", firstName: "X" },
+      });
+      emailService.getStatus.mockReturnValue({ configured: false });
+      await controller.forgotPassword({ email: "x@y.z" } as never);
+      expect(emailService.sendMail).not.toHaveBeenCalled();
+    });
+
+    it("logs error when sendMail fails (Error instance)", async () => {
+      authService.generateResetToken.mockResolvedValue({
+        token: "t",
+        user: { email: "x@y.z", firstName: "X" },
+      });
+      emailService.sendMail.mockRejectedValue(new Error("smtp fail"));
+      const r = await controller.forgotPassword({
+        email: "x@y.z",
+      } as never);
+      expect(r.message).toContain("If an account exists");
+    });
+
+    it("logs error when sendMail fails (non-Error)", async () => {
+      authService.generateResetToken.mockResolvedValue({
+        token: "t",
+        user: { email: "x@y.z", firstName: "X" },
+      });
+      emailService.sendMail.mockRejectedValue("not-an-error");
+      const r = await controller.forgotPassword({
+        email: "x@y.z",
+      } as never);
+      expect(r.message).toContain("If an account exists");
+    });
+
+    it("uses empty string when firstName missing", async () => {
+      authService.generateResetToken.mockResolvedValue({
+        token: "t",
+        user: { email: "x@y.z" },
+      });
+      await controller.forgotPassword({ email: "x@y.z" } as never);
+      expect(emailService.sendMail).toHaveBeenCalled();
+    });
+
+    it("returns success when generateResetToken returns null", async () => {
+      authService.generateResetToken.mockResolvedValue(null);
+      const r = await controller.forgotPassword({
+        email: "x@y.z",
+      } as never);
+      expect(r.message).toContain("If an account exists");
+      expect(emailService.sendMail).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("verify2FA edge cases", () => {
+    it("uses fallback userAgent when none in headers", async () => {
+      authService.verify2FA.mockResolvedValue({
+        accessToken: "a",
+        refreshToken: "r",
+        user: mockUser,
+        rememberMe: false,
+      });
+      const res = mockRes();
+      const req = { headers: {}, ip: "127.0.0.1" };
+      await controller.verify2FA(
+        {
+          tempToken: "t",
+          code: "123456",
+          rememberDevice: false,
+        } as never,
+        req as never,
+        res as never,
+      );
+      expect(authService.verify2FA).toHaveBeenCalledWith(
+        "t",
+        "123456",
+        false,
+        "Unknown Device",
+        "127.0.0.1",
+      );
+    });
+
+    it("strips ::ffff: prefix from IPv4-mapped IP", async () => {
+      authService.verify2FA.mockResolvedValue({
+        accessToken: "a",
+        refreshToken: "r",
+        user: mockUser,
+        rememberMe: false,
+      });
+      const res = mockRes();
+      const req = {
+        headers: { "user-agent": "ua" },
+        ip: undefined,
+        socket: { remoteAddress: "::ffff:192.168.1.1" },
+      };
+      await controller.verify2FA(
+        { tempToken: "t", code: "123456" } as never,
+        req as never,
+        res as never,
+      );
+      expect(authService.verify2FA).toHaveBeenCalledWith(
+        "t",
+        "123456",
+        false,
+        "ua",
+        "192.168.1.1",
+      );
+    });
+  });
+
+  describe("confirmOidcLink", () => {
+    it("redirects with success when token valid", async () => {
+      authService.confirmOidcLink.mockResolvedValue(undefined);
+      const res = mockRes();
+      await controller.confirmOidcLink("valid-token", res as never);
+      expect(res.redirect).toHaveBeenCalledWith(
+        "http://localhost:3000/auth/callback?link=success",
+      );
+    });
+
+    it("redirects with failed when token missing", async () => {
+      const res = mockRes();
+      await controller.confirmOidcLink("", res as never);
+      expect(res.redirect).toHaveBeenCalledWith(
+        "http://localhost:3000/auth/callback?link=failed",
+      );
+    });
+
+    it("redirects with failed when service throws (non-Error)", async () => {
+      authService.confirmOidcLink.mockRejectedValue("boom");
+      const res = mockRes();
+      await controller.confirmOidcLink("tok", res as never);
+      expect(res.redirect).toHaveBeenCalledWith(
+        "http://localhost:3000/auth/callback?link=failed",
+      );
+    });
+  });
+
+  // Use the previously-imported helpers without regenerating the controller
+  // — these branches don't depend on alternate config.
+  void encryptTrustedDeviceCookieForTest;
 });

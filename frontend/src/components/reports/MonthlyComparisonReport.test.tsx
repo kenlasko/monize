@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@/test/render';
+import { render, screen, waitFor, fireEvent, act } from '@/test/render';
 import { MonthlyComparisonReport } from './MonthlyComparisonReport';
+
+vi.mock('@/lib/pdf-export', () => ({
+  exportToPdf: vi.fn().mockResolvedValue(undefined),
+}));
 
 vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({
@@ -20,11 +24,16 @@ vi.mock('recharts', () => ({
   PieChart: ({ children }: any) => <div data-testid="pie-chart">{children}</div>,
   Pie: () => null,
   Cell: () => null,
-  Tooltip: () => null,
+  Tooltip: ({ formatter }: any) => {
+    if (formatter) {
+      try { formatter(123, 'Net Worth'); formatter(0.5, 'Cat'); } catch {}
+    }
+    return null;
+  },
   BarChart: ({ children }: any) => <div data-testid="bar-chart">{children}</div>,
-  Bar: () => null,
-  XAxis: () => null,
-  YAxis: () => null,
+  Bar: ({ children }: any) => <div>{children}</div>,
+  XAxis: ({ tickFormatter }: any) => <div>{tickFormatter ? tickFormatter(50) : ''}</div>,
+  YAxis: ({ tickFormatter }: any) => <div>{tickFormatter ? tickFormatter(1000) : ''}</div>,
   CartesianGrid: () => null,
 }));
 
@@ -273,6 +282,172 @@ describe('MonthlyComparisonReport', () => {
     await waitFor(() => {
       expect(screen.getByText('+11.1%')).toBeInTheDocument(); // income
     });
+  });
+
+  it('navigates to previous month and back forward', async () => {
+    mockGetMonthlyComparison.mockResolvedValue(mockResponse);
+    render(<MonthlyComparisonReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Income vs Expenses')).toBeInTheDocument();
+    });
+    const buttons = document.querySelectorAll('button');
+    const prevBtn = buttons[0];
+    await act(async () => {
+      fireEvent.click(prevBtn);
+    });
+    // Try forward
+    const fwdBtn = Array.from(buttons).find((b) => b.querySelector('path[d="M9 5l7 7-7 7"]'));
+    if (fwdBtn) {
+      await act(async () => {
+        fireEvent.click(fwdBtn);
+      });
+    }
+  });
+
+  it('triggers PDF export', async () => {
+    mockGetMonthlyComparison.mockResolvedValue(mockResponse);
+    render(<MonthlyComparisonReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Income vs Expenses')).toBeInTheDocument();
+    });
+    const exportBtn = screen.getByRole('button', { name: /export/i });
+    await act(async () => {
+      fireEvent.click(exportBtn);
+    });
+    const pdfBtn = screen.queryByText(/PDF/i);
+    if (pdfBtn) {
+      await act(async () => {
+        fireEvent.click(pdfBtn);
+      });
+    }
+  });
+
+  it('handles negative savings and falsy notes for export', async () => {
+    const negResp = {
+      ...mockResponse,
+      incomeExpenses: { ...mockResponse.incomeExpenses, currentSavings: -500, savingsChange: -200, savingsChangePercent: -50 },
+      notes: { savingsNote: '', incomeNote: '' },
+      expenses: { currentMonth: [], previousMonth: [], comparison: [], currentTotal: 0, previousTotal: 0 },
+      topCategories: { currentMonth: [], previousMonth: [] },
+      netWorth: { monthlyHistory: [], currentNetWorth: 0, previousNetWorth: 0, netWorthChange: -100, netWorthChangePercent: -1 },
+      investments: { accountPerformance: [], topMovers: [] },
+    };
+    mockGetMonthlyComparison.mockResolvedValue(negResp);
+    render(<MonthlyComparisonReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Income vs Expenses')).toBeInTheDocument();
+    });
+    const exportBtn = screen.getByRole('button', { name: /export/i });
+    await act(async () => {
+      fireEvent.click(exportBtn);
+    });
+    const pdfBtn = screen.queryByText(/PDF/i);
+    if (pdfBtn) {
+      await act(async () => {
+        fireEvent.click(pdfBtn);
+      });
+    }
+  });
+
+  it('renders empty pie chart message when no current expenses', async () => {
+    const emptyExp = {
+      ...mockResponse,
+      expenses: {
+        ...mockResponse.expenses,
+        currentMonth: [],
+        previousMonth: [],
+      },
+    };
+    mockGetMonthlyComparison.mockResolvedValue(emptyExp);
+    render(<MonthlyComparisonReport />);
+    await waitFor(() => {
+      expect(screen.getAllByText('No expense data').length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  it('renders empty top categories message', async () => {
+    const empty = {
+      ...mockResponse,
+      topCategories: { currentMonth: [], previousMonth: [] },
+    };
+    mockGetMonthlyComparison.mockResolvedValue(empty);
+    render(<MonthlyComparisonReport />);
+    await waitFor(() => {
+      expect(screen.getAllByText('No data').length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  it('renders with all-negative changes including movers', async () => {
+    const negResp = {
+      ...mockResponse,
+      incomeExpenses: {
+        ...mockResponse.incomeExpenses,
+        currentIncome: 4000, previousIncome: 5000,
+        incomeChange: -1000, incomeChangePercent: -20,
+        currentExpenses: 4000, previousExpenses: 3500,
+        expensesChange: 500, expensesChangePercent: 14.29,
+        currentSavings: -500, previousSavings: 500,
+        savingsChange: -1000, savingsChangePercent: -200,
+      },
+      expenses: {
+        ...mockResponse.expenses,
+        comparison: [
+          {
+            categoryId: 'cat-1', categoryName: 'Groceries', color: '#ff0000',
+            currentTotal: 600, previousTotal: 800,
+            change: -200, changePercent: -25,
+          },
+        ],
+      },
+      netWorth: {
+        monthlyHistory: [{ month: '2025-12', netWorth: 50000 }],
+        currentNetWorth: 48000, previousNetWorth: 50000,
+        netWorthChange: -2000, netWorthChangePercent: -4,
+      },
+      investments: {
+        ...mockResponse.investments,
+        topMovers: [
+          {
+            securityId: 's1', symbol: 'AAA', name: 'Down Inc', currentPrice: 100,
+            previousPrice: 110, change: -10, changePercent: -9.09, marketValue: 1000,
+          },
+        ],
+      },
+    };
+    mockGetMonthlyComparison.mockResolvedValue(negResp);
+    render(<MonthlyComparisonReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Income vs Expenses')).toBeInTheDocument();
+    });
+    // Trigger PDF export with negative netWorth change
+    const exportBtn = screen.getByRole('button', { name: /export/i });
+    await act(async () => {
+      fireEvent.click(exportBtn);
+    });
+    const pdfBtn = screen.queryByText(/PDF/i);
+    if (pdfBtn) {
+      await act(async () => {
+        fireEvent.click(pdfBtn);
+      });
+    }
+  });
+
+  it('renders investment performance with no top movers and only account performance', async () => {
+    const onlyPerf = {
+      ...mockResponse,
+      investments: {
+        accountPerformance: [
+          { accountId: 'a', accountName: 'A', currentValue: 100, startValue: 90, annualizedReturn: -5 },
+        ],
+        topMovers: [],
+      },
+    };
+    mockGetMonthlyComparison.mockResolvedValue(onlyPerf);
+    render(<MonthlyComparisonReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Investment Performance')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Top Movers')).not.toBeInTheDocument();
   });
 
   it('renders expense comparison with change amounts and percentages', async () => {

@@ -26,14 +26,46 @@ vi.mock('recharts', () => ({
   PieChart: ({ children }: any) => <div data-testid="pie-chart">{children}</div>,
   BarChart: ({ children }: any) => <div data-testid="bar-chart">{children}</div>,
   LineChart: ({ children }: any) => <div data-testid="line-chart">{children}</div>,
-  Pie: () => null,
-  Bar: () => null,
+  Pie: ({ onClick, data }: any) => (
+    <div data-testid="pie">
+      <button data-testid="pie-click-with-id" onClick={() => onClick && onClick(data[0])}>click-id</button>
+      <button data-testid="pie-click-no-id" onClick={() => onClick && onClick({ value: 1 })}>click-no-id</button>
+    </div>
+  ),
+  Bar: ({ onClick, children }: any) => (
+    <div data-testid="bar">
+      {children}
+      <button data-testid="bar-click-with-id" onClick={() => onClick && onClick({ id: 'cat-1', value: 100 })}>bar-id</button>
+      <button data-testid="bar-click-no-id" onClick={() => onClick && onClick({ value: 100 })}>bar-no-id</button>
+    </div>
+  ),
   Line: () => null,
   Cell: () => null,
-  XAxis: () => null,
-  YAxis: () => null,
+  XAxis: ({ tickFormatter }: any) => <div>{tickFormatter ? tickFormatter(100) : ''}</div>,
+  YAxis: ({ tickFormatter }: any) => <div>{tickFormatter ? tickFormatter(1000) : ''}</div>,
   CartesianGrid: () => null,
-  Tooltip: () => null,
+  Tooltip: ({ content }: any) => {
+    if (content && content.type) {
+      const C = content.type;
+      return (
+        <div data-testid="tooltip">
+          <C active={true} payload={[{ payload: { label: 'Groceries', value: 500, count: 20, color: '#000' } }]} />
+          <C active={true} payload={[{ payload: { label: 'Single', value: 100, count: 1, color: '#000' } }]} />
+          <C active={true} payload={[{ payload: { label: 'NoCount', value: 0, color: '#000' } }]} />
+          <C active={false} payload={[]} />
+        </div>
+      );
+    }
+    return null;
+  },
+}));
+
+vi.mock('@/lib/csv-export', () => ({
+  exportToCsv: vi.fn(),
+}));
+
+vi.mock('@/lib/pdf-export', () => ({
+  exportToPdf: vi.fn().mockResolvedValue(undefined),
 }));
 
 const sampleData = [
@@ -288,6 +320,151 @@ describe('ReportChart', () => {
       />
     );
     expect(screen.getByText('42.5%')).toBeInTheDocument();
+  });
+
+  it('handles pie chart click with and without id', () => {
+    const onClick = vi.fn();
+    render(
+      <ReportChart
+        viewType={ReportViewType.PIE_CHART}
+        data={sampleData}
+        groupBy={GroupByType.CATEGORY}
+        onDataPointClick={onClick}
+      />
+    );
+    fireEvent.click(screen.getByTestId('pie-click-with-id'));
+    fireEvent.click(screen.getByTestId('pie-click-no-id'));
+    expect(onClick).toHaveBeenCalledWith('cat-1');
+  });
+
+  it('handles bar chart click with and without id', () => {
+    const onClick = vi.fn();
+    render(
+      <ReportChart
+        viewType={ReportViewType.BAR_CHART}
+        data={sampleData}
+        groupBy={GroupByType.CATEGORY}
+        onDataPointClick={onClick}
+      />
+    );
+    fireEvent.click(screen.getByTestId('bar-click-with-id'));
+    fireEvent.click(screen.getByTestId('bar-click-no-id'));
+    expect(onClick).toHaveBeenCalledWith('cat-1');
+  });
+
+  it('exports csv', async () => {
+    const { exportToCsv } = await import('@/lib/csv-export');
+    render(
+      <ReportChart
+        viewType={ReportViewType.TABLE}
+        data={sampleData}
+        groupBy={GroupByType.CATEGORY}
+        exportFilename="my-report"
+        reportTitle="My Report"
+        reportSubtitle="Subtitle"
+      />
+    );
+    const exportBtn = screen.getByRole('button', { name: /export/i });
+    fireEvent.click(exportBtn);
+    const csvBtn = screen.queryByText(/CSV/i);
+    if (csvBtn) {
+      fireEvent.click(csvBtn);
+    }
+    expect(exportToCsv).toHaveBeenCalled();
+  });
+
+  it('exports pdf with various views', async () => {
+    const { exportToPdf } = await import('@/lib/pdf-export');
+    render(
+      <ReportChart
+        viewType={ReportViewType.PIE_CHART}
+        data={sampleData}
+        groupBy={GroupByType.CATEGORY}
+        exportFilename="my-report"
+        reportTitle="My Report"
+        reportSubtitle="Subtitle"
+      />
+    );
+    const exportBtn = screen.getByRole('button', { name: /export/i });
+    fireEvent.click(exportBtn);
+    const pdfBtn = screen.queryByText(/PDF/i);
+    if (pdfBtn) {
+      fireEvent.click(pdfBtn);
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    expect(exportToPdf).toHaveBeenCalled();
+  });
+
+  it('exports csv with all columns and date label', async () => {
+    const { exportToCsv } = await import('@/lib/csv-export');
+    (exportToCsv as any).mockClear();
+    const data = [
+      {
+        label: 'X', value: 100, count: 5, id: 'a',
+        date: '2024-01-01', payee: 'P', description: 'D', memo: 'M',
+        category: 'C', account: 'A', percentage: 50,
+      },
+    ];
+    render(
+      <ReportChart
+        viewType={ReportViewType.TABLE}
+        data={data}
+        groupBy={GroupByType.CATEGORY}
+        tableColumns={[
+          TableColumn.DATE, TableColumn.LABEL, TableColumn.PAYEE,
+          TableColumn.DESCRIPTION, TableColumn.MEMO, TableColumn.CATEGORY,
+          TableColumn.ACCOUNT, TableColumn.VALUE, TableColumn.PERCENTAGE,
+          TableColumn.COUNT, TableColumn.TAG,
+        ]}
+      />
+    );
+    const exportBtn = screen.getByRole('button', { name: /export/i });
+    fireEvent.click(exportBtn);
+    const csvBtn = screen.queryByText(/CSV/i);
+    if (csvBtn) {
+      fireEvent.click(csvBtn);
+    }
+    expect(exportToCsv).toHaveBeenCalled();
+  });
+
+  it('exports pdf with DATE-only label fallback in totalRow', async () => {
+    const { exportToPdf } = await import('@/lib/pdf-export');
+    (exportToPdf as any).mockClear();
+    render(
+      <ReportChart
+        viewType={ReportViewType.PIE_CHART}
+        data={[{ label: '2024', value: 100, count: 5, date: '2024-01-01' }]}
+        groupBy={GroupByType.MONTH}
+        tableColumns={[TableColumn.DATE, TableColumn.VALUE, TableColumn.PERCENTAGE, TableColumn.COUNT]}
+      />
+    );
+    const exportBtn = screen.getByRole('button', { name: /export/i });
+    fireEvent.click(exportBtn);
+    const pdfBtn = screen.queryByText(/PDF/i);
+    if (pdfBtn) {
+      fireEvent.click(pdfBtn);
+      await new Promise((r) => setTimeout(r, 50));
+    }
+  });
+
+  it('exports pdf for table view (no chart container)', async () => {
+    const { exportToPdf } = await import('@/lib/pdf-export');
+    (exportToPdf as any).mockClear();
+    render(
+      <ReportChart
+        viewType={ReportViewType.TABLE}
+        data={sampleData}
+        groupBy={GroupByType.CATEGORY}
+        tableColumns={[TableColumn.DATE, TableColumn.VALUE, TableColumn.PERCENTAGE, TableColumn.COUNT]}
+      />
+    );
+    const exportBtn = screen.getByRole('button', { name: /export/i });
+    fireEvent.click(exportBtn);
+    const pdfBtn = screen.queryByText(/PDF/i);
+    if (pdfBtn) {
+      fireEvent.click(pdfBtn);
+      await new Promise((r) => setTimeout(r, 50));
+    }
   });
 
   it('renders totalCount as dash when zero', () => {

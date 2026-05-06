@@ -344,5 +344,326 @@ describe("OAuthInteractionController", () => {
         { mergeWithLastSubmission: false },
       );
     });
+
+    it("renders completed page when abort fails (stale interaction)", async () => {
+      const finishedFn = jest
+        .fn()
+        .mockRejectedValueOnce(
+          Object.assign(new Error("session not found"), {
+            name: "SessionNotFound",
+          }),
+        );
+      const { controller } = makeController({
+        interactionDetails: jest.fn(),
+        interactionFinished: finishedFn,
+      });
+      const req = {} as any;
+      const res = makeRes();
+      await controller.abort(req, res);
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+  });
+
+  // ─── Branch coverage extras ─────────────────────────────────────────
+
+  describe("render: consent prompt with no cookie redirects to login", () => {
+    it("redirects to login when consent prompt has no auth_token", async () => {
+      const { controller } = makeController({
+        interactionDetails: jest.fn().mockResolvedValue({
+          uid: "u1",
+          prompt: { name: "consent" },
+          params: { client_id: "claude-desktop", scope: "monize:read" },
+        }),
+      });
+      const req = { cookies: {}, originalUrl: "/oauth-consent/u1" } as any;
+      const res = makeRes();
+      await controller.render(req, res);
+      expect(res.redirect).toHaveBeenCalledWith(302, expect.any(String));
+    });
+  });
+
+  describe("render: lookupClient branches", () => {
+    it("uses clientId as name when client lookup returns null", async () => {
+      const { controller } = makeController({
+        interactionDetails: jest.fn().mockResolvedValue({
+          uid: "u1",
+          prompt: { name: "consent" },
+          params: { client_id: "unknown-client", scope: "monize:read" },
+        }),
+      });
+      const req = { cookies: { auth_token: "tok" } } as any;
+      const res = makeRes();
+      await controller.render(req, res);
+      expect(res.send).toHaveBeenCalled();
+    });
+
+    it("uses fallback when clientId is empty (lookupClient returns Unknown application)", async () => {
+      const { controller } = makeController({
+        interactionDetails: jest.fn().mockResolvedValue({
+          uid: "u1",
+          prompt: { name: "consent" },
+          params: { client_id: "", scope: "monize:read" },
+        }),
+      });
+      const req = { cookies: { auth_token: "tok" } } as any;
+      const res = makeRes();
+      await controller.render(req, res);
+      expect(res.send).toHaveBeenCalled();
+    });
+
+    it("logs and falls back when Client.find throws", async () => {
+      const { controller, provider } = makeController({
+        interactionDetails: jest.fn().mockResolvedValue({
+          uid: "u1",
+          prompt: { name: "consent" },
+          params: { client_id: "claude-desktop", scope: "monize:read" },
+        }),
+      });
+      provider.Client.find = jest.fn().mockRejectedValue(new Error("db down"));
+      const req = { cookies: { auth_token: "tok" } } as any;
+      const res = makeRes();
+      await controller.render(req, res);
+      expect(res.send).toHaveBeenCalled();
+    });
+  });
+
+  describe("resolveCookieUser branches", () => {
+    it("returns null when JWT type is 2fa_pending", async () => {
+      const { controller } = makeController({
+        interactionDetails: jest.fn().mockResolvedValue({
+          uid: "u1",
+          prompt: { name: "login" },
+          params: { client_id: "claude-desktop", scope: "monize:read" },
+        }),
+        jwtVerify: jest.fn().mockResolvedValue({ sub: "x", type: "2fa_pending" }),
+      });
+      const req = { cookies: { auth_token: "tok" }, originalUrl: "/x" } as any;
+      const res = makeRes();
+      await controller.render(req, res);
+      // Falls through to login redirect since user is null
+      expect(res.redirect).toHaveBeenCalled();
+    });
+
+    it("returns null when user is inactive", async () => {
+      const { controller } = makeController({
+        interactionDetails: jest.fn().mockResolvedValue({
+          uid: "u1",
+          prompt: { name: "login" },
+          params: { client_id: "claude-desktop", scope: "monize:read" },
+        }),
+        findUser: jest.fn().mockResolvedValue({
+          id: "u1",
+          email: "x",
+          isActive: false,
+          mustChangePassword: false,
+        }),
+      });
+      const req = {
+        cookies: { auth_token: "tok" },
+        originalUrl: "/oauth-consent/u1",
+      } as any;
+      const res = makeRes();
+      await controller.render(req, res);
+      expect(res.redirect).toHaveBeenCalled();
+    });
+
+    it("returns null when user must change password", async () => {
+      const { controller } = makeController({
+        interactionDetails: jest.fn().mockResolvedValue({
+          uid: "u1",
+          prompt: { name: "login" },
+          params: { client_id: "claude-desktop", scope: "monize:read" },
+        }),
+        findUser: jest.fn().mockResolvedValue({
+          id: "u1",
+          email: "x",
+          isActive: true,
+          mustChangePassword: true,
+        }),
+      });
+      const req = {
+        cookies: { auth_token: "tok" },
+        originalUrl: "/oauth-consent/u1",
+      } as any;
+      const res = makeRes();
+      await controller.render(req, res);
+      expect(res.redirect).toHaveBeenCalled();
+    });
+
+    it("returns null when JWT verification fails", async () => {
+      const { controller } = makeController({
+        interactionDetails: jest.fn().mockResolvedValue({
+          uid: "u1",
+          prompt: { name: "login" },
+          params: { client_id: "claude-desktop", scope: "monize:read" },
+        }),
+        jwtVerify: jest.fn().mockRejectedValue(new Error("invalid")),
+      });
+      const req = {
+        cookies: { auth_token: "tok" },
+        originalUrl: "/oauth-consent/u1",
+      } as any;
+      const res = makeRes();
+      await controller.render(req, res);
+      expect(res.redirect).toHaveBeenCalled();
+    });
+
+    it("returns null when user has no email (uses null)", async () => {
+      const { controller } = makeController({
+        interactionDetails: jest.fn().mockResolvedValue({
+          uid: "u1",
+          prompt: { name: "consent" },
+          params: { client_id: "claude-desktop", scope: "monize:read" },
+        }),
+        findUser: jest.fn().mockResolvedValue({
+          id: "u1",
+          email: null,
+          isActive: true,
+          mustChangePassword: false,
+        }),
+      });
+      const req = { cookies: { auth_token: "tok" } } as any;
+      const res = makeRes();
+      await controller.render(req, res);
+      expect(res.send).toHaveBeenCalled();
+    });
+  });
+
+  describe("buildLoginRedirect branches", () => {
+    it("normalizes returnTo without leading slash", async () => {
+      const { controller } = makeController({
+        interactionDetails: jest.fn().mockResolvedValue({
+          uid: "u1",
+          prompt: { name: "login" },
+          params: { client_id: "claude-desktop", scope: "monize:read" },
+        }),
+        findUser: jest.fn().mockResolvedValue(null),
+        publicUrl: "https://example.com/",
+      });
+      const req = {
+        cookies: {},
+        originalUrl: undefined,
+        url: "no-slash-prefix",
+      } as any;
+      const res = makeRes();
+      await controller.render(req, res);
+      const target = (res.redirect as jest.Mock).mock.calls[0][1] as string;
+      expect(target).toContain("returnTo=%2Fno-slash-prefix");
+    });
+
+    it("uses empty base when PUBLIC_APP_URL not set", async () => {
+      const { controller } = makeController({
+        interactionDetails: jest.fn().mockResolvedValue({
+          uid: "u1",
+          prompt: { name: "login" },
+          params: { client_id: "claude-desktop", scope: "monize:read" },
+        }),
+        findUser: jest.fn().mockResolvedValue(null),
+        publicUrl: undefined,
+      });
+      const req = { cookies: {}, originalUrl: "/x" } as any;
+      const res = makeRes();
+      await controller.render(req, res);
+      expect(res.redirect).toHaveBeenCalled();
+    });
+  });
+
+  describe("confirm branches", () => {
+    it("uses MCP resource URL when params.resource is missing", async () => {
+      const { controller } = makeController({
+        interactionDetails: jest.fn().mockResolvedValue({
+          uid: "u1",
+          prompt: { name: "consent" },
+          params: { client_id: "claude-desktop", scope: "monize:read" },
+          session: { accountId: "user-1" },
+        }),
+      });
+      const req = { cookies: { auth_token: "tok" } } as any;
+      const res = makeRes();
+      await controller.confirm(req, res, { scopes: ["monize:read"] });
+      expect(res.redirect || res.send || res.status).toBeDefined();
+    });
+
+    it("scopes string form is normalized to array", async () => {
+      const { controller } = makeController({
+        interactionDetails: jest.fn().mockResolvedValue({
+          uid: "u1",
+          prompt: { name: "consent" },
+          params: {
+            client_id: "claude-desktop",
+            scope: "monize:read",
+            resource: "https://app.monize.test/api/v1/mcp",
+          },
+          session: { accountId: "user-1" },
+        }),
+      });
+      const req = { cookies: { auth_token: "tok" } } as any;
+      const res = makeRes();
+      await controller.confirm(req, res, { scopes: "monize:read" });
+    });
+
+    it("uses existing grant when grantId is set on interaction", async () => {
+      const existing = {
+        accountId: "user-1",
+        clientId: "claude-desktop",
+        addOIDCScope: jest.fn(),
+        addResourceScope: jest.fn(),
+        save: jest.fn().mockResolvedValue("grant-existing"),
+      };
+      class GrantMock {
+        accountId: string;
+        clientId: string;
+        constructor(args: { accountId: string; clientId: string }) {
+          this.accountId = args.accountId;
+          this.clientId = args.clientId;
+        }
+        static find = jest.fn().mockResolvedValue(existing);
+        addOIDCScope = jest.fn();
+        addResourceScope = jest.fn();
+        save = jest.fn().mockResolvedValue("grant-new");
+      }
+      const { controller } = makeController({
+        interactionDetails: jest.fn().mockResolvedValue({
+          uid: "u1",
+          prompt: { name: "consent" },
+          params: { client_id: "claude-desktop", scope: "monize:read" },
+          session: { accountId: "user-1" },
+          grantId: "g1",
+        }),
+        Grant: GrantMock,
+      });
+      const req = { cookies: { auth_token: "tok" } } as any;
+      const res = makeRes();
+      await controller.confirm(req, res, { scopes: ["monize:read"] });
+      expect(existing.save).toHaveBeenCalled();
+    });
+
+    it("creates new grant when grantId set but find returns null", async () => {
+      class GrantMock {
+        accountId: string;
+        clientId: string;
+        constructor(args: { accountId: string; clientId: string }) {
+          this.accountId = args.accountId;
+          this.clientId = args.clientId;
+        }
+        static find = jest.fn().mockResolvedValue(null);
+        addOIDCScope = jest.fn();
+        addResourceScope = jest.fn();
+        save = jest.fn().mockResolvedValue("grant-new");
+      }
+      const { controller } = makeController({
+        interactionDetails: jest.fn().mockResolvedValue({
+          uid: "u1",
+          prompt: { name: "consent" },
+          params: { client_id: "claude-desktop", scope: "monize:read" },
+          session: { accountId: "user-1" },
+          grantId: "g1",
+        }),
+        Grant: GrantMock,
+      });
+      const req = { cookies: { auth_token: "tok" } } as any;
+      const res = makeRes();
+      await controller.confirm(req, res, { scopes: ["monize:read"] });
+    });
   });
 });

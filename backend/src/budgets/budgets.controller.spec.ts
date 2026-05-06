@@ -599,4 +599,41 @@ describe("BudgetsController", () => {
       ).toHaveBeenCalledWith("user-1", "budget-1", 3);
     });
   });
+
+  // ─── Default-fallback branch coverage ─────────────────────────────────
+
+  describe("getCategoryTrend default months", () => {
+    it("uses default 6 when months not provided", () => {
+      mockBudgetReportsService.getCategoryTrend!.mockReturnValue("ct");
+      controller.getCategoryTrend(mockReq, "budget-1", {} as never);
+      expect(mockBudgetReportsService.getCategoryTrend).toHaveBeenCalledWith(
+        "user-1",
+        "budget-1",
+        6,
+        undefined,
+      );
+    });
+  });
+
+  describe("getSavingsRate default months", () => {
+    it("uses default 12 when months not provided", () => {
+      mockBudgetReportsService.getSavingsRate!.mockReturnValue("sr");
+      controller.getSavingsRate(mockReq, "budget-1", {} as never);
+      expect(mockBudgetReportsService.getSavingsRate).toHaveBeenCalledWith(
+        "user-1",
+        "budget-1",
+        12,
+      );
+    });
+
+    it("uses provided months", () => {
+      mockBudgetReportsService.getSavingsRate!.mockReturnValue("sr");
+      controller.getSavingsRate(mockReq, "budget-1", { months: 6 } as never);
+      expect(mockBudgetReportsService.getSavingsRate).toHaveBeenCalledWith(
+        "user-1",
+        "budget-1",
+        6,
+      );
+    });
+  });
 });

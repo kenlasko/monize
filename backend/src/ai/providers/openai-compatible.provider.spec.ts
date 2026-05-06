@@ -564,4 +564,94 @@ describe("OpenAiCompatibleProvider", () => {
       }
     });
   });
+
+  describe("parseInlineToolCalls extra branches", () => {
+    it("returns null when the function-tag content is malformed JSON", () => {
+      const r = parseInlineToolCalls("<function=do_thing>not json</function>");
+      expect(r).toBeNull();
+    });
+
+    it("returns null when JSON arguments string in OpenAI shape is malformed", () => {
+      const r = parseInlineToolCalls(
+        '{"type":"function","function":{"name":"x","arguments":"not-json"}}',
+      );
+      expect(r).toBeNull();
+    });
+
+    it("returns null when llama arguments string is malformed", () => {
+      const r = parseInlineToolCalls('{"name":"x","arguments":"not-json"}');
+      expect(r).toBeNull();
+    });
+
+    it("returns null when llama arguments is a non-string non-object value", () => {
+      const r = parseInlineToolCalls('{"name":"x","arguments":42}');
+      expect(r).toBeNull();
+    });
+
+    it("uses parameters when arguments missing (object form)", () => {
+      const r = parseInlineToolCalls('{"name":"x","parameters":{"a":1}}');
+      expect(r).toEqual([
+        expect.objectContaining({ name: "x", input: { a: 1 } }),
+      ]);
+    });
+
+    it("returns null when an OpenAI-ish item has no string name", () => {
+      const r = parseInlineToolCalls(
+        '{"type":"function","function":{"arguments":{}}}',
+      );
+      expect(r).toBeNull();
+    });
+
+    it("treats null arguments as empty input (default object)", () => {
+      const r = parseInlineToolCalls(
+        '{"type":"function","function":{"name":"x","arguments":null}}',
+      );
+      expect(r).toEqual([
+        expect.objectContaining({ name: "x", input: {} }),
+      ]);
+    });
+
+    it("returns null if function is non-object", () => {
+      const r = parseInlineToolCalls(
+        '{"type":"function","function":"hello"}',
+      );
+      expect(r).toBeNull();
+    });
+
+    it("returns null when JSON string starts with non-object/array (returns plain text)", () => {
+      expect(parseInlineToolCalls("just text")).toBeNull();
+      expect(parseInlineToolCalls("123")).toBeNull();
+    });
+
+    it("strips python_tag and parses JSON after", () => {
+      const r = parseInlineToolCalls(
+        '<|python_tag|>{"name":"x","parameters":{"a":2}}',
+      );
+      expect(r).toEqual([
+        expect.objectContaining({ name: "x", input: { a: 2 } }),
+      ]);
+    });
+  });
+
+  describe("flattenToolMessages branch coverage", () => {
+    it("emits assistant content alone when no toolCalls", () => {
+      const m: AiMessage[] = [{ role: "assistant", content: "hello" }];
+      const r = flattenToolMessages(m);
+      expect(r).toEqual([{ role: "assistant", content: "hello" }]);
+    });
+
+    it("emits assistant tool_calls without leading text when content empty", () => {
+      const m: AiMessage[] = [
+        {
+          role: "assistant",
+          content: "",
+          toolCalls: [{ id: "t1", name: "n", input: { a: 1 } }],
+        },
+      ];
+      const r = flattenToolMessages(m);
+      expect(r[0].content).toContain("\"name\":\"n\"");
+      // No leading content+\n
+      expect(r[0].content.startsWith("\n")).toBe(false);
+    });
+  });
 });

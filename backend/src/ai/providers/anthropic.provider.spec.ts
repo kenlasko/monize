@@ -511,5 +511,273 @@ describe("AnthropicProvider", () => {
         expect(result.reason).toContain("ECONNREFUSED");
       }
     });
+
+    it("falls back to a generic reason for non-Error rejections", async () => {
+      mockRetrieve.mockRejectedValueOnce("string-error");
+      const result = await provider.verifyModel();
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.reason).toContain("string-error");
+      }
+    });
+  });
+
+  // ─── Branch coverage extras ─────────────────────────────────────────
+
+  describe("toAnthropicMessages", () => {
+    it("groups consecutive tool results into a single user block", async () => {
+      mockCreate.mockResolvedValue({
+        content: [{ type: "text", text: "ok" }],
+        usage: { input_tokens: 1, output_tokens: 1 },
+        stop_reason: "end_turn",
+        model: "claude-sonnet-4-20250514",
+      });
+      await provider.completeWithTools(
+        {
+          systemPrompt: "s",
+          messages: [
+            { role: "user", content: "u" },
+            {
+              role: "assistant",
+              content: "thinking",
+              toolCalls: [
+                { id: "t1", name: "n1", input: { x: 1 } },
+                { id: "t2", name: "n2", input: { x: 2 } },
+              ],
+            },
+            { role: "tool", content: "r1", toolCallId: "t1", name: "n1" },
+            { role: "tool", content: "r2", toolCallId: "t2", name: "n2" },
+          ],
+        },
+        [
+          {
+            name: "n1",
+            description: "",
+            inputSchema: { type: "object", properties: {} },
+          },
+        ],
+      );
+      const args = mockCreate.mock.calls[0][0];
+      const messages = args.messages;
+      // Last message is a single user message containing both tool_results
+      const last = messages[messages.length - 1];
+      expect(last.role).toBe("user");
+      expect(Array.isArray(last.content)).toBe(true);
+      expect(last.content.length).toBe(2);
+    });
+
+    it("appends new user msg when assistant has no toolCalls (else branch)", async () => {
+      mockCreate.mockResolvedValue({
+        content: [{ type: "text", text: "ok" }],
+        usage: { input_tokens: 1, output_tokens: 1 },
+        stop_reason: "end_turn",
+        model: "claude-sonnet-4-20250514",
+      });
+      await provider.completeWithTools(
+        {
+          systemPrompt: "s",
+          messages: [
+            { role: "assistant", content: "hi" },
+            { role: "tool", content: "r1", toolCallId: "t1", name: "n1" },
+          ],
+        },
+        [
+          {
+            name: "n1",
+            description: "",
+            inputSchema: { type: "object", properties: {} },
+          },
+        ],
+      );
+      const args = mockCreate.mock.calls[0][0];
+      // assistant→string content branch covered
+      expect(
+        args.messages.find(
+          (m: Record<string, unknown>) => m.role === "assistant",
+        ).content,
+      ).toBe("hi");
+    });
+
+    it("emits assistant text block when content present alongside toolCalls", async () => {
+      mockCreate.mockResolvedValue({
+        content: [{ type: "text", text: "ok" }],
+        usage: { input_tokens: 1, output_tokens: 1 },
+        stop_reason: "end_turn",
+        model: "claude-sonnet-4-20250514",
+      });
+      await provider.completeWithTools(
+        {
+          systemPrompt: "s",
+          messages: [
+            {
+              role: "assistant",
+              content: "I will search",
+              toolCalls: [{ id: "t1", name: "n1", input: { x: 1 } }],
+            },
+          ],
+        },
+        [
+          {
+            name: "n1",
+            description: "",
+            inputSchema: { type: "object", properties: {} },
+          },
+        ],
+      );
+      const args = mockCreate.mock.calls[0][0];
+      const assistant = args.messages.find(
+        (m: Record<string, unknown>) => m.role === "assistant",
+      );
+      expect(Array.isArray(assistant.content)).toBe(true);
+      expect(assistant.content[0].type).toBe("text");
+    });
+  });
+
+  describe("completeWithTools stop_reason mapping", () => {
+    it("returns max_tokens stop reason", async () => {
+      mockCreate.mockResolvedValueOnce({
+        content: [{ type: "text", text: "x" }],
+        usage: { input_tokens: 1, output_tokens: 1 },
+        stop_reason: "max_tokens",
+        model: "claude-sonnet-4-20250514",
+      });
+      const r = await provider.completeWithTools(
+        { systemPrompt: "s", messages: [{ role: "user", content: "u" }] },
+        [
+          {
+            name: "n",
+            description: "",
+            inputSchema: { type: "object", properties: {} },
+          },
+        ],
+      );
+      expect(r.stopReason).toBe("max_tokens");
+    });
+
+    it("falls back to end_turn for unknown stop reasons", async () => {
+      mockCreate.mockResolvedValueOnce({
+        content: [{ type: "text", text: "x" }],
+        usage: { input_tokens: 1, output_tokens: 1 },
+        stop_reason: "stop_sequence",
+        model: "claude-sonnet-4-20250514",
+      });
+      const r = await provider.completeWithTools(
+        { systemPrompt: "s", messages: [{ role: "user", content: "u" }] },
+        [
+          {
+            name: "n",
+            description: "",
+            inputSchema: { type: "object", properties: {} },
+          },
+        ],
+      );
+      expect(r.stopReason).toBe("end_turn");
+    });
+
+    it("uses default maxTokens when not provided", async () => {
+      mockCreate.mockResolvedValueOnce({
+        content: [{ type: "text", text: "x" }],
+        usage: { input_tokens: 1, output_tokens: 1 },
+        stop_reason: "end_turn",
+        model: "claude-sonnet-4-20250514",
+      });
+      await provider.complete({
+        systemPrompt: "s",
+        messages: [{ role: "user", content: "u" }],
+      });
+      expect(mockCreate.mock.calls[0][0].max_tokens).toBe(1024);
+    });
+
+    it("propagates temperature when provided", async () => {
+      mockCreate.mockResolvedValueOnce({
+        content: [{ type: "text", text: "x" }],
+        usage: { input_tokens: 1, output_tokens: 1 },
+        stop_reason: "end_turn",
+        model: "claude-sonnet-4-20250514",
+      });
+      await provider.complete({
+        systemPrompt: "s",
+        messages: [{ role: "user", content: "u" }],
+        temperature: 0.5,
+      });
+      expect(mockCreate.mock.calls[0][0].temperature).toBe(0.5);
+    });
+  });
+
+  describe("streamWithTools error paths", () => {
+    it("logs and rethrows when stream() throws (Error)", async () => {
+      mockStream.mockImplementationOnce(() => {
+        throw new Error("boom");
+      });
+      await expect(
+        (async () => {
+          const it = provider.streamWithTools(
+            {
+              systemPrompt: "s",
+              messages: [{ role: "user", content: "u" }],
+            },
+            [
+              {
+                name: "n",
+                description: "",
+                inputSchema: { type: "object", properties: {} },
+              },
+            ],
+          );
+          for await (const _ of it) void _;
+        })(),
+      ).rejects.toThrow("boom");
+    });
+
+    it("logs and rethrows when stream() throws (non-Error)", async () => {
+      mockStream.mockImplementationOnce(() => {
+        throw "string boom";
+      });
+      await expect(
+        (async () => {
+          const it = provider.streamWithTools(
+            {
+              systemPrompt: "s",
+              messages: [{ role: "user", content: "u" }],
+            },
+            [
+              {
+                name: "n",
+                description: "",
+                inputSchema: { type: "object", properties: {} },
+              },
+            ],
+          );
+          for await (const _ of it) void _;
+        })(),
+      ).rejects.toBe("string boom");
+    });
+
+    it("logs and rethrows when iteration throws (non-Error)", async () => {
+      mockStream.mockReturnValueOnce({
+        [Symbol.asyncIterator]: () => ({
+          next: () => Promise.reject("iter-err"),
+        }),
+        finalMessage: jest.fn(),
+      });
+      await expect(
+        (async () => {
+          const it = provider.streamWithTools(
+            {
+              systemPrompt: "s",
+              messages: [{ role: "user", content: "u" }],
+            },
+            [
+              {
+                name: "n",
+                description: "",
+                inputSchema: { type: "object", properties: {} },
+              },
+            ],
+          );
+          for await (const _ of it) void _;
+        })(),
+      ).rejects.toBe("iter-err");
+    });
   });
 });

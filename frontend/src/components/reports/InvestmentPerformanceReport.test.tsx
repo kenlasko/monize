@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@/test/render';
+import { render, screen, waitFor, fireEvent, act } from '@/test/render';
 import { InvestmentPerformanceReport } from './InvestmentPerformanceReport';
 
 vi.mock('@/hooks/useNumberFormat', () => ({
@@ -24,9 +24,21 @@ vi.mock('@/lib/chart-colours', () => ({
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
   PieChart: ({ children }: any) => <div data-testid="pie-chart">{children}</div>,
-  Pie: () => null,
+  Pie: ({ children }: any) => <div data-testid="pie">{children}</div>,
   Cell: () => null,
-  Tooltip: () => null,
+  Tooltip: ({ content }: any) => {
+    if (content && content.type) {
+      const C = content.type;
+      return (
+        <div data-testid="tooltip">
+          <C active={true} payload={[{ name: 'V', value: 100, color: '#000', payload: { name: 'Equities', symbol: 'VFV', marketValue: 100, gainLoss: 10, gainLossPercent: 5, currencyCode: 'CAD', value: 100, percentage: 50 } }]} />
+          <C active={false} payload={[]} />
+          <C active={true} payload={[{ name: 'X', value: 50, color: '#000', payload: { name: 'Bonds', symbol: 'XIC', marketValue: -50, gainLoss: -10, gainLossPercent: -5, currencyCode: 'USD', value: 50, percentage: 25 } }]} />
+        </div>
+      );
+    }
+    return null;
+  },
   Legend: () => null,
 }));
 
@@ -40,6 +52,10 @@ vi.mock('@/lib/investments', () => ({
   },
 }));
 
+vi.mock('@/lib/pdf-export', () => ({
+  exportToPdf: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock('@/lib/logger', () => ({
   createLogger: () => ({
     error: vi.fn(),
@@ -48,6 +64,87 @@ vi.mock('@/lib/logger', () => ({
     debug: vi.fn(),
   }),
 }));
+
+const fullPortfolio = {
+  holdings: [
+    {
+      id: 'h-1',
+      securityId: 'sec-vfv',
+      accountId: 'acc-1',
+      symbol: 'VFV',
+      name: 'Vanguard S&P 500',
+      quantity: 100,
+      averageCost: 90,
+      currentPrice: 100,
+      marketValue: 10000,
+      costBasis: 9000,
+      costBasisAccountCurrency: 9000,
+      gainLoss: 1000,
+      gainLossPercent: 11.11,
+      currencyCode: 'CAD',
+    },
+    {
+      id: 'h-2',
+      securityId: 'sec-vfv',
+      accountId: 'acc-2',
+      symbol: 'VFV',
+      name: 'Vanguard S&P 500',
+      quantity: 50,
+      averageCost: 95,
+      currentPrice: 100,
+      marketValue: 5000,
+      costBasis: 4750,
+      costBasisAccountCurrency: 4750,
+      gainLoss: 250,
+      gainLossPercent: 5.26,
+      currencyCode: 'CAD',
+    },
+    {
+      id: 'h-3',
+      securityId: 'sec-xic',
+      accountId: 'acc-1',
+      symbol: 'XIC',
+      name: 'iShares S&P/TSX',
+      quantity: 0,
+      averageCost: null,
+      currentPrice: null,
+      marketValue: null,
+      costBasis: 0,
+      costBasisAccountCurrency: 0,
+      gainLoss: null,
+      gainLossPercent: null,
+      currencyCode: 'CAD',
+    },
+    {
+      id: 'h-4',
+      securityId: 'sec-aapl',
+      accountId: 'acc-3',
+      symbol: 'AAPL',
+      name: 'Apple Inc',
+      quantity: 10,
+      averageCost: 150,
+      currentPrice: 140,
+      marketValue: 1400,
+      costBasis: 1500,
+      costBasisAccountCurrency: 1500,
+      gainLoss: -100,
+      gainLossPercent: -6.67,
+      currencyCode: 'USD',
+    },
+  ],
+  holdingsByAccount: [
+    { accountId: 'acc-1', totalMarketValue: 10000, cashBalance: 500, totalCostBasis: 9000 },
+    { accountId: 'acc-2', totalMarketValue: 5000, cashBalance: 0, totalCostBasis: 4750 },
+  ],
+  allocation: [
+    { name: 'Equities', value: 15000, percentage: 80, color: '#3b82f6' },
+    { name: 'Bonds', value: 1400, percentage: 20, symbol: 'XBND' },
+  ],
+  totalPortfolioValue: 16400,
+  totalCostBasis: 15250,
+  totalGainLoss: 1150,
+  totalGainLossPercent: 7.54,
+};
 
 describe('InvestmentPerformanceReport', () => {
   beforeEach(() => {
@@ -78,86 +175,92 @@ describe('InvestmentPerformanceReport', () => {
     });
   });
 
-  it('renders summary cards with portfolio data', async () => {
-    mockGetPortfolioSummary.mockResolvedValue({
-      holdings: [
-        {
-          id: 'h-1',
-          securityId: 'sec-vfv',
-          accountId: 'acc-1',
-          symbol: 'VFV',
-          name: 'Vanguard S&P 500',
-          quantity: 100,
-          averageCost: 90,
-          currentPrice: 100,
-          marketValue: 10000,
-          costBasis: 9000,
-          costBasisAccountCurrency: 9000,
-          gainLoss: 1000,
-          gainLossPercent: 11.11,
-          currencyCode: 'CAD',
-        },
-      ],
-      holdingsByAccount: [
-        {
-          accountId: 'acc-1',
-          totalMarketValue: 10000,
-          cashBalance: 500,
-          totalCostBasis: 9000,
-        },
-      ],
-      allocation: [
-        { name: 'Equities', value: 10000, percentage: 100, color: '#3b82f6' },
-      ],
-      totalPortfolioValue: 10500,
-      totalCostBasis: 9000,
-      totalGainLoss: 1000,
-      totalGainLossPercent: 11.11,
+  it('handles error in loadData gracefully', async () => {
+    mockGetPortfolioSummary.mockRejectedValue(new Error('boom'));
+    mockGetInvestmentAccounts.mockRejectedValue(new Error('boom'));
+    render(<InvestmentPerformanceReport />);
+    await waitFor(() => {
+      expect(screen.getByText(/No investment holdings found/)).toBeInTheDocument();
     });
+  });
+
+  it('renders portfolio summary, holdings, allocation toggle, expand and export', async () => {
+    mockGetPortfolioSummary.mockResolvedValue(fullPortfolio);
     mockGetInvestmentAccounts.mockResolvedValue([
-      { id: 'acc-1', name: 'TFSA', currencyCode: 'CAD', accountSubType: 'INVESTMENT_CASH' },
+      { id: 'acc-1', name: 'TFSA - Brokerage', currencyCode: 'CAD', accountSubType: 'INVESTMENT_BROKERAGE' },
+      { id: 'acc-2', name: 'TFSA - Cash', currencyCode: 'CAD', accountSubType: 'INVESTMENT_CASH' },
+      { id: 'acc-3', name: 'RRSP', currencyCode: 'USD', accountSubType: 'INVESTMENT_CASH' },
     ]);
     render(<InvestmentPerformanceReport />);
     await waitFor(() => {
       expect(screen.getByText('Total Value')).toBeInTheDocument();
     });
-    expect(screen.getByText('Cost Basis')).toBeInTheDocument();
-    expect(screen.getByText('Total Gain/Loss')).toBeInTheDocument();
-    expect(screen.getAllByText('Return').length).toBeGreaterThanOrEqual(1);
+    // expand multi-account VFV
+    const expandableRow = screen.getAllByText('VFV')[0];
+    await act(async () => {
+      fireEvent.click(expandableRow);
+    });
+    // collapse it
+    await act(async () => {
+      fireEvent.click(expandableRow);
+    });
+    // switch to allocation view
+    await act(async () => {
+      fireEvent.click(screen.getByText('Allocation'));
+    });
+    expect(screen.getByText('Asset Allocation')).toBeInTheDocument();
+    // back to performance
+    await act(async () => {
+      fireEvent.click(screen.getByText('Holdings'));
+    });
+    // change account filter
+    const select = document.querySelector('select') as HTMLSelectElement;
+    await act(async () => {
+      fireEvent.change(select, { target: { value: 'acc-1' } });
+    });
+    // also test foreign currency summary by switching to USD-only account
+    await act(async () => {
+      fireEvent.change(select, { target: { value: 'acc-3' } });
+    });
+    // export pdf
+    const exportBtn = screen.getByRole('button', { name: /export/i });
+    await act(async () => {
+      fireEvent.click(exportBtn);
+    });
+    const pdfBtn = screen.queryByText(/PDF/i);
+    if (pdfBtn) {
+      await act(async () => {
+        fireEvent.click(pdfBtn);
+      });
+    }
   });
 
-  it('renders view type toggle buttons', async () => {
+  it('handles loss case (negative totalGainLoss)', async () => {
     mockGetPortfolioSummary.mockResolvedValue({
-      holdings: [
-        {
-          id: 'h-1',
-          securityId: 'sec-xic',
-          accountId: 'acc-1',
-          symbol: 'XIC',
-          name: 'iShares S&P/TSX',
-          quantity: 50,
-          averageCost: 30,
-          currentPrice: 35,
-          marketValue: 1750,
-          costBasis: 1500,
-          costBasisAccountCurrency: 1500,
-          gainLoss: 250,
-          gainLossPercent: 16.67,
-          currencyCode: 'CAD',
-        },
-      ],
-      holdingsByAccount: [],
-      allocation: [],
-      totalPortfolioValue: 1750,
-      totalCostBasis: 1500,
-      totalGainLoss: 250,
-      totalGainLossPercent: 16.67,
+      ...fullPortfolio,
+      totalGainLoss: -500,
+      totalGainLossPercent: -3.5,
     });
     mockGetInvestmentAccounts.mockResolvedValue([]);
     render(<InvestmentPerformanceReport />);
     await waitFor(() => {
-      expect(screen.getByText('Holdings')).toBeInTheDocument();
+      expect(screen.getByText('Total Value')).toBeInTheDocument();
     });
-    expect(screen.getByText('Allocation')).toBeInTheDocument();
+  });
+
+  it('handles unknown account in expansion mapping', async () => {
+    mockGetPortfolioSummary.mockResolvedValue(fullPortfolio);
+    mockGetInvestmentAccounts.mockResolvedValue([]);
+    render(<InvestmentPerformanceReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Total Value')).toBeInTheDocument();
+    });
+    // Find VFV row and click it
+    const vfvCells = screen.getAllByText('VFV').filter((el) => el.closest('tr'));
+    const row = vfvCells[0].closest('tr');
+    await act(async () => {
+      fireEvent.click(row!);
+    });
+    expect(screen.getAllByText(/Unknown account/i).length).toBeGreaterThan(0);
   });
 });

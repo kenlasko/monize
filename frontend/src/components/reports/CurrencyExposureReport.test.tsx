@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@/test/render';
+import { render, screen, waitFor, fireEvent, act } from '@/test/render';
 import { CurrencyExposureReport } from './CurrencyExposureReport';
+
+vi.mock('@/lib/pdf-export', () => ({
+  exportToPdf: vi.fn().mockResolvedValue(undefined),
+}));
 
 vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({
@@ -22,7 +26,21 @@ vi.mock('recharts', () => ({
   PieChart: ({ children }: any) => <div data-testid="pie-chart">{children}</div>,
   Pie: () => null,
   Cell: () => null,
-  Tooltip: () => null,
+  Tooltip: ({ content }: any) => {
+    if (content && content.type) {
+      const C = content.type;
+      const baseProps = content.props || {};
+      try {
+        return (
+          <div>
+            <C {...baseProps} active={true} payload={[{ payload: { name: 'CAD', currency: 'CAD', nativeValue: 100, convertedValue: 100, value: 100, percentage: 50, count: 2 } }]} />
+            <C {...baseProps} active={false} payload={[]} />
+          </div>
+        );
+      } catch { return null; }
+    }
+    return null;
+  },
   Legend: () => null,
 }));
 
@@ -149,7 +167,7 @@ describe('CurrencyExposureReport', () => {
     mockGetInvestmentAccounts.mockResolvedValue([]);
     render(<CurrencyExposureReport />);
     await waitFor(() => {
-      expect(screen.getByText('CAD')).toBeInTheDocument();
+      expect(screen.getAllByText('CAD').length).toBeGreaterThanOrEqual(1);
     });
     expect(screen.getByText('USD')).toBeInTheDocument();
   });
@@ -211,6 +229,48 @@ describe('CurrencyExposureReport', () => {
     await waitFor(() => {
       expect(screen.getByText('Clear Filters')).toBeInTheDocument();
     });
+  });
+
+  it('exports pdf', async () => {
+    const { exportToPdf } = await import('@/lib/pdf-export');
+    (exportToPdf as any).mockClear();
+    mockGetPortfolioSummary.mockResolvedValue({ holdings: mockHoldings });
+    mockGetInvestmentAccounts.mockResolvedValue(mockAccounts);
+    render(<CurrencyExposureReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Total Portfolio')).toBeInTheDocument();
+    });
+    const exportBtn = screen.getByRole('button', { name: /export/i });
+    await act(async () => { fireEvent.click(exportBtn); });
+    const pdfBtn = screen.queryByText(/PDF/i);
+    if (pdfBtn) {
+      await act(async () => { fireEvent.click(pdfBtn); });
+    }
+    expect(exportToPdf).toHaveBeenCalled();
+  });
+
+  it('handles error in loadData', async () => {
+    mockGetPortfolioSummary.mockRejectedValue(new Error('boom'));
+    mockGetInvestmentAccounts.mockRejectedValue(new Error('boom'));
+    render(<CurrencyExposureReport />);
+    await waitFor(() => {
+      expect(screen.getByText(/No investment holdings/)).toBeInTheDocument();
+    });
+  });
+
+  it('clears filters when Clear Filters clicked', async () => {
+    mockGetPortfolioSummary.mockResolvedValue({ holdings: mockHoldings });
+    mockGetInvestmentAccounts.mockResolvedValue(mockAccounts);
+    render(<CurrencyExposureReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Accounts')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Accounts'));
+    fireEvent.click(screen.getByText('TFSA'));
+    await waitFor(() => {
+      expect(screen.getByText('Clear Filters')).toBeInTheDocument();
+    });
+    await act(async () => { fireEvent.click(screen.getByText('Clear Filters')); });
   });
 
   it('closes dropdown when clicking outside', async () => {

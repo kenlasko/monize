@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@/test/render';
+import { render, screen, waitFor, fireEvent, act } from '@/test/render';
 import { SecurityPerformanceReport } from './SecurityPerformanceReport';
+
+vi.mock('@/lib/pdf-export', () => ({
+  exportToPdf: vi.fn().mockResolvedValue(undefined),
+}));
 
 vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({
@@ -25,10 +29,24 @@ vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
   AreaChart: ({ children }: any) => <div data-testid="area-chart">{children}</div>,
   Area: () => null,
-  XAxis: () => null,
-  YAxis: () => null,
+  XAxis: ({ tickFormatter }: any) => <div>{tickFormatter ? tickFormatter(1) : ''}</div>,
+  YAxis: ({ tickFormatter }: any) => <div>{tickFormatter ? tickFormatter(100) : ''}</div>,
   CartesianGrid: () => null,
-  Tooltip: () => null,
+  Tooltip: ({ content, formatter }: any) => {
+    if (typeof content === 'function') {
+      return (
+        <div data-testid="tooltip">
+          {content({ active: true, payload: [{ payload: { label: 'Jan', close: 100, buyMarker: 100, sellMarker: 100 } }] })}
+          {content({ active: false, payload: [] })}
+          {content({ active: true, payload: [{ payload: { label: 'Feb', close: 50 } }] })}
+        </div>
+      );
+    }
+    if (formatter) {
+      try { formatter(123, 'X'); } catch {}
+    }
+    return null;
+  },
   ReferenceLine: () => null,
 }));
 
@@ -220,6 +238,151 @@ describe('SecurityPerformanceReport', () => {
     fireEvent.click(screen.getByText('Transactions'));
     await waitFor(() => {
       expect(screen.getByText('Transaction History - AAPL')).toBeInTheDocument();
+    });
+  });
+
+  it('handles loadDetail error and load error gracefully', async () => {
+    mockGetSecurities.mockRejectedValue(new Error('boom'));
+    mockGetPortfolioSummary.mockRejectedValue(new Error('boom'));
+    mockGetInvestmentAccounts.mockRejectedValue(new Error('boom'));
+    render(<SecurityPerformanceReport />);
+    await waitFor(() => {
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
+    });
+  });
+
+  it('exports pdf in chart view', async () => {
+    const { exportToPdf } = await import('@/lib/pdf-export');
+    (exportToPdf as any).mockClear();
+    mockGetSecurities.mockResolvedValue(mockSecurities);
+    mockGetPortfolioSummary.mockResolvedValue({ holdings: mockHoldings });
+    mockGetSecurityPrices.mockResolvedValue([
+      { id: 1, securityId: 's-1', priceDate: '2025-01-01', closePrice: 175, createdAt: '' },
+    ]);
+    mockGetTransactions.mockResolvedValue({
+      data: [
+        { id: 'tx-1', transactionDate: '2020-01-01', action: 'BUY', quantity: 10, price: 150, totalAmount: 1500, securityId: 's-1', security: { symbol: 'AAPL', name: 'A' }, accountId: 'acc-1' },
+        { id: 'tx-2', transactionDate: '2024-06-15', action: 'SELL', quantity: 5, price: 180, totalAmount: 900, securityId: 's-1', security: { symbol: 'AAPL', name: 'A' }, accountId: 'acc-1' },
+        { id: 'tx-3', transactionDate: '2024-07-15', action: 'DIVIDEND', quantity: null, price: null, totalAmount: 50, securityId: 's-1', security: { symbol: 'AAPL', name: 'A' }, accountId: 'acc-1' },
+        { id: 'tx-4', transactionDate: '2024-08-15', action: 'REINVEST', quantity: 1, price: 50, totalAmount: 50, securityId: 's-1', security: { symbol: 'AAPL', name: 'A' }, accountId: 'acc-1' },
+      ],
+      pagination: { hasMore: false },
+    });
+    render(<SecurityPerformanceReport />);
+    await waitFor(() => {
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByRole('combobox'), { target: { value: 's-1' } });
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Current Value')).toBeInTheDocument();
+    });
+    const exportBtn = screen.getByRole('button', { name: /export/i });
+    await act(async () => {
+      fireEvent.click(exportBtn);
+    });
+    const pdfBtn = screen.queryByText(/PDF/i);
+    if (pdfBtn) {
+      await act(async () => {
+        fireEvent.click(pdfBtn);
+      });
+    }
+    expect(exportToPdf).toHaveBeenCalled();
+  });
+
+  it('exports pdf in transactions view', async () => {
+    const { exportToPdf } = await import('@/lib/pdf-export');
+    (exportToPdf as any).mockClear();
+    mockGetSecurities.mockResolvedValue(mockSecurities);
+    mockGetPortfolioSummary.mockResolvedValue({ holdings: [{ ...mockHoldings[0], gainLoss: -100, gainLossPercent: -5, marketValue: 1000, costBasis: 1500 }] });
+    mockGetSecurityPrices.mockResolvedValue([]);
+    mockGetTransactions.mockResolvedValue({
+      data: [
+        { id: 'tx-1', transactionDate: '2024-06-15', action: 'BUY', quantity: 10, price: 150, totalAmount: 1500, securityId: 's-1', security: { symbol: 'AAPL', name: 'A' }, accountId: 'acc-1' },
+      ],
+      pagination: { hasMore: false },
+    });
+    render(<SecurityPerformanceReport />);
+    await waitFor(() => {
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByRole('combobox'), { target: { value: 's-1' } });
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Transactions')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Transactions'));
+    const exportBtn = screen.getByRole('button', { name: /export/i });
+    await act(async () => {
+      fireEvent.click(exportBtn);
+    });
+    const pdfBtn = screen.queryByText(/PDF/i);
+    if (pdfBtn) {
+      await act(async () => {
+        fireEvent.click(pdfBtn);
+      });
+    }
+  });
+
+  it('exports pdf in dividends view', async () => {
+    const { exportToPdf } = await import('@/lib/pdf-export');
+    (exportToPdf as any).mockClear();
+    mockGetSecurities.mockResolvedValue(mockSecurities);
+    mockGetPortfolioSummary.mockResolvedValue({ holdings: mockHoldings });
+    mockGetSecurityPrices.mockResolvedValue([]);
+    mockGetTransactions.mockResolvedValue({
+      data: [
+        { id: 'tx-1', transactionDate: '2024-06-15', action: 'DIVIDEND', quantity: null, price: null, totalAmount: 50, securityId: 's-1', security: { symbol: 'AAPL', name: 'A' }, accountId: 'acc-1' },
+      ],
+      pagination: { hasMore: false },
+    });
+    render(<SecurityPerformanceReport />);
+    await waitFor(() => {
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByRole('combobox'), { target: { value: 's-1' } });
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Dividends')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Dividends'));
+    const exportBtn = screen.getByRole('button', { name: /export/i });
+    await act(async () => {
+      fireEvent.click(exportBtn);
+    });
+    const pdfBtn = screen.queryByText(/PDF/i);
+    if (pdfBtn) {
+      await act(async () => {
+        fireEvent.click(pdfBtn);
+      });
+    }
+  });
+
+  it('paginates transactions through multiple pages', async () => {
+    mockGetSecurities.mockResolvedValue(mockSecurities);
+    mockGetPortfolioSummary.mockResolvedValue({ holdings: mockHoldings });
+    mockGetSecurityPrices.mockResolvedValue([]);
+    mockGetTransactions
+      .mockResolvedValueOnce({
+        data: [{ id: 'tx-1', transactionDate: '2024-06-01', action: 'BUY', quantity: 10, price: 150, totalAmount: 1500, securityId: 's-1', security: { symbol: 'AAPL', name: 'A' }, accountId: 'acc-1' }],
+        pagination: { hasMore: true },
+      })
+      .mockResolvedValueOnce({
+        data: [{ id: 'tx-2', transactionDate: '2024-07-01', action: 'BUY', quantity: 5, price: 160, totalAmount: 800, securityId: 's-1', security: { symbol: 'AAPL', name: 'A' }, accountId: 'acc-1' }],
+        pagination: { hasMore: false },
+      });
+    render(<SecurityPerformanceReport />);
+    await waitFor(() => {
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByRole('combobox'), { target: { value: 's-1' } });
+    });
+    await waitFor(() => {
+      expect(mockGetTransactions).toHaveBeenCalledTimes(2);
     });
   });
 

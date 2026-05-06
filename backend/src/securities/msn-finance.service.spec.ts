@@ -591,4 +591,491 @@ describe("MsnFinanceService", () => {
       expect(result).toBeNull();
     });
   });
+
+  // ─── branch coverage: helper-driven branches via lookupSecurity ────────
+
+  describe("branch coverage extras", () => {
+    it("mapMsnSecurityType: returns null for IX (index)", async () => {
+      global.fetch = jest.fn().mockReturnValueOnce(
+        createResponse({
+          data: {
+            stocks: [
+              {
+                Symbol: "SPX",
+                SecId: "spx1",
+                Name: "S&P 500",
+                Exchange: "XNAS",
+                SecurityType: "IX",
+              },
+            ],
+          },
+        }),
+      );
+      const r = await service.lookupSecurity("SPX");
+      expect(r!.securityType).toBeNull();
+    });
+
+    it("mapMsnSecurityType: returns ETF for ETP/exchange-traded fund text", async () => {
+      global.fetch = jest.fn().mockReturnValueOnce(
+        createResponse({
+          data: {
+            stocks: [
+              {
+                Symbol: "VOO",
+                SecId: "voo1",
+                Name: "Vanguard ETP",
+                Exchange: "XNYS",
+                SecurityType: "EXCHANGE TRADED FUND",
+              },
+            ],
+          },
+        }),
+      );
+      const r = await service.lookupSecurity("VOO");
+      expect(r!.securityType).toBe("ETF");
+    });
+
+    it("mapMsnSecurityType: maps BOND/OPTION/CRYPTO/STOCK variants", async () => {
+      const cases: Array<[string, string]> = [
+        ["BOND", "BOND"],
+        ["FIXED INCOME", "BOND"],
+        ["OPT", "OPTION"],
+        ["DIGITAL CURRENCY", "CRYPTO"],
+        ["CRYPTOCURRENCY", "CRYPTO"],
+        ["CS", "STOCK"],
+        ["PS", "STOCK"],
+        ["ADR", "STOCK"],
+        ["EQUITY", "STOCK"],
+        ["UNKNOWN_TYPE_XYZ", null as unknown as string],
+        ["MUTUAL FUND", "MUTUAL_FUND"],
+        ["MF", "MUTUAL_FUND"],
+        ["OEF", "MUTUAL_FUND"],
+        ["FUND", "MUTUAL_FUND"],
+      ];
+      for (const [secType, expected] of cases) {
+        global.fetch = jest.fn().mockReturnValueOnce(
+          createResponse({
+            data: {
+              stocks: [
+                {
+                  Symbol: "X",
+                  SecId: "x1",
+                  Name: "Some Inc",
+                  Exchange: "XNYS",
+                  SecurityType: secType,
+                },
+              ],
+            },
+          }),
+        );
+        const r = await service.lookupSecurity("X");
+        expect(r!.securityType).toBe(expected);
+      }
+    });
+
+    it("currencyFromExchange: maps various non-USD exchanges", async () => {
+      const cases: Array<[string, string]> = [
+        ["LSE", "GBP"],
+        ["LONDON", "GBP"],
+        ["ASX", "AUD"],
+        ["FRANKFURT", "EUR"],
+        ["XETRA", "EUR"],
+        ["PARIS", "EUR"],
+        ["TOKYO", "JPY"],
+        ["HKEX", "HKD"],
+        ["HONG KONG", "HKD"],
+        ["TSX-V", "CAD"],
+        ["TSXV", "CAD"],
+        ["CSE", "CAD"],
+        ["NEO", "CAD"],
+      ];
+      for (const [exch, ccy] of cases) {
+        const mic = msnInternals.EXCHANGE_TO_MSN[exch];
+        global.fetch = jest.fn().mockReturnValueOnce(
+          createResponse({
+            data: {
+              stocks: [
+                {
+                  Symbol: "X",
+                  SecId: "x1",
+                  Name: "X",
+                  Exchange: mic,
+                },
+              ],
+            },
+          }),
+        );
+        const r = await service.lookupSecurity("X", [exch]);
+        expect(r!.currencyCode).toBe(ccy);
+      }
+    });
+
+    it("currencyFromExchange: defaults to USD for unknown", async () => {
+      global.fetch = jest.fn().mockReturnValueOnce(
+        createResponse({
+          data: {
+            stocks: [
+              {
+                Symbol: "X",
+                SecId: "x1",
+                Name: "X Inc",
+                Exchange: "XNAS",
+              },
+            ],
+          },
+        }),
+      );
+      const r = await service.lookupSecurity("X");
+      expect(r!.currencyCode).toBe("USD");
+    });
+
+    it("currencyFromCountryCode: infers via locale fallback", async () => {
+      const stockBlob = JSON.stringify({
+        OS001: "FOO",
+        OS01W: "Foo Fund Series",
+        FullInstrument: "F999",
+        locale: "en-au",
+      });
+      global.fetch = jest
+        .fn()
+        .mockReturnValueOnce(createResponse({ data: { stocks: [stockBlob] } }));
+      const r = await service.lookupSecurity("FOO");
+      expect(r!.currencyCode).toBe("AUD");
+    });
+
+    it("currencyFromCountryCode: returns null when neither code nor locale", async () => {
+      const stockBlob = JSON.stringify({
+        OS001: "FOO",
+        OS01W: "Foo Fund Series Name",
+        FullInstrument: "F999",
+      });
+      global.fetch = jest
+        .fn()
+        .mockReturnValueOnce(createResponse({ data: { stocks: [stockBlob] } }));
+      const r = await service.lookupSecurity("FOO");
+      // No exchange (no Exchange field), no currency, no locale → null
+      expect(r!.currencyCode).toBeNull();
+    });
+
+    it("countryToCurrency: handles US/GB/UK/JP/HK/CH/SE/NO/DK/IT/ES/NL/FR/DE", async () => {
+      const codes = [
+        ["US", "USD"],
+        ["GB", "GBP"],
+        ["UK", "GBP"],
+        ["JP", "JPY"],
+        ["HK", "HKD"],
+        ["CH", "CHF"],
+        ["SE", "SEK"],
+        ["NO", "NOK"],
+        ["DK", "DKK"],
+        ["IT", "EUR"],
+        ["ES", "EUR"],
+        ["NL", "EUR"],
+        ["FR", "EUR"],
+        ["DE", "EUR"],
+        ["XX", null],
+      ];
+      for (const [country, expected] of codes) {
+        const stockBlob = JSON.stringify({
+          OS001: "X",
+          OS01W: "X Fund",
+          FullInstrument: "F1",
+          RT0EC: country,
+        });
+        global.fetch = jest.fn().mockReturnValueOnce(
+          createResponse({ data: { stocks: [stockBlob] } }),
+        );
+        const r = await service.lookupSecurity("X");
+        expect(r!.currencyCode).toBe(expected);
+      }
+    });
+
+    it("scanExchangeCode: picks up unmapped exchange-shaped string field", async () => {
+      // No mapped exchange field, but a free-form key contains a MIC.
+      global.fetch = jest.fn().mockReturnValueOnce(
+        createResponse({
+          data: {
+            stocks: [
+              {
+                Symbol: "X",
+                SecId: "x1",
+                Name: "X Inc",
+                Misc: "XNAS",
+              },
+            ],
+          },
+        }),
+      );
+      const r = await service.lookupSecurity("X");
+      expect(r!.exchange).toBe("NASDAQ");
+    });
+
+    it("findLongestNameField: falls back to long string when no named candidate", async () => {
+      const stockBlob = JSON.stringify({
+        OS001: "ZZZ",
+        FullInstrument: "F12345",
+        SecId: "sec123",
+        // No standard name fields. A "weird" field carrying a proper-ish name.
+        WeirdKey: "Some Company Long Name LLC",
+      });
+      global.fetch = jest
+        .fn()
+        .mockReturnValueOnce(createResponse({ data: { stocks: [stockBlob] } }));
+      const r = await service.lookupSecurity("ZZZ");
+      expect(r!.name).toBe("Some Company Long Name LLC");
+    });
+
+    it("preferredExchangePriority: unknown exchange gets last priority", async () => {
+      // 2 candidates, first has unknown MIC, second matches preferred.
+      // The preferred one (XNAS via NASDAQ) should sort first.
+      global.fetch = jest.fn().mockReturnValueOnce(
+        createResponse({
+          data: {
+            stocks: [
+              {
+                Symbol: "X",
+                SecId: "x-other",
+                Name: "X Other",
+                Exchange: "XUNKNOWN",
+              },
+              {
+                Symbol: "X",
+                SecId: "x-nas",
+                Name: "X NAS",
+                Exchange: "XNAS",
+              },
+            ],
+          },
+        }),
+      );
+      const all = await service.lookupSecurityMany("X", ["NASDAQ"]);
+      expect(all[0].exchange).toBe("NASDAQ");
+    });
+
+    it("retries en-us when en-ca empty (lookupSecurityMany with prefs)", async () => {
+      global.fetch = jest
+        .fn()
+        // first call (en-ca because pref is canadian) → empty
+        .mockReturnValueOnce(createResponse({ data: { stocks: [] } }))
+        // second call (en-us) → result
+        .mockReturnValueOnce(
+          createResponse({
+            data: {
+              stocks: [
+                {
+                  Symbol: "AAPL",
+                  SecId: "a1",
+                  Name: "Apple Inc",
+                  Exchange: "XNAS",
+                },
+              ],
+            },
+          }),
+        );
+      const r = await service.lookupSecurityMany("AAPL", ["TSX"]);
+      expect(r.length).toBe(1);
+      expect(r[0].symbol).toBe("AAPL");
+    });
+
+    it("returns empty array when both markets empty in lookupSecurityMany", async () => {
+      global.fetch = jest
+        .fn()
+        .mockReturnValue(createResponse({ data: { stocks: [] } }));
+      const r = await service.lookupSecurityMany("BOGUS");
+      expect(r).toEqual([]);
+    });
+  });
+
+  describe("isApiKeyConfigured", () => {
+    it("returns true when MSN_API_KEY is set", () => {
+      expect(service.isApiKeyConfigured()).toBe(true);
+    });
+
+    it("returns false when MSN_API_KEY is empty", async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          MsnFinanceService,
+          {
+            provide: ConfigService,
+            useValue: { get: () => "   " },
+          },
+        ],
+      }).compile();
+      const svc = module.get(MsnFinanceService);
+      expect(svc.isApiKeyConfigured()).toBe(false);
+    });
+
+    it("returns false when ConfigService not provided", async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [MsnFinanceService],
+      }).compile();
+      const svc = module.get(MsnFinanceService);
+      expect(svc.isApiKeyConfigured()).toBe(false);
+    });
+  });
+
+  describe("fetchQuote: API key absence", () => {
+    it("returns null from tryDirectQuote when no apiKey, then chart fallback also fails", async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          MsnFinanceService,
+          {
+            provide: ConfigService,
+            useValue: { get: () => undefined },
+          },
+        ],
+      }).compile();
+      const svc = module.get(MsnFinanceService);
+      // Chart endpoint also returns empty, so overall null.
+      global.fetch = jest
+        .fn()
+        .mockReturnValue(createResponse({ series: [] }));
+      const q = await svc.fetchQuote("AAPL", "NASDAQ", {
+        instrumentId: "a1u3p2",
+      });
+      expect(q).toBeNull();
+    });
+  });
+
+  describe("normalizeTimestamp branch", () => {
+    it("handles invalid string timestamp", () => {
+      const q = msnInternals.extractQuoteFields({
+        Symbol: "X",
+        Time: "not-a-date",
+      });
+      expect(q.time).toBeUndefined();
+    });
+    it("handles missing timestamp", () => {
+      const q = msnInternals.extractQuoteFields({ Symbol: "X" });
+      expect(q.time).toBeUndefined();
+    });
+    it("parses millisecond numeric timestamp", () => {
+      const q = msnInternals.extractQuoteFields({
+        Symbol: "X",
+        Time: 1700000000000,
+      });
+      expect(q.time).toBe(1700000000);
+    });
+    it("parses second numeric timestamp", () => {
+      const q = msnInternals.extractQuoteFields({
+        Symbol: "X",
+        Time: 1700000000,
+      });
+      expect(q.time).toBe(1700000000);
+    });
+  });
+
+  describe("parseMsnDate branches", () => {
+    it("returns null for non-finite seconds", () => {
+      // very-large numbers still produce a date; test object branch
+      expect(msnInternals.parseMsnDate({} as unknown)).toBeNull();
+    });
+  });
+
+  describe("mapRangeToMsn extra ranges", () => {
+    it("maps 1mo, 1m, 6mo, 6m, all variants", () => {
+      expect(msnInternals.mapRangeToMsn("1mo")).toBe("1M");
+      expect(msnInternals.mapRangeToMsn("1m")).toBe("1M");
+      expect(msnInternals.mapRangeToMsn("6mo")).toBe("6M");
+      expect(msnInternals.mapRangeToMsn("6m")).toBe("6M");
+      expect(msnInternals.mapRangeToMsn("all")).toBe("MAX");
+    });
+  });
+
+  describe("fetchHistorical default range", () => {
+    it("uses default 'max' when no range supplied", async () => {
+      global.fetch = jest.fn().mockReturnValueOnce(
+        createResponse({
+          series: [{ Time: "2024-06-15", Close: 100 }],
+          Currency: "USD",
+        }),
+      );
+      const prices = await service.fetchHistorical("X", null, undefined, {
+        instrumentId: "x1",
+      });
+      expect(prices).not.toBeNull();
+      expect(prices![0].close).toBe(100);
+    });
+
+    it("returns null when instrumentId cannot be resolved", async () => {
+      global.fetch = jest
+        .fn()
+        .mockReturnValue(createResponse({ data: { stocks: [] } }));
+      const prices = await service.fetchHistorical("X", null);
+      expect(prices).toBeNull();
+    });
+  });
+
+  describe("fetchStockSectorInfo", () => {
+    it("returns null when instrumentId cannot resolve", async () => {
+      global.fetch = jest
+        .fn()
+        .mockReturnValue(createResponse({ data: { stocks: [] } }));
+      const r = await service.fetchStockSectorInfo("X", null);
+      expect(r).toBeNull();
+    });
+
+    it("returns null on HTTP error", async () => {
+      global.fetch = jest
+        .fn()
+        .mockReturnValueOnce(createResponse("", false, 500));
+      const r = await service.fetchStockSectorInfo("X", null, {
+        instrumentId: "x1",
+      });
+      expect(r).toBeNull();
+    });
+
+    it("returns null when fetch throws", async () => {
+      global.fetch = jest.fn().mockRejectedValueOnce(new Error("boom"));
+      const r = await service.fetchStockSectorInfo("X", null, {
+        instrumentId: "x1",
+      });
+      expect(r).toBeNull();
+    });
+
+    it("returns sector/industry when present in HTML", async () => {
+      const html = `<html><script>{"sector":"Tech","industry":"Software"}</script></html>`;
+      global.fetch = jest.fn().mockReturnValueOnce(createResponse(html));
+      const r = await service.fetchStockSectorInfo("X", null, {
+        instrumentId: "x1",
+      });
+      expect(r).toEqual({ sector: "Tech", industry: "Software" });
+    });
+
+    it("returns nulls inside object when neither match", async () => {
+      const html = `<html>nothing</html>`;
+      global.fetch = jest.fn().mockReturnValueOnce(createResponse(html));
+      const r = await service.fetchStockSectorInfo("X", null, {
+        instrumentId: "x1",
+      });
+      expect(r).toEqual({ sector: null, industry: null });
+    });
+  });
+
+  describe("getTradingDate", () => {
+    it("returns a Date from quote", () => {
+      const d = service.getTradingDate({
+        symbol: "X",
+        regularMarketTime: 1700000000,
+        provider: "msn",
+      });
+      expect(d).toBeInstanceOf(Date);
+    });
+  });
+
+  describe("httpGetJson error path", () => {
+    it("returns null when fetch throws (used by lookupSecurity)", async () => {
+      global.fetch = jest
+        .fn()
+        .mockRejectedValue(new Error("network failure"));
+      const r = await service.lookupSecurity("X");
+      expect(r).toBeNull();
+    });
+
+    it("returns null when fetch throws non-Error", async () => {
+      global.fetch = jest.fn().mockRejectedValue("string error");
+      const r = await service.lookupSecurity("X");
+      expect(r).toBeNull();
+    });
+  });
 });

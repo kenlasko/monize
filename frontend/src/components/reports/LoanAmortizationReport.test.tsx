@@ -1,6 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@/test/render';
+import { render, screen, waitFor, fireEvent, act } from '@/test/render';
 import { LoanAmortizationReport } from './LoanAmortizationReport';
+
+vi.mock('@/lib/csv-export', () => ({
+  exportToCsv: vi.fn(),
+}));
+
+vi.mock('@/lib/pdf-export', () => ({
+  exportToPdf: vi.fn().mockResolvedValue(undefined),
+}));
 
 vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({
@@ -501,6 +509,140 @@ describe('LoanAmortizationReport', () => {
     render(<LoanAmortizationReport />);
     await waitFor(() => {
       expect(screen.getByText('Line of Credit')).toBeInTheDocument();
+    });
+  });
+
+  it('handles loadAccounts error gracefully', async () => {
+    mockGetAllAccounts.mockRejectedValue(new Error('boom'));
+    render(<LoanAmortizationReport />);
+    await waitFor(() => {
+      expect(screen.getByText(/No loan or mortgage accounts found/)).toBeInTheDocument();
+    });
+  });
+
+  it('handles loadTransactions error gracefully', async () => {
+    mockGetAllAccounts.mockResolvedValue([
+      {
+        id: 'loan-1', name: 'Loan', accountType: 'LOAN',
+        currentBalance: -5000, openingBalance: -10000, interestRate: 5.0,
+        paymentAmount: 300, paymentFrequency: 'MONTHLY',
+        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+      },
+    ]);
+    mockGetAllTransactions.mockRejectedValue(new Error('boom'));
+    render(<LoanAmortizationReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Select Loan')).toBeInTheDocument();
+    });
+  });
+
+  it('exports CSV and PDF', async () => {
+    const { exportToCsv } = await import('@/lib/csv-export');
+    const { exportToPdf } = await import('@/lib/pdf-export');
+    (exportToCsv as any).mockClear();
+    (exportToPdf as any).mockClear();
+    mockGetAllAccounts.mockResolvedValue([
+      {
+        id: 'loan-1', name: 'My Car Loan!', accountType: 'LOAN',
+        currentBalance: -5000, openingBalance: -10000, interestRate: 5.0,
+        paymentAmount: 300, paymentFrequency: 'MONTHLY',
+        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        currencyCode: 'CAD',
+      },
+    ]);
+    mockGetAllTransactions.mockResolvedValue({
+      data: [{ id: 'tx-1', transactionDate: '2024-01-15', amount: 300, linkedTransaction: null }],
+      pagination: { hasMore: false },
+    });
+    render(<LoanAmortizationReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Select Loan')).toBeInTheDocument();
+    });
+    const exportBtn = screen.getByRole('button', { name: /export/i });
+    await act(async () => {
+      fireEvent.click(exportBtn);
+    });
+    const csvBtn = screen.queryByText(/CSV/i);
+    if (csvBtn) {
+      await act(async () => {
+        fireEvent.click(csvBtn);
+      });
+    }
+    await act(async () => {
+      fireEvent.click(exportBtn);
+    });
+    const pdfBtn = screen.queryByText(/PDF/i);
+    if (pdfBtn) {
+      await act(async () => {
+        fireEvent.click(pdfBtn);
+      });
+    }
+    expect(exportToCsv).toHaveBeenCalled();
+  });
+
+  it('toggles show all rows when there are more than 24 payments', async () => {
+    const txs = Array.from({ length: 30 }, (_, i) => ({
+      id: `tx-${i}`,
+      transactionDate: `2024-${String((i % 12) + 1).padStart(2, '0')}-15`,
+      amount: 100,
+      linkedTransaction: null,
+    }));
+    mockGetAllAccounts.mockResolvedValue([
+      {
+        id: 'loan-1', name: 'Loan', accountType: 'LOAN',
+        currentBalance: -1000, openingBalance: -10000, interestRate: 5.0,
+        paymentAmount: null, paymentFrequency: null,
+        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+      },
+    ]);
+    mockGetAllTransactions.mockResolvedValue({ data: txs, pagination: { hasMore: false } });
+    render(<LoanAmortizationReport />);
+    await waitFor(() => {
+      expect(screen.getByText(/Show all/)).toBeInTheDocument();
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText(/Show all/));
+    });
+    expect(screen.getByText(/Show fewer rows/)).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByText(/Show fewer rows/));
+    });
+  });
+
+  it('handles WEEKLY, BIWEEKLY, SEMI_MONTHLY, QUARTERLY, YEARLY frequencies', async () => {
+    const freqs = ['WEEKLY', 'BIWEEKLY', 'SEMI_MONTHLY', 'QUARTERLY', 'YEARLY', 'ACCELERATED_BIWEEKLY', 'ACCELERATED_WEEKLY'];
+    for (const freq of freqs) {
+      vi.clearAllMocks();
+      mockGetAllAccounts.mockResolvedValue([
+        {
+          id: 'loan-1', name: 'Loan', accountType: 'LOAN',
+          currentBalance: -2000, openingBalance: -5000, interestRate: 5.0,
+          paymentAmount: 100, paymentFrequency: freq,
+          isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+        },
+      ]);
+      mockGetAllTransactions.mockResolvedValue({ data: [], pagination: { hasMore: false } });
+      const { unmount } = render(<LoanAmortizationReport />);
+      await waitFor(() => {
+        expect(screen.getByText('Select Loan')).toBeInTheDocument();
+      });
+      unmount();
+    }
+  });
+
+  it('does not project when payment cannot cover interest', async () => {
+    mockGetAllAccounts.mockResolvedValue([
+      {
+        id: 'loan-1', name: 'Loan', accountType: 'LOAN',
+        currentBalance: -100000, openingBalance: -100000, interestRate: 50,
+        paymentAmount: 10, paymentFrequency: 'MONTHLY',
+        isCanadianMortgage: false, isVariableRate: false, isClosed: false,
+      },
+    ]);
+    mockGetAllTransactions.mockResolvedValue({ data: [], pagination: { hasMore: false } });
+    render(<LoanAmortizationReport />);
+    await waitFor(() => {
+      expect(screen.getByText(/No payments found/)).toBeInTheDocument();
     });
   });
 

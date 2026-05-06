@@ -555,6 +555,44 @@ describe("SecuritiesController", () => {
         securityPriceService.lookupSecurityCandidates,
       ).toHaveBeenCalledWith("user-1", "AAPL", undefined, "yahoo");
     });
+
+    it("forwards 'msn' provider choice", async () => {
+      securityPriceService.lookupSecurityCandidates.mockResolvedValue([]);
+      await controller.lookupCandidates(req, "AAPL", undefined, "msn");
+      expect(
+        securityPriceService.lookupSecurityCandidates,
+      ).toHaveBeenCalledWith("user-1", "AAPL", undefined, "msn");
+    });
+
+    it("treats empty q as empty safeQuery", async () => {
+      securityPriceService.lookupSecurityCandidates.mockResolvedValue([]);
+      await controller.lookupCandidates(req, undefined as never);
+      expect(
+        securityPriceService.lookupSecurityCandidates,
+      ).toHaveBeenCalledWith("user-1", "", undefined, undefined);
+    });
+  });
+
+  describe("search edge cases", () => {
+    it("treats undefined q as empty safeQuery", async () => {
+      securitiesService.search.mockResolvedValue([]);
+      await controller.search(req, undefined as never);
+      expect(securitiesService.search).toHaveBeenCalledWith("user-1", "");
+    });
+  });
+
+  describe("lookup edge cases", () => {
+    const mockReq = { user: { id: "user-1" } };
+    it("treats undefined q as empty safeQuery", async () => {
+      securityPriceService.lookupSecurity.mockResolvedValue(null);
+      await controller.lookup(mockReq, undefined as never);
+      expect(securityPriceService.lookupSecurity).toHaveBeenCalledWith(
+        "user-1",
+        "",
+        undefined,
+        undefined,
+      );
+    });
   });
 
   describe("refreshAllPrices background recalc", () => {

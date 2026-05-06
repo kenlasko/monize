@@ -1,6 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@/test/render';
+import { render, screen, waitFor, fireEvent, act } from '@/test/render';
 import { NetWorthReport } from './NetWorthReport';
+
+vi.mock('@/lib/pdf-export', () => ({
+  exportToPdf: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('@/components/ui/ChartViewToggle', () => ({
+  ChartViewToggle: ({ value, onChange }: any) => (
+    <div data-testid="chart-view-toggle">
+      <button onClick={() => onChange('line')}>line</button>
+      <button onClick={() => onChange('bar')}>bar</button>
+      <span>val:{value}</span>
+    </div>
+  ),
+}));
 
 vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({
@@ -12,6 +26,7 @@ vi.mock('@/hooks/useNumberFormat', () => ({
   }),
 }));
 
+const STABLE_RANGE = { start: '2024-01-01', end: '2025-01-01' };
 vi.mock('@/hooks/useDateRange', () => ({
   useDateRange: () => ({
     dateRange: '1y',
@@ -20,7 +35,7 @@ vi.mock('@/hooks/useDateRange', () => ({
     setStartDate: vi.fn(),
     endDate: '',
     setEndDate: vi.fn(),
-    resolvedRange: { start: '2024-01-01', end: '2025-01-01' },
+    resolvedRange: STABLE_RANGE,
     isValid: true,
   }),
 }));
@@ -40,10 +55,23 @@ vi.mock('recharts', () => ({
   BarChart: ({ children }: any) => <div data-testid="bar-chart">{children}</div>,
   Area: () => null,
   Bar: () => null,
-  XAxis: () => null,
-  YAxis: () => null,
+  XAxis: ({ tickFormatter }: any) => {
+    if (tickFormatter) {
+      try { tickFormatter('Jan 2024'); tickFormatter('Jul 2024'); tickFormatter('NoSpace'); } catch {}
+    }
+    return null;
+  },
+  YAxis: ({ tickFormatter }: any) => <div>{tickFormatter ? tickFormatter(1000) : ''}</div>,
   CartesianGrid: () => null,
-  Tooltip: () => null,
+  Tooltip: ({ content, formatter }: any) => {
+    if (typeof content === 'function') {
+      try { content({ active: true, payload: [{ value: 100, name: 'NetWorth', color: '#000', payload: { name: 'Jan', NetWorth: 100, Assets: 200, Liabilities: 100 } }] }); content({ active: false, payload: [] }); } catch {}
+    }
+    if (formatter) {
+      try { formatter(100, 'NetWorth'); } catch {}
+    }
+    return null;
+  },
   Legend: () => null,
   ReferenceLine: () => null,
   ReferenceDot: () => null,
@@ -155,6 +183,92 @@ describe('NetWorthReport', () => {
       expect(screen.getByText('Recalculate')).toBeInTheDocument();
     });
     fireEvent.click(screen.getByText('Recalculate'));
+    await waitFor(() => {
+      expect(screen.getByText('Recalculate')).toBeInTheDocument();
+    });
+  });
+
+  it('switches chart type to bar and back', async () => {
+    mockGetMonthly.mockResolvedValue([
+      { month: '2024-01-01', assets: 50000, liabilities: 10000, netWorth: 40000 },
+      { month: '2024-06-01', assets: 55000, liabilities: 9000, netWorth: 46000 },
+    ]);
+    render(<NetWorthReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Current Net Worth')).toBeInTheDocument();
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('bar'));
+    });
+    expect(screen.getByTestId('bar-chart')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByText('line'));
+    });
+    expect(screen.getByTestId('area-chart')).toBeInTheDocument();
+  });
+
+  it('exports pdf', async () => {
+    const { exportToPdf } = await import('@/lib/pdf-export');
+    (exportToPdf as any).mockClear();
+    mockGetMonthly.mockResolvedValue([
+      { month: '2024-01-01', assets: 50000, liabilities: 10000, netWorth: 40000 },
+      { month: '2024-06-01', assets: 55000, liabilities: 9000, netWorth: 46000 },
+    ]);
+    render(<NetWorthReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Current Net Worth')).toBeInTheDocument();
+    });
+    const exportBtn = screen.getByRole('button', { name: /export/i });
+    await act(async () => {
+      fireEvent.click(exportBtn);
+    });
+    const pdfBtn = screen.queryByText(/PDF/i);
+    if (pdfBtn) {
+      await act(async () => {
+        fireEvent.click(pdfBtn);
+      });
+    }
+    expect(exportToPdf).toHaveBeenCalled();
+  });
+
+  it('handles long ranges (>36 months) for tick formatter', async () => {
+    const data = Array.from({ length: 40 }, (_, i) => ({
+      month: `${2018 + Math.floor(i / 12)}-${String((i % 12) + 1).padStart(2, '0')}-01`,
+      assets: 50000 + i * 100, liabilities: 10000, netWorth: 40000 + i * 100,
+    }));
+    mockGetMonthly.mockResolvedValue(data);
+    render(<NetWorthReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Current Net Worth')).toBeInTheDocument();
+    });
+  });
+
+  it('handles medium ranges (19-36) for tick formatter', async () => {
+    const data = Array.from({ length: 24 }, (_, i) => ({
+      month: `2023-${String(((i % 12) + 1)).padStart(2, '0')}-01`,
+      assets: 50000, liabilities: 10000, netWorth: 40000 + i * 50,
+    }));
+    mockGetMonthly.mockResolvedValue(data);
+    render(<NetWorthReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Current Net Worth')).toBeInTheDocument();
+    });
+  });
+
+  it('renders with values that warrant non-zero y-axis domain', async () => {
+    mockGetMonthly.mockResolvedValue([
+      { month: '2024-01-01', assets: 100000, liabilities: 0, netWorth: 100000 },
+      { month: '2024-06-01', assets: 105000, liabilities: 0, netWorth: 105000 },
+    ]);
+    render(<NetWorthReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Current Net Worth')).toBeInTheDocument();
+    });
+  });
+
+  it('handles loadData error', async () => {
+    mockGetMonthly.mockRejectedValue(new Error('boom'));
+    render(<NetWorthReport />);
     await waitFor(() => {
       expect(screen.getByText('Recalculate')).toBeInTheDocument();
     });

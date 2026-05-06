@@ -1768,4 +1768,91 @@ describe("BudgetsService", () => {
       expect(result.trulyAvailable).toBe(-100);
     });
   });
+
+  // ─── Branch coverage extras ─────────────────────────────────────────
+
+  describe("update field branch coverage", () => {
+    it("updates all individually mappable fields", async () => {
+      budgetsRepository.findOne.mockResolvedValue({ ...mockBudget });
+      budgetsRepository.save.mockImplementation((d) => d);
+      const dto = {
+        name: "n",
+        description: "d",
+        budgetType: BudgetType.MONTHLY,
+        periodStart: "2026-01-01",
+        periodEnd: "2026-01-31",
+        baseIncome: 5000,
+        incomeLinked: true,
+        strategy: BudgetStrategy.ROLLOVER,
+        isActive: false,
+        config: { foo: "bar" },
+      };
+      const r = await service.update("user-1", "budget-1", dto as never);
+      expect(r.name).toBe("n");
+      expect(r.description).toBe("d");
+      expect(r.budgetType).toBe(BudgetType.MONTHLY);
+      expect(r.periodStart).toBe("2026-01-01");
+      expect(r.periodEnd).toBe("2026-01-31");
+      expect(r.baseIncome).toBe(5000);
+      expect(r.incomeLinked).toBe(true);
+      expect(r.strategy).toBe(BudgetStrategy.ROLLOVER);
+      expect(r.isActive).toBe(false);
+      expect(r.config).toEqual({ foo: "bar" });
+    });
+  });
+
+  describe("updateCategory field branch coverage", () => {
+    const baseCat: BudgetCategory = {
+      id: "bc-1",
+      budgetId: "budget-1",
+      categoryId: "cat-1",
+      categoryGroup: "fixed",
+      amount: 500,
+      isIncome: false,
+      rolloverType: RolloverType.NONE,
+      rolloverCap: null,
+      flexGroup: null,
+      alertWarnPercent: null,
+      alertCriticalPercent: null,
+      notes: null,
+      sortOrder: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as never;
+
+    it("updates all category fields individually", async () => {
+      budgetsRepository.findOne.mockResolvedValue({ ...mockBudget });
+      budgetCategoriesRepository.findOne.mockResolvedValue({ ...baseCat });
+      budgetCategoriesRepository.save.mockImplementation((d) => d);
+
+      const dto = {
+        categoryGroup: "flex",
+        amount: 700,
+        isIncome: true,
+        rolloverType: RolloverType.MONTHLY,
+        rolloverCap: 1000,
+        flexGroup: "g1",
+        alertWarnPercent: 80,
+        alertCriticalPercent: 95,
+        notes: "n",
+        sortOrder: 5,
+      };
+      const r = await service.updateCategory(
+        "user-1",
+        "budget-1",
+        "bc-1",
+        dto as never,
+      );
+      expect(r.categoryGroup).toBe("flex");
+      expect(r.amount).toBe(700);
+      expect(r.isIncome).toBe(true);
+      expect(r.rolloverType).toBe(RolloverType.MONTHLY);
+      expect(r.rolloverCap).toBe(1000);
+      expect(r.flexGroup).toBe("g1");
+      expect(r.alertWarnPercent).toBe(80);
+      expect(r.alertCriticalPercent).toBe(95);
+      expect(r.notes).toBe("n");
+      expect(r.sortOrder).toBe(5);
+    });
+  });
 });
