@@ -472,7 +472,7 @@ describe('DebtPayoffTimelineReport', () => {
     await waitFor(() => {
       expect(screen.getByText('Payment Breakdown')).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByText('Payment Breakdown'));
+    await act(async () => { fireEvent.click(screen.getByText('Payment Breakdown')); });
     expect(screen.getByTestId('bar-chart')).toBeInTheDocument();
     expect(screen.queryByTestId('area-chart')).not.toBeInTheDocument();
   });
@@ -496,7 +496,7 @@ describe('DebtPayoffTimelineReport', () => {
     await waitFor(() => {
       expect(screen.getByText('Principal vs Interest')).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByText('Principal vs Interest'));
+    await act(async () => { fireEvent.click(screen.getByText('Principal vs Interest')); });
     expect(screen.getByTestId('bar-chart')).toBeInTheDocument();
     expect(screen.queryByTestId('area-chart')).not.toBeInTheDocument();
   });
