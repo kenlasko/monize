@@ -21,8 +21,13 @@ vi.mock('@/lib/logger', () => ({
 }));
 
 vi.mock('@/components/accounts/LoanPaymentSetupDialog', () => ({
-  LoanPaymentSetupDialog: ({ isOpen }: { isOpen: boolean }) =>
-    isOpen ? <div data-testid="loan-payment-setup-dialog">LoanPaymentSetupDialog</div> : null,
+  LoanPaymentSetupDialog: ({ isOpen, onClose, onSetupComplete }: any) =>
+    isOpen ? (
+      <div data-testid="loan-payment-setup-dialog">
+        <button data-testid="close-dialog" onClick={onClose}>Close</button>
+        <button data-testid="setup-complete" onClick={onSetupComplete}>Complete Setup</button>
+      </div>
+    ) : null,
 }));
 
 function createAccount(overrides: Partial<Account> = {}): Account {
@@ -369,6 +374,41 @@ describe('CompleteStep', () => {
 
     // The dialog should now be open
     expect(screen.getByTestId('loan-payment-setup-dialog')).toBeInTheDocument();
+  });
+
+  it('closes loan payment setup dialog when close button clicked', () => {
+    const resultWithLoans = {
+      ...defaultProps.importResult!,
+      loanAccountsNeedingSetup: [
+        { accountId: 'loan-1', accountName: 'Home Mortgage', accountType: 'MORTGAGE' },
+      ],
+    };
+    render(<CompleteStep {...defaultProps} importResult={resultWithLoans} />);
+
+    // Open dialog
+    fireEvent.click(screen.getByRole('button', { name: /Set Up Payments/i }));
+    expect(screen.getByTestId('loan-payment-setup-dialog')).toBeInTheDocument();
+
+    // Close dialog
+    fireEvent.click(screen.getByTestId('close-dialog'));
+    expect(screen.queryByTestId('loan-payment-setup-dialog')).not.toBeInTheDocument();
+  });
+
+  it('shows completion message after setup is done', () => {
+    const resultWithLoans = {
+      ...defaultProps.importResult!,
+      loanAccountsNeedingSetup: [
+        { accountId: 'loan-1', accountName: 'Home Mortgage', accountType: 'MORTGAGE' },
+      ],
+    };
+    render(<CompleteStep {...defaultProps} importResult={resultWithLoans} />);
+
+    // Open dialog and complete setup
+    fireEvent.click(screen.getByRole('button', { name: /Set Up Payments/i }));
+    fireEvent.click(screen.getByTestId('setup-complete'));
+
+    // Should show completed setups message
+    expect(screen.getByText(/Scheduled payments configured for 1 account\./)).toBeInTheDocument();
   });
 
   it('shows loan accounts from bulkImportResult', () => {
