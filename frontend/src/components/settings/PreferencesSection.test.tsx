@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { act } from '@testing-library/react';
 import { render, screen, fireEvent, waitFor } from '@/test/render';
 import { PreferencesSection } from './PreferencesSection';
 import { UserPreferences } from '@/types/auth';
@@ -211,11 +212,11 @@ describe('PreferencesSection', () => {
 
     const timezoneLabel = screen.getByText('Timezone');
     const timezoneInput = timezoneLabel.closest('.w-full')!.querySelector('input')!;
-    fireEvent.focus(timezoneInput);
+    await act(async () => { fireEvent.focus(timezoneInput); });
 
     // Wait for dropdown, then type to filter
     await new Promise(r => setTimeout(r, 150));
-    fireEvent.change(timezoneInput, { target: { value: 'Toronto' } });
+    await act(async () => { fireEvent.change(timezoneInput, { target: { value: 'Toronto' } }); });
 
     await waitFor(() => {
       expect(screen.getByText('America/Toronto')).toBeInTheDocument();

@@ -83,6 +83,16 @@ it('renders data', async () => {
 
 Wrap user interactions that trigger async state updates: `await act(async () => { fireEvent.click(button); });`
 
+When a mock rejects a Promise, the component's error handler runs in a subsequent microtask after `act()` resolves. Add a flush after the interaction to drain it:
+
+```typescript
+await act(async () => { fireEvent.click(runBtn); });
+await act(async () => {}); // flush pending rejection handlers
+await waitFor(() => expect(screen.getByText('Error message')).toBeInTheDocument());
+```
+
+Never use synchronous `act(() => {...})` for calls that trigger async side-effects — always `await act(async () => {...})`.
+
 ## Testing Conventions
 
 **Custom render** (`test/render.tsx`): Wraps components with `ThemeProvider`. Import `render` from `@/test/render` instead of `@testing-library/react`.

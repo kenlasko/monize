@@ -361,7 +361,7 @@ describe('useInvestmentData – pagination, filters, handlers', () => {
   it('handleAccountChange updates selection and resets pages', async () => {
     const { result } = renderHook(() => useInvestmentData());
     await act(async () => { await new Promise(res => setTimeout(res, 0)); });
-    act(() => {
+    await act(async () => {
       result.current.handleAccountChange(['b1']);
     });
     expect(result.current.selectedAccountIds).toEqual(['b1']);
@@ -371,7 +371,7 @@ describe('useInvestmentData – pagination, filters, handlers', () => {
   it('handleSymbolClick sets symbol filter and resets page', async () => {
     const { result } = renderHook(() => useInvestmentData());
     await act(async () => { await new Promise(res => setTimeout(res, 0)); });
-    act(() => {
+    await act(async () => {
       result.current.handleSymbolClick('AAPL');
     });
     expect(result.current.transactionFilters.symbol).toBe('AAPL');
@@ -380,7 +380,7 @@ describe('useInvestmentData – pagination, filters, handlers', () => {
   it('handleFiltersChange updates filter and resets page', async () => {
     const { result } = renderHook(() => useInvestmentData());
     await act(async () => { await new Promise(res => setTimeout(res, 0)); });
-    act(() => {
+    await act(async () => {
       result.current.handleFiltersChange({ action: 'BUY' });
     });
     expect(result.current.transactionFilters).toEqual({ action: 'BUY' });
@@ -390,7 +390,7 @@ describe('useInvestmentData – pagination, filters, handlers', () => {
     mockGetTransactions.mockResolvedValue({ data: [], pagination: { page: 1, limit: 25, total: 50, totalPages: 2, hasMore: false } });
     const { result } = renderHook(() => useInvestmentData());
     await act(async () => { await new Promise(res => setTimeout(res, 0)); });
-    act(() => result.current.goToPage(2));
+    await act(async () => { result.current.goToPage(2); });
     expect(result.current.currentPage).toBe(2);
   });
 
@@ -398,16 +398,16 @@ describe('useInvestmentData – pagination, filters, handlers', () => {
     mockGetTransactions.mockResolvedValue({ data: [], pagination: { page: 1, limit: 25, total: 1, totalPages: 1, hasMore: false } });
     const { result } = renderHook(() => useInvestmentData());
     await act(async () => { await new Promise(res => setTimeout(res, 0)); });
-    act(() => result.current.goToPage(99));
+    await act(async () => { result.current.goToPage(99); });
     expect(result.current.currentPage).toBe(1);
-    act(() => result.current.goToPage(-1));
+    await act(async () => { result.current.goToPage(-1); });
     expect(result.current.currentPage).toBe(1);
   });
 
   it('clearCashFilters resets all cash filter state', async () => {
     const { result } = renderHook(() => useInvestmentData());
     await act(async () => { await new Promise(res => setTimeout(res, 0)); });
-    act(() => {
+    await act(async () => {
       result.current.setCashFilterPayeeIds(['p1']);
       result.current.setCashFilterCategoryIds(['c1']);
       result.current.setCashFilterStartDate('2024-01-01');
@@ -416,28 +416,28 @@ describe('useInvestmentData – pagination, filters, handlers', () => {
     expect(result.current.hasActiveCashFilters).toBe(true);
     expect(result.current.activeCashFilterCount).toBe(4);
 
-    act(() => result.current.clearCashFilters());
+    await act(async () => { result.current.clearCashFilters(); });
     expect(result.current.hasActiveCashFilters).toBe(false);
   });
 
   it('handleCashClick navigates to transactions page', async () => {
     const { result } = renderHook(() => useInvestmentData());
     await act(async () => { await new Promise(res => setTimeout(res, 0)); });
-    act(() => result.current.handleCashClick('cash-x'));
+    await act(async () => { result.current.handleCashClick('cash-x'); });
     expect(mockRouterPush).toHaveBeenCalledWith('/transactions?accountId=cash-x');
   });
 
   it('goToCashPage updates page when within bounds', async () => {
     const { result } = renderHook(() => useInvestmentData());
     await act(async () => { await new Promise(res => setTimeout(res, 0)); });
-    act(() => result.current.goToCashPage(2));
+    await act(async () => { result.current.goToCashPage(2); });
     expect(result.current.cashCurrentPage).toBe(2);
   });
 
   it('handleCashTransactionUpdate replaces matching transaction', async () => {
     const { result } = renderHook(() => useInvestmentData());
     await act(async () => { await new Promise(res => setTimeout(res, 0)); });
-    act(() => {
+    await act(async () => {
       result.current.handleCashTransactionUpdate({ id: 'x', amount: 5 } as any);
     });
   });
@@ -445,7 +445,7 @@ describe('useInvestmentData – pagination, filters, handlers', () => {
   it('getSelectedBrokerageAccountId returns first selected', async () => {
     const { result } = renderHook(() => useInvestmentData());
     await act(async () => { await new Promise(res => setTimeout(res, 0)); });
-    act(() => result.current.handleAccountChange(['b1']));
+    await act(async () => { result.current.handleAccountChange(['b1']); });
     expect(result.current.getSelectedBrokerageAccountId()).toBe('b1');
   });
 
@@ -460,7 +460,7 @@ describe('useInvestmentData – pagination, filters, handlers', () => {
     await act(async () => { await new Promise(res => setTimeout(res, 0)); });
     expect(result.current.cashAccountIds).toEqual(['c1']);
 
-    act(() => result.current.handleAccountChange(['b1']));
+    await act(async () => { result.current.handleAccountChange(['b1']); });
     expect(result.current.cashAccountIds).toEqual(['c1']);
   });
 

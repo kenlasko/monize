@@ -534,6 +534,7 @@ describe('InvestmentValueChart', () => {
       currency: 'CAD',
       fallbackToDaily: false,
       skippedSymbols: [],
+      failedSymbols: [],
     };
     // Seed the session-storage cache manually
     window.sessionStorage.setItem(
@@ -551,15 +552,18 @@ describe('InvestmentValueChart', () => {
     // The chart should appear (not stuck on loading skeleton) because of cache
     await screen.findByText('Portfolio Value Over Time');
 
-    // Clean up: resolve the pending network call
-    resolveIntraday({
-      points: [{ timestamp: '2024-01-02T14:00:00.000Z', value: 8000 }],
-      interval: '1m',
-      currency: 'CAD',
-      range: '1d',
-      fetchedAt: '2024-01-02T15:00:00.000Z',
-      skippedSymbols: [],
-      fallbackToDaily: false,
+    // Clean up: resolve the pending network call inside act to avoid state-update warnings
+    await act(async () => {
+      resolveIntraday({
+        points: [{ timestamp: '2024-01-02T14:00:00.000Z', value: 8000 }],
+        interval: '1m',
+        currency: 'CAD',
+        range: '1d',
+        fetchedAt: '2024-01-02T15:00:00.000Z',
+        skippedSymbols: [],
+        failedSymbols: [],
+        fallbackToDaily: false,
+      });
     });
     window.sessionStorage.clear();
   });

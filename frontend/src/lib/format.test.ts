@@ -353,6 +353,16 @@ describe('evaluateExpression', () => {
     expect(evaluateExpression('2+3*4')).toBe(14);
     expect(evaluateExpression('10-2*3')).toBe(4);
   });
+
+  it('handles unary plus', () => {
+    expect(evaluateExpression('+5')).toBe(5);
+    expect(evaluateExpression('+10+20')).toBe(30);
+  });
+
+  it('returns undefined for non-finite result', () => {
+    // 10^309 exceeds Number.MAX_VALUE, parseFloat returns Infinity
+    expect(evaluateExpression('1' + '0'.repeat(309))).toBeUndefined();
+  });
 });
 
 describe('formatRelativeTime', () => {

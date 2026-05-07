@@ -808,6 +808,7 @@ describe('MonteCarloReport', () => {
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
       });
+      await act(async () => {});
       // Body still rendered -- result never updated.
       expect(screen.getByText('Withdrawal phase')).toBeInTheDocument();
       expect(
@@ -857,7 +858,7 @@ describe('MonteCarloReport', () => {
       await renderReport();
       await screen.findByText('Contribution phase');
       const nameField = screen.getByPlaceholderText('e.g. Aggressive 25-year');
-      fireEvent.change(nameField, { target: { value: 'Failing plan' } });
+      await act(async () => { fireEvent.change(nameField, { target: { value: 'Failing plan' } }); });
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: /Save scenario/ }));
       });
@@ -873,6 +874,7 @@ describe('MonteCarloReport', () => {
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
       });
+      await act(async () => {});
       expect(toast.error).toHaveBeenCalled();
     });
 
@@ -882,11 +884,11 @@ describe('MonteCarloReport', () => {
       const toast = (await import('react-hot-toast')).default;
       await renderReport();
       const item = await screen.findByRole('button', { name: /Retirement/i });
-      fireEvent.click(item);
+      await act(async () => { fireEvent.click(item); });
       const formDeleteBtn = await screen.findByRole('button', {
         name: /^Delete$/,
       });
-      fireEvent.click(formDeleteBtn);
+      await act(async () => { fireEvent.click(formDeleteBtn); });
       await screen.findByText(/Delete scenario\?/);
       const allDeletes = screen.getAllByRole('button', { name: /^Delete$/ });
       const confirmBtn = allDeletes[allDeletes.length - 1];
@@ -1250,7 +1252,7 @@ describe('MonteCarloReport', () => {
       const toast = (await import('react-hot-toast')).default;
       await renderReport();
       const item = await screen.findByRole('button', { name: /Retirement/i });
-      fireEvent.click(item);
+      await act(async () => { fireEvent.click(item); });
       await waitFor(() => expect(toast.error).toHaveBeenCalled());
     });
 
@@ -1262,7 +1264,7 @@ describe('MonteCarloReport', () => {
       const toast = (await import('react-hot-toast')).default;
       await renderReport();
       const item = await screen.findByRole('button', { name: /Retirement/i });
-      fireEvent.click(item);
+      await act(async () => { fireEvent.click(item); });
       await waitFor(() => expect(toast.error).toHaveBeenCalled());
     });
 

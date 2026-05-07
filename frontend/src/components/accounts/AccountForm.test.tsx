@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { act } from '@testing-library/react';
 import { render, screen, fireEvent, waitFor } from '@/test/render';
 import { AccountForm } from './AccountForm';
 import { Account } from '@/types/account';
@@ -1230,13 +1231,13 @@ describe('AccountForm', () => {
     it('handleAssetCategoryChange updates selected asset category', async () => {
       render(<AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
       const typeSelect = screen.getByLabelText('Account Type') as HTMLSelectElement;
-      fireEvent.change(typeSelect, { target: { value: 'ASSET' } });
+      await act(async () => { fireEvent.change(typeSelect, { target: { value: 'ASSET' } }); });
 
       await waitFor(() => {
         expect(screen.getByTestId('asset-fields')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByTestId('trigger-category-change'));
+      await act(async () => { fireEvent.click(screen.getByTestId('trigger-category-change')); });
       // No error = handleAssetCategoryChange executed without throwing
     });
 
@@ -1435,11 +1436,8 @@ describe('AccountForm', () => {
       await waitFor(() => {
         expect(screen.getByText('Opening Balance')).toBeInTheDocument();
       });
-      // CurrencyInput renders a text input (not spinbutton). Find by label.
-      // The input is identified by ID based on the label text
       const openingBalanceInput = screen.getByLabelText('Opening Balance') as HTMLInputElement;
-      fireEvent.change(openingBalanceInput, { target: { value: '500' } });
-      // onChange callback is invoked which calls setValue
+      await act(async () => { fireEvent.change(openingBalanceInput, { target: { value: '500' } }); });
     });
 
     it('creditLimit CurrencyInput onChange updates form value', async () => {
@@ -1448,33 +1446,33 @@ describe('AccountForm', () => {
         expect(screen.getByText('Credit Limit (optional)')).toBeInTheDocument();
       });
       const creditLimitInput = screen.getByLabelText('Credit Limit (optional)') as HTMLInputElement;
-      fireEvent.change(creditLimitInput, { target: { value: '10000' } });
+      await act(async () => { fireEvent.change(creditLimitInput, { target: { value: '10000' } }); });
     });
 
     it('loanAmount CurrencyInput onChange triggers when LOAN type selected', async () => {
       render(<AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
       const typeSelect = screen.getByLabelText('Account Type') as HTMLSelectElement;
-      fireEvent.change(typeSelect, { target: { value: 'LOAN' } });
+      await act(async () => { fireEvent.change(typeSelect, { target: { value: 'LOAN' } }); });
 
       await waitFor(() => {
         expect(screen.getByText('Loan Amount')).toBeInTheDocument();
       });
 
       const loanAmountInput = screen.getByLabelText('Loan Amount') as HTMLInputElement;
-      fireEvent.change(loanAmountInput, { target: { value: '25000' } });
+      await act(async () => { fireEvent.change(loanAmountInput, { target: { value: '25000' } }); });
     });
 
     it('mortgageAmount CurrencyInput onChange triggers when MORTGAGE type selected', async () => {
       render(<AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
       const typeSelect = screen.getByLabelText('Account Type') as HTMLSelectElement;
-      fireEvent.change(typeSelect, { target: { value: 'MORTGAGE' } });
+      await act(async () => { fireEvent.change(typeSelect, { target: { value: 'MORTGAGE' } }); });
 
       await waitFor(() => {
         expect(screen.getByText('Mortgage Amount')).toBeInTheDocument();
       });
 
       const mortgageInput = screen.getByLabelText('Mortgage Amount') as HTMLInputElement;
-      fireEvent.change(mortgageInput, { target: { value: '350000' } });
+      await act(async () => { fireEvent.change(mortgageInput, { target: { value: '350000' } }); });
     });
   });
 
@@ -1492,7 +1490,7 @@ describe('AccountForm', () => {
 
       render(<AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
       const typeSelect = screen.getByLabelText('Account Type') as HTMLSelectElement;
-      fireEvent.change(typeSelect, { target: { value: 'ASSET' } });
+      await act(async () => { fireEvent.change(typeSelect, { target: { value: 'ASSET' } }); });
 
       // Wait for categories to be loaded and AssetFields to be rendered
       await waitFor(() => {
@@ -1504,7 +1502,7 @@ describe('AccountForm', () => {
       (categoriesApi.create as any).mockClear();
 
       // Call the captured callback directly - by this time categories state is populated
-      await capturedHandleAssetCategoryCreate!('Assets: Home Value');
+      await act(async () => { await capturedHandleAssetCategoryCreate!('Assets: Home Value'); });
 
       // Should have called create (regardless of whether it found an existing parent,
       // it creates the child; exercises lines 379 and the parent-found branch)

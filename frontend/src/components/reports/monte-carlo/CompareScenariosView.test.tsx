@@ -199,6 +199,7 @@ describe('CompareScenariosView', () => {
     });
 
     await renderView(['a', 'b']);
+    await act(async () => {});
 
     await waitFor(() => {
       // Plan A column renders metric values, Plan B shows the failure message.
@@ -385,6 +386,7 @@ describe('CompareScenariosView', () => {
     });
 
     await renderView(['a', 'b']);
+    await act(async () => {});
 
     await waitFor(() => {
       expect(screen.getAllByText('Boom').length).toBeGreaterThan(0);
