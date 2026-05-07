@@ -90,6 +90,11 @@ describe('formatDate', () => {
     expect(typeof result).toBe('string');
     expect(result.length).toBeGreaterThan(0);
   });
+
+  it('falls back to browser locale for unknown format', () => {
+    const result = formatDate('2026-01-24', 'unknown-format');
+    expect(typeof result).toBe('string');
+  });
 });
 
 describe('resolveTimezone', () => {
@@ -254,6 +259,18 @@ describe('parseTime', () => {
   it('returns null for empty input', () => {
     expect(parseTime('')).toBeNull();
   });
+
+  it('returns null for hour > 23 in 24h format', () => {
+    expect(parseTime('24:00')).toBeNull();
+  });
+
+  it('returns null for hour 0 in 12h format', () => {
+    expect(parseTime('0:30 AM')).toBeNull();
+  });
+
+  it('returns null for hour > 12 in 12h format', () => {
+    expect(parseTime('13:30 PM')).toBeNull();
+  });
 });
 
 describe('formatDatetimeLocal', () => {
@@ -283,6 +300,10 @@ describe('formatDatetimeLocal', () => {
 
   it('returns empty string for empty input', () => {
     expect(formatDatetimeLocal('', 'YYYY-MM-DD')).toBe('');
+  });
+
+  it('returns just the date when no time part', () => {
+    expect(formatDatetimeLocal('2026-01-15', 'YYYY-MM-DD')).toBe('2026-01-15');
   });
 });
 
@@ -329,6 +350,18 @@ describe('parseDatetimeFromFormat', () => {
 
   it('returns null for empty input', () => {
     expect(parseDatetimeFromFormat('', 'MM/DD/YYYY')).toBeNull();
+  });
+
+  it('returns null when AM/PM time is invalid (hour > 12)', () => {
+    expect(parseDatetimeFromFormat('01/15/2026 13:30 PM', 'MM/DD/YYYY')).toBeNull();
+  });
+
+  it('returns null when AM/PM date part is invalid', () => {
+    expect(parseDatetimeFromFormat('99/99/2026 2:30 PM', 'MM/DD/YYYY')).toBeNull();
+  });
+
+  it('returns null when 24h time part is invalid (hour > 23)', () => {
+    expect(parseDatetimeFromFormat('01/15/2026 25:00', 'MM/DD/YYYY')).toBeNull();
   });
 });
 

@@ -28,4 +28,19 @@ describe('LoadingSpinner', () => {
     const { container } = render(<LoadingSpinner />);
     expect(container.querySelector('.p-12.text-center')).toBeInTheDocument();
   });
+
+  it('renders small spinner when size is sm', () => {
+    const { container } = render(<LoadingSpinner size="sm" />);
+    const spinner = container.querySelector('.animate-spin') as HTMLElement;
+    expect(spinner).toBeInTheDocument();
+    expect(spinner.style.width).toBe('1.25rem');
+    expect(spinner.style.height).toBe('1.25rem');
+  });
+
+  it('renders large spinner when size is lg', () => {
+    const { container } = render(<LoadingSpinner size="lg" />);
+    const spinner = container.querySelector('.animate-spin') as HTMLElement;
+    expect(spinner.style.width).toBe('3rem');
+    expect(spinner.style.height).toBe('3rem');
+  });
 });
