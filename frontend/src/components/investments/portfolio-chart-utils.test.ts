@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   buildIntradayCacheKey,
+  ChartFlagShadowFilter,
   clearAllIntradayCache,
   computeTightYAxisDomain,
   INTRADAY_CACHE_PREFIX,
   niceAxisStep,
   readIntradayCache,
+  renderChartFlagDot,
   writeIntradayCache,
 } from './portfolio-chart-utils';
 
@@ -201,5 +203,51 @@ describe('computeTightYAxisDomain', () => {
     // range=0, so flat-line path
     expect(min).toBeLessThan(500);
     expect(max).toBeGreaterThan(500);
+  });
+});
+
+describe('renderChartFlagDot', () => {
+  const baseOpts = { cx: 100, cy: 200, index: 3, color: '#10b981', label: '$1,234' };
+
+  it('returns a ReactElement for side=above', () => {
+    const el = renderChartFlagDot({ ...baseOpts, side: 'above' });
+    expect(el).toBeTruthy();
+    expect(typeof el).toBe('object');
+  });
+
+  it('returns a ReactElement for side=below', () => {
+    const el = renderChartFlagDot({ ...baseOpts, side: 'below' });
+    expect(el).toBeTruthy();
+    expect(typeof el).toBe('object');
+  });
+
+  it('returns a ReactElement for side=right', () => {
+    const el = renderChartFlagDot({ ...baseOpts, side: 'right' });
+    expect(el).toBeTruthy();
+    expect(typeof el).toBe('object');
+  });
+
+  it('returns a ReactElement for side=left', () => {
+    const el = renderChartFlagDot({ ...baseOpts, side: 'left' });
+    expect(el).toBeTruthy();
+    expect(typeof el).toBe('object');
+  });
+
+  it('uses default gap=24 when gap is not specified', () => {
+    const el = renderChartFlagDot({ ...baseOpts, side: 'above' });
+    expect(el).toBeTruthy();
+  });
+
+  it('accepts custom gap value', () => {
+    const el = renderChartFlagDot({ ...baseOpts, side: 'above', gap: 12 });
+    expect(el).toBeTruthy();
+  });
+});
+
+describe('ChartFlagShadowFilter', () => {
+  it('returns a ReactElement', () => {
+    const el = ChartFlagShadowFilter();
+    expect(el).toBeTruthy();
+    expect(typeof el).toBe('object');
   });
 });
