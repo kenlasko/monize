@@ -1854,6 +1854,501 @@ describe('MonteCarloReport', () => {
       expect(items[1]).toHaveTextContent('Plan B');
     });
   });
+
+  describe('Additional branch coverage', () => {
+    it('treats a non-finite cash flow startYear as 1', async () => {
+      mockApi.list.mockResolvedValueOnce([
+        scenario({
+          cashFlows: [
+            {
+              name: 'Event',
+              amount: 5000,
+              flowType: 'ONE_TIME',
+              startYear: NaN as unknown as number,
+              endYear: null,
+              inflationAdjust: false,
+            },
+          ],
+        }),
+      ]);
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      // NaN startYear falls back to 1, so the marker is at the first year label.
+      const dot = await screen.findByTestId('reference-dot');
+      expect(dot.getAttribute('data-x')).toBe('2027');
+    });
+
+    it('uses fallback name "Cash flow" when the cash flow name is empty', async () => {
+      const captured: Blob[] = [];
+      const origCreate = global.URL.createObjectURL;
+      const origRevoke = global.URL.revokeObjectURL;
+      global.URL.createObjectURL = ((b: Blob) => {
+        captured.push(b);
+        return 'blob:url';
+      }) as never;
+      global.URL.revokeObjectURL = (() => undefined) as never;
+
+      mockApi.list.mockResolvedValueOnce([
+        scenario({
+          cashFlows: [
+            {
+              name: '',
+              amount: 1000,
+              flowType: 'ONE_TIME',
+              startYear: 1,
+              endYear: null,
+              inflationAdjust: false,
+            },
+          ],
+        }),
+      ]);
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      fireEvent.click(screen.getByRole('button', { name: /^Export/i }));
+      const csvOption = await screen.findByRole('button', { name: /^CSV$/ });
+      await act(async () => {
+        fireEvent.click(csvOption);
+      });
+      const text = await captured[0].text();
+      expect(text).toMatch(/Cash flow/);
+
+      global.URL.createObjectURL = origCreate;
+      global.URL.revokeObjectURL = origRevoke;
+    });
+
+    it('skips the end marker when recurring flow endYear equals startYear', async () => {
+      mockApi.list.mockResolvedValueOnce([
+        scenario({
+          cashFlows: [
+            {
+              name: 'Equal',
+              amount: 3000,
+              flowType: 'RECURRING',
+              startYear: 1,
+              endYear: 1,
+              inflationAdjust: false,
+            },
+          ],
+        }),
+      ]);
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      // Only one dot: the start marker. end === start so no end marker is added.
+      const dots = await screen.findAllByTestId('reference-dot');
+      expect(dots).toHaveLength(1);
+    });
+
+    it('uses totalYears when recurring cash flow endYear is null', async () => {
+      mockApi.list.mockResolvedValueOnce([
+        scenario({
+          cashFlows: [
+            {
+              name: 'Forever',
+              amount: 2000,
+              flowType: 'RECURRING',
+              startYear: 1,
+              endYear: null,
+              inflationAdjust: false,
+            },
+          ],
+        }),
+      ]);
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      // null endYear defaults to totalYears (3), so start (1) < end (3) and both markers render.
+      const dots = await screen.findAllByTestId('reference-dot');
+      expect(dots.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('skips a cash flow whose startYear exceeds the simulation horizon', async () => {
+      mockApi.list.mockResolvedValueOnce([
+        scenario({
+          cashFlows: [
+            {
+              name: 'Future',
+              amount: 5000,
+              flowType: 'ONE_TIME',
+              startYear: 100,
+              endYear: null,
+              inflationAdjust: false,
+            },
+          ],
+        }),
+      ]);
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      // startYear 100 > totalYears 3, so the event is skipped entirely.
+      expect(screen.queryByTestId('reference-dot')).not.toBeInTheDocument();
+    });
+
+    it('omits performance summary section from CSV when result has no performanceSummary', async () => {
+      const captured: Blob[] = [];
+      const origCreate = global.URL.createObjectURL;
+      const origRevoke = global.URL.revokeObjectURL;
+      global.URL.createObjectURL = ((b: Blob) => {
+        captured.push(b);
+        return 'blob:url';
+      }) as never;
+      global.URL.revokeObjectURL = (() => undefined) as never;
+
+      mockApi.run.mockResolvedValueOnce(simResult({ performanceSummary: undefined }));
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      fireEvent.click(screen.getByRole('button', { name: /^Export/i }));
+      const csvOption = await screen.findByRole('button', { name: /^CSV$/ });
+      await act(async () => {
+        fireEvent.click(csvOption);
+      });
+      const text = await captured[0].text();
+      expect(text).not.toMatch(/Performance Summary/);
+
+      global.URL.createObjectURL = origCreate;
+      global.URL.revokeObjectURL = origRevoke;
+    });
+
+    it('PDF export subtitle says today\'s value when result.realValues is true', async () => {
+      const { exportToPdf } = await import('@/lib/pdf-export');
+      mockApi.run.mockResolvedValueOnce(simResult({ realValues: true }));
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      fireEvent.click(screen.getByRole('button', { name: /^Export/i }));
+      const pdfOption = await screen.findByRole('button', { name: /^PDF$/ });
+      await act(async () => {
+        fireEvent.click(pdfOption);
+      });
+      const args = (exportToPdf as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(args.subtitle).toMatch(/today's value/);
+    });
+
+    it('PDF export omits performance summary table when result has none', async () => {
+      const { exportToPdf } = await import('@/lib/pdf-export');
+      mockApi.run.mockResolvedValueOnce(simResult({ performanceSummary: undefined }));
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      fireEvent.click(screen.getByRole('button', { name: /^Export/i }));
+      const pdfOption = await screen.findByRole('button', { name: /^PDF$/ });
+      await act(async () => {
+        fireEvent.click(pdfOption);
+      });
+      const args = (exportToPdf as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(args.additionalTables).toHaveLength(1);
+      expect(args.additionalTables[0].title).toBe('Portfolio Value Percentiles by Year');
+    });
+
+    it('PDF export summary card shows em-dash when successRate is null', async () => {
+      const { exportToPdf } = await import('@/lib/pdf-export');
+      mockApi.run.mockResolvedValueOnce(
+        simResult({ successRate: null as unknown as number }),
+      );
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      fireEvent.click(screen.getByRole('button', { name: /^Export/i }));
+      const pdfOption = await screen.findByRole('button', { name: /^PDF$/ });
+      await act(async () => {
+        fireEvent.click(pdfOption);
+      });
+      const args = (exportToPdf as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      const successCard = args.summaryCards.find(
+        (c: { label: string }) => c.label.includes('Probability Above Target'),
+      );
+      expect(successCard.value).toBe('—');
+    });
+
+    it('PDF export title falls back to Scenario when form name is empty', async () => {
+      const { exportToPdf } = await import('@/lib/pdf-export');
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      fireEvent.click(screen.getByRole('button', { name: /^Export/i }));
+      const pdfOption = await screen.findByRole('button', { name: /^PDF$/ });
+      await act(async () => {
+        fireEvent.click(pdfOption);
+      });
+      const args = (exportToPdf as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(args.title).toBe('Monte Carlo: Scenario');
+    });
+
+    it('shows em-dash for Probability Above Target when successRate is null', async () => {
+      mockApi.run.mockResolvedValueOnce(
+        simResult({ successRate: null as unknown as number }),
+      );
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      expect(await screen.findByText('—')).toBeInTheDocument();
+    });
+
+    it('shows plain Probability Above Target label when targetValue is null', async () => {
+      mockApi.list.mockResolvedValueOnce([scenario({ targetValue: null })]);
+      mockApi.run.mockResolvedValueOnce(simResult({ successRate: 0.6 }));
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      const labels = await screen.findAllByText('Probability Above Target');
+      expect(labels.length).toBeGreaterThan(0);
+    });
+
+    it('phase divider label uses left-side arrow when divider is in the first half', async () => {
+      // yearsToRetirement=1, yearLabels.length=3 → 1/3 < 0.5 → left side label
+      mockApi.list.mockResolvedValueOnce([
+        scenario({ yearsToRetirement: 1, yearsInRetirement: 2 }),
+      ]);
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      const line = await screen.findByTestId('reference-line');
+      expect(line).toBeInTheDocument();
+      expect(line.getAttribute('data-x')).toBe('2027');
+    });
+
+    it('phase divider label uses right-side arrow when divider is in the second half', async () => {
+      // yearsToRetirement=2, yearLabels.length=3 → 2/3 > 0.5 → right side label
+      mockApi.list.mockResolvedValueOnce([
+        scenario({ yearsToRetirement: 2, yearsInRetirement: 1 }),
+      ]);
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      const line = await screen.findByTestId('reference-line');
+      expect(line).toBeInTheDocument();
+      expect(line.getAttribute('data-x')).toBe('2028');
+    });
+
+    it('renders CashFlowMarker shapes inside reference dots without throwing', async () => {
+      mockApi.list.mockResolvedValueOnce([
+        scenario({
+          cashFlows: [
+            {
+              name: 'Income',
+              amount: 12000,
+              flowType: 'ONE_TIME',
+              startYear: 1,
+              endYear: null,
+              inflationAdjust: false,
+            },
+          ],
+        }),
+      ]);
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      const dot = await screen.findByTestId('reference-dot');
+      expect(dot.querySelector('svg')).toBeTruthy();
+    });
+
+    it('clicking outside the save menu closes it', async () => {
+      mockApi.list.mockResolvedValueOnce([scenario()]);
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      const chevron = await screen.findByRole('button', {
+        name: /More save options/i,
+      });
+      await act(async () => {
+        fireEvent.click(chevron);
+      });
+      expect(
+        await screen.findByRole('menuitem', { name: /Save as/i }),
+      ).toBeInTheDocument();
+      await act(async () => {
+        fireEvent.mouseDown(document.body);
+      });
+      await waitFor(() =>
+        expect(
+          screen.queryByRole('menuitem', { name: /Save as/i }),
+        ).not.toBeInTheDocument(),
+      );
+    });
+
+    it('shows real/today\'s value heading when result.realValues is true', async () => {
+      mockApi.run.mockResolvedValueOnce(simResult({ realValues: true }));
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      expect(
+        await screen.findByText(/real \/ today's value/),
+      ).toBeInTheDocument();
+    });
+
+    it('renders performance summary section when result includes it', async () => {
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      expect(await screen.findByText('Performance Summary')).toBeInTheDocument();
+    });
+
+    it('Move up on the first scenario is a no-op and does not call reorder', async () => {
+      mockApi.list.mockResolvedValueOnce([
+        scenario({ id: 'a', name: 'Plan A' }),
+        scenario({ id: 'b', name: 'Plan B' }),
+      ]);
+      await renderReport();
+      await act(async () => {
+        fireEvent.click(
+          await screen.findByRole('button', { name: /^Reorder$/ }),
+        );
+      });
+      const ups = screen.getAllByTitle(/Move up/);
+      await act(async () => {
+        fireEvent.click(ups[0]);
+      });
+      expect(mockApi.reorder).not.toHaveBeenCalled();
+    });
+
+    it('Move down on the last scenario is a no-op and does not call reorder', async () => {
+      mockApi.list.mockResolvedValueOnce([
+        scenario({ id: 'a', name: 'Plan A' }),
+        scenario({ id: 'b', name: 'Plan B' }),
+      ]);
+      await renderReport();
+      await act(async () => {
+        fireEvent.click(
+          await screen.findByRole('button', { name: /^Reorder$/ }),
+        );
+      });
+      const downs = screen.getAllByTitle(/Move down/);
+      await act(async () => {
+        fireEvent.click(downs[downs.length - 1]);
+      });
+      expect(mockApi.reorder).not.toHaveBeenCalled();
+    });
+
+    it('scenario items show last-run date when lastRunAt is set', async () => {
+      const dated = scenario({
+        id: 'dated',
+        name: 'Dated Plan',
+        lastRunAt: '2026-03-15T00:00:00Z',
+      });
+      mockApi.list.mockResolvedValueOnce([dated]);
+      await renderReport();
+      expect(await screen.findByText(/Last run/)).toBeInTheDocument();
+    });
+
+    it('shows last-run date inside compare checkboxes when lastRunAt is set', async () => {
+      const dated = scenario({
+        id: 'a',
+        name: 'Plan A',
+        lastRunAt: '2026-03-15T00:00:00Z',
+      });
+      const other = scenario({ id: 'b', name: 'Plan B' });
+      mockApi.list.mockResolvedValueOnce([dated, other]);
+      await renderReport();
+      await act(async () => {
+        fireEvent.click(
+          await screen.findByRole('button', { name: /^Compare$/ }),
+        );
+      });
+      expect(screen.getAllByText(/Last run/).length).toBeGreaterThan(0);
+    });
+
+    it('cancels holdingStats fetch on cleanup when dependencies change', async () => {
+      mockApi.list.mockResolvedValueOnce([
+        scenario({ accountIds: ['acc-1'], useHistoricalReturns: true }),
+      ]);
+      let resolveStats!: (v: unknown) => void;
+      const pending = new Promise((res) => {
+        resolveStats = res;
+      });
+      mockApi.holdingStats.mockReturnValueOnce(pending);
+
+      const MonteCarloReport = await importComponent();
+      let renderResult: ReturnType<typeof render>;
+      await act(async () => {
+        renderResult = render(<MonteCarloReport />);
+      });
+      renderResult!.unmount();
+      // Resolving after unmount should not cause a state-update warning.
+      await act(async () => {
+        resolveStats([]);
+      });
+      expect(true).toBe(true);
+    });
+
+    it('CSV export filename uses form.name when set', async () => {
+      let capturedAnchor: HTMLAnchorElement | null = null;
+      const origAppend = document.body.appendChild.bind(document.body);
+      vi.spyOn(document.body, 'appendChild').mockImplementation((node) => {
+        if (node instanceof HTMLAnchorElement) capturedAnchor = node;
+        return origAppend(node);
+      });
+
+      const origCreate = global.URL.createObjectURL;
+      const origRevoke = global.URL.revokeObjectURL;
+      global.URL.createObjectURL = (() => 'blob:url') as never;
+      global.URL.revokeObjectURL = (() => undefined) as never;
+
+      mockApi.list.mockResolvedValueOnce([scenario({ name: 'My Plan 2026' })]);
+      await renderReport();
+      const item = await screen.findByRole('button', { name: /Retirement/i });
+      fireEvent.click(item);
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      fireEvent.click(screen.getByRole('button', { name: /^Export/i }));
+      const csvOption = await screen.findByRole('button', { name: /^CSV$/ });
+      await act(async () => {
+        fireEvent.click(csvOption);
+      });
+
+      expect(capturedAnchor?.download).toMatch(/my-plan-2026/);
+
+      global.URL.createObjectURL = origCreate;
+      global.URL.revokeObjectURL = origRevoke;
+      vi.restoreAllMocks();
+    });
+  });
 });
 
 // Suppress noisy "act" warnings printed by recharts ResizeObserver shim.

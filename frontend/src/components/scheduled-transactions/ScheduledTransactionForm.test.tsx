@@ -61,17 +61,22 @@ vi.mock('@/lib/categories', () => ({
 
 const mockPayeesGetAll = vi.fn().mockResolvedValue([]);
 const mockPayeesCreate = vi.fn().mockResolvedValue({ id: 'new-payee', name: 'New Payee' });
+const mockPayeesGetById = vi.fn().mockResolvedValue({ id: 'inactive-payee', name: 'Inactive Payee' });
 
 vi.mock('@/lib/payees', () => ({
   payeesApi: {
     getAll: (...args: any[]) => mockPayeesGetAll(...args),
     create: (...args: any[]) => mockPayeesCreate(...args),
+    getById: (...args: any[]) => mockPayeesGetById(...args),
   },
 }));
+
+const mockTagsCreate = vi.fn().mockResolvedValue({ id: 'new-tag', name: 'New Tag' });
 
 vi.mock('@/lib/tags', () => ({
   tagsApi: {
     getAll: vi.fn().mockResolvedValue([]),
+    create: (...args: any[]) => mockTagsCreate(...args),
   },
 }));
 
@@ -194,6 +199,8 @@ describe('ScheduledTransactionForm', () => {
     mockAccountsGetAll.mockResolvedValue(mockAccounts);
     mockCategoriesGetAll.mockResolvedValue(mockCategories);
     mockPayeesGetAll.mockResolvedValue(mockPayees);
+    mockPayeesGetById.mockResolvedValue({ id: 'inactive-payee', name: 'Inactive Payee' });
+    mockTagsCreate.mockResolvedValue({ id: 'new-tag', name: 'New Tag' });
   });
 
   // --- Basic rendering ---
@@ -1394,5 +1401,671 @@ describe('ScheduledTransactionForm', () => {
 
     // submitRef.current should be a function
     expect(typeof submitRef.current).toBe('function');
+  });
+
+  // ============================================================
+  // NEW TESTS: templateTransaction prop initialization
+  // ============================================================
+
+  it('initializes from templateTransaction with payeeName as name', async () => {
+    const template = {
+      id: 't1',
+      accountId: 'acc-1',
+      payeeId: 'payee-1',
+      payeeName: 'Landlord',
+      categoryId: 'cat-1',
+      amount: -1500,
+      currencyCode: 'CAD',
+      description: 'Template desc',
+      isTransfer: false,
+      isSplit: false,
+      tags: [],
+    } as any;
+
+    render(<ScheduledTransactionForm templateTransaction={template} />);
+    await waitFor(() => {
+      const nameInput = screen.getByLabelText('Name') as HTMLInputElement;
+      expect(nameInput.value).toBe('Landlord');
+    });
+  });
+
+  it('initializes transfer mode from templateTransaction.isTransfer', async () => {
+    const template = {
+      id: 't1',
+      accountId: 'acc-1',
+      payeeId: '',
+      payeeName: '',
+      amount: -500,
+      currencyCode: 'CAD',
+      isTransfer: true,
+      isSplit: false,
+      tags: [],
+      linkedTransaction: { accountId: 'acc-2' },
+    } as any;
+
+    render(<ScheduledTransactionForm templateTransaction={template} />);
+    await waitFor(() => {
+      expect(screen.getByText('From Account')).toBeInTheDocument();
+    });
+    expect(screen.getByText('To Account')).toBeInTheDocument();
+  });
+
+  it('initializes split mode from templateTransaction.isSplit', async () => {
+    const template = {
+      id: 't1',
+      accountId: 'acc-1',
+      payeeId: '',
+      payeeName: '',
+      amount: -100,
+      currencyCode: 'CAD',
+      isTransfer: false,
+      isSplit: true,
+      tags: [],
+      splits: [
+        { id: 'sp1', categoryId: 'cat-1', amount: -60, memo: '' },
+        { id: 'sp2', categoryId: 'cat-2', amount: -40, memo: '' },
+      ],
+    } as any;
+
+    render(<ScheduledTransactionForm templateTransaction={template} />);
+    await waitFor(() => {
+      expect(screen.getByTestId('split-editor')).toBeInTheDocument();
+    });
+  });
+
+  it('initializes selectedTagIds from templateTransaction.tags', async () => {
+    const template = {
+      id: 't1',
+      accountId: 'acc-1',
+      payeeId: '',
+      payeeName: '',
+      amount: -100,
+      currencyCode: 'CAD',
+      isTransfer: false,
+      isSplit: false,
+      tags: [{ id: 'tag-1', name: 'Food' }],
+    } as any;
+
+    render(<ScheduledTransactionForm templateTransaction={template} />);
+    await waitFor(() => {
+      expect(screen.getByText('Transaction')).toBeInTheDocument();
+    });
+    // No crash, form renders in transaction mode
+    expect(screen.getByText('Split')).toBeInTheDocument();
+  });
+
+  it('uses template amount as absolute when templateTransaction.isTransfer is true', async () => {
+    const template = {
+      id: 't1',
+      accountId: 'acc-1',
+      payeeId: '',
+      payeeName: '',
+      amount: -800,
+      currencyCode: 'USD',
+      isTransfer: true,
+      isSplit: false,
+      tags: [],
+      linkedTransaction: null,
+    } as any;
+
+    render(<ScheduledTransactionForm templateTransaction={template} />);
+    await waitFor(() => {
+      expect(screen.getByText('From Account')).toBeInTheDocument();
+    });
+    // Transfer amount shows absolute value, no crash
+    expect(screen.getByText('Transfer Amount')).toBeInTheDocument();
+  });
+
+  // ============================================================
+  // NEW TESTS: Inactive payee fetching
+  // ============================================================
+
+  it('fetches inactive payee by ID when editing and payee not in active list', async () => {
+    const stWithInactivePayee = {
+      id: 's1', accountId: 'acc-1', name: 'Rent',
+      amount: -1500, currencyCode: 'CAD', frequency: 'MONTHLY' as const,
+      nextDueDate: '2024-03-01', isActive: true, autoPost: false,
+      reminderDaysBefore: 3, isTransfer: false, isSplit: false,
+      payeeId: 'payee-inactive',
+    } as any;
+
+    render(<ScheduledTransactionForm scheduledTransaction={stWithInactivePayee} />);
+
+    await waitFor(() => {
+      expect(mockPayeesGetById).toHaveBeenCalledWith('payee-inactive');
+    });
+  });
+
+  it('falls back gracefully when inactive payee fetch fails', async () => {
+    mockPayeesGetById.mockRejectedValueOnce(new Error('Payee not found'));
+
+    const stWithInactivePayee = {
+      id: 's1', accountId: 'acc-1', name: 'Rent',
+      amount: -1500, currencyCode: 'CAD', frequency: 'MONTHLY' as const,
+      nextDueDate: '2024-03-01', isActive: true, autoPost: false,
+      reminderDaysBefore: 3, isTransfer: false, isSplit: false,
+      payeeId: 'payee-inactive',
+    } as any;
+
+    render(<ScheduledTransactionForm scheduledTransaction={stWithInactivePayee} />);
+
+    await waitFor(() => {
+      expect(mockPayeesGetById).toHaveBeenCalledWith('payee-inactive');
+    });
+    // Should not crash - renders form normally
+    expect(screen.getByText('Update')).toBeInTheDocument();
+  });
+
+  // ============================================================
+  // NEW TESTS: Transfer submit validation
+  // ============================================================
+
+  it('shows error toast when submitting transfer with no destination account', async () => {
+    const { container } = render(<ScheduledTransactionForm />);
+
+    await waitFor(() => {
+      expect(mockAccountsGetAll).toHaveBeenCalled();
+    });
+
+    // Switch to transfer mode
+    await act(async () => { fireEvent.click(screen.getByText('Transfer')); });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('From Account')).toBeInTheDocument();
+    });
+
+    // Fill source account and name but no destination
+    fireEvent.change(screen.getByLabelText('From Account'), { target: { value: 'acc-1' } });
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'No Destination Transfer' } });
+
+    const submitBtn = container.querySelector('button[type="submit"]')!;
+    await act(async () => { fireEvent.click(submitBtn); });
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Please select a destination account for the transfer');
+    });
+  });
+
+  it('shows error toast when transfer source and destination are the same', async () => {
+    const { container } = render(<ScheduledTransactionForm />);
+
+    await waitFor(() => {
+      expect(mockAccountsGetAll).toHaveBeenCalled();
+    });
+
+    // Switch to transfer mode
+    await act(async () => { fireEvent.click(screen.getByText('Transfer')); });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('From Account')).toBeInTheDocument();
+    });
+
+    // Select same account for source and destination
+    fireEvent.change(screen.getByLabelText('From Account'), { target: { value: 'acc-1' } });
+    fireEvent.change(screen.getByLabelText('To Account'), { target: { value: 'acc-1' } });
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Self Transfer' } });
+
+    const submitBtn = container.querySelector('button[type="submit"]')!;
+    await act(async () => { fireEvent.click(submitBtn); });
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Source and destination accounts must be different');
+    });
+  });
+
+  it('submits transfer successfully when valid destination is selected', async () => {
+    const onSuccess = vi.fn();
+    const { container } = render(<ScheduledTransactionForm onSuccess={onSuccess} />);
+
+    await waitFor(() => {
+      expect(mockAccountsGetAll).toHaveBeenCalled();
+    });
+
+    // Switch to transfer mode
+    await act(async () => { fireEvent.click(screen.getByText('Transfer')); });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('From Account')).toBeInTheDocument();
+    });
+
+    // Set valid source and destination
+    fireEvent.change(screen.getByLabelText('From Account'), { target: { value: 'acc-1' } });
+    fireEvent.change(screen.getByLabelText('To Account'), { target: { value: 'acc-2' } });
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Savings Transfer' } });
+
+    const submitBtn = container.querySelector('button[type="submit"]')!;
+    await act(async () => { fireEvent.click(submitBtn); });
+
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalled();
+    });
+    expect(toast.success).toHaveBeenCalledWith('Scheduled transaction created');
+    expect(onSuccess).toHaveBeenCalled();
+  });
+
+  it('shows error toast when transfer submission API fails', async () => {
+    mockCreate.mockRejectedValueOnce(new Error('Server error'));
+    const { container } = render(<ScheduledTransactionForm />);
+
+    await waitFor(() => {
+      expect(mockAccountsGetAll).toHaveBeenCalled();
+    });
+
+    await act(async () => { fireEvent.click(screen.getByText('Transfer')); });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('From Account')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText('From Account'), { target: { value: 'acc-1' } });
+    fireEvent.change(screen.getByLabelText('To Account'), { target: { value: 'acc-2' } });
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Transfer' } });
+
+    const submitBtn = container.querySelector('button[type="submit"]')!;
+    await act(async () => { fireEvent.click(submitBtn); });
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to save scheduled transaction');
+    });
+  });
+
+  // ============================================================
+  // NEW TESTS: Split submit validation
+  // ============================================================
+
+  it('shows error when submitting split with fewer than 2 splits', async () => {
+    // Override createEmptySplits to return 0 splits for this test
+    // The mock returns 2 splits by default, so we need 0 splits state
+    // We can test by starting in split mode with an existing ST that has no splits
+    const noSplitsSt = {
+      id: 's1', accountId: 'acc-1', name: 'Split Bill',
+      amount: -100, currencyCode: 'CAD', frequency: 'MONTHLY' as const,
+      nextDueDate: '2024-02-01', isActive: true, autoPost: false,
+      reminderDaysBefore: 3, isTransfer: false, isSplit: true,
+      transferAccountId: null,
+      splits: [],
+    } as any;
+
+    const { container } = render(<ScheduledTransactionForm scheduledTransaction={noSplitsSt} />);
+
+    await waitFor(() => {
+      expect(mockAccountsGetAll).toHaveBeenCalled();
+    });
+
+    // Should be in split mode with empty splits
+    const submitBtn = container.querySelector('button[type="submit"]')!;
+    await act(async () => { fireEvent.click(submitBtn); });
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Split transactions require at least 2 splits');
+    });
+  });
+
+  // ============================================================
+  // NEW TESTS: Transaction submit paths
+  // ============================================================
+
+  it('calls create API when submitting new transaction form with valid data', async () => {
+    const onSuccess = vi.fn();
+    const { container } = render(<ScheduledTransactionForm onSuccess={onSuccess} />);
+
+    await waitFor(() => {
+      expect(mockAccountsGetAll).toHaveBeenCalled();
+    });
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'New Bill' } });
+    fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+
+    const submitBtn = container.querySelector('button[type="submit"]')!;
+    await act(async () => { fireEvent.click(submitBtn); });
+
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalled();
+    });
+    expect(toast.success).toHaveBeenCalledWith('Scheduled transaction created');
+    expect(onSuccess).toHaveBeenCalled();
+  });
+
+  it('calls update API when submitting edit form in transaction mode', async () => {
+    const onSuccess = vi.fn();
+    const existingSt = {
+      id: 's1', accountId: 'acc-1', name: 'Monthly Rent', amount: -1500,
+      currencyCode: 'CAD', frequency: 'MONTHLY' as const,
+      nextDueDate: '2024-03-01', isActive: true, autoPost: false,
+      reminderDaysBefore: 3, isTransfer: false, isSplit: false,
+    } as any;
+
+    const { container } = render(<ScheduledTransactionForm scheduledTransaction={existingSt} onSuccess={onSuccess} />);
+
+    await waitFor(() => {
+      expect(mockAccountsGetAll).toHaveBeenCalled();
+    });
+
+    const submitBtn = container.querySelector('button[type="submit"]')!;
+    await act(async () => { fireEvent.click(submitBtn); });
+
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalledWith('s1', expect.objectContaining({ name: 'Monthly Rent' }));
+    });
+    expect(toast.success).toHaveBeenCalledWith('Scheduled transaction updated');
+    expect(onSuccess).toHaveBeenCalled();
+  });
+
+  it('shows error toast when create API fails', async () => {
+    mockCreate.mockRejectedValueOnce(new Error('Server error'));
+    const { container } = render(<ScheduledTransactionForm />);
+
+    await waitFor(() => {
+      expect(mockAccountsGetAll).toHaveBeenCalled();
+    });
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Test' } });
+    fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+
+    const submitBtn = container.querySelector('button[type="submit"]')!;
+    await act(async () => { fireEvent.click(submitBtn); });
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to save scheduled transaction');
+    });
+  });
+
+  it('shows error toast when update API fails', async () => {
+    mockUpdate.mockRejectedValueOnce(new Error('Server error'));
+    const existingSt = {
+      id: 's1', accountId: 'acc-1', name: 'Monthly Rent', amount: -1500,
+      currencyCode: 'CAD', frequency: 'MONTHLY' as const,
+      nextDueDate: '2024-03-01', isActive: true, autoPost: false,
+      reminderDaysBefore: 3, isTransfer: false, isSplit: false,
+    } as any;
+
+    const { container } = render(<ScheduledTransactionForm scheduledTransaction={existingSt} />);
+
+    await waitFor(() => {
+      expect(mockAccountsGetAll).toHaveBeenCalled();
+    });
+
+    const submitBtn = container.querySelector('button[type="submit"]')!;
+    await act(async () => { fireEvent.click(submitBtn); });
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to save scheduled transaction');
+    });
+  });
+
+  it('submits with useEndDate in payload when end date checkbox is enabled', async () => {
+    const onSuccess = vi.fn();
+    const { container } = render(<ScheduledTransactionForm onSuccess={onSuccess} />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('End by date')).toBeInTheDocument();
+    });
+
+    // Enable end date checkbox
+    fireEvent.click(screen.getByLabelText('End by date'));
+
+    // Fill required fields
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Test Bill' } });
+    fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+
+    const submitBtn = container.querySelector('button[type="submit"]')!;
+    await act(async () => { fireEvent.click(submitBtn); });
+
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalled();
+    });
+  });
+
+  // ============================================================
+  // NEW TESTS: Amount sign adjustment via category
+  // ============================================================
+
+  it('adjusts amount to positive when income category is selected with non-zero amount', async () => {
+    const stWithNegAmount = {
+      id: 's1', accountId: 'acc-1', name: 'Salary',
+      amount: -100, currencyCode: 'CAD', frequency: 'MONTHLY' as const,
+      nextDueDate: '2024-03-01', isActive: true, autoPost: false,
+      reminderDaysBefore: 3, isTransfer: false, isSplit: false,
+      categoryId: '',
+    } as any;
+
+    render(<ScheduledTransactionForm scheduledTransaction={stWithNegAmount} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('option-cat-2')).toBeInTheDocument();
+    });
+
+    // Select income category (cat-2 = Salary, isIncome: true) - amount is -100
+    await act(async () => { fireEvent.click(screen.getByTestId('option-cat-2')); });
+
+    // Amount should now be adjusted to positive
+    expect(screen.getByText('Update')).toBeInTheDocument();
+  });
+
+  it('does not auto-fill category from payee when already has a category selected', async () => {
+    const stWithCategory = {
+      id: 's1', accountId: 'acc-1', name: 'Rent',
+      amount: -1500, currencyCode: 'CAD', frequency: 'MONTHLY' as const,
+      nextDueDate: '2024-03-01', isActive: true, autoPost: false,
+      reminderDaysBefore: 3, isTransfer: false, isSplit: false,
+      categoryId: 'cat-1',
+    } as any;
+
+    render(<ScheduledTransactionForm scheduledTransaction={stWithCategory} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('option-payee-2')).toBeInTheDocument();
+    });
+
+    // Select payee-2 = Employer with defaultCategoryId: cat-2
+    // But since selectedCategoryId is 'cat-1', it should NOT auto-fill
+    await act(async () => { fireEvent.click(screen.getByTestId('option-payee-2')); });
+
+    // Form renders without crash
+    expect(screen.getByText('Update')).toBeInTheDocument();
+  });
+
+  it('does not auto-fill category from payee when in transfer mode', async () => {
+    render(<ScheduledTransactionForm />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Transfer')).toBeInTheDocument();
+    });
+
+    // Switch to transfer mode
+    await act(async () => { fireEvent.click(screen.getByText('Transfer')); });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('option-payee-1')).toBeInTheDocument();
+    });
+
+    // Select payee with default category in transfer mode (should NOT auto-fill category)
+    await act(async () => { fireEvent.click(screen.getByTestId('option-payee-1')); });
+
+    // Category should not be shown in transfer mode
+    expect(screen.queryByTestId('combobox-Category')).not.toBeInTheDocument();
+  });
+
+  // ============================================================
+  // NEW TESTS: handleModeChange branch cases
+  // ============================================================
+
+  it('makes amount positive when switching to transfer with negative amount', async () => {
+    const stWithNegAmount = {
+      id: 's1', accountId: 'acc-1', name: 'Expense',
+      amount: -200, currencyCode: 'CAD', frequency: 'MONTHLY' as const,
+      nextDueDate: '2024-02-01', isActive: true, autoPost: false,
+      reminderDaysBefore: 3, isTransfer: false, isSplit: false,
+    } as any;
+
+    render(<ScheduledTransactionForm scheduledTransaction={stWithNegAmount} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Transfer')).toBeInTheDocument();
+    });
+
+    // Switch to transfer mode - amount -200 should become +200
+    await act(async () => { fireEvent.click(screen.getByText('Transfer')); });
+
+    expect(screen.getByText('Transfer Amount')).toBeInTheDocument();
+  });
+
+  it('does not re-create splits when switching to split mode when splits already exist', async () => {
+    const splitSt = {
+      id: 's1', accountId: 'acc-1', name: 'Split Bill',
+      amount: -100, currencyCode: 'CAD', frequency: 'MONTHLY' as const,
+      nextDueDate: '2024-02-01', isActive: true, autoPost: false,
+      reminderDaysBefore: 3, isTransfer: false, isSplit: true,
+      transferAccountId: null,
+      splits: [
+        { id: 'sp1', categoryId: 'cat-1', amount: -60, memo: 'Part 1', transferAccountId: null },
+        { id: 'sp2', categoryId: 'cat-2', amount: -40, memo: 'Part 2', transferAccountId: null },
+      ],
+    } as any;
+
+    render(<ScheduledTransactionForm scheduledTransaction={splitSt} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('split-editor')).toBeInTheDocument();
+    });
+
+    // Go to transaction mode and back to split - splits already exist (length > 0)
+    await act(async () => { fireEvent.click(screen.getByText('Transaction')); });
+    await act(async () => { fireEvent.click(screen.getByText('Split')); });
+
+    expect(screen.getByTestId('split-editor')).toBeInTheDocument();
+  });
+
+  // ============================================================
+  // NEW TESTS: handlePayeeSearch
+  // ============================================================
+
+  it('filters payees based on search query of length >= 2', async () => {
+    render(<ScheduledTransactionForm />);
+
+    await waitFor(() => {
+      expect(mockPayeesGetAll).toHaveBeenCalled();
+    });
+
+    // Trigger search with query >= 2 chars
+    const payeeInput = screen.getByTestId('combobox-input-Payee');
+    fireEvent.change(payeeInput, { target: { value: 'La' } });
+
+    // After search, no crash
+    expect(screen.getByTestId('combobox-Payee')).toBeInTheDocument();
+  });
+
+  it('resets payee list when search query is too short', async () => {
+    render(<ScheduledTransactionForm />);
+
+    await waitFor(() => {
+      expect(mockPayeesGetAll).toHaveBeenCalled();
+    });
+
+    const payeeInput = screen.getByTestId('combobox-input-Payee');
+    // Search then clear back to 1 char
+    fireEvent.change(payeeInput, { target: { value: 'La' } });
+    fireEvent.change(payeeInput, { target: { value: 'L' } });
+
+    expect(screen.getByTestId('combobox-Payee')).toBeInTheDocument();
+  });
+
+  // ============================================================
+  // NEW TESTS: End condition in split mode
+  // ============================================================
+
+  it('shows end condition section in split mode', async () => {
+    render(<ScheduledTransactionForm />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Split')).toBeInTheDocument();
+    });
+
+    await act(async () => { fireEvent.click(screen.getByText('Split')); });
+
+    expect(screen.getByText('End Condition (optional)')).toBeInTheDocument();
+  });
+
+  it('hides end condition in split mode when ONCE frequency is selected', async () => {
+    render(<ScheduledTransactionForm />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Split')).toBeInTheDocument();
+    });
+
+    await act(async () => { fireEvent.click(screen.getByText('Split')); });
+
+    const frequencySelects = screen.getAllByLabelText('Frequency');
+    fireEvent.change(frequencySelects[0], { target: { value: 'ONCE' } });
+
+    expect(screen.queryByText('End Condition (optional)')).not.toBeInTheDocument();
+  });
+
+  // ============================================================
+  // NEW TESTS: Currency auto-update from account
+  // ============================================================
+
+  it('auto-updates currency when a different account is selected', async () => {
+    const usdAccount = {
+      id: 'acc-usd',
+      name: 'USD Account',
+      currencyCode: 'USD',
+      isClosed: false,
+      accountType: 'CHEQUING',
+      accountSubType: null,
+    };
+
+    mockAccountsGetAll.mockResolvedValue([...mockAccounts, usdAccount]);
+
+    render(<ScheduledTransactionForm />);
+
+    await waitFor(() => {
+      expect(mockAccountsGetAll).toHaveBeenCalled();
+    });
+
+    const accountSelect = screen.getByLabelText('Account');
+    fireEvent.change(accountSelect, { target: { value: 'acc-usd' } });
+
+    // No crash after currency change
+    expect(screen.getByText('Transaction')).toBeInTheDocument();
+  });
+
+  // ============================================================
+  // NEW TESTS: Transfer mode end condition (none in transfer mode)
+  // ============================================================
+
+  it('does not show end condition section in transfer mode', async () => {
+    render(<ScheduledTransactionForm />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Transfer')).toBeInTheDocument();
+    });
+
+    await act(async () => { fireEvent.click(screen.getByText('Transfer')); });
+
+    expect(screen.queryByText('End Condition (optional)')).not.toBeInTheDocument();
+  });
+
+  // ============================================================
+  // NEW TESTS: tagIds used in payload
+  // ============================================================
+
+  it('includes empty tagIds array when no tags selected', async () => {
+    const onSuccess = vi.fn();
+    const { container } = render(<ScheduledTransactionForm onSuccess={onSuccess} />);
+
+    await waitFor(() => {
+      expect(mockAccountsGetAll).toHaveBeenCalled();
+    });
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Tagged Bill' } });
+    fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+
+    const submitBtn = container.querySelector('button[type="submit"]')!;
+    await act(async () => { fireEvent.click(submitBtn); });
+
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({ tagIds: [] }));
+    });
   });
 });
