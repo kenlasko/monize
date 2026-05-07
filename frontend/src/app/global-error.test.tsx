@@ -1,9 +1,25 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import GlobalError from './global-error';
 
 describe('GlobalError', () => {
   const mockReset = vi.fn();
+
+  // GlobalError legitimately renders <html><body> (Next.js requirement).
+  // Testing-library mounts it into a <div>, which trips an unavoidable
+  // DOM nesting warning. Silence it.
+  const originalConsoleError = console.error;
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation((...args) => {
+      const msg = String(args[0] ?? '');
+      if (msg.includes('cannot be a child of')) return;
+      originalConsoleError(...args);
+    });
+  });
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
+  });
 
   it('renders error heading', () => {
     render(<GlobalError error={new Error('test error')} reset={mockReset} />);

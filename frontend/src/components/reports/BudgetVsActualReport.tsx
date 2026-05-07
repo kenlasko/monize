@@ -191,8 +191,8 @@ export function BudgetVsActualReport() {
                         return (
                           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
                             <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">{label}</p>
-                            {payload.map((entry) => (
-                              <p key={entry.dataKey as string} className="text-sm" style={{ color: entry.color }}>
+                            {payload.map((entry, idx) => (
+                              <p key={(entry.dataKey as string) ?? entry.name ?? idx} className="text-sm" style={{ color: entry.color }}>
                                 {entry.name}: {formatCurrency(entry.value as number)}
                               </p>
                             ))}

@@ -6,17 +6,37 @@ afterEach(() => {
   cleanup();
 });
 
-// Suppress known-harmless jsdom warnings for SVG elements used by Recharts
+// Suppress known-harmless jsdom warnings for SVG elements used by Recharts.
+// Also suppress tagged output from the project's `createLogger` (e.g.
+// "[useMonteCarloScenarios] Save failed: ..."). Tests intentionally exercise
+// logger.error/warn paths and assert behavioral effects (toasts, state) rather
+// than console output, so the tagged log lines are pure noise.
+const LOGGER_TAG_RE = /^\[[A-Za-z][\w-]*\]$/;
 const originalConsoleError = console.error;
 console.error = (...args: unknown[]) => {
   const msg = typeof args[0] === 'string' ? args[0] : '';
   if (
     msg.includes('is unrecognized in this browser') ||
-    msg.includes('is using incorrect casing')
+    msg.includes('is using incorrect casing') ||
+    LOGGER_TAG_RE.test(msg)
   ) {
     return;
   }
   originalConsoleError(...args);
+};
+
+const originalConsoleWarn = console.warn;
+console.warn = (...args: unknown[]) => {
+  const msg = typeof args[0] === 'string' ? args[0] : '';
+  if (LOGGER_TAG_RE.test(msg)) return;
+  originalConsoleWarn(...args);
+};
+
+const originalConsoleInfo = console.info;
+console.info = (...args: unknown[]) => {
+  const msg = typeof args[0] === 'string' ? args[0] : '';
+  if (LOGGER_TAG_RE.test(msg)) return;
+  originalConsoleInfo(...args);
 };
 
 // Mock next/navigation
