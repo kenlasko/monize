@@ -970,6 +970,126 @@ describe('DividendIncomeReport', () => {
       expect(screen.getByText('$1050.00')).toBeInTheDocument();
     });
 
+    it('shows a Hide inactive days toggle only in daily view', async () => {
+      mockGetTransactions.mockResolvedValue({ data: [], pagination: { hasMore: false } });
+      mockGetInvestmentAccounts.mockResolvedValue([]);
+      mockGetCapitalGains.mockResolvedValue([]);
+
+      render(<DividendIncomeReport />);
+
+      // Toggle should not be visible in monthly view (default).
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: 'Monthly' })).toBeInTheDocument();
+      });
+      expect(screen.queryByRole('switch', { name: /hide inactive days/i })).not.toBeInTheDocument();
+
+      // Switch to daily view — toggle should appear.
+      fireEvent.click(screen.getByRole('button', { name: 'Daily' }));
+      expect(await screen.findByRole('switch', { name: /hide inactive days/i })).toBeInTheDocument();
+
+      // Switch back to monthly — toggle disappears again.
+      fireEvent.click(screen.getByRole('button', { name: 'Monthly' }));
+      await waitFor(() => {
+        expect(screen.queryByRole('switch', { name: /hide inactive days/i })).not.toBeInTheDocument();
+      });
+    });
+
+    it('hides days with all-zero activity when Hide inactive days is toggled on', async () => {
+      mockGetTransactions.mockResolvedValue({
+        data: [
+          {
+            id: 'tx-1',
+            transactionDate: '2024-06-17',
+            action: 'DIVIDEND',
+            totalAmount: 50,
+            accountId: 'acc-1',
+            securityId: 'sec-a',
+            security: { symbol: 'AAA', name: 'Alpha' },
+          },
+        ],
+        pagination: { hasMore: false },
+      });
+      mockGetInvestmentAccounts.mockResolvedValue([
+        { id: 'acc-1', name: 'TFSA', currencyCode: 'CAD', accountSubType: 'INVESTMENT_CASH' },
+      ]);
+      // Day capital gains: Jun 15 has portfolio data, Jun 16 is an empty day
+      // (would be a weekend), Jun 17 has a dividend transaction.
+      mockGetCapitalGains.mockImplementation((params: { granularity?: string }) => {
+        if (params.granularity === 'day') {
+          return Promise.resolve([
+            {
+              month: '2024-06-15',
+              accountId: 'acc-1',
+              accountName: 'TFSA',
+              accountCurrencyCode: 'CAD',
+              securityId: 'sec-1',
+              symbol: 'ABC',
+              securityName: 'ABC Corp',
+              securityCurrencyCode: 'CAD',
+              startQuantity: 10,
+              endQuantity: 10,
+              startValue: 1000,
+              endValue: 1020,
+              buys: 0,
+              sells: 0,
+              realizedGain: 0,
+              unrealizedGain: 20,
+              totalCapitalGain: 20,
+            },
+            // Jun 16: zero everything — simulates a weekend / holiday
+            {
+              month: '2024-06-16',
+              accountId: 'acc-1',
+              accountName: 'TFSA',
+              accountCurrencyCode: 'CAD',
+              securityId: 'sec-1',
+              symbol: 'ABC',
+              securityName: 'ABC Corp',
+              securityCurrencyCode: 'CAD',
+              startQuantity: 0,
+              endQuantity: 0,
+              startValue: 0,
+              endValue: 0,
+              buys: 0,
+              sells: 0,
+              realizedGain: 0,
+              unrealizedGain: 0,
+              totalCapitalGain: 0,
+            },
+          ]);
+        }
+        return Promise.resolve([]);
+      });
+
+      render(<DividendIncomeReport />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: 'Daily' })).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Daily' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Table' }));
+
+      // All three days appear initially (toggle is off).
+      expect(await screen.findByText('Jun 15, 2024')).toBeInTheDocument();
+      expect(screen.getByText('Jun 16, 2024')).toBeInTheDocument();
+      expect(screen.getByText('Jun 17, 2024')).toBeInTheDocument();
+
+      // Enable the toggle — Jun 16 (all zeros) should disappear.
+      const toggle = screen.getByRole('switch', { name: /hide inactive days/i });
+      fireEvent.click(toggle);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Jun 16, 2024')).not.toBeInTheDocument();
+      });
+      // Active days remain visible.
+      expect(screen.getByText('Jun 15, 2024')).toBeInTheDocument();
+      expect(screen.getByText('Jun 17, 2024')).toBeInTheDocument();
+
+      // Disable the toggle — Jun 16 comes back.
+      fireEvent.click(toggle);
+      expect(await screen.findByText('Jun 16, 2024')).toBeInTheDocument();
+    });
+
     it('shows chart container (not table data) to PDF exporter in daily chart view', async () => {
       mockGetTransactions.mockResolvedValue({
         data: [

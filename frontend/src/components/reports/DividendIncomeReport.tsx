@@ -81,6 +81,7 @@ export function DividendIncomeReport() {
   const [isLoading, setIsLoading] = useState(true);
   const [viewType, setViewType] = useState<'monthly' | 'daily' | 'bySecurity'>('monthly');
   const [monthlyDisplay, setMonthlyDisplay] = useState<'chart' | 'table'>('chart');
+  const [hideInactiveDays, setHideInactiveDays] = useState(false);
   const [visibleSeries, setVisibleSeries] = useState<Record<SeriesKey, boolean>>({
     dividends: true,
     interest: true,
@@ -418,6 +419,24 @@ export function DividendIncomeReport() {
     return Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date));
   }, [filteredTransactions, filteredDailyCapitalGains, getTxAmount, convertCapitalGain, convertFromAccountCurrency]);
 
+  // When hideInactiveDays is enabled, drop rows with no portfolio value and no
+  // income (dividends, interest, or capital gains). These are typically weekends
+  // and holidays where the market was closed and no transactions occurred.
+  const displayedDailyData = useMemo(
+    () =>
+      hideInactiveDays
+        ? dailyData.filter(
+            (row) =>
+              row.startValue !== 0 ||
+              row.endValue !== 0 ||
+              row.dividends !== 0 ||
+              row.interest !== 0 ||
+              row.capitalGains !== 0,
+          )
+        : dailyData,
+    [dailyData, hideInactiveDays],
+  );
+
   const securityData = useMemo((): SecurityIncome[] => {
     const securityMap = new Map<string, SecurityIncome>();
 
@@ -531,7 +550,7 @@ export function DividendIncomeReport() {
       if (visibleSeries.interest) headers.push('Interest');
       if (visibleSeries.capitalGains) headers.push('Capital Gains');
       headers.push('Total', 'Currency');
-      const rows = dailyData.map((row) => {
+      const rows = displayedDailyData.map((row) => {
         const out: (string | number)[] = [row.date, round4(row.startValue), round4(row.endValue)];
         let total = 0;
         if (visibleSeries.dividends) {
@@ -626,7 +645,7 @@ export function DividendIncomeReport() {
       if (visibleSeries.interest) headers.push('Interest');
       if (visibleSeries.capitalGains) headers.push('Capital Gains');
       headers.push('Total');
-      const rows = dailyData.map((row) => {
+      const rows = displayedDailyData.map((row) => {
         const out: (string | number)[] = [row.label, fmtValue(row.startValue), fmtValue(row.endValue)];
         let rowTotal = 0;
         if (visibleSeries.dividends) {
@@ -644,7 +663,7 @@ export function DividendIncomeReport() {
         out.push(fmtValue(rowTotal));
         return out;
       });
-      const dailyTotals = dailyData.reduce(
+      const dailyTotals = displayedDailyData.reduce(
         (acc, row) => ({
           dividends: acc.dividends + row.dividends,
           interest: acc.interest + row.interest,
@@ -778,7 +797,7 @@ export function DividendIncomeReport() {
   // instead of being hidden inside a stack.
   const hasNegativeCapitalGains = monthlyData.some((m) => m.capitalGains < 0);
   const stackId = hasNegativeCapitalGains ? undefined : 'a';
-  const dailyHasNegativeCapitalGains = dailyData.some((d) => d.capitalGains < 0);
+  const dailyHasNegativeCapitalGains = displayedDailyData.some((d) => d.capitalGains < 0);
   const dailyStackId = dailyHasNegativeCapitalGains ? undefined : 'a';
 
   return (
@@ -949,6 +968,28 @@ export function DividendIncomeReport() {
                 );
               })}
             </div>
+            {viewType === 'daily' && (
+              <button
+                type="button"
+                role="switch"
+                aria-checked={hideInactiveDays}
+                onClick={() => setHideInactiveDays((v) => !v)}
+                className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 ml-2"
+              >
+                <span
+                  className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ${
+                    hideInactiveDays ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${
+                      hideInactiveDays ? 'translate-x-4' : 'translate-x-0'
+                    }`}
+                  />
+                </span>
+                Hide inactive days
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -1114,14 +1155,14 @@ export function DividendIncomeReport() {
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             Daily Gains, Dividends & Interest
           </h3>
-          {dailyData.length === 0 ? (
+          {displayedDailyData.length === 0 ? (
             <p className="text-gray-500 dark:text-gray-400 text-center py-8">
               No daily transaction data for this period.
             </p>
           ) : (
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                <BarChart data={dailyData}>
+                <BarChart data={displayedDailyData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                   <YAxis tickFormatter={formatCurrencyAxis} />
@@ -1151,7 +1192,7 @@ export function DividendIncomeReport() {
                       fill={SERIES_COLORS.capitalGains.positive}
                       name="Capital Gains"
                     >
-                      {dailyData.map((entry) => (
+                      {displayedDailyData.map((entry) => (
                         <Cell
                           key={entry.date}
                           fill={
@@ -1176,7 +1217,7 @@ export function DividendIncomeReport() {
               Daily Gains, Dividends & Interest
             </h3>
           </div>
-          {dailyData.length === 0 ? (
+          {displayedDailyData.length === 0 ? (
             <p className="text-gray-500 dark:text-gray-400 text-center py-8">
               No daily transaction data for this period.
             </p>
@@ -1215,7 +1256,7 @@ export function DividendIncomeReport() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {dailyData.map((row) => {
+                  {displayedDailyData.map((row) => {
                     const rowTotal =
                       (visibleSeries.dividends ? row.dividends : 0) +
                       (visibleSeries.interest ? row.interest : 0) +
