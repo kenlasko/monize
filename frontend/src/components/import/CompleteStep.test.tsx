@@ -353,4 +353,60 @@ describe('CompleteStep', () => {
     render(<CompleteStep {...defaultProps} />);
     expect(screen.queryByText('Set Up Recurring Payments')).not.toBeInTheDocument();
   });
+
+  it('opens loan payment setup dialog when "Set Up Payments" is clicked', () => {
+    const resultWithLoans = {
+      ...defaultProps.importResult!,
+      loanAccountsNeedingSetup: [
+        { accountId: 'loan-1', accountName: 'Home Mortgage', accountType: 'MORTGAGE' },
+      ],
+    };
+    render(<CompleteStep {...defaultProps} importResult={resultWithLoans} />);
+
+    // Click the setup button to open the dialog
+    const setupButton = screen.getByRole('button', { name: /Set Up Payments/i });
+    fireEvent.click(setupButton);
+
+    // The dialog should now be open
+    expect(screen.getByTestId('loan-payment-setup-dialog')).toBeInTheDocument();
+  });
+
+  it('shows loan accounts from bulkImportResult', () => {
+    const bulkResultWithLoans = {
+      totalImported: 10,
+      totalSkipped: 0,
+      totalErrors: 0,
+      categoriesCreated: 0,
+      accountsCreated: 0,
+      payeesCreated: 0,
+      securitiesCreated: 0,
+      fileResults: [
+        {
+          fileName: 'mortgage.qif',
+          accountName: 'Home Mortgage',
+          imported: 10,
+          skipped: 0,
+          errors: 0,
+          errorMessages: [],
+          loanAccountsNeedingSetup: [
+            { accountId: 'loan-file-1', accountName: 'File Loan', accountType: 'LOAN' },
+          ],
+        },
+      ],
+      loanAccountsNeedingSetup: [
+        { accountId: 'bulk-loan-1', accountName: 'Bulk Mortgage', accountType: 'MORTGAGE' },
+      ],
+    };
+    render(
+      <CompleteStep
+        {...defaultProps}
+        isBulkImport={true}
+        bulkImportResult={bulkResultWithLoans}
+      />
+    );
+
+    expect(screen.getByText('Set Up Recurring Payments')).toBeInTheDocument();
+    expect(screen.getByText('Bulk Mortgage')).toBeInTheDocument();
+    expect(screen.getByText('File Loan')).toBeInTheDocument();
+  });
 });

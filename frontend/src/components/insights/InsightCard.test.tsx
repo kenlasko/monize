@@ -175,4 +175,31 @@ describe('InsightCard', () => {
     const card = container.firstChild as HTMLElement;
     expect(card.className).toContain('opacity-50');
   });
+
+  it('falls back to info severity styles for unknown severity', () => {
+    const { container } = render(
+      <InsightCard
+        insight={makeInsight({ severity: 'unknown-severity' as any })}
+        onDismiss={vi.fn()}
+        isDismissing={false}
+      />,
+    );
+
+    // Falls back to info style (blue borders)
+    const card = container.firstChild as HTMLElement;
+    expect(card.className).toContain('border-blue-200');
+  });
+
+  it('falls back to anomaly type style for unknown type', () => {
+    const { container } = render(
+      <InsightCard
+        insight={makeInsight({ type: 'unknown-type' as any })}
+        onDismiss={vi.fn()}
+        isDismissing={false}
+      />,
+    );
+
+    // Falls back to anomaly style (red), verify it renders without error
+    expect(screen.getByText('High spending on Dining')).toBeInTheDocument();
+  });
 });
