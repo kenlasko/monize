@@ -9,7 +9,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  ReferenceDot,
 } from 'recharts';
 import { format } from 'date-fns';
 import { netWorthApi } from '@/lib/net-worth';
@@ -524,50 +523,29 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix 
                 fill="url(#colorInvestments)"
                 name="Portfolio Value"
                 isAnimationActive={false}
-                dot={false}
                 activeDot={{ r: 4, fill: '#10b981' }}
+                dot={(props: { cx?: number; cy?: number; index?: number }) => {
+                  const { cx, cy, index } = props;
+                  if (cx == null || cy == null || index == null) {
+                    return <circle cx={0} cy={0} r={0} fill="none" />;
+                  }
+                  const isHighest = showFlags && index === highestIndex;
+                  const isLowest = showFlags && index === lowestIndex;
+                  if (!isHighest && !isLowest) {
+                    return <circle key={`dot-${index}`} cx={cx} cy={cy} r={0} fill="none" />;
+                  }
+                  const value = isHighest ? summary.highest : summary.lowest;
+                  const isLeftHalf = index < chartPoints.length / 2;
+                  return renderChartFlagDot({
+                    cx,
+                    cy,
+                    index,
+                    color: isHighest ? '#10b981' : '#ef4444',
+                    label: fmtFlag(value),
+                    side: isLeftHalf ? 'right' : 'left',
+                  });
+                }}
               />
-              {/* Highest / lowest flag callouts. Using ReferenceDot instead of
-                  a per-point dot renderer keeps the SVG to two extra elements
-                  rather than one zero-radius <circle> for every datapoint --
-                  on long ranges (e.g. 366 daily points) that single change
-                  drops hundreds of nodes from the chart layer. */}
-              {showFlags && highestIndex >= 0 && (
-                <ReferenceDot
-                  x={chartPoints[highestIndex].name}
-                  y={summary.highest}
-                  shape={(props: { cx?: number; cy?: number }) => {
-                    const { cx, cy } = props;
-                    if (cx == null || cy == null) return <g />;
-                    return renderChartFlagDot({
-                      cx,
-                      cy,
-                      index: highestIndex,
-                      color: '#10b981',
-                      label: fmtFlag(summary.highest),
-                      side: highestIndex < chartPoints.length / 2 ? 'right' : 'left',
-                    });
-                  }}
-                />
-              )}
-              {showFlags && lowestIndex >= 0 && (
-                <ReferenceDot
-                  x={chartPoints[lowestIndex].name}
-                  y={summary.lowest}
-                  shape={(props: { cx?: number; cy?: number }) => {
-                    const { cx, cy } = props;
-                    if (cx == null || cy == null) return <g />;
-                    return renderChartFlagDot({
-                      cx,
-                      cy,
-                      index: lowestIndex,
-                      color: '#ef4444',
-                      label: fmtFlag(summary.lowest),
-                      side: lowestIndex < chartPoints.length / 2 ? 'right' : 'left',
-                    });
-                  }}
-                />
-              )}
             </AreaChart>
           </ResponsiveContainer>
         </div>
