@@ -682,13 +682,13 @@ describe('PostTransactionDialog', () => {
   // --- Split validation errors ---
   it('shows error when posting split with fewer than 2 splits', async () => {
     // Mock createEmptySplits to return only 1 split
-    const { createEmptySplits: original } = await vi.importActual<any>('@/components/transactions/SplitEditor');
+    const { createEmptySplits: _original } = await vi.importActual<any>('@/components/transactions/SplitEditor');
     vi.mocked(
       (await import('@/components/transactions/SplitEditor')).createEmptySplits
     );
 
     // Render with a custom splits mock that returns only 1 split
-    const oneSplitModule = {
+    const _oneSplitModule = {
       SplitEditor: () => <div data-testid="split-editor">SplitEditor</div>,
       SplitRow: null,
       createEmptySplits: () => [

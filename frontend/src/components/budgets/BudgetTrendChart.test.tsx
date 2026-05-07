@@ -3,7 +3,7 @@ import { render, screen } from '@/test/render';
 import { BudgetTrendChart } from './BudgetTrendChart';
 
 // Capture the tooltip content component so we can render it directly
-let capturedTooltipContent: any = null;
+let _capturedTooltipContent: any = null;
 
 // Mock recharts to avoid rendering actual SVGs in tests
 vi.mock('recharts', () => ({
@@ -16,7 +16,7 @@ vi.mock('recharts', () => ({
   CartesianGrid: () => <div data-testid="grid" />,
   Tooltip: ({ content }: any) => {
     // Render the tooltip content with active payload to cover CustomTooltip branches
-    capturedTooltipContent = content;
+    _capturedTooltipContent = content;
     const payload = [
       { value: 5000, dataKey: 'budgeted', color: '#3b82f6' },
       { value: 4800, dataKey: 'actual', color: '#10b981' },

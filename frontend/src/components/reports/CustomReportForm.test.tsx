@@ -117,7 +117,7 @@ vi.mock('@/components/ui/FormActions', () => ({
 }));
 
 vi.mock('@/components/ui/MultiSelect', () => ({
-  MultiSelect: ({ label, value, onChange, options, placeholder }: any) => (
+  MultiSelect: ({ label, value, onChange, options, placeholder: _placeholder }: any) => (
     <div>
       <label>{label}</label>
       <select

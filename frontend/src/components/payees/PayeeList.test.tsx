@@ -637,7 +637,7 @@ describe('PayeeList', () => {
   // Dense mode button labels
   it('shows abbreviated button labels in dense mode', () => {
     const onMerge = vi.fn();
-    const onReactivate = vi.fn();
+    const _onReactivate = vi.fn();
     const payees = [
       makePayee({ id: 'p1', name: 'Walmart', isActive: true }),
     ];

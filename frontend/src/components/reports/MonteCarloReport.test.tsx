@@ -2223,15 +2223,14 @@ describe('MonteCarloReport', () => {
       const recharts = await import('recharts');
       const origDot = recharts.ReferenceDot;
       // Temporarily override
-      (recharts as unknown as Record<string, unknown>).ReferenceDot = ({
-        shape,
-      }: {
-        shape?: (p: { cx?: number; cy?: number }) => React.ReactNode;
-      }) => (
-        <div data-testid="reference-dot-undef">
-          {shape ? <svg>{shape({ cx: undefined, cy: undefined })}</svg> : null}
-        </div>
-      );
+      function UndefReferenceDot({ shape }: { shape?: (p: { cx?: number; cy?: number }) => React.ReactNode }) {
+        return (
+          <div data-testid="reference-dot-undef">
+            {shape ? <svg>{shape({ cx: undefined, cy: undefined })}</svg> : null}
+          </div>
+        );
+      }
+      (recharts as unknown as Record<string, unknown>).ReferenceDot = UndefReferenceDot;
 
       mockApi.list.mockResolvedValueOnce([
         scenario({
@@ -2430,7 +2429,7 @@ describe('MonteCarloReport', () => {
         fireEvent.click(csvOption);
       });
 
-      expect(capturedAnchor?.download).toMatch(/my-plan-2026/);
+      expect((capturedAnchor as HTMLAnchorElement | null)?.download).toMatch(/my-plan-2026/);
 
       global.URL.createObjectURL = origCreate;
       global.URL.revokeObjectURL = origRevoke;

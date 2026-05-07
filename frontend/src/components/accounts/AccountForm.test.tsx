@@ -97,6 +97,7 @@ vi.mock('@/lib/logger', () => ({
 }));
 
 // Capture AssetFields callback props so tests can call them directly
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 let capturedHandleAssetCategoryChange: ((id: string, name: string) => void) | null = null;
 let capturedHandleAssetCategoryCreate: ((name: string) => Promise<void>) | null = null;
 
@@ -137,7 +138,9 @@ vi.mock('./AssetFields', () => ({
 }));
 
 // Capture LoanPaymentSetupDialog callback so tests can trigger onSetupComplete
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 let capturedOnSetupComplete: (() => void) | null = null;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 let capturedOnClose: (() => void) | null = null;
 
 vi.mock('./LoanPaymentSetupDialog', () => ({

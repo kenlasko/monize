@@ -248,7 +248,7 @@ describe('MultiSelect', () => {
     fireEvent.change(searchInput, { target: { value: 'alp' } });
 
     // The X clear button should appear
-    const clearBtn = screen.getAllByRole('button').find(
+    const _clearBtn = screen.getAllByRole('button').find(
       (b) => !b.getAttribute('type') || b.getAttribute('type') === 'button',
     );
     // Find the svg-only clear button (it renders after the search input)

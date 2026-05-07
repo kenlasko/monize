@@ -15,7 +15,7 @@ describe('InfoTooltip', () => {
   });
 
   it('applies bottom placement classes by default', () => {
-    const { container } = render(<InfoTooltip text="Tooltip" />);
+    render(<InfoTooltip text="Tooltip" />);
     const tooltipEl = screen.getByRole('tooltip');
     expect(tooltipEl.className).toContain('top-full');
   });

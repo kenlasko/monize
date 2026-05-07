@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, act, fireEvent } from '@/test/render';
+import { render, screen, waitFor, act } from '@/test/render';
 import AccountsPage from './page';
 
 // Module-level state for controlling form modal in tests

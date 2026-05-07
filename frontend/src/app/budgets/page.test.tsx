@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, act } from '@/test/render';
+import { render, screen, waitFor, fireEvent } from '@/test/render';
 import toast from 'react-hot-toast';
 import BudgetsPage from './page';
 

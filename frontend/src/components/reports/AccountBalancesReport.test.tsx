@@ -349,7 +349,7 @@ describe("AccountBalancesReport", () => {
     mockGetPortfolioSummary.mockResolvedValue(null);
     render(<AccountBalancesReport />);
     await waitFor(() => {
-      expect(screen.getByTitle && screen.getByText("Total Assets")).toBeInTheDocument();
+      expect(screen.getByText("Total Assets")).toBeInTheDocument();
     });
     // Click the chart view button (SVG circle chart icon)
     const chartBtn = screen.getByTitle("Chart view");

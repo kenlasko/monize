@@ -128,7 +128,7 @@ describe('ActionHistoryPanel', () => {
   });
 
   it('should close panel on outside click', async () => {
-    const { getByTestId, queryByTestId } = await openPanel();
+    const { getByTestId: _getByTestId, queryByTestId } = await openPanel();
     await act(async () => {
       fireEvent.mouseDown(document.body);
     });

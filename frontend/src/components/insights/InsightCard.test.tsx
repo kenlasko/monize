@@ -191,7 +191,7 @@ describe('InsightCard', () => {
   });
 
   it('falls back to anomaly type style for unknown type', () => {
-    const { container } = render(
+    render(
       <InsightCard
         insight={makeInsight({ type: 'unknown-type' as any })}
         onDismiss={vi.fn()}

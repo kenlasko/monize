@@ -282,7 +282,7 @@ describe('PortfolioSummaryCard', () => {
 
   it('applies gray color class when returnColorClass receives null', () => {
     // TWR null triggers returnColorClass(null) -> text-gray-400
-    const { container } = render(
+    render(
       <PortfolioSummaryCard
         summary={makeSummary({ timeWeightedReturn: null })}
         isLoading={false}

@@ -903,7 +903,7 @@ describe('BillsPage', () => {
   });
 
   describe('Edit Occurrence - Override Matching Branches', () => {
-    const overrideSt = {
+    const _overrideSt = {
       id: 'st-1',
       name: 'Rent',
       amount: -1200,

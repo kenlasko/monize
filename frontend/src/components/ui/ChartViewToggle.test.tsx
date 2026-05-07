@@ -30,7 +30,7 @@ describe('ChartViewToggle', () => {
   });
 
   it('applies custom activeColour to the active button', () => {
-    const { container } = render(
+    render(
       <ChartViewToggle value="bar" onChange={vi.fn()} activeColour="bg-green-600" />
     );
     const barBtn = screen.getByTitle('Bar Chart');

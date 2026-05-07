@@ -304,7 +304,7 @@ describe('SettingsPage', () => {
   describe('demo mode', () => {
 
     it('shows demo mode restriction banner when in demo mode', async () => {
-      const { useDemoStore } = await import('@/store/demoStore');
+      const { useDemoStore: _useDemoStore } = await import('@/store/demoStore');
       const { authApi } = await import('@/lib/auth');
       vi.mocked(authApi.getAuthMethods).mockResolvedValue({
         local: true, oidc: false, registration: true, smtp: false, force2fa: false, demo: true,

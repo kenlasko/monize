@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, fireEvent, act } from "@/test/render";
+import { render, screen, waitFor, fireEvent } from "@/test/render";
 import { SpendingByPayeeReport } from "./SpendingByPayeeReport";
 
 const mockPush = vi.fn();
@@ -59,7 +59,7 @@ vi.mock("recharts", () => ({
   CartesianGrid: () => null,
   Tooltip: ({ content }: any) => {
     // Render the tooltip with active payload to cover the CustomTooltip branches
-    const tooltipProps = {
+    const _tooltipProps = {
       active: true,
       payload: [{ payload: { name: "Superstore", value: 300 } }],
     };

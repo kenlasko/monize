@@ -89,7 +89,7 @@ describe('AssetAllocationChart', () => {
     const allocation = {
       totalValue: 10000,
       allocation: [
-        { symbol: 'VTI', name: 'Vanguard', type: 'security' as const, value: 10000, percentage: 100, color: null, currencyCode: 'CAD' },
+        { symbol: 'VTI', name: 'Vanguard', type: 'security' as const, value: 10000, percentage: 100, color: undefined, currencyCode: 'CAD' },
       ],
     };
     const { container } = render(<AssetAllocationChart allocation={allocation} isLoading={false} />);

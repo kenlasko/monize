@@ -319,6 +319,7 @@ describe('MergePayeeDialog', () => {
     vi.mocked(payeesApi.mergePayees).mockResolvedValue({
       transactionsMigrated: 3,
       aliasAdded: true,
+      sourcePayeeDeleted: true,
     });
 
     render(
@@ -358,6 +359,7 @@ describe('MergePayeeDialog', () => {
     vi.mocked(payeesApi.mergePayees).mockResolvedValue({
       transactionsMigrated: 0,
       aliasAdded: false,
+      sourcePayeeDeleted: true,
     });
 
     render(
@@ -393,6 +395,7 @@ describe('MergePayeeDialog', () => {
     vi.mocked(payeesApi.mergePayees).mockResolvedValue({
       transactionsMigrated: 1,
       aliasAdded: false,
+      sourcePayeeDeleted: true,
     });
 
     render(
@@ -447,7 +450,7 @@ describe('MergePayeeDialog', () => {
   });
 
   it('shows "Merging..." button text while submit is in progress', async () => {
-    let resolveApi: (val: { transactionsMigrated: number; aliasAdded: boolean }) => void;
+    let resolveApi: (val: { transactionsMigrated: number; aliasAdded: boolean; sourcePayeeDeleted: boolean }) => void;
     vi.mocked(payeesApi.mergePayees).mockReturnValue(
       new Promise((resolve) => { resolveApi = resolve; }),
     );
@@ -471,7 +474,7 @@ describe('MergePayeeDialog', () => {
     expect(screen.getByText('Merging...')).toBeInTheDocument();
 
     await act(async () => {
-      resolveApi!({ transactionsMigrated: 0, aliasAdded: false });
+      resolveApi!({ transactionsMigrated: 0, aliasAdded: false, sourcePayeeDeleted: true });
     });
 
     await waitFor(() => {
