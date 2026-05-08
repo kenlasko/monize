@@ -461,6 +461,11 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     setFilterTagIds([]);
     setFilterStartDate('');
     setFilterEndDate('');
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+      searchDebounceRef.current = null;
+    }
+    setSearchInput('');
     setFilterSearch('');
     setFilterTimePeriod('');
     setFilterAmountFrom('');

@@ -455,6 +455,26 @@ describe('useTransactionFilters - filter handlers', () => {
     expect(mockReplace).toHaveBeenCalledWith('/transactions', { scroll: false });
   });
 
+  it('clearFilters resets searchInput and cancels pending debounced search', () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useTransactionFilters(defaultOptions));
+    act(() => {
+      result.current.handleSearchChange('hello');
+    });
+    expect(result.current.searchInput).toBe('hello');
+    act(() => {
+      result.current.clearFilters();
+    });
+    expect(result.current.searchInput).toBe('');
+    expect(result.current.filterSearch).toBe('');
+    // Pending debounce must not re-apply the cleared value
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(result.current.filterSearch).toBe('');
+    vi.useRealTimers();
+  });
+
   it('goToPage updates currentPage', () => {
     const { result } = renderHook(() => useTransactionFilters(defaultOptions));
     act(() => {
