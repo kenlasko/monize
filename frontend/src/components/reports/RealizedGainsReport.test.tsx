@@ -479,7 +479,6 @@ describe('RealizedGainsReport', () => {
     // Switch to security table view.
     fireEvent.click(screen.getByTitle('Table'));
     await waitFor(() => expect(container.querySelector('table')).toBeInTheDocument());
-    const tables = container.querySelectorAll('table');
     // First table = securities (Symbol/Trades/Proceeds/Cost Basis/Gain) summary.
     // Second table = individual sell transactions.
     const tableCount = container.querySelectorAll('table').length;

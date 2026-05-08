@@ -360,15 +360,17 @@ describe('GeographicAllocationReport', () => {
     if (exchangeBtns.length > 0) {
       fireEvent.click(exchangeBtns[0]);
       await waitFor(() => expect(container.querySelector('table')).toBeInTheDocument());
-      headers = container.querySelectorAll('table thead th');
-      for (let __i = 0; __i < headers.length; __i += 1) {
-      const __h = (headers as any)[__i];
-      if (__h) fireEvent.click(__h);
-    }
-      for (let __i = 0; __i < headers.length; __i += 1) {
-      const __h = (headers as any)[__i];
-      if (__h) fireEvent.click(__h);
-    }
+      const __exHeaderCount = container.querySelectorAll('table thead th').length;
+      for (let __i = 0; __i < __exHeaderCount; __i += 1) {
+        const __ths = container.querySelectorAll('table thead th');
+        if (!__ths[__i]) break;
+        fireEvent.click(__ths[__i]);
+      }
+      for (let __i = 0; __i < __exHeaderCount; __i += 1) {
+        const __ths = container.querySelectorAll('table thead th');
+        if (!__ths[__i]) break;
+        fireEvent.click(__ths[__i]);
+      }
     }
   });
 });
