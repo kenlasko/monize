@@ -62,6 +62,110 @@ describe("YahooFinanceService", () => {
       expect(result!.regularMarketTime).toBe(1700000000);
     });
 
+    it("falls back to indicators.quote[0].open when meta omits regularMarketOpen", async () => {
+      mockFetchResponse({
+        chart: {
+          result: [
+            {
+              meta: {
+                symbol: "AAPL",
+                regularMarketPrice: 185.5,
+                regularMarketDayHigh: 187.0,
+                regularMarketDayLow: 183.0,
+                regularMarketVolume: 55000000,
+                regularMarketTime: 1700000000,
+              },
+              timestamp: [1700000000],
+              indicators: {
+                quote: [
+                  {
+                    open: [184.25],
+                    high: [187.0],
+                    low: [183.0],
+                    close: [185.5],
+                    volume: [55000000],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      });
+
+      const result = await service.fetchQuote("AAPL");
+
+      expect(result).not.toBeNull();
+      expect(result!.regularMarketOpen).toBe(184.25);
+    });
+
+    it("prefers meta.regularMarketOpen over indicators when both present", async () => {
+      mockFetchResponse({
+        chart: {
+          result: [
+            {
+              meta: {
+                symbol: "AAPL",
+                regularMarketPrice: 185.5,
+                regularMarketOpen: 184.0,
+              },
+              indicators: {
+                quote: [{ open: [999.99] }],
+              },
+            },
+          ],
+        },
+      });
+
+      const result = await service.fetchQuote("AAPL");
+
+      expect(result!.regularMarketOpen).toBe(184.0);
+    });
+
+    it("skips leading null entries in indicators.open when finding the day's open", async () => {
+      mockFetchResponse({
+        chart: {
+          result: [
+            {
+              meta: {
+                symbol: "AAPL",
+                regularMarketPrice: 185.5,
+              },
+              indicators: {
+                quote: [{ open: [null, null, 184.25, 184.5] }],
+              },
+            },
+          ],
+        },
+      });
+
+      const result = await service.fetchQuote("AAPL");
+
+      expect(result!.regularMarketOpen).toBe(184.25);
+    });
+
+    it("converts indicators-sourced open from GBX to GBP for LSE stocks", async () => {
+      mockFetchResponse({
+        chart: {
+          result: [
+            {
+              meta: {
+                symbol: "VOD.L",
+                currency: "GBp",
+                regularMarketPrice: 7250,
+              },
+              indicators: {
+                quote: [{ open: [7200] }],
+              },
+            },
+          ],
+        },
+      });
+
+      const result = await service.fetchQuote("VOD.L");
+
+      expect(result!.regularMarketOpen).toBe(72);
+    });
+
     it("should call fetch with correct URL and User-Agent header", async () => {
       mockFetchResponse({ chart: { result: [{ meta: { symbol: "AAPL" } }] } });
 

@@ -1614,7 +1614,8 @@ describe("SecurityPriceService", () => {
     it("preserves existing openPrice when quote has no open", async () => {
       securitiesRepository.find.mockResolvedValue([mockSecurity]);
 
-      // The service code always sets regularMarketOpen to undefined for chart API
+      // The mock omits both meta.regularMarketOpen and indicators, so the
+      // Yahoo service returns regularMarketOpen=undefined.
       const yahooData = makeYahooChartResponse({
         regularMarketPrice: 200.0,
       });

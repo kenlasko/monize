@@ -333,15 +333,26 @@ export class YahooFinanceService implements QuoteProvider {
       const data = await response.json();
 
       if (data.chart?.result?.[0]?.meta) {
-        const meta = data.chart.result[0].meta;
+        const result = data.chart.result[0];
+        const meta = result.meta;
         const gbx = isGbxCurrency(meta.currency);
         const convert = (v: number | undefined) =>
           v !== undefined && gbx ? convertGbxToGbp(v) : v;
 
+        // The chart-endpoint meta omits regularMarketOpen, so fall back to
+        // the first non-null open in the indicators series (today's open
+        // for range=1d&interval=1d).
+        const openSeries = result.indicators?.quote?.[0]?.open as
+          | (number | null | undefined)[]
+          | undefined;
+        const openFromSeries = openSeries?.find(
+          (v): v is number => v != null && !Number.isNaN(v),
+        );
+
         return {
           symbol: meta.symbol,
           regularMarketPrice: convert(meta.regularMarketPrice),
-          regularMarketOpen: convert(meta.regularMarketOpen),
+          regularMarketOpen: convert(meta.regularMarketOpen ?? openFromSeries),
           regularMarketDayHigh: convert(meta.regularMarketDayHigh),
           regularMarketDayLow: convert(meta.regularMarketDayLow),
           regularMarketVolume: meta.regularMarketVolume,
