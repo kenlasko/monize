@@ -502,7 +502,7 @@ export function TransactionFilterPanel({
                   type="text"
                   value={searchInput}
                   onChange={(e) => handleSearchChange(e.target.value)}
-                  placeholder="Search descriptions..."
+                  placeholder="Search descriptions, payees, reference #..."
                 />
               </div>
 

@@ -722,7 +722,7 @@ describe('TransactionFilterPanel', () => {
     it('shows the search placeholder text', () => {
       render(<TransactionFilterPanel {...defaultProps} filtersExpanded={true} />);
 
-      const searchInput = screen.getByPlaceholderText('Search descriptions...');
+      const searchInput = screen.getByPlaceholderText('Search descriptions, payees, reference #...');
       expect(searchInput).toBeInTheDocument();
     });
   });

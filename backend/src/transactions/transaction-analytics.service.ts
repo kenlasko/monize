@@ -356,7 +356,7 @@ export class TransactionAnalyticsService {
     if (search && search.trim()) {
       const searchPattern = `%${search.trim()}%`;
       queryBuilder.andWhere(
-        "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR splits.memo ILIKE :search)",
+        "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR transaction.referenceNumber ILIKE :search OR splits.memo ILIKE :search)",
         { search: searchPattern },
       );
     }
@@ -549,7 +549,7 @@ export class TransactionAnalyticsService {
         splitsJoined = true;
       }
       queryBuilder.andWhere(
-        "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR splits.memo ILIKE :search)",
+        "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR transaction.referenceNumber ILIKE :search OR splits.memo ILIKE :search)",
         { search: searchPattern },
       );
     }
@@ -794,7 +794,7 @@ export class TransactionAnalyticsService {
 
     if (safeSearchText) {
       qb.andWhere(
-        "(t.description ILIKE :search OR t.payeeName ILIKE :search OR ts.memo ILIKE :search)",
+        "(t.description ILIKE :search OR t.payeeName ILIKE :search OR t.referenceNumber ILIKE :search OR ts.memo ILIKE :search)",
         { search: `%${safeSearchText}%` },
       );
     }

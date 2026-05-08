@@ -581,12 +581,12 @@ export class TransactionBulkUpdateService {
       if (!filters.categoryIds || filters.categoryIds.length === 0) {
         queryBuilder.leftJoin("transaction.splits", "searchSplits");
         queryBuilder.andWhere(
-          "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR searchSplits.memo ILIKE :search)",
+          "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR transaction.referenceNumber ILIKE :search OR searchSplits.memo ILIKE :search)",
           { search: searchPattern },
         );
       } else {
         queryBuilder.andWhere(
-          "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR filterSplits.memo ILIKE :search)",
+          "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR transaction.referenceNumber ILIKE :search OR filterSplits.memo ILIKE :search)",
           { search: searchPattern },
         );
       }

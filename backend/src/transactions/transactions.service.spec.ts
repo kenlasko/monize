@@ -1600,7 +1600,7 @@ describe("TransactionsService", () => {
       );
 
       expect(mockQb.andWhere).toHaveBeenCalledWith(
-        "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR splits.memo ILIKE :search)",
+        "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR transaction.referenceNumber ILIKE :search OR splits.memo ILIKE :search)",
         { search: "%groceries%" },
       );
     });
@@ -2409,7 +2409,7 @@ describe("TransactionsService", () => {
         // Should join splits for search
         expect(idsQb.leftJoin).toHaveBeenCalledWith("bf.splits", "bfSplits");
         expect(idsQb.andWhere).toHaveBeenCalledWith(
-          "(bf.description ILIKE :bfSearch OR bf.payeeName ILIKE :bfSearch OR bfSplits.memo ILIKE :bfSearch)",
+          "(bf.description ILIKE :bfSearch OR bf.payeeName ILIKE :bfSearch OR bf.referenceNumber ILIKE :bfSearch OR bfSplits.memo ILIKE :bfSearch)",
           { bfSearch: "%grocery%" },
         );
       });
@@ -3453,7 +3453,7 @@ describe("TransactionsService", () => {
         "splits",
       );
       expect(mockQb.andWhere).toHaveBeenCalledWith(
-        "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR splits.memo ILIKE :search)",
+        "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR transaction.referenceNumber ILIKE :search OR splits.memo ILIKE :search)",
         { search: "%test search%" },
       );
     });

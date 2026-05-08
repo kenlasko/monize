@@ -353,7 +353,7 @@ export class TransactionsService {
         .replace(/_/g, "\\_");
       const searchPattern = `%${escaped}%`;
       queryBuilder.andWhere(
-        "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR splits.memo ILIKE :search)",
+        "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR transaction.referenceNumber ILIKE :search OR splits.memo ILIKE :search)",
         { search: searchPattern },
       );
     }
@@ -607,7 +607,7 @@ export class TransactionsService {
           .replace(/_/g, "\\_");
         const searchPattern = `%${escaped}%`;
         countQuery.andWhere(
-          "(t.description ILIKE :search OR t.payeeName ILIKE :search OR s.memo ILIKE :search)",
+          "(t.description ILIKE :search OR t.payeeName ILIKE :search OR t.referenceNumber ILIKE :search OR s.memo ILIKE :search)",
           { search: searchPattern },
         );
       }
@@ -1098,7 +1098,7 @@ export class TransactionsService {
         .replace(/%/g, "\\%")
         .replace(/_/g, "\\_");
       qb.andWhere(
-        "(bf.description ILIKE :bfSearch OR bf.payeeName ILIKE :bfSearch OR bfSplits.memo ILIKE :bfSearch)",
+        "(bf.description ILIKE :bfSearch OR bf.payeeName ILIKE :bfSearch OR bf.referenceNumber ILIKE :bfSearch OR bfSplits.memo ILIKE :bfSearch)",
         { bfSearch: `%${escaped}%` },
       );
     }

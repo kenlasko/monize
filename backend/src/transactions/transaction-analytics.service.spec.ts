@@ -692,7 +692,7 @@ describe("TransactionAnalyticsService", () => {
         );
 
         expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-          "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR splits.memo ILIKE :search)",
+          "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR transaction.referenceNumber ILIKE :search OR splits.memo ILIKE :search)",
           { search: "%grocery%" },
         );
       });
@@ -709,7 +709,7 @@ describe("TransactionAnalyticsService", () => {
         );
 
         expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-          "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR splits.memo ILIKE :search)",
+          "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR transaction.referenceNumber ILIKE :search OR splits.memo ILIKE :search)",
           { search: "%coffee%" },
         );
       });
@@ -1226,7 +1226,7 @@ describe("TransactionAnalyticsService", () => {
       );
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR splits.memo ILIKE :search)",
+        "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR transaction.referenceNumber ILIKE :search OR splits.memo ILIKE :search)",
         { search: "%grocery%" },
       );
     });

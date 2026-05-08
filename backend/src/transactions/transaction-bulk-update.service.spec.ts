@@ -1674,7 +1674,7 @@ describe("TransactionBulkUpdateService", () => {
         "searchSplits",
       );
       expect(resolveQb.andWhere).toHaveBeenCalledWith(
-        "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR searchSplits.memo ILIKE :search)",
+        "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR transaction.referenceNumber ILIKE :search OR searchSplits.memo ILIKE :search)",
         { search: "%groceries%" },
       );
     });
@@ -1717,7 +1717,7 @@ describe("TransactionBulkUpdateService", () => {
       expect(result.updated).toBe(1);
       // Search should use filterSplits alias (already joined by category filter)
       expect(resolveQb.andWhere).toHaveBeenCalledWith(
-        "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR filterSplits.memo ILIKE :search)",
+        "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR transaction.referenceNumber ILIKE :search OR filterSplits.memo ILIKE :search)",
         { search: "%food%" },
       );
     });
@@ -1933,7 +1933,7 @@ describe("TransactionBulkUpdateService", () => {
       await service.bulkUpdate(userId, dto);
 
       expect(resolveQb.andWhere).toHaveBeenCalledWith(
-        "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR searchSplits.memo ILIKE :search)",
+        "(transaction.description ILIKE :search OR transaction.payeeName ILIKE :search OR transaction.referenceNumber ILIKE :search OR searchSplits.memo ILIKE :search)",
         { search: "%100\\% off\\_sale\\\\deal%" },
       );
     });
