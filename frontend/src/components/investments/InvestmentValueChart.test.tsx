@@ -175,11 +175,60 @@ describe('InvestmentValueChart', () => {
     );
   });
 
-  it('passes date filter ranges including 1w, 1m, 3m, ytd to DateRangeSelector', async () => {
+  it('passes date filter ranges including mtd between 1w and 1m to DateRangeSelector', async () => {
     render(<InvestmentValueChart />);
     await screen.findByText('Portfolio Value Over Time');
     const lastCall = mockDateRangeSelectorProps.mock.calls[mockDateRangeSelectorProps.mock.calls.length - 1][0];
-    expect(lastCall.ranges).toEqual(['1d', '1w', '1m', '3m', 'ytd', '1y', '2y', '5y', 'all']);
+    expect(lastCall.ranges).toEqual(['1d', '1w', 'mtd', '1m', '3m', 'ytd', '1y', '2y', '5y', 'all']);
+  });
+
+  it('uses intraday API for mtd range and passes 1m to backend', async () => {
+    dateRangeState.dateRange = 'mtd';
+    dateRangeState.resolvedRange = { start: '2024-01-01', end: '2024-01-15' };
+    vi.mocked(investmentsApi.getIntradayValue).mockResolvedValue({
+      points: [
+        { timestamp: '2024-01-01T14:30:00.000Z', value: 9500 },
+        { timestamp: '2024-01-10T14:30:00.000Z', value: 9700 },
+      ],
+      interval: '15m',
+      currency: 'CAD',
+      range: '1m',
+      fetchedAt: '2024-01-15T15:00:00.000Z',
+      skippedSymbols: [],
+      failedSymbols: [],
+      fallbackToDaily: false,
+    });
+    render(<InvestmentValueChart />);
+    await screen.findByText('Portfolio Value Over Time');
+    expect(investmentsApi.getIntradayValue).toHaveBeenCalledWith(
+      expect.objectContaining({ range: '1m' }),
+    );
+    expect(netWorthApi.getInvestmentsDaily).not.toHaveBeenCalled();
+  });
+
+  it('filters mtd intraday points to current month only', async () => {
+    dateRangeState.dateRange = 'mtd';
+    dateRangeState.resolvedRange = { start: '2024-01-01', end: '2024-01-15' };
+    vi.mocked(investmentsApi.getIntradayValue).mockResolvedValue({
+      points: [
+        { timestamp: '2023-12-28T14:30:00.000Z', value: 8000 },
+        { timestamp: '2024-01-01T14:30:00.000Z', value: 9000 },
+        { timestamp: '2024-01-10T14:30:00.000Z', value: 10000 },
+      ],
+      interval: '15m',
+      currency: 'CAD',
+      range: '1m',
+      fetchedAt: '2024-01-15T15:00:00.000Z',
+      skippedSymbols: [],
+      failedSymbols: [],
+      fallbackToDaily: false,
+    });
+    render(<InvestmentValueChart />);
+    await screen.findByText('Portfolio Value Over Time');
+    // highest should be 10000 (Jan 10), not 9000 or 8000 from December
+    expect(screen.getByText('$10000')).toBeInTheDocument();
+    // December point (8000) filtered out, so lowest is 9000
+    expect(screen.getByText('$9000')).toBeInTheDocument();
   });
 
   it('shows negative change values correctly', async () => {
