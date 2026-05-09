@@ -8,10 +8,8 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, DataSource, QueryRunner, In } from "typeorm";
 import { Transaction } from "./entities/transaction.entity";
-import {
-  TransactionSplit,
-  SplitKind,
-} from "./entities/transaction-split.entity";
+import { TransactionSplit } from "./entities/transaction-split.entity";
+import { SplitKind } from "./entities/split-kind.enum";
 import { Category } from "../categories/entities/category.entity";
 import { CreateTransactionSplitDto } from "./dto/create-transaction-split.dto";
 import { AccountsService } from "../accounts/accounts.service";

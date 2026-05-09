@@ -14,7 +14,7 @@ import { Type } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 import { InvestmentAction } from "../../securities/entities/investment-transaction.entity";
-import { SplitKind } from "../entities/transaction-split.entity";
+import { SplitKind } from "../entities/split-kind.enum";
 
 export class InvestmentSplitDto {
   @ApiProperty({ enum: InvestmentAction, description: "Investment action" })

@@ -14,7 +14,7 @@ import {
 import { Type } from "class-transformer";
 import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 import { InvestmentSplitDto } from "../../transactions/dto/create-transaction-split.dto";
-import { SplitKind } from "../../transactions/entities/transaction-split.entity";
+import { SplitKind } from "../../transactions/entities/split-kind.enum";
 
 export class OverrideSplitDto {
   @ApiPropertyOptional({ enum: SplitKind })

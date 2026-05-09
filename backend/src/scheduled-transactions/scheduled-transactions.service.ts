@@ -14,7 +14,7 @@ import {
   FrequencyType,
 } from "./entities/scheduled-transaction.entity";
 import { ScheduledTransactionSplit } from "./entities/scheduled-transaction-split.entity";
-import { SplitKind } from "../transactions/entities/transaction-split.entity";
+import { SplitKind } from "../transactions/entities/split-kind.enum";
 import { ScheduledTransactionOverride } from "./entities/scheduled-transaction-override.entity";
 import { CreateScheduledTransactionDto } from "./dto/create-scheduled-transaction.dto";
 import { UpdateScheduledTransactionDto } from "./dto/update-scheduled-transaction.dto";

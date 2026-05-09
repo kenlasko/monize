@@ -15,12 +15,7 @@ import { Category } from "../../categories/entities/category.entity";
 import { Tag } from "../../tags/entities/tag.entity";
 import { Account } from "../../accounts/entities/account.entity";
 import { InvestmentTransaction } from "../../securities/entities/investment-transaction.entity";
-
-export enum SplitKind {
-  CATEGORY = "category",
-  TRANSFER = "transfer",
-  INVESTMENT = "investment",
-}
+import { SplitKind } from "./split-kind.enum";
 
 @Entity("transaction_splits")
 export class TransactionSplit {

@@ -14,7 +14,7 @@ import { Account } from "../../accounts/entities/account.entity";
 import { Tag } from "../../tags/entities/tag.entity";
 import { Security } from "../../securities/entities/security.entity";
 import { InvestmentAction } from "../../securities/entities/investment-transaction.entity";
-import { SplitKind } from "../../transactions/entities/transaction-split.entity";
+import { SplitKind } from "../../transactions/entities/split-kind.enum";
 
 @Entity("scheduled_transaction_splits")
 export class ScheduledTransactionSplit {
