@@ -246,7 +246,7 @@ CREATE TABLE transaction_splits (
     memo TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_split_kind_exclusive CHECK (
-        (kind = 'category'   AND category_id IS NOT NULL AND transfer_account_id IS NULL) OR
+        (kind = 'category'   AND transfer_account_id IS NULL) OR
         (kind = 'transfer'   AND transfer_account_id IS NOT NULL AND category_id IS NULL) OR
         (kind = 'investment' AND category_id IS NULL AND transfer_account_id IS NULL)
     )
