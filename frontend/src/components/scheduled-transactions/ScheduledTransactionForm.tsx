@@ -168,6 +168,20 @@ export function ScheduledTransactionForm({
   const [investmentTotalAmount, setInvestmentTotalAmount] = useState<number | ''>(
     scheduledTransaction?.investmentTotalAmount != null ? Number(scheduledTransaction.investmentTotalAmount) : '',
   );
+
+  // BUY/SELL/REINVEST helpers: latest market price (used when Price is blank)
+  // and a computed Total Value bound to (qty * price (+/-) commission).
+  const [marketPrice, setMarketPrice] = useState<number | null>(null);
+  const [investmentTotalValue, setInvestmentTotalValue] = useState<number | ''>(() => {
+    const q = scheduledTransaction?.investmentQuantity;
+    const p = scheduledTransaction?.investmentPrice;
+    const c = scheduledTransaction?.investmentCommission ?? 0;
+    if (q != null && p != null) {
+      const sign = scheduledTransaction?.investmentAction === 'SELL' ? -1 : 1;
+      return Math.round((Number(q) * Number(p) + sign * Number(c)) * 10000) / 10000;
+    }
+    return '';
+  });
   const [transferToAccountId, setTransferToAccountId] = useState<string>(
     getTransferAccountId(scheduledTransaction)
     || (templateTransaction?.isTransfer ? templateTransaction.linkedTransaction?.accountId ?? '' : '')
@@ -369,6 +383,97 @@ export function ScheduledTransactionForm({
         logger.error(err);
       });
   }, [mode, securities.length]);
+
+  // When the chosen security changes, fetch its most recent close price so we
+  // can auto-fill the Price field and back-derive quantity from Total Value.
+  useEffect(() => {
+    if (mode !== 'investment' || !investmentSecurityId) {
+      setMarketPrice(null);
+      return;
+    }
+    let cancelled = false;
+    investmentsApi.getSecurityPrices(investmentSecurityId, 1)
+      .then((prices) => {
+        if (cancelled) return;
+        const latest = prices[0];
+        setMarketPrice(latest ? Number(latest.closePrice) : null);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setMarketPrice(null);
+        logger.warn?.('Failed to fetch latest price', err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, investmentSecurityId]);
+
+  // If the user hasn't typed a price, auto-fill from the latest market price
+  // once it arrives. Don't clobber an already-entered price. Uses the
+  // "info from previous render" pattern so we don't violate
+  // react-hooks/set-state-in-effect.
+  const [lastSeenMarketPrice, setLastSeenMarketPrice] = useState<number | null>(null);
+  if (marketPrice !== lastSeenMarketPrice) {
+    setLastSeenMarketPrice(marketPrice);
+    if (
+      marketPrice != null &&
+      (investmentPrice === '' || investmentPrice === 0)
+    ) {
+      setInvestmentPrice(Math.round(marketPrice * 1_000_000) / 1_000_000);
+    }
+  }
+
+  const effectiveInvestmentPrice =
+    investmentPrice !== '' && Number(investmentPrice) > 0
+      ? Number(investmentPrice)
+      : marketPrice ?? 0;
+  const investmentSign = investmentAction === 'SELL' ? -1 : 1;
+
+  const handleTotalValueChange = (raw: number | undefined) => {
+    if (raw === undefined) {
+      setInvestmentTotalValue('');
+      return;
+    }
+    setInvestmentTotalValue(raw);
+    if (effectiveInvestmentPrice > 0) {
+      const commission =
+        investmentCommission === '' ? 0 : Number(investmentCommission);
+      const cost = raw - investmentSign * commission;
+      const qty = Math.max(0, cost / effectiveInvestmentPrice);
+      setInvestmentQuantity(Math.round(qty * 100_000_000) / 100_000_000);
+    }
+  };
+
+  const handleQuantityChange = (raw: string) => {
+    const qty = raw === '' ? '' : Number(raw);
+    setInvestmentQuantity(qty);
+    if (qty !== '' && effectiveInvestmentPrice > 0) {
+      const commission =
+        investmentCommission === '' ? 0 : Number(investmentCommission);
+      const total = Number(qty) * effectiveInvestmentPrice + investmentSign * commission;
+      setInvestmentTotalValue(Math.round(total * 10_000) / 10_000);
+    }
+  };
+
+  const handlePriceChange = (raw: string) => {
+    const price = raw === '' ? '' : Number(raw);
+    setInvestmentPrice(price);
+    if (price !== '' && Number(price) > 0) {
+      const commission =
+        investmentCommission === '' ? 0 : Number(investmentCommission);
+      // If the user has a total in mind, keep it and re-derive quantity. Otherwise
+      // re-derive total from quantity * price.
+      if (investmentTotalValue !== '') {
+        const cost = Number(investmentTotalValue) - investmentSign * commission;
+        const qty = Math.max(0, cost / Number(price));
+        setInvestmentQuantity(Math.round(qty * 100_000_000) / 100_000_000);
+      } else if (investmentQuantity !== '') {
+        const total =
+          Number(investmentQuantity) * Number(price) + investmentSign * commission;
+        setInvestmentTotalValue(Math.round(total * 10_000) / 10_000);
+      }
+    }
+  };
 
   // Load accounts, categories, active payees on mount
   // When editing, also fetch the scheduled transaction's payee if it's inactive
@@ -1290,34 +1395,60 @@ export function ScheduledTransactionForm({
             />
           )}
 
-          {/* Row 4: Quantity / Price / Total Amount (action-conditional) */}
+          {/* Row 4: Quantity / Price / Commission (action-conditional) */}
           {QUANTITY_PRICE_ACTIONS.includes(investmentAction) && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Input
-                label="Quantity (shares)"
-                type="number"
-                step="0.00000001"
-                min={0}
-                value={investmentQuantity}
-                onChange={(e) => setInvestmentQuantity(e.target.value === '' ? '' : Number(e.target.value))}
-              />
-              <Input
-                label="Price per share"
-                type="number"
-                step="0.000001"
-                min={0}
-                value={investmentPrice}
-                onChange={(e) => setInvestmentPrice(e.target.value === '' ? '' : Number(e.target.value))}
-              />
-              <Input
-                label="Commission"
-                type="number"
-                step="0.0001"
-                min={0}
-                value={investmentCommission}
-                onChange={(e) => setInvestmentCommission(e.target.value === '' ? '' : Number(e.target.value))}
-              />
-            </div>
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Input
+                  label="Quantity (shares)"
+                  type="number"
+                  step="0.00000001"
+                  min={0}
+                  value={investmentQuantity}
+                  onChange={(e) => handleQuantityChange(e.target.value)}
+                />
+                <Input
+                  label="Price per share"
+                  type="number"
+                  step="0.000001"
+                  min={0}
+                  placeholder={
+                    marketPrice != null ? `Latest: ${marketPrice}` : undefined
+                  }
+                  value={investmentPrice}
+                  onChange={(e) => handlePriceChange(e.target.value)}
+                />
+                <Input
+                  label="Commission"
+                  type="number"
+                  step="0.0001"
+                  min={0}
+                  value={investmentCommission}
+                  onChange={(e) =>
+                    setInvestmentCommission(
+                      e.target.value === '' ? '' : Number(e.target.value),
+                    )
+                  }
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <CurrencyInput
+                  label="Total Value"
+                  prefix={currencySymbol}
+                  value={
+                    typeof investmentTotalValue === 'number'
+                      ? investmentTotalValue
+                      : undefined
+                  }
+                  onChange={handleTotalValueChange}
+                />
+              </div>
+              {investmentSecurityId && marketPrice == null && (
+                <p className="-mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  No price history yet for this security. Enter the price manually.
+                </p>
+              )}
+            </>
           )}
 
           {QUANTITY_ONLY_ACTIONS.includes(investmentAction) && (
