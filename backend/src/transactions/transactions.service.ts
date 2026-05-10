@@ -306,7 +306,10 @@ export class TransactionsService {
       .leftJoinAndSelect("splits.transferAccount", "splitTransferAccount")
       .leftJoinAndSelect("splits.tags", "splitTags")
       .leftJoinAndSelect("splits.investmentTransaction", "splitInvestmentTx")
-      .leftJoinAndSelect("splitInvestmentTx.security", "splitInvestmentSecurity")
+      .leftJoinAndSelect(
+        "splitInvestmentTx.security",
+        "splitInvestmentSecurity",
+      )
       .leftJoinAndSelect("transaction.linkedTransaction", "linkedTransaction")
       .leftJoinAndSelect("linkedTransaction.account", "linkedAccount")
       .leftJoinAndSelect("linkedTransaction.splits", "linkedSplits")
@@ -1484,11 +1487,7 @@ export class TransactionsService {
 
     try {
       if (transaction.isSplit) {
-        await this.splitService.deleteSplitSideEffects(
-          id,
-          userId,
-          queryRunner,
-        );
+        await this.splitService.deleteSplitSideEffects(id, userId, queryRunner);
       }
 
       const parentSplit = await queryRunner.manager.findOne(TransactionSplit, {
