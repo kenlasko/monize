@@ -1277,20 +1277,14 @@ export function ScheduledTransactionForm({
 
           {/* Row 3: Security (when required) */}
           {SECURITY_REQUIRED_ACTIONS.includes(investmentAction) && (
-            <Combobox
+            <Select
               label="Security"
-              placeholder="Select a security..."
-              options={securityOptions}
               value={investmentSecurityId}
-              initialDisplayValue={
-                scheduledTransaction?.investmentSecurity
-                  ? (scheduledTransaction.investmentSecurity.symbol
-                      ? `${scheduledTransaction.investmentSecurity.symbol} — ${scheduledTransaction.investmentSecurity.name}`
-                      : scheduledTransaction.investmentSecurity.name)
-                  : ''
-              }
-              onChange={(id) => setInvestmentSecurityId(id)}
-              allowCustomValue={false}
+              onChange={(e) => setInvestmentSecurityId(e.target.value)}
+              options={[
+                { value: '', label: 'Select security...' },
+                ...securityOptions,
+              ]}
             />
           )}
 
