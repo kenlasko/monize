@@ -29,7 +29,7 @@ import { AccountsService } from "../accounts/accounts.service";
 import { TransactionsService } from "../transactions/transactions.service";
 import { InvestmentTransactionsService } from "../securities/investment-transactions.service";
 import { InvestmentAction } from "../securities/entities/investment-transaction.entity";
-import { AccountType } from "../accounts/entities/account.entity";
+import { AccountSubType } from "../accounts/entities/account.entity";
 import { ScheduledTransactionOverrideService } from "./scheduled-transaction-override.service";
 import { ScheduledTransactionLoanService } from "./scheduled-transaction-loan.service";
 import { todayInTimezone, todayYMD } from "../common/date-utils";
@@ -258,9 +258,9 @@ export class ScheduledTransactionsService {
     }
 
     if (createDto.isInvestment) {
-      if (account.accountType !== AccountType.INVESTMENT) {
+      if (account.accountSubType !== AccountSubType.INVESTMENT_BROKERAGE) {
         throw new BadRequestException(
-          "Scheduled investment transactions require an investment account",
+          "Scheduled investment transactions require a brokerage account",
         );
       }
       this.validateInvestmentFields(createDto);
@@ -733,9 +733,9 @@ export class ScheduledTransactionsService {
     if (effectiveIsInvestment) {
       const accountId = updateDto.accountId || scheduled.accountId;
       const account = await this.accountsService.findOne(userId, accountId);
-      if (account.accountType !== AccountType.INVESTMENT) {
+      if (account.accountSubType !== AccountSubType.INVESTMENT_BROKERAGE) {
         throw new BadRequestException(
-          "Scheduled investment transactions require an investment account",
+          "Scheduled investment transactions require a brokerage account",
         );
       }
       const merged = {

@@ -1563,11 +1563,12 @@ describe("ScheduledTransactionsService", () => {
       investmentCommission: 0,
     };
 
-    it("rejects when account is not an INVESTMENT account", async () => {
+    it("rejects when account is not a brokerage account", async () => {
       accountsService.findOne.mockResolvedValue({
         id: "acc-inv",
         userId,
-        accountType: "CHECKING",
+        accountType: "INVESTMENT",
+        accountSubType: "INVESTMENT_CASH",
       });
 
       await expect(service.create(userId, investmentBaseDto)).rejects.toThrow(
@@ -1589,7 +1590,7 @@ describe("ScheduledTransactionsService", () => {
       accountsService.findOne.mockResolvedValue({
         id: "acc-inv",
         userId,
-        accountType: "INVESTMENT",
+        accountSubType: "INVESTMENT_BROKERAGE",
       });
 
       await expect(
@@ -1604,7 +1605,7 @@ describe("ScheduledTransactionsService", () => {
       accountsService.findOne.mockResolvedValue({
         id: "acc-inv",
         userId,
-        accountType: "INVESTMENT",
+        accountSubType: "INVESTMENT_BROKERAGE",
       });
       const saved = makeScheduled({
         isInvestment: true,

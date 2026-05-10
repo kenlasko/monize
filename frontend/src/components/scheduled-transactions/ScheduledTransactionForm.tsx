@@ -290,17 +290,19 @@ export function ScheduledTransactionForm({
     [accounts]
   );
 
-  // Investment-mode accounts: only INVESTMENT type accounts (the brokerage cash side).
+  // Investment-mode accounts: only brokerage (share-holding) accounts.
   const investmentAccountOptions = useMemo(() =>
     buildAccountDropdownOptions(
       accounts,
-      (a) => !a.isClosed && a.accountType === 'INVESTMENT',
+      (a) => !a.isClosed && a.accountSubType === 'INVESTMENT_BROKERAGE',
       (a) => `${a.name} (${a.currencyCode})`,
     ),
     [accounts]
   );
 
-  // Funding account options: any non-investment cash-bearing account (for contribution+buy).
+  // Funding account options: anything that can carry cash, except the
+  // brokerage's paired cash side and asset/brokerage accounts. Mirrors the
+  // filtering in InvestmentTransactionForm.
   const fundingAccountOptions = useMemo(() =>
     buildAccountDropdownOptions(
       accounts,
@@ -308,8 +310,8 @@ export function ScheduledTransactionForm({
         !a.isClosed &&
         a.id !== watchedAccountId &&
         a.accountType !== 'ASSET' &&
-        a.accountType !== 'INVESTMENT' &&
-        a.accountSubType !== 'INVESTMENT_BROKERAGE',
+        a.accountSubType !== 'INVESTMENT_BROKERAGE' &&
+        a.accountSubType !== 'INVESTMENT_CASH',
       (a) => `${a.name} (${a.currencyCode})`,
     ),
     [accounts, watchedAccountId]
@@ -428,10 +430,10 @@ export function ScheduledTransactionForm({
       setSelectedCategoryId('');
       setValue('categoryId', '', { shouldDirty: true });
       setTransferToAccountId('');
-      // If the currently-selected account is not an investment account, clear it
-      // so the user picks one from the investment-only dropdown.
+      // If the currently-selected account isn't a brokerage account, clear it
+      // so the user picks one from the brokerage-only dropdown.
       const acc = accounts.find(a => a.id === watchedAccountId);
-      if (acc && acc.accountType !== 'INVESTMENT') {
+      if (acc && acc.accountSubType !== 'INVESTMENT_BROKERAGE') {
         setValue('accountId', '', { shouldDirty: true });
       }
     } else {
@@ -585,8 +587,8 @@ export function ScheduledTransactionForm({
     // Validate investment mode required fields per action
     if (mode === 'investment') {
       const acc = accounts.find(a => a.id === data.accountId);
-      if (!acc || acc.accountType !== 'INVESTMENT') {
-        toast.error('Investment-kind scheduled transactions require an investment account');
+      if (!acc || acc.accountSubType !== 'INVESTMENT_BROKERAGE') {
+        toast.error('Scheduled investment transactions require a brokerage account');
         return;
       }
       if (SECURITY_REQUIRED_ACTIONS.includes(investmentAction) && !investmentSecurityId) {
