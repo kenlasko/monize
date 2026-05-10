@@ -535,6 +535,16 @@ export function ScheduledTransactionForm({
       setSelectedCategoryId('');
       setValue('categoryId', '', { shouldDirty: true });
       setTransferToAccountId('');
+      // The Investment tab has no Amount field, but the Zod schema still
+      // requires amount to be a number. Seed it so validation passes; it
+      // will be replaced at submit time with the computed display amount.
+      if (
+        watchedAmount === undefined ||
+        watchedAmount === null ||
+        Number.isNaN(watchedAmount)
+      ) {
+        setValue('amount', 0, { shouldDirty: false, shouldValidate: false });
+      }
       // If the currently-selected account isn't a brokerage account, clear it
       // so the user picks one from the brokerage-only dropdown.
       const acc = accounts.find(a => a.id === watchedAccountId);
