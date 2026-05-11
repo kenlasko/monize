@@ -468,7 +468,7 @@ export function TransactionFilterPanel({
               {/* Second row: Time period, dates, amount range, reconciliation status, and search.
                   Uses an explicit fr template so Reconciliation can be a fraction
                   of the width of the other inputs. */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_2fr_2fr_2fr_2fr_1fr_2fr] gap-4 mt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr_2fr_2fr_1fr_1fr_2fr_3fr] gap-4 mt-4">
                 <Select
                   label="Time Period"
                   options={TIME_PERIOD_OPTIONS}
