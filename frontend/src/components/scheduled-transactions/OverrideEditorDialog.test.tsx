@@ -22,6 +22,23 @@ vi.mock('@/lib/scheduled-transactions', () => ({
   },
 }));
 
+const mockGetSecurityPrices = vi.fn().mockResolvedValue([]);
+
+vi.mock('@/lib/investments', () => ({
+  investmentsApi: {
+    getSecurityPrices: (...args: any[]) => mockGetSecurityPrices(...args),
+  },
+}));
+
+vi.mock('@/lib/logger', () => ({
+  createLogger: () => ({
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+  }),
+}));
+
 vi.mock('@/lib/format', () => ({
   getCurrencySymbol: () => '$',
   getDecimalPlacesForCurrency: () => 2,
@@ -478,5 +495,193 @@ describe('OverrideEditorDialog', () => {
     const splitCheckbox = screen.getByLabelText('Split this occurrence') as HTMLInputElement;
     expect(splitCheckbox.checked).toBe(true);
     expect(screen.getByTestId('split-editor')).toBeInTheDocument();
+  });
+
+  // --- Investment-mode occurrence editing (BUY/SELL/REINVEST) ---
+  describe('investment qty+price actions', () => {
+    const investmentTransaction = {
+      id: 'inv1',
+      name: 'Buy VTI',
+      amount: -1000,
+      currencyCode: 'CAD',
+      accountId: 'a1',
+      account: { name: 'Brokerage' },
+      isTransfer: false,
+      isSplit: false,
+      isInvestment: true,
+      investmentAction: 'BUY',
+      investmentSecurityId: 'sec1',
+      investmentSecurity: { id: 'sec1', symbol: 'VTI', name: 'Vanguard Total' },
+      investmentQuantity: 10,
+      investmentPrice: 100,
+      investmentCommission: 0,
+    } as any;
+
+    beforeEach(() => {
+      mockGetSecurityPrices.mockReset();
+      mockGetSecurityPrices.mockResolvedValue([]);
+    });
+
+    it('hides Amount / Category / Split toggle for investment occurrences', () => {
+      render(
+        <OverrideEditorDialog
+          {...defaultProps}
+          scheduledTransaction={investmentTransaction}
+        />,
+      );
+      expect(screen.queryByText('Amount')).not.toBeInTheDocument();
+      expect(screen.queryByText('Category')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Split this occurrence')).not.toBeInTheDocument();
+    });
+
+    it('shows Quantity, Price, and Total Price inputs', () => {
+      render(
+        <OverrideEditorDialog
+          {...defaultProps}
+          scheduledTransaction={investmentTransaction}
+        />,
+      );
+      expect(screen.getByLabelText('Quantity (shares)')).toBeInTheDocument();
+      expect(screen.getByLabelText('Price per share')).toBeInTheDocument();
+      expect(screen.getByLabelText('Total Price')).toBeInTheDocument();
+    });
+
+    it('seeds Total Price from saved quantity * price', () => {
+      render(
+        <OverrideEditorDialog
+          {...defaultProps}
+          scheduledTransaction={investmentTransaction}
+        />,
+      );
+      const totalInput = screen.getByLabelText('Total Price') as HTMLInputElement;
+      expect(totalInput.value).toBe('1,000');
+    });
+
+    it('updates Quantity when Total Price is changed', () => {
+      render(
+        <OverrideEditorDialog
+          {...defaultProps}
+          scheduledTransaction={investmentTransaction}
+        />,
+      );
+      const totalInput = screen.getByLabelText('Total Price') as HTMLInputElement;
+      fireEvent.change(totalInput, { target: { value: '250' } });
+      fireEvent.blur(totalInput);
+      const qtyInput = screen.getByLabelText('Quantity (shares)') as HTMLInputElement;
+      expect(Number(qtyInput.value)).toBeCloseTo(2.5, 6);
+    });
+
+    it('auto-fills Price from latest market price on open', async () => {
+      mockGetSecurityPrices.mockResolvedValue([{ closePrice: '123.45' }]);
+      render(
+        <OverrideEditorDialog
+          {...defaultProps}
+          scheduledTransaction={investmentTransaction}
+        />,
+      );
+      const priceInput = screen.getByLabelText('Price per share') as HTMLInputElement;
+      await waitFor(() => {
+        expect(Number(priceInput.value)).toBeCloseTo(123.45, 6);
+      });
+    });
+
+    it('sends investment fields when saving a new override', async () => {
+      render(
+        <OverrideEditorDialog
+          {...defaultProps}
+          scheduledTransaction={investmentTransaction}
+        />,
+      );
+      // Change qty
+      const qtyInput = screen.getByLabelText('Quantity (shares)') as HTMLInputElement;
+      fireEvent.change(qtyInput, { target: { value: '7' } });
+
+      const saveButton = screen.getByText('Save Override');
+      fireEvent.click(saveButton);
+
+      await waitFor(() => {
+        expect(mockCreateOverride).toHaveBeenCalledWith(
+          'inv1',
+          expect.objectContaining({
+            investmentQuantity: 7,
+            investmentPrice: 100,
+          }),
+        );
+      });
+      const payload = mockCreateOverride.mock.calls[0][1];
+      // Non-investment fields should not be set for investment overrides
+      expect(payload.amount).toBeUndefined();
+      expect(payload.categoryId).toBeUndefined();
+      expect(payload.isSplit).toBeUndefined();
+    });
+
+    it('prefills existing override values when editing', () => {
+      const existingOverride = {
+        id: 'ov1',
+        scheduledTransactionId: 'inv1',
+        originalDate: '2025-02-15',
+        overrideDate: '2025-02-15',
+        amount: null,
+        categoryId: null,
+        description: 'One-off',
+        isSplit: null,
+        splits: null,
+        investmentQuantity: 3,
+        investmentPrice: 250,
+        investmentTotalAmount: null,
+        createdAt: '',
+        updatedAt: '',
+      } as any;
+      render(
+        <OverrideEditorDialog
+          {...defaultProps}
+          scheduledTransaction={investmentTransaction}
+          existingOverride={existingOverride}
+        />,
+      );
+      const qtyInput = screen.getByLabelText('Quantity (shares)') as HTMLInputElement;
+      const priceInput = screen.getByLabelText('Price per share') as HTMLInputElement;
+      expect(Number(qtyInput.value)).toBe(3);
+      expect(Number(priceInput.value)).toBe(250);
+    });
+
+    it('shows Total Amount field for DIVIDEND occurrences', () => {
+      const dividendTx = {
+        ...investmentTransaction,
+        investmentAction: 'DIVIDEND',
+        investmentQuantity: null,
+        investmentPrice: null,
+        investmentTotalAmount: 75,
+      };
+      render(
+        <OverrideEditorDialog
+          {...defaultProps}
+          scheduledTransaction={dividendTx}
+        />,
+      );
+      expect(screen.queryByLabelText('Quantity (shares)')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Price per share')).not.toBeInTheDocument();
+      expect(screen.getByLabelText('Total Amount')).toBeInTheDocument();
+    });
+
+    it('rejects save when quantity is zero', async () => {
+      const zeroQtyTx = {
+        ...investmentTransaction,
+        investmentQuantity: 0,
+      };
+      render(
+        <OverrideEditorDialog
+          {...defaultProps}
+          scheduledTransaction={zeroQtyTx}
+        />,
+      );
+      const saveButton = screen.getByText('Save Override');
+      fireEvent.click(saveButton);
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith('Quantity must be greater than zero');
+      });
+      expect(mockCreateOverride).not.toHaveBeenCalled();
+    });
   });
 });

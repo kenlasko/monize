@@ -1093,7 +1093,13 @@ export class ScheduledTransactionsService {
     }
 
     if (scheduled.isInvestment) {
-      await this.postInvestment(userId, scheduled, postDto, postDate);
+      await this.postInvestment(
+        userId,
+        scheduled,
+        postDto,
+        postDate,
+        storedOverride,
+      );
     } else if (scheduled.isTransfer && scheduled.transferAccountId) {
       await this.transactionsService.createTransfer(userId, {
         fromAccountId: scheduled.accountId,
@@ -1201,6 +1207,7 @@ export class ScheduledTransactionsService {
     scheduled: ScheduledTransaction,
     postDto: PostScheduledTransactionDto | undefined,
     postDate: string,
+    storedOverride: ScheduledTransactionOverride | null,
   ): Promise<void> {
     const action = scheduled.investmentAction as InvestmentAction | null;
     if (!action) {
@@ -1209,32 +1216,37 @@ export class ScheduledTransactionsService {
       );
     }
 
-    const quantity =
-      postDto?.investmentQuantity !== undefined &&
-      postDto?.investmentQuantity !== null
-        ? Number(postDto.investmentQuantity)
-        : scheduled.investmentQuantity !== null &&
-            scheduled.investmentQuantity !== undefined
-          ? Number(scheduled.investmentQuantity)
-          : undefined;
+    // Precedence for investment fields at post time: explicit postDto value
+    // (one-time tweak entered in the Post dialog) > stored per-occurrence
+    // override (saved on a future occurrence) > base scheduled transaction.
+    const pickInvestmentValue = (
+      inline: number | null | undefined,
+      override: number | null | undefined,
+      base: number | null | undefined,
+    ): number | undefined => {
+      if (inline !== undefined && inline !== null) return Number(inline);
+      if (override !== undefined && override !== null) return Number(override);
+      if (base !== undefined && base !== null) return Number(base);
+      return undefined;
+    };
 
-    const price =
-      postDto?.investmentPrice !== undefined &&
-      postDto?.investmentPrice !== null
-        ? Number(postDto.investmentPrice)
-        : scheduled.investmentPrice !== null &&
-            scheduled.investmentPrice !== undefined
-          ? Number(scheduled.investmentPrice)
-          : undefined;
+    const quantity = pickInvestmentValue(
+      postDto?.investmentQuantity,
+      storedOverride?.investmentQuantity,
+      scheduled.investmentQuantity,
+    );
 
-    const totalAmount =
-      postDto?.investmentTotalAmount !== undefined &&
-      postDto?.investmentTotalAmount !== null
-        ? Number(postDto.investmentTotalAmount)
-        : scheduled.investmentTotalAmount !== null &&
-            scheduled.investmentTotalAmount !== undefined
-          ? Number(scheduled.investmentTotalAmount)
-          : undefined;
+    const price = pickInvestmentValue(
+      postDto?.investmentPrice,
+      storedOverride?.investmentPrice,
+      scheduled.investmentPrice,
+    );
+
+    const totalAmount = pickInvestmentValue(
+      postDto?.investmentTotalAmount,
+      storedOverride?.investmentTotalAmount,
+      scheduled.investmentTotalAmount,
+    );
 
     const commission =
       scheduled.investmentCommission !== null &&

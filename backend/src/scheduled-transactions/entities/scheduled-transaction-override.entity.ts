@@ -80,6 +80,43 @@ export class ScheduledTransactionOverride {
   @Column({ type: "jsonb", nullable: true })
   splits: OverrideSplit[] | null;
 
+  @ApiPropertyOptional({
+    description: "Per-occurrence investment quantity (null to use base value)",
+  })
+  @Column({
+    type: "decimal",
+    precision: 20,
+    scale: 8,
+    name: "investment_quantity",
+    nullable: true,
+  })
+  investmentQuantity: number | null;
+
+  @ApiPropertyOptional({
+    description: "Per-occurrence investment price (null to use base value)",
+  })
+  @Column({
+    type: "decimal",
+    precision: 20,
+    scale: 6,
+    name: "investment_price",
+    nullable: true,
+  })
+  investmentPrice: number | null;
+
+  @ApiPropertyOptional({
+    description:
+      "Per-occurrence investment total amount, used for amount-only actions (DIVIDEND/INTEREST/CAPITAL_GAIN)",
+  })
+  @Column({
+    type: "decimal",
+    precision: 20,
+    scale: 4,
+    name: "investment_total_amount",
+    nullable: true,
+  })
+  investmentTotalAmount: number | null;
+
   @ApiProperty({ description: "When this override was created" })
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;

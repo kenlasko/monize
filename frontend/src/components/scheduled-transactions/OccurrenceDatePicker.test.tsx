@@ -203,7 +203,7 @@ describe('OccurrenceDatePicker', () => {
     originalDate: original, overrideDate: override,
     amount: null, categoryId: null, category: null,
     description: null, isSplit: null, splits: null,
-    createdAt: '', updatedAt: '',
+    investmentQuantity: null, investmentPrice: null, investmentTotalAmount: null, createdAt: '', updatedAt: '',
   });
 
   it('marks overridden dates as modified', () => {
@@ -333,7 +333,7 @@ describe('OccurrenceDatePicker', () => {
       originalDate: '2025-03-01', overrideDate: '2025-03-05',
       amount: null, categoryId: null, category: null,
       description: null, isSplit: null, splits: null,
-      createdAt: '', updatedAt: '',
+      investmentQuantity: null, investmentPrice: null, investmentTotalAmount: null, createdAt: '', updatedAt: '',
     }];
     render(
       <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
@@ -347,7 +347,7 @@ describe('OccurrenceDatePicker', () => {
       originalDate: '2025-03-01', overrideDate: '2025-03-01',
       amount: -75.50, categoryId: null, category: null,
       description: null, isSplit: null, splits: null,
-      createdAt: '', updatedAt: '',
+      investmentQuantity: null, investmentPrice: null, investmentTotalAmount: null, createdAt: '', updatedAt: '',
     }];
     render(
       <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
@@ -361,7 +361,7 @@ describe('OccurrenceDatePicker', () => {
       originalDate: '2025-03-01', overrideDate: '2025-03-05',
       amount: -1200, categoryId: null, category: null,
       description: null, isSplit: null, splits: null,
-      createdAt: '', updatedAt: '',
+      investmentQuantity: null, investmentPrice: null, investmentTotalAmount: null, createdAt: '', updatedAt: '',
     }];
     render(
       <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
@@ -376,7 +376,7 @@ describe('OccurrenceDatePicker', () => {
       originalDate: '2025-03-01', overrideDate: '2025-03-01',
       amount: null, categoryId: 'c2', category: { id: 'c2', name: 'Utilities' } as any,
       description: null, isSplit: null, splits: null,
-      createdAt: '', updatedAt: '',
+      investmentQuantity: null, investmentPrice: null, investmentTotalAmount: null, createdAt: '', updatedAt: '',
     }];
     render(
       <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
@@ -390,7 +390,7 @@ describe('OccurrenceDatePicker', () => {
       originalDate: '2025-03-01', overrideDate: '2025-03-05',
       amount: null, categoryId: 'cat1', category: { id: 'cat1', name: 'Rent' } as any,
       description: null, isSplit: null, splits: null,
-      createdAt: '', updatedAt: '',
+      investmentQuantity: null, investmentPrice: null, investmentTotalAmount: null, createdAt: '', updatedAt: '',
     }];
     render(
       <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
@@ -405,7 +405,7 @@ describe('OccurrenceDatePicker', () => {
       originalDate: '2025-03-01', overrideDate: '2025-03-01',
       amount: null, categoryId: null, category: null,
       description: 'Partial payment', isSplit: null, splits: null,
-      createdAt: '', updatedAt: '',
+      investmentQuantity: null, investmentPrice: null, investmentTotalAmount: null, createdAt: '', updatedAt: '',
     }];
     render(
       <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
@@ -419,7 +419,7 @@ describe('OccurrenceDatePicker', () => {
       originalDate: '2025-03-01', overrideDate: '2025-03-01',
       amount: null, categoryId: null, category: null,
       description: null, isSplit: true, splits: [{ categoryId: 'c1', amount: 50 }],
-      createdAt: '', updatedAt: '',
+      investmentQuantity: null, investmentPrice: null, investmentTotalAmount: null, createdAt: '', updatedAt: '',
     }];
     render(
       <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
@@ -433,7 +433,7 @@ describe('OccurrenceDatePicker', () => {
       originalDate: '2025-03-01', overrideDate: '2025-03-05',
       amount: null, categoryId: null, category: null,
       description: null, isSplit: false, splits: null,
-      createdAt: '', updatedAt: '',
+      investmentQuantity: null, investmentPrice: null, investmentTotalAmount: null, createdAt: '', updatedAt: '',
     }];
     render(
       <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
@@ -448,7 +448,7 @@ describe('OccurrenceDatePicker', () => {
       originalDate: '2025-03-01', overrideDate: '2025-03-10',
       amount: -200, categoryId: 'c2', category: { id: 'c2', name: 'Insurance' } as any,
       description: 'Annual premium', isSplit: null, splits: null,
-      createdAt: '', updatedAt: '',
+      investmentQuantity: null, investmentPrice: null, investmentTotalAmount: null, createdAt: '', updatedAt: '',
     }];
     render(
       <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
@@ -465,7 +465,7 @@ describe('OccurrenceDatePicker', () => {
       originalDate: '2025-03-01', overrideDate: '2025-03-05',
       amount: -100, categoryId: null, category: null,
       description: null, isSplit: null, splits: null,
-      createdAt: '', updatedAt: '',
+      investmentQuantity: null, investmentPrice: null, investmentTotalAmount: null, createdAt: '', updatedAt: '',
     }];
     render(
       <OccurrenceDatePicker isOpen={true} scheduledTransaction={{ ...scheduledTransaction, currencyCode: 'USD' }} overrides={overrides} onSelect={onSelect} onClose={onClose} />
@@ -481,7 +481,7 @@ describe('OccurrenceDatePicker', () => {
       originalDate: '2025-03-01', overrideDate: '2025-03-05',
       amount: -1200, categoryId: 'cat1', category: { id: 'cat1', name: 'Rent' } as any,
       description: null, isSplit: false, splits: null,
-      createdAt: '', updatedAt: '',
+      investmentQuantity: null, investmentPrice: null, investmentTotalAmount: null, createdAt: '', updatedAt: '',
     }];
     render(
       <OccurrenceDatePicker isOpen={true} scheduledTransaction={scheduledTransaction} overrides={overrides} onSelect={onSelect} onClose={onClose} />
@@ -500,7 +500,7 @@ describe('OccurrenceDatePicker', () => {
       originalDate: '2025-03-01', overrideDate: '2025-03-01',
       amount: -50, categoryId: null, category: null,
       description: null, isSplit: null, splits: null,
-      createdAt: '', updatedAt: '',
+      investmentQuantity: null, investmentPrice: null, investmentTotalAmount: null, createdAt: '', updatedAt: '',
     }];
     render(
       <OccurrenceDatePicker isOpen={true} scheduledTransaction={{ ...scheduledTransaction, currencyCode: 'USD' }} overrides={overrides} onSelect={onSelect} onClose={onClose} />

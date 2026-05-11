@@ -101,6 +101,24 @@ export class CreateScheduledTransactionOverrideDto {
   @ValidateNested({ each: true })
   @Type(() => OverrideSplitDto)
   splits?: OverrideSplitDto[] | null;
+
+  @ApiPropertyOptional({ description: "Per-occurrence investment quantity" })
+  @IsOptional()
+  @IsNumber()
+  investmentQuantity?: number | null;
+
+  @ApiPropertyOptional({ description: "Per-occurrence investment price" })
+  @IsOptional()
+  @IsNumber()
+  investmentPrice?: number | null;
+
+  @ApiPropertyOptional({
+    description:
+      "Per-occurrence investment total amount (for DIVIDEND/INTEREST/CAPITAL_GAIN)",
+  })
+  @IsOptional()
+  @IsNumber()
+  investmentTotalAmount?: number | null;
 }
 
 export class UpdateScheduledTransactionOverrideDto {
@@ -137,6 +155,24 @@ export class UpdateScheduledTransactionOverrideDto {
   @ValidateNested({ each: true })
   @Type(() => OverrideSplitDto)
   splits?: OverrideSplitDto[] | null;
+
+  @ApiPropertyOptional({ description: "Per-occurrence investment quantity" })
+  @IsOptional()
+  @IsNumber()
+  investmentQuantity?: number | null;
+
+  @ApiPropertyOptional({ description: "Per-occurrence investment price" })
+  @IsOptional()
+  @IsNumber()
+  investmentPrice?: number | null;
+
+  @ApiPropertyOptional({
+    description:
+      "Per-occurrence investment total amount (for DIVIDEND/INTEREST/CAPITAL_GAIN)",
+  })
+  @IsOptional()
+  @IsNumber()
+  investmentTotalAmount?: number | null;
 }
 
 export class ScheduledTransactionOverrideResponseDto {
@@ -166,6 +202,15 @@ export class ScheduledTransactionOverrideResponseDto {
 
   @ApiPropertyOptional()
   splits: OverrideSplitDto[] | null;
+
+  @ApiPropertyOptional()
+  investmentQuantity: number | null;
+
+  @ApiPropertyOptional()
+  investmentPrice: number | null;
+
+  @ApiPropertyOptional()
+  investmentTotalAmount: number | null;
 
   @ApiProperty()
   createdAt: Date;

@@ -164,6 +164,9 @@ export interface ScheduledTransactionOverride {
   description: string | null;
   isSplit: boolean | null;
   splits: OverrideSplit[] | null;
+  investmentQuantity: number | null;
+  investmentPrice: number | null;
+  investmentTotalAmount: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -176,6 +179,9 @@ export interface CreateScheduledTransactionOverrideData {
   description?: string | null;
   isSplit?: boolean | null;
   splits?: OverrideSplit[] | null;
+  investmentQuantity?: number | null;
+  investmentPrice?: number | null;
+  investmentTotalAmount?: number | null;
 }
 
 export interface UpdateScheduledTransactionOverrideData {
@@ -184,6 +190,9 @@ export interface UpdateScheduledTransactionOverrideData {
   description?: string | null;
   isSplit?: boolean | null;
   splits?: OverrideSplit[] | null;
+  investmentQuantity?: number | null;
+  investmentPrice?: number | null;
+  investmentTotalAmount?: number | null;
 }
 
 export interface OverrideCheckResult {

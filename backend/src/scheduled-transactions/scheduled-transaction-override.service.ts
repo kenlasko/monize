@@ -69,6 +69,9 @@ export class ScheduledTransactionOverrideService {
           amount: s.amount,
           memo: s.memo ?? null,
         })) ?? null,
+      investmentQuantity: createDto.investmentQuantity ?? null,
+      investmentPrice: createDto.investmentPrice ?? null,
+      investmentTotalAmount: createDto.investmentTotalAmount ?? null,
     });
 
     return this.overridesRepository.save(override);
@@ -169,6 +172,12 @@ export class ScheduledTransactionOverrideService {
           memo: s.memo ?? null,
         })) ?? null;
     }
+    if (updateDto.investmentQuantity !== undefined)
+      override.investmentQuantity = updateDto.investmentQuantity;
+    if (updateDto.investmentPrice !== undefined)
+      override.investmentPrice = updateDto.investmentPrice;
+    if (updateDto.investmentTotalAmount !== undefined)
+      override.investmentTotalAmount = updateDto.investmentTotalAmount;
 
     return this.overridesRepository.save(override);
   }
