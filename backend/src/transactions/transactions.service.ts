@@ -15,6 +15,7 @@ import { CreateTransactionDto } from "./dto/create-transaction.dto";
 import { UpdateTransactionDto } from "./dto/update-transaction.dto";
 import { CreateTransactionSplitDto } from "./dto/create-transaction-split.dto";
 import { CreateTransferDto } from "./dto/create-transfer.dto";
+import { UpdateTransferDto } from "./dto/update-transfer.dto";
 import { TagsService } from "../tags/tags.service";
 import { AccountsService } from "../accounts/accounts.service";
 import { PayeesService } from "../payees/payees.service";
@@ -305,7 +306,10 @@ export class TransactionsService {
       .leftJoinAndSelect("splits.transferAccount", "splitTransferAccount")
       .leftJoinAndSelect("splits.tags", "splitTags")
       .leftJoinAndSelect("splits.investmentTransaction", "splitInvestmentTx")
-      .leftJoinAndSelect("splitInvestmentTx.security", "splitInvestmentSecurity")
+      .leftJoinAndSelect(
+        "splitInvestmentTx.security",
+        "splitInvestmentSecurity",
+      )
       .leftJoinAndSelect("transaction.linkedTransaction", "linkedTransaction")
       .leftJoinAndSelect("linkedTransaction.account", "linkedAccount")
       .leftJoinAndSelect("linkedTransaction.splits", "linkedSplits")
@@ -1483,11 +1487,7 @@ export class TransactionsService {
 
     try {
       if (transaction.isSplit) {
-        await this.splitService.deleteSplitSideEffects(
-          id,
-          userId,
-          queryRunner,
-        );
+        await this.splitService.deleteSplitSideEffects(id, userId, queryRunner);
       }
 
       const parentSplit = await queryRunner.manager.findOne(TransactionSplit, {
@@ -1828,7 +1828,7 @@ export class TransactionsService {
   async updateTransfer(
     userId: string,
     transactionId: string,
-    updateDto: Partial<CreateTransferDto>,
+    updateDto: Partial<UpdateTransferDto>,
   ): Promise<TransferResult> {
     const result = await this.transferService.updateTransfer(
       userId,

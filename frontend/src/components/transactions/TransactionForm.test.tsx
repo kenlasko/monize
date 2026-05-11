@@ -2077,6 +2077,47 @@ describe('TransactionForm', () => {
         expect(toast.success).toHaveBeenCalledWith('Transfer updated');
       });
     });
+
+    it('sends null payeeId/payeeName when the user clears a previously assigned payee on a transfer', async () => {
+      const transferTx = createTransferTransaction();
+      transferTx.payeeId = 'payee-1';
+      transferTx.payeeName = 'Grocery Store';
+
+      render(
+        <TransactionForm
+          transaction={transferTx}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('combobox-input-Payee (Optional)')).toBeInTheDocument();
+      });
+
+      // Clear the payee field — the mocked Combobox forwards the empty string
+      // via onChange('', '') because allowCustomValue=true. We change to a
+      // non-empty value first so React registers a different value on the
+      // second change to ''.
+      fireEvent.change(screen.getByTestId('combobox-input-Payee (Optional)'), {
+        target: { value: 'x' },
+      });
+      fireEvent.change(screen.getByTestId('combobox-input-Payee (Optional)'), {
+        target: { value: '' },
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /Update Transfer/i }));
+
+      await waitFor(() => {
+        expect(mockUpdateTransfer).toHaveBeenCalledWith(
+          transferTx.id,
+          expect.objectContaining({
+            payeeId: null,
+            payeeName: null,
+          })
+        );
+      });
+    });
   });
 
   // =========================================================================

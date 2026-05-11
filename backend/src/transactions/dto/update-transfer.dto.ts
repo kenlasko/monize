@@ -64,17 +64,20 @@ export class UpdateTransferDto {
   @Max(999999999999)
   toAmount?: number;
 
-  @ApiPropertyOptional({ description: "Payee ID" })
+  @ApiPropertyOptional({ description: "Payee ID (null to clear)" })
   @IsOptional()
   @IsUUID()
-  payeeId?: string;
+  payeeId?: string | null;
 
-  @ApiPropertyOptional({ description: "Payee name" })
+  @ApiPropertyOptional({
+    description:
+      "Payee name (null to clear and revert to default 'Transfer to/from <Account>')",
+  })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   @SanitizeHtml()
-  payeeName?: string;
+  payeeName?: string | null;
 
   @ApiPropertyOptional({ description: "Transfer description/notes" })
   @IsOptional()

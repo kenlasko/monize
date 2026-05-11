@@ -853,6 +853,81 @@ describe("TransactionTransferService", () => {
       );
     });
 
+    it("regenerates default payeeName for both transactions when payeeName is explicitly cleared with null", async () => {
+      mockFindOne
+        .mockResolvedValueOnce(fromTransaction)
+        .mockResolvedValueOnce(toTransaction)
+        .mockResolvedValueOnce(fromTransaction)
+        .mockResolvedValueOnce(toTransaction);
+
+      await service.updateTransfer(
+        "user-1",
+        "from-tx",
+        { payeeId: null, payeeName: null },
+        mockFindOne,
+      );
+
+      // Default payee names regenerated from account names
+      expect(transactionsRepository.update).toHaveBeenCalledWith(
+        "from-tx",
+        expect.objectContaining({
+          payeeId: null,
+          payeeName: "Transfer to Savings",
+        }),
+      );
+      expect(transactionsRepository.update).toHaveBeenCalledWith(
+        "to-tx",
+        expect.objectContaining({
+          payeeId: null,
+          payeeName: "Transfer from Checking",
+        }),
+      );
+    });
+
+    it("regenerates default payeeName when payeeName is cleared with empty string", async () => {
+      mockFindOne
+        .mockResolvedValueOnce(fromTransaction)
+        .mockResolvedValueOnce(toTransaction)
+        .mockResolvedValueOnce(fromTransaction)
+        .mockResolvedValueOnce(toTransaction);
+
+      await service.updateTransfer(
+        "user-1",
+        "from-tx",
+        { payeeName: "" },
+        mockFindOne,
+      );
+
+      expect(transactionsRepository.update).toHaveBeenCalledWith(
+        "from-tx",
+        expect.objectContaining({ payeeName: "Transfer to Savings" }),
+      );
+      expect(transactionsRepository.update).toHaveBeenCalledWith(
+        "to-tx",
+        expect.objectContaining({ payeeName: "Transfer from Checking" }),
+      );
+    });
+
+    it("does not modify description when only clearing the payee", async () => {
+      mockFindOne
+        .mockResolvedValueOnce(fromTransaction)
+        .mockResolvedValueOnce(toTransaction)
+        .mockResolvedValueOnce(fromTransaction)
+        .mockResolvedValueOnce(toTransaction);
+
+      await service.updateTransfer(
+        "user-1",
+        "from-tx",
+        { payeeId: null, payeeName: null },
+        mockFindOne,
+      );
+
+      const fromCall = transactionsRepository.update.mock.calls.find(
+        (c: any[]) => c[0] === "from-tx",
+      );
+      expect(fromCall[1]).not.toHaveProperty("description");
+    });
+
     it("does not update payeeName when custom payeeName is set", async () => {
       accountsService.findOne.mockImplementation(
         (_userId: string, accountId: string) => {

@@ -10,6 +10,7 @@ import { Repository, DataSource, QueryRunner } from "typeorm";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { CreateTransferDto } from "./dto/create-transfer.dto";
+import { UpdateTransferDto } from "./dto/update-transfer.dto";
 import { AccountsService } from "../accounts/accounts.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { isTransactionInFuture } from "../common/date-utils";
@@ -399,7 +400,7 @@ export class TransactionTransferService {
   async updateTransfer(
     userId: string,
     transactionId: string,
-    updateDto: Partial<CreateTransferDto>,
+    updateDto: Partial<UpdateTransferDto>,
     findOne: (userId: string, id: string) => Promise<Transaction>,
   ): Promise<TransferResult> {
     const transaction = await findOne(userId, transactionId);
@@ -591,7 +592,7 @@ export class TransactionTransferService {
   }
 
   private buildFromUpdateData(
-    updateDto: Partial<CreateTransferDto>,
+    updateDto: Partial<UpdateTransferDto>,
     newAmount: number,
     oldFromAccountId: string,
     oldToAccountId: string,
@@ -619,13 +620,17 @@ export class TransactionTransferService {
       data.accountId = updateDto.fromAccountId;
     }
 
-    if (
-      updateDto.toAccountId &&
-      updateDto.toAccountId !== oldToAccountId &&
-      updateDto.payeeName === undefined
-    ) {
+    const payeeNameCleared =
+      updateDto.payeeName !== undefined && !updateDto.payeeName;
+    const toAccountChanged =
+      !!updateDto.toAccountId && updateDto.toAccountId !== oldToAccountId;
+    const shouldRegenerateDefault =
+      payeeNameCleared ||
+      (toAccountChanged && updateDto.payeeName === undefined);
+
+    if (shouldRegenerateDefault) {
       data.payeeName = `Transfer to ${newToAccount.name}`;
-      if (updateDto.description === undefined) {
+      if (updateDto.description === undefined && toAccountChanged) {
         data.description = `Transfer to ${newToAccount.name}`;
       }
     }
@@ -634,7 +639,7 @@ export class TransactionTransferService {
   }
 
   private buildToUpdateData(
-    updateDto: Partial<CreateTransferDto>,
+    updateDto: Partial<UpdateTransferDto>,
     newToAmount: number,
     newExchangeRate: number,
     oldFromAccountId: string,
@@ -665,13 +670,17 @@ export class TransactionTransferService {
       data.accountId = updateDto.toAccountId;
     }
 
-    if (
-      updateDto.fromAccountId &&
-      updateDto.fromAccountId !== oldFromAccountId &&
-      updateDto.payeeName === undefined
-    ) {
+    const payeeNameCleared =
+      updateDto.payeeName !== undefined && !updateDto.payeeName;
+    const fromAccountChanged =
+      !!updateDto.fromAccountId && updateDto.fromAccountId !== oldFromAccountId;
+    const shouldRegenerateDefault =
+      payeeNameCleared ||
+      (fromAccountChanged && updateDto.payeeName === undefined);
+
+    if (shouldRegenerateDefault) {
       data.payeeName = `Transfer from ${newFromAccount.name}`;
-      if (updateDto.description === undefined) {
+      if (updateDto.description === undefined && fromAccountChanged) {
         data.description = `Transfer from ${newFromAccount.name}`;
       }
     }

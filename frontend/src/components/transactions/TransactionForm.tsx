@@ -752,8 +752,8 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
           description: data.description ?? null,
           referenceNumber: data.referenceNumber ?? null,
           status: data.status,
-          payeeId: transferPayeeId || undefined,
-          payeeName: transferPayeeName || undefined,
+          payeeId: transferPayeeId || null,
+          payeeName: transferPayeeName || null,
           tagIds: selectedTagIds.length > 0 ? selectedTagIds : [],
         };
 
