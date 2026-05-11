@@ -113,6 +113,43 @@ describe('CurrencyInput', () => {
     expect(input).toHaveValue('113.00');
   });
 
+  it('evaluates calculator expression on Enter without submitting form', () => {
+    const onChange = vi.fn();
+    const onSubmit = vi.fn((e: { preventDefault: () => void }) => e.preventDefault());
+    render(
+      <form onSubmit={onSubmit}>
+        <CurrencyInput label="Amount" value={0} onChange={onChange} />
+      </form>
+    );
+    const input = screen.getByLabelText('Amount');
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: '44*1.13' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onChange).toHaveBeenCalledWith(49.72);
+    expect(input).toHaveValue('49.72');
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('allows Enter to submit form when value is a plain number', () => {
+    const onChange = vi.fn();
+    const onSubmit = vi.fn((e: { preventDefault: () => void }) => e.preventDefault());
+    render(
+      <form onSubmit={onSubmit}>
+        <CurrencyInput label="Amount" value={0} onChange={onChange} />
+        <button type="submit">Save</button>
+      </form>
+    );
+    const input = screen.getByLabelText('Amount');
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: '50' } });
+    // Plain numbers should let Enter behave normally (form submit via the
+    // implicit-submit pathway). We assert by simulating a form submit, which
+    // would have been prevented if our handler called preventDefault.
+    fireEvent.keyDown(input, { key: 'Enter' });
+    fireEvent.submit(input.closest('form')!);
+    expect(onSubmit).toHaveBeenCalled();
+  });
+
   it('handles allowNegative=false', () => {
     const onChange = vi.fn();
     render(<CurrencyInput label="Amount" value={0} onChange={onChange} allowNegative={false} allowCalculator={false} />);

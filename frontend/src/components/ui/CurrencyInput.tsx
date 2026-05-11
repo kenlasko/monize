@@ -159,6 +159,27 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
       onBlur?.(e);
     };
 
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      // When the user presses Enter on a calculator expression like "44*1.13",
+      // evaluate it in place rather than letting the form submit. This lets
+      // users do math inline without triggering validation prematurely.
+      if (
+        e.key === 'Enter' &&
+        allowCalculator &&
+        hasCalculatorOperators(displayValue)
+      ) {
+        e.preventDefault();
+        let result = evaluateExpression(displayValue);
+        if (result !== undefined) {
+          if (!allowNegative && result < 0) {
+            result = Math.abs(result);
+          }
+          setDisplayValue(formatAmountWithCommas(result));
+          onChange(result);
+        }
+      }
+    };
+
     const handleFocus = (e: FocusEvent<HTMLInputElement>) => {
       setIsFocused(true);
       // Strip commas when focused for easier editing, and clear if zero
@@ -250,6 +271,7 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
             onChange={handleChange}
             onBlur={handleBlur}
             onFocus={handleFocus}
+            onKeyDown={handleKeyDown}
             disabled={disabled}
             style={{
               paddingLeft: prefix ? `${1.15 + prefix.length * 0.6}rem` : undefined,
