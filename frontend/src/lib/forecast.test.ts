@@ -696,6 +696,103 @@ describe('buildForecast', () => {
   });
 
   // --- Multiple accounts and transactions ---
+  describe('scheduled investment transactions', () => {
+    it('applies a scheduled BUY to the investment cash funding account', () => {
+      const cashAccount = makeAccount({ id: 'cash-1', currentBalance: 10000 });
+      const transactions = [makeScheduled({
+        id: 'inv-1',
+        name: 'Buy AAPL',
+        accountId: 'brokerage-1',
+        amount: -2500, // signed cash impact (BUY)
+        frequency: 'ONCE',
+        nextDueDate: '2025-01-20',
+        isInvestment: true,
+        investmentFundingAccountId: 'cash-1',
+        investmentExchangeRate: 1,
+      } as any)];
+      const result = buildForecast([cashAccount], transactions, 'month', 'cash-1');
+      const jan20 = result.find(dp => dp.date === '2025-01-20');
+      expect(jan20?.transactions.length).toBe(1);
+      expect(jan20?.transactions[0].amount).toBe(-2500);
+      expect(jan20?.balance).toBe(7500);
+    });
+
+    it('applies a scheduled SELL as a positive cash inflow on the funding account', () => {
+      const cashAccount = makeAccount({ id: 'cash-1', currentBalance: 10000 });
+      const transactions = [makeScheduled({
+        id: 'inv-1',
+        name: 'Sell AAPL',
+        accountId: 'brokerage-1',
+        amount: 1500, // signed cash impact (SELL)
+        frequency: 'ONCE',
+        nextDueDate: '2025-01-20',
+        isInvestment: true,
+        investmentFundingAccountId: 'cash-1',
+        investmentExchangeRate: 1,
+      } as any)];
+      const result = buildForecast([cashAccount], transactions, 'month', 'cash-1');
+      const jan20 = result.find(dp => dp.date === '2025-01-20');
+      expect(jan20?.balance).toBe(11500);
+    });
+
+    it('converts the cash impact via investmentExchangeRate', () => {
+      const cashAccount = makeAccount({ id: 'cash-1', currentBalance: 10000 });
+      const transactions = [makeScheduled({
+        id: 'inv-1',
+        name: 'Buy ABC.TO',
+        accountId: 'brokerage-1',
+        amount: -1000, // security currency
+        frequency: 'ONCE',
+        nextDueDate: '2025-01-20',
+        isInvestment: true,
+        investmentFundingAccountId: 'cash-1',
+        investmentExchangeRate: 1.35,
+      } as any)];
+      const result = buildForecast([cashAccount], transactions, 'month', 'cash-1');
+      const jan20 = result.find(dp => dp.date === '2025-01-20');
+      // -1000 * 1.35 = -1350
+      expect(jan20?.balance).toBe(8650);
+    });
+
+    it('does not affect a non-funding account when selected', () => {
+      const otherCash = makeAccount({ id: 'cash-other', currentBalance: 4000 });
+      const transactions = [makeScheduled({
+        id: 'inv-1',
+        accountId: 'brokerage-1',
+        amount: -2500,
+        frequency: 'ONCE',
+        nextDueDate: '2025-01-20',
+        isInvestment: true,
+        investmentFundingAccountId: 'cash-1',
+        investmentExchangeRate: 1,
+      } as any)];
+      const result = buildForecast([otherCash], transactions, 'month', 'cash-other');
+      const allBalances = result.map(dp => dp.balance);
+      expect(allBalances.every(b => b === 4000)).toBe(true);
+    });
+
+    it('expands recurring scheduled investments on the funding account', () => {
+      const cashAccount = makeAccount({ id: 'cash-1', currentBalance: 10000 });
+      const transactions = [makeScheduled({
+        id: 'inv-1',
+        accountId: 'brokerage-1',
+        amount: -500,
+        frequency: 'MONTHLY',
+        nextDueDate: '2025-01-20',
+        isInvestment: true,
+        investmentFundingAccountId: 'cash-1',
+        investmentExchangeRate: 1,
+      } as any)];
+      const result = buildForecast([cashAccount], transactions, '90days', 'cash-1');
+      const jan20 = result.find(dp => dp.date === '2025-01-20');
+      const feb20 = result.find(dp => dp.date === '2025-02-20');
+      const mar20 = result.find(dp => dp.date === '2025-03-20');
+      expect(jan20?.balance).toBe(9500);
+      expect(feb20?.balance).toBe(9000);
+      expect(mar20?.balance).toBe(8500);
+    });
+  });
+
   describe('multiple accounts and transactions', () => {
     it('sums balances from multiple accounts', () => {
       const accounts = [
@@ -1237,5 +1334,21 @@ describe('getProjectedBalanceAtDate', () => {
     // Jan 15, Jan 22, Jan 29 = 3 occurrences
     const result = getProjectedBalanceAtDate(account, '2025-01-29', scheduled, []);
     expect(result).toBe(4400); // 5000 - 3*200
+  });
+
+  it('applies scheduled investment BUYs to the funding cash account', () => {
+    const cashAccount = makeAccount({ id: 'cash-1', currentBalance: 10000 });
+    const scheduled = [makeScheduled({
+      id: 'inv-1',
+      accountId: 'brokerage-1',
+      amount: -1500,
+      frequency: 'ONCE',
+      nextDueDate: '2025-01-20',
+      isInvestment: true,
+      investmentFundingAccountId: 'cash-1',
+      investmentExchangeRate: 1,
+    } as any)];
+    const result = getProjectedBalanceAtDate(cashAccount, '2025-01-25', scheduled, []);
+    expect(result).toBe(8500);
   });
 });

@@ -223,6 +223,42 @@ function isTransfer(transaction: ScheduledTransaction): boolean {
 }
 
 /**
+ * Scheduled investment transactions store `accountId` as the brokerage account
+ * but the cash side flows through `investmentFundingAccountId` (typically an
+ * INVESTMENT_CASH account). Reshape them so the forecast treats the cash
+ * account as the affected account, with the amount converted into that
+ * account's currency via the recorded exchange rate.
+ */
+function normalizeInvestmentForForecast(transaction: ScheduledTransaction): ScheduledTransaction {
+  if (!transaction.isInvestment || !transaction.investmentFundingAccountId) {
+    return transaction;
+  }
+  const rate = transaction.investmentExchangeRate != null
+    ? Number(transaction.investmentExchangeRate)
+    : 1;
+  if (!Number.isFinite(rate) || rate === 1) {
+    // No conversion needed; just re-target the account.
+    if (transaction.accountId === transaction.investmentFundingAccountId) {
+      return transaction;
+    }
+    return { ...transaction, accountId: transaction.investmentFundingAccountId };
+  }
+  const convertOverride = <T extends { amount: number | null }>(o: T): T => ({
+    ...o,
+    amount: o.amount != null ? Number(o.amount) * rate : o.amount,
+  });
+  return {
+    ...transaction,
+    accountId: transaction.investmentFundingAccountId,
+    amount: Number(transaction.amount) * rate,
+    futureOverrides: transaction.futureOverrides?.map(convertOverride),
+    nextOverride: transaction.nextOverride
+      ? convertOverride(transaction.nextOverride)
+      : transaction.nextOverride,
+  };
+}
+
+/**
  * Build forecast data points for the cash flow chart.
  *
  * futureTransactions: already-posted transactions with a date after today.
@@ -238,6 +274,10 @@ export function buildForecast(
   futureTransactions: FutureTransaction[] = [],
   convertAmount?: (amount: number, currencyCode: string) => number,
 ): ForecastDataPoint[] {
+  // Remap scheduled investment transactions onto their funding cash account so
+  // BUY/SELL/etc. show up in the cash flow forecast for INVESTMENT_CASH accounts.
+  transactions = transactions.map(normalizeInvestmentForForecast);
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayKey = formatDateKey(today);
@@ -381,6 +421,8 @@ export function getProjectedBalanceAtDate(
   futureTransactions: FutureTransaction[] = [],
   excludeScheduledId?: string
 ): number {
+  scheduledTransactions = scheduledTransactions.map(normalizeInvestmentForForecast);
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayKey = formatDateKey(today);
