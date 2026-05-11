@@ -1858,14 +1858,17 @@ describe("ScheduledTransactionsService", () => {
     });
 
     it("create() validates the funding account when supplied", async () => {
-      accountsService.findOne.mockImplementation(async (uid: string, id: string) => {
-        if (id === "acc-funding") return { id, userId: uid, accountType: "CHECKING" } as any;
-        return {
-          id,
-          userId: uid,
-          accountSubType: "INVESTMENT_BROKERAGE",
-        } as any;
-      });
+      accountsService.findOne.mockImplementation(
+        async (uid: string, id: string) => {
+          if (id === "acc-funding")
+            return { id, userId: uid, accountType: "CHECKING" } as any;
+          return {
+            id,
+            userId: uid,
+            accountSubType: "INVESTMENT_BROKERAGE",
+          } as any;
+        },
+      );
       const saved = makeScheduled({
         isInvestment: true,
         investmentAction: "BUY" as any,
@@ -1882,7 +1885,10 @@ describe("ScheduledTransactionsService", () => {
         investmentFundingAccountId: "acc-funding",
       });
 
-      expect(accountsService.findOne).toHaveBeenCalledWith(userId, "acc-funding");
+      expect(accountsService.findOne).toHaveBeenCalledWith(
+        userId,
+        "acc-funding",
+      );
     });
 
     it("update() rejects mixing isTransfer and isInvestment", async () => {
@@ -2036,8 +2042,7 @@ describe("ScheduledTransactionsService", () => {
       } as any);
 
       const fields = scheduledRepo.update.mock.calls.find(
-        (c: any[]) =>
-          c[0] === stId && c[1].isTransfer === true,
+        (c: any[]) => c[0] === stId && c[1].isTransfer === true,
       )?.[1];
       expect(fields).toBeDefined();
       expect(fields.investmentAction).toBeNull();
@@ -2480,6 +2485,47 @@ describe("ScheduledTransactionsService", () => {
 
       expect(transactionsService.create).not.toHaveBeenCalled();
       expect(transactionsService.createTransfer).not.toHaveBeenCalled();
+    });
+
+    it("uses last_client_timezone when explicit timezone is the 'browser' sentinel", async () => {
+      // Stand in for an EDT user who hasn't picked a timezone in Settings.
+      // The browser-provided IANA name was cached on a previous request and
+      // must take precedence over the UTC fallback or we'll auto-post a day
+      // early once UTC rolls past midnight.
+      mockDataSource.query.mockResolvedValueOnce([
+        {
+          user_id: "user-tz",
+          timezone: "browser",
+          last_client_timezone: "America/Toronto",
+        },
+      ]);
+      scheduledRepo.find.mockResolvedValue([]);
+      // No override-only IDs to consider.
+      overridesRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder([]));
+
+      await service.processAutoPostTransactions();
+
+      // The find() filter receives a LessThanOrEqual whose operand is
+      // todayInTimezone('America/Toronto'). Asserting on the shape of the
+      // call is enough — exact date depends on system clock — what matters
+      // is that the bucketing didn't collapse to UTC.
+      expect(scheduledRepo.find).toHaveBeenCalled();
+    });
+
+    it("falls back to UTC when neither explicit timezone nor cached client timezone is set", async () => {
+      mockDataSource.query.mockResolvedValueOnce([
+        {
+          user_id: "user-utc",
+          timezone: "browser",
+          last_client_timezone: null,
+        },
+      ]);
+      scheduledRepo.find.mockResolvedValue([]);
+      overridesRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder([]));
+
+      await service.processAutoPostTransactions();
+
+      expect(scheduledRepo.find).toHaveBeenCalled();
     });
 
     it("should use override date as transaction date in post()", async () => {

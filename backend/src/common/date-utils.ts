@@ -15,6 +15,23 @@ export function formatDateYMD(date: Date): string {
 }
 
 /**
+ * True iff the given string is a non-empty, well-formed IANA timezone name.
+ * Lets us reject the "browser" sentinel and obvious junk before persisting
+ * or scheduling against it.
+ */
+export function isValidIanaTimezone(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "browser") return false;
+  try {
+    new Intl.DateTimeFormat("en-CA", { timeZone: trimmed });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Compute today's date as YYYY-MM-DD in the given IANA timezone.
  * Returns null if the timezone is invalid.
  */

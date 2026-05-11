@@ -100,6 +100,18 @@ export class UserPreference {
   })
   recentTransactionsLimit: number;
 
+  // Set opportunistically by RequestContextInterceptor when an authenticated
+  // request carries an X-Client-Timezone header. Cron jobs prefer the user's
+  // explicit `timezone` setting; this is the fallback when `timezone` is the
+  // "browser" sentinel so we don't compute "today" in UTC for everyone.
+  @Column({
+    name: "last_client_timezone",
+    type: "varchar",
+    length: 64,
+    nullable: true,
+  })
+  lastClientTimezone: string | null;
+
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;
 

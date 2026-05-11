@@ -3,6 +3,7 @@ import {
   formatMonthKey,
   getMonthEndYMD,
   isTransactionInFuture,
+  isValidIanaTimezone,
   todayInTimezone,
   todayYMD,
 } from "./date-utils";
@@ -22,6 +23,31 @@ describe("formatDateYMD", () => {
   it("does not shift dates due to local timezone", () => {
     const d = new Date("2026-12-31T23:59:59Z");
     expect(formatDateYMD(d)).toBe("2026-12-31");
+  });
+});
+
+describe("isValidIanaTimezone", () => {
+  it("accepts a real IANA timezone", () => {
+    expect(isValidIanaTimezone("America/Toronto")).toBe(true);
+  });
+
+  it("rejects the 'browser' sentinel", () => {
+    expect(isValidIanaTimezone("browser")).toBe(false);
+  });
+
+  it("rejects empty / whitespace strings", () => {
+    expect(isValidIanaTimezone("")).toBe(false);
+    expect(isValidIanaTimezone("   ")).toBe(false);
+  });
+
+  it("rejects non-string values", () => {
+    expect(isValidIanaTimezone(undefined)).toBe(false);
+    expect(isValidIanaTimezone(null)).toBe(false);
+    expect(isValidIanaTimezone(42)).toBe(false);
+  });
+
+  it("rejects invented timezone names", () => {
+    expect(isValidIanaTimezone("Not/A_Real_Zone")).toBe(false);
   });
 });
 

@@ -1191,20 +1191,32 @@ export class AccountsService {
   async applyDueTransactionBalances(): Promise<void> {
     try {
       // Group users by their effective timezone. LEFT JOIN keeps users
-      // without a preferences row -- they fall back to UTC.
-      const userRows: { user_id: string; timezone: string | null }[] =
-        await this.dataSource.query(
-          `SELECT u.id as user_id, p.timezone
-             FROM users u
-             LEFT JOIN user_preferences p ON p.user_id = u.id`,
-        );
+      // without a preferences row -- they fall back to UTC. For users whose
+      // timezone is still the "browser" sentinel, prefer the last-known
+      // X-Client-Timezone captured by RequestContextInterceptor so we don't
+      // post a day too early for negative-UTC-offset users.
+      const userRows: {
+        user_id: string;
+        timezone: string | null;
+        last_client_timezone: string | null;
+      }[] = await this.dataSource.query(
+        `SELECT u.id as user_id, p.timezone, p.last_client_timezone
+           FROM users u
+           LEFT JOIN user_preferences p ON p.user_id = u.id`,
+      );
 
       if (userRows.length === 0) return;
 
       const userIdsByTz = new Map<string, string[]>();
-      for (const { user_id, timezone } of userRows) {
-        const normalised = timezone?.trim();
-        const tz = normalised && normalised !== "browser" ? normalised : "UTC";
+      for (const { user_id, timezone, last_client_timezone } of userRows) {
+        const explicit = timezone?.trim();
+        const cached = last_client_timezone?.trim();
+        const tz =
+          explicit && explicit !== "browser"
+            ? explicit
+            : cached && cached !== "browser"
+              ? cached
+              : "UTC";
         const list = userIdsByTz.get(tz) ?? [];
         list.push(user_id);
         userIdsByTz.set(tz, list);

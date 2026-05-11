@@ -2,6 +2,7 @@ import {
   CallHandler,
   ExecutionContext,
   Injectable,
+  Logger,
   NestInterceptor,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
@@ -10,6 +11,7 @@ import { Repository } from "typeorm";
 import { Request } from "express";
 import { UserPreference } from "../../users/entities/user-preference.entity";
 import { requestContextStorage } from "../request-context";
+import { isValidIanaTimezone } from "../date-utils";
 
 /**
  * Populates the request-scoped RequestContext with the authenticated user's
@@ -27,6 +29,8 @@ import { requestContextStorage } from "../request-context";
  */
 @Injectable()
 export class RequestContextInterceptor implements NestInterceptor {
+  private readonly logger = new Logger(RequestContextInterceptor.name);
+
   constructor(
     @InjectRepository(UserPreference)
     private readonly preferencesRepository: Repository<UserPreference>,
@@ -78,6 +82,23 @@ export class RequestContextInterceptor implements NestInterceptor {
       const stored = pref?.timezone?.trim();
       if (stored && stored !== "browser") {
         return stored;
+      }
+
+      // User has no explicit timezone preference; cache the browser-reported
+      // value so cron jobs (which have no request) can still compute "today"
+      // in the user's actual local time. Fire-and-forget — never block the
+      // request on the persistence write.
+      if (
+        isValidIanaTimezone(headerTz) &&
+        pref?.lastClientTimezone !== headerTz
+      ) {
+        this.preferencesRepository
+          .update({ userId }, { lastClientTimezone: headerTz })
+          .catch((err) => {
+            this.logger.warn(
+              `Failed to persist last_client_timezone for user ${userId}: ${err?.message ?? err}`,
+            );
+          });
       }
     }
     return headerTz;

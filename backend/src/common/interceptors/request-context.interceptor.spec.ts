@@ -4,7 +4,7 @@ import type { RequestContext } from "../request-context";
 import { getRequestContext, requestContextStorage } from "../request-context";
 
 describe("RequestContextInterceptor", () => {
-  let preferencesRepository: { findOne: jest.Mock };
+  let preferencesRepository: { findOne: jest.Mock; update: jest.Mock };
   let interceptor: RequestContextInterceptor;
 
   function makeContext(opts: {
@@ -31,7 +31,10 @@ describe("RequestContextInterceptor", () => {
   }
 
   beforeEach(() => {
-    preferencesRepository = { findOne: jest.fn() };
+    preferencesRepository = {
+      findOne: jest.fn(),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
+    };
     interceptor = new RequestContextInterceptor(preferencesRepository as any);
   });
 
@@ -205,6 +208,96 @@ describe("RequestContextInterceptor", () => {
       });
     });
     expect(completed).toBe(true);
+  });
+
+  it("persists a valid X-Client-Timezone header when stored timezone is 'browser'", async () => {
+    preferencesRepository.findOne.mockResolvedValue({
+      timezone: "browser",
+      lastClientTimezone: null,
+    });
+    const next = makeNext();
+    const ctx = makeContext({
+      user: { id: "user-1" },
+      headers: { "x-client-timezone": "America/Toronto" },
+    });
+
+    const obs$ = (await interceptor.intercept(ctx, next as any)) as any;
+    await firstValueFrom(obs$);
+
+    expect(preferencesRepository.update).toHaveBeenCalledWith(
+      { userId: "user-1" },
+      { lastClientTimezone: "America/Toronto" },
+    );
+  });
+
+  it("does not persist X-Client-Timezone when it matches the cached value", async () => {
+    preferencesRepository.findOne.mockResolvedValue({
+      timezone: "browser",
+      lastClientTimezone: "America/Toronto",
+    });
+    const next = makeNext();
+    const ctx = makeContext({
+      user: { id: "user-1" },
+      headers: { "x-client-timezone": "America/Toronto" },
+    });
+
+    const obs$ = (await interceptor.intercept(ctx, next as any)) as any;
+    await firstValueFrom(obs$);
+
+    expect(preferencesRepository.update).not.toHaveBeenCalled();
+  });
+
+  it("does not persist when the explicit timezone is already a real IANA value", async () => {
+    preferencesRepository.findOne.mockResolvedValue({
+      timezone: "America/Toronto",
+      lastClientTimezone: null,
+    });
+    const next = makeNext();
+    const ctx = makeContext({
+      user: { id: "user-1" },
+      headers: { "x-client-timezone": "Europe/Berlin" },
+    });
+
+    const obs$ = (await interceptor.intercept(ctx, next as any)) as any;
+    await firstValueFrom(obs$);
+
+    expect(preferencesRepository.update).not.toHaveBeenCalled();
+  });
+
+  it("ignores invalid X-Client-Timezone header values", async () => {
+    preferencesRepository.findOne.mockResolvedValue({
+      timezone: "browser",
+      lastClientTimezone: null,
+    });
+    const next = makeNext();
+    const ctx = makeContext({
+      user: { id: "user-1" },
+      headers: { "x-client-timezone": "Not/A_Real_Zone" },
+    });
+
+    const obs$ = (await interceptor.intercept(ctx, next as any)) as any;
+    await firstValueFrom(obs$);
+
+    expect(preferencesRepository.update).not.toHaveBeenCalled();
+  });
+
+  it("swallows persistence failures without breaking the request", async () => {
+    preferencesRepository.findOne.mockResolvedValue({
+      timezone: "browser",
+      lastClientTimezone: null,
+    });
+    preferencesRepository.update.mockRejectedValue(
+      new Error("DB write failed"),
+    );
+    const next = makeNext("body");
+    const ctx = makeContext({
+      user: { id: "user-1" },
+      headers: { "x-client-timezone": "Europe/Berlin" },
+    });
+
+    const obs$ = (await interceptor.intercept(ctx, next as any)) as any;
+    // Request still completes successfully even though the side-effect write threw.
+    await expect(firstValueFrom(obs$)).resolves.toBe("body");
   });
 
   it("ALS context is cleared after the request completes", async () => {
