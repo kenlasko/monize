@@ -10,6 +10,7 @@ import {
   Transaction,
   TransactionStatus,
 } from "../transactions/entities/transaction.entity";
+import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { AccountSubType } from "../accounts/entities/account.entity";
 import { AccountsService } from "../accounts/accounts.service";
 import { TransactionsService } from "../transactions/transactions.service";
@@ -4480,6 +4481,212 @@ describe("InvestmentTransactionsService", () => {
       );
       // Cash side suppressed
       expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("update embedded in split", () => {
+    const splitId = "split-1";
+    const parentTxId = "parent-tx-1";
+    const incomeSplitId = "split-income-1";
+
+    const buildEmbeddedBuy = (overrides: Partial<InvestmentTransaction> = {}) =>
+      ({
+        ...mockBuyTransaction,
+        id: transactionId,
+        transactionId: null,
+        transactionSplitId: splitId,
+        quantity: 10,
+        price: 100,
+        commission: 0,
+        totalAmount: 1000,
+        exchangeRate: 1,
+        ...overrides,
+      }) as InvestmentTransaction;
+
+    const wireSplitFetches = (opts: {
+      embedded: InvestmentTransaction;
+      parentAmount: number;
+      siblingIncomeAmount: number;
+      parentDate?: string;
+    }) => {
+      const split: any = {
+        id: splitId,
+        transactionId: parentTxId,
+        amount: Number(opts.embedded.totalAmount) * -1,
+      };
+      const incomeSplit: any = {
+        id: incomeSplitId,
+        transactionId: parentTxId,
+        amount: opts.siblingIncomeAmount,
+      };
+      const parentTx: any = {
+        id: parentTxId,
+        userId,
+        accountId: cashAccountId,
+        transactionDate: opts.parentDate ?? "2026-01-15",
+        amount: opts.parentAmount,
+      };
+
+      mockQueryRunner.manager.findOne = jest
+        .fn()
+        .mockImplementation((Entity: any, query: any) => {
+          if (Entity === TransactionSplit) return Promise.resolve(split);
+          if (Entity === Transaction) {
+            if (query?.where?.id === parentTxId)
+              return Promise.resolve(parentTx);
+            return transactionRepository.findOne(query);
+          }
+          return investmentTransactionsRepository.findOne(query);
+        });
+      mockQueryRunner.manager.find = jest
+        .fn()
+        .mockImplementation((Entity: any) => {
+          if (Entity === TransactionSplit)
+            return Promise.resolve([split, incomeSplit]);
+          return Promise.resolve([]);
+        });
+
+      return { split, incomeSplit, parentTx };
+    };
+
+    beforeEach(() => {
+      accountsService.findOne.mockImplementation((uid: string, aid: string) => {
+        if (aid === accountId) return Promise.resolve(mockInvestmentAccount);
+        if (aid === cashAccountId) return Promise.resolve(mockCashAccount);
+        return Promise.reject(new NotFoundException("Account not found"));
+      });
+    });
+
+    it("does not create a new cash transaction when price changes", async () => {
+      const embedded = buildEmbeddedBuy();
+      const firstFindQB = createMockQueryBuilder(embedded);
+      const secondFindQB = createMockQueryBuilder({
+        ...embedded,
+        price: 150,
+        totalAmount: 1500,
+      });
+      investmentTransactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(firstFindQB)
+        .mockReturnValueOnce(secondFindQB);
+
+      wireSplitFetches({
+        embedded,
+        parentAmount: 0, // $1000 income + -$1000 investment
+        siblingIncomeAmount: 1000,
+      });
+
+      await service.update(userId, transactionId, { price: 150 });
+
+      // No standalone cash transaction is created on the cash account
+      const cashSaves = transactionRepository.save.mock.calls.filter(
+        ([data]: any[]) =>
+          data && data.accountId === cashAccountId && "amount" in data,
+      );
+      expect(cashSaves.length).toBe(0);
+    });
+
+    it("updates the parent split's amount and parent transaction amount", async () => {
+      const embedded = buildEmbeddedBuy();
+      const firstFindQB = createMockQueryBuilder(embedded);
+      const secondFindQB = createMockQueryBuilder({
+        ...embedded,
+        price: 150,
+        totalAmount: 1500,
+      });
+      investmentTransactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(firstFindQB)
+        .mockReturnValueOnce(secondFindQB);
+
+      wireSplitFetches({
+        embedded,
+        parentAmount: 0,
+        siblingIncomeAmount: 1000,
+      });
+
+      await service.update(userId, transactionId, { price: 150 });
+
+      // Investment split amount = -(10 * 150) = -1500
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        TransactionSplit,
+        splitId,
+        { amount: -1500 },
+      );
+      // Parent total = income (1000) + investment (-1500) = -500
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Transaction,
+        parentTxId,
+        { amount: -500 },
+      );
+    });
+
+    it("applies the delta to the cash account balance", async () => {
+      const embedded = buildEmbeddedBuy();
+      const firstFindQB = createMockQueryBuilder(embedded);
+      const secondFindQB = createMockQueryBuilder({
+        ...embedded,
+        price: 150,
+        totalAmount: 1500,
+      });
+      investmentTransactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(firstFindQB)
+        .mockReturnValueOnce(secondFindQB);
+
+      wireSplitFetches({
+        embedded,
+        parentAmount: 0,
+        siblingIncomeAmount: 1000,
+      });
+
+      await service.update(userId, transactionId, { price: 150 });
+
+      // Old parent amount = 0, new = -500, delta = -500
+      expect(accountsService.updateBalance).toHaveBeenCalledWith(
+        cashAccountId,
+        -500,
+        mockQueryRunner,
+      );
+    });
+
+    it("rejects changing the brokerage account", async () => {
+      const embedded = buildEmbeddedBuy();
+      const firstFindQB = createMockQueryBuilder(embedded);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValueOnce(
+        firstFindQB,
+      );
+
+      await expect(
+        service.update(userId, transactionId, {
+          accountId: "different-account",
+        }),
+      ).rejects.toThrow(/Cannot change the account/);
+    });
+
+    it("rejects changing the transaction date", async () => {
+      const embedded = buildEmbeddedBuy();
+      const firstFindQB = createMockQueryBuilder(embedded);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValueOnce(
+        firstFindQB,
+      );
+
+      await expect(
+        service.update(userId, transactionId, {
+          transactionDate: "2027-01-01",
+        }),
+      ).rejects.toThrow(/Cannot change the date/);
+    });
+
+    it("rejects switching to an action not allowed in splits", async () => {
+      const embedded = buildEmbeddedBuy();
+      const firstFindQB = createMockQueryBuilder(embedded);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValueOnce(
+        firstFindQB,
+      );
+
+      await expect(
+        service.update(userId, transactionId, {
+          action: InvestmentAction.ADD_SHARES,
+        }),
+      ).rejects.toThrow(/not allowed inside a split/);
     });
   });
 

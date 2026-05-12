@@ -32,6 +32,7 @@ import {
   Transaction,
   TransactionStatus,
 } from "../transactions/entities/transaction.entity";
+import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { Account, AccountSubType } from "../accounts/entities/account.entity";
 import { isTransactionInFuture } from "../common/date-utils";
 import { ActionHistoryService } from "../action-history/action-history.service";
@@ -907,6 +908,83 @@ export class InvestmentTransactionsService {
     await queryRunner.manager.remove(investmentTransaction);
   }
 
+  /**
+   * Sync a split transaction's parent after one of its embedded investment
+   * rows changes. Recomputes the split's cash-side amount from the saved
+   * investment row, re-sums all sibling splits to derive the parent
+   * transaction's new amount, and applies the delta to the cash account so
+   * its balance stays consistent.
+   */
+  private async updateEmbeddedSplitParent(
+    queryRunner: QueryRunner,
+    userId: string,
+    saved: InvestmentTransaction,
+    splitId: string,
+  ): Promise<void> {
+    const cashImpactInSecurity = computeInvestmentCashImpact(
+      saved.action,
+      Number(saved.quantity ?? 0),
+      Number(saved.price ?? 0),
+      Number(saved.commission ?? 0),
+    );
+    const newSplitAmount = roundToDecimals(
+      cashImpactInSecurity * Number(saved.exchangeRate),
+      4,
+    );
+
+    const split = await queryRunner.manager.findOne(TransactionSplit, {
+      where: { id: splitId },
+    });
+    if (!split) {
+      throw new NotFoundException(
+        `Transaction split ${splitId} not found for embedded investment update`,
+      );
+    }
+
+    await queryRunner.manager.update(TransactionSplit, splitId, {
+      amount: newSplitAmount,
+    });
+
+    const parentTransaction = await queryRunner.manager.findOne(Transaction, {
+      where: { id: split.transactionId, userId },
+    });
+    if (!parentTransaction) {
+      throw new NotFoundException(
+        `Parent transaction ${split.transactionId} not found for embedded investment update`,
+      );
+    }
+
+    const siblingSplits = await queryRunner.manager.find(TransactionSplit, {
+      where: { transactionId: split.transactionId },
+    });
+    const newParentTotalCents = siblingSplits.reduce((sum, s) => {
+      const amt = s.id === splitId ? newSplitAmount : Number(s.amount);
+      return sum + Math.round(amt * 10000);
+    }, 0);
+    const newParentAmount = newParentTotalCents / 10000;
+    const oldParentAmount = Number(parentTransaction.amount);
+    const delta = roundToDecimals(newParentAmount - oldParentAmount, 4);
+
+    await queryRunner.manager.update(Transaction, parentTransaction.id, {
+      amount: newParentAmount,
+    });
+
+    if (delta !== 0) {
+      if (isTransactionInFuture(parentTransaction.transactionDate)) {
+        await this.accountsService.recalculateCurrentBalance(
+          parentTransaction.accountId,
+          queryRunner,
+        );
+      } else {
+        await this.accountsService.updateBalance(
+          parentTransaction.accountId,
+          delta,
+          queryRunner,
+        );
+      }
+    }
+  }
+
   async findAll(
     userId: string,
     accountIds?: string[],
@@ -1075,14 +1153,11 @@ export class InvestmentTransactionsService {
       accountIds = [...resolvedIds];
     }
 
-    return this.portfolioCalculationService.calculateCapitalGainsByDay(
-      userId,
-      {
-        accountIds,
-        startDate: opts.startDate,
-        endDate: opts.endDate,
-      },
-    );
+    return this.portfolioCalculationService.calculateCapitalGainsByDay(userId, {
+      accountIds,
+      startDate: opts.startDate,
+      endDate: opts.endDate,
+    });
   }
 
   /**
@@ -1284,6 +1359,46 @@ export class InvestmentTransactionsService {
     const oldSecurityId = transaction.securityId;
     const oldTransactionDate = transaction.transactionDate;
     const oldAction = transaction.action;
+    const isEmbedded = transaction.transactionSplitId != null;
+
+    if (isEmbedded) {
+      // Embedded rows are pinned to their parent split: account, funding, and
+      // date come from the parent transaction. Letting the API mutate them
+      // here would silently desync the parent's cash side from the investment
+      // row. Anything else (action, security, qty, price, commission, fx,
+      // description) is fine -- those changes flow back into the parent
+      // split's amount below.
+      if (
+        updateDto.accountId !== undefined &&
+        updateDto.accountId !== transaction.accountId
+      ) {
+        throw new BadRequestException(
+          "Cannot change the account of an investment split; remove the split and add it on the new account instead",
+        );
+      }
+      if (
+        updateDto.fundingAccountId !== undefined &&
+        (updateDto.fundingAccountId || null) !== transaction.fundingAccountId
+      ) {
+        throw new BadRequestException(
+          "Investment splits do not use a separate funding account",
+        );
+      }
+      if (
+        updateDto.transactionDate !== undefined &&
+        updateDto.transactionDate !== transaction.transactionDate
+      ) {
+        throw new BadRequestException(
+          "Cannot change the date of an investment split; edit the parent split transaction date instead",
+        );
+      }
+      const effectiveAction = updateDto.action ?? transaction.action;
+      if (!isInvestmentActionAllowedInSplit(effectiveAction)) {
+        throw new BadRequestException(
+          `Investment action ${effectiveAction} is not allowed inside a split transaction`,
+        );
+      }
+    }
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -1402,12 +1517,26 @@ export class InvestmentTransactionsService {
       // current (possibly zero) balance. Correctness is enforced by the
       // history check below, which replays the affected accounts'
       // transactions in chronological order.
+      //
+      // For embedded splits, the parent transaction owns the cash side --
+      // skip the standalone cash-transaction path and instead reflect the
+      // new cash impact into the parent split + parent transaction amount.
       await this.processTransactionEffectsInTransaction(
         queryRunner,
         userId,
         saved,
         true,
+        !isEmbedded,
       );
+
+      if (isEmbedded) {
+        await this.updateEmbeddedSplitParent(
+          queryRunner,
+          userId,
+          saved,
+          transaction.transactionSplitId!,
+        );
+      }
 
       // Scope validation to the accounts AND securities this edit could
       // have affected (old + new if either changed). Validating every
@@ -1808,7 +1937,9 @@ export class InvestmentTransactionsService {
       });
     }
 
-    query.orderBy("it.transactionDate", "DESC").addOrderBy("it.createdAt", "DESC");
+    query
+      .orderBy("it.transactionDate", "DESC")
+      .addOrderBy("it.createdAt", "DESC");
 
     const rows = await query.getMany();
 
