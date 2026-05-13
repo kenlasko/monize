@@ -23,6 +23,7 @@ vi.mock('recharts', () => ({
 
 vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({
+    formatCurrency: (n: number) => `$${n.toFixed(2)}`,
     formatCurrencyCompact: (n: number) => `$${n.toFixed(0)}`,
     formatCurrencyAxis: (n: number) => `$${n}`,
   }),
@@ -135,9 +136,9 @@ describe('InvestmentValueChart', () => {
     render(<InvestmentValueChart />);
     await screen.findByText('Portfolio Value Over Time');
     // highest=15000, lowest=10000, change=+5000, percent=+50.0%
-    expect(screen.getByText('$15000')).toBeInTheDocument();
-    expect(screen.getByText('$10000')).toBeInTheDocument();
-    expect(screen.getByText('+$5000')).toBeInTheDocument();
+    expect(screen.getByText('$15000.00')).toBeInTheDocument();
+    expect(screen.getByText('$10000.00')).toBeInTheDocument();
+    expect(screen.getByText('+$5000.00')).toBeInTheDocument();
     expect(screen.getByText('+50.0%')).toBeInTheDocument();
   });
 
@@ -226,9 +227,9 @@ describe('InvestmentValueChart', () => {
     render(<InvestmentValueChart />);
     await screen.findByText('Portfolio Value Over Time');
     // highest should be 10000 (Jan 10), not 9000 or 8000 from December
-    expect(screen.getByText('$10000')).toBeInTheDocument();
+    expect(screen.getByText('$10000.00')).toBeInTheDocument();
     // December point (8000) filtered out, so lowest is 9000
-    expect(screen.getByText('$9000')).toBeInTheDocument();
+    expect(screen.getByText('$9000.00')).toBeInTheDocument();
   });
 
   it('shows negative change values correctly', async () => {
@@ -238,7 +239,7 @@ describe('InvestmentValueChart', () => {
     ]);
     render(<InvestmentValueChart />);
     await screen.findByText('Portfolio Value Over Time');
-    expect(screen.getByText('$15000')).toBeInTheDocument();
+    expect(screen.getByText('$15000.00')).toBeInTheDocument();
     expect(screen.getByText('-25.0%')).toBeInTheDocument();
   });
 
@@ -363,7 +364,7 @@ describe('InvestmentValueChart', () => {
       expect(netWorthApi.getInvestmentsDaily).toHaveBeenCalled();
     });
     expect(screen.queryByTestId('intraday-error-banner')).toBeNull();
-    expect(screen.getByText('$9000')).toBeInTheDocument();
+    expect(screen.getByText('$9000.00')).toBeInTheDocument();
   });
 
   it('silently falls back to daily on 1d when the intraday request rejects', async () => {
@@ -490,8 +491,8 @@ describe('InvestmentValueChart', () => {
   it('formats values with foreign currency label when displayCurrency differs', async () => {
     render(<InvestmentValueChart displayCurrency="USD" />);
     await screen.findByText('Portfolio Value Over Time');
-    // fmtVal includes the currency code when foreignCurrency is set
-    expect(screen.getByText('$15000 USD')).toBeInTheDocument();
+    // fmtFull includes the currency code when foreignCurrency is set
+    expect(screen.getByText('$15000.00 USD')).toBeInTheDocument();
   });
 
   it('shows changePercent as 0 when initial value is zero', async () => {

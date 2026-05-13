@@ -50,7 +50,7 @@ interface InvestmentValueChartProps {
 }
 
 export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix }: InvestmentValueChartProps) {
-  const { formatCurrencyCompact, formatCurrencyAxis, formatCurrencyFlag } = useNumberFormat();
+  const { formatCurrency, formatCurrencyCompact, formatCurrencyAxis, formatCurrencyFlag } = useNumberFormat();
   const { defaultCurrency } = useExchangeRates();
   const [chartPoints, setChartPoints] = useState<Array<{ name: string; Value: number }>>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -94,6 +94,14 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix 
     if (foreignCurrency) return `${formatCurrencyCompact(value, foreignCurrency)} ${foreignCurrency}`;
     return formatCurrencyCompact(value);
   }, [foreignCurrency, formatCurrencyCompact]);
+
+  // Summary-card values (Highest / Lowest / Change) use the currency's
+  // standard fraction digits rather than the rounded compact form, so the
+  // user sees the full precision instead of a truncated dollar figure.
+  const fmtFull = useCallback((value: number) => {
+    if (foreignCurrency) return `${formatCurrency(value, foreignCurrency)} ${foreignCurrency}`;
+    return formatCurrency(value);
+  }, [foreignCurrency, formatCurrency]);
 
   const fmtAxis = useCallback((value: number) => {
     if (foreignCurrency) return formatCurrencyAxis(value, foreignCurrency);
@@ -432,13 +440,13 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix 
         <div>
           <div className="text-xs text-gray-500 dark:text-gray-400">Highest Value</div>
           <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-            {fmtVal(summary.highest)}
+            {fmtFull(summary.highest)}
           </div>
         </div>
         <div>
           <div className="text-xs text-gray-500 dark:text-gray-400">Lowest Value</div>
           <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-            {fmtVal(summary.lowest)}
+            {fmtFull(summary.lowest)}
           </div>
         </div>
         <div>
@@ -446,7 +454,7 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix 
           <div className={`text-lg font-bold ${
             summary.change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
           }`}>
-            {summary.change >= 0 ? '+' : ''}{fmtVal(summary.change)}
+            {summary.change >= 0 ? '+' : ''}{fmtFull(summary.change)}
           </div>
         </div>
         <div>
