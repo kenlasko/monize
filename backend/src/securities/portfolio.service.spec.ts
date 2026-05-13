@@ -2469,6 +2469,44 @@ describe("PortfolioService", () => {
       const expectedCagr = (Math.pow(10000 / 9000, 1 / 2) - 1) * 100;
       expect(result.cagr).toBeCloseTo(expectedCagr, 1);
     });
+
+    it("returns null when the holding period is less than one year", async () => {
+      accountsRepository.find.mockResolvedValue([
+        mockBrokerageAccount,
+        mockCashAccount,
+      ]);
+      holdingsRepository.find.mockResolvedValue([mockHoldingVFV]);
+      securityPriceRepository.query.mockResolvedValue([
+        { security_id: "sec-2", close_price: "100", price_date: "2026-02-07" },
+      ]);
+
+      // Earliest transaction was a few days ago — annualizing a short
+      // period explodes into nonsensical CAGR values, so the service
+      // should report null instead.
+      const fewDaysAgo = new Date();
+      fewDaysAgo.setDate(fewDaysAgo.getDate() - 3);
+      const earliestDate = fewDaysAgo.toISOString().split("T")[0];
+
+      let queryCallCount = 0;
+      accountsRepository.query.mockImplementation(() => {
+        queryCallCount++;
+        if (queryCallCount === 1) {
+          return [
+            {
+              account_id: "acct-brokerage-1",
+              buys: "1000",
+              sells: "0",
+              income: "0",
+            },
+          ];
+        }
+        return [{ earliest: earliestDate }];
+      });
+
+      const result = await service.getPortfolioSummary(userId);
+
+      expect(result.cagr).toBeNull();
+    });
   });
 
   describe("getAccountMarketValues", () => {

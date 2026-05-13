@@ -1309,7 +1309,11 @@ export class PortfolioCalculationService {
     const now = new Date();
     const years =
       (now.getTime() - earliest.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
-    if (years < 1 / 365.25) return null; // Less than 1 day of history
+    // CAGR annualizes the total return, so for periods shorter than a year
+    // it extrapolates a few days of price movement into a multi-decade
+    // growth rate. The math is correct but the number is meaningless and
+    // can run into the thousands of percent (or worse) for fresh accounts.
+    if (years < 1) return null;
 
     return (
       (Math.pow(totalPortfolioValue / totalNetInvested, 1 / years) - 1) * 100
