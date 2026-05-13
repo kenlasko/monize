@@ -13,6 +13,7 @@ export interface MultiSelectOption {
 
 interface MultiSelectProps {
   label?: string;
+  ariaLabel?: string;
   options: MultiSelectOption[];
   value: string[];
   onChange: (values: string[]) => void;
@@ -26,6 +27,7 @@ interface MultiSelectProps {
 
 export function MultiSelect({
   label,
+  ariaLabel,
   options,
   value,
   onChange,
@@ -253,6 +255,7 @@ export function MultiSelect({
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
+        aria-label={ariaLabel}
         className={cn(
           'block w-full rounded-md border border-gray-300 shadow-sm px-3 py-2 text-left',
           'focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none',

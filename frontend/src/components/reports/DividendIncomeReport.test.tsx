@@ -2,6 +2,34 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@/test/render';
 import { DividendIncomeReport } from './DividendIncomeReport';
 
+// Helpers for driving the account MultiSelect (which renders its dropdown via a
+// portal and toggles with checkboxes rather than a native <select>).
+function openAccountFilter() {
+  fireEvent.click(screen.getByLabelText('Filter by account'));
+}
+async function toggleAccountByName(name: string) {
+  openAccountFilter();
+  const labelText = await screen.findByText(name);
+  const labelEl = labelText.closest('label');
+  if (!labelEl) throw new Error(`No <label> wrapping account option "${name}"`);
+  const checkbox = labelEl.querySelector('input[type="checkbox"]');
+  if (!checkbox) throw new Error(`No checkbox for account option "${name}"`);
+  fireEvent.click(checkbox);
+  // Close the dropdown so subsequent queries don't pick up portal-rendered options
+  fireEvent.click(screen.getByLabelText('Filter by account'));
+}
+async function getAccountOptionLabels(): Promise<string[]> {
+  openAccountFilter();
+  // The dropdown lists each option inside a <label>; the visible text is in a
+  // descendant <span>. Read every checkbox's enclosing label's text.
+  const checkboxes = await screen.findAllByRole('checkbox');
+  const labels = checkboxes
+    .map((cb) => cb.closest('label')?.textContent?.trim() ?? '')
+    .filter(Boolean);
+  fireEvent.click(screen.getByLabelText('Filter by account'));
+  return labels;
+}
+
 vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({
     formatCurrency: (n: number, _currency?: string) => `$${n.toFixed(2)}`,
@@ -304,8 +332,7 @@ describe('DividendIncomeReport', () => {
     fireEvent.change(securitySelect1, { target: { value: 'sec-a' } });
     expect(securitySelect1.value).toBe('sec-a');
 
-    const accountSelect = screen.getByLabelText('Filter by account') as HTMLSelectElement;
-    fireEvent.change(accountSelect, { target: { value: 'acc-2' } });
+    await toggleAccountByName('RRSP');
 
     // Wait out the reload loading state and re-query the security select.
     await waitFor(async () => {
@@ -1384,8 +1411,8 @@ describe('DividendIncomeReport', () => {
     render(<DividendIncomeReport />);
 
     // Wait for data to load, then select the USD account
-    const accountSelect = (await screen.findByLabelText('Filter by account')) as HTMLSelectElement;
-    fireEvent.change(accountSelect, { target: { value: 'acc-1' } });
+    await screen.findByLabelText('Filter by account');
+    await toggleAccountByName('USD Account');
 
     await waitFor(() => {
       // In single-account mode with a foreign currency the label shows the currency code
@@ -1463,8 +1490,7 @@ describe('DividendIncomeReport', () => {
 
     // Now reload with no transactions for acc-2 — sec-a drops from available set
     mockGetTransactions.mockResolvedValue({ data: [], pagination: { hasMore: false } });
-    const accountSelect = screen.getByLabelText('Filter by account') as HTMLSelectElement;
-    fireEvent.change(accountSelect, { target: { value: 'acc-2' } });
+    await toggleAccountByName('RRSP');
 
     // Security selection should be cleared automatically
     await waitFor(() => {
@@ -1705,12 +1731,38 @@ describe('DividendIncomeReport', () => {
 
     render(<DividendIncomeReport />);
 
-    const accountSelect = (await screen.findByLabelText('Filter by account')) as HTMLSelectElement;
+    await screen.findByLabelText('Filter by account');
+    // INVESTMENT_BROKERAGE accounts are filtered out; only INVESTMENT_CASH appears
+    await waitFor(async () => {
+      const labels = await getAccountOptionLabels();
+      expect(labels).toContain('TFSA');
+      expect(labels.some((l) => /Brokerage/i.test(l))).toBe(false);
+    });
+  });
+
+  it('sends a comma-separated accountIds param when multiple accounts are selected', async () => {
+    mockGetTransactions.mockResolvedValue({ data: [], pagination: { hasMore: false } });
+    mockGetInvestmentAccounts.mockResolvedValue([
+      { id: 'acc-1', name: 'TFSA', currencyCode: 'CAD', accountSubType: 'INVESTMENT_CASH' },
+      { id: 'acc-2', name: 'RRSP', currencyCode: 'CAD', accountSubType: 'INVESTMENT_CASH' },
+      { id: 'acc-3', name: 'Margin', currencyCode: 'CAD', accountSubType: 'INVESTMENT_CASH' },
+    ]);
+    mockGetCapitalGains.mockResolvedValue([]);
+
+    render(<DividendIncomeReport />);
+    await screen.findByLabelText('Filter by account');
+
+    mockGetTransactions.mockClear();
+    mockGetCapitalGains.mockClear();
+
+    await toggleAccountByName('TFSA');
+    await toggleAccountByName('RRSP');
+
     await waitFor(() => {
-      // INVESTMENT_BROKERAGE accounts are filtered out; only INVESTMENT_CASH appears
-      const values = Array.from(accountSelect.options).map((o) => o.value);
-      expect(values).toContain('acc-1');
-      expect(values).not.toContain('acc-2');
+      const lastCgCall = mockGetCapitalGains.mock.calls.at(-1)?.[0];
+      expect(lastCgCall?.accountIds).toBe('acc-1,acc-2');
+      const lastTxCall = mockGetTransactions.mock.calls.at(-1)?.[0];
+      expect(lastTxCall?.accountIds).toBe('acc-1,acc-2');
     });
   });
 
@@ -1743,9 +1795,10 @@ describe('DividendIncomeReport', () => {
 
     render(<DividendIncomeReport />);
 
-    // Wait for initial load, then select the account
-    const accountSelect = (await screen.findByLabelText('Filter by account')) as HTMLSelectElement;
-    fireEvent.change(accountSelect, { target: { value: 'acc-1' } });
+    // Wait for initial load, then select the account (its display label has
+    // the " - Brokerage" suffix stripped, so we toggle by the cleaned name).
+    await screen.findByLabelText('Filter by account');
+    await toggleAccountByName('My TFSA');
 
     // Wait for the reload to complete and By Security button to appear
     await waitFor(() => {

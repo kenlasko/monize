@@ -23,6 +23,7 @@ import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useDateRange } from '@/hooks/useDateRange';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
+import { MultiSelect } from '@/components/ui/MultiSelect';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
 import { exportToCsv } from '@/lib/csv-export';
@@ -80,8 +81,12 @@ export function DividendIncomeReport() {
   const [capitalGains, setCapitalGains] = useState<CapitalGainEntry[]>([]);
   const [dailyCapitalGains, setDailyCapitalGains] = useState<CapitalGainEntry[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [selectedAccountId, setSelectedAccountId] = useState<string>('');
+  const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
   const [selectedSecurityId, setSelectedSecurityId] = useState<string>('');
+  // When exactly one account is selected we keep its native currency; with no
+  // selection (all accounts) or several selected accounts we may have mixed
+  // currencies, so we convert into the user's default currency.
+  const isSingleAccount = selectedAccountIds.length === 1;
   const { dateRange, setDateRange, resolvedRange, isValid } = useDateRange({ defaultRange: '1y', alignment: 'month' });
   const [isLoading, setIsLoading] = useState(true);
   const [viewType, setViewType] = useState<'monthly' | 'daily' | 'bySecurity'>('monthly');
@@ -168,37 +173,39 @@ export function DividendIncomeReport() {
   }, [dailyCapitalGains, selectedSecurityId]);
 
   // When a single account is selected, show in native currency; otherwise convert to default
-  const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
+  const selectedAccount = isSingleAccount
+    ? accounts.find((a) => a.id === selectedAccountIds[0])
+    : undefined;
   const displayCurrency = selectedAccount?.currencyCode || defaultCurrency;
   const isForeign = displayCurrency !== defaultCurrency;
 
   const getTxAmount = useCallback((tx: InvestmentTransaction): number => {
     const amount = Math.abs(tx.totalAmount);
-    if (selectedAccountId) {
+    if (isSingleAccount) {
       // Single account selected: native currency, no conversion needed
       return amount;
     }
-    // All accounts: convert to default currency
+    // All accounts or multiple selected: convert to default currency
     const txCurrency = accountCurrencyMap.get(tx.accountId) || defaultCurrency;
     return convertToDefault(amount, txCurrency);
-  }, [selectedAccountId, accountCurrencyMap, defaultCurrency, convertToDefault]);
+  }, [isSingleAccount, accountCurrencyMap, defaultCurrency, convertToDefault]);
 
   // Backend already returns each capital gain entry in the holding account's
-  // currency. Convert to the default currency for the All-Accounts view; pass
-  // through otherwise.
+  // currency. Convert to the default currency for multi-account views; pass
+  // through when a single account is selected.
   const convertCapitalGain = useCallback((entry: CapitalGainEntry): number => {
-    if (selectedAccountId) return entry.totalCapitalGain;
+    if (isSingleAccount) return entry.totalCapitalGain;
     return convertToDefault(entry.totalCapitalGain, entry.accountCurrencyCode || defaultCurrency);
-  }, [selectedAccountId, defaultCurrency, convertToDefault]);
+  }, [isSingleAccount, defaultCurrency, convertToDefault]);
 
   // Same conversion as convertCapitalGain but applied to an arbitrary amount
   // denominated in the entry's account currency (e.g. start/end market values).
   const convertFromAccountCurrency = useCallback(
     (amount: number, accountCurrencyCode: string | null): number => {
-      if (selectedAccountId) return amount;
+      if (isSingleAccount) return amount;
       return convertToDefault(amount, accountCurrencyCode || defaultCurrency);
     },
-    [selectedAccountId, defaultCurrency, convertToDefault],
+    [isSingleAccount, defaultCurrency, convertToDefault],
   );
 
   const fmtValue = useCallback((value: number): string => {
@@ -219,8 +226,11 @@ export function DividendIncomeReport() {
         // Capital gains require a window; fall back to a wide window when the
         // user picks "All Time" so the backend still has bounds to enumerate.
         const cgStart = start || '1970-01-01';
+        const accountIdsParam = selectedAccountIds.length > 0
+          ? selectedAccountIds.join(',')
+          : undefined;
         const capitalGainsPromise = investmentsApi.getCapitalGains({
-          accountIds: selectedAccountId || undefined,
+          accountIds: accountIdsParam,
           startDate: cgStart,
           endDate: end,
         });
@@ -231,7 +241,7 @@ export function DividendIncomeReport() {
         let hasMore = true;
         while (hasMore) {
           const result = await investmentsApi.getTransactions({
-            accountIds: selectedAccountId || undefined,
+            accountIds: accountIdsParam,
             startDate: start || undefined,
             endDate: end,
             limit: 200,
@@ -267,7 +277,7 @@ export function DividendIncomeReport() {
       }
     };
     loadData();
-  }, [selectedAccountId, resolvedRange, isValid]);
+  }, [selectedAccountIds, resolvedRange, isValid]);
 
   // Lazy-load daily capital gains only when the user switches to the daily view.
   useEffect(() => {
@@ -277,7 +287,9 @@ export function DividendIncomeReport() {
         const { start, end } = resolvedRange;
         const cgStart = start || '1970-01-01';
         const data = await investmentsApi.getCapitalGains({
-          accountIds: selectedAccountId || undefined,
+          accountIds: selectedAccountIds.length > 0
+            ? selectedAccountIds.join(',')
+            : undefined,
           startDate: cgStart,
           endDate: end,
           granularity: 'day',
@@ -288,7 +300,7 @@ export function DividendIncomeReport() {
       }
     };
     load();
-  }, [viewType, selectedAccountId, resolvedRange, isValid]);
+  }, [viewType, selectedAccountIds, resolvedRange, isValid]);
 
   const monthlyData = useMemo((): MonthlyIncome[] => {
     const { start, end } = resolvedRange;
@@ -954,27 +966,26 @@ export function DividendIncomeReport() {
       {/* Controls */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
         <div className="flex flex-wrap gap-3 items-center">
-          <select
-            value={selectedAccountId}
-            onChange={(e) => {
-              setSelectedAccountId(e.target.value);
-              // Reset security filter when the account changes so stale
-              // selections can't hide all rows.
-              setSelectedSecurityId('');
-            }}
-            className="max-w-48 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm"
-            aria-label="Filter by account"
-          >
-            <option value="">All Accounts</option>
-            {accounts
-              .filter((a) => a.accountSubType !== 'INVESTMENT_BROKERAGE')
-              .sort((a, b) => a.name.localeCompare(b.name))
-              .map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.name.replace(/ - (Brokerage|Cash)$/, '')}
-                </option>
-              ))}
-          </select>
+          <div className="w-48">
+            <MultiSelect
+              ariaLabel="Filter by account"
+              placeholder="All Accounts"
+              options={accounts
+                .filter((a) => a.accountSubType !== 'INVESTMENT_BROKERAGE')
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((account) => ({
+                  value: account.id,
+                  label: account.name.replace(/ - (Brokerage|Cash)$/, ''),
+                }))}
+              value={selectedAccountIds}
+              onChange={(values) => {
+                setSelectedAccountIds(values);
+                // Reset security filter when the account selection changes so
+                // stale selections can't hide all rows.
+                setSelectedSecurityId('');
+              }}
+            />
+          </div>
           <select
             value={selectedSecurityId}
             onChange={(e) => setSelectedSecurityId(e.target.value)}
