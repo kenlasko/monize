@@ -161,9 +161,7 @@ const InvestmentTransactionRow = memo(function InvestmentTransactionRow({
         {formatDate(tx.transactionDate)}
       </td>
       <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 hidden lg:table-cell`}>
-        <div className="truncate max-w-[200px]" title={accountName}>
-          {accountName || '-'}
-        </div>
+        <span title={accountName}>{accountName || '-'}</span>
       </td>
       <td className={`${cellPadding} whitespace-nowrap`}>
         <span className={`text-sm font-medium ${actionInfo.color}`}>

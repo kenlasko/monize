@@ -330,6 +330,179 @@ describe('InvestmentTransactionForm', () => {
     });
   });
 
+  it('shows Deposit To select for DIVIDEND action', async () => {
+    render(<InvestmentTransactionForm accounts={accounts} />);
+    await waitFor(() => {
+      expect(screen.getByText('Brokerage Account')).toBeInTheDocument();
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Transaction Type'), {
+        target: { value: 'DIVIDEND' },
+      });
+    });
+    await waitFor(() => {
+      expect(screen.getByLabelText('Deposit To (optional)')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Funds From (optional)')).not.toBeInTheDocument();
+  });
+
+  it('shows Deposit To select for INTEREST and CAPITAL_GAIN actions', async () => {
+    render(<InvestmentTransactionForm accounts={accounts} />);
+    await waitFor(() => {
+      expect(screen.getByText('Brokerage Account')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Transaction Type'), {
+        target: { value: 'INTEREST' },
+      });
+    });
+    await waitFor(() => {
+      expect(screen.getByLabelText('Deposit To (optional)')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Transaction Type'), {
+        target: { value: 'CAPITAL_GAIN' },
+      });
+    });
+    await waitFor(() => {
+      expect(screen.getByLabelText('Deposit To (optional)')).toBeInTheDocument();
+    });
+  });
+
+  it('lists cash-holding accounts as dividend deposit destinations', async () => {
+    const investmentCash = {
+      id: 'a4', name: 'RRSP Cash', accountType: 'INVESTMENT',
+      accountSubType: 'INVESTMENT_CASH', currencyCode: 'CAD',
+    } as any;
+    const savings = {
+      id: 'a5', name: 'High-Yield Savings', accountType: 'SAVINGS',
+      accountSubType: null, currencyCode: 'CAD',
+    } as any;
+    const creditCard = {
+      id: 'a6', name: 'Visa', accountType: 'CREDIT_CARD',
+      accountSubType: null, currencyCode: 'CAD',
+    } as any;
+
+    render(
+      <InvestmentTransactionForm
+        accounts={accounts}
+        allAccounts={[...accounts, investmentCash, savings, creditCard]}
+      />,
+    );
+    await waitFor(() => {
+      expect(screen.getByText('Brokerage Account')).toBeInTheDocument();
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Transaction Type'), {
+        target: { value: 'DIVIDEND' },
+      });
+    });
+    await waitFor(() => {
+      expect(screen.getByLabelText('Deposit To (optional)')).toBeInTheDocument();
+    });
+
+    const select = screen.getByLabelText('Deposit To (optional)');
+    const optionTexts = Array.from(select.querySelectorAll('option')).map(
+      (o) => o.textContent,
+    );
+    expect(optionTexts).toContain('Main Chequing (CAD)');
+    expect(optionTexts).toContain('Cash Account (CAD)');
+    expect(optionTexts).toContain('RRSP Cash (CAD)');
+    expect(optionTexts).toContain('High-Yield Savings (CAD)');
+    expect(optionTexts).not.toContain('Visa (CAD)');
+    expect(optionTexts).not.toContain('RRSP Brokerage (CAD)');
+  });
+
+  it('forwards the selected fundingAccountId when creating a DIVIDEND transaction', async () => {
+    render(<InvestmentTransactionForm accounts={accounts} />);
+    await waitFor(() => {
+      expect(screen.getByText('Brokerage Account')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Brokerage Account'), {
+        target: { value: 'a1' },
+      });
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Transaction Type'), {
+        target: { value: 'DIVIDEND' },
+      });
+    });
+    await waitFor(() => {
+      expect(screen.getByLabelText('Security')).toBeInTheDocument();
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Security'), {
+        target: { value: 'sec-1' },
+      });
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Deposit To (optional)'), {
+        target: { value: 'a2' },
+      });
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText(/Amount/), {
+        target: { value: '125' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Create Transaction'));
+    });
+
+    await waitFor(() => {
+      expect(investmentsApi.createTransaction).toHaveBeenCalled();
+    });
+    const payload = vi.mocked(investmentsApi.createTransaction).mock.calls[0][0] as any;
+    expect(payload.action).toBe('DIVIDEND');
+    expect(payload.fundingAccountId).toBe('a2');
+  });
+
+  it('clears a stale fundingAccountId when switching to an action that does not accept one', async () => {
+    render(<InvestmentTransactionForm accounts={accounts} />);
+    await waitFor(() => {
+      expect(screen.getByText('Brokerage Account')).toBeInTheDocument();
+    });
+    // Pick a funding account on BUY first
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Brokerage Account'), {
+        target: { value: 'a1' },
+      });
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Funds From (optional)'), {
+        target: { value: 'a2' },
+      });
+    });
+
+    // Switch to ADD_SHARES which doesn't accept a funding/destination account
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Transaction Type'), {
+        target: { value: 'ADD_SHARES' },
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByLabelText('Funds From (optional)')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Deposit To (optional)')).not.toBeInTheDocument();
+    });
+
+    // Now switch back to BUY: funding should be empty (default), not stale 'a2'
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Transaction Type'), {
+        target: { value: 'BUY' },
+      });
+    });
+    await waitFor(() => {
+      const sel = screen.getByLabelText('Funds From (optional)') as HTMLSelectElement;
+      expect(sel.value).toBe('');
+    });
+  });
+
   it('uses allAccounts for funding dropdown when provided', async () => {
     const extraAccount = {
       id: 'a4', name: 'Savings', accountType: 'SAVINGS',

@@ -91,7 +91,14 @@ const quantityOnlyActions: InvestmentAction[] = ['ADD_SHARES', 'REMOVE_SHARES'];
 const amountOnlyActions: InvestmentAction[] = ['DIVIDEND', 'INTEREST', 'CAPITAL_GAIN', 'TRANSFER_IN', 'TRANSFER_OUT'];
 
 // Actions that can have an external funding account (where funds come from/go to)
-const fundingAccountActions: InvestmentAction[] = ['BUY', 'SELL'];// Actions that post a cash transaction against the cash/funding account.
+const fundingAccountActions: InvestmentAction[] = ['BUY', 'SELL'];
+
+// Actions that deposit cash into an account and can target a destination cash
+// account other than the brokerage's linked cash account (e.g. a dividend paid
+// directly into a chequing account).
+const cashDestinationActions: InvestmentAction[] = ['DIVIDEND', 'INTEREST', 'CAPITAL_GAIN'];
+
+// Actions that post a cash transaction against the cash/funding account.
 // Only these need exchange rate handling when security and cash currencies differ.
 const cashPostingActions: InvestmentAction[] = [
   'BUY',
@@ -168,6 +175,19 @@ export function InvestmentTransactionForm({
         a.accountSubType !== 'INVESTMENT_BROKERAGE' &&
         a.accountType !== 'CASH' &&
         a.accountType !== 'ASSET'
+      )
+      .sort((a, b) => a.name.localeCompare(b.name)),
+    [allAccounts, accounts]
+  );
+
+  // Accounts that can receive cash deposits (dividend, interest, capital gain)
+  const cashDestinationAccountsList = useMemo(
+    () => [...(allAccounts || accounts)]
+      .filter((a) =>
+        a.accountType === 'CHEQUING' ||
+        a.accountType === 'SAVINGS' ||
+        a.accountType === 'CASH' ||
+        a.accountSubType === 'INVESTMENT_CASH'
       )
       .sort((a, b) => a.name.localeCompare(b.name)),
     [allAccounts, accounts]
@@ -256,11 +276,13 @@ export function InvestmentTransactionForm({
   }, [watchedAccountId, accounts, defaultCurrency]);
 
   // Resolve the cash account that will actually receive/provide the funds.
-  // For BUY/SELL with a funding account override, that's the chosen account;
+  // For BUY/SELL with a funding account override, or for dividend/interest/
+  // capital gain with a destination override, that's the chosen account;
   // otherwise it's the brokerage's linked investment cash account.
   const cashAccount = useMemo(() => {
     if (
-      fundingAccountActions.includes(watchedAction) &&
+      (fundingAccountActions.includes(watchedAction) ||
+        cashDestinationActions.includes(watchedAction)) &&
       watchedFundingAccountId
     ) {
       return allAccountsSource.find((a) => a.id === watchedFundingAccountId) ?? null;
@@ -395,6 +417,18 @@ export function InvestmentTransactionForm({
     setValue('quantity', splitRatio, { shouldDirty: true, shouldValidate: false });
   }, [watchedAction, splitRatio, setValue]);
 
+  // Clear a stale fundingAccountId when switching to an action that doesn't
+  // accept one, so the value doesn't silently carry over to a hidden field.
+  useEffect(() => {
+    if (
+      !fundingAccountActions.includes(watchedAction) &&
+      !cashDestinationActions.includes(watchedAction) &&
+      watchedFundingAccountId
+    ) {
+      setValue('fundingAccountId', '', { shouldDirty: false });
+    }
+  }, [watchedAction, watchedFundingAccountId, setValue]);
+
   // Pull the holding state as it was just before this split's transaction
   // date, so the preview's "Before" reflects what the user actually held at
   // that point in time -- not the live holdings (which already include this
@@ -488,9 +522,12 @@ export function InvestmentTransactionForm({
         securityId: securityRequiredActions.includes(action)
           ? data.securityId
           : undefined,
-        fundingAccountId: fundingAccountActions.includes(action) && data.fundingAccountId
-          ? data.fundingAccountId
-          : undefined,
+        fundingAccountId:
+          (fundingAccountActions.includes(action) ||
+            cashDestinationActions.includes(action)) &&
+          data.fundingAccountId
+            ? data.fundingAccountId
+            : undefined,
         quantity: isSplit
           ? ratio
           : (quantityPriceActions.includes(action) || quantityOnlyActions.includes(action))
@@ -535,6 +572,7 @@ export function InvestmentTransactionForm({
   const isAmountOnly = amountOnlyActions.includes(watchedAction);
   const isSplit = watchedAction === 'SPLIT';
   const canHaveFundingAccount = fundingAccountActions.includes(watchedAction);
+  const canHaveCashDestination = cashDestinationActions.includes(watchedAction);
 
   const splitPreview = useMemo(() => {
     if (!isSplit || !splitHoldingAt || splitRatio <= 0) return null;
@@ -590,10 +628,25 @@ export function InvestmentTransactionForm({
         <Select
           label={watchedAction === 'BUY' ? 'Funds From (optional)' : 'Funds To (optional)'}
           options={[
-            { value: '', label: 'Default cash account' },
+            { value: '', label: 'Linked cash account (default)' },
             ...fundingAccounts.map((a) => ({
               value: a.id,
               label: a.name,
+            })),
+          ]}
+          {...register('fundingAccountId')}
+        />
+      )}
+
+      {/* Destination Cash Account - for Dividend/Interest/Capital Gain */}
+      {canHaveCashDestination && (
+        <Select
+          label="Deposit To (optional)"
+          options={[
+            { value: '', label: 'Linked cash account (default)' },
+            ...cashDestinationAccountsList.map((a) => ({
+              value: a.id,
+              label: `${a.name} (${a.currencyCode})`,
             })),
           ]}
           {...register('fundingAccountId')}
