@@ -31,6 +31,14 @@ export type IntradayRange = "1d" | "5d" | "1mo";
 export interface IntradayPoint {
   /** Timestamp of the bar (UTC). */
   timestamp: Date;
+  /**
+   * Open price at the bar (in the security's currency, GBX-converted to GBP).
+   * Optional / null when the provider doesn't expose per-bar opens. Consumers
+   * use this for the first bar of the day so the chart's starting value
+   * matches the day's official opening price rather than the first bar's
+   * close.
+   */
+  open?: number | null;
   /** Close price at the bar (in the security's currency, GBX-converted to GBP). */
   close: number;
 }

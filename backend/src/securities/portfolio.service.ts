@@ -1010,6 +1010,7 @@ export class PortfolioService {
             rateCache.get(`${h.currencyCode}->${displayCurrency}`) ??
             (h.currencyCode === displayCurrency ? 1 : 1),
           times: points.map((p) => p.timestamp.getTime()),
+          opens: points.map((p) => p.open),
           closes: points.map((p) => p.close),
         };
       })
@@ -1032,12 +1033,27 @@ export class PortfolioService {
         // Backfill: when this security's first bar is later than the current
         // grid timestamp (e.g. one holding is on an exchange with thinner
         // intraday coverage, or just has a slightly later first-bar than its
-        // peers), value it at its earliest known close. Without this, every
+        // peers), value it at its earliest known open. Without this, every
         // unstarted series contributes 0 and the aggregate jumps up the
         // moment each one's first bar arrives — which is exactly the
         // "significant jump" the chart used to show on multi-account views.
-        const close = cursors[i] < 0 ? src.closes[0] : src.closes[cursors[i]];
-        const valueInDisplay = src.quantity * close * src.fxRate;
+        //
+        // At the very first bar of each security (cursor=0 and ts equals the
+        // first bar's timestamp) we also use that bar's open rather than its
+        // close, so the chart's starting value matches the day's official
+        // opening price (the same one stored in security_prices.open_price)
+        // rather than the price at the end of the first 1-minute bar.
+        const atFirstBar =
+          cursors[i] === 0 && ts === src.times[0] && src.opens[0] != null;
+        let price: number;
+        if (cursors[i] < 0) {
+          price = src.opens[0] ?? src.closes[0];
+        } else if (atFirstBar) {
+          price = src.opens[0] as number;
+        } else {
+          price = src.closes[cursors[i]];
+        }
+        const valueInDisplay = src.quantity * price * src.fxRate;
         totalCents += Math.round(valueInDisplay * 10000);
       }
       points.push({

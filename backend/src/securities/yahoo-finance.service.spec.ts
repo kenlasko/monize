@@ -1522,7 +1522,14 @@ describe("YahooFinanceService", () => {
             {
               meta: { currency: "USD" },
               timestamp: [1714989000, 1714989060, 1714989120],
-              indicators: { quote: [{ close: [100, 101, 102] }] },
+              indicators: {
+                quote: [
+                  {
+                    open: [99.5, 100.8, 101.4],
+                    close: [100, 101, 102],
+                  },
+                ],
+              },
             },
           ],
         },
@@ -1535,11 +1542,56 @@ describe("YahooFinanceService", () => {
 
       expect(result).toHaveLength(3);
       expect(result![0].close).toBe(100);
+      expect(result![0].open).toBe(99.5);
       expect(result![2].timestamp.getTime()).toBe(1714989120 * 1000);
       expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining("interval=1m&range=1d"),
         expect.any(Object),
       );
+    });
+
+    it("returns null open when the provider omits the open array", async () => {
+      mockFetchResponse({
+        chart: {
+          result: [
+            {
+              meta: { currency: "USD" },
+              timestamp: [1, 2],
+              indicators: { quote: [{ close: [100, 101] }] },
+            },
+          ],
+        },
+      });
+
+      const result = await service.fetchIntradaySeries("AAPL", null, {
+        interval: "1m",
+        range: "1d",
+      });
+
+      expect(result![0].open).toBeNull();
+      expect(result![0].close).toBe(100);
+    });
+
+    it("converts GBX opens to GBP alongside closes", async () => {
+      mockFetchResponse({
+        chart: {
+          result: [
+            {
+              meta: { currency: "GBX" },
+              timestamp: [1],
+              indicators: { quote: [{ open: [199], close: [200] }] },
+            },
+          ],
+        },
+      });
+
+      const result = await service.fetchIntradaySeries("BARC.L", "LSE", {
+        interval: "1m",
+        range: "1d",
+      });
+
+      expect(result![0].open).toBe(1.99);
+      expect(result![0].close).toBe(2);
     });
 
     it("forward-fills null closes so multi-security alignment works", async () => {

@@ -2675,6 +2675,111 @@ describe("PortfolioService", () => {
       expect(result.points[1].value).toBeCloseTo(10590, 4);
     });
 
+    it("uses each security's first-bar open for the chart's starting value", async () => {
+      // Regression test: previously the chart's first point used the close
+      // of the first 1-minute bar, which differs from the day's official
+      // opening price stored in security_prices.open_price. The starting
+      // value must match the opening price reflected in the Security Prices
+      // table so users can reconcile the chart against their own math.
+      accountsRepository.find.mockResolvedValue([
+        mockBrokerageAccount,
+        mockCashAccount,
+      ]);
+      holdingsRepository.find.mockResolvedValue([
+        mockHoldingAAPL,
+        mockHoldingVFV,
+      ]);
+
+      const ts1 = new Date("2026-05-06T13:30:00.000Z");
+      const ts2 = new Date("2026-05-06T13:31:00.000Z");
+
+      yahooFinanceService.fetchIntradaySeries.mockImplementation(
+        async (symbol: string) => {
+          if (symbol === "AAPL") {
+            return [
+              { timestamp: ts1, open: 99, close: 100 },
+              { timestamp: ts2, open: 100, close: 110 },
+            ];
+          }
+          if (symbol === "VFV.TO") {
+            return [
+              { timestamp: ts1, open: 79, close: 80 },
+              { timestamp: ts2, open: 80, close: 81 },
+            ];
+          }
+          return null;
+        },
+      );
+
+      exchangeRateService.getLatestRate.mockImplementation(
+        async (from: string, to: string) => {
+          if (from === "USD" && to === "CAD") return 1.4;
+          return null;
+        },
+      );
+
+      const result = await service.getIntradayValueSeries(userId, {
+        range: "1d",
+      });
+
+      // First bar uses the open price of each security: AAPL=99, VFV=79.
+      // ts1: 10 * 99 * 1.4 + 50 * 79 + 5000 cash = 1386 + 3950 + 5000 = 10336
+      expect(result.points[0].value).toBeCloseTo(10336, 4);
+      // Subsequent bars still use closes — ts2 cursor is at index 1, which
+      // is not the first bar, so closes[1] is used: AAPL=110, VFV=81.
+      // ts2: 10 * 110 * 1.4 + 50 * 81 + 5000 cash = 10590
+      expect(result.points[1].value).toBeCloseTo(10590, 4);
+    });
+
+    it("backfills a late-starting series at that series' open price", async () => {
+      // When one holding's first bar is later than the unified grid's first
+      // timestamp, the late starter is valued at its OWN open price for any
+      // earlier grid points -- not at zero, and not at its later close.
+      accountsRepository.find.mockResolvedValue([
+        mockBrokerageAccount,
+        mockCashAccount,
+      ]);
+      holdingsRepository.find.mockResolvedValue([
+        mockHoldingAAPL,
+        mockHoldingVFV,
+      ]);
+
+      const ts1 = new Date("2026-05-06T13:30:00.000Z");
+      const ts2 = new Date("2026-05-06T13:31:00.000Z");
+
+      yahooFinanceService.fetchIntradaySeries.mockImplementation(
+        async (symbol: string) => {
+          if (symbol === "AAPL") {
+            // Starts at ts1.
+            return [
+              { timestamp: ts1, open: 99, close: 100 },
+              { timestamp: ts2, open: 100, close: 110 },
+            ];
+          }
+          if (symbol === "VFV.TO") {
+            // Starts at ts2 -- ts1 must backfill from VFV's first open (79).
+            return [{ timestamp: ts2, open: 79, close: 80 }];
+          }
+          return null;
+        },
+      );
+
+      exchangeRateService.getLatestRate.mockImplementation(
+        async (from: string, to: string) => {
+          if (from === "USD" && to === "CAD") return 1.4;
+          return null;
+        },
+      );
+
+      const result = await service.getIntradayValueSeries(userId, {
+        range: "1d",
+      });
+
+      // ts1: AAPL at open=99 (first bar), VFV backfilled at its own open=79.
+      // = 10 * 99 * 1.4 + 50 * 79 + 5000 = 1386 + 3950 + 5000 = 10336
+      expect(result.points[0].value).toBeCloseTo(10336, 4);
+    });
+
     it("caches results for 60 seconds keyed by user/range/accounts/currency", async () => {
       accountsRepository.find.mockResolvedValue([mockBrokerageAccount]);
       holdingsRepository.find.mockResolvedValue([mockHoldingAAPL]);

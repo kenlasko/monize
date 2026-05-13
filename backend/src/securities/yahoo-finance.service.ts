@@ -538,18 +538,28 @@ export class YahooFinanceService implements QuoteProvider {
       const timestamps: number[] = result.timestamp;
       const closes: (number | null | undefined)[] =
         result.indicators.quote[0].close ?? [];
+      const opens: (number | null | undefined)[] =
+        result.indicators.quote[0].open ?? [];
 
       const points: IntradayPoint[] = [];
       // Forward-fill nulls so multi-security alignment doesn't drop bars.
       let lastClose: number | null = null;
       for (let i = 0; i < timestamps.length; i++) {
-        const raw = closes[i];
-        if (raw != null && !isNaN(raw)) {
-          lastClose = gbx ? convertGbxToGbp(raw) : raw;
+        const rawClose = closes[i];
+        if (rawClose != null && !isNaN(rawClose)) {
+          lastClose = gbx ? convertGbxToGbp(rawClose) : rawClose;
         }
         if (lastClose === null) continue;
+        const rawOpen = opens[i];
+        const open =
+          rawOpen != null && !isNaN(rawOpen)
+            ? gbx
+              ? convertGbxToGbp(rawOpen)
+              : rawOpen
+            : null;
         points.push({
           timestamp: new Date(timestamps[i] * 1000),
+          open,
           close: lastClose,
         });
       }
