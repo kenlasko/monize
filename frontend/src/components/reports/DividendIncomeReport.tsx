@@ -82,6 +82,14 @@ export function DividendIncomeReport() {
   const [dailyCapitalGains, setDailyCapitalGains] = useState<CapitalGainEntry[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
+  // Debounced mirror of selectedAccountIds. The data-load effect keys off
+  // this, not the raw selection, so rapid toggles in the MultiSelect (e.g.
+  // ticking three accounts in a row) don't fire one fetch per click.
+  const [appliedAccountIds, setAppliedAccountIds] = useState<string[]>([]);
+  const accountDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (accountDebounceRef.current) clearTimeout(accountDebounceRef.current);
+  }, []);
   const [selectedSecurityId, setSelectedSecurityId] = useState<string>('');
   // When exactly one account is selected we keep its native currency; with no
   // selection (all accounts) or several selected accounts we may have mixed
@@ -89,6 +97,10 @@ export function DividendIncomeReport() {
   const isSingleAccount = selectedAccountIds.length === 1;
   const { dateRange, setDateRange, resolvedRange, isValid } = useDateRange({ defaultRange: '1y', alignment: 'month' });
   const [isLoading, setIsLoading] = useState(true);
+  // First load needs the full-page skeleton; subsequent reloads (e.g. after the
+  // user changes the account or security filter) update in place so the
+  // MultiSelect / Select controls don't unmount mid-interaction.
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [viewType, setViewType] = useState<'monthly' | 'daily' | 'bySecurity'>('monthly');
   const [monthlyDisplay, setMonthlyDisplay] = useState<'chart' | 'table'>('chart');
   const [hideInactiveDays, setHideInactiveDays] = useState(false);
@@ -226,8 +238,8 @@ export function DividendIncomeReport() {
         // Capital gains require a window; fall back to a wide window when the
         // user picks "All Time" so the backend still has bounds to enumerate.
         const cgStart = start || '1970-01-01';
-        const accountIdsParam = selectedAccountIds.length > 0
-          ? selectedAccountIds.join(',')
+        const accountIdsParam = appliedAccountIds.length > 0
+          ? appliedAccountIds.join(',')
           : undefined;
         const capitalGainsPromise = investmentsApi.getCapitalGains({
           accountIds: accountIdsParam,
@@ -274,10 +286,11 @@ export function DividendIncomeReport() {
         logger.error('Failed to load investment transactions:', error);
       } finally {
         setIsLoading(false);
+        setHasLoadedOnce(true);
       }
     };
     loadData();
-  }, [selectedAccountIds, resolvedRange, isValid]);
+  }, [appliedAccountIds, resolvedRange, isValid]);
 
   // Lazy-load daily capital gains only when the user switches to the daily view.
   useEffect(() => {
@@ -287,8 +300,8 @@ export function DividendIncomeReport() {
         const { start, end } = resolvedRange;
         const cgStart = start || '1970-01-01';
         const data = await investmentsApi.getCapitalGains({
-          accountIds: selectedAccountIds.length > 0
-            ? selectedAccountIds.join(',')
+          accountIds: appliedAccountIds.length > 0
+            ? appliedAccountIds.join(',')
             : undefined,
           startDate: cgStart,
           endDate: end,
@@ -300,7 +313,7 @@ export function DividendIncomeReport() {
       }
     };
     load();
-  }, [viewType, selectedAccountIds, resolvedRange, isValid]);
+  }, [viewType, appliedAccountIds, resolvedRange, isValid]);
 
   const monthlyData = useMemo((): MonthlyIncome[] => {
     const { start, end } = resolvedRange;
@@ -914,7 +927,7 @@ export function DividendIncomeReport() {
     return null;
   };
 
-  if (isLoading) {
+  if (isLoading && !hasLoadedOnce) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
         <div className="animate-pulse space-y-4">
@@ -983,6 +996,16 @@ export function DividendIncomeReport() {
                 // Reset security filter when the account selection changes so
                 // stale selections can't hide all rows.
                 setSelectedSecurityId('');
+                // Debounce the actual reload so rapid checkbox toggles (the
+                // typical multi-account selection flow) collapse into a single
+                // fetch once the user pauses.
+                if (accountDebounceRef.current) {
+                  clearTimeout(accountDebounceRef.current);
+                }
+                accountDebounceRef.current = setTimeout(() => {
+                  setAppliedAccountIds(values);
+                  accountDebounceRef.current = null;
+                }, 350);
               }}
             />
           </div>
