@@ -259,9 +259,20 @@ export function PostTransactionDialog({
             ? Number(scheduledTransaction.investmentTotalAmount)
             : '',
       );
-      // Seed the UI-only total from qty * price (+ signed commission) so the
-      // user sees a meaningful starting value for BUY/SELL/REINVEST.
-      if (
+      // Seed the UI-only total. Prefer the originally-scheduled total (override
+      // or base) so it stays fixed when the latest market price is applied --
+      // the price change should move the share quantity, not the amount
+      // invested. Fall back to qty * price (+ signed commission) only when no
+      // total was scheduled.
+      const storedTotal =
+        overrideTotal != null
+          ? Number(overrideTotal)
+          : scheduledTransaction.investmentTotalAmount != null
+            ? Number(scheduledTransaction.investmentTotalAmount)
+            : null;
+      if (storedTotal != null && storedTotal > 0) {
+        setInvestmentTotalValue(Math.round(storedTotal * 10_000) / 10_000);
+      } else if (
         typeof initialQty === 'number' &&
         initialQty > 0 &&
         typeof initialPrice === 'number' &&
@@ -307,8 +318,9 @@ export function PostTransactionDialog({
     scheduledTransaction.investmentSecurityId,
   ]);
 
-  // When the market price arrives, overwrite the Price with the latest value
-  // and recompute the total from the existing quantity. Uses the "info from
+  // When the market price arrives, overwrite the Price with the latest value.
+  // The originally-scheduled total stays fixed, so the new price recomputes the
+  // share quantity rather than the amount invested. Uses the "info from
   // previous render" pattern to avoid violating react-hooks/set-state-in-effect.
   const [lastSeenMarketPrice, setLastSeenMarketPrice] = useState<number | null>(null);
   if (isOpen && marketPrice !== lastSeenMarketPrice) {
@@ -316,9 +328,15 @@ export function PostTransactionDialog({
     if (isInvestmentQuantityPrice && marketPrice != null && marketPrice > 0) {
       const rounded = Math.round(marketPrice * 1_000_000) / 1_000_000;
       setInvestmentPrice(rounded);
-      if (investmentQuantity !== '' && Number(investmentQuantity) > 0) {
-        const commission = Number(scheduledTransaction.investmentCommission ?? 0);
-        const sign = scheduledTransaction.investmentAction === 'SELL' ? -1 : 1;
+      const commission = Number(scheduledTransaction.investmentCommission ?? 0);
+      const sign = scheduledTransaction.investmentAction === 'SELL' ? -1 : 1;
+      if (investmentTotalValue !== '' && Number(investmentTotalValue) > 0) {
+        // Preserve the scheduled total -- adjust quantity to the new price.
+        const cost = Number(investmentTotalValue) - sign * commission;
+        const qty = Math.max(0, cost / rounded);
+        setInvestmentQuantity(Math.round(qty * 100_000_000) / 100_000_000);
+      } else if (investmentQuantity !== '' && Number(investmentQuantity) > 0) {
+        // No scheduled total to preserve -- fall back to deriving it from qty.
         const total = Number(investmentQuantity) * rounded + sign * commission;
         setInvestmentTotalValue(Math.round(total * 10_000) / 10_000);
       }

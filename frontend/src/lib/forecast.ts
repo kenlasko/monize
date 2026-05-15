@@ -453,12 +453,17 @@ export function getProjectedBalanceAtDate(
   const endDate = parseLocalDate(targetDate);
   endDate.setHours(0, 0, 0, 0);
 
+  // Investment-kind scheduled transactions (and share-only actions in
+  // particular) may carry a null/blank cash amount; coerce non-finite inputs
+  // to 0 so the projected balance shows a real number instead of NaN.
   let balance = Number(account.currentBalance);
+  if (!Number.isFinite(balance)) balance = 0;
 
   // Add future-dated posted transactions for this account up to targetDate
   for (const ft of futureTransactions) {
     if (ft.accountId === account.id && ft.date > todayKey && ft.date <= targetDate) {
-      balance += ft.amount;
+      const amt = Number(ft.amount);
+      if (Number.isFinite(amt)) balance += amt;
     }
   }
 
@@ -480,7 +485,9 @@ export function getProjectedBalanceAtDate(
     const occurrences = generateOccurrences(tx, today, endDate);
     const isInbound = inboundTransferIds.has(tx.id);
     for (const occ of occurrences) {
-      balance += isInbound ? -occ.amount : occ.amount;
+      const amt = Number(occ.amount);
+      if (!Number.isFinite(amt)) continue;
+      balance += isInbound ? -amt : amt;
     }
   }
 

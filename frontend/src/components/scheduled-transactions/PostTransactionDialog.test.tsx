@@ -1082,6 +1082,22 @@ describe('PostTransactionDialog', () => {
       expect(totalInput.value).toBe('1,000');
     });
 
+    it('seeds Total Price from the scheduled total amount when set', () => {
+      render(
+        <PostTransactionDialog
+          {...defaultProps}
+          scheduledTransaction={{
+            ...investmentTransaction,
+            // qty * price would be 1000, but the scheduled total wins so it
+            // can be preserved when the latest market price is applied.
+            investmentTotalAmount: 750,
+          } as any}
+        />,
+      );
+      const totalInput = screen.getByLabelText('Total Price') as HTMLInputElement;
+      expect(totalInput.value).toBe('750');
+    });
+
     it('updates Total Price when Quantity is changed', () => {
       render(
         <PostTransactionDialog
@@ -1131,7 +1147,7 @@ describe('PostTransactionDialog', () => {
       expect(Number(qtyInput.value)).toBeCloseTo(5, 6);
     });
 
-    it('auto-fills Price from latest market price on open', async () => {
+    it('auto-fills Price from latest market price on open, preserving total and adjusting quantity', async () => {
       mockGetSecurityPrices.mockResolvedValue([{ closePrice: '123.45' }]);
       render(
         <PostTransactionDialog
@@ -1143,11 +1159,14 @@ describe('PostTransactionDialog', () => {
       await waitFor(() => {
         expect(Number(priceInput.value)).toBeCloseTo(123.45, 6);
       });
-      // Total recomputed from saved qty (10) * 123.45 = 1234.5
+      // Scheduled total (10 * 100 = 1000) is preserved -- the new price
+      // recomputes the quantity (1000 / 123.45 ~= 8.10044553), not the total.
       const totalInput = screen.getByLabelText('Total Price') as HTMLInputElement;
+      const qtyInput = screen.getByLabelText('Quantity (shares)') as HTMLInputElement;
       await waitFor(() => {
-        expect(totalInput.value).toBe('1,234.5');
+        expect(Number(qtyInput.value)).toBeCloseTo(1000 / 123.45, 4);
       });
+      expect(totalInput.value).toBe('1,000');
     });
 
     it('fetches latest price for the security', async () => {
