@@ -1298,6 +1298,39 @@ describe('PostTransactionDialog', () => {
       expect(container.textContent).not.toContain('NaN');
     });
 
+    it('shows the cash account going to zero (not NaN) for a BUY whose market price changes the quantity', async () => {
+      // Reproduces the reported screenshot: BUY XCNS, scheduled total $2,000,
+      // latest market price 26.15 -> quantity recomputed, total preserved.
+      // The "CA RRSP - Cash" account ($2,000) should project to $0.00.
+      mockGetSecurityPrices.mockResolvedValue([{ closePrice: '26.15' }]);
+      const buyTx = {
+        ...investmentTransaction,
+        accountId: 'rrsp-cash',
+        account: { name: 'CA RRSP - Cash', currentBalance: 2000 },
+        investmentAction: 'BUY',
+        investmentSecurity: { id: 'sec1', symbol: 'XCNS', name: 'XCNS' },
+        investmentQuantity: 80,
+        investmentPrice: 25,
+        investmentTotalAmount: 2000,
+        investmentCommission: 0,
+      } as any;
+      render(
+        <PostTransactionDialog
+          {...defaultProps}
+          scheduledTransaction={buyTx}
+        />,
+      );
+      const row = (await screen.findByText('CA RRSP - Cash')).closest('div')!;
+      await waitFor(() => {
+        const priceInput = screen.getByLabelText('Price per share') as HTMLInputElement;
+        expect(Number(priceInput.value)).toBeCloseTo(26.15, 6);
+      });
+      await waitFor(() => {
+        expect(row.textContent).toContain('0.00');
+      });
+      expect(row.textContent).not.toContain('NaN');
+    });
+
     it('prefills investmentTotalAmount from nextOverride for DIVIDEND', () => {
       const dividendTx = {
         ...investmentTransaction,
