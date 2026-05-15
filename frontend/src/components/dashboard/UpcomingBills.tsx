@@ -154,6 +154,10 @@ export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxI
     }
   };
 
+  const goToPost = (id: string) => {
+    router.push(`/bills?postBillId=${encodeURIComponent(id)}`);
+  };
+
   const sectionTitle = 'Upcoming Bills & Deposits';
 
   if (isLoading) {
@@ -219,7 +223,17 @@ export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxI
           return (
             <div
               key={item.id}
-              className={`flex items-center justify-between p-2 sm:p-3 rounded-lg border ${
+              role="button"
+              tabIndex={0}
+              onClick={() => goToPost(item.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  goToPost(item.id);
+                }
+              }}
+              title="Post this transaction"
+              className={`flex items-center justify-between p-2 sm:p-3 rounded-lg border cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 isOverdue(item.nextDueDate)
                   ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/10'
                   : 'border-gray-200 dark:border-gray-700'

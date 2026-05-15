@@ -7,6 +7,24 @@ vi.mock('next/image', () => ({
   default: ({ priority, fill, ...props }: any) => <img alt="" {...props} />,
 }));
 
+// Controllable next/navigation mock (overrides the global one for this file)
+const nav = vi.hoisted(() => ({
+  searchParams: new URLSearchParams(),
+  replace: vi.fn(),
+  push: vi.fn(),
+}));
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: nav.push,
+    replace: nav.replace,
+    back: vi.fn(),
+    prefetch: vi.fn(),
+    refresh: vi.fn(),
+  }),
+  usePathname: () => '/bills',
+  useSearchParams: () => nav.searchParams,
+}));
+
 // Mock logger
 vi.mock('@/lib/logger', () => ({
   createLogger: () => ({
@@ -236,6 +254,7 @@ const mockScheduledTransactions = [
 describe('BillsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    nav.searchParams = new URLSearchParams();
     vi.useFakeTimers({ now, shouldAdvanceTime: true });
     mockGetAll.mockResolvedValue(mockScheduledTransactions);
     mockGetAllCategories.mockResolvedValue([]);
@@ -1198,6 +1217,37 @@ describe('BillsPage', () => {
         const bill = screen.getByText('Salary');
         expect(bill.closest('div')).toHaveClass('bg-green-100');
       });
+    });
+  });
+
+  describe('Auto-open Post dialog from query param', () => {
+    it('opens the Post dialog for the bill referenced by postBillId', async () => {
+      nav.searchParams = new URLSearchParams('postBillId=st-1');
+      render(<BillsPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('post-dialog')).toBeInTheDocument();
+      });
+    });
+
+    it('does not open the Post dialog when postBillId is absent', async () => {
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+      expect(screen.queryByTestId('post-dialog')).not.toBeInTheDocument();
+    });
+
+    it('does not open the Post dialog when postBillId does not match any transaction', async () => {
+      nav.searchParams = new URLSearchParams('postBillId=does-not-exist');
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+      expect(screen.queryByTestId('post-dialog')).not.toBeInTheDocument();
+    });
+
+    it('clears the postBillId query param when the Post dialog is closed', async () => {
+      nav.searchParams = new URLSearchParams('postBillId=st-1');
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('post-dialog')).toBeInTheDocument());
+      fireEvent.click(screen.getByTestId('post-close'));
+      await waitFor(() => expect(nav.replace).toHaveBeenCalledWith('/bills'));
     });
   });
 });

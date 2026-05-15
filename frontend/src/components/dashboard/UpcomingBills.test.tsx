@@ -166,6 +166,27 @@ describe('UpcomingBills', () => {
     expect(mockPush).toHaveBeenCalledWith('/bills');
   });
 
+  it('navigates to bills page with postBillId when a bill row is clicked', () => {
+    const transactions = [
+      { id: 'bill-42', name: 'Netflix', amount: -15.99, currencyCode: 'CAD', nextDueDate: futureDateStr(1), isActive: true, autoPost: false },
+    ] as any[];
+
+    render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
+    fireEvent.click(screen.getByText('Netflix'));
+    expect(mockPush).toHaveBeenCalledWith('/bills?postBillId=bill-42');
+  });
+
+  it('navigates with postBillId when Enter is pressed on a focused bill row', () => {
+    const transactions = [
+      { id: 'bill-7', name: 'Spotify', amount: -9.99, currencyCode: 'CAD', nextDueDate: futureDateStr(1), isActive: true, autoPost: false },
+    ] as any[];
+
+    render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
+    const row = screen.getByRole('button', { name: /Spotify/i });
+    fireEvent.keyDown(row, { key: 'Enter' });
+    expect(mockPush).toHaveBeenCalledWith('/bills?postBillId=bill-7');
+  });
+
   it('shows payee name when available', () => {
     const dateStr = futureDateStr(1);
     const transactions = [

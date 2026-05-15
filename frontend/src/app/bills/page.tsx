@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import {
   format,
@@ -65,6 +66,9 @@ export default function BillsPage() {
 }
 
 function BillsContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const postBillId = searchParams.get('postBillId');
   const { formatCurrency } = useNumberFormat();
   const [scheduledTransactions, setScheduledTransactions] = useState<ScheduledTransaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -95,6 +99,7 @@ function BillsContent() {
     isOpen: boolean;
     transaction: ScheduledTransaction | null;
   }>({ isOpen: false, transaction: null });
+  const [autoOpenedPostId, setAutoOpenedPostId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -283,11 +288,30 @@ function BillsContent() {
 
   const handlePostDialogClose = () => {
     setPostDialog({ isOpen: false, transaction: null });
+    if (postBillId) {
+      router.replace('/bills');
+    }
   };
 
   const handlePostDialogPosted = () => {
     loadData();
   };
+
+  // Auto-open the Post dialog when arriving from the dashboard widget
+  // (e.g. /bills?postBillId=<id>). Adjust state during render (gated so it
+  // runs once per id) to comply with the no-setState-in-effect rule.
+  if (
+    postBillId &&
+    postBillId !== autoOpenedPostId &&
+    !isLoading &&
+    scheduledTransactions.length > 0
+  ) {
+    const target = scheduledTransactions.find((st) => st.id === postBillId);
+    setAutoOpenedPostId(postBillId);
+    if (target) {
+      setPostDialog({ isOpen: true, transaction: target });
+    }
+  }
 
   // Filter transactions based on type, then sort by effective date (considering overrides)
   const filteredTransactions = scheduledTransactions.filter((t) => {
