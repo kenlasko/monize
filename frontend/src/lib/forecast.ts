@@ -328,10 +328,18 @@ export function buildForecast(
     return currency ? convertAmount(amount, currency) : amount;
   };
 
+  // Investment-kind scheduled transactions (and share-only actions) may carry
+  // a null/blank cash amount; coerce non-finite balances to 0 so the projected
+  // balance shows a real number instead of NaN.
+  const safeBalance = (v: unknown): number => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+
   const startingBalance = targetAccounts.reduce(
     (sum, acc) => sum + (convertAmount
-      ? convertAmount(Number(acc.currentBalance), acc.currencyCode)
-      : Number(acc.currentBalance)),
+      ? convertAmount(safeBalance(acc.currentBalance), acc.currencyCode)
+      : safeBalance(acc.currentBalance)),
     0
   );
 
@@ -353,10 +361,12 @@ export function buildForecast(
 
   // Add future-dated regular transactions at their correct dates
   for (const ft of relevantFuture) {
+    const amt = conv(Number(ft.amount), ft.accountId);
+    if (!Number.isFinite(amt)) continue;
     const existing = transactionsByDate.get(ft.date) || [];
     existing.push({
       name: ft.name,
-      amount: conv(ft.amount, ft.accountId),
+      amount: amt,
       scheduledTransactionId: ft.id,
     });
     transactionsByDate.set(ft.date, existing);
@@ -367,10 +377,12 @@ export function buildForecast(
     const isInbound = inboundTransferIds.has(tx.id);
     const txAccountId = isInbound ? (tx.transferAccountId ?? tx.accountId) : tx.accountId;
     for (const occ of occurrences) {
+      const raw = Number(occ.amount);
+      if (!Number.isFinite(raw)) continue;
       const existing = transactionsByDate.get(occ.date) || [];
       existing.push({
         name: tx.name,
-        amount: conv(isInbound ? -occ.amount : occ.amount, txAccountId),
+        amount: conv(isInbound ? -raw : raw, txAccountId),
         scheduledTransactionId: tx.id,
       });
       transactionsByDate.set(occ.date, existing);
@@ -393,7 +405,7 @@ export function buildForecast(
 
     // Apply transactions for this day
     for (const tx of dayTransactions) {
-      currentBalance += tx.amount;
+      if (Number.isFinite(tx.amount)) currentBalance += tx.amount;
     }
 
     // Check if we should add a data point (based on granularity)

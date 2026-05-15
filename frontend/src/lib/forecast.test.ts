@@ -1218,6 +1218,34 @@ describe('buildForecast', () => {
       expect(jan20?.balance).toBe(1200);
     });
   });
+
+  describe('NaN safety', () => {
+    it('treats a missing account balance as zero rather than NaN', () => {
+      const accounts = [makeAccount({ currentBalance: undefined as unknown as number })];
+      const result = buildForecast(accounts, [], 'week', 'all');
+      expect(result.length).toBeGreaterThan(0);
+      expect(result.every(dp => Number.isFinite(dp.balance))).toBe(true);
+      expect(result[0].balance).toBe(0);
+    });
+
+    it('ignores non-finite scheduled investment amounts instead of producing NaN balances', () => {
+      const accounts = [makeAccount({ id: 'acc-1', currentBalance: 2500 })];
+      // A share-only scheduled investment can carry a null/blank cash amount.
+      const transactions = [makeScheduled({
+        id: 'inv-1',
+        accountId: 'acc-1',
+        amount: undefined as unknown as number,
+        frequency: 'ONCE',
+        nextDueDate: '2025-01-20',
+        isInvestment: true,
+      } as any)];
+      const result = buildForecast(accounts, transactions, 'month', 'all');
+      expect(result.every(dp => Number.isFinite(dp.balance))).toBe(true);
+      // The non-finite occurrence is skipped, so the balance stays put.
+      const jan20 = result.find(dp => dp.date === '2025-01-20');
+      expect(jan20?.balance ?? 2500).toBe(2500);
+    });
+  });
 });
 
 describe('getForecastSummary', () => {
