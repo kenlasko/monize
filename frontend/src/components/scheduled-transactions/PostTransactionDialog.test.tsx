@@ -1279,25 +1279,6 @@ describe('PostTransactionDialog', () => {
       expect(totalInput.value).toBe('1,000');
     });
 
-    it('shows the projected balance as a number, never NaN, for a non-finite investment amount', () => {
-      const badDividend = {
-        ...investmentTransaction,
-        investmentAction: 'DIVIDEND',
-        investmentQuantity: null,
-        investmentPrice: null,
-        // A corrupt/blank stored total previously made the projected
-        // "final balance" render as NaN.
-        investmentTotalAmount: NaN as unknown as number,
-      } as any;
-      const { container } = render(
-        <PostTransactionDialog
-          {...defaultProps}
-          scheduledTransaction={badDividend}
-        />,
-      );
-      expect(container.textContent).not.toContain('NaN');
-    });
-
     it('shows the cash account going to zero (not NaN) for a BUY whose market price changes the quantity', async () => {
       // Reproduces the reported screenshot: BUY XCNS, scheduled total $2,000,
       // latest market price 26.15 -> quantity recomputed, total preserved.

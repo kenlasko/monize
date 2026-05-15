@@ -42,6 +42,23 @@ export function getDecimalPlacesForCurrency(currencyCode: string): number {
 }
 
 /**
+ * Scale a number by a power of ten using its string form, so the decimal
+ * shift introduces no IEEE 754 multiplication error.
+ *
+ * `String(n)` is already in exponential notation for magnitudes below 1e-6
+ * or at/above 1e21 (e.g. "6.25e-7"). Appending another "e<exp>" would build
+ * a malformed literal like "6.25e-7e2" that `Number()` parses as NaN, which
+ * is how a near-zero projected balance rendered as "$NaN". Splitting on the
+ * existing exponent and adding to it keeps the shift valid across the whole
+ * range.
+ */
+function shiftByPowerOfTen(value: number, exponent: number): number {
+  if (value === 0) return 0;
+  const [mantissa, exp] = value.toString().split('e');
+  return Number(`${mantissa}e${exp ? Number(exp) + exponent : exponent}`);
+}
+
+/**
  * Round a number to the specified number of decimal places using
  * "round half away from zero" (standard financial rounding).
  *
@@ -49,8 +66,6 @@ export function getDecimalPlacesForCurrency(currencyCode: string): number {
  * IEEE 754 midpoint errors. JavaScript's number-to-string conversion
  * produces the shortest decimal that round-trips to the same double,
  * recovering the intended value (e.g., 159.735 not 159.73499...).
- * Shifting via string concatenation ('e+N') sidesteps the floating-point
- * error that direct multiplication would introduce.
  *
  * An additional one-ULP nudge (Number.EPSILON * abs) is applied before
  * rounding to recover values that fell just below a midpoint due to
@@ -62,7 +77,11 @@ export function roundToDecimals(value: number, decimalPlaces: number): number {
   const sign = value < 0 ? -1 : 1;
   const abs = Math.abs(value);
   const nudged = abs + Number.EPSILON * abs;
-  return sign * Number(Math.round(Number(nudged + 'e' + decimalPlaces)) + 'e-' + decimalPlaces);
+  const rounded = Math.round(shiftByPowerOfTen(nudged, decimalPlaces));
+  const result = sign * shiftByPowerOfTen(rounded, -decimalPlaces);
+  // sign * 0 produces -0 for tiny negative residuals; normalize to +0 so
+  // callers and Object.is-based assertions see a plain zero.
+  return result === 0 ? 0 : result;
 }
 
 /**

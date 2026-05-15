@@ -132,6 +132,21 @@ describe('roundToDecimals', () => {
     expect(roundToDecimals(Infinity, 2)).toBe(Infinity);
     expect(roundToDecimals(NaN, 2)).toBeNaN();
   });
+
+  it('rounds tiny near-zero residuals to 0 instead of NaN', () => {
+    // String(n) is exponential below 1e-6 (e.g. "6.25e-7"). The old shift
+    // built "6.25e-7e2" -> Number() -> NaN, so a projected balance that
+    // cancelled to ~0 rendered as "$NaN".
+    expect(roundToDecimals(6.250002115848474e-7, 2)).toBe(0);
+    expect(roundToDecimals(-6.250002115848474e-7, 2)).toBe(0);
+    expect(roundToDecimals(9.999894245993346e-10, 2)).toBe(0);
+    expect(Object.is(roundToDecimals(-5.6e-13, 2), 0)).toBe(true);
+  });
+
+  it('keeps sub-1e-6 precision when decimalPlaces is large enough', () => {
+    expect(roundToDecimals(1e-7, 8)).toBe(1e-7);
+    expect(roundToDecimals(1.23e-7, 9)).toBe(1.23e-7);
+  });
 });
 
 describe('roundToCents', () => {
@@ -154,6 +169,13 @@ describe('roundToCents', () => {
 
   it('handles zero', () => {
     expect(roundToCents(0)).toBe(0);
+  });
+
+  it('rounds a balance that cancels to ~0 down to exactly 0', () => {
+    // Funding cash exactly covers an investment BUY: 2000 + -(qty*price)
+    // lands on a tiny float residual, which must read as $0.00 not $NaN.
+    expect(roundToCents(2000 + -2000.000000625)).toBe(0);
+    expect(roundToCents(5000 - 5000.0000088)).toBe(0);
   });
 });
 

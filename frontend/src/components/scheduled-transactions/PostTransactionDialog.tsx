@@ -180,27 +180,17 @@ export function PostTransactionDialog({
 
   const projectedBalances = useMemo(() => {
     if (!transactionDate) return null;
-    // A resolved account can be a partial relation without a usable balance,
-    // and some investment actions have no cash impact. Coerce non-finite
-    // values to 0 so the projected balance never renders as "NaN".
-    const finiteOrZero = (n: number | null): number | null =>
-      n == null ? null : Number.isFinite(n) ? n : 0;
-    const impact = Number.isFinite(effectivePostAmount) ? effectivePostAmount : 0;
-    const sourceBefore = finiteOrZero(
-      sourceAccount
-        ? getProjectedBalanceAtDate(sourceAccount, transactionDate, scheduledTransactions, futureTransactions, scheduledTransaction.id, accounts)
-        : null,
-    );
-    const transferBefore = finiteOrZero(
-      transferAccount
-        ? getProjectedBalanceAtDate(transferAccount, transactionDate, scheduledTransactions, futureTransactions, scheduledTransaction.id, accounts)
-        : null,
-    );
+    const sourceBefore = sourceAccount
+      ? getProjectedBalanceAtDate(sourceAccount, transactionDate, scheduledTransactions, futureTransactions, scheduledTransaction.id, accounts)
+      : null;
+    const transferBefore = transferAccount
+      ? getProjectedBalanceAtDate(transferAccount, transactionDate, scheduledTransactions, futureTransactions, scheduledTransaction.id, accounts)
+      : null;
     return {
       sourceBefore,
-      sourceAfter: sourceBefore != null ? roundToCents(sourceBefore + impact) : null,
+      sourceAfter: sourceBefore != null ? roundToCents(sourceBefore + effectivePostAmount) : null,
       transferBefore,
-      transferAfter: transferBefore != null ? roundToCents(transferBefore - impact) : null,
+      transferAfter: transferBefore != null ? roundToCents(transferBefore - effectivePostAmount) : null,
     };
   }, [sourceAccount, transferAccount, transactionDate, effectivePostAmount, scheduledTransactions, futureTransactions, scheduledTransaction.id, accounts]);
 
