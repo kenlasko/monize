@@ -1279,6 +1279,25 @@ describe('PostTransactionDialog', () => {
       expect(totalInput.value).toBe('1,000');
     });
 
+    it('shows the projected balance as a number, never NaN, for a non-finite investment amount', () => {
+      const badDividend = {
+        ...investmentTransaction,
+        investmentAction: 'DIVIDEND',
+        investmentQuantity: null,
+        investmentPrice: null,
+        // A corrupt/blank stored total previously made the projected
+        // "final balance" render as NaN.
+        investmentTotalAmount: NaN as unknown as number,
+      } as any;
+      const { container } = render(
+        <PostTransactionDialog
+          {...defaultProps}
+          scheduledTransaction={badDividend}
+        />,
+      );
+      expect(container.textContent).not.toContain('NaN');
+    });
+
     it('prefills investmentTotalAmount from nextOverride for DIVIDEND', () => {
       const dividendTx = {
         ...investmentTransaction,
