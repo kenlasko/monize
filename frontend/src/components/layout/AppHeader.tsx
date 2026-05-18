@@ -41,10 +41,27 @@ const aiLinks: { href: string; label: string }[] = [
 export function AppHeader() {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, logout, actingAsUserId } = useAuthStore();
+  const { user, logout, actingAsUserId, delegateCapabilities } =
+    useAuthStore();
   // Phase 1: a delegate acting as an owner only sees the Dashboard.
   const isDelegateView = !!actingAsUserId;
   const visibleNavLinks = isDelegateView ? [] : navLinks;
+  // A delegate sees only the Tools sections they were granted manage
+  // capability for (payees/categories/tags). Everyone else sees all.
+  const toolsCapabilityByHref: Record<
+    string,
+    'payees' | 'categories' | 'tags'
+  > = {
+    '/categories': 'categories',
+    '/payees': 'payees',
+    '/tags': 'tags',
+  };
+  const visibleToolsLinks = isDelegateView
+    ? toolsLinks.filter((l) => {
+        const cap = toolsCapabilityByHref[l.href];
+        return cap ? !!delegateCapabilities?.[cap] : false;
+      })
+    : toolsLinks;
   const [toolsOpen, setToolsOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -208,7 +225,11 @@ export function AppHeader() {
                         {link.label}
                       </button>
                     ))}
+                    </>
+                    )}
 
+                    {visibleToolsLinks.length > 0 && (
+                    <>
                     {/* Divider */}
                     <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
 
@@ -218,7 +239,7 @@ export function AppHeader() {
                     </div>
 
                     {/* Tools links */}
-                    {toolsLinks.map((link) => (
+                    {visibleToolsLinks.map((link) => (
                       <button
                         key={link.href}
                         onClick={() => router.push(link.href)}
@@ -236,9 +257,11 @@ export function AppHeader() {
                         )}
                       </button>
                     ))}
+                    </>
+                    )}
 
                     {/* Admin section - only for admins */}
-                    {user?.role === 'admin' && (
+                    {!isDelegateView && user?.role === 'admin' && (
                       <>
                         <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
                         <div className="px-4 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -255,8 +278,6 @@ export function AppHeader() {
                           User Management
                         </button>
                       </>
-                    )}
-                    </>
                     )}
 
                     {/* Divider */}
@@ -289,7 +310,7 @@ export function AppHeader() {
               <Image src="/icons/monize-logo.svg" alt="Monize" width={32} height={32} className="rounded" priority />
               <span className="hidden lg:inline">Monize</span>
             </button>
-            {!isDelegateView && (
+            {(!isDelegateView || visibleToolsLinks.length > 0) && (
             <nav className="hidden lg:ml-8 lg:flex lg:items-center lg:space-x-4">
               {visibleNavLinks.map((link) => (
                 <button
@@ -305,6 +326,8 @@ export function AppHeader() {
                 </button>
               ))}
 
+              {!isDelegateView && (
+              <>
               {/* AI Dropdown */}
               <div className="relative" ref={aiRef}>
                 <button
@@ -350,6 +373,11 @@ export function AppHeader() {
                 )}
               </div>
 
+              </>
+              )}
+
+              {visibleToolsLinks.length > 0 && (
+              <>
               {/* Tools Dropdown */}
               <div className="relative" ref={toolsRef}>
                 <button
@@ -374,7 +402,7 @@ export function AppHeader() {
                 {toolsOpen && (
                   <div className="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg dark:shadow-gray-700/50 border border-gray-200 dark:border-gray-700 z-50">
                     <div className="py-1">
-                      {toolsLinks.map((link) => (
+                      {visibleToolsLinks.map((link) => (
                         <button
                           key={link.href}
                           onClick={() => {
@@ -400,8 +428,11 @@ export function AppHeader() {
                 )}
               </div>
 
+              </>
+              )}
+
               {/* Admin link - only visible to admins */}
-              {user?.role === 'admin' && (
+              {!isDelegateView && user?.role === 'admin' && (
                 <button
                   onClick={() => router.push('/admin/users')}
                   className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${

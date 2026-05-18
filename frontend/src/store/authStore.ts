@@ -3,7 +3,10 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { AxiosError } from 'axios';
 import { User } from '@/types/auth';
 import { clearAllCache } from '@/lib/apiCache';
-import type { DelegateContext } from '@/lib/delegation';
+import type {
+  DelegateContext,
+  DelegateCapabilityFlags,
+} from '@/lib/delegation';
 
 interface AuthState {
   user: User | null;
@@ -15,6 +18,7 @@ interface AuthState {
   // Delegate "acting as owner" context (Phase 1). null = acting as self.
   actingAsUserId: string | null;
   availableContexts: DelegateContext[];
+  delegateCapabilities: DelegateCapabilityFlags | null;
   setUser: (user: User | null) => void;
   setToken: (token: string | null) => void;
   setError: (error: string | null) => void;
@@ -22,6 +26,7 @@ interface AuthState {
   setDelegation: (
     actingAsUserId: string | null,
     contexts: DelegateContext[],
+    capabilities: DelegateCapabilityFlags | null,
   ) => void;
   login: (user: User, token: string) => void;
   logout: () => void;
@@ -40,11 +45,12 @@ export const useAuthStore = create<AuthState>()(
       _hasHydrated: false,
       actingAsUserId: null,
       availableContexts: [],
+      delegateCapabilities: null,
 
       setUser: (user) => set({ user, isAuthenticated: !!user }),
 
-      setDelegation: (actingAsUserId, availableContexts) =>
-        set({ actingAsUserId, availableContexts }),
+      setDelegation: (actingAsUserId, availableContexts, delegateCapabilities) =>
+        set({ actingAsUserId, availableContexts, delegateCapabilities }),
 
       // auth_token is httpOnly — backend manages the cookie, not JS
       setToken: (token) => set({ token }),
@@ -88,6 +94,7 @@ export const useAuthStore = create<AuthState>()(
           isLoading: false,
           actingAsUserId: null,
           availableContexts: [],
+          delegateCapabilities: null,
         });
       },
 

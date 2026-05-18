@@ -11,7 +11,7 @@ describe('delegationApi', () => {
 
   it('getContexts fetches /auth/contexts', async () => {
     vi.mocked(apiClient.get).mockResolvedValue({
-      data: { actingAsUserId: null, contexts: [] },
+      data: { actingAsUserId: null, contexts: [], capabilities: null },
     });
     const res = await delegationApi.getContexts();
     expect(apiClient.get).toHaveBeenCalledWith('/auth/contexts');

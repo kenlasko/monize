@@ -495,6 +495,30 @@ describe("DelegationService", () => {
     });
   });
 
+  describe("getCapabilities", () => {
+    it("returns all flags for an active delegation", async () => {
+      delegatesRepo.findOne.mockResolvedValue({
+        canManagePayees: true,
+        canManageCategories: false,
+        canManageTags: true,
+      });
+      await expect(service.getCapabilities("g1")).resolves.toEqual({
+        payees: true,
+        categories: false,
+        tags: true,
+      });
+    });
+
+    it("returns all-false when there is no active delegation", async () => {
+      delegatesRepo.findOne.mockResolvedValue(null);
+      await expect(service.getCapabilities("g1")).resolves.toEqual({
+        payees: false,
+        categories: false,
+        tags: false,
+      });
+    });
+  });
+
   describe("setCapabilities", () => {
     it("throws when the delegation is not owned by the caller", async () => {
       delegatesRepo.findOne.mockResolvedValue(null);

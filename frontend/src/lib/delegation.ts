@@ -7,9 +7,16 @@ export interface DelegateContext {
   ownerHas2FA: boolean;
 }
 
+export interface DelegateCapabilityFlags {
+  payees: boolean;
+  categories: boolean;
+  tags: boolean;
+}
+
 export interface ContextsResponse {
   actingAsUserId: string | null;
   contexts: DelegateContext[];
+  capabilities: DelegateCapabilityFlags | null;
 }
 
 export interface AccountGrant {

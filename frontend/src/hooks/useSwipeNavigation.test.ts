@@ -492,13 +492,13 @@ describe('useSwipeNavigation', () => {
 
   describe('delegate (acting-as) view', () => {
     afterEach(() => {
-      useAuthStore.getState().setDelegation(null, []);
+      useAuthStore.getState().setDelegation(null, [], null);
     });
 
     it('disables swipe navigation on the dashboard for a delegate', () => {
       mockPathname = '/dashboard';
       act(() => {
-        useAuthStore.getState().setDelegation('owner-1', []);
+        useAuthStore.getState().setDelegation('owner-1', [], null);
       });
 
       const { result } = renderHook(() => useSwipeNavigation());

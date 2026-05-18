@@ -331,6 +331,20 @@ export class DelegationService {
     }
   }
 
+  /** All manage capabilities for an active delegation (all false if none). */
+  async getCapabilities(
+    delegationId: string,
+  ): Promise<{ payees: boolean; categories: boolean; tags: boolean }> {
+    const delegation = await this.delegatesRepository.findOne({
+      where: { id: delegationId, status: "active" },
+    });
+    return {
+      payees: !!delegation?.canManagePayees,
+      categories: !!delegation?.canManageCategories,
+      tags: !!delegation?.canManageTags,
+    };
+  }
+
   async setCapabilities(
     ownerUserId: string,
     delegationId: string,

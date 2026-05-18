@@ -485,6 +485,10 @@ export class AuthController {
       contexts: await this.delegationService.getAvailableContexts(
         req.user.realUserId,
       ),
+      capabilities:
+        req.user.isActing && req.user.delegationId
+          ? await this.delegationService.getCapabilities(req.user.delegationId)
+          : null,
     };
   }
 
