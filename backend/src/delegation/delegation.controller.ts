@@ -19,6 +19,7 @@ import { DelegationService } from "./delegation.service";
 import { CreateDelegateDto } from "./dto/create-delegate.dto";
 import { SetGrantsDto } from "./dto/set-grants.dto";
 import { SetCapabilitiesDto } from "./dto/set-capabilities.dto";
+import { SetSectionsDto } from "./dto/set-sections.dto";
 
 /**
  * Owner-scoped delegate management ("Shared Access" settings). Every endpoint
@@ -80,6 +81,19 @@ export class DelegationController {
     @Body() dto: SetCapabilitiesDto,
   ) {
     return this.delegationService.setCapabilities(req.user.id, id, dto);
+  }
+
+  @Put("delegates/:id/sections")
+  @DemoRestricted()
+  @ApiOperation({
+    summary: "Set the delegate's section READ grants (bills/investments/...)",
+  })
+  setSectionGrants(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: SetSectionsDto,
+  ) {
+    return this.delegationService.setSectionGrants(req.user.id, id, dto);
   }
 
   @Post("delegates/:id/reset-password")

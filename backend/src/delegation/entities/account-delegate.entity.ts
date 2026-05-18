@@ -65,6 +65,24 @@ export class AccountDelegate {
   @Column({ name: "tags_can_delete", type: "boolean", default: false })
   tagsCanDelete: boolean;
 
+  // 3A: per-delegation READ grants for whole app sections. Gate tab
+  // visibility + section read endpoints. Account-scoped data still also
+  // requires the per-account grants in account_delegate_grants.
+  @Column({ name: "bills_can_read", type: "boolean", default: false })
+  billsCanRead: boolean;
+
+  @Column({ name: "investments_can_read", type: "boolean", default: false })
+  investmentsCanRead: boolean;
+
+  @Column({ name: "budgets_can_read", type: "boolean", default: false })
+  budgetsCanRead: boolean;
+
+  @Column({ name: "reports_can_read", type: "boolean", default: false })
+  reportsCanRead: boolean;
+
+  @Column({ name: "ai_can_read", type: "boolean", default: false })
+  aiCanRead: boolean;
+
   @ManyToOne(() => User)
   @JoinColumn({ name: "owner_user_id" })
   owner: User;

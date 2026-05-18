@@ -23,6 +23,7 @@ export interface ContextsResponse {
   actingAsUserId: string | null;
   contexts: DelegateContext[];
   capabilities: DelegateCapabilityFlags | null;
+  sections: DelegateSectionGrants | null;
 }
 
 export interface AccountGrant {

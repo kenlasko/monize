@@ -54,6 +54,7 @@ describe('DelegationBanner', () => {
   it('renders nothing when there are no contexts', async () => {
     vi.mocked(delegationApi.getContexts).mockResolvedValue({
       capabilities: null,
+      sections: null,
       actingAsUserId: null,
       contexts: [],
     });
@@ -79,6 +80,7 @@ describe('DelegationBanner', () => {
     ];
     vi.mocked(delegationApi.getContexts).mockResolvedValue({
       capabilities: null,
+      sections: null,
       actingAsUserId: null,
       contexts: state.availableContexts,
     });
@@ -106,6 +108,7 @@ describe('DelegationBanner', () => {
   it('auto-picks the only owner context for a pure delegate', async () => {
     vi.mocked(delegationApi.getContexts).mockResolvedValue({
       capabilities: null,
+      sections: null,
       actingAsUserId: null,
       contexts: [
         { userId: 'o1', label: 'Owner', isSelf: false, ownerHas2FA: false },
@@ -131,6 +134,7 @@ describe('DelegationBanner', () => {
     ];
     vi.mocked(delegationApi.getContexts).mockResolvedValue({
       capabilities: null,
+      sections: null,
       actingAsUserId: null,
       contexts: state.availableContexts,
     });

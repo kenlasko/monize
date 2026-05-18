@@ -481,6 +481,36 @@ describe("DelegationService", () => {
           categories: { create: false, edit: false, delete: false },
           tags: { create: true, edit: false, delete: false },
         },
+        sections: {
+          bills: false,
+          investments: false,
+          budgets: false,
+          reports: false,
+          ai: false,
+        },
+      });
+    });
+
+    it("includes granted sections in the summary", async () => {
+      delegatesRepo.find.mockResolvedValue([
+        {
+          id: "g1",
+          status: "active",
+          createdAt: new Date("2026-01-01"),
+          delegateUserId: "d1",
+          delegate: { email: "d@e.f", passwordHash: "h" },
+          billsCanRead: true,
+          reportsCanRead: true,
+          grants: [],
+        },
+      ]);
+      const res = await service.listDelegates("o1");
+      expect(res[0].sections).toEqual({
+        bills: true,
+        investments: false,
+        budgets: false,
+        reports: true,
+        ai: false,
       });
     });
   });
@@ -575,6 +605,88 @@ describe("DelegationService", () => {
       expect(delegation.tagsCanDelete).toBe(true);
       expect(delegation.payeesCanEdit).toBe(false); // unchanged
       expect(delegation.categoriesCanEdit).toBe(true); // unchanged
+      expect(delegatesRepo.save).toHaveBeenCalledWith(delegation);
+    });
+  });
+
+  describe("hasSection", () => {
+    it("is false when there is no active delegation", async () => {
+      delegatesRepo.findOne.mockResolvedValue(null);
+      await expect(service.hasSection("g1", "bills")).resolves.toBe(false);
+    });
+
+    it("maps the section to the matching flag", async () => {
+      delegatesRepo.findOne.mockResolvedValue({
+        billsCanRead: true,
+        investmentsCanRead: false,
+        budgetsCanRead: true,
+      });
+      await expect(service.hasSection("g1", "bills")).resolves.toBe(true);
+      await expect(service.hasSection("g1", "investments")).resolves.toBe(
+        false,
+      );
+      await expect(service.hasSection("g1", "budgets")).resolves.toBe(true);
+      await expect(service.hasSection("g1", "ai")).resolves.toBe(false);
+    });
+  });
+
+  describe("getSections", () => {
+    it("returns the section set for an active delegation", async () => {
+      delegatesRepo.findOne.mockResolvedValue({
+        billsCanRead: true,
+        investmentsCanRead: false,
+        budgetsCanRead: false,
+        reportsCanRead: true,
+        aiCanRead: true,
+      });
+      await expect(service.getSections("g1")).resolves.toEqual({
+        bills: true,
+        investments: false,
+        budgets: false,
+        reports: true,
+        ai: true,
+      });
+    });
+
+    it("returns all-false when there is no active delegation", async () => {
+      delegatesRepo.findOne.mockResolvedValue(null);
+      await expect(service.getSections("g1")).resolves.toEqual({
+        bills: false,
+        investments: false,
+        budgets: false,
+        reports: false,
+        ai: false,
+      });
+    });
+  });
+
+  describe("setSectionGrants", () => {
+    it("throws when the delegation is not owned by the caller", async () => {
+      delegatesRepo.findOne.mockResolvedValue(null);
+      await expect(
+        service.setSectionGrants("o1", "g1", { billsCanRead: true }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it("updates only the provided sections", async () => {
+      const delegation = {
+        id: "g1",
+        ownerUserId: "o1",
+        billsCanRead: false,
+        investmentsCanRead: true,
+        reportsCanRead: false,
+      };
+      delegatesRepo.findOne.mockResolvedValue(delegation);
+      delegatesRepo.save.mockResolvedValue(delegation);
+
+      await service.setSectionGrants("o1", "g1", {
+        billsCanRead: true,
+        reportsCanRead: true,
+      });
+
+      expect(delegation.billsCanRead).toBe(true);
+      expect(delegation.reportsCanRead).toBe(true);
+      expect(delegation.investmentsCanRead).toBe(true); // unchanged
       expect(delegatesRepo.save).toHaveBeenCalledWith(delegation);
     });
   });

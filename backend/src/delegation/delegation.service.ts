@@ -32,6 +32,7 @@ import { AccountGrantDto } from "./dto/set-grants.dto";
 import {
   DelegateResource,
   DelegateCapabilityOp,
+  DelegateSection,
 } from "./decorators/delegate-access.decorator";
 
 export interface ResourceCapabilities {
@@ -44,6 +45,22 @@ export interface DelegateCapabilitySet {
   categories: ResourceCapabilities;
   tags: ResourceCapabilities;
 }
+
+export interface DelegateSectionSet {
+  bills: boolean;
+  investments: boolean;
+  budgets: boolean;
+  reports: boolean;
+  ai: boolean;
+}
+
+const SECTION_FIELD: Record<DelegateSection, keyof AccountDelegate> = {
+  bills: "billsCanRead",
+  investments: "investmentsCanRead",
+  budgets: "budgetsCanRead",
+  reports: "reportsCanRead",
+  ai: "aiCanRead",
+};
 
 export type DelegateOperation = "read" | "create" | "edit" | "delete";
 
@@ -319,7 +336,18 @@ export class DelegationService {
           canDelete: g.canDelete,
         })),
       capabilities: this.toCapabilitySet(d),
+      sections: this.toSectionSet(d),
     }));
+  }
+
+  private toSectionSet(d?: AccountDelegate | null): DelegateSectionSet {
+    return {
+      bills: !!d?.billsCanRead,
+      investments: !!d?.investmentsCanRead,
+      budgets: !!d?.budgetsCanRead,
+      reports: !!d?.reportsCanRead,
+      ai: !!d?.aiCanRead,
+    };
   }
 
   private toCapabilitySet(d?: AccountDelegate | null): DelegateCapabilitySet {
@@ -368,6 +396,54 @@ export class DelegationService {
       where: { id: delegationId, status: "active" },
     });
     return this.toCapabilitySet(delegation);
+  }
+
+  /** Whether the active delegation was granted READ on `section`. */
+  async hasSection(
+    delegationId: string,
+    section: DelegateSection,
+  ): Promise<boolean> {
+    const delegation = await this.delegatesRepository.findOne({
+      where: { id: delegationId, status: "active" },
+    });
+    if (!delegation) return false;
+    return !!delegation[SECTION_FIELD[section]];
+  }
+
+  /** All section grants for an active delegation (all false if none). */
+  async getSections(delegationId: string): Promise<DelegateSectionSet> {
+    const delegation = await this.delegatesRepository.findOne({
+      where: { id: delegationId, status: "active" },
+    });
+    return this.toSectionSet(delegation);
+  }
+
+  async setSectionGrants(
+    ownerUserId: string,
+    delegationId: string,
+    sections: Partial<
+      Record<
+        | "billsCanRead"
+        | "investmentsCanRead"
+        | "budgetsCanRead"
+        | "reportsCanRead"
+        | "aiCanRead",
+        boolean
+      >
+    >,
+  ): Promise<void> {
+    const delegation = await this.delegatesRepository.findOne({
+      where: { id: delegationId, ownerUserId },
+    });
+    if (!delegation) {
+      throw new NotFoundException("Delegate not found");
+    }
+    for (const [key, value] of Object.entries(sections)) {
+      if (value !== undefined) {
+        (delegation as unknown as Record<string, boolean>)[key] = value;
+      }
+    }
+    await this.delegatesRepository.save(delegation);
   }
 
   async setCapabilities(

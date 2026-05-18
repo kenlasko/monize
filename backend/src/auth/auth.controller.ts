@@ -489,6 +489,10 @@ export class AuthController {
         req.user.isActing && req.user.delegationId
           ? await this.delegationService.getCapabilities(req.user.delegationId)
           : null,
+      sections:
+        req.user.isActing && req.user.delegationId
+          ? await this.delegationService.getSections(req.user.delegationId)
+          : null,
     };
   }
 

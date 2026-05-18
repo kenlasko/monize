@@ -50,7 +50,12 @@ export function DelegationBanner() {
       .getContexts()
       .then((res) => {
         if (cancelled) return;
-        setDelegation(res.actingAsUserId, res.contexts, res.capabilities);
+        setDelegation(
+          res.actingAsUserId,
+          res.contexts,
+          res.capabilities,
+          res.sections,
+        );
         // Smart auto-pick: a pure delegate with exactly one owner context
         // and not yet acting is dropped straight into that account.
         if (

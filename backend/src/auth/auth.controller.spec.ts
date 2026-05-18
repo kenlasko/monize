@@ -2118,6 +2118,70 @@ describe("AuthController", () => {
     });
   });
 
+  describe("getContexts", () => {
+    async function buildController(delegation: Record<string, jest.Mock>) {
+      const module: TestingModule = await Test.createTestingModule({
+        controllers: [AuthController],
+        providers: [
+          { provide: AuthService, useValue: authService },
+          { provide: OidcService, useValue: oidcService },
+          { provide: ConfigService, useValue: configService },
+          { provide: EmailService, useValue: emailService },
+          { provide: DemoModeService, useValue: demoModeService },
+          {
+            provide: TokenService,
+            useValue: { getRefreshExpiryMs: jest.fn() },
+          },
+          { provide: DelegationService, useValue: delegation },
+        ],
+      }).compile();
+      return module.get<AuthController>(AuthController);
+    }
+
+    it("returns capabilities and sections when acting", async () => {
+      const delegation = {
+        getAvailableContexts: jest.fn().mockResolvedValue([{ userId: "o1" }]),
+        getCapabilities: jest.fn().mockResolvedValue({ payees: {} }),
+        getSections: jest.fn().mockResolvedValue({ bills: true }),
+      };
+      const c = await buildController(delegation);
+      const res = await c.getContexts({
+        user: {
+          id: "o1",
+          realUserId: "d1",
+          isActing: true,
+          delegationId: "g1",
+        },
+      } as never);
+      expect(res).toEqual({
+        actingAsUserId: "o1",
+        contexts: [{ userId: "o1" }],
+        capabilities: { payees: {} },
+        sections: { bills: true },
+      });
+      expect(delegation.getSections).toHaveBeenCalledWith("g1");
+    });
+
+    it("returns null capabilities and sections when not acting", async () => {
+      const delegation = {
+        getAvailableContexts: jest.fn().mockResolvedValue([]),
+        getCapabilities: jest.fn(),
+        getSections: jest.fn(),
+      };
+      const c = await buildController(delegation);
+      const res = await c.getContexts({
+        user: { id: "d1", realUserId: "d1", isActing: false },
+      } as never);
+      expect(res).toEqual({
+        actingAsUserId: null,
+        contexts: [],
+        capabilities: null,
+        sections: null,
+      });
+      expect(delegation.getSections).not.toHaveBeenCalled();
+    });
+  });
+
   // Use the previously-imported helpers without regenerating the controller
   // — these branches don't depend on alternate config.
   void encryptTrustedDeviceCookieForTest;

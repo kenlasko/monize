@@ -8,6 +8,7 @@ import {
   DELEGATED_TRANSFER_PARAM_KEY,
   DELEGATE_OPERATION_KEY,
   DELEGATE_CAPABILITY_KEY,
+  DELEGATE_SECTION_KEY,
 } from "../decorators/delegate-access.decorator";
 
 describe("AccountDelegateGuard", () => {
@@ -32,6 +33,7 @@ describe("AccountDelegateGuard", () => {
       accountIdForTransaction: jest.fn(),
       accountIdsForTransfer: jest.fn(),
       hasCapability: jest.fn(),
+      hasSection: jest.fn(),
     };
     guard = new AccountDelegateGuard(
       reflector as any,
@@ -320,6 +322,41 @@ describe("AccountDelegateGuard", () => {
       return undefined;
     });
     delegationService.hasCapability.mockResolvedValue(true);
+    const ctx = makeContext({ headers: { authorization: "Bearer x" } });
+    await expect(guard.canActivate(ctx)).resolves.toBe(true);
+  });
+
+  it("blocks a delegate lacking the required section grant", async () => {
+    jwtService.verify.mockReturnValue({
+      sub: "d1",
+      actingAsUserId: "o1",
+      delegationId: "g1",
+    });
+    reflector.getAllAndOverride.mockImplementation((key: string) => {
+      if (key === ALLOW_DELEGATE_KEY) return true;
+      if (key === DELEGATE_SECTION_KEY) return "bills";
+      return undefined;
+    });
+    delegationService.hasSection.mockResolvedValue(false);
+    const ctx = makeContext({ headers: { authorization: "Bearer x" } });
+    await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+    expect(delegationService.hasSection).toHaveBeenCalledWith("g1", "bills");
+  });
+
+  it("allows a delegate with the required section grant", async () => {
+    jwtService.verify.mockReturnValue({
+      sub: "d1",
+      actingAsUserId: "o1",
+      delegationId: "g1",
+    });
+    reflector.getAllAndOverride.mockImplementation((key: string) => {
+      if (key === ALLOW_DELEGATE_KEY) return true;
+      if (key === DELEGATE_SECTION_KEY) return "budgets";
+      return undefined;
+    });
+    delegationService.hasSection.mockResolvedValue(true);
     const ctx = makeContext({ headers: { authorization: "Bearer x" } });
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
   });

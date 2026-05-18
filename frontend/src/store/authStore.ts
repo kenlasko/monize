@@ -6,6 +6,7 @@ import { clearAllCache } from '@/lib/apiCache';
 import type {
   DelegateContext,
   DelegateCapabilityFlags,
+  DelegateSectionGrants,
 } from '@/lib/delegation';
 
 interface AuthState {
@@ -19,6 +20,7 @@ interface AuthState {
   actingAsUserId: string | null;
   availableContexts: DelegateContext[];
   delegateCapabilities: DelegateCapabilityFlags | null;
+  delegateSections: DelegateSectionGrants | null;
   setUser: (user: User | null) => void;
   setToken: (token: string | null) => void;
   setError: (error: string | null) => void;
@@ -27,6 +29,7 @@ interface AuthState {
     actingAsUserId: string | null,
     contexts: DelegateContext[],
     capabilities: DelegateCapabilityFlags | null,
+    sections: DelegateSectionGrants | null,
   ) => void;
   login: (user: User, token: string) => void;
   logout: () => void;
@@ -46,11 +49,22 @@ export const useAuthStore = create<AuthState>()(
       actingAsUserId: null,
       availableContexts: [],
       delegateCapabilities: null,
+      delegateSections: null,
 
       setUser: (user) => set({ user, isAuthenticated: !!user }),
 
-      setDelegation: (actingAsUserId, availableContexts, delegateCapabilities) =>
-        set({ actingAsUserId, availableContexts, delegateCapabilities }),
+      setDelegation: (
+        actingAsUserId,
+        availableContexts,
+        delegateCapabilities,
+        delegateSections,
+      ) =>
+        set({
+          actingAsUserId,
+          availableContexts,
+          delegateCapabilities,
+          delegateSections,
+        }),
 
       // auth_token is httpOnly — backend manages the cookie, not JS
       setToken: (token) => set({ token }),
@@ -95,6 +109,7 @@ export const useAuthStore = create<AuthState>()(
           actingAsUserId: null,
           availableContexts: [],
           delegateCapabilities: null,
+          delegateSections: null,
         });
       },
 

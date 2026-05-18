@@ -15,8 +15,10 @@ import {
   DELEGATED_TRANSFER_PARAM_KEY,
   DELEGATE_OPERATION_KEY,
   DELEGATE_CAPABILITY_KEY,
+  DELEGATE_SECTION_KEY,
   DelegateOperation,
   DelegateCapabilityReq,
+  DelegateSection,
 } from "../decorators/delegate-access.decorator";
 import { DelegationService } from "../delegation.service";
 
@@ -163,6 +165,20 @@ export class AccountDelegateGuard implements CanActivate {
         throw new ForbiddenException(
           `You are not permitted to ${capability.operation} ${capability.resource}`,
         );
+      }
+    }
+
+    const section = this.reflector.getAllAndOverride<DelegateSection>(
+      DELEGATE_SECTION_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+    if (section) {
+      const ok = await this.delegationService.hasSection(
+        payload.delegationId,
+        section,
+      );
+      if (!ok) {
+        throw new ForbiddenException("You do not have access to this section");
       }
     }
 

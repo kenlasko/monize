@@ -41,11 +41,34 @@ const aiLinks: { href: string; label: string }[] = [
 export function AppHeader() {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, logout, actingAsUserId, delegateCapabilities } =
-    useAuthStore();
-  // Phase 1: a delegate acting as an owner only sees the Dashboard.
+  const {
+    user,
+    logout,
+    actingAsUserId,
+    delegateCapabilities,
+    delegateSections,
+  } = useAuthStore();
   const isDelegateView = !!actingAsUserId;
-  const visibleNavLinks = isDelegateView ? [] : navLinks;
+  // A delegate sees a top-nav section only if the owner granted it.
+  // Accounts & Transactions are scoped via per-account grants, not section
+  // grants, so they stay hidden from the section-gated nav (current
+  // behaviour); the dashboard remains the delegate's landing page.
+  const navSectionByHref: Record<
+    string,
+    'bills' | 'investments' | 'budgets' | 'reports'
+  > = {
+    '/bills': 'bills',
+    '/investments': 'investments',
+    '/budgets': 'budgets',
+    '/reports': 'reports',
+  };
+  const visibleNavLinks = isDelegateView
+    ? navLinks.filter((l) => {
+        const sec = navSectionByHref[l.href];
+        return !!sec && !!delegateSections?.[sec];
+      })
+    : navLinks;
+  const showAiMenu = !isDelegateView || !!delegateSections?.ai;
   // A delegate sees only the Tools sections they were granted manage
   // capability for (payees/categories/tags). Everyone else sees all.
   const toolsCapabilityByHref: Record<
@@ -203,7 +226,7 @@ export function AppHeader() {
                       </button>
                     ))}
 
-                    {!isDelegateView && (
+                    {showAiMenu && (
                     <>
                     {/* Divider */}
                     <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
@@ -312,7 +335,10 @@ export function AppHeader() {
               <Image src="/icons/monize-logo.svg" alt="Monize" width={32} height={32} className="rounded" priority />
               <span className="hidden lg:inline">Monize</span>
             </button>
-            {(!isDelegateView || visibleToolsLinks.length > 0) && (
+            {(!isDelegateView ||
+              visibleNavLinks.length > 0 ||
+              visibleToolsLinks.length > 0 ||
+              showAiMenu) && (
             <nav className="hidden lg:ml-8 lg:flex lg:items-center lg:space-x-4">
               {visibleNavLinks.map((link) => (
                 <button
@@ -328,7 +354,7 @@ export function AppHeader() {
                 </button>
               ))}
 
-              {!isDelegateView && (
+              {showAiMenu && (
               <>
               {/* AI Dropdown */}
               <div className="relative" ref={aiRef}>

@@ -14,6 +14,7 @@ describe("DelegationController", () => {
       revokeDelegate: jest.fn().mockResolvedValue(undefined),
       setGrants: jest.fn().mockResolvedValue(undefined),
       setCapabilities: jest.fn().mockResolvedValue(undefined),
+      setSectionGrants: jest.fn().mockResolvedValue(undefined),
       resetDelegatePassword: jest
         .fn()
         .mockResolvedValue({ temporaryPassword: "x" }),
@@ -53,6 +54,12 @@ describe("DelegationController", () => {
     const dto = { canManagePayees: true };
     await controller.setCapabilities(req, "g1", dto as never);
     expect(service.setCapabilities).toHaveBeenCalledWith("owner-1", "g1", dto);
+  });
+
+  it("sets section grants", async () => {
+    const dto = { billsCanRead: true };
+    await controller.setSectionGrants(req, "g1", dto as never);
+    expect(service.setSectionGrants).toHaveBeenCalledWith("owner-1", "g1", dto);
   });
 
   it("resets a delegate password", async () => {
