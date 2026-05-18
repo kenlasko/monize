@@ -18,6 +18,7 @@ import { TagsModule } from "../tags/tags.module";
 import { NetWorthModule } from "../net-worth/net-worth.module";
 import { ActionHistoryModule } from "../action-history/action-history.module";
 import { SecuritiesModule } from "../securities/securities.module";
+import { DelegationModule } from "../delegation/delegation.module";
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { SecuritiesModule } from "../securities/securities.module";
     PayeesModule,
     TagsModule,
     ActionHistoryModule,
+    DelegationModule,
   ],
   providers: [
     TransactionsService,

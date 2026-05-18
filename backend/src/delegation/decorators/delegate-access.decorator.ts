@@ -36,3 +36,21 @@ export const DelegateRequires = (operation: DelegateOperation) =>
 export const DELEGATED_TRANSACTION_PARAM_KEY = "delegatedTransactionParam";
 export const DelegatedTransactionParam = (key = "id") =>
   SetMetadata(DELEGATED_TRANSACTION_PARAM_KEY, key);
+
+/**
+ * A transfer-create route: both body account ids (from/to) must satisfy the
+ * required operation. Value is the [fromKey, toKey] body field names.
+ */
+export const DELEGATED_TRANSFER_BODY_KEY = "delegatedTransferBody";
+export const DelegatedTransferBody = (
+  fromKey = "fromAccountId",
+  toKey = "toAccountId",
+) => SetMetadata(DELEGATED_TRANSFER_BODY_KEY, [fromKey, toKey]);
+
+/**
+ * A transfer edit/delete-by-id route: BOTH legs' accounts (resolved from the
+ * transaction id) must satisfy the required operation.
+ */
+export const DELEGATED_TRANSFER_PARAM_KEY = "delegatedTransferParam";
+export const DelegatedTransferParam = (key = "id") =>
+  SetMetadata(DELEGATED_TRANSFER_PARAM_KEY, key);

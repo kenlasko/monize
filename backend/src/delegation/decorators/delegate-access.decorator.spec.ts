@@ -3,10 +3,14 @@ import {
   AllowDelegate,
   DelegatedAccountParam,
   DelegatedTransactionParam,
+  DelegatedTransferBody,
+  DelegatedTransferParam,
   DelegateRequires,
   ALLOW_DELEGATE_KEY,
   DELEGATED_ACCOUNT_PARAM_KEY,
   DELEGATED_TRANSACTION_PARAM_KEY,
+  DELEGATED_TRANSFER_BODY_KEY,
+  DELEGATED_TRANSFER_PARAM_KEY,
   DELEGATE_OPERATION_KEY,
 } from "./delegate-access.decorator";
 
@@ -58,6 +62,26 @@ describe("delegate-access decorators", () => {
     }
     expect(
       reflector.get(DELEGATED_TRANSACTION_PARAM_KEY, C.prototype.handler),
+    ).toBe("id");
+  });
+
+  it("DelegatedTransferBody sets [fromKey, toKey]", () => {
+    class C {
+      @DelegatedTransferBody()
+      handler() {}
+    }
+    expect(
+      reflector.get(DELEGATED_TRANSFER_BODY_KEY, C.prototype.handler),
+    ).toEqual(["fromAccountId", "toAccountId"]);
+  });
+
+  it("DelegatedTransferParam sets the transfer-id key", () => {
+    class C {
+      @DelegatedTransferParam()
+      handler() {}
+    }
+    expect(
+      reflector.get(DELEGATED_TRANSFER_PARAM_KEY, C.prototype.handler),
     ).toBe("id");
   });
 });

@@ -11,6 +11,8 @@ import {
   ALLOW_DELEGATE_KEY,
   DELEGATED_ACCOUNT_PARAM_KEY,
   DELEGATED_TRANSACTION_PARAM_KEY,
+  DELEGATED_TRANSFER_BODY_KEY,
+  DELEGATED_TRANSFER_PARAM_KEY,
   DELEGATE_OPERATION_KEY,
   DelegateOperation,
 } from "../decorators/delegate-access.decorator";
@@ -97,6 +99,45 @@ export class AccountDelegateGuard implements CanActivate {
           await this.delegationService.accountIdForTransaction(txId);
         // Unknown transaction: let the owner-scoped service return 404.
         if (accountId) {
+          await this.assertPermission(
+            payload.delegationId,
+            accountId,
+            operation,
+          );
+        }
+      }
+    }
+
+    const transferBodyKeys = this.reflector.getAllAndOverride<[string, string]>(
+      DELEGATED_TRANSFER_BODY_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+    if (transferBodyKeys) {
+      // A transfer touches two accounts; the delegate needs the operation on
+      // BOTH ends (no moving money via an account they cannot access).
+      for (const key of transferBodyKeys) {
+        const accountId = this.resolveAccountId(req, key);
+        if (accountId) {
+          await this.assertPermission(
+            payload.delegationId,
+            accountId,
+            operation,
+          );
+        }
+      }
+    }
+
+    const transferParamKey = this.reflector.getAllAndOverride<string>(
+      DELEGATED_TRANSFER_PARAM_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+    if (transferParamKey) {
+      const txId = this.resolveAccountId(req, transferParamKey);
+      if (txId) {
+        const accountIds =
+          await this.delegationService.accountIdsForTransfer(txId);
+        // Unknown transfer: let the owner-scoped service return 404.
+        for (const accountId of accountIds) {
           await this.assertPermission(
             payload.delegationId,
             accountId,

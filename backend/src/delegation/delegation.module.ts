@@ -14,6 +14,7 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { DelegationService } from "./delegation.service";
 import { DelegationController } from "./delegation.controller";
 import { AccountDelegateGuard } from "./guards/account-delegate.guard";
+import { DelegateTransferMaskInterceptor } from "./interceptors/delegate-transfer-mask.interceptor";
 import { NotificationsModule } from "../notifications/notifications.module";
 
 /**
@@ -52,10 +53,15 @@ import { NotificationsModule } from "../notifications/notifications.module";
   providers: [
     DelegationService,
     AccountDelegateGuard,
+    DelegateTransferMaskInterceptor,
     // Providing APP_GUARD here registers it globally (Nest treats the
     // APP_GUARD token specially regardless of the declaring module).
     { provide: APP_GUARD, useExisting: AccountDelegateGuard },
   ],
-  exports: [DelegationService, AccountDelegateGuard],
+  exports: [
+    DelegationService,
+    AccountDelegateGuard,
+    DelegateTransferMaskInterceptor,
+  ],
 })
 export class DelegationModule {}

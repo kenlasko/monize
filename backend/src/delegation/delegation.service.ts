@@ -165,6 +165,28 @@ export class DelegationService {
     return tx?.accountId ?? null;
   }
 
+  /**
+   * Both account ids involved in a transfer identified by either leg's
+   * transaction id (this leg + the linked leg). Empty if the transaction
+   * does not exist.
+   */
+  async accountIdsForTransfer(transactionId: string): Promise<string[]> {
+    const tx = await this.transactionsRepository.findOne({
+      where: { id: transactionId },
+      select: ["accountId", "linkedTransactionId"],
+    });
+    if (!tx) return [];
+    const ids = new Set<string>([tx.accountId]);
+    if (tx.linkedTransactionId) {
+      const linked = await this.transactionsRepository.findOne({
+        where: { id: tx.linkedTransactionId },
+        select: ["accountId"],
+      });
+      if (linked) ids.add(linked.accountId);
+    }
+    return [...ids];
+  }
+
   async readableAccountIds(delegationId: string): Promise<string[]> {
     const grants = await this.grantsRepository.find({
       where: { delegationId, canRead: true },

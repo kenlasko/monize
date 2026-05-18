@@ -153,6 +153,33 @@ describe("DelegationService", () => {
     });
   });
 
+  describe("accountIdsForTransfer", () => {
+    it("returns both legs' accounts", async () => {
+      transactionsRepo.findOne
+        .mockResolvedValueOnce({ accountId: "a1", linkedTransactionId: "t2" })
+        .mockResolvedValueOnce({ accountId: "a2" });
+      await expect(service.accountIdsForTransfer("t1")).resolves.toEqual([
+        "a1",
+        "a2",
+      ]);
+    });
+
+    it("returns just the one account when there is no linked leg", async () => {
+      transactionsRepo.findOne.mockResolvedValueOnce({
+        accountId: "a1",
+        linkedTransactionId: null,
+      });
+      await expect(service.accountIdsForTransfer("t1")).resolves.toEqual([
+        "a1",
+      ]);
+    });
+
+    it("returns [] when the transaction does not exist", async () => {
+      transactionsRepo.findOne.mockResolvedValueOnce(null);
+      await expect(service.accountIdsForTransfer("t1")).resolves.toEqual([]);
+    });
+  });
+
   describe("hasReadAccess", () => {
     it("is true only when a can_read grant exists", async () => {
       grantsRepo.findOne.mockResolvedValue({ id: "x" });

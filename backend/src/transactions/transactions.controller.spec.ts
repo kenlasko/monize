@@ -2,6 +2,8 @@ import { BadRequestException } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import { TransactionsController } from "./transactions.controller";
 import { TransactionsService } from "./transactions.service";
+import { DelegateTransferMaskInterceptor } from "../delegation/interceptors/delegate-transfer-mask.interceptor";
+import { DelegationService } from "../delegation/delegation.service";
 
 describe("TransactionsController", () => {
   let controller: TransactionsController;
@@ -45,6 +47,11 @@ describe("TransactionsController", () => {
         {
           provide: TransactionsService,
           useValue: mockService,
+        },
+        DelegateTransferMaskInterceptor,
+        {
+          provide: DelegationService,
+          useValue: { readableAccountIds: jest.fn().mockResolvedValue([]) },
         },
       ],
     }).compile();

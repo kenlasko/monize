@@ -4,6 +4,8 @@ import {
   ALLOW_DELEGATE_KEY,
   DELEGATED_ACCOUNT_PARAM_KEY,
   DELEGATED_TRANSACTION_PARAM_KEY,
+  DELEGATED_TRANSFER_BODY_KEY,
+  DELEGATED_TRANSFER_PARAM_KEY,
   DELEGATE_OPERATION_KEY,
 } from "../decorators/delegate-access.decorator";
 
@@ -27,6 +29,7 @@ describe("AccountDelegateGuard", () => {
     delegationService = {
       hasAccountPermission: jest.fn(),
       accountIdForTransaction: jest.fn(),
+      accountIdsForTransfer: jest.fn(),
     };
     guard = new AccountDelegateGuard(
       reflector as any,
@@ -173,6 +176,103 @@ describe("AccountDelegateGuard", () => {
       return undefined;
     });
     delegationService.accountIdForTransaction.mockResolvedValue(null);
+    const ctx = makeContext({
+      headers: { authorization: "Bearer x" },
+      params: { id: "tx-missing" },
+    });
+    await expect(guard.canActivate(ctx)).resolves.toBe(true);
+    expect(delegationService.hasAccountPermission).not.toHaveBeenCalled();
+  });
+
+  it("requires the operation on BOTH accounts of a transfer body", async () => {
+    jwtService.verify.mockReturnValue({
+      sub: "d1",
+      actingAsUserId: "o1",
+      delegationId: "g1",
+    });
+    reflector.getAllAndOverride.mockImplementation((key: string) => {
+      if (key === ALLOW_DELEGATE_KEY) return true;
+      if (key === DELEGATED_TRANSFER_BODY_KEY)
+        return ["fromAccountId", "toAccountId"];
+      if (key === DELEGATE_OPERATION_KEY) return "create";
+      return undefined;
+    });
+    // from-account allowed, to-account denied -> overall denied
+    delegationService.hasAccountPermission.mockImplementation(
+      async (_g: string, accId: string) => accId === "from-acc",
+    );
+    const ctx = makeContext({
+      headers: { authorization: "Bearer x" },
+      body: { fromAccountId: "from-acc", toAccountId: "to-acc" },
+    });
+    await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+    expect(delegationService.hasAccountPermission).toHaveBeenCalledWith(
+      "g1",
+      "to-acc",
+      "create",
+    );
+  });
+
+  it("allows a transfer body when both accounts are permitted", async () => {
+    jwtService.verify.mockReturnValue({
+      sub: "d1",
+      actingAsUserId: "o1",
+      delegationId: "g1",
+    });
+    reflector.getAllAndOverride.mockImplementation((key: string) => {
+      if (key === ALLOW_DELEGATE_KEY) return true;
+      if (key === DELEGATED_TRANSFER_BODY_KEY)
+        return ["fromAccountId", "toAccountId"];
+      if (key === DELEGATE_OPERATION_KEY) return "create";
+      return undefined;
+    });
+    delegationService.hasAccountPermission.mockResolvedValue(true);
+    const ctx = makeContext({
+      headers: { authorization: "Bearer x" },
+      body: { fromAccountId: "a1", toAccountId: "a2" },
+    });
+    await expect(guard.canActivate(ctx)).resolves.toBe(true);
+  });
+
+  it("requires the operation on both legs of a transfer-by-id", async () => {
+    jwtService.verify.mockReturnValue({
+      sub: "d1",
+      actingAsUserId: "o1",
+      delegationId: "g1",
+    });
+    reflector.getAllAndOverride.mockImplementation((key: string) => {
+      if (key === ALLOW_DELEGATE_KEY) return true;
+      if (key === DELEGATED_TRANSFER_PARAM_KEY) return "id";
+      if (key === DELEGATE_OPERATION_KEY) return "delete";
+      return undefined;
+    });
+    delegationService.accountIdsForTransfer.mockResolvedValue(["a1", "a2"]);
+    delegationService.hasAccountPermission.mockImplementation(
+      async (_g: string, accId: string) => accId === "a1",
+    );
+    const ctx = makeContext({
+      headers: { authorization: "Bearer x" },
+      params: { id: "tx-1" },
+    });
+    await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+  });
+
+  it("lets an unknown transfer fall through (404)", async () => {
+    jwtService.verify.mockReturnValue({
+      sub: "d1",
+      actingAsUserId: "o1",
+      delegationId: "g1",
+    });
+    reflector.getAllAndOverride.mockImplementation((key: string) => {
+      if (key === ALLOW_DELEGATE_KEY) return true;
+      if (key === DELEGATED_TRANSFER_PARAM_KEY) return "id";
+      return undefined;
+    });
+    delegationService.accountIdsForTransfer.mockResolvedValue([]);
     const ctx = makeContext({
       headers: { authorization: "Bearer x" },
       params: { id: "tx-missing" },

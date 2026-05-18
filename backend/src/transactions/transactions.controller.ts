@@ -8,6 +8,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  UseInterceptors,
   Request,
   Query,
   ParseUUIDPipe,
@@ -28,8 +29,11 @@ import {
   AllowDelegate,
   DelegatedAccountParam,
   DelegatedTransactionParam,
+  DelegatedTransferBody,
+  DelegatedTransferParam,
   DelegateRequires,
 } from "../delegation/decorators/delegate-access.decorator";
+import { DelegateTransferMaskInterceptor } from "../delegation/interceptors/delegate-transfer-mask.interceptor";
 import { TransactionStatus } from "./entities/transaction.entity";
 import { CreateTransactionDto } from "./dto/create-transaction.dto";
 import { UpdateTransactionDto } from "./dto/update-transaction.dto";
@@ -75,6 +79,7 @@ function parseTransactionStatuses(
 @ApiTags("Transactions")
 @Controller("transactions")
 @UseGuards(AuthGuard("jwt"))
+@UseInterceptors(DelegateTransferMaskInterceptor)
 @ApiBearerAuth()
 export class TransactionsController {
   constructor(private readonly transactionsService: TransactionsService) {}
@@ -579,6 +584,9 @@ export class TransactionsController {
   })
   @ApiResponse({ status: 401, description: "Unauthorized" })
   @ApiResponse({ status: 404, description: "Account not found" })
+  @AllowDelegate()
+  @DelegatedTransferBody()
+  @DelegateRequires("create")
   createTransfer(@Request() req, @Body() createTransferDto: CreateTransferDto) {
     return this.transactionsService.createTransfer(
       req.user.id,
@@ -827,6 +835,9 @@ export class TransactionsController {
   @ApiResponse({ status: 400, description: "Transaction is not a transfer" })
   @ApiResponse({ status: 401, description: "Unauthorized" })
   @ApiResponse({ status: 404, description: "Transaction not found" })
+  @AllowDelegate()
+  @DelegatedTransferParam("id")
+  @DelegateRequires("delete")
   removeTransfer(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
     return this.transactionsService.removeTransfer(req.user.id, id);
   }
@@ -843,6 +854,9 @@ export class TransactionsController {
   })
   @ApiResponse({ status: 401, description: "Unauthorized" })
   @ApiResponse({ status: 404, description: "Transaction not found" })
+  @AllowDelegate()
+  @DelegatedTransferParam("id")
+  @DelegateRequires("edit")
   updateTransfer(
     @Request() req,
     @Param("id", ParseUUIDPipe) id: string,
