@@ -79,6 +79,7 @@ export class PayeesController {
   }
 
   @Get("search")
+  @AllowDelegate()
   @ApiOperation({ summary: "Search payees by name" })
   @ApiQuery({ name: "q", required: true, description: "Search query" })
   @ApiQuery({
@@ -100,6 +101,7 @@ export class PayeesController {
   }
 
   @Get("autocomplete")
+  @AllowDelegate()
   @ApiOperation({ summary: "Autocomplete payees (for input suggestions)" })
   @ApiQuery({
     name: "q",
@@ -118,6 +120,7 @@ export class PayeesController {
   }
 
   @Get("most-used")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get most frequently used payees" })
   @ApiQuery({
     name: "limit",
@@ -135,6 +138,7 @@ export class PayeesController {
   }
 
   @Get("recently-used")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get recently used payees" })
   @ApiQuery({
     name: "limit",
@@ -156,6 +160,7 @@ export class PayeesController {
   }
 
   @Get("summary")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get payee statistics summary" })
   @ApiResponse({ status: 200, description: "Payee summary statistics" })
   getSummary(@Request() req) {
@@ -163,6 +168,7 @@ export class PayeesController {
   }
 
   @Get("aliases")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get all aliases for the user" })
   @ApiResponse({
     status: 200,
@@ -214,6 +220,7 @@ export class PayeesController {
   }
 
   @Get("category-suggestions/preview")
+  @AllowDelegate()
   @ApiOperation({
     summary:
       "Preview category auto-assignment suggestions based on transaction history",
@@ -271,6 +278,7 @@ export class PayeesController {
   }
 
   @Get("deactivation/preview")
+  @AllowDelegate()
   @ApiOperation({
     summary: "Preview which payees would be deactivated based on criteria",
   })
@@ -332,6 +340,7 @@ export class PayeesController {
   }
 
   @Get(":id/aliases")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get all aliases for a specific payee" })
   @ApiResponse({
     status: 200,
@@ -347,6 +356,7 @@ export class PayeesController {
   }
 
   @Get("inactive/match")
+  @AllowDelegate()
   @ApiOperation({
     summary: "Check if a payee name matches an inactive payee",
   })
@@ -366,6 +376,7 @@ export class PayeesController {
   }
 
   @Get(":id")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get a payee by ID" })
   @ApiResponse({ status: 200, description: "Payee details", type: Payee })
   @ApiResponse({ status: 404, description: "Payee not found" })

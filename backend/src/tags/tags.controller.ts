@@ -41,6 +41,7 @@ export class TagsController {
   }
 
   @Get("transaction-counts")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get transaction counts for all tags" })
   @ApiResponse({
     status: 200,
@@ -51,6 +52,7 @@ export class TagsController {
   }
 
   @Get(":id")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get a tag by ID" })
   @ApiResponse({ status: 200, description: "Tag retrieved successfully" })
   @ApiResponse({ status: 404, description: "Tag not found" })
@@ -59,6 +61,7 @@ export class TagsController {
   }
 
   @Get(":id/transaction-count")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get number of transactions using this tag" })
   @ApiResponse({ status: 200, description: "Count retrieved successfully" })
   getTransactionCount(@Request() req, @Param("id", ParseUUIDPipe) id: string) {

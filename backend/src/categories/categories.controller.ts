@@ -71,6 +71,7 @@ export class CategoriesController {
   }
 
   @Get("tree")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get categories in tree structure (hierarchical)" })
   @ApiResponse({
     status: 200,
@@ -82,6 +83,7 @@ export class CategoriesController {
   }
 
   @Get("stats")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get category statistics" })
   @ApiResponse({
     status: 200,
@@ -108,6 +110,7 @@ export class CategoriesController {
   }
 
   @Get("income")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get all income categories" })
   @ApiResponse({
     status: 200,
@@ -119,6 +122,7 @@ export class CategoriesController {
   }
 
   @Get("expense")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get all expense categories" })
   @ApiResponse({
     status: 200,
@@ -130,6 +134,7 @@ export class CategoriesController {
   }
 
   @Get(":id")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get a specific category by ID" })
   @ApiParam({ name: "id", description: "Category UUID" })
   @ApiResponse({
@@ -191,6 +196,7 @@ export class CategoriesController {
   }
 
   @Get(":id/transaction-count")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get the count of transactions using a category" })
   @ApiParam({ name: "id", description: "Category UUID" })
   @ApiResponse({
