@@ -62,9 +62,19 @@ export function TransferTransactionFields({
   crossCurrencyInfo,
   payees,
   payeeAliasMap,
-  transaction: _transaction,
+  transaction,
   createdAtSlot,
 }: TransferTransactionFieldsProps) {
+  // A delegate may only have READ on one side of a transfer; the other
+  // account is not in `accounts` (and the backend masked it). Surface it as
+  // a read-only "Hidden account" option so the field is not blank.
+  const hiddenAccountOption = (id: string) => {
+    if (!id || accounts.some((a) => a.id === id)) return [];
+    const masked =
+      transaction?.linkedTransaction?.account?.name || 'Hidden account';
+    return [{ value: id, label: masked, disabled: true }];
+  };
+
   return (
     <div className="space-y-4">
       {/* Row 1: Date and optionally Create Date */}
@@ -86,6 +96,7 @@ export function TransferTransactionFields({
           value={watchedAccountId || ''}
           options={[
             { value: '', label: 'Select account...' },
+            ...hiddenAccountOption(watchedAccountId),
             ...buildAccountDropdownOptions(
               accounts,
               (account) =>
@@ -104,6 +115,7 @@ export function TransferTransactionFields({
           }}
           options={[
             { value: '', label: 'Select destination account...' },
+            ...hiddenAccountOption(transferToAccountId),
             ...buildAccountDropdownOptions(
               accounts,
               (account) =>

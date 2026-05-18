@@ -499,4 +499,45 @@ describe('TransferTransactionFields', () => {
     expect(labels).toContain('CAD Account (CAD)');
     expect(labels).toContain('US Account (USD)');
   });
+
+  it('shows a "Hidden account" option when the To account is not accessible (delegate)', () => {
+    const accessible = createAccount({ id: 'acc-1', name: 'Chequing' });
+
+    render(
+      <TransferTransactionFields
+        {...defaultProps}
+        accounts={[accessible]}
+        transferToAccountId="acc-hidden"
+        transaction={
+          {
+            linkedTransaction: { account: { name: 'Hidden account' } },
+          } as never
+        }
+      />
+    );
+
+    const toSelect = screen.getByLabelText('To Account');
+    const labels = Array.from(toSelect.querySelectorAll('option')).map(
+      (o) => o.textContent,
+    );
+    expect(labels).toContain('Hidden account');
+  });
+
+  it('falls back to "Hidden account" for an inaccessible From account', () => {
+    const accessible = createAccount({ id: 'acc-1', name: 'Chequing' });
+
+    render(
+      <TransferTransactionFields
+        {...defaultProps}
+        accounts={[accessible]}
+        watchedAccountId="acc-hidden"
+      />
+    );
+
+    const fromSelect = screen.getByLabelText('From Account');
+    const labels = Array.from(fromSelect.querySelectorAll('option')).map(
+      (o) => o.textContent,
+    );
+    expect(labels).toContain('Hidden account');
+  });
 });
