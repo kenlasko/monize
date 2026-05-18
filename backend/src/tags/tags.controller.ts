@@ -73,7 +73,7 @@ export class TagsController {
   @ApiResponse({ status: 201, description: "Tag created successfully" })
   @ApiResponse({ status: 409, description: "Tag name already exists" })
   @AllowDelegate()
-  @DelegateRequiresCapability("tags")
+  @DelegateRequiresCapability("tags", "create")
   create(@Request() req, @Body() createTagDto: CreateTagDto) {
     return this.tagsService.create(req.user.id, createTagDto);
   }
@@ -83,7 +83,7 @@ export class TagsController {
   @ApiResponse({ status: 200, description: "Tag updated successfully" })
   @ApiResponse({ status: 404, description: "Tag not found" })
   @AllowDelegate()
-  @DelegateRequiresCapability("tags")
+  @DelegateRequiresCapability("tags", "edit")
   update(
     @Request() req,
     @Param("id", ParseUUIDPipe) id: string,
@@ -97,7 +97,7 @@ export class TagsController {
   @ApiResponse({ status: 200, description: "Tag deleted successfully" })
   @ApiResponse({ status: 404, description: "Tag not found" })
   @AllowDelegate()
-  @DelegateRequiresCapability("tags")
+  @DelegateRequiresCapability("tags", "delete")
   remove(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
     return this.tagsService.remove(req.user.id, id);
   }

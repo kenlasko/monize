@@ -59,7 +59,9 @@ export function AppHeader() {
   const visibleToolsLinks = isDelegateView
     ? toolsLinks.filter((l) => {
         const cap = toolsCapabilityByHref[l.href];
-        return cap ? !!delegateCapabilities?.[cap] : false;
+        if (!cap) return false;
+        const r = delegateCapabilities?.[cap];
+        return !!r && (r.create || r.edit || r.delete);
       })
     : toolsLinks;
   const [toolsOpen, setToolsOpen] = useState(false);

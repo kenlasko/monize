@@ -87,13 +87,13 @@ describe("delegate-access decorators", () => {
     ).toBe("id");
   });
 
-  it("DelegateRequiresCapability sets the capability", () => {
+  it("DelegateRequiresCapability sets {resource, operation}", () => {
     class C {
-      @DelegateRequiresCapability("payees")
+      @DelegateRequiresCapability("payees", "edit")
       handler() {}
     }
-    expect(reflector.get(DELEGATE_CAPABILITY_KEY, C.prototype.handler)).toBe(
-      "payees",
+    expect(reflector.get(DELEGATE_CAPABILITY_KEY, C.prototype.handler)).toEqual(
+      { resource: "payees", operation: "edit" },
     );
   });
 });

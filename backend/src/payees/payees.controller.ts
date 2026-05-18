@@ -53,7 +53,7 @@ export class PayeesController {
   })
   @ApiResponse({ status: 409, description: "Payee with name already exists" })
   @AllowDelegate()
-  @DelegateRequiresCapability("payees")
+  @DelegateRequiresCapability("payees", "create")
   create(
     @Request() req,
     @Body() createPayeeDto: CreatePayeeDto,
@@ -397,7 +397,7 @@ export class PayeesController {
   @ApiResponse({ status: 404, description: "Payee not found" })
   @ApiResponse({ status: 409, description: "Payee with name already exists" })
   @AllowDelegate()
-  @DelegateRequiresCapability("payees")
+  @DelegateRequiresCapability("payees", "edit")
   update(
     @Request() req,
     @Param("id", ParseUUIDPipe) id: string,
@@ -411,7 +411,7 @@ export class PayeesController {
   @ApiResponse({ status: 200, description: "Payee deleted successfully" })
   @ApiResponse({ status: 404, description: "Payee not found" })
   @AllowDelegate()
-  @DelegateRequiresCapability("payees")
+  @DelegateRequiresCapability("payees", "delete")
   remove(
     @Request() req,
     @Param("id", ParseUUIDPipe) id: string,

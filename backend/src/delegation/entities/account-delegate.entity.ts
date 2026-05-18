@@ -36,15 +36,34 @@ export class AccountDelegate {
   @Column({ name: "revoked_at", type: "timestamp", nullable: true })
   revokedAt: Date | null;
 
-  // 2C: per-delegation "manage" capabilities for shared reference data.
-  @Column({ name: "can_manage_payees", type: "boolean", default: false })
-  canManagePayees: boolean;
+  // 2C: per-delegation, per-resource, per-operation capabilities for shared
+  // reference data. READ is always allowed; these gate create/edit/delete.
+  @Column({ name: "payees_can_create", type: "boolean", default: false })
+  payeesCanCreate: boolean;
 
-  @Column({ name: "can_manage_categories", type: "boolean", default: false })
-  canManageCategories: boolean;
+  @Column({ name: "payees_can_edit", type: "boolean", default: false })
+  payeesCanEdit: boolean;
 
-  @Column({ name: "can_manage_tags", type: "boolean", default: false })
-  canManageTags: boolean;
+  @Column({ name: "payees_can_delete", type: "boolean", default: false })
+  payeesCanDelete: boolean;
+
+  @Column({ name: "categories_can_create", type: "boolean", default: false })
+  categoriesCanCreate: boolean;
+
+  @Column({ name: "categories_can_edit", type: "boolean", default: false })
+  categoriesCanEdit: boolean;
+
+  @Column({ name: "categories_can_delete", type: "boolean", default: false })
+  categoriesCanDelete: boolean;
+
+  @Column({ name: "tags_can_create", type: "boolean", default: false })
+  tagsCanCreate: boolean;
+
+  @Column({ name: "tags_can_edit", type: "boolean", default: false })
+  tagsCanEdit: boolean;
+
+  @Column({ name: "tags_can_delete", type: "boolean", default: false })
+  tagsCanDelete: boolean;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: "owner_user_id" })

@@ -43,7 +43,11 @@ const delegate = {
     canEdit?: boolean;
     canDelete?: boolean;
   }>,
-  capabilities: { payees: false, categories: false, tags: false },
+  capabilities: {
+    payees: { create: false, edit: false, delete: false },
+    categories: { create: false, edit: false, delete: false },
+    tags: { create: false, edit: false, delete: false },
+  },
 };
 
 async function renderSection() {
@@ -163,19 +167,35 @@ describe('SharedAccessSection', () => {
     ]);
   });
 
-  it('toggles a manage capability', async () => {
+  it('toggles a granular manage capability (Edit Payees)', async () => {
     vi.mocked(delegationApi.setCapabilities).mockResolvedValue();
     await renderSection();
     await screen.findByText('d@e.f');
 
     await act(async () => {
       fireEvent.click(
-        screen.getByRole('switch', { name: /Manage Payees/i }),
+        screen.getByRole('switch', { name: /^Edit Payees$/i }),
       );
     });
 
     expect(delegationApi.setCapabilities).toHaveBeenCalledWith('g1', {
-      canManagePayees: true,
+      payeesCanEdit: true,
+    });
+  });
+
+  it('toggles Delete Tags independently', async () => {
+    vi.mocked(delegationApi.setCapabilities).mockResolvedValue();
+    await renderSection();
+    await screen.findByText('d@e.f');
+
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole('switch', { name: /^Delete Tags$/i }),
+      );
+    });
+
+    expect(delegationApi.setCapabilities).toHaveBeenCalledWith('g1', {
+      tagsCanDelete: true,
     });
   });
 });

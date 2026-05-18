@@ -138,22 +138,34 @@ export function SharedAccessSection() {
 
   const updateCapability = async (
     delegate: DelegateSummary,
-    key: 'payees' | 'categories' | 'tags',
+    resource: 'payees' | 'categories' | 'tags',
+    op: 'create' | 'edit' | 'delete',
     value: boolean,
   ) => {
-    const fieldMap = {
-      payees: 'canManagePayees',
-      categories: 'canManageCategories',
-      tags: 'canManageTags',
-    } as const;
+    const opPart =
+      op === 'create' ? 'Create' : op === 'edit' ? 'Edit' : 'Delete';
+    const field = `${resource}Can${opPart}` as
+      | 'payeesCanCreate'
+      | 'payeesCanEdit'
+      | 'payeesCanDelete'
+      | 'categoriesCanCreate'
+      | 'categoriesCanEdit'
+      | 'categoriesCanDelete'
+      | 'tagsCanCreate'
+      | 'tagsCanEdit'
+      | 'tagsCanDelete';
     try {
-      await delegationApi.setCapabilities(delegate.id, {
-        [fieldMap[key]]: value,
-      });
+      await delegationApi.setCapabilities(delegate.id, { [field]: value });
       setDelegates((prev) =>
         prev.map((d) =>
           d.id === delegate.id
-            ? { ...d, capabilities: { ...d.capabilities, [key]: value } }
+            ? {
+                ...d,
+                capabilities: {
+                  ...d.capabilities,
+                  [resource]: { ...d.capabilities[resource], [op]: value },
+                },
+              }
             : d,
         ),
       );
@@ -294,28 +306,46 @@ export function SharedAccessSection() {
                 </div>
               </div>
               <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Can create/edit/delete:
+                Shared data (READ is always allowed):
               </p>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 mb-4">
+              <div className="space-y-2 mb-4">
                 {(
                   [
                     { key: 'payees' as const, label: 'Payees' },
                     { key: 'categories' as const, label: 'Categories' },
                     { key: 'tags' as const, label: 'Tags' },
                   ]
-                ).map((cap) => (
-                  <label
-                    key={cap.key}
-                    className="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300"
+                ).map((res) => (
+                  <div
+                    key={res.key}
+                    className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-gray-700/50 pb-2"
                   >
-                    <ToggleSwitch
-                      size="sm"
-                      checked={!!d.capabilities?.[cap.key]}
-                      onChange={(v) => updateCapability(d, cap.key, v)}
-                      label={`Manage ${cap.label}`}
-                    />
-                    <span className="text-xs">{cap.label}</span>
-                  </label>
+                    <span className="w-40 truncate font-medium">
+                      {res.label}
+                    </span>
+                    {(
+                      [
+                        { op: 'create' as const, label: 'Create' },
+                        { op: 'edit' as const, label: 'Edit' },
+                        { op: 'delete' as const, label: 'Delete' },
+                      ]
+                    ).map((o) => (
+                      <label
+                        key={o.op}
+                        className="flex items-center gap-1.5"
+                      >
+                        <ToggleSwitch
+                          size="sm"
+                          checked={!!d.capabilities?.[res.key]?.[o.op]}
+                          onChange={(v) =>
+                            updateCapability(d, res.key, o.op, v)
+                          }
+                          label={`${o.label} ${res.label}`}
+                        />
+                        <span className="text-xs">{o.label}</span>
+                      </label>
+                    ))}
+                  </div>
                 ))}
               </div>
               <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">

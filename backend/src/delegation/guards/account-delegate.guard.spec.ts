@@ -291,7 +291,8 @@ describe("AccountDelegateGuard", () => {
     });
     reflector.getAllAndOverride.mockImplementation((key: string) => {
       if (key === ALLOW_DELEGATE_KEY) return true;
-      if (key === DELEGATE_CAPABILITY_KEY) return "payees";
+      if (key === DELEGATE_CAPABILITY_KEY)
+        return { resource: "payees", operation: "edit" };
       return undefined;
     });
     delegationService.hasCapability.mockResolvedValue(false);
@@ -302,6 +303,7 @@ describe("AccountDelegateGuard", () => {
     expect(delegationService.hasCapability).toHaveBeenCalledWith(
       "g1",
       "payees",
+      "edit",
     );
   });
 
@@ -313,7 +315,8 @@ describe("AccountDelegateGuard", () => {
     });
     reflector.getAllAndOverride.mockImplementation((key: string) => {
       if (key === ALLOW_DELEGATE_KEY) return true;
-      if (key === DELEGATE_CAPABILITY_KEY) return "tags";
+      if (key === DELEGATE_CAPABILITY_KEY)
+        return { resource: "tags", operation: "delete" };
       return undefined;
     });
     delegationService.hasCapability.mockResolvedValue(true);

@@ -60,7 +60,14 @@ export const DelegatedTransferParam = (key = "id") =>
  * categories, tags). A delegate may reach it only if the owner granted the
  * matching per-delegation manage capability.
  */
-export type DelegateCapability = "payees" | "categories" | "tags";
+export type DelegateResource = "payees" | "categories" | "tags";
+export type DelegateCapabilityOp = "create" | "edit" | "delete";
+export interface DelegateCapabilityReq {
+  resource: DelegateResource;
+  operation: DelegateCapabilityOp;
+}
 export const DELEGATE_CAPABILITY_KEY = "delegateCapability";
-export const DelegateRequiresCapability = (capability: DelegateCapability) =>
-  SetMetadata(DELEGATE_CAPABILITY_KEY, capability);
+export const DelegateRequiresCapability = (
+  resource: DelegateResource,
+  operation: DelegateCapabilityOp,
+) => SetMetadata(DELEGATE_CAPABILITY_KEY, { resource, operation });

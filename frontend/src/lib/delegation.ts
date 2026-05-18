@@ -7,10 +7,16 @@ export interface DelegateContext {
   ownerHas2FA: boolean;
 }
 
+export interface ResourceCapabilities {
+  create: boolean;
+  edit: boolean;
+  delete: boolean;
+}
+
 export interface DelegateCapabilityFlags {
-  payees: boolean;
-  categories: boolean;
-  tags: boolean;
+  payees: ResourceCapabilities;
+  categories: ResourceCapabilities;
+  tags: ResourceCapabilities;
 }
 
 export interface ContextsResponse {
@@ -39,17 +45,19 @@ export interface DelegateSummary {
     hasPassword: boolean;
   };
   grants: AccountGrant[];
-  capabilities: {
-    payees: boolean;
-    categories: boolean;
-    tags: boolean;
-  };
+  capabilities: DelegateCapabilityFlags;
 }
 
 export interface DelegateCapabilities {
-  canManagePayees?: boolean;
-  canManageCategories?: boolean;
-  canManageTags?: boolean;
+  payeesCanCreate?: boolean;
+  payeesCanEdit?: boolean;
+  payeesCanDelete?: boolean;
+  categoriesCanCreate?: boolean;
+  categoriesCanEdit?: boolean;
+  categoriesCanDelete?: boolean;
+  tagsCanCreate?: boolean;
+  tagsCanEdit?: boolean;
+  tagsCanDelete?: boolean;
 }
 
 export interface CreateDelegatePayload {

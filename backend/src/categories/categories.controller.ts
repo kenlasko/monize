@@ -43,7 +43,7 @@ export class CategoriesController {
   @ApiResponse({ status: 400, description: "Bad request" })
   @ApiResponse({ status: 401, description: "Unauthorized" })
   @AllowDelegate()
-  @DelegateRequiresCapability("categories")
+  @DelegateRequiresCapability("categories", "create")
   create(@Request() req, @Body() createCategoryDto: CreateCategoryDto) {
     return this.categoriesService.create(req.user.id, createCategoryDto);
   }
@@ -166,7 +166,7 @@ export class CategoriesController {
   })
   @ApiResponse({ status: 404, description: "Category not found" })
   @AllowDelegate()
-  @DelegateRequiresCapability("categories")
+  @DelegateRequiresCapability("categories", "edit")
   update(
     @Request() req,
     @Param("id", ParseUUIDPipe) id: string,
@@ -190,7 +190,7 @@ export class CategoriesController {
   })
   @ApiResponse({ status: 404, description: "Category not found" })
   @AllowDelegate()
-  @DelegateRequiresCapability("categories")
+  @DelegateRequiresCapability("categories", "delete")
   remove(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
     return this.categoriesService.remove(req.user.id, id);
   }

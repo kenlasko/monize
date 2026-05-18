@@ -29,7 +29,21 @@ import { delegateInviteTemplate } from "../notifications/email-templates";
 import { ConfigService } from "@nestjs/config";
 import { CreateDelegateDto } from "./dto/create-delegate.dto";
 import { AccountGrantDto } from "./dto/set-grants.dto";
-import { DelegateCapability } from "./decorators/delegate-access.decorator";
+import {
+  DelegateResource,
+  DelegateCapabilityOp,
+} from "./decorators/delegate-access.decorator";
+
+export interface ResourceCapabilities {
+  create: boolean;
+  edit: boolean;
+  delete: boolean;
+}
+export interface DelegateCapabilitySet {
+  payees: ResourceCapabilities;
+  categories: ResourceCapabilities;
+  tags: ResourceCapabilities;
+}
 
 export type DelegateOperation = "read" | "create" | "edit" | "delete";
 
@@ -304,55 +318,75 @@ export class DelegationService {
           canEdit: g.canEdit,
           canDelete: g.canDelete,
         })),
-      capabilities: {
-        payees: d.canManagePayees,
-        categories: d.canManageCategories,
-        tags: d.canManageTags,
-      },
+      capabilities: this.toCapabilitySet(d),
     }));
   }
 
-  /** Whether the delegation may manage the given shared reference type. */
+  private toCapabilitySet(d?: AccountDelegate | null): DelegateCapabilitySet {
+    return {
+      payees: {
+        create: !!d?.payeesCanCreate,
+        edit: !!d?.payeesCanEdit,
+        delete: !!d?.payeesCanDelete,
+      },
+      categories: {
+        create: !!d?.categoriesCanCreate,
+        edit: !!d?.categoriesCanEdit,
+        delete: !!d?.categoriesCanDelete,
+      },
+      tags: {
+        create: !!d?.tagsCanCreate,
+        edit: !!d?.tagsCanEdit,
+        delete: !!d?.tagsCanDelete,
+      },
+    };
+  }
+
+  /** Whether the delegation may perform `operation` on `resource`. */
   async hasCapability(
     delegationId: string,
-    capability: DelegateCapability,
+    resource: DelegateResource,
+    operation: DelegateCapabilityOp,
   ): Promise<boolean> {
     const delegation = await this.delegatesRepository.findOne({
       where: { id: delegationId, status: "active" },
     });
     if (!delegation) return false;
-    switch (capability) {
-      case "payees":
-        return delegation.canManagePayees;
-      case "categories":
-        return delegation.canManageCategories;
-      case "tags":
-        return delegation.canManageTags;
-    }
+    const opKey =
+      operation === "create"
+        ? "Create"
+        : operation === "edit"
+          ? "Edit"
+          : "Delete";
+    const field = `${resource}Can${opKey}` as keyof AccountDelegate;
+    return !!delegation[field];
   }
 
-  /** All manage capabilities for an active delegation (all false if none). */
-  async getCapabilities(
-    delegationId: string,
-  ): Promise<{ payees: boolean; categories: boolean; tags: boolean }> {
+  /** All granular capabilities for an active delegation (all false if none). */
+  async getCapabilities(delegationId: string): Promise<DelegateCapabilitySet> {
     const delegation = await this.delegatesRepository.findOne({
       where: { id: delegationId, status: "active" },
     });
-    return {
-      payees: !!delegation?.canManagePayees,
-      categories: !!delegation?.canManageCategories,
-      tags: !!delegation?.canManageTags,
-    };
+    return this.toCapabilitySet(delegation);
   }
 
   async setCapabilities(
     ownerUserId: string,
     delegationId: string,
-    caps: {
-      canManagePayees?: boolean;
-      canManageCategories?: boolean;
-      canManageTags?: boolean;
-    },
+    caps: Partial<
+      Record<
+        | "payeesCanCreate"
+        | "payeesCanEdit"
+        | "payeesCanDelete"
+        | "categoriesCanCreate"
+        | "categoriesCanEdit"
+        | "categoriesCanDelete"
+        | "tagsCanCreate"
+        | "tagsCanEdit"
+        | "tagsCanDelete",
+        boolean
+      >
+    >,
   ): Promise<void> {
     const delegation = await this.delegatesRepository.findOne({
       where: { id: delegationId, ownerUserId },
@@ -360,14 +394,10 @@ export class DelegationService {
     if (!delegation) {
       throw new NotFoundException("Delegate not found");
     }
-    if (caps.canManagePayees !== undefined) {
-      delegation.canManagePayees = caps.canManagePayees;
-    }
-    if (caps.canManageCategories !== undefined) {
-      delegation.canManageCategories = caps.canManageCategories;
-    }
-    if (caps.canManageTags !== undefined) {
-      delegation.canManageTags = caps.canManageTags;
+    for (const [key, value] of Object.entries(caps)) {
+      if (value !== undefined) {
+        (delegation as unknown as Record<string, boolean>)[key] = value;
+      }
     }
     await this.delegatesRepository.save(delegation);
   }

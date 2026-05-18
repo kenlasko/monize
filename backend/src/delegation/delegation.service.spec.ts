@@ -434,9 +434,15 @@ describe("DelegationService", () => {
             lastName: null,
             passwordHash: "h",
           },
-          canManagePayees: true,
-          canManageCategories: false,
-          canManageTags: true,
+          payeesCanCreate: true,
+          payeesCanEdit: true,
+          payeesCanDelete: false,
+          categoriesCanCreate: false,
+          categoriesCanEdit: false,
+          categoriesCanDelete: false,
+          tagsCanCreate: true,
+          tagsCanEdit: false,
+          tagsCanDelete: false,
           grants: [
             {
               accountId: "a1",
@@ -470,7 +476,11 @@ describe("DelegationService", () => {
             canDelete: false,
           },
         ],
-        capabilities: { payees: true, categories: false, tags: true },
+        capabilities: {
+          payees: { create: true, edit: true, delete: false },
+          categories: { create: false, edit: false, delete: false },
+          tags: { create: true, edit: false, delete: false },
+        },
       });
     });
   });
@@ -478,43 +488,60 @@ describe("DelegationService", () => {
   describe("hasCapability", () => {
     it("is false when there is no active delegation", async () => {
       delegatesRepo.findOne.mockResolvedValue(null);
-      await expect(service.hasCapability("g1", "payees")).resolves.toBe(false);
+      await expect(
+        service.hasCapability("g1", "payees", "create"),
+      ).resolves.toBe(false);
     });
 
-    it("maps each capability to the matching flag", async () => {
+    it("maps resource+operation to the matching flag", async () => {
       delegatesRepo.findOne.mockResolvedValue({
-        canManagePayees: true,
-        canManageCategories: false,
-        canManageTags: true,
+        payeesCanCreate: true,
+        payeesCanEdit: false,
+        payeesCanDelete: false,
+        categoriesCanEdit: true,
+        tagsCanDelete: true,
       });
-      await expect(service.hasCapability("g1", "payees")).resolves.toBe(true);
-      await expect(service.hasCapability("g1", "categories")).resolves.toBe(
+      await expect(
+        service.hasCapability("g1", "payees", "create"),
+      ).resolves.toBe(true);
+      await expect(service.hasCapability("g1", "payees", "edit")).resolves.toBe(
         false,
       );
-      await expect(service.hasCapability("g1", "tags")).resolves.toBe(true);
+      await expect(
+        service.hasCapability("g1", "categories", "edit"),
+      ).resolves.toBe(true);
+      await expect(service.hasCapability("g1", "tags", "delete")).resolves.toBe(
+        true,
+      );
     });
   });
 
   describe("getCapabilities", () => {
-    it("returns all flags for an active delegation", async () => {
+    it("returns the nested capability set for an active delegation", async () => {
       delegatesRepo.findOne.mockResolvedValue({
-        canManagePayees: true,
-        canManageCategories: false,
-        canManageTags: true,
+        payeesCanCreate: true,
+        payeesCanEdit: false,
+        payeesCanDelete: true,
+        categoriesCanCreate: false,
+        categoriesCanEdit: true,
+        categoriesCanDelete: false,
+        tagsCanCreate: false,
+        tagsCanEdit: false,
+        tagsCanDelete: false,
       });
       await expect(service.getCapabilities("g1")).resolves.toEqual({
-        payees: true,
-        categories: false,
-        tags: true,
+        payees: { create: true, edit: false, delete: true },
+        categories: { create: false, edit: true, delete: false },
+        tags: { create: false, edit: false, delete: false },
       });
     });
 
     it("returns all-false when there is no active delegation", async () => {
       delegatesRepo.findOne.mockResolvedValue(null);
       await expect(service.getCapabilities("g1")).resolves.toEqual({
-        payees: false,
-        categories: false,
-        tags: false,
+        payees: { create: false, edit: false, delete: false },
+        categories: { create: false, edit: false, delete: false },
+        tags: { create: false, edit: false, delete: false },
       });
     });
   });
@@ -523,7 +550,7 @@ describe("DelegationService", () => {
     it("throws when the delegation is not owned by the caller", async () => {
       delegatesRepo.findOne.mockResolvedValue(null);
       await expect(
-        service.setCapabilities("o1", "g1", { canManagePayees: true }),
+        service.setCapabilities("o1", "g1", { payeesCanCreate: true }),
       ).rejects.toBeInstanceOf(NotFoundException);
     });
 
@@ -531,18 +558,23 @@ describe("DelegationService", () => {
       const delegation = {
         id: "g1",
         ownerUserId: "o1",
-        canManagePayees: false,
-        canManageCategories: true,
-        canManageTags: false,
+        payeesCanCreate: false,
+        payeesCanEdit: false,
+        categoriesCanEdit: true,
+        tagsCanDelete: false,
       };
       delegatesRepo.findOne.mockResolvedValue(delegation);
       delegatesRepo.save.mockResolvedValue(delegation);
 
-      await service.setCapabilities("o1", "g1", { canManagePayees: true });
+      await service.setCapabilities("o1", "g1", {
+        payeesCanCreate: true,
+        tagsCanDelete: true,
+      });
 
-      expect(delegation.canManagePayees).toBe(true);
-      expect(delegation.canManageCategories).toBe(true); // unchanged
-      expect(delegation.canManageTags).toBe(false); // unchanged
+      expect(delegation.payeesCanCreate).toBe(true);
+      expect(delegation.tagsCanDelete).toBe(true);
+      expect(delegation.payeesCanEdit).toBe(false); // unchanged
+      expect(delegation.categoriesCanEdit).toBe(true); // unchanged
       expect(delegatesRepo.save).toHaveBeenCalledWith(delegation);
     });
   });
