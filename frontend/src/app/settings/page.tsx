@@ -13,7 +13,6 @@ import { DangerZoneSection } from '@/components/settings/DangerZoneSection';
 import { BackupRestoreSection } from '@/components/settings/BackupRestoreSection';
 import { AutoBackupSection } from '@/components/settings/AutoBackupSection';
 import { ApiAccessSection } from '@/components/settings/ApiAccessSection';
-import { SharedAccessSection } from '@/components/settings/SharedAccessSection';
 import { SettingsNav, SettingsSection } from '@/components/settings/SettingsNav';
 import { useScrollSpy } from '@/hooks/useScrollSpy';
 import { userSettingsApi } from '@/lib/user-settings';
@@ -32,7 +31,7 @@ const ALL_SETTINGS_SECTIONS: readonly (SettingsSection & { demoVisible?: boolean
   { id: 'preferences', label: 'Preferences', demoVisible: true },
   { id: 'notifications', label: 'Notifications', demoVisible: true },
   { id: 'security', label: 'Security' },
-  { id: 'shared-access', label: 'Shared Access' },
+  { id: 'shared-access', label: 'Shared Access', href: '/settings/shared-access' },
   { id: 'api-access', label: 'API Access' },
   { id: 'ai-settings', label: 'AI Settings', href: '/settings/ai' },
   { id: 'backup-restore', label: 'Backup & Restore' },
@@ -199,7 +198,17 @@ function SettingsContent() {
 
             {!isDemoMode && (
               <div id="shared-access" className="scroll-mt-16 lg:scroll-mt-6">
-                <SharedAccessSection />
+                <Link
+                  href="/settings/shared-access"
+                  className="block bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                    Shared Access
+                  </h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Grant another person scoped read access to specific accounts.
+                  </p>
+                </Link>
               </div>
             )}
 

@@ -2,14 +2,13 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import {
-  delegationApi,
-  DelegateSummary,
-} from '@/lib/delegation';
+import { delegationApi, DelegateSummary } from '@/lib/delegation';
 import { accountsApi } from '@/lib/accounts';
 import { Account } from '@/types/account';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { passwordSchema, PASSWORD_REQUIREMENTS_TEXT } from '@/lib/zod-helpers';
 
 const logger = createLogger('SharedAccess');
 
@@ -46,6 +45,15 @@ export function SharedAccessSection() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!sendInvite && password) {
+      const parsed = passwordSchema.safeParse(password);
+      if (!parsed.success) {
+        toast.error(PASSWORD_REQUIREMENTS_TEXT);
+        return;
+      }
+    }
+
     setSubmitting(true);
     try {
       const res = await delegationApi.createDelegate({
@@ -77,10 +85,7 @@ export function SharedAccessSection() {
     }
   };
 
-  const toggleGrant = async (
-    delegate: DelegateSummary,
-    accountId: string,
-  ) => {
+  const toggleGrant = async (delegate: DelegateSummary, accountId: string) => {
     const has = delegate.accountIds.includes(accountId);
     const next = has
       ? delegate.accountIds.filter((id) => id !== accountId)
@@ -126,12 +131,9 @@ export function SharedAccessSection() {
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-        Shared Access
-      </h2>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-        Grant another person scoped read access to specific accounts. Delegates
-        sign in with their own credentials and never see your password.
+        Delegates sign in with their own credentials and never see your
+        password. They only see the accounts you grant them.
       </p>
 
       <form
@@ -153,24 +155,34 @@ export function SharedAccessSection() {
           onChange={(e) => setFirstName(e.target.value)}
           className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
         />
-        {!sendInvite && (
-          <input
-            type="password"
-            placeholder="Set a password (optional)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            minLength={8}
-            className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
-          />
-        )}
-        <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-          <input
-            type="checkbox"
+
+        <div className="sm:col-span-2 flex items-center gap-3">
+          <ToggleSwitch
             checked={sendInvite}
-            onChange={(e) => setSendInvite(e.target.checked)}
+            onChange={setSendInvite}
+            label="Send an email invite instead of setting a password"
           />
-          Send email invite instead
-        </label>
+          <span className="text-sm text-gray-700 dark:text-gray-300">
+            Send an email invite instead of setting a password
+          </span>
+        </div>
+
+        {!sendInvite && (
+          <div className="sm:col-span-2">
+            <input
+              type="password"
+              placeholder="Set a password (optional)"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
+            />
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {PASSWORD_REQUIREMENTS_TEXT} Leave blank to auto-generate a
+              temporary password.
+            </p>
+          </div>
+        )}
+
         <div className="sm:col-span-2">
           <button
             type="submit"
@@ -218,19 +230,20 @@ export function SharedAccessSection() {
               <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Accounts this delegate can read:
               </p>
-              <div className="grid gap-1 sm:grid-cols-2">
+              <div className="grid gap-2 sm:grid-cols-2">
                 {accounts.map((a) => (
-                  <label
+                  <div
                     key={a.id}
                     className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300"
                   >
-                    <input
-                      type="checkbox"
+                    <ToggleSwitch
+                      size="sm"
                       checked={d.accountIds.includes(a.id)}
                       onChange={() => toggleGrant(d, a.id)}
+                      label={`Read access to ${a.name}`}
                     />
-                    {a.name}
-                  </label>
+                    <span>{a.name}</span>
+                  </div>
                 ))}
               </div>
             </li>
