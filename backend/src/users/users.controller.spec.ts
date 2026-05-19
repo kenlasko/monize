@@ -5,7 +5,7 @@ import { UsersService } from "./users.service";
 describe("UsersController", () => {
   let controller: UsersController;
   let mockUsersService: Record<string, jest.Mock>;
-  const mockReq = { user: { id: "user-1" } };
+  const mockReq = { user: { id: "user-1", realUserId: "user-1" } };
 
   beforeEach(async () => {
     mockUsersService = {
@@ -141,6 +141,21 @@ describe("UsersController", () => {
       expect(result).toEqual({ message: "Password changed successfully" });
       expect(mockUsersService.changePassword).toHaveBeenCalledWith(
         "user-1",
+        dto,
+      );
+    });
+
+    it("targets the real (delegate) user id, never the owner, when acting", async () => {
+      const dto = { currentPassword: "old123", newPassword: "new456" };
+      mockUsersService.changePassword.mockResolvedValue(undefined);
+      const actingReq = {
+        user: { id: "owner-1", realUserId: "delegate-1", isActing: true },
+      };
+
+      await controller.changePassword(actingReq as any, dto as any);
+
+      expect(mockUsersService.changePassword).toHaveBeenCalledWith(
+        "delegate-1",
         dto,
       );
     });

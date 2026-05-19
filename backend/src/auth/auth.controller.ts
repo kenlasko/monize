@@ -472,6 +472,21 @@ export class AuthController {
     return this.authService.sanitizeUser(req.user);
   }
 
+  @Get("me-self")
+  @UseGuards(AuthGuard("jwt"))
+  @AllowDelegate()
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      "Authenticated user's OWN profile (delegate id, never the owner). " +
+      "Used by Security settings while acting as a delegate.",
+  })
+  async getSelfProfile(@Request() req) {
+    const user = await this.authService.getUserById(req.user.realUserId);
+    if (!user) return null;
+    return this.authService.sanitizeUser(user);
+  }
+
   @Get("contexts")
   @UseGuards(AuthGuard("jwt"))
   @AllowDelegate()
@@ -667,48 +682,66 @@ export class AuthController {
 
   @Post("2fa/setup")
   @UseGuards(AuthGuard("jwt"))
+  @AllowDelegate()
   @DemoRestricted()
   @Throttle({ default: { ttl: 900000, limit: 5 } })
   @ApiBearerAuth()
   @ApiOperation({ summary: "Generate QR code and secret for 2FA setup" })
   async setup2FA(@Request() req, @Body() dto: Setup2faInitDto) {
-    return this.authService.setup2FA(req.user.id, dto.currentPassword);
+    return this.authService.setup2FA(req.user.realUserId, dto.currentPassword);
   }
 
   @Post("2fa/confirm-setup")
   @UseGuards(AuthGuard("jwt"))
+  @AllowDelegate()
   @DemoRestricted()
   @Throttle({ default: { ttl: 900000, limit: 5 } })
   @ApiBearerAuth()
   @ApiOperation({ summary: "Confirm 2FA setup with verification code" })
   async confirmSetup2FA(@Request() req, @Body() dto: Setup2faDto) {
-    return this.authService.confirmSetup2FA(req.user.id, dto.code);
+    return this.authService.confirmSetup2FA(req.user.realUserId, dto.code);
   }
 
   @Post("2fa/disable")
   @UseGuards(AuthGuard("jwt"))
+  @AllowDelegate()
   @DemoRestricted()
   @Throttle({ default: { ttl: 900000, limit: 5 } })
   @ApiBearerAuth()
   @ApiOperation({ summary: "Disable 2FA with verification code" })
   async disable2FA(@Request() req, @Body() dto: Setup2faDto) {
-    return this.authService.disable2FA(req.user.id, dto.code);
+    return this.authService.disable2FA(req.user.realUserId, dto.code);
+  }
+
+  @Get("2fa/status")
+  @UseGuards(AuthGuard("jwt"))
+  @AllowDelegate()
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Whether 2FA is enabled for the authenticated user (self).",
+  })
+  async get2FAStatus(@Request() req) {
+    const enabled = await this.authService.is2FAEnabled(req.user.realUserId);
+    return { enabled };
   }
 
   @Get("2fa/trusted-devices")
   @UseGuards(AuthGuard("jwt"))
+  @AllowDelegate()
   @ApiBearerAuth()
   @ApiOperation({ summary: "List trusted devices for the current user" })
   async getTrustedDevices(
     @Request() req: ExpressRequest & { user: any },
     @Res() res: Response,
   ) {
-    const devices = await this.authService.getTrustedDevices(req.user.id);
+    const devices = await this.authService.getTrustedDevices(
+      req.user.realUserId,
+    );
     const currentToken = req.cookies?.["trusted_device"];
     let currentDeviceId: string | null = null;
     if (currentToken) {
       currentDeviceId = await this.authService.findTrustedDeviceByToken(
-        req.user.id,
+        req.user.realUserId,
         currentToken,
       );
     }
@@ -726,6 +759,7 @@ export class AuthController {
 
   @Delete("2fa/trusted-devices/:id")
   @UseGuards(AuthGuard("jwt"))
+  @AllowDelegate()
   @ApiBearerAuth()
   @ApiOperation({ summary: "Revoke a specific trusted device" })
   async revokeTrustedDevice(
@@ -733,12 +767,12 @@ export class AuthController {
     @Param("id", ParseUUIDPipe) deviceId: string,
     @Res() res: Response,
   ) {
-    await this.authService.revokeTrustedDevice(req.user.id, deviceId);
+    await this.authService.revokeTrustedDevice(req.user.realUserId, deviceId);
     // If revoking the current device, clear the cookie
     const currentToken = req.cookies?.["trusted_device"];
     if (currentToken) {
       const currentDeviceId = await this.authService.findTrustedDeviceByToken(
-        req.user.id,
+        req.user.realUserId,
         currentToken,
       );
       if (!currentDeviceId || currentDeviceId === deviceId) {
@@ -750,13 +784,16 @@ export class AuthController {
 
   @Delete("2fa/trusted-devices")
   @UseGuards(AuthGuard("jwt"))
+  @AllowDelegate()
   @ApiBearerAuth()
   @ApiOperation({ summary: "Revoke all trusted devices" })
   async revokeAllTrustedDevices(
     @Request() req: ExpressRequest & { user: any },
     @Res() res: Response,
   ) {
-    const count = await this.authService.revokeAllTrustedDevices(req.user.id);
+    const count = await this.authService.revokeAllTrustedDevices(
+      req.user.realUserId,
+    );
     res.clearCookie("trusted_device");
     res.json({ message: `${count} device(s) revoked`, count });
   }
@@ -789,13 +826,14 @@ export class AuthController {
 
   @Post("2fa/backup-codes")
   @UseGuards(AuthGuard("jwt"))
+  @AllowDelegate()
   @DemoRestricted()
   @Throttle({ default: { ttl: 900000, limit: 5 } })
   @ApiBearerAuth()
   @ApiOperation({ summary: "Generate new 2FA backup codes" })
   async generateBackupCodes(@Request() req, @Body() dto: Setup2faDto) {
     const codes = await this.authService.generateBackupCodes(
-      req.user.id,
+      req.user.realUserId,
       dto.code,
     );
     return { codes };

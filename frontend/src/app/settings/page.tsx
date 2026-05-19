@@ -20,6 +20,7 @@ import { authApi } from '@/lib/auth';
 import { User, UserPreferences } from '@/types/auth';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useDemoStore } from '@/store/demoStore';
+import { useAuthStore } from '@/store/authStore';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
 import Link from 'next/link';
@@ -47,7 +48,106 @@ export default function SettingsPage() {
   );
 }
 
+/**
+ * Settings view for an acting delegate. Renders ONLY the Security section
+ * so the delegate can manage their own password and 2FA. The fetched
+ * profile is the delegate's own (via /auth/me-self), and the 2FA status
+ * comes from /auth/2fa/status -- backend security endpoints all operate
+ * on req.user.realUserId. Other settings sections are intentionally
+ * hidden: they would reflect or alter the owner's account.
+ */
+function DelegateSecurityView() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [force2fa, setForce2fa] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      authApi.getSelfProfile(),
+      authApi.get2FAStatus(),
+      authApi
+        .getAuthMethods()
+        .catch(() => ({ force2fa: false } as { force2fa: boolean })),
+    ])
+      .then(([self, status, methods]) => {
+        if (cancelled) return;
+        setUser(self as User);
+        setTwoFactorEnabled(!!status.enabled);
+        setForce2fa(!!methods.force2fa);
+      })
+      .catch((error) => {
+        toast.error(getErrorMessage(error, 'Failed to load security settings'));
+        logger.error(error);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (isLoading) {
+    return (
+      <PageLayout>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8">
+          <div className="flex justify-center items-center h-64">
+            <LoadingSpinner />
+          </div>
+        </div>
+      </PageLayout>
+    );
+  }
+
+  if (!user) {
+    return (
+      <PageLayout>
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8">
+          <PageHeader title="Settings" />
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            Unable to load your security settings.
+          </p>
+        </main>
+      </PageLayout>
+    );
+  }
+
+  // SecuritySection only reads `preferences.twoFactorEnabled` -- supply a
+  // minimal stub so it can render without fetching the owner's preferences
+  // (which would not be the delegate's own 2FA state anyway).
+  const preferencesStub = {
+    twoFactorEnabled,
+  } as unknown as UserPreferences;
+
+  return (
+    <PageLayout>
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8">
+        <PageHeader title="Settings" />
+        <div id="security">
+          <SecuritySection
+            user={user}
+            preferences={preferencesStub}
+            force2fa={force2fa}
+            onPreferencesUpdated={(next) => {
+              if (typeof next.twoFactorEnabled === 'boolean') {
+                setTwoFactorEnabled(next.twoFactorEnabled);
+              }
+            }}
+          />
+        </div>
+      </main>
+    </PageLayout>
+  );
+}
+
 function SettingsContent() {
+  const isDelegateView = useAuthStore((s) => !!s.actingAsUserId);
+  return isDelegateView ? <DelegateSecurityView /> : <OwnerSettingsView />;
+}
+
+function OwnerSettingsView() {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);

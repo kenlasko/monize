@@ -476,6 +476,18 @@ export class AuthService {
     return this.usersRepository.findOne({ where: { id } });
   }
 
+  /**
+   * Returns whether the given user has 2FA enabled. Lets the Security UI
+   * (including a delegate managing their own credentials) read the
+   * authenticated user's 2FA state without exposing the secret.
+   */
+  async is2FAEnabled(userId: string): Promise<boolean> {
+    const prefs = await this.preferencesRepository.findOne({
+      where: { userId },
+    });
+    return !!prefs?.twoFactorEnabled;
+  }
+
   async getUserStateById(
     id: string,
   ): Promise<Pick<

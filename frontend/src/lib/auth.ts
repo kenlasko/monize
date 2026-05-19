@@ -30,6 +30,14 @@ export const authApi = {
     return response.data;
   },
 
+  // Authenticated user's OWN profile (delegate id, never the owner) -- the
+  // Security view uses this while acting as a delegate so it manages the
+  // actor's credentials, not the owner's.
+  getSelfProfile: async () => {
+    const response = await apiClient.get('/auth/me-self');
+    return response.data;
+  },
+
   getAuthMethods: async (): Promise<AuthMethods> => {
     const response = await apiClient.get<AuthMethods>('/auth/methods');
     return response.data;
@@ -72,6 +80,11 @@ export const authApi = {
 
   disable2FA: async (code: string): Promise<{ message: string }> => {
     const response = await apiClient.post<{ message: string }>('/auth/2fa/disable', { code });
+    return response.data;
+  },
+
+  get2FAStatus: async (): Promise<{ enabled: boolean }> => {
+    const response = await apiClient.get<{ enabled: boolean }>('/auth/2fa/status');
     return response.data;
   },
 

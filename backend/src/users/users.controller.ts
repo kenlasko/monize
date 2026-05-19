@@ -74,6 +74,7 @@ export class UsersController {
 
   @Post("change-password")
   @SkipPasswordCheck()
+  @AllowDelegate()
   @DemoRestricted()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Change current user password" })
@@ -83,7 +84,10 @@ export class UsersController {
     description: "Invalid current password or validation error",
   })
   async changePassword(@Request() req, @Body() dto: ChangePasswordDto) {
-    await this.usersService.changePassword(req.user.id, dto);
+    // Security: a delegate acting as an owner manages their OWN password,
+    // not the owner's — use realUserId so the change always targets the
+    // authenticated identity regardless of acting context.
+    await this.usersService.changePassword(req.user.realUserId, dto);
     return { message: "Password changed successfully" };
   }
 

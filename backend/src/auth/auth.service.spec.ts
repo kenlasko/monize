@@ -2990,6 +2990,30 @@ describe("AuthService", () => {
   // Atomic backup code consumption
   // ---------------------------------------------------------------
 
+  describe("is2FAEnabled", () => {
+    it("returns true when the user's preferences have 2FA enabled", async () => {
+      preferencesRepository.findOne.mockResolvedValue({
+        userId: "u1",
+        twoFactorEnabled: true,
+      });
+      await expect(service.is2FAEnabled("u1")).resolves.toBe(true);
+      expect(preferencesRepository.findOne).toHaveBeenCalledWith({
+        where: { userId: "u1" },
+      });
+    });
+
+    it("returns false when preferences are missing or 2FA is disabled", async () => {
+      preferencesRepository.findOne.mockResolvedValueOnce(null);
+      await expect(service.is2FAEnabled("u1")).resolves.toBe(false);
+
+      preferencesRepository.findOne.mockResolvedValueOnce({
+        userId: "u1",
+        twoFactorEnabled: false,
+      });
+      await expect(service.is2FAEnabled("u1")).resolves.toBe(false);
+    });
+  });
+
   describe("verify2FA - atomic backup code consumption", () => {
     it("uses QueryRunner transaction for backup code removal", async () => {
       const encryptedSecret = encrypt("TESTSECRET", TEST_TOTP_KEY);
