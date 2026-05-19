@@ -1285,8 +1285,18 @@ describe("DelegationService", () => {
 
     it("reorderDelegateFavourites sets sortOrder by position", async () => {
       const manager = { update: jest.fn() };
-      dataSource.transaction.mockImplementation(async (cb: any) => cb(manager));
+      const queryRunner = {
+        connect: jest.fn(),
+        startTransaction: jest.fn(),
+        commitTransaction: jest.fn(),
+        rollbackTransaction: jest.fn(),
+        release: jest.fn(),
+        manager,
+      };
+      dataSource.createQueryRunner = jest.fn().mockReturnValue(queryRunner);
       await service.reorderDelegateFavourites("d1", ["a2", "a1"]);
+      expect(queryRunner.commitTransaction).toHaveBeenCalled();
+      expect(queryRunner.release).toHaveBeenCalled();
       expect(manager.update).toHaveBeenNthCalledWith(
         1,
         DelegateAccountFavourite,

@@ -328,19 +328,29 @@ export class DelegationService {
     // Defensive: reject anything that isn't a proper array. An attacker
     // could submit {length: 1e100} and force an unbounded loop (CWE-834).
     // The DTO layer already validates this via @IsArray, but re-check here
-    // so the bound is visible to static analysis.
+    // so the bound is visible to static analysis. Keep the guard and the
+    // loop in the same scope (no closure) so the barrier is tracked.
     if (!Array.isArray(accountIds)) {
       throw new BadRequestException("accountIds must be an array");
     }
-    await this.dataSource.transaction(async (manager) => {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
       for (let i = 0; i < accountIds.length; i++) {
-        await manager.update(
+        await queryRunner.manager.update(
           DelegateAccountFavourite,
           { delegateUserId, accountId: accountIds[i] },
           { sortOrder: i },
         );
       }
-    });
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   // --- Login / switch context ---
