@@ -23,11 +23,19 @@ import { CreateCustomReportDto } from "./dto/create-custom-report.dto";
 import { UpdateCustomReportDto } from "./dto/update-custom-report.dto";
 import { ExecuteReportDto } from "./dto/execute-report.dto";
 import { CustomReport } from "./entities/custom-report.entity";
+import {
+  AllowDelegate,
+  DelegateRequiresSection,
+} from "../delegation/decorators/delegate-access.decorator";
 
 @ApiTags("Custom Reports")
 @Controller("reports/custom")
 @UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()
+// Read-only section for delegates: only the @AllowDelegate() GETs are
+// reachable, and only with the "reports" section grant. Writes (create/
+// update/delete/execute) have no @AllowDelegate() -> fail closed.
+@DelegateRequiresSection("reports")
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
@@ -48,6 +56,7 @@ export class ReportsController {
   }
 
   @Get()
+  @AllowDelegate()
   @ApiOperation({ summary: "Get all custom reports for the current user" })
   @ApiResponse({
     status: 200,
@@ -60,6 +69,7 @@ export class ReportsController {
   }
 
   @Get(":id")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get a specific custom report by ID" })
   @ApiParam({ name: "id", description: "Report ID" })
   @ApiResponse({

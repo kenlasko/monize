@@ -13,17 +13,26 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from "@nestjs/swagger";
 import { Response } from "express";
 import { AiQueryService } from "./ai-query.service";
 import { AiQueryDto } from "./dto/ai-query.dto";
+import {
+  AllowDelegate,
+  DelegateRequiresSection,
+} from "../../delegation/decorators/delegate-access.decorator";
 
 @ApiTags("AI")
 @Controller("ai")
 @UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()
+// The AI assistant is a read-only "ai" section for delegates: the query
+// endpoints only read the owner's data (effective-user scoping) using the
+// owner's configured provider. Reachable only with the "ai" grant.
+@DelegateRequiresSection("ai")
 export class AiQueryController {
   private readonly logger = new Logger(AiQueryController.name);
 
   constructor(private readonly queryService: AiQueryService) {}
 
   @Post("query")
+  @AllowDelegate()
   @ApiOperation({ summary: "Execute a natural language financial query" })
   @Throttle({ default: { ttl: 60000, limit: 10 } })
   async query(
@@ -38,6 +47,7 @@ export class AiQueryController {
   }
 
   @Post("query/stream")
+  @AllowDelegate()
   @ApiOperation({
     summary: "Execute a natural language financial query with SSE streaming",
   })

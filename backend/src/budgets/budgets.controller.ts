@@ -35,11 +35,19 @@ import { GenerateBudgetDto } from "./dto/generate-budget.dto";
 import { ApplyGeneratedBudgetDto } from "./dto/apply-generated-budget.dto";
 import { BudgetReportQueryDto } from "./dto/budget-report-query.dto";
 import { CategoryBudgetStatusDto } from "./dto/category-budget-status.dto";
+import {
+  AllowDelegate,
+  DelegateRequiresSection,
+} from "../delegation/decorators/delegate-access.decorator";
 
 @ApiTags("Budgets")
 @Controller("budgets")
 @UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()
+// Read-only section: only @AllowDelegate() GETs are reachable by a
+// delegate, and only when the owner granted the "budgets" section. Writes
+// have no @AllowDelegate() so the global guard fails them closed.
+@DelegateRequiresSection("budgets")
 export class BudgetsController {
   constructor(
     private readonly budgetsService: BudgetsService,
@@ -58,6 +66,7 @@ export class BudgetsController {
   }
 
   @Get()
+  @AllowDelegate()
   @ApiOperation({ summary: "Get all budgets for the authenticated user" })
   @ApiResponse({ status: 200, description: "List of budgets retrieved" })
   @ApiResponse({ status: 401, description: "Unauthorized" })
@@ -66,6 +75,7 @@ export class BudgetsController {
   }
 
   @Get("dashboard-summary")
+  @AllowDelegate()
   @ApiOperation({
     summary: "Get budget summary for dashboard widget",
   })
@@ -129,6 +139,7 @@ export class BudgetsController {
   }
 
   @Get("alerts")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get budget alerts" })
   @ApiQuery({
     name: "unreadOnly",
@@ -175,6 +186,7 @@ export class BudgetsController {
   }
 
   @Get(":id")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get a specific budget with categories" })
   @ApiParam({ name: "id", description: "Budget UUID" })
   @ApiResponse({ status: 200, description: "Budget retrieved" })
@@ -279,6 +291,7 @@ export class BudgetsController {
   }
 
   @Get(":id/summary")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get current period budget summary" })
   @ApiParam({ name: "id", description: "Budget UUID" })
   @ApiResponse({ status: 200, description: "Budget summary retrieved" })
@@ -289,6 +302,7 @@ export class BudgetsController {
   }
 
   @Get(":id/velocity")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get spending velocity and projections" })
   @ApiParam({ name: "id", description: "Budget UUID" })
   @ApiResponse({ status: 200, description: "Velocity data retrieved" })
@@ -299,6 +313,7 @@ export class BudgetsController {
   }
 
   @Get(":id/periods")
+  @AllowDelegate()
   @ApiOperation({ summary: "List historical budget periods" })
   @ApiParam({ name: "id", description: "Budget UUID" })
   @ApiResponse({ status: 200, description: "Periods retrieved" })
@@ -309,6 +324,7 @@ export class BudgetsController {
   }
 
   @Get(":id/periods/:periodId")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get period detail with category breakdowns" })
   @ApiParam({ name: "id", description: "Budget UUID" })
   @ApiParam({ name: "periodId", description: "Budget period UUID" })
@@ -337,6 +353,7 @@ export class BudgetsController {
   // --- Budget Reports ---
 
   @Get(":id/reports/trend")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get budget vs actual trend over N months" })
   @ApiParam({ name: "id", description: "Budget UUID" })
   @ApiQuery({
@@ -361,6 +378,7 @@ export class BudgetsController {
   }
 
   @Get(":id/reports/category-trend")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get per-category trend over time" })
   @ApiParam({ name: "id", description: "Budget UUID" })
   @ApiQuery({
@@ -392,6 +410,7 @@ export class BudgetsController {
   }
 
   @Get(":id/reports/health-score")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get budget health score (0-100)" })
   @ApiParam({ name: "id", description: "Budget UUID" })
   @ApiResponse({ status: 200, description: "Health score calculated" })
@@ -402,6 +421,7 @@ export class BudgetsController {
   }
 
   @Get(":id/reports/seasonal")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get seasonal spending patterns" })
   @ApiParam({ name: "id", description: "Budget UUID" })
   @ApiResponse({ status: 200, description: "Seasonal patterns retrieved" })
@@ -412,6 +432,7 @@ export class BudgetsController {
   }
 
   @Get(":id/reports/flex-groups")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get flex group aggregation status" })
   @ApiParam({ name: "id", description: "Budget UUID" })
   @ApiResponse({ status: 200, description: "Flex group status retrieved" })
@@ -422,6 +443,7 @@ export class BudgetsController {
   }
 
   @Get(":id/reports/daily-spending")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get daily spending for current period (heatmap)" })
   @ApiParam({ name: "id", description: "Budget UUID" })
   @ApiResponse({ status: 200, description: "Daily spending data retrieved" })
@@ -432,6 +454,7 @@ export class BudgetsController {
   }
 
   @Get(":id/reports/savings-rate")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get savings rate over N months" })
   @ApiParam({ name: "id", description: "Budget UUID" })
   @ApiQuery({
@@ -456,6 +479,7 @@ export class BudgetsController {
   }
 
   @Get(":id/reports/health-score-history")
+  @AllowDelegate()
   @ApiOperation({ summary: "Get health score history over N months" })
   @ApiParam({ name: "id", description: "Budget UUID" })
   @ApiQuery({

@@ -24,17 +24,26 @@ import {
 import { AiInsightsService } from "./ai-insights.service";
 import { GetInsightsQueryDto } from "./dto/ai-insights.dto";
 import { InsightType } from "../entities/ai-insight.entity";
+import {
+  AllowDelegate,
+  DelegateRequiresSection,
+} from "../../delegation/decorators/delegate-access.decorator";
 
 @ApiTags("AI Insights")
 @Controller("ai/insights")
 @UseGuards(AuthGuard("jwt"))
 @ApiBearerAuth()
+// Read-only "ai" section: only the @AllowDelegate() GET is reachable by a
+// delegate, and only with the owner's "ai" grant. Generate/dismiss have no
+// @AllowDelegate() -> fail closed.
+@DelegateRequiresSection("ai")
 export class AiInsightsController {
   private readonly logger = new Logger(AiInsightsController.name);
 
   constructor(private readonly insightsService: AiInsightsService) {}
 
   @Get()
+  @AllowDelegate()
   @Throttle({ default: { ttl: 60000, limit: 60 } })
   @ApiOperation({ summary: "Get spending insights for the current user" })
   getInsights(
