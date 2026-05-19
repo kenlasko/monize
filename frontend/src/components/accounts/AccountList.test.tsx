@@ -852,7 +852,32 @@ describe('AccountList', () => {
       isFavourite: true,
     });
     expect(accountsApi.setDelegateFavourite).not.toHaveBeenCalled();
-    expect(mockOnRefresh).toHaveBeenCalled();
+    // Optimistic update only -- no full list reload.
+    expect(mockOnRefresh).not.toHaveBeenCalled();
+    expect(
+      screen.getByLabelText('Remove from favourites'),
+    ).toBeInTheDocument();
+  });
+
+  it('rolls back the star when the favourite update fails', async () => {
+    (accountsApi.update as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error('nope'),
+    );
+    const account = createAccount({ isFavourite: false });
+
+    render(
+      <AccountList accounts={[account]} onEdit={mockOnEdit} defaultCurrency="CAD" convertToDefault={exchangeMocks.convertToDefault} onRefresh={mockOnRefresh} />
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Add to favourites'));
+    });
+    await act(async () => {});
+
+    expect(
+      screen.getByLabelText('Add to favourites'),
+    ).toBeInTheDocument();
+    expect(mockOnRefresh).not.toHaveBeenCalled();
   });
 
   it('a delegate toggling the star writes the delegate overlay', async () => {

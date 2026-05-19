@@ -99,6 +99,9 @@ export function AccountList({ accounts, brokerageMarketValues, defaultCurrency, 
   const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
   const [isClosing, setIsClosing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  // Optimistic favourite state so toggling the star does not trigger a full
+  // page reload. Keyed by account id; absence means "use the prop value".
+  const [favOverrides, setFavOverrides] = useState<Record<string, boolean>>({});
   const deletableAccounts = useMemo(
     () => new Set(accounts.filter(a => a.canDelete).map(a => a.id)),
     [accounts],
@@ -238,7 +241,11 @@ export function AccountList({ accounts, brokerageMarketValues, defaultCurrency, 
 
   // Filter and sort accounts
   const filteredAndSortedAccounts = useMemo(() => {
-    let result = [...accounts];
+    let result = accounts.map((a) =>
+      a.id in favOverrides
+        ? { ...a, isFavourite: favOverrides[a.id] }
+        : a,
+    );
 
     // Apply filters
     if (filterStatus) {
@@ -274,7 +281,7 @@ export function AccountList({ accounts, brokerageMarketValues, defaultCurrency, 
     });
 
     return result;
-  }, [accounts, filterStatus, filterNetWorth, sortField, sortDirection]);
+  }, [accounts, favOverrides, filterStatus, filterNetWorth, sortField, sortDirection]);
 
   // Build a map of account IDs to names for showing linked account pairs
   const accountNameMap = useMemo(() => {
@@ -496,8 +503,10 @@ export function AccountList({ accounts, brokerageMarketValues, defaultCurrency, 
 
   const handleToggleFavourite = useCallback(
     async (account: Account) => {
+      const next = !account.isFavourite;
+      // Optimistically flip the star in place -- no list reload/spinner.
+      setFavOverrides((prev) => ({ ...prev, [account.id]: next }));
       try {
-        const next = !account.isFavourite;
         // Owner favourites live on the account row; a delegate keeps an
         // independent overlay (the owner-scoped flag is never touched).
         if (isDelegateView) {
@@ -505,12 +514,13 @@ export function AccountList({ accounts, brokerageMarketValues, defaultCurrency, 
         } else {
           await accountsApi.update(account.id, { isFavourite: next });
         }
-        onRefresh();
       } catch (error) {
+        // Roll back the optimistic change on failure.
+        setFavOverrides((prev) => ({ ...prev, [account.id]: !next }));
         toast.error(getErrorMessage(error, 'Failed to update favourite'));
       }
     },
-    [isDelegateView, onRefresh],
+    [isDelegateView],
   );
 
   const formatCurrency = useCallback((amount: number | string | null | undefined, currency: string) => {
