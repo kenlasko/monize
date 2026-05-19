@@ -175,6 +175,9 @@ export function DelegateAccessModal({
       list.push(a);
       groups.set(a.accountType, list);
     }
+    for (const list of groups.values()) {
+      list.sort((a, b) => a.name.localeCompare(b.name));
+    }
     return Array.from(groups.entries()).sort((x, y) =>
       formatAccountType(x[0]).localeCompare(formatAccountType(y[0])),
     );
