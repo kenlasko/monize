@@ -317,7 +317,7 @@ export function DelegateAccessModal({
 
   return (
     <div className="flex flex-col max-h-[90vh]">
-      <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+      <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
           Edit access
         </h2>
@@ -328,7 +328,7 @@ export function DelegateAccessModal({
 
       <div
         role="tablist"
-        className="flex gap-1 border-b border-gray-200 dark:border-gray-700 px-4"
+        className="flex gap-1 border-b border-gray-200 dark:border-gray-700 px-2"
       >
         {tabs.map((t) => (
           <button
@@ -348,7 +348,7 @@ export function DelegateAccessModal({
         ))}
       </div>
 
-      <div className="overflow-y-auto px-6 py-4 h-[60vh]">
+      <div className="overflow-y-auto px-4 py-3 h-[65vh]">
         {tab === 'sections' && (
           <div className="space-y-3">
             <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -500,7 +500,7 @@ export function DelegateAccessModal({
         )}
       </div>
 
-      <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-end gap-3">
+      <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-3 flex justify-end gap-3">
         <Button variant="outline" onClick={onCancel} disabled={saving}>
           Cancel
         </Button>
