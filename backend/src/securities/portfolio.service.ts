@@ -1192,9 +1192,18 @@ export class PortfolioService {
       return this.getInvestmentAccounts(userId);
     }
 
-    // Batch fetch all requested accounts in one query
+    // Batch fetch all requested accounts in one query. Restricted to
+    // INVESTMENT accounts so a caller passing non-investment ids (e.g. an
+    // acting delegate whose readable set spans chequing/savings granted for
+    // other tabs) never leaks them into portfolio/holdings computations.
+    // Investment-cash siblings are accountType INVESTMENT, so linked pairs
+    // still resolve.
     const requestedAccounts = await this.accountsRepository.find({
-      where: { id: In(accountIds), userId },
+      where: {
+        id: In(accountIds),
+        userId,
+        accountType: AccountType.INVESTMENT,
+      },
     });
     // Resolve linked pairs
     const resolvedIds = new Set<string>(requestedAccounts.map((a) => a.id));
@@ -1209,7 +1218,11 @@ export class PortfolioService {
     );
     if (linkedOnly.length > 0) {
       const linkedAccounts = await this.accountsRepository.find({
-        where: { id: In(linkedOnly), userId },
+        where: {
+          id: In(linkedOnly),
+          userId,
+          accountType: AccountType.INVESTMENT,
+        },
       });
       return [...requestedAccounts, ...linkedAccounts];
     }

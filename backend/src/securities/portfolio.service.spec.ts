@@ -572,7 +572,33 @@ describe("PortfolioService", () => {
           where: {
             id: expect.anything(),
             userId,
+            accountType: AccountType.INVESTMENT,
           },
+        });
+      });
+
+      it("restricts requested and linked fetches to INVESTMENT accounts so non-investment readable accounts (delegate) never leak in", async () => {
+        accountsRepository.find
+          .mockResolvedValueOnce([mockBrokerageAccount])
+          .mockResolvedValueOnce([mockCashAccount])
+          .mockResolvedValueOnce([mockCashAccount]);
+        holdingsRepository.find.mockResolvedValue([]);
+        securityPriceRepository.query.mockResolvedValue([]);
+
+        await service.getPortfolioSummary(userId, [
+          "acct-brokerage-1",
+          "acct-chequing-1",
+        ]);
+
+        expect(accountsRepository.find).toHaveBeenNthCalledWith(1, {
+          where: expect.objectContaining({
+            accountType: AccountType.INVESTMENT,
+          }),
+        });
+        expect(accountsRepository.find).toHaveBeenNthCalledWith(2, {
+          where: expect.objectContaining({
+            accountType: AccountType.INVESTMENT,
+          }),
         });
       });
 
