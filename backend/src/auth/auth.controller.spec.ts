@@ -2144,6 +2144,7 @@ describe("AuthController", () => {
         getCapabilities: jest.fn().mockResolvedValue({ payees: {} }),
         getSections: jest.fn().mockResolvedValue({ bills: true }),
         hasTransactionalAccess: jest.fn().mockResolvedValue(true),
+        hasAnyAccountAccess: jest.fn().mockResolvedValue(true),
       };
       const c = await buildController(delegation);
       const res = await c.getContexts({
@@ -2158,10 +2159,11 @@ describe("AuthController", () => {
         actingAsUserId: "o1",
         contexts: [{ userId: "o1" }],
         capabilities: { payees: {} },
-        sections: { bills: true, transactions: true },
+        sections: { bills: true, transactions: true, accounts: true },
       });
       expect(delegation.getSections).toHaveBeenCalledWith("g1");
       expect(delegation.hasTransactionalAccess).toHaveBeenCalledWith("g1");
+      expect(delegation.hasAnyAccountAccess).toHaveBeenCalledWith("g1");
     });
 
     it("returns null capabilities and sections when not acting", async () => {

@@ -262,6 +262,18 @@ export class DelegationService {
     return count > 0;
   }
 
+  /**
+   * Whether the delegate can READ at least one account at all. Drives the
+   * delegate Accounts nav/route visibility (any granted account, including
+   * investment accounts, makes the Accounts section reachable).
+   */
+  async hasAnyAccountAccess(delegationId: string): Promise<boolean> {
+    const count = await this.grantsRepository.count({
+      where: { delegationId, canRead: true },
+    });
+    return count > 0;
+  }
+
   // --- Login / switch context ---
 
   /**

@@ -21,6 +21,7 @@ const SWIPE_PAGES = [
 // (delegateSections.transactions, derived server-side). Accounts stays
 // per-account scoped and out of the swipe set, mirroring the delegate nav.
 const DELEGATE_SECTION_BY_HREF: Record<string, keyof DelegateSectionGrants> = {
+  '/accounts': 'accounts',
   '/transactions': 'transactions',
   '/bills': 'bills',
   '/investments': 'investments',

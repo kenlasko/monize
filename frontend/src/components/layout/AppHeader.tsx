@@ -56,8 +56,9 @@ export function AppHeader() {
   // the section nav; the dashboard remains the delegate's landing page.
   const navSectionByHref: Record<
     string,
-    'bills' | 'investments' | 'budgets' | 'reports' | 'transactions'
+    'bills' | 'investments' | 'budgets' | 'reports' | 'transactions' | 'accounts'
   > = {
+    '/accounts': 'accounts',
     '/transactions': 'transactions',
     '/bills': 'bills',
     '/investments': 'investments',

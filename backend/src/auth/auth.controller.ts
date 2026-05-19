@@ -501,6 +501,11 @@ export class AuthController {
               transactions: await this.delegationService.hasTransactionalAccess(
                 req.user.delegationId,
               ),
+              // Likewise derived: the Accounts nav appears as soon as the
+              // delegate can read any one of the owner's accounts.
+              accounts: await this.delegationService.hasAnyAccountAccess(
+                req.user.delegationId,
+              ),
             }
           : null,
     };

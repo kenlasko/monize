@@ -22,7 +22,7 @@ describe("DelegationService", () => {
 
   beforeEach(() => {
     delegatesRepo = { findOne: jest.fn(), find: jest.fn(), save: jest.fn() };
-    grantsRepo = { findOne: jest.fn(), find: jest.fn() };
+    grantsRepo = { findOne: jest.fn(), find: jest.fn(), count: jest.fn() };
     usersRepo = { findOne: jest.fn(), save: jest.fn() };
     prefsRepo = { findOne: jest.fn() };
     refreshRepo = { update: jest.fn() };
@@ -1150,6 +1150,21 @@ describe("DelegationService", () => {
       ]);
       accountsRepo.count.mockResolvedValue(1);
       await expect(service.hasTransactionalAccess("g1")).resolves.toBe(true);
+    });
+  });
+
+  describe("hasAnyAccountAccess", () => {
+    it("is false when the delegate has no readable account grant", async () => {
+      grantsRepo.count.mockResolvedValue(0);
+      await expect(service.hasAnyAccountAccess("g1")).resolves.toBe(false);
+      expect(grantsRepo.count).toHaveBeenCalledWith({
+        where: { delegationId: "g1", canRead: true },
+      });
+    });
+
+    it("is true when the delegate can read at least one account", async () => {
+      grantsRepo.count.mockResolvedValue(2);
+      await expect(service.hasAnyAccountAccess("g1")).resolves.toBe(true);
     });
   });
 
