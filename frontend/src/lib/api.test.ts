@@ -202,6 +202,55 @@ describe('apiClient', () => {
       axiosPostSpy.mockRestore();
     });
 
+    it.each([
+      '/auth/register',
+      '/auth/login',
+      '/auth/2fa/verify',
+      '/auth/forgot-password',
+      '/auth/reset-password',
+    ])(
+      'does not refresh or log out on 401 from %s (business error, not session expiry)',
+      async (url) => {
+        const axiosPostSpy = vi.spyOn(axios, 'post');
+        const logoutSpy = vi.fn();
+
+        vi.resetModules();
+        vi.doMock('@/store/authStore', () => ({
+          useAuthStore: {
+            getState: vi.fn(() => ({ logout: logoutSpy })),
+          },
+        }));
+
+        const { apiClient: freshClient } = await import('@/lib/api');
+        const interceptors = freshClient.interceptors.response as any;
+        const errorHandler = interceptors.handlers.find(
+          (h: any) => h?.rejected,
+        );
+
+        const mockError = {
+          response: { status: 401, data: { message: 'business error' } },
+          config: {
+            headers: new AxiosHeaders(),
+            method: 'post',
+            url,
+            _authRetried: false,
+          },
+        };
+
+        await expect(errorHandler.rejected(mockError)).rejects.toEqual(
+          mockError,
+        );
+        expect(axiosPostSpy).not.toHaveBeenCalledWith(
+          '/api/v1/auth/refresh',
+          expect.anything(),
+          expect.anything(),
+        );
+        expect(logoutSpy).not.toHaveBeenCalled();
+
+        axiosPostSpy.mockRestore();
+      },
+    );
+
     it('rejects non-auth/CSRF errors without interception', async () => {
       const { apiClient } = await import('@/lib/api');
       const interceptors = apiClient.interceptors.response as any;

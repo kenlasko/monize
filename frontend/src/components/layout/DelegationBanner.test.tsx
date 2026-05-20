@@ -33,7 +33,7 @@ vi.mock('@/store/authStore', () => ({
   useAuthStore: (selector: any) => selector(state),
 }));
 
-const assignMock = vi.fn();
+const reloadMock = vi.fn();
 
 describe('DelegationBanner', () => {
   beforeEach(() => {
@@ -46,7 +46,7 @@ describe('DelegationBanner', () => {
       state.availableContexts = c;
     });
     Object.defineProperty(window, 'location', {
-      value: { assign: assignMock },
+      value: { reload: reloadMock, pathname: '/transactions' },
       writable: true,
     });
   });
@@ -118,7 +118,9 @@ describe('DelegationBanner', () => {
     await waitFor(() =>
       expect(delegationApi.switchContext).toHaveBeenCalledWith('o1'),
     );
-    expect(assignMock).toHaveBeenCalledWith('/dashboard');
+    // Reload in place rather than bouncing to /dashboard so the
+    // delegate stays on whatever page they were already viewing.
+    expect(reloadMock).toHaveBeenCalledTimes(1);
   });
 
   it('auto-picks the only owner context for a pure delegate', async () => {
@@ -170,6 +172,6 @@ describe('DelegationBanner', () => {
     });
 
     await waitFor(() => expect(toast.error).toHaveBeenCalled());
-    expect(assignMock).not.toHaveBeenCalled();
+    expect(reloadMock).not.toHaveBeenCalled();
   });
 });

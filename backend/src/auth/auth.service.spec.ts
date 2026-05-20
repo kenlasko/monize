@@ -328,6 +328,37 @@ describe("AuthService", () => {
       expect(dataSource.transaction).not.toHaveBeenCalled();
     });
 
+    it("claims a delegate when the new account password happens to match the delegate's password (no currentPassword needed)", async () => {
+      const sharedPwHash = await bcrypt.hash("Temp-Pw-9!aB", 4);
+      const tempDelegate = {
+        id: "deleg-match",
+        email: "shared-match@example.com",
+        authProvider: "local",
+        passwordHash: sharedPwHash,
+        mustChangePassword: true,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+        resetToken: null,
+        resetTokenExpiry: null,
+      };
+      usersRepository.findOne.mockResolvedValue(tempDelegate);
+      delegationService.isDelegateUser.mockResolvedValue(true);
+      delegationService.isFullAccount.mockResolvedValue(false);
+      passwordBreachService.isBreached.mockResolvedValue(false);
+      usersRepository.save.mockImplementation(async (u: any) => u);
+
+      const result = await service.register({
+        email: "shared-match@example.com",
+        // No currentPassword: the front end skipped the second prompt
+        // because the new-account password already matches the delegate.
+        password: "Temp-Pw-9!aB",
+      });
+
+      expect(tempDelegate.mustChangePassword).toBe(false);
+      expect(result.user).not.toHaveProperty("passwordHash");
+      expect(result.accessToken).toBeDefined();
+    });
+
     it("rejects a delegate claim when the currentPassword is wrong or missing", async () => {
       const tempPwHash = await bcrypt.hash("Temp-Pw-9!aB", 4);
       usersRepository.findOne.mockResolvedValue({

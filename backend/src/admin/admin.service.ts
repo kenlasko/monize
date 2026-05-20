@@ -31,21 +31,17 @@ export class AdminService {
   ) {}
 
   async findAllUsers() {
-    // Pure delegates (users that exist only because an account owner granted
-    // them Shared Access) must not appear here -- they are managed solely from
-    // the owner's Shared Access page. A user is still listed if they own data,
-    // own a delegation, are an admin, or simply are not a delegate at all.
-    const users = await this.usersRepository
-      .createQueryBuilder("u")
-      .where(
-        `(NOT EXISTS (SELECT 1 FROM account_delegates ad WHERE ad.delegate_user_id = u.id)
-          OR EXISTS (SELECT 1 FROM accounts a WHERE a.user_id = u.id)
-          OR EXISTS (SELECT 1 FROM account_delegates o WHERE o.owner_user_id = u.id)
-          OR u.role = :adminRole)`,
-        { adminRole: "admin" },
-      )
-      .orderBy("u.created_at", "ASC")
-      .getMany();
+    // Hide owner-managed delegate identities -- users that exist solely
+    // because an account owner added them via Shared Access. Those rows
+    // are managed from the owner's Shared Access page. The is_delegate_only
+    // column is set when createDelegate provisions a new user and cleared
+    // when the user upgrades into a full account via the /register claim
+    // path, so a self-registered user who happens to also be a delegate
+    // still shows up here.
+    const users = await this.usersRepository.find({
+      where: { isDelegateOnly: false },
+      order: { createdAt: "ASC" },
+    });
     return users.map((user) => {
       const {
         passwordHash,
@@ -143,7 +139,10 @@ export class AdminService {
     return this.sanitizeUser(saved);
   }
 
-  async deleteUser(adminId: string, targetUserId: string): Promise<void> {
+  async deleteUser(
+    adminId: string,
+    targetUserId: string,
+  ): Promise<{ downgraded: boolean }> {
     if (adminId === targetUserId) {
       throw new ForbiddenException("You cannot delete your own account");
     }
@@ -183,12 +182,13 @@ export class AdminService {
     // their login and the delegate access others granted them stay.
     if (await this.usersService.isActingDelegate(targetUserId)) {
       await this.usersService.purgeForDowngrade(targetUserId);
-      return;
+      return { downgraded: true };
     }
 
     // Delete preferences first (FK constraint), then the user.
     await this.preferencesRepository.delete({ userId: targetUserId });
     await this.usersRepository.remove(targetUser);
+    return { downgraded: false };
   }
 
   async resetUserPassword(

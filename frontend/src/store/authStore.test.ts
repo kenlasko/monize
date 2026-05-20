@@ -1,8 +1,23 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useAuthStore } from './authStore';
 
+// A single top-level mock for @/lib/auth -- the rehydration tests each
+// reconfigure rehydrateGetProfileMock to control how getProfile
+// resolves/rejects. The earlier per-test vi.doMock pattern was unreliable
+// because Vitest caches a module after its first dynamic import, so the
+// next test's vi.doMock would not take effect for the dynamic
+// import('@/lib/auth') inside onRehydrateStorage -- producing a flaky
+// failure on slower CI runners (see PR #556).
+const rehydrateGetProfileMock = vi.fn();
+vi.mock('@/lib/auth', () => ({
+  authApi: {
+    getProfile: rehydrateGetProfileMock,
+  },
+}));
+
 describe('authStore', () => {
   beforeEach(() => {
+    rehydrateGetProfileMock.mockReset();
     // Reset store to initial state
     useAuthStore.setState({
       user: null,
@@ -157,24 +172,24 @@ describe('authStore', () => {
       const onRehydrate = options.onRehydrateStorage();
 
       // Mock the auth module to return 502
-      vi.doMock('@/lib/auth', () => ({
-        authApi: {
-          getProfile: vi.fn().mockRejectedValue(error502),
-        },
-      }));
+      rehydrateGetProfileMock.mockRejectedValueOnce(error502);
 
       // Call onRehydrate with the current state
       onRehydrate(useAuthStore.getState());
 
-      // Wait for async operations (dynamic import + catch handler)
-      await new Promise(r => setTimeout(r, 50));
+      // Wait until the async rehydrate chain (two dynamic imports + a
+      // Promise.all over two API calls + the .catch handler) settles.
+      // The terminal state in every branch is _hasHydrated=true; a
+      // fixed setTimeout(50) was enough locally but flaked on slower
+      // CI runners (see PR #556).
+      await vi.waitFor(() =>
+        expect(useAuthStore.getState()._hasHydrated).toBe(true),
+      );
 
       const state = useAuthStore.getState();
       expect(state.isAuthenticated).toBe(true);
       expect(state._hasHydrated).toBe(true);
       expect(useConnectionStore.getState().isBackendDown).toBe(true);
-
-      vi.doUnmock('@/lib/auth');
     });
 
     it('logs out on non-502 error during rehydration', async () => {
@@ -199,21 +214,17 @@ describe('authStore', () => {
       const options = persistApi.getOptions();
       const onRehydrate = options.onRehydrateStorage();
 
-      vi.doMock('@/lib/auth', () => ({
-        authApi: {
-          getProfile: vi.fn().mockRejectedValue(error401),
-        },
-      }));
+      rehydrateGetProfileMock.mockRejectedValueOnce(error401);
 
       onRehydrate(useAuthStore.getState());
 
-      await new Promise(r => setTimeout(r, 50));
+      await vi.waitFor(() =>
+        expect(useAuthStore.getState()._hasHydrated).toBe(true),
+      );
 
       const state = useAuthStore.getState();
       expect(state.isAuthenticated).toBe(false);
       expect(state._hasHydrated).toBe(true);
-
-      vi.doUnmock('@/lib/auth');
     });
 
     it('keeps authenticated state on network error (no response)', async () => {
@@ -235,22 +246,18 @@ describe('authStore', () => {
       const options = persistApi.getOptions();
       const onRehydrate = options.onRehydrateStorage();
 
-      vi.doMock('@/lib/auth', () => ({
-        authApi: {
-          getProfile: vi.fn().mockRejectedValue(networkError),
-        },
-      }));
+      rehydrateGetProfileMock.mockRejectedValueOnce(networkError);
 
       onRehydrate(useAuthStore.getState());
 
-      await new Promise(r => setTimeout(r, 50));
+      await vi.waitFor(() =>
+        expect(useAuthStore.getState()._hasHydrated).toBe(true),
+      );
 
       const state = useAuthStore.getState();
       expect(state.isAuthenticated).toBe(true);
       expect(state._hasHydrated).toBe(true);
       expect(useConnectionStore.getState().isBackendDown).toBe(true);
-
-      vi.doUnmock('@/lib/auth');
     });
 
     it('logs out on non-AxiosError during rehydration', async () => {
@@ -265,21 +272,17 @@ describe('authStore', () => {
       const options = persistApi.getOptions();
       const onRehydrate = options.onRehydrateStorage();
 
-      vi.doMock('@/lib/auth', () => ({
-        authApi: {
-          getProfile: vi.fn().mockRejectedValue(new Error('unexpected')),
-        },
-      }));
+      rehydrateGetProfileMock.mockRejectedValueOnce(new Error('unexpected'));
 
       onRehydrate(useAuthStore.getState());
 
-      await new Promise(r => setTimeout(r, 50));
+      await vi.waitFor(() =>
+        expect(useAuthStore.getState()._hasHydrated).toBe(true),
+      );
 
       const state = useAuthStore.getState();
       expect(state.isAuthenticated).toBe(false);
       expect(state._hasHydrated).toBe(true);
-
-      vi.doUnmock('@/lib/auth');
     });
   });
 });

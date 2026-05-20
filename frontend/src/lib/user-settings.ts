@@ -45,8 +45,15 @@ export const userSettingsApi = {
     await apiClient.post('/users/change-password', data);
   },
 
-  deleteAccount: async (data: { password?: string; oidcIdToken?: string }): Promise<void> => {
-    await apiClient.post('/users/delete-account', data, { timeout: 120000 });
+  deleteAccount: async (
+    data: { password?: string; oidcIdToken?: string },
+  ): Promise<{ downgraded: boolean }> => {
+    const response = await apiClient.post<{ downgraded: boolean }>(
+      '/users/delete-account',
+      data,
+      { timeout: 120000 },
+    );
+    return response.data;
   },
 
   getSmtpStatus: async (): Promise<{ configured: boolean }> => {

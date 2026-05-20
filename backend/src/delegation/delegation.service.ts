@@ -370,12 +370,20 @@ export class DelegationService {
 
     if (delegations.length === 0) return [];
 
+    // A user gets a "self" context whenever the row represents a real
+    // account in their own right -- they own data, or they claimed /
+    // self-registered (isDelegateOnly=false). A pure delegate identity
+    // (created via Shared Access, never claimed) deliberately has no
+    // self context so the front end auto-picks the owner on first
+    // login. Without this, a freshly-claimed delegate who has not yet
+    // created any accounts would have only the owner's context and the
+    // banner would never appear.
     const ownsData = await this.accountsRepository.exists({
       where: { userId: user.id },
     });
 
     const contexts: AvailableContext[] = [];
-    if (ownsData) {
+    if (ownsData || !user.isDelegateOnly) {
       contexts.push({
         userId: user.id,
         label: this.userLabel(user),
@@ -456,10 +464,20 @@ export class DelegationService {
    * delegate is not a full account in their own right AND is not also a
    * delegate for any other owner. Otherwise the password belongs to the
    * person, not the owner, so only they may change it.
+   *
+   * "Full account" includes a delegate that has gone through the
+   * /register claim path (isDelegateOnly=false) but has not yet created
+   * any data of their own -- their login is theirs, not the owner's,
+   * even with zero accounts under their name.
    */
   async canOwnerResetDelegatePassword(
     delegateUserId: string,
   ): Promise<boolean> {
+    const user = await this.usersRepository.findOne({
+      where: { id: delegateUserId },
+      select: ["id", "isDelegateOnly"],
+    });
+    if (!user || !user.isDelegateOnly) return false;
     if (await this.isFullAccount(delegateUserId)) return false;
     const delegationCount = await this.delegatesRepository.count({
       where: { delegateUserId },
@@ -713,20 +731,38 @@ export class DelegationService {
       // in with their own credentials; the owner only links the delegation.
       // New users and pure-delegate identities are owner-managed, so the
       // owner may set their password / send an invite.
+      //
+      // "Pure delegate" means the row already exists solely as some other
+      // owner's delegate (a record in account_delegates.delegate_user_id).
+      // A user that self-registered (passwordHash exists, not in any
+      // delegate row) is a full account even if they have not created any
+      // accounts yet -- their login is theirs, not ours to rotate. Without
+      // this check the front end's email-lookup race (Add clicked before
+      // the 400ms debounced lookup finishes) lets a stray dto.password
+      // overwrite a real user's password.
       let mayManageCredentials = true;
       if (delegateUser) {
         if (delegateUser.oidcSubject || delegateUser.role === "admin") {
           mayManageCredentials = false;
         } else {
-          const [ownsAccounts, ownsDelegations] = await Promise.all([
-            manager.count(Account, {
-              where: { userId: delegateUser.id },
-            }),
-            manager.count(AccountDelegate, {
-              where: { ownerUserId: delegateUser.id },
-            }),
-          ]);
-          if (ownsAccounts > 0 || ownsDelegations > 0) {
+          const [ownsAccounts, ownsDelegations, alreadyDelegate] =
+            await Promise.all([
+              manager.count(Account, {
+                where: { userId: delegateUser.id },
+              }),
+              manager.count(AccountDelegate, {
+                where: { ownerUserId: delegateUser.id },
+              }),
+              manager.count(AccountDelegate, {
+                where: { delegateUserId: delegateUser.id },
+              }),
+            ]);
+          const isPureDelegateRow = alreadyDelegate > 0;
+          if (
+            ownsAccounts > 0 ||
+            ownsDelegations > 0 ||
+            (!isPureDelegateRow && !!delegateUser.passwordHash)
+          ) {
             mayManageCredentials = false;
           }
         }
@@ -739,6 +775,11 @@ export class DelegationService {
           lastName: dto.lastName ?? null,
           authProvider: "local",
           role: "user",
+          // Marks the row as owner-managed -- hidden from admin User
+          // Management, no "self" context offered to the delegate.
+          // Cleared by the /register claim path the moment the user
+          // upgrades into a full account in their own right.
+          isDelegateOnly: true,
         });
       }
 
@@ -857,8 +898,11 @@ export class DelegationService {
       await manager.delete(AccountDelegate, { id: delegationId });
 
       // Entirely remove the delegate's login unless it has another reason to
-      // exist: a delegation elsewhere, its own data, it owns a delegation, or
-      // it is an admin (i.e. it is a full user in its own right).
+      // exist: a delegation elsewhere, its own data, it owns a delegation,
+      // it is an admin, or it has been claimed as a full account in its
+      // own right (isDelegateOnly=false). Without the isDelegateOnly
+      // check a self-registered user who hasn't created any accounts yet
+      // would be silently deleted on revoke.
       const [otherDelegations, ownsAccounts, ownsDelegations] =
         await Promise.all([
           manager.count(AccountDelegate, { where: { delegateUserId } }),
@@ -875,7 +919,8 @@ export class DelegationService {
         otherDelegations === 0 &&
         ownsAccounts === 0 &&
         ownsDelegations === 0 &&
-        delegateUser?.role !== "admin"
+        delegateUser?.role !== "admin" &&
+        delegateUser?.isDelegateOnly !== false
       ) {
         // FK ON DELETE CASCADE cleans preferences, tokens, trusted devices.
         await manager.delete(User, { id: delegateUserId });

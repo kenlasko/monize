@@ -36,7 +36,8 @@ CREATE TABLE users (
     oidc_link_pending BOOLEAN NOT NULL DEFAULT false,
     oidc_link_token VARCHAR(255),
     oidc_link_expires_at TIMESTAMP,
-    pending_oidc_subject VARCHAR(255)
+    pending_oidc_subject VARCHAR(255),
+    is_delegate_only BOOLEAN NOT NULL DEFAULT false -- true when the row exists solely as an owner-managed delegate identity (created via Shared Access, never claimed via /register)
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_reset_token ON users(reset_token) WHERE reset_token IS NOT NULL;

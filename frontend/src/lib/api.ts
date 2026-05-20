@@ -47,6 +47,26 @@ apiClient.interceptors.request.use(
   }
 );
 
+// Endpoints where a 401 is a business response (wrong credentials, wrong
+// 2FA code, email already belongs to a delegate that needs claiming, ...)
+// rather than an expired session. The refresh-and-retry dance below would
+// log the visitor out and bounce them to /login otherwise -- swallowing
+// the inline error the calling page needs to show.
+const UNAUTH_ENDPOINTS: ReadonlyArray<string> = [
+  '/auth/register',
+  '/auth/login',
+  '/auth/2fa/verify',
+  '/auth/forgot-password',
+  '/auth/reset-password',
+];
+
+function isUnauthEndpoint(url: string | undefined): boolean {
+  if (!url) return false;
+  return UNAUTH_ENDPOINTS.some(
+    (path) => url === path || url.startsWith(path + '?'),
+  );
+}
+
 // Response interceptor to handle errors
 let isLoggingOut = false;
 let isRefreshingCsrf = false;
@@ -157,7 +177,8 @@ apiClient.interceptors.response.use(
     if (
       error.response?.status === 401 &&
       !originalRequest?._authRetried &&
-      !isLoggingOut
+      !isLoggingOut &&
+      !isUnauthEndpoint(originalRequest?.url)
     ) {
       originalRequest._authRetried = true;
 

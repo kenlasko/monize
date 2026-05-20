@@ -116,19 +116,8 @@ describe("AdminService", () => {
   });
 
   describe("findAllUsers", () => {
-    let qb: Record<string, jest.Mock>;
-
-    function mockQuery(rows: unknown[]) {
-      qb = {
-        where: jest.fn().mockReturnThis(),
-        orderBy: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockResolvedValue(rows),
-      };
-      usersRepository.createQueryBuilder.mockReturnValue(qb);
-    }
-
     it("returns users with sensitive fields stripped", async () => {
-      mockQuery([mockAdmin, mockTargetUser]);
+      usersRepository.find.mockResolvedValue([mockAdmin, mockTargetUser]);
 
       const result = await service.findAllUsers();
 
@@ -143,7 +132,7 @@ describe("AdminService", () => {
     });
 
     it("sets hasPassword false for OIDC users without password", async () => {
-      mockQuery([
+      usersRepository.find.mockResolvedValue([
         { ...mockTargetUser, passwordHash: null, authProvider: "oidc" },
       ]);
 
@@ -152,15 +141,15 @@ describe("AdminService", () => {
       expect(result[0].hasPassword).toBe(false);
     });
 
-    it("excludes pure delegates and orders by createdAt ASC", async () => {
-      mockQuery([]);
+    it("hides owner-managed delegate identities and orders by createdAt ASC", async () => {
+      usersRepository.find.mockResolvedValue([]);
 
       await service.findAllUsers();
 
-      const whereSql = qb.where.mock.calls[0][0] as string;
-      expect(whereSql).toContain("account_delegates");
-      expect(whereSql).toContain("delegate_user_id");
-      expect(qb.orderBy).toHaveBeenCalledWith("u.created_at", "ASC");
+      expect(usersRepository.find).toHaveBeenCalledWith({
+        where: { isDelegateOnly: false },
+        order: { createdAt: "ASC" },
+      });
     });
   });
 

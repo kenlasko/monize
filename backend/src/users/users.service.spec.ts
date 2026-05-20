@@ -658,14 +658,18 @@ describe("UsersService", () => {
       // isActingDelegate -> account_delegates lookup returns a row.
       mockDataSource.query.mockResolvedValue([{ "?column?": 1 }]);
 
-      await service.deleteAccount("user-1", { password: "CorrectPass123!" });
+      const result = await service.deleteAccount("user-1", {
+        password: "CorrectPass123!",
+      });
 
       // Sessions revoked, but the login and incoming delegations stay.
       expect(refreshTokensRepository.update).toHaveBeenCalled();
       expect(patRepository.update).toHaveBeenCalled();
       expect(preferencesRepository.delete).not.toHaveBeenCalled();
       expect(usersRepository.remove).not.toHaveBeenCalled();
-      // Owned data + owner-side delegations are purged in a transaction.
+      // Owned data + owner-side delegations are purged in a transaction,
+      // and the row is flipped back to is_delegate_only so admin User
+      // Management hides it again.
       expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
       const queries = mockQueryRunner.query.mock.calls.map((c) => c[0]);
       expect(
@@ -673,6 +677,12 @@ describe("UsersService", () => {
           q.includes("DELETE FROM account_delegates WHERE owner_user_id"),
         ),
       ).toBe(true);
+      expect(
+        queries.some((q: string) =>
+          q.includes("UPDATE users SET is_delegate_only = true"),
+        ),
+      ).toBe(true);
+      expect(result).toEqual({ downgraded: true });
     });
 
     it("prevents the last admin from self-deleting", async () => {

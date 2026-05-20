@@ -106,11 +106,23 @@ export class AuthService {
       }
 
       if (existingUser.passwordHash) {
-        const supplied = (currentPassword ?? "").trim();
-        const ok =
-          supplied.length > 0 &&
-          (await bcrypt.compare(supplied, existingUser.passwordHash));
-        if (!ok) {
+        // The registrant proves they hold the delegate password in one of
+        // two ways: either they typed it into the dedicated "Delegate
+        // password" prompt (currentPassword), or the new-account password
+        // they typed up front happens to be the same value -- in which
+        // case the front end doesn't need to ask for it a second time.
+        const newPasswordMatches = await bcrypt.compare(
+          password,
+          existingUser.passwordHash,
+        );
+        let claimOk = newPasswordMatches;
+        if (!claimOk) {
+          const supplied = (currentPassword ?? "").trim();
+          claimOk =
+            supplied.length > 0 &&
+            (await bcrypt.compare(supplied, existingUser.passwordHash));
+        }
+        if (!claimOk) {
           throw new UnauthorizedException(
             "An account with this email already exists as a shared user. " +
               "Provide the temporary password your administrator gave you " +
@@ -134,6 +146,12 @@ export class AuthService {
       existingUser.resetTokenExpiry = null;
       existingUser.failedLoginAttempts = 0;
       existingUser.lockedUntil = null;
+      // Promote out of the owner-managed delegate state -- the user is
+      // claiming the row as their own account from here on, so they
+      // should show up in admin User Management and see a "self"
+      // context in the delegate banner even before they have any
+      // accounts of their own.
+      existingUser.isDelegateOnly = false;
       const upgraded = await this.usersRepository.save(existingUser);
 
       const { accessToken, refreshToken } =

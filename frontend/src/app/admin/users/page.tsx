@@ -166,14 +166,25 @@ export default function AdminUsersPage() {
     setConfirmDialog({
       isOpen: true,
       title: 'Delete User?',
-      message: `Are you sure you want to delete ${userName}? This will permanently remove their account and all associated data. This action cannot be undone.`,
+      message:
+        `Are you sure you want to delete ${userName}? This will permanently ` +
+        'remove their account and all associated data. This action cannot ' +
+        'be undone. If they are a delegate of another account, their own ' +
+        'data is removed but their login is kept so the delegation still ' +
+        'works -- they become a delegate-only user.',
       variant: 'danger',
       confirmLabel: 'Delete User',
       onConfirm: async () => {
         try {
-          await adminApi.deleteUser(user.id);
+          const res = await adminApi.deleteUser(user.id);
           setUsers((prev) => prev.filter((u) => u.id !== user.id));
-          toast.success(`${userName} has been deleted`);
+          if (res.downgraded) {
+            toast.success(
+              `${userName}'s own data was removed; their delegate access remains.`,
+            );
+          } else {
+            toast.success(`${userName} has been deleted`);
+          }
         } catch (error) {
           toast.error(getErrorMessage(error, 'Failed to delete user'));
         }

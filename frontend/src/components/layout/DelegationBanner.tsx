@@ -24,8 +24,10 @@ export function DelegationBanner() {
     setSwitching(true);
     try {
       await delegationApi.switchContext(targetUserId);
-      // Full reload so every view re-fetches under the new context.
-      window.location.assign('/dashboard');
+      // Full reload so every view re-fetches under the new context, but
+      // stay on whatever page the user was on rather than bouncing back
+      // to /dashboard each time.
+      window.location.reload();
     } catch (err: unknown) {
       setSwitching(false);
       const status =

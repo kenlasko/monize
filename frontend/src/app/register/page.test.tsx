@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@/test/render';
+import { AxiosError, AxiosHeaders } from 'axios';
 import RegisterPage from './page';
 import toast from 'react-hot-toast';
 
@@ -71,6 +72,40 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
+// Build an AxiosError that mirrors what /auth/register returns when the
+// email already belongs to a pure delegate row that needs the delegate
+// password to be claimed.
+function delegateAxiosError(message = 'shared user'): AxiosError {
+  const err = new AxiosError(
+    'Request failed with status code 401',
+    'ERR_BAD_REQUEST',
+    undefined,
+    {},
+    {
+      data: { message },
+      status: 401,
+      statusText: 'Unauthorized',
+      headers: {},
+      config: { headers: new AxiosHeaders() },
+    },
+  );
+  return err;
+}
+
+async function fillBaseFields() {
+  await act(async () => {
+    fireEvent.change(screen.getByLabelText(/email/i), {
+      target: { value: 'shared@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText(/^password$/i), {
+      target: { value: 'StrongPass1!' },
+    });
+    fireEvent.change(screen.getByLabelText(/confirm password/i), {
+      target: { value: 'StrongPass1!' },
+    });
+  });
+}
+
 describe('RegisterPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -98,6 +133,14 @@ describe('RegisterPage', () => {
       expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/confirm password/i)).toBeInTheDocument();
     });
+  });
+
+  it('does not show the delegate password field until a submit reveals it', async () => {
+    render(<RegisterPage />);
+    await waitFor(() => {
+      expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    });
+    expect(screen.queryByLabelText(/delegate password/i)).not.toBeInTheDocument();
   });
 
   it('renders create account button', async () => {
@@ -189,58 +232,18 @@ describe('RegisterPage', () => {
     });
   });
 
-  it('sends currentPassword when the registrant supplies a temporary password', async () => {
-    const mockUser = { id: 'd1', email: 'shared@example.com' };
-    (authApi.register as ReturnType<typeof vi.fn>).mockResolvedValue({ user: mockUser });
-
-    render(<RegisterPage />);
-
-    await waitFor(() => {
-      expect(screen.getByLabelText(/^email/i)).toBeInTheDocument();
-    });
-
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText(/^email/i), {
-        target: { value: 'shared@example.com' },
-      });
-      fireEvent.change(screen.getByLabelText(/^password$/i), {
-        target: { value: 'StrongPass1!' },
-      });
-      fireEvent.change(screen.getByLabelText(/confirm password/i), {
-        target: { value: 'StrongPass1!' },
-      });
-      fireEvent.change(screen.getByLabelText(/temporary password/i), {
-        target: { value: '  Temp-Pw-9!aB  ' },
-      });
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /create account/i }));
-    });
-
-    await waitFor(() =>
-      expect(authApi.register).toHaveBeenCalledWith(
-        expect.objectContaining({
-          email: 'shared@example.com',
-          password: 'StrongPass1!',
-          currentPassword: 'Temp-Pw-9!aB',
-        }),
-      ),
-    );
-  });
-
-  it('does not send currentPassword when the temp-password field is left blank', async () => {
+  it('does not include currentPassword on a normal first submit', async () => {
     const mockUser = { id: 'u2', email: 'new@example.com' };
     (authApi.register as ReturnType<typeof vi.fn>).mockResolvedValue({ user: mockUser });
 
     render(<RegisterPage />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/^email/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText(/^email/i), {
+      fireEvent.change(screen.getByLabelText(/email/i), {
         target: { value: 'new@example.com' },
       });
       fireEvent.change(screen.getByLabelText(/^password$/i), {
@@ -248,10 +251,6 @@ describe('RegisterPage', () => {
       });
       fireEvent.change(screen.getByLabelText(/confirm password/i), {
         target: { value: 'StrongPass1!' },
-      });
-      // Whitespace-only temp password must NOT be sent.
-      fireEvent.change(screen.getByLabelText(/temporary password/i), {
-        target: { value: '   ' },
       });
     });
 
@@ -262,6 +261,173 @@ describe('RegisterPage', () => {
     await waitFor(() => expect(authApi.register).toHaveBeenCalled());
     const callArg = (authApi.register as ReturnType<typeof vi.fn>).mock.calls[0][0];
     expect(callArg).not.toHaveProperty('currentPassword');
+  });
+
+  it('surfaces the delegate prompt and resubmits with currentPassword on 401', async () => {
+    const mockUser = { id: 'd1', email: 'shared@example.com' };
+    (authApi.register as ReturnType<typeof vi.fn>)
+      .mockRejectedValueOnce(delegateAxiosError())
+      .mockResolvedValueOnce({ user: mockUser });
+
+    render(<RegisterPage />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    });
+
+    await fillBaseFields();
+
+    // First submit: no delegate password yet, backend says it's a delegate.
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /create account/i }));
+    });
+    await act(async () => {}); // flush rejected promise handler
+
+    await waitFor(() => {
+      expect(screen.getByText(/already exists as a shared user/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/delegate password/i)).toBeInTheDocument();
+    });
+
+    // Second submit: registrant supplies the delegate password.
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText(/delegate password/i), {
+        target: { value: '  Temp-Pw-9!aB  ' },
+      });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /create account/i }));
+    });
+
+    await waitFor(() => {
+      expect(
+        (authApi.register as ReturnType<typeof vi.fn>).mock.calls[1][0],
+      ).toEqual(
+        expect.objectContaining({
+          email: 'shared@example.com',
+          password: 'StrongPass1!',
+          currentPassword: 'Temp-Pw-9!aB',
+        }),
+      );
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('two-factor-setup')).toBeInTheDocument();
+    });
+  });
+
+  it('keeps the prompt visible with an inline error when the delegate password is wrong', async () => {
+    (authApi.register as ReturnType<typeof vi.fn>)
+      .mockRejectedValueOnce(delegateAxiosError())
+      .mockRejectedValueOnce(delegateAxiosError('still wrong'));
+
+    render(<RegisterPage />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    });
+
+    await fillBaseFields();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /create account/i }));
+    });
+    await act(async () => {});
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/delegate password/i)).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText(/delegate password/i), {
+        target: { value: 'WrongPw1!' },
+      });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /create account/i }));
+    });
+    await act(async () => {});
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/delegate password is incorrect/i),
+      ).toBeInTheDocument();
+    });
+    // Backend has been called twice (initial detection + retry), but no
+    // account was ever created -- the inline prompt is still visible.
+    expect(
+      (authApi.register as ReturnType<typeof vi.fn>).mock.calls.length,
+    ).toBe(2);
+    expect(screen.getByLabelText(/delegate password/i)).toBeInTheDocument();
+  });
+
+  it('dismisses the delegate prompt when the email is edited', async () => {
+    (authApi.register as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      delegateAxiosError(),
+    );
+
+    render(<RegisterPage />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    });
+
+    await fillBaseFields();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /create account/i }));
+    });
+    await act(async () => {});
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/delegate password/i)).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText(/email/i), {
+        target: { value: 'different@example.com' },
+      });
+    });
+
+    expect(screen.queryByLabelText(/delegate password/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/already exists as a shared user/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows an inline error and does not call the API when the delegate prompt is visible but the password is blank', async () => {
+    (authApi.register as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      delegateAxiosError(),
+    );
+
+    render(<RegisterPage />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    });
+
+    await fillBaseFields();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /create account/i }));
+    });
+    await act(async () => {});
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/delegate password/i)).toBeInTheDocument();
+    });
+
+    // Submit again without filling the delegate password.
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /create account/i }));
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/please enter your delegate password/i),
+      ).toBeInTheDocument();
+    });
+    expect(
+      (authApi.register as ReturnType<typeof vi.fn>).mock.calls.length,
+    ).toBe(1);
   });
 
   it('shows error toast on registration failure', async () => {

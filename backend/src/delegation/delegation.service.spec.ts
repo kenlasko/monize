@@ -421,10 +421,15 @@ describe("DelegationService", () => {
       await expect(service.getAvailableContexts("u1")).resolves.toEqual([]);
     });
 
-    it("includes a self context only when the user owns data", async () => {
+    it("includes a self context when the user owns data", async () => {
       usersRepo.findOne.mockImplementation(({ where }: any) =>
         where.id === "u1"
-          ? { id: "u1", firstName: "Del", lastName: "Egate" }
+          ? {
+              id: "u1",
+              firstName: "Del",
+              lastName: "Egate",
+              isDelegateOnly: false,
+            }
           : {
               id: "o1",
               firstName: "Own",
@@ -451,9 +456,34 @@ describe("DelegationService", () => {
       );
     });
 
-    it("omits the self context when the user owns no data", async () => {
+    it("includes a self context for a self-registered user even when they own no data yet", async () => {
+      // Covers the claim-path bug: a user who upgraded out of a pure
+      // delegate row via /register has no accounts yet, but must still
+      // see a "self" context so the banner appears and they don't get
+      // auto-switched into the owner's account.
       usersRepo.findOne.mockImplementation(({ where }: any) =>
-        where.id === "u1" ? { id: "u1" } : { id: "o1", twoFactorSecret: null },
+        where.id === "u1"
+          ? { id: "u1", firstName: "Self", isDelegateOnly: false }
+          : { id: "o1", twoFactorSecret: null },
+      );
+      delegatesRepo.find.mockResolvedValue([
+        { ownerUserId: "o1", owner: null },
+      ]);
+      accountsRepo.exists.mockResolvedValue(false);
+      prefsRepo.findOne.mockResolvedValue({ twoFactorEnabled: false });
+
+      const res = await service.getAvailableContexts("u1");
+      expect(res).toHaveLength(2);
+      expect(res.find((c) => c.isSelf)).toEqual(
+        expect.objectContaining({ userId: "u1", isSelf: true }),
+      );
+    });
+
+    it("omits the self context for an owner-managed pure delegate with no data", async () => {
+      usersRepo.findOne.mockImplementation(({ where }: any) =>
+        where.id === "u1"
+          ? { id: "u1", isDelegateOnly: true }
+          : { id: "o1", twoFactorSecret: null },
       );
       delegatesRepo.find.mockResolvedValue([
         { ownerUserId: "o1", owner: null },
@@ -470,6 +500,11 @@ describe("DelegationService", () => {
 
   describe("listDelegates", () => {
     it("maps delegations to a safe summary", async () => {
+      usersRepo.findOne.mockResolvedValue({
+        id: "d1",
+        role: "user",
+        isDelegateOnly: true,
+      });
       delegatesRepo.find.mockResolvedValue([
         {
           id: "g1",
@@ -753,6 +788,7 @@ describe("DelegationService", () => {
       ownsAccounts: number;
       ownsDelegations: number;
       role?: string;
+      isDelegateOnly?: boolean;
     }) {
       const manager: any = {
         delete: jest.fn(),
@@ -761,9 +797,11 @@ describe("DelegationService", () => {
           .mockResolvedValueOnce(counts.otherDelegations)
           .mockResolvedValueOnce(counts.ownsAccounts)
           .mockResolvedValueOnce(counts.ownsDelegations),
-        findOne: jest
-          .fn()
-          .mockResolvedValue({ id: "d1", role: counts.role ?? "user" }),
+        findOne: jest.fn().mockResolvedValue({
+          id: "d1",
+          role: counts.role ?? "user",
+          isDelegateOnly: counts.isDelegateOnly ?? true,
+        }),
       };
       return manager;
     }
@@ -778,6 +816,7 @@ describe("DelegationService", () => {
         otherDelegations: 0,
         ownsAccounts: 0,
         ownsDelegations: 0,
+        isDelegateOnly: true,
       });
       dataSource.transaction.mockImplementation(async (cb: any) => cb(manager));
 
@@ -788,6 +827,32 @@ describe("DelegationService", () => {
       });
       expect(manager.delete).toHaveBeenCalledWith(expect.anything(), {
         id: "d1",
+      });
+    });
+
+    it("keeps a self-registered / claimed user even with no accounts of their own", async () => {
+      // A user that has gone through /register (either as a fresh
+      // sign-up or by claiming a delegate row) is a full account, even
+      // if they haven't created any accounts yet. Revoking the
+      // delegation must not delete their login.
+      delegatesRepo.findOne.mockResolvedValue({
+        id: "g1",
+        ownerUserId: "o1",
+        delegateUserId: "d1",
+      });
+      const manager = managerFor({
+        otherDelegations: 0,
+        ownsAccounts: 0,
+        ownsDelegations: 0,
+        isDelegateOnly: false,
+      });
+      dataSource.transaction.mockImplementation(async (cb: any) => cb(manager));
+
+      await service.revokeDelegate("o1", "g1");
+
+      expect(manager.delete).toHaveBeenCalledTimes(1);
+      expect(manager.delete).toHaveBeenCalledWith(expect.anything(), {
+        id: "g1",
       });
     });
 
@@ -810,6 +875,29 @@ describe("DelegationService", () => {
       expect(manager.delete).toHaveBeenCalledWith(expect.anything(), {
         id: "g1",
       });
+    });
+
+    it("keeps a pure delegate (isDelegateOnly=true) when they still delegate for another owner", async () => {
+      // The isDelegateOnly check is an additional guard, not a
+      // replacement: an owner-managed identity that still has at least
+      // one OTHER active delegation must keep their login so the other
+      // owner's Shared Access continues to work.
+      delegatesRepo.findOne.mockResolvedValue({
+        id: "g1",
+        ownerUserId: "o1",
+        delegateUserId: "d1",
+      });
+      const manager = managerFor({
+        otherDelegations: 1,
+        ownsAccounts: 0,
+        ownsDelegations: 0,
+        isDelegateOnly: true,
+      });
+      dataSource.transaction.mockImplementation(async (cb: any) => cb(manager));
+
+      await service.revokeDelegate("o1", "g1");
+
+      expect(manager.delete).toHaveBeenCalledTimes(1); // delegation only
     });
 
     it("keeps the user when they own data of their own", async () => {
@@ -891,6 +979,7 @@ describe("DelegationService", () => {
         oidcSubject: null,
         failedLoginAttempts: 5,
         lockedUntil: new Date(Date.now() + 60000),
+        isDelegateOnly: true,
       };
       usersRepo.findOne.mockResolvedValue(delegate);
       usersRepo.save.mockResolvedValue(delegate);
@@ -942,7 +1031,11 @@ describe("DelegationService", () => {
     it("is true for an owner-provisioned pure delegate", async () => {
       accountsRepo.count.mockResolvedValue(0);
       delegatesRepo.count = jest.fn().mockResolvedValue(0);
-      usersRepo.findOne.mockResolvedValue({ id: "d1", role: "user" });
+      usersRepo.findOne.mockResolvedValue({
+        id: "d1",
+        role: "user",
+        isDelegateOnly: true,
+      });
       await expect(service.canOwnerResetDelegatePassword("d1")).resolves.toBe(
         true,
       );
@@ -954,7 +1047,33 @@ describe("DelegationService", () => {
         .fn()
         .mockResolvedValueOnce(0) // ownsDelegations (isFullAccount)
         .mockResolvedValueOnce(2); // delegations as delegate
-      usersRepo.findOne.mockResolvedValue({ id: "d1", role: "user" });
+      usersRepo.findOne.mockResolvedValue({
+        id: "d1",
+        role: "user",
+        isDelegateOnly: true,
+      });
+      await expect(service.canOwnerResetDelegatePassword("d1")).resolves.toBe(
+        false,
+      );
+    });
+
+    it("is false for a claimed / self-registered user even with no own data yet", async () => {
+      // A user who went through /register (either as a fresh signup or
+      // via the claim path) has isDelegateOnly=false from that moment
+      // on; their login is theirs, so the owner can't rotate it even
+      // before they have created any accounts of their own.
+      usersRepo.findOne.mockResolvedValue({
+        id: "d1",
+        role: "user",
+        isDelegateOnly: false,
+      });
+      await expect(service.canOwnerResetDelegatePassword("d1")).resolves.toBe(
+        false,
+      );
+    });
+
+    it("is false when the user record cannot be found", async () => {
+      usersRepo.findOne.mockResolvedValue(null);
       await expect(service.canOwnerResetDelegatePassword("d1")).resolves.toBe(
         false,
       );
@@ -1015,7 +1134,7 @@ describe("DelegationService", () => {
       expect(res.invited).toBe(false);
     });
 
-    it("clears lockout when the owner sets a password for a locked delegate", async () => {
+    it("clears lockout when the owner sets a password for a locked pure-delegate", async () => {
       usersRepo.findOne.mockResolvedValue({ id: "o1", email: "own@x.y" });
       const lockedUser = {
         id: "d1",
@@ -1030,6 +1149,13 @@ describe("DelegationService", () => {
       manager.findOne
         .mockResolvedValueOnce(lockedUser) // User by email
         .mockResolvedValueOnce(null); // no existing delegation
+      // Mark as a pure delegate (already someone else's delegate row,
+      // owns no data) so credential management is allowed -- a fresh
+      // self-registered user with no delegate role would not be.
+      manager.count.mockImplementation((entity: any, opts: any) => {
+        if (opts?.where?.delegateUserId === "d1") return Promise.resolve(1);
+        return Promise.resolve(0);
+      });
       dataSource.transaction.mockImplementation(async (cb: any) => cb(manager));
       await service.createDelegate("o1", {
         email: "new@x.y",
@@ -1159,6 +1285,36 @@ describe("DelegationService", () => {
       } as any);
 
       expect(existing.passwordHash).toBe("ORIGINAL");
+      expect(res.temporaryPassword).toBeUndefined();
+    });
+
+    it("never touches credentials of a self-registered user with no data yet", async () => {
+      // Reproduces the race where the front-end clicks Add before the
+      // email-lookup debounce returns: dto.password is sent but the
+      // target email belongs to a real user that just hasn't created
+      // any accounts yet. mayManageCredentials must still be false.
+      usersRepo.findOne.mockResolvedValue({ id: "o1", email: "own@x.y" });
+      const existing = {
+        id: "d2",
+        passwordHash: "USER-CHOSEN",
+        oidcSubject: null,
+        role: "user",
+      };
+      const manager = makeManager();
+      manager.findOne
+        .mockResolvedValueOnce(existing)
+        .mockResolvedValueOnce(null);
+      // ownsAccounts=0, ownsDelegations=0, alreadyDelegate=0 -- a fresh
+      // self-registered user who is not yet anybody's delegate row.
+      manager.count.mockResolvedValue(0);
+      dataSource.transaction.mockImplementation(async (cb: any) => cb(manager));
+
+      const res = await service.createDelegate("o1", {
+        email: "fresh@x.y",
+        password: "OwnerWouldOverwrite1!",
+      } as any);
+
+      expect(existing.passwordHash).toBe("USER-CHOSEN");
       expect(res.temporaryPassword).toBeUndefined();
     });
 

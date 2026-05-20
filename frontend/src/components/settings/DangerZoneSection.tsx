@@ -11,6 +11,25 @@ import { useAuthStore } from '@/store/authStore';
 import { getErrorMessage } from '@/lib/errors';
 import { User } from '@/types/auth';
 
+interface DowngradeNoticeProps {
+  isDelegate: boolean;
+}
+
+function DelegateDeleteNotice({ isDelegate }: DowngradeNoticeProps) {
+  if (!isDelegate) return null;
+  return (
+    <div className="mb-4 rounded border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-3 py-3 text-sm text-amber-900 dark:text-amber-100">
+      <p className="font-semibold">You are a delegate of another account.</p>
+      <p className="mt-1">
+        Deleting your account will remove your own data, but your login
+        and the shared access others granted you stay so the delegation
+        keeps working. To revoke that access, ask the owner to remove
+        you from their Shared Access list first.
+      </p>
+    </div>
+  );
+}
+
 interface DangerZoneSectionProps {
   user: User;
 }
@@ -18,6 +37,13 @@ interface DangerZoneSectionProps {
 export function DangerZoneSection({ user }: DangerZoneSectionProps) {
   const router = useRouter();
   const { logout } = useAuthStore();
+  // A delegate of another account sees a tailored warning explaining
+  // that Delete Account demotes them to delegate-only rather than
+  // truly removing their login. Default to [] so tests that don't
+  // bother to seed the delegation slice of the auth store don't blow
+  // up on .some() -- the production store always initialises this.
+  const availableContexts = useAuthStore((s) => s.availableContexts);
+  const isDelegate = (availableContexts ?? []).some((c) => !c.isSelf);
 
   // Delete account state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -51,8 +77,15 @@ export function DangerZoneSection({ user }: DangerZoneSectionProps) {
       const authData = isOidc
         ? { oidcIdToken: 'oidc-session-confirmed' }
         : { password: deleteAccountPassword };
-      await userSettingsApi.deleteAccount(authData);
-      toast.success('Account deleted');
+      const res = await userSettingsApi.deleteAccount(authData);
+      if (res.downgraded) {
+        toast.success(
+          'Your own data was removed. Your login and shared access are kept so the delegation stays in place.',
+          { duration: 12000 },
+        );
+      } else {
+        toast.success('Account deleted');
+      }
       logout();
       router.push('/login');
     } catch (error) {
@@ -265,14 +298,11 @@ export function DangerZoneSection({ user }: DangerZoneSectionProps) {
       {/* Delete Account Section */}
       <div>
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Delete Account</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
           Permanently delete your account and all associated data. This cannot be undone.
         </p>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          If you have been granted delegate access to someone else&apos;s
-          accounts, that access and your login are kept: only your own data
-          is removed and your account becomes a delegate-only account.
-        </p>
+
+        <DelegateDeleteNotice isDelegate={isDelegate} />
 
         {!showDeleteConfirm ? (
           <Button
