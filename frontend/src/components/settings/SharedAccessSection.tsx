@@ -428,8 +428,9 @@ export function SharedAccessSection() {
         title="Remove delegate"
         message={
           'Remove this delegate? They lose access to your account. If they ' +
-          'have no other shared access and no account of their own, their ' +
-          'login is deleted entirely.'
+          'have no other shared access and never claimed this email as ' +
+          'their own Monize account, their owner-managed login is removed ' +
+          'too.'
         }
         confirmLabel={revoking ? 'Removing...' : 'Remove'}
         variant="danger"
