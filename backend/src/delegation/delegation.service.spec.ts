@@ -421,10 +421,15 @@ describe("DelegationService", () => {
       await expect(service.getAvailableContexts("u1")).resolves.toEqual([]);
     });
 
-    it("includes a self context only when the user owns data", async () => {
+    it("includes a self context when the user owns data", async () => {
       usersRepo.findOne.mockImplementation(({ where }: any) =>
         where.id === "u1"
-          ? { id: "u1", firstName: "Del", lastName: "Egate" }
+          ? {
+              id: "u1",
+              firstName: "Del",
+              lastName: "Egate",
+              isDelegateOnly: false,
+            }
           : {
               id: "o1",
               firstName: "Own",
@@ -451,9 +456,34 @@ describe("DelegationService", () => {
       );
     });
 
-    it("omits the self context when the user owns no data", async () => {
+    it("includes a self context for a self-registered user even when they own no data yet", async () => {
+      // Covers the claim-path bug: a user who upgraded out of a pure
+      // delegate row via /register has no accounts yet, but must still
+      // see a "self" context so the banner appears and they don't get
+      // auto-switched into the owner's account.
       usersRepo.findOne.mockImplementation(({ where }: any) =>
-        where.id === "u1" ? { id: "u1" } : { id: "o1", twoFactorSecret: null },
+        where.id === "u1"
+          ? { id: "u1", firstName: "Self", isDelegateOnly: false }
+          : { id: "o1", twoFactorSecret: null },
+      );
+      delegatesRepo.find.mockResolvedValue([
+        { ownerUserId: "o1", owner: null },
+      ]);
+      accountsRepo.exists.mockResolvedValue(false);
+      prefsRepo.findOne.mockResolvedValue({ twoFactorEnabled: false });
+
+      const res = await service.getAvailableContexts("u1");
+      expect(res).toHaveLength(2);
+      expect(res.find((c) => c.isSelf)).toEqual(
+        expect.objectContaining({ userId: "u1", isSelf: true }),
+      );
+    });
+
+    it("omits the self context for an owner-managed pure delegate with no data", async () => {
+      usersRepo.findOne.mockImplementation(({ where }: any) =>
+        where.id === "u1"
+          ? { id: "u1", isDelegateOnly: true }
+          : { id: "o1", twoFactorSecret: null },
       );
       delegatesRepo.find.mockResolvedValue([
         { ownerUserId: "o1", owner: null },

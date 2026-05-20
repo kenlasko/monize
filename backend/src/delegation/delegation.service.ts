@@ -370,12 +370,20 @@ export class DelegationService {
 
     if (delegations.length === 0) return [];
 
+    // A user gets a "self" context whenever the row represents a real
+    // account in their own right -- they own data, or they claimed /
+    // self-registered (isDelegateOnly=false). A pure delegate identity
+    // (created via Shared Access, never claimed) deliberately has no
+    // self context so the front end auto-picks the owner on first
+    // login. Without this, a freshly-claimed delegate who has not yet
+    // created any accounts would have only the owner's context and the
+    // banner would never appear.
     const ownsData = await this.accountsRepository.exists({
       where: { userId: user.id },
     });
 
     const contexts: AvailableContext[] = [];
-    if (ownsData) {
+    if (ownsData || !user.isDelegateOnly) {
       contexts.push({
         userId: user.id,
         label: this.userLabel(user),
@@ -757,6 +765,11 @@ export class DelegationService {
           lastName: dto.lastName ?? null,
           authProvider: "local",
           role: "user",
+          // Marks the row as owner-managed -- hidden from admin User
+          // Management, no "self" context offered to the delegate.
+          // Cleared by the /register claim path the moment the user
+          // upgrades into a full account in their own right.
+          isDelegateOnly: true,
         });
       }
 

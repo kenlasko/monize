@@ -146,6 +146,12 @@ export class AuthService {
       existingUser.resetTokenExpiry = null;
       existingUser.failedLoginAttempts = 0;
       existingUser.lockedUntil = null;
+      // Promote out of the owner-managed delegate state -- the user is
+      // claiming the row as their own account from here on, so they
+      // should show up in admin User Management and see a "self"
+      // context in the delegate banner even before they have any
+      // accounts of their own.
+      existingUser.isDelegateOnly = false;
       const upgraded = await this.usersRepository.save(existingUser);
 
       const { accessToken, refreshToken } =

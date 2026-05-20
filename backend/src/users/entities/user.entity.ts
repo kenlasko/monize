@@ -117,6 +117,14 @@ export class User {
   @Exclude()
   pendingOidcSubject: string | null;
 
+  // True when the row exists solely as an owner-managed delegate identity
+  // (created via the Shared Access flow, never claimed via /register).
+  // Hides the user from admin User Management and the delegate's own
+  // context list. Cleared the moment the row is claimed via /register so
+  // the user becomes a full account.
+  @Column({ name: "is_delegate_only", type: "boolean", default: false })
+  isDelegateOnly: boolean;
+
   @OneToOne(() => UserPreference, (preference) => preference.user)
   preferences: UserPreference;
 }

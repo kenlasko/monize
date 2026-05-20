@@ -31,15 +31,15 @@ export class AdminService {
   ) {}
 
   async findAllUsers() {
-    // List every user. An earlier version hid "pure delegate" rows (users
-    // that are in account_delegates as a delegate, own no accounts, and
-    // aren't admin) on the theory that owners manage them via Shared
-    // Access. That filter caught self-registered users who happened to be
-    // added as a delegate before creating any accounts -- their row
-    // disappeared from User Management even though the user still
-    // existed, which looked exactly like account deletion. The few extra
-    // rows are a much smaller cost than the perceived data loss.
+    // Hide owner-managed delegate identities -- users that exist solely
+    // because an account owner added them via Shared Access. Those rows
+    // are managed from the owner's Shared Access page. The is_delegate_only
+    // column is set when createDelegate provisions a new user and cleared
+    // when the user upgrades into a full account via the /register claim
+    // path, so a self-registered user who happens to also be a delegate
+    // still shows up here.
     const users = await this.usersRepository.find({
+      where: { isDelegateOnly: false },
       order: { createdAt: "ASC" },
     });
     return users.map((user) => {

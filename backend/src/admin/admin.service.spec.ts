@@ -141,12 +141,13 @@ describe("AdminService", () => {
       expect(result[0].hasPassword).toBe(false);
     });
 
-    it("returns every user (including pure delegates) ordered by createdAt ASC", async () => {
+    it("hides owner-managed delegate identities and orders by createdAt ASC", async () => {
       usersRepository.find.mockResolvedValue([]);
 
       await service.findAllUsers();
 
       expect(usersRepository.find).toHaveBeenCalledWith({
+        where: { isDelegateOnly: false },
         order: { createdAt: "ASC" },
       });
     });
