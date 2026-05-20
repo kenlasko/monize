@@ -288,7 +288,7 @@ export class UsersService {
   async deleteAccount(
     userId: string,
     dto?: { password?: string; oidcIdToken?: string },
-  ): Promise<void> {
+  ): Promise<{ downgraded: boolean }> {
     const user = await this.usersRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new NotFoundException("User not found");
@@ -342,12 +342,13 @@ export class UsersService {
     // they can keep acting as a delegate.
     if (await this.isActingDelegate(userId)) {
       await this.purgeForDowngrade(userId);
-      return;
+      return { downgraded: true };
     }
 
     // Delete preferences first (due to FK constraint), then the user.
     await this.preferencesRepository.delete({ userId });
     await this.usersRepository.remove(user);
+    return { downgraded: false };
   }
 
   async deleteData(
@@ -649,7 +650,9 @@ export class UsersService {
    * Wipes everything the user owns but keeps their login and the delegate
    * access others granted them -- demoting a full account to a pure
    * delegate. Delegations the user owned are removed (their accounts are
-   * gone); the rows where they are the delegate are left untouched.
+   * gone); the rows where they are the delegate are left untouched, and
+   * is_delegate_only is flipped back to true so the row is hidden from
+   * admin User Management and no "self" context is offered.
    */
   async purgeForDowngrade(userId: string): Promise<void> {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -668,6 +671,10 @@ export class UsersService {
       );
       await queryRunner.query(
         "DELETE FROM account_delegates WHERE owner_user_id = $1",
+        [userId],
+      );
+      await queryRunner.query(
+        "UPDATE users SET is_delegate_only = true WHERE id = $1",
         [userId],
       );
       await queryRunner.commitTransaction();

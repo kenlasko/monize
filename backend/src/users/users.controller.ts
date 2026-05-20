@@ -100,8 +100,13 @@ export class UsersController {
   @ApiResponse({ status: 200, description: "Account deleted successfully" })
   @ApiResponse({ status: 401, description: "Invalid credentials" })
   async deleteAccount(@Request() req, @Body() dto: DeleteAccountDto) {
-    await this.usersService.deleteAccount(req.user.id, dto);
-    return { message: "Account deleted successfully" };
+    const result = await this.usersService.deleteAccount(req.user.id, dto);
+    return {
+      message: result.downgraded
+        ? "Your own data was removed. Your login and any shared access others granted you remain."
+        : "Account deleted successfully",
+      downgraded: result.downgraded,
+    };
   }
 
   @Post("delete-data")

@@ -139,7 +139,10 @@ export class AdminService {
     return this.sanitizeUser(saved);
   }
 
-  async deleteUser(adminId: string, targetUserId: string): Promise<void> {
+  async deleteUser(
+    adminId: string,
+    targetUserId: string,
+  ): Promise<{ downgraded: boolean }> {
     if (adminId === targetUserId) {
       throw new ForbiddenException("You cannot delete your own account");
     }
@@ -179,12 +182,13 @@ export class AdminService {
     // their login and the delegate access others granted them stay.
     if (await this.usersService.isActingDelegate(targetUserId)) {
       await this.usersService.purgeForDowngrade(targetUserId);
-      return;
+      return { downgraded: true };
     }
 
     // Delete preferences first (FK constraint), then the user.
     await this.preferencesRepository.delete({ userId: targetUserId });
     await this.usersRepository.remove(targetUser);
+    return { downgraded: false };
   }
 
   async resetUserPassword(

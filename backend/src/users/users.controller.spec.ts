@@ -163,16 +163,32 @@ describe("UsersController", () => {
 
   describe("deleteAccount()", () => {
     it("delegates to usersService.deleteAccount and returns success message", async () => {
-      mockUsersService.deleteAccount.mockResolvedValue(undefined);
+      mockUsersService.deleteAccount.mockResolvedValue({ downgraded: false });
       const dto = { password: "mypass" };
 
       const result = await controller.deleteAccount(mockReq, dto);
 
-      expect(result).toEqual({ message: "Account deleted successfully" });
+      expect(result).toEqual({
+        message: "Account deleted successfully",
+        downgraded: false,
+      });
       expect(mockUsersService.deleteAccount).toHaveBeenCalledWith(
         "user-1",
         dto,
       );
+    });
+
+    it("returns a downgrade-aware message when the account is demoted to a delegate", async () => {
+      mockUsersService.deleteAccount.mockResolvedValue({ downgraded: true });
+      const dto = { password: "mypass" };
+
+      const result = await controller.deleteAccount(mockReq, dto);
+
+      expect(result).toEqual({
+        message:
+          "Your own data was removed. Your login and any shared access others granted you remain.",
+        downgraded: true,
+      });
     });
   });
 

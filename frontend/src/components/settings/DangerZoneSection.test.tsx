@@ -16,10 +16,14 @@ vi.mock('@/lib/auth', () => ({
   },
 }));
 
+const authState = {
+  logout: vi.fn(),
+  availableContexts: [] as Array<{ isSelf: boolean }>,
+};
 vi.mock('@/store/authStore', () => ({
-  useAuthStore: vi.fn(() => ({
-    logout: vi.fn(),
-  })),
+  useAuthStore: vi.fn((selector?: (s: typeof authState) => unknown) =>
+    selector ? selector(authState) : authState,
+  ),
 }));
 
 vi.mock('@/lib/errors', () => ({
@@ -105,7 +109,9 @@ describe('DangerZoneSection', () => {
     });
 
     it('calls deleteAccount API with password when confirmed', async () => {
-      (userSettingsApi.deleteAccount as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+      (userSettingsApi.deleteAccount as ReturnType<typeof vi.fn>).mockResolvedValue({
+        downgraded: false,
+      });
 
       render(<DangerZoneSection user={localUser} />);
 
@@ -118,6 +124,50 @@ describe('DangerZoneSection', () => {
         expect(userSettingsApi.deleteAccount).toHaveBeenCalledWith({ password: 'mypass' });
         expect(toast.success).toHaveBeenCalledWith('Account deleted');
       });
+    });
+
+    it('shows a downgrade-aware toast when the backend reports downgraded=true', async () => {
+      (userSettingsApi.deleteAccount as ReturnType<typeof vi.fn>).mockResolvedValue({
+        downgraded: true,
+      });
+
+      render(<DangerZoneSection user={localUser} />);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Delete Account' }));
+      fireEvent.change(screen.getByPlaceholderText('Type DELETE'), {
+        target: { value: 'DELETE' },
+      });
+      fireEvent.change(screen.getByPlaceholderText('Enter your password'), {
+        target: { value: 'mypass' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Confirm Delete' }));
+
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith(
+          expect.stringMatching(/Your own data was removed/i),
+          expect.any(Object),
+        );
+      });
+    });
+
+    it('shows the delegate-aware notice when the user is a delegate elsewhere', () => {
+      authState.availableContexts = [
+        { isSelf: true },
+        { isSelf: false },
+      ];
+      render(<DangerZoneSection user={localUser} />);
+      expect(
+        screen.getByText(/You are a delegate of another account/i),
+      ).toBeInTheDocument();
+      authState.availableContexts = [];
+    });
+
+    it('hides the delegate-aware notice when the user is not a delegate', () => {
+      authState.availableContexts = [];
+      render(<DangerZoneSection user={localUser} />);
+      expect(
+        screen.queryByText(/You are a delegate of another account/i),
+      ).not.toBeInTheDocument();
     });
 
     it('hides confirmation when Cancel is clicked', () => {

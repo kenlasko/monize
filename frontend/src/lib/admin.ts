@@ -33,8 +33,11 @@ export const adminApi = {
     return response.data;
   },
 
-  deleteUser: async (userId: string): Promise<void> => {
-    await apiClient.delete(`/admin/users/${userId}`);
+  deleteUser: async (userId: string): Promise<{ downgraded: boolean }> => {
+    const response = await apiClient.delete<{ downgraded: boolean }>(
+      `/admin/users/${userId}`,
+    );
+    return response.data;
   },
 
   resetUserPassword: async (
