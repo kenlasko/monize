@@ -872,6 +872,29 @@ describe("DelegationService", () => {
       });
     });
 
+    it("keeps a pure delegate (isDelegateOnly=true) when they still delegate for another owner", async () => {
+      // The isDelegateOnly check is an additional guard, not a
+      // replacement: an owner-managed identity that still has at least
+      // one OTHER active delegation must keep their login so the other
+      // owner's Shared Access continues to work.
+      delegatesRepo.findOne.mockResolvedValue({
+        id: "g1",
+        ownerUserId: "o1",
+        delegateUserId: "d1",
+      });
+      const manager = managerFor({
+        otherDelegations: 1,
+        ownsAccounts: 0,
+        ownsDelegations: 0,
+        isDelegateOnly: true,
+      });
+      dataSource.transaction.mockImplementation(async (cb: any) => cb(manager));
+
+      await service.revokeDelegate("o1", "g1");
+
+      expect(manager.delete).toHaveBeenCalledTimes(1); // delegation only
+    });
+
     it("keeps the user when they own data of their own", async () => {
       delegatesRepo.findOne.mockResolvedValue({
         id: "g1",
