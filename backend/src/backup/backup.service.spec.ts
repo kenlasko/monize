@@ -12,6 +12,7 @@ import { BackupService, RestoreBackupInput } from "./backup.service";
 import { User } from "../users/entities/user.entity";
 import { OidcService } from "../auth/oidc/oidc.service";
 import { AiEncryptionService } from "../ai/ai-encryption.service";
+import { encryptBackup } from "./backup-crypto.util";
 import * as bcrypt from "bcryptjs";
 
 jest.mock("bcryptjs");
@@ -1061,14 +1062,15 @@ describe("BackupService", () => {
       };
       mockUserRepo.findOne.mockResolvedValue(oidcModule);
       // Re-resolve OidcService from the testing module and flip verify to false.
-      const oidc = (service as unknown as { oidcService: { verifyIdTokenClaims: jest.Mock } }).oidcService;
+      const oidc = (
+        service as unknown as {
+          oidcService: { verifyIdTokenClaims: jest.Mock };
+        }
+      ).oidcService;
       oidc.verifyIdTokenClaims = jest.fn().mockReturnValue(false);
 
       await expect(
-        service.restoreData(
-          userId,
-          makeInput({ oidcIdToken: "bad-token" }),
-        ),
+        service.restoreData(userId, makeInput({ oidcIdToken: "bad-token" })),
       ).rejects.toThrow(UnauthorizedException);
     });
 
@@ -1076,7 +1078,9 @@ describe("BackupService", () => {
       mockUserRepo.findOne.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       // Gzip a literal null, which is valid JSON but not an object.
-      const nullPayload = compressBackupData(null as unknown as Record<string, unknown>);
+      const nullPayload = compressBackupData(
+        null as unknown as Record<string, unknown>,
+      );
       await expect(
         service.restoreData(userId, {
           compressedData: nullPayload,
@@ -1091,22 +1095,30 @@ describe("BackupService", () => {
       // Make the information_schema query for currencies return the column list
       // so columns aren't all stripped. Make the SELECT-existing query empty so
       // the INSERT is reached.
-      mockQueryRunner.query.mockImplementation((sql: string, params?: unknown[]) => {
-        if (typeof sql === "string" && sql.includes("information_schema.columns")) {
-          // ensureCurrenciesExist embeds the table name literally; insertRows
-          // passes it via $1.
-          const isCurrencies =
-            sql.includes("'currencies'") ||
-            (Array.isArray(params) && params[0] === "currencies");
-          const cols = isCurrencies
-            ? schemaColumns.currencies
-            : (params && schemaColumns[params[0] as string]) || [];
-          return Promise.resolve(
-            cols.map((col: string) => ({ column_name: col, data_type: "text" })),
-          );
-        }
-        return Promise.resolve([]);
-      });
+      mockQueryRunner.query.mockImplementation(
+        (sql: string, params?: unknown[]) => {
+          if (
+            typeof sql === "string" &&
+            sql.includes("information_schema.columns")
+          ) {
+            // ensureCurrenciesExist embeds the table name literally; insertRows
+            // passes it via $1.
+            const isCurrencies =
+              sql.includes("'currencies'") ||
+              (Array.isArray(params) && params[0] === "currencies");
+            const cols = isCurrencies
+              ? schemaColumns.currencies
+              : (params && schemaColumns[params[0] as string]) || [];
+            return Promise.resolve(
+              cols.map((col: string) => ({
+                column_name: col,
+                data_type: "text",
+              })),
+            );
+          }
+          return Promise.resolve([]);
+        },
+      );
 
       const dataWithCurrency = {
         ...validBackupData,
@@ -1141,20 +1153,28 @@ describe("BackupService", () => {
     it("passes native PG array values straight through (not JSON-stringified) for ARRAY columns", async () => {
       mockUserRepo.findOne.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      mockQueryRunner.query.mockImplementation((sql: string, params?: unknown[]) => {
-        if (typeof sql === "string" && sql.includes("information_schema.columns")) {
-          if (Array.isArray(params) && params[0] === "monte_carlo_scenarios") {
-            return Promise.resolve([
-              { column_name: "id", data_type: "uuid" },
-              { column_name: "user_id", data_type: "uuid" },
-              { column_name: "name", data_type: "text" },
-              { column_name: "account_ids", data_type: "ARRAY" },
-            ]);
+      mockQueryRunner.query.mockImplementation(
+        (sql: string, params?: unknown[]) => {
+          if (
+            typeof sql === "string" &&
+            sql.includes("information_schema.columns")
+          ) {
+            if (
+              Array.isArray(params) &&
+              params[0] === "monte_carlo_scenarios"
+            ) {
+              return Promise.resolve([
+                { column_name: "id", data_type: "uuid" },
+                { column_name: "user_id", data_type: "uuid" },
+                { column_name: "name", data_type: "text" },
+                { column_name: "account_ids", data_type: "ARRAY" },
+              ]);
+            }
+            return Promise.resolve([]);
           }
           return Promise.resolve([]);
-        }
-        return Promise.resolve([]);
-      });
+        },
+      );
 
       const dataWithMc = {
         ...validBackupData,
@@ -1206,10 +1226,6 @@ describe("BackupService", () => {
     });
 
     describe("encrypted backups", () => {
-      const {
-        encryptBackup,
-      } = require("./backup-crypto.util") as typeof import("./backup-crypto.util");
-
       function encryptedBlob(data: Record<string, unknown>, password: string) {
         return encryptBackup(compressBackupData(data), password);
       }

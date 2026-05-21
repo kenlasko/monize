@@ -2,12 +2,7 @@ import { Injectable, Logger, BadRequestException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, LessThanOrEqual } from "typeorm";
 import { Cron } from "@nestjs/schedule";
-import {
-  promises as fs,
-  readdirSync,
-  unlinkSync,
-  copyFileSync,
-} from "fs";
+import { promises as fs, readdirSync, unlinkSync, copyFileSync } from "fs";
 import { resolve } from "path";
 import { AutoBackupSettings } from "./entities/auto-backup-settings.entity";
 import { BackupService } from "./backup.service";

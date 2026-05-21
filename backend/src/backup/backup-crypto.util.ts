@@ -18,7 +18,8 @@ const KDF_SCRYPT = 0x01;
 const SALT_LENGTH = 16;
 const IV_LENGTH = 12;
 const TAG_LENGTH = 16;
-const HEADER_LENGTH = MAGIC.length + 1 + 1 + SALT_LENGTH + IV_LENGTH + TAG_LENGTH;
+const HEADER_LENGTH =
+  MAGIC.length + 1 + 1 + SALT_LENGTH + IV_LENGTH + TAG_LENGTH;
 const KEY_LENGTH = 32;
 const SCRYPT_N = 1 << 15; // 32768; tuned for ~100ms on modern hardware
 const SCRYPT_R = 8;
@@ -37,8 +38,14 @@ function deriveKey(password: string, salt: Buffer): Buffer {
  * True if `buf` carries the Monize encrypted-backup magic header. Used so
  * restore can tell whether the upload is a raw gzip backup (legacy) or an
  * encrypted envelope, without trying both code paths.
+ *
+ * Buffer.isBuffer guard is defensive: Express body-parser may deliver a
+ * string or parsed JSON object depending on upstream middleware, and
+ * CodeQL's taint flow flags `.length` access on the untyped form. Narrow
+ * here so callers can trust the typed signature.
  */
 export function isEncryptedBackup(buf: Buffer): boolean {
+  if (!Buffer.isBuffer(buf)) return false;
   return (
     buf.length >= HEADER_LENGTH &&
     buf.subarray(0, MAGIC.length).equals(MAGIC) &&

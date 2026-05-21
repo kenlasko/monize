@@ -77,7 +77,9 @@ describe("BackupEncryptionService", () => {
 
     it("throws when user not found", async () => {
       usersRepo.findOne.mockResolvedValue(null);
-      await expect(service.getStatus(userId)).rejects.toThrow(NotFoundException);
+      await expect(service.getStatus(userId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -101,9 +103,9 @@ describe("BackupEncryptionService", () => {
     it("rejects an invalid password", async () => {
       usersRepo.findOne.mockResolvedValue(makeUser());
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
-      await expect(
-        service.enableForLocalUser(userId, "bad"),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.enableForLocalUser(userId, "bad")).rejects.toThrow(
+        UnauthorizedException,
+      );
       expect(usersRepo.save).not.toHaveBeenCalled();
     });
 
@@ -111,18 +113,18 @@ describe("BackupEncryptionService", () => {
       usersRepo.findOne.mockResolvedValue(
         makeUser({ authProvider: "oidc", passwordHash: null }),
       );
-      await expect(
-        service.enableForLocalUser(userId, "any"),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.enableForLocalUser(userId, "any")).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("refuses when AI_ENCRYPTION_KEY is missing", async () => {
       usersRepo.findOne.mockResolvedValue(makeUser());
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       aiEncryption.isConfigured.mockReturnValue(false);
-      await expect(
-        service.enableForLocalUser(userId, "ok"),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.enableForLocalUser(userId, "ok")).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 

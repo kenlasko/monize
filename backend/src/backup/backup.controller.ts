@@ -134,10 +134,7 @@ export class BackupController {
       "Set or update a dedicated backup password (required for OIDC users to enable encryption)",
   })
   @ApiResponse({ status: 200, description: "Backup password set" })
-  async setBackupPassword(
-    @Request() req,
-    @Body() dto: SetBackupPasswordDto,
-  ) {
+  async setBackupPassword(@Request() req, @Body() dto: SetBackupPasswordDto) {
     await this.backupEncryption.setBackupPasswordForOidcUser(
       req.user.id,
       dto.backupPassword,

@@ -111,9 +111,14 @@ export class BackupEncryptionService {
    * change (we'd rather have a working password than a perfectly-synced
    * backup config).
    */
-  async syncOnPasswordChange(userId: string, newPassword: string): Promise<void> {
+  async syncOnPasswordChange(
+    userId: string,
+    newPassword: string,
+  ): Promise<void> {
     try {
-      const user = await this.usersRepository.findOne({ where: { id: userId } });
+      const user = await this.usersRepository.findOne({
+        where: { id: userId },
+      });
       if (!user || !user.backupEncryptionEnabled) return;
       if (user.authProvider !== "local") return;
       if (!this.aiEncryption.isConfigured()) return;
