@@ -99,7 +99,7 @@ describe("EmergencyAccessService", () => {
     it("returns defaults and emailConfigured=true when no settings row exists", async () => {
       settingsRepo.findOne.mockResolvedValue(null);
       contactsRepo.find.mockResolvedValue([]);
-      usersRepo.findOne.mockResolvedValue({ id: userId, lastLogin: null });
+      usersRepo.findOne.mockResolvedValue({ id: userId, lastActivityAt: null });
 
       const view = await service.getView(userId);
 
@@ -122,7 +122,7 @@ describe("EmergencyAccessService", () => {
         grantedAt: null,
       });
       contactsRepo.find.mockResolvedValue([]);
-      usersRepo.findOne.mockResolvedValue({ id: userId, lastLogin: null });
+      usersRepo.findOne.mockResolvedValue({ id: userId, lastActivityAt: null });
 
       const view = await service.getView(userId);
       expect(view.message).toBe("hello");
@@ -133,7 +133,7 @@ describe("EmergencyAccessService", () => {
       emailService.getStatus.mockReturnValue({ configured: false });
       settingsRepo.findOne.mockResolvedValue(null);
       contactsRepo.find.mockResolvedValue([]);
-      usersRepo.findOne.mockResolvedValue({ id: userId, lastLogin: null });
+      usersRepo.findOne.mockResolvedValue({ id: userId, lastActivityAt: null });
 
       const view = await service.getView(userId);
       expect(view.emailConfigured).toBe(false);
@@ -161,7 +161,7 @@ describe("EmergencyAccessService", () => {
         reminderAfterDays: 7,
         messageCiphertext: "enc(hello)",
       });
-      usersRepo.findOne.mockResolvedValue({ id: userId, lastLogin: null });
+      usersRepo.findOne.mockResolvedValue({ id: userId, lastActivityAt: null });
 
       await service.upsertSettings(userId, {
         enabled: true,
@@ -183,7 +183,7 @@ describe("EmergencyAccessService", () => {
         messageCiphertext: "enc(stale)",
       });
       settingsRepo.findOne.mockResolvedValue(null);
-      usersRepo.findOne.mockResolvedValue({ id: userId, lastLogin: null });
+      usersRepo.findOne.mockResolvedValue({ id: userId, lastActivityAt: null });
 
       await service.upsertSettings(userId, {
         enabled: true,

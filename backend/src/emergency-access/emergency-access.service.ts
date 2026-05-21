@@ -30,7 +30,7 @@ export interface SettingsView {
   message: string | null;
   lastReminderSentAt: Date | null;
   grantedAt: Date | null;
-  lastLogin: Date | null;
+  lastActivityAt: Date | null;
   contacts: ContactView[];
 }
 
@@ -98,7 +98,7 @@ export class EmergencyAccessService {
       message: this.decryptMessage(settings?.messageCiphertext ?? null),
       lastReminderSentAt: settings?.lastReminderSentAt ?? null,
       grantedAt: settings?.grantedAt ?? null,
-      lastLogin: user?.lastLogin ?? null,
+      lastActivityAt: user?.lastActivityAt ?? user?.lastLogin ?? null,
       contacts: contacts.map((c) => this.toContactView(c)),
     };
   }

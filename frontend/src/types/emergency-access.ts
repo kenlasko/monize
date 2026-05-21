@@ -13,7 +13,7 @@ export interface EmergencyAccessView {
   message: string | null;
   lastReminderSentAt: string | null;
   grantedAt: string | null;
-  lastLogin: string | null;
+  lastActivityAt: string | null;
   contacts: EmergencyAccessContact[];
 }
 

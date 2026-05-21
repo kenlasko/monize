@@ -59,7 +59,7 @@ function makeView(overrides: Partial<EmergencyAccessView> = {}): EmergencyAccess
     message: null,
     lastReminderSentAt: null,
     grantedAt: null,
-    lastLogin: new Date().toISOString(),
+    lastActivityAt: new Date().toISOString(),
     contacts: [],
     ...overrides,
   };

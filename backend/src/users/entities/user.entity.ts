@@ -50,6 +50,9 @@ export class User {
   @Column({ name: "last_login", type: "timestamp", nullable: true })
   lastLogin: Date | null;
 
+  @Column({ name: "last_activity_at", type: "timestamp", nullable: true })
+  lastActivityAt: Date | null;
+
   @Column({ name: "reset_token", type: "varchar", nullable: true })
   @Exclude()
   resetToken: string | null;

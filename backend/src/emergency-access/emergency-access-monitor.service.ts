@@ -90,12 +90,14 @@ export class EmergencyAccessMonitorService {
       where: { id: settings.ownerUserId },
     });
     if (!owner || !owner.isActive || !owner.email) return "skipped";
-    if (!owner.lastLogin) return "skipped";
+    // Prefer last_activity_at (touched by every authenticated request); fall
+    // back to last_login for users who have not done anything since the
+    // backfill migration.
+    const lastSeen = owner.lastActivityAt ?? owner.lastLogin;
+    if (!lastSeen) return "skipped";
 
     const now = Date.now();
-    const daysSinceLogin = Math.floor(
-      (now - owner.lastLogin.getTime()) / MS_PER_DAY,
-    );
+    const daysSinceLogin = Math.floor((now - lastSeen.getTime()) / MS_PER_DAY);
 
     // Step 1: grant cascade (only if not already granted)
     if (

@@ -91,7 +91,7 @@ describe("EmergencyAccessMonitorService", () => {
       firstName: "Owner",
       lastName: "One",
       isActive: true,
-      lastLogin: daysAgo(10),
+      lastActivityAt: daysAgo(10),
     });
     contactsRepo.find.mockResolvedValue([
       { firstName: "Carol", email: "carol@example.com" },
@@ -123,7 +123,7 @@ describe("EmergencyAccessMonitorService", () => {
       firstName: "Owner",
       lastName: "One",
       isActive: true,
-      lastLogin: daysAgo(20),
+      lastActivityAt: daysAgo(20),
     });
     contactsRepo.find.mockResolvedValue([
       { id: "c1", firstName: "Carol", email: "carol@example.com" },
@@ -156,7 +156,7 @@ describe("EmergencyAccessMonitorService", () => {
       id: userId,
       email: "owner@example.com",
       isActive: true,
-      lastLogin: daysAgo(20),
+      lastActivityAt: daysAgo(20),
     });
 
     await service.runDailyCheck();
@@ -181,14 +181,14 @@ describe("EmergencyAccessMonitorService", () => {
       id: userId,
       email: "owner@example.com",
       isActive: true,
-      lastLogin: daysAgo(10),
+      lastActivityAt: daysAgo(10),
     });
 
     await service.runDailyCheck();
     expect(emailService.sendMail).not.toHaveBeenCalled();
   });
 
-  it("skips users without a last_login timestamp", async () => {
+  it("skips users without a last_activity_at or last_login timestamp", async () => {
     settingsRepo.find.mockResolvedValue([
       {
         ownerUserId: userId,
@@ -204,11 +204,39 @@ describe("EmergencyAccessMonitorService", () => {
       id: userId,
       email: "owner@example.com",
       isActive: true,
+      lastActivityAt: null,
       lastLogin: null,
     });
 
     await service.runDailyCheck();
     expect(emailService.sendMail).not.toHaveBeenCalled();
+  });
+
+  it("falls back to last_login when last_activity_at is null", async () => {
+    settingsRepo.find.mockResolvedValue([
+      {
+        ownerUserId: userId,
+        enabled: true,
+        grantAfterDays: 14,
+        reminderAfterDays: 7,
+        messageCiphertext: null,
+        lastReminderSentAt: null,
+        grantedAt: null,
+      },
+    ]);
+    usersRepo.findOne.mockResolvedValue({
+      id: userId,
+      email: "owner@example.com",
+      firstName: "Owner",
+      isActive: true,
+      lastActivityAt: null,
+      lastLogin: daysAgo(10),
+    });
+    contactsRepo.find.mockResolvedValue([]);
+
+    await service.runDailyCheck();
+    expect(emailService.sendMail).toHaveBeenCalledTimes(1);
+    expect(emailService.sendMail.mock.calls[0][0]).toBe("owner@example.com");
   });
 
   it("continues processing other users when one fails", async () => {
@@ -238,7 +266,8 @@ describe("EmergencyAccessMonitorService", () => {
         id: "u2",
         email: "two@example.com",
         isActive: true,
-        lastLogin: daysAgo(10),
+        lastActivityAt: daysAgo(10),
+        lastLogin: null,
       });
 
     await service.runDailyCheck();

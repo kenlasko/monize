@@ -19,6 +19,7 @@ import { CsrfRefreshInterceptor } from "./common/interceptors/csrf-refresh.inter
 import { RequestContextInterceptor } from "./common/interceptors/request-context.interceptor";
 import { DemoModeModule } from "./common/demo-mode.module";
 import { UserPreference } from "./users/entities/user-preference.entity";
+import { User } from "./users/entities/user.entity";
 
 import { AuthModule } from "./auth/auth.module";
 import { UsersModule } from "./users/users.module";
@@ -97,9 +98,10 @@ import { EmergencyAccessModule } from "./emergency-access/emergency-access.modul
     // Demo mode (global — available to all modules)
     DemoModeModule,
 
-    // UserPreference repo for RequestContextInterceptor (resolves the
-    // authenticated user's timezone on every request).
-    TypeOrmModule.forFeature([UserPreference]),
+    // UserPreference + User repos for RequestContextInterceptor (resolves the
+    // authenticated user's timezone and updates last_activity_at on every
+    // authenticated request).
+    TypeOrmModule.forFeature([UserPreference, User]),
 
     // Feature modules
     HealthModule,

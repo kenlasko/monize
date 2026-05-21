@@ -5,6 +5,7 @@ import { getRequestContext, requestContextStorage } from "../request-context";
 
 describe("RequestContextInterceptor", () => {
   let preferencesRepository: { findOne: jest.Mock; update: jest.Mock };
+  let usersRepository: { update: jest.Mock };
   let interceptor: RequestContextInterceptor;
 
   function makeContext(opts: {
@@ -35,7 +36,13 @@ describe("RequestContextInterceptor", () => {
       findOne: jest.fn(),
       update: jest.fn().mockResolvedValue({ affected: 1 }),
     };
-    interceptor = new RequestContextInterceptor(preferencesRepository as any);
+    usersRepository = {
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
+    };
+    interceptor = new RequestContextInterceptor(
+      preferencesRepository as any,
+      usersRepository as any,
+    );
   });
 
   it("bypasses non-http contexts and returns next.handle() directly", async () => {
@@ -312,5 +319,59 @@ describe("RequestContextInterceptor", () => {
 
     // Outside of intercept, no ALS context should be active.
     expect(requestContextStorage.getStore()).toBeUndefined();
+  });
+
+  describe("last_activity_at tracking", () => {
+    it("writes last_activity_at on the first authenticated request", async () => {
+      preferencesRepository.findOne.mockResolvedValue(null);
+      const next = makeNext();
+      const ctx = makeContext({ user: { id: "user-activity-1" } });
+
+      const obs$ = (await interceptor.intercept(ctx, next as any)) as any;
+      await firstValueFrom(obs$);
+
+      expect(usersRepository.update).toHaveBeenCalledTimes(1);
+      const args = usersRepository.update.mock.calls[0];
+      expect(args[0]).toEqual({ id: "user-activity-1" });
+      expect(args[1].lastActivityAt).toBeInstanceOf(Date);
+    });
+
+    it("throttles repeat writes within the 5-minute window", async () => {
+      preferencesRepository.findOne.mockResolvedValue(null);
+      const ctx = makeContext({ user: { id: "user-activity-2" } });
+
+      const obs1 = (await interceptor.intercept(ctx, makeNext() as any)) as any;
+      await firstValueFrom(obs1);
+      const obs2 = (await interceptor.intercept(ctx, makeNext() as any)) as any;
+      await firstValueFrom(obs2);
+
+      expect(usersRepository.update).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not write activity when there is no authenticated user", async () => {
+      preferencesRepository.findOne.mockResolvedValue(null);
+      const next = makeNext();
+      const ctx = makeContext({});
+
+      const obs$ = (await interceptor.intercept(ctx, next as any)) as any;
+      await firstValueFrom(obs$);
+
+      expect(usersRepository.update).not.toHaveBeenCalled();
+    });
+
+    it("swallows DB failures and allows the next request to retry", async () => {
+      preferencesRepository.findOne.mockResolvedValue(null);
+      usersRepository.update.mockRejectedValueOnce(new Error("transient"));
+      const ctx = makeContext({ user: { id: "user-activity-3" } });
+
+      const obs1 = (await interceptor.intercept(ctx, makeNext() as any)) as any;
+      await expect(firstValueFrom(obs1)).resolves.toBe("ok");
+      // Drain the rejection microtask
+      await new Promise((r) => setImmediate(r));
+      const obs2 = (await interceptor.intercept(ctx, makeNext() as any)) as any;
+      await firstValueFrom(obs2);
+
+      expect(usersRepository.update).toHaveBeenCalledTimes(2);
+    });
   });
 });

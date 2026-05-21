@@ -183,6 +183,7 @@ export class EmergencyAccessClaimController {
           backupCodes: null,
           authProvider: "local",
           lastLogin: new Date(),
+          lastActivityAt: new Date(),
           failedLoginAttempts: 0,
           lockedUntil: null,
           resetToken: null,

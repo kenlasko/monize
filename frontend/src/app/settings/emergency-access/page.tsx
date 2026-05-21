@@ -312,7 +312,7 @@ function EmergencyAccessSection() {
     );
   }
 
-  const inactiveDays = daysSince(view.lastLogin);
+  const inactiveDays = daysSince(view.lastActivityAt);
   const enabledNow = settingsForm.watch('enabled');
 
   return (
@@ -515,10 +515,10 @@ function EmergencyAccessSection() {
           </h2>
           <dl className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
             <div>
-              <dt className="inline font-medium">Last sign-in: </dt>
+              <dt className="inline font-medium">Last access: </dt>
               <dd className="inline">
-                {view.lastLogin
-                  ? `${formatTimestamp(view.lastLogin, userTimezone, dateFormat, timeFormat)} (${inactiveDays} day${inactiveDays === 1 ? '' : 's'} ago)`
+                {view.lastActivityAt
+                  ? `${formatTimestamp(view.lastActivityAt, userTimezone, dateFormat, timeFormat)} (${inactiveDays} day${inactiveDays === 1 ? '' : 's'} ago)`
                   : 'unknown'}
               </dd>
             </div>
@@ -545,7 +545,8 @@ function EmergencyAccessSection() {
             </div>
           </dl>
           <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-            The timer resets automatically every time you sign in.
+            The timer resets automatically any time you use the app -- signing
+            in, viewing a page, recording a transaction, anything authenticated.
           </p>
         </div>
 
