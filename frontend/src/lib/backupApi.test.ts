@@ -3,7 +3,12 @@ import apiClient from './api';
 import { backupApi } from './backupApi';
 
 vi.mock('./api', () => ({
-  default: { get: vi.fn(), post: vi.fn(), patch: vi.fn() },
+  default: {
+    get: vi.fn(),
+    post: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
+  },
 }));
 
 // jsdom does not implement CompressionStream — provide a fake that just
@@ -155,5 +160,60 @@ describe('backupApi', () => {
     const result = await backupApi.runAutoBackup();
     expect(apiClient.post).toHaveBeenCalledWith('/backup/run-auto-backup');
     expect(result.filename).toBe('backup.gz');
+  });
+
+  it('restoreBackup sends an .mzbe file untouched with the encrypted content-type', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({
+      data: { message: 'ok', restored: {} },
+    });
+    const file = new File([new Uint8Array([0x4d, 0x5a, 0x42, 0x45])], 'backup.mzbe');
+    await backupApi.restoreBackup({ file, password: 'p', backupPassword: 'bk' });
+    const call = vi.mocked(apiClient.post).mock.calls[0];
+    expect(call[1]).toBe(file);
+    expect((call[2] as any).headers['Content-Type']).toBe('application/octet-stream');
+    expect((call[2] as any).headers['X-Backup-Password']).toBe('bk');
+  });
+
+  it('restoreBackup forwards the OIDC token header', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({
+      data: { message: 'ok', restored: {} },
+    });
+    const file = new File(['{}'], 'backup.json.gz');
+    await backupApi.restoreBackup({ file, oidcIdToken: 'tok' });
+    const call = vi.mocked(apiClient.post).mock.calls[0];
+    expect((call[2] as any).headers['X-Restore-OIDC-Token']).toBe('tok');
+  });
+
+  it('getEncryptionStatus calls GET /backup/encryption', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: { enabled: true, needsBackupPassword: false },
+    });
+    const result = await backupApi.getEncryptionStatus();
+    expect(apiClient.get).toHaveBeenCalledWith('/backup/encryption');
+    expect(result).toEqual({ enabled: true, needsBackupPassword: false });
+  });
+
+  it('enableLocalEncryption posts the password', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { enabled: true } });
+    await backupApi.enableLocalEncryption('my-pw');
+    expect(apiClient.post).toHaveBeenCalledWith(
+      '/backup/encryption/enable-local',
+      { password: 'my-pw' },
+    );
+  });
+
+  it('setBackupPassword posts the new password', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { enabled: true } });
+    await backupApi.setBackupPassword('a-strong-password');
+    expect(apiClient.post).toHaveBeenCalledWith(
+      '/backup/encryption/backup-password',
+      { backupPassword: 'a-strong-password' },
+    );
+  });
+
+  it('disableEncryption issues DELETE /backup/encryption', async () => {
+    vi.mocked(apiClient.delete).mockResolvedValue({ data: { enabled: false } });
+    await backupApi.disableEncryption();
+    expect(apiClient.delete).toHaveBeenCalledWith('/backup/encryption');
   });
 });

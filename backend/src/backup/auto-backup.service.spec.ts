@@ -418,6 +418,60 @@ describe("AutoBackupService", () => {
         }),
       );
     });
+
+    it("writes an .mzbe file when the user has encryption enabled", async () => {
+      mockSettingsRepo.findOne.mockResolvedValue(
+        createSettings({ enabled: true, folderPath: "/backups" }),
+      );
+      mockUsersRepo.findOne.mockResolvedValue({
+        id: userId,
+        backupEncryptionEnabled: true,
+        backupPasswordEnc: "enc:secret",
+      });
+      mockBackupService.resolveStoredBackupPassword.mockReturnValue("secret");
+      setupExportMocks();
+
+      const result = await service.runManualBackup(userId);
+
+      expect(mockBackupService.exportToBuffer).toHaveBeenCalledWith(
+        userId,
+        "secret",
+      );
+      expect(result.filename).toMatch(
+        /^monize-backup-daily-\d{4}-\d{2}-\d{2}\.mzbe$/,
+      );
+    });
+
+    it("throws when encryption is enabled but the stored password cannot be decrypted", async () => {
+      mockSettingsRepo.findOne.mockResolvedValue(
+        createSettings({ enabled: true, folderPath: "/backups" }),
+      );
+      mockUsersRepo.findOne.mockResolvedValue({
+        id: userId,
+        backupEncryptionEnabled: true,
+        backupPasswordEnc: "enc:bad",
+      });
+      // Cron has no way to recover the password (e.g. master key rotated).
+      mockBackupService.resolveStoredBackupPassword.mockReturnValue(null);
+      setupExportMocks();
+
+      await expect(service.runManualBackup(userId)).rejects.toThrow(
+        /Re-enable encryption in Security/,
+      );
+      expect(mockBackupService.exportToBuffer).not.toHaveBeenCalled();
+    });
+
+    it("throws when the user row vanishes mid-flight", async () => {
+      mockSettingsRepo.findOne.mockResolvedValue(
+        createSettings({ enabled: true, folderPath: "/backups" }),
+      );
+      mockUsersRepo.findOne.mockResolvedValue(null);
+      setupExportMocks();
+
+      await expect(service.runManualBackup(userId)).rejects.toThrow(
+        /not found/,
+      );
+    });
   });
 
   describe("handleAutoBackupCron", () => {

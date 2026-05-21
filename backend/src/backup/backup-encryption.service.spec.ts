@@ -165,6 +165,16 @@ describe("BackupEncryptionService", () => {
         service.setBackupPasswordForOidcUser(userId, "long-good-password"),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it("refuses when AI_ENCRYPTION_KEY is missing", async () => {
+      usersRepo.findOne.mockResolvedValue(
+        makeUser({ authProvider: "oidc", passwordHash: null }),
+      );
+      aiEncryption.isConfigured.mockReturnValue(false);
+      await expect(
+        service.setBackupPasswordForOidcUser(userId, "long-good-password"),
+      ).rejects.toThrow(/AI_ENCRYPTION_KEY/);
+    });
   });
 
   describe("disable", () => {
@@ -202,6 +212,34 @@ describe("BackupEncryptionService", () => {
 
     it("is a no-op when encryption is disabled", async () => {
       usersRepo.findOne.mockResolvedValue(makeUser());
+      await service.syncOnPasswordChange(userId, "new");
+      expect(usersRepo.save).not.toHaveBeenCalled();
+    });
+
+    it("is a no-op for OIDC users (they manage their backup password separately)", async () => {
+      usersRepo.findOne.mockResolvedValue(
+        makeUser({
+          authProvider: "oidc",
+          passwordHash: null,
+          backupEncryptionEnabled: true,
+          backupPasswordEnc: "enc:dedicated",
+        }),
+      );
+      await service.syncOnPasswordChange(userId, "ignored");
+      expect(usersRepo.save).not.toHaveBeenCalled();
+    });
+
+    it("is a no-op when AI_ENCRYPTION_KEY is missing", async () => {
+      usersRepo.findOne.mockResolvedValue(
+        makeUser({ backupEncryptionEnabled: true }),
+      );
+      aiEncryption.isConfigured.mockReturnValue(false);
+      await service.syncOnPasswordChange(userId, "new");
+      expect(usersRepo.save).not.toHaveBeenCalled();
+    });
+
+    it("is a no-op when the user has disappeared", async () => {
+      usersRepo.findOne.mockResolvedValue(null);
       await service.syncOnPasswordChange(userId, "new");
       expect(usersRepo.save).not.toHaveBeenCalled();
     });

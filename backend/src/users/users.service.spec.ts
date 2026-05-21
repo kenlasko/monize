@@ -17,6 +17,7 @@ import { PersonalAccessToken } from "../auth/entities/personal-access-token.enti
 import { PasswordBreachService } from "../auth/password-breach.service";
 import { ModuleRef } from "@nestjs/core";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
+import { BackupEncryptionService } from "../backup/backup-encryption.service";
 
 describe("UsersService", () => {
   let service: UsersService;
@@ -27,6 +28,7 @@ describe("UsersService", () => {
   let trustedDevicesRepository: Record<string, jest.Mock>;
   let passwordBreachService: { isBreached: jest.Mock };
   let exchangeRateService: { refreshAllRates: jest.Mock };
+  let backupEncryptionService: { syncOnPasswordChange: jest.Mock };
   let moduleRef: { get: jest.Mock };
   let mockQueryRunner: Record<string, jest.Mock>;
   let mockDataSource: Record<string, jest.Mock>;
@@ -104,9 +106,14 @@ describe("UsersService", () => {
       }),
     };
 
+    backupEncryptionService = {
+      syncOnPasswordChange: jest.fn().mockResolvedValue(undefined),
+    };
+
     moduleRef = {
       get: jest.fn((token) => {
         if (token === ExchangeRateService) return exchangeRateService;
+        if (token === BackupEncryptionService) return backupEncryptionService;
         return undefined;
       }),
     };
@@ -509,6 +516,44 @@ describe("UsersService", () => {
         { userId: "user-1", isRevoked: false },
         { isRevoked: true },
       );
+    });
+
+    it("syncs the stored backup password to the new login password", async () => {
+      const hashedPassword = await bcrypt.hash("OldPass123!", 10);
+      usersRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        passwordHash: hashedPassword,
+      });
+
+      await service.changePassword("user-1", {
+        currentPassword: "OldPass123!",
+        newPassword: "NewPass456!",
+      });
+
+      expect(backupEncryptionService.syncOnPasswordChange).toHaveBeenCalledWith(
+        "user-1",
+        "NewPass456!",
+      );
+    });
+
+    it("password change still succeeds when backup-password sync fails", async () => {
+      const hashedPassword = await bcrypt.hash("OldPass123!", 10);
+      usersRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        passwordHash: hashedPassword,
+      });
+      backupEncryptionService.syncOnPasswordChange.mockRejectedValue(
+        new Error("sync failed"),
+      );
+
+      await expect(
+        service.changePassword("user-1", {
+          currentPassword: "OldPass123!",
+          newPassword: "NewPass456!",
+        }),
+      ).resolves.not.toThrow();
+      // The save still happened so the new hash is persisted.
+      expect(usersRepository.save).toHaveBeenCalled();
     });
 
     it("revokes all PATs on password change", async () => {

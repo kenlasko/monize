@@ -65,5 +65,14 @@ describe("backup-crypto.util", () => {
     it("requires a non-empty password to encrypt", () => {
       expect(() => encryptBackup(payload, "")).toThrow();
     });
+
+    it("throws on an unsupported KDF byte", () => {
+      const ct = encryptBackup(payload, "p");
+      // Flip the KDF byte (index 5) to an unsupported value.
+      ct[5] = 0x99;
+      expect(() => decryptBackup(ct, "p")).toThrow(
+        /Unsupported key derivation function/,
+      );
+    });
   });
 });

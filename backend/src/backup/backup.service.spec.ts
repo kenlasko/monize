@@ -465,6 +465,49 @@ describe("BackupService", () => {
     });
   });
 
+  describe("resolveStoredBackupPassword", () => {
+    it("returns null when encryption is disabled", () => {
+      const user = { ...mockUser, backupEncryptionEnabled: false } as any;
+      expect(service.resolveStoredBackupPassword(user)).toBeNull();
+    });
+
+    it("returns null when no stored password exists", () => {
+      const user = {
+        ...mockUser,
+        backupEncryptionEnabled: true,
+        backupPasswordEnc: null,
+      } as any;
+      expect(service.resolveStoredBackupPassword(user)).toBeNull();
+    });
+
+    it("decrypts the stored password via AiEncryptionService", () => {
+      const user = {
+        ...mockUser,
+        backupEncryptionEnabled: true,
+        backupPasswordEnc: "enc:my-password",
+      } as any;
+      expect(service.resolveStoredBackupPassword(user)).toBe("my-password");
+    });
+
+    it("returns null and logs when decryption throws (e.g. master key rotated)", () => {
+      // The mock decrypt throws when called -- this also exercises the catch
+      // block that maps a thrown error to a null return value.
+      const failingService = service as unknown as {
+        aiEncryption: { decrypt: jest.Mock };
+      };
+      failingService.aiEncryption.decrypt = jest.fn(() => {
+        throw new Error("bad ciphertext");
+      });
+      const user = {
+        ...mockUser,
+        id: "rotated-user",
+        backupEncryptionEnabled: true,
+        backupPasswordEnc: "enc:rotated",
+      } as any;
+      expect(service.resolveStoredBackupPassword(user)).toBeNull();
+    });
+  });
+
   describe("restoreData", () => {
     const validBackupData = {
       version: 1,
@@ -1007,6 +1050,141 @@ describe("BackupService", () => {
       expect(disableIdx).toBeGreaterThan(-1);
       expect(updateIdx).toBeGreaterThan(disableIdx);
       expect(enableIdx).toBeGreaterThan(updateIdx);
+    });
+
+    it("rejects OIDC users whose ID token does not match the user's oidcSubject", async () => {
+      const oidcModule = {
+        ...mockUser,
+        authProvider: "oidc",
+        passwordHash: null,
+        oidcSubject: "sub-1",
+      };
+      mockUserRepo.findOne.mockResolvedValue(oidcModule);
+      // Re-resolve OidcService from the testing module and flip verify to false.
+      const oidc = (service as unknown as { oidcService: { verifyIdTokenClaims: jest.Mock } }).oidcService;
+      oidc.verifyIdTokenClaims = jest.fn().mockReturnValue(false);
+
+      await expect(
+        service.restoreData(
+          userId,
+          makeInput({ oidcIdToken: "bad-token" }),
+        ),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it("rejects backup files that decompress to a non-object", async () => {
+      mockUserRepo.findOne.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      // Gzip a literal null, which is valid JSON but not an object.
+      const nullPayload = compressBackupData(null as unknown as Record<string, unknown>);
+      await expect(
+        service.restoreData(userId, {
+          compressedData: nullPayload,
+          password: "test",
+        }),
+      ).rejects.toThrow(/must be an object/);
+    });
+
+    it("executes the currency INSERT path when a user-created currency is in the backup", async () => {
+      mockUserRepo.findOne.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      // Make the information_schema query for currencies return the column list
+      // so columns aren't all stripped. Make the SELECT-existing query empty so
+      // the INSERT is reached.
+      mockQueryRunner.query.mockImplementation((sql: string, params?: unknown[]) => {
+        if (typeof sql === "string" && sql.includes("information_schema.columns")) {
+          // ensureCurrenciesExist embeds the table name literally; insertRows
+          // passes it via $1.
+          const isCurrencies =
+            sql.includes("'currencies'") ||
+            (Array.isArray(params) && params[0] === "currencies");
+          const cols = isCurrencies
+            ? schemaColumns.currencies
+            : (params && schemaColumns[params[0] as string]) || [];
+          return Promise.resolve(
+            cols.map((col: string) => ({ column_name: col, data_type: "text" })),
+          );
+        }
+        return Promise.resolve([]);
+      });
+
+      const dataWithCurrency = {
+        ...validBackupData,
+        currencies: [
+          {
+            code: "XYZ",
+            name: "Test Currency",
+            symbol: "X",
+            decimal_places: 2,
+            is_active: true,
+            created_by_user_id: "someone",
+          },
+        ],
+        // ensureCurrenciesExist short-circuits unless at least one row
+        // somewhere references a currency code, so add a reference.
+        user_currency_preferences: [
+          { user_id: userId, currency_code: "XYZ", is_active: true },
+        ],
+      };
+      await service.restoreData(
+        userId,
+        makeInput({ password: "test", data: dataWithCurrency }),
+      );
+
+      const currencyInsertCalls = mockQueryRunner.query.mock.calls.filter(
+        (c: unknown[]) =>
+          typeof c[0] === "string" && c[0].includes('INSERT INTO "currencies"'),
+      );
+      expect(currencyInsertCalls.length).toBeGreaterThan(0);
+    });
+
+    it("passes native PG array values straight through (not JSON-stringified) for ARRAY columns", async () => {
+      mockUserRepo.findOne.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      mockQueryRunner.query.mockImplementation((sql: string, params?: unknown[]) => {
+        if (typeof sql === "string" && sql.includes("information_schema.columns")) {
+          if (Array.isArray(params) && params[0] === "monte_carlo_scenarios") {
+            return Promise.resolve([
+              { column_name: "id", data_type: "uuid" },
+              { column_name: "user_id", data_type: "uuid" },
+              { column_name: "name", data_type: "text" },
+              { column_name: "account_ids", data_type: "ARRAY" },
+            ]);
+          }
+          return Promise.resolve([]);
+        }
+        return Promise.resolve([]);
+      });
+
+      const dataWithMc = {
+        ...validBackupData,
+        monte_carlo_scenarios: [
+          {
+            id: "mc-1",
+            user_id: userId,
+            name: "S1",
+            account_ids: ["acc-a", "acc-b"],
+          },
+        ],
+      };
+      await service.restoreData(
+        userId,
+        makeInput({ password: "test", data: dataWithMc }),
+      );
+
+      const insertCall = mockQueryRunner.query.mock.calls.find(
+        (c: unknown[]) =>
+          typeof c[0] === "string" &&
+          c[0].includes('INSERT INTO "monte_carlo_scenarios"'),
+      );
+      expect(insertCall).toBeDefined();
+      const values = insertCall![1] as unknown[];
+      const accountIdsValue = values.find(
+        (v) => Array.isArray(v) && (v as string[]).includes("acc-a"),
+      );
+      // The value is a JS array (not a JSON string), so the pg driver
+      // serialises it as PG array syntax.
+      expect(accountIdsValue).toEqual(["acc-a", "acc-b"]);
     });
 
     it("should accept OIDC re-auth for OIDC users", async () => {

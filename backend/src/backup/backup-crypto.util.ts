@@ -84,13 +84,12 @@ export class BackupDecryptionError extends Error {
  * prompt-for-password response instead of a transaction failure.
  */
 export function decryptBackup(envelope: Buffer, password: string): Buffer {
+  // isEncryptedBackup already enforces length >= HEADER_LENGTH, so we don't
+  // re-check it here.
   if (!isEncryptedBackup(envelope)) {
     throw new BackupDecryptionError(
       "Backup file is not in the encrypted Monize format",
     );
-  }
-  if (envelope.length < HEADER_LENGTH) {
-    throw new BackupDecryptionError("Encrypted backup header is truncated");
   }
 
   const kdf = envelope[MAGIC.length + 1];
