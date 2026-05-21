@@ -49,6 +49,12 @@ export class StepUpGuard implements CanActivate {
 
     const headerValue = request.headers?.[STEP_UP_HEADER];
     const token = Array.isArray(headerValue) ? headerValue[0] : headerValue;
+    // CWE-208 (Bearer rule): this is a presence/type check on an
+    // attacker-supplied request header, not a comparison against a secret.
+    // The branch outcome is fully determined by the caller's own input, so
+    // a timing side-channel here reveals nothing the attacker doesn't
+    // already know.
+    // bearer:disable javascript_lang_observable_timing
     if (!token || typeof token !== "string") {
       throw new ForbiddenException({
         code: "STEP_UP_REQUIRED",
