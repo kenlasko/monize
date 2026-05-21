@@ -51,6 +51,10 @@ interface BackupData {
   import_column_mappings: Record<string, unknown>[];
   monthly_account_balances: Record<string, unknown>[];
   auto_backup_settings: Record<string, unknown>[];
+  scheduled_transaction_split_tags: Record<string, unknown>[];
+  monte_carlo_scenarios: Record<string, unknown>[];
+  monte_carlo_cash_flows: Record<string, unknown>[];
+  ai_provider_configs: Record<string, unknown>[];
 }
 
 @Injectable()
@@ -142,6 +146,13 @@ export class BackupService {
               JOIN scheduled_transactions st ON sto.scheduled_transaction_id = st.id
               WHERE st.user_id = $1`,
       },
+      {
+        key: "scheduled_transaction_split_tags",
+        sql: `SELECT stst.* FROM scheduled_transaction_split_tags stst
+              JOIN scheduled_transaction_splits sts ON stst.scheduled_transaction_split_id = sts.id
+              JOIN scheduled_transactions st ON sts.scheduled_transaction_id = st.id
+              WHERE st.user_id = $1`,
+      },
       { key: "securities", sql: "SELECT * FROM securities WHERE user_id = $1" },
       {
         key: "security_prices",
@@ -198,6 +209,20 @@ export class BackupService {
       {
         key: "auto_backup_settings",
         sql: "SELECT * FROM auto_backup_settings WHERE user_id = $1",
+      },
+      {
+        key: "ai_provider_configs",
+        sql: "SELECT * FROM ai_provider_configs WHERE user_id = $1",
+      },
+      {
+        key: "monte_carlo_scenarios",
+        sql: "SELECT * FROM monte_carlo_scenarios WHERE user_id = $1",
+      },
+      {
+        key: "monte_carlo_cash_flows",
+        sql: `SELECT mccf.* FROM monte_carlo_cash_flows mccf
+              JOIN monte_carlo_scenarios mcs ON mccf.scenario_id = mcs.id
+              WHERE mcs.user_id = $1`,
       },
     ];
 
@@ -328,6 +353,12 @@ export class BackupService {
         data.scheduled_transaction_overrides,
         null,
       );
+      restored.scheduledTransactionSplitTags = await this.insertRows(
+        queryRunner,
+        "scheduled_transaction_split_tags",
+        data.scheduled_transaction_split_tags,
+        null,
+      );
       restored.securities = await this.insertRows(
         queryRunner,
         "securities",
@@ -429,6 +460,24 @@ export class BackupService {
         "auto_backup_settings",
         data.auto_backup_settings,
         userId,
+      );
+      restored.aiProviderConfigs = await this.insertRows(
+        queryRunner,
+        "ai_provider_configs",
+        data.ai_provider_configs,
+        userId,
+      );
+      restored.monteCarloScenarios = await this.insertRows(
+        queryRunner,
+        "monte_carlo_scenarios",
+        data.monte_carlo_scenarios,
+        userId,
+      );
+      restored.monteCarloCashFlows = await this.insertRows(
+        queryRunner,
+        "monte_carlo_cash_flows",
+        data.monte_carlo_cash_flows,
+        null,
       );
 
       // Phase 3: Restore deferred FK columns that were stripped during insert
@@ -534,6 +583,24 @@ export class BackupService {
     queryRunner: ReturnType<DataSource["createQueryRunner"]>,
   ): Promise<void> {
     // Delete in FK-safe order (reverse of insert order)
+
+    // Monte Carlo scenarios (cash flows cascade on scenario delete)
+    await queryRunner.query(
+      `DELETE FROM monte_carlo_cash_flows WHERE scenario_id IN
+       (SELECT id FROM monte_carlo_scenarios WHERE user_id = $1)`,
+      [userId],
+    );
+    await queryRunner.query(
+      "DELETE FROM monte_carlo_scenarios WHERE user_id = $1",
+      [userId],
+    );
+
+    // AI provider configs
+    await queryRunner.query(
+      "DELETE FROM ai_provider_configs WHERE user_id = $1",
+      [userId],
+    );
+
     // Investment data
     await queryRunner.query(
       "DELETE FROM investment_transactions WHERE user_id = $1",
@@ -609,6 +676,13 @@ export class BackupService {
     await queryRunner.query(
       `DELETE FROM scheduled_transaction_overrides WHERE scheduled_transaction_id IN
        (SELECT id FROM scheduled_transactions WHERE user_id = $1)`,
+      [userId],
+    );
+    await queryRunner.query(
+      `DELETE FROM scheduled_transaction_split_tags WHERE scheduled_transaction_split_id IN
+       (SELECT sts.id FROM scheduled_transaction_splits sts
+        JOIN scheduled_transactions st ON sts.scheduled_transaction_id = st.id
+        WHERE st.user_id = $1)`,
       [userId],
     );
     await queryRunner.query(
@@ -916,6 +990,7 @@ export class BackupService {
       "scheduled_transactions",
       "scheduled_transaction_splits",
       "scheduled_transaction_overrides",
+      "scheduled_transaction_split_tags",
       "securities",
       "security_prices",
       "holdings",
@@ -929,6 +1004,9 @@ export class BackupService {
       "import_column_mappings",
       "monthly_account_balances",
       "auto_backup_settings",
+      "ai_provider_configs",
+      "monte_carlo_scenarios",
+      "monte_carlo_cash_flows",
     ]);
 
     if (!allowedTables.has(table)) {
