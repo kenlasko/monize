@@ -373,5 +373,32 @@ describe("RequestContextInterceptor", () => {
 
       expect(usersRepository.update).toHaveBeenCalledTimes(2);
     });
+
+    it("swallows non-Error rejections from the activity write", async () => {
+      preferencesRepository.findOne.mockResolvedValue(null);
+      usersRepository.update.mockRejectedValueOnce("raw-string-error");
+      const ctx = makeContext({ user: { id: "user-activity-4" } });
+
+      const obs$ = (await interceptor.intercept(ctx, makeNext() as any)) as any;
+      await expect(firstValueFrom(obs$)).resolves.toBe("ok");
+      await new Promise((r) => setImmediate(r));
+    });
+  });
+
+  it("swallows non-Error rejections from the timezone persistence write", async () => {
+    preferencesRepository.findOne.mockResolvedValue({
+      timezone: "browser",
+      lastClientTimezone: null,
+    });
+    preferencesRepository.update.mockRejectedValueOnce("raw-string-error");
+    const next = makeNext("body");
+    const ctx = makeContext({
+      user: { id: "user-tz-1" },
+      headers: { "x-client-timezone": "Europe/Berlin" },
+    });
+
+    const obs$ = (await interceptor.intercept(ctx, next as any)) as any;
+    await expect(firstValueFrom(obs$)).resolves.toBe("body");
+    await new Promise((r) => setImmediate(r));
   });
 });

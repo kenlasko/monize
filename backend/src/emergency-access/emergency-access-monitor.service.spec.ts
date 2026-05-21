@@ -239,6 +239,295 @@ describe("EmergencyAccessMonitorService", () => {
     expect(emailService.sendMail.mock.calls[0][0]).toBe("owner@example.com");
   });
 
+  it("returns early when nobody has emergency access enabled", async () => {
+    settingsRepo.find.mockResolvedValue([]);
+    await service.runDailyCheck();
+    expect(usersRepo.findOne).not.toHaveBeenCalled();
+    expect(emailService.sendMail).not.toHaveBeenCalled();
+  });
+
+  it("logs and continues when one contact's grant email fails to send", async () => {
+    settingsRepo.find.mockResolvedValue([
+      {
+        ownerUserId: userId,
+        enabled: true,
+        grantAfterDays: 14,
+        reminderAfterDays: 7,
+        messageCiphertext: null,
+        lastReminderSentAt: null,
+        grantedAt: null,
+      },
+    ]);
+    usersRepo.findOne.mockResolvedValue({
+      id: userId,
+      email: "owner@example.com",
+      firstName: "Owner",
+      isActive: true,
+      lastActivityAt: daysAgo(20),
+    });
+    contactsRepo.find.mockResolvedValue([
+      { id: "c1", firstName: "Carol", email: "carol@example.com" },
+      { id: "c2", firstName: "Dave", email: "dave@example.com" },
+    ]);
+    emailService.sendMail
+      .mockRejectedValueOnce(new Error("smtp down"))
+      .mockResolvedValueOnce(undefined);
+
+    await service.runDailyCheck();
+
+    expect(emailService.sendMail).toHaveBeenCalledTimes(2);
+  });
+
+  it("skips a user gracefully when their settings row is inactive (no email)", async () => {
+    settingsRepo.find.mockResolvedValue([
+      {
+        ownerUserId: userId,
+        enabled: true,
+        grantAfterDays: 14,
+        reminderAfterDays: 7,
+        messageCiphertext: null,
+        lastReminderSentAt: null,
+        grantedAt: null,
+      },
+    ]);
+    usersRepo.findOne.mockResolvedValue({
+      id: userId,
+      email: null,
+      isActive: true,
+      lastActivityAt: daysAgo(20),
+    });
+
+    await service.runDailyCheck();
+    expect(emailService.sendMail).not.toHaveBeenCalled();
+  });
+
+  it("does nothing if the grant threshold is reached but the user has no contacts", async () => {
+    settingsRepo.find.mockResolvedValue([
+      {
+        ownerUserId: userId,
+        enabled: true,
+        grantAfterDays: 14,
+        reminderAfterDays: 7,
+        messageCiphertext: null,
+        lastReminderSentAt: null,
+        grantedAt: null,
+      },
+    ]);
+    usersRepo.findOne.mockResolvedValue({
+      id: userId,
+      email: "owner@example.com",
+      isActive: true,
+      lastActivityAt: daysAgo(20),
+    });
+    contactsRepo.find.mockResolvedValue([]);
+
+    await service.runDailyCheck();
+    expect(emailService.sendMail).not.toHaveBeenCalled();
+    expect(settingsRepo.save).not.toHaveBeenCalled();
+  });
+
+  it("emits a grant email with no message body when decryption fails", async () => {
+    encryption.decrypt.mockImplementation(() => {
+      throw new Error("bad key");
+    });
+    settingsRepo.find.mockResolvedValue([
+      {
+        ownerUserId: userId,
+        enabled: true,
+        grantAfterDays: 14,
+        reminderAfterDays: 7,
+        messageCiphertext: "enc(corrupt)",
+        lastReminderSentAt: null,
+        grantedAt: null,
+      },
+    ]);
+    usersRepo.findOne.mockResolvedValue({
+      id: userId,
+      email: "owner@example.com",
+      firstName: "Owner",
+      isActive: true,
+      lastActivityAt: daysAgo(20),
+    });
+    contactsRepo.find.mockResolvedValue([
+      { id: "c1", firstName: "Carol", email: "carol@example.com" },
+    ]);
+
+    await service.runDailyCheck();
+    expect(emailService.sendMail).toHaveBeenCalledTimes(1);
+    // The HTML body should not include the original ciphertext or any block
+    // that requires a non-null message.
+    const html = emailService.sendMail.mock.calls[0][2] as string;
+    expect(html).not.toContain("enc(corrupt)");
+    expect(html).not.toContain("border-left: 4px solid");
+  });
+
+  it("emits a grant email with no message body when the key is not configured", async () => {
+    encryption.isConfigured.mockReturnValue(false);
+    settingsRepo.find.mockResolvedValue([
+      {
+        ownerUserId: userId,
+        enabled: true,
+        grantAfterDays: 14,
+        reminderAfterDays: 7,
+        messageCiphertext: "enc(unreadable)",
+        lastReminderSentAt: null,
+        grantedAt: null,
+      },
+    ]);
+    usersRepo.findOne.mockResolvedValue({
+      id: userId,
+      email: "owner@example.com",
+      isActive: true,
+      lastActivityAt: daysAgo(20),
+    });
+    contactsRepo.find.mockResolvedValue([
+      { id: "c1", firstName: "Carol", email: "carol@example.com" },
+    ]);
+
+    await service.runDailyCheck();
+    expect(emailService.sendMail).toHaveBeenCalledTimes(1);
+    expect(encryption.decrypt).not.toHaveBeenCalled();
+  });
+
+  it("uses singular phrasing in the reminder subject when daysSinceLogin === 1", async () => {
+    settingsRepo.find.mockResolvedValue([
+      {
+        ownerUserId: userId,
+        enabled: true,
+        grantAfterDays: 14,
+        reminderAfterDays: 1,
+        messageCiphertext: null,
+        lastReminderSentAt: null,
+        grantedAt: null,
+      },
+    ]);
+    usersRepo.findOne.mockResolvedValue({
+      id: userId,
+      email: "owner@example.com",
+      firstName: "Owner",
+      isActive: true,
+      lastActivityAt: daysAgo(1),
+    });
+    contactsRepo.find.mockResolvedValue([]);
+
+    await service.runDailyCheck();
+    const subject = emailService.sendMail.mock.calls[0][1] as string;
+    expect(subject).toContain("1 day");
+    expect(subject).not.toContain("1 days");
+  });
+
+  it("logs without crashing when the outer catch sees a non-Error throw", async () => {
+    settingsRepo.find.mockResolvedValue([
+      {
+        ownerUserId: userId,
+        enabled: true,
+        grantAfterDays: 14,
+        reminderAfterDays: 7,
+        messageCiphertext: null,
+        lastReminderSentAt: null,
+        grantedAt: null,
+      },
+    ]);
+    usersRepo.findOne.mockImplementation(() => {
+      throw "string-not-an-Error";
+    });
+
+    await expect(service.runDailyCheck()).resolves.toBeUndefined();
+    expect(emailService.sendMail).not.toHaveBeenCalled();
+  });
+
+  it("logs without crashing when a per-contact send throws a non-Error value", async () => {
+    settingsRepo.find.mockResolvedValue([
+      {
+        ownerUserId: userId,
+        enabled: true,
+        grantAfterDays: 14,
+        reminderAfterDays: 7,
+        messageCiphertext: null,
+        lastReminderSentAt: null,
+        grantedAt: null,
+      },
+    ]);
+    usersRepo.findOne.mockResolvedValue({
+      id: userId,
+      email: "owner@example.com",
+      isActive: true,
+      lastActivityAt: daysAgo(20),
+    });
+    contactsRepo.find.mockResolvedValue([
+      { id: "c1", firstName: "Carol", email: "carol@example.com" },
+    ]);
+    emailService.sendMail.mockRejectedValueOnce("smtp-string-error");
+
+    await expect(service.runDailyCheck()).resolves.toBeUndefined();
+    expect(emailService.sendMail).toHaveBeenCalledTimes(1);
+  });
+
+  it("logs without crashing when decrypt throws a non-Error value", async () => {
+    encryption.decrypt.mockImplementation(() => {
+      throw "decrypt-string-error";
+    });
+    settingsRepo.find.mockResolvedValue([
+      {
+        ownerUserId: userId,
+        enabled: true,
+        grantAfterDays: 14,
+        reminderAfterDays: 7,
+        messageCiphertext: "enc(corrupt)",
+        lastReminderSentAt: null,
+        grantedAt: null,
+      },
+    ]);
+    usersRepo.findOne.mockResolvedValue({
+      id: userId,
+      email: "owner@example.com",
+      isActive: true,
+      lastActivityAt: daysAgo(20),
+    });
+    contactsRepo.find.mockResolvedValue([
+      { id: "c1", firstName: "Carol", email: "carol@example.com" },
+    ]);
+
+    await service.runDailyCheck();
+    expect(emailService.sendMail).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not crash when processOne itself throws and continues to the next user", async () => {
+    settingsRepo.find.mockResolvedValue([
+      {
+        ownerUserId: "u1",
+        enabled: true,
+        grantAfterDays: 14,
+        reminderAfterDays: 7,
+        messageCiphertext: null,
+        lastReminderSentAt: null,
+        grantedAt: null,
+      },
+      {
+        ownerUserId: "u2",
+        enabled: true,
+        grantAfterDays: 14,
+        reminderAfterDays: 7,
+        messageCiphertext: null,
+        lastReminderSentAt: null,
+        grantedAt: null,
+      },
+    ]);
+    usersRepo.findOne
+      .mockRejectedValueOnce(new Error("db down"))
+      .mockResolvedValueOnce({
+        id: "u2",
+        email: "two@example.com",
+        isActive: true,
+        lastActivityAt: daysAgo(10),
+        lastLogin: null,
+      });
+
+    await expect(service.runDailyCheck()).resolves.toBeUndefined();
+    expect(emailService.sendMail).toHaveBeenCalledTimes(1);
+    expect(emailService.sendMail.mock.calls[0][0]).toBe("two@example.com");
+  });
+
   it("continues processing other users when one fails", async () => {
     settingsRepo.find.mockResolvedValue([
       {

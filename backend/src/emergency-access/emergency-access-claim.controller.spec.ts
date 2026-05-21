@@ -211,5 +211,241 @@ describe("EmergencyAccessClaimController", () => {
       expect(queryRunner.rollbackTransaction).toHaveBeenCalled();
       expect(tokenService.generateTokenPair).not.toHaveBeenCalled();
     });
+
+    it("rolls back when the owner row is missing in-transaction", async () => {
+      queryRunner.manager.findOne
+        .mockResolvedValueOnce({
+          id: "c1",
+          ownerUserId: ownerId,
+          claimTokenHash: TOKEN_HASH,
+          claimTokenExpiresAt: new Date(Date.now() + 100000),
+          claimTokenUsedAt: null,
+        })
+        .mockResolvedValueOnce(null);
+
+      const res = makeRes();
+      await expect(
+        controller.complete(
+          { token: RAW_TOKEN, newPassword: "Aa1!correcthorse" },
+          res as never,
+        ),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(queryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(tokenService.generateTokenPair).not.toHaveBeenCalled();
+    });
+
+    it("throws when the freshly-refetched owner is missing after the commit", async () => {
+      queryRunner.manager.findOne
+        .mockResolvedValueOnce({
+          id: "c1",
+          ownerUserId: ownerId,
+          claimTokenHash: TOKEN_HASH,
+          claimTokenExpiresAt: new Date(Date.now() + 100000),
+          claimTokenUsedAt: null,
+        })
+        .mockResolvedValueOnce({ id: ownerId });
+      usersRepo.findOne.mockResolvedValue(null);
+
+      const res = makeRes();
+      await expect(
+        controller.complete(
+          { token: RAW_TOKEN, newPassword: "Aa1!correcthorse" },
+          res as never,
+        ),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(queryRunner.commitTransaction).toHaveBeenCalled();
+      expect(tokenService.generateTokenPair).not.toHaveBeenCalled();
+    });
+
+    it("voids sibling tokens via a TypeORM function-valued setter", async () => {
+      queryRunner.manager.findOne
+        .mockResolvedValueOnce({
+          id: "c1",
+          ownerUserId: ownerId,
+          claimTokenHash: TOKEN_HASH,
+          claimTokenExpiresAt: new Date(Date.now() + 100000),
+          claimTokenUsedAt: null,
+        })
+        .mockResolvedValueOnce({ id: ownerId });
+      usersRepo.findOne.mockResolvedValue({ id: ownerId, isActive: true });
+
+      // Capture the most recent `set()` call argument.
+      const setCalls: Array<Record<string, unknown>> = [];
+      const builder = queryRunner.manager.createQueryBuilder() as unknown as {
+        set: jest.Mock;
+      };
+      builder.set.mockImplementation((arg: Record<string, unknown>) => {
+        setCalls.push(arg);
+        return builder;
+      });
+
+      const res = makeRes();
+      await controller.complete(
+        { token: RAW_TOKEN, newPassword: "Aa1!correcthorse" },
+        res as never,
+      );
+
+      // Find the sibling-void update (the one with `claim_voided_reason`).
+      const voidUpdate = setCalls.find(
+        (s) => s.claimVoidedReason === "claimed_by_other",
+      );
+      expect(voidUpdate).toBeDefined();
+      expect(typeof voidUpdate!.claimTokenUsedAt).toBe("function");
+      expect((voidUpdate!.claimTokenUsedAt as () => string)()).toBe(
+        "CURRENT_TIMESTAMP",
+      );
+    });
+  });
+
+  describe("preview missing data", () => {
+    function validContact() {
+      return {
+        id: "c1",
+        ownerUserId: ownerId,
+        firstName: "Carol",
+        claimTokenHash: TOKEN_HASH,
+        claimTokenExpiresAt: new Date(Date.now() + 100000),
+        claimTokenUsedAt: null,
+      };
+    }
+
+    it("throws when the settings row is missing", async () => {
+      contactsRepo.findOne.mockResolvedValue(validContact());
+      settingsRepo.findOne.mockResolvedValue(null);
+      usersRepo.findOne.mockResolvedValue({
+        id: ownerId,
+        firstName: "Owner",
+      });
+      await expect(
+        controller.preview({ token: RAW_TOKEN }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it("throws when the owner row is missing", async () => {
+      contactsRepo.findOne.mockResolvedValue(validContact());
+      settingsRepo.findOne.mockResolvedValue({
+        ownerUserId: ownerId,
+        messageCiphertext: null,
+      });
+      usersRepo.findOne.mockResolvedValue(null);
+      await expect(
+        controller.preview({ token: RAW_TOKEN }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it("returns a null message when decryption throws", async () => {
+      contactsRepo.findOne.mockResolvedValue(validContact());
+      settingsRepo.findOne.mockResolvedValue({
+        ownerUserId: ownerId,
+        messageCiphertext: "enc(garbage)",
+      });
+      usersRepo.findOne.mockResolvedValue({
+        id: ownerId,
+        firstName: "Owner",
+        lastName: "One",
+      });
+      encryption.decrypt.mockImplementation(() => {
+        throw new Error("bad key");
+      });
+
+      const res = await controller.preview({ token: RAW_TOKEN });
+      expect(res.message).toBeNull();
+    });
+
+    it("returns a null message when the encryption key is not configured", async () => {
+      contactsRepo.findOne.mockResolvedValue(validContact());
+      settingsRepo.findOne.mockResolvedValue({
+        ownerUserId: ownerId,
+        messageCiphertext: "enc(unreadable)",
+      });
+      usersRepo.findOne.mockResolvedValue({
+        id: ownerId,
+        firstName: "Owner",
+        lastName: "One",
+      });
+      encryption.isConfigured.mockReturnValue(false);
+
+      const res = await controller.preview({ token: RAW_TOKEN });
+      expect(res.message).toBeNull();
+      expect(encryption.decrypt).not.toHaveBeenCalled();
+    });
+
+    it("returns a null message when decrypt throws a non-Error value", async () => {
+      contactsRepo.findOne.mockResolvedValue(validContact());
+      settingsRepo.findOne.mockResolvedValue({
+        ownerUserId: ownerId,
+        messageCiphertext: "enc(corrupt)",
+      });
+      usersRepo.findOne.mockResolvedValue({
+        id: ownerId,
+        firstName: "Owner",
+        lastName: "One",
+      });
+      encryption.decrypt.mockImplementation(() => {
+        throw "raw-string-not-an-Error";
+      });
+
+      const res = await controller.preview({ token: RAW_TOKEN });
+      expect(res.message).toBeNull();
+    });
+  });
+
+  describe("secure cookie attribute", () => {
+    it("sets secure: true on cookies in production", async () => {
+      configService.get.mockImplementation((key: string, fallback?: string) => {
+        if (key === "NODE_ENV") return "production";
+        if (key === "DISABLE_HTTPS_HEADERS") return "false";
+        return fallback;
+      });
+      const prodModule = await Test.createTestingModule({
+        controllers: [EmergencyAccessClaimController],
+        providers: [
+          {
+            provide: getRepositoryToken(EmergencyAccessContact),
+            useValue: contactsRepo,
+          },
+          {
+            provide: getRepositoryToken(EmergencyAccessSettings),
+            useValue: settingsRepo,
+          },
+          { provide: getRepositoryToken(User), useValue: usersRepo },
+          { provide: DataSource, useValue: dataSource },
+          { provide: TokenService, useValue: tokenService },
+          { provide: AuthService, useValue: authService },
+          { provide: PasswordBreachService, useValue: passwordBreach },
+          { provide: AiEncryptionService, useValue: encryption },
+          { provide: ConfigService, useValue: configService },
+        ],
+      }).compile();
+      const prodController = prodModule.get(EmergencyAccessClaimController);
+
+      queryRunner.manager.findOne
+        .mockResolvedValueOnce({
+          id: "c1",
+          ownerUserId: ownerId,
+          claimTokenHash: TOKEN_HASH,
+          claimTokenExpiresAt: new Date(Date.now() + 100000),
+          claimTokenUsedAt: null,
+        })
+        .mockResolvedValueOnce({ id: ownerId });
+      usersRepo.findOne.mockResolvedValue({ id: ownerId, isActive: true });
+
+      const cookies: Array<[string, string, Record<string, unknown>]> = [];
+      const res = {
+        cookie: jest.fn(
+          (name: string, value: string, opts: Record<string, unknown>) => {
+            cookies.push([name, value, opts]);
+          },
+        ),
+        json: jest.fn(),
+      };
+      await prodController.complete(
+        { token: RAW_TOKEN, newPassword: "Aa1!correcthorse" },
+        res as never,
+      );
+
+      const auth = cookies.find(([n]) => n === "auth_token");
+      expect(auth?.[2]?.secure).toBe(true);
+    });
   });
 });

@@ -109,4 +109,34 @@ describe('EmergencyClaimPage', () => {
       ).toBeInTheDocument(),
     );
   });
+
+  it('keeps the user on the page when completeClaim fails', async () => {
+    searchParams.set('token', 'abc');
+    api.previewClaim.mockResolvedValue({
+      ownerFirstName: 'Owner',
+      ownerLastName: 'One',
+      contactFirstName: 'Carol',
+      message: null,
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+    });
+    api.completeClaim.mockRejectedValue(new Error('already claimed'));
+    await renderPage();
+    await waitFor(() =>
+      expect(screen.getByLabelText(/New Password/i)).toBeInTheDocument(),
+    );
+    const pw = screen.getByLabelText(/New Password/i);
+    const confirm = screen.getByLabelText(/Confirm Password/i);
+    await act(async () => {
+      fireEvent.change(pw, { target: { value: 'CorrectHorse99!' } });
+      fireEvent.change(confirm, { target: { value: 'CorrectHorse99!' } });
+    });
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole('button', { name: /Claim emergency access/i }),
+      );
+    });
+    await act(async () => {});
+    await waitFor(() => expect(api.completeClaim).toHaveBeenCalled());
+    expect(pushMock).not.toHaveBeenCalled();
+  });
 });

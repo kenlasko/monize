@@ -265,5 +265,319 @@ describe("EmergencyAccessService", () => {
         service.removeContact(userId, "00000000-0000-0000-0000-000000000000"),
       ).rejects.toBeInstanceOf(NotFoundException);
     });
+
+    it("removeContact resolves when a row was deleted", async () => {
+      contactsRepo.delete.mockResolvedValue({ affected: 1 });
+      await expect(
+        service.removeContact(userId, "00000000-0000-0000-0000-000000000000"),
+      ).resolves.toBeUndefined();
+    });
+
+    it("updateContact updates fields and clears the in-flight magic link", async () => {
+      const existing = {
+        id: "c1",
+        ownerUserId: userId,
+        firstName: "Old",
+        email: "old@example.com",
+        claimTokenHash: "stale-hash",
+        claimTokenExpiresAt: new Date(),
+      };
+      contactsRepo.findOne.mockResolvedValue(existing);
+      contactsRepo.save.mockImplementation(async (row) => row);
+      // The email changes, so the service runs the dup-check query.
+      contactsRepo.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      });
+
+      const result = await service.updateContact(userId, "c1", {
+        firstName: " New ",
+        email: " new@example.com ",
+      });
+
+      expect(result.firstName).toBe("New");
+      expect(result.email).toBe("new@example.com");
+      expect(existing.claimTokenHash).toBeNull();
+      expect(existing.claimTokenExpiresAt).toBeNull();
+    });
+
+    it("updateContact skips the dup-check when the email is unchanged", async () => {
+      const existing = {
+        id: "c1",
+        ownerUserId: userId,
+        firstName: "Old",
+        email: "old@example.com",
+        claimTokenHash: null,
+        claimTokenExpiresAt: null,
+      };
+      contactsRepo.findOne.mockResolvedValue(existing);
+      contactsRepo.save.mockImplementation(async (row) => row);
+
+      await service.updateContact(userId, "c1", {
+        firstName: "Renamed",
+        email: "OLD@example.com",
+      });
+
+      expect(contactsRepo.createQueryBuilder).not.toHaveBeenCalled();
+      expect(existing.firstName).toBe("Renamed");
+    });
+
+    it("updateContact rejects swapping to an email already used by another row", async () => {
+      contactsRepo.findOne.mockResolvedValue({
+        id: "c1",
+        ownerUserId: userId,
+        email: "old@example.com",
+      });
+      const qb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue({ id: "c2" }),
+      };
+      contactsRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await expect(
+        service.updateContact(userId, "c1", {
+          firstName: "X",
+          email: "Other@Example.com",
+        }),
+      ).rejects.toBeInstanceOf(ConflictException);
+    });
+  });
+
+  describe("decryptMessage edge cases", () => {
+    it("returns null and warns when the encryption key is not configured", async () => {
+      encryption.isConfigured.mockReturnValue(false);
+      settingsRepo.findOne.mockResolvedValue({
+        ownerUserId: userId,
+        enabled: true,
+        grantAfterDays: 14,
+        reminderAfterDays: 7,
+        messageCiphertext: "enc(hello)",
+      });
+      contactsRepo.find.mockResolvedValue([]);
+      usersRepo.findOne.mockResolvedValue({ id: userId, lastActivityAt: null });
+
+      const view = await service.getView(userId);
+      expect(view.message).toBeNull();
+      expect(encryption.decrypt).not.toHaveBeenCalled();
+    });
+
+    it("returns null when decrypt throws", async () => {
+      encryption.decrypt.mockImplementation(() => {
+        throw new Error("bad key");
+      });
+      settingsRepo.findOne.mockResolvedValue({
+        ownerUserId: userId,
+        enabled: true,
+        grantAfterDays: 14,
+        reminderAfterDays: 7,
+        messageCiphertext: "enc(corrupt)",
+      });
+      contactsRepo.find.mockResolvedValue([]);
+      usersRepo.findOne.mockResolvedValue({ id: userId, lastActivityAt: null });
+
+      const view = await service.getView(userId);
+      expect(view.message).toBeNull();
+    });
+
+    it("returns null when decrypt throws a non-Error value", async () => {
+      encryption.decrypt.mockImplementation(() => {
+        throw "raw-string-not-an-Error";
+      });
+      settingsRepo.findOne.mockResolvedValue({
+        ownerUserId: userId,
+        enabled: true,
+        grantAfterDays: 14,
+        reminderAfterDays: 7,
+        messageCiphertext: "enc(corrupt)",
+      });
+      contactsRepo.find.mockResolvedValue([]);
+      usersRepo.findOne.mockResolvedValue({ id: userId, lastActivityAt: null });
+
+      const view = await service.getView(userId);
+      expect(view.message).toBeNull();
+    });
+  });
+
+  describe("getView lastActivityAt resolution", () => {
+    it("returns the user's lastActivityAt when set", async () => {
+      const t = new Date("2026-01-01T00:00:00Z");
+      settingsRepo.findOne.mockResolvedValue(null);
+      contactsRepo.find.mockResolvedValue([]);
+      usersRepo.findOne.mockResolvedValue({
+        id: userId,
+        lastActivityAt: t,
+        lastLogin: null,
+      });
+
+      const view = await service.getView(userId);
+      expect(view.lastActivityAt).toBe(t);
+    });
+
+    it("falls back to lastLogin when lastActivityAt is null", async () => {
+      const t = new Date("2026-01-01T00:00:00Z");
+      settingsRepo.findOne.mockResolvedValue(null);
+      contactsRepo.find.mockResolvedValue([]);
+      usersRepo.findOne.mockResolvedValue({
+        id: userId,
+        lastActivityAt: null,
+        lastLogin: t,
+      });
+
+      const view = await service.getView(userId);
+      expect(view.lastActivityAt).toBe(t);
+    });
+
+    it("returns null when the user row itself is missing", async () => {
+      settingsRepo.findOne.mockResolvedValue(null);
+      contactsRepo.find.mockResolvedValue([]);
+      usersRepo.findOne.mockResolvedValue(null);
+
+      const view = await service.getView(userId);
+      expect(view.lastActivityAt).toBeNull();
+    });
+
+    it("maps stored contact rows into the contact view shape", async () => {
+      settingsRepo.findOne.mockResolvedValue(null);
+      contactsRepo.find.mockResolvedValue([
+        {
+          id: "c1",
+          firstName: "Carol",
+          email: "carol@example.com",
+          createdAt: new Date("2026-01-01T00:00:00Z"),
+        },
+      ]);
+      usersRepo.findOne.mockResolvedValue({ id: userId, lastActivityAt: null });
+
+      const view = await service.getView(userId);
+      expect(view.contacts).toEqual([
+        {
+          id: "c1",
+          firstName: "Carol",
+          email: "carol@example.com",
+          createdAt: new Date("2026-01-01T00:00:00Z"),
+        },
+      ]);
+    });
+  });
+
+  describe("upsertSettings: encryption configuration", () => {
+    it("refuses to save a non-empty message when AI_ENCRYPTION_KEY is missing", async () => {
+      encryption.isConfigured.mockReturnValue(false);
+      await expect(
+        service.upsertSettings(userId, {
+          enabled: true,
+          grantAfterDays: 14,
+          reminderAfterDays: 7,
+          message: "secret",
+        }),
+      ).rejects.toBeInstanceOf(ServiceUnavailableException);
+    });
+
+    it("voids outstanding magic links and clears markers when owner disables", async () => {
+      const stored = {
+        ownerUserId: userId,
+        enabled: true,
+        grantAfterDays: 14,
+        reminderAfterDays: 7,
+        messageCiphertext: null,
+        grantedAt: new Date(),
+        lastReminderSentAt: new Date(),
+      };
+      queryRunner.manager.findOne.mockResolvedValue(stored);
+      settingsRepo.findOne.mockResolvedValue(stored);
+      usersRepo.findOne.mockResolvedValue({ id: userId, lastActivityAt: null });
+      contactsRepo.find.mockResolvedValue([]);
+
+      const builder = queryRunner.manager.createQueryBuilder();
+      await service.upsertSettings(userId, {
+        enabled: false,
+        grantAfterDays: 14,
+        reminderAfterDays: 7,
+      });
+
+      expect(builder.update).toHaveBeenCalledWith(EmergencyAccessContact);
+      // The contact row's claimTokenUsedAt is set via a TypeORM function-valued
+      // setter; invoking the closure should yield the SQL fragment we expect.
+      const setArgs = builder.set.mock.calls[0][0];
+      expect(typeof setArgs.claimTokenUsedAt).toBe("function");
+      expect(setArgs.claimTokenUsedAt()).toBe("CURRENT_TIMESTAMP");
+      expect(setArgs.claimVoidedReason).toBe("owner_revoked");
+      expect(stored.grantedAt).toBeNull();
+      expect(stored.lastReminderSentAt).toBeNull();
+    });
+
+    it("resets markers when the owner re-enables after a previous disable", async () => {
+      const stored = {
+        ownerUserId: userId,
+        enabled: false,
+        grantAfterDays: 14,
+        reminderAfterDays: 7,
+        messageCiphertext: null,
+        grantedAt: new Date(),
+        lastReminderSentAt: new Date(),
+      };
+      queryRunner.manager.findOne.mockResolvedValue(stored);
+      settingsRepo.findOne.mockResolvedValue(stored);
+      usersRepo.findOne.mockResolvedValue({ id: userId, lastActivityAt: null });
+      contactsRepo.find.mockResolvedValue([]);
+
+      await service.upsertSettings(userId, {
+        enabled: true,
+        grantAfterDays: 14,
+        reminderAfterDays: 7,
+      });
+
+      expect(stored.grantedAt).toBeNull();
+      expect(stored.lastReminderSentAt).toBeNull();
+    });
+  });
+
+  describe("resetGrantedState", () => {
+    it("throws when no settings row exists", async () => {
+      settingsRepo.findOne.mockResolvedValue(null);
+      await expect(service.resetGrantedState(userId)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
+
+    it("clears grant markers and voids outstanding tokens", async () => {
+      const stored = {
+        ownerUserId: userId,
+        enabled: true,
+        grantAfterDays: 14,
+        reminderAfterDays: 7,
+        messageCiphertext: null,
+        grantedAt: new Date(),
+        lastReminderSentAt: new Date(),
+      };
+      // First findOne call: resetGrantedState's own lookup.
+      // Second findOne call: getView at the end re-reads the row.
+      settingsRepo.findOne
+        .mockResolvedValueOnce(stored)
+        .mockResolvedValueOnce({ ...stored, grantedAt: null });
+      usersRepo.findOne.mockResolvedValue({ id: userId, lastActivityAt: null });
+
+      const updateBuilder = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ affected: 0 }),
+      };
+      contactsRepo.createQueryBuilder.mockReturnValue(updateBuilder);
+
+      const view = await service.resetGrantedState(userId);
+
+      expect(stored.grantedAt).toBeNull();
+      expect(stored.lastReminderSentAt).toBeNull();
+      expect(settingsRepo.save).toHaveBeenCalledWith(stored);
+      expect(updateBuilder.update).toHaveBeenCalledWith(EmergencyAccessContact);
+      const setArgs = updateBuilder.set.mock.calls[0][0];
+      expect(setArgs.claimTokenUsedAt()).toBe("CURRENT_TIMESTAMP");
+      expect(setArgs.claimVoidedReason).toBe("owner_revoked");
+      expect(view.grantedAt).toBeNull();
+    });
   });
 });
