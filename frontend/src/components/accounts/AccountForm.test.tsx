@@ -895,7 +895,7 @@ describe('AccountForm', () => {
     fireEvent.change(typeSelect, { target: { value: 'CREDIT_CARD' } });
 
     await waitFor(() => {
-      expect(screen.getByTitle(/settlement date.*closing date.*last day of the billing cycle/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/settlement date.*closing date.*last day of the billing cycle/i)).toBeInTheDocument();
     });
   });
 

@@ -3,7 +3,7 @@
 import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 
 interface InfoTooltipProps {
-  /** Tooltip body text. Used for both the popover and the native title. */
+  /** Tooltip body text. Shown in the popover and exposed via aria-label. */
   text: string;
   /** Where the popover renders relative to the icon. Defaults to 'bottom'. */
   placement?: 'top' | 'bottom';
@@ -13,10 +13,9 @@ interface InfoTooltipProps {
 
 /**
  * Inline help icon with a desktop-only hover popover. Hidden below the md
- * breakpoint because native browser tooltips don't fire on touch and a
- * hover popover can't be triggered. The native title attribute is kept as
- * an accessibility fallback for desktop screen readers and slower mouse
- * pointers.
+ * breakpoint because a hover popover can't be triggered on touch. The text
+ * is exposed via aria-label for screen readers; no native title attribute
+ * is used so the browser tooltip doesn't duplicate the styled popover.
  */
 export function InfoTooltip({
   text,
@@ -29,7 +28,6 @@ export function InfoTooltip({
       : 'left-0 top-full mt-1';
   return (
     <span
-      title={text}
       aria-label={text}
       className="relative hidden md:inline-flex items-center align-middle ml-1 group/tip text-gray-400 hover:text-blue-500 transition-colors cursor-help"
     >

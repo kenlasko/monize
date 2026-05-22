@@ -165,7 +165,7 @@ describe("FavouriteAccounts", () => {
 
     render(<FavouriteAccounts accounts={accounts} isLoading={false} />);
     expect(
-      screen.getByTitle(/last day of the billing cycle/i)
+      screen.getByLabelText(/last day of the billing cycle/i)
     ).toBeInTheDocument();
   });
 

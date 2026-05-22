@@ -96,7 +96,7 @@ describe('PreferencesSection', () => {
       expect(screen.getByText('Show Create Date in transaction forms')).toBeInTheDocument();
     });
     expect(
-      screen.getByTitle(/the date and time a transaction was originally created/i),
+      screen.getByLabelText(/the date and time a transaction was originally created/i),
     ).toBeInTheDocument();
   });
 

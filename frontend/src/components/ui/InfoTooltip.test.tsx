@@ -8,10 +8,11 @@ describe('InfoTooltip', () => {
     expect(screen.getByRole('tooltip')).toHaveTextContent('Help text here');
   });
 
-  it('sets title and aria-label attributes', () => {
+  it('exposes the text via aria-label without a native title', () => {
     render(<InfoTooltip text="Helpful info" />);
-    const span = screen.getByTitle('Helpful info');
+    const span = screen.getByLabelText('Helpful info');
     expect(span).toHaveAttribute('aria-label', 'Helpful info');
+    expect(span).not.toHaveAttribute('title');
   });
 
   it('applies bottom placement classes by default', () => {
