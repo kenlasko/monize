@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { userSettingsApi } from '@/lib/user-settings';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -264,19 +265,22 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
           onChange={(e) => setWeekStartsOn(Number(e.target.value))}
         />
 
-        <label
-          htmlFor="showCreatedAt"
-          className="flex items-center gap-2 cursor-pointer"
-        >
-          <ToggleSwitch
-            checked={showCreatedAt}
-            onChange={setShowCreatedAt}
-            label="Show Create Date in transaction forms"
-          />
-          <span className="text-sm text-gray-900 dark:text-gray-100">
-            Show Create Date in transaction forms
-          </span>
-        </label>
+        <div className="flex items-center">
+          <label
+            htmlFor="showCreatedAt"
+            className="flex items-center gap-2 cursor-pointer"
+          >
+            <ToggleSwitch
+              checked={showCreatedAt}
+              onChange={setShowCreatedAt}
+              label="Show Create Date in transaction forms"
+            />
+            <span className="text-sm text-gray-900 dark:text-gray-100">
+              Show Create Date in transaction forms
+            </span>
+          </label>
+          <InfoTooltip text="Displays the date and time a transaction was originally created on transaction forms. This is separate from the transaction date and can help you tell when an entry was actually added to Monize." />
+        </div>
 
         {showCreatedAt && (
           <Select

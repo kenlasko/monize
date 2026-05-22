@@ -89,6 +89,17 @@ describe('PreferencesSection', () => {
     expect(screen.getByRole('button', { name: 'Save Preferences' })).toBeInTheDocument();
   });
 
+  it('shows a help tooltip explaining the Show Create Date toggle', async () => {
+    render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Show Create Date in transaction forms')).toBeInTheDocument();
+    });
+    expect(
+      screen.getByTitle(/the date and time a transaction was originally created/i),
+    ).toBeInTheDocument();
+  });
+
   it('shows theme options', async () => {
     render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />);
 
