@@ -8,9 +8,13 @@ interface NewTransactionButtonProps {
   onNewCash: () => void;
 }
 
+const menuItemClass =
+  'w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700';
+
 export function NewTransactionButton({ onNewInvestment, onNewCash }: NewTransactionButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const close = useCallback(() => setIsOpen(false), []);
 
@@ -22,7 +26,10 @@ export function NewTransactionButton({ onNewInvestment, onNewCash }: NewTransact
       }
     }
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') close();
+      if (event.key === 'Escape') {
+        close();
+        triggerRef.current?.focus();
+      }
     }
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleKeyDown);
@@ -45,9 +52,10 @@ export function NewTransactionButton({ onNewInvestment, onNewCash }: NewTransact
   return (
     <div ref={dropdownRef} className="relative block w-full sm:inline-block sm:w-auto">
       <Button
+        ref={triggerRef}
         onClick={() => setIsOpen((open) => !open)}
         className="w-full whitespace-nowrap sm:w-auto"
-        aria-haspopup="menu"
+        aria-haspopup="true"
         aria-expanded={isOpen}
       >
         + New Transaction
@@ -57,22 +65,11 @@ export function NewTransactionButton({ onNewInvestment, onNewCash }: NewTransact
       </Button>
 
       {isOpen && (
-        <div
-          role="menu"
-          className="absolute right-0 mt-1 w-full sm:w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50"
-        >
-          <button
-            role="menuitem"
-            onClick={handleInvestment}
-            className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-t-md"
-          >
+        <div className="absolute right-0 mt-1 w-full sm:w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50">
+          <button onClick={handleInvestment} className={`${menuItemClass} rounded-t-md`}>
             Investment Transaction
           </button>
-          <button
-            role="menuitem"
-            onClick={handleCash}
-            className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-b-md"
-          >
+          <button onClick={handleCash} className={`${menuItemClass} rounded-b-md`}>
             Cash Transaction
           </button>
         </div>

@@ -47,4 +47,17 @@ describe('NewTransactionButton', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.queryByText('Investment Transaction')).not.toBeInTheDocument();
   });
+
+  it('closes the menu when clicking outside', () => {
+    render(
+      <div>
+        <NewTransactionButton onNewInvestment={vi.fn()} onNewCash={vi.fn()} />
+        <span data-testid="outside">outside</span>
+      </div>
+    );
+    fireEvent.click(screen.getByText('+ New Transaction'));
+    expect(screen.getByText('Investment Transaction')).toBeInTheDocument();
+    fireEvent.mouseDown(screen.getByTestId('outside'));
+    expect(screen.queryByText('Investment Transaction')).not.toBeInTheDocument();
+  });
 });
