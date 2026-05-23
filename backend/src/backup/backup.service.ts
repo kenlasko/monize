@@ -1,16 +1,13 @@
 import {
   Injectable,
   Logger,
-  UnauthorizedException,
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, DataSource } from "typeorm";
-import * as bcrypt from "bcryptjs";
 import { createGzip, gunzipSync, gzipSync } from "zlib";
 import { User } from "../users/entities/user.entity";
-import { OidcService } from "../auth/oidc/oidc.service";
 import { AiEncryptionService } from "../ai/ai-encryption.service";
 import {
   encryptBackup,
@@ -21,11 +18,8 @@ import {
 
 export interface RestoreBackupInput {
   compressedData: Buffer;
-  password?: string;
-  oidcIdToken?: string;
-  // Password used to encrypt the backup file. For local users this is usually
-  // the same as `password`; if the user rotated their login password since the
-  // backup was made, the frontend re-prompts and sends the old one here.
+  // Password the backup file was encrypted with. Only consulted when the
+  // upload is an encrypted Monize envelope; unencrypted backups ignore it.
   backupPassword?: string;
 }
 
@@ -82,7 +76,6 @@ export class BackupService {
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
     private readonly dataSource: DataSource,
-    private readonly oidcService: OidcService,
     private readonly aiEncryption: AiEncryptionService,
   ) {}
 
@@ -355,8 +348,6 @@ export class BackupService {
       throw new NotFoundException("User not found");
     }
 
-    await this.verifyAuthentication(user, input);
-
     const gzippedPayload = this.maybeDecrypt(input, user);
     const data = this.decompressAndParse(gzippedPayload);
     this.validateBackupFormat(data);
@@ -596,8 +587,7 @@ export class BackupService {
   /**
    * If the upload is encrypted, decrypt it using (in order of preference):
    * 1) the explicit backupPassword the frontend sent for this restore,
-   * 2) the user's auth password (most backups encrypt with this),
-   * 3) the user's currently stored backup password.
+   * 2) the user's currently stored backup password.
    *
    * Returns the inner gzipped JSON payload, or the input unchanged if it's
    * not encrypted. Throws BackupPasswordRequiredError when we know it's
@@ -611,7 +601,6 @@ export class BackupService {
 
     const candidates: string[] = [];
     if (input.backupPassword) candidates.push(input.backupPassword);
-    if (input.password) candidates.push(input.password);
     const stored = this.resolveStoredBackupPassword(user);
     if (stored) candidates.push(stored);
 
@@ -648,41 +637,6 @@ export class BackupService {
       throw new BadRequestException(
         "Invalid backup file: decompressed content is not valid JSON",
       );
-    }
-  }
-
-  private async verifyAuthentication(
-    user: User,
-    input: RestoreBackupInput,
-  ): Promise<void> {
-    if (user.authProvider === "oidc") {
-      if (!input.oidcIdToken) {
-        throw new UnauthorizedException(
-          "OIDC re-authentication is required to confirm restore",
-        );
-      }
-      if (
-        !user.oidcSubject ||
-        !this.oidcService.enabled ||
-        !this.oidcService.verifyIdTokenClaims(
-          input.oidcIdToken,
-          user.oidcSubject,
-        )
-      ) {
-        throw new UnauthorizedException(
-          "Invalid OIDC token: the token must be a valid ID token from your SSO provider",
-        );
-      }
-    } else if (user.passwordHash) {
-      if (!input.password) {
-        throw new UnauthorizedException(
-          "Password is required to confirm restore",
-        );
-      }
-      const isValid = await bcrypt.compare(input.password, user.passwordHash);
-      if (!isValid) {
-        throw new UnauthorizedException("Invalid password");
-      }
     }
   }
 

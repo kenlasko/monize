@@ -1,21 +1,13 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
-import {
-  UnauthorizedException,
-  BadRequestException,
-  NotFoundException,
-} from "@nestjs/common";
+import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { gzipSync, gunzipSync } from "zlib";
 import { PassThrough } from "stream";
 import { BackupService, RestoreBackupInput } from "./backup.service";
 import { User } from "../users/entities/user.entity";
-import { OidcService } from "../auth/oidc/oidc.service";
 import { AiEncryptionService } from "../ai/ai-encryption.service";
 import { encryptBackup } from "./backup-crypto.util";
-import * as bcrypt from "bcryptjs";
-
-jest.mock("bcryptjs");
 
 function compressBackupData(data: Record<string, unknown>): Buffer {
   return gzipSync(Buffer.from(JSON.stringify(data), "utf-8"));
@@ -355,13 +347,6 @@ describe("BackupService", () => {
           useValue: mockDataSource,
         },
         {
-          provide: OidcService,
-          useValue: {
-            enabled: true,
-            verifyIdTokenClaims: jest.fn().mockReturnValue(true),
-          },
-        },
-        {
           provide: AiEncryptionService,
           useValue: {
             isConfigured: jest.fn().mockReturnValue(true),
@@ -557,99 +542,49 @@ describe("BackupService", () => {
     it("should throw NotFoundException if user not found", async () => {
       mockUserRepo.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.restoreData(userId, makeInput({ password: "test" })),
-      ).rejects.toThrow(NotFoundException);
-    });
-
-    it("should throw UnauthorizedException if password is missing for local user", async () => {
-      mockUserRepo.findOne.mockResolvedValue(mockUser);
-
       await expect(service.restoreData(userId, makeInput())).rejects.toThrow(
-        UnauthorizedException,
-      );
-    });
-
-    it("should throw UnauthorizedException if password is invalid", async () => {
-      mockUserRepo.findOne.mockResolvedValue(mockUser);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
-
-      await expect(
-        service.restoreData(userId, makeInput({ password: "wrong-password" })),
-      ).rejects.toThrow(UnauthorizedException);
-    });
-
-    it("should throw UnauthorizedException if OIDC token is missing for OIDC user", async () => {
-      mockUserRepo.findOne.mockResolvedValue({
-        ...mockUser,
-        authProvider: "oidc",
-        passwordHash: null,
-      });
-
-      await expect(service.restoreData(userId, makeInput())).rejects.toThrow(
-        UnauthorizedException,
+        NotFoundException,
       );
     });
 
     it("should throw BadRequestException for invalid backup version", async () => {
       mockUserRepo.findOne.mockResolvedValue(mockUser);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-
       await expect(
         service.restoreData(
           userId,
-          makeInput({
-            password: "test",
-            data: { ...validBackupData, version: 999 },
-          }),
+          makeInput({ data: { ...validBackupData, version: 999 } }),
         ),
       ).rejects.toThrow(BadRequestException);
     });
 
     it("should throw BadRequestException for missing exportedAt", async () => {
       mockUserRepo.findOne.mockResolvedValue(mockUser);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-
       const badData = { ...validBackupData, exportedAt: undefined };
       await expect(
-        service.restoreData(
-          userId,
-          makeInput({
-            password: "test",
-            data: badData as any,
-          }),
-        ),
+        service.restoreData(userId, makeInput({ data: badData as any })),
       ).rejects.toThrow(BadRequestException);
     });
 
     it("should throw BadRequestException for invalid gzip data", async () => {
       mockUserRepo.findOne.mockResolvedValue(mockUser);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-
       await expect(
         service.restoreData(userId, {
           compressedData: Buffer.from("not-gzip-data"),
-          password: "test",
         }),
       ).rejects.toThrow(BadRequestException);
     });
 
     it("should throw BadRequestException for gzip of non-JSON content", async () => {
       mockUserRepo.findOne.mockResolvedValue(mockUser);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-
       await expect(
         service.restoreData(userId, {
           compressedData: gzipSync(Buffer.from("not json")),
-          password: "test",
         }),
       ).rejects.toThrow(BadRequestException);
     });
 
     it("should successfully restore backup data within a transaction", async () => {
       mockUserRepo.findOne.mockResolvedValue(mockUser);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-
       const backupWithData = {
         ...validBackupData,
         categories: [
@@ -667,10 +602,7 @@ describe("BackupService", () => {
 
       const result = await service.restoreData(
         userId,
-        makeInput({
-          password: "test",
-          data: backupWithData,
-        }),
+        makeInput({ data: backupWithData }),
       );
 
       expect(result.message).toBe("Backup restored successfully");
@@ -684,12 +616,11 @@ describe("BackupService", () => {
 
     it("should rollback transaction on error", async () => {
       mockUserRepo.findOne.mockResolvedValue(mockUser);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       mockQueryRunner.query.mockRejectedValueOnce(new Error("DB error"));
 
-      await expect(
-        service.restoreData(userId, makeInput({ password: "test" })),
-      ).rejects.toThrow("DB error");
+      await expect(service.restoreData(userId, makeInput())).rejects.toThrow(
+        "DB error",
+      );
 
       expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.release).toHaveBeenCalled();
@@ -697,8 +628,6 @@ describe("BackupService", () => {
 
     it("should override user_id in restored data to match current user", async () => {
       mockUserRepo.findOne.mockResolvedValue(mockUser);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-
       const backupWithDifferentUser = {
         ...validBackupData,
         categories: [
@@ -708,10 +637,7 @@ describe("BackupService", () => {
 
       await service.restoreData(
         userId,
-        makeInput({
-          password: "test",
-          data: backupWithDifferentUser,
-        }),
+        makeInput({ data: backupWithDifferentUser }),
       );
 
       // Verify the INSERT query was called with the current user's ID
@@ -730,8 +656,6 @@ describe("BackupService", () => {
 
     it("should defer circular FK columns and update them after all inserts", async () => {
       mockUserRepo.findOne.mockResolvedValue(mockUser);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-
       const backupWithFks = {
         ...validBackupData,
         categories: [
@@ -782,10 +706,7 @@ describe("BackupService", () => {
         ],
       };
 
-      await service.restoreData(
-        userId,
-        makeInput({ password: "test", data: backupWithFks }),
-      );
+      await service.restoreData(userId, makeInput({ data: backupWithFks }));
 
       // Verify INSERTs do NOT contain deferred FK columns
       const insertCalls = mockQueryRunner.query.mock.calls.filter(
@@ -824,9 +745,7 @@ describe("BackupService", () => {
     });
 
     it("should ensure referenced currencies exist before restoring data", async () => {
-      mockUserRepo.findOne.mockResolvedValue(mockUser);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      // First call to SELECT code FROM currencies returns empty (missing)
+      mockUserRepo.findOne.mockResolvedValue(mockUser); // First call to SELECT code FROM currencies returns empty (missing)
       mockQueryRunner.query.mockImplementation(
         (sql: string, _params?: unknown[]) => {
           if (
@@ -866,7 +785,7 @@ describe("BackupService", () => {
 
       await service.restoreData(
         userId,
-        makeInput({ password: "test", data: backupWithCurrencies }),
+        makeInput({ data: backupWithCurrencies }),
       );
 
       // Verify currencies INSERT was called with user-created currency
@@ -884,8 +803,6 @@ describe("BackupService", () => {
 
     it("should stringify JSONB values (arrays/objects) for PostgreSQL parameters", async () => {
       mockUserRepo.findOne.mockResolvedValue(mockUser);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-
       const sectorWeightings = [
         { sector: "Technology", weight: 0.25 },
         { sector: "Healthcare", weight: 0.15 },
@@ -914,13 +831,7 @@ describe("BackupService", () => {
         ],
       };
 
-      await service.restoreData(
-        userId,
-        makeInput({
-          password: "test",
-          data: backupWithJsonb,
-        }),
-      );
+      await service.restoreData(userId, makeInput({ data: backupWithJsonb }));
 
       // Find the securities INSERT call
       const insertCalls = mockQueryRunner.query.mock.calls.filter(
@@ -942,8 +853,6 @@ describe("BackupService", () => {
 
     it("should preserve created_at and updated_at timestamps from backup", async () => {
       mockUserRepo.findOne.mockResolvedValue(mockUser);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-
       const backupWithTimestamps = {
         ...validBackupData,
         categories: [
@@ -968,7 +877,7 @@ describe("BackupService", () => {
 
       await service.restoreData(
         userId,
-        makeInput({ password: "test", data: backupWithTimestamps }),
+        makeInput({ data: backupWithTimestamps }),
       );
 
       const insertCalls = mockQueryRunner.query.mock.calls.filter(
@@ -999,8 +908,6 @@ describe("BackupService", () => {
 
     it("should disable updated_at triggers during deferred FK restoration", async () => {
       mockUserRepo.findOne.mockResolvedValue(mockUser);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-
       const backupWithFks = {
         ...validBackupData,
         accounts: [
@@ -1021,10 +928,7 @@ describe("BackupService", () => {
         ],
       };
 
-      await service.restoreData(
-        userId,
-        makeInput({ password: "test", data: backupWithFks }),
-      );
+      await service.restoreData(userId, makeInput({ data: backupWithFks }));
 
       const allCalls = mockQueryRunner.query.mock.calls.map(
         (call: unknown[]) => call[0] as string,
@@ -1053,46 +957,20 @@ describe("BackupService", () => {
       expect(enableIdx).toBeGreaterThan(updateIdx);
     });
 
-    it("rejects OIDC users whose ID token does not match the user's oidcSubject", async () => {
-      const oidcModule = {
-        ...mockUser,
-        authProvider: "oidc",
-        passwordHash: null,
-        oidcSubject: "sub-1",
-      };
-      mockUserRepo.findOne.mockResolvedValue(oidcModule);
-      // Re-resolve OidcService from the testing module and flip verify to false.
-      const oidc = (
-        service as unknown as {
-          oidcService: { verifyIdTokenClaims: jest.Mock };
-        }
-      ).oidcService;
-      oidc.verifyIdTokenClaims = jest.fn().mockReturnValue(false);
-
-      await expect(
-        service.restoreData(userId, makeInput({ oidcIdToken: "bad-token" })),
-      ).rejects.toThrow(UnauthorizedException);
-    });
-
     it("rejects backup files that decompress to a non-object", async () => {
-      mockUserRepo.findOne.mockResolvedValue(mockUser);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      // Gzip a literal null, which is valid JSON but not an object.
+      mockUserRepo.findOne.mockResolvedValue(mockUser); // Gzip a literal null, which is valid JSON but not an object.
       const nullPayload = compressBackupData(
         null as unknown as Record<string, unknown>,
       );
       await expect(
         service.restoreData(userId, {
           compressedData: nullPayload,
-          password: "test",
         }),
       ).rejects.toThrow(/must be an object/);
     });
 
     it("executes the currency INSERT path when a user-created currency is in the backup", async () => {
-      mockUserRepo.findOne.mockResolvedValue(mockUser);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      // Make the information_schema query for currencies return the column list
+      mockUserRepo.findOne.mockResolvedValue(mockUser); // Make the information_schema query for currencies return the column list
       // so columns aren't all stripped. Make the SELECT-existing query empty so
       // the INSERT is reached.
       mockQueryRunner.query.mockImplementation(
@@ -1138,10 +1016,7 @@ describe("BackupService", () => {
           { user_id: userId, currency_code: "XYZ", is_active: true },
         ],
       };
-      await service.restoreData(
-        userId,
-        makeInput({ password: "test", data: dataWithCurrency }),
-      );
+      await service.restoreData(userId, makeInput({ data: dataWithCurrency }));
 
       const currencyInsertCalls = mockQueryRunner.query.mock.calls.filter(
         (c: unknown[]) =>
@@ -1152,7 +1027,6 @@ describe("BackupService", () => {
 
     it("passes native PG array values straight through (not JSON-stringified) for ARRAY columns", async () => {
       mockUserRepo.findOne.mockResolvedValue(mockUser);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       mockQueryRunner.query.mockImplementation(
         (sql: string, params?: unknown[]) => {
           if (
@@ -1187,10 +1061,7 @@ describe("BackupService", () => {
           },
         ],
       };
-      await service.restoreData(
-        userId,
-        makeInput({ password: "test", data: dataWithMc }),
-      );
+      await service.restoreData(userId, makeInput({ data: dataWithMc }));
 
       const insertCall = mockQueryRunner.query.mock.calls.find(
         (c: unknown[]) =>
@@ -1207,73 +1078,38 @@ describe("BackupService", () => {
       expect(accountIdsValue).toEqual(["acc-a", "acc-b"]);
     });
 
-    it("should accept OIDC re-auth for OIDC users", async () => {
-      mockUserRepo.findOne.mockResolvedValue({
-        ...mockUser,
-        authProvider: "oidc",
-        passwordHash: null,
-        oidcSubject: "oidc-sub-123",
-      });
-
-      const result = await service.restoreData(
-        userId,
-        makeInput({
-          oidcIdToken: "oidc-session-confirmed",
-        }),
-      );
-
-      expect(result.message).toBe("Backup restored successfully");
-    });
-
     describe("encrypted backups", () => {
       function encryptedBlob(data: Record<string, unknown>, password: string) {
         return encryptBackup(compressBackupData(data), password);
       }
 
-      it("decrypts using the auth password when nothing more specific is provided", async () => {
+      it("decrypts using the supplied backupPassword", async () => {
         mockUserRepo.findOne.mockResolvedValue(mockUser);
-        (bcrypt.compare as jest.Mock).mockResolvedValue(true);
         const result = await service.restoreData(userId, {
-          compressedData: encryptedBlob(validBackupData, "user-password"),
-          password: "user-password",
+          compressedData: encryptedBlob(validBackupData, "backup-password"),
+          backupPassword: "backup-password",
         });
         expect(result.message).toBe("Backup restored successfully");
       });
 
-      it("prefers the explicit backupPassword over the auth password", async () => {
-        mockUserRepo.findOne.mockResolvedValue(mockUser);
-        (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-        const result = await service.restoreData(userId, {
-          compressedData: encryptedBlob(validBackupData, "old-backup-password"),
-          password: "new-login-password",
-          backupPassword: "old-backup-password",
-        });
-        expect(result.message).toBe("Backup restored successfully");
-      });
-
-      it("falls back to the stored backup password (for OIDC users without auth password)", async () => {
+      it("falls back to the stored backup password when none is supplied", async () => {
         mockUserRepo.findOne.mockResolvedValue({
           ...mockUser,
-          authProvider: "oidc",
-          passwordHash: null,
-          oidcSubject: "sub-1",
           backupEncryptionEnabled: true,
           backupPasswordEnc: "enc:stored-bk-pw",
         });
         const result = await service.restoreData(userId, {
           compressedData: encryptedBlob(validBackupData, "stored-bk-pw"),
-          oidcIdToken: "tok",
         });
         expect(result.message).toBe("Backup restored successfully");
       });
 
       it("throws a BACKUP_PASSWORD_REQUIRED error when no candidate decrypts", async () => {
         mockUserRepo.findOne.mockResolvedValue(mockUser);
-        (bcrypt.compare as jest.Mock).mockResolvedValue(true);
         await expect(
           service.restoreData(userId, {
             compressedData: encryptedBlob(validBackupData, "real-pw"),
-            password: "different-pw",
+            backupPassword: "different-pw",
           }),
         ).rejects.toMatchObject({
           response: expect.objectContaining({

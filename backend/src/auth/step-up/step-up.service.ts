@@ -106,7 +106,7 @@ export class StepUpAuthService {
     } else if (user.authProvider === "oidc") {
       // OIDC users have no Monize-managed password and cannot enroll Monize
       // 2FA (see two-factor.service.ts:283). Mirror the soft-check pattern
-      // used by /users/delete-account and /backup/restore: the frontend
+      // used by /users/delete-account: the frontend
       // redirects the user through the identity provider via
       // authApi.initiateOidc(), then sets oidcConfirmed=true on return.
       // The presence of that flag combined with the freshly-rotated session

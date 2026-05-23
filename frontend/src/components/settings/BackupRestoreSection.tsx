@@ -10,6 +10,7 @@ import {
   backupApi,
   BackupEncryptionStatus,
   BACKUP_PASSWORD_REQUIRED_CODE,
+  isEncryptedBackupFile,
   RestoreResult,
 } from '@/lib/backupApi';
 import { getErrorMessage } from '@/lib/errors';
@@ -49,6 +50,10 @@ const RESTORE_LABELS: Record<string, string> = {
   monteCarloCashFlows: 'Monte Carlo Cash Flows',
 };
 
+// Word the user types to confirm restoring an unencrypted backup, mirroring
+// the "type DELETE" pattern used by the Danger Zone destructive actions.
+const RESTORE_CONFIRM_WORD = 'RESTORE';
+
 function isBackupPasswordRequired(error: unknown): boolean {
   if (!isAxiosError(error)) return false;
   const data = error.response?.data as { code?: string } | undefined;
@@ -73,11 +78,11 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
 
   const [showRestore, setShowRestore] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
-  const [restorePassword, setRestorePassword] = useState('');
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
+  const [restoreFileEncrypted, setRestoreFileEncrypted] = useState(false);
+  const [restoreConfirmText, setRestoreConfirmText] = useState('');
+  const [restoreBackupPassword, setRestoreBackupPassword] = useState('');
   const [restoreResult, setRestoreResult] = useState<RestoreResult | null>(null);
-  const [backupPasswordPrompt, setBackupPasswordPrompt] = useState(false);
-  const [backupPasswordInput, setBackupPasswordInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Encryption setup state
@@ -142,47 +147,54 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
     await runExport();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] ?? null;
-    setRestoreFile(file);
+  const closeRestoreForm = () => {
+    setShowRestore(false);
+    setRestoreFile(null);
+    setRestoreFileEncrypted(false);
+    setRestoreConfirmText('');
+    setRestoreBackupPassword('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
-  const runRestore = async (backupPassword?: string) => {
-    if (!restoreFile) {
-      toast.error('Please select a backup file');
-      return;
-    }
-    if (!isOidc && !restorePassword) {
-      toast.error('Please enter your password to confirm');
-      return;
-    }
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setRestoreFile(file);
+    setRestoreConfirmText('');
+    setRestoreBackupPassword('');
+    setRestoreFileEncrypted(file ? await isEncryptedBackupFile(file) : false);
+  };
+
+  // An encrypted backup needs the password it was created with; an unencrypted
+  // one has nothing to decrypt, so it just needs an explicit typed
+  // confirmation before we wipe and replace the user's data.
+  const canSubmitRestore = restoreFile
+    ? restoreFileEncrypted
+      ? restoreBackupPassword.length > 0
+      : restoreConfirmText === RESTORE_CONFIRM_WORD
+    : false;
+
+  const runRestore = async () => {
+    if (!restoreFile || !canSubmitRestore) return;
 
     setIsRestoring(true);
     try {
-      const authData = isOidc
-        ? { oidcIdToken: 'oidc-session-confirmed' }
-        : { password: restorePassword };
-
       const result = await backupApi.restoreBackup({
         file: restoreFile,
-        ...authData,
-        backupPassword,
+        isEncrypted: restoreFileEncrypted,
+        backupPassword: restoreFileEncrypted
+          ? restoreBackupPassword
+          : undefined,
       });
 
       setRestoreResult(result);
-      setShowRestore(false);
-      setRestorePassword('');
-      setRestoreFile(null);
-      setBackupPasswordPrompt(false);
-      setBackupPasswordInput('');
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      closeRestoreForm();
     } catch (error) {
       if (isBackupPasswordRequired(error)) {
-        // Don't toast -- open the prompt so the user can supply the
-        // password the backup was originally encrypted with.
-        setBackupPasswordPrompt(true);
+        toast.error(
+          'That password could not unlock this backup. Check it and try again.',
+        );
       } else {
         toast.error(getErrorMessage(error, 'Failed to restore backup'));
       }
@@ -341,71 +353,58 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
               />
             </div>
 
-            <div className="pt-2 border-t border-amber-200 dark:border-amber-800">
-              <p className="text-sm font-medium text-amber-700 dark:text-amber-300 mb-2">
-                {isOidc
-                  ? 'Re-authenticate with your identity provider to confirm:'
-                  : 'Enter your password to confirm:'}
-              </p>
-              {isOidc ? (
-                <div className="flex gap-2">
-                  <Button
-                    variant="danger"
-                    onClick={() => runRestore()}
-                    disabled={isRestoring || !restoreFile}
-                  >
-                    {isRestoring ? 'Restoring...' : 'Re-authenticate and Restore'}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowRestore(false);
-                      setRestoreFile(null);
-                      if (fileInputRef.current) {
-                        fileInputRef.current.value = '';
-                      }
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  <Input
-                    type="password"
-                    value={restorePassword}
-                    onChange={(e) => setRestorePassword(e.target.value)}
-                    placeholder="Enter your password"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && restorePassword && restoreFile) {
-                        runRestore();
-                      }
-                    }}
-                  />
-                  <div className="flex gap-2 mt-3">
-                    <Button
-                      variant="danger"
-                      onClick={() => runRestore()}
-                      disabled={isRestoring || !restorePassword || !restoreFile}
-                    >
-                      {isRestoring ? 'Restoring...' : 'Confirm Restore'}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setShowRestore(false);
-                        setRestorePassword('');
-                        setRestoreFile(null);
-                        if (fileInputRef.current) {
-                          fileInputRef.current.value = '';
+            {restoreFile && (
+              <div className="pt-2 border-t border-amber-200 dark:border-amber-800">
+                {restoreFileEncrypted ? (
+                  <>
+                    <p className="text-sm font-medium text-amber-700 dark:text-amber-300 mb-2">
+                      This backup is encrypted. Enter the password it was
+                      created with:
+                    </p>
+                    <Input
+                      type="password"
+                      value={restoreBackupPassword}
+                      onChange={(e) => setRestoreBackupPassword(e.target.value)}
+                      placeholder="Backup password"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && canSubmitRestore) {
+                          runRestore();
                         }
                       }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </>
-              )}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-medium text-amber-700 dark:text-amber-300 mb-2">
+                      This backup is not encrypted, so no password is needed.
+                      Type {RESTORE_CONFIRM_WORD} to confirm:
+                    </p>
+                    <Input
+                      value={restoreConfirmText}
+                      onChange={(e) => setRestoreConfirmText(e.target.value)}
+                      placeholder={`Type ${RESTORE_CONFIRM_WORD}`}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && canSubmitRestore) {
+                          runRestore();
+                        }
+                      }}
+                    />
+                  </>
+                )}
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <Button
+                variant="danger"
+                onClick={() => runRestore()}
+                disabled={isRestoring || !canSubmitRestore}
+              >
+                {isRestoring ? 'Restoring...' : 'Confirm Restore'}
+              </Button>
+              <Button variant="outline" onClick={closeRestoreForm}>
+                Cancel
+              </Button>
             </div>
           </div>
         )}
@@ -499,56 +498,6 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
               disabled={isExporting || !exportPassword}
             >
               {isExporting ? 'Encrypting...' : 'Download'}
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Backup-password retry prompt (encrypted restore couldn't decrypt) */}
-      <Modal
-        isOpen={backupPasswordPrompt}
-        onClose={() => {
-          setBackupPasswordPrompt(false);
-          setBackupPasswordInput('');
-        }}
-        maxWidth="sm"
-      >
-        <div className="p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            Backup Password Required
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            This backup is encrypted, and your current password did not unlock it.
-            Enter the password that was used when this backup was created.
-          </p>
-          <Input
-            type="password"
-            value={backupPasswordInput}
-            onChange={(e) => setBackupPasswordInput(e.target.value)}
-            placeholder="Password used to create this backup"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && backupPasswordInput) {
-                runRestore(backupPasswordInput);
-              }
-            }}
-          />
-          <div className="mt-4 flex justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setBackupPasswordPrompt(false);
-                setBackupPasswordInput('');
-              }}
-              disabled={isRestoring}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="danger"
-              onClick={() => runRestore(backupPasswordInput)}
-              disabled={isRestoring || !backupPasswordInput}
-            >
-              {isRestoring ? 'Restoring...' : 'Try Password'}
             </Button>
           </div>
         </div>
