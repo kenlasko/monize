@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Transaction } from '@/types/transaction';
+import { Category } from '@/types/category';
 import { Modal } from '@/components/ui/Modal';
 
 interface TransactionActionSheetProps {
@@ -66,6 +67,28 @@ export function TransactionActionSheet({
       onCategoryClick(transaction.category.id);
     }
   }, [transaction, onClose, onCategoryClick]);
+
+  const handleFilterCategoryById = useCallback((categoryId: string) => {
+    onClose();
+    if (onCategoryClick) {
+      onCategoryClick(categoryId);
+    }
+  }, [onClose, onCategoryClick]);
+
+  // Unique categories drawn from a split transaction's category splits.
+  // Transfer and investment splits carry no regular category, so they are skipped.
+  const splitCategories = useMemo<Category[]>(() => {
+    if (!transaction?.isSplit || !transaction.splits) return [];
+    const seen = new Set<string>();
+    const result: Category[] = [];
+    for (const split of transaction.splits) {
+      if (split.category && split.categoryId && !seen.has(split.categoryId)) {
+        seen.add(split.categoryId);
+        result.push(split.category);
+      }
+    }
+    return result;
+  }, [transaction]);
 
   const handleFilterTag = useCallback((tagId: string) => {
     onClose();
@@ -135,6 +158,18 @@ export function TransactionActionSheet({
             Filter by &ldquo;{transaction.category.name}&rdquo;
           </button>
         )}
+        {onCategoryClick && splitCategories.map((category) => (
+          <button
+            key={category.id}
+            onClick={() => handleFilterCategoryById(category.id)}
+            className="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+          >
+            <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            Filter by &ldquo;{category.name}&rdquo;
+          </button>
+        ))}
         {onTagFilterClick && transaction?.tags && transaction.tags.length > 0 && (
           transaction.tags.map((tag) => (
             <button

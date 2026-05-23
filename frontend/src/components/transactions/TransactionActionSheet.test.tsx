@@ -128,6 +128,32 @@ describe('TransactionActionSheet', () => {
     expect(onTagFilterClick).toHaveBeenCalledWith('tag1');
   });
 
+  it('renders a category filter for each unique split category', () => {
+    const onCategoryClick = vi.fn();
+    const splitTx: Transaction = {
+      ...tx,
+      categoryId: null,
+      category: null,
+      isSplit: true,
+      splits: [
+        { id: 's1', transactionId: 't1', kind: 'category', categoryId: 'c1', category: { id: 'c1', name: 'Groceries' } as any, transferAccountId: null, transferAccount: null, linkedTransactionId: null, amount: -5, memo: null, createdAt: '2025-06-15T00:00:00Z' },
+        { id: 's2', transactionId: 't1', kind: 'category', categoryId: 'c2', category: { id: 'c2', name: 'Household' } as any, transferAccountId: null, transferAccount: null, linkedTransactionId: null, amount: -3, memo: null, createdAt: '2025-06-15T00:00:00Z' },
+        // Duplicate category should not produce a second button
+        { id: 's3', transactionId: 't1', kind: 'category', categoryId: 'c1', category: { id: 'c1', name: 'Groceries' } as any, transferAccountId: null, transferAccount: null, linkedTransactionId: null, amount: -2, memo: null, createdAt: '2025-06-15T00:00:00Z' },
+        // Transfer split has no category and should be skipped
+        { id: 's4', transactionId: 't1', kind: 'transfer', categoryId: null, category: null, transferAccountId: 'a2', transferAccount: { id: 'a2', name: 'Savings' } as any, linkedTransactionId: 'l1', amount: -1, memo: null, createdAt: '2025-06-15T00:00:00Z' },
+      ],
+    };
+    render(<TransactionActionSheet {...baseProps} transaction={splitTx} onCategoryClick={onCategoryClick} />);
+    expect(screen.getByText(/Filter by .Groceries/)).toBeInTheDocument();
+    expect(screen.getByText(/Filter by .Household/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Filter by .Groceries/)).toHaveLength(1);
+    expect(screen.queryByText(/Filter by .Savings/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText(/Filter by .Household/));
+    expect(onCategoryClick).toHaveBeenCalledWith('c2');
+  });
+
   it('does not crash when transaction is null', () => {
     render(<TransactionActionSheet {...baseProps} transaction={null} />);
     expect(screen.getByText('Transaction')).toBeInTheDocument();
