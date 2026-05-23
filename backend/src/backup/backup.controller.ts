@@ -93,12 +93,18 @@ export class BackupController {
       throw new BadRequestException("Request body must be a backup file");
     }
 
+    const password = req.headers["x-restore-password"] as string | undefined;
+    const oidcIdToken = req.headers["x-restore-oidc-token"] as
+      | string
+      | undefined;
     const backupPassword = req.headers["x-backup-password"] as
       | string
       | undefined;
 
     const result = await this.backupService.restoreData(req.user.id, {
       compressedData: body,
+      password,
+      oidcIdToken,
       backupPassword,
     });
     return result;

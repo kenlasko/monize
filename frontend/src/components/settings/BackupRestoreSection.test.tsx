@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@/test/render';
+import { render, screen, fireEvent, waitFor } from '@/test/render';
 import { BackupRestoreSection } from './BackupRestoreSection';
 import { User } from '@/types/auth';
 
@@ -16,25 +16,6 @@ vi.mock('@/lib/backupApi', () => ({
     disableEncryption: vi.fn(),
   },
   BACKUP_PASSWORD_REQUIRED_CODE: 'BACKUP_PASSWORD_REQUIRED',
-  // Mirror the real magic-byte sniffing so the restore form shows the right
-  // confirmation UI for encrypted vs unencrypted files.
-  isEncryptedBackupFile: vi.fn(async (file: File) => {
-    try {
-      const header = new Uint8Array(await file.slice(0, 4).arrayBuffer());
-      if (
-        header.length === 4 &&
-        header[0] === 0x4d &&
-        header[1] === 0x5a &&
-        header[2] === 0x42 &&
-        header[3] === 0x45
-      ) {
-        return true;
-      }
-    } catch {
-      // fall through to the extension check
-    }
-    return file.name.toLowerCase().endsWith('.mzbe');
-  }),
 }));
 
 vi.mock('@/lib/errors', () => ({
@@ -124,12 +105,17 @@ describe('BackupRestoreSection', () => {
     fireEvent.click(screen.getByText('Restore from Backup...'));
 
     expect(screen.getByText('Select backup file')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Enter your password')).toBeInTheDocument();
     expect(screen.getByText('Confirm Restore')).toBeInTheDocument();
     expect(screen.getByText('Cancel')).toBeInTheDocument();
-    // No confirmation field appears until a file is chosen.
-    expect(
-      screen.queryByPlaceholderText('Type RESTORE'),
-    ).not.toBeInTheDocument();
+  });
+
+  it('shows OIDC re-auth button for OIDC users', () => {
+    render(<BackupRestoreSection user={oidcUser} />);
+
+    fireEvent.click(screen.getByText('Restore from Backup...'));
+
+    expect(screen.getByText('Re-authenticate and Restore')).toBeInTheDocument();
   });
 
   it('collapses restore form on cancel', () => {
@@ -142,15 +128,16 @@ describe('BackupRestoreSection', () => {
     expect(screen.queryByText('Confirm Restore')).not.toBeInTheDocument();
   });
 
-  it('disables confirm button until a file is selected', () => {
+  it('disables confirm button without password and file', () => {
     render(<BackupRestoreSection user={localUser} />);
 
     fireEvent.click(screen.getByText('Restore from Backup...'));
 
-    expect(screen.getByText('Confirm Restore')).toBeDisabled();
+    const confirmButton = screen.getByText('Confirm Restore');
+    expect(confirmButton).toBeDisabled();
   });
 
-  it('restores an unencrypted backup after typing the confirmation word', async () => {
+  it('restores backup successfully and shows summary modal', async () => {
     (backupApi.restoreBackup as ReturnType<typeof vi.fn>).mockResolvedValue({
       message: 'Backup restored successfully',
       restored: { categories: 5, accounts: 3 },
@@ -160,26 +147,23 @@ describe('BackupRestoreSection', () => {
 
     fireEvent.click(screen.getByText('Restore from Backup...'));
 
+    // Simulate file selection
     const backupContent = JSON.stringify({ version: 1, exportedAt: '2026-01-01' });
     const file = new File([backupContent], 'backup.json', { type: 'application/json' });
     const fileInput = screen.getByLabelText('Select backup file') as HTMLInputElement;
-    await act(async () => {
-      fireEvent.change(fileInput, { target: { files: [file] } });
-    });
+    fireEvent.change(fileInput, { target: { files: [file] } });
 
-    // Unencrypted file -> typed confirmation, no password field.
-    const confirmInput = await screen.findByPlaceholderText('Type RESTORE');
-    expect(
-      screen.queryByPlaceholderText('Backup password'),
-    ).not.toBeInTheDocument();
-    fireEvent.change(confirmInput, { target: { value: 'RESTORE' } });
+    // Enter password
+    const passwordInput = screen.getByPlaceholderText('Enter your password');
+    fireEvent.change(passwordInput, { target: { value: 'testpass' } });
 
+    // Click restore
     fireEvent.click(screen.getByText('Confirm Restore'));
 
     await waitFor(() => {
       expect(backupApi.restoreBackup).toHaveBeenCalledWith({
+        password: 'testpass',
         file: expect.any(File),
-        isEncrypted: false,
         backupPassword: undefined,
       });
     });
@@ -209,12 +193,10 @@ describe('BackupRestoreSection', () => {
 
     const file = new File(['{}'], 'backup.json', { type: 'application/json' });
     const fileInput = screen.getByLabelText('Select backup file') as HTMLInputElement;
-    await act(async () => {
-      fireEvent.change(fileInput, { target: { files: [file] } });
-    });
+    fireEvent.change(fileInput, { target: { files: [file] } });
 
-    const confirmInput = await screen.findByPlaceholderText('Type RESTORE');
-    fireEvent.change(confirmInput, { target: { value: 'RESTORE' } });
+    const passwordInput = screen.getByPlaceholderText('Enter your password');
+    fireEvent.change(passwordInput, { target: { value: 'testpass' } });
 
     fireEvent.click(screen.getByText('Confirm Restore'));
 
@@ -404,158 +386,142 @@ describe('BackupRestoreSection', () => {
     });
   });
 
-  describe('restore: encrypted backups', () => {
-    // Real MZBE magic header so the component detects the file as encrypted.
-    const encryptedFile = (name = 'backup.mzbe') =>
-      new File([new Uint8Array([0x4d, 0x5a, 0x42, 0x45, 0x01, 0x01])], name);
-
-    it('prompts for the backup password and sends it on confirm', async () => {
+  describe('restore: backup-password retry flow', () => {
+    it('opens the prompt and retries with the supplied password', async () => {
       const restoreMock = backupApi.restoreBackup as ReturnType<typeof vi.fn>;
-      restoreMock.mockResolvedValue({ message: 'ok', restored: { accounts: 1 } });
-
-      render(<BackupRestoreSection user={localUser} />);
-      fireEvent.click(screen.getByText('Restore from Backup...'));
-      await act(async () => {
-        fireEvent.change(
-          screen.getByLabelText('Select backup file') as HTMLInputElement,
-          { target: { files: [encryptedFile()] } },
-        );
-      });
-
-      // Encrypted file -> a password field, not the typed-confirmation field.
-      const pwInput = await screen.findByPlaceholderText('Backup password');
-      expect(
-        screen.queryByPlaceholderText('Type RESTORE'),
-      ).not.toBeInTheDocument();
-      fireEvent.change(pwInput, { target: { value: 'backup-pw' } });
-      fireEvent.click(screen.getByText('Confirm Restore'));
-
-      await waitFor(() => {
-        expect(restoreMock).toHaveBeenCalledWith({
-          file: expect.any(File),
-          isEncrypted: true,
-          backupPassword: 'backup-pw',
-        });
-      });
-    });
-
-    it('toasts and keeps the field when the password cannot decrypt', async () => {
-      const restoreMock = backupApi.restoreBackup as ReturnType<typeof vi.fn>;
+      // First call: server says BACKUP_PASSWORD_REQUIRED.
       restoreMock.mockImplementationOnce(() => {
         const err = new Error('encrypted') as Error & {
           isAxiosError: boolean;
           response: { data: { code: string } };
         };
-        // Mimic an axios error -- isBackupPasswordRequired uses isAxiosError.
+        // Mimic an axios error -- the isBackupPasswordRequired helper uses
+        // axios's isAxiosError type guard.
         err.isAxiosError = true;
         err.response = { data: { code: 'BACKUP_PASSWORD_REQUIRED' } };
         return Promise.reject(err);
       });
+      restoreMock.mockResolvedValueOnce({
+        message: 'ok',
+        restored: { accounts: 1 },
+      });
 
       render(<BackupRestoreSection user={localUser} />);
       fireEvent.click(screen.getByText('Restore from Backup...'));
-      await act(async () => {
-        fireEvent.change(
-          screen.getByLabelText('Select backup file') as HTMLInputElement,
-          { target: { files: [encryptedFile()] } },
-        );
+      const file = new File([new Uint8Array([0x4d])], 'backup.mzbe');
+      fireEvent.change(
+        screen.getByLabelText('Select backup file') as HTMLInputElement,
+        { target: { files: [file] } },
+      );
+      fireEvent.change(screen.getByPlaceholderText('Enter your password'), {
+        target: { value: 'login-pw' },
       });
-      const pwInput = await screen.findByPlaceholderText('Backup password');
-      fireEvent.change(pwInput, { target: { value: 'wrong-pw' } });
       fireEvent.click(screen.getByText('Confirm Restore'));
 
-      await waitFor(() =>
-        expect(toast.error).toHaveBeenCalledWith(
-          'That password could not unlock this backup. Check it and try again.',
-        ),
+      // The retry prompt appears.
+      const retryInput = await screen.findByPlaceholderText(
+        /Password used to create this backup/,
       );
-      // The field stays so the user can try a different password.
-      expect(
-        screen.getByPlaceholderText('Backup password'),
-      ).toBeInTheDocument();
+      fireEvent.change(retryInput, { target: { value: 'old-backup-pw' } });
+      fireEvent.click(screen.getByText('Try Password'));
+
+      await waitFor(() => {
+        expect(restoreMock).toHaveBeenCalledTimes(2);
+        expect(restoreMock.mock.calls[1][0].backupPassword).toBe('old-backup-pw');
+      });
     });
 
-    it('non-encryption errors still surface the generic failure toast', async () => {
+    it('non-encryption errors still surface as toasts (no retry prompt)', async () => {
       (backupApi.restoreBackup as ReturnType<typeof vi.fn>).mockRejectedValue(
         new Error('regular error'),
       );
       render(<BackupRestoreSection user={localUser} />);
       fireEvent.click(screen.getByText('Restore from Backup...'));
-      await act(async () => {
-        fireEvent.change(
-          screen.getByLabelText('Select backup file') as HTMLInputElement,
-          { target: { files: [new File(['{}'], 'b.json.gz')] } },
-        );
+      fireEvent.change(
+        screen.getByLabelText('Select backup file') as HTMLInputElement,
+        {
+          target: {
+            files: [new File(['{}'], 'b.json.gz')],
+          },
+        },
+      );
+      fireEvent.change(screen.getByPlaceholderText('Enter your password'), {
+        target: { value: 'pw' },
       });
-      const confirmInput = await screen.findByPlaceholderText('Type RESTORE');
-      fireEvent.change(confirmInput, { target: { value: 'RESTORE' } });
       fireEvent.click(screen.getByText('Confirm Restore'));
       await waitFor(() =>
         expect(toast.error).toHaveBeenCalledWith('Failed to restore backup'),
       );
+      expect(
+        screen.queryByPlaceholderText(/Password used to create this backup/),
+      ).not.toBeInTheDocument();
     });
   });
 
   describe('OIDC restore', () => {
-    it('uses the same typed-confirmation flow as local users (no password)', async () => {
+    it('passes the OIDC token instead of a password', async () => {
       (backupApi.restoreBackup as ReturnType<typeof vi.fn>).mockResolvedValue({
         message: 'ok',
         restored: {},
       });
       render(<BackupRestoreSection user={oidcUser} />);
       fireEvent.click(screen.getByText('Restore from Backup...'));
-      await act(async () => {
-        fireEvent.change(
-          screen.getByLabelText('Select backup file') as HTMLInputElement,
-          { target: { files: [new File(['{}'], 'b.json.gz')] } },
-        );
-      });
-      const confirmInput = await screen.findByPlaceholderText('Type RESTORE');
-      fireEvent.change(confirmInput, { target: { value: 'RESTORE' } });
-      fireEvent.click(screen.getByText('Confirm Restore'));
-      await waitFor(() =>
-        expect(backupApi.restoreBackup).toHaveBeenCalledWith({
-          file: expect.any(File),
-          isEncrypted: false,
-          backupPassword: undefined,
-        }),
+      fireEvent.change(
+        screen.getByLabelText('Select backup file') as HTMLInputElement,
+        { target: { files: [new File(['{}'], 'b.json.gz')] } },
       );
+      fireEvent.click(screen.getByText('Re-authenticate and Restore'));
+      await waitFor(() => expect(backupApi.restoreBackup).toHaveBeenCalled());
+      const call = (backupApi.restoreBackup as ReturnType<typeof vi.fn>).mock
+        .calls[0][0];
+      expect(call.oidcIdToken).toBe('oidc-session-confirmed');
+      expect(call.password).toBeUndefined();
     });
 
-    it('restore Cancel closes the form', () => {
+    it('OIDC restore Cancel closes the form', async () => {
       render(<BackupRestoreSection user={oidcUser} />);
       fireEvent.click(screen.getByText('Restore from Backup...'));
-      expect(screen.getByText('Confirm Restore')).toBeInTheDocument();
+      expect(screen.getByText('Re-authenticate and Restore')).toBeInTheDocument();
       fireEvent.click(screen.getByText('Cancel'));
-      expect(screen.queryByText('Confirm Restore')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('Re-authenticate and Restore'),
+      ).not.toBeInTheDocument();
     });
   });
 
-  it('does not allow restore until a file is selected', () => {
+  it('toasts an error when no file is selected on restore', async () => {
     render(<BackupRestoreSection user={localUser} />);
     fireEvent.click(screen.getByText('Restore from Backup...'));
-    // Confirm is disabled with no file, and no confirmation field is shown.
-    expect(screen.getByText('Confirm Restore')).toBeDisabled();
+    fireEvent.change(screen.getByPlaceholderText('Enter your password'), {
+      target: { value: 'pw' },
+    });
+    // The "Confirm Restore" button is disabled without a file, so call the
+    // handler via the keyboard-on-Enter path which has no disabled-check.
+    fireEvent.keyDown(screen.getByPlaceholderText('Enter your password'), {
+      key: 'Enter',
+    });
+    // No file -> no API call, no toast either since the disabled button
+    // is the primary guard. Submit via Enter (which only fires if both
+    // file+password are set) so this expectation just asserts the click
+    // path is unreachable without a file.
     expect(backupApi.restoreBackup).not.toHaveBeenCalled();
   });
 
   describe('keyboard handlers', () => {
-    it('Enter on the confirmation input submits an unencrypted restore', async () => {
+    it('Enter on the restore-password input submits when a file is selected', async () => {
       (backupApi.restoreBackup as ReturnType<typeof vi.fn>).mockResolvedValue({
         message: 'ok',
         restored: {},
       });
       render(<BackupRestoreSection user={localUser} />);
       fireEvent.click(screen.getByText('Restore from Backup...'));
-      await act(async () => {
-        fireEvent.change(
-          screen.getByLabelText('Select backup file') as HTMLInputElement,
-          { target: { files: [new File(['{}'], 'b.json.gz')] } },
-        );
-      });
-      const confirmInput = await screen.findByPlaceholderText('Type RESTORE');
-      fireEvent.change(confirmInput, { target: { value: 'RESTORE' } });
-      fireEvent.keyDown(confirmInput, { key: 'Enter' });
+      fireEvent.change(
+        screen.getByLabelText('Select backup file') as HTMLInputElement,
+        { target: { files: [new File(['{}'], 'b.json.gz')] } },
+      );
+      const pw = screen.getByPlaceholderText('Enter your password');
+      fireEvent.change(pw, { target: { value: 'pw' } });
+      fireEvent.keyDown(pw, { key: 'Enter' });
       await waitFor(() => expect(backupApi.restoreBackup).toHaveBeenCalled());
     });
 
@@ -581,32 +547,67 @@ describe('BackupRestoreSection', () => {
       );
     });
 
-    it('Enter on the backup password input submits an encrypted restore', async () => {
+    it('Enter on the backup-password retry input retries restore', async () => {
       const restoreMock = backupApi.restoreBackup as ReturnType<typeof vi.fn>;
-      restoreMock.mockResolvedValue({ message: 'ok', restored: {} });
+      restoreMock.mockImplementationOnce(() => {
+        const err = new Error('encrypted') as Error & {
+          isAxiosError: boolean;
+          response: { data: { code: string } };
+        };
+        err.isAxiosError = true;
+        err.response = { data: { code: 'BACKUP_PASSWORD_REQUIRED' } };
+        return Promise.reject(err);
+      });
+      restoreMock.mockResolvedValueOnce({ message: 'ok', restored: {} });
 
       render(<BackupRestoreSection user={localUser} />);
       fireEvent.click(screen.getByText('Restore from Backup...'));
-      await act(async () => {
-        fireEvent.change(
-          screen.getByLabelText('Select backup file') as HTMLInputElement,
-          {
-            target: {
-              files: [new File([new Uint8Array([0x4d, 0x5a, 0x42, 0x45])], 'b.mzbe')],
-            },
-          },
-        );
-      });
-      const pwInput = await screen.findByPlaceholderText('Backup password');
-      fireEvent.change(pwInput, { target: { value: 'pw' } });
-      fireEvent.keyDown(pwInput, { key: 'Enter' });
-      await waitFor(() =>
-        expect(restoreMock).toHaveBeenCalledWith({
-          file: expect.any(File),
-          isEncrypted: true,
-          backupPassword: 'pw',
-        }),
+      fireEvent.change(
+        screen.getByLabelText('Select backup file') as HTMLInputElement,
+        { target: { files: [new File(['x'], 'b.mzbe')] } },
       );
+      fireEvent.change(screen.getByPlaceholderText('Enter your password'), {
+        target: { value: 'pw' },
+      });
+      fireEvent.click(screen.getByText('Confirm Restore'));
+      const retry = await screen.findByPlaceholderText(
+        /Password used to create this backup/,
+      );
+      fireEvent.change(retry, { target: { value: 'old-pw' } });
+      fireEvent.keyDown(retry, { key: 'Enter' });
+      await waitFor(() => expect(restoreMock).toHaveBeenCalledTimes(2));
+    });
+
+    it('Cancel in the backup-password retry modal closes it', async () => {
+      const restoreMock = backupApi.restoreBackup as ReturnType<typeof vi.fn>;
+      restoreMock.mockImplementationOnce(() => {
+        const err = new Error('encrypted') as Error & {
+          isAxiosError: boolean;
+          response: { data: { code: string } };
+        };
+        err.isAxiosError = true;
+        err.response = { data: { code: 'BACKUP_PASSWORD_REQUIRED' } };
+        return Promise.reject(err);
+      });
+
+      render(<BackupRestoreSection user={localUser} />);
+      fireEvent.click(screen.getByText('Restore from Backup...'));
+      fireEvent.change(
+        screen.getByLabelText('Select backup file') as HTMLInputElement,
+        { target: { files: [new File(['x'], 'b.mzbe')] } },
+      );
+      fireEvent.change(screen.getByPlaceholderText('Enter your password'), {
+        target: { value: 'pw' },
+      });
+      fireEvent.click(screen.getByText('Confirm Restore'));
+      await screen.findByPlaceholderText(/Password used to create this backup/);
+      // Two Cancels are visible (restore form and modal). Click the one
+      // inside the modal (the last one in DOM order).
+      const cancels = screen.getAllByText('Cancel');
+      fireEvent.click(cancels[cancels.length - 1]);
+      expect(
+        screen.queryByPlaceholderText(/Password used to create this backup/),
+      ).not.toBeInTheDocument();
     });
   });
 

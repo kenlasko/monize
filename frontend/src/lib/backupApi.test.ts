@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import apiClient from './api';
-import { backupApi, isEncryptedBackupFile } from './backupApi';
+import { backupApi } from './backupApi';
 
 vi.mock('./api', () => ({
   default: {
@@ -72,7 +72,7 @@ describe('backupApi', () => {
     });
 
     const file = new File(['{"data":"test"}'], 'backup.json', { type: 'application/json' });
-    const result = await backupApi.restoreBackup({ file, isEncrypted: false });
+    const result = await backupApi.restoreBackup({ file });
 
     expect(apiClient.post).toHaveBeenCalledWith(
       '/backup/restore',
@@ -93,10 +93,30 @@ describe('backupApi', () => {
     });
 
     const file = new File(['compressed'], 'backup.json.gz', { type: 'application/gzip' });
-    await backupApi.restoreBackup({ file, isEncrypted: false });
+    await backupApi.restoreBackup({ file });
 
     const body = vi.mocked(apiClient.post).mock.calls[0][1];
     expect(body).toBe(file);
+  });
+
+  it('restoreBackup adds restore password header when provided', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { message: 'ok', restored: {} } });
+
+    const file = new File(['data'], 'backup.json.gz');
+    await backupApi.restoreBackup({ file, password: 'secret' });
+
+    const config = vi.mocked(apiClient.post).mock.calls[0][2];
+    expect(config?.headers?.['X-Restore-Password']).toBe('secret');
+  });
+
+  it('restoreBackup adds OIDC token header when provided', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { message: 'ok', restored: {} } });
+
+    const file = new File(['data'], 'backup.json.gz');
+    await backupApi.restoreBackup({ file, oidcIdToken: 'oidc-token' });
+
+    const config = vi.mocked(apiClient.post).mock.calls[0][2];
+    expect(config?.headers?.['X-Restore-OIDC-Token']).toBe('oidc-token');
   });
 
   it('getAutoBackupSettings fetches settings', async () => {
@@ -142,16 +162,26 @@ describe('backupApi', () => {
     expect(result.filename).toBe('backup.gz');
   });
 
-  it('restoreBackup sends an encrypted file untouched with the encrypted content-type', async () => {
+  it('restoreBackup sends an .mzbe file untouched with the encrypted content-type', async () => {
     vi.mocked(apiClient.post).mockResolvedValue({
       data: { message: 'ok', restored: {} },
     });
     const file = new File([new Uint8Array([0x4d, 0x5a, 0x42, 0x45])], 'backup.mzbe');
-    await backupApi.restoreBackup({ file, isEncrypted: true, backupPassword: 'bk' });
+    await backupApi.restoreBackup({ file, password: 'p', backupPassword: 'bk' });
     const call = vi.mocked(apiClient.post).mock.calls[0];
     expect(call[1]).toBe(file);
     expect((call[2] as any).headers['Content-Type']).toBe('application/octet-stream');
     expect((call[2] as any).headers['X-Backup-Password']).toBe('bk');
+  });
+
+  it('restoreBackup forwards the OIDC token header', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({
+      data: { message: 'ok', restored: {} },
+    });
+    const file = new File(['{}'], 'backup.json.gz');
+    await backupApi.restoreBackup({ file, oidcIdToken: 'tok' });
+    const call = vi.mocked(apiClient.post).mock.calls[0];
+    expect((call[2] as any).headers['X-Restore-OIDC-Token']).toBe('tok');
   });
 
   it('getEncryptionStatus calls GET /backup/encryption', async () => {
@@ -185,25 +215,5 @@ describe('backupApi', () => {
     vi.mocked(apiClient.delete).mockResolvedValue({ data: { enabled: false } });
     await backupApi.disableEncryption();
     expect(apiClient.delete).toHaveBeenCalledWith('/backup/encryption');
-  });
-});
-
-describe('isEncryptedBackupFile', () => {
-  it('detects the MZBE magic header regardless of file name', async () => {
-    const file = new File(
-      [new Uint8Array([0x4d, 0x5a, 0x42, 0x45, 0x01, 0x01])],
-      'renamed-backup.bin',
-    );
-    expect(await isEncryptedBackupFile(file)).toBe(true);
-  });
-
-  it('returns false for an unencrypted JSON backup', async () => {
-    const file = new File(['{"version":1}'], 'backup.json');
-    expect(await isEncryptedBackupFile(file)).toBe(false);
-  });
-
-  it('falls back to the .mzbe extension when the header is absent', async () => {
-    const file = new File(['not-really-encrypted'], 'backup.mzbe');
-    expect(await isEncryptedBackupFile(file)).toBe(true);
   });
 });
