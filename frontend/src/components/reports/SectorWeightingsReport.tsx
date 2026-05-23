@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useClickOutside } from '@/hooks/useClickOutside';
 import {
   BarChart,
   Bar,
@@ -98,18 +99,8 @@ export function SectorWeightingsReport() {
     return items;
   }, [data, sortField, sortDirection]);
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (showAccountFilter && accountFilterRef.current && !accountFilterRef.current.contains(e.target as Node)) {
-        setShowAccountFilter(false);
-      }
-      if (showSecurityFilter && securityFilterRef.current && !securityFilterRef.current.contains(e.target as Node)) {
-        setShowSecurityFilter(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showAccountFilter, showSecurityFilter]);
+  useClickOutside(accountFilterRef, () => setShowAccountFilter(false), { enabled: showAccountFilter });
+  useClickOutside(securityFilterRef, () => setShowSecurityFilter(false), { enabled: showSecurityFilter });
 
   // Load accounts and securities once on mount
   useEffect(() => {

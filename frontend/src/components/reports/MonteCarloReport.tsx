@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { useClickOutside } from '@/hooks/useClickOutside';
 import { useRouter } from 'next/navigation';
 import {
   Area,
@@ -129,16 +130,7 @@ export function MonteCarloReport() {
   const [holdingStatsLoading, setHoldingStatsLoading] = useState(false);
   const [saveMenuOpen, setSaveMenuOpen] = useState(false);
   const saveMenuRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!saveMenuOpen) return;
-    const onClick = (e: MouseEvent) => {
-      if (saveMenuRef.current && !saveMenuRef.current.contains(e.target as Node)) {
-        setSaveMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
-  }, [saveMenuOpen]);
+  useClickOutside(saveMenuRef, () => setSaveMenuOpen(false), { enabled: saveMenuOpen });
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
   const chartRef = useRef<HTMLDivElement>(null);
 

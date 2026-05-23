@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useClickOutside } from '@/hooks/useClickOutside';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { authApi } from '@/lib/auth';
@@ -102,24 +103,10 @@ export function AppHeader() {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (toolsRef.current && !toolsRef.current.contains(event.target as Node)) {
-        setToolsOpen(false);
-      }
-      if (aiRef.current && !aiRef.current.contains(event.target as Node)) {
-        setAiOpen(false);
-      }
-      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
-        setMobileMenuOpen(false);
-      }
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setSearchOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  useClickOutside(toolsRef, () => setToolsOpen(false));
+  useClickOutside(aiRef, () => setAiOpen(false));
+  useClickOutside(mobileMenuRef, () => setMobileMenuOpen(false));
+  useClickOutside(searchRef, () => setSearchOpen(false));
 
   // Focus the search input as it slides open.
   useEffect(() => {

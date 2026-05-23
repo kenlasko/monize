@@ -1,6 +1,7 @@
 'use client';
 
 import { memo, useState, useRef, useEffect, useCallback, type JSX } from 'react';
+import { useClickOutside } from '@/hooks/useClickOutside';
 import { createPortal } from 'react-dom';
 import { getIconComponent } from '@/components/ui/IconPicker';
 import { Transaction, TransactionSplit, TransactionStatus } from '@/types/transaction';
@@ -47,22 +48,14 @@ function CopyDropdown({ density, onDuplicate, onScheduleRecurring }: {
     }
   }, []);
 
+  useClickOutside([dropdownRef, buttonRef], () => setIsOpen(false), { enabled: isOpen });
+
   useEffect(() => {
     if (!isOpen) return;
     updatePosition();
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
-          buttonRef.current && !buttonRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
     const handleScroll = () => setIsOpen(false);
-    document.addEventListener('mousedown', handleClickOutside);
     window.addEventListener('scroll', handleScroll, true);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('scroll', handleScroll, true);
-    };
+    return () => window.removeEventListener('scroll', handleScroll, true);
   }, [isOpen, updatePosition]);
 
   // If only one action is available, render a simple button

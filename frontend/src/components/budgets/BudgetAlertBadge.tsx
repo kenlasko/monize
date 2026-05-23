@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useClickOutside } from '@/hooks/useClickOutside';
 import { budgetsApi } from '@/lib/budgets';
 import type { BudgetAlert } from '@/types/budget';
 import { BudgetAlertList } from './BudgetAlertList';
@@ -32,18 +33,7 @@ export function BudgetAlertBadge() {
     fetchAlerts();
   }, [fetchAlerts]);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  useClickOutside(dropdownRef, () => setIsOpen(false));
 
   const handleMarkRead = async (alertId: string) => {
     try {

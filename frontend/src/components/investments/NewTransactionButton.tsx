@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useClickOutside } from '@/hooks/useClickOutside';
 
 interface NewTransactionButtonProps {
   onNewInvestment: () => void;
@@ -18,26 +19,13 @@ export function NewTransactionButton({ onNewInvestment, onNewCash }: NewTransact
 
   const close = useCallback(() => setIsOpen(false), []);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        close();
-      }
-    }
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        close();
-        triggerRef.current?.focus();
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen, close]);
+  useClickOutside(dropdownRef, close, {
+    enabled: isOpen,
+    onEscape: () => {
+      close();
+      triggerRef.current?.focus();
+    },
+  });
 
   const handleInvestment = () => {
     close();

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useClickOutside } from '@/hooks/useClickOutside';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 
@@ -58,25 +59,8 @@ export function CalendarPopover({ value, onSelect, onClose, anchorRef }: Calenda
     setPosition({ top: rect.bottom + 4, left });
   }, [anchorRef]);
 
-  // Close on outside click
-  useEffect(() => {
-    const handle = (e: MouseEvent) => {
-      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
-        onClose();
-      }
-    };
-    document.addEventListener('mousedown', handle);
-    return () => document.removeEventListener('mousedown', handle);
-  }, [onClose]);
-
-  // Close on Escape
-  useEffect(() => {
-    const handle = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', handle);
-    return () => document.removeEventListener('keydown', handle);
-  }, [onClose]);
+  // Close on outside click or Escape
+  useClickOutside(popoverRef, onClose, { onEscape: onClose });
 
   const prevMonth = useCallback(() => {
     setViewMonth((m) => {

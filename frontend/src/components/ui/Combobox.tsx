@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useClickOutside } from '@/hooks/useClickOutside';
 import { createPortal } from 'react-dom';
 import { cn, inputBaseClasses, inputErrorClasses } from '@/lib/utils';
 
@@ -139,55 +140,47 @@ export function Combobox({
   }, [value, options, isTyping, allowCustomValue, initialDisplayValue, hasInitialized]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      const isInsideWrapper = wrapperRef.current && wrapperRef.current.contains(event.target as Node);
-      const isInsideDropdown = usePortal && listRef.current && listRef.current.contains(event.target as Node);
+  // Close dropdown when clicking outside. In portal mode the list renders
+  // outside wrapperRef, so it is checked separately; otherwise it lives inside
+  // the wrapper and the listRef check is harmlessly redundant.
+  useClickOutside([wrapperRef, listRef], (event) => {
+    setIsOpen(false);
+    // Only process if user was actively typing AND the click is not on a form submit button
+    // This prevents the click-outside handler from interfering with form submission
+    const target = event.target as HTMLElement;
+    const isSubmitButton = target.closest('button[type="submit"]');
 
-      if (!isInsideWrapper && !isInsideDropdown) {
-        setIsOpen(false);
-        // Only process if user was actively typing AND the click is not on a form submit button
-        // This prevents the click-outside handler from interfering with form submission
-        const target = event.target as HTMLElement;
-        const isSubmitButton = target.closest('button[type="submit"]');
+    if (isTyping) {
+      setIsTyping(false);
 
-        if (isTyping) {
-          setIsTyping(false);
-
-          if (!inputValue.trim()) {
-            // User erased the text -- clear the selection
-            if (selectedLabel) {
-              setSelectedLabel('');
-              setInputValue('');
-              onChange('', '');
-            }
-          } else if (!isSubmitButton) {
-            if (!allowCustomValue && selectedLabel) {
-              // Reset to selected value if not allowing custom
-              setInputValue(selectedLabel);
-            } else if (allowCustomValue) {
-              // For custom values, check if input matches an option exactly
-              const matchedOption = options.find(
-                opt => opt.label.toLowerCase() === inputValue.toLowerCase()
-              );
-              if (matchedOption) {
-                setSelectedLabel(matchedOption.label);
-                setInputValue(matchedOption.label);
-                onChange(matchedOption.value, matchedOption.label);
-              } else if (inputValue.trim() !== selectedLabel) {
-                setSelectedLabel(inputValue.trim());
-                onChange('', inputValue.trim());
-              }
-            }
+      if (!inputValue.trim()) {
+        // User erased the text -- clear the selection
+        if (selectedLabel) {
+          setSelectedLabel('');
+          setInputValue('');
+          onChange('', '');
+        }
+      } else if (!isSubmitButton) {
+        if (!allowCustomValue && selectedLabel) {
+          // Reset to selected value if not allowing custom
+          setInputValue(selectedLabel);
+        } else if (allowCustomValue) {
+          // For custom values, check if input matches an option exactly
+          const matchedOption = options.find(
+            opt => opt.label.toLowerCase() === inputValue.toLowerCase()
+          );
+          if (matchedOption) {
+            setSelectedLabel(matchedOption.label);
+            setInputValue(matchedOption.label);
+            onChange(matchedOption.value, matchedOption.label);
+          } else if (inputValue.trim() !== selectedLabel) {
+            setSelectedLabel(inputValue.trim());
+            onChange('', inputValue.trim());
           }
         }
       }
     }
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [selectedLabel, allowCustomValue, inputValue, options, onChange, isTyping, usePortal]);
+  });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Ignore input changes right after opening (caused by select())

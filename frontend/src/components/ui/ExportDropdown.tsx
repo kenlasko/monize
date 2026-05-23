@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import { useClickOutside } from '@/hooks/useClickOutside';
 
 interface ExportDropdownProps {
   onExportCsv?: () => void;
@@ -16,16 +17,7 @@ export function ExportDropdown({ onExportCsv, onExportPdf, disabled }: ExportDro
 
   const close = useCallback(() => setIsOpen(false), []);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        close();
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen, close]);
+  useClickOutside(dropdownRef, close, { enabled: isOpen });
 
   const handleExportCsv = () => {
     close();

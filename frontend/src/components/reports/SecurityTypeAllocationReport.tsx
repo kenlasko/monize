@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useClickOutside } from '@/hooks/useClickOutside';
 import {
   PieChart,
   Pie,
@@ -88,15 +89,7 @@ export function SecurityTypeAllocationReport() {
     { field: 'totalValue', direction: 'desc' },
   );
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (showAccountFilter && accountFilterRef.current && !accountFilterRef.current.contains(e.target as Node)) {
-        setShowAccountFilter(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showAccountFilter]);
+  useClickOutside(accountFilterRef, () => setShowAccountFilter(false), { enabled: showAccountFilter });
 
   // Fetch accounts once on mount
   useEffect(() => {

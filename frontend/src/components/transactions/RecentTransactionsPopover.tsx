@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, RefObject } from 'react';
+import { useClickOutside } from '@/hooks/useClickOutside';
 import { createPortal } from 'react-dom';
 import { transactionsApi } from '@/lib/transactions';
 import { Transaction } from '@/types/transaction';
@@ -93,23 +94,7 @@ export function RecentTransactionsPopover({
   }, [payeeId, payeeName, limit]);
 
   // Outside-click and escape
-  useEffect(() => {
-    const handleMouse = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (popoverRef.current?.contains(target)) return;
-      if (anchorRef.current?.contains(target)) return;
-      onClose();
-    };
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('mousedown', handleMouse);
-    document.addEventListener('keydown', handleKey);
-    return () => {
-      document.removeEventListener('mousedown', handleMouse);
-      document.removeEventListener('keydown', handleKey);
-    };
-  }, [anchorRef, onClose]);
+  useClickOutside([popoverRef, anchorRef], onClose, { onEscape: onClose });
 
   if (!position) return null;
 
