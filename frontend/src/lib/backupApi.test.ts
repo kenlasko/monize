@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import apiClient from './api';
-import { backupApi } from './backupApi';
+import { backupApi, isEncryptedBackupFile } from './backupApi';
 
 vi.mock('./api', () => ({
   default: {
@@ -215,5 +215,25 @@ describe('backupApi', () => {
     vi.mocked(apiClient.delete).mockResolvedValue({ data: { enabled: false } });
     await backupApi.disableEncryption();
     expect(apiClient.delete).toHaveBeenCalledWith('/backup/encryption');
+  });
+});
+
+describe('isEncryptedBackupFile', () => {
+  it('detects the MZBE magic header regardless of file name', async () => {
+    const file = new File(
+      [new Uint8Array([0x4d, 0x5a, 0x42, 0x45, 0x01, 0x01])],
+      'renamed-backup.bin',
+    );
+    expect(await isEncryptedBackupFile(file)).toBe(true);
+  });
+
+  it('returns false for an unencrypted JSON backup', async () => {
+    const file = new File(['{"version":1}'], 'backup.json');
+    expect(await isEncryptedBackupFile(file)).toBe(false);
+  });
+
+  it('falls back to the .mzbe extension when the header is absent', async () => {
+    const file = new File(['not-really-encrypted'], 'backup.mzbe');
+    expect(await isEncryptedBackupFile(file)).toBe(true);
   });
 });
