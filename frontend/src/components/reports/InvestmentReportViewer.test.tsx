@@ -182,7 +182,14 @@ describe('InvestmentReportViewer', () => {
     );
   });
 
-  it('hides the merge toggle when grouping is none', async () => {
+  it('offers the merge toggle for no grouping (combine duplicates)', async () => {
+    await renderViewer();
+    await screen.findByText('AAA');
+    expect(screen.getByRole('button', { name: 'Merge' })).toBeInTheDocument();
+  });
+
+  it('hides the merge toggle when grouping by account', async () => {
+    mockGetById.mockResolvedValue({ ...report, groupBy: 'ACCOUNT' });
     await renderViewer();
     await screen.findByText('AAA');
     expect(screen.queryByRole('button', { name: 'Merge' })).not.toBeInTheDocument();

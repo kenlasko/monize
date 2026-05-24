@@ -11,6 +11,7 @@ import { Select } from '@/components/ui/Select';
 import { IconPicker } from '@/components/ui/IconPicker';
 import { ColorPicker } from '@/components/ui/ColorPicker';
 import { MultiSelect } from '@/components/ui/MultiSelect';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { FormActions } from '@/components/ui/FormActions';
 import { InvestmentReportColumnChooser } from '@/components/reports/InvestmentReportColumnChooser';
 import {
@@ -19,7 +20,6 @@ import {
   InvestmentGroupBy,
   InvestmentSortDirection,
   INVESTMENT_COLUMN_MAP,
-  ALWAYS_INCLUDED_COLUMN,
   GROUP_BY_LABELS,
   SORT_DIRECTION_LABELS,
 } from '@/types/investment-report';
@@ -289,16 +289,22 @@ export function InvestmentReportForm({
 
       {/* Favourite */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            {...register('isFavourite')}
-            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        <div className="flex items-center gap-3">
+          <Controller
+            name="isFavourite"
+            control={control}
+            render={({ field }) => (
+              <ToggleSwitch
+                checked={!!field.value}
+                onChange={field.onChange}
+                label="Add to favourites"
+              />
+            )}
           />
           <span className="text-sm text-gray-700 dark:text-gray-300">
             Add to favourites
           </span>
-        </label>
+        </div>
       </div>
 
       <FormActions

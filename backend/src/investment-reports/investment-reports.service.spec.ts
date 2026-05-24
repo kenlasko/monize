@@ -64,12 +64,12 @@ describe("InvestmentReportsService", () => {
   });
 
   describe("create", () => {
-    it("forces symbol to the front of the column list and records history", async () => {
+    it("stores the configured columns as given and records history", async () => {
       const saved = await service.create("u1", {
         name: "My Report",
         config: { columns: ["marketValue", "gain"] } as any,
       });
-      expect(saved.config.columns).toEqual(["symbol", "marketValue", "gain"]);
+      expect(saved.config.columns).toEqual(["marketValue", "gain"]);
       expect(saved.config.sortDirection).toBe(InvestmentSortDirection.ASC);
       expect(saved.config.accountIds).toEqual([]);
       expect(actionHistoryService.record).toHaveBeenCalledWith(
@@ -162,7 +162,7 @@ describe("InvestmentReportsService", () => {
         config: { columns: ["gain", "symbol"], sortColumn: "gain" } as any,
       });
       expect(saved.name).toBe("New");
-      expect(saved.config.columns).toEqual(["symbol", "gain"]);
+      expect(saved.config.columns).toEqual(["gain", "symbol"]);
       expect(saved.config.sortColumn).toBe("gain");
     });
   });
@@ -220,7 +220,7 @@ describe("InvestmentReportsService", () => {
         false,
       );
       expect(result.asOfDate).toBe("2024-06-10");
-      expect(result.columns).toEqual(["symbol", "marketValue"]);
+      expect(result.columns).toEqual(["marketValue", "symbol"]);
       expect(result.groups).toHaveLength(1);
       // DESC by marketValue -> BBB first
       expect(result.groups[0].rows[0].values.symbol).toBe("BBB");
@@ -286,7 +286,7 @@ describe("InvestmentReportsService", () => {
       expect(result.columns[0]).not.toBe("account");
     });
 
-    it("ignores merge when grouping is none", async () => {
+    it("honours merge for no grouping (combine duplicate securities)", async () => {
       reportsRepository.findOne.mockResolvedValue(baseReport); // groupBy NONE
       await service.execute("u1", "r1", { mergeAccounts: true });
       expect(dataService.computeHoldings).toHaveBeenCalledWith(
@@ -294,7 +294,22 @@ describe("InvestmentReportsService", () => {
         expect.any(Array),
         "2024-06-10",
         "USD",
-        false, // merge ignored for NONE grouping
+        true,
+      );
+    });
+
+    it("ignores merge when grouping by account", async () => {
+      reportsRepository.findOne.mockResolvedValue({
+        ...baseReport,
+        groupBy: InvestmentGroupBy.ACCOUNT,
+      });
+      await service.execute("u1", "r1", { mergeAccounts: true });
+      expect(dataService.computeHoldings).toHaveBeenCalledWith(
+        "u1",
+        expect.any(Array),
+        "2024-06-10",
+        "USD",
+        false, // rows already keyed by account
       );
     });
 

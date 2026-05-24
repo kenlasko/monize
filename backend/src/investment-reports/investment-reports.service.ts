@@ -156,11 +156,14 @@ export class InvestmentReportsService {
     const pref = await this.prefRepository.findOne({ where: { userId } });
     const baseCurrency = pref?.defaultCurrency || "CAD";
 
-    // Merging only makes sense when securities are grouped together.
+    // Combining duplicate securities across accounts is available everywhere
+    // except when rows are already keyed by account.
     const groupsAcross =
       report.groupBy === InvestmentGroupBy.SYMBOL ||
       report.groupBy === InvestmentGroupBy.CURRENCY;
-    const mergeAccounts = groupsAcross && overrides?.mergeAccounts === true;
+    const mergeAccounts =
+      report.groupBy !== InvestmentGroupBy.ACCOUNT &&
+      overrides?.mergeAccounts === true;
 
     const holdings = await this.dataService.computeHoldings(
       userId,
@@ -170,7 +173,7 @@ export class InvestmentReportsService {
       mergeAccounts,
     );
 
-    let columns = this.ensureSymbolFirst(report.config.columns);
+    let columns = [...report.config.columns];
     // When securities from multiple accounts are listed separately, lead with
     // the account column so the user can tell the holdings apart.
     if (groupsAcross && !mergeAccounts) {
@@ -207,18 +210,12 @@ export class InvestmentReportsService {
     existing?: InvestmentReportConfig,
   ): InvestmentReportConfig {
     return {
-      columns: this.ensureSymbolFirst(dto.columns ?? existing?.columns ?? []),
+      columns: dto.columns ?? existing?.columns ?? [],
       accountIds: dto.accountIds ?? [],
       sortColumn: dto.sortColumn ?? null,
       sortDirection: dto.sortDirection ?? InvestmentSortDirection.ASC,
       asOfDate: dto.asOfDate ?? null,
     };
-  }
-
-  /** Symbol is always present and shown first. */
-  private ensureSymbolFirst(columns: string[]): string[] {
-    const rest = columns.filter((c) => c !== ALWAYS_INCLUDED_COLUMN);
-    return [ALWAYS_INCLUDED_COLUMN, ...rest];
   }
 
   /**

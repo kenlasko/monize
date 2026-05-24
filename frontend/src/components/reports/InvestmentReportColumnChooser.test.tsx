@@ -4,12 +4,11 @@ import { InvestmentReportColumnChooser } from './InvestmentReportColumnChooser';
 import { INVESTMENT_REPORT_COLUMNS } from '@/types/investment-report';
 
 describe('InvestmentReportColumnChooser', () => {
-  it('always pins symbol first and marks it as locked', () => {
-    const onChange = vi.fn();
-    render(<InvestmentReportColumnChooser value={['marketValue']} onChange={onChange} />);
-    expect(screen.getByText('(always shown)')).toBeInTheDocument();
-    // Symbol appears in the selected list even though it was not passed first
+  it('lists the selected columns in the given order', () => {
+    render(<InvestmentReportColumnChooser value={['symbol', 'marketValue']} onChange={vi.fn()} />);
     expect(screen.getByText('Selected columns (2)')).toBeInTheDocument();
+    expect(screen.getByTestId('selected-symbol')).toBeInTheDocument();
+    expect(screen.getByTestId('selected-marketValue')).toBeInTheDocument();
   });
 
   it('adds an available column', () => {
@@ -26,10 +25,11 @@ describe('InvestmentReportColumnChooser', () => {
     expect(onChange).toHaveBeenCalledWith(['symbol']);
   });
 
-  it('does not allow removing the symbol column', () => {
+  it('allows removing the symbol column', () => {
     const onChange = vi.fn();
     render(<InvestmentReportColumnChooser value={['symbol', 'gain']} onChange={onChange} />);
-    expect(screen.queryByLabelText('Remove Symbol')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText('Remove Symbol'));
+    expect(onChange).toHaveBeenCalledWith(['gain']);
   });
 
   it('reorders columns by dragging one onto another', () => {
@@ -48,44 +48,37 @@ describe('InvestmentReportColumnChooser', () => {
     expect(onChange).toHaveBeenCalledWith(['symbol', 'marketValue', 'gain']);
   });
 
-  it('never places a dragged column before the pinned symbol', () => {
+  it('can move a column ahead of symbol', () => {
     const onChange = vi.fn();
-    render(
-      <InvestmentReportColumnChooser
-        value={['symbol', 'gain', 'name']}
-        onChange={onChange}
-      />,
-    );
-    const source = screen.getByTestId('selected-name');
-    const target = screen.getByTestId('selected-symbol');
-    fireEvent.dragStart(source);
-    fireEvent.drop(target);
-    // Dropping onto symbol lands just after it; symbol stays first.
-    expect(onChange).toHaveBeenCalledWith(['symbol', 'name', 'gain']);
+    render(<InvestmentReportColumnChooser value={['symbol', 'gain']} onChange={onChange} />);
+    fireEvent.dragStart(screen.getByTestId('selected-gain'));
+    fireEvent.drop(screen.getByTestId('selected-symbol'));
+    expect(onChange).toHaveBeenCalledWith(['gain', 'symbol']);
   });
 
-  it('does not reorder when the dragged item is the pinned symbol', () => {
+  it('can drag the symbol column itself', () => {
     const onChange = vi.fn();
     render(
-      <InvestmentReportColumnChooser value={['symbol', 'gain']} onChange={onChange} />,
+      <InvestmentReportColumnChooser value={['symbol', 'gain', 'name']} onChange={onChange} />,
     );
-    // Symbol is not draggable, so dragStart sets no source; dropping is a no-op.
     fireEvent.dragStart(screen.getByTestId('selected-symbol'));
-    fireEvent.drop(screen.getByTestId('selected-gain'));
-    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.drop(screen.getByTestId('selected-name'));
+    expect(onChange).toHaveBeenCalledWith(['gain', 'name', 'symbol']);
   });
 
   it('falls back to the raw key for an unknown selected column', () => {
-    const onChange = vi.fn();
-    render(<InvestmentReportColumnChooser value={['symbol', 'legacyKey']} onChange={onChange} />);
-    // A column key no longer in the catalogue still renders by its key.
+    render(<InvestmentReportColumnChooser value={['symbol', 'legacyKey']} onChange={vi.fn()} />);
     expect(screen.getByText('legacyKey')).toBeInTheDocument();
   });
 
+  it('prompts to add a column when none are selected', () => {
+    render(<InvestmentReportColumnChooser value={[]} onChange={vi.fn()} />);
+    expect(screen.getByText(/Add at least one column/)).toBeInTheDocument();
+  });
+
   it('shows an empty state when every column is selected', () => {
-    const onChange = vi.fn();
     const allKeys = INVESTMENT_REPORT_COLUMNS.map((c) => c.key);
-    render(<InvestmentReportColumnChooser value={allKeys} onChange={onChange} />);
+    render(<InvestmentReportColumnChooser value={allKeys} onChange={vi.fn()} />);
     expect(screen.getByText('All columns selected')).toBeInTheDocument();
   });
 });

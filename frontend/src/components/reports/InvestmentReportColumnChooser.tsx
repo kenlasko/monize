@@ -4,19 +4,18 @@ import { useMemo, useState } from 'react';
 import {
   INVESTMENT_REPORT_COLUMNS,
   INVESTMENT_COLUMN_MAP,
-  ALWAYS_INCLUDED_COLUMN,
 } from '@/types/investment-report';
 
 interface InvestmentReportColumnChooserProps {
-  /** Ordered selected column keys (symbol is forced to the front). */
+  /** Ordered selected column keys. */
   value: string[];
   onChange: (columns: string[]) => void;
 }
 
 /**
  * Lets the user pick which MS Money-style columns appear in the report and the
- * order they appear in. Selected columns are reordered by dragging; the symbol
- * column is always present and pinned first.
+ * order they appear in. Columns are added from the available list, removed with
+ * the ✕, and reordered by dragging.
  */
 export function InvestmentReportColumnChooser({
   value,
@@ -25,30 +24,22 @@ export function InvestmentReportColumnChooser({
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
 
-  const selected = useMemo(() => {
-    const rest = value.filter((c) => c !== ALWAYS_INCLUDED_COLUMN);
-    return [ALWAYS_INCLUDED_COLUMN, ...rest];
-  }, [value]);
-
   const available = useMemo(
-    () => INVESTMENT_REPORT_COLUMNS.filter((c) => !selected.includes(c.key)),
-    [selected],
+    () => INVESTMENT_REPORT_COLUMNS.filter((c) => !value.includes(c.key)),
+    [value],
   );
 
-  const add = (key: string) => onChange([...selected, key]);
-  const remove = (key: string) => onChange(selected.filter((c) => c !== key));
+  const add = (key: string) => onChange([...value, key]);
+  const remove = (key: string) => onChange(value.filter((c) => c !== key));
 
-  // Reorder by dropping the dragged column onto another. The pinned symbol at
-  // index 0 never moves and nothing can be placed before it.
   const handleDrop = (targetIndex: number) => {
     setOverIndex(null);
     const from = dragIndex;
     setDragIndex(null);
-    if (from === null || from === 0 || from === targetIndex) return;
-    const dest = Math.max(1, targetIndex);
-    const next = [...selected];
+    if (from === null || from === targetIndex) return;
+    const next = [...value];
     const [moved] = next.splice(from, 1);
-    next.splice(dest, 0, moved);
+    next.splice(targetIndex, 0, moved);
     onChange(next);
   };
 
@@ -57,18 +48,22 @@ export function InvestmentReportColumnChooser({
       {/* Selected (ordered, drag to reorder) */}
       <div>
         <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Selected columns ({selected.length})
+          Selected columns ({value.length})
         </div>
         <ul className="border border-gray-200 dark:border-gray-700 rounded-md divide-y divide-gray-200 dark:divide-gray-700 max-h-96 overflow-auto">
-          {selected.map((key, index) => {
+          {value.length === 0 && (
+            <li className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+              Add at least one column from the list.
+            </li>
+          )}
+          {value.map((key, index) => {
             const col = INVESTMENT_COLUMN_MAP[key];
-            const locked = key === ALWAYS_INCLUDED_COLUMN;
             return (
               <li
                 key={key}
                 data-testid={`selected-${key}`}
-                draggable={!locked}
-                onDragStart={() => !locked && setDragIndex(index)}
+                draggable
+                onDragStart={() => setDragIndex(index)}
                 onDragOver={(e) => {
                   e.preventDefault();
                   if (overIndex !== index) setOverIndex(index);
@@ -81,36 +76,28 @@ export function InvestmentReportColumnChooser({
                   setDragIndex(null);
                   setOverIndex(null);
                 }}
-                className={`flex items-center gap-2 px-3 py-2 text-sm ${
-                  locked ? '' : 'cursor-grab'
-                } ${dragIndex === index ? 'opacity-50' : ''} ${
+                className={`flex items-center gap-2 px-3 py-2 text-sm cursor-grab ${
+                  dragIndex === index ? 'opacity-50' : ''
+                } ${
                   overIndex === index && dragIndex !== null && dragIndex !== index
                     ? 'bg-blue-50 dark:bg-blue-900/20'
                     : ''
                 }`}
               >
-                <span
-                  aria-hidden="true"
-                  className={`select-none ${locked ? 'text-gray-300 dark:text-gray-600' : 'text-gray-400'}`}
-                >
+                <span aria-hidden="true" className="select-none text-gray-400">
                   ⠿
                 </span>
                 <span className="flex-1 text-gray-900 dark:text-gray-100">
                   {col?.label ?? key}
-                  {locked && (
-                    <span className="ml-2 text-xs text-gray-400">(always shown)</span>
-                  )}
                 </span>
-                {!locked && (
-                  <button
-                    type="button"
-                    aria-label={`Remove ${col?.label ?? key}`}
-                    onClick={() => remove(key)}
-                    className="text-gray-400 hover:text-red-600 dark:hover:text-red-400"
-                  >
-                    ✕
-                  </button>
-                )}
+                <button
+                  type="button"
+                  aria-label={`Remove ${col?.label ?? key}`}
+                  onClick={() => remove(key)}
+                  className="text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                >
+                  ✕
+                </button>
               </li>
             );
           })}

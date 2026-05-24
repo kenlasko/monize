@@ -259,8 +259,7 @@ export function InvestmentReportViewer({ reportId }: InvestmentReportViewerProps
                 </button>
               </div>
             </div>
-            {(report.groupBy === InvestmentGroupBy.SYMBOL ||
-              report.groupBy === InvestmentGroupBy.CURRENCY) && (
+            {report.groupBy !== InvestmentGroupBy.ACCOUNT && (
               <div>
                 <span className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Across accounts
