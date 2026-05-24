@@ -42,7 +42,14 @@ export async function loginUser(
   email: string,
   password: string,
 ) {
-  await page.goto('/login');
+  // loginUser may run while the app is still finishing its own redirect to
+  // /login (e.g. immediately after logout). A second goto would race that and
+  // Playwright rejects it as an interrupted navigation, so only navigate when
+  // we are not already on the login page, then let it settle.
+  if (!new URL(page.url()).pathname.startsWith('/login')) {
+    await page.goto('/login');
+  }
+  await page.waitForURL(/\/login/, { timeout: 15000 });
   await page.getByLabel(/email/i).fill(email);
   await page.getByLabel(/password/i).fill(password);
   await page.getByRole('button', { name: /sign in/i }).click();

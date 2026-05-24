@@ -16,9 +16,11 @@ test.describe('Settings', () => {
   test('shows preferences section', async ({ page }) => {
     await page.goto('/settings');
 
-    // Wait for settings to load
+    // Settings is one scrolling page. Target the section heading specifically
+    // -- the responsive nav duplicates these labels as buttons, the inactive
+    // breakpoint's copy is hidden, and getByText().first() would pick it.
     await expect(
-      page.getByText(/preferences/i).first(),
+      page.getByRole('heading', { name: 'Preferences', exact: true }),
     ).toBeVisible({ timeout: 15000 });
 
     // Should show the Save Preferences button
@@ -49,15 +51,10 @@ test.describe('Settings', () => {
   test('shows danger zone section', async ({ page }) => {
     await page.goto('/settings');
 
-    // Wait for the page to fully load
+    // Should show the Danger Zone heading (not the nav button of the same name)
     await expect(
-      page.getByText(/preferences/i).first(),
+      page.getByRole('heading', { name: /danger zone/i }),
     ).toBeVisible({ timeout: 15000 });
-
-    // Should show the Danger Zone heading
-    await expect(
-      page.getByText(/danger zone/i).first(),
-    ).toBeVisible();
 
     // Should show the Delete Account button
     await expect(
@@ -68,15 +65,17 @@ test.describe('Settings', () => {
   test('shows all major setting sections on one page', async ({ page }) => {
     await page.goto('/settings');
 
-    // Wait for loading to complete
+    // All sections render on one scrolling page. Assert their headings rather
+    // than the duplicated, breakpoint-hidden nav labels.
     await expect(
-      page.getByText(/preferences/i).first(),
+      page.getByRole('heading', { name: 'Preferences', exact: true }),
     ).toBeVisible({ timeout: 15000 });
-
-    // Verify all major sections are present
-    await expect(page.getByText(/preferences/i).first()).toBeVisible();
-    await expect(page.getByText(/security/i).first()).toBeVisible();
-    await expect(page.getByText(/danger zone/i).first()).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Security', exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: /danger zone/i }),
+    ).toBeVisible();
   });
 
   test('security section has password change fields', async ({ page }) => {
