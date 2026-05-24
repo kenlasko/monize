@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildCategoryTree, getCategorySelectOptions, buildCategoryColorMap } from './categoryUtils';
+import { buildCategoryTree, getCategorySelectOptions, buildCategoryColorMap, buildCategoryLabelMap } from './categoryUtils';
 import { Category } from '@/types/category';
 
 function makeCategory(overrides: Partial<Category> & { id: string; name: string }): Category {
@@ -155,5 +155,28 @@ describe('buildCategoryColorMap', () => {
     expect(result.get('c1')).toBe('#ef4444');
     expect(result.get('c2')).toBe('#3b82f6');
     expect(result.get('c3')).toBeNull();
+  });
+});
+
+describe('buildCategoryLabelMap', () => {
+  it('returns the bare name for a top-level category', () => {
+    const result = buildCategoryLabelMap([food]);
+    expect(result.get('cat-3')).toBe('Food');
+  });
+
+  it('returns "Parent: Child" for a subcategory', () => {
+    const result = buildCategoryLabelMap([food, fastFood, fineDining]);
+    expect(result.get('cat-4')).toBe('Food: Fast Food');
+    expect(result.get('cat-5')).toBe('Food: Fine Dining');
+  });
+
+  it('falls back to the bare name when the parent is not in the list', () => {
+    const orphan = makeCategory({ id: 'cat-9', name: 'Snacks', parentId: 'missing' });
+    const result = buildCategoryLabelMap([orphan]);
+    expect(result.get('cat-9')).toBe('Snacks');
+  });
+
+  it('returns an empty map for no categories', () => {
+    expect(buildCategoryLabelMap([]).size).toBe(0);
   });
 });

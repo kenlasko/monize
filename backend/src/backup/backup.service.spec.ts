@@ -197,6 +197,7 @@ describe("BackupService", () => {
       "next_due_date",
       "is_active",
       "type",
+      "investment_security_id",
       "created_at",
       "updated_at",
     ],
@@ -207,6 +208,7 @@ describe("BackupService", () => {
       "category_id",
       "memo",
       "transfer_account_id",
+      "investment_security_id",
       "created_at",
       "updated_at",
     ],
@@ -726,6 +728,95 @@ describe("BackupService", () => {
       if (categoryInsert) {
         expect(categoryInsert[1]).toContain(userId);
       }
+    });
+
+    it("clears scheduled-transaction references to securities before deleting securities", async () => {
+      mockUserRepo.findOne.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      await service.restoreData(userId, makeInput({ password: "test" }));
+
+      const sql = mockQueryRunner.query.mock.calls.map(
+        (c: unknown[]) => c[0] as string,
+      );
+      const splitsFkCleared = sql.findIndex(
+        (q) =>
+          typeof q === "string" &&
+          q.includes("UPDATE scheduled_transaction_splits") &&
+          q.includes("investment_security_id = NULL"),
+      );
+      const schedFkCleared = sql.findIndex(
+        (q) =>
+          typeof q === "string" &&
+          q.includes(
+            "UPDATE scheduled_transactions SET investment_security_id = NULL",
+          ),
+      );
+      const securitiesDeleted = sql.findIndex(
+        (q) => typeof q === "string" && q.includes("DELETE FROM securities"),
+      );
+
+      expect(splitsFkCleared).toBeGreaterThan(-1);
+      expect(schedFkCleared).toBeGreaterThan(-1);
+      expect(securitiesDeleted).toBeGreaterThan(-1);
+      expect(splitsFkCleared).toBeLessThan(securitiesDeleted);
+      expect(schedFkCleared).toBeLessThan(securitiesDeleted);
+    });
+
+    it("defers scheduled-split investment_security_id until after securities insert", async () => {
+      mockUserRepo.findOne.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      const backupWithInvSplit = {
+        ...validBackupData,
+        securities: [
+          { id: "sec-1", user_id: userId, symbol: "VEA", name: "Vanguard" },
+        ],
+        scheduled_transactions: [
+          {
+            id: "sched-1",
+            user_id: userId,
+            account_id: "acc-1",
+            investment_security_id: "sec-1",
+          },
+        ],
+        scheduled_transaction_splits: [
+          {
+            id: "ss-1",
+            scheduled_transaction_id: "sched-1",
+            amount: -5,
+            investment_security_id: "sec-1",
+          },
+        ],
+      };
+
+      await service.restoreData(
+        userId,
+        makeInput({ password: "test", data: backupWithInvSplit }),
+      );
+
+      const insertCalls = mockQueryRunner.query.mock.calls.filter(
+        (c: unknown[]) =>
+          typeof c[0] === "string" && c[0].includes("INSERT INTO"),
+      );
+      const splitInsert = insertCalls.find(
+        (c: unknown[]) =>
+          typeof c[0] === "string" &&
+          c[0].includes('"scheduled_transaction_splits"'),
+      );
+      expect(splitInsert).toBeDefined();
+      // The forward FK to securities(id) must be stripped from the INSERT.
+      expect(splitInsert![0]).not.toContain("investment_security_id");
+
+      // ...and restored via a Phase-3 UPDATE keyed by the split id.
+      const update = mockQueryRunner.query.mock.calls.find(
+        (c: unknown[]) =>
+          typeof c[0] === "string" &&
+          c[0].includes('UPDATE "scheduled_transaction_splits"') &&
+          c[0].includes('"investment_security_id"'),
+      );
+      expect(update).toBeDefined();
+      expect(update![1]).toEqual(["sec-1", "ss-1"]);
     });
 
     it("should defer circular FK columns and update them after all inserts", async () => {

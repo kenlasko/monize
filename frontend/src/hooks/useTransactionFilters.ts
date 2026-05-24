@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { MultiSelectOption } from '@/components/ui/MultiSelect';
 import { isInvestmentBrokerageAccount } from '@/lib/account-utils';
-import { buildCategoryColorMap } from '@/lib/categoryUtils';
+import { buildCategoryColorMap, buildCategoryLabelMap } from '@/lib/categoryUtils';
 import { Account } from '@/types/account';
 import { Category } from '@/types/category';
 import { Payee } from '@/types/payee';
@@ -230,6 +230,7 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
   }, [categories]);
 
   const categoryColorMap = useMemo(() => buildCategoryColorMap(categories), [categories]);
+  const categoryLabelMap = useMemo(() => buildCategoryLabelMap(categories), [categories]);
 
   const accountFilterOptions = useMemo(() => {
     return filteredAccounts
@@ -597,6 +598,7 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     payeeFilterOptions,
     tagFilterOptions,
     categoryColorMap,
+    categoryLabelMap,
 
     // Filter handlers
     handleArrayFilterChange,

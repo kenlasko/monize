@@ -16,6 +16,7 @@ vi.mock('@/lib/account-utils', () => ({
 
 vi.mock('@/lib/categoryUtils', () => ({
   buildCategoryColorMap: () => new Map(),
+  buildCategoryLabelMap: () => new Map(),
 }));
 
 import { useTransactionFilters } from './useTransactionFilters';

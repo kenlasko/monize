@@ -19,6 +19,8 @@ interface TransactionActionSheetProps {
   onPayeeFilterClick?: (payeeId: string) => void;
   onCategoryClick?: (categoryId: string) => void;
   onTagFilterClick?: (tagId: string) => void;
+  /** Maps category ID to its full "Parent: Child" label. */
+  categoryLabelMap?: Map<string, string>;
 }
 
 export function TransactionActionSheet({
@@ -35,7 +37,16 @@ export function TransactionActionSheet({
   onPayeeFilterClick,
   onCategoryClick,
   onTagFilterClick,
+  categoryLabelMap,
 }: TransactionActionSheetProps) {
+  // The list query joins a category's own row but not its parent, so fall back
+  // to the bare name when the full-path label isn't available.
+  const categoryLabel = useCallback(
+    (category: Category): string =>
+      categoryLabelMap?.get(category.id) ?? category.name,
+    [categoryLabelMap],
+  );
+
   const handleFilterDate = useCallback(() => {
     if (!transaction) return;
     onClose();
@@ -155,7 +166,7 @@ export function TransactionActionSheet({
             <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
             </svg>
-            Filter by &ldquo;{transaction.category.name}&rdquo;
+            Filter by &ldquo;{categoryLabel(transaction.category)}&rdquo;
           </button>
         )}
         {onCategoryClick && splitCategories.map((category) => (
@@ -167,7 +178,7 @@ export function TransactionActionSheet({
             <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
             </svg>
-            Filter by &ldquo;{category.name}&rdquo;
+            Filter by &ldquo;{categoryLabel(category)}&rdquo;
           </button>
         ))}
         {onTagFilterClick && transaction?.tags && transaction.tags.length > 0 && (

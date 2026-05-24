@@ -883,6 +883,7 @@ function TransactionsContent() {
               pageSize={PAGE_SIZE}
               onPageChange={filters.goToPage}
               categoryColorMap={filters.categoryColorMap}
+              categoryLabelMap={filters.categoryLabelMap}
               budgetStatusMap={budgetStatusMap}
             />
           )}

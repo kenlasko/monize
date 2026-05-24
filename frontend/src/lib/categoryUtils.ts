@@ -101,3 +101,22 @@ export function buildCategoryColorMap(
     categories.map((c) => [c.id, c.effectiveColor ?? c.color]),
   );
 }
+
+/**
+ * Build a map of category ID to its full hierarchical label
+ * ("Parent: Child", or just the name for a top-level category). Useful for
+ * surfaces that only hold a transaction's own category row (the list query
+ * does not join the parent) but want to show the full path -- e.g. the
+ * transaction action sheet.
+ */
+export function buildCategoryLabelMap(
+  categories: Category[],
+): Map<string, string> {
+  const byId = new Map(categories.map((c) => [c.id, c]));
+  return new Map(
+    categories.map((c) => {
+      const parent = c.parentId ? byId.get(c.parentId) : null;
+      return [c.id, parent ? `${parent.name}: ${c.name}` : c.name];
+    }),
+  );
+}

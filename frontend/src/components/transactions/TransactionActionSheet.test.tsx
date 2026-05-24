@@ -154,6 +154,47 @@ describe('TransactionActionSheet', () => {
     expect(onCategoryClick).toHaveBeenCalledWith('c2');
   });
 
+  it('shows the full "Parent: Child" label when a categoryLabelMap is provided', () => {
+    render(
+      <TransactionActionSheet
+        {...baseProps}
+        onCategoryClick={vi.fn()}
+        categoryLabelMap={new Map([['c1', 'Living Expenses: Food']])}
+      />,
+    );
+    expect(
+      screen.getByText(/Filter by .Living Expenses: Food/),
+    ).toBeInTheDocument();
+    // The bare subcategory name should not appear on its own.
+    expect(screen.queryByText(/Filter by .Food.$/)).not.toBeInTheDocument();
+  });
+
+  it('uses full labels for split categories when a categoryLabelMap is provided', () => {
+    const splitTx: Transaction = {
+      ...tx,
+      categoryId: null,
+      category: null,
+      isSplit: true,
+      splits: [
+        { id: 's1', transactionId: 't1', kind: 'category', categoryId: 'c1', category: { id: 'c1', name: 'Groceries' } as any, transferAccountId: null, transferAccount: null, linkedTransactionId: null, amount: -5, memo: null, createdAt: '2025-06-15T00:00:00Z' },
+      ],
+    };
+    render(
+      <TransactionActionSheet
+        {...baseProps}
+        transaction={splitTx}
+        onCategoryClick={vi.fn()}
+        categoryLabelMap={new Map([['c1', 'Food: Groceries']])}
+      />,
+    );
+    expect(screen.getByText(/Filter by .Food: Groceries/)).toBeInTheDocument();
+  });
+
+  it('falls back to the bare category name when no label map is given', () => {
+    render(<TransactionActionSheet {...baseProps} onCategoryClick={vi.fn()} />);
+    expect(screen.getByText(/Filter by .Food/)).toBeInTheDocument();
+  });
+
   it('does not crash when transaction is null', () => {
     render(<TransactionActionSheet {...baseProps} transaction={null} />);
     expect(screen.getByText('Transaction')).toBeInTheDocument();

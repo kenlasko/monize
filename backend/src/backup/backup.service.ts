@@ -742,6 +742,19 @@ export class BackupService {
        (SELECT id FROM securities WHERE user_id = $1)`,
       [userId],
     );
+    // Scheduled transactions and their splits reference securities via
+    // investment_security_id. Clear those FKs before deleting securities; the
+    // rows themselves are removed in the scheduled-transactions block below.
+    await queryRunner.query(
+      `UPDATE scheduled_transaction_splits SET investment_security_id = NULL
+       WHERE scheduled_transaction_id IN
+       (SELECT id FROM scheduled_transactions WHERE user_id = $1)`,
+      [userId],
+    );
+    await queryRunner.query(
+      "UPDATE scheduled_transactions SET investment_security_id = NULL WHERE user_id = $1",
+      [userId],
+    );
     await queryRunner.query("DELETE FROM securities WHERE user_id = $1", [
       userId,
     ]);
@@ -949,12 +962,26 @@ export class BackupService {
         rows: data.payees,
         column: "default_category_id",
       },
+      {
+        table: "scheduled_transactions",
+        rows: data.scheduled_transactions,
+        column: "investment_security_id",
+      },
+      {
+        table: "scheduled_transaction_splits",
+        rows: data.scheduled_transaction_splits,
+        column: "investment_security_id",
+      },
     ];
 
     // Tables that have a BEFORE UPDATE trigger which auto-sets updated_at.
     // We must disable these triggers during deferred FK restoration to
     // preserve the original timestamps from the backup.
-    const tablesWithUpdatedAtTrigger = new Set(["accounts", "transactions"]);
+    const tablesWithUpdatedAtTrigger = new Set([
+      "accounts",
+      "transactions",
+      "scheduled_transactions",
+    ]);
 
     // Collect tables that will actually be updated AND have the trigger
     const triggersToDisable = new Set<string>();
@@ -1155,6 +1182,10 @@ export class BackupService {
       ],
       transactions: ["linked_transaction_id", "parent_transaction_id"],
       payees: ["default_category_id"],
+      // Scheduled transactions/splits are inserted before securities, so their
+      // forward reference to securities(id) is deferred to Phase 3.
+      scheduled_transactions: ["investment_security_id"],
+      scheduled_transaction_splits: ["investment_security_id"],
     };
     const columnsToDefer = deferredFkColumns[table] ?? [];
 

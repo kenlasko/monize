@@ -49,6 +49,7 @@ interface TransactionListProps {
   onToggleAllOnPage?: () => void;
   isAllOnPageSelected?: boolean;
   categoryColorMap?: Map<string, string | null>;
+  categoryLabelMap?: Map<string, string>;
   budgetStatusMap?: Record<string, CategoryBudgetStatus>;
   showToolbar?: boolean;
 }
@@ -87,6 +88,7 @@ export function TransactionList({
   onToggleAllOnPage,
   isAllOnPageSelected,
   categoryColorMap,
+  categoryLabelMap,
   budgetStatusMap,
   showToolbar = true,
 }: TransactionListProps) {
@@ -537,6 +539,7 @@ export function TransactionList({
         onPayeeFilterClick={onPayeeFilterClick}
         onCategoryClick={onCategoryClick}
         onTagFilterClick={onTagClick}
+        categoryLabelMap={categoryLabelMap}
       />
 
       {/* Delete Confirmation Dialog */}

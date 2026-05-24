@@ -63,10 +63,16 @@ async function bootstrap() {
   app.getHttpAdapter().getInstance().set("trust proxy", 1);
 
   // Backup restore accepts gzip-compressed binary (compressed on the client
-  // to avoid multi-minute uploads of 100mb+ JSON files).
+  // to avoid multi-minute uploads of 100mb+ JSON files). Encrypted backups
+  // are uploaded as the Monize envelope under application/octet-stream, so
+  // both content-types must be parsed into a raw Buffer here -- otherwise the
+  // controller sees an unparsed body and rejects it.
   app.use(
     "/api/v1/backup/restore",
-    express.raw({ limit: "100mb", type: "application/gzip" }),
+    express.raw({
+      limit: "100mb",
+      type: ["application/gzip", "application/octet-stream"],
+    }),
   );
 
   // Default body size limit for regular endpoints (QIF imports, etc.).

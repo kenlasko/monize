@@ -16,6 +16,28 @@ export interface BackupEncryptionStatus {
 // user for the password the backup was originally made with.
 export const BACKUP_PASSWORD_REQUIRED_CODE = 'BACKUP_PASSWORD_REQUIRED';
 
+// Encrypted Monize backups begin with the ASCII magic "MZBE" (see the backend
+// backup-crypto.util envelope format). Sniffing the first four bytes lets the
+// restore UI show a backup-password field only when one is actually needed.
+const MZBE_MAGIC = [0x4d, 0x5a, 0x42, 0x45];
+
+export async function isEncryptedBackupFile(file: File): Promise<boolean> {
+  try {
+    const header = new Uint8Array(
+      await file.slice(0, MZBE_MAGIC.length).arrayBuffer(),
+    );
+    if (
+      header.length === MZBE_MAGIC.length &&
+      MZBE_MAGIC.every((byte, i) => header[i] === byte)
+    ) {
+      return true;
+    }
+  } catch {
+    // Reading the header failed (unusual); fall back to the extension below.
+  }
+  return file.name.toLowerCase().endsWith('.mzbe');
+}
+
 async function compressGzip(data: ArrayBuffer): Promise<Blob> {
   const stream = new Blob([data]).stream().pipeThrough(
     new CompressionStream('gzip'),
