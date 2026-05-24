@@ -183,6 +183,18 @@ export class InvestmentReportDataService {
 
     const accountMap = await this.loadAccounts(accountIds);
 
+    // The maintained holdings table is the authoritative current snapshot.
+    const holdings = await this.holdingsRepository.find({
+      where: { accountId: In(accountIds) },
+    });
+    const holdingsMap = new Map<string, { quantity: number; averageCost: number }>();
+    for (const h of holdings) {
+      holdingsMap.set(`${h.accountId}:${h.securityId}`, {
+        quantity: Number(h.quantity) || 0,
+        averageCost: Number(h.averageCost) || 0,
+      });
+    }
+
     // Replay transactions up to the as-of date, grouped by (account, security).
     const transactions = await this.txRepository.find({
       where: { userId, accountId: In(accountIds) },
@@ -192,7 +204,7 @@ export class InvestmentReportDataService {
 
     // Holdings without any transactions (e.g. imported positions) still belong
     // in the report; seed them so they are not dropped.
-    await this.seedTransactionlessHoldings(accountIds, groups);
+    this.seedTransactionlessHoldings(holdings, groups);
 
     const securityIds = [
       ...new Set([...groups.values()].map((g) => g.securityId)),
@@ -230,10 +242,27 @@ export class InvestmentReportDataService {
       const lastPrice = asOfRow ? asOfRow.close : null;
       const previousClose = prevRow ? prevRow.close : null;
 
-      const quantity = round(group.state.quantity, 8);
-      if (Math.abs(quantity) < 0.0001) continue;
+      let quantity = round(group.state.quantity, 8);
+      let costBasis = round(group.state.costBasis, 4);
 
-      const costBasis = round(group.state.costBasis, 4);
+      // When no transactions occur after the as-of date, the maintained
+      // holdings table is the authoritative snapshot of this position. Defer to
+      // it (matching the portfolio view): drop positions it reports as closed
+      // (fully-sold/deactivated securities) and use its quantity and cost basis.
+      const holdingKey = `${group.accountId}:${group.securityId}`;
+      const lastTxDate = group.txs.length
+        ? group.txs[group.txs.length - 1].transactionDate
+        : null;
+      const reflectsPresent = !lastTxDate || lastTxDate <= asOfDate;
+      if (reflectsPresent) {
+        const current = holdingsMap.get(holdingKey);
+        if (!current || Math.abs(current.quantity) < 0.0001) continue;
+        quantity = round(current.quantity, 8);
+        costBasis = round(current.quantity * current.averageCost, 4);
+      } else if (Math.abs(quantity) < 0.0001) {
+        continue;
+      }
+
       const averageCost =
         quantity !== 0 ? round(costBasis / quantity, 6) : null;
       const marketValue =
@@ -512,13 +541,10 @@ export class InvestmentReportDataService {
    * Add synthetic groups for holdings that have no investment transactions so
    * imported positions still appear (valued at their stored average cost).
    */
-  private async seedTransactionlessHoldings(
-    accountIds: string[],
+  private seedTransactionlessHoldings(
+    holdings: Holding[],
     groups: Map<string, GroupRecord>,
-  ): Promise<void> {
-    const holdings = await this.holdingsRepository.find({
-      where: { accountId: In(accountIds) },
-    });
+  ): void {
     for (const h of holdings) {
       const key = `${h.accountId}:${h.securityId}`;
       if (groups.has(key)) continue;
