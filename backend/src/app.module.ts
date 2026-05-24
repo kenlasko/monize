@@ -11,6 +11,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ScheduleModule } from "@nestjs/schedule";
 import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
+import { rateLimit } from "./common/throttle.util";
 import { CsrfGuard } from "./common/guards/csrf.guard";
 import { DemoModeGuard } from "./common/guards/demo-mode.guard";
 import { MustChangePasswordGuard } from "./auth/guards/must-change-password.guard";
@@ -88,7 +89,7 @@ import { EmergencyAccessModule } from "./emergency-access/emergency-access.modul
       {
         name: "default",
         ttl: 60000, // 1 minute
-        limit: 100, // 100 requests per minute for general API
+        limit: rateLimit(100), // 100 requests per minute for general API
       },
     ]),
 

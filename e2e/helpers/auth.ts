@@ -20,10 +20,15 @@ export async function registerUser(
   await page.getByLabel(/confirm password/i).fill(password);
   await page.getByRole('button', { name: /create account|register|sign up/i }).click();
 
-  // After registration, a 2FA setup screen may appear — skip it
+  // After submitting we either land on the dashboard directly or hit an
+  // optional 2FA-setup step. Race the two so the happy path doesn't sit
+  // through a fixed wait, then skip the 2FA step if it appeared.
   const skipButton = page.getByRole('button', { name: /skip for now/i });
-  await skipButton.waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
-  if (await skipButton.isVisible()) {
+  await Promise.race([
+    page.waitForURL(/\/dashboard/, { timeout: 15000 }).catch(() => {}),
+    skipButton.waitFor({ state: 'visible', timeout: 15000 }).catch(() => {}),
+  ]);
+  if (await skipButton.isVisible().catch(() => false)) {
     await skipButton.click();
   }
 

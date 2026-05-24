@@ -50,6 +50,9 @@ services:
       FORCE_2FA: "false"
       DEMO_MODE: "false"
       AI_ENCRYPTION_KEY: ""
+      # Raise rate limits so a full suite of registrations/logins from one IP
+      # doesn't trip the brute-force throttles. E2E-only; prod keeps defaults.
+      RATE_LIMIT_MAX: "100000"
     ports:
       - "3000:3000"
     networks:

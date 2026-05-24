@@ -24,6 +24,7 @@ import {
   ApiResponse,
 } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
+import { rateLimit } from "../common/throttle.util";
 import { Response, Request as ExpressRequest } from "express";
 
 import { AuthService } from "./auth.service";
@@ -228,7 +229,7 @@ export class AuthController {
   @AllowDelegate()
   @SkipCsrf()
   @DemoRestricted()
-  @Throttle({ default: { ttl: 900000, limit: 5 } }) // 5 attempts per 15 minutes
+  @Throttle({ default: { ttl: 900000, limit: rateLimit(5) } }) // 5 attempts per 15 minutes
   @ApiOperation({ summary: "Register a new user with local credentials" })
   @ApiResponse({ status: 403, description: "Local authentication is disabled" })
   @ApiResponse({ status: 429, description: "Too many requests" })
@@ -255,7 +256,7 @@ export class AuthController {
   @Post("login")
   @AllowDelegate()
   @SkipCsrf()
-  @Throttle({ default: { ttl: 900000, limit: 5 } }) // 5 attempts per 15 minutes
+  @Throttle({ default: { ttl: 900000, limit: rateLimit(5) } }) // 5 attempts per 15 minutes
   @ApiOperation({ summary: "Login with local credentials" })
   @ApiResponse({ status: 403, description: "Local authentication is disabled" })
   @ApiResponse({ status: 429, description: "Too many requests" })
@@ -571,7 +572,7 @@ export class AuthController {
   @AllowDelegate()
   @SkipCsrf()
   @DemoRestricted()
-  @Throttle({ default: { ttl: 900000, limit: 3 } })
+  @Throttle({ default: { ttl: 900000, limit: rateLimit(3) } })
   @ApiOperation({ summary: "Request password reset email" })
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     if (!this.localAuthEnabled) {
@@ -622,7 +623,7 @@ export class AuthController {
   @AllowDelegate()
   @SkipCsrf()
   @DemoRestricted()
-  @Throttle({ default: { ttl: 900000, limit: 5 } })
+  @Throttle({ default: { ttl: 900000, limit: rateLimit(5) } })
   @ApiOperation({ summary: "Reset password using token" })
   async resetPassword(@Body() dto: ResetPasswordDto) {
     await this.authService.resetPassword(dto.token, dto.newPassword);
@@ -632,7 +633,7 @@ export class AuthController {
   @Post("2fa/verify")
   @AllowDelegate()
   @SkipCsrf()
-  @Throttle({ default: { ttl: 900000, limit: 5 } })
+  @Throttle({ default: { ttl: 900000, limit: rateLimit(5) } })
   @ApiOperation({ summary: "Verify TOTP code to complete 2FA login" })
   async verify2FA(
     @Body() dto: VerifyTotpDto,
@@ -684,7 +685,7 @@ export class AuthController {
   @UseGuards(AuthGuard("jwt"))
   @AllowDelegate()
   @DemoRestricted()
-  @Throttle({ default: { ttl: 900000, limit: 5 } })
+  @Throttle({ default: { ttl: 900000, limit: rateLimit(5) } })
   @ApiBearerAuth()
   @ApiOperation({ summary: "Generate QR code and secret for 2FA setup" })
   async setup2FA(@Request() req, @Body() dto: Setup2faInitDto) {
@@ -695,7 +696,7 @@ export class AuthController {
   @UseGuards(AuthGuard("jwt"))
   @AllowDelegate()
   @DemoRestricted()
-  @Throttle({ default: { ttl: 900000, limit: 5 } })
+  @Throttle({ default: { ttl: 900000, limit: rateLimit(5) } })
   @ApiBearerAuth()
   @ApiOperation({ summary: "Confirm 2FA setup with verification code" })
   async confirmSetup2FA(@Request() req, @Body() dto: Setup2faDto) {
@@ -706,7 +707,7 @@ export class AuthController {
   @UseGuards(AuthGuard("jwt"))
   @AllowDelegate()
   @DemoRestricted()
-  @Throttle({ default: { ttl: 900000, limit: 5 } })
+  @Throttle({ default: { ttl: 900000, limit: rateLimit(5) } })
   @ApiBearerAuth()
   @ApiOperation({ summary: "Disable 2FA with verification code" })
   async disable2FA(@Request() req, @Body() dto: Setup2faDto) {
@@ -801,7 +802,7 @@ export class AuthController {
   @Post("refresh")
   @AllowDelegate()
   @SkipCsrf()
-  @Throttle({ default: { ttl: 60000, limit: 10 } }) // 10 refreshes per minute
+  @Throttle({ default: { ttl: 60000, limit: rateLimit(10) } }) // 10 refreshes per minute
   @ApiOperation({ summary: "Refresh access token using refresh token cookie" })
   async refresh(@Request() req: ExpressRequest, @Res() res: Response) {
     const refreshToken = req.cookies?.["refresh_token"];
@@ -828,7 +829,7 @@ export class AuthController {
   @UseGuards(AuthGuard("jwt"))
   @AllowDelegate()
   @DemoRestricted()
-  @Throttle({ default: { ttl: 900000, limit: 5 } })
+  @Throttle({ default: { ttl: 900000, limit: rateLimit(5) } })
   @ApiBearerAuth()
   @ApiOperation({ summary: "Generate new 2FA backup codes" })
   async generateBackupCodes(@Request() req, @Body() dto: Setup2faDto) {
