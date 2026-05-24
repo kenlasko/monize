@@ -131,7 +131,7 @@ export function InvestmentReportViewer({ reportId }: InvestmentReportViewerProps
     const cols = result.columns;
     const grouped = result.groupBy !== InvestmentGroupBy.NONE;
     const headers = [
-      ...(grouped ? [groupHeading(result.groupBy)] : []),
+      ...(grouped ? [GROUP_HEADINGS[result.groupBy]] : []),
       ...cols.map((key) => INVESTMENT_COLUMN_MAP[key]?.label ?? key),
     ];
     const rows = result.groups.flatMap((g) =>
@@ -321,15 +321,9 @@ export function InvestmentReportViewer({ reportId }: InvestmentReportViewerProps
   );
 }
 
-function groupHeading(groupBy: InvestmentGroupBy): string {
-  switch (groupBy) {
-    case InvestmentGroupBy.ACCOUNT:
-      return 'Account';
-    case InvestmentGroupBy.SYMBOL:
-      return 'Symbol';
-    case InvestmentGroupBy.CURRENCY:
-      return 'Currency';
-    default:
-      return 'Group';
-  }
-}
+const GROUP_HEADINGS: Record<InvestmentGroupBy, string> = {
+  [InvestmentGroupBy.NONE]: 'Group',
+  [InvestmentGroupBy.ACCOUNT]: 'Account',
+  [InvestmentGroupBy.SYMBOL]: 'Symbol',
+  [InvestmentGroupBy.CURRENCY]: 'Currency',
+};

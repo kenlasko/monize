@@ -103,6 +103,45 @@ describe("InvestmentReportsService", () => {
   });
 
   describe("update", () => {
+    it("updates every editable field when provided", async () => {
+      reportsRepository.findOne.mockResolvedValue({
+        id: "r1",
+        userId: "u1",
+        name: "Old",
+        description: null,
+        icon: null,
+        backgroundColor: null,
+        groupBy: InvestmentGroupBy.NONE,
+        isFavourite: false,
+        sortOrder: 0,
+        config: {
+          columns: ["symbol"],
+          accountIds: [],
+          sortColumn: null,
+          sortDirection: InvestmentSortDirection.ASC,
+          asOfDate: null,
+        },
+      });
+      const saved = await service.update("u1", "r1", {
+        name: "New",
+        description: "d",
+        icon: "i",
+        backgroundColor: "#abcdef",
+        groupBy: InvestmentGroupBy.ACCOUNT,
+        isFavourite: true,
+        sortOrder: 3,
+        config: { columns: ["symbol", "gain"] } as any,
+      });
+      expect(saved.name).toBe("New");
+      expect(saved.description).toBe("d");
+      expect(saved.icon).toBe("i");
+      expect(saved.backgroundColor).toBe("#abcdef");
+      expect(saved.groupBy).toBe(InvestmentGroupBy.ACCOUNT);
+      expect(saved.isFavourite).toBe(true);
+      expect(saved.sortOrder).toBe(3);
+      expect(saved.config.columns).toEqual(["symbol", "gain"]);
+    });
+
     it("merges provided fields and rebuilds config", async () => {
       reportsRepository.findOne.mockResolvedValue({
         id: "r1",

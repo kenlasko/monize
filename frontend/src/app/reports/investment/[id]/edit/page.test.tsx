@@ -21,8 +21,21 @@ vi.mock('@/components/layout/PageHeader', () => ({
 }));
 vi.mock('@/components/ui/LoadingSpinner', () => ({ LoadingSpinner: () => <div>spinner</div> }));
 vi.mock('@/components/ui/Modal', () => ({
-  Modal: ({ isOpen, children }: { isOpen: boolean; children: React.ReactNode }) =>
-    isOpen ? <div data-testid="modal">{children}</div> : null,
+  Modal: ({
+    isOpen,
+    onClose,
+    children,
+  }: {
+    isOpen: boolean;
+    onClose: () => void;
+    children: React.ReactNode;
+  }) =>
+    isOpen ? (
+      <div data-testid="modal">
+        <button onClick={onClose}>modal-close</button>
+        {children}
+      </div>
+    ) : null,
 }));
 
 const mockGetById = vi.fn();
@@ -37,10 +50,23 @@ vi.mock('@/lib/investment-reports', () => ({
 }));
 
 vi.mock('@/components/reports/InvestmentReportForm', () => ({
-  InvestmentReportForm: ({ onSubmit }: { onSubmit: (d: unknown) => Promise<void> }) => (
-    <button onClick={() => onSubmit({ name: 'Updated', config: { columns: ['symbol'] } })}>
-      do-submit
-    </button>
+  InvestmentReportForm: ({
+    onSubmit,
+    onCancel,
+  }: {
+    onSubmit: (d: unknown) => Promise<void>;
+    onCancel: () => void;
+  }) => (
+    <div>
+      <button
+        onClick={() => {
+          void onSubmit({ name: 'Updated', config: { columns: ['symbol'] } }).catch(() => {});
+        }}
+      >
+        do-submit
+      </button>
+      <button onClick={onCancel}>do-cancel</button>
+    </div>
   ),
 }));
 
@@ -95,5 +121,76 @@ describe('EditInvestmentReportPage', () => {
     mockGetById.mockRejectedValue(new Error('boom'));
     await renderEdit();
     await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/reports'));
+  });
+
+  it('surfaces an error and stays on the page when the update fails', async () => {
+    mockGetById.mockResolvedValue(report);
+    mockUpdate.mockRejectedValue(new Error('boom'));
+    await renderEdit();
+    await screen.findByText('Edit Investment Report');
+    await act(async () => {
+      fireEvent.click(screen.getByText('do-submit'));
+    });
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalled());
+    expect(mockPush).not.toHaveBeenCalledWith('/reports/investment/r1');
+  });
+
+  it('cancels editing and returns to the report view', async () => {
+    mockGetById.mockResolvedValue(report);
+    await renderEdit();
+    await screen.findByText('Edit Investment Report');
+    await act(async () => {
+      fireEvent.click(screen.getByText('do-cancel'));
+    });
+    expect(mockPush).toHaveBeenCalledWith('/reports/investment/r1');
+  });
+
+  it('closes the delete modal via the modal onClose handler', async () => {
+    mockGetById.mockResolvedValue(report);
+    await renderEdit();
+    await screen.findByText('Edit Investment Report');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Delete Report' }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'modal-close' }));
+    });
+    expect(screen.queryByTestId('modal')).not.toBeInTheDocument();
+  });
+
+  it('shows a loading spinner while the report loads', async () => {
+    mockGetById.mockReturnValue(new Promise(() => {})); // never resolves
+    await renderEdit();
+    expect(screen.getByText('spinner')).toBeInTheDocument();
+  });
+
+  it('closes the delete confirmation on cancel without deleting', async () => {
+    mockGetById.mockResolvedValue(report);
+    await renderEdit();
+    await screen.findByText('Edit Investment Report');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Delete Report' }));
+    });
+    expect(screen.getByTestId('modal')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    });
+    expect(screen.queryByTestId('modal')).not.toBeInTheDocument();
+    expect(mockDelete).not.toHaveBeenCalled();
+  });
+
+  it('keeps the user on the page when deletion fails', async () => {
+    mockGetById.mockResolvedValue(report);
+    mockDelete.mockRejectedValue(new Error('boom'));
+    await renderEdit();
+    await screen.findByText('Edit Investment Report');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Delete Report' }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    });
+    await waitFor(() => expect(mockDelete).toHaveBeenCalledWith('r1'));
+    expect(mockPush).not.toHaveBeenCalledWith('/reports');
   });
 });

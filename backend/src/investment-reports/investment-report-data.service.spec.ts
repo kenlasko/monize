@@ -361,6 +361,46 @@ describe("InvestmentReportDataService", () => {
     expect(rows[0].values.totalReturn1Year).toBeNull();
   });
 
+  it("handles transfers, share removals, and 52-week lows from null-OHLC rows", async () => {
+    accountsRepository.find.mockResolvedValue([{ id: "acc1", name: "B" }]);
+    securitiesRepository.find.mockResolvedValue([
+      { id: "sec1", symbol: "AAA", name: "Alpha", securityType: "STOCK", currencyCode: "USD" },
+    ]);
+    txRepository.find.mockResolvedValue([
+      makeTx({ action: InvestmentAction.TRANSFER_IN, transactionDate: "2022-01-10", quantity: 20, price: 50, totalAmount: 1000 }),
+      makeTx({ action: InvestmentAction.REMOVE_SHARES, transactionDate: "2022-06-10", quantity: 5 }),
+      makeTx({ action: InvestmentAction.TRANSFER_OUT, transactionDate: "2023-01-10", quantity: 5, price: 60, totalAmount: 300 }),
+      makeTx({ action: InvestmentAction.BUY, transactionDate: "2023-06-10", quantity: 10, price: 70, totalAmount: 700 }),
+    ]);
+    txRepository.query.mockResolvedValue([
+      { security_id: "sec1", price_date: "2022-01-10", open_price: null, high_price: null, low_price: null, close_price: "50", volume: null },
+      { security_id: "sec1", price_date: "2023-06-09", open_price: "65", high_price: "66", low_price: "64", close_price: "65", volume: "10" },
+      { security_id: "sec1", price_date: "2024-01-15", open_price: "80", high_price: null, low_price: null, close_price: "80", volume: "10" },
+      { security_id: "sec1", price_date: "2024-06-10", open_price: "88", high_price: "91", low_price: "87", close_price: "90", volume: "100" },
+    ]);
+
+    const rows = await service.computeHoldings("u1", ["acc1"], "2024-06-10", "USD");
+    const v = rows[0].values;
+    // 20 in (transfer) - 5 (remove) - 5 (transfer out) + 10 (buy) = 20
+    expect(v.quantity).toBe(20);
+    // A TRANSFER_OUT is not a sale, so it does not create realized gains.
+    expect(v.realizedGains).toBe(0);
+    expect(v.fiftyTwoWeekHigh).toBe(91);
+    // The null-OHLC row falls back to its close (80) for the 52-week low.
+    expect(v.fiftyTwoWeekLow).toBe(80);
+  });
+
+  it("skips a holding whose security record is missing", async () => {
+    accountsRepository.find.mockResolvedValue([{ id: "acc1", name: "B" }]);
+    securitiesRepository.find.mockResolvedValue([]); // security not found
+    txRepository.find.mockResolvedValue([
+      makeTx({ action: InvestmentAction.BUY, transactionDate: "2024-01-10", quantity: 10, price: 100, totalAmount: 1000 }),
+    ]);
+    txRepository.query.mockResolvedValue([]);
+    const rows = await service.computeHoldings("u1", ["acc1"], "2024-06-10", "USD");
+    expect(rows).toHaveLength(0);
+  });
+
   describe("getLatestMarketDay", () => {
     it("returns today when there are no accounts", async () => {
       const today = new Date().toISOString().slice(0, 10);

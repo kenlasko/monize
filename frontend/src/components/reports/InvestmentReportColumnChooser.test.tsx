@@ -65,6 +65,13 @@ describe('InvestmentReportColumnChooser', () => {
     expect(screen.getByLabelText('Move Gain up')).toBeDisabled();
   });
 
+  it('falls back to the raw key for an unknown selected column', () => {
+    const onChange = vi.fn();
+    render(<InvestmentReportColumnChooser value={['symbol', 'legacyKey']} onChange={onChange} />);
+    // A column key no longer in the catalogue still renders by its key.
+    expect(screen.getByText('legacyKey')).toBeInTheDocument();
+  });
+
   it('shows an empty state when every column is selected', () => {
     const onChange = vi.fn();
     const allKeys = INVESTMENT_REPORT_COLUMNS.map((c) => c.key);
