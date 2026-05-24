@@ -281,7 +281,7 @@ export function NetWorthReport() {
             <ChartViewToggle
               value={chartType}
               onChange={(v) => setChartType(v as 'line' | 'bar' | 'table')}
-              options={['line', 'bar', 'table']}
+              options={['bar', 'line', 'table']}
             />
             <button
               onClick={handleRecalculate}
@@ -435,7 +435,7 @@ export function NetWorthReport() {
               </AreaChart>
               ) : (
               <BarChart data={chartData} margin={{ top: showBarLabels ? (barLabelsVertical ? 52 : 22) : 10, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                 <XAxis
                   dataKey="name"
                   tick={{ fontSize: 12 }}
