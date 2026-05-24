@@ -31,6 +31,7 @@ const logger = createLogger('InvestmentReportForm');
 
 const DEFAULT_COLUMNS = [
   'symbol',
+  'name',
   'quantity',
   'averageCost',
   'costBasis',

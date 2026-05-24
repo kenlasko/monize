@@ -73,6 +73,7 @@ describe('InvestmentReportForm', () => {
     const submitted = onSubmit.mock.calls[0][0];
     expect(submitted.name).toBe('My Holdings');
     expect(submitted.config.columns[0]).toBe('symbol');
+    expect(submitted.config.columns[1]).toBe('name');
     expect(submitted.config.columns).toContain('marketValue');
     expect(submitted.config.sortColumn).toBe('marketValue');
     expect(submitted.config.accountIds).toEqual([]);
