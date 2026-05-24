@@ -31,13 +31,6 @@ describe('useNumberFormat', () => {
     expect(formatted).toContain('1,000.00');
   });
 
-  it('formatCurrency can render the ISO code instead of the symbol', () => {
-    const { result } = renderHook(() => useNumberFormat());
-    const formatted = result.current.formatCurrency(1000, 'USD', undefined, 'code');
-    expect(formatted).toContain('USD');
-    expect(formatted).toContain('1,000.00');
-  });
-
   it('formatCurrencyCompact omits decimals', () => {
     const { result } = renderHook(() => useNumberFormat());
     const formatted = result.current.formatCurrencyCompact(1234);

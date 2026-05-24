@@ -20,8 +20,7 @@ vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({
     formatNumber: (n: number) => String(n),
     formatPercent: (n: number) => `${n}%`,
-    formatCurrency: (n: number, code?: string, _fd?: number, display = 'narrowSymbol') =>
-      display === 'code' ? `${code} ${n}` : `$${n}`,
+    formatCurrency: (n: number) => `$${n}`,
   }),
 }));
 vi.mock('@/hooks/useDateFormat', () => ({
@@ -254,8 +253,8 @@ describe('InvestmentReportViewer', () => {
     });
     await renderViewer();
     await screen.findByText('AAA');
-    // Native USD holding with CAD base -> shown with its ISO code (USD)
-    expect(screen.getByText('USD 100')).toBeInTheDocument();
+    // Native USD holding with CAD base -> symbol then ISO code, like other pages
+    expect(screen.getByText('$100 USD')).toBeInTheDocument();
     // Switch to base currency (CAD): 100 * 1.25 = 125, base shows narrow symbol
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'CAD' }));
@@ -273,7 +272,7 @@ describe('InvestmentReportViewer', () => {
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Native' }));
     });
-    expect(screen.getByText('USD 100')).toBeInTheDocument();
+    expect(screen.getByText('$100 USD')).toBeInTheDocument();
   });
 
   it('exports group headings for symbol and currency groupings', async () => {

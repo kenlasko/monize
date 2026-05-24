@@ -24,18 +24,13 @@ export function useNumberFormat() {
   const defaultCurrency = usePreferencesStore((state) => state.preferences?.defaultCurrency) || 'CAD';
 
   const formatCurrency = useCallback(
-    (
-      amount: number,
-      currencyCode?: string,
-      fractionDigits?: number,
-      currencyDisplay: 'narrowSymbol' | 'symbol' | 'code' | 'name' = 'narrowSymbol',
-    ): string => {
+    (amount: number, currencyCode?: string, fractionDigits?: number): string => {
       const currency = currencyCode || defaultCurrency;
       const locale = getEffectiveLocale(numberFormat);
       const options: Intl.NumberFormatOptions = {
         style: 'currency',
         currency,
-        currencyDisplay,
+        currencyDisplay: 'narrowSymbol',
       };
       if (fractionDigits !== undefined) {
         options.minimumFractionDigits = fractionDigits;
