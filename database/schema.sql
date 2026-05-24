@@ -296,6 +296,38 @@ CREATE TABLE transaction_split_tags (
 CREATE INDEX idx_transaction_split_tags_tag ON transaction_split_tags(tag_id);
 CREATE INDEX idx_transaction_split_tags_split ON transaction_split_tags(transaction_split_id);
 
+-- Securities (stocks, bonds, mutual funds, ETFs)
+-- Defined before scheduled_transactions because that table (and others below)
+-- carry inline FKs to securities(id); the FK target must exist first when the
+-- whole schema is applied as a single script on a fresh database.
+CREATE TABLE securities (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    symbol VARCHAR(20) NOT NULL, -- ticker symbol (unique per user)
+    name VARCHAR(255) NOT NULL,
+    security_type VARCHAR(50), -- 'STOCK', 'ETF', 'MUTUAL_FUND', 'BOND', etc
+    exchange VARCHAR(50), -- 'NYSE', 'NASDAQ', 'TSX', 'TSXV', etc
+    currency_code VARCHAR(3) NOT NULL REFERENCES currencies(code),
+    is_active BOOLEAN DEFAULT true,
+    skip_price_updates BOOLEAN DEFAULT false, -- for auto-generated symbols that can't be looked up
+    sector VARCHAR(100),             -- stock sector from Yahoo Finance (e.g. 'Technology')
+    industry VARCHAR(100),           -- stock industry (e.g. 'Consumer Electronics')
+    sector_weightings JSONB,         -- ETF sector breakdown [{sector, weight}]
+    sector_data_updated_at TIMESTAMP, -- cache staleness check
+    quote_provider VARCHAR(20),      -- per-security provider override: 'yahoo' | 'msn' | NULL = user default
+    msn_instrument_id VARCHAR(50),   -- cached MSN Financial Instrument ID (SecId)
+    historical_backfill_attempted_at TIMESTAMP, -- last time we asked the provider for a multi-year backfill
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, symbol),
+    CONSTRAINT securities_quote_provider_check
+      CHECK (quote_provider IS NULL OR quote_provider IN ('yahoo','msn'))
+);
+
+CREATE INDEX idx_securities_user_id ON securities(user_id);
+CREATE INDEX idx_securities_symbol ON securities(symbol);
+CREATE INDEX idx_securities_exchange ON securities(exchange);
+
 -- Scheduled Transactions (recurring payments / bills & deposits)
 CREATE TABLE scheduled_transactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -416,35 +448,6 @@ CREATE TABLE scheduled_transaction_overrides (
 CREATE INDEX idx_sched_txn_overrides_sched_txn_id ON scheduled_transaction_overrides(scheduled_transaction_id);
 CREATE INDEX idx_sched_txn_overrides_date ON scheduled_transaction_overrides(override_date);
 CREATE INDEX idx_sched_txn_overrides_orig ON scheduled_transaction_overrides(scheduled_transaction_id, original_date);
-
--- Securities (stocks, bonds, mutual funds, ETFs)
-CREATE TABLE securities (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    symbol VARCHAR(20) NOT NULL, -- ticker symbol (unique per user)
-    name VARCHAR(255) NOT NULL,
-    security_type VARCHAR(50), -- 'STOCK', 'ETF', 'MUTUAL_FUND', 'BOND', etc
-    exchange VARCHAR(50), -- 'NYSE', 'NASDAQ', 'TSX', 'TSXV', etc
-    currency_code VARCHAR(3) NOT NULL REFERENCES currencies(code),
-    is_active BOOLEAN DEFAULT true,
-    skip_price_updates BOOLEAN DEFAULT false, -- for auto-generated symbols that can't be looked up
-    sector VARCHAR(100),             -- stock sector from Yahoo Finance (e.g. 'Technology')
-    industry VARCHAR(100),           -- stock industry (e.g. 'Consumer Electronics')
-    sector_weightings JSONB,         -- ETF sector breakdown [{sector, weight}]
-    sector_data_updated_at TIMESTAMP, -- cache staleness check
-    quote_provider VARCHAR(20),      -- per-security provider override: 'yahoo' | 'msn' | NULL = user default
-    msn_instrument_id VARCHAR(50),   -- cached MSN Financial Instrument ID (SecId)
-    historical_backfill_attempted_at TIMESTAMP, -- last time we asked the provider for a multi-year backfill
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(user_id, symbol),
-    CONSTRAINT securities_quote_provider_check
-      CHECK (quote_provider IS NULL OR quote_provider IN ('yahoo','msn'))
-);
-
-CREATE INDEX idx_securities_user_id ON securities(user_id);
-CREATE INDEX idx_securities_symbol ON securities(symbol);
-CREATE INDEX idx_securities_exchange ON securities(exchange);
 
 -- Security Prices (historical)
 CREATE TABLE security_prices (
