@@ -1,6 +1,6 @@
 'use client';
 
-import { useForm, useWatch, Resolver } from 'react-hook-form';
+import { useForm, useWatch, Resolver, Controller } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import '@/lib/zodConfig';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,6 +30,7 @@ import { LoanPaymentSetupDialog } from './LoanPaymentSetupDialog';
 
 import { useFormSubmitRef } from '@/hooks/useFormSubmitRef';
 import { useFormDirtyNotify } from '@/hooks/useFormDirtyNotify';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { FormActions } from '@/components/ui/FormActions';
 
 const logger = createLogger('AccountForm');
@@ -688,16 +689,22 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
         {/* Hidden input for form registration */}
         <input type="hidden" {...register('isFavourite')} />
 
-        <label className="flex items-center gap-2 px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
-          <input
-            type="checkbox"
-            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            {...register('excludeFromNetWorth')}
+        <div className="flex items-center gap-3 px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600">
+          <Controller
+            name="excludeFromNetWorth"
+            control={control}
+            render={({ field }) => (
+              <ToggleSwitch
+                checked={!!field.value}
+                onChange={field.onChange}
+                label="Exclude from Net Worth"
+              />
+            )}
           />
           <span className="text-sm text-gray-700 dark:text-gray-300">
             Exclude from Net Worth
           </span>
-        </label>
+        </div>
 
         {/* Import/Export buttons - only shown when editing */}
         {account && (

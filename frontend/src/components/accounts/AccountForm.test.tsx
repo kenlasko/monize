@@ -1227,12 +1227,12 @@ describe('AccountForm', () => {
     });
   });
 
-  it('excludeFromNetWorth checkbox is checked for account with excludeFromNetWorth=true', async () => {
+  it('excludeFromNetWorth toggle is on for account with excludeFromNetWorth=true', async () => {
     const account = createExistingAccount({ excludeFromNetWorth: true });
     render(<AccountForm account={account} onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
     await waitFor(() => {
-      const checkbox = screen.getByRole('checkbox', { name: /Exclude from Net Worth/i }) as HTMLInputElement;
-      expect(checkbox.checked).toBe(true);
+      const toggle = screen.getByRole('switch', { name: /Exclude from Net Worth/i });
+      expect(toggle).toHaveAttribute('aria-checked', 'true');
     });
   });
 

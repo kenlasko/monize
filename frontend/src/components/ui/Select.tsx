@@ -10,7 +10,10 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, options, className, id, ...props }, ref) => {
     const selectId = id || `select-${label?.toLowerCase().replace(/\s+/g, '-')}`;
-    const isPlaceholder = props.value === '' || props.value === undefined;
+    // Only grey-out when the value is explicitly the empty placeholder option.
+    // Uncontrolled selects (react-hook-form register) leave value undefined yet
+    // still show a real selected value, so they must not look like placeholders.
+    const isPlaceholder = props.value === '';
 
     return (
       <div className="w-full">
