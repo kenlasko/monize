@@ -31,6 +31,13 @@ describe("EmergencyAccessMonitorService", () => {
     contactsRepo = {
       find: jest.fn().mockResolvedValue([]),
       save: jest.fn(async (row) => row),
+      createQueryBuilder: jest.fn(() => ({
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ affected: 1 }),
+      })),
     };
     usersRepo = { findOne: jest.fn() };
     emailService = {
@@ -562,5 +569,79 @@ describe("EmergencyAccessMonitorService", () => {
     await service.runDailyCheck();
     expect(emailService.sendMail).toHaveBeenCalledTimes(1);
     expect(emailService.sendMail.mock.calls[0][0]).toBe("two@example.com");
+  });
+
+  it("does not commit the grant when every contact email fails to send", async () => {
+    const settings = {
+      ownerUserId: userId,
+      enabled: true,
+      grantAfterDays: 14,
+      reminderAfterDays: 7,
+      messageCiphertext: null,
+      lastReminderSentAt: null,
+      grantedAt: null,
+    };
+    settingsRepo.find.mockResolvedValue([settings]);
+    usersRepo.findOne.mockResolvedValue({
+      id: userId,
+      email: "owner@example.com",
+      firstName: "Owner",
+      isActive: true,
+      lastActivityAt: daysAgo(20),
+    });
+    contactsRepo.find.mockResolvedValue([
+      { id: "c1", firstName: "Carol", email: "carol@example.com" },
+      { id: "c2", firstName: "Dave", email: "dave@example.com" },
+    ]);
+    emailService.sendMail.mockRejectedValue(new Error("smtp down"));
+
+    await service.runDailyCheck();
+
+    // Both sends attempted, but grantedAt must stay null so the next daily
+    // run retries instead of permanently disabling the safeguard.
+    expect(emailService.sendMail).toHaveBeenCalledTimes(2);
+    expect(settings.grantedAt).toBeNull();
+    expect(settingsRepo.save).not.toHaveBeenCalled();
+  });
+
+  it("voids outstanding links and notifies the owner when they return after a grant", async () => {
+    const settings = {
+      ownerUserId: userId,
+      enabled: true,
+      grantAfterDays: 14,
+      reminderAfterDays: 7,
+      messageCiphertext: null,
+      lastReminderSentAt: daysAgo(8),
+      grantedAt: daysAgo(3),
+    };
+    settingsRepo.find.mockResolvedValue([settings]);
+    usersRepo.findOne.mockResolvedValue({
+      id: userId,
+      email: "owner@example.com",
+      firstName: "Owner",
+      isActive: true,
+      // Active again: well under the 14-day grant threshold.
+      lastActivityAt: daysAgo(1),
+    });
+    const execute = jest.fn().mockResolvedValue({ affected: 2 });
+    contactsRepo.createQueryBuilder.mockReturnValue({
+      update: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      execute,
+    });
+
+    await service.runDailyCheck();
+
+    // Outstanding links voided, grant state re-armed, owner emailed.
+    expect(execute).toHaveBeenCalledTimes(1);
+    expect(settings.grantedAt).toBeNull();
+    expect(settings.lastReminderSentAt).toBeNull();
+    expect(settingsRepo.save).toHaveBeenCalledWith(settings);
+    expect(emailService.sendMail).toHaveBeenCalledTimes(1);
+    const [to, subject] = emailService.sendMail.mock.calls[0];
+    expect(to).toBe("owner@example.com");
+    expect(subject).toContain("while you were away");
   });
 });

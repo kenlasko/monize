@@ -209,12 +209,27 @@ export class InvestmentReportsService {
     dto: CreateInvestmentReportDto["config"],
     existing?: InvestmentReportConfig,
   ): InvestmentReportConfig {
+    // On update, an absent field (undefined) keeps the existing value; an
+    // explicit null clears it. Using `??` would conflate the two and silently
+    // reset accountIds/sortColumn/asOfDate whenever a partial config is sent.
     return {
       columns: dto.columns ?? existing?.columns ?? [],
-      accountIds: dto.accountIds ?? [],
-      sortColumn: dto.sortColumn ?? null,
-      sortDirection: dto.sortDirection ?? InvestmentSortDirection.ASC,
-      asOfDate: dto.asOfDate ?? null,
+      accountIds:
+        dto.accountIds !== undefined
+          ? dto.accountIds
+          : (existing?.accountIds ?? []),
+      sortColumn:
+        dto.sortColumn !== undefined
+          ? dto.sortColumn
+          : (existing?.sortColumn ?? null),
+      sortDirection:
+        dto.sortDirection !== undefined
+          ? dto.sortDirection
+          : (existing?.sortDirection ?? InvestmentSortDirection.ASC),
+      asOfDate:
+        dto.asOfDate !== undefined
+          ? dto.asOfDate
+          : (existing?.asOfDate ?? null),
       mergeAccounts: dto.mergeAccounts ?? existing?.mergeAccounts ?? false,
     };
   }

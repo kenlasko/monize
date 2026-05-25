@@ -196,6 +196,49 @@ describe("InvestmentReportsService", () => {
       expect(saved.config.columns).toEqual(["gain", "symbol"]);
       expect(saved.config.sortColumn).toBe("gain");
     });
+
+    it("preserves existing accountIds/sortColumn/asOfDate when the update omits them", async () => {
+      reportsRepository.findOne.mockResolvedValue({
+        id: "r1",
+        userId: "u1",
+        config: {
+          columns: ["symbol"],
+          accountIds: ["a1", "a2"],
+          sortColumn: "marketValue",
+          sortDirection: InvestmentSortDirection.DESC,
+          asOfDate: "2024-01-01",
+          mergeAccounts: true,
+        },
+      });
+      const saved = await service.update("u1", "r1", {
+        config: { columns: ["symbol", "gain"] } as any,
+      });
+      expect(saved.config.accountIds).toEqual(["a1", "a2"]);
+      expect(saved.config.sortColumn).toBe("marketValue");
+      expect(saved.config.sortDirection).toBe(InvestmentSortDirection.DESC);
+      expect(saved.config.asOfDate).toBe("2024-01-01");
+      expect(saved.config.mergeAccounts).toBe(true);
+    });
+
+    it("clears sortColumn/asOfDate when the update sends an explicit null", async () => {
+      reportsRepository.findOne.mockResolvedValue({
+        id: "r1",
+        userId: "u1",
+        config: {
+          columns: ["symbol"],
+          accountIds: ["a1"],
+          sortColumn: "gain",
+          asOfDate: "2024-01-01",
+        },
+      });
+      const saved = await service.update("u1", "r1", {
+        config: { columns: ["symbol"], sortColumn: null, asOfDate: null } as any,
+      });
+      expect(saved.config.sortColumn).toBeNull();
+      expect(saved.config.asOfDate).toBeNull();
+      // accountIds was omitted (undefined), so it stays as-is.
+      expect(saved.config.accountIds).toEqual(["a1"]);
+    });
   });
 
   describe("remove", () => {

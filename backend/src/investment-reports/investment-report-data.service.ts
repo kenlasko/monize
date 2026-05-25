@@ -10,6 +10,7 @@ import {
 import { Account } from "../accounts/entities/account.entity";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { InvestmentCellValue } from "./dto/execute-investment-report.dto";
+import { todayYMD } from "../common/date-utils";
 
 /** One computed holding row plus the fields needed to group it. */
 export interface ComputedHolding {
@@ -157,7 +158,10 @@ export class InvestmentReportDataService {
     userId: string,
     accountIds: string[],
   ): Promise<string> {
-    const today = new Date().toISOString().slice(0, 10);
+    // "Today" in the caller's timezone (RequestContext), not UTC -- otherwise
+    // the default as-of date can land a day off near midnight in the user's
+    // local time and replay the wrong set of transactions.
+    const today = todayYMD();
     if (accountIds.length === 0) return today;
     const rows: { d: string | null }[] = await this.txRepository.query(
       `SELECT MAX(sp.price_date)::text AS d

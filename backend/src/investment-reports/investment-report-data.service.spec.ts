@@ -1,5 +1,7 @@
 import { InvestmentReportDataService } from "./investment-report-data.service";
 import { InvestmentAction } from "../securities/entities/investment-transaction.entity";
+import { requestContextStorage } from "../common/request-context";
+import { todayInTimezone, todayYMD } from "../common/date-utils";
 
 function makeTx(overrides: Record<string, unknown>): any {
   return {
@@ -400,8 +402,7 @@ describe("InvestmentReportDataService", () => {
 
   describe("getLatestMarketDay", () => {
     it("returns today when there are no accounts", async () => {
-      const today = new Date().toISOString().slice(0, 10);
-      expect(await service.getLatestMarketDay("u1", [])).toBe(today);
+      expect(await service.getLatestMarketDay("u1", [])).toBe(todayYMD());
     });
 
     it("returns the max stored price date", async () => {
@@ -410,9 +411,19 @@ describe("InvestmentReportDataService", () => {
     });
 
     it("falls back to today when no prices exist", async () => {
-      const today = new Date().toISOString().slice(0, 10);
       txRepository.query.mockResolvedValue([{ d: null }]);
-      expect(await service.getLatestMarketDay("u1", ["acc1"])).toBe(today);
+      expect(await service.getLatestMarketDay("u1", ["acc1"])).toBe(todayYMD());
+    });
+
+    it("uses the request-context timezone for the today fallback, not UTC", async () => {
+      // Kiritimata (UTC+14) is far enough that 'today' there can differ from
+      // the UTC date; the default must follow the caller's local day.
+      const tz = "Pacific/Kiritimati";
+      await requestContextStorage.run({ timezone: tz }, async () => {
+        expect(await service.getLatestMarketDay("u1", [])).toBe(
+          todayInTimezone(tz),
+        );
+      });
     });
   });
 });

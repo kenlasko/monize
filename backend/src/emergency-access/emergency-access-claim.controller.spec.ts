@@ -38,7 +38,18 @@ describe("EmergencyAccessClaimController", () => {
   const TOKEN_HASH = hashToken(RAW_TOKEN);
 
   beforeEach(async () => {
-    contactsRepo = { findOne: jest.fn() };
+    contactsRepo = {
+      // complete() now pre-validates the link via contactsRepo.findOne before
+      // any expensive work; default to a valid contact so the existing
+      // transaction-path tests reach the in-transaction re-validation.
+      findOne: jest.fn().mockResolvedValue({
+        id: "c1",
+        ownerUserId: ownerId,
+        claimTokenHash: TOKEN_HASH,
+        claimTokenExpiresAt: new Date(Date.now() + 100000),
+        claimTokenUsedAt: null,
+      }),
+    };
     settingsRepo = { findOne: jest.fn() };
     usersRepo = { findOne: jest.fn() };
     tokenService = {
@@ -166,6 +177,21 @@ describe("EmergencyAccessClaimController", () => {
           res as never,
         ),
       ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it("rejects an invalid token before running the breach check", async () => {
+      // Unauthenticated callers must not be able to trigger the HIBP lookup
+      // or a bcrypt hash with a bogus token.
+      contactsRepo.findOne.mockResolvedValue(null);
+      const res = makeRes();
+      await expect(
+        controller.complete(
+          { token: RAW_TOKEN, newPassword: "Aa1!correcthorse" },
+          res as never,
+        ),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(passwordBreach.isBreached).not.toHaveBeenCalled();
+      expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
     it("replaces credentials, voids sibling tokens, and signs in", async () => {

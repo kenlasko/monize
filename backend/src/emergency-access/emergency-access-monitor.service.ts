@@ -10,6 +10,7 @@ import { AiEncryptionService } from "../ai/ai-encryption.service";
 import { EmailService } from "../notifications/email.service";
 import {
   emergencyAccessGrantTemplate,
+  emergencyAccessGrantRevokedTemplate,
   emergencyAccessReminderTemplate,
 } from "../notifications/email-templates";
 import { hashToken } from "../auth/crypto.util";
@@ -99,6 +100,18 @@ export class EmergencyAccessMonitorService {
     const now = Date.now();
     const daysSinceLogin = Math.floor((now - lastSeen.getTime()) / MS_PER_DAY);
 
+    // Step 0: the owner is active again after a grant fired. Revoke the
+    // outstanding (unclaimed) magic links, re-arm monitoring, and tell the
+    // owner. Without this, a contact could take over a fully-active account
+    // for the entire 30-day link lifetime after the owner returned.
+    if (
+      settings.grantedAt !== null &&
+      daysSinceLogin < settings.grantAfterDays
+    ) {
+      await this.revokeAfterReturn(settings, owner, appUrl);
+      return "skipped";
+    }
+
     // Step 1: grant cascade (only if not already granted)
     if (
       settings.grantedAt === null &&
@@ -117,6 +130,7 @@ export class EmergencyAccessMonitorService {
         owner.email;
       const expiresAt = new Date(now + CLAIM_TOKEN_TTL_DAYS * MS_PER_DAY);
 
+      let delivered = 0;
       for (const contact of contacts) {
         try {
           const rawToken = crypto
@@ -141,12 +155,23 @@ export class EmergencyAccessMonitorService {
             `You have been granted emergency access to ${ownerFullName}'s Monize account`,
             html,
           );
+          delivered += 1;
         } catch (error) {
           this.logger.error(
             `Failed to issue emergency access grant for contact ${contact.id}`,
             error instanceof Error ? error.stack : error,
           );
         }
+      }
+
+      // Only commit the grant if at least one contact actually received a
+      // link. Otherwise leave grantedAt null so the next run retries -- a
+      // transient SMTP failure must not permanently disable the safeguard.
+      if (delivered === 0) {
+        this.logger.error(
+          `Emergency access grant for user ${settings.ownerUserId} delivered no contact emails; leaving grant un-set for retry`,
+        );
+        return "skipped";
       }
 
       settings.grantedAt = new Date(now);
@@ -199,6 +224,59 @@ export class EmergencyAccessMonitorService {
     }
 
     return "skipped";
+  }
+
+  /**
+   * The owner signed back in after a grant had fired. Void every outstanding
+   * (unclaimed) magic link, clear the grant marker so monitoring re-arms, and
+   * notify the owner that access had been granted in their absence.
+   */
+  private async revokeAfterReturn(
+    settings: EmergencyAccessSettings,
+    owner: User,
+    appUrl: string,
+  ): Promise<void> {
+    const result = await this.contactsRepo
+      .createQueryBuilder()
+      .update(EmergencyAccessContact)
+      .set({
+        claimTokenHash: null,
+        claimTokenExpiresAt: null,
+        claimTokenUsedAt: () => "CURRENT_TIMESTAMP",
+        claimVoidedReason: "owner_returned",
+      })
+      .where("owner_user_id = :userId", { userId: settings.ownerUserId })
+      .andWhere("claim_token_hash IS NOT NULL")
+      .andWhere("claim_token_used_at IS NULL")
+      .execute();
+
+    settings.grantedAt = null;
+    settings.lastReminderSentAt = null;
+    await this.settingsRepo.save(settings);
+
+    this.logger.warn(
+      `Owner ${settings.ownerUserId} active again after a grant; voided ${
+        result.affected ?? 0
+      } outstanding emergency-access link(s) and re-armed monitoring`,
+    );
+
+    if (!owner.email) return;
+    try {
+      const html = emergencyAccessGrantRevokedTemplate({
+        ownerFirstName: owner.firstName || "",
+        appUrl,
+      });
+      await this.emailService.sendMail(
+        owner.email,
+        "Monize: emergency access was granted while you were away",
+        html,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send emergency-access revocation notice to owner ${settings.ownerUserId}`,
+        error instanceof Error ? error.stack : error,
+      );
+    }
   }
 
   private tryDecrypt(ciphertext: string): string | null {

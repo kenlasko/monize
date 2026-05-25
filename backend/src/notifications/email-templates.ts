@@ -570,3 +570,26 @@ export function emergencyAccessGrantTemplate(
     </div>
   `;
 }
+
+interface EmergencyAccessGrantRevokedData {
+  ownerFirstName: string;
+  appUrl: string;
+}
+
+export function emergencyAccessGrantRevokedTemplate(
+  data: EmergencyAccessGrantRevokedData,
+): string {
+  const safeName = escapeHtml(data.ownerFirstName || "there");
+  return `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2 style="color: #b45309;">Emergency Access Was Granted While You Were Away</h2>
+      <p style="color: #374151;">Hi ${safeName},</p>
+      <p style="color: #374151;">Because your account had been inactive, your designated emergency contacts were sent links to take over your account. You have now signed back in, so <strong>those links have been revoked</strong> and the safeguard has been re-armed.</p>
+      <p style="color: #374151;">If this was expected, no action is needed. If you did not expect this, review your sign-in activity and your emergency-access settings.</p>
+      <p style="margin: 24px 0;">
+        <a href="${escapeHtml(data.appUrl)}/settings/emergency-access" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">Review Emergency Access</a>
+      </p>
+      <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- Monize</p>
+    </div>
+  `;
+}

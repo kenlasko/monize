@@ -129,6 +129,12 @@ export class EmergencyAccessClaimController {
       "Consume the magic link, replace the owner's password, and sign in",
   })
   async complete(@Body() dto: ClaimCompleteDto, @Res() res: Response) {
+    // Validate the magic link before doing any expensive work. Otherwise an
+    // unauthenticated caller could force a breach lookup and a bcrypt hash
+    // (cost 12) on every request with a bogus token. The transaction below
+    // re-validates under lock to close the TOCTOU window.
+    await this.findValidContact(dto.token);
+
     const isBreached = await this.passwordBreachService.isBreached(
       dto.newPassword,
     );
