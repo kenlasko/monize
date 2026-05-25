@@ -6,16 +6,19 @@ import { test, expect } from '../fixtures';
 // default copy. Interception is installed after the authedPage fixture has
 // registered, so only the page-under-test's load is affected.
 test.describe('Error handling', () => {
-  test('shows a friendly error when categories fail to load', async ({
+  test('shows a friendly error when tags fail to load', async ({
     authedPage: page,
   }) => {
-    await page.route('**/api/v1/categories**', (route) =>
+    // Tags aren't fetched during registration/dashboard load, so the page makes
+    // a live request the route can intercept. (Categories are pre-cached by the
+    // dashboard, so a /categories intercept would never fire.)
+    await page.route('**/api/v1/tags**', (route) =>
       route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }),
     );
 
-    await page.goto('/categories');
+    await page.goto('/tags');
 
-    await expect(page.getByText('Failed to load categories')).toBeVisible();
+    await expect(page.getByText('Failed to load tags')).toBeVisible();
   });
 
   test('shows a friendly error when securities fail to load', async ({

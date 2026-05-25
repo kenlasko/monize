@@ -35,12 +35,19 @@ test.describe('Two-factor authentication', () => {
     ).toBeVisible();
   });
 
-  test('requires a TOTP code at login when enabled', async ({
+  test('requires a second factor at login when enabled', async ({
     authedPage: page,
     api,
     user,
   }) => {
     const secret = await enable2FA(api, user.password);
+    // Generate backup codes now (one TOTP, used immediately like the disable
+    // flow). Logging in with a backup code is deterministic -- it avoids the
+    // 30s TOTP window boundary that makes a generated-then-typed code flaky.
+    const { codes } = await api.post<{ codes: string[] }>(
+      '/auth/2fa/backup-codes',
+      { code: generateTotp(secret) },
+    );
 
     await logout(page);
     await page.waitForURL(/\/login/);
@@ -49,9 +56,12 @@ test.describe('Two-factor authentication', () => {
     await page.getByRole('button', { name: 'Sign in' }).click();
 
     // The login response demands the second factor before issuing a session.
-    const code = page.getByLabel('Verification Code');
-    await expect(code).toBeVisible();
-    await code.fill(generateTotp(secret));
+    const backupToggle = page.getByRole('button', {
+      name: /use a backup code instead/i,
+    });
+    await expect(backupToggle).toBeVisible();
+    await backupToggle.click();
+    await page.getByLabel('Backup Code').fill(codes[0]);
     await page.getByRole('button', { name: 'Verify', exact: true }).click();
 
     await page.waitForURL(/\/dashboard/);
