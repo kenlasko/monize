@@ -190,6 +190,31 @@ the account header before asserting individual holding rows.
 Needs the multi-user / admin fixtures above. Higher setup cost, lower change
 frequency, so it follows Phase 2.
 
+### Phase 3 status snapshot (first pass landed)
+
+Infrastructure added: a `put()` method on the API client; an `adminUser` /
+`adminPage` fixture backed by a Playwright `globalSetup` that registers the
+**first** user (=> admin role) and stashes its credentials in a gitignored file;
+delegation factories (`createDelegate`, `grantDelegateAccount`).
+
+| Area | Spec | Landed | Deferred (follow-up) |
+|------|------|--------|----------------------|
+| Delegation | `delegation.spec.ts` | Owner adds/removes a delegate (UI); a delegate signs in, switches into the owner context, and sees a shared account | Section/capability scope boundaries; multi-owner switching |
+| Emergency access | `emergency-access.spec.ts` | Page-render smoke | Settings/contacts CRUD + claim flow -- gated on SMTP (disabled controls) and a time-driven, emailed magic-link grant (min 2 days, cron); needs a mail-capture service + clock control |
+| Admin | `admin.spec.ts` | Admin views the user-management list; non-admin redirected from /admin | User create/disable/role-change (multi-step modal) |
+| Backup | `backup.spec.ts` | Export downloads a backup; export -> delete -> restore round-trip brings data back | Encrypted-backup flow; restore-into-fresh-user |
+| Action history | `action-history.spec.ts` | Create -> history panel entry -> undo -> redo | Per-entity-type undo coverage |
+| Notifications | (none) | -- | SMTP-gated (shows "not available" without a mailer); preferences can't be toggled in the e2e stack |
+
+**Infra-blocked / deferred (need stack changes):**
+- **3.6 AI assistant & MCP** -- requires a stubbed LLM provider; the e2e stack
+  configures no AI provider and the LLM call is server-side (can't be
+  route-intercepted from the browser). Needs a backend test/stub provider.
+- **3.7 OIDC / OAuth** -- requires a mock OIDC provider in
+  `docker-compose.e2e.yml`. Heaviest item.
+- **Emergency-access claim** and **forgot/reset happy path** -- both need SMTP
+  (mail capture, e.g. Mailpit) and, for time-gated grants, clock control.
+
 ### 3.1 Shared access & delegation (`delegation.spec.ts`, new)
 Module `delegation`. Two users via a `secondUser` fixture: owner grants a
 delegate access (role/scope), delegate sees only permitted data, owner revokes →
