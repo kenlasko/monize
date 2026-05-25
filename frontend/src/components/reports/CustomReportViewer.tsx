@@ -162,18 +162,18 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
         title={report.name}
         subtitle={report.description ?? undefined}
         actions={
-          <>
+          <div className="flex items-center gap-3 w-full justify-between sm:w-auto sm:justify-end">
+            <Link href="/reports" className="order-1 sm:order-2">
+              <Button variant="outline">Back to Reports</Button>
+            </Link>
             <Button
               variant="outline"
-              className="shrink-0"
+              className="shrink-0 order-2 sm:order-1"
               onClick={() => router.push(`/reports/custom/${reportId}/edit`)}
             >
               Edit
             </Button>
-            <Link href="/reports">
-              <Button variant="outline">Back to Reports</Button>
-            </Link>
-          </>
+          </div>
         }
       />
 

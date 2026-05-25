@@ -104,18 +104,18 @@ function EditCustomReportContent({ reportId }: { reportId: string }) {
           title="Edit Report"
           subtitle="Modify your custom report configuration"
           actions={
-            <>
+            <div className="flex items-center gap-3 w-full justify-between sm:w-auto sm:justify-end">
+              <Link href="/reports" className="order-1 sm:order-2">
+                <Button variant="outline">Back to Reports</Button>
+              </Link>
               <Button
                 variant="outline"
                 onClick={() => setShowDeleteConfirm(true)}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
+                className="order-2 sm:order-1 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
               >
                 Delete Report
               </Button>
-              <Link href="/reports">
-                <Button variant="outline">Back to Reports</Button>
-              </Link>
-            </>
+            </div>
           }
         />
 
