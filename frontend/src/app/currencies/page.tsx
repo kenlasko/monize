@@ -84,7 +84,14 @@ function CurrenciesContent() {
   const handleFormSubmit = async (data: CreateCurrencyData) => {
     try {
       if (editingCurrency) {
-        await exchangeRatesApi.updateCurrency(editingCurrency.code, data);
+        // `code` is immutable: the backend's UpdateCurrencyDto omits it and
+        // rejects unknown fields (forbidNonWhitelisted), so send only the
+        // editable fields rather than the whole create payload.
+        await exchangeRatesApi.updateCurrency(editingCurrency.code, {
+          name: data.name,
+          symbol: data.symbol,
+          decimalPlaces: data.decimalPlaces,
+        });
         toast.success('Currency updated successfully');
       } else {
         await exchangeRatesApi.createCurrency(data);
