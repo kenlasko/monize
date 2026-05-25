@@ -1,8 +1,7 @@
 import { test as base, expect, type Page } from '@playwright/test';
-import { readFileSync } from 'fs';
 import { registerUser, loginUser } from './helpers/auth';
 import { createApiClient, type ApiClient, type TestUser } from './helpers/api';
-import { ADMIN_CREDS_PATH, type AdminCreds } from './global-setup';
+import { ADMIN_CREDS } from './helpers/admin-creds';
 
 type Fixtures = {
   /** A fresh user (unique email per test), authenticated in the browser. */
@@ -12,7 +11,7 @@ type Fixtures = {
   /** A page already logged in -- just `goto` the route under test. */
   authedPage: Page;
   /** The known admin's credentials (registered in global setup as user #1). */
-  adminUser: AdminCreds;
+  adminUser: TestUser;
   /** A page logged in as the admin, in its own browser context. */
   adminPage: Page;
 };
@@ -36,10 +35,7 @@ export const test = base.extend<Fixtures>({
     await use(page);
   },
   adminUser: async ({}, use) => {
-    const creds = JSON.parse(
-      readFileSync(ADMIN_CREDS_PATH, 'utf8'),
-    ) as AdminCreds;
-    await use(creds);
+    await use(ADMIN_CREDS);
   },
   // The admin lives in its own context so it never collides with a test's
   // per-test user in the default `page`.

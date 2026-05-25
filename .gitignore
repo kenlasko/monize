@@ -70,6 +70,3 @@ credentials/
 
 # Claude Code
 .claude/worktrees/
-
-# E2E admin credentials written by global-setup
-e2e/.admin-creds.json
