@@ -158,3 +158,24 @@ export function createScheduledTransaction(
     nextDueDate: data.nextDueDate ?? new Date().toISOString().slice(0, 10),
   });
 }
+
+export interface CreatedCurrency {
+  code: string;
+  name: string;
+  symbol: string;
+}
+
+// Currencies are a global catalog keyed by a 3-char code (the create DTO only
+// enforces length, not ISO validity). Tests pass distinct fake codes (e.g.
+// "ZQA") that won't collide with the seeded real currencies.
+export function createCurrency(
+  api: ApiClient,
+  data: { code: string; name?: string; symbol?: string; decimalPlaces?: number },
+): Promise<CreatedCurrency> {
+  return api.post<CreatedCurrency>('/currencies', {
+    code: data.code,
+    name: data.name ?? `E2E Currency ${data.code}`,
+    symbol: data.symbol ?? data.code.slice(0, 2),
+    decimalPlaces: data.decimalPlaces ?? 2,
+  });
+}
