@@ -14,6 +14,7 @@ import {
 } from "./entities/investment-transaction.entity";
 import { CreateInvestmentTransactionDto } from "./dto/create-investment-transaction.dto";
 import { UpdateInvestmentTransactionDto } from "./dto/update-investment-transaction.dto";
+import { TransferSecurityDto } from "./dto/transfer-security.dto";
 import { AccountsService } from "../accounts/accounts.service";
 import { TransactionsService } from "../transactions/transactions.service";
 import { HoldingsService } from "./holdings.service";
@@ -551,6 +552,150 @@ export class InvestmentTransactionsService {
     });
 
     return result;
+  }
+
+  /**
+   * Move a security between two investment accounts while preserving cost
+   * basis. Creates both legs atomically: a TRANSFER_OUT in the source account
+   * (drawn down at the source's running average cost) and a TRANSFER_IN in the
+   * destination account at `costPerShare`. No cash transaction is created --
+   * shares move only, no money changes hands -- so both legs use exchangeRate 1
+   * and have a null linked cash transaction.
+   */
+  async transferSecurity(
+    userId: string,
+    dto: TransferSecurityDto,
+  ): Promise<{
+    transferOut: InvestmentTransaction;
+    transferIn: InvestmentTransaction;
+  }> {
+    if (dto.fromAccountId === dto.toAccountId) {
+      throw new BadRequestException(
+        "Source and destination accounts must be different",
+      );
+    }
+
+    const [fromAccount, toAccount] = await Promise.all([
+      this.accountsService.findOne(userId, dto.fromAccountId),
+      this.accountsService.findOne(userId, dto.toAccountId),
+    ]);
+
+    if (
+      fromAccount.accountType !== "INVESTMENT" ||
+      toAccount.accountType !== "INVESTMENT"
+    ) {
+      throw new BadRequestException("Both accounts must be of type INVESTMENT");
+    }
+
+    await this.securitiesService.findOne(userId, dto.securityId);
+
+    // Transfer legs carry no cash, so totalAmount is 0 -- matching how
+    // calculateTotalAmount() treats TRANSFER_IN/TRANSFER_OUT on the edit path.
+    // Cost basis flows through quantity * price (per-share cost) instead.
+    const totalAmount = 0;
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    let outId: string;
+    let inId: string;
+
+    try {
+      const transferOut = queryRunner.manager.create(InvestmentTransaction, {
+        userId,
+        accountId: dto.fromAccountId,
+        securityId: dto.securityId,
+        fundingAccountId: null,
+        action: InvestmentAction.TRANSFER_OUT,
+        transactionDate: dto.transactionDate,
+        quantity: dto.quantity,
+        price: dto.costPerShare,
+        commission: 0,
+        totalAmount,
+        exchangeRate: 1,
+        description: dto.description,
+      });
+      const savedOut = await queryRunner.manager.save(transferOut);
+      outId = savedOut.id;
+      await this.processTransactionEffectsInTransaction(
+        queryRunner,
+        userId,
+        savedOut,
+        false,
+        false,
+      );
+
+      const transferIn = queryRunner.manager.create(InvestmentTransaction, {
+        userId,
+        accountId: dto.toAccountId,
+        securityId: dto.securityId,
+        fundingAccountId: null,
+        action: InvestmentAction.TRANSFER_IN,
+        transactionDate: dto.transactionDate,
+        quantity: dto.quantity,
+        price: dto.costPerShare,
+        commission: 0,
+        totalAmount,
+        exchangeRate: 1,
+        description: dto.description,
+      });
+      const savedIn = await queryRunner.manager.save(transferIn);
+      inId = savedIn.id;
+      await this.processTransactionEffectsInTransaction(
+        queryRunner,
+        userId,
+        savedIn,
+        false,
+        false,
+      );
+
+      // Guard against transferring more than the source holds. Validates the
+      // full replayed history so it catches both the immediate over-draw and
+      // any back-dated transfer that would make a past balance go negative.
+      await this.holdingsService.validateNoNegativeHoldingsHistory(
+        userId,
+        queryRunner,
+        [dto.fromAccountId, dto.toAccountId],
+        [dto.securityId],
+      );
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+
+    this.triggerRecalcWithCashAccount(dto.fromAccountId, userId);
+    this.triggerRecalcWithCashAccount(dto.toAccountId, userId);
+
+    this.securityPriceService
+      .upsertTransactionPrice(dto.securityId, dto.transactionDate)
+      .catch((err) =>
+        this.logger.warn(
+          `Failed to update transaction-derived price: ${err.message}`,
+        ),
+      );
+
+    const [transferOut, transferIn] = await Promise.all([
+      this.findOne(userId, outId),
+      this.findOne(userId, inId),
+    ]);
+
+    this.actionHistoryService.record(userId, {
+      entityType: "investment_transaction",
+      entityId: transferOut.id,
+      action: "create",
+      afterData: {
+        transferOut: { ...transferOut },
+        transferIn: { ...transferIn },
+      },
+      description: "Transferred security between accounts",
+    });
+
+    return { transferOut, transferIn };
   }
 
   private calculateTotalAmount(dto: CreateInvestmentTransactionDto): number {

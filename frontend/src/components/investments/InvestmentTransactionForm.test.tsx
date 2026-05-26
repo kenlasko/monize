@@ -55,6 +55,7 @@ vi.mock('@/lib/investments', () => ({
     createSecurity: vi.fn().mockResolvedValue({ id: 'new-sec', symbol: 'TEST', name: 'Test Corp' }),
     createTransaction: vi.fn().mockResolvedValue({}),
     updateTransaction: vi.fn().mockResolvedValue({}),
+    transferSecurity: vi.fn().mockResolvedValue({ transferOut: {}, transferIn: {} }),
   },
 }));
 
@@ -168,12 +169,19 @@ describe('InvestmentTransactionForm', () => {
     });
   });
 
-  it('renders all action types in dropdown', async () => {
+  it('renders action types in dropdown, offering a single Transfer option', async () => {
     render(<InvestmentTransactionForm accounts={accounts} />);
     await waitFor(() => {
       const select = screen.getByLabelText('Transaction Type');
-      const options = select.querySelectorAll('option');
-      expect(options.length).toBe(11); // 11 action types
+      const optionValues = Array.from(
+        select.querySelectorAll('option'),
+      ).map((o) => o.getAttribute('value'));
+      // The raw TRANSFER_IN/TRANSFER_OUT legs are hidden when creating; a
+      // single combined TRANSFER option is offered instead.
+      expect(optionValues).not.toContain('TRANSFER_IN');
+      expect(optionValues).not.toContain('TRANSFER_OUT');
+      expect(optionValues).toContain('TRANSFER');
+      expect(optionValues.length).toBe(10);
     });
   });
 
@@ -460,6 +468,166 @@ describe('InvestmentTransactionForm', () => {
     const payload = vi.mocked(investmentsApi.createTransaction).mock.calls[0][0] as any;
     expect(payload.action).toBe('DIVIDEND');
     expect(payload.fundingAccountId).toBe('a2');
+  });
+
+  describe('Transfer between accounts', () => {
+    const brokerageB = {
+      id: 'b1',
+      name: 'TFSA Brokerage',
+      accountType: 'INVESTMENT',
+      accountSubType: 'INVESTMENT_BROKERAGE',
+      currencyCode: 'CAD',
+    } as any;
+    const transferAccounts = [brokerageAccount, brokerageB, chequingAccount];
+
+    async function selectTransfer() {
+      render(<InvestmentTransactionForm accounts={transferAccounts} />);
+      await waitFor(() => {
+        expect(screen.getByText('Brokerage Account')).toBeInTheDocument();
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Transaction Type'), {
+          target: { value: 'TRANSFER' },
+        });
+      });
+    }
+
+    it('reveals destination account, security, quantity and cost-per-share fields', async () => {
+      await selectTransfer();
+      await waitFor(() => {
+        expect(screen.getByLabelText('To Account')).toBeInTheDocument();
+      });
+      expect(screen.getByLabelText('From Account')).toBeInTheDocument();
+      expect(screen.getByText('Security')).toBeInTheDocument();
+      expect(screen.getByLabelText('Quantity (Shares)')).toBeInTheDocument();
+      expect(screen.getByLabelText(/Cost per Share/)).toBeInTheDocument();
+    });
+
+    it('excludes the source account from the destination dropdown', async () => {
+      await selectTransfer();
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('From Account'), {
+          target: { value: 'a1' },
+        });
+      });
+      await waitFor(() => {
+        const dest = screen.getByLabelText('To Account');
+        const values = Array.from(dest.querySelectorAll('option')).map((o) =>
+          o.getAttribute('value'),
+        );
+        expect(values).not.toContain('a1');
+        expect(values).toContain('b1');
+      });
+    });
+
+    it('prefills cost per share from the source holding average cost', async () => {
+      vi.mocked(investmentsApi.getHoldingAt).mockResolvedValue({
+        quantity: 100,
+        averageCost: 1.67,
+      });
+      await selectTransfer();
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('From Account'), {
+          target: { value: 'a1' },
+        });
+      });
+      await waitFor(() => {
+        expect(screen.getByText('Security')).toBeInTheDocument();
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Security'), {
+          target: { value: 'sec-1' },
+        });
+      });
+      await waitFor(() => {
+        expect(investmentsApi.getHoldingAt).toHaveBeenCalledWith(
+          expect.objectContaining({ accountId: 'a1', securityId: 'sec-1' }),
+        );
+      });
+      await waitFor(() => {
+        expect(screen.getByLabelText(/Cost per Share/)).toHaveValue('1.670000');
+      });
+    });
+
+    it('submits a transfer with the correct payload', async () => {
+      vi.mocked(investmentsApi.getHoldingAt).mockResolvedValue({
+        quantity: 100,
+        averageCost: 1.67,
+      });
+      await selectTransfer();
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('From Account'), {
+          target: { value: 'a1' },
+        });
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('To Account'), {
+          target: { value: 'b1' },
+        });
+      });
+      await waitFor(() => {
+        expect(screen.getByText('Security')).toBeInTheDocument();
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Security'), {
+          target: { value: 'sec-1' },
+        });
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Quantity (Shares)'), {
+          target: { value: '100' },
+        });
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByText('Transfer Securities'));
+      });
+
+      await waitFor(() => {
+        expect(investmentsApi.transferSecurity).toHaveBeenCalled();
+      });
+      const payload = vi.mocked(investmentsApi.transferSecurity).mock.calls[0][0];
+      expect(payload).toMatchObject({
+        fromAccountId: 'a1',
+        toAccountId: 'b1',
+        securityId: 'sec-1',
+        quantity: 100,
+        costPerShare: 1.67,
+      });
+    });
+
+    it('blocks a transfer to the same source and destination account', async () => {
+      vi.mocked(investmentsApi.getHoldingAt).mockResolvedValue({
+        quantity: 100,
+        averageCost: 1.67,
+      });
+      await selectTransfer();
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('From Account'), {
+          target: { value: 'a1' },
+        });
+      });
+      await waitFor(() => {
+        expect(screen.getByText('Security')).toBeInTheDocument();
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Security'), {
+          target: { value: 'sec-1' },
+        });
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Quantity (Shares)'), {
+          target: { value: '50' },
+        });
+      });
+      // Destination left blank -> validation should block and toast an error.
+      await act(async () => {
+        fireEvent.click(screen.getByText('Transfer Securities'));
+      });
+      await act(async () => {});
+      expect(investmentsApi.transferSecurity).not.toHaveBeenCalled();
+      expect(toast.error).toHaveBeenCalled();
+    });
   });
 
   it('clears a stale fundingAccountId when switching to an action that does not accept one', async () => {

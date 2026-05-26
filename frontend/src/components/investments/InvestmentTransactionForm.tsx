@@ -36,10 +36,14 @@ const logger = createLogger('InvestmentTxForm');
 
 const investmentTransactionSchema = z.object({
   accountId: z.string().min(1, 'Account is required'),
-  action: z.enum(['BUY', 'SELL', 'DIVIDEND', 'INTEREST', 'CAPITAL_GAIN', 'SPLIT', 'TRANSFER_IN', 'TRANSFER_OUT', 'REINVEST', 'ADD_SHARES', 'REMOVE_SHARES']),
+  // 'TRANSFER' is a UI-only action that creates a TRANSFER_OUT + TRANSFER_IN
+  // pair on the backend; it is offered only when creating, not editing.
+  action: z.enum(['BUY', 'SELL', 'DIVIDEND', 'INTEREST', 'CAPITAL_GAIN', 'SPLIT', 'TRANSFER_IN', 'TRANSFER_OUT', 'REINVEST', 'ADD_SHARES', 'REMOVE_SHARES', 'TRANSFER']),
   transactionDate: z.string().min(1, 'Date is required'),
   securityId: z.string().optional(),
   fundingAccountId: z.string().optional(),
+  // Destination account for a TRANSFER (the source is `accountId`).
+  destinationAccountId: z.string().optional(),
   quantity: z.coerce.number().min(0).optional(),
   price: z.coerce.number().min(0).optional(),
   commission: z.coerce.number().min(0).optional(),
@@ -78,17 +82,20 @@ const actionLabels: Record<InvestmentAction, string> = {
   REMOVE_SHARES: 'Remove Shares',
 };
 
-// Actions that require a security selection
-const securityRequiredActions: InvestmentAction[] = ['BUY', 'SELL', 'DIVIDEND', 'CAPITAL_GAIN', 'SPLIT', 'REINVEST', 'ADD_SHARES', 'REMOVE_SHARES'];
+// Actions that require a security selection. TRANSFER_IN/TRANSFER_OUT are the
+// individual legs of a transfer; they carry a security, quantity and per-share
+// cost basis. Creation goes through the combined "Transfer" action, so these
+// only surface here when editing an existing leg.
+const securityRequiredActions: InvestmentAction[] = ['BUY', 'SELL', 'DIVIDEND', 'CAPITAL_GAIN', 'SPLIT', 'REINVEST', 'ADD_SHARES', 'REMOVE_SHARES', 'TRANSFER_IN', 'TRANSFER_OUT'];
 
-// Actions that require quantity and price
-const quantityPriceActions: InvestmentAction[] = ['BUY', 'SELL', 'REINVEST'];
+// Actions that require quantity and price (per-share cost for transfer legs)
+const quantityPriceActions: InvestmentAction[] = ['BUY', 'SELL', 'REINVEST', 'TRANSFER_IN', 'TRANSFER_OUT'];
 
 // Actions that only need quantity (no price, no cash effect)
 const quantityOnlyActions: InvestmentAction[] = ['ADD_SHARES', 'REMOVE_SHARES'];
 
 // Actions that only need an amount (no quantity/price)
-const amountOnlyActions: InvestmentAction[] = ['DIVIDEND', 'INTEREST', 'CAPITAL_GAIN', 'TRANSFER_IN', 'TRANSFER_OUT'];
+const amountOnlyActions: InvestmentAction[] = ['DIVIDEND', 'INTEREST', 'CAPITAL_GAIN'];
 
 // Actions that can have an external funding account (where funds come from/go to)
 const fundingAccountActions: InvestmentAction[] = ['BUY', 'SELL'];
@@ -155,6 +162,12 @@ export function InvestmentTransactionForm({
   // "Before" line in the holding preview. Null means "no holding history at
   // that date" (don't render the preview).
   const [splitHoldingAt, setSplitHoldingAt] = useState<{
+    quantity: number;
+    averageCost: number;
+  } | null>(null);
+  // Source-account holding for a TRANSFER, replayed as of the transfer date.
+  // Drives the available-quantity check and the cost-per-share prefill.
+  const [transferSourceHolding, setTransferSourceHolding] = useState<{
     quantity: number;
     averageCost: number;
   } | null>(null);
@@ -237,6 +250,7 @@ export function InvestmentTransactionForm({
           action: 'BUY',
           transactionDate: getLocalDateString(),
           fundingAccountId: '',
+          destinationAccountId: '',
           quantity: undefined,
           price: undefined,
           commission: undefined,
@@ -251,6 +265,10 @@ export function InvestmentTransactionForm({
 
   const watchedAccountId = watch('accountId');
   const watchedAction = watch('action') as InvestmentAction;
+  // 'TRANSFER' is a UI-only action and is not part of InvestmentAction, so it
+  // never matches any of the classification arrays below; transfer fields are
+  // rendered from this flag instead.
+  const isTransfer = (watchedAction as string) === 'TRANSFER';
   const watchedSecurityId = watch('securityId');
   const watchedFundingAccountId = watch('fundingAccountId');
   const watchedQuantity = Number(watch('quantity')) || 0;
@@ -472,6 +490,42 @@ export function InvestmentTransactionForm({
     transaction?.id,
   ]);
 
+  // For a TRANSFER, replay the source account's holding as of the transfer
+  // date and prefill the cost-per-share with its average cost so the original
+  // cost basis carries to the destination (keeping gain/profit reports
+  // correct). Mirrors the SPLIT as-of fetch above.
+  useEffect(() => {
+    if (!isTransfer || !watchedAccountId || !watchedSecurityId || !watchedTransactionDate) {
+      setTransferSourceHolding(null);
+      return;
+    }
+    let cancelled = false;
+    investmentsApi
+      .getHoldingAt({
+        accountId: watchedAccountId,
+        securityId: watchedSecurityId,
+        asOfDate: watchedTransactionDate,
+      })
+      .then((data) => {
+        if (cancelled) return;
+        setTransferSourceHolding(data);
+        // Suggest the source average cost as the carried cost basis. Re-runs
+        // when source/security/date change; manual edits persist until then.
+        setValue('price', roundToDecimals(Number(data.averageCost) || 0, 6), {
+          shouldValidate: true,
+        });
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setTransferSourceHolding(null);
+          logger.error('Failed to load source holdings for transfer:', error);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isTransfer, watchedAccountId, watchedSecurityId, watchedTransactionDate, setValue]);
+
   // Re-sync form values when editing and securities are loaded
   useEffect(() => {
     if (transaction && securities.length > 0) {
@@ -498,6 +552,49 @@ export function InvestmentTransactionForm({
   const onSubmit = async (data: InvestmentTransactionFormData) => {
     setIsLoading(true);
     try {
+      if (data.action === 'TRANSFER') {
+        const quantity = Number(data.quantity) || 0;
+        const costPerShare = Number(data.price) || 0;
+        if (!data.securityId) {
+          toast.error('Select a security to transfer');
+          setIsLoading(false);
+          return;
+        }
+        if (!data.destinationAccountId) {
+          toast.error('Select a destination account');
+          setIsLoading(false);
+          return;
+        }
+        if (data.destinationAccountId === data.accountId) {
+          toast.error('Source and destination accounts must be different');
+          setIsLoading(false);
+          return;
+        }
+        if (quantity <= 0) {
+          toast.error('Quantity must be greater than zero');
+          setIsLoading(false);
+          return;
+        }
+        const available = Number(transferSourceHolding?.quantity ?? 0);
+        if (transferSourceHolding && quantity > available) {
+          toast.error(`Only ${available} shares available to transfer`);
+          setIsLoading(false);
+          return;
+        }
+        await investmentsApi.transferSecurity({
+          fromAccountId: data.accountId,
+          toAccountId: data.destinationAccountId,
+          securityId: data.securityId,
+          transactionDate: data.transactionDate,
+          quantity,
+          costPerShare,
+          description: data.description,
+        });
+        toast.success('Securities transferred');
+        onSuccess?.();
+        return;
+      }
+
       const action = data.action as InvestmentAction;
       const postsCash = cashPostingActions.includes(action);
       const isSplit = action === 'SPLIT';
@@ -574,6 +671,24 @@ export function InvestmentTransactionForm({
   const canHaveFundingAccount = fundingAccountActions.includes(watchedAction);
   const canHaveCashDestination = cashDestinationActions.includes(watchedAction);
 
+  // When creating, offer a single "Transfer" option and hide the raw
+  // TRANSFER_IN/TRANSFER_OUT legs (they are produced as a pair by the backend).
+  // When editing an existing leg, show the real action labels so the stored
+  // action displays correctly.
+  const actionOptions = transaction
+    ? Object.entries(actionLabels).map(([value, label]) => ({ value, label }))
+    : [
+        ...Object.entries(actionLabels)
+          .filter(([value]) => value !== 'TRANSFER_IN' && value !== 'TRANSFER_OUT')
+          .map(([value, label]) => ({ value, label })),
+        { value: 'TRANSFER', label: 'Transfer Between Accounts' },
+      ];
+
+  // Brokerage accounts eligible as a transfer destination (exclude the source).
+  const destinationAccounts = brokerageAccounts.filter(
+    (a) => a.id !== watchedAccountId,
+  );
+
   const splitPreview = useMemo(() => {
     if (!isSplit || !splitHoldingAt || splitRatio <= 0) return null;
     const currentQty = Number(splitHoldingAt.quantity);
@@ -592,7 +707,7 @@ export function InvestmentTransactionForm({
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {/* Account Selection */}
       <Select
-        label="Brokerage Account"
+        label={isTransfer ? 'From Account' : 'Brokerage Account'}
         error={errors.accountId?.message}
         options={[
           { value: '', label: 'Select account...' },
@@ -615,10 +730,7 @@ export function InvestmentTransactionForm({
         <Select
           label="Transaction Type"
           error={errors.action?.message}
-          options={Object.entries(actionLabels).map(([value, label]) => ({
-            value,
-            label,
-          }))}
+          options={actionOptions}
           {...register('action')}
         />
       </div>
@@ -653,8 +765,24 @@ export function InvestmentTransactionForm({
         />
       )}
 
+      {/* Destination account - for a transfer between accounts */}
+      {isTransfer && (
+        <Select
+          label="To Account"
+          error={errors.destinationAccountId?.message}
+          options={[
+            { value: '', label: 'Select account...' },
+            ...destinationAccounts.map((a) => ({
+              value: a.id,
+              label: `${a.name} (${a.currencyCode})`,
+            })),
+          ]}
+          {...register('destinationAccountId')}
+        />
+      )}
+
       {/* Security Selection - only for actions that need it */}
-      {needsSecurity && (
+      {(needsSecurity || isTransfer) && (
         <div className="space-y-2">
           <Select
             label="Security"
@@ -830,6 +958,50 @@ export function InvestmentTransactionForm({
         />
       )}
 
+      {/* Quantity and cost basis - for a transfer between accounts */}
+      {isTransfer && (
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-4">
+            <NumericInput
+              label="Quantity (Shares)"
+              value={watchedQuantity || undefined}
+              onChange={(value) => setValue('quantity', value, { shouldValidate: true })}
+              decimalPlaces={8}
+              min={0}
+              error={errors.quantity?.message}
+            />
+            <NumericInput
+              label={`Cost per Share (${transactionCurrency})`}
+              prefix={currencySymbol}
+              value={watchedPrice || undefined}
+              onChange={(value) => setValue('price', value, { shouldValidate: true })}
+              decimalPlaces={6}
+              min={0}
+              error={errors.price?.message}
+            />
+          </div>
+          {transferSourceHolding && transferSourceHolding.quantity > 0 && (
+            <div className="rounded border border-gray-200 bg-white p-3 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+              Source holds{' '}
+              <span className="font-mono">
+                {Number(transferSourceHolding.quantity).toFixed(4)}
+              </span>{' '}
+              shares @{' '}
+              <span className="font-mono">
+                {currencySymbol}
+                {Number(transferSourceHolding.averageCost).toFixed(4)}
+              </span>{' '}
+              avg cost as of {formatDate(watchedTransactionDate)}.
+            </div>
+          )}
+          <div className="rounded border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
+            The cost per share (prefilled from the source account) is carried to
+            the destination so your gain and profit reports stay correct. This
+            moves shares only -- no cash changes hands.
+          </div>
+        </div>
+      )}
+
       {/* Commission - rendered inline with qty/price when conversion is shown */}
       {needsQuantityPrice && !needsConversion && (
         <CurrencyInput
@@ -917,7 +1089,7 @@ export function InvestmentTransactionForm({
       )}
 
       {/* Form Actions */}
-      <FormActions onCancel={onCancel} submitLabel={transaction ? 'Update Transaction' : 'Create Transaction'} isSubmitting={isLoading} />
+      <FormActions onCancel={onCancel} submitLabel={isTransfer ? 'Transfer Securities' : transaction ? 'Update Transaction' : 'Create Transaction'} isSubmitting={isLoading} />
     </form>
 
     <Modal isOpen={showSecurityModal} onClose={() => setShowSecurityModal(false)} maxWidth="lg" className="p-6">

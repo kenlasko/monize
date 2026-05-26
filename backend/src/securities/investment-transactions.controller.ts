@@ -23,6 +23,7 @@ import { AuthGuard } from "@nestjs/passport";
 import { InvestmentTransactionsService } from "./investment-transactions.service";
 import { CreateInvestmentTransactionDto } from "./dto/create-investment-transaction.dto";
 import { UpdateInvestmentTransactionDto } from "./dto/update-investment-transaction.dto";
+import { TransferSecurityDto } from "./dto/transfer-security.dto";
 import {
   InvestmentTransaction,
   InvestmentAction,
@@ -84,6 +85,24 @@ export class InvestmentTransactionsController {
     @Body() createDto: CreateInvestmentTransactionDto,
   ): Promise<InvestmentTransaction> {
     return this.investmentTransactionsService.create(req.user.id, createDto);
+  }
+
+  @Post("transfer-security")
+  @ApiOperation({
+    summary:
+      "Transfer a security between two investment accounts, preserving cost basis",
+  })
+  @ApiResponse({
+    status: 201,
+    description:
+      "Both transfer legs (TRANSFER_OUT in source, TRANSFER_IN in destination) created",
+  })
+  @ApiResponse({ status: 400, description: "Invalid request data" })
+  transferSecurity(@Request() req, @Body() dto: TransferSecurityDto) {
+    return this.investmentTransactionsService.transferSecurity(
+      req.user.id,
+      dto,
+    );
   }
 
   @Get()

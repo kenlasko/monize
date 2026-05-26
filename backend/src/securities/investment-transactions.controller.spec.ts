@@ -30,6 +30,7 @@ describe("InvestmentTransactionsController", () => {
   beforeEach(async () => {
     service = {
       create: jest.fn(),
+      transferSecurity: jest.fn(),
       findAll: jest.fn(),
       getSummary: jest.fn(),
       getRealizedGains: jest.fn(),
@@ -78,6 +79,26 @@ describe("InvestmentTransactionsController", () => {
 
       expect(service.create).toHaveBeenCalledWith("user-1", dto);
       expect(result).toEqual(mockTransaction);
+    });
+  });
+
+  describe("transferSecurity", () => {
+    it("delegates to service.transferSecurity with userId and dto", async () => {
+      const dto = {
+        fromAccountId: UUID1,
+        toAccountId: UUID2,
+        securityId: "sec-1",
+        transactionDate: "2025-04-01",
+        quantity: 100,
+        costPerShare: 1.67,
+      };
+      const expected = { transferOut: { id: "out" }, transferIn: { id: "in" } };
+      service.transferSecurity.mockResolvedValue(expected);
+
+      const result = await controller.transferSecurity(req, dto as any);
+
+      expect(service.transferSecurity).toHaveBeenCalledWith("user-1", dto);
+      expect(result).toEqual(expected);
     });
   });
 

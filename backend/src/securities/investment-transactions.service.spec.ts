@@ -4815,4 +4815,119 @@ describe("InvestmentTransactionsService", () => {
       expect(mockQueryRunner.manager.remove).toHaveBeenCalledWith(embedded);
     });
   });
+
+  describe("transferSecurity", () => {
+    const toAccountId = "account-2";
+    const mockToAccount = {
+      id: toAccountId,
+      userId,
+      accountType: "INVESTMENT",
+      accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
+      linkedAccountId: null,
+      currencyCode: "USD",
+      name: "Brokerage B",
+    };
+
+    const transferDto = {
+      fromAccountId: accountId,
+      toAccountId,
+      securityId,
+      transactionDate: "2025-04-01",
+      quantity: 100,
+      costPerShare: 1.67,
+      description: "Move to Brokerage B",
+    };
+
+    beforeEach(() => {
+      accountsService.findOne.mockImplementation((uid: string, aid: string) => {
+        if (aid === accountId) return Promise.resolve(mockInvestmentAccount);
+        if (aid === toAccountId) return Promise.resolve(mockToAccount);
+        if (aid === cashAccountId) return Promise.resolve(mockCashAccount);
+        return Promise.reject(new NotFoundException("Account not found"));
+      });
+      // findOne (post-commit reload) uses the query builder.
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({ id: transactionId, action: "TRANSFER_OUT" }),
+      );
+    });
+
+    it("creates both legs and moves holdings at the supplied cost basis", async () => {
+      const result = await service.transferSecurity(userId, transferDto);
+
+      // TRANSFER_OUT draws down the source at cost basis.
+      expect(holdingsService.updateHolding).toHaveBeenCalledWith(
+        userId,
+        accountId,
+        securityId,
+        -100,
+        1.67,
+        mockQueryRunner,
+        false,
+      );
+      // TRANSFER_IN adds to the destination at the same per-share cost.
+      expect(holdingsService.updateHolding).toHaveBeenCalledWith(
+        userId,
+        toAccountId,
+        securityId,
+        100,
+        1.67,
+        mockQueryRunner,
+        false,
+      );
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(result).toHaveProperty("transferOut");
+      expect(result).toHaveProperty("transferIn");
+    });
+
+    it("does not create any cash transaction", async () => {
+      await service.transferSecurity(userId, transferDto);
+      expect(transactionRepository.create).not.toHaveBeenCalled();
+      expect(transactionRepository.save).not.toHaveBeenCalled();
+    });
+
+    it("validates the full history so the source cannot be over-drawn", async () => {
+      await service.transferSecurity(userId, transferDto);
+      expect(
+        holdingsService.validateNoNegativeHoldingsHistory,
+      ).toHaveBeenCalledWith(
+        userId,
+        mockQueryRunner,
+        [accountId, toAccountId],
+        [securityId],
+      );
+    });
+
+    it("rejects a transfer to the same account", async () => {
+      await expect(
+        service.transferSecurity(userId, {
+          ...transferDto,
+          toAccountId: accountId,
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
+    });
+
+    it("rejects when an account is not an investment account", async () => {
+      accountsService.findOne.mockImplementation((uid: string, aid: string) => {
+        if (aid === accountId) return Promise.resolve(mockInvestmentAccount);
+        if (aid === toAccountId)
+          return Promise.resolve({ ...mockToAccount, accountType: "CHEQUING" });
+        return Promise.reject(new NotFoundException("Account not found"));
+      });
+      await expect(
+        service.transferSecurity(userId, transferDto),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("rolls back when the over-draw guard throws", async () => {
+      holdingsService.validateNoNegativeHoldingsHistory.mockRejectedValueOnce(
+        new BadRequestException("Insufficient shares"),
+      );
+      await expect(
+        service.transferSecurity(userId, transferDto),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();
+    });
+  });
 });

@@ -181,6 +181,29 @@ export const investmentsApi = {
     return response.data;
   },
 
+  // Transfer a security between two investment accounts, preserving cost
+  // basis. Creates both legs (TRANSFER_OUT in source, TRANSFER_IN in
+  // destination) atomically on the backend.
+  transferSecurity: async (data: {
+    fromAccountId: string;
+    toAccountId: string;
+    securityId: string;
+    transactionDate: string;
+    quantity: number;
+    costPerShare: number;
+    description?: string;
+  }): Promise<{
+    transferOut: InvestmentTransaction;
+    transferIn: InvestmentTransaction;
+  }> => {
+    const response = await apiClient.post<{
+      transferOut: InvestmentTransaction;
+      transferIn: InvestmentTransaction;
+    }>('/investment-transactions/transfer-security', data);
+    invalidateCache('investments:');
+    return response.data;
+  },
+
   // Update investment transaction
   updateTransaction: async (
     id: string,
