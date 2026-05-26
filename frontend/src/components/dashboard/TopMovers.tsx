@@ -1,12 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TopMover } from '@/types/investment';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { usePreferencesStore } from '@/store/preferencesStore';
 
 type MoverFilter = 'all' | 'gainers' | 'losers';
+
+const FILTER_STORAGE_KEY = 'dashboard.topMovers.filter';
+
+function getStoredFilter(): MoverFilter {
+  if (typeof window === 'undefined') return 'all';
+  const stored = localStorage.getItem(FILTER_STORAGE_KEY);
+  return stored === 'gainers' || stored === 'losers' || stored === 'all' ? stored : 'all';
+}
 
 interface TopMoversProps {
   movers: TopMover[];
@@ -77,7 +85,11 @@ export function TopMovers({ movers, isLoading, hasInvestmentAccounts, onRefresh,
   const router = useRouter();
   const { formatCurrency, formatPercent } = useNumberFormat();
   const defaultCurrency = usePreferencesStore((s) => s.preferences?.defaultCurrency) || 'USD';
-  const [filter, setFilter] = useState<MoverFilter>('all');
+  const [filter, setFilter] = useState<MoverFilter>(getStoredFilter);
+
+  useEffect(() => {
+    localStorage.setItem(FILTER_STORAGE_KEY, filter);
+  }, [filter]);
 
   if (isLoading) {
     return (

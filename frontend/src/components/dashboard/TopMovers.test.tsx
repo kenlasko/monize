@@ -21,6 +21,7 @@ vi.mock('@/store/preferencesStore', () => ({
 describe('TopMovers', () => {
   beforeEach(() => {
     mockPush.mockClear();
+    localStorage.clear();
   });
 
   it('renders loading state with title and pulse skeleton', () => {
@@ -138,6 +139,22 @@ describe('TopMovers', () => {
 
     render(<TopMovers movers={movers} isLoading={false} hasInvestmentAccounts={true} />);
     fireEvent.click(screen.getByText('Losers'));
+    expect(screen.getByText('MSFT')).toBeInTheDocument();
+    expect(screen.queryByText('AAPL')).not.toBeInTheDocument();
+  });
+
+  it('persists the selected filter to localStorage and restores it on remount', () => {
+    const movers = [
+      { securityId: '1', symbol: 'AAPL', name: 'Apple', currentPrice: 180, dailyChange: 5, dailyChangePercent: 2.8, currencyCode: 'USD' },
+      { securityId: '2', symbol: 'MSFT', name: 'Microsoft', currentPrice: 400, dailyChange: -2, dailyChangePercent: -0.5, currencyCode: 'USD' },
+    ] as any[];
+
+    const { unmount } = render(<TopMovers movers={movers} isLoading={false} hasInvestmentAccounts={true} />);
+    fireEvent.click(screen.getByText('Losers'));
+    expect(localStorage.getItem('dashboard.topMovers.filter')).toBe('losers');
+    unmount();
+
+    render(<TopMovers movers={movers} isLoading={false} hasInvestmentAccounts={true} />);
     expect(screen.getByText('MSFT')).toBeInTheDocument();
     expect(screen.queryByText('AAPL')).not.toBeInTheDocument();
   });
