@@ -2039,4 +2039,43 @@ describe("HoldingsService", () => {
       expect(mockQueryRunner.release).toHaveBeenCalled();
     });
   });
+
+  describe("applyMaturedInvestmentHoldings", () => {
+    it("rebuilds holdings for users with an investment transaction maturing today", async () => {
+      (service as any).dataSource.query = jest
+        .fn()
+        .mockResolvedValueOnce([
+          { user_id: "user-1", timezone: "UTC", last_client_timezone: null },
+          { user_id: "user-2", timezone: "UTC", last_client_timezone: null },
+        ])
+        .mockResolvedValueOnce([{ user_id: "user-1" }]);
+      const rebuildSpy = jest
+        .spyOn(service, "rebuildFromTransactions")
+        .mockResolvedValue({
+          holdingsCreated: 0,
+          holdingsUpdated: 0,
+          holdingsDeleted: 0,
+        });
+
+      await service.applyMaturedInvestmentHoldings();
+
+      // Only the user with a maturing transaction is rebuilt, and the user's
+      // timezone-correct today is passed as the cutoff so the just-matured
+      // transaction is included.
+      expect(rebuildSpy).toHaveBeenCalledTimes(1);
+      expect(rebuildSpy).toHaveBeenCalledWith(
+        "user-1",
+        expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      );
+    });
+
+    it("does nothing when there are no users", async () => {
+      (service as any).dataSource.query = jest.fn().mockResolvedValueOnce([]);
+      const rebuildSpy = jest.spyOn(service, "rebuildFromTransactions");
+
+      await service.applyMaturedInvestmentHoldings();
+
+      expect(rebuildSpy).not.toHaveBeenCalled();
+    });
+  });
 });

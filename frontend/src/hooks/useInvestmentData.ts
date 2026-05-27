@@ -366,8 +366,19 @@ export function useInvestmentData() {
     const target = transactions.find(tx => tx.id === id);
     const removeIds = new Set<string>([id]);
     if (target?.linkedTransactionId) removeIds.add(target.linkedTransactionId);
-    const removedCount =
-      transactions.filter(tx => removeIds.has(tx.id)).length || 1;
+    // The backend deletes both legs of a transfer, but only legs within the
+    // current filter count toward pagination.total. The deleted leg always
+    // does. The paired leg counts when either no account filter is applied (the
+    // whole portfolio is in the total, even if the leg sits on another page) or
+    // it is loaded in the current filtered list -- otherwise it belongs to an
+    // account that's filtered out and must not be subtracted.
+    const linkedLoaded =
+      !!target?.linkedTransactionId &&
+      transactions.some(tx => tx.id === target.linkedTransactionId);
+    const linkedCounts =
+      !!target?.linkedTransactionId &&
+      (selectedAccountIds.length === 0 || linkedLoaded);
+    const removedCount = linkedCounts ? 2 : 1;
     setTransactions(prev => prev.filter(tx => !removeIds.has(tx.id)));
     // Keep the pagination summary in sync immediately so the bottom counter
     // updates without waiting for the next full reload.

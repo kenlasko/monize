@@ -685,6 +685,43 @@ describe('InvestmentTransactionForm', () => {
       expect(investmentsApi.transferSecurity).not.toHaveBeenCalled();
       expect(toast.error).toHaveBeenCalled();
     });
+
+    it('excludes closed accounts from the destination dropdown', async () => {
+      const closedBrokerage = {
+        id: 'b2',
+        name: 'Closed Brokerage',
+        accountType: 'INVESTMENT',
+        accountSubType: 'INVESTMENT_BROKERAGE',
+        currencyCode: 'CAD',
+        isClosed: true,
+      } as any;
+      render(
+        <InvestmentTransactionForm
+          accounts={[...transferAccounts, closedBrokerage]}
+        />,
+      );
+      await waitFor(() => {
+        expect(screen.getByText('Brokerage Account')).toBeInTheDocument();
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Transaction Type'), {
+          target: { value: 'TRANSFER' },
+        });
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('From Account'), {
+          target: { value: 'a1' },
+        });
+      });
+      await waitFor(() => {
+        const dest = screen.getByLabelText('To Account');
+        const values = Array.from(dest.querySelectorAll('option')).map((o) =>
+          o.getAttribute('value'),
+        );
+        expect(values).not.toContain('b2');
+        expect(values).toContain('b1');
+      });
+    });
   });
 
   describe('Editing a posted transfer leg', () => {
@@ -797,6 +834,50 @@ describe('InvestmentTransactionForm', () => {
         securityId: 'sec-1',
         quantity: 60,
       });
+    });
+
+    it('blocks an edit that exceeds the available shares', async () => {
+      // The source (a1) currently holds 0 (all 100 already transferred out).
+      // Editing reverses this leg first, so up to 100 is available again --
+      // 150 must be rejected client-side before hitting the API.
+      vi.mocked(investmentsApi.getHoldings).mockResolvedValue([
+        {
+          id: 'h1',
+          accountId: 'a1',
+          securityId: 'sec-1',
+          quantity: 0,
+          averageCost: 1.67,
+          security: {
+            id: 'sec-1',
+            symbol: 'AAPL',
+            name: 'Apple Inc.',
+            currencyCode: 'USD',
+          },
+        },
+      ] as any);
+      render(
+        <InvestmentTransactionForm
+          accounts={editAccounts}
+          transaction={transferLeg}
+        />,
+      );
+      await waitFor(() => {
+        expect(screen.getByLabelText('To Account')).toHaveValue('b1');
+      });
+      await waitFor(() => {
+        expect(investmentsApi.getHoldings).toHaveBeenCalledWith('a1');
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Quantity (Shares)'), {
+          target: { value: '150' },
+        });
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText('Update Transaction'));
+      });
+      await act(async () => {});
+      expect(investmentsApi.updateTransaction).not.toHaveBeenCalled();
+      expect(toast.error).toHaveBeenCalled();
     });
   });
 

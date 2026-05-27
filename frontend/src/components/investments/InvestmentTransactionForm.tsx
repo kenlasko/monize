@@ -273,7 +273,17 @@ export function InvestmentTransactionForm({
   // never matches any of the classification arrays below; transfer fields are
   // rendered from this flag instead.
   const isTransfer = (watchedAction as string) === 'TRANSFER';
+  // Editing an existing transfer leg (the action is one of the real
+  // TRANSFER_IN/OUT values, not the UI-only 'TRANSFER').
+  const isTransferEditing =
+    !!transaction &&
+    ((watchedAction as string) === 'TRANSFER_IN' ||
+      (watchedAction as string) === 'TRANSFER_OUT');
+  // Source-account holdings are relevant both when creating a transfer and when
+  // editing one (to validate the available quantity).
+  const transferActive = isTransfer || isTransferEditing;
   const watchedSecurityId = watch('securityId');
+  const watchedDestinationAccountId = watch('destinationAccountId');
   const watchedFundingAccountId = watch('fundingAccountId');
   const watchedQuantity = Number(watch('quantity')) || 0;
   const watchedPrice = Number(watch('price')) || 0;
@@ -498,7 +508,7 @@ export function InvestmentTransactionForm({
   // actually held there can be transferred, and each holding carries the
   // average cost we use to prefill the cost-per-share.
   useEffect(() => {
-    if (!isTransfer || !watchedAccountId) {
+    if (!transferActive || !watchedAccountId) {
       setTransferSourceHoldings([]);
       return;
     }
@@ -517,7 +527,7 @@ export function InvestmentTransactionForm({
     return () => {
       cancelled = true;
     };
-  }, [isTransfer, watchedAccountId]);
+  }, [transferActive, watchedAccountId]);
 
   // When editing a transfer leg, load the paired leg so both the source and
   // destination accounts can be shown. The form's `accountId` always holds the
@@ -563,19 +573,21 @@ export function InvestmentTransactionForm({
   // until then.
   const selectedTransferHolding = useMemo(
     () =>
-      isTransfer && watchedSecurityId
+      transferActive && watchedSecurityId
         ? transferSourceHoldings.find((h) => h.securityId === watchedSecurityId)
         : undefined,
-    [isTransfer, watchedSecurityId, transferSourceHoldings],
+    [transferActive, watchedSecurityId, transferSourceHoldings],
   );
   useEffect(() => {
-    if (!selectedTransferHolding) return;
+    // Only prefill the cost on a new transfer. When editing, the leg already
+    // carries its own cost basis and must not be reset to the current average.
+    if (!isTransfer || !selectedTransferHolding) return;
     setValue(
       'price',
       roundToDecimals(Number(selectedTransferHolding.averageCost) || 0, 6),
       { shouldValidate: true },
     );
-  }, [selectedTransferHolding, setValue]);
+  }, [isTransfer, selectedTransferHolding, setValue]);
 
   // Securities available to transfer: only those currently held in the source
   // account. Use the same presence threshold the portfolio/holdings views use
@@ -641,7 +653,10 @@ export function InvestmentTransactionForm({
           setIsLoading(false);
           return;
         }
-        const available = Number(selectedTransferHolding?.quantity ?? 0);
+        const available = roundToDecimals(
+          Number(selectedTransferHolding?.quantity ?? 0),
+          8,
+        );
         if (selectedTransferHolding && quantity > available) {
           toast.error(`Only ${available} shares available to transfer`);
           setIsLoading(false);
@@ -687,6 +702,30 @@ export function InvestmentTransactionForm({
           toast.error('Quantity must be greater than zero');
           setIsLoading(false);
           return;
+        }
+        // Available-quantity check. The edit reverses this leg before
+        // reapplying, so its original quantity is available again on top of the
+        // current source holding. Only checked when the source account is
+        // unchanged; otherwise the backend's full-history validation is
+        // authoritative.
+        const originalSourceAccountId =
+          transaction.action === 'TRANSFER_OUT'
+            ? transaction.accountId
+            : transferLinkedLeg?.accountId;
+        if (
+          selectedTransferHolding &&
+          data.accountId === originalSourceAccountId
+        ) {
+          const available = roundToDecimals(
+            Number(selectedTransferHolding.quantity) +
+              Number(transaction.quantity ?? 0),
+            8,
+          );
+          if (quantity > available) {
+            toast.error(`Only ${available} shares available to transfer`);
+            setIsLoading(false);
+            return;
+          }
         }
         const outLegId =
           data.action === 'TRANSFER_OUT'
@@ -808,9 +847,14 @@ export function InvestmentTransactionForm({
         { value: 'TRANSFER', label: 'Transfer' },
       ];
 
-  // Brokerage accounts eligible as a transfer destination (exclude the source).
+  // Brokerage accounts eligible as a transfer destination: exclude the source
+  // and any closed account (a closed account shouldn't receive new shares),
+  // but keep the currently-selected destination visible when editing a transfer
+  // that already points at a since-closed account.
   const destinationAccounts = brokerageAccounts.filter(
-    (a) => a.id !== watchedAccountId,
+    (a) =>
+      a.id !== watchedAccountId &&
+      (!a.isClosed || a.id === watchedDestinationAccountId),
   );
 
   const splitPreview = useMemo(() => {

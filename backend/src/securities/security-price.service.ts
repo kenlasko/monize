@@ -1031,6 +1031,9 @@ export class SecurityPriceService {
     securityId: string,
     transactionDate: string,
   ): Promise<void> {
+    // Only actual trades (BUY/SELL/REINVEST) imply a market price. TRANSFER_IN/
+    // TRANSFER_OUT legs carry the carried cost basis, not the market price on
+    // the transfer date, so they are excluded from the derived price.
     const rows: Array<{
       avg_price: string;
       latest_action: string;
@@ -1038,13 +1041,13 @@ export class SecurityPriceService {
       `SELECT AVG(price::numeric) as avg_price,
               (SELECT action FROM investment_transactions
                WHERE security_id = $1 AND transaction_date = $2
-                 AND action IN ('BUY', 'SELL', 'REINVEST', 'TRANSFER_IN', 'TRANSFER_OUT')
+                 AND action IN ('BUY', 'SELL', 'REINVEST')
                  AND price IS NOT NULL
                ORDER BY created_at DESC LIMIT 1) as latest_action
        FROM investment_transactions
        WHERE security_id = $1
          AND transaction_date = $2
-         AND action IN ('BUY', 'SELL', 'REINVEST', 'TRANSFER_IN', 'TRANSFER_OUT')
+         AND action IN ('BUY', 'SELL', 'REINVEST')
          AND price IS NOT NULL`,
       [securityId, transactionDate],
     );
@@ -1094,13 +1097,13 @@ export class SecurityPriceService {
               (SELECT it2.action FROM investment_transactions it2
                WHERE it2.security_id = it.security_id
                  AND it2.transaction_date = it.transaction_date
-                 AND it2.action IN ('BUY', 'SELL', 'REINVEST', 'TRANSFER_IN', 'TRANSFER_OUT')
+                 AND it2.action IN ('BUY', 'SELL', 'REINVEST')
                  AND it2.price IS NOT NULL
                ORDER BY it2.created_at DESC LIMIT 1) as latest_action
        FROM investment_transactions it
        WHERE it.security_id IS NOT NULL
          AND it.price IS NOT NULL
-         AND it.action IN ('BUY', 'SELL', 'REINVEST', 'TRANSFER_IN', 'TRANSFER_OUT')
+         AND it.action IN ('BUY', 'SELL', 'REINVEST')
        GROUP BY it.security_id, it.transaction_date`,
     );
 

@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
   Logger,
   Inject,
   forwardRef,
@@ -594,12 +595,28 @@ export class InvestmentTransactionsService {
   }
 
   /**
+   * Reject investment accounts that don't track holdings. Securities can only
+   * live in brokerage / standalone investment accounts (null subtype); the cash
+   * sleeve (INVESTMENT_CASH) is excluded from every holdings rebuild and
+   * negative-balance guard, so transferring shares into it would leave them
+   * absent from the ledger while still drawing down the source.
+   */
+  private assertCanHoldSecurities(account: Account, label: string): void {
+    if (
+      account.accountSubType &&
+      account.accountSubType !== AccountSubType.INVESTMENT_BROKERAGE
+    ) {
+      throw new BadRequestException(`${label} cannot hold securities`);
+    }
+  }
+
+  /**
    * Move a security between two investment accounts while preserving cost
    * basis. Creates both legs atomically: a TRANSFER_OUT in the source account
    * (drawn down at the source's running average cost) and a TRANSFER_IN in the
-   * destination account at `costPerShare`. No cash transaction is created --
-   * shares move only, no money changes hands -- so both legs use exchangeRate 1
-   * and have a null linked cash transaction.
+   * destination account at the source's carried average cost. No cash
+   * transaction is created -- shares move only, no money changes hands -- so
+   * both legs use exchangeRate 1 and have a null linked cash transaction.
    */
   async transferSecurity(
     userId: string,
@@ -626,7 +643,35 @@ export class InvestmentTransactionsService {
       throw new BadRequestException("Both accounts must be of type INVESTMENT");
     }
 
+    // Securities only live in brokerage / standalone investment accounts. The
+    // cash sleeve of an investment account is excluded from every holdings
+    // rebuild, so shares transferred into it would silently vanish.
+    this.assertCanHoldSecurities(fromAccount, "Source account");
+    this.assertCanHoldSecurities(toAccount, "Destination account");
+
+    if (toAccount.isClosed) {
+      throw new BadRequestException("Destination account is closed");
+    }
+
     await this.securitiesService.findOne(userId, dto.securityId);
+
+    // Carry the source's actual blended average cost so basis is conserved.
+    // The client sends a prefilled costPerShare for display, but the server is
+    // authoritative here: a stale or zero client value (e.g. a UI race before
+    // holdings load, or a direct API call) must not be able to poison the
+    // destination's cost basis. When the source holds the security, its current
+    // average cost is exactly what the TRANSFER_OUT draws down, so using it for
+    // both legs conserves basis. With no existing holding the over-draw guard
+    // below rejects the transfer anyway, so the client value is a harmless
+    // fallback.
+    const sourceHolding = await this.holdingsService.findByAccountAndSecurity(
+      dto.fromAccountId,
+      dto.securityId,
+    );
+    const carriedCost =
+      sourceHolding && Number(sourceHolding.quantity) > 0
+        ? roundToDecimals(Number(sourceHolding.averageCost) || 0, 6)
+        : dto.costPerShare;
 
     // Transfer legs carry no cash, so totalAmount is 0 -- matching how
     // calculateTotalAmount() treats TRANSFER_IN/TRANSFER_OUT on the edit path.
@@ -649,7 +694,7 @@ export class InvestmentTransactionsService {
         action: InvestmentAction.TRANSFER_OUT,
         transactionDate: dto.transactionDate,
         quantity: dto.quantity,
-        price: dto.costPerShare,
+        price: carriedCost,
         commission: 0,
         totalAmount,
         exchangeRate: 1,
@@ -673,7 +718,7 @@ export class InvestmentTransactionsService {
         action: InvestmentAction.TRANSFER_IN,
         transactionDate: dto.transactionDate,
         quantity: dto.quantity,
-        price: dto.costPerShare,
+        price: carriedCost,
         commission: 0,
         totalAmount,
         exchangeRate: 1,
@@ -736,10 +781,10 @@ export class InvestmentTransactionsService {
       entityType: "investment_transaction",
       entityId: transferOut.id,
       action: "create",
-      afterData: {
-        transferOut: { ...transferOut },
-        transferIn: { ...transferIn },
-      },
+      // Flat leg + linkedTransferLeg shape mirrors the delete beforeData so the
+      // redo path (which feeds afterData into undoInvestmentDelete) restores
+      // both legs and their mutual link.
+      afterData: { ...transferOut, linkedTransferLeg: { ...transferIn } },
       description: "Transferred security between accounts",
     });
 
@@ -882,6 +927,10 @@ export class InvestmentTransactionsService {
         break;
 
       case InvestmentAction.REINVEST:
+        // A reinvestment buys shares at a market price; without a price the
+        // shares would be blended in at cost 0 and poison the average cost, so
+        // keep the price guard here. Only TRANSFER_IN/OUT (whose carried cost
+        // can legitimately be 0) drop it.
         if (!isFuture && securityId && quantity && price) {
           await this.holdingsService.updateHolding(
             userId,
@@ -912,7 +961,7 @@ export class InvestmentTransactionsService {
         break;
 
       case InvestmentAction.TRANSFER_IN:
-        if (!isFuture && securityId && quantity && price) {
+        if (!isFuture && securityId && quantity) {
           await this.holdingsService.updateHolding(
             userId,
             accountId,
@@ -926,7 +975,7 @@ export class InvestmentTransactionsService {
         break;
 
       case InvestmentAction.TRANSFER_OUT:
-        if (!isFuture && securityId && quantity && price) {
+        if (!isFuture && securityId && quantity) {
           await this.holdingsService.updateHolding(
             userId,
             accountId,
@@ -1709,7 +1758,20 @@ export class InvestmentTransactionsService {
         linkedLeg,
       );
 
-      // The edited leg may move to a different account.
+      // Resolve legs by role, not by which leg id was passed in: `accountId`
+      // is always the source (TRANSFER_OUT) account and `destinationAccountId`
+      // the destination (TRANSFER_IN) account. Mapping by role keeps the
+      // direction correct even when the IN leg is edited directly.
+      const outLeg =
+        editedLeg.action === InvestmentAction.TRANSFER_OUT
+          ? editedLeg
+          : linkedLeg;
+      const inLeg =
+        editedLeg.action === InvestmentAction.TRANSFER_IN
+          ? editedLeg
+          : linkedLeg;
+
+      // The source leg may move to a different account.
       if (updateDto.accountId !== undefined) {
         const account = await this.accountsService.findOne(
           userId,
@@ -1718,11 +1780,12 @@ export class InvestmentTransactionsService {
         if (account.accountType !== "INVESTMENT") {
           throw new BadRequestException("Account must be of type INVESTMENT");
         }
-        editedLeg.accountId = updateDto.accountId;
-        editedLeg.account = { id: updateDto.accountId } as any;
+        this.assertCanHoldSecurities(account, "Account");
+        outLeg.accountId = updateDto.accountId;
+        outLeg.account = { id: updateDto.accountId } as any;
       }
 
-      // The paired leg can be rerouted to a different destination account.
+      // The destination leg can be rerouted to a different account.
       if (updateDto.destinationAccountId !== undefined) {
         const destAccount = await this.accountsService.findOne(
           userId,
@@ -1733,11 +1796,15 @@ export class InvestmentTransactionsService {
             "Destination account must be of type INVESTMENT",
           );
         }
-        linkedLeg.accountId = updateDto.destinationAccountId;
-        linkedLeg.account = { id: updateDto.destinationAccountId } as any;
+        if (destAccount.isClosed) {
+          throw new BadRequestException("Destination account is closed");
+        }
+        this.assertCanHoldSecurities(destAccount, "Destination account");
+        inLeg.accountId = updateDto.destinationAccountId;
+        inLeg.account = { id: updateDto.destinationAccountId } as any;
       }
 
-      if (editedLeg.accountId === linkedLeg.accountId) {
+      if (outLeg.accountId === inLeg.accountId) {
         throw new BadRequestException(
           "Source and destination accounts must be different",
         );
@@ -1797,6 +1864,19 @@ export class InvestmentTransactionsService {
           : undefined,
       );
 
+      // The incremental reverse/re-apply above can misattribute average cost
+      // when a leg crosses a zero balance (a TRANSFER_OUT reversal re-establishes
+      // the source's cost basis from the leg's price instead of the source's
+      // true blended cost). Rebuild the affected accounts from the authoritative
+      // transaction history inside this transaction so both accounts' share
+      // counts and average cost are exact -- and so a rebuild failure rolls the
+      // whole edit back rather than silently committing wrong holdings.
+      await this.holdingsService.rebuildAccountsFromTransactions(
+        userId,
+        Array.from(affectedAccountIds),
+        queryRunner,
+      );
+
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -1809,24 +1889,18 @@ export class InvestmentTransactionsService {
       this.triggerRecalcWithCashAccount(accId, userId);
     }
 
-    if (editedLeg.securityId) {
-      this.securityPriceService
-        .upsertTransactionPrice(editedLeg.securityId, editedLeg.transactionDate)
-        .catch((err) =>
-          this.logger.warn(
-            `Failed to update transaction-derived price: ${err.message}`,
-          ),
-        );
-    }
-
     const result = await this.findOne(userId, editedLegId);
+    const linkedResult = await this.findOne(userId, linkedLeg.id);
 
     this.actionHistoryService.record(userId, {
       entityType: "investment_transaction",
       entityId: editedLegId,
+      // beforeData and afterData both carry the paired leg under
+      // linkedTransferLeg so undo (beforeData) and redo (afterData) can restore
+      // both legs symmetrically.
       action: "update",
       beforeData: { ...beforeData, linkedTransferLeg: beforeLinked },
-      afterData: { ...result },
+      afterData: { ...result, linkedTransferLeg: { ...linkedResult } },
       description: "Updated security transfer",
     });
 
@@ -1850,14 +1924,20 @@ export class InvestmentTransactionsService {
       const linkedLeg = await this.investmentTransactionsRepository.findOne({
         where: { id: transaction.linkedTransactionId, userId },
       });
-      if (linkedLeg) {
-        return this.updateLinkedTransfer(
-          userId,
-          transaction,
-          linkedLeg,
-          updateDto,
+      if (!linkedLeg) {
+        // The pair is missing (stale link / partial data). Editing this leg
+        // alone would leave the two legs unbalanced, so refuse rather than
+        // silently corrupting the transfer.
+        throw new ConflictException(
+          "This transfer's paired transaction is missing; delete and recreate the transfer instead of editing it",
         );
       }
+      return this.updateLinkedTransfer(
+        userId,
+        transaction,
+        linkedLeg,
+        updateDto,
+      );
     }
 
     const beforeData = { ...transaction };

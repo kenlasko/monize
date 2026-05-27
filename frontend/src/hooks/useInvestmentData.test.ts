@@ -165,6 +165,54 @@ describe('useInvestmentData – handleDeleteTransaction', () => {
     expect(result.current.transactions).toHaveLength(0);
   });
 
+  it('decrements the total by two for a transfer even when the paired leg is on another page', async () => {
+    mockDeleteTransaction.mockResolvedValue(undefined);
+    // Only the OUT leg is loaded; its pair (t2) lives on another page.
+    const out = { ...makeTx('t1'), action: 'TRANSFER_OUT', linkedTransactionId: 't2' };
+    mockGetTransactions.mockResolvedValue({
+      data: [out],
+      pagination: { page: 1, limit: 25, total: 10, totalPages: 1, hasMore: false },
+    });
+
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+
+    await act(async () => {
+      await result.current.handleDeleteTransaction('t1');
+    });
+
+    // The backend deletes both legs, so the total drops by 2 (10 -> 8) even
+    // though only one leg was in the loaded list.
+    expect(result.current.pagination?.total).toBe(8);
+  });
+
+  it('drops the total by one when an account filter excludes the paired leg', async () => {
+    mockDeleteTransaction.mockResolvedValue(undefined);
+    // Only the OUT leg is loaded; its pair (t2) is on another account that the
+    // active filter excludes, so it is not part of pagination.total.
+    const out = { ...makeTx('t1'), action: 'TRANSFER_OUT', linkedTransactionId: 't2' };
+    mockGetTransactions.mockResolvedValue({
+      data: [out],
+      pagination: { page: 1, limit: 25, total: 10, totalPages: 1, hasMore: false },
+    });
+
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+
+    // Filter to a single account.
+    await act(async () => {
+      result.current.handleAccountChange(['acc-1']);
+      await new Promise(res => setTimeout(res, 0));
+    });
+
+    await act(async () => {
+      await result.current.handleDeleteTransaction('t1');
+    });
+
+    // Only the in-scope leg counts: 10 -> 9, not 8.
+    expect(result.current.pagination?.total).toBe(9);
+  });
+
   it('calls deleteTransaction API with the correct id', async () => {
     mockDeleteTransaction.mockResolvedValue(undefined);
 

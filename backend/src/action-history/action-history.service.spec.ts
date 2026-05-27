@@ -1029,6 +1029,48 @@ describe("ActionHistoryService", () => {
       expect(insertCalls.length).toBeGreaterThanOrEqual(2);
     });
 
+    it("reinserts idempotently, preserving exchange_rate and a null price", async () => {
+      const invAction = {
+        ...mockAction,
+        entityType: "investment_transaction",
+        action: "delete",
+        entityId: "inv-1",
+        beforeData: {
+          id: "inv-1",
+          accountId: "acc-1",
+          securityId: "sec-1",
+          action: "BUY",
+          transactionDate: "2024-01-15",
+          quantity: 10,
+          price: null,
+          commission: 0,
+          totalAmount: 1360,
+          exchangeRate: 1.36,
+        },
+        afterData: null,
+      };
+      mockRepository.findOne.mockResolvedValue(invAction);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+      mockQueryRunner.query.mockResolvedValue([]);
+
+      await service.undo(userId);
+
+      const insert = mockQueryRunner.query.mock.calls.find(
+        (call: any[]) =>
+          typeof call[0] === "string" &&
+          call[0].includes("INSERT INTO investment_transactions"),
+      );
+      expect(insert).toBeDefined();
+      // Idempotent on id collision (client retry / partial residue).
+      expect(insert![0]).toContain("ON CONFLICT (id) DO NOTHING");
+      expect(insert![0]).toContain("exchange_rate");
+      const params = insert![1] as unknown[];
+      // price (param 10) preserved as null, not coerced to 0.
+      expect(params[9]).toBeNull();
+      // exchange_rate (param 13) restored, not reset to 1.
+      expect(params[12]).toBe(1.36);
+    });
+
     it("should undo investment delete without linked cash transaction", async () => {
       const invAction = {
         ...mockAction,
@@ -1053,6 +1095,167 @@ describe("ActionHistoryService", () => {
       const result = await service.undo(userId);
 
       expect(result.description).toContain("Undone");
+    });
+
+    it("should undo a transfer create by removing both linked legs", async () => {
+      const invAction = {
+        ...mockAction,
+        entityType: "investment_transaction",
+        action: "create",
+        entityId: "inv-out",
+        afterData: {
+          id: "inv-out",
+          accountId: "acc-1",
+          linkedTransferLeg: { id: "inv-in", accountId: "acc-2" },
+        },
+      };
+      mockRepository.findOne.mockResolvedValue(invAction);
+
+      const outLeg = {
+        id: "inv-out",
+        userId,
+        accountId: "acc-1",
+        transactionId: null,
+        linkedTransactionId: "inv-in",
+      };
+      const inLeg = {
+        id: "inv-in",
+        userId,
+        accountId: "acc-2",
+        transactionId: null,
+        linkedTransactionId: "inv-out",
+      };
+      mockQueryRunner.manager.findOne
+        .mockResolvedValueOnce(outLeg) // entity lookup
+        .mockResolvedValueOnce(inLeg); // linked leg lookup
+      mockQueryRunner.manager.remove.mockResolvedValue(undefined);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+      mockQueryRunner.query.mockResolvedValue([]);
+
+      const result = await service.undo(userId);
+
+      expect(result.description).toContain("Undone");
+      // Both legs removed so holdings can't be left half-moved.
+      expect(mockQueryRunner.manager.remove).toHaveBeenCalledTimes(2);
+      // Both legs unlinked before removal to avoid a dangling self-FK.
+      const unlinkCalls = mockQueryRunner.manager.update.mock.calls.filter(
+        (c: any[]) => c[2] && c[2].linkedTransactionId === null,
+      );
+      expect(unlinkCalls).toHaveLength(2);
+    });
+
+    it("should undo a transfer delete by re-inserting both legs and relinking them", async () => {
+      const invAction = {
+        ...mockAction,
+        entityType: "investment_transaction",
+        action: "delete",
+        entityId: "inv-out",
+        beforeData: {
+          id: "inv-out",
+          accountId: "acc-1",
+          securityId: "sec-1",
+          action: "TRANSFER_OUT",
+          transactionDate: "2024-01-15",
+          quantity: 100,
+          price: 1.5,
+          linkedTransferLeg: {
+            id: "inv-in",
+            accountId: "acc-2",
+            securityId: "sec-1",
+            action: "TRANSFER_IN",
+            transactionDate: "2024-01-15",
+            quantity: 100,
+            price: 1.5,
+          },
+        },
+        afterData: null,
+      };
+      mockRepository.findOne.mockResolvedValue(invAction);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+      mockQueryRunner.query.mockResolvedValue([]);
+
+      const result = await service.undo(userId);
+
+      expect(result.description).toContain("Undone");
+      // Both legs re-inserted.
+      const insertCalls = mockQueryRunner.query.mock.calls.filter(
+        (call: any[]) =>
+          typeof call[0] === "string" &&
+          call[0].includes("INSERT INTO investment_transactions"),
+      );
+      expect(insertCalls).toHaveLength(2);
+      // Mutual link restored on both legs once both rows exist.
+      const relinkCalls = mockQueryRunner.manager.update.mock.calls.filter(
+        (c: any[]) => c[2] && typeof c[2].linkedTransactionId === "string",
+      );
+      expect(relinkCalls).toHaveLength(2);
+    });
+
+    it("should undo a transfer update by restoring both legs to their pre-edit state", async () => {
+      const invAction = {
+        ...mockAction,
+        entityType: "investment_transaction",
+        action: "update",
+        entityId: "inv-out",
+        beforeData: {
+          id: "inv-out",
+          accountId: "acc-1",
+          securityId: "sec-1",
+          action: "TRANSFER_OUT",
+          transactionDate: "2024-01-15",
+          quantity: 100,
+          price: 1.5,
+          linkedTransactionId: "inv-in",
+          linkedTransferLeg: {
+            id: "inv-in",
+            accountId: "acc-2",
+            securityId: "sec-1",
+            action: "TRANSFER_IN",
+            transactionDate: "2024-01-15",
+            quantity: 100,
+            price: 1.5,
+            linkedTransactionId: "inv-out",
+          },
+        },
+        afterData: {
+          id: "inv-out",
+          accountId: "acc-1",
+          quantity: 50,
+          linkedTransferLeg: { id: "inv-in", accountId: "acc-2", quantity: 50 },
+        },
+      };
+      mockRepository.findOne.mockResolvedValue(invAction);
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        id: "inv-out",
+        accountId: "acc-1",
+      });
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+      mockQueryRunner.query.mockResolvedValue([]);
+
+      const result = await service.undo(userId);
+
+      expect(result.description).toContain("Undone");
+      // Both legs restored to their pre-edit values.
+      const restoreCalls = mockQueryRunner.manager.update.mock.calls.filter(
+        (c: any[]) => c[2] && "quantity" in c[2],
+      );
+      expect(restoreCalls).toHaveLength(2);
+      expect(restoreCalls.every((c: any[]) => c[2].quantity === 100)).toBe(
+        true,
+      );
+    });
+
+    it("should not undo a regular (non-transfer) investment update", async () => {
+      const invAction = {
+        ...mockAction,
+        entityType: "investment_transaction",
+        action: "update",
+        entityId: "inv-1",
+        beforeData: { id: "inv-1", accountId: "acc-1", quantity: 10 },
+      };
+      mockRepository.findOne.mockResolvedValue(invAction);
+
+      await expect(service.undo(userId)).rejects.toThrow(ConflictException);
     });
 
     it("should throw ConflictException for unsupported investment action", async () => {
