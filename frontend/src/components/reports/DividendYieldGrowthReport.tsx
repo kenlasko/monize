@@ -77,6 +77,10 @@ export function DividendYieldGrowthReport() {
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
   const [reloadKey, setReloadKey] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  // Only the first load shows the full skeleton. Later reloads (e.g. changing
+  // the account filter) keep the existing content -- and the account dropdown --
+  // mounted so they update in place instead of unmounting the whole report.
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [viewType, setViewType] = useState<'yield' | 'growth' | 'frequency'>('yield');
   const isSingleAccount = selectedAccountIds.length === 1;
   const yieldSort = useSortableTable<YieldSortField>(
@@ -161,6 +165,7 @@ export function DividendYieldGrowthReport() {
         logger.error('Failed to load data:', error);
       } finally {
         setIsLoading(false);
+        setHasLoadedOnce(true);
       }
     };
     loadData();
@@ -387,7 +392,7 @@ export function DividendYieldGrowthReport() {
     });
   };
 
-  if (isLoading) {
+  if (isLoading && !hasLoadedOnce) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
         <div className="animate-pulse space-y-4">

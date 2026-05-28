@@ -37,6 +37,10 @@ export function InvestmentPerformanceReport() {
   const [reloadKey, setReloadKey] = useState(0);
   const [expandedSecurityId, setExpandedSecurityId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // Only the first load shows the full skeleton. Later reloads (e.g. changing
+  // the account filter) keep the existing content -- and the account dropdown --
+  // mounted so they update in place instead of unmounting the whole report.
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [viewType, setViewType] = useState<'performance' | 'allocation'>('performance');
   const isSingleAccount = selectedAccountIds.length === 1;
   const { sortField, sortDirection, handleSort } = useSortableTable<HoldingsSortField>(
@@ -58,6 +62,7 @@ export function InvestmentPerformanceReport() {
         logger.error('Failed to load investment data:', error);
       } finally {
         setIsLoading(false);
+        setHasLoadedOnce(true);
       }
     };
     loadData();
@@ -244,7 +249,7 @@ export function InvestmentPerformanceReport() {
     return null;
   };
 
-  if (isLoading) {
+  if (isLoading && !hasLoadedOnce) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
         <div className="animate-pulse space-y-4">

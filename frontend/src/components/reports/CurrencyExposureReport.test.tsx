@@ -172,6 +172,36 @@ describe('CurrencyExposureReport', () => {
     expect(screen.getByText('USD')).toBeInTheDocument();
   });
 
+  it('keeps content and the account dropdown mounted while a filter change reloads', async () => {
+    mockGetPortfolioSummary.mockResolvedValueOnce({ holdings: mockHoldings });
+    mockGetInvestmentAccounts.mockResolvedValue(mockAccounts);
+    render(<CurrencyExposureReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Total Portfolio')).toBeInTheDocument();
+    });
+
+    // The reload triggered by the filter change hangs so isLoading stays true
+    // throughout the assertions below.
+    mockGetPortfolioSummary.mockReturnValueOnce(new Promise(() => {}));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Filter by account' }));
+    await act(async () => {
+      fireEvent.click(screen.getByText('TFSA'));
+    });
+
+    // Wait for the debounced reload to actually fire (second summary fetch).
+    await waitFor(() => {
+      expect(mockGetPortfolioSummary).toHaveBeenCalledTimes(2);
+    });
+
+    // Mid-reload the report must update in place: existing content and the open
+    // account dropdown stay mounted instead of being replaced by the full-page
+    // skeleton (which would close the dropdown).
+    expect(screen.getByText('Total Portfolio')).toBeInTheDocument();
+    expect(document.querySelector('.animate-pulse')).toBeFalsy();
+    expect(screen.getByText('Select All')).toBeInTheDocument();
+  });
+
   it('shows correct number of currencies', async () => {
     mockGetPortfolioSummary.mockResolvedValue({ holdings: mockHoldings });
     mockGetInvestmentAccounts.mockResolvedValue([]);

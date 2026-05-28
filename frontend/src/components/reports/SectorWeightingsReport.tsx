@@ -68,6 +68,10 @@ export function SectorWeightingsReport() {
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
   const [selectedSecurityIds, setSelectedSecurityIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  // Only the first load shows the full skeleton. Later reloads (e.g. changing
+  // the account filter) keep the existing content -- and the account dropdown --
+  // mounted so they update in place instead of unmounting the whole report.
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
 
   const securityOptions = useMemo(
@@ -135,6 +139,7 @@ export function SectorWeightingsReport() {
       logger.error('Failed to load sector weightings:', error);
     } finally {
       setIsLoading(false);
+      setHasLoadedOnce(true);
     }
   }, [selectedAccountIds, selectedSecurityIds]);
 
@@ -164,7 +169,7 @@ export function SectorWeightingsReport() {
     });
   };
 
-  if (isLoading) {
+  if (isLoading && !hasLoadedOnce) {
     return (
       <div className="space-y-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">

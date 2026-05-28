@@ -86,6 +86,10 @@ export function SecurityTypeAllocationReport() {
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
   const [expandedType, setExpandedType] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // Only the first load shows the full skeleton. Later reloads (e.g. changing
+  // the account filter) keep the existing content -- and the account dropdown --
+  // mounted so they update in place instead of unmounting the whole report.
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
   const { sortField, sortDirection, handleSort } = useSortableTable<SecurityTypeSortField>(
     'reports.security-type-allocation.sort',
@@ -110,6 +114,7 @@ export function SecurityTypeAllocationReport() {
       logger.error('Failed to load data:', error);
     } finally {
       setIsLoading(false);
+      setHasLoadedOnce(true);
     }
   }, [selectedAccountIds]);
 
@@ -212,7 +217,7 @@ export function SecurityTypeAllocationReport() {
     });
   };
 
-  if (isLoading) {
+  if (isLoading && !hasLoadedOnce) {
     return (
       <div className="space-y-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">

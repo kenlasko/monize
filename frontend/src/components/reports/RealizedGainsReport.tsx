@@ -68,6 +68,10 @@ export function RealizedGainsReport() {
   const [reloadKey, setReloadKey] = useState(0);
   const { dateRange, setDateRange, resolvedRange, isValid } = useDateRange({ defaultRange: '1y', alignment: 'month' });
   const [isLoading, setIsLoading] = useState(true);
+  // Only the first load shows the full skeleton. Later reloads (e.g. changing
+  // the account filter) keep the existing content -- and the account dropdown --
+  // mounted so they update in place instead of unmounting the whole report.
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [viewType, setViewType] = useState<'chart' | 'table'>('chart');
   const isSingleAccount = selectedAccountIds.length === 1;
   const securityGainsSort = useSortableTable<SecurityGainsSortField>(
@@ -123,6 +127,7 @@ export function RealizedGainsReport() {
         logger.error('Failed to load realized gains:', error);
       } finally {
         setIsLoading(false);
+        setHasLoadedOnce(true);
       }
     };
     loadData();
@@ -276,7 +281,7 @@ export function RealizedGainsReport() {
     });
   }, [getExportData, securityGains.length, fmtValue, totals]);
 
-  if (isLoading) {
+  if (isLoading && !hasLoadedOnce) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
         <div className="animate-pulse space-y-4">
