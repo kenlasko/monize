@@ -205,6 +205,13 @@ const RANGE_FALLBACKS: Record<
 
 const INTRADAY_CACHE_TTL_MS = 60_000;
 
+// Max gap (in days) between a security's two most recent prices for their
+// delta to count as a "daily" move in Top Movers. A normal daily-priced
+// security spans 1-4 days (weekends/holidays); a sparsely priced holding such
+// as a GIC can span months, which would otherwise surface a stale, perpetual
+// daily change.
+const MAX_DAILY_PRICE_GAP_DAYS = 7;
+
 @Injectable()
 export class PortfolioService {
   private readonly logger = new Logger(PortfolioService.name);
@@ -505,10 +512,11 @@ export class PortfolioService {
     const priceRows: Array<{
       security_id: string;
       close_price: string;
+      price_date: string;
       rn: string;
     }> = await this.securityPriceRepository.query(
-      `SELECT security_id, close_price, rn FROM (
-         SELECT security_id, close_price,
+      `SELECT security_id, close_price, price_date, rn FROM (
+         SELECT security_id, close_price, price_date,
                 ROW_NUMBER() OVER (PARTITION BY security_id ORDER BY price_date DESC) as rn
          FROM security_prices
          WHERE security_id = ANY($1)
@@ -518,11 +526,11 @@ export class PortfolioService {
       [securityIds],
     );
 
-    // Build a map: securityId -> [latestPrice, previousPrice]
-    const priceMap = new Map<string, number[]>();
+    // Build a map: securityId -> [latest, previous] price points (newest first)
+    const priceMap = new Map<string, Array<{ price: number; date: string }>>();
     for (const row of priceRows) {
       const existing = priceMap.get(row.security_id) || [];
-      existing.push(Number(row.close_price));
+      existing.push({ price: Number(row.close_price), date: row.price_date });
       priceMap.set(row.security_id, existing);
     }
 
@@ -543,9 +551,22 @@ export class PortfolioService {
       const prices = priceMap.get(securityId);
       if (!prices || prices.length < 2) continue;
 
-      const [currentPrice, previousPrice] = prices;
-      if (previousPrice === 0) continue;
+      const [current, previous] = prices;
+      if (previous.price === 0) continue;
 
+      // Skip securities whose two most recent prices are far apart: the
+      // "previous" close isn't an adjacent trading session, so the delta is a
+      // long-period change rather than a daily move. Without this a sparsely
+      // priced holding (e.g. a matured GIC re-bought under the same symbol)
+      // reports the same stale "daily" change every day.
+      const gapDays = Math.round(
+        (new Date(current.date).getTime() - new Date(previous.date).getTime()) /
+          86_400_000,
+      );
+      if (gapDays > MAX_DAILY_PRICE_GAP_DAYS) continue;
+
+      const currentPrice = current.price;
+      const previousPrice = previous.price;
       const dailyChange = currentPrice - previousPrice;
       const dailyChangePercent = (dailyChange / previousPrice) * 100;
       const security = securityLookup.get(securityId);

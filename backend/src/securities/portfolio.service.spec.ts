@@ -1517,11 +1517,31 @@ describe("PortfolioService", () => {
       it("returns movers sorted by absolute daily change percent descending", async () => {
         securityPriceRepository.query.mockResolvedValue([
           // AAPL: current=180, previous=175 => +2.86%
-          { security_id: "sec-1", close_price: "180", rn: "1" },
-          { security_id: "sec-1", close_price: "175", rn: "2" },
+          {
+            security_id: "sec-1",
+            close_price: "180",
+            price_date: "2026-02-07",
+            rn: "1",
+          },
+          {
+            security_id: "sec-1",
+            close_price: "175",
+            price_date: "2026-02-06",
+            rn: "2",
+          },
           // VFV: current=90, previous=95 => -5.26%
-          { security_id: "sec-2", close_price: "90", rn: "1" },
-          { security_id: "sec-2", close_price: "95", rn: "2" },
+          {
+            security_id: "sec-2",
+            close_price: "90",
+            price_date: "2026-02-07",
+            rn: "1",
+          },
+          {
+            security_id: "sec-2",
+            close_price: "95",
+            price_date: "2026-02-06",
+            rn: "2",
+          },
         ]);
 
         const result = await service.getTopMovers(userId);
@@ -1537,10 +1557,30 @@ describe("PortfolioService", () => {
 
       it("calculates market value using total quantity and current price", async () => {
         securityPriceRepository.query.mockResolvedValue([
-          { security_id: "sec-1", close_price: "180", rn: "1" },
-          { security_id: "sec-1", close_price: "175", rn: "2" },
-          { security_id: "sec-2", close_price: "90", rn: "1" },
-          { security_id: "sec-2", close_price: "95", rn: "2" },
+          {
+            security_id: "sec-1",
+            close_price: "180",
+            price_date: "2026-02-07",
+            rn: "1",
+          },
+          {
+            security_id: "sec-1",
+            close_price: "175",
+            price_date: "2026-02-06",
+            rn: "2",
+          },
+          {
+            security_id: "sec-2",
+            close_price: "90",
+            price_date: "2026-02-07",
+            rn: "1",
+          },
+          {
+            security_id: "sec-2",
+            close_price: "95",
+            price_date: "2026-02-06",
+            rn: "2",
+          },
         ]);
 
         const result = await service.getTopMovers(userId);
@@ -1605,8 +1645,18 @@ describe("PortfolioService", () => {
           mockHoldingVFV,
         ]);
         securityPriceRepository.query.mockResolvedValue([
-          { security_id: "sec-2", close_price: "90", rn: "1" },
-          { security_id: "sec-2", close_price: "95", rn: "2" },
+          {
+            security_id: "sec-2",
+            close_price: "90",
+            price_date: "2026-02-07",
+            rn: "1",
+          },
+          {
+            security_id: "sec-2",
+            close_price: "95",
+            price_date: "2026-02-06",
+            rn: "2",
+          },
         ]);
 
         const result = await service.getTopMovers(userId);
@@ -1628,10 +1678,25 @@ describe("PortfolioService", () => {
         ]);
         securityPriceRepository.query.mockResolvedValue([
           // Only one price for AAPL
-          { security_id: "sec-1", close_price: "180", rn: "1" },
+          {
+            security_id: "sec-1",
+            close_price: "180",
+            price_date: "2026-02-07",
+            rn: "1",
+          },
           // Two prices for VFV
-          { security_id: "sec-2", close_price: "90", rn: "1" },
-          { security_id: "sec-2", close_price: "95", rn: "2" },
+          {
+            security_id: "sec-2",
+            close_price: "90",
+            price_date: "2026-02-07",
+            rn: "1",
+          },
+          {
+            security_id: "sec-2",
+            close_price: "95",
+            price_date: "2026-02-06",
+            rn: "2",
+          },
         ]);
 
         const result = await service.getTopMovers(userId);
@@ -1649,8 +1714,18 @@ describe("PortfolioService", () => {
         ]);
         holdingsRepository.find.mockResolvedValue([mockHoldingAAPL]);
         securityPriceRepository.query.mockResolvedValue([
-          { security_id: "sec-1", close_price: "180", rn: "1" },
-          { security_id: "sec-1", close_price: "0", rn: "2" },
+          {
+            security_id: "sec-1",
+            close_price: "180",
+            price_date: "2026-02-07",
+            rn: "1",
+          },
+          {
+            security_id: "sec-1",
+            close_price: "0",
+            price_date: "2026-02-06",
+            rn: "2",
+          },
         ]);
 
         const result = await service.getTopMovers(userId);
@@ -1684,8 +1759,18 @@ describe("PortfolioService", () => {
           holdingInAccount2,
         ]);
         securityPriceRepository.query.mockResolvedValue([
-          { security_id: "sec-2", close_price: "100", rn: "1" },
-          { security_id: "sec-2", close_price: "95", rn: "2" },
+          {
+            security_id: "sec-2",
+            close_price: "100",
+            price_date: "2026-02-07",
+            rn: "1",
+          },
+          {
+            security_id: "sec-2",
+            close_price: "95",
+            price_date: "2026-02-06",
+            rn: "2",
+          },
         ]);
 
         const result = await service.getTopMovers(userId);
@@ -1715,8 +1800,18 @@ describe("PortfolioService", () => {
         };
         holdingsRepository.find.mockResolvedValue([holdingWithMinimalSecurity]);
         securityPriceRepository.query.mockResolvedValue([
-          { security_id: "sec-1", close_price: "180", rn: "1" },
-          { security_id: "sec-1", close_price: "175", rn: "2" },
+          {
+            security_id: "sec-1",
+            close_price: "180",
+            price_date: "2026-02-07",
+            rn: "1",
+          },
+          {
+            security_id: "sec-1",
+            close_price: "175",
+            price_date: "2026-02-06",
+            rn: "2",
+          },
         ]);
 
         const result = await service.getTopMovers(userId);
@@ -1733,8 +1828,18 @@ describe("PortfolioService", () => {
         accountsRepository.find.mockResolvedValue([mockStandaloneAccount]);
         holdingsRepository.find.mockResolvedValue([mockHoldingXIC]);
         securityPriceRepository.query.mockResolvedValue([
-          { security_id: "sec-3", close_price: "36", rn: "1" },
-          { security_id: "sec-3", close_price: "35", rn: "2" },
+          {
+            security_id: "sec-3",
+            close_price: "36",
+            price_date: "2026-02-07",
+            rn: "1",
+          },
+          {
+            security_id: "sec-3",
+            close_price: "35",
+            price_date: "2026-02-06",
+            rn: "2",
+          },
         ]);
 
         const result = await service.getTopMovers(userId);
@@ -1743,6 +1848,64 @@ describe("PortfolioService", () => {
         expect(result[0].symbol).toBe("XIC.TO");
         expect(result[0].dailyChange).toBeCloseTo(1, 0);
         expect(result[0].marketValue).toBe(36 * 100);
+      });
+    });
+
+    describe("when the two most recent prices are far apart in time", () => {
+      it("skips the security so a sparsely priced holding (e.g. a GIC) is not a perpetual mover", async () => {
+        accountsRepository.find.mockResolvedValue([
+          mockBrokerageAccount,
+          mockCashAccount,
+        ]);
+        holdingsRepository.find.mockResolvedValue([mockHoldingAAPL]);
+        // A matured GIC re-bought under the same symbol: the previous price
+        // (80,000, a year ago) and the current price (50,000) are not adjacent
+        // trading sessions, so the -37.5% delta is not a daily move.
+        securityPriceRepository.query.mockResolvedValue([
+          {
+            security_id: "sec-1",
+            close_price: "50000",
+            price_date: "2025-06-23",
+            rn: "1",
+          },
+          {
+            security_id: "sec-1",
+            close_price: "80000",
+            price_date: "2024-06-23",
+            rn: "2",
+          },
+        ]);
+
+        const result = await service.getTopMovers(userId);
+
+        expect(result).toHaveLength(0);
+      });
+
+      it("includes the security when the gap is within the daily window (e.g. a long weekend)", async () => {
+        accountsRepository.find.mockResolvedValue([
+          mockBrokerageAccount,
+          mockCashAccount,
+        ]);
+        holdingsRepository.find.mockResolvedValue([mockHoldingAAPL]);
+        securityPriceRepository.query.mockResolvedValue([
+          {
+            security_id: "sec-1",
+            close_price: "180",
+            price_date: "2026-02-09",
+            rn: "1",
+          },
+          {
+            security_id: "sec-1",
+            close_price: "175",
+            price_date: "2026-02-06",
+            rn: "2",
+          },
+        ]);
+
+        const result = await service.getTopMovers(userId);
+
+        expect(result).toHaveLength(1);
+        expect(result[0].symbol).toBe("AAPL");
       });
     });
   });
