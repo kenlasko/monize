@@ -10,6 +10,15 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({
     formatCurrency: (n: number) => `$${n.toFixed(2)}`,
+    formatCurrencyPrecise: (n: number) => {
+      const abs = Math.abs(n);
+      let digits = 2;
+      if (n !== 0 && abs < 0.005) {
+        const exp = Math.floor(Math.log10(abs));
+        digits = Math.min(6, Math.max(2, -exp + 2));
+      }
+      return `$${n.toFixed(digits)}`;
+    },
     formatPercent: (n: number) => `${n.toFixed(2)}%`,
   }),
 }));
@@ -54,6 +63,17 @@ describe('TopMovers', () => {
     expect(screen.getByText('MSFT')).toBeInTheDocument();
     expect(screen.getByText('Microsoft')).toBeInTheDocument();
     expect(screen.getByText('$400.00')).toBeInTheDocument();
+  });
+
+  it('expands precision for sub-penny movers instead of showing 0.00', () => {
+    const movers = [
+      { securityId: '1', symbol: 'PENNY', name: 'Sub-penny Co', currentPrice: 0.000318, dailyChange: 0.000033, dailyChangePercent: 11.4, currencyCode: 'GBP' },
+    ] as any[];
+
+    render(<TopMovers movers={movers} isLoading={false} hasInvestmentAccounts={true} />);
+    // Price and change reveal their real figures rather than collapsing to 0.00.
+    expect(screen.getByText(/0\.000318/)).toBeInTheDocument();
+    expect(screen.getByText(/\+\$0\.000033 \(\+11\.40%\)/)).toBeInTheDocument();
   });
 
   it('shows positive change with plus sign and green color', () => {

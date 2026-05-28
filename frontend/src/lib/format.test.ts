@@ -5,6 +5,7 @@ import {
   getDecimalPlacesForCurrency,
   roundToDecimals,
   roundToCents,
+  adaptiveFractionDigits,
   formatAmount,
   formatAmountWithCommas,
   parseAmount,
@@ -465,5 +466,38 @@ describe('formatRelativeTime', () => {
     const result = formatRelativeTime(monthAgo);
     // Should not match relative format
     expect(result).not.toMatch(/Just now|m ago|h ago|Yesterday|d ago/);
+  });
+});
+
+describe('adaptiveFractionDigits', () => {
+  it('keeps the base precision for values that show a figure at 2dp', () => {
+    expect(adaptiveFractionDigits(1234.56)).toBe(2);
+    expect(adaptiveFractionDigits(0.01)).toBe(2);
+    expect(adaptiveFractionDigits(0.005)).toBe(2); // rounds to 0.01
+  });
+
+  it('keeps the base precision for zero', () => {
+    expect(adaptiveFractionDigits(0)).toBe(2);
+  });
+
+  it('expands precision for sub-penny values that would read as 0.00', () => {
+    // 0.000318 GBP (0.0318 GBX) -> 6 places reveals the real figure.
+    expect(adaptiveFractionDigits(0.000318)).toBe(6);
+    expect(adaptiveFractionDigits(0.000342)).toBe(6);
+    expect(adaptiveFractionDigits(0.0042)).toBe(5);
+  });
+
+  it('handles negative values by magnitude', () => {
+    expect(adaptiveFractionDigits(-0.000318)).toBe(6);
+  });
+
+  it('caps at maxDigits', () => {
+    expect(adaptiveFractionDigits(0.00000001)).toBe(6);
+    expect(adaptiveFractionDigits(0.00000001, 2, 8)).toBe(8);
+  });
+
+  it('respects a non-2 base precision (e.g. JPY=0)', () => {
+    expect(adaptiveFractionDigits(123, 0)).toBe(0); // already non-zero at 0dp
+    expect(adaptiveFractionDigits(0.4, 0)).toBe(3); // expands to ~3 significant figures
   });
 });

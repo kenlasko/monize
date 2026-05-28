@@ -87,7 +87,7 @@ function RefreshButton({ onRefresh, isRefreshing }: { onRefresh?: () => void; is
 
 export function TopMovers({ movers, isLoading, hasInvestmentAccounts, onRefresh, isRefreshing }: TopMoversProps) {
   const router = useRouter();
-  const { formatCurrency, formatPercent } = useNumberFormat();
+  const { formatCurrencyPrecise, formatPercent } = useNumberFormat();
   const defaultCurrency = usePreferencesStore((s) => s.preferences?.defaultCurrency) || 'USD';
   const [filter, setFilter] = useState<MoverFilter>(getStoredFilter);
 
@@ -181,7 +181,7 @@ export function TopMovers({ movers, isLoading, hasInvestmentAccounts, onRefresh,
           const isPositive = mover.dailyChange >= 0;
           const isForeign = mover.currencyCode && mover.currencyCode !== defaultCurrency;
           const fmtPrice = (value: number) => {
-            const formatted = formatCurrency(value, mover.currencyCode);
+            const formatted = formatCurrencyPrecise(value, mover.currencyCode);
             return isForeign ? `${formatted} ${mover.currencyCode}` : formatted;
           };
           return (
@@ -208,7 +208,7 @@ export function TopMovers({ movers, isLoading, hasInvestmentAccounts, onRefresh,
                       : 'text-red-600 dark:text-red-400'
                   }`}
                 >
-                  {isPositive ? '+' : ''}{formatCurrency(mover.dailyChange, mover.currencyCode)} ({isPositive ? '+' : ''}{formatPercent(mover.dailyChangePercent)})
+                  {isPositive ? '+' : ''}{formatCurrencyPrecise(mover.dailyChange, mover.currencyCode)} ({isPositive ? '+' : ''}{formatPercent(mover.dailyChangePercent)})
                 </div>
               </div>
             </div>

@@ -92,6 +92,33 @@ export function roundToCents(value: number): number {
 }
 
 /**
+ * Pick how many fraction digits to show so a tiny non-zero value doesn't
+ * collapse to "0.00". When the value already shows a non-zero figure at the
+ * currency's natural precision (baseDigits), baseDigits is returned unchanged.
+ * Otherwise the precision is expanded to reveal `significantDigits` significant
+ * figures (e.g. 0.000342 -> 6 digits), capped at maxDigits.
+ *
+ * Used for sub-penny securities (e.g. LSE pennies quoted around 0.000318 GBP)
+ * where rounding the price or daily change to 2 places would read as zero.
+ */
+export function adaptiveFractionDigits(
+  value: number,
+  baseDigits = 2,
+  maxDigits = 6,
+  significantDigits = 3,
+): number {
+  if (!isFinite(value) || value === 0) return baseDigits;
+  const abs = Math.abs(value);
+  // Already non-zero at the natural precision: leave it alone.
+  if (roundToDecimals(abs, baseDigits) !== 0) return baseDigits;
+  // floor(log10(abs)) is the exponent of the first significant digit
+  // (negative for sub-1 values), e.g. 0.000342 -> -4.
+  const firstSignificantExp = Math.floor(Math.log10(abs));
+  const digits = -firstSignificantExp + (significantDigits - 1);
+  return Math.min(maxDigits, Math.max(baseDigits, digits));
+}
+
+/**
  * Format a number to the specified decimal places for display in inputs.
  * Defaults to 2 decimal places.
  */

@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { usePreferencesStore } from '@/store/preferencesStore';
-import { roundToDecimals } from '@/lib/format';
+import { roundToDecimals, adaptiveFractionDigits } from '@/lib/format';
 
 /**
  * Get the effective locale for number formatting.
@@ -44,6 +44,27 @@ export function useNumberFormat() {
       return formatter.format(roundToDecimals(amount, decimals));
     },
     [numberFormat, defaultCurrency]
+  );
+
+  /**
+   * Currency format that expands precision for tiny values so a sub-penny
+   * amount (e.g. a 0.000342 GBP price or daily change) doesn't render as
+   * "0.00". Values that already show a figure at the currency's natural
+   * precision are formatted identically to formatCurrency.
+   */
+  const formatCurrencyPrecise = useCallback(
+    (amount: number, currencyCode?: string): string => {
+      const currency = currencyCode || defaultCurrency;
+      const locale = getEffectiveLocale(numberFormat);
+      const baseDigits =
+        new Intl.NumberFormat(locale, {
+          style: 'currency',
+          currency,
+          currencyDisplay: 'narrowSymbol',
+        }).resolvedOptions().minimumFractionDigits ?? 2;
+      return formatCurrency(amount, currency, adaptiveFractionDigits(amount, baseDigits));
+    },
+    [numberFormat, defaultCurrency, formatCurrency]
   );
 
   const formatCurrencyCompact = useCallback(
@@ -148,5 +169,5 @@ export function useNumberFormat() {
     [numberFormat, defaultCurrency]
   );
 
-  return { formatCurrency, formatCurrencyCompact, formatCurrencyAxis, formatCurrencyFlag, formatCurrencyLabel, formatNumber, formatPercent, defaultCurrency, numberFormat };
+  return { formatCurrency, formatCurrencyPrecise, formatCurrencyCompact, formatCurrencyAxis, formatCurrencyFlag, formatCurrencyLabel, formatNumber, formatPercent, defaultCurrency, numberFormat };
 }
