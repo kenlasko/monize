@@ -21,6 +21,18 @@ function compressBackupData(data: Record<string, unknown>): Buffer {
   return gzipSync(Buffer.from(JSON.stringify(data), "utf-8"));
 }
 
+// Parses an INSERT call captured by the query mock into a { column: value }
+// map, pairing the column list in the SQL with the parameter array. Used to
+// read back the (remapped) values the restore actually inserted.
+function insertColumnMap(call: unknown[]): Record<string, unknown> {
+  const sql = call[0] as string;
+  const colMatch = sql.match(/\(([^)]*)\)\s*VALUES/i);
+  if (!colMatch) return {};
+  const columns = colMatch[1].split(",").map((c) => c.trim().replace(/"/g, ""));
+  const values = (call[1] as unknown[]) ?? [];
+  return Object.fromEntries(columns.map((col, i) => [col, values[i]]));
+}
+
 describe("BackupService", () => {
   let service: BackupService;
   let mockUserRepo: Record<string, jest.Mock>;
@@ -198,6 +210,7 @@ describe("BackupService", () => {
       "is_active",
       "type",
       "investment_security_id",
+      "tag_ids",
       "created_at",
       "updated_at",
     ],
@@ -808,7 +821,19 @@ describe("BackupService", () => {
       // The forward FK to securities(id) must be stripped from the INSERT.
       expect(splitInsert![0]).not.toContain("investment_security_id");
 
-      // ...and restored via a Phase-3 UPDATE keyed by the split id.
+      // Primary keys are remapped to fresh UUIDs on restore, so read back the
+      // ids the inserts actually used to verify the deferred UPDATE keeps the
+      // security -> split relationship intact.
+      const securityInsert = insertCalls.find(
+        (c: unknown[]) =>
+          typeof c[0] === "string" && c[0].includes('"securities"'),
+      );
+      const newSecurityId = insertColumnMap(securityInsert!).id;
+      const newSplitId = insertColumnMap(splitInsert!).id;
+      expect(newSecurityId).not.toBe("sec-1");
+      expect(newSplitId).not.toBe("ss-1");
+
+      // ...and restored via a Phase-3 UPDATE keyed by the (remapped) split id.
       const update = mockQueryRunner.query.mock.calls.find(
         (c: unknown[]) =>
           typeof c[0] === "string" &&
@@ -816,7 +841,7 @@ describe("BackupService", () => {
           c[0].includes('"investment_security_id"'),
       );
       expect(update).toBeDefined();
-      expect(update![1]).toEqual(["sec-1", "ss-1"]);
+      expect(update![1]).toEqual([newSecurityId, newSplitId]);
     });
 
     it("should defer circular FK columns and update them after all inserts", async () => {
@@ -903,7 +928,14 @@ describe("BackupService", () => {
           call[0].includes('"parent_id"'),
       );
       expect(parentIdUpdate).toBeDefined();
-      expect(parentIdUpdate![1]).toEqual(["cat-parent", "cat-child"]);
+      // Ids are remapped to fresh UUIDs, so the deferred parent_id UPDATE must
+      // key off the remapped ids the inserts used -- never the backup ids.
+      const catRows = categoryInserts.map(insertColumnMap);
+      const parent = catRows.find((r) => r.name === "Parent");
+      const child = catRows.find((r) => r.name === "Child");
+      expect(parent!.id).not.toBe("cat-parent");
+      expect(child!.id).not.toBe("cat-child");
+      expect(parentIdUpdate![1]).toEqual([parent!.id, child!.id]);
 
       const linkedAccountUpdate = updateCalls.find(
         (call: unknown[]) =>
@@ -912,6 +944,96 @@ describe("BackupService", () => {
           call[0].includes('"linked_account_id"'),
       );
       expect(linkedAccountUpdate).toBeDefined();
+    });
+
+    it("remaps backup primary keys so a restore never reuses another user's row ids", async () => {
+      // Reproduces the multi-user restore bug: UserB restoring UserA's backup
+      // must NOT write using UserA's original row ids (which would collide with
+      // or mutate UserA's existing rows). Every id must be remapped to a fresh
+      // UUID, and all references -- FK columns and ids nested in JSONB -- must
+      // be rewritten to match.
+      mockUserRepo.findOne.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      const backup = {
+        ...validBackupData,
+        tags: [{ id: "tag-1", user_id: "other-user", name: "Bills" }],
+        categories: [
+          { id: "cat-1", user_id: "other-user", name: "Food", parent_id: null },
+        ],
+        accounts: [{ id: "acc-1", user_id: "other-user", name: "Checking" }],
+        transactions: [
+          {
+            id: "txn-1",
+            user_id: "other-user",
+            account_id: "acc-1",
+            category_id: "cat-1",
+          },
+        ],
+        transaction_tags: [{ transaction_id: "txn-1", tag_id: "tag-1" }],
+        scheduled_transactions: [
+          {
+            id: "sched-1",
+            user_id: "other-user",
+            account_id: "acc-1",
+            tag_ids: ["tag-1"],
+          },
+        ],
+      };
+
+      await service.restoreData(
+        userId,
+        makeInput({ password: "test", data: backup }),
+      );
+
+      const backupIds = ["cat-1", "acc-1", "txn-1", "tag-1", "sched-1"];
+      const writeCalls = mockQueryRunner.query.mock.calls.filter(
+        (c: unknown[]) =>
+          typeof c[0] === "string" &&
+          (c[0].includes("INSERT INTO") || c[0].startsWith('UPDATE "')),
+      );
+
+      // No INSERT/UPDATE may reference any original backup id, even nested in a
+      // serialised JSONB value.
+      for (const call of writeCalls) {
+        const params = (call[1] as unknown[]) ?? [];
+        const flat = params.flatMap((p) => (Array.isArray(p) ? p : [p]));
+        for (const id of backupIds) {
+          expect(flat).not.toContain(id);
+        }
+        for (const p of params) {
+          if (typeof p === "string") {
+            for (const id of backupIds) {
+              expect(p.includes(id)).toBe(false);
+            }
+          }
+        }
+      }
+
+      // References stay internally consistent across the remap.
+      const inserts = writeCalls.filter((c: unknown[]) =>
+        (c[0] as string).includes("INSERT INTO"),
+      );
+      const findInsert = (table: string) =>
+        insertColumnMap(
+          inserts.find((c: unknown[]) =>
+            (c[0] as string).includes(`"${table}"`),
+          )!,
+        );
+
+      const acctRow = findInsert("accounts");
+      const txnRow = findInsert("transactions");
+      expect(acctRow.id).not.toBe("acc-1");
+      expect(txnRow.account_id).toBe(acctRow.id);
+
+      const tagRow = findInsert("tags");
+      const txnTagRow = findInsert("transaction_tags");
+      expect(txnTagRow.tag_id).toBe(tagRow.id);
+      expect(txnTagRow.transaction_id).toBe(txnRow.id);
+
+      // The id nested in the scheduled transaction's JSONB tag_ids is remapped.
+      const schedRow = findInsert("scheduled_transactions");
+      expect(schedRow.tag_ids).toContain(tagRow.id as string);
     });
 
     it("should ensure referenced currencies exist before restoring data", async () => {

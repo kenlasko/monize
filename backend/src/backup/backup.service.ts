@@ -8,6 +8,7 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, DataSource } from "typeorm";
 import * as bcrypt from "bcryptjs";
+import { randomUUID } from "crypto";
 import { createGzip, gunzipSync, gzipSync } from "zlib";
 import { User } from "../users/entities/user.entity";
 import { OidcService } from "../auth/oidc/oidc.service";
@@ -358,8 +359,18 @@ export class BackupService {
     await this.verifyAuthentication(user, input);
 
     const gzippedPayload = this.maybeDecrypt(input, user);
-    const data = this.decompressAndParse(gzippedPayload);
-    this.validateBackupFormat(data);
+    const rawData = this.decompressAndParse(gzippedPayload);
+    this.validateBackupFormat(rawData);
+
+    // Remap every primary key in the backup to a fresh UUID (and rewrite all
+    // references to those keys, including ids embedded in JSONB columns) so the
+    // restore behaves as if the backup came from an entirely separate system.
+    // Without this, restoring one user's backup into another user's account on
+    // the SAME system would collide on the original UUIDs: the inserts would be
+    // silently skipped by ON CONFLICT DO NOTHING, and the Phase-3 deferred-FK
+    // UPDATEs (keyed only by id) would mutate the OTHER user's rows.
+    const idRemap = this.buildBackupIdRemap(rawData);
+    const data = this.remapBackupIds(rawData, idRemap);
 
     this.logger.log(`Starting backup restore for user ${userId}`);
 
@@ -702,6 +713,76 @@ export class BackupService {
         "Invalid backup format: missing exportedAt",
       );
     }
+  }
+
+  /**
+   * Builds a map from every primary-key UUID in the backup to a freshly
+   * generated UUID. Currencies are intentionally excluded: they are shared,
+   * global rows keyed by `code` (not by a per-user UUID) and are referenced by
+   * code, so they must keep their original identifiers.
+   */
+  private buildBackupIdRemap(data: BackupData): Map<string, string> {
+    const remap = new Map<string, string>();
+    for (const [table, rows] of Object.entries(data)) {
+      if (table === "currencies" || !Array.isArray(rows)) continue;
+      for (const row of rows) {
+        if (!row || typeof row !== "object") continue;
+        const id = (row as Record<string, unknown>).id;
+        if (typeof id === "string" && id.length > 0 && !remap.has(id)) {
+          remap.set(id, randomUUID());
+        }
+      }
+    }
+    return remap;
+  }
+
+  /**
+   * Returns a deep copy of the backup with every id and every reference to an
+   * id (FK columns plus ids embedded in JSONB values such as scheduled
+   * transaction `tag_ids` or override `splits`) rewritten via the remap. The
+   * `user_id` columns are never remapped here -- they are not backup row ids,
+   * and insertRows() forces them to the restoring user. Currencies are passed
+   * through unchanged.
+   */
+  private remapBackupIds(
+    data: BackupData,
+    remap: Map<string, string>,
+  ): BackupData {
+    if (remap.size === 0) return data;
+    const result: Record<string, unknown> = { ...data };
+    for (const [table, rows] of Object.entries(data)) {
+      if (table === "currencies" || !Array.isArray(rows)) continue;
+      result[table] = rows.map((row) => this.deepRemapIds(row, remap));
+    }
+    return result as unknown as BackupData;
+  }
+
+  /**
+   * Recursively rewrites any string that matches a remapped id. Recurses into
+   * arrays and plain objects (e.g. JSONB columns) so ids nested inside JSON are
+   * remapped too. Because the remap only contains genuine backup primary keys
+   * (random UUIDs), non-id strings such as names or memos are left untouched.
+   */
+  private deepRemapIds(value: unknown, remap: Map<string, string>): unknown {
+    if (typeof value === "string") {
+      return remap.get(value) ?? value;
+    }
+    if (Array.isArray(value)) {
+      return value.map((item) => this.deepRemapIds(item, remap));
+    }
+    if (
+      value !== null &&
+      typeof value === "object" &&
+      !(value instanceof Date)
+    ) {
+      return Object.fromEntries(
+        Object.entries(value).map(([key, val]) => [
+          key,
+          this.deepRemapIds(val, remap),
+        ]),
+      );
+    }
+    return value;
   }
 
   private async deleteAllUserData(
