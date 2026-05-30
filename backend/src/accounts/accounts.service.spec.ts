@@ -126,6 +126,7 @@ describe("AccountsService", () => {
         findOneOrFail: jest.fn(),
         save: jest.fn().mockImplementation((data) => data),
         remove: jest.fn().mockImplementation((data) => data),
+        count: jest.fn().mockResolvedValue(0),
       },
     };
 
@@ -594,6 +595,67 @@ describe("AccountsService", () => {
           description: expect.stringContaining("Updated Name"),
         }),
       );
+    });
+
+    describe("currency lock", () => {
+      it("allows currency change when account has no transactions", async () => {
+        mockQueryRunner.manager.findOne.mockResolvedValue({ ...mockAccount });
+        mockQueryRunner.manager.count.mockResolvedValue(0);
+
+        await service.update("user-1", "account-1", { currencyCode: "CAD" });
+
+        const saved = mockQueryRunner.manager.save.mock.calls[0][0];
+        expect(saved.currencyCode).toBe("CAD");
+        expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      });
+
+      it("rejects currency change when account has regular transactions", async () => {
+        mockQueryRunner.manager.findOne.mockResolvedValue({ ...mockAccount });
+        mockQueryRunner.manager.count
+          .mockResolvedValueOnce(3) // transactions
+          .mockResolvedValueOnce(0); // investment transactions
+
+        await expect(
+          service.update("user-1", "account-1", { currencyCode: "CAD" }),
+        ).rejects.toThrow(BadRequestException);
+        expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+        expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+      });
+
+      it("rejects currency change when account has investment transactions", async () => {
+        mockQueryRunner.manager.findOne.mockResolvedValue({ ...mockAccount });
+        mockQueryRunner.manager.count
+          .mockResolvedValueOnce(0) // transactions
+          .mockResolvedValueOnce(2); // investment transactions
+
+        await expect(
+          service.update("user-1", "account-1", { currencyCode: "CAD" }),
+        ).rejects.toThrow(BadRequestException);
+        expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+        expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+      });
+
+      it("allows other field updates on accounts with transactions when currency is unchanged", async () => {
+        mockQueryRunner.manager.findOne.mockResolvedValue({ ...mockAccount });
+        mockQueryRunner.manager.count.mockResolvedValue(5);
+
+        await service.update("user-1", "account-1", { name: "Renamed" });
+
+        const saved = mockQueryRunner.manager.save.mock.calls[0][0];
+        expect(saved.name).toBe("Renamed");
+        expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      });
+
+      it("allows passing the same currency on an account with transactions (no-op)", async () => {
+        mockQueryRunner.manager.findOne.mockResolvedValue({ ...mockAccount });
+        mockQueryRunner.manager.count.mockResolvedValue(5);
+
+        await service.update("user-1", "account-1", {
+          currencyCode: mockAccount.currencyCode,
+        });
+
+        expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      });
     });
   });
 

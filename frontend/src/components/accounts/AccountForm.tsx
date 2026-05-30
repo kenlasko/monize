@@ -134,6 +134,9 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
   const [selectedInterestCategoryId, setSelectedInterestCategoryId] = useState<string>(account?.interestCategoryId || '');
   const [showLoanSetupDialog, setShowLoanSetupDialog] = useState(false);
   const [hasScheduledPayment, setHasScheduledPayment] = useState(!!account?.scheduledTransactionId);
+  // Currency becomes locked once the account has any transactions so existing
+  // balances are not silently re-denominated. Stays unlocked while loading.
+  const [isCurrencyLocked, setIsCurrencyLocked] = useState(false);
 
   const {
     register,
@@ -234,6 +237,23 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
   useEffect(() => {
     exchangeRatesApi.getCurrencies().then(setCurrencies).catch(() => {});
   }, []);
+
+  // For existing accounts, check whether any transactions exist. The backend
+  // rejects currency changes once transactions are present; mirror that in the
+  // UI by locking the field with an explanatory tooltip.
+  useEffect(() => {
+    if (!account?.id) return;
+    accountsApi
+      .canDelete(account.id)
+      .then(({ transactionCount, investmentTransactionCount }) => {
+        setIsCurrencyLocked(
+          transactionCount > 0 || investmentTransactionCount > 0,
+        );
+      })
+      .catch((error) => {
+        logger.error('Failed to load account transaction count:', error);
+      });
+  }, [account?.id]);
 
   // Re-sync the currency select value after options load.
   // react-hook-form's register sets the select value on mount, but if options
@@ -460,12 +480,27 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
       )}
 
       <div className="grid grid-cols-2 gap-4">
-        <Select
-          label="Currency"
-          options={currencyOptions}
-          error={errors.currencyCode?.message}
-          {...register('currencyCode')}
-        />
+        <div>
+          <div className="flex items-center mb-1">
+            <label
+              htmlFor="select-currency"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Currency
+            </label>
+            {isCurrencyLocked && (
+              <InfoTooltip text="Currency is locked because this account already has transactions. Changing it would silently re-denominate existing balances." />
+            )}
+          </div>
+          <Select
+            id="select-currency"
+            options={currencyOptions}
+            error={errors.currencyCode?.message}
+            disabled={isCurrencyLocked}
+            className={isCurrencyLocked ? 'opacity-60' : undefined}
+            {...register('currencyCode')}
+          />
+        </div>
 
         <CurrencyInput
           label={isLoanAccount ? 'Loan Amount' : isMortgageAccount ? 'Mortgage Amount' : 'Opening Balance'}

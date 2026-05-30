@@ -446,6 +446,29 @@ export class AccountsService {
         throw new BadRequestException("Cannot update a closed account");
       }
 
+      // Currency is locked once the account has transactions. Allowing it to
+      // change after that would silently re-denominate existing balances.
+      if (
+        updateAccountDto.currencyCode !== undefined &&
+        updateAccountDto.currencyCode !== account.currencyCode
+      ) {
+        const [transactionCount, investmentTransactionCount] =
+          await Promise.all([
+            queryRunner.manager.count(Transaction, {
+              where: { accountId: id },
+            }),
+            queryRunner.manager.count(InvestmentTransaction, {
+              where: { accountId: id },
+            }),
+          ]);
+
+        if (transactionCount > 0 || investmentTransactionCount > 0) {
+          throw new BadRequestException(
+            "Cannot change the currency of an account that has transactions.",
+          );
+        }
+      }
+
       const beforeData = { ...account };
 
       // If openingBalance is being changed, we need to recalculate currentBalance
