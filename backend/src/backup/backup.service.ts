@@ -38,6 +38,9 @@ export class BackupPasswordRequiredError extends BadRequestException {
 
 const BACKUP_VERSION = 1;
 
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 interface BackupData {
   version: number;
   exportedAt: string;
@@ -719,7 +722,11 @@ export class BackupService {
    * Builds a map from every primary-key UUID in the backup to a freshly
    * generated UUID. Currencies are intentionally excluded: they are shared,
    * global rows keyed by `code` (not by a per-user UUID) and are referenced by
-   * code, so they must keep their original identifiers.
+   * code, so they must keep their original identifiers. Non-UUID ids (e.g.
+   * `security_prices.id` is BIGSERIAL) are also excluded -- they get a fresh
+   * value assigned by the DB on insert (see insertRows), and remapping them
+   * to UUIDs here would (a) corrupt them and (b) clobber unrelated bigint
+   * values in other columns that happen to share the same string form.
    */
   private buildBackupIdRemap(data: BackupData): Map<string, string> {
     const remap = new Map<string, string>();
@@ -728,7 +735,7 @@ export class BackupService {
       for (const row of rows) {
         if (!row || typeof row !== "object") continue;
         const id = (row as Record<string, unknown>).id;
-        if (typeof id === "string" && id.length > 0 && !remap.has(id)) {
+        if (typeof id === "string" && UUID_REGEX.test(id) && !remap.has(id)) {
           remap.set(id, randomUUID());
         }
       }
@@ -1271,22 +1278,39 @@ export class BackupService {
     const columnsToDefer = deferredFkColumns[table] ?? [];
 
     // Fetch all valid column names for this table from the schema. This serves
-    // two purposes: (1) detect native PostgreSQL array columns so we can pass JS
-    // arrays directly to the pg driver, and (2) validate that column names from
+    // three purposes: (1) detect native PostgreSQL array columns so we can pass
+    // JS arrays directly to the pg driver, (2) validate that column names from
     // the user-uploaded backup are real columns, preventing SQL injection via
-    // crafted column names with embedded double-quote characters.
-    const schemaColResult = await queryRunner.query(
-      `SELECT column_name, data_type FROM information_schema.columns
+    // crafted column names with embedded double-quote characters, and (3)
+    // detect sequence-backed columns (e.g. BIGSERIAL `id`) that must be stripped
+    // from the INSERT so PostgreSQL assigns a fresh value -- otherwise the
+    // backup's bigint ids would collide with other users' rows on the shared
+    // sequence and be silently skipped by ON CONFLICT DO NOTHING.
+    const schemaColResult: Array<{
+      column_name: string;
+      data_type: string;
+      column_default: string | null;
+    }> = await queryRunner.query(
+      `SELECT column_name, data_type, column_default FROM information_schema.columns
        WHERE table_name = $1 AND table_schema = 'public'`,
       [table],
     );
     const validColumns = new Set<string>(
-      schemaColResult.map((r: { column_name: string }) => r.column_name),
+      schemaColResult.map((r) => r.column_name),
     );
     const pgArrayColumns = new Set<string>(
       schemaColResult
-        .filter((r: { data_type: string }) => r.data_type === "ARRAY")
-        .map((r: { column_name: string }) => r.column_name),
+        .filter((r) => r.data_type === "ARRAY")
+        .map((r) => r.column_name),
+    );
+    const sequenceBackedColumns = new Set<string>(
+      schemaColResult
+        .filter(
+          (r) =>
+            typeof r.column_default === "string" &&
+            r.column_default.includes("nextval"),
+        )
+        .map((r) => r.column_name),
     );
 
     let count = 0;
@@ -1303,6 +1327,14 @@ export class BackupService {
 
       // Strip deferred FK columns to avoid circular reference violations
       for (const col of columnsToDefer) {
+        delete filteredRow[col];
+      }
+
+      // Strip sequence-backed columns (e.g. BIGSERIAL `id`) so the DB assigns
+      // a fresh value. Reusing the backup's value would collide with other
+      // users' rows on the shared sequence and be silently dropped by
+      // ON CONFLICT DO NOTHING.
+      for (const col of sequenceBackedColumns) {
         delete filteredRow[col];
       }
 

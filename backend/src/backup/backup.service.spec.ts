@@ -8,6 +8,7 @@ import {
 } from "@nestjs/common";
 import { gzipSync, gunzipSync } from "zlib";
 import { PassThrough } from "stream";
+import { randomUUID } from "crypto";
 import { BackupService, RestoreBackupInput } from "./backup.service";
 import { User } from "../users/entities/user.entity";
 import { OidcService } from "../auth/oidc/oidc.service";
@@ -780,25 +781,29 @@ describe("BackupService", () => {
       mockUserRepo.findOne.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
+      const securityId = randomUUID();
+      const schedId = randomUUID();
+      const splitId = randomUUID();
+      const accountId = randomUUID();
       const backupWithInvSplit = {
         ...validBackupData,
         securities: [
-          { id: "sec-1", user_id: userId, symbol: "VEA", name: "Vanguard" },
+          { id: securityId, user_id: userId, symbol: "VEA", name: "Vanguard" },
         ],
         scheduled_transactions: [
           {
-            id: "sched-1",
+            id: schedId,
             user_id: userId,
-            account_id: "acc-1",
-            investment_security_id: "sec-1",
+            account_id: accountId,
+            investment_security_id: securityId,
           },
         ],
         scheduled_transaction_splits: [
           {
-            id: "ss-1",
-            scheduled_transaction_id: "sched-1",
+            id: splitId,
+            scheduled_transaction_id: schedId,
             amount: -5,
-            investment_security_id: "sec-1",
+            investment_security_id: securityId,
           },
         ],
       };
@@ -830,8 +835,8 @@ describe("BackupService", () => {
       );
       const newSecurityId = insertColumnMap(securityInsert!).id;
       const newSplitId = insertColumnMap(splitInsert!).id;
-      expect(newSecurityId).not.toBe("sec-1");
-      expect(newSplitId).not.toBe("ss-1");
+      expect(newSecurityId).not.toBe(securityId);
+      expect(newSplitId).not.toBe(splitId);
 
       // ...and restored via a Phase-3 UPDATE keyed by the (remapped) split id.
       const update = mockQueryRunner.query.mock.calls.find(
@@ -848,52 +853,59 @@ describe("BackupService", () => {
       mockUserRepo.findOne.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
+      const catParentId = randomUUID();
+      const catChildId = randomUUID();
+      const acc1Id = randomUUID();
+      const acc2Id = randomUUID();
+      const schedId = randomUUID();
+      const txn1Id = randomUUID();
+      const txn2Id = randomUUID();
       const backupWithFks = {
         ...validBackupData,
         categories: [
           {
-            id: "cat-parent",
+            id: catParentId,
             user_id: userId,
             name: "Parent",
             parent_id: null,
           },
           {
-            id: "cat-child",
+            id: catChildId,
             user_id: userId,
             name: "Child",
-            parent_id: "cat-parent",
+            parent_id: catParentId,
           },
         ],
         accounts: [
           {
-            id: "acc-1",
+            id: acc1Id,
             user_id: userId,
             name: "Checking",
-            linked_account_id: "acc-2",
-            scheduled_transaction_id: "sched-1",
+            linked_account_id: acc2Id,
+            scheduled_transaction_id: schedId,
           },
           {
-            id: "acc-2",
+            id: acc2Id,
             user_id: userId,
             name: "Savings",
-            linked_account_id: "acc-1",
+            linked_account_id: acc1Id,
           },
         ],
         scheduled_transactions: [
-          { id: "sched-1", user_id: userId, account_id: "acc-1" },
+          { id: schedId, user_id: userId, account_id: acc1Id },
         ],
         transactions: [
           {
-            id: "txn-1",
+            id: txn1Id,
             user_id: userId,
-            account_id: "acc-1",
-            linked_transaction_id: "txn-2",
+            account_id: acc1Id,
+            linked_transaction_id: txn2Id,
           },
           {
-            id: "txn-2",
+            id: txn2Id,
             user_id: userId,
-            account_id: "acc-2",
-            linked_transaction_id: "txn-1",
+            account_id: acc2Id,
+            linked_transaction_id: txn1Id,
           },
         ],
       };
@@ -933,8 +945,8 @@ describe("BackupService", () => {
       const catRows = categoryInserts.map(insertColumnMap);
       const parent = catRows.find((r) => r.name === "Parent");
       const child = catRows.find((r) => r.name === "Child");
-      expect(parent!.id).not.toBe("cat-parent");
-      expect(child!.id).not.toBe("cat-child");
+      expect(parent!.id).not.toBe(catParentId);
+      expect(child!.id).not.toBe(catChildId);
       expect(parentIdUpdate![1]).toEqual([parent!.id, child!.id]);
 
       const linkedAccountUpdate = updateCalls.find(
@@ -955,28 +967,33 @@ describe("BackupService", () => {
       mockUserRepo.findOne.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
+      const tagId = randomUUID();
+      const catId = randomUUID();
+      const acctId = randomUUID();
+      const txnId = randomUUID();
+      const schedId = randomUUID();
       const backup = {
         ...validBackupData,
-        tags: [{ id: "tag-1", user_id: "other-user", name: "Bills" }],
+        tags: [{ id: tagId, user_id: "other-user", name: "Bills" }],
         categories: [
-          { id: "cat-1", user_id: "other-user", name: "Food", parent_id: null },
+          { id: catId, user_id: "other-user", name: "Food", parent_id: null },
         ],
-        accounts: [{ id: "acc-1", user_id: "other-user", name: "Checking" }],
+        accounts: [{ id: acctId, user_id: "other-user", name: "Checking" }],
         transactions: [
           {
-            id: "txn-1",
+            id: txnId,
             user_id: "other-user",
-            account_id: "acc-1",
-            category_id: "cat-1",
+            account_id: acctId,
+            category_id: catId,
           },
         ],
-        transaction_tags: [{ transaction_id: "txn-1", tag_id: "tag-1" }],
+        transaction_tags: [{ transaction_id: txnId, tag_id: tagId }],
         scheduled_transactions: [
           {
-            id: "sched-1",
+            id: schedId,
             user_id: "other-user",
-            account_id: "acc-1",
-            tag_ids: ["tag-1"],
+            account_id: acctId,
+            tag_ids: [tagId],
           },
         ],
       };
@@ -986,7 +1003,7 @@ describe("BackupService", () => {
         makeInput({ password: "test", data: backup }),
       );
 
-      const backupIds = ["cat-1", "acc-1", "txn-1", "tag-1", "sched-1"];
+      const backupIds = [catId, acctId, txnId, tagId, schedId];
       const writeCalls = mockQueryRunner.query.mock.calls.filter(
         (c: unknown[]) =>
           typeof c[0] === "string" &&
@@ -1023,7 +1040,7 @@ describe("BackupService", () => {
 
       const acctRow = findInsert("accounts");
       const txnRow = findInsert("transactions");
-      expect(acctRow.id).not.toBe("acc-1");
+      expect(acctRow.id).not.toBe(acctId);
       expect(txnRow.account_id).toBe(acctRow.id);
 
       const tagRow = findInsert("tags");
@@ -1034,6 +1051,142 @@ describe("BackupService", () => {
       // The id nested in the scheduled transaction's JSONB tag_ids is remapped.
       const schedRow = findInsert("scheduled_transactions");
       expect(schedRow.tag_ids).toContain(tagRow.id as string);
+    });
+
+    it("strips sequence-backed id columns so PG auto-assigns fresh values on restore", async () => {
+      // security_prices.id is BIGSERIAL. If we passed the backup's bigint id
+      // through, it would either be remapped to a UUID (the original bug --
+      // "invalid input syntax for type bigint") or collide on the shared
+      // sequence with another user's row and be silently skipped by
+      // ON CONFLICT DO NOTHING. Stripping the column lets PG assign a fresh
+      // value, mirroring how UUID primary keys get remapped to fresh UUIDs.
+      mockUserRepo.findOne.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      const securityId = randomUUID();
+      mockQueryRunner.query.mockImplementation(
+        (sql: string, params?: unknown[]) => {
+          if (
+            typeof sql === "string" &&
+            sql.includes("information_schema.columns") &&
+            Array.isArray(params) &&
+            params[0] === "security_prices"
+          ) {
+            return Promise.resolve([
+              {
+                column_name: "id",
+                data_type: "bigint",
+                column_default: "nextval('security_prices_id_seq'::regclass)",
+              },
+              {
+                column_name: "security_id",
+                data_type: "uuid",
+                column_default: null,
+              },
+              {
+                column_name: "price_date",
+                data_type: "date",
+                column_default: null,
+              },
+              {
+                column_name: "close_price",
+                data_type: "numeric",
+                column_default: null,
+              },
+            ]);
+          }
+          return mockQueryHandler(sql, params);
+        },
+      );
+
+      const backup = {
+        ...validBackupData,
+        securities: [
+          {
+            id: securityId,
+            user_id: userId,
+            symbol: "VEA",
+            name: "Vanguard",
+          },
+        ],
+        security_prices: [
+          {
+            id: "5",
+            security_id: securityId,
+            price_date: "2024-06-01",
+            close_price: 100.5,
+          },
+          {
+            id: "6",
+            security_id: securityId,
+            price_date: "2024-06-02",
+            close_price: 101.25,
+          },
+        ],
+      };
+
+      await service.restoreData(
+        userId,
+        makeInput({ password: "test", data: backup }),
+      );
+
+      const priceInserts = mockQueryRunner.query.mock.calls.filter(
+        (c: unknown[]) =>
+          typeof c[0] === "string" &&
+          c[0].includes('INSERT INTO "security_prices"'),
+      );
+      expect(priceInserts.length).toBe(2);
+      for (const call of priceInserts) {
+        // id column is stripped entirely so PG assigns from the sequence.
+        // Without this, the original bug remapped the bigint id to a UUID
+        // and sent it into the bigint column.
+        expect(call[0]).not.toContain('"id"');
+        // The UUID FK to securities is still remapped to the new security id.
+        const row = insertColumnMap(call);
+        expect(row.security_id).not.toBe(securityId);
+      }
+    });
+
+    it("does not remap non-UUID string values that happen to match a bigint id", async () => {
+      // The original buildBackupIdRemap matched any string id, so a bigint
+      // like "5" would land in the remap and deepRemapIds would rewrite every
+      // string "5" in the backup -- including unrelated bigint values -- to
+      // a UUID. The UUID-only filter prevents that.
+      mockUserRepo.findOne.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      const acctId = randomUUID();
+      const backup = {
+        ...validBackupData,
+        // A bigserial-style id and a non-id field with the same string value.
+        // Neither should be rewritten as a UUID.
+        security_prices: [
+          { id: "5", security_id: acctId, price_date: "2024-06-01" },
+        ],
+        accounts: [
+          {
+            id: acctId,
+            user_id: userId,
+            name: "Checking",
+            account_number: "5",
+          },
+        ],
+      };
+
+      await service.restoreData(
+        userId,
+        makeInput({ password: "test", data: backup }),
+      );
+
+      const acctInsert = mockQueryRunner.query.mock.calls.find(
+        (c: unknown[]) =>
+          typeof c[0] === "string" && c[0].includes('INSERT INTO "accounts"'),
+      );
+      expect(acctInsert).toBeDefined();
+      const row = insertColumnMap(acctInsert!);
+      // The bigint-shaped string is preserved as-is; only UUID-format ids
+      // get remapped.
+      expect(row.account_number).toBe("5");
     });
 
     it("should ensure referenced currencies exist before restoring data", async () => {
