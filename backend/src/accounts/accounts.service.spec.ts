@@ -126,6 +126,7 @@ describe("AccountsService", () => {
         findOneOrFail: jest.fn(),
         save: jest.fn().mockImplementation((data) => data),
         remove: jest.fn().mockImplementation((data) => data),
+        query: jest.fn().mockResolvedValue(undefined),
       },
     };
 
@@ -1867,6 +1868,103 @@ describe("AccountsService", () => {
 
       // Only one save call for the main account
       expect(mockQueryRunner.manager.save).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("update - currency cascade to transactions and scheduled transactions", () => {
+    it("updates transactions and scheduled_transactions when account currency changes", async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        ...mockAccount,
+        accountType: AccountType.CHEQUING,
+        linkedAccountId: null,
+        currencyCode: "USD",
+      });
+
+      await service.update("user-1", "account-1", { currencyCode: "CAD" });
+
+      const queryCalls = (mockQueryRunner.manager.query as jest.Mock).mock
+        .calls;
+      // Should run an UPDATE on transactions
+      const txCall = queryCalls.find((c) =>
+        (c[0] as string).includes("UPDATE transactions"),
+      );
+      expect(txCall).toBeDefined();
+      expect(txCall![1]).toEqual(["CAD", "account-1", "user-1"]);
+
+      // ...and another on scheduled_transactions
+      const stxCall = queryCalls.find((c) =>
+        (c[0] as string).includes("UPDATE scheduled_transactions"),
+      );
+      expect(stxCall).toBeDefined();
+      expect(stxCall![1]).toEqual(["CAD", "account-1", "user-1"]);
+    });
+
+    it("does not run the cascade when currencyCode is not in the update DTO", async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        ...mockAccount,
+        currencyCode: "USD",
+      });
+
+      await service.update("user-1", "account-1", { name: "Rename" });
+
+      const queryCalls = (mockQueryRunner.manager.query as jest.Mock).mock
+        .calls;
+      const cascadeCall = queryCalls.find(
+        (c) =>
+          (c[0] as string).includes("UPDATE transactions") ||
+          (c[0] as string).includes("UPDATE scheduled_transactions"),
+      );
+      expect(cascadeCall).toBeUndefined();
+    });
+
+    it("does not run the cascade when the new currency matches the old", async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        ...mockAccount,
+        currencyCode: "USD",
+      });
+
+      await service.update("user-1", "account-1", { currencyCode: "USD" });
+
+      const queryCalls = (mockQueryRunner.manager.query as jest.Mock).mock
+        .calls;
+      const cascadeCall = queryCalls.find(
+        (c) =>
+          (c[0] as string).includes("UPDATE transactions") ||
+          (c[0] as string).includes("UPDATE scheduled_transactions"),
+      );
+      expect(cascadeCall).toBeUndefined();
+    });
+
+    it("also cascades to the linked account's rows for investment account pairs", async () => {
+      mockQueryRunner.manager.findOne
+        .mockResolvedValueOnce({
+          ...mockAccount,
+          accountType: AccountType.INVESTMENT,
+          linkedAccountId: "brokerage-1",
+          currencyCode: "USD",
+        })
+        .mockResolvedValueOnce({
+          id: "brokerage-1",
+          userId: "user-1",
+          currencyCode: "USD",
+        });
+
+      await service.update("user-1", "account-1", { currencyCode: "CAD" });
+
+      const queryCalls = (mockQueryRunner.manager.query as jest.Mock).mock
+        .calls;
+      // Should have updated transactions for BOTH accounts
+      const txUpdatesForBrokerage = queryCalls.filter(
+        (c) =>
+          (c[0] as string).includes("UPDATE transactions") &&
+          c[1][1] === "brokerage-1",
+      );
+      expect(txUpdatesForBrokerage).toHaveLength(1);
+      expect(txUpdatesForBrokerage[0][1]).toEqual([
+        "CAD",
+        "brokerage-1",
+        "user-1",
+      ]);
     });
   });
 

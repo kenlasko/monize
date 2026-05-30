@@ -545,6 +545,23 @@ export class AccountsService {
 
       const savedAccount = await queryRunner.manager.save(account);
 
+      // If currency changed, cascade it to every transaction and scheduled
+      // transaction tied to this account so existing rows stop displaying the
+      // old code. The amounts themselves are unchanged -- this is a relabel,
+      // not a conversion. The account's currentBalance was already saved
+      // above, so we don't need to touch it here.
+      if (
+        updateAccountDto.currencyCode !== undefined &&
+        beforeData.currencyCode !== updateAccountDto.currencyCode
+      ) {
+        await this.cascadeCurrencyToAccountRows(
+          queryRunner,
+          userId,
+          account.id,
+          updateAccountDto.currencyCode,
+        );
+      }
+
       // If currency changed on an investment account, update the linked account too
       if (
         updateAccountDto.currencyCode !== undefined &&
@@ -555,8 +572,18 @@ export class AccountsService {
           where: { id: account.linkedAccountId, userId },
         });
         if (linkedAccount) {
+          const linkedHadDifferentCurrency =
+            linkedAccount.currencyCode !== updateAccountDto.currencyCode;
           linkedAccount.currencyCode = updateAccountDto.currencyCode;
           await queryRunner.manager.save(linkedAccount);
+          if (linkedHadDifferentCurrency) {
+            await this.cascadeCurrencyToAccountRows(
+              queryRunner,
+              userId,
+              linkedAccount.id,
+              updateAccountDto.currencyCode,
+            );
+          }
         }
       }
 
@@ -592,6 +619,36 @@ export class AccountsService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  /**
+   * Update `currency_code` on every `transactions` and `scheduled_transactions`
+   * row tied to the given account so they reflect the account's new currency.
+   * Called from `update()` when an account's currencyCode changes -- the
+   * column is denormalized on those rows (originally to support cross-currency
+   * transactions on an account, where amounts can differ from the account's
+   * native code), so we must keep it in sync explicitly.
+   *
+   * Must be invoked inside the caller's QueryRunner transaction.
+   */
+  private async cascadeCurrencyToAccountRows(
+    queryRunner: QueryRunner,
+    userId: string,
+    accountId: string,
+    newCurrencyCode: string,
+  ): Promise<void> {
+    await queryRunner.manager.query(
+      `UPDATE transactions
+         SET currency_code = $1
+       WHERE account_id = $2 AND user_id = $3 AND currency_code <> $1`,
+      [newCurrencyCode, accountId, userId],
+    );
+    await queryRunner.manager.query(
+      `UPDATE scheduled_transactions
+         SET currency_code = $1
+       WHERE account_id = $2 AND user_id = $3 AND currency_code <> $1`,
+      [newCurrencyCode, accountId, userId],
+    );
   }
 
   /**
