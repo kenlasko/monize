@@ -129,16 +129,19 @@ describe("CategoriesService", () => {
         manager: {
           update: jest.fn().mockResolvedValue({ affected: 0 }),
           find: jest.fn().mockResolvedValue([]),
-          remove: jest.fn().mockImplementation((entity: unknown) => entity),
+          // Mirror real TypeORM: save/remove require an explicit entity target
+          // when the value is a plain object (as findOne returns here). Return
+          // the data arg (2nd) so a single-arg call yields undefined and fails
+          // loudly, matching production's CannotDetermineEntityError.
+          remove: jest
+            .fn()
+            .mockImplementation((_target: unknown, entity: unknown) => entity),
           createQueryBuilder: jest.fn((..._args: unknown[]) =>
             createMockQueryBuilder(),
           ),
-          // Supports both save(entity) and save(Entity, data) call shapes.
           save: jest
             .fn()
-            .mockImplementation((entityOrData: unknown, data: unknown) =>
-              data !== undefined ? data : entityOrData,
-            ),
+            .mockImplementation((_target: unknown, data: unknown) => data),
           getRepository: jest.fn().mockReturnValue({
             create: jest.fn().mockImplementation((data: unknown) => ({
               ...(data as Record<string, unknown>),
@@ -914,7 +917,9 @@ describe("CategoriesService", () => {
       await service.update("user-1", "cat-1", { name: "Renamed" });
 
       // update should not be called for children
-      expect(mockDataSource.createQueryRunner().manager.update).not.toHaveBeenCalled();
+      expect(
+        mockDataSource.createQueryRunner().manager.update,
+      ).not.toHaveBeenCalled();
     });
   });
 
@@ -945,7 +950,11 @@ describe("CategoriesService", () => {
         { userId: "user-1", defaultCategoryId: "cat-1" },
         { defaultCategoryId: null },
       );
+      // Must pass the explicit entity target: findOne returns a plain object
+      // (spread with effectiveColor), so the single-arg form throws
+      // CannotDetermineEntityError against real TypeORM.
       expect(manager.remove).toHaveBeenCalledWith(
+        Category,
         expect.objectContaining({ id: "cat-1" }),
       );
     });

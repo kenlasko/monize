@@ -395,7 +395,10 @@ export class CategoriesService {
     await queryRunner.startTransaction();
     let saved: Category;
     try {
-      saved = await queryRunner.manager.save(category);
+      // Pass the explicit entity target: findOne returns a plain object
+      // (spread with effectiveColor), not a Category instance, so the
+      // single-arg form would throw CannotDetermineEntityError.
+      saved = await queryRunner.manager.save(Category, category);
 
       if (
         !category.parentId &&
@@ -504,7 +507,9 @@ export class CategoriesService {
         { userId, defaultCategoryId: id },
         { defaultCategoryId: null },
       );
-      await queryRunner.manager.remove(category);
+      // Explicit entity target: `category` here is a plain object from
+      // findOne (spread with effectiveColor), not a Category instance.
+      await queryRunner.manager.remove(Category, category);
 
       await queryRunner.commitTransaction();
     } catch (error) {
