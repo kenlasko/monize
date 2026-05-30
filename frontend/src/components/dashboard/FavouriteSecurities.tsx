@@ -40,7 +40,7 @@ function RefreshButton({ onRefresh, isRefreshing }: { onRefresh?: () => void; is
 
 export function FavouriteSecurities({ securities, isLoading, onRefresh, isRefreshing }: FavouriteSecuritiesProps) {
   const router = useRouter();
-  const { formatCurrency, formatPercent } = useNumberFormat();
+  const { formatCurrencyPrecise, formatPercent } = useNumberFormat();
   const defaultCurrency = usePreferencesStore((s) => s.preferences?.defaultCurrency) || 'USD';
 
   if (isLoading) {
@@ -103,7 +103,7 @@ export function FavouriteSecurities({ securities, isLoading, onRefresh, isRefres
           const isPositive = sec.dailyChange >= 0;
           const isForeign = sec.currencyCode && sec.currencyCode !== defaultCurrency;
           const fmtPrice = (value: number) => {
-            const formatted = formatCurrency(value, sec.currencyCode);
+            const formatted = formatCurrencyPrecise(value, sec.currencyCode);
             return isForeign ? `${formatted} ${sec.currencyCode}` : formatted;
           };
           return (
@@ -129,7 +129,7 @@ export function FavouriteSecurities({ securities, isLoading, onRefresh, isRefres
                       }`}
                     >
                       {isPositive ? '+' : ''}
-                      {formatCurrency(sec.dailyChange, sec.currencyCode)} ({isPositive ? '+' : ''}
+                      {formatCurrencyPrecise(sec.dailyChange, sec.currencyCode)} ({isPositive ? '+' : ''}
                       {formatPercent(sec.dailyChangePercent)})
                     </div>
                   </>
