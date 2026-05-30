@@ -86,7 +86,8 @@ vi.mock('@/lib/accounts', () => ({
 
 vi.mock('@/lib/transactions', () => ({
   transactionsApi: {
-    getAll: vi.fn().mockResolvedValue({ data: [], pagination: { page: 1, totalPages: 1, total: 0 } }),
+    getAll: vi.fn().mockResolvedValue({ data: [], pagination: { page: 1, totalPages: 1, total: 0, hasMore: false } }),
+    getAllPages: vi.fn().mockResolvedValue([]),
   },
 }));
 
