@@ -321,14 +321,37 @@ export class SecurityPriceService {
     const allActive = await this.securitiesRepository.find({
       where: { isActive: true },
     });
-    const securities = allActive.filter((s) => isRefreshEligible(s));
+    const eligible = allActive.filter((s) => isRefreshEligible(s));
+
+    // Skip securities that already have a price stored for today's date so a
+    // re-run after the daily close (or an on-demand refresh) doesn't re-fetch
+    // quotes that are already current. UTC "today" matches the US trading date
+    // at the 17:00 ET cron; outside that window nothing matches and we refresh
+    // everything, so this only ever avoids redundant work, never skips a
+    // security that needs updating.
+    let securities = eligible;
+    let skipped = 0;
+    if (eligible.length > 0) {
+      const today = formatDateYMD(new Date());
+      const freshRows: { security_id: string }[] =
+        (await this.dataSource.query(
+          `SELECT DISTINCT security_id FROM security_prices
+           WHERE security_id = ANY($1) AND price_date >= $2`,
+          [eligible.map((s) => s.id), today],
+        )) ?? [];
+      const freshIds = new Set(freshRows.map((r) => r.security_id));
+      if (freshIds.size > 0) {
+        securities = eligible.filter((s) => !freshIds.has(s.id));
+        skipped = eligible.length - securities.length;
+      }
+    }
 
     if (securities.length === 0) {
       return {
-        totalSecurities: 0,
+        totalSecurities: eligible.length,
         updated: 0,
         failed: 0,
-        skipped: 0,
+        skipped,
         results: [],
         lastUpdated: new Date(),
       };
@@ -341,7 +364,6 @@ export class SecurityPriceService {
     const results: PriceUpdateResult[] = [];
     let updated = 0;
     let failed = 0;
-    const skipped = 0;
 
     const symbolGroups = new Map<string, Security[]>();
     for (const security of securities) {

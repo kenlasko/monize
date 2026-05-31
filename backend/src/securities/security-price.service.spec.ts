@@ -390,6 +390,24 @@ describe("SecurityPriceService", () => {
       expect(result.lastUpdated).toBeInstanceOf(Date);
     });
 
+    it("skips securities that already have a price for today", async () => {
+      securitiesRepository.find.mockResolvedValue([mockSecurity]);
+      // staleness query reports this security as already fresh today
+      dataSourceMock.query.mockResolvedValueOnce([
+        { security_id: mockSecurity.id },
+      ]);
+      global.fetch = jest.fn() as jest.Mock;
+
+      const result = await service.refreshAllPrices();
+
+      expect(result.totalSecurities).toBe(1);
+      expect(result.skipped).toBe(1);
+      expect(result.updated).toBe(0);
+      expect(result.results).toHaveLength(0);
+      // no external fetch when everything is already fresh
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
     it("successfully refreshes prices for a US security", async () => {
       securitiesRepository.find.mockResolvedValue([mockSecurity]);
 
