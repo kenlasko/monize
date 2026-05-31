@@ -5,7 +5,7 @@ import {
   forwardRef,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { DataSource, Repository } from "typeorm";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { AccountsService } from "../accounts/accounts.service";
 import { isTransactionInFuture } from "../common/date-utils";
@@ -17,6 +17,7 @@ export class TransactionReconciliationService {
     private transactionsRepository: Repository<Transaction>,
     @Inject(forwardRef(() => AccountsService))
     private accountsService: AccountsService,
+    private dataSource: DataSource,
   ) {}
 
   async updateStatus(
@@ -30,43 +31,63 @@ export class TransactionReconciliationService {
     const wasVoid = oldStatus === TransactionStatus.VOID;
     const isVoid = status === TransactionStatus.VOID;
 
-    if (isTransactionInFuture(transaction.transactionDate)) {
-      if (wasVoid !== isVoid) {
-        await this.transactionsRepository.update(transaction.id, { status });
-        await this.accountsService.recalculateCurrentBalance(
-          transaction.accountId,
-        );
+    // The status change and the matching balance adjustment touch two tables
+    // (transactions + accounts) and must commit atomically, otherwise a failure
+    // between the two leaves the account balance out of sync with the status.
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      if (isTransactionInFuture(transaction.transactionDate)) {
+        await queryRunner.manager.update(Transaction, transaction.id, {
+          status,
+        });
+        if (wasVoid !== isVoid) {
+          await this.accountsService.recalculateCurrentBalance(
+            transaction.accountId,
+            queryRunner,
+          );
+        }
       } else {
-        await this.transactionsRepository.update(transaction.id, { status });
+        if (wasVoid && !isVoid) {
+          await this.accountsService.updateBalance(
+            transaction.accountId,
+            Number(transaction.amount),
+            queryRunner,
+          );
+        } else if (!wasVoid && isVoid) {
+          await this.accountsService.updateBalance(
+            transaction.accountId,
+            -Number(transaction.amount),
+            queryRunner,
+          );
+        }
+        await queryRunner.manager.update(Transaction, transaction.id, {
+          status,
+        });
       }
-    } else {
-      if (wasVoid && !isVoid) {
-        await this.accountsService.updateBalance(
-          transaction.accountId,
-          Number(transaction.amount),
-        );
-      } else if (!wasVoid && isVoid) {
-        await this.accountsService.updateBalance(
-          transaction.accountId,
-          -Number(transaction.amount),
-        );
+
+      if (
+        status === TransactionStatus.RECONCILED &&
+        oldStatus !== TransactionStatus.RECONCILED
+      ) {
+        const now = new Date();
+        const reconciledDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+        await queryRunner.manager.update(Transaction, transaction.id, {
+          reconciledDate,
+        });
       }
-      await this.transactionsRepository.update(transaction.id, { status });
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
 
     if (wasVoid !== isVoid) {
       triggerNetWorthRecalc(transaction.accountId, userId);
-    }
-
-    if (
-      status === TransactionStatus.RECONCILED &&
-      oldStatus !== TransactionStatus.RECONCILED
-    ) {
-      const now = new Date();
-      const reconciledDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-      await this.transactionsRepository.update(transaction.id, {
-        reconciledDate,
-      });
     }
 
     return findOne(userId, transaction.id);

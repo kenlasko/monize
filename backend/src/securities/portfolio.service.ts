@@ -9,6 +9,7 @@ import { PortfolioCalculationService } from "./portfolio-calculation.service";
 import { YahooFinanceService } from "./yahoo-finance.service";
 import { QuoteProviderRegistry } from "./providers/quote-provider.registry";
 import { roundMoney } from "../common/round.util";
+import { mapWithConcurrency } from "../common/concurrency.util";
 import {
   IntradayInterval,
   IntradayPoint,
@@ -19,6 +20,10 @@ import {
   IntradayValuePoint,
   IntradayValueResponse,
 } from "./dto/intraday-value.dto";
+
+// Intraday charts run on an interactive request; cap concurrent Yahoo fetches
+// so a portfolio with many holdings does not open one connection per symbol.
+const INTRADAY_FETCH_CONCURRENCY = 6;
 
 export interface TopMover {
   securityId: string;
@@ -921,8 +926,10 @@ export class PortfolioService {
     const seriesBySecurity = new Map<string, IntradayPoint[]>();
     const failedSymbols: string[] = [];
     const intervalCandidates = [yahooParams, ...RANGE_FALLBACKS[range]];
-    await Promise.all(
-      intradayHoldings.map(async (h) => {
+    await mapWithConcurrency(
+      intradayHoldings,
+      INTRADAY_FETCH_CONCURRENCY,
+      async (h) => {
         // Try the primary interval first, then any range-specific
         // fallbacks (e.g. 1m -> 5m for 1D). The first non-empty series
         // wins; silently degrade to coarser bars rather than treating it
@@ -949,7 +956,7 @@ export class PortfolioService {
         } else {
           failedSymbols.push(h.symbol);
         }
-      }),
+      },
     );
 
     // If literally every holding failed we have nothing to chart -- assume
@@ -1063,8 +1070,10 @@ export class PortfolioService {
       latest: number;
     };
     const fxByCurrency = new Map<string, FxCursor>();
-    await Promise.all(
-      [...fxCurrencies].map(async (currency) => {
+    await mapWithConcurrency(
+      [...fxCurrencies],
+      INTRADAY_FETCH_CONCURRENCY,
+      async (currency) => {
         const latest = await this.calculationService.convertToDefault(
           1,
           currency,
@@ -1091,7 +1100,7 @@ export class PortfolioService {
           cursor: -1,
           latest,
         });
-      }),
+      },
     );
 
     // Walk each FX cursor monotonically as the grid advances; if no

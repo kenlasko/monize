@@ -872,38 +872,29 @@ export class AccountsService {
   }> {
     const accounts = await this.findAll(userId, false);
 
-    const assetTypes = ["CHEQUING", "SAVINGS", "INVESTMENT", "CASH", "ASSET"];
-    const liabilityTypes = [
-      "CREDIT_CARD",
-      "LOAN",
-      "MORTGAGE",
-      "LINE_OF_CREDIT",
-    ];
+    // totalBalance is the raw book-balance sum across accounts. Assets,
+    // liabilities and net worth are derived from the same canonical source as
+    // the dashboard Net Worth widget and the `get_account_balances` tool
+    // (getMonthlyNetWorth) so every surface reports an identical net worth.
+    // The previous naive currentBalance classification here ignored brokerage
+    // market value and futureTransactionsSum, producing a different number than
+    // the rest of the app.
+    const totalBalanceCents = accounts.reduce(
+      (sum, account) =>
+        sum + Math.round(Number(account.currentBalance) * 10000),
+      0,
+    );
+    const totalBalance = totalBalanceCents / 10000;
 
-    let totalBalance = 0;
-    let totalAssets = 0;
-    let totalLiabilities = 0;
-
-    accounts.forEach((account) => {
-      const balance = Number(account.currentBalance);
-      totalBalance += balance;
-
-      if (account.excludeFromNetWorth) return;
-
-      if (assetTypes.includes(account.accountType)) {
-        totalAssets += balance;
-      } else if (liabilityTypes.includes(account.accountType)) {
-        // Liabilities are typically negative or stored as positive but represent debt
-        totalLiabilities += Math.abs(balance);
-      }
-    });
+    const monthly = await this.netWorthService.getMonthlyNetWorth(userId);
+    const latest = monthly[monthly.length - 1];
 
     return {
       totalAccounts: accounts.length,
       totalBalance,
-      totalAssets,
-      totalLiabilities,
-      netWorth: totalAssets - totalLiabilities,
+      totalAssets: roundMoney(latest?.assets ?? 0),
+      totalLiabilities: roundMoney(latest?.liabilities ?? 0),
+      netWorth: roundMoney(latest?.netWorth ?? 0),
     };
   }
 
@@ -1290,11 +1281,22 @@ export class AccountsService {
             [accountIds, today],
           );
 
-        for (const row of balances) {
-          const newBalance = roundMoney(Number(row.balance));
-          await this.accountsRepository.update(row.account_id, {
-            currentBalance: newBalance,
-          });
+        if (balances.length > 0) {
+          // Apply all recomputed balances in a single statement instead of one
+          // UPDATE per account.
+          const valuesClause = balances
+            .map((_, i) => `($${i * 2 + 1}::uuid, $${i * 2 + 2}::numeric)`)
+            .join(", ");
+          const params = balances.flatMap((row) => [
+            row.account_id,
+            roundMoney(Number(row.balance)),
+          ]);
+          await this.dataSource.query(
+            `UPDATE accounts SET current_balance = v.balance
+               FROM (VALUES ${valuesClause}) AS v(id, balance)
+               WHERE accounts.id = v.id`,
+            params,
+          );
         }
 
         totalApplied += balances.length;
@@ -1320,28 +1322,20 @@ export class AccountsService {
     if (!Array.isArray(accountIds)) {
       throw new BadRequestException("accountIds must be an array");
     }
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-    try {
-      for (let i = 0; i < accountIds.length; i++) {
-        await queryRunner.manager.update(
-          Account,
-          {
-            id: accountIds[i],
-            userId,
-          },
-          {
-            favouriteSortOrder: i,
-          },
-        );
-      }
-      await queryRunner.commitTransaction();
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
+    if (accountIds.length === 0) {
+      return;
     }
+
+    // Apply the new ordering in a single statement instead of one UPDATE per
+    // account. favouriteSortOrder is the array index; ids are parameterized and
+    // the user_id predicate keeps the update scoped to the caller's accounts.
+    const valuesClause = accountIds
+      .map((_, i) => `($${i + 1}::uuid, ${i})`)
+      .join(", ");
+    const userParam = `$${accountIds.length + 1}`;
+    const sql = `UPDATE accounts SET favourite_sort_order = c.ord
+       FROM (VALUES ${valuesClause}) AS c(id, ord)
+       WHERE accounts.id = c.id AND accounts.user_id = ${userParam}`;
+    await this.accountsRepository.query(sql, [...accountIds, userId]);
   }
 }

@@ -1,5 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
+import { DataSource } from "typeorm";
 import { BadRequestException } from "@nestjs/common";
 import { TransactionReconciliationService } from "./transaction-reconciliation.service";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
@@ -17,6 +18,15 @@ describe("TransactionReconciliationService", () => {
   let service: TransactionReconciliationService;
   let transactionsRepository: Record<string, jest.Mock>;
   let accountsService: Record<string, jest.Mock>;
+  let queryRunner: {
+    connect: jest.Mock;
+    startTransaction: jest.Mock;
+    commitTransaction: jest.Mock;
+    rollbackTransaction: jest.Mock;
+    release: jest.Mock;
+    manager: { update: jest.Mock };
+  };
+  let dataSource: Record<string, jest.Mock>;
 
   const mockFindOne = jest.fn();
   const mockTriggerNetWorthRecalc = jest.fn();
@@ -64,6 +74,27 @@ describe("TransactionReconciliationService", () => {
       createQueryBuilder: jest.fn(),
     };
 
+    // The QueryRunner-based status writes go through queryRunner.manager.update;
+    // forward them to the repository mock (dropping the entity arg) so the
+    // existing two-arg `transactionsRepository.update` assertions still hold.
+    queryRunner = {
+      connect: jest.fn().mockResolvedValue(undefined),
+      startTransaction: jest.fn().mockResolvedValue(undefined),
+      commitTransaction: jest.fn().mockResolvedValue(undefined),
+      rollbackTransaction: jest.fn().mockResolvedValue(undefined),
+      release: jest.fn().mockResolvedValue(undefined),
+      manager: {
+        update: jest
+          .fn()
+          .mockImplementation((_entity, id, payload) =>
+            transactionsRepository.update(id, payload),
+          ),
+      },
+    };
+    dataSource = {
+      createQueryRunner: jest.fn().mockReturnValue(queryRunner),
+    };
+
     accountsService = {
       findOne: jest.fn().mockResolvedValue({
         id: accountId,
@@ -86,6 +117,7 @@ describe("TransactionReconciliationService", () => {
           useValue: transactionsRepository,
         },
         { provide: AccountsService, useValue: accountsService },
+        { provide: DataSource, useValue: dataSource },
       ],
     }).compile();
 
@@ -143,6 +175,7 @@ describe("TransactionReconciliationService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         accountId,
         250,
+        queryRunner,
       );
       expect(mockTriggerNetWorthRecalc).toHaveBeenCalledWith(accountId, userId);
     });
@@ -169,6 +202,7 @@ describe("TransactionReconciliationService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         accountId,
         -300,
+        queryRunner,
       );
       expect(mockTriggerNetWorthRecalc).toHaveBeenCalledWith(accountId, userId);
     });
@@ -306,6 +340,7 @@ describe("TransactionReconciliationService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         accountId,
         75.5,
+        queryRunner,
       );
     });
 
@@ -325,6 +360,56 @@ describe("TransactionReconciliationService", () => {
       );
 
       expect(result).toBe(updatedTx);
+    });
+
+    it("commits the status change and balance update in a single transaction", async () => {
+      const transaction = makeTransaction({
+        status: TransactionStatus.VOID,
+        amount: 250,
+      });
+      mockFindOne.mockResolvedValue(
+        makeTransaction({ status: TransactionStatus.CLEARED, amount: 250 }),
+      );
+
+      await service.updateStatus(
+        transaction,
+        TransactionStatus.CLEARED,
+        userId,
+        mockTriggerNetWorthRecalc,
+        mockFindOne,
+      );
+
+      expect(queryRunner.startTransaction).toHaveBeenCalledTimes(1);
+      expect(queryRunner.commitTransaction).toHaveBeenCalledTimes(1);
+      expect(queryRunner.rollbackTransaction).not.toHaveBeenCalled();
+      expect(queryRunner.release).toHaveBeenCalledTimes(1);
+    });
+
+    it("rolls back and does not commit when the balance update fails", async () => {
+      const transaction = makeTransaction({
+        status: TransactionStatus.VOID,
+        amount: 250,
+      });
+      accountsService.updateBalance.mockRejectedValueOnce(
+        new Error("balance update failed"),
+      );
+
+      await expect(
+        service.updateStatus(
+          transaction,
+          TransactionStatus.CLEARED,
+          userId,
+          mockTriggerNetWorthRecalc,
+          mockFindOne,
+        ),
+      ).rejects.toThrow("balance update failed");
+
+      expect(queryRunner.rollbackTransaction).toHaveBeenCalledTimes(1);
+      expect(queryRunner.commitTransaction).not.toHaveBeenCalled();
+      expect(queryRunner.release).toHaveBeenCalledTimes(1);
+      // Net worth recalc and the final read must not run on a failed write
+      expect(mockTriggerNetWorthRecalc).not.toHaveBeenCalled();
+      expect(mockFindOne).not.toHaveBeenCalled();
     });
   });
 

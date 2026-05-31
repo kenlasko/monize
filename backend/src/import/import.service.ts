@@ -1651,36 +1651,43 @@ export class ImportService {
     // future-dated transactions are excluded. During import,
     // updateAccountBalance() adds every transaction amount regardless
     // of date, which inflates the balance when future transactions exist.
-    for (const accountId of affectedAccountIds) {
+    // Compute every affected account's balance in one grouped query and write
+    // them back in one bulk UPDATE rather than 3 queries per account.
+    const affectedIds = [...affectedAccountIds];
+    if (affectedIds.length > 0) {
       try {
-        const account = await this.accountsRepository.findOne({
-          where: { id: accountId },
-        });
-        if (account) {
-          const balanceSql = `SELECT COALESCE($2::NUMERIC, 0) + COALESCE(SUM(t.amount), 0) as balance
-             FROM transactions t
-             WHERE t.account_id = $1
-               AND (t.status IS NULL OR t.status != 'VOID')
-               AND t.parent_transaction_id IS NULL
-               AND t.transaction_date <= CURRENT_DATE`;
-
-          const result: { balance: string }[] = await this.dataSource.query(
-            balanceSql,
-            [accountId, account.openingBalance],
+        const balances: { account_id: string; balance: string }[] =
+          await this.dataSource.query(
+            `SELECT a.id as account_id,
+                    COALESCE(a.opening_balance, 0) + COALESCE(SUM(t.amount), 0) as balance
+               FROM accounts a
+               LEFT JOIN transactions t ON t.account_id = a.id
+                 AND (t.status IS NULL OR t.status != 'VOID')
+                 AND t.parent_transaction_id IS NULL
+                 AND t.transaction_date <= CURRENT_DATE
+              WHERE a.id = ANY($1)
+              GROUP BY a.id, a.opening_balance`,
+            [affectedIds],
           );
 
-          const newBalance =
-            result.length > 0
-              ? Math.round(Number(result[0].balance) * 10000) / 10000
-              : Math.round(Number(account.openingBalance) * 10000) / 10000;
-
-          await this.accountsRepository.update(accountId, {
-            currentBalance: newBalance,
-          });
+        if (balances.length > 0) {
+          const valuesClause = balances
+            .map((_, i) => `($${i * 2 + 1}::uuid, $${i * 2 + 2}::numeric)`)
+            .join(", ");
+          const params = balances.flatMap((row) => [
+            row.account_id,
+            Math.round(Number(row.balance) * 10000) / 10000,
+          ]);
+          await this.dataSource.query(
+            `UPDATE accounts SET current_balance = v.balance
+               FROM (VALUES ${valuesClause}) AS v(id, balance)
+               WHERE accounts.id = v.id`,
+            params,
+          );
         }
       } catch (err) {
         this.logger.warn(
-          `Post-import balance recalculation failed for account ${accountId}: ${err.message}`,
+          `Post-import balance recalculation failed: ${err.message}`,
         );
       }
     }

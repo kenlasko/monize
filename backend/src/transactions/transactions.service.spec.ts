@@ -953,6 +953,7 @@ describe("TransactionsService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "account-1",
         50,
+        expect.anything(),
       );
     });
 
@@ -976,6 +977,7 @@ describe("TransactionsService", () => {
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         "account-1",
         -50,
+        expect.anything(),
       );
     });
 
@@ -4736,9 +4738,9 @@ describe("TransactionsService", () => {
         amount: 60,
       };
 
-      transactionsRepository.findOne
-        .mockResolvedValueOnce(parentTx) // parent transaction
-        .mockResolvedValueOnce(anotherChildTx); // other linked child
+      transactionsRepository.findOne.mockResolvedValueOnce(parentTx); // parent transaction
+      // Other linked children are now fetched in one batch via manager.find
+      transactionsRepository.find.mockResolvedValue([anotherChildTx]);
 
       splitsRepository.find.mockResolvedValue(allSplits);
 

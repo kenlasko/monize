@@ -1559,34 +1559,40 @@ export class TransactionsService {
         where: { transactionId: parentTransactionId },
       });
 
-      for (const split of allSplits) {
-        if (
-          split.linkedTransactionId &&
-          split.linkedTransactionId !== linkedTransactionId
-        ) {
-          const linkedTx = await queryRunner.manager.findOne(Transaction, {
-            where: { id: split.linkedTransactionId, userId },
-          });
+      // Fetch every linked transfer transaction for these splits in one query
+      // instead of a findOne per split, then process them with the same
+      // per-transaction balance/remove logic as before.
+      const linkedIds = [
+        ...new Set(
+          allSplits
+            .map((s) => s.linkedTransactionId)
+            .filter((id): id is string => !!id && id !== linkedTransactionId),
+        ),
+      ];
 
-          if (linkedTx) {
-            const linkedAccId = linkedTx.accountId;
-            const linkedIsFuture = isTransactionInFuture(
-              linkedTx.transactionDate,
+      if (linkedIds.length > 0) {
+        const linkedTxs = await queryRunner.manager.find(Transaction, {
+          where: { id: In(linkedIds), userId },
+        });
+
+        for (const linkedTx of linkedTxs) {
+          const linkedAccId = linkedTx.accountId;
+          const linkedIsFuture = isTransactionInFuture(
+            linkedTx.transactionDate,
+          );
+          if (!linkedIsFuture) {
+            await this.accountsService.updateBalance(
+              linkedAccId,
+              -Number(linkedTx.amount),
+              queryRunner,
             );
-            if (!linkedIsFuture) {
-              await this.accountsService.updateBalance(
-                linkedAccId,
-                -Number(linkedTx.amount),
-                queryRunner,
-              );
-            }
-            await queryRunner.manager.remove(linkedTx);
-            if (linkedIsFuture) {
-              await this.accountsService.recalculateCurrentBalance(
-                linkedAccId,
-                queryRunner,
-              );
-            }
+          }
+          await queryRunner.manager.remove(linkedTx);
+          if (linkedIsFuture) {
+            await this.accountsService.recalculateCurrentBalance(
+              linkedAccId,
+              queryRunner,
+            );
           }
         }
       }

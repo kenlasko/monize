@@ -342,18 +342,23 @@ export class NetWorthService {
     const params: any[] = [userId, start, end];
 
     if (accountIds && accountIds.length > 0) {
-      // Resolve linked pairs for each account ID
-      const resolvedIds = new Set<string>();
-      for (const id of accountIds) {
-        const accounts: any[] = await this.dataSource.query(
-          `SELECT id, linked_account_id FROM accounts WHERE (id = $1 OR linked_account_id = $1 OR id = (SELECT linked_account_id FROM accounts WHERE id = $1)) AND user_id = $2`,
-          [id, userId],
-        );
-        for (const a of accounts) {
-          resolvedIds.add(a.id);
-        }
-      }
-      const idArray = [...resolvedIds];
+      // Resolve the requested accounts plus their linked pairs in one query
+      // (an account, anything linked to it, and the account it links to)
+      // instead of one round-trip per id.
+      const resolved: { id: string }[] = await this.dataSource.query(
+        `SELECT id FROM accounts
+         WHERE user_id = $2
+           AND (
+             id = ANY($1)
+             OR linked_account_id = ANY($1)
+             OR id IN (
+               SELECT linked_account_id FROM accounts
+               WHERE id = ANY($1) AND user_id = $2
+             )
+           )`,
+        [accountIds, userId],
+      );
+      const idArray = [...new Set(resolved.map((a) => a.id))];
       if (idArray.length === 0) {
         // No matching accounts found — return empty result
         return [];
@@ -603,17 +608,22 @@ export class NetWorthService {
     const acctParams: any[] = [userId];
 
     if (accountIds && accountIds.length > 0) {
-      const resolvedIds = new Set<string>();
-      for (const id of accountIds) {
-        const accounts: any[] = await this.dataSource.query(
-          `SELECT id, linked_account_id FROM accounts WHERE (id = $1 OR linked_account_id = $1 OR id = (SELECT linked_account_id FROM accounts WHERE id = $1)) AND user_id = $2`,
-          [id, userId],
-        );
-        for (const a of accounts) {
-          resolvedIds.add(a.id);
-        }
-      }
-      const idArray = [...resolvedIds];
+      // Resolve the requested accounts plus their linked pairs in one query
+      // instead of one round-trip per id.
+      const resolved: { id: string }[] = await this.dataSource.query(
+        `SELECT id FROM accounts
+         WHERE user_id = $2
+           AND (
+             id = ANY($1)
+             OR linked_account_id = ANY($1)
+             OR id IN (
+               SELECT linked_account_id FROM accounts
+               WHERE id = ANY($1) AND user_id = $2
+             )
+           )`,
+        [accountIds, userId],
+      );
+      const idArray = [...new Set(resolved.map((a) => a.id))];
       if (idArray.length === 0) return [];
       const placeholders = idArray.map((_, i) => `$${i + 2}`).join(", ");
       accountFilter = `AND a.id IN (${placeholders})`;

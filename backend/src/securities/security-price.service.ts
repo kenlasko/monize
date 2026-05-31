@@ -21,6 +21,7 @@ import { getTradingDateFromQuote } from "./providers/trading-date.util";
 import { CreateSecurityPriceDto } from "./dto/create-security-price.dto";
 import { UpdateSecurityPriceDto } from "./dto/update-security-price.dto";
 import { formatDateYMD } from "../common/date-utils";
+import { mapWithConcurrency } from "../common/concurrency.util";
 
 export { SecurityLookupResult } from "./providers/quote-provider.interface";
 
@@ -31,6 +32,10 @@ const TRANSACTION_SOURCES = [
   "transfer_in",
   "transfer_out",
 ];
+
+// Cap simultaneous external quote fetches so a large securities universe does
+// not fire hundreds of concurrent Yahoo/MSN requests and trip rate limits.
+const QUOTE_FETCH_CONCURRENCY = 6;
 
 function sourceFor(provider: QuoteProviderName | undefined): string {
   return provider === "msn" ? "msn_finance" : "yahoo_finance";
@@ -347,15 +352,17 @@ export class SecurityPriceService {
     }
 
     const groups = [...symbolGroups.values()];
-    const quotes = await Promise.all(
-      groups.map((group) => {
+    const quotes = await mapWithConcurrency(
+      groups,
+      QUOTE_FETCH_CONCURRENCY,
+      (group) => {
         const rep = group[0];
         const ctx = userContexts.get(rep.userId) || {
           defaultQuoteProvider: DEFAULT_QUOTE_PROVIDER,
           preferredExchanges: [],
         };
         return this.fetchQuoteWithFallback(rep, ctx);
-      }),
+      },
     );
 
     for (let i = 0; i < groups.length; i++) {
@@ -471,14 +478,16 @@ export class SecurityPriceService {
     let updated = 0;
     let failed = 0;
 
-    const quotes = await Promise.all(
-      securities.map((security) => {
+    const quotes = await mapWithConcurrency(
+      securities,
+      QUOTE_FETCH_CONCURRENCY,
+      (security) => {
         const ctx = userContexts.get(security.userId) || {
           defaultQuoteProvider: DEFAULT_QUOTE_PROVIDER,
           preferredExchanges: [],
         };
         return this.fetchQuoteWithFallback(security, ctx);
-      }),
+      },
     );
 
     for (let i = 0; i < securities.length; i++) {
