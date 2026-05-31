@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   LineChart,
@@ -17,15 +17,15 @@ import { builtInReportsApi } from "@/lib/built-in-reports";
 import { MonthlyIncomeExpenseItem } from "@/types/built-in-reports";
 import { useNumberFormat } from "@/hooks/useNumberFormat";
 import { useDateRange } from "@/hooks/useDateRange";
+import { useReportData } from "@/hooks/useReportData";
 import { useSortableTable, compareValues } from "@/hooks/useSortableTable";
 import { DateRangeSelector } from "@/components/ui/DateRangeSelector";
 import { ChartViewToggle } from "@/components/ui/ChartViewToggle";
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { SortableHeader } from '@/components/ui/SortableHeader';
+import { ChartTooltip } from "@/components/reports/ChartTooltip";
+import { ReportError } from "@/components/reports/ReportError";
 import { exportToCsv } from "@/lib/csv-export";
-import { createLogger } from "@/lib/logger";
-
-const logger = createLogger("MonthlySpendingTrendReport");
 
 type MonthlySpendingSortField = 'name' | 'income' | 'expenses' | 'net';
 
@@ -44,8 +44,6 @@ export function MonthlySpendingTrendReport() {
   const chartRef = useRef<HTMLDivElement>(null);
   const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } =
     useNumberFormat();
-  const [chartData, setChartData] = useState<ChartDataItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [viewType, setViewType] = useState<'line' | 'table'>('line');
   const {
     dateRange,
@@ -60,6 +58,40 @@ export function MonthlySpendingTrendReport() {
   const { sortField, sortDirection, handleSort } = useSortableTable<MonthlySpendingSortField>(
     'reports.monthly-spending-trend.table.sort',
     { field: 'name', direction: 'asc' },
+  );
+
+  const { start: rangeStart, end: rangeEnd } = resolvedRange;
+
+  const { data: response, isLoading, error, reload } = useReportData(
+    () =>
+      isValid
+        ? builtInReportsApi.getIncomeVsExpenses({
+            startDate: rangeStart || undefined,
+            endDate: rangeEnd,
+          })
+        : Promise.resolve(null),
+    [isValid, rangeStart, rangeEnd],
+  );
+
+  // Map response to chart data. `name` must be unique across the dataset
+  // (used as the XAxis category key); a non-unique value like "May" causes
+  // Recharts to resolve the tooltip's payload to the first matching row,
+  // showing data from the wrong year on multi-year ranges.
+  const chartData = useMemo<ChartDataItem[]>(
+    () =>
+      (response?.data ?? []).map((item: MonthlyIncomeExpenseItem) => {
+        const monthDate = parseISO(item.month + "-01");
+        return {
+          name: item.month,
+          fullName: format(monthDate, "MMM yyyy"),
+          Expenses: Math.round(item.expenses),
+          Income: Math.round(item.income),
+          Net: Math.round(item.net),
+          monthStart: format(startOfMonth(monthDate), "yyyy-MM-dd"),
+          monthEnd: format(endOfMonth(monthDate), "yyyy-MM-dd"),
+        };
+      }),
+    [response],
   );
 
   const sortedTableData = useMemo(() => {
@@ -84,46 +116,6 @@ export function MonthlySpendingTrendReport() {
     });
     return sorted;
   }, [chartData, sortField, sortDirection]);
-
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const { start, end } = resolvedRange;
-      const response = await builtInReportsApi.getIncomeVsExpenses({
-        startDate: start || undefined,
-        endDate: end,
-      });
-
-      // Map response to chart data. `name` must be unique across the dataset
-      // (used as the XAxis category key); a non-unique value like "May" causes
-      // Recharts to resolve the tooltip's payload to the first matching row,
-      // showing data from the wrong year on multi-year ranges.
-      const data: ChartDataItem[] = response.data.map(
-        (item: MonthlyIncomeExpenseItem) => {
-          const monthDate = parseISO(item.month + "-01");
-          return {
-            name: item.month,
-            fullName: format(monthDate, "MMM yyyy"),
-            Expenses: Math.round(item.expenses),
-            Income: Math.round(item.income),
-            Net: Math.round(item.net),
-            monthStart: format(startOfMonth(monthDate), "yyyy-MM-dd"),
-            monthEnd: format(endOfMonth(monthDate), "yyyy-MM-dd"),
-          };
-        },
-      );
-
-      setChartData(data);
-    } catch (error) {
-      logger.error("Failed to load data:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [resolvedRange]);
-
-  useEffect(() => {
-    if (isValid) loadData();
-  }, [isValid, loadData]);
 
   const totals = useMemo(() => {
     const totalExpenses = chartData.reduce((sum, m) => sum + m.Expenses, 0);
@@ -173,7 +165,6 @@ export function MonthlySpendingTrendReport() {
   const CustomTooltip = ({
     active,
     payload,
-    label: _label,
   }: {
     active?: boolean;
     payload?: Array<{
@@ -183,24 +174,14 @@ export function MonthlySpendingTrendReport() {
       payload?: { fullName?: string };
     }>;
     label?: string;
-  }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0]?.payload;
-      return (
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
-          <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">
-            {data?.fullName}
-          </p>
-          {payload.map((entry, index) => (
-            <p key={index} className="text-sm" style={{ color: entry.color }}>
-              {entry.name}: {formatCurrency(entry.value)}
-            </p>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
+  }) => (
+    <ChartTooltip
+      active={active}
+      label={payload?.[0]?.payload?.fullName}
+      payload={payload}
+      formatValue={(v) => formatCurrency(v)}
+    />
+  );
 
   return (
     <div className="space-y-6">
@@ -239,6 +220,8 @@ export function MonthlySpendingTrendReport() {
             <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
             <div className="h-96 bg-gray-200 dark:bg-gray-700 rounded" />
           </div>
+        ) : error ? (
+          <ReportError onRetry={reload} />
         ) : chartData.length === 0 ? (
           <p className="text-gray-500 dark:text-gray-400 text-center py-8">
             No data for this period.

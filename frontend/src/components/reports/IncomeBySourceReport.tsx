@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   PieChart,
@@ -18,17 +18,17 @@ import { builtInReportsApi } from '@/lib/built-in-reports';
 import { IncomeSourceItem } from '@/types/built-in-reports';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateRange } from '@/hooks/useDateRange';
+import { useReportData } from '@/hooks/useReportData';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { ChartViewToggle } from '@/components/ui/ChartViewToggle';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { SortableHeader } from '@/components/ui/SortableHeader';
+import { ChartTooltipPanel } from '@/components/reports/ChartTooltip';
+import { ReportError } from '@/components/reports/ReportError';
 import { CHART_COLOURS_INCOME } from '@/lib/chart-colours';
 import { exportToCsv } from '@/lib/csv-export';
-import { createLogger } from '@/lib/logger';
 import type { ChartDatum } from '@/types/chart';
-
-const logger = createLogger('IncomeBySourceReport');
 
 type IncomeSourceSortField = 'name' | 'value' | 'percentage';
 
@@ -38,15 +38,45 @@ export function IncomeBySourceReport() {
   const router = useRouter();
   const chartRef = useRef<HTMLDivElement>(null);
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
-  const [chartData, setChartData] = useState<ChartDataItem[]>([]);
-  const [totalIncome, setTotalIncome] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
   const { dateRange, setDateRange, startDate, setStartDate, endDate, setEndDate, resolvedRange, isValid } = useDateRange({ defaultRange: '1y', alignment: 'day' });
   const [viewType, setViewType] = useState<'pie' | 'bar' | 'table'>('pie');
   const { sortField, sortDirection, handleSort } = useSortableTable<IncomeSourceSortField>(
     'reports.income-by-source.table.sort',
     { field: 'value', direction: 'desc' },
   );
+
+  const { start: rangeStart, end: rangeEnd } = resolvedRange;
+
+  const { data: response, isLoading, error, reload } = useReportData(
+    () =>
+      isValid
+        ? builtInReportsApi.getIncomeBySource({
+            startDate: rangeStart || undefined,
+            endDate: rangeEnd,
+          })
+        : Promise.resolve(null),
+    [isValid, rangeStart, rangeEnd],
+  );
+
+  const chartData = useMemo<ChartDataItem[]>(() => {
+    if (!response) return [];
+    let colourIndex = 0;
+    return response.data.map((item: IncomeSourceItem) => {
+      let colour = item.color || '';
+      if (!colour) {
+        colour = CHART_COLOURS_INCOME[colourIndex % CHART_COLOURS_INCOME.length];
+        colourIndex++;
+      }
+      return {
+        id: item.categoryId || '',
+        name: item.categoryName,
+        value: item.total,
+        colour,
+      };
+    });
+  }, [response]);
+
+  const totalIncome = response?.totalIncome ?? 0;
 
   const sortedTableData = useMemo(() => {
     const sorted = [...chartData];
@@ -70,46 +100,6 @@ export function IncomeBySourceReport() {
     });
     return sorted;
   }, [chartData, sortField, sortDirection, totalIncome]);
-
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const { start, end } = resolvedRange;
-      const response = await builtInReportsApi.getIncomeBySource({
-        startDate: start || undefined,
-        endDate: end,
-      });
-
-      // Map response to chart data with colours
-      let colourIndex = 0;
-      const data: ChartDataItem[] = response.data.map((item: IncomeSourceItem) => {
-        let colour = item.color || '';
-        if (!colour) {
-          colour = CHART_COLOURS_INCOME[colourIndex % CHART_COLOURS_INCOME.length];
-          colourIndex++;
-        }
-        return {
-          id: item.categoryId || '',
-          name: item.categoryName,
-          value: item.total,
-          colour,
-        };
-      });
-
-      setChartData(data);
-      setTotalIncome(response.totalIncome);
-    } catch (error) {
-      logger.error('Failed to load data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [resolvedRange]);
-
-  useEffect(() => {
-    if (isValid) {
-      loadData();
-    }
-  }, [isValid, loadData]);
 
   const handleExportPdf = async () => {
     const { exportToPdf } = await import('@/lib/pdf-export');
@@ -150,20 +140,22 @@ export function IncomeBySourceReport() {
   };
 
   const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: { id: string; name: string; value: number } }> }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      const percentage = totalIncome > 0 ? ((data.value / totalIncome) * 100).toFixed(1) : '0';
-      return (
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
-          <p className="font-medium text-gray-900 dark:text-gray-100">{data.name}</p>
-          <p className="text-gray-600 dark:text-gray-400">
-            {formatCurrency(data.value)} ({percentage}%)
-          </p>
-        </div>
-      );
-    }
-    return null;
+    if (!active || !payload || !payload.length) return null;
+    const data = payload[0].payload;
+    const percentage = totalIncome > 0 ? ((data.value / totalIncome) * 100).toFixed(1) : '0';
+    return (
+      <ChartTooltipPanel>
+        <p className="font-medium text-gray-900 dark:text-gray-100">{data.name}</p>
+        <p className="text-gray-600 dark:text-gray-400">
+          {formatCurrency(data.value)} ({percentage}%)
+        </p>
+      </ChartTooltipPanel>
+    );
   };
+
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
 
   if (isLoading) {
     return (

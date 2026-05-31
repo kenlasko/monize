@@ -203,14 +203,15 @@ describe("IncomeBySourceReport", () => {
     expect(screen.getByText("$2000.00 (20.0%)")).toBeInTheDocument();
   });
 
-  it("handles API error gracefully", async () => {
+  it("surfaces a retryable error state when the API fails", async () => {
     mockGetIncomeBySource.mockRejectedValue(new Error("Network error"));
     render(<IncomeBySourceReport />);
     await waitFor(() => {
       expect(
-        screen.getByText("No income data for this period."),
+        screen.getByText(/failed to load report data/i),
       ).toBeInTheDocument();
     });
+    expect(screen.getByRole("button", { name: /try again/i })).toBeInTheDocument();
   });
 
   it("navigates to transactions page on category legend click", async () => {
