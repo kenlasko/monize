@@ -64,7 +64,6 @@ export function useReportData<T>(
         if (runId !== runIdRef.current) return;
         setIsLoading(false);
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

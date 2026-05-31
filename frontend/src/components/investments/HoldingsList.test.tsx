@@ -13,6 +13,10 @@ vi.mock('@/hooks/useNumberFormat', () => ({
       }
       return `$${n.toFixed(digits)}`;
     },
+    formatSignedPercent: (n: number, decimals = 2) =>
+      `${n >= 0 ? '+' : ''}${n.toFixed(decimals)}%`,
+    formatQuantity: (n: number) =>
+      new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 4 }).format(n),
     numberFormat: 'en-US',
   }),
 }));

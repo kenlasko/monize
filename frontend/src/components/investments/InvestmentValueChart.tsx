@@ -15,6 +15,7 @@ import { netWorthApi } from '@/lib/net-worth';
 import { investmentsApi } from '@/lib/investments';
 import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { gainLossColor } from '@/lib/format';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useDateRange } from '@/hooks/useDateRange';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -50,7 +51,7 @@ interface InvestmentValueChartProps {
 }
 
 export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix }: InvestmentValueChartProps) {
-  const { formatCurrency, formatCurrencyCompact, formatCurrencyAxis, formatCurrencyFlag } = useNumberFormat();
+  const { formatCurrency, formatCurrencyCompact, formatCurrencyAxis, formatCurrencyFlag, formatSignedPercent } = useNumberFormat();
   const { defaultCurrency } = useExchangeRates();
   const [chartPoints, setChartPoints] = useState<Array<{ name: string; Value: number }>>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -451,18 +452,14 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix 
         </div>
         <div>
           <div className="text-xs text-gray-500 dark:text-gray-400">Change</div>
-          <div className={`text-lg font-bold ${
-            summary.change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-          }`}>
+          <div className={`text-lg font-bold ${gainLossColor(summary.change)}`}>
             {summary.change >= 0 ? '+' : ''}{fmtFull(summary.change)}
           </div>
         </div>
         <div>
           <div className="text-xs text-gray-500 dark:text-gray-400">Change %</div>
-          <div className={`text-lg font-bold ${
-            summary.changePercent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-          }`}>
-            {summary.changePercent >= 0 ? '+' : ''}{summary.changePercent.toFixed(1)}%
+          <div className={`text-lg font-bold ${gainLossColor(summary.changePercent)}`}>
+            {formatSignedPercent(summary.changePercent, 1)}
           </div>
         </div>
       </div>

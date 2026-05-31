@@ -20,6 +20,7 @@ import {
   CategorySpendingSnapshot,
 } from '@/types/monthly-comparison';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { gainLossColor } from '@/lib/format';
 import { CHART_COLOURS } from '@/lib/chart-colours';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { SortableHeader } from '@/components/ui/SortableHeader';
@@ -62,7 +63,7 @@ function DeltaBadge({ value, percent, invert = false }: { value: number; percent
 }
 
 export function MonthlyComparisonReport() {
-  const { formatCurrency, formatCurrencyCompact, formatCurrencyAxis } = useNumberFormat();
+  const { formatCurrency, formatCurrencyCompact, formatCurrencyAxis, formatSignedPercent } = useNumberFormat();
   const chartRef = useRef<HTMLDivElement>(null);
   const [month, setMonth] = useState(getDefaultMonth);
   const [data, setData] = useState<MonthlyComparisonResponse | null>(null);
@@ -171,7 +172,7 @@ export function MonthlyComparisonReport() {
         formatCurrency(item.currentTotal, cur),
         formatCurrency(item.previousTotal, cur),
         `${item.change >= 0 ? '+' : ''}${formatCurrency(item.change, cur)}`,
-        `${item.changePercent >= 0 ? '+' : ''}${item.changePercent.toFixed(1)}%`,
+        formatSignedPercent(item.changePercent, 1),
       ]),
     } : undefined;
 
@@ -226,7 +227,7 @@ export function MonthlyComparisonReport() {
           mover.name,
           formatCurrency(mover.currentPrice, cur),
           `${mover.change >= 0 ? '+' : ''}${formatCurrency(mover.change, cur)}`,
-          `${mover.changePercent >= 0 ? '+' : ''}${mover.changePercent.toFixed(2)}%`,
+          formatSignedPercent(mover.changePercent, 2),
         ]),
       });
     }
@@ -491,7 +492,7 @@ export function MonthlyComparisonReport() {
                       {item.change >= 0 ? '+' : ''}{formatCurrency(item.change, currency)}
                     </td>
                     <td className={`px-4 py-3 text-sm text-right font-medium ${item.changePercent <= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                      {item.changePercent >= 0 ? '+' : ''}{item.changePercent.toFixed(1)}%
+                      {formatSignedPercent(item.changePercent, 1)}
                     </td>
                   </tr>
                 ))}
@@ -545,8 +546,8 @@ export function MonthlyComparisonReport() {
             <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
               <p className="text-sm text-gray-700 dark:text-gray-300">
                 Your net worth in {data.currentMonthLabel} was <span className="font-semibold">{formatCurrency(nw.currentNetWorth, currency)}</span>, which was{' '}
-                <span className={`font-semibold ${nw.netWorthChange >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {nw.netWorthChange >= 0 ? '+' : ''}{formatCurrency(nw.netWorthChange, currency)} ({nw.netWorthChange >= 0 ? '+' : ''}{nw.netWorthChangePercent.toFixed(1)}%)
+                <span className={`font-semibold ${gainLossColor(nw.netWorthChange)}`}>
+                  {nw.netWorthChange >= 0 ? '+' : ''}{formatCurrency(nw.netWorthChange, currency)} ({formatSignedPercent(nw.netWorthChangePercent, 1)})
                 </span>{' '}
                 compared to {data.previousMonthLabel}.
               </p>
@@ -660,11 +661,11 @@ export function MonthlyComparisonReport() {
                         <td className="px-4 py-3 text-sm text-right text-gray-900 dark:text-gray-100">
                           {formatCurrency(mover.currentPrice, currency)}
                         </td>
-                        <td className={`px-4 py-3 text-sm text-right font-medium ${mover.change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        <td className={`px-4 py-3 text-sm text-right font-medium ${gainLossColor(mover.change)}`}>
                           {mover.change >= 0 ? '+' : ''}{formatCurrency(mover.change, currency)}
                         </td>
-                        <td className={`px-4 py-3 text-sm text-right font-medium ${mover.changePercent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                          {mover.changePercent >= 0 ? '+' : ''}{mover.changePercent.toFixed(2)}%
+                        <td className={`px-4 py-3 text-sm text-right font-medium ${gainLossColor(mover.changePercent)}`}>
+                          {formatSignedPercent(mover.changePercent, 2)}
                         </td>
                       </tr>
                     ))}

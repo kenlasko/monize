@@ -8,6 +8,7 @@ vi.mock('@/lib/pdf-export', () => ({
 
 vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({
+    formatSignedPercent: (n: number, decimals = 2) => `${n >= 0 ? '+' : ''}${n.toFixed(decimals)}%`,
     formatCurrency: (n: number) => `$${n.toFixed(2)}`,
     formatCurrencyCompact: (n: number) => `$${Math.round(n)}`,
     formatCurrencyAxis: (n: number) => `$${n}`,

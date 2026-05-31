@@ -5,6 +5,7 @@ import { PortfolioSummary } from '@/types/investment';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
+import { gainLossColor } from '@/lib/format';
 
 interface PortfolioSummaryCardProps {
   summary: PortfolioSummary | null;
@@ -19,7 +20,7 @@ export function PortfolioSummaryCard({
   singleAccountCurrency,
   titleSuffix,
 }: PortfolioSummaryCardProps) {
-  const { formatCurrency } = useNumberFormat();
+  const { formatCurrency, formatSignedPercent } = useNumberFormat();
   const { convertToDefault, defaultCurrency } = useExchangeRates();
 
   // When viewing a single foreign-currency account, show values in that currency
@@ -80,16 +81,11 @@ export function PortfolioSummaryCard({
     return formatCurrency(value);
   };
 
-  const formatPercent = (value: number) => {
-    const sign = value >= 0 ? '+' : '';
-    return `${sign}${value.toFixed(2)}%`;
-  };
+  const formatPercent = (value: number) => formatSignedPercent(value);
 
   const returnColorClass = (value: number | null | undefined) => {
     if (value == null) return 'text-gray-400 dark:text-gray-500';
-    return value >= 0
-      ? 'text-green-600 dark:text-green-400'
-      : 'text-red-600 dark:text-red-400';
+    return gainLossColor(value);
   };
 
   if (isLoading) {

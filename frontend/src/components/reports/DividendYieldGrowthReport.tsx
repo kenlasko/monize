@@ -16,6 +16,7 @@ import { InvestmentTransaction, HoldingWithMarketValue } from '@/types/investmen
 import { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { gainLossColor } from '@/lib/format';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { ReportAccountMultiSelect } from '@/components/reports/ReportAccountMultiSelect';
@@ -68,7 +69,7 @@ function detectFrequency(dates: Date[]): string {
 }
 
 export function DividendYieldGrowthReport() {
-  const { formatCurrency: formatCurrencyFull, formatCurrencyAxis } = useNumberFormat();
+  const { formatCurrency: formatCurrencyFull, formatCurrencyAxis, formatSignedPercent } = useNumberFormat();
   const { defaultCurrency, convertToDefault } = useExchangeRates();
   const chartRef = useRef<HTMLDivElement>(null);
   const [transactions, setTransactions] = useState<InvestmentTransaction[]>([]);
@@ -361,7 +362,7 @@ export function DividendYieldGrowthReport() {
         rows: annualData.map((row) => [
           row.year,
           fmtValue(row.amount),
-          row.growth !== null ? `${row.growth >= 0 ? '+' : ''}${row.growth.toFixed(1)}%` : '-',
+          row.growth !== null ? formatSignedPercent(row.growth, 1) : '-',
         ]),
       };
     } else {
@@ -593,8 +594,8 @@ export function DividendYieldGrowthReport() {
                               Dividends: {fmtValue(d.amount)}
                             </p>
                             {d.growth !== null && (
-                              <p className={`text-sm ${d.growth >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                Growth: {d.growth >= 0 ? '+' : ''}{d.growth.toFixed(1)}%
+                              <p className={`text-sm ${gainLossColor(d.growth)}`}>
+                                Growth: {formatSignedPercent(d.growth, 1)}
                               </p>
                             )}
                           </div>
@@ -647,7 +648,7 @@ export function DividendYieldGrowthReport() {
                         <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">{row.year}</td>
                         <td className="px-4 py-3 text-sm text-right text-green-600 dark:text-green-400">{fmtValue(row.amount)}</td>
                         <td className={`px-4 py-3 text-sm text-right ${row.growth !== null ? (row.growth >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') : 'text-gray-400'}`}>
-                          {row.growth !== null ? `${row.growth >= 0 ? '+' : ''}${row.growth.toFixed(1)}%` : '-'}
+                          {row.growth !== null ? formatSignedPercent(row.growth, 1) : '-'}
                         </td>
                       </tr>
                     ))}

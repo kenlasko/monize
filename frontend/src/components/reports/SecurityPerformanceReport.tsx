@@ -41,7 +41,7 @@ interface PriceChartPoint {
 }
 
 export function SecurityPerformanceReport() {
-  const { formatCurrency: formatCurrencyFull, formatCurrencyAxis } = useNumberFormat();
+  const { formatCurrency: formatCurrencyFull, formatCurrencyAxis, formatSignedPercent } = useNumberFormat();
   const { defaultCurrency } = useExchangeRates();
   const chartRef = useRef<HTMLDivElement>(null);
   const [securities, setSecurities] = useState<Security[]>([]);
@@ -288,8 +288,8 @@ export function SecurityPerformanceReport() {
     const summaryCards = stats ? [
       { label: 'Current Value', value: formatCurrencyFull(stats.currentValue, displayCurrency), color: '#111827' },
       { label: 'Cost Basis', value: formatCurrencyFull(stats.costBasis, displayCurrency), color: '#111827' },
-      { label: 'Total Return', value: `${stats.totalReturn >= 0 ? '+' : ''}${formatCurrencyFull(stats.totalReturn, displayCurrency)} (${stats.totalReturnPercent >= 0 ? '+' : ''}${stats.totalReturnPercent.toFixed(2)}%)`, color: stats.totalReturn >= 0 ? '#16a34a' : '#dc2626' },
-      { label: 'Annualized Return', value: stats.annualizedReturn !== null ? `${stats.annualizedReturn >= 0 ? '+' : ''}${stats.annualizedReturn.toFixed(2)}%` : '-', color: stats.annualizedReturn !== null ? (stats.annualizedReturn >= 0 ? '#16a34a' : '#dc2626') : '#9ca3af' },
+      { label: 'Total Return', value: `${stats.totalReturn >= 0 ? '+' : ''}${formatCurrencyFull(stats.totalReturn, displayCurrency)} (${formatSignedPercent(stats.totalReturnPercent)})`, color: stats.totalReturn >= 0 ? '#16a34a' : '#dc2626' },
+      { label: 'Annualized Return', value: stats.annualizedReturn !== null ? formatSignedPercent(stats.annualizedReturn) : '-', color: stats.annualizedReturn !== null ? (stats.annualizedReturn >= 0 ? '#16a34a' : '#dc2626') : '#9ca3af' },
     ] : undefined;
 
     let chartContainer: HTMLElement | null = null;
@@ -477,14 +477,14 @@ export function SecurityPerformanceReport() {
                   {stats.totalReturn >= 0 ? '+' : ''}{formatCurrencyFull(stats.totalReturn, displayCurrency)}
                 </div>
                 <div className={`text-xs mt-1 ${stats.totalReturn >= 0 ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
-                  {stats.totalReturnPercent >= 0 ? '+' : ''}{stats.totalReturnPercent.toFixed(2)}%
+                  {formatSignedPercent(stats.totalReturnPercent)}
                 </div>
               </div>
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
                 <div className="text-sm text-gray-500 dark:text-gray-400">Annualized Return</div>
                 <div className={`text-xl font-bold ${stats.annualizedReturn !== null ? (stats.annualizedReturn >= 0 ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300') : 'text-gray-400'}`}>
                   {stats.annualizedReturn !== null
-                    ? `${stats.annualizedReturn >= 0 ? '+' : ''}${stats.annualizedReturn.toFixed(2)}%`
+                    ? formatSignedPercent(stats.annualizedReturn)
                     : '-'}
                 </div>
                 {stats.annualizedReturn === null && (

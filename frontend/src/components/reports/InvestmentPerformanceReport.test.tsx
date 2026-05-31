@@ -6,6 +6,8 @@ vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({
     formatCurrencyCompact: (n: number) => `$${n.toFixed(0)}`,
     formatCurrency: (n: number, _currency?: string) => `$${n.toFixed(2)}`,
+    formatSignedPercent: (n: number, decimals = 2) =>
+      `${n >= 0 ? '+' : ''}${n.toFixed(decimals)}%`,
     defaultCurrency: 'CAD',
   }),
 }));

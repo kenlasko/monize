@@ -20,6 +20,11 @@ vi.mock('@/hooks/useNumberFormat', () => ({
       const s = `$${n.toFixed(digits)}`;
       return currencyCode ? `${currencyCode} ${s}` : s;
     },
+    formatSignedPercent: (n: number, decimals = 2) =>
+      `${n >= 0 ? '+' : ''}${n.toFixed(decimals)}%`,
+    formatNumber: (n: number, decimals = 2) => n.toFixed(decimals),
+    formatQuantity: (n: number) =>
+      new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 4 }).format(n),
     numberFormat: 'en-US',
   }),
 }));

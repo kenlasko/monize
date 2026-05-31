@@ -45,7 +45,7 @@ const MONTH_NAMES = [
 
 export function YearOverYearReport() {
   const router = useRouter();
-  const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } =
+  const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis, formatSignedPercent } =
     useNumberFormat();
   const chartRef = useRef<HTMLDivElement>(null);
   const [yearData, setYearData] = useState<YearData[]>([]);
@@ -160,7 +160,7 @@ export function YearOverYearReport() {
         const currValue = yearTotals[_year]?.[m] || 0;
         const change = currValue - prevValue;
         const changePercent = prevValue !== 0 ? (change / Math.abs(prevValue)) * 100 : 0;
-        return `${change >= 0 ? "+" : ""}${formatCurrency(change)} (${changePercent >= 0 ? "+" : ""}${changePercent.toFixed(1)}%)`;
+        return `${change >= 0 ? "+" : ""}${formatCurrency(change)} (${formatSignedPercent(changePercent, 1)})`;
       });
       return [label, ...cells];
     });
@@ -500,8 +500,7 @@ export function YearOverYearReport() {
                               isPositive ? "text-green-500" : "text-red-500"
                             }`}
                           >
-                            ({changePercent >= 0 ? "+" : ""}
-                            {changePercent.toFixed(1)}%)
+                            ({formatSignedPercent(changePercent, 1)})
                           </div>
                         </td>
                       );

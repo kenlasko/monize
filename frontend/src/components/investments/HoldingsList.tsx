@@ -2,6 +2,7 @@
 
 import { HoldingWithMarketValue } from '@/types/investment';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { gainLossColor } from '@/lib/format';
 
 interface HoldingsListProps {
   holdings: HoldingWithMarketValue[];
@@ -9,7 +10,7 @@ interface HoldingsListProps {
 }
 
 export function HoldingsList({ holdings, isLoading }: HoldingsListProps) {
-  const { formatCurrency: formatCurrencyBase, formatCurrencyPrecise, numberFormat } = useNumberFormat();
+  const { formatCurrency: formatCurrencyBase, formatCurrencyPrecise, formatSignedPercent, formatQuantity } = useNumberFormat();
 
   const formatCurrency = (value: number | null) => {
     if (value === null) return '-';
@@ -25,16 +26,7 @@ export function HoldingsList({ holdings, isLoading }: HoldingsListProps) {
 
   const formatPercent = (value: number | null) => {
     if (value === null) return '-';
-    const sign = value >= 0 ? '+' : '';
-    return `${sign}${value.toFixed(2)}%`;
-  };
-
-  const formatQuantity = (value: number) => {
-    const locale = numberFormat === 'browser' ? undefined : numberFormat;
-    return new Intl.NumberFormat(locale, {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 4,
-    }).format(value);
+    return formatSignedPercent(value);
   };
 
   if (isLoading) {
@@ -123,22 +115,10 @@ export function HoldingsList({ holdings, isLoading }: HoldingsListProps) {
                   {formatCurrency(holding.marketValue)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right">
-                  <div
-                    className={`font-medium ${
-                      (holding.gainLoss ?? 0) >= 0
-                        ? 'text-green-600 dark:text-green-400'
-                        : 'text-red-600 dark:text-red-400'
-                    }`}
-                  >
+                  <div className={`font-medium ${gainLossColor(holding.gainLoss ?? 0)}`}>
                     {formatCurrency(holding.gainLoss)}
                   </div>
-                  <div
-                    className={`text-sm ${
-                      (holding.gainLossPercent ?? 0) >= 0
-                        ? 'text-green-600 dark:text-green-400'
-                        : 'text-red-600 dark:text-red-400'
-                    }`}
-                  >
+                  <div className={`text-sm ${gainLossColor(holding.gainLossPercent ?? 0)}`}>
                     {formatPercent(holding.gainLossPercent)}
                   </div>
                 </td>
