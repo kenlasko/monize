@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useRef } from 'react';
+import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import {
   BarChart,
   Bar,
@@ -115,7 +116,7 @@ export function CategoryPayeeBarChart({
           {CHART_TITLE}
         </h3>
         <div className="h-72 flex items-center justify-center">
-          <div className="animate-pulse w-full h-full bg-gray-200 dark:bg-gray-700 rounded" />
+          <Skeleton className="w-full h-full" />
         </div>
       </div>
     );

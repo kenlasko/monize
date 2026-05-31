@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import {
   LineChart,
   Line,
@@ -193,7 +194,7 @@ export function CashFlowForecastChart({
           </h3>
         </div>
         <div className="h-72 flex items-center justify-center">
-          <div className="animate-pulse w-full h-full bg-gray-200 dark:bg-gray-700 rounded" />
+          <Skeleton className="w-full h-full" />
         </div>
       </div>
     );

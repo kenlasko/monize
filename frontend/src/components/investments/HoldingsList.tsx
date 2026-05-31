@@ -3,6 +3,7 @@
 import { HoldingWithMarketValue } from '@/types/investment';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { gainLossColor } from '@/lib/format';
+import { Skeleton } from '@/components/ui/LoadingSkeleton';
 
 interface HoldingsListProps {
   holdings: HoldingWithMarketValue[];
@@ -37,9 +38,9 @@ export function HoldingsList({ holdings, isLoading }: HoldingsListProps) {
         </h3>
         <div className="space-y-3">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="animate-pulse flex justify-between">
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4" />
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4" />
+            <div key={i} className="flex justify-between">
+              <Skeleton className="h-4 w-1/4" />
+              <Skeleton className="h-4 w-1/4" />
             </div>
           ))}
         </div>

@@ -6,6 +6,7 @@ import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { gainLossColor } from '@/lib/format';
+import { Skeleton } from '@/components/ui/LoadingSkeleton';
 
 interface GroupedHoldingsListProps {
   holdingsByAccount: AccountHoldings[];
@@ -79,13 +80,13 @@ export function GroupedHoldingsList({
         </h3>
         <div className="space-y-4">
           {[1, 2].map((i) => (
-            <div key={i} className="animate-pulse">
-              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-3" />
+            <div key={i}>
+              <Skeleton className="h-6 w-1/3 mb-3" />
               <div className="space-y-2">
                 {[1, 2, 3].map((j) => (
                   <div key={j} className="flex justify-between">
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4" />
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4" />
+                    <Skeleton className="h-4 w-1/4" />
+                    <Skeleton className="h-4 w-1/4" />
                   </div>
                 ))}
               </div>
