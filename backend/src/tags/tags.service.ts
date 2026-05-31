@@ -188,6 +188,48 @@ export class TagsService {
     }
   }
 
+  /**
+   * Set the same tag set on many transactions at once. Validates the tag set a
+   * single time, then replaces tags with one bulk DELETE and one multi-row
+   * INSERT instead of running validate + delete + insert per transaction (which
+   * is ~3N queries for N transactions in a bulk update).
+   */
+  async setTransactionTagsBulk(
+    transactionIds: string[],
+    tagIds: string[],
+    userId: string,
+    queryRunner?: QueryRunner,
+  ): Promise<void> {
+    if (transactionIds.length === 0) {
+      return;
+    }
+    const manager = queryRunner ? queryRunner.manager : this.dataSource.manager;
+
+    // Validate the tag set once for all transactions
+    if (tagIds.length > 0) {
+      const tags = await manager.find(Tag, {
+        where: { id: In(tagIds), userId },
+      });
+      if (tags.length !== tagIds.length) {
+        throw new NotFoundException("One or more tags not found");
+      }
+    }
+
+    // Replace existing tags for every target transaction in one statement
+    await manager.delete(TransactionTag, {
+      transactionId: In(transactionIds),
+    });
+
+    if (tagIds.length > 0) {
+      const newTags = transactionIds.flatMap((transactionId) =>
+        tagIds.map((tagId) =>
+          manager.create(TransactionTag, { transactionId, tagId }),
+        ),
+      );
+      await manager.save(TransactionTag, newTags);
+    }
+  }
+
   async setSplitTags(
     transactionSplitId: string,
     tagIds: string[],

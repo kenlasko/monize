@@ -142,16 +142,16 @@ export class TransactionBulkUpdateService {
         );
       }
 
-      // Step 4c: Update tags (many-to-many relation, must be done per-transaction)
+      // Step 4c: Update tags (many-to-many relation). Validates the tag set
+      // once and replaces tags with a single bulk delete + insert across all
+      // eligible transactions.
       if (isUpdatingTags) {
-        for (const txId of eligibleIds) {
-          await this.tagsService.setTransactionTags(
-            txId,
-            dto.tagIds ?? [],
-            userId,
-            queryRunner,
-          );
-        }
+        await this.tagsService.setTransactionTagsBulk(
+          eligibleIds,
+          dto.tagIds ?? [],
+          userId,
+          queryRunner,
+        );
       }
 
       await queryRunner.commitTransaction();

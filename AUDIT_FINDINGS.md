@@ -65,9 +65,12 @@ fail-fast, fully unit-tested). Applied to #5, #6, the FX refresh cron, and #17.
   `WHERE id = ANY($1)`. `net-worth.service.ts:347-355, 607-615`
   DONE: both sites resolve all requested accounts plus their linked pairs in a single
   `id = ANY($1) OR linked_account_id = ANY($1) OR id IN (...)` query.
-- [ ] **10. Bulk tag update:** ~3N queries (validate+delete+insert per txn) -> validate once
+- [x] **10. Bulk tag update:** ~3N queries (validate+delete+insert per txn) -> validate once
   + one bulk delete + one multi-row insert. `transaction-bulk-update.service.ts:146-155` ->
   `tags.service.setTransactionTags`
+  DONE: added `TagsService.setTransactionTagsBulk` (validate once, one
+  `DELETE ... WHERE transaction_id IN (...)`, one multi-row insert of the txn x tag product);
+  the bulk-update service now calls it once instead of looping `setTransactionTags`.
 - [~] **11. Per-row balance UPDATEs** in deferred-balance cron / post-import /
   `reorderFavourites` / bulk payee save -> single `UPDATE ... FROM (VALUES ...)`.
   `accounts.service.ts:1293-1298, 1327-1338`, `import.service.ts:1654-1686`,

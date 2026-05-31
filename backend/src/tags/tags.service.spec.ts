@@ -467,6 +467,72 @@ describe("TagsService", () => {
     });
   });
 
+  describe("setTransactionTagsBulk()", () => {
+    beforeEach(() => {
+      mockManager.find.mockReset();
+      mockManager.delete.mockReset();
+      mockManager.create.mockReset();
+      mockManager.save.mockReset();
+    });
+
+    it("validates once and replaces tags with a single delete + insert", async () => {
+      const transactionIds = ["txn-1", "txn-2"];
+      const tagIds = ["tag-1", "tag-2"];
+      mockManager.find.mockResolvedValue([mockTag, mockTag2]);
+      mockManager.delete.mockResolvedValue(undefined);
+      mockManager.create.mockImplementation((_entity, data) => data);
+      mockManager.save.mockResolvedValue(undefined);
+
+      await service.setTransactionTagsBulk(transactionIds, tagIds, userId);
+
+      // tag set validated exactly once for all transactions
+      expect(mockManager.find).toHaveBeenCalledTimes(1);
+      // one bulk delete across all transactions
+      expect(mockManager.delete).toHaveBeenCalledTimes(1);
+      expect(mockManager.delete).toHaveBeenCalledWith(TransactionTag, {
+        transactionId: expect.anything(),
+      });
+      // one save with the full cartesian product (2 txns x 2 tags)
+      expect(mockManager.save).toHaveBeenCalledTimes(1);
+      expect(mockManager.save).toHaveBeenCalledWith(TransactionTag, [
+        { transactionId: "txn-1", tagId: "tag-1" },
+        { transactionId: "txn-1", tagId: "tag-2" },
+        { transactionId: "txn-2", tagId: "tag-1" },
+        { transactionId: "txn-2", tagId: "tag-2" },
+      ]);
+    });
+
+    it("clears tags across all transactions when tagIds is empty", async () => {
+      mockManager.delete.mockResolvedValue(undefined);
+
+      await service.setTransactionTagsBulk(["txn-1", "txn-2"], [], userId);
+
+      expect(mockManager.delete).toHaveBeenCalledTimes(1);
+      expect(mockManager.find).not.toHaveBeenCalled();
+      expect(mockManager.save).not.toHaveBeenCalled();
+    });
+
+    it("does nothing when there are no transactions", async () => {
+      await service.setTransactionTagsBulk([], ["tag-1"], userId);
+
+      expect(mockManager.find).not.toHaveBeenCalled();
+      expect(mockManager.delete).not.toHaveBeenCalled();
+      expect(mockManager.save).not.toHaveBeenCalled();
+    });
+
+    it("throws NotFoundException when a tag does not belong to the user", async () => {
+      mockManager.find.mockResolvedValue([mockTag]); // 1 of 2 found
+
+      await expect(
+        service.setTransactionTagsBulk(
+          ["txn-1"],
+          ["tag-1", "tag-nope"],
+          userId,
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
   describe("setSplitTags()", () => {
     const splitId = "split-1";
 
