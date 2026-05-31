@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import {
   BarChart,
@@ -17,7 +17,6 @@ import {
 import { format, subMonths, isAfter, startOfMonth } from 'date-fns';
 import { builtInReportsApi } from '@/lib/built-in-reports';
 import {
-  MonthlyComparisonResponse,
   CategorySpendingSnapshot,
 } from '@/types/monthly-comparison';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -26,9 +25,8 @@ import { CHART_COLOURS } from '@/lib/chart-colours';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
-import { createLogger } from '@/lib/logger';
-
-const logger = createLogger('MonthlyComparisonReport');
+import { useReportData } from '@/hooks/useReportData';
+import { ReportError } from '@/components/reports/ReportError';
 
 type ComparisonSortField = 'category' | 'current' | 'previous' | 'change' | 'changePercent';
 type TopMoversSortField = 'symbol' | 'name' | 'price' | 'change' | 'changePercent';
@@ -67,8 +65,10 @@ export function MonthlyComparisonReport() {
   const { formatCurrency, formatCurrencyCompact, formatCurrencyAxis, formatSignedPercent } = useNumberFormat();
   const chartRef = useRef<HTMLDivElement>(null);
   const [month, setMonth] = useState(getDefaultMonth);
-  const [data, setData] = useState<MonthlyComparisonResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data, isLoading, error, reload } = useReportData(
+    () => builtInReportsApi.getMonthlyComparison(month),
+    [month],
+  );
   const comparisonSort = useSortableTable<ComparisonSortField>(
     'reports.monthly-comparison.expenses.sort',
     { field: 'current', direction: 'desc' },
@@ -131,22 +131,6 @@ export function MonthlyComparisonReport() {
     });
     return sorted;
   }, [data, topMoversSort.sortField, topMoversSort.sortDirection]);
-
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const response = await builtInReportsApi.getMonthlyComparison(month);
-      setData(response);
-    } catch (error) {
-      logger.error('Failed to load monthly comparison:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [month]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
 
   const handleExportPdf = async () => {
     if (!data) return;
@@ -272,6 +256,10 @@ export function MonthlyComparisonReport() {
     const maxMonth = subMonths(new Date(), 1);
     return isAfter(startOfMonth(next), startOfMonth(maxMonth));
   })();
+
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
 
   if (isLoading) {
     return (

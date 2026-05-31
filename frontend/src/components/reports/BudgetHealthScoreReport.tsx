@@ -1,16 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { budgetsApi } from '@/lib/budgets';
-import type { Budget, HealthScoreResult } from '@/types/budget';
 import { BudgetHealthGauge } from '@/components/budgets/BudgetHealthGauge';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
+import { ReportError } from '@/components/reports/ReportError';
 import { SortableHeader } from '@/components/ui/SortableHeader';
+import { useReportData } from '@/hooks/useReportData';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
-import { createLogger } from '@/lib/logger';
-
-const logger = createLogger('BudgetHealthScoreReport');
 
 function getImpactColor(impact: number): string {
   if (impact > 0) return 'text-green-600 dark:text-green-400';
@@ -36,14 +34,48 @@ type CategoryImpactSortField = 'category' | 'group' | 'percentUsed' | 'impact';
 
 export function BudgetHealthScoreReport() {
   const chartRef = useRef<HTMLDivElement>(null);
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [selectedBudgetId, setSelectedBudgetId] = useState<string>('');
-  const [healthScore, setHealthScore] = useState<HealthScoreResult | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [selectedBudgetIdState, setSelectedBudgetId] = useState<string>('');
   const { sortField, sortDirection, handleSort } = useSortableTable<CategoryImpactSortField>(
     'reports.budget-health-score.categoryImpact.sort',
     { field: 'impact', direction: 'asc' },
   );
+
+  const {
+    data: budgetsData,
+    isLoading: budgetsLoading,
+    error: budgetsError,
+    reload: reloadBudgets,
+  } = useReportData(() => budgetsApi.getAll(), []);
+
+  const budgets = useMemo(() => budgetsData ?? [], [budgetsData]);
+
+  // Auto-select the active budget (or first) until the user picks one. Derived
+  // during render rather than via setState-in-effect.
+  const autoSelectedBudgetId = useMemo(() => {
+    const active = budgets.find((b) => b.isActive);
+    return active?.id ?? budgets[0]?.id ?? '';
+  }, [budgets]);
+  const selectedBudgetId = selectedBudgetIdState || autoSelectedBudgetId;
+
+  const {
+    data: healthScore,
+    isLoading: scoreLoading,
+    error: scoreError,
+    reload: reloadScore,
+  } = useReportData(
+    () =>
+      selectedBudgetId
+        ? budgetsApi.getHealthScore(selectedBudgetId)
+        : Promise.resolve(null),
+    [selectedBudgetId],
+  );
+
+  const isLoading = budgetsLoading || scoreLoading;
+  const error = budgetsError || scoreError;
+  const reload = () => {
+    reloadBudgets();
+    reloadScore();
+  };
 
   const sortedCategoryScores = useMemo(() => {
     if (!healthScore) return [];
@@ -67,44 +99,6 @@ export function BudgetHealthScoreReport() {
     });
     return sorted;
   }, [healthScore, sortField, sortDirection]);
-
-  useEffect(() => {
-    const loadBudgets = async () => {
-      try {
-        const data = await budgetsApi.getAll();
-        setBudgets(data);
-        const active = data.find((b) => b.isActive);
-        if (active) {
-          setSelectedBudgetId(active.id);
-        } else if (data.length > 0) {
-          setSelectedBudgetId(data[0].id);
-        }
-      } catch (error) {
-        logger.error('Failed to load budgets:', error);
-      }
-    };
-    loadBudgets();
-  }, []);
-
-  const loadHealthScore = useCallback(async () => {
-    if (!selectedBudgetId) {
-      setIsLoading(false);
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const result = await budgetsApi.getHealthScore(selectedBudgetId);
-      setHealthScore(result);
-    } catch (error) {
-      logger.error('Failed to load health score:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedBudgetId]);
-
-  useEffect(() => {
-    loadHealthScore();
-  }, [loadHealthScore]);
 
   const handleExportPdf = async () => {
     const { exportToPdf } = await import('@/lib/pdf-export');
@@ -146,6 +140,10 @@ export function BudgetHealthScoreReport() {
       filename: 'budget-health-score',
     });
   };
+
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
 
   if (isLoading) {
     return (

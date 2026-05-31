@@ -173,8 +173,11 @@ export function useNumberFormat() {
         return `${magnitudeFormat.format(0)}%`;
       }
       const rounded = roundToDecimals(value, decimals);
-      const sign = rounded >= 0 ? '+' : '';
-      return `${sign}${magnitudeFormat.format(rounded)}%`;
+      // Normalize -0 so a tiny negative that rounds to zero renders "+0.00%"
+      // rather than "+-0.00%" (Intl formats -0 with a leading minus).
+      const normalized = Object.is(rounded, -0) ? 0 : rounded;
+      const sign = normalized >= 0 ? '+' : '';
+      return `${sign}${magnitudeFormat.format(normalized)}%`;
     },
     [numberFormat]
   );

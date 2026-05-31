@@ -325,6 +325,37 @@ export class NetWorthService {
       }));
   }
 
+  /**
+   * Latest-month net worth only. The account summary and the
+   * `get_account_balances` tool need just the most recent month's
+   * assets/liabilities/netWorth, not the whole series. Bounding the snapshot
+   * query and rate index to a single month avoids replaying the entire
+   * monthly_account_balances history just to read the last element. Returns
+   * null when the user has no populated snapshots.
+   */
+  async getLatestNetWorth(
+    userId: string,
+  ): Promise<{ assets: number; liabilities: number; netWorth: number } | null> {
+    await this.ensurePopulated(userId);
+
+    const latestRows: { month: string | Date }[] = await this.dataSource.query(
+      `SELECT MAX(month) AS month FROM monthly_account_balances WHERE user_id = $1`,
+      [userId],
+    );
+    const latestMonth = latestRows[0]?.month;
+    if (!latestMonth) return null;
+
+    const monthStr = this.toDateString(latestMonth);
+    const months = await this.getMonthlyNetWorth(userId, monthStr, monthStr);
+    const latest = months[months.length - 1];
+    if (!latest) return null;
+    return {
+      assets: latest.assets,
+      liabilities: latest.liabilities,
+      netWorth: latest.netWorth,
+    };
+  }
+
   async getMonthlyInvestments(
     userId: string,
     startDate?: string,

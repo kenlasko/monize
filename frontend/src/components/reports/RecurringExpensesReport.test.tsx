@@ -116,14 +116,17 @@ describe("RecurringExpensesReport", () => {
     expect(screen.getByText("Monthly Estimate")).toBeInTheDocument();
   });
 
-  it("renders failed state when data is null", async () => {
+  it("surfaces a retryable error state when the API fails", async () => {
     mockGetRecurringExpenses.mockRejectedValue(new Error("API error"));
     render(<RecurringExpensesReport />);
     await waitFor(() => {
       expect(
-        screen.getByText("Failed to load recurring expenses data."),
+        screen.getByText(/failed to load report data/i),
       ).toBeInTheDocument();
     });
+    expect(
+      screen.getByRole("button", { name: /try again/i }),
+    ).toBeInTheDocument();
   });
 
   it("renders chart section with data", async () => {

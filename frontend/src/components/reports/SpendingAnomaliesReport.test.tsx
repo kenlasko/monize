@@ -143,12 +143,13 @@ describe("SpendingAnomaliesReport", () => {
     });
   });
 
-  it("handles API error gracefully", async () => {
+  it("surfaces a retryable error state when the API fails", async () => {
     mockGetSpendingAnomalies.mockRejectedValue(new Error("Network error"));
     render(<SpendingAnomaliesReport />);
     await waitFor(() => {
-      expect(screen.getByText("High Priority")).toBeInTheDocument();
+      expect(screen.getByText(/failed to load report data/i)).toBeInTheDocument();
     });
+    expect(screen.getByRole("button", { name: /try again/i })).toBeInTheDocument();
   });
 
   it("navigates to transactions with search on transaction anomaly click", async () => {

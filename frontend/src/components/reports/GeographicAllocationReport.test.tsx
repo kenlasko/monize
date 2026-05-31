@@ -221,7 +221,7 @@ describe('GeographicAllocationReport', () => {
     mockGetSecurities.mockResolvedValue([]);
     render(<GeographicAllocationReport />);
     await waitFor(() => {
-      expect(screen.getByText(/No investment holdings/)).toBeInTheDocument();
+      expect(screen.getByText(/Failed to load report data/)).toBeInTheDocument();
     });
   });
 

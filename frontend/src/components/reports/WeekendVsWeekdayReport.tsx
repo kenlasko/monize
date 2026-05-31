@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import {
   BarChart,
@@ -16,14 +16,12 @@ import {
   Cell,
 } from 'recharts';
 import { builtInReportsApi } from '@/lib/built-in-reports';
-import { WeekendVsWeekdayResponse } from '@/types/built-in-reports';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateRange } from '@/hooks/useDateRange';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
-import { createLogger } from '@/lib/logger';
-
-const logger = createLogger('WeekendVsWeekdayReport');
+import { useReportData } from '@/hooks/useReportData';
+import { ReportError } from '@/components/reports/ReportError';
 
 interface DaySpendingDisplay {
   day: string;
@@ -39,29 +37,19 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export function WeekendVsWeekdayReport() {
   const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
   const chartRef = useRef<HTMLDivElement>(null);
-  const [reportData, setReportData] = useState<WeekendVsWeekdayResponse | null>(null);
   const { dateRange, setDateRange, resolvedRange } = useDateRange({ defaultRange: '3m', alignment: 'day' });
-  const [isLoading, setIsLoading] = useState(true);
   const [viewType, setViewType] = useState<'comparison' | 'byDay' | 'categories'>('comparison');
 
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        const { start, end } = resolvedRange;
-        const data = await builtInReportsApi.getWeekendVsWeekday({
-          startDate: start,
-          endDate: end,
-        });
-        setReportData(data);
-      } catch (error) {
-        logger.error('Failed to load data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
-  }, [resolvedRange]);
+  const { start: rangeStart, end: rangeEnd } = resolvedRange;
+
+  const { data: reportData, isLoading, error, reload } = useReportData(
+    () =>
+      builtInReportsApi.getWeekendVsWeekday({
+        startDate: rangeStart,
+        endDate: rangeEnd,
+      }),
+    [rangeStart, rangeEnd],
+  );
 
   const { weekendTotal, weekdayTotal, weekendCount, weekdayCount, dayData } = useMemo(() => {
     if (!reportData) {
@@ -161,6 +149,10 @@ export function WeekendVsWeekdayReport() {
       filename: 'weekend-vs-weekday',
     });
   };
+
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
 
   if (isLoading) {
     return (

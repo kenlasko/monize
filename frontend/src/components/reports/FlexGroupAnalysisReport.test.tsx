@@ -187,7 +187,7 @@ describe('FlexGroupAnalysisReport', () => {
     mockGetFlexGroupStatus.mockRejectedValue(new Error('boom'));
     await renderReport();
     await waitFor(() => {
-      expect(screen.getByText(/No flex groups configured/i)).toBeInTheDocument();
+      expect(screen.getByText(/Failed to load report data/)).toBeInTheDocument();
     });
   });
 

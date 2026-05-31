@@ -1349,7 +1349,7 @@ describe('DividendIncomeReport', () => {
     expect(mockGetTransactions).toHaveBeenNthCalledWith(2, expect.objectContaining({ page: 2 }));
   });
 
-  it('logs an error and hides the loading spinner when data fetch fails', async () => {
+  it('shows a retryable error and hides the loading spinner when data fetch fails', async () => {
     mockGetTransactions.mockRejectedValue(new Error('Network error'));
     mockGetInvestmentAccounts.mockResolvedValue([]);
     mockGetCapitalGains.mockResolvedValue([]);
@@ -1360,10 +1360,9 @@ describe('DividendIncomeReport', () => {
     await waitFor(() => {
       expect(document.querySelector('.animate-pulse')).not.toBeInTheDocument();
     });
-    // Empty state is shown (no transactions)
-    expect(
-      screen.getByText(/No dividends, interest, or capital gain activity/),
-    ).toBeInTheDocument();
+    // A visible, retryable error replaces the empty state on a failed fetch.
+    expect(screen.getByText(/Failed to load report data/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Try again/ })).toBeInTheDocument();
   });
 
   it('converts amounts to default currency in the all-accounts view', async () => {

@@ -1,16 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { budgetsApi } from '@/lib/budgets';
-import type { Budget, SeasonalPattern } from '@/types/budget';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
-import { createLogger } from '@/lib/logger';
-
-const logger = createLogger('SeasonalSpendingMapReport');
+import { useReportData } from '@/hooks/useReportData';
+import { ReportError } from '@/components/reports/ReportError';
 
 type SeasonalMapSortField = 'category' | 'typical' | `month${number}`;
 
@@ -39,57 +37,51 @@ function getTextColor(value: number, max: number): string {
 export function SeasonalSpendingMapReport() {
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
   const chartRef = useRef<HTMLDivElement>(null);
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [selectedBudgetId, setSelectedBudgetId] = useState<string>('');
-  const [patterns, setPatterns] = useState<SeasonalPattern[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [selectedBudgetIdOverride, setSelectedBudgetIdOverride] = useState<string>('');
   const { sortField, sortDirection, handleSort } = useSortableTable<SeasonalMapSortField>(
     'reports.seasonal-spending-map.sort',
     { field: 'typical', direction: 'desc' },
   );
 
-  useEffect(() => {
-    const loadBudgets = async () => {
-      try {
-        const data = await budgetsApi.getAll();
-        setBudgets(data);
-        const active = data.find((b) => b.isActive);
-        if (active) {
-          setSelectedBudgetId(active.id);
-        } else if (data.length > 0) {
-          setSelectedBudgetId(data[0].id);
-        }
-      } catch (error) {
-        logger.error('Failed to load budgets:', error);
-      }
-    };
-    loadBudgets();
-  }, []);
+  const {
+    data: budgets,
+    isLoading: budgetsLoading,
+    error: budgetsError,
+    reload: reloadBudgets,
+  } = useReportData(() => budgetsApi.getAll(), []);
 
-  const loadData = useCallback(async () => {
-    if (!selectedBudgetId) {
-      setIsLoading(false);
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const data = await budgetsApi.getSeasonalPatterns(selectedBudgetId);
-      setPatterns(data);
-    } catch (error) {
-      logger.error('Failed to load seasonal patterns:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedBudgetId]);
+  const budgetList = budgets ?? [];
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  // Default selection: the active budget, else the first one. A user choice in
+  // the dropdown (tracked via the override) takes precedence over the default.
+  const defaultBudgetId =
+    budgetList.find((b) => b.isActive)?.id ?? budgetList[0]?.id ?? '';
+  const selectedBudgetId = selectedBudgetIdOverride || defaultBudgetId;
+
+  const {
+    data: patterns,
+    isLoading: patternsLoading,
+    error: patternsError,
+    reload: reloadPatterns,
+  } = useReportData(
+    () =>
+      selectedBudgetId
+        ? budgetsApi.getSeasonalPatterns(selectedBudgetId)
+        : Promise.resolve([]),
+    [selectedBudgetId],
+  );
+
+  const isLoading = budgetsLoading || patternsLoading;
+  const error = budgetsError ?? patternsError;
+  const reload = () => {
+    reloadBudgets();
+    reloadPatterns();
+  };
 
   // Build heatmap grid data: categories x months
   const { gridData, globalMax } = useMemo(() => {
     let max = 0;
-    const grid = patterns.map((pattern) => {
+    const grid = (patterns ?? []).map((pattern) => {
       const monthValues = MONTH_LABELS.map((_, idx) => {
         const monthData = pattern.monthlyAverages.find((m) => m.month === idx + 1);
         const value = monthData?.average ?? 0;
@@ -162,6 +154,10 @@ export function SeasonalSpendingMapReport() {
     });
   };
 
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
+
   if (isLoading) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
@@ -173,7 +169,7 @@ export function SeasonalSpendingMapReport() {
     );
   }
 
-  if (budgets.length === 0) {
+  if (budgetList.length === 0) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 text-center">
         <p className="text-gray-500 dark:text-gray-400">
@@ -190,10 +186,10 @@ export function SeasonalSpendingMapReport() {
         <div className="flex flex-wrap gap-3 items-center">
           <select
             value={selectedBudgetId}
-            onChange={(e) => setSelectedBudgetId(e.target.value)}
+            onChange={(e) => setSelectedBudgetIdOverride(e.target.value)}
             className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
           >
-            {budgets.map((b) => (
+            {budgetList.map((b) => (
               <option key={b.id} value={b.id}>{b.name}</option>
             ))}
           </select>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { useRouter } from 'next/navigation';
 import {
@@ -12,16 +12,15 @@ import {
 } from 'recharts';
 import { format } from 'date-fns';
 import { builtInReportsApi } from '@/lib/built-in-reports';
-import { RecurringExpenseItem, RecurringExpensesResponse } from '@/types/built-in-reports';
+import { RecurringExpenseItem } from '@/types/built-in-reports';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { CHART_COLOURS } from '@/lib/chart-colours';
 import { exportToCsv } from '@/lib/csv-export';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
-import { createLogger } from '@/lib/logger';
-
-const logger = createLogger('RecurringExpensesReport');
+import { useReportData } from '@/hooks/useReportData';
+import { ReportError } from '@/components/reports/ReportError';
 
 type RecurringSortField = 'payee' | 'category' | 'frequency' | 'count' | 'average' | 'total' | 'lastPaid';
 
@@ -29,12 +28,15 @@ export function RecurringExpensesReport() {
   const router = useRouter();
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
   const chartRef = useRef<HTMLDivElement>(null);
-  const [recurringData, setRecurringData] = useState<RecurringExpensesResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [minOccurrences, setMinOccurrences] = useState(3);
   const { sortField, sortDirection, handleSort } = useSortableTable<RecurringSortField>(
     'reports.recurring-expenses.sort',
     { field: 'total', direction: 'desc' },
+  );
+
+  const { data: recurringData, isLoading, error, reload } = useReportData(
+    () => builtInReportsApi.getRecurringExpenses(minOccurrences),
+    [minOccurrences],
   );
 
   const sortedExpenses = useMemo(() => {
@@ -68,21 +70,6 @@ export function RecurringExpensesReport() {
     });
     return sorted;
   }, [recurringData, sortField, sortDirection]);
-
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        const data = await builtInReportsApi.getRecurringExpenses(minOccurrences);
-        setRecurringData(data);
-      } catch (error) {
-        logger.error('Failed to load recurring expenses:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
-  }, [minOccurrences]);
 
   const chartData = useMemo(() => {
     if (!recurringData) return [];
@@ -161,6 +148,10 @@ export function RecurringExpensesReport() {
     }
     return null;
   };
+
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
 
   if (isLoading) {
     return (

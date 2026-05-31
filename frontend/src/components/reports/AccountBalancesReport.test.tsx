@@ -271,7 +271,7 @@ describe("AccountBalancesReport", () => {
     mockGetPortfolioSummary.mockResolvedValue(null);
     render(<AccountBalancesReport />);
     await waitFor(() => {
-      expect(screen.getByText('No accounts found.')).toBeInTheDocument();
+      expect(screen.getByText(/Failed to load report data/)).toBeInTheDocument();
     });
   });
 

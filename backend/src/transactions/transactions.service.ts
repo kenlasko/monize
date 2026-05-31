@@ -1968,6 +1968,13 @@ export class TransactionsService {
     },
   ): Promise<LlmTransactionSearch> {
     const limit = Math.min(filters.limit || 50, 100);
+    // Push the amount filter into the SQL WHERE clause so pagination, total and
+    // hasMore reflect the filtered set. Filtering only the expanded rows after
+    // the page was fetched returned a biased sample with a total/hasMore that
+    // counted unfiltered parent rows -- the model would see e.g. 3 rows but be
+    // told there were 50 and never page to the real matches. The per-row filter
+    // below still applies to split sub-rows (whose individual amounts differ
+    // from the parent total) so a split row outside the range is not shown.
     const result = await this.findAll(
       userId,
       filters.accountId ? [filters.accountId] : undefined,
@@ -1979,6 +1986,9 @@ export class TransactionsService {
       limit,
       false,
       filters.query,
+      undefined,
+      filters.minAmount,
+      filters.maxAmount,
     );
 
     const transactions = result.data.flatMap((t): LlmTransactionRow[] => {

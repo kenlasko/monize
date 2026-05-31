@@ -437,13 +437,14 @@ describe("UncategorizedTransactionsReport", () => {
     });
   });
 
-  it("handles API error gracefully", async () => {
+  it("surfaces a retryable error state when the API fails", async () => {
     mockGetUncategorizedTransactions.mockRejectedValue(
       new Error("Network error"),
     );
     render(<UncategorizedTransactionsReport />);
     await waitFor(() => {
-      expect(screen.getByText("Total Uncategorized")).toBeInTheDocument();
+      expect(screen.getByText(/failed to load report data/i)).toBeInTheDocument();
     });
+    expect(screen.getByRole("button", { name: /try again/i })).toBeInTheDocument();
   });
 });

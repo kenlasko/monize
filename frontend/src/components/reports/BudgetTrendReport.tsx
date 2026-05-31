@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import {
   LineChart,
@@ -13,59 +13,54 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { budgetsApi } from '@/lib/budgets';
-import type { Budget, BudgetTrendPoint } from '@/types/budget';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useReportData } from '@/hooks/useReportData';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
-import { createLogger } from '@/lib/logger';
-
-const logger = createLogger('BudgetTrendReport');
+import { ReportError } from '@/components/reports/ReportError';
 
 export function BudgetTrendReport() {
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
   const chartRef = useRef<HTMLDivElement>(null);
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [selectedBudgetId, setSelectedBudgetId] = useState<string>('');
+  const [selectedBudgetIdState, setSelectedBudgetId] = useState<string>('');
   const [months, setMonths] = useState(12);
-  const [trendData, setTrendData] = useState<BudgetTrendPoint[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const loadBudgets = async () => {
-      try {
-        const data = await budgetsApi.getAll();
-        setBudgets(data);
-        const active = data.find((b) => b.isActive);
-        if (active) {
-          setSelectedBudgetId(active.id);
-        } else if (data.length > 0) {
-          setSelectedBudgetId(data[0].id);
-        }
-      } catch (error) {
-        logger.error('Failed to load budgets:', error);
-      }
-    };
-    loadBudgets();
-  }, []);
+  const {
+    data: budgetsData,
+    isLoading: budgetsLoading,
+    error: budgetsError,
+    reload: reloadBudgets,
+  } = useReportData(() => budgetsApi.getAll(), []);
 
-  const loadData = useCallback(async () => {
-    if (!selectedBudgetId) {
-      setIsLoading(false);
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const data = await budgetsApi.getTrend(selectedBudgetId, months);
-      setTrendData(data);
-    } catch (error) {
-      logger.error('Failed to load trend data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedBudgetId, months]);
+  const budgets = useMemo(() => budgetsData ?? [], [budgetsData]);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  // Auto-select the active budget (or first) until the user picks one. Derived
+  // during render rather than via setState-in-effect.
+  const autoSelectedBudgetId = useMemo(() => {
+    const active = budgets.find((b) => b.isActive);
+    return active?.id ?? budgets[0]?.id ?? '';
+  }, [budgets]);
+  const selectedBudgetId = selectedBudgetIdState || autoSelectedBudgetId;
+
+  const {
+    data: trendResponse,
+    isLoading: trendLoading,
+    error: trendError,
+    reload: reloadTrend,
+  } = useReportData(
+    () =>
+      selectedBudgetId
+        ? budgetsApi.getTrend(selectedBudgetId, months)
+        : Promise.resolve(null),
+    [selectedBudgetId, months],
+  );
+
+  const trendData = useMemo(() => trendResponse ?? [], [trendResponse]);
+  const isLoading = budgetsLoading || trendLoading;
+  const error = budgetsError || trendError;
+  const reload = () => {
+    reloadBudgets();
+    reloadTrend();
+  };
 
   const handleExportPdf = async () => {
     const { exportToPdf } = await import('@/lib/pdf-export');
@@ -87,6 +82,10 @@ export function BudgetTrendReport() {
       filename: 'budget-trend',
     });
   };
+
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
 
   if (isLoading) {
     return (

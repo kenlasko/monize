@@ -273,7 +273,7 @@ describe('MonthlyComparisonReport', () => {
     mockGetMonthlyComparison.mockRejectedValue(new Error('Network error'));
     render(<MonthlyComparisonReport />);
     await waitFor(() => {
-      expect(screen.getByText('Failed to load report data.')).toBeInTheDocument();
+      expect(screen.getByText(/Failed to load report data/i)).toBeInTheDocument();
     });
   });
 

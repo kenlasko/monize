@@ -280,7 +280,7 @@ describe('CurrencyExposureReport', () => {
     mockGetInvestmentAccounts.mockRejectedValue(new Error('boom'));
     render(<CurrencyExposureReport />);
     await waitFor(() => {
-      expect(screen.getByText(/No investment holdings/)).toBeInTheDocument();
+      expect(screen.getByText(/Failed to load report data/)).toBeInTheDocument();
     });
   });
 

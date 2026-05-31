@@ -1,20 +1,16 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { builtInReportsApi } from '@/lib/built-in-reports';
-import { TaxSummaryResponse } from '@/types/built-in-reports';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { exportToCsv } from '@/lib/csv-export';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
-import { createLogger } from '@/lib/logger';
-
-const logger = createLogger('TaxSummaryReport');
+import { useReportData } from '@/hooks/useReportData';
+import { ReportError } from '@/components/reports/ReportError';
 
 export function TaxSummaryReport() {
   const { formatCurrency } = useNumberFormat();
-  const [taxData, setTaxData] = useState<TaxSummaryResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   const years = useMemo(() => {
@@ -22,21 +18,14 @@ export function TaxSummaryReport() {
     return Array.from({ length: 5 }, (_, i) => currentYear - i);
   }, []);
 
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await builtInReportsApi.getTaxSummary(selectedYear);
-      setTaxData(data);
-    } catch (error) {
-      logger.error('Failed to load data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedYear]);
+  const { data: taxData, isLoading, error, reload } = useReportData(
+    () => builtInReportsApi.getTaxSummary(selectedYear),
+    [selectedYear],
+  );
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
 
   if (isLoading) {
     return (

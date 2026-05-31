@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import {
   Tooltip,
@@ -22,10 +22,9 @@ import { ReportAccountMultiSelect } from '@/components/reports/ReportAccountMult
 import { RefreshPricesButton } from '@/components/reports/RefreshPricesButton';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
-import { createLogger } from '@/lib/logger';
+import { useReportData } from '@/hooks/useReportData';
+import { ReportError } from '@/components/reports/ReportError';
 import { aggregateHoldingsBySecurity, AggregatedHolding } from '@/lib/aggregate-holdings';
-
-const logger = createLogger('InvestmentPerformanceReport');
 
 type HoldingsSortField = 'symbol' | 'quantity' | 'averageCost' | 'currentPrice' | 'marketValue' | 'gainLoss' | 'gainLossPercent';
 
@@ -33,16 +32,9 @@ export function InvestmentPerformanceReport() {
   const { formatCurrency: formatCurrencyFull, formatSignedPercent } = useNumberFormat();
   const { defaultCurrency } = useExchangeRates();
   const chartRef = useRef<HTMLDivElement>(null);
-  const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
-  const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
   const [reloadKey, setReloadKey] = useState(0);
   const [expandedSecurityId, setExpandedSecurityId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  // Only the first load shows the full skeleton. Later reloads (e.g. changing
-  // the account filter) keep the existing content -- and the account dropdown --
-  // mounted so they update in place instead of unmounting the whole report.
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [viewType, setViewType] = useState<'performance' | 'allocation'>('performance');
   const isSingleAccount = selectedAccountIds.length === 1;
   const { sortField, sortDirection, handleSort } = useSortableTable<HoldingsSortField>(
@@ -50,25 +42,22 @@ export function InvestmentPerformanceReport() {
     { field: 'marketValue', direction: 'desc' },
   );
 
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        const [portfolioData, accountsData] = await Promise.all([
-          investmentsApi.getPortfolioSummary(selectedAccountIds.length > 0 ? selectedAccountIds : undefined),
-          investmentsApi.getInvestmentAccounts(),
-        ]);
-        setPortfolio(portfolioData);
-        setAccounts(accountsData);
-      } catch (error) {
-        logger.error('Failed to load investment data:', error);
-      } finally {
-        setIsLoading(false);
-        setHasLoadedOnce(true);
-      }
-    };
-    loadData();
-  }, [selectedAccountIds, reloadKey]);
+  const { data: response, isLoading, error, reload } = useReportData(
+    async () => {
+      const [portfolioData, accountsData] = await Promise.all([
+        investmentsApi.getPortfolioSummary(selectedAccountIds.length > 0 ? selectedAccountIds : undefined),
+        investmentsApi.getInvestmentAccounts(),
+      ]);
+      return { portfolio: portfolioData, accounts: accountsData };
+    },
+    [selectedAccountIds, reloadKey],
+  );
+
+  const portfolio = useMemo<PortfolioSummary | null>(
+    () => response?.portfolio ?? null,
+    [response],
+  );
+  const accounts = useMemo<Account[]>(() => response?.accounts ?? [], [response]);
 
   const formatPercent = (value: number) => formatSignedPercent(value);
 
@@ -248,7 +237,11 @@ export function InvestmentPerformanceReport() {
     return null;
   };
 
-  if (isLoading && !hasLoadedOnce) {
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
+
+  if (isLoading && response === null) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
         <div className="space-y-4">

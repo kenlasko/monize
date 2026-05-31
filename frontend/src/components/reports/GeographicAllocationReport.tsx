@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import {
   BarChart,
@@ -24,6 +24,8 @@ import { ReportAccountMultiSelect } from '@/components/reports/ReportAccountMult
 import { RefreshPricesButton } from '@/components/reports/RefreshPricesButton';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
+import { useReportData } from '@/hooks/useReportData';
+import { ReportError } from '@/components/reports/ReportError';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('GeographicAllocationReport');
@@ -119,15 +121,9 @@ export function GeographicAllocationReport() {
   const { formatCurrencyCompact: formatCurrency, formatCurrency: formatCurrencyFull, formatCurrencyAxis } = useNumberFormat();
   const { defaultCurrency, convertToDefault } = useExchangeRates();
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [holdings, setHoldings] = useState<HoldingWithMarketValue[]>([]);
   const [securities, setSecurities] = useState<Security[]>([]);
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
   const [viewType, setViewType] = useState<'region' | 'exchange'>('region');
-  const [isLoading, setIsLoading] = useState(true);
-  // Only the first load shows the full skeleton. Later reloads (e.g. changing
-  // the account filter) keep the existing content -- and the account dropdown --
-  // mounted so they update in place instead of unmounting the whole report.
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
   const regionSort = useSortableTable<GeoRegionSortField>(
     'reports.geographic-allocation.region.sort',
@@ -151,24 +147,21 @@ export function GeographicAllocationReport() {
       .catch((error) => logger.error('Failed to load static data:', error));
   }, []);
 
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const summaryData = await investmentsApi.getPortfolioSummary(
+  const { data: response, isLoading, error, reload } = useReportData(
+    () =>
+      investmentsApi.getPortfolioSummary(
         selectedAccountIds.length > 0 ? selectedAccountIds : undefined,
-      );
-      setHoldings(summaryData.holdings);
-    } catch (error) {
-      logger.error('Failed to load data:', error);
-    } finally {
-      setIsLoading(false);
-      setHasLoadedOnce(true);
-    }
-  }, [selectedAccountIds]);
+      ),
+    [selectedAccountIds],
+  );
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  // Only the first load shows the full skeleton. Later reloads (e.g. changing
+  // the account filter) keep the existing content -- and the account dropdown --
+  // mounted so they update in place instead of unmounting the whole report.
+  const holdings = useMemo<HoldingWithMarketValue[]>(
+    () => response?.holdings ?? [],
+    [response],
+  );
 
   const securityExchangeMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -324,7 +317,11 @@ export function GeographicAllocationReport() {
     });
   };
 
-  if (isLoading && !hasLoadedOnce) {
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
+
+  if (isLoading && response === null) {
     return (
       <div className="space-y-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
@@ -381,7 +378,7 @@ export function GeographicAllocationReport() {
             >
               By Exchange
             </button>
-            <RefreshPricesButton onRefreshComplete={loadData} />
+            <RefreshPricesButton onRefreshComplete={reload} />
             <ExportDropdown onExportPdf={handleExportPdf} />
           </div>
         </div>

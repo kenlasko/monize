@@ -94,13 +94,22 @@ export function CashFlowReport() {
     [response],
   );
 
-  const incomeItems: IncomeSourceItem[] = response?.incomeResponse.data ?? [];
-  const expenseItems: CategorySpendingItem[] = response?.spendingResponse.data ?? [];
-  const totals = {
-    totalIncome: response?.cashFlowResponse.totals.income ?? 0,
-    totalExpenses: response?.cashFlowResponse.totals.expenses ?? 0,
-    netCashFlow: response?.cashFlowResponse.totals.net ?? 0,
-  };
+  const incomeItems = useMemo<IncomeSourceItem[]>(
+    () => response?.incomeResponse.data ?? [],
+    [response],
+  );
+  const expenseItems = useMemo<CategorySpendingItem[]>(
+    () => response?.spendingResponse.data ?? [],
+    [response],
+  );
+  const totals = useMemo(
+    () => ({
+      totalIncome: response?.cashFlowResponse.totals.income ?? 0,
+      totalExpenses: response?.cashFlowResponse.totals.expenses ?? 0,
+      netCashFlow: response?.cashFlowResponse.totals.net ?? 0,
+    }),
+    [response],
+  );
 
   const handleExportPdf = async () => {
     const { exportToPdf } = await import("@/lib/pdf-export");

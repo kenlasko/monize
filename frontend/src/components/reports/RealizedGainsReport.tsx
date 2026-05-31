@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { gainLossColor } from '@/lib/format';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
+import { useReportData } from '@/hooks/useReportData';
+import { ReportError } from '@/components/reports/ReportError';
 import {
   BarChart,
   Bar,
@@ -64,16 +66,9 @@ interface SecurityGain {
 export function RealizedGainsReport() {
   const { formatCurrency: formatCurrencyFull, formatCurrencyAxis } = useNumberFormat();
   const { defaultCurrency, convertToDefault } = useExchangeRates();
-  const [entries, setEntries] = useState<RealizedGainEntry[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
-  const [reloadKey, setReloadKey] = useState(0);
   const { dateRange, setDateRange, resolvedRange, isValid } = useDateRange({ defaultRange: '1y', alignment: 'month' });
-  const [isLoading, setIsLoading] = useState(true);
-  // Only the first load shows the full skeleton. Later reloads (e.g. changing
-  // the account filter) keep the existing content -- and the account dropdown --
-  // mounted so they update in place instead of unmounting the whole report.
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [viewType, setViewType] = useState<'chart' | 'table'>('chart');
   const isSingleAccount = selectedAccountIds.length === 1;
   const securityGainsSort = useSortableTable<SecurityGainsSortField>(
@@ -113,27 +108,23 @@ export function RealizedGainsReport() {
       .catch((error) => logger.error('Failed to load accounts:', error));
   }, []);
 
-  useEffect(() => {
-    if (!isValid) return;
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        const { start, end } = resolvedRange;
-        const data = await investmentsApi.getRealizedGains({
-          accountIds: selectedAccountIds.length > 0 ? selectedAccountIds.join(',') : undefined,
-          startDate: start || undefined,
-          endDate: end,
-        });
-        setEntries(data);
-      } catch (error) {
-        logger.error('Failed to load realized gains:', error);
-      } finally {
-        setIsLoading(false);
-        setHasLoadedOnce(true);
-      }
-    };
-    loadData();
-  }, [selectedAccountIds, resolvedRange, isValid, reloadKey]);
+  const { start: rangeStart, end: rangeEnd } = resolvedRange;
+
+  // `reload` (a stable callback) is wired to the RefreshPricesButton so a
+  // manual price refresh re-fetches.
+  const { data: response, isLoading, error, reload } = useReportData(
+    () =>
+      isValid
+        ? investmentsApi.getRealizedGains({
+            accountIds: selectedAccountIds.length > 0 ? selectedAccountIds.join(',') : undefined,
+            startDate: rangeStart || undefined,
+            endDate: rangeEnd,
+          })
+        : Promise.resolve(null),
+    [selectedAccountIds, rangeStart, rangeEnd, isValid],
+  );
+
+  const entries = useMemo<RealizedGainEntry[]>(() => response ?? [], [response]);
 
   const securityGains = useMemo((): SecurityGain[] => {
     const map = new Map<string, SecurityGain>();
@@ -283,7 +274,11 @@ export function RealizedGainsReport() {
     });
   }, [getExportData, securityGains.length, fmtValue, totals]);
 
-  if (isLoading && !hasLoadedOnce) {
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
+
+  if (isLoading && !response) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
         <div className="space-y-4">
@@ -343,7 +338,7 @@ export function RealizedGainsReport() {
             onChange={setDateRange}
           />
           <div className="ml-auto shrink-0 flex gap-2 items-center">
-            <RefreshPricesButton onRefreshComplete={() => setReloadKey((k) => k + 1)} />
+            <RefreshPricesButton onRefreshComplete={reload} />
             <button
               onClick={() => setViewType('chart')}
               title="Chart"

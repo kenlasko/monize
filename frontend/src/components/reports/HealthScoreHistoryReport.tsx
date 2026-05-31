@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import {
   LineChart,
@@ -13,13 +13,12 @@ import {
   ReferenceLine,
 } from 'recharts';
 import { budgetsApi } from '@/lib/budgets';
-import type { Budget, HealthScoreHistoryPoint } from '@/types/budget';
+import type { HealthScoreHistoryPoint } from '@/types/budget';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
+import { ReportError } from '@/components/reports/ReportError';
 import { SortableHeader } from '@/components/ui/SortableHeader';
+import { useReportData } from '@/hooks/useReportData';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
-import { createLogger } from '@/lib/logger';
-
-const logger = createLogger('HealthScoreHistoryReport');
 
 type HealthHistorySortField = 'month' | 'score' | 'grade' | 'change';
 
@@ -40,15 +39,50 @@ function getScoreGrade(score: number): { label: string; color: string } {
 
 export function HealthScoreHistoryReport() {
   const chartRef = useRef<HTMLDivElement>(null);
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [selectedBudgetId, setSelectedBudgetId] = useState<string>('');
+  const [selectedBudgetIdState, setSelectedBudgetId] = useState<string>('');
   const [months, setMonths] = useState(12);
-  const [data, setData] = useState<HealthScoreHistoryPoint[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const { sortField, sortDirection, handleSort } = useSortableTable<HealthHistorySortField>(
     'reports.health-score-history.sort',
     { field: 'month', direction: 'asc' },
   );
+
+  const {
+    data: budgetsData,
+    isLoading: budgetsLoading,
+    error: budgetsError,
+    reload: reloadBudgets,
+  } = useReportData(() => budgetsApi.getAll(), []);
+
+  const budgets = useMemo(() => budgetsData ?? [], [budgetsData]);
+
+  // Auto-select the active budget (or first) until the user picks one. Derived
+  // during render rather than via setState-in-effect.
+  const autoSelectedBudgetId = useMemo(() => {
+    const active = budgets.find((b) => b.isActive);
+    return active?.id ?? budgets[0]?.id ?? '';
+  }, [budgets]);
+  const selectedBudgetId = selectedBudgetIdState || autoSelectedBudgetId;
+
+  const {
+    data: historyData,
+    isLoading: historyLoading,
+    error: historyError,
+    reload: reloadHistory,
+  } = useReportData(
+    () =>
+      selectedBudgetId
+        ? budgetsApi.getHealthScoreHistory(selectedBudgetId, months)
+        : Promise.resolve(null),
+    [selectedBudgetId, months],
+  );
+
+  const data = useMemo<HealthScoreHistoryPoint[]>(() => historyData ?? [], [historyData]);
+  const isLoading = budgetsLoading || historyLoading;
+  const error = budgetsError || historyError;
+  const reload = () => {
+    reloadBudgets();
+    reloadHistory();
+  };
 
   const sortedData = useMemo(() => {
     const indexed = data.map((point, idx) => {
@@ -77,44 +111,6 @@ export function HealthScoreHistoryReport() {
     });
     return indexed;
   }, [data, sortField, sortDirection]);
-
-  useEffect(() => {
-    const loadBudgets = async () => {
-      try {
-        const budgetList = await budgetsApi.getAll();
-        setBudgets(budgetList);
-        const active = budgetList.find((b) => b.isActive);
-        if (active) {
-          setSelectedBudgetId(active.id);
-        } else if (budgetList.length > 0) {
-          setSelectedBudgetId(budgetList[0].id);
-        }
-      } catch (error) {
-        logger.error('Failed to load budgets:', error);
-      }
-    };
-    loadBudgets();
-  }, []);
-
-  const loadData = useCallback(async () => {
-    if (!selectedBudgetId) {
-      setIsLoading(false);
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const result = await budgetsApi.getHealthScoreHistory(selectedBudgetId, months);
-      setData(result);
-    } catch (error) {
-      logger.error('Failed to load health score history:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedBudgetId, months]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
 
   const handleExportPdf = async () => {
     const { exportToPdf } = await import('@/lib/pdf-export');
@@ -152,6 +148,10 @@ export function HealthScoreHistoryReport() {
       filename: 'health-score-history',
     });
   };
+
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
 
   if (isLoading) {
     return (

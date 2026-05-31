@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import {
   BarChart,
@@ -13,29 +13,66 @@ import {
   Cell,
 } from 'recharts';
 import { budgetsApi } from '@/lib/budgets';
-import type { Budget, SeasonalPattern } from '@/types/budget';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useReportData } from '@/hooks/useReportData';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
+import { ReportError } from '@/components/reports/ReportError';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
-import { createLogger } from '@/lib/logger';
-
-const logger = createLogger('BudgetSeasonalPatternsReport');
 
 type SeasonalPatternsSortField = 'category' | 'typical' | 'highMonths';
 
 export function BudgetSeasonalPatternsReport() {
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
   const chartRef = useRef<HTMLDivElement>(null);
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [selectedBudgetId, setSelectedBudgetId] = useState<string>('');
-  const [patterns, setPatterns] = useState<SeasonalPattern[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [selectedBudgetIdState, setSelectedBudgetId] = useState<string>('');
+  const [selectedCategoryState, setSelectedCategory] = useState<string>('');
   const { sortField, sortDirection, handleSort } = useSortableTable<SeasonalPatternsSortField>(
     'reports.budget-seasonal-patterns.sort',
     { field: 'typical', direction: 'desc' },
   );
+
+  const {
+    data: budgetsData,
+    isLoading: budgetsLoading,
+    error: budgetsError,
+    reload: reloadBudgets,
+  } = useReportData(() => budgetsApi.getAll(), []);
+
+  const budgets = useMemo(() => budgetsData ?? [], [budgetsData]);
+
+  // Auto-select the active budget (or first) until the user picks one. Derived
+  // during render rather than via setState-in-effect.
+  const autoSelectedBudgetId = useMemo(() => {
+    const active = budgets.find((b) => b.isActive);
+    return active?.id ?? budgets[0]?.id ?? '';
+  }, [budgets]);
+  const selectedBudgetId = selectedBudgetIdState || autoSelectedBudgetId;
+
+  const {
+    data: patternsData,
+    isLoading: patternsLoading,
+    error: patternsError,
+    reload: reloadPatterns,
+  } = useReportData(
+    () =>
+      selectedBudgetId
+        ? budgetsApi.getSeasonalPatterns(selectedBudgetId)
+        : Promise.resolve(null),
+    [selectedBudgetId],
+  );
+
+  const patterns = useMemo(() => patternsData ?? [], [patternsData]);
+  const isLoading = budgetsLoading || patternsLoading;
+  const error = budgetsError || patternsError;
+  const reload = () => {
+    reloadBudgets();
+    reloadPatterns();
+  };
+
+  // Default to the first pattern's category until the user picks one. Derived
+  // during render rather than via setState-in-effect.
+  const selectedCategory = selectedCategoryState || patterns[0]?.categoryId || '';
 
   const sortedPatterns = useMemo(() => {
     const sorted = [...patterns];
@@ -56,47 +93,6 @@ export function BudgetSeasonalPatternsReport() {
     });
     return sorted;
   }, [patterns, sortField, sortDirection]);
-
-  useEffect(() => {
-    const loadBudgets = async () => {
-      try {
-        const data = await budgetsApi.getAll();
-        setBudgets(data);
-        const active = data.find((b) => b.isActive);
-        if (active) {
-          setSelectedBudgetId(active.id);
-        } else if (data.length > 0) {
-          setSelectedBudgetId(data[0].id);
-        }
-      } catch (error) {
-        logger.error('Failed to load budgets:', error);
-      }
-    };
-    loadBudgets();
-  }, []);
-
-  const loadPatterns = useCallback(async () => {
-    if (!selectedBudgetId) {
-      setIsLoading(false);
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const data = await budgetsApi.getSeasonalPatterns(selectedBudgetId);
-      setPatterns(data);
-      if (data.length > 0 && !selectedCategory) {
-        setSelectedCategory(data[0].categoryId);
-      }
-    } catch (error) {
-      logger.error('Failed to load seasonal patterns:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedBudgetId, selectedCategory]);
-
-  useEffect(() => {
-    loadPatterns();
-  }, [loadPatterns]);
 
   const activePattern = useMemo(
     () => patterns.find((p) => p.categoryId === selectedCategory),
@@ -130,6 +126,10 @@ export function BudgetSeasonalPatternsReport() {
       filename: 'budget-seasonal-patterns',
     });
   };
+
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
 
   if (isLoading) {
     return (

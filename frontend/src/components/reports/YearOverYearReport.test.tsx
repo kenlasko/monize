@@ -231,7 +231,7 @@ describe("YearOverYearReport", () => {
     mockGetYearOverYear.mockRejectedValue(new Error("Network error"));
     render(<YearOverYearReport />);
     await waitFor(() => {
-      expect(screen.getByText("expenses")).toBeInTheDocument();
+      expect(screen.getByText(/Failed to load report data/i)).toBeInTheDocument();
     });
   });
 

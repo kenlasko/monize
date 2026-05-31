@@ -103,6 +103,7 @@ describe("AccountsService", () => {
     netWorthService = {
       recalculateAccount: jest.fn().mockResolvedValue(undefined),
       getMonthlyNetWorth: jest.fn().mockResolvedValue([]),
+      getLatestNetWorth: jest.fn().mockResolvedValue(null),
     };
 
     mockQrRepo = {
@@ -2277,12 +2278,13 @@ describe("AccountsService", () => {
 
     it("derives assets, liabilities and net worth from the latest monthly snapshot", async () => {
       stubAccounts([{ ...mockAccount, id: "a1", currentBalance: 5000 }]);
-      // getMonthlyNetWorth is the canonical source shared with the dashboard
+      // getLatestNetWorth is the canonical source shared with the dashboard
       // widget and get_account_balances; getSummary must report its latest month.
-      netWorthService.getMonthlyNetWorth.mockResolvedValue([
-        { assets: 1, liabilities: 1, netWorth: 0 },
-        { assets: 25000, liabilities: 302000, netWorth: 25000 - 302000 },
-      ]);
+      netWorthService.getLatestNetWorth.mockResolvedValue({
+        assets: 25000,
+        liabilities: 302000,
+        netWorth: 25000 - 302000,
+      });
 
       const result = await service.getSummary("user-1");
 
@@ -2293,7 +2295,7 @@ describe("AccountsService", () => {
 
     it("returns zero net worth when no monthly snapshots exist", async () => {
       stubAccounts([{ ...mockAccount, id: "a1", currentBalance: 5000 }]);
-      netWorthService.getMonthlyNetWorth.mockResolvedValue([]);
+      netWorthService.getLatestNetWorth.mockResolvedValue(null);
 
       const result = await service.getSummary("user-1");
 
@@ -2306,7 +2308,7 @@ describe("AccountsService", () => {
 
     it("returns zeros across the board when no accounts exist", async () => {
       stubAccounts([]);
-      netWorthService.getMonthlyNetWorth.mockResolvedValue([]);
+      netWorthService.getLatestNetWorth.mockResolvedValue(null);
 
       const result = await service.getSummary("user-1");
 
@@ -2614,9 +2616,9 @@ describe("AccountsService", () => {
       jest.spyOn(service, "findAll").mockResolvedValue(allAccounts as never);
       (
         netWorthService as unknown as Record<string, jest.Mock>
-      ).getMonthlyNetWorth = jest
+      ).getLatestNetWorth = jest
         .fn()
-        .mockResolvedValue([{ assets: 800, liabilities: 0, netWorth: 800 }]);
+        .mockResolvedValue({ assets: 800, liabilities: 0, netWorth: 800 });
       (
         service["portfolioService"] as unknown as {
           getAccountMarketValues: jest.Mock;
@@ -2664,7 +2666,7 @@ describe("AccountsService", () => {
     it("falls back to 0 when monthly net worth empty", async () => {
       (
         netWorthService as unknown as Record<string, jest.Mock>
-      ).getMonthlyNetWorth = jest.fn().mockResolvedValue([]);
+      ).getLatestNetWorth = jest.fn().mockResolvedValue(null);
       const r = await service.getLlmBalances("user-1");
       expect(r.totalAssets).toBe(0);
       expect(r.totalLiabilities).toBe(0);

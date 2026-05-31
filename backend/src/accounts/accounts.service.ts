@@ -28,7 +28,7 @@ import {
   MortgageAmortizationResult,
 } from "./mortgage-amortization.util";
 import { Cron } from "@nestjs/schedule";
-import { roundMoney } from "../common/round.util";
+import { roundMoney, sumMoney } from "../common/round.util";
 import { formatDateYMD, todayInTimezone, todayYMD } from "../common/date-utils";
 import { getUsersByEffectiveTimezone } from "../common/users-by-timezone.util";
 import { ActionHistoryService } from "../action-history/action-history.service";
@@ -875,19 +875,15 @@ export class AccountsService {
     // totalBalance is the raw book-balance sum across accounts. Assets,
     // liabilities and net worth are derived from the same canonical source as
     // the dashboard Net Worth widget and the `get_account_balances` tool
-    // (getMonthlyNetWorth) so every surface reports an identical net worth.
-    // The previous naive currentBalance classification here ignored brokerage
-    // market value and futureTransactionsSum, producing a different number than
-    // the rest of the app.
-    const totalBalanceCents = accounts.reduce(
-      (sum, account) =>
-        sum + Math.round(Number(account.currentBalance) * 10000),
-      0,
+    // (the latest monthly net-worth snapshot) so every surface reports an
+    // identical net worth. The previous naive currentBalance classification
+    // here ignored brokerage market value and futureTransactionsSum, producing
+    // a different number than the rest of the app.
+    const totalBalance = sumMoney(
+      accounts.map((account) => Number(account.currentBalance)),
     );
-    const totalBalance = totalBalanceCents / 10000;
 
-    const monthly = await this.netWorthService.getMonthlyNetWorth(userId);
-    const latest = monthly[monthly.length - 1];
+    const latest = await this.netWorthService.getLatestNetWorth(userId);
 
     return {
       totalAccounts: accounts.length,
@@ -964,8 +960,7 @@ export class AccountsService {
       };
     });
 
-    const monthly = await this.netWorthService.getMonthlyNetWorth(userId);
-    const latest = monthly[monthly.length - 1];
+    const latest = await this.netWorthService.getLatestNetWorth(userId);
 
     return {
       accounts: accountList,

@@ -5,13 +5,14 @@ import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { format, parseISO } from 'date-fns';
 import { accountsApi } from '@/lib/accounts';
 import { transactionsApi } from '@/lib/transactions';
-import { Account } from '@/types/account';
 import { Transaction } from '@/types/transaction';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { exportToCsv } from '@/lib/csv-export';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
+import { useReportData } from '@/hooks/useReportData';
+import { ReportError } from '@/components/reports/ReportError';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('LoanAmortizationReport');
@@ -109,37 +110,35 @@ function friendlyAccountType(type: string): string {
 
 export function LoanAmortizationReport() {
   const { formatCurrency } = useNumberFormat();
-  const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [showAllRows, setShowAllRows] = useState(false);
   const { sortField, sortDirection, handleSort } = useSortableTable<AmortizationSortField>(
     'reports.loan-amortization.sort',
     { field: 'paymentNumber', direction: 'asc' },
   );
 
-  // Load all accounts and filter for loans
-  useEffect(() => {
-    const loadAccounts = async () => {
-      setIsLoading(true);
-      try {
-        const fetchedAccounts = await accountsApi.getAll(true);
-        const loanAccounts = fetchedAccounts.filter(
-          (a) => a.accountType === 'LOAN' || a.accountType === 'MORTGAGE' || a.accountType === 'LINE_OF_CREDIT'
-        );
-        setAccounts(loanAccounts);
-        if (loanAccounts.length > 0) {
-          setSelectedAccountId(loanAccounts[0].id);
-        }
-      } catch (error) {
-        logger.error('Failed to load accounts:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadAccounts();
-  }, []);
+  // Load all accounts and filter for loans.
+  const { data: fetchedAccounts, isLoading, error, reload } = useReportData(
+    () => accountsApi.getAll(true),
+    [],
+  );
+
+  const accounts = useMemo(
+    () =>
+      (fetchedAccounts ?? []).filter(
+        (a) => a.accountType === 'LOAN' || a.accountType === 'MORTGAGE' || a.accountType === 'LINE_OF_CREDIT',
+      ),
+    [fetchedAccounts],
+  );
+
+  // Default the selection to the first loan once accounts arrive. Seeded during
+  // render (not in an effect) so the transactions fetch carries it immediately.
+  const [seededAccounts, setSeededAccounts] = useState(false);
+  if (!seededAccounts && accounts.length > 0) {
+    setSeededAccounts(true);
+    setSelectedAccountId(accounts[0].id);
+  }
 
   const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
 
@@ -396,6 +395,10 @@ export function LoanAmortizationReport() {
   const displayedRows = showAllRows
     ? sortedPaymentHistory
     : sortedPaymentHistory.slice(0, 24);
+
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
 
   if (isLoading) {
     return (

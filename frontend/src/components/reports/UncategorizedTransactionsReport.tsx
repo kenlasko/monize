@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { gainLossColor } from '@/lib/format';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { builtInReportsApi } from '@/lib/built-in-reports';
-import { UncategorizedTransactionsResponse, UncategorizedTransactionItem } from '@/types/built-in-reports';
+import { UncategorizedTransactionItem } from '@/types/built-in-reports';
 import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateRange } from '@/hooks/useDateRange';
@@ -15,44 +15,34 @@ import { exportToCsv } from '@/lib/csv-export';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
-import { createLogger } from '@/lib/logger';
-
-const logger = createLogger('UncategorizedTransactionsReport');
+import { useReportData } from '@/hooks/useReportData';
+import { ReportError } from '@/components/reports/ReportError';
 
 type SortField = 'date' | 'amount' | 'payee' | 'account';
 
 export function UncategorizedTransactionsReport() {
   const router = useRouter();
   const { formatCurrency } = useNumberFormat();
-  const [reportData, setReportData] = useState<UncategorizedTransactionsResponse | null>(null);
   const { dateRange, setDateRange, resolvedRange, isValid } = useDateRange({ defaultRange: '3m', alignment: 'day' });
-  const [isLoading, setIsLoading] = useState(true);
   const { sortField, sortDirection, handleSort } = useSortableTable<SortField>(
     'reports.uncategorized-transactions.sort',
     { field: 'date', direction: 'desc' },
   );
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
 
-  useEffect(() => {
-    if (!isValid) return;
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        const { start, end } = resolvedRange;
-        const data = await builtInReportsApi.getUncategorizedTransactions({
-          startDate: start || undefined,
-          endDate: end,
-          limit: 500,
-        });
-        setReportData(data);
-      } catch (error) {
-        logger.error('Failed to load data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
-  }, [resolvedRange, isValid]);
+  const { start: rangeStart, end: rangeEnd } = resolvedRange;
+
+  const { data: reportData, isLoading, error, reload } = useReportData(
+    () =>
+      isValid
+        ? builtInReportsApi.getUncategorizedTransactions({
+            startDate: rangeStart || undefined,
+            endDate: rangeEnd,
+            limit: 500,
+          })
+        : Promise.resolve(null),
+    [isValid, rangeStart, rangeEnd],
+  );
 
   const filteredAndSortedTransactions = useMemo(() => {
     if (!reportData) return [];
@@ -125,6 +115,10 @@ export function UncategorizedTransactionsReport() {
       filename: 'uncategorized-transactions',
     });
   };
+
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
 
   if (isLoading) {
     return (

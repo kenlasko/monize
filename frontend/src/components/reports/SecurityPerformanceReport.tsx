@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { gainLossColor } from '@/lib/format';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
+import { useReportData } from '@/hooks/useReportData';
+import { ReportError } from '@/components/reports/ReportError';
 import {
   AreaChart,
   Area,
@@ -24,10 +26,7 @@ import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { RefreshPricesButton } from '@/components/reports/RefreshPricesButton';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
-import { createLogger } from '@/lib/logger';
 import { aggregateHoldingsBySecurity } from '@/lib/aggregate-holdings';
-
-const logger = createLogger('SecurityPerformanceReport');
 
 const MAX_PAGES = 50;
 
@@ -46,15 +45,7 @@ export function SecurityPerformanceReport() {
   const { formatCurrency: formatCurrencyFull, formatCurrencyAxis, formatSignedPercent } = useNumberFormat();
   const { defaultCurrency } = useExchangeRates();
   const chartRef = useRef<HTMLDivElement>(null);
-  const [securities, setSecurities] = useState<Security[]>([]);
   const [selectedSecurityId, setSelectedSecurityId] = useState<string>('');
-  const [prices, setPrices] = useState<SecurityPrice[]>([]);
-  const [transactions, setTransactions] = useState<InvestmentTransaction[]>([]);
-  const [holdings, setHoldings] = useState<HoldingWithMarketValue[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
-  const [reloadKey, setReloadKey] = useState(0);
   const [viewType, setViewType] = useState<'chart' | 'transactions' | 'dividends'>('chart');
   const tradeSort = useSortableTable<TradeSortField>(
     'reports.security-performance.trades.sort',
@@ -65,26 +56,28 @@ export function SecurityPerformanceReport() {
     { field: 'date', direction: 'desc' },
   );
 
-  // Load securities on mount
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [secs, summary, accts] = await Promise.all([
-          investmentsApi.getSecurities(),
-          investmentsApi.getPortfolioSummary(),
-          investmentsApi.getInvestmentAccounts(),
-        ]);
-        setSecurities(secs.filter((s) => s.isActive));
-        setHoldings(summary.holdings);
-        setAccounts(accts);
-      } catch (error) {
-        logger.error('Failed to load securities:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    load();
-  }, [reloadKey]);
+  // Load securities, holdings, and accounts on mount. `reload` (a stable
+  // callback) is wired to the RefreshPricesButton so a manual price refresh
+  // re-fetches the base data (alongside the per-security detail below).
+  const { data: baseData, isLoading, error, reload: reloadBase } = useReportData(
+    async () => {
+      const [secs, summary, accts] = await Promise.all([
+        investmentsApi.getSecurities(),
+        investmentsApi.getPortfolioSummary(),
+        investmentsApi.getInvestmentAccounts(),
+      ]);
+      return {
+        securities: secs.filter((s) => s.isActive),
+        holdings: summary.holdings,
+        accounts: accts,
+      };
+    },
+    [],
+  );
+
+  const securities = useMemo<Security[]>(() => baseData?.securities ?? [], [baseData]);
+  const holdings = useMemo<HoldingWithMarketValue[]>(() => baseData?.holdings ?? [], [baseData]);
+  const accounts = useMemo<Account[]>(() => baseData?.accounts ?? [], [baseData]);
 
   const selectedSecurity = securities.find((s) => s.id === selectedSecurityId);
 
@@ -94,50 +87,53 @@ export function SecurityPerformanceReport() {
     return map;
   }, [accounts]);
 
-  // Load detail when security selected
-  useEffect(() => {
-    if (!selectedSecurityId) {
-      setPrices([]);
-      setTransactions([]);
-      return;
-    }
+  // Load per-security detail (price history + transactions) when a security is
+  // selected. `reloadDetail` re-runs after a manual price refresh. The detail
+  // fetch is secondary -- its failure leaves the price/transaction panels empty
+  // (handled by their own "no data" messaging) rather than replacing the whole
+  // report with an error.
+  const {
+    data: detailData,
+    isLoading: isLoadingDetail,
+    reload: reloadDetail,
+  } = useReportData(
+    async () => {
+      if (!selectedSecurityId) return null;
+      const symbol = securities.find((s) => s.id === selectedSecurityId)?.symbol;
+      if (!symbol) return null;
 
-    const symbol = securities.find((s) => s.id === selectedSecurityId)?.symbol;
-    if (!symbol) return;
+      const allTx: InvestmentTransaction[] = [];
 
-    const loadDetail = async () => {
-      setIsLoadingDetail(true);
-      try {
-        const allTx: InvestmentTransaction[] = [];
+      const [priceData, firstPage] = await Promise.all([
+        investmentsApi.getSecurityPrices(selectedSecurityId, 1095),
+        investmentsApi.getTransactions({ symbol, limit: 200 }),
+      ]);
 
-        const [priceData, firstPage] = await Promise.all([
-          investmentsApi.getSecurityPrices(selectedSecurityId, 1095),
-          investmentsApi.getTransactions({ symbol, limit: 200 }),
-        ]);
-        setPrices(priceData);
-
-        allTx.push(...firstPage.data);
-        let page = 2;
-        let hasMore = firstPage.pagination.hasMore;
-        while (hasMore && page <= MAX_PAGES) {
-          const nextPage = await investmentsApi.getTransactions({
-            symbol,
-            limit: 200,
-            page,
-          });
-          allTx.push(...nextPage.data);
-          hasMore = nextPage.pagination.hasMore;
-          page++;
-        }
-        setTransactions(allTx);
-      } catch (error) {
-        logger.error('Failed to load security detail:', error);
-      } finally {
-        setIsLoadingDetail(false);
+      allTx.push(...firstPage.data);
+      let page = 2;
+      let hasMore = firstPage.pagination.hasMore;
+      while (hasMore && page <= MAX_PAGES) {
+        const nextPage = await investmentsApi.getTransactions({
+          symbol,
+          limit: 200,
+          page,
+        });
+        allTx.push(...nextPage.data);
+        hasMore = nextPage.pagination.hasMore;
+        page++;
       }
-    };
-    loadDetail();
-  }, [selectedSecurityId, securities, reloadKey]);
+
+      return { prices: priceData, transactions: allTx };
+    },
+    [selectedSecurityId, securities],
+  );
+
+  const prices = useMemo<SecurityPrice[]>(() => detailData?.prices ?? [], [detailData]);
+  const transactions = useMemo<InvestmentTransaction[]>(
+    () => detailData?.transactions ?? [],
+    [detailData],
+  );
+
   const selectedHolding = useMemo(() => {
     if (!selectedSecurityId) return null;
     const matches = holdings.filter((h) => h.securityId === selectedSecurityId);
@@ -335,6 +331,10 @@ export function SecurityPerformanceReport() {
     });
   };
 
+  if (error) {
+    return <ReportError onRetry={reloadBase} />;
+  }
+
   if (isLoading) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
@@ -396,7 +396,7 @@ export function SecurityPerformanceReport() {
                 </button>
               </>
             )}
-            <RefreshPricesButton onRefreshComplete={() => setReloadKey((k) => k + 1)} />
+            <RefreshPricesButton onRefreshComplete={() => { reloadBase(); reloadDetail(); }} />
             {selectedSecurityId && <ExportDropdown onExportPdf={handleExportPdf} />}
           </div>
         </div>

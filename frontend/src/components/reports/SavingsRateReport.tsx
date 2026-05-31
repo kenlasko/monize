@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { gainLossColor } from '@/lib/format';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import {
@@ -20,6 +20,8 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
+import { useReportData } from '@/hooks/useReportData';
+import { ReportError } from '@/components/reports/ReportError';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('SavingsRateReport');
@@ -32,13 +34,21 @@ export function SavingsRateReport() {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [selectedBudgetId, setSelectedBudgetId] = useState<string>('');
   const [months, setMonths] = useState(12);
-  const [data, setData] = useState<SavingsRatePoint[]>([]);
   const [targetRate, setTargetRate] = useState(20);
-  const [isLoading, setIsLoading] = useState(true);
   const { sortField, sortDirection, handleSort } = useSortableTable<SavingsRateSortField>(
     'reports.savings-rate.sort',
     { field: 'month', direction: 'asc' },
   );
+
+  const { data: response, isLoading, error, reload } = useReportData(
+    () =>
+      selectedBudgetId
+        ? budgetsApi.getSavingsRate(selectedBudgetId, months)
+        : Promise.resolve(null),
+    [selectedBudgetId, months],
+  );
+
+  const data = useMemo<SavingsRatePoint[]>(() => response ?? [], [response]);
 
   const sortedData = useMemo(() => {
     const sorted = [...data];
@@ -84,26 +94,6 @@ export function SavingsRateReport() {
     loadBudgets();
   }, []);
 
-  const loadData = useCallback(async () => {
-    if (!selectedBudgetId) {
-      setIsLoading(false);
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const result = await budgetsApi.getSavingsRate(selectedBudgetId, months);
-      setData(result);
-    } catch (error) {
-      logger.error('Failed to load savings rate data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedBudgetId, months]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
   const handleExportPdf = async () => {
     const { exportToPdf } = await import('@/lib/pdf-export');
     await exportToPdf({
@@ -129,6 +119,10 @@ export function SavingsRateReport() {
       filename: 'savings-rate',
     });
   };
+
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
 
   if (isLoading) {
     return (

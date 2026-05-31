@@ -134,11 +134,11 @@ describe('TaxSummaryReport', () => {
     expect(screen.getByText('Groceries')).toBeInTheDocument();
   });
 
-  it('handles API error gracefully', async () => {
+  it('shows a retryable error when the API call fails', async () => {
     mockGetTaxSummary.mockRejectedValue(new Error('Network error'));
     render(<TaxSummaryReport />);
     await waitFor(() => {
-      expect(screen.getByText('Tax Year:')).toBeInTheDocument();
+      expect(screen.getByText('Try again')).toBeInTheDocument();
     });
   });
 

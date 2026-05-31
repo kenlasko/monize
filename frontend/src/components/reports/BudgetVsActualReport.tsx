@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import {
   BarChart,
@@ -15,32 +15,72 @@ import {
   Line,
 } from 'recharts';
 import { budgetsApi } from '@/lib/budgets';
-import type { Budget, BudgetTrendPoint, CategoryTrendSeries } from '@/types/budget';
+import type { CategoryTrendSeries } from '@/types/budget';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useReportData } from '@/hooks/useReportData';
 import { BudgetCategoryTrend } from '@/components/budgets/BudgetCategoryTrend';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
+import { ReportError } from '@/components/reports/ReportError';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
-import { createLogger } from '@/lib/logger';
-
-const logger = createLogger('BudgetVsActualReport');
 
 type BudgetTrendSortField = 'month' | 'budgeted' | 'actual' | 'variance' | 'percentUsed';
 
 export function BudgetVsActualReport() {
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [selectedBudgetId, setSelectedBudgetId] = useState<string>('');
+  const [selectedBudgetIdState, setSelectedBudgetId] = useState<string>('');
   const [months, setMonths] = useState(6);
-  const [trendData, setTrendData] = useState<BudgetTrendPoint[]>([]);
-  const [categoryData, setCategoryData] = useState<CategoryTrendSeries[]>([]);
   const [viewMode, setViewMode] = useState<'overview' | 'categories'>('overview');
-  const [isLoading, setIsLoading] = useState(true);
   const chartRef = useRef<HTMLDivElement>(null);
   const { sortField, sortDirection, handleSort } = useSortableTable<BudgetTrendSortField>(
     'reports.budget-vs-actual.trend.sort',
     { field: 'month', direction: 'asc' },
   );
+
+  const {
+    data: budgetsData,
+    isLoading: budgetsLoading,
+    error: budgetsError,
+    reload: reloadBudgets,
+  } = useReportData(() => budgetsApi.getAll(), []);
+
+  const budgets = useMemo(() => budgetsData ?? [], [budgetsData]);
+
+  // Auto-select the active budget (or first) until the user picks one. Derived
+  // during render rather than via setState-in-effect.
+  const autoSelectedBudgetId = useMemo(() => {
+    const active = budgets.find((b) => b.isActive);
+    return active?.id ?? budgets[0]?.id ?? '';
+  }, [budgets]);
+  const selectedBudgetId = selectedBudgetIdState || autoSelectedBudgetId;
+
+  const {
+    data: reportResponse,
+    isLoading: reportLoading,
+    error: reportError,
+    reload: reloadReport,
+  } = useReportData(
+    () =>
+      selectedBudgetId
+        ? Promise.all([
+            budgetsApi.getTrend(selectedBudgetId, months),
+            budgetsApi.getCategoryTrend(selectedBudgetId, months),
+          ]).then(([trend, catTrend]) => ({ trend, catTrend }))
+        : Promise.resolve(null),
+    [selectedBudgetId, months],
+  );
+
+  const trendData = useMemo(() => reportResponse?.trend ?? [], [reportResponse]);
+  const categoryData = useMemo<CategoryTrendSeries[]>(
+    () => reportResponse?.catTrend ?? [],
+    [reportResponse],
+  );
+  const isLoading = budgetsLoading || reportLoading;
+  const error = budgetsError || reportError;
+  const reload = () => {
+    reloadBudgets();
+    reloadReport();
+  };
 
   const sortedTrendData = useMemo(() => {
     const sorted = [...trendData];
@@ -68,48 +108,6 @@ export function BudgetVsActualReport() {
     return sorted;
   }, [trendData, sortField, sortDirection]);
 
-  useEffect(() => {
-    const loadBudgets = async () => {
-      try {
-        const data = await budgetsApi.getAll();
-        setBudgets(data);
-        const active = data.find((b) => b.isActive);
-        if (active) {
-          setSelectedBudgetId(active.id);
-        } else if (data.length > 0) {
-          setSelectedBudgetId(data[0].id);
-        }
-      } catch (error) {
-        logger.error('Failed to load budgets:', error);
-      }
-    };
-    loadBudgets();
-  }, []);
-
-  const loadReportData = useCallback(async () => {
-    if (!selectedBudgetId) {
-      setIsLoading(false);
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const [trend, catTrend] = await Promise.all([
-        budgetsApi.getTrend(selectedBudgetId, months),
-        budgetsApi.getCategoryTrend(selectedBudgetId, months),
-      ]);
-      setTrendData(trend);
-      setCategoryData(catTrend);
-    } catch (error) {
-      logger.error('Failed to load report data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedBudgetId, months]);
-
-  useEffect(() => {
-    loadReportData();
-  }, [loadReportData]);
-
   const handleExportPdf = async () => {
     const { exportToPdf } = await import('@/lib/pdf-export');
     const headers = ['Month', 'Budgeted', 'Actual', 'Variance', '% Used'];
@@ -127,6 +125,10 @@ export function BudgetVsActualReport() {
       filename: 'budget-vs-actual',
     });
   };
+
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
 
   if (isLoading) {
     return (

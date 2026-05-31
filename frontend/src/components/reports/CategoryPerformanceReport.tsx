@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { budgetsApi } from '@/lib/budgets';
 import type { Budget, CategoryTrendSeries } from '@/types/budget';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useReportData } from '@/hooks/useReportData';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
+import { ReportError } from '@/components/reports/ReportError';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
 import { createLogger } from '@/lib/logger';
@@ -54,8 +56,6 @@ export function CategoryPerformanceReport() {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [selectedBudgetId, setSelectedBudgetId] = useState<string>('');
   const [months, setMonths] = useState(6);
-  const [categoryData, setCategoryData] = useState<CategoryTrendSeries[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const { sortField, sortDirection, handleSort } = useSortableTable<CategoryPerformanceSortField>(
     'reports.category-performance.sort',
     { field: 'avgPercent', direction: 'desc' },
@@ -79,25 +79,15 @@ export function CategoryPerformanceReport() {
     loadBudgets();
   }, []);
 
-  const loadData = useCallback(async () => {
-    if (!selectedBudgetId) {
-      setIsLoading(false);
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const data = await budgetsApi.getCategoryTrend(selectedBudgetId, months);
-      setCategoryData(data);
-    } catch (error) {
-      logger.error('Failed to load category trend data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedBudgetId, months]);
+  const { data: response, isLoading, error, reload } = useReportData(
+    () =>
+      selectedBudgetId
+        ? budgetsApi.getCategoryTrend(selectedBudgetId, months)
+        : Promise.resolve<CategoryTrendSeries[]>([]),
+    [selectedBudgetId, months],
+  );
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  const categoryData = useMemo<CategoryTrendSeries[]>(() => response ?? [], [response]);
 
   const processedData = useMemo(() => {
     return categoryData.map((series) => {
@@ -189,6 +179,10 @@ export function CategoryPerformanceReport() {
       filename: 'category-performance',
     });
   };
+
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
 
   if (isLoading) {
     return (

@@ -212,16 +212,17 @@ describe('CategoryPerformanceReport', () => {
     await waitFor(() => {
       expect(mockGetCategoryTrend).toHaveBeenCalledWith('b-1', 6);
     });
-    const selects = document.querySelectorAll('select');
-    // First select = budget; Second select = months
+    // First select = budget; Second select = months. Re-query after each
+    // change since a reload briefly swaps the controls for the loading
+    // skeleton, detaching any previously captured select nodes.
     await act(async () => {
-      fireEvent.change(selects[0], { target: { value: 'b-2' } });
+      fireEvent.change(document.querySelectorAll('select')[0], { target: { value: 'b-2' } });
     });
     await waitFor(() => {
       expect(mockGetCategoryTrend).toHaveBeenCalledWith('b-2', 6);
     });
     await act(async () => {
-      fireEvent.change(selects[1], { target: { value: '12' } });
+      fireEvent.change(document.querySelectorAll('select')[1], { target: { value: '12' } });
     });
     await waitFor(() => {
       expect(mockGetCategoryTrend).toHaveBeenCalledWith('b-2', 12);
@@ -241,7 +242,7 @@ describe('CategoryPerformanceReport', () => {
     mockGetCategoryTrend.mockRejectedValue(new Error('nope'));
     await renderReport();
     await waitFor(() => {
-      expect(screen.getByText(/No category data available/i)).toBeInTheDocument();
+      expect(screen.getByText(/Failed to load report data/)).toBeInTheDocument();
     });
   });
 

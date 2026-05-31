@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
+import { useReportData } from '@/hooks/useReportData';
+import { ReportError } from '@/components/reports/ReportError';
 import {
   PieChart,
   Pie,
@@ -83,14 +85,8 @@ export function SecurityTypeAllocationReport() {
   const { formatCurrencyCompact: formatCurrency, formatCurrency: formatCurrencyFull } = useNumberFormat();
   const { defaultCurrency, convertToDefault } = useExchangeRates();
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [holdings, setHoldings] = useState<HoldingWithMarketValue[]>([]);
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
   const [expandedType, setExpandedType] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  // Only the first load shows the full skeleton. Later reloads (e.g. changing
-  // the account filter) keep the existing content -- and the account dropdown --
-  // mounted so they update in place instead of unmounting the whole report.
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
   const { sortField, sortDirection, handleSort } = useSortableTable<SecurityTypeSortField>(
     'reports.security-type-allocation.sort',
@@ -104,24 +100,20 @@ export function SecurityTypeAllocationReport() {
       .catch((error) => logger.error('Failed to load accounts:', error));
   }, []);
 
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const summaryData = await investmentsApi.getPortfolioSummary(
+  // `reload` (a stable callback) is wired to the RefreshPricesButton so a
+  // manual price refresh re-fetches the holdings.
+  const { data: summaryData, isLoading, error, reload: loadData } = useReportData(
+    () =>
+      investmentsApi.getPortfolioSummary(
         selectedAccountIds.length > 0 ? selectedAccountIds : undefined,
-      );
-      setHoldings(summaryData.holdings);
-    } catch (error) {
-      logger.error('Failed to load data:', error);
-    } finally {
-      setIsLoading(false);
-      setHasLoadedOnce(true);
-    }
-  }, [selectedAccountIds]);
+      ),
+    [selectedAccountIds],
+  );
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  const holdings = useMemo<HoldingWithMarketValue[]>(
+    () => summaryData?.holdings ?? [],
+    [summaryData],
+  );
 
   const allocationData = useMemo((): TypeAllocation[] => {
     // Aggregate holdings by security first so the same symbol held across
@@ -218,7 +210,11 @@ export function SecurityTypeAllocationReport() {
     });
   };
 
-  if (isLoading && !hasLoadedOnce) {
+  if (error) {
+    return <ReportError onRetry={loadData} />;
+  }
+
+  if (isLoading && !summaryData) {
     return (
       <div className="space-y-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">

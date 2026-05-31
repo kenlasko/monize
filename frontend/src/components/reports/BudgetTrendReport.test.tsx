@@ -150,20 +150,22 @@ describe('BudgetTrendReport', () => {
     ]);
     mockGetTrend.mockResolvedValue([]);
     await renderReport();
-    const selects = document.querySelectorAll('select');
-    await act(async () => { fireEvent.change(selects[0], { target: { value: 'b-2' } }); });
+    // Re-query selects after each change: a re-render can replace the nodes.
+    const selects = () => document.querySelectorAll('select');
+    await act(async () => { fireEvent.change(selects()[0], { target: { value: 'b-2' } }); });
     await waitFor(() => expect(mockGetTrend).toHaveBeenCalledWith('b-2', 12));
-    await act(async () => { fireEvent.change(selects[1], { target: { value: '24' } }); });
+    await act(async () => { fireEvent.change(selects()[1], { target: { value: '24' } }); });
     await waitFor(() => expect(mockGetTrend).toHaveBeenCalledWith('b-2', 24));
   });
 
-  it('handles getTrend error gracefully', async () => {
+  it('shows a retryable error when loading the trend fails', async () => {
     mockGetAll.mockResolvedValue([makeBudget()]);
     mockGetTrend.mockRejectedValue(new Error('boom'));
     await renderReport();
     await waitFor(() => {
-      expect(screen.getByText(/No trend data available/i)).toBeInTheDocument();
+      expect(screen.getByText(/Failed to load report data/i)).toBeInTheDocument();
     });
+    expect(screen.getByRole('button', { name: /Try again/i })).toBeInTheDocument();
   });
 
   it('exports to PDF', async () => {

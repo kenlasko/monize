@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useRef } from "react";
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { useRouter } from "next/navigation";
 import { endOfMonth, format } from "date-fns";
@@ -23,9 +23,8 @@ import { ChartViewToggle } from "@/components/ui/ChartViewToggle";
 import { ExportDropdown } from "@/components/ui/ExportDropdown";
 import { SortableHeader } from "@/components/ui/SortableHeader";
 import { exportToCsv } from "@/lib/csv-export";
-import { createLogger } from "@/lib/logger";
-
-const logger = createLogger("YearOverYearReport");
+import { useReportData } from "@/hooks/useReportData";
+import { ReportError } from "@/components/reports/ReportError";
 
 type YearOverYearSortField = string; // 'name' or any year as a string
 
@@ -49,8 +48,6 @@ export function YearOverYearReport() {
   const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis, formatSignedPercent } =
     useNumberFormat();
   const chartRef = useRef<HTMLDivElement>(null);
-  const [yearData, setYearData] = useState<YearData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [yearsToCompare, setYearsToCompare] = useState(2);
   const [metric, setMetric] = useState<"expenses" | "income" | "savings">(
     "expenses",
@@ -61,23 +58,14 @@ export function YearOverYearReport() {
     { field: 'name', direction: 'asc' },
   );
 
+  const { data: response, isLoading, error, reload } = useReportData(
+    () => builtInReportsApi.getYearOverYear(yearsToCompare),
+    [yearsToCompare],
+  );
+
+  const yearData = useMemo<YearData[]>(() => response?.data ?? [], [response]);
+
   const years = useMemo(() => yearData.map((yd) => yd.year), [yearData]);
-
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const response = await builtInReportsApi.getYearOverYear(yearsToCompare);
-      setYearData(response.data);
-    } catch (error) {
-      logger.error("Failed to load data:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [yearsToCompare]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
 
   const chartData = useMemo(() => {
     return MONTH_NAMES.map((monthName, monthIndex) => {
@@ -224,6 +212,10 @@ export function YearOverYearReport() {
     }
     return null;
   };
+
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
 
   if (isLoading) {
     return (

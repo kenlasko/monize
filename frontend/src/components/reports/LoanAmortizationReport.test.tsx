@@ -512,11 +512,11 @@ describe('LoanAmortizationReport', () => {
     });
   });
 
-  it('handles loadAccounts error gracefully', async () => {
+  it('shows a retryable error when loading accounts fails', async () => {
     mockGetAllAccounts.mockRejectedValue(new Error('boom'));
     render(<LoanAmortizationReport />);
     await waitFor(() => {
-      expect(screen.getByText(/No loan or mortgage accounts found/)).toBeInTheDocument();
+      expect(screen.getByText('Try again')).toBeInTheDocument();
     });
   });
 

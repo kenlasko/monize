@@ -5501,8 +5501,13 @@ describe("TransactionsService", () => {
         payeeId: "p1",
         query: "q",
         limit: 999,
+        minAmount: 25,
+        maxAmount: 500,
       });
 
+      // Amount filters must reach findAll so SQL-level pagination/total/hasMore
+      // reflect them, rather than being applied only to the already-paginated
+      // page (which returned a biased sample with a misleading total).
       expect(spy).toHaveBeenCalledWith(
         "user-1",
         ["a1"],
@@ -5514,6 +5519,9 @@ describe("TransactionsService", () => {
         100,
         false,
         "q",
+        undefined,
+        25,
+        500,
       );
     });
   });

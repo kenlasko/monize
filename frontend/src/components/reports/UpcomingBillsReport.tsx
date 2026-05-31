@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { useRouter } from 'next/navigation';
 import {
@@ -24,9 +24,8 @@ import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { exportToCsv } from '@/lib/csv-export';
-import { createLogger } from '@/lib/logger';
-
-const logger = createLogger('UpcomingBillsReport');
+import { useReportData } from '@/hooks/useReportData';
+import { ReportError } from '@/components/reports/ReportError';
 
 interface CalendarDay {
   date: Date;
@@ -45,28 +44,19 @@ interface UpcomingBill {
 export function UpcomingBillsReport() {
   const router = useRouter();
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
-  const [scheduledTransactions, setScheduledTransactions] = useState<ScheduledTransaction[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [viewType, setViewType] = useState<'calendar' | 'list'>('calendar');
 
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        const data = await scheduledTransactionsApi.getAll();
-        // Filter to active, non-transfer transactions
-        setScheduledTransactions(
-          data.filter((st) => st.isActive && !st.isTransfer)
-        );
-      } catch (error) {
-        logger.error('Failed to load scheduled transactions:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
-  }, []);
+  const { data: response, isLoading, error, reload } = useReportData(
+    () => scheduledTransactionsApi.getAll(),
+    [],
+  );
+
+  // Filter to active, non-transfer transactions.
+  const scheduledTransactions = useMemo(
+    () => (response ?? []).filter((st) => st.isActive && !st.isTransfer),
+    [response],
+  );
 
   // Generate upcoming occurrences for each scheduled transaction
   const getNextOccurrences = (st: ScheduledTransaction, monthsAhead: number = 3): Date[] => {
@@ -228,6 +218,10 @@ export function UpcomingBillsReport() {
       filename: 'upcoming-bills',
     });
   };
+
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
 
   if (isLoading) {
     return (

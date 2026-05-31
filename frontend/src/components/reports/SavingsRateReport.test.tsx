@@ -172,15 +172,17 @@ describe('SavingsRateReport', () => {
     await waitFor(() =>
       expect(mockGetSavingsRate).toHaveBeenCalledWith('b-1', 12),
     );
-    const selects = document.querySelectorAll('select');
+    // Re-query the selects after each reload: the loading skeleton briefly
+    // unmounts the controls during a refetch, so a reference captured before
+    // the change would be detached from the live DOM.
     await act(async () => {
-      fireEvent.change(selects[0], { target: { value: 'b-2' } });
+      fireEvent.change(document.querySelectorAll('select')[0], { target: { value: 'b-2' } });
     });
     await waitFor(() =>
       expect(mockGetSavingsRate).toHaveBeenCalledWith('b-2', 12),
     );
     await act(async () => {
-      fireEvent.change(selects[1], { target: { value: '6' } });
+      fireEvent.change(document.querySelectorAll('select')[1], { target: { value: '6' } });
     });
     await waitFor(() =>
       expect(mockGetSavingsRate).toHaveBeenCalledWith('b-2', 6),
@@ -200,7 +202,7 @@ describe('SavingsRateReport', () => {
     mockGetSavingsRate.mockRejectedValue(new Error('boom'));
     await renderReport();
     await waitFor(() => {
-      expect(screen.getByText(/No savings rate data/i)).toBeInTheDocument();
+      expect(screen.getByText(/Failed to load report data/i)).toBeInTheDocument();
     });
   });
 

@@ -235,14 +235,15 @@ describe('SectorWeightingsReport', () => {
     expect(exportToPdf).toHaveBeenCalled();
   });
 
-  it('handles error in static load and weightings load', async () => {
+  it('shows a retryable error when the weightings load fails', async () => {
     mockGetSectorWeightings.mockRejectedValue(new Error('boom'));
     mockGetInvestmentAccounts.mockRejectedValue(new Error('boom'));
     mockGetSecurities.mockRejectedValue(new Error('boom'));
     render(<SectorWeightingsReport />);
     await waitFor(() => {
-      expect(screen.getByText(/No investment holdings/)).toBeInTheDocument();
+      expect(screen.getByText(/Failed to load report data/)).toBeInTheDocument();
     });
+    expect(screen.getByRole('button', { name: /Try again/ })).toBeInTheDocument();
   });
 
   it('clears filters', async () => {

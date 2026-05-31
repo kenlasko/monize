@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import {
   PieChart,
@@ -20,6 +20,8 @@ import { ReportAccountMultiSelect } from '@/components/reports/ReportAccountMult
 import { RefreshPricesButton } from '@/components/reports/RefreshPricesButton';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
+import { useReportData } from '@/hooks/useReportData';
+import { ReportError } from '@/components/reports/ReportError';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('CurrencyExposureReport');
@@ -81,13 +83,7 @@ export function CurrencyExposureReport() {
   const { formatCurrencyCompact: formatCurrency, formatCurrency: formatCurrencyFull } = useNumberFormat();
   const { defaultCurrency, convertToDefault, getRate } = useExchangeRates();
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [holdings, setHoldings] = useState<HoldingWithMarketValue[]>([]);
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  // Only the first load shows the full skeleton. Later reloads (e.g. changing
-  // the account filter) keep the existing content -- and the account dropdown --
-  // mounted so they update in place instead of unmounting the whole report.
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
   const { sortField, sortDirection, handleSort } = useSortableTable<CurrencyExposureSortField>(
     'reports.currency-exposure.sort',
@@ -101,24 +97,21 @@ export function CurrencyExposureReport() {
       .catch((error) => logger.error('Failed to load accounts:', error));
   }, []);
 
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const summaryData = await investmentsApi.getPortfolioSummary(
+  const { data: response, isLoading, error, reload } = useReportData(
+    () =>
+      investmentsApi.getPortfolioSummary(
         selectedAccountIds.length > 0 ? selectedAccountIds : undefined,
-      );
-      setHoldings(summaryData.holdings);
-    } catch (error) {
-      logger.error('Failed to load data:', error);
-    } finally {
-      setIsLoading(false);
-      setHasLoadedOnce(true);
-    }
-  }, [selectedAccountIds]);
+      ),
+    [selectedAccountIds],
+  );
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  // Only the first load shows the full skeleton. Later reloads (e.g. changing
+  // the account filter) keep the existing content -- and the account dropdown --
+  // mounted so they update in place instead of unmounting the whole report.
+  const holdings = useMemo<HoldingWithMarketValue[]>(
+    () => response?.holdings ?? [],
+    [response],
+  );
 
   const allocationData = useMemo((): CurrencyAllocation[] => {
     const currencyMap = new Map<string, { nativeValue: number; convertedValue: number; count: number }>();
@@ -219,7 +212,11 @@ export function CurrencyExposureReport() {
     });
   };
 
-  if (isLoading && !hasLoadedOnce) {
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
+
+  if (isLoading && response === null) {
     return (
       <div className="space-y-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
@@ -256,7 +253,7 @@ export function CurrencyExposureReport() {
             />
           </div>
           <div className="flex gap-2 items-center">
-            <RefreshPricesButton onRefreshComplete={loadData} />
+            <RefreshPricesButton onRefreshComplete={reload} />
             <ExportDropdown onExportPdf={handleExportPdf} />
           </div>
         </div>

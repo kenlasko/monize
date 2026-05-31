@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { useRouter } from 'next/navigation';
 import {
@@ -23,9 +23,8 @@ import { exportToCsv } from '@/lib/csv-export';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
-import { createLogger } from '@/lib/logger';
-
-const logger = createLogger('BillPaymentHistoryReport');
+import { useReportData } from '@/hooks/useReportData';
+import { ReportError } from '@/components/reports/ReportError';
 
 type BillSortField = 'bill' | 'count' | 'average' | 'total' | 'lastPayment';
 
@@ -33,13 +32,22 @@ export function BillPaymentHistoryReport() {
   const router = useRouter();
   const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
   const chartRef = useRef<HTMLDivElement>(null);
-  const [billData, setBillData] = useState<BillPaymentHistoryResponse | null>(null);
   const { dateRange, setDateRange, resolvedRange } = useDateRange({ defaultRange: '1y', alignment: 'day' });
-  const [isLoading, setIsLoading] = useState(true);
   const [viewType, setViewType] = useState<'overview' | 'byBill'>('overview');
   const { sortField, sortDirection, handleSort } = useSortableTable<BillSortField>(
     'reports.bill-payment-history.sort',
     { field: 'total', direction: 'desc' },
+  );
+
+  const { start: rangeStart, end: rangeEnd } = resolvedRange;
+
+  const { data: billData, isLoading, error, reload } = useReportData<BillPaymentHistoryResponse | null>(
+    () =>
+      builtInReportsApi.getBillPaymentHistory({
+        startDate: rangeStart,
+        endDate: rangeEnd,
+      }),
+    [rangeStart, rangeEnd],
   );
 
   const sortedBillPayments = useMemo(() => {
@@ -68,25 +76,6 @@ export function BillPaymentHistoryReport() {
     });
     return sorted;
   }, [billData, sortField, sortDirection]);
-
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        const { start, end } = resolvedRange;
-        const data = await builtInReportsApi.getBillPaymentHistory({
-          startDate: start,
-          endDate: end,
-        });
-        setBillData(data);
-      } catch (error) {
-        logger.error('Failed to load bill payment history:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
-  }, [resolvedRange]);
 
   const handleBillClick = () => {
     router.push('/bills');
@@ -144,6 +133,10 @@ export function BillPaymentHistoryReport() {
     }
     return null;
   };
+
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
 
   if (isLoading) {
     return (

@@ -10,11 +10,13 @@ import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useDateRange } from '@/hooks/useDateRange';
+import { useReportData } from '@/hooks/useReportData';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { MultiSelect } from '@/components/ui/MultiSelect';
 import { ReportAccountMultiSelect } from '@/components/reports/ReportAccountMultiSelect';
 import { RefreshPricesButton } from '@/components/reports/RefreshPricesButton';
+import { ReportError } from '@/components/reports/ReportError';
 import { exportToCsv } from '@/lib/csv-export';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
@@ -63,10 +65,8 @@ interface ActionSummary {
 export function InvestmentTransactionHistoryReport() {
   const { formatCurrency: formatCurrencyFull } = useNumberFormat();
   const { defaultCurrency, convertToDefault } = useExchangeRates();
-  const [transactions, setTransactions] = useState<InvestmentTransaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
-  const [reloadKey, setReloadKey] = useState(0);
   const [selectedActions, setSelectedActions] = useState<string[]>([]);
   const actionOptions = useMemo(
     () =>
@@ -77,11 +77,7 @@ export function InvestmentTransactionHistoryReport() {
     [],
   );
   const { dateRange, setDateRange, resolvedRange, isValid } = useDateRange({ defaultRange: '1y', alignment: 'month' });
-  const [isLoading, setIsLoading] = useState(true);
-  // Only the first load shows the full skeleton. Later reloads (e.g. changing
-  // the account filter) keep the existing content -- and the account dropdown --
-  // mounted so they update in place instead of unmounting the whole report.
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const { start: rangeStart, end: rangeEnd } = resolvedRange;
   const isSingleAccount = selectedAccountIds.length === 1;
   const { sortField, sortDirection, handleSort } = useSortableTable<InvestmentTxSortField>(
     'reports.investment-transactions.sort',
@@ -121,38 +117,33 @@ export function InvestmentTransactionHistoryReport() {
       .catch((error) => logger.error('Failed to load accounts:', error));
   }, []);
 
-  useEffect(() => {
-    if (!isValid) return;
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        const { start, end } = resolvedRange;
-        const allTransactions: InvestmentTransaction[] = [];
-        let page = 1;
-        let hasMore = true;
-        while (hasMore && page <= MAX_PAGES) {
-          const result = await investmentsApi.getTransactions({
-            accountIds: selectedAccountIds.length > 0 ? selectedAccountIds.join(',') : undefined,
-            startDate: start || undefined,
-            endDate: end,
-            limit: 200,
-            page,
-          });
-          allTransactions.push(...result.data);
-          hasMore = result.pagination.hasMore;
-          page++;
-        }
-
-        setTransactions(allTransactions);
-      } catch (error) {
-        logger.error('Failed to load investment transactions:', error);
-      } finally {
-        setIsLoading(false);
-        setHasLoadedOnce(true);
+  const { data: response, isLoading, error, reload } = useReportData(
+    async () => {
+      if (!isValid) return null;
+      const allTransactions: InvestmentTransaction[] = [];
+      let page = 1;
+      let hasMore = true;
+      while (hasMore && page <= MAX_PAGES) {
+        const result = await investmentsApi.getTransactions({
+          accountIds: selectedAccountIds.length > 0 ? selectedAccountIds.join(',') : undefined,
+          startDate: rangeStart || undefined,
+          endDate: rangeEnd,
+          limit: 200,
+          page,
+        });
+        allTransactions.push(...result.data);
+        hasMore = result.pagination.hasMore;
+        page++;
       }
-    };
-    loadData();
-  }, [selectedAccountIds, resolvedRange, isValid, reloadKey]);
+      return allTransactions;
+    },
+    [selectedAccountIds, rangeStart, rangeEnd, isValid],
+  );
+
+  // Only the first load shows the full skeleton. Later reloads (e.g. changing
+  // the account filter) keep the existing content -- and the account dropdown --
+  // mounted so they update in place instead of unmounting the whole report.
+  const transactions = useMemo<InvestmentTransaction[]>(() => response ?? [], [response]);
 
   // Action filtering happens client-side so toggling actions never re-fetches.
   const filteredTransactions = useMemo(() => {
@@ -266,7 +257,11 @@ export function InvestmentTransactionHistoryReport() {
     });
   }, [getExportData, selectedAccount, filteredTransactions, fmtValue, totalAmount, actionSummaries]);
 
-  if (isLoading && !hasLoadedOnce) {
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
+
+  if (isLoading && response === null) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
         <div className="space-y-4">
@@ -333,7 +328,7 @@ export function InvestmentTransactionHistoryReport() {
             onChange={setDateRange}
           />
           <div className="ml-auto shrink-0 flex gap-2 items-center">
-            <RefreshPricesButton onRefreshComplete={() => setReloadKey((k) => k + 1)} />
+            <RefreshPricesButton onRefreshComplete={reload} />
             <ExportDropdown onExportCsv={handleExportCsv} onExportPdf={handleExportPdf} disabled={filteredTransactions.length === 0} />
           </div>
         </div>

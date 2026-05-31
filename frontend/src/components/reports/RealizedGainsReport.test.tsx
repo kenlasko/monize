@@ -419,13 +419,14 @@ describe('RealizedGainsReport', () => {
     expect(screen.queryByText('TFSA Brokerage')).not.toBeInTheDocument();
   });
 
-  it('handles API error for realized gains gracefully', async () => {
+  it('shows a retryable error when realized gains fail to load', async () => {
     mockGetRealizedGains.mockRejectedValue(new Error('Network error'));
     mockGetInvestmentAccounts.mockResolvedValue([]);
     render(<RealizedGainsReport />);
     await waitFor(() => {
-      expect(screen.getByText('No sell transactions found for this period.')).toBeInTheDocument();
+      expect(screen.getByText(/Failed to load report data/)).toBeInTheDocument();
     });
+    expect(screen.getByRole('button', { name: /Try again/ })).toBeInTheDocument();
   });
 
   it('handles API error for accounts gracefully', async () => {

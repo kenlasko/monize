@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import {
   BarChart,
@@ -18,13 +18,11 @@ import {
 import { format, parseISO } from 'date-fns';
 import { accountsApi } from '@/lib/accounts';
 import { transactionsApi } from '@/lib/transactions';
-import { Account } from '@/types/account';
 import { Transaction } from '@/types/transaction';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useReportData } from '@/hooks/useReportData';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
-import { createLogger } from '@/lib/logger';
-
-const logger = createLogger('DebtPayoffTimelineReport');
+import { ReportError } from '@/components/reports/ReportError';
 
 interface PayoffScheduleItem {
   date: string;
@@ -113,67 +111,69 @@ function advanceDate(date: Date, frequency: string): Date {
 export function DebtPayoffTimelineReport() {
   const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
   const chartRef = useRef<HTMLDivElement>(null);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [selectedAccountId, setSelectedAccountId] = useState<string>('');
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [selectedAccountIdState, setSelectedAccountId] = useState<string>('');
   const [viewType, setViewType] = useState<'balance' | 'breakdown' | 'distribution'>('balance');
 
-  useEffect(() => {
-    const loadAccounts = async () => {
-      setIsLoading(true);
-      try {
-        const allAccounts = await accountsApi.getAll(true);
-        const debtAccounts = allAccounts.filter(
-          (a) => a.accountType === 'LOAN' || a.accountType === 'MORTGAGE' || a.accountType === 'LINE_OF_CREDIT'
-        );
-        setAccounts(debtAccounts);
-        if (debtAccounts.length > 0) {
-          setSelectedAccountId(debtAccounts[0].id);
-        }
-      } catch (error) {
-        logger.error('Failed to load accounts:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadAccounts();
-  }, []);
+  const {
+    data: accountsData,
+    isLoading: accountsLoading,
+    error: accountsError,
+    reload: reloadAccounts,
+  } = useReportData(
+    () =>
+      accountsApi.getAll(true).then((allAccounts) =>
+        allAccounts.filter(
+          (a) =>
+            a.accountType === 'LOAN' ||
+            a.accountType === 'MORTGAGE' ||
+            a.accountType === 'LINE_OF_CREDIT',
+        ),
+      ),
+    [],
+  );
 
+  const accounts = useMemo(() => accountsData ?? [], [accountsData]);
+
+  // Auto-select the first debt account until the user picks one. Derived during
+  // render rather than via setState-in-effect.
+  const selectedAccountId = selectedAccountIdState || accounts[0]?.id || '';
   const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
 
-  // Load transactions from the loan account
-  useEffect(() => {
-    const loadTransactions = async () => {
-      if (!selectedAccountId) {
-        setTransactions([]);
-        return;
+  // Load transactions from the loan account, paginating through all pages
+  // (API limit is 200 per page).
+  const {
+    data: transactionsData,
+    isLoading: transactionsLoading,
+    error: transactionsError,
+    reload: reloadTransactions,
+  } = useReportData(
+    async () => {
+      if (!selectedAccountId) return [] as Transaction[];
+      let allTransactions: Transaction[] = [];
+      let page = 1;
+      let hasMore = true;
+      while (hasMore) {
+        const result = await transactionsApi.getAll({
+          accountId: selectedAccountId,
+          limit: 200,
+          page,
+        });
+        allTransactions = allTransactions.concat(result.data);
+        hasMore = result.pagination.hasMore;
+        page++;
       }
+      return allTransactions;
+    },
+    [selectedAccountId],
+  );
 
-      try {
-        // Paginate through all transactions (API limit is 200 per page)
-        let allTransactions: Transaction[] = [];
-        let page = 1;
-        let hasMore = true;
-        while (hasMore) {
-          const result = await transactionsApi.getAll({
-            accountId: selectedAccountId,
-            limit: 200,
-            page,
-          });
-          allTransactions = allTransactions.concat(result.data);
-          hasMore = result.pagination.hasMore;
-          page++;
-        }
-        setTransactions(allTransactions);
-      } catch (error) {
-        logger.error('Failed to load transactions:', error);
-        setTransactions([]);
-      }
-    };
-
-    loadTransactions();
-  }, [selectedAccountId]);
+  const transactions = useMemo<Transaction[]>(() => transactionsData ?? [], [transactionsData]);
+  const isLoading = accountsLoading || transactionsLoading;
+  const error = accountsError || transactionsError;
+  const reload = () => {
+    reloadAccounts();
+    reloadTransactions();
+  };
 
   // Build payment timeline from actual transactions + projected future payments
   const { payoffSchedule, projectionStartLabel } = useMemo((): {
@@ -451,6 +451,10 @@ export function DebtPayoffTimelineReport() {
       filename: 'debt-payoff-timeline',
     });
   };
+
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
 
   if (isLoading) {
     return (

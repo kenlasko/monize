@@ -314,7 +314,16 @@ export class SecurityPriceService {
 
   // ─── Refresh (current price) ─────────────────────────────────────────────
 
-  async refreshAllPrices(): Promise<PriceRefreshSummary> {
+  /**
+   * @param skipFresh When true, skip securities that already have a
+   *   provider-fetched price for today so a post-close re-run of the scheduled
+   *   job does not re-fetch quotes it just stored. Only the scheduled cron
+   *   passes true; on-demand/manual refreshes pass false (the default) and
+   *   always re-fetch every eligible security. Manual price entries
+   *   (source = 'manual') never count as fresh, so a user-entered intraday
+   *   price does not suppress the official close fetch.
+   */
+  async refreshAllPrices(skipFresh = false): Promise<PriceRefreshSummary> {
     const startTime = Date.now();
     this.logger.log("Starting price refresh for all securities");
 
@@ -323,20 +332,15 @@ export class SecurityPriceService {
     });
     const eligible = allActive.filter((s) => isRefreshEligible(s));
 
-    // Skip securities that already have a price stored for today's date so a
-    // re-run after the daily close (or an on-demand refresh) doesn't re-fetch
-    // quotes that are already current. UTC "today" matches the US trading date
-    // at the 17:00 ET cron; outside that window nothing matches and we refresh
-    // everything, so this only ever avoids redundant work, never skips a
-    // security that needs updating.
     let securities = eligible;
     let skipped = 0;
-    if (eligible.length > 0) {
+    if (skipFresh && eligible.length > 0) {
       const today = formatDateYMD(new Date());
       const freshRows: { security_id: string }[] =
         (await this.dataSource.query(
           `SELECT DISTINCT security_id FROM security_prices
-           WHERE security_id = ANY($1) AND price_date >= $2`,
+           WHERE security_id = ANY($1) AND price_date >= $2
+             AND source IS DISTINCT FROM 'manual'`,
           [eligible.map((s) => s.id), today],
         )) ?? [];
       const freshIds = new Set(freshRows.map((r) => r.security_id));
@@ -979,7 +983,7 @@ export class SecurityPriceService {
   async scheduledPriceRefresh(): Promise<void> {
     this.logger.log("Running scheduled price refresh");
     try {
-      const result = await this.refreshAllPrices();
+      const result = await this.refreshAllPrices(true);
       if (result.updated > 0) {
         this.logger.log(
           "Recalculating investment snapshots after price refresh",

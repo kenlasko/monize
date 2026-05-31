@@ -176,11 +176,12 @@ describe('WeekendVsWeekdayReport', () => {
     });
   });
 
-  it('handles API error gracefully', async () => {
+  it('surfaces a retryable error state when the API fails', async () => {
     mockGetWeekendVsWeekday.mockRejectedValue(new Error('Network error'));
     render(<WeekendVsWeekdayReport />);
     await waitFor(() => {
-      expect(screen.getByText('No expense transactions found for this period.')).toBeInTheDocument();
+      expect(screen.getByText(/failed to load report data/i)).toBeInTheDocument();
     });
+    expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
   });
 });

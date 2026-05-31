@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import {
   AreaChart,
@@ -31,6 +31,8 @@ import { ChartViewToggle } from '@/components/ui/ChartViewToggle';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { exportToCsv } from '@/lib/csv-export';
+import { useReportData } from '@/hooks/useReportData';
+import { ReportError } from '@/components/reports/ReportError';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('NetWorthReport');
@@ -40,8 +42,6 @@ type NetWorthSortField = 'name' | 'assets' | 'liabilities' | 'netWorth';
 export function NetWorthReport() {
   const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis, formatCurrencyLabel, formatSignedPercent } = useNumberFormat();
   const isMobile = useIsMobile();
-  const [monthlyData, setMonthlyData] = useState<MonthlyNetWorth[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [chartType, setChartType] = useState<'line' | 'bar' | 'table'>('bar');
   const chartRef = useRef<HTMLDivElement>(null);
@@ -51,36 +51,29 @@ export function NetWorthReport() {
     { field: 'name', direction: 'asc' },
   );
 
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const { start, end } = resolvedRange;
+  const { start: rangeStart, end: rangeEnd } = resolvedRange;
 
-      if (!end) return;
+  const { data: response, isLoading, error, reload } = useReportData(
+    () =>
+      isValid && rangeEnd
+        ? netWorthApi.getMonthly({
+            startDate: rangeStart || undefined,
+            endDate: rangeEnd,
+          })
+        : Promise.resolve(null),
+    [isValid, rangeStart, rangeEnd],
+  );
 
-      const data = await netWorthApi.getMonthly({
-        startDate: start || undefined,
-        endDate: end,
-      });
-      setMonthlyData(data);
-    } catch (error) {
-      logger.error('Failed to load net worth data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [resolvedRange]);
-
-  useEffect(() => {
-    if (isValid) {
-      loadData();
-    }
-  }, [isValid, loadData]);
+  const monthlyData = useMemo<MonthlyNetWorth[]>(
+    () => response ?? [],
+    [response],
+  );
 
   const handleRecalculate = async () => {
     setIsRecalculating(true);
     try {
       await netWorthApi.recalculate();
-      await loadData();
+      reload();
     } catch (error) {
       logger.error('Failed to recalculate:', error);
     } finally {
@@ -227,6 +220,10 @@ export function NetWorthReport() {
     }
     return null;
   };
+
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
 
   if (isLoading) {
     return (

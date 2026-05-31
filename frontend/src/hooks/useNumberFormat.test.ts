@@ -160,6 +160,14 @@ describe('useNumberFormat', () => {
     expect(result.current.formatSignedPercent(-3.4)).toBe('-3.40%');
   });
 
+  it('formatSignedPercent renders a tiny negative that rounds to zero as +0.00%, not +-0.00%', () => {
+    const { result } = renderHook(() => useNumberFormat());
+    // -0.001 rounds to -0; without -0 normalization Intl emits "-0.00" and the
+    // leading "+" produces the malformed "+-0.00%".
+    expect(result.current.formatSignedPercent(-0.001)).toBe('+0.00%');
+    expect(result.current.formatSignedPercent(-0.004, 2)).toBe('+0.00%');
+  });
+
   it('formatSignedPercent honours the decimals argument', () => {
     const { result } = renderHook(() => useNumberFormat());
     expect(result.current.formatSignedPercent(7.123, 1)).toBe('+7.1%');

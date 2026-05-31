@@ -112,20 +112,29 @@ export const transactionsApi = {
    * endpoint until `hasMore=false`. The dashboard uses this for the trend
    * chart where partial-page data would render wrong totals. Defaults to
    * the maximum page size (200) so the round-trip count stays low.
+   *
+   * A page cap and an empty-page guard bound the loop: if the backend ever
+   * reports `hasMore=true` without returning new rows (a count/offset bug or a
+   * stale-cache response), the loop would otherwise spin forever accumulating
+   * duplicates. MAX_PAGES at 200 rows/page covers 1,000,000 transactions.
    */
   getAllPages: async (
     params?: TransactionsGetAllParams & { pageSize?: number },
   ): Promise<Transaction[]> => {
+    const MAX_PAGES = 5000;
     const { pageSize = 200, ...rest } = params ?? {};
     const all: Transaction[] = [];
     let page = 1;
     let hasMore = true;
-    while (hasMore) {
+    while (hasMore && page <= MAX_PAGES) {
       const result = await transactionsApi.getAll({
         ...rest,
         page,
         limit: pageSize,
       });
+      // Defend against a backend that returns hasMore=true on an empty page;
+      // without new rows there is nothing left to fetch.
+      if (result.data.length === 0) break;
       all.push(...result.data);
       hasMore = result.pagination.hasMore;
       page++;

@@ -190,11 +190,12 @@ describe('DuplicateTransactionReport', () => {
     });
   });
 
-  it('handles API error gracefully', async () => {
+  it('surfaces a retryable error state when the API fails', async () => {
     mockGetDuplicateTransactions.mockRejectedValue(new Error('Network error'));
     render(<DuplicateTransactionReport />);
     await waitFor(() => {
-      expect(screen.getByText('Potential Duplicates')).toBeInTheDocument();
+      expect(screen.getByText(/failed to load report data/i)).toBeInTheDocument();
     });
+    expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
   });
 });

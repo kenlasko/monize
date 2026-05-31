@@ -165,13 +165,14 @@ describe('BudgetSeasonalPatternsReport', () => {
     });
   });
 
-  it('handles error gracefully', async () => {
+  it('shows a retryable error when loading patterns fails', async () => {
     mockGetAll.mockResolvedValue([makeBudget()]);
     mockGetSeasonalPatterns.mockRejectedValue(new Error('boom'));
     await renderReport();
     await waitFor(() => {
-      expect(screen.getByText(/Not enough historical data/i)).toBeInTheDocument();
+      expect(screen.getByText(/Failed to load report data/i)).toBeInTheDocument();
     });
+    expect(screen.getByRole('button', { name: /Try again/i })).toBeInTheDocument();
   });
 
   it('exports to PDF', async () => {

@@ -182,7 +182,7 @@ describe('InvestmentPerformanceReport', () => {
     mockGetInvestmentAccounts.mockRejectedValue(new Error('boom'));
     render(<InvestmentPerformanceReport />);
     await waitFor(() => {
-      expect(screen.getByText(/No investment holdings found/)).toBeInTheDocument();
+      expect(screen.getByText(/Failed to load report data/i)).toBeInTheDocument();
     });
   });
 

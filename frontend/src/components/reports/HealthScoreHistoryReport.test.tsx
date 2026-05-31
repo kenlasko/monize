@@ -198,21 +198,23 @@ describe('HealthScoreHistoryReport', () => {
     );
   });
 
-  it('handles getAll error gracefully', async () => {
+  it('shows a retryable error when loading budgets fails', async () => {
     mockGetAll.mockRejectedValue(new Error('boom'));
     await renderReport();
     await waitFor(() => {
-      expect(screen.getByText(/No budgets found/i)).toBeInTheDocument();
+      expect(screen.getByText(/Failed to load report data/i)).toBeInTheDocument();
     });
+    expect(screen.getByRole('button', { name: /Try again/i })).toBeInTheDocument();
   });
 
-  it('handles history error gracefully', async () => {
+  it('shows a retryable error when loading history fails', async () => {
     mockGetAll.mockResolvedValue([makeBudget()]);
     mockGetHealthScoreHistory.mockRejectedValue(new Error('boom'));
     await renderReport();
     await waitFor(() => {
-      expect(screen.getByText(/No health score history/i)).toBeInTheDocument();
+      expect(screen.getByText(/Failed to load report data/i)).toBeInTheDocument();
     });
+    expect(screen.getByRole('button', { name: /Try again/i })).toBeInTheDocument();
   });
 
   it('exports to PDF with summary cards and history table', async () => {

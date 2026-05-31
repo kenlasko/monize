@@ -531,12 +531,12 @@ describe('UpcomingBillsReport', () => {
   });
 
   describe('Error Handling', () => {
-    it('logs error when API call fails', async () => {
+    it('shows a retryable error when the API call fails', async () => {
       mockGetAll.mockRejectedValue(new Error('Network error'));
       render(<UpcomingBillsReport />);
-      // Should not throw, should render empty state (no bills)
+      // Should not throw; should render the shared error panel instead of an empty report.
       await waitFor(() => {
-        expect(screen.queryByText(/No scheduled bills found/)).toBeInTheDocument();
+        expect(screen.getByText('Try again')).toBeInTheDocument();
       });
     });
   });

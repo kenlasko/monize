@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { gainLossColor } from '@/lib/format';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import {
@@ -17,7 +17,9 @@ import {
 import { budgetsApi } from '@/lib/budgets';
 import type { Budget, FlexGroupStatus } from '@/types/budget';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useReportData } from '@/hooks/useReportData';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
+import { ReportError } from '@/components/reports/ReportError';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
 import { createLogger } from '@/lib/logger';
@@ -32,12 +34,20 @@ export function FlexGroupAnalysisReport() {
   const chartRef = useRef<HTMLDivElement>(null);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [selectedBudgetId, setSelectedBudgetId] = useState<string>('');
-  const [flexGroups, setFlexGroups] = useState<FlexGroupStatus[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const { sortField, sortDirection, handleSort } = useSortableTable<FlexGroupSortField>(
     'reports.flex-group-analysis.sort',
     { field: 'spent', direction: 'desc' },
   );
+
+  const { data: response, isLoading, error, reload } = useReportData(
+    () =>
+      selectedBudgetId
+        ? budgetsApi.getFlexGroupStatus(selectedBudgetId)
+        : Promise.resolve<FlexGroupStatus[]>([]),
+    [selectedBudgetId],
+  );
+
+  const flexGroups = useMemo<FlexGroupStatus[]>(() => response ?? [], [response]);
 
   const sortedFlexGroups = useMemo(() => {
     return flexGroups.map((group) => {
@@ -85,26 +95,6 @@ export function FlexGroupAnalysisReport() {
     loadBudgets();
   }, []);
 
-  const loadData = useCallback(async () => {
-    if (!selectedBudgetId) {
-      setIsLoading(false);
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const result = await budgetsApi.getFlexGroupStatus(selectedBudgetId);
-      setFlexGroups(result);
-    } catch (error) {
-      logger.error('Failed to load flex group data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedBudgetId]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
   const handleExportPdf = async () => {
     const { exportToPdf } = await import('@/lib/pdf-export');
     const headers = ['Group', 'Category', 'Budgeted', 'Spent', 'Remaining', '% Used'];
@@ -125,6 +115,10 @@ export function FlexGroupAnalysisReport() {
       filename: 'flex-group-analysis',
     });
   };
+
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
 
   if (isLoading) {
     return (

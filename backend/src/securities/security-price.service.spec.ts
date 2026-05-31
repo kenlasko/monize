@@ -390,7 +390,7 @@ describe("SecurityPriceService", () => {
       expect(result.lastUpdated).toBeInstanceOf(Date);
     });
 
-    it("skips securities that already have a price for today", async () => {
+    it("skips securities that already have a price for today when skipFresh is set", async () => {
       securitiesRepository.find.mockResolvedValue([mockSecurity]);
       // staleness query reports this security as already fresh today
       dataSourceMock.query.mockResolvedValueOnce([
@@ -398,7 +398,7 @@ describe("SecurityPriceService", () => {
       ]);
       global.fetch = jest.fn() as jest.Mock;
 
-      const result = await service.refreshAllPrices();
+      const result = await service.refreshAllPrices(true);
 
       expect(result.totalSecurities).toBe(1);
       expect(result.skipped).toBe(1);
@@ -406,6 +406,32 @@ describe("SecurityPriceService", () => {
       expect(result.results).toHaveLength(0);
       // no external fetch when everything is already fresh
       expect(global.fetch).not.toHaveBeenCalled();
+      // the freshness query must exclude manually-entered prices so a manual
+      // intraday entry does not suppress the official close fetch
+      expect(dataSourceMock.query).toHaveBeenCalledWith(
+        expect.stringContaining("source IS DISTINCT FROM 'manual'"),
+        expect.any(Array),
+      );
+    });
+
+    it("does not consult the freshness query on an on-demand refresh (skipFresh=false)", async () => {
+      securitiesRepository.find.mockResolvedValue([mockSecurity]);
+      const yahooData = makeYahooChartResponse();
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(createMockFetchResponse(yahooData)) as jest.Mock;
+      securityPriceRepository.findOne.mockResolvedValue(null);
+
+      const result = await service.refreshAllPrices();
+
+      // Default (on-demand) path refreshes everything and never runs the
+      // DISTINCT-security freshness query.
+      expect(result.skipped).toBe(0);
+      expect(result.updated).toBe(1);
+      expect(dataSourceMock.query).not.toHaveBeenCalledWith(
+        expect.stringContaining("source IS DISTINCT FROM 'manual'"),
+        expect.any(Array),
+      );
     });
 
     it("successfully refreshes prices for a US security", async () => {
@@ -1320,6 +1346,21 @@ describe("SecurityPriceService", () => {
       await service.scheduledPriceRefresh();
 
       expect(securitiesRepository.find).toHaveBeenCalled();
+    });
+
+    it("enables skip-fresh so a post-close re-run does not re-fetch", async () => {
+      const spy = jest.spyOn(service, "refreshAllPrices").mockResolvedValue({
+        totalSecurities: 0,
+        updated: 0,
+        failed: 0,
+        skipped: 0,
+        results: [],
+        lastUpdated: new Date(),
+      });
+
+      await service.scheduledPriceRefresh();
+
+      expect(spy).toHaveBeenCalledWith(true);
     });
 
     it("does not throw when refreshAllPrices fails", async () => {

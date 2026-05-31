@@ -129,14 +129,15 @@ describe('BudgetHealthScoreReport', () => {
     await waitFor(() => expect(mockGetHealthScore).toHaveBeenCalledWith('b-2'));
   });
 
-  it('handles getHealthScore error gracefully', async () => {
+  it('shows a retryable error when loading the health score fails', async () => {
     mockGetAll.mockResolvedValue([makeBudget()]);
     mockGetHealthScore.mockRejectedValue(new Error('boom'));
     await renderReport();
-    // Will render without health score block
     await waitFor(() => {
-      expect(screen.queryByText('Score Breakdown')).not.toBeInTheDocument();
+      expect(screen.getByText(/Failed to load report data/i)).toBeInTheDocument();
     });
+    expect(screen.queryByText('Score Breakdown')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Try again/i })).toBeInTheDocument();
   });
 
   it('exports to PDF with category impact rows', async () => {
@@ -153,7 +154,7 @@ describe('BudgetHealthScoreReport', () => {
 
   it('exports to PDF with no health score (empty case)', async () => {
     mockGetAll.mockResolvedValue([makeBudget()]);
-    mockGetHealthScore.mockRejectedValue(new Error('nope'));
+    mockGetHealthScore.mockResolvedValue(null);
     await renderReport();
     const exportBtn = await screen.findByTitle('Export PDF');
     await act(async () => { fireEvent.click(exportBtn); });

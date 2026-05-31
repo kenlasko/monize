@@ -75,6 +75,9 @@ vi.mock('@/lib/logger', () => ({
 describe('DebtPayoffTimelineReport', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default to a single-page result so the report's pagination loop
+    // terminates. Individual tests override data/pagination as needed.
+    mockGetAllTransactions.mockResolvedValue({ data: [], pagination: { hasMore: false } });
   });
 
   it('shows loading state initially', () => {
@@ -107,7 +110,7 @@ describe('DebtPayoffTimelineReport', () => {
         isClosed: false,
       },
     ]);
-    mockGetAllTransactions.mockResolvedValue({ data: [] });
+    mockGetAllTransactions.mockResolvedValue({ data: [], pagination: { hasMore: false } });
     render(<DebtPayoffTimelineReport />);
     await waitFor(() => {
       expect(screen.getByText('Select Account')).toBeInTheDocument();
@@ -137,6 +140,7 @@ describe('DebtPayoffTimelineReport', () => {
       data: [
         { id: 'tx-1', transactionDate: '2024-06-01', amount: 1000, linkedTransaction: null },
       ],
+      pagination: { hasMore: false },
     });
     render(<DebtPayoffTimelineReport />);
     await waitFor(() => {
@@ -165,6 +169,7 @@ describe('DebtPayoffTimelineReport', () => {
       data: [
         { id: 'tx-1', transactionDate: '2024-01-15', amount: 300, linkedTransaction: null },
       ],
+      pagination: { hasMore: false },
     });
     render(<DebtPayoffTimelineReport />);
     await waitFor(() => {
@@ -196,6 +201,7 @@ describe('DebtPayoffTimelineReport', () => {
       data: [
         { id: 'tx-1', transactionDate: '2024-03-01', amount: 500, linkedTransaction: null },
       ],
+      pagination: { hasMore: false },
     });
     render(<DebtPayoffTimelineReport />);
     await waitFor(() => {
@@ -220,7 +226,7 @@ describe('DebtPayoffTimelineReport', () => {
         isClosed: false,
       },
     ]);
-    mockGetAllTransactions.mockResolvedValue({ data: [] });
+    mockGetAllTransactions.mockResolvedValue({ data: [], pagination: { hasMore: false } });
     render(<DebtPayoffTimelineReport />);
     await waitFor(() => {
       expect(screen.getByText(/No payment history found/)).toBeInTheDocument();
@@ -247,6 +253,7 @@ describe('DebtPayoffTimelineReport', () => {
       data: [
         { id: 'tx-1', transactionDate: '2024-06-01', amount: 200, linkedTransaction: null },
       ],
+      pagination: { hasMore: false },
     });
     render(<DebtPayoffTimelineReport />);
     await waitFor(() => {
@@ -295,6 +302,7 @@ describe('DebtPayoffTimelineReport', () => {
           },
         },
       ],
+      pagination: { hasMore: false },
     });
     render(<DebtPayoffTimelineReport />);
     await waitFor(() => {
@@ -630,12 +638,13 @@ describe('DebtPayoffTimelineReport', () => {
     }
   });
 
-  it('handles error in loadAccounts gracefully', async () => {
+  it('shows a retryable error when loading accounts fails', async () => {
     mockGetAllAccounts.mockRejectedValue(new Error('network'));
     render(<DebtPayoffTimelineReport />);
     await waitFor(() => {
-      expect(screen.getByText(/No debt accounts found/)).toBeInTheDocument();
+      expect(screen.getByText(/Failed to load report data/i)).toBeInTheDocument();
     });
+    expect(screen.getByRole('button', { name: /Try again/i })).toBeInTheDocument();
   });
 
   it('handles error in loadTransactions gracefully', async () => {
@@ -650,8 +659,9 @@ describe('DebtPayoffTimelineReport', () => {
     mockGetAllTransactions.mockRejectedValue(new Error('boom'));
     render(<DebtPayoffTimelineReport />);
     await waitFor(() => {
-      expect(screen.getByText('Select Account')).toBeInTheDocument();
+      expect(screen.getByText(/Failed to load report data/i)).toBeInTheDocument();
     });
+    expect(screen.getByRole('button', { name: /Try again/i })).toBeInTheDocument();
   });
 
   it('handles WEEKLY payment frequency in projections', async () => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { useRouter } from 'next/navigation';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -10,11 +10,10 @@ import { Account } from '@/types/account';
 import { PortfolioSummary } from '@/types/investment';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
+import { useReportData } from '@/hooks/useReportData';
 import { CHART_COLOURS } from '@/lib/chart-colours';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
-import { createLogger } from '@/lib/logger';
-
-const logger = createLogger('AccountBalancesReport');
+import { ReportError } from '@/components/reports/ReportError';
 
 type AccountTypeFilter = 'all' | 'assets' | 'liabilities';
 type ViewMode = 'table' | 'chart';
@@ -40,32 +39,27 @@ export function AccountBalancesReport() {
   const router = useRouter();
   const { formatCurrency } = useNumberFormat();
   const { convertToDefault, defaultCurrency } = useExchangeRates();
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState<AccountTypeFilter>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [chartGrouping, setChartGrouping] = useState<ChartGrouping>('type');
   const chartRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        const [data, portfolio] = await Promise.all([
-          accountsApi.getAll(),
-          investmentsApi.getPortfolioSummary().catch(() => null),
-        ]);
-        setAccounts(data);
-        setPortfolioSummary(portfolio);
-      } catch (error) {
-        logger.error('Failed to load accounts:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
-  }, []);
+  const { data: response, isLoading, error, reload } = useReportData(
+    async () => {
+      const [data, portfolio] = await Promise.all([
+        accountsApi.getAll(),
+        investmentsApi.getPortfolioSummary().catch(() => null),
+      ]);
+      return { accounts: data, portfolioSummary: portfolio };
+    },
+    [],
+  );
+
+  const accounts = useMemo<Account[]>(() => response?.accounts ?? [], [response]);
+  const portfolioSummary = useMemo<PortfolioSummary | null>(
+    () => response?.portfolioSummary ?? null,
+    [response],
+  );
 
   // Build a map of brokerage account ID -> market value of holdings only.
   // Cash balance is tracked separately via the linked INVESTMENT_CASH account
@@ -232,6 +226,10 @@ export function AccountBalancesReport() {
       filename: 'account-balances',
     });
   };
+
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
 
   if (isLoading) {
     return (

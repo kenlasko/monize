@@ -95,6 +95,21 @@ describe('transactionsApi', () => {
       // pageSize is consumed by the helper, not forwarded to the backend
       expect(params).not.toHaveProperty('pageSize');
     });
+
+    it('stops when a page returns no rows even if hasMore stays true', async () => {
+      // A backend bug could report hasMore=true on an empty page; the helper
+      // must not loop forever accumulating nothing.
+      vi.mocked(apiClient.get)
+        .mockResolvedValueOnce({
+          data: { data: [{ id: 't1' }], pagination: { hasMore: true } },
+        })
+        .mockResolvedValueOnce({
+          data: { data: [], pagination: { hasMore: true } },
+        });
+      const result = await transactionsApi.getAllPages();
+      expect(result.map((t) => (t as { id: string }).id)).toEqual(['t1']);
+      expect(apiClient.get).toHaveBeenCalledTimes(2);
+    });
   });
 
   it('getById fetches /transactions/:id', async () => {

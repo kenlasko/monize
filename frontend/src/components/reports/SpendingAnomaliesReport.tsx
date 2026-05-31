@@ -1,37 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { useRouter } from 'next/navigation';
 import { builtInReportsApi } from '@/lib/built-in-reports';
-import { SpendingAnomaly, SpendingAnomaliesResponse } from '@/types/built-in-reports';
+import { SpendingAnomaly } from '@/types/built-in-reports';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
-import { createLogger } from '@/lib/logger';
-
-const logger = createLogger('SpendingAnomaliesReport');
+import { useReportData } from '@/hooks/useReportData';
+import { ReportError } from '@/components/reports/ReportError';
 
 export function SpendingAnomaliesReport() {
   const router = useRouter();
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
-  const [anomaliesData, setAnomaliesData] = useState<SpendingAnomaliesResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [threshold, setThreshold] = useState(2); // Standard deviations
 
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        const data = await builtInReportsApi.getSpendingAnomalies(threshold);
-        setAnomaliesData(data);
-      } catch (error) {
-        logger.error('Failed to load data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
-  }, [threshold]);
+  const { data: anomaliesData, isLoading, error, reload } = useReportData(
+    () => builtInReportsApi.getSpendingAnomalies(threshold),
+    [threshold],
+  );
 
   const handleTransactionClick = (anomaly: SpendingAnomaly) => {
     if (anomaly.transactionId && anomaly.payeeName) {
@@ -122,6 +109,10 @@ export function SpendingAnomaliesReport() {
         );
     }
   };
+
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
 
   if (isLoading) {
     return (

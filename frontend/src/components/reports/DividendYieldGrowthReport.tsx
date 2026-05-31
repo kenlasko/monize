@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
+import { useReportData } from '@/hooks/useReportData';
+import { ReportError } from '@/components/reports/ReportError';
 import {
   BarChart,
   Bar,
@@ -73,16 +75,8 @@ export function DividendYieldGrowthReport() {
   const { formatCurrency: formatCurrencyFull, formatCurrencyAxis, formatSignedPercent } = useNumberFormat();
   const { defaultCurrency, convertToDefault } = useExchangeRates();
   const chartRef = useRef<HTMLDivElement>(null);
-  const [transactions, setTransactions] = useState<InvestmentTransaction[]>([]);
-  const [holdings, setHoldings] = useState<HoldingWithMarketValue[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
-  const [reloadKey, setReloadKey] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  // Only the first load shows the full skeleton. Later reloads (e.g. changing
-  // the account filter) keep the existing content -- and the account dropdown --
-  // mounted so they update in place instead of unmounting the whole report.
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [viewType, setViewType] = useState<'yield' | 'growth' | 'frequency'>('yield');
   const isSingleAccount = selectedAccountIds.length === 1;
   const yieldSort = useSortableTable<YieldSortField>(
@@ -129,49 +123,54 @@ export function DividendYieldGrowthReport() {
       .catch((error) => logger.error('Failed to load accounts:', error));
   }, []);
 
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        const accountIds = selectedAccountIds.length > 0 ? selectedAccountIds.join(',') : undefined;
+  // `reload` (a stable callback) is wired to the RefreshPricesButton so a
+  // manual price refresh re-fetches the dividend data.
+  const { data: response, isLoading, error, reload } = useReportData(
+    async () => {
+      const accountIds = selectedAccountIds.length > 0 ? selectedAccountIds.join(',') : undefined;
 
-        const fetchAllPages = async (action: string): Promise<InvestmentTransaction[]> => {
-          const results: InvestmentTransaction[] = [];
-          let page = 1;
-          let hasMore = true;
-          while (hasMore && page <= MAX_PAGES) {
-            const result = await investmentsApi.getTransactions({
-              accountIds,
-              action,
-              limit: 200,
-              page,
-            });
-            results.push(...result.data);
-            hasMore = result.pagination.hasMore;
-            page++;
-          }
-          return results;
-        };
+      const fetchAllPages = async (action: string): Promise<InvestmentTransaction[]> => {
+        const results: InvestmentTransaction[] = [];
+        let page = 1;
+        let hasMore = true;
+        while (hasMore && page <= MAX_PAGES) {
+          const result = await investmentsApi.getTransactions({
+            accountIds,
+            action,
+            limit: 200,
+            page,
+          });
+          results.push(...result.data);
+          hasMore = result.pagination.hasMore;
+          page++;
+        }
+        return results;
+      };
 
-        const [summaryData, dividendTx, reinvestTx] = await Promise.all([
-          investmentsApi.getPortfolioSummary(
-            selectedAccountIds.length > 0 ? selectedAccountIds : undefined,
-          ),
-          fetchAllPages('DIVIDEND'),
-          fetchAllPages('REINVEST'),
-        ]);
+      const [summaryData, dividendTx, reinvestTx] = await Promise.all([
+        investmentsApi.getPortfolioSummary(
+          selectedAccountIds.length > 0 ? selectedAccountIds : undefined,
+        ),
+        fetchAllPages('DIVIDEND'),
+        fetchAllPages('REINVEST'),
+      ]);
 
-        setTransactions([...dividendTx, ...reinvestTx]);
-        setHoldings(summaryData.holdings);
-      } catch (error) {
-        logger.error('Failed to load data:', error);
-      } finally {
-        setIsLoading(false);
-        setHasLoadedOnce(true);
-      }
-    };
-    loadData();
-  }, [selectedAccountIds, reloadKey]);
+      return {
+        transactions: [...dividendTx, ...reinvestTx],
+        holdings: summaryData.holdings,
+      };
+    },
+    [selectedAccountIds],
+  );
+
+  const transactions = useMemo<InvestmentTransaction[]>(
+    () => response?.transactions ?? [],
+    [response],
+  );
+  const holdings = useMemo<HoldingWithMarketValue[]>(
+    () => response?.holdings ?? [],
+    [response],
+  );
 
   // Trailing 12-month portfolio yield
   const trailing12mTotal = useMemo(() => {
@@ -394,7 +393,11 @@ export function DividendYieldGrowthReport() {
     });
   };
 
-  if (isLoading && !hasLoadedOnce) {
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
+
+  if (isLoading && !response) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
         <div className="space-y-4">
@@ -470,7 +473,7 @@ export function DividendYieldGrowthReport() {
             </button>
           </div>
           <div className="ml-auto flex gap-2 items-center">
-            <RefreshPricesButton onRefreshComplete={() => setReloadKey((k) => k + 1)} />
+            <RefreshPricesButton onRefreshComplete={reload} />
             <ExportDropdown onExportPdf={handleExportPdf} />
           </div>
         </div>

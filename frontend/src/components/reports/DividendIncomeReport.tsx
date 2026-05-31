@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
+import { useReportData } from '@/hooks/useReportData';
+import { ReportError } from '@/components/reports/ReportError';
 import {
   BarChart,
   Bar,
@@ -29,9 +31,6 @@ import { RefreshPricesButton } from '@/components/reports/RefreshPricesButton';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
 import { exportToCsv } from '@/lib/csv-export';
-import { createLogger } from '@/lib/logger';
-
-const logger = createLogger('DividendIncomeReport');
 
 type SeriesKey = 'dividends' | 'interest' | 'capitalGains';
 type MonthlyIncomeSortField = 'month' | 'startValue' | 'endValue' | 'dividends' | 'interest' | 'capitalGains' | 'total';
@@ -79,10 +78,6 @@ export function DividendIncomeReport() {
   const { formatCurrency: formatCurrencyFull, formatCurrencyAxis } = useNumberFormat();
   const { defaultCurrency, convertToDefault } = useExchangeRates();
   const chartRef = useRef<HTMLDivElement>(null);
-  const [transactions, setTransactions] = useState<InvestmentTransaction[]>([]);
-  const [capitalGains, setCapitalGains] = useState<CapitalGainEntry[]>([]);
-  const [dailyCapitalGains, setDailyCapitalGains] = useState<CapitalGainEntry[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
   // Debounced mirror of selectedAccountIds. The data-load effect keys off
   // this, not the raw selection, so rapid toggles in the MultiSelect (e.g.
@@ -93,18 +88,11 @@ export function DividendIncomeReport() {
     if (accountDebounceRef.current) clearTimeout(accountDebounceRef.current);
   }, []);
   const [selectedSecurityId, setSelectedSecurityId] = useState<string>('');
-  // Bumped after a manual price refresh to force the data effects to re-fetch.
-  const [reloadKey, setReloadKey] = useState(0);
   // When exactly one account is selected we keep its native currency; with no
   // selection (all accounts) or several selected accounts we may have mixed
   // currencies, so we convert into the user's default currency.
   const isSingleAccount = selectedAccountIds.length === 1;
   const { dateRange, setDateRange, resolvedRange, isValid } = useDateRange({ defaultRange: '1y', alignment: 'month' });
-  const [isLoading, setIsLoading] = useState(true);
-  // First load needs the full-page skeleton; subsequent reloads (e.g. after the
-  // user changes the account or security filter) update in place so the
-  // MultiSelect / Select controls don't unmount mid-interaction.
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [viewType, setViewType] = useState<'monthly' | 'daily' | 'bySecurity'>('monthly');
   const [monthlyDisplay, setMonthlyDisplay] = useState<'chart' | 'table'>('chart');
   const [hideInactiveDays, setHideInactiveDays] = useState(false);
@@ -125,6 +113,119 @@ export function DividendIncomeReport() {
     'reports.dividend-income.security.sort',
     { field: 'total', direction: 'desc' },
   );
+
+  const { start: rangeStart, end: rangeEnd } = resolvedRange;
+  // Capital gains require a window; fall back to a wide window when the user
+  // picks "All Time" so the backend still has bounds to enumerate.
+  const cgStart = rangeStart || '1970-01-01';
+  const accountIdsParam = appliedAccountIds.length > 0
+    ? appliedAccountIds.join(',')
+    : undefined;
+
+  // Primary data load: dividend / interest / CAPITAL_GAIN transactions, the
+  // monthly capital gains, and the account list. `reloadAll` is wired to the
+  // RefreshPricesButton so a manual price refresh re-fetches everything
+  // (including the daily view's lazy capital gains below).
+  const {
+    data: response,
+    isLoading,
+    error,
+    reload: reloadPrimary,
+  } = useReportData(
+    async () => {
+      if (!isValid) return null;
+
+      const accountsPromise = investmentsApi.getInvestmentAccounts();
+      const capitalGainsPromise = investmentsApi.getCapitalGains({
+        accountIds: accountIdsParam,
+        startDate: cgStart,
+        endDate: rangeEnd,
+      });
+
+      // Paginate through all transactions (API limit is 200 per page). Run the
+      // pagination loop concurrently with the accounts and capital gains
+      // requests instead of awaiting it first -- otherwise the three fetches
+      // serialize and the slowest path is the sum of all of them.
+      const transactionsPromise = (async () => {
+        let allTransactions: InvestmentTransaction[] = [];
+        let page = 1;
+        let hasMore = true;
+        while (hasMore) {
+          const result = await investmentsApi.getTransactions({
+            accountIds: accountIdsParam,
+            startDate: rangeStart || undefined,
+            endDate: rangeEnd,
+            limit: 200,
+            page,
+          });
+          allTransactions = allTransactions.concat(result.data);
+          hasMore = result.pagination.hasMore;
+          page++;
+        }
+        return allTransactions;
+      })();
+
+      const [allTransactions, accountsData, capitalGainsData] = await Promise.all([
+        transactionsPromise,
+        accountsPromise,
+        capitalGainsPromise,
+      ]);
+
+      // Dividend / Interest / CAPITAL_GAIN income comes from the plain
+      // transaction list; SELL realized + unrealized capital gains come from
+      // the monthly capital gains endpoint.
+      const incomeTransactions = allTransactions.filter(
+        (tx) =>
+          tx.action === 'DIVIDEND' ||
+          tx.action === 'INTEREST' ||
+          tx.action === 'CAPITAL_GAIN',
+      );
+
+      return {
+        transactions: incomeTransactions,
+        capitalGains: capitalGainsData,
+        accounts: accountsData,
+      };
+    },
+    [appliedAccountIds, rangeStart, rangeEnd, isValid],
+  );
+
+  const transactions = useMemo<InvestmentTransaction[]>(
+    () => response?.transactions ?? [],
+    [response],
+  );
+  const capitalGains = useMemo<CapitalGainEntry[]>(
+    () => response?.capitalGains ?? [],
+    [response],
+  );
+  const accounts = useMemo<Account[]>(
+    () => response?.accounts ?? [],
+    [response],
+  );
+
+  // Lazy-load daily capital gains only when the user switches to the daily view.
+  const { data: dailyResponse, reload: reloadDaily } = useReportData(
+    () =>
+      viewType === 'daily' && isValid
+        ? investmentsApi.getCapitalGains({
+            accountIds: accountIdsParam,
+            startDate: cgStart,
+            endDate: rangeEnd,
+            granularity: 'day',
+          })
+        : Promise.resolve(null),
+    [viewType, appliedAccountIds, rangeStart, rangeEnd, isValid],
+  );
+
+  const dailyCapitalGains = useMemo<CapitalGainEntry[]>(
+    () => dailyResponse ?? [],
+    [dailyResponse],
+  );
+
+  const reloadAll = useCallback(() => {
+    reloadPrimary();
+    reloadDaily();
+  }, [reloadPrimary, reloadDaily]);
 
   // Build account currency lookup
   const accountCurrencyMap = useMemo(() => {
@@ -230,101 +331,6 @@ export function DividendIncomeReport() {
     }
     return formatCurrencyFull(value);
   }, [isForeign, displayCurrency, formatCurrencyFull]);
-
-  useEffect(() => {
-    if (!isValid) return;
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        const { start, end } = resolvedRange;
-
-        const accountsPromise = investmentsApi.getInvestmentAccounts();
-        // Capital gains require a window; fall back to a wide window when the
-        // user picks "All Time" so the backend still has bounds to enumerate.
-        const cgStart = start || '1970-01-01';
-        const accountIdsParam = appliedAccountIds.length > 0
-          ? appliedAccountIds.join(',')
-          : undefined;
-        const capitalGainsPromise = investmentsApi.getCapitalGains({
-          accountIds: accountIdsParam,
-          startDate: cgStart,
-          endDate: end,
-        });
-
-        // Paginate through all transactions (API limit is 200 per page).
-        // Run the pagination loop concurrently with the accounts and capital
-        // gains requests instead of awaiting it first -- otherwise the three
-        // fetches serialize and the slowest path is the sum of all of them.
-        const transactionsPromise = (async () => {
-          let allTransactions: InvestmentTransaction[] = [];
-          let page = 1;
-          let hasMore = true;
-          while (hasMore) {
-            const result = await investmentsApi.getTransactions({
-              accountIds: accountIdsParam,
-              startDate: start || undefined,
-              endDate: end,
-              limit: 200,
-              page,
-            });
-            allTransactions = allTransactions.concat(result.data);
-            hasMore = result.pagination.hasMore;
-            page++;
-          }
-          return allTransactions;
-        })();
-
-        const [allTransactions, accountsData, capitalGainsData] = await Promise.all([
-          transactionsPromise,
-          accountsPromise,
-          capitalGainsPromise,
-        ]);
-
-        // Dividend / Interest / CAPITAL_GAIN income comes from the plain
-        // transaction list; SELL realized + unrealized capital gains come from
-        // the new monthly capital gains endpoint.
-        const incomeTransactions = allTransactions.filter(
-          (tx) =>
-            tx.action === 'DIVIDEND' ||
-            tx.action === 'INTEREST' ||
-            tx.action === 'CAPITAL_GAIN',
-        );
-
-        setTransactions(incomeTransactions);
-        setCapitalGains(capitalGainsData);
-        setAccounts(accountsData);
-      } catch (error) {
-        logger.error('Failed to load investment transactions:', error);
-      } finally {
-        setIsLoading(false);
-        setHasLoadedOnce(true);
-      }
-    };
-    loadData();
-  }, [appliedAccountIds, resolvedRange, isValid, reloadKey]);
-
-  // Lazy-load daily capital gains only when the user switches to the daily view.
-  useEffect(() => {
-    if (viewType !== 'daily' || !isValid) return;
-    const load = async () => {
-      try {
-        const { start, end } = resolvedRange;
-        const cgStart = start || '1970-01-01';
-        const data = await investmentsApi.getCapitalGains({
-          accountIds: appliedAccountIds.length > 0
-            ? appliedAccountIds.join(',')
-            : undefined,
-          startDate: cgStart,
-          endDate: end,
-          granularity: 'day',
-        });
-        setDailyCapitalGains(data);
-      } catch (error) {
-        logger.error('Failed to load daily capital gains:', error);
-      }
-    };
-    load();
-  }, [viewType, appliedAccountIds, resolvedRange, isValid, reloadKey]);
 
   const monthlyData = useMemo((): MonthlyIncome[] => {
     const { start, end } = resolvedRange;
@@ -965,7 +971,11 @@ export function DividendIncomeReport() {
     return null;
   };
 
-  if (isLoading && !hasLoadedOnce) {
+  if (error) {
+    return <ReportError onRetry={reloadAll} />;
+  }
+
+  if (isLoading && !response) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
         <div className="space-y-4">
@@ -1087,7 +1097,7 @@ export function DividendIncomeReport() {
             >
               By Security
             </button>
-            <RefreshPricesButton onRefreshComplete={() => setReloadKey((k) => k + 1)} />
+            <RefreshPricesButton onRefreshComplete={reloadAll} />
             <ExportDropdown
               onExportPdf={handleExportPdf}
               onExportCsv={isTableView ? handleExportCsv : undefined}

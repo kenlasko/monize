@@ -372,7 +372,7 @@ describe('NetWorthReport', () => {
     mockGetMonthly.mockRejectedValue(new Error('boom'));
     render(<NetWorthReport />);
     await waitFor(() => {
-      expect(screen.getByText('Recalculate')).toBeInTheDocument();
+      expect(screen.getByText(/Failed to load report data/i)).toBeInTheDocument();
     });
   });
 

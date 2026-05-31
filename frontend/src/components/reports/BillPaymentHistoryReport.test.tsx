@@ -123,11 +123,11 @@ describe('BillPaymentHistoryReport', () => {
     expect(screen.getByText('Bills Paid')).toBeInTheDocument();
   });
 
-  it('renders failed state when data is null', async () => {
+  it('renders error state when the fetch fails', async () => {
     mockGetBillPaymentHistory.mockRejectedValue(new Error('API error'));
     render(<BillPaymentHistoryReport />);
     await waitFor(() => {
-      expect(screen.getByText('Failed to load bill payment history data.')).toBeInTheDocument();
+      expect(screen.getByText('Try again')).toBeInTheDocument();
     });
   });
 

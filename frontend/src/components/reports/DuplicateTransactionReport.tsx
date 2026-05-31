@@ -1,49 +1,38 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { gainLossColor } from '@/lib/format';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { builtInReportsApi } from '@/lib/built-in-reports';
-import { DuplicateTransactionsResponse, DuplicateGroup, DuplicateTransactionItem } from '@/types/built-in-reports';
+import { DuplicateGroup, DuplicateTransactionItem } from '@/types/built-in-reports';
 import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateRange } from '@/hooks/useDateRange';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { exportToCsv } from '@/lib/csv-export';
-import { createLogger } from '@/lib/logger';
-
-const logger = createLogger('DuplicateTransactionReport');
+import { useReportData } from '@/hooks/useReportData';
+import { ReportError } from '@/components/reports/ReportError';
 
 export function DuplicateTransactionReport() {
   const router = useRouter();
   const { formatCurrency } = useNumberFormat();
-  const [reportData, setReportData] = useState<DuplicateTransactionsResponse | null>(null);
   const { dateRange, setDateRange, resolvedRange } = useDateRange({ defaultRange: '3m', alignment: 'day' });
-  const [isLoading, setIsLoading] = useState(true);
   const [sensitivity, setSensitivity] = useState<'high' | 'medium' | 'low'>('medium');
 
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        const { start, end } = resolvedRange;
-        const data = await builtInReportsApi.getDuplicateTransactions({
-          startDate: start,
-          endDate: end,
-          sensitivity,
-        });
-        setReportData(data);
-      } catch (error) {
-        logger.error('Failed to load data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
-  }, [resolvedRange, sensitivity]);
+  const { start: rangeStart, end: rangeEnd } = resolvedRange;
+
+  const { data: reportData, isLoading, error, reload } = useReportData(
+    () =>
+      builtInReportsApi.getDuplicateTransactions({
+        startDate: rangeStart,
+        endDate: rangeEnd,
+        sensitivity,
+      }),
+    [rangeStart, rangeEnd, sensitivity],
+  );
 
   const handleTransactionClick = (tx: DuplicateTransactionItem) => {
     router.push(`/transactions?search=${encodeURIComponent(tx.payeeName || '')}`);
@@ -71,6 +60,10 @@ export function DuplicateTransactionReport() {
         };
     }
   };
+
+  if (error) {
+    return <ReportError onRetry={reload} />;
+  }
 
   if (isLoading) {
     return (

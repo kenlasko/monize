@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
+import { useReportData } from '@/hooks/useReportData';
+import { ReportError } from '@/components/reports/ReportError';
 import {
   BarChart,
   Bar,
@@ -12,7 +14,7 @@ import {
   Legend,
 } from 'recharts';
 import { investmentsApi } from '@/lib/investments';
-import { SectorWeightingResult, Security } from '@/types/investment';
+import { Security } from '@/types/investment';
 import { Account } from '@/types/account';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
@@ -63,16 +65,10 @@ function CustomTooltip({ active, payload, formatCurrencyFull, defaultCurrency }:
 export function SectorWeightingsReport() {
   const { formatCurrencyCompact: formatCurrency, formatCurrency: formatCurrencyFull } = useNumberFormat();
   const { defaultCurrency } = useExchangeRates();
-  const [data, setData] = useState<SectorWeightingResult | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [securities, setSecurities] = useState<Security[]>([]);
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
   const [selectedSecurityIds, setSelectedSecurityIds] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  // Only the first load shows the full skeleton. Later reloads (e.g. changing
-  // the account filter) keep the existing content -- and the account dropdown --
-  // mounted so they update in place instead of unmounting the whole report.
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
 
   const securityOptions = useMemo(
@@ -85,6 +81,17 @@ export function SectorWeightingsReport() {
   const { sortField, sortDirection, handleSort } = useSortableTable<SectorSortField>(
     'reports.sector-weightings.sort',
     { field: 'total', direction: 'desc' },
+  );
+
+  // Reload weightings whenever filters change. `reload` (a stable callback) is
+  // wired to the RefreshPricesButton so a manual price refresh re-fetches.
+  const { data, isLoading, error, reload: loadWeightings } = useReportData(
+    () =>
+      investmentsApi.getSectorWeightings(
+        selectedAccountIds.length > 0 ? selectedAccountIds : undefined,
+        selectedSecurityIds.length > 0 ? selectedSecurityIds : undefined,
+      ),
+    [selectedAccountIds, selectedSecurityIds],
   );
 
   const sortedItems = useMemo(() => {
@@ -127,27 +134,6 @@ export function SectorWeightingsReport() {
       .catch((error) => logger.error('Failed to load filter data:', error));
   }, []);
 
-  // Reload weightings whenever filters change
-  const loadWeightings = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const weightingsData = await investmentsApi.getSectorWeightings(
-        selectedAccountIds.length > 0 ? selectedAccountIds : undefined,
-        selectedSecurityIds.length > 0 ? selectedSecurityIds : undefined,
-      );
-      setData(weightingsData);
-    } catch (error) {
-      logger.error('Failed to load sector weightings:', error);
-    } finally {
-      setIsLoading(false);
-      setHasLoadedOnce(true);
-    }
-  }, [selectedAccountIds, selectedSecurityIds]);
-
-  useEffect(() => {
-    loadWeightings();
-  }, [loadWeightings]);
-
   const handleExportPdf = async () => {
     const { exportToPdf } = await import('@/lib/pdf-export');
     const headers = ['Sector', 'Direct Value', 'ETF Value', 'Total Value', '% of Portfolio'];
@@ -170,7 +156,11 @@ export function SectorWeightingsReport() {
     });
   };
 
-  if (isLoading && !hasLoadedOnce) {
+  if (error) {
+    return <ReportError onRetry={loadWeightings} />;
+  }
+
+  if (isLoading && !data) {
     return (
       <div className="space-y-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">

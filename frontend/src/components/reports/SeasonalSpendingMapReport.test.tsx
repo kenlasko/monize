@@ -163,21 +163,23 @@ describe('SeasonalSpendingMapReport', () => {
     await waitFor(() => expect(mockGetSeasonalPatterns).toHaveBeenCalledWith('b-2'));
   });
 
-  it('handles getAll failure gracefully', async () => {
+  it('surfaces a retryable error state when getAll fails', async () => {
     mockGetAll.mockRejectedValue(new Error('boom'));
     await renderReport();
     await waitFor(() => {
-      expect(screen.getByText(/No budgets found/i)).toBeInTheDocument();
+      expect(screen.getByText(/failed to load report data/i)).toBeInTheDocument();
     });
+    expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
   });
 
-  it('handles getSeasonalPatterns failure gracefully', async () => {
+  it('surfaces a retryable error state when getSeasonalPatterns fails', async () => {
     mockGetAll.mockResolvedValue([makeBudget()]);
     mockGetSeasonalPatterns.mockRejectedValue(new Error('boom'));
     await renderReport();
     await waitFor(() => {
-      expect(screen.getByText(/Not enough historical data/i)).toBeInTheDocument();
+      expect(screen.getByText(/failed to load report data/i)).toBeInTheDocument();
     });
+    expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
   });
 
   it('exports to PDF covering all intensity buckets including zero', async () => {
