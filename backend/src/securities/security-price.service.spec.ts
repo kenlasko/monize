@@ -1202,8 +1202,15 @@ describe("SecurityPriceService", () => {
         { security_id: "sec-1", earliest: "2099-01-01" },
       ]);
 
+      // Use timestamps relative to "now" so both prices fall inside backfill's
+      // rolling one-year lookback window. With the earliest transaction in the
+      // future, the cutoff is pinned to one-year-ago, so hardcoded calendar
+      // dates became a date-bomb: once a year elapsed past them the boundary
+      // price dropped out of the window and only one price was counted.
+      const daySec = 24 * 60 * 60;
+      const nowSec = Math.floor(Date.now() / 1000);
       const historicalData = makeYahooHistoricalResponse({
-        timestamps: [1748700000, 1748800000],
+        timestamps: [nowSec - 10 * daySec, nowSec - 5 * daySec],
         closes: [193.0, 194.0],
       });
       global.fetch = jest
