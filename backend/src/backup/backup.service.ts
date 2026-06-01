@@ -69,6 +69,7 @@ interface BackupData {
   budget_period_categories: Record<string, unknown>[];
   budget_alerts: Record<string, unknown>[];
   custom_reports: Record<string, unknown>[];
+  investment_reports: Record<string, unknown>[];
   import_column_mappings: Record<string, unknown>[];
   monthly_account_balances: Record<string, unknown>[];
   auto_backup_settings: Record<string, unknown>[];
@@ -302,6 +303,10 @@ export class BackupService {
       {
         key: "custom_reports",
         sql: "SELECT * FROM custom_reports WHERE user_id = $1",
+      },
+      {
+        key: "investment_reports",
+        sql: "SELECT * FROM investment_reports WHERE user_id = $1",
       },
       {
         key: "import_column_mappings",
@@ -543,6 +548,12 @@ export class BackupService {
         queryRunner,
         "custom_reports",
         data.custom_reports,
+        userId,
+      );
+      restored.investmentReports = await this.insertRows(
+        queryRunner,
+        "investment_reports",
+        data.investment_reports,
         userId,
       );
       restored.importColumnMappings = await this.insertRows(
@@ -938,6 +949,10 @@ export class BackupService {
       userId,
     ]);
     await queryRunner.query(
+      "DELETE FROM investment_reports WHERE user_id = $1",
+      [userId],
+    );
+    await queryRunner.query(
       "DELETE FROM import_column_mappings WHERE user_id = $1",
       [userId],
     );
@@ -1242,6 +1257,7 @@ export class BackupService {
       "budget_period_categories",
       "budget_alerts",
       "custom_reports",
+      "investment_reports",
       "import_column_mappings",
       "monthly_account_balances",
       "auto_backup_settings",

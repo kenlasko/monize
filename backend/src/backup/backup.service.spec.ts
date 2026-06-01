@@ -286,6 +286,20 @@ describe("BackupService", () => {
       "created_at",
       "updated_at",
     ],
+    investment_reports: [
+      "id",
+      "user_id",
+      "name",
+      "description",
+      "icon",
+      "background_color",
+      "group_by",
+      "config",
+      "is_favourite",
+      "sort_order",
+      "created_at",
+      "updated_at",
+    ],
     import_column_mappings: [
       "id",
       "user_id",
@@ -444,6 +458,25 @@ describe("BackupService", () => {
       expect(result.accounts).toEqual([]);
     });
 
+    it("should include investment_reports in the exported payload", async () => {
+      const mockInvestmentReports = [
+        { id: "ir-1", name: "By Symbol", user_id: userId },
+      ];
+      mockDataSource.query.mockImplementation((sql: string) => {
+        if (sql.includes("investment_reports")) {
+          return Promise.resolve(mockInvestmentReports);
+        }
+        return Promise.resolve([]);
+      });
+
+      const mockRes = new PassThrough();
+      const resultPromise = collectGzipOutput(mockRes);
+      await service.streamExport(userId, mockRes as any);
+      const result = await resultPromise;
+
+      expect(result.investment_reports).toEqual(mockInvestmentReports);
+    });
+
     it("writes an encrypted envelope when a password is provided", async () => {
       mockDataSource.query.mockResolvedValue([]);
       const mockCategories = [{ id: "cat-1", name: "Food", user_id: userId }];
@@ -554,6 +587,7 @@ describe("BackupService", () => {
       budget_period_categories: [],
       budget_alerts: [],
       custom_reports: [],
+      investment_reports: [],
       import_column_mappings: [],
       monthly_account_balances: [],
     };
@@ -696,6 +730,62 @@ describe("BackupService", () => {
       expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+
+    it("should restore investment_reports rows and scope them to the current user", async () => {
+      mockUserRepo.findOne.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      const backupWithInvestmentReports = {
+        ...validBackupData,
+        investment_reports: [
+          {
+            id: "ir-1",
+            user_id: "different-user-id",
+            name: "By Symbol",
+            description: null,
+            icon: null,
+            background_color: null,
+            group_by: "SYMBOL",
+            config: { columns: ["symbol"], accountIds: [] },
+            is_favourite: false,
+            sort_order: 0,
+          },
+        ],
+      };
+
+      const result = await service.restoreData(
+        userId,
+        makeInput({ password: "test", data: backupWithInvestmentReports }),
+      );
+
+      expect(result.restored.investmentReports).toBe(1);
+
+      const insertCalls = mockQueryRunner.query.mock.calls.filter(
+        (call: unknown[]) =>
+          typeof call[0] === "string" &&
+          call[0].includes('INSERT INTO "investment_reports"'),
+      );
+      expect(insertCalls).toHaveLength(1);
+      const inserted = insertColumnMap(insertCalls[0]);
+      expect(inserted.user_id).toBe(userId);
+      expect(inserted.name).toBe("By Symbol");
+      expect(inserted.group_by).toBe("SYMBOL");
+    });
+
+    it("should delete existing investment_reports during restore wipe", async () => {
+      mockUserRepo.findOne.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      await service.restoreData(userId, makeInput({ password: "test" }));
+
+      const deleteCalls = mockQueryRunner.query.mock.calls.filter(
+        (call: unknown[]) =>
+          typeof call[0] === "string" &&
+          call[0].includes("DELETE FROM investment_reports"),
+      );
+      expect(deleteCalls).toHaveLength(1);
+      expect(deleteCalls[0][1]).toEqual([userId]);
     });
 
     it("should rollback transaction on error", async () => {
