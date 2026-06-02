@@ -9,6 +9,8 @@ export interface SettingsSection {
   readonly label: string;
   /** If set, renders as a navigation link instead of a scroll-to button */
   readonly href?: string;
+  /** Visual treatment for the nav item (e.g. 'danger' renders in red) */
+  readonly variant?: 'default' | 'danger';
 }
 
 interface SettingsNavProps {
@@ -82,6 +84,8 @@ export function SettingsNav({
             );
           }
 
+          const isDanger = section.variant === 'danger';
+
           return (
             <button
               key={section.id}
@@ -90,8 +94,12 @@ export function SettingsNav({
               className={`
                 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors shrink-0
                 ${isActive
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-200'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-200'
+                  ? isDanger
+                    ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                    : 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-200'
+                  : isDanger
+                    ? 'text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-200'
                 }
               `}
               role="tab"
@@ -138,6 +146,8 @@ export function SettingsNav({
             );
           }
 
+          const isDanger = section.variant === 'danger';
+
           return (
             <li key={section.id}>
               <button
@@ -146,8 +156,12 @@ export function SettingsNav({
                 className={`
                   w-full text-left rounded-md px-3 py-2 text-sm font-medium transition-colors
                   ${isActive
-                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-200'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    ? isDanger
+                      ? 'bg-red-50 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                      : 'bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-200'
+                    : isDanger
+                      ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }
                 `}
               >

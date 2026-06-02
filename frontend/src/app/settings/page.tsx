@@ -13,6 +13,7 @@ import { DangerZoneSection } from '@/components/settings/DangerZoneSection';
 import { BackupRestoreSection } from '@/components/settings/BackupRestoreSection';
 import { AutoBackupSection } from '@/components/settings/AutoBackupSection';
 import { ApiAccessSection } from '@/components/settings/ApiAccessSection';
+import { HelpSection } from '@/components/settings/HelpSection';
 import { SettingsNav, SettingsSection } from '@/components/settings/SettingsNav';
 import { useScrollSpy } from '@/hooks/useScrollSpy';
 import { userSettingsApi } from '@/lib/user-settings';
@@ -38,7 +39,8 @@ const ALL_SETTINGS_SECTIONS: readonly (SettingsSection & { demoVisible?: boolean
   { id: 'ai-settings', label: 'AI Settings', href: '/settings/ai' },
   { id: 'backup-restore', label: 'Backup & Restore' },
   { id: 'auto-backup', label: 'Automatic Backup' },
-  { id: 'danger-zone', label: 'Danger Zone' },
+  { id: 'help', label: 'Help & Support' },
+  { id: 'danger-zone', label: 'Danger Zone', variant: 'danger' },
 ] as const;
 
 export default function SettingsPage() {
@@ -363,6 +365,10 @@ function OwnerSettingsView() {
                 <AutoBackupSection />
               </div>
             )}
+
+            <div id="help" className="scroll-mt-32 lg:scroll-mt-22">
+              <HelpSection />
+            </div>
 
             {!isDemoMode && user && (
               <div id="danger-zone" className="scroll-mt-32 lg:scroll-mt-22">

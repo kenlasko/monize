@@ -323,6 +323,73 @@ describe('SettingsNav', () => {
     });
   });
 
+  describe('danger variant styling', () => {
+    const dangerSections: SettingsSection[] = [
+      { id: 'profile', label: 'Profile' },
+      { id: 'danger-zone', label: 'Danger Zone', variant: 'danger' },
+    ];
+
+    it('renders a danger section in red text in the vertical sidebar', () => {
+      render(
+        <SettingsNav
+          sections={dangerSections}
+          activeSection="profile"
+          onSectionClick={onSectionClick}
+          variant="vertical"
+        />,
+      );
+
+      const dangerButton = screen.getByText('Danger Zone');
+      expect(dangerButton.className).toContain('text-red-600');
+      expect(dangerButton.className).not.toContain('text-gray-700');
+    });
+
+    it('renders an active danger section with red background in the vertical sidebar', () => {
+      render(
+        <SettingsNav
+          sections={dangerSections}
+          activeSection="danger-zone"
+          onSectionClick={onSectionClick}
+          variant="vertical"
+        />,
+      );
+
+      const dangerButton = screen.getByText('Danger Zone');
+      expect(dangerButton.className).toContain('bg-red-50');
+      expect(dangerButton.className).toContain('text-red-700');
+      expect(dangerButton.className).not.toContain('bg-blue-50');
+    });
+
+    it('renders a danger section in red text in the horizontal tabs', () => {
+      render(
+        <SettingsNav
+          sections={dangerSections}
+          activeSection="profile"
+          onSectionClick={onSectionClick}
+          variant="horizontal"
+        />,
+      );
+
+      const dangerTab = screen.getByText('Danger Zone');
+      expect(dangerTab.className).toContain('text-red-600');
+    });
+
+    it('leaves non-danger sections with their default gray styling', () => {
+      render(
+        <SettingsNav
+          sections={dangerSections}
+          activeSection="danger-zone"
+          onSectionClick={onSectionClick}
+          variant="vertical"
+        />,
+      );
+
+      const profileButton = screen.getByText('Profile');
+      expect(profileButton.className).toContain('text-gray-700');
+      expect(profileButton.className).not.toContain('text-red-600');
+    });
+  });
+
   describe('default variant', () => {
     it('defaults to vertical variant when not specified', () => {
       render(

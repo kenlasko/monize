@@ -44,9 +44,9 @@ import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { TopMover, PortfolioSummary, FavouriteSecurityQuote } from '@/types/investment';
 import { MonthlyNetWorth } from '@/types/net-worth';
 import { PageLayout } from '@/components/layout/PageLayout';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { usePriceRefresh } from '@/hooks/usePriceRefresh';
-import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('Dashboard');
@@ -212,25 +212,11 @@ function DashboardContent() {
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <div className="sm:px-0">
           {/* Welcome section */}
-          <div className="mb-6">
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                Welcome{user?.firstName ? `, ${user.firstName}` : ''}!
-              </h1>
-              <a
-                href="https://github.com/kenlasko/monize/wiki/Dashboard"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-400 hover:text-blue-500 transition-colors"
-                aria-label="Help"
-              >
-                <QuestionMarkCircleIcon className="h-5 w-5" />
-              </a>
-            </div>
-            <p className="text-gray-500 dark:text-gray-400">
-              Here&apos;s your financial overview
-            </p>
-          </div>
+          <PageHeader
+            title={`Welcome${user?.firstName ? `, ${user.firstName}` : ''}!`}
+            subtitle="Here's your financial overview"
+            helpUrl="https://github.com/kenlasko/monize/wiki/Dashboard"
+          />
 
           {isDelegateView ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
