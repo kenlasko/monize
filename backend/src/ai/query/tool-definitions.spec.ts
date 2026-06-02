@@ -1,8 +1,8 @@
 import { FINANCIAL_TOOLS } from "./tool-definitions";
 
 describe("FINANCIAL_TOOLS", () => {
-  it("defines exactly 14 tools", () => {
-    expect(FINANCIAL_TOOLS).toHaveLength(14);
+  it("defines exactly 16 tools", () => {
+    expect(FINANCIAL_TOOLS).toHaveLength(16);
   });
 
   it("has unique tool names", () => {
@@ -23,6 +23,8 @@ describe("FINANCIAL_TOOLS", () => {
     "get_capital_gains",
     "get_transfers",
     "get_budget_status",
+    "get_upcoming_bills",
+    "get_scheduled_transactions",
     "calculate",
     "render_chart",
   ];
@@ -295,6 +297,82 @@ describe("FINANCIAL_TOOLS", () => {
       >;
       expect(props.accountNames).toBeDefined();
       expect(props.accountNames.type).toBe("array");
+    });
+  });
+
+  describe("get_upcoming_bills", () => {
+    it("has no required fields (days defaults to 30)", () => {
+      const tool = FINANCIAL_TOOLS.find(
+        (t) => t.name === "get_upcoming_bills",
+      )!;
+      expect(tool.inputSchema.required).toBeUndefined();
+    });
+
+    it("supports kind with bill/deposit/transfer/investment/all", () => {
+      const tool = FINANCIAL_TOOLS.find(
+        (t) => t.name === "get_upcoming_bills",
+      )!;
+      const props = tool.inputSchema.properties as Record<
+        string,
+        Record<string, unknown>
+      >;
+      expect(props.kind.enum).toEqual([
+        "bill",
+        "deposit",
+        "transfer",
+        "investment",
+        "all",
+      ]);
+    });
+
+    it("supports optional accountNames filter", () => {
+      const tool = FINANCIAL_TOOLS.find(
+        (t) => t.name === "get_upcoming_bills",
+      )!;
+      const props = tool.inputSchema.properties as Record<
+        string,
+        Record<string, unknown>
+      >;
+      expect(props.accountNames).toBeDefined();
+      expect(props.accountNames.type).toBe("array");
+    });
+  });
+
+  describe("get_scheduled_transactions", () => {
+    it("has no required fields", () => {
+      const tool = FINANCIAL_TOOLS.find(
+        (t) => t.name === "get_scheduled_transactions",
+      )!;
+      expect(tool.inputSchema.required).toBeUndefined();
+    });
+
+    it("supports kind with bill/deposit/transfer/investment/all", () => {
+      const tool = FINANCIAL_TOOLS.find(
+        (t) => t.name === "get_scheduled_transactions",
+      )!;
+      const props = tool.inputSchema.properties as Record<
+        string,
+        Record<string, unknown>
+      >;
+      expect(props.kind.enum).toEqual([
+        "bill",
+        "deposit",
+        "transfer",
+        "investment",
+        "all",
+      ]);
+    });
+
+    it("exposes optional isActive boolean filter", () => {
+      const tool = FINANCIAL_TOOLS.find(
+        (t) => t.name === "get_scheduled_transactions",
+      )!;
+      const props = tool.inputSchema.properties as Record<
+        string,
+        Record<string, unknown>
+      >;
+      expect(props.isActive).toBeDefined();
+      expect(props.isActive.type).toBe("boolean");
     });
   });
 

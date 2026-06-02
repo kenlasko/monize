@@ -579,6 +579,183 @@ describe("ScheduledTransactionsService", () => {
     });
   });
 
+  describe("getLlmUpcomingBillsAndDeposits", () => {
+    it("classifies bills, deposits, transfers, and investments", async () => {
+      const rows = [
+        makeScheduled({
+          id: "s1",
+          name: "Rent",
+          amount: -1200,
+          account: { name: "Checking" } as any,
+        }),
+        makeScheduled({
+          id: "s2",
+          name: "Paycheck",
+          amount: 3000,
+          account: { name: "Checking" } as any,
+        }),
+        makeScheduled({
+          id: "s3",
+          name: "Move to Savings",
+          amount: -500,
+          isTransfer: true,
+          transferAccountId: "acc-2",
+          account: { name: "Checking" } as any,
+        }),
+        makeScheduled({
+          id: "s4",
+          name: "DRIP",
+          amount: -100,
+          isInvestment: true,
+          investmentAction: "BUY" as any,
+          account: { name: "Brokerage" } as any,
+        }),
+      ];
+      const qb = mockQueryBuilder(rows);
+      scheduledRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const result = await service.getLlmUpcomingBillsAndDeposits(userId);
+
+      expect(result.itemCount).toBe(4);
+      const kinds = result.items.map((i) => i.kind).sort();
+      expect(kinds).toEqual(["bill", "deposit", "investment", "transfer"]);
+      expect(result.totalUpcomingBills).toBe(1200);
+      expect(result.totalUpcomingDeposits).toBe(3000);
+    });
+
+    it("filters by kind", async () => {
+      const rows = [
+        makeScheduled({ id: "s1", amount: -100 }),
+        makeScheduled({ id: "s2", amount: 200 }),
+      ];
+      const qb = mockQueryBuilder(rows);
+      scheduledRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const result = await service.getLlmUpcomingBillsAndDeposits(userId, {
+        kind: "bill",
+      });
+
+      expect(result.itemCount).toBe(1);
+      expect(result.items[0].kind).toBe("bill");
+      expect(result.totalUpcomingDeposits).toBe(0);
+    });
+
+    it("filters by accountIds", async () => {
+      const rows = [
+        makeScheduled({ id: "s1", accountId: "acc-1", amount: -100 }),
+        makeScheduled({ id: "s2", accountId: "acc-2", amount: -200 }),
+      ];
+      const qb = mockQueryBuilder(rows);
+      scheduledRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const result = await service.getLlmUpcomingBillsAndDeposits(userId, {
+        accountIds: ["acc-2"],
+      });
+
+      expect(result.itemCount).toBe(1);
+      expect(result.items[0].id).toBe("s2");
+    });
+
+    it("counts overdue items (negative daysUntilDue)", async () => {
+      const rows = [
+        makeScheduled({
+          id: "s1",
+          amount: -100,
+          nextDueDate: "2000-01-01",
+        }),
+      ];
+      const qb = mockQueryBuilder(rows);
+      scheduledRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const result = await service.getLlmUpcomingBillsAndDeposits(userId);
+
+      expect(result.overdueCount).toBe(1);
+      expect(result.items[0].daysUntilDue).toBeLessThan(0);
+    });
+
+    it("returns daysWindow matching the days argument", async () => {
+      const qb = mockQueryBuilder([]);
+      scheduledRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const result = await service.getLlmUpcomingBillsAndDeposits(userId, {
+        days: 14,
+      });
+
+      expect(result.daysWindow).toBe(14);
+    });
+  });
+
+  describe("getLlmScheduledList", () => {
+    const stubFindAllReturns = (rows: ScheduledTransaction[]) => {
+      const stQb = mockQueryBuilder(rows);
+      scheduledRepo.createQueryBuilder.mockReturnValue(stQb);
+      const nextQb = mockQueryBuilder([]);
+      nextQb.getMany.mockResolvedValue([]);
+      const futureQb = mockQueryBuilder([]);
+      futureQb.getMany.mockResolvedValue([]);
+      overridesRepo.createQueryBuilder
+        .mockReturnValueOnce(nextQb)
+        .mockReturnValueOnce(futureQb);
+    };
+
+    it("returns rollup counts and curated items", async () => {
+      stubFindAllReturns([
+        makeScheduled({ id: "s1", amount: -100, autoPost: true }),
+        makeScheduled({ id: "s2", amount: 500, autoPost: false }),
+        makeScheduled({ id: "s3", amount: -200, isActive: false }),
+      ]);
+
+      const result = await service.getLlmScheduledList(userId);
+
+      expect(result.totalCount).toBe(3);
+      expect(result.activeCount).toBe(2);
+      expect(result.autoPostCount).toBe(1);
+      expect(result.billCount).toBe(2);
+      expect(result.depositCount).toBe(1);
+    });
+
+    it("filters by isActive=false", async () => {
+      stubFindAllReturns([
+        makeScheduled({ id: "s1", amount: -100, isActive: true }),
+        makeScheduled({ id: "s2", amount: -200, isActive: false }),
+      ]);
+
+      const result = await service.getLlmScheduledList(userId, {
+        isActive: false,
+      });
+
+      expect(result.totalCount).toBe(1);
+      expect(result.items[0].id).toBe("s2");
+    });
+
+    it("filters by kind=deposit", async () => {
+      stubFindAllReturns([
+        makeScheduled({ id: "s1", amount: -100 }),
+        makeScheduled({ id: "s2", amount: 500 }),
+      ]);
+
+      const result = await service.getLlmScheduledList(userId, {
+        kind: "deposit",
+      });
+
+      expect(result.totalCount).toBe(1);
+      expect(result.items[0].kind).toBe("deposit");
+    });
+
+    it("treats kind='all' as no filter", async () => {
+      stubFindAllReturns([
+        makeScheduled({ id: "s1", amount: -100 }),
+        makeScheduled({ id: "s2", amount: 500 }),
+      ]);
+
+      const result = await service.getLlmScheduledList(userId, {
+        kind: "all",
+      });
+
+      expect(result.totalCount).toBe(2);
+    });
+  });
+
   // ==================== update ====================
   describe("update", () => {
     it("should update simple fields", async () => {

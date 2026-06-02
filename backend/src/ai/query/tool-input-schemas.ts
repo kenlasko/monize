@@ -130,6 +130,31 @@ export const getBudgetStatusSchema = z.object({
   budgetName: z.string().max(100).optional(),
 });
 
+export const SCHEDULED_KINDS = [
+  "bill",
+  "deposit",
+  "transfer",
+  "investment",
+  "all",
+] as const;
+
+const scheduledKindSchema = z.preprocess(
+  (val) => (typeof val === "string" ? val.toLowerCase().trim() : val),
+  z.enum(SCHEDULED_KINDS),
+);
+
+export const getUpcomingBillsSchema = z.object({
+  days: positiveIntSchema(1, 365).optional(),
+  kind: scheduledKindSchema.optional(),
+  accountNames: z.array(z.string().max(100)).max(50).optional(),
+});
+
+export const getScheduledTransactionsSchema = z.object({
+  kind: scheduledKindSchema.optional(),
+  accountNames: z.array(z.string().max(100)).max(50).optional(),
+  isActive: z.boolean().optional(),
+});
+
 export const calculateSchema = z.object({
   operation: z.enum(["percentage", "difference", "ratio", "sum", "average"]),
   values: z.array(z.number()).min(1).max(100),
@@ -169,6 +194,8 @@ export const toolInputSchemas: Record<string, z.ZodSchema> = {
   get_capital_gains: getCapitalGainsSchema,
   get_transfers: getTransfersSchema,
   get_budget_status: getBudgetStatusSchema,
+  get_upcoming_bills: getUpcomingBillsSchema,
+  get_scheduled_transactions: getScheduledTransactionsSchema,
   calculate: calculateSchema,
   render_chart: renderChartSchema,
 };

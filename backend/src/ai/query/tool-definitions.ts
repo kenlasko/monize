@@ -355,6 +355,62 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
     },
   },
   {
+    name: "get_upcoming_bills",
+    description:
+      "Get upcoming scheduled bills and deposits due within a date window. Each item is classified as bill (scheduled outflow), deposit (scheduled inflow), transfer, or investment, and includes a daysUntilDue value (negative when overdue). Returns rollup totals for upcoming bills and deposits plus the per-item list. Use for questions like 'what bills are coming up', 'when is rent due', or 'what deposits am I expecting this month'.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        days: {
+          type: "integer",
+          minimum: 1,
+          maximum: 365,
+          description:
+            "Number of days to look ahead from today. Defaults to 30. Includes overdue items (daysUntilDue < 0) that have not been posted yet.",
+        },
+        kind: {
+          type: "string",
+          enum: ["bill", "deposit", "transfer", "investment", "all"],
+          description:
+            "Narrow to a single kind: 'bill' (scheduled outflow), 'deposit' (scheduled inflow), 'transfer' (between own accounts), or 'investment'. Omit or pass 'all' to include everything.",
+        },
+        accountNames: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Optional: filter to specific account names. Use exact names from the user's account list.",
+        },
+      },
+    },
+  },
+  {
+    name: "get_scheduled_transactions",
+    description:
+      "List all scheduled/recurring transactions (bills, deposits, transfers, investments), regardless of whether they're due soon. Returns rollup counts plus a curated per-item payload with kind, frequency, next due date, account, and amount. Use for questions like 'what recurring bills do I have', 'list all my scheduled deposits', or 'which schedules are paused'.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        kind: {
+          type: "string",
+          enum: ["bill", "deposit", "transfer", "investment", "all"],
+          description:
+            "Narrow to a single kind: 'bill' (scheduled outflow), 'deposit' (scheduled inflow), 'transfer' (between own accounts), or 'investment'. Omit or pass 'all' to include everything.",
+        },
+        accountNames: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Optional: filter to specific account names. Use exact names from the user's account list.",
+        },
+        isActive: {
+          type: "boolean",
+          description:
+            "Filter by active status. true = only active schedules, false = only paused. Omit to include both.",
+        },
+      },
+    },
+  },
+  {
     name: "get_budget_status",
     description:
       "Get budget status for a specific period. Returns total budgeted vs actual spending, per-category breakdowns, spending velocity, safe daily spend, and health score. Use for questions like 'how am I doing on my budget?', 'which categories am I overspending in?', or 'how much can I still spend this month?'.",

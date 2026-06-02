@@ -46,6 +46,55 @@ import {
 import { ActionHistoryService } from "../action-history/action-history.service";
 import { getUsersByEffectiveTimezone } from "../common/users-by-timezone.util";
 import { validateSplitAmountSum } from "../common/split-amount.util";
+import { roundMoney, sumMoney } from "../common/round.util";
+
+export type LlmScheduledKind = "bill" | "deposit" | "transfer" | "investment";
+
+export interface LlmScheduledItem {
+  id: string;
+  name: string;
+  accountId: string;
+  accountName: string;
+  payeeName: string | null;
+  categoryName: string | null;
+  amount: number;
+  currency: string;
+  frequency: FrequencyType;
+  nextDueDate: string;
+  daysUntilDue: number;
+  isActive: boolean;
+  autoPost: boolean;
+  kind: LlmScheduledKind;
+  description: string | null;
+}
+
+export interface LlmUpcomingScheduledResult {
+  daysWindow: number;
+  itemCount: number;
+  overdueCount: number;
+  totalUpcomingBills: number;
+  totalUpcomingDeposits: number;
+  items: LlmScheduledItem[];
+}
+
+export interface LlmScheduledListResult {
+  totalCount: number;
+  activeCount: number;
+  autoPostCount: number;
+  billCount: number;
+  depositCount: number;
+  items: LlmScheduledItem[];
+}
+
+export interface LlmScheduledFilter {
+  kind?: LlmScheduledKind | "all";
+  accountIds?: string[];
+  isActive?: boolean;
+}
+
+export interface LlmUpcomingFilter extends LlmScheduledFilter {
+  days?: number;
+}
 
 const INVESTMENT_RELATIONS = [
   "account",
@@ -682,6 +731,68 @@ export class ScheduledTransactionsService {
       .andWhere("st.nextDueDate <= :futureDate", { futureDate })
       .orderBy("st.nextDueDate", "ASC")
       .getMany();
+  }
+
+  /**
+   * Curated upcoming bills/deposits payload for AI Assistant and MCP. Both
+   * surfaces must return the same shape; the executor and MCP tool are thin
+   * adapters around this method.
+   *
+   * Items are classified by `kind` (bill / deposit / transfer / investment)
+   * so the LLM can answer "what bills are due" or "what deposits are coming
+   * in" without re-deriving sign or transfer/investment flags.
+   */
+  async getLlmUpcomingBillsAndDeposits(
+    userId: string,
+    filter: LlmUpcomingFilter = {},
+  ): Promise<LlmUpcomingScheduledResult> {
+    const days = filter.days ?? 30;
+    const rows = await this.findUpcoming(userId, days);
+    const today = todayYMD();
+    const items = rows
+      .map((r) => toLlmScheduledItem(r, today))
+      .filter((item) => matchesScheduledFilter(item, filter));
+
+    const billAmounts = items
+      .filter((i) => i.kind === "bill")
+      .map((i) => Math.abs(i.amount));
+    const depositAmounts = items
+      .filter((i) => i.kind === "deposit")
+      .map((i) => i.amount);
+
+    return {
+      daysWindow: days,
+      itemCount: items.length,
+      overdueCount: items.filter((i) => i.daysUntilDue < 0).length,
+      totalUpcomingBills: sumMoney(billAmounts),
+      totalUpcomingDeposits: sumMoney(depositAmounts),
+      items,
+    };
+  }
+
+  /**
+   * Curated list of all scheduled transactions (bills, deposits, transfers,
+   * investments) shaped for LLM consumption. Used by the AI Assistant and
+   * MCP `get_scheduled_transactions` tools so both return the same payload.
+   */
+  async getLlmScheduledList(
+    userId: string,
+    filter: LlmScheduledFilter = {},
+  ): Promise<LlmScheduledListResult> {
+    const rows = await this.findAll(userId);
+    const today = todayYMD();
+    const items = rows
+      .map((r) => toLlmScheduledItem(r, today))
+      .filter((item) => matchesScheduledFilter(item, filter));
+
+    return {
+      totalCount: items.length,
+      activeCount: items.filter((i) => i.isActive).length,
+      autoPostCount: items.filter((i) => i.autoPost).length,
+      billCount: items.filter((i) => i.kind === "bill").length,
+      depositCount: items.filter((i) => i.kind === "deposit").length,
+      items,
+    };
   }
 
   async update(
@@ -1432,4 +1543,60 @@ export class ScheduledTransactionsService {
       loanAccountId,
     );
   }
+}
+
+function classifyScheduledKind(row: ScheduledTransaction): LlmScheduledKind {
+  if (row.isTransfer) return "transfer";
+  if (row.isInvestment) return "investment";
+  return Number(row.amount) < 0 ? "bill" : "deposit";
+}
+
+function daysBetweenYMD(fromYMD: string, toYMD: string): number {
+  const from = new Date(`${fromYMD}T00:00:00.000Z`).getTime();
+  const to = new Date(`${toYMD}T00:00:00.000Z`).getTime();
+  return Math.round((to - from) / (1000 * 60 * 60 * 24));
+}
+
+function toLlmScheduledItem(
+  row: ScheduledTransaction,
+  todayYMDStr: string,
+): LlmScheduledItem {
+  const nextDueDate = ensureYMD(row.nextDueDate);
+  return {
+    id: row.id,
+    name: row.name,
+    accountId: row.accountId,
+    accountName: row.account?.name ?? "",
+    payeeName: row.payee?.name ?? row.payeeName ?? null,
+    categoryName: row.category?.name ?? null,
+    amount: roundMoney(Number(row.amount)),
+    currency: row.currencyCode,
+    frequency: row.frequency,
+    nextDueDate,
+    daysUntilDue: daysBetweenYMD(todayYMDStr, nextDueDate),
+    isActive: row.isActive,
+    autoPost: row.autoPost,
+    kind: classifyScheduledKind(row),
+    description: row.description ?? null,
+  };
+}
+
+function matchesScheduledFilter(
+  item: LlmScheduledItem,
+  filter: LlmScheduledFilter,
+): boolean {
+  if (filter.kind && filter.kind !== "all" && item.kind !== filter.kind) {
+    return false;
+  }
+  if (filter.isActive !== undefined && item.isActive !== filter.isActive) {
+    return false;
+  }
+  if (
+    filter.accountIds &&
+    filter.accountIds.length > 0 &&
+    !filter.accountIds.includes(item.accountId)
+  ) {
+    return false;
+  }
+  return true;
 }

@@ -12,6 +12,10 @@ import {
   LlmInvestmentTxGroupBy,
 } from "../../securities/investment-transactions.service";
 import { InvestmentAction } from "../../securities/entities/investment-transaction.entity";
+import {
+  ScheduledTransactionsService,
+  LlmScheduledKind,
+} from "../../scheduled-transactions/scheduled-transactions.service";
 import { validateToolInput } from "./tool-input-schemas";
 import { executeCalculation, CalculateInput } from "./calculate-tool";
 import { sanitizePromptValue } from "../../common/sanitization.util";
@@ -45,6 +49,8 @@ export class ToolExecutorService {
     private readonly budgetReportsService: BudgetReportsService,
     private readonly portfolioService: PortfolioService,
     private readonly investmentTransactionsService: InvestmentTransactionsService,
+    @Inject(forwardRef(() => ScheduledTransactionsService))
+    private readonly scheduledTransactionsService: ScheduledTransactionsService,
   ) {}
 
   async execute(
@@ -113,6 +119,12 @@ export class ToolExecutorService {
           break;
         case "get_budget_status":
           result = await this.getBudgetStatus(userId, validatedInput);
+          break;
+        case "get_upcoming_bills":
+          result = await this.getUpcomingBills(userId, validatedInput);
+          break;
+        case "get_scheduled_transactions":
+          result = await this.getScheduledTransactions(userId, validatedInput);
           break;
         case "calculate":
           result = this.calculate(validatedInput);
@@ -645,6 +657,72 @@ export class ToolExecutorService {
           type: "budget",
           description: `Budget status for "${data.budgetName}"`,
           dateRange: `${data.period.start} to ${data.period.end}`,
+        },
+      ],
+    };
+  }
+
+  private async getUpcomingBills(
+    userId: string,
+    input: Record<string, unknown>,
+  ): Promise<ToolResult> {
+    const days = (input.days as number | undefined) ?? 30;
+    const kind = input.kind as LlmScheduledKind | "all" | undefined;
+    const accountNames = input.accountNames as string[] | undefined;
+    const accountIds = await this.resolveAccountIds(userId, accountNames);
+
+    const data =
+      await this.scheduledTransactionsService.getLlmUpcomingBillsAndDeposits(
+        userId,
+        { days, kind, accountIds },
+      );
+
+    const kindDesc =
+      !kind || kind === "all" ? "bills and deposits" : `${kind}s`;
+    const overduePart =
+      data.overdueCount > 0 ? `, ${data.overdueCount} overdue` : "";
+    return {
+      data,
+      summary: `${data.itemCount} upcoming ${kindDesc} in the next ${days} day${days === 1 ? "" : "s"}${overduePart}. Bills: ${data.totalUpcomingBills.toFixed(2)}, Deposits: ${data.totalUpcomingDeposits.toFixed(2)}.`,
+      sources: [
+        {
+          type: "scheduled_transactions",
+          description: accountNames
+            ? `Upcoming ${kindDesc} for ${accountNames.join(", ")}`
+            : `Upcoming ${kindDesc}`,
+          dateRange: `next ${days} day${days === 1 ? "" : "s"}`,
+        },
+      ],
+    };
+  }
+
+  private async getScheduledTransactions(
+    userId: string,
+    input: Record<string, unknown>,
+  ): Promise<ToolResult> {
+    const kind = input.kind as LlmScheduledKind | "all" | undefined;
+    const accountNames = input.accountNames as string[] | undefined;
+    const isActive = input.isActive as boolean | undefined;
+    const accountIds = await this.resolveAccountIds(userId, accountNames);
+
+    const data = await this.scheduledTransactionsService.getLlmScheduledList(
+      userId,
+      { kind, accountIds, isActive },
+    );
+
+    const kindDesc =
+      !kind || kind === "all" ? "scheduled transactions" : `scheduled ${kind}s`;
+    const statusDesc =
+      isActive === true ? " active" : isActive === false ? " paused" : "";
+    return {
+      data,
+      summary: `${data.totalCount}${statusDesc} ${kindDesc} (${data.activeCount} active, ${data.autoPostCount} auto-posting, ${data.billCount} bills, ${data.depositCount} deposits).`,
+      sources: [
+        {
+          type: "scheduled_transactions",
+          description: accountNames
+            ? `Scheduled ${kindDesc} for ${accountNames.join(", ")}`
+            : `All scheduled ${kindDesc}`,
         },
       ],
     };

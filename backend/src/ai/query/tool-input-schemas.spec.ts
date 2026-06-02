@@ -11,6 +11,8 @@ import {
   queryInvestmentTransactionsSchema,
   getTransfersSchema,
   getBudgetStatusSchema,
+  getUpcomingBillsSchema,
+  getScheduledTransactionsSchema,
   calculateSchema,
   renderChartSchema,
 } from "./tool-input-schemas";
@@ -550,6 +552,92 @@ describe("tool-input-schemas", () => {
         budgetName: "a".repeat(101),
       });
       expect(result.success).toBe(false);
+    });
+  });
+
+  describe("getUpcomingBillsSchema", () => {
+    it("accepts empty input (days defaults via executor)", () => {
+      const result = getUpcomingBillsSchema.safeParse({});
+      expect(result.success).toBe(true);
+    });
+
+    it("accepts days within range", () => {
+      const result = getUpcomingBillsSchema.safeParse({ days: 7 });
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects days over 365", () => {
+      const result = getUpcomingBillsSchema.safeParse({ days: 400 });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects days of 0", () => {
+      const result = getUpcomingBillsSchema.safeParse({ days: 0 });
+      expect(result.success).toBe(false);
+    });
+
+    it("accepts every valid kind", () => {
+      for (const kind of ["bill", "deposit", "transfer", "investment", "all"]) {
+        const result = getUpcomingBillsSchema.safeParse({ kind });
+        expect(result.success).toBe(true);
+      }
+    });
+
+    it("normalizes uppercase/whitespace kind via preprocess", () => {
+      const result = getUpcomingBillsSchema.safeParse({ kind: " BILL " });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.kind).toBe("bill");
+      }
+    });
+
+    it("rejects unknown kind", () => {
+      const result = getUpcomingBillsSchema.safeParse({ kind: "loan" });
+      expect(result.success).toBe(false);
+    });
+
+    it("accepts accountNames filter", () => {
+      const result = getUpcomingBillsSchema.safeParse({
+        accountNames: ["Checking"],
+      });
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe("getScheduledTransactionsSchema", () => {
+    it("accepts empty input", () => {
+      const result = getScheduledTransactionsSchema.safeParse({});
+      expect(result.success).toBe(true);
+    });
+
+    it("accepts kind, accountNames, and isActive", () => {
+      const result = getScheduledTransactionsSchema.safeParse({
+        kind: "deposit",
+        accountNames: ["Savings"],
+        isActive: true,
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects unknown kind", () => {
+      const result = getScheduledTransactionsSchema.safeParse({
+        kind: "subscription",
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects non-boolean isActive", () => {
+      const result = getScheduledTransactionsSchema.safeParse({
+        isActive: "yes",
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("routes through validateToolInput", () => {
+      const result = validateToolInput("get_scheduled_transactions", {
+        kind: "bill",
+      });
+      expect(result.success).toBe(true);
     });
   });
 

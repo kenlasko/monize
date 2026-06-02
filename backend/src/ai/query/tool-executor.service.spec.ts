@@ -7,6 +7,7 @@ import { NetWorthService } from "../../net-worth/net-worth.service";
 import { BudgetReportsService } from "../../budgets/budget-reports.service";
 import { PortfolioService } from "../../securities/portfolio.service";
 import { InvestmentTransactionsService } from "../../securities/investment-transactions.service";
+import { ScheduledTransactionsService } from "../../scheduled-transactions/scheduled-transactions.service";
 
 describe("ToolExecutorService", () => {
   let service: ToolExecutorService;
@@ -17,6 +18,7 @@ describe("ToolExecutorService", () => {
   let portfolio: Record<string, jest.Mock>;
   let investmentTransactions: Record<string, jest.Mock>;
   let categories: Record<string, jest.Mock>;
+  let scheduledTransactions: Record<string, jest.Mock>;
 
   const userId = "user-1";
 
@@ -181,6 +183,25 @@ describe("ToolExecutorService", () => {
       }),
     };
 
+    scheduledTransactions = {
+      getLlmUpcomingBillsAndDeposits: jest.fn().mockResolvedValue({
+        daysWindow: 30,
+        itemCount: 2,
+        overdueCount: 1,
+        totalUpcomingBills: 1200,
+        totalUpcomingDeposits: 3000,
+        items: [],
+      }),
+      getLlmScheduledList: jest.fn().mockResolvedValue({
+        totalCount: 3,
+        activeCount: 2,
+        autoPostCount: 1,
+        billCount: 2,
+        depositCount: 1,
+        items: [],
+      }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ToolExecutorService,
@@ -193,6 +214,10 @@ describe("ToolExecutorService", () => {
         {
           provide: InvestmentTransactionsService,
           useValue: investmentTransactions,
+        },
+        {
+          provide: ScheduledTransactionsService,
+          useValue: scheduledTransactions,
         },
       ],
     }).compile();
@@ -622,6 +647,69 @@ describe("ToolExecutorService", () => {
         undefined,
       );
       expect(result.sources[0].type).toBe("budget");
+    });
+
+    it("get_upcoming_bills delegates to scheduledTransactions.getLlmUpcomingBillsAndDeposits", async () => {
+      const result = await service.execute(userId, "get_upcoming_bills", {});
+
+      expect(
+        scheduledTransactions.getLlmUpcomingBillsAndDeposits,
+      ).toHaveBeenCalledWith(userId, {
+        days: 30,
+        kind: undefined,
+        accountIds: undefined,
+      });
+      expect(result.sources[0].type).toBe("scheduled_transactions");
+      expect(result.summary).toContain("upcoming");
+      expect(result.summary).toContain("Bills: 1200.00");
+      expect(result.summary).toContain("Deposits: 3000.00");
+      expect(result.summary).toContain("1 overdue");
+    });
+
+    it("get_upcoming_bills passes through days, kind, and resolves account names", async () => {
+      await service.execute(userId, "get_upcoming_bills", {
+        days: 7,
+        kind: "bill",
+        accountNames: ["Checking"],
+      });
+
+      expect(accounts.findAll).toHaveBeenCalledWith(userId, false);
+      expect(
+        scheduledTransactions.getLlmUpcomingBillsAndDeposits,
+      ).toHaveBeenCalledWith(userId, {
+        days: 7,
+        kind: "bill",
+        accountIds: ["acc-1"],
+      });
+    });
+
+    it("get_scheduled_transactions delegates to scheduledTransactions.getLlmScheduledList", async () => {
+      const result = await service.execute(
+        userId,
+        "get_scheduled_transactions",
+        {},
+      );
+
+      expect(scheduledTransactions.getLlmScheduledList).toHaveBeenCalledWith(
+        userId,
+        { kind: undefined, accountIds: undefined, isActive: undefined },
+      );
+      expect(result.sources[0].type).toBe("scheduled_transactions");
+      expect(result.summary).toContain("2 active");
+      expect(result.summary).toContain("1 auto-posting");
+    });
+
+    it("get_scheduled_transactions passes kind, account names, and isActive filter", async () => {
+      await service.execute(userId, "get_scheduled_transactions", {
+        kind: "deposit",
+        accountNames: ["Checking"],
+        isActive: false,
+      });
+
+      expect(scheduledTransactions.getLlmScheduledList).toHaveBeenCalledWith(
+        userId,
+        { kind: "deposit", accountIds: ["acc-1"], isActive: false },
+      );
     });
 
     it("calculate runs locally without hitting any service", async () => {
