@@ -169,7 +169,7 @@ describe('ReportChart', () => {
         payee: 'Store A',
         description: 'Groceries shopping',
         memo: 'Weekly groceries',
-        category: 'Food',
+        category: 'Food: Fast Food',
         account: 'Chequing',
       },
     ];
@@ -201,6 +201,8 @@ describe('ReportChart', () => {
     expect(screen.getByText('Count')).toBeInTheDocument();
     expect(screen.getByText('Store A')).toBeInTheDocument();
     expect(screen.getByText('Weekly groceries')).toBeInTheDocument();
+    // Category column shows 'Parent: Child' format for subcategories
+    expect(screen.getByText('Food: Fast Food')).toBeInTheDocument();
   });
 
   it('renders dash for missing optional fields', () => {

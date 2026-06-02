@@ -362,10 +362,12 @@ export class ReportsService {
       .createQueryBuilder("transaction")
       .leftJoinAndSelect("transaction.account", "account")
       .leftJoinAndSelect("transaction.category", "category")
+      .leftJoinAndSelect("category.parent", "categoryParent")
       .leftJoinAndSelect("transaction.payee", "payee")
       .leftJoinAndSelect("transaction.tags", "tags")
       .leftJoinAndSelect("transaction.splits", "splits")
       .leftJoinAndSelect("splits.category", "splitCategory")
+      .leftJoinAndSelect("splitCategory.parent", "splitCategoryParent")
       .leftJoinAndSelect("splits.tags", "splitTags")
       .where("transaction.userId = :userId", { userId })
       .andWhere("transaction.transactionDate >= :startDate", { startDate })
@@ -591,6 +593,14 @@ export class ReportsService {
     }
   }
 
+  private formatCategoryLabel(
+    category: Category | null | undefined,
+  ): string | undefined {
+    if (!category) return undefined;
+    if (category.parent) return `${category.parent.name}: ${category.name}`;
+    return category.name;
+  }
+
   private aggregateNoGrouping(
     transactions: Transaction[],
     metric: MetricType,
@@ -613,7 +623,7 @@ export class ReportsService {
               payee: tx.payeeName || tx.payee?.name || undefined,
               description: tx.description || undefined,
               memo: split.memo || undefined,
-              category: split.category?.name || undefined,
+              category: this.formatCategoryLabel(split.category),
               account: tx.account?.name || undefined,
             });
           }
@@ -628,7 +638,7 @@ export class ReportsService {
             payee: tx.payeeName || tx.payee?.name || undefined,
             description: tx.description || undefined,
             memo: undefined, // Transactions don't have memo, only splits do
-            category: tx.category?.name || undefined,
+            category: this.formatCategoryLabel(tx.category),
             account: tx.account?.name || undefined,
           });
         }
@@ -702,9 +712,17 @@ export class ReportsService {
     const result: AggregatedDataPoint[] = [];
     for (const [categoryId, data] of dataMap) {
       const category = categoryMap.get(categoryId);
+      const parent = category?.parentId
+        ? categoryMap.get(category.parentId)
+        : null;
+      const label = category
+        ? parent
+          ? `${parent.name}: ${category.name}`
+          : category.name
+        : "Uncategorized";
       result.push({
         id: categoryId,
-        label: category?.name || "Uncategorized",
+        label,
         value: this.calculateMetricValue(data.sum, data.count, metric),
         color: category?.color || undefined,
         percentage: totalSum > 0 ? (data.sum / totalSum) * 100 : 0,

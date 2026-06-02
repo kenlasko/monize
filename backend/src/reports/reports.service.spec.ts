@@ -888,6 +888,68 @@ describe("ReportsService", () => {
         expect(result.data[1].memo).toBe("Cleaning supplies");
       });
 
+      it("renders category as 'Parent: Child' for subcategories on individual transactions", async () => {
+        const parentCategory = {
+          ...mockCategory,
+          id: "cat-parent",
+          name: "Food",
+          parentId: null,
+          parent: null,
+        };
+        const childCategory = {
+          ...mockCategory,
+          id: "cat-child",
+          name: "Fast Food",
+          parentId: "cat-parent",
+          parent: parentCategory,
+        };
+        const transactions = [
+          createMockTransaction({
+            id: "tx-1",
+            amount: -25,
+            categoryId: "cat-child",
+            category: childCategory,
+          }),
+          createMockTransaction({
+            id: "tx-2",
+            amount: -10,
+            categoryId: "cat-1",
+            category: { ...mockCategory, parent: null } as Category,
+          }),
+          createMockTransaction({
+            id: "tx-3",
+            amount: -100,
+            isSplit: true,
+            splits: [
+              {
+                id: "split-1",
+                transactionId: "tx-3",
+                categoryId: "cat-child",
+                category: childCategory,
+                amount: -60,
+                memo: "Burgers",
+              } as any,
+            ],
+          }),
+        ];
+        setupExecuteMocks(
+          {
+            groupBy: GroupByType.NONE,
+            config: { ...defaultConfig, metric: MetricType.NONE },
+          },
+          transactions,
+        );
+
+        const result = await service.execute("user-1", "report-1");
+
+        expect(result.data).toHaveLength(3);
+        expect(result.data[0].category).toBe("Food: Fast Food");
+        // Top-level category keeps just its name
+        expect(result.data[1].category).toBe("Groceries");
+        // Split with subcategory also includes parent prefix
+        expect(result.data[2].category).toBe("Food: Fast Food");
+      });
+
       it("handles split transactions with TOTAL_AMOUNT metric by summing split amounts", async () => {
         const transactions = [
           createMockTransaction({
@@ -1011,6 +1073,50 @@ describe("ReportsService", () => {
         const dining = result.data.find((d) => d.label === "Dining");
         expect(groceries!.value).toBe(60);
         expect(dining!.value).toBe(40);
+      });
+
+      it("labels subcategories with their parent in 'Parent: Child' format", async () => {
+        const transactions = [
+          createMockTransaction({
+            id: "tx-1",
+            categoryId: "cat-child",
+            amount: -40,
+          }),
+          createMockTransaction({
+            id: "tx-2",
+            categoryId: "cat-1",
+            amount: -10,
+          }),
+        ];
+        const categories = [
+          mockCategory,
+          {
+            ...mockCategory,
+            id: "cat-child",
+            name: "Fast Food",
+            parentId: "cat-parent",
+          },
+          { ...mockCategory, id: "cat-parent", name: "Food", parentId: null },
+        ];
+        setupExecuteMocks(
+          {
+            groupBy: GroupByType.CATEGORY,
+            config: { ...defaultConfig, metric: MetricType.TOTAL_AMOUNT },
+          },
+          transactions,
+        );
+        categoriesRepository.find.mockResolvedValue(categories);
+
+        const result = await service.execute("user-1", "report-1");
+
+        expect(result.data).toHaveLength(2);
+        expect(result.data.find((d) => d.id === "cat-child")!.label).toBe(
+          "Food: Fast Food",
+        );
+        // Top-level category keeps its simple name
+        expect(result.data.find((d) => d.id === "cat-1")!.label).toBe(
+          "Groceries",
+        );
       });
 
       it("calculates percentages for category aggregation", async () => {
@@ -1949,9 +2055,11 @@ describe("ReportsService", () => {
         );
         expect(joinCalls).toContain("transaction.account");
         expect(joinCalls).toContain("transaction.category");
+        expect(joinCalls).toContain("category.parent");
         expect(joinCalls).toContain("transaction.payee");
         expect(joinCalls).toContain("transaction.splits");
         expect(joinCalls).toContain("splits.category");
+        expect(joinCalls).toContain("splitCategory.parent");
       });
     });
 
