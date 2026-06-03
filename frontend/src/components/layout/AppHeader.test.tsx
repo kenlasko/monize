@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@/test/render';
 import { AppHeader } from './AppHeader';
 
@@ -517,5 +517,30 @@ describe('AppHeader', () => {
     expect(screen.queryByText('test@example.com')).not.toBeInTheDocument();
     // Admin link should not appear
     expect(screen.queryByText('Admin')).not.toBeInTheDocument();
+  });
+
+  describe('header offset CSS variable', () => {
+    afterEach(() => {
+      document.documentElement.style.removeProperty('--app-header-offset');
+    });
+
+    it('publishes the current header offset so sticky sub-navs can anchor to it', () => {
+      render(<AppHeader />);
+      // Header starts fully visible: offset is 0 until the user scrolls.
+      expect(
+        document.documentElement.style.getPropertyValue('--app-header-offset'),
+      ).toBe('0px');
+    });
+
+    it('clears the offset variable when the header unmounts', () => {
+      const { unmount } = render(<AppHeader />);
+      expect(
+        document.documentElement.style.getPropertyValue('--app-header-offset'),
+      ).toBe('0px');
+      unmount();
+      expect(
+        document.documentElement.style.getPropertyValue('--app-header-offset'),
+      ).toBe('');
+    });
   });
 });

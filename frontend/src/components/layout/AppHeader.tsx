@@ -156,6 +156,17 @@ export function AppHeader() {
   const anyMenuOpen = mobileMenuOpen || searchOpen || toolsOpen || aiOpen;
   const headerOffset = anyMenuOpen ? 0 : scrollOffset;
 
+  // Publish how far the header is currently slid up so sticky sub-navigation
+  // (e.g. the Settings menu) can anchor to the header instead of floating where
+  // the header used to be once it slides out of view.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--app-header-offset', `${headerOffset}px`);
+    return () => {
+      root.style.removeProperty('--app-header-offset');
+    };
+  }, [headerOffset]);
+
   const handleLogout = async () => {
     try {
       await authApi.logout();
