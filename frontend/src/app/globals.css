@@ -52,6 +52,14 @@ body {
   @apply bg-gray-900 text-gray-100;
 }
 
+/* Tabular figures across the whole app so numeric values (balances, amounts,
+   prices, quantities, percentages) align with fixed-width digits wherever they
+   appear -- tables, cards, grid/flex widgets, inputs. This is purely a
+   glyph-width change for digits; non-numeric text is unaffected. */
+body {
+  font-variant-numeric: tabular-nums;
+}
+
 /* Category badge colour variables for light/dark mode */
 :root {
   --category-bg-base: #e5e7eb;

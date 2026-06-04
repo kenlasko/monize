@@ -217,19 +217,19 @@ export function SecurityPriceHistory({ security, onClose }: SecurityPriceHistory
                   <td className="px-3 py-2 text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap">
                     {formatDate(price.priceDate)}
                   </td>
-                  <td className="px-3 py-2 text-sm text-gray-900 dark:text-gray-100 text-right tabular-nums">
+                  <td className="px-3 py-2 text-sm text-gray-900 dark:text-gray-100 text-right">
                     {formatPrice(price.closePrice)}
                   </td>
-                  <td className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 text-right tabular-nums hidden sm:table-cell">
+                  <td className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 text-right hidden sm:table-cell">
                     {formatPrice(price.openPrice)}
                   </td>
-                  <td className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 text-right tabular-nums hidden sm:table-cell">
+                  <td className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 text-right hidden sm:table-cell">
                     {formatPrice(price.highPrice)}
                   </td>
-                  <td className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 text-right tabular-nums hidden sm:table-cell">
+                  <td className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 text-right hidden sm:table-cell">
                     {formatPrice(price.lowPrice)}
                   </td>
-                  <td className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 text-right tabular-nums hidden md:table-cell">
+                  <td className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 text-right hidden md:table-cell">
                     {price.volume !== null ? Number(price.volume).toLocaleString() : '-'}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">

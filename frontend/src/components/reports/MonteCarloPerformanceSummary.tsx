@@ -140,19 +140,19 @@ export function PerformanceSummaryTable({
                 {row.label}
                 <InfoTooltip text={row.description} />
               </td>
-              <td className="px-3 py-1.5 text-right tabular-nums">
+              <td className="px-3 py-1.5 text-right">
                 {formatValue(row.band.p10, row.format)}
               </td>
-              <td className="px-3 py-1.5 text-right tabular-nums">
+              <td className="px-3 py-1.5 text-right">
                 {formatValue(row.band.p25, row.format)}
               </td>
-              <td className="px-3 py-1.5 text-right tabular-nums font-semibold text-gray-900 dark:text-gray-100 bg-blue-50 dark:bg-blue-900/30">
+              <td className="px-3 py-1.5 text-right font-semibold text-gray-900 dark:text-gray-100 bg-blue-50 dark:bg-blue-900/30">
                 {formatValue(row.band.p50, row.format)}
               </td>
-              <td className="px-3 py-1.5 text-right tabular-nums">
+              <td className="px-3 py-1.5 text-right">
                 {formatValue(row.band.p75, row.format)}
               </td>
-              <td className="px-3 py-1.5 text-right tabular-nums">
+              <td className="px-3 py-1.5 text-right">
                 {formatValue(row.band.p90, row.format)}
               </td>
             </tr>

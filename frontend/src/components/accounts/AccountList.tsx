@@ -706,7 +706,7 @@ export function AccountList({ accounts, brokerageMarketValues, defaultCurrency, 
                   <td className="hidden md:table-cell" aria-hidden="true" />
                   <td className={`${cellPadding} text-right whitespace-nowrap`}>
                     <span
-                      className={`text-sm font-medium tabular-nums ${
+                      className={`text-sm font-medium ${
                         item.total >= 0
                           ? 'text-gray-700 dark:text-gray-200'
                           : 'text-red-600 dark:text-red-400'
