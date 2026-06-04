@@ -413,7 +413,7 @@ export function InvestmentReportViewer({ reportId }: InvestmentReportViewerProps
                               key={key}
                               className={`px-3 py-2 text-sm whitespace-nowrap ${
                                 numeric
-                                  ? 'text-right tabular-nums text-gray-900 dark:text-gray-100'
+                                  ? 'text-right text-gray-900 dark:text-gray-100'
                                   : 'text-gray-700 dark:text-gray-300'
                               }`}
                             >

@@ -226,7 +226,7 @@ function GroupBlock({
             return (
               <td
                 key={col.id}
-                className="px-3 py-1.5 text-gray-900 dark:text-gray-100 tabular-nums"
+                className="px-3 py-1.5 text-gray-900 dark:text-gray-100"
               >
                 {formatCellValue(value, row.format, formatCurrency)}
               </td>

@@ -166,7 +166,7 @@ export const AccountRow = memo(function AccountRow({
       <td className={`${cellPadding} whitespace-nowrap text-right ${account.isClosed ? 'opacity-50' : ''}`}>
         {account.accountSubType === 'INVESTMENT_BROKERAGE' && brokerageMarketValue !== undefined ? (
           <>
-            <div className="text-sm font-medium tabular-nums text-green-600 dark:text-green-400">
+            <div className="text-sm font-medium text-green-600 dark:text-green-400">
               {formatCurrency(brokerageMarketValue, account.currencyCode)}
             </div>
             {density === 'normal' && (
@@ -175,7 +175,7 @@ export const AccountRow = memo(function AccountRow({
               </div>
             )}
             {density !== 'dense' && account.currencyCode !== defaultCurrency && (
-              <div className="text-xs tabular-nums text-gray-400 dark:text-gray-500">
+              <div className="text-xs text-gray-400 dark:text-gray-500">
                 {'\u2248 '}{formatCurrencyBase(convertToDefault(brokerageMarketValue, account.currencyCode), defaultCurrency)}
               </div>
             )}
@@ -187,14 +187,14 @@ export const AccountRow = memo(function AccountRow({
               return (
                 <>
                   <div
-                    className={`text-sm font-medium tabular-nums ${
+                    className={`text-sm font-medium ${
                       gainLossColor(totalBalance)
                     }`}
                   >
                     {formatCurrency(totalBalance, account.currencyCode)}
                   </div>
                   {density !== 'dense' && account.currencyCode !== defaultCurrency && (
-                    <div className="text-xs tabular-nums text-gray-400 dark:text-gray-500">
+                    <div className="text-xs text-gray-400 dark:text-gray-500">
                       {'\u2248 '}{formatCurrencyBase(convertToDefault(totalBalance, account.currencyCode), defaultCurrency)}
                     </div>
                   )}
@@ -202,7 +202,7 @@ export const AccountRow = memo(function AccountRow({
               );
             })()}
             {density !== 'dense' && account.creditLimit && (
-              <div className="text-xs tabular-nums text-gray-500 dark:text-gray-400">
+              <div className="text-xs text-gray-500 dark:text-gray-400">
                 Limit: {formatCurrency(account.creditLimit, account.currencyCode)}
               </div>
             )}

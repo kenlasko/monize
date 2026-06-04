@@ -52,6 +52,13 @@ body {
   @apply bg-gray-900 text-gray-100;
 }
 
+/* Tabular figures for all tables so numeric columns (balances, amounts,
+   prices, quantities, percentages) align with fixed-width digits. This is
+   purely a glyph-width change; non-numeric text is unaffected. */
+table {
+  font-variant-numeric: tabular-nums;
+}
+
 /* Category badge colour variables for light/dark mode */
 :root {
   --category-bg-base: #e5e7eb;
