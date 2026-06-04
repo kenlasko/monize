@@ -169,6 +169,10 @@ describe("PortfolioService", () => {
       // unset and conversions fall back to the stored getLatestRate path that
       // these tests configure. Tests for the live-rate path override this.
       getLiveRate: jest.fn().mockResolvedValue(null),
+      // Default: no stored daily history, so the intraday chart's date-aware
+      // FX fallback resolves nothing and drops through to the latest spot.
+      // Tests for the historical-fallback path override this.
+      getRateHistory: jest.fn().mockResolvedValue([]),
     };
 
     yahooFinanceService = {
@@ -3514,6 +3518,59 @@ describe("PortfolioService", () => {
       // ts1: 10 * 100 * 1.4 = 1400; ts2 keeps the same price but FX moved.
       expect(result.points[0].value).toBeCloseTo(1400, 4);
       expect(result.points[1].value).toBeCloseTo(10 * 100 * 1.5, 4);
+    });
+
+    it("values bars before the first intraday FX bar at the prior daily close, not the first intraday rate", async () => {
+      // Yahoo's intraday FX series often starts later than the price series
+      // (sparse leading data). Bars before the first FX bar must use the stored
+      // daily close for that date -- the rate that actually prevailed -- rather
+      // than backfilling the first intraday bar, which is a later, near-current
+      // rate. Regression test for the chart's start-of-day / earlier points
+      // drifting while only the latest point stayed correct.
+      accountsRepository.find.mockResolvedValue([mockBrokerageAccount]);
+      holdingsRepository.find.mockResolvedValue([mockHoldingAAPL]);
+
+      const ts0 = new Date("2026-06-04T13:30:00.000Z");
+      const ts1 = new Date("2026-06-04T13:31:00.000Z");
+      const ts2 = new Date("2026-06-04T13:32:00.000Z");
+
+      yahooFinanceService.fetchIntradaySeries.mockResolvedValue([
+        { timestamp: ts0, close: 100 },
+        { timestamp: ts1, close: 100 },
+        { timestamp: ts2, close: 100 },
+      ]);
+      // FX series only covers ts1 and ts2 -- nothing at or before ts0.
+      yahooFinanceService.fetchIntradayFxSeries.mockImplementation(
+        async (from: string, to: string) => {
+          if (from === "USD" && to === "CAD") {
+            return [
+              { timestamp: ts1, close: 1.4 },
+              { timestamp: ts2, close: 1.5 },
+            ];
+          }
+          return null;
+        },
+      );
+      // Prior day's stored daily close used for the uncovered ts0 bar.
+      exchangeRateService.getRateHistory.mockResolvedValue([
+        {
+          fromCurrency: "USD",
+          toCurrency: "CAD",
+          rate: 1.3,
+          rateDate: "2026-06-03",
+        },
+      ]);
+      exchangeRateService.getLatestRate.mockResolvedValue(1.3);
+
+      const result = await service.getIntradayValueSeries(userId, {
+        range: "1d",
+      });
+
+      // ts0: no intraday FX yet -> prior daily close 1.3 (NOT the first
+      // intraday bar 1.4). ts1/ts2: per-bar intraday FX.
+      expect(result.points[0].value).toBeCloseTo(10 * 100 * 1.3, 4);
+      expect(result.points[1].value).toBeCloseTo(10 * 100 * 1.4, 4);
+      expect(result.points[2].value).toBeCloseTo(10 * 100 * 1.5, 4);
     });
 
     it("applies per-bar FX to cash held in a foreign currency", async () => {

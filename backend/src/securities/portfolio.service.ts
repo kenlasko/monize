@@ -5,11 +5,15 @@ import { Holding } from "./entities/holding.entity";
 import { SecurityPrice } from "./entities/security-price.entity";
 import { Account, AccountType } from "../accounts/entities/account.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
-import { PortfolioCalculationService } from "./portfolio-calculation.service";
+import {
+  PortfolioCalculationService,
+  DailyRateIndex,
+} from "./portfolio-calculation.service";
 import { YahooFinanceService } from "./yahoo-finance.service";
 import { QuoteProviderRegistry } from "./providers/quote-provider.registry";
 import { roundMoney } from "../common/round.util";
 import { mapWithConcurrency } from "../common/concurrency.util";
+import { formatDateYMD } from "../common/date-utils";
 import {
   IntradayInterval,
   IntradayPoint,
@@ -1092,19 +1096,27 @@ export class PortfolioService {
           displayCurrency,
           rateCache,
         );
+        // Mirror the per-holding price fetch: try the primary interval, then
+        // any range-specific coarser fallbacks. Yahoo's narrowest FX intervals
+        // are the most rate-limited and most likely to return a short or empty
+        // series, which would otherwise leave the whole currency on a flat
+        // fallback rate. Walk up the ladder until one returns bars.
         let series: IntradayPoint[] | null = null;
-        try {
-          series = await this.yahooFinanceService.fetchIntradayFxSeries(
-            currency,
-            displayCurrency,
-            yahooParams,
-          );
-        } catch (error) {
-          this.logger.warn(
-            `Failed to fetch intraday FX ${currency}->${displayCurrency}: ${
-              error instanceof Error ? error.message : String(error)
-            }`,
-          );
+        for (const params of intervalCandidates) {
+          try {
+            series = await this.yahooFinanceService.fetchIntradayFxSeries(
+              currency,
+              displayCurrency,
+              params,
+            );
+            if (series && series.length > 0) break;
+          } catch (error) {
+            this.logger.warn(
+              `Failed to fetch intraday FX ${currency}->${displayCurrency} at ${params.interval}: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            );
+          }
         }
         fxByCurrency.set(currency, {
           times: series?.map((p) => p.timestamp.getTime()) ?? [],
@@ -1115,19 +1127,65 @@ export class PortfolioService {
       },
     );
 
-    // Walk each FX cursor monotonically as the grid advances; if no
-    // intraday FX series is available (failed fetch or same-currency),
-    // use the latest spot. Backfill the earliest known rate when the
-    // first FX bar arrives after the current grid timestamp.
+    // Stored daily-close FX history, used to value any grid bar the live
+    // intraday FX series does not cover (pre-market before the first bar of the
+    // day, weekend/holiday gaps on 1W/1M, or a currency whose intraday fetch
+    // failed). Without this such bars fall back to a single near-current rate,
+    // which makes the start of the day and earlier multi-day points drift while
+    // only the latest point -- backed by a live intraday bar -- stays correct.
+    // Over-fetch a couple of weeks before the grid so an at-or-before rate
+    // exists even for the first day.
+    const indexStart = formatDateYMD(
+      new Date(timestamps[0] - 14 * 24 * 60 * 60 * 1000),
+    );
+    const indexEnd = formatDateYMD(new Date(now));
+    const dailyRateIndex =
+      fxCurrencies.size > 0
+        ? await this.calculationService.buildDailyRateIndex(
+            fxCurrencies,
+            displayCurrency,
+            indexStart,
+            indexEnd,
+          )
+        : (new Map() as DailyRateIndex);
+    // Memoise the per-currency, per-date daily lookup -- fxAt is called once per
+    // currency per grid bar and the daily rate only changes by date.
+    const dailyRateCache = new Map<string, number | undefined>();
+    const dailyFxAt = (currency: string, ts: number): number | undefined => {
+      const dateStr = formatDateYMD(new Date(ts));
+      const memoKey = `${currency}|${dateStr}`;
+      if (dailyRateCache.has(memoKey)) return dailyRateCache.get(memoKey);
+      const rate = this.calculationService.resolveDailyRate(
+        dailyRateIndex,
+        currency,
+        displayCurrency,
+        dateStr,
+      );
+      dailyRateCache.set(memoKey, rate);
+      return rate;
+    };
+
+    // Walk each FX cursor monotonically as the grid advances. When an intraday
+    // FX bar exists at or before the current timestamp, value the bar at that
+    // live rate. Otherwise (before the first intraday bar, or no intraday series
+    // at all) fall back to the stored daily close for that bar's own date so
+    // historical points are valued at the rate that prevailed then -- not the
+    // first/latest intraday rate -- with the stored latest spot as a last
+    // resort when no daily history exists for the pair.
     const fxAt = (currency: string, ts: number): number => {
       if (currency === displayCurrency) return 1;
       const fx = fxByCurrency.get(currency);
       if (!fx) return rateCache.get(`${currency}->${displayCurrency}`) ?? 1;
-      if (fx.times.length === 0) return fx.latest;
-      while (fx.cursor + 1 < fx.times.length && fx.times[fx.cursor + 1] <= ts) {
-        fx.cursor++;
+      if (fx.times.length > 0) {
+        while (
+          fx.cursor + 1 < fx.times.length &&
+          fx.times[fx.cursor + 1] <= ts
+        ) {
+          fx.cursor++;
+        }
+        if (fx.cursor >= 0) return fx.rates[fx.cursor];
       }
-      return fx.cursor < 0 ? fx.rates[0] : fx.rates[fx.cursor];
+      return dailyFxAt(currency, ts) ?? fx.latest;
     };
 
     // Build per-security ordered timestamp/close arrays and a cursor-based
