@@ -1253,4 +1253,39 @@ describe('BillsPage', () => {
       await waitFor(() => expect(nav.replace).toHaveBeenCalledWith('/bills'));
     });
   });
+
+  describe('Reconcile deep links', () => {
+    it('opens the override editor for the next instance from reconcileEditId', async () => {
+      mockGetOverrideByDate.mockResolvedValue(null);
+      nav.searchParams = new URLSearchParams('reconcileEditId=st-3&reconcileAmount=500');
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('override-editor')).toBeInTheDocument());
+      // Looks up an override on the schedule's next due date.
+      expect(mockGetOverrideByDate).toHaveBeenCalledWith('st-3', '2026-03-01');
+    });
+
+    it('clears the reconcile params when the override editor closes', async () => {
+      mockGetOverrideByDate.mockResolvedValue(null);
+      nav.searchParams = new URLSearchParams('reconcileEditId=st-3&reconcileAmount=500');
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('override-editor')).toBeInTheDocument());
+      fireEvent.click(screen.getByTestId('override-close'));
+      await waitFor(() => expect(nav.replace).toHaveBeenCalledWith('/bills'));
+    });
+
+    it('opens the create form for reconcileCreate', async () => {
+      nav.searchParams = new URLSearchParams(
+        'reconcileCreate=1&reconcileTransferAccountId=acc-2&reconcileAmount=500',
+      );
+      render(<BillsPage />);
+      await waitFor(() => expect(mockOpenCreate).toHaveBeenCalled());
+    });
+
+    it('does nothing for an unknown reconcileEditId', async () => {
+      nav.searchParams = new URLSearchParams('reconcileEditId=missing&reconcileAmount=500');
+      render(<BillsPage />);
+      await waitFor(() => expect(screen.getByTestId('scheduled-transaction-list')).toBeInTheDocument());
+      expect(screen.queryByTestId('override-editor')).not.toBeInTheDocument();
+    });
+  });
 });

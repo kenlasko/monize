@@ -842,6 +842,33 @@ describe('OverrideEditorDialog', () => {
     });
   });
 
+  // --- prefillAmount (post-reconciliation flow) ---
+  describe('prefillAmount', () => {
+    it('seeds the Amount field from prefillAmount', () => {
+      render(<OverrideEditorDialog {...defaultProps} prefillAmount={999.5} />);
+      const amountInput = screen.getByLabelText('Amount') as HTMLInputElement;
+      expect(Number(amountInput.value)).toBe(999.5);
+    });
+
+    it('seeds and negates prefillAmount on save for a transfer', async () => {
+      render(
+        <OverrideEditorDialog
+          {...defaultProps}
+          scheduledTransaction={transferTransaction}
+          prefillAmount={123.45}
+        />,
+      );
+      // Save without touching the field: the seeded prefill amount is used,
+      // negated for the transfer.
+      fireEvent.click(screen.getByText('Save Override'));
+      await waitFor(() => {
+        expect(mockCreateOverride).toHaveBeenCalledWith('s2', expect.objectContaining({
+          amount: -123.45,
+        }));
+      });
+    });
+  });
+
   // --- Split override save sends serialized splits ---
   describe('split override save', () => {
     it('sends split data with null categoryId when split is enabled', async () => {

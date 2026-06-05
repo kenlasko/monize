@@ -63,6 +63,8 @@ interface OverrideEditorState {
   transaction: ScheduledTransaction | null;
   date: string;
   existingOverride: ScheduledTransactionOverride | null;
+  // When set (post-reconciliation flow), seeds the Amount field with this value.
+  prefillAmount: number | null;
 }
 
 export default function BillsPage() {
@@ -77,6 +79,11 @@ function BillsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const postBillId = searchParams.get('postBillId');
+  // Post-reconciliation deep links (from the Reconcile completion screen).
+  const reconcileEditId = searchParams.get('reconcileEditId');
+  const reconcileCreate = searchParams.get('reconcileCreate');
+  const reconcileTransferAccountId = searchParams.get('reconcileTransferAccountId');
+  const reconcileAmount = searchParams.get('reconcileAmount');
   const { formatCurrency } = useNumberFormat();
   const [scheduledTransactions, setScheduledTransactions] = useState<ScheduledTransaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -93,7 +100,14 @@ function BillsContent() {
     transaction: null,
     date: '',
     existingOverride: null,
+    prefillAmount: null,
   });
+  // Prefill state for a new transfer schedule created from the reconcile flow.
+  const [createPrefill, setCreatePrefill] = useState<{
+    transferAccountId: string;
+    amount: number;
+  } | null>(null);
+  const [reconcileHandled, setReconcileHandled] = useState(false);
   const [overrideConfirm, setOverrideConfirm] = useState<{
     isOpen: boolean;
     transaction: ScheduledTransaction | null;
@@ -152,6 +166,8 @@ function BillsContent() {
   useOnUndoRedo(loadData);
 
   const handleCreateNew = () => {
+    // Clear any stale reconcile prefill so a manual create starts blank.
+    setCreatePrefill(null);
     openCreate();
   };
 
@@ -204,11 +220,57 @@ function BillsContent() {
     setOverrideConfirm({ isOpen: false, transaction: null, overrideCount: 0 });
   };
 
+  // Clear any reconcile deep-link query params once the relevant dialog is done.
+  const clearReconcileParams = () => {
+    if (reconcileEditId || reconcileCreate || reconcileTransferAccountId || reconcileAmount) {
+      router.replace('/bills');
+    }
+  };
+
+  const handleFormClose = () => {
+    close();
+    if (createPrefill) {
+      setCreatePrefill(null);
+      clearReconcileParams();
+    }
+  };
+
   const handleFormSuccess = () => {
     close();
+    if (createPrefill) {
+      setCreatePrefill(null);
+      clearReconcileParams();
+    }
     loadData();
   };
 
+  // Open the override editor directly on a schedule's next instance, optionally
+  // prefilling the amount. Used by the post-reconciliation "update next payment"
+  // deep link to skip the occurrence date picker.
+  const openNextOccurrenceEditor = async (
+    transaction: ScheduledTransaction,
+    prefillAmount?: number,
+  ) => {
+    const date = (transaction.nextDueDate || '').split('T')[0];
+    let existingOverride: ScheduledTransactionOverride | null = null;
+    if (date) {
+      try {
+        existingOverride = await scheduledTransactionsApi.getOverrideByDate(
+          transaction.id,
+          date,
+        );
+      } catch (error) {
+        logger.error('Failed to fetch override for next occurrence:', error);
+      }
+    }
+    setOverrideEditor({
+      isOpen: true,
+      transaction,
+      date,
+      existingOverride,
+      prefillAmount: prefillAmount ?? null,
+    });
+  };
 
   const handleEditOccurrence = async (transaction: ScheduledTransaction) => {
     // Fetch existing overrides to show which dates are modified (and what changed)
@@ -261,6 +323,7 @@ function BillsContent() {
         transaction,
         date: overrideByOverrideDate?.originalDate || date, // Use original date if this was an override
         existingOverride,
+        prefillAmount: null,
       });
     } catch (error) {
       logger.error('Failed to check for existing override:', error);
@@ -270,6 +333,7 @@ function BillsContent() {
         transaction,
         date,
         existingOverride: null,
+        prefillAmount: null,
       });
     }
   };
@@ -279,12 +343,17 @@ function BillsContent() {
   };
 
   const handleOverrideEditorClose = () => {
+    const wasReconcileDeepLink = overrideEditor.prefillAmount != null;
     setOverrideEditor({
       isOpen: false,
       transaction: null,
       date: '',
       existingOverride: null,
+      prefillAmount: null,
     });
+    if (wasReconcileDeepLink) {
+      clearReconcileParams();
+    }
   };
 
   const handleOverrideEditorSave = () => {
@@ -319,6 +388,25 @@ function BillsContent() {
     setAutoOpenedPostId(postBillId);
     if (target) {
       setPostDialog({ isOpen: true, transaction: target });
+    }
+  }
+
+  // Handle post-reconciliation deep links. Adjust state during render (gated so
+  // it runs once) to comply with the no-setState-in-effect rule. URL cleanup
+  // happens when the opened dialog/modal closes.
+  if (!reconcileHandled && !isLoading && (reconcileEditId || reconcileCreate)) {
+    setReconcileHandled(true);
+    const amount = reconcileAmount ? Number(reconcileAmount) : undefined;
+    if (reconcileCreate && reconcileTransferAccountId) {
+      setCreatePrefill({ transferAccountId: reconcileTransferAccountId, amount: amount ?? 0 });
+      openCreate();
+    } else if (reconcileEditId) {
+      const target = scheduledTransactions.find((st) => st.id === reconcileEditId);
+      if (target) {
+        void openNextOccurrenceEditor(target, amount);
+      } else {
+        toast.error('Scheduled payment not found');
+      }
     }
   }
 
@@ -523,15 +611,18 @@ function BillsContent() {
         </ErrorBoundary>
 
         {/* Form Modal */}
-        <Modal isOpen={showForm} onClose={close} {...modalProps} maxWidth="6xl" className="p-6 !max-w-[69rem]">
+        <Modal isOpen={showForm} onClose={handleFormClose} {...modalProps} maxWidth="6xl" className="p-6 !max-w-[69rem]">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
             {isEditing ? 'Edit Scheduled Transaction' : 'New Scheduled Transaction'}
           </h2>
           <ScheduledTransactionForm
-            key={editingTransaction?.id || 'new'}
+            key={editingTransaction?.id || (createPrefill ? 'new-prefill' : 'new')}
             scheduledTransaction={editingTransaction}
+            initialMode={createPrefill ? 'transfer' : undefined}
+            initialAmount={createPrefill?.amount}
+            initialTransferAccountId={createPrefill?.transferAccountId}
             onSuccess={handleFormSuccess}
-            onCancel={close}
+            onCancel={handleFormClose}
             onDirtyChange={setFormDirty}
             submitRef={formSubmitRef}
           />
@@ -736,6 +827,7 @@ function BillsContent() {
           categories={categories}
           accounts={accounts}
           existingOverride={overrideEditor.existingOverride}
+          prefillAmount={overrideEditor.prefillAmount}
           onClose={handleOverrideEditorClose}
           onSave={handleOverrideEditorSave}
         />

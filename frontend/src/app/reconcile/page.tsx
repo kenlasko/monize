@@ -12,9 +12,11 @@ import { DateInput } from '@/components/ui/DateInput';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Select } from '@/components/ui/Select';
 import { transactionsApi } from '@/lib/transactions';
+import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { getLocalDateString } from '@/lib/utils';
 import { accountsApi } from '@/lib/accounts';
 import { Account } from '@/types/account';
+import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { ReconciliationData, TransactionStatus } from '@/types/transaction';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { getCurrencySymbol } from '@/lib/format';
@@ -49,6 +51,9 @@ function ReconcileContent() {
   const [selectedTransactionIds, setSelectedTransactionIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [isReconciling, setIsReconciling] = useState(false);
+  // Post-reconciliation liability-payment prompt: the scheduled bill (if any)
+  // that pays down the reconciled liability account.
+  const [paymentBill, setPaymentBill] = useState<ScheduledTransaction | null>(null);
 
   // Load accounts
   useEffect(() => {
@@ -180,6 +185,23 @@ function ReconcileContent() {
         statementDate
       );
       toast.success(`Successfully reconciled ${result.reconciled} transactions`);
+
+      // For liability accounts, look for an existing scheduled bill that pays
+      // down this account so we can offer to update its next instance.
+      if (isLiability) {
+        try {
+          const scheduled = await scheduledTransactionsApi.getAll();
+          const match = scheduled.find(
+            (st) =>
+              (st.isTransfer && st.transferAccountId === selectedAccountId) ||
+              (st.splits?.some((s) => s.transferAccountId === selectedAccountId) ?? false)
+          );
+          setPaymentBill(match ?? null);
+        } catch {
+          setPaymentBill(null);
+        }
+      }
+
       setStep('complete');
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to reconcile transactions'));
@@ -192,6 +214,24 @@ function ReconcileContent() {
     setStep('setup');
     setReconciliationData(null);
     setSelectedTransactionIds(new Set());
+  };
+
+  // The amount to apply to the liability payment: the reconciled balance owed,
+  // as a positive figure (liability balances are stored negative).
+  const reconciledPaymentAmount = Math.round(Math.abs(statementBalance ?? 0) * 100) / 100;
+
+  const handleUpdatePayment = () => {
+    if (!paymentBill) return;
+    router.push(
+      `/bills?reconcileEditId=${paymentBill.id}&reconcileAmount=${reconciledPaymentAmount}`
+    );
+  };
+
+  const handleCreatePayment = () => {
+    router.push(
+      `/bills?reconcileCreate=1&reconcileTransferAccountId=${selectedAccountId}` +
+        `&reconcileAmount=${reconciledPaymentAmount}`
+    );
   };
 
   const formatCurrency = (amount: number | string | null | undefined) => {
@@ -453,6 +493,49 @@ function ReconcileContent() {
           Your account has been successfully reconciled as of{' '}
           {format(new Date(statementDate), 'MMMM d, yyyy')}.
         </p>
+
+        {/* Liability payment prompt: offer to update or create the scheduled
+            bill that pays down this account, using the reconciled balance. */}
+        {isLiability && (
+          <div className="mb-6 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-4 text-left">
+            {paymentBill ? (
+              <>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  This account has a scheduled payment,{' '}
+                  <span className="font-medium">{paymentBill.name}</span>. Would
+                  you like to update its next instance to the reconciled balance
+                  of{' '}
+                  <span className="font-medium">
+                    {formatCurrency(reconciledPaymentAmount)}
+                  </span>
+                  ?
+                </p>
+                <div className="mt-3">
+                  <Button onClick={handleUpdatePayment}>
+                    Update Next Payment
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  No scheduled payment was found for this account. Would you like
+                  to create one for the reconciled balance of{' '}
+                  <span className="font-medium">
+                    {formatCurrency(reconciledPaymentAmount)}
+                  </span>
+                  ?
+                </p>
+                <div className="mt-3">
+                  <Button onClick={handleCreatePayment}>
+                    Create Scheduled Payment
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         <div className="flex justify-center space-x-4">
           <Button variant="outline" onClick={() => router.push('/accounts')}>
             Back to Accounts
@@ -463,6 +546,7 @@ function ReconcileContent() {
               setReconciliationData(null);
               setSelectedTransactionIds(new Set());
               setStatementBalance(undefined);
+              setPaymentBill(null);
             }}
           >
             Reconcile Another Account

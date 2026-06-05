@@ -66,10 +66,17 @@ vi.mock('@/lib/auth', () => ({
 const mockGetAll = vi.fn();
 const mockGetReconciliationData = vi.fn();
 const mockBulkReconcile = vi.fn();
+const mockScheduledGetAll = vi.fn();
 
 vi.mock('@/lib/accounts', () => ({
   accountsApi: {
     getAll: (...args: any[]) => mockGetAll(...args),
+  },
+}));
+
+vi.mock('@/lib/scheduled-transactions', () => ({
+  scheduledTransactionsApi: {
+    getAll: (...args: any[]) => mockScheduledGetAll(...args),
   },
 }));
 
@@ -194,6 +201,7 @@ describe('ReconcilePage', () => {
     mockGetAll.mockResolvedValue(mockAccounts);
     mockGetReconciliationData.mockResolvedValue(mockReconciliationData);
     mockBulkReconcile.mockResolvedValue({ reconciled: 2 });
+    mockScheduledGetAll.mockResolvedValue([]);
   });
 
   describe('Setup Step', () => {
@@ -528,6 +536,82 @@ describe('ReconcilePage', () => {
       await waitFor(() => {
         expect(toast.default.error).toHaveBeenCalledWith('Failed to reconcile transactions');
       }, { timeout: 3000 });
+    });
+  });
+
+  describe('Liability Payment Prompt', () => {
+    // Reconcile a liability account (Visa) to a -500 statement balance: a single
+    // cleared -500 transaction against a reconciledBalance of 0 yields a $0
+    // difference so the Finish button is enabled.
+    async function finishLiabilityReconciliation() {
+      mockGetReconciliationData.mockResolvedValue({
+        transactions: [{
+          id: 'tx-a', transactionDate: '2026-02-01', payee: { name: 'Test' },
+          payeeName: null, category: null, amount: -500, status: TransactionStatus.CLEARED,
+        }],
+        reconciledBalance: 0, clearedBalance: -500, difference: 0,
+      });
+      render(<ReconcilePage />);
+      await waitFor(() => expect(screen.getByText(/Visa/)).toBeInTheDocument(), { timeout: 3000 });
+      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-2' } });
+      fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '500' } });
+      fireEvent.click(screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON')!);
+      await waitFor(() => expect(screen.getByText('Finish Reconciliation')).toBeInTheDocument(), { timeout: 3000 });
+      fireEvent.click(screen.getByText('Finish Reconciliation'));
+      await waitFor(() => expect(screen.getByText('Reconciliation Complete')).toBeInTheDocument(), { timeout: 3000 });
+    }
+
+    it('offers to update an existing scheduled payment for the account', async () => {
+      mockScheduledGetAll.mockResolvedValue([
+        { id: 'bill-1', name: 'Visa Payment', isTransfer: true, transferAccountId: 'acc-2', splits: [] },
+      ]);
+      await finishLiabilityReconciliation();
+      expect(screen.getByText(/Visa Payment/)).toBeInTheDocument();
+      fireEvent.click(screen.getByText('Update Next Payment'));
+      expect(mockRouterPush).toHaveBeenCalledWith('/bills?reconcileEditId=bill-1&reconcileAmount=500');
+    });
+
+    it('matches a scheduled payment linked via a split transfer', async () => {
+      mockScheduledGetAll.mockResolvedValue([
+        { id: 'bill-2', name: 'Paycheck Split', isTransfer: false, transferAccountId: null,
+          splits: [{ transferAccountId: 'acc-2' }] },
+      ]);
+      await finishLiabilityReconciliation();
+      fireEvent.click(screen.getByText('Update Next Payment'));
+      expect(mockRouterPush).toHaveBeenCalledWith('/bills?reconcileEditId=bill-2&reconcileAmount=500');
+    });
+
+    it('offers to create a scheduled payment when none exists', async () => {
+      mockScheduledGetAll.mockResolvedValue([
+        { id: 'other', name: 'Unrelated', isTransfer: true, transferAccountId: 'acc-1', splits: [] },
+      ]);
+      await finishLiabilityReconciliation();
+      expect(screen.getByText('Create Scheduled Payment')).toBeInTheDocument();
+      fireEvent.click(screen.getByText('Create Scheduled Payment'));
+      expect(mockRouterPush).toHaveBeenCalledWith(
+        '/bills?reconcileCreate=1&reconcileTransferAccountId=acc-2&reconcileAmount=500'
+      );
+    });
+
+    it('does not show the payment prompt for a non-liability account', async () => {
+      mockGetReconciliationData.mockResolvedValue({
+        transactions: [{
+          id: 'tx-a', transactionDate: '2026-02-01', payee: { name: 'Test' },
+          payeeName: null, category: null, amount: 500, status: TransactionStatus.CLEARED,
+        }],
+        reconciledBalance: 1000, clearedBalance: 1500, difference: 0,
+      });
+      render(<ReconcilePage />);
+      await waitFor(() => expect(screen.getByText(/Checking/)).toBeInTheDocument(), { timeout: 3000 });
+      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+      fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '1500' } });
+      fireEvent.click(screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON')!);
+      await waitFor(() => expect(screen.getByText('Finish Reconciliation')).toBeInTheDocument(), { timeout: 3000 });
+      fireEvent.click(screen.getByText('Finish Reconciliation'));
+      await waitFor(() => expect(screen.getByText('Reconciliation Complete')).toBeInTheDocument(), { timeout: 3000 });
+      expect(screen.queryByText('Update Next Payment')).not.toBeInTheDocument();
+      expect(screen.queryByText('Create Scheduled Payment')).not.toBeInTheDocument();
+      expect(mockScheduledGetAll).not.toHaveBeenCalled();
     });
   });
 });

@@ -44,7 +44,7 @@ import { FormActions } from '@/components/ui/FormActions';
 
 const logger = createLogger('ScheduledTxForm');
 
-type ScheduledTransactionMode = 'transaction' | 'split' | 'transfer' | 'investment';
+export type ScheduledTransactionMode = 'transaction' | 'split' | 'transfer' | 'investment';
 
 const INVESTMENT_ACTION_LABELS: Record<InvestmentAction, string> = {
   BUY: 'Buy',
@@ -97,6 +97,12 @@ type ScheduledTransactionFormData = z.infer<typeof scheduledTransactionSchema>;
 interface ScheduledTransactionFormProps {
   scheduledTransaction?: ScheduledTransaction;
   templateTransaction?: Transaction;
+  // Prefill hints for a brand-new schedule (ignored when editing an existing
+  // schedule or building from a template). Used by the post-reconciliation
+  // flow to seed a liability payment transfer.
+  initialMode?: ScheduledTransactionMode;
+  initialAmount?: number;
+  initialTransferAccountId?: string;
   onSuccess?: () => void;
   onCancel?: () => void;
   onDirtyChange?: (isDirty: boolean) => void;
@@ -117,6 +123,9 @@ function getTransferAccountId(st?: ScheduledTransaction): string {
 export function ScheduledTransactionForm({
   scheduledTransaction,
   templateTransaction,
+  initialMode,
+  initialAmount,
+  initialTransferAccountId,
   onSuccess,
   onCancel,
   onDirtyChange,
@@ -141,6 +150,8 @@ export function ScheduledTransactionForm({
     if (templateTransaction?.isTransfer) return 'transfer';
     if (scheduledTransaction?.isSplit && !isScheduledTransfer(scheduledTransaction)) return 'split';
     if (templateTransaction?.isSplit) return 'split';
+    // Prefill hint only applies when building a brand-new schedule
+    if (!scheduledTransaction && !templateTransaction && initialMode) return initialMode;
     return 'transaction';
   };
 
@@ -186,6 +197,7 @@ export function ScheduledTransactionForm({
   const [transferToAccountId, setTransferToAccountId] = useState<string>(
     getTransferAccountId(scheduledTransaction)
     || (templateTransaction?.isTransfer ? templateTransaction.linkedTransaction?.accountId ?? '' : '')
+    || (!scheduledTransaction && !templateTransaction ? initialTransferAccountId ?? '' : '')
   );
 
   const [selectedPayeeId, setSelectedPayeeId] = useState<string>(
@@ -256,6 +268,7 @@ export function ScheduledTransactionForm({
             reminderDaysBefore: 3,
           }
         : {
+            amount: initialAmount,
             currencyCode: defaultCurrency,
             frequency: 'MONTHLY' as FrequencyType,
             nextDueDate: getLocalDateString(),

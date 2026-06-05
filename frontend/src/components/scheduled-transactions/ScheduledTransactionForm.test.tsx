@@ -534,6 +534,23 @@ describe('ScheduledTransactionForm', () => {
     expect(screen.getByText('To Account')).toBeInTheDocument();
   });
 
+  it('opens in transfer mode prefilled from initial props (reconcile flow)', async () => {
+    render(
+      <ScheduledTransactionForm
+        initialMode="transfer"
+        initialAmount={250}
+        initialTransferAccountId="acc-2"
+      />,
+    );
+    await waitFor(() => {
+      expect(screen.getByText('From Account')).toBeInTheDocument();
+    });
+    const toAccountSelect = screen.getByLabelText('To Account') as HTMLSelectElement;
+    expect(toAccountSelect.value).toBe('acc-2');
+    const amountInput = screen.getByLabelText('Transfer Amount') as HTMLInputElement;
+    expect(Number(amountInput.value)).toBe(250);
+  });
+
   // --- Form submission for new scheduled transaction ---
   it('submits form for new scheduled transaction via submit button', async () => {
     const { container } = render(<ScheduledTransactionForm />);

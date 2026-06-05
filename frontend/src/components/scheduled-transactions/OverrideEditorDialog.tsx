@@ -29,6 +29,11 @@ interface OverrideEditorDialogProps {
   categories: Category[];
   accounts: Account[];
   existingOverride?: ScheduledTransactionOverride | null;
+  // When provided, seeds the Amount field with this value (absolute, sign is
+  // applied on save for transfers) instead of the base/override amount. Used by
+  // the post-reconciliation flow to prefill a liability payment with the
+  // reconciled balance.
+  prefillAmount?: number | null;
   onClose: () => void;
   onSave: () => void;
 }
@@ -40,6 +45,7 @@ export function OverrideEditorDialog({
   categories,
   accounts,
   existingOverride,
+  prefillAmount,
   onClose,
   onSave,
 }: OverrideEditorDialogProps) {
@@ -94,7 +100,7 @@ export function OverrideEditorDialog({
         // Use override values (absolute value for transfers - sign is applied on save)
         const rawAmt = roundToCents(existingOverride.amount ?? scheduledTransaction.amount);
         const amt = scheduledTransaction.isTransfer ? Math.abs(rawAmt) : rawAmt;
-        setAmount(amt);
+        setAmount(prefillAmount != null ? roundToCents(prefillAmount) : amt);
         setCategoryId(existingOverride.categoryId ?? scheduledTransaction.categoryId ?? '');
         setDescription(existingOverride.description ?? scheduledTransaction.description ?? '');
         setIsSplit(existingOverride.isSplit ?? scheduledTransaction.isSplit);
@@ -112,7 +118,7 @@ export function OverrideEditorDialog({
         // Use base transaction values (absolute value for transfers - sign is applied on save)
         const rawAmt = roundToCents(scheduledTransaction.amount);
         const amt = scheduledTransaction.isTransfer ? Math.abs(rawAmt) : rawAmt;
-        setAmount(amt);
+        setAmount(prefillAmount != null ? roundToCents(prefillAmount) : amt);
         setCategoryId(scheduledTransaction.categoryId ?? '');
         setDescription(scheduledTransaction.description ?? '');
         setIsSplit(scheduledTransaction.isSplit);
@@ -161,7 +167,7 @@ export function OverrideEditorDialog({
       }
       setMarketPrice(null);
     }
-  }, [isOpen, existingOverride, scheduledTransaction, overrideDate]);
+  }, [isOpen, existingOverride, scheduledTransaction, overrideDate, prefillAmount]);
 
   // Fetch the most recent close price for the security so we can auto-fill
   // the Price field (matching the new-scheduled-transaction form behaviour).
