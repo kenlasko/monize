@@ -816,3 +816,162 @@ describe("PortfolioCalculationService.primeLiveRates", () => {
     expect(rateCache.get("USD->CAD")).toBe(1.37);
   });
 });
+
+describe("PortfolioCalculationService daily rate index", () => {
+  let service: PortfolioCalculationService;
+  let exchangeRateService: { getRateHistory: jest.Mock };
+
+  const rate = (
+    fromCurrency: string,
+    toCurrency: string,
+    r: number,
+    rateDate: string,
+  ) => ({ fromCurrency, toCurrency, rate: r, rateDate });
+
+  beforeEach(async () => {
+    exchangeRateService = { getRateHistory: jest.fn().mockResolvedValue([]) };
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        PortfolioCalculationService,
+        { provide: getRepositoryToken(Holding), useValue: {} },
+        { provide: getRepositoryToken(SecurityPrice), useValue: {} },
+        { provide: getRepositoryToken(InvestmentTransaction), useValue: {} },
+        { provide: getRepositoryToken(Account), useValue: {} },
+        { provide: ExchangeRateService, useValue: exchangeRateService },
+      ],
+    }).compile();
+    service = module.get(PortfolioCalculationService);
+  });
+
+  describe("buildDailyRateIndex", () => {
+    it("returns an empty index and skips the query when no foreign currencies", async () => {
+      const index = await service.buildDailyRateIndex(
+        ["CAD"],
+        "CAD",
+        "2026-05-01",
+        "2026-06-04",
+      );
+
+      expect(index.size).toBe(0);
+      expect(exchangeRateService.getRateHistory).not.toHaveBeenCalled();
+    });
+
+    it("keeps only pairs involving the default and a requested currency", async () => {
+      exchangeRateService.getRateHistory.mockResolvedValue([
+        rate("USD", "CAD", 1.3, "2026-06-02"),
+        rate("CAD", "USD", 0.74, "2026-06-02"), // reverse direction kept
+        rate("EUR", "GBP", 0.85, "2026-06-02"), // unrelated pair dropped
+        rate("USD", "EUR", 0.92, "2026-06-02"), // not involving default dropped
+      ]);
+
+      const index = await service.buildDailyRateIndex(
+        ["USD"],
+        "CAD",
+        "2026-05-20",
+        "2026-06-04",
+      );
+
+      expect([...index.keys()].sort()).toEqual(["CAD->USD", "USD->CAD"]);
+      expect(exchangeRateService.getRateHistory).toHaveBeenCalledWith(
+        "2026-05-20",
+        "2026-06-04",
+      );
+    });
+
+    it("normalizes Date and numeric-string rate values and sorts by date", async () => {
+      exchangeRateService.getRateHistory.mockResolvedValue([
+        rate("USD", "CAD", "1.50" as unknown as number, "2026-06-03"),
+        rate("USD", "CAD", "1.40" as unknown as number, "2026-06-01"),
+        {
+          fromCurrency: "USD",
+          toCurrency: "CAD",
+          rate: 1.45,
+          rateDate: new Date("2026-06-02T00:00:00.000Z"),
+        },
+      ]);
+
+      const index = await service.buildDailyRateIndex(
+        ["USD"],
+        "CAD",
+        "2026-05-20",
+        "2026-06-04",
+      );
+
+      expect(index.get("USD->CAD")).toEqual([
+        { date: "2026-06-01", rate: 1.4 },
+        { date: "2026-06-02", rate: 1.45 },
+        { date: "2026-06-03", rate: 1.5 },
+      ]);
+    });
+  });
+
+  describe("resolveDailyRate", () => {
+    it("returns the most recent direct rate at or before the date", async () => {
+      exchangeRateService.getRateHistory.mockResolvedValue([
+        rate("USD", "CAD", 1.4, "2026-06-01"),
+        rate("USD", "CAD", 1.5, "2026-06-03"),
+      ]);
+      const index = await service.buildDailyRateIndex(
+        ["USD"],
+        "CAD",
+        "2026-05-20",
+        "2026-06-04",
+      );
+
+      // On 2026-06-02 the most recent rate at or before is the 06-01 close.
+      expect(service.resolveDailyRate(index, "USD", "CAD", "2026-06-02")).toBe(
+        1.4,
+      );
+      // On 2026-06-03 the same-day close applies.
+      expect(service.resolveDailyRate(index, "USD", "CAD", "2026-06-03")).toBe(
+        1.5,
+      );
+    });
+
+    it("falls back to the earliest known rate when the date precedes all history", async () => {
+      exchangeRateService.getRateHistory.mockResolvedValue([
+        rate("USD", "CAD", 1.4, "2026-06-01"),
+      ]);
+      const index = await service.buildDailyRateIndex(
+        ["USD"],
+        "CAD",
+        "2026-05-20",
+        "2026-06-04",
+      );
+
+      expect(service.resolveDailyRate(index, "USD", "CAD", "2026-05-15")).toBe(
+        1.4,
+      );
+    });
+
+    it("inverts the reverse pair when only that direction is stored", async () => {
+      exchangeRateService.getRateHistory.mockResolvedValue([
+        rate("CAD", "USD", 0.5, "2026-06-01"),
+      ]);
+      const index = await service.buildDailyRateIndex(
+        ["USD"],
+        "CAD",
+        "2026-05-20",
+        "2026-06-04",
+      );
+
+      // 1 USD -> CAD via the reciprocal of the stored CAD->USD rate.
+      expect(service.resolveDailyRate(index, "USD", "CAD", "2026-06-02")).toBe(
+        2,
+      );
+    });
+
+    it("returns undefined when the pair is absent in both directions", async () => {
+      const index = await service.buildDailyRateIndex(
+        ["USD"],
+        "CAD",
+        "2026-05-20",
+        "2026-06-04",
+      );
+
+      expect(
+        service.resolveDailyRate(index, "USD", "CAD", "2026-06-02"),
+      ).toBeUndefined();
+    });
+  });
+});

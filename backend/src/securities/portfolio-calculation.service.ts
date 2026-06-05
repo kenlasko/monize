@@ -15,13 +15,25 @@ import {
   AllocationItem,
 } from "./portfolio.service";
 import { roundMoney } from "../common/round.util";
-import { formatDateYMDLocal } from "../common/date-utils";
+import { formatDateYMD, formatDateYMDLocal } from "../common/date-utils";
 import { mapWithConcurrency } from "../common/concurrency.util";
+import { convertWithRateLookup } from "../common/currency-conversion.util";
 
 // "As of now" portfolio valuations fetch a live spot rate per foreign
 // currency. Cap concurrent quote-provider fetches so a portfolio spanning
 // many currencies does not burst the provider on an interactive request.
 const LIVE_FX_FETCH_CONCURRENCY = 6;
+
+/**
+ * Date-indexed history of stored daily exchange rates, keyed by the raw
+ * "{from}->{to}" pair as stored in the exchange_rates table. Each entry's
+ * rates are sorted ascending by date so an "as of" lookup can walk to the
+ * most recent rate at or before a target date. Used to value intraday chart
+ * bars that fall outside the live intraday FX series (pre-market, weekend and
+ * holiday gaps, or a failed FX fetch) at the rate that actually prevailed on
+ * that bar's own date rather than a single near-current rate.
+ */
+export type DailyRateIndex = Map<string, Array<{ date: string; rate: number }>>;
 
 /**
  * Categorised investment accounts: brokerage, standalone, and cash accounts
@@ -313,6 +325,98 @@ export class PortfolioCalculationService {
         }
       },
     );
+  }
+
+  /**
+   * Build a date-indexed history of stored daily rates for converting each of
+   * `currencies` to `defaultCurrency`, covering [startDate, endDate]. Only the
+   * pairs that involve the default currency and a requested currency are kept,
+   * in either direction, so `resolveDailyRate` can apply the same direct-then-
+   * inverse decision used everywhere else.
+   *
+   * Used by the intraday Portfolio Value Over Time chart to value bars that the
+   * live intraday FX series does not cover at the daily close that prevailed on
+   * that bar's own date, instead of the first/latest intraday rate.
+   */
+  async buildDailyRateIndex(
+    currencies: Iterable<string>,
+    defaultCurrency: string,
+    startDate: string,
+    endDate: string,
+  ): Promise<DailyRateIndex> {
+    const needed = new Set<string>();
+    for (const c of currencies) {
+      if (c && c !== defaultCurrency) needed.add(c);
+    }
+    const index: DailyRateIndex = new Map();
+    if (needed.size === 0) return index;
+
+    const rows = await this.exchangeRateService.getRateHistory(
+      startDate,
+      endDate,
+    );
+    for (const row of rows) {
+      const from = row.fromCurrency;
+      const to = row.toCurrency;
+      const involvesPair =
+        (needed.has(from) && to === defaultCurrency) ||
+        (from === defaultCurrency && needed.has(to));
+      if (!involvesPair) continue;
+      const key = `${from}->${to}`;
+      const arr = index.get(key);
+      // rate_date is normally returned as a "YYYY-MM-DD" string (DATE columns
+      // are parsed as strings, see main.ts) but tolerate a Date instance too.
+      const rawDate: string | Date = row.rateDate;
+      const date =
+        rawDate instanceof Date
+          ? formatDateYMD(rawDate)
+          : String(rawDate).substring(0, 10);
+      const entry = { date, rate: Number(row.rate) };
+      if (arr) {
+        index.set(key, [...arr, entry]);
+      } else {
+        index.set(key, [entry]);
+      }
+    }
+
+    // getRateHistory already orders by rate_date ASC, but sort defensively so
+    // the as-of walk in resolveDailyRate never depends on query ordering.
+    for (const [key, arr] of index) {
+      index.set(
+        key,
+        [...arr].sort((a, b) =>
+          a.date < b.date ? -1 : a.date > b.date ? 1 : 0,
+        ),
+      );
+    }
+
+    return index;
+  }
+
+  /**
+   * Resolve the stored daily rate for converting 1 unit of `from` to `to` as of
+   * `dateStr` (YYYY-MM-DD) from a `DailyRateIndex`. Picks the most recent rate
+   * at or before the date; if none exists yet it uses the earliest known rate.
+   * Returns undefined when the pair is absent in either direction so callers can
+   * apply their own fallback.
+   */
+  resolveDailyRate(
+    index: DailyRateIndex,
+    from: string,
+    to: string,
+    dateStr: string,
+  ): number | undefined {
+    const result = convertWithRateLookup(1, from, to, (f, t) => {
+      const rates = index.get(`${f}->${t}`);
+      if (!rates || rates.length === 0) return undefined;
+      let best: number | undefined;
+      for (const r of rates) {
+        if (r.date <= dateStr) best = r.rate;
+        else break;
+      }
+      return best ?? rates[0].rate;
+    });
+    return result == null ? undefined : result;
   }
 
   // ---------------------------------------------------------------------------
