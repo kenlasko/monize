@@ -407,6 +407,31 @@ describe('AppHeader', () => {
     expect(screen.queryByText('Dashboard')).not.toBeInTheDocument();
   });
 
+  it('closes the mobile menu when a link is selected', () => {
+    // Regression: selecting a link must dismiss the drawer (and navigate)
+    // even when the destination equals the current route, where the
+    // route-change effect never fires.
+    render(<AppHeader />);
+    fireEvent.click(screen.getByLabelText('Toggle menu'));
+    expect(screen.getByText('Settings')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Settings'));
+    expect(mockPush).toHaveBeenCalledWith('/settings');
+    // Drawer is gone (its Close button no longer rendered).
+    expect(screen.queryByLabelText('Close menu')).not.toBeInTheDocument();
+  });
+
+  it('does not push a browser history entry when the drawer opens', () => {
+    // Regression: the drawer must NOT use Modal's pushHistory. A pushed entry
+    // is popped via history.back() on close, which would revert the
+    // router.push that closes the drawer and leave the user on the old page.
+    render(<AppHeader />);
+    const lengthBeforeOpen = window.history.length;
+    fireEvent.click(screen.getByLabelText('Toggle menu'));
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(window.history.length).toBe(lengthBeforeOpen);
+  });
+
   it('closes Tools dropdown when clicking outside', () => {
     render(<AppHeader />);
     const toolsButtons = screen.getAllByText('Tools');
