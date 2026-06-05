@@ -33,8 +33,15 @@ const SECTION_HEADER_CLASS =
 /**
  * Mobile navigation drawer: a full-height panel that slides in from the left
  * over a dimmed backdrop. Reuses the shared `Modal` primitive for the portal,
- * body-scroll lock, focus trap, Escape handling, and back-button-to-close
- * (`pushHistory`). Links are a flat list grouped under section headers.
+ * body-scroll lock, focus trap, and Escape handling. Links are a flat list
+ * grouped under section headers.
+ *
+ * Note: the drawer deliberately does NOT use the Modal's `pushHistory`
+ * (back-button-to-close). That option pushes a history entry on open and pops
+ * it with `history.back()` on close; closing the drawer in response to an
+ * in-drawer navigation would then revert the `router.push` that triggered the
+ * close, leaving the user on the original page. The drawer instead closes via
+ * the caller's route-change effect (and the explicit close in `onNavigate`).
  */
 export function MobileNavDrawer({
   isOpen,
@@ -70,7 +77,7 @@ export function MobileNavDrawer({
   );
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} variant="drawer-left" pushHistory>
+    <Modal isOpen={isOpen} onClose={onClose} variant="drawer-left">
       <nav aria-label="Main menu" className="flex flex-col">
         {/* Drawer header: brand + close button */}
         <div className="flex items-center justify-between px-4 h-16 border-b border-gray-200 dark:border-gray-700">

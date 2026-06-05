@@ -216,7 +216,13 @@ export function AppHeader() {
                 isOpen={mobileMenuOpen}
                 onClose={() => setMobileMenuOpen(false)}
                 pathname={pathname}
-                onNavigate={(href) => router.push(href)}
+                onNavigate={(href) => {
+                  // Close the drawer up front so navigating to the current
+                  // route (no pathname change, so the route-change effect
+                  // below never fires) still dismisses it.
+                  setMobileMenuOpen(false);
+                  router.push(href);
+                }}
                 navLinks={visibleNavLinks}
                 aiLinks={aiLinks}
                 showAiMenu={showAiMenu}
