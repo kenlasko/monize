@@ -135,6 +135,22 @@ jobs:
       - run: cd backend && npm ci && npm audit --audit-level=high
       - run: cd frontend && npm ci && npm audit --audit-level=high
 
+  dockerfile-lint:
+    name: Dockerfile Lint (hadolint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Lint backend Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: backend/Dockerfile
+          config: .hadolint.yaml
+      - name: Lint frontend Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: frontend/Dockerfile
+          config: .hadolint.yaml
+
   bearer-scan:
     name: Bearer Security Scan
     runs-on: ubuntu-latest
@@ -170,11 +186,18 @@ jobs:
         frontend-unit-tests,
         npm-audit,
         bearer-scan,
+        dockerfile-lint,
         e2e-tests,
       ]
     permissions:
       contents: write
       packages: write
+      # Needed for cosign keyless signing and SBOM/provenance attestations
+      # via GitHub's OIDC token.
+      id-token: write
+      attestations: write
+      # Needed for Trivy to upload SARIF results to the Security tab.
+      security-events: write
     steps:
       - uses: actions/checkout@v6
         with:
@@ -215,6 +238,7 @@ jobs:
           echo "build_date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
 
       - name: Build and push backend
+        id: build-backend
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -223,6 +247,7 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           provenance: true
+          sbom: true
           tags: |
             ghcr.io/kenlasko/monize-backend:latest
             ghcr.io/kenlasko/monize-backend:${{ steps.version.outputs.version }}
@@ -244,6 +269,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Build and push frontend
+        id: build-frontend
         uses: docker/build-push-action@v6
         with:
           context: frontend
@@ -252,6 +278,7 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           provenance: true
+          sbom: true
           tags: |
             ghcr.io/kenlasko/monize-frontend:latest
             ghcr.io/kenlasko/monize-frontend:${{ steps.version.outputs.version }}
@@ -271,6 +298,122 @@ jobs:
             index:org.opencontainers.image.version=${{ steps.version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      # Keyless signing via GitHub OIDC. No long-lived keys to manage; the
+      # signature is bound to this workflow's identity and verifiable with
+      # `cosign verify --certificate-identity-regexp ...`.
+      - name: Sign backend image
+        env:
+          DIGEST: ${{ steps.build-backend.outputs.digest }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          cosign sign --yes \
+            "ghcr.io/kenlasko/monize-backend@${DIGEST}" \
+            "ghcr.io/kenlasko/monize-backend:${VERSION}" \
+            ghcr.io/kenlasko/monize-backend:latest
+
+      - name: Sign frontend image
+        env:
+          DIGEST: ${{ steps.build-frontend.outputs.digest }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          cosign sign --yes \
+            "ghcr.io/kenlasko/monize-frontend@${DIGEST}" \
+            "ghcr.io/kenlasko/monize-frontend:${VERSION}" \
+            ghcr.io/kenlasko/monize-frontend:latest
+
+      # Generate and attest an SPDX SBOM for each image. The provenance and
+      # SBOM produced by docker/build-push-action above are embedded in the
+      # OCI manifest; these attestations make them discoverable via
+      # `gh attestation verify` for downstream consumers.
+      - name: Generate backend SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ghcr.io/kenlasko/monize-backend@${{ steps.build-backend.outputs.digest }}
+          format: spdx-json
+          output-file: backend-sbom.spdx.json
+
+      - name: Attest backend SBOM
+        uses: actions/attest-sbom@v2
+        with:
+          subject-name: ghcr.io/kenlasko/monize-backend
+          subject-digest: ${{ steps.build-backend.outputs.digest }}
+          sbom-path: backend-sbom.spdx.json
+          push-to-registry: true
+
+      - name: Generate frontend SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ghcr.io/kenlasko/monize-frontend@${{ steps.build-frontend.outputs.digest }}
+          format: spdx-json
+          output-file: frontend-sbom.spdx.json
+
+      - name: Attest frontend SBOM
+        uses: actions/attest-sbom@v2
+        with:
+          subject-name: ghcr.io/kenlasko/monize-frontend
+          subject-digest: ${{ steps.build-frontend.outputs.digest }}
+          sbom-path: frontend-sbom.spdx.json
+          push-to-registry: true
+
+      # Scan the pushed images for OS + library CVEs. SARIF goes to the
+      # Security tab so findings are tracked over time. We fail on CRITICAL
+      # only - HIGH issues surface in the Security tab but do not block
+      # releases, matching the npm-audit policy.
+      - name: Scan backend image (Trivy)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ghcr.io/kenlasko/monize-backend@${{ steps.build-backend.outputs.digest }}
+          format: sarif
+          output: trivy-backend.sarif
+          severity: CRITICAL,HIGH
+          exit-code: '0'
+          ignore-unfixed: true
+
+      - name: Upload backend Trivy SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-backend.sarif
+          category: trivy-backend
+
+      - name: Scan frontend image (Trivy)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ghcr.io/kenlasko/monize-frontend@${{ steps.build-frontend.outputs.digest }}
+          format: sarif
+          output: trivy-frontend.sarif
+          severity: CRITICAL,HIGH
+          exit-code: '0'
+          ignore-unfixed: true
+
+      - name: Upload frontend Trivy SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-frontend.sarif
+          category: trivy-frontend
+
+      - name: Fail on critical CVEs (backend)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ghcr.io/kenlasko/monize-backend@${{ steps.build-backend.outputs.digest }}
+          format: table
+          severity: CRITICAL
+          exit-code: '1'
+          ignore-unfixed: true
+
+      - name: Fail on critical CVEs (frontend)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ghcr.io/kenlasko/monize-frontend@${{ steps.build-frontend.outputs.digest }}
+          format: table
+          severity: CRITICAL
+          exit-code: '1'
+          ignore-unfixed: true
 
       - name: Commit version bump
         run: |

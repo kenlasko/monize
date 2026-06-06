@@ -1,0 +1,14 @@
+ignored:
+  # Pin versions in apk add. Alpine APK does not provide stable version pinning,
+  # and we mitigate base-image CVEs via Trivy scanning + Dependabot updates on
+  # the FROM image tag instead.
+  - DL3018
+  # Pin versions in npm. We use package-lock.json (npm ci) which provides
+  # deterministic version pinning at the lockfile level.
+  - DL3016
+
+trustedRegistries:
+  - docker.io
+  - ghcr.io
+
+failure-threshold: warning
