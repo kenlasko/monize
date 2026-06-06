@@ -169,6 +169,58 @@ jobs:
       - name: Verify schema.sql matches migrations state
         run: scripts/verify-schema.sh
 
+  frontend-bundle-size:
+    name: Frontend Bundle Size
+    runs-on: ubuntu-latest
+    # Skip on the build-and-push commit so we don't double-build on main.
+    if: github.event_name == 'pull_request'
+    defaults:
+      run:
+        working-directory: frontend
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - run: npm ci
+      - run: npm run build
+        env:
+          # Same env the e2e build uses so the bundle reflects production output.
+          NODE_ENV: production
+      - name: Report bundle sizes
+        run: |
+          {
+            echo "## Frontend bundle sizes"
+            echo
+            echo '| Path | Size |'
+            echo '|------|------|'
+            # Top 20 largest files under .next/static
+            find .next/static -type f -printf '%s\t%P\n' \
+              | sort -rn | head -20 \
+              | awk '{ printf "| %s | %.1f KB |\n", $2, $1/1024 }'
+            echo
+            echo '### Totals'
+            echo
+            TOTAL_STATIC=$(du -sb .next/static | cut -f1)
+            TOTAL_STANDALONE=$(du -sb .next/standalone 2>/dev/null | cut -f1 || echo 0)
+            printf -- '- .next/static: **%.1f MB**\n' "$(echo "$TOTAL_STATIC/1048576" | bc -l)"
+            printf -- '- .next/standalone: **%.1f MB**\n' "$(echo "$TOTAL_STANDALONE/1048576" | bc -l)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  env-doc-check:
+    name: Env Var Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - name: Verify env vars are documented
+        run: node scripts/check-env-docs.mjs
+
   zizmor-scan:
     name: Workflow Security Scan (zizmor)
     runs-on: ubuntu-latest
@@ -218,15 +270,17 @@ jobs:
           # We explicitly don't provide HTTPS out-of-the-box since most users self-host in environments where HTTPS is terminated at a reverse proxy, and we provide guidance on how to securely configure this in our docs. 
           # We also have some known exception messages that contain payee names which would otherwise be flagged as potential secrets, but we have determined that the risk of these being exploited is low and the value of having the full exception message in our logs outweighs the risk.
           skip-rule: "javascript_lang_logger_leak,javascript_express_https_protocol_missing,javascript_lang_exception" 
-          # Exclude some false positives and low-risk findings that we are aware of and have accepted for now. We can re-evaluate these over time to see if any should be remediated.
-          # b65bd7b1a0585cd1d0a326cdb09ce40d_0 - Hard-coded secret used for demo site
-          # da119900eefffd8b84e7693e0388568a_0 - Hard-coded secret used for E2E tests
-          # 95857358158e4664c01c05441df9f2a9_0 - Hard-coded secret used for demo site
-          # 842822dd22cd4403ab5800ac89480c0a_0 - Insufficient randomness for inconsequential task
-          # aa2e6330aede1004652f740df19e1d86_0 - Insufficient randomness for inconsequential task
-          # b04cb91b90deb5e16504baa7ab95f678_0 - Unsanitized dynamic input in file path [CWE-22]
-          # b04cb91b90deb5e16504baa7ab95f678_1 - Unsanitized dynamic input in file path [CWE-22]
-          # b04cb91b90deb5e16504baa7ab95f678_2 - Unsanitized dynamic input in file path [CWE-22]
+          # Exclude some false positives and low-risk findings that we are aware of and have accepted for now.
+          # Each entry has a "review-by" date; the bearer-exceptions-review workflow
+          # opens an issue when any entry is past due, so exceptions don't become permanent debt.
+          # b65bd7b1a0585cd1d0a326cdb09ce40d_0 - Hard-coded secret used for demo site - review-by: 2026-09-04
+          # da119900eefffd8b84e7693e0388568a_0 - Hard-coded secret used for E2E tests - review-by: 2026-09-04
+          # 95857358158e4664c01c05441df9f2a9_0 - Hard-coded secret used for demo site - review-by: 2026-09-04
+          # 842822dd22cd4403ab5800ac89480c0a_0 - Insufficient randomness for inconsequential task - review-by: 2026-09-04
+          # aa2e6330aede1004652f740df19e1d86_0 - Insufficient randomness for inconsequential task - review-by: 2026-09-04
+          # b04cb91b90deb5e16504baa7ab95f678_0 - Unsanitized dynamic input in file path [CWE-22] - review-by: 2026-09-04
+          # b04cb91b90deb5e16504baa7ab95f678_1 - Unsanitized dynamic input in file path [CWE-22] - review-by: 2026-09-04
+          # b04cb91b90deb5e16504baa7ab95f678_2 - Unsanitized dynamic input in file path [CWE-22] - review-by: 2026-09-04
           exclude-fingerprint: "b65bd7b1a0585cd1d0a326cdb09ce40d_0,da119900eefffd8b84e7693e0388568a_0,95857358158e4664c01c05441df9f2a9_0,842822dd22cd4403ab5800ac89480c0a_0,aa2e6330aede1004652f740df19e1d86_0,b04cb91b90deb5e16504baa7ab95f678_0,b04cb91b90deb5e16504baa7ab95f678_1,b04cb91b90deb5e16504baa7ab95f678_2"
 
   build-and-push:
@@ -246,6 +300,7 @@ jobs:
         license-check,
         schema-drift,
         zizmor-scan,
+        env-doc-check,
         e2e-tests,
       ]
     permissions:

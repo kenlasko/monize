@@ -1,0 +1,81 @@
+name: Bearer Exceptions Review
+
+# Weekly check that every entry in the bearer-scan exclude-fingerprint list
+# is still within its review-by window. Opens an issue when any exception is
+# past due so accepted security findings don't quietly become permanent debt.
+
+on:
+  schedule:
+    # Mondays at 09:00 UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  review-exceptions:
+    name: Review Bearer exceptions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - name: Check exceptions
+        id: check
+        run: |
+          set +e
+          OUTPUT="$(node scripts/check-bearer-exceptions.mjs 2>&1)"
+          EXIT_CODE=$?
+          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
+          {
+            echo 'output<<EOF_OUTPUT'
+            echo "$OUTPUT"
+            echo 'EOF_OUTPUT'
+          } >> "$GITHUB_OUTPUT"
+          echo "$OUTPUT"
+          exit 0
+
+      - name: Open issue if stale
+        if: steps.check.outputs.exit_code != '0'
+        uses: actions/github-script@v8
+        env:
+          REPORT: ${{ steps.check.outputs.output }}
+        with:
+          script: |
+            const title = 'Bearer exceptions past review-by date';
+            const body = [
+              'One or more Bearer security exceptions in `.github/workflows/ci.yml`',
+              'are past their review-by date. Re-evaluate the underlying finding',
+              'and either remediate it or extend the review-by date.',
+              '',
+              '```',
+              process.env.REPORT,
+              '```',
+            ].join('\n');
+
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'bearer-exceptions',
+            });
+
+            if (existing.length > 0) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing[0].number,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ['bearer-exceptions', 'security'],
+              });
+            }

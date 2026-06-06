@@ -1,0 +1,11 @@
+# ZAP baseline rule overrides for Monize.
+# Format: RULE_ID<TAB>THRESHOLD<TAB>URL_PATTERN
+# THRESHOLD: IGNORE | WARN | FAIL
+#
+# Self-hosted deployments terminate HTTPS at a reverse proxy, so the e2e
+# stack runs HTTP - silence the HTTPS-related alerts in CI. The proxy
+# config is covered in our self-hosting docs, not enforced here.
+10038	IGNORE	(Content Security Policy headers - validated by Lighthouse)
+10202	IGNORE	(Absence of Anti-CSRF Tokens - we use double-submit cookie pattern; ZAP cannot see the cookie/header pair)
+10038-1	IGNORE	(CSP header reports inline-script - intentional via nonce/strict-dynamic in proxy.ts)
+10063	IGNORE	(Permissions-Policy header missing - acceptable for self-hosted; doc'd in security guide)

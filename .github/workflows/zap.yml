@@ -1,0 +1,46 @@
+name: OWASP ZAP Baseline
+
+# Nightly DAST against a freshly-built e2e stack. Catches runtime issues that
+# Bearer and CodeQL miss (missing/misconfigured security headers, exposed
+# admin endpoints, CSRF gaps, cookie flags). Findings are filed as a GitHub
+# issue automatically.
+
+on:
+  schedule:
+    # 04:00 UTC daily - after demo-mode resets but before any real users.
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  zap-baseline:
+    name: ZAP baseline scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build application images
+        run: docker compose -f docker-compose.e2e.yml build
+
+      - name: Start application stack
+        run: docker compose -f docker-compose.e2e.yml up -d --wait --wait-timeout 600
+
+      - name: ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: http://localhost:3001
+          rules_file_name: .github/zap/rules.tsv
+          cmd_options: '-a -j -T 10'
+          issue_title: 'ZAP Baseline Report'
+          fail_action: false
+
+      - name: Stop services
+        if: always()
+        run: docker compose -f docker-compose.e2e.yml down -v

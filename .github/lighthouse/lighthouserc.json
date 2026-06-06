@@ -1,0 +1,20 @@
+{
+  "ci": {
+    "collect": {
+      "numberOfRuns": 1,
+      "settings": {
+        "preset": "desktop",
+        "chromeFlags": "--no-sandbox --headless=new"
+      }
+    },
+    "assert": {
+      "assertions": {
+        "categories:accessibility": ["error", { "minScore": 0.95 }],
+        "categories:best-practices": ["error", { "minScore": 0.95 }],
+        "categories:performance": ["warn", { "minScore": 0.8 }],
+        "categories:seo": ["off"],
+        "csp-xss": ["warn", { "minScore": 1 }]
+      }
+    }
+  }
+}
