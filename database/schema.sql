@@ -116,9 +116,10 @@ CREATE TABLE accounts (
     current_balance NUMERIC(20, 4) DEFAULT 0,
     credit_limit NUMERIC(20, 4), -- for credit cards
     interest_rate NUMERIC(8, 4), -- for loans, mortgages, savings
-    -- Credit card statement fields
-    statement_due_day INTEGER CHECK (statement_due_day IS NULL OR (statement_due_day >= 1 AND statement_due_day <= 31)) CHECK (account_type = 'CREDIT_CARD' OR statement_due_day IS NULL), -- day of month payment is due (credit cards only)
-    statement_settlement_day INTEGER CHECK (statement_settlement_day IS NULL OR (statement_settlement_day >= 1 AND statement_settlement_day <= 31)) CHECK (account_type = 'CREDIT_CARD' OR statement_settlement_day IS NULL), -- last day of billing cycle (credit cards only)
+    -- Credit card statement fields (constraints named to match migrations 027/028
+    -- so fresh installs and upgraded installs produce the same constraint set)
+    statement_due_day INTEGER, -- day of month payment is due (credit cards only)
+    statement_settlement_day INTEGER, -- last day of billing cycle (credit cards only)
     is_closed BOOLEAN DEFAULT false,
     closed_date DATE,
     is_favourite BOOLEAN DEFAULT false,
@@ -143,7 +144,15 @@ CREATE TABLE accounts (
     amortization_months INTEGER, -- Total amortization period in months (e.g., 300 for 25 years)
     original_principal NUMERIC(20, 4), -- Original mortgage amount for reference
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_statement_due_day
+      CHECK (statement_due_day IS NULL OR (statement_due_day >= 1 AND statement_due_day <= 31)),
+    CONSTRAINT chk_statement_settlement_day
+      CHECK (statement_settlement_day IS NULL OR (statement_settlement_day >= 1 AND statement_settlement_day <= 31)),
+    CONSTRAINT chk_statement_due_day_cc_only
+      CHECK (account_type = 'CREDIT_CARD' OR statement_due_day IS NULL),
+    CONSTRAINT chk_statement_settlement_day_cc_only
+      CHECK (account_type = 'CREDIT_CARD' OR statement_settlement_day IS NULL)
 );
 
 CREATE INDEX idx_accounts_user ON accounts(user_id);
