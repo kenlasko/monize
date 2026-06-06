@@ -39,18 +39,27 @@ docker run -d --rm --name "$CONTAINER" \
   -e POSTGRES_PASSWORD="$PG_PASSWORD" \
   "$PG_IMAGE" >/dev/null
 
+psql_in() {
+  docker exec -i -e PGPASSWORD="$PG_PASSWORD" "$CONTAINER" \
+    psql -U postgres -h localhost -v ON_ERROR_STOP=1 "$@"
+}
+
+# pg_isready can return ready before the server fully accepts connections
+# (and the unix socket may not be created yet). Probe with an actual query
+# instead so we wait until psql can really connect.
 echo "Waiting for postgres to be ready..."
-for _ in $(seq 1 30); do
-  if docker exec "$CONTAINER" pg_isready -U postgres >/dev/null 2>&1; then
+for _ in $(seq 1 60); do
+  if psql_in -c "SELECT 1" >/dev/null 2>&1; then
     break
   fi
   sleep 1
 done
 
-psql_in() {
-  docker exec -i -e PGPASSWORD="$PG_PASSWORD" "$CONTAINER" \
-    psql -U postgres -v ON_ERROR_STOP=1 "$@"
-}
+if ! psql_in -c "SELECT 1" >/dev/null 2>&1; then
+  echo "FAIL: postgres did not become ready within 60s"
+  docker logs "$CONTAINER" || true
+  exit 1
+fi
 
 echo "Creating db_schema and db_migrations..."
 psql_in -c "CREATE DATABASE db_schema;"

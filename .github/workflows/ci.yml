@@ -151,18 +151,26 @@ jobs:
         with:
           node-version: 24
       - run: npm ci
-      # Allow permissive licenses + AGPL-3.0 (the project's own license) +
-      # LGPL variants. LGPL is compatible with AGPL-3.0 in our usage
-      # (npm dependency = dynamic linking equivalent, which LGPL explicitly
-      # permits). Common LGPL transitive dep: @img/sharp-libvips-*, used by
-      # Next.js image optimization.
-      # Anything else (GPL-2.0, proprietary, UNKNOWN) fails the build.
+      # Allowed: permissive (MIT, BSD, ISC, Apache-2.0, 0BSD, Unlicense, ...);
+      # the project's own license (AGPL-3.0 family); LGPL variants (compatible
+      # with AGPL since npm dependency = dynamic-linking equivalent which LGPL
+      # permits; e.g. @img/sharp-libvips-*); MPL-2.0 (weak copyleft, AGPL
+      # compatible; e.g. lightningcss, dompurify); Zlib (e.g. pako).
+      #
+      # MIT* matches packages whose license is inferred from a LICENSE file
+      # but not declared via SPDX (currently pause, rgbcolor) -- still MIT in
+      # practice. Compound SPDX expressions are matched literally because
+      # license-checker doesn't parse them; new ones will need to be added
+      # as they appear.
+      #
+      # Disallowed: GPL-2.0/3.0 (incompatible network-use semantics),
+      # proprietary, UNKNOWN, anything not listed.
       - name: Check licenses
         run: |
           npx --yes license-checker-rseidelsohn \
             --production \
             --excludePrivatePackages \
-            --onlyAllow 'MIT;MIT-0;Apache-2.0;BSD-2-Clause;BSD-3-Clause;BSD;ISC;0BSD;CC0-1.0;CC-BY-3.0;CC-BY-4.0;Unlicense;Python-2.0;BlueOak-1.0.0;AGPL-3.0;AGPL-3.0-only;LGPL-3.0;LGPL-3.0-or-later;LGPL-3.0-only;LGPL-2.1;LGPL-2.1-or-later;LGPL-2.1-only;WTFPL'
+            --onlyAllow 'MIT;MIT-0;Apache-2.0;BSD-2-Clause;BSD-3-Clause;BSD;ISC;0BSD;CC0-1.0;CC-BY-3.0;CC-BY-4.0;Unlicense;Python-2.0;BlueOak-1.0.0;AGPL-3.0;AGPL-3.0-only;AGPL-3.0-or-later;LGPL-3.0;LGPL-3.0-or-later;LGPL-3.0-only;LGPL-2.1;LGPL-2.1-or-later;LGPL-2.1-only;MPL-2.0;Zlib;WTFPL;MIT*;(MIT AND BSD-3-Clause);(MIT AND Zlib);(MIT AND ISC);(MPL-2.0 OR Apache-2.0)'
 
   schema-drift:
     name: Schema vs Migrations Drift
