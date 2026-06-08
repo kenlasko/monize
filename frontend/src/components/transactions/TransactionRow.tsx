@@ -203,6 +203,10 @@ export const TransactionRow = memo(function TransactionRow({
 }: TransactionRowProps) {
   const { formatCurrency } = useNumberFormat();
   const isVoid = transaction.status === TransactionStatus.VOID;
+  // Prefer the denormalized payeeName, but fall back to the linked payee's name
+  // so a transaction that has only payeeId set (e.g. created via the REST API
+  // without payeeName) still shows the payee instead of a dash.
+  const payeeLabel = transaction.payeeName || transaction.payee?.name || null;
   const categoryColor = transaction.category
     ? (categoryColorMap?.get(transaction.category.id) ?? transaction.category.color)
     : null;
@@ -241,16 +245,16 @@ export const TransactionRow = memo(function TransactionRow({
           <button
             onClick={(e) => { e.stopPropagation(); onPayeeClick(transaction.payeeId!); }}
             className={`text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline block truncate sm:max-w-[280px] text-left ${isVoid ? 'line-through' : ''}`}
-            title={`Edit payee: ${transaction.payeeName}`}
+            title={`Edit payee: ${payeeLabel ?? ''}`}
           >
-            {transaction.payeeName || '-'}
+            {payeeLabel || '-'}
           </button>
         ) : (
           <div
             className={`text-sm font-medium text-gray-900 dark:text-gray-100 truncate sm:max-w-[280px] ${isVoid ? 'line-through' : ''}`}
-            title={transaction.payeeName || undefined}
+            title={payeeLabel || undefined}
           >
-            {transaction.payeeName || '-'}
+            {payeeLabel || '-'}
           </div>
         )}
         {density === 'normal' && transaction.referenceNumber && (

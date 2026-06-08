@@ -98,6 +98,32 @@ describe('TransactionRow', () => {
     expect(dashes.length).toBeGreaterThan(0);
   });
 
+  it('falls back to the linked payee name when payeeName is null (button branch)', () => {
+    const onPayeeClick = vi.fn();
+    renderRow(
+      { onPayeeClick },
+      {
+        payeeId: 'p1',
+        payeeName: null,
+        payee: { id: 'p1', name: 'Linked Payee' } as Transaction['payee'],
+      },
+    );
+    fireEvent.click(screen.getByText('Linked Payee'));
+    expect(onPayeeClick).toHaveBeenCalledWith('p1');
+  });
+
+  it('falls back to the linked payee name when payeeName is null (text branch)', () => {
+    renderRow(
+      {},
+      {
+        payeeId: 'p1',
+        payeeName: null,
+        payee: { id: 'p1', name: 'Linked Payee' } as Transaction['payee'],
+      },
+    );
+    expect(screen.getByText('Linked Payee')).toBeInTheDocument();
+  });
+
   it('renders category as clickable when onCategoryClick provided', () => {
     const onCategoryClick = vi.fn();
     renderRow({ onCategoryClick });
