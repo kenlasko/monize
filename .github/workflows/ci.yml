@@ -370,6 +370,12 @@ jobs:
       - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: 24
+          # Disable the package-manager cache in this publish job. zizmor's
+          # cache-poisoning audit flags caches that are restored in a job which
+          # publishes runtime artifacts (the signed GHCR images below): a
+          # poisoned cache could taint a release. This job only runs `npm
+          # version`, so it never needs the cache anyway.
+          package-manager-cache: false
 
       - name: Bump patch version
         id: version
