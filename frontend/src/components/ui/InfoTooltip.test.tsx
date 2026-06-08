@@ -27,6 +27,20 @@ describe('InfoTooltip', () => {
     expect(tooltipEl.className).toContain('bottom-full');
   });
 
+  it('anchors the popover to the right edge when align is right', () => {
+    render(<InfoTooltip text="Tooltip" align="right" />);
+    const tooltipEl = screen.getByRole('tooltip');
+    expect(tooltipEl.className).toContain('right-0');
+    expect(tooltipEl.className).not.toContain('left-0');
+  });
+
+  it('keeps the default left anchor for bottom placement', () => {
+    render(<InfoTooltip text="Tooltip" />);
+    const tooltipEl = screen.getByRole('tooltip');
+    expect(tooltipEl.className).toContain('left-0');
+    expect(tooltipEl.className).not.toContain('right-0');
+  });
+
   it('applies custom icon className', () => {
     const { container } = render(<InfoTooltip text="Tooltip" iconClassName="h-6 w-6" />);
     expect(container.querySelector('.h-6.w-6')).toBeInTheDocument();

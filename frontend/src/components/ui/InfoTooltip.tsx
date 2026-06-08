@@ -7,6 +7,14 @@ interface InfoTooltipProps {
   text: string;
   /** Where the popover renders relative to the icon. Defaults to 'bottom'. */
   placement?: 'top' | 'bottom';
+  /**
+   * Horizontal edge the popover anchors to. Use 'right' (opens leftward) when
+   * the icon sits near a container's right edge -- e.g. the right column of a
+   * modal -- so the fixed-width popover doesn't overflow and get clipped.
+   * Defaults to the natural alignment for the placement (left for 'bottom',
+   * centered for 'top').
+   */
+  align?: 'left' | 'right';
   /** Tailwind size classes for the icon. Defaults to 'h-4 w-4'. */
   iconClassName?: string;
 }
@@ -20,12 +28,19 @@ interface InfoTooltipProps {
 export function InfoTooltip({
   text,
   placement = 'bottom',
+  align,
   iconClassName = 'h-4 w-4',
 }: InfoTooltipProps) {
-  const popoverClasses =
-    placement === 'top'
-      ? 'left-1/2 -translate-x-1/2 bottom-full mb-2'
-      : 'left-0 top-full mt-1';
+  const vertical = placement === 'top' ? 'bottom-full mb-2' : 'top-full mt-1';
+  const horizontal =
+    align === 'right'
+      ? 'right-0'
+      : align === 'left'
+        ? 'left-0'
+        : placement === 'top'
+          ? 'left-1/2 -translate-x-1/2'
+          : 'left-0';
+  const popoverClasses = `${horizontal} ${vertical}`;
   return (
     <span
       aria-label={text}

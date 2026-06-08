@@ -327,11 +327,11 @@ describe('PostTransactionDialog', () => {
     expect(screen.getByLabelText('Split this transaction')).toBeInTheDocument();
   });
 
-  it('shows split editor when split checkbox is checked', () => {
+  it('shows split editor when split toggle is enabled', () => {
     render(<PostTransactionDialog {...defaultProps} />);
 
-    const splitCheckbox = screen.getByLabelText('Split this transaction') as HTMLInputElement;
-    fireEvent.click(splitCheckbox);
+    const splitToggle = screen.getByLabelText('Split this transaction') as HTMLElement;
+    fireEvent.click(splitToggle);
 
     expect(screen.getByTestId('split-editor')).toBeInTheDocument();
   });
@@ -341,8 +341,8 @@ describe('PostTransactionDialog', () => {
 
     expect(screen.getByTestId('combobox-category')).toBeInTheDocument();
 
-    const splitCheckbox = screen.getByLabelText('Split this transaction') as HTMLInputElement;
-    fireEvent.click(splitCheckbox);
+    const splitToggle = screen.getByLabelText('Split this transaction') as HTMLElement;
+    fireEvent.click(splitToggle);
 
     expect(screen.queryByTestId('combobox-category')).not.toBeInTheDocument();
     expect(screen.getByTestId('split-editor')).toBeInTheDocument();
@@ -352,8 +352,8 @@ describe('PostTransactionDialog', () => {
   it('initializes split state from split transaction', () => {
     render(<PostTransactionDialog {...defaultProps} scheduledTransaction={splitTransaction} />);
 
-    const splitCheckbox = screen.getByLabelText('Split this transaction') as HTMLInputElement;
-    expect(splitCheckbox.checked).toBe(true);
+    const splitToggle = screen.getByLabelText('Split this transaction') as HTMLElement;
+    expect(splitToggle).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByTestId('split-editor')).toBeInTheDocument();
   });
 
@@ -722,8 +722,8 @@ describe('PostTransactionDialog', () => {
     // Since the mock is already set up with 2 splits, we test directly via UI
     // Toggle split on a regular transaction, then verify the SplitEditor is shown
     render(<PostTransactionDialog {...defaultProps} />);
-    const splitCheckbox = screen.getByLabelText('Split this transaction') as HTMLInputElement;
-    fireEvent.click(splitCheckbox);
+    const splitToggle = screen.getByLabelText('Split this transaction') as HTMLElement;
+    fireEvent.click(splitToggle);
     expect(screen.getByTestId('split-editor')).toBeInTheDocument();
   });
 
@@ -740,8 +740,8 @@ describe('PostTransactionDialog', () => {
     } as any;
 
     render(<PostTransactionDialog {...defaultProps} scheduledTransaction={splitTx} />);
-    const splitCheckbox = screen.getByLabelText('Split this transaction') as HTMLInputElement;
-    expect(splitCheckbox.checked).toBe(true);
+    const splitToggle = screen.getByLabelText('Split this transaction') as HTMLElement;
+    expect(splitToggle).toHaveAttribute('aria-checked', 'true');
 
     // Post the transaction — splits total matches, should succeed
     const buttons = screen.getAllByText('Post Transaction');
@@ -790,8 +790,8 @@ describe('PostTransactionDialog', () => {
 
     render(<PostTransactionDialog {...defaultProps} scheduledTransaction={overrideWithSplits} />);
     // isSplit should be true and split editor shown
-    const splitCheckbox = screen.getByLabelText('Split this transaction') as HTMLInputElement;
-    expect(splitCheckbox.checked).toBe(true);
+    const splitToggle = screen.getByLabelText('Split this transaction') as HTMLElement;
+    expect(splitToggle).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByTestId('split-editor')).toBeInTheDocument();
   });
 
@@ -814,8 +814,8 @@ describe('PostTransactionDialog', () => {
     } as any;
 
     render(<PostTransactionDialog {...defaultProps} scheduledTransaction={overrideNoSplits} />);
-    const splitCheckbox = screen.getByLabelText('Split this transaction') as HTMLInputElement;
-    expect(splitCheckbox.checked).toBe(true);
+    const splitToggle = screen.getByLabelText('Split this transaction') as HTMLElement;
+    expect(splitToggle).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByTestId('split-editor')).toBeInTheDocument();
   });
 
@@ -835,8 +835,8 @@ describe('PostTransactionDialog', () => {
     } as any;
 
     render(<PostTransactionDialog {...defaultProps} scheduledTransaction={overrideNoSplitsNoBase} />);
-    const splitCheckbox = screen.getByLabelText('Split this transaction') as HTMLInputElement;
-    expect(splitCheckbox.checked).toBe(true);
+    const splitToggle = screen.getByLabelText('Split this transaction') as HTMLElement;
+    expect(splitToggle).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByTestId('split-editor')).toBeInTheDocument();
   });
 
@@ -969,15 +969,15 @@ describe('PostTransactionDialog', () => {
   // --- Split toggle: unchecking hides SplitEditor ---
   it('hides SplitEditor and shows category combobox when split is unchecked', () => {
     render(<PostTransactionDialog {...defaultProps} />);
-    const splitCheckbox = screen.getByLabelText('Split this transaction') as HTMLInputElement;
+    const splitToggle = screen.getByLabelText('Split this transaction') as HTMLElement;
 
     // Enable split
-    fireEvent.click(splitCheckbox);
+    fireEvent.click(splitToggle);
     expect(screen.getByTestId('split-editor')).toBeInTheDocument();
     expect(screen.queryByTestId('combobox-category')).not.toBeInTheDocument();
 
     // Disable split
-    fireEvent.click(splitCheckbox);
+    fireEvent.click(splitToggle);
     expect(screen.queryByTestId('split-editor')).not.toBeInTheDocument();
     expect(screen.getByTestId('combobox-category')).toBeInTheDocument();
   });

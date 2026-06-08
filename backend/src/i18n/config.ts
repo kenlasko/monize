@@ -7,7 +7,13 @@
 
 export const DEFAULT_LOCALE = "en";
 
-export const SUPPORTED_LOCALE_CODES: readonly string[] = ["en"];
+// 'en' ships in every environment. 'xx' is the pseudo-locale used for
+// translation QA: it wraps every catalog string in `[XX-...-XX]` markers so
+// untranslated backend strings (those not routed through `tr()`) stand out
+// when the request locale is `xx`. Mirrors the frontend's `xx` devOnly locale
+// (see frontend/src/i18n/config.ts), which hides it from the language picker
+// in production.
+export const SUPPORTED_LOCALE_CODES: readonly string[] = ["en", "xx"];
 
 export function isSupportedLocale(code: string | undefined | null): boolean {
   if (!code) return false;

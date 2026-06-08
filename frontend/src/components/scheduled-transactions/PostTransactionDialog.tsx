@@ -9,6 +9,7 @@ import { DateInput } from '@/components/ui/DateInput';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Combobox } from '@/components/ui/Combobox';
 import { Modal } from '@/components/ui/Modal';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { SplitEditor, SplitRow, createEmptySplits, toSplitRows } from '@/components/transactions/SplitEditor';
 import { toOverrideSplits } from './splitSerialization';
 import { ScheduledTransaction, PostScheduledTransactionData } from '@/types/scheduled-transaction';
@@ -691,23 +692,21 @@ export function PostTransactionDialog({
         ) : (
           <>
             {/* Split toggle */}
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="isSplit"
+            <label className="flex items-center gap-2 cursor-pointer w-fit">
+              <ToggleSwitch
                 checked={isSplit}
-                onChange={(e) => {
-                  setIsSplit(e.target.checked);
-                  if (e.target.checked && splits.length < 2) {
+                onChange={(next) => {
+                  setIsSplit(next);
+                  if (next && splits.length < 2) {
                     setSplits(createEmptySplits(amount));
                   }
                 }}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                label={t('postDialog.splitLabel')}
               />
-              <label htmlFor="isSplit" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+              <span className="text-sm text-gray-700 dark:text-gray-300">
                 {t('postDialog.splitLabel')}
-              </label>
-            </div>
+              </span>
+            </label>
 
             {/* Category or Splits */}
             {isSplit ? (

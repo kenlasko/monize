@@ -194,13 +194,13 @@ export function FavouriteAccounts({ accounts, brokerageMarketValues, isLoading, 
                       {account.statementDueDay && (
                         <span className="flex items-center">
                           {t('favouriteAccounts.due', { ordinal: getOrdinal(account.statementDueDay) })}
-                          <InfoTooltip text="The day of each month when your credit card payment is due" />
+                          <InfoTooltip text={t('favouriteAccounts.dueTooltip')} />
                         </span>
                       )}
                       {account.statementSettlementDay && (
                         <span className="flex items-center">
                           {t('favouriteAccounts.settlement', { ordinal: getOrdinal(account.statementSettlementDay) })}
-                          <InfoTooltip text="The last day of the billing cycle. Transactions posted on or before this day appear on the current statement." />
+                          <InfoTooltip text={t('favouriteAccounts.settlementTooltip')} />
                         </span>
                       )}
                     </div>

@@ -13,7 +13,9 @@
     "moveDown": "Move down",
     "marketValue": "Market value",
     "due": "Due: {ordinal}",
-    "settlement": "Settlement: {ordinal}"
+    "dueTooltip": "The day of each month when your credit card payment is due",
+    "settlement": "Settlement: {ordinal}",
+    "settlementTooltip": "The last day of the billing cycle. Transactions posted on or before this day appear on the current statement."
   },
   "upcomingBills": {
     "title": "Upcoming Bills & Deposits",

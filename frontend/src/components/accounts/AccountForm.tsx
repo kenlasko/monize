@@ -571,7 +571,7 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   {t('form.statementSettlementDay')}
                 </label>
-                <InfoTooltip text={t('form.statementSettlementDayTooltip')} />
+                <InfoTooltip text={t('form.statementSettlementDayTooltip')} align="right" />
               </div>
               <input
                 type="number"
