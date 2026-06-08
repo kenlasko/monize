@@ -127,5 +127,50 @@
     "length": "[XX-Code must be exactly 6 digits-XX]",
     "digits": "[XX-Code must be 6 digits-XX]"
   },
+  "monthsShort": [
+    "[XX-Jan-XX]",
+    "[XX-Feb-XX]",
+    "[XX-Mar-XX]",
+    "[XX-Apr-XX]",
+    "[XX-May-XX]",
+    "[XX-Jun-XX]",
+    "[XX-Jul-XX]",
+    "[XX-Aug-XX]",
+    "[XX-Sep-XX]",
+    "[XX-Oct-XX]",
+    "[XX-Nov-XX]",
+    "[XX-Dec-XX]"
+  ],
+  "weekdaysShort": [
+    "[XX-Sun-XX]",
+    "[XX-Mon-XX]",
+    "[XX-Tue-XX]",
+    "[XX-Wed-XX]",
+    "[XX-Thu-XX]",
+    "[XX-Fri-XX]",
+    "[XX-Sat-XX]"
+  ],
+  "weekdaysMin": [
+    "[XX-Su-XX]",
+    "[XX-Mo-XX]",
+    "[XX-Tu-XX]",
+    "[XX-We-XX]",
+    "[XX-Th-XX]",
+    "[XX-Fr-XX]",
+    "[XX-Sa-XX]"
+  ],
+  "weekdaysNarrow": [
+    "[XX-S-XX]",
+    "[XX-M-XX]",
+    "[XX-T-XX]",
+    "[XX-W-XX]",
+    "[XX-T-XX]",
+    "[XX-F-XX]",
+    "[XX-S-XX]"
+  ],
+  "dateFormat": {
+    "browserAuto": "[XX-Use browser locale (auto-detect)-XX]",
+    "custom": "[XX-Custom...-XX]"
+  },
   "emailInvalid": "[XX-Please enter a valid email address-XX]"
 }

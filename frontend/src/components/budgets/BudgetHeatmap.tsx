@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useCallback } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import {
   eachDayOfInterval,
@@ -22,8 +22,6 @@ interface BudgetHeatmapProps {
   formatCurrency: (amount: number) => string;
 }
 
-const WEEKDAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-
 function getHeatColor(amount: number, maxAmount: number): string {
   if (amount === 0 || maxAmount === 0) return 'bg-gray-100 dark:bg-gray-700';
   const intensity = amount / maxAmount;
@@ -39,6 +37,13 @@ export function BudgetHeatmap({
   periodEnd,
   formatCurrency,
 }: BudgetHeatmapProps) {
+  const locale = useLocale();
+  const tc = useTranslations('common');
+  // Grid is Monday-first (see getDay conversion below); the catalog array is
+  // Sunday-first, so rotate Sunday to the end.
+  const narrowDays = tc.raw('weekdaysNarrow') as string[];
+  const WEEKDAY_LABELS = [...narrowDays.slice(1), narrowDays[0]];
+
   const { days, maxAmount, spendingMap, monthLabel } = useMemo(() => {
     const start = new Date(periodStart + 'T00:00:00');
     const end = new Date(periodEnd + 'T00:00:00');
@@ -58,9 +63,12 @@ export function BudgetHeatmap({
       days: allDays,
       maxAmount: max,
       spendingMap: map,
-      monthLabel: format(start, 'MMMM yyyy'),
+      monthLabel: new Intl.DateTimeFormat(locale, {
+        month: 'long',
+        year: 'numeric',
+      }).format(start),
     };
-  }, [dailySpending, periodStart, periodEnd]);
+  }, [dailySpending, periodStart, periodEnd, locale]);
 
   // Build weekly grid: rows = weeks, cols = days of week (Monday=0)
   const weeks = useMemo(() => {
@@ -136,7 +144,10 @@ export function BudgetHeatmap({
 
                   const isToday = isSameDay(day.date, today);
                   const color = getHeatColor(day.amount, maxAmount);
-                  const dateLabel = format(day.date, 'MMM d');
+                  const dateLabel = new Intl.DateTimeFormat(locale, {
+                    month: 'short',
+                    day: 'numeric',
+                  }).format(day.date);
 
                   return (
                     <td key={dayIdx} className="p-0.5">

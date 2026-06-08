@@ -25,6 +25,8 @@ type SeasonalPatternsSortField = 'category' | 'typical' | 'highMonths';
 
 export function BudgetSeasonalPatternsReport() {
   const t = useTranslations('reports');
+  const tc = useTranslations('common');
+  const monthsShort = tc.raw('monthsShort') as string[];
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
   const chartRef = useRef<HTMLDivElement>(null);
   const [selectedBudgetIdState, setSelectedBudgetId] = useState<string>('');
@@ -112,13 +114,12 @@ export function BudgetSeasonalPatternsReport() {
 
   const handleExportPdf = async () => {
     const { exportToPdf } = await import('@/lib/pdf-export');
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const headers = [t('budgetSeasonalPatterns.colCategory'), t('budgetSeasonalPatterns.colTypicalPerMo'), t('budgetSeasonalPatterns.colHighMonths')];
     const rows = patterns.map((p) => [
       p.categoryName,
       formatCurrency(p.typicalMonthlySpend),
       p.highMonths.length > 0
-        ? p.highMonths.map((m) => monthNames[m - 1]).join(', ')
+        ? p.highMonths.map((m) => monthsShort[m - 1]).join(', ')
         : t('budgetSeasonalPatterns.noneDetected'),
     ]);
     await exportToPdf({
@@ -308,7 +309,7 @@ export function BudgetSeasonalPatternsReport() {
                         {p.highMonths.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
                             {p.highMonths.map((m) => {
-                              const monthName = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m - 1];
+                              const monthName = monthsShort[m - 1];
                               return (
                                 <span
                                   key={m}

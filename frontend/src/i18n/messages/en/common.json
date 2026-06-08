@@ -127,5 +127,13 @@
     "length": "Code must be exactly 6 digits",
     "digits": "Code must be 6 digits"
   },
+  "monthsShort": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+  "weekdaysShort": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+  "weekdaysMin": ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
+  "weekdaysNarrow": ["S", "M", "T", "W", "T", "F", "S"],
+  "dateFormat": {
+    "browserAuto": "Use browser locale (auto-detect)",
+    "custom": "Custom..."
+  },
   "emailInvalid": "Please enter a valid email address"
 }

@@ -33,10 +33,10 @@ interface DaySpendingDisplay {
   isWeekend: boolean;
 }
 
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
 export function WeekendVsWeekdayReport() {
   const t = useTranslations('reports');
+  const tc = useTranslations('common');
+  const DAY_NAMES = tc.raw('weekdaysShort') as string[];
   const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
   const chartRef = useRef<HTMLDivElement>(null);
   const { dateRange, setDateRange, resolvedRange } = useDateRange({ defaultRange: '3m', alignment: 'day' });
@@ -87,7 +87,7 @@ export function WeekendVsWeekdayReport() {
       weekdayCount: summary.weekdayCount,
       dayData,
     };
-  }, [reportData]);
+  }, [reportData, DAY_NAMES]);
 
   const categoryComparison = useMemo(() => {
     if (!reportData) {

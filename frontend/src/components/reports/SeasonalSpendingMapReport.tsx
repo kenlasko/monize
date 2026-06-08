@@ -13,8 +13,6 @@ import { ReportError } from '@/components/reports/ReportError';
 
 type SeasonalMapSortField = 'category' | 'typical' | `month${number}`;
 
-const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
 function getHeatColor(value: number, max: number): string {
   if (max === 0 || value === 0) return 'bg-gray-50 dark:bg-gray-800';
 
@@ -37,6 +35,8 @@ function getTextColor(value: number, max: number): string {
 
 export function SeasonalSpendingMapReport() {
   const t = useTranslations('reports');
+  const tc = useTranslations('common');
+  const MONTH_LABELS = tc.raw('monthsShort') as string[];
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
   const chartRef = useRef<HTMLDivElement>(null);
   const [selectedBudgetIdOverride, setSelectedBudgetIdOverride] = useState<string>('');
@@ -99,7 +99,7 @@ export function SeasonalSpendingMapReport() {
       };
     });
     return { gridData: grid, globalMax: max };
-  }, [patterns]);
+  }, [patterns, MONTH_LABELS]);
 
   const sortedGridData = useMemo(() => {
     const sorted = [...gridData];

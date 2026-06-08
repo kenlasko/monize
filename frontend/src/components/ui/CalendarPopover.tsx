@@ -17,9 +17,6 @@ interface CalendarPopoverProps {
   anchorRef: React.RefObject<HTMLElement | null>;
 }
 
-const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
 // Approximate rendered height of the fixed-size calendar, used only to decide
 // whether to open below the field or flip above it near the page bottom.
 const POPOVER_HEIGHT = 340;
@@ -40,6 +37,8 @@ type View = 'days' | 'months';
 
 export function CalendarPopover({ value, onSelect, onClose, anchorRef }: CalendarPopoverProps) {
   const t = useTranslations('common');
+  const DAYS = t.raw('weekdaysMin') as string[];
+  const MONTHS = t.raw('monthsShort') as string[];
   const parsed = value ? value.split('-').map(Number) : null;
   const initialYear = parsed ? parsed[0] : new Date().getFullYear();
   const initialMonth = parsed ? parsed[1] - 1 : new Date().getMonth();

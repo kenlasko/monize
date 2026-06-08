@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { accountsApi } from '@/lib/accounts';
 import { usePreferencesStore } from '@/store/preferencesStore';
-import { EXPORT_DATE_FORMAT_OPTIONS } from '@/lib/constants';
+import { getExportDateFormatOptions } from '@/lib/constants';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
 
@@ -135,7 +135,7 @@ export function AccountExportModal({
 
           <Select
             label={t('exportModal.dateFormat')}
-            options={EXPORT_DATE_FORMAT_OPTIONS}
+            options={getExportDateFormatOptions(tc)}
             value={dateFormat}
             onChange={(e) => setDateFormat(e.target.value)}
           />

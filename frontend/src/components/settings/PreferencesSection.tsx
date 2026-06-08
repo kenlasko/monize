@@ -15,7 +15,7 @@ import { getErrorMessage } from '@/lib/errors';
 import { exchangeRatesApi, CurrencyInfo } from '@/lib/exchange-rates';
 import { investmentsApi } from '@/lib/investments';
 import { Combobox } from '@/components/ui/Combobox';
-import { DATE_FORMAT_OPTIONS, EXCHANGE_OPTIONS } from '@/lib/constants';
+import { getDateFormatOptions, EXCHANGE_OPTIONS } from '@/lib/constants';
 import { LanguageSelector } from '@/components/settings/LanguageSelector';
 
 const NUMBER_FORMAT_OPTIONS = [
@@ -86,6 +86,8 @@ interface PreferencesSectionProps {
 
 export function PreferencesSection({ preferences, onPreferencesUpdated }: PreferencesSectionProps) {
   const t = useTranslations('settings.preferences');
+  const tc = useTranslations('common');
+  const dateFormatOptions = getDateFormatOptions(tc);
   const updatePreferencesStore = usePreferencesStore((state) => state.updatePreferences);
   const { setTheme: setAppTheme } = useTheme();
 
@@ -241,7 +243,7 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
 
         <Select
           label={t('dateFormatLabel')}
-          options={DATE_FORMAT_OPTIONS}
+          options={dateFormatOptions}
           value={dateFormat}
           onChange={(e) => setDateFormat(e.target.value)}
         />

@@ -1,17 +1,33 @@
 export const PAGE_SIZE = 50;
 
-export const DATE_FORMAT_OPTIONS = [
-  { value: 'browser', label: 'Use browser locale (auto-detect)' },
-  { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD (2024-12-31)' },
-  { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY (12/31/2024)' },
-  { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY (31/12/2024)' },
-  { value: 'DD-MMM-YYYY', label: 'DD-MMM-YYYY (31-Dec-2024)' },
-];
+type DateFormatOption = { value: string; label: string };
 
-export const EXPORT_DATE_FORMAT_OPTIONS = [
-  ...DATE_FORMAT_OPTIONS,
-  { value: 'custom', label: 'Custom...' },
-];
+/**
+ * Date-format picker options. The pattern labels (YYYY-MM-DD, etc.) are format
+ * codes shown verbatim; only the descriptive "browser" entry is translated.
+ * `t` is the `common` namespace translator.
+ */
+export function getDateFormatOptions(
+  t: (key: string) => string,
+): DateFormatOption[] {
+  return [
+    { value: 'browser', label: t('dateFormat.browserAuto') },
+    { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD (2024-12-31)' },
+    { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY (12/31/2024)' },
+    { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY (31/12/2024)' },
+    { value: 'DD-MMM-YYYY', label: 'DD-MMM-YYYY (31-Dec-2024)' },
+  ];
+}
+
+/** Export picker options: the date formats plus a "Custom..." entry. */
+export function getExportDateFormatOptions(
+  t: (key: string) => string,
+): DateFormatOption[] {
+  return [
+    ...getDateFormatOptions(t),
+    { value: 'custom', label: t('dateFormat.custom') },
+  ];
+}
 
 export const EXCHANGE_OPTIONS = [
   // North America
