@@ -102,7 +102,12 @@
       "totalAmountRequired": "Total amount is required",
       "splitsMinimum": "Split transactions require at least 2 splits",
       "splitsTotal": "Split amounts must equal the transaction amount"
-    }
+    },
+    "latestPlaceholder": "Latest: {price}",
+    "descriptionPlaceholder": "Description...",
+    "amountLabel": "Amount",
+    "selectCategoryPlaceholder": "Select category...",
+    "referencePlaceholder": "Cheque #, confirmation #..."
   },
   "occurrencePicker": {
     "title": "Select Occurrence Date",

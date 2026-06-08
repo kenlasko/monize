@@ -98,7 +98,8 @@
       "viewButton": "[XX-View-XX]",
       "editButton": "[XX-Edit-XX]",
       "deleteButton": "[XX-Delete-XX]"
-    }
+    },
+    "itemNamePlural": "[XX-transactions-XX]"
   },
   "row": {
     "copyOptions": {

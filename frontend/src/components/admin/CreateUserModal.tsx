@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { adminApi, CreateUserResponse } from '@/lib/admin';
-import { passwordSchema, PASSWORD_REQUIREMENTS_TEXT, emailSchema } from '@/lib/zod-helpers';
+import { passwordSchema, emailSchema } from '@/lib/zod-helpers';
 import { getErrorMessage } from '@/lib/errors';
 
 type CredentialMethod = 'invite' | 'password' | 'temporary';
@@ -233,7 +233,7 @@ export function CreateUserModal({
                 </p>
               ) : (
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  {PASSWORD_REQUIREMENTS_TEXT}
+                  {tc('passwordRequirements')}
                 </p>
               )}
             </div>

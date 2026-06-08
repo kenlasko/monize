@@ -138,7 +138,9 @@
       "asset": "[XX-Asset-XX]",
       "cash": "[XX-Cash-XX]",
       "other": "[XX-Other-XX]"
-    }
+    },
+    "statementDueDayPlaceholder": "[XX-e.g. 15-XX]",
+    "statementSettlementDayPlaceholder": "[XX-e.g. 25-XX]"
   },
   "exportModal": {
     "title": "[XX-Export {name}-XX]",

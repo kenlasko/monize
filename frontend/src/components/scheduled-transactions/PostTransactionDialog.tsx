@@ -72,6 +72,7 @@ export function PostTransactionDialog({
   onPosted,
 }: PostTransactionDialogProps) {
   const t = useTranslations('scheduledTransactions');
+  const tc = useTranslations('common');
   const { formatCurrency, formatNumber } = useNumberFormat();
   const [isLoading, setIsLoading] = useState(false);
   const [amount, setAmount] = useState<number>(0);
@@ -619,7 +620,7 @@ export function PostTransactionDialog({
                   min={0}
                   placeholder={
                     marketPrice != null
-                      ? `Latest: ${formatNumber(marketPrice, 6).replace(/0+$/, '').replace(/\.$/, '')}`
+                      ? t('postDialog.latestPlaceholder', { price: formatNumber(marketPrice, 6).replace(/0+$/, '').replace(/\.$/, '') })
                       : undefined
                   }
                   value={investmentPrice}
@@ -658,7 +659,7 @@ export function PostTransactionDialog({
                 type="text"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Description..."
+                placeholder={t('postDialog.descriptionPlaceholder')}
               />
             </div>
           </>
@@ -667,7 +668,7 @@ export function PostTransactionDialog({
         {/* Amount — non-investment only */}
         {!isInvestmentKind && (
         <CurrencyInput
-          label="Amount"
+          label={t('postDialog.amountLabel')}
           prefix={getCurrencySymbol(scheduledTransaction.currencyCode)}
           value={amount}
           onChange={(value) => setAmount(value ?? 0)}
@@ -730,7 +731,7 @@ export function PostTransactionDialog({
                   {t('postDialog.categoryLabel')}
                 </label>
                 <Combobox
-                  placeholder="Select category..."
+                  placeholder={t('postDialog.selectCategoryPlaceholder')}
                   options={categoryOptions}
                   value={categoryId}
                   initialDisplayValue={currentCategory?.name || ''}
@@ -753,7 +754,7 @@ export function PostTransactionDialog({
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Description..."
+              placeholder={t('postDialog.descriptionPlaceholder')}
             />
           </div>
           <div>
@@ -764,7 +765,7 @@ export function PostTransactionDialog({
               type="text"
               value={referenceNumber}
               onChange={(e) => setReferenceNumber(e.target.value)}
-              placeholder="Cheque #, confirmation #..."
+              placeholder={t('postDialog.referencePlaceholder')}
             />
           </div>
         </div>
@@ -774,7 +775,7 @@ export function PostTransactionDialog({
       {/* Actions */}
       <div className="mt-6 flex justify-end space-x-3">
         <Button variant="outline" onClick={onClose} disabled={isLoading}>
-          Cancel
+          {tc('cancel')}
         </Button>
         <Button onClick={handlePost} isLoading={isLoading}>
           {t('postDialog.postButton')}

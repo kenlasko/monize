@@ -114,7 +114,7 @@ export function PayeeForm({ payee, categories, onSubmit, onCancel, onDirtyChange
 
       <Combobox
         label={t('form.categoryLabel')}
-        placeholder="Select category..."
+        placeholder={t('selectCategoryPlaceholder')}
         options={categoryOptions}
         value={selectedCategoryId}
         initialDisplayValue={initialCategoryName}

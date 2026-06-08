@@ -72,11 +72,11 @@ export function AutoBackupSection() {
       setRetentionWeekly(data.retentionWeekly);
       setRetentionMonthly(data.retentionMonthly);
     } catch (error) {
-      toast.error(getErrorMessage(error, 'Failed to load auto-backup settings'));
+      toast.error(getErrorMessage(error, t('toasts.loadFailed')));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadSettings();
@@ -85,7 +85,7 @@ export function AutoBackupSection() {
   const handleValidateFolder = async () => {
     if (!folderPath.trim()) {
       setFolderValid(false);
-      setFolderError('Folder path is required');
+      setFolderError(t('folderErrors.required'));
       return;
     }
     setIsValidating(true);
@@ -98,11 +98,11 @@ export function AutoBackupSection() {
       if (result.valid) {
         toast.success(t('toasts.folderValid'));
       } else {
-        toast.error(result.error ?? 'Folder validation failed');
+        toast.error(result.error ?? t('folderErrors.validationFailed'));
       }
     } catch (error) {
       setFolderValid(false);
-      setFolderError(getErrorMessage(error, 'Validation failed'));
+      setFolderError(getErrorMessage(error, t('folderErrors.validationError')));
     } finally {
       setIsValidating(false);
     }
@@ -126,7 +126,7 @@ export function AutoBackupSection() {
       setIsDirty(false);
       toast.success(t('toasts.saved'));
     } catch (error) {
-      toast.error(getErrorMessage(error, 'Failed to save settings'));
+      toast.error(getErrorMessage(error, t('toasts.saveFailed')));
     } finally {
       setIsSaving(false);
     }
@@ -139,7 +139,7 @@ export function AutoBackupSection() {
       toast.success(t('toasts.backupCreated', { filename: result.filename }));
       await loadSettings();
     } catch (error) {
-      toast.error(getErrorMessage(error, 'Failed to run backup'));
+      toast.error(getErrorMessage(error, t('toasts.runFailed')));
       await loadSettings();
     } finally {
       setIsRunning(false);
@@ -156,7 +156,7 @@ export function AutoBackupSection() {
       setBrowsePath(result.current);
       setBrowseEntries(result.directories);
     } catch (error) {
-      toast.error(getErrorMessage(error, 'Failed to browse folders'));
+      toast.error(getErrorMessage(error, t('toasts.browseFailed')));
     } finally {
       setIsBrowsing(false);
     }

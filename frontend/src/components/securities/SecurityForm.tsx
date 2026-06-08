@@ -46,9 +46,9 @@ const quoteProviderOverrideOptions = [
 ];
 
 const lookupProviderOptions = [
-  { value: 'auto', label: 'Auto' },
-  { value: 'yahoo', label: 'Yahoo' },
-  { value: 'msn', label: 'MSN' },
+  { value: 'auto', labelKey: 'form.providers.auto' },
+  { value: 'yahoo', labelKey: 'form.providers.yahoo' },
+  { value: 'msn', labelKey: 'form.providers.msn' },
 ];
 
 interface SecurityFormProps {
@@ -60,14 +60,14 @@ interface SecurityFormProps {
 }
 
 const securityTypeOptions = [
-  { value: '', label: 'Select type...' },
-  { value: 'STOCK', label: 'Stock' },
-  { value: 'ETF', label: 'ETF' },
-  { value: 'MUTUAL_FUND', label: 'Mutual Fund' },
-  { value: 'BOND', label: 'Bond' },
-  { value: 'OPTION', label: 'Option' },
-  { value: 'CRYPTO', label: 'Cryptocurrency' },
-  { value: 'OTHER', label: 'Other' },
+  { value: '', labelKey: 'form.types.select' },
+  { value: 'STOCK', labelKey: 'form.types.stock' },
+  { value: 'ETF', labelKey: 'form.types.etf' },
+  { value: 'MUTUAL_FUND', labelKey: 'form.types.mutualFund' },
+  { value: 'BOND', labelKey: 'form.types.bond' },
+  { value: 'OPTION', labelKey: 'form.types.option' },
+  { value: 'CRYPTO', labelKey: 'form.types.crypto' },
+  { value: 'OTHER', labelKey: 'form.types.other' },
 ];
 
 export function SecurityForm({ security, onSubmit, onCancel, onDirtyChange, submitRef }: SecurityFormProps) {
@@ -269,14 +269,14 @@ export function SecurityForm({ security, onSubmit, onCancel, onDirtyChange, subm
             label={t('form.symbolLabel')}
             {...register('symbol')}
             error={errors.symbol?.message}
-            placeholder="e.g., AAPL, XEQT, BTC"
+            placeholder={t('form.symbolPlaceholder')}
             className="uppercase"
           />
         </div>
         <div className="flex gap-1.5">
           <Select
             aria-label={t('form.lookupProviderAriaLabel')}
-            options={lookupProviderOptions}
+            options={lookupProviderOptions.map((o) => ({ value: o.value, label: t(o.labelKey) }))}
             value={lookupProvider}
             onChange={(e) =>
               setLookupProvider(e.target.value as 'auto' | 'yahoo' | 'msn')
@@ -315,12 +315,12 @@ export function SecurityForm({ security, onSubmit, onCancel, onDirtyChange, subm
         label={t('form.nameLabel')}
         {...register('name')}
         error={errors.name?.message}
-        placeholder="e.g., Apple Inc., iShares Core Equity ETF"
+        placeholder={t('form.namePlaceholder')}
       />
 
       <Select
         label={t('form.typeLabel')}
-        options={securityTypeOptions}
+        options={securityTypeOptions.map((o) => ({ value: o.value, label: t(o.labelKey) }))}
         value={watch('securityType') || ''}
         onChange={(e) => setValue('securityType', e.target.value, { shouldDirty: true })}
         error={errors.securityType?.message}
@@ -332,7 +332,7 @@ export function SecurityForm({ security, onSubmit, onCancel, onDirtyChange, subm
         value={watch('exchange') || ''}
         onChange={(value, label) => setValue('exchange', value || label, { shouldDirty: true })}
         error={errors.exchange?.message}
-        placeholder="Search exchanges..."
+        placeholder={t('form.exchangeSearchPlaceholder')}
         allowCustomValue
         usePortal
         alwaysShowSubtitle
@@ -350,7 +350,7 @@ export function SecurityForm({ security, onSubmit, onCancel, onDirtyChange, subm
         <Select
           label={t('form.quoteProviderLabel')}
           options={[
-            { value: '', label: `Use default (${userDefaultProvider === 'msn' ? 'MSN Money' : 'Yahoo Finance'})` },
+            { value: '', label: t('form.quoteProviderUseDefault', { provider: userDefaultProvider === 'msn' ? 'MSN Money' : 'Yahoo Finance' }) },
             ...quoteProviderOverrideOptions.slice(1),
           ]}
           value={watch('quoteProvider') || ''}
@@ -377,7 +377,7 @@ export function SecurityForm({ security, onSubmit, onCancel, onDirtyChange, subm
           label={t('form.msnIdLabel')}
           {...register('msnInstrumentId')}
           error={errors.msnInstrumentId?.message}
-          placeholder="Auto-resolved from ticker; override only if wrong"
+          placeholder={t('form.exchangePlaceholder')}
         />
       )}
 

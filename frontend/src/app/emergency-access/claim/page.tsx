@@ -16,7 +16,6 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { emergencyAccessApi } from '@/lib/emergency-access';
 import {
   passwordSchema,
-  PASSWORD_REQUIREMENTS_TEXT,
 } from '@/lib/zod-helpers';
 import { getErrorMessage } from '@/lib/errors';
 import type { EmergencyAccessClaimPreview } from '@/types/emergency-access';
@@ -36,6 +35,7 @@ type FormData = z.infer<typeof schema>;
 function EmergencyClaimForm() {
   const router = useRouter();
   const t = useTranslations('emergencyAccess');
+  const tc = useTranslations('common');
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
   const [loadingPreview, setLoadingPreview] = useState(true);
@@ -176,7 +176,7 @@ function EmergencyClaimForm() {
           />
           {!errors.newPassword && (
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              {PASSWORD_REQUIREMENTS_TEXT}
+              {tc('passwordRequirements')}
             </p>
           )}
         </div>

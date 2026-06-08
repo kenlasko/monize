@@ -12,7 +12,7 @@ describe('time-periods', () => {
     });
 
     it('starts with placeholder option', () => {
-      expect(TIME_PERIOD_OPTIONS[0]).toEqual({ value: '', label: 'Select period...' });
+      expect(TIME_PERIOD_OPTIONS[0]).toEqual({ value: '', labelKey: 'filter.periods.select' });
     });
 
     it('includes all expected periods', () => {

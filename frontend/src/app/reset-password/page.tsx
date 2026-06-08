@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { authApi } from '@/lib/auth';
 import { getErrorMessage } from '@/lib/errors';
-import { passwordSchema, PASSWORD_REQUIREMENTS_TEXT } from '@/lib/zod-helpers';
+import { passwordSchema } from '@/lib/zod-helpers';
 
 const schema = z
   .object({
@@ -30,6 +30,7 @@ type FormData = z.infer<typeof schema>;
 
 function ResetPasswordForm() {
   const t = useTranslations('auth');
+  const tc = useTranslations('common');
   const tr = useTranslations('auth.resetPassword');
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -87,7 +88,7 @@ function ResetPasswordForm() {
         />
         {!errors.newPassword && (
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            {PASSWORD_REQUIREMENTS_TEXT}
+            {tc('passwordRequirements')}
           </p>
         )}
       </div>

@@ -319,7 +319,16 @@
     "toasts": {
       "saved": "Auto-backup settings saved",
       "backupCreated": "Backup created: {filename}",
-      "folderValid": "Folder is valid and writable"
+      "folderValid": "Folder is valid and writable",
+      "loadFailed": "Failed to load auto-backup settings",
+      "saveFailed": "Failed to save settings",
+      "runFailed": "Failed to run backup",
+      "browseFailed": "Failed to browse folders"
+    },
+    "folderErrors": {
+      "required": "Folder path is required",
+      "validationFailed": "Folder validation failed",
+      "validationError": "Validation failed"
     }
   },
   "backupRestore": {

@@ -98,7 +98,8 @@
       "viewButton": "View",
       "editButton": "Edit",
       "deleteButton": "Delete"
-    }
+    },
+    "itemNamePlural": "transactions"
   },
   "row": {
     "copyOptions": {

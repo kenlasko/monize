@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/authStore';
 import { authApi, AuthMethods } from '@/lib/auth';
-import { passwordSchema, PASSWORD_REQUIREMENTS_TEXT, emailSchema } from '@/lib/zod-helpers';
+import { passwordSchema, emailSchema } from '@/lib/zod-helpers';
 import { TwoFactorSetup } from '@/components/auth/TwoFactorSetup';
 import { createLogger } from '@/lib/logger';
 
@@ -249,7 +249,7 @@ export default function RegisterPage() {
               />
               {!errors.password && (
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  {PASSWORD_REQUIREMENTS_TEXT}
+                  {tc('passwordRequirements')}
                 </p>
               )}
             </div>

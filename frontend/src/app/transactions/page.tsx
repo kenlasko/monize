@@ -901,7 +901,7 @@ function TransactionsContent() {
               totalItems={pagination.total}
               pageSize={PAGE_SIZE}
               onPageChange={filters.goToPage}
-              itemName="transactions"
+              itemName={t('list.itemNamePlural')}
             />
           </div>
         )}

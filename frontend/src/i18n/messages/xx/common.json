@@ -113,5 +113,6 @@
   "accountFilter": {
     "allAccounts": "[XX-All Accounts-XX]",
     "allBut": "[XX-All but {names}-XX]"
-  }
+  },
+  "passwordRequirements": "[XX-Password must be at least 12 characters and contain an uppercase letter, a lowercase letter, a number, and a special character.-XX]"
 }

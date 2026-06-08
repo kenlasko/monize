@@ -15,7 +15,7 @@ import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { useFormModal } from '@/hooks/useFormModal';
-import { passwordSchema, PASSWORD_REQUIREMENTS_TEXT } from '@/lib/zod-helpers';
+import { passwordSchema } from '@/lib/zod-helpers';
 import { DelegateAccessModal } from './DelegateAccessModal';
 
 const logger = createLogger('SharedAccess');
@@ -45,6 +45,7 @@ const inputClass =
 
 export function SharedAccessSection() {
   const t = useTranslations('settings.sharedAccess');
+  const tc = useTranslations('common');
   const [delegates, setDelegates] = useState<DelegateSummary[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
@@ -151,7 +152,7 @@ export function SharedAccessSection() {
       }
       const parsed = passwordSchema.safeParse(password);
       if (!parsed.success) {
-        toast.error(PASSWORD_REQUIREMENTS_TEXT);
+        toast.error(tc('passwordRequirements'));
         return;
       }
     }
@@ -376,7 +377,7 @@ export function SharedAccessSection() {
                       className={inputClass}
                     />
                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      {PASSWORD_REQUIREMENTS_TEXT}
+                      {tc('passwordRequirements')}
                     </p>
                   </div>
                 )}

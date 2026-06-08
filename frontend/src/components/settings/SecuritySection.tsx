@@ -18,7 +18,7 @@ import { authApi } from '@/lib/auth';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { User, UserPreferences, TrustedDevice } from '@/types/auth';
 import { getErrorMessage } from '@/lib/errors';
-import { passwordSchema, PASSWORD_REQUIREMENTS_TEXT } from '@/lib/zod-helpers';
+import { passwordSchema } from '@/lib/zod-helpers';
 import { useDateFormat } from '@/hooks/useDateFormat';
 
 const changePasswordSchema = z.object({
@@ -41,6 +41,7 @@ interface SecuritySectionProps {
 
 export function SecuritySection({ user, preferences, force2fa, onPreferencesUpdated }: SecuritySectionProps) {
   const t = useTranslations('settings.security');
+  const tc = useTranslations('common');
   const updatePreferencesStore = usePreferencesStore((state) => state.updatePreferences);
   const { formatDate } = useDateFormat();
 
@@ -193,7 +194,7 @@ export function SecuritySection({ user, preferences, force2fa, onPreferencesUpda
             />
             {!errors.newPassword && (
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                {PASSWORD_REQUIREMENTS_TEXT}
+                {tc('passwordRequirements')}
               </p>
             )}
           </div>

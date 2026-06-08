@@ -137,7 +137,27 @@
       "found": "[XX-Found: {details}-XX]",
       "lookupFailed": "[XX-Lookup failed - please try again-XX]"
     },
-    "msnNotConfigured": "[XX-MSN is selected as the default quote provider, but MSN_API_KEY is not configured on the server. MSN quotes will fail until an administrator sets the env var and restarts the backend.-XX]"
+    "msnNotConfigured": "[XX-MSN is selected as the default quote provider, but MSN_API_KEY is not configured on the server. MSN quotes will fail until an administrator sets the env var and restarts the backend.-XX]",
+    "providers": {
+      "auto": "[XX-Auto-XX]",
+      "yahoo": "[XX-Yahoo-XX]",
+      "msn": "[XX-MSN-XX]"
+    },
+    "types": {
+      "select": "[XX-Select type...-XX]",
+      "stock": "[XX-Stock-XX]",
+      "etf": "[XX-ETF-XX]",
+      "mutualFund": "[XX-Mutual Fund-XX]",
+      "bond": "[XX-Bond-XX]",
+      "option": "[XX-Option-XX]",
+      "crypto": "[XX-Cryptocurrency-XX]",
+      "other": "[XX-Other-XX]"
+    },
+    "quoteProviderUseDefault": "[XX-Use default ({provider})-XX]",
+    "symbolPlaceholder": "[XX-e.g., AAPL, XEQT, BTC-XX]",
+    "namePlaceholder": "[XX-e.g., Apple Inc., iShares Core Equity ETF-XX]",
+    "exchangeSearchPlaceholder": "[XX-Search exchanges...-XX]",
+    "exchangePlaceholder": "[XX-Auto-resolved from ticker; override only if wrong-XX]"
   },
   "priceForm": {
     "dateLabel": "[XX-Date-XX]",

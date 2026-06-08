@@ -138,7 +138,9 @@
       "asset": "Asset",
       "cash": "Cash",
       "other": "Other"
-    }
+    },
+    "statementDueDayPlaceholder": "e.g. 15",
+    "statementSettlementDayPlaceholder": "e.g. 25"
   },
   "exportModal": {
     "title": "Export {name}",

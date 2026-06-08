@@ -137,7 +137,27 @@
       "found": "Found: {details}",
       "lookupFailed": "Lookup failed - please try again"
     },
-    "msnNotConfigured": "MSN is selected as the default quote provider, but MSN_API_KEY is not configured on the server. MSN quotes will fail until an administrator sets the env var and restarts the backend."
+    "msnNotConfigured": "MSN is selected as the default quote provider, but MSN_API_KEY is not configured on the server. MSN quotes will fail until an administrator sets the env var and restarts the backend.",
+    "providers": {
+      "auto": "Auto",
+      "yahoo": "Yahoo",
+      "msn": "MSN"
+    },
+    "types": {
+      "select": "Select type...",
+      "stock": "Stock",
+      "etf": "ETF",
+      "mutualFund": "Mutual Fund",
+      "bond": "Bond",
+      "option": "Option",
+      "crypto": "Cryptocurrency",
+      "other": "Other"
+    },
+    "quoteProviderUseDefault": "Use default ({provider})",
+    "symbolPlaceholder": "e.g., AAPL, XEQT, BTC",
+    "namePlaceholder": "e.g., Apple Inc., iShares Core Equity ETF",
+    "exchangeSearchPlaceholder": "Search exchanges...",
+    "exchangePlaceholder": "Auto-resolved from ticker; override only if wrong"
   },
   "priceForm": {
     "dateLabel": "Date",

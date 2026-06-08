@@ -102,7 +102,12 @@
       "totalAmountRequired": "[XX-Total amount is required-XX]",
       "splitsMinimum": "[XX-Split transactions require at least 2 splits-XX]",
       "splitsTotal": "[XX-Split amounts must equal the transaction amount-XX]"
-    }
+    },
+    "latestPlaceholder": "[XX-Latest: {price}-XX]",
+    "descriptionPlaceholder": "[XX-Description...-XX]",
+    "amountLabel": "[XX-Amount-XX]",
+    "selectCategoryPlaceholder": "[XX-Select category...-XX]",
+    "referencePlaceholder": "[XX-Cheque #, confirmation #...-XX]"
   },
   "occurrencePicker": {
     "title": "[XX-Select Occurrence Date-XX]",

@@ -426,7 +426,7 @@ export function TransactionList({
                   totalItems={totalItems!}
                   pageSize={pageSize!}
                   onPageChange={onPageChange!}
-                  itemName="transactions"
+                  itemName={t('list.itemNamePlural')}
                   minimal
                   infoRight={toolbarButtons}
                 />

@@ -15,7 +15,7 @@ import { useAuthStore } from '@/store/authStore';
 import { userSettingsApi } from '@/lib/user-settings';
 import { authApi } from '@/lib/auth';
 import { getErrorMessage } from '@/lib/errors';
-import { passwordSchema, PASSWORD_REQUIREMENTS_TEXT } from '@/lib/zod-helpers';
+import { passwordSchema } from '@/lib/zod-helpers';
 
 const changePasswordSchema = z
   .object({
@@ -32,6 +32,7 @@ type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
 
 export default function ChangePasswordPage() {
   const t = useTranslations('auth.changePassword');
+  const tc = useTranslations('common');
   const router = useRouter();
   const { user, setUser } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
@@ -117,7 +118,7 @@ export default function ChangePasswordPage() {
           </div>
 
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            {PASSWORD_REQUIREMENTS_TEXT}
+            {tc('passwordRequirements')}
           </p>
 
           <Button

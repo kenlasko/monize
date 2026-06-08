@@ -196,5 +196,6 @@
       "addFailed": "[XX-Failed to add alias-XX]",
       "removeFailed": "[XX-Failed to remove alias-XX]"
     }
-  }
+  },
+  "selectCategoryPlaceholder": "[XX-Select category...-XX]"
 }
