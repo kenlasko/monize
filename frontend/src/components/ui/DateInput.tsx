@@ -1,5 +1,6 @@
 import { ChangeEvent, forwardRef, InputHTMLAttributes, KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslations } from 'next-intl';
 import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import { Input } from './Input';
 import { CalendarPopover } from './CalendarPopover';
@@ -20,24 +21,8 @@ function parseOrToday(value: string): Date {
   return new Date();
 }
 
-const tooltipContent = (
-  <>
-    <span className="block font-medium mb-1">Keyboard shortcuts</span>
-    <span className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
-      <kbd className="font-mono">T</kbd><span>Today</span>
-      <kbd className="font-mono">Y</kbd><span>First day of year</span>
-      <kbd className="font-mono">R</kbd><span>Last day of year</span>
-      <kbd className="font-mono">M</kbd><span>First day of month</span>
-      <kbd className="font-mono">H</kbd><span>Last day of month</span>
-      <kbd className="font-mono">+</kbd><span>Next day</span>
-      <kbd className="font-mono">-</kbd><span>Previous day</span>
-      <kbd className="font-mono">PgUp</kbd><span>Next month</span>
-      <kbd className="font-mono">PgDn</kbd><span>Previous month</span>
-    </span>
-  </>
-);
-
 function DateShortcutTooltip() {
+  const t = useTranslations('common');
   const iconRef = useRef<HTMLSpanElement>(null);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
 
@@ -68,7 +53,20 @@ function DateShortcutTooltip() {
           className="fixed -translate-x-1/2 px-3 py-2 text-xs font-normal text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg whitespace-nowrap z-[100] pointer-events-none"
           style={{ top: position.top, left: position.left }}
         >
-          {tooltipContent}
+          <>
+            <span className="block font-medium mb-1">{t('dateInput.shortcutsTitle')}</span>
+            <span className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
+              <kbd className="font-mono">T</kbd><span>{t('dateInput.today')}</span>
+              <kbd className="font-mono">Y</kbd><span>{t('dateInput.firstDayOfYear')}</span>
+              <kbd className="font-mono">R</kbd><span>{t('dateInput.lastDayOfYear')}</span>
+              <kbd className="font-mono">M</kbd><span>{t('dateInput.firstDayOfMonth')}</span>
+              <kbd className="font-mono">H</kbd><span>{t('dateInput.lastDayOfMonth')}</span>
+              <kbd className="font-mono">+</kbd><span>{t('dateInput.nextDay')}</span>
+              <kbd className="font-mono">-</kbd><span>{t('dateInput.previousDay')}</span>
+              <kbd className="font-mono">PgUp</kbd><span>{t('dateInput.nextMonth')}</span>
+              <kbd className="font-mono">PgDn</kbd><span>{t('dateInput.previousMonth')}</span>
+            </span>
+          </>
         </div>,
         document.body,
       )}

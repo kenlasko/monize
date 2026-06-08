@@ -85,5 +85,17 @@
   "currencyInput": {
     "openCalculator": "Open calculator",
     "calculator": "Calculator"
+  },
+  "dateInput": {
+    "shortcutsTitle": "Keyboard shortcuts",
+    "today": "Today",
+    "firstDayOfYear": "First day of year",
+    "lastDayOfYear": "Last day of year",
+    "firstDayOfMonth": "First day of month",
+    "lastDayOfMonth": "Last day of month",
+    "nextDay": "Next day",
+    "previousDay": "Previous day",
+    "nextMonth": "Next month",
+    "previousMonth": "Previous month"
   }
 }
