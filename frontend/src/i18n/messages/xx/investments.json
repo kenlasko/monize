@@ -236,5 +236,9 @@
     "label": "[XX-+ New Transaction-XX]",
     "investmentTransaction": "[XX-Investment Transaction-XX]",
     "cashTransaction": "[XX-Cash Transaction-XX]"
+  },
+  "validation": {
+    "accountRequired": "[XX-Account is required-XX]",
+    "dateRequired": "[XX-Date is required-XX]"
   }
 }

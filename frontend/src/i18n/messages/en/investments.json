@@ -236,5 +236,9 @@
     "label": "+ New Transaction",
     "investmentTransaction": "Investment Transaction",
     "cashTransaction": "Cash Transaction"
+  },
+  "validation": {
+    "accountRequired": "Account is required",
+    "dateRequired": "Date is required"
   }
 }

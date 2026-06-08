@@ -40,9 +40,9 @@ import { FormActions } from '@/components/ui/FormActions';
 
 const logger = createLogger('TransactionForm');
 
-const transactionSchema = z.object({
+const buildTransactionSchema = (t: (key: string) => string) => z.object({
   accountId: z.string().uuid('Please select an account'),
-  transactionDate: z.string().min(1, 'Date is required'),
+  transactionDate: z.string().min(1, t('validation.dateRequired')),
   payeeId: optionalUuid,
   payeeName: optionalString,
   categoryId: optionalUuid,
@@ -53,7 +53,7 @@ const transactionSchema = z.object({
   status: z.nativeEnum(TransactionStatus).default(TransactionStatus.UNRECONCILED),
 });
 
-type TransactionFormData = z.infer<typeof transactionSchema>;
+type TransactionFormData = z.infer<ReturnType<typeof buildTransactionSchema>>;
 
 interface TransactionFormProps {
   transaction?: Transaction;
@@ -176,7 +176,7 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
     watch,
     formState: { errors, isDirty },
   } = useForm<TransactionFormData>({
-    resolver: zodResolver(transactionSchema) as Resolver<TransactionFormData>,
+    resolver: zodResolver(buildTransactionSchema(t)) as Resolver<TransactionFormData>,
     defaultValues: initSource
       ? {
           // For transfers, use the "from" account as the primary account

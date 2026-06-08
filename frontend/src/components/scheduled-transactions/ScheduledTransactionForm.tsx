@@ -61,9 +61,9 @@ const SCHEDULABLE_INVESTMENT_ACTIONS: InvestmentAction[] = [
   'BUY', 'SELL', 'DIVIDEND', 'INTEREST', 'CAPITAL_GAIN', 'REINVEST', 'ADD_SHARES', 'REMOVE_SHARES',
 ];
 
-const scheduledTransactionSchema = z.object({
+const buildScheduledTransactionSchema = (t: (key: string) => string) => z.object({
   accountId: z.string().uuid('Please select an account'),
-  name: z.string().min(1, 'Name is required'),
+  name: z.string().min(1, t('validation.nameRequired')),
   payeeId: optionalUuid,
   payeeName: optionalString,
   categoryId: optionalUuid,
@@ -72,7 +72,7 @@ const scheduledTransactionSchema = z.object({
   description: optionalString,
   referenceNumber: optionalString,
   frequency: z.enum(['ONCE', 'DAILY', 'WEEKLY', 'BIWEEKLY', 'EVERY4WEEKS', 'SEMIMONTHLY', 'MONTHLY', 'QUARTERLY', 'YEARLY']),
-  nextDueDate: z.string().min(1, 'Due date is required'),
+  nextDueDate: z.string().min(1, t('validation.dueDateRequired')),
   endDate: optionalString,
   occurrencesRemaining: optionalNumber,
   isActive: z.boolean().default(true),
@@ -80,7 +80,7 @@ const scheduledTransactionSchema = z.object({
   reminderDaysBefore: z.number().min(0).default(3),
 });
 
-type ScheduledTransactionFormData = z.infer<typeof scheduledTransactionSchema>;
+type ScheduledTransactionFormData = z.infer<ReturnType<typeof buildScheduledTransactionSchema>>;
 
 interface ScheduledTransactionFormProps {
   scheduledTransaction?: ScheduledTransaction;
@@ -215,7 +215,7 @@ export function ScheduledTransactionForm({
     watch,
     formState: { errors, isDirty },
   } = useForm<ScheduledTransactionFormData>({
-    resolver: zodResolver(scheduledTransactionSchema) as Resolver<ScheduledTransactionFormData>,
+    resolver: zodResolver(buildScheduledTransactionSchema(t)) as Resolver<ScheduledTransactionFormData>,
     defaultValues: scheduledTransaction
       ? {
           accountId: scheduledTransaction.accountId,

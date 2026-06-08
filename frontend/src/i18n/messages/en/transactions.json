@@ -393,5 +393,8 @@
     "deleted": "{count, plural, one {# transaction deleted} other {# transactions deleted}}",
     "noneToExport": "No transactions to export",
     "exported": "{count, plural, one {Exported # transaction} other {Exported # transactions}}"
+  },
+  "validation": {
+    "dateRequired": "Date is required"
   }
 }

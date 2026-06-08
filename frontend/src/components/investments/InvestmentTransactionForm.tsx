@@ -36,12 +36,12 @@ import { FormActions } from '@/components/ui/FormActions';
 
 const logger = createLogger('InvestmentTxForm');
 
-const investmentTransactionSchema = z.object({
-  accountId: z.string().min(1, 'Account is required'),
+const buildInvestmentTransactionSchema = (t: (key: string) => string) => z.object({
+  accountId: z.string().min(1, t('validation.accountRequired')),
   // 'TRANSFER' is a UI-only action that creates a TRANSFER_OUT + TRANSFER_IN
   // pair on the backend; it is offered only when creating, not editing.
   action: z.enum(['BUY', 'SELL', 'DIVIDEND', 'INTEREST', 'CAPITAL_GAIN', 'SPLIT', 'TRANSFER_IN', 'TRANSFER_OUT', 'REINVEST', 'ADD_SHARES', 'REMOVE_SHARES', 'TRANSFER']),
-  transactionDate: z.string().min(1, 'Date is required'),
+  transactionDate: z.string().min(1, t('validation.dateRequired')),
   securityId: z.string().optional(),
   fundingAccountId: z.string().optional(),
   // Destination account for a TRANSFER (the source is `accountId`).
@@ -56,7 +56,7 @@ const investmentTransactionSchema = z.object({
   splitOldShares: z.coerce.number().gt(0).optional(),
 });
 
-type InvestmentTransactionFormData = z.infer<typeof investmentTransactionSchema>;
+type InvestmentTransactionFormData = z.infer<ReturnType<typeof buildInvestmentTransactionSchema>>;
 
 interface InvestmentTransactionFormProps {
   accounts: Account[];
@@ -218,7 +218,7 @@ export function InvestmentTransactionForm({
     setValue,
     formState: { errors, isDirty },
   } = useForm<InvestmentTransactionFormData>({
-    resolver: zodResolver(investmentTransactionSchema) as Resolver<InvestmentTransactionFormData>,
+    resolver: zodResolver(buildInvestmentTransactionSchema(t)) as Resolver<InvestmentTransactionFormData>,
     defaultValues: transaction
       ? {
           accountId: transaction.accountId,

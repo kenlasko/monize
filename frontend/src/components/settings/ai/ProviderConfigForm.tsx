@@ -37,19 +37,19 @@ const COST_CURRENCY_OPTIONS = [
   { value: 'INR', labelKey: 'costCurrencies.INR' },
 ];
 
-const providerConfigSchema = z.object({
+const buildProviderConfigSchema = (t: (key: string) => string) => z.object({
   provider: z.enum(AI_PROVIDER_TYPES),
-  displayName: z.string().max(100, 'Display name must be 100 characters or less').optional().or(z.literal('')),
+  displayName: z.string().max(100, t('validation.displayNameMax')).optional().or(z.literal('')),
   model: z.string().max(200).optional().or(z.literal('')),
   apiKey: z.string().max(500).optional().or(z.literal('')),
   baseUrl: z.string().max(500).optional().or(z.literal('')),
-  priority: z.string().regex(/^\d*$/, 'Must be a number'),
+  priority: z.string().regex(/^\d*$/, t('validation.mustBeNumber')),
   inputCostPer1M: costField,
   outputCostPer1M: costField,
-  costCurrency: z.string().regex(/^[A-Z]{3}$/, 'Must be a 3-letter currency code'),
+  costCurrency: z.string().regex(/^[A-Z]{3}$/, t('validation.currencyCode')),
 });
 
-type ProviderConfigFormData = z.infer<typeof providerConfigSchema>;
+type ProviderConfigFormData = z.infer<ReturnType<typeof buildProviderConfigSchema>>;
 
 interface ProviderConfigFormProps {
   isOpen: boolean;
@@ -77,7 +77,7 @@ export function ProviderConfigForm({ isOpen, onClose, onSubmit, editConfig }: Pr
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<ProviderConfigFormData>({
-    resolver: zodResolver(providerConfigSchema),
+    resolver: zodResolver(buildProviderConfigSchema(t)),
     defaultValues: {
       provider: editConfig?.provider || 'anthropic',
       displayName: editConfig?.displayName || '',

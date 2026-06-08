@@ -257,5 +257,9 @@
     "MONTHLY": "Monthly",
     "QUARTERLY": "Quarterly",
     "YEARLY": "Yearly"
+  },
+  "validation": {
+    "nameRequired": "Name is required",
+    "dueDateRequired": "Due date is required"
   }
 }

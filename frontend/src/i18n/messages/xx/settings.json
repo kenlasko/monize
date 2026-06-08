@@ -740,6 +740,11 @@
         "JPY": "[XX-JPY - Japanese Yen-XX]",
         "CNY": "[XX-CNY - Chinese Yuan-XX]",
         "INR": "[XX-INR - Indian Rupee-XX]"
+      },
+      "validation": {
+        "displayNameMax": "[XX-Display name must be 100 characters or less-XX]",
+        "mustBeNumber": "[XX-Must be a number-XX]",
+        "currencyCode": "[XX-Must be a 3-letter currency code-XX]"
       }
     },
     "testButton": {
