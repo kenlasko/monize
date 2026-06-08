@@ -1,13 +1,17 @@
 import { escapeHtml } from "../common/escape-html.util";
 import { formatCurrency } from "../common/format-currency.util";
+import { EmailT, englishEmailT } from "../i18n/email-translator";
 
-export function testEmailTemplate(firstName: string): string {
+export function testEmailTemplate(
+  firstName: string,
+  t: EmailT = englishEmailT,
+): string {
   const safeName = escapeHtml(firstName || "there");
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2 style="color: #1f2937;">Monize Test Email</h2>
-      <p style="color: #374151;">Hi ${safeName},</p>
-      <p style="color: #374151;">This is a test email from Monize. If you received this, your email notifications are working correctly.</p>
+      <h2 style="color: #1f2937;">${t("emails.test.heading", "Monize Test Email")}</h2>
+      <p style="color: #374151;">${t("emails.test.greeting", `Hi ${safeName},`, { name: safeName })}</p>
+      <p style="color: #374151;">${t("emails.test.body", "This is a test email from Monize. If you received this, your email notifications are working correctly.")}</p>
       <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- Monize</p>
     </div>
   `;
@@ -25,6 +29,7 @@ export function billReminderTemplate(
   firstName: string,
   bills: BillData[],
   appUrl: string,
+  t: EmailT = englishEmailT,
 ): string {
   const safeName = escapeHtml(firstName || "there");
   const billRows = bills
@@ -34,7 +39,7 @@ export function billReminderTemplate(
           <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb;">${escapeHtml(b.payee)}</td>
           <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb;">${escapeHtml(b.dueDate)}</td>
           <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb;">
-            <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; color: white; background: ${b.isIncome ? "#059669" : "#dc2626"};">${b.isIncome ? "Income" : "Expense"}</span>
+            <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; color: white; background: ${b.isIncome ? "#059669" : "#dc2626"};">${b.isIncome ? t("emails.billReminder.typeIncome", "Income") : t("emails.billReminder.typeExpense", "Expense")}</span>
           </td>
           <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right; color: ${b.isIncome ? "#059669" : "#dc2626"}; font-weight: 500;">${formatCurrency(Math.abs(b.amount), b.currencyCode)}</td>
         </tr>`,
@@ -43,22 +48,22 @@ export function billReminderTemplate(
 
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2 style="color: #1f2937;">Upcoming Bill Reminder</h2>
-      <p style="color: #374151;">Hi ${safeName},</p>
-      <p style="color: #374151;">You have ${bills.length} upcoming bill${bills.length === 1 ? "" : "s"} that need${bills.length === 1 ? "s" : ""} attention:</p>
+      <h2 style="color: #1f2937;">${t("emails.billReminder.heading", "Upcoming Bill Reminder")}</h2>
+      <p style="color: #374151;">${t("emails.billReminder.greeting", `Hi ${safeName},`, { name: safeName })}</p>
+      <p style="color: #374151;">${t("emails.billReminder.intro", `You have ${bills.length} upcoming bill${bills.length === 1 ? "" : "s"} that need${bills.length === 1 ? "s" : ""} attention:`, { count: bills.length })}</p>
       <table style="width: 100%; border-collapse: collapse; margin: 16px 0; border: 1px solid #e5e7eb; border-radius: 8px;">
         <thead>
           <tr style="background: #f3f4f6;">
-            <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: #374151;">Payee</th>
-            <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: #374151;">Due Date</th>
-            <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: #374151;">Type</th>
-            <th style="padding: 10px 12px; text-align: right; font-weight: 600; color: #374151;">Amount</th>
+            <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: #374151;">${t("emails.billReminder.colPayee", "Payee")}</th>
+            <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: #374151;">${t("emails.billReminder.colDueDate", "Due Date")}</th>
+            <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: #374151;">${t("emails.billReminder.colType", "Type")}</th>
+            <th style="padding: 10px 12px; text-align: right; font-weight: 600; color: #374151;">${t("emails.billReminder.colAmount", "Amount")}</th>
           </tr>
         </thead>
         <tbody>${billRows}</tbody>
       </table>
       <p style="margin-top: 20px;">
-        <a href="${appUrl}/bills" style="display: inline-block; padding: 10px 20px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">View Bills &amp; Deposits</a>
+        <a href="${appUrl}/bills" style="display: inline-block; padding: 10px 20px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">${t("emails.billReminder.button", "View Bills &amp; Deposits")}</a>
       </p>
       <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- Monize</p>
     </div>
@@ -75,6 +80,7 @@ export function mortgageReminderTemplate(
   firstName: string,
   mortgages: MortgageReminderData[],
   appUrl: string,
+  t: EmailT = englishEmailT,
 ): string {
   const safeName = escapeHtml(firstName || "there");
   const mortgageRows = mortgages
@@ -90,21 +96,21 @@ export function mortgageReminderTemplate(
 
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2 style="color: #1f2937;">Mortgage Renewal Reminder</h2>
-      <p style="color: #374151;">Hi ${safeName},</p>
-      <p style="color: #374151;">You have ${mortgages.length} mortgage${mortgages.length === 1 ? "" : "s"} with an upcoming term renewal. Contact your lender to discuss renewal options before the term ends:</p>
+      <h2 style="color: #1f2937;">${t("emails.mortgageReminder.heading", "Mortgage Renewal Reminder")}</h2>
+      <p style="color: #374151;">${t("emails.mortgageReminder.greeting", `Hi ${safeName},`, { name: safeName })}</p>
+      <p style="color: #374151;">${t("emails.mortgageReminder.intro", `You have ${mortgages.length} mortgage${mortgages.length === 1 ? "" : "s"} with an upcoming term renewal. Contact your lender to discuss renewal options before the term ends:`, { count: mortgages.length })}</p>
       <table style="width: 100%; border-collapse: collapse; margin: 16px 0; border: 1px solid #e5e7eb; border-radius: 8px;">
         <thead>
           <tr style="background: #f3f4f6;">
-            <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: #374151;">Mortgage</th>
-            <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: #374151;">Term End Date</th>
-            <th style="padding: 10px 12px; text-align: right; font-weight: 600; color: #374151;">Time Remaining</th>
+            <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: #374151;">${t("emails.mortgageReminder.colMortgage", "Mortgage")}</th>
+            <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: #374151;">${t("emails.mortgageReminder.colTermEndDate", "Term End Date")}</th>
+            <th style="padding: 10px 12px; text-align: right; font-weight: 600; color: #374151;">${t("emails.mortgageReminder.colTimeRemaining", "Time Remaining")}</th>
           </tr>
         </thead>
         <tbody>${mortgageRows}</tbody>
       </table>
       <p style="margin-top: 20px;">
-        <a href="${appUrl}/accounts" style="display: inline-block; padding: 10px 20px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">View Accounts</a>
+        <a href="${appUrl}/accounts" style="display: inline-block; padding: 10px 20px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">${t("emails.mortgageReminder.button", "View Accounts")}</a>
       </p>
       <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- Monize</p>
     </div>
@@ -131,16 +137,16 @@ function severityColor(severity: string): string {
   }
 }
 
-function severityLabel(severity: string): string {
+function severityLabel(severity: string, t: EmailT = englishEmailT): string {
   switch (severity) {
     case "critical":
-      return "Critical";
+      return t("emails.severity.critical", "Critical");
     case "warning":
-      return "Warning";
+      return t("emails.severity.warning", "Warning");
     case "success":
-      return "Good News";
+      return t("emails.severity.success", "Good News");
     default:
-      return "Info";
+      return t("emails.severity.info", "Info");
   }
 }
 
@@ -148,6 +154,7 @@ export function budgetAlertImmediateTemplate(
   firstName: string,
   alerts: BudgetAlertData[],
   appUrl: string,
+  t: EmailT = englishEmailT,
 ): string {
   const safeName = escapeHtml(firstName || "there");
   const alertRows = alerts
@@ -156,7 +163,7 @@ export function budgetAlertImmediateTemplate(
         `<tr>
           <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb;">
             <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; color: white; background: ${severityColor(a.severity)};">
-              ${escapeHtml(severityLabel(a.severity))}
+              ${escapeHtml(severityLabel(a.severity, t))}
             </span>
           </td>
           <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; font-weight: 500;">${escapeHtml(a.title)}</td>
@@ -167,21 +174,21 @@ export function budgetAlertImmediateTemplate(
 
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2 style="color: #1f2937;">Alert</h2>
-      <p style="color: #374151;">Hi ${safeName},</p>
-      <p style="color: #374151;">Your budget needs attention:</p>
+      <h2 style="color: #1f2937;">${t("emails.budgetAlertImmediate.heading", "Alert")}</h2>
+      <p style="color: #374151;">${t("emails.budgetAlertImmediate.greeting", `Hi ${safeName},`, { name: safeName })}</p>
+      <p style="color: #374151;">${t("emails.budgetAlertImmediate.intro", "Your budget needs attention:")}</p>
       <table style="width: 100%; border-collapse: collapse; margin: 16px 0; border: 1px solid #e5e7eb; border-radius: 8px;">
         <thead>
           <tr style="background: #f3f4f6;">
-            <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: #374151;">Severity</th>
-            <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: #374151;">Alert</th>
-            <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: #374151;">Details</th>
+            <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: #374151;">${t("emails.budgetAlertImmediate.colSeverity", "Severity")}</th>
+            <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: #374151;">${t("emails.budgetAlertImmediate.colAlert", "Alert")}</th>
+            <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: #374151;">${t("emails.budgetAlertImmediate.colDetails", "Details")}</th>
           </tr>
         </thead>
         <tbody>${alertRows}</tbody>
       </table>
       <p style="margin-top: 20px;">
-        <a href="${appUrl}/budgets" style="display: inline-block; padding: 10px 20px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">View Budget</a>
+        <a href="${appUrl}/budgets" style="display: inline-block; padding: 10px 20px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">${t("emails.budgetAlertImmediate.button", "View Budget")}</a>
       </p>
       <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- Monize</p>
     </div>
@@ -193,6 +200,7 @@ export function budgetWeeklyDigestTemplate(
   alerts: BudgetAlertData[],
   budgetNames: string[],
   appUrl: string,
+  t: EmailT = englishEmailT,
 ): string {
   const safeName = escapeHtml(firstName || "there");
 
@@ -203,17 +211,17 @@ export function budgetWeeklyDigestTemplate(
   const alertSummary: string[] = [];
   if (criticalAlerts.length > 0) {
     alertSummary.push(
-      `<span style="color: #dc2626; font-weight: 600;">${criticalAlerts.length} critical</span>`,
+      `<span style="color: #dc2626; font-weight: 600;">${criticalAlerts.length} ${t("emails.budgetWeeklyDigest.critical", "critical")}</span>`,
     );
   }
   if (warningAlerts.length > 0) {
     alertSummary.push(
-      `<span style="color: #d97706; font-weight: 600;">${warningAlerts.length} warning${warningAlerts.length !== 1 ? "s" : ""}</span>`,
+      `<span style="color: #d97706; font-weight: 600;">${warningAlerts.length} ${t("emails.budgetWeeklyDigest.warning", `warning${warningAlerts.length !== 1 ? "s" : ""}`, { count: warningAlerts.length })}</span>`,
     );
   }
   if (positiveAlerts.length > 0) {
     alertSummary.push(
-      `<span style="color: #059669; font-weight: 600;">${positiveAlerts.length} positive</span>`,
+      `<span style="color: #059669; font-weight: 600;">${positiveAlerts.length} ${t("emails.budgetWeeklyDigest.positive", "positive")}</span>`,
     );
   }
 
@@ -223,7 +231,7 @@ export function budgetWeeklyDigestTemplate(
       (a) =>
         `<li style="margin-bottom: 8px;">
           <span style="display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 11px; font-weight: 600; color: white; background: ${severityColor(a.severity)}; vertical-align: middle;">
-            ${escapeHtml(severityLabel(a.severity))}
+            ${escapeHtml(severityLabel(a.severity, t))}
           </span>
           <span style="color: #374151; margin-left: 4px;">${escapeHtml(a.title)}</span>
         </li>`,
@@ -234,27 +242,27 @@ export function budgetWeeklyDigestTemplate(
 
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2 style="color: #1f2937;">Weekly Budget Summary</h2>
-      <p style="color: #374151;">Hi ${safeName},</p>
-      <p style="color: #374151;">Here is your weekly budget summary for: <strong>${safeBudgetNames}</strong></p>
+      <h2 style="color: #1f2937;">${t("emails.budgetWeeklyDigest.heading", "Weekly Budget Summary")}</h2>
+      <p style="color: #374151;">${t("emails.budgetWeeklyDigest.greeting", `Hi ${safeName},`, { name: safeName })}</p>
+      <p style="color: #374151;">${t("emails.budgetWeeklyDigest.intro", `Here is your weekly budget summary for: <strong>${safeBudgetNames}</strong>`, { budgets: safeBudgetNames })}</p>
 
       <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 16px 0;">
-        <p style="margin: 0 0 8px 0; color: #374151; font-weight: 600;">This Week: ${alertSummary.join(", ") || "No alerts"}</p>
-        <p style="margin: 0; color: #6b7280; font-size: 14px;">Total alerts: ${alerts.length}</p>
+        <p style="margin: 0 0 8px 0; color: #374151; font-weight: 600;">${t("emails.budgetWeeklyDigest.thisWeek", "This Week:")} ${alertSummary.join(", ") || t("emails.budgetWeeklyDigest.noAlerts", "No alerts")}</p>
+        <p style="margin: 0; color: #6b7280; font-size: 14px;">${t("emails.budgetWeeklyDigest.totalAlerts", `Total alerts: ${alerts.length}`, { count: alerts.length })}</p>
       </div>
 
       ${
         topAlerts.length > 0
           ? `
-        <h3 style="color: #374151; font-size: 16px; margin-top: 20px;">Top Alerts</h3>
+        <h3 style="color: #374151; font-size: 16px; margin-top: 20px;">${t("emails.budgetWeeklyDigest.topAlertsHeading", "Top Alerts")}</h3>
         <ul style="padding-left: 0; list-style: none;">${alertRows}</ul>
-        ${alerts.length > 5 ? `<p style="color: #6b7280; font-size: 14px;">...and ${alerts.length - 5} more</p>` : ""}
+        ${alerts.length > 5 ? `<p style="color: #6b7280; font-size: 14px;">${t("emails.budgetWeeklyDigest.andMore", `...and ${alerts.length - 5} more`, { count: alerts.length - 5 })}</p>` : ""}
       `
           : ""
       }
 
       <p style="margin-top: 20px;">
-        <a href="${appUrl}/budgets" style="display: inline-block; padding: 10px 20px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">View Budget Dashboard</a>
+        <a href="${appUrl}/budgets" style="display: inline-block; padding: 10px 20px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">${t("emails.budgetWeeklyDigest.button", "View Budget Dashboard")}</a>
       </p>
       <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- Monize</p>
     </div>
@@ -293,6 +301,7 @@ export function budgetMonthlySummaryTemplate(
   firstName: string,
   summaries: MonthlySummaryData[],
   appUrl: string,
+  t: EmailT = englishEmailT,
 ): string {
   const safeName = escapeHtml(firstName || "there");
 
@@ -308,7 +317,7 @@ export function budgetMonthlySummaryTemplate(
       const overBudgetRows =
         s.overBudgetCategories.length > 0
           ? `
-          <h4 style="color: #dc2626; font-size: 14px; margin: 12px 0 8px 0;">Over Budget</h4>
+          <h4 style="color: #dc2626; font-size: 14px; margin: 12px 0 8px 0;">${t("emails.budgetMonthlySummary.overBudget", "Over Budget")}</h4>
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
             ${s.overBudgetCategories
               .map(
@@ -339,7 +348,7 @@ export function budgetMonthlySummaryTemplate(
       const healthSection =
         s.healthScore !== null
           ? `<p style="margin: 8px 0; color: #374151; font-size: 14px;">
-              Health Score: <span style="color: ${healthScoreColor(s.healthScore)}; font-weight: 700;">${s.healthScore}/100</span>
+              ${t("emails.budgetMonthlySummary.healthScore", "Health Score:")} <span style="color: ${healthScoreColor(s.healthScore)}; font-weight: 700;">${s.healthScore}/100</span>
               <span style="color: #6b7280;"> (${escapeHtml(s.healthLabel || "")})</span>
             </p>`
           : "";
@@ -350,15 +359,15 @@ export function budgetMonthlySummaryTemplate(
 
           <div style="display: flex; gap: 16px; margin-bottom: 12px;">
             <div>
-              <span style="color: #6b7280; font-size: 12px;">Budgeted</span><br/>
+              <span style="color: #6b7280; font-size: 12px;">${t("emails.budgetMonthlySummary.labelBudgeted", "Budgeted")}</span><br/>
               <span style="color: #374151; font-weight: 600;">${formatCurrency(s.totalBudgeted, s.currencyCode)}</span>
             </div>
             <div>
-              <span style="color: #6b7280; font-size: 12px;">Spent</span><br/>
+              <span style="color: #6b7280; font-size: 12px;">${t("emails.budgetMonthlySummary.labelSpent", "Spent")}</span><br/>
               <span style="color: ${percentColor}; font-weight: 600;">${formatCurrency(s.totalSpent, s.currencyCode)}</span>
             </div>
             <div>
-              <span style="color: #6b7280; font-size: 12px;">Remaining</span><br/>
+              <span style="color: #6b7280; font-size: 12px;">${t("emails.budgetMonthlySummary.labelRemaining", "Remaining")}</span><br/>
               <span style="color: ${s.remaining >= 0 ? "#059669" : "#dc2626"}; font-weight: 600;">${formatCurrency(s.remaining, s.currencyCode)}</span>
             </div>
           </div>
@@ -366,12 +375,12 @@ export function budgetMonthlySummaryTemplate(
           <div style="background: #e5e7eb; border-radius: 4px; height: 8px; margin-bottom: 8px;">
             <div style="background: ${percentColor}; border-radius: 4px; height: 8px; width: ${Math.min(s.percentUsed, 100)}%;"></div>
           </div>
-          <p style="margin: 0 0 8px 0; color: ${percentColor}; font-weight: 600; font-size: 14px;">${s.percentUsed.toFixed(1)}% used</p>
+          <p style="margin: 0 0 8px 0; color: ${percentColor}; font-weight: 600; font-size: 14px;">${t("emails.budgetMonthlySummary.percentUsed", `${s.percentUsed.toFixed(1)}% used`, { percent: s.percentUsed.toFixed(1) })}</p>
 
           ${healthSection}
           ${overBudgetRows}
 
-          <h4 style="color: #374151; font-size: 14px; margin: 12px 0 8px 0;">Top Categories</h4>
+          <h4 style="color: #374151; font-size: 14px; margin: 12px 0 8px 0;">${t("emails.budgetMonthlySummary.topCategories", "Top Categories")}</h4>
           <table style="width: 100%; border-collapse: collapse;">
             ${topCategoryRows}
           </table>
@@ -381,14 +390,14 @@ export function budgetMonthlySummaryTemplate(
 
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2 style="color: #1f2937;">Monthly Budget Summary</h2>
-      <p style="color: #374151;">Hi ${safeName},</p>
-      <p style="color: #374151;">Here is your monthly budget summary for the period that just closed:</p>
+      <h2 style="color: #1f2937;">${t("emails.budgetMonthlySummary.heading", "Monthly Budget Summary")}</h2>
+      <p style="color: #374151;">${t("emails.budgetMonthlySummary.greeting", `Hi ${safeName},`, { name: safeName })}</p>
+      <p style="color: #374151;">${t("emails.budgetMonthlySummary.intro", "Here is your monthly budget summary for the period that just closed:")}</p>
 
       ${budgetSections}
 
       <p style="margin-top: 20px;">
-        <a href="${appUrl}/budgets" style="display: inline-block; padding: 10px 20px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">View Budget Dashboard</a>
+        <a href="${appUrl}/budgets" style="display: inline-block; padding: 10px 20px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">${t("emails.budgetMonthlySummary.button", "View Budget Dashboard")}</a>
       </p>
       <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- Monize</p>
     </div>
@@ -398,31 +407,35 @@ export function budgetMonthlySummaryTemplate(
 export function oidcLinkTemplate(
   firstName: string,
   confirmUrl: string,
+  t: EmailT = englishEmailT,
 ): string {
   const safeName = escapeHtml(firstName || "there");
   const safeUrl = escapeHtml(confirmUrl);
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2 style="color: #1f2937;">Link Your SSO Account</h2>
-      <p style="color: #374151;">Hi ${safeName},</p>
-      <p style="color: #374151;">Someone attempted to sign in via SSO with an email that matches your existing Monize account. To link your SSO identity to this account, click the button below:</p>
+      <h2 style="color: #1f2937;">${t("emails.oidcLink.heading", "Link Your SSO Account")}</h2>
+      <p style="color: #374151;">${t("emails.oidcLink.greeting", `Hi ${safeName},`, { name: safeName })}</p>
+      <p style="color: #374151;">${t("emails.oidcLink.intro", "Someone attempted to sign in via SSO with an email that matches your existing Monize account. To link your SSO identity to this account, click the button below:")}</p>
       <p style="text-align: center; margin: 24px 0;">
-        <a href="${safeUrl}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">Confirm Account Link</a>
+        <a href="${safeUrl}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">${t("emails.oidcLink.button", "Confirm Account Link")}</a>
       </p>
-      <p style="color: #6b7280; font-size: 14px;">If you did not initiate this request, you can safely ignore this email. The link expires in 1 hour.</p>
+      <p style="color: #6b7280; font-size: 14px;">${t("emails.oidcLink.disclaimer", "If you did not initiate this request, you can safely ignore this email. The link expires in 1 hour.")}</p>
       <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- Monize</p>
     </div>
   `;
 }
 
-export function accountLockedTemplate(firstName: string): string {
+export function accountLockedTemplate(
+  firstName: string,
+  t: EmailT = englishEmailT,
+): string {
   const safeName = escapeHtml(firstName || "there");
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2 style="color: #1f2937;">Account Temporarily Locked</h2>
-      <p style="color: #374151;">Hi ${safeName},</p>
-      <p style="color: #374151;">Your Monize account has been temporarily locked due to multiple failed login attempts. This is a security measure to protect your account.</p>
-      <p style="color: #374151;">The lock will expire automatically. If you did not attempt to log in, we recommend resetting your password immediately.</p>
+      <h2 style="color: #1f2937;">${t("emails.accountLocked.heading", "Account Temporarily Locked")}</h2>
+      <p style="color: #374151;">${t("emails.accountLocked.greeting", `Hi ${safeName},`, { name: safeName })}</p>
+      <p style="color: #374151;">${t("emails.accountLocked.body1", "Your Monize account has been temporarily locked due to multiple failed login attempts. This is a security measure to protect your account.")}</p>
+      <p style="color: #374151;">${t("emails.accountLocked.body2", "The lock will expire automatically. If you did not attempt to log in, we recommend resetting your password immediately.")}</p>
       <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- Monize</p>
     </div>
   `;
@@ -431,18 +444,19 @@ export function accountLockedTemplate(firstName: string): string {
 export function passwordResetTemplate(
   firstName: string,
   resetUrl: string,
+  t: EmailT = englishEmailT,
 ): string {
   const safeName = escapeHtml(firstName || "there");
   const safeUrl = escapeHtml(resetUrl);
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2 style="color: #1f2937;">Password Reset Request</h2>
-      <p style="color: #374151;">Hi ${safeName},</p>
-      <p style="color: #374151;">We received a request to reset your password. Click the button below to set a new password:</p>
+      <h2 style="color: #1f2937;">${t("emails.passwordReset.heading", "Password Reset Request")}</h2>
+      <p style="color: #374151;">${t("emails.passwordReset.greeting", `Hi ${safeName},`, { name: safeName })}</p>
+      <p style="color: #374151;">${t("emails.passwordReset.intro", "We received a request to reset your password. Click the button below to set a new password:")}</p>
       <p style="margin: 24px 0;">
-        <a href="${safeUrl}" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">Reset Password</a>
+        <a href="${safeUrl}" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">${t("emails.passwordReset.button", "Reset Password")}</a>
       </p>
-      <p style="color: #374151;">This link will expire in 1 hour. If you did not request a password reset, you can safely ignore this email.</p>
+      <p style="color: #374151;">${t("emails.passwordReset.disclaimer", "This link will expire in 1 hour. If you did not request a password reset, you can safely ignore this email.")}</p>
       <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- Monize</p>
     </div>
   `;
@@ -451,18 +465,19 @@ export function passwordResetTemplate(
 export function accountInviteTemplate(
   firstName: string,
   inviteUrl: string,
+  t: EmailT = englishEmailT,
 ): string {
   const safeName = escapeHtml(firstName || "there");
   const safeUrl = escapeHtml(inviteUrl);
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2 style="color: #1f2937;">Your Monize account is ready</h2>
-      <p style="color: #374151;">Hi ${safeName},</p>
-      <p style="color: #374151;">An administrator has created a Monize account for you. Click the button below to set your password and sign in:</p>
+      <h2 style="color: #1f2937;">${t("emails.accountInvite.heading", "Your Monize account is ready")}</h2>
+      <p style="color: #374151;">${t("emails.accountInvite.greeting", `Hi ${safeName},`, { name: safeName })}</p>
+      <p style="color: #374151;">${t("emails.accountInvite.intro", "An administrator has created a Monize account for you. Click the button below to set your password and sign in:")}</p>
       <p style="margin: 24px 0;">
-        <a href="${safeUrl}" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">Set Your Password</a>
+        <a href="${safeUrl}" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">${t("emails.accountInvite.button", "Set Your Password")}</a>
       </p>
-      <p style="color: #374151;">This link will expire in 24 hours. If you were not expecting this, you can safely ignore this email.</p>
+      <p style="color: #374151;">${t("emails.accountInvite.disclaimer", "This link will expire in 24 hours. If you were not expecting this, you can safely ignore this email.")}</p>
       <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- Monize</p>
     </div>
   `;
@@ -472,19 +487,20 @@ export function delegateInviteTemplate(
   firstName: string,
   ownerLabel: string,
   inviteUrl: string,
+  t: EmailT = englishEmailT,
 ): string {
   const safeName = escapeHtml(firstName || "there");
   const safeOwner = escapeHtml(ownerLabel);
   const safeUrl = escapeHtml(inviteUrl);
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2 style="color: #1f2937;">You have been invited to Monize</h2>
-      <p style="color: #374151;">Hi ${safeName},</p>
-      <p style="color: #374151;">${safeOwner} has invited you to access their Monize account as a delegate. Click the button below to set your password and get started:</p>
+      <h2 style="color: #1f2937;">${t("emails.delegateInvite.heading", "You have been invited to Monize")}</h2>
+      <p style="color: #374151;">${t("emails.delegateInvite.greeting", `Hi ${safeName},`, { name: safeName })}</p>
+      <p style="color: #374151;">${t("emails.delegateInvite.intro", `${safeOwner} has invited you to access their Monize account as a delegate. Click the button below to set your password and get started:`, { owner: safeOwner })}</p>
       <p style="margin: 24px 0;">
-        <a href="${safeUrl}" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">Set Your Password</a>
+        <a href="${safeUrl}" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">${t("emails.delegateInvite.button", "Set Your Password")}</a>
       </p>
-      <p style="color: #374151;">This link will expire in 24 hours. If you were not expecting this invitation, you can safely ignore this email.</p>
+      <p style="color: #374151;">${t("emails.delegateInvite.disclaimer", "This link will expire in 24 hours. If you were not expecting this invitation, you can safely ignore this email.")}</p>
       <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- Monize</p>
     </div>
   `;
@@ -500,6 +516,7 @@ interface EmergencyAccessReminderData {
 
 export function emergencyAccessReminderTemplate(
   data: EmergencyAccessReminderData,
+  t: EmailT = englishEmailT,
 ): string {
   const safeName = escapeHtml(data.ownerFirstName || "there");
   const contactRows = data.contacts
@@ -510,19 +527,19 @@ export function emergencyAccessReminderTemplate(
     .join("");
   const grantPhrase =
     data.daysUntilGrant <= 0
-      ? "today"
-      : `in ${data.daysUntilGrant} day${data.daysUntilGrant === 1 ? "" : "s"}`;
+      ? t("emails.emergencyAccessReminder.grantPhraseToday", "today")
+      : t("emails.emergencyAccessReminder.grantPhraseFuture", `in ${data.daysUntilGrant} day${data.daysUntilGrant === 1 ? "" : "s"}`, { count: data.daysUntilGrant });
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2 style="color: #b45309;">Monize Emergency Access Reminder</h2>
-      <p style="color: #374151;">Hi ${safeName},</p>
-      <p style="color: #374151;">You have not signed in to Monize for <strong>${data.daysSinceLogin} day${data.daysSinceLogin === 1 ? "" : "s"}</strong>. If you remain inactive, your designated emergency contacts will be granted full access to your account ${grantPhrase}.</p>
-      <p style="color: #374151;">Designated contacts:</p>
+      <h2 style="color: #b45309;">${t("emails.emergencyAccessReminder.heading", "Monize Emergency Access Reminder")}</h2>
+      <p style="color: #374151;">${t("emails.emergencyAccessReminder.greeting", `Hi ${safeName},`, { name: safeName })}</p>
+      <p style="color: #374151;">${t("emails.emergencyAccessReminder.body", `You have not signed in to Monize for <strong>${data.daysSinceLogin} day${data.daysSinceLogin === 1 ? "" : "s"}</strong>. If you remain inactive, your designated emergency contacts will be granted full access to your account ${grantPhrase}.`, { daysSinceLogin: data.daysSinceLogin, grantPhrase })}</p>
+      <p style="color: #374151;">${t("emails.emergencyAccessReminder.contactsLabel", "Designated contacts:")}</p>
       <ul style="margin: 8px 0 16px 20px; padding: 0;">${contactRows}</ul>
       <p style="margin: 24px 0;">
-        <a href="${data.appUrl}/login" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">Sign in now</a>
+        <a href="${data.appUrl}/login" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">${t("emails.emergencyAccessReminder.button", "Sign in now")}</a>
       </p>
-      <p style="color: #374151;">Signing in resets the timer. If you no longer want this feature enabled, you can disable it from Settings &rarr; Emergency Access.</p>
+      <p style="color: #374151;">${t("emails.emergencyAccessReminder.footer", "Signing in resets the timer. If you no longer want this feature enabled, you can disable it from Settings → Emergency Access.")}</p>
       <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- Monize</p>
     </div>
   `;
@@ -538,6 +555,7 @@ interface EmergencyAccessGrantData {
 
 export function emergencyAccessGrantTemplate(
   data: EmergencyAccessGrantData,
+  t: EmailT = englishEmailT,
 ): string {
   const safeContact = escapeHtml(data.contactFirstName || "there");
   const safeOwner = escapeHtml(data.ownerFullName || "the account owner");
@@ -548,15 +566,15 @@ export function emergencyAccessGrantTemplate(
     : "";
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2 style="color: #1f2937;">Emergency Access Granted</h2>
-      <p style="color: #374151;">Hi ${safeContact},</p>
-      <p style="color: #374151;"><strong>${safeOwner}</strong> previously designated you as an emergency contact on their Monize account. Because they have not signed in for an extended period, you are now being granted full access to take over the account.</p>
+      <h2 style="color: #1f2937;">${t("emails.emergencyAccessGrant.heading", "Emergency Access Granted")}</h2>
+      <p style="color: #374151;">${t("emails.emergencyAccessGrant.greeting", `Hi ${safeContact},`, { name: safeContact })}</p>
+      <p style="color: #374151;">${t("emails.emergencyAccessGrant.body", `<strong>${safeOwner}</strong> previously designated you as an emergency contact on their Monize account. Because they have not signed in for an extended period, you are now being granted full access to take over the account.`, { owner: safeOwner })}</p>
       ${messageBlock}
-      <p style="color: #374151;">To claim access, click the link below and set a new password. You will be signed in as the account holder.</p>
+      <p style="color: #374151;">${t("emails.emergencyAccessGrant.claimIntro", "To claim access, click the link below and set a new password. You will be signed in as the account holder.")}</p>
       <p style="margin: 24px 0;">
-        <a href="${safeUrl}" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">Claim Emergency Access</a>
+        <a href="${safeUrl}" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">${t("emails.emergencyAccessGrant.button", "Claim Emergency Access")}</a>
       </p>
-      <p style="color: #374151; font-size: 14px;">This link is valid until <strong>${expiry}</strong> and can only be used once. If multiple contacts received this email, the first to claim will take over the account.</p>
+      <p style="color: #374151; font-size: 14px;">${t("emails.emergencyAccessGrant.expiry", `This link is valid until <strong>${expiry}</strong> and can only be used once. If multiple contacts received this email, the first to claim will take over the account.`, { expiry })}</p>
       <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- Monize</p>
     </div>
   `;
@@ -569,16 +587,17 @@ interface EmergencyAccessGrantRevokedData {
 
 export function emergencyAccessGrantRevokedTemplate(
   data: EmergencyAccessGrantRevokedData,
+  t: EmailT = englishEmailT,
 ): string {
   const safeName = escapeHtml(data.ownerFirstName || "there");
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2 style="color: #b45309;">Emergency Access Was Granted While You Were Away</h2>
-      <p style="color: #374151;">Hi ${safeName},</p>
-      <p style="color: #374151;">Because your account had been inactive, your designated emergency contacts were sent links to take over your account. You have now signed back in, so <strong>those links have been revoked</strong> and the safeguard has been re-armed.</p>
-      <p style="color: #374151;">If this was expected, no action is needed. If you did not expect this, review your sign-in activity and your emergency-access settings.</p>
+      <h2 style="color: #b45309;">${t("emails.emergencyAccessGrantRevoked.heading", "Emergency Access Was Granted While You Were Away")}</h2>
+      <p style="color: #374151;">${t("emails.emergencyAccessGrantRevoked.greeting", `Hi ${safeName},`, { name: safeName })}</p>
+      <p style="color: #374151;">${t("emails.emergencyAccessGrantRevoked.body1", "Because your account had been inactive, your designated emergency contacts were sent links to take over your account. You have now signed back in, so <strong>those links have been revoked</strong> and the safeguard has been re-armed.")}</p>
+      <p style="color: #374151;">${t("emails.emergencyAccessGrantRevoked.body2", "If this was expected, no action is needed. If you did not expect this, review your sign-in activity and your emergency-access settings.")}</p>
       <p style="margin: 24px 0;">
-        <a href="${escapeHtml(data.appUrl)}/settings/emergency-access" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">Review Emergency Access</a>
+        <a href="${escapeHtml(data.appUrl)}/settings/emergency-access" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">${t("emails.emergencyAccessGrantRevoked.button", "Review Emergency Access")}</a>
       </p>
       <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- Monize</p>
     </div>
