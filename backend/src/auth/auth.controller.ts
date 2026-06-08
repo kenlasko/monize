@@ -40,6 +40,9 @@ import { Setup2faDto } from "./dto/setup-2fa.dto";
 import { Setup2faInitDto } from "./dto/setup-2fa-init.dto";
 import { passwordResetTemplate } from "../notifications/email-templates";
 import { SwitchContextDto } from "./dto/switch-context.dto";
+import { I18nService } from "nestjs-i18n";
+import { emailTranslator } from "../i18n/email-translator";
+import { DEFAULT_LOCALE } from "../i18n/config";
 import { DelegationService } from "../delegation/delegation.service";
 import { AllowDelegate } from "../delegation/decorators/delegate-access.decorator";
 import { SkipCsrf } from "../common/decorators/skip-csrf.decorator";
@@ -69,6 +72,7 @@ export class AuthController {
     private demoModeService: DemoModeService,
     private tokenService: TokenService,
     private delegationService: DelegationService,
+    private readonly i18n: I18nService,
   ) {
     // Default to true if not explicitly set to 'false'
     const localAuthSetting = this.configService.get<string>(
@@ -620,12 +624,18 @@ export class AuthController {
         "http://localhost:3000",
       );
       const resetUrl = `${frontendUrl}/reset-password?token=${result.token}`;
-      const html = passwordResetTemplate(result.user.firstName || "", resetUrl);
+      const lang = DEFAULT_LOCALE;
+      const t = emailTranslator(this.i18n, lang);
+      const html = passwordResetTemplate(
+        result.user.firstName || "",
+        resetUrl,
+        t,
+      );
 
       try {
         await this.emailService.sendMail(
           result.user.email!,
-          "Monize Password Reset",
+          t("emails.passwordReset.subject", "Monize Password Reset"),
           html,
         );
       } catch (error) {

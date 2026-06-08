@@ -48,7 +48,10 @@ describe("DelegationService", () => {
     configService = { get: jest.fn() };
     dataSource = { transaction: jest.fn() };
 
-    const i18nStub = { translate: (key: string, opts?: { defaultValue?: string }) => opts?.defaultValue ?? key } as unknown as I18nService;
+    const i18nStub = {
+      translate: (key: string, opts?: { defaultValue?: string }) =>
+        opts?.defaultValue ?? key,
+    } as unknown as I18nService;
 
     service = new DelegationService(
       delegatesRepo as any,

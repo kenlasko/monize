@@ -18,6 +18,7 @@ import { TokenService } from "./token.service";
 import { TwoFactorService } from "./two-factor.service";
 import { AuthEmailService } from "./auth-email.service";
 import { DelegationService } from "../delegation/delegation.service";
+import { I18nService } from "nestjs-i18n";
 import { User } from "../users/entities/user.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { TrustedDevice } from "../users/entities/trusted-device.entity";
@@ -170,6 +171,13 @@ describe("AuthService", () => {
           useValue: {
             isDelegateUser: jest.fn().mockResolvedValue(false),
             isFullAccount: jest.fn().mockResolvedValue(false),
+          },
+        },
+        {
+          provide: I18nService,
+          useValue: {
+            translate: (key: string, opts?: { defaultValue?: string }) =>
+              opts?.defaultValue ?? key,
           },
         },
       ],

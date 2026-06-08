@@ -154,7 +154,10 @@ describe("AdminService", () => {
         },
         {
           provide: I18nService,
-          useValue: { translate: (key: string, opts?: { defaultValue?: string }) => opts?.defaultValue ?? key },
+          useValue: {
+            translate: (key: string, opts?: { defaultValue?: string }) =>
+              opts?.defaultValue ?? key,
+          },
         },
       ],
     }).compile();

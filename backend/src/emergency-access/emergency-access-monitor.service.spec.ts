@@ -68,7 +68,13 @@ describe("EmergencyAccessMonitorService", () => {
         { provide: EmailService, useValue: emailService },
         { provide: AiEncryptionService, useValue: encryption },
         { provide: ConfigService, useValue: configService },
-        { provide: I18nService, useValue: { translate: (key: string, opts?: { defaultValue?: string }) => opts?.defaultValue ?? key } },
+        {
+          provide: I18nService,
+          useValue: {
+            translate: (key: string, opts?: { defaultValue?: string }) =>
+              opts?.defaultValue ?? key,
+          },
+        },
       ],
     }).compile();
 

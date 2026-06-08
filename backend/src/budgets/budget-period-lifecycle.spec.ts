@@ -18,6 +18,7 @@ import { TransactionSplit } from "../transactions/entities/transaction-split.ent
 import { User } from "../users/entities/user.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { EmailService } from "../notifications/email.service";
+import { I18nService } from "nestjs-i18n";
 
 describe("Budget Period Lifecycle Integration", () => {
   let periodService: BudgetPeriodService;
@@ -239,6 +240,13 @@ describe("Budget Period Lifecycle Integration", () => {
         {
           provide: ConfigService,
           useValue: { get: jest.fn().mockReturnValue("http://localhost:3000") },
+        },
+        {
+          provide: I18nService,
+          useValue: {
+            translate: (key: string, opts?: { defaultValue?: string }) =>
+              opts?.defaultValue ?? key,
+          },
         },
       ],
     }).compile();

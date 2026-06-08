@@ -903,7 +903,10 @@ export class DelegationService {
         this.emailService
           .sendMail(
             email,
-            t("emails.delegateInvite.subject", "You have been invited to Monize"),
+            t(
+              "emails.delegateInvite.subject",
+              "You have been invited to Monize",
+            ),
             delegateInviteTemplate(
               dto.firstName || "",
               this.userLabel(owner),

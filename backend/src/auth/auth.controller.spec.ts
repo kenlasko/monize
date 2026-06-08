@@ -13,6 +13,7 @@ import { DemoModeService } from "../common/demo-mode.service";
 import { TokenService } from "./token.service";
 import { DelegationService } from "../delegation/delegation.service";
 import { encrypt, derivePurposeKey } from "./crypto.util";
+import { I18nService } from "nestjs-i18n";
 
 // Matches the JWT_SECRET used in the configService mock below; kept in one
 // place so encrypt/decrypt in tests can round-trip against the controller's
@@ -158,6 +159,13 @@ describe("AuthController", () => {
             validateActingContext: jest.fn(),
           },
         },
+        {
+          provide: I18nService,
+          useValue: {
+            translate: (key: string, opts?: { defaultValue?: string }) =>
+              opts?.defaultValue ?? key,
+          },
+        },
       ],
     }).compile();
 
@@ -206,6 +214,13 @@ describe("AuthController", () => {
               getAvailableContexts: jest.fn().mockResolvedValue([]),
               resolveSwitchTarget: jest.fn(),
               validateActingContext: jest.fn(),
+            },
+          },
+          {
+            provide: I18nService,
+            useValue: {
+              translate: (key: string, opts?: { defaultValue?: string }) =>
+                opts?.defaultValue ?? key,
             },
           },
         ],
@@ -260,6 +275,13 @@ describe("AuthController", () => {
               getAvailableContexts: jest.fn().mockResolvedValue([]),
               resolveSwitchTarget: jest.fn(),
               validateActingContext: jest.fn(),
+            },
+          },
+          {
+            provide: I18nService,
+            useValue: {
+              translate: (key: string, opts?: { defaultValue?: string }) =>
+                opts?.defaultValue ?? key,
             },
           },
         ],
@@ -346,6 +368,13 @@ describe("AuthController", () => {
               getAvailableContexts: jest.fn().mockResolvedValue([]),
               resolveSwitchTarget: jest.fn(),
               validateActingContext: jest.fn(),
+            },
+          },
+          {
+            provide: I18nService,
+            useValue: {
+              translate: (key: string, opts?: { defaultValue?: string }) =>
+                opts?.defaultValue ?? key,
             },
           },
         ],
@@ -586,6 +615,13 @@ describe("AuthController", () => {
               getAvailableContexts: jest.fn().mockResolvedValue([]),
               resolveSwitchTarget: jest.fn(),
               validateActingContext: jest.fn(),
+            },
+          },
+          {
+            provide: I18nService,
+            useValue: {
+              translate: (key: string, opts?: { defaultValue?: string }) =>
+                opts?.defaultValue ?? key,
             },
           },
         ],
@@ -1493,6 +1529,13 @@ describe("AuthController", () => {
               validateActingContext: jest.fn(),
             },
           },
+          {
+            provide: I18nService,
+            useValue: {
+              translate: (key: string, opts?: { defaultValue?: string }) =>
+                opts?.defaultValue ?? key,
+            },
+          },
         ],
       }).compile();
 
@@ -1555,6 +1598,13 @@ describe("AuthController", () => {
               getAvailableContexts: jest.fn().mockResolvedValue([]),
               resolveSwitchTarget: jest.fn(),
               validateActingContext: jest.fn(),
+            },
+          },
+          {
+            provide: I18nService,
+            useValue: {
+              translate: (key: string, opts?: { defaultValue?: string }) =>
+                opts?.defaultValue ?? key,
             },
           },
         ],
@@ -1644,6 +1694,13 @@ describe("AuthController", () => {
               validateActingContext: jest.fn(),
             },
           },
+          {
+            provide: I18nService,
+            useValue: {
+              translate: (key: string, opts?: { defaultValue?: string }) =>
+                opts?.defaultValue ?? key,
+            },
+          },
         ],
       }).compile();
       const c = force2faModule.get<AuthController>(AuthController);
@@ -1717,6 +1774,13 @@ describe("AuthController", () => {
               getAvailableContexts: jest.fn().mockResolvedValue([]),
               resolveSwitchTarget: jest.fn(),
               validateActingContext: jest.fn(),
+            },
+          },
+          {
+            provide: I18nService,
+            useValue: {
+              translate: (key: string, opts?: { defaultValue?: string }) =>
+                opts?.defaultValue ?? key,
             },
           },
         ],
@@ -1796,6 +1860,13 @@ describe("AuthController", () => {
                 validateActingContext: jest.fn(),
               },
             },
+            {
+              provide: I18nService,
+              useValue: {
+                translate: (key: string, opts?: { defaultValue?: string }) =>
+                  opts?.defaultValue ?? key,
+              },
+            },
           ],
         }).compile();
         const c = m.get<AuthController>(AuthController);
@@ -1843,6 +1914,13 @@ describe("AuthController", () => {
               getAvailableContexts: jest.fn().mockResolvedValue([]),
               resolveSwitchTarget: jest.fn(),
               validateActingContext: jest.fn(),
+            },
+          },
+          {
+            provide: I18nService,
+            useValue: {
+              translate: (key: string, opts?: { defaultValue?: string }) =>
+                opts?.defaultValue ?? key,
             },
           },
         ],
@@ -1893,6 +1971,13 @@ describe("AuthController", () => {
               getAvailableContexts: jest.fn().mockResolvedValue([]),
               resolveSwitchTarget: jest.fn(),
               validateActingContext: jest.fn(),
+            },
+          },
+          {
+            provide: I18nService,
+            useValue: {
+              translate: (key: string, opts?: { defaultValue?: string }) =>
+                opts?.defaultValue ?? key,
             },
           },
         ],
@@ -1955,6 +2040,13 @@ describe("AuthController", () => {
               validateActingContext: jest.fn(),
             },
           },
+          {
+            provide: I18nService,
+            useValue: {
+              translate: (key: string, opts?: { defaultValue?: string }) =>
+                opts?.defaultValue ?? key,
+            },
+          },
         ],
       }).compile();
       const c = m.get<AuthController>(AuthController);
@@ -1999,6 +2091,13 @@ describe("AuthController", () => {
               getAvailableContexts: jest.fn().mockResolvedValue([]),
               resolveSwitchTarget: jest.fn(),
               validateActingContext: jest.fn(),
+            },
+          },
+          {
+            provide: I18nService,
+            useValue: {
+              translate: (key: string, opts?: { defaultValue?: string }) =>
+                opts?.defaultValue ?? key,
             },
           },
         ],
@@ -2185,6 +2284,13 @@ describe("AuthController", () => {
             useValue: { getRefreshExpiryMs: jest.fn() },
           },
           { provide: DelegationService, useValue: delegation },
+          {
+            provide: I18nService,
+            useValue: {
+              translate: (key: string, opts?: { defaultValue?: string }) =>
+                opts?.defaultValue ?? key,
+            },
+          },
         ],
       }).compile();
       return module.get<AuthController>(AuthController);

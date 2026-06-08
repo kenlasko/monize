@@ -3,12 +3,15 @@ import { Cron, CronExpression } from "@nestjs/schedule";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, IsNull, Not } from "typeorm";
 import { ConfigService } from "@nestjs/config";
+import { I18nService } from "nestjs-i18n";
 import { Account, AccountType } from "./entities/account.entity";
 import { User } from "../users/entities/user.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { EmailService } from "../notifications/email.service";
 import { mortgageReminderTemplate } from "../notifications/email-templates";
 import { formatDateYMD } from "../common/date-utils";
+import { emailTranslator } from "../i18n/email-translator";
+import { DEFAULT_LOCALE } from "../i18n/config";
 
 /**
  * Service for handling mortgage term renewal reminders
@@ -31,6 +34,7 @@ export class MortgageReminderService {
     private preferencesRepository: Repository<UserPreference>,
     private emailService: EmailService,
     private configService: ConfigService,
+    private readonly i18n: I18nService,
   ) {}
 
   /**
@@ -105,15 +109,25 @@ export class MortgageReminderService {
           daysUntilRenewal: this.getDaysUntilDate(m.termEndDate!),
         }));
 
+        const lang = prefs?.language || DEFAULT_LOCALE;
+        const t = emailTranslator(this.i18n, lang);
         const html = mortgageReminderTemplate(
           user.firstName || "",
           mortgageData,
           appUrl,
+          t,
         );
         const subject =
           mortgages.length === 1
-            ? "Monize: 1 upcoming mortgage renewal"
-            : `Monize: ${mortgages.length} upcoming mortgage renewals`;
+            ? t(
+                "emails.mortgageReminder.subject",
+                "Monize: 1 upcoming mortgage renewal",
+              )
+            : t(
+                "emails.mortgageReminder.subjectPlural",
+                `Monize: ${mortgages.length} upcoming mortgage renewals`,
+                { count: mortgages.length },
+              );
 
         await this.emailService.sendMail(user.email, subject, html);
         sentCount++;

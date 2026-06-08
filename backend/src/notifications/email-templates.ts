@@ -528,7 +528,11 @@ export function emergencyAccessReminderTemplate(
   const grantPhrase =
     data.daysUntilGrant <= 0
       ? t("emails.emergencyAccessReminder.grantPhraseToday", "today")
-      : t("emails.emergencyAccessReminder.grantPhraseFuture", `in ${data.daysUntilGrant} day${data.daysUntilGrant === 1 ? "" : "s"}`, { count: data.daysUntilGrant });
+      : t(
+          "emails.emergencyAccessReminder.grantPhraseFuture",
+          `in ${data.daysUntilGrant} day${data.daysUntilGrant === 1 ? "" : "s"}`,
+          { count: data.daysUntilGrant },
+        );
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <h2 style="color: #b45309;">${t("emails.emergencyAccessReminder.heading", "Monize Emergency Access Reminder")}</h2>

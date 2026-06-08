@@ -149,16 +149,23 @@ export class EmergencyAccessMonitorService {
           const claimUrl = `${appUrl}/emergency-access/claim?token=${rawToken}`;
           const lang = DEFAULT_LOCALE;
           const t = emailTranslator(this.i18n, lang);
-          const html = emergencyAccessGrantTemplate({
-            contactFirstName: contact.firstName,
-            ownerFullName,
-            message: decryptedMessage,
-            claimUrl,
-            expiresAt,
-          }, t);
+          const html = emergencyAccessGrantTemplate(
+            {
+              contactFirstName: contact.firstName,
+              ownerFullName,
+              message: decryptedMessage,
+              claimUrl,
+              expiresAt,
+            },
+            t,
+          );
           await this.emailService.sendMail(
             contact.email,
-            t("emails.emergencyAccessGrant.subject", `You have been granted emergency access to ${ownerFullName}'s Monize account`, { owner: ownerFullName }),
+            t(
+              "emails.emergencyAccessGrant.subject",
+              `You have been granted emergency access to ${ownerFullName}'s Monize account`,
+              { owner: ownerFullName },
+            ),
             html,
           );
           delivered += 1;
@@ -211,19 +218,26 @@ export class EmergencyAccessMonitorService {
       );
       const reminderLang = DEFAULT_LOCALE;
       const reminderT = emailTranslator(this.i18n, reminderLang);
-      const html = emergencyAccessReminderTemplate({
-        ownerFirstName: owner.firstName || "",
-        daysSinceLogin,
-        daysUntilGrant,
-        contacts: contacts.map((c) => ({
-          firstName: c.firstName,
-          email: c.email,
-        })),
-        appUrl,
-      }, reminderT);
+      const html = emergencyAccessReminderTemplate(
+        {
+          ownerFirstName: owner.firstName || "",
+          daysSinceLogin,
+          daysUntilGrant,
+          contacts: contacts.map((c) => ({
+            firstName: c.firstName,
+            email: c.email,
+          })),
+          appUrl,
+        },
+        reminderT,
+      );
       await this.emailService.sendMail(
         owner.email,
-        reminderT("emails.emergencyAccessReminder.subject", `Monize: your account has been inactive for ${daysSinceLogin} day${daysSinceLogin === 1 ? "" : "s"}`, { daysSinceLogin }),
+        reminderT(
+          "emails.emergencyAccessReminder.subject",
+          `Monize: your account has been inactive for ${daysSinceLogin} day${daysSinceLogin === 1 ? "" : "s"}`,
+          { daysSinceLogin },
+        ),
         html,
       );
       settings.lastReminderSentAt = new Date(now);
@@ -272,13 +286,19 @@ export class EmergencyAccessMonitorService {
     try {
       const revokedLang = DEFAULT_LOCALE;
       const revokedT = emailTranslator(this.i18n, revokedLang);
-      const html = emergencyAccessGrantRevokedTemplate({
-        ownerFirstName: owner.firstName || "",
-        appUrl,
-      }, revokedT);
+      const html = emergencyAccessGrantRevokedTemplate(
+        {
+          ownerFirstName: owner.firstName || "",
+          appUrl,
+        },
+        revokedT,
+      );
       await this.emailService.sendMail(
         owner.email,
-        revokedT("emails.emergencyAccessGrantRevoked.subject", "Monize: emergency access was granted while you were away"),
+        revokedT(
+          "emails.emergencyAccessGrantRevoked.subject",
+          "Monize: emergency access was granted while you were away",
+        ),
         html,
       );
     } catch (error) {

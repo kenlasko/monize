@@ -31,6 +31,9 @@ import { TwoFactorService } from "./two-factor.service";
 import { AuthEmailService } from "./auth-email.service";
 import { DelegationService } from "../delegation/delegation.service";
 import { tr } from "../i18n/translate";
+import { I18nService } from "nestjs-i18n";
+import { emailTranslator } from "../i18n/email-translator";
+import { DEFAULT_LOCALE } from "../i18n/config";
 
 @Injectable()
 export class AuthService {
@@ -59,6 +62,7 @@ export class AuthService {
     private twoFactorService: TwoFactorService,
     private authEmailService: AuthEmailService,
     private delegationService: DelegationService,
+    private readonly i18n: I18nService,
   ) {
     this.jwtSecret = this.configService.get<string>("JWT_SECRET")!;
     this.csrfKey = derivePurposeKey(this.jwtSecret, "csrf-token");
@@ -268,11 +272,13 @@ export class AuthService {
         );
         // Fire-and-forget lockout email
         if (user.email) {
+          const lang = DEFAULT_LOCALE;
+          const t = emailTranslator(this.i18n, lang);
           this.emailService
             .sendMail(
               user.email,
-              "Account Temporarily Locked",
-              accountLockedTemplate(user.firstName || ""),
+              t("emails.accountLocked.subject", "Account Temporarily Locked"),
+              accountLockedTemplate(user.firstName || "", t),
             )
             .catch((err) =>
               this.logger.warn(`Failed to send lockout email: ${err.message}`),
@@ -604,10 +610,12 @@ export class AuthService {
         this.configService.get<string>("PUBLIC_APP_URL") ||
         "http://localhost:3000";
       const confirmUrl = `${frontendUrl}/api/v1/auth/oidc/confirm-link?token=${linkToken}`;
-      const html = oidcLinkTemplate(user.firstName || "", confirmUrl);
+      const lang = DEFAULT_LOCALE;
+      const t = emailTranslator(this.i18n, lang);
+      const html = oidcLinkTemplate(user.firstName || "", confirmUrl, t);
       await this.emailService.sendMail(
         user.email,
-        "Monize: Confirm SSO Account Link",
+        t("emails.oidcLink.subject", "Monize: Confirm SSO Account Link"),
         html,
       );
     } catch (err) {
