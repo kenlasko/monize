@@ -1486,5 +1486,22 @@
     "title": "Compare Monte Carlo Scenarios",
     "subtitle": "Side-by-side metrics for up to 4 saved scenarios.",
     "backToMonteCarlo": "Back to Monte Carlo"
+  },
+  "editReport": {
+    "titleCustom": "Edit Report",
+    "subtitleCustom": "Modify your custom report configuration",
+    "titleInvestment": "Edit Investment Report",
+    "subtitleInvestment": "Modify your investment report configuration",
+    "backToReports": "Back to Reports",
+    "deleteButton": "Delete Report",
+    "deleteConfirmMessage": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
+    "deleting": "Deleting...",
+    "toasts": {
+      "loadFailed": "Failed to load report",
+      "updated": "Report updated",
+      "updateFailed": "Failed to update report",
+      "deleted": "Report deleted successfully",
+      "deleteFailed": "Failed to delete report"
+    }
   }
 }
