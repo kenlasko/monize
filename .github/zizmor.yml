@@ -1,0 +1,20 @@
+# zizmor configuration. See https://docs.zizmor.sh/configuration/
+
+rules:
+  cache-poisoning:
+    # The build-and-push job in ci.yml uses actions/setup-node WITHOUT a `cache:`
+    # input, so setup-node does NOT enable npm caching. Zizmor's audit flags it
+    # because the same job also publishes container images via
+    # docker/build-push-action (which uses its own type=gha buildx cache - that
+    # caching is intentional for build speed). This is a low-confidence false
+    # positive in our setup; revisit if we ever add `cache: 'npm'` here.
+    ignore:
+      - ci.yml:358:9
+
+  artipacked:
+    # The build-and-push job intentionally keeps the GITHUB_TOKEN persisted on
+    # the checkout so the subsequent "Commit version bump" step can `git push`
+    # the version bump and `gh release create` the tag. Every other checkout
+    # in this repo sets persist-credentials: false.
+    ignore:
+      - ci.yml:353:9

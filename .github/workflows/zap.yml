@@ -15,16 +15,22 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Default to read-only at the workflow level; the scan job opts into
+# issue-write access so the ZAP action can file a findings issue automatically.
 permissions:
   contents: read
-  issues: write
 
 jobs:
   zap-baseline:
     name: ZAP baseline scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write # so zaproxy/action-baseline can file the findings issue
     steps:
       - uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+        with:
+          persist-credentials: false
 
       - name: Build application images
         run: docker compose -f docker-compose.e2e.yml build

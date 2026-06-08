@@ -10,16 +10,26 @@ on:
     - cron: '0 9 * * 1'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Default to read-only at the workflow level; the one job that needs to open or
+# comment on issues opts in below.
 permissions:
   contents: read
-  issues: write
 
 jobs:
   review-exceptions:
     name: Review Bearer exceptions
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write # to open or comment on the tracking issue when an exception is past due
     steps:
       - uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: 24

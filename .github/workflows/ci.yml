@@ -25,6 +25,8 @@ jobs:
         working-directory: backend
     steps:
       - uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: 24
@@ -40,6 +42,8 @@ jobs:
         working-directory: backend
     steps:
       - uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: 24
@@ -57,7 +61,9 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16-alpine
+        # Pinned by digest to satisfy zizmor's unpinned-images audit. Refresh
+        # alongside production postgres bumps so CI matches what we ship.
+        image: postgres:16-alpine@sha256:16bc17c64a573ef34162af9298258d1aec548232985b33ed7b1eac33ba35c229
         env:
           POSTGRES_DB: monize_test
           POSTGRES_USER: monize_test
@@ -82,6 +88,8 @@ jobs:
       NODE_ENV: test
     steps:
       - uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: 24
@@ -97,6 +105,8 @@ jobs:
         working-directory: frontend
     steps:
       - uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: 24
@@ -112,6 +122,8 @@ jobs:
         working-directory: frontend
     steps:
       - uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: 24
@@ -129,6 +141,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: 24
@@ -147,6 +161,8 @@ jobs:
         working-directory: ${{ matrix.package }}
     steps:
       - uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: 24
@@ -177,6 +193,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+        with:
+          persist-credentials: false
       - name: Verify schema.sql matches migrations state
         run: scripts/verify-schema.sh
 
@@ -190,9 +208,11 @@ jobs:
         working-directory: frontend
     permissions:
       contents: read
-      pull-requests: write
+      pull-requests: write # so the bundle-size report can be posted as a PR comment (today it only writes to the job summary)
     steps:
       - uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: 24
@@ -226,6 +246,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: 24
@@ -237,7 +259,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      security-events: write
+      security-events: write # for github/codeql-action/upload-sarif to publish zizmor findings to the Security tab
     steps:
       - uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
         with:
@@ -259,6 +281,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+        with:
+          persist-credentials: false
       - name: Lint backend Dockerfile
         uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
         with:
@@ -275,6 +299,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+        with:
+          persist-credentials: false
       - name: Bearer
         uses: bearer/bearer-action@828eeb928ce2f4a7ca5ed57fb8b59508cb8c79bc # v2
         with:
@@ -315,18 +341,19 @@ jobs:
         e2e-tests,
       ]
     permissions:
-      contents: write
-      packages: write
-      # Needed for cosign keyless signing and SBOM/provenance attestations
-      # via GitHub's OIDC token.
-      id-token: write
-      attestations: write
-      # Needed for Trivy to upload SARIF results to the Security tab.
-      security-events: write
+      contents: write # to push the version-bump commit and create the GitHub release
+      packages: write # to push the signed multi-arch images to GHCR
+      id-token: write # for cosign keyless signing via GitHub's OIDC token
+      attestations: write # for SBOM and provenance attestations on the published images
+      security-events: write # for Trivy to upload SARIF results to the Security tab
     steps:
+      # persist-credentials is intentionally left at its default (true) here:
+      # later steps run `git push` to publish the version bump and need the
+      # token wired into the checkout.
       - uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
 
       - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
@@ -358,8 +385,10 @@ jobs:
 
       - name: Set build metadata
         id: meta
+        env:
+          GIT_SHA: ${{ github.sha }}
         run: |
-          echo "git_sha=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          echo "git_sha=$GIT_SHA" >> "$GITHUB_OUTPUT"
           echo "build_date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
 
       - name: Build and push backend
@@ -541,20 +570,23 @@ jobs:
           ignore-unfixed: true
 
       - name: Commit version bump
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add backend/package.json backend/package-lock.json frontend/package.json frontend/package-lock.json
-          git commit -m "chore: bump version to ${{ steps.version.outputs.version }} [skip ci]"
+          git commit -m "chore: bump version to ${VERSION} [skip ci]"
           git pull --rebase
           git push
 
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          gh release create "v${{ steps.version.outputs.version }}" \
-            --title "v${{ steps.version.outputs.version }}" \
+          gh release create "v${VERSION}" \
+            --title "v${VERSION}" \
             --generate-notes
 
   # Pre-download and cache the Playwright browsers ONCE, before the sharded
@@ -571,6 +603,8 @@ jobs:
     needs: [backend-unit-tests, frontend-unit-tests]
     steps:
       - uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: 24
@@ -612,9 +646,11 @@ jobs:
         shard: [1, 2, 3, 4]
     permissions:
       contents: read
-      pull-requests: write
+      pull-requests: write # so the failure-diagnostics step can post container logs as a PR comment via the issues/comments API
     steps:
       - uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: 24
@@ -643,8 +679,10 @@ jobs:
       - name: Install Playwright system dependencies
         working-directory: e2e
         timeout-minutes: 10
+        env:
+          PW_CACHE_HIT: ${{ steps.pw-cache.outputs.cache-hit }}
         run: |
-          if [ "${{ steps.pw-cache.outputs.cache-hit }}" = "true" ]; then
+          if [ "$PW_CACHE_HIT" = "true" ]; then
             npx playwright install-deps chromium firefox
           else
             npx playwright install --with-deps chromium firefox
@@ -656,9 +694,10 @@ jobs:
         env:
           BASE_URL: http://localhost:3001
           CI: 'true'
+          SHARD: ${{ matrix.shard }}
         run: |
           set -o pipefail
-          npx playwright test --shard=${{ matrix.shard }}/4 --max-failures=5 2>&1 | tee /tmp/pw-output.txt
+          npx playwright test --shard="${SHARD}/4" --max-failures=5 2>&1 | tee /tmp/pw-output.txt
 
       - name: Upload Playwright report
         if: always()
@@ -675,9 +714,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          SHARD: ${{ matrix.shard }}
+          REPO: ${{ github.repository }}
         run: |
           {
-            echo "## E2E diagnostics (shard ${{ matrix.shard }}/4)"
+            echo "## E2E diagnostics (shard ${SHARD}/4)"
             echo
             if [ -f /tmp/pw-output.txt ]; then
               echo '### Playwright output (tail)'
@@ -705,7 +746,7 @@ jobs:
             http=$(curl -sS -o /tmp/resp.json -w '%{http_code}' -X POST \
               -H "Authorization: Bearer $GH_TOKEN" \
               -H "Accept: application/vnd.github+json" \
-              "https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER/comments" \
+              "https://api.github.com/repos/${REPO}/issues/$PR_NUMBER/comments" \
               -d @/tmp/e2e-diag.json)
             echo "PR comment POST -> HTTP $http"
             [ "$http" = "201" ] || cat /tmp/resp.json
