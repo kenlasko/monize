@@ -81,5 +81,9 @@
   "passwordInput": {
     "show": "Show input",
     "hide": "Hide input"
+  },
+  "currencyInput": {
+    "openCalculator": "Open calculator",
+    "calculator": "Calculator"
   }
 }

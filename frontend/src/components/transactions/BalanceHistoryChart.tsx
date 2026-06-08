@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { gainLossColor } from '@/lib/format';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import {
@@ -18,7 +19,6 @@ import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { ChartDownloadButton } from '@/components/ui/ChartDownloadButton';
 
-const CHART_TITLE = 'Balance History';
 
 interface BalanceHistoryChartProps {
   data: Array<{ date: string; balance: number }>;
@@ -69,9 +69,11 @@ export function BalanceHistoryChart({
   currencyCode,
   accountName,
 }: BalanceHistoryChartProps) {
+  const t = useTranslations('transactions');
+  const chartTitle = t('charts.balanceHistory.title');
   const { formatCurrency: formatCurrencyFull, formatCurrencyAxis } = useNumberFormat();
   const chartRef = useRef<HTMLDivElement>(null);
-  const downloadFilename = accountName ? `${CHART_TITLE} - ${accountName}` : CHART_TITLE;
+  const downloadFilename = accountName ? `${chartTitle} - ${accountName}` : chartTitle;
 
   const formatCurrency = useCallback(
     (value: number) => formatCurrencyFull(value, currencyCode),
@@ -150,7 +152,7 @@ export function BalanceHistoryChart({
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 mb-6 min-h-[420px]">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          {CHART_TITLE}
+          {chartTitle}
         </h3>
         <div className="h-72 flex items-center justify-center">
           <Skeleton className="w-full h-full" />
@@ -163,10 +165,10 @@ export function BalanceHistoryChart({
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 mb-6 min-h-[420px]">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          {CHART_TITLE}
+          {chartTitle}
         </h3>
         <div className="h-72 flex items-center justify-center text-gray-500 dark:text-gray-400">
-          <p>No balance data available</p>
+          <p>{t('charts.balanceHistory.noData')}</p>
         </div>
       </div>
     );
@@ -176,7 +178,7 @@ export function BalanceHistoryChart({
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 mb-6 min-h-[420px]">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          {CHART_TITLE}
+          {chartTitle}
         </h3>
         <ChartDownloadButton chartRef={chartRef} filename={downloadFilename} />
       </div>
@@ -236,7 +238,7 @@ export function BalanceHistoryChart({
       {summary && (
         <div className={`mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 grid ${summary.hasFutureData ? 'grid-cols-2' : 'grid-cols-3'} gap-4 text-center`}>
           <div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">Starting</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">{t('charts.balanceHistory.starting')}</div>
             <div
               className={`font-semibold ${
                 summary.startBalance >= 0
@@ -248,7 +250,7 @@ export function BalanceHistoryChart({
             </div>
           </div>
           <div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">Current</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">{t('charts.balanceHistory.current')}</div>
             <div
               className={`font-semibold ${
                 gainLossColor(summary.currentBalance)
@@ -259,7 +261,7 @@ export function BalanceHistoryChart({
           </div>
           {summary.hasFutureData && (
             <div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">Ending</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">{t('charts.balanceHistory.ending')}</div>
               <div
                 className={`font-semibold ${
                   summary.endBalance >= 0
@@ -273,7 +275,7 @@ export function BalanceHistoryChart({
           )}
           <div>
             <div className="text-sm text-gray-500 dark:text-gray-400">
-              {summary.goesNegative ? 'Lowest' : 'Min Balance'}
+              {summary.goesNegative ? t('charts.balanceHistory.lowest') : t('charts.balanceHistory.minBalance')}
             </div>
             <div
               className={`font-semibold ${

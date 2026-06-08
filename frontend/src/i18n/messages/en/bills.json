@@ -56,5 +56,9 @@
       "sat": "Sat"
     },
     "more": "+{count} more"
+  },
+  "toasts": {
+    "overridesDeleted": "Overrides deleted",
+    "notFound": "Scheduled payment not found"
   }
 }

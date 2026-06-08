@@ -374,5 +374,11 @@
       "autoTitle": "Auto ({scale})",
       "scaleTitle": "{label} scale"
     }
+  },
+  "toasts": {
+    "payeeUpdated": "Payee updated successfully",
+    "deleted": "{count, plural, one {# transaction deleted} other {# transactions deleted}}",
+    "noneToExport": "No transactions to export",
+    "exported": "{count, plural, one {Exported # transaction} other {Exported # transactions}}"
   }
 }

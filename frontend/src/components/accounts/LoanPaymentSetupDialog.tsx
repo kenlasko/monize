@@ -176,12 +176,12 @@ export function LoanPaymentSetupDialog({
       setPayees((prev) => [...prev, newPayee]);
       setSelectedPayeeId(newPayee.id);
       setPayeeName(newPayee.name);
-      toast.success(`Payee "${name}" created`);
+      toast.success(t('toasts.payeeCreated', { name }));
     } catch (error: any) {
-      const message = error?.response?.data?.message || 'Failed to create payee';
+      const message = error?.response?.data?.message || t('toasts.payeeCreateFailed');
       toast.error(message);
     }
-  }, []);
+  }, [t]);
 
   const handleSubmit = useCallback(async () => {
     if (!totalPaymentAmount || !sourceAccountId || !nextDueDate) {
@@ -219,7 +219,7 @@ export function LoanPaymentSetupDialog({
       }
 
       await accountsApi.setupLoanPayments(loanAccount.accountId, data);
-      toast.success(`Scheduled payments set up for ${loanAccount.accountName}`);
+      toast.success(t('loanPaymentSetup.toasts.setupComplete', { account: loanAccount.accountName }));
       onSetupComplete?.();
       onClose();
     } catch (error: any) {

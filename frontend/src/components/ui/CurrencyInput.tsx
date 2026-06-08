@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo, forwardRef, InputHTMLAttributes, FocusEvent } from 'react';
+import { useTranslations } from 'next-intl';
 import { CalculatorIcon } from '@heroicons/react/24/outline';
 import { cn, inputBaseClasses, inputErrorClasses } from '@/lib/utils';
 import { formatAmountWithCommas, formatAmount, parseAmount, filterCurrencyInput, filterCalculatorInput, hasCalculatorOperators, evaluateExpression } from '@/lib/format';
@@ -54,6 +55,7 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
     },
     ref
   ) => {
+    const t = useTranslations('common');
     // Local display state - allows free typing
     const [displayValue, setDisplayValue] = useState(() => formatAmountWithCommas(value));
     const [isFocused, setIsFocused] = useState(false);
@@ -288,7 +290,7 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
             <button
               type="button"
               tabIndex={-1}
-              aria-label="Open calculator"
+              aria-label={t('currencyInput.openCalculator')}
               disabled={disabled}
               onClick={openCalculator}
               className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-50 disabled:pointer-events-none"
@@ -304,7 +306,7 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
         {/* Calculator modal */}
         <Modal isOpen={calcOpen} onClose={() => setCalcOpen(false)} maxWidth="sm" pushHistory>
           <div className="p-4">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Calculator</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{t('currencyInput.calculator')}</h3>
 
             <input
               ref={calcInputRef}

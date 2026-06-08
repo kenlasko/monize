@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { gainLossColor } from '@/lib/format';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import {
@@ -21,7 +22,6 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { ChartDownloadButton } from '@/components/ui/ChartDownloadButton';
 
-const CHART_TITLE = 'Monthly Totals';
 // Desktop goes vertical on the bar-top labels and widens the top margin only
 // once the column count crosses this threshold (3 years of monthly buckets).
 const DESKTOP_CROWDED_THRESHOLD = 36;
@@ -50,6 +50,7 @@ function MonthlyTotalTooltip({
   payload?: Array<{ payload: ChartDataPoint }>;
   formatCurrency: (v: number) => string;
 }) {
+  const t = useTranslations('transactions');
   if (active && payload?.[0]) {
     const data = payload[0].payload;
     return (
@@ -65,7 +66,7 @@ function MonthlyTotalTooltip({
           {formatCurrency(data.total)}
         </p>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          {data.count} transaction{data.count !== 1 ? 's' : ''}
+          {t('charts.monthlyTotals.tooltip', { count: data.count })}
         </p>
       </div>
     );
@@ -79,9 +80,11 @@ export function CategoryPayeeBarChart({
   onMonthClick,
   filterLabel,
 }: CategoryPayeeBarChartProps) {
+  const t = useTranslations('transactions');
+  const chartTitle = t('charts.monthlyTotals.title');
   const { formatCurrency, formatCurrencyAxis } = useNumberFormat();
   const chartRef = useRef<HTMLDivElement>(null);
-  const downloadFilename = filterLabel ? `${CHART_TITLE} - ${filterLabel}` : CHART_TITLE;
+  const downloadFilename = filterLabel ? `${chartTitle} - ${filterLabel}` : chartTitle;
   const isMobile = useIsMobile();
 
   const chartData = useMemo(() => {
@@ -112,7 +115,7 @@ export function CategoryPayeeBarChart({
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 mb-6 min-h-[420px]">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          {CHART_TITLE}
+          {chartTitle}
         </h3>
         <div className="h-72 flex items-center justify-center">
           <Skeleton className="w-full h-full" />
@@ -125,10 +128,10 @@ export function CategoryPayeeBarChart({
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 mb-6 min-h-[420px]">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          {CHART_TITLE}
+          {chartTitle}
         </h3>
         <div className="h-72 flex items-center justify-center text-gray-500 dark:text-gray-400">
-          <p>No transaction data available</p>
+          <p>{t('charts.monthlyTotals.noData')}</p>
         </div>
       </div>
     );
@@ -138,7 +141,7 @@ export function CategoryPayeeBarChart({
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 mb-6 min-h-[420px]">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          {CHART_TITLE}
+          {chartTitle}
         </h3>
         <ChartDownloadButton chartRef={chartRef} filename={downloadFilename} />
       </div>
@@ -224,7 +227,7 @@ export function CategoryPayeeBarChart({
       {summary && (
         <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 grid grid-cols-3 gap-4 text-center">
           <div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">Monthly Avg</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">{t('charts.monthlyTotals.monthlyAvg')}</div>
             <div
               className={`font-semibold ${
                 gainLossColor(summary.monthlyAvg)
@@ -234,7 +237,7 @@ export function CategoryPayeeBarChart({
             </div>
           </div>
           <div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">Total</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">{t('charts.monthlyTotals.total')}</div>
             <div
               className={`font-semibold ${
                 gainLossColor(summary.total)
@@ -244,7 +247,7 @@ export function CategoryPayeeBarChart({
             </div>
           </div>
           <div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">Transactions</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">{t('charts.monthlyTotals.transactions')}</div>
             <div className="font-semibold text-gray-900 dark:text-gray-100">
               {summary.totalCount.toLocaleString()}
             </div>

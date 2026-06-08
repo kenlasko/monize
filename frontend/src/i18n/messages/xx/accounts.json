@@ -225,6 +225,9 @@
       "monthly": "[XX-Monthly-XX]",
       "quarterly": "[XX-Quarterly-XX]",
       "yearly": "[XX-Yearly-XX]"
+    },
+    "toasts": {
+      "setupComplete": "[XX-Scheduled payments set up for {account}-XX]"
     }
   },
   "mortgageFields": {
@@ -271,5 +274,11 @@
     "selectOrCreateCategory": "[XX-Select or create category...-XX]",
     "dateAcquired": "[XX-Date Acquired-XX]",
     "dateAcquiredNote": "[XX-The asset will be excluded from net worth calculations before this date.-XX]"
+  },
+  "toasts": {
+    "categoryCreatedNested": "[XX-Category \"{parent}: {name}\" created-XX]",
+    "categoryCreated": "[XX-Category \"{name}\" created-XX]",
+    "payeeCreated": "[XX-Payee \"{name}\" created-XX]",
+    "payeeCreateFailed": "[XX-Failed to create payee-XX]"
   }
 }

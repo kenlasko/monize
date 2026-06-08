@@ -237,5 +237,9 @@
       "priceRequired": "Price must be greater than zero",
       "totalAmountRequired": "Total amount is required for this action"
     }
+  },
+  "postTransaction": {
+    "minSplits": "Split transactions require at least 2 splits",
+    "splitMismatch": "Split amounts must equal the transaction amount"
   }
 }

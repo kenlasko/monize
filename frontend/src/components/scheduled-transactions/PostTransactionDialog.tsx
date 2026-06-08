@@ -420,13 +420,13 @@ export function PostTransactionDialog({
       }
     } else if (isSplit) {
       if (splits.length < 2) {
-        toast.error('Split transactions require at least 2 splits');
+        toast.error(t('postTransaction.minSplits'));
         return;
       }
       const splitsTotal = splits.reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
       const remaining = Math.abs(amount - splitsTotal);
       if (remaining >= 0.01) {
-        toast.error('Split amounts must equal the transaction amount');
+        toast.error(t('postTransaction.splitMismatch'));
         return;
       }
     }

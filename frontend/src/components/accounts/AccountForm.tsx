@@ -433,9 +433,9 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
       setValue('assetCategoryId', newCategory.id, { shouldDirty: true, shouldValidate: true });
 
       if (parentId && parentName) {
-        toast.success(`Category "${parentName}: ${categoryName}" created`);
+        toast.success(t('toasts.categoryCreatedNested', { parent: parentName, name: categoryName }));
       } else {
-        toast.success(`Category "${categoryName}" created`);
+        toast.success(t('toasts.categoryCreated', { name: categoryName }));
       }
     } catch (error) {
       logger.error('Failed to create category:', error);

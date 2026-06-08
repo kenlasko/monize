@@ -404,7 +404,7 @@ function TransactionsContent() {
         notes: data.notes || undefined,
       };
       const updated = await payeesApi.update(editingPayee.id, cleanedData);
-      toast.success('Payee updated successfully');
+      toast.success(t('toasts.payeeUpdated'));
       setShowPayeeForm(false);
       setEditingPayee(undefined);
       setPayees(prev => prev.map(p => p.id === updated.id ? updated : p));
@@ -567,14 +567,14 @@ function TransactionsContent() {
     const result = await transactionsApi.bulkDelete(payload as BulkDeleteData);
 
     if (result.deleted > 0) {
-      toast.success(`${result.deleted} transaction${result.deleted !== 1 ? 's' : ''} deleted`);
+      toast.success(t('toasts.deleted', { count: result.deleted }));
     }
 
     setShowBulkDeleteConfirm(false);
     setBulkSelectMode(false);
     selection.clearSelection();
     loadAllData();
-  }, [selection, loadAllData]);
+  }, [selection, loadAllData, t]);
 
   const handleExport = useCallback(async () => {
     setIsExporting(true);
@@ -623,7 +623,7 @@ function TransactionsContent() {
       }
 
       if (allTransactions.length === 0) {
-        toast.error('No transactions to export');
+        toast.error(t('toasts.noneToExport'));
         return;
       }
 
@@ -664,14 +664,14 @@ function TransactionsContent() {
       const filename = `Monize_Transactions_${datePart}_${timePart}.csv`;
 
       exportToCsv(filename, headers, rows);
-      toast.success(`Exported ${allTransactions.length} transaction${allTransactions.length !== 1 ? 's' : ''}`);
+      toast.success(t('toasts.exported', { count: allTransactions.length }));
     } catch (error) {
       showErrorToast(error, 'Failed to export transactions');
       logger.error(error);
     } finally {
       setIsExporting(false);
     }
-  }, [filters.filterAccountIds, filters.filteredAccounts, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterTagIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch, filters.filterAmountFrom, filters.filterAmountTo, filters.filterStatuses]);
+  }, [filters.filterAccountIds, filters.filteredAccounts, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterTagIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch, filters.filterAmountFrom, filters.filterAmountTo, filters.filterStatuses, t]);
 
   return (
     <PageLayout>

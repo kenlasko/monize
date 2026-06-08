@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { gainLossColor } from '@/lib/format';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import {
@@ -18,7 +19,6 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { ChartDownloadButton } from '@/components/ui/ChartDownloadButton';
 
-const CHART_TITLE = 'Account Balances';
 
 // When the largest bar is at least this many times taller than the smallest,
 // the "auto" mode switches to a log scale so small bars remain visible.
@@ -117,6 +117,8 @@ export function AccountBalancesBarChart({
   currencyCode,
   onAccountClick,
 }: AccountBalancesBarChartProps) {
+  const t = useTranslations('transactions');
+  const chartTitle = t('charts.accountBalances.title');
   const { formatCurrency: formatCurrencyFull, formatCurrencyAxis } = useNumberFormat();
   const chartRef = useRef<HTMLDivElement>(null);
   const [scaleMode, setScaleMode] = useState<ScaleMode>('auto');
@@ -179,7 +181,7 @@ export function AccountBalancesBarChart({
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 mb-6 min-h-[420px]">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          {CHART_TITLE}
+          {chartTitle}
         </h3>
         <div className="h-72 flex items-center justify-center">
           <Skeleton className="w-full h-full" />
@@ -192,10 +194,10 @@ export function AccountBalancesBarChart({
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 mb-6 min-h-[420px]">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          {CHART_TITLE}
+          {chartTitle}
         </h3>
         <div className="h-72 flex items-center justify-center text-gray-500 dark:text-gray-400">
-          <p>No account balance data available</p>
+          <p>{t('charts.accountBalances.noData')}</p>
         </div>
       </div>
     );
@@ -205,14 +207,14 @@ export function AccountBalancesBarChart({
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 mb-6 min-h-[420px]">
       <div className="flex items-center justify-between mb-4 gap-2">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          {CHART_TITLE}
+          {chartTitle}
         </h3>
         <div className="flex items-center gap-2">
-          <div className="flex gap-1" role="group" aria-label="Y-axis scale">
+          <div className="flex gap-1" role="group" aria-label={t('charts.accountBalances.scaleLabel')}>
             {(['auto', 'linear', 'log'] as const).map((mode) => {
               const isActive = scaleMode === mode;
-              const label = mode[0].toUpperCase() + mode.slice(1);
-              const title = mode === 'auto' ? `Auto (${effectiveScale})` : `${label} scale`;
+              const label = t(`charts.accountBalances.${mode}`);
+              const title = mode === 'auto' ? t('charts.accountBalances.autoTitle', { scale: effectiveScale }) : t('charts.accountBalances.scaleTitle', { label });
               return (
                 <button
                   key={mode}
@@ -231,7 +233,7 @@ export function AccountBalancesBarChart({
               );
             })}
           </div>
-          <ChartDownloadButton chartRef={chartRef} filename={CHART_TITLE} />
+          <ChartDownloadButton chartRef={chartRef} filename={chartTitle} />
         </div>
       </div>
 
@@ -331,7 +333,7 @@ export function AccountBalancesBarChart({
       {summary && (
         <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 grid grid-cols-3 gap-4 text-center">
           <div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">Average</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">{t('charts.accountBalances.average')}</div>
             <div
               className={`font-semibold ${
                 gainLossColor(summary.avgBalance)
@@ -341,7 +343,7 @@ export function AccountBalancesBarChart({
             </div>
           </div>
           <div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">Total</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">{t('charts.accountBalances.total')}</div>
             <div
               className={`font-semibold ${
                 gainLossColor(summary.total)
@@ -351,7 +353,7 @@ export function AccountBalancesBarChart({
             </div>
           </div>
           <div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">Accounts</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">{t('charts.accountBalances.accounts')}</div>
             <div className="font-semibold text-gray-900 dark:text-gray-100">
               {summary.accountsCount.toLocaleString()}
             </div>

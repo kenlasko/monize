@@ -112,7 +112,7 @@ export function ApiAccessSection() {
 
   const handleCreate = async (formData: CreateTokenFormData) => {
     if (selectedScopes.length === 0) {
-      toast.error('Select at least one scope');
+      toast.error(t('toasts.selectScope'));
       return;
     }
 
@@ -156,7 +156,7 @@ export function ApiAccessSection() {
       setCopied(true);
       toast.success(t('toasts.copied'));
     } catch {
-      toast.error('Failed to copy token');
+      toast.error(t('toasts.copyTokenFailed'));
     }
   };
 
@@ -225,7 +225,7 @@ export function ApiAccessSection() {
                 toast.success(t('toasts.mcpUrlCopied'));
                 setTimeout(() => setMcpUrlCopied(false), 2000);
               } catch {
-                toast.error('Failed to copy URL');
+                toast.error(t('toasts.copyUrlFailed'));
               }
             }}
           >

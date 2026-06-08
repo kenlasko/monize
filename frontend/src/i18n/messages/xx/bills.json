@@ -56,5 +56,9 @@
       "sat": "[XX-Sat-XX]"
     },
     "more": "[XX-+{count} more-XX]"
+  },
+  "toasts": {
+    "overridesDeleted": "[XX-Overrides deleted-XX]",
+    "notFound": "[XX-Scheduled payment not found-XX]"
   }
 }

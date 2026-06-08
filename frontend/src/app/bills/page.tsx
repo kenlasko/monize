@@ -209,7 +209,7 @@ function BillsContent() {
     if (overrideConfirm.transaction) {
       try {
         await scheduledTransactionsApi.deleteAllOverrides(overrideConfirm.transaction.id);
-        toast.success('Overrides deleted');
+        toast.success(t('toasts.overridesDeleted'));
         openEdit(overrideConfirm.transaction);
       } catch (error) {
         toast.error(getErrorMessage(error, 'Failed to delete overrides'));
@@ -408,7 +408,7 @@ function BillsContent() {
       if (target) {
         void openNextOccurrenceEditor(target, amount);
       } else {
-        toast.error('Scheduled payment not found');
+        toast.error(t('toasts.notFound'));
       }
     }
   }

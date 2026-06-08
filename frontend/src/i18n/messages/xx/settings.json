@@ -242,7 +242,10 @@
     "toasts": {
       "copied": "[XX-Token copied to clipboard-XX]",
       "mcpUrlCopied": "[XX-MCP URL copied to clipboard-XX]",
-      "revoked": "[XX-Token revoked-XX]"
+      "revoked": "[XX-Token revoked-XX]",
+      "selectScope": "[XX-Select at least one scope-XX]",
+      "copyTokenFailed": "[XX-Failed to copy token-XX]",
+      "copyUrlFailed": "[XX-Failed to copy URL-XX]"
     },
     "relative": {
       "never": "[XX-Never-XX]",
