@@ -111,7 +111,8 @@ CREATE TABLE accounts (
     description TEXT,
     currency_code VARCHAR(3) NOT NULL REFERENCES currencies(code),
     account_number VARCHAR(100), -- masked/encrypted
-    institution VARCHAR(255),
+    institution VARCHAR(255), -- legacy free-text institution name (superseded by institution_id)
+    institution_id UUID, -- structured financial institution (FK added after institutions table)
     opening_balance NUMERIC(20, 4) DEFAULT 0,
     current_balance NUMERIC(20, 4) DEFAULT 0,
     credit_limit NUMERIC(20, 4), -- for credit cards
@@ -165,6 +166,7 @@ CREATE INDEX idx_accounts_interest_category ON accounts(interest_category_id);
 CREATE INDEX idx_accounts_principal_category ON accounts(principal_category_id);
 CREATE INDEX idx_accounts_scheduled_transaction ON accounts(scheduled_transaction_id);
 CREATE INDEX idx_accounts_source_account ON accounts(source_account_id);
+CREATE INDEX idx_accounts_institution ON accounts(institution_id);
 
 -- Categories for transactions
 CREATE TABLE categories (
@@ -213,6 +215,26 @@ CREATE TABLE payee_aliases (
 CREATE INDEX idx_payee_aliases_payee ON payee_aliases(payee_id);
 CREATE INDEX idx_payee_aliases_user ON payee_aliases(user_id);
 CREATE UNIQUE INDEX idx_payee_aliases_user_alias ON payee_aliases(user_id, LOWER(alias));
+
+-- Financial Institutions (per-user registry of banks/brokerages). The brand
+-- icon is the website's favicon, fetched server-side and cached in logo_data so
+-- the browser never contacts a third party to render it.
+CREATE TABLE institutions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    website TEXT NOT NULL,
+    country VARCHAR(2),
+    logo_data BYTEA,
+    logo_content_type VARCHAR(100),
+    has_logo BOOLEAN NOT NULL DEFAULT false,
+    logo_fetched_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, name)
+);
+
+CREATE INDEX idx_institutions_user ON institutions(user_id);
 
 -- Transactions
 CREATE TABLE transactions (
@@ -441,6 +463,8 @@ ALTER TABLE accounts ADD CONSTRAINT fk_accounts_scheduled_transaction
     FOREIGN KEY (scheduled_transaction_id) REFERENCES scheduled_transactions(id) ON DELETE SET NULL;
 ALTER TABLE accounts ADD CONSTRAINT fk_accounts_asset_category
     FOREIGN KEY (asset_category_id) REFERENCES categories(id) ON DELETE SET NULL;
+ALTER TABLE accounts ADD CONSTRAINT fk_accounts_institution
+    FOREIGN KEY (institution_id) REFERENCES institutions(id) ON DELETE SET NULL;
 
 -- Scheduled Transaction Overrides (for modifying individual occurrences)
 CREATE TABLE scheduled_transaction_overrides (

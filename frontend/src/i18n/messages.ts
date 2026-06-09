@@ -25,6 +25,7 @@ const NAMESPACES = [
   "emergencyAccess",
   "import",
   "insights",
+  "institutions",
   "investments",
   "layout",
   "payees",

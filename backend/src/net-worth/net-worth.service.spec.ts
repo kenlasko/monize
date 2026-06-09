@@ -53,6 +53,8 @@ describe("NetWorthService", () => {
     description: null,
     accountNumber: null,
     institution: null,
+    institutionId: null,
+    institutionRef: null,
     creditLimit: null,
     interestRate: null,
     isFavourite: false,

@@ -1,0 +1,73 @@
+{
+  "page": {
+    "title": "Instytucje finansowe",
+    "subtitle": "Banki i biura maklerskie, do których należą Twoje konta",
+    "newInstitution": "Nowa instytucja",
+    "loading": "Ładowanie instytucji...",
+    "searchPlaceholder": "Szukaj instytucji...",
+    "modalTitleNew": "Nowa instytucja",
+    "modalTitleEdit": "Edytuj instytucję",
+    "summary": {
+      "total": "Łącznie instytucji",
+      "withLogo": "Z logo",
+      "linkedAccounts": "Powiązane konta"
+    },
+    "toasts": {
+      "loadFailed": "Nie udało się załadować instytucji",
+      "created": "Instytucja utworzona",
+      "updated": "Instytucja zaktualizowana",
+      "createFailed": "Nie udało się utworzyć instytucji",
+      "updateFailed": "Nie udało się zaktualizować instytucji"
+    }
+  },
+  "list": {
+    "empty": "Brak instytucji. Utwórz jedną, aby grupować konta.",
+    "columns": {
+      "name": "Nazwa",
+      "website": "Strona internetowa",
+      "country": "Kraj",
+      "accounts": "Konta",
+      "actions": "Akcje"
+    },
+    "accountCount": "{count, plural, =0 {Brak kont} one {# konto} few {# konta} many {# kont} other {# konta}}",
+    "actions": {
+      "manageAccounts": "Konta"
+    },
+    "deleteTitle": "Usuń instytucję",
+    "deleteMessage": "Usunąć „{name}”? Przypisane konta zostaną odłączone, ale nie usunięte.",
+    "deleting": "Usuwanie...",
+    "deleted": "Usunięto „{name}”",
+    "deleteFailed": "Nie udało się usunąć instytucji"
+  },
+  "form": {
+    "nameLabel": "Nazwa",
+    "websiteLabel": "Strona internetowa",
+    "websitePlaceholder": "np. td.com",
+    "countryLabel": "Kraj (opcjonalnie)",
+    "countryPlaceholder": "Dwuliterowy kod, np. CA",
+    "logoHint": "Logo marki jest pobierane automatycznie ze strony internetowej.",
+    "submitCreate": "Utwórz instytucję",
+    "submitUpdate": "Zapisz zmiany"
+  },
+  "validation": {
+    "nameRequired": "Nazwa jest wymagana",
+    "websiteRequired": "Strona internetowa jest wymagana",
+    "websiteInvalid": "Podaj prawidłowy adres strony (np. td.com)",
+    "countryInvalid": "Użyj dwuliterowego kodu kraju"
+  },
+  "accountsManager": {
+    "title": "Konta w {name}",
+    "addLabel": "Dodaj konto",
+    "addPlaceholder": "Wybierz konto do dodania...",
+    "noneToAdd": "Wszystkie Twoje konta są już przypisane do instytucji.",
+    "loading": "Ładowanie kont...",
+    "empty": "Do tej instytucji nie przypisano jeszcze żadnych kont.",
+    "remove": "Usuń",
+    "added": "Konto dodane",
+    "removed": "Konto usunięte",
+    "addFailed": "Nie udało się dodać konta",
+    "removeFailed": "Nie udało się usunąć konta",
+    "loadFailed": "Nie udało się załadować kont",
+    "done": "Gotowe"
+  }
+}

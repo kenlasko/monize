@@ -33,6 +33,7 @@ export interface Account {
   currencyCode: string;
   accountNumber: string | null;
   institution: string | null;
+  institutionId: string | null;
   openingBalance: number;
   currentBalance: number;
   creditLimit: number | null;
@@ -76,6 +77,7 @@ export interface CreateAccountData {
   currencyCode: string;
   accountNumber?: string;
   institution?: string;
+  institutionId?: string | null;
   openingBalance?: number;
   creditLimit?: number;
   interestRate?: number;

@@ -12,6 +12,7 @@ import { Transaction } from "../../transactions/entities/transaction.entity";
 import { Category } from "../../categories/entities/category.entity";
 import { ScheduledTransaction } from "../../scheduled-transactions/entities/scheduled-transaction.entity";
 import { User } from "../../users/entities/user.entity";
+import { Institution } from "../../institutions/entities/institution.entity";
 
 export enum AccountType {
   CHEQUING = "CHEQUING",
@@ -66,8 +67,17 @@ export class Account {
   })
   accountNumber: string | null;
 
+  // Legacy free-text institution name. Superseded by the structured
+  // institution relation below; retained so historical values are not lost.
   @Column({ type: "varchar", length: 255, nullable: true })
   institution: string | null;
+
+  @Column({ type: "uuid", name: "institution_id", nullable: true })
+  institutionId: string | null;
+
+  @ManyToOne(() => Institution, { nullable: true })
+  @JoinColumn({ name: "institution_id" })
+  institutionRef: Institution | null;
 
   @Column({
     type: "decimal",

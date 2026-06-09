@@ -14,7 +14,7 @@ function createAccount(overrides: Partial<Account> = {}): Account {
     description: 'Primary account',
     currencyCode: 'CAD',
     accountNumber: null,
-    institution: null,
+    institution: null, institutionId: null,
     openingBalance: 1000,
     currentBalance: 1500,
     creditLimit: null,
@@ -920,6 +920,36 @@ describe('AccountRow', () => {
 
       const nameCell = screen.getByText('Main Chequing').closest('td');
       expect(nameCell?.className).toContain('px-3 py-1');
+    });
+  });
+
+  describe('institution brand icon', () => {
+    it('renders the institution logo at normal density', () => {
+      const props = createDefaultProps({
+        institution: { id: 'i-1', name: 'TD', hasLogo: true },
+      });
+      renderAccountRow(props);
+      expect(screen.getByRole('img')).toHaveAttribute(
+        'src',
+        '/api/v1/institutions/i-1/logo',
+      );
+    });
+
+    it('renders a neutral fallback badge when there is no institution', () => {
+      const props = createDefaultProps({ institution: undefined });
+      renderAccountRow(props);
+      expect(screen.queryByRole('img')).toBeNull();
+      expect(screen.getByText('$')).toBeInTheDocument();
+    });
+
+    it('hides the brand icon at dense density', () => {
+      const props = createDefaultProps({
+        density: 'dense',
+        institution: { id: 'i-1', name: 'TD', hasLogo: true },
+      });
+      renderAccountRow(props);
+      expect(screen.queryByRole('img')).toBeNull();
+      expect(screen.queryByText('$')).toBeNull();
     });
   });
 });

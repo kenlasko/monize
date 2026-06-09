@@ -15,6 +15,7 @@ import {
 } from "./entities/account.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { InvestmentTransaction } from "../securities/entities/investment-transaction.entity";
+import { Institution } from "../institutions/entities/institution.entity";
 import { CreateAccountDto } from "./dto/create-account.dto";
 import { UpdateAccountDto } from "./dto/update-account.dto";
 import { CategoriesService } from "../categories/categories.service";
@@ -45,6 +46,8 @@ export class AccountsService {
     private transactionRepository: Repository<Transaction>,
     @InjectRepository(InvestmentTransaction)
     private investmentTransactionRepository: Repository<InvestmentTransaction>,
+    @InjectRepository(Institution)
+    private institutionsRepository: Repository<Institution>,
     @Inject(forwardRef(() => CategoriesService))
     private categoriesService: CategoriesService,
     @Inject(forwardRef(() => ScheduledTransactionsService))
@@ -59,6 +62,28 @@ export class AccountsService {
   ) {}
 
   /**
+   * Verify that an institution id (if provided) exists and belongs to the user.
+   * Prevents assigning an account to another user's institution.
+   */
+  private async assertInstitutionOwned(
+    userId: string,
+    institutionId: string | null | undefined,
+  ): Promise<void> {
+    if (!institutionId) return;
+    const institution = await this.institutionsRepository.findOne({
+      where: { id: institutionId, userId },
+      select: { id: true },
+    });
+    if (!institution) {
+      throw new BadRequestException(
+        tr("errors.accounts.institutionNotFound", "Institution not found", {
+          id: institutionId,
+        }),
+      );
+    }
+  }
+
+  /**
    * Create a new account for a user
    */
   async create(
@@ -70,6 +95,8 @@ export class AccountsService {
       createInvestmentPair,
       ...accountData
     } = createAccountDto;
+
+    await this.assertInstitutionOwned(userId, accountData.institutionId);
 
     // If creating an investment account pair, delegate to the pair creation method
     if (
@@ -522,6 +549,16 @@ export class AccountsService {
         account.accountNumber = updateAccountDto.accountNumber;
       if (updateAccountDto.institution !== undefined)
         account.institution = updateAccountDto.institution;
+      if (updateAccountDto.institutionId !== undefined) {
+        await this.assertInstitutionOwned(
+          userId,
+          updateAccountDto.institutionId,
+        );
+        account.institutionId = updateAccountDto.institutionId;
+        // Clear the loaded relation so TypeORM persists the scalar FK change
+        // rather than re-deriving it from a stale relation object.
+        account.institutionRef = null;
+      }
       if (updateAccountDto.creditLimit !== undefined)
         account.creditLimit = updateAccountDto.creditLimit;
       if (updateAccountDto.interestRate !== undefined)
@@ -588,9 +625,13 @@ export class AccountsService {
 
       const savedAccount = await queryRunner.manager.save(account);
 
-      // If currency changed on an investment account, update the linked account too
+      // Keep a linked investment pair (cash <-> brokerage) in sync. Both halves
+      // represent one real-world account, so shared attributes -- currency and
+      // institution -- propagate to the partner automatically.
+      const currencyChanged = updateAccountDto.currencyCode !== undefined;
+      const institutionChanged = updateAccountDto.institutionId !== undefined;
       if (
-        updateAccountDto.currencyCode !== undefined &&
+        (currencyChanged || institutionChanged) &&
         account.linkedAccountId &&
         account.accountType === AccountType.INVESTMENT
       ) {
@@ -598,7 +639,12 @@ export class AccountsService {
           where: { id: account.linkedAccountId, userId },
         });
         if (linkedAccount) {
-          linkedAccount.currencyCode = updateAccountDto.currencyCode;
+          if (updateAccountDto.currencyCode !== undefined) {
+            linkedAccount.currencyCode = updateAccountDto.currencyCode;
+          }
+          if (updateAccountDto.institutionId !== undefined) {
+            linkedAccount.institutionId = updateAccountDto.institutionId;
+          }
           await queryRunner.manager.save(linkedAccount);
         }
       }

@@ -4,6 +4,7 @@
     "notInvestmentPair": "This account is not part of an investment account pair",
     "noLinkedInvestmentAccount": "This investment account does not have a linked account",
     "notFound": "Account not found",
+    "institutionNotFound": "Institution not found",
     "updateClosed": "Cannot update a closed account",
     "changeCurrencyWithTransactions": "Cannot change the currency of an account that has transactions.",
     "alreadyClosed": "Account is already closed",
@@ -265,6 +266,12 @@
   "notifications": {
     "smtpNotConfigured": "SMTP is not configured. Set SMTP environment variables.",
     "noEmailOnFile": "No email address on file for this user."
+  },
+  "institutions": {
+    "nameConflict": "Institution with name \"{{ name }}\" already exists",
+    "notFound": "Institution with ID {{ id }} not found",
+    "logoNotFound": "No logo available for this institution",
+    "accountNotFound": "Account with ID {{ id }} not found"
   },
   "payees": {
     "nameConflict": "Payee with name \"{{ name }}\" already exists",

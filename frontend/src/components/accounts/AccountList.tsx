@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Account, AccountType } from '@/types/account';
+import { Institution } from '@/types/institution';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Modal } from '@/components/ui/Modal';
 import { accountsApi } from '@/lib/accounts';
@@ -83,6 +84,7 @@ const getAccountTypeColor = (type: AccountType) => {
 
 interface AccountListProps {
   accounts: Account[];
+  institutions?: Institution[];
   brokerageMarketValues?: Map<string, number>;
   defaultCurrency: string;
   convertToDefault: (value: number, fromCurrency: string) => number;
@@ -90,7 +92,7 @@ interface AccountListProps {
   onRefresh: () => void;
 }
 
-export function AccountList({ accounts, brokerageMarketValues, defaultCurrency, convertToDefault, onEdit, onRefresh }: AccountListProps) {
+export function AccountList({ accounts, institutions, brokerageMarketValues, defaultCurrency, convertToDefault, onEdit, onRefresh }: AccountListProps) {
   const t = useTranslations('accounts');
   const tc = useTranslations('common');
   const router = useRouter();
@@ -292,6 +294,13 @@ export function AccountList({ accounts, brokerageMarketValues, defaultCurrency, 
     accounts.forEach((a) => map.set(a.id, a.name));
     return map;
   }, [accounts]);
+
+  // Map institution id -> institution for the per-row brand icon.
+  const institutionsById = useMemo(() => {
+    const map = new Map<string, Institution>();
+    (institutions || []).forEach((i) => map.set(i.id, i));
+    return map;
+  }, [institutions]);
 
   // Group accounts by account type. Within the INVESTMENT group, ensure linked
   // brokerage/cash pairs are rendered adjacently (brokerage first).
@@ -732,6 +741,7 @@ export function AccountList({ accounts, brokerageMarketValues, defaultCurrency, 
                   cellPadding={cellPadding}
                   isDeletable={deletableAccounts.has(item.account.id)}
                   accountNameMap={accountNameMap}
+                  institution={item.account.institutionId ? institutionsById.get(item.account.institutionId) : undefined}
                   brokerageMarketValue={brokerageMarketValues?.get(item.account.id)}
                   defaultCurrency={defaultCurrency}
                   formatCurrency={formatCurrency}

@@ -105,6 +105,8 @@
     "accountNumber": "Numer konta (opcjonalnie)",
     "institution": "Instytucja (opcjonalnie)",
     "institutionRequired": "Pożyczkodawca/Instytucja (wymagane)",
+    "institutionPlaceholder": "Wybierz lub utwórz instytucję...",
+    "newInstitutionTitle": "Nowa instytucja",
     "creditLimit": "Limit kredytowy (opcjonalnie)",
     "interestRateOptional": "Oprocentowanie % (opcjonalnie)",
     "interestRateRequired": "Oprocentowanie % (wymagane)",
@@ -281,7 +283,9 @@
     "categoryCreatedNested": "Utworzono kategorię \"{parent}: {name}\"",
     "categoryCreated": "Utworzono kategorię \"{name}\"",
     "payeeCreated": "Utworzono odbiorcę \"{name}\"",
-    "payeeCreateFailed": "Nie udało się utworzyć odbiorcy"
+    "payeeCreateFailed": "Nie udało się utworzyć odbiorcy",
+    "institutionCreated": "Instytucja „{name}” utworzona",
+    "institutionCreateFailed": "Nie udało się utworzyć instytucji"
   },
   "validation": {
     "nameRequired": "Nazwa konta jest wymagana",

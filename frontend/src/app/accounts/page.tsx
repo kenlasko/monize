@@ -13,8 +13,10 @@ import { Modal } from '@/components/ui/Modal';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { accountsApi } from '@/lib/accounts';
 import { investmentsApi } from '@/lib/investments';
+import { institutionsApi } from '@/lib/institutions';
 import { countLogicalAccounts } from '@/lib/account-utils';
 import { Account } from '@/types/account';
+import { Institution } from '@/types/institution';
 import { PortfolioSummary } from '@/types/investment';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -40,6 +42,7 @@ export default function AccountsPage() {
 function AccountsContent() {
   const t = useTranslations('accounts');
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { showForm, editingItem, openCreate, openEdit, close, isEditing, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<Account>();
@@ -49,12 +52,14 @@ function AccountsContent() {
   const loadAccounts = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [data, portfolio] = await Promise.all([
+      const [data, portfolio, insts] = await Promise.all([
         accountsApi.getAll(true),
         investmentsApi.getPortfolioSummary().catch(() => null),
+        institutionsApi.getAll().catch(() => [] as Institution[]),
       ]);
       setAccounts(data);
       setPortfolioSummary(portfolio);
+      setInstitutions(insts);
     } catch (error) {
       showErrorToast(error, 'Failed to load accounts');
       logger.error(error);
@@ -211,7 +216,7 @@ function AccountsContent() {
           {isLoading ? (
             <LoadingSpinner text={t('page.loadingAccounts')} />
           ) : (
-            <AccountList accounts={accounts} brokerageMarketValues={brokerageMarketValues} defaultCurrency={defaultCurrency} convertToDefault={convertToDefault} onEdit={openEdit} onRefresh={loadAccounts} />
+            <AccountList accounts={accounts} institutions={institutions} brokerageMarketValues={brokerageMarketValues} defaultCurrency={defaultCurrency} convertToDefault={convertToDefault} onEdit={openEdit} onRefresh={loadAccounts} />
           )}
         </div>
       </main>

@@ -105,6 +105,8 @@
     "accountNumber": "Account Number (optional)",
     "institution": "Institution (optional)",
     "institutionRequired": "Lender/Institution (required)",
+    "institutionPlaceholder": "Select or create an institution...",
+    "newInstitutionTitle": "New Institution",
     "creditLimit": "Credit Limit (optional)",
     "interestRateOptional": "Interest Rate % (optional)",
     "interestRateRequired": "Interest Rate % (required)",
@@ -281,7 +283,9 @@
     "categoryCreatedNested": "Category \"{parent}: {name}\" created",
     "categoryCreated": "Category \"{name}\" created",
     "payeeCreated": "Payee \"{name}\" created",
-    "payeeCreateFailed": "Failed to create payee"
+    "payeeCreateFailed": "Failed to create payee",
+    "institutionCreated": "Institution \"{name}\" created",
+    "institutionCreateFailed": "Failed to create institution"
   },
   "validation": {
     "nameRequired": "Account name is required",

@@ -1,0 +1,73 @@
+{
+  "page": {
+    "title": "Financial Institutions",
+    "subtitle": "Banks and brokerages your accounts belong to",
+    "newInstitution": "New Institution",
+    "loading": "Loading institutions...",
+    "searchPlaceholder": "Search institutions...",
+    "modalTitleNew": "New Institution",
+    "modalTitleEdit": "Edit Institution",
+    "summary": {
+      "total": "Total Institutions",
+      "withLogo": "With Logo",
+      "linkedAccounts": "Linked Accounts"
+    },
+    "toasts": {
+      "loadFailed": "Failed to load institutions",
+      "created": "Institution created",
+      "updated": "Institution updated",
+      "createFailed": "Failed to create institution",
+      "updateFailed": "Failed to update institution"
+    }
+  },
+  "list": {
+    "empty": "No institutions yet. Create one to start grouping your accounts.",
+    "columns": {
+      "name": "Name",
+      "website": "Website",
+      "country": "Country",
+      "accounts": "Accounts",
+      "actions": "Actions"
+    },
+    "accountCount": "{count, plural, =0 {No accounts} one {# account} other {# accounts}}",
+    "actions": {
+      "manageAccounts": "Accounts"
+    },
+    "deleteTitle": "Delete Institution",
+    "deleteMessage": "Delete \"{name}\"? Accounts assigned to it will be unassigned but not deleted.",
+    "deleting": "Deleting...",
+    "deleted": "Deleted \"{name}\"",
+    "deleteFailed": "Failed to delete institution"
+  },
+  "form": {
+    "nameLabel": "Name",
+    "websiteLabel": "Website",
+    "websitePlaceholder": "e.g. td.com",
+    "countryLabel": "Country (optional)",
+    "countryPlaceholder": "2-letter code, e.g. CA",
+    "logoHint": "The brand logo is fetched automatically from the website.",
+    "submitCreate": "Create Institution",
+    "submitUpdate": "Save Changes"
+  },
+  "validation": {
+    "nameRequired": "Name is required",
+    "websiteRequired": "Website is required",
+    "websiteInvalid": "Enter a valid website (e.g. td.com)",
+    "countryInvalid": "Use a 2-letter country code"
+  },
+  "accountsManager": {
+    "title": "Accounts at {name}",
+    "addLabel": "Add an account",
+    "addPlaceholder": "Select an account to add...",
+    "noneToAdd": "All your accounts are already assigned to an institution.",
+    "loading": "Loading accounts...",
+    "empty": "No accounts are assigned to this institution yet.",
+    "remove": "Remove",
+    "added": "Account added",
+    "removed": "Account removed",
+    "addFailed": "Failed to add account",
+    "removeFailed": "Failed to remove account",
+    "loadFailed": "Failed to load accounts",
+    "done": "Done"
+  }
+}

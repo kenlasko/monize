@@ -1,6 +1,7 @@
 import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { Account } from "./entities/account.entity";
+import { Institution } from "../institutions/entities/institution.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { InvestmentTransaction } from "../securities/entities/investment-transaction.entity";
 import { Category } from "../categories/entities/category.entity";
@@ -25,6 +26,7 @@ import { DelegationModule } from "../delegation/delegation.module";
   imports: [
     TypeOrmModule.forFeature([
       Account,
+      Institution,
       Transaction,
       InvestmentTransaction,
       Category,

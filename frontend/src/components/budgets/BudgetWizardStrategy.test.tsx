@@ -945,7 +945,7 @@ describe('BudgetWizardStrategy', () => {
         ...mockAccounts[0],
         id: 'acc-no-inst',
         name: 'Solo Account',
-        institution: null,
+        institution: null, institutionId: null,
       } as unknown as Account,
     ];
     render(

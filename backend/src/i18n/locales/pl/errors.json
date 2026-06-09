@@ -4,6 +4,7 @@
     "notInvestmentPair": "To konto nie jest częścią pary kont inwestycyjnych",
     "noLinkedInvestmentAccount": "To konto inwestycyjne nie ma powiązanego konta",
     "notFound": "Nie znaleziono konta",
+    "institutionNotFound": "Nie znaleziono instytucji",
     "updateClosed": "Nie można zaktualizować zamkniętego konta",
     "changeCurrencyWithTransactions": "Nie można zmienić waluty konta, które ma transakcje.",
     "alreadyClosed": "Konto jest już zamknięte",
@@ -265,6 +266,12 @@
   "notifications": {
     "smtpNotConfigured": "SMTP nie jest skonfigurowany. Ustaw zmienne środowiskowe SMTP.",
     "noEmailOnFile": "Brak zapisanego adresu e-mail dla tego użytkownika."
+  },
+  "institutions": {
+    "nameConflict": "Instytucja o nazwie \"{{ name }}\" już istnieje",
+    "notFound": "Nie znaleziono instytucji o ID {{ id }}",
+    "logoNotFound": "Brak dostępnego logo dla tej instytucji",
+    "accountNotFound": "Nie znaleziono konta o ID {{ id }}"
   },
   "payees": {
     "nameConflict": "Odbiorca o nazwie \"{{ name }}\" już istnieje",

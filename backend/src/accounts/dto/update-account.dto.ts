@@ -11,6 +11,7 @@ import {
   IsUUID,
   IsDateString,
   IsIn,
+  ValidateIf,
 } from "class-validator";
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { AccountType } from "../entities/account.entity";
@@ -79,13 +80,22 @@ export class UpdateAccountDto {
 
   @ApiPropertyOptional({
     example: "BMO Bank of Montreal",
-    description: "Financial institution name",
+    description: "Legacy free-text financial institution name (deprecated)",
   })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   @SanitizeHtml()
   institution?: string;
+
+  @ApiPropertyOptional({
+    description:
+      "ID of the financial institution this account belongs to. Pass null to clear.",
+  })
+  @IsOptional()
+  @ValidateIf((o) => o.institutionId !== null)
+  @IsUUID()
+  institutionId?: string | null;
 
   @ApiPropertyOptional({
     example: 10000.0,

@@ -105,6 +105,8 @@
     "accountNumber": "[XX-Account Number (optional)-XX]",
     "institution": "[XX-Institution (optional)-XX]",
     "institutionRequired": "[XX-Lender/Institution (required)-XX]",
+    "institutionPlaceholder": "[XX-Select or create an institution...-XX]",
+    "newInstitutionTitle": "[XX-New Institution-XX]",
     "creditLimit": "[XX-Credit Limit (optional)-XX]",
     "interestRateOptional": "[XX-Interest Rate % (optional)-XX]",
     "interestRateRequired": "[XX-Interest Rate % (required)-XX]",
@@ -281,7 +283,9 @@
     "categoryCreatedNested": "[XX-Category \"{parent}: {name}\" created-XX]",
     "categoryCreated": "[XX-Category \"{name}\" created-XX]",
     "payeeCreated": "[XX-Payee \"{name}\" created-XX]",
-    "payeeCreateFailed": "[XX-Failed to create payee-XX]"
+    "payeeCreateFailed": "[XX-Failed to create payee-XX]",
+    "institutionCreated": "[XX-Institution \"{name}\" created-XX]",
+    "institutionCreateFailed": "[XX-Failed to create institution-XX]"
   },
   "validation": {
     "nameRequired": "[XX-Account name is required-XX]",

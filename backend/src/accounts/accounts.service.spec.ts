@@ -9,6 +9,7 @@ import {
 } from "./entities/account.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { InvestmentTransaction } from "../securities/entities/investment-transaction.entity";
+import { Institution } from "../institutions/entities/institution.entity";
 import { CategoriesService } from "../categories/categories.service";
 import { ScheduledTransactionsService } from "../scheduled-transactions/scheduled-transactions.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
@@ -22,6 +23,7 @@ describe("AccountsService", () => {
   let accountsRepository: Record<string, jest.Mock>;
   let transactionRepository: Record<string, jest.Mock>;
   let investmentTxRepository: Record<string, jest.Mock>;
+  let institutionsRepository: Record<string, jest.Mock>;
   let scheduledTransactionsService: Record<string, jest.Mock>;
   let categoriesService: Record<string, jest.Mock>;
   let netWorthService: Record<string, jest.Mock>;
@@ -132,6 +134,10 @@ describe("AccountsService", () => {
       },
     };
 
+    institutionsRepository = {
+      findOne: jest.fn().mockResolvedValue({ id: "inst-1" }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AccountsService,
@@ -144,6 +150,10 @@ describe("AccountsService", () => {
         {
           provide: getRepositoryToken(InvestmentTransaction),
           useValue: investmentTxRepository,
+        },
+        {
+          provide: getRepositoryToken(Institution),
+          useValue: institutionsRepository,
         },
         { provide: CategoriesService, useValue: categoriesService },
         {
@@ -214,6 +224,36 @@ describe("AccountsService", () => {
       expect(createCall.currentBalance).toBe(500);
       expect(createCall.userId).toBe("user-1");
       expect(accountsRepository.save).toHaveBeenCalled();
+    });
+
+    it("assigns a valid owned institution", async () => {
+      await service.create("user-1", {
+        name: "Bank Account",
+        accountType: AccountType.CHEQUING,
+        currencyCode: "USD",
+        institutionId: "inst-1",
+      } as any);
+
+      expect(institutionsRepository.findOne).toHaveBeenCalledWith({
+        where: { id: "inst-1", userId: "user-1" },
+        select: { id: true },
+      });
+      const createCall = accountsRepository.create.mock.calls[0][0];
+      expect(createCall.institutionId).toBe("inst-1");
+    });
+
+    it("rejects an institution that does not belong to the user", async () => {
+      institutionsRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.create("user-1", {
+          name: "Bank Account",
+          accountType: AccountType.CHEQUING,
+          currencyCode: "USD",
+          institutionId: "someone-elses",
+        } as any),
+      ).rejects.toThrow(BadRequestException);
+      expect(accountsRepository.save).not.toHaveBeenCalled();
     });
 
     it("defaults opening balance to 0", async () => {
@@ -434,6 +474,26 @@ describe("AccountsService", () => {
       expect(result.name).toBe("Updated Name");
       expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+
+    it("assigns an owned institution on update", async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValue({ ...mockAccount });
+
+      await service.update("user-1", "account-1", { institutionId: "inst-1" });
+
+      const saved = mockQueryRunner.manager.save.mock.calls[0][0];
+      expect(saved.institutionId).toBe("inst-1");
+      expect(institutionsRepository.findOne).toHaveBeenCalled();
+    });
+
+    it("rejects an unowned institution on update", async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValue({ ...mockAccount });
+      institutionsRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.update("user-1", "account-1", { institutionId: "x" }),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
     });
 
     it("throws BadRequestException for closed account", async () => {
@@ -2410,6 +2470,26 @@ describe("AccountsService", () => {
       });
       // Only the main account save runs
       expect(mockQueryRunner.manager.save).toHaveBeenCalledTimes(1);
+    });
+
+    it("syncs institution to the linked investment account when changed", async () => {
+      mockQueryRunner.manager.findOne
+        .mockResolvedValueOnce({
+          ...mockAccount,
+          accountType: AccountType.INVESTMENT,
+          linkedAccountId: "linked-1",
+          institutionId: null,
+        })
+        .mockResolvedValueOnce({
+          id: "linked-1",
+          userId: "user-1",
+          institutionId: null,
+        });
+      await service.update("user-1", "account-1", { institutionId: "inst-1" });
+      // 2 saves: original account + linked partner
+      expect(mockQueryRunner.manager.save).toHaveBeenCalledTimes(2);
+      const linkedSave = mockQueryRunner.manager.save.mock.calls[1][0];
+      expect(linkedSave.institutionId).toBe("inst-1");
     });
 
     it("triggers net-worth recalc when openingBalance changes", async () => {

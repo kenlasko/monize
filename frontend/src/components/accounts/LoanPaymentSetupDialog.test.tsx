@@ -70,7 +70,7 @@ function createAccount(overrides: Partial<Account> = {}): Account {
   return {
     id: 'acc-1', userId: 'user-1', accountType: 'CHEQUING', accountSubType: null,
     linkedAccountId: null, name: 'My Chequing', description: null, currencyCode: 'CAD',
-    accountNumber: null, institution: null, openingBalance: 0, currentBalance: 1000,
+    accountNumber: null, institution: null, institutionId: null, openingBalance: 0, currentBalance: 1000,
     creditLimit: null, interestRate: null, isClosed: false, closedDate: null,
     isFavourite: false, favouriteSortOrder: 0, excludeFromNetWorth: false, paymentAmount: null, paymentFrequency: null, paymentStartDate: null,
     sourceAccountId: null, principalCategoryId: null, interestCategoryId: null,

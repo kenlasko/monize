@@ -87,13 +87,20 @@ export class CreateAccountDto {
 
   @ApiPropertyOptional({
     example: "TD Canada Trust",
-    description: "Financial institution name",
+    description: "Legacy free-text financial institution name (deprecated)",
   })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   @SanitizeHtml()
   institution?: string;
+
+  @ApiPropertyOptional({
+    description: "ID of the financial institution this account belongs to",
+  })
+  @IsOptional()
+  @IsUUID()
+  institutionId?: string;
 
   @ApiPropertyOptional({
     example: 1000.0,

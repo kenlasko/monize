@@ -52,7 +52,7 @@ function createAccount(overrides: Partial<Account> = {}): Account {
     description: 'Primary account',
     currencyCode: 'CAD',
     accountNumber: null,
-    institution: null,
+    institution: null, institutionId: null,
     openingBalance: 1000,
     currentBalance: 1500,
     creditLimit: null,

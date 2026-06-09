@@ -27,6 +27,14 @@ vi.mock('@/lib/categories', () => ({
   },
 }));
 
+vi.mock('@/lib/institutions', () => ({
+  institutionsApi: {
+    getAll: vi.fn().mockResolvedValue([]),
+    create: vi.fn(),
+  },
+  institutionLogoUrl: (id: string) => `/api/v1/institutions/${id}/logo`,
+}));
+
 vi.mock('@/lib/exchange-rates', () => ({
   exchangeRatesApi: {
     getCurrencies: vi.fn().mockResolvedValue([
@@ -186,7 +194,7 @@ function createExistingAccount(overrides: Partial<Account> = {}): Account {
     description: null,
     currencyCode: 'CAD',
     accountNumber: null,
-    institution: null,
+    institution: null, institutionId: null,
     openingBalance: 1000,
     currentBalance: 1500,
     creditLimit: null,
@@ -449,7 +457,6 @@ describe('AccountForm', () => {
       expect(screen.getByDisplayValue('My Savings')).toBeInTheDocument();
     });
     expect(screen.getByDisplayValue('Test description')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('RBC')).toBeInTheDocument();
     expect(screen.getByDisplayValue('1234567')).toBeInTheDocument();
   });
 
@@ -552,7 +559,7 @@ describe('AccountForm', () => {
     });
   });
 
-  it('shows "Lender/Institution (required)" label for LOAN type', async () => {
+  it('shows the institution selector for LOAN type', async () => {
     render(
       <AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
     );
@@ -561,11 +568,11 @@ describe('AccountForm', () => {
     fireEvent.change(typeSelect, { target: { value: 'LOAN' } });
 
     await waitFor(() => {
-      expect(screen.getByText('Lender/Institution (required)')).toBeInTheDocument();
+      expect(screen.getByText('Institution (optional)')).toBeInTheDocument();
     });
   });
 
-  it('shows "Lender/Institution (required)" label for MORTGAGE type', async () => {
+  it('shows the institution selector for MORTGAGE type', async () => {
     render(
       <AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
     );
@@ -574,7 +581,7 @@ describe('AccountForm', () => {
     fireEvent.change(typeSelect, { target: { value: 'MORTGAGE' } });
 
     await waitFor(() => {
-      expect(screen.getByText('Lender/Institution (required)')).toBeInTheDocument();
+      expect(screen.getByText('Institution (optional)')).toBeInTheDocument();
     });
   });
 

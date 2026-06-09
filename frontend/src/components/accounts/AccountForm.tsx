@@ -8,9 +8,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState, useEffect, useMemo, MutableRefObject } from 'react';
 import { Input } from '@/components/ui/Input';
+import { Combobox } from '@/components/ui/Combobox';
+import { Modal } from '@/components/ui/Modal';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Select } from '@/components/ui/Select';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
+import { InstitutionForm } from '@/components/institutions/InstitutionForm';
+import { institutionsApi } from '@/lib/institutions';
+import { Institution } from '@/types/institution';
 import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
 import { Account, PaymentFrequency } from '@/types/account';
@@ -71,7 +76,7 @@ const buildAccountSchema = (t: (key: string) => string) => z.object({
   interestRate: optionalNumberWithRange(0, 100),
   description: z.string().optional(),
   accountNumber: z.string().optional(),
-  institution: z.string().optional(),
+  institutionId: z.string().optional(),
   isFavourite: z.boolean().optional(),
   excludeFromNetWorth: z.boolean().optional(),
   createInvestmentPair: z.boolean().optional(),
@@ -138,6 +143,11 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
   // Currency becomes locked once the account has any transactions so existing
   // balances are not silently re-denominated. Stays unlocked while loading.
   const [isCurrencyLocked, setIsCurrencyLocked] = useState(false);
+  // Financial institution selection + inline create.
+  const [institutions, setInstitutions] = useState<Institution[]>([]);
+  const [selectedInstitutionId, setSelectedInstitutionId] = useState<string>(account?.institutionId || '');
+  const [showInstitutionModal, setShowInstitutionModal] = useState(false);
+  const [pendingInstitutionName, setPendingInstitutionName] = useState('');
 
   const {
     register,
@@ -164,7 +174,7 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
           interestRate: account.interestRate || undefined,
           description: account.description || undefined,
           accountNumber: account.accountNumber || undefined,
-          institution: account.institution || undefined,
+          institutionId: account.institutionId || undefined,
           isFavourite: account.isFavourite || false,
           excludeFromNetWorth: account.excludeFromNetWorth || false,
           statementDueDay: account.statementDueDay || undefined,
@@ -238,6 +248,50 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
   useEffect(() => {
     exchangeRatesApi.getCurrencies().then(setCurrencies).catch(() => {});
   }, []);
+
+  // Load financial institutions for the selector
+  useEffect(() => {
+    institutionsApi.getAll().then(setInstitutions).catch(() => {});
+  }, []);
+
+  const institutionOptions = useMemo(
+    () => institutions.map((i) => ({ value: i.id, label: i.name, subtitle: i.website })),
+    [institutions],
+  );
+
+  const accountInstitutionId = account?.institutionId;
+  const initialInstitutionName = useMemo(() => {
+    if (!accountInstitutionId) return '';
+    return institutions.find((i) => i.id === accountInstitutionId)?.name || '';
+  }, [accountInstitutionId, institutions]);
+
+  const handleInstitutionChange = (value: string) => {
+    setSelectedInstitutionId(value);
+    setValue('institutionId', value || undefined, { shouldDirty: true });
+  };
+
+  const handleInstitutionCreate = (name: string) => {
+    setPendingInstitutionName(name);
+    setShowInstitutionModal(true);
+  };
+
+  const handleInstitutionCreated = async (data: {
+    name: string;
+    website: string;
+    country?: string;
+  }) => {
+    try {
+      const created = await institutionsApi.create(data);
+      setInstitutions((prev) => [created, ...prev]);
+      setSelectedInstitutionId(created.id);
+      setValue('institutionId', created.id, { shouldDirty: true });
+      setShowInstitutionModal(false);
+      toast.success(t('toasts.institutionCreated', { name: created.name }));
+    } catch (error) {
+      toast.error(getErrorMessage(error, t('toasts.institutionCreateFailed')));
+      throw error;
+    }
+  };
 
   // For existing accounts, check whether any transactions exist. The backend
   // rejects currency changes once transactions are present; mirror that in the
@@ -518,10 +572,18 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
           {...register('accountNumber')}
         />
 
-        <Input
-          label={isLoanAccount || isMortgageAccount ? t('form.institutionRequired') : t('form.institution')}
-          error={errors.institution?.message}
-          {...register('institution')}
+        <Combobox
+          label={t('form.institution')}
+          placeholder={t('form.institutionPlaceholder')}
+          options={institutionOptions}
+          value={selectedInstitutionId}
+          initialDisplayValue={initialInstitutionName}
+          onChange={handleInstitutionChange}
+          onCreateNew={handleInstitutionCreate}
+          allowCustomValue
+          usePortal
+          alwaysShowSubtitle
+          error={errors.institutionId?.message}
         />
       </div>
 
@@ -799,6 +861,24 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
           accountName={account.name}
         />
       )}
+
+      {/* Inline create-institution modal (stacked on top of the account form) */}
+      <Modal
+        isOpen={showInstitutionModal}
+        onClose={() => setShowInstitutionModal(false)}
+        maxWidth="lg"
+        className="p-6"
+        pushHistory
+      >
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+          {t('form.newInstitutionTitle')}
+        </h2>
+        <InstitutionForm
+          initialName={pendingInstitutionName}
+          onSubmit={handleInstitutionCreated}
+          onCancel={() => setShowInstitutionModal(false)}
+        />
+      </Modal>
     </form>
   );
 }

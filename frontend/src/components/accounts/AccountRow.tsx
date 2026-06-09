@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { gainLossColor } from '@/lib/format';
 import { Account, AccountType } from '@/types/account';
 import { Button } from '@/components/ui/Button';
+import { InstitutionLogo, InstitutionLogoData } from '@/components/institutions/InstitutionLogo';
 
 export interface AccountRowProps {
   account: Account;
@@ -13,6 +14,9 @@ export interface AccountRowProps {
   cellPadding: string;
   isDeletable: boolean;
   accountNameMap: Map<string, string>;
+  // Institution the account belongs to (for the brand icon). Undefined for
+  // cashflow-only accounts, which render a neutral fallback badge.
+  institution?: InstitutionLogoData;
   brokerageMarketValue: number | undefined;
   defaultCurrency: string;
   formatCurrency: (amount: number | string | null | undefined, currency: string) => string;
@@ -42,6 +46,7 @@ export const AccountRow = memo(function AccountRow({
   cellPadding,
   isDeletable,
   accountNameMap,
+  institution,
   brokerageMarketValue,
   defaultCurrency,
   formatCurrency,
@@ -82,6 +87,9 @@ export const AccountRow = memo(function AccountRow({
             : account.name}
         >
           <div className="flex items-center text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
+            {density !== 'dense' && (
+              <InstitutionLogo institution={institution} size={20} className="mr-2" fallbackGlyph="$" />
+            )}
             {onToggleFavourite ? (
               <button
                 type="button"

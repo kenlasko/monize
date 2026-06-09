@@ -33,6 +33,7 @@ const navLinks = [
 const toolsLinks: { href: string; labelKey: string; badge?: string }[] = [
   { href: '/categories', labelKey: 'categories' },
   { href: '/payees', labelKey: 'payees' },
+  { href: '/institutions', labelKey: 'institutions' },
   { href: '/tags', labelKey: 'tags' },
   { href: '/securities', labelKey: 'securities' },
   { href: '/currencies', labelKey: 'currencies' },

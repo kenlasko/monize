@@ -1,0 +1,73 @@
+{
+  "page": {
+    "title": "[XX-Financial Institutions-XX]",
+    "subtitle": "[XX-Banks and brokerages your accounts belong to-XX]",
+    "newInstitution": "[XX-New Institution-XX]",
+    "loading": "[XX-Loading institutions...-XX]",
+    "searchPlaceholder": "[XX-Search institutions...-XX]",
+    "modalTitleNew": "[XX-New Institution-XX]",
+    "modalTitleEdit": "[XX-Edit Institution-XX]",
+    "summary": {
+      "total": "[XX-Total Institutions-XX]",
+      "withLogo": "[XX-With Logo-XX]",
+      "linkedAccounts": "[XX-Linked Accounts-XX]"
+    },
+    "toasts": {
+      "loadFailed": "[XX-Failed to load institutions-XX]",
+      "created": "[XX-Institution created-XX]",
+      "updated": "[XX-Institution updated-XX]",
+      "createFailed": "[XX-Failed to create institution-XX]",
+      "updateFailed": "[XX-Failed to update institution-XX]"
+    }
+  },
+  "list": {
+    "empty": "[XX-No institutions yet. Create one to start grouping your accounts.-XX]",
+    "columns": {
+      "name": "[XX-Name-XX]",
+      "website": "[XX-Website-XX]",
+      "country": "[XX-Country-XX]",
+      "accounts": "[XX-Accounts-XX]",
+      "actions": "[XX-Actions-XX]"
+    },
+    "accountCount": "[XX-{count, plural, =0 {No accounts} one {# account} other {# accounts}}-XX]",
+    "actions": {
+      "manageAccounts": "[XX-Accounts-XX]"
+    },
+    "deleteTitle": "[XX-Delete Institution-XX]",
+    "deleteMessage": "[XX-Delete \"{name}\"? Accounts assigned to it will be unassigned but not deleted.-XX]",
+    "deleting": "[XX-Deleting...-XX]",
+    "deleted": "[XX-Deleted \"{name}\"-XX]",
+    "deleteFailed": "[XX-Failed to delete institution-XX]"
+  },
+  "form": {
+    "nameLabel": "[XX-Name-XX]",
+    "websiteLabel": "[XX-Website-XX]",
+    "websitePlaceholder": "[XX-e.g. td.com-XX]",
+    "countryLabel": "[XX-Country (optional)-XX]",
+    "countryPlaceholder": "[XX-2-letter code, e.g. CA-XX]",
+    "logoHint": "[XX-The brand logo is fetched automatically from the website.-XX]",
+    "submitCreate": "[XX-Create Institution-XX]",
+    "submitUpdate": "[XX-Save Changes-XX]"
+  },
+  "validation": {
+    "nameRequired": "[XX-Name is required-XX]",
+    "websiteRequired": "[XX-Website is required-XX]",
+    "websiteInvalid": "[XX-Enter a valid website (e.g. td.com)-XX]",
+    "countryInvalid": "[XX-Use a 2-letter country code-XX]"
+  },
+  "accountsManager": {
+    "title": "[XX-Accounts at {name}-XX]",
+    "addLabel": "[XX-Add an account-XX]",
+    "addPlaceholder": "[XX-Select an account to add...-XX]",
+    "noneToAdd": "[XX-All your accounts are already assigned to an institution.-XX]",
+    "loading": "[XX-Loading accounts...-XX]",
+    "empty": "[XX-No accounts are assigned to this institution yet.-XX]",
+    "remove": "[XX-Remove-XX]",
+    "added": "[XX-Account added-XX]",
+    "removed": "[XX-Account removed-XX]",
+    "addFailed": "[XX-Failed to add account-XX]",
+    "removeFailed": "[XX-Failed to remove account-XX]",
+    "loadFailed": "[XX-Failed to load accounts-XX]",
+    "done": "[XX-Done-XX]"
+  }
+}

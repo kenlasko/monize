@@ -9,7 +9,7 @@ function makeAccount(overrides: Partial<Account> & { id: string; name: string })
   return {
     userId: 'u1', accountType: 'CHEQUING', accountSubType: null,
     linkedAccountId: null, description: null, currencyCode: 'CAD',
-    accountNumber: null, institution: null, openingBalance: 0, currentBalance: 0,
+    accountNumber: null, institution: null, institutionId: null, openingBalance: 0, currentBalance: 0,
     creditLimit: null, interestRate: null, isClosed: false, closedDate: null,
     isFavourite: false, favouriteSortOrder: 0, excludeFromNetWorth: false, statementDueDay: null, statementSettlementDay: null,
     paymentAmount: null, paymentFrequency: null, paymentStartDate: null,

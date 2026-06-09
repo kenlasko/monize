@@ -59,7 +59,7 @@ const mockAccounts: Account[] = [
   {
     id: 'acc-1', userId: 'user-1', accountType: 'CHEQUING', accountSubType: null,
     linkedAccountId: null, name: 'Main Chequing', description: null, currencyCode: 'CAD',
-    accountNumber: null, institution: null, openingBalance: 5000, currentBalance: 5000,
+    accountNumber: null, institution: null, institutionId: null, openingBalance: 5000, currentBalance: 5000,
     creditLimit: null, interestRate: null, isClosed: false, closedDate: null,
     isFavourite: false, favouriteSortOrder: 0, excludeFromNetWorth: false, paymentAmount: null, paymentFrequency: null, paymentStartDate: null,
     sourceAccountId: null, principalCategoryId: null, interestCategoryId: null,
@@ -72,7 +72,7 @@ const mockAccounts: Account[] = [
   {
     id: 'acc-2', userId: 'user-1', accountType: 'SAVINGS', accountSubType: null,
     linkedAccountId: null, name: 'Savings', description: null, currencyCode: 'CAD',
-    accountNumber: null, institution: null, openingBalance: 10000, currentBalance: 10000,
+    accountNumber: null, institution: null, institutionId: null, openingBalance: 10000, currentBalance: 10000,
     creditLimit: null, interestRate: null, isClosed: false, closedDate: null,
     isFavourite: false, favouriteSortOrder: 0, excludeFromNetWorth: false, paymentAmount: null, paymentFrequency: null, paymentStartDate: null,
     sourceAccountId: null, principalCategoryId: null, interestCategoryId: null,
