@@ -51,6 +51,12 @@ export function AccountInfoWidget({
   // Prefer the linked institution's canonical name; fall back to the legacy
   // free-text field stored on the account.
   const institutionName = institution?.name ?? account.institution ?? null;
+  // Only treat http(s) URLs as a safe link target, to avoid javascript:/data:
+  // URIs ever reaching the href.
+  const institutionWebsite =
+    institution?.website && /^https?:\/\//i.test(institution.website)
+      ? institution.website
+      : undefined;
 
   // The soonest active scheduled bill/deposit booked against this account.
   // Honours a per-occurrence override for both the date and the amount.
@@ -106,12 +112,12 @@ export function AccountInfoWidget({
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 sm:p-6 mb-6 lg:mb-0 lg:absolute lg:inset-x-0 lg:top-0 lg:bottom-6 lg:overflow-y-auto flex flex-col">
       <div className="flex items-start justify-between gap-2 mb-4">
         <div className="flex items-center gap-3 min-w-0">
-          {institution?.website ? (
+          {institutionWebsite ? (
             <a
-              href={institution.website}
+              href={institutionWebsite}
               target="_blank"
               rel="noopener noreferrer"
-              title={institution.website}
+              title={institutionWebsite}
               className="flex-shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <InstitutionLogo institution={institution} size={40} fallbackGlyph="$" />

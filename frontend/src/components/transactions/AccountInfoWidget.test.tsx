@@ -103,6 +103,18 @@ describe('AccountInfoWidget', () => {
     expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
   });
 
+  it('does not render a logo link for a non-http(s) website scheme', () => {
+    render(
+      <AccountInfoWidget
+        account={makeAccount({ institutionId: 'inst-1' })}
+        institution={{ id: 'inst-1', name: 'TD', hasLogo: true, website: 'javascript:alert(1)' }}
+        onEdit={vi.fn()}
+        onCollapse={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  });
+
   it('falls back to the legacy institution string when no entity is linked', () => {
     render(
       <AccountInfoWidget
