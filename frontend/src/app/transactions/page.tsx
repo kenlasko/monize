@@ -748,24 +748,20 @@ function TransactionsContent() {
           // left of the chart (75%). Stacks vertically on narrow screens. The
           // widget can be collapsed (persisted) so the chart uses full width.
           if (singleFilteredAccount) {
-            if (accountWidgetCollapsed) {
-              return (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setAccountWidgetCollapsed(false)}
-                    className="mb-2 inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                  >
-                    <ChevronDoubleRightIcon className="h-4 w-4" />
-                    {t('accountWidget.show')}
-                  </button>
-                  {chart}
-                </>
-              );
-            }
+            // The widget animates between expanded and collapsed rather than
+            // mounting/unmounting, so the chevron toggle slides it out of view:
+            // its column collapses width (desktop) or height (mobile) and fades,
+            // while the chart flexes to fill the reclaimed space.
             return (
-              <div className="flex flex-col lg:flex-row lg:gap-6 lg:items-stretch">
-                <div className="lg:w-1/4 flex-shrink-0 lg:relative">
+              <div className="flex flex-col lg:flex-row lg:items-stretch">
+                <div
+                  aria-hidden={accountWidgetCollapsed}
+                  className={`flex-shrink-0 lg:relative overflow-hidden transition-all duration-300 ease-in-out motion-reduce:transition-none ${
+                    accountWidgetCollapsed
+                      ? 'max-h-0 lg:max-h-none lg:w-0 lg:mr-0 opacity-0 lg:-translate-x-6 pointer-events-none'
+                      : 'max-h-[1000px] lg:max-h-none lg:w-1/4 lg:mr-6 opacity-100 lg:translate-x-0'
+                  }`}
+                >
                   <AccountInfoWidget
                     account={singleFilteredAccount}
                     institution={singleFilteredInstitution}
@@ -774,7 +770,19 @@ function TransactionsContent() {
                     onCollapse={() => setAccountWidgetCollapsed(true)}
                   />
                 </div>
-                <div className="lg:flex-1 min-w-0">{chart}</div>
+                <div className="lg:flex-1 min-w-0">
+                  {accountWidgetCollapsed && (
+                    <button
+                      type="button"
+                      onClick={() => setAccountWidgetCollapsed(false)}
+                      className="mb-2 inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      <ChevronDoubleRightIcon className="h-4 w-4" />
+                      {t('accountWidget.show')}
+                    </button>
+                  )}
+                  {chart}
+                </div>
               </div>
             );
           }
