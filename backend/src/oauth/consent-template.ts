@@ -25,6 +25,10 @@ const SCOPE_LABELS: Record<string, { title: string; description: string }> = {
 export function renderConsentPage(params: ConsentParams): string {
   const { uid, clientName, clientUri, userEmail, scopes, resource } = params;
 
+  // Scopes are shown as a read-only list, not toggles: the OAuth client fixes
+  // the requested scope set, and node-oidc-provider re-prompts indefinitely if
+  // any requested scope is withheld. The user's choice is Allow (grant all) or
+  // Deny.
   const scopeRows = scopes
     .map((scope) => {
       const meta = SCOPE_LABELS[scope] ?? {
@@ -33,13 +37,10 @@ export function renderConsentPage(params: ConsentParams): string {
       };
       return `
         <li class="scope">
-          <label>
-            <input type="checkbox" name="scopes" value="${escapeHtml(scope)}" checked />
-            <div>
-              <strong>${escapeHtml(meta.title)}</strong>
-              <p>${escapeHtml(meta.description)}</p>
-            </div>
-          </label>
+          <div>
+            <strong>${escapeHtml(meta.title)}</strong>
+            <p>${escapeHtml(meta.description)}</p>
+          </div>
         </li>`;
     })
     .join("\n");
@@ -117,8 +118,6 @@ export function renderConsentPage(params: ConsentParams): string {
     padding: 12px 14px;
     margin-bottom: 8px;
   }
-  li.scope label { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
-  li.scope input { margin-top: 4px; }
   li.scope strong { display: block; font-size: 14px; }
   li.scope p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
   .meta {

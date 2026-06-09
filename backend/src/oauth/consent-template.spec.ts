@@ -1,7 +1,7 @@
 import { renderConsentPage } from "./consent-template";
 
 describe("renderConsentPage", () => {
-  it("renders the form with the requested scopes pre-checked", () => {
+  it("renders the requested scopes as a read-only list", () => {
     const html = renderConsentPage({
       uid: "abc-123",
       clientName: "Claude Desktop",
@@ -15,8 +15,12 @@ describe("renderConsentPage", () => {
     expect(html).toContain("Claude Desktop");
     expect(html).toContain("https://claude.ai");
     expect(html).toContain("user@example.com");
-    expect(html).toContain('value="monize:read"');
-    expect(html).toContain('value="monize:write"');
+    // Human-readable scope labels are shown...
+    expect(html).toContain("Read your financial data");
+    expect(html).toContain("Modify your financial data");
+    // ...but there are no per-scope toggles (granular consent is not offered).
+    expect(html).not.toContain("<input");
+    expect(html).not.toContain('name="scopes"');
     expect(html).toContain('action="/api/v1/oauth-consent/abc-123/confirm"');
     expect(html).toContain('formaction="/api/v1/oauth-consent/abc-123/abort"');
   });

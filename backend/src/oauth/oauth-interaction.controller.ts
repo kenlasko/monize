@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Req, Res, Body, Logger } from "@nestjs/common";
+import { Controller, Get, Post, Req, Res, Logger } from "@nestjs/common";
 import { ApiExcludeController } from "@nestjs/swagger";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
@@ -11,10 +11,6 @@ import {
 } from "./oauth-provider.service";
 import { renderConsentPage } from "./consent-template";
 import { AuthService } from "../auth/auth.service";
-
-interface InteractionFormBody {
-  scopes?: string | string[];
-}
 
 /**
  * Hosts the user-facing OAuth interaction routes (login + consent) for the
@@ -129,11 +125,7 @@ export class OAuthInteractionController {
 
   @Post(":uid/confirm")
   @Throttle({ default: { ttl: 60_000, limit: 10 } })
-  async confirm(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Body() body: InteractionFormBody,
-  ) {
+  async confirm(@Req() req: Request, @Res() res: Response) {
     const provider = this.providerService.getProvider();
     let interaction;
     try {
@@ -167,38 +159,45 @@ export class OAuthInteractionController {
       return;
     }
 
-    const requestedScopes =
-      (params.scope as string | undefined)?.split(" ") ?? [];
-    const submittedScopes = this.normalizeScopes(body?.scopes);
-    const grantedScopes = requestedScopes.filter(
-      (s) =>
-        (MCP_RESOURCE_SCOPES as readonly string[]).includes(s) &&
-        submittedScopes.includes(s),
-    );
-    if (grantedScopes.length === 0) {
-      res.status(400).send("At least one scope must be granted");
-      return;
-    }
-
     const clientId = params.client_id as string;
-    const resource =
-      (params.resource as string | undefined) ??
-      this.providerService.getMcpResourceUrl();
+
+    // node-oidc-provider's consent Check requires the saved Grant to cover
+    // EVERY scope and claim the authorization request asked for. If anything
+    // stays missing the provider re-prompts, minting a fresh consent
+    // interaction on each submit (the "consent uid keeps changing" loop).
+    // Claude requests OIDC scopes (openid, profile) alongside the MCP resource
+    // scopes (monize:read/write), so grant exactly what the prompt reports as
+    // missing rather than only the monize:* subset. Granular per-scope consent
+    // is intentionally not offered: the client fixes the requested scope set,
+    // and withholding any of it would just loop the prompt — the user's choice
+    // is Allow (grant all) or Deny.
+    const details = prompt.details as {
+      missingOIDCScope?: string[];
+      missingOIDCClaims?: string[];
+      missingResourceScopes?: Record<string, string[]>;
+    };
 
     const Grant = provider.Grant;
-    let grant: InstanceType<typeof Grant>;
-    if (interaction.grantId) {
-      const existing = await Grant.find(interaction.grantId);
-      grant = existing ?? new Grant({ accountId: user.id, clientId });
-    } else {
-      grant = new Grant({ accountId: user.id, clientId });
+    const existing = interaction.grantId
+      ? await Grant.find(interaction.grantId)
+      : undefined;
+    const grant = existing ?? new Grant({ accountId: user.id, clientId });
+
+    if (details.missingOIDCScope?.length) {
+      grant.addOIDCScope(details.missingOIDCScope.join(" "));
+    }
+    if (details.missingOIDCClaims?.length) {
+      grant.addOIDCClaims(details.missingOIDCClaims);
+    }
+    for (const [indicator, scopes] of Object.entries(
+      details.missingResourceScopes ?? {},
+    )) {
+      grant.addResourceScope(indicator, scopes.join(" "));
     }
 
-    grant.addOIDCScope(grantedScopes.join(" "));
-    grant.addResourceScope(resource, grantedScopes.join(" "));
     const grantId = await grant.save();
     this.logger.log(
-      `interaction.confirm grant saved id=${grantId} account=${user.id} client=${clientId} scopes=${grantedScopes.join(",")}`,
+      `interaction.confirm grant saved id=${grantId} account=${user.id} client=${clientId} oidcScopes=${(details.missingOIDCScope ?? []).join(",")} resources=${Object.keys(details.missingResourceScopes ?? {}).join(",")}`,
     );
 
     await provider.interactionFinished(
@@ -327,10 +326,5 @@ export class OAuthInteractionController {
       );
       return { name: clientId, uri: null };
     }
-  }
-
-  private normalizeScopes(input: string | string[] | undefined): string[] {
-    if (!input) return [];
-    return Array.isArray(input) ? input : [input];
   }
 }

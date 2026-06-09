@@ -41,6 +41,7 @@ describe("OAuthInteractionController", () => {
           addOIDCScope(s: string) {
             this.oidcScopes.push(s);
           }
+          addOIDCClaims(_c: string[]) {}
           addResourceScope(r: string, s: string) {
             this.resourceScopes.push({ resource: r, scope: s });
           }
@@ -170,7 +171,7 @@ describe("OAuthInteractionController", () => {
         expect.stringContaining("Claude Desktop"),
       );
       expect(res.send).toHaveBeenCalledWith(
-        expect.stringContaining('value="monize:read"'),
+        expect.stringContaining("Read your financial data"),
       );
     });
 
@@ -211,6 +212,13 @@ describe("OAuthInteractionController", () => {
   });
 
   describe("POST /oauth-consent/:uid/confirm", () => {
+    const consentDetails = {
+      missingOIDCScope: ["openid", "profile", "monize:read", "monize:write"],
+      missingResourceScopes: {
+        "https://app.monize.test/api/v1/mcp": ["monize:read", "monize:write"],
+      },
+    };
+
     it("renders a friendly completed page when the interaction is already consumed", async () => {
       const { controller } = makeController({
         interactionDetails: jest.fn().mockRejectedValue(
@@ -222,7 +230,7 @@ describe("OAuthInteractionController", () => {
       const req = { cookies: { auth_token: "v" }, body: {} } as any;
       const res = makeRes();
 
-      await controller.confirm(req, res, { scopes: ["monize:read"] });
+      await controller.confirm(req, res);
 
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.send).toHaveBeenCalledWith(
@@ -234,15 +242,15 @@ describe("OAuthInteractionController", () => {
       const { controller } = makeController({
         interactionDetails: jest.fn().mockResolvedValue({
           uid: "u",
-          prompt: { name: "consent" },
-          params: { client_id: "c", scope: "monize:read" },
+          prompt: { name: "consent", details: consentDetails },
+          params: { client_id: "c" },
         }),
         jwtVerify: jest.fn().mockRejectedValue(new Error("invalid")),
       });
-      const req = { cookies: {}, body: { scopes: ["monize:read"] } } as any;
+      const req = { cookies: {}, body: {} } as any;
       const res = makeRes();
 
-      await controller.confirm(req, res, { scopes: ["monize:read"] });
+      await controller.confirm(req, res);
 
       expect(res.status).toHaveBeenCalledWith(401);
     });
@@ -258,45 +266,58 @@ describe("OAuthInteractionController", () => {
       const req = { cookies: { auth_token: "v" }, body: {} } as any;
       const res = makeRes();
 
-      await controller.confirm(req, res, {});
+      await controller.confirm(req, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
     });
 
-    it("rejects when no requested scope is granted", async () => {
-      const { controller } = makeController({
-        interactionDetails: jest.fn().mockResolvedValue({
-          uid: "u",
-          prompt: { name: "consent" },
-          params: { client_id: "c", scope: "monize:read" },
-        }),
-      });
-      const req = { cookies: { auth_token: "v" }, body: {} } as any;
-      const res = makeRes();
-
-      await controller.confirm(req, res, { scopes: [] });
-
-      expect(res.status).toHaveBeenCalledWith(400);
-    });
-
-    it("creates a grant and finishes the interaction with the granted scopes", async () => {
+    it("grants every missing OIDC and resource scope, then finishes the interaction", async () => {
+      const grant = {
+        addOIDCScope: jest.fn(),
+        addOIDCClaims: jest.fn(),
+        addResourceScope: jest.fn(),
+        save: jest.fn().mockResolvedValue("grant-id-1"),
+      };
+      class GrantMock {
+        constructor() {
+          return grant;
+        }
+        static find = jest.fn().mockResolvedValue(null);
+      }
       const { controller, interactionFinished } = makeController({
         interactionDetails: jest.fn().mockResolvedValue({
           uid: "u",
-          prompt: { name: "consent" },
-          params: {
-            client_id: "claude-desktop",
-            scope: "monize:read monize:write",
-            resource: "https://app.monize.test/api/v1/mcp",
+          prompt: {
+            name: "consent",
+            details: {
+              missingOIDCScope: ["openid", "profile", "monize:read"],
+              missingOIDCClaims: ["sub", "email"],
+              missingResourceScopes: {
+                "https://app.monize.test/api/v1/mcp": ["monize:read"],
+              },
+            },
           },
+          params: { client_id: "claude-desktop" },
           session: { accountId: "user-1" },
         }),
+        Grant: GrantMock as any,
       });
       const req = { cookies: { auth_token: "v" }, body: {} } as any;
       const res = makeRes();
 
-      await controller.confirm(req, res, { scopes: ["monize:read"] });
+      await controller.confirm(req, res);
 
+      // OIDC identity scopes (openid, profile) AND the resource scope are all
+      // granted -- not just the monize:* subset -- so the consent check clears
+      // and the provider stops re-prompting with a new uid.
+      expect(grant.addOIDCScope).toHaveBeenCalledWith(
+        "openid profile monize:read",
+      );
+      expect(grant.addOIDCClaims).toHaveBeenCalledWith(["sub", "email"]);
+      expect(grant.addResourceScope).toHaveBeenCalledWith(
+        "https://app.monize.test/api/v1/mcp",
+        "monize:read",
+      );
       expect(interactionFinished).toHaveBeenCalledWith(
         req,
         res,
@@ -309,15 +330,15 @@ describe("OAuthInteractionController", () => {
       const { controller } = makeController({
         interactionDetails: jest.fn().mockResolvedValue({
           uid: "u",
-          prompt: { name: "consent" },
-          params: { client_id: "c", scope: "monize:read" },
+          prompt: { name: "consent", details: consentDetails },
+          params: { client_id: "c" },
           session: { accountId: "other-user" },
         }),
       });
       const req = { cookies: { auth_token: "v" }, body: {} } as any;
       const res = makeRes();
 
-      await controller.confirm(req, res, { scopes: ["monize:read"] });
+      await controller.confirm(req, res);
 
       expect(res.status).toHaveBeenCalledWith(403);
     });
@@ -565,101 +586,68 @@ describe("OAuthInteractionController", () => {
   });
 
   describe("confirm branches", () => {
-    it("uses MCP resource URL when params.resource is missing", async () => {
-      const { controller } = makeController({
-        interactionDetails: jest.fn().mockResolvedValue({
-          uid: "u1",
-          prompt: { name: "consent" },
-          params: { client_id: "claude-desktop", scope: "monize:read" },
-          session: { accountId: "user-1" },
-        }),
-      });
-      const req = { cookies: { auth_token: "tok" } } as any;
-      const res = makeRes();
-      await controller.confirm(req, res, { scopes: ["monize:read"] });
-      expect(res.redirect || res.send || res.status).toBeDefined();
-    });
+    const consentDetails = {
+      missingOIDCScope: ["openid", "monize:read"],
+      missingResourceScopes: {
+        "https://app.monize.test/api/v1/mcp": ["monize:read"],
+      },
+    };
 
-    it("scopes string form is normalized to array", async () => {
-      const { controller } = makeController({
-        interactionDetails: jest.fn().mockResolvedValue({
-          uid: "u1",
-          prompt: { name: "consent" },
-          params: {
-            client_id: "claude-desktop",
-            scope: "monize:read",
-            resource: "https://app.monize.test/api/v1/mcp",
-          },
-          session: { accountId: "user-1" },
-        }),
-      });
-      const req = { cookies: { auth_token: "tok" } } as any;
-      const res = makeRes();
-      await controller.confirm(req, res, { scopes: "monize:read" });
-    });
-
-    it("uses existing grant when grantId is set on interaction", async () => {
+    it("reuses the existing grant when the interaction already has a grantId", async () => {
       const existing = {
-        accountId: "user-1",
-        clientId: "claude-desktop",
         addOIDCScope: jest.fn(),
+        addOIDCClaims: jest.fn(),
         addResourceScope: jest.fn(),
         save: jest.fn().mockResolvedValue("grant-existing"),
       };
       class GrantMock {
-        accountId: string;
-        clientId: string;
-        constructor(args: { accountId: string; clientId: string }) {
-          this.accountId = args.accountId;
-          this.clientId = args.clientId;
-        }
         static find = jest.fn().mockResolvedValue(existing);
-        addOIDCScope = jest.fn();
-        addResourceScope = jest.fn();
-        save = jest.fn().mockResolvedValue("grant-new");
       }
       const { controller } = makeController({
         interactionDetails: jest.fn().mockResolvedValue({
           uid: "u1",
-          prompt: { name: "consent" },
-          params: { client_id: "claude-desktop", scope: "monize:read" },
+          prompt: { name: "consent", details: consentDetails },
+          params: { client_id: "claude-desktop" },
           session: { accountId: "user-1" },
           grantId: "g1",
         }),
-        Grant: GrantMock,
+        Grant: GrantMock as any,
       });
       const req = { cookies: { auth_token: "tok" } } as any;
       const res = makeRes();
-      await controller.confirm(req, res, { scopes: ["monize:read"] });
+      await controller.confirm(req, res);
+      expect(GrantMock.find).toHaveBeenCalledWith("g1");
+      expect(existing.addOIDCScope).toHaveBeenCalledWith("openid monize:read");
       expect(existing.save).toHaveBeenCalled();
     });
 
-    it("creates new grant when grantId set but find returns null", async () => {
+    it("creates a new grant when grantId is set but find returns null", async () => {
+      const created = {
+        addOIDCScope: jest.fn(),
+        addOIDCClaims: jest.fn(),
+        addResourceScope: jest.fn(),
+        save: jest.fn().mockResolvedValue("grant-new"),
+      };
       class GrantMock {
-        accountId: string;
-        clientId: string;
-        constructor(args: { accountId: string; clientId: string }) {
-          this.accountId = args.accountId;
-          this.clientId = args.clientId;
+        constructor() {
+          return created;
         }
         static find = jest.fn().mockResolvedValue(null);
-        addOIDCScope = jest.fn();
-        addResourceScope = jest.fn();
-        save = jest.fn().mockResolvedValue("grant-new");
       }
       const { controller } = makeController({
         interactionDetails: jest.fn().mockResolvedValue({
           uid: "u1",
-          prompt: { name: "consent" },
-          params: { client_id: "claude-desktop", scope: "monize:read" },
+          prompt: { name: "consent", details: consentDetails },
+          params: { client_id: "claude-desktop" },
           session: { accountId: "user-1" },
           grantId: "g1",
         }),
-        Grant: GrantMock,
+        Grant: GrantMock as any,
       });
       const req = { cookies: { auth_token: "tok" } } as any;
       const res = makeRes();
-      await controller.confirm(req, res, { scopes: ["monize:read"] });
+      await controller.confirm(req, res);
+      expect(created.save).toHaveBeenCalled();
     });
   });
 });
