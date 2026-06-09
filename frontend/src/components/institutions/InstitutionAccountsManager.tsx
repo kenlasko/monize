@@ -133,7 +133,7 @@ export function InstitutionAccountsManager({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} maxWidth="lg" className="p-6" pushHistory>
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="lg" className="p-6">
       <div className="flex items-center gap-3 mb-4">
         <InstitutionLogo institution={institution ?? undefined} size={32} fallbackGlyph="$" />
         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 truncate">

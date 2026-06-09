@@ -166,19 +166,21 @@ export function AccountInfoWidget({
           title={t('accountWidget.viewBills')}
           className="mb-4 w-full text-left rounded-md bg-gray-50 dark:bg-gray-700/40 hover:bg-gray-100 dark:hover:bg-gray-700/60 transition-colors px-3 py-2"
         >
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {t('accountWidget.nextPayment')}
-          </p>
           <div className="flex items-start justify-between gap-3">
-            <p
-              className={`text-base font-semibold ${
-                nextPayment.amount < 0
-                  ? 'text-red-600 dark:text-red-400'
-                  : 'text-green-600 dark:text-green-400'
-              }`}
-            >
-              {formatCurrency(Math.abs(nextPayment.amount), nextPayment.currencyCode)}
-            </p>
+            <div className="min-w-0">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {t('accountWidget.nextPayment')}
+              </p>
+              <p
+                className={`text-base font-semibold ${
+                  nextPayment.amount < 0
+                    ? 'text-red-600 dark:text-red-400'
+                    : 'text-green-600 dark:text-green-400'
+                }`}
+              >
+                {formatCurrency(Math.abs(nextPayment.amount), nextPayment.currencyCode)}
+              </p>
+            </div>
             <div className="text-right min-w-0">
               {nextPayment.payeeName && (
                 <p className="text-sm text-gray-700 dark:text-gray-300 truncate">
@@ -198,7 +200,7 @@ export function AccountInfoWidget({
           <div key={detail.label} className="flex items-baseline justify-between gap-3">
             <dt className="text-gray-500 dark:text-gray-400 flex-shrink-0 flex items-center">
               {detail.label}
-              {detail.tooltip && <InfoTooltip text={detail.tooltip} />}
+              {detail.tooltip && <InfoTooltip text={detail.tooltip} usePortal />}
             </dt>
             <dd className="text-gray-900 dark:text-gray-100 text-right truncate">
               {detail.value}

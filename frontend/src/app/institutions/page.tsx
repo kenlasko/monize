@@ -19,7 +19,7 @@ import { SummaryCard, SummaryIcons } from '@/components/ui/SummaryCard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useFormModal } from '@/hooks/useFormModal';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { DensityLevel, nextDensity } from '@/hooks/useTableDensity';
+import { DensityLevel } from '@/hooks/useTableDensity';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
@@ -173,7 +173,7 @@ function InstitutionsContent() {
           />
         </div>
 
-        <div className="mb-6 flex items-center justify-between gap-3">
+        <div className="mb-6">
           <input
             type="text"
             placeholder={t('page.searchPlaceholder')}
@@ -181,23 +181,6 @@ function InstitutionsContent() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="block w-full sm:max-w-md rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400"
           />
-          <button
-            type="button"
-            onClick={() => setListDensity(nextDensity(listDensity))}
-            className="inline-flex items-center px-2 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex-shrink-0"
-            title={t('list.density.title')}
-          >
-            <svg className="w-4 h-4 sm:mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-            <span className="hidden sm:inline">
-              {listDensity === 'normal'
-                ? t('list.density.normal')
-                : listDensity === 'compact'
-                  ? t('list.density.compact')
-                  : t('list.density.dense')}
-            </span>
-          </button>
         </div>
 
         <Modal isOpen={showForm} onClose={close} {...modalProps} maxWidth="lg" className="p-6">
@@ -226,6 +209,7 @@ function InstitutionsContent() {
               }
               onManageAccounts={setManaging}
               density={listDensity}
+              onDensityChange={setListDensity}
             />
           )}
         </div>
