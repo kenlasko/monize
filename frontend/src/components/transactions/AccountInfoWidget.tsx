@@ -7,6 +7,7 @@ import { formatAccountType } from '@/lib/account-utils';
 import { getOrdinal } from '@/lib/ordinal';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { InstitutionLogo, InstitutionLogoData } from '@/components/institutions/InstitutionLogo';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 interface AccountInfoWidgetProps {
   account: Account;
@@ -34,7 +35,7 @@ export function AccountInfoWidget({ account, institution, onEdit }: AccountInfoW
   // free-text field stored on the account.
   const institutionName = institution?.name ?? account.institution ?? null;
 
-  const details: Array<{ label: string; value: string }> = [];
+  const details: Array<{ label: string; value: string; tooltip?: string }> = [];
   details.push({
     label: t('accountWidget.type'),
     value: formatAccountType(account.accountType, tc),
@@ -59,6 +60,7 @@ export function AccountInfoWidget({ account, institution, onEdit }: AccountInfoW
     details.push({
       label: t('accountWidget.statementSettlement'),
       value: getOrdinal(account.statementSettlementDay),
+      tooltip: t('accountWidget.statementSettlementTooltip'),
     });
   }
   if (account.statementDueDay) {
@@ -118,8 +120,9 @@ export function AccountInfoWidget({ account, institution, onEdit }: AccountInfoW
       <dl className="space-y-2 text-sm">
         {details.map((detail) => (
           <div key={detail.label} className="flex items-baseline justify-between gap-3">
-            <dt className="text-gray-500 dark:text-gray-400 flex-shrink-0">
+            <dt className="text-gray-500 dark:text-gray-400 flex-shrink-0 flex items-center">
               {detail.label}
+              {detail.tooltip && <InfoTooltip text={detail.tooltip} />}
             </dt>
             <dd className="text-gray-900 dark:text-gray-100 text-right truncate">
               {detail.value}

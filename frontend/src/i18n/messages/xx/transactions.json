@@ -7,6 +7,7 @@
     "creditLimit": "[XX-Credit Limit-XX]",
     "interestRate": "[XX-Interest Rate-XX]",
     "statementSettlement": "[XX-Settlement Day-XX]",
+    "statementSettlementTooltip": "[XX-The last day of the billing cycle. Transactions posted on or before this day appear on the current statement.-XX]",
     "statementDue": "[XX-Payment Due-XX]",
     "closed": "[XX-Closed-XX]",
     "editAria": "[XX-Edit account settings-XX]"

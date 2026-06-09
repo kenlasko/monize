@@ -7,6 +7,7 @@
     "creditLimit": "Limit kredytowy",
     "interestRate": "Oprocentowanie",
     "statementSettlement": "Dzień rozliczenia",
+    "statementSettlementTooltip": "Ostatni dzień cyklu rozliczeniowego. Transakcje zaksięgowane w tym dniu lub wcześniej pojawiają się na bieżącym wyciągu.",
     "statementDue": "Termin płatności",
     "closed": "Zamknięte",
     "editAria": "Edytuj ustawienia konta"

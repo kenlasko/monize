@@ -101,6 +101,10 @@ describe('AccountInfoWidget', () => {
     expect(screen.getByText('22nd')).toBeInTheDocument();
     expect(screen.getByText('Payment Due')).toBeInTheDocument();
     expect(screen.getByText('1st')).toBeInTheDocument();
+    // The settlement day carries an explanatory tooltip, as on the dashboard.
+    expect(
+      screen.getByLabelText(/last day of the billing cycle/i),
+    ).toBeInTheDocument();
   });
 
   it('omits optional fields that are absent', () => {

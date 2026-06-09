@@ -7,6 +7,7 @@
     "creditLimit": "Credit Limit",
     "interestRate": "Interest Rate",
     "statementSettlement": "Settlement Day",
+    "statementSettlementTooltip": "The last day of the billing cycle. Transactions posted on or before this day appear on the current statement.",
     "statementDue": "Payment Due",
     "closed": "Closed",
     "editAria": "Edit account settings"
