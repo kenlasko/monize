@@ -37,7 +37,10 @@ describe('InstitutionList', () => {
     );
     expect(screen.getByText('TD Canada Trust')).toBeInTheDocument();
     expect(screen.getByText('https://td.com')).toBeInTheDocument();
-    expect(screen.getByText('2 accounts')).toBeInTheDocument();
+    // Accounts column shows just the number (with an accessible label).
+    expect(
+      screen.getByRole('button', { name: '2 accounts' }),
+    ).toHaveTextContent('2');
   });
 
   it('applies dense row padding when density is dense', () => {
@@ -84,8 +87,24 @@ describe('InstitutionList', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     expect(onEdit).toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'Accounts' }));
+    fireEvent.click(screen.getByRole('button', { name: '2 accounts' }));
     expect(onManageAccounts).toHaveBeenCalled();
+  });
+
+  it('renders edit/delete as icon buttons in dense view', () => {
+    render(
+      <InstitutionList
+        institutions={[makeInstitution()]}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onManageAccounts={vi.fn()}
+        density="dense"
+      />,
+    );
+    // Icon buttons expose their action via aria-label, with no text content.
+    const edit = screen.getByRole('button', { name: 'Edit' });
+    expect(edit).toHaveTextContent('');
+    expect(edit.querySelector('svg')).toBeInTheDocument();
   });
 
   it('deletes after confirmation', async () => {

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
+import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Institution } from '@/types/institution';
@@ -112,33 +113,51 @@ export function InstitutionList({
               <td className={cellPadding}>
                 <button
                   onClick={() => onManageAccounts(institution)}
+                  aria-label={t('list.accountCount', { count: institution.accountCount })}
+                  title={t('list.actions.manageAccounts')}
                   className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
                 >
-                  {t('list.accountCount', { count: institution.accountCount })}
+                  {institution.accountCount}
                 </button>
               </td>
-              <td className={`${cellPadding} text-right whitespace-nowrap space-x-2`}>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onManageAccounts(institution)}
-                >
-                  {t('list.actions.manageAccounts')}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onEdit(institution)}
-                >
-                  {tc('edit')}
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => setToDelete(institution)}
-                >
-                  {tc('delete')}
-                </Button>
+              <td className={`${cellPadding} text-right whitespace-nowrap ${density === 'dense' ? 'space-x-1' : 'space-x-2'}`}>
+                {density === 'dense' ? (
+                  <>
+                    <button
+                      onClick={() => onEdit(institution)}
+                      aria-label={tc('edit')}
+                      title={tc('edit')}
+                      className="inline-flex items-center p-1.5 rounded text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      <PencilSquareIcon className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={() => setToDelete(institution)}
+                      aria-label={tc('delete')}
+                      title={tc('delete')}
+                      className="inline-flex items-center p-1.5 rounded text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onEdit(institution)}
+                    >
+                      {tc('edit')}
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => setToDelete(institution)}
+                    >
+                      {tc('delete')}
+                    </Button>
+                  </>
+                )}
               </td>
             </tr>
           ))}

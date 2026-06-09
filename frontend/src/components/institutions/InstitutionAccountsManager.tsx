@@ -135,24 +135,6 @@ export function InstitutionAccountsManager({
         </h2>
       </div>
 
-      <div className="mb-4">
-        <Combobox
-          label={t('accountsManager.addLabel')}
-          placeholder={t('accountsManager.addPlaceholder')}
-          options={availableOptions}
-          value={selectedAccountId}
-          usePortal
-          onChange={(value) => {
-            if (value) handleAdd(value);
-          }}
-        />
-        {availableOptions.length === 0 && !isLoading && (
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            {t('accountsManager.noneToAdd')}
-          </p>
-        )}
-      </div>
-
       {isLoading ? (
         <LoadingSpinner text={t('accountsManager.loading')} />
       ) : assignedMain.length === 0 ? (
@@ -226,6 +208,24 @@ export function InstitutionAccountsManager({
           )}
         </>
       )}
+
+      <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <Combobox
+          label={t('accountsManager.addLabel')}
+          placeholder={t('accountsManager.addPlaceholder')}
+          options={availableOptions}
+          value={selectedAccountId}
+          usePortal
+          onChange={(value) => {
+            if (value) handleAdd(value);
+          }}
+        />
+        {availableOptions.length === 0 && !isLoading && (
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            {t('accountsManager.noneToAdd')}
+          </p>
+        )}
+      </div>
 
       <div className="mt-6 flex justify-end">
         <Button variant="secondary" onClick={onClose}>
