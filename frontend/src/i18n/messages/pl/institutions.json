@@ -36,6 +36,11 @@
       "compact": "Kompaktowa",
       "dense": "Gęsta"
     },
+    "statusFilter": {
+      "all": "Wszystkie",
+      "active": "Aktywne",
+      "closed": "Zamknięte"
+    },
     "actions": {
       "manageAccounts": "Konta"
     },
