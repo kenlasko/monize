@@ -47,6 +47,7 @@ import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useFormModal } from '@/hooks/useFormModal';
 import { AccountFormModal } from '@/components/accounts/AccountFormModal';
 import { AccountInfoWidget } from '@/components/transactions/AccountInfoWidget';
+import { ChevronDoubleRightIcon } from '@heroicons/react/24/outline';
 import { Modal } from '@/components/ui/Modal';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { PageLayout } from '@/components/layout/PageLayout';
@@ -97,6 +98,7 @@ function TransactionsContent() {
   const [showPayeeForm, setShowPayeeForm] = useState(false);
   const [editingPayee, setEditingPayee] = useState<Payee | undefined>();
   const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-transactions-density', 'normal');
+  const [accountWidgetCollapsed, setAccountWidgetCollapsed] = useLocalStorage<boolean>('monize-transactions-account-widget-collapsed', false);
   const [showBulkUpdate, setShowBulkUpdate] = useState(false);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [bulkSelectMode, setBulkSelectMode] = useState(false);
@@ -738,8 +740,24 @@ function TransactionsContent() {
           );
 
           // Filtered to a single account: show its info widget (25%) to the
-          // left of the chart (75%). Stacks vertically on narrow screens.
+          // left of the chart (75%). Stacks vertically on narrow screens. The
+          // widget can be collapsed (persisted) so the chart uses full width.
           if (singleFilteredAccount) {
+            if (accountWidgetCollapsed) {
+              return (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setAccountWidgetCollapsed(false)}
+                    className="mb-2 inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    <ChevronDoubleRightIcon className="h-4 w-4" />
+                    {t('accountWidget.show')}
+                  </button>
+                  {chart}
+                </>
+              );
+            }
             return (
               <div className="flex flex-col lg:flex-row lg:gap-6">
                 <div className="lg:w-1/4 flex-shrink-0">
@@ -747,6 +765,7 @@ function TransactionsContent() {
                     account={singleFilteredAccount}
                     institution={singleFilteredInstitution}
                     onEdit={() => accountModal.openEdit(singleFilteredAccount)}
+                    onCollapse={() => setAccountWidgetCollapsed(true)}
                   />
                 </div>
                 <div className="lg:flex-1 min-w-0">{chart}</div>

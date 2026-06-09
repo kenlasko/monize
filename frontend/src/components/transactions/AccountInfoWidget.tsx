@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { PencilSquareIcon } from '@heroicons/react/24/outline';
+import { PencilSquareIcon, ChevronDoubleLeftIcon } from '@heroicons/react/24/outline';
 import { Account } from '@/types/account';
 import { formatAccountType } from '@/lib/account-utils';
 import { getOrdinal } from '@/lib/ordinal';
@@ -15,6 +15,8 @@ interface AccountInfoWidgetProps {
   institution?: InstitutionLogoData | null;
   /** Open the shared account edit modal for this account. */
   onEdit: () => void;
+  /** Collapse the widget so the chart can use the full width. */
+  onCollapse: () => void;
 }
 
 /**
@@ -22,7 +24,7 @@ interface AccountInfoWidgetProps {
  * Transactions list is filtered to a single account. The pencil opens the same
  * edit modal used on the Accounts page via the supplied `onEdit` callback.
  */
-export function AccountInfoWidget({ account, institution, onEdit }: AccountInfoWidgetProps) {
+export function AccountInfoWidget({ account, institution, onEdit, onCollapse }: AccountInfoWidgetProps) {
   const t = useTranslations('transactions');
   const tc = useTranslations('common');
   const { formatCurrency } = useNumberFormat();
@@ -91,15 +93,26 @@ export function AccountInfoWidget({ account, institution, onEdit }: AccountInfoW
             )}
           </div>
         </div>
-        <button
-          type="button"
-          onClick={onEdit}
-          aria-label={t('accountWidget.editAria')}
-          title={t('accountWidget.editAria')}
-          className="flex-shrink-0 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-1"
-        >
-          <PencilSquareIcon className="h-5 w-5" />
-        </button>
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+          <button
+            type="button"
+            onClick={onEdit}
+            aria-label={t('accountWidget.editAria')}
+            title={t('accountWidget.editAria')}
+            className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-1"
+          >
+            <PencilSquareIcon className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            onClick={onCollapse}
+            aria-label={t('accountWidget.collapseAria')}
+            title={t('accountWidget.collapseAria')}
+            className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-1"
+          >
+            <ChevronDoubleLeftIcon className="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
       <div className="mb-4">

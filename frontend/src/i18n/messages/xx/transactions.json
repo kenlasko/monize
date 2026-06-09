@@ -10,7 +10,9 @@
     "statementSettlementTooltip": "[XX-The last day of the billing cycle. Transactions posted on or before this day appear on the current statement.-XX]",
     "statementDue": "[XX-Payment Due-XX]",
     "closed": "[XX-Closed-XX]",
-    "editAria": "[XX-Edit account settings-XX]"
+    "editAria": "[XX-Edit account settings-XX]",
+    "collapseAria": "[XX-Hide account info-XX]",
+    "show": "[XX-Show account info-XX]"
   },
   "page": {
     "title": "[XX-Transactions-XX]",

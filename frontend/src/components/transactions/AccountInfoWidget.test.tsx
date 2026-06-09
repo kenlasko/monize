@@ -31,7 +31,7 @@ const makeAccount = (overrides: Partial<Account> = {}): Account =>
 
 describe('AccountInfoWidget', () => {
   it('shows the account name, balance and type', () => {
-    render(<AccountInfoWidget account={makeAccount()} onEdit={vi.fn()} />);
+    render(<AccountInfoWidget account={makeAccount()} onEdit={vi.fn()} onCollapse={vi.fn()} />);
     expect(screen.getByText('Everyday Chequing')).toBeInTheDocument();
     expect(screen.getByText('CAD 1234.50')).toBeInTheDocument();
     expect(screen.getByText('Chequing')).toBeInTheDocument();
@@ -39,9 +39,16 @@ describe('AccountInfoWidget', () => {
 
   it('calls onEdit when the pencil button is clicked', () => {
     const onEdit = vi.fn();
-    render(<AccountInfoWidget account={makeAccount()} onEdit={onEdit} />);
+    render(<AccountInfoWidget account={makeAccount()} onEdit={onEdit} onCollapse={vi.fn()} />);
     fireEvent.click(screen.getByLabelText('Edit account settings'));
     expect(onEdit).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onCollapse when the collapse button is clicked', () => {
+    const onCollapse = vi.fn();
+    render(<AccountInfoWidget account={makeAccount()} onEdit={vi.fn()} onCollapse={onCollapse} />);
+    fireEvent.click(screen.getByLabelText('Hide account info'));
+    expect(onCollapse).toHaveBeenCalledTimes(1);
   });
 
   it('renders optional fields and a closed badge when present', () => {
@@ -54,7 +61,7 @@ describe('AccountInfoWidget', () => {
           interestRate: 19.99,
           isClosed: true,
         })}
-        onEdit={vi.fn()}
+        onEdit={vi.fn()} onCollapse={vi.fn()}
       />,
     );
     expect(screen.getByText('****1234')).toBeInTheDocument();
@@ -68,7 +75,7 @@ describe('AccountInfoWidget', () => {
       <AccountInfoWidget
         account={makeAccount({ institutionId: 'inst-1' })}
         institution={{ id: 'inst-1', name: 'TD Canada Trust', hasLogo: true }}
-        onEdit={vi.fn()}
+        onEdit={vi.fn()} onCollapse={vi.fn()}
       />,
     );
     expect(screen.getByText('TD Canada Trust')).toBeInTheDocument();
@@ -80,7 +87,7 @@ describe('AccountInfoWidget', () => {
     render(
       <AccountInfoWidget
         account={makeAccount({ institution: 'Legacy Bank' })}
-        onEdit={vi.fn()}
+        onEdit={vi.fn()} onCollapse={vi.fn()}
       />,
     );
     expect(screen.getByText('Legacy Bank')).toBeInTheDocument();
@@ -94,7 +101,7 @@ describe('AccountInfoWidget', () => {
           statementSettlementDay: 22,
           statementDueDay: 1,
         })}
-        onEdit={vi.fn()}
+        onEdit={vi.fn()} onCollapse={vi.fn()}
       />,
     );
     expect(screen.getByText('Settlement Day')).toBeInTheDocument();
@@ -108,7 +115,7 @@ describe('AccountInfoWidget', () => {
   });
 
   it('omits optional fields that are absent', () => {
-    render(<AccountInfoWidget account={makeAccount()} onEdit={vi.fn()} />);
+    render(<AccountInfoWidget account={makeAccount()} onEdit={vi.fn()} onCollapse={vi.fn()} />);
     expect(screen.queryByText('Account Number')).not.toBeInTheDocument();
     expect(screen.queryByText('Credit Limit')).not.toBeInTheDocument();
     expect(screen.queryByText('Settlement Day')).not.toBeInTheDocument();

@@ -10,7 +10,9 @@
     "statementSettlementTooltip": "Ostatni dzień cyklu rozliczeniowego. Transakcje zaksięgowane w tym dniu lub wcześniej pojawiają się na bieżącym wyciągu.",
     "statementDue": "Termin płatności",
     "closed": "Zamknięte",
-    "editAria": "Edytuj ustawienia konta"
+    "editAria": "Edytuj ustawienia konta",
+    "collapseAria": "Ukryj informacje o koncie",
+    "show": "Pokaż informacje o koncie"
   },
   "page": {
     "title": "Transakcje",
