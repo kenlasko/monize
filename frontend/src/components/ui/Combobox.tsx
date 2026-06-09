@@ -32,6 +32,12 @@ interface ComboboxProps {
   alwaysShowSubtitle?: boolean;
   /** Values to sort to the top of the list when not filtering */
   priorityValues?: string[];
+  /**
+   * Open the dropdown when the input gains focus. Defaults to true. Set false
+   * when the field may be auto-focused (e.g. it is the first focusable element
+   * in a modal) so the list only opens on an explicit click, keypress, or type.
+   */
+  openOnFocus?: boolean;
 }
 
 export function Combobox({
@@ -49,6 +55,7 @@ export function Combobox({
   usePortal = false,
   alwaysShowSubtitle = false,
   priorityValues,
+  openOnFocus = true,
 }: ComboboxProps) {
   const t = useTranslations('common');
   const [isOpen, setIsOpen] = useState(false);
@@ -232,7 +239,10 @@ export function Combobox({
   };
 
   const handleFocus = () => {
-    openDropdown();
+    // When openOnFocus is disabled, focusing the input (e.g. a modal
+    // auto-focusing the first focusable element) must not open the dropdown;
+    // it only opens on an explicit click, keypress, or typing.
+    if (openOnFocus) openDropdown();
     // Select all text when focusing so user can easily type to filter
     if (inputRef.current && inputValue) {
       setTimeout(() => {

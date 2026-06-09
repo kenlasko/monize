@@ -40,6 +40,19 @@ describe('Combobox', () => {
     expect(screen.getByText('Date')).toBeInTheDocument();
   });
 
+  it('does not open on focus when openOnFocus is false, but opens on click', () => {
+    render(<Combobox options={options} onChange={onChange} openOnFocus={false} />);
+
+    const input = screen.getByRole('textbox');
+    fireEvent.focus(input);
+    // Focus alone must not reveal the options.
+    expect(screen.queryByText('Apple')).not.toBeInTheDocument();
+
+    // An explicit click still opens the dropdown.
+    fireEvent.click(input);
+    expect(screen.getByText('Apple')).toBeInTheDocument();
+  });
+
   it('filters options when typing', async () => {
     render(<Combobox options={options} onChange={onChange} />);
 

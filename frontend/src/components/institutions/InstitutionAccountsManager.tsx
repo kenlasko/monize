@@ -229,6 +229,7 @@ export function InstitutionAccountsManager({
           options={availableOptions}
           value={selectedAccountId}
           usePortal
+          openOnFocus={false}
           onChange={(value) => {
             if (value) handleAdd(value);
           }}
