@@ -94,6 +94,11 @@ export class DemoResetService {
       await queryRunner.query("DELETE FROM accounts WHERE user_id = $1", [
         userId,
       ]);
+      // Institutions are referenced by accounts (institution_id FK); delete
+      // after accounts so the re-seed recreates them without duplicates.
+      await queryRunner.query("DELETE FROM institutions WHERE user_id = $1", [
+        userId,
+      ]);
       await queryRunner.query("DELETE FROM categories WHERE user_id = $1", [
         userId,
       ]);

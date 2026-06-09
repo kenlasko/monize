@@ -2,7 +2,9 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { DemoSeedService } from "./demo-seed.service";
 import { SeedService } from "./seed.service";
+import { InstitutionLogoService } from "../institutions/institution-logo.service";
 import { demoAccounts } from "./demo-seed-data/accounts";
+import { demoInstitutions } from "./demo-seed-data/institutions";
 import { demoPayees } from "./demo-seed-data/payees";
 import { demoScheduledTransactions } from "./demo-seed-data/scheduled";
 import { demoSecurities } from "./demo-seed-data/securities";
@@ -12,6 +14,7 @@ describe("DemoSeedService", () => {
   let service: DemoSeedService;
   let dataSource: Record<string, jest.Mock>;
   let seedService: Record<string, jest.Mock>;
+  let logoService: Record<string, jest.Mock>;
 
   beforeEach(async () => {
     dataSource = {
@@ -22,11 +25,16 @@ describe("DemoSeedService", () => {
       seedAll: jest.fn().mockResolvedValue(undefined),
     };
 
+    logoService = {
+      fetchFavicon: jest.fn().mockResolvedValue(null),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DemoSeedService,
         { provide: DataSource, useValue: dataSource },
         { provide: SeedService, useValue: seedService },
+        { provide: InstitutionLogoService, useValue: logoService },
       ],
     }).compile();
 
@@ -129,6 +137,48 @@ describe("DemoSeedService", () => {
           (call[0] as string).includes("true"),
       );
       expect(incomeInserts.length).toBe(4);
+    });
+
+    it("seeds an institution for each distinct demo institution", async () => {
+      await service.seedDemoData("user-123");
+
+      const institutionCalls = dataSource.query.mock.calls.filter(
+        (call: string[]) => call[0].includes("INSERT INTO institutions"),
+      );
+      expect(institutionCalls.length).toBe(demoInstitutions.length);
+    });
+
+    it("links accounts to their institution via institution_id", async () => {
+      // Return a stable id per institution insert so we can assert linkage.
+      dataSource.query.mockImplementation((sql: string, params?: unknown[]) => {
+        if (sql.includes("INSERT INTO institutions")) {
+          return Promise.resolve([{ id: `inst-${params?.[1] as string}` }]);
+        }
+        if (sql.includes("RETURNING id")) {
+          return Promise.resolve([{ id: `uuid-${Math.random()}` }]);
+        }
+        if (sql.includes("COALESCE(SUM")) {
+          return Promise.resolve([{ total: "0" }]);
+        }
+        return Promise.resolve([]);
+      });
+
+      await service.seedDemoData("user-123");
+
+      const accountInserts = dataSource.query.mock.calls.filter(
+        (call: string[]) => call[0].includes("INSERT INTO accounts"),
+      );
+      // Every INSERT INTO accounts statement carries an institution_id column.
+      for (const call of accountInserts) {
+        expect(call[0]).toContain("institution_id");
+      }
+      // At least one account is linked to a seeded institution id.
+      const linked = accountInserts.some((call: unknown[]) =>
+        (call[1] as unknown[]).some(
+          (p) => typeof p === "string" && p.startsWith("inst-"),
+        ),
+      );
+      expect(linked).toBe(true);
     });
 
     it("seeds all demo accounts", async () => {

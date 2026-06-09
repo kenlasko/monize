@@ -114,14 +114,19 @@ describe("DemoResetService", () => {
         .filter((call: string[]) => call[0].includes("DELETE FROM"))
         .map((call: string[]) => call[0]);
 
-      // Should delete 17 tables in FK-safe order
-      expect(deleteCalls.length).toBe(17);
+      // Should delete 18 tables in FK-safe order
+      expect(deleteCalls.length).toBe(18);
 
       // First deletes should be the leaf dependencies
       expect(deleteCalls[0]).toContain("investment_transactions");
       expect(deleteCalls[1]).toContain("holdings");
       expect(deleteCalls[2]).toContain("security_prices");
       expect(deleteCalls[3]).toContain("securities");
+
+      // Institutions are removed after accounts (FK-safe).
+      expect(deleteCalls).toContain(
+        "DELETE FROM institutions WHERE user_id = $1",
+      );
 
       // Last deletes should be the root tables
       expect(deleteCalls[deleteCalls.length - 1]).toContain("user_preferences");
