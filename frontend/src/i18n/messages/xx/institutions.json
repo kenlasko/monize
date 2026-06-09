@@ -75,6 +75,7 @@
       "closed": "[XX-Closed-XX]"
     },
     "remove": "[XX-Remove-XX]",
+    "viewTransactions": "[XX-View transactions for this account-XX]",
     "added": "[XX-Account added-XX]",
     "removed": "[XX-Account removed-XX]",
     "addFailed": "[XX-Failed to add account-XX]",

@@ -18,6 +18,11 @@ vi.mock('@/lib/accounts', () => ({
   accountsApi: { getAll: vi.fn() },
 }));
 
+const mockPush = vi.fn();
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: mockPush }),
+}));
+
 const institution: Institution = {
   id: 'i-1',
   userId: 'u-1',
@@ -49,18 +54,18 @@ const investmentAccount = (
     linkedAccountId,
   }) as Account;
 
-async function renderManager(onChanged = vi.fn()) {
+async function renderManager(onChanged = vi.fn(), onClose = vi.fn()) {
   await act(async () => {
     render(
       <InstitutionAccountsManager
         institution={institution}
         isOpen
-        onClose={vi.fn()}
+        onClose={onClose}
         onChanged={onChanged}
       />,
     );
   });
-  return { onChanged };
+  return { onChanged, onClose };
 }
 
 describe('InstitutionAccountsManager', () => {
@@ -80,6 +85,26 @@ describe('InstitutionAccountsManager', () => {
     await waitFor(() =>
       expect(screen.getByText('Chequing')).toBeInTheDocument(),
     );
+  });
+
+  it('navigates to the filtered Transactions page when an account is clicked', async () => {
+    vi.mocked(institutionsApi.getAccounts).mockResolvedValue([
+      account('a-1', 'Chequing'),
+    ]);
+    vi.mocked(accountsApi.getAll).mockResolvedValue([account('a-1', 'Chequing')]);
+
+    const onClose = vi.fn();
+    await renderManager(vi.fn(), onClose);
+    await waitFor(() =>
+      expect(screen.getByText('Chequing')).toBeInTheDocument(),
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Chequing'));
+    });
+
+    expect(onClose).toHaveBeenCalled();
+    expect(mockPush).toHaveBeenCalledWith('/transactions?accountId=a-1');
   });
 
   it('removes an assigned account', async () => {

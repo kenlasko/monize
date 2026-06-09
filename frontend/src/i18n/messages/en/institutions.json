@@ -75,6 +75,7 @@
       "closed": "Closed"
     },
     "remove": "Remove",
+    "viewTransactions": "View transactions for this account",
     "added": "Account added",
     "removed": "Account removed",
     "addFailed": "Failed to add account",

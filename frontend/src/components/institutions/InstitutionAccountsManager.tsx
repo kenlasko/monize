@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Modal } from '@/components/ui/Modal';
 import { Combobox } from '@/components/ui/Combobox';
@@ -33,6 +34,7 @@ export function InstitutionAccountsManager({
   onChanged,
 }: InstitutionAccountsManagerProps) {
   const t = useTranslations('institutions');
+  const router = useRouter();
   const [assigned, setAssigned] = useState<Account[]>([]);
   const [allAccounts, setAllAccounts] = useState<Account[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -92,6 +94,12 @@ export function InstitutionAccountsManager({
         .map((a) => ({ value: a.id, label: getMainAccountName(a.name) })),
     [allAccounts, assignedIds],
   );
+
+  // Close the modal and jump to the Transactions page filtered to the account.
+  const handleViewTransactions = (accountId: string) => {
+    onClose();
+    router.push(`/transactions?accountId=${accountId}`);
+  };
 
   const handleAdd = async (accountId: string) => {
     if (!institution || !accountId) return;
@@ -191,9 +199,14 @@ export function InstitutionAccountsManager({
                   key={account.id}
                   className="flex items-center justify-between px-3 py-2 gap-3"
                 >
-                  <span className="text-sm text-gray-900 dark:text-gray-100 truncate">
+                  <button
+                    type="button"
+                    onClick={() => handleViewTransactions(account.id)}
+                    title={t('accountsManager.viewTransactions')}
+                    className="text-sm text-left text-blue-600 dark:text-blue-400 hover:underline truncate"
+                  >
                     {getMainAccountName(account.name)}
-                  </span>
+                  </button>
                   <Button
                     variant="outline"
                     size="sm"

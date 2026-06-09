@@ -75,6 +75,7 @@
       "closed": "Zamknięte"
     },
     "remove": "Usuń",
+    "viewTransactions": "Wyświetl transakcje dla tego konta",
     "added": "Konto dodane",
     "removed": "Konto usunięte",
     "addFailed": "Nie udało się dodać konta",
