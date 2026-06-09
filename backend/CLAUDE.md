@@ -13,6 +13,8 @@ npm run test               # All tests (unit + E2E)
 npm run test:unit          # Unit tests only (src/**/*.spec.ts)
 npm run test:cov           # Coverage report (95% lines, 94% stmts, 95% funcs, 85% branches)
 npm run test:e2e           # E2E tests (test/**/*.spec.ts, 30s timeout, sequential)
+npm run i18n:pseudo        # Regenerate the xx pseudo-locale from en
+npm run i18n:check         # Verify the pseudo-locale is up to date (CI gate)
 ```
 
 ## Module Structure
@@ -92,6 +94,10 @@ transactionDate: string;
 ## Testing Conventions
 
 Mock repositories use `Record<string, jest.Mock>`; tests use `Test.createTestingModule` with mocks injected via `getRepositoryToken()`. E2E tests live in `test/` with helpers under `test/helpers/` (`auth-helper.ts`, `test-database.ts`, `test-factories.ts`).
+
+## Internationalization (i18n)
+
+Server-rendered strings (exception messages, email copy) are localized via `nestjs-i18n`. Wrap exception messages in `tr(key, fallback, args)` (`src/i18n/translate.ts`), which resolves against the request locale and returns the English `fallback` outside an HTTP context (jobs, schedulers, tests). Render emails with an `EmailT` translator (`emailTranslator(i18n, recipientLang)` from `src/i18n/email-translator.ts`) so copy matches the recipient's stored locale rather than the request's. Catalogs live in `src/i18n/locales/{locale}/*.json` (locales `en`, `pl`, `xx`); keep the locale list in `src/i18n/config.ts` in sync with the frontend. Adding or changing a string means updating every locale -- the parity test `src/i18n/locales.parity.spec.ts` fails otherwise -- then regenerating the pseudo-locale with `npm run i18n:pseudo`. Full contributor flow: `src/i18n/README.md`.
 
 ## Cron Jobs
 

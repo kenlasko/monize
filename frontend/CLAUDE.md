@@ -12,6 +12,8 @@ npm run type-check         # tsc --noEmit
 npm run test               # Vitest (single run)
 npm run test:watch         # Vitest (watch mode)
 npm run test:cov           # Coverage report (91% lines, 90% stmts, 87% funcs, 85% branches)
+npm run i18n:pseudo        # Regenerate the xx pseudo-locale from en
+npm run i18n:check         # Verify the pseudo-locale is up to date (CI gate)
 ```
 
 ## Layout
@@ -61,6 +63,10 @@ This is Next.js middleware (NOT the deprecated middleware pattern from this proj
 `useFormModal<T>` (`hooks/useFormModal.ts`) manages create/edit modal state with browser-history integration (back button closes), unsaved-changes detection via `UnsavedChangesDialog`, and form submit exposed via ref. Returns `showForm`, `editingItem`, `openCreate()`, `openEdit(item)`, `close()`, `modalProps`, `unsavedChangesDialog`.
 
 Supporting hooks: `useFormSubmitRef` (expose submit via ref), `useFormDirtyNotify` (track dirty state). Forms use react-hook-form + Zod.
+
+## Internationalization (i18n)
+
+All user-facing strings go through `next-intl` -- no hardcoded literals. Read them with `useTranslations('namespace')`; catalogs live in `src/i18n/messages/{locale}/{namespace}.json` (locales `en`, `pl`, `xx`; register new namespaces in `src/i18n/messages.ts`). Use `t.rich` for embedded markup and `t.raw` for template strings. Adding or changing a string means updating every locale -- the parity test `src/i18n/messages.parity.test.ts` fails otherwise -- then regenerating the pseudo-locale with `npm run i18n:pseudo`. The language is a user preference (`LanguageSelector` in Settings -> Preferences). Full contributor flow: `src/i18n/messages/README.md`.
 
 ## React Testing (act() Pattern)
 
