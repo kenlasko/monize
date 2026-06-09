@@ -13,6 +13,7 @@ import { institutionsApi } from '@/lib/institutions';
 import { accountsApi } from '@/lib/accounts';
 import { getErrorMessage } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
+import { isInvestmentCashHalf, getMainAccountName } from '@/lib/account-utils';
 import { InstitutionLogo } from './InstitutionLogo';
 
 const logger = createLogger('InstitutionAccountsManager');
@@ -67,11 +68,19 @@ export function InstitutionAccountsManager({
     [assigned],
   );
 
+  // Collapse a linked brokerage/cash investment pair into a single entity by
+  // dropping the cash half; assigning or removing the brokerage carries its
+  // partner along, so only the main account is shown.
+  const assignedMain = useMemo(
+    () => assigned.filter((a) => !isInvestmentCashHalf(a)),
+    [assigned],
+  );
+
   const availableOptions = useMemo(
     () =>
       allAccounts
-        .filter((a) => !assignedIds.has(a.id))
-        .map((a) => ({ value: a.id, label: a.name })),
+        .filter((a) => !assignedIds.has(a.id) && !isInvestmentCashHalf(a))
+        .map((a) => ({ value: a.id, label: getMainAccountName(a.name) })),
     [allAccounts, assignedIds],
   );
 
@@ -137,19 +146,19 @@ export function InstitutionAccountsManager({
 
       {isLoading ? (
         <LoadingSpinner text={t('accountsManager.loading')} />
-      ) : assigned.length === 0 ? (
+      ) : assignedMain.length === 0 ? (
         <p className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
           {t('accountsManager.empty')}
         </p>
       ) : (
         <ul className="divide-y divide-gray-200 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded-md">
-          {assigned.map((account) => (
+          {assignedMain.map((account) => (
             <li
               key={account.id}
               className="flex items-center justify-between px-3 py-2 gap-3"
             >
               <span className="text-sm text-gray-900 dark:text-gray-100 truncate">
-                {account.name}
+                {getMainAccountName(account.name)}
               </span>
               <Button
                 variant="outline"

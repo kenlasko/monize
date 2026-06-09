@@ -34,6 +34,21 @@ const institution: Institution = {
 const account = (id: string, name: string): Account =>
   ({ id, name, institutionId: null }) as Account;
 
+const investmentAccount = (
+  id: string,
+  name: string,
+  subType: 'INVESTMENT_CASH' | 'INVESTMENT_BROKERAGE',
+  linkedAccountId: string,
+): Account =>
+  ({
+    id,
+    name,
+    institutionId: null,
+    accountType: 'INVESTMENT',
+    accountSubType: subType,
+    linkedAccountId,
+  }) as Account;
+
 async function renderManager(onChanged = vi.fn()) {
   await act(async () => {
     render(
@@ -89,6 +104,25 @@ describe('InstitutionAccountsManager', () => {
       expect(institutionsApi.unassignAccount).toHaveBeenCalledWith('i-1', 'a-1'),
     );
     expect(onChanged).toHaveBeenCalled();
+  });
+
+  it('shows a linked investment pair as a single main account', async () => {
+    vi.mocked(institutionsApi.getAccounts).mockResolvedValue([
+      investmentAccount('a-cash', 'TFSA - Cash', 'INVESTMENT_CASH', 'a-brok'),
+      investmentAccount('a-brok', 'TFSA - Brokerage', 'INVESTMENT_BROKERAGE', 'a-cash'),
+    ]);
+    vi.mocked(accountsApi.getAll).mockResolvedValue([
+      investmentAccount('a-cash', 'TFSA - Cash', 'INVESTMENT_CASH', 'a-brok'),
+      investmentAccount('a-brok', 'TFSA - Brokerage', 'INVESTMENT_BROKERAGE', 'a-cash'),
+    ]);
+
+    await renderManager();
+
+    // The pair collapses to one row showing the main account name.
+    await waitFor(() => expect(screen.getByText('TFSA')).toBeInTheDocument());
+    expect(screen.queryByText('TFSA - Cash')).not.toBeInTheDocument();
+    expect(screen.queryByText('TFSA - Brokerage')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Remove')).toHaveLength(1);
   });
 
   it('shows the empty state when no accounts are assigned', async () => {

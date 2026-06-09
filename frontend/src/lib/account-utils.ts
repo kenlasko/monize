@@ -72,6 +72,23 @@ export const isInvestmentBrokerageAccount = (account: Account): boolean => {
 };
 
 /**
+ * Whether the account is the cash half of a linked investment pair. The cash
+ * half is a sub-account of its brokerage partner, so callers that present a
+ * pair as a single entity drop it in favour of the brokerage (main) account.
+ */
+export const isInvestmentCashHalf = (account: Account): boolean => {
+  return (
+    account.accountSubType === 'INVESTMENT_CASH' &&
+    account.linkedAccountId !== null
+  );
+};
+
+/** The main account name, with any " - Brokerage"/" - Cash" suffix stripped. */
+export const getMainAccountName = (name: string): string => {
+  return name.replace(/ - (Brokerage|Cash)$/, '');
+};
+
+/**
  * Count accounts treating a linked brokerage/cash investment pair as one
  * logical account. Both halves of the pair must appear in the input list
  * for the dedup to apply.

@@ -102,6 +102,10 @@ export function InstitutionForm({
       <Input
         label={t('form.websiteLabel')}
         placeholder={t('form.websitePlaceholder')}
+        inputMode="url"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
         error={errors.website?.message}
         {...register('website')}
       />

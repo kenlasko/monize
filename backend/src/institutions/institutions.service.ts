@@ -8,7 +8,11 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, DataSource } from "typeorm";
 import { tr } from "../i18n/translate";
 import { Institution } from "./entities/institution.entity";
-import { Account, AccountType } from "../accounts/entities/account.entity";
+import {
+  Account,
+  AccountType,
+  AccountSubType,
+} from "../accounts/entities/account.entity";
 import { CreateInstitutionDto } from "./dto/create-institution.dto";
 import { UpdateInstitutionDto } from "./dto/update-institution.dto";
 import {
@@ -93,13 +97,29 @@ export class InstitutionsService {
     }
   }
 
+  /**
+   * Base query that counts a user's accounts treating a linked brokerage/cash
+   * investment pair as a single logical account. The cash half is a
+   * sub-account of its brokerage partner, so it is excluded from the count and
+   * the pair is represented by the brokerage (main) account alone.
+   */
+  private logicalAccountsQuery(userId: string) {
+    return this.accountsRepository
+      .createQueryBuilder("account")
+      .where("account.user_id = :userId", { userId })
+      .andWhere(
+        "NOT (account.account_sub_type = :cashSubType AND account.linked_account_id IS NOT NULL)",
+        { cashSubType: AccountSubType.INVESTMENT_CASH },
+      );
+  }
+
   private async countAccounts(
     userId: string,
     institutionId: string,
   ): Promise<number> {
-    return this.accountsRepository.count({
-      where: { userId, institutionId },
-    });
+    return this.logicalAccountsQuery(userId)
+      .andWhere("account.institution_id = :institutionId", { institutionId })
+      .getCount();
   }
 
   async create(
@@ -159,11 +179,9 @@ export class InstitutionsService {
       return [];
     }
 
-    const counts = await this.accountsRepository
-      .createQueryBuilder("account")
+    const counts = await this.logicalAccountsQuery(userId)
       .select("account.institution_id", "institution_id")
       .addSelect("COUNT(*)", "count")
-      .where("account.user_id = :userId", { userId })
       .andWhere("account.institution_id IS NOT NULL")
       .groupBy("account.institution_id")
       .getRawMany<{ institution_id: string; count: string }>();

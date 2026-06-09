@@ -4,6 +4,8 @@ import {
   buildAccountFilterLabel,
   formatAccountType,
   isInvestmentBrokerageAccount,
+  isInvestmentCashHalf,
+  getMainAccountName,
 } from './account-utils';
 import { Account } from '@/types/account';
 
@@ -267,5 +269,58 @@ describe('buildAccountFilterLabel', () => {
 
   it('ignores selections for accounts not in the available list', () => {
     expect(buildAccountFilterLabel(['99'], accounts)).toBe('All Accounts');
+  });
+});
+
+describe('isInvestmentCashHalf', () => {
+  it('returns true for the cash half of a linked pair', () => {
+    const cash = makeAccount({
+      id: 'c1', name: 'TFSA - Cash',
+      accountType: 'INVESTMENT', accountSubType: 'INVESTMENT_CASH',
+      linkedAccountId: 'b1',
+    });
+    expect(isInvestmentCashHalf(cash)).toBe(true);
+  });
+
+  it('returns false for the brokerage half', () => {
+    const brokerage = makeAccount({
+      id: 'b1', name: 'TFSA - Brokerage',
+      accountType: 'INVESTMENT', accountSubType: 'INVESTMENT_BROKERAGE',
+      linkedAccountId: 'c1',
+    });
+    expect(isInvestmentCashHalf(brokerage)).toBe(false);
+  });
+
+  it('returns false for a cash account with no linked partner', () => {
+    const cash = makeAccount({
+      id: 'c2', name: 'Standalone',
+      accountType: 'INVESTMENT', accountSubType: 'INVESTMENT_CASH',
+      linkedAccountId: null,
+    });
+    expect(isInvestmentCashHalf(cash)).toBe(false);
+  });
+
+  it('returns false for a plain account', () => {
+    expect(isInvestmentCashHalf(makeAccount({ id: 'p', name: 'Chequing' }))).toBe(
+      false,
+    );
+  });
+});
+
+describe('getMainAccountName', () => {
+  it('strips a trailing " - Brokerage" suffix', () => {
+    expect(getMainAccountName('TFSA - Brokerage')).toBe('TFSA');
+  });
+
+  it('strips a trailing " - Cash" suffix', () => {
+    expect(getMainAccountName('TFSA - Cash')).toBe('TFSA');
+  });
+
+  it('leaves a plain account name untouched', () => {
+    expect(getMainAccountName('Chequing')).toBe('Chequing');
+  });
+
+  it('only strips the suffix at the end of the name', () => {
+    expect(getMainAccountName('Cash - Reserve')).toBe('Cash - Reserve');
   });
 });

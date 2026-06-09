@@ -93,6 +93,15 @@ describe('InstitutionForm', () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
+  it('treats the website field as a URL on mobile (not normal text)', () => {
+    render(<InstitutionForm onSubmit={vi.fn()} onCancel={() => {}} />);
+    const website = screen.getByLabelText('Website');
+    expect(website).toHaveAttribute('inputmode', 'url');
+    expect(website).toHaveAttribute('autocapitalize', 'none');
+    expect(website).toHaveAttribute('autocorrect', 'off');
+    expect(website).toHaveAttribute('spellcheck', 'false');
+  });
+
   it('prefills the name for inline creation', () => {
     render(
       <InstitutionForm

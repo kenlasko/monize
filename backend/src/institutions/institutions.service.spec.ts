@@ -24,7 +24,10 @@ describe("InstitutionsService", () => {
     ...overrides,
   });
 
-  const chainableQb = (result: unknown, method: "getRawMany" | "getOne") => {
+  const chainableQb = (
+    result: unknown,
+    method: "getRawMany" | "getOne" | "getCount",
+  ) => {
     const qb: Record<string, jest.Mock> = {};
     for (const m of ["select", "addSelect", "where", "andWhere", "groupBy"]) {
       qb[m] = jest.fn(() => qb);
@@ -47,7 +50,9 @@ describe("InstitutionsService", () => {
       find: jest.fn().mockResolvedValue([]),
       findOne: jest.fn(),
       save: jest.fn((x) => Promise.resolve(x)),
-      createQueryBuilder: jest.fn(),
+      // Default: the logical-account count query resolves to 0. Individual
+      // tests override this to assert specific counts.
+      createQueryBuilder: jest.fn(() => chainableQb(0, "getCount")),
     };
     logoService = { fetchFavicon: jest.fn().mockResolvedValue(null) };
     actionHistory = { record: jest.fn() };
@@ -156,6 +161,24 @@ describe("InstitutionsService", () => {
       expect(result.find((i) => i.id === "inst-1")!.accountCount).toBe(2);
       expect(result.find((i) => i.id === "inst-2")!.accountCount).toBe(0);
     });
+
+    it("excludes the cash half of a linked investment pair from the counts", async () => {
+      institutionsRepo.find.mockResolvedValue([buildInstitution({ id: "inst-1" })]);
+      const qb = chainableQb(
+        [{ institution_id: "inst-1", count: "1" }],
+        "getRawMany",
+      );
+      accountsRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAll(userId);
+
+      // A linked brokerage/cash pair counts once: the cash sub-account is
+      // filtered out so the pair is represented by the brokerage account alone.
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        expect.stringContaining("account_sub_type"),
+        { cashSubType: "INVESTMENT_CASH" },
+      );
+    });
   });
 
   describe("findOne()", () => {
@@ -166,11 +189,17 @@ describe("InstitutionsService", () => {
       );
     });
 
-    it("returns the institution with its account count", async () => {
+    it("returns the institution with its logical account count", async () => {
       institutionsRepo.findOne.mockResolvedValue(buildInstitution());
-      accountsRepo.count.mockResolvedValue(4);
+      const qb = chainableQb(4, "getCount");
+      accountsRepo.createQueryBuilder.mockReturnValue(qb);
       const result = await service.findOne(userId, "inst-1");
       expect(result.accountCount).toBe(4);
+      // The cash half of a linked investment pair is excluded from the count.
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        expect.stringContaining("account_sub_type"),
+        { cashSubType: "INVESTMENT_CASH" },
+      );
     });
   });
 
