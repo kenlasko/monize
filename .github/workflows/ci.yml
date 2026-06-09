@@ -8,9 +8,27 @@ on:
   # build-and-push only fires on workflow_dispatch so merging to main doesn't
   # publish a new image set on every PR. Trigger from the Actions tab (or
   # `gh workflow run "CI Pipeline" --ref main`) when you actually want a
-  # release: it will bump the patch version, build/sign/scan/push the
-  # images, and cut a GitHub release.
+  # release: it bumps the version, builds/signs/scans/pushes the images, and
+  # cuts a GitHub release. The inputs below choose the version bump and let you
+  # supply your own release notes (see docs/release-notes/README.md).
   workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Version bump (ignored when an explicit "version" is given)'
+        type: choice
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+      version:
+        description: 'Explicit version, e.g. 1.11.0 (overrides "release_type"; blank = bump)'
+        type: string
+        default: ''
+      release_notes:
+        description: 'Release notes (Markdown). Blank = use docs/release-notes/<version>.md, else GitHub auto-notes'
+        type: string
+        default: ''
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -380,16 +398,35 @@ jobs:
           # version`, so it never needs the cache anyway.
           package-manager-cache: false
 
-      - name: Bump patch version
+      # Decide the new version from the workflow inputs. An explicit `version`
+      # wins; otherwise bump major/minor/patch off backend/package.json. Inputs
+      # are read via env (never interpolated into the script) to avoid template
+      # injection. Both package.json files are kept in lockstep.
+      - name: Bump version
         id: version
+        env:
+          RELEASE_TYPE: ${{ inputs.release_type }}
+          EXPLICIT_VERSION: ${{ inputs.version }}
         run: |
           CURRENT=$(node -p "require('./backend/package.json').version")
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
-          NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
+          if [ -n "$EXPLICIT_VERSION" ]; then
+            if ! printf '%s' "$EXPLICIT_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+              echo "::error::Invalid version '$EXPLICIT_VERSION' (expected MAJOR.MINOR.PATCH, e.g. 1.11.0)"
+              exit 1
+            fi
+            NEW_VERSION="$EXPLICIT_VERSION"
+          else
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+            case "${RELEASE_TYPE:-patch}" in
+              major) NEW_VERSION="$((MAJOR + 1)).0.0" ;;
+              minor) NEW_VERSION="$MAJOR.$((MINOR + 1)).0" ;;
+              *)     NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))" ;;
+            esac
+          fi
           echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
-          echo "Bumping version: $CURRENT -> $NEW_VERSION"
-          cd backend  && npm version "$NEW_VERSION" --no-git-tag-version && cd ..
-          cd frontend && npm version "$NEW_VERSION" --no-git-tag-version && cd ..
+          echo "Bumping version: $CURRENT -> $NEW_VERSION (type=${RELEASE_TYPE:-patch}, explicit=${EXPLICIT_VERSION:-none})"
+          cd backend  && npm version "$NEW_VERSION" --no-git-tag-version --allow-same-version && cd ..
+          cd frontend && npm version "$NEW_VERSION" --no-git-tag-version --allow-same-version && cd ..
 
       - name: Log in to GHCR
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
@@ -601,14 +638,44 @@ jobs:
           git pull --rebase
           git push
 
+      # Resolve the release notes body. Precedence: the `release_notes` input,
+      # then a committed docs/release-notes/<version>.md, then GitHub's
+      # auto-generated notes. The input is read via env to avoid injection.
+      - name: Resolve release notes
+        id: notes
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          RELEASE_NOTES_INPUT: ${{ inputs.release_notes }}
+        run: |
+          NOTES_FILE="docs/release-notes/${VERSION}.md"
+          if [ -n "$RELEASE_NOTES_INPUT" ]; then
+            printf '%s\n' "$RELEASE_NOTES_INPUT" > "$RUNNER_TEMP/release-notes.md"
+            echo "path=$RUNNER_TEMP/release-notes.md" >> "$GITHUB_OUTPUT"
+            echo "Release notes: workflow input"
+          elif [ -f "$NOTES_FILE" ]; then
+            cp "$NOTES_FILE" "$RUNNER_TEMP/release-notes.md"
+            echo "path=$RUNNER_TEMP/release-notes.md" >> "$GITHUB_OUTPUT"
+            echo "Release notes: $NOTES_FILE"
+          else
+            echo "path=" >> "$GITHUB_OUTPUT"
+            echo "Release notes: GitHub auto-generated (no input or notes file found)"
+          fi
+
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.version.outputs.version }}
+          NOTES_PATH: ${{ steps.notes.outputs.path }}
         run: |
-          gh release create "v${VERSION}" \
-            --title "v${VERSION}" \
-            --generate-notes
+          if [ -n "$NOTES_PATH" ]; then
+            gh release create "v${VERSION}" \
+              --title "v${VERSION}" \
+              --notes-file "$NOTES_PATH"
+          else
+            gh release create "v${VERSION}" \
+              --title "v${VERSION}" \
+              --generate-notes
+          fi
 
   # Pre-download and cache the Playwright browsers ONCE, before the sharded
   # test jobs run. The shards then restore from this cache (guaranteed hit) and
