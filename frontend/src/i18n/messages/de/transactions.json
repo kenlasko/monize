@@ -1,0 +1,417 @@
+{
+  "accountWidget": {
+    "currentBalance": "Aktueller Saldo",
+    "nextPayment": "Nächste Zahlung",
+    "viewBills": "In Rechnungen & Einzahlungen anzeigen",
+    "type": "Typ",
+    "accountNumber": "Kontonummer",
+    "currency": "Währung",
+    "creditLimit": "Kreditlimit",
+    "interestRate": "Zinssatz",
+    "statementSettlement": "Abrechnungstag",
+    "statementSettlementTooltip": "Der letzte Tag des Abrechnungszeitraums. Buchungen, die an oder vor diesem Tag gebucht werden, erscheinen auf der aktuellen Abrechnung.",
+    "statementDue": "Fälligkeit",
+    "closed": "Geschlossen",
+    "editAria": "Kontoeinstellungen bearbeiten",
+    "collapseAria": "Kontoinformationen ausblenden",
+    "show": "Kontoinformationen anzeigen"
+  },
+  "page": {
+    "title": "Buchungen",
+    "subtitle": "Verwalten Sie Ihre Einnahmen und Ausgaben",
+    "newButton": "+ Neue Buchung",
+    "editModal": {
+      "editTitle": "Buchung bearbeiten",
+      "duplicateTitle": "Buchung duplizieren",
+      "newTitle": "Neue Buchung",
+      "scheduleTitle": "Als wiederkehrend planen",
+      "editPayeeTitle": "Zahlungsempfänger bearbeiten"
+    },
+    "loading": "Buchungen werden geladen...",
+    "totalCount": "{count, plural, one {# Buchung} other {# Buchungen}}",
+    "bulkDelete": {
+      "title": "Buchungen löschen",
+      "message": "Möchten Sie {count, plural, one {# Buchung} other {# Buchungen}} wirklich löschen? Dabei werden auch verknüpfte Überweisungs-Gegenbuchungen gelöscht. Diese Aktion kann nicht rückgängig gemacht werden."
+    },
+    "toasts": {
+      "scheduledCreated": "Terminierte Buchung erstellt",
+      "investmentLinked": "Diese Buchung ist mit einer Investition verknüpft. Öffnet die Investitionsseite."
+    }
+  },
+  "list": {
+    "empty": {
+      "title": "Keine Buchungen",
+      "body": "Erstellen Sie eine neue Buchung, um zu beginnen."
+    },
+    "header": {
+      "date": "Datum",
+      "account": "Konto",
+      "payee": "Zahlungsempfänger",
+      "category": "Kategorie",
+      "description": "Beschreibung",
+      "refNumber": "Ref.-Nr.",
+      "tags": "Tags",
+      "amount": "Betrag",
+      "balance": "Saldo",
+      "status": "Status",
+      "actions": "Aktionen"
+    },
+    "today": "Heute",
+    "export": {
+      "button": "Exportieren",
+      "exporting": "Wird exportiert...",
+      "title": "Buchungen als CSV exportieren",
+      "success": "{count, plural, one {# Buchung exportiert} other {# Buchungen exportiert}}",
+      "noData": "Keine Buchungen zum Exportieren",
+      "error": "Buchungen konnten nicht exportiert werden"
+    },
+    "density": {
+      "title": "Zeilendichte umschalten",
+      "normal": "Normal",
+      "compact": "Kompakt",
+      "dense": "Dicht"
+    },
+    "delete": {
+      "transferTitle": "Überweisung löschen",
+      "transactionTitle": "Buchung löschen",
+      "transferMessage": "Möchten Sie diese Überweisung wirklich löschen? Beide verknüpften Buchungen werden gelöscht.",
+      "transactionMessage": "Möchten Sie diese Buchung wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+      "success": "Buchung gelöscht",
+      "transferSuccess": "Überweisung gelöscht",
+      "error": "Buchung konnte nicht gelöscht werden"
+    },
+    "status": {
+      "voidError": "Bearbeiten Sie die Buchung, um den Status von „Ungültig" zu ändern",
+      "changed": "Status geändert zu {status}",
+      "updateError": "Status konnte nicht aktualisiert werden",
+      "unreconciled": "Nicht abgeglichen",
+      "cleared": "Bestätigt",
+      "reconciled": "Abgeglichen",
+      "void": "Ungültig",
+      "unreconciledDense": "U",
+      "clearedDense": "B",
+      "reconciledDense": "A",
+      "voidDense": "X",
+      "pendingDense": "○",
+      "pending": "Ausstehend",
+      "cycleTitle": "Klicken, um Status zu wechseln"
+    },
+    "row": {
+      "editPayeeTitle": "Zahlungsempfänger bearbeiten: {name}",
+      "ref": "Ref: {number}",
+      "investmentLabel": "Investition",
+      "linkedInvestmentTitle": "In Investitionen anzeigen",
+      "filterByDate": "Nach Datum „{date}" filtern",
+      "filterByAccount": "Nach „{name}" filtern",
+      "filterByPayee": "Nach „{name}" filtern",
+      "filterByCategory": "Nach {name} filtern",
+      "filterByTag": "Nach Tag {name} filtern",
+      "transfer": "Überweisung",
+      "transferTitle": "Überweisung {direction} {name}",
+      "split": "Buchungsteil",
+      "uncategorized": "Nicht kategorisiert",
+      "splitMore": "+{count} weitere",
+      "filteredAmountTitle": "Gefilterter Betrag (vollständige Buchung: {amount})",
+      "viewButton": "Anzeigen",
+      "editButton": "Bearbeiten",
+      "deleteButton": "Löschen"
+    },
+    "itemNamePlural": "Buchungen"
+  },
+  "row": {
+    "copyOptions": {
+      "title": "Kopieroptionen",
+      "duplicateTitle": "Buchung duplizieren",
+      "copy": "Kopieren",
+      "duplicate": "Duplizieren",
+      "scheduleRecurring": "Als wiederkehrend planen"
+    }
+  },
+  "actionSheet": {
+    "defaultTitle": "Buchung",
+    "filterByDate": "Nach Datum „{date}" filtern",
+    "filterByAccount": "Nach „{name}" filtern",
+    "filterByPayee": "Nach „{name}" filtern",
+    "filterByCategory": "Nach „{name}" filtern",
+    "filterByTag": "Nach Tag „{name}" filtern",
+    "edit": "Bearbeiten",
+    "duplicate": "Duplizieren",
+    "scheduleRecurring": "Als wiederkehrend planen",
+    "delete": "Löschen"
+  },
+  "filter": {
+    "favourites": "Favoriten:",
+    "panel": {
+      "title": "Filter",
+      "clear": "Zurücksetzen",
+      "hide": "Ausblenden",
+      "show": "Anzeigen"
+    },
+    "accounts": {
+      "label": "Konten anzeigen:",
+      "all": "Alle",
+      "active": "Aktiv",
+      "closed": "Geschlossen"
+    },
+    "fields": {
+      "accounts": "Konten",
+      "payees": "Zahlungsempfänger",
+      "categories": "Kategorien",
+      "tags": "Tags",
+      "timePeriod": "Zeitraum",
+      "startDate": "Startdatum",
+      "endDate": "Enddatum",
+      "amountFrom": "Betrag von",
+      "amountTo": "Betrag bis",
+      "status": "Status",
+      "search": "Suche"
+    },
+    "placeholders": {
+      "accounts": "Alle Konten",
+      "payees": "Alle Zahlungsempfänger",
+      "categories": "Alle Kategorien",
+      "tags": "Alle Tags",
+      "statuses": "Alle Status",
+      "amountMin": "Min.",
+      "amountMax": "Max.",
+      "search": "Zahlungsempfänger, Kategorie, Betrag, Tag, Beschreibung, Referenz-Nr. suchen..."
+    },
+    "chips": {
+      "removeAccount": "Filter {name} entfernen",
+      "removePayee": "Filter {name} entfernen",
+      "removeCategory": "Filter {name} entfernen",
+      "removeTag": "Filter {name} entfernen",
+      "removeDate": "Datumsfilter entfernen",
+      "removeAmount": "Betragsfilter entfernen",
+      "removeSearch": "Suchfilter entfernen",
+      "dateFrom": "Ab {date}",
+      "dateUntil": "Bis {date}",
+      "amountFrom": "Ab {amount}",
+      "amountUpTo": "Bis zu {amount}"
+    },
+    "bulkUpdate": "Massenaktualisierung",
+    "cancelBulk": "Massenauswahl abbrechen",
+    "statusLabels": {
+      "unreconciled": "Nicht abgeglichen",
+      "cleared": "Bestätigt",
+      "reconciled": "Abgeglichen",
+      "void": "Ungültig"
+    },
+    "periods": {
+      "select": "Zeitraum auswählen...",
+      "today": "Heute",
+      "yesterday": "Gestern",
+      "thisWeek": "Diese Woche",
+      "lastWeek": "Letzte Woche",
+      "monthToDate": "Monat bis heute",
+      "lastMonth": "Letzter Monat",
+      "yearToDate": "Jahr bis heute",
+      "lastYear": "Letztes Jahr",
+      "custom": "Benutzerdefiniert"
+    }
+  },
+  "bulk": {
+    "banner": {
+      "selected": "{count, plural, one {# Buchung ausgewählt} other {# Buchungen ausgewählt}}",
+      "selectAllMatching": "Alle {count} übereinstimmenden Buchungen auswählen",
+      "allMatching": "(alle übereinstimmenden Buchungen)",
+      "clearSelection": "Auswahl aufheben",
+      "bulkUpdate": "Massenaktualisierung"
+    },
+    "modal": {
+      "title": "Buchungen massenweise aktualisieren",
+      "subtitle": "{count, plural, one {# ausgewählte Buchung} other {# ausgewählte Buchungen}} aktualisieren. Aktivieren Sie die Felder, die Sie ändern möchten.",
+      "submitLabel": "{count, plural, one {# Buchung} other {# Buchungen}} aktualisieren",
+      "payee": "Zahlungsempfänger",
+      "category": "Kategorie",
+      "description": "Beschreibung",
+      "status": "Status",
+      "tags": "Tags",
+      "payeePlaceholder": "Zahlungsempfänger auswählen oder eingeben...",
+      "categoryPlaceholder": "Kategorie auswählen...",
+      "descriptionPlaceholder": "Beschreibung eingeben (leer lassen zum Löschen)",
+      "tagsPlaceholder": "Tags auswählen (leer lassen, um alle zu löschen)...",
+      "statusOptions": {
+        "pending": "Ausstehend",
+        "cleared": "Bestätigt",
+        "void": "Ungültig"
+      },
+      "notes": {
+        "transfer": "Bei Überweisungsbuchungen wird auch die verknüpfte Gegenbuchung aktualisiert.",
+        "split": "Buchungen mit Buchungsteilen werden bei Kategorieänderungen übersprungen."
+      }
+    }
+  },
+  "form": {
+    "modeTransaction": "Buchung",
+    "modeSplit": "Buchungsteil",
+    "modeTransfer": "Überweisung",
+    "transferBadge": "Überweisung",
+    "isLinkedTransfer": "Dies ist eine verknüpfte Überweisungsbuchung",
+    "fields": {
+      "account": "Konto",
+      "date": "Datum",
+      "createDate": "Erstellungsdatum",
+      "payee": "Zahlungsempfänger",
+      "category": "Kategorie",
+      "amount": "Betrag",
+      "totalAmount": "Gesamtbetrag",
+      "referenceNumber": "Referenznummer",
+      "description": "Beschreibung",
+      "status": "Status",
+      "tags": "Tags",
+      "fromAccount": "Von Konto",
+      "toAccount": "An Konto",
+      "transferAmount": "Überweisungsbetrag",
+      "transferAmountWithCurrency": "Überweisungsbetrag ({currency})",
+      "amountReceived": "Erhaltener Betrag ({currency})",
+      "payeeOptional": "Zahlungsempfänger (optional)"
+    },
+    "placeholders": {
+      "selectAccount": "Konto auswählen...",
+      "selectDestinationAccount": "Zielkonto auswählen...",
+      "selectOrTypePayee": "Zahlungsempfänger auswählen oder eingeben...",
+      "selectOrCreateCategory": "Kategorie auswählen oder erstellen...",
+      "referenceNumber": "Scheck-Nr., Bestätigungs-Nr....",
+      "optionalDescription": "Optionale Beschreibung...",
+      "selectTags": "Tags auswählen...",
+      "createNewTag": "Neuen Tag erstellen..."
+    },
+    "splitSection": {
+      "title": "Buchung aufteilen",
+      "cancelSplit": "Aufteilung abbrechen"
+    },
+    "statusOptions": {
+      "unreconciled": "Nicht abgeglichen",
+      "cleared": "Bestätigt",
+      "reconciled": "Abgeglichen",
+      "void": "Ungültig"
+    },
+    "submitCreate": "{mode} erstellen",
+    "submitUpdate": "{mode} aktualisieren",
+    "modeLabel": {
+      "transfer": "Überweisung",
+      "transaction": "Buchung"
+    },
+    "transferAmountNote": "Betrag muss bei Überweisungen positiv sein",
+    "amountReceivedNote": "Erhaltener Betrag nach Währungsumrechnung",
+    "splitTransaction": "Buchung aufteilen",
+    "newTagTitle": "Neuer Tag",
+    "toasts": {
+      "transferCreated": "Überweisung erstellt",
+      "transferUpdated": "Überweisung aktualisiert",
+      "transactionCreated": "Buchung erstellt",
+      "transactionUpdated": "Buchung aktualisiert",
+      "saveFailed": "Buchung konnte nicht gespeichert werden",
+      "loadFailed": "Formulardaten konnten nicht geladen werden",
+      "splitsNotEqual": "Summe der Buchungsteile ({splitTotal}) muss dem Buchungsbetrag ({txAmount}) entsprechen",
+      "destinationRequired": "Bitte wählen Sie ein Zielkonto aus",
+      "sameAccount": "Quell- und Zielkonto müssen verschieden sein",
+      "negativeTransfer": "Überweisungsbetrag darf nicht negativ sein",
+      "payeeCreated": "Zahlungsempfänger „{name}" erstellt",
+      "payeeCreateFailed": "Zahlungsempfänger konnte nicht erstellt werden",
+      "payeeReactivated": "Zahlungsempfänger „{name}" reaktiviert",
+      "payeeReactivateFailed": "Zahlungsempfänger konnte nicht reaktiviert werden",
+      "categoryCreated": "Kategorie „{name}" erstellt",
+      "categoryCreateFailed": "Kategorie konnte nicht erstellt werden",
+      "tagCreated": "Tag „{name}" erstellt"
+    },
+    "ariaHistory": "Letzte Buchungen anzeigen",
+    "ariaHistoryForPayee": "Letzte Buchungen für diesen Zahlungsempfänger anzeigen",
+    "historyTitle": "Aus einer aktuellen Buchung übernehmen"
+  },
+  "splitEditor": {
+    "header": "Details der Buchungsteile",
+    "distributeProportionally": "Proportional verteilen",
+    "distributeProportionallyTitle": "Den verbleibenden Betrag proportional auf die Buchungsteile verteilen",
+    "distributeEvenly": "Gleichmäßig verteilen",
+    "addSplit": "Buchungsteil hinzufügen",
+    "removeMinimum": "Mindestens 2 Buchungsteile erforderlich",
+    "removeSplit": "Buchungsteil entfernen",
+    "noUnassigned": "Kein nicht zugewiesener Betrag",
+    "addRemaining": "Restbetrag zu diesem Buchungsteil hinzufügen",
+    "total": "Gesamt",
+    "balanced": "Ausgeglichen",
+    "remaining": "Verbleibend: {symbol}{amount}",
+    "needAmount": "Benötigt {symbol}{amount} (verbleibend: {symbol}{remaining})",
+    "setTotal": "Gesamt auf {symbol}{amount} setzen",
+    "splitLabel": "Buchungsteil {number}",
+    "columns": {
+      "type": "Typ",
+      "categoryAccount": "Kategorie / Konto",
+      "category": "Kategorie",
+      "amount": "Betrag",
+      "memo": "Memo",
+      "tags": "Tags"
+    },
+    "splitTypes": {
+      "category": "Kategorie",
+      "transfer": "Überweisung",
+      "investment": "Investition"
+    },
+    "selectCategory": "Kategorie auswählen...",
+    "selectAccount": "Konto auswählen...",
+    "memoPlaceholder": "Optionales Memo",
+    "mobileMemoPlaceholder": "Memo",
+    "tagsPlaceholder": "Tags..."
+  },
+  "recentPopover": {
+    "recentForPayee": "Zuletzt für {name}",
+    "recentTransactions": "Letzte Buchungen",
+    "loading": "Wird geladen...",
+    "noRecent": "Keine aktuellen Buchungen.",
+    "noRecentForPayee": "Keine aktuellen Buchungen für diesen Zahlungsempfänger.",
+    "noPayee": "(kein Zahlungsempfänger)",
+    "uncategorized": "(nicht kategorisiert)"
+  },
+  "investmentSplit": {
+    "ariaAction": "Investitionsaktion",
+    "ariaSecurity": "Wertpapier",
+    "selectSecurity": "Wertpapier auswählen...",
+    "quantityPlaceholder": "Menge",
+    "pricePlaceholder": "Preis",
+    "commissionPlaceholder": "Provision",
+    "amountPlaceholder": "Betrag ({currency})"
+  },
+  "charts": {
+    "balanceHistory": {
+      "title": "Saldoverlauf",
+      "noData": "Keine Saldodaten verfügbar",
+      "starting": "Anfang",
+      "current": "Aktuell",
+      "ending": "Ende",
+      "lowest": "Niedrigster",
+      "minBalance": "Mindestsaldo"
+    },
+    "monthlyTotals": {
+      "title": "Monatliche Summen",
+      "noData": "Keine Buchungsdaten verfügbar",
+      "monthlyAvg": "Monatsdurchschnitt",
+      "total": "Gesamt",
+      "transactions": "Buchungen",
+      "tooltip": "{count, plural, one {# Buchung} other {# Buchungen}}"
+    },
+    "accountBalances": {
+      "title": "Kontosalden",
+      "noData": "Keine Kontosaldodaten verfügbar",
+      "average": "Durchschnitt",
+      "total": "Gesamt",
+      "accounts": "Konten",
+      "scaleLabel": "Y-Achsen-Skalierung",
+      "auto": "Automatisch",
+      "linear": "Linear",
+      "log": "Logarithmisch",
+      "autoTitle": "Automatisch ({scale})",
+      "scaleTitle": "{label}-Skalierung"
+    }
+  },
+  "toasts": {
+    "payeeUpdated": "Zahlungsempfänger erfolgreich aktualisiert",
+    "deleted": "{count, plural, one {# Buchung gelöscht} other {# Buchungen gelöscht}}",
+    "noneToExport": "Keine Buchungen zum Exportieren",
+    "exported": "{count, plural, one {# Buchung exportiert} other {# Buchungen exportiert}}"
+  },
+  "validation": {
+    "dateRequired": "Datum ist erforderlich"
+  }
+}

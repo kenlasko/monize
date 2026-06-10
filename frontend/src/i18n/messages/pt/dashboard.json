@@ -1,0 +1,136 @@
+{
+  "page": {
+    "welcomePrefix": "Bem-vindo",
+    "welcomeWithName": "Bem-vindo, {name}!",
+    "subtitle": "Aqui está a sua visão geral financeira"
+  },
+  "favouriteAccounts": {
+    "title": "Contas Favoritas",
+    "empty": "Ainda não tem contas favoritas. Marque contas como favoritas para as ver aqui.",
+    "reorder": "Reordenar",
+    "done": "Concluído",
+    "moveUp": "Mover para cima",
+    "moveDown": "Mover para baixo",
+    "marketValue": "Valor de mercado",
+    "due": "Vencimento: {ordinal}",
+    "dueTooltip": "O dia de cada mês em que o pagamento do cartão de crédito é devido",
+    "settlement": "Liquidação: {ordinal}",
+    "settlementTooltip": "O último dia do ciclo de faturação. As transações lançadas até este dia (inclusive) aparecem na fatura atual."
+  },
+  "upcomingBills": {
+    "title": "Faturas e Depósitos Próximos",
+    "empty": "Sem faturas, depósitos ou transferências em atraso ou próximos dentro dos seus períodos de lembrete.",
+    "perReminderSettings": "Por definições de lembrete",
+    "postTransaction": "Lançar esta transação",
+    "manual": "Manual",
+    "manualTitle": "Requer lançamento manual",
+    "negativeBalanceWarning": "Esta transação irá colocar o saldo da conta abaixo de zero",
+    "viewAll": "Ver todas as faturas e depósitos",
+    "totalDue": "Total a pagar",
+    "totalIncoming": "Total a receber",
+    "moreItems": "+{count} mais",
+    "overdue": "Em atraso",
+    "today": "Hoje",
+    "tomorrow": "Amanhã",
+    "daysUntil": "{count} dias",
+    "typeBadge": {
+      "bill": "Fatura",
+      "deposit": "Depósito",
+      "transfer": "Transferência"
+    }
+  },
+  "gettingStarted": {
+    "title": "Primeiros Passos",
+    "subtitle": "Configure a sua conta em alguns passos rápidos",
+    "dismiss": "Dispensar",
+    "steps": {
+      "settings": {
+        "title": "Rever as suas definições",
+        "description": "Defina a sua moeda, formato de data e tema"
+      },
+      "categories": {
+        "title": "Configurar categorias",
+        "description": "Crie categorias ou importe um conjunto predefinido"
+      },
+      "account": {
+        "title": "Adicionar a sua primeira conta",
+        "description": "Crie uma conta bancária para começar a acompanhar"
+      },
+      "import": {
+        "title": "Importar de QIF",
+        "description": "Importar contas e transações de ficheiros QIF"
+      }
+    }
+  },
+  "budgetStatus": {
+    "title": "Estado do Orçamento",
+    "noBudget": "Nenhum orçamento ativo encontrado. Crie um orçamento para acompanhar os seus gastos.",
+    "createBudget": "Criar Orçamento",
+    "viewFullBudget": "Ver orçamento completo",
+    "daysLeft": "{count} dias restantes",
+    "safeToSpend": "Disponível para gastar hoje",
+    "topCategories": "Principais Categorias"
+  },
+  "insights": {
+    "title": "Análise de Despesas",
+    "empty": "Sem análises disponíveis. Visite a página de Análises para gerar a sua primeira análise.",
+    "goToInsights": "Ir para Análises",
+    "viewAll": "Ver todas as análises",
+    "activeCount": "{count} ativas"
+  },
+  "topMovers": {
+    "title": "Maiores Variações",
+    "empty": {
+      "noInvestments": "Adicione contas de investimento para acompanhar as variações diárias.",
+      "noPrices": "Ainda sem variações de preços disponíveis.",
+      "noGainers": "Sem subidas hoje.",
+      "noLosers": "Sem descidas hoje."
+    },
+    "dailyChange": "Variação diária",
+    "refreshPrices": "Atualizar cotações",
+    "viewPortfolio": "Ver portefólio",
+    "filter": {
+      "all": "Todos",
+      "gainers": "Subidas",
+      "losers": "Descidas"
+    }
+  },
+  "favouriteSecurities": {
+    "title": "Títulos Favoritos",
+    "empty": "Ainda sem títulos favoritos. Visite a <securitiesLink>página de Títulos</securitiesLink> e marque os títulos que pretende acompanhar aqui.",
+    "noPriceYet": "Sem cotação ainda",
+    "dailyChange": "Variação diária",
+    "refreshPrices": "Atualizar cotações",
+    "manage": "Gerir títulos"
+  },
+  "netWorth": {
+    "title": "Valor Líquido",
+    "empty": "Ainda não existem dados de valor líquido disponíveis.",
+    "past12Months": "Últimos 12 meses",
+    "viewReport": "Ver relatório completo"
+  },
+  "assetsVsLiabilities": {
+    "title": "Ativos vs Passivos",
+    "empty": "Ainda não existem dados de valor líquido disponíveis.",
+    "current": "Atual",
+    "netWorthLabel": "Valor Líquido",
+    "assets": "Ativos",
+    "liabilities": "Passivos"
+  },
+  "expensesPieChart": {
+    "title": "Despesas por Categoria",
+    "empty": "Sem dados de despesas para este período.",
+    "past30Days": "Últimos 30 dias",
+    "total": "Total",
+    "uncategorized": "Sem categoria",
+    "other": "Outros"
+  },
+  "incomeExpenses": {
+    "title": "Receitas vs Despesas",
+    "last5Weeks": "Últimas 5 semanas",
+    "weekOf": "Semana de {date}",
+    "income": "Receitas",
+    "expenses": "Despesas",
+    "net": "Líquido"
+  }
+}

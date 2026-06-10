@@ -1,0 +1,829 @@
+{
+  "language": {
+    "label": "Sprache",
+    "helpText": "Wählen Sie die Sprache der Monize-Oberfläche. Zahlen- und Datumsformatierung werden separat unten eingestellt.",
+    "saved": "Sprache aktualisiert"
+  },
+  "profile": {
+    "heading": "Profil",
+    "firstNameLabel": "Vorname",
+    "firstNamePlaceholder": "Geben Sie Ihren Vornamen ein",
+    "lastNameLabel": "Nachname",
+    "lastNamePlaceholder": "Geben Sie Ihren Nachnamen ein",
+    "emailLabel": "E-Mail",
+    "emailPlaceholder": "Geben Sie Ihre E-Mail-Adresse ein",
+    "currentPasswordLabel": "Aktuelles Passwort",
+    "currentPasswordPlaceholder": "Erforderlich zum Ändern der E-Mail-Adresse",
+    "passwordRequired": "Das aktuelle Passwort ist zum Ändern der E-Mail-Adresse erforderlich",
+    "noChanges": "Keine Änderungen zu speichern",
+    "passwordConfirmNote": "Die Passwortbestätigung ist beim Ändern Ihrer E-Mail-Adresse erforderlich.",
+    "saveButton": "Profil speichern",
+    "savingButton": "Wird gespeichert...",
+    "toasts": {
+      "success": "Profil erfolgreich aktualisiert"
+    },
+    "validation": {
+      "firstNameMax": "Der Vorname darf höchstens 100 Zeichen lang sein",
+      "lastNameMax": "Der Nachname darf höchstens 100 Zeichen lang sein",
+      "emailRequired": "E-Mail-Adresse ist erforderlich",
+      "emailInvalid": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+      "emailMax": "Die E-Mail-Adresse darf höchstens 254 Zeichen lang sein",
+      "passwordMax": "Das Passwort darf höchstens 128 Zeichen lang sein"
+    }
+  },
+  "security": {
+    "heading": "Sicherheit",
+    "ssoNotice": "Ihr Konto verwendet Single Sign-On (SSO) zur Authentifizierung. Das unten angegebene Passwort wird nicht für die Anmeldung verwendet, kann aber als Backup aufbewahrt werden, falls SSO deaktiviert wird.",
+    "currentPasswordLabel": "Aktuelles Passwort",
+    "currentPasswordPlaceholder": "Aktuelles Passwort eingeben",
+    "newPasswordLabel": "Neues Passwort",
+    "newPasswordPlaceholder": "Neues Passwort eingeben",
+    "confirmPasswordLabel": "Neues Passwort bestätigen",
+    "confirmPasswordPlaceholder": "Neues Passwort bestätigen",
+    "changePasswordButton": "Passwort ändern",
+    "changingPasswordButton": "Wird geändert...",
+    "toasts": {
+      "passwordChanged": "Passwort erfolgreich geändert"
+    },
+    "twoFactor": {
+      "heading": "Zwei-Faktor-Authentifizierung",
+      "ssoUnavailable": "Zwei-Faktor-Authentifizierung ist für SSO-Konten nicht verfügbar. Die Authentifizierungssicherheit wird von Ihrem Identitätsanbieter verwaltet.",
+      "enabledBadge": "Aktiviert",
+      "enabledDescription": "Ihr Konto ist mit TOTP-Verifizierung geschützt.",
+      "requiredByAdmin": "Vom Administrator vorgeschrieben",
+      "addLayerDescription": "Fügen Sie Ihrem Konto eine zusätzliche Sicherheitsebene hinzu.",
+      "enableButton": "2FA aktivieren",
+      "disableButton": "2FA deaktivieren",
+      "disableModal": {
+        "title": "Zwei-Faktor-Authentifizierung deaktivieren",
+        "description": "Geben Sie Ihren aktuellen 6-stelligen Code ein, um die Deaktivierung der 2FA zu bestätigen.",
+        "verificationCodeLabel": "Verifizierungscode",
+        "disablingButton": "Wird deaktiviert...",
+        "toasts": {
+          "disabled": "Zwei-Faktor-Authentifizierung deaktiviert"
+        }
+      }
+    },
+    "backupCodes": {
+      "heading": "Backup-Codes",
+      "description": "Verwenden Sie Backup-Codes, um sich anzumelden, wenn Sie keinen Zugriff mehr auf Ihre Authentifizierungs-App haben.",
+      "regenerateButton": "Codes neu generieren",
+      "regenerateModal": {
+        "title": "Backup-Codes neu generieren",
+        "description": "Geben Sie Ihren aktuellen 6-stelligen Code ein, um die Neugenerierung der Backup-Codes zu bestätigen. Dadurch werden alle vorhandenen Codes ungültig.",
+        "verificationCodeLabel": "Verifizierungscode",
+        "regeneratingButton": "Wird neu generiert...",
+        "regenerateButton": "Neu generieren"
+      }
+    },
+    "trustedDevices": {
+      "heading": "Vertrauenswürdige Geräte",
+      "revokeAllButton": "Alle widerrufen",
+      "noDevices": "Keine vertrauenswürdigen Geräte. Wenn Sie bei der 2FA-Anmeldung „Auf diesem Browser nicht mehr fragen“ aktivieren, wird das Gerät hier angezeigt.",
+      "currentBadge": "Aktuell",
+      "revokeButton": "Widerrufen",
+      "revokeAllModal": {
+        "title": "Alle vertrauenswürdigen Geräte widerrufen",
+        "description": "Dadurch werden alle vertrauenswürdigen Geräte entfernt. Bei der nächsten Anmeldung von einem beliebigen Gerät müssen Sie Ihren 2FA-Code eingeben."
+      },
+      "toasts": {
+        "revoked": "Gerät widerrufen",
+        "revokedAll": "{count} Gerät(e) widerrufen"
+      }
+    },
+    "validation": {
+      "currentPasswordRequired": "Das aktuelle Passwort ist erforderlich",
+      "passwordMax": "Das Passwort darf höchstens 128 Zeichen lang sein",
+      "confirmRequired": "Bitte bestätigen Sie Ihr neues Passwort",
+      "newPasswordsNoMatch": "Die neuen Passwörter stimmen nicht überein"
+    }
+  },
+  "preferences": {
+    "heading": "Einstellungen",
+    "themeLabel": "Design",
+    "defaultCurrencyLabel": "Standardwährung",
+    "preferredExchangesLabel": "Bevorzugte Börsen (für Wertpapiersuchen)",
+    "preferredExchangesHelp": "Wählen Sie bis zu 3 Börsen in Prioritätsreihenfolge. Diese werden bei der Suche nach Wertpapieren bevorzugt.",
+    "exchangePriorityPlaceholder": "Priorität {n}",
+    "defaultQuoteProviderLabel": "Standard-Kursanbieter",
+    "defaultQuoteProviderHelp": "Wird verwendet, wenn für ein Wertpapier kein Anbieter festgelegt ist. Falls der gewählte Anbieter ausfällt, versucht Monize automatisch den anderen.",
+    "msnNoIntradayNote": "Hinweis: MSN Money stellt keine Intraday-Kursdaten bereit. Daher sind die Zeitbereiche 1T / 1W / 1M im Diagramm „Portfolio-Wert im Zeitverlauf" für MSN-verfolgte Bestände nicht verfügbar.",
+    "msnNotConfigured": "MSN ist als Standard-Kursanbieter ausgewählt, aber MSN_API_KEY ist auf dem Server nicht konfiguriert. MSN-Kurse schlagen fehl, bis ein Administrator die Umgebungsvariable setzt und das Backend neu startet.",
+    "dateFormatLabel": "Datumsformat",
+    "numberFormatLabel": "Zahlenformat",
+    "timezoneLabel": "Zeitzone",
+    "timezonePlaceholder": "Zeitzonen suchen...",
+    "weekStartsOnLabel": "Woche beginnt am",
+    "showCreatedAtLabel": "Erstellungsdatum in Buchungsformularen anzeigen",
+    "showCreatedAtTooltip": "Zeigt in Buchungsformularen das Datum und die Uhrzeit an, zu der eine Buchung ursprünglich erstellt wurde. Dies ist unabhängig vom Buchungsdatum und kann helfen nachzuvollziehen, wann ein Eintrag tatsächlich zu Monize hinzugefügt wurde.",
+    "timeFormatLabel": "Zeitformat",
+    "recentTransactionsLabel": "Zuletzt verwendete Buchungen in der Schnellausfüllung",
+    "recentTransactionsHelp": "Anzahl der Einträge im Verlaufs-Popover neben dem Zahlungsempfänger-Feld in Buchungsformularen.",
+    "saveButton": "Einstellungen speichern",
+    "savingButton": "Wird gespeichert...",
+    "toasts": {
+      "saved": "Einstellungen gespeichert"
+    },
+    "browserLocale": "Browser-Gebietsschema verwenden (automatisch erkennen)",
+    "browserTimezonePrefix": "Browser-Zeitzone verwenden (automatisch erkannt: {tz})",
+    "numberFormatOptions": {
+      "browser": "Browser-Gebietsschema verwenden (automatisch erkennen)",
+      "enUS": "English (US) - 1,234.56",
+      "enGB": "English (UK) - 1,234.56",
+      "deDE": "German - 1.234,56",
+      "frFR": "French - 1 234,56"
+    },
+    "weekDays": {
+      "sunday": "Sonntag",
+      "monday": "Montag",
+      "tuesday": "Dienstag",
+      "wednesday": "Mittwoch",
+      "thursday": "Donnerstag",
+      "friday": "Freitag",
+      "saturday": "Samstag"
+    },
+    "themeOptions": {
+      "system": "System (Geräteeinstellung übernehmen)",
+      "light": "Hell",
+      "dark": "Dunkel"
+    },
+    "colorThemeLabel": "Farbdesign",
+    "colorThemeOptions": {
+      "default": "Standard",
+      "latte": "Latte",
+      "msmoney": "MS Money",
+      "newspaper": "Newspaper",
+      "burgundy": "Burgundy",
+      "nord": "Nord",
+      "forest": "Forest",
+      "solarized": "Solarized",
+      "gruvbox": "Gruvbox",
+      "dracula": "Dracula",
+      "tokyonight": "Tokyo Night",
+      "rosepine": "Rosé Pine",
+      "midnight": "Midnight",
+      "highcontrast": "Hoher Kontrast",
+      "colorblind": "Farbenblind-sicher"
+    },
+    "timezoneBrowserOption": "Browser-Zeitzone verwenden (automatisch erkannt: {tz})"
+  },
+  "notifications": {
+    "heading": "Benachrichtigungen",
+    "smtpNotConfigured": "E-Mail-Benachrichtigungen sind nicht verfügbar. SMTP wurde vom Administrator nicht konfiguriert.",
+    "emailNotificationsTitle": "E-Mail-Benachrichtigungen",
+    "emailNotificationsDescription": "E-Mail-Erinnerungen für bevorstehende Rechnungen und Budget-Warnungen empfangen",
+    "budgetNotificationsHeading": "Budget-Benachrichtigungen",
+    "weeklyBudgetDigestTitle": "Wöchentliche Budget-Zusammenfassung",
+    "weeklyBudgetDigestDescription": "Eine wöchentliche Zusammenfassung der Budget-Warnungen und des Status empfangen",
+    "toggleBudgetDigestLabel": "Budget-Zusammenfassung umschalten",
+    "digestDayLabel": "Zusammenfassungstag",
+    "digestDayAriaLabel": "Budget-Zusammenfassungstag",
+    "mondayOption": "Montag",
+    "fridayOption": "Freitag",
+    "immediateAlertsNote": "Kritische Budget-Warnungen (Budgetüberschreitung, Einnahmendefizit) werden sofort gesendet, unabhängig von den Zusammenfassungseinstellungen.",
+    "sendTestEmailDescription": "Senden Sie eine Test-E-Mail, um zu prüfen, ob Ihre Benachrichtigungen funktionieren.",
+    "sendTestEmailButton": "Test-E-Mail senden",
+    "sendingTestEmailButton": "Wird gesendet...",
+    "toasts": {
+      "emailEnabled": "E-Mail-Benachrichtigungen aktiviert",
+      "emailDisabled": "E-Mail-Benachrichtigungen deaktiviert",
+      "digestEnabled": "Budget-Zusammenfassung aktiviert",
+      "digestDisabled": "Budget-Zusammenfassung deaktiviert",
+      "digestDaySet": "Budget-Zusammenfassungstag auf {day} gesetzt",
+      "testEmailSent": "Test-E-Mail gesendet! Bitte prüfen Sie Ihren Posteingang."
+    }
+  },
+  "help": {
+    "heading": "Hilfe & Support",
+    "description": "Dokumentation finden, Probleme melden oder an der Diskussion teilnehmen.",
+    "github": {
+      "label": "GitHub",
+      "description": "Quellcode anzeigen und das Projekt mit einem Stern versehen."
+    },
+    "openIssue": {
+      "label": "Problem melden",
+      "description": "Einen Fehler melden oder eine Funktion anfordern."
+    },
+    "discussions": {
+      "label": "Diskussionen",
+      "description": "Fragen stellen und Ideen mit der Community teilen."
+    },
+    "wiki": {
+      "label": "Wiki",
+      "description": "Anleitungen und Dokumentation durchsuchen."
+    }
+  },
+  "dangerZone": {
+    "heading": "Gefahrenbereich",
+    "deleteData": {
+      "heading": "Daten löschen",
+      "description": "Finanzdaten aus Ihrem Konto entfernen. Dies kann nicht rückgängig gemacht werden.",
+      "openButton": "Daten löschen...",
+      "alwaysDeletedHeading": "Folgendes wird immer gelöscht:",
+      "optionalHeading": "Optional auch löschen:",
+      "accountsOption": "Konten",
+      "categoriesOption": "Kategorien",
+      "payeesOption": "Zahlungsempfänger",
+      "currencyPreferencesOption": "Währungseinstellungen",
+      "balanceResetNote": "Kontosalden werden auf den Anfangsbestand zurückgesetzt.",
+      "oidcConfirmLabel": "Zur Bestätigung erneut mit Ihrem Identitätsanbieter authentifizieren:",
+      "passwordConfirmLabel": "Passwort zur Bestätigung eingeben:",
+      "passwordPlaceholder": "Passwort eingeben",
+      "oidcReauthButton": "Erneut authentifizieren und löschen",
+      "deletingButton": "Wird gelöscht...",
+      "confirmButton": "Datenlöschung bestätigen",
+      "toasts": {
+        "success": "{count} Datensätze erfolgreich gelöscht"
+      }
+    },
+    "deleteAccount": {
+      "heading": "Konto löschen",
+      "description": "Ihr Konto und alle zugehörigen Daten dauerhaft löschen. Dies kann nicht rückgängig gemacht werden.",
+      "delegateNotice": {
+        "title": "Sie sind ein Delegierter eines anderen Kontos.",
+        "body": "Beim Löschen Ihres Kontos werden Ihre eigenen Daten entfernt, aber Ihre Anmeldung und der von anderen gewährte gemeinsame Zugriff bleiben erhalten, damit die Delegierung weiterhin funktioniert. Um diesen Zugriff zu widerrufen, bitten Sie den Kontoinhaber zuerst, Sie aus der Liste der gemeinsamen Zugriffe zu entfernen."
+      },
+      "openButton": "Konto löschen",
+      "typeDeleteLabel": "Geben Sie DELETE ein, um die Kontolöschung zu bestätigen:",
+      "typeDeletePlaceholder": "DELETE eingeben",
+      "enterPasswordLabel": "Passwort eingeben:",
+      "enterPasswordPlaceholder": "Passwort eingeben",
+      "deletingButton": "Wird gelöscht...",
+      "confirmButton": "Löschen bestätigen",
+      "toasts": {
+        "downgraded": "Ihre eigenen Daten wurden entfernt. Ihre Anmeldung und der gemeinsame Zugriff bleiben erhalten, damit die Delegierung bestehen bleibt.",
+        "deleted": "Konto gelöscht"
+      },
+      "errors": {
+        "typeDelete": "Bitte geben Sie DELETE zur Bestätigung ein",
+        "passwordRequired": "Bitte geben Sie Ihr Passwort zur Bestätigung ein"
+      }
+    }
+  },
+  "apiAccess": {
+    "heading": "API-Zugang",
+    "description": "Erstellen Sie persönliche Zugriffstoken, um externe KI-Tools wie Claude Desktop über MCP zu verbinden.",
+    "createTokenButton": "Token erstellen",
+    "mcpServerUrlLabel": "MCP-Server-URL",
+    "mcpServerUrlHelp": "Verwenden Sie diese URL bei der Konfiguration von MCP-Clients wie Claude Code oder Claude Desktop.",
+    "copyButton": "Kopieren",
+    "copiedButton": "Kopiert",
+    "noTokens": "Noch keine API-Token. Erstellen Sie einen, um zu beginnen.",
+    "tokenPrefix": "Zuletzt verwendet",
+    "expires": "Läuft ab",
+    "created": "Erstellt",
+    "lastUsed": "Zuletzt verwendet",
+    "revokeButton": "Widerrufen",
+    "revokeModal": {
+      "title": "Token widerrufen",
+      "message": "Dieser Token wird sofort ungültig. Alle MCP-Verbindungen, die ihn verwenden, werden getrennt.",
+      "confirmLabel": "Widerrufen"
+    },
+    "createModal": {
+      "title": "API-Token erstellen",
+      "tokenNameLabel": "Token-Name",
+      "tokenNamePlaceholder": "z. B. Claude Desktop",
+      "scopesLabel": "Berechtigungen",
+      "expirationLabel": "Ablauf",
+      "creatingButton": "Wird erstellt...",
+      "createButton": "Token erstellen",
+      "scopes": {
+        "read": {
+          "label": "Lesen",
+          "description": "Konten, Buchungen und Kategorien anzeigen"
+        },
+        "write": {
+          "label": "Schreiben",
+          "description": "Buchungen, Zahlungsempfänger und Kategorien erstellen"
+        },
+        "reports": {
+          "label": "Berichte",
+          "description": "Finanzberichte und Analysen erstellen"
+        }
+      },
+      "expiry": {
+        "none": "Kein Ablauf",
+        "d30": "30 Tage",
+        "d90": "90 Tage",
+        "y1": "1 Jahr"
+      },
+      "validation": {
+        "nameRequired": "Token-Name ist erforderlich",
+        "nameMax": "Der Token-Name darf höchstens 100 Zeichen lang sein"
+      }
+    },
+    "createdModal": {
+      "title": "Token erstellt",
+      "warningNote": "Kopieren Sie diesen Token jetzt. Er wird nicht erneut angezeigt.",
+      "doneButton": "Fertig"
+    },
+    "toasts": {
+      "copied": "Token in die Zwischenablage kopiert",
+      "mcpUrlCopied": "MCP-URL in die Zwischenablage kopiert",
+      "revoked": "Token widerrufen",
+      "selectScope": "Wählen Sie mindestens eine Berechtigung aus",
+      "copyTokenFailed": "Token konnte nicht kopiert werden",
+      "copyUrlFailed": "URL konnte nicht kopiert werden"
+    },
+    "relative": {
+      "never": "Nie",
+      "today": "Heute",
+      "yesterday": "Gestern",
+      "daysAgo": "Vor {count} Tagen",
+      "monthsAgo": "Vor {count} Monaten"
+    }
+  },
+  "autoBackup": {
+    "heading": "Automatisches Backup",
+    "description": "Sichern Sie Ihre Daten automatisch nach einem Zeitplan in einem Ordner. Da Monize in Docker läuft, müssen Sie einen Host-Ordner als Volume in den Container einbinden (z. B. -v /host/backups:/backups).",
+    "loadingText": "Wird geladen...",
+    "enableLabel": "Automatische Backups aktivieren",
+    "backupFolderLabel": "Backup-Ordner",
+    "backupFolderPlaceholder": "/backups",
+    "browseButton": "Durchsuchen...",
+    "validateButton": "Validieren",
+    "validatingButton": "Wird validiert...",
+    "folderValid": "Ordner ist gültig und beschreibbar",
+    "selectThisFolder": "Diesen Ordner auswählen",
+    "noSubdirectories": "Keine Unterverzeichnisse",
+    "frequencyLabel": "Backup-Häufigkeit",
+    "backupTimeLabel": "Backup-Zeit ({timezone})",
+    "backupTimeHelpInterval": "Das erste Backup des Tages beginnt zu dieser Zeit ({timezone}). Nachfolgende Backups folgen im konfigurierten Intervall.",
+    "backupTimeHelpDaily": "Tageszeit für das Backup in Ihrer lokalen Zeitzone ({timezone}).",
+    "retention": {
+      "heading": "Aufbewahrungsrichtlinie",
+      "description": "Konfigurieren Sie, wie viele Backups aufbewahrt werden sollen. Ältere Backups über diese Grenzen hinaus werden automatisch gelöscht.",
+      "dailyLabel": "Tägliche Backups",
+      "dailyHelp": "Neueste aufzubewahrende Backups",
+      "weeklyLabel": "Wöchentliche Backups",
+      "weeklyHelp": "Eines pro Woche aufbewahrt",
+      "monthlyLabel": "Monatliche Backups",
+      "monthlyHelp": "Eines pro Monat aufbewahrt"
+    },
+    "status": {
+      "heading": "Status",
+      "lastBackup": "Letztes Backup",
+      "nextBackup": "Nächstes Backup",
+      "error": "Fehler",
+      "success": "Erfolgreich",
+      "failed": "Fehlgeschlagen"
+    },
+    "saveButton": "Einstellungen speichern",
+    "savingButton": "Wird gespeichert...",
+    "runNowButton": "Backup jetzt ausführen",
+    "runningButton": "Backup wird ausgeführt...",
+    "toasts": {
+      "saved": "Einstellungen für automatisches Backup gespeichert",
+      "backupCreated": "Backup erstellt: {filename}",
+      "folderValid": "Ordner ist gültig und beschreibbar",
+      "loadFailed": "Einstellungen für automatisches Backup konnten nicht geladen werden",
+      "saveFailed": "Einstellungen konnten nicht gespeichert werden",
+      "runFailed": "Backup konnte nicht ausgeführt werden",
+      "browseFailed": "Ordner konnten nicht durchsucht werden"
+    },
+    "folderErrors": {
+      "required": "Ordnerpfad ist erforderlich",
+      "validationFailed": "Ordnervalidierung fehlgeschlagen",
+      "validationError": "Validierung fehlgeschlagen"
+    },
+    "frequencyOptions": {
+      "every6hours": "Alle 6 Stunden",
+      "every12hours": "Alle 12 Stunden",
+      "daily": "Täglich",
+      "weekly": "Wöchentlich"
+    }
+  },
+  "backupRestore": {
+    "heading": "Backup & Wiederherstellung",
+    "encryption": {
+      "heading": "Backup-Verschlüsselung",
+      "descriptionOidc": "Manuelle und automatische Backups mit einem hier festgelegten Backup-Passwort verschlüsseln. Das Passwort ist für die Wiederherstellung erforderlich.",
+      "descriptionLocal": "Manuelle und automatische Backups mit Ihrem Anmeldepasswort verschlüsseln. Das Passwort ist für die Wiederherstellung erforderlich.",
+      "loading": "Wird geladen...",
+      "enabledBadge": "Aktiviert",
+      "changePasswordButton": "Backup-Passwort ändern",
+      "disableButton": "Deaktivieren",
+      "setPasswordButton": "Backup-Passwort festlegen",
+      "enableEncryptedButton": "Verschlüsselte Backups aktivieren",
+      "setupModal": {
+        "titleOidc": "Backup-Passwort festlegen",
+        "titleLocal": "Verschlüsselte Backups aktivieren",
+        "descriptionOidc": "Wählen Sie ein Passwort, das zum Verschlüsseln Ihrer Backups verwendet wird. Bewahren Sie es sicher auf -- Sie benötigen es für die Wiederherstellung.",
+        "descriptionLocal": "Bestätigen Sie Ihr Anmeldepasswort. Es wird zur Verschlüsselung aller Backups (manuell und automatisch) verwendet.",
+        "placeholderOidc": "Neues Backup-Passwort (mind. 12 Zeichen)",
+        "placeholderLocal": "Ihr Anmeldepasswort",
+        "savingButton": "Wird gespeichert...",
+        "confirmButton": "Bestätigen"
+      },
+      "toasts": {
+        "enabled": "Verschlüsselte Backups aktiviert",
+        "disabled": "Verschlüsselte Backups deaktiviert"
+      }
+    },
+    "export": {
+      "heading": "Backup erstellen",
+      "description": "Laden Sie ein vollständiges Backup Ihrer Finanzdaten herunter. Dies umfasst Konten, Buchungen, Kategorien, Zahlungsempfänger, Budgets, Investments und alle weiteren Benutzerdaten.",
+      "downloadButton": "Backup herunterladen",
+      "creatingButton": "Backup wird erstellt...",
+      "exportPasswordModal": {
+        "title": "Backup verschlüsseln",
+        "description": "Geben Sie das Passwort ein, um dieses Backup zu verschlüsseln. Sie benötigen es für die Wiederherstellung.",
+        "placeholderOidc": "Backup-Passwort",
+        "placeholderLocal": "Anmeldepasswort",
+        "encryptingButton": "Wird verschlüsselt...",
+        "downloadButton": "Herunterladen"
+      },
+      "toasts": {
+        "success": "Backup erfolgreich heruntergeladen"
+      }
+    },
+    "restore": {
+      "heading": "Aus Backup wiederherstellen",
+      "description": "Ersetzen Sie alle Ihre aktuellen Daten durch Daten aus einer zuvor exportierten Backup-Datei. Dabei werden Ihre vorhandenen Daten dauerhaft überschrieben.",
+      "openButton": "Aus Backup wiederherstellen...",
+      "warning": "Warnung: Dabei werden alle Ihre aktuellen Daten gelöscht und durch den Backup-Inhalt ersetzt. Diese Aktion kann nicht rückgängig gemacht werden.",
+      "selectFileLabel": "Backup-Datei auswählen",
+      "encryptedBackupLabel": "Dieses Backup ist verschlüsselt. Geben Sie das Backup-Passwort ein, mit dem es erstellt wurde:",
+      "backupPasswordPlaceholder": "Backup-Passwort",
+      "oidcConfirmLabel": "Zur Bestätigung erneut mit Ihrem Identitätsanbieter authentifizieren:",
+      "passwordConfirmLabel": "Kontopasswort zur Bestätigung eingeben:",
+      "passwordPlaceholder": "Passwort eingeben",
+      "oidcRestoreButton": "Erneut authentifizieren und wiederherstellen",
+      "restoringButton": "Wird wiederhergestellt...",
+      "confirmRestoreButton": "Wiederherstellung bestätigen",
+      "toasts": {
+        "pleaseSelectFile": "Bitte wählen Sie eine Backup-Datei aus",
+        "pleaseEnterPassword": "Bitte geben Sie Ihr Passwort zur Bestätigung ein"
+      }
+    },
+    "restoreResult": {
+      "title": "Wiederherstellung abgeschlossen",
+      "description": "Ihre Daten wurden erfolgreich wiederhergestellt. Hier eine Zusammenfassung der wiederhergestellten Daten:",
+      "totalRecords": "Datensätze gesamt",
+      "doneButton": "Fertig"
+    }
+  },
+  "sharedAccess": {
+    "description": "Delegierte melden sich mit ihren eigenen Anmeldedaten an und sehen nie Ihr Passwort. Sie sehen nur die Konten und Bereiche, die Sie ihnen gewähren.",
+    "addDelegateButton": "Delegierten hinzufügen",
+    "loading": "Wird geladen...",
+    "noDelegates": "Noch keine Delegierten.",
+    "statusLabel": "Status: {status}",
+    "sectionsLabel": "Bereiche: {count}",
+    "accountsLabel": "Konten: {count}",
+    "sharedDataLabel": "Gemeinsame Daten: {count}",
+    "editAccessButton": "Zugriff bearbeiten",
+    "resetPasswordButton": "Passwort zurücksetzen",
+    "resetPasswordDisabledTitle": "Diese Person verwaltet ihr eigenes Passwort (sie hat ein eigenes Monize-Konto oder delegierten Zugriff anderswo).",
+    "removeButton": "Entfernen",
+    "createModal": {
+      "title": "Delegierten hinzufügen",
+      "description": "Einer anderen Person begrenzten Zugriff auf Ihre Konten gewähren.",
+      "emailLabel": "E-Mail",
+      "emailPlaceholder": "E-Mail des Delegierten",
+      "firstNameLabel": "Vorname",
+      "firstNamePlaceholder": "Vorname (optional)",
+      "lastNameLabel": "Nachname",
+      "lastNamePlaceholder": "Nachname (optional)",
+      "existingAccountNotice": "Diese Person hat bereits eine Monize-Anmeldung. Sie behält ihre eigenen Anmeldedaten und erhält einfach den zusätzlichen gemeinsamen Zugriff -- kein Passwort oder Einladung erforderlich.",
+      "sendInviteLabel": "Statt einem Passwort eine E-Mail-Einladung senden",
+      "passwordLabel": "Passwort",
+      "passwordPlaceholder": "Passwort festlegen",
+      "submitButton": "Delegierten hinzufügen"
+    },
+    "revokeDialog": {
+      "title": "Delegierten entfernen",
+      "message": "Diesen Delegierten entfernen? Er verliert den Zugriff auf Ihr Konto. Wenn dieser Delegierte keinen weiteren gemeinsamen Zugriff hat und diese E-Mail-Adresse nie als eigenes Monize-Konto beansprucht hat, wird auch seine inhaber-verwaltete Anmeldung entfernt.",
+      "removingButton": "Wird entfernt...",
+      "removeButton": "Entfernen"
+    },
+    "tempPasswordModal": {
+      "title": "Temporäres Passwort",
+      "description": "Teilen Sie dies sicher mit dem Delegierten. Beim ersten Anmelden wird er aufgefordert, es zu ändern. Es wird nicht erneut angezeigt.",
+      "copyButton": "Kopieren",
+      "copiedButton": "Kopiert",
+      "doneButton": "Fertig"
+    },
+    "toasts": {
+      "created": "Delegierter erstellt",
+      "createdWithTempPassword": "Delegierter erstellt. Temporäres Passwort: {password}",
+      "invited": "Einladungs-E-Mail gesendet",
+      "removed": "Delegierter entfernt"
+    },
+    "errors": {
+      "setPasswordOrInvite": "Legen Sie ein Passwort fest oder senden Sie eine E-Mail-Einladung.",
+      "loadFailed": "Gemeinsamer Zugriff konnte nicht geladen werden",
+      "createFailed": "Delegierter konnte nicht erstellt werden",
+      "revokeFailed": "Widerruf des Delegierten fehlgeschlagen",
+      "resetPasswordFailed": "Passwort konnte nicht zurückgesetzt werden",
+      "copyFailed": "Kopieren in die Zwischenablage nicht möglich"
+    }
+  },
+  "delegateAccessModal": {
+    "title": "Zugriff bearbeiten",
+    "tabs": {
+      "accounts": "Konten",
+      "sections": "Bereiche",
+      "shared": "Gemeinsame Daten"
+    },
+    "sections": {
+      "description": "Schreibgeschützten Zugriff auf ganze App-Bereiche gewähren. Kontobezogene Daten benötigen zusätzlich Zugriff pro Konto."
+    },
+    "accounts": {
+      "noAccounts": "Keine Konten zum Gewähren.",
+      "grantAll": "Alle gewähren"
+    },
+    "shared": {
+      "description": "LESEN von Zahlungsempfängern, Kategorien und Tags ist immer erlaubt. Diese steuern Erstellen/Bearbeiten/Löschen."
+    },
+    "saveButton": "Speichern",
+    "toasts": {
+      "saved": "Zugriff aktualisiert"
+    }
+  },
+  "nav": {
+    "sectionsAriaLabel": "Einstellungsbereiche",
+    "profile": "Profil",
+    "preferences": "Einstellungen",
+    "notifications": "Benachrichtigungen",
+    "security": "Sicherheit",
+    "sharedAccess": "Gemeinsamer Zugriff",
+    "emergencyAccess": "Notfallzugang",
+    "apiAccess": "API-Zugang",
+    "aiSettings": "KI-Einstellungen",
+    "backupRestore": "Backup & Wiederherstellung",
+    "autoBackup": "Automatisches Backup",
+    "help": "Hilfe & Support",
+    "dangerZone": "Gefahrenbereich"
+  },
+  "page": {
+    "title": "Einstellungen",
+    "demoRestricted": {
+      "heading": "Im Demo-Modus eingeschränkt",
+      "body": "Profilbearbeitung, Passwortänderungen, Zwei-Faktor-Authentifizierung und Kontolöschung sind im Demo-Modus deaktiviert."
+    },
+    "sharedAccessCard": {
+      "title": "Gemeinsamer Zugriff",
+      "description": "Einer anderen Person gezielten Zugriff auf bestimmte Konten gewähren."
+    },
+    "emergencyAccessCard": {
+      "title": "Notfallzugang",
+      "description": "Legen Sie Kontakte fest, die automatisch vollen Zugriff auf Ihr Konto erhalten, wenn Sie sich längere Zeit nicht anmelden."
+    },
+    "aiSettingsCard": {
+      "title": "KI-Einstellungen",
+      "description": "KI-Anbieter konfigurieren, API-Schlüssel verwalten und Nutzungsstatistiken einsehen."
+    },
+    "delegateSecurityError": "Ihre Sicherheitseinstellungen konnten nicht geladen werden."
+  },
+  "aiSettings": {
+    "backLink": "Zurück zu den Einstellungen",
+    "title": "KI-Einstellungen",
+    "subtitle": "KI-Anbieter für intelligente Finanzfunktionen konfigurieren",
+    "demoRestricted": {
+      "heading": "Im Demo-Modus eingeschränkt",
+      "body": "Die KI-Anbieterkonfiguration ist im Demo-Modus deaktiviert."
+    }
+  },
+  "sharedAccessPage": {
+    "backLink": "Zurück zu den Einstellungen",
+    "title": "Gemeinsamer Zugriff",
+    "subtitle": "Einer anderen Person gezielten Zugriff auf bestimmte Konten gewähren",
+    "demoRestricted": {
+      "heading": "Im Demo-Modus eingeschränkt",
+      "body": "Delegiertenverwaltung ist im Demo-Modus deaktiviert."
+    }
+  },
+  "emergencyAccess": {
+    "backLink": "Zurück zu den Einstellungen",
+    "title": "Notfallzugang",
+    "subtitle": "Legen Sie Kontakte fest, die automatisch vollen Zugriff auf Ihr Konto erhalten, wenn Sie sich längere Zeit nicht anmelden",
+    "delegateRestricted": "Der Notfallzugang kann nur vom Kontoinhaber konfiguriert werden.",
+    "demoRestricted": "Der Notfallzugang ist im Demo-Modus deaktiviert.",
+    "emailNotConfigured": {
+      "heading": "E-Mail ist nicht konfiguriert",
+      "body": "Der Notfallzugang ist auf E-Mail-Zustellung angewiesen. Bitten Sie Ihren Administrator, die SMTP-Umgebungsvariablen (SMTP_HOST, SMTP_USER, SMTP_PASSWORD) zu konfigurieren, und versuchen Sie es erneut."
+    },
+    "alreadyGranted": {
+      "heading": "Notfallzugang bereits gewährt",
+      "description": "Ihre festgelegten Kontakte haben Magic Links erhalten, um das Konto zu übernehmen. Falls dies unbeabsichtigt war, löschen Sie den gewährten Status unten, um ausstehende Links ungültig zu machen.",
+      "clearButton": "Gewährten Status löschen"
+    },
+    "loadError": "Einstellungen für den Notfallzugang konnten nicht geladen werden.",
+    "settings": {
+      "heading": "Einstellungen",
+      "enableLabel": "Notfallzugang aktivieren",
+      "grantAfterDaysLabel": "Inaktivitätstage bis zur Gewährung des Zugangs",
+      "reminderAfterDaysLabel": "Inaktivitätstage bis zu Erinnerungs-E-Mails",
+      "saveButton": "Einstellungen speichern",
+      "toasts": {
+        "saved": "Einstellungen für den Notfallzugang gespeichert"
+      }
+    },
+    "message": {
+      "heading": "Nachricht an Ihre Kontakte",
+      "description": "Verschlüsselt gespeichert. Zum Anzeigen oder Bearbeiten ist eine erneute Identitätsverifizierung erforderlich.",
+      "unlockTimer": "Entsperrt für {mins}:{secs}",
+      "messageSet": "Nachricht festgelegt",
+      "charCount": "({count} Zeichen",
+      "updatedAt": ", aktualisiert {timestamp}",
+      "noMessage": "Keine Nachricht festgelegt",
+      "revealButton": "Nachricht anzeigen",
+      "editButton": "Nachricht bearbeiten",
+      "addButton": "Nachricht hinzufügen",
+      "emptyMessage": "(leer)",
+      "lockNowButton": "Jetzt sperren",
+      "editMessageButton": "Bearbeiten",
+      "messagePlaceholder": "Notizen, Anweisungen, Standorte wichtiger Dokumente...",
+      "maxCharsNote": "Maximal 4000 Zeichen. Verschlüsselt gespeichert.",
+      "cancelButton": "Abbrechen",
+      "saveButton": "Nachricht speichern",
+      "toasts": {
+        "saved": "Nachricht gespeichert",
+        "verifyAgain": "Verifizierung abgelaufen -- bitte erneut verifizieren, um zu speichern"
+      }
+    },
+    "contacts": {
+      "heading": "Notfallkontakte",
+      "description": "Jeder Kontakt erhält bei Gewährung des Zugangs einen Magic Link per E-Mail. Damit kann ein neues Passwort festgelegt und das Konto übernommen werden. Der erste Kontakt, der den Link einlöst, gewinnt.",
+      "addButton": "Kontakt hinzufügen",
+      "noContacts": "Noch keine Kontakte.",
+      "editButton": "Bearbeiten",
+      "removeButton": "Entfernen",
+      "contactModal": {
+        "addTitle": "Notfallkontakt hinzufügen",
+        "editTitle": "Kontakt bearbeiten",
+        "firstNameLabel": "Vorname",
+        "emailLabel": "E-Mail",
+        "addButton": "Kontakt hinzufügen",
+        "saveButton": "Änderungen speichern"
+      },
+      "removeDialog": {
+        "title": "Kontakt entfernen",
+        "message": "Dieser Kontakt erhält keinen Notfallzugang mehr. Sie können ihn später wieder hinzufügen.",
+        "removingButton": "Wird entfernt...",
+        "removeButton": "Entfernen"
+      },
+      "toasts": {
+        "added": "Kontakt hinzugefügt",
+        "updated": "Kontakt aktualisiert",
+        "removed": "Kontakt entfernt"
+      }
+    },
+    "status": {
+      "heading": "Status",
+      "lastAccess": "Letzter Zugriff: ",
+      "lastReminderSent": "Letzte Erinnerung gesendet: ",
+      "grantStatus": "Gewährungsstatus: ",
+      "unknown": "unbekannt",
+      "never": "nie",
+      "daysAgo": "Vor {count} Tag{plural}",
+      "grantedOn": "gewährt am {timestamp}",
+      "notYetGranted": "noch nicht gewährt",
+      "timerNote": "Der Timer wird automatisch zurückgesetzt, sobald Sie die App verwenden -- Anmelden, eine Seite aufrufen, eine Buchung erfassen oder eine andere authentifizierte Aktion."
+    },
+    "resetConfirm": {
+      "title": "Gewährten Status löschen",
+      "message": "Dadurch werden ausstehende Magic Links ungültig, der Erinnerungsrhythmus kann neu beginnen, und die Gewährungskaskade kann nach einer weiteren Inaktivitätsperiode erneut ausgelöst werden.",
+      "clearingButton": "Wird gelöscht...",
+      "clearButton": "Löschen",
+      "toasts": {
+        "cleared": "Gewährter Status gelöscht"
+      }
+    },
+    "stepUp": {
+      "reason": "Verifizieren Sie Ihre Identität erneut, um Ihre Notfallzugang-Nachricht anzuzeigen oder zu bearbeiten."
+    }
+  },
+  "aiProviders": {
+    "heading": "KI-Anbieter",
+    "addButton": "Anbieter hinzufügen",
+    "encryptionWarning": "AI_ENCRYPTION_KEY ist nicht konfiguriert. Sie können Ollama (lokal, kein API-Schlüssel erforderlich) verwenden, aber Cloud-Anbieter benötigen Verschlüsselung zur sicheren Speicherung von API-Schlüsseln.",
+    "systemDefault": {
+      "heading": "System-Standard-KI-Anbieter verfügbar",
+      "description": "Ein zentraler KI-Anbieter wurde von Ihrem Administrator konfiguriert",
+      "usedAutomatically": "Er wird automatisch verwendet, da Sie keine persönlichen Anbieter konfiguriert haben.",
+      "personalPriority": "Ihre persönlichen Anbieter haben Vorrang vor dem Systemstandard."
+    },
+    "noProviders": {
+      "withSystemDefault": "Keine persönlichen KI-Anbieter konfiguriert. Der System-Standard-Anbieter wird verwendet.",
+      "withoutSystemDefault": "Keine KI-Anbieter konfiguriert. Fügen Sie einen Anbieter hinzu, um KI-Funktionen zu aktivieren."
+    },
+    "providerCard": {
+      "activeBadge": "Aktiv",
+      "inactiveBadge": "Inaktiv",
+      "priorityLabel": "Priorität: {n}",
+      "modelLabel": "Modell: {model}",
+      "keyLabel": "Schlüssel: {key}",
+      "urlLabel": "URL: {url}",
+      "costLabel": "Kosten/1M ({currency}): {input} ein / {output} aus",
+      "disableButton": "Deaktivieren",
+      "enableButton": "Aktivieren",
+      "editButton": "Bearbeiten",
+      "deleteButton": "Löschen"
+    },
+    "configForm": {
+      "addTitle": "KI-Anbieter hinzufügen",
+      "editTitle": "Anbieter bearbeiten",
+      "providerLabel": "Anbieter",
+      "displayNameLabel": "Anzeigename",
+      "modelLabel": "Modell",
+      "testButton": "Testen",
+      "testingButton": "Wird getestet...",
+      "ollamaCloudNote": "Modellnamen müssen das Suffix -cloud enthalten (z. B. gpt-oss:20b-cloud).",
+      "apiKeyLabel": "API-Schlüssel",
+      "baseUrlLabel": "Basis-URL",
+      "priorityLabel": "Priorität",
+      "priorityHelp": "Niedrigere Zahl = höhere Priorität. Wird für die Fallback-Reihenfolge verwendet.",
+      "costRatesHeading": "Kostensätze (optional)",
+      "costRatesHelp": "Geben Sie die veröffentlichten Sätze Ihres Anbieters pro 1.000.000 Token ein, um geschätzte Kosten im Nutzungs-Dashboard anzuzeigen. Leer lassen, um Kostenschätzungen zu überspringen.",
+      "inputCostLabel": "Eingabekosten / 1M Token",
+      "outputCostLabel": "Ausgabekosten / 1M Token",
+      "rateCurrencyLabel": "Kostenwährung",
+      "rateCurrencyHelp": "Falls diese von Ihrer Heimwährung abweicht, kann das Nutzungs-Dashboard Kosten anhand Ihrer gespeicherten Wechselkurse umrechnen.",
+      "saveButton": "Änderungen speichern",
+      "addProviderButton": "Anbieter hinzufügen",
+      "modelPlaceholder": "Modellname eingeben",
+      "testModelAria": "Modell testen",
+      "apiKeyPlaceholder": "API-Schlüssel eingeben",
+      "saveFailed": "Konfiguration konnte nicht gespeichert werden",
+      "inputCostPlaceholder": "z. B. 3.00",
+      "outputCostPlaceholder": "z. B. 15.00",
+      "toasts": {
+        "notReachable": "Der Anbieter konnte nicht erreicht werden.",
+        "modelUnavailable": "Modell \"{model}\" ist bei diesem Anbieter nicht verfügbar.",
+        "modelReady": "Modell \"{model}\" ist bereit.",
+        "success": "Verbindung erfolgreich.",
+        "testFailed": "Modelltest fehlgeschlagen"
+      },
+      "costCurrencies": {
+        "USD": "USD - US Dollar",
+        "EUR": "EUR - Euro",
+        "GBP": "GBP - British Pound",
+        "CAD": "CAD - Canadian Dollar",
+        "AUD": "AUD - Australian Dollar",
+        "JPY": "JPY - Japanese Yen",
+        "CNY": "CNY - Chinese Yuan",
+        "INR": "INR - Indian Rupee"
+      },
+      "validation": {
+        "displayNameMax": "Der Anzeigename darf höchstens 100 Zeichen lang sein",
+        "mustBeNumber": "Muss eine Zahl sein",
+        "currencyCode": "Muss ein 3-buchstabiger Währungscode sein"
+      }
+    },
+    "testButton": {
+      "testLabel": "Testen",
+      "connectionFailed": "Verbindung fehlgeschlagen",
+      "modelUnavailable": "Modell \"{model}\" ist bei diesem Anbieter nicht verfügbar.",
+      "successWithModel": "Verbindung erfolgreich. Modell \"{model}\" ist bereit.",
+      "success": "Verbindung erfolgreich",
+      "testFailed": "Verbindungstest fehlgeschlagen"
+    },
+    "toasts": {
+      "added": "Anbieter hinzugefügt",
+      "updated": "Anbieter aktualisiert",
+      "removed": "Anbieter entfernt",
+      "modelReady": "Modell \"{model}\" ist bereit.",
+      "notReachable": "Gespeichert, aber der Anbieter konnte nicht erreicht werden. Bitte URL/API-Schlüssel überprüfen.",
+      "modelUnavailable": "Gespeichert, aber Modell \"{model}\" ist bei diesem Anbieter nicht verfügbar.",
+      "deleteFailed": "Anbieter konnte nicht gelöscht werden",
+      "updateFailed": "Anbieter konnte nicht aktualisiert werden"
+    }
+  },
+  "usage": {
+    "heading": "Nutzung",
+    "totalRequests": "Anfragen gesamt",
+    "inputTokens": "Eingabe-Token",
+    "outputTokens": "Ausgabe-Token",
+    "estCost": "Gesch. Kosten",
+    "setRatesToEnable": "Sätze bei einem Anbieter festlegen, um zu aktivieren",
+    "inHomeCurrency": "In {currency}",
+    "inProviderCurrency": "In Anbieterwährung",
+    "byProvider": {
+      "heading": "Nach Anbieter",
+      "provider": "Anbieter",
+      "requests": "Anfragen",
+      "inputTokens": "Eingabe-Token",
+      "outputTokens": "Ausgabe-Token",
+      "estCost": "Gesch. Kosten"
+    },
+    "recentActivity": {
+      "heading": "Letzte Aktivität",
+      "date": "Datum",
+      "provider": "Anbieter",
+      "feature": "Funktion",
+      "tokens": "Token",
+      "duration": "Dauer",
+      "estCost": "Gesch. Kosten"
+    },
+    "noUsage": "Noch keine Nutzungsdaten. Die Nutzung wird hier angezeigt, sobald Sie KI-Funktionen verwenden.",
+    "periods": {
+      "d7": "7 Tage",
+      "d30": "30 Tage",
+      "d90": "90 Tage",
+      "all": "Gesamter Zeitraum"
+    },
+    "estCostTooltip": "Geschätzt anhand der Kostensätze, die Sie für jeden Anbieter konfiguriert haben. Aktivitäten ohne passenden Satz werden nicht berücksichtigt."
+  }
+}

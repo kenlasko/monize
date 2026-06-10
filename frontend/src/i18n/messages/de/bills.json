@@ -1,0 +1,64 @@
+{
+  "page": {
+    "title": "Rechnungen & Einzahlungen",
+    "subtitle": "Verwalten Sie Ihre wiederkehrenden Buchungen und terminierten Zahlungen",
+    "newButton": "+ Neuer Zeitplan",
+    "summaryActiveBills": "Aktive Rechnungen",
+    "summaryActiveDeposits": "Aktive Einzahlungen",
+    "summaryMonthlyNet": "Monatliches Netto",
+    "summaryDueNow": "Jetzt fällig",
+    "loadingText": "Terminierte Buchungen werden geladen...",
+    "chartUnavailable": "Diagramm vorübergehend nicht verfügbar"
+  },
+  "viewTabs": {
+    "list": "Liste",
+    "calendar": "Kalender",
+    "filterAll": "Alle ({count})",
+    "filterBills": "Rechnungen ({count})",
+    "filterDeposits": "Einzahlungen ({count})",
+    "todayButton": "Heute"
+  },
+  "form": {
+    "titleNew": "Neue terminierte Buchung",
+    "titleEdit": "Terminierte Buchung bearbeiten"
+  },
+  "overrideConfirm": {
+    "title": "Vorhandene Überschreibungen gefunden",
+    "message": "Diese terminierte Buchung hat {count, plural, one {# individuelles Vorkommen} other {# individuelle Vorkommen}} mit benutzerdefinierten Änderungen.",
+    "question": "Was soll mit diesen Änderungen geschehen, wenn Sie die Basisvorlage aktualisieren?",
+    "keepButton": "Änderungen beibehalten",
+    "deleteButton": "Alle Änderungen löschen"
+  },
+  "forecast": {
+    "title": "Cashflow-Prognose",
+    "scheduledCount": "{count, plural, one {# terminierte Buchung} other {# terminierte Buchungen}} in der Prognose",
+    "tooltipTransactions": "Buchungen:",
+    "tooltipMore": "+{count} weitere",
+    "noData": "Keine Daten zum Anzeigen",
+    "noAccounts": "Keine Konten gefunden",
+    "noScheduled": "Keine terminierten Buchungen",
+    "noMatchingAccount": "Wählen Sie ein Konto mit terminierten Buchungen aus",
+    "noUpcoming": "Keine bevorstehenden Buchungen in diesem Zeitraum – aktueller Saldo wird angezeigt",
+    "summaryStarting": "Start",
+    "summaryEnding": "Ende",
+    "summaryLowest": "Niedrigster",
+    "summaryMinBalance": "Mindestsaldo",
+    "allAccounts": "Alle Konten"
+  },
+  "calendar": {
+    "days": {
+      "sun": "So",
+      "mon": "Mo",
+      "tue": "Di",
+      "wed": "Mi",
+      "thu": "Do",
+      "fri": "Fr",
+      "sat": "Sa"
+    },
+    "more": "+{count} weitere"
+  },
+  "toasts": {
+    "overridesDeleted": "Überschreibungen gelöscht",
+    "notFound": "Terminierte Zahlung nicht gefunden"
+  }
+}

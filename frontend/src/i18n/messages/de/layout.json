@@ -1,0 +1,70 @@
+{
+  "demoBanner": {
+    "label": "Demo-Modus",
+    "message": "Alle Daten werden täglich um 4:00 Uhr UTC zurückgesetzt. Erkunden Sie alles!"
+  },
+  "delegationBanner": {
+    "viewing": "Anzeige:",
+    "sharedAccount": "Geteiltes Konto",
+    "yourAccount": "Ihr Konto",
+    "switchAccountLabel": "Konto wechseln",
+    "selfSuffix": "{label} (Sie)",
+    "error2fa": "Dieses Konto erfordert Zwei-Faktor-Authentifizierung. Richten Sie 2FA in den Einstellungen ein, bevor Sie wechseln.",
+    "errorSwitch": "Kontowechsel nicht möglich"
+  },
+  "backendDownBanner": {
+    "connectionBlockedLabel": "Verbindung blockiert",
+    "connectionBlockedDetail": "Sicherheits-Header blockieren Anfragen über einfaches HTTP.",
+    "connectionLostLabel": "Verbindung unterbrochen",
+    "connectionLostDetail": "Der Server ist nicht erreichbar. Automatischer Neuversuch...",
+    "httpsHint": "Setzen Sie <code>DISABLE_HTTPS_HEADERS=true</code> in Ihrer Umgebung oder greifen Sie über HTTPS auf die Seite zu."
+  },
+  "httpWarningBanner": {
+    "label": "HTTPS erforderlich",
+    "detail": "Sicherheits-Header sind aktiv, aber auf diese Seite wird über einfaches HTTP zugegriffen. API-Anfragen können fehlschlagen.",
+    "httpsHint": "Setzen Sie <code>DISABLE_HTTPS_HEADERS=true</code> in Ihrer Umgebung oder greifen Sie über HTTPS auf die Seite zu.",
+    "dismiss": "Schließen",
+    "dismissAriaLabel": "HTTPS-Warnung schließen"
+  },
+  "updateBanner": {
+    "availableWithVersion": "Monize v{version} ist verfügbar",
+    "availableGeneric": "Eine neue Version von Monize ist verfügbar",
+    "runningVersion": "(aktuelle Version: v{version})",
+    "releaseNotes": "Versionshinweise",
+    "dismiss": "Schließen",
+    "dismissAriaLabel": "Update-Benachrichtigung schließen"
+  },
+  "actionHistory": {
+    "title": "Aktionsverlauf",
+    "buttonAriaLabel": "Aktionsverlauf",
+    "closeAriaLabel": "Schließen",
+    "undo": "Rückgängig",
+    "redo": "Wiederholen",
+    "noRecentActions": "Keine kürzlichen Aktionen",
+    "undoneLabel": "Rückgängig gemacht",
+    "nothingToUndo": "Nichts rückgängig zu machen",
+    "nothingToRedo": "Nichts zu wiederholen",
+    "cannotUndoDefault": "Diese Aktion kann nicht rückgängig gemacht werden",
+    "cannotRedoDefault": "Diese Aktion kann nicht wiederholt werden",
+    "undoFailed": "Rückgängig machen fehlgeschlagen",
+    "redoFailed": "Wiederholen fehlgeschlagen",
+    "entityLabels": {
+      "transaction": "Buchung",
+      "transfer": "Überweisung",
+      "investment_transaction": "Investition",
+      "bulk_transaction": "Sammelvorgang",
+      "category": "Kategorie",
+      "payee": "Zahlungsempfänger",
+      "tag": "Etikett",
+      "account": "Konto",
+      "scheduled_transaction": "Terminiert",
+      "security": "Wertpapier",
+      "budget": "Budget",
+      "custom_report": "Bericht"
+    }
+  },
+  "pageHeader": {
+    "helpAriaLabel": "Monize-Wiki für Hilfe zu diesem Bereich öffnen",
+    "helpTooltip": "Monize-Wiki für Hilfe zu diesem Bereich öffnen"
+  }
+}

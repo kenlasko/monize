@@ -1,0 +1,80 @@
+{
+  "page": {
+    "title": "Categorias",
+    "subtitle": "Organize as suas transações com categorias personalizadas",
+    "newButton": "+ Nova categoria",
+    "searchPlaceholder": "Pesquisar categorias...",
+    "filterAll": "Todas ({count})",
+    "filterExpenses": "Despesas ({count})",
+    "filterIncome": "Receitas ({count})",
+    "modalTitleNew": "Nova categoria",
+    "modalTitleEdit": "Editar categoria",
+    "countSingle": "1 categoria",
+    "countPlural": "{count} categorias",
+    "loadingText": "A carregar categorias...",
+    "summaryTotal": "Total de categorias",
+    "summaryIncome": "Categorias de receita",
+    "summaryExpense": "Categorias de despesa",
+    "summaryTopLevel": "Nível superior"
+  },
+  "empty": {
+    "heading": "Ainda não há categorias",
+    "description": "As categorias ajudam a organizar as suas transações. Comece por importar o conjunto predefinido de categorias ou crie as suas próprias.",
+    "importButton": "Importar categorias predefinidas",
+    "createButton": "Criar as suas próprias",
+    "hint": "O conjunto predefinido inclui categorias comuns de receita e despesa com subcategorias"
+  },
+  "toasts": {
+    "created": "Categoria criada com sucesso",
+    "updated": "Categoria atualizada com sucesso",
+    "deleted": "Categoria eliminada com sucesso",
+    "cannotDeleteSystem": "As categorias do sistema não podem ser eliminadas",
+    "importSuccess": "{count} categorias importadas com sucesso"
+  },
+  "form": {
+    "nameLabel": "Nome da categoria",
+    "parentLabel": "Categoria-mãe",
+    "noParent": "Sem categoria-mãe (nível superior)",
+    "typeLabel": "Tipo",
+    "typeExpense": "Despesa",
+    "typeIncome": "Receita",
+    "typeInherited": "Tipo herdado da categoria-mãe",
+    "colourLabel": "Cor",
+    "colourInherit": "Herdar da categoria-mãe",
+    "colourNone": "Sem cor",
+    "colourInheritedFrom": "Cor herdada da categoria-mãe ({name})",
+    "descriptionLabel": "Descrição (opcional)",
+    "submitCreate": "Criar categoria",
+    "submitUpdate": "Atualizar categoria"
+  },
+  "list": {
+    "emptyHeading": "Sem categorias",
+    "emptyDescription": "Comece por criar uma nova categoria.",
+    "colName": "Nome",
+    "colType": "Tipo",
+    "colCount": "Contagem",
+    "colDescription": "Descrição",
+    "colActions": "Ações",
+    "badgeIncome": "Receita",
+    "badgeExpense": "Despesa",
+    "systemBadge": "(Sistema)",
+    "inheritedColorTitle": "Herdada da categoria-mãe",
+    "viewTransactionsTitle": "Ver transações nesta categoria",
+    "densityToggleTitle": "Alternar densidade de linha",
+    "densityNormal": "Normal",
+    "densityCompact": "Compacto",
+    "densityDense": "Denso"
+  },
+  "deleteDialog": {
+    "title": "Eliminar \"{name}\"?",
+    "checkingUsage": "A verificar utilização...",
+    "usedBy": "Esta categoria é utilizada por {count, plural, one {# item} other {# itens}} (transações e/ou faturas e depósitos agendados).",
+    "reassignLabel": "Reatribuir a:",
+    "leaveUncategorized": "Deixar sem categoria",
+    "safeToDelete": "Esta categoria não está em uso. Pode ser eliminada com segurança.",
+    "cannotUndo": "Esta ação não pode ser desfeita."
+  },
+  "validation": {
+    "nameRequired": "O nome da categoria é obrigatório"
+  }
+}

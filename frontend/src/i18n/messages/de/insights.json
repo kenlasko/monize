@@ -1,0 +1,44 @@
+{
+  "page": {
+    "title": "Ausgaben-Insights",
+    "subtitle": "KI-gestützte Analyse Ihrer Ausgabenmuster und Anomalien"
+  },
+  "list": {
+    "lastUpdated": "Zuletzt aktualisiert: {date} {time}",
+    "refreshButton": "Insights aktualisieren",
+    "generating": "Wird generiert...",
+    "allTypes": "Alle Typen",
+    "allSeverities": "Alle Schweregrade",
+    "showDismissed": "Ausgeblendete anzeigen",
+    "emptyNoInsights": "Noch keine Insights generiert. Klicken Sie auf \"Insights aktualisieren\", um Ihre Ausgabenmuster zu analysieren.",
+    "emptyFiltered": "Keine Insights entsprechen Ihren aktuellen Filtern.",
+    "generateButton": "Insights generieren",
+    "alertCount": "{count, plural, one {# Alarm} other {# Alarme}}",
+    "warningCount": "{count, plural, one {# Warnung} other {# Warnungen}}",
+    "errorLoadFailed": "Insights konnten nicht geladen werden. Bitte versuchen Sie es erneut.",
+    "errorGenerateFailed": "Insights konnten nicht generiert werden. Stellen Sie sicher, dass ein KI-Anbieter konfiguriert ist.",
+    "errorTimeout": "Die Generierung von Insights dauert länger als erwartet. Bitte warten Sie oder laden Sie die Seite neu."
+  },
+  "card": {
+    "dismiss": "Ausblenden",
+    "dismissing": "Wird ausgeblendet..."
+  },
+  "notConfigured": {
+    "heading": "KI nicht konfiguriert",
+    "message": "Es ist kein KI-Anbieter konfiguriert. Um Ausgaben-Insights zu nutzen, {link} Sie bitte in Ihren Einstellungen.",
+    "linkText": "konfigurieren Sie einen KI-Anbieter"
+  },
+  "insightTypes": {
+    "anomaly": "Anomalie",
+    "trend": "Trend",
+    "subscription": "Abonnement",
+    "budget_pace": "Budget-Tempo",
+    "seasonal": "Saisonal",
+    "new_recurring": "Neu wiederkehrend"
+  },
+  "insightSeverities": {
+    "info": "Info",
+    "warning": "Warnung",
+    "alert": "Alarm"
+  }
+}

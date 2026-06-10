@@ -1,0 +1,53 @@
+{
+  "page": {
+    "title": "Assistente de IA",
+    "subtitle": "Faça perguntas sobre as suas finanças em linguagem natural"
+  },
+  "chat": {
+    "conversationSaved": "Conversa guardada no seu browser",
+    "clearConversation": "Limpar conversa",
+    "inputPlaceholder": "Pergunte sobre as suas finanças...",
+    "inputPlaceholderDisabled": "Fornecedor de IA não configurado",
+    "keyboardHint": "Pressione Enter para enviar, Shift+Enter para nova linha",
+    "cancelTitle": "Cancelar",
+    "sendTitle": "Enviar"
+  },
+  "notConfigured": {
+    "heading": "IA não configurada",
+    "message": "Não está configurado nenhum fornecedor de IA. Para utilizar o Assistente de IA, {link} nas definições.",
+    "linkText": "configure um fornecedor de IA"
+  },
+  "suggestedQueries": {
+    "heading": "Pergunte sobre as suas finanças",
+    "description": "Posso responder a perguntas sobre os seus gastos, receitas, saldos de conta, valor líquido e muito mais.",
+    "monthlySpendingLabel": "Gastos mensais",
+    "monthlySpendingQuery": "Quanto gastei no mês passado?",
+    "topCategoriesLabel": "Principais categorias",
+    "topCategoriesQuery": "Quais são as minhas 5 principais categorias de despesa este ano?",
+    "accountBalancesLabel": "Saldos de conta",
+    "accountBalancesQuery": "Quais são os saldos atuais das minhas contas?",
+    "compareMonthsLabel": "Comparar meses",
+    "compareMonthsQuery": "Compare os meus gastos deste mês com o mês passado",
+    "netWorthTrendLabel": "Tendência do valor líquido",
+    "netWorthTrendQuery": "Mostre a tendência do meu valor líquido nos últimos 12 meses",
+    "savingsRateLabel": "Taxa de poupança",
+    "savingsRateQuery": "Quanto poupei este ano em comparação com as minhas receitas?"
+  },
+  "toolDetails": {
+    "inputLabel": "Entrada",
+    "resultLabel": "Resultado",
+    "toolFailedAriaLabel": "Ferramenta falhou",
+    "toolSucceededAriaLabel": "Ferramenta bem-sucedida"
+  },
+  "table": {
+    "downloadTitle": "Transferir tabela como CSV",
+    "downloadAriaLabel": "Transferir tabela como CSV",
+    "noDataError": "Sem dados de tabela para exportar"
+  },
+  "chart": {
+    "downloadTitle": "Transferir gráfico como PNG",
+    "downloadAriaLabel": "Transferir gráfico como PNG",
+    "captureError": "Não foi possível capturar a imagem do gráfico",
+    "downloadError": "Falha ao transferir o gráfico"
+  }
+}

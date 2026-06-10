@@ -1,0 +1,58 @@
+{
+  "title": "Konto abgleichen",
+  "subtitle": "Gleichen Sie Ihre Aufzeichnungen mit Ihrem Kontoauszug ab",
+  "subtitleActive": "Abgleich: {name}",
+  "setup": {
+    "title": "Abgleich starten",
+    "intro": "Gleichen Sie Ihr Konto mit einem Kontoauszug ab, um sicherzustellen, dass Ihre Aufzeichnungen übereinstimmen.",
+    "accountLabel": "Konto",
+    "accountPlaceholder": "Konto auswählen...",
+    "statementDateLabel": "Kontoauszugsdatum",
+    "statementBalanceLabel": "Abschlusssaldo des Kontoauszugs",
+    "start": "Abgleich starten"
+  },
+  "summary": {
+    "statementBalance": "Kontoauszugssaldo",
+    "reconciledBalance": "Abgeglichener Saldo",
+    "selected": "Ausgewählt ({count})",
+    "difference": "Differenz"
+  },
+  "list": {
+    "heading": "Nicht abgeglichene Buchungen ({count})",
+    "selectAll": "Alle auswählen",
+    "selectNone": "Auswahl aufheben",
+    "empty": "Keine nicht abgeglichenen Buchungen für diesen Zeitraum gefunden.",
+    "colSelect": "Auswählen",
+    "colDate": "Datum",
+    "colPayee": "Zahlungsempfänger",
+    "colCategory": "Kategorie",
+    "colAmount": "Betrag",
+    "colStatus": "Status",
+    "finish": "Abgleich abschließen"
+  },
+  "status": {
+    "cleared": "Bestätigt",
+    "unreconciled": "Nicht abgeglichen",
+    "void": "Ungültig",
+    "reconciled": "Abgeglichen"
+  },
+  "complete": {
+    "title": "Abgleich abgeschlossen",
+    "message": "Ihr Konto wurde erfolgreich zum {date} abgeglichen.",
+    "existingPayment": "Dieses Konto hat eine terminierte Zahlung, <b>{name}</b>. Möchten Sie die nächste Instanz auf den abgeglichenen Saldo von <b>{amount}</b> aktualisieren?",
+    "updatePayment": "Nächste Zahlung aktualisieren",
+    "noPayment": "Für dieses Konto wurde keine terminierte Zahlung gefunden. Möchten Sie eine für den abgeglichenen Saldo von <b>{amount}</b> erstellen?",
+    "createPayment": "Terminierte Zahlung erstellen",
+    "backToAccounts": "Zurück zu den Konten",
+    "reconcileAnother": "Weiteres Konto abgleichen"
+  },
+  "toasts": {
+    "loadAccountsFailed": "Konten konnten nicht geladen werden",
+    "fillAllFields": "Bitte füllen Sie alle Felder aus",
+    "loadDataFailed": "Abgleichdaten konnten nicht geladen werden",
+    "differenceRequired": "Die Differenz muss {amount} betragen, um den Abgleich abzuschließen",
+    "noneSelected": "Keine Buchungen für den Abgleich ausgewählt",
+    "success": "{count, plural, one {# Buchung erfolgreich abgeglichen} other {# Buchungen erfolgreich abgeglichen}}",
+    "reconcileFailed": "Buchungen konnten nicht abgeglichen werden"
+  }
+}

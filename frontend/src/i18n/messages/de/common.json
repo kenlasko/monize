@@ -1,0 +1,148 @@
+{
+  "save": "Speichern",
+  "cancel": "Abbrechen",
+  "delete": "Löschen",
+  "edit": "Bearbeiten",
+  "close": "Schließen",
+  "loading": "Wird geladen...",
+  "pagination": {
+    "showing": "Angezeigt",
+    "of": "von",
+    "firstPage": "Erste Seite",
+    "lastPage": "Letzte Seite",
+    "previousPage": "Vorherige Seite",
+    "nextPage": "Nächste Seite",
+    "back10Pages": "10 Seiten zurück",
+    "forward10Pages": "10 Seiten vor",
+    "enterPageNumber": "Seitennummer eingeben"
+  },
+  "confirmDialog": {
+    "confirm": "Bestätigen"
+  },
+  "unsavedChanges": {
+    "title": "Nicht gespeicherte Änderungen",
+    "message": "Sie haben nicht gespeicherte Änderungen. Was möchten Sie tun?",
+    "discard": "Verwerfen"
+  },
+  "exportDropdown": {
+    "export": "Exportieren",
+    "exporting": "Wird exportiert...",
+    "exportPdf": "PDF exportieren",
+    "exportReport": "Bericht exportieren",
+    "failedPdf": "PDF-Export fehlgeschlagen. Bitte versuchen Sie es erneut."
+  },
+  "dateRange": {
+    "custom": "Benutzerdefiniert",
+    "startDate": "Startdatum",
+    "endDate": "Enddatum"
+  },
+  "colorPicker": {
+    "custom": "Benutzerdefiniert:",
+    "apply": "Anwenden"
+  },
+  "chartDownload": {
+    "downloadAsPng": "{filename} als PNG herunterladen",
+    "unableToCapture": "Diagrammbild konnte nicht erfasst werden",
+    "failedToDownload": "Diagramm konnte nicht heruntergeladen werden"
+  },
+  "chartViewToggle": {
+    "pieChart": "Kreisdiagramm",
+    "barChart": "Balkendiagramm",
+    "lineChart": "Liniendiagramm",
+    "areaChart": "Flächendiagramm",
+    "table": "Tabelle"
+  },
+  "formActions": {
+    "cancel": "Abbrechen",
+    "save": "Speichern"
+  },
+  "themeToggle": {
+    "light": "Hell",
+    "dark": "Dunkel",
+    "system": "System",
+    "title": "Design: {label}. Klicken zum Ändern."
+  },
+  "errorBoundary": {
+    "defaultMessage": "Beim Rendern dieser Komponente ist ein Fehler aufgetreten."
+  },
+  "calendar": {
+    "clear": "Löschen",
+    "today": "Heute"
+  },
+  "multiSelect": {
+    "search": "Suchen...",
+    "selectAll": "Alle auswählen",
+    "clear": "Löschen",
+    "noOptions": "Keine Optionen gefunden"
+  },
+  "combobox": {
+    "createOption": "\"{value}\" erstellen"
+  },
+  "passwordInput": {
+    "show": "Eingabe anzeigen",
+    "hide": "Eingabe ausblenden"
+  },
+  "currencyInput": {
+    "openCalculator": "Rechner öffnen",
+    "calculator": "Rechner"
+  },
+  "dateInput": {
+    "shortcutsTitle": "Tastaturkürzel",
+    "today": "Heute",
+    "firstDayOfYear": "Erster Tag des Jahres",
+    "lastDayOfYear": "Letzter Tag des Jahres",
+    "firstDayOfMonth": "Erster Tag des Monats",
+    "lastDayOfMonth": "Letzter Tag des Monats",
+    "nextDay": "Nächster Tag",
+    "previousDay": "Vorheriger Tag",
+    "nextMonth": "Nächster Monat",
+    "previousMonth": "Vorheriger Monat"
+  },
+  "accountTypes": {
+    "CHEQUING": "Girokonto",
+    "SAVINGS": "Sparkonto",
+    "CREDIT_CARD": "Kreditkarte",
+    "INVESTMENT": "Investmentkonto",
+    "LOAN": "Darlehen",
+    "MORTGAGE": "Hypothek",
+    "CASH": "Bargeld",
+    "LINE_OF_CREDIT": "Kreditlinie",
+    "ASSET": "Aktiva",
+    "OTHER": "Sonstiges"
+  },
+  "accountFilter": {
+    "allAccounts": "Alle Konten",
+    "allBut": "Alle außer {names}"
+  },
+  "passwordRequirements": "Das Passwort muss mindestens 12 Zeichen lang sein und einen Großbuchstaben, einen Kleinbuchstaben, eine Zahl und ein Sonderzeichen enthalten.",
+  "passwordValidation": {
+    "min": "Das Passwort muss mindestens 12 Zeichen lang sein",
+    "max": "Das Passwort darf höchstens 100 Zeichen lang sein",
+    "lowercase": "Muss einen Kleinbuchstaben enthalten",
+    "uppercase": "Muss einen Großbuchstaben enthalten",
+    "number": "Muss eine Zahl enthalten",
+    "special": "Muss ein Sonderzeichen enthalten"
+  },
+  "codeValidation": {
+    "length": "Der Code muss genau 6 Ziffern lang sein",
+    "digits": "Der Code muss 6 Ziffern haben"
+  },
+  "monthsShort": ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"],
+  "weekdaysShort": ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"],
+  "weekdaysMin": ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"],
+  "weekdaysNarrow": ["S", "M", "D", "M", "D", "F", "S"],
+  "dateFormat": {
+    "browserAuto": "Browser-Gebietsschema verwenden (automatisch)",
+    "custom": "Benutzerdefiniert..."
+  },
+  "emailInvalid": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+  "noSectionAccess": "Sie haben keinen Zugriff auf diesen Bereich.",
+  "undoRedo": {
+    "nothingToUndo": "Nichts rückgängig zu machen",
+    "cannotUndo": "Diese Aktion kann nicht rückgängig gemacht werden",
+    "undoFailed": "Rückgängig machen fehlgeschlagen",
+    "nothingToRedo": "Nichts zu wiederholen",
+    "cannotRedo": "Diese Aktion kann nicht wiederholt werden",
+    "redoFailed": "Wiederholen fehlgeschlagen"
+  }
+}

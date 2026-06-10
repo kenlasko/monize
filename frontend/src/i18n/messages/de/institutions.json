@@ -1,0 +1,91 @@
+{
+  "page": {
+    "title": "Finanzinstitute",
+    "subtitle": "Banken und Maklerhäuser, zu denen Ihre Konten gehören",
+    "newInstitution": "Neues Institut",
+    "loading": "Institute werden geladen...",
+    "searchPlaceholder": "Institute suchen...",
+    "modalTitleNew": "Neues Institut",
+    "modalTitleEdit": "Institut bearbeiten",
+    "summary": {
+      "total": "Institute gesamt",
+      "withLogo": "Mit Logo",
+      "linkedAccounts": "Verknüpfte Konten"
+    },
+    "toasts": {
+      "loadFailed": "Institute konnten nicht geladen werden",
+      "created": "Institut erstellt",
+      "updated": "Institut aktualisiert",
+      "createFailed": "Institut konnte nicht erstellt werden",
+      "updateFailed": "Institut konnte nicht aktualisiert werden"
+    }
+  },
+  "list": {
+    "empty": "Noch keine Institute. Erstellen Sie eines, um Ihre Konten zu gruppieren.",
+    "columns": {
+      "name": "Name",
+      "website": "Website",
+      "country": "Land",
+      "accounts": "Konten",
+      "actions": "Aktionen"
+    },
+    "accountCount": "{count, plural, =0 {Keine Konten} one {# Konto} other {# Konten}}",
+    "density": {
+      "title": "Zeilendichte umschalten",
+      "normal": "Normal",
+      "compact": "Kompakt",
+      "dense": "Dicht"
+    },
+    "statusFilter": {
+      "all": "Alle",
+      "active": "Aktiv",
+      "closed": "Geschlossen"
+    },
+    "actions": {
+      "manageAccounts": "Konten"
+    },
+    "deleteTitle": "Institut löschen",
+    "deleteMessage": "\"{name}\" löschen? Zugewiesene Konten werden nicht gelöscht, sondern nur die Zuweisung aufgehoben.",
+    "deleting": "Wird gelöscht...",
+    "deleted": "\"{name}\" gelöscht",
+    "deleteFailed": "Institut konnte nicht gelöscht werden"
+  },
+  "form": {
+    "nameLabel": "Name",
+    "websiteLabel": "Website",
+    "websitePlaceholder": "z. B. commerzbank.de",
+    "countryLabel": "Land (optional)",
+    "countryPlaceholder": "2-Buchstaben-Code, z. B. DE",
+    "logoHint": "Das Markenlogo wird automatisch von der Website abgerufen.",
+    "submitCreate": "Institut erstellen",
+    "submitUpdate": "Änderungen speichern"
+  },
+  "validation": {
+    "nameRequired": "Name ist erforderlich",
+    "websiteRequired": "Website ist erforderlich",
+    "websiteInvalid": "Geben Sie eine gültige Website ein (z. B. commerzbank.de)",
+    "countryInvalid": "Verwenden Sie einen 2-Buchstaben-Ländercode"
+  },
+  "accountsManager": {
+    "title": "Konten bei {name}",
+    "addLabel": "Konto hinzufügen",
+    "addPlaceholder": "Konto zum Hinzufügen auswählen...",
+    "noneToAdd": "Alle Ihre Konten sind bereits einem Institut zugewiesen.",
+    "loading": "Konten werden geladen...",
+    "empty": "Diesem Institut sind noch keine Konten zugewiesen.",
+    "noneMatch": "Keine Konten entsprechen dem ausgewählten Filter.",
+    "filter": {
+      "all": "Alle",
+      "active": "Aktiv",
+      "closed": "Geschlossen"
+    },
+    "remove": "Entfernen",
+    "viewTransactions": "Buchungen für dieses Konto anzeigen",
+    "added": "Konto hinzugefügt",
+    "removed": "Konto entfernt",
+    "addFailed": "Konto konnte nicht hinzugefügt werden",
+    "removeFailed": "Konto konnte nicht entfernt werden",
+    "loadFailed": "Konten konnten nicht geladen werden",
+    "done": "Fertig"
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "page": {
+    "title": "Instituições financeiras",
+    "subtitle": "Bancos e corretoras a que as suas contas pertencem",
+    "newInstitution": "Nova instituição",
+    "loading": "A carregar instituições...",
+    "searchPlaceholder": "Pesquisar instituições...",
+    "modalTitleNew": "Nova instituição",
+    "modalTitleEdit": "Editar instituição",
+    "summary": {
+      "total": "Total de instituições",
+      "withLogo": "Com logótipo",
+      "linkedAccounts": "Contas associadas"
+    },
+    "toasts": {
+      "loadFailed": "Falha ao carregar instituições",
+      "created": "Instituição criada",
+      "updated": "Instituição atualizada",
+      "createFailed": "Falha ao criar instituição",
+      "updateFailed": "Falha ao atualizar instituição"
+    }
+  },
+  "list": {
+    "empty": "Ainda não há instituições. Crie uma para começar a agrupar as suas contas.",
+    "columns": {
+      "name": "Nome",
+      "website": "Website",
+      "country": "País",
+      "accounts": "Contas",
+      "actions": "Ações"
+    },
+    "accountCount": "{count, plural, =0 {Sem contas} one {# conta} other {# contas}}",
+    "density": {
+      "title": "Alternar densidade de linha",
+      "normal": "Normal",
+      "compact": "Compacto",
+      "dense": "Denso"
+    },
+    "statusFilter": {
+      "all": "Todas",
+      "active": "Ativas",
+      "closed": "Encerradas"
+    },
+    "actions": {
+      "manageAccounts": "Contas"
+    },
+    "deleteTitle": "Eliminar instituição",
+    "deleteMessage": "Eliminar \"{name}\"? As contas atribuídas serão desassociadas mas não eliminadas.",
+    "deleting": "A eliminar...",
+    "deleted": "\"{name}\" eliminada",
+    "deleteFailed": "Falha ao eliminar instituição"
+  },
+  "form": {
+    "nameLabel": "Nome",
+    "websiteLabel": "Website",
+    "websitePlaceholder": "ex.: td.com",
+    "countryLabel": "País (opcional)",
+    "countryPlaceholder": "Código de 2 letras, ex.: PT",
+    "logoHint": "O logótipo da marca é obtido automaticamente a partir do website.",
+    "submitCreate": "Criar instituição",
+    "submitUpdate": "Guardar alterações"
+  },
+  "validation": {
+    "nameRequired": "O nome é obrigatório",
+    "websiteRequired": "O website é obrigatório",
+    "websiteInvalid": "Introduza um website válido (ex.: td.com)",
+    "countryInvalid": "Utilize um código de país de 2 letras"
+  },
+  "accountsManager": {
+    "title": "Contas em {name}",
+    "addLabel": "Adicionar uma conta",
+    "addPlaceholder": "Selecionar uma conta para adicionar...",
+    "noneToAdd": "Todas as suas contas já estão atribuídas a uma instituição.",
+    "loading": "A carregar contas...",
+    "empty": "Ainda não há contas atribuídas a esta instituição.",
+    "noneMatch": "Nenhuma conta corresponde ao filtro selecionado.",
+    "filter": {
+      "all": "Todas",
+      "active": "Ativas",
+      "closed": "Encerradas"
+    },
+    "remove": "Remover",
+    "viewTransactions": "Ver transações desta conta",
+    "added": "Conta adicionada",
+    "removed": "Conta removida",
+    "addFailed": "Falha ao adicionar conta",
+    "removeFailed": "Falha ao remover conta",
+    "loadFailed": "Falha ao carregar contas",
+    "done": "Concluído"
+  }
+}

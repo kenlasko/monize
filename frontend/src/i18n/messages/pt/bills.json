@@ -1,0 +1,64 @@
+{
+  "page": {
+    "title": "Faturas e depósitos",
+    "subtitle": "Gerir as suas transações recorrentes e pagamentos agendados",
+    "newButton": "+ Nova agenda",
+    "summaryActiveBills": "Faturas ativas",
+    "summaryActiveDeposits": "Depósitos ativos",
+    "summaryMonthlyNet": "Líquido mensal",
+    "summaryDueNow": "A vencer agora",
+    "loadingText": "A carregar transações agendadas...",
+    "chartUnavailable": "Gráfico temporariamente indisponível"
+  },
+  "viewTabs": {
+    "list": "Lista",
+    "calendar": "Calendário",
+    "filterAll": "Todas ({count})",
+    "filterBills": "Faturas ({count})",
+    "filterDeposits": "Depósitos ({count})",
+    "todayButton": "Hoje"
+  },
+  "form": {
+    "titleNew": "Nova transação agendada",
+    "titleEdit": "Editar transação agendada"
+  },
+  "overrideConfirm": {
+    "title": "Substituições existentes encontradas",
+    "message": "Esta transação agendada tem {count, plural, one {# ocorrência individual} other {# ocorrências individuais}} com modificações personalizadas.",
+    "question": "O que pretende fazer com estas modificações ao atualizar o modelo base?",
+    "keepButton": "Manter modificações",
+    "deleteButton": "Eliminar todas as modificações"
+  },
+  "forecast": {
+    "title": "Previsão de fluxo de caixa",
+    "scheduledCount": "{count, plural, one {# transação agendada} other {# transações agendadas}} na previsão",
+    "tooltipTransactions": "Transações:",
+    "tooltipMore": "+{count} mais",
+    "noData": "Sem dados para mostrar",
+    "noAccounts": "Nenhuma conta encontrada",
+    "noScheduled": "Sem transações agendadas",
+    "noMatchingAccount": "Selecione uma conta com transações agendadas",
+    "noUpcoming": "Sem transações futuras neste período - a mostrar saldo atual",
+    "summaryStarting": "Inicial",
+    "summaryEnding": "Final",
+    "summaryLowest": "Mais baixo",
+    "summaryMinBalance": "Saldo mínimo",
+    "allAccounts": "Todas as contas"
+  },
+  "calendar": {
+    "days": {
+      "sun": "Dom",
+      "mon": "Seg",
+      "tue": "Ter",
+      "wed": "Qua",
+      "thu": "Qui",
+      "fri": "Sex",
+      "sat": "Sáb"
+    },
+    "more": "+{count} mais"
+  },
+  "toasts": {
+    "overridesDeleted": "Substituições eliminadas",
+    "notFound": "Pagamento agendado não encontrado"
+  }
+}

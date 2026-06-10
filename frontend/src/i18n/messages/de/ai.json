@@ -1,0 +1,53 @@
+{
+  "page": {
+    "title": "KI-Assistent",
+    "subtitle": "Stellen Sie Fragen zu Ihren Finanzen in natürlicher Sprache"
+  },
+  "chat": {
+    "conversationSaved": "Gespräch in Ihrem Browser gespeichert",
+    "clearConversation": "Gespräch löschen",
+    "inputPlaceholder": "Fragen Sie nach Ihren Finanzen...",
+    "inputPlaceholderDisabled": "KI-Anbieter nicht konfiguriert",
+    "keyboardHint": "Enter zum Senden, Umschalt+Enter für neue Zeile",
+    "cancelTitle": "Abbrechen",
+    "sendTitle": "Senden"
+  },
+  "notConfigured": {
+    "heading": "KI nicht konfiguriert",
+    "message": "Es ist kein KI-Anbieter konfiguriert. Um den KI-Assistenten zu nutzen, {link} Sie bitte in Ihren Einstellungen.",
+    "linkText": "konfigurieren Sie einen KI-Anbieter"
+  },
+  "suggestedQueries": {
+    "heading": "Fragen Sie nach Ihren Finanzen",
+    "description": "Ich kann Fragen zu Ihren Ausgaben, Einnahmen, Kontoständen, Reinvermögen und vielem mehr beantworten.",
+    "monthlySpendingLabel": "Monatliche Ausgaben",
+    "monthlySpendingQuery": "Wie viel habe ich letzten Monat ausgegeben?",
+    "topCategoriesLabel": "Top-Kategorien",
+    "topCategoriesQuery": "Was sind meine 5 größten Ausgabenkategorien in diesem Jahr?",
+    "accountBalancesLabel": "Kontosalden",
+    "accountBalancesQuery": "Wie hoch sind meine aktuellen Kontosalden?",
+    "compareMonthsLabel": "Monate vergleichen",
+    "compareMonthsQuery": "Vergleiche meine Ausgaben diesen Monat mit dem letzten Monat",
+    "netWorthTrendLabel": "Reinvermögen-Entwicklung",
+    "netWorthTrendQuery": "Zeige mir die Entwicklung meines Reinvermögens der letzten 12 Monate",
+    "savingsRateLabel": "Sparquote",
+    "savingsRateQuery": "Wie viel habe ich in diesem Jahr im Vergleich zu meinen Einnahmen gespart?"
+  },
+  "toolDetails": {
+    "inputLabel": "Eingabe",
+    "resultLabel": "Ergebnis",
+    "toolFailedAriaLabel": "Tool fehlgeschlagen",
+    "toolSucceededAriaLabel": "Tool erfolgreich"
+  },
+  "table": {
+    "downloadTitle": "Tabelle als CSV herunterladen",
+    "downloadAriaLabel": "Tabelle als CSV herunterladen",
+    "noDataError": "Keine Tabellendaten zum Exportieren"
+  },
+  "chart": {
+    "downloadTitle": "Diagramm als PNG herunterladen",
+    "downloadAriaLabel": "Diagramm als PNG herunterladen",
+    "captureError": "Diagrammbild konnte nicht erfasst werden",
+    "downloadError": "Diagramm konnte nicht heruntergeladen werden"
+  }
+}

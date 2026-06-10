@@ -1,0 +1,548 @@
+{
+  "alerts": {
+    "title": "Alertas",
+    "unread": "{count} não lidos",
+    "markAllRead": "Marcar todos como lidos",
+    "loading": "A carregar alertas...",
+    "empty": "Sem alertas",
+    "undo": "Desfazer",
+    "buttonTitle": "Alertas",
+    "buttonAriaLabel": "Alertas",
+    "dismissAriaLabel": "Dispensar alerta",
+    "severity": {
+      "critical": "Crítico",
+      "warning": "Aviso",
+      "success": "Boas Notícias",
+      "info": "Informação"
+    }
+  },
+  "summary503020": {
+    "title": "Alocação 50/30/20",
+    "groups": {
+      "NEED": "Necessidades",
+      "WANT": "Desejos",
+      "SAVING": "Poupanças"
+    },
+    "target": "Meta: {percent}%",
+    "budgeted": "Orçamentado: {percent}% ({amount})"
+  },
+  "categoryForm": {
+    "editTitle": "Editar: {name}",
+    "budgetAmount": "Montante do Orçamento",
+    "rolloverType": "Tipo de Transição",
+    "rolloverCap": "Limite de Transição (opcional)",
+    "rolloverCapPlaceholder": "Sem limite",
+    "flexGroup": "Grupo Flexível (opcional)",
+    "flexGroupPlaceholder": "ex.: Dinheiro Livre",
+    "categoryGroup": "Grupo de Categoria (50/30/20)",
+    "warningAt": "Aviso a (%)",
+    "criticalAt": "Crítico a (%)",
+    "notes": "Notas (opcional)",
+    "notesPlaceholder": "Notas sobre o orçamento desta categoria",
+    "rolloverOptions": {
+      "NONE": "Nenhuma (reinicia em cada período)",
+      "MONTHLY": "Transição mensal",
+      "QUARTERLY": "Transição trimestral",
+      "ANNUAL": "Transição anual"
+    },
+    "groupOptions": {
+      "none": "Nenhum",
+      "NEED": "Necessidade",
+      "WANT": "Desejo",
+      "SAVING": "Poupança"
+    },
+    "saving": "A guardar..."
+  },
+  "categoryList": {
+    "title": "Orçamentos por Categoria",
+    "empty": "Sem categorias de despesa neste orçamento.",
+    "sort": "Ordenar:",
+    "sortAriaLabel": "Ordenar categorias",
+    "sortAscAriaLabel": "Ordenar descendente",
+    "sortDescAriaLabel": "Ordenar ascendente",
+    "sortDescTitle": "Ordenar descendente",
+    "sortAscTitle": "Ordenar ascendente",
+    "sortOptions": {
+      "percentUsed": "% Utilizado",
+      "spent": "Gasto",
+      "remaining": "Restante",
+      "name": "Nome"
+    }
+  },
+  "categoryRow": {
+    "overPace": "Acima do ritmo",
+    "underPace": "Abaixo do ritmo",
+    "onPace": "No ritmo",
+    "rollover": "Transição: {type}",
+    "remaining": "{amount} restante",
+    "over": "{amount} excedido"
+  },
+  "categoryTrend": {
+    "title": "Tendências por Categoria",
+    "empty": "Dados insuficientes para apresentar tendências de categoria.",
+    "tableHeaders": {
+      "category": "Categoria",
+      "avgBudget": "Orçamento Médio",
+      "avgActual": "Real Médio",
+      "avgVariance": "Variação Média"
+    }
+  },
+  "flexGroups": {
+    "title": "Grupos Flexíveis"
+  },
+  "form": {
+    "budgetName": "Nome do Orçamento",
+    "description": "Descrição (opcional)",
+    "descriptionPlaceholder": "Descrição do orçamento",
+    "budgetType": "Tipo de Orçamento",
+    "strategy": "Estratégia",
+    "baseIncome": "Receita Base (opcional)",
+    "baseIncomePlaceholder": "Receita mensal esperada",
+    "active": "Ativo",
+    "saveChanges": "Guardar Alterações",
+    "saving": "A guardar...",
+    "typeOptions": {
+      "MONTHLY": "Mensal",
+      "ANNUAL": "Anual",
+      "PAY_PERIOD": "Período de Pagamento"
+    },
+    "strategyOptions": {
+      "FIXED": "Fixo",
+      "ROLLOVER": "Transição",
+      "ZERO_BASED": "Base Zero",
+      "FIFTY_THIRTY_TWENTY": "50/30/20"
+    }
+  },
+  "healthGauge": {
+    "title": "Pontuação de Saúde",
+    "labels": {
+      "excellent": "Excelente",
+      "good": "Bom",
+      "needsAttention": "Precisa de Atenção",
+      "offTrack": "Fora do Rumo"
+    }
+  },
+  "heatmap": {
+    "title": "Mapa de Calor de Despesas - {monthLabel}",
+    "ariaLabel": "Mapa de calor de despesas",
+    "less": "Menos",
+    "more": "Mais"
+  },
+  "periodDetail": {
+    "summaryCards": {
+      "totalBudgeted": "Total Orçamentado",
+      "totalSpent": "Total Gasto",
+      "underBudget": "Abaixo do Orçamento",
+      "overBudget": "Acima do Orçamento",
+      "saved": "poupado",
+      "overspent": "excedido",
+      "income": "Receita",
+      "savings": "Poupanças: {amount}"
+    },
+    "rolloverSummary": {
+      "title": "Resumo de Transição",
+      "carriedIn": "Transitado para:",
+      "carriedOut": "Transitado de:"
+    },
+    "overallUsage": "Utilização Global do Orçamento",
+    "expenseCategories": "Categorias de Despesa",
+    "incomeCategories": "Categorias de Receita",
+    "categorySublabel": "{count} categorias",
+    "rolloverBadge": "+{amount} transição",
+    "underBudgetLabel": "{amount} abaixo do orçamento",
+    "overBudgetLabel": "{amount} acima do orçamento",
+    "carriedForward": "{amount} transitado"
+  },
+  "periodSelector": {
+    "label": "Período:",
+    "currentPeriod": "Período Atual",
+    "current": "{label} (Atual)",
+    "projected": "{label} (Projetado)"
+  },
+  "progressBar": {
+    "ariaLabel": "{percent}% utilizado",
+    "paceMarkerTitle": "Ritmo esperado: {percent}%"
+  },
+  "scenarioPlanner": {
+    "title": "Planeador de Cenários Hipotéticos",
+    "empty": "Sem categorias de despesa para planear.",
+    "reset": "Repor",
+    "applyChanges": "Aplicar Alterações",
+    "currentBudget": "Orçamento Atual",
+    "proposedBudget": "Orçamento Proposto",
+    "projectedSavings": "Poupanças Projetadas",
+    "savingsChange": "Variação nas Poupanças",
+    "original": "Original: {amount}"
+  },
+  "summaryCards": {
+    "totalBudget": "Total do Orçamento",
+    "spent": "Gasto",
+    "remaining": "Restante",
+    "savings": "Poupanças",
+    "periodEnded": "Período encerrado",
+    "days": "{count} dias",
+    "onTrack": "No rumo",
+    "overBudget": "Orçamento excedido"
+  },
+  "trendChart": {
+    "title": "Tendência Orçamento vs. Real",
+    "empty": "Dados insuficientes para apresentar tendências.",
+    "budgeted": "Orçamentado",
+    "actual": "Real"
+  },
+  "upcomingBills": {
+    "title": "Faturas Próximas",
+    "empty": "Sem faturas a vencer neste período.",
+    "more": "+{count} faturas",
+    "totalUpcoming": "Total próximo",
+    "trulyAvailable": "Verdadeiramente disponível",
+    "over": " excedido"
+  },
+  "velocity": {
+    "title": "Velocidade de Despesa",
+    "dailyBurnRate": "Taxa de consumo diária",
+    "safeToSpend": "Seguro para gastar",
+    "projectedMonthEnd": "Final do mês projetado",
+    "budgetTotal": "Total do orçamento",
+    "billsComing": "Faturas a vencer",
+    "trulyAvailable": "Verdadeiramente disponível",
+    "over": " excedido",
+    "dayProgress": "Dia {elapsed} de {total}",
+    "daysRemaining": "{count} dias restantes",
+    "paceStatus": {
+      "under": "Abaixo do ritmo do orçamento",
+      "on_track": "No rumo",
+      "over": "Acima do ritmo do orçamento"
+    }
+  },
+  "wizard": {
+    "steps": {
+      "analyze": "Analisar",
+      "categories": "Categorias",
+      "configure": "Configurar",
+      "review": "Rever"
+    },
+    "ariaLabel": "Passos do assistente",
+    "back": "Voltar"
+  },
+  "wizardAnalysis": {
+    "chooseStrategy": "Escolha uma Estratégia de Orçamento",
+    "analysisPeriod": "Período de Análise",
+    "analysisPeriodHint": "Quantos meses de histórico de transações devemos analisar para sugerir montantes de orçamento?",
+    "budgetProfile": "Perfil de Orçamento",
+    "analyzeButton": "Analisar as Minhas Despesas",
+    "analysisPeriods": {
+      "3": "3 meses",
+      "6": "6 meses",
+      "12": "12 meses"
+    },
+    "strategies": {
+      "FIXED": {
+        "label": "Fixo",
+        "description": "Defina montantes fixos por categoria. O orçamento não utilizado reinicia em cada período."
+      },
+      "ROLLOVER": {
+        "label": "Transição",
+        "description": "O orçamento não utilizado transita. Configure regras de transição por categoria."
+      },
+      "ZERO_BASED": {
+        "label": "Base Zero",
+        "description": "Cada euro de receita tem um propósito atribuído. Receita menos despesas igual a zero."
+      },
+      "FIFTY_THIRTY_TWENTY": {
+        "label": "50/30/20",
+        "description": "50% necessidades, 30% desejos, 20% poupanças. As categorias são marcadas por grupo."
+      }
+    },
+    "profiles": {
+      "COMFORTABLE": {
+        "label": "Confortável",
+        "description": "Baseado no seu percentil 75 de despesas. Permite margem."
+      },
+      "ON_TRACK": {
+        "label": "No Rumo",
+        "description": "Baseado na sua despesa mediana. Metas realistas."
+      },
+      "AGGRESSIVE": {
+        "label": "Ambicioso",
+        "description": "Baseado no seu percentil 25. Uma meta desafiante para poupar mais."
+      }
+    },
+    "toasts": {
+      "analyzeFailed": "Falha ao analisar despesas"
+    }
+  },
+  "wizardCategories": {
+    "title": "Rever Categorias",
+    "noAnalysis": "Sem dados de análise. Volte atrás e execute a análise primeiro.",
+    "tableHeaders": {
+      "income": "Receita",
+      "expenses": "Despesas",
+      "transfers": "Transferências / Poupanças",
+      "trendMedian": "Tendência / Mediana",
+      "amount": "Montante"
+    },
+    "totals": {
+      "totalIncome": "Total de Receitas",
+      "totalExpenses": "Total de Despesas",
+      "transfers": "Transferências",
+      "remaining": "Restante"
+    },
+    "allocation503020": "Alocação 50/30/20",
+    "allocationTarget": "(meta {percent}%)",
+    "nextButton": "Seguinte: Configurar",
+    "profiles": {
+      "COMFORTABLE": "Confortável",
+      "ON_TRACK": "No Rumo",
+      "AGGRESSIVE": "Ambicioso"
+    }
+  },
+  "wizardStrategy": {
+    "title": "Configure o Seu Orçamento",
+    "sections": {
+      "budgetDetails": "Detalhes do Orçamento",
+      "income": "Receita",
+      "rolloverRules": "Regras de Transição",
+      "alertThresholds": "Limiares de Alerta",
+      "flexGroups": "Grupos Flexíveis",
+      "excludedAccounts": "Contas Excluídas"
+    },
+    "budgetNameLabel": "Nome do Orçamento",
+    "budgetNameRequired": "O nome do orçamento é obrigatório",
+    "budgetTypeLabel": "Tipo de Orçamento",
+    "startDateLabel": "Data de Início",
+    "startDateRequired": "A data de início é obrigatória",
+    "strategyPrefix": "Estratégia: {strategy}",
+    "strategyNotSelected": "Não selecionada",
+    "strategyDescriptions": {
+      "FIXED": "Defina montantes por categoria. O orçamento não gasto reinicia em cada período.",
+      "ROLLOVER": "O orçamento não gasto transita com base em regras de transição por categoria.",
+      "ZERO_BASED": "Cada euro de receita é atribuído. Receita menos despesas deve ser igual a zero.",
+      "FIFTY_THIRTY_TWENTY": "Categorias agrupadas como Necessidades (50%), Desejos (30%), Poupanças (20%)."
+    },
+    "linkBudgetToIncome": "Ligar orçamento à receita",
+    "linkBudgetToIncomeHint": "Os montantes das categorias tornam-se percentagens da sua receita base",
+    "baseMonthlyIncome": "Receita Mensal Base",
+    "estimatedFromAnalysis": "Estimado a partir da análise: {amount}/mês",
+    "defaultRolloverType": "Tipo de Transição Predefinido",
+    "rolloverHint": "Define o padrão para todas as categorias. Pode personalizar categorias individualmente após criar o orçamento.",
+    "rolloverOptions": {
+      "NONE": "Nenhuma -- Reinicia em cada período",
+      "MONTHLY": "Mensal -- Transita todos os meses",
+      "QUARTERLY": "Trimestral -- Transita a cada trimestre",
+      "ANNUAL": "Anual -- Transita todos os anos"
+    },
+    "warningAt": "Aviso a (%)",
+    "warningHint": "Aciona um aviso quando as despesas atingem esta % do orçamento",
+    "criticalAt": "Crítico a (%)",
+    "criticalHint": "Aciona um alerta crítico quando as despesas atingem esta % do orçamento",
+    "flexGroupsHide": "Ocultar",
+    "flexGroupsConfigure": "Configurar",
+    "flexGroupsHint": "Agrupe categorias de despesa relacionadas. As despesas são acompanhadas como total de grupo, dando flexibilidade dentro de cada grupo.",
+    "flexGroupsTableHeaders": {
+      "category": "Categoria",
+      "flexGroup": "Grupo Flexível"
+    },
+    "flexGroupPlaceholder": "ex.: Dinheiro Livre",
+    "excludedAccountsHint": "As transações de contas excluídas não serão contabilizadas nos totais do orçamento.",
+    "excludedCount": "{count} {count, plural, one {conta excluída} other {contas excluídas}}",
+    "categoriesAndTransfers": "{categories} categorias e {transfers} transferências selecionadas",
+    "budgetTypeOptions": {
+      "MONTHLY": "Mensal",
+      "ANNUAL": "Anual",
+      "PAY_PERIOD": "Período de Pagamento"
+    },
+    "nextButton": "Seguinte: Rever"
+  },
+  "wizardReview": {
+    "title": "Rever o Seu Orçamento",
+    "fields": {
+      "name": "Nome",
+      "type": "Tipo",
+      "strategy": "Estratégia",
+      "startDate": "Data de Início",
+      "rollover": "Transição",
+      "alerts": "Alertas",
+      "incomeLinked": "Receita Ligada",
+      "excludedAccounts": "Contas Excluídas"
+    },
+    "rolloverOff": "Desativada",
+    "alertsValue": "Aviso {warn}% / Crítico {critical}%",
+    "accountCount": "{count} {count, plural, one {conta} other {contas}}",
+    "strategyNotSelected": "Não selecionada",
+    "summaryCards": {
+      "estIncome": "Receita Est.",
+      "totalExpenses": "Total de Despesas",
+      "transfers": "Transferências",
+      "remaining": "Restante"
+    },
+    "tableHeaders": {
+      "category": "Categoria",
+      "amount": "Montante",
+      "type": "Tipo"
+    },
+    "categoryTypes": {
+      "income": "Receita",
+      "expense": "Despesa",
+      "transfer": "Transferência"
+    },
+    "createButton": "Criar Orçamento",
+    "categoryCount": "{count} categorias",
+    "accountsCount": "{count} contas",
+    "toasts": {
+      "created": "Orçamento criado com sucesso",
+      "failed": "Falha ao criar orçamento"
+    }
+  },
+  "zeroBasedBar": {
+    "title": "Atribuição Base Zero",
+    "fullyAssigned": "Totalmente atribuído",
+    "overAssigned": "Sobre-atribuído",
+    "underAssigned": "Sub-atribuído",
+    "assigned": "Atribuído: {assigned} / {income}",
+    "unassigned": "{amount} não atribuído",
+    "over": "{amount} excedido"
+  },
+  "strategyCard": {
+    "pros": "Vantagens",
+    "cons": "Desvantagens",
+    "bestFor": "Ideal para: ",
+    "strategies": {
+      "FIXED": {
+        "title": "Orçamento Fixo",
+        "description": "Defina um limite de despesa fixo para cada categoria em cada período. O dinheiro não gasto reinicia no final do período em vez de transitar.",
+        "pros": [
+          "Simples de configurar e compreender",
+          "Limites de despesa claros por categoria",
+          "Orçamentação previsível mês a mês",
+          "Bom ponto de partida para quem começa a orçamentar"
+        ],
+        "cons": [
+          "O dinheiro não gasto não transita",
+          "Sem flexibilidade entre categorias",
+          "Não se adapta a despesas irregulares",
+          "Pode parecer rígido se os padrões de despesa variarem"
+        ],
+        "bestFor": "Pessoas que pretendem uma orçamentação simples com limites claros e padrões de despesa previsíveis."
+      },
+      "ROLLOVER": {
+        "title": "Orçamento com Transição",
+        "description": "O orçamento não gasto transita para o período seguinte com base em regras de transição por categoria. Acumule reservas para categorias com despesas irregulares ou sazonais.",
+        "pros": [
+          "Cria poupanças para despesas irregulares",
+          "Recompensa a contenção nas categorias",
+          "Regras de transição flexíveis por categoria",
+          "Lida com a variação sazonal de forma natural"
+        ],
+        "cons": [
+          "Mais complexo de configurar inicialmente",
+          "Os saldos acumulados precisam de monitorização",
+          "Pode mascarar gastos excessivos se os limites forem demasiado altos",
+          "Requer revisão periódica das regras de transição"
+        ],
+        "bestFor": "Pessoas com despesas irregulares como manutenção de veículos, subscrições anuais ou custos sazonais que pretendem poupar gradualmente."
+      },
+      "ZERO_BASED": {
+        "title": "Orçamento Base Zero",
+        "description": "Cada euro de receita tem um propósito específico. A sua receita menos todos os montantes orçamentados deve ser igual a zero, garantindo que nenhum dinheiro fica sem ser alocado.",
+        "pros": [
+          "Controlo máximo sobre cada euro",
+          "Obriga a decisões de despesa intencionais",
+          "Revela rapidamente despesas desnecessárias",
+          "Muito eficaz para objetivos de pagamento de dívidas"
+        ],
+        "cons": [
+          "Requer conhecer a receita exata antecipadamente",
+          "Consome tempo para manter em cada período",
+          "Menos flexível para receita variável",
+          "Pode parecer restritivo para alguns utilizadores"
+        ],
+        "bestFor": "Pessoas que pretendem controlo total sobre as suas finanças e estão dispostas a planear onde vai cada euro em cada período."
+      },
+      "FIFTY_THIRTY_TWENTY": {
+        "title": "Orçamento 50/30/20",
+        "description": "Uma abordagem equilibrada que divide a receita em três grupos: 50% para necessidades (habitação, alimentação, serviços), 30% para desejos (restauração, entretenimento) e 20% para poupanças e pagamento de dívidas.",
+        "pros": [
+          "Fácil de lembrar e seguir",
+          "Alocação de poupanças integrada",
+          "Abordagem equilibrada às despesas",
+          "Flexível dentro de cada grupo"
+        ],
+        "cons": [
+          "Pode não ser adequado para áreas com custo de vida elevado",
+          "Os rácios fixos podem não se adaptar a todas as situações",
+          "Controlo menos granular ao nível das categorias",
+          "Requer categorizar cada despesa por grupo"
+        ],
+        "bestFor": "Pessoas que pretendem uma abordagem equilibrada e baseada em regras práticas, sem acompanhar cada categoria individualmente."
+      }
+    }
+  },
+  "pages": {
+    "list": {
+      "title": "Orçamentos",
+      "subtitle": "Gira os seus orçamentos e acompanhe as despesas",
+      "newBudget": "+ Novo Orçamento",
+      "empty": {
+        "title": "Sem orçamentos ainda",
+        "description": "Crie o seu primeiro orçamento analisando o seu histórico de despesas. O assistente sugerirá montantes realistas com base nas suas transações.",
+        "cta": "Criar o Seu Primeiro Orçamento"
+      },
+      "card": {
+        "active": "Ativo",
+        "inactive": "Inativo",
+        "categories": "{count} categorias",
+        "started": "Iniciado em {date}"
+      }
+    },
+    "create": {
+      "title": "Criar Orçamento",
+      "subtitle": "Analise as suas despesas e crie um orçamento personalizado"
+    },
+    "detail": {
+      "backToBudgets": "Voltar aos Orçamentos",
+      "notFound": "Orçamento não encontrado",
+      "delete": {
+        "title": "Eliminar Orçamento",
+        "message": "Tem a certeza de que pretende eliminar \"{name}\"? Isto removerá todos os dados do orçamento, incluindo períodos e alertas. Esta ação não pode ser desfeita.",
+        "confirm": "Eliminar",
+        "cancel": "Cancelar"
+      },
+      "toasts": {
+        "deleted": "Orçamento eliminado",
+        "deleteFailed": "Falha ao eliminar orçamento",
+        "loadFailed": "Falha ao carregar orçamento",
+        "periodFailed": "Falha ao carregar período"
+      }
+    },
+    "edit": {
+      "subtitlePrefix": "Editar: ",
+      "subtitle": "Atualizar definições do orçamento e alocações por categoria",
+      "backToDashboard": "Voltar ao Painel",
+      "budgetSettings": "Definições do Orçamento",
+      "categoryAllocations": "Alocações por Categoria",
+      "income": "Receita",
+      "expensesWithCount": "Despesas ({count})",
+      "resetsEachPeriod": "Reinicia em cada período",
+      "percentUsed": "{percent}% utilizado",
+      "rolloverType": "Transição: {type}",
+      "editCategoryTitle": "Editar {name}",
+      "toasts": {
+        "updated": "Orçamento atualizado",
+        "updateFailed": "Falha ao atualizar orçamento",
+        "categoryUpdated": "Categoria atualizada",
+        "categoryFailed": "Falha ao atualizar categoria",
+        "loadFailed": "Falha ao carregar orçamento"
+      }
+    }
+  },
+  "validation": {
+    "nameRequired": "O nome do orçamento é obrigatório",
+    "nameMax": "O nome do orçamento não pode ter mais de 255 caracteres",
+    "descriptionMax": "A descrição não pode ter mais de 1000 caracteres"
+  },
+  "categoryValidation": {
+    "amountMin": "O montante deve ser 0 ou superior",
+    "mustBeNumber": "Deve ser um número"
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "createUserModal": {
+    "title": "Benutzer hinzufügen",
+    "description": "Erstellen Sie ein neues Konto. Sie können eine Einladung per E-Mail senden, selbst ein Passwort festlegen oder ein temporäres Passwort generieren.",
+    "emailLabel": "E-Mail",
+    "emailPlaceholder": "benutzer@beispiel.de",
+    "firstNameLabel": "Vorname (optional)",
+    "firstNamePlaceholder": "Vorname",
+    "lastNameLabel": "Nachname (optional)",
+    "lastNamePlaceholder": "Nachname",
+    "roleLabel": "Rolle",
+    "roleUser": "Benutzer",
+    "roleAdmin": "Administrator",
+    "credentialsLegend": "Zugangsdaten",
+    "inviteLabel": "Einladungs-E-Mail zum Festlegen eines Passworts senden",
+    "inviteSmtpNote": "Erfordert eine konfigurierte SMTP-Verbindung.",
+    "setPasswordLabel": "Jetzt ein Passwort festlegen",
+    "tempPasswordLabel": "Temporäres Passwort generieren",
+    "tempPasswordNote": "Wird nach der Erstellung einmalig angezeigt. Der Benutzer muss es bei der ersten Anmeldung ändern.",
+    "passwordFieldLabel": "Passwort",
+    "passwordPlaceholder": "Passwort festlegen",
+    "createButton": "Benutzer erstellen",
+    "validation": {
+      "invalidPassword": "Ungültiges Passwort."
+    },
+    "toasts": {
+      "createFailed": "Benutzer konnte nicht erstellt werden"
+    }
+  },
+  "resetPasswordModal": {
+    "defaultTitle": "Passwort zurückgesetzt",
+    "defaultDescription": "Für {userName} wurde ein temporäres Passwort festgelegt.",
+    "temporaryPasswordLabel": "Temporäres Passwort",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "notShownAgain": "Dieses Passwort wird nicht erneut angezeigt.",
+    "mustChangeOnLogin": "Der Benutzer muss sein Passwort bei der nächsten Anmeldung ändern.",
+    "toasts": {
+      "copied": "Passwort in die Zwischenablage kopiert",
+      "copyFailed": "Kopieren in die Zwischenablage fehlgeschlagen"
+    }
+  },
+  "userTable": {
+    "colUser": "Benutzer",
+    "colRole": "Rolle",
+    "colProvider": "Anbieter",
+    "colStatus": "Status",
+    "colLastLogin": "Letzte Anmeldung",
+    "colActions": "Aktionen",
+    "youSuffix": "(Sie)",
+    "noEmail": "Keine E-Mail",
+    "unknown": "Unbekannt",
+    "never": "Nie",
+    "providerSso": "SSO",
+    "providerLocal": "Lokal",
+    "roleAdmin": "Administrator",
+    "roleUser": "Benutzer",
+    "statusActive": "Aktiv",
+    "statusDisabled": "Deaktiviert",
+    "clickToDisable": "Klicken zum Deaktivieren",
+    "clickToEnable": "Klicken zum Aktivieren",
+    "resetPassword": "Passwort zurücksetzen",
+    "noUsers": "Keine Benutzer gefunden."
+  },
+  "usersPage": {
+    "title": "Benutzerverwaltung",
+    "userCount": "{count, plural, one {# Benutzer} other {# Benutzer}}",
+    "newUser": "+ Neuer Benutzer",
+    "loadingUsers": "Benutzer werden geladen...",
+    "toasts": {
+      "inviteSent": "Einladungs-E-Mail an {email} gesendet",
+      "userCreated": "{name} wurde erstellt",
+      "userUpgraded": "{name} wurde auf ein vollständiges Konto hochgestuft",
+      "roleChanged": "{name} ist jetzt {role}",
+      "roleAdmin": "ein Administrator",
+      "roleUser": "ein Benutzer",
+      "userEnabled": "{name} wurde aktiviert",
+      "userDisabled": "{name} wurde deaktiviert",
+      "userDeleted": "{name} wurde gelöscht",
+      "userDowngraded": "Die eigenen Daten von {name} wurden entfernt; der Delegierten-Zugang bleibt erhalten.",
+      "loadFailed": "Benutzer konnten nicht geladen werden",
+      "deleteFailed": "Benutzer konnte nicht gelöscht werden",
+      "disableFailed": "Benutzer konnte nicht deaktiviert werden",
+      "resetFailed": "Passwort konnte nicht zurückgesetzt werden"
+    },
+    "dialogs": {
+      "promoteTitle": "Benutzer befördern?",
+      "demoteTitle": "Benutzer zurückstufen?",
+      "promoteMessage": "Möchten Sie {name} wirklich zu {role} befördern?",
+      "demoteMessage": "Möchten Sie {name} wirklich zu {role} zurückzustufen?",
+      "promoteConfirm": "Zum Administrator befördern",
+      "demoteConfirm": "Zum Benutzer zurückstufen",
+      "disableTitle": "Benutzer deaktivieren?",
+      "disableMessage": "Möchten Sie {name} wirklich deaktivieren? Die Person kann sich dann nicht mehr anmelden.",
+      "disableConfirm": "Benutzer deaktivieren",
+      "resetTitle": "Passwort zurücksetzen?",
+      "resetMessage": "Dadurch wird ein neues temporäres Passwort für {name} generiert. Die Person muss es bei der nächsten Anmeldung ändern.",
+      "resetConfirm": "Passwort zurücksetzen",
+      "deleteTitle": "Benutzer löschen?",
+      "deleteMessage": "Möchten Sie {name} wirklich löschen? Das Konto und alle zugehörigen Daten werden dauerhaft entfernt. Diese Aktion kann nicht rückgängig gemacht werden. Wenn die Person Delegierter eines anderen Kontos ist, werden die eigenen Daten entfernt, die Anmeldung jedoch beibehalten, damit die Delegation weiterhin funktioniert – die Person wird zum reinen Delegierten.",
+      "deleteConfirm": "Benutzer löschen",
+      "tempPasswordTitleCreated": "Benutzer erstellt",
+      "tempPasswordTitleUpgraded": "Konto hochgestuft",
+      "tempPasswordDescCreated": "Für {name} wurde ein temporäres Passwort generiert. Teilen Sie es der Person mit, damit sie sich anmelden kann.",
+      "tempPasswordDescUpgraded": "Ein bestehender geteilter Benutzer wurde auf ein vollständiges Konto hochgestuft. Teilen Sie {name} dieses temporäre Passwort mit."
+    }
+  }
+}

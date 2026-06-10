@@ -1,0 +1,300 @@
+{
+  "priceRefresh": {
+    "noneToUpdate": "Keine Wertpapiere zu aktualisieren",
+    "updated": "{count, plural, one {# Wertpapierkurs aktualisiert} other {# Wertpapierkurse aktualisiert}}",
+    "partialFailure": "Kurse aktualisiert: {updated} erfolgreich, {failed} fehlgeschlagen{symbols}",
+    "failed": "Kursaktualisierung fehlgeschlagen"
+  },
+  "page": {
+    "title": "Wertpapiere",
+    "subtitle": "Verwalten Sie Ihre Aktien, ETFs, Investmentfonds und sonstigen Wertpapiere",
+    "newSecurity": "+ Neues Wertpapier",
+    "searchPlaceholder": "Nach Symbol oder Name suchen...",
+    "statusAll": "Alle ({count})",
+    "statusActive": "Aktiv ({count})",
+    "statusInactive": "Inaktiv ({count})",
+    "modalTitleEdit": "Wertpapier bearbeiten",
+    "modalTitleNew": "Neues Wertpapier",
+    "loading": "Wertpapiere werden geladen...",
+    "count": "{count, plural, one {# Wertpapier} other {# Wertpapiere}}",
+    "toasts": {
+      "loadFailed": "Wertpapiere konnten nicht geladen werden",
+      "updated": "Wertpapier erfolgreich aktualisiert",
+      "created": "Wertpapier erfolgreich erstellt",
+      "deactivated": "Wertpapier deaktiviert",
+      "activated": "Wertpapier aktiviert",
+      "statusFailed": "Wertpapierstatus konnte nicht aktualisiert werden",
+      "deleted": "Wertpapier \"{symbol}\" gelöscht",
+      "deleteFailed": "Wertpapier konnte nicht gelöscht werden",
+      "favouriteFailed": "Favorit konnte nicht aktualisiert werden",
+      "updateFailed": "Wertpapier konnte nicht aktualisiert werden",
+      "createFailed": "Wertpapier konnte nicht erstellt werden"
+    },
+    "deleteConfirm": {
+      "title": "Wertpapier löschen",
+      "message": "Möchten Sie \"{symbol}\" wirklich löschen? Der gesamte Kursverlauf wird ebenfalls gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
+      "confirmLabel": "Löschen",
+      "cancelLabel": "Abbrechen"
+    }
+  },
+  "summary": {
+    "totalSecurities": "Wertpapiere gesamt",
+    "types": "Typen",
+    "exchanges": "Börsen",
+    "currencies": "Währungen"
+  },
+  "list": {
+    "columns": {
+      "symbol": "Symbol",
+      "name": "Name",
+      "type": "Typ",
+      "shares": "Anteile",
+      "exchange": "Börse",
+      "currency": "Währung",
+      "provider": "Anbieter",
+      "source": "Quelle",
+      "status": "Status",
+      "actions": "Aktionen",
+      "favourite": "Favorit"
+    },
+    "density": {
+      "normal": "Normal",
+      "compact": "Kompakt",
+      "dense": "Dicht",
+      "toggle": "Zeilendichte umschalten"
+    },
+    "statusBadge": {
+      "active": "Aktiv",
+      "activeShort": "Akt",
+      "inactive": "Inaktiv",
+      "inactiveShort": "Ina"
+    },
+    "providerTitle": {
+      "override": "Wertpapierspezifische Anbieterüberschreibung",
+      "inherited": "Übernommen von Ihrer Standard-Kursanbieter-Einstellung"
+    },
+    "columnTitles": {
+      "shares": "Aktuell gehaltene Anteile über alle Konten",
+      "source": "Quelle des zuletzt abgerufenen Kurses"
+    },
+    "actions": {
+      "history": "Verlauf",
+      "prices": "Kurse",
+      "edit": "Bearbeiten",
+      "deactivate": "Deaktivieren",
+      "activate": "Aktivieren",
+      "delete": "Löschen"
+    },
+    "favouriteButton": {
+      "add": "Zu Favoriten hinzufügen",
+      "remove": "Aus Favoriten entfernen"
+    },
+    "empty": {
+      "title": "Keine Wertpapiere",
+      "subtitle": "Fügen Sie Ihr erstes Wertpapier hinzu, um zu beginnen."
+    },
+    "contextMenu": {
+      "transactionHistory": "Buchungsverlauf",
+      "viewPrices": "Kurse anzeigen",
+      "editSecurity": "Wertpapier bearbeiten",
+      "deactivate": "Deaktivieren",
+      "activate": "Aktivieren",
+      "delete": "Löschen"
+    }
+  },
+  "typeLabels": {
+    "STOCK": "Aktie",
+    "ETF": "ETF",
+    "MUTUAL_FUND": "Investmentfonds",
+    "BOND": "Anleihe",
+    "OPTION": "Option",
+    "CRYPTO": "Krypto",
+    "OTHER": "Sonstiges",
+    "STOCK_short": "Akt",
+    "ETF_short": "ETF",
+    "MUTUAL_FUND_short": "IF",
+    "BOND_short": "Anl",
+    "OPTION_short": "Opt",
+    "CRYPTO_short": "Kry",
+    "OTHER_short": "Son"
+  },
+  "form": {
+    "symbolLabel": "Symbol",
+    "nameLabel": "Name",
+    "typeLabel": "Typ",
+    "exchangeLabel": "Börse",
+    "currencyLabel": "Währung",
+    "quoteProviderLabel": "Kursanbieter",
+    "msnIdLabel": "MSN Instrument ID (erweitert)",
+    "lookupProviderAriaLabel": "Anbieter suchen",
+    "lookupButton": "Suchen",
+    "revertButton": "Zurücksetzen",
+    "clearButton": "Leeren",
+    "revertTitle": "Auf ursprüngliche Werte zurücksetzen",
+    "clearTitle": "Alle Felder leeren",
+    "favouriteLabel": "Favorit",
+    "addToFavourites": "Zu Favoriten hinzufügen",
+    "removeFromFavourites": "Aus Favoriten entfernen",
+    "submitCreate": "Wertpapier erstellen",
+    "submitUpdate": "Wertpapier aktualisieren",
+    "toasts": {
+      "lookupTooShort": "Bitte ein Symbol oder einen Namen (mindestens 2 Zeichen) eingeben",
+      "notFound": "Kein Wertpapier für \"{query}\" gefunden",
+      "found": "Gefunden: {details}",
+      "lookupFailed": "Suche fehlgeschlagen – bitte erneut versuchen"
+    },
+    "msnNotConfigured": "MSN ist als Standard-Kursanbieter ausgewählt, aber MSN_API_KEY ist auf dem Server nicht konfiguriert. MSN-Kursabfragen schlagen fehl, bis ein Administrator die Umgebungsvariable setzt und das Backend neu startet.",
+    "providers": {
+      "auto": "Auto",
+      "yahoo": "Yahoo",
+      "msn": "MSN"
+    },
+    "types": {
+      "select": "Typ auswählen...",
+      "stock": "Aktie",
+      "etf": "ETF",
+      "mutualFund": "Investmentfonds",
+      "bond": "Anleihe",
+      "option": "Option",
+      "crypto": "Kryptowährung",
+      "other": "Sonstiges"
+    },
+    "quoteProviderUseDefault": "Standard verwenden ({provider})",
+    "symbolPlaceholder": "z. B. AAPL, XEQT, BTC",
+    "namePlaceholder": "z. B. Apple Inc., iShares Core Equity ETF",
+    "exchangeSearchPlaceholder": "Börsen suchen...",
+    "exchangePlaceholder": "Automatisch aus Ticker ermittelt; nur bei Fehler überschreiben"
+  },
+  "priceForm": {
+    "dateLabel": "Datum",
+    "closePriceLabel": "Schlusskurs",
+    "openPriceLabel": "Eröffnungskurs",
+    "highPriceLabel": "Tageshoch",
+    "lowPriceLabel": "Tagestief",
+    "volumeLabel": "Volumen",
+    "optionalPlaceholder": "Optional",
+    "submitCreate": "Kurs hinzufügen",
+    "submitUpdate": "Kurs aktualisieren"
+  },
+  "priceHistory": {
+    "title": "{symbol} – Kursverlauf",
+    "forceUpdateButton": "Kurse neu abrufen",
+    "forceUpdateTitle": "Historische Kurse für den gesamten Haltezeitraum dieses Wertpapiers neu abrufen",
+    "addPriceButton": "+ Kurs hinzufügen",
+    "addPriceSection": "Kurs hinzufügen",
+    "editPriceSection": "Kurs bearbeiten",
+    "loading": "Kurse werden geladen...",
+    "empty": "Kein Kursverlauf verfügbar",
+    "columns": {
+      "date": "Datum",
+      "close": "Schluss",
+      "open": "Eröffnung",
+      "high": "Hoch",
+      "low": "Tief",
+      "volume": "Volumen",
+      "source": "Quelle",
+      "actions": "Aktionen"
+    },
+    "toasts": {
+      "added": "Kurs hinzugefügt",
+      "updated": "Kurs aktualisiert",
+      "deleted": "Kurs gelöscht",
+      "loadFailed": "Kursverlauf konnte nicht geladen werden",
+      "addFailed": "Kurs konnte nicht hinzugefügt werden",
+      "updateFailed": "Kurs konnte nicht aktualisiert werden",
+      "deleteFailed": "Kurs konnte nicht gelöscht werden",
+      "updatedCount": "{count, plural, one {# Kurs für {symbol} aktualisiert} other {# Kurse für {symbol} aktualisiert}}",
+      "noPricesFound": "Keine Kurse für {symbol} gefunden",
+      "updatePricesFailed": "Kurse für {symbol} konnten nicht aktualisiert werden",
+      "updateFetchFailed": "Kurse konnten nicht aktualisiert werden"
+    },
+    "closeButton": "Schließen",
+    "deleteConfirm": {
+      "title": "Kurs löschen",
+      "confirmLabel": "Löschen"
+    }
+  },
+  "transactionHistory": {
+    "inactiveBadge": "Inaktiv",
+    "currentShares": "Aktuelle Anteile",
+    "accountLabel": "Konto",
+    "allAccounts": "Alle Konten ({shares})",
+    "accountClosed": "{name} (geschlossen)",
+    "addTransaction": "+ Buchung hinzufügen",
+    "loading": "Buchungen werden geladen...",
+    "emptyAll": "Keine Buchungen für dieses Wertpapier.",
+    "emptyAccount": "Keine Buchungen für dieses Wertpapier im ausgewählten Konto.",
+    "editTransactionTitle": "Buchung bearbeiten",
+    "columns": {
+      "date": "Datum",
+      "account": "Konto",
+      "action": "Aktion",
+      "quantity": "Menge",
+      "runningTotal": "Kumulierter Bestand",
+      "price": "Kurs",
+      "amount": "Betrag",
+      "actionsLabel": "Aktionen"
+    },
+    "actionLabels": {
+      "BUY": "Kauf",
+      "SELL": "Verkauf",
+      "DIVIDEND": "Dividende",
+      "INTEREST": "Zinsen",
+      "CAPITAL_GAIN": "Kapitalertrag",
+      "SPLIT": "Aufteilung",
+      "TRANSFER_IN": "Eingehende Überweisung",
+      "TRANSFER_OUT": "Ausgehende Überweisung",
+      "REINVEST": "Reinvestition",
+      "ADD_SHARES": "Anteile hinzufügen",
+      "REMOVE_SHARES": "Anteile entfernen"
+    }
+  },
+  "shareAdjustment": {
+    "heading": "Anteile anpassen",
+    "accountLabel": "Konto",
+    "accountPlaceholder": "Konto auswählen...",
+    "actionLabel": "Aktion",
+    "quantityLabel": "Menge (Anteile)",
+    "dateLabel": "Datum",
+    "descriptionLabel": "Beschreibung (optional)",
+    "descriptionPlaceholder": "z. B. Restanteile bereinigen",
+    "saving": "Wird gespeichert...",
+    "submitButton": "Anpassung erfassen",
+    "accountClosed": "{name} (geschlossen)",
+    "adjustmentActions": {
+      "REMOVE_SHARES": "Anteile entfernen",
+      "ADD_SHARES": "Anteile hinzufügen"
+    },
+    "toasts": {
+      "selectAccount": "Bitte ein Konto auswählen",
+      "quantityRequired": "Menge muss größer als null sein",
+      "recorded": "Anpassung erfasst",
+      "failed": "Anpassung konnte nicht erfasst werden"
+    }
+  },
+  "lookupPicker": {
+    "title": "Mehrere Treffer für \"{query}\"",
+    "subtitle": "Wählen Sie das gewünschte Wertpapier aus.",
+    "columns": {
+      "symbol": "Symbol",
+      "name": "Name",
+      "exchange": "Börse",
+      "currency": "Währung",
+      "type": "Typ",
+      "source": "Quelle"
+    },
+    "selectButton": "Auswählen"
+  },
+  "validation": {
+    "symbolRequired": "Symbol ist erforderlich",
+    "symbolMax": "Symbol darf maximal 20 Zeichen lang sein",
+    "nameRequired": "Name ist erforderlich",
+    "nameMax": "Name darf maximal 255 Zeichen lang sein",
+    "currencyRequired": "Währung ist erforderlich"
+  },
+  "priceValidation": {
+    "dateRequired": "Datum ist erforderlich",
+    "priceRequired": "Kurs ist erforderlich",
+    "priceNonNegative": "Kurs muss eine nicht-negative Zahl sein"
+  }
+}

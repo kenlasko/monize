@@ -1,0 +1,80 @@
+{
+  "page": {
+    "title": "Etiketten",
+    "subtitle": "Versehen Sie Ihre Buchungen mit benutzerdefinierten Etiketten",
+    "newButton": "+ Neues Etikett",
+    "summary": {
+      "totalTags": "Etiketten gesamt",
+      "tagsWithColour": "Etiketten mit Farbe",
+      "tagsWithIcon": "Etiketten mit Symbol"
+    },
+    "search": {
+      "placeholder": "Etiketten suchen..."
+    },
+    "loading": "Etiketten werden geladen...",
+    "emptyState": {
+      "title": "Noch keine Etiketten",
+      "body": "Etiketten helfen Ihnen, Ihre Buchungen zu beschriften und zu filtern. Erstellen Sie Ihr erstes Etikett, um zu beginnen.",
+      "createButton": "Erstes Etikett erstellen"
+    },
+    "modal": {
+      "newTitle": "Neues Etikett",
+      "editTitle": "Etikett bearbeiten"
+    },
+    "totalCount": "{count, plural, one {# Etikett} other {# Etiketten}}",
+    "delete": {
+      "title": "Etikett löschen",
+      "withTransactionsMessage": "Möchten Sie \"{name}\" wirklich löschen? Dieses Etikett wird bei {count, plural, one {# Buchung} other {# Buchungen}} verwendet. Das Etikett wird von diesen Buchungen entfernt.",
+      "simpleMessage": "Möchten Sie \"{name}\" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden."
+    },
+    "toasts": {
+      "created": "Etikett erfolgreich erstellt",
+      "updated": "Etikett erfolgreich aktualisiert",
+      "deleted": "Etikett erfolgreich gelöscht",
+      "loadFailed": "Etiketten konnten nicht geladen werden",
+      "createFailed": "Etikett konnte nicht erstellt werden",
+      "updateFailed": "Etikett konnte nicht aktualisiert werden",
+      "deleteFailed": "Etikett konnte nicht gelöscht werden"
+    }
+  },
+  "list": {
+    "empty": {
+      "title": "Keine Etiketten gefunden",
+      "body": "Keine Etiketten entsprechen Ihrer aktuellen Suche."
+    },
+    "density": {
+      "title": "Zeilendichte umschalten",
+      "normal": "Normal",
+      "compact": "Kompakt",
+      "dense": "Dicht"
+    },
+    "header": {
+      "name": "Name",
+      "icon": "Symbol",
+      "transactions": "Buchungen",
+      "actions": "Aktionen"
+    }
+  },
+  "form": {
+    "nameLabel": "Etikettenname",
+    "colourLabel": "Farbe",
+    "iconLabel": "Symbol",
+    "noColour": "Keine Farbe",
+    "submitCreate": "Etikett erstellen",
+    "submitUpdate": "Etikett aktualisieren",
+    "colours": {
+      "red": "Rot",
+      "orange": "Orange",
+      "yellow": "Gelb",
+      "green": "Grün",
+      "teal": "Blaugrün",
+      "blue": "Blau",
+      "purple": "Lila",
+      "pink": "Rosa",
+      "grey": "Grau"
+    }
+  },
+  "validation": {
+    "nameRequired": "Etikettenname ist erforderlich"
+  }
+}

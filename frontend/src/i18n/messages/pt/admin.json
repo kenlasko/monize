@@ -1,0 +1,108 @@
+{
+  "createUserModal": {
+    "title": "Adicionar Utilizador",
+    "description": "Criar uma nova conta. Pode enviar um convite por e-mail, definir uma palavra-passe diretamente, ou gerar uma temporária para partilhar.",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "utilizador@exemplo.com",
+    "firstNameLabel": "Primeiro nome (opcional)",
+    "firstNamePlaceholder": "Primeiro nome",
+    "lastNameLabel": "Apelido (opcional)",
+    "lastNamePlaceholder": "Apelido",
+    "roleLabel": "Função",
+    "roleUser": "Utilizador",
+    "roleAdmin": "Administrador",
+    "credentialsLegend": "Credenciais",
+    "inviteLabel": "Enviar um convite por e-mail para definir uma palavra-passe",
+    "inviteSmtpNote": "Requer configuração de SMTP.",
+    "setPasswordLabel": "Definir uma palavra-passe agora",
+    "tempPasswordLabel": "Gerar uma palavra-passe temporária",
+    "tempPasswordNote": "Mostrada uma vez após a criação. O utilizador terá de a alterar no primeiro início de sessão.",
+    "passwordFieldLabel": "Palavra-passe",
+    "passwordPlaceholder": "Definir uma palavra-passe",
+    "createButton": "Criar Utilizador",
+    "validation": {
+      "invalidPassword": "Palavra-passe inválida."
+    },
+    "toasts": {
+      "createFailed": "Falha ao criar utilizador"
+    }
+  },
+  "resetPasswordModal": {
+    "defaultTitle": "Reposição de Palavra-passe Bem-sucedida",
+    "defaultDescription": "Foi definida uma palavra-passe temporária para {userName}.",
+    "temporaryPasswordLabel": "Palavra-passe Temporária",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "notShownAgain": "Esta palavra-passe não será mostrada novamente.",
+    "mustChangeOnLogin": "O utilizador será obrigado a alterar a palavra-passe no próximo início de sessão.",
+    "toasts": {
+      "copied": "Palavra-passe copiada para a área de transferência",
+      "copyFailed": "Falha ao copiar para a área de transferência"
+    }
+  },
+  "userTable": {
+    "colUser": "Utilizador",
+    "colRole": "Função",
+    "colProvider": "Fornecedor",
+    "colStatus": "Estado",
+    "colLastLogin": "Último Início de Sessão",
+    "colActions": "Ações",
+    "youSuffix": "(você)",
+    "noEmail": "Sem e-mail",
+    "unknown": "Desconhecido",
+    "never": "Nunca",
+    "providerSso": "SSO",
+    "providerLocal": "Local",
+    "roleAdmin": "Administrador",
+    "roleUser": "Utilizador",
+    "statusActive": "Ativo",
+    "statusDisabled": "Desativado",
+    "clickToDisable": "Clique para desativar",
+    "clickToEnable": "Clique para ativar",
+    "resetPassword": "Repor Palavra-passe",
+    "noUsers": "Nenhum utilizador encontrado."
+  },
+  "usersPage": {
+    "title": "Gestão de Utilizadores",
+    "userCount": "{count, plural, one {# utilizador} other {# utilizadores}}",
+    "newUser": "+ Novo Utilizador",
+    "loadingUsers": "A carregar utilizadores...",
+    "toasts": {
+      "inviteSent": "E-mail de convite enviado para {email}",
+      "userCreated": "{name} foi criado",
+      "userUpgraded": "{name} foi promovido a conta completa",
+      "roleChanged": "{name} é agora {role}",
+      "roleAdmin": "um administrador",
+      "roleUser": "um utilizador",
+      "userEnabled": "{name} foi ativado",
+      "userDisabled": "{name} foi desativado",
+      "userDeleted": "{name} foi eliminado",
+      "userDowngraded": "Os dados próprios de {name} foram removidos; o acesso de delegado mantém-se.",
+      "loadFailed": "Falha ao carregar utilizadores",
+      "deleteFailed": "Falha ao eliminar utilizador",
+      "disableFailed": "Falha ao desativar utilizador",
+      "resetFailed": "Falha ao repor palavra-passe"
+    },
+    "dialogs": {
+      "promoteTitle": "Promover Utilizador?",
+      "demoteTitle": "Despromover Utilizador?",
+      "promoteMessage": "Tem a certeza de que pretende promover {name} a {role}?",
+      "demoteMessage": "Tem a certeza de que pretende despromover {name} a {role}?",
+      "promoteConfirm": "Promover a Administrador",
+      "demoteConfirm": "Despromover a Utilizador",
+      "disableTitle": "Desativar Utilizador?",
+      "disableMessage": "Tem a certeza de que pretende desativar {name}? Não conseguirá iniciar sessão.",
+      "disableConfirm": "Desativar Utilizador",
+      "resetTitle": "Repor Palavra-passe?",
+      "resetMessage": "Isto irá gerar uma nova palavra-passe temporária para {name}. Será obrigado a alterá-la no próximo início de sessão.",
+      "resetConfirm": "Repor Palavra-passe",
+      "deleteTitle": "Eliminar Utilizador?",
+      "deleteMessage": "Tem a certeza de que pretende eliminar {name}? Isto irá remover permanentemente a sua conta e todos os dados associados. Esta ação não pode ser desfeita. Se for delegado de outra conta, os seus próprios dados são removidos mas o seu início de sessão é mantido para que a delegação continue a funcionar — passa a ser um utilizador apenas delegado.",
+      "deleteConfirm": "Eliminar Utilizador",
+      "tempPasswordTitleCreated": "Utilizador Criado",
+      "tempPasswordTitleUpgraded": "Conta Promovida",
+      "tempPasswordDescCreated": "Foi gerada uma palavra-passe temporária para {name}. Partilhe-a para que possa iniciar sessão.",
+      "tempPasswordDescUpgraded": "Um utilizador partilhado existente foi promovido a conta completa. Partilhe esta palavra-passe temporária com {name}."
+    }
+  }
+}

@@ -1,0 +1,136 @@
+{
+  "page": {
+    "welcomePrefix": "Willkommen",
+    "welcomeWithName": "Willkommen, {name}!",
+    "subtitle": "Hier ist Ihre Finanzübersicht"
+  },
+  "favouriteAccounts": {
+    "title": "Favoritenkonten",
+    "empty": "Noch keine Favoritenkonten. Markieren Sie Konten als Favoriten, um sie hier zu sehen.",
+    "reorder": "Neu anordnen",
+    "done": "Fertig",
+    "moveUp": "Nach oben",
+    "moveDown": "Nach unten",
+    "marketValue": "Marktwert",
+    "due": "Fällig: {ordinal}",
+    "dueTooltip": "Der Tag des Monats, an dem Ihre Kreditkartenzahlung fällig ist",
+    "settlement": "Abrechnung: {ordinal}",
+    "settlementTooltip": "Der letzte Tag des Abrechnungszeitraums. Buchungen, die an oder vor diesem Tag erfasst werden, erscheinen auf der aktuellen Abrechnung."
+  },
+  "upcomingBills": {
+    "title": "Bevorstehende Rechnungen und Einzahlungen",
+    "empty": "Keine überfälligen oder bevorstehenden Rechnungen, Einzahlungen oder Überweisungen innerhalb der Erinnerungsfenster.",
+    "perReminderSettings": "Gemäß Erinnerungseinstellungen",
+    "postTransaction": "Diese Buchung ausführen",
+    "manual": "Manuell",
+    "manualTitle": "Erfordert manuelle Buchung",
+    "negativeBalanceWarning": "Diese Buchung bringt den Kontosaldo unter null",
+    "viewAll": "Alle Rechnungen und Einzahlungen anzeigen",
+    "totalDue": "Gesamt fällig",
+    "totalIncoming": "Gesamt eingehend",
+    "moreItems": "+{count} weitere",
+    "overdue": "Überfällig",
+    "today": "Heute",
+    "tomorrow": "Morgen",
+    "daysUntil": "{count} Tage",
+    "typeBadge": {
+      "bill": "Rechnung",
+      "deposit": "Einzahlung",
+      "transfer": "Überweisung"
+    }
+  },
+  "gettingStarted": {
+    "title": "Erste Schritte",
+    "subtitle": "Richten Sie Ihr Konto in wenigen Schritten ein",
+    "dismiss": "Ausblenden",
+    "steps": {
+      "settings": {
+        "title": "Einstellungen überprüfen",
+        "description": "Währung, Datumsformat und Design festlegen"
+      },
+      "categories": {
+        "title": "Kategorien einrichten",
+        "description": "Kategorien erstellen oder einen Standardsatz importieren"
+      },
+      "account": {
+        "title": "Erstes Konto hinzufügen",
+        "description": "Bankkonto erstellen, um die Verwaltung zu starten"
+      },
+      "import": {
+        "title": "Aus QIF importieren",
+        "description": "Konten und Buchungen aus QIF-Dateien importieren"
+      }
+    }
+  },
+  "budgetStatus": {
+    "title": "Budget-Status",
+    "noBudget": "Kein aktives Budget gefunden. Erstellen Sie ein Budget, um Ihre Ausgaben zu verfolgen.",
+    "createBudget": "Budget erstellen",
+    "viewFullBudget": "Vollständiges Budget anzeigen",
+    "daysLeft": "{count} Tage verbleibend",
+    "safeToSpend": "Heute sicher ausgeben",
+    "topCategories": "Top-Kategorien"
+  },
+  "insights": {
+    "title": "Ausgaben-Einblicke",
+    "empty": "Keine Einblicke verfügbar. Besuchen Sie die Einblicke-Seite, um Ihre erste Analyse zu generieren.",
+    "goToInsights": "Zu Einblicken",
+    "viewAll": "Alle Einblicke anzeigen",
+    "activeCount": "{count} aktiv"
+  },
+  "topMovers": {
+    "title": "Top-Beweger",
+    "empty": {
+      "noInvestments": "Fügen Sie Investmentkonten hinzu, um tägliche Beweger zu verfolgen.",
+      "noPrices": "Noch keine Kursveränderungen verfügbar.",
+      "noGainers": "Heute keine Gewinner.",
+      "noLosers": "Heute keine Verlierer."
+    },
+    "dailyChange": "Tagesveränderung",
+    "refreshPrices": "Kurse aktualisieren",
+    "viewPortfolio": "Portfolio anzeigen",
+    "filter": {
+      "all": "Alle",
+      "gainers": "Gewinner",
+      "losers": "Verlierer"
+    }
+  },
+  "favouriteSecurities": {
+    "title": "Favoritwertpapiere",
+    "empty": "Noch keine Favoritwertpapiere. Besuchen Sie die <securitiesLink>Wertpapierseite</securitiesLink> und markieren Sie die Wertpapiere, die Sie hier verfolgen möchten.",
+    "noPriceYet": "Noch kein Kurs",
+    "dailyChange": "Tagesveränderung",
+    "refreshPrices": "Kurse aktualisieren",
+    "manage": "Wertpapiere verwalten"
+  },
+  "netWorth": {
+    "title": "Reinvermögen",
+    "empty": "Noch keine Reinvermögensdaten verfügbar.",
+    "past12Months": "Letzte 12 Monate",
+    "viewReport": "Vollständigen Bericht anzeigen"
+  },
+  "assetsVsLiabilities": {
+    "title": "Aktiva vs. Verbindlichkeiten",
+    "empty": "Noch keine Reinvermögensdaten verfügbar.",
+    "current": "Aktuell",
+    "netWorthLabel": "Reinvermögen",
+    "assets": "Aktiva",
+    "liabilities": "Verbindlichkeiten"
+  },
+  "expensesPieChart": {
+    "title": "Ausgaben nach Kategorie",
+    "empty": "Keine Ausgabendaten für diesen Zeitraum.",
+    "past30Days": "Letzte 30 Tage",
+    "total": "Gesamt",
+    "uncategorized": "Nicht kategorisiert",
+    "other": "Sonstiges"
+  },
+  "incomeExpenses": {
+    "title": "Einnahmen vs. Ausgaben",
+    "last5Weeks": "Letzte 5 Wochen",
+    "weekOf": "Woche vom {date}",
+    "income": "Einnahmen",
+    "expenses": "Ausgaben",
+    "net": "Netto"
+  }
+}

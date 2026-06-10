@@ -1,0 +1,204 @@
+{
+  "page": {
+    "title": "Zahlungsempfänger",
+    "subtitle": "Verwalten Sie Ihre Zahlungsempfänger und deren Standardkategorien",
+    "deactivateUnused": "Ungenutzte deaktivieren",
+    "autoAssignCategories": "Kategorien automatisch zuweisen",
+    "newPayee": "+ Neuer Zahlungsempfänger",
+    "searchPlaceholder": "Zahlungsempfänger suchen...",
+    "statusAll": "Alle ({count})",
+    "statusActive": "Aktiv ({count})",
+    "statusInactive": "Inaktiv ({count})",
+    "modalTitleEdit": "Zahlungsempfänger bearbeiten",
+    "modalTitleNew": "Neuer Zahlungsempfänger",
+    "loading": "Zahlungsempfänger werden geladen...",
+    "count": "{count, plural, one {# Zahlungsempfänger} other {# Zahlungsempfänger}}",
+    "toasts": {
+      "loadFailed": "Daten konnten nicht geladen werden",
+      "updated": "Zahlungsempfänger erfolgreich aktualisiert",
+      "created": "Zahlungsempfänger erfolgreich erstellt",
+      "reactivated": "Zahlungsempfänger \"{name}\" reaktiviert",
+      "reactivateFailed": "Zahlungsempfänger konnte nicht reaktiviert werden",
+      "updateFailed": "Zahlungsempfänger konnte nicht aktualisiert werden",
+      "createFailed": "Zahlungsempfänger konnte nicht erstellt werden"
+    },
+    "summary": {
+      "totalPayees": "Zahlungsempfänger gesamt",
+      "active": "Aktiv",
+      "inactive": "Inaktiv",
+      "withoutCategory": "Ohne Kategorie"
+    }
+  },
+  "list": {
+    "columns": {
+      "name": "Name",
+      "defaultCategory": "Standardkategorie",
+      "count": "Anzahl",
+      "aliases": "Aliase",
+      "lastUsed": "Zuletzt verwendet",
+      "created": "Erstellt",
+      "status": "Status",
+      "notes": "Notizen",
+      "actions": "Aktionen"
+    },
+    "density": {
+      "normal": "Normal",
+      "compact": "Kompakt",
+      "dense": "Dicht",
+      "toggle": "Zeilendichte umschalten"
+    },
+    "noCategory": "Keine",
+    "statusBadge": {
+      "active": "Aktiv",
+      "inactive": "Inaktiv"
+    },
+    "actions": {
+      "reactivate": "Reaktivieren",
+      "reactivateShort": "Re",
+      "merge": "Zusammenführen",
+      "mergeShort": "Z",
+      "edit": "Bearbeiten",
+      "editShort": "B",
+      "delete": "Löschen",
+      "deleteShort": "X"
+    },
+    "viewTransactionsTitle": "Buchungen mit diesem Zahlungsempfänger anzeigen",
+    "empty": {
+      "title": "Keine Zahlungsempfänger",
+      "subtitle": "Erstellen Sie einen neuen Zahlungsempfänger, um zu beginnen."
+    },
+    "deleteConfirm": {
+      "title": "\"{name}\" löschen?",
+      "message": "Diese Aktion kann nicht rückgängig gemacht werden.",
+      "confirmLabel": "Löschen",
+      "cancelLabel": "Abbrechen"
+    },
+    "toasts": {
+      "deleted": "Zahlungsempfänger erfolgreich gelöscht",
+      "deleteFailed": "Zahlungsempfänger konnte nicht gelöscht werden"
+    }
+  },
+  "form": {
+    "nameLabel": "Name des Zahlungsempfängers",
+    "categoryLabel": "Standardkategorie",
+    "notesLabel": "Notizen (optional)",
+    "submitCreate": "Zahlungsempfänger erstellen",
+    "submitUpdate": "Zahlungsempfänger aktualisieren"
+  },
+  "merge": {
+    "title": "Zahlungsempfänger zusammenführen",
+    "mergeFromLabel": "Zusammenführen von (wird gelöscht):",
+    "transactionCount": "{count, plural, one {# Buchung wird übertragen} other {# Buchungen werden übertragen}}",
+    "mergeIntoLabel": "Zusammenführen in (Ziel-Zahlungsempfänger)",
+    "addAsAliasLabel": "\"{name}\" als Alias beim Ziel-Zahlungsempfänger hinzufügen",
+    "willLabel": "Folgendes wird ausgeführt:",
+    "willMoveTransactions": "Alle Buchungen von \"{source}\" nach \"{target}\" verschieben",
+    "willAddAlias": "\"{source}\" als Alias hinzufügen, damit zukünftige Importe automatisch zugeordnet werden",
+    "willDelete": "Den Zahlungsempfänger \"{source}\" löschen",
+    "merging": "Wird zusammengeführt...",
+    "mergeButton": "Zahlungsempfänger zusammenführen",
+    "toasts": {
+      "merged": "In \"{target}\" zusammengeführt: {details}",
+      "transactionsMigrated": "{count, plural, one {# Buchung übertragen} other {# Buchungen übertragen}}",
+      "aliasAdded": "Alias hinzugefügt",
+      "sourceDeleted": "\"{name}\" gelöscht",
+      "failed": "Zahlungsempfänger konnten nicht zusammengeführt werden"
+    }
+  },
+  "categoryAutoAssign": {
+    "title": "Standardkategorien automatisch zuweisen",
+    "howItWorksTitle": "Funktionsweise",
+    "howItWorksBody": "Diese Funktion analysiert Ihren Buchungsverlauf, um Standardkategorien für Zahlungsempfänger vorzuschlagen. Sie prüft, welche Kategorie am häufigsten für jeden Zahlungsempfänger verwendet wird, und schlägt vor, diese als Standardkategorie für zukünftige Buchungen festzulegen. Sie können die Standardkategorie jederzeit überschreiben.",
+    "minTransactionsLabel": "Mindestanzahl Buchungen: {count}",
+    "minTransactionsHelp": "Nur Zahlungsempfänger mit mindestens so vielen Buchungen berücksichtigen",
+    "matchPercentageLabel": "Kategorieübereinstimmung: {percent}%",
+    "matchPercentageHelp": "Die Kategorie muss bei mindestens diesem Prozentsatz der Buchungen verwendet worden sein",
+    "onlyWithoutCategoryLabel": "Nur Zahlungsempfänger ohne Standardkategorie",
+    "previewButton": "Vorschläge anzeigen",
+    "loading": "Wird geladen...",
+    "suggestionsHeader": "Vorschläge ({count} gefunden)",
+    "selectAll": "Alle auswählen",
+    "selectNone": "Keine auswählen",
+    "empty": {
+      "line1": "Keine Zahlungsempfänger entsprechen den aktuellen Kriterien.",
+      "line2": "Bitte die Einstellungen oben anpassen."
+    },
+    "columns": {
+      "payee": "Zahlungsempfänger",
+      "suggestedCategory": "Vorgeschlagene Kategorie",
+      "match": "Übereinstimmung"
+    },
+    "selectedCount": "{count, plural, one {# Zahlungsempfänger ausgewählt} other {# Zahlungsempfänger ausgewählt}}",
+    "applyButton": "Auf {count, plural, one {# Zahlungsempfänger} other {# Zahlungsempfänger}} anwenden",
+    "applying": "Wird angewendet...",
+    "toasts": {
+      "selectAtLeastOne": "Bitte mindestens einen Zahlungsempfänger zum Aktualisieren auswählen",
+      "updated": "{count, plural, one {# Zahlungsempfänger aktualisiert} other {# Zahlungsempfänger aktualisiert}}",
+      "loadFailed": "Vorschläge konnten nicht geladen werden",
+      "applyFailed": "Kategoriezuweisungen konnten nicht angewendet werden"
+    }
+  },
+  "deactivateUnused": {
+    "title": "Ungenutzte Zahlungsempfänger deaktivieren",
+    "howItWorksTitle": "Funktionsweise",
+    "howItWorksBody": "Diese Funktion sucht selten genutzte Zahlungsempfänger und deaktiviert sie. Deaktivierte Zahlungsempfänger erscheinen nicht in Auswahlfeldern beim Erstellen von Buchungen, ihre historischen Buchungen bleiben jedoch erhalten. Sie können einen Zahlungsempfänger jederzeit in der Zahlungsempfängerliste reaktivieren.",
+    "maxTransactionsLabel": "{count, plural, one {# oder weniger Buchung} other {# oder weniger Buchungen}}",
+    "maxTransactionsHelp": "Nur Zahlungsempfänger mit dieser Anzahl Buchungen oder weniger einbeziehen",
+    "monthsUnusedLabel": "Zuletzt verwendet vor mehr als {label}",
+    "monthsUnusedHelp": "Nur Zahlungsempfänger einbeziehen, die seit dieser Zeit nicht verwendet wurden (oder noch nie)",
+    "previewButton": "Ungenutzte Zahlungsempfänger anzeigen",
+    "loading": "Wird geladen...",
+    "candidatesHeader": "Kandidaten ({count} gefunden)",
+    "selectAll": "Alle auswählen",
+    "selectNone": "Keine auswählen",
+    "neverUsed": "Nie verwendet",
+    "empty": {
+      "line1": "Keine Zahlungsempfänger entsprechen den aktuellen Kriterien.",
+      "line2": "Bitte die Einstellungen oben anpassen."
+    },
+    "columns": {
+      "payee": "Zahlungsempfänger",
+      "transactions": "Buchungen",
+      "lastUsed": "Zuletzt verwendet"
+    },
+    "selectedCount": "{count, plural, one {# Zahlungsempfänger ausgewählt} other {# Zahlungsempfänger ausgewählt}}",
+    "deactivateButton": "{count, plural, one {# Zahlungsempfänger} other {# Zahlungsempfänger}} deaktivieren",
+    "deactivating": "Wird deaktiviert...",
+    "toasts": {
+      "selectAtLeastOne": "Bitte mindestens einen Zahlungsempfänger zum Deaktivieren auswählen",
+      "deactivated": "{count, plural, one {# Zahlungsempfänger deaktiviert} other {# Zahlungsempfänger deaktiviert}}",
+      "loadFailed": "Vorschau konnte nicht geladen werden",
+      "deactivateFailed": "Zahlungsempfänger konnten nicht deaktiviert werden"
+    }
+  },
+  "reactivate": {
+    "title": "Zahlungsempfänger reaktivieren?",
+    "message": "Der Zahlungsempfänger \"{name}\" wurde zuvor deaktiviert. Möchten Sie ihn reaktivieren, damit er wieder in Auswahlfeldern erscheint?",
+    "keepInactiveButton": "Nein, inaktiv lassen",
+    "reactivateButton": "Reaktivieren",
+    "reactivating": "Wird reaktiviert..."
+  },
+  "aliases": {
+    "heading": "Aliase",
+    "description": "Aliase ordnen importierte Zahlungsempfängernamen diesem Zahlungsempfänger zu. Verwenden Sie * als Platzhalter (z. B. \"STARBUCKS*\"). Groß-/Kleinschreibung wird ignoriert.",
+    "loading": "Wird geladen...",
+    "noAliases": "Keine Aliase konfiguriert",
+    "removeTitle": "Alias entfernen",
+    "removeButton": "Entfernen",
+    "addButton": "Hinzufügen",
+    "adding": "Wird hinzugefügt...",
+    "placeholder": "z. B. STARBUCKS #*",
+    "toasts": {
+      "alreadyAdded": "Alias \"{alias}\" bereits vorhanden",
+      "added": "Alias \"{alias}\" hinzugefügt",
+      "removed": "Alias \"{alias}\" entfernt",
+      "loadFailed": "Aliase konnten nicht geladen werden",
+      "addFailed": "Alias konnte nicht hinzugefügt werden",
+      "removeFailed": "Alias konnte nicht entfernt werden"
+    }
+  },
+  "selectCategoryPlaceholder": "Kategorie auswählen...",
+  "validation": {
+    "nameRequired": "Name des Zahlungsempfängers ist erforderlich"
+  }
+}

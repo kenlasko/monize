@@ -1,0 +1,20 @@
+{
+  "title": "Acesso de emergência",
+  "missingToken": "Token de acesso de emergência em falta.",
+  "previewError": "Este link de acesso de emergência é inválido, expirou ou já foi utilizado.",
+  "linkInvalid": "O link já não é válido.",
+  "backToSignIn": "Voltar ao início de sessão",
+  "ownerFallback": "o proprietário da conta",
+  "ownerFirstNameFallback": "o proprietário",
+  "intro": "Olá {contactName}, foi designado(a) como contacto de emergência na conta Monize de <b>{ownerName}</b>.",
+  "introDetail": "Definir uma palavra-passe aqui permitirá iniciar sessão como titular da conta e terá acesso total à mesma. As sessões existentes serão revogadas e as credenciais anteriores substituídas.",
+  "messageHeading": "Mensagem de {name}",
+  "newPasswordLabel": "Nova palavra-passe",
+  "confirmPasswordLabel": "Confirmar palavra-passe",
+  "submit": "Reivindicar acesso de emergência",
+  "toasts": {
+    "success": "Tem agora acesso à conta de {name}.",
+    "failed": "Falha ao concluir a reivindicação de acesso de emergência. O link pode ter expirado ou já ter sido utilizado."
+  },
+  "passwordsNoMatch": "As palavras-passe não coincidem"
+}

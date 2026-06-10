@@ -1,0 +1,80 @@
+{
+  "page": {
+    "title": "Kategorien",
+    "subtitle": "Organisieren Sie Ihre Buchungen mit benutzerdefinierten Kategorien",
+    "newButton": "+ Neue Kategorie",
+    "searchPlaceholder": "Kategorien suchen...",
+    "filterAll": "Alle ({count})",
+    "filterExpenses": "Ausgaben ({count})",
+    "filterIncome": "Einnahmen ({count})",
+    "modalTitleNew": "Neue Kategorie",
+    "modalTitleEdit": "Kategorie bearbeiten",
+    "countSingle": "1 Kategorie",
+    "countPlural": "{count} Kategorien",
+    "loadingText": "Kategorien werden geladen...",
+    "summaryTotal": "Kategorien gesamt",
+    "summaryIncome": "Einnahmenkategorien",
+    "summaryExpense": "Ausgabenkategorien",
+    "summaryTopLevel": "Oberste Ebene"
+  },
+  "empty": {
+    "heading": "Noch keine Kategorien",
+    "description": "Kategorien helfen Ihnen, Ihre Buchungen zu organisieren. Beginnen Sie mit dem Import unserer Standard-Kategorien oder erstellen Sie eigene.",
+    "importButton": "Standardkategorien importieren",
+    "createButton": "Eigene erstellen",
+    "hint": "Der Standardsatz enthält gängige Einnahmen- und Ausgabenkategorien mit Unterkategorien"
+  },
+  "toasts": {
+    "created": "Kategorie erfolgreich erstellt",
+    "updated": "Kategorie erfolgreich aktualisiert",
+    "deleted": "Kategorie erfolgreich gelöscht",
+    "cannotDeleteSystem": "Systemkategorien können nicht gelöscht werden",
+    "importSuccess": "{count} Kategorien erfolgreich importiert"
+  },
+  "form": {
+    "nameLabel": "Kategoriename",
+    "parentLabel": "Übergeordnete Kategorie",
+    "noParent": "Keine übergeordnete Kategorie (oberste Ebene)",
+    "typeLabel": "Typ",
+    "typeExpense": "Ausgabe",
+    "typeIncome": "Einnahme",
+    "typeInherited": "Typ wird von übergeordneter Kategorie übernommen",
+    "colourLabel": "Farbe",
+    "colourInherit": "Von übergeordneter Kategorie übernehmen",
+    "colourNone": "Keine Farbe",
+    "colourInheritedFrom": "Farbe von übergeordneter Kategorie übernommen ({name})",
+    "descriptionLabel": "Beschreibung (optional)",
+    "submitCreate": "Kategorie erstellen",
+    "submitUpdate": "Kategorie aktualisieren"
+  },
+  "list": {
+    "emptyHeading": "Keine Kategorien",
+    "emptyDescription": "Erstellen Sie eine neue Kategorie, um zu beginnen.",
+    "colName": "Name",
+    "colType": "Typ",
+    "colCount": "Anzahl",
+    "colDescription": "Beschreibung",
+    "colActions": "Aktionen",
+    "badgeIncome": "Einnahme",
+    "badgeExpense": "Ausgabe",
+    "systemBadge": "(System)",
+    "inheritedColorTitle": "Von übergeordneter Kategorie übernommen",
+    "viewTransactionsTitle": "Buchungen in dieser Kategorie anzeigen",
+    "densityToggleTitle": "Zeilendichte umschalten",
+    "densityNormal": "Normal",
+    "densityCompact": "Kompakt",
+    "densityDense": "Dicht"
+  },
+  "deleteDialog": {
+    "title": "\"{name}\" löschen?",
+    "checkingUsage": "Verwendung wird geprüft...",
+    "usedBy": "Diese Kategorie wird von {count, plural, one {# Eintrag} other {# Einträgen}} verwendet (Buchungen und/oder terminierte Rechnungen & Einzahlungen).",
+    "reassignLabel": "Neu zuweisen an:",
+    "leaveUncategorized": "Ohne Kategorie lassen",
+    "safeToDelete": "Diese Kategorie wird nicht verwendet. Sie kann sicher gelöscht werden.",
+    "cannotUndo": "Diese Aktion kann nicht rückgängig gemacht werden."
+  },
+  "validation": {
+    "nameRequired": "Kategoriename ist erforderlich"
+  }
+}

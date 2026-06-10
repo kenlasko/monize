@@ -1,0 +1,20 @@
+{
+  "title": "Notfallzugriff",
+  "missingToken": "Notfallzugriffs-Token fehlt.",
+  "previewError": "Dieser Notfallzugriffs-Link ist ungültig, abgelaufen oder wurde bereits verwendet.",
+  "linkInvalid": "Link ist nicht mehr gültig.",
+  "backToSignIn": "Zurück zur Anmeldung",
+  "ownerFallback": "der Kontoinhaber",
+  "ownerFirstNameFallback": "der Inhaber",
+  "intro": "Hallo {contactName}, Sie wurden als Notfallkontakt im Monize-Konto von <b>{ownerName}</b> eingetragen.",
+  "introDetail": "Wenn Sie hier ein Passwort festlegen, werden Sie als Kontoinhaber angemeldet und erhalten vollen Zugriff auf das Konto. Bestehende Sitzungen werden widerrufen und die bisherigen Anmeldedaten werden ersetzt.",
+  "messageHeading": "Nachricht von {name}",
+  "newPasswordLabel": "Neues Passwort",
+  "confirmPasswordLabel": "Passwort bestätigen",
+  "submit": "Notfallzugriff beanspruchen",
+  "toasts": {
+    "success": "Sie haben jetzt Zugriff auf das Konto von {name}.",
+    "failed": "Notfallzugriff konnte nicht abgeschlossen werden. Der Link ist möglicherweise abgelaufen oder wurde bereits verwendet."
+  },
+  "passwordsNoMatch": "Passwörter stimmen nicht überein"
+}

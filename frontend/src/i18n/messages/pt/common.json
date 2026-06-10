@@ -1,0 +1,148 @@
+{
+  "save": "Guardar",
+  "cancel": "Cancelar",
+  "delete": "Eliminar",
+  "edit": "Editar",
+  "close": "Fechar",
+  "loading": "A carregar...",
+  "pagination": {
+    "showing": "A mostrar",
+    "of": "de",
+    "firstPage": "Primeira página",
+    "lastPage": "Última página",
+    "previousPage": "Página anterior",
+    "nextPage": "Página seguinte",
+    "back10Pages": "Recuar 10 páginas",
+    "forward10Pages": "Avançar 10 páginas",
+    "enterPageNumber": "Introduzir número de página"
+  },
+  "confirmDialog": {
+    "confirm": "Confirmar"
+  },
+  "unsavedChanges": {
+    "title": "Alterações não guardadas",
+    "message": "Tem alterações não guardadas. O que pretende fazer?",
+    "discard": "Descartar"
+  },
+  "exportDropdown": {
+    "export": "Exportar",
+    "exporting": "A exportar...",
+    "exportPdf": "Exportar PDF",
+    "exportReport": "Exportar relatório",
+    "failedPdf": "Falha ao exportar PDF. Tente novamente."
+  },
+  "dateRange": {
+    "custom": "Personalizado",
+    "startDate": "Data de início",
+    "endDate": "Data de fim"
+  },
+  "colorPicker": {
+    "custom": "Personalizado:",
+    "apply": "Aplicar"
+  },
+  "chartDownload": {
+    "downloadAsPng": "Transferir {filename} como PNG",
+    "unableToCapture": "Não foi possível capturar a imagem do gráfico",
+    "failedToDownload": "Falha ao transferir o gráfico"
+  },
+  "chartViewToggle": {
+    "pieChart": "Gráfico circular",
+    "barChart": "Gráfico de barras",
+    "lineChart": "Gráfico de linhas",
+    "areaChart": "Gráfico de área",
+    "table": "Tabela"
+  },
+  "formActions": {
+    "cancel": "Cancelar",
+    "save": "Guardar"
+  },
+  "themeToggle": {
+    "light": "Claro",
+    "dark": "Escuro",
+    "system": "Sistema",
+    "title": "Tema: {label}. Clique para alterar."
+  },
+  "errorBoundary": {
+    "defaultMessage": "Ocorreu um erro ao renderizar este componente."
+  },
+  "calendar": {
+    "clear": "Limpar",
+    "today": "Hoje"
+  },
+  "multiSelect": {
+    "search": "Pesquisar...",
+    "selectAll": "Selecionar tudo",
+    "clear": "Limpar",
+    "noOptions": "Sem opções disponíveis"
+  },
+  "combobox": {
+    "createOption": "Criar \"{value}\""
+  },
+  "passwordInput": {
+    "show": "Mostrar campo",
+    "hide": "Ocultar campo"
+  },
+  "currencyInput": {
+    "openCalculator": "Abrir calculadora",
+    "calculator": "Calculadora"
+  },
+  "dateInput": {
+    "shortcutsTitle": "Atalhos de teclado",
+    "today": "Hoje",
+    "firstDayOfYear": "Primeiro dia do ano",
+    "lastDayOfYear": "Último dia do ano",
+    "firstDayOfMonth": "Primeiro dia do mês",
+    "lastDayOfMonth": "Último dia do mês",
+    "nextDay": "Dia seguinte",
+    "previousDay": "Dia anterior",
+    "nextMonth": "Mês seguinte",
+    "previousMonth": "Mês anterior"
+  },
+  "accountTypes": {
+    "CHEQUING": "Conta à ordem",
+    "SAVINGS": "Poupança",
+    "CREDIT_CARD": "Cartão de crédito",
+    "INVESTMENT": "Investimento",
+    "LOAN": "Empréstimo",
+    "MORTGAGE": "Crédito habitação",
+    "CASH": "Dinheiro",
+    "LINE_OF_CREDIT": "Linha de crédito",
+    "ASSET": "Ativo",
+    "OTHER": "Outro"
+  },
+  "accountFilter": {
+    "allAccounts": "Todas as contas",
+    "allBut": "Todas exceto {names}"
+  },
+  "passwordRequirements": "A palavra-passe deve ter pelo menos 12 caracteres e conter uma letra maiúscula, uma letra minúscula, um número e um carácter especial.",
+  "passwordValidation": {
+    "min": "A palavra-passe deve ter pelo menos 12 caracteres",
+    "max": "A palavra-passe deve ter no máximo 100 caracteres",
+    "lowercase": "Deve conter uma letra minúscula",
+    "uppercase": "Deve conter uma letra maiúscula",
+    "number": "Deve conter um número",
+    "special": "Deve conter um carácter especial"
+  },
+  "codeValidation": {
+    "length": "O código deve ter exatamente 6 dígitos",
+    "digits": "O código deve ter 6 dígitos"
+  },
+  "monthsShort": ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"],
+  "weekdaysShort": ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"],
+  "weekdaysMin": ["do", "se", "te", "qu", "qu", "se", "sá"],
+  "weekdaysNarrow": ["D", "S", "T", "Q", "Q", "S", "S"],
+  "dateFormat": {
+    "browserAuto": "Usar locale do browser (deteção automática)",
+    "custom": "Personalizado..."
+  },
+  "emailInvalid": "Introduza um endereço de e-mail válido",
+  "noSectionAccess": "Não tem acesso a essa secção.",
+  "undoRedo": {
+    "nothingToUndo": "Nada para desfazer",
+    "cannotUndo": "Não é possível desfazer esta ação",
+    "undoFailed": "Falha ao desfazer",
+    "nothingToRedo": "Nada para refazer",
+    "cannotRedo": "Não é possível refazer esta ação",
+    "redoFailed": "Falha ao refazer"
+  }
+}

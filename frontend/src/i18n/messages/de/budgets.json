@@ -1,0 +1,548 @@
+{
+  "alerts": {
+    "title": "Warnungen",
+    "unread": "{count} ungelesen",
+    "markAllRead": "Alle als gelesen markieren",
+    "loading": "Warnungen werden geladen...",
+    "empty": "Keine Warnungen",
+    "undo": "Rückgängig",
+    "buttonTitle": "Warnungen",
+    "buttonAriaLabel": "Warnungen",
+    "dismissAriaLabel": "Warnung schließen",
+    "severity": {
+      "critical": "Kritisch",
+      "warning": "Warnung",
+      "success": "Gute Nachricht",
+      "info": "Info"
+    }
+  },
+  "summary503020": {
+    "title": "50/30/20-Aufteilung",
+    "groups": {
+      "NEED": "Bedürfnisse",
+      "WANT": "Wünsche",
+      "SAVING": "Ersparnisse"
+    },
+    "target": "Ziel: {percent}%",
+    "budgeted": "Budgetiert: {percent}% ({amount})"
+  },
+  "categoryForm": {
+    "editTitle": "Bearbeiten: {name}",
+    "budgetAmount": "Budget-Betrag",
+    "rolloverType": "Übertragungsart",
+    "rolloverCap": "Übertragungsgrenze (optional)",
+    "rolloverCapPlaceholder": "Keine Grenze",
+    "flexGroup": "Flex-Gruppe (optional)",
+    "flexGroupPlaceholder": "z. B. Freizeitgeld",
+    "categoryGroup": "Kategoriegruppe (50/30/20)",
+    "warningAt": "Warnung bei (%)",
+    "criticalAt": "Kritisch bei (%)",
+    "notes": "Notizen (optional)",
+    "notesPlaceholder": "Notizen zu diesem Kategorie-Budget",
+    "rolloverOptions": {
+      "NONE": "Kein (wird jede Periode zurückgesetzt)",
+      "MONTHLY": "Monatlicher Übertrag",
+      "QUARTERLY": "Vierteljährlicher Übertrag",
+      "ANNUAL": "Jährlicher Übertrag"
+    },
+    "groupOptions": {
+      "none": "Keine",
+      "NEED": "Bedürfnis",
+      "WANT": "Wunsch",
+      "SAVING": "Ersparnis"
+    },
+    "saving": "Wird gespeichert..."
+  },
+  "categoryList": {
+    "title": "Kategorie-Budgets",
+    "empty": "Keine Ausgabenkategorien in diesem Budget.",
+    "sort": "Sortieren:",
+    "sortAriaLabel": "Kategorien sortieren",
+    "sortAscAriaLabel": "Absteigend sortieren",
+    "sortDescAriaLabel": "Aufsteigend sortieren",
+    "sortDescTitle": "Absteigend sortieren",
+    "sortAscTitle": "Aufsteigend sortieren",
+    "sortOptions": {
+      "percentUsed": "% Verwendet",
+      "spent": "Ausgegeben",
+      "remaining": "Verbleibend",
+      "name": "Name"
+    }
+  },
+  "categoryRow": {
+    "overPace": "Über dem Tempo",
+    "underPace": "Unter dem Tempo",
+    "onPace": "Im Tempo",
+    "rollover": "Übertrag: {type}",
+    "remaining": "{amount} verbleibend",
+    "over": "{amount} überschritten"
+  },
+  "categoryTrend": {
+    "title": "Kategorietrends",
+    "empty": "Noch nicht genügend Daten für Kategorietrends.",
+    "tableHeaders": {
+      "category": "Kategorie",
+      "avgBudget": "Ø Budget",
+      "avgActual": "Ø Tatsächlich",
+      "avgVariance": "Ø Abweichung"
+    }
+  },
+  "flexGroups": {
+    "title": "Flex-Gruppen"
+  },
+  "form": {
+    "budgetName": "Budget-Name",
+    "description": "Beschreibung (optional)",
+    "descriptionPlaceholder": "Budget-Beschreibung",
+    "budgetType": "Budget-Typ",
+    "strategy": "Strategie",
+    "baseIncome": "Basiseinkommen (optional)",
+    "baseIncomePlaceholder": "Erwartetes monatliches Einkommen",
+    "active": "Aktiv",
+    "saveChanges": "Änderungen speichern",
+    "saving": "Wird gespeichert...",
+    "typeOptions": {
+      "MONTHLY": "Monatlich",
+      "ANNUAL": "Jährlich",
+      "PAY_PERIOD": "Lohnperiode"
+    },
+    "strategyOptions": {
+      "FIXED": "Fest",
+      "ROLLOVER": "Übertrag",
+      "ZERO_BASED": "Nullbasiert",
+      "FIFTY_THIRTY_TWENTY": "50/30/20"
+    }
+  },
+  "healthGauge": {
+    "title": "Gesundheitswert",
+    "labels": {
+      "excellent": "Ausgezeichnet",
+      "good": "Gut",
+      "needsAttention": "Aufmerksamkeit erforderlich",
+      "offTrack": "Außer Kurs"
+    }
+  },
+  "heatmap": {
+    "title": "Ausgaben-Heatmap – {monthLabel}",
+    "ariaLabel": "Ausgaben-Heatmap",
+    "less": "Weniger",
+    "more": "Mehr"
+  },
+  "periodDetail": {
+    "summaryCards": {
+      "totalBudgeted": "Gesamt budgetiert",
+      "totalSpent": "Gesamt ausgegeben",
+      "underBudget": "Unter Budget",
+      "overBudget": "Über Budget",
+      "saved": "gespart",
+      "overspent": "überzogen",
+      "income": "Einnahmen",
+      "savings": "Ersparnisse: {amount}"
+    },
+    "rolloverSummary": {
+      "title": "Übertragsübersicht",
+      "carriedIn": "Eingebracht:",
+      "carriedOut": "Übertragen:"
+    },
+    "overallUsage": "Gesamte Budget-Nutzung",
+    "expenseCategories": "Ausgabenkategorien",
+    "incomeCategories": "Einnahmenkategorien",
+    "categorySublabel": "{count} Kategorien",
+    "rolloverBadge": "+{amount} Übertrag",
+    "underBudgetLabel": "{amount} unter Budget",
+    "overBudgetLabel": "{amount} über Budget",
+    "carriedForward": "{amount} übertragen"
+  },
+  "periodSelector": {
+    "label": "Periode:",
+    "currentPeriod": "Aktuelle Periode",
+    "current": "{label} (Aktuell)",
+    "projected": "{label} (Prognose)"
+  },
+  "progressBar": {
+    "ariaLabel": "{percent}% verwendet",
+    "paceMarkerTitle": "Erwartetes Tempo: {percent}%"
+  },
+  "scenarioPlanner": {
+    "title": "Was-wäre-wenn-Szenarioplaner",
+    "empty": "Keine Ausgabenkategorien für die Planung verfügbar.",
+    "reset": "Zurücksetzen",
+    "applyChanges": "Änderungen anwenden",
+    "currentBudget": "Aktuelles Budget",
+    "proposedBudget": "Vorgeschlagenes Budget",
+    "projectedSavings": "Prognostizierte Ersparnisse",
+    "savingsChange": "Änderung der Ersparnisse",
+    "original": "Original: {amount}"
+  },
+  "summaryCards": {
+    "totalBudget": "Gesamt-Budget",
+    "spent": "Ausgegeben",
+    "remaining": "Verbleibend",
+    "savings": "Ersparnisse",
+    "periodEnded": "Periode beendet",
+    "days": "{count} Tage",
+    "onTrack": "Im Plan",
+    "overBudget": "Über Budget"
+  },
+  "trendChart": {
+    "title": "Budget vs. tatsächliche Entwicklung",
+    "empty": "Noch nicht genügend Daten für Trends.",
+    "budgeted": "Budgetiert",
+    "actual": "Tatsächlich"
+  },
+  "upcomingBills": {
+    "title": "Bevorstehende Rechnungen",
+    "empty": "Keine Rechnungen in dieser Periode fällig.",
+    "more": "+{count} weitere Rechnungen",
+    "totalUpcoming": "Bevorstehend gesamt",
+    "trulyAvailable": "Tatsächlich verfügbar",
+    "over": " überschritten"
+  },
+  "velocity": {
+    "title": "Ausgabentempo",
+    "dailyBurnRate": "Tägliche Ausgabenrate",
+    "safeToSpend": "Sicher auszugeben",
+    "projectedMonthEnd": "Prognose Monatsende",
+    "budgetTotal": "Budget gesamt",
+    "billsComing": "Bevorstehende Rechnungen",
+    "trulyAvailable": "Tatsächlich verfügbar",
+    "over": " überschritten",
+    "dayProgress": "Tag {elapsed} von {total}",
+    "daysRemaining": "{count} Tage verbleibend",
+    "paceStatus": {
+      "under": "Unter Budget-Tempo",
+      "on_track": "Im Plan",
+      "over": "Über Budget-Tempo"
+    }
+  },
+  "wizard": {
+    "steps": {
+      "analyze": "Analysieren",
+      "categories": "Kategorien",
+      "configure": "Konfigurieren",
+      "review": "Überprüfen"
+    },
+    "ariaLabel": "Assistent-Schritte",
+    "back": "Zurück"
+  },
+  "wizardAnalysis": {
+    "chooseStrategy": "Budget-Strategie wählen",
+    "analysisPeriod": "Analysezeitraum",
+    "analysisPeriodHint": "Wie viele Monate der Buchungshistorie sollen analysiert werden, um Budget-Beträge vorzuschlagen?",
+    "budgetProfile": "Budget-Profil",
+    "analyzeButton": "Meine Ausgaben analysieren",
+    "analysisPeriods": {
+      "3": "3 Monate",
+      "6": "6 Monate",
+      "12": "12 Monate"
+    },
+    "strategies": {
+      "FIXED": {
+        "label": "Fest",
+        "description": "Feste Beträge pro Kategorie festlegen. Ungenutztes Budget wird jede Periode zurückgesetzt."
+      },
+      "ROLLOVER": {
+        "label": "Übertrag",
+        "description": "Ungenutztes Budget wird übertragen. Übertragungsregeln pro Kategorie konfigurieren."
+      },
+      "ZERO_BASED": {
+        "label": "Nullbasiert",
+        "description": "Jeder Euro des Einkommens erhält eine Verwendung. Einnahmen minus Ausgaben ergibt null."
+      },
+      "FIFTY_THIRTY_TWENTY": {
+        "label": "50/30/20",
+        "description": "50% Bedürfnisse, 30% Wünsche, 20% Ersparnisse. Kategorien werden nach Gruppe gekennzeichnet."
+      }
+    },
+    "profiles": {
+      "COMFORTABLE": {
+        "label": "Komfortabel",
+        "description": "Basiert auf Ihrem 75. Perzentil der Ausgaben. Lässt Spielraum."
+      },
+      "ON_TRACK": {
+        "label": "Im Plan",
+        "description": "Basiert auf Ihrem Medianausgaben. Realistische Ziele."
+      },
+      "AGGRESSIVE": {
+        "label": "Aggressiv",
+        "description": "Basiert auf Ihrem 25. Perzentil. Ein anspruchsvolles Sparziel."
+      }
+    },
+    "toasts": {
+      "analyzeFailed": "Ausgabenanalyse fehlgeschlagen"
+    }
+  },
+  "wizardCategories": {
+    "title": "Kategorien überprüfen",
+    "noAnalysis": "Keine Analysedaten. Gehen Sie zurück und führen Sie zuerst die Analyse durch.",
+    "tableHeaders": {
+      "income": "Einnahmen",
+      "expenses": "Ausgaben",
+      "transfers": "Überweisungen / Ersparnisse",
+      "trendMedian": "Trend / Median",
+      "amount": "Betrag"
+    },
+    "totals": {
+      "totalIncome": "Einnahmen gesamt",
+      "totalExpenses": "Ausgaben gesamt",
+      "transfers": "Überweisungen",
+      "remaining": "Verbleibend"
+    },
+    "allocation503020": "50/30/20-Aufteilung",
+    "allocationTarget": "(Ziel {percent}%)",
+    "nextButton": "Weiter: Konfigurieren",
+    "profiles": {
+      "COMFORTABLE": "Komfortabel",
+      "ON_TRACK": "Im Plan",
+      "AGGRESSIVE": "Aggressiv"
+    }
+  },
+  "wizardStrategy": {
+    "title": "Ihr Budget konfigurieren",
+    "sections": {
+      "budgetDetails": "Budget-Details",
+      "income": "Einnahmen",
+      "rolloverRules": "Übertragungsregeln",
+      "alertThresholds": "Warnschwellen",
+      "flexGroups": "Flex-Gruppen",
+      "excludedAccounts": "Ausgeschlossene Konten"
+    },
+    "budgetNameLabel": "Budget-Name",
+    "budgetNameRequired": "Budget-Name ist erforderlich",
+    "budgetTypeLabel": "Budget-Typ",
+    "startDateLabel": "Startdatum",
+    "startDateRequired": "Startdatum ist erforderlich",
+    "strategyPrefix": "Strategie: {strategy}",
+    "strategyNotSelected": "Nicht ausgewählt",
+    "strategyDescriptions": {
+      "FIXED": "Beträge pro Kategorie festlegen. Ungenutztes Budget wird jede Periode zurückgesetzt.",
+      "ROLLOVER": "Ungenutztes Budget wird basierend auf kategoriespezifischen Übertragungsregeln übertragen.",
+      "ZERO_BASED": "Jeder Euro des Einkommens wird zugewiesen. Einnahmen minus Ausgaben sollte null ergeben.",
+      "FIFTY_THIRTY_TWENTY": "Kategorien gruppiert als Bedürfnisse (50%), Wünsche (30%), Ersparnisse (20%)."
+    },
+    "linkBudgetToIncome": "Budget mit Einkommen verknüpfen",
+    "linkBudgetToIncomeHint": "Kategoriebeträge werden zu Prozentsätzen Ihres Basiseinkommens",
+    "baseMonthlyIncome": "Monatliches Basiseinkommen",
+    "estimatedFromAnalysis": "Aus Analyse geschätzt: {amount}/Monat",
+    "defaultRolloverType": "Standard-Übertragungsart",
+    "rolloverHint": "Legt den Standard für alle Kategorien fest. Sie können einzelne Kategorien nach der Budgeterstellung anpassen.",
+    "rolloverOptions": {
+      "NONE": "Kein -- Wird jede Periode zurückgesetzt",
+      "MONTHLY": "Monatlich -- Wird jeden Monat übertragen",
+      "QUARTERLY": "Vierteljährlich -- Wird jedes Quartal übertragen",
+      "ANNUAL": "Jährlich -- Wird jedes Jahr übertragen"
+    },
+    "warningAt": "Warnung bei (%)",
+    "warningHint": "Löst eine Warnung aus, wenn die Ausgaben diesen % des Budgets erreichen",
+    "criticalAt": "Kritisch bei (%)",
+    "criticalHint": "Löst eine kritische Warnung aus, wenn die Ausgaben diesen % des Budgets erreichen",
+    "flexGroupsHide": "Ausblenden",
+    "flexGroupsConfigure": "Konfigurieren",
+    "flexGroupsHint": "Verwandte Ausgabenkategorien zusammenfassen. Ausgaben werden als Gruppengesamt verfolgt, was Flexibilität innerhalb der Gruppe ermöglicht.",
+    "flexGroupsTableHeaders": {
+      "category": "Kategorie",
+      "flexGroup": "Flex-Gruppe"
+    },
+    "flexGroupPlaceholder": "z. B. Freizeitgeld",
+    "excludedAccountsHint": "Buchungen von ausgeschlossenen Konten werden nicht in Ihre Budget-Summen eingerechnet.",
+    "excludedCount": "{count} {count, plural, one {Konto} other {Konten}} ausgeschlossen",
+    "categoriesAndTransfers": "{categories} Kategorien und {transfers} Überweisungen ausgewählt",
+    "budgetTypeOptions": {
+      "MONTHLY": "Monatlich",
+      "ANNUAL": "Jährlich",
+      "PAY_PERIOD": "Lohnperiode"
+    },
+    "nextButton": "Weiter: Überprüfen"
+  },
+  "wizardReview": {
+    "title": "Ihr Budget überprüfen",
+    "fields": {
+      "name": "Name",
+      "type": "Typ",
+      "strategy": "Strategie",
+      "startDate": "Startdatum",
+      "rollover": "Übertrag",
+      "alerts": "Warnungen",
+      "incomeLinked": "Einkommen verknüpft",
+      "excludedAccounts": "Ausgeschlossene Konten"
+    },
+    "rolloverOff": "Aus",
+    "alertsValue": "Warnung {warn}% / Kritisch {critical}%",
+    "accountCount": "{count} {count, plural, one {Konto} other {Konten}}",
+    "strategyNotSelected": "Nicht ausgewählt",
+    "summaryCards": {
+      "estIncome": "Gesch. Einnahmen",
+      "totalExpenses": "Ausgaben gesamt",
+      "transfers": "Überweisungen",
+      "remaining": "Verbleibend"
+    },
+    "tableHeaders": {
+      "category": "Kategorie",
+      "amount": "Betrag",
+      "type": "Typ"
+    },
+    "categoryTypes": {
+      "income": "Einnahmen",
+      "expense": "Ausgaben",
+      "transfer": "Überweisung"
+    },
+    "createButton": "Budget erstellen",
+    "categoryCount": "{count} Kategorien",
+    "accountsCount": "{count} Konten",
+    "toasts": {
+      "created": "Budget erfolgreich erstellt",
+      "failed": "Budget konnte nicht erstellt werden"
+    }
+  },
+  "zeroBasedBar": {
+    "title": "Nullbasierte Zuweisung",
+    "fullyAssigned": "Vollständig zugewiesen",
+    "overAssigned": "Überzugewiesen",
+    "underAssigned": "Unterzugewiesen",
+    "assigned": "Zugewiesen: {assigned} / {income}",
+    "unassigned": "{amount} nicht zugewiesen",
+    "over": "{amount} überschritten"
+  },
+  "strategyCard": {
+    "pros": "Vorteile",
+    "cons": "Nachteile",
+    "bestFor": "Am besten geeignet für: ",
+    "strategies": {
+      "FIXED": {
+        "title": "Festes Budget",
+        "description": "Legen Sie für jede Kategorie jede Periode ein festes Ausgabenlimit fest. Ungenutztes Geld wird am Periodenende zurückgesetzt und nicht übertragen.",
+        "pros": [
+          "Einfach einzurichten und zu verstehen",
+          "Klare Ausgabenlimits pro Kategorie",
+          "Vorhersehbare Budgetplanung von Monat zu Monat",
+          "Guter Ausgangspunkt für Budget-Einsteiger"
+        ],
+        "cons": [
+          "Ungenutztes Geld wird nicht übertragen",
+          "Keine Flexibilität zwischen Kategorien",
+          "Passt sich nicht an unregelmäßige Ausgaben an",
+          "Kann starr wirken, wenn Ausgabenmuster variieren"
+        ],
+        "bestFor": "Personen, die unkomplizierte Budgetplanung mit klaren Limits und vorhersehbaren Ausgabenmustern bevorzugen."
+      },
+      "ROLLOVER": {
+        "title": "Übertrag-Budget",
+        "description": "Ungenutztes Budget wird basierend auf kategoriespezifischen Übertragungsregeln in die nächste Periode übertragen. Aufbau von Rücklagen für Kategorien mit unregelmäßigen oder saisonalen Ausgaben.",
+        "pros": [
+          "Bildet Ersparnisse für unregelmäßige Ausgaben",
+          "Belohnt Unterdurchschnitt bei Ausgaben in Kategorien",
+          "Flexible Übertragungsregeln pro Kategorie",
+          "Bewältigt saisonale Schwankungen auf natürliche Weise"
+        ],
+        "cons": [
+          "Anfangs aufwendiger zu konfigurieren",
+          "Angesammelte Salden müssen überwacht werden",
+          "Kann Überausgaben verschleiern, wenn Obergrenzen zu hoch sind",
+          "Erfordert regelmäßige Überprüfung der Übertragungsregeln"
+        ],
+        "bestFor": "Personen mit unregelmäßigen Ausgaben wie Kfz-Wartung, jährlichen Abonnements oder saisonalen Kosten, die schrittweise sparen möchten."
+      },
+      "ZERO_BASED": {
+        "title": "Nullbasiertes Budget",
+        "description": "Jeder Euro des Einkommens erhält eine bestimmte Verwendung. Ihre Einnahmen abzüglich aller budgetierten Beträge sollten null ergeben, sodass kein Geld nicht zugewiesen bleibt.",
+        "pros": [
+          "Maximale Kontrolle über jeden Euro",
+          "Erzwingt bewusste Ausgabenentscheidungen",
+          "Deckt Ausgabenverschwendung schnell auf",
+          "Sehr effektiv für Schuldenabbau-Ziele"
+        ],
+        "cons": [
+          "Erfordert Kenntnis des genauen Einkommens im Voraus",
+          "Zeitaufwendig, jede Periode zu pflegen",
+          "Weniger flexibel bei variablem Einkommen",
+          "Kann für manche Benutzer einschränkend wirken"
+        ],
+        "bestFor": "Personen, die vollständige Kontrolle über ihre Finanzen wollen und bereit sind, jede Periode zu planen, wohin jeder Euro geht."
+      },
+      "FIFTY_THIRTY_TWENTY": {
+        "title": "50/30/20-Budget",
+        "description": "Ein ausgewogener Ansatz, der das Einkommen in drei Gruppen aufteilt: 50% für Bedürfnisse (Wohnen, Lebensmittel, Versorgung), 30% für Wünsche (Essen gehen, Unterhaltung) und 20% für Ersparnisse und Schuldenrückzahlung.",
+        "pros": [
+          "Einfach zu merken und anzuwenden",
+          "Eingebaute Sparquote",
+          "Ausgewogener Ausgabenansatz",
+          "Flexibel innerhalb jeder Gruppe"
+        ],
+        "cons": [
+          "Möglicherweise nicht geeignet für Gebiete mit hohen Lebenshaltungskosten",
+          "Feste Verhältnisse passen möglicherweise nicht auf alle Situationen",
+          "Weniger granulare Kontrolle auf Kategorieebene",
+          "Erfordert die Kategorisierung jeder Ausgabe nach Gruppe"
+        ],
+        "bestFor": "Personen, die einen ausgewogenen Daumenregel-Ansatz bevorzugen, ohne jede Kategorie einzeln zu verfolgen."
+      }
+    }
+  },
+  "pages": {
+    "list": {
+      "title": "Budgets",
+      "subtitle": "Budgets verwalten und Ausgaben verfolgen",
+      "newBudget": "+ Neues Budget",
+      "empty": {
+        "title": "Noch keine Budgets",
+        "description": "Erstellen Sie Ihr erstes Budget, indem Sie Ihre Ausgabenhistorie analysieren. Der Assistent schlägt realistische Beträge basierend auf Ihren Buchungen vor.",
+        "cta": "Erstes Budget erstellen"
+      },
+      "card": {
+        "active": "Aktiv",
+        "inactive": "Inaktiv",
+        "categories": "{count} Kategorien",
+        "started": "Gestartet {date}"
+      }
+    },
+    "create": {
+      "title": "Budget erstellen",
+      "subtitle": "Ausgaben analysieren und ein personalisiertes Budget erstellen"
+    },
+    "detail": {
+      "backToBudgets": "Zurück zu Budgets",
+      "notFound": "Budget nicht gefunden",
+      "delete": {
+        "title": "Budget löschen",
+        "message": "Möchten Sie \"{name}\" wirklich löschen? Dabei werden alle Budget-Daten einschließlich Perioden und Warnungen entfernt. Diese Aktion kann nicht rückgängig gemacht werden.",
+        "confirm": "Löschen",
+        "cancel": "Abbrechen"
+      },
+      "toasts": {
+        "deleted": "Budget gelöscht",
+        "deleteFailed": "Budget konnte nicht gelöscht werden",
+        "loadFailed": "Budget konnte nicht geladen werden",
+        "periodFailed": "Periode konnte nicht geladen werden"
+      }
+    },
+    "edit": {
+      "subtitlePrefix": "Bearbeiten: ",
+      "subtitle": "Budget-Einstellungen und Kategoriezuweisungen aktualisieren",
+      "backToDashboard": "Zurück zum Dashboard",
+      "budgetSettings": "Budget-Einstellungen",
+      "categoryAllocations": "Kategoriezuweisungen",
+      "income": "Einnahmen",
+      "expensesWithCount": "Ausgaben ({count})",
+      "resetsEachPeriod": "Wird jede Periode zurückgesetzt",
+      "percentUsed": "{percent}% verwendet",
+      "rolloverType": "Übertrag: {type}",
+      "editCategoryTitle": "{name} bearbeiten",
+      "toasts": {
+        "updated": "Budget aktualisiert",
+        "updateFailed": "Budget konnte nicht aktualisiert werden",
+        "categoryUpdated": "Kategorie aktualisiert",
+        "categoryFailed": "Kategorie konnte nicht aktualisiert werden",
+        "loadFailed": "Budget konnte nicht geladen werden"
+      }
+    }
+  },
+  "validation": {
+    "nameRequired": "Budget-Name ist erforderlich",
+    "nameMax": "Der Budget-Name darf höchstens 255 Zeichen lang sein",
+    "descriptionMax": "Die Beschreibung darf höchstens 1000 Zeichen lang sein"
+  },
+  "categoryValidation": {
+    "amountMin": "Betrag muss 0 oder größer sein",
+    "mustBeNumber": "Muss eine Zahl sein"
+  }
+}

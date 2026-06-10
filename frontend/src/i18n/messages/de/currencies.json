@@ -1,0 +1,117 @@
+{
+  "page": {
+    "title": "Währungen",
+    "subtitle": "Verwalten Sie die Währungen, die in Ihren Konten und Wertpapieren verwendet werden",
+    "refreshRates": "Kurse aktualisieren",
+    "refreshing": "Wird aktualisiert...",
+    "newCurrency": "+ Neue Währung",
+    "searchPlaceholder": "Nach Code oder Name suchen...",
+    "statusAll": "Alle ({count})",
+    "statusActive": "Aktiv ({count})",
+    "statusInactive": "Inaktiv ({count})",
+    "modalTitleEdit": "Währung bearbeiten",
+    "modalTitleNew": "Neue Währung",
+    "loading": "Währungen werden geladen...",
+    "count": "{count, plural, one {# Währung} other {# Währungen}}",
+    "toasts": {
+      "loadFailed": "Währungen konnten nicht geladen werden",
+      "updated": "Währung erfolgreich aktualisiert",
+      "created": "Währung erfolgreich erstellt",
+      "updateFailed": "Währung konnte nicht aktualisiert werden",
+      "createFailed": "Währung konnte nicht erstellt werden",
+      "deactivated": "Währung deaktiviert",
+      "activated": "Währung aktiviert",
+      "statusFailed": "Währungsstatus konnte nicht aktualisiert werden",
+      "ratesRefreshed": "Wechselkurse aktualisiert: {updated} Paare aktualisiert",
+      "ratesRefreshedWithFailed": "Wechselkurse aktualisiert: {updated} aktualisiert, {failed} fehlgeschlagen",
+      "ratesFailed": "Wechselkurse konnten nicht aktualisiert werden"
+    },
+    "summary": {
+      "totalCurrencies": "Währungen gesamt",
+      "active": "Aktiv",
+      "inactive": "Inaktiv"
+    }
+  },
+  "list": {
+    "columns": {
+      "code": "Code",
+      "name": "Name",
+      "symbol": "Symbol",
+      "decimals": "Dezimalstellen",
+      "usage": "Verwendung",
+      "rate": "Kurs ({currency})",
+      "status": "Status",
+      "actions": "Aktionen"
+    },
+    "density": {
+      "normal": "Normal",
+      "compact": "Kompakt",
+      "dense": "Dicht",
+      "toggle": "Zeilendichte umschalten"
+    },
+    "defaultBadge": "Standard",
+    "statusBadge": {
+      "active": "Aktiv",
+      "activeShort": "Akt",
+      "inactive": "Inaktiv",
+      "inactiveShort": "Ina"
+    },
+    "actions": {
+      "edit": "Bearbeiten",
+      "deactivate": "Deaktivieren",
+      "activate": "Aktivieren"
+    },
+    "contextMenu": {
+      "editCurrency": "Währung bearbeiten",
+      "deactivate": "Deaktivieren",
+      "activate": "Aktivieren",
+      "deleteCurrency": "Währung löschen"
+    },
+    "usageTooltip": "{accounts} Konto/Konten, {securities} Wertpapier/e",
+    "usageAccounts": "{count, plural, one {# Kto.} other {# Kten.}}",
+    "usageSecurities": "{count, plural, one {# WP} other {# WP}}",
+    "empty": {
+      "title": "Keine Währungen",
+      "subtitle": "Fügen Sie eine Währung hinzu, um zu beginnen."
+    },
+    "deleteConfirm": {
+      "title": "\"{code}\" löschen?",
+      "message": "Diese Währung wird dauerhaft gelöscht. Dies funktioniert nur, wenn die Währung von keinen Konten oder Wertpapieren verwendet wird.",
+      "confirmLabel": "Löschen",
+      "cancelLabel": "Abbrechen"
+    },
+    "toasts": {
+      "deleted": "Währung erfolgreich gelöscht",
+      "deleteFailed": "Währung konnte nicht gelöscht werden. Sie wird möglicherweise noch verwendet."
+    }
+  },
+  "form": {
+    "codeLabel": "Währungscode",
+    "codePlaceholder": "z. B. USD, EUR, GBP",
+    "nameLabel": "Name",
+    "namePlaceholderCreate": "z. B. Kanadischer Dollar, Malaysischer Ringgit (auch für die Suche verwendet)",
+    "namePlaceholderEdit": "z. B. Kanadischer Dollar",
+    "symbolLabel": "Symbol",
+    "symbolPlaceholder": "z. B. $, €, £, ¥",
+    "decimalPlacesLabel": "Dezimalstellen",
+    "lookupButton": "Suchen",
+    "lookingUp": "Wird gesucht...",
+    "clearButton": "Löschen",
+    "clearTitle": "Alle Felder löschen",
+    "submitCreate": "Währung erstellen",
+    "submitUpdate": "Währung aktualisieren",
+    "toasts": {
+      "lookupTooShort": "Geben Sie einen Währungscode oder -namen ein (mindestens 2 Zeichen) für die Suche",
+      "found": "Gefunden: {details}",
+      "notFound": "Keine Währung für \"{query}\" gefunden",
+      "lookupFailed": "Suche fehlgeschlagen – bitte versuchen Sie es erneut"
+    }
+  },
+  "validation": {
+    "codeLength": "Der Währungscode muss genau 3 Zeichen lang sein",
+    "nameRequired": "Name ist erforderlich",
+    "nameMax": "Name darf höchstens 100 Zeichen lang sein",
+    "symbolRequired": "Symbol ist erforderlich",
+    "symbolMax": "Symbol darf höchstens 10 Zeichen lang sein"
+  }
+}
