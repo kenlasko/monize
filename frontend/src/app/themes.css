@@ -20,8 +20,8 @@
  * allows.
  */
 
-/* ===== Beige -- warm cream surfaces, taupe darks, caramel accent ===== */
-html[data-theme='beige'] {
+/* ===== Latte -- warm cream surfaces, taupe darks, caramel accent ===== */
+html[data-theme='latte'] {
   --color-white: #fbf7ef;
 
   --color-gray-50: #f6f1e7;

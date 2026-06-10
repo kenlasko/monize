@@ -53,7 +53,7 @@ export class UpdatePreferencesDto {
     example: "default",
     enum: [
       "default",
-      "beige",
+      "latte",
       "msmoney",
       "nord",
       "forest",
@@ -65,7 +65,7 @@ export class UpdatePreferencesDto {
   @IsString()
   @IsIn([
     "default",
-    "beige",
+    "latte",
     "msmoney",
     "nord",
     "forest",

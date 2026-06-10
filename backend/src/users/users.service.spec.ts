@@ -465,7 +465,7 @@ describe("UsersService", () => {
       ["defaultQuoteProvider", "yahoo"],
       ["recentTransactionsLimit", 25],
       ["language", "fr"],
-      ["colorTheme", "beige"],
+      ["colorTheme", "latte"],
     ])(
       "updates the %s field when provided",
       async (field: string, value: any) => {

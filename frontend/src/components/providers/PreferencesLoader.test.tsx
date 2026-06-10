@@ -34,7 +34,7 @@ vi.mock('@/store/authStore', () => ({
 vi.mock('@/store/preferencesStore', () => ({
   usePreferencesStore: (selector: any) => {
     const state = {
-      preferences: { theme: 'dark', colorTheme: 'beige' },
+      preferences: { theme: 'dark', colorTheme: 'latte' },
       isLoaded: false,
       _hasHydrated: true,
       loadPreferences: mockLoadPreferences,
@@ -82,6 +82,6 @@ describe('PreferencesLoader', () => {
         <div>Child</div>
       </PreferencesLoader>,
     );
-    expect(mockSetColorTheme).toHaveBeenCalledWith('beige');
+    expect(mockSetColorTheme).toHaveBeenCalledWith('latte');
   });
 });

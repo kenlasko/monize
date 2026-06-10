@@ -21,7 +21,7 @@ vi.mock('@/contexts/ThemeContext', () => ({
 
 vi.mock('@/lib/user-settings', () => ({
   userSettingsApi: {
-    updatePreferences: vi.fn().mockResolvedValue({ colorTheme: 'beige', defaultCurrency: 'USD' }),
+    updatePreferences: vi.fn().mockResolvedValue({ colorTheme: 'latte', defaultCurrency: 'USD' }),
   },
 }));
 
@@ -53,15 +53,15 @@ describe('ColorThemeSelector', () => {
     render(<ColorThemeSelector value="default" onChange={onChange} />);
 
     await act(async () => {
-      fireEvent.change(screen.getByRole('combobox'), { target: { value: 'beige' } });
+      fireEvent.change(screen.getByRole('combobox'), { target: { value: 'latte' } });
     });
 
     // Parent state and the live colour theme update right away, no save step.
-    expect(onChange).toHaveBeenCalledWith('beige');
-    expect(mockSetAppColorTheme).toHaveBeenCalledWith('beige');
+    expect(onChange).toHaveBeenCalledWith('latte');
+    expect(mockSetAppColorTheme).toHaveBeenCalledWith('latte');
 
     await waitFor(() =>
-      expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith({ colorTheme: 'beige' }),
+      expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith({ colorTheme: 'latte' }),
     );
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
   });

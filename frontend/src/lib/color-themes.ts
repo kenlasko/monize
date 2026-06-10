@@ -8,7 +8,7 @@
  */
 export const COLOR_THEMES = [
   'default',
-  'beige',
+  'latte',
   'msmoney',
   'nord',
   'forest',

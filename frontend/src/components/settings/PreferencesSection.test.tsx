@@ -290,11 +290,11 @@ describe('PreferencesSection', () => {
     render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />);
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Colour theme'), { target: { value: 'beige' } });
+      fireEvent.change(screen.getByLabelText('Colour theme'), { target: { value: 'latte' } });
     });
 
     await waitFor(() => {
-      expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith({ colorTheme: 'beige' });
+      expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith({ colorTheme: 'latte' });
     });
   });
 

@@ -137,9 +137,9 @@ describe('ThemeContext', () => {
     const { result } = renderHook(() => useTheme(), { wrapper: ThemeProvider });
 
     act(() => {
-      result.current.setColorTheme('beige');
+      result.current.setColorTheme('latte');
     });
-    expect(document.documentElement.getAttribute('data-theme')).toBe('beige');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('latte');
 
     act(() => {
       result.current.setColorTheme('default');
