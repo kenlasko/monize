@@ -409,7 +409,12 @@
     "payeeUpdated": "Zaktualizowano odbiorcę",
     "deleted": "{count, plural, one {Usunięto # transakcję} few {Usunięto # transakcje} many {Usunięto # transakcji} other {Usunięto # transakcji}}",
     "noneToExport": "Brak transakcji do wyeksportowania",
-    "exported": "{count, plural, one {Wyeksportowano # transakcję} few {Wyeksportowano # transakcje} many {Wyeksportowano # transakcji} other {Wyeksportowano # transakcji}}"
+    "exported": "{count, plural, one {Wyeksportowano # transakcję} few {Wyeksportowano # transakcje} many {Wyeksportowano # transakcji} other {Wyeksportowano # transakcji}}",
+    "loadFormDataFailed": "Nie udało się załadować danych formularza",
+    "loadFailed": "Nie udało się załadować transakcji",
+    "loadPayeeFailed": "Nie udało się załadować szczegółów odbiorcy",
+    "payeeUpdateFailed": "Nie udało się zaktualizować odbiorcy",
+    "exportFailed": "Nie udało się wyeksportować transakcji"
   },
   "validation": {
     "dateRequired": "Data jest wymagana"

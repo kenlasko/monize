@@ -88,8 +88,12 @@
   },
   "toast": {
     "deleteSuccess": "[XX-Account deleted successfully-XX]",
+    "deleteFailed": "[XX-Failed to delete account-XX]",
     "closeSuccess": "[XX-Account closed successfully-XX]",
+    "closeFailed": "[XX-Failed to close account-XX]",
     "reopenSuccess": "[XX-Account reopened successfully-XX]",
+    "reopenFailed": "[XX-Failed to reopen account-XX]",
+    "loadFailed": "[XX-Failed to load accounts-XX]",
     "favouriteError": "[XX-Failed to update favourite-XX]",
     "createSuccess": "[XX-Account created successfully-XX]",
     "updateSuccess": "[XX-Account updated successfully-XX]"
@@ -157,7 +161,8 @@
       "collapse": "[XX-One line per transaction-XX]"
     },
     "customDateFormatEmpty": "[XX-Please enter a custom date format-XX]",
-    "exportedAs": "[XX-Exported as {format}-XX]"
+    "exportedAs": "[XX-Exported as {format}-XX]",
+    "exportFailed": "[XX-Failed to export account-XX]"
   },
   "loanFields": {
     "title": "[XX-Loan Payment Details-XX]",
@@ -282,6 +287,7 @@
   "toasts": {
     "categoryCreatedNested": "[XX-Category \"{parent}: {name}\" created-XX]",
     "categoryCreated": "[XX-Category \"{name}\" created-XX]",
+    "categoryCreateFailed": "[XX-Failed to create category-XX]",
     "payeeCreated": "[XX-Payee \"{name}\" created-XX]",
     "payeeCreateFailed": "[XX-Failed to create payee-XX]",
     "institutionCreated": "[XX-Institution \"{name}\" created-XX]",

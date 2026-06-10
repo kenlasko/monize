@@ -375,7 +375,11 @@
     "updating": "[XX-Updating...-XX]",
     "generating": "[XX-Generating report...-XX]",
     "noData": "[XX-No data found for the selected criteria-XX]",
-    "transactionCount": "[XX-{count, plural, one {# transaction} other {# transactions}}-XX]"
+    "transactionCount": "[XX-{count, plural, one {# transaction} other {# transactions}}-XX]",
+    "toasts": {
+      "loadFailed": "[XX-Failed to load report-XX]",
+      "executeFailed": "[XX-Failed to execute report-XX]"
+    }
   },
   "debtPayoff": {
     "empty": "[XX-No debt accounts found. Add a loan, mortgage, or line of credit to see the payoff timeline.-XX]",
@@ -677,7 +681,11 @@
     "groupHeadingNone": "[XX-Group-XX]",
     "groupHeadingAccount": "[XX-Account-XX]",
     "groupHeadingSymbol": "[XX-Symbol-XX]",
-    "groupHeadingCurrency": "[XX-Currency-XX]"
+    "groupHeadingCurrency": "[XX-Currency-XX]",
+    "toasts": {
+      "loadFailed": "[XX-Failed to load report-XX]",
+      "runFailed": "[XX-Failed to run report-XX]"
+    }
   },
   "investmentPerformance": {
     "pdfTitle": "[XX-Investment Performance-XX]",
@@ -790,7 +798,11 @@
       "saveAsFailed": "[XX-Could not save as new scenario.-XX]",
       "overwriteFailed": "[XX-Could not overwrite scenario.-XX]",
       "deleteFailed": "[XX-Could not delete scenario.-XX]",
-      "maxCompare": "[XX-You can compare up to {max} scenarios.-XX]"
+      "maxCompare": "[XX-You can compare up to {max} scenarios.-XX]",
+      "loadFailed": "[XX-Failed to load Monte Carlo data. Please refresh.-XX]",
+      "currentValueFailed": "[XX-Failed to fetch the current portfolio value.-XX]",
+      "holdingStatsFailed": "[XX-Failed to load per-holding historical stats.-XX]",
+      "reorderFailed": "[XX-Could not reorder scenarios.-XX]"
     },
     "scenarios": "[XX-Scenarios-XX]",
     "noScenarios": "[XX-No saved scenarios. Configure inputs on the right and click Save.-XX]",
@@ -1523,7 +1535,11 @@
   "monteCarloComparePage": {
     "title": "[XX-Compare Monte Carlo Scenarios-XX]",
     "subtitle": "[XX-Side-by-side metrics for up to 4 saved scenarios.-XX]",
-    "backToMonteCarlo": "[XX-Back to Monte Carlo-XX]"
+    "backToMonteCarlo": "[XX-Back to Monte Carlo-XX]",
+    "errors": {
+      "loadScenarioFailed": "[XX-Failed to load scenario.-XX]",
+      "simulationFailed": "[XX-Simulation failed.-XX]"
+    }
   },
   "editReport": {
     "titleCustom": "[XX-Edit Report-XX]",

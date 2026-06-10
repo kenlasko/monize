@@ -409,7 +409,12 @@
     "payeeUpdated": "Zahlungsempfänger erfolgreich aktualisiert",
     "deleted": "{count, plural, one {# Buchung gelöscht} other {# Buchungen gelöscht}}",
     "noneToExport": "Keine Buchungen zum Exportieren",
-    "exported": "{count, plural, one {# Buchung exportiert} other {# Buchungen exportiert}}"
+    "exported": "{count, plural, one {# Buchung exportiert} other {# Buchungen exportiert}}",
+    "loadFormDataFailed": "Formulardaten konnten nicht geladen werden",
+    "loadFailed": "Buchungen konnten nicht geladen werden",
+    "loadPayeeFailed": "Details des Zahlungsempfängers konnten nicht geladen werden",
+    "payeeUpdateFailed": "Zahlungsempfänger konnte nicht aktualisiert werden",
+    "exportFailed": "Buchungen konnten nicht exportiert werden"
   },
   "validation": {
     "dateRequired": "Datum ist erforderlich"

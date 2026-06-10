@@ -2,7 +2,8 @@
   "language": {
     "label": "[XX-Language-XX]",
     "helpText": "[XX-Choose the language used throughout the Monize interface. Number and date formatting are controlled separately below.-XX]",
-    "saved": "[XX-Language updated-XX]"
+    "saved": "[XX-Language updated-XX]",
+    "saveFailed": "[XX-Failed to save language-XX]"
   },
   "profile": {
     "heading": "[XX-Profile-XX]",
@@ -20,7 +21,8 @@
     "saveButton": "[XX-Save Profile-XX]",
     "savingButton": "[XX-Saving...-XX]",
     "toasts": {
-      "success": "[XX-Profile updated successfully-XX]"
+      "success": "[XX-Profile updated successfully-XX]",
+      "updateFailed": "[XX-Failed to update profile-XX]"
     },
     "validation": {
       "firstNameMax": "[XX-First name must be 100 characters or less-XX]",
@@ -43,7 +45,8 @@
     "changePasswordButton": "[XX-Change Password-XX]",
     "changingPasswordButton": "[XX-Changing...-XX]",
     "toasts": {
-      "passwordChanged": "[XX-Password changed successfully-XX]"
+      "passwordChanged": "[XX-Password changed successfully-XX]",
+      "passwordChangeFailed": "[XX-Failed to change password-XX]"
     },
     "twoFactor": {
       "heading": "[XX-Two-Factor Authentication-XX]",
@@ -60,7 +63,8 @@
         "verificationCodeLabel": "[XX-Verification Code-XX]",
         "disablingButton": "[XX-Disabling...-XX]",
         "toasts": {
-          "disabled": "[XX-Two-factor authentication disabled-XX]"
+          "disabled": "[XX-Two-factor authentication disabled-XX]",
+          "disableFailed": "[XX-Failed to disable 2FA-XX]"
         }
       }
     },
@@ -74,6 +78,9 @@
         "verificationCodeLabel": "[XX-Verification Code-XX]",
         "regeneratingButton": "[XX-Regenerating...-XX]",
         "regenerateButton": "[XX-Regenerate-XX]"
+      },
+      "toasts": {
+        "generateFailed": "[XX-Failed to generate backup codes-XX]"
       }
     },
     "trustedDevices": {
@@ -88,7 +95,9 @@
       },
       "toasts": {
         "revoked": "[XX-Device revoked-XX]",
-        "revokedAll": "[XX-{count} device(s) revoked-XX]"
+        "revokedAll": "[XX-{count} device(s) revoked-XX]",
+        "revokeFailed": "[XX-Failed to revoke device-XX]",
+        "revokeAllFailed": "[XX-Failed to revoke devices-XX]"
       }
     },
     "validation": {
@@ -122,7 +131,10 @@
     "saveButton": "[XX-Save Preferences-XX]",
     "savingButton": "[XX-Saving...-XX]",
     "toasts": {
-      "saved": "[XX-Preferences saved-XX]"
+      "saved": "[XX-Preferences saved-XX]",
+      "saveFailed": "[XX-Failed to save preferences-XX]",
+      "themeSaveFailed": "[XX-Failed to save theme-XX]",
+      "colorThemeSaveFailed": "[XX-Failed to save colour theme-XX]"
     },
     "browserLocale": "[XX-Use browser locale (auto-detect)-XX]",
     "browserTimezonePrefix": "[XX-Use browser timezone (auto-detected as {tz})-XX]",
@@ -190,7 +202,11 @@
       "digestEnabled": "[XX-Budget digest enabled-XX]",
       "digestDisabled": "[XX-Budget digest disabled-XX]",
       "digestDaySet": "[XX-Budget digest day set to {day}-XX]",
-      "testEmailSent": "[XX-Test email sent! Check your inbox.-XX]"
+      "testEmailSent": "[XX-Test email sent! Check your inbox.-XX]",
+      "emailUpdateFailed": "[XX-Failed to update notification preference-XX]",
+      "digestUpdateFailed": "[XX-Failed to update budget digest preference-XX]",
+      "digestDayFailed": "[XX-Failed to update digest day-XX]",
+      "testEmailFailed": "[XX-Failed to send test email-XX]"
     }
   },
   "help": {
@@ -233,7 +249,8 @@
       "deletingButton": "[XX-Deleting...-XX]",
       "confirmButton": "[XX-Confirm Delete Data-XX]",
       "toasts": {
-        "success": "[XX-Deleted {count} records successfully-XX]"
+        "success": "[XX-Deleted {count} records successfully-XX]",
+        "failed": "[XX-Failed to delete data-XX]"
       }
     },
     "deleteAccount": {
@@ -252,7 +269,8 @@
       "confirmButton": "[XX-Confirm Delete-XX]",
       "toasts": {
         "downgraded": "[XX-Your own data was removed. Your login and shared access are kept so the delegation stays in place.-XX]",
-        "deleted": "[XX-Account deleted-XX]"
+        "deleted": "[XX-Account deleted-XX]",
+        "failed": "[XX-Failed to delete account-XX]"
       },
       "errors": {
         "typeDelete": "[XX-Please type DELETE to confirm-XX]",
@@ -323,7 +341,10 @@
       "revoked": "[XX-Token revoked-XX]",
       "selectScope": "[XX-Select at least one scope-XX]",
       "copyTokenFailed": "[XX-Failed to copy token-XX]",
-      "copyUrlFailed": "[XX-Failed to copy URL-XX]"
+      "copyUrlFailed": "[XX-Failed to copy URL-XX]",
+      "loadFailed": "[XX-Failed to load API tokens-XX]",
+      "createFailed": "[XX-Failed to create token-XX]",
+      "revokeFailed": "[XX-Failed to revoke token-XX]"
     },
     "relative": {
       "never": "[XX-Never-XX]",
@@ -417,7 +438,9 @@
       },
       "toasts": {
         "enabled": "[XX-Encrypted backups enabled-XX]",
-        "disabled": "[XX-Encrypted backups disabled-XX]"
+        "disabled": "[XX-Encrypted backups disabled-XX]",
+        "enableFailed": "[XX-Failed to enable encryption-XX]",
+        "disableFailed": "[XX-Failed to disable encryption-XX]"
       }
     },
     "export": {
@@ -434,7 +457,8 @@
         "downloadButton": "[XX-Download-XX]"
       },
       "toasts": {
-        "success": "[XX-Backup downloaded successfully-XX]"
+        "success": "[XX-Backup downloaded successfully-XX]",
+        "failed": "[XX-Failed to create backup-XX]"
       }
     },
     "restore": {
@@ -453,7 +477,9 @@
       "confirmRestoreButton": "[XX-Confirm Restore-XX]",
       "toasts": {
         "pleaseSelectFile": "[XX-Please select a backup file-XX]",
-        "pleaseEnterPassword": "[XX-Please enter your password to confirm-XX]"
+        "pleaseEnterPassword": "[XX-Please enter your password to confirm-XX]",
+        "encryptedNeedsPassword": "[XX-This backup is encrypted. Enter the password it was created with in the \"Backup password\" field, then try again.-XX]",
+        "failed": "[XX-Failed to restore backup-XX]"
       }
     },
     "restoreResult": {
@@ -538,7 +564,8 @@
     },
     "saveButton": "[XX-Save-XX]",
     "toasts": {
-      "saved": "[XX-Access updated-XX]"
+      "saved": "[XX-Access updated-XX]",
+      "saveFailed": "[XX-Failed to update access-XX]"
     }
   },
   "nav": {
@@ -574,7 +601,11 @@
       "title": "[XX-AI Settings-XX]",
       "description": "[XX-Configure AI providers, manage API keys, and view usage statistics.-XX]"
     },
-    "delegateSecurityError": "[XX-Unable to load your security settings.-XX]"
+    "delegateSecurityError": "[XX-Unable to load your security settings.-XX]",
+    "toasts": {
+      "securityLoadFailed": "[XX-Failed to load security settings-XX]",
+      "loadFailed": "[XX-Failed to load settings-XX]"
+    }
   },
   "aiSettings": {
     "backLink": "[XX-Back to Settings-XX]",
@@ -583,6 +614,10 @@
     "demoRestricted": {
       "heading": "[XX-Restricted in Demo Mode-XX]",
       "body": "[XX-AI provider configuration is disabled in demo mode.-XX]"
+    },
+    "toasts": {
+      "loadFailed": "[XX-Failed to load AI settings-XX]",
+      "usageLoadFailed": "[XX-Failed to load usage data-XX]"
     }
   },
   "sharedAccessPage": {
@@ -617,7 +652,8 @@
       "reminderAfterDaysLabel": "[XX-Days of inactivity before reminder emails-XX]",
       "saveButton": "[XX-Save settings-XX]",
       "toasts": {
-        "saved": "[XX-Emergency access settings saved-XX]"
+        "saved": "[XX-Emergency access settings saved-XX]",
+        "saveFailed": "[XX-Failed to save settings-XX]"
       }
     },
     "message": {
@@ -640,7 +676,9 @@
       "saveButton": "[XX-Save message-XX]",
       "toasts": {
         "saved": "[XX-Message saved-XX]",
-        "verifyAgain": "[XX-Verification expired -- please verify again to save-XX]"
+        "verifyAgain": "[XX-Verification expired -- please verify again to save-XX]",
+        "loadFailed": "[XX-Failed to load message-XX]",
+        "saveFailed": "[XX-Failed to save message-XX]"
       }
     },
     "contacts": {
@@ -667,7 +705,9 @@
       "toasts": {
         "added": "[XX-Contact added-XX]",
         "updated": "[XX-Contact updated-XX]",
-        "removed": "[XX-Contact removed-XX]"
+        "removed": "[XX-Contact removed-XX]",
+        "saveFailed": "[XX-Failed to save contact-XX]",
+        "removeFailed": "[XX-Failed to remove contact-XX]"
       }
     },
     "status": {
@@ -688,11 +728,16 @@
       "clearingButton": "[XX-Clearing...-XX]",
       "clearButton": "[XX-Clear-XX]",
       "toasts": {
-        "cleared": "[XX-Granted state cleared-XX]"
+        "cleared": "[XX-Granted state cleared-XX]",
+        "resetFailed": "[XX-Failed to reset granted state-XX]"
       }
     },
     "stepUp": {
       "reason": "[XX-Re-verify your identity to view or edit your emergency-access message.-XX]"
+    },
+    "toasts": {
+      "loadFailed": "[XX-Failed to load emergency access-XX]",
+      "reauthFailed": "[XX-Failed to confirm re-authentication-XX]"
     }
   },
   "aiProviders": {

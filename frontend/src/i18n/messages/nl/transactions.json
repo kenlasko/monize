@@ -409,7 +409,12 @@
     "payeeUpdated": "Begunstigde succesvol bijgewerkt",
     "deleted": "{count, plural, one {# transactie verwijderd} other {# transacties verwijderd}}",
     "noneToExport": "Geen transacties om te exporteren",
-    "exported": "{count, plural, one {# transactie geëxporteerd} other {# transacties geëxporteerd}}"
+    "exported": "{count, plural, one {# transactie geëxporteerd} other {# transacties geëxporteerd}}",
+    "loadFormDataFailed": "Laden van formuliergegevens mislukt",
+    "loadFailed": "Laden van transacties mislukt",
+    "loadPayeeFailed": "Laden van gegevens van begunstigde mislukt",
+    "payeeUpdateFailed": "Bijwerken van begunstigde mislukt",
+    "exportFailed": "Exporteren van transacties mislukt"
   },
   "validation": {
     "dateRequired": "Datum is vereist"

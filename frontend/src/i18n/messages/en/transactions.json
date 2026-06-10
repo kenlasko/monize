@@ -409,7 +409,12 @@
     "payeeUpdated": "Payee updated successfully",
     "deleted": "{count, plural, one {# transaction deleted} other {# transactions deleted}}",
     "noneToExport": "No transactions to export",
-    "exported": "{count, plural, one {Exported # transaction} other {Exported # transactions}}"
+    "exported": "{count, plural, one {Exported # transaction} other {Exported # transactions}}",
+    "loadFormDataFailed": "Failed to load form data",
+    "loadFailed": "Failed to load transactions",
+    "loadPayeeFailed": "Failed to load payee details",
+    "payeeUpdateFailed": "Failed to update payee",
+    "exportFailed": "Failed to export transactions"
   },
   "validation": {
     "dateRequired": "Date is required"

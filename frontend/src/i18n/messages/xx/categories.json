@@ -29,7 +29,12 @@
     "updated": "[XX-Category updated successfully-XX]",
     "deleted": "[XX-Category deleted successfully-XX]",
     "cannotDeleteSystem": "[XX-System categories cannot be deleted-XX]",
-    "importSuccess": "[XX-Successfully imported {count} categories-XX]"
+    "importSuccess": "[XX-Successfully imported {count} categories-XX]",
+    "loadFailed": "[XX-Failed to load categories-XX]",
+    "deleteFailed": "[XX-Failed to delete category-XX]",
+    "createFailed": "[XX-Failed to create category-XX]",
+    "updateFailed": "[XX-Failed to update category-XX]",
+    "importFailed": "[XX-Failed to import default categories-XX]"
   },
   "form": {
     "nameLabel": "[XX-Category Name-XX]",

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { AxiosError } from 'axios';
 import { Button } from '@/components/ui/Button';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -53,6 +54,7 @@ export interface CompareScenariosViewProps {
 }
 
 export function CompareScenariosView({ ids }: CompareScenariosViewProps) {
+  const t = useTranslations('reports');
   const router = useRouter();
   const { formatCurrency } = useNumberFormat();
 
@@ -121,12 +123,12 @@ export function CompareScenariosView({ ids }: CompareScenariosViewProps) {
         logger.error(`Failed to load scenario ${id}:`, err);
         updateColumn(id, {
           status: 'error',
-          error: getErrorMessage(err, 'Failed to load scenario.'),
+          error: getErrorMessage(err, t('monteCarloComparePage.errors.loadScenarioFailed')),
         });
         return null;
       }
     },
-    [updateColumn],
+    [updateColumn, t],
   );
 
   const runScenario = useCallback(
@@ -152,11 +154,11 @@ export function CompareScenariosView({ ids }: CompareScenariosViewProps) {
         logger.error(`Run failed for scenario ${id}:`, err);
         updateColumn(id, {
           status: 'error',
-          error: getErrorMessage(err, 'Simulation failed.'),
+          error: getErrorMessage(err, t('monteCarloComparePage.errors.simulationFailed')),
         });
       }
     },
-    [updateColumn],
+    [updateColumn, t],
   );
 
   // Bootstrap each new id: fetch metadata, mark cached state as ok, then run.

@@ -49,10 +49,10 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
       const reportData = await customReportsApi.getById(reportId);
       setReport(reportData);
     } catch (error) {
-      toast.error(getErrorMessage(error, 'Failed to load report'));
+      toast.error(getErrorMessage(error, t('customReportViewer.toasts.loadFailed')));
       logger.error(error);
     }
-  }, [reportId]);
+  }, [reportId, t]);
 
   const executeReport = useCallback(async () => {
     if (!report) return;
@@ -75,12 +75,12 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
       const resultData = await customReportsApi.execute(reportId, params);
       setResult(resultData);
     } catch (error) {
-      toast.error(getErrorMessage(error, 'Failed to execute report'));
+      toast.error(getErrorMessage(error, t('customReportViewer.toasts.executeFailed')));
       logger.error(error);
     } finally {
       setIsExecuting(false);
     }
-  }, [reportId, report, overrideTimeframe, customStartDate, customEndDate]);
+  }, [reportId, report, overrideTimeframe, customStartDate, customEndDate, t]);
 
   useEffect(() => {
     const init = async () => {

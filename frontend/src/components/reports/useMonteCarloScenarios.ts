@@ -223,13 +223,13 @@ export function useMonteCarloScenarios() {
         }
       } catch (err) {
         logger.error('Failed to load Monte Carlo data:', err);
-        showErrorToast(err, 'Failed to load Monte Carlo data. Please refresh.');
+        showErrorToast(err, t('monteCarlo.toasts.loadFailed'));
       } finally {
         setIsLoading(false);
       }
     };
     load();
-  }, []);
+  }, [t]);
 
   // Auto-populate the starting value when "Use current balance" is on. Refetches
   // when the selected accounts change so the displayed value matches what the
@@ -260,12 +260,12 @@ export function useMonteCarloScenarios() {
       })
       .catch((err) => {
         logger.error('Failed to fetch current balance:', err);
-        showErrorToast(err, 'Failed to fetch the current portfolio value.');
+        showErrorToast(err, t('monteCarlo.toasts.currentValueFailed'));
       });
     return () => {
       cancelled = true;
     };
-  }, [form.useCurrentBalance, form.accountIds]);
+  }, [form.useCurrentBalance, form.accountIds, t]);
 
   const updateField = useCallback(
     <K extends keyof FormState>(key: K, value: FormState[K]) => {
@@ -524,11 +524,11 @@ export function useMonteCarloScenarios() {
         await monteCarloApi.reorder(orderedIds);
       } catch (err) {
         logger.error('Reorder failed:', err);
-        showErrorToast(err, 'Could not reorder scenarios.');
+        showErrorToast(err, t('monteCarlo.toasts.reorderFailed'));
         setScenarios(snapshot);
       }
     },
-    [],
+    [t],
   );
 
   return {

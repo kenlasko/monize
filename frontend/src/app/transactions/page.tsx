@@ -143,10 +143,10 @@ function TransactionsContent() {
       setScheduledTransactions(scheduledData);
       staticDataLoaded.current = true;
     } catch (error) {
-      showErrorToast(error, 'Failed to load form data');
+      showErrorToast(error, t('toasts.loadFormDataFailed'));
       logger.error(error);
     }
-  }, []);
+  }, [t]);
 
   // Load transaction data and chart data in parallel
   const loadTransactions = useCallback(async (page: number) => {
@@ -242,12 +242,12 @@ function TransactionsContent() {
         budgetsApi.getCategoryBudgetStatus(categoryIds).then(setBudgetStatusMap).catch(() => {});
       }
     } catch (error) {
-      showErrorToast(error, 'Failed to load transactions');
+      showErrorToast(error, t('toasts.loadFailed'));
       logger.error(error);
     } finally {
       setIsLoading(false);
     }
-  }, [filters.filterAccountIds, filters.filterAccountStatus, filters.filteredAccounts, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterTagIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch, filters.filterAmountFrom, filters.filterAmountTo, filters.filterStatuses]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filters.filterAccountIds, filters.filterAccountStatus, filters.filteredAccounts, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterTagIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch, filters.filterAmountFrom, filters.filterAmountTo, filters.filterStatuses, t]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadData = useCallback(async (page: number = filters.currentPage) => {
     await loadTransactions(page);
@@ -408,7 +408,7 @@ function TransactionsContent() {
       setEditingPayee(payee);
       setShowPayeeForm(true);
     } catch (error) {
-      showErrorToast(error, 'Failed to load payee details');
+      showErrorToast(error, t('toasts.loadPayeeFailed'));
       logger.error(error);
     }
   };
@@ -427,7 +427,7 @@ function TransactionsContent() {
       setEditingPayee(undefined);
       setPayees(prev => prev.map(p => p.id === updated.id ? updated : p));
     } catch (error) {
-      showErrorToast(error, 'Failed to update payee');
+      showErrorToast(error, t('toasts.payeeUpdateFailed'));
     }
   };
 
@@ -729,7 +729,7 @@ function TransactionsContent() {
       exportToCsv(filename, headers, rows);
       toast.success(t('toasts.exported', { count: allTransactions.length }));
     } catch (error) {
-      showErrorToast(error, 'Failed to export transactions');
+      showErrorToast(error, t('toasts.exportFailed'));
       logger.error(error);
     } finally {
       setIsExporting(false);

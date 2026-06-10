@@ -89,10 +89,10 @@ export function InvestmentReportViewer({ reportId }: InvestmentReportViewerProps
       const data = await investmentReportsApi.getById(reportId);
       setReport(data);
     } catch (error) {
-      toast.error(getErrorMessage(error, 'Failed to load report'));
+      toast.error(getErrorMessage(error, t('investmentReportViewer.toasts.loadFailed')));
       logger.error(error);
     }
-  }, [reportId]);
+  }, [reportId, t]);
 
   const executeReport = useCallback(async () => {
     setIsExecuting(true);
@@ -103,12 +103,12 @@ export function InvestmentReportViewer({ reportId }: InvestmentReportViewerProps
       });
       setResult(data);
     } catch (error) {
-      toast.error(getErrorMessage(error, 'Failed to run report'));
+      toast.error(getErrorMessage(error, t('investmentReportViewer.toasts.runFailed')));
       logger.error(error);
     } finally {
       setIsExecuting(false);
     }
-  }, [reportId, asOfOverride, selectedAccountIds]);
+  }, [reportId, asOfOverride, selectedAccountIds, t]);
 
   useEffect(() => {
     const init = async () => {

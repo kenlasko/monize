@@ -164,7 +164,7 @@ export function MonteCarloReport() {
       .catch((err) => {
         if (!cancelled) {
           logger.error('Failed to fetch holding stats:', err);
-          showErrorToast(err, 'Failed to load per-holding historical stats.');
+          showErrorToast(err, t('monteCarlo.toasts.holdingStatsFailed'));
           setHoldingStats(null);
         }
       })
@@ -174,7 +174,7 @@ export function MonteCarloReport() {
     return () => {
       cancelled = true;
     };
-  }, [form.useHistoricalReturns, form.accountIds]);
+  }, [form.useHistoricalReturns, form.accountIds, t]);
 
 
   const num = (v: unknown): number =>

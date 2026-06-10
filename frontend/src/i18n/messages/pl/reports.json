@@ -375,7 +375,11 @@
     "updating": "Aktualizowanie...",
     "generating": "Generowanie raportu...",
     "noData": "Nie znaleziono danych dla wybranych kryteriów",
-    "transactionCount": "{count, plural, one {# transakcja} few {# transakcje} many {# transakcji} other {# transakcji}}"
+    "transactionCount": "{count, plural, one {# transakcja} few {# transakcje} many {# transakcji} other {# transakcji}}",
+    "toasts": {
+      "loadFailed": "Nie udało się załadować raportu",
+      "executeFailed": "Nie udało się wykonać raportu"
+    }
   },
   "debtPayoff": {
     "empty": "Nie znaleziono kont zadłużenia. Dodaj pożyczkę, kredyt hipoteczny lub linię kredytową, aby zobaczyć harmonogram spłaty.",
@@ -677,7 +681,11 @@
     "groupHeadingNone": "Grupa",
     "groupHeadingAccount": "Konto",
     "groupHeadingSymbol": "Symbol",
-    "groupHeadingCurrency": "Waluta"
+    "groupHeadingCurrency": "Waluta",
+    "toasts": {
+      "loadFailed": "Nie udało się załadować raportu",
+      "runFailed": "Nie udało się uruchomić raportu"
+    }
   },
   "investmentPerformance": {
     "pdfTitle": "Wyniki inwestycji",
@@ -790,7 +798,11 @@
       "saveAsFailed": "Nie udało się zapisać jako nowy scenariusz.",
       "overwriteFailed": "Nie udało się nadpisać scenariusza.",
       "deleteFailed": "Nie udało się usunąć scenariusza.",
-      "maxCompare": "Możesz porównać maksymalnie {max} scenariusze."
+      "maxCompare": "Możesz porównać maksymalnie {max} scenariusze.",
+      "loadFailed": "Nie udało się załadować danych Monte Carlo. Odśwież stronę.",
+      "currentValueFailed": "Nie udało się pobrać bieżącej wartości portfela.",
+      "holdingStatsFailed": "Nie udało się załadować historycznych statystyk dla poszczególnych pozycji.",
+      "reorderFailed": "Nie udało się zmienić kolejności scenariuszy."
     },
     "scenarios": "Scenariusze",
     "noScenarios": "Brak zapisanych scenariuszy. Skonfiguruj parametry po prawej i kliknij Zapisz.",
@@ -1523,7 +1535,11 @@
   "monteCarloComparePage": {
     "title": "Porównaj scenariusze Monte Carlo",
     "subtitle": "Zestawienie metryk dla maksymalnie 4 zapisanych scenariuszy.",
-    "backToMonteCarlo": "Powrót do Monte Carlo"
+    "backToMonteCarlo": "Powrót do Monte Carlo",
+    "errors": {
+      "loadScenarioFailed": "Nie udało się załadować scenariusza.",
+      "simulationFailed": "Symulacja nie powiodła się."
+    }
   },
   "editReport": {
     "titleCustom": "Edytuj raport",

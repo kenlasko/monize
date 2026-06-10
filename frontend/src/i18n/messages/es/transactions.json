@@ -409,7 +409,12 @@
     "payeeUpdated": "Beneficiario actualizado correctamente",
     "deleted": "{count, plural, one {# transacción eliminada} other {# transacciones eliminadas}}",
     "noneToExport": "No hay transacciones para exportar",
-    "exported": "{count, plural, one {Se exportó # transacción} other {Se exportaron # transacciones}}"
+    "exported": "{count, plural, one {Se exportó # transacción} other {Se exportaron # transacciones}}",
+    "loadFormDataFailed": "Error al cargar los datos del formulario",
+    "loadFailed": "Error al cargar las transacciones",
+    "loadPayeeFailed": "Error al cargar los detalles del beneficiario",
+    "payeeUpdateFailed": "Error al actualizar el beneficiario",
+    "exportFailed": "Error al exportar transacciones"
   },
   "validation": {
     "dateRequired": "La fecha es obligatoria"

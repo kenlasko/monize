@@ -375,7 +375,11 @@
     "updating": "Aggiornamento...",
     "generating": "Generazione report...",
     "noData": "Nessun dato trovato per i criteri selezionati",
-    "transactionCount": "{count, plural, one {# transazione} other {# transazioni}}"
+    "transactionCount": "{count, plural, one {# transazione} other {# transazioni}}",
+    "toasts": {
+      "loadFailed": "Caricamento report non riuscito",
+      "executeFailed": "Esecuzione report non riuscita"
+    }
   },
   "debtPayoff": {
     "empty": "Nessun conto di debito trovato. Aggiungi un prestito, un mutuo o una linea di credito per vedere la cronologia di estinzione.",
@@ -677,7 +681,11 @@
     "groupHeadingNone": "Gruppo",
     "groupHeadingAccount": "Conto",
     "groupHeadingSymbol": "Simbolo",
-    "groupHeadingCurrency": "Valuta"
+    "groupHeadingCurrency": "Valuta",
+    "toasts": {
+      "loadFailed": "Caricamento report non riuscito",
+      "runFailed": "Esecuzione report non riuscita"
+    }
   },
   "investmentPerformance": {
     "pdfTitle": "Rendimento degli investimenti",
@@ -790,7 +798,11 @@
       "saveAsFailed": "Impossibile salvare come nuovo scenario.",
       "overwriteFailed": "Impossibile sovrascrivere lo scenario.",
       "deleteFailed": "Impossibile eliminare lo scenario.",
-      "maxCompare": "Puoi confrontare fino a {max} scenari."
+      "maxCompare": "Puoi confrontare fino a {max} scenari.",
+      "loadFailed": "Impossibile caricare i dati Monte Carlo. Aggiorna la pagina.",
+      "currentValueFailed": "Impossibile recuperare il valore attuale del portafoglio.",
+      "holdingStatsFailed": "Impossibile caricare le statistiche storiche per posizione.",
+      "reorderFailed": "Impossibile riordinare gli scenari."
     },
     "scenarios": "Scenari",
     "noScenarios": "Nessuno scenario salvato. Configura i parametri a destra e clicca Salva.",
@@ -1523,7 +1535,11 @@
   "monteCarloComparePage": {
     "title": "Confronta scenari Monte Carlo",
     "subtitle": "Metriche affiancate per un massimo di 4 scenari salvati.",
-    "backToMonteCarlo": "Torna a Monte Carlo"
+    "backToMonteCarlo": "Torna a Monte Carlo",
+    "errors": {
+      "loadScenarioFailed": "Impossibile caricare lo scenario.",
+      "simulationFailed": "Simulazione non riuscita."
+    }
   },
   "editReport": {
     "titleCustom": "Modifica report",

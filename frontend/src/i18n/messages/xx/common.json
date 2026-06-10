@@ -62,6 +62,13 @@
     "system": "[XX-System-XX]",
     "title": "[XX-Theme: {label}. Click to change.-XX]"
   },
+  "errorPage": {
+    "title": "[XX-Something went wrong-XX]",
+    "description": "[XX-An unexpected error occurred. Please try again or contact support if the problem persists.-XX]",
+    "errorId": "[XX-Error ID: {digest}-XX]",
+    "tryAgain": "[XX-Try again-XX]",
+    "goToDashboard": "[XX-Go to Dashboard-XX]"
+  },
   "errorBoundary": {
     "defaultMessage": "[XX-Something went wrong rendering this component.-XX]"
   },
