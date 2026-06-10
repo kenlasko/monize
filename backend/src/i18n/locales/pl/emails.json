@@ -1,1 +1,157 @@
-{}
+{
+  "test": {
+    "subject": "Testowy e-mail Monize",
+    "heading": "Testowy e-mail Monize",
+    "greeting": "Cześć {{ name }},",
+    "body": "To jest testowy e-mail z Monize. Jeśli go otrzymałeś, powiadomienia e-mail działają poprawnie."
+  },
+  "billReminder": {
+    "subjectOne": "Monize: 1 nadchodzący rachunek wymaga uwagi",
+    "subjectMany": "Monize: {{ count }} nadchodzących rachunków wymaga uwagi",
+    "heading": "Przypomnienie o nadchodzących rachunkach",
+    "greeting": "Cześć {{ name }},",
+    "introOne": "Masz 1 nadchodzący rachunek, który wymaga uwagi:",
+    "introMany": "Masz {{ count }} nadchodzących rachunków, które wymagają uwagi:",
+    "colPayee": "Odbiorca",
+    "colDueDate": "Termin płatności",
+    "colType": "Typ",
+    "colAmount": "Kwota",
+    "typeIncome": "Przychód",
+    "typeExpense": "Wydatek",
+    "button": "Zobacz rachunki &amp; wpłaty"
+  },
+  "mortgageReminder": {
+    "subject": "Monize: 1 nadchodzące odnowienie kredytu hipotecznego",
+    "subjectPlural": "Monize: {{ count }} nadchodzących odnowień kredytów hipotecznych",
+    "heading": "Przypomnienie o odnowieniu kredytu hipotecznego",
+    "greeting": "Cześć {{ name }},",
+    "introOne": "Masz 1 kredyt hipoteczny z nadchodzącym odnowieniem okresu. Skontaktuj się z pożyczkodawcą, aby omówić opcje odnowienia przed końcem okresu:",
+    "introMany": "Masz {{ count }} kredytów hipotecznych z nadchodzącym odnowieniem okresu. Skontaktuj się z pożyczkodawcą, aby omówić opcje odnowienia przed końcem okresu:",
+    "colMortgage": "Kredyt hipoteczny",
+    "colTermEndDate": "Data zakończenia okresu",
+    "colTimeRemaining": "Pozostały czas",
+    "daysRemainingOne": "1 dzień",
+    "daysRemainingMany": "{{ count }} dni",
+    "button": "Zobacz konta"
+  },
+  "severity": {
+    "critical": "Krytyczny",
+    "warning": "Ostrzeżenie",
+    "success": "Dobre wieści",
+    "info": "Informacja"
+  },
+  "budgetAlertImmediate": {
+    "subject": "Monize: Alert - {{ title }}",
+    "subjectPlural": "Monize: {{ count }} alertów wymaga uwagi",
+    "heading": "Alert",
+    "greeting": "Cześć {{ name }},",
+    "intro": "Twój budżet wymaga uwagi:",
+    "colSeverity": "Ważność",
+    "colAlert": "Alert",
+    "colDetails": "Szczegóły",
+    "button": "Zobacz budżet"
+  },
+  "budgetWeeklyDigest": {
+    "subject": "Monize: Twoje tygodniowe podsumowanie budżetu",
+    "heading": "Tygodniowe podsumowanie budżetu",
+    "greeting": "Cześć {{ name }},",
+    "intro": "Oto Twoje tygodniowe podsumowanie budżetu dla: <strong>{{ budgets }}</strong>",
+    "criticalOne": "krytyczny",
+    "criticalMany": "krytycznych",
+    "warningOne": "ostrzeżenie",
+    "warningMany": "ostrzeżeń",
+    "positiveOne": "pozytywny",
+    "positiveMany": "pozytywnych",
+    "thisWeek": "W tym tygodniu:",
+    "noAlerts": "Brak alertów",
+    "totalAlerts": "Alerty łącznie: {{ count }}",
+    "topAlertsHeading": "Najważniejsze alerty",
+    "andMore": "...i {{ count }} więcej",
+    "button": "Zobacz panel budżetu"
+  },
+  "budgetMonthlySummary": {
+    "subject": "Monize: Miesięczne podsumowanie budżetu - {{ period }}",
+    "subjectPlural": "Monize: Miesięczne podsumowanie budżetu dla {{ count }} budżetów",
+    "heading": "Miesięczne podsumowanie budżetu",
+    "greeting": "Cześć {{ name }},",
+    "intro": "Oto Twoje miesięczne podsumowanie budżetu za właśnie zakończony okres:",
+    "overBudget": "Powyżej budżetu",
+    "healthScore": "Wskaźnik kondycji:",
+    "labelBudgeted": "Zabudżetowane",
+    "labelSpent": "Wydane",
+    "labelRemaining": "Pozostało",
+    "percentUsed": "{{ percent }}% wykorzystane",
+    "topCategories": "Najważniejsze kategorie",
+    "button": "Zobacz panel budżetu"
+  },
+  "oidcLink": {
+    "subject": "Monize: Potwierdź połączenie konta SSO",
+    "heading": "Połącz konto SSO",
+    "greeting": "Cześć {{ name }},",
+    "intro": "Ktoś próbował zalogować się przez SSO przy użyciu adresu e-mail powiązanego z Twoim istniejącym kontem Monize. Aby połączyć swoją tożsamość SSO z tym kontem, kliknij przycisk poniżej:",
+    "button": "Potwierdź połączenie konta",
+    "disclaimer": "Jeśli to nie Ty zainicjowałeś to żądanie, możesz bezpiecznie zignorować ten e-mail. Link wygasa za 1 godzinę."
+  },
+  "accountLocked": {
+    "subject": "Konto tymczasowo zablokowane",
+    "heading": "Konto tymczasowo zablokowane",
+    "greeting": "Cześć {{ name }},",
+    "body1": "Twoje konto Monize zostało tymczasowo zablokowane z powodu wielu nieudanych prób logowania. To środek bezpieczeństwa chroniący Twoje konto.",
+    "body2": "Blokada wygaśnie automatycznie. Jeśli to nie Ty próbowałeś się zalogować, zalecamy natychmiastowe zresetowanie hasła."
+  },
+  "passwordReset": {
+    "subject": "Resetowanie hasła Monize",
+    "heading": "Żądanie resetowania hasła",
+    "greeting": "Cześć {{ name }},",
+    "intro": "Otrzymaliśmy żądanie zresetowania Twojego hasła. Kliknij przycisk poniżej, aby ustawić nowe hasło:",
+    "button": "Zresetuj hasło",
+    "disclaimer": "Ten link wygasa za 1 godzinę. Jeśli nie prosiłeś o zresetowanie hasła, możesz bezpiecznie zignorować ten e-mail."
+  },
+  "accountInvite": {
+    "subject": "Twoje konto Monize jest gotowe",
+    "heading": "Twoje konto Monize jest gotowe",
+    "greeting": "Cześć {{ name }},",
+    "intro": "Administrator utworzył dla Ciebie konto Monize. Kliknij przycisk poniżej, aby ustawić hasło i zalogować się:",
+    "button": "Ustaw hasło",
+    "disclaimer": "Ten link wygasa za 24 godziny. Jeśli nie spodziewałeś się tej wiadomości, możesz bezpiecznie zignorować ten e-mail."
+  },
+  "delegateInvite": {
+    "subject": "Zostałeś zaproszony do Monize",
+    "heading": "Zostałeś zaproszony do Monize",
+    "greeting": "Cześć {{ name }},",
+    "intro": "{{ owner }} zaprosił Cię do uzyskania dostępu do swojego konta Monize jako delegat. Kliknij przycisk poniżej, aby ustawić hasło i rozpocząć:",
+    "button": "Ustaw hasło",
+    "disclaimer": "Ten link wygasa za 24 godziny. Jeśli nie spodziewałeś się tego zaproszenia, możesz bezpiecznie zignorować ten e-mail."
+  },
+  "emergencyAccessReminder": {
+    "subjectOne": "Monize: Twoje konto było nieaktywne przez 1 dzień",
+    "subjectMany": "Monize: Twoje konto było nieaktywne przez {{ daysSinceLogin }} dni",
+    "heading": "Przypomnienie o dostępie awaryjnym Monize",
+    "greeting": "Cześć {{ name }},",
+    "grantPhraseToday": "dzisiaj",
+    "grantPhraseFutureOne": "za 1 dzień",
+    "grantPhraseFutureMany": "za {{ count }} dni",
+    "bodyOne": "Nie logowałeś się do Monize od <strong>1 dnia</strong>. Jeśli pozostaniesz nieaktywny, Twoi wyznaczeni kontakci awaryjni uzyskają pełny dostęp do Twojego konta {{ grantPhrase }}.",
+    "bodyMany": "Nie logowałeś się do Monize od <strong>{{ daysSinceLogin }} dni</strong>. Jeśli pozostaniesz nieaktywny, Twoi wyznaczeni kontakci awaryjni uzyskają pełny dostęp do Twojego konta {{ grantPhrase }}.",
+    "contactsLabel": "Wyznaczeni kontakci:",
+    "button": "Zaloguj się teraz",
+    "footer": "Zalogowanie się resetuje licznik. Jeśli nie chcesz już korzystać z tej funkcji, możesz ją wyłączyć w Ustawienia → Dostęp awaryjny."
+  },
+  "emergencyAccessGrant": {
+    "subject": "Udzielono Ci dostępu awaryjnego do konta Monize użytkownika {{ owner }}",
+    "heading": "Dostęp awaryjny przyznany",
+    "greeting": "Cześć {{ name }},",
+    "body": "<strong>{{ owner }}</strong> wyznaczył Cię wcześniej jako kontakt awaryjny na swoim koncie Monize. Ponieważ nie logował się przez dłuższy czas, przyznaję Ci teraz pełny dostęp do przejęcia konta.",
+    "claimIntro": "Aby przejąć dostęp, kliknij poniższy link i ustaw nowe hasło. Zostaniesz zalogowany jako posiadacz konta.",
+    "button": "Przejmij dostęp awaryjny",
+    "expiry": "Ten link jest ważny do <strong>{{ expiry }}</strong> i może być użyty tylko raz. Jeśli kilka kontaktów otrzymało ten e-mail, pierwsze które skorzysta z linku przejmie konto."
+  },
+  "emergencyAccessGrantRevoked": {
+    "subject": "Monize: dostęp awaryjny został przyznany podczas Twojej nieobecności",
+    "heading": "Dostęp awaryjny został przyznany podczas Twojej nieobecności",
+    "greeting": "Cześć {{ name }},",
+    "body1": "Ze względu na nieaktywność Twojego konta, Twoi wyznaczeni kontakci awaryjni otrzymali linki do przejęcia konta. Zalogowałeś się ponownie, więc <strong>te linki zostały unieważnione</strong>, a zabezpieczenie zostało ponownie uruchomione.",
+    "body2": "Jeśli tego się spodziewałeś, nie musisz podejmować żadnych działań. Jeśli nie, sprawdź aktywność logowania oraz ustawienia dostępu awaryjnego.",
+    "button": "Przejrzyj dostęp awaryjny"
+  }
+}
