@@ -149,6 +149,8 @@ export class AccountsService {
       action: "create",
       afterData: { ...saved },
       description: `Created account "${saved.name}"`,
+      descriptionKey: "createdAccount",
+      descriptionParams: { name: saved.name },
     });
 
     return saved;
@@ -658,6 +660,8 @@ export class AccountsService {
         beforeData,
         afterData: { ...savedAccount },
         description: `Updated account "${savedAccount.name}"`,
+        descriptionKey: "updatedAccount",
+        descriptionParams: { name: savedAccount.name },
       });
 
       // Trigger net worth recalculation if balance-affecting fields changed
@@ -1194,6 +1198,8 @@ export class AccountsService {
       action: "delete",
       beforeData,
       description: `Deleted account "${beforeData.name}"`,
+      descriptionKey: "deletedAccount",
+      descriptionParams: { name: beforeData.name },
     });
   }
 

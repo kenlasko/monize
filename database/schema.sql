@@ -1127,6 +1127,8 @@ CREATE TABLE action_history (
     related_entities JSONB,
     is_undone BOOLEAN NOT NULL DEFAULT false,
     description VARCHAR(500) NOT NULL,
+    description_key VARCHAR(100),
+    description_params JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

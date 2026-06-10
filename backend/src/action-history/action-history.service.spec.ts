@@ -106,6 +106,50 @@ describe("ActionHistoryService", () => {
       expect(mockRepository.save).toHaveBeenCalled();
     });
 
+    it("should persist the localization key and params", async () => {
+      mockRepository.delete.mockResolvedValue({ affected: 0 });
+      mockRepository.create.mockReturnValue(mockAction);
+      mockRepository.save.mockResolvedValue(mockAction);
+      mockRepository.count.mockResolvedValue(1);
+
+      await service.record(userId, {
+        entityType: "payee",
+        entityId: "payee-1",
+        action: "create",
+        description: 'Created payee "Acme"',
+        descriptionKey: "createdPayee",
+        descriptionParams: { name: "Acme" },
+      });
+
+      expect(mockRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          descriptionKey: "createdPayee",
+          descriptionParams: { name: "Acme" },
+        }),
+      );
+    });
+
+    it("should default localization fields to null when omitted", async () => {
+      mockRepository.delete.mockResolvedValue({ affected: 0 });
+      mockRepository.create.mockReturnValue(mockAction);
+      mockRepository.save.mockResolvedValue(mockAction);
+      mockRepository.count.mockResolvedValue(1);
+
+      await service.record(userId, {
+        entityType: "tag",
+        entityId: "entity-1",
+        action: "create",
+        description: "test",
+      });
+
+      expect(mockRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          descriptionKey: null,
+          descriptionParams: null,
+        }),
+      );
+    });
+
     it("should clear redo stack when recording new action", async () => {
       mockRepository.delete.mockResolvedValue({ affected: 2 });
       mockRepository.create.mockReturnValue(mockAction);

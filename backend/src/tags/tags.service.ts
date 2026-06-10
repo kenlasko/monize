@@ -83,6 +83,8 @@ export class TagsService {
         icon: saved.icon,
       },
       description: `Created tag "${saved.name}"`,
+      descriptionKey: "createdTag",
+      descriptionParams: { name: saved.name },
     });
     return saved;
   }
@@ -124,6 +126,8 @@ export class TagsService {
       beforeData,
       afterData: { name: saved.name, color: saved.color, icon: saved.icon },
       description: `Updated tag "${saved.name}"`,
+      descriptionKey: "updatedTag",
+      descriptionParams: { name: saved.name },
     });
     return saved;
   }
@@ -143,6 +147,8 @@ export class TagsService {
       action: "delete",
       beforeData,
       description: `Deleted tag "${beforeData.name}"`,
+      descriptionKey: "deletedTag",
+      descriptionParams: { name: beforeData.name },
     });
   }
 

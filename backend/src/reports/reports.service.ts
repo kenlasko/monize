@@ -93,6 +93,8 @@ export class ReportsService {
       action: "create",
       afterData: { ...saved },
       description: `Created report "${saved.name}"`,
+      descriptionKey: "createdReport",
+      descriptionParams: { name: saved.name },
     });
 
     return saved;
@@ -166,6 +168,8 @@ export class ReportsService {
       beforeData,
       afterData: { ...saved },
       description: `Updated report "${saved.name}"`,
+      descriptionKey: "updatedReport",
+      descriptionParams: { name: saved.name },
     });
 
     return saved;
@@ -182,6 +186,8 @@ export class ReportsService {
       action: "delete",
       beforeData,
       description: `Deleted report "${beforeData.name}"`,
+      descriptionKey: "deletedReport",
+      descriptionParams: { name: beforeData.name },
     });
   }
 

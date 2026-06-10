@@ -28,7 +28,16 @@ export interface RecordActionParams {
   beforeData?: Record<string, any> | null;
   afterData?: Record<string, any> | null;
   relatedEntities?: Record<string, any>[] | null;
+  /** English source string, kept as a fallback for clients/rows without a key. */
   description: string;
+  /**
+   * Stable, locale-independent key (e.g. "createdPayee") the client maps to a
+   * translated template under `layout.actionHistory.descriptions`, plus the
+   * values to interpolate into it. Supplying these lets the history render in
+   * the viewer's current language instead of the frozen `description` above.
+   */
+  descriptionKey?: string | null;
+  descriptionParams?: Record<string, any> | null;
 }
 
 export interface UndoRedoResult {
@@ -255,6 +264,8 @@ export class ActionHistoryService {
         afterData: params.afterData ?? null,
         relatedEntities: params.relatedEntities ?? null,
         description: params.description,
+        descriptionKey: params.descriptionKey ?? null,
+        descriptionParams: params.descriptionParams ?? null,
       });
 
       const saved = await this.actionHistoryRepository.save(action);

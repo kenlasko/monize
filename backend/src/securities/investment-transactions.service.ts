@@ -607,6 +607,8 @@ export class InvestmentTransactionsService {
       action: "create",
       afterData,
       description: `Created ${createDto.action} transaction${createDto.securityId ? "" : ""}`,
+      descriptionKey: "createdInvestmentTransaction",
+      descriptionParams: { action: createDto.action },
     });
 
     return result;
@@ -823,6 +825,7 @@ export class InvestmentTransactionsService {
       // both legs and their mutual link.
       afterData: { ...transferOut, linkedTransferLeg: { ...transferIn } },
       description: "Transferred security between accounts",
+      descriptionKey: "transferredSecurity",
     });
 
     return { transferOut, transferIn };
@@ -1965,6 +1968,7 @@ export class InvestmentTransactionsService {
       beforeData: { ...beforeData, linkedTransferLeg: beforeLinked },
       afterData: { ...result, linkedTransferLeg: { ...linkedResult } },
       description: "Updated security transfer",
+      descriptionKey: "updatedSecurityTransfer",
     });
 
     return result;
@@ -2314,6 +2318,8 @@ export class InvestmentTransactionsService {
       beforeData,
       afterData: { ...result },
       description: `Updated ${result.action} transaction`,
+      descriptionKey: "updatedInvestmentTransaction",
+      descriptionParams: { action: result.action },
     });
 
     return result;
@@ -2599,6 +2605,8 @@ export class InvestmentTransactionsService {
       action: "delete",
       beforeData,
       description: `Deleted ${beforeData.action} transaction`,
+      descriptionKey: "deletedInvestmentTransaction",
+      descriptionParams: { action: beforeData.action },
     });
   }
 

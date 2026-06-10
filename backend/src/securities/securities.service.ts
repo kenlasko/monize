@@ -80,6 +80,8 @@ export class SecuritiesService {
       action: "create",
       afterData: { ...saved },
       description: `Created security "${saved.symbol}"`,
+      descriptionKey: "createdSecurity",
+      descriptionParams: { symbol: saved.symbol },
     });
 
     return saved;
@@ -220,6 +222,8 @@ export class SecuritiesService {
       beforeData,
       afterData: { ...saved },
       description: `Updated security "${saved.symbol}"`,
+      descriptionKey: "updatedSecurity",
+      descriptionParams: { symbol: saved.symbol },
     });
 
     return saved;
@@ -316,6 +320,8 @@ export class SecuritiesService {
       action: "delete",
       beforeData,
       description: `Deleted security "${beforeData.symbol}"`,
+      descriptionKey: "deletedSecurity",
+      descriptionParams: { symbol: beforeData.symbol },
     });
   }
 

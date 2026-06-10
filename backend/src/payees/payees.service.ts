@@ -113,6 +113,8 @@ export class PayeesService {
         isActive: saved.isActive,
       },
       description: `Created payee "${saved.name}"`,
+      descriptionKey: "createdPayee",
+      descriptionParams: { name: saved.name },
     });
     return saved;
   }
@@ -382,6 +384,8 @@ export class PayeesService {
         isActive: refreshed.isActive,
       },
       description: `Updated payee "${refreshed.name}"`,
+      descriptionKey: "updatedPayee",
+      descriptionParams: { name: refreshed.name },
     });
     return { ...refreshed, aliasCount, transactionCount };
   }
@@ -402,6 +406,8 @@ export class PayeesService {
       action: "delete",
       beforeData,
       description: `Deleted payee "${beforeData.name}"`,
+      descriptionKey: "deletedPayee",
+      descriptionParams: { name: beforeData.name },
     });
   }
 

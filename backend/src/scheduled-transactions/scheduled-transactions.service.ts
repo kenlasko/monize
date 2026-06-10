@@ -392,6 +392,8 @@ export class ScheduledTransactionsService {
       action: "create",
       afterData: { ...result },
       description: `Created scheduled transaction "${result.name}"`,
+      descriptionKey: "createdScheduledTransaction",
+      descriptionParams: { name: result.name },
     });
 
     return result;
@@ -1085,6 +1087,8 @@ export class ScheduledTransactionsService {
       beforeData,
       afterData: { ...result },
       description: `Updated scheduled transaction "${result.name}"`,
+      descriptionKey: "updatedScheduledTransaction",
+      descriptionParams: { name: result.name },
     });
 
     return result;
@@ -1101,6 +1105,8 @@ export class ScheduledTransactionsService {
       action: "delete",
       beforeData,
       description: `Deleted scheduled transaction "${beforeData.name}"`,
+      descriptionKey: "deletedScheduledTransaction",
+      descriptionParams: { name: beforeData.name },
     });
   }
 

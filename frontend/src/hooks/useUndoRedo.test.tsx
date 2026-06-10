@@ -3,11 +3,16 @@ import { renderHook, act } from '@testing-library/react';
 import { ReactNode } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import commonEn from '@/i18n/messages/en/common.json';
+import layoutEn from '@/i18n/messages/en/layout.json';
 
 // Hook emits toasts via next-intl; resolve them against the real English
-// catalog so renderHook has an intl context.
+// catalogs so renderHook has an intl context. `layout` carries the action
+// descriptions and undo/redo prefixes; `common` carries the error messages.
 const wrapper = ({ children }: { children: ReactNode }) => (
-  <NextIntlClientProvider locale="en" messages={{ common: commonEn }}>
+  <NextIntlClientProvider
+    locale="en"
+    messages={{ common: commonEn, layout: layoutEn }}
+  >
     {children}
   </NextIntlClientProvider>
 );
@@ -52,8 +57,12 @@ describe('useUndoRedo', () => {
 
   it('should call undo API and show success toast', async () => {
     actionHistoryApi.undo.mockResolvedValue({
-      action: { id: 'action-1' },
-      description: 'Undone: Created tag "Test"',
+      action: {
+        id: 'action-1',
+        descriptionKey: 'createdTag',
+        descriptionParams: { name: 'Test' },
+      },
+      description: 'ignored backend string',
     });
 
     const { result } = renderHook(() => useUndoRedo(), { wrapper });
@@ -68,8 +77,12 @@ describe('useUndoRedo', () => {
 
   it('should call redo API and show success toast', async () => {
     actionHistoryApi.redo.mockResolvedValue({
-      action: { id: 'action-1' },
-      description: 'Redone: Created tag "Test"',
+      action: {
+        id: 'action-1',
+        descriptionKey: 'createdTag',
+        descriptionParams: { name: 'Test' },
+      },
+      description: 'ignored backend string',
     });
 
     const { result } = renderHook(() => useUndoRedo(), { wrapper });

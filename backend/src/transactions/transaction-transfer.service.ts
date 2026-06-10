@@ -200,6 +200,12 @@ export class TransactionTransferService {
         toAccountId,
       },
       description: `Created transfer ${formatCurrency(amount, fromCurrencyCode)} from ${fromAccount.name} to ${toAccount.name}`,
+      descriptionKey: "createdTransfer",
+      descriptionParams: {
+        amount: formatCurrency(amount, fromCurrencyCode),
+        from: fromAccount.name,
+        to: toAccount.name,
+      },
     });
 
     return result;

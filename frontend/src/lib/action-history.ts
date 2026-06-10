@@ -7,7 +7,13 @@ export interface ActionHistoryItem {
   entityId: string | null;
   action: string;
   isUndone: boolean;
+  // English source string; rendered as-is only when no localizable key is present.
   description: string;
+  // Stable key (e.g. "createdPayee") + interpolation values the client uses to
+  // render the description in the user's current language. Null on older records
+  // written before localization, in which case `description` is the fallback.
+  descriptionKey?: string | null;
+  descriptionParams?: Record<string, string | number> | null;
   createdAt: string;
 }
 

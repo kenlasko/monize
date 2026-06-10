@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { actionHistoryApi, type ActionHistoryItem } from '@/lib/action-history';
+import { renderActionDescription } from '@/lib/action-history-format';
 import { clearAllCache } from '@/lib/apiCache';
 import { notifyUndoRedo, subscribeUndoRedo } from '@/lib/undoRedoSignal';
 import { createLogger } from '@/lib/logger';
@@ -24,17 +25,20 @@ function getEntityLabel(t: ReturnType<typeof useTranslations<'layout'>>, entityT
   return entityType;
 }
 
-function timeAgo(dateStr: string): string {
+function timeAgo(
+  t: ReturnType<typeof useTranslations<'layout'>>,
+  dateStr: string,
+): string {
   const seconds = Math.floor(
     (Date.now() - new Date(dateStr).getTime()) / 1000,
   );
-  if (seconds < 60) return 'just now';
+  if (seconds < 60) return t('actionHistory.timeAgo.justNow');
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 60) return t('actionHistory.timeAgo.minutes', { count: minutes });
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return t('actionHistory.timeAgo.hours', { count: hours });
   const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+  return t('actionHistory.timeAgo.days', { count: days });
 }
 
 export function ActionHistoryPanel() {
@@ -81,7 +85,11 @@ export function ActionHistoryPanel() {
     pendingRef.current = true;
     try {
       const result = await actionHistoryApi.undo();
-      toast.success(result.description);
+      toast.success(
+        t('actionHistory.undonePrefix', {
+          description: renderActionDescription(t, result.action),
+        }),
+      );
       clearAllCache();
       notifyUndoRedo();
       await fetchHistory();
@@ -106,7 +114,11 @@ export function ActionHistoryPanel() {
     pendingRef.current = true;
     try {
       const result = await actionHistoryApi.redo();
-      toast.success(result.description);
+      toast.success(
+        t('actionHistory.redonePrefix', {
+          description: renderActionDescription(t, result.action),
+        }),
+      );
       clearAllCache();
       notifyUndoRedo();
       await fetchHistory();
@@ -270,14 +282,14 @@ export function ActionHistoryPanel() {
                             item.isUndone ? 'line-through' : ''
                           }`}
                         >
-                          {item.description}
+                          {renderActionDescription(t, item)}
                         </p>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
                             {getEntityLabel(t, item.entityType)}
                           </span>
                           <span className="text-xs text-gray-400 dark:text-gray-500">
-                            {timeAgo(item.createdAt)}
+                            {timeAgo(t, item.createdAt)}
                           </span>
                         </div>
                       </div>

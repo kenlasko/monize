@@ -48,6 +48,22 @@ export class ActionHistory {
   @Column({ type: "varchar", length: 500 })
   description: string;
 
+  // Localization fields. `description` above is the English source string kept
+  // for backward compatibility and as a fallback; the client renders the
+  // localized text from this stable key plus its interpolation params so the
+  // history always reads in the viewer's current language. Both are exposed to
+  // the client (unlike the bulky before/after snapshots above).
+  @Column({
+    type: "varchar",
+    length: 100,
+    name: "description_key",
+    nullable: true,
+  })
+  descriptionKey: string | null;
+
+  @Column({ type: "jsonb", name: "description_params", nullable: true })
+  descriptionParams: Record<string, any> | null;
+
   @CreateDateColumn({ name: "created_at", type: "timestamptz" })
   createdAt: Date;
 }

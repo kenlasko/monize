@@ -164,6 +164,8 @@ export class InstitutionsService {
         country: saved.country,
       },
       description: `Created institution "${saved.name}"`,
+      descriptionKey: "createdInstitution",
+      descriptionParams: { name: saved.name },
     });
 
     return this.toView(saved, 0);
@@ -275,6 +277,8 @@ export class InstitutionsService {
         country: saved.country,
       },
       description: `Updated institution "${saved.name}"`,
+      descriptionKey: "updatedInstitution",
+      descriptionParams: { name: saved.name },
     });
 
     const accountCount = await this.countAccounts(userId, id);
@@ -296,6 +300,8 @@ export class InstitutionsService {
         country: institution.country,
       },
       description: `Deleted institution "${institution.name}"`,
+      descriptionKey: "deletedInstitution",
+      descriptionParams: { name: institution.name },
     });
   }
 

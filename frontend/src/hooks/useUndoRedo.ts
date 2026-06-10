@@ -4,6 +4,7 @@ import { useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { actionHistoryApi } from '@/lib/action-history';
+import { renderActionDescription } from '@/lib/action-history-format';
 import { clearAllCache } from '@/lib/apiCache';
 import { notifyUndoRedo } from '@/lib/undoRedoSignal';
 import { createLogger } from '@/lib/logger';
@@ -23,6 +24,9 @@ const logger = createLogger('UndoRedo');
  */
 export function useUndoRedo() {
   const t = useTranslations('common');
+  // Action descriptions live in the `layout` catalog (shared with the panel);
+  // render them here so keyboard-driven undo/redo toasts are localized too.
+  const tLayout = useTranslations('layout');
   const pendingRef = useRef(false);
 
   const handleUndo = useCallback(async () => {
@@ -30,7 +34,11 @@ export function useUndoRedo() {
     pendingRef.current = true;
     try {
       const result = await actionHistoryApi.undo();
-      toast.success(result.description);
+      toast.success(
+        tLayout('actionHistory.undonePrefix', {
+          description: renderActionDescription(tLayout, result.action),
+        }),
+      );
       clearAllCache();
       notifyUndoRedo();
     } catch (error: any) {
@@ -47,14 +55,18 @@ export function useUndoRedo() {
     } finally {
       pendingRef.current = false;
     }
-  }, [t]);
+  }, [t, tLayout]);
 
   const handleRedo = useCallback(async () => {
     if (pendingRef.current) return;
     pendingRef.current = true;
     try {
       const result = await actionHistoryApi.redo();
-      toast.success(result.description);
+      toast.success(
+        tLayout('actionHistory.redonePrefix', {
+          description: renderActionDescription(tLayout, result.action),
+        }),
+      );
       clearAllCache();
       notifyUndoRedo();
     } catch (error: any) {
@@ -71,7 +83,7 @@ export function useUndoRedo() {
     } finally {
       pendingRef.current = false;
     }
-  }, [t]);
+  }, [t, tLayout]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

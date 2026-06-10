@@ -1505,6 +1505,14 @@ export class TransactionsService {
       beforeData: beforeSnapshot,
       afterData: this.snapshotTransaction(finalTransaction),
       description: `Updated transaction ${finalTransaction.payeeName || ""} ${formatCurrency(Number(finalTransaction.amount), finalTransaction.currencyCode)}`,
+      descriptionKey: "updatedTransaction",
+      descriptionParams: {
+        payee: finalTransaction.payeeName || "",
+        amount: formatCurrency(
+          Number(finalTransaction.amount),
+          finalTransaction.currencyCode,
+        ),
+      },
     });
     return finalTransaction;
   }
@@ -1958,6 +1966,16 @@ export class TransactionsService {
       beforeData: action === "create" ? undefined : beforeData,
       afterData: action === "delete" ? undefined : snapshot,
       description: `${action === "create" ? "Created" : action === "update" ? "Updated" : "Deleted"} transaction ${tx.payeeName || ""} ${formatCurrency(Number(tx.amount), tx.currencyCode)}`,
+      descriptionKey:
+        action === "create"
+          ? "createdTransaction"
+          : action === "update"
+            ? "updatedTransaction"
+            : "deletedTransaction",
+      descriptionParams: {
+        payee: tx.payeeName || "",
+        amount: formatCurrency(Number(tx.amount), tx.currencyCode),
+      },
     });
   }
 

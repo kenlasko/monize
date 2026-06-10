@@ -107,6 +107,8 @@ export class BudgetsService {
       action: "create",
       afterData: { ...saved },
       description: `Created budget "${saved.name}"`,
+      descriptionKey: "createdBudget",
+      descriptionParams: { name: saved.name },
     });
 
     return saved;
@@ -177,6 +179,8 @@ export class BudgetsService {
       beforeData,
       afterData: { ...saved },
       description: `Updated budget "${saved.name}"`,
+      descriptionKey: "updatedBudget",
+      descriptionParams: { name: saved.name },
     });
 
     return saved;
@@ -193,6 +197,8 @@ export class BudgetsService {
       action: "delete",
       beforeData,
       description: `Deleted budget "${beforeData.name}"`,
+      descriptionKey: "deletedBudget",
+      descriptionParams: { name: beforeData.name },
     });
   }
 

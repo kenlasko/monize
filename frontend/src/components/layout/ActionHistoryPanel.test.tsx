@@ -211,7 +211,9 @@ describe('ActionHistoryPanel', () => {
       fireEvent.click(getByTestId('undo-button'));
     });
     await waitFor(() => {
-      expect(toast.default.success).toHaveBeenCalledWith('Undone: Created transaction');
+      expect(toast.default.success).toHaveBeenCalledWith(
+        'Undone: Created transaction: Grocery $50',
+      );
     });
   });
 
@@ -223,7 +225,61 @@ describe('ActionHistoryPanel', () => {
       fireEvent.click(getByTestId('redo-button'));
     });
     await waitFor(() => {
-      expect(toast.default.success).toHaveBeenCalledWith('Redone: Deleted tag');
+      expect(toast.default.success).toHaveBeenCalledWith(
+        'Redone: Deleted tag "Old Tag"',
+      );
+    });
+  });
+
+  it('renders a localized description from descriptionKey and params', async () => {
+    (actionHistoryApi.getHistory as ReturnType<typeof vi.fn>).mockResolvedValue([
+      makeItem({
+        entityType: 'payee',
+        description: 'stored English fallback (should not show)',
+        descriptionKey: 'createdPayee',
+        descriptionParams: { name: 'Acme' },
+      }),
+    ]);
+    const { getByText } = await openPanel();
+    await waitFor(() => {
+      expect(getByText('Created payee "Acme"')).toBeInTheDocument();
+    });
+  });
+
+  it('falls back to the stored description for an unknown descriptionKey', async () => {
+    (actionHistoryApi.getHistory as ReturnType<typeof vi.fn>).mockResolvedValue([
+      makeItem({
+        description: 'Legacy English text',
+        descriptionKey: 'someFutureKeyTheClientDoesNotKnow',
+        descriptionParams: { foo: 'bar' },
+      }),
+    ]);
+    const { getByText } = await openPanel();
+    await waitFor(() => {
+      expect(getByText('Legacy English text')).toBeInTheDocument();
+    });
+  });
+
+  it('renders the undo toast from the action key in the active locale', async () => {
+    (actionHistoryApi.undo as ReturnType<typeof vi.fn>).mockResolvedValue({
+      action: makeItem({
+        entityType: 'payee',
+        description: 'stored English fallback',
+        descriptionKey: 'createdPayee',
+        descriptionParams: { name: 'Acme' },
+      }),
+      description: 'ignored backend string',
+    });
+    const toast = await import('react-hot-toast');
+    const { getByTestId } = await openPanel();
+    await waitFor(() => expect(getByTestId('undo-button')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(getByTestId('undo-button'));
+    });
+    await waitFor(() => {
+      expect(toast.default.success).toHaveBeenCalledWith(
+        'Undone: Created payee "Acme"',
+      );
     });
   });
 

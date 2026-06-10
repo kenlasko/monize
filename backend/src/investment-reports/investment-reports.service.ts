@@ -67,6 +67,8 @@ export class InvestmentReportsService {
       action: "create",
       afterData: { ...saved },
       description: `Created investment report "${saved.name}"`,
+      descriptionKey: "createdInvestmentReport",
+      descriptionParams: { name: saved.name },
     });
 
     return saved;
@@ -125,6 +127,8 @@ export class InvestmentReportsService {
       beforeData,
       afterData: { ...saved },
       description: `Updated investment report "${saved.name}"`,
+      descriptionKey: "updatedInvestmentReport",
+      descriptionParams: { name: saved.name },
     });
 
     return saved;
@@ -141,6 +145,8 @@ export class InvestmentReportsService {
       action: "delete",
       beforeData,
       description: `Deleted investment report "${beforeData.name}"`,
+      descriptionKey: "deletedInvestmentReport",
+      descriptionParams: { name: beforeData.name },
     });
   }
 

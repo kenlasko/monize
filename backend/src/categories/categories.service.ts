@@ -73,6 +73,8 @@ export class CategoriesService {
         isSystem: saved.isSystem,
       },
       description: `Created category "${saved.name}"`,
+      descriptionKey: "createdCategory",
+      descriptionParams: { name: saved.name },
     });
     return saved;
   }
@@ -449,6 +451,8 @@ export class CategoriesService {
         parentId: saved.parentId,
       },
       description: `Updated category "${saved.name}"`,
+      descriptionKey: "updatedCategory",
+      descriptionParams: { name: saved.name },
     });
     return saved;
   }
@@ -551,6 +555,8 @@ export class CategoriesService {
       action: "delete",
       beforeData,
       description: `Deleted category "${beforeData.name}"`,
+      descriptionKey: "deletedCategory",
+      descriptionParams: { name: beforeData.name },
     });
   }
 
