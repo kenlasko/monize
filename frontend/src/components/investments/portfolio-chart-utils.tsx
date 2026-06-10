@@ -154,7 +154,7 @@ export interface FlagDotOptions {
   cx: number;
   cy: number;
   index: number;
-  /** Color of dot/bubble (e.g. '#10b981' for highest, '#ef4444' for lowest). */
+  /** Color of dot/bubble (e.g. chartColors.income for highest, chartColors.expense for lowest). */
   color: string;
   /** Pre-formatted label text (caller chooses compact vs full). */
   label: string;

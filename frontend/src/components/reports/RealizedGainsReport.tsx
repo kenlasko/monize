@@ -16,6 +16,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { format } from 'date-fns';
+import { chartColors } from '@/lib/chart-colors';
 import { investmentsApi } from '@/lib/investments';
 import { RealizedGainEntry } from '@/types/investment';
 import { Account } from '@/types/account';
@@ -392,14 +393,14 @@ export function RealizedGainsReport() {
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <BarChart data={chartData} layout="vertical" margin={{ left: 0, right: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
                   <XAxis type="number" tickFormatter={formatCurrencyAxis} />
                   <YAxis type="category" dataKey="symbol" width={60} tick={{ fontSize: 12 }} />
                   <Tooltip content={<CustomTooltip fmtValue={fmtValue} />} />
                   <Bar
                     dataKey="gain"
                     name={t('realizedGains.realizedGainLoss')}
-                    fill="#22c55e"
+                    fill={chartColors.income}
                     radius={[0, 4, 4, 0]}
                   />
                 </BarChart>

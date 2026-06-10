@@ -13,6 +13,7 @@ import {
   LabelList,
 } from 'recharts';
 import { format } from 'date-fns';
+import { chartColors } from '@/lib/chart-colors';
 import { MonthlyNetWorth } from '@/types/net-worth';
 import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -151,7 +152,7 @@ export function NetWorthChart({ data, isLoading }: NetWorthChartProps) {
             <YAxis hide domain={yAxisDomain} />
             <XAxis
               dataKey="name"
-              tick={{ fill: '#6b7280', fontSize: 11 }}
+              tick={{ fill: chartColors.axis, fontSize: 11 }}
               tickLine={false}
               axisLine={false}
               interval="preserveStartEnd"
@@ -159,9 +160,9 @@ export function NetWorthChart({ data, isLoading }: NetWorthChartProps) {
             />
             <Tooltip
               content={<NetWorthTooltip formatCurrency={formatCurrency} />}
-              cursor={{ fill: '#e5e7eb', fillOpacity: 0.35 }}
+              cursor={{ fill: chartColors.grid, fillOpacity: 0.35 }}
             />
-            <Bar dataKey="netWorth" fill="#3b82f6" radius={[4, 4, 0, 0]}>
+            <Bar dataKey="netWorth" fill={chartColors.primary} radius={[4, 4, 0, 0]}>
               <LabelList
                 dataKey="netWorth"
                 position="top"
@@ -169,7 +170,7 @@ export function NetWorthChart({ data, isLoading }: NetWorthChartProps) {
                 offset={6}
                 textAnchor="start"
                 formatter={(value: unknown) => formatCurrencyLabel(Number(value))}
-                style={{ fill: '#6b7280', fontSize: 11, fontWeight: 600, dominantBaseline: 'central' }}
+                style={{ fill: chartColors.axis, fontSize: 11, fontWeight: 600, dominantBaseline: 'central' }}
               />
             </Bar>
           </BarChart>

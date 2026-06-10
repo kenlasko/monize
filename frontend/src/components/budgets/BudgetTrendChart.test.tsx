@@ -14,8 +14,8 @@ vi.mock('recharts', () => ({
   Tooltip: ({ content }: any) => {
     // Render the tooltip content with active payload to cover CustomTooltip branches
     const payload = [
-      { value: 5000, dataKey: 'budgeted', color: '#3b82f6' },
-      { value: 4800, dataKey: 'actual', color: '#10b981' },
+      { value: 5000, dataKey: 'budgeted', color: 'var(--chart-primary)' },
+      { value: 4800, dataKey: 'actual', color: 'var(--chart-income)' },
     ];
     if (content) {
       const ContentComponent = content.type;

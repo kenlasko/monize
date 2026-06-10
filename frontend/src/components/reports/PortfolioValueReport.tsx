@@ -13,6 +13,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { format } from 'date-fns';
+import { chartColors } from '@/lib/chart-colors';
 import { netWorthApi } from '@/lib/net-worth';
 import { investmentsApi } from '@/lib/investments';
 import { PortfolioSummary } from '@/types/investment';
@@ -607,12 +608,12 @@ export function PortfolioValueReport() {
               <AreaChart data={chartPoints} margin={{ top: 30, right: 30, left: 0, bottom: 30 }}>
                 <defs>
                   <linearGradient id="colorPortfolioValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    <stop offset="5%" stopColor={chartColors.income} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={chartColors.income} stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <ChartFlagShadowFilter />
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
                 <XAxis
                   dataKey="name"
                   tick={{ fontSize: 12 }}
@@ -643,7 +644,7 @@ export function PortfolioValueReport() {
                 <Area
                   type="monotone"
                   dataKey="Value"
-                  stroke="#10b981"
+                  stroke={chartColors.income}
                   strokeWidth={2}
                   fillOpacity={1}
                   fill="url(#colorPortfolioValue)"
@@ -671,7 +672,7 @@ export function PortfolioValueReport() {
                       cx,
                       cy,
                       index,
-                      color: isHighest ? '#10b981' : '#ef4444',
+                      color: isHighest ? chartColors.income : chartColors.expense,
                       label: fmtFlag(value),
                       side: isLeftHalf ? 'right' : 'left',
                     });

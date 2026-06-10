@@ -16,6 +16,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { budgetsApi } from '@/lib/budgets';
+import { chartColors } from '@/lib/chart-colors';
 import type { Budget, SavingsRatePoint } from '@/types/budget';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
@@ -270,15 +271,15 @@ export function SavingsRateReport() {
                 <Legend />
                 <ReferenceLine
                   y={targetRate}
-                  stroke="#3b82f6"
+                  stroke={chartColors.primary}
                   strokeDasharray="3 3"
-                  label={{ value: t('savingsRate.targetPrefix', { rate: targetRate }), position: 'right', fill: '#3b82f6', fontSize: 11 }}
+                  label={{ value: t('savingsRate.targetPrefix', { rate: targetRate }), position: 'right', fill: chartColors.primary, fontSize: 11 }}
                 />
-                <ReferenceLine y={0} stroke="#9ca3af" />
+                <ReferenceLine y={0} stroke={chartColors.axis} />
                 <Line
                   type="monotone"
                   dataKey="savingsRate"
-                  stroke="#10b981"
+                  stroke={chartColors.income}
                   strokeWidth={2}
                   dot={{ r: 4 }}
                   name={t('savingsRate.seriesSavingsRate')}

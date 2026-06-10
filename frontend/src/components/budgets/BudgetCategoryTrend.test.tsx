@@ -136,7 +136,7 @@ describe('BudgetCategoryTrend', () => {
     expect(toggleBtn).toHaveStyle({ backgroundColor: expect.any(String) });
     fireEvent.click(toggleBtn);
     // After deselecting, backgroundColor should be unset
-    expect(toggleBtn).not.toHaveStyle({ backgroundColor: '#3b82f6' });
+    expect(toggleBtn).not.toHaveStyle({ backgroundColor: 'var(--chart-1)' });
   });
 
   it('re-selects category when toggle clicked again', () => {

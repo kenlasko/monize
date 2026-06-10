@@ -14,6 +14,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
+import { chartColors, chartSeriesColor } from '@/lib/chart-colors';
 import { investmentsApi } from '@/lib/investments';
 import { Security } from '@/types/investment';
 import { Account } from '@/types/account';
@@ -34,12 +35,6 @@ const logger = createLogger('SectorWeightingsReport');
 const excludeCashAccounts = (a: Account) => a.accountSubType !== 'INVESTMENT_CASH';
 
 type SectorSortField = 'sector' | 'direct' | 'etf' | 'total' | 'percentage';
-
-const SECTOR_COLOURS = [
-  '#3b82f6', '#22c55e', '#f97316', '#8b5cf6', '#ec4899',
-  '#14b8a6', '#eab308', '#ef4444', '#06b6d4', '#a855f7',
-  '#f43f5e', '#84cc16',
-];
 
 function CustomTooltip({ active, payload, formatCurrencyFull, defaultCurrency, labelDirect, labelEtf, labelTotal }: {
   active?: boolean;
@@ -200,7 +195,7 @@ export function SectorWeightingsReport() {
     etf: item.etfValue,
     total: item.totalValue,
     percentage: item.percentage,
-    color: SECTOR_COLOURS[idx % SECTOR_COLOURS.length],
+    color: chartSeriesColor(idx),
   }));
 
   return (
@@ -304,8 +299,8 @@ export function SectorWeightingsReport() {
                   value === 'direct' ? t('sectorWeightings.viewDirect') : t('sectorWeightings.viewEtf')
                 }
               />
-              <Bar dataKey="direct" stackId="a" fill="#3b82f6" name="direct" />
-              <Bar dataKey="etf" stackId="a" fill="#22c55e" name="etf" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="direct" stackId="a" fill={chartColors.primary} name="direct" />
+              <Bar dataKey="etf" stackId="a" fill={chartColors.income} name="etf" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -377,7 +372,7 @@ export function SectorWeightingsReport() {
                     <div className="flex items-center gap-2">
                       <div
                         className="w-3 h-3 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: SECTOR_COLOURS[idx % SECTOR_COLOURS.length] }}
+                        style={{ backgroundColor: chartSeriesColor(idx) }}
                       />
                       {item.sector}
                     </div>

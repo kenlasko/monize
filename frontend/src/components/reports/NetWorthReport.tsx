@@ -19,6 +19,7 @@ import {
   LabelList,
 } from 'recharts';
 import { format } from 'date-fns';
+import { chartColors } from '@/lib/chart-colors';
 import { netWorthApi } from '@/lib/net-worth';
 import { MonthlyNetWorth } from '@/types/net-worth';
 import { parseLocalDate } from '@/lib/utils';
@@ -374,11 +375,11 @@ export function NetWorthReport() {
               <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorNetWorth" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                    <stop offset="5%" stopColor={chartColors.primary} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={chartColors.primary} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
                 <XAxis
                   dataKey="name"
                   tick={{ fontSize: 12 }}
@@ -400,11 +401,11 @@ export function NetWorthReport() {
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
-                <ReferenceLine y={0} stroke="#9ca3af" strokeDasharray="3 3" />
+                <ReferenceLine y={0} stroke={chartColors.axis} strokeDasharray="3 3" />
                 <Area
                   type="monotone"
                   dataKey="NetWorth"
-                  stroke="#3b82f6"
+                  stroke={chartColors.primary}
                   strokeWidth={2}
                   fillOpacity={1}
                   fill="url(#colorNetWorth)"
@@ -415,10 +416,10 @@ export function NetWorthReport() {
                     x={minMax.max.name}
                     y={minMax.max.NetWorth}
                     r={6}
-                    fill="#16a34a"
+                    fill={chartColors.income}
                     stroke="#fff"
                     strokeWidth={2}
-                    label={{ value: formatCurrencyLabel(minMax.max.NetWorth), position: 'bottom', fontSize: 12, fill: '#16a34a', fontWeight: 600, offset: 8 }}
+                    label={{ value: formatCurrencyLabel(minMax.max.NetWorth), position: 'bottom', fontSize: 12, fill: chartColors.income, fontWeight: 600, offset: 8 }}
                   />
                 )}
                 {minMax && (
@@ -426,16 +427,16 @@ export function NetWorthReport() {
                     x={minMax.min.name}
                     y={minMax.min.NetWorth}
                     r={6}
-                    fill="#dc2626"
+                    fill={chartColors.expense}
                     stroke="#fff"
                     strokeWidth={2}
-                    label={{ value: formatCurrencyLabel(minMax.min.NetWorth), position: 'top', fontSize: 12, fill: '#dc2626', fontWeight: 600, offset: 8 }}
+                    label={{ value: formatCurrencyLabel(minMax.min.NetWorth), position: 'top', fontSize: 12, fill: chartColors.expense, fontWeight: 600, offset: 8 }}
                   />
                 )}
               </AreaChart>
               ) : (
               <BarChart data={chartData} margin={{ top: showBarLabels ? (barLabelsVertical ? 52 : 22) : 10, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
                 <XAxis
                   dataKey="name"
                   tick={{ fontSize: 12 }}
@@ -457,8 +458,8 @@ export function NetWorthReport() {
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
-                <ReferenceLine y={0} stroke="#9ca3af" strokeDasharray="3 3" />
-                <Bar dataKey="NetWorth" fill="#3b82f6" name={t('netWorth.seriesNetWorth')} radius={[4, 4, 0, 0]}>
+                <ReferenceLine y={0} stroke={chartColors.axis} strokeDasharray="3 3" />
+                <Bar dataKey="NetWorth" fill={chartColors.primary} name={t('netWorth.seriesNetWorth')} radius={[4, 4, 0, 0]}>
                   {showBarLabels && (
                     <LabelList
                       dataKey="NetWorth"
@@ -468,7 +469,7 @@ export function NetWorthReport() {
                       textAnchor={barLabelsVertical ? 'start' : 'middle'}
                       formatter={(value: unknown) => formatCurrencyLabel(Number(value))}
                       style={{
-                        fill: '#6b7280',
+                        fill: chartColors.axis,
                         fontSize: 11,
                         fontWeight: 600,
                         ...(barLabelsVertical && { dominantBaseline: 'central' as const }),

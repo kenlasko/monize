@@ -17,6 +17,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 import { format, differenceInDays } from 'date-fns';
+import { chartColors } from '@/lib/chart-colors';
 import { investmentsApi } from '@/lib/investments';
 import { Security, SecurityPrice, InvestmentTransaction, HoldingWithMarketValue } from '@/types/investment';
 import { Account } from '@/types/account';
@@ -522,11 +523,11 @@ export function SecurityPerformanceReport() {
                     <AreaChart data={chartData}>
                       <defs>
                         <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                          <stop offset="5%" stopColor={chartColors.primary} stopOpacity={0.3} />
+                          <stop offset="95%" stopColor={chartColors.primary} stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
                       <XAxis
                         dataKey="label"
                         tick={{ fontSize: 11 }}
@@ -556,7 +557,7 @@ export function SecurityPerformanceReport() {
                       <Area
                         type="monotone"
                         dataKey="close"
-                        stroke="#3b82f6"
+                        stroke={chartColors.primary}
                         fill="url(#priceGradient)"
                         strokeWidth={2}
                       />
@@ -566,7 +567,7 @@ export function SecurityPerformanceReport() {
                         dataKey="buyMarker"
                         stroke="none"
                         fill="none"
-                        dot={{ r: 6, fill: '#22c55e', stroke: '#fff', strokeWidth: 2 }}
+                        dot={{ r: 6, fill: chartColors.income, stroke: '#fff', strokeWidth: 2 }}
                         activeDot={false}
                         connectNulls={false}
                       />
@@ -576,16 +577,16 @@ export function SecurityPerformanceReport() {
                         dataKey="sellMarker"
                         stroke="none"
                         fill="none"
-                        dot={{ r: 6, fill: '#ef4444', stroke: '#fff', strokeWidth: 2 }}
+                        dot={{ r: 6, fill: chartColors.expense, stroke: '#fff', strokeWidth: 2 }}
                         activeDot={false}
                         connectNulls={false}
                       />
                       {stats && stats.averageCost > 0 && (
                         <ReferenceLine
                           y={stats.averageCost}
-                          stroke="#f97316"
+                          stroke={chartColors.warning}
                           strokeDasharray="4 4"
-                          label={{ value: t('securityPerformance.avgCostRefLine'), position: 'right', fill: '#f97316', fontSize: 11 }}
+                          label={{ value: t('securityPerformance.avgCostRefLine'), position: 'right', fill: chartColors.warning, fontSize: 11 }}
                         />
                       )}
                     </AreaChart>

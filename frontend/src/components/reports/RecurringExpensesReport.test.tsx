@@ -15,10 +15,6 @@ vi.mock("@/hooks/useNumberFormat", () => ({
   }),
 }));
 
-vi.mock("@/lib/chart-colours", () => ({
-  CHART_COLOURS: ["#3b82f6", "#ef4444", "#22c55e"],
-}));
-
 vi.mock("recharts", () => ({
   ResponsiveContainer: ({ children }: any) => (
     <div data-testid="responsive-container">{children}</div>

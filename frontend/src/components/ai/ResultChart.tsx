@@ -18,12 +18,8 @@ import {
   Area,
 } from 'recharts';
 import { captureSvgAsImage } from '@/lib/pdf-export-charts';
+import { chartColors, chartSeriesColor } from '@/lib/chart-colors';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-
-const COLORS = [
-  '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
-  '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1',
-];
 
 interface ChartData {
   label: string;
@@ -146,7 +142,7 @@ export function ResultChart({ type, title, data }: ResultChartProps) {
                 {data.map((_, index) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={COLORS[index % COLORS.length]}
+                    fill={chartSeriesColor(index)}
                   />
                 ))}
               </Pie>
@@ -161,8 +157,9 @@ export function ResultChart({ type, title, data }: ResultChartProps) {
               <Area
                 type="monotone"
                 dataKey="value"
-                stroke="#3b82f6"
-                fill="#bfdbfe"
+                stroke={chartColors.primary}
+                fill={chartColors.primary}
+                fillOpacity={0.25}
               />
             </AreaChart>
           ) : (
@@ -175,7 +172,7 @@ export function ResultChart({ type, title, data }: ResultChartProps) {
                 {data.map((_, index) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={COLORS[index % COLORS.length]}
+                    fill={chartSeriesColor(index)}
                   />
                 ))}
               </Bar>

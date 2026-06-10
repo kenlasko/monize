@@ -23,6 +23,7 @@ import { useDateRange } from '@/hooks/useDateRange';
 import { useReportData } from '@/hooks/useReportData';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
 import { CHART_COLOURS } from '@/lib/chart-colours';
+import { chartColors } from '@/lib/chart-colors';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { ChartViewToggle } from '@/components/ui/ChartViewToggle';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
@@ -315,7 +316,7 @@ export function SpendingByCategoryReport() {
               <div className="h-96">
                 <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <BarChart data={chartData} layout="vertical" margin={{ left: 10 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
                     <XAxis type="number" tickFormatter={(value) => formatCurrency(value)} />
                     <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={80} />
                     <Tooltip content={<CustomTooltip />} />

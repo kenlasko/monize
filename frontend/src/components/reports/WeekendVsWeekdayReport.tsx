@@ -17,12 +17,18 @@ import {
   Cell,
 } from 'recharts';
 import { builtInReportsApi } from '@/lib/built-in-reports';
+import { chartColors, CHART_SERIES } from '@/lib/chart-colors';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateRange } from '@/hooks/useDateRange';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { useReportData } from '@/hooks/useReportData';
 import { ReportError } from '@/components/reports/ReportError';
+import { resolvePdfColor } from '@/components/reports/resolve-pdf-color';
+
+// Weekend purple vs weekday blue, drawn from the categorical theme palette.
+const WEEKEND_COLOR = CHART_SERIES[4];
+const WEEKDAY_COLOR = CHART_SERIES[0];
 
 interface DaySpendingDisplay {
   day: string;
@@ -112,8 +118,8 @@ export function WeekendVsWeekdayReport() {
   const weekendPercent = totalSpending > 0 ? (weekendTotal / totalSpending) * 100 : 0;
 
   const pieData = [
-    { name: t('weekendVsWeekday.weekendLabel'), value: weekendTotal, color: '#8b5cf6' },
-    { name: t('weekendVsWeekday.weekdayLabel'), value: weekdayTotal, color: '#3b82f6' },
+    { name: t('weekendVsWeekday.weekendLabel'), value: weekendTotal, color: WEEKEND_COLOR },
+    { name: t('weekendVsWeekday.weekdayLabel'), value: weekdayTotal, color: WEEKDAY_COLOR },
   ];
 
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) => {
@@ -145,8 +151,8 @@ export function WeekendVsWeekdayReport() {
       ],
       chartContainer: chartRef.current,
       chartLegend: [
-        { color: '#8b5cf6', label: `${t('weekendVsWeekday.weekendLabel')} - ${formatCurrency(weekendTotal)} (${weekendPercent.toFixed(1)}%)` },
-        { color: '#3b82f6', label: `${t('weekendVsWeekday.weekdayLabel')} - ${formatCurrency(weekdayTotal)} (${weekdayPercent.toFixed(1)}%)` },
+        { color: resolvePdfColor(WEEKEND_COLOR), label: `${t('weekendVsWeekday.weekendLabel')} - ${formatCurrency(weekendTotal)} (${weekendPercent.toFixed(1)}%)` },
+        { color: resolvePdfColor(WEEKDAY_COLOR), label: `${t('weekendVsWeekday.weekdayLabel')} - ${formatCurrency(weekdayTotal)} (${weekdayPercent.toFixed(1)}%)` },
       ],
       filename: 'weekend-vs-weekday',
     });
@@ -322,7 +328,7 @@ export function WeekendVsWeekdayReport() {
           <div className="h-96">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart data={dayData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
                 <XAxis dataKey="day" />
                 <YAxis tickFormatter={formatCurrencyAxis} />
                 <Tooltip content={<CustomTooltip />} />
@@ -330,7 +336,7 @@ export function WeekendVsWeekdayReport() {
                   {dayData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={entry.isWeekend ? '#8b5cf6' : '#3b82f6'}
+                      fill={entry.isWeekend ? WEEKEND_COLOR : WEEKDAY_COLOR}
                     />
                   ))}
                 </Bar>
@@ -364,13 +370,13 @@ export function WeekendVsWeekdayReport() {
           <div className="h-[480px]">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart data={categoryComparison} layout="vertical" margin={{ left: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
                 <XAxis type="number" tickFormatter={formatCurrencyAxis} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={80} />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
-                <Bar dataKey="weekendTotal" fill="#8b5cf6" name={t('weekendVsWeekday.barWeekend')} />
-                <Bar dataKey="weekdayTotal" fill="#3b82f6" name={t('weekendVsWeekday.barWeekday')} />
+                <Bar dataKey="weekendTotal" fill={WEEKEND_COLOR} name={t('weekendVsWeekday.barWeekend')} />
+                <Bar dataKey="weekdayTotal" fill={WEEKDAY_COLOR} name={t('weekendVsWeekday.barWeekday')} />
               </BarChart>
             </ResponsiveContainer>
           </div>

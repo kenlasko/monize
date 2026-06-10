@@ -15,6 +15,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 import { format } from 'date-fns';
+import { chartColors } from '@/lib/chart-colors';
 import { parseLocalDate } from '@/lib/utils';
 import { computeBalanceSummary } from '@/lib/balance-history';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -191,26 +192,22 @@ export function BalanceHistoryChart({
           <AreaChart data={chartData} margin={{ left: 0, right: 8, top: 5, bottom: 0 }}>
             <defs>
               <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
-                <stop offset={0} stopColor="#3b82f6" stopOpacity={areaGradient.topOpacity} />
-                <stop offset={areaGradient.zeroOffset} stopColor="#3b82f6" stopOpacity={0} />
-                <stop offset={1} stopColor="#3b82f6" stopOpacity={areaGradient.bottomOpacity} />
+                <stop offset={0} stopColor={chartColors.primary} stopOpacity={areaGradient.topOpacity} />
+                <stop offset={areaGradient.zeroOffset} stopColor={chartColors.primary} stopOpacity={0} />
+                <stop offset={1} stopColor={chartColors.primary} stopOpacity={areaGradient.bottomOpacity} />
               </linearGradient>
             </defs>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="#e5e7eb"
-              className="dark:stroke-gray-700"
-            />
+            <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
             <XAxis
               dataKey="date"
               ticks={monthTicks}
-              tick={{ fill: '#6b7280', fontSize: 12 }}
+              tick={{ fill: chartColors.axis, fontSize: 12 }}
               tickLine={false}
-              axisLine={{ stroke: '#e5e7eb' }}
+              axisLine={{ stroke: chartColors.grid }}
               tickFormatter={(value: string) => format(parseLocalDate(value), 'MMM')}
             />
             <YAxis
-              tick={{ fill: '#6b7280', fontSize: 11 }}
+              tick={{ fill: chartColors.axis, fontSize: 11 }}
               tickLine={false}
               axisLine={false}
               tickFormatter={formatAxis}
@@ -220,14 +217,14 @@ export function BalanceHistoryChart({
             <Tooltip content={<BalanceTooltip formatCurrency={formatCurrency} />} />
             <ReferenceLine
               y={0}
-              stroke="#ef4444"
+              stroke={chartColors.expense}
               strokeDasharray="5 5"
               strokeOpacity={0.5}
             />
             {summary && summary.minBalance !== summary.startBalance && (
               <ReferenceLine
                 y={summary.minBalance}
-                stroke={summary.minBalance < 0 ? '#ef4444' : '#f59e0b'}
+                stroke={summary.minBalance < 0 ? chartColors.expense : chartColors.warning}
                 strokeDasharray="3 3"
                 strokeOpacity={0.4}
               />
@@ -235,12 +232,12 @@ export function BalanceHistoryChart({
             <Area
               type="monotone"
               dataKey="balance"
-              stroke="#3b82f6"
+              stroke={chartColors.primary}
               strokeWidth={2}
               fillOpacity={1}
               fill="url(#colorBalance)"
               dot={false}
-              activeDot={{ r: 6, fill: '#3b82f6' }}
+              activeDot={{ r: 6, fill: chartColors.primary }}
             />
           </AreaChart>
         </ResponsiveContainer>

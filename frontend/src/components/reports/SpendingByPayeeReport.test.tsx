@@ -30,10 +30,6 @@ vi.mock("@/hooks/useDateRange", () => ({
   }),
 }));
 
-vi.mock("@/lib/chart-colours", () => ({
-  CHART_COLOURS: ["#3b82f6", "#ef4444", "#22c55e", "#f97316"],
-}));
-
 vi.mock("@/components/ui/DateRangeSelector", () => ({
   DateRangeSelector: () => <div data-testid="date-range-selector" />,
 }));

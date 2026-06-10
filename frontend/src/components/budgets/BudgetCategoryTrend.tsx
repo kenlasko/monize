@@ -12,25 +12,13 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import { chartSeriesColor } from '@/lib/chart-colors';
 import type { CategoryTrendSeries } from '@/types/budget';
 
 interface BudgetCategoryTrendProps {
   data: CategoryTrendSeries[];
   formatCurrency: (amount: number) => string;
 }
-
-const CHART_COLORS = [
-  '#3b82f6',
-  '#10b981',
-  '#f59e0b',
-  '#ef4444',
-  '#8b5cf6',
-  '#06b6d4',
-  '#f97316',
-  '#ec4899',
-  '#14b8a6',
-  '#6366f1',
-];
 
 function CategoryTrendTooltip({
   active,
@@ -138,7 +126,7 @@ export function BudgetCategoryTrend({
       {/* Category toggles */}
       <div className="flex flex-wrap gap-2 mb-4">
         {data.map((series, idx) => {
-          const color = CHART_COLORS[idx % CHART_COLORS.length];
+          const color = chartSeriesColor(idx);
           const isSelected = selectedCategories.has(series.categoryId);
           return (
             <button
@@ -181,7 +169,7 @@ export function BudgetCategoryTrend({
             <Legend />
             {data.map((series, idx) => {
               if (!selectedCategories.has(series.categoryId)) return null;
-              const color = CHART_COLORS[idx % CHART_COLORS.length];
+              const color = chartSeriesColor(idx);
               return (
                 <Line
                   key={series.categoryId}

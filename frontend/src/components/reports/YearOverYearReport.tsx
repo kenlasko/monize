@@ -19,7 +19,8 @@ import { builtInReportsApi } from "@/lib/built-in-reports";
 import { YearData } from "@/types/built-in-reports";
 import { useNumberFormat } from "@/hooks/useNumberFormat";
 import { useSortableTable, compareValues } from "@/hooks/useSortableTable";
-import { CHART_COLOURS } from "@/lib/chart-colours";
+import { chartColors, chartSeriesColor } from "@/lib/chart-colors";
+import { resolvePdfColor } from "@/components/reports/resolve-pdf-color";
 import { ChartViewToggle } from "@/components/ui/ChartViewToggle";
 import { ExportDropdown } from "@/components/ui/ExportDropdown";
 import { SortableHeader } from "@/components/ui/SortableHeader";
@@ -139,7 +140,7 @@ export function YearOverYearReport() {
     const cards = years.map((year, index) => ({
       label: String(year),
       value: formatCurrency(yearTotals[year]?.[metric] || 0),
-      color: CHART_COLOURS[index % CHART_COLOURS.length],
+      color: resolvePdfColor(chartSeriesColor(index)),
     }));
 
     // Build YoY change table
@@ -295,7 +296,7 @@ export function YearOverYearReport() {
             key={year}
             className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4"
             style={{
-              borderLeft: `4px solid ${CHART_COLOURS[index % CHART_COLOURS.length]}`,
+              borderLeft: `4px solid ${chartSeriesColor(index)}`,
             }}
           >
             <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
@@ -362,7 +363,7 @@ export function YearOverYearReport() {
                       align="right"
                       className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
                     >
-                      <span style={{ color: CHART_COLOURS[index % CHART_COLOURS.length] }}>{year}</span>
+                      <span style={{ color: chartSeriesColor(index) }}>{year}</span>
                     </SortableHeader>
                   ))}
                 </tr>
@@ -407,7 +408,7 @@ export function YearOverYearReport() {
                 data={chartData}
                 margin={{ top: 20, right: 10, left: 0, bottom: 5 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
                 <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                 <YAxis
                   tickFormatter={formatCurrencyAxis}
@@ -419,7 +420,7 @@ export function YearOverYearReport() {
                   <Bar
                     key={year}
                     dataKey={`${year}`}
-                    fill={CHART_COLOURS[index % CHART_COLOURS.length]}
+                    fill={chartSeriesColor(index)}
                     radius={[4, 4, 0, 0]}
                     name={`${year}`}
                     cursor="pointer"

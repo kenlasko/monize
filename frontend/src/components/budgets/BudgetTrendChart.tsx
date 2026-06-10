@@ -11,6 +11,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import { chartColors } from '@/lib/chart-colors';
 
 interface TrendDataPoint {
   month: string;
@@ -108,7 +109,7 @@ export function BudgetTrendChart({
             <Line
               type="monotone"
               dataKey="budgeted"
-              stroke="#3b82f6"
+              stroke={chartColors.primary}
               strokeWidth={2}
               strokeDasharray="5 5"
               dot={{ r: 4 }}
@@ -117,7 +118,7 @@ export function BudgetTrendChart({
             <Line
               type="monotone"
               dataKey="actual"
-              stroke="#10b981"
+              stroke={chartColors.income}
               strokeWidth={2}
               dot={{ r: 4 }}
               name={actualLabel}

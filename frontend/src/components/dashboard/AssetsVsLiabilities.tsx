@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { chartColors } from '@/lib/chart-colors';
 import { MonthlyNetWorth } from '@/types/net-worth';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 
@@ -12,8 +13,8 @@ interface AssetsVsLiabilitiesProps {
   isLoading: boolean;
 }
 
-const ASSET_COLOUR = '#22c55e';
-const LIABILITY_COLOUR = '#ef4444';
+const ASSET_COLOUR = chartColors.income;
+const LIABILITY_COLOUR = chartColors.expense;
 
 function AssetsTooltip({
   active,

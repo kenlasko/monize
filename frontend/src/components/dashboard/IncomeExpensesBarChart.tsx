@@ -16,6 +16,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { format, startOfWeek, endOfWeek, eachWeekOfInterval, subWeeks } from 'date-fns';
+import { chartColors } from '@/lib/chart-colors';
 import { Transaction } from '@/types/transaction';
 import { parseLocalDate } from '@/lib/utils';
 import { useDateFormat } from '@/hooks/useDateFormat';
@@ -210,21 +211,17 @@ export function IncomeExpensesBarChart({
             onClick={handleChartClick}
             style={{ cursor: 'pointer' }}
           >
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="#e5e7eb"
-              className="dark:stroke-gray-700"
-            />
+            <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
             <XAxis
               dataKey="name"
-              tick={{ fill: '#6b7280', fontSize: 12 }}
+              tick={{ fill: chartColors.axis, fontSize: 12 }}
               tickLine={false}
-              axisLine={{ stroke: '#e5e7eb' }}
+              axisLine={{ stroke: chartColors.grid }}
             />
             <YAxis
-              tick={{ fill: '#6b7280', fontSize: 12 }}
+              tick={{ fill: chartColors.axis, fontSize: 12 }}
               tickLine={false}
-              axisLine={{ stroke: '#e5e7eb' }}
+              axisLine={{ stroke: chartColors.grid }}
               tickFormatter={formatCurrencyAxis}
             />
             <Tooltip content={<IncomeExpensesTooltip formatCurrency={formatCurrency} weekOfLabel={(date) => t('incomeExpenses.weekOf', { date })} />} />
@@ -236,7 +233,7 @@ export function IncomeExpensesBarChart({
             />
             <Bar
               dataKey="Income"
-              fill="#22c55e"
+              fill={chartColors.income}
               radius={[4, 4, 0, 0]}
               maxBarSize={40}
               cursor="pointer"
@@ -244,7 +241,7 @@ export function IncomeExpensesBarChart({
             />
             <Bar
               dataKey="Expenses"
-              fill="#ef4444"
+              fill={chartColors.expense}
               radius={[4, 4, 0, 0]}
               maxBarSize={40}
               cursor="pointer"

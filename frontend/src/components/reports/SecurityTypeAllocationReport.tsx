@@ -13,6 +13,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
+import { chartColors, CHART_SERIES, chartSeriesColor } from '@/lib/chart-colors';
 import { investmentsApi } from '@/lib/investments';
 import { HoldingWithMarketValue } from '@/types/investment';
 import { Account } from '@/types/account';
@@ -20,6 +21,7 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { ReportAccountMultiSelect } from '@/components/reports/ReportAccountMultiSelect';
+import { resolvePdfColor } from '@/components/reports/resolve-pdf-color';
 import { RefreshPricesButton } from '@/components/reports/RefreshPricesButton';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
@@ -35,14 +37,12 @@ const excludeCashAccounts = (a: Account) => a.accountSubType !== 'INVESTMENT_CAS
 type SecurityTypeSortField = 'label' | 'totalValue' | 'percentage' | 'count';
 
 const TYPE_COLOURS: Record<string, string> = {
-  STOCK: '#3b82f6',
-  ETF: '#22c55e',
-  MUTUAL_FUND: '#f97316',
-  BOND: '#8b5cf6',
-  CASH: '#6b7280',
+  STOCK: CHART_SERIES[0],
+  ETF: CHART_SERIES[1],
+  MUTUAL_FUND: CHART_SERIES[8],
+  BOND: CHART_SERIES[4],
+  CASH: chartColors.axis,
 };
-
-const FALLBACK_COLOURS = ['#14b8a6', '#eab308', '#ef4444', '#06b6d4', '#a855f7', '#f43f5e'];
 
 const TYPE_LABELS: Record<string, string> = {
   STOCK: 'Stocks',
@@ -63,7 +63,7 @@ interface TypeAllocation {
 }
 
 function getColor(type: string, index: number): string {
-  return TYPE_COLOURS[type] || FALLBACK_COLOURS[index % FALLBACK_COLOURS.length];
+  return TYPE_COLOURS[type] || chartSeriesColor(index);
 }
 
 function CustomTooltip({ active, payload, formatCurrencyFull, getHoldingsLabel }: {
@@ -210,7 +210,7 @@ export function SecurityTypeAllocationReport() {
       ],
       chartContainer: chartRef.current,
       chartLegend: allocationData.map((item) => ({
-        color: item.color,
+        color: resolvePdfColor(item.color),
         label: `${item.label} - ${formatCurrencyFull(item.totalValue, defaultCurrency)} (${item.percentage.toFixed(1)}%)`,
       })),
       tableData: { headers, rows },

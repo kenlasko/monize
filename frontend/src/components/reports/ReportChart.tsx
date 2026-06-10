@@ -19,6 +19,7 @@ import { ReportViewType, AggregatedDataPoint, GroupByType, TableColumn } from '@
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { CHART_COLOURS } from '@/lib/chart-colours';
+import { chartColors } from '@/lib/chart-colors';
 import { exportToCsv } from '@/lib/csv-export';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
 
@@ -181,7 +182,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
           <div ref={chartContainerRef} className="h-80">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
                 <XAxis
                   dataKey="label"
                   tick={{ fontSize: 12, fill: 'currentColor' }}
@@ -219,7 +220,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
           <div ref={chartContainerRef} className="h-80">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <LineChart data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
                 <XAxis
                   dataKey="label"
                   tick={{ fontSize: 12, fill: 'currentColor' }}
@@ -238,9 +239,9 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                 <Line
                   type="monotone"
                   dataKey="value"
-                  stroke="#3b82f6"
+                  stroke={chartColors.primary}
                   strokeWidth={2}
-                  dot={{ fill: '#3b82f6', strokeWidth: 2 }}
+                  dot={{ fill: chartColors.primary, strokeWidth: 2 }}
                   activeDot={{ r: 6 }}
                 />
               </LineChart>

@@ -15,7 +15,8 @@ import { format } from 'date-fns';
 import { builtInReportsApi } from '@/lib/built-in-reports';
 import { RecurringExpenseItem } from '@/types/built-in-reports';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-import { CHART_COLOURS } from '@/lib/chart-colours';
+import { chartSeriesColor } from '@/lib/chart-colors';
+import { resolvePdfColor } from '@/components/reports/resolve-pdf-color';
 import { exportToCsv } from '@/lib/csv-export';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { SortableHeader } from '@/components/ui/SortableHeader';
@@ -77,7 +78,7 @@ export function RecurringExpensesReport() {
     if (!recurringData) return [];
     return recurringData.data.slice(0, 10).map((item, index) => ({
       ...item,
-      color: CHART_COLOURS[index % CHART_COLOURS.length],
+      color: chartSeriesColor(index),
     }));
   }, [recurringData]);
 
@@ -124,7 +125,7 @@ export function RecurringExpensesReport() {
       ],
       chartContainer: chartRef.current,
       chartLegend: chartData.map((item) => ({
-        color: item.color,
+        color: resolvePdfColor(item.color),
         label: `${item.payeeName}: ${formatCurrency(item.totalAmount)}`,
       })),
       tableData: { headers: expData.headers, rows: expData.rows },

@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { format } from 'date-fns';
+import { chartColors } from '@/lib/chart-colors';
 import { netWorthApi } from '@/lib/net-worth';
 import { investmentsApi } from '@/lib/investments';
 import { parseLocalDate } from '@/lib/utils';
@@ -505,12 +506,12 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix 
             >
               <defs>
                 <linearGradient id="colorInvestments" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  <stop offset="5%" stopColor={chartColors.income} stopOpacity={0.3} />
+                  <stop offset="95%" stopColor={chartColors.income} stopOpacity={0} />
                 </linearGradient>
               </defs>
               <ChartFlagShadowFilter />
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
               <XAxis
                 dataKey="name"
                 tick={{ fontSize: 12 }}
@@ -542,13 +543,13 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix 
               <Area
                 type="monotone"
                 dataKey="Value"
-                stroke="#10b981"
+                stroke={chartColors.income}
                 strokeWidth={2}
                 fillOpacity={1}
                 fill="url(#colorInvestments)"
                 name="Portfolio Value"
                 isAnimationActive={false}
-                activeDot={{ r: 4, fill: '#10b981' }}
+                activeDot={{ r: 4, fill: chartColors.income }}
                 dot={(props: { cx?: number; cy?: number; index?: number }) => {
                   const { cx, cy, index } = props;
                   if (cx == null || cy == null || index == null) {
@@ -565,7 +566,7 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix 
                     cx,
                     cy,
                     index,
-                    color: isHighest ? '#10b981' : '#ef4444',
+                    color: isHighest ? chartColors.income : chartColors.expense,
                     label: fmtFlag(value),
                     side: isLeftHalf ? 'right' : 'left',
                   });

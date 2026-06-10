@@ -22,7 +22,7 @@ import { useReportData } from '@/hooks/useReportData';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { ChartViewToggle } from '@/components/ui/ChartViewToggle';
-import { CHART_COLOURS } from '@/lib/chart-colours';
+import { chartColors, chartSeriesColor } from '@/lib/chart-colors';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { ChartTooltipPanel } from '@/components/reports/ChartTooltip';
@@ -239,7 +239,7 @@ export function SpendingByPayeeReport() {
                           <div className="flex items-center gap-2">
                             <div
                               className="w-3 h-3 rounded-full flex-shrink-0"
-                              style={{ backgroundColor: CHART_COLOURS[idx % CHART_COLOURS.length] }}
+                              style={{ backgroundColor: chartSeriesColor(idx) }}
                             />
                             {item.name}
                           </div>
@@ -273,7 +273,7 @@ export function SpendingByPayeeReport() {
             <div className="h-[500px]">
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
                   <XAxis
                     type="number"
                     tickFormatter={formatCurrencyAxis}
@@ -287,7 +287,7 @@ export function SpendingByPayeeReport() {
                     radius={[0, 4, 4, 0]}
                   >
                     {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={CHART_COLOURS[index % CHART_COLOURS.length]} />
+                      <Cell key={`cell-${index}`} fill={chartSeriesColor(index)} />
                     ))}
                   </Bar>
                 </BarChart>
