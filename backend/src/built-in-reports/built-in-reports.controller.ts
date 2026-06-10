@@ -26,6 +26,7 @@ import {
   DuplicateTransactionsQueryDto,
   MonthlyComparisonResponse,
   MonthlyComparisonQueryDto,
+  MonthlyCategoryBreakdownResponse,
 } from "./dto";
 
 @ApiTags("Built-in Reports")
@@ -244,5 +245,22 @@ export class BuiltInReportsController {
     @Query() query: MonthlyComparisonQueryDto,
   ): Promise<MonthlyComparisonResponse> {
     return this.reportsService.getMonthlyComparison(req.user.id, query.month);
+  }
+
+  @Get("monthly-category-breakdown")
+  @ApiOperation({
+    summary:
+      "Get expense and income amounts broken down by category and month",
+  })
+  @ApiResponse({ status: 200, type: MonthlyCategoryBreakdownResponse })
+  getMonthlyCategoryBreakdown(
+    @Request() req,
+    @Query() query: ReportQueryDto,
+  ): Promise<MonthlyCategoryBreakdownResponse> {
+    return this.reportsService.getMonthlyCategoryBreakdown(
+      req.user.id,
+      query.startDate,
+      query.endDate,
+    );
   }
 }

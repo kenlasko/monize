@@ -46,6 +46,7 @@ vi.mock('@/components/layout/PageHeader', () => ({
 vi.mock('@/components/reports/SpendingByCategoryReport', () => ({ SpendingByCategoryReport: () => <div data-testid="r-spending-by-category" /> }));
 vi.mock('@/components/reports/SpendingByPayeeReport', () => ({ SpendingByPayeeReport: () => <div data-testid="r-spending-by-payee" /> }));
 vi.mock('@/components/reports/MonthlySpendingTrendReport', () => ({ MonthlySpendingTrendReport: () => <div data-testid="r-monthly-spending-trend" /> }));
+vi.mock('@/components/reports/MonthlyCategoryBreakdownReport', () => ({ MonthlyCategoryBreakdownReport: () => <div data-testid="r-monthly-category-breakdown" /> }));
 vi.mock('@/components/reports/IncomeVsExpensesReport', () => ({ IncomeVsExpensesReport: () => <div data-testid="r-income-vs-expenses" /> }));
 vi.mock('@/components/reports/IncomeBySourceReport', () => ({ IncomeBySourceReport: () => <div data-testid="r-income-by-source" /> }));
 vi.mock('@/components/reports/NetWorthReport', () => ({ NetWorthReport: () => <div data-testid="r-net-worth" /> }));
@@ -89,6 +90,7 @@ const ALL_REPORT_IDS = [
   'spending-by-category',
   'spending-by-payee',
   'monthly-spending-trend',
+  'monthly-category-breakdown',
   'income-vs-expenses',
   'income-by-source',
   'net-worth',

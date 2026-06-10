@@ -23,6 +23,7 @@ describe("BuiltInReportsController", () => {
       getUncategorizedTransactions: jest.fn(),
       getDuplicateTransactions: jest.fn(),
       getMonthlyComparison: jest.fn(),
+      getMonthlyCategoryBreakdown: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -396,6 +397,26 @@ describe("BuiltInReportsController", () => {
       expect(mockService.getMonthlyComparison).toHaveBeenCalledWith(
         "user-1",
         "2026-01",
+      );
+    });
+  });
+
+  describe("getMonthlyCategoryBreakdown()", () => {
+    it("delegates to service with userId, startDate, and endDate", async () => {
+      const query = { startDate: "2024-01-01", endDate: "2024-12-31" };
+      const expected = { months: [], data: [], currency: "USD" };
+      mockService.getMonthlyCategoryBreakdown.mockResolvedValue(expected);
+
+      const result = await controller.getMonthlyCategoryBreakdown(
+        mockReq,
+        query as any,
+      );
+
+      expect(result).toEqual(expected);
+      expect(mockService.getMonthlyCategoryBreakdown).toHaveBeenCalledWith(
+        "user-1",
+        "2024-01-01",
+        "2024-12-31",
       );
     });
   });

@@ -19,6 +19,7 @@ import { CurrenciesModule } from "../currencies/currencies.module";
 import { NetWorthModule } from "../net-worth/net-worth.module";
 import { SecuritiesModule } from "../securities/securities.module";
 import { MonthlyComparisonService } from "./monthly-comparison.service";
+import { MonthlyCategoryBreakdownService } from "./monthly-category-breakdown.service";
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { MonthlyComparisonService } from "./monthly-comparison.service";
     TaxRecurringReportsService,
     DataQualityReportsService,
     MonthlyComparisonService,
+    MonthlyCategoryBreakdownService,
   ],
   exports: [BuiltInReportsService, MonthlyComparisonService],
 })

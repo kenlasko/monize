@@ -14,6 +14,7 @@ import { AnomalyReportsService } from "./anomaly-reports.service";
 import { TaxRecurringReportsService } from "./tax-recurring-reports.service";
 import { DataQualityReportsService } from "./data-quality-reports.service";
 import { MonthlyComparisonService } from "./monthly-comparison.service";
+import { MonthlyCategoryBreakdownService } from "./monthly-category-breakdown.service";
 
 describe("BuiltInReportsService", () => {
   let service: BuiltInReportsService;
@@ -151,6 +152,7 @@ describe("BuiltInReportsService", () => {
           provide: MonthlyComparisonService,
           useValue: { getMonthlyComparison: jest.fn() },
         },
+        MonthlyCategoryBreakdownService,
       ],
     }).compile();
 
@@ -2055,6 +2057,55 @@ describe("BuiltInReportsService", () => {
       );
 
       expect(result.data[0].total).toBe(250);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // getMonthlyCategoryBreakdown
+  // ---------------------------------------------------------------------------
+  describe("getMonthlyCategoryBreakdown", () => {
+    it("returns empty data when no transactions exist", async () => {
+      transactionsRepository.query.mockResolvedValue([]);
+      categoriesRepository.find.mockResolvedValue([]);
+
+      const result = await service.getMonthlyCategoryBreakdown(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      expect(result.months).toEqual([]);
+      expect(result.data).toEqual([]);
+      expect(result.currency).toBe("USD");
+    });
+
+    it("delegates through the facade to produce category rows", async () => {
+      transactionsRepository.query.mockResolvedValue([
+        {
+          month: "2025-01",
+          category_id: "cat-child",
+          currency_code: "USD",
+          deposits: "0.00",
+          withdrawals: "100.00",
+        },
+      ]);
+      categoriesRepository.find.mockResolvedValue([
+        mockParentCategory,
+        mockChildCategory,
+      ]);
+
+      const result = await service.getMonthlyCategoryBreakdown(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      expect(result.months).toEqual(["2025-01"]);
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].categoryName).toBe("Groceries");
+      expect(result.data[0].parentName).toBe("Food & Dining");
+      expect(result.data[0].isIncome).toBe(false);
+      expect(result.data[0].valuesByMonth["2025-01"]).toBe(100);
     });
   });
 });
