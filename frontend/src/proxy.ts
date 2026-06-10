@@ -65,6 +65,22 @@ function nextWithCsp(request: NextRequest): NextResponse {
   return response;
 }
 
+// MCP clients configured with the bare origin (https://monize.laskonet.com)
+// send their JSON-RPC traffic to "/". The Streamable HTTP transport requires
+// clients to send "Accept: application/json, text/event-stream" on POST and
+// "Accept: text/event-stream" on GET, and follow-up requests carry an
+// Mcp-Session-Id / MCP-Protocol-Version header — none of which a browser
+// navigation ever sends, so this cannot intercept normal page loads.
+function isRootMcpRequest(request: NextRequest, pathname: string): boolean {
+  if (pathname !== '/') return false;
+  const accept = request.headers.get('accept') ?? '';
+  return (
+    accept.includes('text/event-stream') ||
+    request.headers.has('mcp-session-id') ||
+    request.headers.has('mcp-protocol-version')
+  );
+}
+
 // OAuth 2.1 endpoints exposed at the application root for the MCP remote
 // connector flow. These live outside /api because OAuth issuer URLs and the
 // RFC 9728 protected-resource metadata path are fixed by the spec; clients
@@ -90,9 +106,11 @@ export async function proxy(request: NextRequest) {
   }
 
   // Handle API proxying to backend
-  if (pathname.startsWith('/api/') || isOAuthPath(pathname)) {
+  const rootMcp = isRootMcpRequest(request, pathname);
+  if (pathname.startsWith('/api/') || isOAuthPath(pathname) || rootMcp) {
     const apiUrl = process.env.INTERNAL_API_URL || 'http://localhost:3001';
-    const url = new URL(pathname + request.nextUrl.search, apiUrl);
+    const backendPath = rootMcp ? '/api/v1/mcp' : pathname;
+    const url = new URL(backendPath + request.nextUrl.search, apiUrl);
     logger.debug(`${request.method} ${pathname} -> ${apiUrl}`);
 
     const headers = new Headers(request.headers);
