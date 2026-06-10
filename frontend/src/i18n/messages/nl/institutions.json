@@ -1,0 +1,91 @@
+{
+  "page": {
+    "title": "Financiële instellingen",
+    "subtitle": "Banken en makelaars waarbij je rekeningen zijn ondergebracht",
+    "newInstitution": "Nieuwe instelling",
+    "loading": "Instellingen laden...",
+    "searchPlaceholder": "Instellingen zoeken...",
+    "modalTitleNew": "Nieuwe instelling",
+    "modalTitleEdit": "Instelling bewerken",
+    "summary": {
+      "total": "Totaal instellingen",
+      "withLogo": "Met logo",
+      "linkedAccounts": "Gekoppelde rekeningen"
+    },
+    "toasts": {
+      "loadFailed": "Instellingen laden mislukt",
+      "created": "Instelling aangemaakt",
+      "updated": "Instelling bijgewerkt",
+      "createFailed": "Instelling aanmaken mislukt",
+      "updateFailed": "Instelling bijwerken mislukt"
+    }
+  },
+  "list": {
+    "empty": "Nog geen instellingen. Maak er een aan om je rekeningen te groeperen.",
+    "columns": {
+      "name": "Naam",
+      "website": "Website",
+      "country": "Land",
+      "accounts": "Rekeningen",
+      "actions": "Acties"
+    },
+    "accountCount": "{count, plural, =0 {Geen rekeningen} one {# rekening} other {# rekeningen}}",
+    "density": {
+      "title": "Rijdichtheid wisselen",
+      "normal": "Normaal",
+      "compact": "Compact",
+      "dense": "Dicht"
+    },
+    "statusFilter": {
+      "all": "Alle",
+      "active": "Actief",
+      "closed": "Gesloten"
+    },
+    "actions": {
+      "manageAccounts": "Rekeningen"
+    },
+    "deleteTitle": "Instelling verwijderen",
+    "deleteMessage": "Verwijder \"{name}\"? Rekeningen die hieraan zijn gekoppeld, worden losgekoppeld maar niet verwijderd.",
+    "deleting": "Verwijderen...",
+    "deleted": "\"{name}\" verwijderd",
+    "deleteFailed": "Instelling verwijderen mislukt"
+  },
+  "form": {
+    "nameLabel": "Naam",
+    "websiteLabel": "Website",
+    "websitePlaceholder": "bijv. rabobank.nl",
+    "countryLabel": "Land (optioneel)",
+    "countryPlaceholder": "2-letterige code, bijv. NL",
+    "logoHint": "Het merklogo wordt automatisch opgehaald van de website.",
+    "submitCreate": "Instelling aanmaken",
+    "submitUpdate": "Wijzigingen opslaan"
+  },
+  "validation": {
+    "nameRequired": "Naam is verplicht",
+    "websiteRequired": "Website is verplicht",
+    "websiteInvalid": "Voer een geldige website in (bijv. rabobank.nl)",
+    "countryInvalid": "Gebruik een 2-letterige landcode"
+  },
+  "accountsManager": {
+    "title": "Rekeningen bij {name}",
+    "addLabel": "Rekening toevoegen",
+    "addPlaceholder": "Selecteer een rekening om toe te voegen...",
+    "noneToAdd": "Al je rekeningen zijn al gekoppeld aan een instelling.",
+    "loading": "Rekeningen laden...",
+    "empty": "Er zijn nog geen rekeningen gekoppeld aan deze instelling.",
+    "noneMatch": "Geen rekeningen komen overeen met het geselecteerde filter.",
+    "filter": {
+      "all": "Alle",
+      "active": "Actief",
+      "closed": "Gesloten"
+    },
+    "remove": "Verwijderen",
+    "viewTransactions": "Transacties voor deze rekening bekijken",
+    "added": "Rekening toegevoegd",
+    "removed": "Rekening verwijderd",
+    "addFailed": "Rekening toevoegen mislukt",
+    "removeFailed": "Rekening verwijderen mislukt",
+    "loadFailed": "Rekeningen laden mislukt",
+    "done": "Klaar"
+  }
+}

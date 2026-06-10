@@ -1,0 +1,70 @@
+{
+  "demoBanner": {
+    "label": "Modalità demo",
+    "message": "Tutti i dati vengono ripristinati ogni giorno alle 4:00 UTC. Esplora liberamente!"
+  },
+  "delegationBanner": {
+    "viewing": "In visualizzazione:",
+    "sharedAccount": "Account condiviso",
+    "yourAccount": "Il tuo account",
+    "switchAccountLabel": "Cambia account",
+    "selfSuffix": "{label} (tu)",
+    "error2fa": "Quell'account richiede l'autenticazione a due fattori. Configura la 2FA nelle Impostazioni prima di passare.",
+    "errorSwitch": "Impossibile cambiare account"
+  },
+  "backendDownBanner": {
+    "connectionBlockedLabel": "Connessione bloccata",
+    "connectionBlockedDetail": "Le intestazioni di sicurezza stanno bloccando le richieste su HTTP non cifrato.",
+    "connectionLostLabel": "Connessione persa",
+    "connectionLostDetail": "Impossibile raggiungere il server. Nuovo tentativo automatico...",
+    "httpsHint": "Imposta <code>DISABLE_HTTPS_HEADERS=true</code> nel tuo ambiente oppure accedi al sito tramite HTTPS."
+  },
+  "httpWarningBanner": {
+    "label": "HTTPS richiesto",
+    "detail": "Le intestazioni di sicurezza sono attive ma il sito è accessibile tramite HTTP non cifrato. Le richieste API potrebbero non riuscire.",
+    "httpsHint": "Imposta <code>DISABLE_HTTPS_HEADERS=true</code> nel tuo ambiente oppure accedi al sito tramite HTTPS.",
+    "dismiss": "Chiudi",
+    "dismissAriaLabel": "Chiudi avviso HTTPS"
+  },
+  "updateBanner": {
+    "availableWithVersion": "Monize v{version} è disponibile",
+    "availableGeneric": "È disponibile una nuova versione di Monize",
+    "runningVersion": "(versione attuale v{version})",
+    "releaseNotes": "Note di rilascio",
+    "dismiss": "Chiudi",
+    "dismissAriaLabel": "Chiudi notifica aggiornamento"
+  },
+  "actionHistory": {
+    "title": "Cronologia azioni",
+    "buttonAriaLabel": "Cronologia azioni",
+    "closeAriaLabel": "Chiudi",
+    "undo": "Annulla",
+    "redo": "Ripristina",
+    "noRecentActions": "Nessuna azione recente",
+    "undoneLabel": "Annullato",
+    "nothingToUndo": "Niente da annullare",
+    "nothingToRedo": "Niente da ripristinare",
+    "cannotUndoDefault": "Impossibile annullare questa azione",
+    "cannotRedoDefault": "Impossibile ripristinare questa azione",
+    "undoFailed": "Annullamento non riuscito",
+    "redoFailed": "Ripristino non riuscito",
+    "entityLabels": {
+      "transaction": "Transazione",
+      "transfer": "Trasferimento",
+      "investment_transaction": "Investimento",
+      "bulk_transaction": "Collettivo",
+      "category": "Categoria",
+      "payee": "Beneficiario",
+      "tag": "Etichetta",
+      "account": "Conto",
+      "scheduled_transaction": "Pianificata",
+      "security": "Titolo",
+      "budget": "Budget",
+      "custom_report": "Report"
+    }
+  },
+  "pageHeader": {
+    "helpAriaLabel": "Apri il wiki di Monize per aiuto su questa sezione",
+    "helpTooltip": "Apri il wiki di Monize per aiuto su questa sezione"
+  }
+}

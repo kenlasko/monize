@@ -1,0 +1,70 @@
+{
+  "demoBanner": {
+    "label": "Modo de demonstração",
+    "message": "Todos os dados são reiniciados diariamente às 4:00 UTC. Explore à vontade!"
+  },
+  "delegationBanner": {
+    "viewing": "Visualizando:",
+    "sharedAccount": "Conta compartilhada",
+    "yourAccount": "Sua conta",
+    "switchAccountLabel": "Trocar de conta",
+    "selfSuffix": "{label} (você)",
+    "error2fa": "Essa conta requer autenticação de dois fatores. Configure a 2FA nas Configurações antes de trocar.",
+    "errorSwitch": "Não foi possível trocar de conta"
+  },
+  "backendDownBanner": {
+    "connectionBlockedLabel": "Conexão bloqueada",
+    "connectionBlockedDetail": "Os cabeçalhos de segurança estão bloqueando requisições sobre HTTP simples.",
+    "connectionLostLabel": "Conexão perdida",
+    "connectionLostDetail": "Não foi possível contatar o servidor. Tentando novamente automaticamente...",
+    "httpsHint": "Defina <code>DISABLE_HTTPS_HEADERS=true</code> no seu ambiente ou acesse o site via HTTPS."
+  },
+  "httpWarningBanner": {
+    "label": "HTTPS obrigatório",
+    "detail": "Os cabeçalhos de segurança estão ativos, mas este site está sendo acessado via HTTP simples. As requisições à API podem falhar.",
+    "httpsHint": "Defina <code>DISABLE_HTTPS_HEADERS=true</code> no seu ambiente ou acesse o site via HTTPS.",
+    "dismiss": "Dispensar",
+    "dismissAriaLabel": "Dispensar aviso HTTPS"
+  },
+  "updateBanner": {
+    "availableWithVersion": "Monize v{version} disponível",
+    "availableGeneric": "Uma nova versão do Monize está disponível",
+    "runningVersion": "(executando v{version})",
+    "releaseNotes": "Notas de versão",
+    "dismiss": "Dispensar",
+    "dismissAriaLabel": "Dispensar notificação de atualização"
+  },
+  "actionHistory": {
+    "title": "Histórico de ações",
+    "buttonAriaLabel": "Histórico de ações",
+    "closeAriaLabel": "Fechar",
+    "undo": "Desfazer",
+    "redo": "Refazer",
+    "noRecentActions": "Sem ações recentes",
+    "undoneLabel": "Desfeito",
+    "nothingToUndo": "Nada para desfazer",
+    "nothingToRedo": "Nada para refazer",
+    "cannotUndoDefault": "Não é possível desfazer esta ação",
+    "cannotRedoDefault": "Não é possível refazer esta ação",
+    "undoFailed": "Falha ao desfazer",
+    "redoFailed": "Falha ao refazer",
+    "entityLabels": {
+      "transaction": "Transação",
+      "transfer": "Transferência",
+      "investment_transaction": "Investimento",
+      "bulk_transaction": "Em massa",
+      "category": "Categoria",
+      "payee": "Beneficiário",
+      "tag": "Etiqueta",
+      "account": "Conta",
+      "scheduled_transaction": "Agendada",
+      "security": "Título",
+      "budget": "Orçamento",
+      "custom_report": "Relatório"
+    }
+  },
+  "pageHeader": {
+    "helpAriaLabel": "Abrir a wiki do Monize para obter ajuda com esta seção",
+    "helpTooltip": "Abrir a wiki do Monize para obter ajuda com esta seção"
+  }
+}

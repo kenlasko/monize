@@ -1,0 +1,117 @@
+{
+  "page": {
+    "title": "Valuta's",
+    "subtitle": "Beheer valuta's die worden gebruikt in je rekeningen en waardepapieren",
+    "refreshRates": "Koersen vernieuwen",
+    "refreshing": "Vernieuwen...",
+    "newCurrency": "+ Nieuwe valuta",
+    "searchPlaceholder": "Zoeken op code of naam...",
+    "statusAll": "Alle ({count})",
+    "statusActive": "Actief ({count})",
+    "statusInactive": "Inactief ({count})",
+    "modalTitleEdit": "Valuta bewerken",
+    "modalTitleNew": "Nieuwe valuta",
+    "loading": "Valuta's laden...",
+    "count": "{count, plural, one {# valuta} other {# valuta's}}",
+    "toasts": {
+      "loadFailed": "Valuta's laden mislukt",
+      "updated": "Valuta succesvol bijgewerkt",
+      "created": "Valuta succesvol aangemaakt",
+      "updateFailed": "Valuta bijwerken mislukt",
+      "createFailed": "Valuta aanmaken mislukt",
+      "deactivated": "Valuta gedeactiveerd",
+      "activated": "Valuta geactiveerd",
+      "statusFailed": "Status van valuta bijwerken mislukt",
+      "ratesRefreshed": "Wisselkoersen vernieuwd: {updated} paren bijgewerkt",
+      "ratesRefreshedWithFailed": "Wisselkoersen vernieuwd: {updated} bijgewerkt, {failed} mislukt",
+      "ratesFailed": "Wisselkoersen vernieuwen mislukt"
+    },
+    "summary": {
+      "totalCurrencies": "Totaal valuta's",
+      "active": "Actief",
+      "inactive": "Inactief"
+    }
+  },
+  "list": {
+    "columns": {
+      "code": "Code",
+      "name": "Naam",
+      "symbol": "Symbool",
+      "decimals": "Decimalen",
+      "usage": "Gebruik",
+      "rate": "Koers ({currency})",
+      "status": "Status",
+      "actions": "Acties"
+    },
+    "density": {
+      "normal": "Normaal",
+      "compact": "Compact",
+      "dense": "Dicht",
+      "toggle": "Rijdichtheid wisselen"
+    },
+    "defaultBadge": "Standaard",
+    "statusBadge": {
+      "active": "Actief",
+      "activeShort": "Act",
+      "inactive": "Inactief",
+      "inactiveShort": "Ina"
+    },
+    "actions": {
+      "edit": "Bewerken",
+      "deactivate": "Deactiveren",
+      "activate": "Activeren"
+    },
+    "contextMenu": {
+      "editCurrency": "Valuta bewerken",
+      "deactivate": "Deactiveren",
+      "activate": "Activeren",
+      "deleteCurrency": "Valuta verwijderen"
+    },
+    "usageTooltip": "{accounts} rekening(en), {securities} waardepapier(en)",
+    "usageAccounts": "{count, plural, one {# rek.} other {# rek.}}",
+    "usageSecurities": "{count, plural, one {# wp.} other {# wp.'s}}",
+    "empty": {
+      "title": "Geen valuta's",
+      "subtitle": "Begin door een valuta toe te voegen."
+    },
+    "deleteConfirm": {
+      "title": "Verwijder \"{code}\"?",
+      "message": "Deze valuta wordt permanent verwijderd. Dit werkt alleen als de valuta niet in gebruik is door rekeningen of waardepapieren.",
+      "confirmLabel": "Verwijderen",
+      "cancelLabel": "Annuleren"
+    },
+    "toasts": {
+      "deleted": "Valuta succesvol verwijderd",
+      "deleteFailed": "Valuta verwijderen mislukt. Mogelijk is deze in gebruik."
+    }
+  },
+  "form": {
+    "codeLabel": "Valutacode",
+    "codePlaceholder": "bijv. USD, EUR, GBP",
+    "nameLabel": "Naam",
+    "namePlaceholderCreate": "bijv. Canadese dollar, Maleisische ringgit (ook gebruikt voor opzoeken)",
+    "namePlaceholderEdit": "bijv. Canadese dollar",
+    "symbolLabel": "Symbool",
+    "symbolPlaceholder": "bijv. $, €, £, ¥",
+    "decimalPlacesLabel": "Decimalen",
+    "lookupButton": "Opzoeken",
+    "lookingUp": "Opzoeken...",
+    "clearButton": "Wissen",
+    "clearTitle": "Alle velden wissen",
+    "submitCreate": "Valuta aanmaken",
+    "submitUpdate": "Valuta bijwerken",
+    "toasts": {
+      "lookupTooShort": "Voer een valutacode of naam in (minimaal 2 tekens) om op te zoeken",
+      "found": "Gevonden: {details}",
+      "notFound": "Geen valuta gevonden voor \"{query}\"",
+      "lookupFailed": "Opzoeken mislukt - probeer het opnieuw"
+    }
+  },
+  "validation": {
+    "codeLength": "Valutacode moet precies 3 tekens zijn",
+    "nameRequired": "Naam is verplicht",
+    "nameMax": "Naam mag maximaal 100 tekens lang zijn",
+    "symbolRequired": "Symbool is verplicht",
+    "symbolMax": "Symbool mag maximaal 10 tekens lang zijn"
+  }
+}

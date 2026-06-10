@@ -1,0 +1,53 @@
+{
+  "page": {
+    "title": "Assistente AI",
+    "subtitle": "Fai domande sulle tue finanze in linguaggio naturale"
+  },
+  "chat": {
+    "conversationSaved": "Conversazione salvata nel tuo browser",
+    "clearConversation": "Cancella conversazione",
+    "inputPlaceholder": "Chiedi delle tue finanze...",
+    "inputPlaceholderDisabled": "Provider AI non configurato",
+    "keyboardHint": "Premi Invio per inviare, Shift+Invio per una nuova riga",
+    "cancelTitle": "Annulla",
+    "sendTitle": "Invia"
+  },
+  "notConfigured": {
+    "heading": "AI non configurata",
+    "message": "Nessun provider AI è configurato. Per usare l'Assistente AI, {link} nelle impostazioni.",
+    "linkText": "configura un provider AI"
+  },
+  "suggestedQueries": {
+    "heading": "Chiedi delle tue finanze",
+    "description": "Posso rispondere a domande sulle tue spese, entrate, saldi dei conti, patrimonio netto e altro ancora.",
+    "monthlySpendingLabel": "Spese mensili",
+    "monthlySpendingQuery": "Quanto ho speso il mese scorso?",
+    "topCategoriesLabel": "Categorie principali",
+    "topCategoriesQuery": "Quali sono le mie 5 categorie di uscite principali quest'anno?",
+    "accountBalancesLabel": "Saldi dei conti",
+    "accountBalancesQuery": "Quali sono i saldi attuali dei miei conti?",
+    "compareMonthsLabel": "Confronta mesi",
+    "compareMonthsQuery": "Confronta le mie spese di questo mese con quelle del mese scorso",
+    "netWorthTrendLabel": "Andamento patrimonio netto",
+    "netWorthTrendQuery": "Mostrami l'andamento del mio patrimonio netto negli ultimi 12 mesi",
+    "savingsRateLabel": "Tasso di risparmio",
+    "savingsRateQuery": "Quanto ho risparmiato quest'anno rispetto alle mie entrate?"
+  },
+  "toolDetails": {
+    "inputLabel": "Input",
+    "resultLabel": "Risultato",
+    "toolFailedAriaLabel": "Strumento non riuscito",
+    "toolSucceededAriaLabel": "Strumento riuscito"
+  },
+  "table": {
+    "downloadTitle": "Scarica tabella come CSV",
+    "downloadAriaLabel": "Scarica tabella come CSV",
+    "noDataError": "Nessun dato tabella da esportare"
+  },
+  "chart": {
+    "downloadTitle": "Scarica grafico come PNG",
+    "downloadAriaLabel": "Scarica grafico come PNG",
+    "captureError": "Impossibile acquisire l'immagine del grafico",
+    "downloadError": "Download del grafico non riuscito"
+  }
+}

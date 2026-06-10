@@ -1,0 +1,108 @@
+{
+  "createUserModal": {
+    "title": "Gebruiker toevoegen",
+    "description": "Maak een nieuw account aan. Je kunt een uitnodiging e-mailen, zelf een wachtwoord instellen of een tijdelijk wachtwoord genereren om te delen.",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "gebruiker@voorbeeld.nl",
+    "firstNameLabel": "Voornaam (optioneel)",
+    "firstNamePlaceholder": "Voornaam",
+    "lastNameLabel": "Achternaam (optioneel)",
+    "lastNamePlaceholder": "Achternaam",
+    "roleLabel": "Rol",
+    "roleUser": "Gebruiker",
+    "roleAdmin": "Beheerder",
+    "credentialsLegend": "Inloggegevens",
+    "inviteLabel": "Stuur een e-mailuitnodiging om een wachtwoord in te stellen",
+    "inviteSmtpNote": "Vereist geconfigureerde SMTP.",
+    "setPasswordLabel": "Nu een wachtwoord instellen",
+    "tempPasswordLabel": "Een tijdelijk wachtwoord genereren",
+    "tempPasswordNote": "Eenmalig weergegeven na aanmaken. De gebruiker moet het bij eerste inlog wijzigen.",
+    "passwordFieldLabel": "Wachtwoord",
+    "passwordPlaceholder": "Stel een wachtwoord in",
+    "createButton": "Gebruiker aanmaken",
+    "validation": {
+      "invalidPassword": "Ongeldig wachtwoord."
+    },
+    "toasts": {
+      "createFailed": "Gebruiker aanmaken mislukt"
+    }
+  },
+  "resetPasswordModal": {
+    "defaultTitle": "Wachtwoord opnieuw ingesteld",
+    "defaultDescription": "Er is een tijdelijk wachtwoord ingesteld voor {userName}.",
+    "temporaryPasswordLabel": "Tijdelijk wachtwoord",
+    "copy": "Kopiëren",
+    "copied": "Gekopieerd",
+    "notShownAgain": "Dit wachtwoord wordt niet opnieuw weergegeven.",
+    "mustChangeOnLogin": "De gebruiker moet het wachtwoord wijzigen bij de volgende inlog.",
+    "toasts": {
+      "copied": "Wachtwoord naar klembord gekopieerd",
+      "copyFailed": "Kopiëren naar klembord mislukt"
+    }
+  },
+  "userTable": {
+    "colUser": "Gebruiker",
+    "colRole": "Rol",
+    "colProvider": "Provider",
+    "colStatus": "Status",
+    "colLastLogin": "Laatste inlog",
+    "colActions": "Acties",
+    "youSuffix": "(jij)",
+    "noEmail": "Geen e-mail",
+    "unknown": "Onbekend",
+    "never": "Nooit",
+    "providerSso": "SSO",
+    "providerLocal": "Lokaal",
+    "roleAdmin": "Beheerder",
+    "roleUser": "Gebruiker",
+    "statusActive": "Actief",
+    "statusDisabled": "Uitgeschakeld",
+    "clickToDisable": "Klik om uit te schakelen",
+    "clickToEnable": "Klik om in te schakelen",
+    "resetPassword": "Wachtwoord opnieuw instellen",
+    "noUsers": "Geen gebruikers gevonden."
+  },
+  "usersPage": {
+    "title": "Gebruikersbeheer",
+    "userCount": "{count, plural, one {# gebruiker} other {# gebruikers}}",
+    "newUser": "+ Nieuwe gebruiker",
+    "loadingUsers": "Gebruikers laden...",
+    "toasts": {
+      "inviteSent": "Uitnodigings-e-mail verstuurd naar {email}",
+      "userCreated": "{name} is aangemaakt",
+      "userUpgraded": "{name} is omgezet naar een volledig account",
+      "roleChanged": "{name} is nu {role}",
+      "roleAdmin": "een beheerder",
+      "roleUser": "een gebruiker",
+      "userEnabled": "{name} is ingeschakeld",
+      "userDisabled": "{name} is uitgeschakeld",
+      "userDeleted": "{name} is verwijderd",
+      "userDowngraded": "De eigen gegevens van {name} zijn verwijderd; de gedelegeerde toegang blijft behouden.",
+      "loadFailed": "Gebruikers laden mislukt",
+      "deleteFailed": "Gebruiker verwijderen mislukt",
+      "disableFailed": "Gebruiker uitschakelen mislukt",
+      "resetFailed": "Wachtwoord opnieuw instellen mislukt"
+    },
+    "dialogs": {
+      "promoteTitle": "Gebruiker promoveren?",
+      "demoteTitle": "Gebruiker degraderen?",
+      "promoteMessage": "Weet je zeker dat je {name} wilt promoveren naar {role}?",
+      "demoteMessage": "Weet je zeker dat je {name} wilt degraderen naar {role}?",
+      "promoteConfirm": "Promoveren tot beheerder",
+      "demoteConfirm": "Degraderen tot gebruiker",
+      "disableTitle": "Gebruiker uitschakelen?",
+      "disableMessage": "Weet je zeker dat je {name} wilt uitschakelen? Ze kunnen dan niet meer inloggen.",
+      "disableConfirm": "Gebruiker uitschakelen",
+      "resetTitle": "Wachtwoord opnieuw instellen?",
+      "resetMessage": "Er wordt een nieuw tijdelijk wachtwoord gegenereerd voor {name}. Ze moeten het bij de volgende inlog wijzigen.",
+      "resetConfirm": "Wachtwoord opnieuw instellen",
+      "deleteTitle": "Gebruiker verwijderen?",
+      "deleteMessage": "Weet je zeker dat je {name} wilt verwijderen? Hiermee wordt het account en alle bijbehorende gegevens permanent verwijderd. Dit kan niet ongedaan worden gemaakt. Als ze gedelegeerde zijn van een ander account, worden hun eigen gegevens verwijderd maar blijft de login bewaard zodat de delegatie werkt — ze worden dan een gebruiker met uitsluitend gedelegeerde toegang.",
+      "deleteConfirm": "Gebruiker verwijderen",
+      "tempPasswordTitleCreated": "Gebruiker aangemaakt",
+      "tempPasswordTitleUpgraded": "Account bijgewerkt",
+      "tempPasswordDescCreated": "Er is een tijdelijk wachtwoord gegenereerd voor {name}. Deel dit met hen om in te loggen.",
+      "tempPasswordDescUpgraded": "Een bestaande gedeelde gebruiker is omgezet naar een volledig account. Deel dit tijdelijke wachtwoord met {name}."
+    }
+  }
+}

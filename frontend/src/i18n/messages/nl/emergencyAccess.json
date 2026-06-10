@@ -1,0 +1,20 @@
+{
+  "title": "Noodtoegang",
+  "missingToken": "Noodtoegangscode ontbreekt.",
+  "previewError": "Deze noodtoegangskoppeling is ongeldig, verlopen of al gebruikt.",
+  "linkInvalid": "Koppeling is niet meer geldig.",
+  "backToSignIn": "Terug naar inloggen",
+  "ownerFallback": "de rekeninghouder",
+  "ownerFirstNameFallback": "de eigenaar",
+  "intro": "Hoi {contactName}, je bent aangewezen als noodcontact op het Monize-account van <b>{ownerName}</b>.",
+  "introDetail": "Door hier een wachtwoord in te stellen, word je ingelogd als de rekeninghouder en krijg je volledige toegang tot het account. Bestaande sessies worden ingetrokken en de vorige inloggegevens worden vervangen.",
+  "messageHeading": "Bericht van {name}",
+  "newPasswordLabel": "Nieuw wachtwoord",
+  "confirmPasswordLabel": "Wachtwoord bevestigen",
+  "submit": "Noodtoegang claimen",
+  "toasts": {
+    "success": "Je hebt nu toegang tot het account van {name}.",
+    "failed": "Noodtoegangsclaim voltooien mislukt. De koppeling is mogelijk verlopen of al gebruikt."
+  },
+  "passwordsNoMatch": "Wachtwoorden komen niet overeen"
+}

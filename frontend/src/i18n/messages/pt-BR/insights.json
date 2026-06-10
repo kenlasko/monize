@@ -1,0 +1,44 @@
+{
+  "page": {
+    "title": "Análise de gastos",
+    "subtitle": "Análise dos seus padrões de gastos e anomalias com recurso à IA"
+  },
+  "list": {
+    "lastUpdated": "Última atualização: {date} {time}",
+    "refreshButton": "Atualizar análise",
+    "generating": "Gerando...",
+    "allTypes": "Todos os tipos",
+    "allSeverities": "Todas as gravidades",
+    "showDismissed": "Mostrar dispensadas",
+    "emptyNoInsights": "Ainda não foram geradas análises. Clique em \"Atualizar análise\" para analisar seus padrões de gastos.",
+    "emptyFiltered": "Nenhuma análise corresponde aos filtros atuais.",
+    "generateButton": "Gerar análise",
+    "alertCount": "{count, plural, one {# alerta} other {# alertas}}",
+    "warningCount": "{count, plural, one {# aviso} other {# avisos}}",
+    "errorLoadFailed": "Falha ao carregar análises. Tente novamente.",
+    "errorGenerateFailed": "Falha ao gerar análises. Certifique-se de que você tem um provedor de IA configurado.",
+    "errorTimeout": "A geração de análises está demorando mais do que o esperado. Aguarde ou recarregue a página."
+  },
+  "card": {
+    "dismiss": "Dispensar",
+    "dismissing": "Dispensando..."
+  },
+  "notConfigured": {
+    "heading": "IA não configurada",
+    "message": "Não há nenhum provedor de IA configurado. Para utilizar a Análise de gastos, {link} nas configurações.",
+    "linkText": "configure um provedor de IA"
+  },
+  "insightTypes": {
+    "anomaly": "Anomalia",
+    "trend": "Tendência",
+    "subscription": "Assinatura",
+    "budget_pace": "Ritmo do orçamento",
+    "seasonal": "Sazonal",
+    "new_recurring": "Nova recorrência"
+  },
+  "insightSeverities": {
+    "info": "Informação",
+    "warning": "Aviso",
+    "alert": "Alerta"
+  }
+}

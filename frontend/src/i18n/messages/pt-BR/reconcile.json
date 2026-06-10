@@ -1,0 +1,58 @@
+{
+  "title": "Reconciliar conta",
+  "subtitle": "Confira seus registros com o extrato bancário",
+  "subtitleActive": "Reconciliando: {name}",
+  "setup": {
+    "title": "Iniciar reconciliação",
+    "intro": "Reconcilie sua conta com um extrato bancário para garantir que seus registros coincidem.",
+    "accountLabel": "Conta",
+    "accountPlaceholder": "Selecionar conta...",
+    "statementDateLabel": "Data do extrato",
+    "statementBalanceLabel": "Saldo final do extrato",
+    "start": "Iniciar reconciliação"
+  },
+  "summary": {
+    "statementBalance": "Saldo do extrato",
+    "reconciledBalance": "Saldo reconciliado",
+    "selected": "Selecionadas ({count})",
+    "difference": "Diferença"
+  },
+  "list": {
+    "heading": "Transações não reconciliadas ({count})",
+    "selectAll": "Selecionar todas",
+    "selectNone": "Desmarcar todas",
+    "empty": "Não foram encontradas transações não reconciliadas neste período.",
+    "colSelect": "Selecionar",
+    "colDate": "Data",
+    "colPayee": "Beneficiário",
+    "colCategory": "Categoria",
+    "colAmount": "Valor",
+    "colStatus": "Status",
+    "finish": "Concluir reconciliação"
+  },
+  "status": {
+    "cleared": "Confirmada",
+    "unreconciled": "Não reconciliada",
+    "void": "Anulada",
+    "reconciled": "Reconciliada"
+  },
+  "complete": {
+    "title": "Reconciliação concluída",
+    "message": "Sua conta foi reconciliada com sucesso em {date}.",
+    "existingPayment": "Esta conta tem um pagamento agendado, <b>{name}</b>. Deseja atualizar a próxima ocorrência para o saldo reconciliado de <b>{amount}</b>?",
+    "updatePayment": "Atualizar próximo pagamento",
+    "noPayment": "Não foi encontrado nenhum pagamento agendado para esta conta. Deseja criar um para o saldo reconciliado de <b>{amount}</b>?",
+    "createPayment": "Criar pagamento agendado",
+    "backToAccounts": "Voltar às contas",
+    "reconcileAnother": "Reconciliar outra conta"
+  },
+  "toasts": {
+    "loadAccountsFailed": "Falha ao carregar contas",
+    "fillAllFields": "Preencha todos os campos",
+    "loadDataFailed": "Falha ao carregar dados de reconciliação",
+    "differenceRequired": "A diferença deve ser {amount} para concluir a reconciliação",
+    "noneSelected": "Nenhuma transação selecionada para reconciliação",
+    "success": "{count, plural, one {# transação reconciliada com sucesso} other {# transações reconciliadas com sucesso}}",
+    "reconcileFailed": "Falha ao reconciliar transações"
+  }
+}

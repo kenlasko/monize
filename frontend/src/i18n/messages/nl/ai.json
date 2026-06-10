@@ -1,0 +1,53 @@
+{
+  "page": {
+    "title": "AI-assistent",
+    "subtitle": "Stel vragen over je financiën in gewone taal"
+  },
+  "chat": {
+    "conversationSaved": "Gesprek opgeslagen in je browser",
+    "clearConversation": "Gesprek wissen",
+    "inputPlaceholder": "Stel een vraag over je financiën...",
+    "inputPlaceholderDisabled": "AI-provider niet geconfigureerd",
+    "keyboardHint": "Druk op Enter om te verzenden, Shift+Enter voor een nieuwe regel",
+    "cancelTitle": "Annuleren",
+    "sendTitle": "Verzenden"
+  },
+  "notConfigured": {
+    "heading": "AI niet geconfigureerd",
+    "message": "Er is geen AI-provider geconfigureerd. Om de AI-assistent te gebruiken, {link} in je instellingen.",
+    "linkText": "configureer een AI-provider"
+  },
+  "suggestedQueries": {
+    "heading": "Stel een vraag over je financiën",
+    "description": "Ik kan vragen beantwoorden over je uitgaven, inkomsten, rekeningsaldi, nettowaarde en meer.",
+    "monthlySpendingLabel": "Maandelijkse uitgaven",
+    "monthlySpendingQuery": "Hoeveel heb ik vorige maand uitgegeven?",
+    "topCategoriesLabel": "Topcategorieën",
+    "topCategoriesQuery": "Wat zijn mijn 5 grootste uitgavencategorieën dit jaar?",
+    "accountBalancesLabel": "Rekeningsaldi",
+    "accountBalancesQuery": "Wat zijn mijn huidige rekeningsaldi?",
+    "compareMonthsLabel": "Maanden vergelijken",
+    "compareMonthsQuery": "Vergelijk mijn uitgaven deze maand met vorige maand",
+    "netWorthTrendLabel": "Nettowaardeontwikkeling",
+    "netWorthTrendQuery": "Laat mijn nettowaardeontwikkeling van de afgelopen 12 maanden zien",
+    "savingsRateLabel": "Spaarquote",
+    "savingsRateQuery": "Hoeveel heb ik dit jaar gespaard in verhouding tot mijn inkomsten?"
+  },
+  "toolDetails": {
+    "inputLabel": "Invoer",
+    "resultLabel": "Resultaat",
+    "toolFailedAriaLabel": "Tool mislukt",
+    "toolSucceededAriaLabel": "Tool geslaagd"
+  },
+  "table": {
+    "downloadTitle": "Tabel downloaden als CSV",
+    "downloadAriaLabel": "Tabel downloaden als CSV",
+    "noDataError": "Geen tabelgegevens om te exporteren"
+  },
+  "chart": {
+    "downloadTitle": "Grafiek downloaden als PNG",
+    "downloadAriaLabel": "Grafiek downloaden als PNG",
+    "captureError": "Kan grafiekafbeelding niet vastleggen",
+    "downloadError": "Grafiek downloaden mislukt"
+  }
+}

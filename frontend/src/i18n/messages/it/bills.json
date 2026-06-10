@@ -1,0 +1,64 @@
+{
+  "page": {
+    "title": "Fatture & Versamenti",
+    "subtitle": "Gestisci le transazioni ricorrenti e i pagamenti pianificati",
+    "newButton": "+ Nuova pianificazione",
+    "summaryActiveBills": "Fatture attive",
+    "summaryActiveDeposits": "Versamenti attivi",
+    "summaryMonthlyNet": "Netto mensile",
+    "summaryDueNow": "In scadenza",
+    "loadingText": "Caricamento transazioni pianificate...",
+    "chartUnavailable": "Grafico temporaneamente non disponibile"
+  },
+  "viewTabs": {
+    "list": "Elenco",
+    "calendar": "Calendario",
+    "filterAll": "Tutte ({count})",
+    "filterBills": "Fatture ({count})",
+    "filterDeposits": "Versamenti ({count})",
+    "todayButton": "Oggi"
+  },
+  "form": {
+    "titleNew": "Nuova transazione pianificata",
+    "titleEdit": "Modifica transazione pianificata"
+  },
+  "overrideConfirm": {
+    "title": "Sostituzioni esistenti trovate",
+    "message": "Questa transazione pianificata ha {count, plural, one {# occorrenza individuale} other {# occorrenze individuali}} con modifiche personalizzate.",
+    "question": "Cosa vuoi fare con queste modifiche quando aggiorni il modello base?",
+    "keepButton": "Mantieni le modifiche",
+    "deleteButton": "Elimina tutte le modifiche"
+  },
+  "forecast": {
+    "title": "Previsione flusso di cassa",
+    "scheduledCount": "{count, plural, one {# transazione pianificata} other {# transazioni pianificate}} nella previsione",
+    "tooltipTransactions": "Transazioni:",
+    "tooltipMore": "+{count} altre",
+    "noData": "Nessun dato da visualizzare",
+    "noAccounts": "Nessun conto trovato",
+    "noScheduled": "Nessuna transazione pianificata",
+    "noMatchingAccount": "Seleziona un conto con transazioni pianificate",
+    "noUpcoming": "Nessuna transazione imminente in questo periodo - viene mostrato il saldo attuale",
+    "summaryStarting": "Iniziale",
+    "summaryEnding": "Finale",
+    "summaryLowest": "Minimo",
+    "summaryMinBalance": "Saldo minimo",
+    "allAccounts": "Tutti i conti"
+  },
+  "calendar": {
+    "days": {
+      "sun": "Dom",
+      "mon": "Lun",
+      "tue": "Mar",
+      "wed": "Mer",
+      "thu": "Gio",
+      "fri": "Ven",
+      "sat": "Sab"
+    },
+    "more": "+{count} altre"
+  },
+  "toasts": {
+    "overridesDeleted": "Sostituzioni eliminate",
+    "notFound": "Pagamento pianificato non trovato"
+  }
+}

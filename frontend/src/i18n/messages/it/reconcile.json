@@ -1,0 +1,58 @@
+{
+  "title": "Riconcilia conto",
+  "subtitle": "Confronta i tuoi dati con l'estratto conto bancario",
+  "subtitleActive": "Riconciliazione in corso: {name}",
+  "setup": {
+    "title": "Avvia riconciliazione",
+    "intro": "Riconcilia il tuo conto con un estratto conto bancario per verificare che i tuoi dati corrispondano.",
+    "accountLabel": "Conto",
+    "accountPlaceholder": "Seleziona conto...",
+    "statementDateLabel": "Data estratto conto",
+    "statementBalanceLabel": "Saldo finale estratto conto",
+    "start": "Avvia riconciliazione"
+  },
+  "summary": {
+    "statementBalance": "Saldo estratto conto",
+    "reconciledBalance": "Saldo riconciliato",
+    "selected": "Selezionate ({count})",
+    "difference": "Differenza"
+  },
+  "list": {
+    "heading": "Transazioni non riconciliate ({count})",
+    "selectAll": "Seleziona tutto",
+    "selectNone": "Deseleziona tutto",
+    "empty": "Nessuna transazione non riconciliata trovata per questo periodo.",
+    "colSelect": "Seleziona",
+    "colDate": "Data",
+    "colPayee": "Beneficiario",
+    "colCategory": "Categoria",
+    "colAmount": "Importo",
+    "colStatus": "Stato",
+    "finish": "Completa riconciliazione"
+  },
+  "status": {
+    "cleared": "Compensata",
+    "unreconciled": "Non riconciliata",
+    "void": "Annullata",
+    "reconciled": "Riconciliata"
+  },
+  "complete": {
+    "title": "Riconciliazione completata",
+    "message": "Il tuo conto è stato riconciliato con successo in data {date}.",
+    "existingPayment": "Questo conto ha un pagamento pianificato, <b>{name}</b>. Vuoi aggiornare la prossima occorrenza al saldo riconciliato di <b>{amount}</b>?",
+    "updatePayment": "Aggiorna prossimo pagamento",
+    "noPayment": "Nessun pagamento pianificato trovato per questo conto. Vuoi crearne uno per il saldo riconciliato di <b>{amount}</b>?",
+    "createPayment": "Crea pagamento pianificato",
+    "backToAccounts": "Torna ai conti",
+    "reconcileAnother": "Riconcilia un altro conto"
+  },
+  "toasts": {
+    "loadAccountsFailed": "Caricamento conti non riuscito",
+    "fillAllFields": "Compila tutti i campi",
+    "loadDataFailed": "Caricamento dati di riconciliazione non riuscito",
+    "differenceRequired": "La differenza deve essere {amount} per completare la riconciliazione",
+    "noneSelected": "Nessuna transazione selezionata per la riconciliazione",
+    "success": "{count, plural, one {# transazione riconciliata con successo} other {# transazioni riconciliate con successo}}",
+    "reconcileFailed": "Riconciliazione transazioni non riuscita"
+  }
+}

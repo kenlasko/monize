@@ -1,0 +1,70 @@
+{
+  "demoBanner": {
+    "label": "Demomodus",
+    "message": "Alle gegevens worden dagelijks om 4:00 UTC gereset. Verken vrijuit!"
+  },
+  "delegationBanner": {
+    "viewing": "Bekijken:",
+    "sharedAccount": "Gedeeld account",
+    "yourAccount": "Jouw account",
+    "switchAccountLabel": "Account wisselen",
+    "selfSuffix": "{label} (jij)",
+    "error2fa": "Dat account vereist tweefactorauthenticatie. Stel 2FA in via Instellingen voordat je wisselt.",
+    "errorSwitch": "Account wisselen niet mogelijk"
+  },
+  "backendDownBanner": {
+    "connectionBlockedLabel": "Verbinding geblokkeerd",
+    "connectionBlockedDetail": "Beveiligingsheaders blokkeren verzoeken via gewone HTTP.",
+    "connectionLostLabel": "Verbinding verbroken",
+    "connectionLostDetail": "De server is niet bereikbaar. Opnieuw verbinden...",
+    "httpsHint": "Stel <code>DISABLE_HTTPS_HEADERS=true</code> in je omgeving in of open de site via HTTPS."
+  },
+  "httpWarningBanner": {
+    "label": "HTTPS vereist",
+    "detail": "Beveiligingsheaders zijn actief, maar de site wordt benaderd via gewone HTTP. API-verzoeken kunnen mislukken.",
+    "httpsHint": "Stel <code>DISABLE_HTTPS_HEADERS=true</code> in je omgeving in of open de site via HTTPS.",
+    "dismiss": "Sluiten",
+    "dismissAriaLabel": "HTTPS-waarschuwing sluiten"
+  },
+  "updateBanner": {
+    "availableWithVersion": "Monize v{version} is beschikbaar",
+    "availableGeneric": "Er is een nieuwe versie van Monize beschikbaar",
+    "runningVersion": "(actief: v{version})",
+    "releaseNotes": "Release-opmerkingen",
+    "dismiss": "Sluiten",
+    "dismissAriaLabel": "Updatemelding sluiten"
+  },
+  "actionHistory": {
+    "title": "Actiegeschiedenis",
+    "buttonAriaLabel": "Actiegeschiedenis",
+    "closeAriaLabel": "Sluiten",
+    "undo": "Ongedaan maken",
+    "redo": "Opnieuw",
+    "noRecentActions": "Geen recente acties",
+    "undoneLabel": "Ongedaan gemaakt",
+    "nothingToUndo": "Niets om ongedaan te maken",
+    "nothingToRedo": "Niets om opnieuw te doen",
+    "cannotUndoDefault": "Deze actie kan niet ongedaan worden gemaakt",
+    "cannotRedoDefault": "Deze actie kan niet opnieuw worden gedaan",
+    "undoFailed": "Ongedaan maken mislukt",
+    "redoFailed": "Opnieuw doen mislukt",
+    "entityLabels": {
+      "transaction": "Transactie",
+      "transfer": "Overboeking",
+      "investment_transaction": "Belegging",
+      "bulk_transaction": "Bulkactie",
+      "category": "Categorie",
+      "payee": "Begunstigde",
+      "tag": "Label",
+      "account": "Rekening",
+      "scheduled_transaction": "Gepland",
+      "security": "Waardepapier",
+      "budget": "Budget",
+      "custom_report": "Rapport"
+    }
+  },
+  "pageHeader": {
+    "helpAriaLabel": "Open de Monize-wiki voor hulp bij dit gedeelte",
+    "helpTooltip": "Open de Monize-wiki voor hulp bij dit gedeelte"
+  }
+}

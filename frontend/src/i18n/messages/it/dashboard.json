@@ -1,0 +1,136 @@
+{
+  "page": {
+    "welcomePrefix": "Benvenuto",
+    "welcomeWithName": "Benvenuto, {name}!",
+    "subtitle": "Ecco il riepilogo delle tue finanze"
+  },
+  "favouriteAccounts": {
+    "title": "Conti preferiti",
+    "empty": "Nessun conto preferito. Aggiungi conti ai preferiti per visualizzarli qui.",
+    "reorder": "Riordina",
+    "done": "Fine",
+    "moveUp": "Sposta su",
+    "moveDown": "Sposta giù",
+    "marketValue": "Valore di mercato",
+    "due": "Scadenza: {ordinal}",
+    "dueTooltip": "Il giorno del mese in cui scade il pagamento della carta di credito",
+    "settlement": "Liquidazione: {ordinal}",
+    "settlementTooltip": "L'ultimo giorno del ciclo di fatturazione. Le transazioni registrate entro questo giorno compaiono nell'estratto conto corrente."
+  },
+  "upcomingBills": {
+    "title": "Fatture e versamenti in arrivo",
+    "empty": "Nessuna fattura, versamento o trasferimento scaduto o in arrivo nelle finestre di promemoria.",
+    "perReminderSettings": "In base alle impostazioni promemoria",
+    "postTransaction": "Registra questa transazione",
+    "manual": "Manuale",
+    "manualTitle": "Richiede registrazione manuale",
+    "negativeBalanceWarning": "Questa transazione porterà il saldo del conto sotto zero",
+    "viewAll": "Visualizza tutte le fatture e i versamenti",
+    "totalDue": "Totale dovuto",
+    "totalIncoming": "Totale in arrivo",
+    "moreItems": "+{count} altri",
+    "overdue": "Scaduta",
+    "today": "Oggi",
+    "tomorrow": "Domani",
+    "daysUntil": "{count} giorni",
+    "typeBadge": {
+      "bill": "Fattura",
+      "deposit": "Versamento",
+      "transfer": "Trasferimento"
+    }
+  },
+  "gettingStarted": {
+    "title": "Per iniziare",
+    "subtitle": "Configura il tuo account in pochi passaggi",
+    "dismiss": "Ignora",
+    "steps": {
+      "settings": {
+        "title": "Esamina le impostazioni",
+        "description": "Imposta valuta, formato data e tema"
+      },
+      "categories": {
+        "title": "Configura le categorie",
+        "description": "Crea categorie o importa un set predefinito"
+      },
+      "account": {
+        "title": "Aggiungi il primo conto",
+        "description": "Crea un conto bancario per iniziare a monitorare"
+      },
+      "import": {
+        "title": "Importa da QIF",
+        "description": "Importa conti e transazioni da file QIF"
+      }
+    }
+  },
+  "budgetStatus": {
+    "title": "Stato del budget",
+    "noBudget": "Nessun budget attivo. Crea un budget per monitorare le spese.",
+    "createBudget": "Crea budget",
+    "viewFullBudget": "Visualizza budget completo",
+    "daysLeft": "{count} giorni rimanenti",
+    "safeToSpend": "Disponibile oggi",
+    "topCategories": "Categorie principali"
+  },
+  "insights": {
+    "title": "Analisi delle spese",
+    "empty": "Nessuna analisi disponibile. Visita la pagina Analisi per generare la prima.",
+    "goToInsights": "Vai ad Analisi",
+    "viewAll": "Visualizza tutte le analisi",
+    "activeCount": "{count} attive"
+  },
+  "topMovers": {
+    "title": "Maggiori variazioni",
+    "empty": {
+      "noInvestments": "Aggiungi conti investimento per monitorare le variazioni giornaliere.",
+      "noPrices": "Nessuna variazione di prezzo disponibile.",
+      "noGainers": "Nessun guadagno oggi.",
+      "noLosers": "Nessuna perdita oggi."
+    },
+    "dailyChange": "Variazione giornaliera",
+    "refreshPrices": "Aggiorna quotazioni",
+    "viewPortfolio": "Visualizza portafoglio",
+    "filter": {
+      "all": "Tutti",
+      "gainers": "Guadagni",
+      "losers": "Perdite"
+    }
+  },
+  "favouriteSecurities": {
+    "title": "Titoli preferiti",
+    "empty": "Nessun titolo preferito. Visita la <securitiesLink>pagina Titoli</securitiesLink> e aggiungi ai preferiti i titoli che vuoi monitorare.",
+    "noPriceYet": "Nessun prezzo disponibile",
+    "dailyChange": "Variazione giornaliera",
+    "refreshPrices": "Aggiorna quotazioni",
+    "manage": "Gestisci titoli"
+  },
+  "netWorth": {
+    "title": "Patrimonio netto",
+    "empty": "Nessun dato sul patrimonio netto disponibile.",
+    "past12Months": "Ultimi 12 mesi",
+    "viewReport": "Visualizza report completo"
+  },
+  "assetsVsLiabilities": {
+    "title": "Attività vs Passività",
+    "empty": "Nessun dato sul patrimonio netto disponibile.",
+    "current": "Attuale",
+    "netWorthLabel": "Patrimonio netto",
+    "assets": "Attività",
+    "liabilities": "Passività"
+  },
+  "expensesPieChart": {
+    "title": "Uscite per categoria",
+    "empty": "Nessun dato sulle uscite per questo periodo.",
+    "past30Days": "Ultimi 30 giorni",
+    "total": "Totale",
+    "uncategorized": "Non categorizzate",
+    "other": "Altro"
+  },
+  "incomeExpenses": {
+    "title": "Entrate vs Uscite",
+    "last5Weeks": "Ultime 5 settimane",
+    "weekOf": "Settimana del {date}",
+    "income": "Entrate",
+    "expenses": "Uscite",
+    "net": "Netto"
+  }
+}

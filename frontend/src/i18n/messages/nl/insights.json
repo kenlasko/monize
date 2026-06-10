@@ -1,0 +1,44 @@
+{
+  "page": {
+    "title": "Uitgaveninzichten",
+    "subtitle": "AI-gestuurde analyse van je uitgavenpatronen en afwijkingen"
+  },
+  "list": {
+    "lastUpdated": "Laatst bijgewerkt: {date} {time}",
+    "refreshButton": "Inzichten vernieuwen",
+    "generating": "Genereren...",
+    "allTypes": "Alle typen",
+    "allSeverities": "Alle ernstgraden",
+    "showDismissed": "Gesloten tonen",
+    "emptyNoInsights": "Nog geen inzichten gegenereerd. Klik op \"Inzichten vernieuwen\" om je uitgavenpatronen te analyseren.",
+    "emptyFiltered": "Geen inzichten komen overeen met je huidige filters.",
+    "generateButton": "Inzichten genereren",
+    "alertCount": "{count, plural, one {# melding} other {# meldingen}}",
+    "warningCount": "{count, plural, one {# waarschuwing} other {# waarschuwingen}}",
+    "errorLoadFailed": "Inzichten laden mislukt. Probeer het opnieuw.",
+    "errorGenerateFailed": "Inzichten genereren mislukt. Controleer of je een AI-provider hebt geconfigureerd.",
+    "errorTimeout": "Het genereren van inzichten duurt langer dan verwacht. Even geduld of vernieuw de pagina."
+  },
+  "card": {
+    "dismiss": "Sluiten",
+    "dismissing": "Sluiten..."
+  },
+  "notConfigured": {
+    "heading": "AI niet geconfigureerd",
+    "message": "Er is geen AI-provider geconfigureerd. Om Uitgaveninzichten te gebruiken, {link} in je instellingen.",
+    "linkText": "configureer een AI-provider"
+  },
+  "insightTypes": {
+    "anomaly": "Afwijking",
+    "trend": "Trend",
+    "subscription": "Abonnement",
+    "budget_pace": "Budgettempo",
+    "seasonal": "Seizoensgebonden",
+    "new_recurring": "Nieuw terugkerend"
+  },
+  "insightSeverities": {
+    "info": "Info",
+    "warning": "Waarschuwing",
+    "alert": "Melding"
+  }
+}

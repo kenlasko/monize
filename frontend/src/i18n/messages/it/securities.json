@@ -1,0 +1,300 @@
+{
+  "priceRefresh": {
+    "noneToUpdate": "Nessun titolo da aggiornare",
+    "updated": "{count, plural, one {# quotazione titolo aggiornata} other {# quotazioni titoli aggiornate}}",
+    "partialFailure": "Quotazioni aggiornate: {updated} riuscite, {failed} fallite{symbols}",
+    "failed": "Aggiornamento quotazioni non riuscito"
+  },
+  "page": {
+    "title": "Titoli",
+    "subtitle": "Gestisci azioni, ETF, fondi comuni e altri titoli",
+    "newSecurity": "+ Nuovo titolo",
+    "searchPlaceholder": "Cerca per simbolo o nome...",
+    "statusAll": "Tutti ({count})",
+    "statusActive": "Attivi ({count})",
+    "statusInactive": "Inattivi ({count})",
+    "modalTitleEdit": "Modifica titolo",
+    "modalTitleNew": "Nuovo titolo",
+    "loading": "Caricamento titoli...",
+    "count": "{count, plural, one {# titolo} other {# titoli}}",
+    "toasts": {
+      "loadFailed": "Caricamento titoli non riuscito",
+      "updated": "Titolo aggiornato",
+      "created": "Titolo creato",
+      "deactivated": "Titolo disattivato",
+      "activated": "Titolo attivato",
+      "statusFailed": "Aggiornamento stato titolo non riuscito",
+      "deleted": "Titolo \"{symbol}\" eliminato",
+      "deleteFailed": "Eliminazione titolo non riuscita",
+      "favouriteFailed": "Aggiornamento preferito non riuscito",
+      "updateFailed": "Aggiornamento titolo non riuscito",
+      "createFailed": "Creazione titolo non riuscita"
+    },
+    "deleteConfirm": {
+      "title": "Elimina titolo",
+      "message": "Sei sicuro di voler eliminare \"{symbol}\"? Verrà eliminato anche tutto lo storico delle quotazioni. L'operazione non può essere annullata.",
+      "confirmLabel": "Elimina",
+      "cancelLabel": "Annulla"
+    }
+  },
+  "summary": {
+    "totalSecurities": "Titoli totali",
+    "types": "Tipi",
+    "exchanges": "Borse",
+    "currencies": "Valute"
+  },
+  "list": {
+    "columns": {
+      "symbol": "Simbolo",
+      "name": "Nome",
+      "type": "Tipo",
+      "shares": "Azioni",
+      "exchange": "Borsa",
+      "currency": "Valuta",
+      "provider": "Fornitore",
+      "source": "Fonte",
+      "status": "Stato",
+      "actions": "Azioni",
+      "favourite": "Preferito"
+    },
+    "density": {
+      "normal": "Normale",
+      "compact": "Compatto",
+      "dense": "Denso",
+      "toggle": "Alterna densità righe"
+    },
+    "statusBadge": {
+      "active": "Attivo",
+      "activeShort": "Att",
+      "inactive": "Inattivo",
+      "inactiveShort": "Ina"
+    },
+    "providerTitle": {
+      "override": "Fornitore specifico per titolo",
+      "inherited": "Ereditato dal fornitore di quotazioni predefinito"
+    },
+    "columnTitles": {
+      "shares": "Azioni correnti detenute in tutti i conti",
+      "source": "Fonte del prezzo più recente"
+    },
+    "actions": {
+      "history": "Storico",
+      "prices": "Prezzi",
+      "edit": "Modifica",
+      "deactivate": "Disattiva",
+      "activate": "Attiva",
+      "delete": "Elimina"
+    },
+    "favouriteButton": {
+      "add": "Aggiungi ai preferiti",
+      "remove": "Rimuovi dai preferiti"
+    },
+    "empty": {
+      "title": "Nessun titolo",
+      "subtitle": "Inizia aggiungendo il tuo primo titolo."
+    },
+    "contextMenu": {
+      "transactionHistory": "Storico transazioni",
+      "viewPrices": "Visualizza prezzi",
+      "editSecurity": "Modifica titolo",
+      "deactivate": "Disattiva",
+      "activate": "Attiva",
+      "delete": "Elimina"
+    }
+  },
+  "typeLabels": {
+    "STOCK": "Azione",
+    "ETF": "ETF",
+    "MUTUAL_FUND": "Fondo comune",
+    "BOND": "Obbligazione",
+    "OPTION": "Opzione",
+    "CRYPTO": "Criptovaluta",
+    "OTHER": "Altro",
+    "STOCK_short": "Az",
+    "ETF_short": "ETF",
+    "MUTUAL_FUND_short": "FC",
+    "BOND_short": "Obl",
+    "OPTION_short": "Opt",
+    "CRYPTO_short": "Cry",
+    "OTHER_short": "Alt"
+  },
+  "form": {
+    "symbolLabel": "Simbolo",
+    "nameLabel": "Nome",
+    "typeLabel": "Tipo",
+    "exchangeLabel": "Borsa",
+    "currencyLabel": "Valuta",
+    "quoteProviderLabel": "Fornitore quotazioni",
+    "msnIdLabel": "ID strumento MSN (avanzato)",
+    "lookupProviderAriaLabel": "Cerca fornitore",
+    "lookupButton": "Cerca",
+    "revertButton": "Ripristina",
+    "clearButton": "Cancella",
+    "revertTitle": "Ripristina i valori originali",
+    "clearTitle": "Cancella tutti i campi",
+    "favouriteLabel": "Preferito",
+    "addToFavourites": "Aggiungi ai preferiti",
+    "removeFromFavourites": "Rimuovi dai preferiti",
+    "submitCreate": "Crea titolo",
+    "submitUpdate": "Aggiorna titolo",
+    "toasts": {
+      "lookupTooShort": "Inserisci un simbolo o un nome (almeno 2 caratteri) per la ricerca",
+      "notFound": "Nessun titolo trovato per \"{query}\"",
+      "found": "Trovato: {details}",
+      "lookupFailed": "Ricerca non riuscita - riprova"
+    },
+    "msnNotConfigured": "MSN è selezionato come fornitore di quotazioni predefinito, ma MSN_API_KEY non è configurato sul server. Le quotazioni MSN non funzioneranno finché un amministratore non imposta la variabile d'ambiente e riavvia il backend.",
+    "providers": {
+      "auto": "Auto",
+      "yahoo": "Yahoo",
+      "msn": "MSN"
+    },
+    "types": {
+      "select": "Seleziona tipo...",
+      "stock": "Azione",
+      "etf": "ETF",
+      "mutualFund": "Fondo comune",
+      "bond": "Obbligazione",
+      "option": "Opzione",
+      "crypto": "Criptovaluta",
+      "other": "Altro"
+    },
+    "quoteProviderUseDefault": "Usa predefinito ({provider})",
+    "symbolPlaceholder": "es., AAPL, XEQT, BTC",
+    "namePlaceholder": "es., Apple Inc., iShares Core Equity ETF",
+    "exchangeSearchPlaceholder": "Cerca borse...",
+    "exchangePlaceholder": "Risolto automaticamente dal ticker; modifica solo se errato"
+  },
+  "priceForm": {
+    "dateLabel": "Data",
+    "closePriceLabel": "Prezzo di chiusura",
+    "openPriceLabel": "Prezzo di apertura",
+    "highPriceLabel": "Prezzo massimo",
+    "lowPriceLabel": "Prezzo minimo",
+    "volumeLabel": "Volume",
+    "optionalPlaceholder": "Opzionale",
+    "submitCreate": "Aggiungi prezzo",
+    "submitUpdate": "Aggiorna prezzo"
+  },
+  "priceHistory": {
+    "title": "{symbol} - Storico delle quotazioni",
+    "forceUpdateButton": "Forza aggiornamento prezzi",
+    "forceUpdateTitle": "Ricarica i prezzi storici per l'intero periodo di detenzione di questo titolo",
+    "addPriceButton": "+ Aggiungi prezzo",
+    "addPriceSection": "Aggiungi prezzo",
+    "editPriceSection": "Modifica prezzo",
+    "loading": "Caricamento prezzi...",
+    "empty": "Nessuno storico delle quotazioni disponibile",
+    "columns": {
+      "date": "Data",
+      "close": "Chiusura",
+      "open": "Apertura",
+      "high": "Massimo",
+      "low": "Minimo",
+      "volume": "Volume",
+      "source": "Fonte",
+      "actions": "Azioni"
+    },
+    "toasts": {
+      "added": "Prezzo aggiunto",
+      "updated": "Prezzo aggiornato",
+      "deleted": "Prezzo eliminato",
+      "loadFailed": "Caricamento storico delle quotazioni non riuscito",
+      "addFailed": "Aggiunta prezzo non riuscita",
+      "updateFailed": "Aggiornamento prezzo non riuscito",
+      "deleteFailed": "Eliminazione prezzo non riuscita",
+      "updatedCount": "{count, plural, one {Aggiornato # prezzo per {symbol}} other {Aggiornati # prezzi per {symbol}}}",
+      "noPricesFound": "Nessun prezzo trovato per {symbol}",
+      "updatePricesFailed": "Aggiornamento prezzi per {symbol} non riuscito",
+      "updateFetchFailed": "Aggiornamento prezzi non riuscito"
+    },
+    "closeButton": "Chiudi",
+    "deleteConfirm": {
+      "title": "Elimina prezzo",
+      "confirmLabel": "Elimina"
+    }
+  },
+  "transactionHistory": {
+    "inactiveBadge": "Inattivo",
+    "currentShares": "Azioni correnti",
+    "accountLabel": "Conto",
+    "allAccounts": "Tutti i conti ({shares})",
+    "accountClosed": "{name} (chiuso)",
+    "addTransaction": "+ Aggiungi transazione",
+    "loading": "Caricamento transazioni...",
+    "emptyAll": "Nessuna transazione per questo titolo.",
+    "emptyAccount": "Nessuna transazione per questo titolo nel conto selezionato.",
+    "editTransactionTitle": "Modifica transazione",
+    "columns": {
+      "date": "Data",
+      "account": "Conto",
+      "action": "Azione",
+      "quantity": "Quantità",
+      "runningTotal": "Totale progressivo",
+      "price": "Prezzo",
+      "amount": "Importo",
+      "actionsLabel": "Azioni"
+    },
+    "actionLabels": {
+      "BUY": "Acquisto",
+      "SELL": "Vendita",
+      "DIVIDEND": "Dividendo",
+      "INTEREST": "Interesse",
+      "CAPITAL_GAIN": "Plusvalenza",
+      "SPLIT": "Suddivisione",
+      "TRANSFER_IN": "Trasferimento in entrata",
+      "TRANSFER_OUT": "Trasferimento in uscita",
+      "REINVEST": "Reinvestimento",
+      "ADD_SHARES": "Aggiungi azioni",
+      "REMOVE_SHARES": "Rimuovi azioni"
+    }
+  },
+  "shareAdjustment": {
+    "heading": "Rettifica azioni",
+    "accountLabel": "Conto",
+    "accountPlaceholder": "Seleziona conto...",
+    "actionLabel": "Azione",
+    "quantityLabel": "Quantità (azioni)",
+    "dateLabel": "Data",
+    "descriptionLabel": "Descrizione (opzionale)",
+    "descriptionPlaceholder": "es. Eliminazione azioni residue",
+    "saving": "Salvataggio...",
+    "submitButton": "Registra rettifica",
+    "accountClosed": "{name} (chiuso)",
+    "adjustmentActions": {
+      "REMOVE_SHARES": "Rimuovi azioni",
+      "ADD_SHARES": "Aggiungi azioni"
+    },
+    "toasts": {
+      "selectAccount": "Seleziona un conto",
+      "quantityRequired": "La quantità deve essere maggiore di zero",
+      "recorded": "Rettifica registrata",
+      "failed": "Registrazione rettifica non riuscita"
+    }
+  },
+  "lookupPicker": {
+    "title": "Più risultati per \"{query}\"",
+    "subtitle": "Seleziona il titolo che vuoi usare.",
+    "columns": {
+      "symbol": "Simbolo",
+      "name": "Nome",
+      "exchange": "Borsa",
+      "currency": "Valuta",
+      "type": "Tipo",
+      "source": "Fonte"
+    },
+    "selectButton": "Seleziona"
+  },
+  "validation": {
+    "symbolRequired": "Il simbolo è obbligatorio",
+    "symbolMax": "Il simbolo deve avere al massimo 20 caratteri",
+    "nameRequired": "Il nome è obbligatorio",
+    "nameMax": "Il nome deve avere al massimo 255 caratteri",
+    "currencyRequired": "La valuta è obbligatoria"
+  },
+  "priceValidation": {
+    "dateRequired": "La data è obbligatoria",
+    "priceRequired": "Il prezzo è obbligatorio",
+    "priceNonNegative": "Il prezzo deve essere un numero non negativo"
+  }
+}

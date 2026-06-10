@@ -1,0 +1,204 @@
+{
+  "page": {
+    "title": "Beneficiários",
+    "subtitle": "Gerenciar os seus beneficiários e as suas categorias padrão",
+    "deactivateUnused": "Desativar Não Utilizados",
+    "autoAssignCategories": "Atribuir Categorias Automaticamente",
+    "newPayee": "+ Novo Beneficiário",
+    "searchPlaceholder": "Pesquisar beneficiários...",
+    "statusAll": "Todos ({count})",
+    "statusActive": "Ativos ({count})",
+    "statusInactive": "Inativos ({count})",
+    "modalTitleEdit": "Editar Beneficiário",
+    "modalTitleNew": "Novo Beneficiário",
+    "loading": "Carregando beneficiários...",
+    "count": "{count, plural, one {# beneficiário} other {# beneficiários}}",
+    "toasts": {
+      "loadFailed": "Falha ao carregar dados",
+      "updated": "Beneficiário atualizado com sucesso",
+      "created": "Beneficiário criado com sucesso",
+      "reactivated": "Beneficiário \"{name}\" reativado",
+      "reactivateFailed": "Falha ao reativar beneficiário",
+      "updateFailed": "Falha ao atualizar beneficiário",
+      "createFailed": "Falha ao criar beneficiário"
+    },
+    "summary": {
+      "totalPayees": "Total de Beneficiários",
+      "active": "Ativos",
+      "inactive": "Inativos",
+      "withoutCategory": "Sem Categoria"
+    }
+  },
+  "list": {
+    "columns": {
+      "name": "Nome",
+      "defaultCategory": "Categoria Padrão",
+      "count": "Contagem",
+      "aliases": "Aliases",
+      "lastUsed": "Último Uso",
+      "created": "Criado",
+      "status": "Status",
+      "notes": "Notas",
+      "actions": "Ações"
+    },
+    "density": {
+      "normal": "Normal",
+      "compact": "Compacto",
+      "dense": "Denso",
+      "toggle": "Alternar densidade das linhas"
+    },
+    "noCategory": "Nenhuma",
+    "statusBadge": {
+      "active": "Ativo",
+      "inactive": "Inativo"
+    },
+    "actions": {
+      "reactivate": "Reativar",
+      "reactivateShort": "Re",
+      "merge": "Unir",
+      "mergeShort": "U",
+      "edit": "Editar",
+      "editShort": "E",
+      "delete": "Excluir",
+      "deleteShort": "X"
+    },
+    "viewTransactionsTitle": "Ver transações com este beneficiário",
+    "empty": {
+      "title": "Sem beneficiários",
+      "subtitle": "Comece criando um novo beneficiário."
+    },
+    "deleteConfirm": {
+      "title": "Excluir \"{name}\"?",
+      "message": "Esta ação não pode ser desfeita.",
+      "confirmLabel": "Excluir",
+      "cancelLabel": "Cancelar"
+    },
+    "toasts": {
+      "deleted": "Beneficiário excluído com sucesso",
+      "deleteFailed": "Falha ao excluir beneficiário"
+    }
+  },
+  "form": {
+    "nameLabel": "Nome do Beneficiário",
+    "categoryLabel": "Categoria Padrão",
+    "notesLabel": "Notas (opcional)",
+    "submitCreate": "Criar Beneficiário",
+    "submitUpdate": "Atualizar Beneficiário"
+  },
+  "merge": {
+    "title": "Unir Beneficiário",
+    "mergeFromLabel": "Unir a partir de (será excluído):",
+    "transactionCount": "{count, plural, one {# transação será migrada} other {# transações serão migradas}}",
+    "mergeIntoLabel": "Unir para (beneficiário destino)",
+    "addAsAliasLabel": "Adicionar \"{name}\" como alias no beneficiário destino",
+    "willLabel": "Isto irá:",
+    "willMoveTransactions": "Mover todas as transações de \"{source}\" para \"{target}\"",
+    "willAddAlias": "Adicionar \"{source}\" como alias para que futuras importações sejam associadas automaticamente",
+    "willDelete": "Excluir o beneficiário \"{source}\"",
+    "merging": "Unindo...",
+    "mergeButton": "Unir Beneficiário",
+    "toasts": {
+      "merged": "Unido em \"{target}\": {details}",
+      "transactionsMigrated": "{count, plural, one {# transação migrada} other {# transações migradas}}",
+      "aliasAdded": "alias adicionado",
+      "sourceDeleted": "\"{name}\" excluído",
+      "failed": "Falha ao unir beneficiários"
+    }
+  },
+  "categoryAutoAssign": {
+    "title": "Atribuir Categorias Padrão Automaticamente",
+    "howItWorksTitle": "Como funciona",
+    "howItWorksBody": "Esta funcionalidade analisa o histórico de transações para sugerir categorias padrão para os beneficiários. Verifica qual a categoria mais utilizada para cada beneficiário e sugere a sua atribuição como categoria padrão para futuras transações. É sempre possível substituir a categoria padrão.",
+    "minTransactionsLabel": "Transações Mínimas: {count}",
+    "minTransactionsHelp": "Considerar apenas beneficiários com pelo menos este número de transações",
+    "matchPercentageLabel": "Percentagem de Correspondência de Categoria: {percent}%",
+    "matchPercentageHelp": "A categoria deve ser utilizada em pelo menos esta percentagem de transações",
+    "onlyWithoutCategoryLabel": "Apenas beneficiários sem categoria padrão",
+    "previewButton": "Pré-visualizar Sugestões",
+    "loading": "Carregando...",
+    "suggestionsHeader": "Sugestões ({count} encontradas)",
+    "selectAll": "Selecionar tudo",
+    "selectNone": "Desselecionar tudo",
+    "empty": {
+      "line1": "Nenhum beneficiário corresponde aos critérios atuais.",
+      "line2": "Tente ajustar as configurações acima."
+    },
+    "columns": {
+      "payee": "Beneficiário",
+      "suggestedCategory": "Categoria Sugerida",
+      "match": "Correspondência"
+    },
+    "selectedCount": "{count, plural, one {# beneficiário selecionado} other {# beneficiários selecionados}}",
+    "applyButton": "Aplicar a {count, plural, one {# Beneficiário} other {# Beneficiários}}",
+    "applying": "Aplicando...",
+    "toasts": {
+      "selectAtLeastOne": "Selecione pelo menos um beneficiário para atualizar",
+      "updated": "{count, plural, one {# beneficiário atualizado} other {# beneficiários atualizados}}",
+      "loadFailed": "Falha ao carregar sugestões",
+      "applyFailed": "Falha ao aplicar atribuições de categorias"
+    }
+  },
+  "deactivateUnused": {
+    "title": "Desativar Beneficiários Não Utilizados",
+    "howItWorksTitle": "Como funciona",
+    "howItWorksBody": "Esta funcionalidade encontra beneficiários raramente utilizados e desativa-os. Os beneficiários desativados não aparecem nas listas de beneficiários ao criar transações, mas as suas transações históricas são preservadas. É possível reativar um beneficiário a qualquer momento a partir da lista de beneficiários.",
+    "maxTransactionsLabel": "{count, plural, one {# ou menos transação} other {# ou menos transações}}",
+    "maxTransactionsHelp": "Incluir apenas beneficiários com este número de transações ou menos",
+    "monthsUnusedLabel": "Último uso há mais de {label}",
+    "monthsUnusedHelp": "Incluir apenas beneficiários não utilizados desde há este tempo (ou nunca utilizados)",
+    "previewButton": "Pré-visualizar Beneficiários Não Utilizados",
+    "loading": "Carregando...",
+    "candidatesHeader": "Candidatos ({count} encontrados)",
+    "selectAll": "Selecionar tudo",
+    "selectNone": "Desselecionar tudo",
+    "neverUsed": "Nunca utilizado",
+    "empty": {
+      "line1": "Nenhum beneficiário corresponde aos critérios atuais.",
+      "line2": "Tente ajustar as configurações acima."
+    },
+    "columns": {
+      "payee": "Beneficiário",
+      "transactions": "Transações",
+      "lastUsed": "Último Uso"
+    },
+    "selectedCount": "{count, plural, one {# beneficiário selecionado} other {# beneficiários selecionados}}",
+    "deactivateButton": "Desativar {count, plural, one {# Beneficiário} other {# Beneficiários}}",
+    "deactivating": "Desativando...",
+    "toasts": {
+      "selectAtLeastOne": "Selecione pelo menos um beneficiário para desativar",
+      "deactivated": "{count, plural, one {# beneficiário desativado} other {# beneficiários desativados}}",
+      "loadFailed": "Falha ao carregar pré-visualização",
+      "deactivateFailed": "Falha ao desativar beneficiários"
+    }
+  },
+  "reactivate": {
+    "title": "Reativar Beneficiário?",
+    "message": "O beneficiário \"{name}\" foi desativado anteriormente. Deseja reativá-lo para que apareça novamente nas listas de beneficiários?",
+    "keepInactiveButton": "Não, Manter Inativo",
+    "reactivateButton": "Reativar",
+    "reactivating": "Reativando..."
+  },
+  "aliases": {
+    "heading": "Aliases",
+    "description": "Os aliases associam nomes de beneficiários importados a este beneficiário. Use * como caractere curinga (ex: \"STARBUCKS*\"). Sem distinção entre maiúsculas e minúsculas.",
+    "loading": "Carregando...",
+    "noAliases": "Sem aliases configurados",
+    "removeTitle": "Remover alias",
+    "removeButton": "Remover",
+    "addButton": "Adicionar",
+    "adding": "Adicionando...",
+    "placeholder": "ex: STARBUCKS #*",
+    "toasts": {
+      "alreadyAdded": "Alias \"{alias}\" já adicionado",
+      "added": "Alias \"{alias}\" adicionado",
+      "removed": "Alias \"{alias}\" removido",
+      "loadFailed": "Falha ao carregar aliases",
+      "addFailed": "Falha ao adicionar alias",
+      "removeFailed": "Falha ao remover alias"
+    }
+  },
+  "selectCategoryPlaceholder": "Selecionar categoria...",
+  "validation": {
+    "nameRequired": "O nome do beneficiário é obrigatório"
+  }
+}

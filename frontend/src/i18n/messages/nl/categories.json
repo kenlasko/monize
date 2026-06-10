@@ -1,0 +1,80 @@
+{
+  "page": {
+    "title": "Categorieën",
+    "subtitle": "Organiseer je transacties met aangepaste categorieën",
+    "newButton": "+ Nieuwe categorie",
+    "searchPlaceholder": "Categorieën zoeken...",
+    "filterAll": "Alle ({count})",
+    "filterExpenses": "Uitgaven ({count})",
+    "filterIncome": "Inkomsten ({count})",
+    "modalTitleNew": "Nieuwe categorie",
+    "modalTitleEdit": "Categorie bewerken",
+    "countSingle": "1 categorie",
+    "countPlural": "{count} categorieën",
+    "loadingText": "Categorieën laden...",
+    "summaryTotal": "Totaal categorieën",
+    "summaryIncome": "Inkomstencategorieën",
+    "summaryExpense": "Uitgavencategorieën",
+    "summaryTopLevel": "Hoofdniveau"
+  },
+  "empty": {
+    "heading": "Nog geen categorieën",
+    "description": "Categorieën helpen je transacties te organiseren. Begin door onze standaardset te importeren of maak je eigen categorieën aan.",
+    "importButton": "Standaardcategorieën importeren",
+    "createButton": "Zelf aanmaken",
+    "hint": "De standaardset bevat veelgebruikte inkomsten- en uitgavencategorieën met subcategorieën"
+  },
+  "toasts": {
+    "created": "Categorie succesvol aangemaakt",
+    "updated": "Categorie succesvol bijgewerkt",
+    "deleted": "Categorie succesvol verwijderd",
+    "cannotDeleteSystem": "Systeemcategorieën kunnen niet worden verwijderd",
+    "importSuccess": "Succesvol {count} categorieën geïmporteerd"
+  },
+  "form": {
+    "nameLabel": "Categorienaam",
+    "parentLabel": "Bovenliggende categorie",
+    "noParent": "Geen bovenliggende (hoofdniveau)",
+    "typeLabel": "Type",
+    "typeExpense": "Uitgaven",
+    "typeIncome": "Inkomsten",
+    "typeInherited": "Type overgenomen van bovenliggende",
+    "colourLabel": "Kleur",
+    "colourInherit": "Overnemen van bovenliggende",
+    "colourNone": "Geen kleur",
+    "colourInheritedFrom": "Kleur overgenomen van bovenliggende ({name})",
+    "descriptionLabel": "Beschrijving (optioneel)",
+    "submitCreate": "Categorie aanmaken",
+    "submitUpdate": "Categorie bijwerken"
+  },
+  "list": {
+    "emptyHeading": "Geen categorieën",
+    "emptyDescription": "Begin door een nieuwe categorie aan te maken.",
+    "colName": "Naam",
+    "colType": "Type",
+    "colCount": "Aantal",
+    "colDescription": "Beschrijving",
+    "colActions": "Acties",
+    "badgeIncome": "Inkomsten",
+    "badgeExpense": "Uitgaven",
+    "systemBadge": "(Systeem)",
+    "inheritedColorTitle": "Overgenomen van bovenliggende",
+    "viewTransactionsTitle": "Transacties in deze categorie bekijken",
+    "densityToggleTitle": "Rijdichtheid wisselen",
+    "densityNormal": "Normaal",
+    "densityCompact": "Compact",
+    "densityDense": "Dicht"
+  },
+  "deleteDialog": {
+    "title": "Verwijder \"{name}\"?",
+    "checkingUsage": "Gebruik controleren...",
+    "usedBy": "Deze categorie wordt gebruikt door {count, plural, one {# item} other {# items}} (transacties en/of geplande rekeningen & stortingen).",
+    "reassignLabel": "Opnieuw toewijzen aan:",
+    "leaveUncategorized": "Zonder categorie laten",
+    "safeToDelete": "Deze categorie is niet in gebruik en kan veilig worden verwijderd.",
+    "cannotUndo": "Deze actie kan niet ongedaan worden gemaakt."
+  },
+  "validation": {
+    "nameRequired": "Categorienaam is verplicht"
+  }
+}

@@ -1,0 +1,829 @@
+{
+  "language": {
+    "label": "Taal",
+    "helpText": "Kies de taal die door de hele Monize-interface wordt gebruikt. Getal- en datumopmaak worden hieronder apart ingesteld.",
+    "saved": "Taal bijgewerkt"
+  },
+  "profile": {
+    "heading": "Profiel",
+    "firstNameLabel": "Voornaam",
+    "firstNamePlaceholder": "Voer jouw voornaam in",
+    "lastNameLabel": "Achternaam",
+    "lastNamePlaceholder": "Voer jouw achternaam in",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "Voer jouw e-mailadres in",
+    "currentPasswordLabel": "Huidig wachtwoord",
+    "currentPasswordPlaceholder": "Vereist om e-mail te wijzigen",
+    "passwordRequired": "Huidig wachtwoord is vereist om e-mail te wijzigen",
+    "noChanges": "Geen wijzigingen om op te slaan",
+    "passwordConfirmNote": "Wachtwoordbevestiging is vereist bij het wijzigen van jouw e-mailadres.",
+    "saveButton": "Profiel opslaan",
+    "savingButton": "Opslaan...",
+    "toasts": {
+      "success": "Profiel succesvol bijgewerkt"
+    },
+    "validation": {
+      "firstNameMax": "Voornaam mag maximaal 100 tekens bevatten",
+      "lastNameMax": "Achternaam mag maximaal 100 tekens bevatten",
+      "emailRequired": "E-mail is vereist",
+      "emailInvalid": "Voer een geldig e-mailadres in",
+      "emailMax": "E-mail mag maximaal 254 tekens bevatten",
+      "passwordMax": "Wachtwoord mag maximaal 128 tekens bevatten"
+    }
+  },
+  "security": {
+    "heading": "Beveiliging",
+    "ssoNotice": "Jouw account maakt gebruik van Single Sign-On (SSO) voor authenticatie. Het onderstaande wachtwoord wordt niet gebruikt voor inloggen, maar kan als reservekopie worden bewaard als SSO wordt uitgeschakeld.",
+    "currentPasswordLabel": "Huidig wachtwoord",
+    "currentPasswordPlaceholder": "Voer huidig wachtwoord in",
+    "newPasswordLabel": "Nieuw wachtwoord",
+    "newPasswordPlaceholder": "Voer nieuw wachtwoord in",
+    "confirmPasswordLabel": "Bevestig nieuw wachtwoord",
+    "confirmPasswordPlaceholder": "Bevestig nieuw wachtwoord",
+    "changePasswordButton": "Wachtwoord wijzigen",
+    "changingPasswordButton": "Wijzigen...",
+    "toasts": {
+      "passwordChanged": "Wachtwoord succesvol gewijzigd"
+    },
+    "twoFactor": {
+      "heading": "Tweefactorauthenticatie",
+      "ssoUnavailable": "Tweefactorauthenticatie is niet beschikbaar voor SSO-accounts. Authenticatiebeveiliging wordt beheerd door jouw identiteitsprovider.",
+      "enabledBadge": "Ingeschakeld",
+      "enabledDescription": "Jouw account is beveiligd met TOTP-verificatie.",
+      "requiredByAdmin": "Vereist door beheerder",
+      "addLayerDescription": "Voeg een extra beveiligingslaag toe aan jouw account.",
+      "enableButton": "2FA inschakelen",
+      "disableButton": "2FA uitschakelen",
+      "disableModal": {
+        "title": "Tweefactorauthenticatie uitschakelen",
+        "description": "Voer jouw huidige 6-cijferige code in om het uitschakelen van 2FA te bevestigen.",
+        "verificationCodeLabel": "Verificatiecode",
+        "disablingButton": "Uitschakelen...",
+        "toasts": {
+          "disabled": "Tweefactorauthenticatie uitgeschakeld"
+        }
+      }
+    },
+    "backupCodes": {
+      "heading": "Reservecodes",
+      "description": "Gebruik reservecodes om in te loggen als je geen toegang meer hebt tot jouw authenticator-app.",
+      "regenerateButton": "Codes opnieuw genereren",
+      "regenerateModal": {
+        "title": "Reservecodes opnieuw genereren",
+        "description": "Voer jouw huidige 6-cijferige code in om het opnieuw genereren van reservecodes te bevestigen. Dit maakt alle bestaande codes ongeldig.",
+        "verificationCodeLabel": "Verificatiecode",
+        "regeneratingButton": "Genereren...",
+        "regenerateButton": "Opnieuw genereren"
+      }
+    },
+    "trustedDevices": {
+      "heading": "Vertrouwde apparaten",
+      "revokeAllButton": "Alle intrekken",
+      "noDevices": "Geen vertrouwde apparaten. Wanneer je \"Niet opnieuw vragen op deze browser\" aanvinkt tijdens 2FA-aanmelding, verschijnt het apparaat hier.",
+      "currentBadge": "Huidig",
+      "revokeButton": "Intrekken",
+      "revokeAllModal": {
+        "title": "Alle vertrouwde apparaten intrekken",
+        "description": "Dit verwijdert alle vertrouwde apparaten. Je moet jouw 2FA-code invoeren bij jouw volgende aanmelding vanaf elk apparaat."
+      },
+      "toasts": {
+        "revoked": "Apparaat ingetrokken",
+        "revokedAll": "{count} apparaat/apparaten ingetrokken"
+      }
+    },
+    "validation": {
+      "currentPasswordRequired": "Huidig wachtwoord is vereist",
+      "passwordMax": "Wachtwoord mag maximaal 128 tekens bevatten",
+      "confirmRequired": "Bevestig jouw nieuwe wachtwoord",
+      "newPasswordsNoMatch": "Nieuwe wachtwoorden komen niet overeen"
+    }
+  },
+  "preferences": {
+    "heading": "Voorkeuren",
+    "themeLabel": "Thema",
+    "defaultCurrencyLabel": "Standaardvaluta",
+    "preferredExchangesLabel": "Voorkeursbeurzen (voor effectopzoekingen)",
+    "preferredExchangesHelp": "Selecteer maximaal 3 beurzen in volgorde van prioriteit. Deze worden gebruikt bij het opzoeken van effecten.",
+    "exchangePriorityPlaceholder": "Prioriteit {n}",
+    "defaultQuoteProviderLabel": "Standaard aandelenkoersprovider",
+    "defaultQuoteProviderHelp": "Gebruikt wanneer een effect geen provideroverride heeft. Als de gekozen provider uitvalt, probeert Monize automatisch de andere.",
+    "msnNoIntradayNote": "Opmerking: MSN Money levert geen intraday-koersgegevens, dus de bereiken 1D / 1W / 1M in het diagram Portefeuillewaarde over tijd zijn niet beschikbaar voor MSN-bijgehouden posities.",
+    "msnNotConfigured": "MSN is geselecteerd als de standaard koersprovider, maar MSN_API_KEY is niet geconfigureerd op de server. MSN-koersen zullen mislukken totdat een beheerder de omgevingsvariabele instelt en de backend opnieuw opstart.",
+    "dateFormatLabel": "Datumnotatie",
+    "numberFormatLabel": "Getalnotatie",
+    "timezoneLabel": "Tijdzone",
+    "timezonePlaceholder": "Tijdzones zoeken...",
+    "weekStartsOnLabel": "Week begint op",
+    "showCreatedAtLabel": "Aanmaakdatum weergeven in transactieformulieren",
+    "showCreatedAtTooltip": "Toont de datum en tijd waarop een transactie oorspronkelijk is aangemaakt op transactieformulieren. Dit staat los van de transactiedatum en kan helpen bij te houden wanneer een invoer werkelijk aan Monize is toegevoegd.",
+    "timeFormatLabel": "Tijdnotatie",
+    "recentTransactionsLabel": "Recente transacties in snel invullen",
+    "recentTransactionsHelp": "Aantal vermeldingen dat wordt weergegeven in de popover van de geschiedenis-knop naast het veld Begunstigde op transactieformulieren.",
+    "saveButton": "Voorkeuren opslaan",
+    "savingButton": "Opslaan...",
+    "toasts": {
+      "saved": "Voorkeuren opgeslagen"
+    },
+    "browserLocale": "Browserinstelling gebruiken (automatisch detecteren)",
+    "browserTimezonePrefix": "Browsertijdzone gebruiken (automatisch gedetecteerd als {tz})",
+    "numberFormatOptions": {
+      "browser": "Browserinstelling gebruiken (automatisch detecteren)",
+      "enUS": "English (US) - 1,234.56",
+      "enGB": "English (UK) - 1,234.56",
+      "deDE": "German - 1.234,56",
+      "frFR": "French - 1 234,56"
+    },
+    "weekDays": {
+      "sunday": "Zondag",
+      "monday": "Maandag",
+      "tuesday": "Dinsdag",
+      "wednesday": "Woensdag",
+      "thursday": "Donderdag",
+      "friday": "Vrijdag",
+      "saturday": "Zaterdag"
+    },
+    "themeOptions": {
+      "system": "Systeem (apparaatinstelling volgen)",
+      "light": "Licht",
+      "dark": "Donker"
+    },
+    "colorThemeLabel": "Kleurthema",
+    "colorThemeOptions": {
+      "default": "Standaard",
+      "latte": "Latte",
+      "msmoney": "MS Money",
+      "newspaper": "Newspaper",
+      "burgundy": "Burgundy",
+      "nord": "Nord",
+      "forest": "Forest",
+      "solarized": "Solarized",
+      "gruvbox": "Gruvbox",
+      "dracula": "Dracula",
+      "tokyonight": "Tokyo Night",
+      "rosepine": "Rosé Pine",
+      "midnight": "Midnight",
+      "highcontrast": "Hoog contrast",
+      "colorblind": "Kleurenblindveilig"
+    },
+    "timezoneBrowserOption": "Browsertijdzone gebruiken (automatisch gedetecteerd als {tz})"
+  },
+  "notifications": {
+    "heading": "Meldingen",
+    "smtpNotConfigured": "E-mailmeldingen zijn niet beschikbaar. SMTP is niet geconfigureerd door de beheerder.",
+    "emailNotificationsTitle": "E-mailmeldingen",
+    "emailNotificationsDescription": "Ontvang e-mailherinneringen voor aankomende rekeningen en budgetwaarschuwingen",
+    "budgetNotificationsHeading": "Budgetmeldingen",
+    "weeklyBudgetDigestTitle": "Wekelijks budgetoverzicht",
+    "weeklyBudgetDigestDescription": "Ontvang een wekelijks overzicht van budgetwaarschuwingen en -status",
+    "toggleBudgetDigestLabel": "Budgetoverzicht aan/uit",
+    "digestDayLabel": "Dag van overzicht",
+    "digestDayAriaLabel": "Dag van budgetoverzicht",
+    "mondayOption": "Maandag",
+    "fridayOption": "Vrijdag",
+    "immediateAlertsNote": "Kritieke budgetwaarschuwingen (budget overschreden, inkortentekort) worden direct verzonden, ongeacht de overzichtsinstellingen.",
+    "sendTestEmailDescription": "Verstuur een teste-mail om te controleren of jouw meldingen werken.",
+    "sendTestEmailButton": "Teste-mail versturen",
+    "sendingTestEmailButton": "Versturen...",
+    "toasts": {
+      "emailEnabled": "E-mailmeldingen ingeschakeld",
+      "emailDisabled": "E-mailmeldingen uitgeschakeld",
+      "digestEnabled": "Budgetoverzicht ingeschakeld",
+      "digestDisabled": "Budgetoverzicht uitgeschakeld",
+      "digestDaySet": "Dag van budgetoverzicht ingesteld op {day}",
+      "testEmailSent": "Teste-mail verzonden! Controleer jouw inbox."
+    }
+  },
+  "help": {
+    "heading": "Help & ondersteuning",
+    "description": "Vind documentatie, meld problemen of doe mee aan de discussie.",
+    "github": {
+      "label": "GitHub",
+      "description": "Bekijk de broncode en geef het project een ster."
+    },
+    "openIssue": {
+      "label": "Probleem melden",
+      "description": "Meld een bug of vraag een functie aan."
+    },
+    "discussions": {
+      "label": "Discussies",
+      "description": "Stel vragen en deel ideeën met de community."
+    },
+    "wiki": {
+      "label": "Wiki",
+      "description": "Blader door handleidingen en documentatie."
+    }
+  },
+  "dangerZone": {
+    "heading": "Gevarenzone",
+    "deleteData": {
+      "heading": "Gegevens verwijderen",
+      "description": "Verwijder financiële gegevens uit jouw account. Dit kan niet ongedaan worden gemaakt.",
+      "openButton": "Gegevens verwijderen...",
+      "alwaysDeletedHeading": "Het volgende wordt altijd verwijderd:",
+      "optionalHeading": "Optioneel ook verwijderen:",
+      "accountsOption": "Rekeningen",
+      "categoriesOption": "Categorieën",
+      "payeesOption": "Begunstigden",
+      "currencyPreferencesOption": "Valutavoorkeuren",
+      "balanceResetNote": "Rekeningsaldi worden teruggezet naar het beginsaldo.",
+      "oidcConfirmLabel": "Verifieer opnieuw via jouw identiteitsprovider om te bevestigen:",
+      "passwordConfirmLabel": "Voer jouw wachtwoord in om te bevestigen:",
+      "passwordPlaceholder": "Voer jouw wachtwoord in",
+      "oidcReauthButton": "Opnieuw verifiëren en verwijderen",
+      "deletingButton": "Verwijderen...",
+      "confirmButton": "Verwijdering van gegevens bevestigen",
+      "toasts": {
+        "success": "{count} records succesvol verwijderd"
+      }
+    },
+    "deleteAccount": {
+      "heading": "Account verwijderen",
+      "description": "Verwijder jouw account en alle bijbehorende gegevens permanent. Dit kan niet ongedaan worden gemaakt.",
+      "delegateNotice": {
+        "title": "Je bent een gedelegeerde van een ander account.",
+        "body": "Het verwijderen van jouw account verwijdert jouw eigen gegevens, maar jouw aanmelding en de gedeelde toegang die anderen je hebben verleend blijven behouden zodat de delegatie blijft werken. Om die toegang in te trekken, vraag de eigenaar eerst jou te verwijderen uit diens lijst met gedeelde toegang."
+      },
+      "openButton": "Account verwijderen",
+      "typeDeleteLabel": "Typ DELETE om accountverwijdering te bevestigen:",
+      "typeDeletePlaceholder": "Typ DELETE",
+      "enterPasswordLabel": "Voer jouw wachtwoord in:",
+      "enterPasswordPlaceholder": "Voer jouw wachtwoord in",
+      "deletingButton": "Verwijderen...",
+      "confirmButton": "Verwijdering bevestigen",
+      "toasts": {
+        "downgraded": "Jouw eigen gegevens zijn verwijderd. Jouw aanmelding en gedeelde toegang blijven behouden zodat de delegatie in stand blijft.",
+        "deleted": "Account verwijderd"
+      },
+      "errors": {
+        "typeDelete": "Typ DELETE om te bevestigen",
+        "passwordRequired": "Voer jouw wachtwoord in om te bevestigen"
+      }
+    }
+  },
+  "apiAccess": {
+    "heading": "API-toegang",
+    "description": "Maak persoonlijke toegangstokens aan om externe AI-tools zoals Claude Desktop via MCP te verbinden.",
+    "createTokenButton": "Token aanmaken",
+    "mcpServerUrlLabel": "MCP-server-URL",
+    "mcpServerUrlHelp": "Gebruik deze URL bij het configureren van MCP-clients zoals Claude Code of Claude Desktop.",
+    "copyButton": "Kopiëren",
+    "copiedButton": "Gekopieerd",
+    "noTokens": "Nog geen API-tokens. Maak er een aan om te beginnen.",
+    "tokenPrefix": "Laatst gebruikt",
+    "expires": "Vervalt",
+    "created": "Aangemaakt",
+    "lastUsed": "Laatst gebruikt",
+    "revokeButton": "Intrekken",
+    "revokeModal": {
+      "title": "Token intrekken",
+      "message": "Dit token werkt onmiddellijk niet meer. Alle MCP-verbindingen die er gebruik van maken worden verbroken.",
+      "confirmLabel": "Intrekken"
+    },
+    "createModal": {
+      "title": "API-token aanmaken",
+      "tokenNameLabel": "Tokennaam",
+      "tokenNamePlaceholder": "bijv. Claude Desktop",
+      "scopesLabel": "Bereiken",
+      "expirationLabel": "Vervaldatum",
+      "creatingButton": "Aanmaken...",
+      "createButton": "Token aanmaken",
+      "scopes": {
+        "read": {
+          "label": "Lezen",
+          "description": "Rekeningen, transacties en categorieën bekijken"
+        },
+        "write": {
+          "label": "Schrijven",
+          "description": "Transacties, begunstigden en categorieën aanmaken"
+        },
+        "reports": {
+          "label": "Rapporten",
+          "description": "Financiële rapporten en analyses genereren"
+        }
+      },
+      "expiry": {
+        "none": "Geen vervaldatum",
+        "d30": "30 dagen",
+        "d90": "90 dagen",
+        "y1": "1 jaar"
+      },
+      "validation": {
+        "nameRequired": "Tokennaam is vereist",
+        "nameMax": "Tokennaam mag maximaal 100 tekens bevatten"
+      }
+    },
+    "createdModal": {
+      "title": "Token aangemaakt",
+      "warningNote": "Kopieer dit token nu. Je kunt het daarna niet meer inzien.",
+      "doneButton": "Gereed"
+    },
+    "toasts": {
+      "copied": "Token gekopieerd naar klembord",
+      "mcpUrlCopied": "MCP-URL gekopieerd naar klembord",
+      "revoked": "Token ingetrokken",
+      "selectScope": "Selecteer ten minste één bereik",
+      "copyTokenFailed": "Kopiëren van token mislukt",
+      "copyUrlFailed": "Kopiëren van URL mislukt"
+    },
+    "relative": {
+      "never": "Nooit",
+      "today": "Vandaag",
+      "yesterday": "Gisteren",
+      "daysAgo": "{count} dagen geleden",
+      "monthsAgo": "{count} maanden geleden"
+    }
+  },
+  "autoBackup": {
+    "heading": "Automatische back-up",
+    "description": "Maak automatisch een back-up van jouw gegevens naar een map op een schema. Omdat Monize in Docker draait, moet je een hostmap als volume in de container koppelen (bijv. -v /host/backups:/backups).",
+    "loadingText": "Laden...",
+    "enableLabel": "Automatische back-ups inschakelen",
+    "backupFolderLabel": "Back-upmap",
+    "backupFolderPlaceholder": "/backups",
+    "browseButton": "Bladeren...",
+    "validateButton": "Valideren",
+    "validatingButton": "Valideren...",
+    "folderValid": "Map is geldig en beschrijfbaar",
+    "selectThisFolder": "Deze map selecteren",
+    "noSubdirectories": "Geen submappen",
+    "frequencyLabel": "Back-upfrequentie",
+    "backupTimeLabel": "Back-uptijd ({timezone})",
+    "backupTimeHelpInterval": "De eerste back-up van de dag start op dit tijdstip ({timezone}). Volgende back-ups volgen op het ingestelde interval.",
+    "backupTimeHelpDaily": "Tijdstip waarop de dagelijkse back-up wordt uitgevoerd in jouw lokale tijdzone ({timezone}).",
+    "retention": {
+      "heading": "Bewaarbeleid",
+      "description": "Stel in hoeveel back-ups je wilt bewaren. Oudere back-ups buiten deze limieten worden automatisch verwijderd.",
+      "dailyLabel": "Dagelijkse back-ups",
+      "dailyHelp": "Meest recente back-ups om te bewaren",
+      "weeklyLabel": "Wekelijkse back-ups",
+      "weeklyHelp": "Één per week bewaard",
+      "monthlyLabel": "Maandelijkse back-ups",
+      "monthlyHelp": "Één per maand bewaard"
+    },
+    "status": {
+      "heading": "Status",
+      "lastBackup": "Laatste back-up",
+      "nextBackup": "Volgende back-up",
+      "error": "Fout",
+      "success": "Geslaagd",
+      "failed": "Mislukt"
+    },
+    "saveButton": "Instellingen opslaan",
+    "savingButton": "Opslaan...",
+    "runNowButton": "Nu back-up uitvoeren",
+    "runningButton": "Back-up uitvoeren...",
+    "toasts": {
+      "saved": "Instellingen voor automatische back-up opgeslagen",
+      "backupCreated": "Back-up aangemaakt: {filename}",
+      "folderValid": "Map is geldig en beschrijfbaar",
+      "loadFailed": "Laden van instellingen voor automatische back-up mislukt",
+      "saveFailed": "Opslaan van instellingen mislukt",
+      "runFailed": "Uitvoeren van back-up mislukt",
+      "browseFailed": "Bladeren door mappen mislukt"
+    },
+    "folderErrors": {
+      "required": "Mappad is vereist",
+      "validationFailed": "Mapvalidatie mislukt",
+      "validationError": "Validatie mislukt"
+    },
+    "frequencyOptions": {
+      "every6hours": "Elke 6 uur",
+      "every12hours": "Elke 12 uur",
+      "daily": "Dagelijks",
+      "weekly": "Wekelijks"
+    }
+  },
+  "backupRestore": {
+    "heading": "Back-up en herstel",
+    "encryption": {
+      "heading": "Back-upversleuteling",
+      "descriptionOidc": "Versleutel handmatige en automatische back-ups met een speciaal back-upwachtwoord dat je hier instelt. Het wachtwoord is vereist voor herstel.",
+      "descriptionLocal": "Versleutel handmatige en automatische back-ups met jouw inlogwachtwoord. Het wachtwoord is vereist voor herstel.",
+      "loading": "Laden...",
+      "enabledBadge": "Ingeschakeld",
+      "changePasswordButton": "Back-upwachtwoord wijzigen",
+      "disableButton": "Uitschakelen",
+      "setPasswordButton": "Back-upwachtwoord instellen",
+      "enableEncryptedButton": "Versleutelde back-ups inschakelen",
+      "setupModal": {
+        "titleOidc": "Back-upwachtwoord instellen",
+        "titleLocal": "Versleutelde back-ups inschakelen",
+        "descriptionOidc": "Kies een wachtwoord dat wordt gebruikt om jouw back-ups te versleutelen. Bewaar het op een veilige plek -- je hebt het nodig voor herstel.",
+        "descriptionLocal": "Bevestig jouw inlogwachtwoord. Het wordt gebruikt om alle back-ups (handmatig en automatisch) te versleutelen.",
+        "placeholderOidc": "Nieuw back-upwachtwoord (12+ tekens)",
+        "placeholderLocal": "Jouw inlogwachtwoord",
+        "savingButton": "Opslaan...",
+        "confirmButton": "Bevestigen"
+      },
+      "toasts": {
+        "enabled": "Versleutelde back-ups ingeschakeld",
+        "disabled": "Versleutelde back-ups uitgeschakeld"
+      }
+    },
+    "export": {
+      "heading": "Back-up aanmaken",
+      "description": "Download een volledige back-up van jouw financiële gegevens. Dit omvat rekeningen, transacties, categorieën, begunstigden, budgetten, beleggingen en alle andere gebruikersgegevens.",
+      "downloadButton": "Back-up downloaden",
+      "creatingButton": "Back-up aanmaken...",
+      "exportPasswordModal": {
+        "title": "Back-up versleutelen",
+        "description": "Voer het wachtwoord in om deze back-up te versleutelen. Je hebt het nodig voor herstel.",
+        "placeholderOidc": "Back-upwachtwoord",
+        "placeholderLocal": "Inlogwachtwoord",
+        "encryptingButton": "Versleutelen...",
+        "downloadButton": "Downloaden"
+      },
+      "toasts": {
+        "success": "Back-up succesvol gedownload"
+      }
+    },
+    "restore": {
+      "heading": "Herstellen vanaf back-up",
+      "description": "Vervang al jouw huidige gegevens door gegevens uit een eerder geëxporteerd back-upbestand. Dit overschrijft jouw bestaande gegevens permanent.",
+      "openButton": "Herstellen vanaf back-up...",
+      "warning": "Waarschuwing: Dit verwijdert al jouw huidige gegevens en vervangt ze door de back-upinhoud. Deze actie kan niet ongedaan worden gemaakt.",
+      "selectFileLabel": "Selecteer back-upbestand",
+      "encryptedBackupLabel": "Deze back-up is versleuteld. Voer het back-upwachtwoord in waarmee deze is aangemaakt:",
+      "backupPasswordPlaceholder": "Back-upwachtwoord",
+      "oidcConfirmLabel": "Verifieer opnieuw via jouw identiteitsprovider om te bevestigen:",
+      "passwordConfirmLabel": "Voer jouw accountwachtwoord in om te bevestigen:",
+      "passwordPlaceholder": "Voer jouw wachtwoord in",
+      "oidcRestoreButton": "Opnieuw verifiëren en herstellen",
+      "restoringButton": "Herstellen...",
+      "confirmRestoreButton": "Herstel bevestigen",
+      "toasts": {
+        "pleaseSelectFile": "Selecteer een back-upbestand",
+        "pleaseEnterPassword": "Voer jouw wachtwoord in om te bevestigen"
+      }
+    },
+    "restoreResult": {
+      "title": "Herstel voltooid",
+      "description": "Jouw gegevens zijn succesvol hersteld. Hier is een overzicht van wat is hersteld:",
+      "totalRecords": "Totaal records",
+      "doneButton": "Gereed"
+    }
+  },
+  "sharedAccess": {
+    "description": "Gedelegeerden loggen in met hun eigen inloggegevens en zien jouw wachtwoord nooit. Ze zien alleen de rekeningen en secties die je ze verleent.",
+    "addDelegateButton": "Gedelegeerde toevoegen",
+    "loading": "Laden...",
+    "noDelegates": "Nog geen gedelegeerden.",
+    "statusLabel": "Status: {status}",
+    "sectionsLabel": "Secties: {count}",
+    "accountsLabel": "Rekeningen: {count}",
+    "sharedDataLabel": "Gedeelde gegevens: {count}",
+    "editAccessButton": "Toegang bewerken",
+    "resetPasswordButton": "Wachtwoord opnieuw instellen",
+    "resetPasswordDisabledTitle": "Deze persoon beheert zijn eigen wachtwoord (hij heeft een eigen Monize-account of gedelegeerde toegang elders).",
+    "removeButton": "Verwijderen",
+    "createModal": {
+      "title": "Gedelegeerde toevoegen",
+      "description": "Verleen een andere persoon beperkte toegang tot jouw rekeningen.",
+      "emailLabel": "E-mail",
+      "emailPlaceholder": "E-mail van gedelegeerde",
+      "firstNameLabel": "Voornaam",
+      "firstNamePlaceholder": "Voornaam (optioneel)",
+      "lastNameLabel": "Achternaam",
+      "lastNamePlaceholder": "Achternaam (optioneel)",
+      "existingAccountNotice": "Deze persoon heeft al een Monize-aanmelding. Ze behouden hun eigen inloggegevens en krijgen gewoon de aanvullende gedeelde toegang -- geen wachtwoord of uitnodiging nodig.",
+      "sendInviteLabel": "Een e-mailuitnodiging sturen in plaats van een wachtwoord instellen",
+      "passwordLabel": "Wachtwoord",
+      "passwordPlaceholder": "Stel een wachtwoord in",
+      "submitButton": "Gedelegeerde toevoegen"
+    },
+    "revokeDialog": {
+      "title": "Gedelegeerde verwijderen",
+      "message": "Deze gedelegeerde verwijderen? Ze verliezen toegang tot jouw account. Als ze geen andere gedeelde toegang hebben en dit e-mailadres nooit hebben geclaimd als eigen Monize-account, wordt hun door de eigenaar beheerde aanmelding ook verwijderd.",
+      "removingButton": "Verwijderen...",
+      "removeButton": "Verwijderen"
+    },
+    "tempPasswordModal": {
+      "title": "Tijdelijk wachtwoord",
+      "description": "Deel dit veilig met de gedelegeerde. Ze worden gevraagd het bij eerste aanmelding te wijzigen. Het wordt niet opnieuw getoond.",
+      "copyButton": "Kopiëren",
+      "copiedButton": "Gekopieerd",
+      "doneButton": "Gereed"
+    },
+    "toasts": {
+      "created": "Gedelegeerde aangemaakt",
+      "createdWithTempPassword": "Gedelegeerde aangemaakt. Tijdelijk wachtwoord: {password}",
+      "invited": "Uitnodigingse-mail verzonden",
+      "removed": "Gedelegeerde verwijderd"
+    },
+    "errors": {
+      "setPasswordOrInvite": "Stel een wachtwoord in of stuur een e-mailuitnodiging.",
+      "loadFailed": "Laden van gedeelde toegang mislukt",
+      "createFailed": "Aanmaken van gedelegeerde mislukt",
+      "revokeFailed": "Intrekken van gedelegeerde mislukt",
+      "resetPasswordFailed": "Opnieuw instellen van wachtwoord mislukt",
+      "copyFailed": "Kopiëren naar klembord mislukt"
+    }
+  },
+  "delegateAccessModal": {
+    "title": "Toegang bewerken",
+    "tabs": {
+      "accounts": "Rekeningen",
+      "sections": "Secties",
+      "shared": "Gedeelde gegevens"
+    },
+    "sections": {
+      "description": "Verleen alleen-lezentoegang tot hele appsecties. Rekeninggebonden gegevens vereisen ook per-rekeningtoegang."
+    },
+    "accounts": {
+      "noAccounts": "Geen rekeningen om te verlenen.",
+      "grantAll": "Alles verlenen"
+    },
+    "shared": {
+      "description": "LEZEN van begunstigden, categorieën en labels is altijd toegestaan. Dit regelt aanmaken/bewerken/verwijderen."
+    },
+    "saveButton": "Opslaan",
+    "toasts": {
+      "saved": "Toegang bijgewerkt"
+    }
+  },
+  "nav": {
+    "sectionsAriaLabel": "Instellingssecties",
+    "profile": "Profiel",
+    "preferences": "Voorkeuren",
+    "notifications": "Meldingen",
+    "security": "Beveiliging",
+    "sharedAccess": "Gedeelde toegang",
+    "emergencyAccess": "Noodtoegang",
+    "apiAccess": "API-toegang",
+    "aiSettings": "AI-instellingen",
+    "backupRestore": "Back-up en herstel",
+    "autoBackup": "Automatische back-up",
+    "help": "Help & ondersteuning",
+    "dangerZone": "Gevarenzone"
+  },
+  "page": {
+    "title": "Instellingen",
+    "demoRestricted": {
+      "heading": "Beperkt in demomodus",
+      "body": "Profielbewerking, wachtwoordwijzigingen, tweefactorauthenticatie en accountverwijdering zijn uitgeschakeld in demomodus."
+    },
+    "sharedAccessCard": {
+      "title": "Gedeelde toegang",
+      "description": "Verleen een andere persoon gedetailleerde toegang tot specifieke rekeningen."
+    },
+    "emergencyAccessCard": {
+      "title": "Noodtoegang",
+      "description": "Wijs contactpersonen aan die automatisch volledige toegang tot jouw account ontvangen als je je gedurende een langere periode niet aanmeldt."
+    },
+    "aiSettingsCard": {
+      "title": "AI-instellingen",
+      "description": "Configureer AI-providers, beheer API-sleutels en bekijk gebruiksstatistieken."
+    },
+    "delegateSecurityError": "Kan jouw beveiligingsinstellingen niet laden."
+  },
+  "aiSettings": {
+    "backLink": "Terug naar instellingen",
+    "title": "AI-instellingen",
+    "subtitle": "Configureer AI-providers voor intelligente financiële functies",
+    "demoRestricted": {
+      "heading": "Beperkt in demomodus",
+      "body": "AI-providerconfiguratie is uitgeschakeld in demomodus."
+    }
+  },
+  "sharedAccessPage": {
+    "backLink": "Terug naar instellingen",
+    "title": "Gedeelde toegang",
+    "subtitle": "Verleen een andere persoon gedetailleerde toegang tot specifieke rekeningen",
+    "demoRestricted": {
+      "heading": "Beperkt in demomodus",
+      "body": "Beheer van gedelegeerden is uitgeschakeld in demomodus."
+    }
+  },
+  "emergencyAccess": {
+    "backLink": "Terug naar instellingen",
+    "title": "Noodtoegang",
+    "subtitle": "Wijs contactpersonen aan die automatisch volledige toegang tot jouw account ontvangen als je je gedurende een langere periode niet aanmeldt",
+    "delegateRestricted": "Noodtoegang kan alleen worden geconfigureerd door de accounteigenaar.",
+    "demoRestricted": "Noodtoegang is uitgeschakeld in demomodus.",
+    "emailNotConfigured": {
+      "heading": "E-mail is niet geconfigureerd",
+      "body": "Noodtoegang vereist e-mailbezorging. Vraag jouw beheerder de SMTP-omgevingsvariabelen (SMTP_HOST, SMTP_USER, SMTP_PASSWORD) te configureren en probeer het opnieuw."
+    },
+    "alreadyGranted": {
+      "heading": "Noodtoegang al verleend",
+      "description": "jouw aangewezen contactpersonen hebben magische links ontvangen om het account over te nemen. Als dit niet de bedoeling was, wis dan de verleende status hieronder om openstaande links ongeldig te maken.",
+      "clearButton": "Verleende status wissen"
+    },
+    "loadError": "Kan instellingen voor noodtoegang niet laden.",
+    "settings": {
+      "heading": "Instellingen",
+      "enableLabel": "Noodtoegang inschakelen",
+      "grantAfterDaysLabel": "Dagen van inactiviteit voordat toegang wordt verleend",
+      "reminderAfterDaysLabel": "Dagen van inactiviteit voordat herinneringe-mails worden verstuurd",
+      "saveButton": "Instellingen opslaan",
+      "toasts": {
+        "saved": "Instellingen voor noodtoegang opgeslagen"
+      }
+    },
+    "message": {
+      "heading": "Bericht aan jouw contactpersonen",
+      "description": "Versleuteld opgeslagen. Bekijken of bewerken vereist heridentificatie.",
+      "unlockTimer": "Ontgrendeld voor {mins}:{secs}",
+      "messageSet": "Bericht ingesteld",
+      "charCount": "({count} tekens",
+      "updatedAt": ", bijgewerkt {timestamp}",
+      "noMessage": "Geen bericht ingesteld",
+      "revealButton": "Bericht tonen",
+      "editButton": "Bericht bewerken",
+      "addButton": "Bericht toevoegen",
+      "emptyMessage": "(leeg)",
+      "lockNowButton": "Nu vergrendelen",
+      "editMessageButton": "Bewerken",
+      "messagePlaceholder": "Notities, instructies, locaties van belangrijke documenten...",
+      "maxCharsNote": "Maximaal 4000 tekens. Versleuteld opgeslagen.",
+      "cancelButton": "Annuleren",
+      "saveButton": "Bericht opslaan",
+      "toasts": {
+        "saved": "Bericht opgeslagen",
+        "verifyAgain": "Verificatie verlopen -- verifieer opnieuw om op te slaan"
+      }
+    },
+    "contacts": {
+      "heading": "Noodcontactpersonen",
+      "description": "Elke contactpersoon ontvangt een magische link per e-mail wanneer toegang wordt verleend. Ze gebruiken die om een nieuw wachtwoord in te stellen en jouw account over te nemen. De eerste contactpersoon die claimt wint.",
+      "addButton": "Contactpersoon toevoegen",
+      "noContacts": "Nog geen contactpersonen.",
+      "editButton": "Bewerken",
+      "removeButton": "Verwijderen",
+      "contactModal": {
+        "addTitle": "Noodcontactpersoon toevoegen",
+        "editTitle": "Contactpersoon bewerken",
+        "firstNameLabel": "Voornaam",
+        "emailLabel": "E-mail",
+        "addButton": "Contactpersoon toevoegen",
+        "saveButton": "Wijzigingen opslaan"
+      },
+      "removeDialog": {
+        "title": "Contactpersoon verwijderen",
+        "message": "Deze contactpersoon ontvangt geen noodtoegang meer. Je kunt ze later opnieuw toevoegen.",
+        "removingButton": "Verwijderen...",
+        "removeButton": "Verwijderen"
+      },
+      "toasts": {
+        "added": "Contactpersoon toegevoegd",
+        "updated": "Contactpersoon bijgewerkt",
+        "removed": "Contactpersoon verwijderd"
+      }
+    },
+    "status": {
+      "heading": "Status",
+      "lastAccess": "Laatste toegang: ",
+      "lastReminderSent": "Laatste herinnering verstuurd: ",
+      "grantStatus": "Verleningsstatus: ",
+      "unknown": "onbekend",
+      "never": "nooit",
+      "daysAgo": "{count} dag{plural} geleden",
+      "grantedOn": "verleend op {timestamp}",
+      "notYetGranted": "nog niet verleend",
+      "timerNote": "De timer wordt automatisch gereset elke keer dat je de app gebruikt -- aanmelden, een pagina bekijken, een transactie vastleggen, alles wat geauthenticeerd is."
+    },
+    "resetConfirm": {
+      "title": "Verleende status wissen",
+      "message": "Dit maakt openstaande magische links ongeldig, laat de herinneringscyclus opnieuw beginnen en laat de verleningscascade opnieuw activeren na een andere periode van inactiviteit.",
+      "clearingButton": "Wissen...",
+      "clearButton": "Wissen",
+      "toasts": {
+        "cleared": "Verleende status gewist"
+      }
+    },
+    "stepUp": {
+      "reason": "Verifieer jouw identiteit opnieuw om jouw noodtoegang-bericht te bekijken of te bewerken."
+    }
+  },
+  "aiProviders": {
+    "heading": "AI-providers",
+    "addButton": "Provider toevoegen",
+    "encryptionWarning": "AI_ENCRYPTION_KEY is niet geconfigureerd. Je kunt Ollama gebruiken (lokaal, geen API-sleutel nodig), maar cloudproviders vereisen versleuteling om API-sleutels veilig op te slaan.",
+    "systemDefault": {
+      "heading": "Standaard AI-provider beschikbaar",
+      "description": "Een centrale AI-provider is geconfigureerd door jouw beheerder",
+      "usedAutomatically": "Deze wordt automatisch gebruikt omdat je geen persoonlijke providers hebt geconfigureerd.",
+      "personalPriority": "Jouw persoonlijke providers hebben prioriteit boven de standaard systeemprovider."
+    },
+    "noProviders": {
+      "withSystemDefault": "Geen persoonlijke AI-providers geconfigureerd. De standaard systeemprovider wordt gebruikt.",
+      "withoutSystemDefault": "Geen AI-providers geconfigureerd. Voeg een provider toe om AI-functies in te schakelen."
+    },
+    "providerCard": {
+      "activeBadge": "Actief",
+      "inactiveBadge": "Inactief",
+      "priorityLabel": "Prioriteit: {n}",
+      "modelLabel": "Model: {model}",
+      "keyLabel": "Sleutel: {key}",
+      "urlLabel": "URL: {url}",
+      "costLabel": "Kosten/1M ({currency}): {input} invoer / {output} uitvoer",
+      "disableButton": "Uitschakelen",
+      "enableButton": "Inschakelen",
+      "editButton": "Bewerken",
+      "deleteButton": "Verwijderen"
+    },
+    "configForm": {
+      "addTitle": "AI-provider toevoegen",
+      "editTitle": "Provider bewerken",
+      "providerLabel": "Provider",
+      "displayNameLabel": "Weergavenaam",
+      "modelLabel": "Model",
+      "testButton": "Testen",
+      "testingButton": "Testen...",
+      "ollamaCloudNote": "Modelnamen moeten het achtervoegsel -cloud bevatten (bijv. gpt-oss:20b-cloud).",
+      "apiKeyLabel": "API-sleutel",
+      "baseUrlLabel": "Basis-URL",
+      "priorityLabel": "Prioriteit",
+      "priorityHelp": "Lager getal = hogere prioriteit. Gebruikt voor de terugvalopvolgorde.",
+      "costRatesHeading": "Kostentarieven (optioneel)",
+      "costRatesHelp": "Voer de gepubliceerde tarieven per 1.000.000 tokens van jouw provider in om de geschatte kosten op het gebruiksdashboard te zien. Laat leeg om kostenramingen over te slaan.",
+      "inputCostLabel": "Invoerkosten / 1M tokens",
+      "outputCostLabel": "Uitvoerkosten / 1M tokens",
+      "rateCurrencyLabel": "Tariefvaluta",
+      "rateCurrencyHelp": "Als dit verschilt van jouw thuisvaluta, kan het gebruiksdashboard kosten omrekenen met jouw opgeslagen wisselkoersen.",
+      "saveButton": "Wijzigingen opslaan",
+      "addProviderButton": "Provider toevoegen",
+      "modelPlaceholder": "Voer modelnaam in",
+      "testModelAria": "Model testen",
+      "apiKeyPlaceholder": "Voer API-sleutel in",
+      "saveFailed": "Opslaan van configuratie mislukt",
+      "inputCostPlaceholder": "bijv. 3,00",
+      "outputCostPlaceholder": "bijv. 15,00",
+      "toasts": {
+        "notReachable": "Provider kon niet worden bereikt.",
+        "modelUnavailable": "Model \"{model}\" is niet beschikbaar bij deze provider.",
+        "modelReady": "Model \"{model}\" is gereed.",
+        "success": "Verbinding geslaagd.",
+        "testFailed": "Modeltest mislukt"
+      },
+      "costCurrencies": {
+        "USD": "USD - US Dollar",
+        "EUR": "EUR - Euro",
+        "GBP": "GBP - British Pound",
+        "CAD": "CAD - Canadian Dollar",
+        "AUD": "AUD - Australian Dollar",
+        "JPY": "JPY - Japanese Yen",
+        "CNY": "CNY - Chinese Yuan",
+        "INR": "INR - Indian Rupee"
+      },
+      "validation": {
+        "displayNameMax": "Weergavenaam mag maximaal 100 tekens bevatten",
+        "mustBeNumber": "Moet een getal zijn",
+        "currencyCode": "Moet een valutacode van 3 letters zijn"
+      }
+    },
+    "testButton": {
+      "testLabel": "Testen",
+      "connectionFailed": "Verbinding mislukt",
+      "modelUnavailable": "Model \"{model}\" is niet beschikbaar bij deze provider.",
+      "successWithModel": "Verbinding geslaagd. Model \"{model}\" is gereed.",
+      "success": "Verbinding geslaagd",
+      "testFailed": "Verbindingstest mislukt"
+    },
+    "toasts": {
+      "added": "Provider toegevoegd",
+      "updated": "Provider bijgewerkt",
+      "removed": "Provider verwijderd",
+      "modelReady": "Model \"{model}\" is gereed.",
+      "notReachable": "Opgeslagen, maar de provider kon niet worden bereikt. Controleer de URL/API-sleutel.",
+      "modelUnavailable": "Opgeslagen, maar model \"{model}\" is niet beschikbaar bij deze provider.",
+      "deleteFailed": "Verwijderen van provider mislukt",
+      "updateFailed": "Bijwerken van provider mislukt"
+    }
+  },
+  "usage": {
+    "heading": "Gebruik",
+    "totalRequests": "Totaal verzoeken",
+    "inputTokens": "Invoertokens",
+    "outputTokens": "Uitvoertokens",
+    "estCost": "Gesch. kosten",
+    "setRatesToEnable": "Stel tarieven in bij een provider om in te schakelen",
+    "inHomeCurrency": "In {currency}",
+    "inProviderCurrency": "In providervaluta",
+    "byProvider": {
+      "heading": "Per provider",
+      "provider": "Provider",
+      "requests": "Verzoeken",
+      "inputTokens": "Invoertokens",
+      "outputTokens": "Uitvoertokens",
+      "estCost": "Gesch. kosten"
+    },
+    "recentActivity": {
+      "heading": "Recente activiteit",
+      "date": "Datum",
+      "provider": "Provider",
+      "feature": "Functie",
+      "tokens": "Tokens",
+      "duration": "Duur",
+      "estCost": "Gesch. kosten"
+    },
+    "noUsage": "Nog geen gebruiksgegevens. Gebruik verschijnt hier zodra je AI-functies begint te gebruiken.",
+    "periods": {
+      "d7": "7 dagen",
+      "d30": "30 dagen",
+      "d90": "90 dagen",
+      "all": "Alle tijd"
+    },
+    "estCostTooltip": "Geschat op basis van de kostentarieven die je hebt geconfigureerd bij elke provider. Activiteit zonder bijbehorend tarief is uitgesloten."
+  }
+}

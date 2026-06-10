@@ -1,0 +1,108 @@
+{
+  "createUserModal": {
+    "title": "Aggiungi utente",
+    "description": "Crea un nuovo account. Puoi inviare un invito via email, impostare una password personalmente o generarne una temporanea da condividere.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "utente@esempio.com",
+    "firstNameLabel": "Nome (opzionale)",
+    "firstNamePlaceholder": "Nome",
+    "lastNameLabel": "Cognome (opzionale)",
+    "lastNamePlaceholder": "Cognome",
+    "roleLabel": "Ruolo",
+    "roleUser": "Utente",
+    "roleAdmin": "Amministratore",
+    "credentialsLegend": "Credenziali",
+    "inviteLabel": "Invia un invito via email per impostare la password",
+    "inviteSmtpNote": "Richiede la configurazione SMTP.",
+    "setPasswordLabel": "Imposta una password adesso",
+    "tempPasswordLabel": "Genera una password temporanea",
+    "tempPasswordNote": "Mostrata una sola volta dopo la creazione. L'utente dovrà cambiarla al primo accesso.",
+    "passwordFieldLabel": "Password",
+    "passwordPlaceholder": "Imposta una password",
+    "createButton": "Crea utente",
+    "validation": {
+      "invalidPassword": "Password non valida."
+    },
+    "toasts": {
+      "createFailed": "Creazione utente non riuscita"
+    }
+  },
+  "resetPasswordModal": {
+    "defaultTitle": "Password reimpostata",
+    "defaultDescription": "È stata impostata una password temporanea per {userName}.",
+    "temporaryPasswordLabel": "Password temporanea",
+    "copy": "Copia",
+    "copied": "Copiato",
+    "notShownAgain": "Questa password non verrà mostrata di nuovo.",
+    "mustChangeOnLogin": "L'utente dovrà cambiare la password al prossimo accesso.",
+    "toasts": {
+      "copied": "Password copiata negli appunti",
+      "copyFailed": "Copia negli appunti non riuscita"
+    }
+  },
+  "userTable": {
+    "colUser": "Utente",
+    "colRole": "Ruolo",
+    "colProvider": "Provider",
+    "colStatus": "Stato",
+    "colLastLogin": "Ultimo accesso",
+    "colActions": "Azioni",
+    "youSuffix": "(tu)",
+    "noEmail": "Nessuna email",
+    "unknown": "Sconosciuto",
+    "never": "Mai",
+    "providerSso": "SSO",
+    "providerLocal": "Locale",
+    "roleAdmin": "Amministratore",
+    "roleUser": "Utente",
+    "statusActive": "Attivo",
+    "statusDisabled": "Disabilitato",
+    "clickToDisable": "Clicca per disabilitare",
+    "clickToEnable": "Clicca per abilitare",
+    "resetPassword": "Reimposta password",
+    "noUsers": "Nessun utente trovato."
+  },
+  "usersPage": {
+    "title": "Gestione utenti",
+    "userCount": "{count, plural, one {# utente} other {# utenti}}",
+    "newUser": "+ Nuovo utente",
+    "loadingUsers": "Caricamento utenti...",
+    "toasts": {
+      "inviteSent": "Email di invito inviata a {email}",
+      "userCreated": "{name} è stato creato",
+      "userUpgraded": "{name} è stato convertito in account completo",
+      "roleChanged": "{name} è ora {role}",
+      "roleAdmin": "un amministratore",
+      "roleUser": "un utente",
+      "userEnabled": "{name} è stato abilitato",
+      "userDisabled": "{name} è stato disabilitato",
+      "userDeleted": "{name} è stato eliminato",
+      "userDowngraded": "I dati di {name} sono stati rimossi; il suo accesso come delegato rimane.",
+      "loadFailed": "Caricamento utenti non riuscito",
+      "deleteFailed": "Eliminazione utente non riuscita",
+      "disableFailed": "Disabilitazione utente non riuscita",
+      "resetFailed": "Reimpostazione password non riuscita"
+    },
+    "dialogs": {
+      "promoteTitle": "Promuovere l'utente?",
+      "demoteTitle": "Retrocedere l'utente?",
+      "promoteMessage": "Sei sicuro di voler promuovere {name} a {role}?",
+      "demoteMessage": "Sei sicuro di voler retrocedere {name} a {role}?",
+      "promoteConfirm": "Promuovi ad amministratore",
+      "demoteConfirm": "Retrocedi a utente",
+      "disableTitle": "Disabilitare l'utente?",
+      "disableMessage": "Sei sicuro di voler disabilitare {name}? Non potrà più accedere.",
+      "disableConfirm": "Disabilita utente",
+      "resetTitle": "Reimpostare la password?",
+      "resetMessage": "Verrà generata una nuova password temporanea per {name}. Dovrà cambiarla al prossimo accesso.",
+      "resetConfirm": "Reimposta password",
+      "deleteTitle": "Eliminare l'utente?",
+      "deleteMessage": "Sei sicuro di voler eliminare {name}? Il suo account e tutti i dati associati verranno rimossi definitivamente. L'operazione non può essere annullata. Se è un delegato di un altro account, i suoi dati vengono rimossi ma il suo accesso viene mantenuto affinché la delega continui a funzionare — diventerà un utente solo delegato.",
+      "deleteConfirm": "Elimina utente",
+      "tempPasswordTitleCreated": "Utente creato",
+      "tempPasswordTitleUpgraded": "Account aggiornato",
+      "tempPasswordDescCreated": "È stata generata una password temporanea per {name}. Condividila con loro per l'accesso.",
+      "tempPasswordDescUpgraded": "Un utente condiviso esistente è stato convertito in account completo. Condividi questa password temporanea con {name}."
+    }
+  }
+}

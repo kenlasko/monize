@@ -1,0 +1,204 @@
+{
+  "page": {
+    "title": "Begunstigden",
+    "subtitle": "Beheer je begunstigden en hun standaardcategorieën",
+    "deactivateUnused": "Ongebruikte deactiveren",
+    "autoAssignCategories": "Categorieën automatisch toewijzen",
+    "newPayee": "+ Nieuwe begunstigde",
+    "searchPlaceholder": "Begunstigden zoeken...",
+    "statusAll": "Alle ({count})",
+    "statusActive": "Actief ({count})",
+    "statusInactive": "Inactief ({count})",
+    "modalTitleEdit": "Begunstigde bewerken",
+    "modalTitleNew": "Nieuwe begunstigde",
+    "loading": "Begunstigden laden...",
+    "count": "{count, plural, one {# begunstigde} other {# begunstigden}}",
+    "toasts": {
+      "loadFailed": "Gegevens laden mislukt",
+      "updated": "Begunstigde bijgewerkt",
+      "created": "Begunstigde aangemaakt",
+      "reactivated": "Begunstigde \"{name}\" geheractiveerd",
+      "reactivateFailed": "Begunstigde heractiveren mislukt",
+      "updateFailed": "Begunstigde bijwerken mislukt",
+      "createFailed": "Begunstigde aanmaken mislukt"
+    },
+    "summary": {
+      "totalPayees": "Totaal begunstigden",
+      "active": "Actief",
+      "inactive": "Inactief",
+      "withoutCategory": "Zonder categorie"
+    }
+  },
+  "list": {
+    "columns": {
+      "name": "Naam",
+      "defaultCategory": "Standaardcategorie",
+      "count": "Aantal",
+      "aliases": "Aliassen",
+      "lastUsed": "Laatste gebruik",
+      "created": "Aangemaakt",
+      "status": "Status",
+      "notes": "Notities",
+      "actions": "Acties"
+    },
+    "density": {
+      "normal": "Normaal",
+      "compact": "Compact",
+      "dense": "Dicht",
+      "toggle": "Rijdichtheid wisselen"
+    },
+    "noCategory": "Geen",
+    "statusBadge": {
+      "active": "Actief",
+      "inactive": "Inactief"
+    },
+    "actions": {
+      "reactivate": "Heractiveren",
+      "reactivateShort": "He",
+      "merge": "Samenvoegen",
+      "mergeShort": "S",
+      "edit": "Bewerken",
+      "editShort": "B",
+      "delete": "Verwijderen",
+      "deleteShort": "X"
+    },
+    "viewTransactionsTitle": "Transacties met deze begunstigde bekijken",
+    "empty": {
+      "title": "Geen begunstigden",
+      "subtitle": "Begin met het aanmaken van een nieuwe begunstigde."
+    },
+    "deleteConfirm": {
+      "title": "\"{name}\" verwijderen?",
+      "message": "Dit kan niet ongedaan worden gemaakt.",
+      "confirmLabel": "Verwijderen",
+      "cancelLabel": "Annuleren"
+    },
+    "toasts": {
+      "deleted": "Begunstigde verwijderd",
+      "deleteFailed": "Begunstigde verwijderen mislukt"
+    }
+  },
+  "form": {
+    "nameLabel": "Naam begunstigde",
+    "categoryLabel": "Standaardcategorie",
+    "notesLabel": "Notities (optioneel)",
+    "submitCreate": "Begunstigde aanmaken",
+    "submitUpdate": "Begunstigde bijwerken"
+  },
+  "merge": {
+    "title": "Begunstigde samenvoegen",
+    "mergeFromLabel": "Samenvoegen vanuit (wordt verwijderd):",
+    "transactionCount": "{count, plural, one {# transactie wordt gemigreerd} other {# transacties worden gemigreerd}}",
+    "mergeIntoLabel": "Samenvoegen in (doelbegunstigde)",
+    "addAsAliasLabel": "\"{name}\" als alias toevoegen aan de doelbegunstigde",
+    "willLabel": "Dit zal:",
+    "willMoveTransactions": "Alle transacties van \"{source}\" verplaatsen naar \"{target}\"",
+    "willAddAlias": "\"{source}\" als alias toevoegen zodat toekomstige imports automatisch overeenkomen",
+    "willDelete": "De begunstigde \"{source}\" verwijderen",
+    "merging": "Samenvoegen...",
+    "mergeButton": "Begunstigde samenvoegen",
+    "toasts": {
+      "merged": "Samengevoegd in \"{target}\": {details}",
+      "transactionsMigrated": "{count, plural, one {# transactie gemigreerd} other {# transacties gemigreerd}}",
+      "aliasAdded": "alias toegevoegd",
+      "sourceDeleted": "\"{name}\" verwijderd",
+      "failed": "Begunstigden samenvoegen mislukt"
+    }
+  },
+  "categoryAutoAssign": {
+    "title": "Standaardcategorieën automatisch toewijzen",
+    "howItWorksTitle": "Hoe het werkt",
+    "howItWorksBody": "Deze functie analyseert je transactiegeschiedenis om standaardcategorieën voor begunstigden voor te stellen. Er wordt gekeken welke categorie het vaakst wordt gebruikt voor elke begunstigde en voorgesteld deze als standaardcategorie in te stellen voor toekomstige transacties. Je kunt de standaardcategorie altijd aanpassen.",
+    "minTransactionsLabel": "Minimaal transacties: {count}",
+    "minTransactionsHelp": "Alleen begunstigden met minimaal dit aantal transacties meenemen",
+    "matchPercentageLabel": "Categorieovereenkomstpercentage: {percent}%",
+    "matchPercentageHelp": "De categorie moet in minimaal dit percentage van de transacties worden gebruikt",
+    "onlyWithoutCategoryLabel": "Alleen begunstigden zonder standaardcategorie",
+    "previewButton": "Suggesties bekijken",
+    "loading": "Laden...",
+    "suggestionsHeader": "Suggesties ({count} gevonden)",
+    "selectAll": "Alles selecteren",
+    "selectNone": "Niets selecteren",
+    "empty": {
+      "line1": "Geen begunstigden voldoen aan de huidige criteria.",
+      "line2": "Pas de instellingen hierboven aan."
+    },
+    "columns": {
+      "payee": "Begunstigde",
+      "suggestedCategory": "Voorgestelde categorie",
+      "match": "Overeenkomst"
+    },
+    "selectedCount": "{count, plural, one {# begunstigde geselecteerd} other {# begunstigden geselecteerd}}",
+    "applyButton": "Toepassen op {count, plural, one {# begunstigde} other {# begunstigden}}",
+    "applying": "Toepassen...",
+    "toasts": {
+      "selectAtLeastOne": "Selecteer minimaal één begunstigde om bij te werken",
+      "updated": "{count, plural, one {# begunstigde bijgewerkt} other {# begunstigden bijgewerkt}}",
+      "loadFailed": "Suggesties laden mislukt",
+      "applyFailed": "Categorietoewijzingen toepassen mislukt"
+    }
+  },
+  "deactivateUnused": {
+    "title": "Ongebruikte begunstigden deactiveren",
+    "howItWorksTitle": "Hoe het werkt",
+    "howItWorksBody": "Deze functie zoekt zelden gebruikte begunstigden en deactiveert deze. Gedeactiveerde begunstigden verschijnen niet in de keuzelijsten bij het aanmaken van transacties, maar hun historische transacties blijven bewaard. Je kunt een begunstigde op elk moment heractiveren vanuit de begunstigdenlijst.",
+    "maxTransactionsLabel": "{count, plural, one {# of minder transactie} other {# of minder transacties}}",
+    "maxTransactionsHelp": "Alleen begunstigden met dit aantal transacties of minder meenemen",
+    "monthsUnusedLabel": "Langer dan {label} geleden voor het laatst gebruikt",
+    "monthsUnusedHelp": "Alleen begunstigden meenemen die zo lang niet zijn gebruikt (of nooit gebruikt)",
+    "previewButton": "Ongebruikte begunstigden bekijken",
+    "loading": "Laden...",
+    "candidatesHeader": "Kandidaten ({count} gevonden)",
+    "selectAll": "Alles selecteren",
+    "selectNone": "Niets selecteren",
+    "neverUsed": "Nooit gebruikt",
+    "empty": {
+      "line1": "Geen begunstigden voldoen aan de huidige criteria.",
+      "line2": "Pas de instellingen hierboven aan."
+    },
+    "columns": {
+      "payee": "Begunstigde",
+      "transactions": "Transacties",
+      "lastUsed": "Laatste gebruik"
+    },
+    "selectedCount": "{count, plural, one {# begunstigde geselecteerd} other {# begunstigden geselecteerd}}",
+    "deactivateButton": "Deactiveer {count, plural, one {# begunstigde} other {# begunstigden}}",
+    "deactivating": "Deactiveren...",
+    "toasts": {
+      "selectAtLeastOne": "Selecteer minimaal één begunstigde om te deactiveren",
+      "deactivated": "{count, plural, one {# begunstigde gedeactiveerd} other {# begunstigden gedeactiveerd}}",
+      "loadFailed": "Voorvertoning laden mislukt",
+      "deactivateFailed": "Begunstigden deactiveren mislukt"
+    }
+  },
+  "reactivate": {
+    "title": "Begunstigde heractiveren?",
+    "message": "De begunstigde \"{name}\" was eerder gedeactiveerd. Wil je deze heractiveren zodat deze weer in de keuzelijsten verschijnt?",
+    "keepInactiveButton": "Nee, inactief houden",
+    "reactivateButton": "Heractiveren",
+    "reactivating": "Heractiveren..."
+  },
+  "aliases": {
+    "heading": "Aliassen",
+    "description": "Aliassen koppelen geïmporteerde namen van begunstigden aan deze begunstigde. Gebruik * als jokerteken (bijv. \"STARBUCKS*\"). Niet hoofdlettergevoelig.",
+    "loading": "Laden...",
+    "noAliases": "Geen aliassen geconfigureerd",
+    "removeTitle": "Alias verwijderen",
+    "removeButton": "Verwijderen",
+    "addButton": "Toevoegen",
+    "adding": "Toevoegen...",
+    "placeholder": "bijv. STARBUCKS #*",
+    "toasts": {
+      "alreadyAdded": "Alias \"{alias}\" al toegevoegd",
+      "added": "Alias \"{alias}\" toegevoegd",
+      "removed": "Alias \"{alias}\" verwijderd",
+      "loadFailed": "Aliassen laden mislukt",
+      "addFailed": "Alias toevoegen mislukt",
+      "removeFailed": "Alias verwijderen mislukt"
+    }
+  },
+  "selectCategoryPlaceholder": "Selecteer categorie...",
+  "validation": {
+    "nameRequired": "Naam begunstigde is verplicht"
+  }
+}

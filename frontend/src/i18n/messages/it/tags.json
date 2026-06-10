@@ -1,0 +1,80 @@
+{
+  "page": {
+    "title": "Etichette",
+    "subtitle": "Contrassegna le tue transazioni con etichette personalizzate",
+    "newButton": "+ Nuova etichetta",
+    "summary": {
+      "totalTags": "Totale etichette",
+      "tagsWithColour": "Etichette con colore",
+      "tagsWithIcon": "Etichette con icona"
+    },
+    "search": {
+      "placeholder": "Cerca etichette..."
+    },
+    "loading": "Caricamento etichette...",
+    "emptyState": {
+      "title": "Nessuna etichetta",
+      "body": "Le etichette ti aiutano a classificare e filtrare le transazioni. Crea la tua prima etichetta per iniziare.",
+      "createButton": "Crea la prima etichetta"
+    },
+    "modal": {
+      "newTitle": "Nuova etichetta",
+      "editTitle": "Modifica etichetta"
+    },
+    "totalCount": "{count, plural, one {# etichetta} other {# etichette}}",
+    "delete": {
+      "title": "Elimina etichetta",
+      "withTransactionsMessage": "Eliminare \"{name}\"? Questa etichetta è utilizzata in {count, plural, one {# transazione} other {# transazioni}}. L'etichetta verrà rimossa da quelle transazioni.",
+      "simpleMessage": "Eliminare \"{name}\"? Questa azione non può essere annullata."
+    },
+    "toasts": {
+      "created": "Etichetta creata con successo",
+      "updated": "Etichetta aggiornata con successo",
+      "deleted": "Etichetta eliminata con successo",
+      "loadFailed": "Caricamento etichette non riuscito",
+      "createFailed": "Creazione etichetta non riuscita",
+      "updateFailed": "Aggiornamento etichetta non riuscito",
+      "deleteFailed": "Eliminazione etichetta non riuscita"
+    }
+  },
+  "list": {
+    "empty": {
+      "title": "Nessuna etichetta trovata",
+      "body": "Nessuna etichetta corrisponde alla ricerca corrente."
+    },
+    "density": {
+      "title": "Cambia densità righe",
+      "normal": "Normale",
+      "compact": "Compatto",
+      "dense": "Denso"
+    },
+    "header": {
+      "name": "Nome",
+      "icon": "Icona",
+      "transactions": "Transazioni",
+      "actions": "Azioni"
+    }
+  },
+  "form": {
+    "nameLabel": "Nome etichetta",
+    "colourLabel": "Colore",
+    "iconLabel": "Icona",
+    "noColour": "Nessun colore",
+    "submitCreate": "Crea etichetta",
+    "submitUpdate": "Aggiorna etichetta",
+    "colours": {
+      "red": "Rosso",
+      "orange": "Arancione",
+      "yellow": "Giallo",
+      "green": "Verde",
+      "teal": "Verde acqua",
+      "blue": "Blu",
+      "purple": "Viola",
+      "pink": "Rosa",
+      "grey": "Grigio"
+    }
+  },
+  "validation": {
+    "nameRequired": "Il nome dell'etichetta è obbligatorio"
+  }
+}

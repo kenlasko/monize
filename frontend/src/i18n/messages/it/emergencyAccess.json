@@ -1,0 +1,20 @@
+{
+  "title": "Accesso di emergenza",
+  "missingToken": "Token di accesso di emergenza mancante.",
+  "previewError": "Questo link di accesso di emergenza non è valido, è scaduto o è già stato utilizzato.",
+  "linkInvalid": "Il link non è più valido.",
+  "backToSignIn": "Torna all'accesso",
+  "ownerFallback": "il titolare dell'account",
+  "ownerFirstNameFallback": "il titolare",
+  "intro": "Ciao {contactName}, sei stato designato come contatto di emergenza sull'account Monize di <b>{ownerName}</b>.",
+  "introDetail": "Impostare una password qui ti farà accedere come titolare dell'account con accesso completo. Le sessioni esistenti vengono revocate e le credenziali precedenti vengono sostituite.",
+  "messageHeading": "Messaggio da {name}",
+  "newPasswordLabel": "Nuova password",
+  "confirmPasswordLabel": "Conferma password",
+  "submit": "Richiedi accesso di emergenza",
+  "toasts": {
+    "success": "Hai ora accesso all'account di {name}.",
+    "failed": "Richiesta di accesso di emergenza non riuscita. Il link potrebbe essere scaduto o già stato utilizzato."
+  },
+  "passwordsNoMatch": "Le password non corrispondono"
+}

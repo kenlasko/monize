@@ -1,0 +1,80 @@
+{
+  "page": {
+    "title": "Labels",
+    "subtitle": "Markeer je transacties met aangepaste labels",
+    "newButton": "+ Nieuw label",
+    "summary": {
+      "totalTags": "Totaal labels",
+      "tagsWithColour": "Labels met kleur",
+      "tagsWithIcon": "Labels met pictogram"
+    },
+    "search": {
+      "placeholder": "Labels zoeken..."
+    },
+    "loading": "Labels laden...",
+    "emptyState": {
+      "title": "Nog geen labels",
+      "body": "Labels helpen je transacties te markeren en te filteren. Maak je eerste label aan om te beginnen.",
+      "createButton": "Je eerste label aanmaken"
+    },
+    "modal": {
+      "newTitle": "Nieuw label",
+      "editTitle": "Label bewerken"
+    },
+    "totalCount": "{count, plural, one {# label} other {# labels}}",
+    "delete": {
+      "title": "Label verwijderen",
+      "withTransactionsMessage": "Weet je zeker dat je \"{name}\" wilt verwijderen? Dit label wordt gebruikt bij {count, plural, one {# transactie} other {# transacties}}. Het label wordt van die transacties verwijderd.",
+      "simpleMessage": "Weet je zeker dat je \"{name}\" wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt."
+    },
+    "toasts": {
+      "created": "Label succesvol aangemaakt",
+      "updated": "Label succesvol bijgewerkt",
+      "deleted": "Label succesvol verwijderd",
+      "loadFailed": "Labels laden mislukt",
+      "createFailed": "Label aanmaken mislukt",
+      "updateFailed": "Label bijwerken mislukt",
+      "deleteFailed": "Label verwijderen mislukt"
+    }
+  },
+  "list": {
+    "empty": {
+      "title": "Geen labels gevonden",
+      "body": "Geen labels komen overeen met je huidige zoekopdracht."
+    },
+    "density": {
+      "title": "Rijdichtheid wisselen",
+      "normal": "Normaal",
+      "compact": "Compact",
+      "dense": "Dicht"
+    },
+    "header": {
+      "name": "Naam",
+      "icon": "Pictogram",
+      "transactions": "Transacties",
+      "actions": "Acties"
+    }
+  },
+  "form": {
+    "nameLabel": "Labelnaam",
+    "colourLabel": "Kleur",
+    "iconLabel": "Pictogram",
+    "noColour": "Geen kleur",
+    "submitCreate": "Label aanmaken",
+    "submitUpdate": "Label bijwerken",
+    "colours": {
+      "red": "Rood",
+      "orange": "Oranje",
+      "yellow": "Geel",
+      "green": "Groen",
+      "teal": "Groenblauw",
+      "blue": "Blauw",
+      "purple": "Paars",
+      "pink": "Roze",
+      "grey": "Grijs"
+    }
+  },
+  "validation": {
+    "nameRequired": "Labelnaam is verplicht"
+  }
+}

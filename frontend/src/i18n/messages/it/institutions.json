@@ -1,0 +1,91 @@
+{
+  "page": {
+    "title": "Istituti finanziari",
+    "subtitle": "Banche e intermediari finanziari a cui appartengono i tuoi conti",
+    "newInstitution": "Nuovo istituto",
+    "loading": "Caricamento istituti...",
+    "searchPlaceholder": "Cerca istituti...",
+    "modalTitleNew": "Nuovo istituto",
+    "modalTitleEdit": "Modifica istituto",
+    "summary": {
+      "total": "Totale istituti",
+      "withLogo": "Con logo",
+      "linkedAccounts": "Conti collegati"
+    },
+    "toasts": {
+      "loadFailed": "Caricamento istituti non riuscito",
+      "created": "Istituto creato",
+      "updated": "Istituto aggiornato",
+      "createFailed": "Creazione istituto non riuscita",
+      "updateFailed": "Aggiornamento istituto non riuscito"
+    }
+  },
+  "list": {
+    "empty": "Nessun istituto ancora. Creane uno per iniziare a raggruppare i tuoi conti.",
+    "columns": {
+      "name": "Nome",
+      "website": "Sito web",
+      "country": "Paese",
+      "accounts": "Conti",
+      "actions": "Azioni"
+    },
+    "accountCount": "{count, plural, =0 {Nessun conto} one {# conto} other {# conti}}",
+    "density": {
+      "title": "Cambia densità righe",
+      "normal": "Normale",
+      "compact": "Compatto",
+      "dense": "Denso"
+    },
+    "statusFilter": {
+      "all": "Tutti",
+      "active": "Attivi",
+      "closed": "Chiusi"
+    },
+    "actions": {
+      "manageAccounts": "Conti"
+    },
+    "deleteTitle": "Elimina istituto",
+    "deleteMessage": "Eliminare \"{name}\"? I conti associati verranno dissociati ma non eliminati.",
+    "deleting": "Eliminazione...",
+    "deleted": "\"{name}\" eliminato",
+    "deleteFailed": "Eliminazione istituto non riuscita"
+  },
+  "form": {
+    "nameLabel": "Nome",
+    "websiteLabel": "Sito web",
+    "websitePlaceholder": "es. td.com",
+    "countryLabel": "Paese (facoltativo)",
+    "countryPlaceholder": "Codice a 2 lettere, es. IT",
+    "logoHint": "Il logo del marchio viene recuperato automaticamente dal sito web.",
+    "submitCreate": "Crea istituto",
+    "submitUpdate": "Salva modifiche"
+  },
+  "validation": {
+    "nameRequired": "Il nome è obbligatorio",
+    "websiteRequired": "Il sito web è obbligatorio",
+    "websiteInvalid": "Inserisci un sito web valido (es. td.com)",
+    "countryInvalid": "Usa un codice paese a 2 lettere"
+  },
+  "accountsManager": {
+    "title": "Conti presso {name}",
+    "addLabel": "Aggiungi un conto",
+    "addPlaceholder": "Seleziona un conto da aggiungere...",
+    "noneToAdd": "Tutti i tuoi conti sono già assegnati a un istituto.",
+    "loading": "Caricamento conti...",
+    "empty": "Nessun conto è ancora assegnato a questo istituto.",
+    "noneMatch": "Nessun conto corrisponde al filtro selezionato.",
+    "filter": {
+      "all": "Tutti",
+      "active": "Attivi",
+      "closed": "Chiusi"
+    },
+    "remove": "Rimuovi",
+    "viewTransactions": "Visualizza transazioni per questo conto",
+    "added": "Conto aggiunto",
+    "removed": "Conto rimosso",
+    "addFailed": "Aggiunta conto non riuscita",
+    "removeFailed": "Rimozione conto non riuscita",
+    "loadFailed": "Caricamento conti non riuscito",
+    "done": "Fatto"
+  }
+}

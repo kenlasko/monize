@@ -1,0 +1,58 @@
+{
+  "title": "Rekening afstemmen",
+  "subtitle": "Vergelijk je records met je bankafschrift",
+  "subtitleActive": "Afstemmen: {name}",
+  "setup": {
+    "title": "Afstemming starten",
+    "intro": "Stem je rekening af met een bankafschrift om te controleren of je records kloppen.",
+    "accountLabel": "Rekening",
+    "accountPlaceholder": "Selecteer rekening...",
+    "statementDateLabel": "Afschriftdatum",
+    "statementBalanceLabel": "Eindsaldo afschrift",
+    "start": "Afstemming starten"
+  },
+  "summary": {
+    "statementBalance": "Afschriftsaldo",
+    "reconciledBalance": "Afgestemd saldo",
+    "selected": "Geselecteerd ({count})",
+    "difference": "Verschil"
+  },
+  "list": {
+    "heading": "Niet-afgestemde transacties ({count})",
+    "selectAll": "Alles selecteren",
+    "selectNone": "Niets selecteren",
+    "empty": "Geen niet-afgestemde transacties gevonden voor deze periode.",
+    "colSelect": "Selecteer",
+    "colDate": "Datum",
+    "colPayee": "Begunstigde",
+    "colCategory": "Categorie",
+    "colAmount": "Bedrag",
+    "colStatus": "Status",
+    "finish": "Afstemming voltooien"
+  },
+  "status": {
+    "cleared": "Bevestigd",
+    "unreconciled": "Niet afgestemd",
+    "void": "Ongeldig",
+    "reconciled": "Afgestemd"
+  },
+  "complete": {
+    "title": "Afstemming voltooid",
+    "message": "Je rekening is succesvol afgestemd per {date}.",
+    "existingPayment": "Deze rekening heeft een geplande betaling, <b>{name}</b>. Wil je het volgende exemplaar bijwerken naar het afgestemde saldo van <b>{amount}</b>?",
+    "updatePayment": "Volgende betaling bijwerken",
+    "noPayment": "Er is geen geplande betaling gevonden voor deze rekening. Wil je er een aanmaken voor het afgestemde saldo van <b>{amount}</b>?",
+    "createPayment": "Geplande betaling aanmaken",
+    "backToAccounts": "Terug naar rekeningen",
+    "reconcileAnother": "Andere rekening afstemmen"
+  },
+  "toasts": {
+    "loadAccountsFailed": "Rekeningen laden mislukt",
+    "fillAllFields": "Vul alle velden in",
+    "loadDataFailed": "Afstemmingsgegevens laden mislukt",
+    "differenceRequired": "Het verschil moet {amount} zijn om de afstemming te voltooien",
+    "noneSelected": "Geen transacties geselecteerd voor afstemming",
+    "success": "{count, plural, one {# transactie succesvol afgestemd} other {# transacties succesvol afgestemd}}",
+    "reconcileFailed": "Transacties afstemmen mislukt"
+  }
+}

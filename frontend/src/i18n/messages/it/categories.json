@@ -1,0 +1,80 @@
+{
+  "page": {
+    "title": "Categorie",
+    "subtitle": "Organizza le tue transazioni con categorie personalizzate",
+    "newButton": "+ Nuova categoria",
+    "searchPlaceholder": "Cerca categorie...",
+    "filterAll": "Tutte ({count})",
+    "filterExpenses": "Uscite ({count})",
+    "filterIncome": "Entrate ({count})",
+    "modalTitleNew": "Nuova categoria",
+    "modalTitleEdit": "Modifica categoria",
+    "countSingle": "1 categoria",
+    "countPlural": "{count} categorie",
+    "loadingText": "Caricamento categorie...",
+    "summaryTotal": "Totale categorie",
+    "summaryIncome": "Categorie entrate",
+    "summaryExpense": "Categorie uscite",
+    "summaryTopLevel": "Livello superiore"
+  },
+  "empty": {
+    "heading": "Nessuna categoria",
+    "description": "Le categorie ti aiutano a organizzare le transazioni. Inizia importando il set predefinito di categorie o creane di nuove da zero.",
+    "importButton": "Importa categorie predefinite",
+    "createButton": "Crea le tue categorie",
+    "hint": "Il set predefinito include categorie comuni di entrate e uscite con sottocategorie"
+  },
+  "toasts": {
+    "created": "Categoria creata con successo",
+    "updated": "Categoria aggiornata con successo",
+    "deleted": "Categoria eliminata con successo",
+    "cannotDeleteSystem": "Le categorie di sistema non possono essere eliminate",
+    "importSuccess": "{count} categorie importate con successo"
+  },
+  "form": {
+    "nameLabel": "Nome categoria",
+    "parentLabel": "Categoria genitore",
+    "noParent": "Nessun genitore (livello superiore)",
+    "typeLabel": "Tipo",
+    "typeExpense": "Uscita",
+    "typeIncome": "Entrata",
+    "typeInherited": "Tipo ereditato dal genitore",
+    "colourLabel": "Colore",
+    "colourInherit": "Eredita dal genitore",
+    "colourNone": "Nessun colore",
+    "colourInheritedFrom": "Colore ereditato dal genitore ({name})",
+    "descriptionLabel": "Descrizione (facoltativa)",
+    "submitCreate": "Crea categoria",
+    "submitUpdate": "Aggiorna categoria"
+  },
+  "list": {
+    "emptyHeading": "Nessuna categoria",
+    "emptyDescription": "Inizia creando una nuova categoria.",
+    "colName": "Nome",
+    "colType": "Tipo",
+    "colCount": "Numero",
+    "colDescription": "Descrizione",
+    "colActions": "Azioni",
+    "badgeIncome": "Entrata",
+    "badgeExpense": "Uscita",
+    "systemBadge": "(Sistema)",
+    "inheritedColorTitle": "Ereditato dal genitore",
+    "viewTransactionsTitle": "Visualizza transazioni in questa categoria",
+    "densityToggleTitle": "Cambia densità righe",
+    "densityNormal": "Normale",
+    "densityCompact": "Compatto",
+    "densityDense": "Denso"
+  },
+  "deleteDialog": {
+    "title": "Eliminare \"{name}\"?",
+    "checkingUsage": "Verifica utilizzo...",
+    "usedBy": "Questa categoria è utilizzata da {count, plural, one {# elemento} other {# elementi}} (transazioni e/o fatture e versamenti pianificati).",
+    "reassignLabel": "Riassegna a:",
+    "leaveUncategorized": "Lascia senza categoria",
+    "safeToDelete": "Questa categoria non è in uso. Può essere eliminata in sicurezza.",
+    "cannotUndo": "Questa azione non può essere annullata."
+  },
+  "validation": {
+    "nameRequired": "Il nome della categoria è obbligatorio"
+  }
+}

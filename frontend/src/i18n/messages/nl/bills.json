@@ -1,0 +1,64 @@
+{
+  "page": {
+    "title": "Facturen & stortingen",
+    "subtitle": "Beheer je terugkerende transacties en geplande betalingen",
+    "newButton": "+ Nieuw schema",
+    "summaryActiveBills": "Actieve facturen",
+    "summaryActiveDeposits": "Actieve stortingen",
+    "summaryMonthlyNet": "Maandelijks netto",
+    "summaryDueNow": "Nu verschuldigd",
+    "loadingText": "Geplande transacties laden...",
+    "chartUnavailable": "Grafiek tijdelijk niet beschikbaar"
+  },
+  "viewTabs": {
+    "list": "Lijst",
+    "calendar": "Kalender",
+    "filterAll": "Alle ({count})",
+    "filterBills": "Facturen ({count})",
+    "filterDeposits": "Stortingen ({count})",
+    "todayButton": "Vandaag"
+  },
+  "form": {
+    "titleNew": "Nieuwe geplande transactie",
+    "titleEdit": "Geplande transactie bewerken"
+  },
+  "overrideConfirm": {
+    "title": "Bestaande overschrijvingen gevonden",
+    "message": "Deze geplande transactie heeft {count, plural, one {# afzonderlijk exemplaar} other {# afzonderlijke exemplaren}} met aangepaste aanpassingen.",
+    "question": "Wat wil je doen met deze aanpassingen wanneer je de basissjabloon bijwerkt?",
+    "keepButton": "Aanpassingen bewaren",
+    "deleteButton": "Alle aanpassingen verwijderen"
+  },
+  "forecast": {
+    "title": "Kasstroomprognose",
+    "scheduledCount": "{count, plural, one {# geplande transactie} other {# geplande transacties}} in prognose",
+    "tooltipTransactions": "Transacties:",
+    "tooltipMore": "+{count} meer",
+    "noData": "Geen gegevens om weer te geven",
+    "noAccounts": "Geen rekeningen gevonden",
+    "noScheduled": "Geen geplande transacties",
+    "noMatchingAccount": "Selecteer een rekening met geplande transacties",
+    "noUpcoming": "Geen aankomende transacties in deze periode - huidig saldo wordt getoond",
+    "summaryStarting": "Beginstand",
+    "summaryEnding": "Eindstand",
+    "summaryLowest": "Laagste",
+    "summaryMinBalance": "Minimumsaldo",
+    "allAccounts": "Alle rekeningen"
+  },
+  "calendar": {
+    "days": {
+      "sun": "zo",
+      "mon": "ma",
+      "tue": "di",
+      "wed": "wo",
+      "thu": "do",
+      "fri": "vr",
+      "sat": "za"
+    },
+    "more": "+{count} meer"
+  },
+  "toasts": {
+    "overridesDeleted": "Overschrijvingen verwijderd",
+    "notFound": "Geplande betaling niet gevonden"
+  }
+}

@@ -1,0 +1,300 @@
+{
+  "priceRefresh": {
+    "noneToUpdate": "Geen waardepapieren om bij te werken",
+    "updated": "{count, plural, one {# koers bijgewerkt} other {# koersen bijgewerkt}}",
+    "partialFailure": "Koersen bijgewerkt: {updated} geslaagd, {failed} mislukt{symbols}",
+    "failed": "Koersen vernieuwen mislukt"
+  },
+  "page": {
+    "title": "Waardepapieren",
+    "subtitle": "Beheer je aandelen, ETF's, beleggingsfondsen en andere waardepapieren",
+    "newSecurity": "+ Nieuw waardepapier",
+    "searchPlaceholder": "Zoek op symbool of naam...",
+    "statusAll": "Alle ({count})",
+    "statusActive": "Actief ({count})",
+    "statusInactive": "Inactief ({count})",
+    "modalTitleEdit": "Waardepapier bewerken",
+    "modalTitleNew": "Nieuw waardepapier",
+    "loading": "Waardepapieren laden...",
+    "count": "{count, plural, one {# waardepapier} other {# waardepapieren}}",
+    "toasts": {
+      "loadFailed": "Waardepapieren laden mislukt",
+      "updated": "Waardepapier bijgewerkt",
+      "created": "Waardepapier aangemaakt",
+      "deactivated": "Waardepapier gedeactiveerd",
+      "activated": "Waardepapier geactiveerd",
+      "statusFailed": "Status waardepapier bijwerken mislukt",
+      "deleted": "Waardepapier \"{symbol}\" verwijderd",
+      "deleteFailed": "Waardepapier verwijderen mislukt",
+      "favouriteFailed": "Favoriet bijwerken mislukt",
+      "updateFailed": "Waardepapier bijwerken mislukt",
+      "createFailed": "Waardepapier aanmaken mislukt"
+    },
+    "deleteConfirm": {
+      "title": "Waardepapier verwijderen",
+      "message": "Weet je zeker dat je \"{symbol}\" wilt verwijderen? Alle koershistorie wordt ook verwijderd. Dit kan niet ongedaan worden gemaakt.",
+      "confirmLabel": "Verwijderen",
+      "cancelLabel": "Annuleren"
+    }
+  },
+  "summary": {
+    "totalSecurities": "Totaal waardepapieren",
+    "types": "Typen",
+    "exchanges": "Beurzen",
+    "currencies": "Valuta's"
+  },
+  "list": {
+    "columns": {
+      "symbol": "Symbool",
+      "name": "Naam",
+      "type": "Type",
+      "shares": "Aandelen",
+      "exchange": "Beurs",
+      "currency": "Valuta",
+      "provider": "Provider",
+      "source": "Bron",
+      "status": "Status",
+      "actions": "Acties",
+      "favourite": "Favoriet"
+    },
+    "density": {
+      "normal": "Normaal",
+      "compact": "Compact",
+      "dense": "Dicht",
+      "toggle": "Rijdichtheid wisselen"
+    },
+    "statusBadge": {
+      "active": "Actief",
+      "activeShort": "Act",
+      "inactive": "Inactief",
+      "inactiveShort": "Ina"
+    },
+    "providerTitle": {
+      "override": "Provider-uitzondering per waardepapier",
+      "inherited": "Overgenomen van jouw standaard koersprovidervoorkeur"
+    },
+    "columnTitles": {
+      "shares": "Huidig aandelenbestand over alle rekeningen",
+      "source": "Bron van de meest recente koers"
+    },
+    "actions": {
+      "history": "Geschiedenis",
+      "prices": "Koersen",
+      "edit": "Bewerken",
+      "deactivate": "Deactiveren",
+      "activate": "Activeren",
+      "delete": "Verwijderen"
+    },
+    "favouriteButton": {
+      "add": "Aan favorieten toevoegen",
+      "remove": "Uit favorieten verwijderen"
+    },
+    "empty": {
+      "title": "Geen waardepapieren",
+      "subtitle": "Begin met het toevoegen van je eerste waardepapier."
+    },
+    "contextMenu": {
+      "transactionHistory": "Transactiegeschiedenis",
+      "viewPrices": "Koersen bekijken",
+      "editSecurity": "Waardepapier bewerken",
+      "deactivate": "Deactiveren",
+      "activate": "Activeren",
+      "delete": "Verwijderen"
+    }
+  },
+  "typeLabels": {
+    "STOCK": "Aandeel",
+    "ETF": "ETF",
+    "MUTUAL_FUND": "Beleggingsfonds",
+    "BOND": "Obligatie",
+    "OPTION": "Optie",
+    "CRYPTO": "Crypto",
+    "OTHER": "Overig",
+    "STOCK_short": "And",
+    "ETF_short": "ETF",
+    "MUTUAL_FUND_short": "BF",
+    "BOND_short": "Obl",
+    "OPTION_short": "Opt",
+    "CRYPTO_short": "Cry",
+    "OTHER_short": "Ov"
+  },
+  "form": {
+    "symbolLabel": "Symbool",
+    "nameLabel": "Naam",
+    "typeLabel": "Type",
+    "exchangeLabel": "Beurs",
+    "currencyLabel": "Valuta",
+    "quoteProviderLabel": "Koersprovider",
+    "msnIdLabel": "MSN-instrument-ID (geavanceerd)",
+    "lookupProviderAriaLabel": "Provider opzoeken",
+    "lookupButton": "Opzoeken",
+    "revertButton": "Terugzetten",
+    "clearButton": "Wissen",
+    "revertTitle": "Terugzetten naar oorspronkelijke waarden",
+    "clearTitle": "Alle velden wissen",
+    "favouriteLabel": "Favoriet",
+    "addToFavourites": "Aan favorieten toevoegen",
+    "removeFromFavourites": "Uit favorieten verwijderen",
+    "submitCreate": "Waardepapier aanmaken",
+    "submitUpdate": "Waardepapier bijwerken",
+    "toasts": {
+      "lookupTooShort": "Voer een symbool of naam in (minimaal 2 tekens) om op te zoeken",
+      "notFound": "Geen waardepapier gevonden voor \"{query}\"",
+      "found": "Gevonden: {details}",
+      "lookupFailed": "Opzoeken mislukt — probeer het opnieuw"
+    },
+    "msnNotConfigured": "MSN is geselecteerd als standaard koersprovider, maar MSN_API_KEY is niet geconfigureerd op de server. MSN-koersen mislukken totdat een beheerder de omgevingsvariabele instelt en de backend herstart.",
+    "providers": {
+      "auto": "Auto",
+      "yahoo": "Yahoo",
+      "msn": "MSN"
+    },
+    "types": {
+      "select": "Selecteer type...",
+      "stock": "Aandeel",
+      "etf": "ETF",
+      "mutualFund": "Beleggingsfonds",
+      "bond": "Obligatie",
+      "option": "Optie",
+      "crypto": "Cryptovaluta",
+      "other": "Overig"
+    },
+    "quoteProviderUseDefault": "Standaard gebruiken ({provider})",
+    "symbolPlaceholder": "bijv. AAPL, XEQT, BTC",
+    "namePlaceholder": "bijv. Apple Inc., iShares Core Equity ETF",
+    "exchangeSearchPlaceholder": "Beurzen zoeken...",
+    "exchangePlaceholder": "Automatisch bepaald via ticker; overschrijf alleen indien onjuist"
+  },
+  "priceForm": {
+    "dateLabel": "Datum",
+    "closePriceLabel": "Slotkoers",
+    "openPriceLabel": "Openingskoers",
+    "highPriceLabel": "Hoogste koers",
+    "lowPriceLabel": "Laagste koers",
+    "volumeLabel": "Volume",
+    "optionalPlaceholder": "Optioneel",
+    "submitCreate": "Koers toevoegen",
+    "submitUpdate": "Koers bijwerken"
+  },
+  "priceHistory": {
+    "title": "{symbol} - Koershistorie",
+    "forceUpdateButton": "Koersen geforceerd bijwerken",
+    "forceUpdateTitle": "Historische koersen opnieuw ophalen voor de gehele periode dat je dit waardepapier bezit",
+    "addPriceButton": "+ Koers toevoegen",
+    "addPriceSection": "Koers toevoegen",
+    "editPriceSection": "Koers bewerken",
+    "loading": "Koersen laden...",
+    "empty": "Geen koershistorie beschikbaar",
+    "columns": {
+      "date": "Datum",
+      "close": "Slotkoers",
+      "open": "Opening",
+      "high": "Hoog",
+      "low": "Laag",
+      "volume": "Volume",
+      "source": "Bron",
+      "actions": "Acties"
+    },
+    "toasts": {
+      "added": "Koers toegevoegd",
+      "updated": "Koers bijgewerkt",
+      "deleted": "Koers verwijderd",
+      "loadFailed": "Koershistorie laden mislukt",
+      "addFailed": "Koers toevoegen mislukt",
+      "updateFailed": "Koers bijwerken mislukt",
+      "deleteFailed": "Koers verwijderen mislukt",
+      "updatedCount": "{count, plural, one {# koers bijgewerkt voor {symbol}} other {# koersen bijgewerkt voor {symbol}}}",
+      "noPricesFound": "Geen koersen gevonden voor {symbol}",
+      "updatePricesFailed": "Koersen bijwerken voor {symbol} mislukt",
+      "updateFetchFailed": "Koersen bijwerken mislukt"
+    },
+    "closeButton": "Sluiten",
+    "deleteConfirm": {
+      "title": "Koers verwijderen",
+      "confirmLabel": "Verwijderen"
+    }
+  },
+  "transactionHistory": {
+    "inactiveBadge": "Inactief",
+    "currentShares": "Huidige aandelen",
+    "accountLabel": "Rekening",
+    "allAccounts": "Alle rekeningen ({shares})",
+    "accountClosed": "{name} (gesloten)",
+    "addTransaction": "+ Transactie toevoegen",
+    "loading": "Transacties laden...",
+    "emptyAll": "Geen transacties voor dit waardepapier.",
+    "emptyAccount": "Geen transacties voor dit waardepapier op de geselecteerde rekening.",
+    "editTransactionTitle": "Transactie bewerken",
+    "columns": {
+      "date": "Datum",
+      "account": "Rekening",
+      "action": "Actie",
+      "quantity": "Hoeveelheid",
+      "runningTotal": "Lopend totaal",
+      "price": "Koers",
+      "amount": "Bedrag",
+      "actionsLabel": "Acties"
+    },
+    "actionLabels": {
+      "BUY": "Kopen",
+      "SELL": "Verkopen",
+      "DIVIDEND": "Dividend",
+      "INTEREST": "Rente",
+      "CAPITAL_GAIN": "Kapitaalwinst",
+      "SPLIT": "Splitsing",
+      "TRANSFER_IN": "Inkomend",
+      "TRANSFER_OUT": "Uitgaand",
+      "REINVEST": "Herinvesteren",
+      "ADD_SHARES": "Aandelen toevoegen",
+      "REMOVE_SHARES": "Aandelen verwijderen"
+    }
+  },
+  "shareAdjustment": {
+    "heading": "Aandelen aanpassen",
+    "accountLabel": "Rekening",
+    "accountPlaceholder": "Selecteer rekening...",
+    "actionLabel": "Actie",
+    "quantityLabel": "Hoeveelheid (aandelen)",
+    "dateLabel": "Datum",
+    "descriptionLabel": "Beschrijving (optioneel)",
+    "descriptionPlaceholder": "bijv. Resterende aandelen opschonen",
+    "saving": "Opslaan...",
+    "submitButton": "Aanpassing vastleggen",
+    "accountClosed": "{name} (gesloten)",
+    "adjustmentActions": {
+      "REMOVE_SHARES": "Aandelen verwijderen",
+      "ADD_SHARES": "Aandelen toevoegen"
+    },
+    "toasts": {
+      "selectAccount": "Selecteer een rekening",
+      "quantityRequired": "Hoeveelheid moet groter zijn dan nul",
+      "recorded": "Aanpassing vastgelegd",
+      "failed": "Aanpassing vastleggen mislukt"
+    }
+  },
+  "lookupPicker": {
+    "title": "Meerdere resultaten voor \"{query}\"",
+    "subtitle": "Selecteer het waardepapier dat je wilt gebruiken.",
+    "columns": {
+      "symbol": "Symbool",
+      "name": "Naam",
+      "exchange": "Beurs",
+      "currency": "Valuta",
+      "type": "Type",
+      "source": "Bron"
+    },
+    "selectButton": "Selecteren"
+  },
+  "validation": {
+    "symbolRequired": "Symbool is verplicht",
+    "symbolMax": "Symbool mag maximaal 20 tekens bevatten",
+    "nameRequired": "Naam is verplicht",
+    "nameMax": "Naam mag maximaal 255 tekens bevatten",
+    "currencyRequired": "Valuta is verplicht"
+  },
+  "priceValidation": {
+    "dateRequired": "Datum is verplicht",
+    "priceRequired": "Koers is verplicht",
+    "priceNonNegative": "Koers moet een niet-negatief getal zijn"
+  }
+}
