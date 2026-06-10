@@ -303,6 +303,7 @@
     "totalAvailable": "Total disponible",
     "overallUtilization": "Utilisation globale",
     "utilizationByAccount": "Utilisation par compte",
+    "totalUtilization": "Utilisation totale",
     "colAccount": "Compte",
     "colType": "Type",
     "colCreditLimit": "Limite de crédit",

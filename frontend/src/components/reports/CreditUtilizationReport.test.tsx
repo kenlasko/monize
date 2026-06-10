@@ -32,6 +32,8 @@ vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
   BarChart: ({ children }: any) => <div data-testid="bar-chart">{children}</div>,
   Bar: ({ children }: any) => <div data-testid="bar">{children}</div>,
+  PieChart: ({ children }: any) => <div data-testid="pie-chart">{children}</div>,
+  Pie: ({ children }: any) => <div data-testid="pie">{children}</div>,
   Cell: () => null,
   XAxis: () => null,
   YAxis: () => null,
@@ -39,9 +41,11 @@ vi.mock('recharts', () => ({
   ReferenceLine: () => null,
   Tooltip: ({ content }: any) => {
     if (typeof content === 'function') {
+      // One payload shape serves both tooltips: the bar tooltip reads
+      // used/available/utilizationPercent, the pie tooltip reads value/percent.
       return (
         <div>
-          {content({ active: true, payload: [{ payload: { id: 'tip', name: 'TooltipAccount', used: 500, available: 4500, utilizationPercent: 10 } }] })}
+          {content({ active: true, payload: [{ payload: { id: 'tip', name: 'TooltipAccount', used: 500, available: 4500, utilizationPercent: 10, value: 500, percent: 10 } }] })}
           {content({ active: false, payload: [] })}
         </div>
       );
@@ -174,6 +178,23 @@ describe('CreditUtilizationReport', () => {
       expect(screen.getByText('Utilization by Account')).toBeInTheDocument();
     });
     expect(screen.getByTestId('bar-chart')).toBeInTheDocument();
+  });
+
+  it('renders the total utilization pie chart alongside the bar chart', async () => {
+    mockGetAll.mockResolvedValue(cadAccounts);
+    render(<CreditUtilizationReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Total Utilization')).toBeInTheDocument();
+    });
+    expect(screen.getByTestId('pie-chart')).toBeInTheDocument();
+    // Donut centre repeats the overall utilization (6500 / 15000 = 43.3%),
+    // which also appears in the summary card and the table footer.
+    expect(screen.getAllByText('43.3%').length).toBeGreaterThanOrEqual(3);
+    // Legend lists used and available totals next to their slice labels.
+    expect(screen.getAllByText('Used').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('Available').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('CAD 6500.00').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('CAD 8500.00').length).toBeGreaterThanOrEqual(2);
   });
 
   it('exports pdf through the export pipeline', async () => {

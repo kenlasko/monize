@@ -303,6 +303,7 @@
     "totalAvailable": "Totaal beschikbaar",
     "overallUtilization": "Totale benutting",
     "utilizationByAccount": "Benutting per rekening",
+    "totalUtilization": "Totale benutting",
     "colAccount": "Rekening",
     "colType": "Type",
     "colCreditLimit": "Kredietlimiet",

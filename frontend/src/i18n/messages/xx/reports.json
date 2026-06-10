@@ -303,6 +303,7 @@
     "totalAvailable": "[XX-Total Available-XX]",
     "overallUtilization": "[XX-Overall Utilization-XX]",
     "utilizationByAccount": "[XX-Utilization by Account-XX]",
+    "totalUtilization": "[XX-Total Utilization-XX]",
     "colAccount": "[XX-Account-XX]",
     "colType": "[XX-Type-XX]",
     "colCreditLimit": "[XX-Credit Limit-XX]",
