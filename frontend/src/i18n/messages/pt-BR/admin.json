@@ -1,0 +1,108 @@
+{
+  "createUserModal": {
+    "title": "Adicionar Usuário",
+    "description": "Criar uma nova conta. Você pode enviar um convite por e-mail, definir uma senha diretamente, ou gerar uma temporária para compartilhar.",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "usuario@exemplo.com",
+    "firstNameLabel": "Primeiro nome (opcional)",
+    "firstNamePlaceholder": "Primeiro nome",
+    "lastNameLabel": "Sobrenome (opcional)",
+    "lastNamePlaceholder": "Sobrenome",
+    "roleLabel": "Função",
+    "roleUser": "Usuário",
+    "roleAdmin": "Administrador",
+    "credentialsLegend": "Credenciais",
+    "inviteLabel": "Enviar um convite por e-mail para definir uma senha",
+    "inviteSmtpNote": "Requer configuração de SMTP.",
+    "setPasswordLabel": "Definir uma senha agora",
+    "tempPasswordLabel": "Gerar uma senha temporária",
+    "tempPasswordNote": "Mostrada uma vez após a criação. O usuário terá de alterá-la no primeiro login.",
+    "passwordFieldLabel": "Senha",
+    "passwordPlaceholder": "Definir uma senha",
+    "createButton": "Criar Usuário",
+    "validation": {
+      "invalidPassword": "Senha inválida."
+    },
+    "toasts": {
+      "createFailed": "Falha ao criar usuário"
+    }
+  },
+  "resetPasswordModal": {
+    "defaultTitle": "Redefinição de Senha Bem-sucedida",
+    "defaultDescription": "Foi definida uma senha temporária para {userName}.",
+    "temporaryPasswordLabel": "Senha Temporária",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "notShownAgain": "Esta senha não será mostrada novamente.",
+    "mustChangeOnLogin": "O usuário será obrigado a alterar a senha no próximo login.",
+    "toasts": {
+      "copied": "Senha copiada para a área de transferência",
+      "copyFailed": "Falha ao copiar para a área de transferência"
+    }
+  },
+  "userTable": {
+    "colUser": "Usuário",
+    "colRole": "Função",
+    "colProvider": "Fornecedor",
+    "colStatus": "Status",
+    "colLastLogin": "Último Login",
+    "colActions": "Ações",
+    "youSuffix": "(você)",
+    "noEmail": "Sem e-mail",
+    "unknown": "Desconhecido",
+    "never": "Nunca",
+    "providerSso": "SSO",
+    "providerLocal": "Local",
+    "roleAdmin": "Administrador",
+    "roleUser": "Usuário",
+    "statusActive": "Ativo",
+    "statusDisabled": "Desativado",
+    "clickToDisable": "Clique para desativar",
+    "clickToEnable": "Clique para ativar",
+    "resetPassword": "Redefinir Senha",
+    "noUsers": "Nenhum usuário encontrado."
+  },
+  "usersPage": {
+    "title": "Gerenciamento de Usuários",
+    "userCount": "{count, plural, one {# usuário} other {# usuários}}",
+    "newUser": "+ Novo Usuário",
+    "loadingUsers": "Carregando usuários...",
+    "toasts": {
+      "inviteSent": "E-mail de convite enviado para {email}",
+      "userCreated": "{name} foi criado",
+      "userUpgraded": "{name} foi promovido a conta completa",
+      "roleChanged": "{name} agora é {role}",
+      "roleAdmin": "um administrador",
+      "roleUser": "um usuário",
+      "userEnabled": "{name} foi ativado",
+      "userDisabled": "{name} foi desativado",
+      "userDeleted": "{name} foi excluído",
+      "userDowngraded": "Os dados próprios de {name} foram removidos; o acesso de delegado mantém-se.",
+      "loadFailed": "Falha ao carregar usuários",
+      "deleteFailed": "Falha ao excluir usuário",
+      "disableFailed": "Falha ao desativar usuário",
+      "resetFailed": "Falha ao redefinir senha"
+    },
+    "dialogs": {
+      "promoteTitle": "Promover Usuário?",
+      "demoteTitle": "Despromover Usuário?",
+      "promoteMessage": "Tem certeza de que deseja promover {name} a {role}?",
+      "demoteMessage": "Tem certeza de que deseja despromover {name} a {role}?",
+      "promoteConfirm": "Promover a Administrador",
+      "demoteConfirm": "Despromover a Usuário",
+      "disableTitle": "Desativar Usuário?",
+      "disableMessage": "Tem certeza de que deseja desativar {name}? Não conseguirá fazer login.",
+      "disableConfirm": "Desativar Usuário",
+      "resetTitle": "Redefinir Senha?",
+      "resetMessage": "Isto irá gerar uma nova senha temporária para {name}. O usuário será obrigado a alterá-la no próximo login.",
+      "resetConfirm": "Redefinir Senha",
+      "deleteTitle": "Excluir Usuário?",
+      "deleteMessage": "Tem certeza de que deseja excluir {name}? Isto irá remover permanentemente a sua conta e todos os dados associados. Esta ação não pode ser desfeita. Se for delegado de outra conta, os seus próprios dados são removidos mas o seu login é mantido para que a delegação continue a funcionar — passa a ser um usuário apenas delegado.",
+      "deleteConfirm": "Excluir Usuário",
+      "tempPasswordTitleCreated": "Usuário Criado",
+      "tempPasswordTitleUpgraded": "Conta Promovida",
+      "tempPasswordDescCreated": "Foi gerada uma senha temporária para {name}. Compartilhe-a para que possa fazer login.",
+      "tempPasswordDescUpgraded": "Um usuário compartilhado existente foi promovido a conta completa. Compartilhe esta senha temporária com {name}."
+    }
+  }
+}

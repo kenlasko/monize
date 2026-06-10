@@ -1,0 +1,136 @@
+{
+  "page": {
+    "welcomePrefix": "Welkom",
+    "welcomeWithName": "Welkom, {name}!",
+    "subtitle": "Hier is je financieel overzicht"
+  },
+  "favouriteAccounts": {
+    "title": "Favoriete rekeningen",
+    "empty": "Nog geen favoriete rekeningen. Markeer rekeningen als favoriet om ze hier te zien.",
+    "reorder": "Herordenen",
+    "done": "Klaar",
+    "moveUp": "Omhoog",
+    "moveDown": "Omlaag",
+    "marketValue": "Marktwaarde",
+    "due": "Vervalt: {ordinal}",
+    "dueTooltip": "De dag van elke maand waarop je creditcardbetaling vervalt",
+    "settlement": "Afrekening: {ordinal}",
+    "settlementTooltip": "De laatste dag van de factuurperiode. Transacties geboekt op of vóór deze dag verschijnen op het huidige overzicht."
+  },
+  "upcomingBills": {
+    "title": "Aankomende facturen en stortingen",
+    "empty": "Geen achterstallige of aankomende facturen, stortingen of overboekingen binnen de herinneringsvensters.",
+    "perReminderSettings": "Per herinneringsinstellingen",
+    "postTransaction": "Deze transactie boeken",
+    "manual": "Handmatig",
+    "manualTitle": "Vereist handmatige boeking",
+    "negativeBalanceWarning": "Deze transactie zorgt ervoor dat het rekeningsaldo onder nul komt",
+    "viewAll": "Alle facturen en stortingen bekijken",
+    "totalDue": "Totaal verschuldigd",
+    "totalIncoming": "Totaal inkomend",
+    "moreItems": "+{count} meer",
+    "overdue": "Achterstallig",
+    "today": "Vandaag",
+    "tomorrow": "Morgen",
+    "daysUntil": "{count} dagen",
+    "typeBadge": {
+      "bill": "Factuur",
+      "deposit": "Storting",
+      "transfer": "Overboeking"
+    }
+  },
+  "gettingStarted": {
+    "title": "Aan de slag",
+    "subtitle": "Stel je account in een paar stappen in",
+    "dismiss": "Sluiten",
+    "steps": {
+      "settings": {
+        "title": "Jouw instellingen bekijken",
+        "description": "Stel je valuta, datumnotatie en thema in"
+      },
+      "categories": {
+        "title": "Categorieën instellen",
+        "description": "Maak categorieën aan of importeer een standaardset"
+      },
+      "account": {
+        "title": "Jouw eerste rekening toevoegen",
+        "description": "Maak een bankrekening aan om te beginnen met bijhouden"
+      },
+      "import": {
+        "title": "Importeren vanuit QIF",
+        "description": "Importeer rekeningen en transacties uit QIF-bestanden"
+      }
+    }
+  },
+  "budgetStatus": {
+    "title": "Budgetstatus",
+    "noBudget": "Geen actief budget gevonden. Maak een budget aan om je uitgaven bij te houden.",
+    "createBudget": "Budget aanmaken",
+    "viewFullBudget": "Volledig budget bekijken",
+    "daysLeft": "{count} dagen resterend",
+    "safeToSpend": "Vandaag veilig te besteden",
+    "topCategories": "Topcategorieën"
+  },
+  "insights": {
+    "title": "Uitgaveninzichten",
+    "empty": "Geen inzichten beschikbaar. Ga naar de pagina Inzichten om je eerste analyse te genereren.",
+    "goToInsights": "Naar inzichten",
+    "viewAll": "Alle inzichten bekijken",
+    "activeCount": "{count} actief"
+  },
+  "topMovers": {
+    "title": "Grootste verschuivingen",
+    "empty": {
+      "noInvestments": "Voeg beleggingsrekeningen toe om dagelijkse verschuivingen bij te houden.",
+      "noPrices": "Nog geen koerswijzigingen beschikbaar.",
+      "noGainers": "Vandaag geen stijgers.",
+      "noLosers": "Vandaag geen dalers."
+    },
+    "dailyChange": "Dagelijkse wijziging",
+    "refreshPrices": "Koersen vernieuwen",
+    "viewPortfolio": "Portefeuille bekijken",
+    "filter": {
+      "all": "Alle",
+      "gainers": "Stijgers",
+      "losers": "Dalers"
+    }
+  },
+  "favouriteSecurities": {
+    "title": "Favoriete waardepapieren",
+    "empty": "Nog geen favoriete waardepapieren. Ga naar de <securitiesLink>pagina Waardepapieren</securitiesLink> en markeer de waardepapieren die je hier wilt volgen.",
+    "noPriceYet": "Nog geen koers",
+    "dailyChange": "Dagelijkse wijziging",
+    "refreshPrices": "Koersen vernieuwen",
+    "manage": "Waardepapieren beheren"
+  },
+  "netWorth": {
+    "title": "Nettowaarde",
+    "empty": "Nog geen nettowaardegegevens beschikbaar.",
+    "past12Months": "Afgelopen 12 maanden",
+    "viewReport": "Volledig rapport bekijken"
+  },
+  "assetsVsLiabilities": {
+    "title": "Activa versus passiva",
+    "empty": "Nog geen nettowaardegegevens beschikbaar.",
+    "current": "Huidig",
+    "netWorthLabel": "Nettowaarde",
+    "assets": "Activa",
+    "liabilities": "Passiva"
+  },
+  "expensesPieChart": {
+    "title": "Uitgaven per categorie",
+    "empty": "Geen uitgavengegevens voor deze periode.",
+    "past30Days": "Afgelopen 30 dagen",
+    "total": "Totaal",
+    "uncategorized": "Niet gecategoriseerd",
+    "other": "Overig"
+  },
+  "incomeExpenses": {
+    "title": "Inkomsten versus uitgaven",
+    "last5Weeks": "Laatste 5 weken",
+    "weekOf": "Week van {date}",
+    "income": "Inkomsten",
+    "expenses": "Uitgaven",
+    "net": "Netto"
+  }
+}
