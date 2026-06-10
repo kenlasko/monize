@@ -16,6 +16,7 @@ import { RefreshToken } from "../auth/entities/refresh-token.entity";
 import { PersonalAccessToken } from "../auth/entities/personal-access-token.entity";
 import { PasswordBreachService } from "../auth/password-breach.service";
 import { ModuleRef } from "@nestjs/core";
+import { I18nContext } from "nestjs-i18n";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { BackupEncryptionService } from "../backup/backup-encryption.service";
 
@@ -497,6 +498,19 @@ describe("UsersService", () => {
       const result = await service.getPreferences("user-1");
 
       expect(result.language).toBe("en");
+    });
+
+    it("seeds language from the request locale when creating default preferences", async () => {
+      preferencesRepository.findOne.mockResolvedValue(null);
+      preferencesRepository.save.mockImplementation((data) => data);
+      const spy = jest
+        .spyOn(I18nContext, "current")
+        .mockReturnValue({ lang: "pl" } as never);
+
+      const result = await service.getPreferences("user-1");
+
+      expect(result.language).toBe("pl");
+      spy.mockRestore();
     });
   });
 

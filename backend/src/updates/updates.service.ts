@@ -4,6 +4,8 @@ import { Cron, CronExpression } from "@nestjs/schedule";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { UserPreference } from "../users/entities/user-preference.entity";
+import { buildDefaultPreferences } from "../users/user-preference.factory";
+import { currentRequestLocale } from "../i18n/request-locale";
 
 // Version comes from the backend package.json at build/run time. Using require
 // keeps the read synchronous and avoids ESM import-assertion issues.
@@ -250,8 +252,10 @@ export class UpdatesService implements OnModuleInit {
       prefs.dismissedUpdateVersion = latestVersion;
       await this.preferencesRepository.save(prefs);
     } else {
-      const created = new UserPreference();
-      created.userId = userId;
+      // No row yet: materialize one from the shared defaults (seeding the
+      // request locale) so this fallback doesn't create a preferences row with
+      // a different baseline than every other creation path.
+      const created = buildDefaultPreferences(userId, currentRequestLocale());
       created.dismissedUpdateVersion = latestVersion;
       await this.preferencesRepository.save(created);
     }

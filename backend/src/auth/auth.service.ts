@@ -15,6 +15,7 @@ import * as crypto from "crypto";
 
 import { User } from "../users/entities/user.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
+import { buildDefaultPreferences } from "../users/user-preference.factory";
 import { TrustedDevice } from "../users/entities/trusted-device.entity";
 import { RefreshToken } from "./entities/refresh-token.entity";
 import { RegisterDto } from "./dto/register.dto";
@@ -31,6 +32,7 @@ import { TwoFactorService } from "./two-factor.service";
 import { AuthEmailService } from "./auth-email.service";
 import { DelegationService } from "../delegation/delegation.service";
 import { tr } from "../i18n/translate";
+import { currentRequestLocale } from "../i18n/request-locale";
 import { I18nService } from "nestjs-i18n";
 import { emailTranslator } from "../i18n/email-translator";
 import { DEFAULT_LOCALE } from "../i18n/config";
@@ -194,6 +196,11 @@ export class AuthService {
     const saltRounds = 12;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
+    // Capture the browser-detected UI language (resolved by the proxy and
+    // forwarded as x-locale) so it is persisted at account creation and the
+    // user keeps it on subsequent logins instead of reverting to English.
+    const language = currentRequestLocale();
+
     // C9: Use serializable transaction to prevent race condition on first-user admin
     const user = await this.dataSource.transaction(
       "SERIALIZABLE",
@@ -207,7 +214,9 @@ export class AuthService {
           authProvider: "local",
           role: userCount === 0 ? "admin" : "user",
         });
-        return manager.save(newUser);
+        const savedUser = await manager.save(newUser);
+        await manager.save(buildDefaultPreferences(savedUser.id, language));
+        return savedUser;
       },
     );
 
@@ -443,6 +452,11 @@ export class AuthService {
             ),
           );
         }
+        // Persist the browser-detected UI language at account creation (same
+        // rationale as local registration) so SSO users also keep their
+        // language across logins.
+        const language = currentRequestLocale();
+
         // C9: Use serializable transaction for first-user admin race prevention
         try {
           user = await this.dataSource.transaction(
@@ -458,7 +472,11 @@ export class AuthService {
                 role: userCount === 0 ? "admin" : "user",
               };
               const newUser = manager.create(User, userData);
-              return manager.save(newUser);
+              const savedUser = await manager.save(newUser);
+              await manager.save(
+                buildDefaultPreferences(savedUser.id, language),
+              );
+              return savedUser;
             },
           );
         } catch (err: any) {

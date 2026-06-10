@@ -18,7 +18,7 @@ import { TokenService } from "./token.service";
 import { TwoFactorService } from "./two-factor.service";
 import { AuthEmailService } from "./auth-email.service";
 import { DelegationService } from "../delegation/delegation.service";
-import { I18nService } from "nestjs-i18n";
+import { I18nService, I18nContext } from "nestjs-i18n";
 import { User } from "../users/entities/user.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { TrustedDevice } from "../users/entities/trusted-device.entity";
@@ -257,6 +257,38 @@ describe("AuthService", () => {
 
       const createdUser = txManager.save.mock.calls[0][0];
       expect(createdUser.role).toBe("admin");
+    });
+
+    it("creates default preferences for the new user", async () => {
+      usersRepository.findOne.mockResolvedValue(null);
+      const txManager = setupRegisterTransactionMock(1);
+
+      await service.register({
+        email: "new@example.com",
+        password: "StrongPass123!",
+      });
+
+      // First save is the user, second is the preferences row.
+      const savedPrefs = txManager.save.mock.calls[1][0];
+      expect(savedPrefs.userId).toBe("new-user");
+      expect(savedPrefs.language).toBe("en");
+    });
+
+    it("seeds the new user's language from the request locale", async () => {
+      usersRepository.findOne.mockResolvedValue(null);
+      const txManager = setupRegisterTransactionMock(1);
+      const spy = jest
+        .spyOn(I18nContext, "current")
+        .mockReturnValue({ lang: "pl" } as never);
+
+      await service.register({
+        email: "polish@example.com",
+        password: "StrongPass123!",
+      });
+
+      const savedPrefs = txManager.save.mock.calls[1][0];
+      expect(savedPrefs.language).toBe("pl");
+      spy.mockRestore();
     });
 
     it("throws for duplicate email", async () => {
@@ -1286,6 +1318,36 @@ describe("AuthService", () => {
       expect(result.user.authProvider).toBe("oidc");
       expect(result.user.firstName).toBe("OIDC");
       expect(result.user.lastName).toBe("User");
+    });
+
+    it("seeds preferences with the request locale for a new OIDC user", async () => {
+      usersRepository.findOne
+        .mockResolvedValueOnce(null) // no existing by oidcSubject
+        .mockResolvedValueOnce(null); // no existing by email
+      const txManager = setupOidcTransactionMock(1);
+      txManager.create.mockImplementation((_entity, data) => ({
+        ...data,
+        id: "oidc-user-1",
+      }));
+      usersRepository.save.mockImplementation((u) => u);
+      const spy = jest
+        .spyOn(I18nContext, "current")
+        .mockReturnValue({ lang: "fr" } as never);
+
+      await service.findOrCreateOidcUser({
+        sub: "oidc-sub-fr",
+        email: "fr@example.com",
+        email_verified: true,
+      });
+
+      const savedPrefs = txManager.save.mock.calls.find(
+        (call: unknown[]) =>
+          (call[0] as { language?: string })?.language !== undefined,
+      )?.[0];
+      expect(savedPrefs).toBeDefined();
+      expect(savedPrefs.userId).toBe("oidc-user-1");
+      expect(savedPrefs.language).toBe("fr");
+      spy.mockRestore();
     });
 
     it("creates new user with unverified email (email stored but not linked)", async () => {

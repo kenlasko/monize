@@ -11,8 +11,10 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, DataSource, QueryRunner } from "typeorm";
 import * as bcrypt from "bcryptjs";
 import { tr } from "../i18n/translate";
+import { currentRequestLocale } from "../i18n/request-locale";
 import { User } from "./entities/user.entity";
 import { UserPreference } from "./entities/user-preference.entity";
+import { buildDefaultPreferences } from "./user-preference.factory";
 import { TrustedDevice } from "./entities/trusted-device.entity";
 import { RefreshToken } from "../auth/entities/refresh-token.entity";
 import { PersonalAccessToken } from "../auth/entities/personal-access-token.entity";
@@ -130,23 +132,12 @@ export class UsersService {
       where: { userId },
     });
 
-    // Create default preferences if they don't exist
-    // Default to 'browser' for locale-dependent settings
+    // Create default preferences if they don't exist. Seed `language` from the
+    // request locale (browser-detected on first visit, forwarded by the proxy)
+    // so a row first materialized here still captures the user's UI language
+    // rather than defaulting everyone to English.
     if (!preferences) {
-      // Use direct instantiation to ensure primary key is set
-      preferences = new UserPreference();
-      preferences.userId = userId;
-      preferences.defaultCurrency = "USD";
-      preferences.dateFormat = "browser";
-      preferences.numberFormat = "browser";
-      preferences.theme = "system";
-      preferences.timezone = "browser";
-      preferences.notificationEmail = true;
-      preferences.notificationBrowser = true;
-      preferences.twoFactorEnabled = false;
-      preferences.gettingStartedDismissed = false;
-      preferences.favouriteReportIds = [];
-      preferences.language = "en";
+      preferences = buildDefaultPreferences(userId, currentRequestLocale());
       await this.preferencesRepository.save(preferences);
     }
 
