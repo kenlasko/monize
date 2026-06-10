@@ -79,7 +79,7 @@
     "trustedDevices": {
       "heading": "Vertrauenswürdige Geräte",
       "revokeAllButton": "Alle widerrufen",
-      "noDevices": "Keine vertrauenswürdigen Geräte. Wenn Sie bei der 2FA-Anmeldung „Auf diesem Browser nicht mehr fragen“ aktivieren, wird das Gerät hier angezeigt.",
+      “noDevices”: “Keine vertrauenswürdigen Geräte. Wenn Sie bei der 2FA-Anmeldung \”Auf diesem Browser nicht mehr fragen\” aktivieren, wird das Gerät hier angezeigt.”,
       "currentBadge": "Aktuell",
       "revokeButton": "Widerrufen",
       "revokeAllModal": {
@@ -107,7 +107,7 @@
     "exchangePriorityPlaceholder": "Priorität {n}",
     "defaultQuoteProviderLabel": "Standard-Kursanbieter",
     "defaultQuoteProviderHelp": "Wird verwendet, wenn für ein Wertpapier kein Anbieter festgelegt ist. Falls der gewählte Anbieter ausfällt, versucht Monize automatisch den anderen.",
-    "msnNoIntradayNote": "Hinweis: MSN Money stellt keine Intraday-Kursdaten bereit. Daher sind die Zeitbereiche 1T / 1W / 1M im Diagramm „Portfolio-Wert im Zeitverlauf" für MSN-verfolgte Bestände nicht verfügbar.",
+    "msnNoIntradayNote": "Hinweis: MSN Money stellt keine Intraday-Kursdaten bereit. Daher sind die Zeitbereiche 1T / 1W / 1M im Diagramm \"Portfolio-Wert im Zeitverlauf\" für MSN-verfolgte Bestände nicht verfügbar.",
     "msnNotConfigured": "MSN ist als Standard-Kursanbieter ausgewählt, aber MSN_API_KEY ist auf dem Server nicht konfiguriert. MSN-Kurse schlagen fehl, bis ein Administrator die Umgebungsvariable setzt und das Backend neu startet.",
     "dateFormatLabel": "Datumsformat",
     "numberFormatLabel": "Zahlenformat",
