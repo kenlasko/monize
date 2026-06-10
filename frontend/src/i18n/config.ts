@@ -26,10 +26,12 @@ export interface SupportedLocale {
 export const DEFAULT_LOCALE = "en";
 
 const ALL_LOCALES: readonly SupportedLocale[] = [
+  { code: "de", label: "Deutsch", dir: "ltr" },
   { code: "en", label: "English", dir: "ltr" },
   { code: "es", label: "Español", dir: "ltr" },
   { code: "fr", label: "Français", dir: "ltr" },
   { code: "pl", label: "Polski", dir: "ltr" },
+  { code: "pt", label: "Português", dir: "ltr" },
   { code: "xx", label: "Pseudo (debug)", dir: "ltr", devOnly: true },
 ];
 
