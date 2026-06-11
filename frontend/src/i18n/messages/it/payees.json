@@ -183,7 +183,11 @@
     "granularity": {
       "category": "Categoria",
       "subcategory": "Sottocategoria"
-    }
+    },
+    "ignoreCommonWordsLabel": "Ignora le parole comuni",
+    "ignoreCommonWordsHelp": "Non raggruppare in base a parole generiche (Ristorante, Cafe, nomi di Paesi) o a parole con cui iniziano molti beneficiari diversi.",
+    "commonWordSensitivityLabel": "Sensibilità alle parole comuni: {count}+ varianti",
+    "commonWordSensitivityHelp": "Una parola iniziale è considerata comune quando almeno questo numero di beneficiari diversi ne deriva. Più basso = filtro più aggressivo."
   },
   "deactivateUnused": {
     "title": "Disattiva beneficiari inutilizzati",

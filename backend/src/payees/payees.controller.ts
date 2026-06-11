@@ -264,6 +264,18 @@ export class PayeesController {
     description:
       "Only merge payees sharing a category/subcategory (default: off)",
   })
+  @ApiQuery({
+    name: "ignoreCommonWords",
+    required: false,
+    type: Boolean,
+    description: "Exclude payees anchored on a common word (default: false)",
+  })
+  @ApiQuery({
+    name: "commonWordMinVariants",
+    required: false,
+    type: Number,
+    description: "Auto-detect threshold for common leading words (default: 5)",
+  })
   @ApiResponse({ status: 200, description: "Suggested merge groups" })
   previewAutoMerge(
     @Request() req,
@@ -277,6 +289,10 @@ export class PayeesController {
     includeInactive: boolean,
     @Query("categoryMatch", new DefaultValuePipe("off"))
     categoryMatch: string,
+    @Query("ignoreCommonWords", new DefaultValuePipe(false), ParseBoolPipe)
+    ignoreCommonWords: boolean,
+    @Query("commonWordMinVariants", new DefaultValuePipe(5), ParseIntPipe)
+    commonWordMinVariants: number,
   ) {
     const categoryMatchMode: CategoryMatchMode =
       categoryMatch === "category" || categoryMatch === "subcategory"
@@ -288,6 +304,8 @@ export class PayeesController {
       minTokenLength: Math.min(Math.max(minTokenLength, 2), 10),
       includeInactive,
       categoryMatch: categoryMatchMode,
+      ignoreCommonWords,
+      commonWordMinVariants: Math.min(Math.max(commonWordMinVariants, 2), 50),
     });
   }
 

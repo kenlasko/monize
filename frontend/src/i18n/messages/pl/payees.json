@@ -183,7 +183,11 @@
     "granularity": {
       "category": "Kategoria",
       "subcategory": "Podkategoria"
-    }
+    },
+    "ignoreCommonWordsLabel": "Ignoruj popularne słowa",
+    "ignoreCommonWordsHelp": "Nie twórz grup wokół ogólnych słów (Restauracja, Cafe, nazwy krajów) ani słów, od których zaczyna się wielu różnych odbiorców.",
+    "commonWordSensitivityLabel": "Czułość popularnych słów: {count}+ wariantów",
+    "commonWordSensitivityHelp": "Słowo początkowe jest uznawane za popularne, gdy odgałęzia się od niego co najmniej tylu różnych odbiorców. Niżej = filtruj agresywniej."
   },
   "deactivateUnused": {
     "title": "Dezaktywuj nieużywanych odbiorców",

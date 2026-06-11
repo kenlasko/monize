@@ -80,6 +80,8 @@ describe("PayeeAutoMergeService", () => {
       minTokenLength: 3,
       includeInactive: false,
       categoryMatch: "off" as const,
+      ignoreCommonWords: false,
+      commonWordMinVariants: 5,
     };
 
     it("clusters Lidl variants and picks the most-used canonical", async () => {
@@ -314,6 +316,95 @@ describe("PayeeAutoMergeService", () => {
         });
 
         expect(mockCategoriesRepository.find).not.toHaveBeenCalled();
+      });
+    });
+
+    describe("ignore common words", () => {
+      it("merges a generic-word base when the option is off", async () => {
+        mockPayeesService.findAll.mockResolvedValue([
+          makePayee("p1", "Cafe", 3),
+          makePayee("p2", "Cafe Nero", 2),
+          makePayee("p3", "Cafe Rouge", 2),
+        ]);
+
+        const { groups } = await service.previewAutoMerge(userId, opts);
+
+        // Without the option, the bare "Cafe" anchors an over-broad group.
+        expect(groups).toHaveLength(1);
+        expect(groups[0].members).toHaveLength(3);
+      });
+
+      it("excludes payees anchored on a seed-list common word", async () => {
+        mockPayeesService.findAll.mockResolvedValue([
+          makePayee("p1", "Cafe", 3),
+          makePayee("p2", "Cafe Nero", 2),
+          makePayee("p3", "Cafe Rouge", 2),
+        ]);
+
+        const { groups } = await service.previewAutoMerge(userId, {
+          ...opts,
+          ignoreCommonWords: true,
+        });
+
+        expect(groups).toHaveLength(0);
+      });
+
+      it("auto-detects a common leading word from branching continuations", async () => {
+        // "Plaza" is not in the seed list but five distinct payees branch off
+        // it, so it is detected as common at the default sensitivity.
+        mockPayeesService.findAll.mockResolvedValue([
+          makePayee("p0", "Plaza", 9),
+          makePayee("p1", "Plaza Tower", 3),
+          makePayee("p2", "Plaza Heights", 3),
+          makePayee("p3", "Plaza Gardens", 3),
+          makePayee("p4", "Plaza Vista", 3),
+          makePayee("p5", "Plaza Ridge", 3),
+        ]);
+
+        const merged = await service.previewAutoMerge(userId, opts);
+        expect(merged.groups).toHaveLength(1); // off: bare Plaza over-merges
+
+        const filtered = await service.previewAutoMerge(userId, {
+          ...opts,
+          ignoreCommonWords: true,
+        });
+        expect(filtered.groups).toHaveLength(0); // on: Plaza excluded
+      });
+
+      it("respects the sensitivity threshold for auto-detection", async () => {
+        mockPayeesService.findAll.mockResolvedValue([
+          makePayee("p0", "Plaza", 9),
+          makePayee("p1", "Plaza Tower", 3),
+          makePayee("p2", "Plaza Heights", 3),
+          makePayee("p3", "Plaza Gardens", 3),
+          makePayee("p4", "Plaza Vista", 3),
+          makePayee("p5", "Plaza Ridge", 3),
+        ]);
+
+        // Five distinct continuations; a threshold of 6 leaves Plaza unflagged.
+        const { groups } = await service.previewAutoMerge(userId, {
+          ...opts,
+          ignoreCommonWords: true,
+          commonWordMinVariants: 6,
+        });
+
+        expect(groups).toHaveLength(1);
+      });
+
+      it("still merges a genuine brand that is not common", async () => {
+        mockPayeesService.findAll.mockResolvedValue([
+          makePayee("p1", "Lidl", 10),
+          makePayee("p2", "LIDL sp. z o.o.", 2),
+          makePayee("p3", "LIDL WARSZAWA 0421", 5),
+        ]);
+
+        const { groups } = await service.previewAutoMerge(userId, {
+          ...opts,
+          ignoreCommonWords: true,
+        });
+
+        expect(groups).toHaveLength(1);
+        expect(groups[0].suggestedAlias).toBe("*LIDL*");
       });
     });
   });

@@ -14,6 +14,7 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { PayeesService } from "./payees.service";
 import { matchesAliasPattern } from "./alias-match.util";
+import { COMMON_WORD_SEED } from "./payee-common-words";
 import {
   normalizePayeeName,
   significantTokens,
@@ -30,6 +31,13 @@ export interface AutoMergeOptions {
   // When not "off", only payees sharing the same category ("category" = the
   // top-level parent, "subcategory" = the exact default category) may merge.
   categoryMatch: CategoryMatchMode;
+  // When true, payees whose leading word is "common" (a generic business word,
+  // a country name, or a word many distinct payees branch off) are excluded so
+  // they never anchor a group or alias.
+  ignoreCommonWords: boolean;
+  // Auto-detect threshold: a leading token is treated as common once at least
+  // this many payees branch off it with distinct continuations.
+  commonWordMinVariants: number;
 }
 
 export interface AutoMergeMember {
@@ -131,8 +139,14 @@ export class PayeeAutoMergeService {
       }))
       .filter((entry) => entry.tokens.length > 0);
 
+    // Optionally drop payees anchored on a "common" leading word so generic
+    // words never form a group or an over-broad alias.
+    const eligible = opts.ignoreCommonWords
+      ? this.dropCommonAnchors(annotated, opts.commonWordMinVariants)
+      : annotated;
+
     const clusters = this.clusterPayees(
-      annotated,
+      eligible,
       opts.similarityThreshold,
       opts.categoryMatch !== "off",
     );
@@ -148,6 +162,38 @@ export class PayeeAutoMergeService {
       });
 
     return { groups };
+  }
+
+  /**
+   * Exclude payees whose leading significant token is "common" - either in the
+   * curated seed list (generic business words, country names) or detected from
+   * the data because at least `minVariants` distinct continuations branch off it
+   * (e.g. "Royal Electric", "Royal City Nursery", "Royal Cat..."; also catches
+   * recurring city names). This keeps generic words from anchoring a group or
+   * producing a broad alias.
+   */
+  private dropCommonAnchors(
+    annotated: AnnotatedPayee[],
+    minVariants: number,
+  ): AnnotatedPayee[] {
+    // Count distinct second tokens per leading token to auto-detect common ones.
+    const continuations = new Map<string, Set<string>>();
+    for (const entry of annotated) {
+      const lead = entry.tokens[0];
+      const second = entry.tokens[1];
+      if (second === undefined) continue; // bare name adds no continuation
+      const set = continuations.get(lead);
+      if (set) set.add(second);
+      else continuations.set(lead, new Set([second]));
+    }
+
+    const isCommon = (token: string): boolean => {
+      if (COMMON_WORD_SEED.has(token)) return true;
+      const conts = continuations.get(token);
+      return conts !== undefined && conts.size >= minVariants;
+    };
+
+    return annotated.filter((entry) => !isCommon(entry.tokens[0]));
   }
 
   /**

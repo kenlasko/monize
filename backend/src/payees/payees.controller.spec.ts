@@ -562,7 +562,16 @@ describe("PayeesController", () => {
     it("delegates with clamped options", async () => {
       mockAutoMergeService.previewAutoMerge.mockResolvedValue({ groups: [] });
 
-      await controller.previewAutoMerge(mockReq, 2, 0.85, 3, false, "off");
+      await controller.previewAutoMerge(
+        mockReq,
+        2,
+        0.85,
+        3,
+        false,
+        "off",
+        false,
+        5,
+      );
 
       expect(mockAutoMergeService.previewAutoMerge).toHaveBeenCalledWith(
         "user-1",
@@ -572,6 +581,8 @@ describe("PayeesController", () => {
           minTokenLength: 3,
           includeInactive: false,
           categoryMatch: "off",
+          ignoreCommonWords: false,
+          commonWordMinVariants: 5,
         },
       );
     });
@@ -586,6 +597,8 @@ describe("PayeesController", () => {
         99,
         true,
         "subcategory",
+        true,
+        99,
       );
 
       expect(mockAutoMergeService.previewAutoMerge).toHaveBeenCalledWith(
@@ -596,6 +609,8 @@ describe("PayeesController", () => {
           minTokenLength: 10,
           includeInactive: true,
           categoryMatch: "subcategory",
+          ignoreCommonWords: true,
+          commonWordMinVariants: 50,
         },
       );
     });
@@ -603,7 +618,16 @@ describe("PayeesController", () => {
     it("falls back to 'off' for an unknown categoryMatch value", async () => {
       mockAutoMergeService.previewAutoMerge.mockResolvedValue({ groups: [] });
 
-      await controller.previewAutoMerge(mockReq, 2, 0.85, 3, false, "bogus");
+      await controller.previewAutoMerge(
+        mockReq,
+        2,
+        0.85,
+        3,
+        false,
+        "bogus",
+        false,
+        5,
+      );
 
       expect(mockAutoMergeService.previewAutoMerge).toHaveBeenCalledWith(
         "user-1",

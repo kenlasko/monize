@@ -63,6 +63,8 @@ export function AutoMergePayeesDialog({
   const [categoryMatchEnabled, setCategoryMatchEnabled] = useState(false);
   const [categoryGranularity, setCategoryGranularity] =
     useState<CategoryGranularity>('category');
+  const [ignoreCommonWords, setIgnoreCommonWords] = useState(false);
+  const [commonWordMinVariants, setCommonWordMinVariants] = useState(5);
 
   const [groups, setGroups] = useState<EditableGroup[]>([]);
   const [hasPreviewLoaded, setHasPreviewLoaded] = useState(false);
@@ -89,6 +91,8 @@ export function AutoMergePayeesDialog({
         minTokenLength,
         includeInactive,
         categoryMatch: categoryMatchEnabled ? categoryGranularity : 'off',
+        ignoreCommonWords,
+        commonWordMinVariants,
       });
       setGroups(toEditableGroups(results));
       setHasPreviewLoaded(true);
@@ -306,6 +310,45 @@ export function AutoMergePayeesDialog({
                     </button>
                   ),
                 )}
+              </div>
+            )}
+          </div>
+
+          {/* Ignore common words */}
+          <div>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <ToggleSwitch
+                checked={ignoreCommonWords}
+                onChange={setIgnoreCommonWords}
+                label={t('autoMerge.ignoreCommonWordsLabel')}
+              />
+              <span className="text-sm text-gray-700 dark:text-gray-300">
+                {t('autoMerge.ignoreCommonWordsLabel')}
+              </span>
+            </label>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              {t('autoMerge.ignoreCommonWordsHelp')}
+            </p>
+            {ignoreCommonWords && (
+              <div className="mt-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('autoMerge.commonWordSensitivityLabel', {
+                    count: commonWordMinVariants,
+                  })}
+                </label>
+                <input
+                  type="range"
+                  min="2"
+                  max="15"
+                  value={commonWordMinVariants}
+                  onChange={(e) =>
+                    setCommonWordMinVariants(parseInt(e.target.value))
+                  }
+                  className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {t('autoMerge.commonWordSensitivityHelp')}
+                </p>
               </div>
             )}
           </div>

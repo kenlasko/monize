@@ -183,7 +183,11 @@
     "granularity": {
       "category": "Categorie",
       "subcategory": "Subcategorie"
-    }
+    },
+    "ignoreCommonWordsLabel": "Veelvoorkomende woorden negeren",
+    "ignoreCommonWordsHelp": "Groepeer niet op algemene woorden (Restaurant, Cafe, landnamen) of woorden waarmee veel verschillende begunstigden beginnen.",
+    "commonWordSensitivityLabel": "Gevoeligheid voor veelvoorkomende woorden: {count}+ varianten",
+    "commonWordSensitivityHelp": "Een beginwoord geldt als veelvoorkomend zodra ten minste zoveel verschillende begunstigden ervan aftakken. Lager = agressiever filteren."
   },
   "deactivateUnused": {
     "title": "Ongebruikte begunstigden deactiveren",

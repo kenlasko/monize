@@ -183,7 +183,11 @@
     "granularity": {
       "category": "Kategorie",
       "subcategory": "Unterkategorie"
-    }
+    },
+    "ignoreCommonWordsLabel": "Häufige Wörter ignorieren",
+    "ignoreCommonWordsHelp": "Gruppen nicht auf generische Wörter (Restaurant, Cafe, Ländernamen) oder Wörter stützen, mit denen viele verschiedene Zahlungsempfänger beginnen.",
+    "commonWordSensitivityLabel": "Empfindlichkeit für häufige Wörter: {count}+ Varianten",
+    "commonWordSensitivityHelp": "Ein führendes Wort gilt als häufig, sobald mindestens so viele verschiedene Zahlungsempfänger davon abzweigen. Niedriger = aggressiver filtern."
   },
   "deactivateUnused": {
     "title": "Ungenutzte Zahlungsempfänger deaktivieren",

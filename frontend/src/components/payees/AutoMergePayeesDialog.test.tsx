@@ -84,7 +84,25 @@ describe('AutoMergePayeesDialog', () => {
       minTokenLength: 3,
       includeInactive: false,
       categoryMatch: 'off',
+      ignoreCommonWords: false,
+      commonWordMinVariants: 5,
     });
+  });
+
+  it('requests common-word filtering when the toggle is enabled', async () => {
+    mockPreview.mockResolvedValue([]);
+    render(<AutoMergePayeesDialog isOpen onClose={onClose} onSuccess={onSuccess} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('switch', { name: 'Ignore common words' }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Preview Groups'));
+    });
+
+    expect(mockPreview).toHaveBeenCalledWith(
+      expect.objectContaining({ ignoreCommonWords: true, commonWordMinVariants: 5 }),
+    );
   });
 
   it('requests category matching when enabled, defaulting to category granularity', async () => {

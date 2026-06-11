@@ -183,7 +183,11 @@
     "granularity": {
       "category": "Category",
       "subcategory": "Subcategory"
-    }
+    },
+    "ignoreCommonWordsLabel": "Ignore common words",
+    "ignoreCommonWordsHelp": "Don't anchor groups on generic words (Restaurant, Cafe, country names) or words that many different payees start with.",
+    "commonWordSensitivityLabel": "Common-word sensitivity: {count}+ variants",
+    "commonWordSensitivityHelp": "A leading word is treated as common once at least this many different payees branch off it. Lower = filter more aggressively."
   },
   "deactivateUnused": {
     "title": "Deactivate Unused Payees",

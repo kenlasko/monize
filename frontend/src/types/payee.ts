@@ -58,6 +58,8 @@ export interface AutoMergePreviewParams {
   minTokenLength: number;
   includeInactive: boolean;
   categoryMatch: CategoryMatchMode;
+  ignoreCommonWords: boolean;
+  commonWordMinVariants: number;
 }
 
 export interface AutoMergeMember {

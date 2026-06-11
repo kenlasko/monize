@@ -224,6 +224,8 @@ export const payeesApi = {
         minTokenLength: params.minTokenLength,
         includeInactive: params.includeInactive,
         categoryMatch: params.categoryMatch,
+        ignoreCommonWords: params.ignoreCommonWords,
+        commonWordMinVariants: params.commonWordMinVariants,
       },
     });
     return response.data.groups;
