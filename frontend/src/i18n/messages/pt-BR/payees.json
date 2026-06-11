@@ -146,7 +146,7 @@
     "minGroupSizeLabel": "Tamanho mínimo do grupo: {count}",
     "minGroupSizeHelp": "Sugerir apenas grupos com pelo menos este número de beneficiários",
     "similarityLabel": "Limite de similaridade: {percent}%",
-    "similarityHelp": "Quão semelhantes dois nomes devem ser para serem mesclados como variantes com erros de digitação",
+    "similarityHelp": "Tolerância ortográfica: reduza-a para agrupar também correspondências próximas como LIDL / LIDI; 100% exige uma correspondência exata da palavra-chave.",
     "minTokenLengthLabel": "Comprimento mínimo da palavra-chave: {count}",
     "minTokenLengthHelp": "Ignorar palavras-chave mais curtas que isto ao agrupar",
     "includeInactiveLabel": "Incluir beneficiários inativos",

@@ -146,7 +146,7 @@
     "minGroupSizeLabel": "Mindestgruppengröße: {count}",
     "minGroupSizeHelp": "Nur Gruppen mit mindestens so vielen Zahlungsempfängern vorschlagen",
     "similarityLabel": "Ähnlichkeitsschwelle: {percent}%",
-    "similarityHelp": "Wie ähnlich zwei Namen sein müssen, um als Tippfehler-Varianten zusammengeführt zu werden",
+    "similarityHelp": "Schreibtoleranz: niedriger einstellen, um auch ähnliche Schreibweisen wie LIDL / LIDI zu gruppieren; 100% erfordert eine exakte Schlüsselwortübereinstimmung.",
     "minTokenLengthLabel": "Mindestlänge des Schlüsselworts: {count}",
     "minTokenLengthHelp": "Schlüsselwörter, die kürzer sind, beim Gruppieren ignorieren",
     "includeInactiveLabel": "Inaktive Zahlungsempfänger einbeziehen",

@@ -65,7 +65,6 @@ type PayeeWithStats = Awaited<ReturnType<PayeesService["findAll"]>>[number];
 
 interface Cluster {
   token: string;
-  repNormalized: string; // shortest normalized name in the cluster
   payees: PayeeWithStats[];
 }
 
@@ -119,21 +118,20 @@ export class PayeeAutoMergeService {
       if (!existing) {
         buckets.set(entry.token, {
           token: entry.token,
-          repNormalized: entry.normalized,
           payees: [entry.payee],
         });
       } else {
-        const payees = [...existing.payees, entry.payee];
-        const repNormalized =
-          entry.normalized.length < existing.repNormalized.length
-            ? entry.normalized
-            : existing.repNormalized;
-        buckets.set(entry.token, { ...existing, repNormalized, payees });
+        buckets.set(entry.token, {
+          ...existing,
+          payees: [...existing.payees, entry.payee],
+        });
       }
     }
 
-    // Stage 2: fuzzy-merge buckets whose representatives are close enough
-    // (catches typo variants with different leading tokens, e.g. LIDL/LIDI).
+    // Stage 2: fuzzy-merge buckets whose leading tokens are close enough so
+    // spelling variants that fell into different token buckets still group
+    // (e.g. LIDL/LIDI, WALMART/WALMRT). Exact-token buckets are already merged
+    // in Stage 1; this is where the similarity threshold takes effect.
     const clusters = this.fuzzyMergeClusters(
       [...buckets.values()],
       opts.similarityThreshold,
@@ -179,13 +177,13 @@ export class PayeeAutoMergeService {
       if (ra !== rb) parent[ra] = rb;
     };
 
+    // Compare leading tokens (not full names): a token matches itself at 1.0,
+    // so a threshold of 1 means "exact tokens only" while lower values pull in
+    // near-token spelling variants.
     for (let i = 0; i < clusters.length; i++) {
       for (let j = i + 1; j < clusters.length; j++) {
         if (find(i) === find(j)) continue;
-        if (
-          similarity(clusters[i].repNormalized, clusters[j].repNormalized) >=
-          threshold
-        ) {
+        if (similarity(clusters[i].token, clusters[j].token) >= threshold) {
           union(i, j);
         }
       }
@@ -199,18 +197,13 @@ export class PayeeAutoMergeService {
       if (!existing) {
         merged.set(root, current);
       } else {
-        const payees = [...existing.payees, ...current.payees];
-        // Keep the token/representative of the larger contributing bucket so
-        // the generated alias is anchored on the dominant spelling.
+        // Keep the token of the larger contributing bucket so the generated
+        // alias is anchored on the dominant spelling.
         const dominant =
           current.payees.length > existing.payees.length ? current : existing;
         merged.set(root, {
           token: dominant.token,
-          repNormalized:
-            current.repNormalized.length < existing.repNormalized.length
-              ? current.repNormalized
-              : existing.repNormalized,
-          payees,
+          payees: [...existing.payees, ...current.payees],
         });
       }
     }

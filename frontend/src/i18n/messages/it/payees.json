@@ -146,7 +146,7 @@
     "minGroupSizeLabel": "Dimensione minima del gruppo: {count}",
     "minGroupSizeHelp": "Suggerisci solo gruppi con almeno questo numero di beneficiari",
     "similarityLabel": "Soglia di somiglianza: {percent}%",
-    "similarityHelp": "Quanto devono essere simili due nomi per essere uniti come varianti con errori di battitura",
+    "similarityHelp": "Tolleranza ortografica: abbassala per raggruppare anche corrispondenze simili come LIDL / LIDI; 100% richiede una corrispondenza esatta della parola chiave.",
     "minTokenLengthLabel": "Lunghezza minima della parola chiave: {count}",
     "minTokenLengthHelp": "Ignora le parole chiave più corte di questo valore durante il raggruppamento",
     "includeInactiveLabel": "Includi beneficiari inattivi",

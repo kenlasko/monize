@@ -146,7 +146,7 @@
     "minGroupSizeLabel": "Minimalny rozmiar grupy: {count}",
     "minGroupSizeHelp": "Proponuj tylko grupy z co najmniej taką liczbą odbiorców",
     "similarityLabel": "Próg podobieństwa: {percent}%",
-    "similarityHelp": "Jak bardzo dwie nazwy muszą być podobne, aby scalić je jako warianty z literówkami",
+    "similarityHelp": "Tolerancja pisowni: zmniejsz ją, aby grupować także zbliżone warianty, np. LIDL / LIDI; 100% wymaga dokładnego dopasowania słowa kluczowego.",
     "minTokenLengthLabel": "Minimalna długość słowa kluczowego: {count}",
     "minTokenLengthHelp": "Ignoruj słowa kluczowe krótsze niż ta wartość podczas grupowania",
     "includeInactiveLabel": "Uwzględnij nieaktywnych odbiorców",

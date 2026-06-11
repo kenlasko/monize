@@ -134,6 +134,57 @@ describe("PayeeAutoMergeService", () => {
       expect(groups[0].suggestedCanonicalPayeeId).toBe("p1");
     });
 
+    it("groups near-token spelling variants when the threshold is lowered", async () => {
+      mockPayeesService.findAll.mockResolvedValue([
+        makePayee("p1", "Lidl", 10),
+        makePayee("p2", "Lidi", 4),
+      ]);
+
+      // similarity("LIDL", "LIDI") === 0.75
+      const { groups } = await service.previewAutoMerge(userId, {
+        ...opts,
+        similarityThreshold: 0.7,
+      });
+
+      expect(groups).toHaveLength(1);
+      expect(groups[0].members).toHaveLength(2);
+    });
+
+    it("keeps near-token variants apart when the threshold is high", async () => {
+      mockPayeesService.findAll.mockResolvedValue([
+        makePayee("p1", "Lidl", 10),
+        makePayee("p2", "Lidi", 4),
+      ]);
+
+      // 0.75 similarity falls below the 0.85 default, so no group forms.
+      const { groups } = await service.previewAutoMerge(userId, {
+        ...opts,
+        similarityThreshold: 0.85,
+      });
+
+      expect(groups).toHaveLength(0);
+    });
+
+    it("only groups exact tokens at a threshold of 1", async () => {
+      mockPayeesService.findAll.mockResolvedValue([
+        makePayee("p1", "Lidl", 10),
+        makePayee("p2", "Lidi", 4),
+        makePayee("p3", "LIDL sp. z o.o.", 2),
+      ]);
+
+      const { groups } = await service.previewAutoMerge(userId, {
+        ...opts,
+        similarityThreshold: 1,
+      });
+
+      // p1 + p3 share the exact LIDL token; p2 (LIDI) stays out.
+      expect(groups).toHaveLength(1);
+      expect(groups[0].members.map((m) => m.payeeId).sort()).toEqual([
+        "p1",
+        "p3",
+      ]);
+    });
+
     it("ignores payees with no significant token", async () => {
       mockPayeesService.findAll.mockResolvedValue([
         makePayee("p1", "12345", 4),

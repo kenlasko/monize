@@ -146,7 +146,7 @@
     "minGroupSizeLabel": "[XX-Minimum Group Size: {count}-XX]",
     "minGroupSizeHelp": "[XX-Only suggest groups with at least this many payees-XX]",
     "similarityLabel": "[XX-Similarity Threshold: {percent}%-XX]",
-    "similarityHelp": "[XX-How close two names must be to merge as typo variants-XX]",
+    "similarityHelp": "[XX-Spelling tolerance: lower it to also group near-matches like LIDL / LIDI; 100% requires an exact keyword match.-XX]",
     "minTokenLengthLabel": "[XX-Minimum Keyword Length: {count}-XX]",
     "minTokenLengthHelp": "[XX-Ignore keywords shorter than this when grouping-XX]",
     "includeInactiveLabel": "[XX-Include inactive payees-XX]",

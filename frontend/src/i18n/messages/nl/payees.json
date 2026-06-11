@@ -146,7 +146,7 @@
     "minGroupSizeLabel": "Minimale groepsgrootte: {count}",
     "minGroupSizeHelp": "Alleen groepen met ten minste zoveel begunstigden voorstellen",
     "similarityLabel": "Gelijkenisdrempel: {percent}%",
-    "similarityHelp": "Hoe sterk twee namen op elkaar moeten lijken om als typefoutvarianten te worden samengevoegd",
+    "similarityHelp": "Spellingtolerantie: verlaag deze om ook vergelijkbare schrijfwijzen zoals LIDL / LIDI te groeperen; 100% vereist een exacte trefwoordovereenkomst.",
     "minTokenLengthLabel": "Minimale trefwoordlengte: {count}",
     "minTokenLengthHelp": "Negeer trefwoorden die korter zijn dan dit bij het groeperen",
     "includeInactiveLabel": "Inactieve begunstigden opnemen",
