@@ -5,7 +5,7 @@ import {
   Logger,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { DataSource, QueryRunner, Repository } from "typeorm";
+import { DataSource, In, QueryRunner, Repository } from "typeorm";
 import { tr } from "../i18n/translate";
 import { Payee } from "./entities/payee.entity";
 import { PayeeAlias } from "./entities/payee-alias.entity";
@@ -52,6 +52,10 @@ export interface AutoMergeGroupPreview {
   suggestedCanonicalPayeeId: string;
   suggestedName: string;
   suggestedAlias: string;
+  // The group's most-used transaction category (across all members), offered as
+  // a default category for the merged payee; null when no member has any
+  // categorized transactions.
+  suggestedCategoryId: string | null;
   members: AutoMergeMember[];
   totalTransactions: number;
 }
@@ -61,6 +65,8 @@ export interface ApplyAutoMergeGroup {
   canonicalName?: string;
   sourcePayeeIds: string[];
   alias?: string;
+  // Optional default category to set on the canonical payee after merging.
+  defaultCategoryId?: string;
 }
 
 export interface ApplyAutoMergeResult {
@@ -117,6 +123,11 @@ export class PayeeAutoMergeService {
       opts.includeInactive ? "all" : "active",
     );
 
+    // Per-payee transaction-category counts drive both the optional category
+    // filter (dominant category fallback) and the suggested default category
+    // returned for each group, so build it once up front.
+    const categoryCounts = await this.buildCategoryCountsMap(userId);
+
     // Resolve each payee's effective category when the filter is on: prefer the
     // explicit default category, else fall back to the payee's dominant
     // transaction category. A null key means "category unknown" - such payees
@@ -127,7 +138,7 @@ export class PayeeAutoMergeService {
         ? await this.buildRootCategoryMap(userId)
         : null;
     const dominantByPayee = categoryFilterOn
-      ? await this.buildDominantCategoryMap(userId)
+      ? this.dominantFromCounts(categoryCounts)
       : null;
     const categoryKeyOf = (payee: PayeeWithStats): string | null => {
       if (!categoryFilterOn) return null;
@@ -163,7 +174,9 @@ export class PayeeAutoMergeService {
 
     const groups: AutoMergeGroupPreview[] = clusters
       .filter((members) => members.length >= opts.minGroupSize)
-      .map((members) => this.toGroupPreview(members, opts.minTokenLength))
+      .map((members) =>
+        this.toGroupPreview(members, opts.minTokenLength, categoryCounts),
+      )
       .sort((a, b) => {
         if (b.totalTransactions !== a.totalTransactions) {
           return b.totalTransactions - a.totalTransactions;
@@ -338,13 +351,14 @@ export class PayeeAutoMergeService {
   }
 
   /**
-   * Build a map from payee id to its dominant (most-used) transaction category,
-   * used as the payee's category when no explicit default category is set.
-   * Transfers and uncategorized transactions are ignored.
+   * Build a map from payee id to its per-category transaction counts
+   * (payeeId -> categoryId -> count). Transfers and uncategorized transactions
+   * are ignored. Drives both the dominant-category fallback used by the category
+   * filter and the suggested default category surfaced per merge group.
    */
-  private async buildDominantCategoryMap(
+  private async buildCategoryCountsMap(
     userId: string,
-  ): Promise<Map<string, string>> {
+  ): Promise<Map<string, Map<string, number>>> {
     const rows = await this.transactionsRepository
       .createQueryBuilder("t")
       .select("t.payee_id", "payeeId")
@@ -358,15 +372,72 @@ export class PayeeAutoMergeService {
       .addGroupBy("t.category_id")
       .getRawMany<{ payeeId: string; categoryId: string; cnt: string }>();
 
-    const best = new Map<string, { categoryId: string; count: number }>();
+    const map = new Map<string, Map<string, number>>();
     for (const row of rows) {
       const count = parseInt(row.cnt, 10);
-      const current = best.get(row.payeeId);
-      if (!current || count > current.count) {
-        best.set(row.payeeId, { categoryId: row.categoryId, count });
+      const inner = map.get(row.payeeId);
+      if (inner) {
+        inner.set(row.categoryId, count);
+      } else {
+        map.set(row.payeeId, new Map([[row.categoryId, count]]));
       }
     }
-    return new Map([...best].map(([payeeId, v]) => [payeeId, v.categoryId]));
+    return map;
+  }
+
+  /**
+   * Reduce per-category counts to each payee's single dominant (most-used)
+   * category, used as the payee's category when no explicit default is set.
+   */
+  private dominantFromCounts(
+    categoryCounts: Map<string, Map<string, number>>,
+  ): Map<string, string> {
+    const result = new Map<string, string>();
+    for (const [payeeId, counts] of categoryCounts) {
+      let bestCategory: string | null = null;
+      let bestCount = -1;
+      for (const [categoryId, count] of counts) {
+        if (count > bestCount) {
+          bestCategory = categoryId;
+          bestCount = count;
+        }
+      }
+      if (bestCategory !== null) {
+        result.set(payeeId, bestCategory);
+      }
+    }
+    return result;
+  }
+
+  /**
+   * The group's most-used transaction category: sum each member's per-category
+   * counts and pick the highest total (ties broken by category id for
+   * determinism). Returns null when no member has any categorized transactions.
+   */
+  private suggestedCategoryForGroup(
+    payeeList: PayeeWithStats[],
+    categoryCounts: Map<string, Map<string, number>>,
+  ): string | null {
+    const totals = new Map<string, number>();
+    for (const payee of payeeList) {
+      const counts = categoryCounts.get(payee.id);
+      if (!counts) continue;
+      for (const [categoryId, count] of counts) {
+        totals.set(categoryId, (totals.get(categoryId) ?? 0) + count);
+      }
+    }
+    let best: string | null = null;
+    let bestCount = 0;
+    for (const [categoryId, count] of totals) {
+      if (
+        count > bestCount ||
+        (count === bestCount && best !== null && categoryId < best)
+      ) {
+        best = categoryId;
+        bestCount = count;
+      }
+    }
+    return best;
   }
 
   /**
@@ -384,6 +455,7 @@ export class PayeeAutoMergeService {
   private toGroupPreview(
     payeeList: PayeeWithStats[],
     minTokenLength: number,
+    categoryCounts: Map<string, Map<string, number>>,
   ): AutoMergeGroupPreview {
     // Canonical = most transactions, tie-break on shortest then alphabetical.
     const canonical = [...payeeList].sort((a, b) => {
@@ -429,6 +501,10 @@ export class PayeeAutoMergeService {
       suggestedCanonicalPayeeId: canonical.id,
       suggestedName: canonical.name,
       suggestedAlias: aliasBase ? `*${aliasBase}*` : "",
+      suggestedCategoryId: this.suggestedCategoryForGroup(
+        payeeList,
+        categoryCounts,
+      ),
       members,
       totalTransactions,
     };
@@ -464,6 +540,33 @@ export class PayeeAutoMergeService {
       if (group.sourcePayeeIds.includes(group.canonicalPayeeId)) {
         throw new BadRequestException(
           tr("errors.payees.mergeSelf", "Cannot merge a payee into itself"),
+        );
+      }
+    }
+
+    // Batch-verify any chosen default categories belong to the user before
+    // touching the database, so an invalid id fails fast rather than mid-merge.
+    const categoryIds = [
+      ...new Set(
+        groups
+          .map((g) => g.defaultCategoryId)
+          .filter((id): id is string => !!id),
+      ),
+    ];
+    if (categoryIds.length > 0) {
+      const owned = await this.categoriesRepository.find({
+        where: { id: In(categoryIds), userId },
+        select: ["id"],
+      });
+      const ownedIds = new Set(owned.map((c) => c.id));
+      const invalidIds = categoryIds.filter((id) => !ownedIds.has(id));
+      if (invalidIds.length > 0) {
+        throw new BadRequestException(
+          tr(
+            "errors.payees.categoryIdsNotOwned",
+            `Category IDs not found or not owned by user: ${invalidIds.join(", ")}`,
+            { ids: invalidIds.join(", ") },
+          ),
         );
       }
     }
@@ -534,6 +637,16 @@ export class PayeeAutoMergeService {
         canonical,
         group,
       );
+
+      // Optionally set the chosen default category on the canonical. Ownership
+      // was validated up front in applyAutoMerge.
+      if (group.defaultCategoryId) {
+        await queryRunner.manager.update(
+          Payee,
+          { id: canonical.id, userId },
+          { defaultCategoryId: group.defaultCategoryId },
+        );
+      }
 
       // Reassign each source's data to the canonical, then delete the source.
       let transactionsMigrated = 0;

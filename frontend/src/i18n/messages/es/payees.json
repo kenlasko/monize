@@ -120,6 +120,7 @@
     "suggestionsHeader": "Sugerencias ({count} encontradas)",
     "selectAll": "Seleccionar todos",
     "selectNone": "Deseleccionar todos",
+    "selectPayeeLabel": "Seleccionar {name}",
     "empty": {
       "line1": "Ningún beneficiario coincide con los criterios actuales.",
       "line2": "Intenta ajustar la configuración anterior."
@@ -160,12 +161,17 @@
     "includeGroupLabel": "Incluir este grupo",
     "canonicalNameLabel": "Conservar como beneficiario",
     "aliasLabel": "Alias para futuras importaciones",
+    "defaultCategoryLabel": "Categoría predeterminada (opcional)",
     "aliasPlaceholder": "p. ej., *LIDL*",
     "keepLabel": "Conservar este beneficiario",
     "includeMemberLabel": "Incluir en la combinación",
     "keepBadge": "Conservar",
+    "keepColumn": "Conservar",
+    "mergeColumn": "Combinar",
+    "membersHelp": "Seleccione el beneficiario que desea conservar. Los demás se combinarán con él.",
     "memberTransactions": "{count, plural, one {# transacción} other {# transacciones}}",
     "selectedCount": "{count, plural, one {# grupo seleccionado} other {# grupos seleccionados}}",
+    "payeesMergedCount": "{count, plural, one {# beneficiario a combinar} other {# beneficiarios a combinar}}",
     "applyButton": "Combinar {count, plural, one {# grupo} other {# grupos}}",
     "applying": "Combinando...",
     "toasts": {
@@ -202,6 +208,7 @@
     "candidatesHeader": "Candidatos ({count} encontrados)",
     "selectAll": "Seleccionar todos",
     "selectNone": "Deseleccionar todos",
+    "selectPayeeLabel": "Seleccionar {name}",
     "neverUsed": "Nunca usado",
     "empty": {
       "line1": "Ningún beneficiario coincide con los criterios actuales.",

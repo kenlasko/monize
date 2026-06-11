@@ -120,6 +120,7 @@
     "suggestionsHeader": "Vorschläge ({count} gefunden)",
     "selectAll": "Alle auswählen",
     "selectNone": "Keine auswählen",
+    "selectPayeeLabel": "{name} auswählen",
     "empty": {
       "line1": "Keine Zahlungsempfänger entsprechen den aktuellen Kriterien.",
       "line2": "Bitte die Einstellungen oben anpassen."
@@ -160,12 +161,17 @@
     "includeGroupLabel": "Diese Gruppe einbeziehen",
     "canonicalNameLabel": "Als Zahlungsempfänger behalten",
     "aliasLabel": "Alias für künftige Importe",
+    "defaultCategoryLabel": "Standardkategorie (optional)",
     "aliasPlaceholder": "z. B. *LIDL*",
     "keepLabel": "Diesen Zahlungsempfänger behalten",
     "includeMemberLabel": "In Zusammenführung einbeziehen",
     "keepBadge": "Behalten",
+    "keepColumn": "Behalten",
+    "mergeColumn": "Zusammenführen",
+    "membersHelp": "Wählen Sie den Zahlungsempfänger, den Sie behalten möchten. Die anderen werden in ihn zusammengeführt.",
     "memberTransactions": "{count, plural, one {# Transaktion} other {# Transaktionen}}",
     "selectedCount": "{count, plural, one {# Gruppe ausgewählt} other {# Gruppen ausgewählt}}",
+    "payeesMergedCount": "{count, plural, one {# Zahlungsempfänger zum Zusammenführen} other {# Zahlungsempfänger zum Zusammenführen}}",
     "applyButton": "{count, plural, one {# Gruppe zusammenführen} other {# Gruppen zusammenführen}}",
     "applying": "Wird zusammengeführt...",
     "toasts": {
@@ -202,6 +208,7 @@
     "candidatesHeader": "Kandidaten ({count} gefunden)",
     "selectAll": "Alle auswählen",
     "selectNone": "Keine auswählen",
+    "selectPayeeLabel": "{name} auswählen",
     "neverUsed": "Nie verwendet",
     "empty": {
       "line1": "Keine Zahlungsempfänger entsprechen den aktuellen Kriterien.",

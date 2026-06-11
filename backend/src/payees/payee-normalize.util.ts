@@ -49,6 +49,57 @@ const BUSINESS_SUFFIXES: ReadonlySet<string> = new Set([
   "MBH",
 ]);
 
+// Latin letters whose diacritic is an integral stroke or ligature that Unicode
+// NFD does NOT split into a base letter + combining mark. Without an explicit
+// transliteration the diacritic-stripping pass in normalizePayeeName leaves them
+// untouched, and the later [^A-Z0-9] replacement turns them into a word break --
+// so e.g. Polish "MALGORZATA" (with an L-stroke) would wrongly split into "MA"
+// and "GORZATA" and cluster on "GORZATA". Mapped to upper-case ASCII bases since
+// names are upper-cased during normalization.
+const NON_DECOMPOSING_LETTERS: ReadonlyMap<string, string> = new Map([
+  ["Ł", "L"],
+  ["ł", "L"],
+  ["Ø", "O"],
+  ["ø", "O"],
+  ["Đ", "D"],
+  ["đ", "D"],
+  ["Ð", "D"],
+  ["ð", "D"],
+  ["Þ", "TH"],
+  ["þ", "TH"],
+  ["ẞ", "SS"],
+  ["ß", "SS"],
+  ["Æ", "AE"],
+  ["æ", "AE"],
+  ["Œ", "OE"],
+  ["œ", "OE"],
+  ["Ĳ", "IJ"],
+  ["ĳ", "IJ"],
+  ["Ħ", "H"],
+  ["ħ", "H"],
+  ["Ŧ", "T"],
+  ["ŧ", "T"],
+  ["Ŀ", "L"],
+  ["ŀ", "L"],
+  ["Ŋ", "NG"],
+  ["ŋ", "NG"],
+]);
+
+const NON_DECOMPOSING_RE = /[ŁłØøĐđÐðÞþẞßÆæŒœĲĳĦħŦŧĿŀŊŋ]/g;
+
+/**
+ * Replace Latin letters with an integral stroke/ligature (which NFD does not
+ * decompose) with an ASCII equivalent, so the diacritic strip in
+ * normalizePayeeName does not turn them into word breaks. Pure: `replace`
+ * returns a new string.
+ */
+function transliterateNonDecomposing(name: string): string {
+  return name.replace(
+    NON_DECOMPOSING_RE,
+    (ch) => NON_DECOMPOSING_LETTERS.get(ch) ?? ch,
+  );
+}
+
 // Payment-rail / generic noise tokens that never identify a payee. Filtered
 // out when picking the "significant" tokens used for grouping.
 const NOISE_TOKENS: ReadonlySet<string> = new Set([
@@ -84,7 +135,7 @@ const NOISE_TOKENS: ReadonlySet<string> = new Set([
  */
 export function normalizePayeeName(name: string): string {
   if (!name) return "";
-  const tokens = name
+  const tokens = transliterateNonDecomposing(name)
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toUpperCase()

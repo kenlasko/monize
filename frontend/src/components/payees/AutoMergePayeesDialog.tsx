@@ -1,12 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { Combobox } from '@/components/ui/Combobox';
 import { payeesApi } from '@/lib/payees';
 import { AutoMergeGroup } from '@/types/payee';
+import { Category } from '@/types/category';
+import { buildCategoryTree, buildCategoryLabelMap } from '@/lib/categoryUtils';
 import toast from 'react-hot-toast';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
@@ -19,6 +22,7 @@ interface AutoMergePayeesDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  categories?: Category[];
 }
 
 interface EditableGroup {
@@ -28,6 +32,7 @@ interface EditableGroup {
   canonicalPayeeId: string;
   canonicalName: string;
   alias: string;
+  defaultCategoryId: string;
   members: AutoMergeGroup['members'];
   selectedMemberIds: Set<string>;
 }
@@ -39,10 +44,13 @@ function toEditableGroups(groups: AutoMergeGroup[]): EditableGroup[] {
     // key on it.
     id: `group-${index}`,
     groupKey: g.groupKey,
-    included: true,
+    // Groups start de-selected so the user opts in to each merge deliberately.
+    included: false,
     canonicalPayeeId: g.suggestedCanonicalPayeeId,
     canonicalName: g.suggestedName,
     alias: g.suggestedAlias,
+    // Prefill with the group's most-used category, but leave it freely editable.
+    defaultCategoryId: g.suggestedCategoryId ?? '',
     members: g.members,
     selectedMemberIds: new Set(g.members.map((m) => m.payeeId)),
   }));
@@ -52,6 +60,7 @@ export function AutoMergePayeesDialog({
   isOpen,
   onClose,
   onSuccess,
+  categories = [],
 }: AutoMergePayeesDialogProps) {
   const t = useTranslations('payees');
   const tc = useTranslations('common');
@@ -70,6 +79,26 @@ export function AutoMergePayeesDialog({
   const [hasPreviewLoaded, setHasPreviewLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
+
+  // Hierarchical "Parent: Child" options for the per-group default category,
+  // mirroring the payee edit form so the picker behaves identically.
+  const categoryOptions = useMemo(
+    () =>
+      buildCategoryTree(categories).map(({ category }) => {
+        const parent = category.parentId
+          ? categories.find((c) => c.id === category.parentId)
+          : null;
+        return {
+          value: category.id,
+          label: parent ? `${parent.name}: ${category.name}` : category.name,
+        };
+      }),
+    [categories],
+  );
+  const categoryLabelMap = useMemo(
+    () => buildCategoryLabelMap(categories),
+    [categories],
+  );
 
   // Reset state when the dialog opens (info-from-previous-render pattern to
   // avoid setState in an effect).
@@ -143,6 +172,13 @@ export function AutoMergePayeesDialog({
     (g) => g.included && g.selectedMemberIds.size >= 2,
   );
 
+  // Total payees that will be folded into a canonical and removed (every
+  // selected member except the canonical of each applicable group).
+  const payeesToMerge = applicableGroups.reduce(
+    (sum, g) => sum + (g.selectedMemberIds.size - 1),
+    0,
+  );
+
   const handleApply = async () => {
     if (applicableGroups.length === 0) {
       toast.error(t('autoMerge.toasts.selectAtLeastOne'));
@@ -158,6 +194,7 @@ export function AutoMergePayeesDialog({
           (id) => id !== g.canonicalPayeeId,
         ),
         alias: g.alias.trim() || undefined,
+        defaultCategoryId: g.defaultCategoryId || undefined,
       }));
 
       const result = await payeesApi.applyAutoMerge(payload);
@@ -410,7 +447,7 @@ export function AutoMergePayeesDialog({
                         : 'border-gray-200 dark:border-gray-700 opacity-50'
                     }`}
                   >
-                    {/* Group header: include toggle + editable canonical name + alias */}
+                    {/* Group header: include toggle + editable canonical name, alias, category */}
                     <div className="flex items-start gap-3 mb-3">
                       <div className="mt-1">
                         <ToggleSwitch
@@ -421,41 +458,73 @@ export function AutoMergePayeesDialog({
                           label={t('autoMerge.includeGroupLabel')}
                         />
                       </div>
-                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                            {t('autoMerge.canonicalNameLabel')}
-                          </label>
-                          <input
-                            type="text"
-                            value={group.canonicalName}
-                            onChange={(e) =>
-                              updateGroup(group.id, {
-                                canonicalName: e.target.value,
-                              })
-                            }
-                            className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100"
-                          />
+                      <div className="flex-1 space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                              {t('autoMerge.canonicalNameLabel')}
+                            </label>
+                            <input
+                              type="text"
+                              value={group.canonicalName}
+                              onChange={(e) =>
+                                updateGroup(group.id, {
+                                  canonicalName: e.target.value,
+                                })
+                              }
+                              className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                              {t('autoMerge.aliasLabel')}
+                            </label>
+                            <input
+                              type="text"
+                              value={group.alias}
+                              onChange={(e) =>
+                                updateGroup(group.id, { alias: e.target.value })
+                              }
+                              placeholder={t('autoMerge.aliasPlaceholder')}
+                              className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm text-sm font-mono focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100"
+                            />
+                          </div>
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                            {t('autoMerge.aliasLabel')}
+                            {t('autoMerge.defaultCategoryLabel')}
                           </label>
-                          <input
-                            type="text"
-                            value={group.alias}
-                            onChange={(e) =>
-                              updateGroup(group.id, { alias: e.target.value })
+                          <Combobox
+                            placeholder={t('selectCategoryPlaceholder')}
+                            options={categoryOptions}
+                            value={group.defaultCategoryId}
+                            initialDisplayValue={
+                              categoryLabelMap.get(group.defaultCategoryId) ?? ''
                             }
-                            placeholder={t('autoMerge.aliasPlaceholder')}
-                            className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm text-sm font-mono focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100"
+                            onChange={(value) =>
+                              updateGroup(group.id, { defaultCategoryId: value })
+                            }
+                            disabled={!group.included}
+                            usePortal
                           />
                         </div>
                       </div>
                     </div>
 
-                    {/* Members */}
+                    {/* Members: choose which payee to keep; the rest merge into it */}
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                      {t('autoMerge.membersHelp')}
+                    </p>
                     <ul className="divide-y divide-gray-100 dark:divide-gray-700 border-t border-gray-100 dark:border-gray-700">
+                      <li className="flex items-center gap-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                        <span className="w-10 text-center">
+                          {t('autoMerge.keepColumn')}
+                        </span>
+                        <span className="w-10 text-center">
+                          {t('autoMerge.mergeColumn')}
+                        </span>
+                        <span className="flex-1" />
+                      </li>
                       {group.members.map((member) => {
                         const isCanonical = member.payeeId === group.canonicalPayeeId;
                         return (
@@ -463,22 +532,26 @@ export function AutoMergePayeesDialog({
                             key={member.payeeId}
                             className="flex items-center gap-3 py-2 text-sm"
                           >
-                            <input
-                              type="radio"
-                              name={`canonical-${group.id}`}
-                              checked={isCanonical}
-                              onChange={() => setCanonical(group, member.payeeId)}
-                              disabled={!group.included}
-                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600"
-                              aria-label={t('autoMerge.keepLabel')}
-                            />
-                            <ToggleSwitch
-                              size="sm"
-                              checked={group.selectedMemberIds.has(member.payeeId)}
-                              onChange={() => toggleMember(group, member.payeeId)}
-                              disabled={isCanonical || !group.included}
-                              label={t('autoMerge.includeMemberLabel')}
-                            />
+                            <span className="flex w-10 justify-center">
+                              <input
+                                type="radio"
+                                name={`canonical-${group.id}`}
+                                checked={isCanonical}
+                                onChange={() => setCanonical(group, member.payeeId)}
+                                disabled={!group.included}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600"
+                                aria-label={t('autoMerge.keepLabel')}
+                              />
+                            </span>
+                            <span className="flex w-10 justify-center">
+                              <ToggleSwitch
+                                size="sm"
+                                checked={group.selectedMemberIds.has(member.payeeId)}
+                                onChange={() => toggleMember(group, member.payeeId)}
+                                disabled={isCanonical || !group.included}
+                                label={t('autoMerge.includeMemberLabel')}
+                              />
+                            </span>
                             <span className="flex-1 text-gray-900 dark:text-gray-100">
                               {member.name}
                               {isCanonical && (
@@ -506,11 +579,19 @@ export function AutoMergePayeesDialog({
 
       {/* Footer */}
       <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-        <div className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
           {applicableGroups.length > 0 && (
-            <span>
-              {t('autoMerge.selectedCount', { count: applicableGroups.length })}
-            </span>
+            <>
+              <span>
+                {t('autoMerge.selectedCount', { count: applicableGroups.length })}
+              </span>
+              <span aria-hidden="true" className="text-gray-300 dark:text-gray-600">
+                &middot;
+              </span>
+              <span>
+                {t('autoMerge.payeesMergedCount', { count: payeesToMerge })}
+              </span>
+            </>
           )}
         </div>
         <div className="flex gap-3">

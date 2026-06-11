@@ -17,6 +17,25 @@ describe("payee-normalize.util", () => {
       expect(normalizePayeeName("Café Münchën")).toBe("CAFE MUNCHEN");
     });
 
+    it("transliterates stroke/ligature letters that NFD does not decompose", () => {
+      // The L-stroke must become a plain L, not a word break -- otherwise
+      // "MALGORZATA" would split into "MA" + "GORZATA" and cluster on "GORZATA".
+      expect(normalizePayeeName("MAŁGORZATA")).toBe("MALGORZATA");
+      expect(normalizePayeeName("Małgorzata")).toBe("MALGORZATA");
+      expect(normalizePayeeName("Łódź")).toBe("LODZ");
+      expect(normalizePayeeName("Smørrebrød")).toBe("SMORREBROD");
+      expect(normalizePayeeName("Æro")).toBe("AERO");
+      expect(normalizePayeeName("Œuvre")).toBe("OEUVRE");
+    });
+
+    it("keeps a stroke-letter name as a single significant token", () => {
+      // Regression: the leading significant token of "MAŁGORZATA SKLEP" must be
+      // the full name, not the fragment after the stroke.
+      expect(
+        leadingSignificantToken(normalizePayeeName("MAŁGORZATA SKLEP"), 3),
+      ).toBe("MALGORZATA");
+    });
+
     it("drops store numbers and punctuation", () => {
       expect(normalizePayeeName("STARBUCKS #1234")).toBe("STARBUCKS");
       expect(normalizePayeeName("Tesco-Express, 99")).toBe("TESCO EXPRESS");

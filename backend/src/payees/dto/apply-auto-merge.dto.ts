@@ -53,6 +53,15 @@ export class AutoMergeGroupDto {
   @MaxLength(255)
   @SanitizeHtml()
   alias?: string;
+
+  @ApiProperty({
+    required: false,
+    example: "category-uuid",
+    description: "Optional default category to set on the canonical payee",
+  })
+  @IsOptional()
+  @IsUUID()
+  defaultCategoryId?: string;
 }
 
 export class ApplyAutoMergeDto {

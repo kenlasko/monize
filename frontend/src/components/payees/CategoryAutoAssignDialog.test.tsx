@@ -4,6 +4,7 @@ import { CategoryAutoAssignDialog } from './CategoryAutoAssignDialog';
 import { payeesApi } from '@/lib/payees';
 import toast from 'react-hot-toast';
 import { CategorySuggestion } from '@/types/payee';
+import { Category } from '@/types/category';
 
 vi.mock('@/lib/payees', () => ({
   payeesApi: {
@@ -316,18 +317,54 @@ describe('CategoryAutoAssignDialog', () => {
       fireEvent.click(screen.getByText('Preview Suggestions'));
 
       await waitFor(() => {
-        const checkboxes = screen.getAllByRole('checkbox').filter(
+        const toggles = screen.getAllByRole('switch').filter(
           (el) => el.closest('table')
         );
         // All should be checked
-        checkboxes.forEach((cb) => {
+        toggles.forEach((cb) => {
           expect(cb).toBeChecked();
         });
       });
     });
   });
 
-  describe('individual suggestion checkbox toggle', () => {
+  describe('suggested category label', () => {
+    it('shows the full "Parent: Child" path when categories are provided', async () => {
+      const categories = [
+        { id: 'cat-food', name: 'Food', parentId: null },
+        { id: 'cat-1', name: 'Groceries', parentId: 'cat-food' },
+      ] as unknown as Category[];
+      mockGetCategorySuggestions.mockResolvedValue([sampleSuggestions[0]]);
+      render(
+        <CategoryAutoAssignDialog
+          isOpen={true}
+          onClose={onClose}
+          onSuccess={onSuccess}
+          categories={categories}
+        />,
+      );
+
+      fireEvent.click(screen.getByText('Preview Suggestions'));
+
+      await waitFor(() => {
+        // "Groceries" (cat-1) is shown in context of its parent "Food".
+        expect(screen.getByText('Food: Groceries')).toBeInTheDocument();
+      });
+    });
+
+    it('falls back to the bare category name when no categories are provided', async () => {
+      mockGetCategorySuggestions.mockResolvedValue([sampleSuggestions[0]]);
+      render(<CategoryAutoAssignDialog isOpen={true} onClose={onClose} onSuccess={onSuccess} />);
+
+      fireEvent.click(screen.getByText('Preview Suggestions'));
+
+      await waitFor(() => {
+        expect(screen.getByText('Groceries')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('individual suggestion toggle', () => {
     it('unchecks a suggestion when clicked', async () => {
       mockGetCategorySuggestions.mockResolvedValue(sampleSuggestions);
       render(<CategoryAutoAssignDialog isOpen={true} onClose={onClose} onSuccess={onSuccess} />);
@@ -338,13 +375,13 @@ describe('CategoryAutoAssignDialog', () => {
         expect(screen.getByText('Grocery Store')).toBeInTheDocument();
       });
 
-      // Find the checkbox in the Grocery Store row
+      // Find the toggle in the Grocery Store row
       const groceryRow = screen.getByText('Grocery Store').closest('tr')!;
-      const checkbox = groceryRow.querySelector('input[type="checkbox"]') as HTMLInputElement;
-      expect(checkbox).toBeChecked();
+      const toggle = groceryRow.querySelector('[role="switch"]') as HTMLElement;
+      expect(toggle).toBeChecked();
 
-      fireEvent.click(checkbox);
-      expect(checkbox).not.toBeChecked();
+      fireEvent.click(toggle);
+      expect(toggle).not.toBeChecked();
     });
 
     it('re-checks a suggestion when clicked again', async () => {
@@ -358,11 +395,11 @@ describe('CategoryAutoAssignDialog', () => {
       });
 
       const groceryRow = screen.getByText('Grocery Store').closest('tr')!;
-      const checkbox = groceryRow.querySelector('input[type="checkbox"]') as HTMLInputElement;
+      const toggle = groceryRow.querySelector('[role="switch"]') as HTMLElement;
 
-      fireEvent.click(checkbox); // uncheck
-      fireEvent.click(checkbox); // re-check
-      expect(checkbox).toBeChecked();
+      fireEvent.click(toggle); // uncheck
+      fireEvent.click(toggle); // re-check
+      expect(toggle).toBeChecked();
     });
 
     it('toggles suggestion when row is clicked', async () => {
@@ -376,12 +413,12 @@ describe('CategoryAutoAssignDialog', () => {
       });
 
       const gasRow = screen.getByText('Gas Station').closest('tr')!;
-      const checkbox = gasRow.querySelector('input[type="checkbox"]') as HTMLInputElement;
-      expect(checkbox).toBeChecked();
+      const toggle = gasRow.querySelector('[role="switch"]') as HTMLElement;
+      expect(toggle).toBeChecked();
 
-      // Click the row (not the checkbox)
+      // Click the row (not the toggle)
       fireEvent.click(gasRow);
-      expect(checkbox).not.toBeChecked();
+      expect(toggle).not.toBeChecked();
     });
 
     it('updates selected count in footer when toggling', async () => {
@@ -396,8 +433,8 @@ describe('CategoryAutoAssignDialog', () => {
 
       // Uncheck one
       const groceryRow = screen.getByText('Grocery Store').closest('tr')!;
-      const checkbox = groceryRow.querySelector('input[type="checkbox"]') as HTMLInputElement;
-      fireEvent.click(checkbox);
+      const toggle = groceryRow.querySelector('[role="switch"]') as HTMLElement;
+      fireEvent.click(toggle);
 
       expect(screen.getByText('2 payees selected')).toBeInTheDocument();
     });
@@ -416,18 +453,18 @@ describe('CategoryAutoAssignDialog', () => {
 
       // First uncheck one
       const groceryRow = screen.getByText('Grocery Store').closest('tr')!;
-      const checkbox = groceryRow.querySelector('input[type="checkbox"]') as HTMLInputElement;
-      fireEvent.click(checkbox);
-      expect(checkbox).not.toBeChecked();
+      const toggle = groceryRow.querySelector('[role="switch"]') as HTMLElement;
+      fireEvent.click(toggle);
+      expect(toggle).not.toBeChecked();
 
       // Click "Select all"
       fireEvent.click(screen.getByText('Select all'));
 
       // All should be checked now
-      const checkboxes = screen.getAllByRole('checkbox').filter(
+      const toggles = screen.getAllByRole('switch').filter(
         (el) => el.closest('table')
       );
-      checkboxes.forEach((cb) => {
+      toggles.forEach((cb) => {
         expect(cb).toBeChecked();
       });
     });
@@ -447,10 +484,10 @@ describe('CategoryAutoAssignDialog', () => {
       // Click "Select none"
       fireEvent.click(screen.getByText('Select none'));
 
-      const checkboxes = screen.getAllByRole('checkbox').filter(
+      const toggles = screen.getAllByRole('switch').filter(
         (el) => el.closest('table')
       );
-      checkboxes.forEach((cb) => {
+      toggles.forEach((cb) => {
         expect(cb).not.toBeChecked();
       });
     });
@@ -547,8 +584,8 @@ describe('CategoryAutoAssignDialog', () => {
       // Deselect all then select only Grocery Store
       fireEvent.click(screen.getByText('Select none'));
       const groceryRow = screen.getByText('Grocery Store').closest('tr')!;
-      const checkbox = groceryRow.querySelector('input[type="checkbox"]') as HTMLInputElement;
-      fireEvent.click(checkbox);
+      const toggle = groceryRow.querySelector('[role="switch"]') as HTMLElement;
+      fireEvent.click(toggle);
 
       fireEvent.click(screen.getByText('Apply to 1 Payee'));
 

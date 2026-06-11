@@ -120,6 +120,7 @@
     "suggestionsHeader": "Suggestions ({count} found)",
     "selectAll": "Select all",
     "selectNone": "Select none",
+    "selectPayeeLabel": "Select {name}",
     "empty": {
       "line1": "No payees match the current criteria.",
       "line2": "Try adjusting the settings above."
@@ -160,12 +161,17 @@
     "includeGroupLabel": "Include this group",
     "canonicalNameLabel": "Keep as payee",
     "aliasLabel": "Alias for future imports",
+    "defaultCategoryLabel": "Default category (optional)",
     "aliasPlaceholder": "e.g., *LIDL*",
     "keepLabel": "Keep this payee",
     "includeMemberLabel": "Include in merge",
     "keepBadge": "Keep",
+    "keepColumn": "Keep",
+    "mergeColumn": "Merge",
+    "membersHelp": "Select the payee to keep. The others are merged into it.",
     "memberTransactions": "{count, plural, one {# transaction} other {# transactions}}",
     "selectedCount": "{count, plural, one {# group selected} other {# groups selected}}",
+    "payeesMergedCount": "{count, plural, one {# payee to merge} other {# payees to merge}}",
     "applyButton": "Merge {count, plural, one {# Group} other {# Groups}}",
     "applying": "Merging...",
     "toasts": {
@@ -202,6 +208,7 @@
     "candidatesHeader": "Candidates ({count} found)",
     "selectAll": "Select all",
     "selectNone": "Select none",
+    "selectPayeeLabel": "Select {name}",
     "neverUsed": "Never used",
     "empty": {
       "line1": "No payees match the current criteria.",

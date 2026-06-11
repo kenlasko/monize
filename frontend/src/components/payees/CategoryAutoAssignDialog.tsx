@@ -1,11 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { payeesApi } from '@/lib/payees';
 import { CategorySuggestion } from '@/types/payee';
+import { Category } from '@/types/category';
+import { buildCategoryLabelMap } from '@/lib/categoryUtils';
 import toast from 'react-hot-toast';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
@@ -16,12 +19,14 @@ interface CategoryAutoAssignDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  categories?: Category[];
 }
 
 export function CategoryAutoAssignDialog({
   isOpen,
   onClose,
   onSuccess,
+  categories = [],
 }: CategoryAutoAssignDialogProps) {
   const [minTransactions, setMinTransactions] = useState(10);
   const [minPercentage, setMinPercentage] = useState(75);
@@ -32,6 +37,13 @@ export function CategoryAutoAssignDialog({
   const [isApplying, setIsApplying] = useState(false);
   const [hasPreviewLoaded, setHasPreviewLoaded] = useState(false);
   const t = useTranslations('payees');
+
+  // Map a suggested category id to its full "Parent: Child" label so the
+  // suggestion shows the subcategory in context; fall back to the bare name.
+  const categoryLabelMap = useMemo(
+    () => buildCategoryLabelMap(categories),
+    [categories],
+  );
 
   // Load preview when parameters change
   const loadPreview = useCallback(async () => {
@@ -181,21 +193,16 @@ export function CategoryAutoAssignDialog({
             </div>
 
             {/* Only Without Category */}
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="onlyWithoutCategory"
+            <label className="flex items-center gap-3 cursor-pointer">
+              <ToggleSwitch
                 checked={onlyWithoutCategory}
-                onChange={(e) => setOnlyWithoutCategory(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
+                onChange={setOnlyWithoutCategory}
+                label={t('categoryAutoAssign.onlyWithoutCategoryLabel')}
               />
-              <label
-                htmlFor="onlyWithoutCategory"
-                className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
-              >
+              <span className="text-sm text-gray-700 dark:text-gray-300">
                 {t('categoryAutoAssign.onlyWithoutCategoryLabel')}
-              </label>
-            </div>
+              </span>
+            </label>
           </div>
 
           {/* Preview Button */}
@@ -265,13 +272,14 @@ export function CategoryAutoAssignDialog({
                           className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                           onClick={() => togglePayee(suggestion.payeeId)}
                         >
-                          <td className="px-3 py-2">
-                            <input
-                              type="checkbox"
+                          <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
+                            <ToggleSwitch
+                              size="sm"
                               checked={selectedIds.has(suggestion.payeeId)}
                               onChange={() => togglePayee(suggestion.payeeId)}
-                              onClick={(e) => e.stopPropagation()}
-                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
+                              label={t('categoryAutoAssign.selectPayeeLabel', {
+                                name: suggestion.payeeName,
+                              })}
                             />
                           </td>
                           <td className="px-3 py-2">
@@ -284,7 +292,8 @@ export function CategoryAutoAssignDialog({
                           </td>
                           <td className="px-3 py-2">
                             <span className="inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                              {suggestion.suggestedCategoryName}
+                              {categoryLabelMap.get(suggestion.suggestedCategoryId) ??
+                                suggestion.suggestedCategoryName}
                             </span>
                           </td>
                           <td className="px-3 py-2 text-right">

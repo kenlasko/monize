@@ -120,6 +120,7 @@
     "suggestionsHeader": "Suggestions ({count} trouvée(s))",
     "selectAll": "Tout sélectionner",
     "selectNone": "Tout désélectionner",
+    "selectPayeeLabel": "Sélectionner {name}",
     "empty": {
       "line1": "Aucun bénéficiaire ne correspond aux critères actuels.",
       "line2": "Essayez de modifier les paramètres ci-dessus."
@@ -160,12 +161,17 @@
     "includeGroupLabel": "Inclure ce groupe",
     "canonicalNameLabel": "Conserver comme bénéficiaire",
     "aliasLabel": "Alias pour les futurs imports",
+    "defaultCategoryLabel": "Catégorie par défaut (facultatif)",
     "aliasPlaceholder": "ex. : *LIDL*",
     "keepLabel": "Conserver ce bénéficiaire",
     "includeMemberLabel": "Inclure dans la fusion",
     "keepBadge": "Conserver",
+    "keepColumn": "Conserver",
+    "mergeColumn": "Fusionner",
+    "membersHelp": "Sélectionnez le bénéficiaire à conserver. Les autres y seront fusionnés.",
     "memberTransactions": "{count, plural, one {# transaction} other {# transactions}}",
     "selectedCount": "{count, plural, one {# groupe sélectionné} other {# groupes sélectionnés}}",
+    "payeesMergedCount": "{count, plural, one {# bénéficiaire à fusionner} other {# bénéficiaires à fusionner}}",
     "applyButton": "Fusionner {count, plural, one {# groupe} other {# groupes}}",
     "applying": "Fusion...",
     "toasts": {
@@ -202,6 +208,7 @@
     "candidatesHeader": "Candidats ({count} trouvé(s))",
     "selectAll": "Tout sélectionner",
     "selectNone": "Tout désélectionner",
+    "selectPayeeLabel": "Sélectionner {name}",
     "neverUsed": "Jamais utilisé",
     "empty": {
       "line1": "Aucun bénéficiaire ne correspond aux critères actuels.",

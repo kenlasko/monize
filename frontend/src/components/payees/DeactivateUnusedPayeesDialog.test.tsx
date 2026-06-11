@@ -159,9 +159,9 @@ describe('DeactivateUnusedPayeesDialog', () => {
     it('allows deselecting individual candidates', async () => {
       const { getAllByRole, getByText } = await renderWithPreview();
 
-      const checkboxes = getAllByRole('checkbox');
+      const toggles = getAllByRole('switch');
       await act(async () => {
-        fireEvent.click(checkboxes[0]);
+        fireEvent.click(toggles[0]);
       });
 
       expect(getByText('1 payee selected')).toBeInTheDocument();

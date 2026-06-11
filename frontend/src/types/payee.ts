@@ -74,6 +74,7 @@ export interface AutoMergeGroup {
   suggestedCanonicalPayeeId: string;
   suggestedName: string;
   suggestedAlias: string;
+  suggestedCategoryId: string | null;
   members: AutoMergeMember[];
   totalTransactions: number;
 }
@@ -83,6 +84,7 @@ export interface ApplyAutoMergeGroup {
   canonicalName?: string;
   sourcePayeeIds: string[];
   alias?: string;
+  defaultCategoryId?: string;
 }
 
 export interface ApplyAutoMergeResult {

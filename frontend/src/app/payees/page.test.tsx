@@ -90,6 +90,7 @@ vi.mock('@/lib/payees', () => ({
 vi.mock('@/lib/categoryUtils', () => ({
   buildCategoryColorMap: () => new Map(),
   buildCategoryLabelMap: () => new Map(),
+  buildCategoryTree: () => [],
 }));
 
 vi.mock('@/lib/categories', () => ({

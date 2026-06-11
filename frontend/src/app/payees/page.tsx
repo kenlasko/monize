@@ -349,6 +349,7 @@ function PayeesContent() {
         isOpen={showAutoAssign}
         onClose={() => setShowAutoAssign(false)}
         onSuccess={loadData}
+        categories={categories}
       />
 
       {/* Merge Payee Dialog */}
@@ -372,6 +373,7 @@ function PayeesContent() {
         isOpen={showAutoMerge}
         onClose={() => setShowAutoMerge(false)}
         onSuccess={loadData}
+        categories={categories}
       />
     </PageLayout>
   );

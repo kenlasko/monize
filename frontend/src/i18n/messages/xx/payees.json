@@ -120,6 +120,7 @@
     "suggestionsHeader": "[XX-Suggestions ({count} found)-XX]",
     "selectAll": "[XX-Select all-XX]",
     "selectNone": "[XX-Select none-XX]",
+    "selectPayeeLabel": "[XX-Select {name}-XX]",
     "empty": {
       "line1": "[XX-No payees match the current criteria.-XX]",
       "line2": "[XX-Try adjusting the settings above.-XX]"
@@ -160,12 +161,17 @@
     "includeGroupLabel": "[XX-Include this group-XX]",
     "canonicalNameLabel": "[XX-Keep as payee-XX]",
     "aliasLabel": "[XX-Alias for future imports-XX]",
+    "defaultCategoryLabel": "[XX-Default category (optional)-XX]",
     "aliasPlaceholder": "[XX-e.g., *LIDL*-XX]",
     "keepLabel": "[XX-Keep this payee-XX]",
     "includeMemberLabel": "[XX-Include in merge-XX]",
     "keepBadge": "[XX-Keep-XX]",
+    "keepColumn": "[XX-Keep-XX]",
+    "mergeColumn": "[XX-Merge-XX]",
+    "membersHelp": "[XX-Select the payee to keep. The others are merged into it.-XX]",
     "memberTransactions": "[XX-{count, plural, one {# transaction} other {# transactions}}-XX]",
     "selectedCount": "[XX-{count, plural, one {# group selected} other {# groups selected}}-XX]",
+    "payeesMergedCount": "[XX-{count, plural, one {# payee to merge} other {# payees to merge}}-XX]",
     "applyButton": "[XX-Merge {count, plural, one {# Group} other {# Groups}}-XX]",
     "applying": "[XX-Merging...-XX]",
     "toasts": {
@@ -202,6 +208,7 @@
     "candidatesHeader": "[XX-Candidates ({count} found)-XX]",
     "selectAll": "[XX-Select all-XX]",
     "selectNone": "[XX-Select none-XX]",
+    "selectPayeeLabel": "[XX-Select {name}-XX]",
     "neverUsed": "[XX-Never used-XX]",
     "empty": {
       "line1": "[XX-No payees match the current criteria.-XX]",

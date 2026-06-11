@@ -129,6 +129,38 @@ describe("PayeeAutoMergeService", () => {
       expect(canonical?.payeeId).toBe("p1");
     });
 
+    it("suggests the group's most-used transaction category", async () => {
+      mockPayeesService.findAll.mockResolvedValue([
+        makePayee("p1", "Lidl", 10),
+        makePayee("p2", "LIDL sp. z o.o.", 2),
+        makePayee("p3", "LIDL WARSZAWA 0421", 5),
+      ]);
+      // Aggregated across the group: groceries 10, dining 5 -> groceries wins.
+      dominantRows = [
+        { payeeId: "p1", categoryId: "cat-groceries", cnt: "8" },
+        { payeeId: "p2", categoryId: "cat-groceries", cnt: "2" },
+        { payeeId: "p3", categoryId: "cat-dining", cnt: "5" },
+      ];
+
+      const { groups } = await service.previewAutoMerge(userId, opts);
+
+      expect(groups).toHaveLength(1);
+      expect(groups[0].suggestedCategoryId).toBe("cat-groceries");
+    });
+
+    it("suggests no category when no member has categorized transactions", async () => {
+      mockPayeesService.findAll.mockResolvedValue([
+        makePayee("p1", "Lidl", 10),
+        makePayee("p2", "LIDL sp. z o.o.", 2),
+      ]);
+      dominantRows = [];
+
+      const { groups } = await service.previewAutoMerge(userId, opts);
+
+      expect(groups).toHaveLength(1);
+      expect(groups[0].suggestedCategoryId).toBeNull();
+    });
+
     it("requests active-only payees by default", async () => {
       mockPayeesService.findAll.mockResolvedValue([]);
       await service.previewAutoMerge(userId, opts);
@@ -516,6 +548,41 @@ describe("PayeeAutoMergeService", () => {
       });
       expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.manager.save).toHaveBeenCalled();
+    });
+
+    it("sets the chosen default category on the canonical", async () => {
+      mockCategoriesRepository.find.mockResolvedValue([{ id: "cat-1" }]);
+
+      await service.applyAutoMerge(userId, [
+        {
+          canonicalPayeeId: "p1",
+          sourcePayeeIds: ["p2"],
+          alias: "*LIDL*",
+          defaultCategoryId: "cat-1",
+        },
+      ]);
+
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Payee,
+        { id: "p1", userId },
+        { defaultCategoryId: "cat-1" },
+      );
+    });
+
+    it("rejects a default category not owned by the user", async () => {
+      mockCategoriesRepository.find.mockResolvedValue([]); // none owned
+
+      await expect(
+        service.applyAutoMerge(userId, [
+          {
+            canonicalPayeeId: "p1",
+            sourcePayeeIds: ["p2"],
+            defaultCategoryId: "cat-not-owned",
+          },
+        ]),
+      ).rejects.toThrow(BadRequestException);
+      // Fails fast, before opening a transaction.
+      expect(mockQueryRunner.startTransaction).not.toHaveBeenCalled();
     });
 
     it("renames the canonical and cascades the name", async () => {

@@ -120,6 +120,7 @@
     "suggestionsHeader": "Suggesties ({count} gevonden)",
     "selectAll": "Alles selecteren",
     "selectNone": "Niets selecteren",
+    "selectPayeeLabel": "{name} selecteren",
     "empty": {
       "line1": "Geen begunstigden voldoen aan de huidige criteria.",
       "line2": "Pas de instellingen hierboven aan."
@@ -160,12 +161,17 @@
     "includeGroupLabel": "Deze groep opnemen",
     "canonicalNameLabel": "Behouden als begunstigde",
     "aliasLabel": "Alias voor toekomstige imports",
+    "defaultCategoryLabel": "Standaardcategorie (optioneel)",
     "aliasPlaceholder": "bijv. *LIDL*",
     "keepLabel": "Deze begunstigde behouden",
     "includeMemberLabel": "Opnemen in samenvoeging",
     "keepBadge": "Behouden",
+    "keepColumn": "Behouden",
+    "mergeColumn": "Samenvoegen",
+    "membersHelp": "Selecteer de begunstigde die u wilt behouden. De andere worden hierin samengevoegd.",
     "memberTransactions": "{count, plural, one {# transactie} other {# transacties}}",
     "selectedCount": "{count, plural, one {# groep geselecteerd} other {# groepen geselecteerd}}",
+    "payeesMergedCount": "{count, plural, one {# begunstigde om samen te voegen} other {# begunstigden om samen te voegen}}",
     "applyButton": "{count, plural, one {# groep samenvoegen} other {# groepen samenvoegen}}",
     "applying": "Samenvoegen...",
     "toasts": {
@@ -202,6 +208,7 @@
     "candidatesHeader": "Kandidaten ({count} gevonden)",
     "selectAll": "Alles selecteren",
     "selectNone": "Niets selecteren",
+    "selectPayeeLabel": "{name} selecteren",
     "neverUsed": "Nooit gebruikt",
     "empty": {
       "line1": "Geen begunstigden voldoen aan de huidige criteria.",

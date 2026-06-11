@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor, act } from '@/test/render';
 import { AutoMergePayeesDialog } from './AutoMergePayeesDialog';
 import { payeesApi } from '@/lib/payees';
 import { AutoMergeGroup } from '@/types/payee';
+import { Category } from '@/types/category';
 
 vi.mock('@/lib/payees', () => ({
   payeesApi: {
@@ -33,6 +34,7 @@ const lidlGroup: AutoMergeGroup = {
   suggestedCanonicalPayeeId: 'p1',
   suggestedName: 'Lidl',
   suggestedAlias: '*LIDL*',
+  suggestedCategoryId: null,
   totalTransactions: 17,
   members: [
     { payeeId: 'p1', name: 'Lidl', transactionCount: 10, isCanonical: true },
@@ -40,6 +42,32 @@ const lidlGroup: AutoMergeGroup = {
     { payeeId: 'p3', name: 'LIDL WARSZAWA 0421', transactionCount: 5, isCanonical: false },
   ],
 };
+
+// A two-level category tree so the picker shows the "Parent: Child" label.
+const categories = [
+  { id: 'cat-food', name: 'Food', parentId: null },
+  { id: 'cat-groceries', name: 'Groceries', parentId: 'cat-food' },
+] as unknown as Category[];
+
+const groceryGroup: AutoMergeGroup = {
+  groupKey: 'LIDL',
+  suggestedCanonicalPayeeId: 'p1',
+  suggestedName: 'Lidl',
+  suggestedAlias: '*LIDL*',
+  suggestedCategoryId: 'cat-groceries',
+  totalTransactions: 12,
+  members: [
+    { payeeId: 'p1', name: 'Lidl', transactionCount: 10, isCanonical: true },
+    { payeeId: 'p2', name: 'LIDL sp. z o.o.', transactionCount: 2, isCanonical: false },
+  ],
+};
+
+// Selecting (including) every previewed group; groups start de-selected.
+async function selectAllGroups() {
+  await act(async () => {
+    fireEvent.click(screen.getByText('Select all'));
+  });
+}
 
 describe('AutoMergePayeesDialog', () => {
   const onClose = vi.fn();
@@ -145,7 +173,7 @@ describe('AutoMergePayeesDialog', () => {
     );
   });
 
-  it('deselects every group with Deselect all', async () => {
+  it('starts with every group de-selected', async () => {
     mockPreview.mockResolvedValue([lidlGroup]);
     render(<AutoMergePayeesDialog isOpen onClose={onClose} onSuccess={onSuccess} />);
 
@@ -153,6 +181,26 @@ describe('AutoMergePayeesDialog', () => {
       fireEvent.click(screen.getByText('Preview Groups'));
     });
     await waitFor(() => expect(screen.getByDisplayValue('Lidl')).toBeInTheDocument());
+
+    // Nothing is selected until the user opts in, so the apply button is
+    // disabled and no footer count is shown.
+    expect(
+      screen.getByRole('button', { name: /Merge 0 Groups/ }),
+    ).toBeDisabled();
+    expect(screen.queryByText(/group selected/)).not.toBeInTheDocument();
+  });
+
+  it('selects then deselects every group with the bulk actions', async () => {
+    mockPreview.mockResolvedValue([lidlGroup]);
+    render(<AutoMergePayeesDialog isOpen onClose={onClose} onSuccess={onSuccess} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Preview Groups'));
+    });
+    await waitFor(() => expect(screen.getByDisplayValue('Lidl')).toBeInTheDocument());
+
+    await selectAllGroups();
+    expect(screen.getByRole('button', { name: /Merge 1 Group/ })).toBeEnabled();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Deselect all'));
@@ -180,6 +228,7 @@ describe('AutoMergePayeesDialog', () => {
     });
     await waitFor(() => expect(screen.getByDisplayValue('Lidl')).toBeInTheDocument());
 
+    await selectAllGroups();
     await act(async () => {
       fireEvent.click(screen.getByText(/Merge 1 Group/));
     });
@@ -228,11 +277,14 @@ describe('AutoMergePayeesDialog', () => {
     });
     await waitFor(() => expect(screen.getByDisplayValue('Lidl')).toBeInTheDocument());
 
-    // Uncheck the "include in merge" checkbox for p2 (LIDL sp. z o.o.).
+    // The member toggles are only enabled once the group is included.
+    await selectAllGroups();
+
+    // Uncheck the "include in merge" toggle for p2 (LIDL sp. z o.o.).
     // Index 0 is the canonical (p1, disabled); index 1 is p2.
-    const includeCheckboxes = screen.getAllByLabelText('Include in merge');
+    const includeToggles = screen.getAllByLabelText('Include in merge');
     await act(async () => {
-      fireEvent.click(includeCheckboxes[1]);
+      fireEvent.click(includeToggles[1]);
     });
 
     await act(async () => {
@@ -258,6 +310,7 @@ describe('AutoMergePayeesDialog', () => {
       suggestedCanonicalPayeeId: 'a1',
       suggestedName: 'Royal Electric',
       suggestedAlias: '*ROYAL ELECTRIC*',
+      suggestedCategoryId: null,
       totalTransactions: 25,
       members: [
         { payeeId: 'a1', name: 'Royal Electric', transactionCount: 23, isCanonical: true },
@@ -269,6 +322,7 @@ describe('AutoMergePayeesDialog', () => {
       suggestedCanonicalPayeeId: 'b1',
       suggestedName: 'Royal City Nursery',
       suggestedAlias: '*ROYAL CITY NURSERY*',
+      suggestedCategoryId: null,
       totalTransactions: 11,
       members: [
         { payeeId: 'b1', name: 'Royal City Nursery', transactionCount: 9, isCanonical: true },
@@ -290,11 +344,12 @@ describe('AutoMergePayeesDialog', () => {
     });
     await waitFor(() => expect(screen.getByDisplayValue('Royal Electric')).toBeInTheDocument());
 
-    // De-select only the first group.
-    const groupCheckboxes = screen.getAllByLabelText('Include this group');
-    expect(groupCheckboxes).toHaveLength(2);
+    // Include both groups, then de-select only the first.
+    await selectAllGroups();
+    const groupToggles = screen.getAllByLabelText('Include this group');
+    expect(groupToggles).toHaveLength(2);
     await act(async () => {
-      fireEvent.click(groupCheckboxes[0]);
+      fireEvent.click(groupToggles[0]);
     });
 
     // Footer should now offer to merge exactly one group.
@@ -310,6 +365,80 @@ describe('AutoMergePayeesDialog', () => {
         sourcePayeeIds: ['b2'],
         alias: '*ROYAL CITY NURSERY*',
       },
+    ]);
+  });
+
+  it('labels the Keep/Merge columns and explains the radio choice', async () => {
+    mockPreview.mockResolvedValue([lidlGroup]);
+    render(<AutoMergePayeesDialog isOpen onClose={onClose} onSuccess={onSuccess} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Preview Groups'));
+    });
+    await waitFor(() => expect(screen.getByDisplayValue('Lidl')).toBeInTheDocument());
+
+    expect(
+      screen.getByText('Select the payee to keep. The others are merged into it.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Merge')).toBeInTheDocument();
+    // "Keep" labels both the column header and the canonical badge.
+    expect(screen.getAllByText('Keep').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('shows how many payees will be merged next to the group count', async () => {
+    mockPreview.mockResolvedValue([lidlGroup]);
+    render(<AutoMergePayeesDialog isOpen onClose={onClose} onSuccess={onSuccess} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Preview Groups'));
+    });
+    await waitFor(() => expect(screen.getByDisplayValue('Lidl')).toBeInTheDocument());
+
+    await selectAllGroups();
+
+    // One group, two non-canonical members folded into the canonical.
+    expect(screen.getByText('1 group selected')).toBeInTheDocument();
+    expect(screen.getByText('2 payees to merge')).toBeInTheDocument();
+  });
+
+  it('prefills the suggested default category and applies it', async () => {
+    mockPreview.mockResolvedValue([groceryGroup]);
+    mockApply.mockResolvedValue({
+      groupsMerged: 1,
+      payeesMerged: 1,
+      transactionsMigrated: 2,
+      aliasesCreated: 1,
+      skippedAliases: 0,
+    });
+    render(
+      <AutoMergePayeesDialog
+        isOpen
+        onClose={onClose}
+        onSuccess={onSuccess}
+        categories={categories}
+      />,
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Preview Groups'));
+    });
+    await waitFor(() => expect(screen.getByDisplayValue('Lidl')).toBeInTheDocument());
+
+    // The category picker is prefilled with the group's most-used category,
+    // shown with its parent ("Food: Groceries").
+    expect(screen.getByDisplayValue('Food: Groceries')).toBeInTheDocument();
+
+    await selectAllGroups();
+    await act(async () => {
+      fireEvent.click(screen.getByText(/Merge 1 Group/));
+    });
+
+    await waitFor(() => expect(mockApply).toHaveBeenCalled());
+    expect(mockApply).toHaveBeenCalledWith([
+      expect.objectContaining({
+        canonicalPayeeId: 'p1',
+        defaultCategoryId: 'cat-groceries',
+      }),
     ]);
   });
 });

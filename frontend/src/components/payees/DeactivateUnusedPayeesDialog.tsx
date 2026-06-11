@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { payeesApi } from '@/lib/payees';
 import { DeactivationCandidate } from '@/types/payee';
 import toast from 'react-hot-toast';
@@ -257,13 +258,14 @@ export function DeactivateUnusedPayeesDialog({
                         className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                         onClick={() => togglePayee(candidate.payeeId)}
                       >
-                        <td className="px-3 py-2">
-                          <input
-                            type="checkbox"
+                        <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
+                          <ToggleSwitch
+                            size="sm"
                             checked={selectedIds.has(candidate.payeeId)}
                             onChange={() => togglePayee(candidate.payeeId)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 dark:border-gray-600 rounded"
+                            label={t('deactivateUnused.selectPayeeLabel', {
+                              name: candidate.payeeName,
+                            })}
                           />
                         </td>
                         <td className="px-3 py-2">

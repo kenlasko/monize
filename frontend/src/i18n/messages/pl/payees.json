@@ -120,6 +120,7 @@
     "suggestionsHeader": "Sugestie (znaleziono: {count})",
     "selectAll": "Zaznacz wszystkie",
     "selectNone": "Odznacz wszystkie",
+    "selectPayeeLabel": "Zaznacz {name}",
     "empty": {
       "line1": "Żaden odbiorca nie spełnia bieżących kryteriów.",
       "line2": "Spróbuj dostosować ustawienia powyżej."
@@ -160,12 +161,17 @@
     "includeGroupLabel": "Uwzględnij tę grupę",
     "canonicalNameLabel": "Zachowaj jako odbiorcę",
     "aliasLabel": "Alias dla przyszłych importów",
+    "defaultCategoryLabel": "Domyślna kategoria (opcjonalnie)",
     "aliasPlaceholder": "np. *LIDL*",
     "keepLabel": "Zachowaj tego odbiorcę",
     "includeMemberLabel": "Uwzględnij w scalaniu",
     "keepBadge": "Zachowaj",
+    "keepColumn": "Zachowaj",
+    "mergeColumn": "Scal",
+    "membersHelp": "Wybierz odbiorcę, którego chcesz zachować. Pozostali zostaną z nim scaleni.",
     "memberTransactions": "{count, plural, one {# transakcja} few {# transakcje} many {# transakcji} other {# transakcji}}",
     "selectedCount": "{count, plural, one {# grupa wybrana} few {# grupy wybrane} many {# grup wybranych} other {# grup wybranych}}",
+    "payeesMergedCount": "{count, plural, one {# odbiorca do scalenia} few {# odbiorcy do scalenia} many {# odbiorców do scalenia} other {# odbiorców do scalenia}}",
     "applyButton": "Scal {count, plural, one {# grupę} few {# grupy} many {# grup} other {# grup}}",
     "applying": "Scalanie...",
     "toasts": {
@@ -202,6 +208,7 @@
     "candidatesHeader": "Kandydaci (znaleziono: {count})",
     "selectAll": "Zaznacz wszystkie",
     "selectNone": "Odznacz wszystkie",
+    "selectPayeeLabel": "Zaznacz {name}",
     "neverUsed": "Nigdy nieużywany",
     "empty": {
       "line1": "Żaden odbiorca nie spełnia bieżących kryteriów.",
