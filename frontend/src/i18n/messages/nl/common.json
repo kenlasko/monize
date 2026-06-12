@@ -1,4 +1,7 @@
 {
+  "appVersion": {
+    "releaseNotes": "Release-opmerkingen voor v{version} bekijken"
+  },
   "save": "Opslaan",
   "cancel": "Annuleren",
   "delete": "Verwijderen",

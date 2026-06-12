@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { AppVersion } from '@/components/ui/AppVersion';
 import { ProfileSection } from '@/components/settings/ProfileSection';
 import { PreferencesSection } from '@/components/settings/PreferencesSection';
 import { NotificationsSection } from '@/components/settings/NotificationsSection';
@@ -391,9 +392,7 @@ function OwnerSettingsView() {
               </div>
             )}
 
-            <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-8 mb-4">
-              v{process.env.NEXT_PUBLIC_APP_VERSION}
-            </p>
+            <AppVersion className="text-center text-xs text-gray-400 dark:text-gray-500 mt-8 mb-4" />
           </div>
         </div>
       </main>

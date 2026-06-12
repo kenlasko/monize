@@ -1,4 +1,7 @@
 {
+  "appVersion": {
+    "releaseNotes": "[XX-View release notes for v{version}-XX]"
+  },
   "save": "[XX-Save-XX]",
   "cancel": "[XX-Cancel-XX]",
   "delete": "[XX-Delete-XX]",

@@ -1,4 +1,7 @@
 {
+  "appVersion": {
+    "releaseNotes": "Versionshinweise für v{version} anzeigen"
+  },
   "save": "Speichern",
   "cancel": "Abbrechen",
   "delete": "Löschen",

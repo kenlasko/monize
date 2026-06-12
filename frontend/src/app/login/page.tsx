@@ -17,6 +17,7 @@ import { useDemoStore } from '@/store/demoStore';
 import { authApi, AuthMethods } from '@/lib/auth';
 import { TwoFactorVerify } from '@/components/auth/TwoFactorVerify';
 import { AuthLanguageSwitcher } from '@/components/auth/AuthLanguageSwitcher';
+import { AppVersion } from '@/components/ui/AppVersion';
 import { User } from '@/types/auth';
 import { createLogger } from '@/lib/logger';
 import { buildEmailSchema } from '@/lib/zod-helpers';
@@ -204,9 +205,7 @@ export default function LoginPage() {
 
           <AuthLanguageSwitcher />
 
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-6">
-            v{process.env.NEXT_PUBLIC_APP_VERSION}
-          </p>
+          <AppVersion className="text-xs text-gray-400 dark:text-gray-500 mt-6" />
         </div>
       </div>
     );
@@ -365,9 +364,7 @@ export default function LoginPage() {
 
         <AuthLanguageSwitcher />
 
-        <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-6">
-          v{process.env.NEXT_PUBLIC_APP_VERSION}
-        </p>
+        <AppVersion className="text-center text-xs text-gray-400 dark:text-gray-500 mt-6" />
       </div>
     </div>
   );
