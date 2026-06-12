@@ -55,11 +55,17 @@ interface InvestmentValueChartProps {
 
 export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix }: InvestmentValueChartProps) {
   const t = useTranslations('investments');
+  const tc = useTranslations('common');
   const { formatCurrency, formatCurrencyCompact, formatCurrencyAxis, formatCurrencyFlag, formatSignedPercent } = useNumberFormat();
   const { defaultCurrency } = useExchangeRates();
   const isMobile = useIsMobile();
   const [chartPoints, setChartPoints] = useState<Array<{ name: string; Value: number }>>([]);
   const [isLoading, setIsLoading] = useState(true);
+  // High/low value bubbles the user has temporarily dismissed, keyed by the
+  // value they marked so a later data change with a new extreme shows the
+  // bubble again. Component-local (not persisted), so it resets on navigation.
+  const [dismissedHigh, setDismissedHigh] = useState<number | null>(null);
+  const [dismissedLow, setDismissedLow] = useState<number | null>(null);
   const [intradayUnavailable, setIntradayUnavailable] = useState<{
     skipped: string[];
   } | null>(null);
@@ -555,8 +561,8 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix 
                   if (cx == null || cy == null || index == null) {
                     return <circle cx={0} cy={0} r={0} fill="none" />;
                   }
-                  const isHighest = showFlags && index === highestIndex;
-                  const isLowest = showFlags && index === lowestIndex;
+                  const isHighest = showFlags && index === highestIndex && summary.highest !== dismissedHigh;
+                  const isLowest = showFlags && index === lowestIndex && summary.lowest !== dismissedLow;
                   if (!isHighest && !isLowest) {
                     return <circle key={`dot-${index}`} cx={cx} cy={cy} r={0} fill="none" />;
                   }
@@ -569,6 +575,10 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix 
                     color: isHighest ? chartColors.income : chartColors.expense,
                     label: fmtFlag(value),
                     side: isLeftHalf ? 'right' : 'left',
+                    onDismiss: isHighest
+                      ? () => setDismissedHigh(summary.highest)
+                      : () => setDismissedLow(summary.lowest),
+                    dismissLabel: tc('chartFlag.dismiss'),
                   });
                 }}
               />

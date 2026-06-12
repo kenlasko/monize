@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act } from 'react';
-import { render, screen, waitFor } from '@/test/render';
+import { render, screen, waitFor, fireEvent } from '@/test/render';
 import {
   InvestmentValueChart,
   INVESTMENT_CHART_REFRESH_EVENT,
@@ -15,7 +15,18 @@ vi.mock('recharts', () => ({
   AreaChart: ({ children, margin }: any) => (
     <div data-testid="area-chart" data-margin={JSON.stringify(margin)}>{children}</div>
   ),
-  Area: () => null,
+  // Invoke the dot render-prop so the high/low value bubbles (and their dismiss
+  // controls) are exercised; indices 0..2 cover both extremes of the test
+  // series. Existing tests are unaffected -- the bubble labels use the compact
+  // flag formatter (no decimals), distinct from the ".00" summary figures.
+  Area: ({ dot }: any) =>
+    typeof dot === 'function' ? (
+      <div data-testid="line-dots">
+        {dot({ cx: 10, cy: 20, index: 0 })}
+        {dot({ cx: 30, cy: 40, index: 1 })}
+        {dot({ cx: 50, cy: 60, index: 2 })}
+      </div>
+    ) : null,
   XAxis: () => null,
   YAxis: ({ width }: any) => <div data-testid="y-axis" data-width={width ?? ''} />,
   CartesianGrid: () => null,
@@ -43,6 +54,7 @@ vi.mock('@/hooks/useNumberFormat', () => ({
     formatCurrency: (n: number) => `$${n.toFixed(2)}`,
     formatCurrencyCompact: (n: number) => `$${n.toFixed(0)}`,
     formatCurrencyAxis: (n: number) => `$${n}`,
+    formatCurrencyFlag: (n: number, _currency?: string) => `$${n}`,
   }),
 }));
 
@@ -147,6 +159,29 @@ describe('InvestmentValueChart', () => {
     render(<InvestmentValueChart />);
     await screen.findByText('Portfolio Value Over Time');
     expect(screen.getByTestId('area-chart')).toBeInTheDocument();
+  });
+
+  it('temporarily hides a value bubble when its dismiss control is clicked', async () => {
+    const { container } = render(<InvestmentValueChart />);
+    await screen.findByText('Portfolio Value Over Time');
+    const labels = () =>
+      Array.from(
+        container.querySelectorAll('[data-testid="line-dots"] text'),
+      ).map((node) => node.textContent);
+    // highest=15000 (index 1), lowest=10000 (index 0) -> a bubble each.
+    await waitFor(() => {
+      expect(labels()).toEqual(expect.arrayContaining(['$10000', '$15000']));
+    });
+
+    const closeControls = container.querySelectorAll('.chart-flag-dismiss');
+    expect(closeControls).toHaveLength(2);
+    // The second control belongs to the high bubble (dot index 1).
+    await act(async () => {
+      fireEvent.click(closeControls[1]);
+    });
+
+    expect(labels()).toContain('$10000');
+    expect(labels()).not.toContain('$15000');
   });
 
   it('uses generous chart margins on desktop', async () => {
