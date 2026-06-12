@@ -11,6 +11,8 @@ export interface Category {
   effectiveColor: string | null;
   isIncome: boolean;
   isSystem: boolean;
+  isTaxRelated?: boolean;
+  taxLineItem?: string | null;
   createdAt: string;
   transactionCount?: number;
 }
@@ -22,6 +24,8 @@ export interface CreateCategoryData {
   icon?: string;
   color?: string;
   isIncome?: boolean;
+  isTaxRelated?: boolean;
+  taxLineItem?: string | null;
 }
 
 export interface UpdateCategoryData extends Partial<CreateCategoryData> {}

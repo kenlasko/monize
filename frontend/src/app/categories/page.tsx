@@ -81,6 +81,8 @@ function CategoriesContent() {
         description: data.description || null,
         icon: data.icon || null,
         color: data.color || null,
+        isTaxRelated: !!data.isTaxRelated,
+        taxLineItem: data.isTaxRelated ? (data.taxLineItem || null) : null,
       };
 
       if (editingItem) {
