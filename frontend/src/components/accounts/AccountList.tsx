@@ -33,15 +33,31 @@ const STORAGE_KEYS = {
 
 // Display order for account-type groups: assets first, then liabilities.
 const ACCOUNT_TYPE_ORDER: AccountType[] = [
+  // Banking
   'CHEQUING',
   'SAVINGS',
-  'CASH',
-  'INVESTMENT',
-  'ASSET',
   'CREDIT_CARD',
-  'LINE_OF_CREDIT',
+  'FSA',
+  'DCFSA',
+  // Investing & Retirement
+  'INVESTMENT',
+  'HSA',
+  '401K',
+  '403B',
+  'TRADITIONAL_IRA',
+  'ROTH_IRA',
+  '529_PLAN',
+  // Loan & Debt
   'LOAN',
   'MORTGAGE',
+  'LINE_OF_CREDIT',
+  'HELOC',
+  'LIABILITY',
+  // Other Assets & Liabilities
+  'CASH',
+  'PROPERTY',
+  'VEHICLE',
+  'ASSET',
   'OTHER',
 ];
 
@@ -66,16 +82,28 @@ const getAccountTypeColor = (type: AccountType) => {
     case 'CREDIT_CARD':
       return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
     case 'INVESTMENT':
+    case '401K':
+    case '403B':
+    case 'TRADITIONAL_IRA':
+    case 'ROTH_IRA':
+    case '529_PLAN':
       return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
     case 'LOAN':
+    case 'LIABILITY':
       return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
     case 'MORTGAGE':
       return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
     case 'CASH':
+    case 'HSA':
+    case 'FSA':
+    case 'DCFSA':
       return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200';
     case 'LINE_OF_CREDIT':
+    case 'HELOC':
       return 'bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200';
     case 'ASSET':
+    case 'PROPERTY':
+    case 'VEHICLE':
       return 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200';
     default:
       return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';

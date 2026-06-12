@@ -97,7 +97,19 @@ CREATE TYPE account_type AS ENUM (
     'CASH',
     'LINE_OF_CREDIT',
     'ASSET',
-    'OTHER'
+    'OTHER',
+    'HSA',
+    'FSA',
+    'DCFSA',
+    '401K',
+    '403B',
+    'TRADITIONAL_IRA',
+    'ROTH_IRA',
+    '529_PLAN',
+    'HELOC',
+    'PROPERTY',
+    'VEHICLE',
+    'LIABILITY'
 );
 
 -- Accounts
