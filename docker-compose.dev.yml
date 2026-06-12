@@ -72,6 +72,7 @@ services:
       AI_DEFAULT_BASE_URL: ${AI_DEFAULT_BASE_URL:-}
       # HTTP mode (optional)
       DISABLE_HTTPS_HEADERS: ${DISABLE_HTTPS_HEADERS:-false}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-100}
     volumes:
       - ./backend:/app
       - ./database/schema.sql:/app/schema.sql:ro
