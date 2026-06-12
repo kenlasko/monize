@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Combobox } from '@/components/ui/Combobox';
 import { MultiSelect } from '@/components/ui/MultiSelect';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { Tag } from '@/types/tag';
@@ -37,6 +38,12 @@ interface SplitEditorProps {
   disabled?: boolean;
   onTransactionAmountChange?: (amount: number) => void;
   currencyCode?: string;
+  /**
+   * When provided, deleting one of the final two splits is allowed: it converts
+   * the transaction back to a regular one using the remaining split's category.
+   * The remaining split must be a category split for this to be offered.
+   */
+  onConvertToRegular?: (categoryId: string | undefined) => void;
 }
 
 export function SplitEditor({
@@ -51,12 +58,16 @@ export function SplitEditor({
   disabled = false,
   onTransactionAmountChange,
   currencyCode = 'CAD',
+  onConvertToRegular,
 }: SplitEditorProps) {
   const t = useTranslations('transactions');
   const investmentSplitsEnabled = parentAccountSubType === 'INVESTMENT_CASH';
   const currencySymbol = getCurrencySymbol(currencyCode);
   const decimals = getDecimalPlacesForCurrency(currencyCode);
   const [localSplits, setLocalSplits] = useState<SplitRow[]>(splits);
+  // Index of the split pending removal that would convert the transaction back
+  // to a regular one (only set while the confirmation dialog is open).
+  const [convertPendingIndex, setConvertPendingIndex] = useState<number | null>(null);
 
   // Always show Type column since a transaction will always have an account
   const supportsTransfers = true;
@@ -230,13 +241,37 @@ export function SplitEditor({
     onChange(newSplits);
   };
 
-  const removeSplit = (index: number) => {
-    if (localSplits.length <= 2) {
-      return; // Minimum 2 splits required
+  // Whether removing the row at `index` is allowed. Above two splits removal is
+  // always allowed. At exactly two splits, removal is only offered when it can
+  // convert the transaction back to a regular one -- i.e. the parent provided
+  // `onConvertToRegular` and the split that would remain is a category split.
+  const canRemoveRow = (index: number) => {
+    if (localSplits.length > 2) return true;
+    if (localSplits.length === 2 && onConvertToRegular) {
+      const remaining = localSplits[index === 0 ? 1 : 0];
+      return remaining?.splitType === 'category';
     }
-    const newSplits = localSplits.filter((_, i) => i !== index);
-    setLocalSplits(newSplits);
-    onChange(newSplits);
+    return false;
+  };
+
+  const removeSplit = (index: number) => {
+    if (localSplits.length > 2) {
+      const newSplits = localSplits.filter((_, i) => i !== index);
+      setLocalSplits(newSplits);
+      onChange(newSplits);
+      return;
+    }
+    // At two splits, deleting one converts back to a regular transaction.
+    if (canRemoveRow(index)) {
+      setConvertPendingIndex(index);
+    }
+  };
+
+  const confirmConvertToRegular = () => {
+    if (convertPendingIndex === null) return;
+    const remaining = localSplits[convertPendingIndex === 0 ? 1 : 0];
+    setConvertPendingIndex(null);
+    onConvertToRegular?.(remaining?.categoryId);
   };
 
   const distributeEvenly = () => {
@@ -376,9 +411,9 @@ export function SplitEditor({
                     <button
                       type="button"
                       onClick={() => removeSplit(index)}
-                      disabled={disabled || localSplits.length <= 2}
+                      disabled={disabled || !canRemoveRow(index)}
                       className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title={localSplits.length <= 2 ? t('splitEditor.removeMinimum') : t('splitEditor.removeSplit')}
+                      title={!canRemoveRow(index) ? t('splitEditor.removeMinimum') : localSplits.length <= 2 ? t('splitEditor.removeAndConvert') : t('splitEditor.removeSplit')}
                     >
                       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -648,9 +683,9 @@ export function SplitEditor({
                     <button
                       type="button"
                       onClick={() => removeSplit(index)}
-                      disabled={disabled || localSplits.length <= 2}
+                      disabled={disabled || !canRemoveRow(index)}
                       className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title={localSplits.length <= 2 ? t('splitEditor.removeMinimum') : t('splitEditor.removeSplit')}
+                      title={!canRemoveRow(index) ? t('splitEditor.removeMinimum') : localSplits.length <= 2 ? t('splitEditor.removeAndConvert') : t('splitEditor.removeSplit')}
                     >
                       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path
@@ -721,6 +756,17 @@ export function SplitEditor({
           </tfoot>
         </table>
       </div>
+
+      <ConfirmDialog
+        isOpen={convertPendingIndex !== null}
+        variant="warning"
+        title={t('splitEditor.convertConfirm.title')}
+        message={t('splitEditor.convertConfirm.message')}
+        confirmLabel={t('splitEditor.convertConfirm.confirm')}
+        onConfirm={confirmConvertToRegular}
+        onCancel={() => setConvertPendingIndex(null)}
+        pushHistory
+      />
     </div>
   );
 }

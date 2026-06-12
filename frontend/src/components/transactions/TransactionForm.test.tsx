@@ -792,6 +792,62 @@ describe('TransactionForm', () => {
       expect(mockOnSuccess).toHaveBeenCalledTimes(1);
     });
 
+    it('sends splits: [] when converting an existing split transaction back to regular', async () => {
+      const splitTransaction = createSplitTransaction();
+
+      render(
+        <TransactionForm
+          transaction={splitTransaction}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      // Editing a split transaction starts in split mode.
+      await waitFor(() => {
+        expect(screen.getByText('Cancel Split')).toBeInTheDocument();
+      });
+
+      // Leave split mode (mirrors deleting the final split / cancelling the split).
+      fireEvent.click(screen.getByText('Cancel Split'));
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Update Transaction/i })).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /Update Transaction/i }));
+
+      await waitFor(() => {
+        expect(mockUpdate).toHaveBeenCalledWith(
+          splitTransaction.id,
+          expect.objectContaining({ splits: [] })
+        );
+      });
+    });
+
+    it('sends splits: undefined for a regular-to-regular edit (no split churn)', async () => {
+      const existingTransaction = createExistingTransaction();
+
+      render(
+        <TransactionForm
+          transaction={existingTransaction}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Update Transaction/i })).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /Update Transaction/i }));
+
+      await waitFor(() => {
+        expect(mockUpdate).toHaveBeenCalled();
+      });
+      expect(mockUpdate.mock.calls[0][1].splits).toBeUndefined();
+    });
+
     it('shows toast.success after creating a new transaction', async () => {
       render(
         <TransactionForm

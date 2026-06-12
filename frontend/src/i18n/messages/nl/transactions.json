@@ -330,6 +330,12 @@
     "addSplit": "Splitsing toevoegen",
     "removeMinimum": "Minimaal 2 splitsingen vereist",
     "removeSplit": "Splitsing verwijderen",
+    "removeAndConvert": "Splitsing verwijderen en omzetten naar een gewone transactie",
+    "convertConfirm": {
+      "title": "Omzetten naar een gewone transactie?",
+      "message": "Als u deze splitsing verwijdert, wordt dit weer een gewone transactie met de categorie van de resterende splitsing.",
+      "confirm": "Omzetten"
+    },
     "noUnassigned": "Geen niet-toegewezen bedrag",
     "addRemaining": "Restbedrag aan deze splitsing toevoegen",
     "total": "Totaal",

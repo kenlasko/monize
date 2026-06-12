@@ -330,6 +330,12 @@
     "addSplit": "Agregar desglose",
     "removeMinimum": "Se requieren mínimo 2 desgloses",
     "removeSplit": "Quitar desglose",
+    "removeAndConvert": "Eliminar la división y convertir en una transacción normal",
+    "convertConfirm": {
+      "title": "¿Convertir en una transacción normal?",
+      "message": "Al eliminar esta división, se volverá a convertir en una transacción normal utilizando la categoría de la división restante.",
+      "confirm": "Convertir"
+    },
     "noUnassigned": "Sin cantidad sin asignar",
     "addRemaining": "Agregar el restante a este desglose",
     "total": "Total",

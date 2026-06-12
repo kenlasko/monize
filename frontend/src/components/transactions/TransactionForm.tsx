@@ -322,6 +322,17 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
     handleModeChange(enabled ? 'split' : 'normal');
   };
 
+  // Convert a split transaction back to a regular one, adopting the category of
+  // the split that remains after the user deletes one of the final two splits.
+  const handleConvertToRegular = (categoryId?: string) => {
+    setMode('normal');
+    setIsSplitMode(false);
+    setSplits([]);
+    setTransferToAccountId('');
+    setSelectedCategoryId(categoryId || '');
+    setValue('categoryId', categoryId || '', { shouldDirty: true, shouldValidate: true });
+  };
+
   // Set defaultAccountId when it changes (and we're not editing an existing transaction)
   useEffect(() => {
     if (!transaction && defaultAccountId) {
@@ -779,8 +790,16 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
         return;
       }
 
-      // Prepare splits data if in split mode
-      const splitsData = isSplitMode ? toCreateSplitData(splits) : undefined;
+      // Prepare splits data. When editing a transaction that was previously a
+      // split but is now saved in non-split mode, send an explicit empty array
+      // so the backend clears the splits and converts it to a regular one.
+      // (`undefined` means "leave splits untouched", which is wrong here.)
+      const wasSplit = Boolean(transaction?.isSplit);
+      const splitsData = isSplitMode
+        ? toCreateSplitData(splits)
+        : wasSplit
+          ? []
+          : undefined;
 
       // Validate splits sum to amount if in split mode
       if (isSplitMode && splitsData) {
@@ -1013,6 +1032,7 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
             disabled={isLoading}
             onTransactionAmountChange={(amount) => setValue('amount', amount, { shouldDirty: true, shouldValidate: true })}
             currencyCode={watchedCurrencyCode || defaultCurrency}
+            onConvertToRegular={handleConvertToRegular}
           />
         </div>
       )}

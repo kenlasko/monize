@@ -330,6 +330,12 @@
     "addSplit": "Add Split",
     "removeMinimum": "Minimum 2 splits required",
     "removeSplit": "Remove split",
+    "removeAndConvert": "Remove split and convert to a regular transaction",
+    "convertConfirm": {
+      "title": "Convert to a regular transaction?",
+      "message": "Removing this split will convert this back into a regular transaction using the remaining split's category.",
+      "confirm": "Convert"
+    },
     "noUnassigned": "No unassigned amount",
     "addRemaining": "Add remaining to this split",
     "total": "Total",
