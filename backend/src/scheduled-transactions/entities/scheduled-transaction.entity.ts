@@ -230,6 +230,9 @@ export class ScheduledTransaction {
   @Column({ type: "jsonb", name: "tag_ids", default: [] })
   tagIds: string[];
 
+  @Column({ type: "jsonb", name: "paycheck_metadata", nullable: true })
+  paycheckMetadata: any | null;
+
   @OneToMany(
     () => ScheduledTransactionSplit,
     (split) => split.scheduledTransaction,

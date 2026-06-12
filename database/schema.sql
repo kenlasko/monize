@@ -414,6 +414,7 @@ CREATE TABLE scheduled_transactions (
     investment_total_amount NUMERIC(20, 4), -- for amount-only actions (DIVIDEND, INTEREST, CAPITAL_GAIN)
     investment_exchange_rate NUMERIC(20, 10),
     tag_ids JSONB DEFAULT '[]'::jsonb, -- array of tag UUIDs to apply when posting
+    paycheck_metadata JSONB DEFAULT NULL, -- paycheck configuration details for the single-page wizard
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_scheduled_transactions_kind_exclusive CHECK (

@@ -26,6 +26,7 @@ import { RefreshToken } from "./entities/refresh-token.entity";
 import { encrypt, derivePurposeKey } from "./crypto.util";
 import { PasswordBreachService } from "./password-breach.service";
 import { EmailService } from "../notifications/email.service";
+import { CategoriesService } from "../categories/categories.service";
 
 const TEST_JWT_SECRET = "test-jwt-secret-minimum-32-chars-long";
 const TEST_TOTP_KEY = derivePurposeKey(TEST_JWT_SECRET, "totp-encryption");
@@ -59,6 +60,7 @@ describe("AuthService", () => {
   let dataSource: Record<string, jest.Mock>;
   let passwordBreachService: { isBreached: jest.Mock };
   let emailService: { sendMail: jest.Mock };
+  let categoriesService: { importDefaults: jest.Mock };
 
   const mockUser = {
     id: "user-1",
@@ -130,6 +132,10 @@ describe("AuthService", () => {
       sendMail: jest.fn().mockResolvedValue(undefined),
     };
 
+    categoriesService = {
+      importDefaults: jest.fn().mockResolvedValue({ categoriesCreated: 15 }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
@@ -180,6 +186,7 @@ describe("AuthService", () => {
               opts?.defaultValue ?? key,
           },
         },
+        { provide: CategoriesService, useValue: categoriesService },
       ],
     }).compile();
 
