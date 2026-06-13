@@ -69,6 +69,7 @@ export interface AiStatusResponse {
   hasSystemDefault: boolean;
   systemDefaultProvider: string | null;
   systemDefaultModel: string | null;
+  defaultSystemPrompt?: string;
 }
 
 export interface AiConnectionTestResponse {

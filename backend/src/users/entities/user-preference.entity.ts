@@ -118,6 +118,13 @@ export class UserPreference {
   })
   lastClientTimezone: string | null;
 
+  @Column({
+    name: "ai_import_instructions",
+    type: "text",
+    nullable: true,
+  })
+  aiImportInstructions: string | null;
+
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;
 
