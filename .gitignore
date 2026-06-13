@@ -70,4 +70,6 @@ credentials/
 
 # Claude Code
 .claude/worktrees/
-Sample401k.csv
+docs/requirements/*
+docs/knowledgebase/*
+docs/SampleData/*
