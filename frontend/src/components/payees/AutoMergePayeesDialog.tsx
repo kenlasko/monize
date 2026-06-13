@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
@@ -33,6 +35,8 @@ interface EditableGroup {
   canonicalName: string;
   alias: string;
   defaultCategoryId: string;
+  backfillTransactions: boolean;
+  uncategorizedTransactionCount: number;
   members: AutoMergeGroup['members'];
   selectedMemberIds: Set<string>;
 }
@@ -51,6 +55,9 @@ function toEditableGroups(groups: AutoMergeGroup[]): EditableGroup[] {
     alias: g.suggestedAlias,
     // Prefill with the group's most-used category, but leave it freely editable.
     defaultCategoryId: g.suggestedCategoryId ?? '',
+    // Backfill is opt-in per group; surface the count so the user can decide.
+    backfillTransactions: false,
+    uncategorizedTransactionCount: g.uncategorizedTransactionCount,
     members: g.members,
     selectedMemberIds: new Set(g.members.map((m) => m.payeeId)),
   }));
@@ -64,6 +71,16 @@ export function AutoMergePayeesDialog({
 }: AutoMergePayeesDialogProps) {
   const t = useTranslations('payees');
   const tc = useTranslations('common');
+  const router = useRouter();
+
+  // Jump to the Transactions page filtered to this group's uncategorized
+  // transactions across every member payee, so the user can review or fix them
+  // directly. The count covers all members, so we filter on all of their ids.
+  const viewUncategorized = (group: EditableGroup) => {
+    const payeeIds = group.members.map((m) => m.payeeId).join(',');
+    onClose();
+    router.push(`/transactions?payeeIds=${payeeIds}&categoryId=uncategorized`);
+  };
 
   const [minGroupSize, setMinGroupSize] = useState(2);
   const [similarityPercent, setSimilarityPercent] = useState(85);
@@ -195,6 +212,8 @@ export function AutoMergePayeesDialog({
         ),
         alias: g.alias.trim() || undefined,
         defaultCategoryId: g.defaultCategoryId || undefined,
+        // Backfill only makes sense alongside a chosen default category.
+        backfillTransactions: g.backfillTransactions && !!g.defaultCategoryId,
       }));
 
       const result = await payeesApi.applyAutoMerge(payload);
@@ -204,6 +223,11 @@ export function AutoMergePayeesDialog({
           payees: result.payeesMerged,
         }),
       );
+      if (result.transactionsBackfilled > 0) {
+        toast.success(
+          t('autoMerge.toasts.backfilled', { count: result.transactionsBackfilled }),
+        );
+      }
       if (result.skippedAliases > 0) {
         toast(
           t('autoMerge.toasts.aliasesSkipped', { count: result.skippedAliases }),
@@ -237,6 +261,18 @@ export function AutoMergePayeesDialog({
           </h3>
           <p className="text-sm text-blue-700 dark:text-blue-300">
             {t('autoMerge.howItWorksBody')}
+          </p>
+          <p className="mt-2 text-sm font-bold text-blue-800 dark:text-blue-200">
+            {t.rich('autoMerge.backupRecommendation', {
+              link: (chunks) => (
+                <Link
+                  href="/settings#backup-restore"
+                  className="underline hover:no-underline"
+                >
+                  {chunks}
+                </Link>
+              ),
+            })}
           </p>
         </div>
 
@@ -490,6 +526,23 @@ export function AutoMergePayeesDialog({
                             />
                           </div>
                         </div>
+                        {group.uncategorizedTransactionCount > 0 && (
+                          <div>
+                            <button
+                              type="button"
+                              onClick={() => viewUncategorized(group)}
+                              className="inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200 hover:bg-amber-200 dark:hover:bg-amber-900/60 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500"
+                              title={t('autoMerge.viewUncategorizedTitle', {
+                                count: group.uncategorizedTransactionCount,
+                                name: group.canonicalName,
+                              })}
+                            >
+                              {t('list.uncategorizedBadge', {
+                                count: group.uncategorizedTransactionCount,
+                              })}
+                            </button>
+                          </div>
+                        )}
                         <div>
                           <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                             {t('autoMerge.defaultCategoryLabel')}
@@ -508,6 +561,31 @@ export function AutoMergePayeesDialog({
                             usePortal
                           />
                         </div>
+                        {/* Optional backfill: apply the default category to the
+                            merged payee's existing uncategorized transactions.
+                            Only meaningful once a default category is chosen. */}
+                        {group.uncategorizedTransactionCount > 0 &&
+                          group.defaultCategoryId !== '' && (
+                            <label className="flex items-start gap-3 cursor-pointer">
+                              <ToggleSwitch
+                                checked={group.backfillTransactions}
+                                onChange={(next) =>
+                                  updateGroup(group.id, {
+                                    backfillTransactions: next,
+                                  })
+                                }
+                                disabled={!group.included}
+                                label={t('autoMerge.backfillLabel', {
+                                  count: group.uncategorizedTransactionCount,
+                                })}
+                              />
+                              <span className="text-xs text-gray-600 dark:text-gray-400">
+                                {t('autoMerge.backfillLabel', {
+                                  count: group.uncategorizedTransactionCount,
+                                })}
+                              </span>
+                            </label>
+                          )}
                       </div>
                     </div>
 

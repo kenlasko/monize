@@ -34,6 +34,8 @@ describe("PayeeAutoMergeService", () => {
   let mockTransactionsRepository: Record<string, jest.Mock>;
   // Rows returned by the dominant-category query; set per test.
   let dominantRows: Array<{ payeeId: string; categoryId: string; cnt: string }>;
+  // Rows returned by the uncategorized-count query (manager builder); per test.
+  let uncategorizedRows: Array<{ payeeId: string; cnt: string }>;
   let mockQueryRunner: any;
   let mockDataSource: { createQueryRunner: jest.Mock };
 
@@ -41,6 +43,7 @@ describe("PayeeAutoMergeService", () => {
     mockPayeesService = { findAll: jest.fn() };
     mockCategoriesRepository = { find: jest.fn().mockResolvedValue([]) };
     dominantRows = [];
+    uncategorizedRows = [];
     const txQueryBuilder: any = {
       select: jest.fn().mockReturnThis(),
       addSelect: jest.fn().mockReturnThis(),
@@ -52,8 +55,23 @@ describe("PayeeAutoMergeService", () => {
         .fn()
         .mockImplementation(() => Promise.resolve(dominantRows)),
     };
+    // The uncategorized-count helper runs through the entity manager, so give
+    // it its own builder returning uncategorizedRows.
+    const uncatQueryBuilder: any = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      getRawMany: jest
+        .fn()
+        .mockImplementation(() => Promise.resolve(uncategorizedRows)),
+    };
     mockTransactionsRepository = {
       createQueryBuilder: jest.fn().mockReturnValue(txQueryBuilder),
+      manager: {
+        createQueryBuilder: jest.fn().mockReturnValue(uncatQueryBuilder),
+      } as any,
     };
 
     mockQueryRunner = {
@@ -127,6 +145,26 @@ describe("PayeeAutoMergeService", () => {
       expect(group.totalTransactions).toBe(17);
       const canonical = group.members.find((m) => m.isCanonical);
       expect(canonical?.payeeId).toBe("p1");
+      // No uncategorized rows configured, so nothing to backfill.
+      expect(group.uncategorizedTransactionCount).toBe(0);
+    });
+
+    it("sums each member's uncategorized transactions for the group", async () => {
+      mockPayeesService.findAll.mockResolvedValue([
+        makePayee("p1", "Lidl", 10),
+        makePayee("p2", "LIDL sp. z o.o.", 2),
+        makePayee("p3", "LIDL WARSZAWA 0421", 5),
+      ]);
+      // p1 has 4 uncategorized, p3 has 2; p2 has none.
+      uncategorizedRows = [
+        { payeeId: "p1", cnt: "4" },
+        { payeeId: "p3", cnt: "2" },
+      ];
+
+      const { groups } = await service.previewAutoMerge(userId, opts);
+
+      expect(groups).toHaveLength(1);
+      expect(groups[0].uncategorizedTransactionCount).toBe(6);
     });
 
     it("suggests the group's most-used transaction category", async () => {
@@ -545,9 +583,57 @@ describe("PayeeAutoMergeService", () => {
         transactionsMigrated: 3,
         aliasesCreated: 1,
         skippedAliases: 0,
+        transactionsBackfilled: 0,
       });
       expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.manager.save).toHaveBeenCalled();
+    });
+
+    it("backfills the canonical's uncategorized transactions when requested", async () => {
+      mockCategoriesRepository.find.mockResolvedValue([{ id: "cat-1" }]);
+
+      const result = await service.applyAutoMerge(userId, [
+        {
+          canonicalPayeeId: "p1",
+          sourcePayeeIds: ["p2"],
+          alias: "*LIDL*",
+          defaultCategoryId: "cat-1",
+          backfillTransactions: true,
+        },
+      ]);
+
+      // The mocked manager.update reports 3 affected rows for the backfill.
+      expect(result.transactionsBackfilled).toBe(3);
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Transaction,
+        expect.objectContaining({
+          userId,
+          payeeId: "p1",
+          isTransfer: false,
+          isSplit: false,
+        }),
+        { categoryId: "cat-1" },
+      );
+    });
+
+    it("does not backfill when no default category is set even if requested", async () => {
+      const result = await service.applyAutoMerge(userId, [
+        {
+          canonicalPayeeId: "p1",
+          sourcePayeeIds: ["p2"],
+          alias: "*LIDL*",
+          backfillTransactions: true,
+        },
+      ]);
+
+      expect(result.transactionsBackfilled).toBe(0);
+      // No update targeting the Transaction entity with a categoryId payload.
+      const backfillCalls = mockQueryRunner.manager.update.mock.calls.filter(
+        (call: unknown[]) =>
+          call[0] === Transaction &&
+          (call[2] as { categoryId?: string }).categoryId !== undefined,
+      );
+      expect(backfillCalls).toHaveLength(0);
     });
 
     it("sets the chosen default category on the canonical", async () => {

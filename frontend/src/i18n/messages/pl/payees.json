@@ -64,6 +64,8 @@
       "deleteShort": "X"
     },
     "viewTransactionsTitle": "Wyświetl transakcje z tym odbiorcą",
+    "uncategorizedBadge": "{count, plural, one {# bez kategorii} few {# bez kategorii} many {# bez kategorii} other {# bez kategorii}}",
+    "uncategorizedTitle": "{count, plural, one {# transakcja tego odbiorcy nie ma kategorii} few {# transakcje tego odbiorcy nie mają kategorii} many {# transakcji tego odbiorcy nie ma kategorii} other {# transakcji tego odbiorcy nie ma kategorii}}",
     "empty": {
       "title": "Brak odbiorców",
       "subtitle": "Zacznij od utworzenia nowego odbiorcy."
@@ -115,6 +117,9 @@
     "matchPercentageLabel": "Procent dopasowania kategorii: {percent}%",
     "matchPercentageHelp": "Kategoria musi być używana w co najmniej takim procencie transakcji",
     "onlyWithoutCategoryLabel": "Tylko odbiorcy bez domyślnej kategorii",
+    "backfillLabel": "{count, plural, one {Skategoryzuj też # istniejącą nieskategoryzowaną transakcję} few {Skategoryzuj też # istniejące nieskategoryzowane transakcje} many {Skategoryzuj też # istniejących nieskategoryzowanych transakcji} other {Skategoryzuj też # istniejących nieskategoryzowanych transakcji}}",
+    "backfillHelp": "Stosuje wybraną kategorię do transakcji, które obecnie jej nie mają. Istniejące kategorie, przelewy i transakcje podzielone pozostają bez zmian.",
+    "viewUncategorizedTitle": "Wyświetl {count, plural, one {# nieskategoryzowaną transakcję} few {# nieskategoryzowane transakcje} many {# nieskategoryzowanych transakcji} other {# nieskategoryzowanych transakcji}} dla {name}",
     "previewButton": "Podgląd sugestii",
     "loading": "Wczytywanie...",
     "suggestionsHeader": "Sugestie (znaleziono: {count})",
@@ -136,6 +141,7 @@
     "toasts": {
       "selectAtLeastOne": "Wybierz co najmniej jednego odbiorcę do aktualizacji",
       "updated": "{count, plural, one {Zaktualizowano # odbiorcę} few {Zaktualizowano # odbiorców} many {Zaktualizowano # odbiorców} other {Zaktualizowano # odbiorcy}}",
+      "backfilled": "{count, plural, one {Skategoryzowano # transakcję} few {Skategoryzowano # transakcje} many {Skategoryzowano # transakcji} other {Skategoryzowano # transakcji}}",
       "loadFailed": "Nie udało się wczytać sugestii",
       "applyFailed": "Nie udało się zastosować przypisań kategorii"
     }
@@ -144,6 +150,7 @@
     "title": "Automatycznie scal odbiorców",
     "howItWorksTitle": "Jak to działa",
     "howItWorksBody": "Ta funkcja przeszukuje odbiorców i grupuje warianty, w których jedna nazwa rozszerza drugą - na przykład \"Lidl\", \"LIDL sp. z o.o.\" i \"LIDL WARSZAWA 0421\" opierają się na \"Lidl\". Każda grupa jest scalana w jednego głównego odbiorcę, a alias z symbolem wieloznacznym (np. \"*LIDL*\") jest tworzony, aby przyszłe importy były dopasowywane automatycznie. Odbiorcy, których łączy tylko wspólne słowo (jak \"Royal Electric\" i \"Royal City Nursery\"), pozostają osobno. Sprawdź i dostosuj każdą grupę przed zastosowaniem.",
+    "backupRecommendation": "Zalecane: utwórz <link>kopię zapasową</link> przed wprowadzeniem zmian.",
     "minGroupSizeLabel": "Minimalny rozmiar grupy: {count}",
     "minGroupSizeHelp": "Proponuj tylko grupy z co najmniej taką liczbą odbiorców",
     "similarityLabel": "Próg podobieństwa: {percent}%",
@@ -162,6 +169,7 @@
     "canonicalNameLabel": "Zachowaj jako odbiorcę",
     "aliasLabel": "Alias dla przyszłych importów",
     "defaultCategoryLabel": "Domyślna kategoria (opcjonalnie)",
+    "backfillLabel": "{count, plural, one {Skategoryzuj też # istniejącą nieskategoryzowaną transakcję} few {Skategoryzuj też # istniejące nieskategoryzowane transakcje} many {Skategoryzuj też # istniejących nieskategoryzowanych transakcji} other {Skategoryzuj też # istniejących nieskategoryzowanych transakcji}}",
     "aliasPlaceholder": "np. *LIDL*",
     "keepLabel": "Zachowaj tego odbiorcę",
     "includeMemberLabel": "Uwzględnij w scalaniu",
@@ -177,6 +185,7 @@
     "toasts": {
       "selectAtLeastOne": "Wybierz co najmniej jedną grupę do scalenia",
       "applied": "Scalono {groups, plural, one {# grupę} few {# grupy} many {# grup} other {# grup}} (połączono {payees} odbiorców)",
+      "backfilled": "{count, plural, one {Skategoryzowano # transakcję} few {Skategoryzowano # transakcje} many {Skategoryzowano # transakcji} other {Skategoryzowano # transakcji}}",
       "aliasesSkipped": "{count, plural, one {Pominięto # alias z powodu konfliktu} few {Pominięto # aliasy z powodu konfliktów} many {Pominięto # aliasów z powodu konfliktów} other {Pominięto # aliasów z powodu konfliktów}}",
       "loadFailed": "Nie udało się załadować grup scalania",
       "applyFailed": "Nie udało się scalić odbiorców"
@@ -193,7 +202,8 @@
     "ignoreCommonWordsLabel": "Ignoruj popularne słowa",
     "ignoreCommonWordsHelp": "Nie twórz grup wokół ogólnych słów (Restauracja, Cafe, nazwy krajów) ani słów, od których zaczyna się wielu różnych odbiorców.",
     "commonWordSensitivityLabel": "Czułość popularnych słów: {count}+ wariantów",
-    "commonWordSensitivityHelp": "Słowo początkowe jest uznawane za popularne, gdy odgałęzia się od niego co najmniej tylu różnych odbiorców. Niżej = filtruj agresywniej."
+    "commonWordSensitivityHelp": "Słowo początkowe jest uznawane za popularne, gdy odgałęzia się od niego co najmniej tylu różnych odbiorców. Niżej = filtruj agresywniej.",
+    "viewUncategorizedTitle": "Wyświetl {count, plural, one {# nieskategoryzowaną transakcję} few {# nieskategoryzowane transakcje} many {# nieskategoryzowanych transakcji} other {# nieskategoryzowanych transakcji}} dla {name}"
   },
   "deactivateUnused": {
     "title": "Dezaktywuj nieużywanych odbiorców",

@@ -1,6 +1,21 @@
 import apiClient from './api';
 import { AutoBackupSettings, UpdateAutoBackupSettingsData } from '@/types/auth';
 
+// HTTP header values have their leading and trailing whitespace stripped in
+// transit (RFC 7230 "optional whitespace"), which silently corrupts passwords
+// that begin or end with a space. Base64-encode password header values so every
+// byte -- including surrounding whitespace and non-ASCII characters -- survives
+// the round trip. The backend decodes them with the matching scheme before any
+// credential comparison.
+function encodePasswordHeader(value: string): string {
+  const bytes = new TextEncoder().encode(value);
+  let binary = '';
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return btoa(binary);
+}
+
 export interface RestoreResult {
   message: string;
   restored: Record<string, number>;
@@ -49,7 +64,7 @@ export const backupApi = {
   exportBackup: async (encryptionPassword?: string): Promise<Blob> => {
     const headers: Record<string, string> = {};
     if (encryptionPassword) {
-      headers['X-Export-Password'] = encryptionPassword;
+      headers['X-Export-Password'] = encodePasswordHeader(encryptionPassword);
     }
     const response = await apiClient.post('/backup/export', {}, {
       responseType: 'blob',
@@ -80,13 +95,13 @@ export const backupApi = {
       'Content-Type': isEncrypted ? 'application/octet-stream' : 'application/gzip',
     };
     if (params.password) {
-      headers['X-Restore-Password'] = params.password;
+      headers['X-Restore-Password'] = encodePasswordHeader(params.password);
     }
     if (params.oidcIdToken) {
       headers['X-Restore-OIDC-Token'] = params.oidcIdToken;
     }
     if (params.backupPassword) {
-      headers['X-Backup-Password'] = params.backupPassword;
+      headers['X-Backup-Password'] = encodePasswordHeader(params.backupPassword);
     }
 
     const response = await apiClient.post<RestoreResult>(

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
@@ -33,10 +34,22 @@ export function CategoryAutoAssignDialog({
   const [onlyWithoutCategory, setOnlyWithoutCategory] = useState(true);
   const [suggestions, setSuggestions] = useState<CategorySuggestion[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [backfillTransactions, setBackfillTransactions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
   const [hasPreviewLoaded, setHasPreviewLoaded] = useState(false);
   const t = useTranslations('payees');
+  const router = useRouter();
+
+  // Jump to the Transactions page filtered to this payee's uncategorized
+  // transactions so the user can review or fix them directly.
+  const viewUncategorized = useCallback(
+    (payeeId: string) => {
+      onClose();
+      router.push(`/transactions?payeeId=${payeeId}&categoryId=uncategorized`);
+    },
+    [onClose, router],
+  );
 
   // Map a suggested category id to its full "Parent: Child" label so the
   // suggestion shows the subcategory in context; fall back to the bare name.
@@ -71,9 +84,20 @@ export function CategoryAutoAssignDialog({
     if (isOpen) {
       setSuggestions([]);
       setSelectedIds(new Set());
+      setBackfillTransactions(false);
       setHasPreviewLoaded(false);
     }
   }, [isOpen]);
+
+  // Total uncategorized transactions across the selected payees -- the scope of
+  // the optional backfill, shown in its label.
+  const backfillCount = useMemo(
+    () =>
+      suggestions
+        .filter(s => selectedIds.has(s.payeeId))
+        .reduce((sum, s) => sum + s.uncategorizedCount, 0),
+    [suggestions, selectedIds],
+  );
 
   const handleApply = async () => {
     if (selectedIds.size === 0) {
@@ -88,10 +112,16 @@ export function CategoryAutoAssignDialog({
         .map(s => ({
           payeeId: s.payeeId,
           categoryId: s.suggestedCategoryId,
+          backfillTransactions,
         }));
 
       const result = await payeesApi.applyCategorySuggestions(assignments);
       toast.success(t('categoryAutoAssign.toasts.updated', { count: result.updated }));
+      if (result.transactionsBackfilled > 0) {
+        toast.success(
+          t('categoryAutoAssign.toasts.backfilled', { count: result.transactionsBackfilled }),
+        );
+      }
       onSuccess();
       onClose();
     } catch (error) {
@@ -286,8 +316,25 @@ export function CategoryAutoAssignDialog({
                             <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                               {suggestion.payeeName}
                             </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              {suggestion.transactionCount} transactions
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                {suggestion.transactionCount} transactions
+                              </span>
+                              {suggestion.uncategorizedCount > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => viewUncategorized(suggestion.payeeId)}
+                                  className="inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200 hover:bg-amber-200 dark:hover:bg-amber-900/60 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                  title={t('categoryAutoAssign.viewUncategorizedTitle', {
+                                    count: suggestion.uncategorizedCount,
+                                    name: suggestion.payeeName,
+                                  })}
+                                >
+                                  {t('list.uncategorizedBadge', {
+                                    count: suggestion.uncategorizedCount,
+                                  })}
+                                </button>
+                              )}
                             </div>
                           </td>
                           <td className="px-3 py-2">
@@ -311,6 +358,26 @@ export function CategoryAutoAssignDialog({
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+
+              {/* Optional backfill: also apply the assigned category to the
+                  selected payees' existing uncategorized transactions. */}
+              {backfillCount > 0 && (
+                <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <ToggleSwitch
+                      checked={backfillTransactions}
+                      onChange={setBackfillTransactions}
+                      label={t('categoryAutoAssign.backfillLabel', { count: backfillCount })}
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                      {t('categoryAutoAssign.backfillLabel', { count: backfillCount })}
+                    </span>
+                  </label>
+                  <p className="ml-12 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    {t('categoryAutoAssign.backfillHelp')}
+                  </p>
                 </div>
               )}
             </div>

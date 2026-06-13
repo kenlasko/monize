@@ -2,6 +2,7 @@ import { ApiProperty } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import {
   IsArray,
+  IsBoolean,
   IsOptional,
   IsString,
   IsUUID,
@@ -62,6 +63,16 @@ export class AutoMergeGroupDto {
   @IsOptional()
   @IsUUID()
   defaultCategoryId?: string;
+
+  @ApiProperty({
+    required: false,
+    example: true,
+    description:
+      "When true (with a default category set), also apply that category to the canonical's existing uncategorized transactions after merging",
+  })
+  @IsOptional()
+  @IsBoolean()
+  backfillTransactions?: boolean;
 }
 
 export class ApplyAutoMergeDto {

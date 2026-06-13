@@ -208,6 +208,25 @@ describe('PayeeList', () => {
     expect(zeros.length).toBeGreaterThanOrEqual(1);
   });
 
+  it('shows an uncategorized badge for payees with uncategorized transactions', () => {
+    const payees = [
+      makePayee({ id: 'p1', name: 'Walmart', uncategorizedCount: 4 }),
+      makePayee({ id: 'p2', name: 'Netflix', uncategorizedCount: 0 }),
+    ];
+
+    render(<PayeeList payees={payees} onEdit={onEdit} onRefresh={onRefresh} />);
+    // Walmart has 4 uncategorized; Netflix has none, so only one badge.
+    expect(screen.getByText('4 uncategorized')).toBeInTheDocument();
+    expect(screen.queryByText('0 uncategorized')).not.toBeInTheDocument();
+  });
+
+  it('does not show the uncategorized badge when the count is undefined', () => {
+    const payees = [makePayee({ id: 'p1', name: 'Walmart' })];
+
+    render(<PayeeList payees={payees} onEdit={onEdit} onRefresh={onRefresh} />);
+    expect(screen.queryByText(/uncategorized/)).not.toBeInTheDocument();
+  });
+
   it('displays notes when available', () => {
     const payees = [
       makePayee({ id: 'p1', name: 'Netflix', notes: 'Streaming service' }),

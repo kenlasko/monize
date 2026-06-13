@@ -64,6 +64,8 @@
       "deleteShort": "[XX-X-XX]"
     },
     "viewTransactionsTitle": "[XX-View transactions with this payee-XX]",
+    "uncategorizedBadge": "[XX-{count, plural, one {# uncategorized} other {# uncategorized}}-XX]",
+    "uncategorizedTitle": "[XX-{count, plural, one {# transaction for this payee has no category} other {# transactions for this payee have no category}}-XX]",
     "empty": {
       "title": "[XX-No payees-XX]",
       "subtitle": "[XX-Get started by creating a new payee.-XX]"
@@ -115,6 +117,9 @@
     "matchPercentageLabel": "[XX-Category Match Percentage: {percent}%-XX]",
     "matchPercentageHelp": "[XX-The category must be used in at least this percentage of transactions-XX]",
     "onlyWithoutCategoryLabel": "[XX-Only payees without a default category-XX]",
+    "backfillLabel": "[XX-Also categorize {count, plural, one {# existing uncategorized transaction} other {# existing uncategorized transactions}}-XX]",
+    "backfillHelp": "[XX-Applies the chosen category to transactions that currently have none. Existing categories, transfers, and split transactions are left unchanged.-XX]",
+    "viewUncategorizedTitle": "[XX-View {count, plural, one {# uncategorized transaction} other {# uncategorized transactions}} for {name}-XX]",
     "previewButton": "[XX-Preview Suggestions-XX]",
     "loading": "[XX-Loading...-XX]",
     "suggestionsHeader": "[XX-Suggestions ({count} found)-XX]",
@@ -136,6 +141,7 @@
     "toasts": {
       "selectAtLeastOne": "[XX-Please select at least one payee to update-XX]",
       "updated": "[XX-{count, plural, one {Updated # payee} other {Updated # payees}}-XX]",
+      "backfilled": "[XX-{count, plural, one {Categorized # transaction} other {Categorized # transactions}}-XX]",
       "loadFailed": "[XX-Failed to load suggestions-XX]",
       "applyFailed": "[XX-Failed to apply category assignments-XX]"
     }
@@ -144,6 +150,7 @@
     "title": "[XX-Auto-Merge Payees-XX]",
     "howItWorksTitle": "[XX-How it works-XX]",
     "howItWorksBody": "[XX-This feature scans your payees and groups variants where one name extends another - for example \"Lidl\", \"LIDL sp. z o.o.\" and \"LIDL WARSZAWA 0421\" all build on \"Lidl\". Each group is merged into a single canonical payee, and a wildcard alias (such as \"*LIDL*\") is created so future imports are matched automatically. Payees that merely share a common word (like \"Royal Electric\" and \"Royal City Nursery\") are kept separate. Review and adjust each group before applying.-XX]",
+    "backupRecommendation": "[XX-Recommended: create a <link>backup</link> before making changes.-XX]",
     "minGroupSizeLabel": "[XX-Minimum Group Size: {count}-XX]",
     "minGroupSizeHelp": "[XX-Only suggest groups with at least this many payees-XX]",
     "similarityLabel": "[XX-Similarity Threshold: {percent}%-XX]",
@@ -162,6 +169,7 @@
     "canonicalNameLabel": "[XX-Keep as payee-XX]",
     "aliasLabel": "[XX-Alias for future imports-XX]",
     "defaultCategoryLabel": "[XX-Default category (optional)-XX]",
+    "backfillLabel": "[XX-Also categorize {count, plural, one {# existing uncategorized transaction} other {# existing uncategorized transactions}}-XX]",
     "aliasPlaceholder": "[XX-e.g., *LIDL*-XX]",
     "keepLabel": "[XX-Keep this payee-XX]",
     "includeMemberLabel": "[XX-Include in merge-XX]",
@@ -177,6 +185,7 @@
     "toasts": {
       "selectAtLeastOne": "[XX-Please select at least one group to merge-XX]",
       "applied": "[XX-Merged {groups, plural, one {# group} other {# groups}} ({payees} payees combined)-XX]",
+      "backfilled": "[XX-{count, plural, one {Categorized # transaction} other {Categorized # transactions}}-XX]",
       "aliasesSkipped": "[XX-{count, plural, one {# alias was skipped due to a conflict} other {# aliases were skipped due to conflicts}}-XX]",
       "loadFailed": "[XX-Failed to load merge groups-XX]",
       "applyFailed": "[XX-Failed to merge payees-XX]"
@@ -193,7 +202,8 @@
     "ignoreCommonWordsLabel": "[XX-Ignore common words-XX]",
     "ignoreCommonWordsHelp": "[XX-Don't anchor groups on generic words (Restaurant, Cafe, country names) or words that many different payees start with.-XX]",
     "commonWordSensitivityLabel": "[XX-Common-word sensitivity: {count}+ variants-XX]",
-    "commonWordSensitivityHelp": "[XX-A leading word is treated as common once at least this many different payees branch off it. Lower = filter more aggressively.-XX]"
+    "commonWordSensitivityHelp": "[XX-A leading word is treated as common once at least this many different payees branch off it. Lower = filter more aggressively.-XX]",
+    "viewUncategorizedTitle": "[XX-View {count, plural, one {# uncategorized transaction} other {# uncategorized transactions}} for {name}-XX]"
   },
   "deactivateUnused": {
     "title": "[XX-Deactivate Unused Payees-XX]",

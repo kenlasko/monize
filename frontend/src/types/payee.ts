@@ -12,6 +12,7 @@ export interface Payee {
   transactionCount?: number;
   lastUsedDate?: string | null;
   aliasCount?: number;
+  uncategorizedCount?: number;
 }
 
 export interface PayeeAlias {
@@ -75,6 +76,7 @@ export interface AutoMergeGroup {
   suggestedName: string;
   suggestedAlias: string;
   suggestedCategoryId: string | null;
+  uncategorizedTransactionCount: number;
   members: AutoMergeMember[];
   totalTransactions: number;
 }
@@ -85,6 +87,7 @@ export interface ApplyAutoMergeGroup {
   sourcePayeeIds: string[];
   alias?: string;
   defaultCategoryId?: string;
+  backfillTransactions?: boolean;
 }
 
 export interface ApplyAutoMergeResult {
@@ -93,6 +96,7 @@ export interface ApplyAutoMergeResult {
   transactionsMigrated: number;
   aliasesCreated: number;
   skippedAliases: number;
+  transactionsBackfilled: number;
 }
 
 export interface PayeeSummary {
@@ -113,6 +117,7 @@ export interface CategorySuggestion {
   transactionCount: number;
   categoryCount: number;
   percentage: number;
+  uncategorizedCount: number;
 }
 
 export interface CategorySuggestionsParams {
@@ -124,6 +129,7 @@ export interface CategorySuggestionsParams {
 export interface CategoryAssignment {
   payeeId: string;
   categoryId: string;
+  backfillTransactions?: boolean;
 }
 
 export interface DeactivationPreviewParams {
