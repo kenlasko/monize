@@ -8,8 +8,10 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { ProviderList } from '@/components/settings/ai/ProviderList';
+import { CustomInstructionsCard } from '@/components/settings/ai/CustomInstructionsCard';
 import { UsageDashboard } from '@/components/settings/ai/UsageDashboard';
 import { aiApi } from '@/lib/ai';
+import { userSettingsApi } from '@/lib/user-settings';
 import { getErrorMessage } from '@/lib/errors';
 import type { AiProviderConfig, AiUsageSummary, AiStatus } from '@/types/ai';
 import Link from 'next/link';
@@ -30,18 +32,21 @@ function AiSettingsContent() {
   const [configs, setConfigs] = useState<AiProviderConfig[]>([]);
   const [usage, setUsage] = useState<AiUsageSummary | null>(null);
   const [status, setStatus] = useState<AiStatus | null>(null);
+  const [instructions, setInstructions] = useState('');
   const [usageDays, setUsageDays] = useState<number | undefined>(30);
 
   const loadData = useCallback(async () => {
     try {
-      const [configsData, usageData, statusData] = await Promise.all([
+      const [configsData, usageData, statusData, preferencesData] = await Promise.all([
         aiApi.getConfigs(),
         aiApi.getUsage(usageDays),
         aiApi.getStatus(),
+        userSettingsApi.getPreferences(),
       ]);
       setConfigs(configsData);
       setUsage(usageData);
       setStatus(statusData);
+      setInstructions(preferencesData.aiImportInstructions || '');
     } catch (error) {
       toast.error(getErrorMessage(error, t('toasts.loadFailed')));
     } finally {
@@ -110,6 +115,12 @@ function AiSettingsContent() {
           hasSystemDefault={status?.hasSystemDefault}
           systemDefaultProvider={status?.systemDefaultProvider}
           systemDefaultModel={status?.systemDefaultModel}
+          disabled={isDemoMode}
+        />
+
+        <CustomInstructionsCard
+          initialInstructions={instructions}
+          defaultPrompt={status?.defaultSystemPrompt || ''}
           disabled={isDemoMode}
         />
 

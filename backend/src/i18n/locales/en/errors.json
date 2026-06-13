@@ -63,6 +63,7 @@
     "providerConfigNotFound": "AI provider configuration not found",
     "maxProvidersExceeded": "Maximum of {{ maxProvidersPerUser }} AI provider configurations per user",
     "encryptionKeyNotConfigured": "AI_ENCRYPTION_KEY is not configured. Cannot store API keys securely.",
+    "duplicatePriority": "An AI provider configuration with the same provider and priority already exists.",
     "noActiveProviders": "No active AI providers configured. Please configure a provider in AI Settings.",
     "allProvidersFailed": "All AI providers failed. Please check your provider configuration and try again.",
     "noToolUseProvider": "No AI provider with tool use support configured. Natural language queries require Anthropic, OpenAI, or Ollama. Please configure one in AI Settings.",

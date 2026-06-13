@@ -169,11 +169,19 @@ function AiImportContent() {
 
   const handleImport = async () => {
     if (!parsed || selectedRows.size === 0) return;
+    
+    // Build a minimal QIF multi-account payload from the AI-parsed data
+    const selectedTxns = transactions.filter((_, i) => selectedRows.has(i));
+    
+    // Validate that all selected transactions have a valid date (YYYY-MM-DD)
+    const invalidDateTxn = selectedTxns.find(tx => !tx.date || tx.date === 'null' || tx.date === 'undefined' || !/^\d{4}-\d{2}-\d{2}$/.test(tx.date));
+    if (invalidDateTxn) {
+      toast.error(`Transaction "${invalidDateTxn.payee || 'Without Payee'}" has an invalid or missing date. Please edit it to set a valid date.`);
+      return;
+    }
+
     setIsImporting(true);
     try {
-      // Build a minimal QIF multi-account payload from the AI-parsed data
-      // We convert AI transactions to the QIF format the import service already handles
-      const selectedTxns = transactions.filter((_, i) => selectedRows.has(i));
       const qifContent = buildQifFromAiTransactions(selectedTxns, parsed.accounts);
       const result = await importApi.importQifMultiAccount({
         content: qifContent,
