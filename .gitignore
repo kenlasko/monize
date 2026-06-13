@@ -70,6 +70,8 @@ credentials/
 
 # Claude Code
 .claude/worktrees/
-docs/missing-requirements.md
+docs/requirements/*
 Sample401k.csv
-docs/knowledgebase/local-development-setup.md
+docs/knowledgebase/*
+
+docs/Requirements/missing-requirements.md
