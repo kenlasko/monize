@@ -249,6 +249,7 @@ export class AccountsController {
     @Query("startDate") startDate?: string,
     @Query("endDate") endDate?: string,
     @Query("accountIds") accountIds?: string,
+    @Query("optimize") optimize?: string,
   ) {
     const sd = assertStringParam(startDate, "startDate");
     const ed = assertStringParam(endDate, "endDate");
@@ -276,7 +277,7 @@ export class AccountsController {
           : readable;
       if (ids.length === 0) return [];
     }
-    return this.accountsService.getDailyBalances(req.user.id, sd, ed, ids);
+    return this.accountsService.getDailyBalances(req.user.id, sd, ed, ids, optimize === "true");
   }
 
   @Get("summary")
