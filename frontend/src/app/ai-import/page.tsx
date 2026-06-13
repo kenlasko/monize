@@ -639,7 +639,7 @@ function AiImportContent() {
           </div>
 
           {isAnalyzing && (
-            <div className="mt-8 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 shadow-lg max-w-2xl mx-auto transition-all duration-300">
+            <div className="mt-8 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm transition-all duration-300">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 bg-blue-500 rounded-full animate-ping" />
