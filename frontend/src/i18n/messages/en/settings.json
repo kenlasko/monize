@@ -834,6 +834,19 @@
       "modelUnavailable": "Saved, but model \"{model}\" is not available on this provider.",
       "deleteFailed": "Failed to delete provider",
       "updateFailed": "Failed to update provider"
+    },
+    "customInstructions": {
+      "heading": "Custom Import Instructions",
+      "description": "Provide custom system prompt instructions and rules for the AI importer. These are appended to the system prompt and will affect how transactions and accounts are parsed.",
+      "textareaPlaceholder": "e.g., Always map STARBUCKS to coffee category. If payee is Walmart, assume account is Credit Card.",
+      "basePromptHeading": "Base System Prompt (Read-only)",
+      "basePromptDescription": "This is the default system prompt used by Monize. Your custom rules will be appended to this prompt.",
+      "saveButton": "Save Instructions",
+      "savingButton": "Saving...",
+      "toasts": {
+        "saved": "Custom import instructions saved successfully",
+        "saveFailed": "Failed to save custom import instructions"
+      }
     }
   },
   "usage": {
