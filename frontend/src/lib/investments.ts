@@ -136,6 +136,8 @@ export const investmentsApi = {
     limit?: number;
     symbol?: string;
     action?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
   }): Promise<PaginatedInvestmentTransactions> => {
     const response = await apiClient.get<PaginatedInvestmentTransactions>(
       '/investment-transactions',
