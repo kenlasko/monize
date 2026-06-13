@@ -29,6 +29,8 @@ export interface ParsedAiTransaction {
   account?: string;
   sourceAccount?: string | null;
   memo?: string | null;
+  notes?: string | null;
+  category?: string | null;
   security?: string | null;
   shares?: number | null;
   price?: number | null;

@@ -270,6 +270,10 @@ export function parseQif(
         currentTransaction.memo = truncate(value, FIELD_LIMITS.MEMO);
         break;
 
+      case "X": // Custom Notes
+        currentTransaction.notes = truncate(value, FIELD_LIMITS.MEMO);
+        break;
+
       case "N": // Number (cheque number) OR Action (for investment transactions)
         currentTransaction.number = truncate(
           value,
@@ -1156,6 +1160,10 @@ export function parseQifFull(
 
       case "M":
         currentTransaction.memo = truncate(value, FIELD_LIMITS.MEMO);
+        break;
+
+      case "X": // Custom Notes
+        currentTransaction.notes = truncate(value, FIELD_LIMITS.MEMO);
         break;
 
       case "N":
