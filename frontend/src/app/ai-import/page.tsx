@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { aiApi, ParsedFinancialDataResponse, ParsedAiTransaction } from '@/lib/ai';
 import { importApi } from '@/lib/import';
@@ -73,6 +73,9 @@ function AiImportContent() {
   const [rawText, setRawText] = useState('');
   const [hint, setHint] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [streamedText, setStreamedText] = useState('');
+  const consoleRef = useRef<HTMLDivElement | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [parsed, setParsed] = useState<ParsedFinancialDataResponse | null>(null);
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
@@ -91,23 +94,115 @@ function AiImportContent() {
     }).catch(() => {});
   }, []);
 
-  const handleAnalyze = useCallback(async () => {
+  // Auto-scroll the stream console block
+  useEffect(() => {
+    if (consoleRef.current) {
+      consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
+    }
+  }, [streamedText]);
+
+  // Cleanup abort controller on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  const handleCancelAnalysis = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      setIsAnalyzing(false);
+      toast.success('Analysis cancelled by user.');
+    }
+  }, []);
+
+  const handleAnalyze = useCallback(() => {
     if (!rawText.trim()) {
       toast.error('Please paste some financial data first.');
       return;
     }
     setIsAnalyzing(true);
-    try {
-      const result = await aiApi.parseFinancialData(rawText.trim(), hint.trim() || undefined);
-      setParsed(result);
-      setTransactions(result.transactions);
-      setSelectedRows(new Set(result.transactions.map((_, i) => i)));
-      setStep('preview');
-    } catch (err) {
-      toast.error(getErrorMessage(err, 'AI could not parse the data. Please try again.'));
-    } finally {
-      setIsAnalyzing(false);
+    setStreamedText('');
+    
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
+
+    let accumulated = '';
+    let hasFailed = false;
+
+    const controller = aiApi.parseFinancialDataStream(
+      rawText.trim(),
+      {
+        onEvent: (event) => {
+          if (event.type === 'error' || event.error) {
+            hasFailed = true;
+            const msg = event.message || event.error || 'Unknown error';
+            toast.error(`Import failed: ${msg}`);
+            setIsAnalyzing(false);
+            return;
+          }
+          if (event.content) {
+            accumulated += event.content;
+            setStreamedText(accumulated);
+          }
+        },
+        onDone: () => {
+          setIsAnalyzing(false);
+          abortControllerRef.current = null;
+          if (hasFailed) return;
+          try {
+            let rawContent = accumulated.trim();
+            rawContent = rawContent.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '');
+            const result = JSON.parse(rawContent) as ParsedFinancialDataResponse;
+            
+            // Validate and sanitize (identical to backend sanitization in complete path)
+            if (!Array.isArray(result.transactions)) {
+              result.transactions = [];
+            } else {
+              for (const tx of result.transactions) {
+                if (tx.date && typeof tx.date === 'string') {
+                  const match = tx.date.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+                  if (match) {
+                    const [, y, m, d] = match;
+                    tx.date = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+                  }
+                }
+                if (tx.date === 'null' || tx.date === 'undefined' || !tx.date) {
+                  tx.date = new Date().toISOString().split('T')[0];
+                }
+              }
+            }
+            if (!Array.isArray(result.accounts)) {
+              result.accounts = [];
+            }
+            if (!Array.isArray(result.securities)) {
+              result.securities = [];
+            }
+            result.confidence = result.confidence || 'medium';
+            result.notes = result.notes || '';
+
+            setParsed(result);
+            setTransactions(result.transactions);
+            setSelectedRows(new Set(result.transactions.map((_, i) => i)));
+            setStep('preview');
+          } catch (err) {
+            toast.error('Failed to parse AI output. Please try again.');
+          }
+        },
+        onError: (err) => {
+          setIsAnalyzing(false);
+          abortControllerRef.current = null;
+          toast.error(getErrorMessage(err, 'AI could not parse the data. Please try again.'));
+        }
+      },
+      hint.trim() || undefined
+    );
+
+    abortControllerRef.current = controller;
   }, [rawText, hint]);
 
   const toggleRow = (i: number) => {
@@ -523,7 +618,16 @@ function AiImportContent() {
             />
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-3">
+            {isAnalyzing && (
+              <Button
+                variant="outline"
+                onClick={handleCancelAnalysis}
+                size="lg"
+              >
+                🛑 Cancel
+              </Button>
+            )}
             <Button
               onClick={handleAnalyze}
               isLoading={isAnalyzing}
@@ -535,8 +639,29 @@ function AiImportContent() {
           </div>
 
           {isAnalyzing && (
-            <div className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400 animate-pulse">
-              AI is reading your data — this usually takes 5–15 seconds...
+            <div className="mt-8 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 shadow-lg max-w-2xl mx-auto transition-all duration-300">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full animate-ping" />
+                  <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    AI Parsing in Progress...
+                  </span>
+                </div>
+                <span className="text-xs font-mono text-gray-500 dark:text-gray-400">
+                  {streamedText.length.toLocaleString()} characters streamed
+                </span>
+              </div>
+              <div className="w-full bg-gray-100 dark:bg-gray-800 h-1.5 rounded-full overflow-hidden mb-4">
+                <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 animate-pulse w-full" />
+              </div>
+              <div
+                ref={consoleRef}
+                className="bg-gray-50 dark:bg-gray-950 rounded-lg p-4 font-mono text-xs text-gray-600 dark:text-gray-400 h-48 overflow-y-auto border border-gray-100 dark:border-gray-900 shadow-inner scrollbar-thin"
+              >
+                <div className="whitespace-pre-wrap">
+                  {streamedText || 'Waiting for AI stream to initialize...'}
+                </div>
+              </div>
             </div>
           )}
         </div>

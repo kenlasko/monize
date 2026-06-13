@@ -26,6 +26,7 @@ import {
   AiCompletionRequest,
   AiCompletionResponse,
   AiProvider,
+  AiStreamChunk,
 } from "./providers/ai-provider.interface";
 import {
   validateUrlIsSafe,
@@ -644,6 +645,130 @@ export class AiService {
     parsed.notes = parsed.notes || '';
 
     return parsed;
+  }
+
+  async *stream(
+    userId: string,
+    request: AiCompletionRequest,
+    feature: string,
+  ): AsyncIterable<AiStreamChunk & { model: string; provider: string }> {
+    const configs = await this.getActiveConfigs(userId);
+
+    if (configs.length === 0) {
+      throw new BadRequestException(
+        tr(
+          "errors.ai.noActiveProviders",
+          "No active AI providers configured. Please configure a provider in AI Settings.",
+        ),
+      );
+    }
+
+    const errors: string[] = [];
+
+    for (const config of configs) {
+      const startTime = Date.now();
+      try {
+        const provider = this.providerFactory.createProvider(config);
+        
+        let accumulatedContent = "";
+
+        if (provider.supportsStreaming && provider.stream) {
+          for await (const chunk of provider.stream(request)) {
+            accumulatedContent += chunk.content;
+            yield {
+              content: chunk.content,
+              done: chunk.done,
+              model: config.model || provider.name,
+              provider: provider.name,
+            };
+          }
+        } else {
+          // Fallback to complete
+          const response = await provider.complete(request);
+          accumulatedContent = response.content;
+          yield {
+            content: response.content,
+            done: true,
+            model: response.model,
+            provider: response.provider,
+          };
+        }
+
+        const durationMs = Date.now() - startTime;
+        const inputTokensEstimate = Math.ceil(JSON.stringify(request.messages).length / 4);
+        const outputTokensEstimate = Math.ceil(accumulatedContent.length / 4);
+
+        await this.usageService.logUsage({
+          userId,
+          provider: config.provider,
+          model: config.model || provider.name,
+          feature,
+          inputTokens: inputTokensEstimate,
+          outputTokens: outputTokensEstimate,
+          durationMs,
+        });
+
+        return; // success, we are done
+      } catch (error) {
+        const durationMs = Date.now() - startTime;
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        errors.push(`${config.provider}: ${message}`);
+
+        this.logger.warn(`AI provider ${config.provider} failed: ${message}`);
+
+        await this.usageService.logUsage({
+          userId,
+          provider: config.provider,
+          model: config.model || "unknown",
+          feature,
+          inputTokens: 0,
+          outputTokens: 0,
+          durationMs,
+          error: message,
+        });
+      }
+    }
+
+    this.logger.error(`All AI providers failed: ${errors.join("; ")}`);
+    throw new BadRequestException(
+      tr(
+        "errors.ai.allProvidersFailed",
+        "All AI providers failed. Please check your provider configuration and try again.",
+      ),
+    );
+  }
+
+  async *parseFinancialDataStream(
+    userId: string,
+    rawText: string,
+    hint?: string,
+  ): AsyncIterable<AiStreamChunk & { model?: string; provider?: string }> {
+    const preferences = await this.configRepository.manager.findOne(UserPreference, {
+      where: { userId },
+    });
+
+    let systemPrompt = DEFAULT_SYSTEM_PROMPT;
+    if (preferences?.aiImportInstructions) {
+      systemPrompt += `\n\nUser Custom Rules/Instructions:\n${preferences.aiImportInstructions}`;
+    }
+
+    const userMessage = hint
+      ? `Data source hint: ${hint}\n\nRaw data:\n${rawText}`
+      : `Raw data:\n${rawText}`;
+
+    yield* this.stream(
+      userId,
+      {
+        systemPrompt,
+        messages: [
+          { role: 'user', content: userMessage },
+        ],
+        maxTokens: 8000,
+        temperature: 0.1,
+      },
+      'ai-import',
+    );
   }
 
   async getStatus(userId: string): Promise<AiStatusResponse> {

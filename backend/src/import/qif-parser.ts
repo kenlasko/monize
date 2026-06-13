@@ -44,6 +44,7 @@ export interface QifTransaction {
   isTransfer: boolean;
   transferAccount: string;
   splits: QifSplit[];
+  notes?: string;
   // Investment-specific fields
   security: string;
   action: string;
