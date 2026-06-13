@@ -107,6 +107,7 @@
     "categoryField": "Kategoria",
     "subcategoryField": "Podkategoria",
     "memoField": "Notatka",
+    "notesField": "Notatka",
     "referenceNumberField": "Numer referencyjny",
     "tagsField": "Tagi",
     "tagsHelp": "Wiele tagów jest automatycznie dzielonych według wykrytego separatora (|, ; lub ,). Myślniki i ukośniki są zachowywane jako część nazw tagów.",

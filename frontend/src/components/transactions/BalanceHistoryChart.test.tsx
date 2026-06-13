@@ -26,6 +26,15 @@ vi.mock('recharts', () => ({
   ReferenceLine: () => <div data-testid="reference-line" />,
 }));
 
+vi.mock('@/components/ui/DateRangeSelector', () => ({
+  DateRangeSelector: ({ value, onChange }: any) => (
+    <div data-testid="date-range-selector">
+      <span>Timeframe: {value}</span>
+      <button onClick={() => onChange('3m')}>Change to 3m</button>
+    </div>
+  ),
+}));
+
 const mockFormatCurrency = vi.fn((n: number, _code?: string) => `$${n.toFixed(2)}`);
 const mockFormatCurrencyAxis = vi.fn((n: number, _code?: string) => `$${n}`);
 const mockFormatCurrencyFlag = vi.fn((n: number, _code?: string) => `$${n}`);
@@ -38,10 +47,21 @@ vi.mock('@/hooks/useNumberFormat', () => ({
   }),
 }));
 
+const defaultProps = {
+  dateRange: '1y',
+  onDateRangeChange: vi.fn(),
+  customStartDate: '',
+  onCustomStartDateChange: vi.fn(),
+  customEndDate: '',
+  onCustomEndDateChange: vi.fn(),
+  optimize: true,
+  onOptimizeChange: vi.fn(),
+};
+
 describe('BalanceHistoryChart', () => {
   it('renders loading state with title and pulse skeleton', () => {
     render(
-      <BalanceHistoryChart data={[]} isLoading={true} />
+      <BalanceHistoryChart {...defaultProps} data={[]} isLoading={true} />
     );
     expect(screen.getByText('Balance History')).toBeInTheDocument();
     expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
@@ -49,7 +69,7 @@ describe('BalanceHistoryChart', () => {
 
   it('shows empty state when no data returned', () => {
     render(
-      <BalanceHistoryChart data={[]} isLoading={false} />
+      <BalanceHistoryChart {...defaultProps} data={[]} isLoading={false} />
     );
     expect(screen.getByText('No balance data available')).toBeInTheDocument();
   });
@@ -57,6 +77,7 @@ describe('BalanceHistoryChart', () => {
   it('renders chart with data and summary footer', () => {
     render(
       <BalanceHistoryChart
+        {...defaultProps}
         data={[
           { date: '2025-01-01', balance: 1000 },
           { date: '2025-01-02', balance: 750 },
@@ -78,6 +99,7 @@ describe('BalanceHistoryChart', () => {
   it('renders a download button titled after the chart when data is present', () => {
     render(
       <BalanceHistoryChart
+        {...defaultProps}
         data={[
           { date: '2025-01-01', balance: 1000 },
           { date: '2025-01-02', balance: 900 },
@@ -93,17 +115,18 @@ describe('BalanceHistoryChart', () => {
 
   it('hides the download button in loading and empty states', () => {
     const { rerender } = render(
-      <BalanceHistoryChart data={[]} isLoading={true} />,
+      <BalanceHistoryChart {...defaultProps} data={[]} isLoading={true} />,
     );
     expect(screen.queryByRole('button', { name: /download/i })).not.toBeInTheDocument();
 
-    rerender(<BalanceHistoryChart data={[]} isLoading={false} />);
+    rerender(<BalanceHistoryChart {...defaultProps} data={[]} isLoading={false} />);
     expect(screen.queryByRole('button', { name: /download/i })).not.toBeInTheDocument();
   });
 
   it('appends the account name to the download button filename when provided', () => {
     render(
       <BalanceHistoryChart
+        {...defaultProps}
         data={[
           { date: '2025-01-01', balance: 1000 },
           { date: '2025-01-02', balance: 900 },
@@ -121,6 +144,7 @@ describe('BalanceHistoryChart', () => {
   it('shows "Lowest" label and warning when balance goes negative', () => {
     render(
       <BalanceHistoryChart
+        {...defaultProps}
         data={[
           { date: '2025-01-01', balance: 100 },
           { date: '2025-01-02', balance: -50 },
@@ -136,6 +160,7 @@ describe('BalanceHistoryChart', () => {
   it('shows Ending balance when future transactions exist', () => {
     render(
       <BalanceHistoryChart
+        {...defaultProps}
         data={[
           { date: '2026-01-01', balance: 1000 },
           { date: '2026-03-19', balance: 800 },
@@ -157,6 +182,7 @@ describe('BalanceHistoryChart', () => {
   it('does not show Ending balance when no future transactions', () => {
     render(
       <BalanceHistoryChart
+        {...defaultProps}
         data={[
           { date: '2025-01-01', balance: 1000 },
           { date: '2025-06-01', balance: 750 },
@@ -177,6 +203,7 @@ describe('BalanceHistoryChart', () => {
     // with the balance carried forward unchanged. "Ending" should not appear.
     render(
       <BalanceHistoryChart
+        {...defaultProps}
         data={[
           { date: '2026-01-01', balance: 1000 },
           { date: '2026-03-01', balance: 1500 },
@@ -202,6 +229,7 @@ describe('BalanceHistoryChart', () => {
     try {
       render(
         <BalanceHistoryChart
+          {...defaultProps}
           data={[
             { date: '2026-03-01', balance: 2000 },
             { date: '2026-03-10', balance: 1500 },
@@ -228,6 +256,7 @@ describe('BalanceHistoryChart', () => {
 
     render(
       <BalanceHistoryChart
+        {...defaultProps}
         data={[
           { date: '2025-01-01', balance: 500 },
           { date: '2025-01-02', balance: 600 },
@@ -248,6 +277,7 @@ describe('BalanceHistoryChart', () => {
     mockFormatCurrencyFlag.mockClear();
     render(
       <BalanceHistoryChart
+        {...defaultProps}
         data={[
           { date: '2025-01-01', balance: 500 },
           { date: '2025-01-02', balance: 600 },
@@ -269,6 +299,7 @@ describe('BalanceHistoryChart', () => {
   it('temporarily hides a value bubble when its dismiss control is clicked', () => {
     const { container } = render(
       <BalanceHistoryChart
+        {...defaultProps}
         data={[
           { date: '2025-01-01', balance: 500 },
           { date: '2025-01-02', balance: 600 },
@@ -291,6 +322,29 @@ describe('BalanceHistoryChart', () => {
 
     expect(labels()).toContain('$500');
     expect(labels()).not.toContain('$600');
+  });
+
+  it('renders a customizable DateRangeSelector and triggers onChange callback', () => {
+    const onDateRangeChange = vi.fn();
+    render(
+      <BalanceHistoryChart
+        {...defaultProps}
+        data={[
+          { date: '2025-01-01', balance: 500 },
+          { date: '2025-01-02', balance: 600 },
+        ]}
+        isLoading={false}
+        dateRange="1y"
+        onDateRangeChange={onDateRangeChange}
+      />
+    );
+
+    expect(screen.getByTestId('date-range-selector')).toBeInTheDocument();
+    expect(screen.getByText('Timeframe: 1y')).toBeInTheDocument();
+
+    const changeButton = screen.getByRole('button', { name: /change to 3m/i });
+    fireEvent.click(changeButton);
+    expect(onDateRangeChange).toHaveBeenCalledWith('3m');
   });
 });
 

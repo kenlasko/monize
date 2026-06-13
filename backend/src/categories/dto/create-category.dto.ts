@@ -52,4 +52,21 @@ export class CreateCategoryDto {
   @IsOptional()
   @IsUUID()
   parentId?: string;
+
+  @ApiPropertyOptional({
+    description: "Whether this category is tax-related",
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isTaxRelated?: boolean;
+
+  @ApiPropertyOptional({
+    description: "Tax line item mapped to this category",
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  @SanitizeHtml()
+  taxLineItem?: string;
 }

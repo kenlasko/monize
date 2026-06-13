@@ -121,7 +121,19 @@
     "CASH": "Efectivo",
     "LINE_OF_CREDIT": "Línea de crédito",
     "ASSET": "Activo",
-    "OTHER": "Otro"
+    "OTHER": "Otro",
+    "HSA": "HSA",
+    "FSA": "FSA",
+    "DCFSA": "DCFSA",
+    "401K": "401(k)",
+    "403B": "403(b)",
+    "TRADITIONAL_IRA": "Traditional IRA",
+    "ROTH_IRA": "Roth IRA",
+    "529_PLAN": "529 Plan",
+    "HELOC": "HELOC",
+    "PROPERTY": "Property",
+    "VEHICLE": "Vehicle",
+    "LIABILITY": "Other Liability"
   },
   "accountFilter": {
     "allAccounts": "Todas las cuentas",
@@ -140,10 +152,47 @@
     "length": "El código debe tener exactamente 6 dígitos",
     "digits": "El código debe ser de 6 dígitos"
   },
-  "monthsShort": ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"],
-  "weekdaysShort": ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"],
-  "weekdaysMin": ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sá"],
-  "weekdaysNarrow": ["D", "L", "M", "X", "J", "V", "S"],
+  "monthsShort": [
+    "Ene",
+    "Feb",
+    "Mar",
+    "Abr",
+    "May",
+    "Jun",
+    "Jul",
+    "Ago",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dic"
+  ],
+  "weekdaysShort": [
+    "Dom",
+    "Lun",
+    "Mar",
+    "Mié",
+    "Jue",
+    "Vie",
+    "Sáb"
+  ],
+  "weekdaysMin": [
+    "Do",
+    "Lu",
+    "Ma",
+    "Mi",
+    "Ju",
+    "Vi",
+    "Sá"
+  ],
+  "weekdaysNarrow": [
+    "D",
+    "L",
+    "M",
+    "X",
+    "J",
+    "V",
+    "S"
+  ],
   "dateFormat": {
     "browserAuto": "Usar configuración regional del navegador (detección automática)",
     "custom": "Personalizado..."

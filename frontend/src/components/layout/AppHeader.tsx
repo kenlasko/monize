@@ -39,6 +39,7 @@ const toolsLinks: { href: string; labelKey: string; badge?: string }[] = [
   { href: '/currencies', labelKey: 'currencies' },
   { href: '/import', labelKey: 'import' },
   { href: '/ai-import', labelKey: 'aiSmartImport', badge: 'AI' },
+  { href: '/paycheck-wizard', labelKey: 'paycheckWizard' },
 ];
 
 const aiLinks: { href: string; labelKey: string }[] = [

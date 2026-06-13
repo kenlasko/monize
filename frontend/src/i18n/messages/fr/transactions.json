@@ -51,6 +51,7 @@
       "payee": "Bénéficiaire",
       "category": "Catégorie",
       "description": "Description",
+      "notes": "Notes",
       "refNumber": "Réf. #",
       "tags": "Étiquettes",
       "amount": "Montant",
@@ -260,6 +261,7 @@
       "totalAmount": "Montant total",
       "referenceNumber": "Numéro de référence",
       "description": "Description",
+      "notes": "Notes",
       "status": "Statut",
       "tags": "Étiquettes",
       "fromAccount": "Compte source",
@@ -276,6 +278,7 @@
       "selectOrCreateCategory": "Sélectionner ou créer une catégorie...",
       "referenceNumber": "N° chèque, N° confirmation...",
       "optionalDescription": "Description facultative...",
+      "optionalNotes": "Notes facultatives...",
       "selectTags": "Sélectionner des étiquettes...",
       "createNewTag": "Créer une nouvelle étiquette..."
     },

@@ -296,7 +296,6 @@ export const aiApi = {
       }
     })();
 
-    return controller;
   },
 };
 

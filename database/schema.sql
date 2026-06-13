@@ -97,7 +97,19 @@ CREATE TYPE account_type AS ENUM (
     'CASH',
     'LINE_OF_CREDIT',
     'ASSET',
-    'OTHER'
+    'OTHER',
+    'HSA',
+    'FSA',
+    'DCFSA',
+    '401K',
+    '403B',
+    'TRADITIONAL_IRA',
+    'ROTH_IRA',
+    '529_PLAN',
+    'HELOC',
+    'PROPERTY',
+    'VEHICLE',
+    'LIABILITY'
 );
 
 -- Accounts
@@ -249,6 +261,7 @@ CREATE TABLE transactions (
     currency_code VARCHAR(3) NOT NULL REFERENCES currencies(code),
     exchange_rate NUMERIC(20, 10) DEFAULT 1, -- rate at transaction time
     description TEXT,
+    notes TEXT,
     reference_number VARCHAR(100), -- check number, confirmation number, etc
     is_cleared BOOLEAN DEFAULT false, -- LEGACY: replaced by status field
     is_reconciled BOOLEAN DEFAULT false, -- LEGACY: replaced by status field
@@ -402,6 +415,7 @@ CREATE TABLE scheduled_transactions (
     investment_total_amount NUMERIC(20, 4), -- for amount-only actions (DIVIDEND, INTEREST, CAPITAL_GAIN)
     investment_exchange_rate NUMERIC(20, 10),
     tag_ids JSONB DEFAULT '[]'::jsonb, -- array of tag UUIDs to apply when posting
+    paycheck_metadata JSONB DEFAULT NULL, -- paycheck configuration details for the single-page wizard
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_scheduled_transactions_kind_exclusive CHECK (

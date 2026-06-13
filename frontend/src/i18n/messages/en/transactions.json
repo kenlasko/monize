@@ -51,6 +51,7 @@
       "payee": "Payee",
       "category": "Category",
       "description": "Description",
+      "notes": "Notes",
       "refNumber": "Ref #",
       "tags": "Tags",
       "amount": "Amount",
@@ -260,6 +261,7 @@
       "totalAmount": "Total Amount",
       "referenceNumber": "Reference Number",
       "description": "Description",
+      "notes": "Notes",
       "status": "Status",
       "tags": "Tags",
       "fromAccount": "From Account",
@@ -276,6 +278,7 @@
       "selectOrCreateCategory": "Select or create category...",
       "referenceNumber": "Cheque #, confirmation #...",
       "optionalDescription": "Optional description...",
+      "optionalNotes": "Optional notes...",
       "selectTags": "Select tags...",
       "createNewTag": "Create new tag..."
     },

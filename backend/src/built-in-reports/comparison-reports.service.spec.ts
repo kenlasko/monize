@@ -25,6 +25,8 @@ describe("ComparisonReportsService", () => {
     color: "#FF5733",
     isIncome: false,
     isSystem: false,
+    isTaxRelated: false,
+    taxLineItem: null,
     createdAt: new Date("2025-01-01"),
   };
 
@@ -40,6 +42,8 @@ describe("ComparisonReportsService", () => {
     color: "#33FF57",
     isIncome: false,
     isSystem: false,
+    isTaxRelated: false,
+    taxLineItem: null,
     createdAt: new Date("2025-01-02"),
   };
 
@@ -55,6 +59,8 @@ describe("ComparisonReportsService", () => {
     color: "#3357FF",
     isIncome: false,
     isSystem: false,
+    isTaxRelated: false,
+    taxLineItem: null,
     createdAt: new Date("2025-01-03"),
   };
 

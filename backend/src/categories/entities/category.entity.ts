@@ -51,6 +51,12 @@ export class Category {
   @Column({ name: "is_system", default: false })
   isSystem: boolean;
 
+  @Column({ name: "is_tax_related", default: false })
+  isTaxRelated?: boolean;
+
+  @Column({ name: "tax_line_item", type: "varchar", length: 255, nullable: true })
+  taxLineItem?: string | null;
+
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;
 }

@@ -51,6 +51,7 @@
       "payee": "Beneficiário",
       "category": "Categoria",
       "description": "Descrição",
+      "notes": "Notatki",
       "refNumber": "Ref. #",
       "tags": "Etiquetas",
       "amount": "Valor",
@@ -260,6 +261,7 @@
       "totalAmount": "Valor Total",
       "referenceNumber": "Número de Referência",
       "description": "Descrição",
+      "notes": "Notatki",
       "status": "Status",
       "tags": "Etiquetas",
       "fromAccount": "Conta de Origem",
@@ -276,6 +278,7 @@
       "selectOrCreateCategory": "Selecionar ou criar categoria...",
       "referenceNumber": "N.º cheque, n.º confirmação...",
       "optionalDescription": "Descrição opcional...",
+      "optionalNotes": "Notatki opcjonalne...",
       "selectTags": "Selecionar etiquetas...",
       "createNewTag": "Criar nova etiqueta..."
     },

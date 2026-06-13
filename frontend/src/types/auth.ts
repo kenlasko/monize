@@ -104,7 +104,6 @@ export interface UserPreferences {
   preferredExchanges: string[];
   defaultQuoteProvider: 'yahoo' | 'msn';
   recentTransactionsLimit: number;
-  language: string;
   aiImportInstructions?: string | null;
   createdAt: string;
   updatedAt: string;

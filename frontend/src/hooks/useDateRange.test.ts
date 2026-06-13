@@ -132,9 +132,9 @@ describe('useDateRange', () => {
     expect(result.current.resolvedRange.end).toBe('2025-01-15');
   });
 
-  it('resolves all range with empty start', () => {
+  it('resolves all range with sentinel start date', () => {
     const { result } = renderHook(() => useDateRange({ defaultRange: 'all' }));
-    expect(result.current.resolvedRange.start).toBe('');
+    expect(result.current.resolvedRange.start).toBe('1970-01-01');
   });
 
   it('custom range uses user-set dates', () => {

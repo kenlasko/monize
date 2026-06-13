@@ -107,6 +107,7 @@
     "categoryField": "Kategorie",
     "subcategoryField": "Unterkategorie",
     "memoField": "Memo",
+    "notesField": "Notizen",
     "referenceNumberField": "Referenznummer",
     "tagsField": "Tags",
     "tagsHelp": "Mehrere Tags werden automatisch am erkannten Trennzeichen (|, ; oder ,) aufgeteilt. Bindestriche und Schrägstriche bleiben als Teil des Tag-Namens erhalten.",

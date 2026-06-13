@@ -143,7 +143,19 @@
       "mortgage": "[XX-Mortgage-XX]",
       "asset": "[XX-Asset-XX]",
       "cash": "[XX-Cash-XX]",
-      "other": "[XX-Other-XX]"
+      "other": "[XX-Other-XX]",
+      "hsa": "[XX-HSA-XX]",
+      "fsa": "[XX-FSA-XX]",
+      "dcfsa": "[XX-DCFSA-XX]",
+      "401k": "[XX-401(k)-XX]",
+      "403b": "[XX-403(b)-XX]",
+      "traditionalIra": "[XX-Traditional IRA-XX]",
+      "rothIra": "[XX-Roth IRA-XX]",
+      "529Plan": "[XX-529 Plan-XX]",
+      "heloc": "[XX-HELOC-XX]",
+      "property": "[XX-Property-XX]",
+      "vehicle": "[XX-Vehicle-XX]",
+      "liability": "[XX-Other Liability-XX]"
     },
     "statementDueDayPlaceholder": "[XX-e.g. 15-XX]",
     "statementSettlementDayPlaceholder": "[XX-e.g. 25-XX]"

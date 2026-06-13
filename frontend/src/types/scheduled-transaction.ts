@@ -94,6 +94,7 @@ export interface ScheduledTransaction {
   overrideCount?: number;
   nextOverride?: ScheduledTransactionOverride | null;
   futureOverrides?: ScheduledTransactionOverride[];
+  paycheckMetadata?: any;
   createdAt: string;
   updatedAt: string;
 }
@@ -138,6 +139,7 @@ export interface CreateScheduledTransactionData {
   investmentExchangeRate?: number;
   splits?: CreateScheduledTransactionSplitData[];
   tagIds?: string[];
+  paycheckMetadata?: any;
 }
 
 export interface UpdateScheduledTransactionData extends Partial<CreateScheduledTransactionData> {}

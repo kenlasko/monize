@@ -121,7 +121,19 @@
     "CASH": "[XX-Cash-XX]",
     "LINE_OF_CREDIT": "[XX-Line of Credit-XX]",
     "ASSET": "[XX-Asset-XX]",
-    "OTHER": "[XX-Other-XX]"
+    "OTHER": "[XX-Other-XX]",
+    "HSA": "[XX-HSA-XX]",
+    "FSA": "[XX-FSA-XX]",
+    "DCFSA": "[XX-DCFSA-XX]",
+    "401K": "[XX-401(k)-XX]",
+    "403B": "[XX-403(b)-XX]",
+    "TRADITIONAL_IRA": "[XX-Traditional IRA-XX]",
+    "ROTH_IRA": "[XX-Roth IRA-XX]",
+    "529_PLAN": "[XX-529 Plan-XX]",
+    "HELOC": "[XX-HELOC-XX]",
+    "PROPERTY": "[XX-Property-XX]",
+    "VEHICLE": "[XX-Vehicle-XX]",
+    "LIABILITY": "[XX-Other Liability-XX]"
   },
   "accountFilter": {
     "allAccounts": "[XX-All Accounts-XX]",

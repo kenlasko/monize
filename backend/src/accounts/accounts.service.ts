@@ -1229,6 +1229,7 @@ export class AccountsService {
     startDate?: string,
     endDate?: string,
     accountIds?: string[],
+    optimize?: boolean,
   ): Promise<
     Array<{
       date: string;
@@ -1237,6 +1238,9 @@ export class AccountsService {
       currencyCode: string;
     }>
   > {
+    this.logger.log(
+      `getDailyBalances: userId=${userId}, startDate=${startDate}, endDate=${endDate}, accountIds=${accountIds?.join(",")}, optimize=${optimize}`,
+    );
     let end = endDate || todayYMD();
 
     // When no explicit endDate, extend to include future transactions
@@ -1260,16 +1264,60 @@ export class AccountsService {
       }
     }
 
-    const start =
-      startDate ||
-      (() => {
+    const accountIdsParam =
+      accountIds && accountIds.length > 0 ? accountIds : null;
+
+    let start = startDate;
+    if (start === "1970-01-01") {
+      const minTxResult = await this.dataSource.query(
+        `SELECT MIN(t.transaction_date)::TEXT as min_date
+         FROM transactions t
+         JOIN accounts a ON a.id = t.account_id
+         WHERE a.user_id = $1
+           AND ($2::UUID[] IS NULL OR t.account_id = ANY($2::UUID[]))
+           AND (t.status IS NULL OR t.status != 'VOID')
+           AND t.parent_transaction_id IS NULL`,
+        [userId, accountIdsParam],
+      );
+      const minAcctResult = await this.dataSource.query(
+        `SELECT MIN(a.created_at)::DATE::TEXT as min_date
+         FROM accounts a
+         WHERE a.user_id = $1
+           AND ($2::UUID[] IS NULL OR a.id = ANY($2::UUID[]))`,
+        [userId, accountIdsParam],
+      );
+      const dates = [
+        minTxResult?.[0]?.min_date,
+        minAcctResult?.[0]?.min_date,
+      ].filter(Boolean);
+      const earliest = dates.length > 0 ? dates.sort()[0] : null;
+      start =
+        earliest ||
+        (() => {
+          const d = new Date();
+          d.setFullYear(d.getFullYear() - 1);
+          return formatDateYMD(d);
+        })();
+    } else if (!start) {
+      start = (() => {
         const d = new Date();
         d.setFullYear(d.getFullYear() - 1);
         return formatDateYMD(d);
       })();
+    }
 
-    const accountIdsParam =
-      accountIds && accountIds.length > 0 ? accountIds : null;
+    let filterClause = "";
+    if (optimize) {
+      const diffMs = new Date(end).getTime() - new Date(start!).getTime();
+      const diffDays = diffMs / (1000 * 60 * 60 * 24);
+      if (diffDays > 365 * 3) {
+        // More than 3 years: return monthly points (1st of month) or final day
+        filterClause = "WHERE EXTRACT(DAY FROM date) = 1 OR date = $4::DATE";
+      } else if (diffDays > 365) {
+        // More than 1 year: return weekly points (Mondays) or final day
+        filterClause = "WHERE EXTRACT(ISODOW FROM date) = 1 OR date = $4::DATE";
+      }
+    }
 
     const rows: Array<{
       date: string;
@@ -1322,6 +1370,7 @@ export class AccountsService {
         )
         SELECT date::TEXT, balance::NUMERIC, account_id, currency_code
         FROM account_daily
+        ${filterClause}
         ORDER BY date, account_id`,
       [userId, accountIdsParam, start, end],
     );
