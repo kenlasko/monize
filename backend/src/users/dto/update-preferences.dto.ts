@@ -220,4 +220,12 @@ export class UpdatePreferencesDto {
       "language must be an ISO 639-1 code (e.g. 'en') or BCP 47 tag (e.g. 'pt-BR')",
   })
   language?: string;
+
+  @ApiPropertyOptional({
+    description: "Custom instructions/rules for AI transaction parsing",
+    example: "Always map STARBUCKS to coffee category.",
+  })
+  @IsOptional()
+  @IsString()
+  aiImportInstructions?: string;
 }

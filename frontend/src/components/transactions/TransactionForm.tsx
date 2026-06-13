@@ -49,6 +49,7 @@ const buildTransactionSchema = (t: (key: string) => string) => z.object({
   amount: z.number({ error: 'Amount is required' }),
   currencyCode: z.string().default('CAD'),
   description: optionalString,
+  notes: optionalString,
   referenceNumber: optionalString,
   status: z.nativeEnum(TransactionStatus).default(TransactionStatus.UNRECONCILED),
 });
@@ -194,6 +195,7 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
             : Math.round(Number(initSource.amount) * 100) / 100,
           currencyCode: initSource.currencyCode,
           description: initSource.description || '',
+          notes: initSource.notes || '',
           referenceNumber: initSource.referenceNumber || '',
           status: duplicateFrom ? TransactionStatus.UNRECONCILED : (initSource.status || TransactionStatus.UNRECONCILED),
         }
@@ -408,6 +410,7 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
     setValue('amount', amount, { shouldDirty: true, shouldValidate: true });
     setValue('currencyCode', source.currencyCode, { shouldDirty: true });
     setValue('description', source.description || '', { shouldDirty: true });
+    setValue('notes', source.notes || '', { shouldDirty: true });
     setValue('referenceNumber', '', { shouldDirty: true });
     setValue('status', TransactionStatus.UNRECONCILED, { shouldDirty: true });
 
@@ -763,6 +766,7 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
           fromCurrencyCode: data.currencyCode,
           toCurrencyCode: toCurrencyCode,
           description: data.description ?? null,
+          notes: data.notes ?? null,
           referenceNumber: data.referenceNumber ?? null,
           status: data.status,
           payeeId: transferPayeeId || null,
@@ -822,6 +826,7 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
         // Ensure cleared optional fields are sent as null (not undefined)
         // so the backend knows to clear them rather than ignoring the field
         description: data.description ?? null,
+        notes: data.notes ?? null,
         referenceNumber: data.referenceNumber ?? null,
       };
 
@@ -1059,20 +1064,35 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
         />
       </Modal>
 
-      {/* Description - only shown when not in split mode (split mode has it inline with Reference Number) */}
+      {/* Description & Notes - only shown when not in split mode (split mode has it inline with Reference Number) */}
       {!isSplitMode && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            {t('form.fields.description')}
-          </label>
-          <textarea
-            rows={3}
-            className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400"
-            {...register('description')}
-          />
-          {errors.description && (
-            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.description.message}</p>
-          )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              {t('form.fields.description')}
+            </label>
+            <textarea
+              rows={3}
+              className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400"
+              {...register('description')}
+            />
+            {errors.description && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.description.message}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              {t('form.fields.notes')}
+            </label>
+            <textarea
+              rows={3}
+              className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400"
+              {...register('notes')}
+            />
+            {errors.notes && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.notes.message}</p>
+            )}
+          </div>
         </div>
       )}
 

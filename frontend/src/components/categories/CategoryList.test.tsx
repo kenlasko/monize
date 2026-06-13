@@ -135,7 +135,7 @@ describe('CategoryList', () => {
     ];
 
     render(<CategoryList categories={categories} onEdit={onEdit} onRefresh={onRefresh} />);
-    expect(screen.getByText('-')).toBeInTheDocument();
+    expect(screen.getAllByText('-')[0]).toBeInTheDocument();
   });
 
   it('shows color indicator when category has color', () => {

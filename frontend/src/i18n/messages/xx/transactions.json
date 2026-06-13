@@ -51,6 +51,7 @@
       "payee": "[XX-Payee-XX]",
       "category": "[XX-Category-XX]",
       "description": "[XX-Description-XX]",
+      "notes": "[XX-Notes-XX]",
       "refNumber": "[XX-Ref #-XX]",
       "tags": "[XX-Tags-XX]",
       "amount": "[XX-Amount-XX]",
@@ -260,6 +261,7 @@
       "totalAmount": "[XX-Total Amount-XX]",
       "referenceNumber": "[XX-Reference Number-XX]",
       "description": "[XX-Description-XX]",
+      "notes": "[XX-Notes-XX]",
       "status": "[XX-Status-XX]",
       "tags": "[XX-Tags-XX]",
       "fromAccount": "[XX-From Account-XX]",
@@ -276,6 +278,7 @@
       "selectOrCreateCategory": "[XX-Select or create category...-XX]",
       "referenceNumber": "[XX-Cheque #, confirmation #...-XX]",
       "optionalDescription": "[XX-Optional description...-XX]",
+      "optionalNotes": "[XX-Optional notes...-XX]",
       "selectTags": "[XX-Select tags...-XX]",
       "createNewTag": "[XX-Create new tag...-XX]"
     },

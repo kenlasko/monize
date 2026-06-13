@@ -33,6 +33,8 @@ describe("CategoriesService", () => {
     color: null,
     isIncome: false,
     isSystem: false,
+    isTaxRelated: false,
+    taxLineItem: null,
     createdAt: new Date("2025-01-01"),
   };
 
@@ -48,6 +50,8 @@ describe("CategoriesService", () => {
     color: null,
     isIncome: false,
     isSystem: false,
+    isTaxRelated: false,
+    taxLineItem: null,
     createdAt: new Date("2025-01-02"),
   };
 

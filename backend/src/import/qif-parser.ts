@@ -29,6 +29,7 @@ export interface QifTransaction {
   amount: number;
   payee: string;
   memo: string;
+  notes?: string;
   number: string;
   cleared: boolean;
   reconciled: boolean;
@@ -44,6 +45,7 @@ export interface QifTransaction {
   isTransfer: boolean;
   transferAccount: string;
   splits: QifSplit[];
+  notes?: string;
   // Investment-specific fields
   security: string;
   action: string;
@@ -229,6 +231,7 @@ export function parseQif(
         amount: 0,
         payee: "",
         memo: "",
+        notes: "",
         number: "",
         cleared: false,
         reconciled: false,
@@ -268,6 +271,10 @@ export function parseQif(
 
       case "M": // Memo
         currentTransaction.memo = truncate(value, FIELD_LIMITS.MEMO);
+        break;
+
+      case "X": // Custom Notes
+        currentTransaction.notes = truncate(value, FIELD_LIMITS.MEMO);
         break;
 
       case "N": // Number (cheque number) OR Action (for investment transactions)
@@ -1117,6 +1124,7 @@ export function parseQifFull(
         amount: 0,
         payee: "",
         memo: "",
+        notes: "",
         number: "",
         cleared: false,
         reconciled: false,
@@ -1156,6 +1164,10 @@ export function parseQifFull(
 
       case "M":
         currentTransaction.memo = truncate(value, FIELD_LIMITS.MEMO);
+        break;
+
+      case "X": // Custom Notes
+        currentTransaction.notes = truncate(value, FIELD_LIMITS.MEMO);
         break;
 
       case "N":

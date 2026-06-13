@@ -104,7 +104,7 @@ export interface UserPreferences {
   preferredExchanges: string[];
   defaultQuoteProvider: 'yahoo' | 'msn';
   recentTransactionsLimit: number;
-  language: string;
+  aiImportInstructions?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -165,6 +165,7 @@ export interface UpdatePreferencesData {
   defaultQuoteProvider?: 'yahoo' | 'msn';
   recentTransactionsLimit?: number;
   language?: string;
+  aiImportInstructions?: string;
 }
 
 export interface ChangePasswordData {

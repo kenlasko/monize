@@ -40,6 +40,10 @@ export function useInvestmentData() {
   const [pagination, setPagination] = useState<InvestmentTransactionPaginationInfo | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<string>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [cashSortBy, setCashSortBy] = useState<string>('date');
+  const [cashSortOrder, setCashSortOrder] = useState<'asc' | 'desc'>('desc');
   const {
     showForm: showTransactionForm, editingItem: editingTransaction,
     openCreate, openEdit, close, isEditing: _isEditing,
@@ -139,6 +143,8 @@ export function useInvestmentData() {
           action: filters.action,
           startDate: filters.startDate,
           endDate: filters.endDate,
+          sortBy,
+          sortOrder,
         }),
       ]);
       setPortfolioSummary(summaryData);
@@ -153,7 +159,7 @@ export function useInvestmentData() {
       if (!hasLoadedRef.current) setIsLoading(false);
       hasLoadedRef.current = true;
     }
-  }, []);
+  }, [sortBy, sortOrder]);
 
   const { isRefreshing: isRefreshingPrices, triggerManualRefresh: handleRefreshPrices, triggerAutoRefresh } = usePriceRefresh({
     onRefreshComplete: (lastUpdated) => {
@@ -196,6 +202,8 @@ export function useInvestmentData() {
         action: filters.action,
         startDate: filters.startDate,
         endDate: filters.endDate,
+        sortBy,
+        sortOrder,
       });
       setTransactions(txResponse.data || []);
       setPagination(txResponse.pagination);
@@ -206,7 +214,7 @@ export function useInvestmentData() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [sortBy, sortOrder]);
 
   // Derive cash account IDs from selected brokerage accounts
   const cashAccountIds = useMemo(() => {
@@ -241,6 +249,8 @@ export function useInvestmentData() {
         categoryIds: filters.categoryIds?.length ? filters.categoryIds : undefined,
         startDate: filters.startDate || undefined,
         endDate: filters.endDate || undefined,
+        sortBy: cashSortBy,
+        sortOrder: cashSortOrder,
       });
       setCashTransactions(response.data || []);
       setCashStartingBalance(response.startingBalance);
@@ -256,7 +266,7 @@ export function useInvestmentData() {
     } finally {
       setCashTransactionsLoading(false);
     }
-  }, []);
+  }, [cashSortBy, cashSortOrder]);
 
   useEffect(() => {
     loadInvestmentAccounts();
@@ -301,10 +311,10 @@ export function useInvestmentData() {
     loadPortfolioSummary(selectedAccountIds);
   }, [loadPortfolioSummary, selectedAccountIds]);
 
-  // Load transactions when page, filters, or account selection changes
+  // Load transactions when page, filters, sorting, or account selection changes
   useEffect(() => {
     loadTransactions(selectedAccountIds, currentPage, transactionFilters);
-  }, [loadTransactions, selectedAccountIds, currentPage, transactionFilters]);
+  }, [loadTransactions, selectedAccountIds, currentPage, transactionFilters, sortBy, sortOrder]);
 
   // Memoize cash filters object
   const cashFiltersObj = useMemo(() => ({
@@ -320,7 +330,7 @@ export function useInvestmentData() {
     if (transactionView === 'cash') {
       loadCashTransactions(cashAccountIds, cashCurrentPage, cashFiltersObj);
     }
-  }, [loadCashTransactions, cashAccountIds, cashCurrentPage, cashFiltersObj]);
+  }, [loadCashTransactions, cashAccountIds, cashCurrentPage, cashFiltersObj, cashSortBy, cashSortOrder]);
 
   useEffect(() => {
     if (!isLoading && !initialLoadComplete) {
@@ -503,6 +513,26 @@ export function useInvestmentData() {
     (a) => a.accountSubType === 'INVESTMENT_BROKERAGE' || !a.accountSubType,
   );
 
+  const handleSortChange = (column: string) => {
+    if (sortBy === column) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortOrder(column === 'date' ? 'desc' : 'asc');
+    }
+    setCurrentPage(1);
+  };
+
+  const handleCashSortChange = (column: string) => {
+    if (cashSortBy === column) {
+      setCashSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setCashSortBy(column);
+      setCashSortOrder(column === 'date' ? 'desc' : 'asc');
+    }
+    setCashCurrentPage(1);
+  };
+
   return {
     // Accounts
     accounts, allAccounts, selectedAccountIds, selectableAccounts,
@@ -516,7 +546,7 @@ export function useInvestmentData() {
     transactions, pagination, currentPage,
     transactionFilters, handleFiltersChange,
     handleDeleteTransaction, handleNewTransaction, handleEditTransaction, handleFormSuccess,
-    handleSymbolClick, goToPage,
+    handleSymbolClick, goToPage, sortBy, sortOrder, handleSortChange,
 
     // Transaction form modal
     showTransactionForm, editingTransaction,
@@ -540,7 +570,7 @@ export function useInvestmentData() {
     goToCashPage, handleCashClick,
     loadCashFilterData, loadCashTransactionsIfNeeded,
     setCashCurrentPage,
-    openCashCreate,
+    openCashCreate, cashSortBy, cashSortOrder, handleCashSortChange,
 
     // Cash form modal
     showCashForm, editingCashTransaction, closeCash,

@@ -36,6 +36,8 @@ import { currentRequestLocale } from "../i18n/request-locale";
 import { I18nService } from "nestjs-i18n";
 import { emailTranslator } from "../i18n/email-translator";
 import { DEFAULT_LOCALE } from "../i18n/config";
+import { CategoriesService } from "../categories/categories.service";
+import { Category } from "../categories/entities/category.entity";
 
 @Injectable()
 export class AuthService {
@@ -65,6 +67,7 @@ export class AuthService {
     private authEmailService: AuthEmailService,
     private delegationService: DelegationService,
     private readonly i18n: I18nService,
+    private categoriesService: CategoriesService,
   ) {
     this.jwtSecret = this.configService.get<string>("JWT_SECRET")!;
     this.csrfKey = derivePurposeKey(this.jwtSecret, "csrf-token");
@@ -172,6 +175,8 @@ export class AuthService {
       existingUser.isDelegateOnly = false;
       const upgraded = await this.usersRepository.save(existingUser);
 
+      await this.ensureDefaultCategories(upgraded.id);
+
       const { accessToken, refreshToken } =
         await this.tokenService.generateTokenPair(upgraded);
       return {
@@ -219,6 +224,8 @@ export class AuthService {
         return savedUser;
       },
     );
+
+    await this.ensureDefaultCategories(user.id);
 
     const { accessToken, refreshToken } =
       await this.tokenService.generateTokenPair(user);
@@ -321,6 +328,9 @@ export class AuthService {
         .where("id = :id", { id: user.id })
         .execute();
     }
+
+    // Ensure default categories are seeded if they don't have any
+    await this.ensureDefaultCategories(user.id);
 
     // Check if 2FA is enabled
     const preferences = await this.preferencesRepository.findOne({
@@ -567,6 +577,8 @@ export class AuthService {
     user.lastLogin = new Date();
     await this.usersRepository.save(user);
 
+    await this.ensureDefaultCategories(user.id);
+
     return { user };
   }
 
@@ -810,5 +822,21 @@ export class AuthService {
 
   checkForgotPasswordEmailLimit(email: string) {
     return this.authEmailService.checkForgotPasswordEmailLimit(email);
+  }
+
+  private async ensureDefaultCategories(userId: string): Promise<void> {
+    try {
+      const count = await this.usersRepository.manager.count(Category, {
+        where: { userId },
+      });
+      if (count === 0) {
+        await this.categoriesService.importDefaults(userId);
+        this.logger.log(`Successfully seeded default categories for user ${userId}`);
+      }
+    } catch (err: any) {
+      this.logger.warn(
+        `Failed to seed default categories for user ${userId}: ${err.message}`,
+      );
+    }
   }
 }

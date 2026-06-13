@@ -72,6 +72,18 @@ export const ACCOUNT_TYPE_OPTIONS = [
   { value: 'CASH', label: 'Cash' },
   { value: 'ASSET', label: 'Asset' },
   { value: 'OTHER', label: 'Other' },
+  { value: 'HSA', label: 'HSA' },
+  { value: 'FSA', label: 'FSA' },
+  { value: 'DCFSA', label: 'DCFSA' },
+  { value: '401K', label: '401(k)' },
+  { value: '403B', label: '403(b)' },
+  { value: 'TRADITIONAL_IRA', label: 'Traditional IRA' },
+  { value: 'ROTH_IRA', label: 'Roth IRA' },
+  { value: '529_PLAN', label: '529 Plan' },
+  { value: 'HELOC', label: 'HELOC' },
+  { value: 'PROPERTY', label: 'Property' },
+  { value: 'VEHICLE', label: 'Vehicle' },
+  { value: 'LIABILITY', label: 'Other Liability' },
 ];
 
 export const SECURITY_TYPE_OPTIONS = [

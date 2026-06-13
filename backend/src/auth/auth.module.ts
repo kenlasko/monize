@@ -26,6 +26,7 @@ import { StepUpGuard } from "./step-up/step-up.guard";
 import { UsersModule } from "../users/users.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { DelegationModule } from "../delegation/delegation.module";
+import { CategoriesModule } from "../categories/categories.module";
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { DelegationModule } from "../delegation/delegation.module";
     UsersModule,
     NotificationsModule,
     DelegationModule,
+    CategoriesModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

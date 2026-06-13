@@ -143,7 +143,19 @@
       "mortgage": "Hypothek",
       "asset": "Aktiva",
       "cash": "Barmittel",
-      "other": "Sonstiges"
+      "other": "Sonstiges",
+      "hsa": "HSA",
+      "fsa": "FSA",
+      "dcfsa": "DCFSA",
+      "401k": "401(k)",
+      "403b": "403(b)",
+      "traditionalIra": "Traditional IRA",
+      "rothIra": "Roth IRA",
+      "529Plan": "529 Plan",
+      "heloc": "HELOC",
+      "property": "Property",
+      "vehicle": "Vehicle",
+      "liability": "Other Liability"
     },
     "statementDueDayPlaceholder": "z. B. 15",
     "statementSettlementDayPlaceholder": "z. B. 25"

@@ -196,10 +196,14 @@ export class TransactionsController {
       "Filter by reconciliation statuses (comma-separated: UNRECONCILED, CLEARED, RECONCILED, VOID)",
   })
   @ApiQuery({
-    name: "targetTransactionId",
+    name: "sortBy",
     required: false,
-    description:
-      "Navigate to the page containing this transaction ID (overrides page parameter)",
+    description: "Field to sort by (date, account, payee, category, description, refNumber, amount, status, tags)",
+  })
+  @ApiQuery({
+    name: "sortOrder",
+    required: false,
+    description: "Sort order (ASC, DESC)",
   })
   @ApiResponse({
     status: 200,
@@ -227,6 +231,8 @@ export class TransactionsController {
     @Query("amountTo") amountTo?: string,
     @Query("tagIds") tagIdsParam?: string,
     @Query("statuses") statusesParam?: string,
+    @Query("sortBy") sortBy?: string,
+    @Query("sortOrder") sortOrder?: string,
   ) {
     // Validate pagination parameters
     if (page !== undefined) {
@@ -326,6 +332,18 @@ export class TransactionsController {
       }
     }
 
+    let validatedSortOrder: "ASC" | "DESC" | undefined;
+    if (sortOrder !== undefined) {
+      const upper = sortOrder.trim().toUpperCase();
+      if (upper === "ASC" || upper === "DESC") {
+        validatedSortOrder = upper as "ASC" | "DESC";
+      } else {
+        throw new BadRequestException(
+          tr("errors.transactions.invalidSortOrder", "sortOrder must be ASC or DESC"),
+        );
+      }
+    }
+
     return this.transactionsService.findAll(
       req.user.id,
       effectiveAccountIds,
@@ -342,6 +360,8 @@ export class TransactionsController {
       parsedAmountTo,
       parseUuids(tagIdsParam),
       parseTransactionStatuses(statusesParam),
+      sortBy,
+      validatedSortOrder,
     );
   }
 

@@ -49,6 +49,8 @@
     "colourNone": "No colour",
     "colourInheritedFrom": "Colour inherited from parent ({name})",
     "descriptionLabel": "Description (optional)",
+    "isTaxRelatedLabel": "Tax-Related Category",
+    "taxLineItemLabel": "Tax Line Item (IRS Form / Schedule)",
     "submitCreate": "Create Category",
     "submitUpdate": "Update Category"
   },
@@ -59,6 +61,7 @@
     "colType": "Type",
     "colCount": "Count",
     "colDescription": "Description",
+    "colTaxLine": "Tax Line",
     "colActions": "Actions",
     "badgeIncome": "Income",
     "badgeExpense": "Expense",

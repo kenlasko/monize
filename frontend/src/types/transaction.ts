@@ -64,6 +64,7 @@ export interface Transaction {
   currencyCode: string;
   exchangeRate: number;
   description: string | null;
+  notes: string | null;
   referenceNumber: string | null;
   status: TransactionStatus;
   // Computed properties for backwards compatibility
@@ -104,6 +105,7 @@ export interface CreateTransactionData {
   currencyCode: string;
   exchangeRate?: number;
   description?: string | null;
+  notes?: string | null;
   referenceNumber?: string | null;
   status?: TransactionStatus;
   reconciledDate?: string;

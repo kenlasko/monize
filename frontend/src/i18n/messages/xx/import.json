@@ -107,6 +107,7 @@
     "categoryField": "[XX-Category-XX]",
     "subcategoryField": "[XX-Subcategory-XX]",
     "memoField": "[XX-Memo-XX]",
+    "notesField": "[XX-Notes-XX]",
     "referenceNumberField": "[XX-Reference Number-XX]",
     "tagsField": "[XX-Tags-XX]",
     "tagsHelp": "[XX-Multiple tags are auto-split on the detected separator (|, ;, or ,). Dashes and slashes are preserved as part of tag names.-XX]",

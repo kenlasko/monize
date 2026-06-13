@@ -25,6 +25,18 @@ export enum AccountType {
   LINE_OF_CREDIT = "LINE_OF_CREDIT",
   ASSET = "ASSET",
   OTHER = "OTHER",
+  HSA = "HSA",
+  FSA = "FSA",
+  DCFSA = "DCFSA",
+  FORTY_ONE_K = "401K",
+  FORTY_THREE_B = "403B",
+  TRADITIONAL_IRA = "TRADITIONAL_IRA",
+  ROTH_IRA = "ROTH_IRA",
+  FIVE_TWENTY_NINE_PLAN = "529_PLAN",
+  HELOC = "HELOC",
+  PROPERTY = "PROPERTY",
+  VEHICLE = "VEHICLE",
+  LIABILITY = "LIABILITY",
 }
 
 export enum AccountSubType {

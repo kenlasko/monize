@@ -121,7 +121,19 @@
     "CASH": "Dinheiro",
     "LINE_OF_CREDIT": "Linha de crédito",
     "ASSET": "Ativo",
-    "OTHER": "Outro"
+    "OTHER": "Outro",
+    "HSA": "HSA",
+    "FSA": "FSA",
+    "DCFSA": "DCFSA",
+    "401K": "401(k)",
+    "403B": "403(b)",
+    "TRADITIONAL_IRA": "Traditional IRA",
+    "ROTH_IRA": "Roth IRA",
+    "529_PLAN": "529 Plan",
+    "HELOC": "HELOC",
+    "PROPERTY": "Property",
+    "VEHICLE": "Vehicle",
+    "LIABILITY": "Other Liability"
   },
   "accountFilter": {
     "allAccounts": "Todas as contas",
@@ -140,10 +152,47 @@
     "length": "O código deve ter exatamente 6 dígitos",
     "digits": "O código deve ter 6 dígitos"
   },
-  "monthsShort": ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"],
-  "weekdaysShort": ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"],
-  "weekdaysMin": ["do", "se", "te", "qu", "qu", "se", "sá"],
-  "weekdaysNarrow": ["D", "S", "T", "Q", "Q", "S", "S"],
+  "monthsShort": [
+    "jan",
+    "fev",
+    "mar",
+    "abr",
+    "mai",
+    "jun",
+    "jul",
+    "ago",
+    "set",
+    "out",
+    "nov",
+    "dez"
+  ],
+  "weekdaysShort": [
+    "dom",
+    "seg",
+    "ter",
+    "qua",
+    "qui",
+    "sex",
+    "sáb"
+  ],
+  "weekdaysMin": [
+    "do",
+    "se",
+    "te",
+    "qu",
+    "qu",
+    "se",
+    "sá"
+  ],
+  "weekdaysNarrow": [
+    "D",
+    "S",
+    "T",
+    "Q",
+    "Q",
+    "S",
+    "S"
+  ],
   "dateFormat": {
     "browserAuto": "Usar locale do navegador (detecção automática)",
     "custom": "Personalizado..."

@@ -62,6 +62,18 @@ export const formatAccountType = (type: AccountType, t?: (key: string) => string
     LINE_OF_CREDIT: 'Line of Credit',
     ASSET: 'Asset',
     OTHER: 'Other',
+    HSA: 'HSA',
+    FSA: 'FSA',
+    DCFSA: 'DCFSA',
+    '401K': '401(k)',
+    '403B': '403(b)',
+    TRADITIONAL_IRA: 'Traditional IRA',
+    ROTH_IRA: 'Roth IRA',
+    '529_PLAN': '529 Plan',
+    HELOC: 'HELOC',
+    PROPERTY: 'Property',
+    VEHICLE: 'Vehicle',
+    LIABILITY: 'Other Liability',
   };
   return labels[type] || type;
 };

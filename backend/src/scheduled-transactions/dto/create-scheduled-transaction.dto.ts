@@ -159,4 +159,7 @@ export class CreateScheduledTransactionDto {
   @IsArray()
   @IsUUID("4", { each: true })
   tagIds?: string[];
+
+  @IsOptional()
+  paycheckMetadata?: any;
 }

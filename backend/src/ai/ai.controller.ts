@@ -10,7 +10,9 @@ import {
   Request,
   UseGuards,
   ParseUUIDPipe,
+  Res,
 } from "@nestjs/common";
+import { Response } from "express";
 import { AuthGuard } from "@nestjs/passport";
 import { Throttle } from "@nestjs/throttler";
 import {
@@ -26,6 +28,7 @@ import {
   UpdateAiConfigDto,
   TestAiConfigDto,
 } from "./dto/ai-config.dto";
+import { ParseFinancialDataDto } from "./dto/ai-import.dto";
 
 @ApiTags("AI")
 @Controller("ai")
@@ -116,5 +119,81 @@ export class AiController {
       req.user.id,
       parsedDays && !isNaN(parsedDays) ? parsedDays : undefined,
     );
+  }
+
+  @Post("import/parse")
+  @ApiOperation({
+    summary:
+      "Parse raw pasted financial data using AI and return structured transactions",
+  })
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
+  parseFinancialData(
+    @Request() req: { user: { id: string } },
+    @Body() dto: ParseFinancialDataDto,
+  ) {
+    return this.aiService.parseFinancialData(
+      req.user.id,
+      dto.rawText,
+      dto.hint,
+    );
+  }
+
+  @Post("import/parse/stream")
+  @ApiOperation({
+    summary:
+      "Parse raw pasted financial data using AI and return structured transactions with SSE streaming",
+  })
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
+  async parseFinancialDataStream(
+    @Request() req: { user: { id: string } },
+    @Body() dto: ParseFinancialDataDto,
+    @Res() res: Response,
+  ) {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+    res.flushHeaders();
+
+    const streamStart = Date.now();
+    const userId = req.user.id;
+
+    const abortController = new AbortController();
+    res.on("close", () => {
+      abortController.abort();
+    });
+
+    const heartbeat = setInterval(() => {
+      if (!abortController.signal.aborted && !res.writableEnded) {
+        res.write(`: heartbeat ${Date.now()}\n\n`);
+      }
+    }, 15_000);
+
+    let eventCount = 0;
+    try {
+      for await (const chunk of this.aiService.parseFinancialDataStream(
+        userId,
+        dto.rawText,
+        dto.hint,
+      )) {
+        if (abortController.signal.aborted) break;
+        if (chunk) {
+          eventCount++;
+          res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+        }
+      }
+    } catch (error) {
+      if (!abortController.signal.aborted) {
+        const rawMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        res.write(`data: ${JSON.stringify({ type: "error", message: rawMessage })}\n\n`);
+      }
+    } finally {
+      clearInterval(heartbeat);
+    }
+
+    if (!abortController.signal.aborted) {
+      res.end();
+    }
   }
 }

@@ -2,12 +2,13 @@
 
 import { useEffect, MutableRefObject } from 'react';
 import { useTranslations } from 'next-intl';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm, useWatch, Controller } from 'react-hook-form';
 import '@/lib/zodConfig';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { useFormSubmitRef } from '@/hooks/useFormSubmitRef';
 import { useFormDirtyNotify } from '@/hooks/useFormDirtyNotify';
 import { FormActions } from '@/components/ui/FormActions';
@@ -19,9 +20,33 @@ const buildCategorySchema = (t: (key: string) => string) => z.object({
   description: z.string().optional(),
   color: z.string().optional(),
   isIncome: z.boolean(),
+  isTaxRelated: z.boolean().optional(),
+  taxLineItem: z.string().optional(),
 });
 
 type CategoryFormData = z.infer<ReturnType<typeof buildCategorySchema>>;
+
+const TAX_LINE_OPTIONS = [
+  { value: '', label: 'Select IRS tax line item...' },
+  { value: 'Schedule A: Medical & Dental', label: 'Schedule A: Medical & Dental' },
+  { value: 'Schedule A: Cash Contributions', label: 'Schedule A: Cash Contributions' },
+  { value: 'Schedule A: Taxes Paid', label: 'Schedule A: Taxes Paid' },
+  { value: 'Schedule A: Interest Paid', label: 'Schedule A: Interest Paid' },
+  { value: 'Schedule A: Job Expenses', label: 'Schedule A: Job Expenses' },
+  { value: 'Schedule A: Miscellaneous Deductions', label: 'Schedule A: Miscellaneous Deductions' },
+  { value: 'Schedule C: Advertising', label: 'Schedule C: Advertising' },
+  { value: 'Schedule C: Office Expenses', label: 'Schedule C: Office Expenses' },
+  { value: 'Schedule C: Travel & Meals', label: 'Schedule C: Travel & Meals' },
+  { value: 'Schedule C: Taxes & Licenses', label: 'Schedule C: Taxes & Licenses' },
+  { value: 'Form 1040: Federal Tax Withheld', label: 'Form 1040: Federal Tax Withheld' },
+  { value: 'Form 1040: State Tax Withheld', label: 'Form 1040: State Tax Withheld' },
+  { value: 'Form 1040: Social Security Withheld', label: 'Form 1040: Social Security Withheld' },
+  { value: 'Form 1040: Medicare Withheld', label: 'Form 1040: Medicare Withheld' },
+  { value: 'Form 1040: Retirement Contributions', label: 'Form 1040: Retirement Contributions' },
+  { value: 'Form 1040: Salary & Wages', label: 'Form 1040: Salary & Wages' },
+  { value: 'Form 1040: Education Expenses', label: 'Form 1040: Education Expenses' },
+  { value: 'Form 2441: Child Care Expenses', label: 'Form 2441: Child Care Expenses' },
+];
 
 interface CategoryFormProps {
   category?: Category;
@@ -61,10 +86,14 @@ export function CategoryForm({ category, categories, onSubmit, onCancel, onDirty
           description: category.description || '',
           color: category.color || '',
           isIncome: category.isIncome,
+          isTaxRelated: category.isTaxRelated || false,
+          taxLineItem: category.taxLineItem || '',
         }
       : {
           parentId: '',
           isIncome: false,
+          isTaxRelated: false,
+          taxLineItem: '',
         },
   });
 
@@ -75,6 +104,7 @@ export function CategoryForm({ category, categories, onSubmit, onCancel, onDirty
   const watchedColor = useWatch({ control, name: 'color' });
   const watchedParentId = useWatch({ control, name: 'parentId' });
   const watchedIsIncome = useWatch({ control, name: 'isIncome' });
+  const watchedIsTaxRelated = useWatch({ control, name: 'isTaxRelated' });
 
   // When parent category changes, set type to match parent
   useEffect(() => {
@@ -249,6 +279,32 @@ export function CategoryForm({ category, categories, onSubmit, onCancel, onDirty
         error={errors.description?.message}
         {...register('description')}
       />
+
+      <div className="flex items-center gap-3 px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600">
+        <Controller
+          name="isTaxRelated"
+          control={control}
+          render={({ field }) => (
+            <ToggleSwitch
+              checked={!!field.value}
+              onChange={field.onChange}
+              label={t('form.isTaxRelatedLabel')}
+            />
+          )}
+        />
+        <span className="text-sm text-gray-700 dark:text-gray-300">
+          {t('form.isTaxRelatedLabel')}
+        </span>
+      </div>
+
+      {watchedIsTaxRelated && (
+        <Select
+          label={t('form.taxLineItemLabel')}
+          options={TAX_LINE_OPTIONS}
+          error={errors.taxLineItem?.message}
+          {...register('taxLineItem')}
+        />
+      )}
 
       <FormActions onCancel={onCancel} submitLabel={category ? t('form.submitUpdate') : t('form.submitCreate')} isSubmitting={isSubmitting} />
     </form>

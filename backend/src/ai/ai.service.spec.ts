@@ -234,6 +234,33 @@ describe("AiService", () => {
         }),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it("auto-assigns priority when omitted", async () => {
+      const existingConfig = makeConfig({ provider: "ollama", priority: 2 });
+      mockConfigRepository.findOne.mockResolvedValue(existingConfig);
+
+      await service.createConfig(userId, {
+        provider: "ollama",
+        baseUrl: "http://localhost:11434",
+      });
+
+      expect(mockConfigRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ priority: 3 }),
+      );
+    });
+
+    it("throws BadRequestException when custom priority is duplicated", async () => {
+      const existingConfig = makeConfig({ provider: "openai", priority: 0 });
+      mockConfigRepository.findOne.mockResolvedValue(existingConfig);
+
+      await expect(
+        service.createConfig(userId, {
+          provider: "openai",
+          priority: 0,
+          apiKey: "sk-key",
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
   });
 
   describe("updateConfig()", () => {
@@ -276,6 +303,21 @@ describe("AiService", () => {
       expect(mockConfigRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({ apiKeyEnc: null }),
       );
+    });
+
+    it("throws BadRequestException when updating to a duplicated priority", async () => {
+      const config = makeConfig({ id: "config-1", provider: "openai", priority: 0 });
+      const otherConfig = makeConfig({ id: "config-2", provider: "openai", priority: 1 });
+      
+      mockConfigRepository.findOne
+        .mockResolvedValueOnce(config)
+        .mockResolvedValueOnce(otherConfig);
+
+      await expect(
+        service.updateConfig(userId, "config-1", {
+          priority: 1,
+        }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -479,6 +521,17 @@ describe("AiService", () => {
           configId: "someone-elses-config",
         }),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it("throws BadRequestException when encryption is not configured and apiKey is provided in draft", async () => {
+      mockEncryptionService.isConfigured!.mockReturnValue(false);
+
+      await expect(
+        service.testDraftConnection(userId, {
+          provider: "openai",
+          apiKey: "sk-test",
+        }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -753,4 +806,107 @@ describe("AiService", () => {
       );
     });
   });
+
+  describe("parseFinancialData() & getStatus() prompt customization", () => {
+    it("injects user custom rules from user preferences into system prompt", async () => {
+      const userPrefs = {
+        userId,
+        aiImportInstructions: "Always map McDonald's to Category Restaurant.",
+      };
+      mockConfigRepository.manager = {
+        findOne: jest.fn().mockResolvedValue(userPrefs),
+      } as any;
+
+      mockConfigRepository.find.mockResolvedValue([makeConfig()]);
+
+      const mockComplete = jest.spyOn(service, "complete").mockResolvedValue({
+        content: JSON.stringify({
+          transactions: [],
+          accounts: [],
+          securities: [],
+          confidence: "high",
+          notes: "ok",
+        }),
+        usage: { inputTokens: 10, outputTokens: 10 },
+        model: "model",
+        provider: "anthropic",
+      });
+
+      await service.parseFinancialData(userId, "McDonalds $10");
+
+      expect(mockComplete).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({
+          systemPrompt: expect.stringContaining("Always map McDonald's to Category Restaurant."),
+        }),
+        "ai-import",
+      );
+    });
+
+    it("coerces account types to valid Monize types or defaults to OTHER", async () => {
+      mockConfigRepository.manager = {
+        findOne: jest.fn().mockResolvedValue(null),
+      } as any;
+
+      mockConfigRepository.find.mockResolvedValue([makeConfig()]);
+
+      jest.spyOn(service, "complete").mockResolvedValue({
+        content: JSON.stringify({
+          transactions: [],
+          accounts: [
+            { name: "Checking Account", type: "checking" },
+            { name: "Savings Account", type: "SAVINGS" },
+            { name: "Unknown Account", type: "INVALID_TYPE" },
+          ],
+          securities: [],
+          confidence: "high",
+          notes: "ok",
+        }),
+        usage: { inputTokens: 10, outputTokens: 10 },
+        model: "model",
+        provider: "anthropic",
+      });
+
+      const parsed = await service.parseFinancialData(userId, "some raw data");
+      expect(parsed.accounts[0].type).toBe("CHEQUING");
+      expect(parsed.accounts[1].type).toBe("SAVINGS");
+      expect(parsed.accounts[2].type).toBe("OTHER");
+    });
+
+    it("sanitizes date formats", async () => {
+      mockConfigRepository.manager = {
+        findOne: jest.fn().mockResolvedValue(null),
+      } as any;
+
+      mockConfigRepository.find.mockResolvedValue([makeConfig()]);
+
+      jest.spyOn(service, "complete").mockResolvedValue({
+        content: JSON.stringify({
+          transactions: [
+            { date: "2026/06/13", payee: "Cafe", amount: -5, type: "expense" },
+            { date: "null", payee: "Fee", amount: -1, type: "fee" },
+          ],
+          accounts: [],
+          securities: [],
+          confidence: "high",
+          notes: "ok",
+        }),
+        usage: { inputTokens: 10, outputTokens: 10 },
+        model: "model",
+        provider: "anthropic",
+      });
+
+      const parsed = await service.parseFinancialData(userId, "some raw data");
+      expect(parsed.transactions[0].date).toBe("2026-06-13");
+      expect(parsed.transactions[1].date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    });
+
+    it("returns defaultSystemPrompt in getStatus", async () => {
+      mockConfigRepository.find.mockResolvedValue([makeConfig()]);
+      const status = await service.getStatus(userId);
+      expect(status.defaultSystemPrompt).toBeDefined();
+      expect(status.defaultSystemPrompt).toContain("You are a financial data parser.");
+    });
+  });
 });
+

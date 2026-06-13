@@ -49,6 +49,8 @@
     "colourNone": "Keine Farbe",
     "colourInheritedFrom": "Farbe von übergeordneter Kategorie übernommen ({name})",
     "descriptionLabel": "Beschreibung (optional)",
+    "isTaxRelatedLabel": "Steuerlich relevante Kategorie",
+    "taxLineItemLabel": "Steuerzeilen-Zuordnung (IRS Formular / Schedule)",
     "submitCreate": "Kategorie erstellen",
     "submitUpdate": "Kategorie aktualisieren"
   },
@@ -59,6 +61,7 @@
     "colType": "Typ",
     "colCount": "Anzahl",
     "colDescription": "Beschreibung",
+    "colTaxLine": "Steuerzeile",
     "colActions": "Aktionen",
     "badgeIncome": "Einnahme",
     "badgeExpense": "Ausgabe",

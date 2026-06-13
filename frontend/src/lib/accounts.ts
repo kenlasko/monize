@@ -132,11 +132,12 @@ export const accountsApi = {
     startDate?: string;
     endDate?: string;
     accountIds?: string;
+    optimize?: string;
   }): Promise<Array<{ date: string; balance: number; accountId: string; currencyCode: string }>> => {
     // Dedupe so multiple components requesting the same range/accounts share
     // a single network call. Daily balances roll forward as transactions
     // change, so cache TTL is short.
-    const cacheKey = `accounts:daily-balances:${params?.startDate ?? ''}:${params?.endDate ?? ''}:${params?.accountIds ?? ''}`;
+    const cacheKey = `accounts:daily-balances:${params?.startDate ?? ''}:${params?.endDate ?? ''}:${params?.accountIds ?? ''}:${params?.optimize ?? ''}`;
     return dedupe(
       cacheKey,
       async () => {

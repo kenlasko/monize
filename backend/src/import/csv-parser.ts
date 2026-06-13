@@ -25,6 +25,7 @@ export interface CsvColumnMappingConfig {
   category?: number;
   subcategory?: number;
   memo?: number;
+  notes?: number;
   referenceNumber?: number;
   tags?: number;
   reconciliationStatus?: number;
@@ -786,6 +787,7 @@ export function parseCsv(
       category = category.substring(0, FIELD_LIMITS.CATEGORY);
     }
     const memo = truncate(getField(row, config.memo), FIELD_LIMITS.MEMO);
+    const notes = truncate(getField(row, config.notes), FIELD_LIMITS.MEMO);
     const referenceNumber = truncate(
       getField(row, config.referenceNumber),
       FIELD_LIMITS.REFERENCE_NUMBER,
@@ -890,6 +892,7 @@ export function parseCsv(
       amount,
       payee,
       memo,
+      notes,
       number: referenceNumber,
       cleared: normalizedStatus === "CLEARED",
       reconciled: normalizedStatus === "RECONCILED",

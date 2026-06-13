@@ -35,6 +35,7 @@ import { Transaction, PaginationInfo, BulkUpdateData, BulkUpdateFilters, Monthly
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useTransactionSelection } from '@/hooks/useTransactionSelection';
 import { useTransactionFilters } from '@/hooks/useTransactionFilters';
+import { useDateRange } from '@/hooks/useDateRange';
 import { BulkSelectionBanner } from '@/components/transactions/BulkSelectionBanner';
 import { Account } from '@/types/account';
 import { Institution } from '@/types/institution';
@@ -114,6 +115,24 @@ function TransactionsContent() {
 
   const filters = useTransactionFilters({ accounts, categories, payees, tags, weekStartsOn });
 
+  const {
+    dateRange: chartDateRange,
+    setDateRange: setChartDateRange,
+    startDate: chartCustomStartDate,
+    setStartDate: setChartCustomStartDate,
+    endDate: chartCustomEndDate,
+    setEndDate: setChartCustomEndDate,
+    resolvedRange: chartResolvedRange,
+  } = useDateRange({
+    defaultRange: '1y',
+    storageKey: 'transactions.balance-history.date-range',
+  });
+
+  const [optimizeChart, setOptimizeChart] = useLocalStorage<boolean>(
+    'transactions.balance-history.optimize-chart',
+    true,
+  );
+
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
   const [startingBalance, setStartingBalance] = useState<number | undefined>();
 
@@ -168,9 +187,15 @@ function TransactionsContent() {
 
       const hasCategoryOrPayeeFilter = filters.filterCategoryIds.length > 0 || filters.filterPayeeIds.length > 0 || filters.filterTagIds.length > 0 || filters.filterSearch.length > 0;
 
-      const chartParams: { startDate?: string; endDate?: string; accountIds?: string } = {};
-      if (filters.filterStartDate) chartParams.startDate = filters.filterStartDate;
-      if (filters.filterEndDate) chartParams.endDate = filters.filterEndDate;
+      const chartParams: { startDate?: string; endDate?: string; accountIds?: string; optimize?: string } = {};
+      if (!hasCategoryOrPayeeFilter) {
+        if (chartResolvedRange.start) chartParams.startDate = chartResolvedRange.start;
+        if (chartResolvedRange.end) chartParams.endDate = chartResolvedRange.end;
+        if (optimizeChart) chartParams.optimize = 'true';
+      } else {
+        if (filters.filterStartDate) chartParams.startDate = filters.filterStartDate;
+        if (filters.filterEndDate) chartParams.endDate = filters.filterEndDate;
+      }
       // Mirror the Show Accounts filter (Active/Closed/All) into the chart query
       // so the Account Balances and Balance History charts only include accounts
       // that the transaction list is actually showing.
@@ -210,6 +235,8 @@ function TransactionsContent() {
           amountFrom: parsedAmountFrom,
           amountTo: parsedAmountTo,
           statuses: filters.filterStatuses.length > 0 ? filters.filterStatuses : undefined,
+          sortBy: filters.sortBy,
+          sortOrder: filters.sortOrder,
         }),
         chartPromise,
       ]);
@@ -247,7 +274,7 @@ function TransactionsContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [filters.filterAccountIds, filters.filterAccountStatus, filters.filteredAccounts, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterTagIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch, filters.filterAmountFrom, filters.filterAmountTo, filters.filterStatuses, t]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filters.filterAccountIds, filters.filterAccountStatus, filters.filteredAccounts, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterTagIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch, filters.filterAmountFrom, filters.filterAmountTo, filters.filterStatuses, filters.sortBy, filters.sortOrder, chartResolvedRange.start, chartResolvedRange.end, optimizeChart, t]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadData = useCallback(async (page: number = filters.currentPage) => {
     await loadTransactions(page);
@@ -301,6 +328,8 @@ function TransactionsContent() {
         amountFrom: filters.filterAmountFrom,
         amountTo: filters.filterAmountTo,
         statuses: filters.filterStatuses,
+        sortBy: filters.sortBy,
+        sortOrder: filters.sortOrder,
       }, wasFilterChange);
     }
 
@@ -312,7 +341,7 @@ function TransactionsContent() {
     } else {
       loadTransactions(page);
     }
-  }, [filters.currentPage, filters.filterAccountIds, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterTagIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch, filters.filterAmountFrom, filters.filterAmountTo, filters.filterStatuses, filters.updateUrl, loadTransactions, filters.filtersInitialized, undoRedoTick]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filters.currentPage, filters.filterAccountIds, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterTagIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch, filters.filterAmountFrom, filters.filterAmountTo, filters.filterStatuses, filters.sortBy, filters.sortOrder, chartResolvedRange.start, chartResolvedRange.end, filters.updateUrl, loadTransactions, filters.filtersInitialized, undoRedoTick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Patch popstate handler to skip when modals open
   useEffect(() => {
@@ -781,6 +810,14 @@ function TransactionsContent() {
                   isLoading={isLoading}
                   currencyCode={chartCurrency}
                   accountName={balanceHistoryAccountName}
+                  dateRange={chartDateRange}
+                  onDateRangeChange={setChartDateRange}
+                  customStartDate={chartCustomStartDate}
+                  onCustomStartDateChange={setChartCustomStartDate}
+                  customEndDate={chartCustomEndDate}
+                  onCustomEndDateChange={setChartCustomEndDate}
+                  optimize={optimizeChart}
+                  onOptimizeChange={setOptimizeChart}
                 />
               )}
             </div>
@@ -1016,6 +1053,9 @@ function TransactionsContent() {
               categoryColorMap={filters.categoryColorMap}
               categoryLabelMap={filters.categoryLabelMap}
               budgetStatusMap={budgetStatusMap}
+              sortBy={filters.sortBy}
+              sortOrder={filters.sortOrder}
+              onSortChange={filters.handleSort}
             />
           )}
         </div>

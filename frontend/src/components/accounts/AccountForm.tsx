@@ -69,6 +69,18 @@ const buildAccountSchema = (t: (key: string) => string) => z.object({
     'LINE_OF_CREDIT',
     'ASSET',
     'OTHER',
+    'HSA',
+    'FSA',
+    'DCFSA',
+    '401K',
+    '403B',
+    'TRADITIONAL_IRA',
+    'ROTH_IRA',
+    '529_PLAN',
+    'HELOC',
+    'PROPERTY',
+    'VEHICLE',
+    'LIABILITY',
   ]),
   currencyCode: z.string().length(3, t('validation.currencyCodeLength')),
   openingBalance: optionalNumber,
@@ -125,9 +137,22 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
     { value: 'ASSET', label: t('form.accountTypeOptions.asset') },
     { value: 'CASH', label: t('form.accountTypeOptions.cash') },
     { value: 'OTHER', label: t('form.accountTypeOptions.other') },
+    { value: 'HSA', label: t('form.accountTypeOptions.hsa') },
+    { value: 'FSA', label: t('form.accountTypeOptions.fsa') },
+    { value: 'DCFSA', label: t('form.accountTypeOptions.dcfsa') },
+    { value: '401K', label: t('form.accountTypeOptions.401k') },
+    { value: '403B', label: t('form.accountTypeOptions.403b') },
+    { value: 'TRADITIONAL_IRA', label: t('form.accountTypeOptions.traditionalIra') },
+    { value: 'ROTH_IRA', label: t('form.accountTypeOptions.rothIra') },
+    { value: '529_PLAN', label: t('form.accountTypeOptions.529Plan') },
+    { value: 'HELOC', label: t('form.accountTypeOptions.heloc') },
+    { value: 'PROPERTY', label: t('form.accountTypeOptions.property') },
+    { value: 'VEHICLE', label: t('form.accountTypeOptions.vehicle') },
+    { value: 'LIABILITY', label: t('form.accountTypeOptions.liability') },
   ];
   const { formatCurrency } = useNumberFormat();
   const { defaultCurrency } = useExchangeRates();
+  const [activeTab, setActiveTab] = useState<'offline' | 'other'>('offline');
   const [currencies, setCurrencies] = useState<CurrencyInfo[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -232,8 +257,9 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
   // Show loan fields only for LOAN account type
   const isLoanAccount = watchedAccountType === 'LOAN';
 
-  // Show asset fields only for ASSET account type
-  const isAssetAccount = watchedAccountType === 'ASSET';
+  // Show asset fields for ASSET, PROPERTY, and VEHICLE account types
+  const isAssetAccount = watchedAccountType === 'ASSET' || watchedAccountType === 'PROPERTY' || watchedAccountType === 'VEHICLE';
+  const isLiabilityAccount = watchedAccountType === 'LIABILITY';
   const watchedDateAcquired = useWatch({ control, name: 'dateAcquired' });
 
   // Show mortgage fields only for MORTGAGE account type
@@ -505,12 +531,248 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
         {...register('name')}
       />
 
-      <Select
-        label={t('form.accountType')}
-        options={accountTypeOptions}
-        error={errors.accountType?.message}
-        {...register('accountType')}
-      />
+      {account ? (
+        <Select
+          label={t('form.accountType')}
+          options={accountTypeOptions}
+          error={errors.accountType?.message}
+          {...register('accountType')}
+        />
+      ) : (
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            {t('form.accountType')}
+          </label>
+          
+          {/* Tabs */}
+          <div className="flex border-b border-gray-200 dark:border-gray-700">
+            <button
+              type="button"
+              onClick={() => setActiveTab('offline')}
+              className={`py-2 px-4 font-medium text-sm border-b-2 transition-colors ${
+                activeTab === 'offline'
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Offline Account
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('other')}
+              className={`py-2 px-4 font-medium text-sm border-b-2 transition-colors ${
+                activeTab === 'other'
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Other Assets & Liabilities
+            </button>
+          </div>
+
+          {/* Grid Selector */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 max-h-[320px] overflow-y-auto pr-1">
+            {activeTab === 'offline' ? (
+              <>
+                {/* Banking Group */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 font-semibold text-gray-800 dark:text-gray-200 text-xs uppercase tracking-wider border-b border-gray-100 dark:border-gray-800 pb-1">
+                    <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    Banking
+                  </div>
+                  <div className="space-y-1">
+                    {[
+                      { value: 'CHEQUING', label: t('form.accountTypeOptions.chequing'), desc: 'Checking / Daily bills' },
+                      { value: 'SAVINGS', label: t('form.accountTypeOptions.savings'), desc: 'Savings & reserves' },
+                      { value: 'CREDIT_CARD', label: t('form.accountTypeOptions.creditCard'), desc: 'Revolving credit card' },
+                    ].map((type) => (
+                      <button
+                        key={type.value}
+                        type="button"
+                        onClick={() => setValue('accountType', type.value as any, { shouldDirty: true, shouldValidate: true })}
+                        className={`w-full text-left p-2 rounded border transition-all ${
+                          watchedAccountType === type.value
+                            ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/20 ring-1 ring-blue-500'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800'
+                        }`}
+                      >
+                        <div className="font-medium text-xs text-gray-900 dark:text-gray-100">{type.label}</div>
+                        <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 leading-tight">{type.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Investing & Retirement Group */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 font-semibold text-gray-800 dark:text-gray-200 text-xs uppercase tracking-wider border-b border-gray-100 dark:border-gray-800 pb-1">
+                    <svg className="w-4 h-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                    Investing & Retirement
+                  </div>
+                  <div className="space-y-1">
+                    {[
+                      { value: 'INVESTMENT', label: t('form.accountTypeOptions.investment'), desc: 'Brokerage & investments' },
+                      { value: '401K', label: t('form.accountTypeOptions.401k'), desc: 'Employer 401(k)' },
+                      { value: '403B', label: t('form.accountTypeOptions.403b'), desc: 'Employer 403(b)' },
+                      { value: 'TRADITIONAL_IRA', label: t('form.accountTypeOptions.traditionalIra'), desc: 'Pre-tax individual IRA' },
+                      { value: 'ROTH_IRA', label: t('form.accountTypeOptions.rothIra'), desc: 'Post-tax individual Roth' },
+                      { value: '529_PLAN', label: t('form.accountTypeOptions.529Plan'), desc: 'Education savings plans' },
+                      { value: 'HSA', label: t('form.accountTypeOptions.hsa'), desc: 'Health Savings Account' },
+                    ].map((type) => (
+                      <button
+                        key={type.value}
+                        type="button"
+                        onClick={() => setValue('accountType', type.value as any, { shouldDirty: true, shouldValidate: true })}
+                        className={`w-full text-left p-2 rounded border transition-all ${
+                          watchedAccountType === type.value
+                            ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/20 ring-1 ring-blue-500'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800'
+                        }`}
+                      >
+                        <div className="font-medium text-xs text-gray-900 dark:text-gray-100">{type.label}</div>
+                        <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 leading-tight">{type.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Loan & Debt Group */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 font-semibold text-gray-800 dark:text-gray-200 text-xs uppercase tracking-wider border-b border-gray-100 dark:border-gray-800 pb-1">
+                    <svg className="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Loan & Debt
+                  </div>
+                  <div className="space-y-1">
+                    {[
+                      { value: 'LOAN', label: t('form.accountTypeOptions.loan'), desc: 'Auto / Personal loans' },
+                      { value: 'MORTGAGE', label: t('form.accountTypeOptions.mortgage'), desc: 'Property mortgages' },
+                      { value: 'HELOC', label: t('form.accountTypeOptions.heloc'), desc: 'Home Equity Line of Credit' },
+                      { value: 'LINE_OF_CREDIT', label: t('form.accountTypeOptions.lineOfCredit'), desc: 'Revolving line of credit' },
+                    ].map((type) => (
+                      <button
+                        key={type.value}
+                        type="button"
+                        onClick={() => setValue('accountType', type.value as any, { shouldDirty: true, shouldValidate: true })}
+                        className={`w-full text-left p-2 rounded border transition-all ${
+                          watchedAccountType === type.value
+                            ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/20 ring-1 ring-blue-500'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800'
+                        }`}
+                      >
+                        <div className="font-medium text-xs text-gray-900 dark:text-gray-100">{type.label}</div>
+                        <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 leading-tight">{type.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Cash & Assets Column */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 font-semibold text-gray-800 dark:text-gray-200 text-xs uppercase tracking-wider border-b border-gray-100 dark:border-gray-800 pb-1">
+                    <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M12 16v1M4 6h16a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z" />
+                    </svg>
+                    Cash & Assets
+                  </div>
+                  <div className="space-y-1">
+                    {[
+                      { value: 'CASH', label: t('form.accountTypeOptions.cash'), desc: 'Cash on hand / Wallets' },
+                      { value: 'PROPERTY', label: t('form.accountTypeOptions.property'), desc: 'Home, rental property' },
+                      { value: 'VEHICLE', label: t('form.accountTypeOptions.vehicle'), desc: 'Car, truck, RV' },
+                      { value: 'ASSET', label: t('form.accountTypeOptions.asset'), desc: 'Other high-value assets' },
+                    ].map((type) => (
+                      <button
+                        key={type.value}
+                        type="button"
+                        onClick={() => setValue('accountType', type.value as any, { shouldDirty: true, shouldValidate: true })}
+                        className={`w-full text-left p-2 rounded border transition-all ${
+                          watchedAccountType === type.value
+                            ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/20 ring-1 ring-blue-500'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800'
+                        }`}
+                      >
+                        <div className="font-medium text-xs text-gray-900 dark:text-gray-100">{type.label}</div>
+                        <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 leading-tight">{type.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Tax-Advantaged Cash Column */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 font-semibold text-gray-800 dark:text-gray-200 text-xs uppercase tracking-wider border-b border-gray-100 dark:border-gray-800 pb-1">
+                    <svg className="w-4 h-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    Tax-Advantaged Cash
+                  </div>
+                  <div className="space-y-1">
+                    {[
+                      { value: 'FSA', label: t('form.accountTypeOptions.fsa'), desc: 'Flexible Spending Account' },
+                      { value: 'DCFSA', label: t('form.accountTypeOptions.dcfsa'), desc: 'Dependent Care FSA' },
+                    ].map((type) => (
+                      <button
+                        key={type.value}
+                        type="button"
+                        onClick={() => setValue('accountType', type.value as any, { shouldDirty: true, shouldValidate: true })}
+                        className={`w-full text-left p-2 rounded border transition-all ${
+                          watchedAccountType === type.value
+                            ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/20 ring-1 ring-blue-500'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800'
+                        }`}
+                      >
+                        <div className="font-medium text-xs text-gray-900 dark:text-gray-100">{type.label}</div>
+                        <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 leading-tight">{type.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Liabilities & Other Column */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 font-semibold text-gray-800 dark:text-gray-200 text-xs uppercase tracking-wider border-b border-gray-100 dark:border-gray-800 pb-1">
+                    <svg className="w-4 h-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    Liabilities & Other
+                  </div>
+                  <div className="space-y-1">
+                    {[
+                      { value: 'LIABILITY', label: t('form.accountTypeOptions.liability'), desc: 'Other liabilities' },
+                      { value: 'OTHER', label: t('form.accountTypeOptions.other'), desc: 'Other custom accounts' },
+                    ].map((type) => (
+                      <button
+                        key={type.value}
+                        type="button"
+                        onClick={() => setValue('accountType', type.value as any, { shouldDirty: true, shouldValidate: true })}
+                        className={`w-full text-left p-2 rounded border transition-all ${
+                          watchedAccountType === type.value
+                            ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/20 ring-1 ring-blue-500'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800'
+                        }`}
+                      >
+                        <div className="font-medium text-xs text-gray-900 dark:text-gray-100">{type.label}</div>
+                        <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 leading-tight">{type.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          {errors.accountType?.message && (
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.accountType.message}</p>
+          )}
+        </div>
+      )}
 
       {/* Investment account pair option */}
       {showInvestmentPairOption && (
@@ -587,10 +849,10 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
         />
       </div>
 
-      {/* Credit Limit and Interest Rate - hide for loans, mortgages, and assets */}
+      {/* Credit Limit and Interest Rate - hide for loans, mortgages, assets, and liabilities */}
       {!isAssetAccount && (
         <div className="grid grid-cols-2 gap-4">
-          {!isLoanAccount && !isMortgageAccount && (
+          {!isLoanAccount && !isMortgageAccount && !isLiabilityAccount && (
             <CurrencyInput
               label={t('form.creditLimit')}
               prefix={currencySymbol}
