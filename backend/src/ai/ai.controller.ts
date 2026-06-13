@@ -26,6 +26,7 @@ import {
   UpdateAiConfigDto,
   TestAiConfigDto,
 } from "./dto/ai-config.dto";
+import { ParseFinancialDataDto } from "./dto/ai-import.dto";
 
 @ApiTags("AI")
 @Controller("ai")
@@ -115,6 +116,23 @@ export class AiController {
     return this.aiService.getUsageSummary(
       req.user.id,
       parsedDays && !isNaN(parsedDays) ? parsedDays : undefined,
+    );
+  }
+
+  @Post("import/parse")
+  @ApiOperation({
+    summary:
+      "Parse raw pasted financial data using AI and return structured transactions",
+  })
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
+  parseFinancialData(
+    @Request() req: { user: { id: string } },
+    @Body() dto: ParseFinancialDataDto,
+  ) {
+    return this.aiService.parseFinancialData(
+      req.user.id,
+      dto.rawText,
+      dto.hint,
     );
   }
 }

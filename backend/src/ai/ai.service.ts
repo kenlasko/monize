@@ -32,6 +32,7 @@ import {
   validateUrlBasicSafety,
 } from "./validators/safe-url.validator";
 import { tr } from "../i18n/translate";
+import type { ParsedFinancialDataResponse } from "./dto/ai-import.dto";
 import {
   SELF_HOSTED_PROVIDERS,
   AiProviderType,
@@ -429,6 +430,104 @@ export class AiService {
     days?: number,
   ): Promise<AiUsageSummary> {
     return this.usageService.getUsageSummary(userId, days);
+  }
+
+  /**
+   * Parse raw pasted financial data (CSV, bank statement, any format) into
+   * structured transactions using the configured AI provider.
+   */
+  async parseFinancialData(
+    userId: string,
+    rawText: string,
+    hint?: string,
+  ): Promise<ParsedFinancialDataResponse> {
+    const systemPrompt = `You are a financial data parser. The user will paste raw financial data in any format (CSV, spreadsheet, bank statement, brokerage export, etc.).
+
+Your task is to extract all transactions and return ONLY a valid JSON object — no markdown, no explanation, just the JSON.
+
+Rules:
+- Group continuation rows (rows with no date that reference an account in brackets like [AccountName]) with their parent transaction as a transfer
+- Action codes: XIn/XOut = transfer, Bought/Buy = buy, Sold/Sell = sell, Div/DivX = dividend, ReinvDiv = reinvest, Int/IntInc = interest income
+- Dates must be in YYYY-MM-DD format
+- Amounts: positive = money coming in to the account, negative = money going out
+- For investment Buy: amount should be negative (cash outflow), for Sell: amount positive
+- Extract security name from transaction description for Bought/Sold rows
+- Strip brackets from account references: [Classic XX1234] → "Classic XX1234"
+
+Return exactly this JSON schema:
+{
+  "transactions": [
+    {
+      "date": "YYYY-MM-DD",
+      "payee": "string",
+      "amount": number,
+      "type": "income|expense|transfer|buy|sell|dividend|reinvest|fee",
+      "account": "string or null",
+      "sourceAccount": "string or null",
+      "memo": "string or null",
+      "security": "string or null",
+      "shares": number or null,
+      "price": number or null,
+      "currency": "string or null"
+    }
+  ],
+  "accounts": [
+    { "name": "string", "type": "INVESTMENT|CHEQUING|SAVINGS|CREDIT_CARD|OTHER" }
+  ],
+  "securities": ["string"],
+  "confidence": "high|medium|low",
+  "notes": "string explaining what you interpreted and any assumptions made"
+}`;
+
+    const userMessage = hint
+      ? `Data source hint: ${hint}\n\nRaw data:\n${rawText}`
+      : `Raw data:\n${rawText}`;
+
+    const response = await this.complete(
+      userId,
+      {
+        systemPrompt,
+        messages: [
+          { role: 'user', content: userMessage },
+        ],
+        maxTokens: 8000,
+        temperature: 0.1, // Low temperature for deterministic parsing
+      },
+      'ai-import',
+    );
+
+    // Extract and parse the JSON from the AI response
+    let rawContent = response.content.trim();
+    // Strip markdown code fences if present
+    rawContent = rawContent.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '');
+
+    let parsed: ParsedFinancialDataResponse;
+    try {
+      parsed = JSON.parse(rawContent) as ParsedFinancialDataResponse;
+    } catch {
+      this.logger.warn(`AI returned non-JSON for financial parse: ${rawContent.substring(0, 200)}`);
+      throw new BadRequestException(
+        tr(
+          'errors.ai.importParseFailed',
+          'The AI could not parse the financial data into a structured format. Please check your data and try again.',
+        ),
+      );
+    }
+
+    // Validate and sanitize the response
+    if (!Array.isArray(parsed.transactions)) {
+      parsed.transactions = [];
+    }
+    if (!Array.isArray(parsed.accounts)) {
+      parsed.accounts = [];
+    }
+    if (!Array.isArray(parsed.securities)) {
+      parsed.securities = [];
+    }
+    parsed.confidence = parsed.confidence || 'medium';
+    parsed.notes = parsed.notes || '';
+
+    return parsed;
   }
 
   async getStatus(userId: string): Promise<AiStatusResponse> {
