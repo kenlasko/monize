@@ -29,6 +29,8 @@ const STORAGE_KEYS = {
   amountTo: 'transactions.filter.amountTo',
   tagIds: 'transactions.filter.tagIds',
   statuses: 'transactions.filter.statuses',
+  sortBy: 'transactions.sort.sortBy',
+  sortOrder: 'transactions.sort.sortOrder',
 };
 
 const VALID_TRANSACTION_STATUSES = new Set<string>(Object.values(TransactionStatus));
@@ -132,6 +134,8 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
   const [filterAmountTo, setFilterAmountTo] = useState<string>('');
   const [filterTagIds, setFilterTagIds] = useState<string[]>([]);
   const [filterStatuses, setFilterStatuses] = useState<TransactionStatus[]>([]);
+  const [sortBy, setSortBy] = useState<string>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const [filtersInitialized, setFiltersInitialized] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(true);
@@ -158,6 +162,8 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     amountFrom: string;
     amountTo: string;
     statuses: TransactionStatus[];
+    sortBy: string;
+    sortOrder: 'asc' | 'desc';
   }, push: boolean = false) => {
     const params = new URLSearchParams();
     if (page > 1) params.set('page', page.toString());
@@ -171,6 +177,8 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     if (filters.amountFrom) params.set('amountFrom', filters.amountFrom);
     if (filters.amountTo) params.set('amountTo', filters.amountTo);
     if (filters.statuses.length) params.set('statuses', filters.statuses.join(','));
+    if (filters.sortBy && filters.sortBy !== 'date') params.set('sortBy', filters.sortBy);
+    if (filters.sortOrder && filters.sortOrder !== 'desc') params.set('sortOrder', filters.sortOrder);
 
     const queryString = params.toString();
     const newUrl = queryString ? `/transactions?${queryString}` : '/transactions';
@@ -368,6 +376,10 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     } else {
       setFilterTimePeriod(getFilterValue(STORAGE_KEYS.timePeriod, null, false));
     }
+    const initialSortBy = getFilterValue(STORAGE_KEYS.sortBy, searchParams.get('sortBy'), hasAnyUrlParams) || 'date';
+    const initialSortOrder = (getFilterValue(STORAGE_KEYS.sortOrder, searchParams.get('sortOrder'), hasAnyUrlParams) as 'asc' | 'desc') || 'desc';
+    setSortBy(initialSortBy);
+    setSortOrder(initialSortOrder);
     setFiltersInitialized(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -390,7 +402,9 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     localStorage.setItem(STORAGE_KEYS.amountFrom, filterAmountFrom);
     localStorage.setItem(STORAGE_KEYS.amountTo, filterAmountTo);
     localStorage.setItem(STORAGE_KEYS.statuses, JSON.stringify(filterStatuses));
-  }, [filterAccountIds, filterCategoryIds, filterPayeeIds, filterTagIds, filterStartDate, filterEndDate, filterSearch, filterTimePeriod, filterAmountFrom, filterAmountTo, filterStatuses, filtersInitialized]);
+    localStorage.setItem(STORAGE_KEYS.sortBy, sortBy);
+    localStorage.setItem(STORAGE_KEYS.sortOrder, sortOrder);
+  }, [filterAccountIds, filterCategoryIds, filterPayeeIds, filterTagIds, filterStartDate, filterEndDate, filterSearch, filterTimePeriod, filterAmountFrom, filterAmountTo, filterStatuses, sortBy, sortOrder, filtersInitialized]);
 
   // Helper to update array filter and mark as filter change
   const handleArrayFilterChange = useCallback(<T,>(setter: (value: T) => void, value: T) => {
@@ -475,6 +489,8 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
       setFilterAmountFrom(params.get('amountFrom') || '');
       setFilterAmountTo(params.get('amountTo') || '');
       setFilterStatuses(sanitizeStatuses(params.get('statuses')?.split(',').filter(Boolean) || []));
+      setSortBy(params.get('sortBy') || 'date');
+      setSortOrder((params.get('sortOrder') as 'asc' | 'desc') || 'desc');
       const hasDateParams = params.has('startDate') || params.has('endDate');
       setFilterTimePeriod(hasDateParams ? 'custom' : '');
       const pageParam = params.get('page');
@@ -540,6 +556,8 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     setFilterAmountFrom('');
     setFilterAmountTo('');
     setFilterStatuses([]);
+    setSortBy('date');
+    setSortOrder('desc');
     localStorage.removeItem(STORAGE_KEYS.accountIds);
     localStorage.removeItem(STORAGE_KEYS.categoryIds);
     localStorage.removeItem(STORAGE_KEYS.payeeIds);
@@ -551,12 +569,24 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     localStorage.removeItem(STORAGE_KEYS.amountFrom);
     localStorage.removeItem(STORAGE_KEYS.amountTo);
     localStorage.removeItem(STORAGE_KEYS.statuses);
+    localStorage.removeItem(STORAGE_KEYS.sortBy);
+    localStorage.removeItem(STORAGE_KEYS.sortOrder);
     router.replace('/transactions', { scroll: false });
   }, [router]);
 
   const goToPage = useCallback((page: number) => {
     setCurrentPage(page);
   }, []);
+
+  const handleSort = useCallback((column: string) => {
+    isFilterChange.current = true;
+    if (sortBy === column) {
+      setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortBy(column);
+      setSortOrder(column === 'date' ? 'desc' : 'asc');
+    }
+  }, [sortBy]);
 
   return {
     // Pagination
@@ -576,6 +606,8 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     filterAmountTo, setFilterAmountTo,
     filterTagIds, setFilterTagIds,
     filterStatuses, setFilterStatuses,
+    sortBy, setSortBy,
+    sortOrder, setSortOrder,
     filtersInitialized,
     filtersExpanded, setFiltersExpanded,
     activeFilterCount,
@@ -607,6 +639,7 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     handleTransferClick,
     clearFilters,
     goToPage,
+    handleSort,
 
     // URL sync internals (needed by the page component)
     updateUrl,

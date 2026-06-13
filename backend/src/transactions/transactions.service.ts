@@ -311,6 +311,8 @@ export class TransactionsService {
     amountTo?: number,
     tagIds?: string[],
     statuses?: TransactionStatus[],
+    sortBy?: string,
+    sortOrder?: "ASC" | "DESC",
   ): Promise<PaginatedTransactions> {
     const clamped = clampPagination(page, limit);
     const safeLimit = clamped.limit;
@@ -339,10 +341,58 @@ export class TransactionsService {
         "linkedSplits.transferAccount",
         "linkedSplitTransferAccount",
       )
-      .where("transaction.userId = :userId", { userId })
-      .orderBy("transaction.transactionDate", "DESC")
-      .addOrderBy("transaction.createdAt", "DESC")
-      .addOrderBy("transaction.id", "DESC");
+      .where("transaction.userId = :userId", { userId });
+
+    const order = sortOrder || "DESC";
+    if (sortBy) {
+      if (sortBy === "date") {
+        queryBuilder.orderBy("transaction.transactionDate", order)
+          .addOrderBy("transaction.createdAt", "DESC")
+          .addOrderBy("transaction.id", "DESC");
+      } else if (sortBy === "account") {
+        queryBuilder.orderBy("account.name", order)
+          .addOrderBy("transaction.transactionDate", "DESC")
+          .addOrderBy("transaction.id", "DESC");
+      } else if (sortBy === "payee") {
+        queryBuilder
+          .addSelect("COALESCE(payee.name, transaction.payeeName)", "payee_name_sort")
+          .orderBy("payee_name_sort", order)
+          .addOrderBy("transaction.transactionDate", "DESC")
+          .addOrderBy("transaction.id", "DESC");
+      } else if (sortBy === "category") {
+        queryBuilder.orderBy("category.name", order)
+          .addOrderBy("transaction.transactionDate", "DESC")
+          .addOrderBy("transaction.id", "DESC");
+      } else if (sortBy === "description") {
+        queryBuilder.orderBy("transaction.description", order)
+          .addOrderBy("transaction.transactionDate", "DESC")
+          .addOrderBy("transaction.id", "DESC");
+      } else if (sortBy === "refNumber") {
+        queryBuilder.orderBy("transaction.referenceNumber", order)
+          .addOrderBy("transaction.transactionDate", "DESC")
+          .addOrderBy("transaction.id", "DESC");
+      } else if (sortBy === "amount") {
+        queryBuilder.orderBy("transaction.amount", order)
+          .addOrderBy("transaction.transactionDate", "DESC")
+          .addOrderBy("transaction.id", "DESC");
+      } else if (sortBy === "status") {
+        queryBuilder.orderBy("transaction.status", order)
+          .addOrderBy("transaction.transactionDate", "DESC")
+          .addOrderBy("transaction.id", "DESC");
+      } else if (sortBy === "tags") {
+        queryBuilder.orderBy("tags.name", order)
+          .addOrderBy("transaction.transactionDate", "DESC")
+          .addOrderBy("transaction.id", "DESC");
+      } else {
+        queryBuilder.orderBy("transaction.transactionDate", "DESC")
+          .addOrderBy("transaction.createdAt", "DESC")
+          .addOrderBy("transaction.id", "DESC");
+      }
+    } else {
+      queryBuilder.orderBy("transaction.transactionDate", "DESC")
+        .addOrderBy("transaction.createdAt", "DESC")
+        .addOrderBy("transaction.id", "DESC");
+    }
 
     if (!includeInvestmentBrokerage) {
       queryBuilder.andWhere(
