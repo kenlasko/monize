@@ -72,3 +72,4 @@ credentials/
 .claude/worktrees/
 docs/missing-requirements.md
 Sample401k.csv
+docs/knowledgebase/local-development-setup.md

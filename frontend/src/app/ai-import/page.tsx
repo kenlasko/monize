@@ -146,11 +146,12 @@ function AiImportContent() {
     const selected = transactions.filter((_, i) => selectedRows.has(i));
     exportToCsv(
       'ai-import-preview.csv',
-      ['Date', 'Payee', 'Amount', 'Type', 'Account', 'Source Account', 'Security', 'Shares', 'Price', 'Memo'],
+      ['Date', 'Payee', 'Amount', 'Type', 'Account', 'Source Account', 'Category', 'Security', 'Shares', 'Price', 'Memo', 'Notes'],
       selected.map(t => [
         t.date, t.payee, t.amount, t.type,
         t.account ?? '', t.sourceAccount ?? '',
-        t.security ?? '', t.shares ?? '', t.price ?? '', t.memo ?? '',
+        t.category ?? '',
+        t.security ?? '', t.shares ?? '', t.price ?? '', t.memo ?? '', t.notes ?? '',
       ]),
     );
     toast.success(`Downloaded ${selected.length} transactions as CSV`);
@@ -158,9 +159,9 @@ function AiImportContent() {
 
   const handleCopyTable = () => {
     const selected = transactions.filter((_, i) => selectedRows.has(i));
-    const header = 'Date\tPayee\tAmount\tType\tAccount\tMemo';
+    const header = 'Date\tPayee\tAmount\tType\tAccount\tCategory\tMemo\tNotes';
     const rows = selected.map(t =>
-      `${t.date}\t${t.payee}\t${t.amount}\t${t.type}\t${t.account ?? ''}\t${t.memo ?? ''}`
+      `${t.date}\t${t.payee}\t${t.amount}\t${t.type}\t${t.account ?? ''}\t${t.category ?? ''}\t${t.memo ?? ''}\t${t.notes ?? ''}`
     );
     navigator.clipboard.writeText([header, ...rows].join('\n'))
       .then(() => toast.success('Table copied to clipboard'))
@@ -238,7 +239,7 @@ function AiImportContent() {
             subtitle={`AI found ${transactions.length} transactions across ${parsed.accounts.length} account${parsed.accounts.length !== 1 ? 's' : ''}`}
           />
 
-          <div className="max-w-5xl mx-auto">
+          <div className="w-full">
             <ConfidenceBanner confidence={parsed.confidence} notes={parsed.notes} />
 
             {/* Summary pills */}
@@ -317,11 +318,32 @@ function AiImportContent() {
                               />
                             </td>
                             <td className="px-4 py-2">
-                              <input
-                                value={editValues.payee ?? tx.payee}
-                                onChange={e => setEditValues(v => ({ ...v, payee: e.target.value }))}
-                                className="border border-blue-300 dark:border-blue-600 rounded px-2 py-1 text-sm w-full min-w-32 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                              />
+                              <div className="flex flex-col gap-1 w-full min-w-48">
+                                <input
+                                  value={editValues.payee ?? tx.payee}
+                                  onChange={e => setEditValues(v => ({ ...v, payee: e.target.value }))}
+                                  className="border border-blue-300 dark:border-blue-600 rounded px-2 py-1 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                                  placeholder="Payee"
+                                />
+                                <input
+                                  value={editValues.category ?? tx.category ?? ''}
+                                  onChange={e => setEditValues(v => ({ ...v, category: e.target.value }))}
+                                  className="border border-blue-300 dark:border-blue-600 rounded px-2 py-0.5 text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-emerald-600 dark:text-emerald-400"
+                                  placeholder="Category"
+                                />
+                                <input
+                                  value={editValues.memo ?? tx.memo ?? ''}
+                                  onChange={e => setEditValues(v => ({ ...v, memo: e.target.value }))}
+                                  className="border border-blue-300 dark:border-blue-600 rounded px-2 py-0.5 text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                                  placeholder="Memo"
+                                />
+                                <input
+                                  value={editValues.notes ?? tx.notes ?? ''}
+                                  onChange={e => setEditValues(v => ({ ...v, notes: e.target.value }))}
+                                  className="border border-blue-300 dark:border-blue-600 rounded px-2 py-0.5 text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-purple-600 dark:text-purple-400"
+                                  placeholder="Notes"
+                                />
+                              </div>
                             </td>
                             <td className="px-4 py-2">
                               <select
@@ -373,8 +395,14 @@ function AiImportContent() {
                               {tx.sourceAccount && (
                                 <div className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">← {tx.sourceAccount}</div>
                               )}
+                              {tx.category && (
+                                <div className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">🏷️ {tx.category}</div>
+                              )}
                               {tx.memo && (
                                 <div className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[200px]" title={tx.memo}>{tx.memo}</div>
+                              )}
+                              {tx.notes && (
+                                <div className="text-xs text-purple-600 dark:text-purple-400 truncate max-w-[200px]" title={tx.notes}>📝 {tx.notes}</div>
                               )}
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap"><TypeBadge type={tx.type} /></td>
@@ -451,7 +479,7 @@ function AiImportContent() {
           subtitle="Paste any financial data and let AI parse it into transactions"
         />
 
-        <div className="max-w-3xl mx-auto">
+        <div className="w-full">
           {/* How it works */}
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6">
             <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-1">How it works</h3>
@@ -555,9 +583,12 @@ function buildQifFromAiTransactions(
 
       if (tx.payee) lines.push(`P${tx.payee}`);
       if (tx.memo) lines.push(`M${tx.memo}`);
+      if (tx.notes) lines.push(`X${tx.notes}`);
 
       if (tx.type === 'transfer' && tx.sourceAccount) {
         lines.push(`L[${tx.sourceAccount}]`);
+      } else if (tx.category) {
+        lines.push(`L${tx.category}`);
       }
 
       // Investment fields
