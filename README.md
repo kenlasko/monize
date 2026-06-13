@@ -349,6 +349,7 @@ npm run dev
 | `AI_DEFAULT_BASE_URL` | Base URL for Ollama or compatible endpoints | - |
 | `JWT_EXPIRATION` | JWT token expiration time | `15m` |
 | `REMEMBER_ME_DAYS` | Duration for "Remember Me" sessions (days) | `30` |
+| `RATE_LIMIT_MAX` | Advanced: raise per-IP rate-limit ceilings (only raises, never lowers below secure defaults) | - |
 | `DISABLE_HTTPS_HEADERS` | Disable HSTS and COOP headers for plain HTTP | `false` |
 | `DEMO_MODE` | Enable demo mode with sample data | `false` |
 | `SMTP_SECURE` | Use TLS for SMTP | `false` |
