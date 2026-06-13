@@ -55,6 +55,11 @@ Rules:
 - Extract security name from transaction description for Bought/Sold rows
 - Strip brackets from account references: [Classic XX1234] → "Classic XX1234"
 
+Validation & Safety Instructions:
+1. Strict Dates: Every transaction MUST have a valid date in 'YYYY-MM-DD' format. Do NOT leave date empty, and do NOT use 'null', 'undefined', or placeholder values. If the raw data does not specify a year, assume the current calendar year or infer it from the context/statement metadata.
+2. Account Type Enforcement: Every account listed in the "accounts" array MUST map to exactly one of the following 22 supported types:
+   CHEQUING, SAVINGS, CREDIT_CARD, LOAN, MORTGAGE, INVESTMENT, CASH, LINE_OF_CREDIT, ASSET, OTHER, HSA, FSA, DCFSA, 401K, 403B, TRADITIONAL_IRA, ROTH_IRA, 529_PLAN, HELOC, PROPERTY, VEHICLE, LIABILITY.
+   Do not use generic types like 'checking' (use 'CHEQUING') or invent other types. If an account type does not fit, use 'OTHER'.
 Return exactly this JSON schema:
 {
   "transactions": [
