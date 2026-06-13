@@ -64,6 +64,8 @@
       "deleteShort": "X"
     },
     "viewTransactionsTitle": "Ver transações com este beneficiário",
+    "uncategorizedBadge": "{count, plural, one {# sem categoria} other {# sem categoria}}",
+    "uncategorizedTitle": "{count, plural, one {# transação deste beneficiário não tem categoria} other {# transações deste beneficiário não têm categoria}}",
     "empty": {
       "title": "Sem beneficiários",
       "subtitle": "Comece criando um novo beneficiário."
@@ -115,6 +117,9 @@
     "matchPercentageLabel": "Percentagem de Correspondência de Categoria: {percent}%",
     "matchPercentageHelp": "A categoria deve ser utilizada em pelo menos esta percentagem de transações",
     "onlyWithoutCategoryLabel": "Apenas beneficiários sem categoria padrão",
+    "backfillLabel": "{count, plural, one {Categorizar também # transação existente sem categoria} other {Categorizar também # transações existentes sem categoria}}",
+    "backfillHelp": "Aplica a categoria escolhida às transações que atualmente não têm nenhuma. As categorias existentes, as transferências e as transações divididas permanecem inalteradas.",
+    "viewUncategorizedTitle": "Ver {count, plural, one {# transação sem categoria} other {# transações sem categoria}} de {name}",
     "previewButton": "Pré-visualizar Sugestões",
     "loading": "Carregando...",
     "suggestionsHeader": "Sugestões ({count} encontradas)",
@@ -136,6 +141,7 @@
     "toasts": {
       "selectAtLeastOne": "Selecione pelo menos um beneficiário para atualizar",
       "updated": "{count, plural, one {# beneficiário atualizado} other {# beneficiários atualizados}}",
+      "backfilled": "{count, plural, one {# transação categorizada} other {# transações categorizadas}}",
       "loadFailed": "Falha ao carregar sugestões",
       "applyFailed": "Falha ao aplicar atribuições de categorias"
     }
@@ -144,6 +150,7 @@
     "title": "Mesclar beneficiários automaticamente",
     "howItWorksTitle": "Como funciona",
     "howItWorksBody": "Este recurso examina seus beneficiários e agrupa variantes em que um nome estende outro - por exemplo, \"Lidl\", \"LIDL sp. z o.o.\" e \"LIDL WARSZAWA 0421\" se baseiam em \"Lidl\". Cada grupo é mesclado em um único beneficiário canônico e um alias com curinga (como \"*LIDL*\") é criado para que as importações futuras sejam correspondidas automaticamente. Beneficiários que apenas compartilham uma palavra comum (como \"Royal Electric\" e \"Royal City Nursery\") permanecem separados. Revise e ajuste cada grupo antes de aplicar.",
+    "backupRecommendation": "Recomendado: crie um <link>backup</link> antes de fazer alterações.",
     "minGroupSizeLabel": "Tamanho mínimo do grupo: {count}",
     "minGroupSizeHelp": "Sugerir apenas grupos com pelo menos este número de beneficiários",
     "similarityLabel": "Limite de similaridade: {percent}%",
@@ -162,6 +169,7 @@
     "canonicalNameLabel": "Manter como beneficiário",
     "aliasLabel": "Alias para importações futuras",
     "defaultCategoryLabel": "Categoria padrão (opcional)",
+    "backfillLabel": "{count, plural, one {Categorizar também # transação existente sem categoria} other {Categorizar também # transações existentes sem categoria}}",
     "aliasPlaceholder": "ex.: *LIDL*",
     "keepLabel": "Manter este beneficiário",
     "includeMemberLabel": "Incluir na mesclagem",
@@ -177,6 +185,7 @@
     "toasts": {
       "selectAtLeastOne": "Selecione pelo menos um grupo para mesclar",
       "applied": "Mesclados {groups, plural, one {# grupo} other {# grupos}} ({payees} beneficiários combinados)",
+      "backfilled": "{count, plural, one {# transação categorizada} other {# transações categorizadas}}",
       "aliasesSkipped": "{count, plural, one {# alias foi ignorado devido a um conflito} other {# aliases foram ignorados devido a conflitos}}",
       "loadFailed": "Falha ao carregar os grupos de mesclagem",
       "applyFailed": "Falha ao mesclar os beneficiários"
@@ -193,7 +202,8 @@
     "ignoreCommonWordsLabel": "Ignorar palavras comuns",
     "ignoreCommonWordsHelp": "Não agrupar a partir de palavras genéricas (Restaurante, Cafe, nomes de países) nem de palavras com que começam muitos beneficiários diferentes.",
     "commonWordSensitivityLabel": "Sensibilidade a palavras comuns: {count}+ variantes",
-    "commonWordSensitivityHelp": "Uma palavra inicial é tratada como comum quando pelo menos este número de beneficiários diferentes deriva dela. Menor = filtrar de forma mais agressiva."
+    "commonWordSensitivityHelp": "Uma palavra inicial é tratada como comum quando pelo menos este número de beneficiários diferentes deriva dela. Menor = filtrar de forma mais agressiva.",
+    "viewUncategorizedTitle": "Ver {count, plural, one {# transação sem categoria} other {# transações sem categoria}} de {name}"
   },
   "deactivateUnused": {
     "title": "Desativar Beneficiários Não Utilizados",

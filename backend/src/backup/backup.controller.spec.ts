@@ -88,7 +88,7 @@ describe("BackupController", () => {
       const mockRes = { setHeader: jest.fn() };
       const encryptedReq = {
         ...mockReq,
-        headers: { "x-export-password": "pw" },
+        headers: { "x-export-password": Buffer.from("pw").toString("base64") },
       };
       await controller.exportBackup(encryptedReq, mockRes as any);
       expect(mockRes.setHeader).toHaveBeenCalledWith(
@@ -119,7 +119,7 @@ describe("BackupController", () => {
         user: { id: userId },
         body: Buffer.from("gzip-data"),
         headers: {
-          "x-restore-password": "mypassword",
+          "x-restore-password": Buffer.from("mypassword").toString("base64"),
         },
       };
 
@@ -190,12 +190,34 @@ describe("BackupController", () => {
       const req = {
         user: { id: userId },
         body: Buffer.from("data"),
-        headers: { "x-backup-password": "old-password" },
+        headers: {
+          "x-backup-password": Buffer.from("old-password").toString("base64"),
+        },
       };
       await controller.restoreBackup(req);
       expect(mockBackupService.restoreData).toHaveBeenCalledWith(
         userId,
         expect.objectContaining({ backupPassword: "old-password" }),
+      );
+    });
+
+    it("decodes a restore password that begins with a space", async () => {
+      mockBackupService.restoreData.mockResolvedValue({
+        message: "ok",
+        restored: {},
+      });
+      const req = {
+        user: { id: userId },
+        body: Buffer.from("data"),
+        headers: {
+          "x-restore-password":
+            Buffer.from(" leading space").toString("base64"),
+        },
+      };
+      await controller.restoreBackup(req);
+      expect(mockBackupService.restoreData).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({ password: " leading space" }),
       );
     });
   });

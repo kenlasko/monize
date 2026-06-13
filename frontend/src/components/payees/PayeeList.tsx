@@ -102,13 +102,23 @@ const PayeeRow = memo(function PayeeRow({
       className={`group hover:bg-gray-100 dark:hover:bg-gray-800 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} ${!payee.isActive ? 'opacity-60' : ''}`}
     >
       <td className={`${cellPadding} whitespace-nowrap`}>
-        <button
-          onClick={handleViewTransactions}
-          className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline text-left"
-          title={t('list.viewTransactionsTitle')}
-        >
-          {payee.name}
-        </button>
+        <div className="flex flex-col items-start gap-0.5 sm:flex-row sm:items-center sm:gap-2">
+          <button
+            onClick={handleViewTransactions}
+            className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline text-left"
+            title={t('list.viewTransactionsTitle')}
+          >
+            {payee.name}
+          </button>
+          {(payee.uncategorizedCount ?? 0) > 0 && (
+            <span
+              className="inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
+              title={t('list.uncategorizedTitle', { count: payee.uncategorizedCount ?? 0 })}
+            >
+              {t('list.uncategorizedBadge', { count: payee.uncategorizedCount ?? 0 })}
+            </span>
+          )}
+        </div>
       </td>
       <td className={`${cellPadding} whitespace-nowrap hidden sm:table-cell`}>
         {payee.defaultCategory ? (

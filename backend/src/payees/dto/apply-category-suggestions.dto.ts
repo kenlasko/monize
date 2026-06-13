@@ -1,4 +1,11 @@
-import { IsArray, ArrayMaxSize, IsUUID, ValidateNested } from "class-validator";
+import {
+  IsArray,
+  ArrayMaxSize,
+  IsBoolean,
+  IsOptional,
+  IsUUID,
+  ValidateNested,
+} from "class-validator";
 import { Type } from "class-transformer";
 import { ApiProperty } from "@nestjs/swagger";
 
@@ -10,6 +17,15 @@ export class CategorySuggestionAssignmentDto {
   @ApiProperty({ description: "Category ID to assign to the payee" })
   @IsUUID()
   categoryId: string;
+
+  @ApiProperty({
+    required: false,
+    description:
+      "When true, also apply this category to the payee's existing uncategorized transactions",
+  })
+  @IsOptional()
+  @IsBoolean()
+  backfillTransactions?: boolean;
 }
 
 export class ApplyCategorySuggestionsDto {

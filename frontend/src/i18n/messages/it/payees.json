@@ -64,6 +64,8 @@
       "deleteShort": "X"
     },
     "viewTransactionsTitle": "Visualizza le transazioni con questo beneficiario",
+    "uncategorizedBadge": "{count, plural, one {# senza categoria} other {# senza categoria}}",
+    "uncategorizedTitle": "{count, plural, one {# transazione di questo beneficiario non ha una categoria} other {# transazioni di questo beneficiario non hanno una categoria}}",
     "empty": {
       "title": "Nessun beneficiario",
       "subtitle": "Inizia creando un nuovo beneficiario."
@@ -115,6 +117,9 @@
     "matchPercentageLabel": "Percentuale di corrispondenza categoria: {percent}%",
     "matchPercentageHelp": "La categoria deve essere usata in almeno questa percentuale di transazioni",
     "onlyWithoutCategoryLabel": "Solo beneficiari senza categoria predefinita",
+    "backfillLabel": "{count, plural, one {Categorizza anche # transazione esistente senza categoria} other {Categorizza anche # transazioni esistenti senza categoria}}",
+    "backfillHelp": "Applica la categoria scelta alle transazioni che attualmente non ne hanno una. Le categorie esistenti, i trasferimenti e le transazioni suddivise restano invariati.",
+    "viewUncategorizedTitle": "Visualizza {count, plural, one {# transazione senza categoria} other {# transazioni senza categoria}} per {name}",
     "previewButton": "Anteprima suggerimenti",
     "loading": "Caricamento...",
     "suggestionsHeader": "Suggerimenti ({count} trovati)",
@@ -136,6 +141,7 @@
     "toasts": {
       "selectAtLeastOne": "Seleziona almeno un beneficiario da aggiornare",
       "updated": "{count, plural, one {# beneficiario aggiornato} other {# beneficiari aggiornati}}",
+      "backfilled": "{count, plural, one {# transazione categorizzata} other {# transazioni categorizzate}}",
       "loadFailed": "Caricamento suggerimenti non riuscito",
       "applyFailed": "Applicazione delle categorie non riuscita"
     }
@@ -144,6 +150,7 @@
     "title": "Unisci beneficiari automaticamente",
     "howItWorksTitle": "Come funziona",
     "howItWorksBody": "Questa funzione esamina i tuoi beneficiari e raggruppa le varianti in cui un nome estende un altro - ad esempio \"Lidl\", \"LIDL sp. z o.o.\" e \"LIDL WARSZAWA 0421\" si basano tutti su \"Lidl\". Ogni gruppo viene unito in un unico beneficiario canonico e viene creato un alias con caratteri jolly (come \"*LIDL*\") in modo che le importazioni future vengano abbinate automaticamente. I beneficiari che condividono solo una parola comune (come \"Royal Electric\" e \"Royal City Nursery\") restano separati. Rivedi e modifica ciascun gruppo prima di applicarlo.",
+    "backupRecommendation": "Consigliato: crea un <link>backup</link> prima di apportare modifiche.",
     "minGroupSizeLabel": "Dimensione minima del gruppo: {count}",
     "minGroupSizeHelp": "Suggerisci solo gruppi con almeno questo numero di beneficiari",
     "similarityLabel": "Soglia di somiglianza: {percent}%",
@@ -162,6 +169,7 @@
     "canonicalNameLabel": "Mantieni come beneficiario",
     "aliasLabel": "Alias per importazioni future",
     "defaultCategoryLabel": "Categoria predefinita (facoltativa)",
+    "backfillLabel": "{count, plural, one {Categorizza anche # transazione esistente senza categoria} other {Categorizza anche # transazioni esistenti senza categoria}}",
     "aliasPlaceholder": "es. *LIDL*",
     "keepLabel": "Mantieni questo beneficiario",
     "includeMemberLabel": "Includi nell'unione",
@@ -177,6 +185,7 @@
     "toasts": {
       "selectAtLeastOne": "Seleziona almeno un gruppo da unire",
       "applied": "Uniti {groups, plural, one {# gruppo} other {# gruppi}} ({payees} beneficiari combinati)",
+      "backfilled": "{count, plural, one {# transazione categorizzata} other {# transazioni categorizzate}}",
       "aliasesSkipped": "{count, plural, one {# alias è stato saltato a causa di un conflitto} other {# alias sono stati saltati a causa di conflitti}}",
       "loadFailed": "Impossibile caricare i gruppi di unione",
       "applyFailed": "Impossibile unire i beneficiari"
@@ -193,7 +202,8 @@
     "ignoreCommonWordsLabel": "Ignora le parole comuni",
     "ignoreCommonWordsHelp": "Non raggruppare in base a parole generiche (Ristorante, Cafe, nomi di Paesi) o a parole con cui iniziano molti beneficiari diversi.",
     "commonWordSensitivityLabel": "Sensibilità alle parole comuni: {count}+ varianti",
-    "commonWordSensitivityHelp": "Una parola iniziale è considerata comune quando almeno questo numero di beneficiari diversi ne deriva. Più basso = filtro più aggressivo."
+    "commonWordSensitivityHelp": "Una parola iniziale è considerata comune quando almeno questo numero di beneficiari diversi ne deriva. Più basso = filtro più aggressivo.",
+    "viewUncategorizedTitle": "Visualizza {count, plural, one {# transazione senza categoria} other {# transazioni senza categoria}} per {name}"
   },
   "deactivateUnused": {
     "title": "Disattiva beneficiari inutilizzati",

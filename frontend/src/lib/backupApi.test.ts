@@ -56,14 +56,24 @@ describe('backupApi', () => {
     expect(result).toBe(mockBlob);
   });
 
-  it('exportBackup forwards encryption password as a header', async () => {
+  it('exportBackup forwards encryption password as a base64-encoded header', async () => {
     vi.mocked(apiClient.post).mockResolvedValue({ data: new Blob() });
     await backupApi.exportBackup('my-pw');
     expect(apiClient.post).toHaveBeenCalledWith('/backup/export', {}, {
       responseType: 'blob',
       timeout: 120000,
-      headers: { 'X-Export-Password': 'my-pw' },
+      headers: { 'X-Export-Password': btoa('my-pw') },
     });
+  });
+
+  it('exportBackup preserves a leading space in the password header', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({ data: new Blob() });
+    await backupApi.exportBackup(' leading-space');
+    const config = vi.mocked(apiClient.post).mock.calls[0]?.[2] as
+      | { headers?: Record<string, string> }
+      | undefined;
+    const encoded = config?.headers?.['X-Export-Password'];
+    expect(atob(encoded as string)).toBe(' leading-space');
   });
 
   it('restoreBackup uploads gzipped uncompressed file', async () => {
@@ -99,14 +109,25 @@ describe('backupApi', () => {
     expect(body).toBe(file);
   });
 
-  it('restoreBackup adds restore password header when provided', async () => {
+  it('restoreBackup adds a base64-encoded restore password header when provided', async () => {
     vi.mocked(apiClient.post).mockResolvedValue({ data: { message: 'ok', restored: {} } });
 
     const file = new File(['data'], 'backup.json.gz');
     await backupApi.restoreBackup({ file, password: 'secret' });
 
     const config = vi.mocked(apiClient.post).mock.calls[0][2];
-    expect(config?.headers?.['X-Restore-Password']).toBe('secret');
+    expect(config?.headers?.['X-Restore-Password']).toBe(btoa('secret'));
+  });
+
+  it('restoreBackup preserves a leading space in the restore password header', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { message: 'ok', restored: {} } });
+
+    const file = new File(['data'], 'backup.json.gz');
+    await backupApi.restoreBackup({ file, password: ' spacey' });
+
+    const config = vi.mocked(apiClient.post).mock.calls[0][2];
+    const encoded = config?.headers?.['X-Restore-Password'];
+    expect(atob(encoded as string)).toBe(' spacey');
   });
 
   it('restoreBackup adds OIDC token header when provided', async () => {
@@ -171,7 +192,7 @@ describe('backupApi', () => {
     const call = vi.mocked(apiClient.post).mock.calls[0];
     expect(call[1]).toBe(file);
     expect((call[2] as any).headers['Content-Type']).toBe('application/octet-stream');
-    expect((call[2] as any).headers['X-Backup-Password']).toBe('bk');
+    expect((call[2] as any).headers['X-Backup-Password']).toBe(btoa('bk'));
   });
 
   it('restoreBackup forwards the OIDC token header', async () => {

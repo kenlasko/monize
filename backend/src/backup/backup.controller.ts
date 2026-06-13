@@ -34,6 +34,15 @@ import {
 import { DemoRestricted } from "../common/decorators/demo-restricted.decorator";
 import { tr } from "../i18n/translate";
 
+// Password header values are base64-encoded by the client so leading/trailing
+// whitespace (and non-ASCII characters) survive HTTP header transport, which
+// otherwise strips surrounding whitespace per RFC 7230. Decode them back to the
+// exact password the user typed before any credential comparison or decryption.
+function decodePasswordHeader(value: string | undefined): string | undefined {
+  if (value === undefined) return undefined;
+  return Buffer.from(value, "base64").toString("utf8");
+}
+
 @ApiTags("Backup")
 @Controller("backup")
 @UseGuards(AuthGuard("jwt"))
@@ -53,9 +62,9 @@ export class BackupController {
     // Encryption password (when encryption is enabled) comes via header so the
     // browser can issue a plain GET-like POST without a body parser dependency
     // and so it never lands in server access logs as a query string.
-    const encryptionPassword = req.headers["x-export-password"] as
-      | string
-      | undefined;
+    const encryptionPassword = decodePasswordHeader(
+      req.headers["x-export-password"] as string | undefined,
+    );
 
     const today = new Date().toISOString().slice(0, 10);
     const filename = encryptionPassword
@@ -99,13 +108,15 @@ export class BackupController {
       );
     }
 
-    const password = req.headers["x-restore-password"] as string | undefined;
+    const password = decodePasswordHeader(
+      req.headers["x-restore-password"] as string | undefined,
+    );
     const oidcIdToken = req.headers["x-restore-oidc-token"] as
       | string
       | undefined;
-    const backupPassword = req.headers["x-backup-password"] as
-      | string
-      | undefined;
+    const backupPassword = decodePasswordHeader(
+      req.headers["x-backup-password"] as string | undefined,
+    );
 
     const result = await this.backupService.restoreData(req.user.id, {
       compressedData: body,

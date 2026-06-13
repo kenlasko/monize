@@ -64,6 +64,8 @@
       "deleteShort": "X"
     },
     "viewTransactionsTitle": "Buchungen mit diesem Zahlungsempfänger anzeigen",
+    "uncategorizedBadge": "{count, plural, one {# ohne Kategorie} other {# ohne Kategorie}}",
+    "uncategorizedTitle": "{count, plural, one {# Transaktion dieses Zahlungsempfängers hat keine Kategorie} other {# Transaktionen dieses Zahlungsempfängers haben keine Kategorie}}",
     "empty": {
       "title": "Keine Zahlungsempfänger",
       "subtitle": "Erstellen Sie einen neuen Zahlungsempfänger, um zu beginnen."
@@ -115,6 +117,9 @@
     "matchPercentageLabel": "Kategorieübereinstimmung: {percent}%",
     "matchPercentageHelp": "Die Kategorie muss bei mindestens diesem Prozentsatz der Buchungen verwendet worden sein",
     "onlyWithoutCategoryLabel": "Nur Zahlungsempfänger ohne Standardkategorie",
+    "backfillLabel": "{count, plural, one {Auch # vorhandene nicht kategorisierte Transaktion kategorisieren} other {Auch # vorhandene nicht kategorisierte Transaktionen kategorisieren}}",
+    "backfillHelp": "Wendet die gewählte Kategorie auf Transaktionen an, die derzeit keine haben. Vorhandene Kategorien, Überweisungen und aufgeteilte Transaktionen bleiben unverändert.",
+    "viewUncategorizedTitle": "{count, plural, one {# nicht kategorisierte Transaktion} other {# nicht kategorisierte Transaktionen}} für {name} anzeigen",
     "previewButton": "Vorschläge anzeigen",
     "loading": "Wird geladen...",
     "suggestionsHeader": "Vorschläge ({count} gefunden)",
@@ -136,6 +141,7 @@
     "toasts": {
       "selectAtLeastOne": "Bitte mindestens einen Zahlungsempfänger zum Aktualisieren auswählen",
       "updated": "{count, plural, one {# Zahlungsempfänger aktualisiert} other {# Zahlungsempfänger aktualisiert}}",
+      "backfilled": "{count, plural, one {# Transaktion kategorisiert} other {# Transaktionen kategorisiert}}",
       "loadFailed": "Vorschläge konnten nicht geladen werden",
       "applyFailed": "Kategoriezuweisungen konnten nicht angewendet werden"
     }
@@ -144,6 +150,7 @@
     "title": "Zahlungsempfänger automatisch zusammenführen",
     "howItWorksTitle": "So funktioniert es",
     "howItWorksBody": "Diese Funktion durchsucht Ihre Zahlungsempfänger und gruppiert Varianten, bei denen ein Name einen anderen erweitert - zum Beispiel bauen \"Lidl\", \"LIDL sp. z o.o.\" und \"LIDL WARSZAWA 0421\" alle auf \"Lidl\" auf. Jede Gruppe wird zu einem einzigen Haupt-Zahlungsempfänger zusammengeführt, und ein Platzhalter-Alias (etwa \"*LIDL*\") wird erstellt, damit künftige Importe automatisch zugeordnet werden. Zahlungsempfänger, die nur ein gemeinsames Wort teilen (wie \"Royal Electric\" und \"Royal City Nursery\"), bleiben getrennt. Prüfen und passen Sie jede Gruppe vor dem Anwenden an.",
+    "backupRecommendation": "Empfohlen: Erstellen Sie ein <link>Backup</link>, bevor Sie Änderungen vornehmen.",
     "minGroupSizeLabel": "Mindestgruppengröße: {count}",
     "minGroupSizeHelp": "Nur Gruppen mit mindestens so vielen Zahlungsempfängern vorschlagen",
     "similarityLabel": "Ähnlichkeitsschwelle: {percent}%",
@@ -162,6 +169,7 @@
     "canonicalNameLabel": "Als Zahlungsempfänger behalten",
     "aliasLabel": "Alias für künftige Importe",
     "defaultCategoryLabel": "Standardkategorie (optional)",
+    "backfillLabel": "{count, plural, one {Auch # vorhandene nicht kategorisierte Transaktion kategorisieren} other {Auch # vorhandene nicht kategorisierte Transaktionen kategorisieren}}",
     "aliasPlaceholder": "z. B. *LIDL*",
     "keepLabel": "Diesen Zahlungsempfänger behalten",
     "includeMemberLabel": "In Zusammenführung einbeziehen",
@@ -177,6 +185,7 @@
     "toasts": {
       "selectAtLeastOne": "Bitte wählen Sie mindestens eine Gruppe zum Zusammenführen aus",
       "applied": "{groups, plural, one {# Gruppe} other {# Gruppen}} zusammengeführt ({payees} Zahlungsempfänger kombiniert)",
+      "backfilled": "{count, plural, one {# Transaktion kategorisiert} other {# Transaktionen kategorisiert}}",
       "aliasesSkipped": "{count, plural, one {# Alias wurde wegen eines Konflikts übersprungen} other {# Aliase wurden wegen Konflikten übersprungen}}",
       "loadFailed": "Zusammenführungsgruppen konnten nicht geladen werden",
       "applyFailed": "Zahlungsempfänger konnten nicht zusammengeführt werden"
@@ -193,7 +202,8 @@
     "ignoreCommonWordsLabel": "Häufige Wörter ignorieren",
     "ignoreCommonWordsHelp": "Gruppen nicht auf generische Wörter (Restaurant, Cafe, Ländernamen) oder Wörter stützen, mit denen viele verschiedene Zahlungsempfänger beginnen.",
     "commonWordSensitivityLabel": "Empfindlichkeit für häufige Wörter: {count}+ Varianten",
-    "commonWordSensitivityHelp": "Ein führendes Wort gilt als häufig, sobald mindestens so viele verschiedene Zahlungsempfänger davon abzweigen. Niedriger = aggressiver filtern."
+    "commonWordSensitivityHelp": "Ein führendes Wort gilt als häufig, sobald mindestens so viele verschiedene Zahlungsempfänger davon abzweigen. Niedriger = aggressiver filtern.",
+    "viewUncategorizedTitle": "{count, plural, one {# nicht kategorisierte Transaktion} other {# nicht kategorisierte Transaktionen}} für {name} anzeigen"
   },
   "deactivateUnused": {
     "title": "Ungenutzte Zahlungsempfänger deaktivieren",

@@ -20,6 +20,10 @@ import {
   significantTokens,
   similarity,
 } from "./payee-normalize.util";
+import {
+  backfillPayeeCategory,
+  countUncategorizedTransactionsByPayee,
+} from "./payee-backfill.util";
 
 export type CategoryMatchMode = "off" | "category" | "subcategory";
 
@@ -56,6 +60,10 @@ export interface AutoMergeGroupPreview {
   // a default category for the merged payee; null when no member has any
   // categorized transactions.
   suggestedCategoryId: string | null;
+  // How many transactions across all members currently have no category (and
+  // are not transfers or split parents), i.e. how many a default-category
+  // backfill would touch once the group is merged into its canonical.
+  uncategorizedTransactionCount: number;
   members: AutoMergeMember[];
   totalTransactions: number;
 }
@@ -67,6 +75,9 @@ export interface ApplyAutoMergeGroup {
   alias?: string;
   // Optional default category to set on the canonical payee after merging.
   defaultCategoryId?: string;
+  // When true (and a default category is set), also apply that category to the
+  // canonical's existing uncategorized transactions after the merge.
+  backfillTransactions?: boolean;
 }
 
 export interface ApplyAutoMergeResult {
@@ -75,6 +86,7 @@ export interface ApplyAutoMergeResult {
   transactionsMigrated: number;
   aliasesCreated: number;
   skippedAliases: number;
+  transactionsBackfilled: number;
 }
 
 // Cap the cross-bucket fuzzy pass (O(B^2) over distinct first tokens) to keep
@@ -128,6 +140,13 @@ export class PayeeAutoMergeService {
     // returned for each group, so build it once up front.
     const categoryCounts = await this.buildCategoryCountsMap(userId);
 
+    // Per-payee count of transactions a default-category backfill would touch,
+    // surfaced per group so the UI can offer the optional backfill with a count.
+    const uncategorizedCounts = await countUncategorizedTransactionsByPayee(
+      this.transactionsRepository.manager,
+      userId,
+    );
+
     // Resolve each payee's effective category when the filter is on: prefer the
     // explicit default category, else fall back to the payee's dominant
     // transaction category. A null key means "category unknown" - such payees
@@ -175,7 +194,12 @@ export class PayeeAutoMergeService {
     const groups: AutoMergeGroupPreview[] = clusters
       .filter((members) => members.length >= opts.minGroupSize)
       .map((members) =>
-        this.toGroupPreview(members, opts.minTokenLength, categoryCounts),
+        this.toGroupPreview(
+          members,
+          opts.minTokenLength,
+          categoryCounts,
+          uncategorizedCounts,
+        ),
       )
       .sort((a, b) => {
         if (b.totalTransactions !== a.totalTransactions) {
@@ -456,6 +480,7 @@ export class PayeeAutoMergeService {
     payeeList: PayeeWithStats[],
     minTokenLength: number,
     categoryCounts: Map<string, Map<string, number>>,
+    uncategorizedCounts: Map<string, number>,
   ): AutoMergeGroupPreview {
     // Canonical = most transactions, tie-break on shortest then alphabetical.
     const canonical = [...payeeList].sort((a, b) => {
@@ -496,6 +521,13 @@ export class PayeeAutoMergeService {
       0,
     );
 
+    // After the merge, every member's transactions belong to the canonical, so
+    // the backfill scope is the sum of each member's uncategorized count.
+    const uncategorizedTransactionCount = payeeList.reduce(
+      (sum, payee) => sum + (uncategorizedCounts.get(payee.id) ?? 0),
+      0,
+    );
+
     return {
       groupKey: aliasBase,
       suggestedCanonicalPayeeId: canonical.id,
@@ -505,6 +537,7 @@ export class PayeeAutoMergeService {
         payeeList,
         categoryCounts,
       ),
+      uncategorizedTransactionCount,
       members,
       totalTransactions,
     };
@@ -577,6 +610,7 @@ export class PayeeAutoMergeService {
       transactionsMigrated: 0,
       aliasesCreated: 0,
       skippedAliases: 0,
+      transactionsBackfilled: 0,
     };
 
     for (const group of groups) {
@@ -586,6 +620,7 @@ export class PayeeAutoMergeService {
       result.transactionsMigrated += groupResult.transactionsMigrated;
       result.aliasesCreated += groupResult.aliasCreated ? 1 : 0;
       result.skippedAliases += groupResult.aliasSkipped ? 1 : 0;
+      result.transactionsBackfilled += groupResult.transactionsBackfilled;
     }
 
     return result;
@@ -599,6 +634,7 @@ export class PayeeAutoMergeService {
     transactionsMigrated: number;
     aliasCreated: boolean;
     aliasSkipped: boolean;
+    transactionsBackfilled: number;
   }> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -681,6 +717,19 @@ export class PayeeAutoMergeService {
         group.alias,
       );
 
+      // Optionally backfill the canonical's uncategorized transactions with the
+      // chosen default category. Runs after reassignment so it covers every
+      // member's transactions, and only ever touches rows with no category.
+      let transactionsBackfilled = 0;
+      if (group.backfillTransactions && group.defaultCategoryId) {
+        transactionsBackfilled = await backfillPayeeCategory(
+          queryRunner.manager,
+          userId,
+          canonical.id,
+          group.defaultCategoryId,
+        );
+      }
+
       await queryRunner.commitTransaction();
 
       return {
@@ -688,6 +737,7 @@ export class PayeeAutoMergeService {
         transactionsMigrated,
         aliasCreated: aliasOutcome === "created",
         aliasSkipped: aliasOutcome === "skipped",
+        transactionsBackfilled,
       };
     } catch (error) {
       await queryRunner.rollbackTransaction();
