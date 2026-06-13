@@ -6,6 +6,19 @@ import { AutoMergeGroup } from '@/types/payee';
 import { Category } from '@/types/category';
 import toast from 'react-hot-toast';
 
+const mockPush = vi.fn();
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: mockPush,
+    replace: vi.fn(),
+    back: vi.fn(),
+    prefetch: vi.fn(),
+    refresh: vi.fn(),
+  }),
+  usePathname: () => '/',
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 vi.mock('@/lib/payees', () => ({
   payeesApi: {
     getAutoMergePreview: vi.fn().mockResolvedValue([]),
@@ -119,6 +132,43 @@ describe('AutoMergePayeesDialog', () => {
       ignoreCommonWords: false,
       commonWordMinVariants: 5,
     });
+  });
+
+  it('shows a clickable uncategorized badge that navigates to the filtered transactions', async () => {
+    mockPreview.mockResolvedValue([lidlGroup]);
+    render(<AutoMergePayeesDialog isOpen onClose={onClose} onSuccess={onSuccess} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Preview Groups'));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('6 uncategorized')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('6 uncategorized'));
+    });
+
+    expect(onClose).toHaveBeenCalled();
+    // The count spans every member, so the filter targets all member ids.
+    expect(mockPush).toHaveBeenCalledWith(
+      '/transactions?payeeIds=p1,p2,p3&categoryId=uncategorized',
+    );
+  });
+
+  it('does not show an uncategorized badge when the group has none', async () => {
+    mockPreview.mockResolvedValue([
+      { ...lidlGroup, uncategorizedTransactionCount: 0 },
+    ]);
+    render(<AutoMergePayeesDialog isOpen onClose={onClose} onSuccess={onSuccess} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Preview Groups'));
+    });
+
+    await waitFor(() => expect(screen.getByDisplayValue('Lidl')).toBeInTheDocument());
+    expect(screen.queryByText(/uncategorized/)).not.toBeInTheDocument();
   });
 
   it('requests common-word filtering when the toggle is enabled', async () => {

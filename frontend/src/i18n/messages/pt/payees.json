@@ -201,7 +201,8 @@
     "ignoreCommonWordsLabel": "Ignorar palavras comuns",
     "ignoreCommonWordsHelp": "Não agrupar a partir de palavras genéricas (Restaurante, Cafe, nomes de países) nem de palavras com que começam muitos beneficiários diferentes.",
     "commonWordSensitivityLabel": "Sensibilidade a palavras comuns: {count}+ variantes",
-    "commonWordSensitivityHelp": "Uma palavra inicial é tratada como comum quando pelo menos este número de beneficiários diferentes deriva dela. Menor = filtrar de forma mais agressiva."
+    "commonWordSensitivityHelp": "Uma palavra inicial é tratada como comum quando pelo menos este número de beneficiários diferentes deriva dela. Menor = filtrar de forma mais agressiva.",
+    "viewUncategorizedTitle": "Ver {count, plural, one {# transação sem categoria} other {# transações sem categoria}} de {name}"
   },
   "deactivateUnused": {
     "title": "Desativar Beneficiários Não Utilizados",

@@ -201,7 +201,8 @@
     "ignoreCommonWordsLabel": "Ignorer les mots courants",
     "ignoreCommonWordsHelp": "Ne pas regrouper sur des mots génériques (Restaurant, Cafe, noms de pays) ou des mots par lesquels commencent de nombreux bénéficiaires différents.",
     "commonWordSensitivityLabel": "Sensibilité aux mots courants : {count}+ variantes",
-    "commonWordSensitivityHelp": "Un mot initial est considéré comme courant dès qu'au moins ce nombre de bénéficiaires différents en dérivent. Plus bas = filtrage plus agressif."
+    "commonWordSensitivityHelp": "Un mot initial est considéré comme courant dès qu'au moins ce nombre de bénéficiaires différents en dérivent. Plus bas = filtrage plus agressif.",
+    "viewUncategorizedTitle": "Afficher {count, plural, one {# transaction sans catégorie} other {# transactions sans catégorie}} pour {name}"
   },
   "deactivateUnused": {
     "title": "Désactiver les bénéficiaires inutilisés",

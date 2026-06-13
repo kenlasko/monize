@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
@@ -69,6 +70,16 @@ export function AutoMergePayeesDialog({
 }: AutoMergePayeesDialogProps) {
   const t = useTranslations('payees');
   const tc = useTranslations('common');
+  const router = useRouter();
+
+  // Jump to the Transactions page filtered to this group's uncategorized
+  // transactions across every member payee, so the user can review or fix them
+  // directly. The count covers all members, so we filter on all of their ids.
+  const viewUncategorized = (group: EditableGroup) => {
+    const payeeIds = group.members.map((m) => m.payeeId).join(',');
+    onClose();
+    router.push(`/transactions?payeeIds=${payeeIds}&categoryId=uncategorized`);
+  };
 
   const [minGroupSize, setMinGroupSize] = useState(2);
   const [similarityPercent, setSimilarityPercent] = useState(85);
@@ -502,6 +513,23 @@ export function AutoMergePayeesDialog({
                             />
                           </div>
                         </div>
+                        {group.uncategorizedTransactionCount > 0 && (
+                          <div>
+                            <button
+                              type="button"
+                              onClick={() => viewUncategorized(group)}
+                              className="inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200 hover:bg-amber-200 dark:hover:bg-amber-900/60 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500"
+                              title={t('autoMerge.viewUncategorizedTitle', {
+                                count: group.uncategorizedTransactionCount,
+                                name: group.canonicalName,
+                              })}
+                            >
+                              {t('list.uncategorizedBadge', {
+                                count: group.uncategorizedTransactionCount,
+                              })}
+                            </button>
+                          </div>
+                        )}
                         <div>
                           <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                             {t('autoMerge.defaultCategoryLabel')}

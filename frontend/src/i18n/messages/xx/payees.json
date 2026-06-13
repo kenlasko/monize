@@ -201,7 +201,8 @@
     "ignoreCommonWordsLabel": "[XX-Ignore common words-XX]",
     "ignoreCommonWordsHelp": "[XX-Don't anchor groups on generic words (Restaurant, Cafe, country names) or words that many different payees start with.-XX]",
     "commonWordSensitivityLabel": "[XX-Common-word sensitivity: {count}+ variants-XX]",
-    "commonWordSensitivityHelp": "[XX-A leading word is treated as common once at least this many different payees branch off it. Lower = filter more aggressively.-XX]"
+    "commonWordSensitivityHelp": "[XX-A leading word is treated as common once at least this many different payees branch off it. Lower = filter more aggressively.-XX]",
+    "viewUncategorizedTitle": "[XX-View {count, plural, one {# uncategorized transaction} other {# uncategorized transactions}} for {name}-XX]"
   },
   "deactivateUnused": {
     "title": "[XX-Deactivate Unused Payees-XX]",

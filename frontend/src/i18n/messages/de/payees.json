@@ -201,7 +201,8 @@
     "ignoreCommonWordsLabel": "Häufige Wörter ignorieren",
     "ignoreCommonWordsHelp": "Gruppen nicht auf generische Wörter (Restaurant, Cafe, Ländernamen) oder Wörter stützen, mit denen viele verschiedene Zahlungsempfänger beginnen.",
     "commonWordSensitivityLabel": "Empfindlichkeit für häufige Wörter: {count}+ Varianten",
-    "commonWordSensitivityHelp": "Ein führendes Wort gilt als häufig, sobald mindestens so viele verschiedene Zahlungsempfänger davon abzweigen. Niedriger = aggressiver filtern."
+    "commonWordSensitivityHelp": "Ein führendes Wort gilt als häufig, sobald mindestens so viele verschiedene Zahlungsempfänger davon abzweigen. Niedriger = aggressiver filtern.",
+    "viewUncategorizedTitle": "{count, plural, one {# nicht kategorisierte Transaktion} other {# nicht kategorisierte Transaktionen}} für {name} anzeigen"
   },
   "deactivateUnused": {
     "title": "Ungenutzte Zahlungsempfänger deaktivieren",
