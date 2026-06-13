@@ -330,6 +330,12 @@
     "addSplit": "Aggiungi suddivisione",
     "removeMinimum": "Sono richieste almeno 2 suddivisioni",
     "removeSplit": "Rimuovi suddivisione",
+    "removeAndConvert": "Rimuovi la suddivisione e converti in una transazione normale",
+    "convertConfirm": {
+      "title": "Convertire in una transazione normale?",
+      "message": "Rimuovendo questa suddivisione, l'elemento tornerà a essere una transazione normale utilizzando la categoria della suddivisione rimanente.",
+      "confirm": "Converti"
+    },
     "noUnassigned": "Nessun importo non assegnato",
     "addRemaining": "Aggiungi il rimanente a questa suddivisione",
     "total": "Totale",

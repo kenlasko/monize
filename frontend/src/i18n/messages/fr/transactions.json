@@ -330,6 +330,12 @@
     "addSplit": "Ajouter une répartition",
     "removeMinimum": "Minimum 2 répartitions requises",
     "removeSplit": "Supprimer la répartition",
+    "removeAndConvert": "Supprimer la ventilation et convertir en transaction normale",
+    "convertConfirm": {
+      "title": "Convertir en transaction normale ?",
+      "message": "La suppression de cette ventilation reconvertira l'élément en transaction normale en utilisant la catégorie de la ventilation restante.",
+      "confirm": "Convertir"
+    },
     "noUnassigned": "Aucun montant non affecté",
     "addRemaining": "Ajouter le reste à cette répartition",
     "total": "Total",

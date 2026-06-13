@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { captureSvgAsImage, captureAllChartsAsImages } from './pdf-export-charts';
+import { captureSvgAsImage, captureAllChartsAsImages, CHART_FONT_FAMILY } from './pdf-export-charts';
 
 /**
  * Creates a realistic Recharts DOM structure: .recharts-wrapper > svg.recharts-surface
@@ -149,6 +149,45 @@ describe('captureSingleSvg via captureSvgAsImage (with mocked Image)', () => {
     expect(result?.width).toBe(800);
     expect(result?.height).toBe(400);
     expect(result?.dataUrl).toBe('data:image/png;base64,test');
+  });
+
+  it('pins a sans-serif font-family on the captured SVG so chart text matches the report', async () => {
+    // Capture the element handed to the serializer to inspect the clone that
+    // gets rasterized, without depending on the base64 data-URI encoding.
+    const originalSerialize = XMLSerializer.prototype.serializeToString;
+    let serialized: Element | null = null;
+    const spy = vi
+      .spyOn(XMLSerializer.prototype, 'serializeToString')
+      .mockImplementation(function (this: XMLSerializer, node: Node) {
+        serialized = node as Element;
+        return originalSerialize.call(this, node);
+      });
+
+    try {
+      const container = document.createElement('div');
+      const wrapper = document.createElement('div');
+      wrapper.classList.add('recharts-wrapper');
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.classList.add('recharts-surface');
+      svg.setAttribute('width', '800');
+      svg.setAttribute('height', '400');
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      text.textContent = 'Axis label';
+      svg.appendChild(text);
+      wrapper.appendChild(svg);
+      container.appendChild(wrapper);
+
+      const result = await captureSvgAsImage(container);
+
+      expect(result).not.toBeNull();
+      expect(serialized).not.toBeNull();
+      expect(serialized!.getAttribute('font-family')).toBe(CHART_FONT_FAMILY);
+      // The stack must resolve to sans-serif and never the serif default.
+      expect(CHART_FONT_FAMILY.toLowerCase()).toContain('sans-serif');
+      expect(CHART_FONT_FAMILY.toLowerCase()).not.toContain('times');
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it('captureAllChartsAsImages returns multiple captured charts', async () => {
