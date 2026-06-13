@@ -51,6 +51,7 @@
       "payee": "Zahlungsempfänger",
       "category": "Kategorie",
       "description": "Beschreibung",
+      "notes": "Notizen",
       "refNumber": "Ref.-Nr.",
       "tags": "Tags",
       "amount": "Betrag",
@@ -260,6 +261,7 @@
       "totalAmount": "Gesamtbetrag",
       "referenceNumber": "Referenznummer",
       "description": "Beschreibung",
+      "notes": "Notizen",
       "status": "Status",
       "tags": "Tags",
       "fromAccount": "Von Konto",
@@ -276,6 +278,7 @@
       "selectOrCreateCategory": "Kategorie auswählen oder erstellen...",
       "referenceNumber": "Scheck-Nr., Bestätigungs-Nr....",
       "optionalDescription": "Optionale Beschreibung...",
+      "optionalNotes": "Optionale Notizen...",
       "selectTags": "Tags auswählen...",
       "createNewTag": "Neuen Tag erstellen..."
     },

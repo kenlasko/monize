@@ -135,6 +135,7 @@ export interface CsvColumnMappingConfig {
   category?: number;
   subcategory?: number;
   memo?: number;
+  notes?: number;
   referenceNumber?: number;
   tags?: number;
   reconciliationStatus?: number;
@@ -166,7 +167,8 @@ export function autoMatchCsvColumns(headers: string[]): Partial<CsvColumnMapping
     payee: ['payee', 'description', 'merchant', 'name', 'vendor', 'beneficiary', 'transaction description'],
     category: ['category', 'type', 'class', 'transaction type'],
     subcategory: ['subcategory', 'sub-category', 'sub category'],
-    memo: ['memo', 'note', 'notes', 'comment', 'comments', 'remarks', 'details', 'additional info'],
+    memo: ['memo', 'remarks', 'details'],
+    notes: ['notes', 'note', 'comment', 'comments', 'additional info'],
     referenceNumber: ['reference', 'ref', 'check', 'check number', 'check no', 'reference number', 'ref no', 'transaction id', 'confirmation', 'receipt'],
     tags: ['tag', 'tags', 'label', 'labels', 'keyword', 'keywords'],
     reconciliationStatus: ['status', 'reconciliation status', 'reconciliation', 'reconciled', 'cleared', 'state'],

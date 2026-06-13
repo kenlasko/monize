@@ -261,6 +261,7 @@ CREATE TABLE transactions (
     currency_code VARCHAR(3) NOT NULL REFERENCES currencies(code),
     exchange_rate NUMERIC(20, 10) DEFAULT 1, -- rate at transaction time
     description TEXT,
+    notes TEXT,
     reference_number VARCHAR(100), -- check number, confirmation number, etc
     is_cleared BOOLEAN DEFAULT false, -- LEGACY: replaced by status field
     is_reconciled BOOLEAN DEFAULT false, -- LEGACY: replaced by status field

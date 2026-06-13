@@ -65,6 +65,7 @@ export interface LlmTransactionRow {
   amount: number;
   accountName?: string;
   description: string | null;
+  notes?: string | null;
   status: string;
   isSplit?: boolean;
 }
@@ -1420,6 +1421,8 @@ export class TransactionsService {
         transactionUpdateData.exchangeRate = updateData.exchangeRate;
       if ("description" in updateData)
         transactionUpdateData.description = updateData.description ?? null;
+      if ("notes" in updateData)
+        transactionUpdateData.notes = updateData.notes ?? null;
       if ("referenceNumber" in updateData)
         transactionUpdateData.referenceNumber =
           updateData.referenceNumber ?? null;
@@ -1981,6 +1984,7 @@ export class TransactionsService {
       payeeName: tx.payeeName,
       categoryId: tx.categoryId,
       description: tx.description,
+      notes: tx.notes,
       referenceNumber: tx.referenceNumber,
       status: tx.status,
       isSplit: tx.isSplit,
@@ -2100,6 +2104,7 @@ export class TransactionsService {
                 amount: Number(t.amount),
                 accountName: t.account?.name,
                 description: t.description,
+                notes: t.notes,
                 status: t.status,
               },
             ];

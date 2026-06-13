@@ -107,6 +107,7 @@
     "categoryField": "Categoría",
     "subcategoryField": "Subcategoría",
     "memoField": "Memo",
+    "notesField": "Notas",
     "referenceNumberField": "Número de Referencia",
     "tagsField": "Etiquetas",
     "tagsHelp": "Las etiquetas múltiples se dividen automáticamente por el separador detectado (|, ; o ,). Los guiones y barras se conservan como parte del nombre de etiqueta.",

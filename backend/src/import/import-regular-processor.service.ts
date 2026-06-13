@@ -71,6 +71,7 @@ export class ImportRegularProcessorService {
       payeeName: resolvedPayee.payeeName,
       payeeId: resolvedPayee.payeeId,
       description: qifTx.memo,
+      notes: qifTx.notes || null,
       referenceNumber: qifTx.number,
       categoryId: effectiveCategoryId,
       status,
@@ -608,6 +609,7 @@ export class ImportRegularProcessorService {
         ? qifTx.payee || `Loan Payment from ${ctx.account.name}`
         : qifTx.payee || `Transfer from ${ctx.account.name}`,
       description: split.memo || qifTx.memo,
+      notes: qifTx.notes || null,
       status,
       currencyCode: ctx.account.currencyCode,
       isTransfer: true,
@@ -785,6 +787,7 @@ export class ImportRegularProcessorService {
       amount: linkedAmount,
       payeeName: linkedPayeeName,
       description: linkedDescription,
+      notes: qifTx.notes || null,
       referenceNumber: qifTx.number,
       status,
       currencyCode: targetAccount?.currencyCode || ctx.account.currencyCode,

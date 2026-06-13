@@ -51,6 +51,7 @@
       "payee": "Begunstigde",
       "category": "Categorie",
       "description": "Omschrijving",
+      "notes": "Notities",
       "refNumber": "Ref #",
       "tags": "Labels",
       "amount": "Bedrag",
@@ -260,6 +261,7 @@
       "totalAmount": "Totaalbedrag",
       "referenceNumber": "Referentienummer",
       "description": "Omschrijving",
+      "notes": "Notities",
       "status": "Status",
       "tags": "Labels",
       "fromAccount": "Van rekening",
@@ -276,6 +278,7 @@
       "selectOrCreateCategory": "Selecteer of maak categorie aan...",
       "referenceNumber": "Chequenummer, bevestigingsnummer...",
       "optionalDescription": "Optionele omschrijving...",
+      "optionalNotes": "Optionele notities...",
       "selectTags": "Selecteer labels...",
       "createNewTag": "Nieuw label aanmaken..."
     },

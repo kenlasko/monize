@@ -107,6 +107,7 @@
     "categoryField": "Category",
     "subcategoryField": "Subcategory",
     "memoField": "Memo",
+    "notesField": "Notes",
     "referenceNumberField": "Reference Number",
     "tagsField": "Tags",
     "tagsHelp": "Multiple tags are auto-split on the detected separator (|, ;, or ,). Dashes and slashes are preserved as part of tag names.",

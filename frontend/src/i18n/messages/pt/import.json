@@ -107,6 +107,7 @@
     "categoryField": "Categoria",
     "subcategoryField": "Subcategoria",
     "memoField": "Nota",
+    "notesField": "Notatka",
     "referenceNumberField": "Número de Referência",
     "tagsField": "Etiquetas",
     "tagsHelp": "Várias etiquetas são separadas automaticamente pelo separador detetado (|, ; ou ,). Traços e barras são preservados como parte dos nomes das etiquetas.",

@@ -411,6 +411,14 @@ export const TransactionRow = memo(function TransactionRow({
       </td>
       <td className={`${cellPadding} text-sm text-gray-500 dark:text-gray-400 hidden 2xl:table-cell`}>
         <div
+          className={`truncate max-w-[320px] ${isVoid ? 'line-through' : ''}`}
+          title={transaction.notes || undefined}
+        >
+          {transaction.notes || '-'}
+        </div>
+      </td>
+      <td className={`${cellPadding} text-sm text-gray-500 dark:text-gray-400 hidden 2xl:table-cell`}>
+        <div
           className={`truncate max-w-[160px] ${isVoid ? 'line-through' : ''}`}
           title={transaction.referenceNumber || undefined}
         >

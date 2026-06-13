@@ -77,6 +77,13 @@ export class CreateTransactionDto {
   @SanitizeHtml()
   description?: string;
 
+  @ApiPropertyOptional({ description: "Transaction notes" })
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  @SanitizeHtml()
+  notes?: string;
+
   @ApiPropertyOptional({
     description: "Reference number (e.g., cheque number)",
   })

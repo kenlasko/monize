@@ -29,6 +29,7 @@ export interface QifTransaction {
   amount: number;
   payee: string;
   memo: string;
+  notes?: string;
   number: string;
   cleared: boolean;
   reconciled: boolean;
@@ -229,6 +230,7 @@ export function parseQif(
         amount: 0,
         payee: "",
         memo: "",
+        notes: "",
         number: "",
         cleared: false,
         reconciled: false,
@@ -1117,6 +1119,7 @@ export function parseQifFull(
         amount: 0,
         payee: "",
         memo: "",
+        notes: "",
         number: "",
         cleared: false,
         reconciled: false,

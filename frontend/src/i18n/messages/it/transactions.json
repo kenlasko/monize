@@ -51,6 +51,7 @@
       "payee": "Beneficiario",
       "category": "Categoria",
       "description": "Descrizione",
+      "notes": "Note",
       "refNumber": "Rif. #",
       "tags": "Etichette",
       "amount": "Importo",
@@ -260,6 +261,7 @@
       "totalAmount": "Importo totale",
       "referenceNumber": "Numero di riferimento",
       "description": "Descrizione",
+      "notes": "Note",
       "status": "Stato",
       "tags": "Etichette",
       "fromAccount": "Conto di origine",
@@ -276,6 +278,7 @@
       "selectOrCreateCategory": "Seleziona o crea categoria...",
       "referenceNumber": "N. assegno, n. conferma...",
       "optionalDescription": "Descrizione facoltativa...",
+      "optionalNotes": "Note facoltative...",
       "selectTags": "Seleziona etichette...",
       "createNewTag": "Crea nuova etichetta..."
     },
