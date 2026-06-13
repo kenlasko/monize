@@ -330,6 +330,12 @@
     "addSplit": "Buchungsteil hinzufügen",
     "removeMinimum": "Mindestens 2 Buchungsteile erforderlich",
     "removeSplit": "Buchungsteil entfernen",
+    "removeAndConvert": "Aufteilung entfernen und in eine normale Transaktion umwandeln",
+    "convertConfirm": {
+      "title": "In eine normale Transaktion umwandeln?",
+      "message": "Wenn Sie diese Aufteilung entfernen, wird daraus wieder eine normale Transaktion mit der Kategorie der verbleibenden Aufteilung.",
+      "confirm": "Umwandeln"
+    },
     "noUnassigned": "Kein nicht zugewiesener Betrag",
     "addRemaining": "Restbetrag zu diesem Buchungsteil hinzufügen",
     "total": "Gesamt",

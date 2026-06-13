@@ -882,6 +882,152 @@ describe('SplitEditor', () => {
   });
 });
 
+describe('SplitEditor — convert to regular transaction', () => {
+  const mockOnChange = vi.fn();
+  const mockOnConvert = vi.fn();
+  const mockCategories = [
+    { id: 'cat-1', name: 'Groceries', parentId: null, isIncome: false },
+    { id: 'cat-2', name: 'Dining', parentId: null, isIncome: false },
+  ] as any[];
+  const mockAccounts = [
+    { id: 'acc-1', name: 'Chequing', isClosed: false, accountSubType: null },
+    { id: 'acc-2', name: 'Savings', isClosed: false, accountSubType: null },
+  ] as any[];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('enables the trash buttons at two category splits when onConvertToRegular is provided', () => {
+    const splits: SplitRow[] = [
+      createSplitRow({ id: 'split-1', categoryId: 'cat-1', amount: -30 }),
+      createSplitRow({ id: 'split-2', categoryId: 'cat-2', amount: -20 }),
+    ];
+
+    render(
+      <SplitEditor
+        splits={splits}
+        onChange={mockOnChange}
+        categories={mockCategories}
+        transactionAmount={-50}
+        onConvertToRegular={mockOnConvert}
+      />
+    );
+
+    const removeButtons = screen.getAllByTitle('Remove split and convert to a regular transaction');
+    expect(removeButtons.length).toBeGreaterThan(0);
+    removeButtons.forEach((btn) => expect(btn).not.toBeDisabled());
+  });
+
+  it('keeps the trash buttons disabled at two splits when no onConvertToRegular is provided', () => {
+    const splits: SplitRow[] = [
+      createSplitRow({ id: 'split-1', categoryId: 'cat-1', amount: -30 }),
+      createSplitRow({ id: 'split-2', categoryId: 'cat-2', amount: -20 }),
+    ];
+
+    render(
+      <SplitEditor
+        splits={splits}
+        onChange={mockOnChange}
+        categories={mockCategories}
+        transactionAmount={-50}
+      />
+    );
+
+    const removeButtons = screen.getAllByTitle('Minimum 2 splits required');
+    expect(removeButtons.length).toBeGreaterThan(0);
+    removeButtons.forEach((btn) => expect(btn).toBeDisabled());
+  });
+
+  it('warns and converts using the remaining split category on confirm', () => {
+    const splits: SplitRow[] = [
+      createSplitRow({ id: 'split-1', categoryId: 'cat-1', amount: -30 }),
+      createSplitRow({ id: 'split-2', categoryId: 'cat-2', amount: -20 }),
+    ];
+
+    render(
+      <SplitEditor
+        splits={splits}
+        onChange={mockOnChange}
+        categories={mockCategories}
+        transactionAmount={-50}
+        onConvertToRegular={mockOnConvert}
+      />
+    );
+
+    // Delete the first split (mobile button is first in the DOM); the remaining
+    // split is split-2 (cat-2).
+    const removeButtons = screen.getAllByTitle('Remove split and convert to a regular transaction');
+    fireEvent.click(removeButtons[0]);
+
+    // Warning dialog is shown and nothing has changed yet.
+    expect(screen.getByText('Convert to a regular transaction?')).toBeInTheDocument();
+    expect(mockOnConvert).not.toHaveBeenCalled();
+    expect(mockOnChange).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Convert' }));
+
+    expect(mockOnConvert).toHaveBeenCalledTimes(1);
+    expect(mockOnConvert).toHaveBeenCalledWith('cat-2');
+  });
+
+  it('does not convert when the warning is cancelled', () => {
+    const splits: SplitRow[] = [
+      createSplitRow({ id: 'split-1', categoryId: 'cat-1', amount: -30 }),
+      createSplitRow({ id: 'split-2', categoryId: 'cat-2', amount: -20 }),
+    ];
+
+    render(
+      <SplitEditor
+        splits={splits}
+        onChange={mockOnChange}
+        categories={mockCategories}
+        transactionAmount={-50}
+        onConvertToRegular={mockOnConvert}
+      />
+    );
+
+    const removeButtons = screen.getAllByTitle('Remove split and convert to a regular transaction');
+    fireEvent.click(removeButtons[0]);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(mockOnConvert).not.toHaveBeenCalled();
+    expect(screen.queryByText('Convert to a regular transaction?')).not.toBeInTheDocument();
+  });
+
+  it('only offers conversion when the remaining split is a category split', () => {
+    // Removing split-2 (transfer) leaves split-1 (category) -> eligible.
+    // Removing split-1 (category) leaves split-2 (transfer) -> not eligible.
+    const splits: SplitRow[] = [
+      createSplitRow({ id: 'split-1', splitType: 'category', categoryId: 'cat-1', amount: -30 }),
+      createSplitRow({ id: 'split-2', splitType: 'transfer', transferAccountId: 'acc-2', amount: -20 }),
+    ];
+
+    render(
+      <SplitEditor
+        splits={splits}
+        onChange={mockOnChange}
+        categories={mockCategories}
+        accounts={mockAccounts}
+        sourceAccountId="acc-1"
+        transactionAmount={-50}
+        onConvertToRegular={mockOnConvert}
+      />
+    );
+
+    // The category row's remove button is blocked (would leave a transfer).
+    const blocked = screen.getAllByTitle('Minimum 2 splits required');
+    expect(blocked.length).toBeGreaterThan(0);
+    blocked.forEach((btn) => expect(btn).toBeDisabled());
+
+    // The transfer row's remove button is convert-eligible.
+    const eligible = screen.getAllByTitle('Remove split and convert to a regular transaction');
+    expect(eligible.length).toBeGreaterThan(0);
+    eligible.forEach((btn) => expect(btn).not.toBeDisabled());
+  });
+});
+
 describe('createEmptySplits', () => {
   it('returns 2 splits', () => {
     const splits = createEmptySplits(-100);

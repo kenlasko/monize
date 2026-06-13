@@ -1808,6 +1808,37 @@ describe('ScheduledTransactionForm', () => {
     expect(onSuccess).toHaveBeenCalled();
   });
 
+  it('sends splits: [] when converting an existing split scheduled transaction back to regular', async () => {
+    const onSuccess = vi.fn();
+    const existingSt = {
+      id: 's1', accountId: 'acc-1', name: 'Monthly Rent', amount: -1500,
+      currencyCode: 'CAD', frequency: 'MONTHLY' as const,
+      nextDueDate: '2024-03-01', isActive: true, autoPost: false,
+      reminderDaysBefore: 3, isTransfer: false, isSplit: true,
+      splits: [
+        { id: 'sp-1', categoryId: 'cat-1', amount: -1000, memo: '', kind: 'category' as const },
+        { id: 'sp-2', categoryId: 'cat-2', amount: -500, memo: '', kind: 'category' as const },
+      ],
+    } as any;
+
+    const { container } = render(<ScheduledTransactionForm scheduledTransaction={existingSt} onSuccess={onSuccess} />);
+
+    await waitFor(() => {
+      expect(mockAccountsGetAll).toHaveBeenCalled();
+    });
+
+    // Editing a split scheduled transaction starts in split mode; switch to the
+    // Transaction tab (mirrors deleting the final split).
+    await act(async () => { fireEvent.click(screen.getByText('Transaction')); });
+
+    const submitBtn = container.querySelector('button[type="submit"]')!;
+    await act(async () => { fireEvent.click(submitBtn); });
+
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalledWith('s1', expect.objectContaining({ splits: [] }));
+    });
+  });
+
   it('shows error toast when create API fails', async () => {
     mockCreate.mockRejectedValueOnce(new Error('Server error'));
     const { container } = render(<ScheduledTransactionForm />);

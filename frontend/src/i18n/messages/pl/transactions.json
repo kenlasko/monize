@@ -330,6 +330,12 @@
     "addSplit": "Dodaj podział",
     "removeMinimum": "Wymagane są co najmniej 2 podziały",
     "removeSplit": "Usuń podział",
+    "removeAndConvert": "Usuń podział i przekształć w zwykłą transakcję",
+    "convertConfirm": {
+      "title": "Przekształcić w zwykłą transakcję?",
+      "message": "Usunięcie tego podziału przekształci pozycję z powrotem w zwykłą transakcję, używając kategorii pozostałego podziału.",
+      "confirm": "Przekształć"
+    },
     "noUnassigned": "Brak nieprzypisanej kwoty",
     "addRemaining": "Dodaj resztę do tego podziału",
     "total": "Suma",

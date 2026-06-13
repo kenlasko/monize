@@ -330,6 +330,12 @@
     "addSplit": "Adicionar Parcela",
     "removeMinimum": "São necessárias no mínimo 2 parcelas",
     "removeSplit": "Remover parcela",
+    "removeAndConvert": "Remover a divisão e converter numa transação normal",
+    "convertConfirm": {
+      "title": "Converter numa transação normal?",
+      "message": "Remover esta divisão irá convertê-la novamente numa transação normal utilizando a categoria da divisão restante.",
+      "confirm": "Converter"
+    },
     "noUnassigned": "Sem montante por atribuir",
     "addRemaining": "Adicionar o restante a esta parcela",
     "total": "Total",

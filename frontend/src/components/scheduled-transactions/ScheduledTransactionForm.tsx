@@ -561,6 +561,17 @@ export function ScheduledTransactionForm({
     }
   };
 
+  // Convert a split scheduled transaction back to a regular one, adopting the
+  // category of the split that remains after the user deletes one of the final
+  // two splits.
+  const handleConvertToRegular = (categoryId?: string) => {
+    setMode('transaction');
+    setSplits([]);
+    setTransferToAccountId('');
+    setSelectedCategoryId(categoryId || '');
+    setValue('categoryId', categoryId || '', { shouldDirty: true });
+  };
+
   const handlePayeeSearch = (query: string) => {
     if (!query || query.length < 2) {
       setPayees(allPayees);
@@ -810,7 +821,10 @@ export function ScheduledTransactionForm({
           isTransfer: false,
           transferAccountId: undefined,
           isInvestment: false,
-          splits: undefined,
+          // Editing a previously-split scheduled transaction in regular mode:
+          // send an explicit empty array so the backend clears the splits and
+          // sets isSplit=false. `undefined` would leave the splits untouched.
+          splits: scheduledTransaction?.isSplit ? [] : undefined,
         };
       }
 
@@ -1207,6 +1221,7 @@ export function ScheduledTransactionForm({
               transactionAmount={watchedAmount || 0}
               onTransactionAmountChange={handleTransactionAmountChange}
               currencyCode={watchedCurrencyCode || defaultCurrency}
+              onConvertToRegular={handleConvertToRegular}
             />
           </div>
 
