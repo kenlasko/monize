@@ -71,3 +71,4 @@ credentials/
 # Claude Code
 .claude/worktrees/
 docs/missing-requirements.md
+Sample401k.csv

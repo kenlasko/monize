@@ -195,4 +195,41 @@ export const aiApi = {
   dismissInsight: async (id: string): Promise<void> => {
     await apiClient.patch(`/ai/insights/${id}/dismiss`);
   },
+
+  parseFinancialData: async (rawText: string, hint?: string): Promise<ParsedFinancialDataResponse> => {
+    const response = await apiClient.post<ParsedFinancialDataResponse>(
+      '/ai/import/parse',
+      { rawText, hint },
+      { timeout: 120000 },
+    );
+    return response.data;
+  },
 };
+
+export interface ParsedAiTransaction {
+  date: string;
+  payee: string;
+  amount: number;
+  type: 'income' | 'expense' | 'transfer' | 'buy' | 'sell' | 'dividend' | 'reinvest' | 'fee';
+  account?: string;
+  sourceAccount?: string | null;
+  memo?: string | null;
+  security?: string | null;
+  shares?: number | null;
+  price?: number | null;
+  currency?: string | null;
+}
+
+export interface ParsedAiAccount {
+  name: string;
+  type: string;
+}
+
+export interface ParsedFinancialDataResponse {
+  transactions: ParsedAiTransaction[];
+  accounts: ParsedAiAccount[];
+  securities: string[];
+  confidence: 'high' | 'medium' | 'low';
+  notes: string;
+}
+
