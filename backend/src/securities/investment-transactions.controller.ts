@@ -160,6 +160,8 @@ export class InvestmentTransactionsController {
     @Query("limit") limit?: string,
     @Query("symbol") symbol?: string,
     @Query("action") action?: string,
+    @Query("sortBy") sortBy?: string,
+    @Query("sortOrder") sortOrder?: string,
   ) {
     const uuidRegex =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -239,6 +241,44 @@ export class InvestmentTransactionsController {
       }
     }
 
+    // Validate sortBy
+    if (sortBy !== undefined) {
+      const validSortByFields = [
+        "date",
+        "account",
+        "action",
+        "symbol",
+        "shares",
+        "price",
+        "total",
+      ];
+      if (!validSortByFields.includes(sortBy)) {
+        throw new BadRequestException(
+          tr(
+            "errors.securities.invalidSortBy",
+            `Invalid sortBy field: ${sortBy}. Must be one of: ${validSortByFields.join(", ")}`,
+            { sortBy, validSortByFields: validSortByFields.join(", ") },
+          ),
+        );
+      }
+    }
+
+    // Validate sortOrder
+    let validatedSortOrder: "ASC" | "DESC" | undefined;
+    if (sortOrder !== undefined) {
+      const upper = sortOrder.trim().toUpperCase();
+      if (upper === "ASC" || upper === "DESC") {
+        validatedSortOrder = upper as "ASC" | "DESC";
+      } else {
+        throw new BadRequestException(
+          tr(
+            "errors.securities.invalidSortOrder",
+            "sortOrder must be ASC or DESC",
+          ),
+        );
+      }
+    }
+
     return this.investmentTransactionsService.findAll(
       req.user.id,
       await this.scopeIds(req, ids),
@@ -248,6 +288,8 @@ export class InvestmentTransactionsController {
       limit ? parseInt(limit, 10) : undefined,
       symbol,
       action,
+      sortBy,
+      validatedSortOrder,
     );
   }
 

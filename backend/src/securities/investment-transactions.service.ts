@@ -1294,6 +1294,8 @@ export class InvestmentTransactionsService {
     limit?: number,
     symbol?: string,
     action?: string,
+    sortBy?: string,
+    sortOrder?: "ASC" | "DESC",
   ): Promise<PaginatedResult<InvestmentTransaction>> {
     const {
       page: pageNum,
@@ -1339,9 +1341,34 @@ export class InvestmentTransactionsService {
 
     const total = await query.getCount();
 
+    if (sortBy) {
+      const fieldMapping: Record<string, string> = {
+        date: "it.transactionDate",
+        account: "account.name",
+        action: "it.action",
+        symbol: "security.symbol",
+        shares: "it.quantity",
+        price: "it.price",
+        total: "it.totalAmount",
+      };
+      const dbField = fieldMapping[sortBy];
+      if (dbField) {
+        const order = sortOrder || "ASC";
+        query.orderBy(dbField, order);
+        if (dbField !== "it.transactionDate") {
+          query.addOrderBy("it.transactionDate", "DESC");
+        }
+        query.addOrderBy("it.createdAt", "DESC");
+        query.addOrderBy("it.id", "DESC");
+      }
+    } else {
+      query
+        .orderBy("it.transactionDate", "DESC")
+        .addOrderBy("it.createdAt", "DESC")
+        .addOrderBy("it.id", "DESC");
+    }
+
     const data = await query
-      .orderBy("it.transactionDate", "DESC")
-      .addOrderBy("it.createdAt", "DESC")
       .skip(skip)
       .take(pageSize)
       .getMany();

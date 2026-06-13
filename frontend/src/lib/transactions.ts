@@ -74,6 +74,8 @@ export interface TransactionsGetAllParams {
   amountTo?: number;
   tagIds?: string[];
   statuses?: TransactionStatus[];
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 export const transactionsApi = {
@@ -98,6 +100,8 @@ export const transactionsApi = {
       amountFrom: params?.amountFrom,
       amountTo: params?.amountTo,
       statuses: params?.statuses && params.statuses.length > 0 ? params.statuses.join(',') : undefined,
+      sortBy: params?.sortBy,
+      sortOrder: params?.sortOrder,
     };
 
     const response = await apiClient.get<PaginatedTransactions>('/transactions', {

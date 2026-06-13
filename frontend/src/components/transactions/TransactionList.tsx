@@ -53,6 +53,9 @@ interface TransactionListProps {
   categoryLabelMap?: Map<string, string>;
   budgetStatusMap?: Record<string, CategoryBudgetStatus>;
   showToolbar?: boolean;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  onSortChange?: (column: string) => void;
 }
 
 export function TransactionList({
@@ -92,6 +95,9 @@ export function TransactionList({
   categoryLabelMap,
   budgetStatusMap,
   showToolbar = true,
+  sortBy,
+  sortOrder,
+  onSortChange,
 }: TransactionListProps) {
   const t = useTranslations('transactions');
   const tc = useTranslations('common');
@@ -451,18 +457,246 @@ export function TransactionList({
                   />
                 </th>
               )}
-              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>{t('list.header.date')}</th>
-              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell`}>{t('list.header.account')}</th>
-              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>{t('list.header.payee')}</th>
-              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden min-[900px]:table-cell`}>{t('list.header.category')}</th>
-              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden 2xl:table-cell`}>{t('list.header.description')}</th>
-              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden 2xl:table-cell`}>{t('list.header.refNumber')}</th>
-              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden xl:table-cell`}>{t('list.header.tags')}</th>
-              <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>{t('list.header.amount')}</th>
+              {/* Date Header */}
+              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+                <button
+                  onClick={() => onSortChange?.('date')}
+                  className="group inline-flex items-center gap-1 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none"
+                >
+                  <span>{t('list.header.date')}</span>
+                  <span className="inline-flex w-3.5 h-3.5 items-center justify-center">
+                    {sortBy === 'date' ? (
+                      sortOrder === 'asc' ? (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )
+                    ) : (
+                      <svg className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </span>
+                </button>
+              </th>
+              {/* Account Header */}
+              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell`}>
+                <button
+                  onClick={() => onSortChange?.('account')}
+                  className="group inline-flex items-center gap-1 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none"
+                >
+                  <span>{t('list.header.account')}</span>
+                  <span className="inline-flex w-3.5 h-3.5 items-center justify-center">
+                    {sortBy === 'account' ? (
+                      sortOrder === 'asc' ? (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )
+                    ) : (
+                      <svg className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </span>
+                </button>
+              </th>
+              {/* Payee Header */}
+              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+                <button
+                  onClick={() => onSortChange?.('payee')}
+                  className="group inline-flex items-center gap-1 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none"
+                >
+                  <span>{t('list.header.payee')}</span>
+                  <span className="inline-flex w-3.5 h-3.5 items-center justify-center">
+                    {sortBy === 'payee' ? (
+                      sortOrder === 'asc' ? (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )
+                    ) : (
+                      <svg className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </span>
+                </button>
+              </th>
+              {/* Category Header */}
+              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden min-[900px]:table-cell`}>
+                <button
+                  onClick={() => onSortChange?.('category')}
+                  className="group inline-flex items-center gap-1 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none"
+                >
+                  <span>{t('list.header.category')}</span>
+                  <span className="inline-flex w-3.5 h-3.5 items-center justify-center">
+                    {sortBy === 'category' ? (
+                      sortOrder === 'asc' ? (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )
+                    ) : (
+                      <svg className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </span>
+                </button>
+              </th>
+              {/* Description Header */}
+              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden 2xl:table-cell`}>
+                <button
+                  onClick={() => onSortChange?.('description')}
+                  className="group inline-flex items-center gap-1 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none"
+                >
+                  <span>{t('list.header.description')}</span>
+                  <span className="inline-flex w-3.5 h-3.5 items-center justify-center">
+                    {sortBy === 'description' ? (
+                      sortOrder === 'asc' ? (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )
+                    ) : (
+                      <svg className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </span>
+                </button>
+              </th>
+              {/* Ref Number Header */}
+              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden 2xl:table-cell`}>
+                <button
+                  onClick={() => onSortChange?.('refNumber')}
+                  className="group inline-flex items-center gap-1 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none"
+                >
+                  <span>{t('list.header.refNumber')}</span>
+                  <span className="inline-flex w-3.5 h-3.5 items-center justify-center">
+                    {sortBy === 'refNumber' ? (
+                      sortOrder === 'asc' ? (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )
+                    ) : (
+                      <svg className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </span>
+                </button>
+              </th>
+              {/* Tags Header */}
+              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden xl:table-cell`}>
+                <button
+                  onClick={() => onSortChange?.('tags')}
+                  className="group inline-flex items-center gap-1 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none"
+                >
+                  <span>{t('list.header.tags')}</span>
+                  <span className="inline-flex w-3.5 h-3.5 items-center justify-center">
+                    {sortBy === 'tags' ? (
+                      sortOrder === 'asc' ? (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )
+                    ) : (
+                      <svg className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </span>
+                </button>
+              </th>
+              {/* Amount Header */}
+              <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+                <button
+                  onClick={() => onSortChange?.('amount')}
+                  className="group inline-flex items-center gap-1 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none ml-auto flex-row-reverse"
+                >
+                  <span>{t('list.header.amount')}</span>
+                  <span className="inline-flex w-3.5 h-3.5 items-center justify-center">
+                    {sortBy === 'amount' ? (
+                      sortOrder === 'asc' ? (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )
+                    ) : (
+                      <svg className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </span>
+                </button>
+              </th>
               {showRunningBalance && (
-                <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>{t('list.header.balance')}</th>
+                <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+                  {/* Balance cannot be sorted directly on backend (it is a client-computed running balance). We show it as non-sortable to avoid confusing results. */}
+                  <span>{t('list.header.balance')}</span>
+                </th>
               )}
-              <th className={`${headerPadding} text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden min-[1400px]:table-cell`}>{t('list.header.status')}</th>
+              {/* Status Header */}
+              <th className={`${headerPadding} text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden min-[1400px]:table-cell`}>
+                <button
+                  onClick={() => onSortChange?.('status')}
+                  className="group inline-flex items-center gap-1 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none mx-auto"
+                >
+                  <span>{t('list.header.status')}</span>
+                  <span className="inline-flex w-3.5 h-3.5 items-center justify-center">
+                    {sortBy === 'status' ? (
+                      sortOrder === 'asc' ? (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )
+                    ) : (
+                      <svg className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </span>
+                </button>
+              </th>
               <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden min-[480px]:table-cell sticky right-0 bg-gray-50 dark:bg-gray-800`}>{t('list.header.actions')}</th>
             </tr>
           </thead>

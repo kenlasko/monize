@@ -210,6 +210,8 @@ function TransactionsContent() {
           amountFrom: parsedAmountFrom,
           amountTo: parsedAmountTo,
           statuses: filters.filterStatuses.length > 0 ? filters.filterStatuses : undefined,
+          sortBy: filters.sortBy,
+          sortOrder: filters.sortOrder,
         }),
         chartPromise,
       ]);
@@ -247,7 +249,7 @@ function TransactionsContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [filters.filterAccountIds, filters.filterAccountStatus, filters.filteredAccounts, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterTagIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch, filters.filterAmountFrom, filters.filterAmountTo, filters.filterStatuses, t]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filters.filterAccountIds, filters.filterAccountStatus, filters.filteredAccounts, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterTagIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch, filters.filterAmountFrom, filters.filterAmountTo, filters.filterStatuses, filters.sortBy, filters.sortOrder, t]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadData = useCallback(async (page: number = filters.currentPage) => {
     await loadTransactions(page);
@@ -301,6 +303,8 @@ function TransactionsContent() {
         amountFrom: filters.filterAmountFrom,
         amountTo: filters.filterAmountTo,
         statuses: filters.filterStatuses,
+        sortBy: filters.sortBy,
+        sortOrder: filters.sortOrder,
       }, wasFilterChange);
     }
 
@@ -312,7 +316,7 @@ function TransactionsContent() {
     } else {
       loadTransactions(page);
     }
-  }, [filters.currentPage, filters.filterAccountIds, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterTagIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch, filters.filterAmountFrom, filters.filterAmountTo, filters.filterStatuses, filters.updateUrl, loadTransactions, filters.filtersInitialized, undoRedoTick]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filters.currentPage, filters.filterAccountIds, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterTagIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch, filters.filterAmountFrom, filters.filterAmountTo, filters.filterStatuses, filters.sortBy, filters.sortOrder, filters.updateUrl, loadTransactions, filters.filtersInitialized, undoRedoTick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Patch popstate handler to skip when modals open
   useEffect(() => {
@@ -1016,6 +1020,9 @@ function TransactionsContent() {
               categoryColorMap={filters.categoryColorMap}
               categoryLabelMap={filters.categoryLabelMap}
               budgetStatusMap={budgetStatusMap}
+              sortBy={filters.sortBy}
+              sortOrder={filters.sortOrder}
+              onSortChange={filters.handleSort}
             />
           )}
         </div>
