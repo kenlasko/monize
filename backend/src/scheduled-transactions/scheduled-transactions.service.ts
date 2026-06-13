@@ -276,6 +276,16 @@ export class ScheduledTransactionsService {
     userId: string,
     createDto: CreateScheduledTransactionDto,
   ): Promise<ScheduledTransaction> {
+    if (createDto.paycheckMetadata) {
+      const calc = this.calculatePaycheckSplitsAndAmount(createDto.paycheckMetadata);
+      createDto.amount = calc.amount;
+      createDto.splits = calc.splits;
+      createDto.name = `Paycheck: ${createDto.paycheckMetadata.companyName || "Employer"}`;
+      createDto.isTransfer = false;
+      createDto.isInvestment = false;
+      createDto.payeeName = createDto.paycheckMetadata.companyName || undefined;
+    }
+
     if (createDto.isInvestment && createDto.isTransfer) {
       throw new BadRequestException(
         tr(
@@ -375,6 +385,7 @@ export class ScheduledTransactionsService {
         isInvestment && transactionData.investmentExchangeRate !== undefined
           ? transactionData.investmentExchangeRate
           : null,
+      paycheckMetadata: createDto.paycheckMetadata || null,
     });
 
     const saved =
@@ -493,6 +504,88 @@ export class ScheduledTransactionsService {
       },
     });
   }
+
+  private calculatePaycheckSplitsAndAmount(metadata: any): { amount: number; splits: any[] } {
+    const earnings = metadata.earnings || [];
+    const preTax = metadata.preTaxDeductions || [];
+    const taxes = metadata.taxes || [];
+    const afterTax = metadata.afterTaxDeductions || [];
+    const deposits = metadata.depositAccounts || [];
+
+    const totalEarnings = earnings.reduce((sum: number, e: any) => sum + Number(e.amount || 0), 0);
+    const totalPreTax = preTax.reduce((sum: number, d: any) => sum + Number(d.amount || 0), 0);
+    const totalTaxes = taxes.reduce((sum: number, t: any) => sum + Number(t.amount || 0), 0);
+    const totalAfterTax = afterTax.reduce((sum: number, d: any) => sum + Number(d.amount || 0), 0);
+
+    const totalDeductions = totalPreTax + totalTaxes + totalAfterTax;
+    const netPay = totalEarnings - totalDeductions;
+
+    const splits: any[] = [];
+
+    // Earnings
+    for (const e of earnings) {
+      splits.push({
+        categoryId: e.categoryId,
+        amount: Number(e.amount || 0),
+        memo: e.name,
+      });
+    }
+
+    // Pre-Tax Deductions
+    for (const d of preTax) {
+      splits.push({
+        categoryId: d.transferAccountId ? undefined : d.categoryId,
+        transferAccountId: d.transferAccountId || undefined,
+        amount: -Number(d.amount || 0),
+        memo: d.name,
+      });
+    }
+
+    // Taxes
+    for (const t of taxes) {
+      splits.push({
+        categoryId: t.categoryId,
+        amount: -Number(t.amount || 0),
+        memo: t.name,
+      });
+    }
+
+    // After-Tax Deductions
+    for (const d of afterTax) {
+      splits.push({
+        categoryId: d.transferAccountId ? undefined : d.categoryId,
+        transferAccountId: d.transferAccountId || undefined,
+        amount: -Number(d.amount || 0),
+        memo: d.name,
+      });
+    }
+
+    // Deposit splits (secondary accounts)
+    let secondaryDepositsTotal = 0;
+    for (const dep of deposits) {
+      let depAmount = 0;
+      if (dep.amount !== undefined && dep.amount !== null) {
+        depAmount = Number(dep.amount);
+      } else if (dep.percent !== undefined && dep.percent !== null) {
+        depAmount = (Number(dep.percent) / 100) * netPay;
+      }
+      secondaryDepositsTotal += depAmount;
+
+      splits.push({
+        transferAccountId: dep.accountId,
+        amount: -depAmount,
+        memo: dep.memo || 'Paycheck Deposit',
+      });
+    }
+
+    const primaryAmount = netPay - secondaryDepositsTotal;
+
+    return {
+      amount: primaryAmount,
+      splits,
+    };
+  }
+
 
   private async createSplits(
     scheduledTransactionId: string,
@@ -841,6 +934,16 @@ export class ScheduledTransactionsService {
     id: string,
     updateDto: UpdateScheduledTransactionDto,
   ): Promise<ScheduledTransaction> {
+    if (updateDto.paycheckMetadata) {
+      const calc = this.calculatePaycheckSplitsAndAmount(updateDto.paycheckMetadata);
+      updateDto.amount = calc.amount;
+      updateDto.splits = calc.splits;
+      updateDto.name = `Paycheck: ${updateDto.paycheckMetadata.companyName || "Employer"}`;
+      updateDto.isTransfer = false;
+      updateDto.isInvestment = false;
+      updateDto.payeeName = updateDto.paycheckMetadata.companyName || undefined;
+    }
+
     const scheduled = await this.findOne(userId, id);
     const beforeData = { ...scheduled };
 
@@ -963,6 +1066,9 @@ export class ScheduledTransactionsService {
       fieldsToUpdate.reminderDaysBefore = updateData.reminderDaysBefore;
     if (updateData.tagIds !== undefined)
       fieldsToUpdate.tagIds = updateData.tagIds;
+    if (updateDto.paycheckMetadata !== undefined) {
+      fieldsToUpdate.paycheckMetadata = updateDto.paycheckMetadata || null;
+    }
 
     if (isTransfer !== undefined) {
       fieldsToUpdate.isTransfer = isTransfer;

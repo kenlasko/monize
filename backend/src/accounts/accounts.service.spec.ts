@@ -2813,6 +2813,50 @@ describe("AccountsService", () => {
       await service.getDailyBalances("user-1", "2024-01-01", "2024-12-31", []);
       expect(ds.query).toHaveBeenCalled();
     });
+
+    it("dynamically resolves 1970-01-01 to earliest transaction or account date", async () => {
+      const ds = service["dataSource"] as unknown as { query: jest.Mock };
+      ds.query = jest
+        .fn()
+        // minTxResult
+        .mockResolvedValueOnce([{ min_date: "2023-05-15" }])
+        // minAcctResult
+        .mockResolvedValueOnce([{ min_date: "2023-05-10" }])
+        // main rows query
+        .mockResolvedValueOnce([]);
+      await service.getDailyBalances("user-1", "1970-01-01", "2024-12-31", ["a1"]);
+
+      expect(ds.query).toHaveBeenCalledTimes(3);
+      expect(ds.query.mock.calls[2][1]).toEqual(["user-1", ["a1"], "2023-05-10", "2024-12-31"]);
+    });
+
+    it("applies weekly filter clause when optimize is true and range is > 1 year", async () => {
+      const ds = service["dataSource"] as unknown as { query: jest.Mock };
+      ds.query = jest.fn().mockResolvedValue([]);
+      await service.getDailyBalances("user-1", "2023-01-01", "2024-06-01", ["a1"], true);
+      expect(ds.query).toHaveBeenCalledTimes(1);
+      const sql = ds.query.mock.calls[0][0];
+      expect(sql).toContain("WHERE EXTRACT(ISODOW FROM date) = 1 OR date = $4::DATE");
+    });
+
+    it("applies monthly filter clause when optimize is true and range is > 3 years", async () => {
+      const ds = service["dataSource"] as unknown as { query: jest.Mock };
+      ds.query = jest.fn().mockResolvedValue([]);
+      await service.getDailyBalances("user-1", "2020-01-01", "2024-06-01", ["a1"], true);
+      expect(ds.query).toHaveBeenCalledTimes(1);
+      const sql = ds.query.mock.calls[0][0];
+      expect(sql).toContain("WHERE EXTRACT(DAY FROM date) = 1 OR date = $4::DATE");
+    });
+
+    it("does not apply filter clause when optimize is false", async () => {
+      const ds = service["dataSource"] as unknown as { query: jest.Mock };
+      ds.query = jest.fn().mockResolvedValue([]);
+      await service.getDailyBalances("user-1", "2020-01-01", "2024-06-01", ["a1"], false);
+      expect(ds.query).toHaveBeenCalledTimes(1);
+      const sql = ds.query.mock.calls[0][0];
+      expect(sql).not.toContain("WHERE EXTRACT(DAY FROM date) = 1");
+      expect(sql).not.toContain("WHERE EXTRACT(ISODOW FROM date) = 1");
+    });
   });
 
   describe("applyDueTransactionBalances cron", () => {

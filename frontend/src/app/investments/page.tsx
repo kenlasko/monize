@@ -292,6 +292,9 @@ function InvestmentsContent() {
                   filters={data.transactionFilters}
                   onFiltersChange={data.handleFiltersChange}
                   availableSymbols={[...new Set(data.portfolioSummary?.holdings.map(h => h.symbol) || [])].sort()}
+                  sortBy={data.sortBy}
+                  sortOrder={data.sortOrder}
+                  onSortChange={data.handleSortChange}
                   viewToggle={
                     <div className="inline-flex rounded-md bg-gray-100 dark:bg-gray-700 p-0.5">
                       <button
@@ -424,6 +427,9 @@ function InvestmentsContent() {
                   startingBalance={data.cashAccountIds.length === 1 ? (data.cashStartingBalance ?? 0) : undefined}
                   isSingleAccountView={data.cashAccountIds.length === 1}
                   showToolbar={false}
+                  sortBy={data.cashSortBy}
+                  sortOrder={data.cashSortOrder}
+                  onSortChange={data.handleCashSortChange}
                 />
               )}
             </div>

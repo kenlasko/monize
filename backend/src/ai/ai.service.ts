@@ -32,12 +32,84 @@ import {
   validateUrlBasicSafety,
 } from "./validators/safe-url.validator";
 import { tr } from "../i18n/translate";
+import type { ParsedFinancialDataResponse } from "./dto/ai-import.dto";
+import { UserPreference } from "../users/entities/user-preference.entity";
+import { AccountType } from "../accounts/entities/account.entity";
 import {
   SELF_HOSTED_PROVIDERS,
   AiProviderType,
 } from "./entities/ai-provider-config.entity";
 
 const DEFAULT_MAX_AI_PROVIDERS_PER_USER = 10;
+
+export const DEFAULT_SYSTEM_PROMPT = `You are a financial data parser. The user will paste raw financial data in any format (CSV, spreadsheet, bank statement, brokerage export, etc.).
+
+Your task is to extract all transactions and return ONLY a valid JSON object — no markdown, no explanation, just the JSON.
+
+Available Columns & Mapping Rules:
+- "date": Map from any transaction date column. Format must be YYYY-MM-DD. Never output "null", "undefined", or invalid date strings. If a date is missing, infer it from neighboring rows or statement headers.
+- "payee": Map from description, merchant, payee, action detail, or transaction name columns.
+- "amount": Map from the transaction's specific value (amount, deposit, withdrawal, or cash flow columns). CRITICAL: Do NOT map from running balance, ending balance, or "total" balance columns if individual transaction amount/deposit/withdrawal columns are present. Inflows should be positive numbers, outflows should be negative.
+- "type": Determine based on the transaction type/action:
+  - "income": Salaries, deposits, interest income, credits.
+  - "expense": Purchases, withdrawals, debits.
+  - "transfer": Internal movements (e.g. XIn/XOut, transfer to/from other accounts, or category in brackets like [AccountName]).
+  - "buy": Purchase of shares/securities (e.g. Bought, Buy).
+  - "sell": Sale of shares/securities (e.g. Sold, Sell).
+  - "dividend": Dividend distributions (e.g. Div, DivX).
+  - "reinvest": Reinvested dividends/earnings (e.g. ReinvDiv).
+  - "fee": Bank fees, service fees, commissions (e.g. Fee, Commission).
+- "account": Map from account name, number, or identifier column. Strip brackets if present (e.g., [Classic XX1234] -> "Classic XX1234").
+- "sourceAccount": Map from the secondary account involved in a transfer. If the Category column contains a bracketed account name like [AccountName], map it here.
+- "memo": Map from memo, comment, or secondary description columns.
+- "category": Map from category, category/tag, subcategory, or transaction classification columns. If it references an account in brackets like [AccountName], map it as a transfer (set type to "transfer" and populate sourceAccount instead of category).
+- "notes": Map from notes, annotations, or detailed descriptions/comments columns.
+- "security": Map from security name, ticker, or symbol column for investment activities (buy, sell, dividend, reinvest).
+- "shares": Map from shares, quantity, or number of units column (for buy/sell/reinvest).
+- "price": Map from share price, unit price, or cost per share column (for buy/sell/reinvest).
+- "currency": Map from currency columns (e.g. USD, CAD, EUR) if specified.
+
+Rules:
+- Group continuation rows (rows with no date that reference an account in brackets like [AccountName]) with their parent transaction as a transfer
+- Action codes: XIn/XOut = transfer, Bought/Buy = buy, Sold/Sell = sell, Div/DivX = dividend, ReinvDiv = reinvest, Int/IntInc = interest income
+- Dates must be in YYYY-MM-DD format. Ensure every transaction has a valid date. Never output "null", "undefined", or invalid date strings. If a date is missing, infer the date from neighboring transactions or the statement header.
+- Amounts: positive = money coming in to the account, negative = money going out
+- For investment Buy: amount should be negative (cash outflow), for Sell: amount positive
+- Extract security name from transaction description for Bought/Sold rows
+- Strip brackets from account references: [Classic XX1234] -> "Classic XX1234"
+
+Validation & Safety Instructions:
+1. Strict Dates: Every transaction MUST have a valid date in 'YYYY-MM-DD' format. Do NOT leave date empty, and do NOT use 'null', 'undefined', or placeholder values. If the raw data does not specify a year, assume the current calendar year or infer it from the context/statement metadata.
+2. Account Type Enforcement: Every account listed in the "accounts" array MUST map to exactly one of the following 22 supported types:
+   CHEQUING, SAVINGS, CREDIT_CARD, LOAN, MORTGAGE, INVESTMENT, CASH, LINE_OF_CREDIT, ASSET, OTHER, HSA, FSA, DCFSA, 401K, 403B, TRADITIONAL_IRA, ROTH_IRA, 529_PLAN, HELOC, PROPERTY, VEHICLE, LIABILITY.
+   Do not use generic types like 'checking' (use 'CHEQUING') or invent other types. If an account type does not fit, use 'OTHER'.
+
+Return exactly this JSON schema:
+{
+  "transactions": [
+    {
+      "date": "YYYY-MM-DD",
+      "payee": "string",
+      "amount": number,
+      "type": "income|expense|transfer|buy|sell|dividend|reinvest|fee",
+      "account": "string or null",
+      "sourceAccount": "string or null",
+      "memo": "string or null",
+      "notes": "string or null",
+      "category": "string or null",
+      "security": "string or null",
+      "shares": number or null,
+      "price": number or null,
+      "currency": "string or null"
+    }
+  ],
+  "accounts": [
+    { "name": "string", "type": "CHEQUING|SAVINGS|CREDIT_CARD|LOAN|MORTGAGE|INVESTMENT|CASH|LINE_OF_CREDIT|ASSET|OTHER|HSA|FSA|DCFSA|401K|403B|TRADITIONAL_IRA|ROTH_IRA|529_PLAN|HELOC|PROPERTY|VEHICLE|LIABILITY" }
+  ],
+  "securities": ["string"],
+  "confidence": "high|medium|low",
+  "notes": "string explaining what you interpreted and any assumptions made"
+}`;
 
 @Injectable()
 export class AiService {
@@ -151,13 +223,34 @@ export class AiService {
       );
     }
 
+    let priority = dto.priority;
+    if (priority === undefined || priority === null) {
+      const maxConfig = await this.configRepository.findOne({
+        where: { userId, provider: dto.provider },
+        order: { priority: "DESC" },
+      });
+      priority = maxConfig ? maxConfig.priority + 1 : 0;
+    } else {
+      const existing = await this.configRepository.findOne({
+        where: { userId, provider: dto.provider, priority },
+      });
+      if (existing) {
+        throw new BadRequestException(
+          tr(
+            "errors.ai.duplicatePriority",
+            "An AI provider configuration with the same provider and priority already exists.",
+          ),
+        );
+      }
+    }
+
     const config = this.configRepository.create({
       userId,
       provider: dto.provider,
       displayName: dto.displayName || null,
       model: dto.model || null,
       baseUrl: dto.baseUrl || null,
-      priority: dto.priority ?? 0,
+      priority,
       config: dto.config || {},
       inputCostPer1M: dto.inputCostPer1M ?? null,
       outputCostPer1M: dto.outputCostPer1M ?? null,
@@ -198,7 +291,20 @@ export class AiService {
       config.displayName = dto.displayName || null;
     if (dto.model !== undefined) config.model = dto.model || null;
     if (dto.baseUrl !== undefined) config.baseUrl = dto.baseUrl || null;
-    if (dto.priority !== undefined) config.priority = dto.priority;
+    if (dto.priority !== undefined && dto.priority !== config.priority) {
+      const existing = await this.configRepository.findOne({
+        where: { userId, provider: config.provider, priority: dto.priority },
+      });
+      if (existing && existing.id !== config.id) {
+        throw new BadRequestException(
+          tr(
+            "errors.ai.duplicatePriority",
+            "An AI provider configuration with the same provider and priority already exists.",
+          ),
+        );
+      }
+      config.priority = dto.priority;
+    }
     if (dto.isActive !== undefined) config.isActive = dto.isActive;
     if (dto.config !== undefined) config.config = dto.config;
     if (dto.inputCostPer1M !== undefined)
@@ -273,6 +379,14 @@ export class AiService {
     transient.displayName = null;
 
     if (dto.apiKey) {
+      if (!this.encryptionService.isConfigured()) {
+        throw new BadRequestException(
+          tr(
+            "errors.ai.encryptionKeyNotConfigured",
+            "AI_ENCRYPTION_KEY is not configured. Cannot store API keys securely.",
+          ),
+        );
+      }
       transient.apiKeyEnc = this.encryptionService.encrypt(dto.apiKey);
     } else if (dto.configId) {
       // Load the stored key so the user doesn't have to retype it just
@@ -431,6 +545,108 @@ export class AiService {
     return this.usageService.getUsageSummary(userId, days);
   }
 
+  /**
+   * Parse raw pasted financial data (CSV, bank statement, any format) into
+   * structured transactions using the configured AI provider.
+   */
+  async parseFinancialData(
+    userId: string,
+    rawText: string,
+    hint?: string,
+  ): Promise<ParsedFinancialDataResponse> {
+    // Fetch user preferences
+    const preferences = await this.configRepository.manager.findOne(UserPreference, {
+      where: { userId },
+    });
+
+    let systemPrompt = DEFAULT_SYSTEM_PROMPT;
+    if (preferences?.aiImportInstructions) {
+      systemPrompt += `\n\nUser Custom Rules/Instructions:\n${preferences.aiImportInstructions}`;
+    }
+
+    const userMessage = hint
+      ? `Data source hint: ${hint}\n\nRaw data:\n${rawText}`
+      : `Raw data:\n${rawText}`;
+
+    const response = await this.complete(
+      userId,
+      {
+        systemPrompt,
+        messages: [
+          { role: 'user', content: userMessage },
+        ],
+        maxTokens: 8000,
+        temperature: 0.1, // Low temperature for deterministic parsing
+      },
+      'ai-import',
+    );
+
+    // Extract and parse the JSON from the AI response
+    let rawContent = response.content.trim();
+    // Strip markdown code fences if present
+    rawContent = rawContent.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '');
+
+    let parsed: ParsedFinancialDataResponse;
+    try {
+      parsed = JSON.parse(rawContent) as ParsedFinancialDataResponse;
+    } catch {
+      this.logger.warn(`AI returned non-JSON for financial parse: ${rawContent.substring(0, 200)}`);
+      throw new BadRequestException(
+        tr(
+          'errors.ai.importParseFailed',
+          'The AI could not parse the financial data into a structured format. Please check your data and try again.',
+        ),
+      );
+    }
+
+    // Validate and sanitize the response
+    if (!Array.isArray(parsed.transactions)) {
+      parsed.transactions = [];
+    } else {
+      for (const tx of parsed.transactions) {
+        // Sanitize date format: Ensure YYYY-MM-DD
+        if (tx.date && typeof tx.date === 'string') {
+          const match = tx.date.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+          if (match) {
+            const [, y, m, d] = match;
+            tx.date = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+          }
+        }
+        if (tx.date === 'null' || tx.date === 'undefined' || !tx.date) {
+          tx.date = new Date().toISOString().split('T')[0];
+        }
+      }
+    }
+    if (!Array.isArray(parsed.accounts)) {
+      parsed.accounts = [];
+    } else {
+      // Backend coercion and validation for 22 account types
+      const validTypes = new Set(Object.values(AccountType));
+      for (const acc of parsed.accounts) {
+        if (!acc.type) {
+          acc.type = AccountType.OTHER;
+          continue;
+        }
+        let coercedType = acc.type.toUpperCase().replace(/\s+/g, '_');
+        if (coercedType === 'CHECKING') {
+          coercedType = 'CHEQUING';
+        }
+        if (validTypes.has(coercedType as AccountType)) {
+          acc.type = coercedType as AccountType;
+        } else {
+          acc.type = AccountType.OTHER;
+        }
+      }
+    }
+    if (!Array.isArray(parsed.securities)) {
+      parsed.securities = [];
+    }
+    parsed.confidence = parsed.confidence || 'medium';
+    parsed.notes = parsed.notes || '';
+
+    return parsed;
+  }
+
   async getStatus(userId: string): Promise<AiStatusResponse> {
     const configs = await this.configRepository.find({
       where: { userId, isActive: true },
@@ -446,6 +662,7 @@ export class AiService {
       hasSystemDefault,
       systemDefaultProvider: hasSystemDefault ? defaultConfig.provider : null,
       systemDefaultModel: hasSystemDefault ? defaultConfig.model : null,
+      defaultSystemPrompt: DEFAULT_SYSTEM_PROMPT,
     };
   }
 

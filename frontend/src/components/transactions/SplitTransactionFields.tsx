@@ -157,8 +157,8 @@ export function SplitTransactionFields({
         />
       </div>
 
-      {/* Row 3: Reference Number and Description */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Row 3: Reference Number, Description and Notes */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Input
           label={t('form.fields.referenceNumber')}
           type="text"
@@ -172,6 +172,13 @@ export function SplitTransactionFields({
           placeholder={t('form.placeholders.optionalDescription')}
           error={errors.description?.message as string | undefined}
           {...register('description')}
+        />
+        <Input
+          label={t('form.fields.notes')}
+          type="text"
+          placeholder={t('form.placeholders.optionalNotes')}
+          error={errors.notes?.message as string | undefined}
+          {...register('notes')}
         />
       </div>
     </div>

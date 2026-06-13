@@ -230,10 +230,19 @@ describe('autoMatchCsvColumns', () => {
   });
 
   it('does not double-assign the same column', () => {
-    // "Note" matches memo; each column used only once
+    // "Note" matches notes; each column used only once
     const result = autoMatchCsvColumns(['Date', 'Note', 'Notes']);
     expect(result.date).toBe(0);
-    expect(result.memo).toBe(1);
+    expect(result.notes).toBe(1);
+  });
+
+  it('matches both Memo and Notes columns if both are present', () => {
+    const result = autoMatchCsvColumns(['Date', 'Amount', 'Payee', 'Memo', 'Notes']);
+    expect(result.date).toBe(0);
+    expect(result.amount).toBe(1);
+    expect(result.payee).toBe(2);
+    expect(result.memo).toBe(3);
+    expect(result.notes).toBe(4);
   });
 
   it('auto-matches tags and reconciliation status columns', () => {

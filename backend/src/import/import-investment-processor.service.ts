@@ -138,6 +138,7 @@ export class ImportInvestmentProcessorService {
       price,
       totalAmount,
       securityId,
+      qifTx,
     );
 
     // Update holdings
@@ -309,6 +310,7 @@ export class ImportInvestmentProcessorService {
       amount: cashAmount,
       payeeName: qifTx.payee || null,
       description: qifTx.memo || null,
+      notes: qifTx.notes || null,
       status,
       currencyCode: cashCurrencyCode,
       isTransfer: !!transferAccountId,
@@ -330,6 +332,7 @@ export class ImportInvestmentProcessorService {
         amount: linkedAmount,
         payeeName: qifTx.payee || `Transfer from ${ctx.account.name}`,
         description: qifTx.memo || null,
+        notes: qifTx.notes || null,
         status,
         currencyCode: targetAccount?.currencyCode || cashCurrencyCode,
         isTransfer: true,
@@ -358,6 +361,7 @@ export class ImportInvestmentProcessorService {
     price: number,
     totalAmount: number,
     securityId: string | null,
+    qifTx?: any,
   ): Promise<void> {
     let cashAccountId = ctx.accountId;
     let cashAccountCurrency = ctx.account.currencyCode;
@@ -434,6 +438,7 @@ export class ImportInvestmentProcessorService {
     cashTx.payeeName = payeeName;
     cashTx.payeeId = null;
     cashTx.description = investmentTx.description;
+    cashTx.notes = qifTx?.notes || null;
     cashTx.status = TransactionStatus.CLEARED;
     cashTx.isTransfer = isCrossAccountTransfer;
 
@@ -452,6 +457,7 @@ export class ImportInvestmentProcessorService {
       brokerageTx.payeeName = payeeName;
       brokerageTx.payeeId = null;
       brokerageTx.description = investmentTx.description;
+      brokerageTx.notes = qifTx?.notes || null;
       brokerageTx.status = TransactionStatus.CLEARED;
       brokerageTx.isTransfer = true;
       brokerageTx.linkedTransactionId = savedCashTx.id;

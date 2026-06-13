@@ -121,7 +121,19 @@
     "CASH": "Contanti",
     "LINE_OF_CREDIT": "Linea di credito",
     "ASSET": "Attività",
-    "OTHER": "Altro"
+    "OTHER": "Altro",
+    "HSA": "HSA",
+    "FSA": "FSA",
+    "DCFSA": "DCFSA",
+    "401K": "401(k)",
+    "403B": "403(b)",
+    "TRADITIONAL_IRA": "Traditional IRA",
+    "ROTH_IRA": "Roth IRA",
+    "529_PLAN": "529 Plan",
+    "HELOC": "HELOC",
+    "PROPERTY": "Property",
+    "VEHICLE": "Vehicle",
+    "LIABILITY": "Other Liability"
   },
   "accountFilter": {
     "allAccounts": "Tutti i conti",
@@ -140,10 +152,47 @@
     "length": "Il codice deve essere esattamente di 6 cifre",
     "digits": "Il codice deve essere di 6 cifre"
   },
-  "monthsShort": ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"],
-  "weekdaysShort": ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"],
-  "weekdaysMin": ["Do", "Lu", "Ma", "Me", "Gi", "Ve", "Sa"],
-  "weekdaysNarrow": ["D", "L", "M", "M", "G", "V", "S"],
+  "monthsShort": [
+    "Gen",
+    "Feb",
+    "Mar",
+    "Apr",
+    "Mag",
+    "Giu",
+    "Lug",
+    "Ago",
+    "Set",
+    "Ott",
+    "Nov",
+    "Dic"
+  ],
+  "weekdaysShort": [
+    "Dom",
+    "Lun",
+    "Mar",
+    "Mer",
+    "Gio",
+    "Ven",
+    "Sab"
+  ],
+  "weekdaysMin": [
+    "Do",
+    "Lu",
+    "Ma",
+    "Me",
+    "Gi",
+    "Ve",
+    "Sa"
+  ],
+  "weekdaysNarrow": [
+    "D",
+    "L",
+    "M",
+    "M",
+    "G",
+    "V",
+    "S"
+  ],
   "dateFormat": {
     "browserAuto": "Usa le impostazioni del browser (rilevamento automatico)",
     "custom": "Personalizzato..."

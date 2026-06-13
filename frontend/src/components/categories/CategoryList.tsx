@@ -98,12 +98,24 @@ const CategoryRow = memo(function CategoryRow({
         {category.transactionCount ?? 0}
       </td>
       {density === 'normal' && (
-        <td className={`${cellPadding}`}>
-          <div className="text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
+        <td className={`${cellPadding} hidden sm:table-cell`}>
+          <div className="text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate" title={category.description || undefined}>
             {category.description || '-'}
           </div>
         </td>
       )}
+      <td className={`${cellPadding} hidden md:table-cell`}>
+        {category.isTaxRelated ? (
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-900/50">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+            {category.taxLineItem || '-'}
+          </span>
+        ) : (
+          <span className="text-sm text-gray-400 dark:text-gray-600">-</span>
+        )}
+      </td>
       <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium sticky right-0 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800`}>
         <Button
           variant="ghost"
@@ -315,10 +327,13 @@ export function CategoryList({
                 {t('list.colCount')}<SortIcon field="count" sortField={sortField} sortDirection={sortDirection} />
               </th>
               {density === 'normal' && (
-                <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+                <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell`}>
                   {t('list.colDescription')}
                 </th>
               )}
+              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell`}>
+                {t('list.colTaxLine')}
+              </th>
               <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider sticky right-0 bg-gray-50 dark:bg-gray-800`}>
                 {t('list.colActions')}
               </th>

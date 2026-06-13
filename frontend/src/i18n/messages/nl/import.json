@@ -107,6 +107,7 @@
     "categoryField": "Categorie",
     "subcategoryField": "Subcategorie",
     "memoField": "Memo",
+    "notesField": "Notities",
     "referenceNumberField": "Referentienummer",
     "tagsField": "Labels",
     "tagsHelp": "Meerdere labels worden automatisch gesplitst op het gedetecteerde scheidingsteken (|, ;, of ,). Koppeltekens en slashes blijven behouden als onderdeel van labelnamen.",

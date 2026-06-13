@@ -107,6 +107,7 @@
     "categoryField": "Catégorie",
     "subcategoryField": "Sous-catégorie",
     "memoField": "Mémo",
+    "notesField": "Notes",
     "referenceNumberField": "Numéro de référence",
     "tagsField": "Étiquettes",
     "tagsHelp": "Les étiquettes multiples sont automatiquement séparées selon le séparateur détecté (|, ; ou ,). Les tirets et barres obliques sont conservés dans les noms d'étiquettes.",

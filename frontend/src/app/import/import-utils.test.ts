@@ -321,10 +321,22 @@ describe('ACCOUNT_TYPE_OPTIONS', () => {
     expect(values).toContain('CASH');
     expect(values).toContain('ASSET');
     expect(values).toContain('OTHER');
+    expect(values).toContain('HSA');
+    expect(values).toContain('FSA');
+    expect(values).toContain('DCFSA');
+    expect(values).toContain('401K');
+    expect(values).toContain('403B');
+    expect(values).toContain('TRADITIONAL_IRA');
+    expect(values).toContain('ROTH_IRA');
+    expect(values).toContain('529_PLAN');
+    expect(values).toContain('HELOC');
+    expect(values).toContain('PROPERTY');
+    expect(values).toContain('VEHICLE');
+    expect(values).toContain('LIABILITY');
   });
 
-  it('has 10 account type options', () => {
-    expect(ACCOUNT_TYPE_OPTIONS).toHaveLength(10);
+  it('has 22 account type options', () => {
+    expect(ACCOUNT_TYPE_OPTIONS).toHaveLength(22);
   });
 
   it('has correct labels for each type', () => {
@@ -339,6 +351,18 @@ describe('ACCOUNT_TYPE_OPTIONS', () => {
     expect(map['CASH']).toBe('Cash');
     expect(map['ASSET']).toBe('Asset');
     expect(map['OTHER']).toBe('Other');
+    expect(map['HSA']).toBe('HSA');
+    expect(map['FSA']).toBe('FSA');
+    expect(map['DCFSA']).toBe('DCFSA');
+    expect(map['401K']).toBe('401(k)');
+    expect(map['403B']).toBe('403(b)');
+    expect(map['TRADITIONAL_IRA']).toBe('Traditional IRA');
+    expect(map['ROTH_IRA']).toBe('Roth IRA');
+    expect(map['529_PLAN']).toBe('529 Plan');
+    expect(map['HELOC']).toBe('HELOC');
+    expect(map['PROPERTY']).toBe('Property');
+    expect(map['VEHICLE']).toBe('Vehicle');
+    expect(map['LIABILITY']).toBe('Other Liability');
   });
 });
 

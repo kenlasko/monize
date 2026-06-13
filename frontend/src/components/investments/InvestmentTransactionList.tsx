@@ -32,6 +32,9 @@ interface InvestmentTransactionListProps {
   onFiltersChange?: (filters: TransactionFilters) => void;
   availableSymbols?: string[];
   viewToggle?: React.ReactNode;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  onSortChange?: (column: string) => void;
 }
 
 /**
@@ -236,6 +239,9 @@ export function InvestmentTransactionList({
   onFiltersChange,
   availableSymbols = [],
   viewToggle,
+  sortBy,
+  sortOrder,
+  onSortChange,
 }: InvestmentTransactionListProps) {
   const t = useTranslations('investments');
   const ACTION_OPTIONS = [
@@ -591,25 +597,179 @@ export function InvestmentTransactionList({
           <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
               <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
-                {t('transactionList.dateColumn')}
+                <button
+                  onClick={() => onSortChange?.('date')}
+                  className="group inline-flex items-center gap-1 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none"
+                >
+                  <span>{t('transactionList.dateColumn')}</span>
+                  <span className="inline-flex w-3.5 h-3.5 items-center justify-center">
+                    {sortBy === 'date' ? (
+                      sortOrder === 'asc' ? (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )
+                    ) : (
+                      <svg className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </span>
+                </button>
               </th>
               <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell`}>
-                {t('transactionList.accountColumn')}
+                <button
+                  onClick={() => onSortChange?.('account')}
+                  className="group inline-flex items-center gap-1 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none"
+                >
+                  <span>{t('transactionList.accountColumn')}</span>
+                  <span className="inline-flex w-3.5 h-3.5 items-center justify-center">
+                    {sortBy === 'account' ? (
+                      sortOrder === 'asc' ? (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )
+                    ) : (
+                      <svg className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </span>
+                </button>
               </th>
               <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
-                {t('transactionList.actionColumn')}
+                <button
+                  onClick={() => onSortChange?.('action')}
+                  className="group inline-flex items-center gap-1 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none"
+                >
+                  <span>{t('transactionList.actionColumn')}</span>
+                  <span className="inline-flex w-3.5 h-3.5 items-center justify-center">
+                    {sortBy === 'action' ? (
+                      sortOrder === 'asc' ? (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )
+                    ) : (
+                      <svg className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </span>
+                </button>
               </th>
               <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
-                {t('transactionList.symbolColumn')}
+                <button
+                  onClick={() => onSortChange?.('symbol')}
+                  className="group inline-flex items-center gap-1 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none"
+                >
+                  <span>{t('transactionList.symbolColumn')}</span>
+                  <span className="inline-flex w-3.5 h-3.5 items-center justify-center">
+                    {sortBy === 'symbol' ? (
+                      sortOrder === 'asc' ? (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )
+                    ) : (
+                      <svg className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </span>
+                </button>
               </th>
               <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell`}>
-                {t('transactionList.sharesColumn')}
+                <button
+                  onClick={() => onSortChange?.('shares')}
+                  className="group inline-flex items-center gap-1 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none ml-auto flex-row-reverse"
+                >
+                  <span>{t('transactionList.sharesColumn')}</span>
+                  <span className="inline-flex w-3.5 h-3.5 items-center justify-center">
+                    {sortBy === 'shares' ? (
+                      sortOrder === 'asc' ? (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )
+                    ) : (
+                      <svg className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </span>
+                </button>
               </th>
               <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell`}>
-                {t('transactionList.priceColumn')}
+                <button
+                  onClick={() => onSortChange?.('price')}
+                  className="group inline-flex items-center gap-1 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none ml-auto flex-row-reverse"
+                >
+                  <span>{t('transactionList.priceColumn')}</span>
+                  <span className="inline-flex w-3.5 h-3.5 items-center justify-center">
+                    {sortBy === 'price' ? (
+                      sortOrder === 'asc' ? (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )
+                    ) : (
+                      <svg className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </span>
+                </button>
               </th>
               <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
-                {t('transactionList.totalColumn')}
+                <button
+                  onClick={() => onSortChange?.('total')}
+                  className="group inline-flex items-center gap-1 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none ml-auto flex-row-reverse"
+                >
+                  <span>{t('transactionList.totalColumn')}</span>
+                  <span className="inline-flex w-3.5 h-3.5 items-center justify-center">
+                    {sortBy === 'total' ? (
+                      sortOrder === 'asc' ? (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )
+                    ) : (
+                      <svg className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </span>
+                </button>
               </th>
               {(onDelete || onEdit) && (
                 <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden min-[480px]:table-cell sticky right-0 bg-gray-50 dark:bg-gray-800`}>

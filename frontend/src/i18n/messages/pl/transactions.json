@@ -51,6 +51,7 @@
       "payee": "Odbiorca",
       "category": "Kategoria",
       "description": "Opis",
+      "notes": "Notatki",
       "refNumber": "Nr ref.",
       "tags": "Tagi",
       "amount": "Kwota",
@@ -260,6 +261,7 @@
       "totalAmount": "Kwota łączna",
       "referenceNumber": "Numer referencyjny",
       "description": "Opis",
+      "notes": "Notatki",
       "status": "Status",
       "tags": "Tagi",
       "fromAccount": "Konto źródłowe",
@@ -276,6 +278,7 @@
       "selectOrCreateCategory": "Wybierz lub utwórz kategorię...",
       "referenceNumber": "Nr czeku, nr potwierdzenia...",
       "optionalDescription": "Opcjonalny opis...",
+      "optionalNotes": "Notatki opcjonalne...",
       "selectTags": "Wybierz tagi...",
       "createNewTag": "Utwórz nowy tag..."
     },

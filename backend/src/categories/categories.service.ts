@@ -71,6 +71,8 @@ export class CategoriesService {
         isIncome: saved.isIncome,
         parentId: saved.parentId,
         isSystem: saved.isSystem,
+        isTaxRelated: saved.isTaxRelated,
+        taxLineItem: saved.taxLineItem,
       },
       description: `Created category "${saved.name}"`,
       descriptionKey: "createdCategory",
@@ -339,6 +341,8 @@ export class CategoriesService {
       color: category.color,
       isIncome: category.isIncome,
       parentId: category.parentId,
+      isTaxRelated: category.isTaxRelated,
+      taxLineItem: category.taxLineItem,
     };
 
     if (category.isSystem) {
@@ -395,6 +399,10 @@ export class CategoriesService {
       category.color = updateCategoryDto.color;
     if (updateCategoryDto.parentId !== undefined)
       category.parentId = updateCategoryDto.parentId;
+    if (updateCategoryDto.isTaxRelated !== undefined)
+      category.isTaxRelated = updateCategoryDto.isTaxRelated;
+    if (updateCategoryDto.taxLineItem !== undefined)
+      category.taxLineItem = updateCategoryDto.taxLineItem;
 
     // Inherit type from parent - child categories must match parent type
     if (category.parentId) {
@@ -449,6 +457,8 @@ export class CategoriesService {
         color: saved.color,
         isIncome: saved.isIncome,
         parentId: saved.parentId,
+        isTaxRelated: saved.isTaxRelated,
+        taxLineItem: saved.taxLineItem,
       },
       description: `Updated category "${saved.name}"`,
       descriptionKey: "updatedCategory",

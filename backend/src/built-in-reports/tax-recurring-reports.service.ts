@@ -136,10 +136,12 @@ export class TaxRecurringReportsService {
           (allExpensesByCategory.get(catName) || 0) + expenseAmt,
         );
 
-        if (matchesKeywords(catName)) {
+        const isTaxRelated = category?.isTaxRelated || matchesKeywords(catName);
+        if (isTaxRelated) {
+          const taxName = category?.taxLineItem || catName;
           deductibleExpenses.set(
-            catName,
-            (deductibleExpenses.get(catName) || 0) + expenseAmt,
+            taxName,
+            (deductibleExpenses.get(taxName) || 0) + expenseAmt,
           );
         }
       }

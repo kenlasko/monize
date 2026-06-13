@@ -107,6 +107,7 @@
     "categoryField": "Categoria",
     "subcategoryField": "Sottocategoria",
     "memoField": "Memo",
+    "notesField": "Note",
     "referenceNumberField": "Numero di riferimento",
     "tagsField": "Etichette",
     "tagsHelp": "Più etichette vengono suddivise automaticamente sul separatore rilevato (|, ;, o ,). Trattini e barre sono conservati come parte dei nomi delle etichette.",

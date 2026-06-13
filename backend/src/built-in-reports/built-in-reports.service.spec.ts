@@ -38,6 +38,8 @@ describe("BuiltInReportsService", () => {
     color: "#FF5733",
     isIncome: false,
     isSystem: false,
+    isTaxRelated: false,
+    taxLineItem: null,
     createdAt: new Date("2025-01-01"),
   };
 
@@ -53,6 +55,8 @@ describe("BuiltInReportsService", () => {
     color: "#33FF57",
     isIncome: false,
     isSystem: false,
+    isTaxRelated: false,
+    taxLineItem: null,
     createdAt: new Date("2025-01-02"),
   };
 
@@ -68,6 +72,8 @@ describe("BuiltInReportsService", () => {
     color: "#5733FF",
     isIncome: true,
     isSystem: false,
+    isTaxRelated: false,
+    taxLineItem: null,
     createdAt: new Date("2025-01-03"),
   };
 
@@ -83,6 +89,8 @@ describe("BuiltInReportsService", () => {
     color: "#FF0000",
     isIncome: false,
     isSystem: false,
+    isTaxRelated: false,
+    taxLineItem: null,
     createdAt: new Date("2025-01-04"),
   };
 
@@ -269,6 +277,8 @@ describe("BuiltInReportsService", () => {
         color: null,
         isIncome: false,
         isSystem: false,
+        isTaxRelated: false,
+        taxLineItem: null,
         createdAt: new Date(),
       }));
       transactionsRepository.query.mockResolvedValue(rawResults);
@@ -543,6 +553,8 @@ describe("BuiltInReportsService", () => {
         color: null,
         isIncome: true,
         isSystem: false,
+        isTaxRelated: false,
+        taxLineItem: null,
         createdAt: new Date(),
       }));
       transactionsRepository.query.mockResolvedValue(rawResults);
@@ -742,6 +754,8 @@ describe("BuiltInReportsService", () => {
         color: null,
         isIncome: false,
         isSystem: false,
+        isTaxRelated: false,
+        taxLineItem: null,
         createdAt: new Date(),
       }));
 
@@ -1028,6 +1042,8 @@ describe("BuiltInReportsService", () => {
         color: null,
         isIncome: false,
         isSystem: false,
+        isTaxRelated: false,
+        taxLineItem: null,
         createdAt: new Date(),
       }));
 

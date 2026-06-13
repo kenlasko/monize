@@ -100,6 +100,9 @@ export class Transaction {
   @Column({ type: "text", nullable: true })
   description: string | null;
 
+  @Column({ type: "text", nullable: true })
+  notes: string | null;
+
   @Column({
     type: "varchar",
     name: "reference_number",

@@ -20,11 +20,13 @@ import { parseLocalDate } from '@/lib/utils';
 import { computeBalanceGradient, computeBalanceSummary } from '@/lib/balance-history';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { ChartDownloadButton } from '@/components/ui/ChartDownloadButton';
+import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import {
   ChartFlagShadowFilter,
   computeMinMaxFlagIndices,
   renderMinMaxFlagDots,
 } from '@/components/investments/portfolio-chart-utils';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 
 
 interface BalanceHistoryChartProps {
@@ -33,6 +35,14 @@ interface BalanceHistoryChartProps {
   currencyCode?: string;
   /** Account name to append to the download filename, e.g. "Checking". */
   accountName?: string;
+  dateRange: string;
+  onDateRangeChange: (range: string) => void;
+  customStartDate?: string;
+  onCustomStartDateChange?: (date: string) => void;
+  customEndDate?: string;
+  onCustomEndDateChange?: (date: string) => void;
+  optimize: boolean;
+  onOptimizeChange: (val: boolean) => void;
 }
 
 interface ChartPoint {
@@ -75,6 +85,14 @@ export function BalanceHistoryChart({
   isLoading,
   currencyCode,
   accountName,
+  dateRange,
+  onDateRangeChange,
+  customStartDate,
+  onCustomStartDateChange,
+  customEndDate,
+  onCustomEndDateChange,
+  optimize,
+  onOptimizeChange,
 }: BalanceHistoryChartProps) {
   const t = useTranslations('transactions');
   const tc = useTranslations('common');
@@ -176,11 +194,33 @@ export function BalanceHistoryChart({
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 mb-6 min-h-[420px]">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           {chartTitle}
         </h3>
-        <ChartDownloadButton chartRef={chartRef} filename={downloadFilename} />
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <span>Fast Render</span>
+            <ToggleSwitch
+              checked={optimize}
+              onChange={onOptimizeChange}
+              size="sm"
+              label="Fast Render"
+            />
+          </div>
+          <DateRangeSelector
+            ranges={['1m', '3m', '6m', '1y', 'ytd', 'all']}
+            value={dateRange}
+            onChange={onDateRangeChange}
+            showCustom
+            customStartDate={customStartDate}
+            onCustomStartDateChange={onCustomStartDateChange}
+            customEndDate={customEndDate}
+            onCustomEndDateChange={onCustomEndDateChange}
+            size="sm"
+          />
+          <ChartDownloadButton chartRef={chartRef} filename={downloadFilename} />
+        </div>
       </div>
 
       {/* overflow-hidden: while the account-widget column animates the card's

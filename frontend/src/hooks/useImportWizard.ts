@@ -1043,6 +1043,14 @@ export function useImportWizard() {
     setCsvTransferRules([]);
   };
 
+  const tc = useTranslations('common');
+  const accountTypeOptions = useMemo(() => {
+    return ACCOUNT_TYPE_OPTIONS.map((opt) => ({
+      value: opt.value,
+      label: tc(`accountTypes.${opt.value}`) || opt.label,
+    }));
+  }, [tc]);
+
   return {
     step, setStep,
     importFiles, isBulkImport, fileName, parsedData, selectedAccountId, setSelectedAccountId, setFileAccountId, fileContent,
@@ -1056,7 +1064,7 @@ export function useImportWizard() {
     newAccountName, setNewAccountName, newAccountType, setNewAccountType, newAccountCurrency, setNewAccountCurrency,
     isCreatingAccount, handleCreateAccount,
     categoryOptions, parentCategoryOptions, getAccountOptions,
-    accountTypeOptions: ACCOUNT_TYPE_OPTIONS, currencyOptions, getSecurityOptions, securityTypeOptions: SECURITY_TYPE_OPTIONS,
+    accountTypeOptions, currencyOptions, getSecurityOptions, securityTypeOptions: SECURITY_TYPE_OPTIONS,
     shouldShowMapAccounts, preselectedAccount,
     scrollContainerRef, dateFormat, setDateFormat, defaultCurrency,
     // Multi-account QIF

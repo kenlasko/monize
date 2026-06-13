@@ -139,7 +139,7 @@ export function useDateRange(options: UseDateRangeOptions): UseDateRangeReturn {
           start = `${now.getFullYear()}-01-01`;
           break;
         case 'all':
-          start = '';
+          start = '1970-01-01';
           break;
         default:
           start = format(subMonths(now, 3), 'yyyy-MM-dd');
