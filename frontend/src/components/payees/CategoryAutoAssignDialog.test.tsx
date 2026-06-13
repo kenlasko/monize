@@ -9,7 +9,7 @@ import { Category } from '@/types/category';
 vi.mock('@/lib/payees', () => ({
   payeesApi: {
     getCategorySuggestions: vi.fn().mockResolvedValue([]),
-    applyCategorySuggestions: vi.fn().mockResolvedValue({ updated: 0 }),
+    applyCategorySuggestions: vi.fn().mockResolvedValue({ updated: 0, transactionsBackfilled: 0 }),
   },
 }));
 
@@ -34,6 +34,7 @@ const makeSuggestion = (overrides: Partial<CategorySuggestion> = {}): CategorySu
   transactionCount: 25,
   categoryCount: 20,
   percentage: 80,
+  uncategorizedCount: 0,
   ...overrides,
 });
 
@@ -71,7 +72,7 @@ describe('CategoryAutoAssignDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetCategorySuggestions.mockResolvedValue([]);
-    mockApplyCategorySuggestions.mockResolvedValue({ updated: 0 });
+    mockApplyCategorySuggestions.mockResolvedValue({ updated: 0, transactionsBackfilled: 0 });
   });
 
   // --- Existing tests (preserved) ---
@@ -512,7 +513,7 @@ describe('CategoryAutoAssignDialog', () => {
   describe('apply button', () => {
     it('calls API with selected suggestions', async () => {
       mockGetCategorySuggestions.mockResolvedValue(sampleSuggestions);
-      mockApplyCategorySuggestions.mockResolvedValue({ updated: 3 });
+      mockApplyCategorySuggestions.mockResolvedValue({ updated: 3, transactionsBackfilled: 0 });
       render(<CategoryAutoAssignDialog isOpen={true} onClose={onClose} onSuccess={onSuccess} />);
 
       fireEvent.click(screen.getByText('Preview Suggestions'));
@@ -526,16 +527,16 @@ describe('CategoryAutoAssignDialog', () => {
 
       await waitFor(() => {
         expect(mockApplyCategorySuggestions).toHaveBeenCalledWith([
-          { payeeId: 'payee-1', categoryId: 'cat-1' },
-          { payeeId: 'payee-2', categoryId: 'cat-2' },
-          { payeeId: 'payee-3', categoryId: 'cat-3' },
+          { payeeId: 'payee-1', categoryId: 'cat-1', backfillTransactions: false },
+          { payeeId: 'payee-2', categoryId: 'cat-2', backfillTransactions: false },
+          { payeeId: 'payee-3', categoryId: 'cat-3', backfillTransactions: false },
         ]);
       });
     });
 
     it('calls onSuccess and onClose after successful apply', async () => {
       mockGetCategorySuggestions.mockResolvedValue(sampleSuggestions);
-      mockApplyCategorySuggestions.mockResolvedValue({ updated: 3 });
+      mockApplyCategorySuggestions.mockResolvedValue({ updated: 3, transactionsBackfilled: 0 });
       render(<CategoryAutoAssignDialog isOpen={true} onClose={onClose} onSuccess={onSuccess} />);
 
       fireEvent.click(screen.getByText('Preview Suggestions'));
@@ -554,7 +555,7 @@ describe('CategoryAutoAssignDialog', () => {
 
     it('shows success toast after apply', async () => {
       mockGetCategorySuggestions.mockResolvedValue(sampleSuggestions);
-      mockApplyCategorySuggestions.mockResolvedValue({ updated: 3 });
+      mockApplyCategorySuggestions.mockResolvedValue({ updated: 3, transactionsBackfilled: 0 });
       render(<CategoryAutoAssignDialog isOpen={true} onClose={onClose} onSuccess={onSuccess} />);
 
       fireEvent.click(screen.getByText('Preview Suggestions'));
@@ -572,7 +573,7 @@ describe('CategoryAutoAssignDialog', () => {
 
     it('sends only selected suggestions, not all', async () => {
       mockGetCategorySuggestions.mockResolvedValue(sampleSuggestions);
-      mockApplyCategorySuggestions.mockResolvedValue({ updated: 1 });
+      mockApplyCategorySuggestions.mockResolvedValue({ updated: 1, transactionsBackfilled: 0 });
       render(<CategoryAutoAssignDialog isOpen={true} onClose={onClose} onSuccess={onSuccess} />);
 
       fireEvent.click(screen.getByText('Preview Suggestions'));
@@ -591,7 +592,7 @@ describe('CategoryAutoAssignDialog', () => {
 
       await waitFor(() => {
         expect(mockApplyCategorySuggestions).toHaveBeenCalledWith([
-          { payeeId: 'payee-1', categoryId: 'cat-1' },
+          { payeeId: 'payee-1', categoryId: 'cat-1', backfillTransactions: false },
         ]);
       });
     });
@@ -631,8 +632,8 @@ describe('CategoryAutoAssignDialog', () => {
     });
 
     it('shows Applying text while applying', async () => {
-      let resolvePromise: (value: { updated: number }) => void;
-      const promise = new Promise<{ updated: number }>((resolve) => {
+      let resolvePromise: (value: { updated: number; transactionsBackfilled: number }) => void;
+      const promise = new Promise<{ updated: number; transactionsBackfilled: number }>((resolve) => {
         resolvePromise = resolve;
       });
       mockGetCategorySuggestions.mockResolvedValue(sampleSuggestions);
@@ -652,14 +653,14 @@ describe('CategoryAutoAssignDialog', () => {
       });
 
       await act(async () => {
-        resolvePromise!({ updated: 3 });
+        resolvePromise!({ updated: 3, transactionsBackfilled: 0 });
       });
     });
 
     it('shows singular "payee" for single update', async () => {
       const singleSuggestion = [sampleSuggestions[0]];
       mockGetCategorySuggestions.mockResolvedValue(singleSuggestion);
-      mockApplyCategorySuggestions.mockResolvedValue({ updated: 1 });
+      mockApplyCategorySuggestions.mockResolvedValue({ updated: 1, transactionsBackfilled: 0 });
       render(<CategoryAutoAssignDialog isOpen={true} onClose={onClose} onSuccess={onSuccess} />);
 
       fireEvent.click(screen.getByText('Preview Suggestions'));
@@ -782,6 +783,110 @@ describe('CategoryAutoAssignDialog', () => {
       // The button should be disabled, but let's verify the behavior
       const applyBtn = screen.getByText('Apply to 0 Payees');
       expect(applyBtn).toBeDisabled();
+    });
+  });
+
+  describe('backfill uncategorized transactions', () => {
+    const withUncategorized: CategorySuggestion[] = [
+      makeSuggestion({ payeeId: 'payee-1', payeeName: 'Grocery Store', uncategorizedCount: 4 }),
+      makeSuggestion({ payeeId: 'payee-2', payeeName: 'Gas Station', uncategorizedCount: 3 }),
+    ];
+
+    it('does not show the backfill option when no selected payee has uncategorized transactions', async () => {
+      mockGetCategorySuggestions.mockResolvedValue(sampleSuggestions); // all uncategorizedCount: 0
+      render(<CategoryAutoAssignDialog isOpen={true} onClose={onClose} onSuccess={onSuccess} />);
+
+      fireEvent.click(screen.getByText('Preview Suggestions'));
+
+      await waitFor(() => {
+        expect(screen.getByText('Grocery Store')).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText(/Also categorize/)).not.toBeInTheDocument();
+    });
+
+    it('shows the backfill option with the summed count across selected payees', async () => {
+      mockGetCategorySuggestions.mockResolvedValue(withUncategorized);
+      render(<CategoryAutoAssignDialog isOpen={true} onClose={onClose} onSuccess={onSuccess} />);
+
+      fireEvent.click(screen.getByText('Preview Suggestions'));
+
+      await waitFor(() => {
+        // 4 + 3 = 7 across the two selected payees.
+        expect(
+          screen.getAllByText(/Also categorize 7 existing uncategorized transactions/).length,
+        ).toBeGreaterThanOrEqual(1);
+      });
+    });
+
+    it('recomputes the count when a payee is deselected', async () => {
+      mockGetCategorySuggestions.mockResolvedValue(withUncategorized);
+      render(<CategoryAutoAssignDialog isOpen={true} onClose={onClose} onSuccess={onSuccess} />);
+
+      fireEvent.click(screen.getByText('Preview Suggestions'));
+
+      await waitFor(() => {
+        expect(screen.getByText('Gas Station')).toBeInTheDocument();
+      });
+
+      // Deselect Gas Station (uncategorizedCount 3), leaving 4.
+      const gasRow = screen.getByText('Gas Station').closest('tr')!;
+      const toggle = gasRow.querySelector('[role="switch"]') as HTMLElement;
+      fireEvent.click(toggle);
+
+      expect(
+        screen.getAllByText(/Also categorize 4 existing uncategorized transactions/).length,
+      ).toBeGreaterThanOrEqual(1);
+    });
+
+    it('sends backfillTransactions: true when the backfill toggle is enabled', async () => {
+      mockGetCategorySuggestions.mockResolvedValue(withUncategorized);
+      mockApplyCategorySuggestions.mockResolvedValue({ updated: 2, transactionsBackfilled: 7 });
+      render(<CategoryAutoAssignDialog isOpen={true} onClose={onClose} onSuccess={onSuccess} />);
+
+      fireEvent.click(screen.getByText('Preview Suggestions'));
+
+      await waitFor(() => {
+        expect(screen.getByText('Grocery Store')).toBeInTheDocument();
+      });
+
+      // Enable the backfill toggle (the ToggleSwitch carries the aria-label).
+      const backfillToggle = screen.getByLabelText(
+        /Also categorize 7 existing uncategorized transactions/,
+      );
+      fireEvent.click(backfillToggle);
+
+      fireEvent.click(screen.getByText('Apply to 2 Payees'));
+
+      await waitFor(() => {
+        expect(mockApplyCategorySuggestions).toHaveBeenCalledWith([
+          { payeeId: 'payee-1', categoryId: 'cat-1', backfillTransactions: true },
+          { payeeId: 'payee-2', categoryId: 'cat-1', backfillTransactions: true },
+        ]);
+      });
+    });
+
+    it('shows a backfilled toast when transactions were categorized', async () => {
+      mockGetCategorySuggestions.mockResolvedValue(withUncategorized);
+      mockApplyCategorySuggestions.mockResolvedValue({ updated: 2, transactionsBackfilled: 7 });
+      render(<CategoryAutoAssignDialog isOpen={true} onClose={onClose} onSuccess={onSuccess} />);
+
+      fireEvent.click(screen.getByText('Preview Suggestions'));
+
+      await waitFor(() => {
+        expect(screen.getByText('Grocery Store')).toBeInTheDocument();
+      });
+
+      const backfillToggle = screen.getByLabelText(
+        /Also categorize 7 existing uncategorized transactions/,
+      );
+      fireEvent.click(backfillToggle);
+
+      fireEvent.click(screen.getByText('Apply to 2 Payees'));
+
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith('Categorized 7 transactions');
+      });
     });
   });
 });

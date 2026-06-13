@@ -33,6 +33,7 @@ export function CategoryAutoAssignDialog({
   const [onlyWithoutCategory, setOnlyWithoutCategory] = useState(true);
   const [suggestions, setSuggestions] = useState<CategorySuggestion[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [backfillTransactions, setBackfillTransactions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
   const [hasPreviewLoaded, setHasPreviewLoaded] = useState(false);
@@ -71,9 +72,20 @@ export function CategoryAutoAssignDialog({
     if (isOpen) {
       setSuggestions([]);
       setSelectedIds(new Set());
+      setBackfillTransactions(false);
       setHasPreviewLoaded(false);
     }
   }, [isOpen]);
+
+  // Total uncategorized transactions across the selected payees -- the scope of
+  // the optional backfill, shown in its label.
+  const backfillCount = useMemo(
+    () =>
+      suggestions
+        .filter(s => selectedIds.has(s.payeeId))
+        .reduce((sum, s) => sum + s.uncategorizedCount, 0),
+    [suggestions, selectedIds],
+  );
 
   const handleApply = async () => {
     if (selectedIds.size === 0) {
@@ -88,10 +100,16 @@ export function CategoryAutoAssignDialog({
         .map(s => ({
           payeeId: s.payeeId,
           categoryId: s.suggestedCategoryId,
+          backfillTransactions,
         }));
 
       const result = await payeesApi.applyCategorySuggestions(assignments);
       toast.success(t('categoryAutoAssign.toasts.updated', { count: result.updated }));
+      if (result.transactionsBackfilled > 0) {
+        toast.success(
+          t('categoryAutoAssign.toasts.backfilled', { count: result.transactionsBackfilled }),
+        );
+      }
       onSuccess();
       onClose();
     } catch (error) {
@@ -311,6 +329,26 @@ export function CategoryAutoAssignDialog({
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+
+              {/* Optional backfill: also apply the assigned category to the
+                  selected payees' existing uncategorized transactions. */}
+              {backfillCount > 0 && (
+                <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <ToggleSwitch
+                      checked={backfillTransactions}
+                      onChange={setBackfillTransactions}
+                      label={t('categoryAutoAssign.backfillLabel', { count: backfillCount })}
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                      {t('categoryAutoAssign.backfillLabel', { count: backfillCount })}
+                    </span>
+                  </label>
+                  <p className="ml-12 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    {t('categoryAutoAssign.backfillHelp')}
+                  </p>
                 </div>
               )}
             </div>

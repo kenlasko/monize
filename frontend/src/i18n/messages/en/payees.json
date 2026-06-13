@@ -115,6 +115,8 @@
     "matchPercentageLabel": "Category Match Percentage: {percent}%",
     "matchPercentageHelp": "The category must be used in at least this percentage of transactions",
     "onlyWithoutCategoryLabel": "Only payees without a default category",
+    "backfillLabel": "Also categorize {count, plural, one {# existing uncategorized transaction} other {# existing uncategorized transactions}}",
+    "backfillHelp": "Applies the chosen category to transactions that currently have none. Existing categories, transfers, and split transactions are left unchanged.",
     "previewButton": "Preview Suggestions",
     "loading": "Loading...",
     "suggestionsHeader": "Suggestions ({count} found)",
@@ -136,6 +138,7 @@
     "toasts": {
       "selectAtLeastOne": "Please select at least one payee to update",
       "updated": "{count, plural, one {Updated # payee} other {Updated # payees}}",
+      "backfilled": "{count, plural, one {Categorized # transaction} other {Categorized # transactions}}",
       "loadFailed": "Failed to load suggestions",
       "applyFailed": "Failed to apply category assignments"
     }
@@ -162,6 +165,7 @@
     "canonicalNameLabel": "Keep as payee",
     "aliasLabel": "Alias for future imports",
     "defaultCategoryLabel": "Default category (optional)",
+    "backfillLabel": "Also categorize {count, plural, one {# existing uncategorized transaction} other {# existing uncategorized transactions}}",
     "aliasPlaceholder": "e.g., *LIDL*",
     "keepLabel": "Keep this payee",
     "includeMemberLabel": "Include in merge",
@@ -177,6 +181,7 @@
     "toasts": {
       "selectAtLeastOne": "Please select at least one group to merge",
       "applied": "Merged {groups, plural, one {# group} other {# groups}} ({payees} payees combined)",
+      "backfilled": "{count, plural, one {Categorized # transaction} other {Categorized # transactions}}",
       "aliasesSkipped": "{count, plural, one {# alias was skipped due to a conflict} other {# aliases were skipped due to conflicts}}",
       "loadFailed": "Failed to load merge groups",
       "applyFailed": "Failed to merge payees"

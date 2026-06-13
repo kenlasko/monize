@@ -115,6 +115,8 @@
     "matchPercentageLabel": "Kategorieübereinstimmung: {percent}%",
     "matchPercentageHelp": "Die Kategorie muss bei mindestens diesem Prozentsatz der Buchungen verwendet worden sein",
     "onlyWithoutCategoryLabel": "Nur Zahlungsempfänger ohne Standardkategorie",
+    "backfillLabel": "{count, plural, one {Auch # vorhandene nicht kategorisierte Transaktion kategorisieren} other {Auch # vorhandene nicht kategorisierte Transaktionen kategorisieren}}",
+    "backfillHelp": "Wendet die gewählte Kategorie auf Transaktionen an, die derzeit keine haben. Vorhandene Kategorien, Überweisungen und aufgeteilte Transaktionen bleiben unverändert.",
     "previewButton": "Vorschläge anzeigen",
     "loading": "Wird geladen...",
     "suggestionsHeader": "Vorschläge ({count} gefunden)",
@@ -136,6 +138,7 @@
     "toasts": {
       "selectAtLeastOne": "Bitte mindestens einen Zahlungsempfänger zum Aktualisieren auswählen",
       "updated": "{count, plural, one {# Zahlungsempfänger aktualisiert} other {# Zahlungsempfänger aktualisiert}}",
+      "backfilled": "{count, plural, one {# Transaktion kategorisiert} other {# Transaktionen kategorisiert}}",
       "loadFailed": "Vorschläge konnten nicht geladen werden",
       "applyFailed": "Kategoriezuweisungen konnten nicht angewendet werden"
     }
@@ -162,6 +165,7 @@
     "canonicalNameLabel": "Als Zahlungsempfänger behalten",
     "aliasLabel": "Alias für künftige Importe",
     "defaultCategoryLabel": "Standardkategorie (optional)",
+    "backfillLabel": "{count, plural, one {Auch # vorhandene nicht kategorisierte Transaktion kategorisieren} other {Auch # vorhandene nicht kategorisierte Transaktionen kategorisieren}}",
     "aliasPlaceholder": "z. B. *LIDL*",
     "keepLabel": "Diesen Zahlungsempfänger behalten",
     "includeMemberLabel": "In Zusammenführung einbeziehen",
@@ -177,6 +181,7 @@
     "toasts": {
       "selectAtLeastOne": "Bitte wählen Sie mindestens eine Gruppe zum Zusammenführen aus",
       "applied": "{groups, plural, one {# Gruppe} other {# Gruppen}} zusammengeführt ({payees} Zahlungsempfänger kombiniert)",
+      "backfilled": "{count, plural, one {# Transaktion kategorisiert} other {# Transaktionen kategorisiert}}",
       "aliasesSkipped": "{count, plural, one {# Alias wurde wegen eines Konflikts übersprungen} other {# Aliase wurden wegen Konflikten übersprungen}}",
       "loadFailed": "Zusammenführungsgruppen konnten nicht geladen werden",
       "applyFailed": "Zahlungsempfänger konnten nicht zusammengeführt werden"

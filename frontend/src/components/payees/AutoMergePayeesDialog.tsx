@@ -33,6 +33,8 @@ interface EditableGroup {
   canonicalName: string;
   alias: string;
   defaultCategoryId: string;
+  backfillTransactions: boolean;
+  uncategorizedTransactionCount: number;
   members: AutoMergeGroup['members'];
   selectedMemberIds: Set<string>;
 }
@@ -51,6 +53,9 @@ function toEditableGroups(groups: AutoMergeGroup[]): EditableGroup[] {
     alias: g.suggestedAlias,
     // Prefill with the group's most-used category, but leave it freely editable.
     defaultCategoryId: g.suggestedCategoryId ?? '',
+    // Backfill is opt-in per group; surface the count so the user can decide.
+    backfillTransactions: false,
+    uncategorizedTransactionCount: g.uncategorizedTransactionCount,
     members: g.members,
     selectedMemberIds: new Set(g.members.map((m) => m.payeeId)),
   }));
@@ -195,6 +200,8 @@ export function AutoMergePayeesDialog({
         ),
         alias: g.alias.trim() || undefined,
         defaultCategoryId: g.defaultCategoryId || undefined,
+        // Backfill only makes sense alongside a chosen default category.
+        backfillTransactions: g.backfillTransactions && !!g.defaultCategoryId,
       }));
 
       const result = await payeesApi.applyAutoMerge(payload);
@@ -204,6 +211,11 @@ export function AutoMergePayeesDialog({
           payees: result.payeesMerged,
         }),
       );
+      if (result.transactionsBackfilled > 0) {
+        toast.success(
+          t('autoMerge.toasts.backfilled', { count: result.transactionsBackfilled }),
+        );
+      }
       if (result.skippedAliases > 0) {
         toast(
           t('autoMerge.toasts.aliasesSkipped', { count: result.skippedAliases }),
@@ -508,6 +520,31 @@ export function AutoMergePayeesDialog({
                             usePortal
                           />
                         </div>
+                        {/* Optional backfill: apply the default category to the
+                            merged payee's existing uncategorized transactions.
+                            Only meaningful once a default category is chosen. */}
+                        {group.uncategorizedTransactionCount > 0 &&
+                          group.defaultCategoryId !== '' && (
+                            <label className="flex items-start gap-3 cursor-pointer">
+                              <ToggleSwitch
+                                checked={group.backfillTransactions}
+                                onChange={(next) =>
+                                  updateGroup(group.id, {
+                                    backfillTransactions: next,
+                                  })
+                                }
+                                disabled={!group.included}
+                                label={t('autoMerge.backfillLabel', {
+                                  count: group.uncategorizedTransactionCount,
+                                })}
+                              />
+                              <span className="text-xs text-gray-600 dark:text-gray-400">
+                                {t('autoMerge.backfillLabel', {
+                                  count: group.uncategorizedTransactionCount,
+                                })}
+                              </span>
+                            </label>
+                          )}
                       </div>
                     </div>
 

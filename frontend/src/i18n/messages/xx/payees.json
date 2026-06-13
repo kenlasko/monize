@@ -115,6 +115,8 @@
     "matchPercentageLabel": "[XX-Category Match Percentage: {percent}%-XX]",
     "matchPercentageHelp": "[XX-The category must be used in at least this percentage of transactions-XX]",
     "onlyWithoutCategoryLabel": "[XX-Only payees without a default category-XX]",
+    "backfillLabel": "[XX-Also categorize {count, plural, one {# existing uncategorized transaction} other {# existing uncategorized transactions}}-XX]",
+    "backfillHelp": "[XX-Applies the chosen category to transactions that currently have none. Existing categories, transfers, and split transactions are left unchanged.-XX]",
     "previewButton": "[XX-Preview Suggestions-XX]",
     "loading": "[XX-Loading...-XX]",
     "suggestionsHeader": "[XX-Suggestions ({count} found)-XX]",
@@ -136,6 +138,7 @@
     "toasts": {
       "selectAtLeastOne": "[XX-Please select at least one payee to update-XX]",
       "updated": "[XX-{count, plural, one {Updated # payee} other {Updated # payees}}-XX]",
+      "backfilled": "[XX-{count, plural, one {Categorized # transaction} other {Categorized # transactions}}-XX]",
       "loadFailed": "[XX-Failed to load suggestions-XX]",
       "applyFailed": "[XX-Failed to apply category assignments-XX]"
     }
@@ -162,6 +165,7 @@
     "canonicalNameLabel": "[XX-Keep as payee-XX]",
     "aliasLabel": "[XX-Alias for future imports-XX]",
     "defaultCategoryLabel": "[XX-Default category (optional)-XX]",
+    "backfillLabel": "[XX-Also categorize {count, plural, one {# existing uncategorized transaction} other {# existing uncategorized transactions}}-XX]",
     "aliasPlaceholder": "[XX-e.g., *LIDL*-XX]",
     "keepLabel": "[XX-Keep this payee-XX]",
     "includeMemberLabel": "[XX-Include in merge-XX]",
@@ -177,6 +181,7 @@
     "toasts": {
       "selectAtLeastOne": "[XX-Please select at least one group to merge-XX]",
       "applied": "[XX-Merged {groups, plural, one {# group} other {# groups}} ({payees} payees combined)-XX]",
+      "backfilled": "[XX-{count, plural, one {Categorized # transaction} other {Categorized # transactions}}-XX]",
       "aliasesSkipped": "[XX-{count, plural, one {# alias was skipped due to a conflict} other {# aliases were skipped due to conflicts}}-XX]",
       "loadFailed": "[XX-Failed to load merge groups-XX]",
       "applyFailed": "[XX-Failed to merge payees-XX]"

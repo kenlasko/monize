@@ -122,18 +122,20 @@ export const payeesApi = {
   },
 
   // Apply category auto-assignments (batches in chunks of 500 to respect server limit)
-  applyCategorySuggestions: async (assignments: CategoryAssignment[]): Promise<{ updated: number }> => {
+  applyCategorySuggestions: async (assignments: CategoryAssignment[]): Promise<{ updated: number; transactionsBackfilled: number }> => {
     const BATCH_SIZE = 500;
     let totalUpdated = 0;
+    let totalBackfilled = 0;
 
     for (let i = 0; i < assignments.length; i += BATCH_SIZE) {
       const batch = assignments.slice(i, i + BATCH_SIZE);
-      const response = await apiClient.post<{ updated: number }>('/payees/category-suggestions/apply', { assignments: batch });
+      const response = await apiClient.post<{ updated: number; transactionsBackfilled: number }>('/payees/category-suggestions/apply', { assignments: batch });
       totalUpdated += response.data.updated;
+      totalBackfilled += response.data.transactionsBackfilled;
     }
 
     invalidateCache('payees:');
-    return { updated: totalUpdated };
+    return { updated: totalUpdated, transactionsBackfilled: totalBackfilled };
   },
 
   // Preview deactivation candidates

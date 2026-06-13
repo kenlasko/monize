@@ -115,6 +115,8 @@
     "matchPercentageLabel": "Percentuale di corrispondenza categoria: {percent}%",
     "matchPercentageHelp": "La categoria deve essere usata in almeno questa percentuale di transazioni",
     "onlyWithoutCategoryLabel": "Solo beneficiari senza categoria predefinita",
+    "backfillLabel": "{count, plural, one {Categorizza anche # transazione esistente senza categoria} other {Categorizza anche # transazioni esistenti senza categoria}}",
+    "backfillHelp": "Applica la categoria scelta alle transazioni che attualmente non ne hanno una. Le categorie esistenti, i trasferimenti e le transazioni suddivise restano invariati.",
     "previewButton": "Anteprima suggerimenti",
     "loading": "Caricamento...",
     "suggestionsHeader": "Suggerimenti ({count} trovati)",
@@ -136,6 +138,7 @@
     "toasts": {
       "selectAtLeastOne": "Seleziona almeno un beneficiario da aggiornare",
       "updated": "{count, plural, one {# beneficiario aggiornato} other {# beneficiari aggiornati}}",
+      "backfilled": "{count, plural, one {# transazione categorizzata} other {# transazioni categorizzate}}",
       "loadFailed": "Caricamento suggerimenti non riuscito",
       "applyFailed": "Applicazione delle categorie non riuscita"
     }
@@ -162,6 +165,7 @@
     "canonicalNameLabel": "Mantieni come beneficiario",
     "aliasLabel": "Alias per importazioni future",
     "defaultCategoryLabel": "Categoria predefinita (facoltativa)",
+    "backfillLabel": "{count, plural, one {Categorizza anche # transazione esistente senza categoria} other {Categorizza anche # transazioni esistenti senza categoria}}",
     "aliasPlaceholder": "es. *LIDL*",
     "keepLabel": "Mantieni questo beneficiario",
     "includeMemberLabel": "Includi nell'unione",
@@ -177,6 +181,7 @@
     "toasts": {
       "selectAtLeastOne": "Seleziona almeno un gruppo da unire",
       "applied": "Uniti {groups, plural, one {# gruppo} other {# gruppi}} ({payees} beneficiari combinati)",
+      "backfilled": "{count, plural, one {# transazione categorizzata} other {# transazioni categorizzate}}",
       "aliasesSkipped": "{count, plural, one {# alias è stato saltato a causa di un conflitto} other {# alias sono stati saltati a causa di conflitti}}",
       "loadFailed": "Impossibile caricare i gruppi di unione",
       "applyFailed": "Impossibile unire i beneficiari"

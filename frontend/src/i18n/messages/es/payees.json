@@ -115,6 +115,8 @@
     "matchPercentageLabel": "Porcentaje de coincidencia de categoría: {percent}%",
     "matchPercentageHelp": "La categoría debe usarse al menos en este porcentaje de transacciones",
     "onlyWithoutCategoryLabel": "Solo beneficiarios sin categoría predeterminada",
+    "backfillLabel": "{count, plural, one {Categorizar también # transacción sin categoría existente} other {Categorizar también # transacciones sin categoría existentes}}",
+    "backfillHelp": "Aplica la categoría elegida a las transacciones que actualmente no tienen ninguna. Las categorías existentes, las transferencias y las transacciones divididas no se modifican.",
     "previewButton": "Vista previa de sugerencias",
     "loading": "Cargando...",
     "suggestionsHeader": "Sugerencias ({count} encontradas)",
@@ -136,6 +138,7 @@
     "toasts": {
       "selectAtLeastOne": "Selecciona al menos un beneficiario para actualizar",
       "updated": "{count, plural, one {# beneficiario actualizado} other {# beneficiarios actualizados}}",
+      "backfilled": "{count, plural, one {# transacción categorizada} other {# transacciones categorizadas}}",
       "loadFailed": "Error al cargar las sugerencias",
       "applyFailed": "Error al aplicar las asignaciones de categorías"
     }
@@ -162,6 +165,7 @@
     "canonicalNameLabel": "Conservar como beneficiario",
     "aliasLabel": "Alias para futuras importaciones",
     "defaultCategoryLabel": "Categoría predeterminada (opcional)",
+    "backfillLabel": "{count, plural, one {Categorizar también # transacción sin categoría existente} other {Categorizar también # transacciones sin categoría existentes}}",
     "aliasPlaceholder": "p. ej., *LIDL*",
     "keepLabel": "Conservar este beneficiario",
     "includeMemberLabel": "Incluir en la combinación",
@@ -177,6 +181,7 @@
     "toasts": {
       "selectAtLeastOne": "Seleccione al menos un grupo para combinar",
       "applied": "Se combinaron {groups, plural, one {# grupo} other {# grupos}} ({payees} beneficiarios combinados)",
+      "backfilled": "{count, plural, one {# transacción categorizada} other {# transacciones categorizadas}}",
       "aliasesSkipped": "{count, plural, one {Se omitió # alias por un conflicto} other {Se omitieron # alias por conflictos}}",
       "loadFailed": "No se pudieron cargar los grupos de combinación",
       "applyFailed": "No se pudieron combinar los beneficiarios"

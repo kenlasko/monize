@@ -22,6 +22,7 @@ describe("PayeesService", () => {
   let scheduledTransactionsRepository: Record<string, jest.Mock>;
   let categoriesRepository: Record<string, jest.Mock>;
   let mockDataSource: Record<string, jest.Mock>;
+  let mockQueryRunner: any;
 
   const userId = "user-1";
 
@@ -78,6 +79,11 @@ describe("PayeesService", () => {
       count: jest.fn(),
       update: jest.fn(),
       createQueryBuilder: jest.fn(() => ({ ...queryBuilderMock })),
+      // The uncategorized-count backfill helper queries through the entity
+      // manager; default it to an empty result set.
+      manager: {
+        createQueryBuilder: jest.fn(() => ({ ...queryBuilderMock })),
+      } as any,
     };
 
     transactionsRepository = {
@@ -122,13 +128,14 @@ describe("PayeesService", () => {
       },
     };
 
-    const mockQueryRunner = {
+    mockQueryRunner = {
       connect: jest.fn(),
       startTransaction: jest.fn(),
       commitTransaction: jest.fn(),
       rollbackTransaction: jest.fn(),
       release: jest.fn(),
       manager: {
+        find: jest.fn().mockResolvedValue([]),
         update: jest.fn().mockResolvedValue({ affected: 0 }),
         create: jest.fn().mockImplementation((_, data) => data),
         save: jest.fn().mockImplementation((data) => data),
@@ -1022,7 +1029,7 @@ describe("PayeesService", () => {
 
   describe("applyCategorySuggestions", () => {
     it("should bulk update payee categories and return count", async () => {
-      payeesRepository.find.mockResolvedValue([
+      mockQueryRunner.manager.find.mockResolvedValue([
         { ...mockPayeeNoCategory },
         { ...mockPayee },
       ]);
@@ -1041,9 +1048,9 @@ describe("PayeesService", () => {
         assignments,
       );
 
-      expect(result).toEqual({ updated: 2 });
-      expect(payeesRepository.save).toHaveBeenCalledTimes(1);
-      expect(payeesRepository.save).toHaveBeenCalledWith(
+      expect(result).toEqual({ updated: 2, transactionsBackfilled: 0 });
+      expect(mockQueryRunner.manager.save).toHaveBeenCalledTimes(1);
+      expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
             id: "payee-2",
@@ -1055,11 +1062,12 @@ describe("PayeesService", () => {
           }),
         ]),
       );
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
     });
 
     it("should skip assignments for payees not belonging to user", async () => {
       // Batch find only returns payees belonging to the user (not "other-user-payee")
-      payeesRepository.find.mockResolvedValue([{ ...mockPayee }]);
+      mockQueryRunner.manager.find.mockResolvedValue([{ ...mockPayee }]);
       categoriesRepository.find.mockResolvedValue([
         { id: "cat-1" },
         { id: "cat-2" },
@@ -1075,9 +1083,9 @@ describe("PayeesService", () => {
         assignments,
       );
 
-      expect(result).toEqual({ updated: 1 });
-      expect(payeesRepository.save).toHaveBeenCalledTimes(1);
-      expect(payeesRepository.save).toHaveBeenCalledWith(
+      expect(result).toEqual({ updated: 1, transactionsBackfilled: 0 });
+      expect(mockQueryRunner.manager.save).toHaveBeenCalledTimes(1);
+      expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
             id: "payee-1",
@@ -1089,29 +1097,29 @@ describe("PayeesService", () => {
 
     it("should return zero updated when no valid assignments", async () => {
       // Batch find returns empty: no payees match the requested IDs for this user
-      payeesRepository.find.mockResolvedValue([]);
+      mockQueryRunner.manager.find.mockResolvedValue([]);
       categoriesRepository.find.mockResolvedValue([{ id: "cat-1" }]);
 
       const result = await service.applyCategorySuggestions(userId, [
         { payeeId: "bad-1", categoryId: "cat-1" },
       ]);
 
-      expect(result).toEqual({ updated: 0 });
-      expect(payeesRepository.save).not.toHaveBeenCalled();
+      expect(result).toEqual({ updated: 0, transactionsBackfilled: 0 });
+      expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
     });
 
     it("should handle empty assignments array", async () => {
-      payeesRepository.find.mockResolvedValue([]);
+      mockQueryRunner.manager.find.mockResolvedValue([]);
 
       const result = await service.applyCategorySuggestions(userId, []);
 
-      expect(result).toEqual({ updated: 0 });
-      expect(payeesRepository.save).not.toHaveBeenCalled();
+      expect(result).toEqual({ updated: 0, transactionsBackfilled: 0 });
+      expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
     });
 
     it("should set defaultCategoryId on the payee entity before saving", async () => {
       const payee = { ...mockPayeeNoCategory, defaultCategoryId: null };
-      payeesRepository.find.mockResolvedValue([payee]);
+      mockQueryRunner.manager.find.mockResolvedValue([payee]);
       categoriesRepository.find.mockResolvedValue([{ id: "cat-new" }]);
 
       await service.applyCategorySuggestions(userId, [
@@ -1119,11 +1127,60 @@ describe("PayeesService", () => {
       ]);
 
       expect(payee.defaultCategoryId).toBe("cat-new");
-      expect(payeesRepository.save).toHaveBeenCalledWith(
+      expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({ defaultCategoryId: "cat-new" }),
         ]),
       );
+    });
+
+    it("should backfill uncategorized transactions when requested and report the count", async () => {
+      const payee = { ...mockPayeeNoCategory, defaultCategoryId: null };
+      mockQueryRunner.manager.find.mockResolvedValue([payee]);
+      categoriesRepository.find.mockResolvedValue([{ id: "cat-new" }]);
+      // The backfill update reports three rows affected.
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 3 });
+
+      const result = await service.applyCategorySuggestions(userId, [
+        { payeeId: "payee-2", categoryId: "cat-new", backfillTransactions: true },
+      ]);
+
+      expect(result).toEqual({ updated: 1, transactionsBackfilled: 3 });
+      // The transaction update is scoped to the payee with no existing category.
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Transaction,
+        expect.objectContaining({
+          userId,
+          payeeId: "payee-2",
+          isTransfer: false,
+          isSplit: false,
+        }),
+        { categoryId: "cat-new" },
+      );
+    });
+
+    it("should not backfill transactions when the flag is omitted", async () => {
+      const payee = { ...mockPayeeNoCategory, defaultCategoryId: null };
+      mockQueryRunner.manager.find.mockResolvedValue([payee]);
+      categoriesRepository.find.mockResolvedValue([{ id: "cat-new" }]);
+
+      const result = await service.applyCategorySuggestions(userId, [
+        { payeeId: "payee-2", categoryId: "cat-new" },
+      ]);
+
+      expect(result).toEqual({ updated: 1, transactionsBackfilled: 0 });
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+    });
+
+    it("should roll back when the category ownership check fails", async () => {
+      // No owned categories returned -> invalid category id -> throws.
+      categoriesRepository.find.mockResolvedValue([]);
+
+      await expect(
+        service.applyCategorySuggestions(userId, [
+          { payeeId: "payee-2", categoryId: "not-mine" },
+        ]),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 

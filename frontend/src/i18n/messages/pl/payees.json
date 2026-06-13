@@ -115,6 +115,8 @@
     "matchPercentageLabel": "Procent dopasowania kategorii: {percent}%",
     "matchPercentageHelp": "Kategoria musi być używana w co najmniej takim procencie transakcji",
     "onlyWithoutCategoryLabel": "Tylko odbiorcy bez domyślnej kategorii",
+    "backfillLabel": "{count, plural, one {Skategoryzuj też # istniejącą nieskategoryzowaną transakcję} few {Skategoryzuj też # istniejące nieskategoryzowane transakcje} many {Skategoryzuj też # istniejących nieskategoryzowanych transakcji} other {Skategoryzuj też # istniejących nieskategoryzowanych transakcji}}",
+    "backfillHelp": "Stosuje wybraną kategorię do transakcji, które obecnie jej nie mają. Istniejące kategorie, przelewy i transakcje podzielone pozostają bez zmian.",
     "previewButton": "Podgląd sugestii",
     "loading": "Wczytywanie...",
     "suggestionsHeader": "Sugestie (znaleziono: {count})",
@@ -136,6 +138,7 @@
     "toasts": {
       "selectAtLeastOne": "Wybierz co najmniej jednego odbiorcę do aktualizacji",
       "updated": "{count, plural, one {Zaktualizowano # odbiorcę} few {Zaktualizowano # odbiorców} many {Zaktualizowano # odbiorców} other {Zaktualizowano # odbiorcy}}",
+      "backfilled": "{count, plural, one {Skategoryzowano # transakcję} few {Skategoryzowano # transakcje} many {Skategoryzowano # transakcji} other {Skategoryzowano # transakcji}}",
       "loadFailed": "Nie udało się wczytać sugestii",
       "applyFailed": "Nie udało się zastosować przypisań kategorii"
     }
@@ -162,6 +165,7 @@
     "canonicalNameLabel": "Zachowaj jako odbiorcę",
     "aliasLabel": "Alias dla przyszłych importów",
     "defaultCategoryLabel": "Domyślna kategoria (opcjonalnie)",
+    "backfillLabel": "{count, plural, one {Skategoryzuj też # istniejącą nieskategoryzowaną transakcję} few {Skategoryzuj też # istniejące nieskategoryzowane transakcje} many {Skategoryzuj też # istniejących nieskategoryzowanych transakcji} other {Skategoryzuj też # istniejących nieskategoryzowanych transakcji}}",
     "aliasPlaceholder": "np. *LIDL*",
     "keepLabel": "Zachowaj tego odbiorcę",
     "includeMemberLabel": "Uwzględnij w scalaniu",
@@ -177,6 +181,7 @@
     "toasts": {
       "selectAtLeastOne": "Wybierz co najmniej jedną grupę do scalenia",
       "applied": "Scalono {groups, plural, one {# grupę} few {# grupy} many {# grup} other {# grup}} (połączono {payees} odbiorców)",
+      "backfilled": "{count, plural, one {Skategoryzowano # transakcję} few {Skategoryzowano # transakcje} many {Skategoryzowano # transakcji} other {Skategoryzowano # transakcji}}",
       "aliasesSkipped": "{count, plural, one {Pominięto # alias z powodu konfliktu} few {Pominięto # aliasy z powodu konfliktów} many {Pominięto # aliasów z powodu konfliktów} other {Pominięto # aliasów z powodu konfliktów}}",
       "loadFailed": "Nie udało się załadować grup scalania",
       "applyFailed": "Nie udało się scalić odbiorców"

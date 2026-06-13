@@ -20,6 +20,10 @@ import { MergePayeeDto } from "./dto/merge-payee.dto";
 import { ActionHistoryService } from "../action-history/action-history.service";
 import { toCountMap } from "../common/count-map.util";
 import { matchesAliasPattern } from "./alias-match.util";
+import {
+  backfillPayeeCategory,
+  countUncategorizedTransactionsByPayee,
+} from "./payee-backfill.util";
 
 function escapeLikeWildcards(value: string): string {
   // Escape backslash first, then the LIKE wildcards. Escaping only the
@@ -586,6 +590,7 @@ export class PayeesService {
       transactionCount: number;
       categoryCount: number;
       percentage: number;
+      uncategorizedCount: number;
     }>
   > {
     // Get category usage statistics per payee
@@ -645,6 +650,13 @@ export class PayeesService {
       countField: "total_count",
     });
 
+    // Per-payee count of transactions a default-category backfill would touch,
+    // surfaced per suggestion so the UI can offer the optional backfill.
+    const uncategorizedCountMap = await countUncategorizedTransactionsByPayee(
+      this.payeesRepository.manager,
+      userId,
+    );
+
     // Get current category names for payees that have one
     const payeesWithCategories = await this.payeesRepository.find({
       where: { userId },
@@ -672,6 +684,7 @@ export class PayeesService {
       transactionCount: number;
       categoryCount: number;
       percentage: number;
+      uncategorizedCount: number;
     }> = [];
 
     // Group category usage by payee
@@ -724,6 +737,7 @@ export class PayeesService {
           transactionCount: totalCount,
           categoryCount: topCategory.count,
           percentage: Math.round(percentage * 10) / 10,
+          uncategorizedCount: uncategorizedCountMap.get(payeeId) ?? 0,
         });
       }
     }
@@ -735,12 +749,21 @@ export class PayeesService {
   }
 
   /**
-   * Apply category suggestions to payees (bulk update)
+   * Apply category suggestions to payees (bulk update). When an assignment opts
+   * into `backfillTransactions`, that payee's existing uncategorized
+   * transactions also receive the chosen category (manual categorizations,
+   * transfers, and split parents are left untouched). Setting the default
+   * category and backfilling span two tables, so the whole batch runs in one
+   * transaction.
    */
   async applyCategorySuggestions(
     userId: string,
-    assignments: Array<{ payeeId: string; categoryId: string }>,
-  ): Promise<{ updated: number }> {
+    assignments: Array<{
+      payeeId: string;
+      categoryId: string;
+      backfillTransactions?: boolean;
+    }>,
+  ): Promise<{ updated: number; transactionsBackfilled: number }> {
     // M24: Batch-verify all categoryIds belong to the user
     const uniqueCategoryIds = [
       ...new Set(assignments.map((a) => a.categoryId)),
@@ -766,25 +789,46 @@ export class PayeesService {
     }
 
     const payeeIds = [...new Set(assignments.map((a) => a.payeeId))];
-    const payees = await this.payeesRepository.find({
-      where: { id: In(payeeIds), userId },
-    });
-    const payeeMap = new Map(payees.map((p) => [p.id, p]));
 
-    const toSave: Payee[] = [];
-    for (const assignment of assignments) {
-      const payee = payeeMap.get(assignment.payeeId);
-      if (payee) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const payees = await queryRunner.manager.find(Payee, {
+        where: { id: In(payeeIds), userId },
+      });
+      const payeeMap = new Map(payees.map((p) => [p.id, p]));
+
+      const toSave: Payee[] = [];
+      let transactionsBackfilled = 0;
+      for (const assignment of assignments) {
+        const payee = payeeMap.get(assignment.payeeId);
+        if (!payee) continue;
         payee.defaultCategoryId = assignment.categoryId;
         toSave.push(payee);
+
+        if (assignment.backfillTransactions) {
+          transactionsBackfilled += await backfillPayeeCategory(
+            queryRunner.manager,
+            userId,
+            assignment.payeeId,
+            assignment.categoryId,
+          );
+        }
       }
-    }
 
-    if (toSave.length > 0) {
-      await this.payeesRepository.save(toSave);
-    }
+      if (toSave.length > 0) {
+        await queryRunner.manager.save(toSave);
+      }
 
-    return { updated: toSave.length };
+      await queryRunner.commitTransaction();
+      return { updated: toSave.length, transactionsBackfilled };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   // ===== Alias Methods =====

@@ -4,6 +4,7 @@ import { AutoMergePayeesDialog } from './AutoMergePayeesDialog';
 import { payeesApi } from '@/lib/payees';
 import { AutoMergeGroup } from '@/types/payee';
 import { Category } from '@/types/category';
+import toast from 'react-hot-toast';
 
 vi.mock('@/lib/payees', () => ({
   payeesApi: {
@@ -14,6 +15,7 @@ vi.mock('@/lib/payees', () => ({
       transactionsMigrated: 0,
       aliasesCreated: 0,
       skippedAliases: 0,
+      transactionsBackfilled: 0,
     }),
   },
 }));
@@ -35,6 +37,7 @@ const lidlGroup: AutoMergeGroup = {
   suggestedName: 'Lidl',
   suggestedAlias: '*LIDL*',
   suggestedCategoryId: null,
+  uncategorizedTransactionCount: 6,
   totalTransactions: 17,
   members: [
     { payeeId: 'p1', name: 'Lidl', transactionCount: 10, isCanonical: true },
@@ -55,6 +58,7 @@ const groceryGroup: AutoMergeGroup = {
   suggestedName: 'Lidl',
   suggestedAlias: '*LIDL*',
   suggestedCategoryId: 'cat-groceries',
+  uncategorizedTransactionCount: 8,
   totalTransactions: 12,
   members: [
     { payeeId: 'p1', name: 'Lidl', transactionCount: 10, isCanonical: true },
@@ -220,6 +224,7 @@ describe('AutoMergePayeesDialog', () => {
       transactionsMigrated: 7,
       aliasesCreated: 1,
       skippedAliases: 0,
+      transactionsBackfilled: 0,
     });
     render(<AutoMergePayeesDialog isOpen onClose={onClose} onSuccess={onSuccess} />);
 
@@ -240,6 +245,7 @@ describe('AutoMergePayeesDialog', () => {
         canonicalName: 'Lidl',
         sourcePayeeIds: ['p2', 'p3'],
         alias: '*LIDL*',
+        backfillTransactions: false,
       },
     ]);
     expect(onSuccess).toHaveBeenCalled();
@@ -269,6 +275,7 @@ describe('AutoMergePayeesDialog', () => {
       transactionsMigrated: 5,
       aliasesCreated: 1,
       skippedAliases: 0,
+      transactionsBackfilled: 0,
     });
     render(<AutoMergePayeesDialog isOpen onClose={onClose} onSuccess={onSuccess} />);
 
@@ -298,6 +305,7 @@ describe('AutoMergePayeesDialog', () => {
         canonicalName: 'Lidl',
         sourcePayeeIds: ['p3'],
         alias: '*LIDL*',
+        backfillTransactions: false,
       },
     ]);
   });
@@ -311,6 +319,7 @@ describe('AutoMergePayeesDialog', () => {
       suggestedName: 'Royal Electric',
       suggestedAlias: '*ROYAL ELECTRIC*',
       suggestedCategoryId: null,
+      uncategorizedTransactionCount: 0,
       totalTransactions: 25,
       members: [
         { payeeId: 'a1', name: 'Royal Electric', transactionCount: 23, isCanonical: true },
@@ -323,6 +332,7 @@ describe('AutoMergePayeesDialog', () => {
       suggestedName: 'Royal City Nursery',
       suggestedAlias: '*ROYAL CITY NURSERY*',
       suggestedCategoryId: null,
+      uncategorizedTransactionCount: 0,
       totalTransactions: 11,
       members: [
         { payeeId: 'b1', name: 'Royal City Nursery', transactionCount: 9, isCanonical: true },
@@ -336,6 +346,7 @@ describe('AutoMergePayeesDialog', () => {
       transactionsMigrated: 2,
       aliasesCreated: 1,
       skippedAliases: 0,
+      transactionsBackfilled: 0,
     });
     render(<AutoMergePayeesDialog isOpen onClose={onClose} onSuccess={onSuccess} />);
 
@@ -364,6 +375,7 @@ describe('AutoMergePayeesDialog', () => {
         canonicalName: 'Royal City Nursery',
         sourcePayeeIds: ['b2'],
         alias: '*ROYAL CITY NURSERY*',
+        backfillTransactions: false,
       },
     ]);
   });
@@ -409,6 +421,7 @@ describe('AutoMergePayeesDialog', () => {
       transactionsMigrated: 2,
       aliasesCreated: 1,
       skippedAliases: 0,
+      transactionsBackfilled: 0,
     });
     render(
       <AutoMergePayeesDialog
@@ -440,5 +453,89 @@ describe('AutoMergePayeesDialog', () => {
         defaultCategoryId: 'cat-groceries',
       }),
     ]);
+  });
+
+  it('hides the backfill option when the group has no default category', async () => {
+    // lidlGroup has uncategorized transactions but no suggested category.
+    mockPreview.mockResolvedValue([lidlGroup]);
+    render(<AutoMergePayeesDialog isOpen onClose={onClose} onSuccess={onSuccess} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Preview Groups'));
+    });
+    await waitFor(() => expect(screen.getByDisplayValue('Lidl')).toBeInTheDocument());
+
+    expect(screen.queryByText(/Also categorize/)).not.toBeInTheDocument();
+  });
+
+  it('offers the backfill option with the group count once a category is set', async () => {
+    mockPreview.mockResolvedValue([groceryGroup]);
+    render(
+      <AutoMergePayeesDialog
+        isOpen
+        onClose={onClose}
+        onSuccess={onSuccess}
+        categories={categories}
+      />,
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Preview Groups'));
+    });
+    await waitFor(() => expect(screen.getByDisplayValue('Lidl')).toBeInTheDocument());
+
+    // groceryGroup carries 8 uncategorized transactions and a default category.
+    expect(
+      screen.getAllByText(/Also categorize 8 existing uncategorized transactions/).length,
+    ).toBeGreaterThanOrEqual(1);
+  });
+
+  it('sends backfillTransactions and shows a backfilled toast when enabled', async () => {
+    mockPreview.mockResolvedValue([groceryGroup]);
+    mockApply.mockResolvedValue({
+      groupsMerged: 1,
+      payeesMerged: 1,
+      transactionsMigrated: 2,
+      aliasesCreated: 1,
+      skippedAliases: 0,
+      transactionsBackfilled: 8,
+    });
+    render(
+      <AutoMergePayeesDialog
+        isOpen
+        onClose={onClose}
+        onSuccess={onSuccess}
+        categories={categories}
+      />,
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Preview Groups'));
+    });
+    await waitFor(() => expect(screen.getByDisplayValue('Lidl')).toBeInTheDocument());
+
+    // The backfill toggle is enabled only once the group is included.
+    await selectAllGroups();
+
+    const backfillToggle = screen.getByLabelText(
+      /Also categorize 8 existing uncategorized transactions/,
+    );
+    await act(async () => {
+      fireEvent.click(backfillToggle);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText(/Merge 1 Group/));
+    });
+
+    await waitFor(() => expect(mockApply).toHaveBeenCalled());
+    expect(mockApply).toHaveBeenCalledWith([
+      expect.objectContaining({
+        canonicalPayeeId: 'p1',
+        defaultCategoryId: 'cat-groceries',
+        backfillTransactions: true,
+      }),
+    ]);
+    expect(toast.success).toHaveBeenCalledWith('Categorized 8 transactions');
   });
 });

@@ -115,6 +115,8 @@
     "matchPercentageLabel": "Pourcentage de correspondance : {percent} %",
     "matchPercentageHelp": "La catégorie doit être utilisée dans au moins ce pourcentage de transactions",
     "onlyWithoutCategoryLabel": "Uniquement les bénéficiaires sans catégorie par défaut",
+    "backfillLabel": "{count, plural, one {Catégoriser aussi # transaction existante sans catégorie} other {Catégoriser aussi # transactions existantes sans catégorie}}",
+    "backfillHelp": "Applique la catégorie choisie aux transactions qui n'en ont pas actuellement. Les catégories existantes, les virements et les transactions ventilées restent inchangés.",
     "previewButton": "Aperçu des suggestions",
     "loading": "Chargement...",
     "suggestionsHeader": "Suggestions ({count} trouvée(s))",
@@ -136,6 +138,7 @@
     "toasts": {
       "selectAtLeastOne": "Veuillez sélectionner au moins un bénéficiaire à mettre à jour",
       "updated": "{count, plural, one {# bénéficiaire mis à jour} other {# bénéficiaires mis à jour}}",
+      "backfilled": "{count, plural, one {# transaction catégorisée} other {# transactions catégorisées}}",
       "loadFailed": "Échec du chargement des suggestions",
       "applyFailed": "Échec de l'application des catégories"
     }
@@ -162,6 +165,7 @@
     "canonicalNameLabel": "Conserver comme bénéficiaire",
     "aliasLabel": "Alias pour les futurs imports",
     "defaultCategoryLabel": "Catégorie par défaut (facultatif)",
+    "backfillLabel": "{count, plural, one {Catégoriser aussi # transaction existante sans catégorie} other {Catégoriser aussi # transactions existantes sans catégorie}}",
     "aliasPlaceholder": "ex. : *LIDL*",
     "keepLabel": "Conserver ce bénéficiaire",
     "includeMemberLabel": "Inclure dans la fusion",
@@ -177,6 +181,7 @@
     "toasts": {
       "selectAtLeastOne": "Veuillez sélectionner au moins un groupe à fusionner",
       "applied": "{groups, plural, one {# groupe fusionné} other {# groupes fusionnés}} ({payees} bénéficiaires combinés)",
+      "backfilled": "{count, plural, one {# transaction catégorisée} other {# transactions catégorisées}}",
       "aliasesSkipped": "{count, plural, one {# alias a été ignoré en raison d'un conflit} other {# alias ont été ignorés en raison de conflits}}",
       "loadFailed": "Échec du chargement des groupes de fusion",
       "applyFailed": "Échec de la fusion des bénéficiaires"

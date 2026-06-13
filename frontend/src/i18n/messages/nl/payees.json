@@ -115,6 +115,8 @@
     "matchPercentageLabel": "Categorieovereenkomstpercentage: {percent}%",
     "matchPercentageHelp": "De categorie moet in minimaal dit percentage van de transacties worden gebruikt",
     "onlyWithoutCategoryLabel": "Alleen begunstigden zonder standaardcategorie",
+    "backfillLabel": "{count, plural, one {Categoriseer ook # bestaande niet-gecategoriseerde transactie} other {Categoriseer ook # bestaande niet-gecategoriseerde transacties}}",
+    "backfillHelp": "Past de gekozen categorie toe op transacties die er nu geen hebben. Bestaande categorieën, overboekingen en gesplitste transacties blijven ongewijzigd.",
     "previewButton": "Suggesties bekijken",
     "loading": "Laden...",
     "suggestionsHeader": "Suggesties ({count} gevonden)",
@@ -136,6 +138,7 @@
     "toasts": {
       "selectAtLeastOne": "Selecteer minimaal één begunstigde om bij te werken",
       "updated": "{count, plural, one {# begunstigde bijgewerkt} other {# begunstigden bijgewerkt}}",
+      "backfilled": "{count, plural, one {# transactie gecategoriseerd} other {# transacties gecategoriseerd}}",
       "loadFailed": "Suggesties laden mislukt",
       "applyFailed": "Categorietoewijzingen toepassen mislukt"
     }
@@ -162,6 +165,7 @@
     "canonicalNameLabel": "Behouden als begunstigde",
     "aliasLabel": "Alias voor toekomstige imports",
     "defaultCategoryLabel": "Standaardcategorie (optioneel)",
+    "backfillLabel": "{count, plural, one {Categoriseer ook # bestaande niet-gecategoriseerde transactie} other {Categoriseer ook # bestaande niet-gecategoriseerde transacties}}",
     "aliasPlaceholder": "bijv. *LIDL*",
     "keepLabel": "Deze begunstigde behouden",
     "includeMemberLabel": "Opnemen in samenvoeging",
@@ -177,6 +181,7 @@
     "toasts": {
       "selectAtLeastOne": "Selecteer ten minste één groep om samen te voegen",
       "applied": "{groups, plural, one {# groep} other {# groepen}} samengevoegd ({payees} begunstigden gecombineerd)",
+      "backfilled": "{count, plural, one {# transactie gecategoriseerd} other {# transacties gecategoriseerd}}",
       "aliasesSkipped": "{count, plural, one {# alias is overgeslagen vanwege een conflict} other {# aliassen zijn overgeslagen vanwege conflicten}}",
       "loadFailed": "Samenvoegingsgroepen konden niet worden geladen",
       "applyFailed": "Begunstigden konden niet worden samengevoegd"
