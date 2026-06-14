@@ -823,6 +823,12 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
         // rejected and the old category sticks), while undefined is dropped by
         // JSON.stringify (so the backend never learns the category was cleared).
         categoryId: isSplitMode ? undefined : (data.categoryId || null),
+        // A cleared payee must be sent as null, not the empty string the
+        // combobox yields: '' fails the backend's UUID validation (rejecting
+        // the update so the old payee sticks). A typed custom payee keeps its
+        // name with a null payeeId so the backend can link or create it.
+        payeeId: data.payeeId || null,
+        payeeName: data.payeeName || null,
         // Ensure cleared optional fields are sent as null (not undefined)
         // so the backend knows to clear them rather than ignoring the field
         description: data.description ?? null,

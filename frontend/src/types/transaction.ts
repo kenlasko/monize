@@ -97,8 +97,8 @@ export interface CreateSplitData {
 export interface CreateTransactionData {
   accountId: string;
   transactionDate: string;
-  payeeId?: string;
-  payeeName?: string;
+  payeeId?: string | null;
+  payeeName?: string | null;
   categoryId?: string | null;
   amount: number;
   currencyCode: string;
