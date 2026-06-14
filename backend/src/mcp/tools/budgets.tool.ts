@@ -10,6 +10,7 @@ import {
   safeToolError,
 } from "../mcp-context";
 import { getBudgetStatusOutput } from "../tool-output-schemas";
+import { READ_ONLY } from "../mcp-annotations";
 
 @Injectable()
 export class McpBudgetsTools {
@@ -19,6 +20,8 @@ export class McpBudgetsTools {
     server.registerTool(
       "get_budget_status",
       {
+        title: "Budget status",
+        annotations: READ_ONLY,
         description:
           "Get budget status for a specific period. Returns total budgeted vs actual spending, per-category breakdowns, spending velocity, safe daily spend, and health score. Returns the same shape as the AI Assistant's get_budget_status tool.",
         inputSchema: {

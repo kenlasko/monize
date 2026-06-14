@@ -10,6 +10,7 @@ import {
   safeToolError,
 } from "../mcp-context";
 import { getPayeesOutput, createPayeeOutput } from "../tool-output-schemas";
+import { READ_ONLY, CREATE } from "../mcp-annotations";
 
 @Injectable()
 export class McpPayeesTools {
@@ -19,6 +20,8 @@ export class McpPayeesTools {
     server.registerTool(
       "get_payees",
       {
+        title: "List payees",
+        annotations: READ_ONLY,
         description: "List payees, optionally filtered by search query",
         inputSchema: {
           search: z
@@ -55,6 +58,8 @@ export class McpPayeesTools {
     server.registerTool(
       "create_payee",
       {
+        title: "Create payee",
+        annotations: CREATE,
         description: "Create a new payee",
         inputSchema: {
           name: z.string().max(100).describe("Payee name"),

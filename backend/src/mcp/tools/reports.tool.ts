@@ -18,6 +18,7 @@ import {
   monthlyComparisonOutput,
   getAnomaliesOutput,
 } from "../tool-output-schemas";
+import { READ_ONLY } from "../mcp-annotations";
 
 @Injectable()
 export class McpReportsTools {
@@ -27,6 +28,8 @@ export class McpReportsTools {
     server.registerTool(
       "generate_report",
       {
+        title: "Generate report",
+        annotations: READ_ONLY,
         description: "Run a financial report",
         inputSchema: {
           type: z
@@ -109,6 +112,8 @@ export class McpReportsTools {
     server.registerTool(
       "monthly_comparison",
       {
+        title: "Monthly comparison",
+        annotations: READ_ONLY,
         description:
           "Generate a monthly comparison report comparing one month to the previous month. Includes income vs expenses, category spending breakdown, net worth, and investment performance.",
         inputSchema: {
@@ -143,6 +148,8 @@ export class McpReportsTools {
     server.registerTool(
       "get_anomalies",
       {
+        title: "Detect spending anomalies",
+        annotations: READ_ONLY,
         description: "Find unusual transactions or spending patterns",
         inputSchema: {
           months: z

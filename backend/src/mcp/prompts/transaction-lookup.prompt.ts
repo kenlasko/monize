@@ -8,6 +8,7 @@ export class McpTransactionLookupPrompt {
     server.registerPrompt(
       "transaction-lookup",
       {
+        title: "Transaction lookup",
         description: "Help find specific transactions",
         argsSchema: {
           query: z

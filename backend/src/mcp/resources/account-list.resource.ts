@@ -12,6 +12,7 @@ export class McpAccountListResource {
       "accounts",
       "monize://accounts",
       {
+        title: "Accounts",
         description: "Current account list with types and balances",
       },
       async (_uri, extra) => {

@@ -12,6 +12,7 @@ export class McpCategoryTreeResource {
       "categories",
       "monize://categories",
       {
+        title: "Category tree",
         description: "Full category hierarchy",
       },
       async (_uri, extra) => {

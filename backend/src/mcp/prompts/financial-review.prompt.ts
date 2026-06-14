@@ -8,6 +8,7 @@ export class McpFinancialReviewPrompt {
     server.registerPrompt(
       "financial-review",
       {
+        title: "Financial review",
         description: "Review finances for a period and provide insights",
         argsSchema: {
           period: z

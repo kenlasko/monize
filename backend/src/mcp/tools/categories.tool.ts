@@ -10,6 +10,7 @@ import {
   safeToolError,
 } from "../mcp-context";
 import { getCategoriesOutput } from "../tool-output-schemas";
+import { READ_ONLY } from "../mcp-annotations";
 
 @Injectable()
 export class McpCategoriesTools {
@@ -19,6 +20,8 @@ export class McpCategoriesTools {
     server.registerTool(
       "get_categories",
       {
+        title: "List categories",
+        annotations: READ_ONLY,
         description:
           "List the user's categories with their hierarchy (parent names) and transaction counts. Optionally filter by type or search by name. Returns the same shape as the AI Assistant's get_categories tool.",
         inputSchema: {

@@ -16,7 +16,10 @@ export class McpRecentTransactionsResource {
     server.registerResource(
       "recent-transactions",
       "monize://recent-transactions",
-      { description: "Last 30 days of transactions (summarized)" },
+      {
+        title: "Recent transactions",
+        description: "Last 30 days of transactions (summarized)",
+      },
       async (_uri, extra) => {
         const ctx = resolve(extra.sessionId);
         if (!ctx) {

@@ -15,6 +15,7 @@ import {
   getNetWorthOutput,
   getNetWorthHistoryOutput,
 } from "../tool-output-schemas";
+import { READ_ONLY } from "../mcp-annotations";
 
 @Injectable()
 export class McpNetWorthTools {
@@ -27,6 +28,8 @@ export class McpNetWorthTools {
     server.registerTool(
       "get_net_worth",
       {
+        title: "Get net worth",
+        annotations: READ_ONLY,
         description: "Get current net worth breakdown by account",
         inputSchema: {},
         outputSchema: getNetWorthOutput,
@@ -49,6 +52,8 @@ export class McpNetWorthTools {
     server.registerTool(
       "get_net_worth_history",
       {
+        title: "Get net worth history",
+        annotations: READ_ONLY,
         description:
           "Get net worth over time (monthly snapshots). Returns the same shape as the AI Assistant's get_net_worth_history tool. Default range is the last 12 months when both dates are omitted.",
         inputSchema: {

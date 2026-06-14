@@ -15,6 +15,7 @@ import {
   getAccountBalanceOutput,
   getAccountBalancesOutput,
 } from "../tool-output-schemas";
+import { READ_ONLY } from "../mcp-annotations";
 
 @Injectable()
 export class McpAccountsTools {
@@ -24,6 +25,8 @@ export class McpAccountsTools {
     server.registerTool(
       "get_accounts",
       {
+        title: "List accounts",
+        annotations: READ_ONLY,
         description: "List all accounts with balances",
         inputSchema: {
           includeInactive: z
@@ -54,6 +57,8 @@ export class McpAccountsTools {
     server.registerTool(
       "get_account_balance",
       {
+        title: "Get account balance",
+        annotations: READ_ONLY,
         description: "Get detailed balance for a specific account",
         inputSchema: {
           accountId: z.string().uuid().describe("Account ID"),
@@ -88,6 +93,8 @@ export class McpAccountsTools {
     server.registerTool(
       "get_account_balances",
       {
+        title: "Get account balances",
+        annotations: READ_ONLY,
         description:
           "Get current account balances with per-account type and currency, plus total assets, total liabilities, and net worth. Returns the same shape as the AI Assistant's get_account_balances tool. Brokerage accounts show market value; every other account shows currentBalance + futureTransactionsSum. Totals match the dashboard Net Worth widget.",
         inputSchema: {

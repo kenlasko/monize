@@ -17,6 +17,7 @@ export class McpFinancialSummaryResource {
       "financial-summary",
       "monize://financial-summary",
       {
+        title: "Financial summary",
         description:
           "High-level financial snapshot: income, expenses, net worth",
       },

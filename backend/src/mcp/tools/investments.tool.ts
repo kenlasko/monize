@@ -22,6 +22,7 @@ import {
   getCapitalGainsOutput,
   getHoldingDetailsOutput,
 } from "../tool-output-schemas";
+import { READ_ONLY } from "../mcp-annotations";
 
 @Injectable()
 export class McpInvestmentsTools {
@@ -35,6 +36,8 @@ export class McpInvestmentsTools {
     server.registerTool(
       "get_portfolio_summary",
       {
+        title: "Portfolio summary",
+        annotations: READ_ONLY,
         description:
           "Get investment portfolio overview with holdings, gains/losses, and allocation. Returns the same compact, LLM-friendly shape as the AI Assistant's tool.",
         inputSchema: {
@@ -69,6 +72,8 @@ export class McpInvestmentsTools {
     server.registerTool(
       "query_investment_transactions",
       {
+        title: "Query investment transactions",
+        annotations: READ_ONLY,
         description:
           "Query brokerage investment-account transactions (buys, sells, dividends, interest, capital gains, splits, transfers, reinvestments, share adjustments). Filter by account, security symbol, action, and date; optionally group by account, date, security, or action. Returns the same compact, LLM-friendly shape as the AI Assistant's tool.",
         inputSchema: {
@@ -139,6 +144,8 @@ export class McpInvestmentsTools {
     server.registerTool(
       "get_capital_gains",
       {
+        title: "Capital gains",
+        annotations: READ_ONLY,
         description:
           "Per-period capital gains (realized + unrealized) for the user's investment accounts. Replays transaction history and snapshots positions against historical close prices, so the output includes mark-to-market movement on currently-held positions in addition to realized SELL gains. Requires startDate and endDate. Returns the same compact, LLM-friendly shape as the AI Assistant's tool.",
         inputSchema: {
@@ -199,6 +206,8 @@ export class McpInvestmentsTools {
     server.registerTool(
       "get_holding_details",
       {
+        title: "Holding details",
+        annotations: READ_ONLY,
         description: "Get details for holdings in a specific account",
         inputSchema: {
           accountId: z
