@@ -514,6 +514,12 @@ export function MonthlyCategoryBreakdownReport() {
     const overallSum = roundMoney(balanceSum + transfers.totalSum);
     const overallAvg = roundMoney(overallSum / monthCount);
 
+    // Category id collections for the summary drill-throughs.
+    const incomeCategoryIds = incomeSections.flatMap((s) => s.allCategoryIds);
+    const expenseCategoryIds = expenseSections.flatMap((s) => s.allCategoryIds);
+    const allCategoryIds = [...incomeCategoryIds, ...expenseCategoryIds];
+    const allTransferAccountIds = transfers.rows.map((r) => r.accountId);
+
     return {
       months,
       sections,
@@ -533,6 +539,10 @@ export function MonthlyCategoryBreakdownReport() {
       monthlyOverall,
       overallSum,
       overallAvg,
+      incomeCategoryIds,
+      expenseCategoryIds,
+      allCategoryIds,
+      allTransferAccountIds,
     };
   }, [
     data,
@@ -551,17 +561,33 @@ export function MonthlyCategoryBreakdownReport() {
     return `${year}-${String(mon).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
   };
 
+  // Navigate to the transactions page with the given filters. Empty filter
+  // sets are omitted; transfers are selected via the special "transfer"
+  // category id, optionally narrowed to specific accounts.
+  const pushTransactions = (opts: {
+    categoryIds?: string[];
+    accountIds?: string[];
+    start?: string;
+    end?: string;
+  }) => {
+    const params = new URLSearchParams();
+    const cats = opts.categoryIds ? Array.from(new Set(opts.categoryIds)) : [];
+    const accs = opts.accountIds ? Array.from(new Set(opts.accountIds)) : [];
+    if (cats.length) params.set('categoryIds', cats.join(','));
+    if (accs.length) params.set('accountIds', accs.join(','));
+    if (opts.start) params.set('startDate', opts.start);
+    if (opts.end) params.set('endDate', opts.end);
+    if (Array.from(params.keys()).length === 0) return;
+    router.push(`/transactions?${params.toString()}`);
+  };
+
   const navigateToTransactions = (
     categoryIds: string[],
     start: string | undefined,
     end: string | undefined,
   ) => {
-    const ids = Array.from(new Set(categoryIds));
-    if (ids.length === 0) return;
-    const params = new URLSearchParams({ categoryIds: ids.join(',') });
-    if (start) params.set('startDate', start);
-    if (end) params.set('endDate', end);
-    router.push(`/transactions?${params.toString()}`);
+    if (Array.from(new Set(categoryIds)).length === 0) return;
+    pushTransactions({ categoryIds, start, end });
   };
 
   // Drill into a single month for the given categories.
@@ -573,6 +599,25 @@ export function MonthlyCategoryBreakdownReport() {
   // clicking a category/subcategory name rather than a single month cell).
   const drillDownRange = (categoryIds: string[]) => {
     navigateToTransactions(categoryIds, rangeStart || undefined, rangeEnd || undefined);
+  };
+
+  // Drill into transfers (optionally for specific accounts) over the full
+  // report range or a single month.
+  const drillTransfersRange = (accountIds: string[]) => {
+    pushTransactions({
+      categoryIds: ['transfer'],
+      accountIds,
+      start: rangeStart || undefined,
+      end: rangeEnd || undefined,
+    });
+  };
+  const drillTransfersMonth = (month: string, accountIds: string[]) => {
+    pushTransactions({
+      categoryIds: ['transfer'],
+      accountIds,
+      start: `${month}-01`,
+      end: lastDayOfMonth(month),
+    });
   };
 
   // Export the breakdown as a CSV matrix: one row per category (with its parent
@@ -870,13 +915,32 @@ export function MonthlyCategoryBreakdownReport() {
         {tr.rows.map((row) => (
           <tr key={`${row.direction}-${row.accountId}`} className="hover:bg-gray-50 dark:hover:bg-gray-700/40">
             <td className="sticky left-0 z-10 bg-white dark:bg-gray-800 pl-5 pr-2 py-1 text-gray-900 dark:text-gray-100 truncate max-w-[220px]" title={row.displayName}>
-              {row.displayName}
+              <button
+                type="button"
+                onClick={() => drillTransfersRange([row.accountId])}
+                className="block w-full text-left truncate hover:underline"
+              >
+                {row.displayName}
+              </button>
             </td>
-            {months.map((m) => (
-              <td key={m} className="px-2 py-1 text-right">
-                {formatGrand(row.values[m] || 0, null, formatCurrency, currency)}
-              </td>
-            ))}
+            {months.map((m) => {
+              const value = row.values[m] || 0;
+              return (
+                <td key={m} className="px-2 py-1 text-right">
+                  {value !== 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => drillTransfersMonth(m, [row.accountId])}
+                      className="hover:underline"
+                    >
+                      {formatGrand(value, null, formatCurrency, currency)}
+                    </button>
+                  ) : (
+                    <span className="text-gray-300 dark:text-gray-600">—</span>
+                  )}
+                </td>
+              );
+            })}
             <td className="px-2 py-1 text-right font-semibold text-gray-900 dark:text-gray-100">
               {formatGrand(row.total, null, formatCurrency, currency)}
             </td>
@@ -887,13 +951,32 @@ export function MonthlyCategoryBreakdownReport() {
         ))}
         <tr className="font-bold bg-gray-100 dark:bg-gray-900 border-t-2 border-gray-400 dark:border-gray-500">
           <td className={`sticky left-0 z-10 bg-gray-100 dark:bg-gray-900 px-2 py-1 ${accent}`}>
-            {t('monthlyCategoryBreakdown.totalTransfers')}
+            <button
+              type="button"
+              onClick={() => drillTransfersRange(model!.allTransferAccountIds)}
+              className="text-left hover:underline"
+            >
+              {t('monthlyCategoryBreakdown.totalTransfers')}
+            </button>
           </td>
-          {months.map((m) => (
-            <td key={m} className={`px-2 py-1 text-right ${accent}`}>
-              {formatGrand(tr.monthly[m] || 0, null, formatCurrency, currency)}
-            </td>
-          ))}
+          {months.map((m) => {
+            const value = tr.monthly[m] || 0;
+            return (
+              <td key={m} className={`px-2 py-1 text-right ${accent}`}>
+                {value !== 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => drillTransfersMonth(m, model!.allTransferAccountIds)}
+                    className="hover:underline"
+                  >
+                    {formatGrand(value, null, formatCurrency, currency)}
+                  </button>
+                ) : (
+                  formatGrand(value, null, formatCurrency, currency)
+                )}
+              </td>
+            );
+          })}
           <td className={`px-2 py-1 text-right ${accent}`}>
             {formatGrand(tr.totalSum, null, formatCurrency, currency)}
           </td>
@@ -906,6 +989,8 @@ export function MonthlyCategoryBreakdownReport() {
   };
 
   // A bold summary row spanning all months plus the total/average columns.
+  // When `drill` is supplied the label and non-zero month cells become
+  // click-throughs to the transactions page.
   const renderSummaryRow = (
     label: string,
     monthly: Record<string, number>,
@@ -913,16 +998,36 @@ export function MonthlyCategoryBreakdownReport() {
     avg: number,
     signMode: boolean | null,
     accent: string,
+    drill?: { range: () => void; month: (m: string) => void },
   ) => (
     <tr className="font-bold bg-gray-100 dark:bg-gray-900">
       <td className={`sticky left-0 z-10 bg-gray-100 dark:bg-gray-900 px-2 py-1 ${accent}`}>
-        {label}
+        {drill ? (
+          <button type="button" onClick={drill.range} className="text-left hover:underline">
+            {label}
+          </button>
+        ) : (
+          label
+        )}
       </td>
-      {months.map((m) => (
-        <td key={m} className={`px-2 py-1 text-right ${accent}`}>
-          {formatGrand(monthly[m] || 0, signMode, formatCurrency, currency)}
-        </td>
-      ))}
+      {months.map((m) => {
+        const value = monthly[m] || 0;
+        return (
+          <td key={m} className={`px-2 py-1 text-right ${accent}`}>
+            {drill && value !== 0 ? (
+              <button
+                type="button"
+                onClick={() => drill.month(m)}
+                className="hover:underline"
+              >
+                {formatGrand(value, signMode, formatCurrency, currency)}
+              </button>
+            ) : (
+              formatGrand(value, signMode, formatCurrency, currency)
+            )}
+          </td>
+        );
+      })}
       <td className={`px-2 py-1 text-right ${accent}`}>
         {formatGrand(sum, signMode, formatCurrency, currency)}
       </td>
@@ -1105,6 +1210,10 @@ export function MonthlyCategoryBreakdownReport() {
                   model!.totalIncomeAvg,
                   true,
                   'text-green-600 dark:text-green-400',
+                  {
+                    range: () => drillDownRange(model!.incomeCategoryIds),
+                    month: (m) => drillDown(m, model!.incomeCategoryIds),
+                  },
                 )}
                 {renderSummaryRow(
                   t('monthlyCategoryBreakdown.totalExpenses'),
@@ -1113,16 +1222,36 @@ export function MonthlyCategoryBreakdownReport() {
                   model!.totalExpensesAvg,
                   false,
                   '',
+                  {
+                    range: () => drillDownRange(model!.expenseCategoryIds),
+                    month: (m) => drillDown(m, model!.expenseCategoryIds),
+                  },
                 )}
                 <tr className="font-bold bg-gray-100 dark:bg-gray-900 border-t-2 border-gray-400 dark:border-gray-500">
                   <td className="sticky left-0 z-10 bg-gray-100 dark:bg-gray-900 px-2 py-1">
-                    {t('monthlyCategoryBreakdown.balance')}
+                    <button
+                      type="button"
+                      onClick={() => drillDownRange(model!.allCategoryIds)}
+                      className="text-left hover:underline"
+                    >
+                      {t('monthlyCategoryBreakdown.balance')}
+                    </button>
                   </td>
                   {months.map((m) => {
                     const bal = model!.monthlyBalance[m] || 0;
                     return (
                       <td key={m} className={`px-2 py-1 text-right ${bal >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                        {formatGrand(bal, null, formatCurrency, currency)}
+                        {bal !== 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => drillDown(m, model!.allCategoryIds)}
+                            className="hover:underline"
+                          >
+                            {formatGrand(bal, null, formatCurrency, currency)}
+                          </button>
+                        ) : (
+                          formatGrand(bal, null, formatCurrency, currency)
+                        )}
                       </td>
                     );
                   })}
@@ -1141,6 +1270,10 @@ export function MonthlyCategoryBreakdownReport() {
                     model!.transfers.totalAvg,
                     null,
                     'text-blue-700 dark:text-blue-300',
+                    {
+                      range: () => drillTransfersRange(model!.allTransferAccountIds),
+                      month: (m) => drillTransfersMonth(m, model!.allTransferAccountIds),
+                    },
                   )}
                 {model!.hasTransfers && (
                   <tr className="font-bold bg-gray-200 dark:bg-gray-800 border-t-2 border-gray-400 dark:border-gray-500">
@@ -1184,13 +1317,31 @@ export function MonthlyCategoryBreakdownReport() {
                   return (
                     <tr key={`recap-${si}`} className="font-bold bg-gray-50 dark:bg-gray-900">
                       <td className="sticky left-0 z-10 bg-gray-50 dark:bg-gray-900 px-2 py-1 truncate" title={section.title}>
-                        {section.title}
+                        {section.allCategoryIds.length > 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => drillDownRange(section.allCategoryIds)}
+                            className="block w-full text-left truncate hover:underline"
+                          >
+                            {section.title}
+                          </button>
+                        ) : (
+                          section.title
+                        )}
                       </td>
                       {months.map((m) => {
                         const value = section.subtotals[m] || 0;
                         return (
                           <td key={m} className="px-2 py-1 text-right">
-                            {value !== 0 ? (
+                            {value !== 0 && section.allCategoryIds.length > 0 ? (
+                              <button
+                                type="button"
+                                onClick={() => drillDown(m, section.allCategoryIds)}
+                                className="hover:underline"
+                              >
+                                {formatCell(value, sectionMonthTotal(m), section.isIncome)}
+                              </button>
+                            ) : value !== 0 ? (
                               formatCell(value, sectionMonthTotal(m), section.isIncome)
                             ) : (
                               <span className="text-gray-300 dark:text-gray-600">—</span>
@@ -1215,6 +1366,10 @@ export function MonthlyCategoryBreakdownReport() {
                     model!.transfers.totalAvg,
                     null,
                     'text-blue-700 dark:text-blue-300',
+                    {
+                      range: () => drillTransfersRange(model!.allTransferAccountIds),
+                      month: (m) => drillTransfersMonth(m, model!.allTransferAccountIds),
+                    },
                   )}
               </tbody>
             </table>

@@ -521,4 +521,46 @@ describe('MonthlyCategoryBreakdownReport', () => {
       expect(screen.getAllByText('+ $500.00').length).toBeGreaterThan(0);
     });
   });
+
+  it('drills into an account\'s transfers when a transfer row is clicked', async () => {
+    mockGetMonthlyCategoryBreakdown.mockResolvedValue(transfersResponse);
+    render(<MonthlyCategoryBreakdownReport />);
+
+    await waitFor(() => {
+      expect(screen.getByText('From Chequing')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('From Chequing'));
+    });
+
+    expect(mockPush).toHaveBeenCalledTimes(1);
+    const url = mockPush.mock.calls[0][0] as string;
+    expect(url).toContain('/transactions?');
+    expect(url).toContain('categoryIds=transfer');
+    expect(url).toContain('accountIds=acc-chequing');
+    expect(url).toContain('startDate=2025-01-01');
+    expect(url).toContain('endDate=2025-06-30');
+  });
+
+  it('drills into income categories when the Total income summary row is clicked', async () => {
+    mockGetMonthlyCategoryBreakdown.mockResolvedValue(sampleResponse);
+    render(<MonthlyCategoryBreakdownReport />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Groceries')).toBeInTheDocument();
+    });
+
+    // Only the summary "Total income" is a button (the group total is plain).
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Total income' }));
+    });
+
+    expect(mockPush).toHaveBeenCalledTimes(1);
+    const url = mockPush.mock.calls[0][0] as string;
+    expect(url).toContain('/transactions?');
+    expect(url).toContain('categoryIds=cat-salary');
+    expect(url).toContain('startDate=2025-01-01');
+    expect(url).toContain('endDate=2025-06-30');
+  });
 });
