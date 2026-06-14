@@ -32,7 +32,8 @@
       "active": "Actief",
       "inactive": "Inactief",
       "withoutCategory": "Zonder categorie"
-    }
+    },
+    "applyDefaultCategories": "Standaardcategorieën toepassen"
   },
   "list": {
     "columns": {
@@ -277,5 +278,15 @@
   "selectCategoryPlaceholder": "Selecteer categorie...",
   "validation": {
     "nameRequired": "Naam begunstigde is verplicht"
+  },
+  "defaultCategoryBackfill": {
+    "allConfirmTitle": "Standaardcategorieën toepassen?",
+    "allConfirmMessage": "Hiermee worden {transactions, plural, one {# niet-gecategoriseerde transactie} other {# niet-gecategoriseerde transacties}} bij {payees, plural, one {# begunstigde} other {# begunstigden}} gecategoriseerd met de standaardcategorie van elke begunstigde. Handmatig gecategoriseerde transacties, overboekingen en gesplitste transacties blijven ongewijzigd.",
+    "confirmButton": "Toepassen",
+    "toasts": {
+      "nothingToDo": "Geen niet-gecategoriseerde transacties om te categoriseren",
+      "applied": "{count, plural, one {# transactie gecategoriseerd} other {# transacties gecategoriseerd}}",
+      "failed": "Kan transacties niet categoriseren"
+    }
   }
 }

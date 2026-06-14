@@ -32,7 +32,8 @@
       "active": "Active",
       "inactive": "Inactive",
       "withoutCategory": "Without Category"
-    }
+    },
+    "applyDefaultCategories": "Apply Default Categories"
   },
   "list": {
     "columns": {
@@ -277,5 +278,15 @@
   "selectCategoryPlaceholder": "Select category...",
   "validation": {
     "nameRequired": "Payee name is required"
+  },
+  "defaultCategoryBackfill": {
+    "allConfirmTitle": "Apply default categories?",
+    "allConfirmMessage": "This will categorize {transactions, plural, one {# uncategorized transaction} other {# uncategorized transactions}} across {payees, plural, one {# payee} other {# payees}} using each payee's default category. Manually categorized transactions, transfers, and split transactions are left unchanged.",
+    "confirmButton": "Apply",
+    "toasts": {
+      "nothingToDo": "No uncategorized transactions to categorize",
+      "applied": "{count, plural, one {Categorized # transaction} other {Categorized # transactions}}",
+      "failed": "Failed to categorize transactions"
+    }
   }
 }

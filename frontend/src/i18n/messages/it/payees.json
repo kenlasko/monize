@@ -32,7 +32,8 @@
       "active": "Attivi",
       "inactive": "Inattivi",
       "withoutCategory": "Senza categoria"
-    }
+    },
+    "applyDefaultCategories": "Applica categorie predefinite"
   },
   "list": {
     "columns": {
@@ -277,5 +278,15 @@
   "selectCategoryPlaceholder": "Seleziona categoria...",
   "validation": {
     "nameRequired": "Il nome del beneficiario è obbligatorio"
+  },
+  "defaultCategoryBackfill": {
+    "allConfirmTitle": "Applicare le categorie predefinite?",
+    "allConfirmMessage": "Verranno categorizzate {transactions, plural, one {# transazione senza categoria} other {# transazioni senza categoria}} per {payees, plural, one {# beneficiario} other {# beneficiari}} usando la categoria predefinita di ciascun beneficiario. Le transazioni categorizzate manualmente, i trasferimenti e le transazioni suddivise restano invariati.",
+    "confirmButton": "Applica",
+    "toasts": {
+      "nothingToDo": "Nessuna transazione senza categoria da categorizzare",
+      "applied": "{count, plural, one {# transazione categorizzata} other {# transazioni categorizzate}}",
+      "failed": "Impossibile categorizzare le transazioni"
+    }
   }
 }

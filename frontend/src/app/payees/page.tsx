@@ -13,6 +13,7 @@ import { DeactivateUnusedPayeesDialog } from '@/components/payees/DeactivateUnus
 import { AutoMergePayeesDialog } from '@/components/payees/AutoMergePayeesDialog';
 import { Modal } from '@/components/ui/Modal';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { payeesApi } from '@/lib/payees';
 import { categoriesApi } from '@/lib/categories';
 import { buildCategoryColorMap, buildCategoryLabelMap } from '@/lib/categoryUtils';
@@ -48,6 +49,7 @@ function PayeesContent() {
   const [showAutoAssign, setShowAutoAssign] = useState(false);
   const [showDeactivate, setShowDeactivate] = useState(false);
   const [showAutoMerge, setShowAutoMerge] = useState(false);
+  const [showApplyDefaults, setShowApplyDefaults] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<PayeeStatusFilter>('active');
   const [categoryFilter, setCategoryFilter] = useState<PayeeCategoryFilter>('all');
@@ -142,6 +144,44 @@ function PayeesContent() {
 
   const categoryColorMap = useMemo(() => buildCategoryColorMap(categories), [categories]);
   const categoryLabelMap = useMemo(() => buildCategoryLabelMap(categories), [categories]);
+
+  // Payees that have a default category set but still have uncategorized
+  // transactions -- the scope of the bulk "apply default categories" action.
+  const backfillTargets = useMemo(
+    () => payees.filter((p) => p.defaultCategoryId && (p.uncategorizedCount ?? 0) > 0),
+    [payees],
+  );
+  const backfillTotals = useMemo(
+    () => ({
+      payees: backfillTargets.length,
+      transactions: backfillTargets.reduce((sum, p) => sum + (p.uncategorizedCount ?? 0), 0),
+    }),
+    [backfillTargets],
+  );
+
+  // Apply each payee's existing default category to its uncategorized
+  // transactions, reusing the category-suggestions apply endpoint (which sets
+  // the default category -- a no-op here -- and backfills when asked).
+  const handleApplyDefaultCategories = async () => {
+    setShowApplyDefaults(false);
+    if (backfillTargets.length === 0) {
+      toast(t('defaultCategoryBackfill.toasts.nothingToDo'));
+      return;
+    }
+    try {
+      const assignments = backfillTargets.map((p) => ({
+        payeeId: p.id,
+        categoryId: p.defaultCategoryId as string,
+        backfillTransactions: true,
+      }));
+      const result = await payeesApi.applyCategorySuggestions(assignments);
+      toast.success(t('defaultCategoryBackfill.toasts.applied', { count: result.transactionsBackfilled }));
+      loadData();
+    } catch (error) {
+      toast.error(getErrorMessage(error, t('defaultCategoryBackfill.toasts.failed')));
+      logger.error(error);
+    }
+  };
 
   // Apply status filter
   const statusFilteredPayees = useMemo(() => {
@@ -240,6 +280,9 @@ function PayeesContent() {
               </Button>
               <Button variant="secondary" onClick={() => setShowAutoAssign(true)}>
                 {t('page.autoAssignCategories')}
+              </Button>
+              <Button variant="secondary" onClick={() => setShowApplyDefaults(true)}>
+                {t('page.applyDefaultCategories')}
               </Button>
               <Button onClick={openCreate}>{t('page.newPayee')}</Button>
             </>
@@ -421,6 +464,20 @@ function PayeesContent() {
         onClose={() => setShowAutoMerge(false)}
         onSuccess={loadData}
         categories={categories}
+      />
+
+      {/* Apply default categories to all payees with uncategorized transactions */}
+      <ConfirmDialog
+        isOpen={showApplyDefaults}
+        variant="info"
+        title={t('defaultCategoryBackfill.allConfirmTitle')}
+        message={t('defaultCategoryBackfill.allConfirmMessage', {
+          transactions: backfillTotals.transactions,
+          payees: backfillTotals.payees,
+        })}
+        confirmLabel={t('defaultCategoryBackfill.confirmButton')}
+        onConfirm={handleApplyDefaultCategories}
+        onCancel={() => setShowApplyDefaults(false)}
       />
     </PageLayout>
   );

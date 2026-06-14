@@ -32,7 +32,8 @@
       "active": "Aktiv",
       "inactive": "Inaktiv",
       "withoutCategory": "Ohne Kategorie"
-    }
+    },
+    "applyDefaultCategories": "Standardkategorien zuweisen"
   },
   "list": {
     "columns": {
@@ -277,5 +278,15 @@
   "selectCategoryPlaceholder": "Kategorie auswählen...",
   "validation": {
     "nameRequired": "Name des Zahlungsempfängers ist erforderlich"
+  },
+  "defaultCategoryBackfill": {
+    "allConfirmTitle": "Standardkategorien zuweisen?",
+    "allConfirmMessage": "Dadurch werden {transactions, plural, one {# nicht kategorisierte Transaktion} other {# nicht kategorisierte Transaktionen}} bei {payees, plural, one {# Zahlungsempfänger} other {# Zahlungsempfängern}} mit der jeweiligen Standardkategorie kategorisiert. Manuell kategorisierte Transaktionen, Überweisungen und Splitbuchungen bleiben unverändert.",
+    "confirmButton": "Anwenden",
+    "toasts": {
+      "nothingToDo": "Keine nicht kategorisierten Transaktionen zum Kategorisieren",
+      "applied": "{count, plural, one {# Transaktion kategorisiert} other {# Transaktionen kategorisiert}}",
+      "failed": "Transaktionen konnten nicht kategorisiert werden"
+    }
   }
 }

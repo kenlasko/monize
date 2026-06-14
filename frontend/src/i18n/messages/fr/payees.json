@@ -32,7 +32,8 @@
       "active": "Actifs",
       "inactive": "Inactifs",
       "withoutCategory": "Sans catégorie"
-    }
+    },
+    "applyDefaultCategories": "Appliquer les catégories par défaut"
   },
   "list": {
     "columns": {
@@ -277,5 +278,15 @@
   "selectCategoryPlaceholder": "Sélectionner une catégorie...",
   "validation": {
     "nameRequired": "Le nom du bénéficiaire est requis"
+  },
+  "defaultCategoryBackfill": {
+    "allConfirmTitle": "Appliquer les catégories par défaut ?",
+    "allConfirmMessage": "Cela catégorisera {transactions, plural, one {# transaction sans catégorie} other {# transactions sans catégorie}} pour {payees, plural, one {# bénéficiaire} other {# bénéficiaires}} en utilisant la catégorie par défaut de chaque bénéficiaire. Les transactions catégorisées manuellement, les virements et les transactions ventilées restent inchangés.",
+    "confirmButton": "Appliquer",
+    "toasts": {
+      "nothingToDo": "Aucune transaction sans catégorie à catégoriser",
+      "applied": "{count, plural, one {# transaction catégorisée} other {# transactions catégorisées}}",
+      "failed": "Échec de la catégorisation des transactions"
+    }
   }
 }
