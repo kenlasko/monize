@@ -6,6 +6,7 @@ import {
   AiToolResponse,
   AiToolStreamChunk,
   ModelVerificationResult,
+  AiStreamChunk,
 } from "./ai-provider.interface";
 import { OpenAiProvider } from "./openai.provider";
 
@@ -192,6 +193,31 @@ export class OpenAiCompatibleProvider extends OpenAiProvider {
 
   constructor(apiKey: string, baseUrl: string, model: string) {
     super(apiKey, model, baseUrl);
+  }
+
+  override async complete(request: AiCompletionRequest): Promise<any> {
+    const { responseFormat, ...rest } = request;
+    return super.complete(rest);
+  }
+
+  override async *stream(request: AiCompletionRequest): AsyncIterable<AiStreamChunk> {
+    const { responseFormat, ...rest } = request;
+    try {
+      yield* super.stream(rest);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      const code = (error as { code?: string })?.code;
+      if (
+        code === "ECONNRESET" ||
+        msg.includes("aborted") ||
+        msg.includes("socket hang up")
+      ) {
+        // Terminate gracefully for local/compatible servers closing connection abruptly
+        yield { content: "", done: true };
+      } else {
+        throw error;
+      }
+    }
   }
 
   override async completeWithTools(
