@@ -10,6 +10,9 @@
     "statusAll": "Todos ({count})",
     "statusActive": "Ativos ({count})",
     "statusInactive": "Inativos ({count})",
+    "categoryFilterAll": "Todos os beneficiários ({count})",
+    "categoryFilterNoCategory": "Sem categoria predefinida ({count})",
+    "categoryFilterUncategorized": "Trans. sem categoria ({count})",
     "modalTitleEdit": "Editar Beneficiário",
     "modalTitleNew": "Novo Beneficiário",
     "loading": "A carregar beneficiários...",
@@ -21,7 +24,8 @@
       "reactivated": "Beneficiário \"{name}\" reativado",
       "reactivateFailed": "Falha ao reativar beneficiário",
       "updateFailed": "Falha ao atualizar beneficiário",
-      "createFailed": "Falha ao criar beneficiário"
+      "createFailed": "Falha ao criar beneficiário",
+      "categorized": "{count, plural, one {# transação categorizada} other {# transações categorizadas}}"
     },
     "summary": {
       "totalPayees": "Total de Beneficiários",
@@ -86,7 +90,12 @@
     "categoryLabel": "Categoria Predefinida",
     "notesLabel": "Notas (opcional)",
     "submitCreate": "Criar Beneficiário",
-    "submitUpdate": "Atualizar Beneficiário"
+    "submitUpdate": "Atualizar Beneficiário",
+    "applyCategoryLabel": "Aplicar esta categoria às transações existentes",
+    "applyCategoryNone": "Não alterar as transações existentes",
+    "applyCategoryUncategorized": "Apenas transações sem categoria ({count})",
+    "applyCategoryAll": "Todas as transações ({count})",
+    "applyCategoryHelp": "As transferências e as transações divididas nunca são alteradas."
   },
   "merge": {
     "title": "Unir Beneficiário",

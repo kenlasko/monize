@@ -10,6 +10,9 @@
     "statusAll": "Alle ({count})",
     "statusActive": "Aktiv ({count})",
     "statusInactive": "Inaktiv ({count})",
+    "categoryFilterAll": "Alle Zahlungsempfänger ({count})",
+    "categoryFilterNoCategory": "Ohne Standardkategorie ({count})",
+    "categoryFilterUncategorized": "Unkat. Transaktionen ({count})",
     "modalTitleEdit": "Zahlungsempfänger bearbeiten",
     "modalTitleNew": "Neuer Zahlungsempfänger",
     "loading": "Zahlungsempfänger werden geladen...",
@@ -21,7 +24,8 @@
       "reactivated": "Zahlungsempfänger \"{name}\" reaktiviert",
       "reactivateFailed": "Zahlungsempfänger konnte nicht reaktiviert werden",
       "updateFailed": "Zahlungsempfänger konnte nicht aktualisiert werden",
-      "createFailed": "Zahlungsempfänger konnte nicht erstellt werden"
+      "createFailed": "Zahlungsempfänger konnte nicht erstellt werden",
+      "categorized": "{count, plural, one {# Transaktion kategorisiert} other {# Transaktionen kategorisiert}}"
     },
     "summary": {
       "totalPayees": "Zahlungsempfänger gesamt",
@@ -86,7 +90,12 @@
     "categoryLabel": "Standardkategorie",
     "notesLabel": "Notizen (optional)",
     "submitCreate": "Zahlungsempfänger erstellen",
-    "submitUpdate": "Zahlungsempfänger aktualisieren"
+    "submitUpdate": "Zahlungsempfänger aktualisieren",
+    "applyCategoryLabel": "Diese Kategorie auf vorhandene Transaktionen anwenden",
+    "applyCategoryNone": "Vorhandene Transaktionen nicht ändern",
+    "applyCategoryUncategorized": "Nur Transaktionen ohne Kategorie ({count})",
+    "applyCategoryAll": "Alle Transaktionen ({count})",
+    "applyCategoryHelp": "Überweisungen und aufgeteilte Transaktionen werden nie geändert."
   },
   "merge": {
     "title": "Zahlungsempfänger zusammenführen",

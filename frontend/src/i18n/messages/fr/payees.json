@@ -10,6 +10,9 @@
     "statusAll": "Tous ({count})",
     "statusActive": "Actifs ({count})",
     "statusInactive": "Inactifs ({count})",
+    "categoryFilterAll": "Tous les bénéficiaires ({count})",
+    "categoryFilterNoCategory": "Sans catégorie par défaut ({count})",
+    "categoryFilterUncategorized": "Trans. sans catégorie ({count})",
     "modalTitleEdit": "Modifier le bénéficiaire",
     "modalTitleNew": "Nouveau bénéficiaire",
     "loading": "Chargement des bénéficiaires...",
@@ -21,7 +24,8 @@
       "reactivated": "Bénéficiaire « {name} » réactivé",
       "reactivateFailed": "Échec de la réactivation du bénéficiaire",
       "updateFailed": "Échec de la mise à jour du bénéficiaire",
-      "createFailed": "Échec de la création du bénéficiaire"
+      "createFailed": "Échec de la création du bénéficiaire",
+      "categorized": "{count, plural, one {# transaction catégorisée} other {# transactions catégorisées}}"
     },
     "summary": {
       "totalPayees": "Total des bénéficiaires",
@@ -86,7 +90,12 @@
     "categoryLabel": "Catégorie par défaut",
     "notesLabel": "Notes (facultatif)",
     "submitCreate": "Créer le bénéficiaire",
-    "submitUpdate": "Mettre à jour le bénéficiaire"
+    "submitUpdate": "Mettre à jour le bénéficiaire",
+    "applyCategoryLabel": "Appliquer cette catégorie aux transactions existantes",
+    "applyCategoryNone": "Ne pas modifier les transactions existantes",
+    "applyCategoryUncategorized": "Uniquement les transactions sans catégorie ({count})",
+    "applyCategoryAll": "Toutes les transactions ({count})",
+    "applyCategoryHelp": "Les virements et les transactions ventilées ne sont jamais modifiés."
   },
   "merge": {
     "title": "Fusionner le bénéficiaire",

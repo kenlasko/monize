@@ -21,6 +21,7 @@ import { ActionHistoryService } from "../action-history/action-history.service";
 import { toCountMap } from "../common/count-map.util";
 import { matchesAliasPattern } from "./alias-match.util";
 import {
+  applyPayeeCategoryToAll,
   backfillPayeeCategory,
   countUncategorizedTransactionsByPayee,
 } from "./payee-backfill.util";
@@ -274,7 +275,13 @@ export class PayeesService {
     userId: string,
     id: string,
     updatePayeeDto: UpdatePayeeDto,
-  ): Promise<Payee & { aliasCount: number; transactionCount: number }> {
+  ): Promise<
+    Payee & {
+      aliasCount: number;
+      transactionCount: number;
+      transactionsCategorized: number;
+    }
+  > {
     const payee = await this.findOne(userId, id);
     const beforeData = {
       name: payee.name,
@@ -319,9 +326,16 @@ export class PayeesService {
     if (updatePayeeDto.isActive !== undefined)
       payee.isActive = updatePayeeDto.isActive;
 
+    // Optionally apply the (new) default category to the payee's existing
+    // transactions. Only meaningful when the payee ends up with a category.
+    const applyMode = updatePayeeDto.applyCategoryToTransactions ?? "none";
+
     // Save the payee and cascade the name change to existing transactions and
     // scheduled transactions atomically, so a partial failure cannot leave the
-    // denormalised payeeName snapshots out of sync with the payee record.
+    // denormalised payeeName snapshots out of sync with the payee record. The
+    // optional category backfill runs in the same transaction so the payee
+    // default and its transactions can never drift apart on a partial failure.
+    let transactionsCategorized = 0;
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -339,6 +353,23 @@ export class PayeesService {
           { payeeId: id, userId },
           { payeeName: updatePayeeDto.name },
         );
+      }
+
+      if (applyMode !== "none" && payee.defaultCategoryId) {
+        transactionsCategorized =
+          applyMode === "all"
+            ? await applyPayeeCategoryToAll(
+                queryRunner.manager,
+                userId,
+                id,
+                payee.defaultCategoryId,
+              )
+            : await backfillPayeeCategory(
+                queryRunner.manager,
+                userId,
+                id,
+                payee.defaultCategoryId,
+              );
       }
 
       await queryRunner.commitTransaction();
@@ -372,7 +403,12 @@ export class PayeesService {
       descriptionKey: "updatedPayee",
       descriptionParams: { name: refreshed.name },
     });
-    return { ...refreshed, aliasCount, transactionCount };
+    return {
+      ...refreshed,
+      aliasCount,
+      transactionCount,
+      transactionsCategorized,
+    };
   }
 
   async remove(userId: string, id: string): Promise<void> {

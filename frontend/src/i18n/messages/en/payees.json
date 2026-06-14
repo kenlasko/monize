@@ -10,6 +10,9 @@
     "statusAll": "All ({count})",
     "statusActive": "Active ({count})",
     "statusInactive": "Inactive ({count})",
+    "categoryFilterAll": "All Payees ({count})",
+    "categoryFilterNoCategory": "No Default Category ({count})",
+    "categoryFilterUncategorized": "Uncategorized Txns ({count})",
     "modalTitleEdit": "Edit Payee",
     "modalTitleNew": "New Payee",
     "loading": "Loading payees...",
@@ -21,7 +24,8 @@
       "reactivated": "Payee \"{name}\" reactivated",
       "reactivateFailed": "Failed to reactivate payee",
       "updateFailed": "Failed to update payee",
-      "createFailed": "Failed to create payee"
+      "createFailed": "Failed to create payee",
+      "categorized": "{count, plural, one {Categorized # transaction} other {Categorized # transactions}}"
     },
     "summary": {
       "totalPayees": "Total Payees",
@@ -86,7 +90,12 @@
     "categoryLabel": "Default Category",
     "notesLabel": "Notes (optional)",
     "submitCreate": "Create Payee",
-    "submitUpdate": "Update Payee"
+    "submitUpdate": "Update Payee",
+    "applyCategoryLabel": "Apply this category to existing transactions",
+    "applyCategoryNone": "Don't change existing transactions",
+    "applyCategoryUncategorized": "Only transactions without a category ({count})",
+    "applyCategoryAll": "All transactions ({count})",
+    "applyCategoryHelp": "Transfers and split transactions are never changed."
   },
   "merge": {
     "title": "Merge Payee",

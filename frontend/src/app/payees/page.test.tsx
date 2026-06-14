@@ -164,6 +164,7 @@ vi.mock('@/components/payees/PayeeForm', () => ({
       {payee && <span data-testid="editing-payee">{payee.name}</span>}
       <button data-testid="submit-form" onClick={() => Promise.resolve(onSubmit({ name: 'New Payee', defaultCategoryId: '', notes: '' })).catch(() => {})}>Submit</button>
       <button data-testid="submit-with-aliases" onClick={() => Promise.resolve(onSubmit({ name: 'WithAliases', defaultCategoryId: 'cat-1', notes: 'note', pendingAliases: ['Alias1', 'Alias2'] })).catch(() => {})}>SubmitWithAliases</button>
+      <button data-testid="submit-apply-category" onClick={() => Promise.resolve(onSubmit({ name: 'Updated', defaultCategoryId: 'cat-1', notes: '', applyCategoryToTransactions: 'all' })).catch(() => {})}>SubmitApplyCategory</button>
     </div>
   ),
 }));
@@ -595,6 +596,61 @@ describe('PayeesPage', () => {
       await waitFor(() => {
         expect(screen.queryByTestId('payee-p-1')).not.toBeInTheDocument();
         expect(screen.getByTestId('payee-p-5')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Category Filter', () => {
+    it('renders category filter buttons with counts', async () => {
+      render(<PayeesPage />);
+      await waitFor(() => {
+        expect(screen.getByText(/All Payees \(4\)/)).toBeInTheDocument();
+        expect(screen.getByText(/No Default Category \(2\)/)).toBeInTheDocument();
+        expect(screen.getByText(/Uncategorized Txns \(0\)/)).toBeInTheDocument();
+      });
+    });
+
+    it('filters to payees without a default category', async () => {
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByTestId('payee-list')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByText(/No Default Category \(2\)/)); });
+      await waitFor(() => {
+        expect(screen.queryByTestId('payee-p-1')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('payee-p-2')).not.toBeInTheDocument();
+        expect(screen.getByTestId('payee-p-3')).toBeInTheDocument();
+        expect(screen.getByTestId('payee-p-4')).toBeInTheDocument();
+      });
+    });
+
+    it('filters to payees that have uncategorized transactions', async () => {
+      const withUncat = [
+        { id: 'p-1', name: 'Grocery Store', defaultCategoryId: 'cat-1', defaultCategory: { name: 'Food' }, transactionCount: 50, uncategorizedCount: 5, isActive: true },
+        { id: 'p-2', name: 'Gas Station', defaultCategoryId: 'cat-2', defaultCategory: { name: 'Auto' }, transactionCount: 20, uncategorizedCount: 0, isActive: true },
+      ];
+      mockGetAllPayees.mockResolvedValue(withUncat);
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByTestId('payee-list')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByText(/Uncategorized Txns \(1\)/)); });
+      await waitFor(() => {
+        expect(screen.getByTestId('payee-p-1')).toBeInTheDocument();
+        expect(screen.queryByTestId('payee-p-2')).not.toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Apply category to transactions', () => {
+    it('passes the apply mode through, toasts, and reloads when transactions are categorized', async () => {
+      mockUpdatePayee.mockResolvedValue({ id: 'p-1', name: 'Updated', defaultCategoryId: 'cat-1', transactionsCategorized: 7 });
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByTestId('payee-list')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByTestId('edit-p-1')); });
+      await waitFor(() => expect(screen.getByTestId('submit-apply-category')).toBeInTheDocument());
+      mockGetAllPayees.mockClear();
+      await act(async () => { fireEvent.click(screen.getByTestId('submit-apply-category')); });
+      await waitFor(() => {
+        expect(mockUpdatePayee).toHaveBeenCalledWith('p-1', { name: 'Updated', defaultCategoryId: 'cat-1', notes: undefined, applyCategoryToTransactions: 'all' });
+        expect(toast.success).toHaveBeenCalledWith('Categorized 7 transactions');
+        expect(mockGetAllPayees).toHaveBeenCalled();
       });
     });
   });

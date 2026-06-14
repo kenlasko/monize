@@ -52,9 +52,16 @@ export const payeesApi = {
     return response.data;
   },
 
-  // Update payee
-  update: async (id: string, data: UpdatePayeeData): Promise<Payee> => {
-    const response = await apiClient.patch<Payee>(`/payees/${id}`, data);
+  // Update payee. When the update applies the default category to existing
+  // transactions, the response also reports how many were categorized.
+  update: async (
+    id: string,
+    data: UpdatePayeeData,
+  ): Promise<Payee & { transactionsCategorized?: number }> => {
+    const response = await apiClient.patch<Payee & { transactionsCategorized?: number }>(
+      `/payees/${id}`,
+      data,
+    );
     invalidateCache('payees:');
     return response.data;
   },

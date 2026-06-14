@@ -10,6 +10,9 @@
     "statusAll": "Wszystkie ({count})",
     "statusActive": "Aktywne ({count})",
     "statusInactive": "Nieaktywne ({count})",
+    "categoryFilterAll": "Wszyscy odbiorcy ({count})",
+    "categoryFilterNoCategory": "Bez domyślnej kategorii ({count})",
+    "categoryFilterUncategorized": "Nieskat. transakcje ({count})",
     "modalTitleEdit": "Edytuj odbiorcę",
     "modalTitleNew": "Nowy odbiorca",
     "loading": "Wczytywanie odbiorców...",
@@ -21,7 +24,8 @@
       "reactivated": "Odbiorca \"{name}\" został przywrócony",
       "reactivateFailed": "Nie udało się przywrócić odbiorcy",
       "updateFailed": "Nie udało się zaktualizować odbiorcy",
-      "createFailed": "Nie udało się utworzyć odbiorcy"
+      "createFailed": "Nie udało się utworzyć odbiorcy",
+      "categorized": "{count, plural, one {Skategoryzowano # transakcję} few {Skategoryzowano # transakcje} many {Skategoryzowano # transakcji} other {Skategoryzowano # transakcji}}"
     },
     "summary": {
       "totalPayees": "Wszyscy odbiorcy",
@@ -86,7 +90,12 @@
     "categoryLabel": "Domyślna kategoria",
     "notesLabel": "Notatki (opcjonalnie)",
     "submitCreate": "Utwórz odbiorcę",
-    "submitUpdate": "Zapisz odbiorcę"
+    "submitUpdate": "Zapisz odbiorcę",
+    "applyCategoryLabel": "Zastosuj tę kategorię do istniejących transakcji",
+    "applyCategoryNone": "Nie zmieniaj istniejących transakcji",
+    "applyCategoryUncategorized": "Tylko transakcje bez kategorii ({count})",
+    "applyCategoryAll": "Wszystkie transakcje ({count})",
+    "applyCategoryHelp": "Przelewy i transakcje podzielone nigdy nie są zmieniane."
   },
   "merge": {
     "title": "Scal odbiorcę",

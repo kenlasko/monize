@@ -1,5 +1,6 @@
 import { IsNull } from "typeorm";
 import {
+  applyPayeeCategoryToAll,
   backfillPayeeCategory,
   countUncategorizedTransactionsByPayee,
 } from "./payee-backfill.util";
@@ -9,9 +10,10 @@ const userId = "user-1";
 
 describe("payee-backfill.util", () => {
   describe("countUncategorizedTransactionsByPayee", () => {
-    function makeManager(
-      rows: Array<{ payeeId: string; cnt: string }>,
-    ): { manager: any; qb: Record<string, jest.Mock> } {
+    function makeManager(rows: Array<{ payeeId: string; cnt: string }>): {
+      manager: any;
+      qb: Record<string, jest.Mock>;
+    } {
       const qb: Record<string, jest.Mock> = {
         select: jest.fn().mockReturnThis(),
         addSelect: jest.fn().mockReturnThis(),
@@ -100,6 +102,48 @@ describe("payee-backfill.util", () => {
       const manager = { update: jest.fn().mockResolvedValue({}) };
 
       const affected = await backfillPayeeCategory(
+        manager as any,
+        userId,
+        "p1",
+        "cat-1",
+      );
+
+      expect(affected).toBe(0);
+    });
+  });
+
+  describe("applyPayeeCategoryToAll", () => {
+    it("updates all of the payee's non-transfer, non-split rows regardless of existing category", async () => {
+      const manager = {
+        update: jest.fn().mockResolvedValue({ affected: 8 }),
+      };
+
+      const affected = await applyPayeeCategoryToAll(
+        manager as any,
+        userId,
+        "p1",
+        "cat-1",
+      );
+
+      expect(affected).toBe(8);
+      // No categoryId condition: rows that already have a category are
+      // overwritten, unlike the uncategorized-only backfill.
+      expect(manager.update).toHaveBeenCalledWith(
+        Transaction,
+        {
+          userId,
+          payeeId: "p1",
+          isTransfer: false,
+          isSplit: false,
+        },
+        { categoryId: "cat-1" },
+      );
+    });
+
+    it("returns 0 when the driver reports no affected count", async () => {
+      const manager = { update: jest.fn().mockResolvedValue({}) };
+
+      const affected = await applyPayeeCategoryToAll(
         manager as any,
         userId,
         "p1",

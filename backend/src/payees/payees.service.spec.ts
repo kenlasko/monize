@@ -5,7 +5,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from "@nestjs/common";
-import { DataSource } from "typeorm";
+import { DataSource, IsNull } from "typeorm";
 import { PayeesService } from "./payees.service";
 import { Payee } from "./entities/payee.entity";
 import { PayeeAlias } from "./entities/payee-alias.entity";
@@ -534,6 +534,105 @@ describe("PayeesService", () => {
 
       // findOne called twice: once for ownership check, once for re-fetch; no conflict check
       expect(payeesRepository.findOne).toHaveBeenCalledTimes(2);
+    });
+
+    it("applies the new default category to uncategorized transactions when requested", async () => {
+      const existingPayee = {
+        ...mockPayee,
+        defaultCategoryId: null,
+        defaultCategory: null,
+      };
+      const refreshedPayee = { ...mockPayee, defaultCategoryId: "cat-99" };
+      payeesRepository.findOne
+        .mockResolvedValueOnce(existingPayee)
+        .mockResolvedValueOnce(refreshedPayee);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 4 });
+
+      const result = await service.update(userId, "payee-1", {
+        defaultCategoryId: "cat-99",
+        applyCategoryToTransactions: "uncategorized",
+      });
+
+      expect(result.transactionsCategorized).toBe(4);
+      // Uncategorized-only backfill: rows with no category, excluding
+      // transfers and split parents.
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Transaction,
+        {
+          userId,
+          payeeId: "payee-1",
+          categoryId: IsNull(),
+          isTransfer: false,
+          isSplit: false,
+        },
+        { categoryId: "cat-99" },
+      );
+    });
+
+    it("applies the new default category to all transactions when requested", async () => {
+      const existingPayee = {
+        ...mockPayee,
+        defaultCategoryId: null,
+        defaultCategory: null,
+      };
+      const refreshedPayee = { ...mockPayee, defaultCategoryId: "cat-99" };
+      payeesRepository.findOne
+        .mockResolvedValueOnce(existingPayee)
+        .mockResolvedValueOnce(refreshedPayee);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 9 });
+
+      const result = await service.update(userId, "payee-1", {
+        defaultCategoryId: "cat-99",
+        applyCategoryToTransactions: "all",
+      });
+
+      expect(result.transactionsCategorized).toBe(9);
+      // "all" overwrites every non-transfer, non-split row (no categoryId filter).
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Transaction,
+        {
+          userId,
+          payeeId: "payee-1",
+          isTransfer: false,
+          isSplit: false,
+        },
+        { categoryId: "cat-99" },
+      );
+    });
+
+    it("does not touch transactions when no apply mode is given", async () => {
+      const existingPayee = {
+        ...mockPayee,
+        defaultCategoryId: null,
+        defaultCategory: null,
+      };
+      const refreshedPayee = { ...mockPayee, defaultCategoryId: "cat-99" };
+      payeesRepository.findOne
+        .mockResolvedValueOnce(existingPayee)
+        .mockResolvedValueOnce(refreshedPayee);
+
+      const result = await service.update(userId, "payee-1", {
+        defaultCategoryId: "cat-99",
+      });
+
+      expect(result.transactionsCategorized).toBe(0);
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+    });
+
+    it("does not apply a category when the payee ends up without one", async () => {
+      const existingPayee = { ...mockPayee };
+      const refreshedPayee = { ...mockPayee, defaultCategoryId: null };
+      payeesRepository.findOne
+        .mockResolvedValueOnce(existingPayee)
+        .mockResolvedValueOnce(refreshedPayee);
+
+      const result = await service.update(userId, "payee-1", {
+        defaultCategoryId: null,
+        applyCategoryToTransactions: "all",
+      });
+
+      expect(result.transactionsCategorized).toBe(0);
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
     });
 
     it("should update defaultCategoryId via explicit mapping", async () => {
@@ -1166,7 +1265,11 @@ describe("PayeesService", () => {
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 3 });
 
       const result = await service.applyCategorySuggestions(userId, [
-        { payeeId: "payee-2", categoryId: "cat-new", backfillTransactions: true },
+        {
+          payeeId: "payee-2",
+          categoryId: "cat-new",
+          backfillTransactions: true,
+        },
       ]);
 
       expect(result).toEqual({ updated: 1, transactionsBackfilled: 3 });
