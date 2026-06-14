@@ -768,9 +768,9 @@ export function MonthlyCategoryBreakdownReport() {
         </tr>
         {/* Subcategory rows (sorted alphabetically) */}
         {section.rows.map((row) => (
-          <tr key={row.categoryId || row.displayName} className="hover:bg-gray-50 dark:hover:bg-gray-700/40">
+          <tr key={row.categoryId || row.displayName} className="group hover:bg-gray-50 dark:hover:bg-gray-700/40">
             <td
-              className="sticky left-0 z-10 bg-white dark:bg-gray-800 pl-5 pr-2 py-1 text-gray-900 dark:text-gray-100 truncate max-w-[220px]"
+              className="sticky left-0 z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-50 dark:group-hover:bg-gray-700/40 pl-5 pr-2 py-1 text-gray-900 dark:text-gray-100 truncate max-w-[220px]"
               title={row.displayName}
             >
               {row.categoryId ? (
@@ -943,8 +943,8 @@ export function MonthlyCategoryBreakdownReport() {
           </td>
         </tr>
         {tr.rows.map((row) => (
-          <tr key={`${row.direction}-${row.accountId}`} className="hover:bg-gray-50 dark:hover:bg-gray-700/40">
-            <td className="sticky left-0 z-10 bg-white dark:bg-gray-800 pl-5 pr-2 py-1 text-gray-900 dark:text-gray-100 truncate max-w-[220px]" title={row.displayName}>
+          <tr key={`${row.direction}-${row.accountId}`} className="group hover:bg-gray-50 dark:hover:bg-gray-700/40">
+            <td className="sticky left-0 z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-50 dark:group-hover:bg-gray-700/40 pl-5 pr-2 py-1 text-gray-900 dark:text-gray-100 truncate max-w-[220px]" title={row.displayName}>
               <button
                 type="button"
                 onClick={() => drillTransfersRange([row.accountId])}
