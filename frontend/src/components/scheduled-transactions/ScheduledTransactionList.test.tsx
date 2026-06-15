@@ -432,19 +432,19 @@ describe('ScheduledTransactionList', () => {
   it('shows post button for active transactions', () => {
     const transactions = [createTransaction({ isActive: true })];
     render(<ScheduledTransactionList transactions={transactions} />);
-    expect(screen.getByTitle('Post transaction')).toBeInTheDocument();
+    expect(screen.getByTitle('Post Transaction')).toBeInTheDocument();
   });
 
   it('shows skip button for active recurring transactions', () => {
     const transactions = [createTransaction({ isActive: true, frequency: 'MONTHLY' })];
     render(<ScheduledTransactionList transactions={transactions} />);
-    expect(screen.getByTitle('Skip this occurrence')).toBeInTheDocument();
+    expect(screen.getByTitle('Skip Occurrence')).toBeInTheDocument();
   });
 
   it('does not show skip button for ONCE frequency transactions', () => {
     const transactions = [createTransaction({ isActive: true, frequency: 'ONCE' })];
     render(<ScheduledTransactionList transactions={transactions} />);
-    expect(screen.queryByTitle('Skip this occurrence')).not.toBeInTheDocument();
+    expect(screen.queryByTitle('Skip Occurrence')).not.toBeInTheDocument();
   });
 
   it('shows delete button for all transactions', () => {
@@ -457,34 +457,34 @@ describe('ScheduledTransactionList', () => {
     const onEdit = vi.fn();
     const transactions = [createTransaction()];
     render(<ScheduledTransactionList transactions={transactions} onEdit={onEdit} />);
-    expect(screen.getByTitle('Edit schedule')).toBeInTheDocument();
+    expect(screen.getByTitle('Edit Schedule')).toBeInTheDocument();
   });
 
   it('does not show edit schedule button when onEdit is not provided', () => {
     const transactions = [createTransaction()];
     render(<ScheduledTransactionList transactions={transactions} />);
-    expect(screen.queryByTitle('Edit schedule')).not.toBeInTheDocument();
+    expect(screen.queryByTitle('Edit Schedule')).not.toBeInTheDocument();
   });
 
   it('shows edit occurrence button when onEditOccurrence is provided and transaction is active', () => {
     const onEditOccurrence = vi.fn();
     const transactions = [createTransaction({ isActive: true })];
     render(<ScheduledTransactionList transactions={transactions} onEditOccurrence={onEditOccurrence} />);
-    expect(screen.getByTitle('Edit occurrence')).toBeInTheDocument();
+    expect(screen.getByTitle('Edit Occurrence')).toBeInTheDocument();
   });
 
   it('does not show edit occurrence button for inactive transactions', () => {
     const onEditOccurrence = vi.fn();
     const transactions = [createTransaction({ isActive: false })];
     render(<ScheduledTransactionList transactions={transactions} onEditOccurrence={onEditOccurrence} />);
-    expect(screen.queryByTitle('Edit occurrence')).not.toBeInTheDocument();
+    expect(screen.queryByTitle('Edit Occurrence')).not.toBeInTheDocument();
   });
 
   it('does not show post and skip buttons for inactive transactions', () => {
     const transactions = [createTransaction({ isActive: false })];
     render(<ScheduledTransactionList transactions={transactions} />);
-    expect(screen.queryByTitle('Post transaction')).not.toBeInTheDocument();
-    expect(screen.queryByTitle('Skip this occurrence')).not.toBeInTheDocument();
+    expect(screen.queryByTitle('Post Transaction')).not.toBeInTheDocument();
+    expect(screen.queryByTitle('Skip Occurrence')).not.toBeInTheDocument();
   });
 
   // --- Edit button click ---
@@ -493,7 +493,7 @@ describe('ScheduledTransactionList', () => {
     const transaction = createTransaction();
     render(<ScheduledTransactionList transactions={[transaction]} onEdit={onEdit} />);
 
-    fireEvent.click(screen.getByTitle('Edit schedule'));
+    fireEvent.click(screen.getByTitle('Edit Schedule'));
     expect(onEdit).toHaveBeenCalledWith(transaction);
   });
 
@@ -512,7 +512,7 @@ describe('ScheduledTransactionList', () => {
     const transaction = createTransaction({ isActive: true });
     render(<ScheduledTransactionList transactions={[transaction]} onEditOccurrence={onEditOccurrence} />);
 
-    fireEvent.click(screen.getByTitle('Edit occurrence'));
+    fireEvent.click(screen.getByTitle('Edit Occurrence'));
     expect(onEditOccurrence).toHaveBeenCalledWith(transaction);
   });
 
@@ -585,7 +585,7 @@ describe('ScheduledTransactionList', () => {
     const transactions = [createTransaction()];
     render(<ScheduledTransactionList transactions={transactions} />);
 
-    fireEvent.click(screen.getByTitle('Post transaction'));
+    fireEvent.click(screen.getByTitle('Post Transaction'));
 
     expect(screen.getByText('Post Transaction')).toBeInTheDocument();
     expect(screen.getByText(/Post "Netflix"/)).toBeInTheDocument();
@@ -596,7 +596,7 @@ describe('ScheduledTransactionList', () => {
     const transaction = createTransaction();
     render(<ScheduledTransactionList transactions={[transaction]} onRefresh={onRefresh} />);
 
-    fireEvent.click(screen.getByTitle('Post transaction'));
+    fireEvent.click(screen.getByTitle('Post Transaction'));
     fireEvent.click(screen.getByText('Post'));
 
     await waitFor(() => {
@@ -613,7 +613,7 @@ describe('ScheduledTransactionList', () => {
     const transaction = createTransaction();
     render(<ScheduledTransactionList transactions={[transaction]} onPost={onPost} />);
 
-    fireEvent.click(screen.getByTitle('Post transaction'));
+    fireEvent.click(screen.getByTitle('Post Transaction'));
 
     // onPost should be called directly, not opening confirm dialog
     expect(onPost).toHaveBeenCalledWith(transaction);
@@ -625,7 +625,7 @@ describe('ScheduledTransactionList', () => {
     const transaction = createTransaction();
     render(<ScheduledTransactionList transactions={[transaction]} />);
 
-    fireEvent.click(screen.getByTitle('Post transaction'));
+    fireEvent.click(screen.getByTitle('Post Transaction'));
     fireEvent.click(screen.getByText('Post'));
 
     await waitFor(() => {
@@ -638,7 +638,7 @@ describe('ScheduledTransactionList', () => {
     const transactions = [createTransaction({ frequency: 'MONTHLY' })];
     render(<ScheduledTransactionList transactions={transactions} />);
 
-    fireEvent.click(screen.getByTitle('Skip this occurrence'));
+    fireEvent.click(screen.getByTitle('Skip Occurrence'));
 
     expect(screen.getByText('Skip Occurrence')).toBeInTheDocument();
     expect(screen.getByText(/Skip this occurrence of "Netflix"/)).toBeInTheDocument();
@@ -649,7 +649,7 @@ describe('ScheduledTransactionList', () => {
     const transaction = createTransaction({ frequency: 'MONTHLY' });
     render(<ScheduledTransactionList transactions={[transaction]} onRefresh={onRefresh} />);
 
-    fireEvent.click(screen.getByTitle('Skip this occurrence'));
+    fireEvent.click(screen.getByTitle('Skip Occurrence'));
     fireEvent.click(screen.getByText('Skip'));
 
     await waitFor(() => {
@@ -666,7 +666,7 @@ describe('ScheduledTransactionList', () => {
     const transaction = createTransaction({ frequency: 'MONTHLY' });
     render(<ScheduledTransactionList transactions={[transaction]} />);
 
-    fireEvent.click(screen.getByTitle('Skip this occurrence'));
+    fireEvent.click(screen.getByTitle('Skip Occurrence'));
     fireEvent.click(screen.getByText('Skip'));
 
     await waitFor(() => {
