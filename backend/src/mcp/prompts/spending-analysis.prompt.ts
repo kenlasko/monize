@@ -8,6 +8,7 @@ export class McpSpendingAnalysisPrompt {
     server.registerPrompt(
       "spending-analysis",
       {
+        title: "Spending analysis",
         description: "Analyze spending patterns in a category or overall",
         argsSchema: {
           category: z

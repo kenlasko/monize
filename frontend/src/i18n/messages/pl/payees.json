@@ -10,6 +10,9 @@
     "statusAll": "Wszystkie ({count})",
     "statusActive": "Aktywne ({count})",
     "statusInactive": "Nieaktywne ({count})",
+    "categoryFilterAll": "Wszyscy odbiorcy ({count})",
+    "categoryFilterNoCategory": "Bez domyślnej kategorii ({count})",
+    "categoryFilterUncategorized": "Nieskat. transakcje ({count})",
     "modalTitleEdit": "Edytuj odbiorcę",
     "modalTitleNew": "Nowy odbiorca",
     "loading": "Wczytywanie odbiorców...",
@@ -21,14 +24,16 @@
       "reactivated": "Odbiorca \"{name}\" został przywrócony",
       "reactivateFailed": "Nie udało się przywrócić odbiorcy",
       "updateFailed": "Nie udało się zaktualizować odbiorcy",
-      "createFailed": "Nie udało się utworzyć odbiorcy"
+      "createFailed": "Nie udało się utworzyć odbiorcy",
+      "categorized": "{count, plural, one {Skategoryzowano # transakcję} few {Skategoryzowano # transakcje} many {Skategoryzowano # transakcji} other {Skategoryzowano # transakcji}}"
     },
     "summary": {
       "totalPayees": "Wszyscy odbiorcy",
       "active": "Aktywny",
       "inactive": "Nieaktywny",
       "withoutCategory": "Bez kategorii"
-    }
+    },
+    "applyDefaultCategories": "Przypisz domyślne kategorie"
   },
   "list": {
     "columns": {
@@ -86,7 +91,12 @@
     "categoryLabel": "Domyślna kategoria",
     "notesLabel": "Notatki (opcjonalnie)",
     "submitCreate": "Utwórz odbiorcę",
-    "submitUpdate": "Zapisz odbiorcę"
+    "submitUpdate": "Zapisz odbiorcę",
+    "applyCategoryLabel": "Zastosuj tę kategorię do istniejących transakcji",
+    "applyCategoryNone": "Nie zmieniaj istniejących transakcji",
+    "applyCategoryUncategorized": "Tylko transakcje bez kategorii ({count})",
+    "applyCategoryAll": "Wszystkie transakcje ({count})",
+    "applyCategoryHelp": "Przelewy i transakcje podzielone nigdy nie są zmieniane."
   },
   "merge": {
     "title": "Scal odbiorcę",
@@ -268,5 +278,15 @@
   "selectCategoryPlaceholder": "Wybierz kategorię...",
   "validation": {
     "nameRequired": "Nazwa odbiorcy jest wymagana"
+  },
+  "defaultCategoryBackfill": {
+    "allConfirmTitle": "Przypisać domyślne kategorie?",
+    "allConfirmMessage": "Spowoduje to skategoryzowanie {transactions, plural, one {# nieskategoryzowanej transakcji} few {# nieskategoryzowanych transakcji} many {# nieskategoryzowanych transakcji} other {# nieskategoryzowanych transakcji}} dla {payees, plural, one {# odbiorcy} few {# odbiorców} many {# odbiorców} other {# odbiorców}} przy użyciu domyślnej kategorii każdego odbiorcy. Ręcznie skategoryzowane transakcje, przelewy i transakcje podzielone pozostają bez zmian.",
+    "confirmButton": "Zastosuj",
+    "toasts": {
+      "nothingToDo": "Brak nieskategoryzowanych transakcji do skategoryzowania",
+      "applied": "{count, plural, one {Skategoryzowano # transakcję} few {Skategoryzowano # transakcje} many {Skategoryzowano # transakcji} other {Skategoryzowano # transakcji}}",
+      "failed": "Nie udało się skategoryzować transakcji"
+    }
   }
 }

@@ -21,6 +21,7 @@ import { ActionHistoryService } from "../action-history/action-history.service";
 import { toCountMap } from "../common/count-map.util";
 import { matchesAliasPattern } from "./alias-match.util";
 import {
+  applyPayeeCategoryToAll,
   backfillPayeeCategory,
   countUncategorizedTransactionsByPayee,
 } from "./payee-backfill.util";
@@ -274,7 +275,13 @@ export class PayeesService {
     userId: string,
     id: string,
     updatePayeeDto: UpdatePayeeDto,
-  ): Promise<Payee & { aliasCount: number; transactionCount: number }> {
+  ): Promise<
+    Payee & {
+      aliasCount: number;
+      transactionCount: number;
+      transactionsCategorized: number;
+    }
+  > {
     const payee = await this.findOne(userId, id);
     const beforeData = {
       name: payee.name,
@@ -303,30 +310,50 @@ export class PayeesService {
       }
     }
 
-    // SECURITY: Explicit property mapping instead of Object.assign to prevent mass assignment
+    // SECURITY: Explicit property mapping instead of Object.assign to prevent
+    // mass assignment. We persist with a column-level update (not save() on the
+    // loaded entity) so the default_category_id FK is written from the scalar.
+    // Saving the loaded entity is unsafe here: its defaultCategory relation is
+    // hydrated, and TypeORM derives the FK from that relation -- so changing
+    // only the scalar (or nulling the relation) makes save() clobber the FK,
+    // which silently wiped the default category on an unchanged re-save.
+    const updateFields: Partial<Payee> = {};
     const nameChanged =
       updatePayeeDto.name !== undefined && updatePayeeDto.name !== payee.name;
-    if (updatePayeeDto.name !== undefined) payee.name = updatePayeeDto.name;
-    if (updatePayeeDto.defaultCategoryId !== undefined) {
-      payee.defaultCategoryId = updatePayeeDto.defaultCategoryId;
-      // Always clear the loaded relation object. Otherwise TypeORM's save()
-      // re-derives the FK from the stale relation entity and ignores the
-      // changed scalar -- so switching to a different category (or to null)
-      // would silently not persist.
-      payee.defaultCategory = null as any;
-    }
-    if (updatePayeeDto.notes !== undefined) payee.notes = updatePayeeDto.notes;
+    if (updatePayeeDto.name !== undefined)
+      updateFields.name = updatePayeeDto.name;
+    if (updatePayeeDto.defaultCategoryId !== undefined)
+      updateFields.defaultCategoryId = updatePayeeDto.defaultCategoryId;
+    if (updatePayeeDto.notes !== undefined)
+      updateFields.notes = updatePayeeDto.notes;
     if (updatePayeeDto.isActive !== undefined)
-      payee.isActive = updatePayeeDto.isActive;
+      updateFields.isActive = updatePayeeDto.isActive;
+
+    // The default category the payee ends up with: the new value when one was
+    // supplied, otherwise the existing one. Drives the optional backfill below
+    // and is read from the DTO (not a save()-mutated entity).
+    const effectiveCategoryId =
+      updatePayeeDto.defaultCategoryId !== undefined
+        ? updatePayeeDto.defaultCategoryId
+        : payee.defaultCategoryId;
+
+    // Optionally apply the (new) default category to the payee's existing
+    // transactions. Only meaningful when the payee ends up with a category.
+    const applyMode = updatePayeeDto.applyCategoryToTransactions ?? "none";
 
     // Save the payee and cascade the name change to existing transactions and
     // scheduled transactions atomically, so a partial failure cannot leave the
-    // denormalised payeeName snapshots out of sync with the payee record.
+    // denormalised payeeName snapshots out of sync with the payee record. The
+    // optional category backfill runs in the same transaction so the payee
+    // default and its transactions can never drift apart on a partial failure.
+    let transactionsCategorized = 0;
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      await queryRunner.manager.save(payee);
+      if (Object.keys(updateFields).length > 0) {
+        await queryRunner.manager.update(Payee, { id, userId }, updateFields);
+      }
 
       if (nameChanged) {
         await queryRunner.manager.update(
@@ -339,6 +366,23 @@ export class PayeesService {
           { payeeId: id, userId },
           { payeeName: updatePayeeDto.name },
         );
+      }
+
+      if (applyMode !== "none" && effectiveCategoryId) {
+        transactionsCategorized =
+          applyMode === "all"
+            ? await applyPayeeCategoryToAll(
+                queryRunner.manager,
+                userId,
+                id,
+                effectiveCategoryId,
+              )
+            : await backfillPayeeCategory(
+                queryRunner.manager,
+                userId,
+                id,
+                effectiveCategoryId,
+              );
       }
 
       await queryRunner.commitTransaction();
@@ -372,7 +416,12 @@ export class PayeesService {
       descriptionKey: "updatedPayee",
       descriptionParams: { name: refreshed.name },
     });
-    return { ...refreshed, aliasCount, transactionCount };
+    return {
+      ...refreshed,
+      aliasCount,
+      transactionCount,
+      transactionsCategorized,
+    };
   }
 
   async remove(userId: string, id: string): Promise<void> {

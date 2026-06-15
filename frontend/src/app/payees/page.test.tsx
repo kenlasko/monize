@@ -9,6 +9,18 @@ vi.mock('next/image', () => ({
   default: ({ priority, fill, ...props }: any) => <img alt="" {...props} />,
 }));
 
+// Callable toast mock: the bulk backfill uses the bare toast() for the
+// "nothing to do" notice, so the default export must be a function (the
+// global setup mock only exposes toast.success/.error).
+vi.mock('react-hot-toast', () => {
+  const fn: any = vi.fn();
+  fn.success = vi.fn();
+  fn.error = vi.fn();
+  fn.loading = vi.fn();
+  fn.dismiss = vi.fn();
+  return { default: fn, Toaster: () => null };
+});
+
 // Mock logger
 vi.mock('@/lib/logger', () => ({
   createLogger: () => ({
@@ -76,6 +88,7 @@ const mockCreatePayee = vi.fn();
 const mockUpdatePayee = vi.fn();
 const mockReactivatePayee = vi.fn();
 const mockCreateAlias = vi.fn();
+const mockApplyCategorySuggestions = vi.fn();
 
 vi.mock('@/lib/payees', () => ({
   payeesApi: {
@@ -84,6 +97,7 @@ vi.mock('@/lib/payees', () => ({
     update: (...args: any[]) => mockUpdatePayee(...args),
     reactivatePayee: (...args: any[]) => mockReactivatePayee(...args),
     createAlias: (...args: any[]) => mockCreateAlias(...args),
+    applyCategorySuggestions: (...args: any[]) => mockApplyCategorySuggestions(...args),
   },
 }));
 
@@ -164,6 +178,7 @@ vi.mock('@/components/payees/PayeeForm', () => ({
       {payee && <span data-testid="editing-payee">{payee.name}</span>}
       <button data-testid="submit-form" onClick={() => Promise.resolve(onSubmit({ name: 'New Payee', defaultCategoryId: '', notes: '' })).catch(() => {})}>Submit</button>
       <button data-testid="submit-with-aliases" onClick={() => Promise.resolve(onSubmit({ name: 'WithAliases', defaultCategoryId: 'cat-1', notes: 'note', pendingAliases: ['Alias1', 'Alias2'] })).catch(() => {})}>SubmitWithAliases</button>
+      <button data-testid="submit-apply-category" onClick={() => Promise.resolve(onSubmit({ name: 'Updated', defaultCategoryId: 'cat-1', notes: '', applyCategoryToTransactions: 'all' })).catch(() => {})}>SubmitApplyCategory</button>
     </div>
   ),
 }));
@@ -381,6 +396,73 @@ describe('PayeesPage', () => {
     });
   });
 
+  describe('Apply Default Categories', () => {
+    it('renders the Apply Default Categories button', async () => {
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByText('Apply Default Categories')).toBeInTheDocument());
+    });
+
+    it('backfills each payee default category into its uncategorized transactions', async () => {
+      mockGetAllPayees.mockResolvedValue([
+        { id: 'p-1', name: 'Grocery Store', defaultCategoryId: 'cat-1', defaultCategory: { id: 'cat-1', name: 'Food' }, transactionCount: 50, uncategorizedCount: 5, isActive: true },
+        { id: 'p-3', name: 'Amazon', defaultCategoryId: null, defaultCategory: null, transactionCount: 35, uncategorizedCount: 3, isActive: true },
+      ]);
+      mockApplyCategorySuggestions.mockResolvedValue({ updated: 1, transactionsBackfilled: 5 });
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByText('Apply Default Categories')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByText('Apply Default Categories')); });
+      await act(async () => { fireEvent.click(screen.getByText('Apply', { exact: true })); });
+      await waitFor(() =>
+        expect(mockApplyCategorySuggestions).toHaveBeenCalledWith([
+          { payeeId: 'p-1', categoryId: 'cat-1', backfillTransactions: true },
+        ]),
+      );
+    });
+
+    it('only targets payees that have a default category AND uncategorized transactions', async () => {
+      mockGetAllPayees.mockResolvedValue([
+        // has default + uncategorized -> included
+        { id: 'p-1', name: 'Grocery Store', defaultCategoryId: 'cat-1', defaultCategory: { id: 'cat-1', name: 'Food' }, transactionCount: 50, uncategorizedCount: 5, isActive: true },
+        // has default but nothing uncategorized -> excluded
+        { id: 'p-2', name: 'Gas Station', defaultCategoryId: 'cat-2', defaultCategory: { id: 'cat-2', name: 'Auto' }, transactionCount: 20, uncategorizedCount: 0, isActive: true },
+        // uncategorized but no default category -> excluded
+        { id: 'p-3', name: 'Amazon', defaultCategoryId: null, defaultCategory: null, transactionCount: 35, uncategorizedCount: 3, isActive: true },
+      ]);
+      mockApplyCategorySuggestions.mockResolvedValue({ updated: 1, transactionsBackfilled: 5 });
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByText('Apply Default Categories')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByText('Apply Default Categories')); });
+      await act(async () => { fireEvent.click(screen.getByText('Apply', { exact: true })); });
+      await waitFor(() =>
+        expect(mockApplyCategorySuggestions).toHaveBeenCalledWith([
+          { payeeId: 'p-1', categoryId: 'cat-1', backfillTransactions: true },
+        ]),
+      );
+    });
+
+    it('does nothing and does not call the API when there is nothing to backfill', async () => {
+      mockGetAllPayees.mockResolvedValue([
+        { id: 'p-2', name: 'Gas Station', defaultCategoryId: 'cat-2', defaultCategory: { id: 'cat-2', name: 'Auto' }, transactionCount: 20, uncategorizedCount: 0, isActive: true },
+      ]);
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByText('Apply Default Categories')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByText('Apply Default Categories')); });
+      await act(async () => { fireEvent.click(screen.getByText('Apply', { exact: true })); });
+      expect(mockApplyCategorySuggestions).not.toHaveBeenCalled();
+    });
+
+    it('does not call the API when the confirmation is cancelled', async () => {
+      mockGetAllPayees.mockResolvedValue([
+        { id: 'p-1', name: 'Grocery Store', defaultCategoryId: 'cat-1', defaultCategory: { id: 'cat-1', name: 'Food' }, transactionCount: 50, uncategorizedCount: 5, isActive: true },
+      ]);
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByText('Apply Default Categories')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByText('Apply Default Categories')); });
+      await act(async () => { fireEvent.click(screen.getByText('Cancel', { exact: true })); });
+      expect(mockApplyCategorySuggestions).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Loading State', () => {
     it('shows loading spinner while data is loading', async () => {
       mockGetAllPayees.mockReturnValue(new Promise(() => {}));
@@ -595,6 +677,61 @@ describe('PayeesPage', () => {
       await waitFor(() => {
         expect(screen.queryByTestId('payee-p-1')).not.toBeInTheDocument();
         expect(screen.getByTestId('payee-p-5')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Category Filter', () => {
+    it('renders category filter buttons with counts', async () => {
+      render(<PayeesPage />);
+      await waitFor(() => {
+        expect(screen.getByText(/All Payees \(4\)/)).toBeInTheDocument();
+        expect(screen.getByText(/No Default Category \(2\)/)).toBeInTheDocument();
+        expect(screen.getByText(/Uncategorized Txns \(0\)/)).toBeInTheDocument();
+      });
+    });
+
+    it('filters to payees without a default category', async () => {
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByTestId('payee-list')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByText(/No Default Category \(2\)/)); });
+      await waitFor(() => {
+        expect(screen.queryByTestId('payee-p-1')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('payee-p-2')).not.toBeInTheDocument();
+        expect(screen.getByTestId('payee-p-3')).toBeInTheDocument();
+        expect(screen.getByTestId('payee-p-4')).toBeInTheDocument();
+      });
+    });
+
+    it('filters to payees that have uncategorized transactions', async () => {
+      const withUncat = [
+        { id: 'p-1', name: 'Grocery Store', defaultCategoryId: 'cat-1', defaultCategory: { name: 'Food' }, transactionCount: 50, uncategorizedCount: 5, isActive: true },
+        { id: 'p-2', name: 'Gas Station', defaultCategoryId: 'cat-2', defaultCategory: { name: 'Auto' }, transactionCount: 20, uncategorizedCount: 0, isActive: true },
+      ];
+      mockGetAllPayees.mockResolvedValue(withUncat);
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByTestId('payee-list')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByText(/Uncategorized Txns \(1\)/)); });
+      await waitFor(() => {
+        expect(screen.getByTestId('payee-p-1')).toBeInTheDocument();
+        expect(screen.queryByTestId('payee-p-2')).not.toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Apply category to transactions', () => {
+    it('passes the apply mode through, toasts, and reloads when transactions are categorized', async () => {
+      mockUpdatePayee.mockResolvedValue({ id: 'p-1', name: 'Updated', defaultCategoryId: 'cat-1', transactionsCategorized: 7 });
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByTestId('payee-list')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByTestId('edit-p-1')); });
+      await waitFor(() => expect(screen.getByTestId('submit-apply-category')).toBeInTheDocument());
+      mockGetAllPayees.mockClear();
+      await act(async () => { fireEvent.click(screen.getByTestId('submit-apply-category')); });
+      await waitFor(() => {
+        expect(mockUpdatePayee).toHaveBeenCalledWith('p-1', { name: 'Updated', defaultCategoryId: 'cat-1', notes: undefined, applyCategoryToTransactions: 'all' });
+        expect(toast.success).toHaveBeenCalledWith('Categorized 7 transactions');
+        expect(mockGetAllPayees).toHaveBeenCalled();
       });
     });
   });

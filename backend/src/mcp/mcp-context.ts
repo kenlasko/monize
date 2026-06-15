@@ -73,11 +73,27 @@ export function safeToolError(err: unknown) {
   return toolError("An error occurred while processing your request");
 }
 
+/**
+ * Wrap a sanitized payload into the object form required for an MCP tool's
+ * `structuredContent`. Bare arrays are nested under `items` (structured content
+ * must be a JSON object); primitives under `value`; objects pass through.
+ */
+function toStructuredContent(data: unknown): Record<string, unknown> {
+  if (Array.isArray(data)) {
+    return { items: data };
+  }
+  if (data !== null && typeof data === "object") {
+    return data as Record<string, unknown>;
+  }
+  return { value: data };
+}
+
 export function toolResult(data: unknown) {
   const sanitized = sanitizeToolResultStrings(data);
   return {
     content: [
       { type: "text" as const, text: JSON.stringify(sanitized, null, 2) },
     ],
+    structuredContent: toStructuredContent(sanitized),
   };
 }

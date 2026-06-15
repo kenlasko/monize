@@ -30,8 +30,11 @@ export interface CreatePayeeData {
   notes?: string;
 }
 
+export type ApplyCategoryToTransactions = 'none' | 'uncategorized' | 'all';
+
 export interface UpdatePayeeData extends Partial<CreatePayeeData> {
   isActive?: boolean;
+  applyCategoryToTransactions?: ApplyCategoryToTransactions;
 }
 
 export interface CreatePayeeAliasData {
@@ -146,3 +149,5 @@ export interface DeactivationCandidate {
 }
 
 export type PayeeStatusFilter = 'active' | 'inactive' | 'all';
+
+export type PayeeCategoryFilter = 'all' | 'noDefaultCategory' | 'uncategorizedTransactions';

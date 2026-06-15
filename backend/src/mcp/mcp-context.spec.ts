@@ -150,5 +150,25 @@ describe("mcp-context", () => {
       expect(JSON.parse(toolResult(42).content[0].text)).toBe(42);
       expect(JSON.parse(toolResult("hello").content[0].text)).toBe("hello");
     });
+
+    describe("structuredContent", () => {
+      it("passes an object payload through unchanged", () => {
+        const data = { netWorth: 1000, totalAccounts: 2 };
+        const result = toolResult(data);
+        expect(result.structuredContent).toEqual(data);
+      });
+
+      it("wraps a bare array under 'items' (structured content must be an object)", () => {
+        const result = toolResult([{ id: "a1" }, { id: "a2" }]);
+        expect(result.structuredContent).toEqual({
+          items: [{ id: "a1" }, { id: "a2" }],
+        });
+      });
+
+      it("wraps a primitive payload under 'value'", () => {
+        expect(toolResult(42).structuredContent).toEqual({ value: 42 });
+        expect(toolResult(null).structuredContent).toEqual({ value: null });
+      });
+    });
   });
 });

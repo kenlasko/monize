@@ -89,6 +89,7 @@ const sampleResponse = {
       categoryName: 'Groceries',
       parentId: 'cat-food',
       parentName: 'Food & Dining',
+      parentIsIncome: false,
       isIncome: false,
       valuesByMonth: { '2025-01': 100, '2025-02': 200, '2025-03': 300 },
       depositTotal: 0,
@@ -99,12 +100,14 @@ const sampleResponse = {
       categoryName: 'Salary',
       parentId: null,
       parentName: null,
+      parentIsIncome: null,
       isIncome: true,
       valuesByMonth: { '2025-01': 1000, '2025-02': 1000, '2025-03': 1000 },
       depositTotal: 3000,
       withdrawalTotal: 0,
     },
   ],
+  transfers: [],
 };
 
 describe('MonthlyCategoryBreakdownReport', () => {
@@ -151,19 +154,23 @@ describe('MonthlyCategoryBreakdownReport', () => {
       expect(screen.getByText('Groceries')).toBeInTheDocument();
     });
 
-    // Parent section header (also appears in the subtotal recap).
+    // Parent section header for the expense group.
     expect(screen.getAllByText('Food & Dining').length).toBeGreaterThan(0);
-    // Parentless income category gets the "Other" section.
+    // Parentless income category collects into the "Other income" section.
     expect(screen.getByText('Salary')).toBeInTheDocument();
-    expect(screen.getAllByText('Other expenses').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Other income').length).toBeGreaterThan(0);
+
+    // Top-level group headers separate income from expenses.
+    expect(screen.getByText('Income')).toBeInTheDocument();
+    expect(screen.getByText('Expenses')).toBeInTheDocument();
 
     // Subtotal rows reference each section title.
     expect(screen.getByText('Subtotal: Food & Dining')).toBeInTheDocument();
 
-    // Grand summary rows.
+    // Per-group totals (also echoed in the summary) plus the balance row.
     expect(screen.getByText('Summary')).toBeInTheDocument();
-    expect(screen.getByText('Total expenses')).toBeInTheDocument();
-    expect(screen.getByText('Total income')).toBeInTheDocument();
+    expect(screen.getAllByText('Total expenses').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Total income').length).toBeGreaterThan(0);
     expect(screen.getByText('Balance')).toBeInTheDocument();
 
     // Month headers follow the user's date format (mocked here as MM/YYYY).
@@ -215,6 +222,43 @@ describe('MonthlyCategoryBreakdownReport', () => {
     // Full resolved report range, not a single month.
     expect(url).toContain('startDate=2025-01-01');
     expect(url).toContain('endDate=2025-06-30');
+  });
+
+  it('drills down to uncategorized transactions when the Uncategorized row is clicked', async () => {
+    mockGetMonthlyCategoryBreakdown.mockResolvedValue({
+      currency: 'USD',
+      months: ['2025-01', '2025-02', '2025-03'],
+      data: [
+        {
+          categoryId: null,
+          categoryName: 'Uncategorized',
+          parentId: null,
+          parentName: null,
+          parentIsIncome: null,
+          isIncome: false,
+          valuesByMonth: { '2025-01': 50, '2025-02': 0, '2025-03': 70 },
+          depositTotal: 0,
+          withdrawalTotal: 120,
+        },
+      ],
+      transfers: [],
+    });
+    render(<MonthlyCategoryBreakdownReport />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Uncategorized')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Uncategorized'));
+    });
+
+    expect(mockPush).toHaveBeenCalledTimes(1);
+    const url = mockPush.mock.calls[0][0] as string;
+    expect(url).toContain('/transactions?');
+    // Reuses the existing "uncategorized" pseudo-filter (categoryId IS NULL);
+    // no real category id and no extra backend query.
+    expect(url).toContain('categoryIds=uncategorized');
   });
 
   it('drills down into every child category when a section header is clicked', async () => {
@@ -328,5 +372,331 @@ describe('MonthlyCategoryBreakdownReport', () => {
     const redCells = container.querySelectorAll('[class*="bg-red-"]');
     expect(greenCells.length).toBeGreaterThan(0);
     expect(redCells.length).toBeGreaterThan(0);
+  });
+
+  // Two expense subcategories under one parent: a normal spend and a
+  // refund-heavy one whose net is positive (negative expense magnitude). The
+  // subcategories must sort alphabetically and the subtotal must net them out.
+  const mixedSignResponse = {
+    currency: 'USD',
+    months: ['2025-01'],
+    data: [
+      {
+        categoryId: 'sub-zebra',
+        categoryName: 'Zebra',
+        parentId: 'cat-auto',
+        parentName: 'Auto',
+        parentIsIncome: false,
+        isIncome: false,
+        valuesByMonth: { '2025-01': 100 },
+        depositTotal: 0,
+        withdrawalTotal: 100,
+      },
+      {
+        categoryId: 'sub-apple',
+        categoryName: 'Apple',
+        parentId: 'cat-auto',
+        parentName: 'Auto',
+        parentIsIncome: false,
+        isIncome: false,
+        valuesByMonth: { '2025-01': -30 },
+        depositTotal: 30,
+        withdrawalTotal: 0,
+      },
+    ],
+    transfers: [],
+  };
+
+  it('sorts subcategories alphabetically within a section', async () => {
+    mockGetMonthlyCategoryBreakdown.mockResolvedValue(mixedSignResponse);
+    render(<MonthlyCategoryBreakdownReport />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Apple')).toBeInTheDocument();
+    });
+
+    // Apple (A) must render before Zebra (Z), not in amount order.
+    const apple = screen.getByText('Apple');
+    const zebra = screen.getByText('Zebra');
+    expect(
+      apple.compareDocumentPosition(zebra) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('nets a positive-total expense subcategory into the section subtotal', async () => {
+    mockGetMonthlyCategoryBreakdown.mockResolvedValue(mixedSignResponse);
+    render(<MonthlyCategoryBreakdownReport />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Subtotal: Auto')).toBeInTheDocument();
+    });
+
+    // Subtotal = 100 + (-30) = 70, NOT 100 + 30 = 130.
+    expect(screen.getAllByText('- $70.00').length).toBeGreaterThan(0);
+    expect(screen.queryByText('- $130.00')).not.toBeInTheDocument();
+  });
+
+  it('re-sorts rows by amount when a value column header is clicked', async () => {
+    mockGetMonthlyCategoryBreakdown.mockResolvedValue(mixedSignResponse);
+    render(<MonthlyCategoryBreakdownReport />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Apple')).toBeInTheDocument();
+    });
+
+    // Default (alphabetical): Apple before Zebra. Sorting by the Total column
+    // descending puts Zebra (100) before Apple (-30).
+    await act(async () => {
+      fireEvent.click(screen.getByText('Total'));
+    });
+
+    await waitFor(() => {
+      const apple = screen.getByText('Apple');
+      const zebra = screen.getByText('Zebra');
+      expect(
+        zebra.compareDocumentPosition(apple) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+  });
+
+  const transfersResponse = {
+    currency: 'USD',
+    months: ['2025-01'],
+    data: [
+      {
+        categoryId: 'cat-salary',
+        categoryName: 'Salary',
+        parentId: null,
+        parentName: null,
+        parentIsIncome: null,
+        isIncome: true,
+        valuesByMonth: { '2025-01': 1000 },
+        depositTotal: 1000,
+        withdrawalTotal: 0,
+      },
+    ],
+    transfers: [
+      {
+        accountId: 'acc-chequing',
+        accountName: 'Chequing',
+        direction: 'from',
+        valuesByMonth: { '2025-01': 500 },
+      },
+      {
+        accountId: 'acc-savings',
+        accountName: 'Savings',
+        direction: 'to',
+        valuesByMonth: { '2025-01': -200 },
+      },
+    ],
+  };
+
+  it('renders a transfers section with from/to rows and an overall total', async () => {
+    mockGetMonthlyCategoryBreakdown.mockResolvedValue(transfersResponse);
+    render(<MonthlyCategoryBreakdownReport />);
+
+    await waitFor(() => {
+      expect(screen.getByText('From Chequing')).toBeInTheDocument();
+    });
+
+    // Transfers group header and a "to" row (shown negative).
+    expect(screen.getAllByText('Transfers').length).toBeGreaterThan(0);
+    expect(screen.getByText('To Savings')).toBeInTheDocument();
+
+    // Net transfers = 500 + (-200) = 300.
+    expect(screen.getAllByText('+ $300.00').length).toBeGreaterThan(0);
+    // Overall total = income (1000) - expenses (0) + transfers (300) = 1300.
+    expect(screen.getByText('Overall total')).toBeInTheDocument();
+    expect(screen.getAllByText('+ $1300.00').length).toBeGreaterThan(0);
+  });
+
+  it('excludes the in-progress current month unless opted in', async () => {
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(
+      now.getMonth() + 1,
+    ).padStart(2, '0')}`;
+    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevMonth = `${prev.getFullYear()}-${String(
+      prev.getMonth() + 1,
+    ).padStart(2, '0')}`;
+
+    mockGetMonthlyCategoryBreakdown.mockResolvedValue({
+      currency: 'USD',
+      months: [prevMonth, currentMonth],
+      data: [
+        {
+          categoryId: 'cat-salary',
+          categoryName: 'Salary',
+          parentId: null,
+          parentName: null,
+          parentIsIncome: null,
+          isIncome: true,
+          valuesByMonth: { [prevMonth]: 1000, [currentMonth]: 500 },
+          depositTotal: 1500,
+          withdrawalTotal: 0,
+        },
+      ],
+      transfers: [],
+    });
+    render(<MonthlyCategoryBreakdownReport />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Salary')).toBeInTheDocument();
+    });
+
+    // By default the current (in-progress) month column is hidden, so its
+    // value (500) does not appear anywhere.
+    expect(screen.queryAllByText('+ $500.00').length).toBe(0);
+
+    // Opting in brings the current month back.
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Include current month'));
+    });
+    await waitFor(() => {
+      expect(screen.getAllByText('+ $500.00').length).toBeGreaterThan(0);
+    });
+  });
+
+  it('drills into an account\'s transfers when a transfer row is clicked', async () => {
+    mockGetMonthlyCategoryBreakdown.mockResolvedValue(transfersResponse);
+    render(<MonthlyCategoryBreakdownReport />);
+
+    await waitFor(() => {
+      expect(screen.getByText('From Chequing')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('From Chequing'));
+    });
+
+    expect(mockPush).toHaveBeenCalledTimes(1);
+    const url = mockPush.mock.calls[0][0] as string;
+    expect(url).toContain('/transactions?');
+    expect(url).toContain('categoryIds=transfer');
+    expect(url).toContain('accountIds=acc-chequing');
+    expect(url).toContain('startDate=2025-01-01');
+    expect(url).toContain('endDate=2025-06-30');
+  });
+
+  it('drills into income categories when the Total income summary row is clicked', async () => {
+    mockGetMonthlyCategoryBreakdown.mockResolvedValue(sampleResponse);
+    render(<MonthlyCategoryBreakdownReport />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Groceries')).toBeInTheDocument();
+    });
+
+    // Only the summary "Total income" is a button (the group total is plain).
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Total income' }));
+    });
+
+    expect(mockPush).toHaveBeenCalledTimes(1);
+    const url = mockPush.mock.calls[0][0] as string;
+    expect(url).toContain('/transactions?');
+    expect(url).toContain('categoryIds=cat-salary');
+    expect(url).toContain('startDate=2025-01-01');
+    expect(url).toContain('endDate=2025-06-30');
+  });
+
+  it('drills into the category over the full range when its Total cell is clicked', async () => {
+    mockGetMonthlyCategoryBreakdown.mockResolvedValue(sampleResponse);
+    render(<MonthlyCategoryBreakdownReport />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Groceries')).toBeInTheDocument();
+    });
+
+    // Groceries total is 100+200+300 = 600; the row's Total cell is the first
+    // such button and drills with the same filter as the category name.
+    const totals = screen.getAllByRole('button', { name: '- $600.00' });
+    await act(async () => {
+      fireEvent.click(totals[0]);
+    });
+
+    expect(mockPush).toHaveBeenCalledTimes(1);
+    const url = mockPush.mock.calls[0][0] as string;
+    expect(url).toContain('categoryIds=cat-groceries');
+    expect(url).toContain('startDate=2025-01-01');
+    expect(url).toContain('endDate=2025-06-30');
+  });
+
+  describe('row hover highlighting', () => {
+    // The category column is sticky with its own opaque background, so it must
+    // carry the row's group-hover tint or it paints over the hover highlight
+    // (the whole row, including the name, should highlight together).
+    it('highlights the sticky category column on subcategory and transfer rows', async () => {
+      mockGetMonthlyCategoryBreakdown.mockResolvedValue(transfersResponse);
+      render(<MonthlyCategoryBreakdownReport />);
+
+      await waitFor(() => {
+        expect(screen.getByText('From Chequing')).toBeInTheDocument();
+      });
+
+      // Subcategory name cell.
+      const salaryCell = screen.getByText('Salary').closest('td');
+      expect(salaryCell?.className).toContain('group-hover:bg-gray-50');
+      const salaryRow = salaryCell?.closest('tr');
+      expect(salaryRow?.className).toContain('group');
+      expect(salaryRow?.className).toContain('hover:bg-gray-50');
+
+      // Transfer name cell.
+      const transferCell = screen.getByText('From Chequing').closest('td');
+      expect(transferCell?.className).toContain('group-hover:bg-gray-50');
+      expect(transferCell?.closest('tr')?.className).toContain('group');
+    });
+
+    it('highlights the category column on the Summary total and balance rows', async () => {
+      mockGetMonthlyCategoryBreakdown.mockResolvedValue(transfersResponse);
+      render(<MonthlyCategoryBreakdownReport />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Summary')).toBeInTheDocument();
+      });
+
+      // Balance row (rendered inline in the summary).
+      const balanceCell = screen
+        .getByRole('button', { name: 'Balance' })
+        .closest('td');
+      expect(balanceCell?.className).toContain('group-hover:bg-gray-200');
+      const balanceRow = balanceCell?.closest('tr');
+      expect(balanceRow?.className).toContain('group');
+      expect(balanceRow?.className).toContain('hover:bg-gray-200');
+
+      // Total income summary row (rendered via renderSummaryRow).
+      const incomeCell = screen
+        .getByRole('button', { name: 'Total income' })
+        .closest('td');
+      expect(incomeCell?.className).toContain('group-hover:bg-gray-200');
+      expect(incomeCell?.closest('tr')?.className).toContain('group');
+
+      // Overall total row (only present when there are transfers).
+      const overallCell = screen.getByText('Overall total').closest('td');
+      expect(overallCell?.className).toContain('group-hover:bg-gray-300');
+      expect(overallCell?.closest('tr')?.className).toContain('hover:bg-gray-300');
+    });
+
+    it('highlights the category column on the Summary recap rows', async () => {
+      mockGetMonthlyCategoryBreakdown.mockResolvedValue(sampleResponse);
+      const { container } = render(<MonthlyCategoryBreakdownReport />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Groceries')).toBeInTheDocument();
+      });
+
+      // The per-section recap rows at the bottom of the Summary tint their
+      // sticky title cell with the lighter recap hover shade.
+      const recapCells = container.querySelectorAll(
+        'td[class*="group-hover:bg-gray-100"]',
+      );
+      expect(recapCells.length).toBeGreaterThan(0);
+      recapCells.forEach((cell) => {
+        const row = cell.closest('tr');
+        expect(row?.className).toContain('group');
+        expect(row?.className).toContain('hover:bg-gray-100');
+      });
+    });
   });
 });

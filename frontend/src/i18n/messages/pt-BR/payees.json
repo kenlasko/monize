@@ -10,6 +10,9 @@
     "statusAll": "Todos ({count})",
     "statusActive": "Ativos ({count})",
     "statusInactive": "Inativos ({count})",
+    "categoryFilterAll": "Todos os beneficiários ({count})",
+    "categoryFilterNoCategory": "Sem categoria padrão ({count})",
+    "categoryFilterUncategorized": "Trans. sem categoria ({count})",
     "modalTitleEdit": "Editar Beneficiário",
     "modalTitleNew": "Novo Beneficiário",
     "loading": "Carregando beneficiários...",
@@ -21,14 +24,16 @@
       "reactivated": "Beneficiário \"{name}\" reativado",
       "reactivateFailed": "Falha ao reativar beneficiário",
       "updateFailed": "Falha ao atualizar beneficiário",
-      "createFailed": "Falha ao criar beneficiário"
+      "createFailed": "Falha ao criar beneficiário",
+      "categorized": "{count, plural, one {# transação categorizada} other {# transações categorizadas}}"
     },
     "summary": {
       "totalPayees": "Total de Beneficiários",
       "active": "Ativos",
       "inactive": "Inativos",
       "withoutCategory": "Sem Categoria"
-    }
+    },
+    "applyDefaultCategories": "Aplicar categorias padrão"
   },
   "list": {
     "columns": {
@@ -86,7 +91,12 @@
     "categoryLabel": "Categoria Padrão",
     "notesLabel": "Notas (opcional)",
     "submitCreate": "Criar Beneficiário",
-    "submitUpdate": "Atualizar Beneficiário"
+    "submitUpdate": "Atualizar Beneficiário",
+    "applyCategoryLabel": "Aplicar esta categoria às transações existentes",
+    "applyCategoryNone": "Não alterar as transações existentes",
+    "applyCategoryUncategorized": "Apenas transações sem categoria ({count})",
+    "applyCategoryAll": "Todas as transações ({count})",
+    "applyCategoryHelp": "As transferências e as transações divididas nunca são alteradas."
   },
   "merge": {
     "title": "Unir Beneficiário",
@@ -268,5 +278,15 @@
   "selectCategoryPlaceholder": "Selecionar categoria...",
   "validation": {
     "nameRequired": "O nome do beneficiário é obrigatório"
+  },
+  "defaultCategoryBackfill": {
+    "allConfirmTitle": "Aplicar categorias padrão?",
+    "allConfirmMessage": "Isso irá categorizar {transactions, plural, one {# transação sem categoria} other {# transações sem categoria}} em {payees, plural, one {# beneficiário} other {# beneficiários}} usando a categoria padrão de cada beneficiário. As transações categorizadas manualmente, as transferências e as transações divididas permanecem inalteradas.",
+    "confirmButton": "Aplicar",
+    "toasts": {
+      "nothingToDo": "Não há transações sem categoria para categorizar",
+      "applied": "{count, plural, one {# transação categorizada} other {# transações categorizadas}}",
+      "failed": "Falha ao categorizar as transações"
+    }
   }
 }

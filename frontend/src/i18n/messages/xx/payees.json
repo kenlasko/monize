@@ -10,6 +10,9 @@
     "statusAll": "[XX-All ({count})-XX]",
     "statusActive": "[XX-Active ({count})-XX]",
     "statusInactive": "[XX-Inactive ({count})-XX]",
+    "categoryFilterAll": "[XX-All Payees ({count})-XX]",
+    "categoryFilterNoCategory": "[XX-No Default Category ({count})-XX]",
+    "categoryFilterUncategorized": "[XX-Uncategorized Txns ({count})-XX]",
     "modalTitleEdit": "[XX-Edit Payee-XX]",
     "modalTitleNew": "[XX-New Payee-XX]",
     "loading": "[XX-Loading payees...-XX]",
@@ -21,14 +24,16 @@
       "reactivated": "[XX-Payee \"{name}\" reactivated-XX]",
       "reactivateFailed": "[XX-Failed to reactivate payee-XX]",
       "updateFailed": "[XX-Failed to update payee-XX]",
-      "createFailed": "[XX-Failed to create payee-XX]"
+      "createFailed": "[XX-Failed to create payee-XX]",
+      "categorized": "[XX-{count, plural, one {Categorized # transaction} other {Categorized # transactions}}-XX]"
     },
     "summary": {
       "totalPayees": "[XX-Total Payees-XX]",
       "active": "[XX-Active-XX]",
       "inactive": "[XX-Inactive-XX]",
       "withoutCategory": "[XX-Without Category-XX]"
-    }
+    },
+    "applyDefaultCategories": "[XX-Apply Default Categories-XX]"
   },
   "list": {
     "columns": {
@@ -86,7 +91,12 @@
     "categoryLabel": "[XX-Default Category-XX]",
     "notesLabel": "[XX-Notes (optional)-XX]",
     "submitCreate": "[XX-Create Payee-XX]",
-    "submitUpdate": "[XX-Update Payee-XX]"
+    "submitUpdate": "[XX-Update Payee-XX]",
+    "applyCategoryLabel": "[XX-Apply this category to existing transactions-XX]",
+    "applyCategoryNone": "[XX-Don't change existing transactions-XX]",
+    "applyCategoryUncategorized": "[XX-Only transactions without a category ({count})-XX]",
+    "applyCategoryAll": "[XX-All transactions ({count})-XX]",
+    "applyCategoryHelp": "[XX-Transfers and split transactions are never changed.-XX]"
   },
   "merge": {
     "title": "[XX-Merge Payee-XX]",
@@ -268,5 +278,15 @@
   "selectCategoryPlaceholder": "[XX-Select category...-XX]",
   "validation": {
     "nameRequired": "[XX-Payee name is required-XX]"
+  },
+  "defaultCategoryBackfill": {
+    "allConfirmTitle": "[XX-Apply default categories?-XX]",
+    "allConfirmMessage": "[XX-This will categorize {transactions, plural, one {# uncategorized transaction} other {# uncategorized transactions}} across {payees, plural, one {# payee} other {# payees}} using each payee's default category. Manually categorized transactions, transfers, and split transactions are left unchanged.-XX]",
+    "confirmButton": "[XX-Apply-XX]",
+    "toasts": {
+      "nothingToDo": "[XX-No uncategorized transactions to categorize-XX]",
+      "applied": "[XX-{count, plural, one {Categorized # transaction} other {Categorized # transactions}}-XX]",
+      "failed": "[XX-Failed to categorize transactions-XX]"
+    }
   }
 }

@@ -8,6 +8,7 @@ export class McpBudgetCheckPrompt {
     server.registerPrompt(
       "budget-check",
       {
+        title: "Budget check",
         description: "Check spending patterns against typical monthly expenses",
         argsSchema: {
           month: z

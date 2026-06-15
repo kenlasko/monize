@@ -10,6 +10,9 @@
     "statusAll": "Tous ({count})",
     "statusActive": "Actifs ({count})",
     "statusInactive": "Inactifs ({count})",
+    "categoryFilterAll": "Tous les bénéficiaires ({count})",
+    "categoryFilterNoCategory": "Sans catégorie par défaut ({count})",
+    "categoryFilterUncategorized": "Trans. sans catégorie ({count})",
     "modalTitleEdit": "Modifier le bénéficiaire",
     "modalTitleNew": "Nouveau bénéficiaire",
     "loading": "Chargement des bénéficiaires...",
@@ -21,14 +24,16 @@
       "reactivated": "Bénéficiaire « {name} » réactivé",
       "reactivateFailed": "Échec de la réactivation du bénéficiaire",
       "updateFailed": "Échec de la mise à jour du bénéficiaire",
-      "createFailed": "Échec de la création du bénéficiaire"
+      "createFailed": "Échec de la création du bénéficiaire",
+      "categorized": "{count, plural, one {# transaction catégorisée} other {# transactions catégorisées}}"
     },
     "summary": {
       "totalPayees": "Total des bénéficiaires",
       "active": "Actifs",
       "inactive": "Inactifs",
       "withoutCategory": "Sans catégorie"
-    }
+    },
+    "applyDefaultCategories": "Appliquer les catégories par défaut"
   },
   "list": {
     "columns": {
@@ -86,7 +91,12 @@
     "categoryLabel": "Catégorie par défaut",
     "notesLabel": "Notes (facultatif)",
     "submitCreate": "Créer le bénéficiaire",
-    "submitUpdate": "Mettre à jour le bénéficiaire"
+    "submitUpdate": "Mettre à jour le bénéficiaire",
+    "applyCategoryLabel": "Appliquer cette catégorie aux transactions existantes",
+    "applyCategoryNone": "Ne pas modifier les transactions existantes",
+    "applyCategoryUncategorized": "Uniquement les transactions sans catégorie ({count})",
+    "applyCategoryAll": "Toutes les transactions ({count})",
+    "applyCategoryHelp": "Les virements et les transactions ventilées ne sont jamais modifiés."
   },
   "merge": {
     "title": "Fusionner le bénéficiaire",
@@ -268,5 +278,15 @@
   "selectCategoryPlaceholder": "Sélectionner une catégorie...",
   "validation": {
     "nameRequired": "Le nom du bénéficiaire est requis"
+  },
+  "defaultCategoryBackfill": {
+    "allConfirmTitle": "Appliquer les catégories par défaut ?",
+    "allConfirmMessage": "Cela catégorisera {transactions, plural, one {# transaction sans catégorie} other {# transactions sans catégorie}} pour {payees, plural, one {# bénéficiaire} other {# bénéficiaires}} en utilisant la catégorie par défaut de chaque bénéficiaire. Les transactions catégorisées manuellement, les virements et les transactions ventilées restent inchangés.",
+    "confirmButton": "Appliquer",
+    "toasts": {
+      "nothingToDo": "Aucune transaction sans catégorie à catégoriser",
+      "applied": "{count, plural, one {# transaction catégorisée} other {# transactions catégorisées}}",
+      "failed": "Échec de la catégorisation des transactions"
+    }
   }
 }

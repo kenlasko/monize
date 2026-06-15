@@ -9,6 +9,11 @@ import {
   toolError,
   safeToolError,
 } from "../mcp-context";
+import {
+  getUpcomingBillsOutput,
+  getScheduledTransactionsOutput,
+} from "../tool-output-schemas";
+import { READ_ONLY } from "../mcp-annotations";
 
 const SCHEDULED_KIND_VALUES = [
   "bill",
@@ -28,6 +33,8 @@ export class McpScheduledTools {
     server.registerTool(
       "get_upcoming_bills",
       {
+        title: "Upcoming bills and deposits",
+        annotations: READ_ONLY,
         description:
           "Get upcoming scheduled bills and deposits due within a date window. Each item is classified as bill / deposit / transfer / investment and includes a daysUntilDue value (negative when overdue). Returns the same shape as the AI Assistant's get_upcoming_bills tool.",
         inputSchema: {
@@ -50,6 +57,7 @@ export class McpScheduledTools {
             .optional()
             .describe("Optional account IDs to filter to."),
         },
+        outputSchema: getUpcomingBillsOutput,
       },
       async (args, extra) => {
         const ctx = resolve(extra.sessionId);
@@ -77,6 +85,8 @@ export class McpScheduledTools {
     server.registerTool(
       "get_scheduled_transactions",
       {
+        title: "List scheduled transactions",
+        annotations: READ_ONLY,
         description:
           "List all scheduled/recurring transactions (bills, deposits, transfers, investments). Returns rollup counts plus a curated per-item payload. Returns the same shape as the AI Assistant's get_scheduled_transactions tool.",
         inputSchema: {
@@ -98,6 +108,7 @@ export class McpScheduledTools {
               "Filter by active status. Omit to include both active and paused schedules.",
             ),
         },
+        outputSchema: getScheduledTransactionsOutput,
       },
       async (args, extra) => {
         const ctx = resolve(extra.sessionId);

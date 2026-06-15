@@ -79,15 +79,24 @@ export interface MonthlyBreakdownCategoryRow {
   categoryName: string;
   parentId: string | null;
   parentName: string | null;
+  parentIsIncome: boolean | null;
   isIncome: boolean;
   valuesByMonth: Record<string, number>;
   depositTotal: number;
   withdrawalTotal: number;
 }
 
+export interface MonthlyBreakdownTransferRow {
+  accountId: string;
+  accountName: string;
+  direction: 'from' | 'to';
+  valuesByMonth: Record<string, number>;
+}
+
 export interface MonthlyCategoryBreakdownResponse {
   months: string[];
   data: MonthlyBreakdownCategoryRow[];
+  transfers: MonthlyBreakdownTransferRow[];
   currency: string;
 }
 

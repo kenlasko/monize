@@ -1882,6 +1882,42 @@ describe('TransactionForm', () => {
         expect(mockCreate).toHaveBeenCalled();
       });
     });
+
+    it('sends payeeId/payeeName null when the user clears a previously assigned payee', async () => {
+      const existingTransaction = createExistingTransaction();
+
+      render(
+        <TransactionForm
+          transaction={existingTransaction}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('combobox-input-Payee')).toBeInTheDocument();
+      });
+
+      // Clear the payee. The payee field allows custom values, so the mocked
+      // Combobox forwards onChange('', '') for the now-empty input. The form
+      // must send null (not the empty string the combobox yields) so the
+      // backend clears the payee rather than rejecting an invalid UUID.
+      fireEvent.change(screen.getByTestId('combobox-input-Payee'), {
+        target: { value: 'x' },
+      });
+      fireEvent.change(screen.getByTestId('combobox-input-Payee'), {
+        target: { value: '' },
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /Update Transaction/i }));
+
+      await waitFor(() => {
+        expect(mockUpdate).toHaveBeenCalledWith(
+          existingTransaction.id,
+          expect.objectContaining({ payeeId: null, payeeName: null })
+        );
+      });
+    });
   });
 
   // =========================================================================
@@ -1936,6 +1972,42 @@ describe('TransactionForm', () => {
 
       await waitFor(() => {
         expect(mockCreate).toHaveBeenCalled();
+      });
+    });
+
+    it('sends categoryId null when the user clears a previously assigned category', async () => {
+      const existingTransaction = createExistingTransaction();
+
+      render(
+        <TransactionForm
+          transaction={existingTransaction}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('combobox-input-Category')).toBeInTheDocument();
+      });
+
+      // Clear the category. The category field allows custom values, so the
+      // mocked Combobox forwards onChange('', '') for the now-empty input. The
+      // zod helper coerces '' to undefined; the form must still send null so
+      // the backend clears the category rather than ignoring the omitted field.
+      fireEvent.change(screen.getByTestId('combobox-input-Category'), {
+        target: { value: 'x' },
+      });
+      fireEvent.change(screen.getByTestId('combobox-input-Category'), {
+        target: { value: '' },
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /Update Transaction/i }));
+
+      await waitFor(() => {
+        expect(mockUpdate).toHaveBeenCalledWith(
+          existingTransaction.id,
+          expect.objectContaining({ categoryId: null })
+        );
       });
     });
 
@@ -2964,7 +3036,9 @@ describe('TransactionForm', () => {
       fireEvent.click(screen.getByRole('button', { name: /Create Transaction/i }));
       await waitFor(() => expect(mockCreate).toHaveBeenCalled());
       const payload = mockCreate.mock.calls[0][0];
-      expect(payload.categoryId).toBe('');
+      // A typed-but-not-created custom value leaves no category: send null, not
+      // an empty string (which the backend rejects as an invalid UUID).
+      expect(payload.categoryId).toBeNull();
     });
   });
 
@@ -2997,7 +3071,7 @@ describe('TransactionForm', () => {
       await waitFor(() => expect(mockCreate).toHaveBeenCalled());
       const payload = mockCreate.mock.calls[0][0];
       expect(payload.payeeName).toBe('Brand New Payee');
-      expect(payload.payeeId).toBeUndefined();
+      expect(payload.payeeId).toBeNull();
     });
   });
 
@@ -3180,7 +3254,7 @@ describe('TransactionForm', () => {
       fireEvent.click(screen.getByRole('button', { name: /Create Transaction/i }));
       await waitFor(() => expect(mockCreate).toHaveBeenCalled());
       const payload = mockCreate.mock.calls[0][0];
-      expect(payload.payeeId).toBeUndefined();
+      expect(payload.payeeId).toBeNull();
     });
   });
 

@@ -10,6 +10,9 @@
     "statusAll": "Tutti ({count})",
     "statusActive": "Attivi ({count})",
     "statusInactive": "Inattivi ({count})",
+    "categoryFilterAll": "Tutti i beneficiari ({count})",
+    "categoryFilterNoCategory": "Senza categoria predefinita ({count})",
+    "categoryFilterUncategorized": "Trans. senza categoria ({count})",
     "modalTitleEdit": "Modifica beneficiario",
     "modalTitleNew": "Nuovo beneficiario",
     "loading": "Caricamento beneficiari...",
@@ -21,14 +24,16 @@
       "reactivated": "Beneficiario \"{name}\" riattivato",
       "reactivateFailed": "Riattivazione del beneficiario non riuscita",
       "updateFailed": "Aggiornamento del beneficiario non riuscito",
-      "createFailed": "Creazione del beneficiario non riuscita"
+      "createFailed": "Creazione del beneficiario non riuscita",
+      "categorized": "{count, plural, one {# transazione categorizzata} other {# transazioni categorizzate}}"
     },
     "summary": {
       "totalPayees": "Beneficiari totali",
       "active": "Attivi",
       "inactive": "Inattivi",
       "withoutCategory": "Senza categoria"
-    }
+    },
+    "applyDefaultCategories": "Applica categorie predefinite"
   },
   "list": {
     "columns": {
@@ -86,7 +91,12 @@
     "categoryLabel": "Categoria predefinita",
     "notesLabel": "Note (opzionale)",
     "submitCreate": "Crea beneficiario",
-    "submitUpdate": "Aggiorna beneficiario"
+    "submitUpdate": "Aggiorna beneficiario",
+    "applyCategoryLabel": "Applica questa categoria alle transazioni esistenti",
+    "applyCategoryNone": "Non modificare le transazioni esistenti",
+    "applyCategoryUncategorized": "Solo transazioni senza categoria ({count})",
+    "applyCategoryAll": "Tutte le transazioni ({count})",
+    "applyCategoryHelp": "I trasferimenti e le transazioni suddivise non vengono mai modificati."
   },
   "merge": {
     "title": "Unisci beneficiario",
@@ -268,5 +278,15 @@
   "selectCategoryPlaceholder": "Seleziona categoria...",
   "validation": {
     "nameRequired": "Il nome del beneficiario è obbligatorio"
+  },
+  "defaultCategoryBackfill": {
+    "allConfirmTitle": "Applicare le categorie predefinite?",
+    "allConfirmMessage": "Verranno categorizzate {transactions, plural, one {# transazione senza categoria} other {# transazioni senza categoria}} per {payees, plural, one {# beneficiario} other {# beneficiari}} usando la categoria predefinita di ciascun beneficiario. Le transazioni categorizzate manualmente, i trasferimenti e le transazioni suddivise restano invariati.",
+    "confirmButton": "Applica",
+    "toasts": {
+      "nothingToDo": "Nessuna transazione senza categoria da categorizzare",
+      "applied": "{count, plural, one {# transazione categorizzata} other {# transazioni categorizzate}}",
+      "failed": "Impossibile categorizzare le transazioni"
+    }
   }
 }

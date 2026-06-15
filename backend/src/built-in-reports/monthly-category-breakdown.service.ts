@@ -8,6 +8,7 @@ import { roundMoney, toMoneyNumber } from "../common/round.util";
 import {
   MonthlyCategoryBreakdownResponse,
   MonthlyBreakdownCategoryRow,
+  MonthlyBreakdownTransferRow,
 } from "./dto";
 
 /**
@@ -21,6 +22,20 @@ interface RawBreakdownAggregate {
   currency_code: string;
   deposits: string;
   withdrawals: string;
+}
+
+/**
+ * Raw per-(account, month, currency) transfer aggregate. Outflows and inflows
+ * are summed separately so each account can be split into a "from" row
+ * (outflows, a source of funds) and a "to" row (inflows, a use of funds).
+ */
+interface RawTransferAggregate {
+  month: string;
+  account_id: string;
+  account_name: string;
+  currency_code: string;
+  outflow: string;
+  inflow: string;
 }
 
 /**
@@ -159,19 +174,163 @@ export class MonthlyCategoryBreakdownService {
       acc.withdrawalTotal += withdrawals;
     }
 
+    const transfers = await this.getTransferRows(
+      userId,
+      startDate,
+      endDate,
+      defaultCurrency,
+      rateMap,
+      monthSet,
+    );
+
     const months = Array.from(monthSet).sort();
 
     const data: MonthlyBreakdownCategoryRow[] = Array.from(
       accumulators.values(),
     ).map((acc) => this.buildRow(acc, categoryMap));
 
-    return { months, data, currency: defaultCurrency };
+    return { months, data, transfers, currency: defaultCurrency };
+  }
+
+  /**
+   * Aggregate transfers per (account, month) into signed "from"/"to" rows.
+   * Each transfer is stored as two linked legs (a negative leg on the source
+   * account and a positive leg on the destination account); grouping every
+   * leg by the account it sits on therefore counts each transfer exactly once
+   * per side. Outflows become a "from" row (positive, a source of funds) and
+   * inflows become a "to" row (negative, a use of funds). Months that contain
+   * transfers but no categorised activity are added to the shared month set.
+   */
+  private async getTransferRows(
+    userId: string,
+    startDate: string | undefined,
+    endDate: string,
+    defaultCurrency: string,
+    rateMap: Map<string, number>,
+    monthSet: Set<string>,
+  ): Promise<MonthlyBreakdownTransferRow[]> {
+    let query = `
+      SELECT
+        TO_CHAR(t.transaction_date, 'YYYY-MM') as month,
+        t.account_id,
+        a.name as account_name,
+        t.currency_code,
+        SUM(CASE WHEN t.amount < 0 THEN ABS(t.amount) ELSE 0 END) as outflow,
+        SUM(CASE WHEN t.amount > 0 THEN t.amount ELSE 0 END) as inflow
+      FROM transactions t
+      JOIN accounts a ON a.id = t.account_id
+      WHERE t.user_id = $1
+        AND t.transaction_date <= $2
+        AND t.is_transfer = true
+        AND (t.status IS NULL OR t.status != 'VOID')
+        AND t.parent_transaction_id IS NULL
+    `;
+
+    const params: (string | undefined)[] = [userId, endDate];
+
+    if (startDate) {
+      query += ` AND t.transaction_date >= $3`;
+      params.push(startDate);
+    }
+
+    query += `
+      GROUP BY TO_CHAR(t.transaction_date, 'YYYY-MM'),
+               t.account_id, a.name, t.currency_code
+      ORDER BY month
+    `;
+
+    const rawResults: RawTransferAggregate[] =
+      await this.transactionsRepository.query(query, params);
+
+    // Accumulate the signed flow per (account, direction) across currencies.
+    const fromByAccount = new Map<
+      string,
+      { name: string; valuesByMonth: Map<string, number> }
+    >();
+    const toByAccount = new Map<
+      string,
+      { name: string; valuesByMonth: Map<string, number> }
+    >();
+
+    const addFlow = (
+      store: Map<string, { name: string; valuesByMonth: Map<string, number> }>,
+      accountId: string,
+      accountName: string,
+      month: string,
+      amount: number,
+    ) => {
+      let entry = store.get(accountId);
+      if (!entry) {
+        entry = { name: accountName, valuesByMonth: new Map() };
+        store.set(accountId, entry);
+      }
+      entry.valuesByMonth.set(
+        month,
+        (entry.valuesByMonth.get(month) ?? 0) + amount,
+      );
+    };
+
+    for (const row of rawResults) {
+      monthSet.add(row.month);
+      const outflow = this.currencyService.convertAmount(
+        toMoneyNumber(row.outflow),
+        row.currency_code,
+        defaultCurrency,
+        rateMap,
+      );
+      const inflow = this.currencyService.convertAmount(
+        toMoneyNumber(row.inflow),
+        row.currency_code,
+        defaultCurrency,
+        rateMap,
+      );
+      if (outflow !== 0) {
+        addFlow(
+          fromByAccount,
+          row.account_id,
+          row.account_name,
+          row.month,
+          outflow,
+        );
+      }
+      if (inflow !== 0) {
+        addFlow(
+          toByAccount,
+          row.account_id,
+          row.account_name,
+          row.month,
+          inflow,
+        );
+      }
+    }
+
+    const buildTransferRows = (
+      store: Map<string, { name: string; valuesByMonth: Map<string, number> }>,
+      direction: "from" | "to",
+    ): MonthlyBreakdownTransferRow[] =>
+      Array.from(store.entries()).map(([accountId, entry]) => {
+        const valuesByMonth: Record<string, number> = {};
+        for (const [month, amount] of entry.valuesByMonth) {
+          // "from" rows are a source of funds (positive); "to" rows are a use
+          // of funds (negative).
+          valuesByMonth[month] = roundMoney(
+            direction === "from" ? amount : -amount,
+          );
+        }
+        return { accountId, accountName: entry.name, direction, valuesByMonth };
+      });
+
+    return [
+      ...buildTransferRows(fromByAccount, "from"),
+      ...buildTransferRows(toByAccount, "to"),
+    ];
   }
 
   /**
    * Convert one accumulator into a response row. A category is income when its
-   * deposits exceed its withdrawals; the per-month value is the signed net in
-   * the category's dominant direction (positive magnitude either way) so the
+   * own isIncome flag says so (falling back to deposits-dominate only for
+   * uncategorized rows that have no category record); the per-month value is
+   * the signed net in that direction (positive magnitude either way) so the
    * frontend can render and sum it without re-deciding the sign.
    */
   private buildRow(
@@ -185,7 +344,9 @@ export class MonthlyCategoryBreakdownService {
       ? (categoryMap.get(category.parentId) ?? null)
       : null;
 
-    const isIncome = acc.depositTotal > acc.withdrawalTotal;
+    const isIncome = category
+      ? category.isIncome
+      : acc.depositTotal > acc.withdrawalTotal;
 
     const valuesByMonth: Record<string, number> = {};
     const allMonths = new Set<string>([
@@ -204,6 +365,7 @@ export class MonthlyCategoryBreakdownService {
       categoryName: category?.name ?? "Uncategorized",
       parentId: parent?.id ?? null,
       parentName: parent?.name ?? null,
+      parentIsIncome: parent?.isIncome ?? null,
       isIncome,
       valuesByMonth,
       depositTotal: roundMoney(acc.depositTotal),

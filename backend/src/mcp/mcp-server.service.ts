@@ -20,6 +20,12 @@ import { McpBudgetCheckPrompt } from "./prompts/budget-check.prompt";
 import { McpTransactionLookupPrompt } from "./prompts/transaction-lookup.prompt";
 import { McpSpendingAnalysisPrompt } from "./prompts/spending-analysis.prompt";
 
+// Version comes from the backend package.json at build/run time so the MCP
+// server advertises the same version as the published image. Using require
+// keeps the read synchronous and avoids ESM import-assertion issues.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const backendPkg = require("../../package.json") as { version: string };
+
 @Injectable()
 export class McpServerService {
   constructor(
@@ -45,7 +51,7 @@ export class McpServerService {
 
   createServer(resolve: UserContextResolver): McpServer {
     const server = new McpServer(
-      { name: "monize", version: "1.0.0" },
+      { name: "monize", version: backendPkg.version },
       {
         instructions: [
           "Monize is a personal finance management service. You can query accounts, transactions, investments, and generate financial reports.",

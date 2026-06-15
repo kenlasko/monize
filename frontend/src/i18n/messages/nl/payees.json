@@ -10,6 +10,9 @@
     "statusAll": "Alle ({count})",
     "statusActive": "Actief ({count})",
     "statusInactive": "Inactief ({count})",
+    "categoryFilterAll": "Alle begunstigden ({count})",
+    "categoryFilterNoCategory": "Zonder standaardcategorie ({count})",
+    "categoryFilterUncategorized": "Ongecat. transacties ({count})",
     "modalTitleEdit": "Begunstigde bewerken",
     "modalTitleNew": "Nieuwe begunstigde",
     "loading": "Begunstigden laden...",
@@ -21,14 +24,16 @@
       "reactivated": "Begunstigde \"{name}\" geheractiveerd",
       "reactivateFailed": "Begunstigde heractiveren mislukt",
       "updateFailed": "Begunstigde bijwerken mislukt",
-      "createFailed": "Begunstigde aanmaken mislukt"
+      "createFailed": "Begunstigde aanmaken mislukt",
+      "categorized": "{count, plural, one {# transactie gecategoriseerd} other {# transacties gecategoriseerd}}"
     },
     "summary": {
       "totalPayees": "Totaal begunstigden",
       "active": "Actief",
       "inactive": "Inactief",
       "withoutCategory": "Zonder categorie"
-    }
+    },
+    "applyDefaultCategories": "Standaardcategorieën toepassen"
   },
   "list": {
     "columns": {
@@ -86,7 +91,12 @@
     "categoryLabel": "Standaardcategorie",
     "notesLabel": "Notities (optioneel)",
     "submitCreate": "Begunstigde aanmaken",
-    "submitUpdate": "Begunstigde bijwerken"
+    "submitUpdate": "Begunstigde bijwerken",
+    "applyCategoryLabel": "Deze categorie toepassen op bestaande transacties",
+    "applyCategoryNone": "Bestaande transacties niet wijzigen",
+    "applyCategoryUncategorized": "Alleen transacties zonder categorie ({count})",
+    "applyCategoryAll": "Alle transacties ({count})",
+    "applyCategoryHelp": "Overboekingen en gesplitste transacties worden nooit gewijzigd."
   },
   "merge": {
     "title": "Begunstigde samenvoegen",
@@ -268,5 +278,15 @@
   "selectCategoryPlaceholder": "Selecteer categorie...",
   "validation": {
     "nameRequired": "Naam begunstigde is verplicht"
+  },
+  "defaultCategoryBackfill": {
+    "allConfirmTitle": "Standaardcategorieën toepassen?",
+    "allConfirmMessage": "Hiermee worden {transactions, plural, one {# niet-gecategoriseerde transactie} other {# niet-gecategoriseerde transacties}} bij {payees, plural, one {# begunstigde} other {# begunstigden}} gecategoriseerd met de standaardcategorie van elke begunstigde. Handmatig gecategoriseerde transacties, overboekingen en gesplitste transacties blijven ongewijzigd.",
+    "confirmButton": "Toepassen",
+    "toasts": {
+      "nothingToDo": "Geen niet-gecategoriseerde transacties om te categoriseren",
+      "applied": "{count, plural, one {# transactie gecategoriseerd} other {# transacties gecategoriseerd}}",
+      "failed": "Kan transacties niet categoriseren"
+    }
   }
 }

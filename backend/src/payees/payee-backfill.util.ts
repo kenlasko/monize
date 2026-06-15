@@ -64,3 +64,38 @@ export async function backfillPayeeCategory(
   );
   return result.affected ?? 0;
 }
+
+/**
+ * "Recategorizable" transactions are every one of a payee's transactions except
+ * transfers (whose categorisation is implicit) and split parents (whose
+ * categories live on the split lines). Unlike `backfillableWhere`, this includes
+ * rows that already have a category, so applying a category overwrites them.
+ */
+function recategorizableWhere(userId: string, payeeId: string) {
+  return {
+    userId,
+    payeeId,
+    isTransfer: false,
+    isSplit: false,
+  };
+}
+
+/**
+ * Assign `categoryId` to ALL of a single payee's recategorizable transactions
+ * (see `recategorizableWhere`), overwriting any existing category. Returns the
+ * number of transactions updated. Pass the EntityManager from an active
+ * QueryRunner so the update joins the caller's transaction.
+ */
+export async function applyPayeeCategoryToAll(
+  manager: EntityManager,
+  userId: string,
+  payeeId: string,
+  categoryId: string,
+): Promise<number> {
+  const result = await manager.update(
+    Transaction,
+    recategorizableWhere(userId, payeeId),
+    { categoryId },
+  );
+  return result.affected ?? 0;
+}

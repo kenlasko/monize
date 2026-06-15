@@ -18,6 +18,17 @@ import {
   getDefaultDateRange,
   resolveComparePeriods,
 } from "../../common/tool-schemas";
+import {
+  searchTransactionsOutput,
+  queryTransactionsOutput,
+  getSpendingByCategoryOutput,
+  getIncomeSummaryOutput,
+  comparePeriodsOutput,
+  getTransfersOutput,
+  createTransactionOutput,
+  categorizeTransactionOutput,
+} from "../tool-output-schemas";
+import { READ_ONLY, CREATE, UPDATE } from "../mcp-annotations";
 
 @Injectable()
 export class McpTransactionsTools {
@@ -33,6 +44,8 @@ export class McpTransactionsTools {
     server.registerTool(
       "search_transactions",
       {
+        title: "Search transactions",
+        annotations: READ_ONLY,
         description: "Search and filter transactions",
         inputSchema: {
           query: z.string().max(200).optional().describe("Search text"),
@@ -77,6 +90,7 @@ export class McpTransactionsTools {
             .default(50)
             .describe("Max results (default 50, max 100)"),
         },
+        outputSchema: searchTransactionsOutput,
       },
       async (args, extra) => {
         const ctx = resolve(extra.sessionId);
@@ -112,6 +126,8 @@ export class McpTransactionsTools {
     server.registerTool(
       "query_transactions",
       {
+        title: "Query transaction totals",
+        annotations: READ_ONLY,
         description:
           "Search and aggregate transaction data. Returns totals, counts, and optional grouped breakdowns (category, payee, year, month, week) - never individual transaction details. Returns the same shape as the AI Assistant's query_transactions tool.",
         inputSchema: {
@@ -149,6 +165,7 @@ export class McpTransactionsTools {
             .optional()
             .describe("Filter by direction"),
         },
+        outputSchema: queryTransactionsOutput,
       },
       async (args, extra) => {
         const ctx = resolve(extra.sessionId);
@@ -180,6 +197,8 @@ export class McpTransactionsTools {
     server.registerTool(
       "get_spending_by_category",
       {
+        title: "Spending by category",
+        annotations: READ_ONLY,
         description:
           "Spending breakdown by category for a date range. Returns each category with total amount, percentage of total spending, and transaction count. Sorted by amount descending. Returns the same shape as the AI Assistant's get_spending_by_category tool.",
         inputSchema: {
@@ -203,6 +222,7 @@ export class McpTransactionsTools {
               `Limit to top N categories by amount. Defaults to ${DEFAULT_TOP_N}.`,
             ),
         },
+        outputSchema: getSpendingByCategoryOutput,
       },
       async (args, extra) => {
         const ctx = resolve(extra.sessionId);
@@ -228,6 +248,8 @@ export class McpTransactionsTools {
     server.registerTool(
       "get_income_summary",
       {
+        title: "Income summary",
+        annotations: READ_ONLY,
         description:
           "Income summary for a date range, grouped by category, payee, or month. Returns the same shape as the AI Assistant's get_income_summary tool.",
         inputSchema: {
@@ -246,6 +268,7 @@ export class McpTransactionsTools {
             .optional()
             .describe("How to group income (default: category)"),
         },
+        outputSchema: getIncomeSummaryOutput,
       },
       async (args, extra) => {
         const ctx = resolve(extra.sessionId);
@@ -271,6 +294,8 @@ export class McpTransactionsTools {
     server.registerTool(
       "compare_periods",
       {
+        title: "Compare periods",
+        annotations: READ_ONLY,
         description:
           "Compare spending or income between two time periods. Returns side-by-side comparison showing absolute and percentage changes per group. If any of the four period dates are omitted, defaults to the previous full month (period1) vs the current month-to-date (period2). Returns the same shape as the AI Assistant's compare_periods tool.",
         inputSchema: {
@@ -309,6 +334,7 @@ export class McpTransactionsTools {
             .optional()
             .describe("Filter by direction (default: expenses)"),
         },
+        outputSchema: comparePeriodsOutput,
       },
       async (args, extra) => {
         const ctx = resolve(extra.sessionId);
@@ -344,6 +370,8 @@ export class McpTransactionsTools {
     server.registerTool(
       "get_transfers",
       {
+        title: "Get transfers",
+        annotations: READ_ONLY,
         description:
           "Get transfer activity between the user's own accounts for a date range. Returns per-account inbound, outbound, net, and count. Transfers are deliberately excluded from other transaction queries because they net to zero across accounts. Returns the same shape as the AI Assistant's get_transfers tool.",
         inputSchema: {
@@ -365,6 +393,7 @@ export class McpTransactionsTools {
               "Optional account IDs to filter to. Omit to cover all accounts.",
             ),
         },
+        outputSchema: getTransfersOutput,
       },
       async (args, extra) => {
         const ctx = resolve(extra.sessionId);
@@ -390,6 +419,8 @@ export class McpTransactionsTools {
     server.registerTool(
       "create_transaction",
       {
+        title: "Create transaction",
+        annotations: CREATE,
         description:
           "Create a new transaction. Set dryRun=true to preview without saving.",
         inputSchema: {
@@ -415,6 +446,7 @@ export class McpTransactionsTools {
               "If true, validate and return a preview without creating the transaction",
             ),
         },
+        outputSchema: createTransactionOutput,
       },
       async (args, extra) => {
         const ctx = resolve(extra.sessionId);
@@ -487,11 +519,14 @@ export class McpTransactionsTools {
     server.registerTool(
       "categorize_transaction",
       {
+        title: "Categorize transaction",
+        annotations: UPDATE,
         description: "Assign a category to a transaction",
         inputSchema: {
           transactionId: z.string().uuid().describe("Transaction ID"),
           categoryId: z.string().uuid().describe("Category ID"),
         },
+        outputSchema: categorizeTransactionOutput,
       },
       async (args, extra) => {
         const ctx = resolve(extra.sessionId);
