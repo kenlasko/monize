@@ -215,7 +215,9 @@ describe('PreferencesSection', () => {
     fireEvent.focus(timezoneInput);
 
     await waitFor(() => {
-      const browserOption = screen.getByText(/auto-detected as/);
+      // Scope to the timezone phrasing: the language selector's "use browser
+      // locale" option also contains "auto-detected as".
+      const browserOption = screen.getByText(/browser timezone \(auto-detected as/);
       expect(browserOption).toBeInTheDocument();
     });
   });

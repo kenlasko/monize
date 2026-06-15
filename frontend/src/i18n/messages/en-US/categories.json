@@ -1,0 +1,7 @@
+{
+  "form": {
+    "colourLabel": "Color",
+    "colourNone": "No color",
+    "colourInheritedFrom": "Color inherited from parent ({name})"
+  }
+}

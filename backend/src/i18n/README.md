@@ -19,6 +19,21 @@ the `NEXT_LOCALE` cookie, or the `Accept-Language` header.
    `frontend/src/i18n/config.ts`.
 5. Open a PR. No other code changes are needed.
 
+## Regional variants (lean overrides)
+
+A regional variant (e.g. `en-US`) lists only the keys whose wording differs from
+its base. nestjs-i18n falls back to `en` (via `fallbackLanguage` and the
+`fallbacks` map in `i18n.module.ts`) for every other key, and for variants that
+ship no folder at all.
+
+1. Add the code to `SUPPORTED_LOCALE_CODES` and an entry to `LOCALE_BASES`
+   (`{ "en-US": "en" }`) in `backend/src/i18n/config.ts`.
+2. Create `locales/en-US/<file>.json` with only the changed keys, mirroring the
+   base structure. Omit files (or the whole folder) that have no changes.
+3. The parity test checks variants as a subset of `en` (keys must exist in `en`,
+   values must differ, placeholders must match). Mirror the matching variant
+   under `frontend/src/i18n/`.
+
 ## Namespaces
 
 | File              | Contents                                                  |

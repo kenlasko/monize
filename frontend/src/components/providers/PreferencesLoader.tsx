@@ -6,7 +6,7 @@ import Cookies from 'js-cookie';
 import { useAuthStore } from '@/store/authStore';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTheme } from '@/contexts/ThemeContext';
-import { LOCALE_COOKIE, isSupportedLocale } from '@/i18n/config';
+import { LOCALE_COOKIE, isSupportedLocale, detectBrowserLocale } from '@/i18n/config';
 import { isColorTheme } from '@/lib/color-themes';
 import { userSettingsApi } from '@/lib/user-settings';
 import { consumePreLoginLocale } from '@/lib/pre-login-locale';
@@ -62,11 +62,15 @@ export function PreferencesLoader({ children }: { children: React.ReactNode }) {
   // the stored preference -- persist it instead of reverting the cookie.
   useEffect(() => {
     if (!prefsHydrated || !preferences?.language) return;
-    if (!isSupportedLocale(preferences.language)) return;
+    const pref = preferences.language;
+    // 'browser' resolves to the locale the browser advertises; a concrete code
+    // must be a supported locale before it is applied to the cookie.
+    if (pref !== 'browser' && !isSupportedLocale(pref)) return;
+    const effective = pref === 'browser' ? detectBrowserLocale() : pref;
 
     const preLogin = consumePreLoginLocale();
     if (preLogin && isSupportedLocale(preLogin)) {
-      if (preLogin !== preferences.language) {
+      if (preLogin !== pref) {
         userSettingsApi
           .updatePreferences({ language: preLogin })
           .then((updated) => updatePreferencesStore(updated))
@@ -78,8 +82,8 @@ export function PreferencesLoader({ children }: { children: React.ReactNode }) {
     }
 
     const current = Cookies.get(LOCALE_COOKIE);
-    if (current === preferences.language) return;
-    Cookies.set(LOCALE_COOKIE, preferences.language, {
+    if (current === effective) return;
+    Cookies.set(LOCALE_COOKIE, effective, {
       sameSite: 'lax',
       expires: 365,
     });

@@ -16,7 +16,8 @@ export function useDateFormat() {
 
   const formatDate = useCallback(
     (date: Date | string): string => {
-      const locale = language && language !== 'xx' ? language : undefined;
+      const locale =
+        language && language !== 'xx' && language !== 'browser' ? language : undefined;
       return formatDateUtil(date, dateFormat, locale);
     },
     [dateFormat, language]
@@ -24,7 +25,8 @@ export function useDateFormat() {
 
   const formatMonth = useCallback(
     (month: string): string => {
-      const locale = language && language !== 'xx' ? language : undefined;
+      const locale =
+        language && language !== 'xx' && language !== 'browser' ? language : undefined;
       return formatMonthUtil(month, dateFormat, locale);
     },
     [dateFormat, language]

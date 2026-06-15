@@ -1,0 +1,8 @@
+{
+  "postDialog": {
+    "referencePlaceholder": "Check #, confirmation #..."
+  },
+  "form": {
+    "referenceNumberPlaceholder": "Check #, confirmation #..."
+  }
+}

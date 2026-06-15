@@ -1,0 +1,11 @@
+{
+  "preferences": {
+    "toasts": {
+      "colorThemeSaveFailed": "Failed to save color theme"
+    },
+    "colorThemeLabel": "Color theme",
+    "colorThemeOptions": {
+      "colorblind": "Color-blind safe"
+    }
+  }
+}

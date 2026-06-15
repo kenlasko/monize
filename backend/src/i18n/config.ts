@@ -18,6 +18,9 @@ export const DEFAULT_LOCALE = "en";
 export const SUPPORTED_LOCALE_CODES: readonly string[] = [
   "de",
   "en",
+  "en-US",
+  "en-CA",
+  "en-GB",
   "es",
   "fr",
   "it",
@@ -27,6 +30,26 @@ export const SUPPORTED_LOCALE_CODES: readonly string[] = [
   "pt-BR",
   "xx",
 ];
+
+/**
+ * Regional variants and the base locale they inherit from. A variant catalog
+ * holds only the keys that differ from its base; nestjs-i18n falls back to
+ * `fallbackLanguage` ('en') for the rest. Mirrors the frontend `base` field in
+ * `frontend/src/i18n/config.ts`. Used by the parity test to apply subset
+ * (rather than full-mirror) checks to variant locales.
+ */
+export const LOCALE_BASES: Readonly<Record<string, string>> = {
+  "en-US": "en",
+  "en-CA": "en",
+  "en-GB": "en",
+};
+
+export function localeBase(
+  code: string | undefined | null,
+): string | undefined {
+  if (!code) return undefined;
+  return LOCALE_BASES[code];
+}
 
 export function isSupportedLocale(code: string | undefined | null): boolean {
   if (!code) return false;

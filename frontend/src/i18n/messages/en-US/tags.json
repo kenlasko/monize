@@ -1,0 +1,14 @@
+{
+  "page": {
+    "summary": {
+      "tagsWithColour": "Tags with Color"
+    }
+  },
+  "form": {
+    "colourLabel": "Color",
+    "noColour": "No color",
+    "colours": {
+      "grey": "Gray"
+    }
+  }
+}

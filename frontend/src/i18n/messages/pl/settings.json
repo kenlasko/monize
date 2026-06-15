@@ -1,6 +1,7 @@
 {
   "language": {
     "label": "Język",
+    "browserOption": "Użyj języka przeglądarki (wykryto {locale})",
     "helpText": "Wybierz język używany w całym interfejsie Monize. Formatowanie liczb i dat jest sterowane osobno poniżej.",
     "saved": "Zmieniono język",
     "saveFailed": "Nie udało się zapisać języka"

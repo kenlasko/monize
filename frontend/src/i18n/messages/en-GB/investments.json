@@ -1,0 +1,7 @@
+{
+  "portfolioSummary": {
+    "totalGainTooltip": "The total profit or loss across all your investments: Portfolio Value minus Net Invested. Includes realised gains, unrealised gains, dividends, and interest.",
+    "gainLossTooltip": "Unrealised gain or loss on your current holdings: Market Value minus Cost Basis. Does not include realised gains from past sales or income received.",
+    "cagrTooltip": "Compound Annual Growth Rate. Your annualised return based on Net Invested vs. current portfolio value, as if growth had been perfectly steady each year."
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "form": {
+    "accountTypeOptions": {
+      "chequing": "Current account"
+    }
+  },
+  "loanPaymentSetup": {
+    "analyzingHistory": "Analysing transaction history...",
+    "amortizationMonths": "Amortisation (months)"
+  },
+  "mortgageFields": {
+    "amortizationPeriod": "Amortisation Period (required)",
+    "previewTitle": "Amortisation Preview"
+  }
+}

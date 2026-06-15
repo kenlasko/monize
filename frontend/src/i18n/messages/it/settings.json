@@ -1,6 +1,7 @@
 {
   "language": {
     "label": "Lingua",
+    "browserOption": "Usa la lingua del browser (rilevata automaticamente: {locale})",
     "helpText": "Scegli la lingua dell'interfaccia Monize. La formattazione di numeri e date è controllata separatamente in basso.",
     "saved": "Lingua aggiornata",
     "saveFailed": "Impossibile salvare la lingua"

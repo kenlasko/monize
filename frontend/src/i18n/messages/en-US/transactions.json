@@ -1,0 +1,10 @@
+{
+  "filter": {
+    "favourites": "Favorites:"
+  },
+  "form": {
+    "placeholders": {
+      "referenceNumber": "Check #, confirmation #..."
+    }
+  }
+}

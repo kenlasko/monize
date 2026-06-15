@@ -209,15 +209,15 @@ export class UpdatePreferencesDto {
 
   @ApiPropertyOptional({
     description:
-      "UI language. ISO 639-1 code (e.g. 'en', 'fr') or BCP 47 tag (e.g. 'pt-BR'). Must be one of the SUPPORTED_LOCALES values.",
+      "UI language. 'browser' to follow the browser's configured language, an ISO 639-1 code (e.g. 'en', 'fr'), or a BCP 47 tag (e.g. 'pt-BR'). Must be 'browser' or one of the SUPPORTED_LOCALES values.",
     example: "en",
   })
   @IsOptional()
   @IsString()
   @MaxLength(10)
-  @Matches(/^[a-z]{2}(-[A-Z]{2})?$/, {
+  @Matches(/^(browser|[a-z]{2}(-[A-Z]{2})?)$/, {
     message:
-      "language must be an ISO 639-1 code (e.g. 'en') or BCP 47 tag (e.g. 'pt-BR')",
+      "language must be 'browser', an ISO 639-1 code (e.g. 'en'), or a BCP 47 tag (e.g. 'pt-BR')",
   })
   language?: string;
 }

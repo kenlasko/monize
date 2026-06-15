@@ -9,7 +9,12 @@ import { Select } from '@/components/ui/Select';
 import { userSettingsApi } from '@/lib/user-settings';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { getErrorMessage } from '@/lib/errors';
-import { LOCALE_COOKIE, SUPPORTED_LOCALES } from '@/i18n/config';
+import {
+  LOCALE_COOKIE,
+  SUPPORTED_LOCALES,
+  detectBrowserLocale,
+  getLocaleLabel,
+} from '@/i18n/config';
 import { loadNamespaceMessages } from '@/i18n/messages';
 
 /**
@@ -42,20 +47,27 @@ export function LanguageSelector({ value, onChange }: LanguageSelectorProps) {
   const [isSaving, startTransition] = useTransition();
   const updatePreferencesStore = usePreferencesStore((state) => state.updatePreferences);
 
-  const options = SUPPORTED_LOCALES.map((l) => ({
-    value: l.code,
-    label: l.label,
-  }));
+  const browserLocale = detectBrowserLocale();
+  const options = [
+    {
+      value: 'browser',
+      label: t('browserOption', { locale: getLocaleLabel(browserLocale) }),
+    },
+    ...SUPPORTED_LOCALES.map((l) => ({ value: l.code, label: l.label })),
+  ];
 
   const handleChange = (next: string) => {
     onChange(next);
-    Cookies.set(LOCALE_COOKIE, next, { sameSite: 'lax', expires: 365 });
+    // 'browser' follows the browser's language: persist the sentinel but drive
+    // the active locale (cookie + confirmation toast) with the detected locale.
+    const effective = next === 'browser' ? browserLocale : next;
+    Cookies.set(LOCALE_COOKIE, effective, { sameSite: 'lax', expires: 365 });
 
     startTransition(async () => {
       try {
         const updated = await userSettingsApi.updatePreferences({ language: next });
         updatePreferencesStore(updated);
-        toast.success(await savedMessageIn(next, t('saved')));
+        toast.success(await savedMessageIn(effective, t('saved')));
         router.refresh();
       } catch (error) {
         toast.error(getErrorMessage(error, t('saveFailed')));

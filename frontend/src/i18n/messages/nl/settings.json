@@ -1,6 +1,7 @@
 {
   "language": {
     "label": "Taal",
+    "browserOption": "Browsertaal gebruiken (automatisch gedetecteerd als {locale})",
     "helpText": "Kies de taal die door de hele Monize-interface wordt gebruikt. Getal- en datumopmaak worden hieronder apart ingesteld.",
     "saved": "Taal bijgewerkt",
     "saveFailed": "Opslaan van taal mislukt"

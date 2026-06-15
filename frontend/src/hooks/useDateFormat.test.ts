@@ -1,6 +1,8 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useDateFormat } from './useDateFormat';
+import { usePreferencesStore } from '@/store/preferencesStore';
+import { formatDate as formatDateUtil } from '@/lib/utils';
 
 vi.mock('@/store/preferencesStore', () => ({
   usePreferencesStore: vi.fn((selector: any) =>
@@ -12,6 +14,27 @@ vi.mock('@/lib/utils', () => ({
   formatDate: vi.fn((date: Date | string, fmt: string) => `formatted:${fmt}`),
   formatMonth: vi.fn((month: string, fmt: string) => `month:${fmt}`),
 }));
+
+describe('useDateFormat with a "browser" UI language', () => {
+  afterEach(() => {
+    vi.mocked(usePreferencesStore).mockImplementation((selector: any) =>
+      selector({ preferences: { dateFormat: 'YYYY-MM-DD' } }),
+    );
+  });
+
+  it('does not pass the "browser" sentinel through as an Intl locale', () => {
+    vi.mocked(usePreferencesStore).mockImplementation((selector: any) =>
+      selector({ preferences: { dateFormat: 'browser', language: 'browser' } }),
+    );
+    const { result } = renderHook(() => useDateFormat());
+    result.current.formatDate('2025-01-15');
+    expect(vi.mocked(formatDateUtil)).toHaveBeenLastCalledWith(
+      '2025-01-15',
+      'browser',
+      undefined,
+    );
+  });
+});
 
 describe('useDateFormat', () => {
   it('returns formatDate/formatMonth functions and dateFormat', () => {
