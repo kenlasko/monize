@@ -2,6 +2,7 @@ import {
   testEmailTemplate,
   billReminderTemplate,
   passwordResetTemplate,
+  emailVerificationTemplate,
   accountInviteTemplate,
   budgetMonthlySummaryTemplate,
   mortgageReminderTemplate,
@@ -311,6 +312,55 @@ describe("Email Templates", () => {
       );
 
       expect(html).toContain("Password Reset Request");
+    });
+  });
+
+  describe("emailVerificationTemplate()", () => {
+    it("includes the verify url in the verify button link", () => {
+      const html = emailVerificationTemplate(
+        "Alice",
+        "https://monize.app/verify-email?token=abc123",
+      );
+
+      expect(html).toContain(
+        'href="https://monize.app/verify-email?token=abc123"',
+      );
+    });
+
+    it("includes the name in the greeting", () => {
+      const html = emailVerificationTemplate(
+        "Bob",
+        "https://monize.app/verify-email?token=xyz",
+      );
+
+      expect(html).toContain("Hi Bob,");
+    });
+
+    it('falls back to "there" when name is empty', () => {
+      const html = emailVerificationTemplate(
+        "",
+        "https://monize.app/verify-email?token=abc123",
+      );
+
+      expect(html).toContain("Hi there,");
+    });
+
+    it("includes the 24-hour expiration notice", () => {
+      const html = emailVerificationTemplate(
+        "Alice",
+        "https://monize.app/verify-email?token=abc123",
+      );
+
+      expect(html).toContain("This link will expire in 24 hours");
+    });
+
+    it("escapes HTML in the verify url to prevent injection", () => {
+      const html = emailVerificationTemplate(
+        "Alice",
+        'https://monize.app/verify-email?token="><script>alert(1)</script>',
+      );
+
+      expect(html).not.toContain("<script>alert(1)</script>");
     });
   });
 

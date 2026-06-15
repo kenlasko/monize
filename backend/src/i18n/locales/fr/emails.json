@@ -107,6 +107,14 @@
     "button": "Réinitialiser le mot de passe",
     "disclaimer": "Ce lien expirera dans 1 heure. Si vous n'avez pas demandé de réinitialisation de mot de passe, vous pouvez ignorer cet e-mail en toute sécurité."
   },
+  "emailVerification": {
+    "subject": "Vérifiez votre adresse e-mail Monize",
+    "heading": "Vérifiez votre adresse e-mail",
+    "greeting": "Bonjour {{ name }},",
+    "intro": "Merci de vous être inscrit à Monize. Veuillez confirmer votre adresse e-mail pour activer votre compte et vous connecter :",
+    "button": "Vérifier l'e-mail",
+    "disclaimer": "Ce lien expirera dans 24 heures. Si vous n'avez pas créé de compte Monize, vous pouvez ignorer cet e-mail en toute sécurité."
+  },
   "accountInvite": {
     "subject": "Votre compte Monize est prêt",
     "heading": "Votre compte Monize est prêt",

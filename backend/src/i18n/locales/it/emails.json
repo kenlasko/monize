@@ -107,6 +107,14 @@
     "button": "Reimposta password",
     "disclaimer": "Questo link scadrà in 1 ora. Se non hai richiesto la reimpostazione della password, puoi ignorare tranquillamente questa email."
   },
+  "emailVerification": {
+    "subject": "Verifica il tuo indirizzo email Monize",
+    "heading": "Verifica il tuo indirizzo email",
+    "greeting": "Ciao {{ name }},",
+    "intro": "Grazie per esserti registrato a Monize. Conferma il tuo indirizzo email per attivare il tuo account e accedere:",
+    "button": "Verifica email",
+    "disclaimer": "Questo link scadrà tra 24 ore. Se non hai creato un account Monize, puoi ignorare tranquillamente questa email."
+  },
   "accountInvite": {
     "subject": "Il tuo account Monize è pronto",
     "heading": "Il tuo account Monize è pronto",

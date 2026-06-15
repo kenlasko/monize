@@ -164,6 +164,10 @@ export class AuthService {
       existingUser.resetTokenExpiry = null;
       existingUser.failedLoginAttempts = 0;
       existingUser.lockedUntil = null;
+      // The row being claimed was provisioned by an account owner who invited
+      // this email as a delegate, so the address is already trusted -- the
+      // claimant can sign in immediately without an email-verification step.
+      existingUser.emailVerified = true;
       // Promote out of the owner-managed delegate state -- the user is
       // claiming the row as their own account from here on, so they
       // should show up in admin User Management and see a "self"
@@ -201,24 +205,62 @@ export class AuthService {
     // user keeps it on subsequent logins instead of reverting to English.
     const language = currentRequestLocale();
 
+    // Email verification is required only for brand-new self-service
+    // registrations, and only when SMTP is configured (without it we cannot
+    // deliver the link). The very first user bootstraps the instance and
+    // becomes admin, so they are auto-verified -- otherwise a misconfigured
+    // SMTP setup could lock the operator out of their own deployment.
+    const smtpConfigured = this.emailService.getStatus().configured;
+
+    // Raw token is kept in memory only long enough to build the email link;
+    // only its hash is persisted (same pattern as password-reset tokens).
+    let rawVerificationToken: string | null = null;
+
     // C9: Use serializable transaction to prevent race condition on first-user admin
-    const user = await this.dataSource.transaction(
+    const { user, requireVerification } = await this.dataSource.transaction(
       "SERIALIZABLE",
       async (manager) => {
         const userCount = await manager.count(User);
+        const isFirstUser = userCount === 0;
+        const needsVerification = smtpConfigured && !isFirstUser;
+
+        let emailVerificationToken: string | null = null;
+        let emailVerificationTokenExpiry: Date | null = null;
+        if (needsVerification) {
+          rawVerificationToken = crypto.randomBytes(32).toString("hex");
+          emailVerificationToken = hashToken(rawVerificationToken);
+          emailVerificationTokenExpiry = new Date(
+            Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+          );
+        }
+
         const newUser = manager.create(User, {
           email: normalizedEmail,
           passwordHash,
           firstName,
           lastName,
           authProvider: "local",
-          role: userCount === 0 ? "admin" : "user",
+          role: isFirstUser ? "admin" : "user",
+          emailVerified: !needsVerification,
+          emailVerificationToken,
+          emailVerificationTokenExpiry,
         });
         const savedUser = await manager.save(newUser);
         await manager.save(buildDefaultPreferences(savedUser.id, language));
-        return savedUser;
+        return { user: savedUser, requireVerification: needsVerification };
       },
     );
+
+    if (requireVerification) {
+      // Account exists but cannot sign in until the email is verified, so we
+      // deliberately do NOT issue tokens here. Hand the raw token back to the
+      // controller, which owns email delivery (mirroring forgot-password).
+      return {
+        verificationRequired: true,
+        user: this.sanitizeUser(user),
+        verificationToken: rawVerificationToken!,
+      };
+    }
 
     const { accessToken, refreshToken } =
       await this.tokenService.generateTokenPair(user);
@@ -320,6 +362,16 @@ export class AuthService {
         .set({ failedLoginAttempts: 0, lockedUntil: null })
         .where("id = :id", { id: user.id })
         .execute();
+    }
+
+    // Hard email-verification gate: a local account that self-registered while
+    // SMTP was enabled must confirm its email before it can sign in. The
+    // password is already proven correct at this point, so surfacing the
+    // unverified state is not an enumeration risk. Reported like requires2FA
+    // (HTTP 200, no tokens) so the client can offer to resend the link.
+    if (!user.emailVerified) {
+      this.logger.warn(`Login blocked: email not verified for user ${user.id}`);
+      return { emailNotVerified: true };
     }
 
     // Check if 2FA is enabled
@@ -483,6 +535,9 @@ export class AuthService {
                 oidcSubject: sub,
                 authProvider: "oidc",
                 role: userCount === 0 ? "admin" : "user",
+                // OIDC identities are verified by the provider and never use
+                // the local-login gate; create them already verified.
+                emailVerified: true,
               };
               const newUser = manager.create(User, userData);
               const savedUser = await manager.save(newUser);
@@ -711,6 +766,8 @@ export class AuthService {
       oidcLinkToken,
       oidcLinkExpiresAt,
       pendingOidcSubject,
+      emailVerificationToken,
+      emailVerificationTokenExpiry,
       ...sanitized
     } = user;
     return { ...sanitized, hasPassword: !!passwordHash };
@@ -824,5 +881,17 @@ export class AuthService {
 
   checkForgotPasswordEmailLimit(email: string) {
     return this.authEmailService.checkForgotPasswordEmailLimit(email);
+  }
+
+  async generateVerificationToken(email: string) {
+    return this.authEmailService.generateVerificationToken(email);
+  }
+
+  async verifyEmail(token: string) {
+    return this.authEmailService.verifyEmail(token);
+  }
+
+  checkVerificationEmailLimit(email: string) {
+    return this.authEmailService.checkVerificationEmailLimit(email);
   }
 }

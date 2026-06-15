@@ -107,6 +107,14 @@
     "button": "Restablecer contraseña",
     "disclaimer": "Este enlace expirará en 1 hora. Si no solicitaste un restablecimiento de contraseña, puedes ignorar este correo con seguridad."
   },
+  "emailVerification": {
+    "subject": "Verifica tu correo electrónico de Monize",
+    "heading": "Verifica tu correo electrónico",
+    "greeting": "Hola, {{ name }}:",
+    "intro": "Gracias por registrarte en Monize. Confirma tu correo electrónico para activar tu cuenta e iniciar sesión:",
+    "button": "Verificar correo electrónico",
+    "disclaimer": "Este enlace expirará en 24 horas. Si no creaste una cuenta de Monize, puedes ignorar este correo con seguridad."
+  },
   "accountInvite": {
     "subject": "Tu cuenta de Monize está lista",
     "heading": "Tu cuenta de Monize está lista",

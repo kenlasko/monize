@@ -107,6 +107,14 @@
     "button": "Wachtwoord herstellen",
     "disclaimer": "Deze koppeling verloopt over 1 uur. Als je geen wachtwoordherstel hebt aangevraagd, kun je deze e-mail veilig negeren."
   },
+  "emailVerification": {
+    "subject": "Bevestig je Monize-e-mailadres",
+    "heading": "Bevestig je e-mailadres",
+    "greeting": "Hoi {{ name }},",
+    "intro": "Bedankt voor je registratie bij Monize. Bevestig je e-mailadres om je account te activeren en in te loggen:",
+    "button": "E-mail bevestigen",
+    "disclaimer": "Deze koppeling verloopt over 24 uur. Als je geen Monize-account hebt aangemaakt, kun je deze e-mail veilig negeren."
+  },
   "accountInvite": {
     "subject": "Je Monize-account is klaar",
     "heading": "Je Monize-account is klaar",

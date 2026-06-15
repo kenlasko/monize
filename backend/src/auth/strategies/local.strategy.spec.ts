@@ -66,6 +66,17 @@ describe("LocalStrategy", () => {
       ).rejects.toThrow("2FA verification required");
     });
 
+    it("throws UnauthorizedException when the email is not verified", async () => {
+      authService.login.mockResolvedValue({ emailNotVerified: true });
+
+      await expect(
+        strategy.validate("test@example.com", "password123"),
+      ).rejects.toThrow(UnauthorizedException);
+      await expect(
+        strategy.validate("test@example.com", "password123"),
+      ).rejects.toThrow("verify your email");
+    });
+
     it("throws when login throws UnauthorizedException", async () => {
       authService.login.mockRejectedValue(
         new UnauthorizedException("Invalid credentials"),

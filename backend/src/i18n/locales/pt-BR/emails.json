@@ -107,6 +107,14 @@
     "button": "Redefinir senha",
     "disclaimer": "Este link expira em 1 hora. Se você não solicitou uma redefinição de senha, pode ignorar este e-mail com segurança."
   },
+  "emailVerification": {
+    "subject": "Verifique o seu e-mail do Monize",
+    "heading": "Verifique o seu endereço de e-mail",
+    "greeting": "Olá {{ name }},",
+    "intro": "Obrigado por se cadastrar no Monize. Confirme o seu endereço de e-mail para ativar a sua conta e fazer login:",
+    "button": "Verificar e-mail",
+    "disclaimer": "Este link expira em 24 horas. Se você não criou uma conta Monize, pode ignorar este e-mail com segurança."
+  },
   "accountInvite": {
     "subject": "Sua conta Monize está pronta",
     "heading": "Sua conta Monize está pronta",

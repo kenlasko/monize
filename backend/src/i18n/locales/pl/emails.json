@@ -107,6 +107,14 @@
     "button": "Zresetuj hasło",
     "disclaimer": "Ten link wygasa za 1 godzinę. Jeśli nie prosiłeś o zresetowanie hasła, możesz bezpiecznie zignorować ten e-mail."
   },
+  "emailVerification": {
+    "subject": "Zweryfikuj swój adres e-mail Monize",
+    "heading": "Zweryfikuj swój adres e-mail",
+    "greeting": "Cześć {{ name }},",
+    "intro": "Dziękujemy za rejestrację w Monize. Potwierdź swój adres e-mail, aby aktywować konto i zalogować się:",
+    "button": "Zweryfikuj e-mail",
+    "disclaimer": "Ten link wygasa za 24 godziny. Jeśli nie zakładałeś konta Monize, możesz bezpiecznie zignorować ten e-mail."
+  },
   "accountInvite": {
     "subject": "Twoje konto Monize jest gotowe",
     "heading": "Twoje konto Monize jest gotowe",

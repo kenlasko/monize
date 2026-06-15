@@ -10,6 +10,7 @@ export interface User {
   role: 'admin' | 'user';
   isActive: boolean;
   mustChangePassword: boolean;
+  emailVerified?: boolean;
   createdAt: string;
   updatedAt: string;
   lastLogin?: string;
@@ -53,6 +54,10 @@ export interface AuthResponse {
   user?: User;
   requires2FA?: boolean;
   tempToken?: string;
+  /** Login was rejected because the account's email is not yet verified. */
+  emailNotVerified?: boolean;
+  /** Registration succeeded but the user must verify their email before logging in. */
+  verificationRequired?: boolean;
 }
 
 export interface TwoFactorSetupResponse {

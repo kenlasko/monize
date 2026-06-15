@@ -107,6 +107,14 @@
     "button": "Redefinir palavra-passe",
     "disclaimer": "Este link expira em 1 hora. Se não solicitou uma redefinição de palavra-passe, pode ignorar este e-mail com segurança."
   },
+  "emailVerification": {
+    "subject": "Verifique o seu e-mail do Monize",
+    "heading": "Verifique o seu endereço de e-mail",
+    "greeting": "Olá {{ name }},",
+    "intro": "Obrigado por se registar no Monize. Confirme o seu endereço de e-mail para ativar a sua conta e iniciar sessão:",
+    "button": "Verificar e-mail",
+    "disclaimer": "Este link expira em 24 horas. Se não criou uma conta Monize, pode ignorar este e-mail com segurança."
+  },
   "accountInvite": {
     "subject": "A sua conta Monize está pronta",
     "heading": "A sua conta Monize está pronta",

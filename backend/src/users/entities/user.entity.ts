@@ -61,6 +61,29 @@ export class User {
   @Exclude()
   resetTokenExpiry: Date | null;
 
+  // Gates local login. New self-service registrants who sign up while SMTP is
+  // enabled start unverified and must confirm their email before they can log
+  // in; every other creation path (bootstrap user, admin-created users,
+  // invited delegates, OIDC users) creates the row already verified.
+  @Column({ name: "email_verified", default: false })
+  emailVerified: boolean;
+
+  @Column({
+    name: "email_verification_token",
+    type: "varchar",
+    nullable: true,
+  })
+  @Exclude()
+  emailVerificationToken: string | null;
+
+  @Column({
+    name: "email_verification_token_expiry",
+    type: "timestamp",
+    nullable: true,
+  })
+  @Exclude()
+  emailVerificationTokenExpiry: Date | null;
+
   @Column({ type: "varchar", default: "user" })
   role: string;
 

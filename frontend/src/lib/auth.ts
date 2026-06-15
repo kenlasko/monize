@@ -58,6 +58,16 @@ export const authApi = {
     return response.data;
   },
 
+  verifyEmail: async (token: string): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>('/auth/verify-email', { token });
+    return response.data;
+  },
+
+  resendVerification: async (email: string): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>('/auth/resend-verification', { email });
+    return response.data;
+  },
+
   verify2FA: async (tempToken: string, code: string, rememberDevice = false): Promise<AuthResponse> => {
     const response = await apiClient.post<AuthResponse>('/auth/2fa/verify', { tempToken, code, rememberDevice });
     return response.data;

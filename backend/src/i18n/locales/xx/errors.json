@@ -98,6 +98,8 @@
     "invalidCredentials": "[XX-Invalid credentials-XX]",
     "accountTemporarilyLocked": "[XX-Account is temporarily locked due to too many failed login attempts. Please try again later.-XX]",
     "accountDeactivated": "[XX-Account is deactivated-XX]",
+    "emailNotVerified": "[XX-Please verify your email address before signing in. Check your inbox for the verification link.-XX]",
+    "invalidOrExpiredEmailVerificationToken": "[XX-Invalid or expired verification link-XX]",
     "oidcNoSubject": "[XX-OIDC provider did not return a subject identifier-XX]",
     "registrationDisabled": "[XX-New account registration is disabled.-XX]",
     "invalidOrExpiredLinkToken": "[XX-Invalid or expired link token-XX]",

@@ -98,6 +98,8 @@
     "invalidCredentials": "Ongeldige inloggegevens",
     "accountTemporarilyLocked": "Account is tijdelijk vergrendeld vanwege te veel mislukte inlogpogingen. Probeer het later opnieuw.",
     "accountDeactivated": "Account is gedeactiveerd",
+    "emailNotVerified": "Bevestig je e-mailadres voordat je inlogt. Controleer je inbox voor de verificatielink.",
+    "invalidOrExpiredEmailVerificationToken": "Ongeldige of verlopen verificatielink",
     "oidcNoSubject": "OIDC-provider heeft geen onderwerpidentificatie geretourneerd",
     "registrationDisabled": "Aanmaken van nieuwe accounts is uitgeschakeld.",
     "invalidOrExpiredLinkToken": "Ongeldig of verlopen koppelingstoken",

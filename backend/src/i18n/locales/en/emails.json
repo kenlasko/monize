@@ -107,6 +107,14 @@
     "button": "Reset Password",
     "disclaimer": "This link will expire in 1 hour. If you did not request a password reset, you can safely ignore this email."
   },
+  "emailVerification": {
+    "subject": "Verify your Monize email",
+    "heading": "Verify your email address",
+    "greeting": "Hi {{ name }},",
+    "intro": "Thanks for signing up for Monize. Please confirm your email address to activate your account and sign in:",
+    "button": "Verify Email",
+    "disclaimer": "This link will expire in 24 hours. If you did not create a Monize account, you can safely ignore this email."
+  },
   "accountInvite": {
     "subject": "Your Monize account is ready",
     "heading": "Your Monize account is ready",

@@ -822,6 +822,9 @@ export class DelegationService {
           // Cleared by the /register claim path the moment the user
           // upgrades into a full account in their own right.
           isDelegateOnly: true,
+          // Owner-provisioned and invited to this email, so the address is
+          // trusted -- delegates skip the self-service verification gate.
+          emailVerified: true,
         });
       }
 

@@ -15,6 +15,7 @@ vi.mock('@/lib/auth', () => ({
     }),
     login: vi.fn(),
     initiateOidc: vi.fn(),
+    resendVerification: vi.fn(),
   },
   AuthMethods: {},
 }));
@@ -314,6 +315,39 @@ describe('LoginPage', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('two-factor-verify')).toBeInTheDocument();
+    });
+  });
+
+  it('shows the verify-your-email prompt and resends when login is unverified', async () => {
+    (authApi.login as ReturnType<typeof vi.fn>).mockResolvedValue({ emailNotVerified: true });
+    (authApi.resendVerification as ReturnType<typeof vi.fn>).mockResolvedValue({ message: 'ok' });
+
+    render(<LoginPage />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'unverified@example.com' } });
+      fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'password123' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Verify your email')).toBeInTheDocument();
+    });
+    expect(mockLogin).not.toHaveBeenCalled();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /resend verification email/i }));
+    });
+
+    await waitFor(() => {
+      expect(authApi.resendVerification).toHaveBeenCalledWith('unverified@example.com');
     });
   });
 

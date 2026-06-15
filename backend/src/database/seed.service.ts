@@ -95,10 +95,10 @@ export class SeedService {
     }
 
     const result = await this.dataSource.query(
-      `INSERT INTO users (email, password_hash, first_name, last_name, auth_provider, is_active)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO users (email, password_hash, first_name, last_name, auth_provider, is_active, email_verified)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING id`,
-      [email, hashedPassword, "Demo", "User", "local", true],
+      [email, hashedPassword, "Demo", "User", "local", true, true],
     );
 
     this.logger.log(`Created demo user: ${email}`);

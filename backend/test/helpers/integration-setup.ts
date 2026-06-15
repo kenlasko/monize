@@ -154,6 +154,7 @@ export async function createTestUserDirect(
     authProvider: "local",
     role: overrides.role || "user",
     isActive: true,
+    emailVerified: true,
   });
   return dataSource.manager.save(user);
 }

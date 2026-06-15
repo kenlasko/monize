@@ -25,6 +25,14 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
         ),
       );
     }
+    if (result.emailNotVerified) {
+      throw new UnauthorizedException(
+        tr(
+          "errors.auth.emailNotVerified",
+          "Please verify your email address before signing in. Check your inbox for the verification link.",
+        ),
+      );
+    }
     return result.user;
   }
 }

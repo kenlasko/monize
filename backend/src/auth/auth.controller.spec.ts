@@ -72,6 +72,9 @@ describe("AuthController", () => {
       getUserById: jest.fn(),
       generateResetToken: jest.fn(),
       resetPassword: jest.fn(),
+      verifyEmail: jest.fn(),
+      generateVerificationToken: jest.fn(),
+      checkVerificationEmailLimit: jest.fn().mockReturnValue(true),
       revokeRefreshToken: jest.fn(),
       refreshTokens: jest.fn(),
       setup2FA: jest.fn(),
@@ -329,6 +332,32 @@ describe("AuthController", () => {
       );
       expect(res.json).toHaveBeenCalledWith({ user: registerResult.user });
     });
+
+    it("sends a verification email and sets no cookies when verification is required", async () => {
+      authService.register.mockResolvedValue({
+        verificationRequired: true,
+        user: { id: "user-3", email: "verify@example.com", firstName: "Vee" },
+        verificationToken: "raw-verify-token",
+      });
+      const res = mockRes();
+      const dto = {
+        email: "verify@example.com",
+        password: "Password1!",
+        firstName: "Vee",
+      };
+
+      await controller.register(dto as any, res as any);
+
+      expect(emailService.sendMail).toHaveBeenCalledWith(
+        "verify@example.com",
+        "Verify your Monize email",
+        expect.stringContaining(
+          "/verify-email?token=raw-verify-token",
+        ),
+      );
+      expect(res.cookie).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({ verificationRequired: true });
+    });
   });
 
   describe("login", () => {
@@ -470,6 +499,21 @@ describe("AuthController", () => {
         (call: any[]) => call[0] === "refresh_token",
       );
       expect(refreshCookieCall[2]).toHaveProperty("maxAge");
+    });
+
+    it("returns emailNotVerified and sets no cookies when the email is unverified", async () => {
+      authService.login.mockResolvedValue({ emailNotVerified: true });
+      const res = mockRes();
+      const expressReq = {
+        cookies: {},
+        headers: { "user-agent": "TestBrowser/1.0" },
+      } as any;
+      const dto = { email: "test@example.com", password: "password" };
+
+      await controller.login(dto as any, expressReq, res as any);
+
+      expect(res.json).toHaveBeenCalledWith({ emailNotVerified: true });
+      expect(res.cookie).not.toHaveBeenCalled();
     });
   });
 
@@ -649,6 +693,154 @@ describe("AuthController", () => {
         "NewPassword1!",
       );
       expect(result.message).toContain("Password reset successfully");
+    });
+  });
+
+  describe("verifyEmail", () => {
+    it("delegates to authService.verifyEmail and returns a success message", async () => {
+      authService.verifyEmail.mockResolvedValue(undefined);
+
+      const result = await controller.verifyEmail({
+        token: "verify-token",
+      } as any);
+
+      expect(authService.verifyEmail).toHaveBeenCalledWith("verify-token");
+      expect(result.message).toContain("Email verified successfully");
+    });
+
+    it("propagates errors from an invalid token", async () => {
+      authService.verifyEmail.mockRejectedValue(
+        new BadRequestException("Invalid or expired verification link"),
+      );
+
+      await expect(
+        controller.verifyEmail({ token: "bad" } as any),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe("resendVerification", () => {
+    it("always returns a generic message to prevent enumeration", async () => {
+      authService.generateVerificationToken.mockResolvedValue(null);
+
+      const result = await controller.resendVerification({
+        email: "nobody@example.com",
+      } as any);
+
+      expect(result.message).toContain("If an account exists");
+    });
+
+    it("sends a verification email when an unverified account exists and SMTP is configured", async () => {
+      authService.generateVerificationToken.mockResolvedValue({
+        token: "raw-verify-token",
+        user: { email: "verify@example.com", firstName: "Vee" },
+      });
+
+      const result = await controller.resendVerification({
+        email: "verify@example.com",
+      } as any);
+
+      expect(emailService.sendMail).toHaveBeenCalledWith(
+        "verify@example.com",
+        "Verify your Monize email",
+        expect.stringContaining("/verify-email?token=raw-verify-token"),
+      );
+      expect(result.message).toContain("If an account exists");
+    });
+
+    it("stays generic even when sending the verification email fails", async () => {
+      authService.generateVerificationToken.mockResolvedValue({
+        token: "raw-verify-token",
+        user: { email: "verify@example.com", firstName: "Vee" },
+      });
+      emailService.sendMail.mockRejectedValue(new Error("SMTP error"));
+
+      const result = await controller.resendVerification({
+        email: "verify@example.com",
+      } as any);
+
+      expect(result.message).toContain("If an account exists");
+    });
+
+    it("skips sending and stays generic when the per-email limit is exceeded", async () => {
+      authService.checkVerificationEmailLimit.mockReturnValue(false);
+
+      const result = await controller.resendVerification({
+        email: "verify@example.com",
+      } as any);
+
+      expect(authService.generateVerificationToken).not.toHaveBeenCalled();
+      expect(emailService.sendMail).not.toHaveBeenCalled();
+      expect(result.message).toContain("If an account exists");
+    });
+
+    it("does not send when SMTP is not configured", async () => {
+      emailService.getStatus.mockReturnValue({ configured: false });
+
+      const result = await controller.resendVerification({
+        email: "verify@example.com",
+      } as any);
+
+      expect(authService.generateVerificationToken).not.toHaveBeenCalled();
+      expect(emailService.sendMail).not.toHaveBeenCalled();
+      expect(result.message).toContain("If an account exists");
+    });
+
+    it("throws ForbiddenException when local auth is disabled", async () => {
+      configService.get.mockImplementation(
+        (key: string, defaultValue?: string) => {
+          const config: Record<string, string> = {
+            LOCAL_AUTH_ENABLED: "false",
+            REGISTRATION_ENABLED: "true",
+            FORCE_2FA: "false",
+            JWT_SECRET: "test-jwt-secret-for-spec-32-characters-min",
+            NODE_ENV: "test",
+          };
+          return config[key] ?? defaultValue;
+        },
+      );
+
+      const module: TestingModule = await Test.createTestingModule({
+        controllers: [AuthController],
+        providers: [
+          { provide: AuthService, useValue: authService },
+          { provide: OidcService, useValue: oidcService },
+          { provide: ConfigService, useValue: configService },
+          { provide: EmailService, useValue: emailService },
+          { provide: DemoModeService, useValue: demoModeService },
+          {
+            provide: TokenService,
+            useValue: {
+              getRefreshExpiryMs: jest
+                .fn()
+                .mockReturnValue(7 * 24 * 60 * 60 * 1000),
+            },
+          },
+          {
+            provide: DelegationService,
+            useValue: {
+              getAvailableContexts: jest.fn().mockResolvedValue([]),
+              resolveSwitchTarget: jest.fn(),
+              validateActingContext: jest.fn(),
+            },
+          },
+          {
+            provide: I18nService,
+            useValue: {
+              translate: (key: string, opts?: { defaultValue?: string }) =>
+                opts?.defaultValue ?? key,
+            },
+          },
+        ],
+      }).compile();
+
+      const disabledController = module.get<AuthController>(AuthController);
+
+      await expect(
+        disabledController.resendVerification({
+          email: "verify@example.com",
+        } as any),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 

@@ -58,7 +58,7 @@ describe("AuthService", () => {
   };
   let dataSource: Record<string, jest.Mock>;
   let passwordBreachService: { isBreached: jest.Mock };
-  let emailService: { sendMail: jest.Mock };
+  let emailService: { sendMail: jest.Mock; getStatus: jest.Mock };
 
   const mockUser = {
     id: "user-1",
@@ -69,6 +69,7 @@ describe("AuthService", () => {
     authProvider: "local",
     role: "user",
     isActive: true,
+    emailVerified: true,
     twoFactorSecret: null,
     resetToken: null,
     resetTokenExpiry: null,
@@ -128,6 +129,7 @@ describe("AuthService", () => {
 
     emailService = {
       sendMail: jest.fn().mockResolvedValue(undefined),
+      getStatus: jest.fn().mockReturnValue({ configured: false }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -458,6 +460,85 @@ describe("AuthService", () => {
         }),
       ).rejects.toThrow("found in a data breach");
     });
+
+    it("requires email verification (no tokens) when SMTP is configured and not the first user", async () => {
+      usersRepository.findOne.mockResolvedValue(null);
+      emailService.getStatus.mockReturnValue({ configured: true });
+      const txManager = setupRegisterTransactionMock(1); // not first user
+
+      const result = await service.register({
+        email: "verify@example.com",
+        password: "StrongPass123!",
+      });
+
+      expect(result.verificationRequired).toBe(true);
+      expect(result.verificationToken).toBeDefined();
+      // No session is issued until the email is verified.
+      expect(result.accessToken).toBeUndefined();
+      expect(result.refreshToken).toBeUndefined();
+
+      // The persisted row starts unverified with a hashed (not raw) token.
+      const created = txManager.create.mock.calls[0][1];
+      expect(created.emailVerified).toBe(false);
+      expect(created.emailVerificationToken).toBeDefined();
+      expect(created.emailVerificationToken).not.toBe(result.verificationToken);
+      expect(created.emailVerificationTokenExpiry).toBeInstanceOf(Date);
+    });
+
+    it("auto-verifies the first user even when SMTP is configured", async () => {
+      usersRepository.findOne.mockResolvedValue(null);
+      emailService.getStatus.mockReturnValue({ configured: true });
+      const txManager = setupRegisterTransactionMock(0); // first user
+
+      const result = await service.register({
+        email: "admin@example.com",
+        password: "StrongPass123!",
+      });
+
+      expect(result.verificationRequired).toBeUndefined();
+      expect(result.accessToken).toBeDefined();
+      const created = txManager.create.mock.calls[0][1];
+      expect(created.role).toBe("admin");
+      expect(created.emailVerified).toBe(true);
+      expect(created.emailVerificationToken).toBeNull();
+    });
+
+    it("creates a verified account (immediate login) when SMTP is not configured", async () => {
+      usersRepository.findOne.mockResolvedValue(null);
+      emailService.getStatus.mockReturnValue({ configured: false });
+      const txManager = setupRegisterTransactionMock(1);
+
+      const result = await service.register({
+        email: "nosmtp@example.com",
+        password: "StrongPass123!",
+      });
+
+      expect(result.accessToken).toBeDefined();
+      expect(result.verificationRequired).toBeUndefined();
+      expect(txManager.create.mock.calls[0][1].emailVerified).toBe(true);
+    });
+
+    it("marks a claimed delegate as email-verified", async () => {
+      const invitedDelegate = {
+        id: "deleg-verify",
+        email: "shared-verify@example.com",
+        authProvider: "local",
+        passwordHash: null,
+        emailVerified: false,
+        resetToken: "tok",
+        resetTokenExpiry: new Date(),
+      };
+      usersRepository.findOne.mockResolvedValue(invitedDelegate);
+      delegationService.isDelegateUser.mockResolvedValue(true);
+      usersRepository.save.mockImplementation(async (u: any) => u);
+
+      await service.register({
+        email: "shared-verify@example.com",
+        password: "StrongPass123!",
+      });
+
+      expect(invitedDelegate.emailVerified).toBe(true);
+    });
   });
 
   describe("login", () => {
@@ -695,6 +776,27 @@ describe("AuthService", () => {
       const lockDuration = setArg.lockedUntil.getTime() - Date.now();
       expect(lockDuration).toBeGreaterThan(55 * 60 * 1000);
       expect(lockDuration).toBeLessThan(65 * 60 * 1000);
+    });
+
+    it("blocks login (no tokens) when the email is not verified", async () => {
+      const hashedPassword = await bcrypt.hash("ValidPass123!", 10);
+      mockLoginQueryBuilder();
+      usersRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        passwordHash: hashedPassword,
+        emailVerified: false,
+      });
+
+      const result = await service.login({
+        email: "test@example.com",
+        password: "ValidPass123!",
+      });
+
+      expect(result.emailNotVerified).toBe(true);
+      expect(result).not.toHaveProperty("accessToken");
+      expect((service as any).logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining("email not verified"),
+      );
     });
   });
 

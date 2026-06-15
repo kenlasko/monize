@@ -98,6 +98,8 @@
     "invalidCredentials": "Credenciais inválidas",
     "accountTemporarilyLocked": "A conta está temporariamente bloqueada devido a muitas tentativas de login malsucedidas. Tente novamente mais tarde.",
     "accountDeactivated": "A conta está desativada",
+    "emailNotVerified": "Verifique o seu endereço de e-mail antes de fazer login. Confira a sua caixa de entrada para encontrar o link de verificação.",
+    "invalidOrExpiredEmailVerificationToken": "Link de verificação inválido ou expirado",
     "oidcNoSubject": "O provedor OIDC não retornou um identificador de sujeito",
     "registrationDisabled": "O cadastro de novas contas está desativado.",
     "invalidOrExpiredLinkToken": "Token de associação inválido ou expirado",

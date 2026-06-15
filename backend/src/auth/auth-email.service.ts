@@ -27,6 +27,14 @@ export class AuthEmailService implements OnModuleDestroy {
   >();
   private readonly FORGOT_PASSWORD_EMAIL_LIMIT = 3;
   private readonly FORGOT_PASSWORD_EMAIL_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+  // Per-email rate limiting for resending the verification email. Shares the
+  // same window/limit shape as forgot-password to throttle abuse.
+  private readonly verificationEmailAttempts = new Map<
+    string,
+    { count: number; windowStart: number }
+  >();
+  private readonly VERIFICATION_EMAIL_LIMIT = 3;
+  private readonly VERIFICATION_EMAIL_WINDOW_MS = 60 * 60 * 1000; // 1 hour
   private readonly cleanupInterval: ReturnType<typeof setInterval>;
 
   constructor(
@@ -57,6 +65,11 @@ export class AuthEmailService implements OnModuleDestroy {
     for (const [email, record] of this.forgotPasswordAttempts) {
       if (now - record.windowStart > this.FORGOT_PASSWORD_EMAIL_WINDOW_MS) {
         this.forgotPasswordAttempts.delete(email);
+      }
+    }
+    for (const [email, record] of this.verificationEmailAttempts) {
+      if (now - record.windowStart > this.VERIFICATION_EMAIL_WINDOW_MS) {
+        this.verificationEmailAttempts.delete(email);
       }
     }
   }
@@ -154,6 +167,91 @@ export class AuthEmailService implements OnModuleDestroy {
     }
 
     this.forgotPasswordAttempts.set(normalizedEmail, {
+      count: 1,
+      windowStart: now,
+    });
+    return true;
+  }
+
+  /**
+   * Mint a fresh email-verification token for an unverified local account.
+   * Returns null (and writes nothing) when no matching unverified account
+   * exists, so callers can return a generic success to prevent enumeration.
+   * Only the hashed token is stored; the raw value is returned for the link.
+   */
+  async generateVerificationToken(
+    email: string,
+  ): Promise<{ user: User; token: string } | null> {
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await this.usersRepository.findOne({
+      where: { email: normalizedEmail },
+    });
+
+    // Nothing to do for unknown emails or accounts that are already verified.
+    if (!user || user.emailVerified) return null;
+
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    user.emailVerificationToken = hashToken(rawToken);
+    user.emailVerificationTokenExpiry = new Date(
+      Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+    );
+    await this.usersRepository.save(user);
+
+    return { user, token: rawToken };
+  }
+
+  /**
+   * Mark the account owning the given verification token as verified. Uses an
+   * atomic UPDATE...WHERE (mirroring resetPassword) so a single click wins and
+   * the token cannot be replayed once consumed.
+   */
+  async verifyEmail(token: string): Promise<void> {
+    const hashedToken = hashToken(token);
+
+    const result = await this.usersRepository
+      .createQueryBuilder()
+      .update(User)
+      .set({
+        emailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationTokenExpiry: null,
+      })
+      .where("emailVerificationToken = :hashedToken", { hashedToken })
+      .andWhere("emailVerificationTokenExpiry > :now", { now: new Date() })
+      .execute();
+
+    if (!result.affected || result.affected === 0) {
+      throw new BadRequestException(
+        tr(
+          "errors.auth.invalidOrExpiredEmailVerificationToken",
+          "Invalid or expired verification link",
+        ),
+      );
+    }
+  }
+
+  checkVerificationEmailLimit(email: string): boolean {
+    const normalizedEmail = email.toLowerCase().trim();
+    const now = Date.now();
+    const record = this.verificationEmailAttempts.get(normalizedEmail);
+
+    if (record) {
+      if (now - record.windowStart > this.VERIFICATION_EMAIL_WINDOW_MS) {
+        // Window expired, reset
+        this.verificationEmailAttempts.set(normalizedEmail, {
+          count: 1,
+          windowStart: now,
+        });
+        return true;
+      }
+      if (record.count >= this.VERIFICATION_EMAIL_LIMIT) {
+        return false;
+      }
+      record.count += 1;
+      return true;
+    }
+
+    this.verificationEmailAttempts.set(normalizedEmail, {
       count: 1,
       windowStart: now,
     });
