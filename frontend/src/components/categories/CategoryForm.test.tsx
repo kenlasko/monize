@@ -1,6 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@/test/render';
+import { render, screen, fireEvent, act, waitFor } from '@/test/render';
 import { CategoryForm } from './CategoryForm';
+
+// jsdom does not implement scrollIntoView, which the Combobox calls when its
+// dropdown opens with a selected or highlighted option.
+Element.prototype.scrollIntoView = vi.fn();
 
 vi.mock('@hookform/resolvers/zod', () => ({
   zodResolver: () => async () => ({ values: {}, errors: {} }),
@@ -49,7 +53,7 @@ describe('CategoryForm', () => {
     expect(screen.getByTitle('No colour')).toBeInTheDocument();
   });
 
-  it('shows "Inherit from parent" title when parent is selected', () => {
+  it('shows "Inherit from parent" title when parent is selected', async () => {
     const categoriesWithColor = [
       { id: 'c1', name: 'Food', parentId: null, isIncome: false, effectiveColor: '#ef4444', color: '#ef4444' },
       { id: 'c2', name: 'Salary', parentId: null, isIncome: true, effectiveColor: null, color: null },
@@ -57,24 +61,74 @@ describe('CategoryForm', () => {
 
     render(<CategoryForm categories={categoriesWithColor} onSubmit={onSubmit} onCancel={onCancel} />);
 
-    // Select a parent category
-    const parentSelect = screen.getByLabelText('Parent Category');
-    fireEvent.change(parentSelect, { target: { value: 'c1' } });
+    // Select a parent category through the searchable combobox.
+    const parentInput = screen.getByPlaceholderText('No parent (top-level)');
+    await act(async () => { fireEvent.focus(parentInput); });
+    await act(async () => { fireEvent.click(screen.getByText('Food')); });
 
     expect(screen.getByTitle('Inherit from parent')).toBeInTheDocument();
   });
 
-  it('shows inheritance message when parent has colour and child has none', () => {
+  it('shows inheritance message when parent has colour and child has none', async () => {
     const categoriesWithColor = [
       { id: 'c1', name: 'Food', parentId: null, isIncome: false, effectiveColor: '#ef4444', color: '#ef4444' },
     ] as any[];
 
     render(<CategoryForm categories={categoriesWithColor} onSubmit={onSubmit} onCancel={onCancel} />);
 
-    const parentSelect = screen.getByLabelText('Parent Category');
-    fireEvent.change(parentSelect, { target: { value: 'c1' } });
+    const parentInput = screen.getByPlaceholderText('No parent (top-level)');
+    await act(async () => { fireEvent.focus(parentInput); });
+    await act(async () => { fireEvent.click(screen.getByText('Food')); });
 
     expect(screen.getByText('Colour inherited from parent (Food)')).toBeInTheDocument();
+  });
+
+  it('renders the parent category as a searchable combobox, not a select', () => {
+    render(<CategoryForm categories={categories} onSubmit={onSubmit} onCancel={onCancel} />);
+    // The parent field is a text input using the "no parent" copy as its
+    // placeholder, the same searchable Combobox the Payee form uses.
+    const parentInput = screen.getByPlaceholderText('No parent (top-level)');
+    expect(parentInput).toBeInTheDocument();
+    expect(parentInput.tagName).toBe('INPUT');
+  });
+
+  it('filters parent options as the user types', async () => {
+    const cats = [
+      { id: 'c1', name: 'Food', parentId: null, isIncome: false },
+      { id: 'c2', name: 'Salary', parentId: null, isIncome: true },
+      { id: 'c3', name: 'Shopping', parentId: null, isIncome: false },
+    ] as any[];
+    render(<CategoryForm categories={cats} onSubmit={onSubmit} onCancel={onCancel} />);
+
+    const parentInput = screen.getByPlaceholderText('No parent (top-level)');
+    await act(async () => { fireEvent.focus(parentInput); });
+    // Clear the just-opened guard so typed input is treated as a filter.
+    await new Promise((r) => setTimeout(r, 150));
+    await act(async () => { fireEvent.change(parentInput, { target: { value: 'Sal' } }); });
+
+    await waitFor(() => {
+      expect(screen.getByText('Salary')).toBeInTheDocument();
+      expect(screen.queryByText('Food')).not.toBeInTheDocument();
+      expect(screen.queryByText('Shopping')).not.toBeInTheDocument();
+    });
+  });
+
+  it('excludes the edited category and its descendants from the parent options', async () => {
+    const cats = [
+      { id: 'c1', name: 'Food', parentId: null, isIncome: false },
+      { id: 'c2', name: 'Groceries', parentId: 'c1', isIncome: false },
+      { id: 'c3', name: 'Salary', parentId: null, isIncome: true },
+    ] as any[];
+    // Editing "Food": neither it nor its child "Groceries" may be offered as a
+    // parent (that would create a cycle), but an unrelated category still is.
+    render(<CategoryForm category={cats[0]} categories={cats} onSubmit={onSubmit} onCancel={onCancel} />);
+
+    const parentInput = screen.getByPlaceholderText('No parent (top-level)');
+    await act(async () => { fireEvent.focus(parentInput); });
+
+    expect(screen.getByText('Salary')).toBeInTheDocument();
+    expect(screen.queryByText('Food')).not.toBeInTheDocument();
+    expect(screen.queryByText('Food: Groceries')).not.toBeInTheDocument();
   });
 
   it('selects colour when swatch is clicked', () => {

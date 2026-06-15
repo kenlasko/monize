@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, MutableRefObject } from 'react';
+import { useEffect, useMemo, MutableRefObject } from 'react';
 import { useTranslations } from 'next-intl';
 import { useForm, useWatch } from 'react-hook-form';
 import '@/lib/zodConfig';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Input } from '@/components/ui/Input';
+import { Combobox } from '@/components/ui/Combobox';
 import { Select } from '@/components/ui/Select';
 import { useFormSubmitRef } from '@/hooks/useFormSubmitRef';
 import { useFormDirtyNotify } from '@/hooks/useFormDirtyNotify';
@@ -121,17 +122,30 @@ export function CategoryForm({ category, categories, onSubmit, onCancel, onDirty
     return buildTree();
   };
 
-  const parentOptions = [
-    { value: '', label: t('form.noParent') },
-    ...getAvailableParents().map(({ category: cat }) => {
-      const parent = cat.parentId ? categories.find(c => c.id === cat.parentId) : null;
-      const displayName = parent ? `${parent.name}: ${cat.name}` : cat.name;
-      return {
-        value: cat.id,
-        label: displayName,
-      };
-    }),
-  ];
+  const parentOptions = getAvailableParents().map(({ category: cat }) => {
+    const parent = cat.parentId ? categories.find(c => c.id === cat.parentId) : null;
+    const displayName = parent ? `${parent.name}: ${cat.name}` : cat.name;
+    return {
+      value: cat.id,
+      label: displayName,
+    };
+  });
+
+  // Sync the parent selection from the searchable combobox back into the form.
+  const handleParentChange = (parentId: string) => {
+    setValue('parentId', parentId || '', { shouldDirty: true });
+  };
+
+  // Resolve the display name for the initially selected parent so the combobox
+  // can show it before the matching option is looked up (mirrors PayeeForm).
+  const initialParentId = category?.parentId;
+  const initialParentName = useMemo(() => {
+    if (!initialParentId) return '';
+    const cat = categories.find(c => c.id === initialParentId);
+    if (!cat) return '';
+    const parent = cat.parentId ? categories.find(c => c.id === cat.parentId) : null;
+    return parent ? `${parent.name}: ${cat.name}` : cat.name;
+  }, [initialParentId, categories]);
 
   const typeOptions = [
     { value: 'false', label: t('form.typeExpense') },
@@ -146,11 +160,14 @@ export function CategoryForm({ category, categories, onSubmit, onCancel, onDirty
         {...register('name')}
       />
 
-      <Select
+      <Combobox
         label={t('form.parentLabel')}
+        placeholder={t('form.noParent')}
         options={parentOptions}
+        value={watchedParentId}
+        initialDisplayValue={initialParentName}
+        onChange={handleParentChange}
         error={errors.parentId?.message}
-        {...register('parentId')}
       />
 
       <div className="grid grid-cols-2 gap-4">
