@@ -10,6 +10,21 @@
   "delete": "[XX-Delete-XX]",
   "edit": "[XX-Edit-XX]",
   "close": "[XX-Close-XX]",
+  "actions": {
+    "edit": "[XX-Edit-XX]",
+    "delete": "[XX-Delete-XX]",
+    "view": "[XX-View-XX]",
+    "duplicate": "[XX-Duplicate-XX]",
+    "merge": "[XX-Merge-XX]",
+    "reactivate": "[XX-Reactivate-XX]",
+    "reconcile": "[XX-Reconcile-XX]",
+    "post": "[XX-Post-XX]",
+    "skip": "[XX-Skip-XX]",
+    "close": "[XX-Close-XX]",
+    "reopen": "[XX-Reopen-XX]",
+    "scheduleRecurring": "[XX-Make recurring-XX]",
+    "more": "[XX-More actions-XX]"
+  },
   "loading": "[XX-Loading...-XX]",
   "pagination": {
     "showing": "[XX-Showing-XX]",

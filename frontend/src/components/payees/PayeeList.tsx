@@ -4,7 +4,6 @@ import { useState, useMemo, useCallback, memo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { Payee } from '@/types/payee';
-import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { payeesApi } from '@/lib/payees';
 import toast from 'react-hot-toast';
@@ -13,8 +12,68 @@ import { getErrorMessage } from '@/lib/errors';
 import { useTableDensity, nextDensity, type DensityLevel } from '@/hooks/useTableDensity';
 import { SortIcon } from '@/components/ui/SortIcon';
 import { useDateFormat } from '@/hooks/useDateFormat';
+import { useLongPress, type LongPressRowHandlers } from '@/hooks/useLongPress';
+import { RowActions } from '@/components/ui/row-actions/RowActions';
+import { RowActionSheet } from '@/components/ui/row-actions/RowActionSheet';
+import type { RowAction } from '@/components/ui/row-actions/rowAction';
 
 const logger = createLogger('PayeeList');
+
+type PayeeActionLabels = {
+  edit: string;
+  delete: string;
+  merge: string;
+  reactivate: string;
+};
+
+/**
+ * Builds the standard row actions for a payee. Shared by the desktop `RowActions`
+ * cell and the mobile `RowActionSheet` so both surfaces stay in sync.
+ */
+function buildPayeeActions(
+  payee: Payee,
+  labels: PayeeActionLabels,
+  handlers: {
+    onEdit: (payee: Payee) => void;
+    onDelete: (payee: Payee) => void;
+    onMerge?: (payee: Payee) => void;
+    onReactivate?: (payeeId: string) => void;
+  },
+): RowAction[] {
+  return [
+    {
+      key: 'reactivate',
+      label: labels.reactivate,
+      icon: 'reactivate',
+      tone: 'success',
+      onClick: () => handlers.onReactivate?.(payee.id),
+      hidden: payee.isActive || !handlers.onReactivate,
+    },
+    {
+      key: 'merge',
+      label: labels.merge,
+      icon: 'merge',
+      tone: 'accent',
+      onClick: () => handlers.onMerge?.(payee),
+      hidden: !handlers.onMerge || !payee.isActive,
+    },
+    {
+      key: 'edit',
+      label: labels.edit,
+      icon: 'edit',
+      tone: 'primary',
+      onClick: () => handlers.onEdit(payee),
+    },
+    {
+      key: 'delete',
+      label: labels.delete,
+      icon: 'delete',
+      tone: 'delete',
+      destructive: true,
+      onClick: () => handlers.onDelete(payee),
+    },
+  ];
+}
 
 // Re-export DensityLevel from shared hook
 export type { DensityLevel };
@@ -53,6 +112,7 @@ interface PayeeRowProps {
   categoryColorMap?: Map<string, string | null>;
   categoryLabelMap?: Map<string, string>;
   formatDate: (date: string) => string;
+  getRowHandlers: (payee: Payee) => LongPressRowHandlers;
 }
 
 const PayeeRow = memo(function PayeeRow({
@@ -69,42 +129,34 @@ const PayeeRow = memo(function PayeeRow({
   categoryColorMap,
   categoryLabelMap,
   formatDate,
+  getRowHandlers,
 }: PayeeRowProps) {
   const t = useTranslations('payees');
+  const tc = useTranslations('common');
   const defaultCategoryColor = payee.defaultCategory
     ? (categoryColorMap?.get(payee.defaultCategory.id) ?? payee.defaultCategory.color)
     : null;
   const defaultCategoryLabel = payee.defaultCategory
     ? (categoryLabelMap?.get(payee.defaultCategory.id) ?? payee.defaultCategory.name)
     : null;
-  const handleEdit = useCallback(() => {
-    onEdit(payee);
-  }, [onEdit, payee]);
-
-  const handleDelete = useCallback(() => {
-    onDelete(payee);
-  }, [onDelete, payee]);
-
-  const handleViewTransactions = useCallback(() => {
-    onViewTransactions(payee);
-  }, [onViewTransactions, payee]);
-
-  const handleReactivate = useCallback(() => {
-    onReactivate?.(payee.id);
-  }, [onReactivate, payee.id]);
-
-  const handleMerge = useCallback(() => {
-    onMerge?.(payee);
-  }, [onMerge, payee]);
+  const actions = useMemo(
+    () => buildPayeeActions(
+      payee,
+      { edit: tc('actions.edit'), delete: tc('actions.delete'), merge: tc('actions.merge'), reactivate: tc('actions.reactivate') },
+      { onEdit, onDelete, onMerge, onReactivate },
+    ),
+    [payee, tc, onEdit, onDelete, onMerge, onReactivate],
+  );
 
   return (
     <tr
-      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} ${!payee.isActive ? 'opacity-60' : ''}`}
+      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} ${!payee.isActive ? 'opacity-60' : ''}`}
+      {...getRowHandlers(payee)}
     >
       <td className={`${cellPadding} whitespace-nowrap`}>
         <div className="flex flex-col items-start gap-0.5 sm:flex-row sm:items-center sm:gap-2">
           <button
-            onClick={handleViewTransactions}
+            onClick={(e) => { e.stopPropagation(); onViewTransactions(payee); }}
             className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline text-left"
             title={t('list.viewTransactionsTitle')}
           >
@@ -171,43 +223,8 @@ const PayeeRow = memo(function PayeeRow({
           </div>
         </td>
       )}
-      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium sticky right-0 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800`}>
-        {!payee.isActive && onReactivate ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleReactivate}
-            className="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 mr-2"
-          >
-            {density === 'dense' ? t('list.actions.reactivateShort') : t('list.actions.reactivate')}
-          </Button>
-        ) : null}
-        {onMerge && payee.isActive && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleMerge}
-            className="text-purple-600 dark:text-purple-400 hover:text-purple-900 dark:hover:text-purple-300 mr-2"
-          >
-            {density === 'dense' ? t('list.actions.mergeShort') : t('list.actions.merge')}
-          </Button>
-        )}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleEdit}
-          className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 mr-2"
-        >
-          {density === 'dense' ? t('list.actions.editShort') : t('list.actions.edit')}
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleDelete}
-          className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
-        >
-          {density === 'dense' ? t('list.actions.deleteShort') : t('list.actions.delete')}
-        </Button>
+      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium hidden min-[480px]:table-cell sticky right-0 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800`}>
+        <RowActions actions={actions} density={density} />
       </td>
     </tr>
   );
@@ -230,9 +247,11 @@ export function PayeeList({
   categoryLabelMap,
 }: PayeeListProps) {
   const t = useTranslations('payees');
+  const tc = useTranslations('common');
   const router = useRouter();
   const { formatDate } = useDateFormat();
   const [deletePayee, setDeletePayee] = useState<Payee | null>(null);
+  const [actionSheet, setActionSheet] = useState<{ open: boolean; payee: Payee | null }>({ open: false, payee: null });
   const [localDensity, setLocalDensity] = useState<DensityLevel>('normal');
   const [localSortField, setLocalSortField] = useState<SortField>('name');
   const [localSortDirection, setLocalSortDirection] = useState<SortDirection>('asc');
@@ -296,6 +315,11 @@ export function PayeeList({
   const handleViewTransactions = useCallback((payee: Payee) => {
     router.push(`/transactions?payeeId=${payee.id}`);
   }, [router]);
+
+  const { getRowHandlers } = useLongPress<Payee>({
+    onLongPress: (payee) => setActionSheet({ open: true, payee }),
+    onClick: onEdit,
+  });
 
   const handleConfirmDelete = async () => {
     if (!deletePayee) return;
@@ -402,7 +426,7 @@ export function PayeeList({
                   {t('list.columns.notes')}
                 </th>
               )}
-              <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider sticky right-0 bg-gray-50 dark:bg-gray-800`}>
+              <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden min-[480px]:table-cell sticky right-0 bg-gray-50 dark:bg-gray-800`}>
                 {t('list.columns.actions')}
               </th>
             </tr>
@@ -424,6 +448,7 @@ export function PayeeList({
                 categoryColorMap={categoryColorMap}
                 categoryLabelMap={categoryLabelMap}
                 formatDate={formatDate}
+                getRowHandlers={getRowHandlers}
               />
             ))}
           </tbody>
@@ -439,6 +464,19 @@ export function PayeeList({
         variant="danger"
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeletePayee(null)}
+      />
+
+      <RowActionSheet
+        isOpen={actionSheet.open}
+        title={actionSheet.payee?.name ?? ''}
+        actions={actionSheet.payee
+          ? buildPayeeActions(
+              actionSheet.payee,
+              { edit: tc('actions.edit'), delete: tc('actions.delete'), merge: tc('actions.merge'), reactivate: tc('actions.reactivate') },
+              { onEdit, onDelete: setDeletePayee, onMerge, onReactivate },
+            )
+          : []}
+        onClose={() => setActionSheet({ open: false, payee: null })}
       />
     </div>
   );

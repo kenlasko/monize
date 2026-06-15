@@ -1,18 +1,19 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Account, AccountType } from '@/types/account';
 import { Institution } from '@/types/institution';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { Modal } from '@/components/ui/Modal';
 import { accountsApi } from '@/lib/accounts';
 import { useAuthStore } from '@/store/authStore';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import toast from 'react-hot-toast';
 import { getErrorMessage } from '@/lib/errors';
-import { AccountRow } from './AccountRow';
+import { AccountRow, buildAccountActions, type AccountActionLabels } from './AccountRow';
+import { useLongPress } from '@/hooks/useLongPress';
+import { RowActionSheet } from '@/components/ui/row-actions/RowActionSheet';
 import { useTableDensity, nextDensity, type DensityLevel } from '@/hooks/useTableDensity';
 import { SortIcon } from '@/components/ui/SortIcon';
 import { formatAccountType, countLogicalAccounts } from '@/lib/account-utils';
@@ -186,58 +187,32 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, def
     );
   }, [collapsedGroups]);
 
-  // Long-press handling for context menu on mobile
-  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
-  const longPressTriggered = useRef(false);
-  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
-  const LONG_PRESS_MOVE_THRESHOLD = 10;
+  // Long-press opens a per-row action sheet on mobile (and via right-click).
   const [contextAccount, setContextAccount] = useState<Account | null>(null);
 
-  const handleLongPressStart = useCallback((account: Account, e?: React.TouchEvent) => {
-    if (e?.touches?.[0]) {
-      touchStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    } else {
-      touchStartPos.current = null;
-    }
-
-    longPressTriggered.current = false;
-    longPressTimer.current = setTimeout(() => {
-      longPressTriggered.current = true;
-      setContextAccount(account);
-    }, 750);
-  }, []);
-
-  const handleLongPressEnd = useCallback(() => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-    touchStartPos.current = null;
-  }, []);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (touchStartPos.current && longPressTimer.current && e.touches?.[0]) {
-      const deltaX = Math.abs(e.touches[0].clientX - touchStartPos.current.x);
-      const deltaY = Math.abs(e.touches[0].clientY - touchStartPos.current.y);
-      if (deltaX > LONG_PRESS_MOVE_THRESHOLD || deltaY > LONG_PRESS_MOVE_THRESHOLD) {
-        clearTimeout(longPressTimer.current);
-        longPressTimer.current = null;
-        touchStartPos.current = null;
-      }
-    }
-  }, []);
-
   const handleRowClick = useCallback((account: Account) => {
-    if (longPressTriggered.current) {
-      longPressTriggered.current = false;
-      return;
-    }
     if (account.accountSubType === 'INVESTMENT_BROKERAGE') {
       router.push(`/investments?accountId=${account.id}`);
     } else {
       router.push(`/transactions?accountId=${account.id}`);
     }
   }, [router]);
+
+  const { getRowHandlers } = useLongPress<Account>({
+    onLongPress: setContextAccount,
+    onClick: handleRowClick,
+  });
+
+  const accountActionLabels = useMemo<AccountActionLabels>(() => ({
+    viewTransactions: t('row.actions.viewTransactions'),
+    edit: tc('actions.edit'),
+    reconcile: tc('actions.reconcile'),
+    close: tc('actions.close'),
+    closeTitleDisabled: t('row.actions.closeTitleDisabled'),
+    closeTitleEnabled: t('row.actions.closeTitleEnabled'),
+    reopen: tc('actions.reopen'),
+    delete: tc('actions.delete'),
+  }), [t, tc]);
   const { cellPadding, headerPadding } = useTableDensity(density);
 
   const cycleDensity = useCallback(() => {
@@ -749,16 +724,13 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, def
                   convertToDefault={convertToDefault}
                   formatAccountType={(type) => formatAccountType(type, tc)}
                   getAccountTypeColor={getAccountTypeColor}
-                  onRowClick={handleRowClick}
+                  actionLabels={accountActionLabels}
                   onEdit={onEdit}
                   onReconcile={handleReconcile}
                   onCloseClick={handleCloseClick}
                   onDeleteClick={handleDeleteClick}
                   onReopen={handleReopen}
-                  onLongPressStart={handleLongPressStart}
-                  onLongPressStartTouch={handleLongPressStart}
-                  onLongPressEnd={handleLongPressEnd}
-                  onTouchMove={handleTouchMove}
+                  getRowHandlers={getRowHandlers}
                   onToggleFavourite={handleToggleFavourite}
                 />
               ),
@@ -769,96 +741,27 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, def
       </div>
       )}
 
-      {/* Long-press Context Menu */}
-      <Modal isOpen={!!contextAccount} onClose={() => setContextAccount(null)} maxWidth="sm" className="p-0">
-        {contextAccount && (
-          <div>
-            <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">{contextAccount.name}</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {contextAccount.accountSubType === 'INVESTMENT_BROKERAGE' ? t('contextMenu.subtypeBrokerage') :
-                 contextAccount.accountSubType === 'INVESTMENT_CASH' ? t('contextMenu.subtypeInvCash') :
-                 formatAccountType(contextAccount.accountType, tc)}
-                {contextAccount.isClosed ? t('contextMenu.closedSuffix') : ''}
-              </p>
-            </div>
-            <div className="py-2">
-              <button
-                onClick={() => { setContextAccount(null); handleViewTransactions(contextAccount); }}
-                className="w-full text-left px-5 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
-              >
-                <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-                {t('row.actions.viewTransactions')}
-              </button>
-              {!contextAccount.isClosed && (
-                <>
-                  <button
-                    onClick={() => { setContextAccount(null); onEdit(contextAccount); }}
-                    className="w-full text-left px-5 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
-                  >
-                    <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    {t('row.actions.editAccount')}
-                  </button>
-                  {contextAccount.accountSubType !== 'INVESTMENT_BROKERAGE' && (
-                    <button
-                      onClick={() => { setContextAccount(null); handleReconcile(contextAccount); }}
-                      className="w-full text-left px-5 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
-                    >
-                      <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      {t('row.actions.reconcile')}
-                    </button>
-                  )}
-                  <button
-                    onClick={() => { setContextAccount(null); handleCloseClick(contextAccount); }}
-                    disabled={Number(contextAccount.currentBalance) !== 0}
-                    className={`w-full text-left px-5 py-3 text-sm flex items-center gap-3 ${
-                      Number(contextAccount.currentBalance) !== 0
-                        ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                        : 'text-orange-600 dark:text-orange-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                    </svg>
-                    {t('row.actions.closeAccount')}
-                    {Number(contextAccount.currentBalance) !== 0 && (
-                      <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto">{t('row.actions.balanceMustBeZero')}</span>
-                    )}
-                  </button>
-                </>
-              )}
-              {contextAccount.isClosed && (
-                <button
-                  onClick={() => { setContextAccount(null); handleReopen(contextAccount); }}
-                  className="w-full text-left px-5 py-3 text-sm text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  {t('row.actions.reopenAccount')}
-                </button>
-              )}
-              {deletableAccounts.has(contextAccount.id) && (
-                <button
-                  onClick={() => { setContextAccount(null); handleDeleteClick(contextAccount); }}
-                  className="w-full text-left px-5 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                  {t('row.actions.deleteAccount')}
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-      </Modal>
+      {/* Long-press action sheet */}
+      <RowActionSheet
+        isOpen={!!contextAccount}
+        title={contextAccount?.name ?? ''}
+        subtitle={contextAccount
+          ? `${contextAccount.accountSubType === 'INVESTMENT_BROKERAGE' ? t('contextMenu.subtypeBrokerage') :
+              contextAccount.accountSubType === 'INVESTMENT_CASH' ? t('contextMenu.subtypeInvCash') :
+              formatAccountType(contextAccount.accountType, tc)}${contextAccount.isClosed ? t('contextMenu.closedSuffix') : ''}`
+          : undefined}
+        actions={contextAccount
+          ? buildAccountActions(contextAccount, deletableAccounts.has(contextAccount.id), accountActionLabels, {
+              onViewTransactions: handleViewTransactions,
+              onEdit,
+              onReconcile: handleReconcile,
+              onCloseClick: handleCloseClick,
+              onReopen: handleReopen,
+              onDeleteClick: handleDeleteClick,
+            })
+          : []}
+        onClose={() => setContextAccount(null)}
+      />
 
       {/* Close Account Confirmation Dialog */}
       <ConfirmDialog

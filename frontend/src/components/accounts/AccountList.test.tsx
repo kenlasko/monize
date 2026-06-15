@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@/test/render';
+import { render, screen, fireEvent, waitFor, act, within } from '@/test/render';
 import * as nextNavigation from 'next/navigation';
 import { AccountList } from './AccountList';
 import { Account } from '@/types/account';
@@ -1542,7 +1542,7 @@ describe('AccountList', () => {
       fireEvent.click(densityButton);
       fireEvent.click(densityButton);
 
-      expect(screen.getByTitle('Permanently delete account (no transactions)')).toBeInTheDocument();
+      expect(screen.getByTitle('Delete')).toBeInTheDocument();
     });
 
     it('renders reopen icon button in dense mode for closed accounts', async () => {
@@ -1581,7 +1581,7 @@ describe('AccountList', () => {
       fireEvent.click(densityButton);
       fireEvent.click(densityButton);
 
-      expect(screen.getByTitle('Permanently delete account (no transactions)')).toBeInTheDocument();
+      expect(screen.getByTitle('Delete')).toBeInTheDocument();
     });
 
     it('hides Market value label in dense mode for brokerage accounts', () => {
@@ -1760,12 +1760,13 @@ describe('AccountList', () => {
       expect(mockPush).toHaveBeenCalledWith('/investments?accountId=broker-1');
     });
 
-    it('context menu shows Edit Account button for active accounts and calls onEdit', () => {
+    it('context menu shows Edit button for active accounts and calls onEdit', () => {
       const account = createAccount({ name: 'My Account' });
       openContextMenu(account);
 
-      expect(screen.getByText('Edit Account')).toBeInTheDocument();
-      fireEvent.click(screen.getByText('Edit Account'));
+      const sheet = within(screen.getByRole('dialog'));
+      expect(sheet.getByText('Edit')).toBeInTheDocument();
+      fireEvent.click(sheet.getByText('Edit'));
       expect(mockOnEdit).toHaveBeenCalledWith(account);
     });
 
@@ -1800,33 +1801,31 @@ describe('AccountList', () => {
       expect(mockPush).toHaveBeenCalledWith('/reconcile?accountId=acc-1');
     });
 
-    it('context menu shows Close Account button enabled when balance is zero', () => {
+    it('context menu shows Close button enabled when balance is zero', () => {
       const account = createAccount({ name: 'Zero Balance', currentBalance: 0 });
       openContextMenu(account);
 
-      const closeBtn = screen.getByRole('button', { name: /Close Account/ });
+      const closeBtn = within(screen.getByRole('dialog')).getByRole('button', { name: 'Close' });
       expect(closeBtn).not.toBeDisabled();
     });
 
-    it('context menu shows Close Account button disabled when balance is non-zero', () => {
+    it('context menu shows Close button disabled when balance is non-zero', () => {
       const account = createAccount({ name: 'Non Zero', currentBalance: 500 });
       openContextMenu(account);
 
-      const closeBtn = screen.getByRole('button', { name: /Close Account/ });
+      const closeBtn = within(screen.getByRole('dialog')).getByRole('button', { name: 'Close' });
       expect(closeBtn).toBeDisabled();
-      // Shows helper text
-      expect(screen.getByText('Balance must be zero')).toBeInTheDocument();
     });
 
-    it('context menu Close Account opens close dialog', () => {
+    it('context menu Close opens close dialog', () => {
       const account = createAccount({ name: 'Zero Bal', currentBalance: 0 });
       openContextMenu(account);
 
-      fireEvent.click(screen.getByRole('button', { name: /Close Account/ }));
+      fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Close' }));
       expect(screen.getByText(/Are you sure you want to close/)).toBeInTheDocument();
     });
 
-    it('context menu shows Reopen Account for closed accounts', async () => {
+    it('context menu shows Reopen for closed accounts', async () => {
       const account = createAccount({
         name: 'Closed Acct',
         isClosed: true,
@@ -1834,13 +1833,14 @@ describe('AccountList', () => {
       });
       openContextMenu(account);
 
-      expect(screen.getByText('Reopen Account')).toBeInTheDocument();
+      const sheet = within(screen.getByRole('dialog'));
+      expect(sheet.getByText('Reopen')).toBeInTheDocument();
       // Active-account-only buttons should not appear
-      expect(screen.queryByText('Edit Account')).not.toBeInTheDocument();
-      expect(screen.queryByText('Close Account')).not.toBeInTheDocument();
+      expect(sheet.queryByText('Edit')).not.toBeInTheDocument();
+      expect(sheet.queryByText('Close')).not.toBeInTheDocument();
     });
 
-    it('context menu Reopen Account calls reopen API', async () => {
+    it('context menu Reopen calls reopen API', async () => {
       const account = createAccount({
         name: 'Closed Acct',
         isClosed: true,
@@ -1848,7 +1848,7 @@ describe('AccountList', () => {
       });
       openContextMenu(account);
 
-      fireEvent.click(screen.getByText('Reopen Account'));
+      fireEvent.click(within(screen.getByRole('dialog')).getByText('Reopen'));
 
       // Switch to real timers so waitFor can work
       vi.useRealTimers();
@@ -1913,26 +1913,26 @@ describe('AccountList', () => {
       expect(invCashTexts.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('context menu shows Delete Account for deletable accounts', () => {
+    it('context menu shows Delete for deletable accounts', () => {
       const account = createAccount({ name: 'Del Acct', canDelete: true });
       openContextMenu(account);
 
-      expect(screen.getByText('Delete Account')).toBeInTheDocument();
+      expect(within(screen.getByRole('dialog')).getByText('Delete')).toBeInTheDocument();
     });
 
-    it('context menu Delete Account opens delete confirmation dialog', () => {
+    it('context menu Delete opens delete confirmation dialog', () => {
       const account = createAccount({ name: 'Del Acct', canDelete: true });
       openContextMenu(account);
 
-      fireEvent.click(screen.getByText('Delete Account'));
+      fireEvent.click(within(screen.getByRole('dialog')).getByText('Delete'));
       expect(screen.getByText(/Are you sure you want to permanently delete/)).toBeInTheDocument();
     });
 
-    it('context menu does not show Delete Account for non-deletable accounts', () => {
+    it('context menu does not show Delete for non-deletable accounts', () => {
       const account = createAccount({ name: 'No Del Acct', canDelete: false });
       openContextMenu(account);
 
-      expect(screen.queryByText('Delete Account')).not.toBeInTheDocument();
+      expect(within(screen.getByRole('dialog')).queryByText('Delete')).not.toBeInTheDocument();
     });
 
     it('closes context menu when modal onClose is triggered', () => {
@@ -2330,7 +2330,7 @@ describe('AccountList', () => {
       // No Reconcile in dense mode for brokerage
       expect(screen.queryByTitle('Reconcile')).not.toBeInTheDocument();
       // But delete button appears for deletable
-      expect(screen.getByTitle('Permanently delete account (no transactions)')).toBeInTheDocument();
+      expect(screen.getByTitle('Delete')).toBeInTheDocument();
     });
 
     it('dense mode with non-deletable closed account does not show delete button', () => {
@@ -2348,7 +2348,7 @@ describe('AccountList', () => {
       fireEvent.click(densityButton);
       fireEvent.click(densityButton); // dense
 
-      expect(screen.queryByTitle('Permanently delete account (no transactions)')).not.toBeInTheDocument();
+      expect(screen.queryByTitle('Delete')).not.toBeInTheDocument();
     });
   });
 });

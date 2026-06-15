@@ -4,7 +4,6 @@ import { useState, useMemo, useCallback, memo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { Category } from '@/types/category';
-import { Button } from '@/components/ui/Button';
 import { DeleteCategoryDialog } from './DeleteCategoryDialog';
 import { categoriesApi } from '@/lib/categories';
 import toast from 'react-hot-toast';
@@ -12,8 +11,41 @@ import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
 import { useTableDensity, nextDensity, type DensityLevel } from '@/hooks/useTableDensity';
 import { SortIcon } from '@/components/ui/SortIcon';
+import { useLongPress, type LongPressRowHandlers } from '@/hooks/useLongPress';
+import { RowActions } from '@/components/ui/row-actions/RowActions';
+import { RowActionSheet } from '@/components/ui/row-actions/RowActionSheet';
+import type { RowAction } from '@/components/ui/row-actions/rowAction';
 
 const logger = createLogger('CategoryList');
+
+/**
+ * Builds the standard row actions for a category. Shared by the desktop
+ * `RowActions` cell and the mobile `RowActionSheet`.
+ */
+function buildCategoryActions(
+  category: Category,
+  labels: { edit: string; delete: string },
+  handlers: { onEdit: (category: Category) => void; onDeleteClick: (category: Category) => void },
+): RowAction[] {
+  return [
+    {
+      key: 'edit',
+      label: labels.edit,
+      icon: 'edit',
+      tone: 'primary',
+      onClick: () => handlers.onEdit(category),
+    },
+    {
+      key: 'delete',
+      label: labels.delete,
+      icon: 'delete',
+      tone: 'delete',
+      destructive: true,
+      onClick: () => handlers.onDeleteClick(category),
+      hidden: category.isSystem,
+    },
+  ];
+}
 
 export type { DensityLevel } from '@/hooks/useTableDensity';
 
@@ -28,6 +60,7 @@ interface CategoryRowProps {
   onDeleteClick: (category: Category) => void;
   onViewTransactions: (category: Category) => void;
   index: number;
+  getRowHandlers: (category: Category) => LongPressRowHandlers;
 }
 
 const CategoryRow = memo(function CategoryRow({
@@ -38,24 +71,24 @@ const CategoryRow = memo(function CategoryRow({
   onDeleteClick,
   onViewTransactions,
   index,
+  getRowHandlers,
 }: CategoryRowProps) {
   const t = useTranslations('categories');
   const tc = useTranslations('common');
-  const handleEdit = useCallback(() => {
-    onEdit(category);
-  }, [onEdit, category]);
 
-  const handleDelete = useCallback(() => {
-    onDeleteClick(category);
-  }, [onDeleteClick, category]);
-
-  const handleView = useCallback(() => {
-    onViewTransactions(category);
-  }, [onViewTransactions, category]);
+  const actions = useMemo(
+    () => buildCategoryActions(
+      category,
+      { edit: tc('actions.edit'), delete: tc('actions.delete') },
+      { onEdit, onDeleteClick },
+    ),
+    [category, tc, onEdit, onDeleteClick],
+  );
 
   return (
     <tr
-      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'}`}
+      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'}`}
+      {...getRowHandlers(category)}
     >
       <td className={`${cellPadding} whitespace-nowrap`}>
         <div
@@ -72,7 +105,7 @@ const CategoryRow = memo(function CategoryRow({
             />
           )}
           <button
-            onClick={handleView}
+            onClick={(e) => { e.stopPropagation(); onViewTransactions(category); }}
             className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline text-left"
             title={t('list.viewTransactionsTitle')}
           >
@@ -104,25 +137,8 @@ const CategoryRow = memo(function CategoryRow({
           </div>
         </td>
       )}
-      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium sticky right-0 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800`}>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleEdit}
-          className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 mr-2"
-        >
-          {density === 'dense' ? '✎' : tc('edit')}
-        </Button>
-        {!category.isSystem && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleDelete}
-            className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
-          >
-            {density === 'dense' ? '✕' : tc('delete')}
-          </Button>
-        )}
+      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium hidden min-[480px]:table-cell sticky right-0 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800`}>
+        <RowActions actions={actions} density={density} />
       </td>
     </tr>
   );
@@ -152,8 +168,10 @@ export function CategoryList({
   onSort,
 }: CategoryListProps) {
   const t = useTranslations('categories');
+  const tc = useTranslations('common');
   const router = useRouter();
   const [deleteCategory, setDeleteCategory] = useState<Category | null>(null);
+  const [actionSheet, setActionSheet] = useState<{ open: boolean; category: Category | null }>({ open: false, category: null });
   const [localDensity, setLocalDensity] = useState<DensityLevel>('normal');
   const [localSortField, setLocalSortField] = useState<SortField>('name');
   const [localSortDirection, setLocalSortDirection] = useState<SortDirection>('asc');
@@ -200,6 +218,11 @@ export function CategoryList({
     }
     setDeleteCategory(category);
   }, [t]);
+
+  const { getRowHandlers } = useLongPress<Category>({
+    onLongPress: (category) => setActionSheet({ open: true, category }),
+    onClick: onEdit,
+  });
 
   const handleConfirmDelete = async (reassignToCategoryId: string | null) => {
     if (!deleteCategory) return;
@@ -319,7 +342,7 @@ export function CategoryList({
                   {t('list.colDescription')}
                 </th>
               )}
-              <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider sticky right-0 bg-gray-50 dark:bg-gray-800`}>
+              <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden min-[480px]:table-cell sticky right-0 bg-gray-50 dark:bg-gray-800`}>
                 {t('list.colActions')}
               </th>
             </tr>
@@ -335,6 +358,7 @@ export function CategoryList({
                 onDeleteClick={handleDeleteClick}
                 onViewTransactions={handleViewTransactions}
                 index={index}
+                getRowHandlers={getRowHandlers}
               />
             ))}
           </tbody>
@@ -347,6 +371,19 @@ export function CategoryList({
         categories={categories}
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteCategory(null)}
+      />
+
+      <RowActionSheet
+        isOpen={actionSheet.open}
+        title={actionSheet.category?.name ?? ''}
+        actions={actionSheet.category
+          ? buildCategoryActions(
+              actionSheet.category,
+              { edit: tc('actions.edit'), delete: tc('actions.delete') },
+              { onEdit, onDeleteClick: handleDeleteClick },
+            )
+          : []}
+        onClose={() => setActionSheet({ open: false, category: null })}
       />
     </div>
   );

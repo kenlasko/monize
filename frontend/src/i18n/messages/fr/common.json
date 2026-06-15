@@ -10,6 +10,21 @@
   "delete": "Supprimer",
   "edit": "Modifier",
   "close": "Fermer",
+  "actions": {
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "view": "Afficher",
+    "duplicate": "Dupliquer",
+    "merge": "Fusionner",
+    "reactivate": "Réactiver",
+    "reconcile": "Rapprocher",
+    "post": "Comptabiliser",
+    "skip": "Ignorer",
+    "close": "Fermer",
+    "reopen": "Rouvrir",
+    "scheduleRecurring": "Rendre récurrent",
+    "more": "Plus d'actions"
+  },
   "loading": "Chargement...",
   "pagination": {
     "showing": "Affichage",

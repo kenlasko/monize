@@ -79,16 +79,32 @@ function createDefaultProps(overrides: Partial<AccountRowProps> = {}): AccountRo
       return labels[type] || type;
     },
     getAccountTypeColor: () => 'bg-blue-100 text-blue-800',
-    onRowClick: vi.fn(),
+    actionLabels: {
+      viewTransactions: 'View Transactions',
+      edit: 'Edit',
+      reconcile: 'Reconcile',
+      close: 'Close',
+      closeTitleDisabled: 'Balance must be zero',
+      closeTitleEnabled: 'Close account',
+      reopen: 'Reopen',
+      delete: 'Delete',
+    },
     onEdit: vi.fn(),
     onReconcile: vi.fn(),
     onCloseClick: vi.fn(),
     onDeleteClick: vi.fn(),
     onReopen: vi.fn(),
-    onLongPressStart: vi.fn(),
-    onLongPressStartTouch: vi.fn(),
-    onLongPressEnd: vi.fn(),
-    onTouchMove: vi.fn(),
+    getRowHandlers: () => ({
+      onClick: vi.fn(),
+      onContextMenu: vi.fn(),
+      onMouseDown: vi.fn(),
+      onMouseUp: vi.fn(),
+      onMouseLeave: vi.fn(),
+      onTouchStart: vi.fn(),
+      onTouchMove: vi.fn(),
+      onTouchEnd: vi.fn(),
+      onTouchCancel: vi.fn(),
+    }),
     ...overrides,
   };
 }
@@ -590,8 +606,8 @@ describe('AccountRow', () => {
       // In dense mode, buttons are icon-only with title attributes
       expect(screen.getByTitle('Edit')).toBeInTheDocument();
       expect(screen.getByTitle('Reconcile')).toBeInTheDocument();
-      expect(screen.getByTitle(/Close account|Account must have zero balance/)).toBeInTheDocument();
-      expect(screen.getByTitle('Permanently delete account (no transactions)')).toBeInTheDocument();
+      expect(screen.getByTitle(/Close account|Balance must be zero/)).toBeInTheDocument();
+      expect(screen.getByTitle('Delete')).toBeInTheDocument();
     });
 
     it('renders icon-only Reopen button for closed accounts in dense mode', () => {
@@ -645,7 +661,7 @@ describe('AccountRow', () => {
       });
       renderAccountRow(props);
 
-      const closeButton = screen.getByTitle('Account must have zero balance to close');
+      const closeButton = screen.getByTitle('Balance must be zero');
       expect(closeButton).toBeDisabled();
     });
 
@@ -747,60 +763,59 @@ describe('AccountRow', () => {
   });
 
   describe('row click and interaction', () => {
-    it('calls onRowClick when row is clicked', () => {
-      const onRowClick = vi.fn();
+    // Builds a full set of long-press row handlers backed by spies so we can
+    // assert AccountRow spreads them onto the <tr>.
+    function makeRowHandlers() {
+      const spies = {
+        onClick: vi.fn(),
+        onContextMenu: vi.fn(),
+        onMouseDown: vi.fn(),
+        onMouseUp: vi.fn(),
+        onMouseLeave: vi.fn(),
+        onTouchStart: vi.fn(),
+        onTouchMove: vi.fn(),
+        onTouchEnd: vi.fn(),
+        onTouchCancel: vi.fn(),
+      };
+      return spies;
+    }
+
+    it('spreads the row click handler onto the row', () => {
+      const handlers = makeRowHandlers();
       const account = createAccount();
-      const props = createDefaultProps({ account, onRowClick });
+      const props = createDefaultProps({ account, getRowHandlers: () => handlers });
       renderAccountRow(props);
 
       fireEvent.click(screen.getByText('Main Chequing'));
-      expect(onRowClick).toHaveBeenCalledWith(account);
+      expect(handlers.onClick).toHaveBeenCalled();
     });
 
     it('does not propagate row click when action buttons are clicked', () => {
-      const onRowClick = vi.fn();
+      const handlers = makeRowHandlers();
       const onEdit = vi.fn();
       const account = createAccount({ isClosed: false });
-      const props = createDefaultProps({ account, onRowClick, onEdit });
+      const props = createDefaultProps({ account, onEdit, getRowHandlers: () => handlers });
       renderAccountRow(props);
 
-      // The actions column has stopPropagation on click
+      // The actions column has stopPropagation on click.
       fireEvent.click(screen.getByText('Edit'));
       expect(onEdit).toHaveBeenCalledWith(account);
-      // onRowClick should not be called because of stopPropagation on the actions td
+      expect(handlers.onClick).not.toHaveBeenCalled();
     });
 
-    it('calls onLongPressStart on mouse down', () => {
-      const onLongPressStart = vi.fn();
+    it('spreads the long-press handlers onto the row', () => {
+      const handlers = makeRowHandlers();
       const account = createAccount();
-      const props = createDefaultProps({ account, onLongPressStart });
+      const props = createDefaultProps({ account, getRowHandlers: () => handlers });
       renderAccountRow(props);
 
       const row = screen.getByRole('row');
       fireEvent.mouseDown(row);
-      expect(onLongPressStart).toHaveBeenCalledWith(account);
-    });
-
-    it('calls onLongPressEnd on mouse up', () => {
-      const onLongPressEnd = vi.fn();
-      const account = createAccount();
-      const props = createDefaultProps({ account, onLongPressEnd });
-      renderAccountRow(props);
-
-      const row = screen.getByRole('row');
+      expect(handlers.onMouseDown).toHaveBeenCalled();
       fireEvent.mouseUp(row);
-      expect(onLongPressEnd).toHaveBeenCalled();
-    });
-
-    it('calls onLongPressEnd on mouse leave', () => {
-      const onLongPressEnd = vi.fn();
-      const account = createAccount();
-      const props = createDefaultProps({ account, onLongPressEnd });
-      renderAccountRow(props);
-
-      const row = screen.getByRole('row');
+      expect(handlers.onMouseUp).toHaveBeenCalled();
       fireEvent.mouseLeave(row);
-      expect(onLongPressEnd).toHaveBeenCalled();
+      expect(handlers.onMouseLeave).toHaveBeenCalled();
     });
   });
 

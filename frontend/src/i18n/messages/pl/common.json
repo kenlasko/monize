@@ -10,6 +10,21 @@
   "delete": "Usuń",
   "edit": "Edytuj",
   "close": "Zamknij",
+  "actions": {
+    "edit": "Edytuj",
+    "delete": "Usuń",
+    "view": "Wyświetl",
+    "duplicate": "Duplikuj",
+    "merge": "Scal",
+    "reactivate": "Reaktywuj",
+    "reconcile": "Uzgodnij",
+    "post": "Zaksięguj",
+    "skip": "Pomiń",
+    "close": "Zamknij",
+    "reopen": "Otwórz ponownie",
+    "scheduleRecurring": "Ustaw jako cykliczne",
+    "more": "Więcej akcji"
+  },
   "loading": "Wczytywanie...",
   "pagination": {
     "showing": "Wyświetlanie",

@@ -771,27 +771,27 @@ describe('PayeeList', () => {
   });
 
   // Dense mode button labels
-  it('shows abbreviated button labels in dense mode', () => {
+  it('shows icon-only action buttons in dense mode', () => {
     const onMerge = vi.fn();
-    const _onReactivate = vi.fn();
     const payees = [
       makePayee({ id: 'p1', name: 'Walmart', isActive: true }),
     ];
 
     render(<PayeeList payees={payees} onEdit={onEdit} onRefresh={onRefresh} onMerge={onMerge} density="dense" />);
-    expect(screen.getByText('M')).toBeInTheDocument();
-    expect(screen.getByText('E')).toBeInTheDocument();
-    expect(screen.getByText('X')).toBeInTheDocument();
+    // Icon-only buttons expose their label via the accessible name, not visible text.
+    expect(screen.getByRole('button', { name: 'Merge' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
   });
 
-  it('shows abbreviated Reactivate label in dense mode for inactive payee', () => {
+  it('shows the Reactivate action in dense mode for an inactive payee', () => {
     const onReactivate = vi.fn();
     const payees = [
       makePayee({ id: 'p1', name: 'Walmart', isActive: false }),
     ];
 
     render(<PayeeList payees={payees} onEdit={onEdit} onRefresh={onRefresh} onReactivate={onReactivate} density="dense" />);
-    expect(screen.getByText('Re')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reactivate' })).toBeInTheDocument();
   });
 
   // Category badge density
