@@ -673,12 +673,12 @@ describe('SecurityList', () => {
       expect(onViewPrices).toHaveBeenCalledWith(expect.objectContaining({ symbol: 'AAPL' }));
     });
 
-    it('shows $ button in dense mode when onViewPrices provided', () => {
+    it('shows the prices icon button in dense mode when onViewPrices provided', () => {
       const onViewPrices = vi.fn();
       const securities = [makeSecurity()];
 
       render(<SecurityList securities={securities} onEdit={onEdit} onToggleActive={onToggleActive} onViewPrices={onViewPrices} density="dense" />);
-      expect(screen.getByText('$')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Prices' })).toBeInTheDocument();
     });
 
     it('does not show Prices button when onViewPrices not provided', () => {

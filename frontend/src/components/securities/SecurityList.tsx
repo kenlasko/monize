@@ -1,14 +1,98 @@
 'use client';
 
-import { useState, useMemo, useCallback, useRef, memo } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import { useTranslations, useMessages } from 'next-intl';
 import { Security } from '@/types/investment';
-import { Button } from '@/components/ui/Button';
-import { Modal } from '@/components/ui/Modal';
 import { DensityLevel, nextDensity } from '@/hooks/useTableDensity';
 import { SortIcon } from '@/components/ui/SortIcon';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { formatShareQuantity } from '@/lib/format';
+import { useLongPress, type LongPressRowHandlers } from '@/hooks/useLongPress';
+import { RowActions } from '@/components/ui/row-actions/RowActions';
+import { RowActionSheet } from '@/components/ui/row-actions/RowActionSheet';
+import type { RowAction } from '@/components/ui/row-actions/rowAction';
+
+interface SecurityActionLabels {
+  history: string;
+  prices: string;
+  edit: string;
+  activate: string;
+  deactivate: string;
+  delete: string;
+}
+
+interface SecurityActionHandlers {
+  onViewHistory?: (security: Security) => void;
+  onViewPrices?: (security: Security) => void;
+  onEdit: (security: Security) => void;
+  onToggleActive: (security: Security) => void;
+  onDelete?: (security: Security) => void;
+}
+
+/**
+ * Builds the standard row actions for a security. Shared by the desktop
+ * `RowActions` cell and the mobile `RowActionSheet`.
+ */
+function buildSecurityActions(
+  security: Security,
+  hasHoldings: boolean,
+  hasTransactions: boolean,
+  labels: SecurityActionLabels,
+  handlers: SecurityActionHandlers,
+): RowAction[] {
+  const canDelete = !hasHoldings && !hasTransactions;
+  return [
+    {
+      key: 'history',
+      label: labels.history,
+      icon: 'history',
+      tone: 'neutral',
+      onClick: () => handlers.onViewHistory?.(security),
+      hidden: !handlers.onViewHistory,
+    },
+    {
+      key: 'prices',
+      label: labels.prices,
+      icon: 'prices',
+      tone: 'neutral',
+      onClick: () => handlers.onViewPrices?.(security),
+      hidden: !handlers.onViewPrices,
+    },
+    {
+      key: 'edit',
+      label: labels.edit,
+      icon: 'edit',
+      tone: 'primary',
+      onClick: () => handlers.onEdit(security),
+    },
+    security.isActive
+      ? {
+          key: 'toggle',
+          label: labels.deactivate,
+          icon: 'deactivate',
+          tone: 'warning',
+          onClick: () => handlers.onToggleActive(security),
+          hidden: hasHoldings,
+        }
+      : {
+          key: 'toggle',
+          label: labels.activate,
+          icon: 'activate',
+          tone: 'success',
+          onClick: () => handlers.onToggleActive(security),
+          hidden: hasHoldings,
+        },
+    {
+      key: 'delete',
+      label: labels.delete,
+      icon: 'delete',
+      tone: 'delete',
+      destructive: true,
+      onClick: () => handlers.onDelete?.(security),
+      hidden: !canDelete || !handlers.onDelete,
+    },
+  ];
+}
 
 export type SecuritySortField = 'symbol' | 'name' | 'type' | 'shares' | 'exchange' | 'currency' | 'provider' | 'source';
 
@@ -84,10 +168,7 @@ interface SecurityRowProps {
   onDelete?: (security: Security) => void;
   onViewPrices?: (security: Security) => void;
   onViewHistory?: (security: Security) => void;
-  onLongPressStart: (security: Security) => void;
-  onLongPressStartTouch: (security: Security, e: React.TouchEvent) => void;
-  onLongPressEnd: () => void;
-  onTouchMove: (e: React.TouchEvent) => void;
+  getRowHandlers: (security: Security) => LongPressRowHandlers;
   index: number;
   defaultQuoteProvider: 'yahoo' | 'msn';
 }
@@ -105,21 +186,18 @@ const SecurityRow = memo(function SecurityRow({
   onDelete,
   onViewPrices,
   onViewHistory,
-  onLongPressStart,
-  onLongPressStartTouch,
-  onLongPressEnd,
-  onTouchMove,
+  getRowHandlers,
   index,
   defaultQuoteProvider,
 }: SecurityRowProps) {
   const t = useTranslations('securities');
+  const tc = useTranslations('common');
   const messages = useMessages();
   const typeLabelsMap = ((messages as any)?.securities?.typeLabels ?? {}) as Record<string, string>;
   const getTypeLabel = (type: string, short: boolean): string => {
     const key = short ? `${type}_short` : type;
     return typeLabelsMap[key] ?? type;
   };
-  const canDelete = !hasHoldings && !hasTransactions;
 
   const handleToggleFavourite = useCallback(
     (e: React.MouseEvent) => {
@@ -129,38 +207,27 @@ const SecurityRow = memo(function SecurityRow({
     [onToggleFavourite, security],
   );
 
-  const handleEdit = useCallback(() => {
-    onEdit(security);
-  }, [onEdit, security]);
-
-  const handleToggleActive = useCallback(() => {
-    onToggleActive(security);
-  }, [onToggleActive, security]);
-
-  const handleDelete = useCallback(() => {
-    onDelete?.(security);
-  }, [onDelete, security]);
-
-  const handleViewPrices = useCallback(() => {
-    onViewPrices?.(security);
-  }, [onViewPrices, security]);
-
-  const handleViewHistory = useCallback(() => {
-    onViewHistory?.(security);
-  }, [onViewHistory, security]);
+  const actions = buildSecurityActions(
+    security,
+    hasHoldings,
+    hasTransactions,
+    {
+      history: t('list.actions.history'),
+      prices: t('list.actions.prices'),
+      edit: tc('actions.edit'),
+      activate: t('list.actions.activate'),
+      deactivate: t('list.actions.deactivate'),
+      delete: tc('actions.delete'),
+    },
+    { onViewHistory, onViewPrices, onEdit, onToggleActive, onDelete },
+  );
 
   return (
     <tr
       className={`group hover:bg-gray-100 dark:hover:bg-gray-800 select-none ${
         !security.isActive ? 'opacity-60' : ''
       } ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'}`}
-      onMouseDown={() => onLongPressStart(security)}
-      onMouseUp={onLongPressEnd}
-      onMouseLeave={onLongPressEnd}
-      onTouchStart={(e) => onLongPressStartTouch(security, e)}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onLongPressEnd}
-      onTouchCancel={onLongPressEnd}
+      {...getRowHandlers(security)}
     >
       <td className={`${cellPadding} whitespace-nowrap text-center`}>
         <button
@@ -271,60 +338,7 @@ const SecurityRow = memo(function SecurityRow({
       </td>
       {/* Actions - hidden on mobile */}
       <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium hidden sm:table-cell sticky right-0 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800`}>
-        <div className="flex justify-end gap-2">
-          {onViewHistory && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleViewHistory}
-              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-            >
-              {density === 'dense' ? '☰' : t('list.actions.history')}
-            </Button>
-          )}
-          {onViewPrices && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleViewPrices}
-              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-            >
-              {density === 'dense' ? '$' : t('list.actions.prices')}
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleEdit}
-            className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
-          >
-            {density === 'dense' ? '✎' : t('list.actions.edit')}
-          </Button>
-          {!hasHoldings && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleToggleActive}
-              className={security.isActive
-                ? 'text-yellow-600 dark:text-yellow-400 hover:text-yellow-900 dark:hover:text-yellow-300'
-                : 'text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300'}
-            >
-              {density === 'dense'
-                ? (security.isActive ? '⊘' : '✓')
-                : (security.isActive ? t('list.actions.deactivate') : t('list.actions.activate'))}
-            </Button>
-          )}
-          {canDelete && onDelete && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleDelete}
-              className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
-            >
-              {density === 'dense' ? '\u2715' : t('list.actions.delete')}
-            </Button>
-          )}
-        </div>
+        <RowActions actions={actions} density={density} />
       </td>
     </tr>
   );
@@ -374,54 +388,12 @@ export function SecurityList({
     }
   }, [onSort, localSortField]);
 
-  // Long-press handling for context menu on mobile
-  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
-  const longPressTriggered = useRef(false);
-  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
-  const LONG_PRESS_MOVE_THRESHOLD = 10;
+  // Long-press opens a per-row action sheet on mobile (and via right-click).
   const [contextSecurity, setContextSecurity] = useState<Security | null>(null);
 
-  const handleLongPressStart = useCallback((security: Security) => {
-    touchStartPos.current = null;
-    longPressTriggered.current = false;
-    longPressTimer.current = setTimeout(() => {
-      longPressTriggered.current = true;
-      setContextSecurity(security);
-    }, 750);
-  }, []);
-
-  const handleLongPressStartTouch = useCallback((security: Security, e: React.TouchEvent) => {
-    if (e?.touches?.[0]) {
-      touchStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    } else {
-      touchStartPos.current = null;
-    }
-    longPressTriggered.current = false;
-    longPressTimer.current = setTimeout(() => {
-      longPressTriggered.current = true;
-      setContextSecurity(security);
-    }, 750);
-  }, []);
-
-  const handleLongPressEnd = useCallback(() => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-    touchStartPos.current = null;
-  }, []);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (touchStartPos.current && longPressTimer.current && e.touches?.[0]) {
-      const deltaX = Math.abs(e.touches[0].clientX - touchStartPos.current.x);
-      const deltaY = Math.abs(e.touches[0].clientY - touchStartPos.current.y);
-      if (deltaX > LONG_PRESS_MOVE_THRESHOLD || deltaY > LONG_PRESS_MOVE_THRESHOLD) {
-        clearTimeout(longPressTimer.current);
-        longPressTimer.current = null;
-        touchStartPos.current = null;
-      }
-    }
-  }, []);
+  const { getRowHandlers } = useLongPress<Security>({
+    onLongPress: setContextSecurity,
+  });
 
   // Memoize padding classes based on density
   const cellPadding = useMemo(() => {
@@ -575,10 +547,7 @@ export function SecurityList({
                 onDelete={onDelete}
                 onViewPrices={onViewPrices}
                 onViewHistory={onViewHistory}
-                onLongPressStart={handleLongPressStart}
-                onLongPressStartTouch={handleLongPressStartTouch}
-                onLongPressEnd={handleLongPressEnd}
-                onTouchMove={handleTouchMove}
+                getRowHandlers={getRowHandlers}
                 index={index}
                 defaultQuoteProvider={defaultQuoteProvider}
               />
@@ -587,87 +556,29 @@ export function SecurityList({
         </table>
       </div>
 
-      {/* Long-press Context Menu */}
-      <Modal isOpen={!!contextSecurity} onClose={() => setContextSecurity(null)} maxWidth="sm" className="p-0">
-        {contextSecurity && (() => {
-          const contextHasHoldings = (holdings[contextSecurity.id] || 0) > 0;
-          const contextHasTransactions = transactionSecurityIds.has(contextSecurity.id);
-          const contextCanDelete = !contextHasHoldings && !contextHasTransactions;
-          return (
-          <div>
-            <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">{contextSecurity.symbol}</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{contextSecurity.name}</p>
-            </div>
-            <div className="py-2">
-              {onViewHistory && (
-                <button
-                  onClick={() => { setContextSecurity(null); onViewHistory(contextSecurity); }}
-                  className="w-full text-left px-5 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
-                >
-                  <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                  </svg>
-                  {t('list.contextMenu.transactionHistory')}
-                </button>
-              )}
-              {onViewPrices && (
-                <button
-                  onClick={() => { setContextSecurity(null); onViewPrices(contextSecurity); }}
-                  className="w-full text-left px-5 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
-                >
-                  <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {t('list.contextMenu.viewPrices')}
-                </button>
-              )}
-              <button
-                onClick={() => { setContextSecurity(null); onEdit(contextSecurity); }}
-                className="w-full text-left px-5 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
-              >
-                <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-                {t('list.contextMenu.editSecurity')}
-              </button>
-              {!contextHasHoldings && (
-                <button
-                  onClick={() => { setContextSecurity(null); onToggleActive(contextSecurity); }}
-                  className={`w-full text-left px-5 py-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 ${
-                    contextSecurity.isActive
-                      ? 'text-yellow-600 dark:text-yellow-400'
-                      : 'text-green-600 dark:text-green-400'
-                  }`}
-                >
-                  {contextSecurity.isActive ? (
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  )}
-                  {contextSecurity.isActive ? t('list.contextMenu.deactivate') : t('list.contextMenu.activate')}
-                </button>
-              )}
-              {contextCanDelete && onDelete && (
-                <button
-                  onClick={() => { setContextSecurity(null); onDelete(contextSecurity); }}
-                  className="w-full text-left px-5 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-3"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                  {t('list.contextMenu.delete')}
-                </button>
-              )}
-            </div>
-          </div>
-          );
-        })()}
-      </Modal>
+      {/* Long-press action sheet */}
+      <RowActionSheet
+        isOpen={!!contextSecurity}
+        title={contextSecurity?.symbol ?? ''}
+        subtitle={contextSecurity?.name}
+        actions={contextSecurity
+          ? buildSecurityActions(
+              contextSecurity,
+              (holdings[contextSecurity.id] || 0) > 0,
+              transactionSecurityIds.has(contextSecurity.id),
+              {
+                history: t('list.contextMenu.transactionHistory'),
+                prices: t('list.contextMenu.viewPrices'),
+                edit: t('list.contextMenu.editSecurity'),
+                activate: t('list.contextMenu.activate'),
+                deactivate: t('list.contextMenu.deactivate'),
+                delete: t('list.contextMenu.delete'),
+              },
+              { onViewHistory, onViewPrices, onEdit, onToggleActive, onDelete },
+            )
+          : []}
+        onClose={() => setContextSecurity(null)}
+      />
     </div>
   );
 }
