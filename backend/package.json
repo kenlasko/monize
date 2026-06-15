@@ -106,7 +106,19 @@
     "picomatch": "4.0.4",
     "path-to-regexp": "8.4.0",
     "uuid": "^14.0.0",
-    "fast-uri": "^3.1.2"
+    "fast-uri": "^3.1.2",
+    "typeorm": {
+      "glob": "13.0.0"
+    },
+    "jest-config": {
+      "glob": "13.0.0"
+    },
+    "jest-runtime": {
+      "glob": "13.0.0"
+    },
+    "@jest/reporters": {
+      "glob": "13.0.0"
+    }
   },
   "jest": {
     "moduleFileExtensions": [
