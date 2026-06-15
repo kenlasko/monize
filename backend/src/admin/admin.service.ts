@@ -147,6 +147,10 @@ export class AdminService {
           // a standalone account (visible in User Management, gets its own
           // "self" context) while keeping every delegation others granted it.
           user.isDelegateOnly = false;
+          // Admin-created accounts are trusted (the admin vouches for the
+          // email, and any invite link is delivered to it), so they bypass the
+          // self-service email-verification gate.
+          user.emailVerified = true;
         } else {
           user = manager.create(User, {
             email,
@@ -155,6 +159,8 @@ export class AdminService {
             authProvider: "local",
             role,
             isDelegateOnly: false,
+            // Admin-created accounts bypass the email-verification gate.
+            emailVerified: true,
           });
         }
 

@@ -54,6 +54,10 @@ export default function LoginPage() {
   const { login } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [twoFactorState, setTwoFactorState] = useState<{ tempToken: string } | null>(null);
+  // Set when login is rejected because the account's email is unverified. The
+  // password was already accepted, so we can prompt the user to verify/resend.
+  const [emailNotVerified, setEmailNotVerified] = useState<{ email: string } | null>(null);
+  const [isResending, setIsResending] = useState(false);
   const [authMethods, setAuthMethods] = useState<AuthMethods>({ local: true, oidc: false, registration: true, smtp: false, force2fa: false, demo: false });
   const [isLoadingMethods, setIsLoadingMethods] = useState(true);
 
@@ -103,6 +107,11 @@ export default function LoginPage() {
         return;
       }
 
+      if (response.emailNotVerified) {
+        setEmailNotVerified({ email: data.email });
+        return;
+      }
+
       // Token is now in httpOnly cookie, not in response body
       login(response.user!, 'httpOnly');
       if (authMethods.demo) {
@@ -140,6 +149,19 @@ export default function LoginPage() {
       window.location.href = returnTo;
     } else {
       router.push('/dashboard');
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!emailNotVerified) return;
+    setIsResending(true);
+    try {
+      await authApi.resendVerification(emailNotVerified.email);
+      toast.success(t('signIn.resendVerificationSuccess'));
+    } catch {
+      toast.error(t('signIn.resendVerificationError'));
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -224,6 +246,46 @@ export default function LoginPage() {
             onVerified={handle2FAVerified}
             onCancel={() => setTwoFactorState(null)}
           />
+        </div>
+      </div>
+    );
+  }
+
+  if (emailNotVerified) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+          <div className="text-center">
+            <Image src="/icons/monize-logo.svg" alt="Monize" width={96} height={96} className="mx-auto rounded-xl" priority />
+            <h2 className="mt-4 text-3xl font-extrabold text-gray-900 dark:text-gray-100">
+              {t('signIn.notVerifiedTitle')}
+            </h2>
+          </div>
+          <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-center">
+            <p className="text-sm text-amber-800 dark:text-amber-200">
+              {t('signIn.notVerifiedMessage')}
+            </p>
+          </div>
+          <div className="space-y-3">
+            <Button
+              type="button"
+              variant="primary"
+              size="lg"
+              isLoading={isResending}
+              onClick={handleResendVerification}
+              className="w-full"
+            >
+              {t('signIn.resendVerification')}
+            </Button>
+            <button
+              type="button"
+              onClick={() => setEmailNotVerified(null)}
+              className="block w-full text-center font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+            >
+              {t('backToSignIn')}
+            </button>
+          </div>
+          <AuthLanguageSwitcher />
         </div>
       </div>
     );

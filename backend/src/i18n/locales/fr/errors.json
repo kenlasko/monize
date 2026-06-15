@@ -98,6 +98,8 @@
     "invalidCredentials": "Identifiants invalides",
     "accountTemporarilyLocked": "Le compte est temporairement verrouillé en raison de trop nombreuses tentatives de connexion échouées. Veuillez réessayer plus tard.",
     "accountDeactivated": "Le compte est désactivé",
+    "emailNotVerified": "Veuillez vérifier votre adresse e-mail avant de vous connecter. Consultez votre boîte de réception pour le lien de vérification.",
+    "invalidOrExpiredEmailVerificationToken": "Lien de vérification invalide ou expiré",
     "oidcNoSubject": "Le fournisseur OIDC n'a pas renvoyé d'identifiant de sujet",
     "registrationDisabled": "L'inscription de nouveaux comptes est désactivée.",
     "invalidOrExpiredLinkToken": "Jeton de lien invalide ou expiré",

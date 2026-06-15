@@ -98,6 +98,8 @@
     "invalidCredentials": "Credenziali non valide",
     "accountTemporarilyLocked": "L'account è temporaneamente bloccato a causa di troppi tentativi di accesso falliti. Riprova più tardi.",
     "accountDeactivated": "L'account è disattivato",
+    "emailNotVerified": "Verifica il tuo indirizzo email prima di accedere. Controlla la tua casella di posta per il link di verifica.",
+    "invalidOrExpiredEmailVerificationToken": "Link di verifica non valido o scaduto",
     "oidcNoSubject": "Il provider OIDC non ha restituito un identificatore soggetto",
     "registrationDisabled": "La registrazione di nuovi account è disabilitata.",
     "invalidOrExpiredLinkToken": "Token di collegamento non valido o scaduto",

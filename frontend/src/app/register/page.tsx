@@ -49,6 +49,11 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showTwoFactorSetup, setShowTwoFactorSetup] = useState(false);
   const [showPreferencesSetup, setShowPreferencesSetup] = useState(false);
+  // Set when registration requires email verification (SMTP enabled): the
+  // account exists but cannot sign in until the emailed link is clicked, so
+  // we show a "check your email" screen instead of logging the user in.
+  const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
+  const [isResending, setIsResending] = useState(false);
   const [authMethods, setAuthMethods] = useState<AuthMethods>({ local: true, oidc: false, registration: true, smtp: false, force2fa: false, demo: false });
   const [isLoadingMethods, setIsLoadingMethods] = useState(true);
 
@@ -119,6 +124,12 @@ export default function RegisterPage() {
         ? { ...rest, currentPassword: trimmed }
         : rest;
       const response = await authApi.register(registerData);
+      // When SMTP is enabled the backend does not log the user in; it sends a
+      // verification link instead. Show the "check your email" screen.
+      if (response.verificationRequired) {
+        setVerificationEmail(rest.email);
+        return;
+      }
       // Token is now in httpOnly cookie, not in response body
       login(response.user!, 'httpOnly');
       toast.success(t('toasts.created'));
@@ -163,10 +174,61 @@ export default function RegisterPage() {
     authApi.initiateOidc();
   };
 
+  const handleResendVerification = async () => {
+    if (!verificationEmail) return;
+    setIsResending(true);
+    try {
+      await authApi.resendVerification(verificationEmail);
+      toast.success(t('checkEmail.resendSuccess'));
+    } catch {
+      toast.error(t('checkEmail.resendError'));
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   if (isLoadingMethods || !authMethods.local || !authMethods.registration) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-gray-500 dark:text-gray-400">{tc('loading')}</div>
+      </div>
+    );
+  }
+
+  if (verificationEmail) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+          <div className="text-center">
+            <Image src="/icons/monize-logo.svg" alt="Monize" width={96} height={96} className="mx-auto rounded-xl" priority />
+            <h2 className="mt-4 text-3xl font-extrabold text-gray-900 dark:text-gray-100">
+              {t('checkEmail.title')}
+            </h2>
+          </div>
+          <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-center">
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              {t('checkEmail.body', { email: verificationEmail })}
+            </p>
+          </div>
+          <div className="space-y-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              isLoading={isResending}
+              onClick={handleResendVerification}
+              className="w-full"
+            >
+              {t('checkEmail.resendButton')}
+            </Button>
+            <Link
+              href="/login"
+              className="block text-center font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+            >
+              {t('checkEmail.backToSignIn')}
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }

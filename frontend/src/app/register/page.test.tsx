@@ -31,6 +31,7 @@ vi.mock('@/lib/auth', () => ({
     }),
     register: vi.fn(),
     initiateOidc: vi.fn(),
+    resendVerification: vi.fn(),
   },
   AuthMethods: {},
 }));
@@ -428,6 +429,67 @@ describe('RegisterPage', () => {
     expect(
       (authApi.register as ReturnType<typeof vi.fn>).mock.calls.length,
     ).toBe(1);
+  });
+
+  it('shows the check-your-email screen (not 2FA) when verification is required', async () => {
+    (authApi.register as ReturnType<typeof vi.fn>).mockResolvedValue({ verificationRequired: true });
+
+    render(<RegisterPage />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'verify@example.com' } });
+      fireEvent.change(screen.getByLabelText(/^password$/i), { target: { value: 'StrongPass1!' } });
+      fireEvent.change(screen.getByLabelText(/confirm password/i), { target: { value: 'StrongPass1!' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /create account/i }));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Check your email')).toBeInTheDocument();
+    });
+    // Verification path must NOT log the user in or show 2FA setup.
+    expect(mockLogin).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('two-factor-setup')).not.toBeInTheDocument();
+  });
+
+  it('resends the verification email from the check-your-email screen', async () => {
+    (authApi.register as ReturnType<typeof vi.fn>).mockResolvedValue({ verificationRequired: true });
+    (authApi.resendVerification as ReturnType<typeof vi.fn>).mockResolvedValue({ message: 'ok' });
+
+    render(<RegisterPage />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'verify@example.com' } });
+      fireEvent.change(screen.getByLabelText(/^password$/i), { target: { value: 'StrongPass1!' } });
+      fireEvent.change(screen.getByLabelText(/confirm password/i), { target: { value: 'StrongPass1!' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /create account/i }));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /resend verification email/i })).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /resend verification email/i }));
+    });
+
+    await waitFor(() => {
+      expect(authApi.resendVerification).toHaveBeenCalledWith('verify@example.com');
+      expect(toast.success).toHaveBeenCalledWith('Verification email sent. Please check your inbox.');
+    });
   });
 
   it('shows error toast on registration failure', async () => {

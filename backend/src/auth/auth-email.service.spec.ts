@@ -326,6 +326,135 @@ describe("AuthEmailService", () => {
     });
   });
 
+  describe("generateVerificationToken", () => {
+    it("returns user and a raw token, storing only the hashed token with a 24h expiry", async () => {
+      const user = { ...mockUser, emailVerified: false };
+      usersRepository.findOne.mockResolvedValue(user);
+      usersRepository.save.mockResolvedValue(user);
+
+      const result = await service.generateVerificationToken("test@example.com");
+
+      expect(result).not.toBeNull();
+      expect(result!.user).toBe(user);
+      expect(result!.token).toHaveLength(64); // 32 bytes hex
+
+      expect(usersRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          emailVerificationToken: hashToken(result!.token),
+          emailVerificationTokenExpiry: expect.any(Date),
+        }),
+      );
+
+      const savedUser = usersRepository.save.mock.calls[0][0];
+      const expiryTime = savedUser.emailVerificationTokenExpiry.getTime();
+      const twentyFourHoursFromNow = Date.now() + 24 * 60 * 60 * 1000;
+      expect(Math.abs(expiryTime - twentyFourHoursFromNow)).toBeLessThan(5000);
+    });
+
+    it("returns null when the user is not found", async () => {
+      usersRepository.findOne.mockResolvedValue(null);
+
+      const result = await service.generateVerificationToken("nobody@example.com");
+
+      expect(result).toBeNull();
+      expect(usersRepository.save).not.toHaveBeenCalled();
+    });
+
+    it("returns null when the account is already verified", async () => {
+      usersRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        emailVerified: true,
+      });
+
+      const result = await service.generateVerificationToken("test@example.com");
+
+      expect(result).toBeNull();
+      expect(usersRepository.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("verifyEmail", () => {
+    let mockExecute: jest.Mock;
+    let mockAndWhere: jest.Mock;
+    let mockWhere: jest.Mock;
+    let mockSet: jest.Mock;
+    let mockUpdate: jest.Mock;
+
+    beforeEach(() => {
+      mockExecute = jest.fn();
+      mockAndWhere = jest.fn().mockReturnValue({ execute: mockExecute });
+      mockWhere = jest.fn().mockReturnValue({ andWhere: mockAndWhere });
+      mockSet = jest.fn().mockReturnValue({ where: mockWhere });
+      mockUpdate = jest.fn().mockReturnValue({ set: mockSet });
+      usersRepository.createQueryBuilder.mockReturnValue({ update: mockUpdate });
+    });
+
+    it("marks the account verified and clears the token on a valid token", async () => {
+      mockExecute.mockResolvedValue({ affected: 1 });
+
+      await service.verifyEmail("valid-token");
+
+      expect(mockSet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          emailVerified: true,
+          emailVerificationToken: null,
+          emailVerificationTokenExpiry: null,
+        }),
+      );
+      expect(mockWhere).toHaveBeenCalledWith(
+        "emailVerificationToken = :hashedToken",
+        { hashedToken: hashToken("valid-token") },
+      );
+      expect(mockAndWhere).toHaveBeenCalledWith(
+        "emailVerificationTokenExpiry > :now",
+        { now: expect.any(Date) },
+      );
+    });
+
+    it("throws BadRequestException for an invalid or expired token", async () => {
+      mockExecute.mockResolvedValue({ affected: 0 });
+
+      await expect(service.verifyEmail("bad-token")).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.verifyEmail("bad-token")).rejects.toThrow(
+        "Invalid or expired verification link",
+      );
+    });
+  });
+
+  describe("checkVerificationEmailLimit", () => {
+    it("allows the first 3 requests and blocks the 4th within the window", () => {
+      expect(service.checkVerificationEmailLimit("v@example.com")).toBe(true);
+      expect(service.checkVerificationEmailLimit("v@example.com")).toBe(true);
+      expect(service.checkVerificationEmailLimit("v@example.com")).toBe(true);
+      expect(service.checkVerificationEmailLimit("v@example.com")).toBe(false);
+    });
+
+    it("resets and allows again after the window expires", () => {
+      service.checkVerificationEmailLimit("v2@example.com");
+      service.checkVerificationEmailLimit("v2@example.com");
+      service.checkVerificationEmailLimit("v2@example.com");
+      expect(service.checkVerificationEmailLimit("v2@example.com")).toBe(false);
+
+      const realDateNow = Date.now;
+      Date.now = jest.fn().mockReturnValue(realDateNow() + 60 * 60 * 1000 + 1);
+      try {
+        expect(service.checkVerificationEmailLimit("v2@example.com")).toBe(true);
+      } finally {
+        Date.now = realDateNow;
+      }
+    });
+
+    it("tracks different emails independently and normalizes case", () => {
+      service.checkVerificationEmailLimit("A@Example.com");
+      service.checkVerificationEmailLimit("a@example.com");
+      service.checkVerificationEmailLimit("A@EXAMPLE.COM");
+      expect(service.checkVerificationEmailLimit("a@example.com")).toBe(false);
+      expect(service.checkVerificationEmailLimit("other@example.com")).toBe(true);
+    });
+  });
+
   describe("cleanup", () => {
     it("should remove expired entries when cleanup runs", () => {
       // Add entries
@@ -361,6 +490,24 @@ describe("AuthEmailService", () => {
       service.onModuleDestroy();
       expect(clearIntervalSpy).toHaveBeenCalled();
       clearIntervalSpy.mockRestore();
+    });
+
+    it("prunes expired verification-email attempts too", () => {
+      service.checkVerificationEmailLimit("stale@example.com");
+
+      const realDateNow = Date.now;
+      const originalNow = Date.now();
+      Date.now = jest.fn().mockReturnValue(originalNow + 60 * 60 * 1000 + 1);
+      try {
+        (service as any).cleanupExpiredAttempts();
+
+        // The stale entry was pruned, so the limiter starts fresh again.
+        expect(service.checkVerificationEmailLimit("stale@example.com")).toBe(
+          true,
+        );
+      } finally {
+        Date.now = realDateNow;
+      }
     });
   });
 });

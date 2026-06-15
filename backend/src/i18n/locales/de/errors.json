@@ -98,6 +98,8 @@
     "invalidCredentials": "Ungültige Anmeldedaten",
     "accountTemporarilyLocked": "Konto ist aufgrund zu vieler fehlgeschlagener Anmeldeversuche vorübergehend gesperrt. Bitte versuchen Sie es später erneut.",
     "accountDeactivated": "Konto ist deaktiviert",
+    "emailNotVerified": "Bitte bestätigen Sie Ihre E-Mail-Adresse, bevor Sie sich anmelden. Prüfen Sie Ihren Posteingang auf den Bestätigungslink.",
+    "invalidOrExpiredEmailVerificationToken": "Ungültiger oder abgelaufener Bestätigungslink",
     "oidcNoSubject": "OIDC-Anbieter hat keinen Subject-Bezeichner zurückgegeben",
     "registrationDisabled": "Die Registrierung neuer Konten ist deaktiviert.",
     "invalidOrExpiredLinkToken": "Ungültiger oder abgelaufener Verknüpfungs-Token",

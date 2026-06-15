@@ -36,12 +36,24 @@ jobs:
         # runner; GH_TOKEN authenticates its API calls.
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
+          AUTHOR_ASSOCIATION: ${{ github.event.pull_request.author_association }}
           GH_TOKEN: ${{ github.token }}
           OWNER: ${{ github.repository_owner }}
           REPO: ${{ github.event.repository.name }}
           APPROVAL_LABEL: approved-to-build
         run: |
           set -uo pipefail
+
+          # Maintainers' own PRs bypass the propose-first checklist gate.
+          # author_association is set by GitHub and cannot be spoofed by outside
+          # contributors (theirs is CONTRIBUTOR or NONE), so the gate still
+          # applies to fork/community PRs while maintainers skip it automatically.
+          case "${AUTHOR_ASSOCIATION:-}" in
+            OWNER | MEMBER | COLLABORATOR)
+              echo "PR author is a maintainer ($AUTHOR_ASSOCIATION); skipping checklist enforcement."
+              exit 0
+              ;;
+          esac
 
           if [ -z "${PR_BODY:-}" ]; then
             echo "::error::PR description is empty. Use the pull request template and fill it in."

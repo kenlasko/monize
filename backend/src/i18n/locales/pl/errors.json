@@ -98,6 +98,8 @@
     "invalidCredentials": "Nieprawidłowe dane logowania",
     "accountTemporarilyLocked": "Konto jest tymczasowo zablokowane z powodu zbyt wielu nieudanych prób logowania. Spróbuj ponownie później.",
     "accountDeactivated": "Konto jest dezaktywowane",
+    "emailNotVerified": "Zweryfikuj swój adres e-mail przed zalogowaniem. Sprawdź swoją skrzynkę odbiorczą, aby znaleźć link weryfikacyjny.",
+    "invalidOrExpiredEmailVerificationToken": "Nieprawidłowy lub wygasły link weryfikacyjny",
     "oidcNoSubject": "Dostawca OIDC nie zwrócił identyfikatora podmiotu",
     "registrationDisabled": "Rejestracja nowych kont jest wyłączona.",
     "invalidOrExpiredLinkToken": "Nieprawidłowy lub wygasły token łączenia",

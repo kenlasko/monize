@@ -107,6 +107,14 @@
     "button": "Passwort zurücksetzen",
     "disclaimer": "Dieser Link läuft in 1 Stunde ab. Wenn Sie keine Passwortrücksetzung angefordert haben, können Sie diese E-Mail ignorieren."
   },
+  "emailVerification": {
+    "subject": "Bestätigen Sie Ihre Monize-E-Mail-Adresse",
+    "heading": "Bestätigen Sie Ihre E-Mail-Adresse",
+    "greeting": "Hallo {{ name }},",
+    "intro": "Danke, dass Sie sich für Monize registriert haben. Bitte bestätigen Sie Ihre E-Mail-Adresse, um Ihr Konto zu aktivieren und sich anzumelden:",
+    "button": "E-Mail bestätigen",
+    "disclaimer": "Dieser Link läuft in 24 Stunden ab. Wenn Sie kein Monize-Konto erstellt haben, können Sie diese E-Mail ignorieren."
+  },
   "accountInvite": {
     "subject": "Ihr Monize-Konto ist bereit",
     "heading": "Ihr Monize-Konto ist bereit",

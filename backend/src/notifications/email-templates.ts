@@ -462,6 +462,27 @@ export function passwordResetTemplate(
   `;
 }
 
+export function emailVerificationTemplate(
+  firstName: string,
+  verifyUrl: string,
+  t: EmailT = englishEmailT,
+): string {
+  const safeName = escapeHtml(firstName || "there");
+  const safeUrl = escapeHtml(verifyUrl);
+  return `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2 style="color: #1f2937;">${t("emails.emailVerification.heading", "Verify your email address")}</h2>
+      <p style="color: #374151;">${t("emails.emailVerification.greeting", `Hi ${safeName},`, { name: safeName })}</p>
+      <p style="color: #374151;">${t("emails.emailVerification.intro", "Thanks for signing up for Monize. Please confirm your email address to activate your account and sign in:")}</p>
+      <p style="margin: 24px 0;">
+        <a href="${safeUrl}" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none; font-weight: 500;">${t("emails.emailVerification.button", "Verify Email")}</a>
+      </p>
+      <p style="color: #374151;">${t("emails.emailVerification.disclaimer", "This link will expire in 24 hours. If you did not create a Monize account, you can safely ignore this email.")}</p>
+      <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">-- Monize</p>
+    </div>
+  `;
+}
+
 export function accountInviteTemplate(
   firstName: string,
   inviteUrl: string,

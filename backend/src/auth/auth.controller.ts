@@ -35,10 +35,15 @@ import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
+import { VerifyEmailDto } from "./dto/verify-email.dto";
+import { ResendVerificationDto } from "./dto/resend-verification.dto";
 import { VerifyTotpDto } from "./dto/verify-totp.dto";
 import { Setup2faDto } from "./dto/setup-2fa.dto";
 import { Setup2faInitDto } from "./dto/setup-2fa-init.dto";
-import { passwordResetTemplate } from "../notifications/email-templates";
+import {
+  passwordResetTemplate,
+  emailVerificationTemplate,
+} from "../notifications/email-templates";
 import { SwitchContextDto } from "./dto/switch-context.dto";
 import { I18nService } from "nestjs-i18n";
 import { emailTranslator } from "../i18n/email-translator";
@@ -257,13 +262,58 @@ export class AuthController {
     }
     const result = await this.authService.register(registerDto);
 
+    // When email verification is required the account exists but cannot sign
+    // in yet, so no auth cookies are set. Send the verification link and tell
+    // the client to show its "check your email" state.
+    if (result.verificationRequired) {
+      await this.sendVerificationEmail(
+        result.user.email!,
+        result.user.firstName ?? "",
+        result.verificationToken,
+      );
+      return res.json({ verificationRequired: true });
+    }
+
     this.setAuthCookies(
       res,
-      result.accessToken,
-      result.refreshToken,
-      result.user.id,
+      result.accessToken!,
+      result.refreshToken!,
+      result.user!.id,
     );
     res.json({ user: result.user });
+  }
+
+  /**
+   * Build the verification link and email it. Shared by registration and the
+   * resend endpoint. Failures are logged, never thrown, so the HTTP response
+   * does not reveal whether delivery succeeded (mirrors password-reset).
+   */
+  private async sendVerificationEmail(
+    email: string,
+    firstName: string,
+    token: string,
+  ): Promise<void> {
+    const frontendUrl = this.configService.get<string>(
+      "PUBLIC_APP_URL",
+      "http://localhost:3000",
+    );
+    const verifyUrl = `${frontendUrl}/verify-email?token=${token}`;
+    const lang = DEFAULT_LOCALE;
+    const t = emailTranslator(this.i18n, lang);
+    const html = emailVerificationTemplate(firstName, verifyUrl, t);
+
+    try {
+      await this.emailService.sendMail(
+        email,
+        t("emails.emailVerification.subject", "Verify your Monize email"),
+        html,
+      );
+    } catch (error) {
+      this.logger.error(
+        "Failed to send email verification email",
+        error instanceof Error ? error.stack : error,
+      );
+    }
   }
 
   @Post("login")
@@ -299,6 +349,11 @@ export class AuthController {
     // If 2FA is required, return temp token without setting cookie
     if (result.requires2FA) {
       return res.json({ requires2FA: true, tempToken: result.tempToken });
+    }
+
+    // Email not verified yet: no cookies, tell the client to prompt a resend.
+    if (result.emailNotVerified) {
+      return res.json({ emailNotVerified: true });
     }
 
     this.setAuthCookies(
@@ -662,6 +717,62 @@ export class AuthController {
   async resetPassword(@Body() dto: ResetPasswordDto) {
     await this.authService.resetPassword(dto.token, dto.newPassword);
     return { message: "Password reset successfully. You can now log in." };
+  }
+
+  @Post("verify-email")
+  @AllowDelegate()
+  @SkipCsrf()
+  @DemoRestricted()
+  @Throttle({ default: { ttl: 900000, limit: rateLimit(5) } })
+  @ApiOperation({ summary: "Verify a new account's email address" })
+  async verifyEmail(@Body() dto: VerifyEmailDto) {
+    await this.authService.verifyEmail(dto.token);
+    return { message: "Email verified successfully. You can now log in." };
+  }
+
+  @Post("resend-verification")
+  @AllowDelegate()
+  @SkipCsrf()
+  @DemoRestricted()
+  @Throttle({ default: { ttl: 900000, limit: rateLimit(3) } })
+  @ApiOperation({ summary: "Resend the email verification link" })
+  async resendVerification(@Body() dto: ResendVerificationDto) {
+    if (!this.localAuthEnabled) {
+      throw new ForbiddenException(
+        tr(
+          "errors.auth.localAuthDisabledShort",
+          "Local authentication is disabled.",
+        ),
+      );
+    }
+
+    // SECURITY: Always return the same generic response so the endpoint never
+    // reveals whether an account exists or is already verified.
+    const genericResponse = {
+      message:
+        "If an account exists with that email and still needs verification, " +
+        "a new verification link has been sent.",
+    };
+
+    // Per-email rate limiting (max 3 per email per hour)
+    if (!this.authService.checkVerificationEmailLimit(dto.email)) {
+      return genericResponse;
+    }
+
+    if (this.emailService.getStatus().configured) {
+      const result = await this.authService.generateVerificationToken(
+        dto.email,
+      );
+      if (result) {
+        await this.sendVerificationEmail(
+          result.user.email!,
+          result.user.firstName ?? "",
+          result.token,
+        );
+      }
+    }
+
+    return genericResponse;
   }
 
   @Post("2fa/verify")
