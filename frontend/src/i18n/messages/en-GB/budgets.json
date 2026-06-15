@@ -1,0 +1,39 @@
+{
+  "wizardStrategy": {
+    "rolloverHint": "This sets the default for all categories. You can customise individual categories after creating the budget."
+  },
+  "wizard": {
+    "steps": {
+      "analyze": "Analyse"
+    }
+  },
+  "wizardAnalysis": {
+    "analysisPeriodHint": "How many months of transaction history should we analyse to suggest budget amounts?",
+    "analyzeButton": "Analyse My Spending",
+    "toasts": {
+      "analyzeFailed": "Failed to analyse spending"
+    }
+  },
+  "strategyCard": {
+    "strategies": {
+      "FIFTY_THIRTY_TWENTY": {
+        "cons": [
+          "May not suit high cost-of-living areas",
+          "Fixed ratios may not fit all situations",
+          "Less granular category-level control",
+          "Requires categorising every expense by group"
+        ]
+      }
+    }
+  },
+  "pages": {
+    "list": {
+      "empty": {
+        "description": "Create your first budget by analysing your spending history. The wizard will suggest realistic amounts based on your transactions."
+      }
+    },
+    "create": {
+      "subtitle": "Analyse your spending and create a personalised budget"
+    }
+  }
+}

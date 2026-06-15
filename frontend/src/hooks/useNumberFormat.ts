@@ -9,14 +9,18 @@ import { roundToDecimals, adaptiveFractionDigits } from '@/lib/format';
  *   can pick German number grouping with an English UI.
  * - When `numberFormat === 'browser'`, fall back to the user's UI `language`
  *   so freshly defaulted users see numbers in the same locale as their UI.
+ * - A `language` of 'browser' (follow the browser) or 'xx' (pseudo-locale) is
+ *   not a real Intl locale, so we hand off to the browser default instead.
  * - Returning undefined hands off to the browser default.
  */
-function getEffectiveLocale(
+export function getEffectiveLocale(
   numberFormat: string,
   language: string | undefined,
 ): string | undefined {
   if (numberFormat !== 'browser') return numberFormat;
-  return language && language !== 'xx' ? language : undefined;
+  return language && language !== 'xx' && language !== 'browser'
+    ? language
+    : undefined;
 }
 
 /**

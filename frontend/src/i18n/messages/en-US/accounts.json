@@ -1,0 +1,18 @@
+{
+  "row": {
+    "favourite": "Favorite",
+    "addToFavourites": "Add to favorites",
+    "removeFromFavourites": "Remove from favorites"
+  },
+  "toast": {
+    "favouriteError": "Failed to update favorite"
+  },
+  "form": {
+    "favourite": "Favorite",
+    "addToFavourites": "Add to favorites",
+    "removeFromFavourites": "Remove from favorites",
+    "accountTypeOptions": {
+      "chequing": "Checking"
+    }
+  }
+}

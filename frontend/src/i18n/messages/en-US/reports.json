@@ -1,0 +1,17 @@
+{
+  "page": {
+    "removeFavourite": "Remove from favorites",
+    "addFavourite": "Add to favorites"
+  },
+  "accountBalances": {
+    "accountTypes": {
+      "CHEQUING": "Checking"
+    }
+  },
+  "customReport": {
+    "checkboxFavourites": "Add to favorites"
+  },
+  "investmentReportForm": {
+    "labelFavourite": "Add to favorites"
+  }
+}

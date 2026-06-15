@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { act } from '@testing-library/react';
+import { act, within } from '@testing-library/react';
 import { render, screen, fireEvent, waitFor } from '@/test/render';
 import { PreferencesSection } from './PreferencesSection';
 import { UserPreferences } from '@/types/auth';
@@ -215,9 +215,30 @@ describe('PreferencesSection', () => {
     fireEvent.focus(timezoneInput);
 
     await waitFor(() => {
-      const browserOption = screen.getByText(/auto-detected as/);
+      // Scope to the timezone phrasing: the language selector's "use browser
+      // locale" option also contains "auto-detected as".
+      const browserOption = screen.getByText(/browser timezone \(auto-detected as/);
       expect(browserOption).toBeInTheDocument();
     });
+  });
+
+  it('shows the detected sample in the number-format browser option', () => {
+    render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />);
+
+    // The number-format browser option is the only "Use browser locale" entry
+    // whose detected value is a number sample (the language option shows a name).
+    const option = screen.getByText(/Use browser locale \(auto-detected as [\d.,\s]+\)/);
+    expect(option).toBeInTheDocument();
+  });
+
+  it('shows the detected sample in the date-format browser option', () => {
+    render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />);
+
+    // Scope to the Date Format select so the date sample is unambiguous among
+    // the other "auto-detected as" options (timezone, language, number format).
+    const dateSelect = screen.getByLabelText('Date Format');
+    const browserOption = within(dateSelect).getByText(/auto-detected as/);
+    expect(browserOption).toBeInTheDocument();
   });
 
   it('allows searching for timezones by typing', async () => {

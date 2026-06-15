@@ -1,0 +1,21 @@
+{
+  "page": {
+    "toasts": {
+      "favouriteFailed": "Failed to update favorite"
+    }
+  },
+  "list": {
+    "columns": {
+      "favourite": "Favorite"
+    },
+    "favouriteButton": {
+      "add": "Add to favorites",
+      "remove": "Remove from favorites"
+    }
+  },
+  "form": {
+    "favouriteLabel": "Favorite",
+    "addToFavourites": "Add to favorites",
+    "removeFromFavourites": "Remove from favorites"
+  }
+}

@@ -1,12 +1,54 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { useNumberFormat } from './useNumberFormat';
+import { useNumberFormat, getEffectiveLocale } from './useNumberFormat';
+import { usePreferencesStore } from '@/store/preferencesStore';
 
 vi.mock('@/store/preferencesStore', () => ({
   usePreferencesStore: vi.fn((selector: any) =>
     selector({ preferences: { numberFormat: 'en-US', defaultCurrency: 'USD' } })
   ),
 }));
+
+describe('getEffectiveLocale', () => {
+  it('returns an explicit number format verbatim', () => {
+    expect(getEffectiveLocale('en-GB', 'fr')).toBe('en-GB');
+    expect(getEffectiveLocale('de-DE', undefined)).toBe('de-DE');
+  });
+
+  it('falls back to the UI language when set to "browser"', () => {
+    expect(getEffectiveLocale('browser', 'fr')).toBe('fr');
+    expect(getEffectiveLocale('browser', 'en-GB')).toBe('en-GB');
+  });
+
+  it('returns undefined (browser default) for a browser/xx/unset language', () => {
+    expect(getEffectiveLocale('browser', 'browser')).toBeUndefined();
+    expect(getEffectiveLocale('browser', 'xx')).toBeUndefined();
+    expect(getEffectiveLocale('browser', undefined)).toBeUndefined();
+  });
+});
+
+describe('useNumberFormat with a "browser" UI language', () => {
+  afterEach(() => {
+    vi.mocked(usePreferencesStore).mockImplementation((selector: any) =>
+      selector({ preferences: { numberFormat: 'en-US', defaultCurrency: 'USD' } }),
+    );
+  });
+
+  it('does not pass the "browser" sentinel to Intl', () => {
+    vi.mocked(usePreferencesStore).mockImplementation((selector: any) =>
+      selector({
+        preferences: {
+          numberFormat: 'browser',
+          defaultCurrency: 'USD',
+          language: 'browser',
+        },
+      }),
+    );
+    const { result } = renderHook(() => useNumberFormat());
+    expect(() => result.current.formatCurrency(1234.56)).not.toThrow();
+    expect(result.current.formatCurrency(1234.56)).toMatch(/1.?234/);
+  });
+});
 
 describe('useNumberFormat', () => {
   it('returns formatting functions', () => {

@@ -1,6 +1,7 @@
 {
   "language": {
     "label": "Język",
+    "browserOption": "Użyj języka przeglądarki (wykryto {locale})",
     "helpText": "Wybierz język używany w całym interfejsie Monize. Formatowanie liczb i dat jest sterowane osobno poniżej.",
     "saved": "Zmieniono język",
     "saveFailed": "Nie udało się zapisać języka"
@@ -139,7 +140,7 @@
     "browserLocale": "Użyj ustawień regionalnych przeglądarki (automatycznie)",
     "browserTimezonePrefix": "Użyj strefy czasowej przeglądarki (wykryto {tz})",
     "numberFormatOptions": {
-      "browser": "Użyj ustawień regionalnych przeglądarki (automatycznie)",
+      "browser": "Użyj ustawień regionalnych przeglądarki (wykryto {sample})",
       "enUS": "Angielski (US) - 1,234.56",
       "enGB": "Angielski (UK) - 1,234.56",
       "deDE": "Niemiecki - 1.234,56",

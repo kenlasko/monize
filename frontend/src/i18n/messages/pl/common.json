@@ -183,7 +183,7 @@
     "S"
   ],
   "dateFormat": {
-    "browserAuto": "Użyj ustawień regionalnych przeglądarki (automatycznie)",
+    "browserAuto": "Użyj ustawień regionalnych przeglądarki (wykryto {sample})",
     "custom": "Niestandardowy..."
   },
   "emailInvalid": "Wprowadź prawidłowy adres e-mail",

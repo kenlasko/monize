@@ -146,7 +146,7 @@
   "weekdaysMin": ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"],
   "weekdaysNarrow": ["S", "M", "D", "M", "D", "F", "S"],
   "dateFormat": {
-    "browserAuto": "Browser-Gebietsschema verwenden (automatisch)",
+    "browserAuto": "Browser-Gebietsschema verwenden (automatisch erkannt: {sample})",
     "custom": "Benutzerdefiniert..."
   },
   "emailInvalid": "Bitte geben Sie eine gültige E-Mail-Adresse ein",

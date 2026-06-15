@@ -1,0 +1,68 @@
+{
+  "page": {
+    "names": {
+      "uncategorized-transactions": "Uncategorised Transactions",
+      "loan-amortization": "Loan Amortisation Schedule",
+      "credit-utilization": "Credit Utilisation",
+      "realized-gains": "Realised Gains & Losses"
+    },
+    "descriptions": {
+      "sector-weightings": "Analyse portfolio sector exposure from individual stocks and ETFs.",
+      "geographic-allocation": "Analyse portfolio geographic exposure by exchange and region for diversification insights.",
+      "weekend-weekday-spending": "Analyse your spending patterns based on day of week to understand habits.",
+      "uncategorized-transactions": "Find and categorise transactions that are missing categories.",
+      "dividend-income": "Track capital gains and losses (realised + unrealised) alongside dividend and interest income.",
+      "realized-gains": "Track realised gains and losses from sold securities for tax planning and performance review."
+    }
+  },
+  "accountBalances": {
+    "accountTypes": {
+      "CHEQUING": "Current account"
+    }
+  },
+  "budgetHealthScore": {
+    "groupUncategorized": "Uncategorised"
+  },
+  "filterBuilder": {
+    "categoryUncategorized": "Uncategorised"
+  },
+  "uncategorizedTransactions": {
+    "totalUncategorized": "Total Uncategorised",
+    "uncategorizedExpenses": "Uncategorised Expenses",
+    "uncategorizedIncome": "Uncategorised Income",
+    "allCategorized": "All transactions are categorised. Great job!",
+    "tableTitle": "Uncategorised Transactions",
+    "pdfTitle": "Uncategorised Transactions"
+  },
+  "customPages": {
+    "createSubtitle": "Define how you want to view and analyse your financial data"
+  },
+  "creditUtilization": {
+    "empty": "No credit card or line of credit accounts with a credit limit found. Add a credit card or line of credit with a credit limit to see utilisation.",
+    "overallUtilization": "Overall Utilisation",
+    "utilizationByAccount": "Utilisation by Account",
+    "totalUtilization": "Total Utilisation",
+    "colUtilization": "Utilisation",
+    "tooltipUtilization": "Utilisation",
+    "pdfTitle": "Credit Utilisation"
+  },
+  "loanAmortization": {
+    "pdfTitlePrefix": "Loan Amortisation - "
+  },
+  "realizedGains": {
+    "realizedGainLoss": "Realised Gain/Loss",
+    "bySecurityTitle": "Realised Gains by Security",
+    "detailTitle": "Realised Gains Detail",
+    "pdfTitle": "Realised Gains Report"
+  },
+  "monteCarloPerformance": {
+    "rowAnnualizedVolatilityLabel": "Annualised Volatility"
+  },
+  "monthlyComparison": {
+    "pdfAnnualizedReturn": "Annualised Return"
+  },
+  "securityPerformance": {
+    "annualizedReturn": "Annualised Return",
+    "pdfAnnualizedReturn": "Annualised Return"
+  }
+}

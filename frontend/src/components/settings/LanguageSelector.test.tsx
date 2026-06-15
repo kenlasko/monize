@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, fireEvent, screen, waitFor } from '@/test/render';
 import { render } from '@/test/render';
 import { LanguageSelector } from './LanguageSelector';
+import { detectBrowserLocale } from '@/i18n/config';
 
 vi.mock('@/lib/user-settings', () => ({
   userSettingsApi: {
@@ -71,5 +72,36 @@ describe('LanguageSelector', () => {
       }),
     );
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
+  });
+
+  it('offers a "use browser locale" option', () => {
+    render(<LanguageSelector value="en" onChange={() => {}} />);
+    const select = screen.getByRole('combobox') as HTMLSelectElement;
+    const optionValues = Array.from(select.options).map((o) => o.value);
+    expect(optionValues).toContain('browser');
+  });
+
+  it('stores "browser" but sets the cookie to the detected locale', async () => {
+    const onChange = vi.fn();
+    render(<LanguageSelector value="en" onChange={onChange} />);
+
+    const select = screen.getByRole('combobox') as HTMLSelectElement;
+    await act(async () => {
+      fireEvent.change(select, { target: { value: 'browser' } });
+    });
+
+    expect(onChange).toHaveBeenCalledWith('browser');
+    // The persisted preference is the 'browser' sentinel, but the active locale
+    // cookie is the concrete locale detected from the browser.
+    expect(Cookies.set).toHaveBeenCalledWith(
+      'NEXT_LOCALE',
+      detectBrowserLocale(),
+      expect.objectContaining({ sameSite: 'lax' }),
+    );
+    await waitFor(() =>
+      expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith({
+        language: 'browser',
+      }),
+    );
   });
 });

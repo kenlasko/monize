@@ -16,7 +16,7 @@ See `backend/CLAUDE.md`, `frontend/CLAUDE.md`, and `database/CLAUDE.md` for laye
 | Forms | react-hook-form + Zod (frontend), class-validator (backend) |
 | Auth | JWT + Passport + OIDC + TOTP 2FA |
 | AI | Anthropic SDK, OpenAI SDK, Ollama (user-configurable) |
-| i18n | next-intl (frontend), nestjs-i18n (backend) -- locales: `de`, `en`, `es`, `fr`, `it`, `nl`, `pl`, `pt`, `pt-BR`, `xx` (pseudo) |
+| i18n | next-intl (frontend), nestjs-i18n (backend) -- locales: `de`, `en`, `en-US`, `en-CA`, `en-GB`, `es`, `fr`, `it`, `nl`, `pl`, `pt`, `pt-BR`, `xx` (pseudo) |
 | Testing | Jest (backend), Vitest (frontend), Playwright (e2e) |
 
 Everything runs in Docker: `docker compose -f docker-compose.dev.yml up`.
@@ -39,7 +39,7 @@ Everything runs in Docker: `docker compose -f docker-compose.dev.yml up`.
 Every user-facing string must be translated -- no hardcoded literals in toasts, labels, placeholders, validation messages, or emails. A new feature is not done until it is fully internationalized and translated for every supported locale in the same PR.
 - **Frontend** (`next-intl`): read strings via `useTranslations('namespace')`; catalogs live in `frontend/src/i18n/messages/{locale}/{namespace}.json` (register new namespaces in `src/i18n/messages.ts`). Use `t.rich` for embedded markup and `t.raw` for template strings.
 - **Backend** (`nestjs-i18n`): wrap exception messages in `tr(key, fallback, args)`; render emails with an `EmailT` translator (`emailTranslator(i18n, recipientLang)`) so copy matches the recipient's stored locale, not the request's. Catalogs live in `backend/src/i18n/locales/{locale}/*.json`.
-- **Supported locales** are defined in `frontend/src/i18n/config.ts` and `backend/src/i18n/config.ts` -- keep the two lists in sync. Currently `de` (German), `en` (English), `es` (Spanish), `fr` (French), `it` (Italian), `nl` (Dutch), `pl` (Polish), `pt` (Portuguese), `pt-BR` (Brazilian Portuguese), and `xx` (dev-only pseudo-locale for QA).
+- **Supported locales** are defined in `frontend/src/i18n/config.ts` and `backend/src/i18n/config.ts` -- keep the two lists in sync. Currently `de` (German), `en` (English -- Canadian-flavoured base), `en-US` (American English), `en-CA` (Canadian English), `en-GB` (British English), `es` (Spanish), `fr` (French), `it` (Italian), `nl` (Dutch), `pl` (Polish), `pt` (Portuguese), `pt-BR` (Brazilian Portuguese), and `xx` (dev-only pseudo-locale for QA). The `en-*` variants are lean regional variants (see their `base` in config): each ships only the strings that differ from `en` and inherits the rest per key.
 - **Adding or changing a string means updating every locale**, not just `en`. Parity tests (`frontend/src/i18n/messages.parity.test.ts`, `backend/src/i18n/locales.parity.spec.ts`) fail when a locale is missing a key or references a placeholder `en` does not supply.
 - After editing any `en/*.json`, regenerate the pseudo-locale: `npm run i18n:pseudo` (CI enforces freshness via `npm run i18n:check`).
 - The user's language lives in `user_preferences.language` and is chosen in Settings -> Preferences (`LanguageSelector`); unauthenticated screens offer `AuthLanguageSwitcher` (cookie-only) on login/register. See `frontend/src/i18n/messages/README.md` and `backend/src/i18n/README.md` for the full contributor flow.

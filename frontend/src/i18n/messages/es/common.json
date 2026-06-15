@@ -146,7 +146,7 @@
   "weekdaysMin": ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sá"],
   "weekdaysNarrow": ["D", "L", "M", "X", "J", "V", "S"],
   "dateFormat": {
-    "browserAuto": "Usar configuración regional del navegador (detección automática)",
+    "browserAuto": "Usar configuración regional del navegador (detectado automáticamente como {sample})",
     "custom": "Personalizado..."
   },
   "emailInvalid": "Introduce una dirección de correo electrónico válida",

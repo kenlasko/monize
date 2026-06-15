@@ -146,7 +146,7 @@
   "weekdaysMin": ["Di", "Lu", "Ma", "Me", "Je", "Ve", "Sa"],
   "weekdaysNarrow": ["D", "L", "M", "M", "J", "V", "S"],
   "dateFormat": {
-    "browserAuto": "Utiliser la locale du navigateur (détection automatique)",
+    "browserAuto": "Utiliser les paramètres régionaux du navigateur (détecté automatiquement : {sample})",
     "custom": "Personnalisé..."
   },
   "emailInvalid": "Veuillez saisir une adresse e-mail valide",

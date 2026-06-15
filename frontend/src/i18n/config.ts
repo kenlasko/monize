@@ -21,6 +21,13 @@ export interface SupportedLocale {
    * that wraps every string with markers so missing extractions are visible.
    */
   devOnly?: boolean;
+  /**
+   * Regional variant: the locale this one inherits from. Variant catalogs hold
+   * only the keys that differ from the base; every other key falls back to the
+   * base at load time (see `loadNamespace` in `messages.ts`). Unlike the full
+   * translations, a variant folder may be partial or absent.
+   */
+  base?: string;
 }
 
 export const DEFAULT_LOCALE = "en";
@@ -28,6 +35,9 @@ export const DEFAULT_LOCALE = "en";
 const ALL_LOCALES: readonly SupportedLocale[] = [
   { code: "de", label: "Deutsch", dir: "ltr" },
   { code: "en", label: "English", dir: "ltr" },
+  { code: "en-US", label: "English (US)", dir: "ltr", base: "en" },
+  { code: "en-CA", label: "English (Canada)", dir: "ltr", base: "en" },
+  { code: "en-GB", label: "English (UK)", dir: "ltr", base: "en" },
   { code: "es", label: "Español", dir: "ltr" },
   { code: "fr", label: "Français", dir: "ltr" },
   { code: "it", label: "Italiano", dir: "ltr" },
@@ -61,6 +71,17 @@ export function getLocaleDir(code: string): "ltr" | "rtl" {
   return locale?.dir ?? "ltr";
 }
 
+/**
+ * The base locale a regional variant inherits from (e.g. `en` for `en-GB`), or
+ * `undefined` for full locales. Used by the message loader to merge a variant's
+ * partial overrides over its base, and by the parity test to apply subset
+ * (rather than full-mirror) checks to variants.
+ */
+export function localeBase(code: string | undefined | null): string | undefined {
+  if (!code) return undefined;
+  return SUPPORTED_LOCALES.find((l) => l.code === code)?.base;
+}
+
 /** Best-effort match of an Accept-Language header against supported locales. */
 export function matchAcceptLanguage(header: string | null | undefined): string {
   if (!header) return DEFAULT_LOCALE;
@@ -74,6 +95,25 @@ export function matchAcceptLanguage(header: string | null | undefined): string {
     if (isSupportedLocale(primary)) return primary;
   }
   return DEFAULT_LOCALE;
+}
+
+/** Human-readable label (native name) for a locale code, or the code itself. */
+export function getLocaleLabel(code: string): string {
+  return SUPPORTED_LOCALES.find((l) => l.code === code)?.label ?? code;
+}
+
+/**
+ * The supported locale that best matches the browser's configured languages.
+ * Backs the "use browser locale" language preference. Falls back to
+ * DEFAULT_LOCALE when called off the client (no `navigator`).
+ */
+export function detectBrowserLocale(): string {
+  if (typeof navigator === "undefined") return DEFAULT_LOCALE;
+  const languages =
+    navigator.languages && navigator.languages.length > 0
+      ? navigator.languages.join(",")
+      : navigator.language;
+  return matchAcceptLanguage(languages);
 }
 
 export const LOCALE_COOKIE = "NEXT_LOCALE";

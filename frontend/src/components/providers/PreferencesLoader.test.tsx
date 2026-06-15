@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@/test/render';
 import { PreferencesLoader } from './PreferencesLoader';
+import { detectBrowserLocale } from '@/i18n/config';
 
 const mockLoadPreferences = vi.fn();
 const mockClearPreferences = vi.fn();
@@ -128,6 +129,24 @@ describe('PreferencesLoader', () => {
     expect(Cookies.set).toHaveBeenCalledWith(
       'NEXT_LOCALE',
       'es',
+      expect.objectContaining({ sameSite: 'lax' }),
+    );
+    expect(mockRefresh).toHaveBeenCalled();
+  });
+
+  it('resolves a "browser" language preference to the detected locale cookie', () => {
+    mockPreferences = { ...mockPreferences, language: 'browser' };
+    // Cookies.get returns undefined (cleared each test), so the cookie is set
+    // to the detected locale rather than the 'browser' sentinel.
+    render(
+      <PreferencesLoader>
+        <div>Child</div>
+      </PreferencesLoader>,
+    );
+
+    expect(Cookies.set).toHaveBeenCalledWith(
+      'NEXT_LOCALE',
+      detectBrowserLocale(),
       expect.objectContaining({ sameSite: 'lax' }),
     );
     expect(mockRefresh).toHaveBeenCalled();

@@ -7,7 +7,7 @@ import {
   HeaderResolver,
   QueryResolver,
 } from "nestjs-i18n";
-import { DEFAULT_LOCALE } from "./config";
+import { DEFAULT_LOCALE, LOCALE_BASES } from "./config";
 import { i18nFormatter } from "./i18n-formatter";
 
 /**
@@ -29,6 +29,11 @@ import { i18nFormatter } from "./i18n-formatter";
   imports: [
     NestjsI18nModule.forRoot({
       fallbackLanguage: DEFAULT_LOCALE,
+      // Regional English variants carry only the keys that differ from `en`;
+      // any catalog they omit (e.g. en-CA, which inherits `en` wholesale and
+      // ships no folder) resolves to its base here, while missing individual
+      // keys fall back via `fallbackLanguage` above.
+      fallbacks: { ...LOCALE_BASES },
       // The stock `string-format` formatter treats our `{{ key }}` placeholder
       // convention as escaped literal braces; this one interpolates them.
       formatter: i18nFormatter,

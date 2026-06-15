@@ -1,10 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import {
   DEFAULT_LOCALE,
   SUPPORTED_LOCALES,
   SUPPORTED_LOCALE_CODES,
+  detectBrowserLocale,
   getLocaleDir,
+  getLocaleLabel,
   isSupportedLocale,
+  localeBase,
   matchAcceptLanguage,
   resolveLocale,
 } from './config';
@@ -67,12 +70,70 @@ describe('i18n config', () => {
       expect(matchAcceptLanguage('en')).toBe('en');
     });
 
-    it('strips region tags to find the primary subtag', () => {
-      expect(matchAcceptLanguage('en-US,en;q=0.9')).toBe('en');
+    it('prefers a supported region tag over the primary subtag', () => {
+      expect(matchAcceptLanguage('en-US,en;q=0.9')).toBe('en-US');
+    });
+
+    it('strips an unsupported region tag to the primary subtag', () => {
+      expect(matchAcceptLanguage('en-AU,en;q=0.9')).toBe('en');
     });
 
     it('falls back when no supported tag is present', () => {
       expect(matchAcceptLanguage('zz-ZZ,qq;q=0.5')).toBe(DEFAULT_LOCALE);
+    });
+  });
+
+  describe('localeBase', () => {
+    it('maps regional English variants to en', () => {
+      expect(localeBase('en-US')).toBe('en');
+      expect(localeBase('en-CA')).toBe('en');
+      expect(localeBase('en-GB')).toBe('en');
+    });
+
+    it('returns undefined for full locales and nullish input', () => {
+      expect(localeBase('en')).toBeUndefined();
+      expect(localeBase('pt-BR')).toBeUndefined();
+      expect(localeBase(undefined)).toBeUndefined();
+      expect(localeBase(null)).toBeUndefined();
+    });
+  });
+
+  describe('getLocaleLabel', () => {
+    it('returns the native label for a known locale', () => {
+      expect(getLocaleLabel('de')).toBe('Deutsch');
+      expect(getLocaleLabel('en-GB')).toBe('English (UK)');
+    });
+
+    it('falls back to the code for an unknown locale', () => {
+      expect(getLocaleLabel('zz')).toBe('zz');
+    });
+  });
+
+  describe('detectBrowserLocale', () => {
+    const setLanguages = (languages: string[]) =>
+      Object.defineProperty(navigator, 'languages', {
+        configurable: true,
+        get: () => languages,
+      });
+
+    afterEach(() => {
+      // Drop the per-test own property so the jsdom prototype getter returns.
+      delete (navigator as { languages?: readonly string[] }).languages;
+    });
+
+    it('matches the browser languages against supported locales', () => {
+      setLanguages(['fr-FR', 'fr']);
+      expect(detectBrowserLocale()).toBe('fr');
+    });
+
+    it('prefers an exact supported regional match', () => {
+      setLanguages(['en-GB', 'en']);
+      expect(detectBrowserLocale()).toBe('en-GB');
+    });
+
+    it('always resolves to a supported locale', () => {
+      setLanguages(['zz-ZZ']);
+      expect(isSupportedLocale(detectBrowserLocale())).toBe(true);
     });
   });
 });

@@ -1,0 +1,34 @@
+{
+  "page": {
+    "categoryFilterUncategorized": "Uncategorised Txns ({count})",
+    "toasts": {
+      "categorized": "{count, plural, one {Categorised # transaction} other {Categorised # transactions}}"
+    }
+  },
+  "list": {
+    "uncategorizedBadge": "{count, plural, one {# uncategorised} other {# uncategorised}}"
+  },
+  "categoryAutoAssign": {
+    "howItWorksBody": "This feature analyses your transaction history to suggest default categories for payees. It looks at which category is most commonly used for each payee and suggests assigning it as their default category for future transactions. You can always override the default category if needed.",
+    "backfillLabel": "Also categorise {count, plural, one {# existing uncategorised transaction} other {# existing uncategorised transactions}}",
+    "viewUncategorizedTitle": "View {count, plural, one {# uncategorised transaction} other {# uncategorised transactions}} for {name}",
+    "toasts": {
+      "backfilled": "{count, plural, one {Categorised # transaction} other {Categorised # transactions}}"
+    }
+  },
+  "autoMerge": {
+    "backfillLabel": "Also categorise {count, plural, one {# existing uncategorised transaction} other {# existing uncategorised transactions}}",
+    "toasts": {
+      "backfilled": "{count, plural, one {Categorised # transaction} other {Categorised # transactions}}"
+    },
+    "viewUncategorizedTitle": "View {count, plural, one {# uncategorised transaction} other {# uncategorised transactions}} for {name}"
+  },
+  "defaultCategoryBackfill": {
+    "allConfirmMessage": "This will categorise {transactions, plural, one {# uncategorised transaction} other {# uncategorised transactions}} across {payees, plural, one {# payee} other {# payees}} using each payee's default category. Manually categorised transactions, transfers, and split transactions are left unchanged.",
+    "toasts": {
+      "nothingToDo": "No uncategorised transactions to categorise",
+      "applied": "{count, plural, one {Categorised # transaction} other {Categorised # transactions}}",
+      "failed": "Failed to categorise transactions"
+    }
+  }
+}

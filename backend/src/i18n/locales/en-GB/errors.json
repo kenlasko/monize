@@ -1,0 +1,8 @@
+{
+  "backup": {
+    "folderPathMustBeNormalized": "Folder path must be a normalised absolute path"
+  },
+  "common": {
+    "oauthProviderNotInitialized": "OAuth provider not initialised"
+  }
+}

@@ -146,7 +146,7 @@
   "weekdaysMin": ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
   "weekdaysNarrow": ["S", "M", "T", "W", "T", "F", "S"],
   "dateFormat": {
-    "browserAuto": "Use browser locale (auto-detect)",
+    "browserAuto": "Use browser locale (auto-detected as {sample})",
     "custom": "Custom..."
   },
   "emailInvalid": "Please enter a valid email address",

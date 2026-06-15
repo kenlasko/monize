@@ -1,6 +1,7 @@
 {
   "language": {
     "label": "Langue",
+    "browserOption": "Utiliser la langue du navigateur (détectée automatiquement : {locale})",
     "helpText": "Choisissez la langue utilisée dans toute l'interface Monize. Le formatage des nombres et des dates est contrôlé séparément ci-dessous.",
     "saved": "Langue mise à jour",
     "saveFailed": "Échec de l'enregistrement de la langue"
@@ -139,7 +140,7 @@
     "browserLocale": "Utiliser les paramètres régionaux du navigateur (détection automatique)",
     "browserTimezonePrefix": "Utiliser le fuseau horaire du navigateur (détecté automatiquement : {tz})",
     "numberFormatOptions": {
-      "browser": "Utiliser les paramètres régionaux du navigateur (détection automatique)",
+      "browser": "Utiliser les paramètres régionaux du navigateur (détecté automatiquement : {sample})",
       "enUS": "English (US) - 1,234.56",
       "enGB": "English (UK) - 1,234.56",
       "deDE": "German - 1.234,56",

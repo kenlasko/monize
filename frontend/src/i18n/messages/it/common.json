@@ -146,7 +146,7 @@
   "weekdaysMin": ["Do", "Lu", "Ma", "Me", "Gi", "Ve", "Sa"],
   "weekdaysNarrow": ["D", "L", "M", "M", "G", "V", "S"],
   "dateFormat": {
-    "browserAuto": "Usa le impostazioni del browser (rilevamento automatico)",
+    "browserAuto": "Usa localizzazione del browser (rilevata automaticamente: {sample})",
     "custom": "Personalizzato..."
   },
   "emailInvalid": "Inserisci un indirizzo email valido",

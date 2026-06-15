@@ -146,7 +146,7 @@
   "weekdaysMin": ["zo", "ma", "di", "wo", "do", "vr", "za"],
   "weekdaysNarrow": ["Z", "M", "D", "W", "D", "V", "Z"],
   "dateFormat": {
-    "browserAuto": "Browserinstelling gebruiken (automatisch)",
+    "browserAuto": "Browserinstelling gebruiken (automatisch gedetecteerd als {sample})",
     "custom": "Aangepast..."
   },
   "emailInvalid": "Voer een geldig e-mailadres in",

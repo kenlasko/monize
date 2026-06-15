@@ -183,7 +183,7 @@
     "[XX-S-XX]"
   ],
   "dateFormat": {
-    "browserAuto": "[XX-Use browser locale (auto-detect)-XX]",
+    "browserAuto": "[XX-Use browser locale (auto-detected as {sample})-XX]",
     "custom": "[XX-Custom...-XX]"
   },
   "emailInvalid": "[XX-Please enter a valid email address-XX]",

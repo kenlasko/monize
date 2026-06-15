@@ -18,6 +18,13 @@ export default defineConfig({
   expect: { timeout: 10000 },
   use: {
     baseURL: process.env.BASE_URL || 'http://localhost:3001',
+    // Pin the UI locale so the app renders the base English catalog
+    // deterministically. Without this, the CI browser's default
+    // Accept-Language (en-US) now matches the en-US locale and renders
+    // American labels (e.g. "Checking" instead of "Chequing"), breaking
+    // label-based selectors. `devices` presets don't set a locale, so this
+    // applies to every project.
+    locale: 'en',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

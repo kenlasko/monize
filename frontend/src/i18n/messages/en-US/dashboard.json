@@ -1,0 +1,10 @@
+{
+  "favouriteAccounts": {
+    "title": "Favorite Accounts",
+    "empty": "No favorite accounts yet. Mark accounts as favorites to see them here."
+  },
+  "favouriteSecurities": {
+    "title": "Favorite Securities",
+    "empty": "No favorite securities yet. Visit the <securitiesLink>Securities page</securitiesLink> and star the securities you want to track here."
+  }
+}

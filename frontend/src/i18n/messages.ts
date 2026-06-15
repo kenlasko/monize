@@ -1,4 +1,5 @@
-import { DEFAULT_LOCALE } from "./config";
+import { DEFAULT_LOCALE, localeBase } from "./config";
+import { deepMerge } from "./deep-merge";
 
 /**
  * Per-locale namespaced catalogs. Each namespace is a small JSON file under
@@ -40,22 +41,39 @@ const NAMESPACES = [
 type Namespace = (typeof NAMESPACES)[number];
 type Messages = Record<string, unknown>;
 
+async function importNamespace(
+  locale: string,
+  namespace: Namespace,
+): Promise<Messages | null> {
+  try {
+    return (await import(`./messages/${locale}/${namespace}.json`)).default;
+  } catch {
+    return null;
+  }
+}
+
 async function loadNamespace(
   locale: string,
   namespace: Namespace,
 ): Promise<Messages> {
-  try {
-    return (await import(`./messages/${locale}/${namespace}.json`)).default;
-  } catch {
-    // Fall back to the default locale if a translation file is missing -- this
-    // lets contributors land a new language without translating every namespace
-    // in one PR.
-    if (locale !== DEFAULT_LOCALE) {
-      return (await import(`./messages/${DEFAULT_LOCALE}/${namespace}.json`))
-        .default;
-    }
-    return {};
+  const base = localeBase(locale);
+  if (base) {
+    // Regional variant (e.g. en-GB): layer its partial overrides over the base
+    // locale so every non-overridden key -- and any namespace it omits entirely
+    // -- falls back to the base per key.
+    const baseMessages = (await importNamespace(base, namespace)) ?? {};
+    const override = await importNamespace(locale, namespace);
+    return override ? deepMerge(baseMessages, override) : baseMessages;
   }
+  // Full locale: load its own catalog, falling back to the default locale if a
+  // namespace file is missing -- this lets contributors land a new language
+  // without translating every namespace in one PR.
+  const own = await importNamespace(locale, namespace);
+  if (own) return own;
+  if (locale !== DEFAULT_LOCALE) {
+    return (await importNamespace(DEFAULT_LOCALE, namespace)) ?? {};
+  }
+  return {};
 }
 
 export async function loadMessages(locale: string): Promise<Messages> {

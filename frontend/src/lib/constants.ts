@@ -1,3 +1,5 @@
+import { formatDate } from './utils';
+
 export const PAGE_SIZE = 50;
 
 type DateFormatOption = { value: string; label: string };
@@ -8,10 +10,15 @@ type DateFormatOption = { value: string; label: string };
  * `t` is the `common` namespace translator.
  */
 export function getDateFormatOptions(
-  t: (key: string) => string,
+  t: (key: string, values?: Record<string, string | number>) => string,
+  browserLocale?: string,
 ): DateFormatOption[] {
+  // Preview the format 'browser' mode actually produces, using the same date
+  // the pattern options show (2024-12-31) formatted with the effective locale
+  // (e.g. "12/31/2024"). Mirrors formatDate's 'browser' branch.
+  const sample = formatDate('2024-12-31', 'browser', browserLocale);
   return [
-    { value: 'browser', label: t('dateFormat.browserAuto') },
+    { value: 'browser', label: t('dateFormat.browserAuto', { sample }) },
     { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD (2024-12-31)' },
     { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY (12/31/2024)' },
     { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY (31/12/2024)' },
@@ -21,10 +28,11 @@ export function getDateFormatOptions(
 
 /** Export picker options: the date formats plus a "Custom..." entry. */
 export function getExportDateFormatOptions(
-  t: (key: string) => string,
+  t: (key: string, values?: Record<string, string | number>) => string,
+  browserLocale?: string,
 ): DateFormatOption[] {
   return [
-    ...getDateFormatOptions(t),
+    ...getDateFormatOptions(t, browserLocale),
     { value: 'custom', label: t('dateFormat.custom') },
   ];
 }

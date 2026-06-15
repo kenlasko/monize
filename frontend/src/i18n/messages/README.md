@@ -26,6 +26,36 @@ be done in focused PRs.
 
 5. Open a PR. No other code changes are needed.
 
+## Regional variants (lean overrides)
+
+A regional variant of an existing language (e.g. `en-GB`, `en-US`) does **not**
+copy the whole catalog. It ships only the keys whose wording differs from its
+base and inherits everything else per key at load time.
+
+1. Add an entry to `frontend/src/i18n/config.ts` with a `base`:
+
+       { code: "en-GB", label: "English (UK)", dir: "ltr", base: "en" }
+
+2. Create `messages/en-GB/<namespace>.json` files containing **only** the
+   changed leaves, mirroring the base's nested structure:
+
+       // messages/en-GB/reports.json
+       { "groupUncategorized": "Uncategorised" }
+
+   Omit any namespace that has no changes -- the loader falls back to the base
+   for missing files and missing keys (`loadNamespace` in `messages.ts` merges
+   the variant over its base with `deepMerge`). A variant that differs in
+   nothing (e.g. `en-CA`, which already matches our Canadian-flavoured `en`)
+   needs no folder at all; listing it in config is enough.
+
+3. The parity test checks variants as a *subset* of `en`: every key you add must
+   exist in `en`, must actually change the value (no verbatim copies), and must
+   keep the same ICU placeholders.
+
+4. Mirror the same approach under `backend/src/i18n/locales/` for any
+   server-rendered strings that differ (often none). The `xx` pseudo-locale is
+   generated from `en` only, so variants never affect it.
+
 ## Testing locally
 
 - Change the language in **Settings -> Preferences**.

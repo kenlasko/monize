@@ -1,6 +1,7 @@
 {
   "language": {
     "label": "Taal",
+    "browserOption": "Browsertaal gebruiken (automatisch gedetecteerd als {locale})",
     "helpText": "Kies de taal die door de hele Monize-interface wordt gebruikt. Getal- en datumopmaak worden hieronder apart ingesteld.",
     "saved": "Taal bijgewerkt",
     "saveFailed": "Opslaan van taal mislukt"
@@ -139,7 +140,7 @@
     "browserLocale": "Browserinstelling gebruiken (automatisch detecteren)",
     "browserTimezonePrefix": "Browsertijdzone gebruiken (automatisch gedetecteerd als {tz})",
     "numberFormatOptions": {
-      "browser": "Browserinstelling gebruiken (automatisch detecteren)",
+      "browser": "Browserinstelling gebruiken (automatisch gedetecteerd als {sample})",
       "enUS": "English (US) - 1,234.56",
       "enGB": "English (UK) - 1,234.56",
       "deDE": "German - 1.234,56",
