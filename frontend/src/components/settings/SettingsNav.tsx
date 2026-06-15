@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
-import { ArrowTopRightOnSquareIcon } from '@heroicons/react/20/solid';
+import { ArrowTopRightOnSquareIcon, ChevronDownIcon } from '@heroicons/react/20/solid';
 import { useTranslations } from 'next-intl';
+import { useClickOutside } from '@/hooks/useClickOutside';
 
 export interface SettingsSection {
   readonly id: string;
@@ -18,7 +19,30 @@ interface SettingsNavProps {
   readonly sections: readonly SettingsSection[];
   readonly activeSection: string;
   readonly onSectionClick: (id: string) => void;
-  readonly variant?: 'vertical' | 'horizontal';
+  readonly variant?: 'vertical' | 'dropdown';
+}
+
+/**
+ * Colour classes for a scroll-to (button) section. The four-way matrix covers
+ * active/inactive against default/danger so the desktop sidebar and the mobile
+ * dropdown stay visually identical.
+ */
+function navItemColors(isActive: boolean, isDanger: boolean): string {
+  if (isActive) {
+    return isDanger
+      ? 'bg-red-50 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+      : 'bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-200';
+  }
+  return isDanger
+    ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30'
+    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700';
+}
+
+/** Colour classes for a link section (links are never the danger variant). */
+function navLinkColors(isActive: boolean): string {
+  return isActive
+    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-200'
+    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700';
 }
 
 export function SettingsNav({
@@ -28,89 +52,81 @@ export function SettingsNav({
   variant = 'vertical',
 }: SettingsNavProps) {
   const t = useTranslations('settings.nav');
-  const activeRef = useRef<HTMLButtonElement | HTMLAnchorElement | null>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll active tab into view for horizontal variant
-  useEffect(() => {
-    if (variant === 'horizontal' && activeRef.current?.scrollIntoView && scrollContainerRef.current) {
-      activeRef.current.scrollIntoView({
-        inline: 'center',
-        block: 'nearest',
-        behavior: 'smooth',
-      });
-    }
-  }, [activeSection, variant]);
+  useClickOutside(dropdownRef, () => setOpen(false), {
+    enabled: open,
+    onEscape: () => setOpen(false),
+  });
 
-  const setActiveRef = useCallback(
-    (id: string) => (el: HTMLButtonElement | HTMLAnchorElement | null) => {
-      if (id === activeSection) {
-        activeRef.current = el;
-      }
-    },
-    [activeSection],
-  );
+  if (variant === 'dropdown') {
+    // Compact control showing the active section; tapping it reveals every
+    // section at once instead of a cramped horizontally-scrolling tab strip.
+    const current =
+      sections.find((s) => s.id === activeSection) ?? sections[0];
 
-  if (variant === 'horizontal') {
     return (
-      <div
-        ref={scrollContainerRef}
-        className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide"
-        role="tablist"
-        aria-label={t('sectionsAriaLabel')}
-      >
-        {sections.map((section) => {
-          const isActive = section.id === activeSection;
+      <div ref={dropdownRef} className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen((prev) => !prev)}
+          aria-haspopup="true"
+          aria-expanded={open}
+          className="flex w-full items-center justify-between gap-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm font-medium text-gray-900 dark:text-gray-100 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        >
+          <span className="truncate">{current?.label}</span>
+          <ChevronDownIcon
+            className={`h-5 w-5 shrink-0 text-gray-400 dark:text-gray-500 transition-transform ${
+              open ? 'rotate-180' : ''
+            }`}
+          />
+        </button>
 
-          if (section.href) {
-            return (
-              <Link
-                key={section.id}
-                href={section.href}
-                ref={setActiveRef(section.id) as React.Ref<HTMLAnchorElement>}
-                className={`
-                  flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors shrink-0
-                  ${isActive
-                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-200'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-200'
-                  }
-                `}
-                role="tab"
-                aria-selected={isActive}
-              >
-                <span className="inline-flex items-center">
-                  {section.label}
-                </span>
-                <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5" />
-              </Link>
-            );
-          }
+        {open && (
+          <nav
+            aria-label={t('sectionsAriaLabel')}
+            className="absolute left-0 right-0 top-full z-30 mt-1 max-h-[70vh] overflow-y-auto rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg dark:shadow-gray-700/50"
+          >
+            <ul className="py-1">
+              {sections.map((section) => {
+                const isActive = section.id === activeSection;
 
-          const isDanger = section.variant === 'danger';
-
-          return (
-            <button
-              key={section.id}
-              ref={setActiveRef(section.id) as React.Ref<HTMLButtonElement>}
-              onClick={() => onSectionClick(section.id)}
-              className={`
-                whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors shrink-0
-                ${isActive
-                  ? isDanger
-                    ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
-                    : 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-200'
-                  : isDanger
-                    ? 'text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-200'
+                if (section.href) {
+                  return (
+                    <li key={section.id}>
+                      <Link
+                        href={section.href}
+                        onClick={() => setOpen(false)}
+                        className={`flex items-center justify-between gap-2 px-4 py-2.5 text-sm font-medium transition-colors ${navLinkColors(isActive)}`}
+                      >
+                        <span className="inline-flex items-center">
+                          {section.label}
+                        </span>
+                        <ArrowTopRightOnSquareIcon className="h-4 w-4 opacity-50" />
+                      </Link>
+                    </li>
+                  );
                 }
-              `}
-              role="tab"
-              aria-selected={isActive}
-            >
-              {section.label}
-            </button>
-          );
-        })}
+
+                return (
+                  <li key={section.id}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSectionClick(section.id);
+                        setOpen(false);
+                      }}
+                      className={`block w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${navItemColors(isActive, section.variant === 'danger')}`}
+                    >
+                      {section.label}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        )}
       </div>
     );
   }
@@ -130,14 +146,7 @@ export function SettingsNav({
               <li key={section.id}>
                 <Link
                   href={section.href}
-                  ref={setActiveRef(section.id) as React.Ref<HTMLAnchorElement>}
-                  className={`
-                    flex items-center justify-between w-full rounded-md px-3 py-2 text-sm font-medium transition-colors
-                    ${isActive
-                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-200'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                    }
-                  `}
+                  className={`flex items-center justify-between w-full rounded-md px-3 py-2 text-sm font-medium transition-colors ${navLinkColors(isActive)}`}
                 >
                   <span className="inline-flex items-center">
                     {section.label}
@@ -148,24 +157,11 @@ export function SettingsNav({
             );
           }
 
-          const isDanger = section.variant === 'danger';
-
           return (
             <li key={section.id}>
               <button
-                ref={setActiveRef(section.id) as React.Ref<HTMLButtonElement>}
                 onClick={() => onSectionClick(section.id)}
-                className={`
-                  w-full text-left rounded-md px-3 py-2 text-sm font-medium transition-colors
-                  ${isActive
-                    ? isDanger
-                      ? 'bg-red-50 text-red-700 dark:bg-red-900/40 dark:text-red-300'
-                      : 'bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-200'
-                    : isDanger
-                      ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }
-                `}
+                className={`w-full text-left rounded-md px-3 py-2 text-sm font-medium transition-colors ${navItemColors(isActive, section.variant === 'danger')}`}
               >
                 {section.label}
               </button>

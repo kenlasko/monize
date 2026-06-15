@@ -228,7 +228,8 @@ describe('SettingsPage', () => {
     render(<SettingsPage />);
     await waitFor(() => {
       // Check that section names appear in the nav (they also appear as section headings)
-      // Navigation renders both vertical and horizontal variants, so labels appear multiple times
+      // Navigation renders the desktop sidebar plus the mobile dropdown trigger
+      // (showing the active section), so labels appear multiple times
       const profileElements = screen.getAllByText('Profile');
       expect(profileElements.length).toBeGreaterThanOrEqual(2);
     });

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@/test/render';
+import { render, screen, fireEvent, within } from '@/test/render';
 import { SettingsNav, SettingsSection } from './SettingsNav';
 
 // Mock next/link
@@ -12,6 +12,7 @@ vi.mock('next/link', () => ({
 // Mock heroicons
 vi.mock('@heroicons/react/20/solid', () => ({
   ArrowTopRightOnSquareIcon: (props: any) => <svg data-testid="external-icon" {...props} />,
+  ChevronDownIcon: (props: any) => <svg data-testid="chevron-icon" {...props} />,
 }));
 
 const defaultSections: SettingsSection[] = [
@@ -188,121 +189,99 @@ describe('SettingsNav', () => {
     });
   });
 
-  describe('horizontal variant (mobile tabs)', () => {
-    it('renders all section labels', () => {
+  describe('dropdown variant (mobile)', () => {
+    const renderDropdown = (activeSection: string) =>
       render(
         <SettingsNav
           sections={defaultSections}
-          activeSection="profile"
+          activeSection={activeSection}
           onSectionClick={onSectionClick}
-          variant="horizontal"
+          variant="dropdown"
         />,
       );
 
+    const openMenu = () => {
+      fireEvent.click(screen.getByRole('button', { expanded: false }));
+    };
+
+    it('shows the active section label in a collapsed trigger', () => {
+      renderDropdown('preferences');
+
+      const trigger = screen.getByRole('button');
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(trigger).toHaveTextContent('Preferences');
+      // Collapsed: the menu (and its other sections) is not rendered yet.
+      expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+      expect(screen.queryByText('Security')).not.toBeInTheDocument();
+    });
+
+    it('opens the menu listing every section when the trigger is clicked', () => {
+      renderDropdown('profile');
+      openMenu();
+
+      expect(screen.getByRole('button', { expanded: true })).toBeInTheDocument();
+      const menu = screen.getByRole('navigation', { name: 'Settings sections' });
+      expect(menu).toBeInTheDocument();
       for (const section of defaultSections) {
-        expect(screen.getByText(section.label)).toBeInTheDocument();
+        // Active label appears in both the trigger and the menu.
+        expect(screen.getAllByText(section.label).length).toBeGreaterThanOrEqual(1);
       }
     });
 
-    it('renders with tablist role', () => {
-      render(
-        <SettingsNav
-          sections={defaultSections}
-          activeSection="profile"
-          onSectionClick={onSectionClick}
-          variant="horizontal"
-        />,
-      );
+    it('highlights the active section in the open menu with blue styling', () => {
+      renderDropdown('preferences');
+      openMenu();
 
-      expect(screen.getByRole('tablist', { name: 'Settings sections' })).toBeInTheDocument();
+      const menu = screen.getByRole('navigation', { name: 'Settings sections' });
+      const activeItem = within(menu).getByText('Preferences');
+      expect(activeItem.className).toContain('bg-blue-50');
+      expect(activeItem.className).toContain('text-blue-700');
     });
 
-    it('sets aria-selected on active tab', () => {
-      render(
-        <SettingsNav
-          sections={defaultSections}
-          activeSection="preferences"
-          onSectionClick={onSectionClick}
-          variant="horizontal"
-        />,
-      );
+    it('calls onSectionClick and closes the menu when a section is selected', () => {
+      renderDropdown('profile');
+      openMenu();
 
-      const tabs = screen.getAllByRole('tab');
-      const preferencesTab = tabs.find((tab) => tab.textContent === 'Preferences');
-      expect(preferencesTab).toHaveAttribute('aria-selected', 'true');
-    });
+      const menu = screen.getByRole('navigation', { name: 'Settings sections' });
+      fireEvent.click(within(menu).getByText('Security'));
 
-    it('sets aria-selected false on inactive tabs', () => {
-      render(
-        <SettingsNav
-          sections={defaultSections}
-          activeSection="preferences"
-          onSectionClick={onSectionClick}
-          variant="horizontal"
-        />,
-      );
-
-      const tabs = screen.getAllByRole('tab');
-      const profileTab = tabs.find((tab) => tab.textContent === 'Profile');
-      expect(profileTab).toHaveAttribute('aria-selected', 'false');
-    });
-
-    it('highlights active tab with blue styling', () => {
-      render(
-        <SettingsNav
-          sections={defaultSections}
-          activeSection="preferences"
-          onSectionClick={onSectionClick}
-          variant="horizontal"
-        />,
-      );
-
-      const preferencesTab = screen.getByText('Preferences');
-      expect(preferencesTab.className).toContain('bg-blue-100');
-      expect(preferencesTab.className).toContain('text-blue-700');
-    });
-
-    it('calls onSectionClick when a tab is clicked', () => {
-      render(
-        <SettingsNav
-          sections={defaultSections}
-          activeSection="profile"
-          onSectionClick={onSectionClick}
-          variant="horizontal"
-        />,
-      );
-
-      fireEvent.click(screen.getByText('Danger Zone'));
-      expect(onSectionClick).toHaveBeenCalledWith('danger-zone');
+      expect(onSectionClick).toHaveBeenCalledWith('security');
+      expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
     });
 
     it('renders link sections as anchor elements with external icon', () => {
-      render(
-        <SettingsNav
-          sections={defaultSections}
-          activeSection="profile"
-          onSectionClick={onSectionClick}
-          variant="horizontal"
-        />,
-      );
+      renderDropdown('profile');
+      openMenu();
 
       const aiLink = screen.getByText('AI Settings').closest('a');
       expect(aiLink).toHaveAttribute('href', '/settings/ai');
       expect(screen.getAllByTestId('external-icon')).toHaveLength(1);
     });
 
-    it('does not call onSectionClick for link tabs', () => {
-      render(
-        <SettingsNav
-          sections={defaultSections}
-          activeSection="profile"
-          onSectionClick={onSectionClick}
-          variant="horizontal"
-        />,
-      );
+    it('does not call onSectionClick for link sections', () => {
+      renderDropdown('profile');
+      openMenu();
 
       fireEvent.click(screen.getByText('AI Settings'));
       expect(onSectionClick).not.toHaveBeenCalled();
+    });
+
+    it('closes the menu on Escape', () => {
+      renderDropdown('profile');
+      openMenu();
+      expect(screen.getByRole('navigation')).toBeInTheDocument();
+
+      fireEvent.keyDown(document, { key: 'Escape' });
+      expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    });
+
+    it('closes the menu when clicking outside', () => {
+      renderDropdown('profile');
+      openMenu();
+      expect(screen.getByRole('navigation')).toBeInTheDocument();
+
+      fireEvent.mouseDown(document.body);
+      expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
     });
   });
 
@@ -360,18 +339,20 @@ describe('SettingsNav', () => {
       expect(dangerButton.className).not.toContain('bg-blue-50');
     });
 
-    it('renders a danger section in red text in the horizontal tabs', () => {
+    it('renders a danger section in red text in the open dropdown menu', () => {
       render(
         <SettingsNav
           sections={dangerSections}
           activeSection="profile"
           onSectionClick={onSectionClick}
-          variant="horizontal"
+          variant="dropdown"
         />,
       );
 
-      const dangerTab = screen.getByText('Danger Zone');
-      expect(dangerTab.className).toContain('text-red-600');
+      fireEvent.click(screen.getByRole('button', { expanded: false }));
+      const menu = screen.getByRole('navigation', { name: 'Settings sections' });
+      const dangerItem = within(menu).getByText('Danger Zone');
+      expect(dangerItem.className).toContain('text-red-600');
     });
 
     it('leaves non-danger sections with their default gray styling', () => {
