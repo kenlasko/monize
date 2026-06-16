@@ -5,6 +5,28 @@ import { McpServerService } from "./mcp-server.service";
 import { PatService } from "../auth/pat.service";
 import { OAuthProviderService } from "../oauth/oauth-provider.service";
 
+// Capture the options passed to each StreamableHTTPServerTransport so we can
+// assert the transport is constructed in JSON-response mode (required for
+// buffering ingresses like Cloudflare).
+const mockTransportOptions: any[] = [];
+jest.mock(
+  "@modelcontextprotocol/sdk/server/streamableHttp.js",
+  () => ({
+    StreamableHTTPServerTransport: jest
+      .fn()
+      .mockImplementation((opts: any) => {
+        mockTransportOptions.push(opts);
+        return {
+          sessionId: undefined,
+          onclose: null,
+          handleRequest: jest.fn().mockResolvedValue(undefined),
+          close: jest.fn().mockResolvedValue(undefined),
+        };
+      }),
+  }),
+  { virtual: false },
+);
+
 describe("McpHttpController", () => {
   let controller: McpHttpController;
   let patService: Record<string, jest.Mock>;
@@ -42,6 +64,7 @@ describe("McpHttpController", () => {
     }).compile();
 
     controller = module.get<McpHttpController>(McpHttpController);
+    mockTransportOptions.length = 0;
   });
 
   afterEach(() => {
@@ -159,6 +182,35 @@ describe("McpHttpController", () => {
       expect(res.setHeader).not.toHaveBeenCalledWith(
         "WWW-Authenticate",
         expect.anything(),
+      );
+    });
+
+    it("constructs the transport in JSON-response mode for buffering proxies", async () => {
+      patService.validateToken.mockResolvedValue({
+        userId: "user-1",
+        scopes: "read",
+      });
+
+      const req = {
+        headers: {
+          authorization: "Bearer pat_test",
+          accept: "application/json, text/event-stream",
+        },
+        body: { jsonrpc: "2.0", method: "initialize", id: 1 },
+      } as any;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+        setHeader: jest.fn(),
+        on: jest.fn(),
+      } as any;
+
+      await controller.handlePost(req, res);
+
+      expect(mockTransportOptions).toHaveLength(1);
+      expect(mockTransportOptions[0].enableJsonResponse).toBe(true);
+      expect(typeof mockTransportOptions[0].sessionIdGenerator).toBe(
+        "function",
       );
     });
 

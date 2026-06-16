@@ -152,6 +152,13 @@ export class McpHttpController implements OnModuleDestroy {
 
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => randomUUID(),
+      // Reply to POSTs with plain application/json instead of an SSE stream.
+      // Streaming proxies (Traefik/Pangolin) forward text/event-stream
+      // transparently, but buffering ingresses (Cloudflare, cloudflared
+      // tunnels) hold the SSE body so clients see a connected session with
+      // zero tools. JSON responses pass through any proxy unchanged, and the
+      // MCP tools here are all request/response with no mid-call streaming.
+      enableJsonResponse: true,
     });
 
     transport.onclose = () => {
