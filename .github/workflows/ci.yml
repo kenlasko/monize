@@ -651,6 +651,7 @@ jobs:
           git add backend/package.json backend/package-lock.json frontend/package.json frontend/package-lock.json
           git commit -m "chore: bump version to ${VERSION} [skip ci]"
           git pull --rebase
+          git push
           SHA=$(git rev-parse HEAD)
           gh api repos/$REPO/check-runs \
             --method POST \
@@ -660,7 +661,6 @@ jobs:
             -f conclusion=success \
             -f "output[title]=PR checklist" \
             -f "output[summary]=Auto-pass: CI release commit (no PR body to inspect)"
-          git push
 
       # Resolve the release notes body. Precedence: the `release_notes` input,
       # then a committed docs/release-notes/<version>.md, then GitHub's
