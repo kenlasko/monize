@@ -10,6 +10,21 @@
   "delete": "刪除",
   "edit": "編輯",
   "close": "關閉",
+  "actions": {
+    "edit": "編輯",
+    "delete": "刪除",
+    "view": "檢視",
+    "duplicate": "複製",
+    "merge": "合併",
+    "reactivate": "重新啟用",
+    "reconcile": "對帳",
+    "post": "過帳",
+    "skip": "跳過",
+    "close": "關閉",
+    "reopen": "重新開啟",
+    "scheduleRecurring": "設為固定排程",
+    "more": "更多操作"
+  },
   "loading": "載入中...",
   "pagination": {
     "showing": "顯示",
@@ -146,7 +161,7 @@
   "weekdaysMin": ["日", "一", "二", "三", "四", "五", "六"],
   "weekdaysNarrow": ["日", "一", "二", "三", "四", "五", "六"],
   "dateFormat": {
-    "browserAuto": "使用瀏覽器語言設定（自動偵測）",
+    "browserAuto": "使用瀏覽器語言設定（自動偵測為 {sample}）",
     "custom": "自訂..."
   },
   "emailInvalid": "請輸入有效的電子郵件地址",

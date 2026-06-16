@@ -10,6 +10,21 @@
   "delete": "삭제",
   "edit": "편집",
   "close": "닫기",
+  "actions": {
+    "edit": "편집",
+    "delete": "삭제",
+    "view": "보기",
+    "duplicate": "복사본 만들기",
+    "merge": "병합",
+    "reactivate": "재활성화",
+    "reconcile": "조정",
+    "post": "거래 게시",
+    "skip": "건너뛰기",
+    "close": "닫기",
+    "reopen": "재개",
+    "scheduleRecurring": "반복 거래로 예약",
+    "more": "추가 작업"
+  },
   "loading": "로딩 중...",
   "pagination": {
     "showing": "표시 중",
@@ -146,7 +161,7 @@
   "weekdaysMin": ["일", "월", "화", "수", "목", "금", "토"],
   "weekdaysNarrow": ["일", "월", "화", "수", "목", "금", "토"],
   "dateFormat": {
-    "browserAuto": "브라우저 로케일 사용 (자동 감지)",
+    "browserAuto": "브라우저 로케일 사용 (자동 감지: {sample})",
     "custom": "사용자 지정..."
   },
   "emailInvalid": "유효한 이메일 주소를 입력해 주세요",

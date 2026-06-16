@@ -10,6 +10,21 @@
   "delete": "Xóa",
   "edit": "Chỉnh sửa",
   "close": "Đóng",
+  "actions": {
+    "edit": "Chỉnh sửa",
+    "delete": "Xóa",
+    "view": "Xem",
+    "duplicate": "Nhân bản",
+    "merge": "Gộp",
+    "reactivate": "Kích hoạt lại",
+    "reconcile": "Đối soát",
+    "post": "Đăng",
+    "skip": "Bỏ qua",
+    "close": "Đóng",
+    "reopen": "Mở lại",
+    "scheduleRecurring": "Lên lịch định kỳ",
+    "more": "Thêm thao tác"
+  },
   "loading": "Đang tải...",
   "pagination": {
     "showing": "Hiển thị",
@@ -146,7 +161,7 @@
   "weekdaysMin": ["CN", "T2", "T3", "T4", "T5", "T6", "T7"],
   "weekdaysNarrow": ["C", "2", "3", "4", "5", "6", "7"],
   "dateFormat": {
-    "browserAuto": "Dùng ngôn ngữ trình duyệt (tự động nhận dạng)",
+    "browserAuto": "Dùng ngôn ngữ trình duyệt (tự động nhận dạng: {sample})",
     "custom": "Tùy chỉnh..."
   },
   "emailInvalid": "Vui lòng nhập địa chỉ email hợp lệ",

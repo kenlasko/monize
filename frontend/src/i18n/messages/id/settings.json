@@ -1,6 +1,7 @@
 {
   "language": {
     "label": "Bahasa",
+    "browserOption": "Gunakan lokal browser (deteksi otomatis: {locale})",
     "helpText": "Pilih bahasa yang digunakan di seluruh antarmuka Monize. Format angka dan tanggal dikendalikan secara terpisah di bawah.",
     "saved": "Bahasa diperbarui",
     "saveFailed": "Gagal menyimpan bahasa"
@@ -139,7 +140,7 @@
     "browserLocale": "Gunakan lokal browser (deteksi otomatis)",
     "browserTimezonePrefix": "Gunakan zona waktu browser (terdeteksi otomatis sebagai {tz})",
     "numberFormatOptions": {
-      "browser": "Gunakan lokal browser (deteksi otomatis)",
+      "browser": "Gunakan lokal browser (deteksi otomatis: {sample})",
       "enUS": "Inggris (AS) - 1,234.56",
       "enGB": "Inggris (UK) - 1,234.56",
       "deDE": "Jerman - 1.234,56",

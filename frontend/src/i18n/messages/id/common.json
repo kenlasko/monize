@@ -10,6 +10,21 @@
   "delete": "Hapus",
   "edit": "Ubah",
   "close": "Tutup",
+  "actions": {
+    "edit": "Edit",
+    "delete": "Hapus",
+    "view": "Lihat",
+    "duplicate": "Duplikat",
+    "merge": "Gabungkan",
+    "reactivate": "Aktifkan Kembali",
+    "reconcile": "Rekonsiliasi",
+    "post": "Posting",
+    "skip": "Lewati",
+    "close": "Tutup",
+    "reopen": "Buka kembali",
+    "scheduleRecurring": "Jadwalkan sebagai Berulang",
+    "more": "Tindakan Lainnya"
+  },
   "loading": "Memuat...",
   "pagination": {
     "showing": "Menampilkan",
@@ -146,7 +161,7 @@
   "weekdaysMin": ["Mi", "Se", "Sl", "Ra", "Ka", "Ju", "Sa"],
   "weekdaysNarrow": ["M", "S", "S", "R", "K", "J", "S"],
   "dateFormat": {
-    "browserAuto": "Gunakan lokal browser (deteksi otomatis)",
+    "browserAuto": "Gunakan lokal browser (deteksi otomatis: {sample})",
     "custom": "Kustom..."
   },
   "emailInvalid": "Masukkan alamat email yang valid",

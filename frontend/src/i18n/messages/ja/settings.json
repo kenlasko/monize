@@ -1,6 +1,7 @@
 {
   "language": {
     "label": "言語",
+    "browserOption": "ブラウザのロケールを使用（自動検出: {locale}）",
     "helpText": "Monizeインターフェース全体で使用する言語を選択してください。数値と日付のフォーマットは以下で別途設定できます。",
     "saved": "言語を更新しました",
     "saveFailed": "言語の保存に失敗しました"
@@ -139,7 +140,7 @@
     "browserLocale": "ブラウザのロケールを使用（自動検出）",
     "browserTimezonePrefix": "ブラウザのタイムゾーンを使用（自動検出: {tz}）",
     "numberFormatOptions": {
-      "browser": "ブラウザのロケールを使用（自動検出）",
+      "browser": "ブラウザのロケールを使用（自動検出: {sample}）",
       "enUS": "英語（US） - 1,234.56",
       "enGB": "英語（UK） - 1,234.56",
       "deDE": "ドイツ語 - 1.234,56",

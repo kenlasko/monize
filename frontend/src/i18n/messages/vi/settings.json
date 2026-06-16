@@ -1,6 +1,7 @@
 {
   "language": {
     "label": "Ngôn ngữ",
+    "browserOption": "Dùng ngôn ngữ trình duyệt (tự động nhận dạng: {locale})",
     "helpText": "Chọn ngôn ngữ sử dụng trong giao diện Monize. Định dạng số và ngày được kiểm soát riêng bên dưới.",
     "saved": "Đã cập nhật ngôn ngữ",
     "saveFailed": "Không thể lưu ngôn ngữ"
@@ -139,7 +140,7 @@
     "browserLocale": "Sử dụng ngôn ngữ trình duyệt (tự động phát hiện)",
     "browserTimezonePrefix": "Sử dụng múi giờ trình duyệt (tự động phát hiện là {tz})",
     "numberFormatOptions": {
-      "browser": "Sử dụng ngôn ngữ trình duyệt (tự động phát hiện)",
+      "browser": "Sử dụng ngôn ngữ trình duyệt (tự động phát hiện: {sample})",
       "enUS": "Tiếng Anh (Mỹ) - 1,234.56",
       "enGB": "Tiếng Anh (Anh) - 1,234.56",
       "deDE": "Tiếng Đức - 1.234,56",

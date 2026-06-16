@@ -10,6 +10,21 @@
   "delete": "削除",
   "edit": "編集",
   "close": "閉じる",
+  "actions": {
+    "edit": "編集",
+    "delete": "削除",
+    "view": "表示",
+    "duplicate": "複製",
+    "merge": "マージ",
+    "reactivate": "再有効化",
+    "reconcile": "照合",
+    "post": "転記",
+    "skip": "スキップ",
+    "close": "閉じる",
+    "reopen": "再開",
+    "scheduleRecurring": "定期取引としてスケジュール",
+    "more": "その他の操作"
+  },
   "loading": "読み込み中...",
   "pagination": {
     "showing": "表示中",
@@ -146,7 +161,7 @@
   "weekdaysMin": ["日", "月", "火", "水", "木", "金", "土"],
   "weekdaysNarrow": ["日", "月", "火", "水", "木", "金", "土"],
   "dateFormat": {
-    "browserAuto": "ブラウザのロケールを使用（自動検出）",
+    "browserAuto": "ブラウザのロケールを使用（自動検出: {sample}）",
     "custom": "カスタム..."
   },
   "emailInvalid": "有効なメールアドレスを入力してください",

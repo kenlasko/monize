@@ -1,6 +1,7 @@
 {
   "language": {
     "label": "語言",
+    "browserOption": "使用瀏覽器語言設定（自動偵測為 {locale}）",
     "helpText": "選擇 Monize 介面使用的語言。數字和日期格式在下方單獨設定。",
     "saved": "語言已更新",
     "saveFailed": "儲存語言失敗"
@@ -139,7 +140,7 @@
     "browserLocale": "使用瀏覽器語言設定（自動偵測）",
     "browserTimezonePrefix": "使用瀏覽器時區（自動偵測為 {tz}）",
     "numberFormatOptions": {
-      "browser": "使用瀏覽器語言設定（自動偵測）",
+      "browser": "使用瀏覽器語言設定（自動偵測為 {sample}）",
       "enUS": "英文（美國）- 1,234.56",
       "enGB": "英文（英國）- 1,234.56",
       "deDE": "德文 - 1.234,56",

@@ -1,6 +1,7 @@
 {
   "language": {
     "label": "Dil",
+    "browserOption": "Tarayıcı yerel ayarını kullan (otomatik algılama: {locale})",
     "helpText": "Monize arayüzünde kullanılan dili seçin. Sayı ve tarih biçimlendirmesi aşağıda ayrıca kontrol edilir.",
     "saved": "Dil güncellendi",
     "saveFailed": "Dil kaydedilemedi"
@@ -139,7 +140,7 @@
     "browserLocale": "Tarayıcı yerel ayarını kullan (otomatik algıla)",
     "browserTimezonePrefix": "Tarayıcı saat dilimini kullan (otomatik algılandı: {tz})",
     "numberFormatOptions": {
-      "browser": "Tarayıcı yerel ayarını kullan (otomatik algıla)",
+      "browser": "Tarayıcı yerel ayarını kullan (otomatik algılama: {sample})",
       "enUS": "İngilizce (ABD) - 1,234.56",
       "enGB": "İngilizce (İngiltere) - 1,234.56",
       "deDE": "Almanca - 1.234,56",

@@ -10,6 +10,21 @@
   "delete": "删除",
   "edit": "编辑",
   "close": "关闭",
+  "actions": {
+    "edit": "编辑",
+    "delete": "删除",
+    "view": "查看",
+    "duplicate": "复制",
+    "merge": "合并",
+    "reactivate": "重新激活",
+    "reconcile": "对账",
+    "post": "过账",
+    "skip": "跳过",
+    "close": "关闭",
+    "reopen": "重新开启",
+    "scheduleRecurring": "设为定期计划",
+    "more": "更多操作"
+  },
   "loading": "加载中...",
   "pagination": {
     "showing": "显示",
@@ -146,7 +161,7 @@
   "weekdaysMin": ["日", "一", "二", "三", "四", "五", "六"],
   "weekdaysNarrow": ["日", "一", "二", "三", "四", "五", "六"],
   "dateFormat": {
-    "browserAuto": "使用浏览器区域设置（自动检测）",
+    "browserAuto": "使用浏览器区域设置（自动检测为 {sample}）",
     "custom": "自定义..."
   },
   "emailInvalid": "请输入有效的电子邮件地址",

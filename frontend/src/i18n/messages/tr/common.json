@@ -10,6 +10,21 @@
   "delete": "Sil",
   "edit": "Düzenle",
   "close": "Kapat",
+  "actions": {
+    "edit": "Düzenle",
+    "delete": "Sil",
+    "view": "Görüntüle",
+    "duplicate": "Çoğalt",
+    "merge": "Birleştir",
+    "reactivate": "Yeniden Etkinleştir",
+    "reconcile": "Mutabakat",
+    "post": "Kaydet",
+    "skip": "Atla",
+    "close": "Kapat",
+    "reopen": "Yeniden Aç",
+    "scheduleRecurring": "Tekrarlayan Olarak Zamanla",
+    "more": "Daha Fazla İşlem"
+  },
   "loading": "Yükleniyor...",
   "pagination": {
     "showing": "Gösterilen",
@@ -146,7 +161,7 @@
   "weekdaysMin": ["Pz", "Pt", "Sa", "Ça", "Pe", "Cu", "Ct"],
   "weekdaysNarrow": ["P", "P", "S", "Ç", "P", "C", "C"],
   "dateFormat": {
-    "browserAuto": "Tarayıcı yerel ayarını kullan (otomatik algıla)",
+    "browserAuto": "Tarayıcı yerel ayarını kullan (otomatik algılama: {sample})",
     "custom": "Özel..."
   },
   "emailInvalid": "Lütfen geçerli bir e-posta adresi girin",
