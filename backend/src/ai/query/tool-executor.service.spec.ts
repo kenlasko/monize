@@ -230,7 +230,10 @@ describe("ToolExecutorService", () => {
         accountName: "Checking",
         amount: -12.5,
         transactionDate: "2026-01-15",
+        payeeId: "payee-1",
         payeeName: "Starbucks",
+        payeeMatched: true,
+        payeeWillBeCreated: false,
         categoryId: "cat-1",
         categoryName: "Dining",
         description: null,
@@ -925,11 +928,93 @@ describe("ToolExecutorService", () => {
         accountId: "acc-1",
         amount: -12.5,
         currencyCode: "USD",
+        // The resolved payee id is signed into the descriptor so the confirmed
+        // transaction links to the existing payee.
+        payeeId: "payee-1",
       });
       expect(result.pendingAction?.preview).toMatchObject({
         accountName: "Checking",
         categoryName: "Dining",
       });
+    });
+
+    it("defaults to creating a payee for an unmatched name (createPayee flagged on the descriptor)", async () => {
+      transactions.previewCreate.mockResolvedValueOnce({
+        accountId: "acc-1",
+        accountName: "Checking",
+        amount: -12.5,
+        transactionDate: "2026-01-15",
+        payeeId: null,
+        payeeName: "Brand New Store",
+        payeeMatched: false,
+        payeeWillBeCreated: true,
+        categoryId: null,
+        categoryName: null,
+        description: null,
+        currencyCode: "USD",
+      });
+
+      const result = await service.execute(userId, "create_transaction", {
+        accountName: "Checking",
+        amount: -12.5,
+        date: "2026-01-15",
+        payeeName: "Brand New Store",
+      });
+
+      // createPayeeIfMissing defaults to true, so previewCreate is asked to plan
+      // a payee and the signed descriptor records that intent for the confirm step.
+      expect(transactions.previewCreate).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({ createPayeeIfMissing: true }),
+      );
+      expect(result.pendingAction?.type).toBe("create_transaction");
+      expect(result.pendingAction?.descriptor).toMatchObject({
+        payeeId: null,
+        payeeName: "Brand New Store",
+        createPayee: true,
+      });
+      expect(result.pendingAction?.preview).toMatchObject({
+        payeeName: "Brand New Store",
+        payeeWillBeCreated: true,
+      });
+      const data = result.data as { payeeNote?: string };
+      expect(data.payeeNote).toContain("a new payee will be created");
+    });
+
+    it("records a free-text payee when createPayeeIfMissing is false", async () => {
+      transactions.previewCreate.mockResolvedValueOnce({
+        accountId: "acc-1",
+        accountName: "Checking",
+        amount: -12.5,
+        transactionDate: "2026-01-15",
+        payeeId: null,
+        payeeName: "Brand New Store",
+        payeeMatched: false,
+        payeeWillBeCreated: false,
+        categoryId: null,
+        categoryName: null,
+        description: null,
+        currencyCode: "USD",
+      });
+
+      const result = await service.execute(userId, "create_transaction", {
+        accountName: "Checking",
+        amount: -12.5,
+        date: "2026-01-15",
+        payeeName: "Brand New Store",
+        createPayeeIfMissing: false,
+      });
+
+      expect(transactions.previewCreate).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({ createPayeeIfMissing: false }),
+      );
+      expect(result.pendingAction?.descriptor).toMatchObject({
+        payeeId: null,
+        createPayee: false,
+      });
+      const data = result.data as { payeeNote?: string };
+      expect(data.payeeNote).toContain("free-text");
     });
 
     it("does not leak the signature into the LLM-facing data", async () => {

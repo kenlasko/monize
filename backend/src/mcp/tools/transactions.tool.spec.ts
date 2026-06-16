@@ -6,7 +6,11 @@ describe("McpTransactionsTools", () => {
   let tool: McpTransactionsTools;
   let transactionsService: Record<string, jest.Mock>;
   let analyticsService: Record<string, jest.Mock>;
-  let server: { registerTool: jest.Mock };
+  let server: {
+    registerTool: jest.Mock;
+    server: { getClientCapabilities: jest.Mock; elicitInput: jest.Mock };
+  };
+  let elicitInput: jest.Mock;
   let resolve: jest.MockedFunction<UserContextResolver>;
   const handlers: Record<string, (...args: any[]) => any> = {};
 
@@ -15,6 +19,16 @@ describe("McpTransactionsTools", () => {
       findAll: jest.fn(),
       getLlmTransactionRows: jest.fn(),
       previewCreate: jest.fn(),
+      previewCategorize: jest.fn().mockResolvedValue({
+        transactionId: "t1",
+        payeeName: "Store",
+        amount: -50,
+        transactionDate: "2025-01-15",
+        accountName: "Checking",
+        currentCategoryName: "Uncategorized",
+        categoryId: "c1",
+        newCategoryName: "Groceries",
+      }),
       create: jest.fn(),
       update: jest.fn(),
     };
@@ -32,10 +46,18 @@ describe("McpTransactionsTools", () => {
       analyticsService as any,
     );
 
+    elicitInput = jest.fn();
     server = {
       registerTool: jest.fn((name, _opts, handler) => {
         handlers[name] = handler;
       }),
+      // confirmWrite() reads capabilities + elicits via server.server. Default
+      // to no elicitation capability so writes proceed (matches a client that
+      // can't show a dialog); accept/decline tests override these.
+      server: {
+        getClientCapabilities: jest.fn().mockReturnValue({}),
+        elicitInput,
+      },
     };
 
     resolve = jest.fn();
@@ -412,23 +434,29 @@ describe("McpTransactionsTools", () => {
       expect(result.isError).toBe(true);
     });
 
-    it("should create transaction with account currency", async () => {
+    it("should create transaction with account currency and link the resolved payee", async () => {
       resolve.mockReturnValue({ userId: "u1", scopes: "read,write" });
       transactionsService.previewCreate.mockResolvedValue({
         accountId: "a1",
         accountName: "Checking",
         amount: -50,
         transactionDate: "2025-01-15",
+        payeeId: "p1",
         payeeName: "Store",
+        payeeMatched: true,
+        payeeWillBeCreated: false,
         categoryId: null,
         categoryName: null,
         description: null,
         currencyCode: "USD",
       });
+      // The entity carries amount as a string (decimal column, no numeric
+      // transformer); the tool must coerce it to a number for the output schema.
       transactionsService.create.mockResolvedValue({
         id: "t1",
         transactionDate: "2025-01-15",
-        amount: -50,
+        amount: "-50.0000",
+        payeeId: "p1",
         payeeName: "Store",
         status: "pending",
       });
@@ -452,20 +480,147 @@ describe("McpTransactionsTools", () => {
         expect.objectContaining({
           currencyCode: "USD",
           amount: -50,
+          payeeId: "p1",
         }),
+        { createPayeeIfMissing: true },
       );
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.id).toBe("t1");
+      // dryRun=false must not error on the amount field: it comes back numeric.
+      expect(parsed.amount).toBe(-50);
+      expect(typeof parsed.amount).toBe("number");
+      expect(parsed.payeeId).toBe("p1");
+    });
+
+    it("confirms via elicitation and creates when the user accepts", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "read,write" });
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput.mockResolvedValue({ action: "accept" });
+      transactionsService.previewCreate.mockResolvedValue({
+        accountId: "a1",
+        accountName: "Checking",
+        amount: -50,
+        transactionDate: "2025-01-15",
+        payeeId: "p1",
+        payeeName: "Store",
+        payeeMatched: true,
+        payeeWillBeCreated: false,
+        categoryId: null,
+        categoryName: null,
+        description: null,
+        currencyCode: "USD",
+      });
+      transactionsService.create.mockResolvedValue({
+        id: "t1",
+        transactionDate: "2025-01-15",
+        amount: "-50.0000",
+        payeeId: "p1",
+        payeeName: "Store",
+        status: "pending",
+      });
+
+      const result = await handlers["create_transaction"](
+        {
+          accountId: "a1",
+          amount: -50,
+          date: "2025-01-15",
+          payeeName: "Store",
+          dryRun: false,
+        },
+        { sessionId: "s1" },
+      );
+
+      expect(elicitInput).toHaveBeenCalled();
+      expect(transactionsService.create).toHaveBeenCalled();
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed.id).toBe("t1");
     });
 
-    it("should return preview in dry-run mode without creating", async () => {
+    it("does not create when the user declines the confirmation", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "read,write" });
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput.mockResolvedValue({ action: "decline" });
+      transactionsService.previewCreate.mockResolvedValue({
+        accountId: "a1",
+        accountName: "Checking",
+        amount: -50,
+        transactionDate: "2025-01-15",
+        payeeId: null,
+        payeeName: "Store",
+        payeeMatched: false,
+        categoryId: null,
+        categoryName: null,
+        description: null,
+        currencyCode: "USD",
+      });
+
+      const result = await handlers["create_transaction"](
+        {
+          accountId: "a1",
+          amount: -50,
+          date: "2025-01-15",
+          payeeName: "Store",
+          dryRun: false,
+        },
+        { sessionId: "s1" },
+      );
+
+      expect(elicitInput).toHaveBeenCalled();
+      expect(transactionsService.create).not.toHaveBeenCalled();
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("declined");
+    });
+
+    it("does not elicit a confirmation in dry-run mode", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "read,write" });
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      transactionsService.previewCreate.mockResolvedValue({
+        accountId: "a1",
+        accountName: "Checking",
+        amount: -75,
+        transactionDate: "2025-02-01",
+        payeeId: null,
+        payeeName: "Coffee Shop",
+        payeeMatched: false,
+        payeeWillBeCreated: true,
+        categoryId: null,
+        categoryName: null,
+        description: null,
+        currencyCode: "USD",
+      });
+
+      await handlers["create_transaction"](
+        {
+          accountId: "a1",
+          amount: -75,
+          date: "2025-02-01",
+          payeeName: "Coffee Shop",
+          dryRun: true,
+        },
+        { sessionId: "s1" },
+      );
+
+      expect(elicitInput).not.toHaveBeenCalled();
+      expect(transactionsService.create).not.toHaveBeenCalled();
+    });
+
+    it("should return preview in dry-run mode without creating and flag that an unmatched payee will be created", async () => {
       resolve.mockReturnValue({ userId: "u1", scopes: "read,write" });
       transactionsService.previewCreate.mockResolvedValue({
         accountId: "a1",
         accountName: "Checking",
         amount: -75,
         transactionDate: "2025-02-01",
+        payeeId: null,
         payeeName: "Coffee Shop",
+        payeeMatched: false,
+        payeeWillBeCreated: true,
         categoryId: null,
         categoryName: null,
         description: null,
@@ -491,7 +646,11 @@ describe("McpTransactionsTools", () => {
       expect(parsed.preview.amount).toBe(-75);
       expect(parsed.preview.accountName).toBe("Checking");
       expect(parsed.preview.currencyCode).toBe("USD");
+      expect(parsed.preview.payeeMatched).toBe(false);
+      expect(parsed.preview.payeeWillBeCreated).toBe(true);
       expect(parsed.message).toContain("preview");
+      // No matching payee + default create -> a new payee will be created.
+      expect(parsed.message).toContain("a new payee will be created");
     });
 
     it("persists the sanitized preview values (LLM07-F3)", async () => {
@@ -503,7 +662,9 @@ describe("McpTransactionsTools", () => {
         accountName: "Checking",
         amount: -50,
         transactionDate: "2025-01-15",
+        payeeId: null,
         payeeName: "scriptalert('XSS')/script",
+        payeeMatched: false,
         categoryId: null,
         categoryName: null,
         description: "Purchase at bStore/b",
@@ -512,7 +673,7 @@ describe("McpTransactionsTools", () => {
       transactionsService.create.mockResolvedValue({
         id: "t1",
         transactionDate: "2025-01-15",
-        amount: -50,
+        amount: "-50.0000",
         payeeName: "scriptalert('XSS')/script",
         status: "pending",
       });
@@ -535,7 +696,104 @@ describe("McpTransactionsTools", () => {
           payeeName: "scriptalert('XSS')/script",
           description: "Purchase at bStore/b",
         }),
+        { createPayeeIfMissing: true },
       );
+    });
+
+    it("records a free-text payee (no payee created) when createPayeeIfMissing is false", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "read,write" });
+      transactionsService.previewCreate.mockResolvedValue({
+        accountId: "a1",
+        accountName: "Checking",
+        amount: -50,
+        transactionDate: "2025-01-15",
+        payeeId: null,
+        payeeName: "Coffee Shop",
+        payeeMatched: false,
+        payeeWillBeCreated: false,
+        categoryId: null,
+        categoryName: null,
+        description: null,
+        currencyCode: "USD",
+      });
+      transactionsService.create.mockResolvedValue({
+        id: "t1",
+        transactionDate: "2025-01-15",
+        amount: "-50.0000",
+        payeeId: null,
+        payeeName: "Coffee Shop",
+        status: "pending",
+      });
+
+      const result = await handlers["create_transaction"](
+        {
+          accountId: "a1",
+          amount: -50,
+          date: "2025-01-15",
+          payeeName: "Coffee Shop",
+          createPayeeIfMissing: false,
+          dryRun: false,
+        },
+        { sessionId: "s1" },
+      );
+
+      expect(transactionsService.create).toHaveBeenCalledWith(
+        "u1",
+        expect.objectContaining({
+          payeeName: "Coffee Shop",
+          payeeId: undefined,
+        }),
+        { createPayeeIfMissing: false },
+      );
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.payeeCreated).toBe(false);
+    });
+
+    it("reports payeeCreated when an unmatched payee is auto-created", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "read,write" });
+      transactionsService.previewCreate.mockResolvedValue({
+        accountId: "a1",
+        accountName: "Checking",
+        amount: -50,
+        transactionDate: "2025-01-15",
+        payeeId: null,
+        payeeName: "Coffee Shop",
+        payeeMatched: false,
+        payeeWillBeCreated: true,
+        categoryId: null,
+        categoryName: null,
+        description: null,
+        currencyCode: "USD",
+      });
+      // create() resolves the name to a freshly created payee and links it.
+      transactionsService.create.mockResolvedValue({
+        id: "t1",
+        transactionDate: "2025-01-15",
+        amount: "-50.0000",
+        payeeId: "new-payee-1",
+        payeeName: "Coffee Shop",
+        status: "pending",
+      });
+
+      const result = await handlers["create_transaction"](
+        {
+          accountId: "a1",
+          amount: -50,
+          date: "2025-01-15",
+          payeeName: "Coffee Shop",
+          dryRun: false,
+        },
+        { sessionId: "s1" },
+      );
+
+      expect(transactionsService.create).toHaveBeenCalledWith(
+        "u1",
+        expect.objectContaining({ payeeName: "Coffee Shop" }),
+        { createPayeeIfMissing: true },
+      );
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.payeeCreated).toBe(true);
+      expect(parsed.payeeId).toBe("new-payee-1");
     });
 
     it("should enforce daily write rate limit", async () => {
@@ -545,7 +803,9 @@ describe("McpTransactionsTools", () => {
         accountName: "Checking",
         amount: -10,
         transactionDate: "2025-01-15",
+        payeeId: null,
         payeeName: null,
+        payeeMatched: false,
         categoryId: null,
         categoryName: null,
         description: null,
@@ -554,7 +814,7 @@ describe("McpTransactionsTools", () => {
       transactionsService.create.mockResolvedValue({
         id: "t-new",
         transactionDate: "2025-01-15",
-        amount: -10,
+        amount: "-10.0000",
         payeeName: "Store",
         status: "pending",
       });
@@ -608,6 +868,24 @@ describe("McpTransactionsTools", () => {
       );
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed.message).toContain("categorized");
+    });
+
+    it("does not update when the user declines the confirmation", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "read,write" });
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput.mockResolvedValue({ action: "cancel" });
+
+      const result = await handlers["categorize_transaction"](
+        { transactionId: "t1", categoryId: "c1" },
+        { sessionId: "s1" },
+      );
+
+      expect(transactionsService.previewCategorize).toHaveBeenCalled();
+      expect(transactionsService.update).not.toHaveBeenCalled();
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("declined");
     });
 
     it("should enforce daily write rate limit for categorization", async () => {

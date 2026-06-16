@@ -40,6 +40,51 @@ describe('TransactionConfirmationCard', () => {
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
   });
 
+  it('marks the payee as new when a payee will be created on approval', () => {
+    render(
+      <TransactionConfirmationCard
+        action={makeAction({
+          preview: {
+            accountName: 'Checking',
+            amount: -12.5,
+            currencyCode: 'USD',
+            transactionDate: '2026-01-15',
+            payeeName: 'Brand New Store',
+            payeeWillBeCreated: true,
+            categoryName: 'Dining',
+          },
+        })}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByText('Brand New Store (new payee)'),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps the payee name plain when it is recorded as free text', () => {
+    render(
+      <TransactionConfirmationCard
+        action={makeAction({
+          preview: {
+            accountName: 'Checking',
+            amount: -12.5,
+            currencyCode: 'USD',
+            transactionDate: '2026-01-15',
+            payeeName: 'Brand New Store',
+            payeeWillBeCreated: false,
+            categoryName: 'Dining',
+          },
+        })}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Brand New Store')).toBeInTheDocument();
+    expect(screen.queryByText('Brand New Store (new payee)')).toBeNull();
+  });
+
   it('fires onConfirm / onCancel when the buttons are clicked', () => {
     const onConfirm = vi.fn();
     const onCancel = vi.fn();

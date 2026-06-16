@@ -47,6 +47,7 @@
     "amount": "Valor",
     "date": "Data",
     "payee": "Beneficiário",
+    "newPayee": "(novo beneficiário)",
     "category": "Categoria",
     "newCategory": "Nova categoria",
     "currentCategory": "Categoria atual",

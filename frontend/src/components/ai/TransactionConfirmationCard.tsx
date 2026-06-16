@@ -54,7 +54,11 @@ export function TransactionConfirmationCard({
       rows.push({ label: t('confirmAction.date'), value: preview.transactionDate });
     rows.push({
       label: t('confirmAction.payee'),
-      value: preview.payeeName || none,
+      value: preview.payeeName
+        ? preview.payeeWillBeCreated
+          ? `${preview.payeeName} ${t('confirmAction.newPayee')}`
+          : preview.payeeName
+        : none,
     });
     rows.push({
       label: t('confirmAction.category'),

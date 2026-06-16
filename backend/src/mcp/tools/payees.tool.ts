@@ -8,6 +8,7 @@ import {
   toolResult,
   toolError,
   safeToolError,
+  confirmWrite,
 } from "../mcp-context";
 import { getPayeesOutput, createPayeeOutput } from "../tool-output-schemas";
 import { READ_ONLY, CREATE } from "../mcp-annotations";
@@ -60,7 +61,8 @@ export class McpPayeesTools {
       {
         title: "Create payee",
         annotations: CREATE,
-        description: "Create a new payee",
+        description:
+          "Create a new payee. The user is asked to confirm before it is created (clients that support it show a confirmation dialog).",
         inputSchema: {
           name: z.string().max(100).describe("Payee name"),
           defaultCategoryId: z
@@ -78,6 +80,29 @@ export class McpPayeesTools {
         if (check.error) return check.result;
 
         try {
+          // Resolve + validate (rejects duplicates, resolves the category name)
+          // so the client's confirmation dialog shows what will be created,
+          // mirroring the AI Assistant card.
+          const preview = await this.payeesService.previewCreate(ctx.userId, {
+            name: args.name,
+            defaultCategoryId: args.defaultCategoryId,
+          });
+          const confirmLines = [
+            `Create a new payee named "${preview.name}"?`,
+            preview.defaultCategoryName
+              ? `Default category: ${preview.defaultCategoryName}`
+              : null,
+          ].filter((line): line is string => line !== null);
+          const confirmation = await confirmWrite(
+            server,
+            confirmLines.join("\n"),
+          );
+          if (confirmation === "declined") {
+            return toolError(
+              "Cancelled: the confirmation was declined, so no payee was created. Do not retry unless the user asks again.",
+            );
+          }
+
           const payee = await this.payeesService.create(ctx.userId, {
             name: args.name,
             defaultCategoryId: args.defaultCategoryId,

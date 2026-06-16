@@ -47,6 +47,7 @@
     "amount": "[XX-Amount-XX]",
     "date": "[XX-Date-XX]",
     "payee": "[XX-Payee-XX]",
+    "newPayee": "[XX-(new payee)-XX]",
     "category": "[XX-Category-XX]",
     "newCategory": "[XX-New category-XX]",
     "currentCategory": "[XX-Current category-XX]",

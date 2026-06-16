@@ -214,7 +214,10 @@ export const createTransactionOutput = {
       accountName: str.optional(),
       amount: num.optional(),
       date: str.optional(),
+      payeeId: strNull.optional(),
       payeeName: strNull.optional(),
+      payeeMatched: bool.optional(),
+      payeeWillBeCreated: bool.optional(),
       categoryId: strNull.optional(),
       categoryName: strNull.optional(),
       description: strNull.optional(),
@@ -226,7 +229,10 @@ export const createTransactionOutput = {
   id: str.optional(),
   date: str.optional(),
   amount: num.optional(),
+  payeeId: strNull.optional(),
   payeeName: strNull.optional(),
+  payeeMatched: bool.optional(),
+  payeeCreated: bool.optional(),
   status: str.optional(),
 };
 
@@ -263,7 +269,9 @@ export const getPayeesOutput = {
       id: str,
       name: str,
       defaultCategoryId: strNull.optional(),
-      notes: str.optional(),
+      // notes is a nullable column -- a payee without notes serializes as null,
+      // which must pass output validation (was rejected by a non-null string).
+      notes: strNull.optional(),
       isActive: bool.optional(),
       transactionCount: num.optional(),
       lastUsedDate: strNull.optional(),

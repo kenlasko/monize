@@ -214,6 +214,7 @@ export const createTransactionSchema = z.object({
   payeeName: z.string().max(100).optional(),
   categoryName: z.string().max(100).optional(),
   description: z.string().max(500).optional(),
+  createPayeeIfMissing: z.boolean().optional(),
 });
 
 export const categorizeTransactionSchema = z.object({

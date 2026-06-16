@@ -47,6 +47,7 @@
     "amount": "Kwota",
     "date": "Data",
     "payee": "Odbiorca",
+    "newPayee": "(nowy odbiorca)",
     "category": "Kategoria",
     "newCategory": "Nowa kategoria",
     "currentCategory": "Bieżąca kategoria",

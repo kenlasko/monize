@@ -47,6 +47,7 @@
     "amount": "Miktar",
     "date": "Tarih",
     "payee": "Alacaklı",
+    "newPayee": "(yeni alacaklı)",
     "category": "Kategori",
     "newCategory": "Yeni kategori",
     "currentCategory": "Mevcut kategori",

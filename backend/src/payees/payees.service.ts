@@ -45,6 +45,20 @@ function escapeLikeWildcards(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/[%_]/g, "\\$&");
 }
 
+/**
+ * Normalize a payee name for tolerant matching. Apostrophes are dropped so
+ * "Zehr's" and "Zehrs" collapse together; any other punctuation or whitespace
+ * run folds to a single space. Lower-cased and trimmed. Used only for the
+ * fuzzy resolveByName fallback -- never for persistence.
+ */
+function normalizePayeeName(value: string): string {
+  return value
+    .replace(/['’]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
 @Injectable()
 export class PayeesService {
   private readonly logger = new Logger(PayeesService.name);
@@ -303,6 +317,66 @@ export class PayeesService {
       .andWhere("payee.is_active = false")
       .andWhere("LOWER(payee.name) = LOWER(:name)", { name })
       .getOne();
+  }
+
+  /**
+   * Resolve a free-text payee name (as typed by a user or proposed by the AI
+   * Assistant / MCP server) to an existing payee so a new transaction can link
+   * to the payee record -- and inherit its default category -- instead of
+   * storing a detached name. Resolution is tiered, most-specific first:
+   *   1. exact name match (case-insensitive),
+   *   2. alias pattern match (the same matching the importer uses),
+   *   3. punctuation-insensitive match: normalize both sides (drop apostrophes,
+   *      fold other punctuation/whitespace) so "Zehrs" resolves to
+   *      "Zehr's Supermarket" and "Buon Gusto" to "Buon Gusto Restaurant".
+   *      Prefer a single payee whose normalized name equals the input, else a
+   *      single payee that contains it; anything ambiguous returns null.
+   * Returns null when nothing matches so the caller can offer to create one.
+   */
+  async resolveByName(userId: string, name: string): Promise<Payee | null> {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    const byName = await this.payeesRepository
+      .createQueryBuilder("payee")
+      .leftJoinAndSelect("payee.defaultCategory", "defaultCategory")
+      .where("payee.user_id = :userId", { userId })
+      .andWhere("LOWER(payee.name) = LOWER(:name)", { name: trimmed })
+      .getOne();
+    if (byName) {
+      return byName;
+    }
+
+    const byAlias = await this.findPayeeByAlias(userId, trimmed);
+    if (byAlias) {
+      return byAlias;
+    }
+
+    // Require a few significant characters so a 1-2 char term can't auto-link.
+    const normalizedInput = normalizePayeeName(trimmed);
+    if (normalizedInput.length < 3) {
+      return null;
+    }
+
+    // Normalize in JS over the user's active payees (the exact + alias tiers
+    // already handled the common cases) so apostrophes and other punctuation
+    // never block a match regardless of how the database collates them.
+    const activePayees = await this.payeesRepository.find({
+      where: { userId, isActive: true },
+      relations: ["defaultCategory"],
+    });
+    const containing = activePayees.filter((payee) =>
+      normalizePayeeName(payee.name).includes(normalizedInput),
+    );
+    const exactNormalized = containing.filter(
+      (payee) => normalizePayeeName(payee.name) === normalizedInput,
+    );
+    if (exactNormalized.length === 1) {
+      return exactNormalized[0];
+    }
+    return containing.length === 1 ? containing[0] : null;
   }
 
   async findOrCreate(

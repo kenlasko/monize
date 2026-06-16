@@ -47,6 +47,7 @@
     "amount": "金額",
     "date": "日付",
     "payee": "支払先",
+    "newPayee": "(新しい支払先)",
     "category": "カテゴリ",
     "newCategory": "新しいカテゴリ",
     "currentCategory": "現在のカテゴリ",

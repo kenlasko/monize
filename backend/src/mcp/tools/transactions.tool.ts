@@ -9,6 +9,7 @@ import {
   toolResult,
   toolError,
   safeToolError,
+  confirmWrite,
 } from "../mcp-context";
 import { McpWriteLimiter } from "../mcp-write-limiter";
 import {
@@ -419,7 +420,7 @@ export class McpTransactionsTools {
         title: "Create transaction",
         annotations: CREATE,
         description:
-          "Create a new transaction. Set dryRun=true to preview without saving.",
+          "Create a new transaction. The payee name is matched to an existing payee (by name, case-insensitive, or alias) and the transaction is linked to it, inheriting its default category when no category is given. If no payee matches, a new payee is created by default; set createPayeeIfMissing=false to instead record the name as free text without creating a payee (e.g. for a one-time payee). Set dryRun=true to preview (the preview reports payeeMatched and payeeWillBeCreated) without saving. When dryRun is false, the user is asked to confirm before the transaction is saved (clients that support it show a confirmation dialog).",
         inputSchema: {
           accountId: z.string().uuid().describe("Account ID"),
           amount: z
@@ -428,13 +429,26 @@ export class McpTransactionsTools {
             .max(999999999999)
             .describe("Amount (positive for income, negative for expenses)"),
           date: z.string().max(10).describe("Transaction date (YYYY-MM-DD)"),
-          payeeName: z.string().max(100).optional().describe("Payee name"),
+          payeeName: z
+            .string()
+            .max(100)
+            .optional()
+            .describe(
+              "Payee name. Matched to an existing payee when one exists; otherwise recorded as a new free-text name.",
+            ),
           categoryId: z.string().uuid().optional().describe("Category ID"),
           description: z
             .string()
             .max(500)
             .optional()
             .describe("Description or memo"),
+          createPayeeIfMissing: z
+            .boolean()
+            .optional()
+            .default(true)
+            .describe(
+              "When the payee name matches no existing payee, create a new payee (true, the default) or record the name as free text without creating a payee (false). Ignored when the name matches an existing payee.",
+            ),
           dryRun: z
             .boolean()
             .optional()
@@ -460,6 +474,10 @@ export class McpTransactionsTools {
         }
 
         try {
+          // Default to creating a payee for an unmatched name (the SDK applies
+          // the same schema default; this keeps direct callers/tests consistent).
+          const createPayeeIfMissing = args.createPayeeIfMissing ?? true;
+
           // Shared preview: validates account + category ownership, resolves
           // names, and sanitizes strings (matches @SanitizeHtml() DTO behavior)
           // identically to the AI Assistant confirmation flow.
@@ -472,8 +490,19 @@ export class McpTransactionsTools {
               payeeName: args.payeeName,
               categoryId: args.categoryId,
               description: args.description,
+              createPayeeIfMissing,
             },
           );
+
+          // Surface whether the payee resolved to an existing record and, when
+          // it did not, whether a new payee will be created or the name kept as
+          // free text -- so the model can describe what will happen.
+          const payeeMessage =
+            preview.payeeName && !preview.payeeMatched
+              ? preview.payeeWillBeCreated
+                ? ` No existing payee matches "${preview.payeeName}" -- a new payee will be created and linked. Pass createPayeeIfMissing=false to keep it as a free-text name instead.`
+                : ` No existing payee matches "${preview.payeeName}" -- it will be recorded as a free-text name (no payee created).`
+              : "";
 
           // Dry-run mode: return preview without persisting
           if (args.dryRun) {
@@ -484,15 +513,48 @@ export class McpTransactionsTools {
                 accountName: preview.accountName,
                 amount: preview.amount,
                 date: preview.transactionDate,
+                payeeId: preview.payeeId,
                 payeeName: preview.payeeName,
+                payeeMatched: preview.payeeMatched,
+                payeeWillBeCreated: preview.payeeWillBeCreated,
                 categoryId: preview.categoryId,
                 categoryName: preview.categoryName,
                 description: preview.description,
                 currencyCode: preview.currencyCode,
               },
               message:
-                "This is a preview. Call again with dryRun=false to create the transaction.",
+                "This is a preview. Call again with dryRun=false to create the transaction." +
+                payeeMessage,
             });
+          }
+
+          // Ask the client to confirm before persisting (AI Assistant parity).
+          // Falls through to the write only when the client cannot show a dialog.
+          const confirmLines = [
+            "Create this transaction?",
+            `Account: ${preview.accountName}`,
+            `Amount: ${preview.amount} ${preview.currencyCode}`,
+            `Date: ${preview.transactionDate}`,
+          ];
+          if (preview.payeeName) {
+            const payeeSuffix = preview.payeeMatched
+              ? ""
+              : preview.payeeWillBeCreated
+                ? " (new payee)"
+                : " (free text)";
+            confirmLines.push(`Payee: ${preview.payeeName}${payeeSuffix}`);
+          }
+          if (preview.categoryName) {
+            confirmLines.push(`Category: ${preview.categoryName}`);
+          }
+          const confirmation = await confirmWrite(
+            server,
+            confirmLines.join("\n"),
+          );
+          if (confirmation === "declined") {
+            return toolError(
+              "Cancelled: the confirmation was declined, so no transaction was created. Do not retry unless the user asks again.",
+            );
           }
 
           const transaction = await this.transactionsService.create(
@@ -501,11 +563,13 @@ export class McpTransactionsTools {
               accountId: preview.accountId,
               amount: preview.amount,
               transactionDate: preview.transactionDate,
+              payeeId: preview.payeeId ?? undefined,
               payeeName: preview.payeeName ?? undefined,
               categoryId: preview.categoryId ?? undefined,
               description: preview.description ?? undefined,
               currencyCode: preview.currencyCode,
             },
+            { createPayeeIfMissing },
           );
 
           this.writeLimiter.record(ctx.userId, "create_transaction");
@@ -513,8 +577,15 @@ export class McpTransactionsTools {
           return toolResult({
             id: transaction.id,
             date: transaction.transactionDate,
-            amount: transaction.amount,
+            // amount is a decimal column with no numeric transformer, so the
+            // entity carries it as a string; coerce to a number so it satisfies
+            // the tool's output schema (and matches the dry-run preview).
+            amount: Number(transaction.amount),
+            payeeId: transaction.payeeId,
             payeeName: transaction.payeeName,
+            payeeMatched: preview.payeeMatched,
+            // True when an unmatched name resulted in a newly linked payee.
+            payeeCreated: !preview.payeeMatched && Boolean(transaction.payeeId),
             status: transaction.status,
           });
         } catch (err: unknown) {
@@ -528,7 +599,8 @@ export class McpTransactionsTools {
       {
         title: "Categorize transaction",
         annotations: UPDATE,
-        description: "Assign a category to a transaction",
+        description:
+          "Assign a category to a transaction. The user is asked to confirm before the change is saved (clients that support it show a confirmation dialog).",
         inputSchema: {
           transactionId: z.string().uuid().describe("Transaction ID"),
           categoryId: z.string().uuid().describe("Category ID"),
@@ -550,6 +622,31 @@ export class McpTransactionsTools {
         }
 
         try {
+          // Resolve friendly details (and validate ownership) so the client's
+          // confirmation dialog shows what is changing, mirroring the AI
+          // Assistant card.
+          const preview = await this.transactionsService.previewCategorize(
+            ctx.userId,
+            args.transactionId,
+            args.categoryId,
+          );
+          const confirmLines = [
+            "Apply this category change?",
+            preview.payeeName ? `Payee: ${preview.payeeName}` : null,
+            `Amount: ${preview.amount}`,
+            `Date: ${preview.transactionDate}`,
+            `Category: ${preview.currentCategoryName ?? "Uncategorized"} -> ${preview.newCategoryName}`,
+          ].filter((line): line is string => line !== null);
+          const confirmation = await confirmWrite(
+            server,
+            confirmLines.join("\n"),
+          );
+          if (confirmation === "declined") {
+            return toolError(
+              "Cancelled: the confirmation was declined, so the category was not changed. Do not retry unless the user asks again.",
+            );
+          }
+
           const transaction = await this.transactionsService.update(
             ctx.userId,
             args.transactionId,

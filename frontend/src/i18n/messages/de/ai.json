@@ -47,6 +47,7 @@
     "amount": "Betrag",
     "date": "Datum",
     "payee": "Zahlungsempfänger",
+    "newPayee": "(neuer Zahlungsempfänger)",
     "category": "Kategorie",
     "newCategory": "Neue Kategorie",
     "currentCategory": "Aktuelle Kategorie",

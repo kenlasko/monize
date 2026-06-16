@@ -42,7 +42,15 @@ export interface CreateTransactionDescriptor extends BaseDescriptor {
   accountId: string;
   amount: number;
   transactionDate: string;
+  /** Existing payee the name resolved to, or null to record a free-text name. */
+  payeeId: string | null;
   payeeName: string | null;
+  /**
+   * When true and payeeId is null, the confirm step creates a payee from
+   * payeeName and links the transaction to it; when false the name is stored as
+   * free text. Always false when payeeId is set or no payee name was given.
+   */
+  createPayee: boolean;
   categoryId: string | null;
   description: string | null;
   currencyCode: string;
@@ -76,6 +84,8 @@ export interface AiActionPreview {
   currencyCode?: string;
   transactionDate?: string;
   payeeName?: string | null;
+  /** True when approving the transaction will also create a new payee. */
+  payeeWillBeCreated?: boolean;
   categoryName?: string | null;
   newCategoryName?: string | null;
   currentCategoryName?: string | null;

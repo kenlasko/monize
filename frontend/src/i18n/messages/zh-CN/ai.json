@@ -47,6 +47,7 @@
     "amount": "金额",
     "date": "日期",
     "payee": "收款人",
+    "newPayee": "(新收款人)",
     "category": "分类",
     "newCategory": "新分类",
     "currentCategory": "当前分类",

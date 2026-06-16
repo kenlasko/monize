@@ -147,11 +147,14 @@ export class AiActionsService {
       transactionDate: descriptor.transactionDate,
       amount: descriptor.amount,
       currencyCode: descriptor.currencyCode,
+      payeeId: descriptor.payeeId ?? undefined,
       payeeName: descriptor.payeeName ?? undefined,
       categoryId: descriptor.categoryId ?? undefined,
       description: descriptor.description ?? undefined,
     });
-    const transaction = await this.transactionsService.create(userId, dto);
+    const transaction = await this.transactionsService.create(userId, dto, {
+      createPayeeIfMissing: descriptor.createPayee === true,
+    });
     return { type: "create_transaction", id: transaction.id };
   }
 

@@ -47,6 +47,7 @@
     "amount": "Montant",
     "date": "Date",
     "payee": "Bénéficiaire",
+    "newPayee": "(nouveau bénéficiaire)",
     "category": "Catégorie",
     "newCategory": "Nouvelle catégorie",
     "currentCategory": "Catégorie actuelle",

@@ -176,6 +176,8 @@ export interface PendingActionPreview {
   currencyCode?: string;
   transactionDate?: string;
   payeeName?: string | null;
+  /** True when approving a create_transaction will also create a new payee. */
+  payeeWillBeCreated?: boolean;
   categoryName?: string | null;
   newCategoryName?: string | null;
   currentCategoryName?: string | null;

@@ -14,6 +14,7 @@ const USER = "user-1";
 const ACC = "11111111-1111-4111-8111-111111111111";
 const CAT = "22222222-2222-4222-8222-222222222222";
 const TX = "33333333-3333-4333-8333-333333333333";
+const PAYEE = "44444444-4444-4444-8444-444444444444";
 
 describe("AiActionsService", () => {
   let service: AiActionsService;
@@ -56,7 +57,9 @@ describe("AiActionsService", () => {
       accountId: ACC,
       amount: -12.5,
       transactionDate: "2026-01-15",
+      payeeId: null,
       payeeName: "Starbucks",
+      createPayee: false,
       categoryId: CAT,
       description: null,
       currencyCode: "USD",
@@ -89,8 +92,35 @@ describe("AiActionsService", () => {
         currencyCode: "USD",
         transactionDate: "2026-01-15",
       }),
+      { createPayeeIfMissing: false },
     );
     expect(result).toEqual({ type: "create_transaction", id: "tx-new" });
+  });
+
+  it("links the resolved payee when the descriptor carries a payeeId", async () => {
+    const descriptor = createTxDescriptor({ payeeId: PAYEE });
+    await service.confirm(USER, dtoFor(descriptor));
+
+    expect(transactions.create).toHaveBeenCalledWith(
+      USER,
+      expect.objectContaining({ payeeId: PAYEE }),
+      { createPayeeIfMissing: false },
+    );
+  });
+
+  it("creates a payee for an unmatched name when the descriptor sets createPayee", async () => {
+    const descriptor = createTxDescriptor({
+      payeeId: null,
+      payeeName: "Brand New Store",
+      createPayee: true,
+    });
+    await service.confirm(USER, dtoFor(descriptor));
+
+    expect(transactions.create).toHaveBeenCalledWith(
+      USER,
+      expect.objectContaining({ payeeName: "Brand New Store" }),
+      { createPayeeIfMissing: true },
+    );
   });
 
   it("categorizes a transaction on a valid confirmation", async () => {

@@ -47,6 +47,7 @@
     "amount": "Importo",
     "date": "Data",
     "payee": "Beneficiario",
+    "newPayee": "(nuovo beneficiario)",
     "category": "Categoria",
     "newCategory": "Nuova categoria",
     "currentCategory": "Categoria attuale",

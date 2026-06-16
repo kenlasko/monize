@@ -47,6 +47,7 @@
     "amount": "금액",
     "date": "날짜",
     "payee": "수취인",
+    "newPayee": "(새 수취인)",
     "category": "카테고리",
     "newCategory": "새 카테고리",
     "currentCategory": "현재 카테고리",

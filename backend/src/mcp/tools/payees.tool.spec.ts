@@ -4,7 +4,11 @@ import { UserContextResolver } from "../mcp-context";
 describe("McpPayeesTools", () => {
   let tool: McpPayeesTools;
   let payeesService: Record<string, jest.Mock>;
-  let server: { registerTool: jest.Mock };
+  let server: {
+    registerTool: jest.Mock;
+    server: { getClientCapabilities: jest.Mock; elicitInput: jest.Mock };
+  };
+  let elicitInput: jest.Mock;
   let resolve: jest.MockedFunction<UserContextResolver>;
   const handlers: Record<string, (...args: any[]) => any> = {};
 
@@ -13,14 +17,26 @@ describe("McpPayeesTools", () => {
       findAll: jest.fn(),
       search: jest.fn(),
       create: jest.fn(),
+      previewCreate: jest.fn().mockResolvedValue({
+        name: "New Payee",
+        defaultCategoryId: null,
+        defaultCategoryName: null,
+      }),
     };
 
     tool = new McpPayeesTools(payeesService as any);
 
+    elicitInput = jest.fn();
     server = {
       registerTool: jest.fn((name, _opts, handler) => {
         handlers[name] = handler;
       }),
+      // Default to no elicitation capability so create_payee proceeds (matches a
+      // client that can't show a dialog); the decline test overrides these.
+      server: {
+        getClientCapabilities: jest.fn().mockReturnValue({}),
+        elicitInput,
+      },
     };
 
     resolve = jest.fn();
@@ -71,6 +87,24 @@ describe("McpPayeesTools", () => {
       );
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed.message).toContain("created");
+    });
+
+    it("does not create when the user declines the confirmation", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "read,write" });
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput.mockResolvedValue({ action: "decline" });
+
+      const result = await handlers["create_payee"](
+        { name: "New Payee" },
+        { sessionId: "s1" },
+      );
+
+      expect(payeesService.previewCreate).toHaveBeenCalled();
+      expect(payeesService.create).not.toHaveBeenCalled();
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("declined");
     });
 
     it("returns error when no user context for create_payee", async () => {
