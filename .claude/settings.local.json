@@ -48,7 +48,15 @@
       "Bash(python3 -c \"import json; d=json.load\\(open\\('src/i18n/messages/en/reports.json'\\)\\); print\\(json.dumps\\(d.get\\('monthlyComparison',{}\\), indent=2, ensure_ascii=False\\)\\)\")",
       "Bash(git fetch *)",
       "Bash(gh repo *)",
-      "Bash(gh auth *)"
+      "Bash(gh auth *)",
+      "Bash(claude mcp *)",
+      "Bash(curl -sS -o /dev/null -w \"HTTP %{http_code}  final=%{url_effective}\\\\n\" -L https://monize.laskonet.com)",
+      "Bash(curl -sS -i -X POST https://monize.laskonet.com/mcp -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2025-06-18\",\"capabilities\":{},\"clientInfo\":{\"name\":\"diag\",\"version\":\"0\"}}}')",
+      "Bash(curl -sS -i -X POST https://monize.laskonet.com/ -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2025-06-18\",\"capabilities\":{},\"clientInfo\":{\"name\":\"diag\",\"version\":\"0\"}}}')",
+      "Bash(curl -sS https://monize.laskonet.com/.well-known/oauth-protected-resource)",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl -sS https://monize.laskonet.com/.well-known/oauth-authorization-server)",
+      "Bash(docker exec monize-backend *)"
     ]
   }
 }
