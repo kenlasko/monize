@@ -667,7 +667,15 @@ jobs:
             echo "path=$RUNNER_TEMP/release-notes.md" >> "$GITHUB_OUTPUT"
             echo "Release notes: workflow input"
           elif [ -f "$NOTES_FILE" ]; then
-            cp "$NOTES_FILE" "$RUNNER_TEMP/release-notes.md"
+            # Strip the leading "# v<version>" heading (and any blank lines that
+            # follow it) so the release body does not duplicate the "v<version>"
+            # release title. Only the matching version heading is removed; a real
+            # first-line heading is left untouched.
+            awk -v ver="$VERSION" '
+              NR == 1 && $0 == "# v" ver { skip = 1; next }
+              skip && $0 ~ /^[[:space:]]*$/ { next }
+              { skip = 0; print }
+            ' "$NOTES_FILE" > "$RUNNER_TEMP/release-notes.md"
             echo "path=$RUNNER_TEMP/release-notes.md" >> "$GITHUB_OUTPUT"
             echo "Release notes: $NOTES_FILE"
           else
