@@ -554,7 +554,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
   {
     name: "create_transaction",
     description:
-      "Propose creating a new transaction. This does NOT create anything immediately: it shows the user a confirmation card they must explicitly approve before the transaction is saved. Use it only when the user clearly asks to add or record a transaction in their latest message. Amount is positive for income and negative for expenses. The payee name is automatically matched to an existing payee and linked; if the tool result reports that no payee matched, offer to create a reusable payee with create_payee. After calling this tool, briefly tell the user to review and approve the card; never claim the transaction was created.",
+      "Propose creating a new transaction. This does NOT create anything immediately: it shows the user a confirmation card they must explicitly approve before the transaction is saved. Use it only when the user clearly asks to add or record a transaction in their latest message. Amount is positive for income and negative for expenses. If a payee name is given it must match an existing payee (by name or alias); the transaction then links to that payee and inherits its default category. If no existing payee matches, this tool prepares NOTHING and reports that the payee was not found -- ask the user whether to use a different existing payee or to create the new payee first with create_payee (then call this tool again). After calling this tool, briefly tell the user to review and approve the card; never claim the transaction was created.",
     inputSchema: {
       type: "object",
       properties: {
@@ -575,7 +575,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
         payeeName: {
           type: "string",
           description:
-            "Optional payee name. Matched to an existing payee when one exists; otherwise recorded as a new free-text name.",
+            "Optional payee name. Must match an existing payee (by name or alias). If none matches, the transaction is not prepared -- create the payee first with create_payee, or use a different name.",
         },
         categoryName: {
           type: "string",

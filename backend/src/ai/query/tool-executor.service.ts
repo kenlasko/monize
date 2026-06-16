@@ -390,6 +390,25 @@ export class ToolExecutorService {
       );
     }
 
+    // Verify the payee exists before preparing the confirmation card. When a
+    // payee name was given but matches no existing payee, prepare nothing and
+    // ask the user to either pick an existing payee or create a new one --
+    // mirroring how unknown accounts and categories fail loudly above instead
+    // of silently recording a detached free-text name.
+    if (preview.payeeName && !preview.payeeMatched) {
+      const unmatched = preview.payeeName;
+      return {
+        data: {
+          status: "payee_not_found",
+          unmatchedPayeeName: unmatched,
+          message: `No existing payee matches "${unmatched}", so no confirmation card was shown and nothing was created. Ask the user to either (1) use a different existing payee -- then call create_transaction again with that name -- or (2) create a new payee named "${unmatched}" with create_payee, and after they approve it call create_transaction again. Do not record the transaction with an unmatched payee.`,
+        },
+        summary: `No existing payee matches "${unmatched}". Asking the user to pick an existing payee or create a new one.`,
+        sources: [],
+        isError: true,
+      };
+    }
+
     const { actionId, expiresAt } = this.newActionEnvelope();
     const descriptor: CreateTransactionDescriptor = {
       type: "create_transaction",
@@ -422,19 +441,8 @@ export class ToolExecutorService {
       },
     };
 
-    // When the payee name does not match an existing payee, tell the model so
-    // it can offer to create a reusable payee. The note rides alongside the
-    // standard "awaiting approval" status without leaking the signature.
-    const data =
-      preview.payeeName && !preview.payeeMatched
-        ? {
-            ...PENDING_ACTION_TOOL_RESULT,
-            payeeNote: `No existing payee matches "${preview.payeeName}"; the transaction will record it as a free-text name. If the user wants future transactions to link automatically, offer to create a payee with create_payee.`,
-          }
-        : PENDING_ACTION_TOOL_RESULT;
-
     return {
-      data,
+      data: PENDING_ACTION_TOOL_RESULT,
       summary: `Prepared a transaction for ${preview.accountName} (${preview.amount} ${preview.currencyCode}) dated ${preview.transactionDate}. Awaiting user confirmation.`,
       sources: [],
       pendingAction,

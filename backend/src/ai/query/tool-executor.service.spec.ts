@@ -937,7 +937,7 @@ describe("ToolExecutorService", () => {
       });
     });
 
-    it("notes an unmatched payee in the model-facing data so it can offer to create one", async () => {
+    it("does not prepare a card for an unmatched payee and asks the user to pick or create one", async () => {
       transactions.previewCreate.mockResolvedValueOnce({
         accountId: "acc-1",
         accountName: "Checking",
@@ -959,10 +959,20 @@ describe("ToolExecutorService", () => {
         payeeName: "Brand New Store",
       });
 
-      expect(result.pendingAction?.descriptor).toMatchObject({ payeeId: null });
-      const data = result.data as { status: string; payeeNote?: string };
-      expect(data.status).toBe("preview_shown");
-      expect(data.payeeNote).toContain("create_payee");
+      // No confirmation card is prepared and nothing is signed for an unmatched
+      // payee -- the model must ask the user how to proceed instead of recording
+      // a detached free-text name.
+      expect(result.pendingAction).toBeUndefined();
+      expect(signing.sign).not.toHaveBeenCalled();
+      expect(result.isError).toBe(true);
+      const data = result.data as {
+        status: string;
+        unmatchedPayeeName?: string;
+        message?: string;
+      };
+      expect(data.status).toBe("payee_not_found");
+      expect(data.unmatchedPayeeName).toBe("Brand New Store");
+      expect(data.message).toContain("create_payee");
     });
 
     it("does not leak the signature into the LLM-facing data", async () => {
