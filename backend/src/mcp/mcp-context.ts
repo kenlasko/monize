@@ -1,4 +1,5 @@
 import { sanitizeToolResultStrings } from "../common/sanitization.util";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 export interface McpUserContext {
   userId: string;
@@ -113,6 +114,52 @@ function normalizeNonFiniteNumbers(data: unknown): unknown {
     return result;
   }
   return data;
+}
+
+export type WriteConfirmation = "accepted" | "declined" | "unsupported";
+
+// A human needs time to read and decide, so override the SDK's short default
+// request timeout for the confirmation round-trip.
+const CONFIRM_TIMEOUT_MS = 5 * 60 * 1000;
+
+/**
+ * Ask the MCP client to confirm a write via elicitation -- the MCP-native
+ * equivalent of the AI Assistant's approve/reject card. Returns:
+ *  - "accepted": the user approved; proceed with the write.
+ *  - "declined": the user rejected/cancelled, or a supported dialog
+ *    failed/timed out; abort so a write never happens without an explicit
+ *    accept.
+ *  - "unsupported": the client advertises no form-elicitation capability, so no
+ *    dialog can be shown and the caller falls back to its normal behavior. The
+ *    client still gates every tool call with its own approval prompt, so this
+ *    is not a consent bypass.
+ *
+ * We pre-check the capability (rather than relying solely on the thrown
+ * "client does not support elicitation" error) so that only a genuine lack of
+ * capability falls through to the write -- a dismissed or timed-out dialog on a
+ * capable client must abort.
+ */
+export async function confirmWrite(
+  server: McpServer,
+  message: string,
+): Promise<WriteConfirmation> {
+  const capabilities = server.server.getClientCapabilities();
+  if (!capabilities?.elicitation?.form) {
+    return "unsupported";
+  }
+  try {
+    const result = await server.server.elicitInput(
+      {
+        message,
+        // No fields to collect -- the accept/decline/cancel action is the answer.
+        requestedSchema: { type: "object", properties: {} },
+      },
+      { timeout: CONFIRM_TIMEOUT_MS },
+    );
+    return result.action === "accept" ? "accepted" : "declined";
+  } catch {
+    return "declined";
+  }
 }
 
 export function toolResult(data: unknown) {

@@ -9,6 +9,7 @@ import {
   toolResult,
   toolError,
   safeToolError,
+  confirmWrite,
 } from "../mcp-context";
 import { McpWriteLimiter } from "../mcp-write-limiter";
 import {
@@ -419,7 +420,7 @@ export class McpTransactionsTools {
         title: "Create transaction",
         annotations: CREATE,
         description:
-          "Create a new transaction. The payee name is matched to an existing payee (by name, case-insensitive, or alias) and the transaction is linked to it, inheriting its default category when no category is given. If no payee matches, the name is still recorded as free text -- offer to create a reusable payee with create_payee first when the user wants one. Set dryRun=true to preview (the preview reports payeeMatched) without saving.",
+          "Create a new transaction. The payee name is matched to an existing payee (by name, case-insensitive, or alias) and the transaction is linked to it, inheriting its default category when no category is given. If no payee matches, the name is still recorded as free text -- offer to create a reusable payee with create_payee first when the user wants one. Set dryRun=true to preview (the preview reports payeeMatched) without saving. When dryRun is false, the user is asked to confirm before the transaction is saved (clients that support it show a confirmation dialog).",
         inputSchema: {
           accountId: z.string().uuid().describe("Account ID"),
           amount: z
@@ -511,6 +512,32 @@ export class McpTransactionsTools {
             });
           }
 
+          // Ask the client to confirm before persisting (AI Assistant parity).
+          // Falls through to the write only when the client cannot show a dialog.
+          const confirmLines = [
+            "Create this transaction?",
+            `Account: ${preview.accountName}`,
+            `Amount: ${preview.amount} ${preview.currencyCode}`,
+            `Date: ${preview.transactionDate}`,
+          ];
+          if (preview.payeeName) {
+            confirmLines.push(
+              `Payee: ${preview.payeeName}${preview.payeeMatched ? "" : " (new)"}`,
+            );
+          }
+          if (preview.categoryName) {
+            confirmLines.push(`Category: ${preview.categoryName}`);
+          }
+          const confirmation = await confirmWrite(
+            server,
+            confirmLines.join("\n"),
+          );
+          if (confirmation === "declined") {
+            return toolError(
+              "Cancelled: the confirmation was declined, so no transaction was created. Do not retry unless the user asks again.",
+            );
+          }
+
           const transaction = await this.transactionsService.create(
             ctx.userId,
             {
@@ -550,7 +577,8 @@ export class McpTransactionsTools {
       {
         title: "Categorize transaction",
         annotations: UPDATE,
-        description: "Assign a category to a transaction",
+        description:
+          "Assign a category to a transaction. The user is asked to confirm before the change is saved (clients that support it show a confirmation dialog).",
         inputSchema: {
           transactionId: z.string().uuid().describe("Transaction ID"),
           categoryId: z.string().uuid().describe("Category ID"),
@@ -572,6 +600,31 @@ export class McpTransactionsTools {
         }
 
         try {
+          // Resolve friendly details (and validate ownership) so the client's
+          // confirmation dialog shows what is changing, mirroring the AI
+          // Assistant card.
+          const preview = await this.transactionsService.previewCategorize(
+            ctx.userId,
+            args.transactionId,
+            args.categoryId,
+          );
+          const confirmLines = [
+            "Apply this category change?",
+            preview.payeeName ? `Payee: ${preview.payeeName}` : null,
+            `Amount: ${preview.amount}`,
+            `Date: ${preview.transactionDate}`,
+            `Category: ${preview.currentCategoryName ?? "Uncategorized"} -> ${preview.newCategoryName}`,
+          ].filter((line): line is string => line !== null);
+          const confirmation = await confirmWrite(
+            server,
+            confirmLines.join("\n"),
+          );
+          if (confirmation === "declined") {
+            return toolError(
+              "Cancelled: the confirmation was declined, so the category was not changed. Do not retry unless the user asks again.",
+            );
+          }
+
           const transaction = await this.transactionsService.update(
             ctx.userId,
             args.transactionId,

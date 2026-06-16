@@ -92,7 +92,13 @@ Checklist for a new tool:
 4. Pick the right annotation preset (below) and import it.
 5. If it mutates data, derive scope `"write"` and enforce the daily write limit
    via `McpWriteLimiter` (see `transactions.tool.ts`). `whitelist`-style
-   sanitize user strings with `stripHtml(...)` before persisting.
+   sanitize user strings with `stripHtml(...)` before persisting. Gate the write
+   behind a user confirmation with `confirmWrite(server, message)` (the
+   MCP-elicitation equivalent of the AI Assistant's approve/reject card) and
+   only persist on `"accepted"`/`"unsupported"`; on `"declined"` return a
+   `toolError` without writing. `"unsupported"` means the client can't show a
+   dialog -- it still gates every tool call with its own approval prompt, so
+   proceeding is not a consent bypass.
 6. Update `mcp-server.service.ts` count and `mcp.module.ts` if it's a new
    provider class.
 7. Add/extend tests (below). `mcp-annotations.spec.ts` enforces that every tool

@@ -6,7 +6,11 @@ describe("McpTransactionsTools", () => {
   let tool: McpTransactionsTools;
   let transactionsService: Record<string, jest.Mock>;
   let analyticsService: Record<string, jest.Mock>;
-  let server: { registerTool: jest.Mock };
+  let server: {
+    registerTool: jest.Mock;
+    server: { getClientCapabilities: jest.Mock; elicitInput: jest.Mock };
+  };
+  let elicitInput: jest.Mock;
   let resolve: jest.MockedFunction<UserContextResolver>;
   const handlers: Record<string, (...args: any[]) => any> = {};
 
@@ -15,6 +19,16 @@ describe("McpTransactionsTools", () => {
       findAll: jest.fn(),
       getLlmTransactionRows: jest.fn(),
       previewCreate: jest.fn(),
+      previewCategorize: jest.fn().mockResolvedValue({
+        transactionId: "t1",
+        payeeName: "Store",
+        amount: -50,
+        transactionDate: "2025-01-15",
+        accountName: "Checking",
+        currentCategoryName: "Uncategorized",
+        categoryId: "c1",
+        newCategoryName: "Groceries",
+      }),
       create: jest.fn(),
       update: jest.fn(),
     };
@@ -32,10 +46,18 @@ describe("McpTransactionsTools", () => {
       analyticsService as any,
     );
 
+    elicitInput = jest.fn();
     server = {
       registerTool: jest.fn((name, _opts, handler) => {
         handlers[name] = handler;
       }),
+      // confirmWrite() reads capabilities + elicits via server.server. Default
+      // to no elicitation capability so writes proceed (matches a client that
+      // can't show a dialog); accept/decline tests override these.
+      server: {
+        getClientCapabilities: jest.fn().mockReturnValue({}),
+        elicitInput,
+      },
     };
 
     resolve = jest.fn();
@@ -468,6 +490,122 @@ describe("McpTransactionsTools", () => {
       expect(parsed.payeeId).toBe("p1");
     });
 
+    it("confirms via elicitation and creates when the user accepts", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "read,write" });
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput.mockResolvedValue({ action: "accept" });
+      transactionsService.previewCreate.mockResolvedValue({
+        accountId: "a1",
+        accountName: "Checking",
+        amount: -50,
+        transactionDate: "2025-01-15",
+        payeeId: "p1",
+        payeeName: "Store",
+        payeeMatched: true,
+        categoryId: null,
+        categoryName: null,
+        description: null,
+        currencyCode: "USD",
+      });
+      transactionsService.create.mockResolvedValue({
+        id: "t1",
+        transactionDate: "2025-01-15",
+        amount: "-50.0000",
+        payeeId: "p1",
+        payeeName: "Store",
+        status: "pending",
+      });
+
+      const result = await handlers["create_transaction"](
+        {
+          accountId: "a1",
+          amount: -50,
+          date: "2025-01-15",
+          payeeName: "Store",
+          dryRun: false,
+        },
+        { sessionId: "s1" },
+      );
+
+      expect(elicitInput).toHaveBeenCalled();
+      expect(transactionsService.create).toHaveBeenCalled();
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.id).toBe("t1");
+    });
+
+    it("does not create when the user declines the confirmation", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "read,write" });
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput.mockResolvedValue({ action: "decline" });
+      transactionsService.previewCreate.mockResolvedValue({
+        accountId: "a1",
+        accountName: "Checking",
+        amount: -50,
+        transactionDate: "2025-01-15",
+        payeeId: null,
+        payeeName: "Store",
+        payeeMatched: false,
+        categoryId: null,
+        categoryName: null,
+        description: null,
+        currencyCode: "USD",
+      });
+
+      const result = await handlers["create_transaction"](
+        {
+          accountId: "a1",
+          amount: -50,
+          date: "2025-01-15",
+          payeeName: "Store",
+          dryRun: false,
+        },
+        { sessionId: "s1" },
+      );
+
+      expect(elicitInput).toHaveBeenCalled();
+      expect(transactionsService.create).not.toHaveBeenCalled();
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("declined");
+    });
+
+    it("does not elicit a confirmation in dry-run mode", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "read,write" });
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      transactionsService.previewCreate.mockResolvedValue({
+        accountId: "a1",
+        accountName: "Checking",
+        amount: -75,
+        transactionDate: "2025-02-01",
+        payeeId: null,
+        payeeName: "Coffee Shop",
+        payeeMatched: false,
+        categoryId: null,
+        categoryName: null,
+        description: null,
+        currencyCode: "USD",
+      });
+
+      await handlers["create_transaction"](
+        {
+          accountId: "a1",
+          amount: -75,
+          date: "2025-02-01",
+          payeeName: "Coffee Shop",
+          dryRun: true,
+        },
+        { sessionId: "s1" },
+      );
+
+      expect(elicitInput).not.toHaveBeenCalled();
+      expect(transactionsService.create).not.toHaveBeenCalled();
+    });
+
     it("should return preview in dry-run mode without creating and offer to create an unmatched payee", async () => {
       resolve.mockReturnValue({ userId: "u1", scopes: "read,write" });
       transactionsService.previewCreate.mockResolvedValue({
@@ -627,6 +765,24 @@ describe("McpTransactionsTools", () => {
       );
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed.message).toContain("categorized");
+    });
+
+    it("does not update when the user declines the confirmation", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "read,write" });
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput.mockResolvedValue({ action: "cancel" });
+
+      const result = await handlers["categorize_transaction"](
+        { transactionId: "t1", categoryId: "c1" },
+        { sessionId: "s1" },
+      );
+
+      expect(transactionsService.previewCategorize).toHaveBeenCalled();
+      expect(transactionsService.update).not.toHaveBeenCalled();
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("declined");
     });
 
     it("should enforce daily write rate limit for categorization", async () => {
