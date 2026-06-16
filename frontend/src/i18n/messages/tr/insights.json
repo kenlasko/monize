@@ -1,0 +1,44 @@
+{
+  "page": {
+    "title": "Harcama İçgörüleri",
+    "subtitle": "Harcama örüntüleriniz ve anormalliklerinizin yapay zeka destekli analizi"
+  },
+  "list": {
+    "lastUpdated": "Son güncelleme: {date} {time}",
+    "refreshButton": "İçgörüleri Yenile",
+    "generating": "Oluşturuluyor...",
+    "allTypes": "Tüm Türler",
+    "allSeverities": "Tüm Önem Dereceleri",
+    "showDismissed": "Kapatılanları göster",
+    "emptyNoInsights": "Henüz içgörü oluşturulmadı. Harcama örüntülerinizi analiz etmek için \"İçgörüleri Yenile\"ye tıklayın.",
+    "emptyFiltered": "Mevcut filtrelerinizle eşleşen içgörü yok.",
+    "generateButton": "İçgörü Oluştur",
+    "alertCount": "{count, plural, one {# uyarı} other {# uyarı}}",
+    "warningCount": "{count, plural, one {# ikaz} other {# ikaz}}",
+    "errorLoadFailed": "İçgörüler yüklenemedi. Lütfen tekrar deneyin.",
+    "errorGenerateFailed": "İçgörüler oluşturulamadı. Yapılandırılmış bir yapay zeka sağlayıcınız olduğundan emin olun.",
+    "errorTimeout": "İçgörü oluşturma beklenenden uzun sürüyor. Lütfen bekleyin veya sayfayı yenileyin."
+  },
+  "card": {
+    "dismiss": "Kapat",
+    "dismissing": "Kapatılıyor..."
+  },
+  "notConfigured": {
+    "heading": "Yapay Zeka Yapılandırılmamış",
+    "message": "Yapay zeka sağlayıcısı yapılandırılmamış. Harcama İçgörüleri'ni kullanmak için lütfen ayarlarınızda {link}.",
+    "linkText": "bir yapay zeka sağlayıcısı yapılandırın"
+  },
+  "insightTypes": {
+    "anomaly": "Anormallik",
+    "trend": "Trend",
+    "subscription": "Abonelik",
+    "budget_pace": "Bütçe Hızı",
+    "seasonal": "Mevsimsel",
+    "new_recurring": "Yeni Yinelenen"
+  },
+  "insightSeverities": {
+    "info": "Bilgi",
+    "warning": "İkaz",
+    "alert": "Uyarı"
+  }
+}

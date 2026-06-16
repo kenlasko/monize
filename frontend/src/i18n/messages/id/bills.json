@@ -1,0 +1,66 @@
+{
+  "page": {
+    "title": "Tagihan & Setoran",
+    "subtitle": "Kelola transaksi berulang dan pembayaran terjadwal Anda",
+    "newButton": "+ Jadwal Baru",
+    "summaryActiveBills": "Tagihan Aktif",
+    "summaryActiveDeposits": "Setoran Aktif",
+    "summaryMonthlyNet": "Bersih Bulanan",
+    "summaryDueNow": "Jatuh Tempo Sekarang",
+    "loadingText": "Memuat transaksi terjadwal...",
+    "chartUnavailable": "Grafik sementara tidak tersedia"
+  },
+  "viewTabs": {
+    "list": "Daftar",
+    "calendar": "Kalender",
+    "filterAll": "Semua ({count})",
+    "filterBills": "Tagihan ({count})",
+    "filterDeposits": "Setoran ({count})",
+    "todayButton": "Hari Ini"
+  },
+  "form": {
+    "titleNew": "Transaksi Terjadwal Baru",
+    "titleEdit": "Edit Transaksi Terjadwal"
+  },
+  "overrideConfirm": {
+    "title": "Penimpaan yang Ada Ditemukan",
+    "message": "Transaksi terjadwal ini memiliki {count, plural, one {# kejadian individual} other {# kejadian individual}} dengan modifikasi khusus.",
+    "question": "Apa yang ingin Anda lakukan dengan modifikasi ini saat Anda memperbarui templat dasar?",
+    "keepButton": "Pertahankan Modifikasi",
+    "deleteButton": "Hapus Semua Modifikasi"
+  },
+  "forecast": {
+    "title": "Prakiraan Arus Kas",
+    "scheduledCount": "{count, plural, one {# transaksi terjadwal} other {# transaksi terjadwal}} dalam prakiraan",
+    "tooltipTransactions": "Transaksi:",
+    "tooltipMore": "+{count} lagi",
+    "noData": "Tidak ada data untuk ditampilkan",
+    "noAccounts": "Tidak ada akun ditemukan",
+    "noScheduled": "Tidak ada transaksi terjadwal",
+    "noMatchingAccount": "Pilih akun dengan transaksi terjadwal",
+    "noUpcoming": "Tidak ada transaksi mendatang dalam periode ini - menampilkan saldo saat ini",
+    "summaryStarting": "Awal",
+    "summaryEnding": "Akhir",
+    "summaryLowest": "Terendah",
+    "summaryMinBalance": "Saldo Min",
+    "allAccounts": "Semua Akun"
+  },
+  "calendar": {
+    "days": {
+      "sun": "Min",
+      "mon": "Sen",
+      "tue": "Sel",
+      "wed": "Rab",
+      "thu": "Kam",
+      "fri": "Jum",
+      "sat": "Sab"
+    },
+    "more": "+{count} lagi"
+  },
+  "toasts": {
+    "overridesDeleted": "Penimpaan dihapus",
+    "notFound": "Pembayaran terjadwal tidak ditemukan",
+    "loadFailed": "Gagal memuat transaksi terjadwal",
+    "overridesDeleteFailed": "Gagal menghapus penimpaan"
+  }
+}

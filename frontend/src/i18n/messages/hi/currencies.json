@@ -1,0 +1,117 @@
+{
+  "page": {
+    "title": "मुद्राएं",
+    "subtitle": "अपने खातों और प्रतिभूतियों में उपयोग की जाने वाली मुद्राएं प्रबंधित करें",
+    "refreshRates": "दरें रीफ्रेश करें",
+    "refreshing": "रीफ्रेश हो रहा है...",
+    "newCurrency": "+ नई मुद्रा",
+    "searchPlaceholder": "कोड या नाम से खोजें...",
+    "statusAll": "सभी ({count})",
+    "statusActive": "सक्रिय ({count})",
+    "statusInactive": "निष्क्रिय ({count})",
+    "modalTitleEdit": "मुद्रा संपादित करें",
+    "modalTitleNew": "नई मुद्रा",
+    "loading": "मुद्राएं लोड हो रही हैं...",
+    "count": "{count, plural, one {# मुद्रा} other {# मुद्राएं}}",
+    "toasts": {
+      "loadFailed": "मुद्राएं लोड करने में विफल",
+      "updated": "मुद्रा सफलतापूर्वक अपडेट की गई",
+      "created": "मुद्रा सफलतापूर्वक बनाई गई",
+      "updateFailed": "मुद्रा अपडेट करने में विफल",
+      "createFailed": "मुद्रा बनाने में विफल",
+      "deactivated": "मुद्रा निष्क्रिय की गई",
+      "activated": "मुद्रा सक्रिय की गई",
+      "statusFailed": "मुद्रा स्थिति अपडेट करने में विफल",
+      "ratesRefreshed": "विनिमय दरें रीफ्रेश की गईं: {updated} जोड़े अपडेट हुए",
+      "ratesRefreshedWithFailed": "विनिमय दरें रीफ्रेश की गईं: {updated} अपडेट, {failed} विफल",
+      "ratesFailed": "विनिमय दरें रीफ्रेश करने में विफल"
+    },
+    "summary": {
+      "totalCurrencies": "कुल मुद्राएं",
+      "active": "सक्रिय",
+      "inactive": "निष्क्रिय"
+    }
+  },
+  "list": {
+    "columns": {
+      "code": "कोड",
+      "name": "नाम",
+      "symbol": "प्रतीक",
+      "decimals": "दशमलव",
+      "usage": "उपयोग",
+      "rate": "दर ({currency})",
+      "status": "स्थिति",
+      "actions": "क्रियाएं"
+    },
+    "density": {
+      "normal": "सामान्य",
+      "compact": "संक्षिप्त",
+      "dense": "घना",
+      "toggle": "पंक्ति घनत्व टॉगल करें"
+    },
+    "defaultBadge": "डिफ़ॉल्ट",
+    "statusBadge": {
+      "active": "सक्रिय",
+      "activeShort": "सक्रि",
+      "inactive": "निष्क्रिय",
+      "inactiveShort": "निष्क्रि"
+    },
+    "actions": {
+      "edit": "संपादित करें",
+      "deactivate": "निष्क्रिय करें",
+      "activate": "सक्रिय करें"
+    },
+    "contextMenu": {
+      "editCurrency": "मुद्रा संपादित करें",
+      "deactivate": "निष्क्रिय करें",
+      "activate": "सक्रिय करें",
+      "deleteCurrency": "मुद्रा हटाएं"
+    },
+    "usageTooltip": "{accounts} खाता(ते), {securities} प्रतिभूति",
+    "usageAccounts": "{count, plural, one {# खाता} other {# खाते}}",
+    "usageSecurities": "{count, plural, one {# प्रति} other {# प्रतिभूतियां}}",
+    "empty": {
+      "title": "कोई मुद्रा नहीं",
+      "subtitle": "एक मुद्रा जोड़कर शुरू करें।"
+    },
+    "deleteConfirm": {
+      "title": "\"{code}\" हटाएं?",
+      "message": "यह मुद्रा स्थायी रूप से हटा दी जाएगी। यह केवल तभी काम करता है जब मुद्रा किसी खाते या प्रतिभूति द्वारा उपयोग में नहीं है।",
+      "confirmLabel": "हटाएं",
+      "cancelLabel": "रद्द करें"
+    },
+    "toasts": {
+      "deleted": "मुद्रा सफलतापूर्वक हटाई गई",
+      "deleteFailed": "मुद्रा हटाने में विफल। यह उपयोग में हो सकती है।"
+    }
+  },
+  "form": {
+    "codeLabel": "मुद्रा कोड",
+    "codePlaceholder": "उदा., USD, EUR, GBP",
+    "nameLabel": "नाम",
+    "namePlaceholderCreate": "उदा., Canadian Dollar, Malaysia, Ringgit (लुकअप के लिए भी उपयोग होता है)",
+    "namePlaceholderEdit": "उदा., Canadian Dollar",
+    "symbolLabel": "प्रतीक",
+    "symbolPlaceholder": "उदा., $, €, £, ¥",
+    "decimalPlacesLabel": "दशमलव स्थान",
+    "lookupButton": "लुकअप",
+    "lookingUp": "लुकअप हो रहा है...",
+    "clearButton": "साफ़ करें",
+    "clearTitle": "सभी फ़ील्ड साफ़ करें",
+    "submitCreate": "मुद्रा बनाएं",
+    "submitUpdate": "मुद्रा अपडेट करें",
+    "toasts": {
+      "lookupTooShort": "लुकअप के लिए मुद्रा कोड या नाम दर्ज करें (कम से कम 2 अक्षर)",
+      "found": "मिला: {details}",
+      "notFound": "\"{query}\" के लिए कोई मुद्रा नहीं मिली",
+      "lookupFailed": "लुकअप विफल - कृपया पुनः प्रयास करें"
+    }
+  },
+  "validation": {
+    "codeLength": "मुद्रा कोड बिल्कुल 3 अक्षरों का होना चाहिए",
+    "nameRequired": "नाम आवश्यक है",
+    "nameMax": "नाम 100 अक्षरों से कम होना चाहिए",
+    "symbolRequired": "प्रतीक आवश्यक है",
+    "symbolMax": "प्रतीक 10 अक्षरों से कम होना चाहिए"
+  }
+}

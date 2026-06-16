@@ -1,0 +1,117 @@
+{
+  "page": {
+    "title": "Para Birimleri",
+    "subtitle": "Hesaplarınızda ve menkul kıymetlerinizde kullanılan para birimlerini yönetin",
+    "refreshRates": "Kurları Yenile",
+    "refreshing": "Yenileniyor...",
+    "newCurrency": "+ Yeni Para Birimi",
+    "searchPlaceholder": "Kod veya ada göre ara...",
+    "statusAll": "Tümü ({count})",
+    "statusActive": "Aktif ({count})",
+    "statusInactive": "Pasif ({count})",
+    "modalTitleEdit": "Para Birimini Düzenle",
+    "modalTitleNew": "Yeni Para Birimi",
+    "loading": "Para birimleri yükleniyor...",
+    "count": "{count, plural, one {# para birimi} other {# para birimi}}",
+    "toasts": {
+      "loadFailed": "Para birimleri yüklenemedi",
+      "updated": "Para birimi başarıyla güncellendi",
+      "created": "Para birimi başarıyla oluşturuldu",
+      "updateFailed": "Para birimi güncellenemedi",
+      "createFailed": "Para birimi oluşturulamadı",
+      "deactivated": "Para birimi devre dışı bırakıldı",
+      "activated": "Para birimi etkinleştirildi",
+      "statusFailed": "Para birimi durumu güncellenemedi",
+      "ratesRefreshed": "Döviz kurları yenilendi: {updated} çift güncellendi",
+      "ratesRefreshedWithFailed": "Döviz kurları yenilendi: {updated} güncellendi, {failed} başarısız",
+      "ratesFailed": "Döviz kurları yenilenemedi"
+    },
+    "summary": {
+      "totalCurrencies": "Toplam Para Birimi",
+      "active": "Aktif",
+      "inactive": "Pasif"
+    }
+  },
+  "list": {
+    "columns": {
+      "code": "Kod",
+      "name": "Ad",
+      "symbol": "Sembol",
+      "decimals": "Ondalıklar",
+      "usage": "Kullanım",
+      "rate": "Kur ({currency})",
+      "status": "Durum",
+      "actions": "İşlemler"
+    },
+    "density": {
+      "normal": "Normal",
+      "compact": "Kompakt",
+      "dense": "Yoğun",
+      "toggle": "Satır yoğunluğunu değiştir"
+    },
+    "defaultBadge": "Varsayılan",
+    "statusBadge": {
+      "active": "Aktif",
+      "activeShort": "Akt",
+      "inactive": "Pasif",
+      "inactiveShort": "Pas"
+    },
+    "actions": {
+      "edit": "Düzenle",
+      "deactivate": "Devre Dışı Bırak",
+      "activate": "Etkinleştir"
+    },
+    "contextMenu": {
+      "editCurrency": "Para Birimini Düzenle",
+      "deactivate": "Devre Dışı Bırak",
+      "activate": "Etkinleştir",
+      "deleteCurrency": "Para Birimini Sil"
+    },
+    "usageTooltip": "{accounts} hesap, {securities} menkul kıymet",
+    "usageAccounts": "{count, plural, one {# hesap} other {# hesap}}",
+    "usageSecurities": "{count, plural, one {# menk.} other {# menk.}}",
+    "empty": {
+      "title": "Para birimi yok",
+      "subtitle": "Bir para birimi ekleyerek başlayın."
+    },
+    "deleteConfirm": {
+      "title": "\"{code}\" silinsin mi?",
+      "message": "Bu para birimi kalıcı olarak silinecektir. Bu işlem yalnızca para birimi herhangi bir hesap veya menkul kıymet tarafından kullanılmıyorsa çalışır.",
+      "confirmLabel": "Sil",
+      "cancelLabel": "İptal"
+    },
+    "toasts": {
+      "deleted": "Para birimi başarıyla silindi",
+      "deleteFailed": "Para birimi silinemedi. Kullanımda olabilir."
+    }
+  },
+  "form": {
+    "codeLabel": "Para Birimi Kodu",
+    "codePlaceholder": "örn. USD, EUR, GBP",
+    "nameLabel": "Ad",
+    "namePlaceholderCreate": "örn. Kanada Doları, Malezya, Ringgit (arama için de kullanılır)",
+    "namePlaceholderEdit": "örn. Kanada Doları",
+    "symbolLabel": "Sembol",
+    "symbolPlaceholder": "örn. $, €, £, ¥",
+    "decimalPlacesLabel": "Ondalık Basamaklar",
+    "lookupButton": "Ara",
+    "lookingUp": "Aranıyor...",
+    "clearButton": "Temizle",
+    "clearTitle": "Tüm alanları temizle",
+    "submitCreate": "Para Birimi Oluştur",
+    "submitUpdate": "Para Birimini Güncelle",
+    "toasts": {
+      "lookupTooShort": "Arama için bir para birimi kodu veya adı girin (en az 2 karakter)",
+      "found": "Bulundu: {details}",
+      "notFound": "\"{query}\" için para birimi bulunamadı",
+      "lookupFailed": "Arama başarısız - lütfen tekrar deneyin"
+    }
+  },
+  "validation": {
+    "codeLength": "Para birimi kodu tam olarak 3 karakter olmalıdır",
+    "nameRequired": "Ad zorunludur",
+    "nameMax": "Ad en fazla 100 karakter olabilir",
+    "symbolRequired": "Sembol zorunludur",
+    "symbolMax": "Sembol en fazla 10 karakter olabilir"
+  }
+}

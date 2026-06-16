@@ -1,0 +1,548 @@
+{
+  "alerts": {
+    "title": "提醒",
+    "unread": "{count} 条未读",
+    "markAllRead": "全部标为已读",
+    "loading": "正在加载提醒...",
+    "empty": "无提醒",
+    "undo": "撤销",
+    "buttonTitle": "提醒",
+    "buttonAriaLabel": "提醒",
+    "dismissAriaLabel": "关闭提醒",
+    "severity": {
+      "critical": "严重",
+      "warning": "警告",
+      "success": "好消息",
+      "info": "信息"
+    }
+  },
+  "summary503020": {
+    "title": "50/30/20 分配",
+    "groups": {
+      "NEED": "需求",
+      "WANT": "欲望",
+      "SAVING": "储蓄"
+    },
+    "target": "目标：{percent}%",
+    "budgeted": "已预算：{percent}%（{amount}）"
+  },
+  "categoryForm": {
+    "editTitle": "编辑：{name}",
+    "budgetAmount": "预算金额",
+    "rolloverType": "滚存类型",
+    "rolloverCap": "滚存上限（可选）",
+    "rolloverCapPlaceholder": "无上限",
+    "flexGroup": "弹性分组（可选）",
+    "flexGroupPlaceholder": "例如：娱乐资金",
+    "categoryGroup": "分类组（50/30/20）",
+    "warningAt": "警告阈值（%）",
+    "criticalAt": "严重阈值（%）",
+    "notes": "备注（可选）",
+    "notesPlaceholder": "关于此分类预算的备注",
+    "rolloverOptions": {
+      "NONE": "无（每期重置）",
+      "MONTHLY": "按月滚存",
+      "QUARTERLY": "按季滚存",
+      "ANNUAL": "按年滚存"
+    },
+    "groupOptions": {
+      "none": "无",
+      "NEED": "需求",
+      "WANT": "欲望",
+      "SAVING": "储蓄"
+    },
+    "saving": "保存中..."
+  },
+  "categoryList": {
+    "title": "分类预算",
+    "empty": "此预算中无支出分类。",
+    "sort": "排序：",
+    "sortAriaLabel": "排序分类",
+    "sortAscAriaLabel": "降序排序",
+    "sortDescAriaLabel": "升序排序",
+    "sortDescTitle": "降序排序",
+    "sortAscTitle": "升序排序",
+    "sortOptions": {
+      "percentUsed": "已用 %",
+      "spent": "已支出",
+      "remaining": "剩余",
+      "name": "名称"
+    }
+  },
+  "categoryRow": {
+    "overPace": "超出进度",
+    "underPace": "低于进度",
+    "onPace": "进度正常",
+    "rollover": "滚存：{type}",
+    "remaining": "剩余 {amount}",
+    "over": "超出 {amount}"
+  },
+  "categoryTrend": {
+    "title": "分类趋势",
+    "empty": "数据不足，暂无分类趋势可显示。",
+    "tableHeaders": {
+      "category": "分类",
+      "avgBudget": "平均预算",
+      "avgActual": "平均实际",
+      "avgVariance": "平均偏差"
+    }
+  },
+  "flexGroups": {
+    "title": "弹性分组"
+  },
+  "form": {
+    "budgetName": "预算名称",
+    "description": "描述（可选）",
+    "descriptionPlaceholder": "预算描述",
+    "budgetType": "预算类型",
+    "strategy": "策略",
+    "baseIncome": "基础收入（可选）",
+    "baseIncomePlaceholder": "预期月收入",
+    "active": "活跃",
+    "saveChanges": "保存更改",
+    "saving": "保存中...",
+    "typeOptions": {
+      "MONTHLY": "月度",
+      "ANNUAL": "年度",
+      "PAY_PERIOD": "薪资周期"
+    },
+    "strategyOptions": {
+      "FIXED": "固定",
+      "ROLLOVER": "滚存",
+      "ZERO_BASED": "零基础",
+      "FIFTY_THIRTY_TWENTY": "50/30/20"
+    }
+  },
+  "healthGauge": {
+    "title": "健康评分",
+    "labels": {
+      "excellent": "优秀",
+      "good": "良好",
+      "needsAttention": "需关注",
+      "offTrack": "偏离轨道"
+    }
+  },
+  "heatmap": {
+    "title": "支出热图 - {monthLabel}",
+    "ariaLabel": "支出热图",
+    "less": "较少",
+    "more": "较多"
+  },
+  "periodDetail": {
+    "summaryCards": {
+      "totalBudgeted": "总预算",
+      "totalSpent": "总支出",
+      "underBudget": "低于预算",
+      "overBudget": "超出预算",
+      "saved": "已节省",
+      "overspent": "已超支",
+      "income": "收入",
+      "savings": "储蓄：{amount}"
+    },
+    "rolloverSummary": {
+      "title": "滚存摘要",
+      "carriedIn": "转入：",
+      "carriedOut": "转出："
+    },
+    "overallUsage": "总体预算使用情况",
+    "expenseCategories": "支出分类",
+    "incomeCategories": "收入分类",
+    "categorySublabel": "{count} 个分类",
+    "rolloverBadge": "+{amount} 滚存",
+    "underBudgetLabel": "低于预算 {amount}",
+    "overBudgetLabel": "超出预算 {amount}",
+    "carriedForward": "结转 {amount}"
+  },
+  "periodSelector": {
+    "label": "周期：",
+    "currentPeriod": "当前周期",
+    "current": "{label}（当前）",
+    "projected": "{label}（预测）"
+  },
+  "progressBar": {
+    "ariaLabel": "已用 {percent}%",
+    "paceMarkerTitle": "预期进度：{percent}%"
+  },
+  "scenarioPlanner": {
+    "title": "假设情景规划器",
+    "empty": "无支出分类可供规划。",
+    "reset": "重置",
+    "applyChanges": "应用更改",
+    "currentBudget": "当前预算",
+    "proposedBudget": "拟议预算",
+    "projectedSavings": "预计储蓄",
+    "savingsChange": "储蓄变化",
+    "original": "原始：{amount}"
+  },
+  "summaryCards": {
+    "totalBudget": "总预算",
+    "spent": "已支出",
+    "remaining": "剩余",
+    "savings": "储蓄",
+    "periodEnded": "周期已结束",
+    "days": "{count} 天",
+    "onTrack": "进度正常",
+    "overBudget": "超出预算"
+  },
+  "trendChart": {
+    "title": "预算与实际趋势",
+    "empty": "数据不足，暂无趋势可显示。",
+    "budgeted": "已预算",
+    "actual": "实际"
+  },
+  "upcomingBills": {
+    "title": "即将到期账单",
+    "empty": "本期无到期账单。",
+    "more": "+{count} 个账单",
+    "totalUpcoming": "即将到期合计",
+    "trulyAvailable": "真实可用",
+    "over": " 超出"
+  },
+  "velocity": {
+    "title": "支出速度",
+    "dailyBurnRate": "日均消耗",
+    "safeToSpend": "可安全支出",
+    "projectedMonthEnd": "预测月末",
+    "budgetTotal": "预算合计",
+    "billsComing": "即将到期账单",
+    "trulyAvailable": "真实可用",
+    "over": " 超出",
+    "dayProgress": "第 {elapsed} 天，共 {total} 天",
+    "daysRemaining": "剩余 {count} 天",
+    "paceStatus": {
+      "under": "低于预算进度",
+      "on_track": "进度正常",
+      "over": "超出预算进度"
+    }
+  },
+  "wizard": {
+    "steps": {
+      "analyze": "分析",
+      "categories": "分类",
+      "configure": "配置",
+      "review": "审核"
+    },
+    "ariaLabel": "向导步骤",
+    "back": "返回"
+  },
+  "wizardAnalysis": {
+    "chooseStrategy": "选择预算策略",
+    "analysisPeriod": "分析周期",
+    "analysisPeriodHint": "应分析多少个月的交易历史来建议预算金额？",
+    "budgetProfile": "预算配置",
+    "analyzeButton": "分析我的支出",
+    "analysisPeriods": {
+      "3": "3 个月",
+      "6": "6 个月",
+      "12": "12 个月"
+    },
+    "strategies": {
+      "FIXED": {
+        "label": "固定",
+        "description": "为每个分类设置固定金额。未使用的预算在每期结束时重置。"
+      },
+      "ROLLOVER": {
+        "label": "滚存",
+        "description": "未使用的预算结转至下一期。可为每个分类配置滚存规则。"
+      },
+      "ZERO_BASED": {
+        "label": "零基础",
+        "description": "每一分收入都分配了用途。收入减去支出等于零。"
+      },
+      "FIFTY_THIRTY_TWENTY": {
+        "label": "50/30/20",
+        "description": "50% 用于需求，30% 用于欲望，20% 用于储蓄。分类按组打标。"
+      }
+    },
+    "profiles": {
+      "COMFORTABLE": {
+        "label": "宽松",
+        "description": "基于您的第 75 百分位支出。留有余地。"
+      },
+      "ON_TRACK": {
+        "label": "正常",
+        "description": "基于您的中位数支出。切实可行的目标。"
+      },
+      "AGGRESSIVE": {
+        "label": "激进",
+        "description": "基于您的第 25 百分位。力求多储蓄的挑战目标。"
+      }
+    },
+    "toasts": {
+      "analyzeFailed": "分析支出失败"
+    }
+  },
+  "wizardCategories": {
+    "title": "审核分类",
+    "noAnalysis": "无分析数据。请返回并先运行分析。",
+    "tableHeaders": {
+      "income": "收入",
+      "expenses": "支出",
+      "transfers": "转账/储蓄",
+      "trendMedian": "趋势/中位数",
+      "amount": "金额"
+    },
+    "totals": {
+      "totalIncome": "总收入",
+      "totalExpenses": "总支出",
+      "transfers": "转账",
+      "remaining": "剩余"
+    },
+    "allocation503020": "50/30/20 分配",
+    "allocationTarget": "（目标 {percent}%）",
+    "nextButton": "下一步：配置",
+    "profiles": {
+      "COMFORTABLE": "宽松",
+      "ON_TRACK": "正常",
+      "AGGRESSIVE": "激进"
+    }
+  },
+  "wizardStrategy": {
+    "title": "配置您的预算",
+    "sections": {
+      "budgetDetails": "预算详情",
+      "income": "收入",
+      "rolloverRules": "滚存规则",
+      "alertThresholds": "提醒阈值",
+      "flexGroups": "弹性分组",
+      "excludedAccounts": "排除账户"
+    },
+    "budgetNameLabel": "预算名称",
+    "budgetNameRequired": "预算名称为必填项",
+    "budgetTypeLabel": "预算类型",
+    "startDateLabel": "开始日期",
+    "startDateRequired": "开始日期为必填项",
+    "strategyPrefix": "策略：{strategy}",
+    "strategyNotSelected": "未选择",
+    "strategyDescriptions": {
+      "FIXED": "为每个分类设置金额。未支出的预算在每期结束时重置。",
+      "ROLLOVER": "未支出的预算根据每分类的滚存规则结转。",
+      "ZERO_BASED": "每一分收入都已分配。收入减去支出应等于零。",
+      "FIFTY_THIRTY_TWENTY": "分类分为需求（50%）、欲望（30%）、储蓄（20%）。"
+    },
+    "linkBudgetToIncome": "将预算与收入关联",
+    "linkBudgetToIncomeHint": "分类金额变为基础收入的百分比",
+    "baseMonthlyIncome": "月基础收入",
+    "estimatedFromAnalysis": "分析估算：{amount}/月",
+    "defaultRolloverType": "默认滚存类型",
+    "rolloverHint": "这将设置所有分类的默认值。创建预算后可自定义各个分类。",
+    "rolloverOptions": {
+      "NONE": "无 — 每期重置",
+      "MONTHLY": "按月 — 每月结转",
+      "QUARTERLY": "按季 — 每季结转",
+      "ANNUAL": "按年 — 每年结转"
+    },
+    "warningAt": "警告阈值（%）",
+    "warningHint": "当支出达到预算的此百分比时触发警告",
+    "criticalAt": "严重阈值（%）",
+    "criticalHint": "当支出达到预算的此百分比时触发严重提醒",
+    "flexGroupsHide": "隐藏",
+    "flexGroupsConfigure": "配置",
+    "flexGroupsHint": "将相关支出分类归为一组。按组合计追踪支出，组内可灵活分配。",
+    "flexGroupsTableHeaders": {
+      "category": "分类",
+      "flexGroup": "弹性分组"
+    },
+    "flexGroupPlaceholder": "例如：娱乐资金",
+    "excludedAccountsHint": "排除账户的交易不计入预算总额。",
+    "excludedCount": "已排除 {count} 个账户",
+    "categoriesAndTransfers": "已选择 {categories} 个分类和 {transfers} 个转账",
+    "budgetTypeOptions": {
+      "MONTHLY": "月度",
+      "ANNUAL": "年度",
+      "PAY_PERIOD": "薪资周期"
+    },
+    "nextButton": "下一步：审核"
+  },
+  "wizardReview": {
+    "title": "审核您的预算",
+    "fields": {
+      "name": "名称",
+      "type": "类型",
+      "strategy": "策略",
+      "startDate": "开始日期",
+      "rollover": "滚存",
+      "alerts": "提醒",
+      "incomeLinked": "收入关联",
+      "excludedAccounts": "排除账户"
+    },
+    "rolloverOff": "关闭",
+    "alertsValue": "警告 {warn}% / 严重 {critical}%",
+    "accountCount": "{count} 个账户",
+    "strategyNotSelected": "未选择",
+    "summaryCards": {
+      "estIncome": "预计收入",
+      "totalExpenses": "总支出",
+      "transfers": "转账",
+      "remaining": "剩余"
+    },
+    "tableHeaders": {
+      "category": "分类",
+      "amount": "金额",
+      "type": "类型"
+    },
+    "categoryTypes": {
+      "income": "收入",
+      "expense": "支出",
+      "transfer": "转账"
+    },
+    "createButton": "创建预算",
+    "categoryCount": "{count} 个分类",
+    "accountsCount": "{count} 个账户",
+    "toasts": {
+      "created": "预算已成功创建",
+      "failed": "创建预算失败"
+    }
+  },
+  "zeroBasedBar": {
+    "title": "零基础分配",
+    "fullyAssigned": "已全额分配",
+    "overAssigned": "已超额分配",
+    "underAssigned": "未足额分配",
+    "assigned": "已分配：{assigned} / {income}",
+    "unassigned": "未分配 {amount}",
+    "over": "超出 {amount}"
+  },
+  "strategyCard": {
+    "pros": "优点",
+    "cons": "缺点",
+    "bestFor": "最适合：",
+    "strategies": {
+      "FIXED": {
+        "title": "固定预算",
+        "description": "为每个分类每期设置固定支出上限。未支出的金额在期末重置，不结转。",
+        "pros": [
+          "设置简单易懂",
+          "每个分类有明确支出上限",
+          "每月预算可预测",
+          "适合预算新手入门"
+        ],
+        "cons": [
+          "未支出金额不结转",
+          "分类之间无灵活性",
+          "无法适应不规律支出",
+          "支出模式变化时可能感觉过于死板"
+        ],
+        "bestFor": "希望有明确上限和可预测支出模式的简洁预算方式的人群。"
+      },
+      "ROLLOVER": {
+        "title": "滚存预算",
+        "description": "未支出的预算根据每分类的滚存规则结转至下一期。为不规律或季节性支出的分类积累储备。",
+        "pros": [
+          "为不规律支出建立储备",
+          "奖励分类节省行为",
+          "每个分类可灵活设置滚存规则",
+          "自然应对季节性变化"
+        ],
+        "cons": [
+          "初始配置较为复杂",
+          "累积余额需要监控",
+          "上限过高可能掩盖超支",
+          "需要定期审查滚存规则"
+        ],
+        "bestFor": "有不规律支出（如汽车保养、年度订阅或季节性费用）且希望逐步积累的人群。"
+      },
+      "ZERO_BASED": {
+        "title": "零基础预算",
+        "description": "每一分收入都分配了特定用途。收入减去所有预算金额应等于零，确保没有未分配的资金。",
+        "pros": [
+          "对每一分钱的最大控制",
+          "迫使有意识地做出消费决策",
+          "快速发现浪费性支出",
+          "对还债目标非常有效"
+        ],
+        "cons": [
+          "需要提前知道确切收入",
+          "每期维护耗时",
+          "对可变收入灵活性较低",
+          "部分用户可能感到受限"
+        ],
+        "bestFor": "希望完全掌控财务且愿意每期规划每一分钱用途的人群。"
+      },
+      "FIFTY_THIRTY_TWENTY": {
+        "title": "50/30/20 预算",
+        "description": "一种将收入分为三组的平衡方法：50% 用于需求（住房、食品、水电），30% 用于欲望（餐饮、娱乐），20% 用于储蓄和还债。",
+        "pros": [
+          "易于记忆和遵循",
+          "内置储蓄分配",
+          "支出方式平衡",
+          "每组内部灵活"
+        ],
+        "cons": [
+          "可能不适合生活成本较高的地区",
+          "固定比例可能不适合所有情况",
+          "分类层面控制粒度较低",
+          "需要将每笔支出按组归类"
+        ],
+        "bestFor": "希望采用平衡的经验法则而无需逐个追踪每个分类的人群。"
+      }
+    }
+  },
+  "pages": {
+    "list": {
+      "title": "预算",
+      "subtitle": "管理您的预算并追踪支出",
+      "newBudget": "+ 新建预算",
+      "empty": {
+        "title": "暂无预算",
+        "description": "通过分析您的支出历史来创建第一个预算。向导将根据您的交易建议切实可行的金额。",
+        "cta": "创建您的第一个预算"
+      },
+      "card": {
+        "active": "活跃",
+        "inactive": "非活跃",
+        "categories": "{count} 个分类",
+        "started": "开始于 {date}"
+      }
+    },
+    "create": {
+      "title": "创建预算",
+      "subtitle": "分析您的支出并创建个性化预算"
+    },
+    "detail": {
+      "backToBudgets": "返回预算",
+      "notFound": "未找到预算",
+      "delete": {
+        "title": "删除预算",
+        "message": "确定要删除\"{name}\"吗？这将删除所有预算数据，包括周期和提醒。此操作无法撤销。",
+        "confirm": "删除",
+        "cancel": "取消"
+      },
+      "toasts": {
+        "deleted": "预算已删除",
+        "deleteFailed": "删除预算失败",
+        "loadFailed": "加载预算失败",
+        "periodFailed": "加载周期失败"
+      }
+    },
+    "edit": {
+      "subtitlePrefix": "编辑：",
+      "subtitle": "更新预算设置和分类分配",
+      "backToDashboard": "返回仪表盘",
+      "budgetSettings": "预算设置",
+      "categoryAllocations": "分类分配",
+      "income": "收入",
+      "expensesWithCount": "支出（{count}）",
+      "resetsEachPeriod": "每期重置",
+      "percentUsed": "已用 {percent}%",
+      "rolloverType": "滚存：{type}",
+      "editCategoryTitle": "编辑 {name}",
+      "toasts": {
+        "updated": "预算已更新",
+        "updateFailed": "更新预算失败",
+        "categoryUpdated": "分类已更新",
+        "categoryFailed": "更新分类失败",
+        "loadFailed": "加载预算失败"
+      }
+    }
+  },
+  "validation": {
+    "nameRequired": "预算名称为必填项",
+    "nameMax": "预算名称不能超过 255 个字符",
+    "descriptionMax": "描述不能超过 1000 个字符"
+  },
+  "categoryValidation": {
+    "amountMin": "金额必须大于等于 0",
+    "mustBeNumber": "必须为数字"
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "page": {
+    "title": "टैग",
+    "subtitle": "अपने लेन-देन को कस्टम टैग से लेबल करें",
+    "newButton": "+ नया टैग",
+    "summary": {
+      "totalTags": "कुल टैग",
+      "tagsWithColour": "रंग वाले टैग",
+      "tagsWithIcon": "आइकन वाले टैग"
+    },
+    "search": {
+      "placeholder": "टैग खोजें..."
+    },
+    "loading": "टैग लोड हो रहे हैं...",
+    "emptyState": {
+      "title": "अभी कोई टैग नहीं",
+      "body": "टैग आपके लेन-देन को लेबल और फ़िल्टर करने में मदद करते हैं। शुरू करने के लिए पहला टैग बनाएँ।",
+      "createButton": "पहला टैग बनाएँ"
+    },
+    "modal": {
+      "newTitle": "नया टैग",
+      "editTitle": "टैग संपादित करें"
+    },
+    "totalCount": "{count, plural, one {# टैग} other {# टैग}}",
+    "delete": {
+      "title": "टैग हटाएँ",
+      "withTransactionsMessage": "क्या आप वाकई \"{name}\" हटाना चाहते हैं? यह टैग {count, plural, one {# लेन-देन} other {# लेन-देनों}} पर उपयोग किया गया है। उन लेन-देनों से टैग हटा दिया जाएगा।",
+      "simpleMessage": "क्या आप वाकई \"{name}\" हटाना चाहते हैं? यह क्रिया पूर्ववत नहीं की जा सकती।"
+    },
+    "toasts": {
+      "created": "टैग सफलतापूर्वक बनाया गया",
+      "updated": "टैग सफलतापूर्वक अपडेट किया गया",
+      "deleted": "टैग सफलतापूर्वक हटाया गया",
+      "loadFailed": "टैग लोड करने में विफल",
+      "createFailed": "टैग बनाने में विफल",
+      "updateFailed": "टैग अपडेट करने में विफल",
+      "deleteFailed": "टैग हटाने में विफल"
+    }
+  },
+  "list": {
+    "empty": {
+      "title": "कोई टैग नहीं मिला",
+      "body": "आपकी वर्तमान खोज से कोई टैग मेल नहीं खाता।"
+    },
+    "density": {
+      "title": "पंक्ति घनत्व बदलें",
+      "normal": "सामान्य",
+      "compact": "संक्षिप्त",
+      "dense": "घना"
+    },
+    "header": {
+      "name": "नाम",
+      "icon": "आइकन",
+      "transactions": "लेन-देन",
+      "actions": "क्रियाएँ"
+    }
+  },
+  "form": {
+    "nameLabel": "टैग का नाम",
+    "colourLabel": "रंग",
+    "iconLabel": "आइकन",
+    "noColour": "कोई रंग नहीं",
+    "submitCreate": "टैग बनाएँ",
+    "submitUpdate": "टैग अपडेट करें",
+    "colours": {
+      "red": "लाल",
+      "orange": "नारंगी",
+      "yellow": "पीला",
+      "green": "हरा",
+      "teal": "टील",
+      "blue": "नीला",
+      "purple": "बैंगनी",
+      "pink": "गुलाबी",
+      "grey": "धूसर"
+    }
+  },
+  "validation": {
+    "nameRequired": "टैग का नाम आवश्यक है"
+  }
+}

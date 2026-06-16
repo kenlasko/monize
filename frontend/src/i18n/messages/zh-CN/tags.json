@@ -1,0 +1,80 @@
+{
+  "page": {
+    "title": "标签",
+    "subtitle": "使用自定义标签为您的交易打标",
+    "newButton": "+ 新建标签",
+    "summary": {
+      "totalTags": "标签总数",
+      "tagsWithColour": "含颜色的标签",
+      "tagsWithIcon": "含图标的标签"
+    },
+    "search": {
+      "placeholder": "搜索标签..."
+    },
+    "loading": "正在加载标签...",
+    "emptyState": {
+      "title": "暂无标签",
+      "body": "标签帮助您为交易打标和筛选。创建您的第一个标签以开始使用。",
+      "createButton": "创建第一个标签"
+    },
+    "modal": {
+      "newTitle": "新建标签",
+      "editTitle": "编辑标签"
+    },
+    "totalCount": "{count, plural, one {# 个标签} other {# 个标签}}",
+    "delete": {
+      "title": "删除标签",
+      "withTransactionsMessage": "确定要删除\"{name}\"吗？此标签已用于 {count, plural, one {# 笔交易} other {# 笔交易}}，将从这些交易中移除。",
+      "simpleMessage": "确定要删除\"{name}\"吗？此操作无法撤销。"
+    },
+    "toasts": {
+      "created": "标签已成功创建",
+      "updated": "标签已成功更新",
+      "deleted": "标签已成功删除",
+      "loadFailed": "加载标签失败",
+      "createFailed": "创建标签失败",
+      "updateFailed": "更新标签失败",
+      "deleteFailed": "删除标签失败"
+    }
+  },
+  "list": {
+    "empty": {
+      "title": "未找到标签",
+      "body": "没有标签符合您当前的搜索条件。"
+    },
+    "density": {
+      "title": "切换行密度",
+      "normal": "正常",
+      "compact": "紧凑",
+      "dense": "密集"
+    },
+    "header": {
+      "name": "名称",
+      "icon": "图标",
+      "transactions": "交易",
+      "actions": "操作"
+    }
+  },
+  "form": {
+    "nameLabel": "标签名称",
+    "colourLabel": "颜色",
+    "iconLabel": "图标",
+    "noColour": "无颜色",
+    "submitCreate": "创建标签",
+    "submitUpdate": "更新标签",
+    "colours": {
+      "red": "红色",
+      "orange": "橙色",
+      "yellow": "黄色",
+      "green": "绿色",
+      "teal": "青色",
+      "blue": "蓝色",
+      "purple": "紫色",
+      "pink": "粉色",
+      "grey": "灰色"
+    }
+  },
+  "validation": {
+    "nameRequired": "标签名称为必填项"
+  }
+}

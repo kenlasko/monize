@@ -1,0 +1,44 @@
+{
+  "page": {
+    "title": "支出インサイト",
+    "subtitle": "AI を活用した支出パターンと異常の分析"
+  },
+  "list": {
+    "lastUpdated": "最終更新: {date} {time}",
+    "refreshButton": "インサイトを更新",
+    "generating": "生成中...",
+    "allTypes": "すべての種類",
+    "allSeverities": "すべての重要度",
+    "showDismissed": "非表示にしたものを表示",
+    "emptyNoInsights": "インサイトはまだ生成されていません。「インサイトを更新」をクリックして支出パターンを分析してください。",
+    "emptyFiltered": "現在のフィルターに一致するインサイトはありません。",
+    "generateButton": "インサイトを生成",
+    "alertCount": "{count, plural, one {# 件のアラート} other {# 件のアラート}}",
+    "warningCount": "{count, plural, one {# 件の警告} other {# 件の警告}}",
+    "errorLoadFailed": "インサイトの読み込みに失敗しました。もう一度お試しください。",
+    "errorGenerateFailed": "インサイトの生成に失敗しました。AI プロバイダーが設定されていることを確認してください。",
+    "errorTimeout": "インサイトの生成に予想以上の時間がかかっています。しばらくお待ちいただくか、ページを更新してください。"
+  },
+  "card": {
+    "dismiss": "非表示にする",
+    "dismissing": "非表示にしています..."
+  },
+  "notConfigured": {
+    "heading": "AI が設定されていません",
+    "message": "AI プロバイダーが設定されていません。支出インサイトを使用するには、設定で {link} してください。",
+    "linkText": "AI プロバイダーを設定"
+  },
+  "insightTypes": {
+    "anomaly": "異常",
+    "trend": "トレンド",
+    "subscription": "サブスクリプション",
+    "budget_pace": "予算ペース",
+    "seasonal": "季節性",
+    "new_recurring": "新しい定期支出"
+  },
+  "insightSeverities": {
+    "info": "情報",
+    "warning": "警告",
+    "alert": "アラート"
+  }
+}

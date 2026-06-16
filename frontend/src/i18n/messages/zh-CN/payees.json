@@ -1,0 +1,292 @@
+{
+  "page": {
+    "title": "收款人",
+    "subtitle": "管理您的收款人及其默认分类",
+    "deactivateUnused": "停用未使用",
+    "autoAssignCategories": "自动分配分类",
+    "autoMergePayees": "自动合并收款人",
+    "newPayee": "+ 新建收款人",
+    "searchPlaceholder": "搜索收款人...",
+    "statusAll": "全部（{count}）",
+    "statusActive": "活跃（{count}）",
+    "statusInactive": "非活跃（{count}）",
+    "categoryFilterAll": "所有收款人（{count}）",
+    "categoryFilterNoCategory": "无默认分类（{count}）",
+    "categoryFilterUncategorized": "未分类交易（{count}）",
+    "modalTitleEdit": "编辑收款人",
+    "modalTitleNew": "新建收款人",
+    "loading": "正在加载收款人...",
+    "count": "{count, plural, one {# 个收款人} other {# 个收款人}}",
+    "toasts": {
+      "loadFailed": "加载数据失败",
+      "updated": "收款人已成功更新",
+      "created": "收款人已成功创建",
+      "reactivated": "收款人\"{name}\"已重新激活",
+      "reactivateFailed": "重新激活收款人失败",
+      "updateFailed": "更新收款人失败",
+      "createFailed": "创建收款人失败",
+      "categorized": "{count, plural, one {已分类 # 笔交易} other {已分类 # 笔交易}}"
+    },
+    "summary": {
+      "totalPayees": "收款人总数",
+      "active": "活跃",
+      "inactive": "非活跃",
+      "withoutCategory": "无分类"
+    },
+    "applyDefaultCategories": "应用默认分类"
+  },
+  "list": {
+    "columns": {
+      "name": "名称",
+      "defaultCategory": "默认分类",
+      "count": "数量",
+      "aliases": "别名",
+      "lastUsed": "最后使用",
+      "created": "创建时间",
+      "status": "状态",
+      "notes": "备注",
+      "actions": "操作"
+    },
+    "density": {
+      "normal": "正常",
+      "compact": "紧凑",
+      "dense": "密集",
+      "toggle": "切换行密度"
+    },
+    "noCategory": "无",
+    "statusBadge": {
+      "active": "活跃",
+      "inactive": "非活跃"
+    },
+    "actions": {
+      "reactivate": "重新激活",
+      "reactivateShort": "激活",
+      "merge": "合并",
+      "mergeShort": "并",
+      "edit": "编辑",
+      "editShort": "编",
+      "delete": "删除",
+      "deleteShort": "删"
+    },
+    "viewTransactionsTitle": "查看此收款人的交易",
+    "uncategorizedBadge": "{count, plural, one {# 笔未分类} other {# 笔未分类}}",
+    "uncategorizedTitle": "{count, plural, one {此收款人有 # 笔交易无分类} other {此收款人有 # 笔交易无分类}}",
+    "empty": {
+      "title": "无收款人",
+      "subtitle": "创建新收款人以开始使用。"
+    },
+    "deleteConfirm": {
+      "title": "删除\"{name}\"？",
+      "message": "此操作无法撤销。",
+      "confirmLabel": "删除",
+      "cancelLabel": "取消"
+    },
+    "toasts": {
+      "deleted": "收款人已成功删除",
+      "deleteFailed": "删除收款人失败"
+    }
+  },
+  "form": {
+    "nameLabel": "收款人名称",
+    "categoryLabel": "默认分类",
+    "notesLabel": "备注（可选）",
+    "submitCreate": "创建收款人",
+    "submitUpdate": "更新收款人",
+    "applyCategoryLabel": "将此分类应用于现有交易",
+    "applyCategoryNone": "不更改现有交易",
+    "applyCategoryUncategorized": "仅限无分类交易（{count}）",
+    "applyCategoryAll": "所有交易（{count}）",
+    "applyCategoryHelp": "转账和拆分交易不会被更改。"
+  },
+  "merge": {
+    "title": "合并收款人",
+    "mergeFromLabel": "合并来源（将被删除）：",
+    "transactionCount": "{count, plural, one {将迁移 # 笔交易} other {将迁移 # 笔交易}}",
+    "mergeIntoLabel": "合并目标（目标收款人）",
+    "addAsAliasLabel": "将\"{name}\"添加为目标收款人的别名",
+    "willLabel": "此操作将：",
+    "willMoveTransactions": "将所有来自\"{source}\"的交易移至\"{target}\"",
+    "willAddAlias": "将\"{source}\"添加为别名，以便未来导入时自动匹配",
+    "willDelete": "删除\"{source}\"收款人",
+    "merging": "合并中...",
+    "mergeButton": "合并收款人",
+    "toasts": {
+      "merged": "已合并至\"{target}\"：{details}",
+      "transactionsMigrated": "{count, plural, one {已迁移 # 笔交易} other {已迁移 # 笔交易}}",
+      "aliasAdded": "别名已添加",
+      "sourceDeleted": "\"{name}\"已删除",
+      "failed": "合并收款人失败"
+    }
+  },
+  "categoryAutoAssign": {
+    "title": "自动分配默认分类",
+    "howItWorksTitle": "工作原理",
+    "howItWorksBody": "此功能分析您的交易历史，为收款人推荐默认分类。它查看每个收款人最常用的分类，并建议将其设为该收款人的默认分类，以供未来交易使用。您随时可以覆盖默认分类。",
+    "minTransactionsLabel": "最少交易数：{count}",
+    "minTransactionsHelp": "仅考虑至少有这么多笔交易的收款人",
+    "matchPercentageLabel": "分类匹配百分比：{percent}%",
+    "matchPercentageHelp": "该分类在交易中的使用占比至少需达到此百分比",
+    "onlyWithoutCategoryLabel": "仅限无默认分类的收款人",
+    "backfillLabel": "同时为 {count, plural, one {# 笔现有未分类交易} other {# 笔现有未分类交易}} 分类",
+    "backfillHelp": "将所选分类应用于当前无分类的交易。已有分类的交易、转账和拆分交易保持不变。",
+    "viewUncategorizedTitle": "查看 {name} 的 {count, plural, one {# 笔未分类交易} other {# 笔未分类交易}}",
+    "previewButton": "预览建议",
+    "loading": "加载中...",
+    "suggestionsHeader": "建议（找到 {count} 个）",
+    "selectAll": "全选",
+    "selectNone": "取消全选",
+    "selectPayeeLabel": "选择 {name}",
+    "empty": {
+      "line1": "没有收款人符合当前条件。",
+      "line2": "请尝试调整上方设置。"
+    },
+    "columns": {
+      "payee": "收款人",
+      "suggestedCategory": "建议分类",
+      "match": "匹配度"
+    },
+    "selectedCount": "{count, plural, one {已选 # 个收款人} other {已选 # 个收款人}}",
+    "applyButton": "应用到 {count, plural, one {# 个收款人} other {# 个收款人}}",
+    "applying": "应用中...",
+    "toasts": {
+      "selectAtLeastOne": "请至少选择一个收款人进行更新",
+      "updated": "{count, plural, one {已更新 # 个收款人} other {已更新 # 个收款人}}",
+      "backfilled": "{count, plural, one {已分类 # 笔交易} other {已分类 # 笔交易}}",
+      "loadFailed": "加载建议失败",
+      "applyFailed": "应用分类分配失败"
+    }
+  },
+  "autoMerge": {
+    "title": "自动合并收款人",
+    "howItWorksTitle": "工作原理",
+    "howItWorksBody": "此功能扫描您的收款人，将一个名称是另一个扩展的变体归为一组。例如\"Lidl\"、\"LIDL sp. z o.o.\"和\"LIDL WARSZAWA 0421\"都基于\"Lidl\"。每个组合并为一个规范收款人，并创建通配符别名（例如\"*LIDL*\"），以便未来导入自动匹配。仅共享一个常见词的收款人（如\"皇家电器\"和\"皇家城市苗圃\"）将保持分开。应用前请检查并调整每个分组。",
+    "backupRecommendation": "建议：进行更改前先创建<link>备份</link>。",
+    "minGroupSizeLabel": "最小组大小：{count}",
+    "minGroupSizeHelp": "仅建议至少包含这么多收款人的分组",
+    "similarityLabel": "相似度阈值：{percent}%",
+    "similarityHelp": "拼写容差：降低此值也可将近似匹配（如 LIDL / LIDI）归为一组；100% 需要完全关键词匹配。",
+    "minTokenLengthLabel": "最小关键词长度：{count}",
+    "minTokenLengthHelp": "分组时忽略短于此长度的关键词",
+    "includeInactiveLabel": "包含非活跃收款人",
+    "previewButton": "预览分组",
+    "loading": "加载中...",
+    "groupsHeader": "分组（找到 {count} 个）",
+    "empty": {
+      "line1": "没有合并分组符合当前条件。",
+      "line2": "请尝试降低相似度阈值或组大小。"
+    },
+    "includeGroupLabel": "包含此组",
+    "canonicalNameLabel": "保留为收款人",
+    "aliasLabel": "未来导入的别名",
+    "defaultCategoryLabel": "默认分类（可选）",
+    "backfillLabel": "同时为 {count, plural, one {# 笔现有未分类交易} other {# 笔现有未分类交易}} 分类",
+    "aliasPlaceholder": "例如：*LIDL*",
+    "keepLabel": "保留此收款人",
+    "includeMemberLabel": "包含在合并中",
+    "keepBadge": "保留",
+    "keepColumn": "保留",
+    "mergeColumn": "合并",
+    "membersHelp": "选择要保留的收款人，其余将合并进去。",
+    "memberTransactions": "{count, plural, one {# 笔交易} other {# 笔交易}}",
+    "selectedCount": "{count, plural, one {已选 # 个分组} other {已选 # 个分组}}",
+    "payeesMergedCount": "{count, plural, one {# 个收款人待合并} other {# 个收款人待合并}}",
+    "applyButton": "合并 {count, plural, one {# 个分组} other {# 个分组}}",
+    "applying": "合并中...",
+    "toasts": {
+      "selectAtLeastOne": "请至少选择一个分组进行合并",
+      "applied": "已合并 {groups, plural, one {# 个分组} other {# 个分组}}（合并了 {payees} 个收款人）",
+      "backfilled": "{count, plural, one {已分类 # 笔交易} other {已分类 # 笔交易}}",
+      "aliasesSkipped": "{count, plural, one {# 个别名因冲突被跳过} other {# 个别名因冲突被跳过}}",
+      "loadFailed": "加载合并分组失败",
+      "applyFailed": "合并收款人失败"
+    },
+    "categoryMatchLabel": "仅合并同一分类下的收款人",
+    "categoryMatchHelp": "当收款人分类不同时保持分开，减少误匹配。",
+    "granularityLabel": "分类匹配级别",
+    "selectAll": "全选",
+    "deselectAll": "取消全选",
+    "granularity": {
+      "category": "分类",
+      "subcategory": "子分类"
+    },
+    "ignoreCommonWordsLabel": "忽略常见词",
+    "ignoreCommonWordsHelp": "不以通用词（餐厅、咖啡馆、国家名称）或许多不同收款人开头的词作为分组依据。",
+    "commonWordSensitivityLabel": "常见词敏感度：{count}+ 个变体",
+    "commonWordSensitivityHelp": "当至少这么多不同的收款人以某个词开头时，将其视为常见词。数值越低，过滤越积极。",
+    "viewUncategorizedTitle": "查看 {name} 的 {count, plural, one {# 笔未分类交易} other {# 笔未分类交易}}"
+  },
+  "deactivateUnused": {
+    "title": "停用未使用收款人",
+    "howItWorksTitle": "工作原理",
+    "howItWorksBody": "此功能查找很少使用的收款人并将其停用。停用的收款人不会出现在创建交易时的收款人下拉列表中，但其历史交易记录将保留。您可以随时从收款人列表重新激活收款人。",
+    "maxTransactionsLabel": "{count, plural, one {# 笔或更少交易} other {# 笔或更少交易}}",
+    "maxTransactionsHelp": "仅包含交易数不超过此值的收款人",
+    "monthsUnusedLabel": "最后使用超过 {label} 前",
+    "monthsUnusedHelp": "仅包含距今此时间或更长时间未使用的收款人（或从未使用）",
+    "previewButton": "预览未使用收款人",
+    "loading": "加载中...",
+    "candidatesHeader": "候选（找到 {count} 个）",
+    "selectAll": "全选",
+    "selectNone": "取消全选",
+    "selectPayeeLabel": "选择 {name}",
+    "neverUsed": "从未使用",
+    "empty": {
+      "line1": "没有收款人符合当前条件。",
+      "line2": "请尝试调整上方设置。"
+    },
+    "columns": {
+      "payee": "收款人",
+      "transactions": "交易",
+      "lastUsed": "最后使用"
+    },
+    "selectedCount": "{count, plural, one {已选 # 个收款人} other {已选 # 个收款人}}",
+    "deactivateButton": "停用 {count, plural, one {# 个收款人} other {# 个收款人}}",
+    "deactivating": "停用中...",
+    "toasts": {
+      "selectAtLeastOne": "请至少选择一个收款人进行停用",
+      "deactivated": "{count, plural, one {已停用 # 个收款人} other {已停用 # 个收款人}}",
+      "loadFailed": "加载预览失败",
+      "deactivateFailed": "停用收款人失败"
+    }
+  },
+  "reactivate": {
+    "title": "重新激活收款人？",
+    "message": "收款人\"{name}\"之前已被停用。是否重新激活以使其再次出现在收款人下拉列表中？",
+    "keepInactiveButton": "否，保持非活跃",
+    "reactivateButton": "重新激活",
+    "reactivating": "重新激活中..."
+  },
+  "aliases": {
+    "heading": "别名",
+    "description": "别名将导入的收款人名称映射到此收款人。使用 * 作为通配符（例如：\"STARBUCKS*\"）。不区分大小写。",
+    "loading": "加载中...",
+    "noAliases": "未配置别名",
+    "removeTitle": "移除别名",
+    "removeButton": "移除",
+    "addButton": "添加",
+    "adding": "添加中...",
+    "placeholder": "例如：STARBUCKS #*",
+    "toasts": {
+      "alreadyAdded": "别名\"{alias}\"已添加",
+      "added": "别名\"{alias}\"已添加",
+      "removed": "别名\"{alias}\"已移除",
+      "loadFailed": "加载别名失败",
+      "addFailed": "添加别名失败",
+      "removeFailed": "移除别名失败"
+    }
+  },
+  "selectCategoryPlaceholder": "选择分类...",
+  "validation": {
+    "nameRequired": "收款人名称为必填项"
+  },
+  "defaultCategoryBackfill": {
+    "allConfirmTitle": "应用默认分类？",
+    "allConfirmMessage": "此操作将使用各收款人的默认分类，对 {transactions, plural, one {# 笔未分类交易} other {# 笔未分类交易}}（涉及 {payees, plural, one {# 个收款人} other {# 个收款人}}）进行分类。已手动分类的交易、转账和拆分交易保持不变。",
+    "confirmButton": "应用",
+    "toasts": {
+      "nothingToDo": "无未分类交易需要分类",
+      "applied": "{count, plural, one {已分类 # 笔交易} other {已分类 # 笔交易}}",
+      "failed": "分类交易失败"
+    }
+  }
+}

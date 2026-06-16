@@ -1,0 +1,875 @@
+{
+  "language": {
+    "label": "Bahasa",
+    "browserOption": "Gunakan lokal browser (deteksi otomatis: {locale})",
+    "helpText": "Pilih bahasa yang digunakan di seluruh antarmuka Monize. Format angka dan tanggal dikendalikan secara terpisah di bawah.",
+    "saved": "Bahasa diperbarui",
+    "saveFailed": "Gagal menyimpan bahasa"
+  },
+  "profile": {
+    "heading": "Profil",
+    "firstNameLabel": "Nama Depan",
+    "firstNamePlaceholder": "Masukkan nama depan Anda",
+    "lastNameLabel": "Nama Belakang",
+    "lastNamePlaceholder": "Masukkan nama belakang Anda",
+    "emailLabel": "Surel",
+    "emailPlaceholder": "Masukkan surel Anda",
+    "currentPasswordLabel": "Kata Sandi Saat Ini",
+    "currentPasswordPlaceholder": "Diperlukan untuk mengubah surel",
+    "passwordRequired": "Kata sandi saat ini diperlukan untuk mengubah surel",
+    "noChanges": "Tidak ada perubahan untuk disimpan",
+    "passwordConfirmNote": "Konfirmasi kata sandi diperlukan saat mengubah alamat surel Anda.",
+    "saveButton": "Simpan Profil",
+    "savingButton": "Menyimpan...",
+    "toasts": {
+      "success": "Profil berhasil diperbarui",
+      "updateFailed": "Gagal memperbarui profil"
+    },
+    "validation": {
+      "firstNameMax": "Nama depan harus 100 karakter atau kurang",
+      "lastNameMax": "Nama belakang harus 100 karakter atau kurang",
+      "emailRequired": "Surel diperlukan",
+      "emailInvalid": "Silakan masukkan alamat surel yang valid",
+      "emailMax": "Surel harus 254 karakter atau kurang",
+      "passwordMax": "Kata sandi harus 128 karakter atau kurang"
+    }
+  },
+  "security": {
+    "heading": "Keamanan",
+    "ssoNotice": "Akun Anda menggunakan Single Sign-On (SSO) untuk autentikasi. Kata sandi di bawah ini tidak digunakan untuk login tetapi dapat disimpan sebagai cadangan jika SSO dinonaktifkan.",
+    "currentPasswordLabel": "Kata Sandi Saat Ini",
+    "currentPasswordPlaceholder": "Masukkan kata sandi saat ini",
+    "newPasswordLabel": "Kata Sandi Baru",
+    "newPasswordPlaceholder": "Masukkan kata sandi baru",
+    "confirmPasswordLabel": "Konfirmasi Kata Sandi Baru",
+    "confirmPasswordPlaceholder": "Konfirmasi kata sandi baru",
+    "changePasswordButton": "Ganti Kata Sandi",
+    "changingPasswordButton": "Mengganti...",
+    "toasts": {
+      "passwordChanged": "Kata sandi berhasil diubah",
+      "passwordChangeFailed": "Gagal mengubah kata sandi"
+    },
+    "twoFactor": {
+      "heading": "Autentikasi Dua Faktor",
+      "ssoUnavailable": "Autentikasi dua faktor tidak tersedia untuk akun SSO. Keamanan autentikasi dikelola oleh penyedia identitas Anda.",
+      "enabledBadge": "Aktif",
+      "enabledDescription": "Akun Anda dilindungi dengan verifikasi TOTP.",
+      "requiredByAdmin": "Diperlukan oleh administrator",
+      "addLayerDescription": "Tambahkan lapisan keamanan ekstra ke akun Anda.",
+      "enableButton": "Aktifkan 2FA",
+      "disableButton": "Nonaktifkan 2FA",
+      "disableModal": {
+        "title": "Nonaktifkan Autentikasi Dua Faktor",
+        "description": "Masukkan kode 6 digit Anda saat ini untuk mengonfirmasi menonaktifkan 2FA.",
+        "verificationCodeLabel": "Kode Verifikasi",
+        "disablingButton": "Menonaktifkan...",
+        "toasts": {
+          "disabled": "Autentikasi dua faktor dinonaktifkan",
+          "disableFailed": "Gagal menonaktifkan 2FA"
+        }
+      }
+    },
+    "backupCodes": {
+      "heading": "Kode Cadangan",
+      "description": "Gunakan kode cadangan untuk masuk jika Anda kehilangan akses ke aplikasi autentikator Anda.",
+      "regenerateButton": "Buat ulang kode",
+      "regenerateModal": {
+        "title": "Buat Ulang Kode Cadangan",
+        "description": "Masukkan kode 6 digit Anda saat ini untuk mengonfirmasi pembuatan ulang kode cadangan. Ini akan membatalkan kode yang ada.",
+        "verificationCodeLabel": "Kode Verifikasi",
+        "regeneratingButton": "Membuat ulang...",
+        "regenerateButton": "Buat Ulang"
+      },
+      "toasts": {
+        "generateFailed": "Gagal membuat kode cadangan"
+      }
+    },
+    "trustedDevices": {
+      "heading": "Perangkat Tepercaya",
+      "revokeAllButton": "Cabut Semua",
+      "noDevices": "Tidak ada perangkat tepercaya. Saat Anda mencentang \"Jangan tanya lagi di browser ini\" selama login 2FA, perangkat akan muncul di sini.",
+      "currentBadge": "Saat ini",
+      "revokeButton": "Cabut",
+      "revokeAllModal": {
+        "title": "Cabut Semua Perangkat Tepercaya",
+        "description": "Ini akan menghapus semua perangkat tepercaya. Anda perlu memasukkan kode 2FA Anda pada login berikutnya dari perangkat mana pun."
+      },
+      "toasts": {
+        "revoked": "Perangkat dicabut",
+        "revokedAll": "{count} perangkat dicabut",
+        "revokeFailed": "Gagal mencabut perangkat",
+        "revokeAllFailed": "Gagal mencabut perangkat"
+      }
+    },
+    "validation": {
+      "currentPasswordRequired": "Kata sandi saat ini diperlukan",
+      "passwordMax": "Kata sandi harus 128 karakter atau kurang",
+      "confirmRequired": "Silakan konfirmasi kata sandi baru Anda",
+      "newPasswordsNoMatch": "Kata sandi baru tidak cocok"
+    }
+  },
+  "preferences": {
+    "heading": "Preferensi",
+    "themeLabel": "Tema",
+    "defaultCurrencyLabel": "Mata Uang Bawaan",
+    "preferredExchangesLabel": "Bursa Pilihan (untuk pencarian keamanan dokumen)",
+    "preferredExchangesHelp": "Pilih hingga 3 bursa dalam urutan prioritas. Ini akan diprioritaskan saat mencari keamanan dokumen.",
+    "exchangePriorityPlaceholder": "Prioritas {n}",
+    "defaultQuoteProviderLabel": "Penyedia Kuotasi Saham Bawaan",
+    "defaultQuoteProviderHelp": "Digunakan saat keamanan dokumen tidak memiliki penggantian penyedia. Jika penyedia yang dipilih gagal, Monize secara otomatis mencoba yang lain.",
+    "msnNoIntradayNote": "Catatan: MSN Money tidak menyediakan data kuotasi intraday, sehingga rentang 1D / 1W / 1M pada grafik Nilai Portofolio Dari Waktu ke Waktu tidak tersedia untuk kepemilikan yang dilacak MSN.",
+    "msnNotConfigured": "MSN dipilih sebagai penyedia kuotasi bawaan, tetapi MSN_API_KEY tidak dikonfigurasi di server. Kuotasi MSN akan gagal hingga administrator menetapkan variabel lingkungan dan memulai ulang backend.",
+    "dateFormatLabel": "Format Tanggal",
+    "numberFormatLabel": "Format Angka",
+    "timezoneLabel": "Zona Waktu",
+    "timezonePlaceholder": "Cari zona waktu...",
+    "weekStartsOnLabel": "Minggu dimulai pada",
+    "showCreatedAtLabel": "Tampilkan Tanggal Dibuat di formulir transaksi",
+    "showCreatedAtTooltip": "Menampilkan tanggal dan waktu transaksi pertama kali dibuat pada formulir transaksi. Ini terpisah dari tanggal transaksi dan dapat membantu Anda mengetahui kapan entri sebenarnya ditambahkan ke Monize.",
+    "timeFormatLabel": "Format Waktu",
+    "recentTransactionsLabel": "Transaksi terbaru dalam isi-cepat",
+    "recentTransactionsHelp": "Jumlah entri yang ditampilkan di popover tombol riwayat di samping kolom Penerima pada formulir transaksi.",
+    "saveButton": "Simpan Preferensi",
+    "savingButton": "Menyimpan...",
+    "toasts": {
+      "saved": "Preferensi disimpan",
+      "saveFailed": "Gagal menyimpan preferensi",
+      "themeSaveFailed": "Gagal menyimpan tema",
+      "colorThemeSaveFailed": "Gagal menyimpan tema warna"
+    },
+    "browserLocale": "Gunakan lokal browser (deteksi otomatis)",
+    "browserTimezonePrefix": "Gunakan zona waktu browser (terdeteksi otomatis sebagai {tz})",
+    "numberFormatOptions": {
+      "browser": "Gunakan lokal browser (deteksi otomatis: {sample})",
+      "enUS": "Inggris (AS) - 1,234.56",
+      "enGB": "Inggris (UK) - 1,234.56",
+      "deDE": "Jerman - 1.234,56",
+      "frFR": "Prancis - 1 234,56"
+    },
+    "weekDays": {
+      "sunday": "Minggu",
+      "monday": "Senin",
+      "tuesday": "Selasa",
+      "wednesday": "Rabu",
+      "thursday": "Kamis",
+      "friday": "Jumat",
+      "saturday": "Sabtu"
+    },
+    "themeOptions": {
+      "system": "Sistem (ikuti pengaturan perangkat)",
+      "light": "Terang",
+      "dark": "Gelap"
+    },
+    "colorThemeLabel": "Tema warna",
+    "colorThemeOptions": {
+      "default": "Bawaan",
+      "latte": "Latte",
+      "msmoney": "MS Money",
+      "newspaper": "Koran",
+      "burgundy": "Burgundy",
+      "nord": "Nord",
+      "forest": "Hutan",
+      "solarized": "Solarized",
+      "gruvbox": "Gruvbox",
+      "dracula": "Dracula",
+      "tokyonight": "Tokyo Night",
+      "rosepine": "Rosé Pine",
+      "midnight": "Tengah Malam",
+      "highcontrast": "Kontras tinggi",
+      "colorblind": "Aman untuk buta warna"
+    },
+    "timezoneBrowserOption": "Gunakan zona waktu browser (terdeteksi otomatis sebagai {tz})"
+  },
+  "notifications": {
+    "heading": "Notifikasi",
+    "smtpNotConfigured": "Notifikasi surel tidak tersedia. SMTP belum dikonfigurasi oleh administrator.",
+    "emailNotificationsTitle": "Notifikasi Surel",
+    "emailNotificationsDescription": "Terima pengingat surel untuk tagihan yang akan datang dan peringatan anggaran",
+    "budgetNotificationsHeading": "Notifikasi Anggaran",
+    "weeklyBudgetDigestTitle": "Ringkasan Anggaran Mingguan",
+    "weeklyBudgetDigestDescription": "Terima ringkasan mingguan peringatan dan status anggaran",
+    "toggleBudgetDigestLabel": "Aktifkan/matikan ringkasan anggaran",
+    "digestDayLabel": "Hari ringkasan",
+    "digestDayAriaLabel": "Hari ringkasan anggaran",
+    "mondayOption": "Senin",
+    "fridayOption": "Jumat",
+    "immediateAlertsNote": "Peringatan anggaran kritis (melebihi anggaran, kekurangan pendapatan) dikirim segera terlepas dari pengaturan ringkasan.",
+    "sendTestEmailDescription": "Kirim surel uji untuk memverifikasi notifikasi Anda berfungsi.",
+    "sendTestEmailButton": "Kirim Surel Uji",
+    "sendingTestEmailButton": "Mengirim...",
+    "toasts": {
+      "emailEnabled": "Notifikasi surel diaktifkan",
+      "emailDisabled": "Notifikasi surel dinonaktifkan",
+      "digestEnabled": "Ringkasan anggaran diaktifkan",
+      "digestDisabled": "Ringkasan anggaran dinonaktifkan",
+      "digestDaySet": "Hari ringkasan anggaran ditetapkan ke {day}",
+      "testEmailSent": "Surel uji terkirim! Periksa kotak masuk Anda.",
+      "emailUpdateFailed": "Gagal memperbarui preferensi notifikasi",
+      "digestUpdateFailed": "Gagal memperbarui preferensi ringkasan anggaran",
+      "digestDayFailed": "Gagal memperbarui hari ringkasan",
+      "testEmailFailed": "Gagal mengirim surel uji"
+    }
+  },
+  "help": {
+    "heading": "Bantuan & Dukungan",
+    "description": "Temukan dokumentasi, laporkan masalah, atau bergabunglah dalam percakapan.",
+    "github": {
+      "label": "GitHub",
+      "description": "Lihat kode sumber dan beri bintang pada proyek."
+    },
+    "openIssue": {
+      "label": "Buka Masalah",
+      "description": "Laporkan bug atau minta fitur."
+    },
+    "discussions": {
+      "label": "Diskusi",
+      "description": "Ajukan pertanyaan dan bagikan ide dengan komunitas."
+    },
+    "wiki": {
+      "label": "Wiki",
+      "description": "Jelajahi panduan dan dokumentasi."
+    }
+  },
+  "dangerZone": {
+    "heading": "Zona Berbahaya",
+    "deleteData": {
+      "heading": "Hapus Data",
+      "description": "Hapus data keuangan dari akun Anda. Ini tidak dapat dibatalkan.",
+      "openButton": "Hapus Data...",
+      "alwaysDeletedHeading": "Berikut ini akan selalu dihapus:",
+      "optionalHeading": "Opsional juga hapus:",
+      "accountsOption": "Akun",
+      "categoriesOption": "Kategori",
+      "payeesOption": "Penerima",
+      "currencyPreferencesOption": "Preferensi mata uang",
+      "balanceResetNote": "Saldo akun akan diatur ulang ke saldo awal.",
+      "oidcConfirmLabel": "Autentikasi ulang dengan penyedia identitas Anda untuk mengonfirmasi:",
+      "passwordConfirmLabel": "Masukkan kata sandi Anda untuk mengonfirmasi:",
+      "passwordPlaceholder": "Masukkan kata sandi Anda",
+      "oidcReauthButton": "Autentikasi Ulang dan Hapus",
+      "deletingButton": "Menghapus...",
+      "confirmButton": "Konfirmasi Hapus Data",
+      "toasts": {
+        "success": "Berhasil menghapus {count} rekaman",
+        "failed": "Gagal menghapus data"
+      }
+    },
+    "deleteAccount": {
+      "heading": "Hapus Akun",
+      "description": "Hapus akun Anda dan semua data terkait secara permanen. Ini tidak dapat dibatalkan.",
+      "delegateNotice": {
+        "title": "Anda adalah delegasi dari akun lain.",
+        "body": "Menghapus akun Anda akan menghapus data Anda sendiri, tetapi login Anda dan akses bersama yang diberikan orang lain kepada Anda tetap ada sehingga delegasi terus berfungsi. Untuk mencabut akses tersebut, minta pemilik untuk menghapus Anda dari daftar Akses Bersama mereka terlebih dahulu."
+      },
+      "openButton": "Hapus Akun",
+      "typeDeleteLabel": "Ketik DELETE untuk mengonfirmasi penghapusan akun:",
+      "typeDeletePlaceholder": "Ketik DELETE",
+      "enterPasswordLabel": "Masukkan kata sandi Anda:",
+      "enterPasswordPlaceholder": "Masukkan kata sandi Anda",
+      "deletingButton": "Menghapus...",
+      "confirmButton": "Konfirmasi Hapus",
+      "toasts": {
+        "downgraded": "Data Anda sendiri dihapus. Login dan akses bersama Anda disimpan sehingga delegasi tetap berlaku.",
+        "deleted": "Akun dihapus",
+        "failed": "Gagal menghapus akun"
+      },
+      "errors": {
+        "typeDelete": "Silakan ketik DELETE untuk mengonfirmasi",
+        "passwordRequired": "Silakan masukkan kata sandi Anda untuk mengonfirmasi"
+      }
+    }
+  },
+  "apiAccess": {
+    "heading": "Akses API",
+    "description": "Buat token akses pribadi untuk menghubungkan alat AI eksternal seperti Claude Desktop melalui MCP.",
+    "createTokenButton": "Buat Token",
+    "mcpServerUrlLabel": "URL Server MCP",
+    "mcpServerUrlHelp": "Gunakan URL ini saat mengonfigurasi klien MCP seperti Claude Code atau Claude Desktop.",
+    "copyButton": "Salin",
+    "copiedButton": "Tersalin",
+    "noTokens": "Belum ada token API. Buat satu untuk memulai.",
+    "tokenPrefix": "Terakhir digunakan",
+    "expires": "Kedaluwarsa",
+    "created": "Dibuat",
+    "lastUsed": "Terakhir digunakan",
+    "revokeButton": "Cabut",
+    "revokeModal": {
+      "title": "Cabut Token",
+      "message": "Token ini akan segera berhenti berfungsi. Koneksi MCP mana pun yang menggunakannya akan terputus.",
+      "confirmLabel": "Cabut"
+    },
+    "createModal": {
+      "title": "Buat Token API",
+      "tokenNameLabel": "Nama Token",
+      "tokenNamePlaceholder": "misalnya, Claude Desktop",
+      "scopesLabel": "Cakupan",
+      "expirationLabel": "Kedaluwarsa",
+      "creatingButton": "Membuat...",
+      "createButton": "Buat Token",
+      "scopes": {
+        "read": {
+          "label": "Baca",
+          "description": "Lihat akun, transaksi, dan kategori"
+        },
+        "write": {
+          "label": "Tulis",
+          "description": "Buat transaksi, penerima, dan kategori"
+        },
+        "reports": {
+          "label": "Laporan",
+          "description": "Hasilkan laporan keuangan dan analitik"
+        }
+      },
+      "expiry": {
+        "none": "Tidak ada kedaluwarsa",
+        "d30": "30 hari",
+        "d90": "90 hari",
+        "y1": "1 tahun"
+      },
+      "validation": {
+        "nameRequired": "Nama token diperlukan",
+        "nameMax": "Nama token harus 100 karakter atau kurang"
+      }
+    },
+    "createdModal": {
+      "title": "Token Dibuat",
+      "warningNote": "Salin token ini sekarang. Anda tidak akan bisa melihatnya lagi.",
+      "doneButton": "Selesai"
+    },
+    "toasts": {
+      "copied": "Token disalin ke papan klip",
+      "mcpUrlCopied": "URL MCP disalin ke papan klip",
+      "revoked": "Token dicabut",
+      "selectScope": "Pilih setidaknya satu cakupan",
+      "copyTokenFailed": "Gagal menyalin token",
+      "copyUrlFailed": "Gagal menyalin URL",
+      "loadFailed": "Gagal memuat token API",
+      "createFailed": "Gagal membuat token",
+      "revokeFailed": "Gagal mencabut token"
+    },
+    "relative": {
+      "never": "Tidak pernah",
+      "today": "Hari ini",
+      "yesterday": "Kemarin",
+      "daysAgo": "{count} hari yang lalu",
+      "monthsAgo": "{count} bulan yang lalu"
+    }
+  },
+  "autoBackup": {
+    "heading": "Pencadangan Otomatis",
+    "description": "Cadangkan data Anda secara otomatis ke folder sesuai jadwal. Karena Monize berjalan di Docker, Anda harus memetakan folder host ke dalam kontainer sebagai volume (misalnya, -v /host/backups:/backups).",
+    "loadingText": "Memuat...",
+    "enableLabel": "Aktifkan pencadangan otomatis",
+    "backupFolderLabel": "Folder Cadangan",
+    "backupFolderPlaceholder": "/backups",
+    "browseButton": "Jelajahi...",
+    "validateButton": "Validasi",
+    "validatingButton": "Memvalidasi...",
+    "folderValid": "Folder valid dan dapat ditulis",
+    "selectThisFolder": "Pilih Folder Ini",
+    "noSubdirectories": "Tidak ada subdirektori",
+    "frequencyLabel": "Frekuensi Pencadangan",
+    "backupTimeLabel": "Waktu Pencadangan ({timezone})",
+    "backupTimeHelpInterval": "Pencadangan pertama hari dimulai pada waktu ini ({timezone}). Pencadangan berikutnya mengikuti pada interval yang dikonfigurasi.",
+    "backupTimeHelpDaily": "Waktu hari untuk menjalankan pencadangan di zona waktu lokal Anda ({timezone}).",
+    "retention": {
+      "heading": "Kebijakan Retensi",
+      "description": "Konfigurasikan berapa banyak cadangan yang disimpan. Cadangan lama di luar batas ini dihapus secara otomatis.",
+      "dailyLabel": "Cadangan harian",
+      "dailyHelp": "Cadangan terbaru yang disimpan",
+      "weeklyLabel": "Cadangan mingguan",
+      "weeklyHelp": "Satu per minggu disimpan",
+      "monthlyLabel": "Cadangan bulanan",
+      "monthlyHelp": "Satu per bulan disimpan"
+    },
+    "status": {
+      "heading": "Status",
+      "lastBackup": "Pencadangan terakhir",
+      "nextBackup": "Pencadangan berikutnya",
+      "error": "Kesalahan",
+      "success": "Berhasil",
+      "failed": "Gagal"
+    },
+    "saveButton": "Simpan Pengaturan",
+    "savingButton": "Menyimpan...",
+    "runNowButton": "Jalankan Pencadangan Sekarang",
+    "runningButton": "Menjalankan Pencadangan...",
+    "toasts": {
+      "saved": "Pengaturan pencadangan otomatis disimpan",
+      "backupCreated": "Cadangan dibuat: {filename}",
+      "folderValid": "Folder valid dan dapat ditulis",
+      "loadFailed": "Gagal memuat pengaturan pencadangan otomatis",
+      "saveFailed": "Gagal menyimpan pengaturan",
+      "runFailed": "Gagal menjalankan pencadangan",
+      "browseFailed": "Gagal menjelajahi folder"
+    },
+    "folderErrors": {
+      "required": "Jalur folder diperlukan",
+      "validationFailed": "Validasi folder gagal",
+      "validationError": "Validasi gagal"
+    },
+    "frequencyOptions": {
+      "every6hours": "Setiap 6 Jam",
+      "every12hours": "Setiap 12 Jam",
+      "daily": "Harian",
+      "weekly": "Mingguan"
+    }
+  },
+  "backupRestore": {
+    "heading": "Cadangkan & Pulihkan",
+    "encryption": {
+      "heading": "Enkripsi Cadangan",
+      "descriptionOidc": "Enkripsi cadangan manual dan otomatis dengan kata sandi cadangan khusus yang Anda tetapkan di sini. Kata sandi diperlukan untuk pemulihan.",
+      "descriptionLocal": "Enkripsi cadangan manual dan otomatis dengan kata sandi login Anda. Kata sandi diperlukan untuk pemulihan.",
+      "loading": "Memuat...",
+      "enabledBadge": "Aktif",
+      "changePasswordButton": "Ubah Kata Sandi Cadangan",
+      "disableButton": "Nonaktifkan",
+      "setPasswordButton": "Tetapkan Kata Sandi Cadangan",
+      "enableEncryptedButton": "Aktifkan Cadangan Terenkripsi",
+      "setupModal": {
+        "titleOidc": "Tetapkan Kata Sandi Cadangan",
+        "titleLocal": "Aktifkan Cadangan Terenkripsi",
+        "descriptionOidc": "Pilih kata sandi yang akan digunakan untuk mengenkripsi cadangan Anda. Simpan di tempat yang aman -- Anda akan membutuhkannya untuk pemulihan.",
+        "descriptionLocal": "Konfirmasi kata sandi login Anda. Ini akan digunakan untuk mengenkripsi semua cadangan (manual dan otomatis).",
+        "placeholderOidc": "Kata sandi cadangan baru (12+ karakter)",
+        "placeholderLocal": "Kata sandi login Anda",
+        "savingButton": "Menyimpan...",
+        "confirmButton": "Konfirmasi"
+      },
+      "toasts": {
+        "enabled": "Cadangan terenkripsi diaktifkan",
+        "disabled": "Cadangan terenkripsi dinonaktifkan",
+        "enableFailed": "Gagal mengaktifkan enkripsi",
+        "disableFailed": "Gagal menonaktifkan enkripsi"
+      }
+    },
+    "export": {
+      "heading": "Buat Cadangan",
+      "description": "Unduh cadangan lengkap data keuangan Anda. Ini mencakup akun, transaksi, kategori, penerima, anggaran, investasi, dan semua data pengguna lainnya.",
+      "downloadButton": "Unduh Cadangan",
+      "creatingButton": "Membuat Cadangan...",
+      "exportPasswordModal": {
+        "title": "Enkripsi Cadangan",
+        "description": "Masukkan kata sandi untuk mengenkripsi cadangan ini. Anda akan membutuhkannya untuk pemulihan.",
+        "placeholderOidc": "Kata sandi cadangan",
+        "placeholderLocal": "Kata sandi login",
+        "encryptingButton": "Mengenkripsi...",
+        "downloadButton": "Unduh"
+      },
+      "toasts": {
+        "success": "Cadangan berhasil diunduh",
+        "failed": "Gagal membuat cadangan"
+      }
+    },
+    "restore": {
+      "heading": "Pulihkan dari Cadangan",
+      "description": "Ganti semua data Anda saat ini dengan data dari berkas cadangan yang sebelumnya diekspor. Ini akan menimpa data Anda yang ada secara permanen.",
+      "openButton": "Pulihkan dari Cadangan...",
+      "warning": "Peringatan: Ini akan menghapus semua data Anda saat ini dan menggantinya dengan isi cadangan. Tindakan ini tidak dapat dibatalkan.",
+      "selectFileLabel": "Pilih berkas cadangan",
+      "encryptedBackupLabel": "Cadangan ini dienkripsi. Masukkan kata sandi cadangan yang digunakan saat membuatnya:",
+      "backupPasswordPlaceholder": "Kata sandi cadangan",
+      "oidcConfirmLabel": "Autentikasi ulang dengan penyedia identitas Anda untuk mengonfirmasi:",
+      "passwordConfirmLabel": "Masukkan kata sandi akun Anda untuk mengonfirmasi:",
+      "passwordPlaceholder": "Masukkan kata sandi Anda",
+      "oidcRestoreButton": "Autentikasi Ulang dan Pulihkan",
+      "restoringButton": "Memulihkan...",
+      "confirmRestoreButton": "Konfirmasi Pemulihan",
+      "toasts": {
+        "pleaseSelectFile": "Silakan pilih berkas cadangan",
+        "pleaseEnterPassword": "Silakan masukkan kata sandi Anda untuk mengonfirmasi",
+        "encryptedNeedsPassword": "Cadangan ini dienkripsi. Masukkan kata sandi yang digunakan saat membuatnya di kolom \"Kata sandi cadangan\", lalu coba lagi.",
+        "failed": "Gagal memulihkan cadangan"
+      }
+    },
+    "restoreResult": {
+      "title": "Pemulihan Selesai",
+      "description": "Data Anda telah berhasil dipulihkan. Berikut ringkasan apa yang dipulihkan:",
+      "totalRecords": "Total rekaman",
+      "doneButton": "Selesai"
+    }
+  },
+  "sharedAccess": {
+    "description": "Delegasi masuk dengan kredensial mereka sendiri dan tidak pernah melihat kata sandi Anda. Mereka hanya melihat akun dan bagian yang Anda berikan kepada mereka.",
+    "addDelegateButton": "Tambah delegasi",
+    "loading": "Memuat...",
+    "noDelegates": "Belum ada delegasi.",
+    "statusLabel": "Status: {status}",
+    "sectionsLabel": "Bagian: {count}",
+    "accountsLabel": "Akun: {count}",
+    "sharedDataLabel": "Data bersama: {count}",
+    "editAccessButton": "Edit akses",
+    "resetPasswordButton": "Atur ulang kata sandi",
+    "resetPasswordDisabledTitle": "Orang ini mengelola kata sandi mereka sendiri (mereka memiliki akun Monize sendiri atau akses delegasi di tempat lain).",
+    "removeButton": "Hapus",
+    "createModal": {
+      "title": "Tambah delegasi",
+      "description": "Berikan akses terbatas kepada orang lain ke akun Anda.",
+      "emailLabel": "Surel",
+      "emailPlaceholder": "Surel delegasi",
+      "firstNameLabel": "Nama depan",
+      "firstNamePlaceholder": "Nama depan (opsional)",
+      "lastNameLabel": "Nama belakang",
+      "lastNamePlaceholder": "Nama belakang (opsional)",
+      "existingAccountNotice": "Orang ini sudah memiliki login Monize. Mereka akan menyimpan kredensial mereka sendiri dan hanya diberikan akses bersama tambahan — tidak diperlukan kata sandi atau undangan.",
+      "sendInviteLabel": "Kirim undangan surel alih-alih menetapkan kata sandi",
+      "passwordLabel": "Kata Sandi",
+      "passwordPlaceholder": "Tetapkan kata sandi",
+      "submitButton": "Tambah delegasi"
+    },
+    "revokeDialog": {
+      "title": "Hapus delegasi",
+      "message": "Hapus delegasi ini? Mereka kehilangan akses ke akun Anda. Jika mereka tidak memiliki akses bersama lain dan tidak pernah mengklaim surel ini sebagai akun Monize mereka sendiri, login yang dikelola pemilik juga dihapus.",
+      "removingButton": "Menghapus...",
+      "removeButton": "Hapus"
+    },
+    "tempPasswordModal": {
+      "title": "Kata sandi sementara",
+      "description": "Bagikan ini kepada delegasi dengan aman. Mereka akan diminta untuk mengubahnya saat pertama kali masuk. Ini tidak akan ditampilkan lagi.",
+      "copyButton": "Salin",
+      "copiedButton": "Tersalin",
+      "doneButton": "Selesai"
+    },
+    "toasts": {
+      "created": "Delegasi dibuat",
+      "createdWithTempPassword": "Delegasi dibuat. Kata sandi sementara: {password}",
+      "invited": "Surel undangan terkirim",
+      "removed": "Delegasi dihapus"
+    },
+    "errors": {
+      "setPasswordOrInvite": "Tetapkan kata sandi atau kirim undangan surel.",
+      "loadFailed": "Gagal memuat akses bersama",
+      "createFailed": "Gagal membuat delegasi",
+      "revokeFailed": "Gagal mencabut delegasi",
+      "resetPasswordFailed": "Gagal mengatur ulang kata sandi",
+      "copyFailed": "Tidak dapat menyalin ke papan klip"
+    }
+  },
+  "delegateAccessModal": {
+    "title": "Edit akses",
+    "tabs": {
+      "accounts": "Akun",
+      "sections": "Bagian",
+      "shared": "Data bersama"
+    },
+    "sections": {
+      "description": "Berikan akses hanya-baca ke seluruh bagian aplikasi. Data yang dicakup akun juga masih memerlukan akses per-akun."
+    },
+    "accounts": {
+      "noAccounts": "Tidak ada akun untuk diberikan.",
+      "grantAll": "Berikan semua"
+    },
+    "shared": {
+      "description": "BACA penerima, kategori dan tag selalu diizinkan. Ini mengendalikan buat/edit/hapus."
+    },
+    "saveButton": "Simpan",
+    "toasts": {
+      "saved": "Akses diperbarui",
+      "saveFailed": "Gagal memperbarui akses"
+    }
+  },
+  "nav": {
+    "sectionsAriaLabel": "Bagian pengaturan",
+    "profile": "Profil",
+    "preferences": "Preferensi",
+    "notifications": "Notifikasi",
+    "security": "Keamanan",
+    "sharedAccess": "Akses Bersama",
+    "emergencyAccess": "Akses Darurat",
+    "apiAccess": "Akses API",
+    "aiSettings": "Pengaturan AI",
+    "backupRestore": "Cadangkan & Pulihkan",
+    "autoBackup": "Pencadangan Otomatis",
+    "help": "Bantuan & Dukungan",
+    "dangerZone": "Zona Berbahaya"
+  },
+  "page": {
+    "title": "Pengaturan",
+    "demoRestricted": {
+      "heading": "Dibatasi dalam Mode Demo",
+      "body": "Pengeditan profil, perubahan kata sandi, autentikasi dua faktor, dan penghapusan akun dinonaktifkan dalam mode demo."
+    },
+    "sharedAccessCard": {
+      "title": "Akses Bersama",
+      "description": "Berikan orang lain akses terperinci ke akun tertentu."
+    },
+    "emergencyAccessCard": {
+      "title": "Akses Darurat",
+      "description": "Tentukan kontak yang secara otomatis menerima akses penuh ke akun Anda jika Anda tidak masuk dalam jangka waktu yang lama."
+    },
+    "aiSettingsCard": {
+      "title": "Pengaturan AI",
+      "description": "Konfigurasikan penyedia AI, kelola kunci API, dan lihat statistik penggunaan."
+    },
+    "delegateSecurityError": "Tidak dapat memuat pengaturan keamanan Anda.",
+    "toasts": {
+      "securityLoadFailed": "Gagal memuat pengaturan keamanan",
+      "loadFailed": "Gagal memuat pengaturan"
+    }
+  },
+  "aiSettings": {
+    "backLink": "Kembali ke Pengaturan",
+    "title": "Pengaturan AI",
+    "subtitle": "Konfigurasikan penyedia AI untuk fitur keuangan yang cerdas",
+    "demoRestricted": {
+      "heading": "Dibatasi dalam Mode Demo",
+      "body": "Konfigurasi penyedia AI dinonaktifkan dalam mode demo."
+    },
+    "toasts": {
+      "loadFailed": "Gagal memuat pengaturan AI",
+      "usageLoadFailed": "Gagal memuat data penggunaan"
+    }
+  },
+  "sharedAccessPage": {
+    "backLink": "Kembali ke Pengaturan",
+    "title": "Akses Bersama",
+    "subtitle": "Berikan orang lain akses terperinci ke akun tertentu",
+    "demoRestricted": {
+      "heading": "Dibatasi dalam Mode Demo",
+      "body": "Manajemen delegasi dinonaktifkan dalam mode demo."
+    }
+  },
+  "emergencyAccess": {
+    "backLink": "Kembali ke Pengaturan",
+    "title": "Akses Darurat",
+    "subtitle": "Tentukan kontak yang secara otomatis menerima akses penuh ke akun Anda jika Anda tidak masuk dalam jangka waktu yang lama",
+    "delegateRestricted": "Akses darurat hanya dapat dikonfigurasi oleh pemilik akun.",
+    "demoRestricted": "Akses darurat dinonaktifkan dalam mode demo.",
+    "emailNotConfigured": {
+      "heading": "Surel tidak dikonfigurasi",
+      "body": "Akses darurat bergantung pada pengiriman surel. Minta administrator Anda untuk mengonfigurasi variabel lingkungan SMTP (SMTP_HOST, SMTP_USER, SMTP_PASSWORD) dan coba lagi."
+    },
+    "alreadyGranted": {
+      "heading": "Akses darurat sudah diberikan",
+      "description": "kontak yang Anda tentukan menerima tautan ajaib untuk mengambil alih akun. Jika ini tidak disengaja, hapus status yang diberikan di bawah ini untuk membatalkan tautan yang beredar.",
+      "clearButton": "Hapus status yang diberikan"
+    },
+    "loadError": "Tidak dapat memuat pengaturan akses darurat.",
+    "settings": {
+      "heading": "Pengaturan",
+      "enableLabel": "Aktifkan akses darurat",
+      "grantAfterDaysLabel": "Hari tidak aktif sebelum akses diberikan",
+      "reminderAfterDaysLabel": "Hari tidak aktif sebelum surel pengingat",
+      "saveButton": "Simpan pengaturan",
+      "toasts": {
+        "saved": "Pengaturan akses darurat disimpan",
+        "saveFailed": "Gagal menyimpan pengaturan"
+      }
+    },
+    "message": {
+      "heading": "Pesan untuk kontak Anda",
+      "description": "Dienkripsi saat istirahat. Melihat atau mengedit memerlukan verifikasi ulang identitas Anda.",
+      "unlockTimer": "Dibuka kunci selama {mins}:{secs}",
+      "messageSet": "Pesan ditetapkan",
+      "charCount": "({count} karakter",
+      "updatedAt": ", diperbarui {timestamp}",
+      "noMessage": "Tidak ada pesan yang ditetapkan",
+      "revealButton": "Tampilkan pesan",
+      "editButton": "Edit pesan",
+      "addButton": "Tambah pesan",
+      "emptyMessage": "(kosong)",
+      "lockNowButton": "Kunci sekarang",
+      "editMessageButton": "Edit",
+      "messagePlaceholder": "Catatan, instruksi, lokasi dokumen penting...",
+      "maxCharsNote": "Maksimum 4000 karakter. Disimpan terenkripsi saat istirahat.",
+      "cancelButton": "Batal",
+      "saveButton": "Simpan pesan",
+      "toasts": {
+        "saved": "Pesan disimpan",
+        "verifyAgain": "Verifikasi kedaluwarsa -- silakan verifikasi lagi untuk menyimpan",
+        "loadFailed": "Gagal memuat pesan",
+        "saveFailed": "Gagal menyimpan pesan"
+      }
+    },
+    "contacts": {
+      "heading": "Kontak Darurat",
+      "description": "Setiap kontak menerima tautan ajaib melalui surel saat akses diberikan. Mereka menggunakannya untuk menetapkan kata sandi baru dan mengambil alih akun Anda. Kontak pertama yang mengklaim menang.",
+      "addButton": "Tambah kontak",
+      "noContacts": "Belum ada kontak.",
+      "editButton": "Edit",
+      "removeButton": "Hapus",
+      "contactModal": {
+        "addTitle": "Tambah kontak darurat",
+        "editTitle": "Edit kontak",
+        "firstNameLabel": "Nama depan",
+        "emailLabel": "Surel",
+        "addButton": "Tambah kontak",
+        "saveButton": "Simpan perubahan"
+      },
+      "removeDialog": {
+        "title": "Hapus kontak",
+        "message": "Kontak ini tidak akan lagi menerima akses darurat. Anda dapat menambahkan mereka lagi nanti.",
+        "removingButton": "Menghapus...",
+        "removeButton": "Hapus"
+      },
+      "toasts": {
+        "added": "Kontak ditambahkan",
+        "updated": "Kontak diperbarui",
+        "removed": "Kontak dihapus",
+        "saveFailed": "Gagal menyimpan kontak",
+        "removeFailed": "Gagal menghapus kontak"
+      }
+    },
+    "status": {
+      "heading": "Status",
+      "lastAccess": "Akses terakhir: ",
+      "lastReminderSent": "Pengingat terakhir dikirim: ",
+      "grantStatus": "Status pemberian: ",
+      "unknown": "tidak diketahui",
+      "never": "tidak pernah",
+      "daysAgo": "{count} hari yang lalu",
+      "grantedOn": "diberikan pada {timestamp}",
+      "notYetGranted": "belum diberikan",
+      "timerNote": "Timer direset secara otomatis setiap kali Anda menggunakan aplikasi -- masuk, melihat halaman, mencatat transaksi, apa pun yang diautentikasi."
+    },
+    "resetConfirm": {
+      "title": "Hapus status yang diberikan",
+      "message": "Ini membatalkan tautan ajaib yang beredar, membiarkan siklus pengingat dimulai lagi, dan membiarkan kaskade pemberian aktif lagi setelah periode tidak aktif lainnya.",
+      "clearingButton": "Menghapus...",
+      "clearButton": "Hapus",
+      "toasts": {
+        "cleared": "Status yang diberikan dihapus",
+        "resetFailed": "Gagal mengatur ulang status yang diberikan"
+      }
+    },
+    "stepUp": {
+      "reason": "Verifikasi ulang identitas Anda untuk melihat atau mengedit pesan akses darurat Anda."
+    },
+    "toasts": {
+      "loadFailed": "Gagal memuat akses darurat",
+      "reauthFailed": "Gagal mengonfirmasi autentikasi ulang"
+    }
+  },
+  "aiProviders": {
+    "heading": "Penyedia AI",
+    "addButton": "Tambah Penyedia",
+    "encryptionWarning": "AI_ENCRYPTION_KEY tidak dikonfigurasi. Anda dapat menggunakan Ollama (lokal, tidak perlu kunci API) tetapi penyedia cloud memerlukan enkripsi untuk menyimpan kunci API dengan aman.",
+    "systemDefault": {
+      "heading": "Penyedia AI Bawaan Sistem Tersedia",
+      "description": "Penyedia AI pusat telah dikonfigurasi oleh administrator Anda",
+      "usedAutomatically": "Ini akan digunakan secara otomatis karena Anda tidak memiliki penyedia pribadi yang dikonfigurasi.",
+      "personalPriority": "Penyedia pribadi Anda diprioritaskan di atas bawaan sistem."
+    },
+    "noProviders": {
+      "withSystemDefault": "Tidak ada penyedia AI pribadi yang dikonfigurasi. Penyedia bawaan sistem akan digunakan.",
+      "withoutSystemDefault": "Tidak ada penyedia AI yang dikonfigurasi. Tambah penyedia untuk mengaktifkan fitur AI."
+    },
+    "providerCard": {
+      "activeBadge": "Aktif",
+      "inactiveBadge": "Tidak aktif",
+      "priorityLabel": "Prioritas: {n}",
+      "modelLabel": "Model: {model}",
+      "keyLabel": "Kunci: {key}",
+      "urlLabel": "URL: {url}",
+      "costLabel": "Biaya/1J ({currency}): {input} masuk / {output} keluar",
+      "disableButton": "Nonaktifkan",
+      "enableButton": "Aktifkan",
+      "editButton": "Edit",
+      "deleteButton": "Hapus"
+    },
+    "configForm": {
+      "addTitle": "Tambah Penyedia AI",
+      "editTitle": "Edit Penyedia",
+      "providerLabel": "Penyedia",
+      "displayNameLabel": "Nama Tampilan",
+      "modelLabel": "Model",
+      "testButton": "Uji",
+      "testingButton": "Menguji...",
+      "ollamaCloudNote": "Nama model harus menyertakan akhiran -cloud (misalnya gpt-oss:20b-cloud).",
+      "apiKeyLabel": "Kunci API",
+      "baseUrlLabel": "URL Dasar",
+      "priorityLabel": "Prioritas",
+      "priorityHelp": "Angka lebih kecil = prioritas lebih tinggi. Digunakan untuk urutan cadangan.",
+      "costRatesHeading": "Tarif biaya (opsional)",
+      "costRatesHelp": "Masukkan tarif yang diterbitkan penyedia Anda per 1.000.000 token untuk melihat perkiraan biaya di dasbor Penggunaan. Kosongkan untuk melewati perkiraan biaya.",
+      "inputCostLabel": "Biaya input / 1J token",
+      "outputCostLabel": "Biaya output / 1J token",
+      "rateCurrencyLabel": "Mata Uang Tarif",
+      "rateCurrencyHelp": "Jika ini berbeda dari mata uang rumah Anda, dasbor Penggunaan dapat mengonversi biaya menggunakan kurs yang disimpan.",
+      "saveButton": "Simpan Perubahan",
+      "addProviderButton": "Tambah Penyedia",
+      "modelPlaceholder": "Masukkan nama model",
+      "testModelAria": "Uji model",
+      "apiKeyPlaceholder": "Masukkan kunci API",
+      "saveFailed": "Gagal menyimpan konfigurasi",
+      "inputCostPlaceholder": "misalnya, 3.00",
+      "outputCostPlaceholder": "misalnya, 15.00",
+      "toasts": {
+        "notReachable": "Tidak dapat menjangkau penyedia.",
+        "modelUnavailable": "Model \"{model}\" tidak tersedia pada penyedia ini.",
+        "modelReady": "Model \"{model}\" siap.",
+        "success": "Koneksi berhasil.",
+        "testFailed": "Uji model gagal"
+      },
+      "costCurrencies": {
+        "USD": "USD - Dolar AS",
+        "EUR": "EUR - Euro",
+        "GBP": "GBP - Pound Inggris",
+        "CAD": "CAD - Dolar Kanada",
+        "AUD": "AUD - Dolar Australia",
+        "JPY": "JPY - Yen Jepang",
+        "CNY": "CNY - Yuan Tiongkok",
+        "INR": "INR - Rupee India"
+      },
+      "validation": {
+        "displayNameMax": "Nama tampilan harus 100 karakter atau kurang",
+        "mustBeNumber": "Harus berupa angka",
+        "currencyCode": "Harus berupa kode mata uang 3 huruf"
+      }
+    },
+    "testButton": {
+      "testLabel": "Uji",
+      "connectionFailed": "Koneksi gagal",
+      "modelUnavailable": "Model \"{model}\" tidak tersedia pada penyedia ini.",
+      "successWithModel": "Koneksi berhasil. Model \"{model}\" siap.",
+      "success": "Koneksi berhasil",
+      "testFailed": "Uji koneksi gagal"
+    },
+    "toasts": {
+      "added": "Penyedia ditambahkan",
+      "updated": "Penyedia diperbarui",
+      "removed": "Penyedia dihapus",
+      "modelReady": "Model \"{model}\" siap.",
+      "notReachable": "Disimpan, tetapi penyedia tidak dapat dijangkau. Periksa kembali URL/kunci API.",
+      "modelUnavailable": "Disimpan, tetapi model \"{model}\" tidak tersedia pada penyedia ini.",
+      "deleteFailed": "Gagal menghapus penyedia",
+      "updateFailed": "Gagal memperbarui penyedia"
+    }
+  },
+  "usage": {
+    "heading": "Penggunaan",
+    "totalRequests": "Total Permintaan",
+    "inputTokens": "Token Masukan",
+    "outputTokens": "Token Keluaran",
+    "estCost": "Perkiraan Biaya",
+    "setRatesToEnable": "Tetapkan tarif pada penyedia untuk mengaktifkan",
+    "inHomeCurrency": "Dalam {currency}",
+    "inProviderCurrency": "Dalam mata uang penyedia",
+    "byProvider": {
+      "heading": "Per Penyedia",
+      "provider": "Penyedia",
+      "requests": "Permintaan",
+      "inputTokens": "Token Masukan",
+      "outputTokens": "Token Keluaran",
+      "estCost": "Perkiraan Biaya"
+    },
+    "recentActivity": {
+      "heading": "Aktivitas Terbaru",
+      "date": "Tanggal",
+      "provider": "Penyedia",
+      "feature": "Fitur",
+      "tokens": "Token",
+      "duration": "Durasi",
+      "estCost": "Perkiraan Biaya"
+    },
+    "noUsage": "Belum ada data penggunaan. Penggunaan akan muncul di sini setelah Anda mulai menggunakan fitur AI.",
+    "periods": {
+      "d7": "7 hari",
+      "d30": "30 hari",
+      "d90": "90 hari",
+      "all": "Sepanjang waktu"
+    },
+    "estCostTooltip": "Diperkirakan menggunakan tarif biaya yang Anda konfigurasikan pada setiap penyedia. Tidak termasuk aktivitas apa pun di mana tidak ada tarif yang cocok."
+  }
+}

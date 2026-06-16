@@ -1,0 +1,85 @@
+{
+  "page": {
+    "title": "カテゴリ",
+    "subtitle": "カスタムカテゴリで取引を整理する",
+    "newButton": "+ 新規カテゴリ",
+    "searchPlaceholder": "カテゴリを検索...",
+    "filterAll": "すべて ({count})",
+    "filterExpenses": "支出 ({count})",
+    "filterIncome": "収入 ({count})",
+    "modalTitleNew": "新規カテゴリ",
+    "modalTitleEdit": "カテゴリを編集",
+    "countSingle": "1 カテゴリ",
+    "countPlural": "{count} カテゴリ",
+    "loadingText": "カテゴリを読み込み中...",
+    "summaryTotal": "カテゴリ合計",
+    "summaryIncome": "収入カテゴリ",
+    "summaryExpense": "支出カテゴリ",
+    "summaryTopLevel": "トップレベル"
+  },
+  "empty": {
+    "heading": "カテゴリがまだありません",
+    "description": "カテゴリを使うと取引を整理できます。デフォルトのカテゴリセットをインポートするか、ゼロから独自のカテゴリを作成して始めましょう。",
+    "importButton": "デフォルトカテゴリをインポート",
+    "createButton": "独自に作成する",
+    "hint": "デフォルトセットには、サブカテゴリを含む一般的な収入・支出カテゴリが含まれています"
+  },
+  "toasts": {
+    "created": "カテゴリを作成しました",
+    "updated": "カテゴリを更新しました",
+    "deleted": "カテゴリを削除しました",
+    "cannotDeleteSystem": "システムカテゴリは削除できません",
+    "importSuccess": "{count} 件のカテゴリをインポートしました",
+    "loadFailed": "カテゴリの読み込みに失敗しました",
+    "deleteFailed": "カテゴリの削除に失敗しました",
+    "createFailed": "カテゴリの作成に失敗しました",
+    "updateFailed": "カテゴリの更新に失敗しました",
+    "importFailed": "デフォルトカテゴリのインポートに失敗しました"
+  },
+  "form": {
+    "nameLabel": "カテゴリ名",
+    "parentLabel": "親カテゴリ",
+    "noParent": "親なし（トップレベル）",
+    "typeLabel": "種類",
+    "typeExpense": "支出",
+    "typeIncome": "収入",
+    "typeInherited": "種類は親から継承されます",
+    "colourLabel": "色",
+    "colourInherit": "親から継承する",
+    "colourNone": "色なし",
+    "colourInheritedFrom": "親（{name}）から色を継承",
+    "descriptionLabel": "説明（任意）",
+    "submitCreate": "カテゴリを作成",
+    "submitUpdate": "カテゴリを更新"
+  },
+  "list": {
+    "emptyHeading": "カテゴリがありません",
+    "emptyDescription": "新しいカテゴリを作成して始めましょう。",
+    "colName": "名前",
+    "colType": "種類",
+    "colCount": "件数",
+    "colDescription": "説明",
+    "colActions": "操作",
+    "badgeIncome": "収入",
+    "badgeExpense": "支出",
+    "systemBadge": "（システム）",
+    "inheritedColorTitle": "親から継承",
+    "viewTransactionsTitle": "このカテゴリの取引を表示",
+    "densityToggleTitle": "行の密度を切り替え",
+    "densityNormal": "通常",
+    "densityCompact": "コンパクト",
+    "densityDense": "密集"
+  },
+  "deleteDialog": {
+    "title": "「{name}」を削除しますか？",
+    "checkingUsage": "使用状況を確認中...",
+    "usedBy": "このカテゴリは {count, plural, one {# 件} other {# 件}}（取引またはスケジュール済み請求・入金）で使用されています。",
+    "reassignLabel": "再割り当て先：",
+    "leaveUncategorized": "未分類のままにする",
+    "safeToDelete": "このカテゴリは使用されていません。安全に削除できます。",
+    "cannotUndo": "この操作は取り消せません。"
+  },
+  "validation": {
+    "nameRequired": "カテゴリ名は必須です"
+  }
+}

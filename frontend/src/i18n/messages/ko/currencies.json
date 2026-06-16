@@ -1,0 +1,117 @@
+{
+  "page": {
+    "title": "통화",
+    "subtitle": "계정 및 유가증권 전반에서 사용되는 통화를 관리하세요",
+    "refreshRates": "환율 갱신",
+    "refreshing": "갱신 중...",
+    "newCurrency": "+ 새 통화",
+    "searchPlaceholder": "코드 또는 이름으로 검색...",
+    "statusAll": "전체 ({count})",
+    "statusActive": "활성 ({count})",
+    "statusInactive": "비활성 ({count})",
+    "modalTitleEdit": "통화 편집",
+    "modalTitleNew": "새 통화",
+    "loading": "통화를 불러오는 중...",
+    "count": "{count, plural, one {# 통화} other {# 통화}}",
+    "toasts": {
+      "loadFailed": "통화를 불러오지 못했습니다",
+      "updated": "통화가 성공적으로 업데이트되었습니다",
+      "created": "통화가 성공적으로 생성되었습니다",
+      "updateFailed": "통화를 업데이트하지 못했습니다",
+      "createFailed": "통화를 생성하지 못했습니다",
+      "deactivated": "통화가 비활성화되었습니다",
+      "activated": "통화가 활성화되었습니다",
+      "statusFailed": "통화 상태를 업데이트하지 못했습니다",
+      "ratesRefreshed": "환율 갱신 완료: {updated}쌍 업데이트됨",
+      "ratesRefreshedWithFailed": "환율 갱신 완료: {updated}개 업데이트됨, {failed}개 실패",
+      "ratesFailed": "환율을 갱신하지 못했습니다"
+    },
+    "summary": {
+      "totalCurrencies": "전체 통화",
+      "active": "활성",
+      "inactive": "비활성"
+    }
+  },
+  "list": {
+    "columns": {
+      "code": "코드",
+      "name": "이름",
+      "symbol": "기호",
+      "decimals": "소수점 자리",
+      "usage": "사용",
+      "rate": "환율 ({currency})",
+      "status": "상태",
+      "actions": "작업"
+    },
+    "density": {
+      "normal": "보통",
+      "compact": "컴팩트",
+      "dense": "조밀",
+      "toggle": "행 밀도 전환"
+    },
+    "defaultBadge": "기본",
+    "statusBadge": {
+      "active": "활성",
+      "activeShort": "활성",
+      "inactive": "비활성",
+      "inactiveShort": "비활"
+    },
+    "actions": {
+      "edit": "편집",
+      "deactivate": "비활성화",
+      "activate": "활성화"
+    },
+    "contextMenu": {
+      "editCurrency": "통화 편집",
+      "deactivate": "비활성화",
+      "activate": "활성화",
+      "deleteCurrency": "통화 삭제"
+    },
+    "usageTooltip": "{accounts}개 계정, {securities}개 유가증권",
+    "usageAccounts": "{count, plural, one {# 계정} other {# 계정}}",
+    "usageSecurities": "{count, plural, one {# 유가증권} other {# 유가증권}}",
+    "empty": {
+      "title": "통화 없음",
+      "subtitle": "통화를 추가하여 시작하세요."
+    },
+    "deleteConfirm": {
+      "title": "\"{code}\"를 삭제하시겠습니까?",
+      "message": "이 통화는 영구적으로 삭제됩니다. 계정이나 유가증권에서 사용 중이지 않은 경우에만 삭제할 수 있습니다.",
+      "confirmLabel": "삭제",
+      "cancelLabel": "취소"
+    },
+    "toasts": {
+      "deleted": "통화가 성공적으로 삭제되었습니다",
+      "deleteFailed": "통화를 삭제하지 못했습니다. 사용 중일 수 있습니다."
+    }
+  },
+  "form": {
+    "codeLabel": "통화 코드",
+    "codePlaceholder": "예: USD, EUR, GBP",
+    "nameLabel": "이름",
+    "namePlaceholderCreate": "예: Canadian Dollar, Malaysia, Ringgit (조회에도 사용됩니다)",
+    "namePlaceholderEdit": "예: Canadian Dollar",
+    "symbolLabel": "기호",
+    "symbolPlaceholder": "예: $, €, £, ¥",
+    "decimalPlacesLabel": "소수점 자리",
+    "lookupButton": "조회",
+    "lookingUp": "조회 중...",
+    "clearButton": "지우기",
+    "clearTitle": "모든 필드 지우기",
+    "submitCreate": "통화 생성",
+    "submitUpdate": "통화 업데이트",
+    "toasts": {
+      "lookupTooShort": "조회하려면 통화 코드 또는 이름을 2자 이상 입력하세요",
+      "found": "찾음: {details}",
+      "notFound": "\"{query}\"에 해당하는 통화를 찾을 수 없습니다",
+      "lookupFailed": "조회에 실패했습니다 - 다시 시도해 주세요"
+    }
+  },
+  "validation": {
+    "codeLength": "통화 코드는 정확히 3자여야 합니다",
+    "nameRequired": "이름은 필수입니다",
+    "nameMax": "이름은 100자 이하여야 합니다",
+    "symbolRequired": "기호는 필수입니다",
+    "symbolMax": "기호는 10자 이하여야 합니다"
+  }
+}

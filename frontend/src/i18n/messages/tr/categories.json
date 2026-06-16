@@ -1,0 +1,85 @@
+{
+  "page": {
+    "title": "Kategoriler",
+    "subtitle": "İşlemlerinizi özel kategorilerle düzenleyin",
+    "newButton": "+ Yeni Kategori",
+    "searchPlaceholder": "Kategorileri ara...",
+    "filterAll": "Tümü ({count})",
+    "filterExpenses": "Giderler ({count})",
+    "filterIncome": "Gelirler ({count})",
+    "modalTitleNew": "Yeni Kategori",
+    "modalTitleEdit": "Kategoriyi Düzenle",
+    "countSingle": "1 kategori",
+    "countPlural": "{count} kategori",
+    "loadingText": "Kategoriler yükleniyor...",
+    "summaryTotal": "Toplam Kategoriler",
+    "summaryIncome": "Gelir Kategorileri",
+    "summaryExpense": "Gider Kategorileri",
+    "summaryTopLevel": "Üst Düzey"
+  },
+  "empty": {
+    "heading": "Henüz kategori yok",
+    "description": "Kategoriler işlemlerinizi düzenlemenize yardımcı olur. Varsayılan kategori setimizi içe aktararak veya sıfırdan kendinizinkini oluşturarak başlayın.",
+    "importButton": "Varsayılan Kategorileri İçe Aktar",
+    "createButton": "Kendinizinkini Oluşturun",
+    "hint": "Varsayılan set, alt kategorilerle birlikte yaygın gelir ve gider kategorilerini içerir"
+  },
+  "toasts": {
+    "created": "Kategori başarıyla oluşturuldu",
+    "updated": "Kategori başarıyla güncellendi",
+    "deleted": "Kategori başarıyla silindi",
+    "cannotDeleteSystem": "Sistem kategorileri silinemez",
+    "importSuccess": "{count} kategori başarıyla içe aktarıldı",
+    "loadFailed": "Kategoriler yüklenemedi",
+    "deleteFailed": "Kategori silinemedi",
+    "createFailed": "Kategori oluşturulamadı",
+    "updateFailed": "Kategori güncellenemedi",
+    "importFailed": "Varsayılan kategoriler içe aktarılamadı"
+  },
+  "form": {
+    "nameLabel": "Kategori Adı",
+    "parentLabel": "Üst Kategori",
+    "noParent": "Üst yok (üst düzey)",
+    "typeLabel": "Tür",
+    "typeExpense": "Gider",
+    "typeIncome": "Gelir",
+    "typeInherited": "Tür üst kategoriden devralındı",
+    "colourLabel": "Renk",
+    "colourInherit": "Üst kategoriden devral",
+    "colourNone": "Renk yok",
+    "colourInheritedFrom": "Renk üst kategoriden devralındı ({name})",
+    "descriptionLabel": "Açıklama (isteğe bağlı)",
+    "submitCreate": "Kategori Oluştur",
+    "submitUpdate": "Kategoriyi Güncelle"
+  },
+  "list": {
+    "emptyHeading": "Kategori yok",
+    "emptyDescription": "Yeni bir kategori oluşturarak başlayın.",
+    "colName": "Ad",
+    "colType": "Tür",
+    "colCount": "Sayı",
+    "colDescription": "Açıklama",
+    "colActions": "İşlemler",
+    "badgeIncome": "Gelir",
+    "badgeExpense": "Gider",
+    "systemBadge": "(Sistem)",
+    "inheritedColorTitle": "Üst kategoriden devralındı",
+    "viewTransactionsTitle": "Bu kategorideki işlemleri görüntüle",
+    "densityToggleTitle": "Satır yoğunluğunu değiştir",
+    "densityNormal": "Normal",
+    "densityCompact": "Kompakt",
+    "densityDense": "Yoğun"
+  },
+  "deleteDialog": {
+    "title": "\"{name}\" silinsin mi?",
+    "checkingUsage": "Kullanım kontrol ediliyor...",
+    "usedBy": "Bu kategori {count, plural, one {# öğe} other {# öğe}} tarafından kullanılıyor (işlemler ve/veya zamanlanmış faturalar ve mevduatlar).",
+    "reassignLabel": "Yeniden ata:",
+    "leaveUncategorized": "Kategorisiz bırak",
+    "safeToDelete": "Bu kategori kullanılmıyor. Güvenle silinebilir.",
+    "cannotUndo": "Bu işlem geri alınamaz."
+  },
+  "validation": {
+    "nameRequired": "Kategori adı zorunludur"
+  }
+}

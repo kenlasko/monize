@@ -1,0 +1,91 @@
+{
+  "page": {
+    "title": "वित्तीय संस्थाएं",
+    "subtitle": "बैंक और ब्रोकरेज जिनसे आपके खाते संबंधित हैं",
+    "newInstitution": "नई संस्था",
+    "loading": "संस्थाएं लोड हो रही हैं...",
+    "searchPlaceholder": "संस्थाएं खोजें...",
+    "modalTitleNew": "नई संस्था",
+    "modalTitleEdit": "संस्था संपादित करें",
+    "summary": {
+      "total": "कुल संस्थाएं",
+      "withLogo": "लोगो के साथ",
+      "linkedAccounts": "लिंक किए गए खाते"
+    },
+    "toasts": {
+      "loadFailed": "संस्थाएं लोड करने में विफल",
+      "created": "संस्था बनाई गई",
+      "updated": "संस्था अपडेट की गई",
+      "createFailed": "संस्था बनाने में विफल",
+      "updateFailed": "संस्था अपडेट करने में विफल"
+    }
+  },
+  "list": {
+    "empty": "अभी तक कोई संस्था नहीं। अपने खाते समूहित करना शुरू करने के लिए एक बनाएं।",
+    "columns": {
+      "name": "नाम",
+      "website": "वेबसाइट",
+      "country": "देश",
+      "accounts": "खाते",
+      "actions": "क्रियाएं"
+    },
+    "accountCount": "{count, plural, =0 {कोई खाता नहीं} one {# खाता} other {# खाते}}",
+    "density": {
+      "title": "पंक्ति घनत्व टॉगल करें",
+      "normal": "सामान्य",
+      "compact": "संक्षिप्त",
+      "dense": "घना"
+    },
+    "statusFilter": {
+      "all": "सभी",
+      "active": "सक्रिय",
+      "closed": "बंद"
+    },
+    "actions": {
+      "manageAccounts": "खाते"
+    },
+    "deleteTitle": "संस्था हटाएं",
+    "deleteMessage": "\"{name}\" हटाएं? इससे असाइन किए गए खाते अनासाइन हो जाएंगे लेकिन हटाए नहीं जाएंगे।",
+    "deleting": "हटाया जा रहा है...",
+    "deleted": "\"{name}\" हटाई गई",
+    "deleteFailed": "संस्था हटाने में विफल"
+  },
+  "form": {
+    "nameLabel": "नाम",
+    "websiteLabel": "वेबसाइट",
+    "websitePlaceholder": "जैसे td.com",
+    "countryLabel": "देश (वैकल्पिक)",
+    "countryPlaceholder": "2-अक्षर कोड, जैसे CA",
+    "logoHint": "ब्रांड लोगो वेबसाइट से स्वचालित रूप से प्राप्त किया जाता है।",
+    "submitCreate": "संस्था बनाएं",
+    "submitUpdate": "परिवर्तन सहेजें"
+  },
+  "validation": {
+    "nameRequired": "नाम आवश्यक है",
+    "websiteRequired": "वेबसाइट आवश्यक है",
+    "websiteInvalid": "एक वैध वेबसाइट दर्ज करें (जैसे td.com)",
+    "countryInvalid": "2-अक्षर देश कोड का उपयोग करें"
+  },
+  "accountsManager": {
+    "title": "{name} के खाते",
+    "addLabel": "एक खाता जोड़ें",
+    "addPlaceholder": "जोड़ने के लिए खाता चुनें...",
+    "noneToAdd": "आपके सभी खाते पहले से किसी संस्था को असाइन हैं।",
+    "loading": "खाते लोड हो रहे हैं...",
+    "empty": "इस संस्था को अभी तक कोई खाता असाइन नहीं है।",
+    "noneMatch": "चुने गए फ़िल्टर से कोई खाता मेल नहीं खाता।",
+    "filter": {
+      "all": "सभी",
+      "active": "सक्रिय",
+      "closed": "बंद"
+    },
+    "remove": "हटाएं",
+    "viewTransactions": "इस खाते के लेनदेन देखें",
+    "added": "खाता जोड़ा गया",
+    "removed": "खाता हटाया गया",
+    "addFailed": "खाता जोड़ने में विफल",
+    "removeFailed": "खाता हटाने में विफल",
+    "loadFailed": "खाते लोड करने में विफल",
+    "done": "हो गया"
+  }
+}

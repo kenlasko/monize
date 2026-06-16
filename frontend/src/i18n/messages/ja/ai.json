@@ -1,0 +1,53 @@
+{
+  "page": {
+    "title": "AI アシスタント",
+    "subtitle": "自然言語で財務に関する質問をしてください"
+  },
+  "chat": {
+    "conversationSaved": "会話はブラウザに保存されました",
+    "clearConversation": "会話をクリア",
+    "inputPlaceholder": "財務について質問してください...",
+    "inputPlaceholderDisabled": "AI プロバイダーが設定されていません",
+    "keyboardHint": "Enter で送信、Shift+Enter で改行",
+    "cancelTitle": "キャンセル",
+    "sendTitle": "送信"
+  },
+  "notConfigured": {
+    "heading": "AI が設定されていません",
+    "message": "AI プロバイダーが設定されていません。AI アシスタントを使用するには、設定で {link} してください。",
+    "linkText": "AI プロバイダーを設定"
+  },
+  "suggestedQueries": {
+    "heading": "財務について質問してください",
+    "description": "支出、収入、勘定科目の残高、純資産などについての質問にお答えします。",
+    "monthlySpendingLabel": "月次支出",
+    "monthlySpendingQuery": "先月の支出はいくらでしたか？",
+    "topCategoriesLabel": "主なカテゴリ",
+    "topCategoriesQuery": "今年の支出カテゴリ上位5件を教えてください",
+    "accountBalancesLabel": "勘定科目残高",
+    "accountBalancesQuery": "現在の勘定科目残高を教えてください",
+    "compareMonthsLabel": "月次比較",
+    "compareMonthsQuery": "今月と先月の支出を比較してください",
+    "netWorthTrendLabel": "純資産の推移",
+    "netWorthTrendQuery": "過去12ヶ月の純資産の推移を表示してください",
+    "savingsRateLabel": "貯蓄率",
+    "savingsRateQuery": "今年の収入に対してどれだけ貯蓄できましたか？"
+  },
+  "toolDetails": {
+    "inputLabel": "入力",
+    "resultLabel": "結果",
+    "toolFailedAriaLabel": "ツールが失敗しました",
+    "toolSucceededAriaLabel": "ツールが成功しました"
+  },
+  "table": {
+    "downloadTitle": "テーブルを CSV でダウンロード",
+    "downloadAriaLabel": "テーブルを CSV でダウンロード",
+    "noDataError": "エクスポートするテーブルデータがありません"
+  },
+  "chart": {
+    "downloadTitle": "チャートを PNG でダウンロード",
+    "downloadAriaLabel": "チャートを PNG でダウンロード",
+    "captureError": "チャート画像を取得できません",
+    "downloadError": "チャートのダウンロードに失敗しました"
+  }
+}

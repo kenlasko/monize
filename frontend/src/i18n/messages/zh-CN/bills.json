@@ -1,0 +1,66 @@
+{
+  "page": {
+    "title": "账单与存款",
+    "subtitle": "管理您的定期交易和定期付款",
+    "newButton": "+ 新建计划",
+    "summaryActiveBills": "活跃账单",
+    "summaryActiveDeposits": "活跃存款",
+    "summaryMonthlyNet": "月净额",
+    "summaryDueNow": "当前到期",
+    "loadingText": "正在加载定期交易...",
+    "chartUnavailable": "图表暂时不可用"
+  },
+  "viewTabs": {
+    "list": "列表",
+    "calendar": "日历",
+    "filterAll": "全部（{count}）",
+    "filterBills": "账单（{count}）",
+    "filterDeposits": "存款（{count}）",
+    "todayButton": "今天"
+  },
+  "form": {
+    "titleNew": "新建定期交易",
+    "titleEdit": "编辑定期交易"
+  },
+  "overrideConfirm": {
+    "title": "发现现有覆盖设置",
+    "message": "此定期交易有 {count, plural, one {# 条} other {# 条}}经过自定义修改的单次记录。",
+    "question": "更新基础模板时，您希望如何处理这些修改？",
+    "keepButton": "保留修改",
+    "deleteButton": "删除所有修改"
+  },
+  "forecast": {
+    "title": "现金流预测",
+    "scheduledCount": "预测中有 {count, plural, one {# 笔} other {# 笔}}定期交易",
+    "tooltipTransactions": "交易：",
+    "tooltipMore": "+{count} 项",
+    "noData": "无数据可显示",
+    "noAccounts": "未找到账户",
+    "noScheduled": "无定期交易",
+    "noMatchingAccount": "请选择有定期交易的账户",
+    "noUpcoming": "此时段内无即将到来的交易——显示当前余额",
+    "summaryStarting": "起始",
+    "summaryEnding": "结束",
+    "summaryLowest": "最低",
+    "summaryMinBalance": "最低余额",
+    "allAccounts": "所有账户"
+  },
+  "calendar": {
+    "days": {
+      "sun": "日",
+      "mon": "一",
+      "tue": "二",
+      "wed": "三",
+      "thu": "四",
+      "fri": "五",
+      "sat": "六"
+    },
+    "more": "+{count} 项"
+  },
+  "toasts": {
+    "overridesDeleted": "覆盖设置已删除",
+    "notFound": "未找到定期付款",
+    "loadFailed": "加载定期交易失败",
+    "overridesDeleteFailed": "删除覆盖设置失败"
+  }
+}

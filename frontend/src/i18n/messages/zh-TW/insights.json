@@ -1,0 +1,44 @@
+{
+  "page": {
+    "title": "消費洞察",
+    "subtitle": "AI 驅動的消費模式與異常分析"
+  },
+  "list": {
+    "lastUpdated": "最後更新：{date} {time}",
+    "refreshButton": "重新整理洞察",
+    "generating": "生成中...",
+    "allTypes": "所有類型",
+    "allSeverities": "所有嚴重程度",
+    "showDismissed": "顯示已關閉",
+    "emptyNoInsights": "尚未生成任何洞察。點擊「重新整理洞察」以分析您的消費模式。",
+    "emptyFiltered": "沒有符合目前篩選條件的洞察。",
+    "generateButton": "生成洞察",
+    "alertCount": "{count, plural, one {# 個警示} other {# 個警示}}",
+    "warningCount": "{count, plural, one {# 個警告} other {# 個警告}}",
+    "errorLoadFailed": "載入洞察失敗，請重試。",
+    "errorGenerateFailed": "生成洞察失敗。請確認您已設定 AI 提供者。",
+    "errorTimeout": "洞察生成時間超出預期，請稍候或重新整理頁面。"
+  },
+  "card": {
+    "dismiss": "關閉",
+    "dismissing": "關閉中..."
+  },
+  "notConfigured": {
+    "heading": "AI 未設定",
+    "message": "尚未設定 AI 提供者。若要使用消費洞察，請在設定中 {link}。",
+    "linkText": "設定 AI 提供者"
+  },
+  "insightTypes": {
+    "anomaly": "異常",
+    "trend": "趨勢",
+    "subscription": "訂閱",
+    "budget_pace": "預算進度",
+    "seasonal": "季節性",
+    "new_recurring": "新定期項目"
+  },
+  "insightSeverities": {
+    "info": "資訊",
+    "warning": "警告",
+    "alert": "警示"
+  }
+}

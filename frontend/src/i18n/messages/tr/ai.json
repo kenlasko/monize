@@ -1,0 +1,53 @@
+{
+  "page": {
+    "title": "Yapay Zeka Asistanı",
+    "subtitle": "Finanslarınız hakkında doğal dilde sorular sorun"
+  },
+  "chat": {
+    "conversationSaved": "Konuşma tarayıcınıza kaydedildi",
+    "clearConversation": "Konuşmayı temizle",
+    "inputPlaceholder": "Finanslarınız hakkında sorun...",
+    "inputPlaceholderDisabled": "Yapay zeka sağlayıcısı yapılandırılmamış",
+    "keyboardHint": "Göndermek için Enter, yeni satır için Shift+Enter",
+    "cancelTitle": "İptal",
+    "sendTitle": "Gönder"
+  },
+  "notConfigured": {
+    "heading": "Yapay Zeka Yapılandırılmamış",
+    "message": "Hiçbir yapay zeka sağlayıcısı yapılandırılmamış. Yapay Zeka Asistanını kullanmak için lütfen ayarlarınızda {link}.",
+    "linkText": "bir yapay zeka sağlayıcısı yapılandırın"
+  },
+  "suggestedQueries": {
+    "heading": "Finanslarınız hakkında sorun",
+    "description": "Harcamalarınız, geliriniz, hesap bakiyeleriniz, net değeriniz ve daha fazlası hakkında sorular yanıtlayabilirim.",
+    "monthlySpendingLabel": "Aylık harcama",
+    "monthlySpendingQuery": "Geçen ay ne kadar harcadım?",
+    "topCategoriesLabel": "En yüksek kategoriler",
+    "topCategoriesQuery": "Bu yılki en yüksek 5 gider kategorim neler?",
+    "accountBalancesLabel": "Hesap bakiyeleri",
+    "accountBalancesQuery": "Mevcut hesap bakiyelerim neler?",
+    "compareMonthsLabel": "Ayları karşılaştır",
+    "compareMonthsQuery": "Bu ayki harcamalarımı geçen ayla karşılaştır",
+    "netWorthTrendLabel": "Net değer trendi",
+    "netWorthTrendQuery": "Son 12 aydaki net değer trendimi göster",
+    "savingsRateLabel": "Tasarruf oranı",
+    "savingsRateQuery": "Bu yıl gelirime kıyasla ne kadar tasarruf ettim?"
+  },
+  "toolDetails": {
+    "inputLabel": "Girdi",
+    "resultLabel": "Sonuç",
+    "toolFailedAriaLabel": "Araç başarısız oldu",
+    "toolSucceededAriaLabel": "Araç başarılı oldu"
+  },
+  "table": {
+    "downloadTitle": "Tabloyu CSV olarak indir",
+    "downloadAriaLabel": "Tabloyu CSV olarak indir",
+    "noDataError": "Dışa aktarılacak tablo verisi yok"
+  },
+  "chart": {
+    "downloadTitle": "Grafiği PNG olarak indir",
+    "downloadAriaLabel": "Grafiği PNG olarak indir",
+    "captureError": "Grafik görüntüsü yakalanamadı",
+    "downloadError": "Grafik indirilemedi"
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "title": "對帳科目",
+  "subtitle": "將您的記錄與銀行對帳單比對",
+  "subtitleActive": "對帳中：{name}",
+  "setup": {
+    "title": "開始對帳",
+    "intro": "將您的科目與銀行對帳單進行對帳，以確保記錄相符。",
+    "accountLabel": "科目",
+    "accountPlaceholder": "選擇科目...",
+    "statementDateLabel": "對帳單日期",
+    "statementBalanceLabel": "對帳單期末餘額",
+    "start": "開始對帳"
+  },
+  "summary": {
+    "statementBalance": "對帳單結餘",
+    "reconciledBalance": "已對帳結餘",
+    "selected": "已選（{count}）",
+    "difference": "差異"
+  },
+  "list": {
+    "heading": "未對帳交易（{count}）",
+    "selectAll": "全選",
+    "selectNone": "取消全選",
+    "empty": "此期間無未對帳交易。",
+    "colSelect": "選取",
+    "colDate": "日期",
+    "colPayee": "收款人",
+    "colCategory": "類別",
+    "colAmount": "金額",
+    "colStatus": "狀態",
+    "finish": "完成對帳"
+  },
+  "status": {
+    "cleared": "已結清",
+    "unreconciled": "未對帳",
+    "void": "作廢",
+    "reconciled": "已對帳"
+  },
+  "complete": {
+    "title": "對帳完成",
+    "message": "您的科目已成功完成截至 {date} 的對帳。",
+    "existingPayment": "此科目有一筆排程付款 <b>{name}</b>。您是否要將下一筆更新為已對帳結餘 <b>{amount}</b>？",
+    "updatePayment": "更新下一筆付款",
+    "noPayment": "未找到此科目的排程付款。您是否要為已對帳結餘 <b>{amount}</b> 建立一筆？",
+    "createPayment": "建立排程付款",
+    "backToAccounts": "返回科目",
+    "reconcileAnother": "對帳另一個科目"
+  },
+  "toasts": {
+    "loadAccountsFailed": "載入科目失敗",
+    "fillAllFields": "請填寫所有欄位",
+    "loadDataFailed": "載入對帳資料失敗",
+    "differenceRequired": "差異必須為 {amount} 才能完成對帳",
+    "noneSelected": "未選取任何交易進行對帳",
+    "success": "{count, plural, one {已成功對帳 # 筆交易} other {已成功對帳 # 筆交易}}",
+    "reconcileFailed": "對帳交易失敗"
+  }
+}

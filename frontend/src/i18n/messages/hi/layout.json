@@ -1,0 +1,119 @@
+{
+  "demoBanner": {
+    "label": "डेमो मोड",
+    "message": "सभी डेटा प्रतिदिन UTC 4:00 AM पर रीसेट होता है। स्वतंत्र रूप से अन्वेषण करें!"
+  },
+  "delegationBanner": {
+    "viewing": "देख रहे हैं:",
+    "sharedAccount": "साझा खाता",
+    "yourAccount": "आपका खाता",
+    "switchAccountLabel": "खाता स्विच करें",
+    "selfSuffix": "{label} (आप)",
+    "error2fa": "उस खाते के लिए दो-कारक प्रमाणीकरण आवश्यक है। स्विच करने से पहले सेटिंग्स में 2FA सेट करें।",
+    "errorSwitch": "खाता स्विच करने में असमर्थ"
+  },
+  "backendDownBanner": {
+    "connectionBlockedLabel": "कनेक्शन अवरुद्ध",
+    "connectionBlockedDetail": "सुरक्षा हेडर सादे HTTP पर अनुरोधों को अवरुद्ध कर रहे हैं।",
+    "connectionLostLabel": "कनेक्शन खो गया",
+    "connectionLostDetail": "सर्वर तक पहुंचने में असमर्थ। स्वचालित रूप से पुनः प्रयास हो रहा है...",
+    "httpsHint": "अपने परिवेश में <code>DISABLE_HTTPS_HEADERS=true</code> सेट करें या HTTPS पर साइट तक पहुंचें।"
+  },
+  "httpWarningBanner": {
+    "label": "HTTPS आवश्यक",
+    "detail": "सुरक्षा हेडर सक्रिय हैं लेकिन इस साइट तक सादे HTTP पर पहुंचा जा रहा है। API अनुरोध विफल हो सकते हैं।",
+    "httpsHint": "अपने परिवेश में <code>DISABLE_HTTPS_HEADERS=true</code> सेट करें या HTTPS पर साइट तक पहुंचें।",
+    "dismiss": "खारिज करें",
+    "dismissAriaLabel": "HTTPS चेतावनी खारिज करें"
+  },
+  "updateBanner": {
+    "availableWithVersion": "Monize v{version} उपलब्ध है",
+    "availableGeneric": "Monize का एक नया संस्करण उपलब्ध है",
+    "runningVersion": "(चल रहा v{version})",
+    "releaseNotes": "रिलीज नोट्स",
+    "dismiss": "खारिज करें",
+    "dismissAriaLabel": "अपडेट अधिसूचना खारिज करें"
+  },
+  "actionHistory": {
+    "title": "क्रिया इतिहास",
+    "buttonAriaLabel": "क्रिया इतिहास",
+    "closeAriaLabel": "बंद करें",
+    "undo": "पूर्ववत करें",
+    "redo": "फिर से करें",
+    "noRecentActions": "कोई हाल की क्रियाएं नहीं",
+    "undoneLabel": "पूर्ववत हुआ",
+    "nothingToUndo": "पूर्ववत करने के लिए कुछ नहीं",
+    "nothingToRedo": "फिर से करने के लिए कुछ नहीं",
+    "cannotUndoDefault": "यह क्रिया पूर्ववत नहीं की जा सकती",
+    "cannotRedoDefault": "यह क्रिया फिर से नहीं की जा सकती",
+    "undoFailed": "पूर्ववत विफल हुआ",
+    "redoFailed": "फिर से करना विफल हुआ",
+    "entityLabels": {
+      "transaction": "लेनदेन",
+      "transfer": "स्थानांतरण",
+      "investment_transaction": "निवेश",
+      "bulk_transaction": "बल्क",
+      "category": "श्रेणी",
+      "payee": "भुगतानकर्ता",
+      "tag": "टैग",
+      "account": "खाता",
+      "scheduled_transaction": "अनुसूचित",
+      "security": "प्रतिभूति",
+      "budget": "बजट",
+      "custom_report": "रिपोर्ट"
+    },
+    "descriptions": {
+      "createdAccount": "खाता \"{name}\" बनाया गया",
+      "updatedAccount": "खाता \"{name}\" अपडेट हुआ",
+      "deletedAccount": "खाता \"{name}\" हटाया गया",
+      "createdBudget": "बजट \"{name}\" बनाया गया",
+      "updatedBudget": "बजट \"{name}\" अपडेट हुआ",
+      "deletedBudget": "बजट \"{name}\" हटाया गया",
+      "createdCategory": "श्रेणी \"{name}\" बनाई गई",
+      "updatedCategory": "श्रेणी \"{name}\" अपडेट हुई",
+      "deletedCategory": "श्रेणी \"{name}\" हटाई गई",
+      "createdInstitution": "संस्था \"{name}\" बनाई गई",
+      "updatedInstitution": "संस्था \"{name}\" अपडेट हुई",
+      "deletedInstitution": "संस्था \"{name}\" हटाई गई",
+      "createdInvestmentReport": "निवेश रिपोर्ट \"{name}\" बनाई गई",
+      "updatedInvestmentReport": "निवेश रिपोर्ट \"{name}\" अपडेट हुई",
+      "deletedInvestmentReport": "निवेश रिपोर्ट \"{name}\" हटाई गई",
+      "createdPayee": "भुगतानकर्ता \"{name}\" बनाया गया",
+      "updatedPayee": "भुगतानकर्ता \"{name}\" अपडेट हुआ",
+      "deletedPayee": "भुगतानकर्ता \"{name}\" हटाया गया",
+      "createdReport": "रिपोर्ट \"{name}\" बनाई गई",
+      "updatedReport": "रिपोर्ट \"{name}\" अपडेट हुई",
+      "deletedReport": "रिपोर्ट \"{name}\" हटाई गई",
+      "createdScheduledTransaction": "अनुसूचित लेनदेन \"{name}\" बनाया गया",
+      "updatedScheduledTransaction": "अनुसूचित लेनदेन \"{name}\" अपडेट हुआ",
+      "deletedScheduledTransaction": "अनुसूचित लेनदेन \"{name}\" हटाया गया",
+      "createdSecurity": "प्रतिभूति \"{symbol}\" बनाई गई",
+      "updatedSecurity": "प्रतिभूति \"{symbol}\" अपडेट हुई",
+      "deletedSecurity": "प्रतिभूति \"{symbol}\" हटाई गई",
+      "createdTag": "टैग \"{name}\" बनाया गया",
+      "updatedTag": "टैग \"{name}\" अपडेट हुआ",
+      "deletedTag": "टैग \"{name}\" हटाया गया",
+      "createdTransaction": "लेनदेन {payee} {amount} बनाया गया",
+      "updatedTransaction": "लेनदेन {payee} {amount} अपडेट हुआ",
+      "deletedTransaction": "लेनदेन {payee} {amount} हटाया गया",
+      "createdTransfer": "{from} से {to} को {amount} का स्थानांतरण बनाया गया",
+      "createdInvestmentTransaction": "{action} लेनदेन बनाया गया",
+      "updatedInvestmentTransaction": "{action} लेनदेन अपडेट हुआ",
+      "deletedInvestmentTransaction": "{action} लेनदेन हटाया गया",
+      "transferredSecurity": "खातों के बीच प्रतिभूति स्थानांतरित की गई",
+      "updatedSecurityTransfer": "प्रतिभूति स्थानांतरण अपडेट हुआ"
+    },
+    "timeAgo": {
+      "justNow": "अभी-अभी",
+      "minutes": "{count} मिनट पहले",
+      "hours": "{count} घंटे पहले",
+      "days": "{count} दिन पहले"
+    },
+    "undonePrefix": "पूर्ववत: {description}",
+    "redonePrefix": "फिर से किया: {description}"
+  },
+  "pageHeader": {
+    "helpAriaLabel": "इस अनुभाग की सहायता के लिए Monize विकी खोलें",
+    "helpTooltip": "इस अनुभाग की सहायता के लिए Monize विकी खोलें"
+  }
+}

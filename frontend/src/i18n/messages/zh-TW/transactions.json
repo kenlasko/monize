@@ -1,0 +1,430 @@
+{
+  "accountWidget": {
+    "currentBalance": "目前結餘",
+    "nextPayment": "下次付款",
+    "viewBills": "在帳單與存款中查看",
+    "type": "類型",
+    "accountNumber": "科目號碼",
+    "currency": "貨幣",
+    "creditLimit": "信用額度",
+    "interestRate": "利率",
+    "statementSettlement": "結算日",
+    "statementSettlementTooltip": "帳單週期的最後一天。在此日期或之前過帳的交易將出現在目前帳單中。",
+    "statementDue": "付款到期",
+    "closed": "已關閉",
+    "editAria": "編輯科目設定",
+    "collapseAria": "隱藏科目資訊",
+    "showAccountNumber": "顯示科目號碼",
+    "hideAccountNumber": "隱藏科目號碼",
+    "show": "顯示科目資訊"
+  },
+  "page": {
+    "title": "交易",
+    "subtitle": "管理您的收支",
+    "newButton": "+ 新增交易",
+    "editModal": {
+      "editTitle": "編輯交易",
+      "duplicateTitle": "複製交易",
+      "newTitle": "新增交易",
+      "scheduleTitle": "設為固定排程",
+      "editPayeeTitle": "編輯收款人"
+    },
+    "loading": "載入交易中...",
+    "totalCount": "{count, plural, one {# 筆交易} other {# 筆交易}}",
+    "bulkDelete": {
+      "title": "刪除交易",
+      "message": "確定要刪除 {count, plural, one {# 筆交易} other {# 筆交易}}嗎？此操作也將刪除所有連結的轉帳對應交易，且無法復原。"
+    },
+    "toasts": {
+      "scheduledCreated": "排程交易已建立",
+      "investmentLinked": "此交易已連結至投資。正在投資頁面中開啟。"
+    }
+  },
+  "list": {
+    "empty": {
+      "title": "無交易",
+      "body": "請建立新交易以開始使用。"
+    },
+    "header": {
+      "date": "日期",
+      "account": "科目",
+      "payee": "收款人",
+      "category": "類別",
+      "description": "描述",
+      "refNumber": "參考 #",
+      "tags": "標籤",
+      "amount": "金額",
+      "balance": "結餘",
+      "status": "狀態",
+      "actions": "動作"
+    },
+    "today": "今天",
+    "export": {
+      "button": "匯出",
+      "exporting": "匯出中...",
+      "title": "將交易匯出為 CSV",
+      "success": "{count, plural, one {已匯出 # 筆交易} other {已匯出 # 筆交易}}",
+      "noData": "無交易可匯出",
+      "error": "匯出交易失敗"
+    },
+    "density": {
+      "title": "切換列間距",
+      "normal": "一般",
+      "compact": "緊密",
+      "dense": "密集"
+    },
+    "delete": {
+      "transferTitle": "刪除轉帳",
+      "transactionTitle": "刪除交易",
+      "transferMessage": "確定要刪除此轉帳嗎？兩筆連結的交易都將被刪除。",
+      "transactionMessage": "確定要刪除此交易嗎？此操作無法復原。",
+      "success": "交易已刪除",
+      "transferSuccess": "轉帳已刪除",
+      "error": "刪除交易失敗"
+    },
+    "status": {
+      "voidError": "請編輯交易以從作廢狀態更改",
+      "changed": "狀態已更改為 {status}",
+      "updateError": "更新狀態失敗",
+      "unreconciled": "未對帳",
+      "cleared": "已結清",
+      "reconciled": "已對帳",
+      "void": "作廢",
+      "unreconciledDense": "未",
+      "clearedDense": "清",
+      "reconciledDense": "帳",
+      "voidDense": "廢",
+      "pendingDense": "○",
+      "pending": "待處理",
+      "cycleTitle": "點擊以循環切換狀態"
+    },
+    "row": {
+      "editPayeeTitle": "編輯收款人：{name}",
+      "ref": "參考：{number}",
+      "investmentLabel": "投資",
+      "linkedInvestmentTitle": "在投資中查看",
+      "filterByDate": "依日期「{date}」篩選",
+      "filterByAccount": "依「{name}」篩選",
+      "filterByPayee": "依「{name}」篩選",
+      "filterByCategory": "依 {name} 篩選",
+      "filterByTag": "依標籤 {name} 篩選",
+      "transfer": "轉帳",
+      "transferTitle": "轉帳 {direction} {name}",
+      "split": "分割",
+      "uncategorized": "未分類",
+      "splitMore": "+{count} 更多",
+      "filteredAmountTitle": "篩選後金額（完整交易：{amount}）",
+      "viewButton": "查看",
+      "editButton": "編輯",
+      "deleteButton": "刪除"
+    },
+    "itemNamePlural": "筆交易"
+  },
+  "row": {
+    "copyOptions": {
+      "title": "複製選項",
+      "duplicateTitle": "複製交易",
+      "copy": "複製",
+      "duplicate": "複製",
+      "scheduleRecurring": "設為固定排程"
+    }
+  },
+  "actionSheet": {
+    "defaultTitle": "交易",
+    "filterByDate": "依日期「{date}」篩選",
+    "filterByAccount": "依「{name}」篩選",
+    "filterByPayee": "依「{name}」篩選",
+    "filterByCategory": "依「{name}」篩選",
+    "filterByTag": "依標籤「{name}」篩選",
+    "edit": "編輯",
+    "duplicate": "複製",
+    "scheduleRecurring": "設為固定排程",
+    "delete": "刪除"
+  },
+  "filter": {
+    "favourites": "最愛：",
+    "panel": {
+      "title": "篩選",
+      "clear": "清除",
+      "hide": "隱藏",
+      "show": "顯示"
+    },
+    "accounts": {
+      "label": "顯示科目：",
+      "all": "全部",
+      "active": "活躍",
+      "closed": "已關閉"
+    },
+    "fields": {
+      "accounts": "科目",
+      "payees": "收款人",
+      "categories": "類別",
+      "tags": "標籤",
+      "timePeriod": "時間範圍",
+      "startDate": "開始日期",
+      "endDate": "結束日期",
+      "amountFrom": "金額起",
+      "amountTo": "金額至",
+      "status": "狀態",
+      "search": "搜尋"
+    },
+    "placeholders": {
+      "accounts": "所有科目",
+      "payees": "所有收款人",
+      "categories": "所有類別",
+      "tags": "所有標籤",
+      "statuses": "所有狀態",
+      "amountMin": "最小",
+      "amountMax": "最大",
+      "search": "搜尋收款人、類別、金額、標籤、描述、參考號碼..."
+    },
+    "chips": {
+      "removeAccount": "移除 {name} 篩選",
+      "removePayee": "移除 {name} 篩選",
+      "removeCategory": "移除 {name} 篩選",
+      "removeTag": "移除 {name} 篩選",
+      "removeDate": "移除日期篩選",
+      "removeAmount": "移除金額篩選",
+      "removeSearch": "移除搜尋篩選",
+      "dateFrom": "從 {date}",
+      "dateUntil": "至 {date}",
+      "amountFrom": "從 {amount}",
+      "amountUpTo": "至 {amount}"
+    },
+    "bulkUpdate": "批次更新",
+    "cancelBulk": "取消批次",
+    "statusLabels": {
+      "unreconciled": "未對帳",
+      "cleared": "已結清",
+      "reconciled": "已對帳",
+      "void": "作廢"
+    },
+    "periods": {
+      "select": "選擇期間...",
+      "today": "今天",
+      "yesterday": "昨天",
+      "thisWeek": "本週",
+      "lastWeek": "上週",
+      "monthToDate": "本月至今",
+      "lastMonth": "上個月",
+      "yearToDate": "年初至今",
+      "lastYear": "去年",
+      "custom": "自訂"
+    }
+  },
+  "bulk": {
+    "banner": {
+      "selected": "{count, plural, one {已選 # 筆交易} other {已選 # 筆交易}}",
+      "selectAllMatching": "選取所有 {count} 筆符合交易",
+      "allMatching": "（所有符合交易）",
+      "clearSelection": "清除選取",
+      "bulkUpdate": "批次更新"
+    },
+    "modal": {
+      "title": "批次更新交易",
+      "subtitle": "更新 {count, plural, one {# 筆選取的交易} other {# 筆選取的交易}}。切換您要更改的欄位。",
+      "submitLabel": "更新 {count, plural, one {# 筆交易} other {# 筆交易}}",
+      "payee": "收款人",
+      "category": "類別",
+      "description": "描述",
+      "status": "狀態",
+      "tags": "標籤",
+      "payeePlaceholder": "選擇或輸入收款人名稱...",
+      "categoryPlaceholder": "選擇類別...",
+      "descriptionPlaceholder": "輸入描述（留空以清除）",
+      "tagsPlaceholder": "選擇標籤（留空以清除全部）...",
+      "statusOptions": {
+        "pending": "待處理",
+        "cleared": "已結清",
+        "void": "作廢"
+      },
+      "notes": {
+        "transfer": "轉帳交易的連結對應交易也將一併更新。",
+        "split": "分割交易的類別更改將被跳過。"
+      }
+    }
+  },
+  "form": {
+    "modeTransaction": "交易",
+    "modeSplit": "分割",
+    "modeTransfer": "轉帳",
+    "transferBadge": "轉帳",
+    "isLinkedTransfer": "此為連結的轉帳交易",
+    "fields": {
+      "account": "科目",
+      "date": "日期",
+      "createDate": "建立日期",
+      "payee": "收款人",
+      "category": "類別",
+      "amount": "金額",
+      "totalAmount": "總金額",
+      "referenceNumber": "參考號碼",
+      "description": "描述",
+      "status": "狀態",
+      "tags": "標籤",
+      "fromAccount": "來源科目",
+      "toAccount": "目的科目",
+      "transferAmount": "轉帳金額",
+      "transferAmountWithCurrency": "轉帳金額（{currency}）",
+      "amountReceived": "收到金額（{currency}）",
+      "payeeOptional": "收款人（選填）"
+    },
+    "placeholders": {
+      "selectAccount": "選擇科目...",
+      "selectDestinationAccount": "選擇目的科目...",
+      "selectOrTypePayee": "選擇或輸入收款人名稱...",
+      "selectOrCreateCategory": "選擇或建立類別...",
+      "referenceNumber": "支票號碼、確認號碼...",
+      "optionalDescription": "選填描述...",
+      "selectTags": "選擇標籤...",
+      "createNewTag": "建立新標籤..."
+    },
+    "splitSection": {
+      "title": "分割交易",
+      "cancelSplit": "取消分割"
+    },
+    "statusOptions": {
+      "unreconciled": "未對帳",
+      "cleared": "已結清",
+      "reconciled": "已對帳",
+      "void": "作廢"
+    },
+    "submitCreate": "建立{mode}",
+    "submitUpdate": "更新{mode}",
+    "modeLabel": {
+      "transfer": "轉帳",
+      "transaction": "交易"
+    },
+    "transferAmountNote": "轉帳金額必須為正數",
+    "amountReceivedNote": "貨幣換算後的收到金額",
+    "splitTransaction": "分割交易",
+    "newTagTitle": "新增標籤",
+    "toasts": {
+      "transferCreated": "轉帳已建立",
+      "transferUpdated": "轉帳已更新",
+      "transactionCreated": "交易已建立",
+      "transactionUpdated": "交易已更新",
+      "saveFailed": "儲存交易失敗",
+      "loadFailed": "載入表單資料失敗",
+      "splitsNotEqual": "分割總計（{splitTotal}）必須等於交易金額（{txAmount}）",
+      "destinationRequired": "請選擇目的科目",
+      "sameAccount": "來源科目與目的科目不能相同",
+      "negativeTransfer": "轉帳金額不得為負數",
+      "payeeCreated": "收款人「{name}」已建立",
+      "payeeCreateFailed": "建立收款人失敗",
+      "payeeReactivated": "收款人「{name}」已重新啟用",
+      "payeeReactivateFailed": "重新啟用收款人失敗",
+      "categoryCreated": "類別「{name}」已建立",
+      "categoryCreateFailed": "建立類別失敗",
+      "tagCreated": "標籤「{name}」已建立"
+    },
+    "ariaHistory": "顯示最近交易",
+    "ariaHistoryForPayee": "顯示此收款人的最近交易",
+    "historyTitle": "從最近的交易快速填寫"
+  },
+  "splitEditor": {
+    "header": "分割詳情",
+    "distributeProportionally": "按比例分配",
+    "distributeProportionallyTitle": "根據每筆分割的金額按比例分配剩餘金額",
+    "distributeEvenly": "平均分配",
+    "addSplit": "新增分割",
+    "removeMinimum": "最少需要 2 筆分割",
+    "removeSplit": "移除分割",
+    "removeAndConvert": "移除分割並轉換為一般交易",
+    "convertConfirm": {
+      "title": "轉換為一般交易？",
+      "message": "移除此分割將使用剩餘分割的類別將其轉換回一般交易。",
+      "confirm": "轉換"
+    },
+    "noUnassigned": "無未分配金額",
+    "addRemaining": "將剩餘金額加入此分割",
+    "total": "總計",
+    "balanced": "平衡",
+    "remaining": "剩餘：{symbol}{amount}",
+    "needAmount": "需要 {symbol}{amount}（剩餘：{symbol}{remaining}）",
+    "setTotal": "設定總計為 {symbol}{amount}",
+    "splitLabel": "分割 {number}",
+    "columns": {
+      "type": "類型",
+      "categoryAccount": "類別 / 科目",
+      "category": "類別",
+      "amount": "金額",
+      "memo": "備註",
+      "tags": "標籤"
+    },
+    "splitTypes": {
+      "category": "類別",
+      "transfer": "轉帳",
+      "investment": "投資"
+    },
+    "selectCategory": "選擇類別...",
+    "selectAccount": "選擇科目...",
+    "memoPlaceholder": "選填備註",
+    "mobileMemoPlaceholder": "備註",
+    "tagsPlaceholder": "標籤..."
+  },
+  "recentPopover": {
+    "recentForPayee": "{name} 的最近記錄",
+    "recentTransactions": "最近交易",
+    "loading": "載入中...",
+    "noRecent": "無最近交易。",
+    "noRecentForPayee": "此收款人無最近交易。",
+    "noPayee": "（無收款人）",
+    "uncategorized": "（未分類）"
+  },
+  "investmentSplit": {
+    "ariaAction": "投資操作",
+    "ariaSecurity": "證券",
+    "selectSecurity": "選擇證券...",
+    "quantityPlaceholder": "數量",
+    "pricePlaceholder": "價格",
+    "commissionPlaceholder": "手續費",
+    "amountPlaceholder": "金額（{currency}）"
+  },
+  "charts": {
+    "balanceHistory": {
+      "title": "結餘歷史",
+      "noData": "無可用的結餘資料",
+      "starting": "起始",
+      "current": "目前",
+      "ending": "結束",
+      "lowest": "最低",
+      "minBalance": "最低結餘"
+    },
+    "monthlyTotals": {
+      "title": "每月總計",
+      "noData": "無可用的交易資料",
+      "monthlyAvg": "月平均",
+      "total": "總計",
+      "transactions": "交易",
+      "tooltip": "{count, plural, one {# 筆交易} other {# 筆交易}}"
+    },
+    "accountBalances": {
+      "title": "科目結餘",
+      "noData": "無可用的科目結餘資料",
+      "average": "平均",
+      "total": "總計",
+      "accounts": "科目",
+      "scaleLabel": "Y 軸刻度",
+      "auto": "自動",
+      "linear": "線性",
+      "log": "對數",
+      "autoTitle": "自動（{scale}）",
+      "scaleTitle": "{label} 刻度"
+    }
+  },
+  "toasts": {
+    "payeeUpdated": "收款人更新成功",
+    "deleted": "{count, plural, one {# 筆交易已刪除} other {# 筆交易已刪除}}",
+    "noneToExport": "無交易可匯出",
+    "exported": "{count, plural, one {已匯出 # 筆交易} other {已匯出 # 筆交易}}",
+    "loadFormDataFailed": "載入表單資料失敗",
+    "loadFailed": "載入交易失敗",
+    "loadPayeeFailed": "載入收款人詳情失敗",
+    "payeeUpdateFailed": "更新收款人失敗",
+    "exportFailed": "匯出交易失敗"
+  },
+  "validation": {
+    "dateRequired": "日期為必填"
+  }
+}

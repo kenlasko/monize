@@ -1,0 +1,53 @@
+{
+  "page": {
+    "title": "AI 助手",
+    "subtitle": "用自然语言提问您的财务状况"
+  },
+  "chat": {
+    "conversationSaved": "对话已保存在您的浏览器中",
+    "clearConversation": "清除对话",
+    "inputPlaceholder": "询问您的财务状况...",
+    "inputPlaceholderDisabled": "未配置 AI 提供商",
+    "keyboardHint": "按 Enter 发送，Shift+Enter 换行",
+    "cancelTitle": "取消",
+    "sendTitle": "发送"
+  },
+  "notConfigured": {
+    "heading": "AI 未配置",
+    "message": "未配置任何 AI 提供商。要使用 AI 助手，请在设置中{link}。",
+    "linkText": "配置 AI 提供商"
+  },
+  "suggestedQueries": {
+    "heading": "询问您的财务状况",
+    "description": "我可以回答有关您的支出、收入、账户余额、资产净值等问题。",
+    "monthlySpendingLabel": "月度支出",
+    "monthlySpendingQuery": "我上个月花了多少钱？",
+    "topCategoriesLabel": "主要科目",
+    "topCategoriesQuery": "今年我的前 5 大支出科目是什么？",
+    "accountBalancesLabel": "账户余额",
+    "accountBalancesQuery": "我当前各账户的余额是多少？",
+    "compareMonthsLabel": "月度对比",
+    "compareMonthsQuery": "比较本月与上月的支出",
+    "netWorthTrendLabel": "资产净值趋势",
+    "netWorthTrendQuery": "显示我过去 12 个月的资产净值趋势",
+    "savingsRateLabel": "储蓄率",
+    "savingsRateQuery": "与我的收入相比，今年我存了多少钱？"
+  },
+  "toolDetails": {
+    "inputLabel": "输入",
+    "resultLabel": "结果",
+    "toolFailedAriaLabel": "工具执行失败",
+    "toolSucceededAriaLabel": "工具执行成功"
+  },
+  "table": {
+    "downloadTitle": "将表格下载为 CSV",
+    "downloadAriaLabel": "将表格下载为 CSV",
+    "noDataError": "无表格数据可导出"
+  },
+  "chart": {
+    "downloadTitle": "将图表下载为 PNG",
+    "downloadAriaLabel": "将图表下载为 PNG",
+    "captureError": "无法捕获图表图像",
+    "downloadError": "下载图表失败"
+  }
+}

@@ -1,0 +1,430 @@
+{
+  "accountWidget": {
+    "currentBalance": "当前余额",
+    "nextPayment": "下次还款",
+    "viewBills": "在账单与存款中查看",
+    "type": "类型",
+    "accountNumber": "账户号码",
+    "currency": "货币",
+    "creditLimit": "信用额度",
+    "interestRate": "利率",
+    "statementSettlement": "结算日",
+    "statementSettlementTooltip": "账单周期的最后一天。在此日期或之前过账的交易将出现在当前账单中。",
+    "statementDue": "还款到期日",
+    "closed": "已关闭",
+    "editAria": "编辑账户设置",
+    "collapseAria": "隐藏账户信息",
+    "showAccountNumber": "显示账户号码",
+    "hideAccountNumber": "隐藏账户号码",
+    "show": "显示账户信息"
+  },
+  "page": {
+    "title": "交易",
+    "subtitle": "管理您的收入和支出",
+    "newButton": "+ 新建交易",
+    "editModal": {
+      "editTitle": "编辑交易",
+      "duplicateTitle": "复制交易",
+      "newTitle": "新建交易",
+      "scheduleTitle": "设为定期计划",
+      "editPayeeTitle": "编辑收款人"
+    },
+    "loading": "正在加载交易...",
+    "totalCount": "{count, plural, one {# 笔交易} other {# 笔交易}}",
+    "bulkDelete": {
+      "title": "删除交易",
+      "message": "确定要删除 {count, plural, one {# 笔交易} other {# 笔交易}} 吗？这也将删除所有关联的转账对应项。此操作无法撤销。"
+    },
+    "toasts": {
+      "scheduledCreated": "计划交易已创建",
+      "investmentLinked": "此交易已关联到投资。正在跳转到投资页面。"
+    }
+  },
+  "list": {
+    "empty": {
+      "title": "无交易",
+      "body": "创建新交易以开始使用。"
+    },
+    "header": {
+      "date": "日期",
+      "account": "账户",
+      "payee": "收款人",
+      "category": "分类",
+      "description": "描述",
+      "refNumber": "参考编号",
+      "tags": "标签",
+      "amount": "金额",
+      "balance": "余额",
+      "status": "状态",
+      "actions": "操作"
+    },
+    "today": "今天",
+    "export": {
+      "button": "导出",
+      "exporting": "导出中...",
+      "title": "将交易导出为 CSV",
+      "success": "{count, plural, one {已导出 # 笔交易} other {已导出 # 笔交易}}",
+      "noData": "无交易可导出",
+      "error": "导出交易失败"
+    },
+    "density": {
+      "title": "切换行密度",
+      "normal": "正常",
+      "compact": "紧凑",
+      "dense": "密集"
+    },
+    "delete": {
+      "transferTitle": "删除转账",
+      "transactionTitle": "删除交易",
+      "transferMessage": "确定要删除此转账吗？两笔关联交易均将被删除。",
+      "transactionMessage": "确定要删除此交易吗？此操作无法撤销。",
+      "success": "交易已删除",
+      "transferSuccess": "转账已删除",
+      "error": "删除交易失败"
+    },
+    "status": {
+      "voidError": "请编辑交易以将状态从\"作废\"更改",
+      "changed": "状态已更改为 {status}",
+      "updateError": "更新状态失败",
+      "unreconciled": "未对账",
+      "cleared": "已结算",
+      "reconciled": "已对账",
+      "void": "作废",
+      "unreconciledDense": "未",
+      "clearedDense": "清",
+      "reconciledDense": "账",
+      "voidDense": "废",
+      "pendingDense": "○",
+      "pending": "待处理",
+      "cycleTitle": "点击切换状态"
+    },
+    "row": {
+      "editPayeeTitle": "编辑收款人：{name}",
+      "ref": "参考：{number}",
+      "investmentLabel": "投资",
+      "linkedInvestmentTitle": "在投资中查看",
+      "filterByDate": "按日期筛选\"{date}\"",
+      "filterByAccount": "按\"{name}\"筛选",
+      "filterByPayee": "按\"{name}\"筛选",
+      "filterByCategory": "按 {name} 筛选",
+      "filterByTag": "按标签 {name} 筛选",
+      "transfer": "转账",
+      "transferTitle": "转账 {direction} {name}",
+      "split": "拆分",
+      "uncategorized": "未分类",
+      "splitMore": "+{count} 项",
+      "filteredAmountTitle": "筛选后金额（完整交易：{amount}）",
+      "viewButton": "查看",
+      "editButton": "编辑",
+      "deleteButton": "删除"
+    },
+    "itemNamePlural": "笔交易"
+  },
+  "row": {
+    "copyOptions": {
+      "title": "复制选项",
+      "duplicateTitle": "复制交易",
+      "copy": "复制",
+      "duplicate": "复制",
+      "scheduleRecurring": "设为定期计划"
+    }
+  },
+  "actionSheet": {
+    "defaultTitle": "交易",
+    "filterByDate": "按日期筛选\"{date}\"",
+    "filterByAccount": "按\"{name}\"筛选",
+    "filterByPayee": "按\"{name}\"筛选",
+    "filterByCategory": "按\"{name}\"筛选",
+    "filterByTag": "按标签\"{name}\"筛选",
+    "edit": "编辑",
+    "duplicate": "复制",
+    "scheduleRecurring": "设为定期计划",
+    "delete": "删除"
+  },
+  "filter": {
+    "favourites": "收藏：",
+    "panel": {
+      "title": "筛选",
+      "clear": "清除",
+      "hide": "隐藏",
+      "show": "显示"
+    },
+    "accounts": {
+      "label": "显示账户：",
+      "all": "全部",
+      "active": "活跃",
+      "closed": "已关闭"
+    },
+    "fields": {
+      "accounts": "账户",
+      "payees": "收款人",
+      "categories": "分类",
+      "tags": "标签",
+      "timePeriod": "时间段",
+      "startDate": "开始日期",
+      "endDate": "结束日期",
+      "amountFrom": "金额从",
+      "amountTo": "金额至",
+      "status": "状态",
+      "search": "搜索"
+    },
+    "placeholders": {
+      "accounts": "所有账户",
+      "payees": "所有收款人",
+      "categories": "所有分类",
+      "tags": "所有标签",
+      "statuses": "所有状态",
+      "amountMin": "最小",
+      "amountMax": "最大",
+      "search": "搜索收款人、分类、金额、标签、描述、参考编号..."
+    },
+    "chips": {
+      "removeAccount": "移除 {name} 筛选",
+      "removePayee": "移除 {name} 筛选",
+      "removeCategory": "移除 {name} 筛选",
+      "removeTag": "移除 {name} 筛选",
+      "removeDate": "移除日期筛选",
+      "removeAmount": "移除金额筛选",
+      "removeSearch": "移除搜索筛选",
+      "dateFrom": "从 {date}",
+      "dateUntil": "至 {date}",
+      "amountFrom": "从 {amount}",
+      "amountUpTo": "最多 {amount}"
+    },
+    "bulkUpdate": "批量更新",
+    "cancelBulk": "取消批量",
+    "statusLabels": {
+      "unreconciled": "未对账",
+      "cleared": "已结算",
+      "reconciled": "已对账",
+      "void": "作废"
+    },
+    "periods": {
+      "select": "选择时间段...",
+      "today": "今天",
+      "yesterday": "昨天",
+      "thisWeek": "本周",
+      "lastWeek": "上周",
+      "monthToDate": "本月至今",
+      "lastMonth": "上个月",
+      "yearToDate": "今年至今",
+      "lastYear": "去年",
+      "custom": "自定义"
+    }
+  },
+  "bulk": {
+    "banner": {
+      "selected": "{count, plural, one {已选 # 笔交易} other {已选 # 笔交易}}",
+      "selectAllMatching": "选择全部 {count} 笔匹配交易",
+      "allMatching": "（所有匹配交易）",
+      "clearSelection": "清除选择",
+      "bulkUpdate": "批量更新"
+    },
+    "modal": {
+      "title": "批量更新交易",
+      "subtitle": "更新 {count, plural, one {# 笔选中的交易} other {# 笔选中的交易}}。切换要更改的字段。",
+      "submitLabel": "更新 {count, plural, one {# 笔交易} other {# 笔交易}}",
+      "payee": "收款人",
+      "category": "分类",
+      "description": "描述",
+      "status": "状态",
+      "tags": "标签",
+      "payeePlaceholder": "选择或输入收款人名称...",
+      "categoryPlaceholder": "选择分类...",
+      "descriptionPlaceholder": "输入描述（留空则清除）",
+      "tagsPlaceholder": "选择标签（留空则清除所有）...",
+      "statusOptions": {
+        "pending": "待处理",
+        "cleared": "已结算",
+        "void": "作废"
+      },
+      "notes": {
+        "transfer": "转账交易的关联对应项也将被更新。",
+        "split": "拆分交易将跳过分类更改。"
+      }
+    }
+  },
+  "form": {
+    "modeTransaction": "交易",
+    "modeSplit": "拆分",
+    "modeTransfer": "转账",
+    "transferBadge": "转账",
+    "isLinkedTransfer": "这是一笔关联转账交易",
+    "fields": {
+      "account": "账户",
+      "date": "日期",
+      "createDate": "创建日期",
+      "payee": "收款人",
+      "category": "分类",
+      "amount": "金额",
+      "totalAmount": "总金额",
+      "referenceNumber": "参考编号",
+      "description": "描述",
+      "status": "状态",
+      "tags": "标签",
+      "fromAccount": "来源账户",
+      "toAccount": "目标账户",
+      "transferAmount": "转账金额",
+      "transferAmountWithCurrency": "转账金额（{currency}）",
+      "amountReceived": "收到金额（{currency}）",
+      "payeeOptional": "收款人（可选）"
+    },
+    "placeholders": {
+      "selectAccount": "选择账户...",
+      "selectDestinationAccount": "选择目标账户...",
+      "selectOrTypePayee": "选择或输入收款人名称...",
+      "selectOrCreateCategory": "选择或创建分类...",
+      "referenceNumber": "支票编号、确认编号...",
+      "optionalDescription": "可选描述...",
+      "selectTags": "选择标签...",
+      "createNewTag": "创建新标签..."
+    },
+    "splitSection": {
+      "title": "拆分交易",
+      "cancelSplit": "取消拆分"
+    },
+    "statusOptions": {
+      "unreconciled": "未对账",
+      "cleared": "已结算",
+      "reconciled": "已对账",
+      "void": "作废"
+    },
+    "submitCreate": "创建{mode}",
+    "submitUpdate": "更新{mode}",
+    "modeLabel": {
+      "transfer": "转账",
+      "transaction": "交易"
+    },
+    "transferAmountNote": "转账金额必须为正数",
+    "amountReceivedNote": "货币兑换后收到的金额",
+    "splitTransaction": "拆分交易",
+    "newTagTitle": "新建标签",
+    "toasts": {
+      "transferCreated": "转账已创建",
+      "transferUpdated": "转账已更新",
+      "transactionCreated": "交易已创建",
+      "transactionUpdated": "交易已更新",
+      "saveFailed": "保存交易失败",
+      "loadFailed": "加载表单数据失败",
+      "splitsNotEqual": "拆分合计（{splitTotal}）必须等于交易金额（{txAmount}）",
+      "destinationRequired": "请选择目标账户",
+      "sameAccount": "来源账户和目标账户必须不同",
+      "negativeTransfer": "转账金额不能为负数",
+      "payeeCreated": "收款人\"{name}\"已创建",
+      "payeeCreateFailed": "创建收款人失败",
+      "payeeReactivated": "收款人\"{name}\"已重新激活",
+      "payeeReactivateFailed": "重新激活收款人失败",
+      "categoryCreated": "分类\"{name}\"已创建",
+      "categoryCreateFailed": "创建分类失败",
+      "tagCreated": "标签\"{name}\"已创建"
+    },
+    "ariaHistory": "显示近期交易",
+    "ariaHistoryForPayee": "显示此收款人的近期交易",
+    "historyTitle": "从近期交易快速填充"
+  },
+  "splitEditor": {
+    "header": "拆分详情",
+    "distributeProportionally": "按比例分配",
+    "distributeProportionallyTitle": "根据每个拆分项的金额按比例分配剩余金额",
+    "distributeEvenly": "均匀分配",
+    "addSplit": "添加拆分项",
+    "removeMinimum": "最少需要 2 个拆分项",
+    "removeSplit": "移除拆分项",
+    "removeAndConvert": "移除拆分项并转换为普通交易",
+    "convertConfirm": {
+      "title": "转换为普通交易？",
+      "message": "移除此拆分项将使用剩余拆分项的分类将此交易转换回普通交易。",
+      "confirm": "转换"
+    },
+    "noUnassigned": "无未分配金额",
+    "addRemaining": "将剩余金额添加到此拆分项",
+    "total": "合计",
+    "balanced": "已平衡",
+    "remaining": "剩余：{symbol}{amount}",
+    "needAmount": "需要 {symbol}{amount}（剩余：{symbol}{remaining}）",
+    "setTotal": "将合计设为 {symbol}{amount}",
+    "splitLabel": "拆分项 {number}",
+    "columns": {
+      "type": "类型",
+      "categoryAccount": "分类/账户",
+      "category": "分类",
+      "amount": "金额",
+      "memo": "备注",
+      "tags": "标签"
+    },
+    "splitTypes": {
+      "category": "分类",
+      "transfer": "转账",
+      "investment": "投资"
+    },
+    "selectCategory": "选择分类...",
+    "selectAccount": "选择账户...",
+    "memoPlaceholder": "可选备注",
+    "mobileMemoPlaceholder": "备注",
+    "tagsPlaceholder": "标签..."
+  },
+  "recentPopover": {
+    "recentForPayee": "{name} 的近期交易",
+    "recentTransactions": "近期交易",
+    "loading": "加载中...",
+    "noRecent": "无近期交易。",
+    "noRecentForPayee": "此收款人无近期交易。",
+    "noPayee": "（无收款人）",
+    "uncategorized": "（未分类）"
+  },
+  "investmentSplit": {
+    "ariaAction": "投资操作",
+    "ariaSecurity": "证券",
+    "selectSecurity": "选择证券...",
+    "quantityPlaceholder": "数量",
+    "pricePlaceholder": "价格",
+    "commissionPlaceholder": "佣金",
+    "amountPlaceholder": "金额（{currency}）"
+  },
+  "charts": {
+    "balanceHistory": {
+      "title": "余额历史",
+      "noData": "无余额数据",
+      "starting": "起始",
+      "current": "当前",
+      "ending": "结算",
+      "lowest": "最低",
+      "minBalance": "最低余额"
+    },
+    "monthlyTotals": {
+      "title": "月度合计",
+      "noData": "无交易数据",
+      "monthlyAvg": "月均",
+      "total": "合计",
+      "transactions": "交易",
+      "tooltip": "{count, plural, one {# 笔交易} other {# 笔交易}}"
+    },
+    "accountBalances": {
+      "title": "账户余额",
+      "noData": "无账户余额数据",
+      "average": "平均",
+      "total": "合计",
+      "accounts": "账户",
+      "scaleLabel": "Y 轴刻度",
+      "auto": "自动",
+      "linear": "线性",
+      "log": "对数",
+      "autoTitle": "自动（{scale}）",
+      "scaleTitle": "{label}刻度"
+    }
+  },
+  "toasts": {
+    "payeeUpdated": "收款人已成功更新",
+    "deleted": "{count, plural, one {已删除 # 笔交易} other {已删除 # 笔交易}}",
+    "noneToExport": "无交易可导出",
+    "exported": "{count, plural, one {已导出 # 笔交易} other {已导出 # 笔交易}}",
+    "loadFormDataFailed": "加载表单数据失败",
+    "loadFailed": "加载交易失败",
+    "loadPayeeFailed": "加载收款人详情失败",
+    "payeeUpdateFailed": "更新收款人失败",
+    "exportFailed": "导出交易失败"
+  },
+  "validation": {
+    "dateRequired": "日期为必填项"
+  }
+}

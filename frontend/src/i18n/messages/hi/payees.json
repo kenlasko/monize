@@ -1,0 +1,292 @@
+{
+  "page": {
+    "title": "भुगतानकर्ता",
+    "subtitle": "अपने भुगतानकर्ताओं और उनकी डिफ़ॉल्ट श्रेणियों का प्रबंधन करें",
+    "deactivateUnused": "अप्रयुक्त निष्क्रिय करें",
+    "autoAssignCategories": "श्रेणियां स्वतः असाइन करें",
+    "autoMergePayees": "भुगतानकर्ताओं को स्वतः मर्ज करें",
+    "newPayee": "+ नया भुगतानकर्ता",
+    "searchPlaceholder": "भुगतानकर्ता खोजें...",
+    "statusAll": "सभी ({count})",
+    "statusActive": "सक्रिय ({count})",
+    "statusInactive": "निष्क्रिय ({count})",
+    "categoryFilterAll": "सभी भुगतानकर्ता ({count})",
+    "categoryFilterNoCategory": "कोई डिफ़ॉल्ट श्रेणी नहीं ({count})",
+    "categoryFilterUncategorized": "वर्गीकृत न किए गए लेन. ({count})",
+    "modalTitleEdit": "भुगतानकर्ता संपादित करें",
+    "modalTitleNew": "नया भुगतानकर्ता",
+    "loading": "भुगतानकर्ता लोड हो रहे हैं...",
+    "count": "{count, plural, one {# भुगतानकर्ता} other {# भुगतानकर्ता}}",
+    "toasts": {
+      "loadFailed": "डेटा लोड करने में विफल",
+      "updated": "भुगतानकर्ता सफलतापूर्वक अपडेट हुआ",
+      "created": "भुगतानकर्ता सफलतापूर्वक बनाया गया",
+      "reactivated": "भुगतानकर्ता \"{name}\" पुनः सक्रिय हुआ",
+      "reactivateFailed": "भुगतानकर्ता पुनः सक्रिय करने में विफल",
+      "updateFailed": "भुगतानकर्ता अपडेट करने में विफल",
+      "createFailed": "भुगतानकर्ता बनाने में विफल",
+      "categorized": "{count, plural, one {# लेनदेन वर्गीकृत किया गया} other {# लेनदेन वर्गीकृत किए गए}}"
+    },
+    "summary": {
+      "totalPayees": "कुल भुगतानकर्ता",
+      "active": "सक्रिय",
+      "inactive": "निष्क्रिय",
+      "withoutCategory": "बिना श्रेणी के"
+    },
+    "applyDefaultCategories": "डिफ़ॉल्ट श्रेणियां लागू करें"
+  },
+  "list": {
+    "columns": {
+      "name": "नाम",
+      "defaultCategory": "डिफ़ॉल्ट श्रेणी",
+      "count": "संख्या",
+      "aliases": "उपनाम",
+      "lastUsed": "अंतिम उपयोग",
+      "created": "बनाया गया",
+      "status": "स्थिति",
+      "notes": "नोट्स",
+      "actions": "क्रियाएं"
+    },
+    "density": {
+      "normal": "सामान्य",
+      "compact": "संक्षिप्त",
+      "dense": "घना",
+      "toggle": "पंक्ति घनत्व टॉगल करें"
+    },
+    "noCategory": "कोई नहीं",
+    "statusBadge": {
+      "active": "सक्रिय",
+      "inactive": "निष्क्रिय"
+    },
+    "actions": {
+      "reactivate": "पुनः सक्रिय करें",
+      "reactivateShort": "पु",
+      "merge": "मर्ज करें",
+      "mergeShort": "म",
+      "edit": "संपादित करें",
+      "editShort": "सं",
+      "delete": "हटाएं",
+      "deleteShort": "ह"
+    },
+    "viewTransactionsTitle": "इस भुगतानकर्ता के लेनदेन देखें",
+    "uncategorizedBadge": "{count, plural, one {# वर्गीकृत न किया गया} other {# वर्गीकृत न किए गए}}",
+    "uncategorizedTitle": "{count, plural, one {इस भुगतानकर्ता का # लेनदेन बिना श्रेणी के है} other {इस भुगतानकर्ता के # लेनदेन बिना श्रेणी के हैं}}",
+    "empty": {
+      "title": "कोई भुगतानकर्ता नहीं",
+      "subtitle": "नया भुगतानकर्ता बनाकर शुरू करें।"
+    },
+    "deleteConfirm": {
+      "title": "\"{name}\" हटाएं?",
+      "message": "यह क्रिया पूर्ववत नहीं की जा सकती।",
+      "confirmLabel": "हटाएं",
+      "cancelLabel": "रद्द करें"
+    },
+    "toasts": {
+      "deleted": "भुगतानकर्ता सफलतापूर्वक हटाया गया",
+      "deleteFailed": "भुगतानकर्ता हटाने में विफल"
+    }
+  },
+  "form": {
+    "nameLabel": "भुगतानकर्ता का नाम",
+    "categoryLabel": "डिफ़ॉल्ट श्रेणी",
+    "notesLabel": "नोट्स (वैकल्पिक)",
+    "submitCreate": "भुगतानकर्ता बनाएं",
+    "submitUpdate": "भुगतानकर्ता अपडेट करें",
+    "applyCategoryLabel": "यह श्रेणी मौजूदा लेनदेनों पर लागू करें",
+    "applyCategoryNone": "मौजूदा लेनदेन न बदलें",
+    "applyCategoryUncategorized": "केवल बिना श्रेणी वाले लेनदेन ({count})",
+    "applyCategoryAll": "सभी लेनदेन ({count})",
+    "applyCategoryHelp": "स्थानांतरण और विभाजित लेनदेन कभी नहीं बदले जाते।"
+  },
+  "merge": {
+    "title": "भुगतानकर्ता मर्ज करें",
+    "mergeFromLabel": "मर्ज करें (हटाया जाएगा):",
+    "transactionCount": "{count, plural, one {# लेनदेन माइग्रेट होगा} other {# लेनदेन माइग्रेट होंगे}}",
+    "mergeIntoLabel": "इसमें मर्ज करें (लक्ष्य भुगतानकर्ता)",
+    "addAsAliasLabel": "लक्ष्य भुगतानकर्ता पर \"{name}\" उपनाम के रूप में जोड़ें",
+    "willLabel": "यह करेगा:",
+    "willMoveTransactions": "\"{source}\" से \"{target}\" में सभी लेनदेन ले जाएगा",
+    "willAddAlias": "\"{source}\" को उपनाम के रूप में जोड़ेगा ताकि भविष्य के आयात स्वतः मिलान करें",
+    "willDelete": "\"{source}\" भुगतानकर्ता हटाएगा",
+    "merging": "मर्ज हो रहा है...",
+    "mergeButton": "भुगतानकर्ता मर्ज करें",
+    "toasts": {
+      "merged": "\"{target}\" में मर्ज हुआ: {details}",
+      "transactionsMigrated": "{count, plural, one {# लेनदेन माइग्रेट हुआ} other {# लेनदेन माइग्रेट हुए}}",
+      "aliasAdded": "उपनाम जोड़ा गया",
+      "sourceDeleted": "\"{name}\" हटाया गया",
+      "failed": "भुगतानकर्ताओं को मर्ज करने में विफल"
+    }
+  },
+  "categoryAutoAssign": {
+    "title": "डिफ़ॉल्ट श्रेणियां स्वतः असाइन करें",
+    "howItWorksTitle": "यह कैसे काम करता है",
+    "howItWorksBody": "यह सुविधा भुगतानकर्ताओं के लिए डिफ़ॉल्ट श्रेणियां सुझाने के लिए आपके लेनदेन इतिहास का विश्लेषण करती है। यह देखती है कि प्रत्येक भुगतानकर्ता के लिए कौन सी श्रेणी सबसे अधिक उपयोग की जाती है और भविष्य के लेनदेनों के लिए उसे डिफ़ॉल्ट श्रेणी के रूप में असाइन करने का सुझाव देती है। आप हमेशा डिफ़ॉल्ट श्रेणी को ओवरराइड कर सकते हैं।",
+    "minTransactionsLabel": "न्यूनतम लेनदेन: {count}",
+    "minTransactionsHelp": "केवल कम से कम इतने लेनदेन वाले भुगतानकर्ताओं पर विचार करें",
+    "matchPercentageLabel": "श्रेणी मिलान प्रतिशत: {percent}%",
+    "matchPercentageHelp": "श्रेणी कम से कम इस प्रतिशत लेनदेनों में उपयोग होनी चाहिए",
+    "onlyWithoutCategoryLabel": "केवल बिना डिफ़ॉल्ट श्रेणी वाले भुगतानकर्ता",
+    "backfillLabel": "{count, plural, one {# मौजूदा वर्गीकृत न किए गए लेनदेन} other {# मौजूदा वर्गीकृत न किए गए लेनदेन}} को भी वर्गीकृत करें",
+    "backfillHelp": "वर्तमान में बिना श्रेणी वाले लेनदेनों पर चुनी गई श्रेणी लागू करता है। मौजूदा श्रेणियां, स्थानांतरण और विभाजित लेनदेन अपरिवर्तित रहते हैं।",
+    "viewUncategorizedTitle": "{name} के {count, plural, one {# वर्गीकृत न किए गए लेनदेन} other {# वर्गीकृत न किए गए लेनदेन}} देखें",
+    "previewButton": "सुझाव पूर्वावलोकन",
+    "loading": "लोड हो रहा है...",
+    "suggestionsHeader": "सुझाव ({count} मिले)",
+    "selectAll": "सभी चुनें",
+    "selectNone": "कोई नहीं चुनें",
+    "selectPayeeLabel": "{name} चुनें",
+    "empty": {
+      "line1": "वर्तमान मानदंड से कोई भुगतानकर्ता मेल नहीं खाता।",
+      "line2": "ऊपर सेटिंग्स समायोजित करने का प्रयास करें।"
+    },
+    "columns": {
+      "payee": "भुगतानकर्ता",
+      "suggestedCategory": "सुझाई गई श्रेणी",
+      "match": "मिलान"
+    },
+    "selectedCount": "{count, plural, one {# भुगतानकर्ता चुना गया} other {# भुगतानकर्ता चुने गए}}",
+    "applyButton": "{count, plural, one {# भुगतानकर्ता} other {# भुगतानकर्ताओं}} पर लागू करें",
+    "applying": "लागू हो रहा है...",
+    "toasts": {
+      "selectAtLeastOne": "अपडेट करने के लिए कम से कम एक भुगतानकर्ता चुनें",
+      "updated": "{count, plural, one {# भुगतानकर्ता अपडेट हुआ} other {# भुगतानकर्ता अपडेट हुए}}",
+      "backfilled": "{count, plural, one {# लेनदेन वर्गीकृत हुआ} other {# लेनदेन वर्गीकृत हुए}}",
+      "loadFailed": "सुझाव लोड करने में विफल",
+      "applyFailed": "श्रेणी असाइनमेंट लागू करने में विफल"
+    }
+  },
+  "autoMerge": {
+    "title": "भुगतानकर्ताओं को स्वतः मर्ज करें",
+    "howItWorksTitle": "यह कैसे काम करता है",
+    "howItWorksBody": "यह सुविधा आपके भुगतानकर्ताओं को स्कैन करती है और उन वेरिएंट को समूहित करती है जहां एक नाम दूसरे का विस्तार है - उदाहरण के लिए \"Lidl\", \"LIDL sp. z o.o.\" और \"LIDL WARSZAWA 0421\" सभी \"Lidl\" पर आधारित हैं। प्रत्येक समूह को एक एकल विहित भुगतानकर्ता में मर्ज किया जाता है, और एक वाइल्डकार्ड उपनाम (जैसे \"*LIDL*\") बनाया जाता है ताकि भविष्य के आयात स्वचालित रूप से मिलान हों। जो भुगतानकर्ता केवल एक सामान्य शब्द साझा करते हैं (जैसे \"Royal Electric\" और \"Royal City Nursery\") वे अलग रखे जाते हैं। लागू करने से पहले प्रत्येक समूह की समीक्षा और समायोजन करें।",
+    "backupRecommendation": "अनुशंसित: परिवर्तन करने से पहले <link>बैकअप</link> बनाएं।",
+    "minGroupSizeLabel": "न्यूनतम समूह आकार: {count}",
+    "minGroupSizeHelp": "केवल कम से कम इतने भुगतानकर्ताओं वाले समूह सुझाएं",
+    "similarityLabel": "समानता सीमा: {percent}%",
+    "similarityHelp": "वर्तनी सहिष्णुता: LIDL / LIDI जैसे निकट-मिलान समूहित करने के लिए इसे कम करें; 100% के लिए सटीक कीवर्ड मिलान आवश्यक है।",
+    "minTokenLengthLabel": "न्यूनतम कीवर्ड लंबाई: {count}",
+    "minTokenLengthHelp": "समूहित करते समय इससे छोटे कीवर्ड अनदेखा करें",
+    "includeInactiveLabel": "निष्क्रिय भुगतानकर्ता शामिल करें",
+    "previewButton": "समूहों का पूर्वावलोकन",
+    "loading": "लोड हो रहा है...",
+    "groupsHeader": "समूह ({count} मिले)",
+    "empty": {
+      "line1": "वर्तमान मानदंड से कोई मर्ज समूह मेल नहीं खाता।",
+      "line2": "समानता सीमा या समूह आकार कम करने का प्रयास करें।"
+    },
+    "includeGroupLabel": "यह समूह शामिल करें",
+    "canonicalNameLabel": "भुगतानकर्ता के रूप में रखें",
+    "aliasLabel": "भविष्य के आयात के लिए उपनाम",
+    "defaultCategoryLabel": "डिफ़ॉल्ट श्रेणी (वैकल्पिक)",
+    "backfillLabel": "{count, plural, one {# मौजूदा वर्गीकृत न किए गए लेनदेन} other {# मौजूदा वर्गीकृत न किए गए लेनदेन}} को भी वर्गीकृत करें",
+    "aliasPlaceholder": "जैसे *LIDL*",
+    "keepLabel": "यह भुगतानकर्ता रखें",
+    "includeMemberLabel": "मर्ज में शामिल करें",
+    "keepBadge": "रखें",
+    "keepColumn": "रखें",
+    "mergeColumn": "मर्ज",
+    "membersHelp": "रखने के लिए भुगतानकर्ता चुनें। बाकी उसमें मर्ज हो जाते हैं।",
+    "memberTransactions": "{count, plural, one {# लेनदेन} other {# लेनदेन}}",
+    "selectedCount": "{count, plural, one {# समूह चुना गया} other {# समूह चुने गए}}",
+    "payeesMergedCount": "{count, plural, one {# भुगतानकर्ता मर्ज होगा} other {# भुगतानकर्ता मर्ज होंगे}}",
+    "applyButton": "{count, plural, one {# समूह} other {# समूह}} मर्ज करें",
+    "applying": "मर्ज हो रहा है...",
+    "toasts": {
+      "selectAtLeastOne": "मर्ज करने के लिए कम से कम एक समूह चुनें",
+      "applied": "{groups, plural, one {# समूह} other {# समूह}} मर्ज हुए ({payees} भुगतानकर्ता संयुक्त)",
+      "backfilled": "{count, plural, one {# लेनदेन वर्गीकृत हुआ} other {# लेनदेन वर्गीकृत हुए}}",
+      "aliasesSkipped": "{count, plural, one {# उपनाम टकराव के कारण छोड़ा गया} other {# उपनाम टकरावों के कारण छोड़े गए}}",
+      "loadFailed": "मर्ज समूह लोड करने में विफल",
+      "applyFailed": "भुगतानकर्ताओं को मर्ज करने में विफल"
+    },
+    "categoryMatchLabel": "केवल एक ही श्रेणी के भुगतानकर्ताओं को मर्ज करें",
+    "categoryMatchHelp": "जब श्रेणियां अलग हों तो भुगतानकर्ताओं को अलग रखें, जिससे गलत मिलान कम होते हैं।",
+    "granularityLabel": "श्रेणी मिलान स्तर",
+    "selectAll": "सभी चुनें",
+    "deselectAll": "सभी का चयन हटाएं",
+    "granularity": {
+      "category": "श्रेणी",
+      "subcategory": "उपश्रेणी"
+    },
+    "ignoreCommonWordsLabel": "सामान्य शब्द अनदेखा करें",
+    "ignoreCommonWordsHelp": "सामान्य शब्दों (रेस्तरां, कैफे, देश के नाम) या ऐसे शब्दों पर समूह आधारित न करें जिनसे कई अलग-अलग भुगतानकर्ता शुरू होते हैं।",
+    "commonWordSensitivityLabel": "सामान्य-शब्द संवेदनशीलता: {count}+ वेरिएंट",
+    "commonWordSensitivityHelp": "एक प्रमुख शब्द को सामान्य माना जाता है जब इससे कम से कम इतने अलग-अलग भुगतानकर्ता शाखाबद्ध होते हैं। कम = अधिक आक्रामक फ़िल्टर।",
+    "viewUncategorizedTitle": "{name} के {count, plural, one {# वर्गीकृत न किए गए लेनदेन} other {# वर्गीकृत न किए गए लेनदेन}} देखें"
+  },
+  "deactivateUnused": {
+    "title": "अप्रयुक्त भुगतानकर्ता निष्क्रिय करें",
+    "howItWorksTitle": "यह कैसे काम करता है",
+    "howItWorksBody": "यह सुविधा उन भुगतानकर्ताओं को खोजती है जो शायद ही उपयोग किए जाते हैं और उन्हें निष्क्रिय करती है। निष्क्रिय भुगतानकर्ता लेनदेन बनाते समय भुगतानकर्ता ड्रॉपडाउन में नहीं दिखेंगे, लेकिन उनके ऐतिहासिक लेनदेन संरक्षित रहते हैं। आप किसी भी समय भुगतानकर्ता सूची से भुगतानकर्ता को पुनः सक्रिय कर सकते हैं।",
+    "maxTransactionsLabel": "{count, plural, one {# या कम लेनदेन} other {# या कम लेनदेन}}",
+    "maxTransactionsHelp": "केवल इतने या कम लेनदेन वाले भुगतानकर्ता शामिल करें",
+    "monthsUnusedLabel": "{label} से अधिक समय पहले अंतिम उपयोग",
+    "monthsUnusedHelp": "केवल इतने समय से पहले (या कभी नहीं) उपयोग किए गए भुगतानकर्ता शामिल करें",
+    "previewButton": "अप्रयुक्त भुगतानकर्ताओं का पूर्वावलोकन",
+    "loading": "लोड हो रहा है...",
+    "candidatesHeader": "उम्मीदवार ({count} मिले)",
+    "selectAll": "सभी चुनें",
+    "selectNone": "कोई नहीं चुनें",
+    "selectPayeeLabel": "{name} चुनें",
+    "neverUsed": "कभी उपयोग नहीं किया",
+    "empty": {
+      "line1": "वर्तमान मानदंड से कोई भुगतानकर्ता मेल नहीं खाता।",
+      "line2": "ऊपर सेटिंग्स समायोजित करने का प्रयास करें।"
+    },
+    "columns": {
+      "payee": "भुगतानकर्ता",
+      "transactions": "लेनदेन",
+      "lastUsed": "अंतिम उपयोग"
+    },
+    "selectedCount": "{count, plural, one {# भुगतानकर्ता चुना गया} other {# भुगतानकर्ता चुने गए}}",
+    "deactivateButton": "{count, plural, one {# भुगतानकर्ता} other {# भुगतानकर्ताओं}} को निष्क्रिय करें",
+    "deactivating": "निष्क्रिय हो रहा है...",
+    "toasts": {
+      "selectAtLeastOne": "निष्क्रिय करने के लिए कम से कम एक भुगतानकर्ता चुनें",
+      "deactivated": "{count, plural, one {# भुगतानकर्ता निष्क्रिय हुआ} other {# भुगतानकर्ता निष्क्रिय हुए}}",
+      "loadFailed": "पूर्वावलोकन लोड करने में विफल",
+      "deactivateFailed": "भुगतानकर्ताओं को निष्क्रिय करने में विफल"
+    }
+  },
+  "reactivate": {
+    "title": "भुगतानकर्ता पुनः सक्रिय करें?",
+    "message": "भुगतानकर्ता \"{name}\" पहले निष्क्रिय कर दिया गया था। क्या आप इसे पुनः सक्रिय करना चाहते हैं ताकि यह भुगतानकर्ता ड्रॉपडाउन में फिर से दिखे?",
+    "keepInactiveButton": "नहीं, निष्क्रिय रखें",
+    "reactivateButton": "पुनः सक्रिय करें",
+    "reactivating": "पुनः सक्रिय हो रहा है..."
+  },
+  "aliases": {
+    "heading": "उपनाम",
+    "description": "उपनाम आयातित भुगतानकर्ता नामों को इस भुगतानकर्ता से मैप करते हैं। वाइल्डकार्ड के रूप में * का उपयोग करें (जैसे \"STARBUCKS*\")। केस-असंवेदनशील।",
+    "loading": "लोड हो रहा है...",
+    "noAliases": "कोई उपनाम कॉन्फ़िगर नहीं",
+    "removeTitle": "उपनाम हटाएं",
+    "removeButton": "हटाएं",
+    "addButton": "जोड़ें",
+    "adding": "जोड़ा जा रहा है...",
+    "placeholder": "जैसे STARBUCKS #*",
+    "toasts": {
+      "alreadyAdded": "उपनाम \"{alias}\" पहले से जोड़ा गया",
+      "added": "उपनाम \"{alias}\" जोड़ा गया",
+      "removed": "उपनाम \"{alias}\" हटाया गया",
+      "loadFailed": "उपनाम लोड करने में विफल",
+      "addFailed": "उपनाम जोड़ने में विफल",
+      "removeFailed": "उपनाम हटाने में विफल"
+    }
+  },
+  "selectCategoryPlaceholder": "श्रेणी चुनें...",
+  "validation": {
+    "nameRequired": "भुगतानकर्ता का नाम आवश्यक है"
+  },
+  "defaultCategoryBackfill": {
+    "allConfirmTitle": "डिफ़ॉल्ट श्रेणियां लागू करें?",
+    "allConfirmMessage": "यह {payees, plural, one {# भुगतानकर्ता} other {# भुगतानकर्ताओं}} में {transactions, plural, one {# वर्गीकृत न किए गए लेनदेन} other {# वर्गीकृत न किए गए लेनदेन}} को प्रत्येक भुगतानकर्ता की डिफ़ॉल्ट श्रेणी का उपयोग करके वर्गीकृत करेगा। मैन्युअल रूप से वर्गीकृत लेनदेन, स्थानांतरण और विभाजित लेनदेन अपरिवर्तित रहते हैं।",
+    "confirmButton": "लागू करें",
+    "toasts": {
+      "nothingToDo": "वर्गीकृत करने के लिए कोई वर्गीकृत न किए गए लेनदेन नहीं",
+      "applied": "{count, plural, one {# लेनदेन वर्गीकृत हुआ} other {# लेनदेन वर्गीकृत हुए}}",
+      "failed": "लेनदेन वर्गीकृत करने में विफल"
+    }
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "page": {
+    "title": "Danh mục",
+    "subtitle": "Tổ chức giao dịch của bạn với các danh mục tùy chỉnh",
+    "newButton": "+ Danh mục mới",
+    "searchPlaceholder": "Tìm kiếm danh mục...",
+    "filterAll": "Tất cả ({count})",
+    "filterExpenses": "Chi tiêu ({count})",
+    "filterIncome": "Thu nhập ({count})",
+    "modalTitleNew": "Danh mục mới",
+    "modalTitleEdit": "Chỉnh sửa danh mục",
+    "countSingle": "1 danh mục",
+    "countPlural": "{count} danh mục",
+    "loadingText": "Đang tải danh mục...",
+    "summaryTotal": "Tổng danh mục",
+    "summaryIncome": "Danh mục thu nhập",
+    "summaryExpense": "Danh mục chi tiêu",
+    "summaryTopLevel": "Cấp cao nhất"
+  },
+  "empty": {
+    "heading": "Chưa có danh mục",
+    "description": "Danh mục giúp bạn tổ chức giao dịch. Bắt đầu bằng cách nhập bộ danh mục mặc định hoặc tạo danh mục riêng từ đầu.",
+    "importButton": "Nhập danh mục mặc định",
+    "createButton": "Tự tạo",
+    "hint": "Bộ mặc định bao gồm các danh mục thu nhập và chi tiêu phổ biến với các danh mục con"
+  },
+  "toasts": {
+    "created": "Đã tạo danh mục thành công",
+    "updated": "Đã cập nhật danh mục thành công",
+    "deleted": "Đã xóa danh mục thành công",
+    "cannotDeleteSystem": "Không thể xóa danh mục hệ thống",
+    "importSuccess": "Đã nhập thành công {count} danh mục",
+    "loadFailed": "Không thể tải danh mục",
+    "deleteFailed": "Không thể xóa danh mục",
+    "createFailed": "Không thể tạo danh mục",
+    "updateFailed": "Không thể cập nhật danh mục",
+    "importFailed": "Không thể nhập danh mục mặc định"
+  },
+  "form": {
+    "nameLabel": "Tên danh mục",
+    "parentLabel": "Danh mục cha",
+    "noParent": "Không có cha (cấp cao nhất)",
+    "typeLabel": "Loại",
+    "typeExpense": "Chi tiêu",
+    "typeIncome": "Thu nhập",
+    "typeInherited": "Loại kế thừa từ cha",
+    "colourLabel": "Màu sắc",
+    "colourInherit": "Kế thừa từ cha",
+    "colourNone": "Không có màu",
+    "colourInheritedFrom": "Màu kế thừa từ cha ({name})",
+    "descriptionLabel": "Mô tả (tùy chọn)",
+    "submitCreate": "Tạo danh mục",
+    "submitUpdate": "Cập nhật danh mục"
+  },
+  "list": {
+    "emptyHeading": "Không có danh mục",
+    "emptyDescription": "Bắt đầu bằng cách tạo danh mục mới.",
+    "colName": "Tên",
+    "colType": "Loại",
+    "colCount": "Số lượng",
+    "colDescription": "Mô tả",
+    "colActions": "Thao tác",
+    "badgeIncome": "Thu nhập",
+    "badgeExpense": "Chi tiêu",
+    "systemBadge": "(Hệ thống)",
+    "inheritedColorTitle": "Kế thừa từ cha",
+    "viewTransactionsTitle": "Xem giao dịch trong danh mục này",
+    "densityToggleTitle": "Chuyển đổi mật độ hàng",
+    "densityNormal": "Bình thường",
+    "densityCompact": "Thu gọn",
+    "densityDense": "Dày đặc"
+  },
+  "deleteDialog": {
+    "title": "Xóa \"{name}\"?",
+    "checkingUsage": "Đang kiểm tra mức độ sử dụng...",
+    "usedBy": "Danh mục này được dùng bởi {count, plural, one {# mục} other {# mục}} (giao dịch và/hoặc hóa đơn & tiền gửi theo lịch).",
+    "reassignLabel": "Phân công lại cho:",
+    "leaveUncategorized": "Để chưa phân loại",
+    "safeToDelete": "Danh mục này chưa được sử dụng. Có thể xóa an toàn.",
+    "cannotUndo": "Hành động này không thể hoàn tác."
+  },
+  "validation": {
+    "nameRequired": "Tên danh mục là bắt buộc"
+  }
+}

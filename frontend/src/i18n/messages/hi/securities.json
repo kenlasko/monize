@@ -1,0 +1,304 @@
+{
+  "priceRefresh": {
+    "noneToUpdate": "अपडेट करने के लिए कोई प्रतिभूति नहीं",
+    "updated": "{count, plural, one {# प्रतिभूति मूल्य अपडेट हुआ} other {# प्रतिभूति मूल्य अपडेट हुए}}",
+    "partialFailure": "मूल्य अपडेट: {updated} सफल, {failed} विफल{symbols}",
+    "failed": "मूल्य ताज़ा करने में विफल"
+  },
+  "page": {
+    "title": "प्रतिभूतियां",
+    "subtitle": "अपने स्टॉक, ETF, म्यूचुअल फंड और अन्य प्रतिभूतियां प्रबंधित करें",
+    "newSecurity": "+ नई प्रतिभूति",
+    "searchPlaceholder": "प्रतीक या नाम से खोजें...",
+    "statusAll": "सभी ({count})",
+    "statusActive": "सक्रिय ({count})",
+    "statusInactive": "निष्क्रिय ({count})",
+    "modalTitleEdit": "प्रतिभूति संपादित करें",
+    "modalTitleNew": "नई प्रतिभूति",
+    "loading": "प्रतिभूतियां लोड हो रही हैं...",
+    "count": "{count, plural, one {# प्रतिभूति} other {# प्रतिभूतियां}}",
+    "toasts": {
+      "loadFailed": "प्रतिभूतियां लोड करने में विफल",
+      "updated": "प्रतिभूति सफलतापूर्वक अपडेट की गई",
+      "created": "प्रतिभूति सफलतापूर्वक बनाई गई",
+      "deactivated": "प्रतिभूति निष्क्रिय की गई",
+      "activated": "प्रतिभूति सक्रिय की गई",
+      "statusFailed": "प्रतिभूति स्थिति अपडेट करने में विफल",
+      "deleted": "प्रतिभूति \"{symbol}\" हटाई गई",
+      "deleteFailed": "प्रतिभूति हटाने में विफल",
+      "favouriteFailed": "पसंदीदा अपडेट करने में विफल",
+      "updateFailed": "प्रतिभूति अपडेट करने में विफल",
+      "createFailed": "प्रतिभूति बनाने में विफल"
+    },
+    "deleteConfirm": {
+      "title": "प्रतिभूति हटाएं",
+      "message": "क्या आप वाकई \"{symbol}\" हटाना चाहते हैं? सभी मूल्य इतिहास भी हटा दिए जाएंगे। यह क्रिया पूर्ववत नहीं की जा सकती।",
+      "confirmLabel": "हटाएं",
+      "cancelLabel": "रद्द करें"
+    }
+  },
+  "summary": {
+    "totalSecurities": "कुल प्रतिभूतियां",
+    "types": "प्रकार",
+    "exchanges": "एक्सचेंज",
+    "currencies": "मुद्राएं"
+  },
+  "list": {
+    "columns": {
+      "symbol": "प्रतीक",
+      "name": "नाम",
+      "type": "प्रकार",
+      "shares": "शेयर",
+      "exchange": "एक्सचेंज",
+      "currency": "मुद्रा",
+      "provider": "प्रदाता",
+      "source": "स्रोत",
+      "status": "स्थिति",
+      "actions": "क्रियाएं",
+      "favourite": "पसंदीदा"
+    },
+    "density": {
+      "normal": "सामान्य",
+      "compact": "संक्षिप्त",
+      "dense": "सघन",
+      "toggle": "पंक्ति घनत्व टॉगल करें"
+    },
+    "statusBadge": {
+      "active": "सक्रिय",
+      "activeShort": "स.",
+      "inactive": "निष्क्रिय",
+      "inactiveShort": "नि."
+    },
+    "providerTitle": {
+      "override": "प्रति-प्रतिभूति प्रदाता ओवरराइड",
+      "inherited": "आपकी डिफ़ॉल्ट उद्धरण प्रदाता प्राथमिकता से विरासत में मिला"
+    },
+    "columnTitles": {
+      "shares": "सभी खातों में वर्तमान शेयर",
+      "source": "सबसे हाल के मूल्य का स्रोत"
+    },
+    "actions": {
+      "history": "इतिहास",
+      "prices": "मूल्य",
+      "edit": "संपादित करें",
+      "deactivate": "निष्क्रिय करें",
+      "activate": "सक्रिय करें",
+      "delete": "हटाएं"
+    },
+    "favouriteButton": {
+      "add": "पसंदीदा में जोड़ें",
+      "remove": "पसंदीदा से हटाएं"
+    },
+    "empty": {
+      "title": "कोई प्रतिभूति नहीं",
+      "subtitle": "अपनी पहली प्रतिभूति जोड़कर शुरू करें।"
+    },
+    "contextMenu": {
+      "transactionHistory": "लेन-देन इतिहास",
+      "viewPrices": "मूल्य देखें",
+      "editSecurity": "प्रतिभूति संपादित करें",
+      "deactivate": "निष्क्रिय करें",
+      "activate": "सक्रिय करें",
+      "delete": "हटाएं"
+    }
+  },
+  "typeLabels": {
+    "STOCK": "स्टॉक",
+    "ETF": "ETF",
+    "MUTUAL_FUND": "म्यूचुअल फंड",
+    "BOND": "बॉन्ड",
+    "OPTION": "विकल्प",
+    "CRYPTO": "क्रिप्टो",
+    "OTHER": "अन्य",
+    "STOCK_short": "स्टॉ",
+    "ETF_short": "ETF",
+    "MUTUAL_FUND_short": "MF",
+    "BOND_short": "बॉन",
+    "OPTION_short": "वि.",
+    "CRYPTO_short": "क्रि",
+    "OTHER_short": "अन्य"
+  },
+  "form": {
+    "symbolLabel": "प्रतीक",
+    "nameLabel": "नाम",
+    "typeLabel": "प्रकार",
+    "exchangeLabel": "एक्सचेंज",
+    "currencyLabel": "मुद्रा",
+    "quoteProviderLabel": "उद्धरण प्रदाता",
+    "msnIdLabel": "MSN इंस्ट्रूमेंट ID (उन्नत)",
+    "lookupProviderAriaLabel": "प्रदाता खोजें",
+    "lookupButton": "खोजें",
+    "revertButton": "पूर्ववत करें",
+    "clearButton": "साफ करें",
+    "revertTitle": "मूल मानों पर वापस जाएं",
+    "clearTitle": "सभी फ़ील्ड साफ करें",
+    "favouriteLabel": "पसंदीदा",
+    "addToFavourites": "पसंदीदा में जोड़ें",
+    "removeFromFavourites": "पसंदीदा से हटाएं",
+    "submitCreate": "प्रतिभूति बनाएं",
+    "submitUpdate": "प्रतिभूति अपडेट करें",
+    "toasts": {
+      "lookupTooShort": "खोजने के लिए प्रतीक या नाम दर्ज करें (कम से कम 2 अक्षर)",
+      "notFound": "\"{query}\" के लिए कोई प्रतिभूति नहीं मिली",
+      "found": "मिली: {details}",
+      "lookupFailed": "खोज विफल - कृपया पुनः प्रयास करें"
+    },
+    "msnNotConfigured": "MSN डिफ़ॉल्ट उद्धरण प्रदाता के रूप में चुना गया है, लेकिन MSN_API_KEY सर्वर पर कॉन्फ़िगर नहीं किया गया है। MSN उद्धरण तब तक विफल रहेंगे जब तक एक व्यवस्थापक env var सेट करके बैकएंड पुनः शुरू नहीं करता।",
+    "providers": {
+      "auto": "स्वत:",
+      "yahoo": "Yahoo",
+      "msn": "MSN"
+    },
+    "types": {
+      "select": "प्रकार चुनें...",
+      "stock": "स्टॉक",
+      "etf": "ETF",
+      "mutualFund": "म्यूचुअल फंड",
+      "bond": "बॉन्ड",
+      "option": "विकल्प",
+      "crypto": "क्रिप्टोकरेंसी",
+      "other": "अन्य"
+    },
+    "quoteProviderUseDefault": "डिफ़ॉल्ट उपयोग करें ({provider})",
+    "symbolPlaceholder": "उदा., AAPL, XEQT, BTC",
+    "namePlaceholder": "उदा., Apple Inc., iShares Core Equity ETF",
+    "exchangeSearchPlaceholder": "एक्सचेंज खोजें...",
+    "exchangePlaceholder": "टिकर से स्वत: निर्धारित; केवल गलत होने पर ओवरराइड करें"
+  },
+  "priceForm": {
+    "dateLabel": "तिथि",
+    "closePriceLabel": "बंद मूल्य",
+    "openPriceLabel": "खुला मूल्य",
+    "highPriceLabel": "उच्च मूल्य",
+    "lowPriceLabel": "निम्न मूल्य",
+    "volumeLabel": "वॉल्यूम",
+    "optionalPlaceholder": "वैकल्पिक",
+    "submitCreate": "मूल्य जोड़ें",
+    "submitUpdate": "मूल्य अपडेट करें"
+  },
+  "priceHistory": {
+    "title": "{symbol} - मूल्य इतिहास",
+    "forceUpdateButton": "मूल्य जबरन अपडेट करें",
+    "forceUpdateTitle": "इस प्रतिभूति को रखने की पूरी अवधि के लिए ऐतिहासिक मूल्य फिर से प्राप्त करें",
+    "addPriceButton": "+ मूल्य जोड़ें",
+    "addPriceSection": "मूल्य जोड़ें",
+    "editPriceSection": "मूल्य संपादित करें",
+    "loading": "मूल्य लोड हो रहे हैं...",
+    "empty": "कोई मूल्य इतिहास उपलब्ध नहीं",
+    "columns": {
+      "date": "तिथि",
+      "close": "बंद",
+      "open": "खुला",
+      "high": "उच्च",
+      "low": "निम्न",
+      "volume": "वॉल्यूम",
+      "source": "स्रोत",
+      "actions": "क्रियाएं"
+    },
+    "toasts": {
+      "added": "मूल्य जोड़ा गया",
+      "updated": "मूल्य अपडेट किया गया",
+      "deleted": "मूल्य हटाया गया",
+      "loadFailed": "मूल्य इतिहास लोड करने में विफल",
+      "addFailed": "मूल्य जोड़ने में विफल",
+      "updateFailed": "मूल्य अपडेट करने में विफल",
+      "deleteFailed": "मूल्य हटाने में विफल",
+      "updatedCount": "{count, plural, one {{symbol} के लिए # मूल्य अपडेट किया गया} other {{symbol} के लिए # मूल्य अपडेट किए गए}}",
+      "noPricesFound": "{symbol} के लिए कोई मूल्य नहीं मिला",
+      "updatePricesFailed": "{symbol} के लिए मूल्य अपडेट करने में विफल",
+      "updateFetchFailed": "मूल्य अपडेट करने में विफल"
+    },
+    "closeButton": "बंद करें",
+    "deleteConfirm": {
+      "title": "मूल्य हटाएं",
+      "confirmLabel": "हटाएं"
+    }
+  },
+  "transactionHistory": {
+    "inactiveBadge": "निष्क्रिय",
+    "currentShares": "वर्तमान शेयर",
+    "accountLabel": "खाता",
+    "allAccounts": "सभी खाते ({shares})",
+    "accountClosed": "{name} (बंद)",
+    "addTransaction": "+ लेन-देन जोड़ें",
+    "loading": "लेन-देन लोड हो रहे हैं...",
+    "emptyAll": "इस प्रतिभूति के लिए कोई लेन-देन नहीं।",
+    "emptyAccount": "चयनित खाते में इस प्रतिभूति के लिए कोई लेन-देन नहीं।",
+    "editTransactionTitle": "लेन-देन संपादित करें",
+    "columns": {
+      "date": "तिथि",
+      "account": "खाता",
+      "action": "क्रिया",
+      "quantity": "मात्रा",
+      "runningTotal": "चालू कुल",
+      "price": "मूल्य",
+      "amount": "राशि",
+      "actionsLabel": "क्रियाएं"
+    },
+    "actionLabels": {
+      "BUY": "खरीदें",
+      "SELL": "बेचें",
+      "DIVIDEND": "लाभांश",
+      "INTEREST": "ब्याज",
+      "CAPITAL_GAIN": "पूंजी लाभ",
+      "SPLIT": "विभाजन",
+      "TRANSFER_IN": "ट्रांसफर आया",
+      "TRANSFER_OUT": "ट्रांसफर गया",
+      "REINVEST": "पुनर्निवेश",
+      "ADD_SHARES": "शेयर जोड़ें",
+      "REMOVE_SHARES": "शेयर हटाएं"
+    },
+    "toasts": {
+      "loadHistoryFailed": "इतिहास लोड करने में विफल",
+      "loadTransactionFailed": "लेन-देन लोड करने में विफल"
+    }
+  },
+  "shareAdjustment": {
+    "heading": "शेयर समायोजित करें",
+    "accountLabel": "खाता",
+    "accountPlaceholder": "खाता चुनें...",
+    "actionLabel": "क्रिया",
+    "quantityLabel": "मात्रा (शेयर)",
+    "dateLabel": "तिथि",
+    "descriptionLabel": "विवरण (वैकल्पिक)",
+    "descriptionPlaceholder": "उदा. शेष शेयर साफ करें",
+    "saving": "सहेजा जा रहा है...",
+    "submitButton": "समायोजन दर्ज करें",
+    "accountClosed": "{name} (बंद)",
+    "adjustmentActions": {
+      "REMOVE_SHARES": "शेयर हटाएं",
+      "ADD_SHARES": "शेयर जोड़ें"
+    },
+    "toasts": {
+      "selectAccount": "खाता चुनें",
+      "quantityRequired": "मात्रा शून्य से अधिक होनी चाहिए",
+      "recorded": "समायोजन दर्ज किया गया",
+      "failed": "समायोजन दर्ज करने में विफल"
+    }
+  },
+  "lookupPicker": {
+    "title": "\"{query}\" के लिए एकाधिक मिलान",
+    "subtitle": "वह प्रतिभूति चुनें जिसे आप उपयोग करना चाहते हैं।",
+    "columns": {
+      "symbol": "प्रतीक",
+      "name": "नाम",
+      "exchange": "एक्सचेंज",
+      "currency": "मुद्रा",
+      "type": "प्रकार",
+      "source": "स्रोत"
+    },
+    "selectButton": "चुनें"
+  },
+  "validation": {
+    "symbolRequired": "प्रतीक आवश्यक है",
+    "symbolMax": "प्रतीक 20 अक्षरों या उससे कम होना चाहिए",
+    "nameRequired": "नाम आवश्यक है",
+    "nameMax": "नाम 255 अक्षरों या उससे कम होना चाहिए",
+    "currencyRequired": "मुद्रा आवश्यक है"
+  },
+  "priceValidation": {
+    "dateRequired": "तिथि आवश्यक है",
+    "priceRequired": "मूल्य आवश्यक है",
+    "priceNonNegative": "मूल्य एक गैर-ऋणात्मक संख्या होनी चाहिए"
+  }
+}

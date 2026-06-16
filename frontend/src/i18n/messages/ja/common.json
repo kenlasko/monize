@@ -1,0 +1,177 @@
+{
+  "chartFlag": {
+    "dismiss": "この値を非表示にする"
+  },
+  "appVersion": {
+    "releaseNotes": "v{version}のリリースノートを見る"
+  },
+  "save": "保存",
+  "cancel": "キャンセル",
+  "delete": "削除",
+  "edit": "編集",
+  "close": "閉じる",
+  "actions": {
+    "edit": "編集",
+    "delete": "削除",
+    "view": "表示",
+    "duplicate": "複製",
+    "merge": "マージ",
+    "reactivate": "再有効化",
+    "reconcile": "照合",
+    "post": "転記",
+    "skip": "スキップ",
+    "close": "閉じる",
+    "reopen": "再開",
+    "scheduleRecurring": "定期取引としてスケジュール",
+    "more": "その他の操作"
+  },
+  "loading": "読み込み中...",
+  "pagination": {
+    "showing": "表示中",
+    "of": "件中",
+    "firstPage": "最初のページ",
+    "lastPage": "最後のページ",
+    "previousPage": "前のページ",
+    "nextPage": "次のページ",
+    "back10Pages": "10ページ戻る",
+    "forward10Pages": "10ページ進む",
+    "enterPageNumber": "ページ番号を入力"
+  },
+  "confirmDialog": {
+    "confirm": "確認"
+  },
+  "unsavedChanges": {
+    "title": "未保存の変更",
+    "message": "未保存の変更があります。どうしますか？",
+    "discard": "破棄"
+  },
+  "exportDropdown": {
+    "export": "エクスポート",
+    "exporting": "エクスポート中...",
+    "exportPdf": "PDF をエクスポート",
+    "exportReport": "レポートをエクスポート",
+    "failedPdf": "PDF のエクスポートに失敗しました。もう一度お試しください。"
+  },
+  "dateRange": {
+    "custom": "カスタム",
+    "startDate": "開始日",
+    "endDate": "終了日"
+  },
+  "colorPicker": {
+    "custom": "カスタム:",
+    "apply": "適用"
+  },
+  "chartDownload": {
+    "downloadAsPng": "{filename} を PNG としてダウンロード",
+    "unableToCapture": "チャート画像を取得できません",
+    "failedToDownload": "チャートのダウンロードに失敗しました"
+  },
+  "chartViewToggle": {
+    "pieChart": "円グラフ",
+    "barChart": "棒グラフ",
+    "stackedChart": "100% 積み上げ棒グラフ",
+    "lineChart": "折れ線グラフ",
+    "areaChart": "面グラフ",
+    "table": "テーブル"
+  },
+  "formActions": {
+    "cancel": "キャンセル",
+    "save": "保存"
+  },
+  "themeToggle": {
+    "light": "ライト",
+    "dark": "ダーク",
+    "system": "システム",
+    "title": "テーマ: {label}。クリックして変更。"
+  },
+  "errorPage": {
+    "title": "エラーが発生しました",
+    "description": "予期しないエラーが発生しました。もう一度お試しいただくか、問題が解決しない場合はサポートにお問い合わせください。",
+    "errorId": "エラー ID: {digest}",
+    "tryAgain": "もう一度試す",
+    "goToDashboard": "ダッシュボードへ"
+  },
+  "errorBoundary": {
+    "defaultMessage": "このコンポーネントのレンダリング中にエラーが発生しました。"
+  },
+  "calendar": {
+    "clear": "クリア",
+    "today": "今日"
+  },
+  "multiSelect": {
+    "search": "検索...",
+    "selectAll": "すべて選択",
+    "clear": "クリア",
+    "noOptions": "オプションが見つかりません"
+  },
+  "combobox": {
+    "createOption": "\"{value}\" を作成"
+  },
+  "passwordInput": {
+    "show": "入力を表示",
+    "hide": "入力を非表示"
+  },
+  "currencyInput": {
+    "openCalculator": "電卓を開く",
+    "calculator": "電卓"
+  },
+  "dateInput": {
+    "shortcutsTitle": "キーボードショートカット",
+    "today": "今日",
+    "firstDayOfYear": "年の初日",
+    "lastDayOfYear": "年の最終日",
+    "firstDayOfMonth": "月の初日",
+    "lastDayOfMonth": "月の最終日",
+    "nextDay": "翌日",
+    "previousDay": "前日",
+    "nextMonth": "翌月",
+    "previousMonth": "前月"
+  },
+  "accountTypes": {
+    "CHEQUING": "普通預金",
+    "SAVINGS": "貯蓄預金",
+    "CREDIT_CARD": "クレジットカード",
+    "INVESTMENT": "投資",
+    "LOAN": "ローン",
+    "MORTGAGE": "住宅ローン",
+    "CASH": "現金",
+    "LINE_OF_CREDIT": "信用枠",
+    "ASSET": "資産",
+    "OTHER": "その他"
+  },
+  "accountFilter": {
+    "allAccounts": "すべての勘定科目",
+    "allBut": "{names} 以外すべて"
+  },
+  "passwordRequirements": "パスワードは12文字以上で、大文字、小文字、数字、特殊文字をそれぞれ1文字以上含む必要があります。",
+  "passwordValidation": {
+    "min": "パスワードは12文字以上である必要があります",
+    "max": "パスワードは100文字以内である必要があります",
+    "lowercase": "小文字を含む必要があります",
+    "uppercase": "大文字を含む必要があります",
+    "number": "数字を含む必要があります",
+    "special": "特殊文字を含む必要があります"
+  },
+  "codeValidation": {
+    "length": "コードは正確に6桁である必要があります",
+    "digits": "コードは6桁である必要があります"
+  },
+  "monthsShort": ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"],
+  "weekdaysShort": ["日", "月", "火", "水", "木", "金", "土"],
+  "weekdaysMin": ["日", "月", "火", "水", "木", "金", "土"],
+  "weekdaysNarrow": ["日", "月", "火", "水", "木", "金", "土"],
+  "dateFormat": {
+    "browserAuto": "ブラウザのロケールを使用（自動検出: {sample}）",
+    "custom": "カスタム..."
+  },
+  "emailInvalid": "有効なメールアドレスを入力してください",
+  "noSectionAccess": "そのセクションへのアクセス権がありません。",
+  "undoRedo": {
+    "nothingToUndo": "元に戻す操作がありません",
+    "cannotUndo": "この操作は元に戻せません",
+    "undoFailed": "元に戻す操作に失敗しました",
+    "nothingToRedo": "やり直す操作がありません",
+    "cannotRedo": "この操作はやり直せません",
+    "redoFailed": "やり直す操作に失敗しました"
+  }
+}

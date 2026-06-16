@@ -1,0 +1,165 @@
+{
+  "test": {
+    "subject": "Monize 테스트 이메일",
+    "heading": "Monize 테스트 이메일",
+    "greeting": "안녕하세요 {{ name }}님,",
+    "body": "Monize에서 발송된 테스트 이메일입니다. 이 메일을 수신하셨다면 이메일 알림이 정상적으로 작동 중입니다."
+  },
+  "billReminder": {
+    "subjectOne": "Monize: 주의가 필요한 예정 청구서 1건",
+    "subjectMany": "Monize: 주의가 필요한 예정 청구서 {{ count }}건",
+    "heading": "예정 청구서 알림",
+    "greeting": "안녕하세요 {{ name }}님,",
+    "introOne": "주의가 필요한 예정 청구서가 1건 있습니다:",
+    "introMany": "주의가 필요한 예정 청구서가 {{ count }}건 있습니다:",
+    "colPayee": "수취인",
+    "colDueDate": "납부 기한",
+    "colType": "유형",
+    "colAmount": "금액",
+    "typeIncome": "수입",
+    "typeExpense": "지출",
+    "button": "청구서 &amp; 입금 보기"
+  },
+  "mortgageReminder": {
+    "subject": "Monize: 예정된 주택담보대출 갱신 1건",
+    "subjectPlural": "Monize: 예정된 주택담보대출 갱신 {{ count }}건",
+    "heading": "주택담보대출 갱신 알림",
+    "greeting": "안녕하세요 {{ name }}님,",
+    "introOne": "만기 갱신이 예정된 주택담보대출이 1건 있습니다. 만기 전에 대출 기관에 연락하여 갱신 옵션을 논의하세요:",
+    "introMany": "만기 갱신이 예정된 주택담보대출이 {{ count }}건 있습니다. 만기 전에 대출 기관에 연락하여 갱신 옵션을 논의하세요:",
+    "colMortgage": "주택담보대출",
+    "colTermEndDate": "만기일",
+    "colTimeRemaining": "남은 기간",
+    "daysRemainingOne": "1일",
+    "daysRemainingMany": "{{ count }}일",
+    "button": "계정 보기"
+  },
+  "severity": {
+    "critical": "심각",
+    "warning": "경고",
+    "success": "좋은 소식",
+    "info": "정보"
+  },
+  "budgetAlertImmediate": {
+    "subject": "Monize: 알림 - {{ title }}",
+    "subjectPlural": "Monize: 주의가 필요한 알림 {{ count }}건",
+    "heading": "알림",
+    "greeting": "안녕하세요 {{ name }}님,",
+    "intro": "예산에 주의가 필요합니다:",
+    "colSeverity": "심각도",
+    "colAlert": "알림",
+    "colDetails": "세부 정보",
+    "button": "예산 보기"
+  },
+  "budgetWeeklyDigest": {
+    "subject": "Monize: 주간 예산 요약",
+    "heading": "주간 예산 요약",
+    "greeting": "안녕하세요 {{ name }}님,",
+    "intro": "다음 예산에 대한 주간 요약입니다: <strong>{{ budgets }}</strong>",
+    "criticalOne": "심각",
+    "criticalMany": "심각",
+    "warningOne": "경고",
+    "warningMany": "경고",
+    "positiveOne": "긍정적",
+    "positiveMany": "긍정적",
+    "thisWeek": "이번 주:",
+    "noAlerts": "알림 없음",
+    "totalAlerts": "총 알림: {{ count }}건",
+    "topAlertsHeading": "주요 알림",
+    "andMore": "...외 {{ count }}건",
+    "button": "예산 대시보드 보기"
+  },
+  "budgetMonthlySummary": {
+    "subject": "Monize: 월간 예산 요약 - {{ period }}",
+    "subjectPlural": "Monize: {{ count }}개 예산의 월간 예산 요약",
+    "heading": "월간 예산 요약",
+    "greeting": "안녕하세요 {{ name }}님,",
+    "intro": "방금 종료된 기간의 월간 예산 요약입니다:",
+    "overBudget": "예산 초과",
+    "healthScore": "건전성 점수:",
+    "labelBudgeted": "예산",
+    "labelSpent": "지출",
+    "labelRemaining": "잔여",
+    "percentUsed": "{{ percent }}% 사용",
+    "topCategories": "주요 카테고리",
+    "button": "예산 대시보드 보기"
+  },
+  "oidcLink": {
+    "subject": "Monize: SSO 계정 연결 확인",
+    "heading": "SSO 계정 연결",
+    "greeting": "안녕하세요 {{ name }}님,",
+    "intro": "누군가 기존 Monize 계정의 이메일과 일치하는 주소로 SSO를 통해 로그인을 시도했습니다. SSO 인증을 이 계정에 연결하려면 아래 버튼을 클릭하세요:",
+    "button": "계정 연결 확인",
+    "disclaimer": "이 요청을 직접 시작하지 않으셨다면 이 이메일을 무시하셔도 됩니다. 링크는 1시간 후 만료됩니다."
+  },
+  "accountLocked": {
+    "subject": "계정이 일시적으로 잠겼습니다",
+    "heading": "계정이 일시적으로 잠겼습니다",
+    "greeting": "안녕하세요 {{ name }}님,",
+    "body1": "여러 번의 로그인 실패로 인해 Monize 계정이 일시적으로 잠겼습니다. 이는 계정을 보호하기 위한 보안 조치입니다.",
+    "body2": "잠금은 자동으로 해제됩니다. 로그인을 시도하지 않으셨다면 즉시 비밀번호를 재설정하시기 바랍니다."
+  },
+  "passwordReset": {
+    "subject": "Monize 비밀번호 재설정",
+    "heading": "비밀번호 재설정 요청",
+    "greeting": "안녕하세요 {{ name }}님,",
+    "intro": "비밀번호 재설정 요청을 받았습니다. 아래 버튼을 클릭하여 새 비밀번호를 설정하세요:",
+    "button": "비밀번호 재설정",
+    "disclaimer": "이 링크는 1시간 후 만료됩니다. 비밀번호 재설정을 요청하지 않으셨다면 이 이메일을 무시하셔도 됩니다."
+  },
+  "emailVerification": {
+    "subject": "Monize 이메일 인증",
+    "heading": "이메일 주소 인증",
+    "greeting": "안녕하세요 {{ name }}님,",
+    "intro": "Monize에 가입해 주셔서 감사합니다. 계정을 활성화하고 로그인하려면 이메일 주소를 확인하세요:",
+    "button": "이메일 인증",
+    "disclaimer": "이 링크는 24시간 후 만료됩니다. Monize 계정을 만들지 않으셨다면 이 이메일을 무시하셔도 됩니다."
+  },
+  "accountInvite": {
+    "subject": "Monize 계정이 준비되었습니다",
+    "heading": "Monize 계정이 준비되었습니다",
+    "greeting": "안녕하세요 {{ name }}님,",
+    "intro": "관리자가 Monize 계정을 생성했습니다. 아래 버튼을 클릭하여 비밀번호를 설정하고 로그인하세요:",
+    "button": "비밀번호 설정",
+    "disclaimer": "이 링크는 24시간 후 만료됩니다. 이 초대를 예상하지 못하셨다면 이 이메일을 무시하셔도 됩니다."
+  },
+  "delegateInvite": {
+    "subject": "Monize에 초대되었습니다",
+    "heading": "Monize에 초대되었습니다",
+    "greeting": "안녕하세요 {{ name }}님,",
+    "intro": "{{ owner }}님이 귀하를 Monize 계정의 위임 사용자로 초대했습니다. 아래 버튼을 클릭하여 비밀번호를 설정하고 시작하세요:",
+    "button": "비밀번호 설정",
+    "disclaimer": "이 링크는 24시간 후 만료됩니다. 이 초대를 예상하지 못하셨다면 이 이메일을 무시하셔도 됩니다."
+  },
+  "emergencyAccessReminder": {
+    "subjectOne": "Monize: 계정이 1일 동안 비활성 상태입니다",
+    "subjectMany": "Monize: 계정이 {{ daysSinceLogin }}일 동안 비활성 상태입니다",
+    "heading": "Monize 긴급 접근 알림",
+    "greeting": "안녕하세요 {{ name }}님,",
+    "grantPhraseToday": "오늘",
+    "grantPhraseFutureOne": "1일 후",
+    "grantPhraseFutureMany": "{{ count }}일 후",
+    "bodyOne": "Monize에 <strong>1일</strong> 동안 로그인하지 않으셨습니다. 계속 비활성 상태이면 지정된 긴급 연락처가 {{ grantPhrase }} 계정에 대한 전체 접근 권한을 부여받습니다.",
+    "bodyMany": "Monize에 <strong>{{ daysSinceLogin }}일</strong> 동안 로그인하지 않으셨습니다. 계속 비활성 상태이면 지정된 긴급 연락처가 {{ grantPhrase }} 계정에 대한 전체 접근 권한을 부여받습니다.",
+    "contactsLabel": "지정된 연락처:",
+    "button": "지금 로그인",
+    "footer": "로그인하면 타이머가 초기화됩니다. 이 기능을 더 이상 사용하지 않으려면 설정 → 긴급 접근에서 비활성화할 수 있습니다."
+  },
+  "emergencyAccessGrant": {
+    "subject": "{{ owner }}님의 Monize 계정에 대한 긴급 접근 권한이 부여되었습니다",
+    "heading": "긴급 접근 권한 부여됨",
+    "greeting": "안녕하세요 {{ name }}님,",
+    "body": "<strong>{{ owner }}</strong>님이 이전에 귀하를 Monize 계정의 긴급 연락처로 지정했습니다. 장기간 로그인하지 않아 계정에 대한 전체 접근 권한이 귀하에게 부여됩니다.",
+    "claimIntro": "접근 권한을 얻으려면 아래 링크를 클릭하고 새 비밀번호를 설정하세요. 계정 소유자로 로그인됩니다.",
+    "button": "긴급 접근 권한 사용",
+    "expiry": "이 링크는 <strong>{{ expiry }}</strong>까지 유효하며 한 번만 사용할 수 있습니다. 여러 연락처가 이 이메일을 받은 경우 먼저 사용한 사람이 계정을 인수합니다."
+  },
+  "emergencyAccessGrantRevoked": {
+    "subject": "Monize: 부재 중 긴급 접근 권한이 부여되었습니다",
+    "heading": "부재 중 긴급 접근 권한이 부여되었습니다",
+    "greeting": "안녕하세요 {{ name }}님,",
+    "body1": "계정이 비활성 상태였기 때문에 지정된 긴급 연락처에게 계정 인수 링크가 발송되었습니다. 귀하가 다시 로그인하셨으므로 <strong>해당 링크가 취소되었으며</strong> 보안 장치가 다시 활성화되었습니다.",
+    "body2": "예상했던 상황이라면 추가 조치가 필요하지 않습니다. 예상치 못한 상황이라면 로그인 활동과 긴급 접근 설정을 검토하세요.",
+    "button": "긴급 접근 검토"
+  }
+}

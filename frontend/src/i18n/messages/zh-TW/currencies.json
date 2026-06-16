@@ -1,0 +1,117 @@
+{
+  "page": {
+    "title": "貨幣",
+    "subtitle": "管理您的科目和有價證券所使用的貨幣",
+    "refreshRates": "更新匯率",
+    "refreshing": "更新中...",
+    "newCurrency": "+ 新增貨幣",
+    "searchPlaceholder": "依代碼或名稱搜尋...",
+    "statusAll": "全部 ({count})",
+    "statusActive": "有效 ({count})",
+    "statusInactive": "停用 ({count})",
+    "modalTitleEdit": "編輯貨幣",
+    "modalTitleNew": "新增貨幣",
+    "loading": "正在載入貨幣...",
+    "count": "{count, plural, one {# 種貨幣} other {# 種貨幣}}",
+    "toasts": {
+      "loadFailed": "載入貨幣失敗",
+      "updated": "貨幣更新成功",
+      "created": "貨幣建立成功",
+      "updateFailed": "更新貨幣失敗",
+      "createFailed": "建立貨幣失敗",
+      "deactivated": "貨幣已停用",
+      "activated": "貨幣已啟用",
+      "statusFailed": "更新貨幣狀態失敗",
+      "ratesRefreshed": "匯率已更新：{updated} 組匯率已更新",
+      "ratesRefreshedWithFailed": "匯率已更新：{updated} 組成功，{failed} 組失敗",
+      "ratesFailed": "更新匯率失敗"
+    },
+    "summary": {
+      "totalCurrencies": "貨幣總計",
+      "active": "有效",
+      "inactive": "停用"
+    }
+  },
+  "list": {
+    "columns": {
+      "code": "代碼",
+      "name": "名稱",
+      "symbol": "符號",
+      "decimals": "小數位數",
+      "usage": "使用狀況",
+      "rate": "匯率（{currency}）",
+      "status": "狀態",
+      "actions": "操作"
+    },
+    "density": {
+      "normal": "正常",
+      "compact": "緊湊",
+      "dense": "密集",
+      "toggle": "切換列密度"
+    },
+    "defaultBadge": "預設",
+    "statusBadge": {
+      "active": "有效",
+      "activeShort": "有效",
+      "inactive": "停用",
+      "inactiveShort": "停用"
+    },
+    "actions": {
+      "edit": "編輯",
+      "deactivate": "停用",
+      "activate": "啟用"
+    },
+    "contextMenu": {
+      "editCurrency": "編輯貨幣",
+      "deactivate": "停用",
+      "activate": "啟用",
+      "deleteCurrency": "刪除貨幣"
+    },
+    "usageTooltip": "{accounts} 個科目，{securities} 種有價證券",
+    "usageAccounts": "{count, plural, one {# 個科目} other {# 個科目}}",
+    "usageSecurities": "{count, plural, one {# 種證券} other {# 種證券}}",
+    "empty": {
+      "title": "無貨幣",
+      "subtitle": "立即新增貨幣開始使用。"
+    },
+    "deleteConfirm": {
+      "title": "刪除「{code}」？",
+      "message": "此貨幣將被永久刪除。僅在此貨幣未被任何科目或有價證券使用的情況下才能刪除。",
+      "confirmLabel": "刪除",
+      "cancelLabel": "取消"
+    },
+    "toasts": {
+      "deleted": "貨幣刪除成功",
+      "deleteFailed": "刪除貨幣失敗。此貨幣可能正在使用中。"
+    }
+  },
+  "form": {
+    "codeLabel": "貨幣代碼",
+    "codePlaceholder": "例如 USD、EUR、GBP",
+    "nameLabel": "名稱",
+    "namePlaceholderCreate": "例如 Canadian Dollar、Malaysia、Ringgit（也用於查詢）",
+    "namePlaceholderEdit": "例如 Canadian Dollar",
+    "symbolLabel": "符號",
+    "symbolPlaceholder": "例如 $、€、£、¥",
+    "decimalPlacesLabel": "小數位數",
+    "lookupButton": "查詢",
+    "lookingUp": "查詢中...",
+    "clearButton": "清除",
+    "clearTitle": "清除所有欄位",
+    "submitCreate": "建立貨幣",
+    "submitUpdate": "更新貨幣",
+    "toasts": {
+      "lookupTooShort": "請輸入貨幣代碼或名稱（至少 2 個字元）以進行查詢",
+      "found": "已找到：{details}",
+      "notFound": "找不到「{query}」的貨幣",
+      "lookupFailed": "查詢失敗 - 請再試一次"
+    }
+  },
+  "validation": {
+    "codeLength": "貨幣代碼必須恰好為 3 個字元",
+    "nameRequired": "名稱為必填",
+    "nameMax": "名稱不得超過 100 個字元",
+    "symbolRequired": "符號為必填",
+    "symbolMax": "符號不得超過 10 個字元"
+  }
+}

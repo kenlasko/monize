@@ -1,0 +1,20 @@
+{
+  "title": "緊急存取",
+  "missingToken": "缺少緊急存取憑證。",
+  "previewError": "此緊急存取連結無效、已過期或已被使用。",
+  "linkInvalid": "連結已失效。",
+  "backToSignIn": "返回登入",
+  "ownerFallback": "帳戶擁有者",
+  "ownerFirstNameFallback": "擁有者",
+  "intro": "您好 {contactName}，您已被指定為 <b>{ownerName}</b> 的 Monize 帳戶緊急聯絡人。",
+  "introDetail": "在此設定密碼後，您將以帳戶持有人的身份登入並獲得帳戶的完整存取權限。現有的工作階段將被撤銷，且先前的憑證將被替換。",
+  "messageHeading": "來自 {name} 的訊息",
+  "newPasswordLabel": "新密碼",
+  "confirmPasswordLabel": "確認密碼",
+  "submit": "申請緊急存取",
+  "toasts": {
+    "success": "您現在可以存取 {name} 的帳戶。",
+    "failed": "無法完成緊急存取申請。連結可能已過期或已被使用。"
+  },
+  "passwordsNoMatch": "密碼不符"
+}

@@ -1,0 +1,165 @@
+{
+  "test": {
+    "subject": "Monize 测试邮件",
+    "heading": "Monize 测试邮件",
+    "greeting": "您好，{{ name }}，",
+    "body": "这是一封来自 Monize 的测试邮件。如果您收到了此邮件，说明您的邮件通知功能运行正常。"
+  },
+  "billReminder": {
+    "subjectOne": "Monize：1 个即将到期的账单需要关注",
+    "subjectMany": "Monize：{{ count }} 个即将到期的账单需要关注",
+    "heading": "即将到期账单提醒",
+    "greeting": "您好，{{ name }}，",
+    "introOne": "您有 1 个即将到期的账单需要关注：",
+    "introMany": "您有 {{ count }} 个即将到期的账单需要关注：",
+    "colPayee": "收款人",
+    "colDueDate": "到期日",
+    "colType": "类型",
+    "colAmount": "金额",
+    "typeIncome": "收入",
+    "typeExpense": "支出",
+    "button": "查看账单与存款"
+  },
+  "mortgageReminder": {
+    "subject": "Monize：1 个即将到期的抵押贷款续期",
+    "subjectPlural": "Monize：{{ count }} 个即将到期的抵押贷款续期",
+    "heading": "抵押贷款续期提醒",
+    "greeting": "您好，{{ name }}，",
+    "introOne": "您有 1 笔抵押贷款的期限即将到期。请在期限结束前联系贷款机构讨论续期选项：",
+    "introMany": "您有 {{ count }} 笔抵押贷款的期限即将到期。请在期限结束前联系贷款机构讨论续期选项：",
+    "colMortgage": "抵押贷款",
+    "colTermEndDate": "期限到期日",
+    "colTimeRemaining": "剩余时间",
+    "daysRemainingOne": "1 天",
+    "daysRemainingMany": "{{ count }} 天",
+    "button": "查看账户"
+  },
+  "severity": {
+    "critical": "严重",
+    "warning": "警告",
+    "success": "好消息",
+    "info": "信息"
+  },
+  "budgetAlertImmediate": {
+    "subject": "Monize：提醒 - {{ title }}",
+    "subjectPlural": "Monize：{{ count }} 个提醒需要关注",
+    "heading": "提醒",
+    "greeting": "您好，{{ name }}，",
+    "intro": "您的预算需要关注：",
+    "colSeverity": "严重性",
+    "colAlert": "提醒",
+    "colDetails": "详情",
+    "button": "查看预算"
+  },
+  "budgetWeeklyDigest": {
+    "subject": "Monize：您的每周预算摘要",
+    "heading": "每周预算摘要",
+    "greeting": "您好，{{ name }}，",
+    "intro": "以下是您的每周预算摘要：<strong>{{ budgets }}</strong>",
+    "criticalOne": "个严重",
+    "criticalMany": "个严重",
+    "warningOne": "个警告",
+    "warningMany": "个警告",
+    "positiveOne": "个正面",
+    "positiveMany": "个正面",
+    "thisWeek": "本周：",
+    "noAlerts": "无提醒",
+    "totalAlerts": "总提醒数：{{ count }}",
+    "topAlertsHeading": "主要提醒",
+    "andMore": "...还有 {{ count }} 个",
+    "button": "查看预算仪表盘"
+  },
+  "budgetMonthlySummary": {
+    "subject": "Monize：月度预算摘要 - {{ period }}",
+    "subjectPlural": "Monize：{{ count }} 个预算的月度摘要",
+    "heading": "月度预算摘要",
+    "greeting": "您好，{{ name }}，",
+    "intro": "以下是刚刚结束的周期的月度预算摘要：",
+    "overBudget": "超出预算",
+    "healthScore": "健康评分：",
+    "labelBudgeted": "预算",
+    "labelSpent": "已支出",
+    "labelRemaining": "剩余",
+    "percentUsed": "已用 {{ percent }}%",
+    "topCategories": "主要分类",
+    "button": "查看预算仪表盘"
+  },
+  "oidcLink": {
+    "subject": "Monize：确认 SSO 账户关联",
+    "heading": "关联您的 SSO 账户",
+    "greeting": "您好，{{ name }}，",
+    "intro": "有人尝试通过 SSO 使用与您现有 Monize 账户匹配的电子邮件登录。要将您的 SSO 身份关联到此账户，请点击下方按钮：",
+    "button": "确认账户关联",
+    "disclaimer": "如果您未发起此请求，可以安全忽略此邮件。链接将在 1 小时后过期。"
+  },
+  "accountLocked": {
+    "subject": "账户已暂时锁定",
+    "heading": "账户已暂时锁定",
+    "greeting": "您好，{{ name }}，",
+    "body1": "由于多次登录失败，您的 Monize 账户已被暂时锁定。这是保护您账户安全的措施。",
+    "body2": "锁定将自动过期。如果您未尝试登录，建议立即重置密码。"
+  },
+  "passwordReset": {
+    "subject": "Monize 密码重置",
+    "heading": "密码重置请求",
+    "greeting": "您好，{{ name }}，",
+    "intro": "我们收到了您的密码重置请求。点击下方按钮设置新密码：",
+    "button": "重置密码",
+    "disclaimer": "此链接将在 1 小时后过期。如果您未请求密码重置，可以安全忽略此邮件。"
+  },
+  "emailVerification": {
+    "subject": "验证您的 Monize 邮箱",
+    "heading": "验证您的邮箱地址",
+    "greeting": "您好，{{ name }}，",
+    "intro": "感谢您注册 Monize。请确认您的邮箱地址以激活账户并登录：",
+    "button": "验证邮箱",
+    "disclaimer": "此链接将在 24 小时后过期。如果您未创建 Monize 账户，可以安全忽略此邮件。"
+  },
+  "accountInvite": {
+    "subject": "您的 Monize 账户已准备就绪",
+    "heading": "您的 Monize 账户已准备就绪",
+    "greeting": "您好，{{ name }}，",
+    "intro": "管理员已为您创建了 Monize 账户。点击下方按钮设置密码并登录：",
+    "button": "设置密码",
+    "disclaimer": "此链接将在 24 小时后过期。如果您未期待此邮件，可以安全忽略。"
+  },
+  "delegateInvite": {
+    "subject": "您已受邀加入 Monize",
+    "heading": "您已受邀加入 Monize",
+    "greeting": "您好，{{ name }}，",
+    "intro": "{{ owner }} 邀请您作为委托人访问其 Monize 账户。点击下方按钮设置密码并开始使用：",
+    "button": "设置密码",
+    "disclaimer": "此链接将在 24 小时后过期。如果您未期待此邀请，可以安全忽略此邮件。"
+  },
+  "emergencyAccessReminder": {
+    "subjectOne": "Monize：您的账户已有 1 天未活跃",
+    "subjectMany": "Monize：您的账户已有 {{ daysSinceLogin }} 天未活跃",
+    "heading": "Monize 紧急访问提醒",
+    "greeting": "您好，{{ name }}，",
+    "grantPhraseToday": "今天",
+    "grantPhraseFutureOne": "1 天后",
+    "grantPhraseFutureMany": "{{ count }} 天后",
+    "bodyOne": "您已有 <strong>1 天</strong>未登录 Monize。如果您继续不活跃，您指定的紧急联系人将 {{ grantPhrase }} 获得对您账户的完全访问权限。",
+    "bodyMany": "您已有 <strong>{{ daysSinceLogin }} 天</strong>未登录 Monize。如果您继续不活跃，您指定的紧急联系人将 {{ grantPhrase }} 获得对您账户的完全访问权限。",
+    "contactsLabel": "指定联系人：",
+    "button": "立即登录",
+    "footer": "登录将重置计时器。如果您不再需要此功能，可以在设置 → 紧急访问中将其禁用。"
+  },
+  "emergencyAccessGrant": {
+    "subject": "您已获得对 {{ owner }} 的 Monize 账户的紧急访问权限",
+    "heading": "紧急访问已授权",
+    "greeting": "您好，{{ name }}，",
+    "body": "<strong>{{ owner }}</strong> 之前将您指定为其 Monize 账户的紧急联系人。由于他们已长时间未登录，现授予您完全访问权限以接管该账户。",
+    "claimIntro": "要获取访问权限，请点击下方链接并设置新密码。您将以账户持有人身份登录。",
+    "button": "领取紧急访问权限",
+    "expiry": "此链接有效期至 <strong>{{ expiry }}</strong>，且只能使用一次。如果多位联系人收到了此邮件，第一个领取者将接管账户。"
+  },
+  "emergencyAccessGrantRevoked": {
+    "subject": "Monize：您不在期间紧急访问权限已被授予",
+    "heading": "您不在期间紧急访问权限已被授予",
+    "greeting": "您好，{{ name }}，",
+    "body1": "由于您的账户已处于不活跃状态，您指定的紧急联系人收到了接管账户的链接。您现在已重新登录，因此<strong>这些链接已被撤销</strong>，安全保障已重新启动。",
+    "body2": "如果这是预期的，则无需采取任何行动。如果您未预料到此情况，请检查您的登录活动和紧急访问设置。",
+    "button": "查看紧急访问"
+  }
+}

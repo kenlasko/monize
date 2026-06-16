@@ -1,0 +1,20 @@
+{
+  "title": "紧急访问",
+  "missingToken": "缺少紧急访问令牌。",
+  "previewError": "此紧急访问链接无效、已过期或已被使用。",
+  "linkInvalid": "链接不再有效。",
+  "backToSignIn": "返回登录",
+  "ownerFallback": "账户所有者",
+  "ownerFirstNameFallback": "所有者",
+  "intro": "您好，{contactName}，您被指定为 <b>{ownerName}</b> 的 Monize 账户紧急联系人。",
+  "introDetail": "在此设置密码将以账户持有人身份登录，并授予您对账户的完全访问权限。现有会话将被撤销，之前的凭据将被替换。",
+  "messageHeading": "来自 {name} 的留言",
+  "newPasswordLabel": "新密码",
+  "confirmPasswordLabel": "确认密码",
+  "submit": "申请紧急访问",
+  "toasts": {
+    "success": "您现在可以访问 {name} 的账户。",
+    "failed": "完成紧急访问申请失败。该链接可能已过期或已被使用。"
+  },
+  "passwordsNoMatch": "两次输入的密码不一致"
+}

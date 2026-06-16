@@ -1,0 +1,58 @@
+{
+  "title": "Rekonsiliasi Akun",
+  "subtitle": "Cocokkan catatan Anda dengan laporan bank",
+  "subtitleActive": "Merekonsiliasi: {name}",
+  "setup": {
+    "title": "Mulai Rekonsiliasi",
+    "intro": "Rekonsiliasi akun Anda dengan laporan bank untuk memastikan catatan Anda cocok.",
+    "accountLabel": "Akun",
+    "accountPlaceholder": "Pilih akun...",
+    "statementDateLabel": "Tanggal Laporan",
+    "statementBalanceLabel": "Saldo Akhir Laporan",
+    "start": "Mulai Rekonsiliasi"
+  },
+  "summary": {
+    "statementBalance": "Saldo Laporan",
+    "reconciledBalance": "Saldo Rekonsiliasi",
+    "selected": "Dipilih ({count})",
+    "difference": "Selisih"
+  },
+  "list": {
+    "heading": "Transaksi Belum Direkonsiliasi ({count})",
+    "selectAll": "Pilih Semua",
+    "selectNone": "Batalkan Semua",
+    "empty": "Tidak ada transaksi yang belum direkonsiliasi ditemukan untuk periode ini.",
+    "colSelect": "Pilih",
+    "colDate": "Tanggal",
+    "colPayee": "Penerima",
+    "colCategory": "Kategori",
+    "colAmount": "Jumlah",
+    "colStatus": "Status",
+    "finish": "Selesaikan Rekonsiliasi"
+  },
+  "status": {
+    "cleared": "Dikonfirmasi",
+    "unreconciled": "Belum Direkonsiliasi",
+    "void": "Batal",
+    "reconciled": "Direkonsiliasi"
+  },
+  "complete": {
+    "title": "Rekonsiliasi Selesai",
+    "message": "Akun Anda telah berhasil direkonsiliasi per {date}.",
+    "existingPayment": "Akun ini memiliki pembayaran terjadwal, <b>{name}</b>. Apakah Anda ingin memperbarui instance berikutnya ke saldo rekonsiliasi sebesar <b>{amount}</b>?",
+    "updatePayment": "Perbarui Pembayaran Berikutnya",
+    "noPayment": "Tidak ada pembayaran terjadwal ditemukan untuk akun ini. Apakah Anda ingin membuat satu untuk saldo rekonsiliasi sebesar <b>{amount}</b>?",
+    "createPayment": "Buat Pembayaran Terjadwal",
+    "backToAccounts": "Kembali ke Akun",
+    "reconcileAnother": "Rekonsiliasi Akun Lain"
+  },
+  "toasts": {
+    "loadAccountsFailed": "Gagal memuat akun",
+    "fillAllFields": "Harap isi semua bidang",
+    "loadDataFailed": "Gagal memuat data rekonsiliasi",
+    "differenceRequired": "Selisih harus {amount} untuk menyelesaikan rekonsiliasi",
+    "noneSelected": "Tidak ada transaksi yang dipilih untuk rekonsiliasi",
+    "success": "{count, plural, one {Berhasil merekonsiliasi # transaksi} other {Berhasil merekonsiliasi # transaksi}}",
+    "reconcileFailed": "Gagal merekonsiliasi transaksi"
+  }
+}

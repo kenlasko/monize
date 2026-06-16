@@ -1,0 +1,108 @@
+{
+  "createUserModal": {
+    "title": "ユーザーを追加",
+    "description": "新しいアカウントを作成します。招待メールを送信する、パスワードを自分で設定する、または共有用の一時パスワードを生成することができます。",
+    "emailLabel": "メール",
+    "emailPlaceholder": "user@example.com",
+    "firstNameLabel": "名（任意）",
+    "firstNamePlaceholder": "名",
+    "lastNameLabel": "姓（任意）",
+    "lastNamePlaceholder": "姓",
+    "roleLabel": "役割",
+    "roleUser": "ユーザー",
+    "roleAdmin": "管理者",
+    "credentialsLegend": "認証情報",
+    "inviteLabel": "パスワード設定の招待メールを送信する",
+    "inviteSmtpNote": "SMTP の設定が必要です。",
+    "setPasswordLabel": "今すぐパスワードを設定する",
+    "tempPasswordLabel": "一時パスワードを生成する",
+    "tempPasswordNote": "作成後に一度だけ表示されます。ユーザーは初回ログイン時に変更する必要があります。",
+    "passwordFieldLabel": "パスワード",
+    "passwordPlaceholder": "パスワードを設定",
+    "createButton": "ユーザーを作成",
+    "validation": {
+      "invalidPassword": "無効なパスワードです。"
+    },
+    "toasts": {
+      "createFailed": "ユーザーの作成に失敗しました"
+    }
+  },
+  "resetPasswordModal": {
+    "defaultTitle": "パスワードのリセット完了",
+    "defaultDescription": "{userName} の一時パスワードが設定されました。",
+    "temporaryPasswordLabel": "一時パスワード",
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "notShownAgain": "このパスワードは再度表示されません。",
+    "mustChangeOnLogin": "ユーザーは次回ログイン時にパスワードの変更が求められます。",
+    "toasts": {
+      "copied": "パスワードをクリップボードにコピーしました",
+      "copyFailed": "クリップボードへのコピーに失敗しました"
+    }
+  },
+  "userTable": {
+    "colUser": "ユーザー",
+    "colRole": "役割",
+    "colProvider": "プロバイダー",
+    "colStatus": "ステータス",
+    "colLastLogin": "最終ログイン",
+    "colActions": "操作",
+    "youSuffix": "（あなた）",
+    "noEmail": "メールなし",
+    "unknown": "不明",
+    "never": "なし",
+    "providerSso": "SSO",
+    "providerLocal": "ローカル",
+    "roleAdmin": "管理者",
+    "roleUser": "ユーザー",
+    "statusActive": "有効",
+    "statusDisabled": "無効",
+    "clickToDisable": "クリックして無効化",
+    "clickToEnable": "クリックして有効化",
+    "resetPassword": "パスワードをリセット",
+    "noUsers": "ユーザーが見つかりません。"
+  },
+  "usersPage": {
+    "title": "ユーザー管理",
+    "userCount": "{count, plural, one {# 人のユーザー} other {# 人のユーザー}}",
+    "newUser": "+ 新しいユーザー",
+    "loadingUsers": "ユーザーを読み込み中...",
+    "toasts": {
+      "inviteSent": "{email} に招待メールを送信しました",
+      "userCreated": "{name} が作成されました",
+      "userUpgraded": "{name} が正式アカウントにアップグレードされました",
+      "roleChanged": "{name} は {role} になりました",
+      "roleAdmin": "管理者",
+      "roleUser": "ユーザー",
+      "userEnabled": "{name} が有効化されました",
+      "userDisabled": "{name} が無効化されました",
+      "userDeleted": "{name} が削除されました",
+      "userDowngraded": "{name} のデータが削除されました。代理アクセスは引き続き有効です。",
+      "loadFailed": "ユーザーの読み込みに失敗しました",
+      "deleteFailed": "ユーザーの削除に失敗しました",
+      "disableFailed": "ユーザーの無効化に失敗しました",
+      "resetFailed": "パスワードのリセットに失敗しました"
+    },
+    "dialogs": {
+      "promoteTitle": "ユーザーを昇格しますか？",
+      "demoteTitle": "ユーザーを降格しますか？",
+      "promoteMessage": "{name} を {role} に昇格してよろしいですか？",
+      "demoteMessage": "{name} を {role} に降格してよろしいですか？",
+      "promoteConfirm": "管理者に昇格",
+      "demoteConfirm": "ユーザーに降格",
+      "disableTitle": "ユーザーを無効化しますか？",
+      "disableMessage": "{name} を無効化してよろしいですか？無効化するとログインできなくなります。",
+      "disableConfirm": "ユーザーを無効化",
+      "resetTitle": "パスワードをリセットしますか？",
+      "resetMessage": "{name} の新しい一時パスワードが生成されます。ユーザーは次回ログイン時にパスワードの変更が求められます。",
+      "resetConfirm": "パスワードをリセット",
+      "deleteTitle": "ユーザーを削除しますか？",
+      "deleteMessage": "{name} を削除してよろしいですか？アカウントと関連するすべてのデータが完全に削除されます。この操作は取り消せません。別のアカウントの代理ユーザーである場合、そのユーザーのデータは削除されますが、委任が引き続き機能するようにログイン情報は保持されます（代理専用ユーザーになります）。",
+      "deleteConfirm": "ユーザーを削除",
+      "tempPasswordTitleCreated": "ユーザーが作成されました",
+      "tempPasswordTitleUpgraded": "アカウントがアップグレードされました",
+      "tempPasswordDescCreated": "{name} の一時パスワードが生成されました。サインインするために共有してください。",
+      "tempPasswordDescUpgraded": "既存の共有ユーザーが正式アカウントにアップグレードされました。{name} にこの一時パスワードを共有してください。"
+    }
+  }
+}

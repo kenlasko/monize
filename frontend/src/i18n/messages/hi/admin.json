@@ -1,0 +1,108 @@
+{
+  "createUserModal": {
+    "title": "उपयोगकर्ता जोड़ें",
+    "description": "एक नया खाता बनाएं। आप एक आमंत्रण ईमेल भेज सकते हैं, स्वयं पासवर्ड सेट कर सकते हैं, या साझा करने के लिए एक अस्थायी पासवर्ड उत्पन्न कर सकते हैं।",
+    "emailLabel": "ईमेल",
+    "emailPlaceholder": "user@example.com",
+    "firstNameLabel": "पहला नाम (वैकल्पिक)",
+    "firstNamePlaceholder": "पहला नाम",
+    "lastNameLabel": "अंतिम नाम (वैकल्पिक)",
+    "lastNamePlaceholder": "अंतिम नाम",
+    "roleLabel": "भूमिका",
+    "roleUser": "उपयोगकर्ता",
+    "roleAdmin": "व्यवस्थापक",
+    "credentialsLegend": "क्रेडेंशियल",
+    "inviteLabel": "पासवर्ड सेट करने के लिए ईमेल आमंत्रण भेजें",
+    "inviteSmtpNote": "SMTP कॉन्फ़िगर होना आवश्यक है।",
+    "setPasswordLabel": "अभी पासवर्ड सेट करें",
+    "tempPasswordLabel": "अस्थायी पासवर्ड उत्पन्न करें",
+    "tempPasswordNote": "निर्माण के बाद एक बार दिखाया जाएगा। उपयोगकर्ता को पहले लॉगिन पर इसे बदलना होगा।",
+    "passwordFieldLabel": "पासवर्ड",
+    "passwordPlaceholder": "पासवर्ड सेट करें",
+    "createButton": "उपयोगकर्ता बनाएं",
+    "validation": {
+      "invalidPassword": "अमान्य पासवर्ड।"
+    },
+    "toasts": {
+      "createFailed": "उपयोगकर्ता बनाने में विफल"
+    }
+  },
+  "resetPasswordModal": {
+    "defaultTitle": "पासवर्ड रीसेट सफल",
+    "defaultDescription": "{userName} के लिए एक अस्थायी पासवर्ड सेट किया गया है।",
+    "temporaryPasswordLabel": "अस्थायी पासवर्ड",
+    "copy": "कॉपी करें",
+    "copied": "कॉपी हो गया",
+    "notShownAgain": "यह पासवर्ड दोबारा नहीं दिखाया जाएगा।",
+    "mustChangeOnLogin": "उपयोगकर्ता को अगले लॉगिन पर अपना पासवर्ड बदलना होगा।",
+    "toasts": {
+      "copied": "पासवर्ड क्लिपबोर्ड पर कॉपी किया गया",
+      "copyFailed": "क्लिपबोर्ड पर कॉपी करने में विफल"
+    }
+  },
+  "userTable": {
+    "colUser": "उपयोगकर्ता",
+    "colRole": "भूमिका",
+    "colProvider": "प्रदाता",
+    "colStatus": "स्थिति",
+    "colLastLogin": "अंतिम लॉगिन",
+    "colActions": "क्रियाएं",
+    "youSuffix": "(आप)",
+    "noEmail": "कोई ईमेल नहीं",
+    "unknown": "अज्ञात",
+    "never": "कभी नहीं",
+    "providerSso": "SSO",
+    "providerLocal": "स्थानीय",
+    "roleAdmin": "व्यवस्थापक",
+    "roleUser": "उपयोगकर्ता",
+    "statusActive": "सक्रिय",
+    "statusDisabled": "अक्षम",
+    "clickToDisable": "अक्षम करने के लिए क्लिक करें",
+    "clickToEnable": "सक्षम करने के लिए क्लिक करें",
+    "resetPassword": "पासवर्ड रीसेट करें",
+    "noUsers": "कोई उपयोगकर्ता नहीं मिला।"
+  },
+  "usersPage": {
+    "title": "उपयोगकर्ता प्रबंधन",
+    "userCount": "{count, plural, one {# उपयोगकर्ता} other {# उपयोगकर्ता}}",
+    "newUser": "+ नया उपयोगकर्ता",
+    "loadingUsers": "उपयोगकर्ता लोड हो रहे हैं...",
+    "toasts": {
+      "inviteSent": "{email} को आमंत्रण ईमेल भेजा गया",
+      "userCreated": "{name} बनाया गया है",
+      "userUpgraded": "{name} को पूर्ण खाते में अपग्रेड किया गया",
+      "roleChanged": "{name} अब {role} है",
+      "roleAdmin": "एक व्यवस्थापक",
+      "roleUser": "एक उपयोगकर्ता",
+      "userEnabled": "{name} सक्षम किया गया है",
+      "userDisabled": "{name} अक्षम किया गया है",
+      "userDeleted": "{name} हटाया गया है",
+      "userDowngraded": "{name} का अपना डेटा हटाया गया; उनकी प्रतिनिधि पहुंच बनी रहती है।",
+      "loadFailed": "उपयोगकर्ता लोड करने में विफल",
+      "deleteFailed": "उपयोगकर्ता हटाने में विफल",
+      "disableFailed": "उपयोगकर्ता अक्षम करने में विफल",
+      "resetFailed": "पासवर्ड रीसेट करने में विफल"
+    },
+    "dialogs": {
+      "promoteTitle": "उपयोगकर्ता को पदोन्नत करें?",
+      "demoteTitle": "उपयोगकर्ता को पदावनत करें?",
+      "promoteMessage": "क्या आप वाकई {name} को {role} में पदोन्नत करना चाहते हैं?",
+      "demoteMessage": "क्या आप वाकई {name} को {role} में पदावनत करना चाहते हैं?",
+      "promoteConfirm": "व्यवस्थापक में पदोन्नत करें",
+      "demoteConfirm": "उपयोगकर्ता में पदावनत करें",
+      "disableTitle": "उपयोगकर्ता अक्षम करें?",
+      "disableMessage": "क्या आप वाकई {name} को अक्षम करना चाहते हैं? वे लॉग इन करने में असमर्थ होंगे।",
+      "disableConfirm": "उपयोगकर्ता अक्षम करें",
+      "resetTitle": "पासवर्ड रीसेट करें?",
+      "resetMessage": "यह {name} के लिए एक नया अस्थायी पासवर्ड उत्पन्न करेगा। उन्हें अगले लॉगिन पर इसे बदलना होगा।",
+      "resetConfirm": "पासवर्ड रीसेट करें",
+      "deleteTitle": "उपयोगकर्ता हटाएं?",
+      "deleteMessage": "क्या आप वाकई {name} को हटाना चाहते हैं? यह उनके खाते और सभी संबंधित डेटा को स्थायी रूप से हटा देगा। यह क्रिया वापस नहीं की जा सकती। यदि वे किसी अन्य खाते के प्रतिनिधि हैं, तो उनका अपना डेटा हटाया जाता है लेकिन प्रतिनिधित्व काम करते रहने के लिए उनका लॉगिन रखा जाता है — वे केवल-प्रतिनिधि उपयोगकर्ता बन जाते हैं।",
+      "deleteConfirm": "उपयोगकर्ता हटाएं",
+      "tempPasswordTitleCreated": "उपयोगकर्ता बनाया गया",
+      "tempPasswordTitleUpgraded": "खाता अपग्रेड किया गया",
+      "tempPasswordDescCreated": "{name} के लिए एक अस्थायी पासवर्ड उत्पन्न किया गया था। साइन इन करने के लिए इसे उनके साथ साझा करें।",
+      "tempPasswordDescUpgraded": "एक मौजूदा साझा उपयोगकर्ता को पूर्ण खाते में अपग्रेड किया गया। {name} के साथ यह अस्थायी पासवर्ड साझा करें।"
+    }
+  }
+}

@@ -1,0 +1,165 @@
+{
+  "test": {
+    "subject": "Monize 測試電子郵件",
+    "heading": "Monize 測試電子郵件",
+    "greeting": "您好，{{ name }}，",
+    "body": "這是 Monize 發出的測試電子郵件。如果您收到此郵件，表示您的電子郵件通知運作正常。"
+  },
+  "billReminder": {
+    "subjectOne": "Monize：1 筆即將到期的帳單需要處理",
+    "subjectMany": "Monize：{{ count }} 筆即將到期的帳單需要處理",
+    "heading": "即將到期帳單提醒",
+    "greeting": "您好，{{ name }}，",
+    "introOne": "您有 1 筆即將到期的帳單需要處理：",
+    "introMany": "您有 {{ count }} 筆即將到期的帳單需要處理：",
+    "colPayee": "收款人",
+    "colDueDate": "到期日",
+    "colType": "類型",
+    "colAmount": "金額",
+    "typeIncome": "收入",
+    "typeExpense": "支出",
+    "button": "查看帳單與存款"
+  },
+  "mortgageReminder": {
+    "subject": "Monize：1 筆即將到期的抵押貸款續約",
+    "subjectPlural": "Monize：{{ count }} 筆即將到期的抵押貸款續約",
+    "heading": "抵押貸款續約提醒",
+    "greeting": "您好，{{ name }}，",
+    "introOne": "您有 1 筆抵押貸款即將到期需要續約。請在期限結束前聯絡您的貸款機構討論續約選項：",
+    "introMany": "您有 {{ count }} 筆抵押貸款即將到期需要續約。請在期限結束前聯絡您的貸款機構討論續約選項：",
+    "colMortgage": "抵押貸款",
+    "colTermEndDate": "期限結束日期",
+    "colTimeRemaining": "剩餘時間",
+    "daysRemainingOne": "1 天",
+    "daysRemainingMany": "{{ count }} 天",
+    "button": "查看科目"
+  },
+  "severity": {
+    "critical": "緊急",
+    "warning": "警告",
+    "success": "好消息",
+    "info": "資訊"
+  },
+  "budgetAlertImmediate": {
+    "subject": "Monize：警示 - {{ title }}",
+    "subjectPlural": "Monize：{{ count }} 個警示需要處理",
+    "heading": "警示",
+    "greeting": "您好，{{ name }}，",
+    "intro": "您的預算需要關注：",
+    "colSeverity": "嚴重程度",
+    "colAlert": "警示",
+    "colDetails": "詳情",
+    "button": "查看預算"
+  },
+  "budgetWeeklyDigest": {
+    "subject": "Monize：您的每週預算摘要",
+    "heading": "每週預算摘要",
+    "greeting": "您好，{{ name }}，",
+    "intro": "以下是您的每週預算摘要：<strong>{{ budgets }}</strong>",
+    "criticalOne": "個緊急",
+    "criticalMany": "個緊急",
+    "warningOne": "個警告",
+    "warningMany": "個警告",
+    "positiveOne": "個好消息",
+    "positiveMany": "個好消息",
+    "thisWeek": "本週：",
+    "noAlerts": "無警示",
+    "totalAlerts": "警示總計：{{ count }}",
+    "topAlertsHeading": "主要警示",
+    "andMore": "...及 {{ count }} 個更多",
+    "button": "查看預算儀表板"
+  },
+  "budgetMonthlySummary": {
+    "subject": "Monize：每月預算摘要 - {{ period }}",
+    "subjectPlural": "Monize：{{ count }} 個預算的每月摘要",
+    "heading": "每月預算摘要",
+    "greeting": "您好，{{ name }}，",
+    "intro": "以下是剛結束期間的每月預算摘要：",
+    "overBudget": "超出預算",
+    "healthScore": "健康分數：",
+    "labelBudgeted": "預算",
+    "labelSpent": "已支出",
+    "labelRemaining": "剩餘",
+    "percentUsed": "已使用 {{ percent }}%",
+    "topCategories": "主要類別",
+    "button": "查看預算儀表板"
+  },
+  "oidcLink": {
+    "subject": "Monize：確認 SSO 帳戶連結",
+    "heading": "連結您的 SSO 帳戶",
+    "greeting": "您好，{{ name }}，",
+    "intro": "有人嘗試透過 SSO 使用與您現有 Monize 帳戶相符的電子郵件登入。若要將您的 SSO 身份連結至此帳戶，請點擊下方按鈕：",
+    "button": "確認帳戶連結",
+    "disclaimer": "如果您未發起此請求，可以安全地忽略此電子郵件。此連結將在 1 小時後過期。"
+  },
+  "accountLocked": {
+    "subject": "帳戶暫時鎖定",
+    "heading": "帳戶暫時鎖定",
+    "greeting": "您好，{{ name }}，",
+    "body1": "由於多次登入失敗，您的 Monize 帳戶已暫時鎖定。這是保護您帳戶安全的措施。",
+    "body2": "鎖定將自動解除。如果您未嘗試登入，建議立即重置您的密碼。"
+  },
+  "passwordReset": {
+    "subject": "Monize 密碼重置",
+    "heading": "密碼重置請求",
+    "greeting": "您好，{{ name }}，",
+    "intro": "我們收到了重置您密碼的請求。請點擊下方按鈕設定新密碼：",
+    "button": "重置密碼",
+    "disclaimer": "此連結將在 1 小時後過期。如果您未請求重置密碼，可以安全地忽略此電子郵件。"
+  },
+  "emailVerification": {
+    "subject": "驗證您的 Monize 電子郵件",
+    "heading": "驗證您的電子郵件地址",
+    "greeting": "您好，{{ name }}，",
+    "intro": "感謝您註冊 Monize。請確認您的電子郵件地址以啟用帳戶並登入：",
+    "button": "驗證電子郵件",
+    "disclaimer": "此連結將在 24 小時後過期。如果您未建立 Monize 帳戶，可以安全地忽略此電子郵件。"
+  },
+  "accountInvite": {
+    "subject": "您的 Monize 帳戶已準備就緒",
+    "heading": "您的 Monize 帳戶已準備就緒",
+    "greeting": "您好，{{ name }}，",
+    "intro": "管理員已為您建立 Monize 帳戶。請點擊下方按鈕設定您的密碼並登入：",
+    "button": "設定您的密碼",
+    "disclaimer": "此連結將在 24 小時後過期。如果您未預期收到此郵件，可以安全地忽略它。"
+  },
+  "delegateInvite": {
+    "subject": "您已被邀請使用 Monize",
+    "heading": "您已被邀請使用 Monize",
+    "greeting": "您好，{{ name }}，",
+    "intro": "{{ owner }} 邀請您作為委派人存取其 Monize 帳戶。請點擊下方按鈕設定您的密碼並開始使用：",
+    "button": "設定您的密碼",
+    "disclaimer": "此連結將在 24 小時後過期。如果您未預期收到此邀請，可以安全地忽略它。"
+  },
+  "emergencyAccessReminder": {
+    "subjectOne": "Monize：您的帳戶已有 1 天未活躍",
+    "subjectMany": "Monize：您的帳戶已有 {{ daysSinceLogin }} 天未活躍",
+    "heading": "Monize 緊急存取提醒",
+    "greeting": "您好，{{ name }}，",
+    "grantPhraseToday": "今天",
+    "grantPhraseFutureOne": "1 天後",
+    "grantPhraseFutureMany": "{{ count }} 天後",
+    "bodyOne": "您已有 <strong>1 天</strong>未登入 Monize。如果您持續不活躍，您指定的緊急聯絡人將在 {{ grantPhrase }} 獲得對您帳戶的完整存取。",
+    "bodyMany": "您已有 <strong>{{ daysSinceLogin }} 天</strong>未登入 Monize。如果您持續不活躍，您指定的緊急聯絡人將在 {{ grantPhrase }} 獲得對您帳戶的完整存取。",
+    "contactsLabel": "指定聯絡人：",
+    "button": "立即登入",
+    "footer": "登入將重置計時器。如果您不再希望啟用此功能，可以在「設定 → 緊急存取」中停用。"
+  },
+  "emergencyAccessGrant": {
+    "subject": "您已獲得 {{ owner }} 的 Monize 帳戶緊急存取",
+    "heading": "緊急存取已授予",
+    "greeting": "您好，{{ name }}，",
+    "body": "<strong>{{ owner }}</strong> 此前將您指定為其 Monize 帳戶的緊急聯絡人。由於他們長時間未登入，您現在被授予完整存取權以接管帳戶。",
+    "claimIntro": "若要認領存取，請點擊下方連結並設定新密碼。您將以帳戶持有人身份登入。",
+    "button": "認領緊急存取",
+    "expiry": "此連結有效期至 <strong>{{ expiry }}</strong>，且只能使用一次。如果多位聯絡人收到此電子郵件，第一個認領的人將接管帳戶。"
+  },
+  "emergencyAccessGrantRevoked": {
+    "subject": "Monize：您離開期間已授予緊急存取",
+    "heading": "您離開期間已授予緊急存取",
+    "greeting": "您好，{{ name }}，",
+    "body1": "由於您的帳戶處於非活躍狀態，您指定的緊急聯絡人收到了接管帳戶的連結。您現在已重新登入，因此<strong>這些連結已被撤銷</strong>，安全防護已重新啟動。",
+    "body2": "如果這是預期中的事，無需採取任何行動。如果您未預期此情況，請審查您的登入記錄及緊急存取設定。",
+    "button": "審查緊急存取"
+  }
+}

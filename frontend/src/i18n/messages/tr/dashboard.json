@@ -1,0 +1,136 @@
+{
+  "page": {
+    "welcomePrefix": "Hoş geldiniz",
+    "welcomeWithName": "Hoş geldiniz, {name}!",
+    "subtitle": "Finansal özetiniz burada"
+  },
+  "favouriteAccounts": {
+    "title": "Favori Hesaplar",
+    "empty": "Henüz favori hesap yok. Burada görmek istediğiniz hesapları favori olarak işaretleyin.",
+    "reorder": "Yeniden Sırala",
+    "done": "Tamam",
+    "moveUp": "Yukarı taşı",
+    "moveDown": "Aşağı taşı",
+    "marketValue": "Piyasa değeri",
+    "due": "Son ödeme: {ordinal}",
+    "dueTooltip": "Kredi kartı ödemenizin her ay vadesi gelen gün",
+    "settlement": "Hesap kesimi: {ordinal}",
+    "settlementTooltip": "Fatura döneminin son günü. Bu tarihte veya öncesinde gerçekleştirilen işlemler mevcut ekstrede görünür."
+  },
+  "upcomingBills": {
+    "title": "Yaklaşan Faturalar ve Ödemeler",
+    "empty": "Hatırlatma pencereleri içinde vadesi geçmiş veya yaklaşan fatura, ödeme ya da transfer yok.",
+    "perReminderSettings": "Hatırlatma ayarlarına göre",
+    "postTransaction": "Bu işlemi kaydet",
+    "manual": "Manuel",
+    "manualTitle": "Manuel kayıt gerektirir",
+    "negativeBalanceWarning": "Bu işlem hesap bakiyesinin sıfırın altına düşmesine yol açacak",
+    "viewAll": "Tüm fatura ve ödemeleri görüntüle",
+    "totalDue": "Toplam borç",
+    "totalIncoming": "Toplam gelen",
+    "moreItems": "+{count} daha",
+    "overdue": "Vadesi geçmiş",
+    "today": "Bugün",
+    "tomorrow": "Yarın",
+    "daysUntil": "{count} gün",
+    "typeBadge": {
+      "bill": "Fatura",
+      "deposit": "Ödeme",
+      "transfer": "Transfer"
+    }
+  },
+  "gettingStarted": {
+    "title": "Başlarken",
+    "subtitle": "Hesabınızı birkaç hızlı adımda ayarlayın",
+    "dismiss": "Kapat",
+    "steps": {
+      "settings": {
+        "title": "Ayarlarınızı gözden geçirin",
+        "description": "Para biriminizi, tarih biçiminizi ve temanızı ayarlayın"
+      },
+      "categories": {
+        "title": "Kategorileri ayarlayın",
+        "description": "Kategori oluşturun veya varsayılan bir set içe aktarın"
+      },
+      "account": {
+        "title": "İlk hesabınızı ekleyin",
+        "description": "Takip etmeye başlamak için bir banka hesabı oluşturun"
+      },
+      "import": {
+        "title": "QIF'ten içe aktar",
+        "description": "QIF dosyalarından hesapları ve işlemleri içe aktarın"
+      }
+    }
+  },
+  "budgetStatus": {
+    "title": "Bütçe Durumu",
+    "noBudget": "Aktif bütçe bulunamadı. Harcamalarınızı takip etmek için bir bütçe oluşturun.",
+    "createBudget": "Bütçe Oluştur",
+    "viewFullBudget": "Tam bütçeyi görüntüle",
+    "daysLeft": "{count} gün kaldı",
+    "safeToSpend": "Bugün harcayabileceğiniz güvenli tutar",
+    "topCategories": "En Yüksek Kategoriler"
+  },
+  "insights": {
+    "title": "Harcama Analizleri",
+    "empty": "Analiz bulunamadı. İlk analizinizi oluşturmak için Analizler sayfasını ziyaret edin.",
+    "goToInsights": "Analizlere Git",
+    "viewAll": "Tüm analizleri görüntüle",
+    "activeCount": "{count} aktif"
+  },
+  "topMovers": {
+    "title": "En Çok Değişenler",
+    "empty": {
+      "noInvestments": "Günlük hareketleri takip etmek için yatırım hesabı ekleyin.",
+      "noPrices": "Henüz fiyat değişikliği yok.",
+      "noGainers": "Bugün kazananlar yok.",
+      "noLosers": "Bugün kaybedenler yok."
+    },
+    "dailyChange": "Günlük değişim",
+    "refreshPrices": "Fiyatları yenile",
+    "viewPortfolio": "Portföyü görüntüle",
+    "filter": {
+      "all": "Tümü",
+      "gainers": "Kazananlar",
+      "losers": "Kaybedenler"
+    }
+  },
+  "favouriteSecurities": {
+    "title": "Favori Menkul Kıymetler",
+    "empty": "Henüz favori menkul kıymet yok. <securitiesLink>Menkul Kıymetler sayfasını</securitiesLink> ziyaret edin ve burada takip etmek istediğiniz menkul kıymetleri yıldızlayın.",
+    "noPriceYet": "Henüz fiyat yok",
+    "dailyChange": "Günlük değişim",
+    "refreshPrices": "Fiyatları yenile",
+    "manage": "Menkul kıymetleri yönet"
+  },
+  "netWorth": {
+    "title": "Net Değer",
+    "empty": "Henüz net değer verisi yok.",
+    "past12Months": "Son 12 ay",
+    "viewReport": "Tam raporu görüntüle"
+  },
+  "assetsVsLiabilities": {
+    "title": "Varlıklar ve Borçlar",
+    "empty": "Henüz net değer verisi yok.",
+    "current": "Güncel",
+    "netWorthLabel": "Net Değer",
+    "assets": "Varlıklar",
+    "liabilities": "Borçlar"
+  },
+  "expensesPieChart": {
+    "title": "Kategoriye Göre Giderler",
+    "empty": "Bu dönem için gider verisi yok.",
+    "past30Days": "Son 30 gün",
+    "total": "Toplam",
+    "uncategorized": "Kategorisiz",
+    "other": "Diğer"
+  },
+  "incomeExpenses": {
+    "title": "Gelir ve Giderler",
+    "last5Weeks": "Son 5 hafta",
+    "weekOf": "{date} haftası",
+    "income": "Gelir",
+    "expenses": "Giderler",
+    "net": "Net"
+  }
+}

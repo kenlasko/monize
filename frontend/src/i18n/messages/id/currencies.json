@@ -1,0 +1,117 @@
+{
+  "page": {
+    "title": "Mata Uang",
+    "subtitle": "Kelola mata uang yang digunakan di akun dan efek Anda",
+    "refreshRates": "Perbarui Kurs",
+    "refreshing": "Memperbarui...",
+    "newCurrency": "+ Mata Uang Baru",
+    "searchPlaceholder": "Cari berdasarkan kode atau nama...",
+    "statusAll": "Semua ({count})",
+    "statusActive": "Aktif ({count})",
+    "statusInactive": "Tidak Aktif ({count})",
+    "modalTitleEdit": "Edit Mata Uang",
+    "modalTitleNew": "Mata Uang Baru",
+    "loading": "Memuat mata uang...",
+    "count": "{count, plural, one {# mata uang} other {# mata uang}}",
+    "toasts": {
+      "loadFailed": "Gagal memuat mata uang",
+      "updated": "Mata uang berhasil diperbarui",
+      "created": "Mata uang berhasil dibuat",
+      "updateFailed": "Gagal memperbarui mata uang",
+      "createFailed": "Gagal membuat mata uang",
+      "deactivated": "Mata uang dinonaktifkan",
+      "activated": "Mata uang diaktifkan",
+      "statusFailed": "Gagal memperbarui status mata uang",
+      "ratesRefreshed": "Kurs tukar diperbarui: {updated} pasang diperbarui",
+      "ratesRefreshedWithFailed": "Kurs tukar diperbarui: {updated} berhasil, {failed} gagal",
+      "ratesFailed": "Gagal memperbarui kurs tukar"
+    },
+    "summary": {
+      "totalCurrencies": "Total Mata Uang",
+      "active": "Aktif",
+      "inactive": "Tidak Aktif"
+    }
+  },
+  "list": {
+    "columns": {
+      "code": "Kode",
+      "name": "Nama",
+      "symbol": "Simbol",
+      "decimals": "Desimal",
+      "usage": "Penggunaan",
+      "rate": "Kurs ({currency})",
+      "status": "Status",
+      "actions": "Tindakan"
+    },
+    "density": {
+      "normal": "Normal",
+      "compact": "Kompak",
+      "dense": "Padat",
+      "toggle": "Ubah kepadatan baris"
+    },
+    "defaultBadge": "Bawaan",
+    "statusBadge": {
+      "active": "Aktif",
+      "activeShort": "Akt",
+      "inactive": "Tidak Aktif",
+      "inactiveShort": "Tdk"
+    },
+    "actions": {
+      "edit": "Edit",
+      "deactivate": "Nonaktifkan",
+      "activate": "Aktifkan"
+    },
+    "contextMenu": {
+      "editCurrency": "Edit Mata Uang",
+      "deactivate": "Nonaktifkan",
+      "activate": "Aktifkan",
+      "deleteCurrency": "Hapus Mata Uang"
+    },
+    "usageTooltip": "{accounts} akun, {securities} efek",
+    "usageAccounts": "{count, plural, one {# akun} other {# akun}}",
+    "usageSecurities": "{count, plural, one {# efek} other {# efek}}",
+    "empty": {
+      "title": "Tidak ada mata uang",
+      "subtitle": "Mulailah dengan menambahkan mata uang."
+    },
+    "deleteConfirm": {
+      "title": "Hapus \"{code}\"?",
+      "message": "Mata uang ini akan dihapus secara permanen. Ini hanya berhasil jika mata uang tidak sedang digunakan oleh akun atau efek mana pun.",
+      "confirmLabel": "Hapus",
+      "cancelLabel": "Batal"
+    },
+    "toasts": {
+      "deleted": "Mata uang berhasil dihapus",
+      "deleteFailed": "Gagal menghapus mata uang. Mungkin sedang digunakan."
+    }
+  },
+  "form": {
+    "codeLabel": "Kode Mata Uang",
+    "codePlaceholder": "mis., USD, EUR, GBP",
+    "nameLabel": "Nama",
+    "namePlaceholderCreate": "mis., Canadian Dollar, Malaysia, Ringgit (digunakan untuk pencarian juga)",
+    "namePlaceholderEdit": "mis., Canadian Dollar",
+    "symbolLabel": "Simbol",
+    "symbolPlaceholder": "mis., $, €, £, ¥",
+    "decimalPlacesLabel": "Tempat Desimal",
+    "lookupButton": "Cari",
+    "lookingUp": "Mencari...",
+    "clearButton": "Hapus",
+    "clearTitle": "Hapus semua bidang",
+    "submitCreate": "Buat Mata Uang",
+    "submitUpdate": "Perbarui Mata Uang",
+    "toasts": {
+      "lookupTooShort": "Masukkan kode atau nama mata uang (minimal 2 karakter) untuk mencari",
+      "found": "Ditemukan: {details}",
+      "notFound": "Tidak ada mata uang ditemukan untuk \"{query}\"",
+      "lookupFailed": "Pencarian gagal - silakan coba lagi"
+    }
+  },
+  "validation": {
+    "codeLength": "Kode mata uang harus tepat 3 karakter",
+    "nameRequired": "Nama diperlukan",
+    "nameMax": "Nama harus 100 karakter atau kurang",
+    "symbolRequired": "Simbol diperlukan",
+    "symbolMax": "Simbol harus 10 karakter atau kurang"
+  }
+}

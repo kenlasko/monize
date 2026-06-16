@@ -1,0 +1,875 @@
+{
+  "language": {
+    "label": "언어",
+    "browserOption": "브라우저 로케일 사용 (자동 감지: {locale})",
+    "helpText": "Monize 인터페이스 전반에 사용되는 언어를 선택하세요. 숫자 및 날짜 형식은 아래에서 별도로 설정합니다.",
+    "saved": "언어가 업데이트되었습니다",
+    "saveFailed": "언어 저장에 실패했습니다"
+  },
+  "profile": {
+    "heading": "프로필",
+    "firstNameLabel": "이름",
+    "firstNamePlaceholder": "이름을 입력하세요",
+    "lastNameLabel": "성",
+    "lastNamePlaceholder": "성을 입력하세요",
+    "emailLabel": "이메일",
+    "emailPlaceholder": "이메일을 입력하세요",
+    "currentPasswordLabel": "현재 비밀번호",
+    "currentPasswordPlaceholder": "이메일 변경 시 필요합니다",
+    "passwordRequired": "이메일을 변경하려면 현재 비밀번호가 필요합니다",
+    "noChanges": "저장할 변경사항이 없습니다",
+    "passwordConfirmNote": "이메일 주소를 변경할 때는 비밀번호 확인이 필요합니다.",
+    "saveButton": "프로필 저장",
+    "savingButton": "저장 중...",
+    "toasts": {
+      "success": "프로필이 성공적으로 업데이트되었습니다",
+      "updateFailed": "프로필 업데이트에 실패했습니다"
+    },
+    "validation": {
+      "firstNameMax": "이름은 100자 이하여야 합니다",
+      "lastNameMax": "성은 100자 이하여야 합니다",
+      "emailRequired": "이메일은 필수입니다",
+      "emailInvalid": "유효한 이메일 주소를 입력해 주세요",
+      "emailMax": "이메일은 254자 이하여야 합니다",
+      "passwordMax": "비밀번호는 128자 이하여야 합니다"
+    }
+  },
+  "security": {
+    "heading": "보안",
+    "ssoNotice": "계정이 인증에 SSO(Single Sign-On)를 사용합니다. 아래 비밀번호는 로그인에 사용되지 않지만 SSO가 비활성화된 경우를 대비해 백업으로 유지할 수 있습니다.",
+    "currentPasswordLabel": "현재 비밀번호",
+    "currentPasswordPlaceholder": "현재 비밀번호를 입력하세요",
+    "newPasswordLabel": "새 비밀번호",
+    "newPasswordPlaceholder": "새 비밀번호를 입력하세요",
+    "confirmPasswordLabel": "새 비밀번호 확인",
+    "confirmPasswordPlaceholder": "새 비밀번호를 확인하세요",
+    "changePasswordButton": "비밀번호 변경",
+    "changingPasswordButton": "변경 중...",
+    "toasts": {
+      "passwordChanged": "비밀번호가 성공적으로 변경되었습니다",
+      "passwordChangeFailed": "비밀번호 변경에 실패했습니다"
+    },
+    "twoFactor": {
+      "heading": "이중 인증",
+      "ssoUnavailable": "SSO 계정에는 이중 인증을 사용할 수 없습니다. 인증 보안은 아이덴티티 제공자가 관리합니다.",
+      "enabledBadge": "활성화됨",
+      "enabledDescription": "계정이 TOTP 인증으로 보호되고 있습니다.",
+      "requiredByAdmin": "관리자에 의해 필수로 설정됨",
+      "addLayerDescription": "계정에 추가 보안 레이어를 추가하세요.",
+      "enableButton": "2FA 활성화",
+      "disableButton": "2FA 비활성화",
+      "disableModal": {
+        "title": "이중 인증 비활성화",
+        "description": "2FA 비활성화를 확인하려면 현재 6자리 코드를 입력하세요.",
+        "verificationCodeLabel": "인증 코드",
+        "disablingButton": "비활성화 중...",
+        "toasts": {
+          "disabled": "이중 인증이 비활성화되었습니다",
+          "disableFailed": "2FA 비활성화에 실패했습니다"
+        }
+      }
+    },
+    "backupCodes": {
+      "heading": "백업 코드",
+      "description": "인증 앱에 접근할 수 없는 경우 백업 코드를 사용하여 로그인할 수 있습니다.",
+      "regenerateButton": "코드 재생성",
+      "regenerateModal": {
+        "title": "백업 코드 재생성",
+        "description": "백업 코드 재생성을 확인하려면 현재 6자리 코드를 입력하세요. 기존 코드가 모두 무효화됩니다.",
+        "verificationCodeLabel": "인증 코드",
+        "regeneratingButton": "재생성 중...",
+        "regenerateButton": "재생성"
+      },
+      "toasts": {
+        "generateFailed": "백업 코드 생성에 실패했습니다"
+      }
+    },
+    "trustedDevices": {
+      "heading": "신뢰할 수 있는 기기",
+      "revokeAllButton": "모두 취소",
+      "noDevices": "신뢰할 수 있는 기기가 없습니다. 2FA 로그인 시 \"이 브라우저에서 다시 묻지 않음\"을 선택하면 해당 기기가 여기에 표시됩니다.",
+      "currentBadge": "현재",
+      "revokeButton": "취소",
+      "revokeAllModal": {
+        "title": "신뢰할 수 있는 기기 모두 취소",
+        "description": "모든 신뢰할 수 있는 기기가 제거됩니다. 다음 로그인 시 모든 기기에서 2FA 코드를 입력해야 합니다."
+      },
+      "toasts": {
+        "revoked": "기기가 취소되었습니다",
+        "revokedAll": "{count}개의 기기가 취소되었습니다",
+        "revokeFailed": "기기 취소에 실패했습니다",
+        "revokeAllFailed": "기기 취소에 실패했습니다"
+      }
+    },
+    "validation": {
+      "currentPasswordRequired": "현재 비밀번호는 필수입니다",
+      "passwordMax": "비밀번호는 128자 이하여야 합니다",
+      "confirmRequired": "새 비밀번호를 확인해 주세요",
+      "newPasswordsNoMatch": "새 비밀번호가 일치하지 않습니다"
+    }
+  },
+  "preferences": {
+    "heading": "환경설정",
+    "themeLabel": "테마",
+    "defaultCurrencyLabel": "기본 통화",
+    "preferredExchangesLabel": "선호 거래소 (유가증권 조회용)",
+    "preferredExchangesHelp": "우선순위 순서로 최대 3개의 거래소를 선택하세요. 유가증권 조회 시 이 거래소가 우선적으로 사용됩니다.",
+    "exchangePriorityPlaceholder": "우선순위 {n}",
+    "defaultQuoteProviderLabel": "기본 주식 시세 제공자",
+    "defaultQuoteProviderHelp": "유가증권에 제공자 재정의가 없을 때 사용됩니다. 선택한 제공자가 실패하면 Monize가 자동으로 다른 제공자를 시도합니다.",
+    "msnNoIntradayNote": "참고: MSN Money는 장중 시세 데이터를 제공하지 않으므로, MSN으로 추적되는 보유 종목의 포트폴리오 가치 추이 차트에서 1D / 1W / 1M 범위를 사용할 수 없습니다.",
+    "msnNotConfigured": "MSN이 기본 시세 제공자로 선택되었지만 서버에 MSN_API_KEY가 구성되어 있지 않습니다. 관리자가 환경 변수를 설정하고 백엔드를 재시작할 때까지 MSN 시세 조회가 실패합니다.",
+    "dateFormatLabel": "날짜 형식",
+    "numberFormatLabel": "숫자 형식",
+    "timezoneLabel": "시간대",
+    "timezonePlaceholder": "시간대 검색...",
+    "weekStartsOnLabel": "주 시작일",
+    "showCreatedAtLabel": "거래 양식에 생성 날짜 표시",
+    "showCreatedAtTooltip": "거래 양식에 거래가 최초 생성된 날짜와 시간을 표시합니다. 거래 날짜와는 별개이며 항목이 Monize에 실제로 추가된 시점을 확인하는 데 도움이 됩니다.",
+    "timeFormatLabel": "시간 형식",
+    "recentTransactionsLabel": "빠른 채우기의 최근 거래 수",
+    "recentTransactionsHelp": "거래 양식의 수취인 필드 옆 기록 버튼 팝오버에 표시되는 항목 수입니다.",
+    "saveButton": "환경설정 저장",
+    "savingButton": "저장 중...",
+    "toasts": {
+      "saved": "환경설정이 저장되었습니다",
+      "saveFailed": "환경설정 저장에 실패했습니다",
+      "themeSaveFailed": "테마 저장에 실패했습니다",
+      "colorThemeSaveFailed": "색상 테마 저장에 실패했습니다"
+    },
+    "browserLocale": "브라우저 로케일 사용 (자동 감지)",
+    "browserTimezonePrefix": "브라우저 시간대 사용 ({tz}로 자동 감지됨)",
+    "numberFormatOptions": {
+      "browser": "브라우저 로케일 사용 (자동 감지: {sample})",
+      "enUS": "English (US) - 1,234.56",
+      "enGB": "English (UK) - 1,234.56",
+      "deDE": "German - 1.234,56",
+      "frFR": "French - 1 234,56"
+    },
+    "weekDays": {
+      "sunday": "일요일",
+      "monday": "월요일",
+      "tuesday": "화요일",
+      "wednesday": "수요일",
+      "thursday": "목요일",
+      "friday": "금요일",
+      "saturday": "토요일"
+    },
+    "themeOptions": {
+      "system": "시스템 (기기 설정에 따름)",
+      "light": "밝은",
+      "dark": "어두운"
+    },
+    "colorThemeLabel": "색상 테마",
+    "colorThemeOptions": {
+      "default": "기본",
+      "latte": "Latte",
+      "msmoney": "MS Money",
+      "newspaper": "Newspaper",
+      "burgundy": "Burgundy",
+      "nord": "Nord",
+      "forest": "Forest",
+      "solarized": "Solarized",
+      "gruvbox": "Gruvbox",
+      "dracula": "Dracula",
+      "tokyonight": "Tokyo Night",
+      "rosepine": "Rosé Pine",
+      "midnight": "Midnight",
+      "highcontrast": "고대비",
+      "colorblind": "색맹 안전"
+    },
+    "timezoneBrowserOption": "브라우저 시간대 사용 ({tz}로 자동 감지됨)"
+  },
+  "notifications": {
+    "heading": "알림",
+    "smtpNotConfigured": "이메일 알림을 사용할 수 없습니다. 관리자가 SMTP를 구성하지 않았습니다.",
+    "emailNotificationsTitle": "이메일 알림",
+    "emailNotificationsDescription": "다가오는 청구서 및 예산 경고에 대한 이메일 알림 받기",
+    "budgetNotificationsHeading": "예산 알림",
+    "weeklyBudgetDigestTitle": "주간 예산 요약",
+    "weeklyBudgetDigestDescription": "예산 경고 및 상태에 대한 주간 요약 받기",
+    "toggleBudgetDigestLabel": "예산 요약 전환",
+    "digestDayLabel": "요약 발송일",
+    "digestDayAriaLabel": "예산 요약 발송일",
+    "mondayOption": "월요일",
+    "fridayOption": "금요일",
+    "immediateAlertsNote": "심각한 예산 경고 (예산 초과, 수입 부족)는 요약 설정에 관계없이 즉시 발송됩니다.",
+    "sendTestEmailDescription": "테스트 이메일을 전송하여 알림이 정상적으로 작동하는지 확인하세요.",
+    "sendTestEmailButton": "테스트 이메일 전송",
+    "sendingTestEmailButton": "전송 중...",
+    "toasts": {
+      "emailEnabled": "이메일 알림이 활성화되었습니다",
+      "emailDisabled": "이메일 알림이 비활성화되었습니다",
+      "digestEnabled": "예산 요약이 활성화되었습니다",
+      "digestDisabled": "예산 요약이 비활성화되었습니다",
+      "digestDaySet": "예산 요약 발송일이 {day}로 설정되었습니다",
+      "testEmailSent": "테스트 이메일이 전송되었습니다! 받은 편지함을 확인하세요.",
+      "emailUpdateFailed": "알림 설정 업데이트에 실패했습니다",
+      "digestUpdateFailed": "예산 요약 설정 업데이트에 실패했습니다",
+      "digestDayFailed": "요약 발송일 업데이트에 실패했습니다",
+      "testEmailFailed": "테스트 이메일 전송에 실패했습니다"
+    }
+  },
+  "help": {
+    "heading": "도움말 및 지원",
+    "description": "문서를 찾거나, 문제를 보고하거나, 대화에 참여하세요.",
+    "github": {
+      "label": "GitHub",
+      "description": "소스 코드를 보고 프로젝트에 별표를 추가하세요."
+    },
+    "openIssue": {
+      "label": "이슈 등록",
+      "description": "버그를 보고하거나 기능을 요청하세요."
+    },
+    "discussions": {
+      "label": "토론",
+      "description": "커뮤니티와 질문하고 아이디어를 공유하세요."
+    },
+    "wiki": {
+      "label": "위키",
+      "description": "가이드와 문서를 탐색하세요."
+    }
+  },
+  "dangerZone": {
+    "heading": "위험 구역",
+    "deleteData": {
+      "heading": "데이터 삭제",
+      "description": "계정에서 재무 데이터를 제거합니다. 이 작업은 취소할 수 없습니다.",
+      "openButton": "데이터 삭제...",
+      "alwaysDeletedHeading": "다음 항목은 항상 삭제됩니다:",
+      "optionalHeading": "선택적으로 삭제 가능:",
+      "accountsOption": "계정",
+      "categoriesOption": "카테고리",
+      "payeesOption": "수취인",
+      "currencyPreferencesOption": "통화 설정",
+      "balanceResetNote": "계정 잔액이 초기 잔액으로 재설정됩니다.",
+      "oidcConfirmLabel": "확인을 위해 아이덴티티 제공자로 재인증하세요:",
+      "passwordConfirmLabel": "확인을 위해 비밀번호를 입력하세요:",
+      "passwordPlaceholder": "비밀번호를 입력하세요",
+      "oidcReauthButton": "재인증 후 삭제",
+      "deletingButton": "삭제 중...",
+      "confirmButton": "데이터 삭제 확인",
+      "toasts": {
+        "success": "{count}개의 레코드가 성공적으로 삭제되었습니다",
+        "failed": "데이터 삭제에 실패했습니다"
+      }
+    },
+    "deleteAccount": {
+      "heading": "계정 삭제",
+      "description": "계정과 관련된 모든 데이터를 영구적으로 삭제합니다. 이 작업은 취소할 수 없습니다.",
+      "delegateNotice": {
+        "title": "다른 계정의 위임자입니다.",
+        "body": "계정을 삭제하면 자신의 데이터가 제거되지만, 로그인 및 다른 사람이 부여한 공유 접근 권한은 위임이 계속 작동할 수 있도록 유지됩니다. 해당 접근 권한을 취소하려면 먼저 소유자에게 공유 접근 목록에서 제거해 달라고 요청하세요."
+      },
+      "openButton": "계정 삭제",
+      "typeDeleteLabel": "계정 삭제 확인을 위해 DELETE를 입력하세요:",
+      "typeDeletePlaceholder": "DELETE 입력",
+      "enterPasswordLabel": "비밀번호를 입력하세요:",
+      "enterPasswordPlaceholder": "비밀번호를 입력하세요",
+      "deletingButton": "삭제 중...",
+      "confirmButton": "삭제 확인",
+      "toasts": {
+        "downgraded": "자신의 데이터가 제거되었습니다. 위임이 유지될 수 있도록 로그인 및 공유 접근 권한은 보존됩니다.",
+        "deleted": "계정이 삭제되었습니다",
+        "failed": "계정 삭제에 실패했습니다"
+      },
+      "errors": {
+        "typeDelete": "확인을 위해 DELETE를 입력해 주세요",
+        "passwordRequired": "확인을 위해 비밀번호를 입력해 주세요"
+      }
+    }
+  },
+  "apiAccess": {
+    "heading": "API 접근",
+    "description": "MCP를 통해 Claude Desktop과 같은 외부 AI 도구를 연결하기 위한 개인 접근 토큰을 만드세요.",
+    "createTokenButton": "토큰 생성",
+    "mcpServerUrlLabel": "MCP 서버 URL",
+    "mcpServerUrlHelp": "Claude Code 또는 Claude Desktop과 같은 MCP 클라이언트를 구성할 때 이 URL을 사용하세요.",
+    "copyButton": "복사",
+    "copiedButton": "복사됨",
+    "noTokens": "아직 API 토큰이 없습니다. 시작하려면 하나를 생성하세요.",
+    "tokenPrefix": "마지막 사용",
+    "expires": "만료",
+    "created": "생성됨",
+    "lastUsed": "마지막 사용",
+    "revokeButton": "취소",
+    "revokeModal": {
+      "title": "토큰 취소",
+      "message": "이 토큰은 즉시 작동을 중단합니다. 이 토큰을 사용하는 MCP 연결이 모두 끊어집니다.",
+      "confirmLabel": "취소"
+    },
+    "createModal": {
+      "title": "API 토큰 생성",
+      "tokenNameLabel": "토큰 이름",
+      "tokenNamePlaceholder": "예: Claude Desktop",
+      "scopesLabel": "범위",
+      "expirationLabel": "만료",
+      "creatingButton": "생성 중...",
+      "createButton": "토큰 생성",
+      "scopes": {
+        "read": {
+          "label": "읽기",
+          "description": "계정, 거래, 카테고리 보기"
+        },
+        "write": {
+          "label": "쓰기",
+          "description": "거래, 수취인, 카테고리 생성"
+        },
+        "reports": {
+          "label": "보고서",
+          "description": "재무 보고서 및 분석 생성"
+        }
+      },
+      "expiry": {
+        "none": "만료 없음",
+        "d30": "30일",
+        "d90": "90일",
+        "y1": "1년"
+      },
+      "validation": {
+        "nameRequired": "토큰 이름은 필수입니다",
+        "nameMax": "토큰 이름은 100자 이하여야 합니다"
+      }
+    },
+    "createdModal": {
+      "title": "토큰 생성됨",
+      "warningNote": "지금 이 토큰을 복사하세요. 다시 볼 수 없습니다.",
+      "doneButton": "완료"
+    },
+    "toasts": {
+      "copied": "토큰이 클립보드에 복사되었습니다",
+      "mcpUrlCopied": "MCP URL이 클립보드에 복사되었습니다",
+      "revoked": "토큰이 취소되었습니다",
+      "selectScope": "적어도 하나의 범위를 선택하세요",
+      "copyTokenFailed": "토큰 복사에 실패했습니다",
+      "copyUrlFailed": "URL 복사에 실패했습니다",
+      "loadFailed": "API 토큰 로드에 실패했습니다",
+      "createFailed": "토큰 생성에 실패했습니다",
+      "revokeFailed": "토큰 취소에 실패했습니다"
+    },
+    "relative": {
+      "never": "없음",
+      "today": "오늘",
+      "yesterday": "어제",
+      "daysAgo": "{count}일 전",
+      "monthsAgo": "{count}개월 전"
+    }
+  },
+  "autoBackup": {
+    "heading": "자동 백업",
+    "description": "일정에 따라 데이터를 폴더에 자동으로 백업합니다. Monize는 Docker에서 실행되므로 호스트 폴더를 볼륨으로 컨테이너에 매핑해야 합니다 (예: -v /host/backups:/backups).",
+    "loadingText": "로딩 중...",
+    "enableLabel": "자동 백업 활성화",
+    "backupFolderLabel": "백업 폴더",
+    "backupFolderPlaceholder": "/backups",
+    "browseButton": "찾아보기...",
+    "validateButton": "유효성 검사",
+    "validatingButton": "유효성 검사 중...",
+    "folderValid": "폴더가 유효하고 쓰기 가능합니다",
+    "selectThisFolder": "이 폴더 선택",
+    "noSubdirectories": "하위 디렉토리 없음",
+    "frequencyLabel": "백업 빈도",
+    "backupTimeLabel": "백업 시간 ({timezone})",
+    "backupTimeHelpInterval": "하루의 첫 번째 백업이 이 시간에 시작됩니다 ({timezone}). 이후 백업은 구성된 간격으로 이어집니다.",
+    "backupTimeHelpDaily": "로컬 시간대 ({timezone})에서 백업을 실행할 시간입니다.",
+    "retention": {
+      "heading": "보존 정책",
+      "description": "유지할 백업 수를 구성합니다. 이 한도를 초과한 오래된 백업은 자동으로 삭제됩니다.",
+      "dailyLabel": "일별 백업",
+      "dailyHelp": "유지할 최근 백업 수",
+      "weeklyLabel": "주별 백업",
+      "weeklyHelp": "주당 하나 보존",
+      "monthlyLabel": "월별 백업",
+      "monthlyHelp": "월당 하나 보존"
+    },
+    "status": {
+      "heading": "상태",
+      "lastBackup": "마지막 백업",
+      "nextBackup": "다음 백업",
+      "error": "오류",
+      "success": "성공",
+      "failed": "실패"
+    },
+    "saveButton": "설정 저장",
+    "savingButton": "저장 중...",
+    "runNowButton": "지금 백업 실행",
+    "runningButton": "백업 실행 중...",
+    "toasts": {
+      "saved": "자동 백업 설정이 저장되었습니다",
+      "backupCreated": "백업 생성됨: {filename}",
+      "folderValid": "폴더가 유효하고 쓰기 가능합니다",
+      "loadFailed": "자동 백업 설정 로드에 실패했습니다",
+      "saveFailed": "설정 저장에 실패했습니다",
+      "runFailed": "백업 실행에 실패했습니다",
+      "browseFailed": "폴더 탐색에 실패했습니다"
+    },
+    "folderErrors": {
+      "required": "폴더 경로는 필수입니다",
+      "validationFailed": "폴더 유효성 검사에 실패했습니다",
+      "validationError": "유효성 검사 실패"
+    },
+    "frequencyOptions": {
+      "every6hours": "6시간마다",
+      "every12hours": "12시간마다",
+      "daily": "매일",
+      "weekly": "매주"
+    }
+  },
+  "backupRestore": {
+    "heading": "백업 및 복원",
+    "encryption": {
+      "heading": "백업 암호화",
+      "descriptionOidc": "여기서 설정한 전용 백업 비밀번호로 수동 및 자동 백업을 암호화합니다. 복원 시 비밀번호가 필요합니다.",
+      "descriptionLocal": "로그인 비밀번호로 수동 및 자동 백업을 암호화합니다. 복원 시 비밀번호가 필요합니다.",
+      "loading": "로딩 중...",
+      "enabledBadge": "활성화됨",
+      "changePasswordButton": "백업 비밀번호 변경",
+      "disableButton": "비활성화",
+      "setPasswordButton": "백업 비밀번호 설정",
+      "enableEncryptedButton": "암호화 백업 활성화",
+      "setupModal": {
+        "titleOidc": "백업 비밀번호 설정",
+        "titleLocal": "암호화 백업 활성화",
+        "descriptionOidc": "백업 암호화에 사용할 비밀번호를 선택하세요. 안전한 곳에 저장해 두세요 -- 복원 시 필요합니다.",
+        "descriptionLocal": "로그인 비밀번호를 확인하세요. 모든 백업 (수동 및 자동) 암호화에 사용됩니다.",
+        "placeholderOidc": "새 백업 비밀번호 (12자 이상)",
+        "placeholderLocal": "로그인 비밀번호",
+        "savingButton": "저장 중...",
+        "confirmButton": "확인"
+      },
+      "toasts": {
+        "enabled": "암호화 백업이 활성화되었습니다",
+        "disabled": "암호화 백업이 비활성화되었습니다",
+        "enableFailed": "암호화 활성화에 실패했습니다",
+        "disableFailed": "암호화 비활성화에 실패했습니다"
+      }
+    },
+    "export": {
+      "heading": "백업 생성",
+      "description": "재무 데이터의 전체 백업을 다운로드합니다. 계정, 거래, 카테고리, 수취인, 예산, 투자 및 기타 모든 사용자 데이터가 포함됩니다.",
+      "downloadButton": "백업 다운로드",
+      "creatingButton": "백업 생성 중...",
+      "exportPasswordModal": {
+        "title": "백업 암호화",
+        "description": "이 백업을 암호화할 비밀번호를 입력하세요. 복원 시 필요합니다.",
+        "placeholderOidc": "백업 비밀번호",
+        "placeholderLocal": "로그인 비밀번호",
+        "encryptingButton": "암호화 중...",
+        "downloadButton": "다운로드"
+      },
+      "toasts": {
+        "success": "백업이 성공적으로 다운로드되었습니다",
+        "failed": "백업 생성에 실패했습니다"
+      }
+    },
+    "restore": {
+      "heading": "백업에서 복원",
+      "description": "이전에 내보낸 백업 파일의 데이터로 현재 모든 데이터를 교체합니다. 기존 데이터가 영구적으로 덮어써집니다.",
+      "openButton": "백업에서 복원...",
+      "warning": "경고: 현재 모든 데이터가 삭제되고 백업 내용으로 교체됩니다. 이 작업은 취소할 수 없습니다.",
+      "selectFileLabel": "백업 파일 선택",
+      "encryptedBackupLabel": "이 백업은 암호화되어 있습니다. 생성 시 사용한 백업 비밀번호를 입력하세요:",
+      "backupPasswordPlaceholder": "백업 비밀번호",
+      "oidcConfirmLabel": "확인을 위해 아이덴티티 제공자로 재인증하세요:",
+      "passwordConfirmLabel": "확인을 위해 계정 비밀번호를 입력하세요:",
+      "passwordPlaceholder": "비밀번호를 입력하세요",
+      "oidcRestoreButton": "재인증 후 복원",
+      "restoringButton": "복원 중...",
+      "confirmRestoreButton": "복원 확인",
+      "toasts": {
+        "pleaseSelectFile": "백업 파일을 선택해 주세요",
+        "pleaseEnterPassword": "확인을 위해 비밀번호를 입력해 주세요",
+        "encryptedNeedsPassword": "이 백업은 암호화되어 있습니다. \"백업 비밀번호\" 필드에 생성 시 사용한 비밀번호를 입력한 후 다시 시도하세요.",
+        "failed": "백업 복원에 실패했습니다"
+      }
+    },
+    "restoreResult": {
+      "title": "복원 완료",
+      "description": "데이터가 성공적으로 복원되었습니다. 복원된 내용의 요약입니다:",
+      "totalRecords": "전체 레코드",
+      "doneButton": "완료"
+    }
+  },
+  "sharedAccess": {
+    "description": "위임자는 자신의 자격증명으로 로그인하며 비밀번호를 볼 수 없습니다. 부여한 계정 및 섹션만 볼 수 있습니다.",
+    "addDelegateButton": "위임자 추가",
+    "loading": "로딩 중...",
+    "noDelegates": "아직 위임자가 없습니다.",
+    "statusLabel": "상태: {status}",
+    "sectionsLabel": "섹션: {count}",
+    "accountsLabel": "계정: {count}",
+    "sharedDataLabel": "공유 데이터: {count}",
+    "editAccessButton": "접근 편집",
+    "resetPasswordButton": "비밀번호 재설정",
+    "resetPasswordDisabledTitle": "이 사람은 자신의 비밀번호를 직접 관리합니다 (자체 Monize 계정이 있거나 다른 곳에서 위임된 접근 권한이 있습니다).",
+    "removeButton": "제거",
+    "createModal": {
+      "title": "위임자 추가",
+      "description": "다른 사람에게 계정에 대한 범위별 접근 권한을 부여합니다.",
+      "emailLabel": "이메일",
+      "emailPlaceholder": "위임자 이메일",
+      "firstNameLabel": "이름",
+      "firstNamePlaceholder": "이름 (선택사항)",
+      "lastNameLabel": "성",
+      "lastNamePlaceholder": "성 (선택사항)",
+      "existingAccountNotice": "이 사람은 이미 Monize 로그인이 있습니다. 자신의 자격증명을 유지하면서 추가 공유 접근 권한만 부여됩니다 -- 비밀번호나 초대가 필요하지 않습니다.",
+      "sendInviteLabel": "비밀번호 설정 대신 이메일 초대 전송",
+      "passwordLabel": "비밀번호",
+      "passwordPlaceholder": "비밀번호 설정",
+      "submitButton": "위임자 추가"
+    },
+    "revokeDialog": {
+      "title": "위임자 제거",
+      "message": "이 위임자를 제거할까요? 계정 접근 권한을 잃게 됩니다. 다른 공유 접근 권한이 없고 이 이메일을 자신의 Monize 계정으로 등록한 적이 없다면 소유자가 관리하는 로그인도 제거됩니다.",
+      "removingButton": "제거 중...",
+      "removeButton": "제거"
+    },
+    "tempPasswordModal": {
+      "title": "임시 비밀번호",
+      "description": "위임자와 안전하게 공유하세요. 첫 로그인 시 변경하도록 요청받습니다. 다시 표시되지 않습니다.",
+      "copyButton": "복사",
+      "copiedButton": "복사됨",
+      "doneButton": "완료"
+    },
+    "toasts": {
+      "created": "위임자가 생성되었습니다",
+      "createdWithTempPassword": "위임자가 생성되었습니다. 임시 비밀번호: {password}",
+      "invited": "초대 이메일이 전송되었습니다",
+      "removed": "위임자가 제거되었습니다"
+    },
+    "errors": {
+      "setPasswordOrInvite": "비밀번호를 설정하거나 이메일 초대를 전송하세요.",
+      "loadFailed": "공유 접근 로드에 실패했습니다",
+      "createFailed": "위임자 생성에 실패했습니다",
+      "revokeFailed": "위임자 취소에 실패했습니다",
+      "resetPasswordFailed": "비밀번호 재설정에 실패했습니다",
+      "copyFailed": "클립보드에 복사할 수 없습니다"
+    }
+  },
+  "delegateAccessModal": {
+    "title": "접근 편집",
+    "tabs": {
+      "accounts": "계정",
+      "sections": "섹션",
+      "shared": "공유 데이터"
+    },
+    "sections": {
+      "description": "전체 앱 섹션에 대한 읽기 전용 접근 권한을 부여합니다. 계정 범위 데이터는 여전히 계정별 접근 권한도 필요합니다."
+    },
+    "accounts": {
+      "noAccounts": "부여할 계정이 없습니다.",
+      "grantAll": "모두 부여"
+    },
+    "shared": {
+      "description": "수취인, 카테고리 및 태그의 읽기는 항상 허용됩니다. 생성/편집/삭제를 제어합니다."
+    },
+    "saveButton": "저장",
+    "toasts": {
+      "saved": "접근 권한이 업데이트되었습니다",
+      "saveFailed": "접근 권한 업데이트에 실패했습니다"
+    }
+  },
+  "nav": {
+    "sectionsAriaLabel": "설정 섹션",
+    "profile": "프로필",
+    "preferences": "환경설정",
+    "notifications": "알림",
+    "security": "보안",
+    "sharedAccess": "공유 접근",
+    "emergencyAccess": "긴급 접근",
+    "apiAccess": "API 접근",
+    "aiSettings": "AI 설정",
+    "backupRestore": "백업 및 복원",
+    "autoBackup": "자동 백업",
+    "help": "도움말 및 지원",
+    "dangerZone": "위험 구역"
+  },
+  "page": {
+    "title": "설정",
+    "demoRestricted": {
+      "heading": "데모 모드에서 제한됨",
+      "body": "데모 모드에서는 프로필 편집, 비밀번호 변경, 이중 인증, 계정 삭제가 비활성화됩니다."
+    },
+    "sharedAccessCard": {
+      "title": "공유 접근",
+      "description": "다른 사람에게 특정 계정에 대한 세분화된 접근 권한을 부여합니다."
+    },
+    "emergencyAccessCard": {
+      "title": "긴급 접근",
+      "description": "장기간 로그인하지 않을 경우 자동으로 계정 전체 접근 권한을 받을 연락처를 지정합니다."
+    },
+    "aiSettingsCard": {
+      "title": "AI 설정",
+      "description": "AI 제공자를 구성하고, API 키를 관리하며, 사용 통계를 확인합니다."
+    },
+    "delegateSecurityError": "보안 설정을 로드할 수 없습니다.",
+    "toasts": {
+      "securityLoadFailed": "보안 설정 로드에 실패했습니다",
+      "loadFailed": "설정 로드에 실패했습니다"
+    }
+  },
+  "aiSettings": {
+    "backLink": "설정으로 돌아가기",
+    "title": "AI 설정",
+    "subtitle": "지능형 재무 기능을 위한 AI 제공자 구성",
+    "demoRestricted": {
+      "heading": "데모 모드에서 제한됨",
+      "body": "데모 모드에서는 AI 제공자 구성이 비활성화됩니다."
+    },
+    "toasts": {
+      "loadFailed": "AI 설정 로드에 실패했습니다",
+      "usageLoadFailed": "사용량 데이터 로드에 실패했습니다"
+    }
+  },
+  "sharedAccessPage": {
+    "backLink": "설정으로 돌아가기",
+    "title": "공유 접근",
+    "subtitle": "다른 사람에게 특정 계정에 대한 세분화된 접근 권한을 부여합니다",
+    "demoRestricted": {
+      "heading": "데모 모드에서 제한됨",
+      "body": "데모 모드에서는 위임자 관리가 비활성화됩니다."
+    }
+  },
+  "emergencyAccess": {
+    "backLink": "설정으로 돌아가기",
+    "title": "긴급 접근",
+    "subtitle": "장기간 로그인하지 않을 경우 자동으로 계정 전체 접근 권한을 받을 연락처를 지정합니다",
+    "delegateRestricted": "긴급 접근은 계정 소유자만 구성할 수 있습니다.",
+    "demoRestricted": "데모 모드에서는 긴급 접근이 비활성화됩니다.",
+    "emailNotConfigured": {
+      "heading": "이메일이 구성되지 않았습니다",
+      "body": "긴급 접근은 이메일 전달에 의존합니다. 관리자에게 SMTP 환경 변수 (SMTP_HOST, SMTP_USER, SMTP_PASSWORD)를 구성하고 다시 시도하도록 요청하세요."
+    },
+    "alreadyGranted": {
+      "heading": "긴급 접근이 이미 부여됨",
+      "description": "지정된 연락처가 계정을 인수할 매직 링크를 받았습니다. 의도하지 않은 경우 아래의 부여된 상태를 지워 미결 링크를 무효화하세요.",
+      "clearButton": "부여된 상태 지우기"
+    },
+    "loadError": "긴급 접근 설정을 로드할 수 없습니다.",
+    "settings": {
+      "heading": "설정",
+      "enableLabel": "긴급 접근 활성화",
+      "grantAfterDaysLabel": "접근 부여 전 비활성 일수",
+      "reminderAfterDaysLabel": "알림 이메일 전 비활성 일수",
+      "saveButton": "설정 저장",
+      "toasts": {
+        "saved": "긴급 접근 설정이 저장되었습니다",
+        "saveFailed": "설정 저장에 실패했습니다"
+      }
+    },
+    "message": {
+      "heading": "연락처에게 전달할 메시지",
+      "description": "저장 시 암호화됩니다. 보기 또는 편집 시 신원 재확인이 필요합니다.",
+      "unlockTimer": "{mins}:{secs} 동안 잠금 해제됨",
+      "messageSet": "메시지 설정됨",
+      "charCount": "({count}자",
+      "updatedAt": ", {timestamp}에 업데이트됨",
+      "noMessage": "메시지 없음",
+      "revealButton": "메시지 표시",
+      "editButton": "메시지 편집",
+      "addButton": "메시지 추가",
+      "emptyMessage": "(비어 있음)",
+      "lockNowButton": "지금 잠금",
+      "editMessageButton": "편집",
+      "messagePlaceholder": "메모, 지침, 중요 문서 위치...",
+      "maxCharsNote": "최대 4000자. 저장 시 암호화됩니다.",
+      "cancelButton": "취소",
+      "saveButton": "메시지 저장",
+      "toasts": {
+        "saved": "메시지가 저장되었습니다",
+        "verifyAgain": "인증이 만료되었습니다 -- 저장하려면 다시 인증해 주세요",
+        "loadFailed": "메시지 로드에 실패했습니다",
+        "saveFailed": "메시지 저장에 실패했습니다"
+      }
+    },
+    "contacts": {
+      "heading": "긴급 연락처",
+      "description": "각 연락처는 접근 권한이 부여될 때 이메일로 매직 링크를 받습니다. 이를 통해 새 비밀번호를 설정하고 계정을 인수합니다. 먼저 청구하는 연락처가 우선입니다.",
+      "addButton": "연락처 추가",
+      "noContacts": "아직 연락처가 없습니다.",
+      "editButton": "편집",
+      "removeButton": "제거",
+      "contactModal": {
+        "addTitle": "긴급 연락처 추가",
+        "editTitle": "연락처 편집",
+        "firstNameLabel": "이름",
+        "emailLabel": "이메일",
+        "addButton": "연락처 추가",
+        "saveButton": "변경사항 저장"
+      },
+      "removeDialog": {
+        "title": "연락처 제거",
+        "message": "이 연락처는 더 이상 긴급 접근 권한을 받지 않습니다. 나중에 다시 추가할 수 있습니다.",
+        "removingButton": "제거 중...",
+        "removeButton": "제거"
+      },
+      "toasts": {
+        "added": "연락처가 추가되었습니다",
+        "updated": "연락처가 업데이트되었습니다",
+        "removed": "연락처가 제거되었습니다",
+        "saveFailed": "연락처 저장에 실패했습니다",
+        "removeFailed": "연락처 제거에 실패했습니다"
+      }
+    },
+    "status": {
+      "heading": "상태",
+      "lastAccess": "마지막 접근: ",
+      "lastReminderSent": "마지막 알림 전송: ",
+      "grantStatus": "부여 상태: ",
+      "unknown": "알 수 없음",
+      "never": "없음",
+      "daysAgo": "{count}일 전",
+      "grantedOn": "{timestamp}에 부여됨",
+      "notYetGranted": "아직 부여되지 않음",
+      "timerNote": "앱 사용 시 타이머가 자동으로 재설정됩니다 -- 로그인, 페이지 보기, 거래 기록 등 인증된 모든 작업."
+    },
+    "resetConfirm": {
+      "title": "부여된 상태 지우기",
+      "message": "미결 매직 링크가 무효화되고, 알림 주기가 다시 시작되며, 비활성 기간 이후 부여 연쇄가 다시 발동될 수 있습니다.",
+      "clearingButton": "지우는 중...",
+      "clearButton": "지우기",
+      "toasts": {
+        "cleared": "부여된 상태가 지워졌습니다",
+        "resetFailed": "부여된 상태 재설정에 실패했습니다"
+      }
+    },
+    "stepUp": {
+      "reason": "긴급 접근 메시지를 보거나 편집하려면 신원을 재확인하세요."
+    },
+    "toasts": {
+      "loadFailed": "긴급 접근 로드에 실패했습니다",
+      "reauthFailed": "재인증 확인에 실패했습니다"
+    }
+  },
+  "aiProviders": {
+    "heading": "AI 제공자",
+    "addButton": "제공자 추가",
+    "encryptionWarning": "AI_ENCRYPTION_KEY가 구성되지 않았습니다. Ollama (로컬, API 키 불필요)는 사용할 수 있지만 클라우드 제공자는 API 키를 안전하게 저장하기 위해 암호화가 필요합니다.",
+    "systemDefault": {
+      "heading": "시스템 기본 AI 제공자 사용 가능",
+      "description": "관리자가 중앙 AI 제공자를 구성했습니다",
+      "usedAutomatically": "개인 제공자가 구성되지 않았으므로 자동으로 사용됩니다.",
+      "personalPriority": "개인 제공자가 시스템 기본값보다 우선합니다."
+    },
+    "noProviders": {
+      "withSystemDefault": "개인 AI 제공자가 구성되지 않았습니다. 시스템 기본 제공자가 사용됩니다.",
+      "withoutSystemDefault": "AI 제공자가 구성되지 않았습니다. AI 기능을 활성화하려면 제공자를 추가하세요."
+    },
+    "providerCard": {
+      "activeBadge": "활성",
+      "inactiveBadge": "비활성",
+      "priorityLabel": "우선순위: {n}",
+      "modelLabel": "모델: {model}",
+      "keyLabel": "키: {key}",
+      "urlLabel": "URL: {url}",
+      "costLabel": "비용/1M ({currency}): {input} 입력 / {output} 출력",
+      "disableButton": "비활성화",
+      "enableButton": "활성화",
+      "editButton": "편집",
+      "deleteButton": "삭제"
+    },
+    "configForm": {
+      "addTitle": "AI 제공자 추가",
+      "editTitle": "제공자 편집",
+      "providerLabel": "제공자",
+      "displayNameLabel": "표시 이름",
+      "modelLabel": "모델",
+      "testButton": "테스트",
+      "testingButton": "테스트 중...",
+      "ollamaCloudNote": "모델 이름에는 -cloud 접미사가 포함되어야 합니다 (예: gpt-oss:20b-cloud).",
+      "apiKeyLabel": "API 키",
+      "baseUrlLabel": "기본 URL",
+      "priorityLabel": "우선순위",
+      "priorityHelp": "숫자가 낮을수록 우선순위가 높습니다. 대체 순서에 사용됩니다.",
+      "costRatesHeading": "비용 요율 (선택사항)",
+      "costRatesHelp": "사용량 대시보드에서 예상 비용을 확인하려면 제공자의 공시 요율 (1,000,000 토큰당)을 입력하세요. 비용 추정을 건너뛰려면 비워 두세요.",
+      "inputCostLabel": "입력 비용 / 1M 토큰",
+      "outputCostLabel": "출력 비용 / 1M 토큰",
+      "rateCurrencyLabel": "요율 통화",
+      "rateCurrencyHelp": "이것이 홈 통화와 다른 경우 사용량 대시보드에서 저장된 환율을 사용하여 비용을 변환할 수 있습니다.",
+      "saveButton": "변경사항 저장",
+      "addProviderButton": "제공자 추가",
+      "modelPlaceholder": "모델 이름을 입력하세요",
+      "testModelAria": "모델 테스트",
+      "apiKeyPlaceholder": "API 키를 입력하세요",
+      "saveFailed": "구성 저장에 실패했습니다",
+      "inputCostPlaceholder": "예: 3.00",
+      "outputCostPlaceholder": "예: 15.00",
+      "toasts": {
+        "notReachable": "제공자에 연결할 수 없습니다.",
+        "modelUnavailable": "이 제공자에서 \"{model}\" 모델을 사용할 수 없습니다.",
+        "modelReady": "\"{model}\" 모델이 준비되었습니다.",
+        "success": "연결에 성공했습니다.",
+        "testFailed": "모델 테스트에 실패했습니다"
+      },
+      "costCurrencies": {
+        "USD": "USD - 미국 달러",
+        "EUR": "EUR - 유로",
+        "GBP": "GBP - 영국 파운드",
+        "CAD": "CAD - 캐나다 달러",
+        "AUD": "AUD - 호주 달러",
+        "JPY": "JPY - 일본 엔",
+        "CNY": "CNY - 중국 위안",
+        "INR": "INR - 인도 루피"
+      },
+      "validation": {
+        "displayNameMax": "표시 이름은 100자 이하여야 합니다",
+        "mustBeNumber": "숫자여야 합니다",
+        "currencyCode": "3자리 통화 코드여야 합니다"
+      }
+    },
+    "testButton": {
+      "testLabel": "테스트",
+      "connectionFailed": "연결에 실패했습니다",
+      "modelUnavailable": "이 제공자에서 \"{model}\" 모델을 사용할 수 없습니다.",
+      "successWithModel": "연결에 성공했습니다. \"{model}\" 모델이 준비되었습니다.",
+      "success": "연결에 성공했습니다",
+      "testFailed": "연결 테스트에 실패했습니다"
+    },
+    "toasts": {
+      "added": "제공자가 추가되었습니다",
+      "updated": "제공자가 업데이트되었습니다",
+      "removed": "제공자가 제거되었습니다",
+      "modelReady": "\"{model}\" 모델이 준비되었습니다.",
+      "notReachable": "저장되었지만 제공자에 연결할 수 없습니다. URL/API 키를 다시 확인하세요.",
+      "modelUnavailable": "저장되었지만 이 제공자에서 \"{model}\" 모델을 사용할 수 없습니다.",
+      "deleteFailed": "제공자 삭제에 실패했습니다",
+      "updateFailed": "제공자 업데이트에 실패했습니다"
+    }
+  },
+  "usage": {
+    "heading": "사용량",
+    "totalRequests": "전체 요청",
+    "inputTokens": "입력 토큰",
+    "outputTokens": "출력 토큰",
+    "estCost": "예상 비용",
+    "setRatesToEnable": "활성화하려면 제공자에 요율을 설정하세요",
+    "inHomeCurrency": "{currency} 기준",
+    "inProviderCurrency": "제공자 통화 기준",
+    "byProvider": {
+      "heading": "제공자별",
+      "provider": "제공자",
+      "requests": "요청",
+      "inputTokens": "입력 토큰",
+      "outputTokens": "출력 토큰",
+      "estCost": "예상 비용"
+    },
+    "recentActivity": {
+      "heading": "최근 활동",
+      "date": "날짜",
+      "provider": "제공자",
+      "feature": "기능",
+      "tokens": "토큰",
+      "duration": "소요 시간",
+      "estCost": "예상 비용"
+    },
+    "noUsage": "아직 사용량 데이터가 없습니다. AI 기능을 사용하기 시작하면 여기에 표시됩니다.",
+    "periods": {
+      "d7": "7일",
+      "d30": "30일",
+      "d90": "90일",
+      "all": "전체 기간"
+    },
+    "estCostTooltip": "각 제공자에 구성한 비용 요율을 사용하여 추정됩니다. 일치하는 요율이 없는 활동은 제외됩니다."
+  }
+}

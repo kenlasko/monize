@@ -1,0 +1,165 @@
+{
+  "test": {
+    "subject": "Email thử nghiệm từ Monize",
+    "heading": "Email thử nghiệm từ Monize",
+    "greeting": "Xin chào {{ name }},",
+    "body": "Đây là email thử nghiệm từ Monize. Nếu bạn nhận được email này, thông báo qua email của bạn đang hoạt động bình thường."
+  },
+  "billReminder": {
+    "subjectOne": "Monize: 1 hóa đơn sắp tới cần chú ý",
+    "subjectMany": "Monize: {{ count }} hóa đơn sắp tới cần chú ý",
+    "heading": "Nhắc nhở hóa đơn sắp tới",
+    "greeting": "Xin chào {{ name }},",
+    "introOne": "Bạn có 1 hóa đơn sắp tới cần chú ý:",
+    "introMany": "Bạn có {{ count }} hóa đơn sắp tới cần chú ý:",
+    "colPayee": "Người nhận",
+    "colDueDate": "Ngày đến hạn",
+    "colType": "Loại",
+    "colAmount": "Số tiền",
+    "typeIncome": "Thu nhập",
+    "typeExpense": "Chi phí",
+    "button": "Xem hóa đơn &amp; tiền gửi"
+  },
+  "mortgageReminder": {
+    "subject": "Monize: 1 hợp đồng thế chấp sắp gia hạn",
+    "subjectPlural": "Monize: {{ count }} hợp đồng thế chấp sắp gia hạn",
+    "heading": "Nhắc nhở gia hạn thế chấp",
+    "greeting": "Xin chào {{ name }},",
+    "introOne": "Bạn có 1 khoản thế chấp sắp gia hạn kỳ hạn. Liên hệ với người cho vay để thảo luận về các lựa chọn gia hạn trước khi kỳ hạn kết thúc:",
+    "introMany": "Bạn có {{ count }} khoản thế chấp sắp gia hạn kỳ hạn. Liên hệ với người cho vay để thảo luận về các lựa chọn gia hạn trước khi kỳ hạn kết thúc:",
+    "colMortgage": "Thế chấp",
+    "colTermEndDate": "Ngày kết thúc kỳ hạn",
+    "colTimeRemaining": "Thời gian còn lại",
+    "daysRemainingOne": "1 ngày",
+    "daysRemainingMany": "{{ count }} ngày",
+    "button": "Xem tài khoản"
+  },
+  "severity": {
+    "critical": "Nghiêm trọng",
+    "warning": "Cảnh báo",
+    "success": "Tin tốt",
+    "info": "Thông tin"
+  },
+  "budgetAlertImmediate": {
+    "subject": "Monize: Cảnh báo - {{ title }}",
+    "subjectPlural": "Monize: {{ count }} cảnh báo cần chú ý",
+    "heading": "Cảnh báo",
+    "greeting": "Xin chào {{ name }},",
+    "intro": "Ngân sách của bạn cần chú ý:",
+    "colSeverity": "Mức độ",
+    "colAlert": "Cảnh báo",
+    "colDetails": "Chi tiết",
+    "button": "Xem ngân sách"
+  },
+  "budgetWeeklyDigest": {
+    "subject": "Monize: Tóm tắt ngân sách hàng tuần của bạn",
+    "heading": "Tóm tắt ngân sách hàng tuần",
+    "greeting": "Xin chào {{ name }},",
+    "intro": "Đây là tóm tắt ngân sách hàng tuần của bạn cho: <strong>{{ budgets }}</strong>",
+    "criticalOne": "nghiêm trọng",
+    "criticalMany": "nghiêm trọng",
+    "warningOne": "cảnh báo",
+    "warningMany": "cảnh báo",
+    "positiveOne": "tích cực",
+    "positiveMany": "tích cực",
+    "thisWeek": "Tuần này:",
+    "noAlerts": "Không có cảnh báo",
+    "totalAlerts": "Tổng cảnh báo: {{ count }}",
+    "topAlertsHeading": "Cảnh báo hàng đầu",
+    "andMore": "...và {{ count }} cảnh báo khác",
+    "button": "Xem bảng điều khiển ngân sách"
+  },
+  "budgetMonthlySummary": {
+    "subject": "Monize: Tóm tắt ngân sách tháng - {{ period }}",
+    "subjectPlural": "Monize: Tóm tắt ngân sách tháng cho {{ count }} ngân sách",
+    "heading": "Tóm tắt ngân sách tháng",
+    "greeting": "Xin chào {{ name }},",
+    "intro": "Đây là tóm tắt ngân sách tháng của bạn cho kỳ vừa kết thúc:",
+    "overBudget": "Vượt ngân sách",
+    "healthScore": "Điểm sức khỏe:",
+    "labelBudgeted": "Ngân sách",
+    "labelSpent": "Đã chi",
+    "labelRemaining": "Còn lại",
+    "percentUsed": "Đã dùng {{ percent }}%",
+    "topCategories": "Danh mục hàng đầu",
+    "button": "Xem bảng điều khiển ngân sách"
+  },
+  "oidcLink": {
+    "subject": "Monize: Xác nhận liên kết tài khoản SSO",
+    "heading": "Liên kết tài khoản SSO của bạn",
+    "greeting": "Xin chào {{ name }},",
+    "intro": "Ai đó đã cố gắng đăng nhập qua SSO bằng email trùng với tài khoản Monize hiện có của bạn. Để liên kết danh tính SSO với tài khoản này, hãy nhấp vào nút bên dưới:",
+    "button": "Xác nhận liên kết tài khoản",
+    "disclaimer": "Nếu bạn không khởi tạo yêu cầu này, bạn có thể bỏ qua email này một cách an toàn. Liên kết sẽ hết hạn sau 1 giờ."
+  },
+  "accountLocked": {
+    "subject": "Tài khoản tạm thời bị khóa",
+    "heading": "Tài khoản tạm thời bị khóa",
+    "greeting": "Xin chào {{ name }},",
+    "body1": "Tài khoản Monize của bạn đã tạm thời bị khóa do nhiều lần đăng nhập thất bại. Đây là biện pháp bảo mật để bảo vệ tài khoản của bạn.",
+    "body2": "Khóa sẽ tự động hết hạn. Nếu bạn không thực hiện đăng nhập, chúng tôi khuyên bạn nên đặt lại mật khẩu ngay lập tức."
+  },
+  "passwordReset": {
+    "subject": "Đặt lại mật khẩu Monize",
+    "heading": "Yêu cầu đặt lại mật khẩu",
+    "greeting": "Xin chào {{ name }},",
+    "intro": "Chúng tôi đã nhận được yêu cầu đặt lại mật khẩu của bạn. Nhấp vào nút bên dưới để đặt mật khẩu mới:",
+    "button": "Đặt lại mật khẩu",
+    "disclaimer": "Liên kết này sẽ hết hạn sau 1 giờ. Nếu bạn không yêu cầu đặt lại mật khẩu, bạn có thể bỏ qua email này một cách an toàn."
+  },
+  "emailVerification": {
+    "subject": "Xác minh email Monize của bạn",
+    "heading": "Xác minh địa chỉ email của bạn",
+    "greeting": "Xin chào {{ name }},",
+    "intro": "Cảm ơn bạn đã đăng ký Monize. Vui lòng xác nhận địa chỉ email của bạn để kích hoạt tài khoản và đăng nhập:",
+    "button": "Xác minh email",
+    "disclaimer": "Liên kết này sẽ hết hạn sau 24 giờ. Nếu bạn không tạo tài khoản Monize, bạn có thể bỏ qua email này một cách an toàn."
+  },
+  "accountInvite": {
+    "subject": "Tài khoản Monize của bạn đã sẵn sàng",
+    "heading": "Tài khoản Monize của bạn đã sẵn sàng",
+    "greeting": "Xin chào {{ name }},",
+    "intro": "Quản trị viên đã tạo tài khoản Monize cho bạn. Nhấp vào nút bên dưới để đặt mật khẩu và đăng nhập:",
+    "button": "Đặt mật khẩu của bạn",
+    "disclaimer": "Liên kết này sẽ hết hạn sau 24 giờ. Nếu bạn không mong đợi điều này, bạn có thể bỏ qua email này một cách an toàn."
+  },
+  "delegateInvite": {
+    "subject": "Bạn đã được mời vào Monize",
+    "heading": "Bạn đã được mời vào Monize",
+    "greeting": "Xin chào {{ name }},",
+    "intro": "{{ owner }} đã mời bạn truy cập vào tài khoản Monize của họ với tư cách là người được ủy quyền. Nhấp vào nút bên dưới để đặt mật khẩu và bắt đầu:",
+    "button": "Đặt mật khẩu của bạn",
+    "disclaimer": "Liên kết này sẽ hết hạn sau 24 giờ. Nếu bạn không mong đợi lời mời này, bạn có thể bỏ qua email này một cách an toàn."
+  },
+  "emergencyAccessReminder": {
+    "subjectOne": "Monize: tài khoản của bạn đã không hoạt động 1 ngày",
+    "subjectMany": "Monize: tài khoản của bạn đã không hoạt động {{ daysSinceLogin }} ngày",
+    "heading": "Nhắc nhở truy cập khẩn cấp Monize",
+    "greeting": "Xin chào {{ name }},",
+    "grantPhraseToday": "hôm nay",
+    "grantPhraseFutureOne": "sau 1 ngày",
+    "grantPhraseFutureMany": "sau {{ count }} ngày",
+    "bodyOne": "Bạn đã không đăng nhập vào Monize trong <strong>1 ngày</strong>. Nếu bạn vẫn không hoạt động, các liên hệ khẩn cấp được chỉ định của bạn sẽ được cấp quyền truy cập đầy đủ vào tài khoản của bạn {{ grantPhrase }}.",
+    "bodyMany": "Bạn đã không đăng nhập vào Monize trong <strong>{{ daysSinceLogin }} ngày</strong>. Nếu bạn vẫn không hoạt động, các liên hệ khẩn cấp được chỉ định của bạn sẽ được cấp quyền truy cập đầy đủ vào tài khoản của bạn {{ grantPhrase }}.",
+    "contactsLabel": "Các liên hệ được chỉ định:",
+    "button": "Đăng nhập ngay",
+    "footer": "Đăng nhập sẽ đặt lại bộ đếm thời gian. Nếu bạn không muốn tính năng này được bật nữa, bạn có thể tắt nó từ Cài đặt → Truy cập khẩn cấp."
+  },
+  "emergencyAccessGrant": {
+    "subject": "Bạn đã được cấp quyền truy cập khẩn cấp vào tài khoản Monize của {{ owner }}",
+    "heading": "Đã cấp quyền truy cập khẩn cấp",
+    "greeting": "Xin chào {{ name }},",
+    "body": "<strong>{{ owner }}</strong> trước đây đã chỉ định bạn là liên hệ khẩn cấp trên tài khoản Monize của họ. Vì họ đã không đăng nhập trong một thời gian dài, bạn hiện đang được cấp quyền truy cập đầy đủ để tiếp quản tài khoản.",
+    "claimIntro": "Để yêu cầu quyền truy cập, nhấp vào liên kết bên dưới và đặt mật khẩu mới. Bạn sẽ được đăng nhập với tư cách là chủ tài khoản.",
+    "button": "Yêu cầu truy cập khẩn cấp",
+    "expiry": "Liên kết này có giá trị đến <strong>{{ expiry }}</strong> và chỉ có thể sử dụng một lần. Nếu nhiều liên hệ nhận được email này, người đầu tiên yêu cầu sẽ tiếp quản tài khoản."
+  },
+  "emergencyAccessGrantRevoked": {
+    "subject": "Monize: quyền truy cập khẩn cấp đã được cấp khi bạn vắng mặt",
+    "heading": "Quyền truy cập khẩn cấp đã được cấp khi bạn vắng mặt",
+    "greeting": "Xin chào {{ name }},",
+    "body1": "Do tài khoản của bạn không hoạt động, các liên hệ khẩn cấp được chỉ định của bạn đã được gửi liên kết để tiếp quản tài khoản của bạn. Bạn hiện đã đăng nhập lại, vì vậy <strong>các liên kết đó đã bị thu hồi</strong> và biện pháp bảo vệ đã được tái kích hoạt.",
+    "body2": "Nếu điều này là mong đợi, không cần thực hiện thêm hành động nào. Nếu bạn không mong đợi điều này, hãy xem lại hoạt động đăng nhập và cài đặt truy cập khẩn cấp của bạn.",
+    "button": "Xem lại truy cập khẩn cấp"
+  }
+}

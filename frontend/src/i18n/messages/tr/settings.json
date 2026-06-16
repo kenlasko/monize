@@ -1,0 +1,875 @@
+{
+  "language": {
+    "label": "Dil",
+    "browserOption": "Tarayıcı yerel ayarını kullan (otomatik algılama: {locale})",
+    "helpText": "Monize arayüzünde kullanılan dili seçin. Sayı ve tarih biçimlendirmesi aşağıda ayrıca kontrol edilir.",
+    "saved": "Dil güncellendi",
+    "saveFailed": "Dil kaydedilemedi"
+  },
+  "profile": {
+    "heading": "Profil",
+    "firstNameLabel": "Ad",
+    "firstNamePlaceholder": "Adınızı girin",
+    "lastNameLabel": "Soyad",
+    "lastNamePlaceholder": "Soyadınızı girin",
+    "emailLabel": "E-posta",
+    "emailPlaceholder": "E-posta adresinizi girin",
+    "currentPasswordLabel": "Mevcut Şifre",
+    "currentPasswordPlaceholder": "E-posta değişikliği için gerekli",
+    "passwordRequired": "E-posta adresini değiştirmek için mevcut şifre gereklidir",
+    "noChanges": "Kaydedilecek değişiklik yok",
+    "passwordConfirmNote": "E-posta adresinizi değiştirirken şifre onayı gereklidir.",
+    "saveButton": "Profili Kaydet",
+    "savingButton": "Kaydediliyor...",
+    "toasts": {
+      "success": "Profil başarıyla güncellendi",
+      "updateFailed": "Profil güncellenemedi"
+    },
+    "validation": {
+      "firstNameMax": "Ad 100 karakter veya daha az olmalıdır",
+      "lastNameMax": "Soyad 100 karakter veya daha az olmalıdır",
+      "emailRequired": "E-posta zorunludur",
+      "emailInvalid": "Lütfen geçerli bir e-posta adresi girin",
+      "emailMax": "E-posta 254 karakter veya daha az olmalıdır",
+      "passwordMax": "Şifre 128 karakter veya daha az olmalıdır"
+    }
+  },
+  "security": {
+    "heading": "Güvenlik",
+    "ssoNotice": "Hesabınız kimlik doğrulama için Tek Oturum Açma (SSO) kullanmaktadır. Aşağıdaki şifre oturum açma için kullanılmamaktadır; ancak SSO devre dışı bırakıldığında yedek olarak tutulabilir.",
+    "currentPasswordLabel": "Mevcut Şifre",
+    "currentPasswordPlaceholder": "Mevcut şifreyi girin",
+    "newPasswordLabel": "Yeni Şifre",
+    "newPasswordPlaceholder": "Yeni şifreyi girin",
+    "confirmPasswordLabel": "Yeni Şifreyi Onayla",
+    "confirmPasswordPlaceholder": "Yeni şifreyi onaylayın",
+    "changePasswordButton": "Şifreyi Değiştir",
+    "changingPasswordButton": "Değiştiriliyor...",
+    "toasts": {
+      "passwordChanged": "Şifre başarıyla değiştirildi",
+      "passwordChangeFailed": "Şifre değiştirilemedi"
+    },
+    "twoFactor": {
+      "heading": "İki Faktörlü Kimlik Doğrulama",
+      "ssoUnavailable": "SSO hesapları için iki faktörlü kimlik doğrulama mevcut değildir. Kimlik doğrulama güvenliği kimlik sağlayıcınız tarafından yönetilmektedir.",
+      "enabledBadge": "Etkin",
+      "enabledDescription": "Hesabınız TOTP doğrulamasıyla korunmaktadır.",
+      "requiredByAdmin": "Yönetici tarafından zorunlu kılındı",
+      "addLayerDescription": "Hesabınıza ekstra bir güvenlik katmanı ekleyin.",
+      "enableButton": "2FA'yı Etkinleştir",
+      "disableButton": "2FA'yı Devre Dışı Bırak",
+      "disableModal": {
+        "title": "İki Faktörlü Kimlik Doğrulamayı Devre Dışı Bırak",
+        "description": "2FA'yı devre dışı bırakmayı onaylamak için mevcut 6 haneli kodunuzu girin.",
+        "verificationCodeLabel": "Doğrulama Kodu",
+        "disablingButton": "Devre Dışı Bırakılıyor...",
+        "toasts": {
+          "disabled": "İki faktörlü kimlik doğrulama devre dışı bırakıldı",
+          "disableFailed": "2FA devre dışı bırakılamadı"
+        }
+      }
+    },
+    "backupCodes": {
+      "heading": "Yedek Kodlar",
+      "description": "Kimlik doğrulama uygulamanıza erişimi kaybederseniz oturum açmak için yedek kodları kullanın.",
+      "regenerateButton": "Kodları yeniden oluştur",
+      "regenerateModal": {
+        "title": "Yedek Kodları Yeniden Oluştur",
+        "description": "Yedek kodları yeniden oluşturmayı onaylamak için mevcut 6 haneli kodunuzu girin. Bu işlem mevcut tüm kodları geçersiz kılar.",
+        "verificationCodeLabel": "Doğrulama Kodu",
+        "regeneratingButton": "Yeniden oluşturuluyor...",
+        "regenerateButton": "Yeniden Oluştur"
+      },
+      "toasts": {
+        "generateFailed": "Yedek kodlar oluşturulamadı"
+      }
+    },
+    "trustedDevices": {
+      "heading": "Güvenilen Cihazlar",
+      "revokeAllButton": "Tümünü İptal Et",
+      "noDevices": "Güvenilen cihaz yok. 2FA girişi sırasında \"Bu tarayıcıda tekrar sorma\" seçeneğini işaretlediğinizde cihaz burada görünecektir.",
+      "currentBadge": "Mevcut",
+      "revokeButton": "İptal Et",
+      "revokeAllModal": {
+        "title": "Tüm Güvenilen Cihazları İptal Et",
+        "description": "Bu işlem tüm güvenilen cihazları kaldıracaktır. Herhangi bir cihazdan bir sonraki oturum açışınızda 2FA kodunuzu girmeniz gerekecektir."
+      },
+      "toasts": {
+        "revoked": "Cihaz iptal edildi",
+        "revokedAll": "{count} cihaz iptal edildi",
+        "revokeFailed": "Cihaz iptal edilemedi",
+        "revokeAllFailed": "Cihazlar iptal edilemedi"
+      }
+    },
+    "validation": {
+      "currentPasswordRequired": "Mevcut şifre zorunludur",
+      "passwordMax": "Şifre 128 karakter veya daha az olmalıdır",
+      "confirmRequired": "Lütfen yeni şifrenizi onaylayın",
+      "newPasswordsNoMatch": "Yeni şifreler eşleşmiyor"
+    }
+  },
+  "preferences": {
+    "heading": "Tercihler",
+    "themeLabel": "Tema",
+    "defaultCurrencyLabel": "Varsayılan Para Birimi",
+    "preferredExchangesLabel": "Tercih Edilen Borsalar (menkul kıymet aramaları için)",
+    "preferredExchangesHelp": "Öncelik sırasına göre en fazla 3 borsa seçin. Menkul kıymet ararken bunlar tercih edilecektir.",
+    "exchangePriorityPlaceholder": "Öncelik {n}",
+    "defaultQuoteProviderLabel": "Varsayılan Hisse Fiyat Teklifi Sağlayıcısı",
+    "defaultQuoteProviderHelp": "Menkul kıymetin sağlayıcı geçersiz kılması olmadığında kullanılır. Seçilen sağlayıcı başarısız olursa Monize otomatik olarak diğerini dener.",
+    "msnNoIntradayNote": "Not: MSN Money gün içi fiyat teklifi verileri sağlamamaktadır; bu nedenle MSN tarafından takip edilen varlıklar için Zaman İçinde Portföy Değeri grafiğindeki 1G / 1H / 1A aralıkları kullanılamaz.",
+    "msnNotConfigured": "Varsayılan fiyat teklifi sağlayıcısı olarak MSN seçildi, ancak sunucuda MSN_API_KEY yapılandırılmamış. Bir yönetici ortam değişkenini ayarlayıp arka ucu yeniden başlatana kadar MSN fiyat teklifleri başarısız olacak.",
+    "dateFormatLabel": "Tarih Biçimi",
+    "numberFormatLabel": "Sayı Biçimi",
+    "timezoneLabel": "Saat Dilimi",
+    "timezonePlaceholder": "Saat dilimi ara...",
+    "weekStartsOnLabel": "Hafta başlangıcı",
+    "showCreatedAtLabel": "İşlem formlarında Oluşturma Tarihini Göster",
+    "showCreatedAtTooltip": "İşlem formlarında bir işlemin ilk oluşturulduğu tarih ve saati görüntüler. Bu, işlem tarihinden ayrıdır ve bir kaydın Monize'ye gerçekte ne zaman eklendiğini anlamanıza yardımcı olabilir.",
+    "timeFormatLabel": "Saat Biçimi",
+    "recentTransactionsLabel": "Hızlı doldurma için son işlemler",
+    "recentTransactionsHelp": "İşlem formlarında Alacaklı alanı yanındaki geçmiş düğmesi açılır penceresinde gösterilen kayıt sayısı.",
+    "saveButton": "Tercihleri Kaydet",
+    "savingButton": "Kaydediliyor...",
+    "toasts": {
+      "saved": "Tercihler kaydedildi",
+      "saveFailed": "Tercihler kaydedilemedi",
+      "themeSaveFailed": "Tema kaydedilemedi",
+      "colorThemeSaveFailed": "Renk teması kaydedilemedi"
+    },
+    "browserLocale": "Tarayıcı yerel ayarını kullan (otomatik algıla)",
+    "browserTimezonePrefix": "Tarayıcı saat dilimini kullan (otomatik algılandı: {tz})",
+    "numberFormatOptions": {
+      "browser": "Tarayıcı yerel ayarını kullan (otomatik algılama: {sample})",
+      "enUS": "İngilizce (ABD) - 1,234.56",
+      "enGB": "İngilizce (İngiltere) - 1,234.56",
+      "deDE": "Almanca - 1.234,56",
+      "frFR": "Fransızca - 1 234,56"
+    },
+    "weekDays": {
+      "sunday": "Pazar",
+      "monday": "Pazartesi",
+      "tuesday": "Salı",
+      "wednesday": "Çarşamba",
+      "thursday": "Perşembe",
+      "friday": "Cuma",
+      "saturday": "Cumartesi"
+    },
+    "themeOptions": {
+      "system": "Sistem (cihaz ayarını takip et)",
+      "light": "Açık",
+      "dark": "Koyu"
+    },
+    "colorThemeLabel": "Renk teması",
+    "colorThemeOptions": {
+      "default": "Varsayılan",
+      "latte": "Latte",
+      "msmoney": "MS Money",
+      "newspaper": "Newspaper",
+      "burgundy": "Burgundy",
+      "nord": "Nord",
+      "forest": "Forest",
+      "solarized": "Solarized",
+      "gruvbox": "Gruvbox",
+      "dracula": "Dracula",
+      "tokyonight": "Tokyo Night",
+      "rosepine": "Rosé Pine",
+      "midnight": "Midnight",
+      "highcontrast": "Yüksek kontrast",
+      "colorblind": "Renk körü uyumlu"
+    },
+    "timezoneBrowserOption": "Tarayıcı saat dilimini kullan (otomatik algılandı: {tz})"
+  },
+  "notifications": {
+    "heading": "Bildirimler",
+    "smtpNotConfigured": "E-posta bildirimleri mevcut değil. SMTP yönetici tarafından yapılandırılmamış.",
+    "emailNotificationsTitle": "E-posta Bildirimleri",
+    "emailNotificationsDescription": "Yaklaşan faturalar ve bütçe uyarıları için e-posta hatırlatıcıları alın",
+    "budgetNotificationsHeading": "Bütçe Bildirimleri",
+    "weeklyBudgetDigestTitle": "Haftalık Bütçe Özeti",
+    "weeklyBudgetDigestDescription": "Bütçe uyarıları ve durumunun haftalık özetini alın",
+    "toggleBudgetDigestLabel": "Bütçe özetini aç/kapat",
+    "digestDayLabel": "Özet günü",
+    "digestDayAriaLabel": "Bütçe özeti günü",
+    "mondayOption": "Pazartesi",
+    "fridayOption": "Cuma",
+    "immediateAlertsNote": "Kritik bütçe uyarıları (bütçe aşımı, gelir açığı) özet ayarlarından bağımsız olarak anında gönderilir.",
+    "sendTestEmailDescription": "Bildirimlerinizin çalıştığını doğrulamak için test e-postası gönderin.",
+    "sendTestEmailButton": "Test E-postası Gönder",
+    "sendingTestEmailButton": "Gönderiliyor...",
+    "toasts": {
+      "emailEnabled": "E-posta bildirimleri etkinleştirildi",
+      "emailDisabled": "E-posta bildirimleri devre dışı bırakıldı",
+      "digestEnabled": "Bütçe özeti etkinleştirildi",
+      "digestDisabled": "Bütçe özeti devre dışı bırakıldı",
+      "digestDaySet": "Bütçe özeti günü {day} olarak ayarlandı",
+      "testEmailSent": "Test e-postası gönderildi! Gelen kutunuzu kontrol edin.",
+      "emailUpdateFailed": "Bildirim tercihi güncellenemedi",
+      "digestUpdateFailed": "Bütçe özeti tercihi güncellenemedi",
+      "digestDayFailed": "Özet günü güncellenemedi",
+      "testEmailFailed": "Test e-postası gönderilemedi"
+    }
+  },
+  "help": {
+    "heading": "Yardım ve Destek",
+    "description": "Belgeler bulun, sorun bildirin veya konuşmaya katılın.",
+    "github": {
+      "label": "GitHub",
+      "description": "Kaynak kodunu görüntüleyin ve projeyi yıldızlayın."
+    },
+    "openIssue": {
+      "label": "Sorun Bildir",
+      "description": "Hata bildirin veya özellik talep edin."
+    },
+    "discussions": {
+      "label": "Tartışmalar",
+      "description": "Toplulukla soru sorun ve fikir paylaşın."
+    },
+    "wiki": {
+      "label": "Wiki",
+      "description": "Kılavuzlara ve belgelere göz atın."
+    }
+  },
+  "dangerZone": {
+    "heading": "Tehlikeli Alan",
+    "deleteData": {
+      "heading": "Verileri Sil",
+      "description": "Hesabınızdaki finansal verileri kaldırın. Bu işlem geri alınamaz.",
+      "openButton": "Verileri Sil...",
+      "alwaysDeletedHeading": "Aşağıdakiler her zaman silinecektir:",
+      "optionalHeading": "İsteğe bağlı olarak ayrıca şunları silin:",
+      "accountsOption": "Hesaplar",
+      "categoriesOption": "Kategoriler",
+      "payeesOption": "Alacaklılar",
+      "currencyPreferencesOption": "Para birimi tercihleri",
+      "balanceResetNote": "Hesap bakiyeleri açılış bakiyelerine sıfırlanacaktır.",
+      "oidcConfirmLabel": "Onaylamak için kimlik sağlayıcınızla yeniden kimlik doğrulayın:",
+      "passwordConfirmLabel": "Onaylamak için şifrenizi girin:",
+      "passwordPlaceholder": "Şifrenizi girin",
+      "oidcReauthButton": "Yeniden Kimlik Doğrula ve Sil",
+      "deletingButton": "Siliniyor...",
+      "confirmButton": "Veri Silmeyi Onayla",
+      "toasts": {
+        "success": "{count} kayıt başarıyla silindi",
+        "failed": "Veriler silinemedi"
+      }
+    },
+    "deleteAccount": {
+      "heading": "Hesabı Sil",
+      "description": "Hesabınızı ve ilgili tüm verileri kalıcı olarak silin. Bu işlem geri alınamaz.",
+      "delegateNotice": {
+        "title": "Başka bir hesabın temsilcisisiniz.",
+        "body": "Hesabınızı silmek kendi verilerinizi kaldırır, ancak oturumunuz ve başkalarının size verdiği paylaşılan erişim, temsilcilik işlevsel kalacak şekilde korunur. Bu erişimi iptal etmek için önce sahibinden sizi Paylaşılan Erişim listesinden kaldırmasını isteyin."
+      },
+      "openButton": "Hesabı Sil",
+      "typeDeleteLabel": "Hesap silmeyi onaylamak için DELETE yazın:",
+      "typeDeletePlaceholder": "DELETE yazın",
+      "enterPasswordLabel": "Şifrenizi girin:",
+      "enterPasswordPlaceholder": "Şifrenizi girin",
+      "deletingButton": "Siliniyor...",
+      "confirmButton": "Silmeyi Onayla",
+      "toasts": {
+        "downgraded": "Kendi verileriniz kaldırıldı. Temsilcilik yerinde kalsın diye oturumunuz ve paylaşılan erişim korunmaktadır.",
+        "deleted": "Hesap silindi",
+        "failed": "Hesap silinemedi"
+      },
+      "errors": {
+        "typeDelete": "Onaylamak için lütfen DELETE yazın",
+        "passwordRequired": "Onaylamak için lütfen şifrenizi girin"
+      }
+    }
+  },
+  "apiAccess": {
+    "heading": "API Erişimi",
+    "description": "MCP aracılığıyla Claude Desktop gibi harici AI araçlarını bağlamak için kişisel erişim belirteçleri oluşturun.",
+    "createTokenButton": "Belirteç Oluştur",
+    "mcpServerUrlLabel": "MCP Sunucu URL'si",
+    "mcpServerUrlHelp": "Claude Code veya Claude Desktop gibi MCP istemcilerini yapılandırırken bu URL'yi kullanın.",
+    "copyButton": "Kopyala",
+    "copiedButton": "Kopyalandı",
+    "noTokens": "Henüz API belirteci yok. Başlamak için bir tane oluşturun.",
+    "tokenPrefix": "Son kullanım",
+    "expires": "Bitiş",
+    "created": "Oluşturuldu",
+    "lastUsed": "Son kullanım",
+    "revokeButton": "İptal Et",
+    "revokeModal": {
+      "title": "Belirteci İptal Et",
+      "message": "Bu belirteç hemen çalışmayı durduracak. Bunu kullanan MCP bağlantıları kesilecektir.",
+      "confirmLabel": "İptal Et"
+    },
+    "createModal": {
+      "title": "API Belirteci Oluştur",
+      "tokenNameLabel": "Belirteç Adı",
+      "tokenNamePlaceholder": "örn., Claude Desktop",
+      "scopesLabel": "Kapsamlar",
+      "expirationLabel": "Bitiş",
+      "creatingButton": "Oluşturuluyor...",
+      "createButton": "Belirteç Oluştur",
+      "scopes": {
+        "read": {
+          "label": "Oku",
+          "description": "Hesapları, işlemleri ve kategorileri görüntüle"
+        },
+        "write": {
+          "label": "Yaz",
+          "description": "İşlemler, alacaklılar ve kategoriler oluştur"
+        },
+        "reports": {
+          "label": "Raporlar",
+          "description": "Finansal raporlar ve analitik oluştur"
+        }
+      },
+      "expiry": {
+        "none": "Bitiş yok",
+        "d30": "30 gün",
+        "d90": "90 gün",
+        "y1": "1 yıl"
+      },
+      "validation": {
+        "nameRequired": "Belirteç adı zorunludur",
+        "nameMax": "Belirteç adı 100 karakter veya daha az olmalıdır"
+      }
+    },
+    "createdModal": {
+      "title": "Belirteç Oluşturuldu",
+      "warningNote": "Bu belirteci şimdi kopyalayın. Bir daha göremezsiniz.",
+      "doneButton": "Tamam"
+    },
+    "toasts": {
+      "copied": "Belirteç panoya kopyalandı",
+      "mcpUrlCopied": "MCP URL'si panoya kopyalandı",
+      "revoked": "Belirteç iptal edildi",
+      "selectScope": "En az bir kapsam seçin",
+      "copyTokenFailed": "Belirteç kopyalanamadı",
+      "copyUrlFailed": "URL kopyalanamadı",
+      "loadFailed": "API belirteçleri yüklenemedi",
+      "createFailed": "Belirteç oluşturulamadı",
+      "revokeFailed": "Belirteç iptal edilemedi"
+    },
+    "relative": {
+      "never": "Hiçbir zaman",
+      "today": "Bugün",
+      "yesterday": "Dün",
+      "daysAgo": "{count} gün önce",
+      "monthsAgo": "{count} ay önce"
+    }
+  },
+  "autoBackup": {
+    "heading": "Otomatik Yedekleme",
+    "description": "Verilerinizi bir programa göre otomatik olarak bir klasöre yedekleyin. Monize Docker'da çalıştığından, bir ana klasörü kapsayıcıya birim olarak eşlemeniz gerekir (örn., -v /host/backups:/backups).",
+    "loadingText": "Yükleniyor...",
+    "enableLabel": "Otomatik yedeklemeyi etkinleştir",
+    "backupFolderLabel": "Yedekleme Klasörü",
+    "backupFolderPlaceholder": "/backups",
+    "browseButton": "Göz at...",
+    "validateButton": "Doğrula",
+    "validatingButton": "Doğrulanıyor...",
+    "folderValid": "Klasör geçerli ve yazılabilir",
+    "selectThisFolder": "Bu Klasörü Seç",
+    "noSubdirectories": "Alt dizin yok",
+    "frequencyLabel": "Yedekleme Sıklığı",
+    "backupTimeLabel": "Yedekleme Saati ({timezone})",
+    "backupTimeHelpInterval": "Günün ilk yedeklemesi bu saatte başlar ({timezone}). Sonraki yedeklemeler yapılandırılan aralıkta devam eder.",
+    "backupTimeHelpDaily": "Yerel saat diliminizde ({timezone}) yedeklemenin çalışacağı günün saati.",
+    "retention": {
+      "heading": "Saklama Politikası",
+      "description": "Kaç yedeklemenin tutulacağını yapılandırın. Bu sınırların ötesindeki eski yedeklemeler otomatik olarak silinir.",
+      "dailyLabel": "Günlük yedeklemeler",
+      "dailyHelp": "Tutulacak en son yedekleme sayısı",
+      "weeklyLabel": "Haftalık yedeklemeler",
+      "weeklyHelp": "Haftada bir tutulur",
+      "monthlyLabel": "Aylık yedeklemeler",
+      "monthlyHelp": "Ayda bir tutulur"
+    },
+    "status": {
+      "heading": "Durum",
+      "lastBackup": "Son yedekleme",
+      "nextBackup": "Sonraki yedekleme",
+      "error": "Hata",
+      "success": "Başarılı",
+      "failed": "Başarısız"
+    },
+    "saveButton": "Ayarları Kaydet",
+    "savingButton": "Kaydediliyor...",
+    "runNowButton": "Şimdi Yedekle",
+    "runningButton": "Yedekleniyor...",
+    "toasts": {
+      "saved": "Otomatik yedekleme ayarları kaydedildi",
+      "backupCreated": "Yedekleme oluşturuldu: {filename}",
+      "folderValid": "Klasör geçerli ve yazılabilir",
+      "loadFailed": "Otomatik yedekleme ayarları yüklenemedi",
+      "saveFailed": "Ayarlar kaydedilemedi",
+      "runFailed": "Yedekleme çalıştırılamadı",
+      "browseFailed": "Klasörler incelenemedi"
+    },
+    "folderErrors": {
+      "required": "Klasör yolu zorunludur",
+      "validationFailed": "Klasör doğrulaması başarısız",
+      "validationError": "Doğrulama başarısız"
+    },
+    "frequencyOptions": {
+      "every6hours": "Her 6 Saatte Bir",
+      "every12hours": "Her 12 Saatte Bir",
+      "daily": "Günlük",
+      "weekly": "Haftalık"
+    }
+  },
+  "backupRestore": {
+    "heading": "Yedekleme ve Geri Yükleme",
+    "encryption": {
+      "heading": "Yedekleme Şifreleme",
+      "descriptionOidc": "Manuel ve otomatik yedeklemeleri burada ayarladığınız özel bir yedekleme şifresiyle şifreleyin. Geri yükleme için şifre gereklidir.",
+      "descriptionLocal": "Manuel ve otomatik yedeklemeleri oturum açma şifrenizle şifreleyin. Geri yükleme için şifre gereklidir.",
+      "loading": "Yükleniyor...",
+      "enabledBadge": "Etkin",
+      "changePasswordButton": "Yedekleme Şifresini Değiştir",
+      "disableButton": "Devre Dışı Bırak",
+      "setPasswordButton": "Yedekleme Şifresi Ayarla",
+      "enableEncryptedButton": "Şifreli Yedeklemeyi Etkinleştir",
+      "setupModal": {
+        "titleOidc": "Yedekleme Şifresi Ayarla",
+        "titleLocal": "Şifreli Yedeklemeyi Etkinleştir",
+        "descriptionOidc": "Yedeklemelerinizi şifrelemek için kullanılacak şifreyi seçin. Güvenli bir yere kaydedin -- geri yükleme için ihtiyacınız olacak.",
+        "descriptionLocal": "Oturum açma şifrenizi onaylayın. Tüm yedeklemeleri (manuel ve otomatik) şifrelemek için kullanılacak.",
+        "placeholderOidc": "Yeni yedekleme şifresi (en az 12 karakter)",
+        "placeholderLocal": "Oturum açma şifreniz",
+        "savingButton": "Kaydediliyor...",
+        "confirmButton": "Onayla"
+      },
+      "toasts": {
+        "enabled": "Şifreli yedeklemeler etkinleştirildi",
+        "disabled": "Şifreli yedeklemeler devre dışı bırakıldı",
+        "enableFailed": "Şifreleme etkinleştirilemedi",
+        "disableFailed": "Şifreleme devre dışı bırakılamadı"
+      }
+    },
+    "export": {
+      "heading": "Yedekleme Oluştur",
+      "description": "Finansal verilerinizin tam yedeğini indirin. Bu, hesapları, işlemleri, kategorileri, alacaklıları, bütçeleri, yatırımları ve diğer tüm kullanıcı verilerini içerir.",
+      "downloadButton": "Yedeği İndir",
+      "creatingButton": "Yedekleme Oluşturuluyor...",
+      "exportPasswordModal": {
+        "title": "Yedeği Şifrele",
+        "description": "Bu yedeği şifrelemek için şifreyi girin. Geri yükleme için ihtiyacınız olacak.",
+        "placeholderOidc": "Yedekleme şifresi",
+        "placeholderLocal": "Oturum açma şifresi",
+        "encryptingButton": "Şifreleniyor...",
+        "downloadButton": "İndir"
+      },
+      "toasts": {
+        "success": "Yedekleme başarıyla indirildi",
+        "failed": "Yedekleme oluşturulamadı"
+      }
+    },
+    "restore": {
+      "heading": "Yedekten Geri Yükle",
+      "description": "Mevcut tüm verilerinizi daha önce dışa aktarılan bir yedekleme dosyasındaki verilerle değiştirin. Bu işlem mevcut verilerinizin üzerine kalıcı olarak yazar.",
+      "openButton": "Yedekten Geri Yükle...",
+      "warning": "Uyarı: Bu işlem mevcut tüm verilerinizi silecek ve yerine yedekleme içeriğini koyacaktır. Bu işlem geri alınamaz.",
+      "selectFileLabel": "Yedekleme dosyası seçin",
+      "encryptedBackupLabel": "Bu yedekleme şifrelenmiş. Oluşturulduğu yedekleme şifresini girin:",
+      "backupPasswordPlaceholder": "Yedekleme şifresi",
+      "oidcConfirmLabel": "Onaylamak için kimlik sağlayıcınızla yeniden kimlik doğrulayın:",
+      "passwordConfirmLabel": "Onaylamak için hesap şifrenizi girin:",
+      "passwordPlaceholder": "Şifrenizi girin",
+      "oidcRestoreButton": "Yeniden Kimlik Doğrula ve Geri Yükle",
+      "restoringButton": "Geri Yükleniyor...",
+      "confirmRestoreButton": "Geri Yüklemeyi Onayla",
+      "toasts": {
+        "pleaseSelectFile": "Lütfen bir yedekleme dosyası seçin",
+        "pleaseEnterPassword": "Onaylamak için lütfen şifrenizi girin",
+        "encryptedNeedsPassword": "Bu yedekleme şifrelenmiş. Oluşturulduğu şifreyi \"Yedekleme şifresi\" alanına girin ve tekrar deneyin.",
+        "failed": "Yedekleme geri yüklenemedi"
+      }
+    },
+    "restoreResult": {
+      "title": "Geri Yükleme Tamamlandı",
+      "description": "Verileriniz başarıyla geri yüklendi. Geri yüklenenler hakkında özet:",
+      "totalRecords": "Toplam kayıt",
+      "doneButton": "Tamam"
+    }
+  },
+  "sharedAccess": {
+    "description": "Temsilciler kendi kimlik bilgileriyle oturum açar ve şifrenizi asla görmez. Yalnızca onlara verdiğiniz hesapları ve bölümleri görürler.",
+    "addDelegateButton": "Temsilci ekle",
+    "loading": "Yükleniyor...",
+    "noDelegates": "Henüz temsilci yok.",
+    "statusLabel": "Durum: {status}",
+    "sectionsLabel": "Bölümler: {count}",
+    "accountsLabel": "Hesaplar: {count}",
+    "sharedDataLabel": "Paylaşılan veri: {count}",
+    "editAccessButton": "Erişimi düzenle",
+    "resetPasswordButton": "Şifreyi sıfırla",
+    "resetPasswordDisabledTitle": "Bu kişi kendi şifresini yönetiyor (kendi Monize hesabı var veya başka bir yerde temsilci erişimi var).",
+    "removeButton": "Kaldır",
+    "createModal": {
+      "title": "Temsilci ekle",
+      "description": "Başka bir kişiye hesaplarınıza kapsamlı erişim verin.",
+      "emailLabel": "E-posta",
+      "emailPlaceholder": "Temsilci e-postası",
+      "firstNameLabel": "Ad",
+      "firstNamePlaceholder": "Ad (isteğe bağlı)",
+      "lastNameLabel": "Soyad",
+      "lastNamePlaceholder": "Soyad (isteğe bağlı)",
+      "existingAccountNotice": "Bu kişinin zaten bir Monize girişi var. Kendi kimlik bilgilerini koruyacak ve yalnızca ek paylaşılan erişim verilecek — şifre veya davet gerekmez.",
+      "sendInviteLabel": "Şifre ayarlamak yerine e-posta daveti gönder",
+      "passwordLabel": "Şifre",
+      "passwordPlaceholder": "Şifre belirle",
+      "submitButton": "Temsilci ekle"
+    },
+    "revokeDialog": {
+      "title": "Temsilciyi kaldır",
+      "message": "Bu temsilciyi kaldır? Hesabınıza erişimini kaybeder. Başka paylaşılan erişimi yoksa ve bu e-postayı kendi Monize hesabı olarak talep etmediyse, sahibi tarafından yönetilen girişi de kaldırılır.",
+      "removingButton": "Kaldırılıyor...",
+      "removeButton": "Kaldır"
+    },
+    "tempPasswordModal": {
+      "title": "Geçici şifre",
+      "description": "Bunu temsilciyle güvenli bir şekilde paylaşın. İlk oturum açışlarında değiştirmeleri istenecektir. Bir daha gösterilmeyecektir.",
+      "copyButton": "Kopyala",
+      "copiedButton": "Kopyalandı",
+      "doneButton": "Tamam"
+    },
+    "toasts": {
+      "created": "Temsilci oluşturuldu",
+      "createdWithTempPassword": "Temsilci oluşturuldu. Geçici şifre: {password}",
+      "invited": "Davet e-postası gönderildi",
+      "removed": "Temsilci kaldırıldı"
+    },
+    "errors": {
+      "setPasswordOrInvite": "Şifre belirleyin veya e-posta daveti gönderin.",
+      "loadFailed": "Paylaşılan erişim yüklenemedi",
+      "createFailed": "Temsilci oluşturulamadı",
+      "revokeFailed": "Temsilci iptal edilemedi",
+      "resetPasswordFailed": "Şifre sıfırlanamadı",
+      "copyFailed": "Panoya kopyalanamadı"
+    }
+  },
+  "delegateAccessModal": {
+    "title": "Erişimi düzenle",
+    "tabs": {
+      "accounts": "Hesaplar",
+      "sections": "Bölümler",
+      "shared": "Paylaşılan veri"
+    },
+    "sections": {
+      "description": "Uygulama bölümlerine salt okunur erişim verin. Hesap kapsamlı veriler yine de hesap başına erişim gerektirir."
+    },
+    "accounts": {
+      "noAccounts": "Verilecek hesap yok.",
+      "grantAll": "Tümüne ver"
+    },
+    "shared": {
+      "description": "Alacaklılar, kategoriler ve etiketlerin OKUNMASI her zaman izin verilir. Bunlar oluşturma/düzenleme/silmeyi kontrol eder."
+    },
+    "saveButton": "Kaydet",
+    "toasts": {
+      "saved": "Erişim güncellendi",
+      "saveFailed": "Erişim güncellenemedi"
+    }
+  },
+  "nav": {
+    "sectionsAriaLabel": "Ayarlar bölümleri",
+    "profile": "Profil",
+    "preferences": "Tercihler",
+    "notifications": "Bildirimler",
+    "security": "Güvenlik",
+    "sharedAccess": "Paylaşılan Erişim",
+    "emergencyAccess": "Acil Durum Erişimi",
+    "apiAccess": "API Erişimi",
+    "aiSettings": "AI Ayarları",
+    "backupRestore": "Yedekleme ve Geri Yükleme",
+    "autoBackup": "Otomatik Yedekleme",
+    "help": "Yardım ve Destek",
+    "dangerZone": "Tehlikeli Alan"
+  },
+  "page": {
+    "title": "Ayarlar",
+    "demoRestricted": {
+      "heading": "Demo Modunda Kısıtlandı",
+      "body": "Profil düzenleme, şifre değiştirme, iki faktörlü kimlik doğrulama ve hesap silme demo modunda devre dışıdır."
+    },
+    "sharedAccessCard": {
+      "title": "Paylaşılan Erişim",
+      "description": "Başka bir kişiye belirli hesaplara ayrıntılı erişim verin."
+    },
+    "emergencyAccessCard": {
+      "title": "Acil Durum Erişimi",
+      "description": "Uzun süre oturum açmadığınızda hesabınıza otomatik olarak tam erişim alacak kişileri belirleyin."
+    },
+    "aiSettingsCard": {
+      "title": "AI Ayarları",
+      "description": "AI sağlayıcılarını yapılandırın, API anahtarlarını yönetin ve kullanım istatistiklerini görüntüleyin."
+    },
+    "delegateSecurityError": "Güvenlik ayarlarınız yüklenemiyor.",
+    "toasts": {
+      "securityLoadFailed": "Güvenlik ayarları yüklenemedi",
+      "loadFailed": "Ayarlar yüklenemedi"
+    }
+  },
+  "aiSettings": {
+    "backLink": "Ayarlara Geri Dön",
+    "title": "AI Ayarları",
+    "subtitle": "Akıllı finansal özellikler için AI sağlayıcılarını yapılandırın",
+    "demoRestricted": {
+      "heading": "Demo Modunda Kısıtlandı",
+      "body": "AI sağlayıcı yapılandırması demo modunda devre dışıdır."
+    },
+    "toasts": {
+      "loadFailed": "AI ayarları yüklenemedi",
+      "usageLoadFailed": "Kullanım verileri yüklenemedi"
+    }
+  },
+  "sharedAccessPage": {
+    "backLink": "Ayarlara Geri Dön",
+    "title": "Paylaşılan Erişim",
+    "subtitle": "Başka bir kişiye belirli hesaplara ayrıntılı erişim verin",
+    "demoRestricted": {
+      "heading": "Demo Modunda Kısıtlandı",
+      "body": "Temsilci yönetimi demo modunda devre dışıdır."
+    }
+  },
+  "emergencyAccess": {
+    "backLink": "Ayarlara Geri Dön",
+    "title": "Acil Durum Erişimi",
+    "subtitle": "Uzun süre oturum açmadığınızda hesabınıza otomatik olarak tam erişim alacak kişileri belirleyin",
+    "delegateRestricted": "Acil durum erişimi yalnızca hesap sahibi tarafından yapılandırılabilir.",
+    "demoRestricted": "Acil durum erişimi demo modunda devre dışıdır.",
+    "emailNotConfigured": {
+      "heading": "E-posta yapılandırılmamış",
+      "body": "Acil durum erişimi e-posta teslimatına bağlıdır. Yöneticinizden SMTP ortam değişkenlerini (SMTP_HOST, SMTP_USER, SMTP_PASSWORD) yapılandırmasını isteyin ve tekrar deneyin."
+    },
+    "alreadyGranted": {
+      "heading": "Acil durum erişimi zaten verildi",
+      "description": "belirlediğiniz kişiler hesabı devralmaları için sihirli bağlantılar aldı. Bu istenmediyse, bekleyen bağlantıları geçersiz kılmak için aşağıdan verilen durumu temizleyin.",
+      "clearButton": "Verilen durumu temizle"
+    },
+    "loadError": "Acil durum erişim ayarları yüklenemiyor.",
+    "settings": {
+      "heading": "Ayarlar",
+      "enableLabel": "Acil durum erişimini etkinleştir",
+      "grantAfterDaysLabel": "Erişim verilmeden önceki hareketsizlik günleri",
+      "reminderAfterDaysLabel": "Hatırlatma e-postalarından önceki hareketsizlik günleri",
+      "saveButton": "Ayarları kaydet",
+      "toasts": {
+        "saved": "Acil durum erişim ayarları kaydedildi",
+        "saveFailed": "Ayarlar kaydedilemedi"
+      }
+    },
+    "message": {
+      "heading": "Kişilerinize mesaj",
+      "description": "Depolamada şifreli. Görüntüleme veya düzenleme için kimliğinizi yeniden doğrulamanız gerekir.",
+      "unlockTimer": "{mins}:{secs} için kilidi açıldı",
+      "messageSet": "Mesaj ayarlandı",
+      "charCount": "({count} karakter",
+      "updatedAt": ", {timestamp} güncellendi",
+      "noMessage": "Mesaj ayarlanmadı",
+      "revealButton": "Mesajı göster",
+      "editButton": "Mesajı düzenle",
+      "addButton": "Mesaj ekle",
+      "emptyMessage": "(boş)",
+      "lockNowButton": "Şimdi kilitle",
+      "editMessageButton": "Düzenle",
+      "messagePlaceholder": "Notlar, talimatlar, önemli belgelerin yerleri...",
+      "maxCharsNote": "Maksimum 4000 karakter. Depolamada şifreli olarak saklanır.",
+      "cancelButton": "İptal",
+      "saveButton": "Mesajı kaydet",
+      "toasts": {
+        "saved": "Mesaj kaydedildi",
+        "verifyAgain": "Doğrulama süresi doldu -- kaydetmek için lütfen tekrar doğrulayın",
+        "loadFailed": "Mesaj yüklenemedi",
+        "saveFailed": "Mesaj kaydedilemedi"
+      }
+    },
+    "contacts": {
+      "heading": "Acil Durum Kişileri",
+      "description": "Erişim verildiğinde her kişi e-postayla bir sihirli bağlantı alır. Yeni şifre belirlemek ve hesabı devralmak için kullanırlar. İlk talep eden kazanır.",
+      "addButton": "Kişi ekle",
+      "noContacts": "Henüz kişi yok.",
+      "editButton": "Düzenle",
+      "removeButton": "Kaldır",
+      "contactModal": {
+        "addTitle": "Acil durum kişisi ekle",
+        "editTitle": "Kişiyi düzenle",
+        "firstNameLabel": "Ad",
+        "emailLabel": "E-posta",
+        "addButton": "Kişi ekle",
+        "saveButton": "Değişiklikleri kaydet"
+      },
+      "removeDialog": {
+        "title": "Kişiyi kaldır",
+        "message": "Bu kişi artık acil durum erişimi almayacak. Daha sonra tekrar ekleyebilirsiniz.",
+        "removingButton": "Kaldırılıyor...",
+        "removeButton": "Kaldır"
+      },
+      "toasts": {
+        "added": "Kişi eklendi",
+        "updated": "Kişi güncellendi",
+        "removed": "Kişi kaldırıldı",
+        "saveFailed": "Kişi kaydedilemedi",
+        "removeFailed": "Kişi kaldırılamadı"
+      }
+    },
+    "status": {
+      "heading": "Durum",
+      "lastAccess": "Son erişim: ",
+      "lastReminderSent": "Son hatırlatma gönderildi: ",
+      "grantStatus": "Verme durumu: ",
+      "unknown": "bilinmiyor",
+      "never": "hiçbir zaman",
+      "daysAgo": "{count} gün önce",
+      "grantedOn": "{timestamp} tarihinde verildi",
+      "notYetGranted": "henüz verilmedi",
+      "timerNote": "Zamanlayıcı, uygulamayı her kullandığınızda otomatik olarak sıfırlanır — oturum açma, sayfa görüntüleme, işlem kaydetme, herhangi bir kimlik doğrulamalı eylem."
+    },
+    "resetConfirm": {
+      "title": "Verilen durumu temizle",
+      "message": "Bu işlem bekleyen sihirli bağlantıları geçersiz kılar, hatırlatma kadansının yeniden başlamasına izin verir ve başka bir hareketsizlik döneminden sonra verme zincirinin tekrar tetiklenmesine izin verir.",
+      "clearingButton": "Temizleniyor...",
+      "clearButton": "Temizle",
+      "toasts": {
+        "cleared": "Verilen durum temizlendi",
+        "resetFailed": "Verilen durum sıfırlanamadı"
+      }
+    },
+    "stepUp": {
+      "reason": "Acil durum erişim mesajınızı görüntülemek veya düzenlemek için kimliğinizi yeniden doğrulayın."
+    },
+    "toasts": {
+      "loadFailed": "Acil durum erişimi yüklenemedi",
+      "reauthFailed": "Yeniden kimlik doğrulama onaylanamadı"
+    }
+  },
+  "aiProviders": {
+    "heading": "AI Sağlayıcıları",
+    "addButton": "Sağlayıcı Ekle",
+    "encryptionWarning": "AI_ENCRYPTION_KEY yapılandırılmamış. Ollama'yı (yerel, API anahtarı gerekmez) kullanabilirsiniz, ancak bulut sağlayıcıları API anahtarlarını güvenle depolamak için şifreleme gerektirir.",
+    "systemDefault": {
+      "heading": "Sistem Varsayılan AI Sağlayıcısı Mevcut",
+      "description": "Yöneticiniz tarafından merkezi bir AI sağlayıcısı yapılandırıldı",
+      "usedAutomatically": "Kişisel sağlayıcı yapılandırmadığınızdan otomatik olarak kullanılacak.",
+      "personalPriority": "Kişisel sağlayıcılarınız sistem varsayılanına göre önceliklidir."
+    },
+    "noProviders": {
+      "withSystemDefault": "Kişisel AI sağlayıcısı yapılandırılmadı. Sistem varsayılan sağlayıcısı kullanılacak.",
+      "withoutSystemDefault": "AI sağlayıcısı yapılandırılmadı. AI özelliklerini etkinleştirmek için sağlayıcı ekleyin."
+    },
+    "providerCard": {
+      "activeBadge": "Aktif",
+      "inactiveBadge": "Pasif",
+      "priorityLabel": "Öncelik: {n}",
+      "modelLabel": "Model: {model}",
+      "keyLabel": "Anahtar: {key}",
+      "urlLabel": "URL: {url}",
+      "costLabel": "Maliyet/1M ({currency}): {input} giriş / {output} çıkış",
+      "disableButton": "Devre Dışı Bırak",
+      "enableButton": "Etkinleştir",
+      "editButton": "Düzenle",
+      "deleteButton": "Sil"
+    },
+    "configForm": {
+      "addTitle": "AI Sağlayıcısı Ekle",
+      "editTitle": "Sağlayıcıyı Düzenle",
+      "providerLabel": "Sağlayıcı",
+      "displayNameLabel": "Görünen Ad",
+      "modelLabel": "Model",
+      "testButton": "Test Et",
+      "testingButton": "Test ediliyor...",
+      "ollamaCloudNote": "Model adları -cloud sonekini içermelidir (örn. gpt-oss:20b-cloud).",
+      "apiKeyLabel": "API Anahtarı",
+      "baseUrlLabel": "Temel URL",
+      "priorityLabel": "Öncelik",
+      "priorityHelp": "Düşük sayı = yüksek öncelik. Yedek sıralama için kullanılır.",
+      "costRatesHeading": "Maliyet oranları (isteğe bağlı)",
+      "costRatesHelp": "Kullanım panosunda tahmini maliyet görmek için sağlayıcınızın 1.000.000 token başına yayımlanmış oranlarını girin. Maliyet tahminlerini atlamak için boş bırakın.",
+      "inputCostLabel": "Giriş maliyeti / 1M token",
+      "outputCostLabel": "Çıkış maliyeti / 1M token",
+      "rateCurrencyLabel": "Oran Para Birimi",
+      "rateCurrencyHelp": "Bu, ana para biriminizden farklıysa, Kullanım panosu kaydedilmiş döviz kurlarınızı kullanarak maliyetleri dönüştürebilir.",
+      "saveButton": "Değişiklikleri Kaydet",
+      "addProviderButton": "Sağlayıcı Ekle",
+      "modelPlaceholder": "Model adı girin",
+      "testModelAria": "Modeli test et",
+      "apiKeyPlaceholder": "API anahtarı girin",
+      "saveFailed": "Yapılandırma kaydedilemedi",
+      "inputCostPlaceholder": "örn., 3.00",
+      "outputCostPlaceholder": "örn., 15.00",
+      "toasts": {
+        "notReachable": "Sağlayıcıya ulaşılamadı.",
+        "modelUnavailable": "\"{model}\" modeli bu sağlayıcıda mevcut değil.",
+        "modelReady": "\"{model}\" modeli hazır.",
+        "success": "Bağlantı başarılı.",
+        "testFailed": "Model testi başarısız"
+      },
+      "costCurrencies": {
+        "USD": "USD - ABD Doları",
+        "EUR": "EUR - Euro",
+        "GBP": "GBP - İngiliz Sterlini",
+        "CAD": "CAD - Kanada Doları",
+        "AUD": "AUD - Avustralya Doları",
+        "JPY": "JPY - Japon Yeni",
+        "CNY": "CNY - Çin Yuanı",
+        "INR": "INR - Hindistan Rupisi"
+      },
+      "validation": {
+        "displayNameMax": "Görünen ad 100 karakter veya daha az olmalıdır",
+        "mustBeNumber": "Sayı olmalıdır",
+        "currencyCode": "3 harfli para birimi kodu olmalıdır"
+      }
+    },
+    "testButton": {
+      "testLabel": "Test Et",
+      "connectionFailed": "Bağlantı başarısız",
+      "modelUnavailable": "\"{model}\" modeli bu sağlayıcıda mevcut değil.",
+      "successWithModel": "Bağlantı başarılı. \"{model}\" modeli hazır.",
+      "success": "Bağlantı başarılı",
+      "testFailed": "Bağlantı testi başarısız"
+    },
+    "toasts": {
+      "added": "Sağlayıcı eklendi",
+      "updated": "Sağlayıcı güncellendi",
+      "removed": "Sağlayıcı kaldırıldı",
+      "modelReady": "\"{model}\" modeli hazır.",
+      "notReachable": "Kaydedildi, ancak sağlayıcıya ulaşılamadı. URL/API anahtarını kontrol edin.",
+      "modelUnavailable": "Kaydedildi, ancak \"{model}\" modeli bu sağlayıcıda mevcut değil.",
+      "deleteFailed": "Sağlayıcı silinemedi",
+      "updateFailed": "Sağlayıcı güncellenemedi"
+    }
+  },
+  "usage": {
+    "heading": "Kullanım",
+    "totalRequests": "Toplam İstek",
+    "inputTokens": "Giriş Token'ları",
+    "outputTokens": "Çıkış Token'ları",
+    "estCost": "Tahmini Maliyet",
+    "setRatesToEnable": "Etkinleştirmek için sağlayıcıda oranları ayarlayın",
+    "inHomeCurrency": "{currency} cinsinden",
+    "inProviderCurrency": "Sağlayıcı para birimi cinsinden",
+    "byProvider": {
+      "heading": "Sağlayıcıya Göre",
+      "provider": "Sağlayıcı",
+      "requests": "İstekler",
+      "inputTokens": "Giriş Token'ları",
+      "outputTokens": "Çıkış Token'ları",
+      "estCost": "Tahmini Maliyet"
+    },
+    "recentActivity": {
+      "heading": "Son Aktivite",
+      "date": "Tarih",
+      "provider": "Sağlayıcı",
+      "feature": "Özellik",
+      "tokens": "Token'lar",
+      "duration": "Süre",
+      "estCost": "Tahmini Maliyet"
+    },
+    "noUsage": "Henüz kullanım verisi yok. AI özelliklerini kullanmaya başladığınızda kullanım burada görünecektir.",
+    "periods": {
+      "d7": "7 gün",
+      "d30": "30 gün",
+      "d90": "90 gün",
+      "all": "Tüm zamanlar"
+    },
+    "estCostTooltip": "Her sağlayıcıda yapılandırdığınız maliyet oranları kullanılarak tahmin edildi. Eşleşen oran ayarlanmamış aktiviteler hariçtir."
+  }
+}

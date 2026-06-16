@@ -1,0 +1,165 @@
+{
+  "test": {
+    "subject": "Monize テストメール",
+    "heading": "Monize テストメール",
+    "greeting": "{{ name }} 様、",
+    "body": "これはMonizeからのテストメールです。このメールが届いた場合、メール通知が正常に機能しています。"
+  },
+  "billReminder": {
+    "subjectOne": "Monize: 1件の支払いにご注意ください",
+    "subjectMany": "Monize: {{ count }} 件の支払いにご注意ください",
+    "heading": "支払い予定リマインダー",
+    "greeting": "{{ name }} 様、",
+    "introOne": "1件の支払いが近づいています：",
+    "introMany": "{{ count }} 件の支払いが近づいています：",
+    "colPayee": "支払先",
+    "colDueDate": "支払期日",
+    "colType": "種類",
+    "colAmount": "金額",
+    "typeIncome": "収入",
+    "typeExpense": "支出",
+    "button": "支払い予定を確認する"
+  },
+  "mortgageReminder": {
+    "subject": "Monize: 1件の住宅ローン更新が近づいています",
+    "subjectPlural": "Monize: {{ count }} 件の住宅ローン更新が近づいています",
+    "heading": "住宅ローン更新リマインダー",
+    "greeting": "{{ name }} 様、",
+    "introOne": "1件の住宅ローンの期間更新が近づいています。期間終了前に貸し手に更新オプションについてご相談ください：",
+    "introMany": "{{ count }} 件の住宅ローンの期間更新が近づいています。期間終了前に貸し手に更新オプションについてご相談ください：",
+    "colMortgage": "住宅ローン",
+    "colTermEndDate": "期間終了日",
+    "colTimeRemaining": "残り期間",
+    "daysRemainingOne": "1日",
+    "daysRemainingMany": "{{ count }} 日",
+    "button": "口座を確認する"
+  },
+  "severity": {
+    "critical": "緊急",
+    "warning": "警告",
+    "success": "お知らせ",
+    "info": "情報"
+  },
+  "budgetAlertImmediate": {
+    "subject": "Monize: アラート - {{ title }}",
+    "subjectPlural": "Monize: {{ count }} 件のアラートにご注意ください",
+    "heading": "アラート",
+    "greeting": "{{ name }} 様、",
+    "intro": "予算に注意が必要です：",
+    "colSeverity": "重大度",
+    "colAlert": "アラート",
+    "colDetails": "詳細",
+    "button": "予算を確認する"
+  },
+  "budgetWeeklyDigest": {
+    "subject": "Monize: 週次予算サマリー",
+    "heading": "週次予算サマリー",
+    "greeting": "{{ name }} 様、",
+    "intro": "以下の週次予算サマリーです：<strong>{{ budgets }}</strong>",
+    "criticalOne": "緊急",
+    "criticalMany": "緊急",
+    "warningOne": "警告",
+    "warningMany": "警告",
+    "positiveOne": "良好",
+    "positiveMany": "良好",
+    "thisWeek": "今週：",
+    "noAlerts": "アラートなし",
+    "totalAlerts": "アラート合計：{{ count }}",
+    "topAlertsHeading": "主なアラート",
+    "andMore": "...他 {{ count }} 件",
+    "button": "予算ダッシュボードを確認する"
+  },
+  "budgetMonthlySummary": {
+    "subject": "Monize: 月次予算サマリー - {{ period }}",
+    "subjectPlural": "Monize: {{ count }} 件の予算の月次サマリー",
+    "heading": "月次予算サマリー",
+    "greeting": "{{ name }} 様、",
+    "intro": "先月の期間が終了した月次予算サマリーです：",
+    "overBudget": "予算超過",
+    "healthScore": "健全性スコア：",
+    "labelBudgeted": "予算額",
+    "labelSpent": "支出額",
+    "labelRemaining": "残額",
+    "percentUsed": "{{ percent }}% 使用済み",
+    "topCategories": "主なカテゴリ",
+    "button": "予算ダッシュボードを確認する"
+  },
+  "oidcLink": {
+    "subject": "Monize: SSOアカウントのリンクを確認してください",
+    "heading": "SSOアカウントをリンクする",
+    "greeting": "{{ name }} 様、",
+    "intro": "SSOを通じてサインインしようとした際に、既存のMonizeアカウントと一致するメールアドレスが見つかりました。SSOのIDをこのアカウントにリンクするには、以下のボタンをクリックしてください：",
+    "button": "アカウントのリンクを確認する",
+    "disclaimer": "このリクエストを開始していない場合は、このメールを無視してください。リンクは1時間後に有効期限が切れます。"
+  },
+  "accountLocked": {
+    "subject": "アカウントが一時的にロックされました",
+    "heading": "アカウントが一時的にロックされました",
+    "greeting": "{{ name }} 様、",
+    "body1": "ログイン試行が複数回失敗したため、Monizeアカウントが一時的にロックされました。これはアカウントを保護するためのセキュリティ対策です。",
+    "body2": "ロックは自動的に解除されます。ログイン試行に心当たりがない場合は、直ちにパスワードをリセットすることをお勧めします。"
+  },
+  "passwordReset": {
+    "subject": "Monize パスワードリセット",
+    "heading": "パスワードリセットのリクエスト",
+    "greeting": "{{ name }} 様、",
+    "intro": "パスワードをリセットするリクエストを受け付けました。以下のボタンをクリックして新しいパスワードを設定してください：",
+    "button": "パスワードをリセットする",
+    "disclaimer": "このリンクは1時間後に有効期限が切れます。パスワードリセットをリクエストしていない場合は、このメールを無視してください。"
+  },
+  "emailVerification": {
+    "subject": "Monizeのメールアドレスを確認してください",
+    "heading": "メールアドレスを確認してください",
+    "greeting": "{{ name }} 様、",
+    "intro": "Monizeにご登録いただきありがとうございます。メールアドレスを確認してアカウントを有効化し、サインインしてください：",
+    "button": "メールを確認する",
+    "disclaimer": "このリンクは24時間後に有効期限が切れます。Monizeアカウントを作成していない場合は、このメールを無視してください。"
+  },
+  "accountInvite": {
+    "subject": "Monizeアカウントの準備ができました",
+    "heading": "Monizeアカウントの準備ができました",
+    "greeting": "{{ name }} 様、",
+    "intro": "管理者がMonizeアカウントを作成しました。以下のボタンをクリックしてパスワードを設定し、サインインしてください：",
+    "button": "パスワードを設定する",
+    "disclaimer": "このリンクは24時間後に有効期限が切れます。ご不明な点がある場合は、このメールを無視してください。"
+  },
+  "delegateInvite": {
+    "subject": "Monizeに招待されました",
+    "heading": "Monizeに招待されました",
+    "greeting": "{{ name }} 様、",
+    "intro": "{{ owner }} があなたをMonizeアカウントの代理人として招待しました。以下のボタンをクリックしてパスワードを設定し、始めてください：",
+    "button": "パスワードを設定する",
+    "disclaimer": "このリンクは24時間後に有効期限が切れます。この招待に心当たりがない場合は、このメールを無視してください。"
+  },
+  "emergencyAccessReminder": {
+    "subjectOne": "Monize: あなたのアカウントは1日間非アクティブです",
+    "subjectMany": "Monize: あなたのアカウントは {{ daysSinceLogin }} 日間非アクティブです",
+    "heading": "Monize 緊急アクセスリマインダー",
+    "greeting": "{{ name }} 様、",
+    "grantPhraseToday": "本日",
+    "grantPhraseFutureOne": "1日後",
+    "grantPhraseFutureMany": "{{ count }} 日後",
+    "bodyOne": "Monizeに<strong>1日間</strong>サインインしていません。このまま非アクティブの状態が続くと、指定した緊急連絡先に{{ grantPhrase }}アカウントへのフルアクセスが付与されます。",
+    "bodyMany": "Monizeに<strong>{{ daysSinceLogin }} 日間</strong>サインインしていません。このまま非アクティブの状態が続くと、指定した緊急連絡先に{{ grantPhrase }}アカウントへのフルアクセスが付与されます。",
+    "contactsLabel": "指定した緊急連絡先：",
+    "button": "今すぐサインインする",
+    "footer": "サインインするとタイマーがリセットされます。この機能が不要な場合は、設定 → 緊急アクセスから無効にできます。"
+  },
+  "emergencyAccessGrant": {
+    "subject": "{{ owner }} のMonizeアカウントへの緊急アクセスが付与されました",
+    "heading": "緊急アクセスが付与されました",
+    "greeting": "{{ name }} 様、",
+    "body": "<strong>{{ owner }}</strong> があなたをMonizeアカウントの緊急連絡先として指定していました。彼らは長期間サインインしていないため、アカウントを引き継ぐためのフルアクセスが付与されました。",
+    "claimIntro": "アクセスを取得するには、以下のリンクをクリックして新しいパスワードを設定してください。アカウントホルダーとしてサインインされます。",
+    "button": "緊急アクセスを取得する",
+    "expiry": "このリンクは<strong>{{ expiry }}</strong>まで有効で、一度のみ使用できます。複数の連絡先がこのメールを受け取った場合、最初に取得した人がアカウントを引き継ぎます。"
+  },
+  "emergencyAccessGrantRevoked": {
+    "subject": "Monize: 不在中に緊急アクセスが付与されました",
+    "heading": "不在中に緊急アクセスが付与されました",
+    "greeting": "{{ name }} 様、",
+    "body1": "アカウントが非アクティブだったため、指定した緊急連絡先にアカウントを引き継ぐリンクが送信されました。あなたが再度サインインしたため、<strong>それらのリンクは無効化されました</strong>。セーフガードは再設定されました。",
+    "body2": "これが予期されていた場合は、何もする必要はありません。心当たりがない場合は、サインインアクティビティと緊急アクセス設定を確認してください。",
+    "button": "緊急アクセスを確認する"
+  }
+}

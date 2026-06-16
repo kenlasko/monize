@@ -12,11 +12,21 @@ import deCommon from '@/i18n/messages/de/common.json';
 import enCommon from '@/i18n/messages/en/common.json';
 import esCommon from '@/i18n/messages/es/common.json';
 import frCommon from '@/i18n/messages/fr/common.json';
+import hiCommon from '@/i18n/messages/hi/common.json';
+import idCommon from '@/i18n/messages/id/common.json';
 import itCommon from '@/i18n/messages/it/common.json';
+import jaCommon from '@/i18n/messages/ja/common.json';
+import koCommon from '@/i18n/messages/ko/common.json';
 import nlCommon from '@/i18n/messages/nl/common.json';
 import plCommon from '@/i18n/messages/pl/common.json';
 import ptCommon from '@/i18n/messages/pt/common.json';
 import ptBrCommon from '@/i18n/messages/pt-BR/common.json';
+import ruCommon from '@/i18n/messages/ru/common.json';
+import trCommon from '@/i18n/messages/tr/common.json';
+import ukCommon from '@/i18n/messages/uk/common.json';
+import viCommon from '@/i18n/messages/vi/common.json';
+import zhCnCommon from '@/i18n/messages/zh-CN/common.json';
+import zhTwCommon from '@/i18n/messages/zh-TW/common.json';
 
 // global-error replaces the root layout, so the NextIntlClientProvider that
 // normally supplies translations is gone. We bundle the `common` catalogs
@@ -26,11 +36,21 @@ const COMMON_MESSAGES: Record<string, typeof enCommon> = {
   en: enCommon,
   es: esCommon,
   fr: frCommon,
+  hi: hiCommon,
+  id: idCommon,
   it: itCommon,
+  ja: jaCommon,
+  ko: koCommon,
   nl: nlCommon,
   pl: plCommon,
   pt: ptCommon,
   'pt-BR': ptBrCommon,
+  ru: ruCommon,
+  tr: trCommon,
+  uk: ukCommon,
+  vi: viCommon,
+  'zh-CN': zhCnCommon,
+  'zh-TW': zhTwCommon,
 };
 
 const subscribeNoop = () => () => {};

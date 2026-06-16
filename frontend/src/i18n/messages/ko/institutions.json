@@ -1,0 +1,91 @@
+{
+  "page": {
+    "title": "금융 기관",
+    "subtitle": "계정이 속한 은행 및 증권사",
+    "newInstitution": "새 기관",
+    "loading": "기관을 불러오는 중...",
+    "searchPlaceholder": "기관 검색...",
+    "modalTitleNew": "새 기관",
+    "modalTitleEdit": "기관 편집",
+    "summary": {
+      "total": "전체 기관",
+      "withLogo": "로고 있음",
+      "linkedAccounts": "연결된 계정"
+    },
+    "toasts": {
+      "loadFailed": "기관을 불러오지 못했습니다",
+      "created": "기관이 생성되었습니다",
+      "updated": "기관이 업데이트되었습니다",
+      "createFailed": "기관을 생성하지 못했습니다",
+      "updateFailed": "기관을 업데이트하지 못했습니다"
+    }
+  },
+  "list": {
+    "empty": "아직 기관이 없습니다. 기관을 생성하여 계정을 그룹화하세요.",
+    "columns": {
+      "name": "이름",
+      "website": "웹사이트",
+      "country": "국가",
+      "accounts": "계정",
+      "actions": "작업"
+    },
+    "accountCount": "{count, plural, =0 {계정 없음} one {# 계정} other {# 계정}}",
+    "density": {
+      "title": "행 밀도 전환",
+      "normal": "보통",
+      "compact": "컴팩트",
+      "dense": "조밀"
+    },
+    "statusFilter": {
+      "all": "전체",
+      "active": "활성",
+      "closed": "닫힘"
+    },
+    "actions": {
+      "manageAccounts": "계정"
+    },
+    "deleteTitle": "기관 삭제",
+    "deleteMessage": "\"{name}\"을 삭제하시겠습니까? 이 기관에 연결된 계정은 연결이 해제되지만 삭제되지는 않습니다.",
+    "deleting": "삭제 중...",
+    "deleted": "\"{name}\"이 삭제되었습니다",
+    "deleteFailed": "기관을 삭제하지 못했습니다"
+  },
+  "form": {
+    "nameLabel": "이름",
+    "websiteLabel": "웹사이트",
+    "websitePlaceholder": "예: td.com",
+    "countryLabel": "국가 (선택사항)",
+    "countryPlaceholder": "2자리 코드, 예: CA",
+    "logoHint": "브랜드 로고는 웹사이트에서 자동으로 가져옵니다.",
+    "submitCreate": "기관 생성",
+    "submitUpdate": "변경 사항 저장"
+  },
+  "validation": {
+    "nameRequired": "이름은 필수입니다",
+    "websiteRequired": "웹사이트는 필수입니다",
+    "websiteInvalid": "유효한 웹사이트를 입력하세요 (예: td.com)",
+    "countryInvalid": "2자리 국가 코드를 사용하세요"
+  },
+  "accountsManager": {
+    "title": "{name}의 계정",
+    "addLabel": "계정 추가",
+    "addPlaceholder": "추가할 계정 선택...",
+    "noneToAdd": "모든 계정이 이미 기관에 배정되었습니다.",
+    "loading": "계정을 불러오는 중...",
+    "empty": "이 기관에 배정된 계정이 아직 없습니다.",
+    "noneMatch": "선택한 필터와 일치하는 계정이 없습니다.",
+    "filter": {
+      "all": "전체",
+      "active": "활성",
+      "closed": "닫힘"
+    },
+    "remove": "제거",
+    "viewTransactions": "이 계정의 거래 보기",
+    "added": "계정이 추가되었습니다",
+    "removed": "계정이 제거되었습니다",
+    "addFailed": "계정을 추가하지 못했습니다",
+    "removeFailed": "계정을 제거하지 못했습니다",
+    "loadFailed": "계정을 불러오지 못했습니다",
+    "done": "완료"
+  }
+}

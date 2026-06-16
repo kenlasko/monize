@@ -1,0 +1,304 @@
+{
+  "priceRefresh": {
+    "noneToUpdate": "無證券需要更新",
+    "updated": "{count, plural, one {# 個證券價格已更新} other {# 個證券價格已更新}}",
+    "partialFailure": "價格已更新：{updated} 成功，{failed} 失敗{symbols}",
+    "failed": "重新整理價格失敗"
+  },
+  "page": {
+    "title": "證券",
+    "subtitle": "管理您的股票、ETF、共同基金及其他證券",
+    "newSecurity": "+ 新增證券",
+    "searchPlaceholder": "依代號或名稱搜尋...",
+    "statusAll": "全部（{count}）",
+    "statusActive": "活躍（{count}）",
+    "statusInactive": "非活躍（{count}）",
+    "modalTitleEdit": "編輯證券",
+    "modalTitleNew": "新增證券",
+    "loading": "載入證券中...",
+    "count": "{count, plural, one {# 個證券} other {# 個證券}}",
+    "toasts": {
+      "loadFailed": "載入證券失敗",
+      "updated": "證券更新成功",
+      "created": "證券建立成功",
+      "deactivated": "證券已停用",
+      "activated": "證券已啟用",
+      "statusFailed": "更新證券狀態失敗",
+      "deleted": "證券「{symbol}」已刪除",
+      "deleteFailed": "刪除證券失敗",
+      "favouriteFailed": "更新最愛失敗",
+      "updateFailed": "更新證券失敗",
+      "createFailed": "建立證券失敗"
+    },
+    "deleteConfirm": {
+      "title": "刪除證券",
+      "message": "確定要刪除「{symbol}」嗎？所有價格歷史也將一併刪除。此操作無法復原。",
+      "confirmLabel": "刪除",
+      "cancelLabel": "取消"
+    }
+  },
+  "summary": {
+    "totalSecurities": "證券總數",
+    "types": "類型",
+    "exchanges": "交易所",
+    "currencies": "貨幣"
+  },
+  "list": {
+    "columns": {
+      "symbol": "代號",
+      "name": "名稱",
+      "type": "類型",
+      "shares": "股數",
+      "exchange": "交易所",
+      "currency": "貨幣",
+      "provider": "提供者",
+      "source": "來源",
+      "status": "狀態",
+      "actions": "動作",
+      "favourite": "最愛"
+    },
+    "density": {
+      "normal": "一般",
+      "compact": "緊密",
+      "dense": "密集",
+      "toggle": "切換列間距"
+    },
+    "statusBadge": {
+      "active": "活躍",
+      "activeShort": "活",
+      "inactive": "非活躍",
+      "inactiveShort": "非"
+    },
+    "providerTitle": {
+      "override": "個別證券的提供者覆寫設定",
+      "inherited": "繼承自您的預設報價提供者偏好設定"
+    },
+    "columnTitles": {
+      "shares": "所有科目中目前持有的股數",
+      "source": "最近一次價格的來源"
+    },
+    "actions": {
+      "history": "歷史",
+      "prices": "價格",
+      "edit": "編輯",
+      "deactivate": "停用",
+      "activate": "啟用",
+      "delete": "刪除"
+    },
+    "favouriteButton": {
+      "add": "加入最愛",
+      "remove": "從最愛移除"
+    },
+    "empty": {
+      "title": "無證券",
+      "subtitle": "請新增您的第一個證券以開始使用。"
+    },
+    "contextMenu": {
+      "transactionHistory": "交易記錄",
+      "viewPrices": "查看價格",
+      "editSecurity": "編輯證券",
+      "deactivate": "停用",
+      "activate": "啟用",
+      "delete": "刪除"
+    }
+  },
+  "typeLabels": {
+    "STOCK": "股票",
+    "ETF": "ETF",
+    "MUTUAL_FUND": "共同基金",
+    "BOND": "債券",
+    "OPTION": "選擇權",
+    "CRYPTO": "加密貨幣",
+    "OTHER": "其他",
+    "STOCK_short": "股票",
+    "ETF_short": "ETF",
+    "MUTUAL_FUND_short": "基金",
+    "BOND_short": "債券",
+    "OPTION_short": "選擇",
+    "CRYPTO_short": "加密",
+    "OTHER_short": "其他"
+  },
+  "form": {
+    "symbolLabel": "代號",
+    "nameLabel": "名稱",
+    "typeLabel": "類型",
+    "exchangeLabel": "交易所",
+    "currencyLabel": "貨幣",
+    "quoteProviderLabel": "報價提供者",
+    "msnIdLabel": "MSN 金融商品 ID（進階）",
+    "lookupProviderAriaLabel": "查找提供者",
+    "lookupButton": "查找",
+    "revertButton": "還原",
+    "clearButton": "清除",
+    "revertTitle": "還原為原始值",
+    "clearTitle": "清除所有欄位",
+    "favouriteLabel": "最愛",
+    "addToFavourites": "加入最愛",
+    "removeFromFavourites": "從最愛移除",
+    "submitCreate": "建立證券",
+    "submitUpdate": "更新證券",
+    "toasts": {
+      "lookupTooShort": "請輸入代號或名稱（至少 2 個字元）進行查找",
+      "notFound": "找不到「{query}」的證券",
+      "found": "已找到：{details}",
+      "lookupFailed": "查找失敗 - 請再試一次"
+    },
+    "msnNotConfigured": "MSN 已被選為預設報價提供者，但伺服器上未設定 MSN_API_KEY。在管理員設定環境變數並重啟後端之前，MSN 報價將無法使用。",
+    "providers": {
+      "auto": "自動",
+      "yahoo": "Yahoo",
+      "msn": "MSN"
+    },
+    "types": {
+      "select": "選擇類型...",
+      "stock": "股票",
+      "etf": "ETF",
+      "mutualFund": "共同基金",
+      "bond": "債券",
+      "option": "選擇權",
+      "crypto": "加密貨幣",
+      "other": "其他"
+    },
+    "quoteProviderUseDefault": "使用預設（{provider}）",
+    "symbolPlaceholder": "例如：AAPL、XEQT、BTC",
+    "namePlaceholder": "例如：Apple Inc.、iShares Core Equity ETF",
+    "exchangeSearchPlaceholder": "搜尋交易所...",
+    "exchangePlaceholder": "從股票代碼自動解析；如有誤才需覆寫"
+  },
+  "priceForm": {
+    "dateLabel": "日期",
+    "closePriceLabel": "收盤價",
+    "openPriceLabel": "開盤價",
+    "highPriceLabel": "最高價",
+    "lowPriceLabel": "最低價",
+    "volumeLabel": "成交量",
+    "optionalPlaceholder": "選填",
+    "submitCreate": "新增價格",
+    "submitUpdate": "更新價格"
+  },
+  "priceHistory": {
+    "title": "{symbol} - 價格歷史",
+    "forceUpdateButton": "強制更新價格",
+    "forceUpdateTitle": "重新取得您持有此證券整個期間的歷史價格",
+    "addPriceButton": "+ 新增價格",
+    "addPriceSection": "新增價格",
+    "editPriceSection": "編輯價格",
+    "loading": "載入價格中...",
+    "empty": "無可用的價格歷史",
+    "columns": {
+      "date": "日期",
+      "close": "收盤",
+      "open": "開盤",
+      "high": "最高",
+      "low": "最低",
+      "volume": "成交量",
+      "source": "來源",
+      "actions": "動作"
+    },
+    "toasts": {
+      "added": "價格已新增",
+      "updated": "價格已更新",
+      "deleted": "價格已刪除",
+      "loadFailed": "載入價格歷史失敗",
+      "addFailed": "新增價格失敗",
+      "updateFailed": "更新價格失敗",
+      "deleteFailed": "刪除價格失敗",
+      "updatedCount": "{count, plural, one {已更新 {symbol} 的 # 筆價格} other {已更新 {symbol} 的 # 筆價格}}",
+      "noPricesFound": "找不到 {symbol} 的價格",
+      "updatePricesFailed": "更新 {symbol} 的價格失敗",
+      "updateFetchFailed": "更新價格失敗"
+    },
+    "closeButton": "關閉",
+    "deleteConfirm": {
+      "title": "刪除價格",
+      "confirmLabel": "刪除"
+    }
+  },
+  "transactionHistory": {
+    "inactiveBadge": "非活躍",
+    "currentShares": "目前股數",
+    "accountLabel": "科目",
+    "allAccounts": "所有科目（{shares}）",
+    "accountClosed": "{name}（已關閉）",
+    "addTransaction": "+ 新增交易",
+    "loading": "載入交易中...",
+    "emptyAll": "此證券無交易記錄。",
+    "emptyAccount": "此科目中此證券無交易記錄。",
+    "editTransactionTitle": "編輯交易",
+    "columns": {
+      "date": "日期",
+      "account": "科目",
+      "action": "操作",
+      "quantity": "數量",
+      "runningTotal": "累計總計",
+      "price": "價格",
+      "amount": "金額",
+      "actionsLabel": "動作"
+    },
+    "actionLabels": {
+      "BUY": "買入",
+      "SELL": "賣出",
+      "DIVIDEND": "股利",
+      "INTEREST": "利息",
+      "CAPITAL_GAIN": "資本利得",
+      "SPLIT": "股票分割",
+      "TRANSFER_IN": "轉入",
+      "TRANSFER_OUT": "轉出",
+      "REINVEST": "再投資",
+      "ADD_SHARES": "增加股數",
+      "REMOVE_SHARES": "減少股數"
+    },
+    "toasts": {
+      "loadHistoryFailed": "載入歷史失敗",
+      "loadTransactionFailed": "載入交易失敗"
+    }
+  },
+  "shareAdjustment": {
+    "heading": "調整股數",
+    "accountLabel": "科目",
+    "accountPlaceholder": "選擇科目...",
+    "actionLabel": "操作",
+    "quantityLabel": "數量（股數）",
+    "dateLabel": "日期",
+    "descriptionLabel": "描述（選填）",
+    "descriptionPlaceholder": "例如：清理殘餘股數",
+    "saving": "儲存中...",
+    "submitButton": "記錄調整",
+    "accountClosed": "{name}（已關閉）",
+    "adjustmentActions": {
+      "REMOVE_SHARES": "減少股數",
+      "ADD_SHARES": "增加股數"
+    },
+    "toasts": {
+      "selectAccount": "選擇科目",
+      "quantityRequired": "數量必須大於零",
+      "recorded": "調整已記錄",
+      "failed": "記錄調整失敗"
+    }
+  },
+  "lookupPicker": {
+    "title": "「{query}」有多筆符合結果",
+    "subtitle": "請選擇您要使用的證券。",
+    "columns": {
+      "symbol": "代號",
+      "name": "名稱",
+      "exchange": "交易所",
+      "currency": "貨幣",
+      "type": "類型",
+      "source": "來源"
+    },
+    "selectButton": "選擇"
+  },
+  "validation": {
+    "symbolRequired": "代號為必填",
+    "symbolMax": "代號不得超過 20 個字元",
+    "nameRequired": "名稱為必填",
+    "nameMax": "名稱不得超過 255 個字元",
+    "currencyRequired": "貨幣為必填"
+  },
+  "priceValidation": {
+    "dateRequired": "日期為必填",
+    "priceRequired": "價格為必填",
+    "priceNonNegative": "價格必須為非負數"
+  }
+}

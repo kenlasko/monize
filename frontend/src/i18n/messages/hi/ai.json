@@ -1,0 +1,53 @@
+{
+  "page": {
+    "title": "AI सहायक",
+    "subtitle": "प्राकृतिक भाषा में अपने वित्त के बारे में प्रश्न पूछें"
+  },
+  "chat": {
+    "conversationSaved": "बातचीत आपके ब्राउज़र में सहेजी गई",
+    "clearConversation": "बातचीत साफ़ करें",
+    "inputPlaceholder": "अपने वित्त के बारे में पूछें...",
+    "inputPlaceholderDisabled": "AI प्रदाता कॉन्फ़िगर नहीं है",
+    "keyboardHint": "भेजने के लिए Enter दबाएं, नई पंक्ति के लिए Shift+Enter",
+    "cancelTitle": "रद्द करें",
+    "sendTitle": "भेजें"
+  },
+  "notConfigured": {
+    "heading": "AI कॉन्फ़िगर नहीं है",
+    "message": "कोई AI प्रदाता कॉन्फ़िगर नहीं है। AI सहायक का उपयोग करने के लिए, कृपया अपनी सेटिंग्स में {link}।",
+    "linkText": "एक AI प्रदाता कॉन्फ़िगर करें"
+  },
+  "suggestedQueries": {
+    "heading": "अपने वित्त के बारे में पूछें",
+    "description": "मैं आपके खर्च, आय, खाता शेष, शुद्ध संपत्ति और अधिक के बारे में प्रश्नों का उत्तर दे सकता हूं।",
+    "monthlySpendingLabel": "मासिक खर्च",
+    "monthlySpendingQuery": "पिछले महीने मैंने कितना खर्च किया?",
+    "topCategoriesLabel": "शीर्ष श्रेणियां",
+    "topCategoriesQuery": "इस वर्ष मेरी शीर्ष 5 व्यय श्रेणियां क्या हैं?",
+    "accountBalancesLabel": "खाता शेष",
+    "accountBalancesQuery": "मेरे वर्तमान खाता शेष क्या हैं?",
+    "compareMonthsLabel": "महीनों की तुलना",
+    "compareMonthsQuery": "इस महीने बनाम पिछले महीने मेरे खर्च की तुलना करें",
+    "netWorthTrendLabel": "शुद्ध संपत्ति प्रवृत्ति",
+    "netWorthTrendQuery": "पिछले 12 महीनों के लिए मेरी शुद्ध संपत्ति प्रवृत्ति दिखाएं",
+    "savingsRateLabel": "बचत दर",
+    "savingsRateQuery": "इस वर्ष मैंने अपनी आय की तुलना में कितनी बचत की है?"
+  },
+  "toolDetails": {
+    "inputLabel": "इनपुट",
+    "resultLabel": "परिणाम",
+    "toolFailedAriaLabel": "टूल विफल हुआ",
+    "toolSucceededAriaLabel": "टूल सफल रहा"
+  },
+  "table": {
+    "downloadTitle": "तालिका CSV के रूप में डाउनलोड करें",
+    "downloadAriaLabel": "तालिका CSV के रूप में डाउनलोड करें",
+    "noDataError": "निर्यात करने के लिए कोई तालिका डेटा नहीं"
+  },
+  "chart": {
+    "downloadTitle": "चार्ट PNG के रूप में डाउनलोड करें",
+    "downloadAriaLabel": "चार्ट PNG के रूप में डाउनलोड करें",
+    "captureError": "चार्ट छवि कैप्चर करने में असमर्थ",
+    "downloadError": "चार्ट डाउनलोड करने में विफल"
+  }
+}

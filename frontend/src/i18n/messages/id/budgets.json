@@ -1,0 +1,548 @@
+{
+  "alerts": {
+    "title": "Peringatan",
+    "unread": "{count} belum dibaca",
+    "markAllRead": "Tandai semua sudah dibaca",
+    "loading": "Memuat peringatan...",
+    "empty": "Tidak ada peringatan",
+    "undo": "Batalkan",
+    "buttonTitle": "Peringatan",
+    "buttonAriaLabel": "Peringatan",
+    "dismissAriaLabel": "Tutup peringatan",
+    "severity": {
+      "critical": "Kritis",
+      "warning": "Peringatan",
+      "success": "Kabar Baik",
+      "info": "Info"
+    }
+  },
+  "summary503020": {
+    "title": "Alokasi 50/30/20",
+    "groups": {
+      "NEED": "Kebutuhan",
+      "WANT": "Keinginan",
+      "SAVING": "Tabungan"
+    },
+    "target": "Target: {percent}%",
+    "budgeted": "Dianggarkan: {percent}% ({amount})"
+  },
+  "categoryForm": {
+    "editTitle": "Edit: {name}",
+    "budgetAmount": "Jumlah Anggaran",
+    "rolloverType": "Jenis Rollover",
+    "rolloverCap": "Batas Rollover (opsional)",
+    "rolloverCapPlaceholder": "Tidak ada batas",
+    "flexGroup": "Grup Fleksibel (opsional)",
+    "flexGroupPlaceholder": "mis., Uang Hiburan",
+    "categoryGroup": "Grup Kategori (50/30/20)",
+    "warningAt": "Peringatan pada (%)",
+    "criticalAt": "Kritis pada (%)",
+    "notes": "Catatan (opsional)",
+    "notesPlaceholder": "Catatan tentang anggaran kategori ini",
+    "rolloverOptions": {
+      "NONE": "Tidak ada (direset setiap periode)",
+      "MONTHLY": "Rollover bulanan",
+      "QUARTERLY": "Rollover triwulanan",
+      "ANNUAL": "Rollover tahunan"
+    },
+    "groupOptions": {
+      "none": "Tidak ada",
+      "NEED": "Kebutuhan",
+      "WANT": "Keinginan",
+      "SAVING": "Tabungan"
+    },
+    "saving": "Menyimpan..."
+  },
+  "categoryList": {
+    "title": "Anggaran Kategori",
+    "empty": "Tidak ada kategori pengeluaran dalam anggaran ini.",
+    "sort": "Urutkan:",
+    "sortAriaLabel": "Urutkan kategori",
+    "sortAscAriaLabel": "Urutkan menurun",
+    "sortDescAriaLabel": "Urutkan naik",
+    "sortDescTitle": "Urutkan menurun",
+    "sortAscTitle": "Urutkan naik",
+    "sortOptions": {
+      "percentUsed": "% Terpakai",
+      "spent": "Terpakai",
+      "remaining": "Sisa",
+      "name": "Nama"
+    }
+  },
+  "categoryRow": {
+    "overPace": "Melebihi kecepatan",
+    "underPace": "Di bawah kecepatan",
+    "onPace": "Sesuai kecepatan",
+    "rollover": "Rollover: {type}",
+    "remaining": "{amount} tersisa",
+    "over": "{amount} melebihi"
+  },
+  "categoryTrend": {
+    "title": "Tren Kategori",
+    "empty": "Data belum cukup untuk menampilkan tren kategori.",
+    "tableHeaders": {
+      "category": "Kategori",
+      "avgBudget": "Rata-rata Anggaran",
+      "avgActual": "Rata-rata Aktual",
+      "avgVariance": "Rata-rata Varians"
+    }
+  },
+  "flexGroups": {
+    "title": "Grup Fleksibel"
+  },
+  "form": {
+    "budgetName": "Nama Anggaran",
+    "description": "Deskripsi (opsional)",
+    "descriptionPlaceholder": "Deskripsi anggaran",
+    "budgetType": "Jenis Anggaran",
+    "strategy": "Strategi",
+    "baseIncome": "Pendapatan Dasar (opsional)",
+    "baseIncomePlaceholder": "Perkiraan pendapatan bulanan",
+    "active": "Aktif",
+    "saveChanges": "Simpan Perubahan",
+    "saving": "Menyimpan...",
+    "typeOptions": {
+      "MONTHLY": "Bulanan",
+      "ANNUAL": "Tahunan",
+      "PAY_PERIOD": "Periode Gaji"
+    },
+    "strategyOptions": {
+      "FIXED": "Tetap",
+      "ROLLOVER": "Rollover",
+      "ZERO_BASED": "Berbasis Nol",
+      "FIFTY_THIRTY_TWENTY": "50/30/20"
+    }
+  },
+  "healthGauge": {
+    "title": "Skor Kesehatan",
+    "labels": {
+      "excellent": "Sangat Baik",
+      "good": "Baik",
+      "needsAttention": "Perlu Perhatian",
+      "offTrack": "Di Luar Jalur"
+    }
+  },
+  "heatmap": {
+    "title": "Peta Panas Pengeluaran - {monthLabel}",
+    "ariaLabel": "Peta panas pengeluaran",
+    "less": "Sedikit",
+    "more": "Banyak"
+  },
+  "periodDetail": {
+    "summaryCards": {
+      "totalBudgeted": "Total Dianggarkan",
+      "totalSpent": "Total Terpakai",
+      "underBudget": "Di Bawah Anggaran",
+      "overBudget": "Melebihi Anggaran",
+      "saved": "dihemat",
+      "overspent": "kelebihan belanja",
+      "income": "Pendapatan",
+      "savings": "Tabungan: {amount}"
+    },
+    "rolloverSummary": {
+      "title": "Ringkasan Rollover",
+      "carriedIn": "Dibawa masuk:",
+      "carriedOut": "Dibawa keluar:"
+    },
+    "overallUsage": "Penggunaan Anggaran Keseluruhan",
+    "expenseCategories": "Kategori Pengeluaran",
+    "incomeCategories": "Kategori Pendapatan",
+    "categorySublabel": "{count} kategori",
+    "rolloverBadge": "+{amount} rollover",
+    "underBudgetLabel": "{amount} di bawah anggaran",
+    "overBudgetLabel": "{amount} melebihi anggaran",
+    "carriedForward": "{amount} dibawa ke depan"
+  },
+  "periodSelector": {
+    "label": "Periode:",
+    "currentPeriod": "Periode Saat Ini",
+    "current": "{label} (Saat Ini)",
+    "projected": "{label} (Proyeksi)"
+  },
+  "progressBar": {
+    "ariaLabel": "{percent}% terpakai",
+    "paceMarkerTitle": "Kecepatan yang diharapkan: {percent}%"
+  },
+  "scenarioPlanner": {
+    "title": "Perencana Skenario Bagaimana-Jika",
+    "empty": "Tidak ada kategori pengeluaran untuk direncanakan.",
+    "reset": "Reset",
+    "applyChanges": "Terapkan Perubahan",
+    "currentBudget": "Anggaran Saat Ini",
+    "proposedBudget": "Anggaran yang Diusulkan",
+    "projectedSavings": "Proyeksi Tabungan",
+    "savingsChange": "Perubahan Tabungan",
+    "original": "Asli: {amount}"
+  },
+  "summaryCards": {
+    "totalBudget": "Total Anggaran",
+    "spent": "Terpakai",
+    "remaining": "Sisa",
+    "savings": "Tabungan",
+    "periodEnded": "Periode berakhir",
+    "days": "{count} hari",
+    "onTrack": "Sesuai rencana",
+    "overBudget": "Melebihi anggaran"
+  },
+  "trendChart": {
+    "title": "Tren Anggaran vs Aktual",
+    "empty": "Data belum cukup untuk menampilkan tren.",
+    "budgeted": "Dianggarkan",
+    "actual": "Aktual"
+  },
+  "upcomingBills": {
+    "title": "Tagihan Mendatang",
+    "empty": "Tidak ada tagihan jatuh tempo pada periode ini.",
+    "more": "+{count} tagihan lagi",
+    "totalUpcoming": "Total mendatang",
+    "trulyAvailable": "Benar-benar tersedia",
+    "over": " melebihi"
+  },
+  "velocity": {
+    "title": "Kecepatan Pengeluaran",
+    "dailyBurnRate": "Tingkat pengeluaran harian",
+    "safeToSpend": "Aman untuk dibelanjakan",
+    "projectedMonthEnd": "Proyeksi akhir bulan",
+    "budgetTotal": "Total anggaran",
+    "billsComing": "Tagihan mendatang",
+    "trulyAvailable": "Benar-benar tersedia",
+    "over": " melebihi",
+    "dayProgress": "Hari {elapsed} dari {total}",
+    "daysRemaining": "{count} hari tersisa",
+    "paceStatus": {
+      "under": "Di bawah kecepatan anggaran",
+      "on_track": "Sesuai rencana",
+      "over": "Melebihi kecepatan anggaran"
+    }
+  },
+  "wizard": {
+    "steps": {
+      "analyze": "Analisis",
+      "categories": "Kategori",
+      "configure": "Konfigurasi",
+      "review": "Tinjau"
+    },
+    "ariaLabel": "Langkah-langkah wizard",
+    "back": "Kembali"
+  },
+  "wizardAnalysis": {
+    "chooseStrategy": "Pilih Strategi Anggaran",
+    "analysisPeriod": "Periode Analisis",
+    "analysisPeriodHint": "Berapa bulan riwayat transaksi yang harus kami analisis untuk menyarankan jumlah anggaran?",
+    "budgetProfile": "Profil Anggaran",
+    "analyzeButton": "Analisis Pengeluaran Saya",
+    "analysisPeriods": {
+      "3": "3 bulan",
+      "6": "6 bulan",
+      "12": "12 bulan"
+    },
+    "strategies": {
+      "FIXED": {
+        "label": "Tetap",
+        "description": "Tetapkan jumlah tetap per kategori. Anggaran yang tidak terpakai direset setiap periode."
+      },
+      "ROLLOVER": {
+        "label": "Rollover",
+        "description": "Anggaran yang tidak terpakai dibawa ke depan. Konfigurasikan aturan rollover per kategori."
+      },
+      "ZERO_BASED": {
+        "label": "Berbasis Nol",
+        "description": "Setiap rupiah pendapatan diberi tujuan. Pendapatan dikurangi pengeluaran sama dengan nol."
+      },
+      "FIFTY_THIRTY_TWENTY": {
+        "label": "50/30/20",
+        "description": "50% kebutuhan, 30% keinginan, 20% tabungan. Kategori ditandai berdasarkan grup."
+      }
+    },
+    "profiles": {
+      "COMFORTABLE": {
+        "label": "Nyaman",
+        "description": "Berdasarkan pengeluaran persentil ke-75 Anda. Memberikan ruang lebih."
+      },
+      "ON_TRACK": {
+        "label": "Sesuai Rencana",
+        "description": "Berdasarkan pengeluaran median Anda. Target yang realistis."
+      },
+      "AGGRESSIVE": {
+        "label": "Agresif",
+        "description": "Berdasarkan persentil ke-25 Anda. Tujuan ambisius untuk menabung lebih banyak."
+      }
+    },
+    "toasts": {
+      "analyzeFailed": "Gagal menganalisis pengeluaran"
+    }
+  },
+  "wizardCategories": {
+    "title": "Tinjau Kategori",
+    "noAnalysis": "Tidak ada data analisis. Kembali dan jalankan analisis terlebih dahulu.",
+    "tableHeaders": {
+      "income": "Pendapatan",
+      "expenses": "Pengeluaran",
+      "transfers": "Transfer / Tabungan",
+      "trendMedian": "Tren / Median",
+      "amount": "Jumlah"
+    },
+    "totals": {
+      "totalIncome": "Total Pendapatan",
+      "totalExpenses": "Total Pengeluaran",
+      "transfers": "Transfer",
+      "remaining": "Sisa"
+    },
+    "allocation503020": "Alokasi 50/30/20",
+    "allocationTarget": "(target {percent}%)",
+    "nextButton": "Berikutnya: Konfigurasi",
+    "profiles": {
+      "COMFORTABLE": "Nyaman",
+      "ON_TRACK": "Sesuai Rencana",
+      "AGGRESSIVE": "Agresif"
+    }
+  },
+  "wizardStrategy": {
+    "title": "Konfigurasi Anggaran Anda",
+    "sections": {
+      "budgetDetails": "Detail Anggaran",
+      "income": "Pendapatan",
+      "rolloverRules": "Aturan Rollover",
+      "alertThresholds": "Ambang Peringatan",
+      "flexGroups": "Grup Fleksibel",
+      "excludedAccounts": "Akun yang Dikecualikan"
+    },
+    "budgetNameLabel": "Nama Anggaran",
+    "budgetNameRequired": "Nama anggaran wajib diisi",
+    "budgetTypeLabel": "Jenis Anggaran",
+    "startDateLabel": "Tanggal Mulai",
+    "startDateRequired": "Tanggal mulai wajib diisi",
+    "strategyPrefix": "Strategi: {strategy}",
+    "strategyNotSelected": "Belum dipilih",
+    "strategyDescriptions": {
+      "FIXED": "Tetapkan jumlah per kategori. Anggaran yang tidak terpakai direset setiap periode.",
+      "ROLLOVER": "Anggaran yang tidak terpakai dibawa ke depan berdasarkan aturan rollover per kategori.",
+      "ZERO_BASED": "Setiap rupiah pendapatan dialokasikan. Pendapatan dikurangi pengeluaran harus sama dengan nol.",
+      "FIFTY_THIRTY_TWENTY": "Kategori dikelompokkan sebagai Kebutuhan (50%), Keinginan (30%), Tabungan (20%)."
+    },
+    "linkBudgetToIncome": "Kaitkan anggaran ke pendapatan",
+    "linkBudgetToIncomeHint": "Jumlah kategori menjadi persentase dari pendapatan dasar Anda",
+    "baseMonthlyIncome": "Pendapatan Bulanan Dasar",
+    "estimatedFromAnalysis": "Perkiraan dari analisis: {amount}/bln",
+    "defaultRolloverType": "Jenis Rollover Default",
+    "rolloverHint": "Ini menetapkan default untuk semua kategori. Anda dapat menyesuaikan kategori individual setelah membuat anggaran.",
+    "rolloverOptions": {
+      "NONE": "Tidak ada -- Direset setiap periode",
+      "MONTHLY": "Bulanan -- Dibawa ke depan setiap bulan",
+      "QUARTERLY": "Triwulanan -- Dibawa ke depan setiap kuartal",
+      "ANNUAL": "Tahunan -- Dibawa ke depan setiap tahun"
+    },
+    "warningAt": "Peringatan pada (%)",
+    "warningHint": "Memicu peringatan saat pengeluaran mencapai % anggaran ini",
+    "criticalAt": "Kritis pada (%)",
+    "criticalHint": "Memicu peringatan kritis saat pengeluaran mencapai % anggaran ini",
+    "flexGroupsHide": "Sembunyikan",
+    "flexGroupsConfigure": "Konfigurasi",
+    "flexGroupsHint": "Kelompokkan kategori pengeluaran terkait bersama. Pengeluaran dilacak sebagai total grup, memberikan fleksibilitas di dalam setiap grup.",
+    "flexGroupsTableHeaders": {
+      "category": "Kategori",
+      "flexGroup": "Grup Fleksibel"
+    },
+    "flexGroupPlaceholder": "mis. Uang Hiburan",
+    "excludedAccountsHint": "Transaksi dari akun yang dikecualikan tidak akan dihitung terhadap total anggaran Anda.",
+    "excludedCount": "{count} {count, plural, one {akun} other {akun}} dikecualikan",
+    "categoriesAndTransfers": "{categories} kategori dan {transfers} transfer dipilih",
+    "budgetTypeOptions": {
+      "MONTHLY": "Bulanan",
+      "ANNUAL": "Tahunan",
+      "PAY_PERIOD": "Periode Gaji"
+    },
+    "nextButton": "Berikutnya: Tinjau"
+  },
+  "wizardReview": {
+    "title": "Tinjau Anggaran Anda",
+    "fields": {
+      "name": "Nama",
+      "type": "Jenis",
+      "strategy": "Strategi",
+      "startDate": "Tanggal Mulai",
+      "rollover": "Rollover",
+      "alerts": "Peringatan",
+      "incomeLinked": "Pendapatan Dikaitkan",
+      "excludedAccounts": "Akun Dikecualikan"
+    },
+    "rolloverOff": "Mati",
+    "alertsValue": "Peringatan {warn}% / Kritis {critical}%",
+    "accountCount": "{count} {count, plural, one {akun} other {akun}}",
+    "strategyNotSelected": "Belum dipilih",
+    "summaryCards": {
+      "estIncome": "Perkiraan Pendapatan",
+      "totalExpenses": "Total Pengeluaran",
+      "transfers": "Transfer",
+      "remaining": "Sisa"
+    },
+    "tableHeaders": {
+      "category": "Kategori",
+      "amount": "Jumlah",
+      "type": "Jenis"
+    },
+    "categoryTypes": {
+      "income": "Pendapatan",
+      "expense": "Pengeluaran",
+      "transfer": "Transfer"
+    },
+    "createButton": "Buat Anggaran",
+    "categoryCount": "{count} kategori",
+    "accountsCount": "{count} akun",
+    "toasts": {
+      "created": "Anggaran berhasil dibuat",
+      "failed": "Gagal membuat anggaran"
+    }
+  },
+  "zeroBasedBar": {
+    "title": "Penugasan Berbasis Nol",
+    "fullyAssigned": "Sepenuhnya ditugaskan",
+    "overAssigned": "Kelebihan penugasan",
+    "underAssigned": "Kekurangan penugasan",
+    "assigned": "Ditugaskan: {assigned} / {income}",
+    "unassigned": "{amount} belum ditugaskan",
+    "over": "{amount} melebihi"
+  },
+  "strategyCard": {
+    "pros": "Kelebihan",
+    "cons": "Kekurangan",
+    "bestFor": "Terbaik untuk: ",
+    "strategies": {
+      "FIXED": {
+        "title": "Anggaran Tetap",
+        "description": "Tetapkan batas pengeluaran tetap untuk setiap kategori setiap periode. Uang yang tidak terpakai direset di akhir periode alih-alih dibawa ke depan.",
+        "pros": [
+          "Mudah untuk disiapkan dan dipahami",
+          "Batas pengeluaran yang jelas per kategori",
+          "Penganggaran bulan ke bulan yang dapat diprediksi",
+          "Titik awal yang baik untuk pemula dalam penganggaran"
+        ],
+        "cons": [
+          "Uang yang tidak terpakai tidak dibawa ke depan",
+          "Tidak ada fleksibilitas antar kategori",
+          "Tidak menyesuaikan dengan pengeluaran tidak teratur",
+          "Dapat terasa kaku jika pola pengeluaran bervariasi"
+        ],
+        "bestFor": "Orang yang menginginkan penganggaran sederhana dengan batas yang jelas dan pola pengeluaran yang dapat diprediksi."
+      },
+      "ROLLOVER": {
+        "title": "Anggaran Rollover",
+        "description": "Anggaran yang tidak terpakai dibawa ke periode berikutnya berdasarkan aturan rollover per kategori. Kumpulkan cadangan untuk kategori dengan pengeluaran tidak teratur atau musiman.",
+        "pros": [
+          "Membangun tabungan untuk pengeluaran tidak teratur",
+          "Memberikan penghargaan atas pengeluaran di bawah anggaran di kategori",
+          "Aturan rollover yang fleksibel per kategori",
+          "Menangani variasi musiman secara alami"
+        ],
+        "cons": [
+          "Lebih kompleks untuk dikonfigurasi pada awalnya",
+          "Saldo yang terakumulasi perlu dipantau",
+          "Dapat menyembunyikan kelebihan pengeluaran jika batas terlalu tinggi",
+          "Memerlukan tinjauan berkala atas aturan rollover"
+        ],
+        "bestFor": "Orang dengan pengeluaran tidak teratur seperti perawatan kendaraan, langganan tahunan, atau biaya musiman yang ingin menabung secara bertahap."
+      },
+      "ZERO_BASED": {
+        "title": "Anggaran Berbasis Nol",
+        "description": "Setiap rupiah pendapatan diberi tujuan tertentu. Pendapatan Anda dikurangi semua jumlah yang dianggarkan harus sama dengan nol, memastikan tidak ada uang yang tidak dialokasikan.",
+        "pros": [
+          "Kontrol maksimal atas setiap rupiah",
+          "Mendorong keputusan pengeluaran yang disengaja",
+          "Cepat mengungkapkan pengeluaran yang boros",
+          "Sangat efektif untuk tujuan pelunasan utang"
+        ],
+        "cons": [
+          "Memerlukan mengetahui pendapatan pasti di muka",
+          "Membutuhkan waktu untuk dikelola setiap periode",
+          "Kurang fleksibel untuk pendapatan yang bervariasi",
+          "Dapat terasa membatasi bagi sebagian pengguna"
+        ],
+        "bestFor": "Orang yang menginginkan kendali penuh atas keuangan mereka dan bersedia merencanakan ke mana setiap rupiah pergi setiap periode."
+      },
+      "FIFTY_THIRTY_TWENTY": {
+        "title": "Anggaran 50/30/20",
+        "description": "Pendekatan seimbang yang membagi pendapatan menjadi tiga kelompok: 50% untuk kebutuhan (perumahan, bahan makanan, utilitas), 30% untuk keinginan (makan di luar, hiburan), dan 20% untuk tabungan dan pembayaran utang.",
+        "pros": [
+          "Mudah diingat dan diikuti",
+          "Alokasi tabungan bawaan",
+          "Pendekatan pengeluaran yang seimbang",
+          "Fleksibel di dalam setiap kelompok"
+        ],
+        "cons": [
+          "Mungkin tidak cocok untuk daerah dengan biaya hidup tinggi",
+          "Rasio tetap mungkin tidak sesuai untuk semua situasi",
+          "Kontrol tingkat kategori yang kurang terperinci",
+          "Memerlukan pengategorian setiap pengeluaran berdasarkan kelompok"
+        ],
+        "bestFor": "Orang yang menginginkan pendekatan seimbang dan berbasis aturan praktis tanpa melacak setiap kategori secara individual."
+      }
+    }
+  },
+  "pages": {
+    "list": {
+      "title": "Anggaran",
+      "subtitle": "Kelola anggaran dan lacak pengeluaran Anda",
+      "newBudget": "+ Anggaran Baru",
+      "empty": {
+        "title": "Belum ada anggaran",
+        "description": "Buat anggaran pertama Anda dengan menganalisis riwayat pengeluaran. Wizard akan menyarankan jumlah realistis berdasarkan transaksi Anda.",
+        "cta": "Buat Anggaran Pertama Anda"
+      },
+      "card": {
+        "active": "Aktif",
+        "inactive": "Tidak Aktif",
+        "categories": "{count} kategori",
+        "started": "Dimulai {date}"
+      }
+    },
+    "create": {
+      "title": "Buat Anggaran",
+      "subtitle": "Analisis pengeluaran Anda dan buat anggaran yang dipersonalisasi"
+    },
+    "detail": {
+      "backToBudgets": "Kembali ke Anggaran",
+      "notFound": "Anggaran tidak ditemukan",
+      "delete": {
+        "title": "Hapus Anggaran",
+        "message": "Apakah Anda yakin ingin menghapus \"{name}\"? Ini akan menghapus semua data anggaran termasuk periode dan peringatan. Tindakan ini tidak dapat dibatalkan.",
+        "confirm": "Hapus",
+        "cancel": "Batal"
+      },
+      "toasts": {
+        "deleted": "Anggaran dihapus",
+        "deleteFailed": "Gagal menghapus anggaran",
+        "loadFailed": "Gagal memuat anggaran",
+        "periodFailed": "Gagal memuat periode"
+      }
+    },
+    "edit": {
+      "subtitlePrefix": "Edit: ",
+      "subtitle": "Perbarui pengaturan anggaran dan alokasi kategori",
+      "backToDashboard": "Kembali ke Dasbor",
+      "budgetSettings": "Pengaturan Anggaran",
+      "categoryAllocations": "Alokasi Kategori",
+      "income": "Pendapatan",
+      "expensesWithCount": "Pengeluaran ({count})",
+      "resetsEachPeriod": "Direset setiap periode",
+      "percentUsed": "{percent}% terpakai",
+      "rolloverType": "Rollover: {type}",
+      "editCategoryTitle": "Edit {name}",
+      "toasts": {
+        "updated": "Anggaran diperbarui",
+        "updateFailed": "Gagal memperbarui anggaran",
+        "categoryUpdated": "Kategori diperbarui",
+        "categoryFailed": "Gagal memperbarui kategori",
+        "loadFailed": "Gagal memuat anggaran"
+      }
+    }
+  },
+  "validation": {
+    "nameRequired": "Nama anggaran wajib diisi",
+    "nameMax": "Nama anggaran harus 255 karakter atau kurang",
+    "descriptionMax": "Deskripsi harus 1000 karakter atau kurang"
+  },
+  "categoryValidation": {
+    "amountMin": "Jumlah harus 0 atau lebih",
+    "mustBeNumber": "Harus berupa angka"
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "title": "खाता समाधान करें",
+  "subtitle": "अपने बैंक विवरण के विरुद्ध अपने रिकॉर्ड मिलाएं",
+  "subtitleActive": "समाधान हो रहा है: {name}",
+  "setup": {
+    "title": "समाधान शुरू करें",
+    "intro": "यह सुनिश्चित करने के लिए कि आपके रिकॉर्ड मेल खाते हैं, बैंक विवरण के विरुद्ध अपने खाते का समाधान करें।",
+    "accountLabel": "खाता",
+    "accountPlaceholder": "खाता चुनें...",
+    "statementDateLabel": "विवरण दिनांक",
+    "statementBalanceLabel": "विवरण अंतिम शेष",
+    "start": "समाधान शुरू करें"
+  },
+  "summary": {
+    "statementBalance": "विवरण शेष",
+    "reconciledBalance": "समाधानित शेष",
+    "selected": "चुने गए ({count})",
+    "difference": "अंतर"
+  },
+  "list": {
+    "heading": "असमाधानित लेनदेन ({count})",
+    "selectAll": "सभी चुनें",
+    "selectNone": "कोई नहीं चुनें",
+    "empty": "इस अवधि के लिए कोई असमाधानित लेनदेन नहीं मिले।",
+    "colSelect": "चुनें",
+    "colDate": "दिनांक",
+    "colPayee": "भुगतानकर्ता",
+    "colCategory": "श्रेणी",
+    "colAmount": "राशि",
+    "colStatus": "स्थिति",
+    "finish": "समाधान पूर्ण करें"
+  },
+  "status": {
+    "cleared": "क्लियर हुआ",
+    "unreconciled": "असमाधानित",
+    "void": "रद्द",
+    "reconciled": "समाधानित"
+  },
+  "complete": {
+    "title": "समाधान पूर्ण",
+    "message": "आपके खाते का {date} तक सफलतापूर्वक समाधान हो गया।",
+    "existingPayment": "इस खाते में एक अनुसूचित भुगतान है, <b>{name}</b>। क्या आप इसके अगले अवसर को <b>{amount}</b> के समाधानित शेष में अपडेट करना चाहते हैं?",
+    "updatePayment": "अगला भुगतान अपडेट करें",
+    "noPayment": "इस खाते के लिए कोई अनुसूचित भुगतान नहीं मिला। क्या आप <b>{amount}</b> के समाधानित शेष के लिए एक बनाना चाहते हैं?",
+    "createPayment": "अनुसूचित भुगतान बनाएं",
+    "backToAccounts": "खातों पर वापस जाएं",
+    "reconcileAnother": "दूसरा खाता समाधान करें"
+  },
+  "toasts": {
+    "loadAccountsFailed": "खाते लोड करने में विफल",
+    "fillAllFields": "कृपया सभी फ़ील्ड भरें",
+    "loadDataFailed": "समाधान डेटा लोड करने में विफल",
+    "differenceRequired": "समाधान पूर्ण करने के लिए अंतर {amount} होना चाहिए",
+    "noneSelected": "समाधान के लिए कोई लेनदेन नहीं चुना गया",
+    "success": "{count, plural, one {# लेनदेन सफलतापूर्वक समाधानित हुआ} other {# लेनदेन सफलतापूर्वक समाधानित हुए}}",
+    "reconcileFailed": "लेनदेन समाधान करने में विफल"
+  }
+}

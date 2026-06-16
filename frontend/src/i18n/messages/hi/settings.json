@@ -1,0 +1,875 @@
+{
+  "language": {
+    "label": "भाषा",
+    "browserOption": "ब्राउज़र लोकेल उपयोग करें (स्वत: पहचान {locale})",
+    "helpText": "Monize इंटरफ़ेस में उपयोग की जाने वाली भाषा चुनें। संख्या और तिथि स्वरूपण नीचे अलग से नियंत्रित किए जाते हैं।",
+    "saved": "भाषा अपडेट की गई",
+    "saveFailed": "भाषा सहेजने में विफल"
+  },
+  "profile": {
+    "heading": "प्रोफ़ाइल",
+    "firstNameLabel": "पहला नाम",
+    "firstNamePlaceholder": "अपना पहला नाम दर्ज करें",
+    "lastNameLabel": "अंतिम नाम",
+    "lastNamePlaceholder": "अपना अंतिम नाम दर्ज करें",
+    "emailLabel": "ईमेल",
+    "emailPlaceholder": "अपना ईमेल दर्ज करें",
+    "currentPasswordLabel": "वर्तमान पासवर्ड",
+    "currentPasswordPlaceholder": "ईमेल बदलने के लिए आवश्यक",
+    "passwordRequired": "ईमेल बदलने के लिए वर्तमान पासवर्ड आवश्यक है",
+    "noChanges": "सहेजने के लिए कोई परिवर्तन नहीं",
+    "passwordConfirmNote": "अपना ईमेल पता बदलते समय पासवर्ड पुष्टि आवश्यक है।",
+    "saveButton": "प्रोफ़ाइल सहेजें",
+    "savingButton": "सहेजा जा रहा है...",
+    "toasts": {
+      "success": "प्रोफ़ाइल सफलतापूर्वक अपडेट की गई",
+      "updateFailed": "प्रोफ़ाइल अपडेट करने में विफल"
+    },
+    "validation": {
+      "firstNameMax": "पहला नाम 100 अक्षरों या उससे कम होना चाहिए",
+      "lastNameMax": "अंतिम नाम 100 अक्षरों या उससे कम होना चाहिए",
+      "emailRequired": "ईमेल आवश्यक है",
+      "emailInvalid": "कृपया एक वैध ईमेल पता दर्ज करें",
+      "emailMax": "ईमेल 254 अक्षरों या उससे कम होना चाहिए",
+      "passwordMax": "पासवर्ड 128 अक्षरों या उससे कम होना चाहिए"
+    }
+  },
+  "security": {
+    "heading": "सुरक्षा",
+    "ssoNotice": "आपका खाता प्रमाणीकरण के लिए Single Sign-On (SSO) का उपयोग करता है। नीचे दिया गया पासवर्ड लॉगिन के लिए उपयोग नहीं किया जाता लेकिन यदि SSO अक्षम हो जाए तो बैकअप के रूप में रखा जा सकता है।",
+    "currentPasswordLabel": "वर्तमान पासवर्ड",
+    "currentPasswordPlaceholder": "वर्तमान पासवर्ड दर्ज करें",
+    "newPasswordLabel": "नया पासवर्ड",
+    "newPasswordPlaceholder": "नया पासवर्ड दर्ज करें",
+    "confirmPasswordLabel": "नए पासवर्ड की पुष्टि करें",
+    "confirmPasswordPlaceholder": "नए पासवर्ड की पुष्टि करें",
+    "changePasswordButton": "पासवर्ड बदलें",
+    "changingPasswordButton": "बदला जा रहा है...",
+    "toasts": {
+      "passwordChanged": "पासवर्ड सफलतापूर्वक बदला गया",
+      "passwordChangeFailed": "पासवर्ड बदलने में विफल"
+    },
+    "twoFactor": {
+      "heading": "दो-कारक प्रमाणीकरण",
+      "ssoUnavailable": "SSO खातों के लिए दो-कारक प्रमाणीकरण उपलब्ध नहीं है। प्रमाणीकरण सुरक्षा आपके पहचान प्रदाता द्वारा प्रबंधित की जाती है।",
+      "enabledBadge": "सक्षम",
+      "enabledDescription": "आपका खाता TOTP सत्यापन से सुरक्षित है।",
+      "requiredByAdmin": "व्यवस्थापक द्वारा आवश्यक",
+      "addLayerDescription": "अपने खाते में सुरक्षा की एक अतिरिक्त परत जोड़ें।",
+      "enableButton": "2FA सक्षम करें",
+      "disableButton": "2FA अक्षम करें",
+      "disableModal": {
+        "title": "दो-कारक प्रमाणीकरण अक्षम करें",
+        "description": "2FA अक्षम करने की पुष्टि के लिए अपना वर्तमान 6-अंकीय कोड दर्ज करें।",
+        "verificationCodeLabel": "सत्यापन कोड",
+        "disablingButton": "अक्षम किया जा रहा है...",
+        "toasts": {
+          "disabled": "दो-कारक प्रमाणीकरण अक्षम किया गया",
+          "disableFailed": "2FA अक्षम करने में विफल"
+        }
+      }
+    },
+    "backupCodes": {
+      "heading": "बैकअप कोड",
+      "description": "यदि आप अपने प्रमाणीकरक ऐप तक पहुंच खो देते हैं तो साइन इन करने के लिए बैकअप कोड का उपयोग करें।",
+      "regenerateButton": "कोड पुनः उत्पन्न करें",
+      "regenerateModal": {
+        "title": "बैकअप कोड पुनः उत्पन्न करें",
+        "description": "बैकअप कोड पुनः उत्पन्न करने की पुष्टि के लिए अपना वर्तमान 6-अंकीय कोड दर्ज करें। यह किसी भी मौजूदा कोड को अमान्य कर देगा।",
+        "verificationCodeLabel": "सत्यापन कोड",
+        "regeneratingButton": "पुनः उत्पन्न किया जा रहा है...",
+        "regenerateButton": "पुनः उत्पन्न करें"
+      },
+      "toasts": {
+        "generateFailed": "बैकअप कोड उत्पन्न करने में विफल"
+      }
+    },
+    "trustedDevices": {
+      "heading": "विश्वसनीय डिवाइस",
+      "revokeAllButton": "सभी रद्द करें",
+      "noDevices": "कोई विश्वसनीय डिवाइस नहीं। जब आप 2FA लॉगिन के दौरान \"इस ब्राउज़र पर फिर न पूछें\" चेक करते हैं, तो डिवाइस यहां दिखाई देगा।",
+      "currentBadge": "वर्तमान",
+      "revokeButton": "रद्द करें",
+      "revokeAllModal": {
+        "title": "सभी विश्वसनीय डिवाइस रद्द करें",
+        "description": "यह सभी विश्वसनीय डिवाइस हटा देगा। किसी भी डिवाइस से अगले लॉगिन पर आपको अपना 2FA कोड दर्ज करना होगा।"
+      },
+      "toasts": {
+        "revoked": "डिवाइस रद्द किया गया",
+        "revokedAll": "{count} डिवाइस रद्द किए गए",
+        "revokeFailed": "डिवाइस रद्द करने में विफल",
+        "revokeAllFailed": "डिवाइस रद्द करने में विफल"
+      }
+    },
+    "validation": {
+      "currentPasswordRequired": "वर्तमान पासवर्ड आवश्यक है",
+      "passwordMax": "पासवर्ड 128 अक्षरों या उससे कम होना चाहिए",
+      "confirmRequired": "कृपया अपने नए पासवर्ड की पुष्टि करें",
+      "newPasswordsNoMatch": "नए पासवर्ड मेल नहीं खाते"
+    }
+  },
+  "preferences": {
+    "heading": "प्राथमिकताएं",
+    "themeLabel": "थीम",
+    "defaultCurrencyLabel": "डिफ़ॉल्ट मुद्रा",
+    "preferredExchangesLabel": "पसंदीदा एक्सचेंज (प्रतिभूति खोज के लिए)",
+    "preferredExchangesHelp": "प्राथमिकता क्रम में 3 तक एक्सचेंज चुनें। प्रतिभूतियां खोजते समय इन्हें प्राथमिकता दी जाएगी।",
+    "exchangePriorityPlaceholder": "प्राथमिकता {n}",
+    "defaultQuoteProviderLabel": "डिफ़ॉल्ट स्टॉक उद्धरण प्रदाता",
+    "defaultQuoteProviderHelp": "जब किसी प्रतिभूति में कोई प्रदाता ओवरराइड नहीं होता तब उपयोग किया जाता है। यदि चुना गया प्रदाता विफल होता है, तो Monize स्वचालित रूप से दूसरे को आज़माता है।",
+    "msnNoIntradayNote": "नोट: MSN Money इंट्राडे उद्धरण डेटा प्रदान नहीं करता, इसलिए MSN-ट्रैक किए गए होल्डिंग के लिए पोर्टफोलियो मूल्य चार्ट पर 1D / 1W / 1M श्रेणियां अनुपलब्ध हैं।",
+    "msnNotConfigured": "MSN डिफ़ॉल्ट उद्धरण प्रदाता के रूप में चुना गया है, लेकिन MSN_API_KEY सर्वर पर कॉन्फ़िगर नहीं किया गया है। MSN उद्धरण तब तक विफल रहेंगे जब तक एक व्यवस्थापक env var सेट करके बैकएंड पुनः शुरू नहीं करता।",
+    "dateFormatLabel": "तिथि स्वरूप",
+    "numberFormatLabel": "संख्या स्वरूप",
+    "timezoneLabel": "समयक्षेत्र",
+    "timezonePlaceholder": "समयक्षेत्र खोजें...",
+    "weekStartsOnLabel": "सप्ताह शुरू होता है",
+    "showCreatedAtLabel": "लेन-देन फ़ॉर्म में निर्माण तिथि दिखाएं",
+    "showCreatedAtTooltip": "लेन-देन फ़ॉर्म पर वह तिथि और समय प्रदर्शित करता है जब लेन-देन मूल रूप से बनाया गया था। यह लेन-देन तिथि से अलग है और आपको बता सकता है कि कोई प्रविष्टि वास्तव में Monize में कब जोड़ी गई थी।",
+    "timeFormatLabel": "समय स्वरूप",
+    "recentTransactionsLabel": "त्वरित भरण में हाल के लेन-देन",
+    "recentTransactionsHelp": "लेन-देन फ़ॉर्म पर भुगतानकर्ता फ़ील्ड के बगल में इतिहास बटन पॉपओवर में दिखाई जाने वाली प्रविष्टियों की संख्या।",
+    "saveButton": "प्राथमिकताएं सहेजें",
+    "savingButton": "सहेजा जा रहा है...",
+    "toasts": {
+      "saved": "प्राथमिकताएं सहेजी गईं",
+      "saveFailed": "प्राथमिकताएं सहेजने में विफल",
+      "themeSaveFailed": "थीम सहेजने में विफल",
+      "colorThemeSaveFailed": "रंग थीम सहेजने में विफल"
+    },
+    "browserLocale": "ब्राउज़र लोकेल उपयोग करें (स्वत: पहचान)",
+    "browserTimezonePrefix": "ब्राउज़र समयक्षेत्र उपयोग करें (स्वत: पहचाना {tz})",
+    "numberFormatOptions": {
+      "browser": "ब्राउज़र लोकेल उपयोग करें (स्वत: पहचान {sample})",
+      "enUS": "अंग्रेजी (US) - 1,234.56",
+      "enGB": "अंग्रेजी (UK) - 1,234.56",
+      "deDE": "जर्मन - 1.234,56",
+      "frFR": "फ्रेंच - 1 234,56"
+    },
+    "weekDays": {
+      "sunday": "रविवार",
+      "monday": "सोमवार",
+      "tuesday": "मंगलवार",
+      "wednesday": "बुधवार",
+      "thursday": "गुरुवार",
+      "friday": "शुक्रवार",
+      "saturday": "शनिवार"
+    },
+    "themeOptions": {
+      "system": "सिस्टम (डिवाइस सेटिंग का अनुसरण करें)",
+      "light": "लाइट",
+      "dark": "डार्क"
+    },
+    "colorThemeLabel": "रंग थीम",
+    "colorThemeOptions": {
+      "default": "डिफ़ॉल्ट",
+      "latte": "Latte",
+      "msmoney": "MS Money",
+      "newspaper": "Newspaper",
+      "burgundy": "Burgundy",
+      "nord": "Nord",
+      "forest": "Forest",
+      "solarized": "Solarized",
+      "gruvbox": "Gruvbox",
+      "dracula": "Dracula",
+      "tokyonight": "Tokyo Night",
+      "rosepine": "Rosé Pine",
+      "midnight": "Midnight",
+      "highcontrast": "उच्च कंट्रास्ट",
+      "colorblind": "वर्णान्ध-सुरक्षित"
+    },
+    "timezoneBrowserOption": "ब्राउज़र समयक्षेत्र उपयोग करें (स्वत: पहचाना {tz})"
+  },
+  "notifications": {
+    "heading": "सूचनाएं",
+    "smtpNotConfigured": "ईमेल सूचनाएं उपलब्ध नहीं हैं। SMTP व्यवस्थापक द्वारा कॉन्फ़िगर नहीं किया गया है।",
+    "emailNotificationsTitle": "ईमेल सूचनाएं",
+    "emailNotificationsDescription": "आगामी बिल और बजट अलर्ट के लिए ईमेल रिमाइंडर प्राप्त करें",
+    "budgetNotificationsHeading": "बजट सूचनाएं",
+    "weeklyBudgetDigestTitle": "साप्ताहिक बजट डाइजेस्ट",
+    "weeklyBudgetDigestDescription": "बजट अलर्ट और स्थिति का साप्ताहिक सारांश प्राप्त करें",
+    "toggleBudgetDigestLabel": "बजट डाइजेस्ट टॉगल करें",
+    "digestDayLabel": "डाइजेस्ट दिन",
+    "digestDayAriaLabel": "बजट डाइजेस्ट दिन",
+    "mondayOption": "सोमवार",
+    "fridayOption": "शुक्रवार",
+    "immediateAlertsNote": "महत्वपूर्ण बजट अलर्ट (बजट से अधिक, आय कमी) डाइजेस्ट सेटिंग की परवाह किए बिना तुरंत भेजे जाते हैं।",
+    "sendTestEmailDescription": "यह सत्यापित करने के लिए एक परीक्षण ईमेल भेजें कि आपकी सूचनाएं काम कर रही हैं।",
+    "sendTestEmailButton": "परीक्षण ईमेल भेजें",
+    "sendingTestEmailButton": "भेजा जा रहा है...",
+    "toasts": {
+      "emailEnabled": "ईमेल सूचनाएं सक्षम की गईं",
+      "emailDisabled": "ईमेल सूचनाएं अक्षम की गईं",
+      "digestEnabled": "बजट डाइजेस्ट सक्षम किया गया",
+      "digestDisabled": "बजट डाइजेस्ट अक्षम किया गया",
+      "digestDaySet": "बजट डाइजेस्ट दिन {day} पर सेट किया गया",
+      "testEmailSent": "परीक्षण ईमेल भेजा गया! अपना इनबॉक्स जांचें।",
+      "emailUpdateFailed": "सूचना प्राथमिकता अपडेट करने में विफल",
+      "digestUpdateFailed": "बजट डाइजेस्ट प्राथमिकता अपडेट करने में विफल",
+      "digestDayFailed": "डाइजेस्ट दिन अपडेट करने में विफल",
+      "testEmailFailed": "परीक्षण ईमेल भेजने में विफल"
+    }
+  },
+  "help": {
+    "heading": "सहायता और समर्थन",
+    "description": "दस्तावेज़ खोजें, समस्याएं रिपोर्ट करें, या बातचीत में शामिल हों।",
+    "github": {
+      "label": "GitHub",
+      "description": "सोर्स कोड देखें और प्रोजेक्ट को स्टार करें।"
+    },
+    "openIssue": {
+      "label": "समस्या खोलें",
+      "description": "बग रिपोर्ट करें या कोई सुविधा अनुरोध करें।"
+    },
+    "discussions": {
+      "label": "चर्चाएं",
+      "description": "समुदाय के साथ प्रश्न पूछें और विचार साझा करें।"
+    },
+    "wiki": {
+      "label": "विकी",
+      "description": "गाइड और दस्तावेज़ ब्राउज़ करें।"
+    }
+  },
+  "dangerZone": {
+    "heading": "खतरनाक क्षेत्र",
+    "deleteData": {
+      "heading": "डेटा हटाएं",
+      "description": "अपने खाते से वित्तीय डेटा हटाएं। यह पूर्ववत नहीं किया जा सकता।",
+      "openButton": "डेटा हटाएं...",
+      "alwaysDeletedHeading": "निम्नलिखित हमेशा हटाया जाएगा:",
+      "optionalHeading": "वैकल्पिक रूप से भी हटाएं:",
+      "accountsOption": "खाते",
+      "categoriesOption": "श्रेणियां",
+      "payeesOption": "भुगतानकर्ता",
+      "currencyPreferencesOption": "मुद्रा प्राथमिकताएं",
+      "balanceResetNote": "खाते की शेष राशि उनके प्रारंभिक शेष पर रीसेट की जाएगी।",
+      "oidcConfirmLabel": "पुष्टि के लिए अपने पहचान प्रदाता से पुनः प्रमाणित करें:",
+      "passwordConfirmLabel": "पुष्टि के लिए अपना पासवर्ड दर्ज करें:",
+      "passwordPlaceholder": "अपना पासवर्ड दर्ज करें",
+      "oidcReauthButton": "पुनः प्रमाणित करें और हटाएं",
+      "deletingButton": "हटाया जा रहा है...",
+      "confirmButton": "डेटा हटाने की पुष्टि करें",
+      "toasts": {
+        "success": "{count} रिकॉर्ड सफलतापूर्वक हटाए गए",
+        "failed": "डेटा हटाने में विफल"
+      }
+    },
+    "deleteAccount": {
+      "heading": "खाता हटाएं",
+      "description": "अपना खाता और सभी संबंधित डेटा स्थायी रूप से हटाएं। यह पूर्ववत नहीं किया जा सकता।",
+      "delegateNotice": {
+        "title": "आप किसी अन्य खाते के प्रतिनिधि हैं।",
+        "body": "आपका खाता हटाने से आपका अपना डेटा हटा दिया जाएगा, लेकिन आपका लॉगिन और दूसरों द्वारा दी गई साझा पहुंच बनी रहेगी ताकि प्रतिनिधित्व कार्य करता रहे। उस पहुंच को रद्द करने के लिए, पहले स्वामी को अपने साझा पहुंच सूची से आपको हटाने के लिए कहें।"
+      },
+      "openButton": "खाता हटाएं",
+      "typeDeleteLabel": "खाता हटाने की पुष्टि के लिए DELETE टाइप करें:",
+      "typeDeletePlaceholder": "DELETE टाइप करें",
+      "enterPasswordLabel": "अपना पासवर्ड दर्ज करें:",
+      "enterPasswordPlaceholder": "अपना पासवर्ड दर्ज करें",
+      "deletingButton": "हटाया जा रहा है...",
+      "confirmButton": "हटाने की पुष्टि करें",
+      "toasts": {
+        "downgraded": "आपका अपना डेटा हटा दिया गया। प्रतिनिधित्व बनाए रखने के लिए आपका लॉगिन और साझा पहुंच बनी रहती है।",
+        "deleted": "खाता हटाया गया",
+        "failed": "खाता हटाने में विफल"
+      },
+      "errors": {
+        "typeDelete": "पुष्टि के लिए DELETE टाइप करें",
+        "passwordRequired": "पुष्टि के लिए कृपया अपना पासवर्ड दर्ज करें"
+      }
+    }
+  },
+  "apiAccess": {
+    "heading": "API पहुंच",
+    "description": "MCP के माध्यम से Claude Desktop जैसे बाहरी AI टूल कनेक्ट करने के लिए व्यक्तिगत पहुंच टोकन बनाएं।",
+    "createTokenButton": "टोकन बनाएं",
+    "mcpServerUrlLabel": "MCP सर्वर URL",
+    "mcpServerUrlHelp": "MCP क्लाइंट जैसे Claude Code या Claude Desktop कॉन्फ़िगर करते समय इस URL का उपयोग करें।",
+    "copyButton": "कॉपी",
+    "copiedButton": "कॉपी हो गया",
+    "noTokens": "अभी कोई API टोकन नहीं। शुरू करने के लिए एक बनाएं।",
+    "tokenPrefix": "अंतिम उपयोग",
+    "expires": "समाप्ति",
+    "created": "बनाया गया",
+    "lastUsed": "अंतिम उपयोग",
+    "revokeButton": "रद्द करें",
+    "revokeModal": {
+      "title": "टोकन रद्द करें",
+      "message": "यह टोकन तुरंत काम करना बंद कर देगा। इसका उपयोग करने वाले किसी भी MCP कनेक्शन को डिस्कनेक्ट कर दिया जाएगा।",
+      "confirmLabel": "रद्द करें"
+    },
+    "createModal": {
+      "title": "API टोकन बनाएं",
+      "tokenNameLabel": "टोकन का नाम",
+      "tokenNamePlaceholder": "उदा., Claude Desktop",
+      "scopesLabel": "स्कोप",
+      "expirationLabel": "समाप्ति",
+      "creatingButton": "बनाया जा रहा है...",
+      "createButton": "टोकन बनाएं",
+      "scopes": {
+        "read": {
+          "label": "पढ़ें",
+          "description": "खाते, लेन-देन और श्रेणियां देखें"
+        },
+        "write": {
+          "label": "लिखें",
+          "description": "लेन-देन, भुगतानकर्ता और श्रेणियां बनाएं"
+        },
+        "reports": {
+          "label": "रिपोर्ट",
+          "description": "वित्तीय रिपोर्ट और विश्लेषण उत्पन्न करें"
+        }
+      },
+      "expiry": {
+        "none": "कोई समाप्ति नहीं",
+        "d30": "30 दिन",
+        "d90": "90 दिन",
+        "y1": "1 वर्ष"
+      },
+      "validation": {
+        "nameRequired": "टोकन का नाम आवश्यक है",
+        "nameMax": "टोकन का नाम 100 अक्षरों या उससे कम होना चाहिए"
+      }
+    },
+    "createdModal": {
+      "title": "टोकन बनाया गया",
+      "warningNote": "इस टोकन को अभी कॉपी करें। आप इसे फिर नहीं देख पाएंगे।",
+      "doneButton": "हो गया"
+    },
+    "toasts": {
+      "copied": "टोकन क्लिपबोर्ड पर कॉपी किया गया",
+      "mcpUrlCopied": "MCP URL क्लिपबोर्ड पर कॉपी किया गया",
+      "revoked": "टोकन रद्द किया गया",
+      "selectScope": "कम से कम एक स्कोप चुनें",
+      "copyTokenFailed": "टोकन कॉपी करने में विफल",
+      "copyUrlFailed": "URL कॉपी करने में विफल",
+      "loadFailed": "API टोकन लोड करने में विफल",
+      "createFailed": "टोकन बनाने में विफल",
+      "revokeFailed": "टोकन रद्द करने में विफल"
+    },
+    "relative": {
+      "never": "कभी नहीं",
+      "today": "आज",
+      "yesterday": "कल",
+      "daysAgo": "{count} दिन पहले",
+      "monthsAgo": "{count} महीने पहले"
+    }
+  },
+  "autoBackup": {
+    "heading": "स्वचालित बैकअप",
+    "description": "अपने डेटा को एक शेड्यूल पर एक फ़ोल्डर में स्वचालित रूप से बैकअप करें। चूंकि Monize Docker में चलता है, आपको एक होस्ट फ़ोल्डर को कंटेनर में वॉल्यूम के रूप में मैप करना होगा (उदा., -v /host/backups:/backups)।",
+    "loadingText": "लोड हो रहा है...",
+    "enableLabel": "स्वचालित बैकअप सक्षम करें",
+    "backupFolderLabel": "बैकअप फ़ोल्डर",
+    "backupFolderPlaceholder": "/backups",
+    "browseButton": "ब्राउज़ करें...",
+    "validateButton": "सत्यापित करें",
+    "validatingButton": "सत्यापित किया जा रहा है...",
+    "folderValid": "फ़ोल्डर मान्य और लिखने योग्य है",
+    "selectThisFolder": "यह फ़ोल्डर चुनें",
+    "noSubdirectories": "कोई उपनिर्देशिका नहीं",
+    "frequencyLabel": "बैकअप आवृत्ति",
+    "backupTimeLabel": "बैकअप समय ({timezone})",
+    "backupTimeHelpInterval": "दिन का पहला बैकअप इस समय शुरू होता है ({timezone})। बाद के बैकअप कॉन्फ़िगर किए गए अंतराल पर होते हैं।",
+    "backupTimeHelpDaily": "आपके स्थानीय समयक्षेत्र ({timezone}) में बैकअप चलाने का समय।",
+    "retention": {
+      "heading": "प्रतिधारण नीति",
+      "description": "कितने बैकअप रखने हैं कॉन्फ़िगर करें। इन सीमाओं से परे पुराने बैकअप स्वचालित रूप से हटा दिए जाते हैं।",
+      "dailyLabel": "दैनिक बैकअप",
+      "dailyHelp": "रखने के लिए सबसे हाल के बैकअप",
+      "weeklyLabel": "साप्ताहिक बैकअप",
+      "weeklyHelp": "प्रति सप्ताह एक बनाए रखा गया",
+      "monthlyLabel": "मासिक बैकअप",
+      "monthlyHelp": "प्रति माह एक बनाए रखा गया"
+    },
+    "status": {
+      "heading": "स्थिति",
+      "lastBackup": "अंतिम बैकअप",
+      "nextBackup": "अगला बैकअप",
+      "error": "त्रुटि",
+      "success": "सफल",
+      "failed": "विफल"
+    },
+    "saveButton": "सेटिंग सहेजें",
+    "savingButton": "सहेजा जा रहा है...",
+    "runNowButton": "अभी बैकअप चलाएं",
+    "runningButton": "बैकअप चल रहा है...",
+    "toasts": {
+      "saved": "स्वत:-बैकअप सेटिंग सहेजी गईं",
+      "backupCreated": "बैकअप बनाया गया: {filename}",
+      "folderValid": "फ़ोल्डर मान्य और लिखने योग्य है",
+      "loadFailed": "स्वत:-बैकअप सेटिंग लोड करने में विफल",
+      "saveFailed": "सेटिंग सहेजने में विफल",
+      "runFailed": "बैकअप चलाने में विफल",
+      "browseFailed": "फ़ोल्डर ब्राउज़ करने में विफल"
+    },
+    "folderErrors": {
+      "required": "फ़ोल्डर पथ आवश्यक है",
+      "validationFailed": "फ़ोल्डर सत्यापन विफल",
+      "validationError": "सत्यापन विफल"
+    },
+    "frequencyOptions": {
+      "every6hours": "प्रत्येक 6 घंटे",
+      "every12hours": "प्रत्येक 12 घंटे",
+      "daily": "दैनिक",
+      "weekly": "साप्ताहिक"
+    }
+  },
+  "backupRestore": {
+    "heading": "बैकअप और पुनर्स्थापना",
+    "encryption": {
+      "heading": "बैकअप एन्क्रिप्शन",
+      "descriptionOidc": "यहां सेट किए गए समर्पित बैकअप पासवर्ड से मैन्युअल और स्वचालित बैकअप एन्क्रिप्ट करें। पुनर्स्थापना के लिए पासवर्ड आवश्यक है।",
+      "descriptionLocal": "अपने लॉगिन पासवर्ड से मैन्युअल और स्वचालित बैकअप एन्क्रिप्ट करें। पुनर्स्थापना के लिए पासवर्ड आवश्यक है।",
+      "loading": "लोड हो रहा है...",
+      "enabledBadge": "सक्षम",
+      "changePasswordButton": "बैकअप पासवर्ड बदलें",
+      "disableButton": "अक्षम करें",
+      "setPasswordButton": "बैकअप पासवर्ड सेट करें",
+      "enableEncryptedButton": "एन्क्रिप्टेड बैकअप सक्षम करें",
+      "setupModal": {
+        "titleOidc": "बैकअप पासवर्ड सेट करें",
+        "titleLocal": "एन्क्रिप्टेड बैकअप सक्षम करें",
+        "descriptionOidc": "एक पासवर्ड चुनें जो आपके बैकअप एन्क्रिप्ट करने के लिए उपयोग किया जाएगा। इसे कहीं सुरक्षित रखें -- पुनर्स्थापना के लिए आपको इसकी आवश्यकता होगी।",
+        "descriptionLocal": "अपने लॉगिन पासवर्ड की पुष्टि करें। इसका उपयोग सभी बैकअप (मैन्युअल और स्वचालित) एन्क्रिप्ट करने के लिए किया जाएगा।",
+        "placeholderOidc": "नया बैकअप पासवर्ड (12+ अक्षर)",
+        "placeholderLocal": "आपका लॉगिन पासवर्ड",
+        "savingButton": "सहेजा जा रहा है...",
+        "confirmButton": "पुष्टि करें"
+      },
+      "toasts": {
+        "enabled": "एन्क्रिप्टेड बैकअप सक्षम किए गए",
+        "disabled": "एन्क्रिप्टेड बैकअप अक्षम किए गए",
+        "enableFailed": "एन्क्रिप्शन सक्षम करने में विफल",
+        "disableFailed": "एन्क्रिप्शन अक्षम करने में विफल"
+      }
+    },
+    "export": {
+      "heading": "बैकअप बनाएं",
+      "description": "अपने वित्तीय डेटा का पूर्ण बैकअप डाउनलोड करें। इसमें खाते, लेन-देन, श्रेणियां, भुगतानकर्ता, बजट, निवेश और अन्य सभी उपयोगकर्ता डेटा शामिल हैं।",
+      "downloadButton": "बैकअप डाउनलोड करें",
+      "creatingButton": "बैकअप बन रहा है...",
+      "exportPasswordModal": {
+        "title": "बैकअप एन्क्रिप्ट करें",
+        "description": "इस बैकअप को एन्क्रिप्ट करने के लिए पासवर्ड दर्ज करें। पुनर्स्थापना के लिए आपको इसकी आवश्यकता होगी।",
+        "placeholderOidc": "बैकअप पासवर्ड",
+        "placeholderLocal": "लॉगिन पासवर्ड",
+        "encryptingButton": "एन्क्रिप्ट किया जा रहा है...",
+        "downloadButton": "डाउनलोड"
+      },
+      "toasts": {
+        "success": "बैकअप सफलतापूर्वक डाउनलोड किया गया",
+        "failed": "बैकअप बनाने में विफल"
+      }
+    },
+    "restore": {
+      "heading": "बैकअप से पुनर्स्थापित करें",
+      "description": "पहले निर्यात की गई बैकअप फ़ाइल से अपने सभी वर्तमान डेटा को बदलें। यह आपके मौजूदा डेटा को स्थायी रूप से अधिलेखित कर देगा।",
+      "openButton": "बैकअप से पुनर्स्थापित करें...",
+      "warning": "चेतावनी: यह आपका सभी वर्तमान डेटा हटा देगा और उसे बैकअप सामग्री से बदल देगा। यह क्रिया पूर्ववत नहीं की जा सकती।",
+      "selectFileLabel": "बैकअप फ़ाइल चुनें",
+      "encryptedBackupLabel": "यह बैकअप एन्क्रिप्टेड है। इसे बनाते समय उपयोग किया गया बैकअप पासवर्ड दर्ज करें:",
+      "backupPasswordPlaceholder": "बैकअप पासवर्ड",
+      "oidcConfirmLabel": "पुष्टि के लिए अपने पहचान प्रदाता से पुनः प्रमाणित करें:",
+      "passwordConfirmLabel": "पुष्टि के लिए अपना खाता पासवर्ड दर्ज करें:",
+      "passwordPlaceholder": "अपना पासवर्ड दर्ज करें",
+      "oidcRestoreButton": "पुनः प्रमाणित करें और पुनर्स्थापित करें",
+      "restoringButton": "पुनर्स्थापित किया जा रहा है...",
+      "confirmRestoreButton": "पुनर्स्थापना की पुष्टि करें",
+      "toasts": {
+        "pleaseSelectFile": "कृपया एक बैकअप फ़ाइल चुनें",
+        "pleaseEnterPassword": "पुष्टि के लिए कृपया अपना पासवर्ड दर्ज करें",
+        "encryptedNeedsPassword": "यह बैकअप एन्क्रिप्टेड है। \"बैकअप पासवर्ड\" फ़ील्ड में उसे बनाते समय उपयोग किया गया पासवर्ड दर्ज करें, फिर पुनः प्रयास करें।",
+        "failed": "बैकअप पुनर्स्थापित करने में विफल"
+      }
+    },
+    "restoreResult": {
+      "title": "पुनर्स्थापना पूर्ण",
+      "description": "आपका डेटा सफलतापूर्वक पुनर्स्थापित हो गया है। यहां जो पुनर्स्थापित किया गया उसका सारांश है:",
+      "totalRecords": "कुल रिकॉर्ड",
+      "doneButton": "हो गया"
+    }
+  },
+  "sharedAccess": {
+    "description": "प्रतिनिधि अपनी स्वयं की साख के साथ साइन इन करते हैं और आपका पासवर्ड कभी नहीं देखते। वे केवल वे खाते और अनुभाग देखते हैं जो आप उन्हें देते हैं।",
+    "addDelegateButton": "प्रतिनिधि जोड़ें",
+    "loading": "लोड हो रहा है...",
+    "noDelegates": "अभी कोई प्रतिनिधि नहीं।",
+    "statusLabel": "स्थिति: {status}",
+    "sectionsLabel": "अनुभाग: {count}",
+    "accountsLabel": "खाते: {count}",
+    "sharedDataLabel": "साझा डेटा: {count}",
+    "editAccessButton": "पहुंच संपादित करें",
+    "resetPasswordButton": "पासवर्ड रीसेट करें",
+    "resetPasswordDisabledTitle": "यह व्यक्ति अपना पासवर्ड स्वयं प्रबंधित करता है (उनका अपना Monize खाता है या अन्यत्र प्रतिनिधित्व पहुंच है)।",
+    "removeButton": "हटाएं",
+    "createModal": {
+      "title": "प्रतिनिधि जोड़ें",
+      "description": "किसी अन्य व्यक्ति को अपने खातों तक सीमित पहुंच दें।",
+      "emailLabel": "ईमेल",
+      "emailPlaceholder": "प्रतिनिधि ईमेल",
+      "firstNameLabel": "पहला नाम",
+      "firstNamePlaceholder": "पहला नाम (वैकल्पिक)",
+      "lastNameLabel": "अंतिम नाम",
+      "lastNamePlaceholder": "अंतिम नाम (वैकल्पिक)",
+      "existingAccountNotice": "इस व्यक्ति के पास पहले से Monize लॉगिन है। वे अपनी साख रखेंगे और बस उन्हें अतिरिक्त साझा पहुंच दी जाएगी -- कोई पासवर्ड या आमंत्रण की आवश्यकता नहीं है।",
+      "sendInviteLabel": "पासवर्ड सेट करने के बजाय ईमेल आमंत्रण भेजें",
+      "passwordLabel": "पासवर्ड",
+      "passwordPlaceholder": "पासवर्ड सेट करें",
+      "submitButton": "प्रतिनिधि जोड़ें"
+    },
+    "revokeDialog": {
+      "title": "प्रतिनिधि हटाएं",
+      "message": "यह प्रतिनिधि हटाएं? वे आपके खाते तक पहुंच खो देंगे। यदि उनके पास कोई अन्य साझा पहुंच नहीं है और उन्होंने कभी इस ईमेल को अपने Monize खाते के रूप में दावा नहीं किया, तो उनका स्वामी-प्रबंधित लॉगिन भी हटा दिया जाएगा।",
+      "removingButton": "हटाया जा रहा है...",
+      "removeButton": "हटाएं"
+    },
+    "tempPasswordModal": {
+      "title": "अस्थायी पासवर्ड",
+      "description": "इसे प्रतिनिधि के साथ सुरक्षित रूप से साझा करें। पहले साइन इन पर उनसे इसे बदलने के लिए कहा जाएगा। यह फिर नहीं दिखाया जाएगा।",
+      "copyButton": "कॉपी",
+      "copiedButton": "कॉपी हो गया",
+      "doneButton": "हो गया"
+    },
+    "toasts": {
+      "created": "प्रतिनिधि बनाया गया",
+      "createdWithTempPassword": "प्रतिनिधि बनाया गया। अस्थायी पासवर्ड: {password}",
+      "invited": "आमंत्रण ईमेल भेजा गया",
+      "removed": "प्रतिनिधि हटाया गया"
+    },
+    "errors": {
+      "setPasswordOrInvite": "पासवर्ड सेट करें या ईमेल आमंत्रण भेजें।",
+      "loadFailed": "साझा पहुंच लोड करने में विफल",
+      "createFailed": "प्रतिनिधि बनाने में विफल",
+      "revokeFailed": "प्रतिनिधि रद्द करने में विफल",
+      "resetPasswordFailed": "पासवर्ड रीसेट करने में विफल",
+      "copyFailed": "क्लिपबोर्ड पर कॉपी नहीं हो सका"
+    }
+  },
+  "delegateAccessModal": {
+    "title": "पहुंच संपादित करें",
+    "tabs": {
+      "accounts": "खाते",
+      "sections": "अनुभाग",
+      "shared": "साझा डेटा"
+    },
+    "sections": {
+      "description": "पूरे ऐप अनुभागों तक केवल-पढ़ने की पहुंच दें। खाता-स्कोप किए गए डेटा के लिए प्रति-खाता पहुंच की भी आवश्यकता है।"
+    },
+    "accounts": {
+      "noAccounts": "देने के लिए कोई खाता नहीं।",
+      "grantAll": "सभी दें"
+    },
+    "shared": {
+      "description": "भुगतानकर्ता, श्रेणियों और टैग को पढ़ना हमेशा अनुमत है। ये बनाएं/संपादित करें/हटाएं को नियंत्रित करते हैं।"
+    },
+    "saveButton": "सहेजें",
+    "toasts": {
+      "saved": "पहुंच अपडेट की गई",
+      "saveFailed": "पहुंच अपडेट करने में विफल"
+    }
+  },
+  "nav": {
+    "sectionsAriaLabel": "सेटिंग अनुभाग",
+    "profile": "प्रोफ़ाइल",
+    "preferences": "प्राथमिकताएं",
+    "notifications": "सूचनाएं",
+    "security": "सुरक्षा",
+    "sharedAccess": "साझा पहुंच",
+    "emergencyAccess": "आपातकालीन पहुंच",
+    "apiAccess": "API पहुंच",
+    "aiSettings": "AI सेटिंग",
+    "backupRestore": "बैकअप और पुनर्स्थापना",
+    "autoBackup": "स्वचालित बैकअप",
+    "help": "सहायता और समर्थन",
+    "dangerZone": "खतरनाक क्षेत्र"
+  },
+  "page": {
+    "title": "सेटिंग",
+    "demoRestricted": {
+      "heading": "डेमो मोड में प्रतिबंधित",
+      "body": "प्रोफ़ाइल संपादन, पासवर्ड परिवर्तन, दो-कारक प्रमाणीकरण और खाता हटाना डेमो मोड में अक्षम हैं।"
+    },
+    "sharedAccessCard": {
+      "title": "साझा पहुंच",
+      "description": "किसी अन्य व्यक्ति को विशिष्ट खातों तक दानेदार पहुंच दें।"
+    },
+    "emergencyAccessCard": {
+      "title": "आपातकालीन पहुंच",
+      "description": "उन संपर्कों को नामित करें जो एक विस्तारित अवधि के लिए साइन इन न करने पर आपके खाते तक पूर्ण पहुंच स्वचालित रूप से प्राप्त करते हैं।"
+    },
+    "aiSettingsCard": {
+      "title": "AI सेटिंग",
+      "description": "AI प्रदाताओं को कॉन्फ़िगर करें, API कुंजियां प्रबंधित करें और उपयोग आंकड़े देखें।"
+    },
+    "delegateSecurityError": "आपकी सुरक्षा सेटिंग लोड करने में असमर्थ।",
+    "toasts": {
+      "securityLoadFailed": "सुरक्षा सेटिंग लोड करने में विफल",
+      "loadFailed": "सेटिंग लोड करने में विफल"
+    }
+  },
+  "aiSettings": {
+    "backLink": "सेटिंग पर वापस",
+    "title": "AI सेटिंग",
+    "subtitle": "बुद्धिमान वित्तीय सुविधाओं के लिए AI प्रदाता कॉन्फ़िगर करें",
+    "demoRestricted": {
+      "heading": "डेमो मोड में प्रतिबंधित",
+      "body": "AI प्रदाता कॉन्फ़िगरेशन डेमो मोड में अक्षम है।"
+    },
+    "toasts": {
+      "loadFailed": "AI सेटिंग लोड करने में विफल",
+      "usageLoadFailed": "उपयोग डेटा लोड करने में विफल"
+    }
+  },
+  "sharedAccessPage": {
+    "backLink": "सेटिंग पर वापस",
+    "title": "साझा पहुंच",
+    "subtitle": "किसी अन्य व्यक्ति को विशिष्ट खातों तक दानेदार पहुंच दें",
+    "demoRestricted": {
+      "heading": "डेमो मोड में प्रतिबंधित",
+      "body": "प्रतिनिधि प्रबंधन डेमो मोड में अक्षम है।"
+    }
+  },
+  "emergencyAccess": {
+    "backLink": "सेटिंग पर वापस",
+    "title": "आपातकालीन पहुंच",
+    "subtitle": "उन संपर्कों को नामित करें जो एक विस्तारित अवधि के लिए साइन इन न करने पर आपके खाते तक पूर्ण पहुंच स्वचालित रूप से प्राप्त करते हैं",
+    "delegateRestricted": "आपातकालीन पहुंच केवल खाता स्वामी द्वारा कॉन्फ़िगर की जा सकती है।",
+    "demoRestricted": "आपातकालीन पहुंच डेमो मोड में अक्षम है।",
+    "emailNotConfigured": {
+      "heading": "ईमेल कॉन्फ़िगर नहीं है",
+      "body": "आपातकालीन पहुंच ईमेल डिलीवरी पर निर्भर है। अपने व्यवस्थापक को SMTP पर्यावरण चर (SMTP_HOST, SMTP_USER, SMTP_PASSWORD) कॉन्फ़िगर करने और पुनः प्रयास करने के लिए कहें।"
+    },
+    "alreadyGranted": {
+      "heading": "आपातकालीन पहुंच पहले से दी गई",
+      "description": "आपके नामित संपर्कों को खाता अधिग्रहण के लिए मैजिक लिंक प्राप्त हुए। यदि यह अनपेक्षित था, तो बकाया लिंक को अमान्य करने के लिए नीचे दी गई स्थिति साफ करें।",
+      "clearButton": "दी गई स्थिति साफ करें"
+    },
+    "loadError": "आपातकालीन पहुंच सेटिंग लोड करने में असमर्थ।",
+    "settings": {
+      "heading": "सेटिंग",
+      "enableLabel": "आपातकालीन पहुंच सक्षम करें",
+      "grantAfterDaysLabel": "पहुंच दिए जाने से पहले निष्क्रियता के दिन",
+      "reminderAfterDaysLabel": "रिमाइंडर ईमेल से पहले निष्क्रियता के दिन",
+      "saveButton": "सेटिंग सहेजें",
+      "toasts": {
+        "saved": "आपातकालीन पहुंच सेटिंग सहेजी गईं",
+        "saveFailed": "सेटिंग सहेजने में विफल"
+      }
+    },
+    "message": {
+      "heading": "अपने संपर्कों के लिए संदेश",
+      "description": "विश्राम पर एन्क्रिप्टेड। देखने या संपादित करने के लिए आपकी पहचान की पुनः सत्यापना आवश्यक है।",
+      "unlockTimer": "{mins}:{secs} के लिए अनलॉक किया गया",
+      "messageSet": "संदेश सेट है",
+      "charCount": "({count} अक्षर",
+      "updatedAt": ", {timestamp} पर अपडेट किया गया",
+      "noMessage": "कोई संदेश सेट नहीं",
+      "revealButton": "संदेश दिखाएं",
+      "editButton": "संदेश संपादित करें",
+      "addButton": "संदेश जोड़ें",
+      "emptyMessage": "(खाली)",
+      "lockNowButton": "अभी लॉक करें",
+      "editMessageButton": "संपादित करें",
+      "messagePlaceholder": "नोट, निर्देश, महत्वपूर्ण दस्तावेजों के स्थान...",
+      "maxCharsNote": "अधिकतम 4000 अक्षर। विश्राम पर एन्क्रिप्टेड संग्रहीत।",
+      "cancelButton": "रद्द करें",
+      "saveButton": "संदेश सहेजें",
+      "toasts": {
+        "saved": "संदेश सहेजा गया",
+        "verifyAgain": "सत्यापन समाप्त हो गया -- सहेजने के लिए फिर से सत्यापित करें",
+        "loadFailed": "संदेश लोड करने में विफल",
+        "saveFailed": "संदेश सहेजने में विफल"
+      }
+    },
+    "contacts": {
+      "heading": "आपातकालीन संपर्क",
+      "description": "प्रत्येक संपर्क को पहुंच दिए जाने पर ईमेल द्वारा एक मैजिक लिंक प्राप्त होता है। वे इसका उपयोग एक नया पासवर्ड सेट करने और आपके खाते को अधिग्रहण करने के लिए करते हैं। दावा करने वाला पहला संपर्क जीतता है।",
+      "addButton": "संपर्क जोड़ें",
+      "noContacts": "अभी कोई संपर्क नहीं।",
+      "editButton": "संपादित करें",
+      "removeButton": "हटाएं",
+      "contactModal": {
+        "addTitle": "आपातकालीन संपर्क जोड़ें",
+        "editTitle": "संपर्क संपादित करें",
+        "firstNameLabel": "पहला नाम",
+        "emailLabel": "ईमेल",
+        "addButton": "संपर्क जोड़ें",
+        "saveButton": "परिवर्तन सहेजें"
+      },
+      "removeDialog": {
+        "title": "संपर्क हटाएं",
+        "message": "यह संपर्क अब आपातकालीन पहुंच प्राप्त नहीं करेगा। आप उन्हें बाद में फिर जोड़ सकते हैं।",
+        "removingButton": "हटाया जा रहा है...",
+        "removeButton": "हटाएं"
+      },
+      "toasts": {
+        "added": "संपर्क जोड़ा गया",
+        "updated": "संपर्क अपडेट किया गया",
+        "removed": "संपर्क हटाया गया",
+        "saveFailed": "संपर्क सहेजने में विफल",
+        "removeFailed": "संपर्क हटाने में विफल"
+      }
+    },
+    "status": {
+      "heading": "स्थिति",
+      "lastAccess": "अंतिम पहुंच: ",
+      "lastReminderSent": "अंतिम रिमाइंडर भेजा गया: ",
+      "grantStatus": "दान स्थिति: ",
+      "unknown": "अज्ञात",
+      "never": "कभी नहीं",
+      "daysAgo": "{count} दिन{plural} पहले",
+      "grantedOn": "{timestamp} पर दिया गया",
+      "notYetGranted": "अभी तक नहीं दिया गया",
+      "timerNote": "जब भी आप ऐप उपयोग करते हैं -- साइन इन, पृष्ठ देखना, लेन-देन दर्ज करना, कोई भी प्रमाणित -- टाइमर स्वचालित रूप से रीसेट होता है।"
+    },
+    "resetConfirm": {
+      "title": "दी गई स्थिति साफ करें",
+      "message": "यह किसी भी बकाया मैजिक लिंक को अमान्य करता है, रिमाइंडर क्रम को फिर से शुरू करने देता है, और निष्क्रियता की एक और अवधि के बाद दान प्रवाह को फिर से सक्रिय करने देता है।",
+      "clearingButton": "साफ किया जा रहा है...",
+      "clearButton": "साफ करें",
+      "toasts": {
+        "cleared": "दी गई स्थिति साफ की गई",
+        "resetFailed": "दी गई स्थिति रीसेट करने में विफल"
+      }
+    },
+    "stepUp": {
+      "reason": "अपना आपातकालीन-पहुंच संदेश देखने या संपादित करने के लिए अपनी पहचान पुनः सत्यापित करें।"
+    },
+    "toasts": {
+      "loadFailed": "आपातकालीन पहुंच लोड करने में विफल",
+      "reauthFailed": "पुनः प्रमाणीकरण की पुष्टि करने में विफल"
+    }
+  },
+  "aiProviders": {
+    "heading": "AI प्रदाता",
+    "addButton": "प्रदाता जोड़ें",
+    "encryptionWarning": "AI_ENCRYPTION_KEY कॉन्फ़िगर नहीं है। आप Ollama (स्थानीय, कोई API कुंजी नहीं चाहिए) उपयोग कर सकते हैं लेकिन क्लाउड प्रदाताओं को API कुंजियां सुरक्षित रूप से संग्रहीत करने के लिए एन्क्रिप्शन की आवश्यकता है।",
+    "systemDefault": {
+      "heading": "सिस्टम डिफ़ॉल्ट AI प्रदाता उपलब्ध",
+      "description": "आपके व्यवस्थापक द्वारा एक केंद्रीय AI प्रदाता कॉन्फ़िगर किया गया है",
+      "usedAutomatically": "यह स्वचालित रूप से उपयोग किया जाएगा क्योंकि आपके पास कोई व्यक्तिगत प्रदाता कॉन्फ़िगर नहीं है।",
+      "personalPriority": "आपके व्यक्तिगत प्रदाता सिस्टम डिफ़ॉल्ट से प्राथमिकता लेते हैं।"
+    },
+    "noProviders": {
+      "withSystemDefault": "कोई व्यक्तिगत AI प्रदाता कॉन्फ़िगर नहीं। सिस्टम डिफ़ॉल्ट प्रदाता उपयोग किया जाएगा।",
+      "withoutSystemDefault": "कोई AI प्रदाता कॉन्फ़िगर नहीं। AI सुविधाएं सक्षम करने के लिए एक प्रदाता जोड़ें।"
+    },
+    "providerCard": {
+      "activeBadge": "सक्रिय",
+      "inactiveBadge": "निष्क्रिय",
+      "priorityLabel": "प्राथमिकता: {n}",
+      "modelLabel": "मॉडल: {model}",
+      "keyLabel": "कुंजी: {key}",
+      "urlLabel": "URL: {url}",
+      "costLabel": "लागत/1M ({currency}): {input} इनपुट / {output} आउटपुट",
+      "disableButton": "अक्षम करें",
+      "enableButton": "सक्षम करें",
+      "editButton": "संपादित करें",
+      "deleteButton": "हटाएं"
+    },
+    "configForm": {
+      "addTitle": "AI प्रदाता जोड़ें",
+      "editTitle": "प्रदाता संपादित करें",
+      "providerLabel": "प्रदाता",
+      "displayNameLabel": "प्रदर्शन नाम",
+      "modelLabel": "मॉडल",
+      "testButton": "परीक्षण करें",
+      "testingButton": "परीक्षण हो रहा है...",
+      "ollamaCloudNote": "मॉडल नामों में -cloud प्रत्यय शामिल होना चाहिए (उदा. gpt-oss:20b-cloud)।",
+      "apiKeyLabel": "API कुंजी",
+      "baseUrlLabel": "आधार URL",
+      "priorityLabel": "प्राथमिकता",
+      "priorityHelp": "कम संख्या = अधिक प्राथमिकता। फॉलबैक ऑर्डरिंग के लिए उपयोग किया जाता है।",
+      "costRatesHeading": "लागत दरें (वैकल्पिक)",
+      "costRatesHelp": "उपयोग डैशबोर्ड पर अनुमानित लागत देखने के लिए अपने प्रदाता की प्रति 1,000,000 टोकन प्रकाशित दरें दर्ज करें। लागत अनुमान छोड़ने के लिए खाली छोड़ें।",
+      "inputCostLabel": "इनपुट लागत / 1M टोकन",
+      "outputCostLabel": "आउटपुट लागत / 1M टोकन",
+      "rateCurrencyLabel": "दर मुद्रा",
+      "rateCurrencyHelp": "यदि यह आपकी गृह मुद्रा से भिन्न है, तो उपयोग डैशबोर्ड आपकी सहेजी गई विनिमय दरों का उपयोग करके लागत रूपांतरित कर सकता है।",
+      "saveButton": "परिवर्तन सहेजें",
+      "addProviderButton": "प्रदाता जोड़ें",
+      "modelPlaceholder": "मॉडल नाम दर्ज करें",
+      "testModelAria": "मॉडल परीक्षण करें",
+      "apiKeyPlaceholder": "API कुंजी दर्ज करें",
+      "saveFailed": "कॉन्फ़िगरेशन सहेजने में विफल",
+      "inputCostPlaceholder": "उदा., 3.00",
+      "outputCostPlaceholder": "उदा., 15.00",
+      "toasts": {
+        "notReachable": "प्रदाता तक नहीं पहुंचा जा सका।",
+        "modelUnavailable": "मॉडल \"{model}\" इस प्रदाता पर उपलब्ध नहीं है।",
+        "modelReady": "मॉडल \"{model}\" तैयार है।",
+        "success": "कनेक्शन सफल।",
+        "testFailed": "मॉडल परीक्षण विफल"
+      },
+      "costCurrencies": {
+        "USD": "USD - US डॉलर",
+        "EUR": "EUR - यूरो",
+        "GBP": "GBP - ब्रिटिश पाउंड",
+        "CAD": "CAD - कनाडाई डॉलर",
+        "AUD": "AUD - ऑस्ट्रेलियाई डॉलर",
+        "JPY": "JPY - जापानी येन",
+        "CNY": "CNY - चीनी युआन",
+        "INR": "INR - भारतीय रुपया"
+      },
+      "validation": {
+        "displayNameMax": "प्रदर्शन नाम 100 अक्षरों या उससे कम होना चाहिए",
+        "mustBeNumber": "संख्या होनी चाहिए",
+        "currencyCode": "3 अक्षरों का मुद्रा कोड होना चाहिए"
+      }
+    },
+    "testButton": {
+      "testLabel": "परीक्षण",
+      "connectionFailed": "कनेक्शन विफल",
+      "modelUnavailable": "मॉडल \"{model}\" इस प्रदाता पर उपलब्ध नहीं है।",
+      "successWithModel": "कनेक्शन सफल। मॉडल \"{model}\" तैयार है।",
+      "success": "कनेक्शन सफल",
+      "testFailed": "कनेक्शन परीक्षण विफल"
+    },
+    "toasts": {
+      "added": "प्रदाता जोड़ा गया",
+      "updated": "प्रदाता अपडेट किया गया",
+      "removed": "प्रदाता हटाया गया",
+      "modelReady": "मॉडल \"{model}\" तैयार है।",
+      "notReachable": "सहेजा गया, लेकिन प्रदाता तक नहीं पहुंचा जा सका। URL/API कुंजी दोबारा जांचें।",
+      "modelUnavailable": "सहेजा गया, लेकिन मॉडल \"{model}\" इस प्रदाता पर उपलब्ध नहीं है।",
+      "deleteFailed": "प्रदाता हटाने में विफल",
+      "updateFailed": "प्रदाता अपडेट करने में विफल"
+    }
+  },
+  "usage": {
+    "heading": "उपयोग",
+    "totalRequests": "कुल अनुरोध",
+    "inputTokens": "इनपुट टोकन",
+    "outputTokens": "आउटपुट टोकन",
+    "estCost": "अनुमानित लागत",
+    "setRatesToEnable": "सक्षम करने के लिए प्रदाता पर दरें सेट करें",
+    "inHomeCurrency": "{currency} में",
+    "inProviderCurrency": "प्रदाता मुद्रा में",
+    "byProvider": {
+      "heading": "प्रदाता द्वारा",
+      "provider": "प्रदाता",
+      "requests": "अनुरोध",
+      "inputTokens": "इनपुट टोकन",
+      "outputTokens": "आउटपुट टोकन",
+      "estCost": "अनुमानित लागत"
+    },
+    "recentActivity": {
+      "heading": "हाल की गतिविधि",
+      "date": "तिथि",
+      "provider": "प्रदाता",
+      "feature": "सुविधा",
+      "tokens": "टोकन",
+      "duration": "अवधि",
+      "estCost": "अनुमानित लागत"
+    },
+    "noUsage": "अभी कोई उपयोग डेटा नहीं। AI सुविधाओं का उपयोग शुरू करने के बाद उपयोग यहां दिखाई देगा।",
+    "periods": {
+      "d7": "7 दिन",
+      "d30": "30 दिन",
+      "d90": "90 दिन",
+      "all": "सभी समय"
+    },
+    "estCostTooltip": "प्रत्येक प्रदाता पर आपके द्वारा कॉन्फ़िगर की गई लागत दरों का उपयोग करके अनुमानित। किसी भी गतिविधि को बाहर रखता है जहां कोई मिलान दर सेट नहीं है।"
+  }
+}

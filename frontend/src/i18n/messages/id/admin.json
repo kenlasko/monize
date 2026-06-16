@@ -1,0 +1,108 @@
+{
+  "createUserModal": {
+    "title": "Tambah Pengguna",
+    "description": "Buat akun baru. Anda dapat mengirim undangan email, mengatur kata sandi sendiri, atau membuat kata sandi sementara untuk dibagikan.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "pengguna@contoh.com",
+    "firstNameLabel": "Nama depan (opsional)",
+    "firstNamePlaceholder": "Nama depan",
+    "lastNameLabel": "Nama belakang (opsional)",
+    "lastNamePlaceholder": "Nama belakang",
+    "roleLabel": "Peran",
+    "roleUser": "Pengguna",
+    "roleAdmin": "Admin",
+    "credentialsLegend": "Kredensial",
+    "inviteLabel": "Kirim undangan email untuk mengatur kata sandi",
+    "inviteSmtpNote": "Membutuhkan SMTP yang dikonfigurasi.",
+    "setPasswordLabel": "Atur kata sandi sekarang",
+    "tempPasswordLabel": "Buat kata sandi sementara",
+    "tempPasswordNote": "Ditampilkan sekali setelah pembuatan. Pengguna harus menggantinya saat login pertama kali.",
+    "passwordFieldLabel": "Kata Sandi",
+    "passwordPlaceholder": "Atur kata sandi",
+    "createButton": "Buat Pengguna",
+    "validation": {
+      "invalidPassword": "Kata sandi tidak valid."
+    },
+    "toasts": {
+      "createFailed": "Gagal membuat pengguna"
+    }
+  },
+  "resetPasswordModal": {
+    "defaultTitle": "Reset Kata Sandi Berhasil",
+    "defaultDescription": "Kata sandi sementara telah ditetapkan untuk {userName}.",
+    "temporaryPasswordLabel": "Kata Sandi Sementara",
+    "copy": "Salin",
+    "copied": "Disalin",
+    "notShownAgain": "Kata sandi ini tidak akan ditampilkan lagi.",
+    "mustChangeOnLogin": "Pengguna akan diminta mengganti kata sandi mereka saat login berikutnya.",
+    "toasts": {
+      "copied": "Kata sandi disalin ke clipboard",
+      "copyFailed": "Gagal menyalin ke clipboard"
+    }
+  },
+  "userTable": {
+    "colUser": "Pengguna",
+    "colRole": "Peran",
+    "colProvider": "Penyedia",
+    "colStatus": "Status",
+    "colLastLogin": "Login Terakhir",
+    "colActions": "Tindakan",
+    "youSuffix": "(Anda)",
+    "noEmail": "Tidak ada email",
+    "unknown": "Tidak diketahui",
+    "never": "Tidak pernah",
+    "providerSso": "SSO",
+    "providerLocal": "Lokal",
+    "roleAdmin": "Admin",
+    "roleUser": "Pengguna",
+    "statusActive": "Aktif",
+    "statusDisabled": "Dinonaktifkan",
+    "clickToDisable": "Klik untuk menonaktifkan",
+    "clickToEnable": "Klik untuk mengaktifkan",
+    "resetPassword": "Reset Kata Sandi",
+    "noUsers": "Tidak ada pengguna ditemukan."
+  },
+  "usersPage": {
+    "title": "Manajemen Pengguna",
+    "userCount": "{count, plural, one {# pengguna} other {# pengguna}}",
+    "newUser": "+ Pengguna Baru",
+    "loadingUsers": "Memuat pengguna...",
+    "toasts": {
+      "inviteSent": "Email undangan dikirim ke {email}",
+      "userCreated": "{name} telah dibuat",
+      "userUpgraded": "{name} telah ditingkatkan ke akun penuh",
+      "roleChanged": "{name} sekarang menjadi {role}",
+      "roleAdmin": "admin",
+      "roleUser": "pengguna",
+      "userEnabled": "{name} telah diaktifkan",
+      "userDisabled": "{name} telah dinonaktifkan",
+      "userDeleted": "{name} telah dihapus",
+      "userDowngraded": "Data milik {name} telah dihapus; akses delegasi mereka tetap ada.",
+      "loadFailed": "Gagal memuat pengguna",
+      "deleteFailed": "Gagal menghapus pengguna",
+      "disableFailed": "Gagal menonaktifkan pengguna",
+      "resetFailed": "Gagal mereset kata sandi"
+    },
+    "dialogs": {
+      "promoteTitle": "Promosikan Pengguna?",
+      "demoteTitle": "Turunkan Pengguna?",
+      "promoteMessage": "Apakah Anda yakin ingin mempromosikan {name} ke {role}?",
+      "demoteMessage": "Apakah Anda yakin ingin menurunkan {name} ke {role}?",
+      "promoteConfirm": "Promosikan ke Admin",
+      "demoteConfirm": "Turunkan ke Pengguna",
+      "disableTitle": "Nonaktifkan Pengguna?",
+      "disableMessage": "Apakah Anda yakin ingin menonaktifkan {name}? Mereka tidak akan dapat masuk.",
+      "disableConfirm": "Nonaktifkan Pengguna",
+      "resetTitle": "Reset Kata Sandi?",
+      "resetMessage": "Ini akan membuat kata sandi sementara baru untuk {name}. Mereka akan diminta untuk menggantinya saat login berikutnya.",
+      "resetConfirm": "Reset Kata Sandi",
+      "deleteTitle": "Hapus Pengguna?",
+      "deleteMessage": "Apakah Anda yakin ingin menghapus {name}? Ini akan menghapus akun dan semua data terkait mereka secara permanen. Tindakan ini tidak dapat dibatalkan. Jika mereka adalah delegasi akun lain, data mereka sendiri dihapus tetapi login mereka dipertahankan agar delegasi tetap berfungsi -- mereka menjadi pengguna delegasi saja.",
+      "deleteConfirm": "Hapus Pengguna",
+      "tempPasswordTitleCreated": "Pengguna Dibuat",
+      "tempPasswordTitleUpgraded": "Akun Ditingkatkan",
+      "tempPasswordDescCreated": "Kata sandi sementara dibuat untuk {name}. Bagikan kepada mereka untuk masuk.",
+      "tempPasswordDescUpgraded": "Pengguna bersama yang sudah ada telah ditingkatkan ke akun penuh. Bagikan kata sandi sementara ini kepada {name}."
+    }
+  }
+}

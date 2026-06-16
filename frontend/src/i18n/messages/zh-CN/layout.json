@@ -1,0 +1,119 @@
+{
+  "demoBanner": {
+    "label": "演示模式",
+    "message": "所有数据每天 UTC 凌晨 4:00 重置。请随意体验！"
+  },
+  "delegationBanner": {
+    "viewing": "正在查看：",
+    "sharedAccount": "共享账户",
+    "yourAccount": "您的账户",
+    "switchAccountLabel": "切换账户",
+    "selfSuffix": "{label}（您）",
+    "error2fa": "该账户需要双因素认证。请在切换前在设置中启用 2FA。",
+    "errorSwitch": "无法切换账户"
+  },
+  "backendDownBanner": {
+    "connectionBlockedLabel": "连接被阻止",
+    "connectionBlockedDetail": "安全标头正在阻止通过普通 HTTP 发出的请求。",
+    "connectionLostLabel": "连接中断",
+    "connectionLostDetail": "无法连接到服务器。正在自动重试...",
+    "httpsHint": "请在您的环境中设置 <code>DISABLE_HTTPS_HEADERS=true</code> 或通过 HTTPS 访问本站。"
+  },
+  "httpWarningBanner": {
+    "label": "需要 HTTPS",
+    "detail": "安全标头已启用，但本站正通过普通 HTTP 访问。API 请求可能失败。",
+    "httpsHint": "请在您的环境中设置 <code>DISABLE_HTTPS_HEADERS=true</code> 或通过 HTTPS 访问本站。",
+    "dismiss": "关闭",
+    "dismissAriaLabel": "关闭 HTTPS 警告"
+  },
+  "updateBanner": {
+    "availableWithVersion": "Monize v{version} 已可用",
+    "availableGeneric": "Monize 新版本已可用",
+    "runningVersion": "（当前运行 v{version}）",
+    "releaseNotes": "发布说明",
+    "dismiss": "关闭",
+    "dismissAriaLabel": "关闭更新通知"
+  },
+  "actionHistory": {
+    "title": "操作历史",
+    "buttonAriaLabel": "操作历史",
+    "closeAriaLabel": "关闭",
+    "undo": "撤销",
+    "redo": "重做",
+    "noRecentActions": "无最近操作",
+    "undoneLabel": "已撤销",
+    "nothingToUndo": "无可撤销操作",
+    "nothingToRedo": "无可重做操作",
+    "cannotUndoDefault": "无法撤销此操作",
+    "cannotRedoDefault": "无法重做此操作",
+    "undoFailed": "撤销失败",
+    "redoFailed": "重做失败",
+    "entityLabels": {
+      "transaction": "交易",
+      "transfer": "转账",
+      "investment_transaction": "投资",
+      "bulk_transaction": "批量",
+      "category": "分类",
+      "payee": "收款人",
+      "tag": "标签",
+      "account": "账户",
+      "scheduled_transaction": "计划交易",
+      "security": "证券",
+      "budget": "预算",
+      "custom_report": "报表"
+    },
+    "descriptions": {
+      "createdAccount": "已创建账户\"{name}\"",
+      "updatedAccount": "已更新账户\"{name}\"",
+      "deletedAccount": "已删除账户\"{name}\"",
+      "createdBudget": "已创建预算\"{name}\"",
+      "updatedBudget": "已更新预算\"{name}\"",
+      "deletedBudget": "已删除预算\"{name}\"",
+      "createdCategory": "已创建分类\"{name}\"",
+      "updatedCategory": "已更新分类\"{name}\"",
+      "deletedCategory": "已删除分类\"{name}\"",
+      "createdInstitution": "已创建机构\"{name}\"",
+      "updatedInstitution": "已更新机构\"{name}\"",
+      "deletedInstitution": "已删除机构\"{name}\"",
+      "createdInvestmentReport": "已创建投资报表\"{name}\"",
+      "updatedInvestmentReport": "已更新投资报表\"{name}\"",
+      "deletedInvestmentReport": "已删除投资报表\"{name}\"",
+      "createdPayee": "已创建收款人\"{name}\"",
+      "updatedPayee": "已更新收款人\"{name}\"",
+      "deletedPayee": "已删除收款人\"{name}\"",
+      "createdReport": "已创建报表\"{name}\"",
+      "updatedReport": "已更新报表\"{name}\"",
+      "deletedReport": "已删除报表\"{name}\"",
+      "createdScheduledTransaction": "已创建计划交易\"{name}\"",
+      "updatedScheduledTransaction": "已更新计划交易\"{name}\"",
+      "deletedScheduledTransaction": "已删除计划交易\"{name}\"",
+      "createdSecurity": "已创建证券\"{symbol}\"",
+      "updatedSecurity": "已更新证券\"{symbol}\"",
+      "deletedSecurity": "已删除证券\"{symbol}\"",
+      "createdTag": "已创建标签\"{name}\"",
+      "updatedTag": "已更新标签\"{name}\"",
+      "deletedTag": "已删除标签\"{name}\"",
+      "createdTransaction": "已创建交易 {payee} {amount}",
+      "updatedTransaction": "已更新交易 {payee} {amount}",
+      "deletedTransaction": "已删除交易 {payee} {amount}",
+      "createdTransfer": "已创建从 {from} 到 {to} 的转账 {amount}",
+      "createdInvestmentTransaction": "已创建 {action} 交易",
+      "updatedInvestmentTransaction": "已更新 {action} 交易",
+      "deletedInvestmentTransaction": "已删除 {action} 交易",
+      "transferredSecurity": "已在账户间转移证券",
+      "updatedSecurityTransfer": "已更新证券转移"
+    },
+    "timeAgo": {
+      "justNow": "刚刚",
+      "minutes": "{count} 分钟前",
+      "hours": "{count} 小时前",
+      "days": "{count} 天前"
+    },
+    "undonePrefix": "已撤销：{description}",
+    "redonePrefix": "已重做：{description}"
+  },
+  "pageHeader": {
+    "helpAriaLabel": "打开 Monize 维基以获取此部分的帮助",
+    "helpTooltip": "打开 Monize 维基以获取此部分的帮助"
+  }
+}

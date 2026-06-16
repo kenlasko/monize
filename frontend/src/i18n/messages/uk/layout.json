@@ -1,0 +1,119 @@
+{
+  "demoBanner": {
+    "label": "Демо-режим",
+    "message": "Усі дані скидаються щодня о 4:00 UTC. Досліджуйте вільно!"
+  },
+  "delegationBanner": {
+    "viewing": "Перегляд:",
+    "sharedAccount": "Спільний обліковий запис",
+    "yourAccount": "Ваш обліковий запис",
+    "switchAccountLabel": "Переключити обліковий запис",
+    "selfSuffix": "{label} (ви)",
+    "error2fa": "Цей обліковий запис вимагає двофакторної автентифікації. Налаштуйте 2FA в Налаштуваннях перед переключенням.",
+    "errorSwitch": "Не вдалося переключити обліковий запис"
+  },
+  "backendDownBanner": {
+    "connectionBlockedLabel": "З'єднання заблоковано",
+    "connectionBlockedDetail": "Заголовки безпеки блокують запити через звичайний HTTP.",
+    "connectionLostLabel": "З'єднання втрачено",
+    "connectionLostDetail": "Не вдається зв'язатися з сервером. Повторне підключення автоматично...",
+    "httpsHint": "Встановіть <code>DISABLE_HTTPS_HEADERS=true</code> у вашому середовищі або отримайте доступ до сайту через HTTPS."
+  },
+  "httpWarningBanner": {
+    "label": "Потрібен HTTPS",
+    "detail": "Заголовки безпеки активні, але сайт відкрито через звичайний HTTP. Запити API можуть не виконуватися.",
+    "httpsHint": "Встановіть <code>DISABLE_HTTPS_HEADERS=true</code> у вашому середовищі або отримайте доступ до сайту через HTTPS.",
+    "dismiss": "Закрити",
+    "dismissAriaLabel": "Закрити попередження про HTTPS"
+  },
+  "updateBanner": {
+    "availableWithVersion": "Доступна версія Monize v{version}",
+    "availableGeneric": "Доступна нова версія Monize",
+    "runningVersion": "(запущено v{version})",
+    "releaseNotes": "Примітки до випуску",
+    "dismiss": "Закрити",
+    "dismissAriaLabel": "Закрити сповіщення про оновлення"
+  },
+  "actionHistory": {
+    "title": "Журнал дій",
+    "buttonAriaLabel": "Журнал дій",
+    "closeAriaLabel": "Закрити",
+    "undo": "Скасувати",
+    "redo": "Повторити",
+    "noRecentActions": "Немає нещодавніх дій",
+    "undoneLabel": "Скасовано",
+    "nothingToUndo": "Немає чого скасовувати",
+    "nothingToRedo": "Немає чого повторювати",
+    "cannotUndoDefault": "Неможливо скасувати цю дію",
+    "cannotRedoDefault": "Неможливо повторити цю дію",
+    "undoFailed": "Скасування не вдалося",
+    "redoFailed": "Повтор не вдався",
+    "entityLabels": {
+      "transaction": "Транзакція",
+      "transfer": "Переказ",
+      "investment_transaction": "Інвестиція",
+      "bulk_transaction": "Масова",
+      "category": "Категорія",
+      "payee": "Одержувач",
+      "tag": "Тег",
+      "account": "Рахунок",
+      "scheduled_transaction": "Запланована",
+      "security": "Цінний папір",
+      "budget": "Бюджет",
+      "custom_report": "Звіт"
+    },
+    "descriptions": {
+      "createdAccount": "Створено рахунок \"{name}\"",
+      "updatedAccount": "Оновлено рахунок \"{name}\"",
+      "deletedAccount": "Видалено рахунок \"{name}\"",
+      "createdBudget": "Створено бюджет \"{name}\"",
+      "updatedBudget": "Оновлено бюджет \"{name}\"",
+      "deletedBudget": "Видалено бюджет \"{name}\"",
+      "createdCategory": "Створено категорію \"{name}\"",
+      "updatedCategory": "Оновлено категорію \"{name}\"",
+      "deletedCategory": "Видалено категорію \"{name}\"",
+      "createdInstitution": "Створено установу \"{name}\"",
+      "updatedInstitution": "Оновлено установу \"{name}\"",
+      "deletedInstitution": "Видалено установу \"{name}\"",
+      "createdInvestmentReport": "Створено інвестиційний звіт \"{name}\"",
+      "updatedInvestmentReport": "Оновлено інвестиційний звіт \"{name}\"",
+      "deletedInvestmentReport": "Видалено інвестиційний звіт \"{name}\"",
+      "createdPayee": "Створено одержувача \"{name}\"",
+      "updatedPayee": "Оновлено одержувача \"{name}\"",
+      "deletedPayee": "Видалено одержувача \"{name}\"",
+      "createdReport": "Створено звіт \"{name}\"",
+      "updatedReport": "Оновлено звіт \"{name}\"",
+      "deletedReport": "Видалено звіт \"{name}\"",
+      "createdScheduledTransaction": "Створено заплановану транзакцію \"{name}\"",
+      "updatedScheduledTransaction": "Оновлено заплановану транзакцію \"{name}\"",
+      "deletedScheduledTransaction": "Видалено заплановану транзакцію \"{name}\"",
+      "createdSecurity": "Створено цінний папір \"{symbol}\"",
+      "updatedSecurity": "Оновлено цінний папір \"{symbol}\"",
+      "deletedSecurity": "Видалено цінний папір \"{symbol}\"",
+      "createdTag": "Створено тег \"{name}\"",
+      "updatedTag": "Оновлено тег \"{name}\"",
+      "deletedTag": "Видалено тег \"{name}\"",
+      "createdTransaction": "Створено транзакцію {payee} {amount}",
+      "updatedTransaction": "Оновлено транзакцію {payee} {amount}",
+      "deletedTransaction": "Видалено транзакцію {payee} {amount}",
+      "createdTransfer": "Створено переказ {amount} з {from} на {to}",
+      "createdInvestmentTransaction": "Створено транзакцію {action}",
+      "updatedInvestmentTransaction": "Оновлено транзакцію {action}",
+      "deletedInvestmentTransaction": "Видалено транзакцію {action}",
+      "transferredSecurity": "Переведено цінні папери між рахунками",
+      "updatedSecurityTransfer": "Оновлено переказ цінних паперів"
+    },
+    "timeAgo": {
+      "justNow": "щойно",
+      "minutes": "{count} хв тому",
+      "hours": "{count} год тому",
+      "days": "{count} д тому"
+    },
+    "undonePrefix": "Скасовано: {description}",
+    "redonePrefix": "Повторено: {description}"
+  },
+  "pageHeader": {
+    "helpAriaLabel": "Відкрити вікі Monize для допомоги з цим розділом",
+    "helpTooltip": "Відкрити вікі Monize для допомоги з цим розділом"
+  }
+}

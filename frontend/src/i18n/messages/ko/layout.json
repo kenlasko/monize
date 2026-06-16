@@ -1,0 +1,119 @@
+{
+  "demoBanner": {
+    "label": "데모 모드",
+    "message": "모든 데이터는 매일 UTC 4:00에 초기화됩니다. 자유롭게 탐색하세요!"
+  },
+  "delegationBanner": {
+    "viewing": "보는 중:",
+    "sharedAccount": "공유 계정",
+    "yourAccount": "내 계정",
+    "switchAccountLabel": "계정 전환",
+    "selfSuffix": "{label} (나)",
+    "error2fa": "해당 계정은 이중 인증이 필요합니다. 전환하기 전에 설정에서 2FA를 활성화하세요.",
+    "errorSwitch": "계정을 전환할 수 없습니다"
+  },
+  "backendDownBanner": {
+    "connectionBlockedLabel": "연결 차단됨",
+    "connectionBlockedDetail": "보안 헤더가 일반 HTTP 요청을 차단하고 있습니다.",
+    "connectionLostLabel": "연결 끊김",
+    "connectionLostDetail": "서버에 연결할 수 없습니다. 자동으로 재시도 중...",
+    "httpsHint": "환경에서 <code>DISABLE_HTTPS_HEADERS=true</code>를 설정하거나 HTTPS로 사이트에 접속하세요."
+  },
+  "httpWarningBanner": {
+    "label": "HTTPS 필요",
+    "detail": "보안 헤더가 활성화되어 있지만 이 사이트는 일반 HTTP로 접속 중입니다. API 요청이 실패할 수 있습니다.",
+    "httpsHint": "환경에서 <code>DISABLE_HTTPS_HEADERS=true</code>를 설정하거나 HTTPS로 사이트에 접속하세요.",
+    "dismiss": "닫기",
+    "dismissAriaLabel": "HTTPS 경고 닫기"
+  },
+  "updateBanner": {
+    "availableWithVersion": "Monize v{version}을 사용할 수 있습니다",
+    "availableGeneric": "Monize 새 버전을 사용할 수 있습니다",
+    "runningVersion": "(현재 v{version} 실행 중)",
+    "releaseNotes": "릴리스 노트",
+    "dismiss": "닫기",
+    "dismissAriaLabel": "업데이트 알림 닫기"
+  },
+  "actionHistory": {
+    "title": "작업 내역",
+    "buttonAriaLabel": "작업 내역",
+    "closeAriaLabel": "닫기",
+    "undo": "실행 취소",
+    "redo": "다시 실행",
+    "noRecentActions": "최근 작업 없음",
+    "undoneLabel": "취소됨",
+    "nothingToUndo": "취소할 항목 없음",
+    "nothingToRedo": "다시 실행할 항목 없음",
+    "cannotUndoDefault": "이 작업을 취소할 수 없습니다",
+    "cannotRedoDefault": "이 작업을 다시 실행할 수 없습니다",
+    "undoFailed": "실행 취소에 실패했습니다",
+    "redoFailed": "다시 실행에 실패했습니다",
+    "entityLabels": {
+      "transaction": "거래",
+      "transfer": "이체",
+      "investment_transaction": "투자",
+      "bulk_transaction": "일괄",
+      "category": "카테고리",
+      "payee": "수취인",
+      "tag": "태그",
+      "account": "계정",
+      "scheduled_transaction": "예약됨",
+      "security": "유가증권",
+      "budget": "예산",
+      "custom_report": "보고서"
+    },
+    "descriptions": {
+      "createdAccount": "계정 \"{name}\" 생성됨",
+      "updatedAccount": "계정 \"{name}\" 업데이트됨",
+      "deletedAccount": "계정 \"{name}\" 삭제됨",
+      "createdBudget": "예산 \"{name}\" 생성됨",
+      "updatedBudget": "예산 \"{name}\" 업데이트됨",
+      "deletedBudget": "예산 \"{name}\" 삭제됨",
+      "createdCategory": "카테고리 \"{name}\" 생성됨",
+      "updatedCategory": "카테고리 \"{name}\" 업데이트됨",
+      "deletedCategory": "카테고리 \"{name}\" 삭제됨",
+      "createdInstitution": "금융기관 \"{name}\" 생성됨",
+      "updatedInstitution": "금융기관 \"{name}\" 업데이트됨",
+      "deletedInstitution": "금융기관 \"{name}\" 삭제됨",
+      "createdInvestmentReport": "투자 보고서 \"{name}\" 생성됨",
+      "updatedInvestmentReport": "투자 보고서 \"{name}\" 업데이트됨",
+      "deletedInvestmentReport": "투자 보고서 \"{name}\" 삭제됨",
+      "createdPayee": "수취인 \"{name}\" 생성됨",
+      "updatedPayee": "수취인 \"{name}\" 업데이트됨",
+      "deletedPayee": "수취인 \"{name}\" 삭제됨",
+      "createdReport": "보고서 \"{name}\" 생성됨",
+      "updatedReport": "보고서 \"{name}\" 업데이트됨",
+      "deletedReport": "보고서 \"{name}\" 삭제됨",
+      "createdScheduledTransaction": "예약 거래 \"{name}\" 생성됨",
+      "updatedScheduledTransaction": "예약 거래 \"{name}\" 업데이트됨",
+      "deletedScheduledTransaction": "예약 거래 \"{name}\" 삭제됨",
+      "createdSecurity": "유가증권 \"{symbol}\" 생성됨",
+      "updatedSecurity": "유가증권 \"{symbol}\" 업데이트됨",
+      "deletedSecurity": "유가증권 \"{symbol}\" 삭제됨",
+      "createdTag": "태그 \"{name}\" 생성됨",
+      "updatedTag": "태그 \"{name}\" 업데이트됨",
+      "deletedTag": "태그 \"{name}\" 삭제됨",
+      "createdTransaction": "거래 생성됨 {payee} {amount}",
+      "updatedTransaction": "거래 업데이트됨 {payee} {amount}",
+      "deletedTransaction": "거래 삭제됨 {payee} {amount}",
+      "createdTransfer": "이체 생성됨 {from}에서 {to}으로 {amount}",
+      "createdInvestmentTransaction": "{action} 거래 생성됨",
+      "updatedInvestmentTransaction": "{action} 거래 업데이트됨",
+      "deletedInvestmentTransaction": "{action} 거래 삭제됨",
+      "transferredSecurity": "계정 간 유가증권이 이체되었습니다",
+      "updatedSecurityTransfer": "유가증권 이체가 업데이트되었습니다"
+    },
+    "timeAgo": {
+      "justNow": "방금 전",
+      "minutes": "{count}분 전",
+      "hours": "{count}시간 전",
+      "days": "{count}일 전"
+    },
+    "undonePrefix": "취소됨: {description}",
+    "redonePrefix": "다시 실행됨: {description}"
+  },
+  "pageHeader": {
+    "helpAriaLabel": "이 섹션의 도움말을 위해 Monize 위키 열기",
+    "helpTooltip": "이 섹션의 도움말을 위해 Monize 위키 열기"
+  }
+}

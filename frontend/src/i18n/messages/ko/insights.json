@@ -1,0 +1,44 @@
+{
+  "page": {
+    "title": "지출 인사이트",
+    "subtitle": "AI 기반의 지출 패턴 및 이상 징후 분석"
+  },
+  "list": {
+    "lastUpdated": "마지막 업데이트: {date} {time}",
+    "refreshButton": "인사이트 새로고침",
+    "generating": "생성 중...",
+    "allTypes": "모든 유형",
+    "allSeverities": "모든 심각도",
+    "showDismissed": "해제된 항목 표시",
+    "emptyNoInsights": "아직 생성된 인사이트가 없습니다. \"인사이트 새로고침\"을 클릭하여 지출 패턴을 분석하세요.",
+    "emptyFiltered": "현재 필터와 일치하는 인사이트가 없습니다.",
+    "generateButton": "인사이트 생성",
+    "alertCount": "{count, plural, one {# 알림} other {# 알림}}",
+    "warningCount": "{count, plural, one {# 경고} other {# 경고}}",
+    "errorLoadFailed": "인사이트를 불러오지 못했습니다. 다시 시도해 주세요.",
+    "errorGenerateFailed": "인사이트를 생성하지 못했습니다. AI 제공업체가 구성되어 있는지 확인하세요.",
+    "errorTimeout": "인사이트 생성에 예상보다 시간이 걸리고 있습니다. 잠시 기다리거나 페이지를 새로고침하세요."
+  },
+  "card": {
+    "dismiss": "해제",
+    "dismissing": "해제 중..."
+  },
+  "notConfigured": {
+    "heading": "AI가 구성되지 않음",
+    "message": "AI 제공업체가 구성되지 않았습니다. 지출 인사이트를 사용하려면 설정에서 {link}하세요.",
+    "linkText": "AI 제공업체를 구성"
+  },
+  "insightTypes": {
+    "anomaly": "이상 징후",
+    "trend": "트렌드",
+    "subscription": "구독",
+    "budget_pace": "예산 진행",
+    "seasonal": "계절적",
+    "new_recurring": "새 반복 항목"
+  },
+  "insightSeverities": {
+    "info": "정보",
+    "warning": "경고",
+    "alert": "알림"
+  }
+}

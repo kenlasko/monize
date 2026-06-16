@@ -1,0 +1,117 @@
+{
+  "page": {
+    "title": "Валюти",
+    "subtitle": "Керуйте валютами, що використовуються у ваших рахунках та цінних паперах",
+    "refreshRates": "Оновити курси",
+    "refreshing": "Оновлення...",
+    "newCurrency": "+ Нова валюта",
+    "searchPlaceholder": "Пошук за кодом або назвою...",
+    "statusAll": "Усі ({count})",
+    "statusActive": "Активні ({count})",
+    "statusInactive": "Неактивні ({count})",
+    "modalTitleEdit": "Редагувати валюту",
+    "modalTitleNew": "Нова валюта",
+    "loading": "Завантаження валют...",
+    "count": "{count, plural, one {# валюта} other {# валют}}",
+    "toasts": {
+      "loadFailed": "Не вдалося завантажити валюти",
+      "updated": "Валюту успішно оновлено",
+      "created": "Валюту успішно створено",
+      "updateFailed": "Не вдалося оновити валюту",
+      "createFailed": "Не вдалося створити валюту",
+      "deactivated": "Валюту деактивовано",
+      "activated": "Валюту активовано",
+      "statusFailed": "Не вдалося оновити статус валюти",
+      "ratesRefreshed": "Обмінні курси оновлено: оновлено {updated} пар",
+      "ratesRefreshedWithFailed": "Обмінні курси оновлено: оновлено {updated}, не вдалося {failed}",
+      "ratesFailed": "Не вдалося оновити обмінні курси"
+    },
+    "summary": {
+      "totalCurrencies": "Всього валют",
+      "active": "Активні",
+      "inactive": "Неактивні"
+    }
+  },
+  "list": {
+    "columns": {
+      "code": "Код",
+      "name": "Назва",
+      "symbol": "Символ",
+      "decimals": "Знаки після коми",
+      "usage": "Використання",
+      "rate": "Курс ({currency})",
+      "status": "Статус",
+      "actions": "Дії"
+    },
+    "density": {
+      "normal": "Звичайний",
+      "compact": "Компактний",
+      "dense": "Щільний",
+      "toggle": "Змінити щільність рядків"
+    },
+    "defaultBadge": "За замовчуванням",
+    "statusBadge": {
+      "active": "Активна",
+      "activeShort": "Акт",
+      "inactive": "Неактивна",
+      "inactiveShort": "Неакт"
+    },
+    "actions": {
+      "edit": "Редагувати",
+      "deactivate": "Деактивувати",
+      "activate": "Активувати"
+    },
+    "contextMenu": {
+      "editCurrency": "Редагувати валюту",
+      "deactivate": "Деактивувати",
+      "activate": "Активувати",
+      "deleteCurrency": "Видалити валюту"
+    },
+    "usageTooltip": "{accounts} рахунок(-ків), {securities} цінний(-них) папір(-ів)",
+    "usageAccounts": "{count, plural, one {# рах.} other {# рах.}}",
+    "usageSecurities": "{count, plural, one {# цін. пап.} other {# цін. пап.}}",
+    "empty": {
+      "title": "Немає валют",
+      "subtitle": "Почніть із додавання валюти."
+    },
+    "deleteConfirm": {
+      "title": "Видалити \"{code}\"?",
+      "message": "Цю валюту буде остаточно видалено. Це можливо лише якщо валюта не використовується жодним рахунком або цінним папером.",
+      "confirmLabel": "Видалити",
+      "cancelLabel": "Скасувати"
+    },
+    "toasts": {
+      "deleted": "Валюту успішно видалено",
+      "deleteFailed": "Не вдалося видалити валюту. Можливо, вона використовується."
+    }
+  },
+  "form": {
+    "codeLabel": "Код валюти",
+    "codePlaceholder": "наприклад, USD, EUR, GBP",
+    "nameLabel": "Назва",
+    "namePlaceholderCreate": "наприклад, Canadian Dollar, Malaysia, Ringgit (використовується також для пошуку)",
+    "namePlaceholderEdit": "наприклад, Canadian Dollar",
+    "symbolLabel": "Символ",
+    "symbolPlaceholder": "наприклад, $, €, £, ¥",
+    "decimalPlacesLabel": "Знаки після коми",
+    "lookupButton": "Знайти",
+    "lookingUp": "Пошук...",
+    "clearButton": "Очистити",
+    "clearTitle": "Очистити всі поля",
+    "submitCreate": "Створити валюту",
+    "submitUpdate": "Оновити валюту",
+    "toasts": {
+      "lookupTooShort": "Введіть код або назву валюти (не менше 2 символів) для пошуку",
+      "found": "Знайдено: {details}",
+      "notFound": "Валюту для \"{query}\" не знайдено",
+      "lookupFailed": "Пошук не вдався — спробуйте ще раз"
+    }
+  },
+  "validation": {
+    "codeLength": "Код валюти має містити рівно 3 символи",
+    "nameRequired": "Назва обов'язкова",
+    "nameMax": "Назва має містити не більше 100 символів",
+    "symbolRequired": "Символ обов'язковий",
+    "symbolMax": "Символ має містити не більше 10 символів"
+  }
+}

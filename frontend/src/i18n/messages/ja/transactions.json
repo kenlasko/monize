@@ -1,0 +1,430 @@
+{
+  "accountWidget": {
+    "currentBalance": "現在残高",
+    "nextPayment": "次回支払い",
+    "viewBills": "請求書と入金で表示",
+    "type": "種類",
+    "accountNumber": "口座番号",
+    "currency": "通貨",
+    "creditLimit": "クレジット限度額",
+    "interestRate": "金利",
+    "statementSettlement": "締め日",
+    "statementSettlementTooltip": "請求サイクルの最終日。この日以前に投稿された取引が現在の明細書に表示されます。",
+    "statementDue": "支払期日",
+    "closed": "閉鎖済み",
+    "editAria": "口座設定を編集",
+    "collapseAria": "口座情報を非表示",
+    "showAccountNumber": "口座番号を表示",
+    "hideAccountNumber": "口座番号を非表示",
+    "show": "口座情報を表示"
+  },
+  "page": {
+    "title": "取引",
+    "subtitle": "収入と支出を管理する",
+    "newButton": "+ 新規取引",
+    "editModal": {
+      "editTitle": "取引を編集",
+      "duplicateTitle": "取引を複製",
+      "newTitle": "新規取引",
+      "scheduleTitle": "定期取引としてスケジュール",
+      "editPayeeTitle": "支払先を編集"
+    },
+    "loading": "取引を読み込み中...",
+    "totalCount": "{count, plural, one {# 件の取引} other {# 件の取引}}",
+    "bulkDelete": {
+      "title": "取引を削除",
+      "message": "{count, plural, one {# 件の取引} other {# 件の取引}}を削除してもよろしいですか？リンクされた振替の対応分も削除されます。この操作は元に戻せません。"
+    },
+    "toasts": {
+      "scheduledCreated": "定期取引を作成しました",
+      "investmentLinked": "この取引は投資にリンクされています。投資ページで開きます。"
+    }
+  },
+  "list": {
+    "empty": {
+      "title": "取引がありません",
+      "body": "新規取引を作成して始めましょう。"
+    },
+    "header": {
+      "date": "日付",
+      "account": "口座",
+      "payee": "支払先",
+      "category": "カテゴリ",
+      "description": "説明",
+      "refNumber": "参照番号",
+      "tags": "タグ",
+      "amount": "金額",
+      "balance": "残高",
+      "status": "状態",
+      "actions": "操作"
+    },
+    "today": "今日",
+    "export": {
+      "button": "エクスポート",
+      "exporting": "エクスポート中...",
+      "title": "取引をCSVにエクスポート",
+      "success": "{count, plural, one {# 件の取引をエクスポートしました} other {# 件の取引をエクスポートしました}}",
+      "noData": "エクスポートする取引がありません",
+      "error": "取引のエクスポートに失敗しました"
+    },
+    "density": {
+      "title": "行の密度を切り替え",
+      "normal": "通常",
+      "compact": "コンパクト",
+      "dense": "密集"
+    },
+    "delete": {
+      "transferTitle": "振替を削除",
+      "transactionTitle": "取引を削除",
+      "transferMessage": "この振替を削除してもよろしいですか？リンクされた両方の取引が削除されます。",
+      "transactionMessage": "この取引を削除してもよろしいですか？この操作は元に戻せません。",
+      "success": "取引を削除しました",
+      "transferSuccess": "振替を削除しました",
+      "error": "取引の削除に失敗しました"
+    },
+    "status": {
+      "voidError": "取引を編集してVoid状態を変更してください",
+      "changed": "状態を{status}に変更しました",
+      "updateError": "状態の更新に失敗しました",
+      "unreconciled": "未照合",
+      "cleared": "決済済み",
+      "reconciled": "照合済み",
+      "void": "無効",
+      "unreconciledDense": "未",
+      "clearedDense": "済",
+      "reconciledDense": "照",
+      "voidDense": "無",
+      "pendingDense": "○",
+      "pending": "保留中",
+      "cycleTitle": "クリックして状態を切り替え"
+    },
+    "row": {
+      "editPayeeTitle": "支払先を編集: {name}",
+      "ref": "参照: {number}",
+      "investmentLabel": "投資",
+      "linkedInvestmentTitle": "投資で表示",
+      "filterByDate": "日付「{date}」でフィルター",
+      "filterByAccount": "「{name}」でフィルター",
+      "filterByPayee": "「{name}」でフィルター",
+      "filterByCategory": "{name}でフィルター",
+      "filterByTag": "タグ{name}でフィルター",
+      "transfer": "振替",
+      "transferTitle": "{direction} {name}への振替",
+      "split": "分割",
+      "uncategorized": "未分類",
+      "splitMore": "+{count}件",
+      "filteredAmountTitle": "フィルター適用金額（取引全体: {amount}）",
+      "viewButton": "表示",
+      "editButton": "編集",
+      "deleteButton": "削除"
+    },
+    "itemNamePlural": "件の取引"
+  },
+  "row": {
+    "copyOptions": {
+      "title": "コピーオプション",
+      "duplicateTitle": "取引を複製",
+      "copy": "コピー",
+      "duplicate": "複製",
+      "scheduleRecurring": "定期取引としてスケジュール"
+    }
+  },
+  "actionSheet": {
+    "defaultTitle": "取引",
+    "filterByDate": "日付「{date}」でフィルター",
+    "filterByAccount": "「{name}」でフィルター",
+    "filterByPayee": "「{name}」でフィルター",
+    "filterByCategory": "「{name}」でフィルター",
+    "filterByTag": "タグ「{name}」でフィルター",
+    "edit": "編集",
+    "duplicate": "複製",
+    "scheduleRecurring": "定期取引としてスケジュール",
+    "delete": "削除"
+  },
+  "filter": {
+    "favourites": "お気に入り:",
+    "panel": {
+      "title": "フィルター",
+      "clear": "クリア",
+      "hide": "非表示",
+      "show": "表示"
+    },
+    "accounts": {
+      "label": "口座を表示:",
+      "all": "すべて",
+      "active": "アクティブ",
+      "closed": "閉鎖済み"
+    },
+    "fields": {
+      "accounts": "口座",
+      "payees": "支払先",
+      "categories": "カテゴリ",
+      "tags": "タグ",
+      "timePeriod": "期間",
+      "startDate": "開始日",
+      "endDate": "終了日",
+      "amountFrom": "金額（下限）",
+      "amountTo": "金額（上限）",
+      "status": "状態",
+      "search": "検索"
+    },
+    "placeholders": {
+      "accounts": "すべての口座",
+      "payees": "すべての支払先",
+      "categories": "すべてのカテゴリ",
+      "tags": "すべてのタグ",
+      "statuses": "すべての状態",
+      "amountMin": "最小",
+      "amountMax": "最大",
+      "search": "支払先、カテゴリ、金額、タグ、説明、参照番号で検索..."
+    },
+    "chips": {
+      "removeAccount": "{name}フィルターを削除",
+      "removePayee": "{name}フィルターを削除",
+      "removeCategory": "{name}フィルターを削除",
+      "removeTag": "{name}フィルターを削除",
+      "removeDate": "日付フィルターを削除",
+      "removeAmount": "金額フィルターを削除",
+      "removeSearch": "検索フィルターを削除",
+      "dateFrom": "{date}以降",
+      "dateUntil": "{date}まで",
+      "amountFrom": "{amount}以上",
+      "amountUpTo": "{amount}以下"
+    },
+    "bulkUpdate": "一括更新",
+    "cancelBulk": "一括操作をキャンセル",
+    "statusLabels": {
+      "unreconciled": "未照合",
+      "cleared": "決済済み",
+      "reconciled": "照合済み",
+      "void": "無効"
+    },
+    "periods": {
+      "select": "期間を選択...",
+      "today": "今日",
+      "yesterday": "昨日",
+      "thisWeek": "今週",
+      "lastWeek": "先週",
+      "monthToDate": "今月初めから",
+      "lastMonth": "先月",
+      "yearToDate": "今年初めから",
+      "lastYear": "昨年",
+      "custom": "カスタム"
+    }
+  },
+  "bulk": {
+    "banner": {
+      "selected": "{count, plural, one {# 件の取引が選択されています} other {# 件の取引が選択されています}}",
+      "selectAllMatching": "一致する{count}件の取引をすべて選択",
+      "allMatching": "（一致するすべての取引）",
+      "clearSelection": "選択をクリア",
+      "bulkUpdate": "一括更新"
+    },
+    "modal": {
+      "title": "取引を一括更新",
+      "subtitle": "{count, plural, one {# 件の選択された取引} other {# 件の選択された取引}}を更新します。変更するフィールドを切り替えてください。",
+      "submitLabel": "{count, plural, one {# 件の取引} other {# 件の取引}}を更新",
+      "payee": "支払先",
+      "category": "カテゴリ",
+      "description": "説明",
+      "status": "状態",
+      "tags": "タグ",
+      "payeePlaceholder": "支払先名を選択または入力...",
+      "categoryPlaceholder": "カテゴリを選択...",
+      "descriptionPlaceholder": "説明を入力（クリアするには空白のまま）",
+      "tagsPlaceholder": "タグを選択（すべてクリアするには空白のまま）...",
+      "statusOptions": {
+        "pending": "保留中",
+        "cleared": "決済済み",
+        "void": "無効"
+      },
+      "notes": {
+        "transfer": "振替取引はリンクされた対応分も更新されます。",
+        "split": "分割取引はカテゴリ変更時にスキップされます。"
+      }
+    }
+  },
+  "form": {
+    "modeTransaction": "取引",
+    "modeSplit": "分割",
+    "modeTransfer": "振替",
+    "transferBadge": "振替",
+    "isLinkedTransfer": "これはリンクされた振替取引です",
+    "fields": {
+      "account": "口座",
+      "date": "日付",
+      "createDate": "作成日",
+      "payee": "支払先",
+      "category": "カテゴリ",
+      "amount": "金額",
+      "totalAmount": "合計金額",
+      "referenceNumber": "参照番号",
+      "description": "説明",
+      "status": "状態",
+      "tags": "タグ",
+      "fromAccount": "振替元口座",
+      "toAccount": "振替先口座",
+      "transferAmount": "振替金額",
+      "transferAmountWithCurrency": "振替金額（{currency}）",
+      "amountReceived": "受取金額（{currency}）",
+      "payeeOptional": "支払先（任意）"
+    },
+    "placeholders": {
+      "selectAccount": "口座を選択...",
+      "selectDestinationAccount": "振替先口座を選択...",
+      "selectOrTypePayee": "支払先名を選択または入力...",
+      "selectOrCreateCategory": "カテゴリを選択または作成...",
+      "referenceNumber": "小切手番号、確認番号...",
+      "optionalDescription": "任意の説明...",
+      "selectTags": "タグを選択...",
+      "createNewTag": "新しいタグを作成..."
+    },
+    "splitSection": {
+      "title": "取引を分割",
+      "cancelSplit": "分割をキャンセル"
+    },
+    "statusOptions": {
+      "unreconciled": "未照合",
+      "cleared": "決済済み",
+      "reconciled": "照合済み",
+      "void": "無効"
+    },
+    "submitCreate": "{mode}を作成",
+    "submitUpdate": "{mode}を更新",
+    "modeLabel": {
+      "transfer": "振替",
+      "transaction": "取引"
+    },
+    "transferAmountNote": "振替の金額はプラスである必要があります",
+    "amountReceivedNote": "通貨変換後の受取金額",
+    "splitTransaction": "取引を分割",
+    "newTagTitle": "新しいタグ",
+    "toasts": {
+      "transferCreated": "振替を作成しました",
+      "transferUpdated": "振替を更新しました",
+      "transactionCreated": "取引を作成しました",
+      "transactionUpdated": "取引を更新しました",
+      "saveFailed": "取引の保存に失敗しました",
+      "loadFailed": "フォームデータの読み込みに失敗しました",
+      "splitsNotEqual": "分割合計（{splitTotal}）は取引金額（{txAmount}）と一致する必要があります",
+      "destinationRequired": "振替先口座を選択してください",
+      "sameAccount": "振替元と振替先の口座は異なる必要があります",
+      "negativeTransfer": "振替金額はマイナスにできません",
+      "payeeCreated": "支払先「{name}」を作成しました",
+      "payeeCreateFailed": "支払先の作成に失敗しました",
+      "payeeReactivated": "支払先「{name}」を再有効化しました",
+      "payeeReactivateFailed": "支払先の再有効化に失敗しました",
+      "categoryCreated": "カテゴリ「{name}」を作成しました",
+      "categoryCreateFailed": "カテゴリの作成に失敗しました",
+      "tagCreated": "タグ「{name}」を作成しました"
+    },
+    "ariaHistory": "最近の取引を表示",
+    "ariaHistoryForPayee": "この支払先の最近の取引を表示",
+    "historyTitle": "最近の取引からクイック入力"
+  },
+  "splitEditor": {
+    "header": "分割の詳細",
+    "distributeProportionally": "比例配分",
+    "distributeProportionallyTitle": "各分割の金額に基づいて残額を比例配分します",
+    "distributeEvenly": "均等配分",
+    "addSplit": "分割を追加",
+    "removeMinimum": "最低2つの分割が必要です",
+    "removeSplit": "分割を削除",
+    "removeAndConvert": "分割を削除して通常の取引に変換",
+    "convertConfirm": {
+      "title": "通常の取引に変換しますか？",
+      "message": "この分割を削除すると、残りの分割のカテゴリを使用して通常の取引に戻ります。",
+      "confirm": "変換"
+    },
+    "noUnassigned": "未割り当て金額はありません",
+    "addRemaining": "残額をこの分割に追加",
+    "total": "合計",
+    "balanced": "バランス済み",
+    "remaining": "残り: {symbol}{amount}",
+    "needAmount": "{symbol}{amount}が必要（残り: {symbol}{remaining}）",
+    "setTotal": "合計を{symbol}{amount}に設定",
+    "splitLabel": "分割{number}",
+    "columns": {
+      "type": "種類",
+      "categoryAccount": "カテゴリ / 口座",
+      "category": "カテゴリ",
+      "amount": "金額",
+      "memo": "摘要",
+      "tags": "タグ"
+    },
+    "splitTypes": {
+      "category": "カテゴリ",
+      "transfer": "振替",
+      "investment": "投資"
+    },
+    "selectCategory": "カテゴリを選択...",
+    "selectAccount": "口座を選択...",
+    "memoPlaceholder": "任意のメモ",
+    "mobileMemoPlaceholder": "メモ",
+    "tagsPlaceholder": "タグ..."
+  },
+  "recentPopover": {
+    "recentForPayee": "{name}の最近の取引",
+    "recentTransactions": "最近の取引",
+    "loading": "読み込み中...",
+    "noRecent": "最近の取引はありません。",
+    "noRecentForPayee": "この支払先の最近の取引はありません。",
+    "noPayee": "（支払先なし）",
+    "uncategorized": "（未分類）"
+  },
+  "investmentSplit": {
+    "ariaAction": "投資アクション",
+    "ariaSecurity": "証券",
+    "selectSecurity": "証券を選択...",
+    "quantityPlaceholder": "数量",
+    "pricePlaceholder": "価格",
+    "commissionPlaceholder": "手数料",
+    "amountPlaceholder": "金額（{currency}）"
+  },
+  "charts": {
+    "balanceHistory": {
+      "title": "残高履歴",
+      "noData": "残高データがありません",
+      "starting": "開始",
+      "current": "現在",
+      "ending": "終了",
+      "lowest": "最低",
+      "minBalance": "最小残高"
+    },
+    "monthlyTotals": {
+      "title": "月次合計",
+      "noData": "取引データがありません",
+      "monthlyAvg": "月次平均",
+      "total": "合計",
+      "transactions": "取引",
+      "tooltip": "{count, plural, one {# 件の取引} other {# 件の取引}}"
+    },
+    "accountBalances": {
+      "title": "口座残高",
+      "noData": "口座残高データがありません",
+      "average": "平均",
+      "total": "合計",
+      "accounts": "口座",
+      "scaleLabel": "Y軸スケール",
+      "auto": "自動",
+      "linear": "線形",
+      "log": "対数",
+      "autoTitle": "自動（{scale}）",
+      "scaleTitle": "{label}スケール"
+    }
+  },
+  "toasts": {
+    "payeeUpdated": "支払先を更新しました",
+    "deleted": "{count, plural, one {# 件の取引を削除しました} other {# 件の取引を削除しました}}",
+    "noneToExport": "エクスポートする取引がありません",
+    "exported": "{count, plural, one {# 件の取引をエクスポートしました} other {# 件の取引をエクスポートしました}}",
+    "loadFormDataFailed": "フォームデータの読み込みに失敗しました",
+    "loadFailed": "取引の読み込みに失敗しました",
+    "loadPayeeFailed": "支払先の詳細の読み込みに失敗しました",
+    "payeeUpdateFailed": "支払先の更新に失敗しました",
+    "exportFailed": "取引のエクスポートに失敗しました"
+  },
+  "validation": {
+    "dateRequired": "日付は必須です"
+  }
+}

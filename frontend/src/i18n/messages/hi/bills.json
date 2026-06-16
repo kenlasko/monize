@@ -1,0 +1,66 @@
+{
+  "page": {
+    "title": "बिल और जमा",
+    "subtitle": "अपने आवर्ती लेनदेन और निर्धारित भुगतान प्रबंधित करें",
+    "newButton": "+ नया शेड्यूल",
+    "summaryActiveBills": "सक्रिय बिल",
+    "summaryActiveDeposits": "सक्रिय जमा",
+    "summaryMonthlyNet": "मासिक शुद्ध",
+    "summaryDueNow": "अभी देय",
+    "loadingText": "निर्धारित लेनदेन लोड हो रहे हैं...",
+    "chartUnavailable": "चार्ट अस्थायी रूप से अनुपलब्ध"
+  },
+  "viewTabs": {
+    "list": "सूची",
+    "calendar": "कैलेंडर",
+    "filterAll": "सभी ({count})",
+    "filterBills": "बिल ({count})",
+    "filterDeposits": "जमा ({count})",
+    "todayButton": "आज"
+  },
+  "form": {
+    "titleNew": "नया निर्धारित लेनदेन",
+    "titleEdit": "निर्धारित लेनदेन संपादित करें"
+  },
+  "overrideConfirm": {
+    "title": "मौजूदा ओवरराइड पाए गए",
+    "message": "इस निर्धारित लेनदेन में {count, plural, one {# व्यक्तिगत घटना} other {# व्यक्तिगत घटनाएं}} कस्टम संशोधनों के साथ हैं।",
+    "question": "बेस टेम्प्लेट अपडेट करने पर आप इन संशोधनों के साथ क्या करना चाहते हैं?",
+    "keepButton": "संशोधन रखें",
+    "deleteButton": "सभी संशोधन हटाएं"
+  },
+  "forecast": {
+    "title": "नकदी प्रवाह पूर्वानुमान",
+    "scheduledCount": "पूर्वानुमान में {count, plural, one {# निर्धारित लेनदेन} other {# निर्धारित लेनदेन}}",
+    "tooltipTransactions": "लेनदेन:",
+    "tooltipMore": "+{count} और",
+    "noData": "प्रदर्शित करने के लिए कोई डेटा नहीं",
+    "noAccounts": "कोई खाता नहीं मिला",
+    "noScheduled": "कोई निर्धारित लेनदेन नहीं",
+    "noMatchingAccount": "निर्धारित लेनदेन वाला खाता चुनें",
+    "noUpcoming": "इस अवधि में कोई आगामी लेनदेन नहीं - वर्तमान शेष दिखा रहा है",
+    "summaryStarting": "प्रारंभ",
+    "summaryEnding": "समाप्त",
+    "summaryLowest": "न्यूनतम",
+    "summaryMinBalance": "न्यूनतम शेष",
+    "allAccounts": "सभी खाते"
+  },
+  "calendar": {
+    "days": {
+      "sun": "रवि",
+      "mon": "सोम",
+      "tue": "मंगल",
+      "wed": "बुध",
+      "thu": "गुरु",
+      "fri": "शुक्र",
+      "sat": "शनि"
+    },
+    "more": "+{count} और"
+  },
+  "toasts": {
+    "overridesDeleted": "ओवरराइड हटाए गए",
+    "notFound": "निर्धारित भुगतान नहीं मिला",
+    "loadFailed": "निर्धारित लेनदेन लोड करने में विफल",
+    "overridesDeleteFailed": "ओवरराइड हटाने में विफल"
+  }
+}

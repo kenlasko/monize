@@ -1,0 +1,875 @@
+{
+  "language": {
+    "label": "Ngôn ngữ",
+    "browserOption": "Dùng ngôn ngữ trình duyệt (tự động nhận dạng: {locale})",
+    "helpText": "Chọn ngôn ngữ sử dụng trong giao diện Monize. Định dạng số và ngày được kiểm soát riêng bên dưới.",
+    "saved": "Đã cập nhật ngôn ngữ",
+    "saveFailed": "Không thể lưu ngôn ngữ"
+  },
+  "profile": {
+    "heading": "Hồ sơ",
+    "firstNameLabel": "Tên",
+    "firstNamePlaceholder": "Nhập tên của bạn",
+    "lastNameLabel": "Họ",
+    "lastNamePlaceholder": "Nhập họ của bạn",
+    "emailLabel": "Email",
+    "emailPlaceholder": "Nhập email của bạn",
+    "currentPasswordLabel": "Mật khẩu hiện tại",
+    "currentPasswordPlaceholder": "Bắt buộc để thay đổi email",
+    "passwordRequired": "Cần có mật khẩu hiện tại để thay đổi email",
+    "noChanges": "Không có thay đổi nào để lưu",
+    "passwordConfirmNote": "Cần xác nhận mật khẩu khi thay đổi địa chỉ email.",
+    "saveButton": "Lưu hồ sơ",
+    "savingButton": "Đang lưu...",
+    "toasts": {
+      "success": "Hồ sơ đã được cập nhật thành công",
+      "updateFailed": "Không thể cập nhật hồ sơ"
+    },
+    "validation": {
+      "firstNameMax": "Tên phải có tối đa 100 ký tự",
+      "lastNameMax": "Họ phải có tối đa 100 ký tự",
+      "emailRequired": "Email là bắt buộc",
+      "emailInvalid": "Vui lòng nhập địa chỉ email hợp lệ",
+      "emailMax": "Email phải có tối đa 254 ký tự",
+      "passwordMax": "Mật khẩu phải có tối đa 128 ký tự"
+    }
+  },
+  "security": {
+    "heading": "Bảo mật",
+    "ssoNotice": "Tài khoản của bạn sử dụng Đăng nhập một lần (SSO) để xác thực. Mật khẩu bên dưới không được dùng để đăng nhập nhưng có thể được giữ như bản dự phòng nếu SSO bị tắt.",
+    "currentPasswordLabel": "Mật khẩu hiện tại",
+    "currentPasswordPlaceholder": "Nhập mật khẩu hiện tại",
+    "newPasswordLabel": "Mật khẩu mới",
+    "newPasswordPlaceholder": "Nhập mật khẩu mới",
+    "confirmPasswordLabel": "Xác nhận mật khẩu mới",
+    "confirmPasswordPlaceholder": "Xác nhận mật khẩu mới",
+    "changePasswordButton": "Thay đổi mật khẩu",
+    "changingPasswordButton": "Đang thay đổi...",
+    "toasts": {
+      "passwordChanged": "Mật khẩu đã được thay đổi thành công",
+      "passwordChangeFailed": "Không thể thay đổi mật khẩu"
+    },
+    "twoFactor": {
+      "heading": "Xác thực hai yếu tố",
+      "ssoUnavailable": "Xác thực hai yếu tố không có sẵn cho tài khoản SSO. Bảo mật xác thực được quản lý bởi nhà cung cấp danh tính của bạn.",
+      "enabledBadge": "Đã bật",
+      "enabledDescription": "Tài khoản của bạn được bảo vệ bằng xác minh TOTP.",
+      "requiredByAdmin": "Bắt buộc bởi quản trị viên",
+      "addLayerDescription": "Thêm một lớp bảo mật cho tài khoản của bạn.",
+      "enableButton": "Bật 2FA",
+      "disableButton": "Tắt 2FA",
+      "disableModal": {
+        "title": "Tắt xác thực hai yếu tố",
+        "description": "Nhập mã 6 chữ số hiện tại của bạn để xác nhận tắt 2FA.",
+        "verificationCodeLabel": "Mã xác minh",
+        "disablingButton": "Đang tắt...",
+        "toasts": {
+          "disabled": "Xác thực hai yếu tố đã bị tắt",
+          "disableFailed": "Không thể tắt 2FA"
+        }
+      }
+    },
+    "backupCodes": {
+      "heading": "Mã dự phòng",
+      "description": "Sử dụng mã dự phòng để đăng nhập nếu bạn mất quyền truy cập vào ứng dụng xác thực.",
+      "regenerateButton": "Tạo lại mã",
+      "regenerateModal": {
+        "title": "Tạo lại mã dự phòng",
+        "description": "Nhập mã 6 chữ số hiện tại của bạn để xác nhận tạo lại mã dự phòng. Điều này sẽ vô hiệu hóa các mã hiện có.",
+        "verificationCodeLabel": "Mã xác minh",
+        "regeneratingButton": "Đang tạo lại...",
+        "regenerateButton": "Tạo lại"
+      },
+      "toasts": {
+        "generateFailed": "Không thể tạo mã dự phòng"
+      }
+    },
+    "trustedDevices": {
+      "heading": "Thiết bị đáng tin cậy",
+      "revokeAllButton": "Thu hồi tất cả",
+      "noDevices": "Không có thiết bị đáng tin cậy. Khi bạn chọn \"Đừng hỏi lại trên trình duyệt này\" trong khi đăng nhập 2FA, thiết bị sẽ xuất hiện ở đây.",
+      "currentBadge": "Hiện tại",
+      "revokeButton": "Thu hồi",
+      "revokeAllModal": {
+        "title": "Thu hồi tất cả thiết bị đáng tin cậy",
+        "description": "Điều này sẽ xóa tất cả thiết bị đáng tin cậy. Bạn sẽ cần nhập mã 2FA trong lần đăng nhập tiếp theo từ bất kỳ thiết bị nào."
+      },
+      "toasts": {
+        "revoked": "Thiết bị đã bị thu hồi",
+        "revokedAll": "{count} thiết bị đã bị thu hồi",
+        "revokeFailed": "Không thể thu hồi thiết bị",
+        "revokeAllFailed": "Không thể thu hồi các thiết bị"
+      }
+    },
+    "validation": {
+      "currentPasswordRequired": "Mật khẩu hiện tại là bắt buộc",
+      "passwordMax": "Mật khẩu phải có tối đa 128 ký tự",
+      "confirmRequired": "Vui lòng xác nhận mật khẩu mới của bạn",
+      "newPasswordsNoMatch": "Mật khẩu mới không khớp"
+    }
+  },
+  "preferences": {
+    "heading": "Sở thích",
+    "themeLabel": "Giao diện",
+    "defaultCurrencyLabel": "Tiền tệ mặc định",
+    "preferredExchangesLabel": "Sàn giao dịch ưa thích (để tra cứu giấy chứng khoán)",
+    "preferredExchangesHelp": "Chọn tối đa 3 sàn giao dịch theo thứ tự ưu tiên. Chúng sẽ được ưu tiên khi tra cứu giấy chứng khoán.",
+    "exchangePriorityPlaceholder": "Ưu tiên {n}",
+    "defaultQuoteProviderLabel": "Nhà cung cấp báo giá cổ phiếu mặc định",
+    "defaultQuoteProviderHelp": "Được sử dụng khi giấy chứng khoán không có ghi đè nhà cung cấp. Nếu nhà cung cấp được chọn thất bại, Monize tự động thử nhà cung cấp khác.",
+    "msnNoIntradayNote": "Lưu ý: MSN Money không cung cấp dữ liệu báo giá trong ngày, vì vậy phạm vi 1N / 1T / 1Th trên biểu đồ Giá trị danh mục đầu tư theo thời gian không có sẵn cho các chứng khoán được theo dõi bởi MSN.",
+    "msnNotConfigured": "MSN được chọn làm nhà cung cấp báo giá mặc định, nhưng MSN_API_KEY chưa được cấu hình trên máy chủ. Báo giá MSN sẽ thất bại cho đến khi quản trị viên đặt biến môi trường và khởi động lại backend.",
+    "dateFormatLabel": "Định dạng ngày",
+    "numberFormatLabel": "Định dạng số",
+    "timezoneLabel": "Múi giờ",
+    "timezonePlaceholder": "Tìm kiếm múi giờ...",
+    "weekStartsOnLabel": "Tuần bắt đầu vào",
+    "showCreatedAtLabel": "Hiển thị ngày tạo trong biểu mẫu giao tác",
+    "showCreatedAtTooltip": "Hiển thị ngày và giờ giao tác được tạo ban đầu trên biểu mẫu giao tác. Điều này khác với ngày giao tác và có thể giúp bạn biết khi nào mục nhập thực sự được thêm vào Monize.",
+    "timeFormatLabel": "Định dạng giờ",
+    "recentTransactionsLabel": "Giao tác gần đây trong điền nhanh",
+    "recentTransactionsHelp": "Số mục được hiển thị trong cửa sổ bật lên lịch sử bên cạnh trường Người nhận trên biểu mẫu giao tác.",
+    "saveButton": "Lưu sở thích",
+    "savingButton": "Đang lưu...",
+    "toasts": {
+      "saved": "Đã lưu sở thích",
+      "saveFailed": "Không thể lưu sở thích",
+      "themeSaveFailed": "Không thể lưu giao diện",
+      "colorThemeSaveFailed": "Không thể lưu giao diện màu sắc"
+    },
+    "browserLocale": "Sử dụng ngôn ngữ trình duyệt (tự động phát hiện)",
+    "browserTimezonePrefix": "Sử dụng múi giờ trình duyệt (tự động phát hiện là {tz})",
+    "numberFormatOptions": {
+      "browser": "Sử dụng ngôn ngữ trình duyệt (tự động phát hiện: {sample})",
+      "enUS": "Tiếng Anh (Mỹ) - 1,234.56",
+      "enGB": "Tiếng Anh (Anh) - 1,234.56",
+      "deDE": "Tiếng Đức - 1.234,56",
+      "frFR": "Tiếng Pháp - 1 234,56"
+    },
+    "weekDays": {
+      "sunday": "Chủ nhật",
+      "monday": "Thứ hai",
+      "tuesday": "Thứ ba",
+      "wednesday": "Thứ tư",
+      "thursday": "Thứ năm",
+      "friday": "Thứ sáu",
+      "saturday": "Thứ bảy"
+    },
+    "themeOptions": {
+      "system": "Hệ thống (theo cài đặt thiết bị)",
+      "light": "Sáng",
+      "dark": "Tối"
+    },
+    "colorThemeLabel": "Giao diện màu sắc",
+    "colorThemeOptions": {
+      "default": "Mặc định",
+      "latte": "Latte",
+      "msmoney": "MS Money",
+      "newspaper": "Newspaper",
+      "burgundy": "Burgundy",
+      "nord": "Nord",
+      "forest": "Forest",
+      "solarized": "Solarized",
+      "gruvbox": "Gruvbox",
+      "dracula": "Dracula",
+      "tokyonight": "Tokyo Night",
+      "rosepine": "Rosé Pine",
+      "midnight": "Midnight",
+      "highcontrast": "Độ tương phản cao",
+      "colorblind": "An toàn cho người mù màu"
+    },
+    "timezoneBrowserOption": "Sử dụng múi giờ trình duyệt (tự động phát hiện là {tz})"
+  },
+  "notifications": {
+    "heading": "Thông báo",
+    "smtpNotConfigured": "Thông báo email không có sẵn. SMTP chưa được quản trị viên cấu hình.",
+    "emailNotificationsTitle": "Thông báo email",
+    "emailNotificationsDescription": "Nhận nhắc nhở email cho các hóa đơn sắp đến và cảnh báo ngân sách",
+    "budgetNotificationsHeading": "Thông báo ngân sách",
+    "weeklyBudgetDigestTitle": "Tóm tắt ngân sách hàng tuần",
+    "weeklyBudgetDigestDescription": "Nhận tóm tắt hàng tuần về cảnh báo và trạng thái ngân sách",
+    "toggleBudgetDigestLabel": "Bật/tắt tóm tắt ngân sách",
+    "digestDayLabel": "Ngày tóm tắt",
+    "digestDayAriaLabel": "Ngày tóm tắt ngân sách",
+    "mondayOption": "Thứ hai",
+    "fridayOption": "Thứ sáu",
+    "immediateAlertsNote": "Các cảnh báo ngân sách quan trọng (vượt ngân sách, thiếu hụt thu nhập) được gửi ngay lập tức bất kể cài đặt tóm tắt.",
+    "sendTestEmailDescription": "Gửi email thử nghiệm để xác minh thông báo của bạn đang hoạt động.",
+    "sendTestEmailButton": "Gửi email thử nghiệm",
+    "sendingTestEmailButton": "Đang gửi...",
+    "toasts": {
+      "emailEnabled": "Thông báo email đã được bật",
+      "emailDisabled": "Thông báo email đã bị tắt",
+      "digestEnabled": "Tóm tắt ngân sách đã được bật",
+      "digestDisabled": "Tóm tắt ngân sách đã bị tắt",
+      "digestDaySet": "Ngày tóm tắt ngân sách đã được đặt thành {day}",
+      "testEmailSent": "Email thử nghiệm đã được gửi! Kiểm tra hộp thư đến của bạn.",
+      "emailUpdateFailed": "Không thể cập nhật tùy chọn thông báo",
+      "digestUpdateFailed": "Không thể cập nhật tùy chọn tóm tắt ngân sách",
+      "digestDayFailed": "Không thể cập nhật ngày tóm tắt",
+      "testEmailFailed": "Không thể gửi email thử nghiệm"
+    }
+  },
+  "help": {
+    "heading": "Trợ giúp & Hỗ trợ",
+    "description": "Tìm tài liệu, báo cáo sự cố hoặc tham gia cuộc trò chuyện.",
+    "github": {
+      "label": "GitHub",
+      "description": "Xem mã nguồn và gắn sao cho dự án."
+    },
+    "openIssue": {
+      "label": "Mở một sự cố",
+      "description": "Báo cáo lỗi hoặc yêu cầu tính năng."
+    },
+    "discussions": {
+      "label": "Thảo luận",
+      "description": "Đặt câu hỏi và chia sẻ ý tưởng với cộng đồng."
+    },
+    "wiki": {
+      "label": "Wiki",
+      "description": "Duyệt các hướng dẫn và tài liệu."
+    }
+  },
+  "dangerZone": {
+    "heading": "Khu vực nguy hiểm",
+    "deleteData": {
+      "heading": "Xóa dữ liệu",
+      "description": "Xóa dữ liệu tài chính khỏi tài khoản của bạn. Không thể hoàn tác.",
+      "openButton": "Xóa dữ liệu...",
+      "alwaysDeletedHeading": "Những thứ sau sẽ luôn được xóa:",
+      "optionalHeading": "Tùy chọn cũng xóa:",
+      "accountsOption": "Tài khoản",
+      "categoriesOption": "Danh mục",
+      "payeesOption": "Người nhận",
+      "currencyPreferencesOption": "Tùy chọn tiền tệ",
+      "balanceResetNote": "Số dư tài khoản sẽ được đặt lại về số dư mở đầu.",
+      "oidcConfirmLabel": "Xác thực lại với nhà cung cấp danh tính của bạn để xác nhận:",
+      "passwordConfirmLabel": "Nhập mật khẩu để xác nhận:",
+      "passwordPlaceholder": "Nhập mật khẩu của bạn",
+      "oidcReauthButton": "Xác thực lại và xóa",
+      "deletingButton": "Đang xóa...",
+      "confirmButton": "Xác nhận xóa dữ liệu",
+      "toasts": {
+        "success": "Đã xóa {count} bản ghi thành công",
+        "failed": "Không thể xóa dữ liệu"
+      }
+    },
+    "deleteAccount": {
+      "heading": "Xóa tài khoản",
+      "description": "Xóa vĩnh viễn tài khoản và tất cả dữ liệu liên quan. Không thể hoàn tác.",
+      "delegateNotice": {
+        "title": "Bạn là đại diện của một tài khoản khác.",
+        "body": "Xóa tài khoản của bạn sẽ xóa dữ liệu của bạn, nhưng đăng nhập và quyền truy cập chia sẻ mà người khác cấp cho bạn vẫn còn để ủy quyền tiếp tục hoạt động. Để thu hồi quyền truy cập đó, hãy yêu cầu chủ tài khoản xóa bạn khỏi danh sách Truy cập chia sẻ của họ trước."
+      },
+      "openButton": "Xóa tài khoản",
+      "typeDeleteLabel": "Nhập DELETE để xác nhận xóa tài khoản:",
+      "typeDeletePlaceholder": "Nhập DELETE",
+      "enterPasswordLabel": "Nhập mật khẩu của bạn:",
+      "enterPasswordPlaceholder": "Nhập mật khẩu của bạn",
+      "deletingButton": "Đang xóa...",
+      "confirmButton": "Xác nhận xóa",
+      "toasts": {
+        "downgraded": "Dữ liệu của bạn đã bị xóa. Đăng nhập và quyền truy cập chia sẻ được giữ lại để ủy quyền vẫn có hiệu lực.",
+        "deleted": "Tài khoản đã bị xóa",
+        "failed": "Không thể xóa tài khoản"
+      },
+      "errors": {
+        "typeDelete": "Vui lòng nhập DELETE để xác nhận",
+        "passwordRequired": "Vui lòng nhập mật khẩu để xác nhận"
+      }
+    }
+  },
+  "apiAccess": {
+    "heading": "Truy cập API",
+    "description": "Tạo mã thông báo truy cập cá nhân để kết nối các công cụ AI bên ngoài như Claude Desktop qua MCP.",
+    "createTokenButton": "Tạo mã thông báo",
+    "mcpServerUrlLabel": "URL máy chủ MCP",
+    "mcpServerUrlHelp": "Sử dụng URL này khi cấu hình các ứng dụng MCP như Claude Code hoặc Claude Desktop.",
+    "copyButton": "Sao chép",
+    "copiedButton": "Đã sao chép",
+    "noTokens": "Chưa có mã thông báo API. Tạo một mã để bắt đầu.",
+    "tokenPrefix": "Lần sử dụng cuối",
+    "expires": "Hết hạn",
+    "created": "Đã tạo",
+    "lastUsed": "Lần sử dụng cuối",
+    "revokeButton": "Thu hồi",
+    "revokeModal": {
+      "title": "Thu hồi mã thông báo",
+      "message": "Mã thông báo này sẽ ngừng hoạt động ngay lập tức. Bất kỳ kết nối MCP nào sử dụng nó sẽ bị ngắt kết nối.",
+      "confirmLabel": "Thu hồi"
+    },
+    "createModal": {
+      "title": "Tạo mã thông báo API",
+      "tokenNameLabel": "Tên mã thông báo",
+      "tokenNamePlaceholder": "VD: Claude Desktop",
+      "scopesLabel": "Phạm vi",
+      "expirationLabel": "Hết hạn",
+      "creatingButton": "Đang tạo...",
+      "createButton": "Tạo mã thông báo",
+      "scopes": {
+        "read": {
+          "label": "Đọc",
+          "description": "Xem tài khoản, giao tác và danh mục"
+        },
+        "write": {
+          "label": "Ghi",
+          "description": "Tạo giao tác, người nhận và danh mục"
+        },
+        "reports": {
+          "label": "Báo cáo",
+          "description": "Tạo báo cáo tài chính và phân tích"
+        }
+      },
+      "expiry": {
+        "none": "Không hết hạn",
+        "d30": "30 ngày",
+        "d90": "90 ngày",
+        "y1": "1 năm"
+      },
+      "validation": {
+        "nameRequired": "Tên mã thông báo là bắt buộc",
+        "nameMax": "Tên mã thông báo phải có tối đa 100 ký tự"
+      }
+    },
+    "createdModal": {
+      "title": "Mã thông báo đã được tạo",
+      "warningNote": "Sao chép mã thông báo này ngay. Bạn sẽ không thể xem lại nó.",
+      "doneButton": "Xong"
+    },
+    "toasts": {
+      "copied": "Mã thông báo đã được sao chép vào clipboard",
+      "mcpUrlCopied": "URL MCP đã được sao chép vào clipboard",
+      "revoked": "Mã thông báo đã bị thu hồi",
+      "selectScope": "Chọn ít nhất một phạm vi",
+      "copyTokenFailed": "Không thể sao chép mã thông báo",
+      "copyUrlFailed": "Không thể sao chép URL",
+      "loadFailed": "Không thể tải mã thông báo API",
+      "createFailed": "Không thể tạo mã thông báo",
+      "revokeFailed": "Không thể thu hồi mã thông báo"
+    },
+    "relative": {
+      "never": "Không bao giờ",
+      "today": "Hôm nay",
+      "yesterday": "Hôm qua",
+      "daysAgo": "{count} ngày trước",
+      "monthsAgo": "{count} tháng trước"
+    }
+  },
+  "autoBackup": {
+    "heading": "Sao lưu tự động",
+    "description": "Tự động sao lưu dữ liệu của bạn vào một thư mục theo lịch. Vì Monize chạy trong Docker, bạn phải ánh xạ một thư mục máy chủ vào container dưới dạng volume (VD: -v /host/backups:/backups).",
+    "loadingText": "Đang tải...",
+    "enableLabel": "Bật sao lưu tự động",
+    "backupFolderLabel": "Thư mục sao lưu",
+    "backupFolderPlaceholder": "/backups",
+    "browseButton": "Duyệt...",
+    "validateButton": "Xác thực",
+    "validatingButton": "Đang xác thực...",
+    "folderValid": "Thư mục hợp lệ và có thể ghi",
+    "selectThisFolder": "Chọn thư mục này",
+    "noSubdirectories": "Không có thư mục con",
+    "frequencyLabel": "Tần suất sao lưu",
+    "backupTimeLabel": "Thời gian sao lưu ({timezone})",
+    "backupTimeHelpInterval": "Lần sao lưu đầu tiên trong ngày bắt đầu vào giờ này ({timezone}). Các lần sao lưu tiếp theo diễn ra theo khoảng thời gian đã cấu hình.",
+    "backupTimeHelpDaily": "Thời gian trong ngày để chạy sao lưu theo múi giờ địa phương của bạn ({timezone}).",
+    "retention": {
+      "heading": "Chính sách lưu giữ",
+      "description": "Cấu hình số lượng bản sao lưu cần giữ. Các bản sao lưu cũ hơn vượt quá các giới hạn này sẽ tự động bị xóa.",
+      "dailyLabel": "Bản sao lưu hàng ngày",
+      "dailyHelp": "Các bản sao lưu gần nhất cần giữ",
+      "weeklyLabel": "Bản sao lưu hàng tuần",
+      "weeklyHelp": "Giữ một bản mỗi tuần",
+      "monthlyLabel": "Bản sao lưu hàng tháng",
+      "monthlyHelp": "Giữ một bản mỗi tháng"
+    },
+    "status": {
+      "heading": "Trạng thái",
+      "lastBackup": "Sao lưu lần cuối",
+      "nextBackup": "Sao lưu tiếp theo",
+      "error": "Lỗi",
+      "success": "Thành công",
+      "failed": "Thất bại"
+    },
+    "saveButton": "Lưu cài đặt",
+    "savingButton": "Đang lưu...",
+    "runNowButton": "Chạy sao lưu ngay",
+    "runningButton": "Đang chạy sao lưu...",
+    "toasts": {
+      "saved": "Cài đặt sao lưu tự động đã được lưu",
+      "backupCreated": "Sao lưu đã được tạo: {filename}",
+      "folderValid": "Thư mục hợp lệ và có thể ghi",
+      "loadFailed": "Không thể tải cài đặt sao lưu tự động",
+      "saveFailed": "Không thể lưu cài đặt",
+      "runFailed": "Không thể chạy sao lưu",
+      "browseFailed": "Không thể duyệt thư mục"
+    },
+    "folderErrors": {
+      "required": "Cần có đường dẫn thư mục",
+      "validationFailed": "Xác thực thư mục thất bại",
+      "validationError": "Xác thực thất bại"
+    },
+    "frequencyOptions": {
+      "every6hours": "Mỗi 6 giờ",
+      "every12hours": "Mỗi 12 giờ",
+      "daily": "Hàng ngày",
+      "weekly": "Hàng tuần"
+    }
+  },
+  "backupRestore": {
+    "heading": "Sao lưu & Khôi phục",
+    "encryption": {
+      "heading": "Mã hóa sao lưu",
+      "descriptionOidc": "Mã hóa các bản sao lưu thủ công và tự động bằng mật khẩu sao lưu chuyên dụng bạn đặt ở đây. Mật khẩu được yêu cầu để khôi phục.",
+      "descriptionLocal": "Mã hóa các bản sao lưu thủ công và tự động bằng mật khẩu đăng nhập của bạn. Mật khẩu được yêu cầu để khôi phục.",
+      "loading": "Đang tải...",
+      "enabledBadge": "Đã bật",
+      "changePasswordButton": "Thay đổi mật khẩu sao lưu",
+      "disableButton": "Tắt",
+      "setPasswordButton": "Đặt mật khẩu sao lưu",
+      "enableEncryptedButton": "Bật sao lưu mã hóa",
+      "setupModal": {
+        "titleOidc": "Đặt mật khẩu sao lưu",
+        "titleLocal": "Bật sao lưu mã hóa",
+        "descriptionOidc": "Chọn mật khẩu sẽ được dùng để mã hóa các bản sao lưu. Lưu nó ở nơi an toàn -- bạn sẽ cần nó để khôi phục.",
+        "descriptionLocal": "Xác nhận mật khẩu đăng nhập của bạn. Nó sẽ được dùng để mã hóa tất cả các bản sao lưu (thủ công và tự động).",
+        "placeholderOidc": "Mật khẩu sao lưu mới (12+ ký tự)",
+        "placeholderLocal": "Mật khẩu đăng nhập của bạn",
+        "savingButton": "Đang lưu...",
+        "confirmButton": "Xác nhận"
+      },
+      "toasts": {
+        "enabled": "Sao lưu mã hóa đã được bật",
+        "disabled": "Sao lưu mã hóa đã bị tắt",
+        "enableFailed": "Không thể bật mã hóa",
+        "disableFailed": "Không thể tắt mã hóa"
+      }
+    },
+    "export": {
+      "heading": "Tạo sao lưu",
+      "description": "Tải xuống bản sao lưu đầy đủ dữ liệu tài chính của bạn. Bao gồm tài khoản, giao tác, danh mục, người nhận, ngân sách, đầu tư và tất cả dữ liệu người dùng khác.",
+      "downloadButton": "Tải xuống sao lưu",
+      "creatingButton": "Đang tạo sao lưu...",
+      "exportPasswordModal": {
+        "title": "Mã hóa sao lưu",
+        "description": "Nhập mật khẩu để mã hóa sao lưu này. Bạn sẽ cần nó để khôi phục.",
+        "placeholderOidc": "Mật khẩu sao lưu",
+        "placeholderLocal": "Mật khẩu đăng nhập",
+        "encryptingButton": "Đang mã hóa...",
+        "downloadButton": "Tải xuống"
+      },
+      "toasts": {
+        "success": "Sao lưu đã được tải xuống thành công",
+        "failed": "Không thể tạo sao lưu"
+      }
+    },
+    "restore": {
+      "heading": "Khôi phục từ sao lưu",
+      "description": "Thay thế tất cả dữ liệu hiện tại của bạn bằng dữ liệu từ tệp sao lưu đã xuất trước đó. Điều này sẽ ghi đè vĩnh viễn dữ liệu hiện có của bạn.",
+      "openButton": "Khôi phục từ sao lưu...",
+      "warning": "Cảnh báo: Điều này sẽ xóa tất cả dữ liệu hiện tại của bạn và thay thế bằng nội dung sao lưu. Không thể hoàn tác.",
+      "selectFileLabel": "Chọn tệp sao lưu",
+      "encryptedBackupLabel": "Sao lưu này được mã hóa. Nhập mật khẩu sao lưu đã được tạo cùng với nó:",
+      "backupPasswordPlaceholder": "Mật khẩu sao lưu",
+      "oidcConfirmLabel": "Xác thực lại với nhà cung cấp danh tính của bạn để xác nhận:",
+      "passwordConfirmLabel": "Nhập mật khẩu tài khoản để xác nhận:",
+      "passwordPlaceholder": "Nhập mật khẩu của bạn",
+      "oidcRestoreButton": "Xác thực lại và khôi phục",
+      "restoringButton": "Đang khôi phục...",
+      "confirmRestoreButton": "Xác nhận khôi phục",
+      "toasts": {
+        "pleaseSelectFile": "Vui lòng chọn tệp sao lưu",
+        "pleaseEnterPassword": "Vui lòng nhập mật khẩu để xác nhận",
+        "encryptedNeedsPassword": "Sao lưu này được mã hóa. Nhập mật khẩu đã được tạo cùng với nó vào trường \"Mật khẩu sao lưu\", sau đó thử lại.",
+        "failed": "Không thể khôi phục sao lưu"
+      }
+    },
+    "restoreResult": {
+      "title": "Khôi phục hoàn tất",
+      "description": "Dữ liệu của bạn đã được khôi phục thành công. Dưới đây là tóm tắt những gì đã được khôi phục:",
+      "totalRecords": "Tổng số bản ghi",
+      "doneButton": "Xong"
+    }
+  },
+  "sharedAccess": {
+    "description": "Đại diện đăng nhập bằng thông tin xác thực của riêng họ và không bao giờ thấy mật khẩu của bạn. Họ chỉ thấy các tài khoản và phần bạn cấp cho họ.",
+    "addDelegateButton": "Thêm đại diện",
+    "loading": "Đang tải...",
+    "noDelegates": "Chưa có đại diện.",
+    "statusLabel": "Trạng thái: {status}",
+    "sectionsLabel": "Phần: {count}",
+    "accountsLabel": "Tài khoản: {count}",
+    "sharedDataLabel": "Dữ liệu chia sẻ: {count}",
+    "editAccessButton": "Chỉnh sửa quyền truy cập",
+    "resetPasswordButton": "Đặt lại mật khẩu",
+    "resetPasswordDisabledTitle": "Người này tự quản lý mật khẩu của họ (họ có tài khoản Monize riêng hoặc quyền truy cập được ủy quyền ở nơi khác).",
+    "removeButton": "Xóa",
+    "createModal": {
+      "title": "Thêm đại diện",
+      "description": "Cấp cho người khác quyền truy cập có phạm vi vào tài khoản của bạn.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "Email đại diện",
+      "firstNameLabel": "Tên",
+      "firstNamePlaceholder": "Tên (tùy chọn)",
+      "lastNameLabel": "Họ",
+      "lastNamePlaceholder": "Họ (tùy chọn)",
+      "existingAccountNotice": "Người này đã có đăng nhập Monize. Họ sẽ giữ thông tin xác thực của riêng họ và chỉ được cấp thêm quyền truy cập chia sẻ - không cần mật khẩu hoặc lời mời.",
+      "sendInviteLabel": "Gửi lời mời qua email thay vì đặt mật khẩu",
+      "passwordLabel": "Mật khẩu",
+      "passwordPlaceholder": "Đặt mật khẩu",
+      "submitButton": "Thêm đại diện"
+    },
+    "revokeDialog": {
+      "title": "Xóa đại diện",
+      "message": "Xóa đại diện này? Họ mất quyền truy cập vào tài khoản của bạn. Nếu họ không có quyền truy cập chia sẻ nào khác và chưa bao giờ nhận email này làm tài khoản Monize của riêng họ, đăng nhập được quản lý bởi chủ tài khoản của họ cũng bị xóa.",
+      "removingButton": "Đang xóa...",
+      "removeButton": "Xóa"
+    },
+    "tempPasswordModal": {
+      "title": "Mật khẩu tạm thời",
+      "description": "Chia sẻ điều này với đại diện một cách an toàn. Họ sẽ được yêu cầu thay đổi nó khi đăng nhập lần đầu. Nó sẽ không được hiển thị lại.",
+      "copyButton": "Sao chép",
+      "copiedButton": "Đã sao chép",
+      "doneButton": "Xong"
+    },
+    "toasts": {
+      "created": "Đại diện đã được tạo",
+      "createdWithTempPassword": "Đại diện đã được tạo. Mật khẩu tạm thời: {password}",
+      "invited": "Email mời đã được gửi",
+      "removed": "Đại diện đã bị xóa"
+    },
+    "errors": {
+      "setPasswordOrInvite": "Đặt mật khẩu hoặc gửi lời mời qua email.",
+      "loadFailed": "Không thể tải quyền truy cập chia sẻ",
+      "createFailed": "Không thể tạo đại diện",
+      "revokeFailed": "Không thể thu hồi đại diện",
+      "resetPasswordFailed": "Không thể đặt lại mật khẩu",
+      "copyFailed": "Không thể sao chép vào clipboard"
+    }
+  },
+  "delegateAccessModal": {
+    "title": "Chỉnh sửa quyền truy cập",
+    "tabs": {
+      "accounts": "Tài khoản",
+      "sections": "Phần",
+      "shared": "Dữ liệu chia sẻ"
+    },
+    "sections": {
+      "description": "Cấp quyền truy cập chỉ đọc vào toàn bộ các phần ứng dụng. Dữ liệu phạm vi tài khoản vẫn cần quyền truy cập từng tài khoản."
+    },
+    "accounts": {
+      "noAccounts": "Không có tài khoản nào để cấp.",
+      "grantAll": "Cấp tất cả"
+    },
+    "shared": {
+      "description": "Đọc người nhận, danh mục và thẻ luôn được phép. Đây là các điều khiển tạo/chỉnh sửa/xóa."
+    },
+    "saveButton": "Lưu",
+    "toasts": {
+      "saved": "Quyền truy cập đã được cập nhật",
+      "saveFailed": "Không thể cập nhật quyền truy cập"
+    }
+  },
+  "nav": {
+    "sectionsAriaLabel": "Các phần cài đặt",
+    "profile": "Hồ sơ",
+    "preferences": "Sở thích",
+    "notifications": "Thông báo",
+    "security": "Bảo mật",
+    "sharedAccess": "Truy cập chia sẻ",
+    "emergencyAccess": "Truy cập khẩn cấp",
+    "apiAccess": "Truy cập API",
+    "aiSettings": "Cài đặt AI",
+    "backupRestore": "Sao lưu & Khôi phục",
+    "autoBackup": "Sao lưu tự động",
+    "help": "Trợ giúp & Hỗ trợ",
+    "dangerZone": "Khu vực nguy hiểm"
+  },
+  "page": {
+    "title": "Cài đặt",
+    "demoRestricted": {
+      "heading": "Bị hạn chế trong chế độ demo",
+      "body": "Chỉnh sửa hồ sơ, thay đổi mật khẩu, xác thực hai yếu tố và xóa tài khoản bị vô hiệu hóa trong chế độ demo."
+    },
+    "sharedAccessCard": {
+      "title": "Truy cập chia sẻ",
+      "description": "Cấp cho người khác quyền truy cập chi tiết vào các tài khoản cụ thể."
+    },
+    "emergencyAccessCard": {
+      "title": "Truy cập khẩn cấp",
+      "description": "Chỉ định các liên hệ tự động nhận quyền truy cập đầy đủ vào tài khoản của bạn nếu bạn không đăng nhập trong một thời gian dài."
+    },
+    "aiSettingsCard": {
+      "title": "Cài đặt AI",
+      "description": "Cấu hình nhà cung cấp AI, quản lý khóa API và xem số liệu thống kê sử dụng."
+    },
+    "delegateSecurityError": "Không thể tải cài đặt bảo mật của bạn.",
+    "toasts": {
+      "securityLoadFailed": "Không thể tải cài đặt bảo mật",
+      "loadFailed": "Không thể tải cài đặt"
+    }
+  },
+  "aiSettings": {
+    "backLink": "Quay lại Cài đặt",
+    "title": "Cài đặt AI",
+    "subtitle": "Cấu hình nhà cung cấp AI cho các tính năng tài chính thông minh",
+    "demoRestricted": {
+      "heading": "Bị hạn chế trong chế độ demo",
+      "body": "Cấu hình nhà cung cấp AI bị vô hiệu hóa trong chế độ demo."
+    },
+    "toasts": {
+      "loadFailed": "Không thể tải cài đặt AI",
+      "usageLoadFailed": "Không thể tải dữ liệu sử dụng"
+    }
+  },
+  "sharedAccessPage": {
+    "backLink": "Quay lại Cài đặt",
+    "title": "Truy cập chia sẻ",
+    "subtitle": "Cấp cho người khác quyền truy cập chi tiết vào các tài khoản cụ thể",
+    "demoRestricted": {
+      "heading": "Bị hạn chế trong chế độ demo",
+      "body": "Quản lý đại diện bị vô hiệu hóa trong chế độ demo."
+    }
+  },
+  "emergencyAccess": {
+    "backLink": "Quay lại Cài đặt",
+    "title": "Truy cập khẩn cấp",
+    "subtitle": "Chỉ định các liên hệ tự động nhận quyền truy cập đầy đủ vào tài khoản của bạn nếu bạn không đăng nhập trong một thời gian dài",
+    "delegateRestricted": "Truy cập khẩn cấp chỉ có thể được cấu hình bởi chủ tài khoản.",
+    "demoRestricted": "Truy cập khẩn cấp bị vô hiệu hóa trong chế độ demo.",
+    "emailNotConfigured": {
+      "heading": "Email chưa được cấu hình",
+      "body": "Truy cập khẩn cấp phụ thuộc vào việc gửi email. Yêu cầu quản trị viên cấu hình các biến môi trường SMTP (SMTP_HOST, SMTP_USER, SMTP_PASSWORD) và thử lại."
+    },
+    "alreadyGranted": {
+      "heading": "Quyền truy cập khẩn cấp đã được cấp",
+      "description": "các liên hệ được chỉ định của bạn đã nhận được liên kết ma thuật để tiếp quản tài khoản. Nếu đây là ngoài ý muốn, hãy xóa trạng thái đã cấp bên dưới để vô hiệu hóa các liên kết đang chờ xử lý.",
+      "clearButton": "Xóa trạng thái đã cấp"
+    },
+    "loadError": "Không thể tải cài đặt truy cập khẩn cấp.",
+    "settings": {
+      "heading": "Cài đặt",
+      "enableLabel": "Bật truy cập khẩn cấp",
+      "grantAfterDaysLabel": "Số ngày không hoạt động trước khi quyền truy cập được cấp",
+      "reminderAfterDaysLabel": "Số ngày không hoạt động trước khi gửi email nhắc nhở",
+      "saveButton": "Lưu cài đặt",
+      "toasts": {
+        "saved": "Cài đặt truy cập khẩn cấp đã được lưu",
+        "saveFailed": "Không thể lưu cài đặt"
+      }
+    },
+    "message": {
+      "heading": "Tin nhắn đến các liên hệ của bạn",
+      "description": "Được mã hóa khi lưu trữ. Xem hoặc chỉnh sửa yêu cầu xác minh lại danh tính của bạn.",
+      "unlockTimer": "Đã mở khóa trong {mins}:{secs}",
+      "messageSet": "Tin nhắn đã được đặt",
+      "charCount": "({count} ký tự",
+      "updatedAt": ", cập nhật {timestamp}",
+      "noMessage": "Chưa đặt tin nhắn",
+      "revealButton": "Hiển thị tin nhắn",
+      "editButton": "Chỉnh sửa tin nhắn",
+      "addButton": "Thêm tin nhắn",
+      "emptyMessage": "(trống)",
+      "lockNowButton": "Khóa ngay",
+      "editMessageButton": "Chỉnh sửa",
+      "messagePlaceholder": "Ghi chú, hướng dẫn, vị trí các tài liệu quan trọng...",
+      "maxCharsNote": "Tối đa 4000 ký tự. Được lưu trữ mã hóa.",
+      "cancelButton": "Hủy",
+      "saveButton": "Lưu tin nhắn",
+      "toasts": {
+        "saved": "Tin nhắn đã được lưu",
+        "verifyAgain": "Xác minh đã hết hạn -- vui lòng xác minh lại để lưu",
+        "loadFailed": "Không thể tải tin nhắn",
+        "saveFailed": "Không thể lưu tin nhắn"
+      }
+    },
+    "contacts": {
+      "heading": "Liên hệ khẩn cấp",
+      "description": "Mỗi liên hệ nhận được liên kết ma thuật qua email khi quyền truy cập được cấp. Họ sử dụng nó để đặt mật khẩu mới và tiếp quản tài khoản của bạn. Liên hệ đầu tiên yêu cầu sẽ thắng.",
+      "addButton": "Thêm liên hệ",
+      "noContacts": "Chưa có liên hệ.",
+      "editButton": "Chỉnh sửa",
+      "removeButton": "Xóa",
+      "contactModal": {
+        "addTitle": "Thêm liên hệ khẩn cấp",
+        "editTitle": "Chỉnh sửa liên hệ",
+        "firstNameLabel": "Tên",
+        "emailLabel": "Email",
+        "addButton": "Thêm liên hệ",
+        "saveButton": "Lưu thay đổi"
+      },
+      "removeDialog": {
+        "title": "Xóa liên hệ",
+        "message": "Liên hệ này sẽ không còn nhận quyền truy cập khẩn cấp. Bạn có thể thêm lại họ sau.",
+        "removingButton": "Đang xóa...",
+        "removeButton": "Xóa"
+      },
+      "toasts": {
+        "added": "Liên hệ đã được thêm",
+        "updated": "Liên hệ đã được cập nhật",
+        "removed": "Liên hệ đã bị xóa",
+        "saveFailed": "Không thể lưu liên hệ",
+        "removeFailed": "Không thể xóa liên hệ"
+      }
+    },
+    "status": {
+      "heading": "Trạng thái",
+      "lastAccess": "Lần truy cập cuối: ",
+      "lastReminderSent": "Nhắc nhở cuối được gửi: ",
+      "grantStatus": "Trạng thái cấp: ",
+      "unknown": "không xác định",
+      "never": "không bao giờ",
+      "daysAgo": "{count} ngày trước",
+      "grantedOn": "đã cấp vào {timestamp}",
+      "notYetGranted": "chưa được cấp",
+      "timerNote": "Bộ đếm thời gian tự động đặt lại bất kỳ lúc nào bạn sử dụng ứng dụng -- đăng nhập, xem trang, ghi nhận giao tác, bất kỳ thứ gì được xác thực."
+    },
+    "resetConfirm": {
+      "title": "Xóa trạng thái đã cấp",
+      "message": "Điều này vô hiệu hóa bất kỳ liên kết ma thuật nào đang chờ xử lý, cho phép lịch nhắc nhở bắt đầu lại và cho phép tầng cấp kích hoạt lại sau một khoảng thời gian không hoạt động khác.",
+      "clearingButton": "Đang xóa...",
+      "clearButton": "Xóa",
+      "toasts": {
+        "cleared": "Trạng thái đã cấp đã bị xóa",
+        "resetFailed": "Không thể đặt lại trạng thái đã cấp"
+      }
+    },
+    "stepUp": {
+      "reason": "Xác minh lại danh tính của bạn để xem hoặc chỉnh sửa tin nhắn truy cập khẩn cấp."
+    },
+    "toasts": {
+      "loadFailed": "Không thể tải truy cập khẩn cấp",
+      "reauthFailed": "Không thể xác nhận xác thực lại"
+    }
+  },
+  "aiProviders": {
+    "heading": "Nhà cung cấp AI",
+    "addButton": "Thêm nhà cung cấp",
+    "encryptionWarning": "AI_ENCRYPTION_KEY chưa được cấu hình. Bạn có thể sử dụng Ollama (cục bộ, không cần khóa API) nhưng các nhà cung cấp đám mây yêu cầu mã hóa để lưu trữ khóa API an toàn.",
+    "systemDefault": {
+      "heading": "Nhà cung cấp AI mặc định của hệ thống có sẵn",
+      "description": "Một nhà cung cấp AI trung tâm đã được quản trị viên cấu hình",
+      "usedAutomatically": "Nó sẽ được sử dụng tự động vì bạn không có nhà cung cấp cá nhân nào được cấu hình.",
+      "personalPriority": "Các nhà cung cấp cá nhân của bạn được ưu tiên hơn mặc định của hệ thống."
+    },
+    "noProviders": {
+      "withSystemDefault": "Không có nhà cung cấp AI cá nhân nào được cấu hình. Nhà cung cấp mặc định của hệ thống sẽ được sử dụng.",
+      "withoutSystemDefault": "Không có nhà cung cấp AI nào được cấu hình. Thêm nhà cung cấp để bật các tính năng AI."
+    },
+    "providerCard": {
+      "activeBadge": "Hoạt động",
+      "inactiveBadge": "Không hoạt động",
+      "priorityLabel": "Ưu tiên: {n}",
+      "modelLabel": "Mô hình: {model}",
+      "keyLabel": "Khóa: {key}",
+      "urlLabel": "URL: {url}",
+      "costLabel": "Chi phí/1M ({currency}): {input} vào / {output} ra",
+      "disableButton": "Tắt",
+      "enableButton": "Bật",
+      "editButton": "Chỉnh sửa",
+      "deleteButton": "Xóa"
+    },
+    "configForm": {
+      "addTitle": "Thêm nhà cung cấp AI",
+      "editTitle": "Chỉnh sửa nhà cung cấp",
+      "providerLabel": "Nhà cung cấp",
+      "displayNameLabel": "Tên hiển thị",
+      "modelLabel": "Mô hình",
+      "testButton": "Kiểm tra",
+      "testingButton": "Đang kiểm tra...",
+      "ollamaCloudNote": "Tên mô hình phải bao gồm hậu tố -cloud (VD: gpt-oss:20b-cloud).",
+      "apiKeyLabel": "Khóa API",
+      "baseUrlLabel": "URL cơ sở",
+      "priorityLabel": "Ưu tiên",
+      "priorityHelp": "Số nhỏ hơn = ưu tiên cao hơn. Được sử dụng để đặt thứ tự dự phòng.",
+      "costRatesHeading": "Tỷ lệ chi phí (tùy chọn)",
+      "costRatesHelp": "Nhập tỷ lệ đã công bố của nhà cung cấp trên mỗi 1.000.000 token để xem chi phí ước tính trên bảng điều khiển Sử dụng. Để trống để bỏ qua ước tính chi phí.",
+      "inputCostLabel": "Chi phí đầu vào / 1M token",
+      "outputCostLabel": "Chi phí đầu ra / 1M token",
+      "rateCurrencyLabel": "Tiền tệ tỷ lệ",
+      "rateCurrencyHelp": "Nếu điều này khác với tiền tệ gốc của bạn, bảng điều khiển Sử dụng có thể chuyển đổi chi phí bằng cách sử dụng tỷ giá hối đoái đã lưu của bạn.",
+      "saveButton": "Lưu thay đổi",
+      "addProviderButton": "Thêm nhà cung cấp",
+      "modelPlaceholder": "Nhập tên mô hình",
+      "testModelAria": "Kiểm tra mô hình",
+      "apiKeyPlaceholder": "Nhập khóa API",
+      "saveFailed": "Không thể lưu cấu hình",
+      "inputCostPlaceholder": "VD: 3.00",
+      "outputCostPlaceholder": "VD: 15.00",
+      "toasts": {
+        "notReachable": "Không thể kết nối với nhà cung cấp.",
+        "modelUnavailable": "Mô hình \"{model}\" không có sẵn trên nhà cung cấp này.",
+        "modelReady": "Mô hình \"{model}\" đã sẵn sàng.",
+        "success": "Kết nối thành công.",
+        "testFailed": "Kiểm tra mô hình thất bại"
+      },
+      "costCurrencies": {
+        "USD": "USD - Đô la Mỹ",
+        "EUR": "EUR - Euro",
+        "GBP": "GBP - Bảng Anh",
+        "CAD": "CAD - Đô la Canada",
+        "AUD": "AUD - Đô la Úc",
+        "JPY": "JPY - Yên Nhật",
+        "CNY": "CNY - Nhân dân tệ",
+        "INR": "INR - Rupee Ấn Độ"
+      },
+      "validation": {
+        "displayNameMax": "Tên hiển thị phải có tối đa 100 ký tự",
+        "mustBeNumber": "Phải là số",
+        "currencyCode": "Phải là mã tiền tệ 3 chữ cái"
+      }
+    },
+    "testButton": {
+      "testLabel": "Kiểm tra",
+      "connectionFailed": "Kết nối thất bại",
+      "modelUnavailable": "Mô hình \"{model}\" không có sẵn trên nhà cung cấp này.",
+      "successWithModel": "Kết nối thành công. Mô hình \"{model}\" đã sẵn sàng.",
+      "success": "Kết nối thành công",
+      "testFailed": "Kiểm tra kết nối thất bại"
+    },
+    "toasts": {
+      "added": "Nhà cung cấp đã được thêm",
+      "updated": "Nhà cung cấp đã được cập nhật",
+      "removed": "Nhà cung cấp đã bị xóa",
+      "modelReady": "Mô hình \"{model}\" đã sẵn sàng.",
+      "notReachable": "Đã lưu, nhưng không thể kết nối với nhà cung cấp. Kiểm tra lại URL/khóa API.",
+      "modelUnavailable": "Đã lưu, nhưng mô hình \"{model}\" không có sẵn trên nhà cung cấp này.",
+      "deleteFailed": "Không thể xóa nhà cung cấp",
+      "updateFailed": "Không thể cập nhật nhà cung cấp"
+    }
+  },
+  "usage": {
+    "heading": "Sử dụng",
+    "totalRequests": "Tổng yêu cầu",
+    "inputTokens": "Token đầu vào",
+    "outputTokens": "Token đầu ra",
+    "estCost": "Chi phí ước tính",
+    "setRatesToEnable": "Đặt tỷ lệ trên nhà cung cấp để bật",
+    "inHomeCurrency": "Bằng {currency}",
+    "inProviderCurrency": "Bằng tiền tệ nhà cung cấp",
+    "byProvider": {
+      "heading": "Theo nhà cung cấp",
+      "provider": "Nhà cung cấp",
+      "requests": "Yêu cầu",
+      "inputTokens": "Token đầu vào",
+      "outputTokens": "Token đầu ra",
+      "estCost": "Chi phí ước tính"
+    },
+    "recentActivity": {
+      "heading": "Hoạt động gần đây",
+      "date": "Ngày",
+      "provider": "Nhà cung cấp",
+      "feature": "Tính năng",
+      "tokens": "Token",
+      "duration": "Thời gian",
+      "estCost": "Chi phí ước tính"
+    },
+    "noUsage": "Chưa có dữ liệu sử dụng. Dữ liệu sử dụng sẽ xuất hiện ở đây khi bạn bắt đầu sử dụng các tính năng AI.",
+    "periods": {
+      "d7": "7 ngày",
+      "d30": "30 ngày",
+      "d90": "90 ngày",
+      "all": "Tất cả thời gian"
+    },
+    "estCostTooltip": "Ước tính sử dụng tỷ lệ chi phí bạn đã cấu hình trên mỗi nhà cung cấp. Không bao gồm bất kỳ hoạt động nào mà không có tỷ lệ phù hợp được đặt."
+  }
+}

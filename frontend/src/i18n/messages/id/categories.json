@@ -1,0 +1,85 @@
+{
+  "page": {
+    "title": "Kategori",
+    "subtitle": "Atur transaksi Anda dengan kategori khusus",
+    "newButton": "+ Kategori Baru",
+    "searchPlaceholder": "Cari kategori...",
+    "filterAll": "Semua ({count})",
+    "filterExpenses": "Pengeluaran ({count})",
+    "filterIncome": "Pendapatan ({count})",
+    "modalTitleNew": "Kategori Baru",
+    "modalTitleEdit": "Edit Kategori",
+    "countSingle": "1 kategori",
+    "countPlural": "{count} kategori",
+    "loadingText": "Memuat kategori...",
+    "summaryTotal": "Total Kategori",
+    "summaryIncome": "Kategori Pendapatan",
+    "summaryExpense": "Kategori Pengeluaran",
+    "summaryTopLevel": "Tingkat Atas"
+  },
+  "empty": {
+    "heading": "Belum ada kategori",
+    "description": "Kategori membantu Anda mengatur transaksi. Mulailah dengan mengimpor set kategori bawaan kami, atau buat sendiri dari awal.",
+    "importButton": "Impor Kategori Bawaan",
+    "createButton": "Buat Sendiri",
+    "hint": "Set bawaan mencakup kategori pendapatan dan pengeluaran umum beserta subkategori"
+  },
+  "toasts": {
+    "created": "Kategori berhasil dibuat",
+    "updated": "Kategori berhasil diperbarui",
+    "deleted": "Kategori berhasil dihapus",
+    "cannotDeleteSystem": "Kategori sistem tidak dapat dihapus",
+    "importSuccess": "Berhasil mengimpor {count} kategori",
+    "loadFailed": "Gagal memuat kategori",
+    "deleteFailed": "Gagal menghapus kategori",
+    "createFailed": "Gagal membuat kategori",
+    "updateFailed": "Gagal memperbarui kategori",
+    "importFailed": "Gagal mengimpor kategori bawaan"
+  },
+  "form": {
+    "nameLabel": "Nama Kategori",
+    "parentLabel": "Kategori Induk",
+    "noParent": "Tanpa induk (tingkat atas)",
+    "typeLabel": "Jenis",
+    "typeExpense": "Pengeluaran",
+    "typeIncome": "Pendapatan",
+    "typeInherited": "Jenis diwarisi dari induk",
+    "colourLabel": "Warna",
+    "colourInherit": "Warisi dari induk",
+    "colourNone": "Tanpa warna",
+    "colourInheritedFrom": "Warna diwarisi dari induk ({name})",
+    "descriptionLabel": "Deskripsi (opsional)",
+    "submitCreate": "Buat Kategori",
+    "submitUpdate": "Perbarui Kategori"
+  },
+  "list": {
+    "emptyHeading": "Tidak ada kategori",
+    "emptyDescription": "Mulailah dengan membuat kategori baru.",
+    "colName": "Nama",
+    "colType": "Jenis",
+    "colCount": "Jumlah",
+    "colDescription": "Deskripsi",
+    "colActions": "Tindakan",
+    "badgeIncome": "Pendapatan",
+    "badgeExpense": "Pengeluaran",
+    "systemBadge": "(Sistem)",
+    "inheritedColorTitle": "Diwarisi dari induk",
+    "viewTransactionsTitle": "Lihat transaksi dalam kategori ini",
+    "densityToggleTitle": "Ubah kepadatan baris",
+    "densityNormal": "Normal",
+    "densityCompact": "Kompak",
+    "densityDense": "Padat"
+  },
+  "deleteDialog": {
+    "title": "Hapus \"{name}\"?",
+    "checkingUsage": "Memeriksa penggunaan...",
+    "usedBy": "Kategori ini digunakan oleh {count, plural, one {# item} other {# item}} (transaksi dan/atau tagihan & setoran terjadwal).",
+    "reassignLabel": "Tetapkan ulang ke:",
+    "leaveUncategorized": "Biarkan tanpa kategori",
+    "safeToDelete": "Kategori ini tidak digunakan. Kategori ini dapat dihapus dengan aman.",
+    "cannotUndo": "Tindakan ini tidak dapat dibatalkan."
+  },
+  "validation": {
+    "nameRequired": "Nama kategori diperlukan"
+  }
+}

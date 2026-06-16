@@ -1,0 +1,119 @@
+{
+  "demoBanner": {
+    "label": "デモモード",
+    "message": "全データは毎日午前4時（UTC）にリセットされます。自由にお試しください！"
+  },
+  "delegationBanner": {
+    "viewing": "表示中：",
+    "sharedAccount": "共有アカウント",
+    "yourAccount": "あなたのアカウント",
+    "switchAccountLabel": "アカウントを切り替え",
+    "selfSuffix": "{label}（あなた）",
+    "error2fa": "そのアカウントには二要素認証が必要です。切り替える前に設定で 2FA を設定してください。",
+    "errorSwitch": "アカウントの切り替えができませんでした"
+  },
+  "backendDownBanner": {
+    "connectionBlockedLabel": "接続がブロックされています",
+    "connectionBlockedDetail": "セキュリティヘッダーが平文 HTTP でのリクエストをブロックしています。",
+    "connectionLostLabel": "接続が切断されました",
+    "connectionLostDetail": "サーバーに到達できません。自動的に再試行しています...",
+    "httpsHint": "環境変数に <code>DISABLE_HTTPS_HEADERS=true</code> を設定するか、HTTPS でサイトにアクセスしてください。"
+  },
+  "httpWarningBanner": {
+    "label": "HTTPS が必要です",
+    "detail": "セキュリティヘッダーが有効ですが、このサイトに平文 HTTP でアクセスしています。API リクエストが失敗する場合があります。",
+    "httpsHint": "環境変数に <code>DISABLE_HTTPS_HEADERS=true</code> を設定するか、HTTPS でサイトにアクセスしてください。",
+    "dismiss": "閉じる",
+    "dismissAriaLabel": "HTTPS 警告を閉じる"
+  },
+  "updateBanner": {
+    "availableWithVersion": "Monize v{version} が利用可能です",
+    "availableGeneric": "Monize の新しいバージョンが利用可能です",
+    "runningVersion": "（現在 v{version} を実行中）",
+    "releaseNotes": "リリースノート",
+    "dismiss": "閉じる",
+    "dismissAriaLabel": "更新通知を閉じる"
+  },
+  "actionHistory": {
+    "title": "操作履歴",
+    "buttonAriaLabel": "操作履歴",
+    "closeAriaLabel": "閉じる",
+    "undo": "元に戻す",
+    "redo": "やり直す",
+    "noRecentActions": "最近の操作はありません",
+    "undoneLabel": "元に戻しました",
+    "nothingToUndo": "元に戻す操作がありません",
+    "nothingToRedo": "やり直す操作がありません",
+    "cannotUndoDefault": "この操作は元に戻せません",
+    "cannotRedoDefault": "この操作はやり直せません",
+    "undoFailed": "元に戻す操作に失敗しました",
+    "redoFailed": "やり直す操作に失敗しました",
+    "entityLabels": {
+      "transaction": "取引",
+      "transfer": "振替",
+      "investment_transaction": "投資",
+      "bulk_transaction": "一括",
+      "category": "カテゴリー",
+      "payee": "支払先",
+      "tag": "タグ",
+      "account": "勘定科目",
+      "scheduled_transaction": "スケジュール",
+      "security": "有価証券",
+      "budget": "予算",
+      "custom_report": "レポート"
+    },
+    "descriptions": {
+      "createdAccount": "勘定科目「{name}」を作成しました",
+      "updatedAccount": "勘定科目「{name}」を更新しました",
+      "deletedAccount": "勘定科目「{name}」を削除しました",
+      "createdBudget": "予算「{name}」を作成しました",
+      "updatedBudget": "予算「{name}」を更新しました",
+      "deletedBudget": "予算「{name}」を削除しました",
+      "createdCategory": "カテゴリー「{name}」を作成しました",
+      "updatedCategory": "カテゴリー「{name}」を更新しました",
+      "deletedCategory": "カテゴリー「{name}」を削除しました",
+      "createdInstitution": "金融機関「{name}」を作成しました",
+      "updatedInstitution": "金融機関「{name}」を更新しました",
+      "deletedInstitution": "金融機関「{name}」を削除しました",
+      "createdInvestmentReport": "投資レポート「{name}」を作成しました",
+      "updatedInvestmentReport": "投資レポート「{name}」を更新しました",
+      "deletedInvestmentReport": "投資レポート「{name}」を削除しました",
+      "createdPayee": "支払先「{name}」を作成しました",
+      "updatedPayee": "支払先「{name}」を更新しました",
+      "deletedPayee": "支払先「{name}」を削除しました",
+      "createdReport": "レポート「{name}」を作成しました",
+      "updatedReport": "レポート「{name}」を更新しました",
+      "deletedReport": "レポート「{name}」を削除しました",
+      "createdScheduledTransaction": "スケジュール取引「{name}」を作成しました",
+      "updatedScheduledTransaction": "スケジュール取引「{name}」を更新しました",
+      "deletedScheduledTransaction": "スケジュール取引「{name}」を削除しました",
+      "createdSecurity": "有価証券「{symbol}」を作成しました",
+      "updatedSecurity": "有価証券「{symbol}」を更新しました",
+      "deletedSecurity": "有価証券「{symbol}」を削除しました",
+      "createdTag": "タグ「{name}」を作成しました",
+      "updatedTag": "タグ「{name}」を更新しました",
+      "deletedTag": "タグ「{name}」を削除しました",
+      "createdTransaction": "取引 {payee} {amount} を作成しました",
+      "updatedTransaction": "取引 {payee} {amount} を更新しました",
+      "deletedTransaction": "取引 {payee} {amount} を削除しました",
+      "createdTransfer": "{from} から {to} への {amount} の振替を作成しました",
+      "createdInvestmentTransaction": "{action} 取引を作成しました",
+      "updatedInvestmentTransaction": "{action} 取引を更新しました",
+      "deletedInvestmentTransaction": "{action} 取引を削除しました",
+      "transferredSecurity": "勘定科目間で有価証券を振替しました",
+      "updatedSecurityTransfer": "有価証券の振替を更新しました"
+    },
+    "timeAgo": {
+      "justNow": "たった今",
+      "minutes": "{count}分前",
+      "hours": "{count}時間前",
+      "days": "{count}日前"
+    },
+    "undonePrefix": "元に戻しました: {description}",
+    "redonePrefix": "やり直しました: {description}"
+  },
+  "pageHeader": {
+    "helpAriaLabel": "このセクションのヘルプは Monize Wiki を開いてください",
+    "helpTooltip": "このセクションのヘルプは Monize Wiki を開いてください"
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "page": {
+    "title": "태그",
+    "subtitle": "사용자 정의 태그로 거래에 레이블을 붙이세요",
+    "newButton": "+ 새 태그",
+    "summary": {
+      "totalTags": "총 태그",
+      "tagsWithColour": "색상 있는 태그",
+      "tagsWithIcon": "아이콘 있는 태그"
+    },
+    "search": {
+      "placeholder": "태그 검색..."
+    },
+    "loading": "태그 로드 중...",
+    "emptyState": {
+      "title": "태그가 없습니다",
+      "body": "태그를 사용하면 거래에 레이블을 붙이고 필터링할 수 있습니다. 첫 번째 태그를 만들어 시작하세요.",
+      "createButton": "첫 번째 태그 만들기"
+    },
+    "modal": {
+      "newTitle": "새 태그",
+      "editTitle": "태그 편집"
+    },
+    "totalCount": "{count, plural, one {태그 #개} other {태그 #개}}",
+    "delete": {
+      "title": "태그 삭제",
+      "withTransactionsMessage": "\"{name}\"을(를) 삭제하시겠습니까? 이 태그는 {count, plural, one {거래 #건} other {거래 #건}}에 사용되고 있습니다. 해당 거래에서 태그가 제거됩니다.",
+      "simpleMessage": "\"{name}\"을(를) 삭제하시겠습니까? 이 작업은 취소할 수 없습니다."
+    },
+    "toasts": {
+      "created": "태그가 성공적으로 만들어졌습니다",
+      "updated": "태그가 성공적으로 업데이트되었습니다",
+      "deleted": "태그가 성공적으로 삭제되었습니다",
+      "loadFailed": "태그 로드에 실패했습니다",
+      "createFailed": "태그 만들기에 실패했습니다",
+      "updateFailed": "태그 업데이트에 실패했습니다",
+      "deleteFailed": "태그 삭제에 실패했습니다"
+    }
+  },
+  "list": {
+    "empty": {
+      "title": "태그를 찾을 수 없습니다",
+      "body": "현재 검색어와 일치하는 태그가 없습니다."
+    },
+    "density": {
+      "title": "행 밀도 전환",
+      "normal": "보통",
+      "compact": "좁게",
+      "dense": "더 좁게"
+    },
+    "header": {
+      "name": "이름",
+      "icon": "아이콘",
+      "transactions": "거래",
+      "actions": "작업"
+    }
+  },
+  "form": {
+    "nameLabel": "태그 이름",
+    "colourLabel": "색상",
+    "iconLabel": "아이콘",
+    "noColour": "색상 없음",
+    "submitCreate": "태그 만들기",
+    "submitUpdate": "태그 업데이트",
+    "colours": {
+      "red": "빨강",
+      "orange": "주황",
+      "yellow": "노랑",
+      "green": "초록",
+      "teal": "청록",
+      "blue": "파랑",
+      "purple": "보라",
+      "pink": "분홍",
+      "grey": "회색"
+    }
+  },
+  "validation": {
+    "nameRequired": "태그 이름은 필수입니다"
+  }
+}

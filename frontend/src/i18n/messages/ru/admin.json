@@ -1,0 +1,108 @@
+{
+  "createUserModal": {
+    "title": "Добавить пользователя",
+    "description": "Создайте новый аккаунт. Вы можете отправить приглашение по электронной почте, установить пароль самостоятельно или сгенерировать временный для передачи.",
+    "emailLabel": "Электронная почта",
+    "emailPlaceholder": "user@example.com",
+    "firstNameLabel": "Имя (необязательно)",
+    "firstNamePlaceholder": "Имя",
+    "lastNameLabel": "Фамилия (необязательно)",
+    "lastNamePlaceholder": "Фамилия",
+    "roleLabel": "Роль",
+    "roleUser": "Пользователь",
+    "roleAdmin": "Администратор",
+    "credentialsLegend": "Учётные данные",
+    "inviteLabel": "Отправить приглашение по электронной почте для установки пароля",
+    "inviteSmtpNote": "Требуется настройка SMTP.",
+    "setPasswordLabel": "Установить пароль сейчас",
+    "tempPasswordLabel": "Создать временный пароль",
+    "tempPasswordNote": "Показывается один раз после создания. Пользователь должен сменить его при первом входе.",
+    "passwordFieldLabel": "Пароль",
+    "passwordPlaceholder": "Установите пароль",
+    "createButton": "Создать пользователя",
+    "validation": {
+      "invalidPassword": "Недопустимый пароль."
+    },
+    "toasts": {
+      "createFailed": "Не удалось создать пользователя"
+    }
+  },
+  "resetPasswordModal": {
+    "defaultTitle": "Пароль успешно сброшен",
+    "defaultDescription": "Для {userName} установлен временный пароль.",
+    "temporaryPasswordLabel": "Временный пароль",
+    "copy": "Копировать",
+    "copied": "Скопировано",
+    "notShownAgain": "Этот пароль больше не будет показан.",
+    "mustChangeOnLogin": "Пользователь должен будет сменить пароль при следующем входе.",
+    "toasts": {
+      "copied": "Пароль скопирован в буфер обмена",
+      "copyFailed": "Не удалось скопировать в буфер обмена"
+    }
+  },
+  "userTable": {
+    "colUser": "Пользователь",
+    "colRole": "Роль",
+    "colProvider": "Поставщик",
+    "colStatus": "Статус",
+    "colLastLogin": "Последний вход",
+    "colActions": "Действия",
+    "youSuffix": "(вы)",
+    "noEmail": "Нет почты",
+    "unknown": "Неизвестно",
+    "never": "Никогда",
+    "providerSso": "SSO",
+    "providerLocal": "Локальный",
+    "roleAdmin": "Администратор",
+    "roleUser": "Пользователь",
+    "statusActive": "Активный",
+    "statusDisabled": "Отключён",
+    "clickToDisable": "Нажмите, чтобы отключить",
+    "clickToEnable": "Нажмите, чтобы включить",
+    "resetPassword": "Сбросить пароль",
+    "noUsers": "Пользователи не найдены."
+  },
+  "usersPage": {
+    "title": "Управление пользователями",
+    "userCount": "{count, plural, one {# пользователь} other {# пользователей}}",
+    "newUser": "+ Новый пользователь",
+    "loadingUsers": "Загрузка пользователей...",
+    "toasts": {
+      "inviteSent": "Приглашение отправлено на {email}",
+      "userCreated": "{name} создан",
+      "userUpgraded": "{name} обновлён до полного аккаунта",
+      "roleChanged": "{name} теперь {role}",
+      "roleAdmin": "администратором",
+      "roleUser": "пользователем",
+      "userEnabled": "{name} активирован",
+      "userDisabled": "{name} отключён",
+      "userDeleted": "{name} удалён",
+      "userDowngraded": "Собственные данные {name} удалены; делегированный доступ сохранён.",
+      "loadFailed": "Не удалось загрузить пользователей",
+      "deleteFailed": "Не удалось удалить пользователя",
+      "disableFailed": "Не удалось отключить пользователя",
+      "resetFailed": "Не удалось сбросить пароль"
+    },
+    "dialogs": {
+      "promoteTitle": "Повысить пользователя?",
+      "demoteTitle": "Понизить пользователя?",
+      "promoteMessage": "Вы уверены, что хотите повысить {name} до {role}?",
+      "demoteMessage": "Вы уверены, что хотите понизить {name} до {role}?",
+      "promoteConfirm": "Повысить до администратора",
+      "demoteConfirm": "Понизить до пользователя",
+      "disableTitle": "Отключить пользователя?",
+      "disableMessage": "Вы уверены, что хотите отключить {name}? Они не смогут войти в систему.",
+      "disableConfirm": "Отключить пользователя",
+      "resetTitle": "Сбросить пароль?",
+      "resetMessage": "Для {name} будет создан новый временный пароль. При следующем входе потребуется его сменить.",
+      "resetConfirm": "Сбросить пароль",
+      "deleteTitle": "Удалить пользователя?",
+      "deleteMessage": "Вы уверены, что хотите удалить {name}? Это навсегда удалит их аккаунт и все связанные данные. Это действие нельзя отменить. Если они являются делегатом другого аккаунта, их собственные данные будут удалены, но логин сохранён, чтобы делегирование продолжало работать — они станут пользователем только для делегирования.",
+      "deleteConfirm": "Удалить пользователя",
+      "tempPasswordTitleCreated": "Пользователь создан",
+      "tempPasswordTitleUpgraded": "Аккаунт обновлён",
+      "tempPasswordDescCreated": "Для {name} создан временный пароль. Поделитесь им для входа.",
+      "tempPasswordDescUpgraded": "Существующий общий пользователь обновлён до полного аккаунта. Поделитесь этим временным паролем с {name}."
+    }
+  }
+}

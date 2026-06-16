@@ -1,0 +1,430 @@
+{
+  "accountWidget": {
+    "currentBalance": "Текущий остаток",
+    "nextPayment": "Следующий платёж",
+    "viewBills": "Просмотр в разделе Счета и депозиты",
+    "type": "Тип",
+    "accountNumber": "Номер счёта",
+    "currency": "Валюта",
+    "creditLimit": "Кредитный лимит",
+    "interestRate": "Процентная ставка",
+    "statementSettlement": "День расчёта",
+    "statementSettlementTooltip": "Последний день расчётного периода. Проводки, зафиксированные до этого дня включительно, отображаются в текущей выписке.",
+    "statementDue": "Дата платежа",
+    "closed": "Закрыт",
+    "editAria": "Редактировать настройки счёта",
+    "collapseAria": "Скрыть информацию о счёте",
+    "showAccountNumber": "Показать номер счёта",
+    "hideAccountNumber": "Скрыть номер счёта",
+    "show": "Показать информацию о счёте"
+  },
+  "page": {
+    "title": "Проводки",
+    "subtitle": "Управляйте доходами и расходами",
+    "newButton": "+ Новая проводка",
+    "editModal": {
+      "editTitle": "Редактировать проводку",
+      "duplicateTitle": "Дублировать проводку",
+      "newTitle": "Новая проводка",
+      "scheduleTitle": "Запланировать как повторяющуюся",
+      "editPayeeTitle": "Редактировать получателя"
+    },
+    "loading": "Загрузка проводок...",
+    "totalCount": "{count, plural, one {# проводка} other {# проводок}}",
+    "bulkDelete": {
+      "title": "Удалить проводки",
+      "message": "Вы уверены, что хотите удалить {count, plural, one {# проводку} other {# проводок}}? Также будут удалены связанные парные переводы. Это действие нельзя отменить."
+    },
+    "toasts": {
+      "scheduledCreated": "Запланированная проводка создана",
+      "investmentLinked": "Эта проводка связана с инвестицией. Открытие на странице инвестиций."
+    }
+  },
+  "list": {
+    "empty": {
+      "title": "Нет проводок",
+      "body": "Начните с создания новой проводки."
+    },
+    "header": {
+      "date": "Дата",
+      "account": "Счёт",
+      "payee": "Получатель",
+      "category": "Категория",
+      "description": "Описание",
+      "refNumber": "Реф. №",
+      "tags": "Теги",
+      "amount": "Сумма",
+      "balance": "Остаток",
+      "status": "Статус",
+      "actions": "Действия"
+    },
+    "today": "Сегодня",
+    "export": {
+      "button": "Экспорт",
+      "exporting": "Экспорт...",
+      "title": "Экспорт проводок в CSV",
+      "success": "{count, plural, one {Экспортирована # проводка} other {Экспортировано # проводок}}",
+      "noData": "Нет проводок для экспорта",
+      "error": "Не удалось экспортировать проводки"
+    },
+    "density": {
+      "title": "Изменить плотность строк",
+      "normal": "Обычная",
+      "compact": "Компактная",
+      "dense": "Плотная"
+    },
+    "delete": {
+      "transferTitle": "Удалить перевод",
+      "transactionTitle": "Удалить проводку",
+      "transferMessage": "Вы уверены, что хотите удалить этот перевод? Обе связанные проводки будут удалены.",
+      "transactionMessage": "Вы уверены, что хотите удалить эту проводку? Это действие нельзя отменить.",
+      "success": "Проводка удалена",
+      "transferSuccess": "Перевод удалён",
+      "error": "Не удалось удалить проводку"
+    },
+    "status": {
+      "voidError": "Отредактируйте проводку для изменения статуса с Аннулирована",
+      "changed": "Статус изменён на {status}",
+      "updateError": "Не удалось обновить статус",
+      "unreconciled": "Не согласована",
+      "cleared": "Очищена",
+      "reconciled": "Согласована",
+      "void": "Аннулирована",
+      "unreconciledDense": "Н",
+      "clearedDense": "О",
+      "reconciledDense": "С",
+      "voidDense": "А",
+      "pendingDense": "○",
+      "pending": "Ожидает",
+      "cycleTitle": "Нажмите для изменения статуса"
+    },
+    "row": {
+      "editPayeeTitle": "Редактировать получателя: {name}",
+      "ref": "Реф.: {number}",
+      "investmentLabel": "Инвестиция",
+      "linkedInvestmentTitle": "Просмотр в разделе Инвестиции",
+      "filterByDate": "Фильтр по дате \"{date}\"",
+      "filterByAccount": "Фильтр по \"{name}\"",
+      "filterByPayee": "Фильтр по \"{name}\"",
+      "filterByCategory": "Фильтр по {name}",
+      "filterByTag": "Фильтр по тегу {name}",
+      "transfer": "Перевод",
+      "transferTitle": "Перевод {direction} {name}",
+      "split": "Разделённая",
+      "uncategorized": "Без категории",
+      "splitMore": "+{count} ещё",
+      "filteredAmountTitle": "Отфильтрованная сумма (полная проводка: {amount})",
+      "viewButton": "Просмотр",
+      "editButton": "Изменить",
+      "deleteButton": "Удалить"
+    },
+    "itemNamePlural": "проводки"
+  },
+  "row": {
+    "copyOptions": {
+      "title": "Параметры копирования",
+      "duplicateTitle": "Дублировать проводку",
+      "copy": "Копировать",
+      "duplicate": "Дублировать",
+      "scheduleRecurring": "Запланировать как повторяющуюся"
+    }
+  },
+  "actionSheet": {
+    "defaultTitle": "Проводка",
+    "filterByDate": "Фильтр по дате \"{date}\"",
+    "filterByAccount": "Фильтр по \"{name}\"",
+    "filterByPayee": "Фильтр по \"{name}\"",
+    "filterByCategory": "Фильтр по \"{name}\"",
+    "filterByTag": "Фильтр по тегу \"{name}\"",
+    "edit": "Изменить",
+    "duplicate": "Дублировать",
+    "scheduleRecurring": "Запланировать как повторяющуюся",
+    "delete": "Удалить"
+  },
+  "filter": {
+    "favourites": "Избранное:",
+    "panel": {
+      "title": "Фильтры",
+      "clear": "Сбросить",
+      "hide": "Скрыть",
+      "show": "Показать"
+    },
+    "accounts": {
+      "label": "Показать счета:",
+      "all": "Все",
+      "active": "Активные",
+      "closed": "Закрытые"
+    },
+    "fields": {
+      "accounts": "Счета",
+      "payees": "Получатели",
+      "categories": "Категории",
+      "tags": "Теги",
+      "timePeriod": "Период",
+      "startDate": "Начальная дата",
+      "endDate": "Конечная дата",
+      "amountFrom": "Сумма от",
+      "amountTo": "Сумма до",
+      "status": "Статус",
+      "search": "Поиск"
+    },
+    "placeholders": {
+      "accounts": "Все счета",
+      "payees": "Все получатели",
+      "categories": "Все категории",
+      "tags": "Все теги",
+      "statuses": "Все статусы",
+      "amountMin": "Мин.",
+      "amountMax": "Макс.",
+      "search": "Поиск получателя, категории, суммы, тега, описания, реф. номера..."
+    },
+    "chips": {
+      "removeAccount": "Убрать фильтр {name}",
+      "removePayee": "Убрать фильтр {name}",
+      "removeCategory": "Убрать фильтр {name}",
+      "removeTag": "Убрать фильтр {name}",
+      "removeDate": "Убрать фильтр по дате",
+      "removeAmount": "Убрать фильтр по сумме",
+      "removeSearch": "Убрать фильтр поиска",
+      "dateFrom": "С {date}",
+      "dateUntil": "До {date}",
+      "amountFrom": "От {amount}",
+      "amountUpTo": "До {amount}"
+    },
+    "bulkUpdate": "Массовое обновление",
+    "cancelBulk": "Отменить массовое",
+    "statusLabels": {
+      "unreconciled": "Не согласована",
+      "cleared": "Очищена",
+      "reconciled": "Согласована",
+      "void": "Аннулирована"
+    },
+    "periods": {
+      "select": "Выберите период...",
+      "today": "Сегодня",
+      "yesterday": "Вчера",
+      "thisWeek": "Эта неделя",
+      "lastWeek": "Прошлая неделя",
+      "monthToDate": "Текущий месяц",
+      "lastMonth": "Прошлый месяц",
+      "yearToDate": "Текущий год",
+      "lastYear": "Прошлый год",
+      "custom": "Произвольный"
+    }
+  },
+  "bulk": {
+    "banner": {
+      "selected": "{count, plural, one {# проводка выбрана} other {# проводок выбрано}}",
+      "selectAllMatching": "Выбрать все {count} подходящих проводок",
+      "allMatching": "(все подходящие проводки)",
+      "clearSelection": "Снять выбор",
+      "bulkUpdate": "Массовое обновление"
+    },
+    "modal": {
+      "title": "Массовое обновление проводок",
+      "subtitle": "Обновить {count, plural, one {# выбранную проводку} other {# выбранных проводок}}. Отметьте поля, которые хотите изменить.",
+      "submitLabel": "Обновить {count, plural, one {# проводку} other {# проводок}}",
+      "payee": "Получатель",
+      "category": "Категория",
+      "description": "Описание",
+      "status": "Статус",
+      "tags": "Теги",
+      "payeePlaceholder": "Выберите или введите имя получателя...",
+      "categoryPlaceholder": "Выберите категорию...",
+      "descriptionPlaceholder": "Введите описание (оставьте пустым для очистки)",
+      "tagsPlaceholder": "Выберите теги (оставьте пустым для очистки всех)...",
+      "statusOptions": {
+        "pending": "Ожидает",
+        "cleared": "Очищена",
+        "void": "Аннулирована"
+      },
+      "notes": {
+        "transfer": "Связанные парные переводы также будут обновлены.",
+        "split": "Разделённые проводки будут пропущены при изменении категории."
+      }
+    }
+  },
+  "form": {
+    "modeTransaction": "Проводка",
+    "modeSplit": "Разбивка",
+    "modeTransfer": "Перевод",
+    "transferBadge": "Перевод",
+    "isLinkedTransfer": "Это связанная проводка-перевод",
+    "fields": {
+      "account": "Счёт",
+      "date": "Дата",
+      "createDate": "Дата создания",
+      "payee": "Получатель",
+      "category": "Категория",
+      "amount": "Сумма",
+      "totalAmount": "Общая сумма",
+      "referenceNumber": "Референс-номер",
+      "description": "Описание",
+      "status": "Статус",
+      "tags": "Теги",
+      "fromAccount": "Со счёта",
+      "toAccount": "На счёт",
+      "transferAmount": "Сумма перевода",
+      "transferAmountWithCurrency": "Сумма перевода ({currency})",
+      "amountReceived": "Полученная сумма ({currency})",
+      "payeeOptional": "Получатель (необязательно)"
+    },
+    "placeholders": {
+      "selectAccount": "Выберите счёт...",
+      "selectDestinationAccount": "Выберите счёт назначения...",
+      "selectOrTypePayee": "Выберите или введите имя получателя...",
+      "selectOrCreateCategory": "Выберите или создайте категорию...",
+      "referenceNumber": "Номер чека, подтверждения...",
+      "optionalDescription": "Необязательное описание...",
+      "selectTags": "Выберите теги...",
+      "createNewTag": "Создать новый тег..."
+    },
+    "splitSection": {
+      "title": "Разделить проводку",
+      "cancelSplit": "Отменить разбивку"
+    },
+    "statusOptions": {
+      "unreconciled": "Не согласована",
+      "cleared": "Очищена",
+      "reconciled": "Согласована",
+      "void": "Аннулирована"
+    },
+    "submitCreate": "Создать {mode}",
+    "submitUpdate": "Обновить {mode}",
+    "modeLabel": {
+      "transfer": "Перевод",
+      "transaction": "Проводку"
+    },
+    "transferAmountNote": "Сумма для переводов должна быть положительной",
+    "amountReceivedNote": "Полученная сумма после конвертации валюты",
+    "splitTransaction": "Разделить проводку",
+    "newTagTitle": "Новый тег",
+    "toasts": {
+      "transferCreated": "Перевод создан",
+      "transferUpdated": "Перевод обновлён",
+      "transactionCreated": "Проводка создана",
+      "transactionUpdated": "Проводка обновлена",
+      "saveFailed": "Не удалось сохранить проводку",
+      "loadFailed": "Не удалось загрузить данные формы",
+      "splitsNotEqual": "Итого по частям ({splitTotal}) должно соответствовать сумме проводки ({txAmount})",
+      "destinationRequired": "Выберите счёт назначения",
+      "sameAccount": "Счёт источника и счёт назначения должны отличаться",
+      "negativeTransfer": "Сумма перевода не должна быть отрицательной",
+      "payeeCreated": "Получатель \"{name}\" создан",
+      "payeeCreateFailed": "Не удалось создать получателя",
+      "payeeReactivated": "Получатель \"{name}\" реактивирован",
+      "payeeReactivateFailed": "Не удалось реактивировать получателя",
+      "categoryCreated": "Категория \"{name}\" создана",
+      "categoryCreateFailed": "Не удалось создать категорию",
+      "tagCreated": "Тег \"{name}\" создан"
+    },
+    "ariaHistory": "Показать последние проводки",
+    "ariaHistoryForPayee": "Показать последние проводки для этого получателя",
+    "historyTitle": "Быстрое заполнение из последней проводки"
+  },
+  "splitEditor": {
+    "header": "Детали разбивки",
+    "distributeProportionally": "Распределить пропорционально",
+    "distributeProportionallyTitle": "Распределить оставшуюся сумму пропорционально на основе суммы каждой части",
+    "distributeEvenly": "Распределить равномерно",
+    "addSplit": "Добавить часть",
+    "removeMinimum": "Требуется минимум 2 части",
+    "removeSplit": "Удалить часть",
+    "removeAndConvert": "Удалить часть и преобразовать в обычную проводку",
+    "convertConfirm": {
+      "title": "Преобразовать в обычную проводку?",
+      "message": "Удаление этой части преобразует проводку обратно в обычную, используя категорию оставшейся части.",
+      "confirm": "Преобразовать"
+    },
+    "noUnassigned": "Нет нераспределённой суммы",
+    "addRemaining": "Добавить оставшуюся сумму к этой части",
+    "total": "Итого",
+    "balanced": "Сбалансировано",
+    "remaining": "Остаток: {symbol}{amount}",
+    "needAmount": "Требуется {symbol}{amount} (остаток: {symbol}{remaining})",
+    "setTotal": "Установить итого {symbol}{amount}",
+    "splitLabel": "Часть {number}",
+    "columns": {
+      "type": "Тип",
+      "categoryAccount": "Категория / Счёт",
+      "category": "Категория",
+      "amount": "Сумма",
+      "memo": "Памятка",
+      "tags": "Теги"
+    },
+    "splitTypes": {
+      "category": "Категория",
+      "transfer": "Перевод",
+      "investment": "Инвестиция"
+    },
+    "selectCategory": "Выберите категорию...",
+    "selectAccount": "Выберите счёт...",
+    "memoPlaceholder": "Необязательная памятка",
+    "mobileMemoPlaceholder": "Памятка",
+    "tagsPlaceholder": "Теги..."
+  },
+  "recentPopover": {
+    "recentForPayee": "Последние для {name}",
+    "recentTransactions": "Последние проводки",
+    "loading": "Загрузка...",
+    "noRecent": "Нет последних проводок.",
+    "noRecentForPayee": "Нет последних проводок для этого получателя.",
+    "noPayee": "(нет получателя)",
+    "uncategorized": "(без категории)"
+  },
+  "investmentSplit": {
+    "ariaAction": "Инвестиционная операция",
+    "ariaSecurity": "Ценная бумага",
+    "selectSecurity": "Выберите ценную бумагу...",
+    "quantityPlaceholder": "Количество",
+    "pricePlaceholder": "Цена",
+    "commissionPlaceholder": "Комиссия",
+    "amountPlaceholder": "Сумма ({currency})"
+  },
+  "charts": {
+    "balanceHistory": {
+      "title": "История остатка",
+      "noData": "Нет данных об остатке",
+      "starting": "Начальный",
+      "current": "Текущий",
+      "ending": "Конечный",
+      "lowest": "Минимальный",
+      "minBalance": "Мин. остаток"
+    },
+    "monthlyTotals": {
+      "title": "Месячные итоги",
+      "noData": "Нет данных о проводках",
+      "monthlyAvg": "Средн. в месяц",
+      "total": "Итого",
+      "transactions": "Проводки",
+      "tooltip": "{count, plural, one {# проводка} other {# проводок}}"
+    },
+    "accountBalances": {
+      "title": "Остатки по счетам",
+      "noData": "Нет данных об остатках по счетам",
+      "average": "Среднее",
+      "total": "Итого",
+      "accounts": "Счета",
+      "scaleLabel": "Масштаб оси Y",
+      "auto": "Авто",
+      "linear": "Линейный",
+      "log": "Лог",
+      "autoTitle": "Авто ({scale})",
+      "scaleTitle": "Масштаб {label}"
+    }
+  },
+  "toasts": {
+    "payeeUpdated": "Получатель успешно обновлён",
+    "deleted": "{count, plural, one {# проводка удалена} other {# проводок удалено}}",
+    "noneToExport": "Нет проводок для экспорта",
+    "exported": "{count, plural, one {Экспортирована # проводка} other {Экспортировано # проводок}}",
+    "loadFormDataFailed": "Не удалось загрузить данные формы",
+    "loadFailed": "Не удалось загрузить проводки",
+    "loadPayeeFailed": "Не удалось загрузить данные получателя",
+    "payeeUpdateFailed": "Не удалось обновить получателя",
+    "exportFailed": "Не удалось экспортировать проводки"
+  },
+  "validation": {
+    "dateRequired": "Дата обязательна"
+  }
+}

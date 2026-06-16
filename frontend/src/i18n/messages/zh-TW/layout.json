@@ -1,0 +1,119 @@
+{
+  "demoBanner": {
+    "label": "示範模式",
+    "message": "所有資料每天凌晨 4:00 UTC 重置。請自由探索！"
+  },
+  "delegationBanner": {
+    "viewing": "正在查看：",
+    "sharedAccount": "共用科目",
+    "yourAccount": "您的科目",
+    "switchAccountLabel": "切換科目",
+    "selfSuffix": "{label}（您）",
+    "error2fa": "該科目需要雙重驗證。請先在設定中啟用 2FA 後再切換。",
+    "errorSwitch": "無法切換科目"
+  },
+  "backendDownBanner": {
+    "connectionBlockedLabel": "連線已封鎖",
+    "connectionBlockedDetail": "安全標頭封鎖了 HTTP 純文字請求。",
+    "connectionLostLabel": "連線中斷",
+    "connectionLostDetail": "無法連線至伺服器。正在自動重試...",
+    "httpsHint": "請在環境中設定 <code>DISABLE_HTTPS_HEADERS=true</code>，或改用 HTTPS 存取網站。"
+  },
+  "httpWarningBanner": {
+    "label": "需要 HTTPS",
+    "detail": "安全標頭已啟用，但網站目前透過 HTTP 存取。API 請求可能失敗。",
+    "httpsHint": "請在環境中設定 <code>DISABLE_HTTPS_HEADERS=true</code>，或改用 HTTPS 存取網站。",
+    "dismiss": "關閉",
+    "dismissAriaLabel": "關閉 HTTPS 警告"
+  },
+  "updateBanner": {
+    "availableWithVersion": "Monize v{version} 已可更新",
+    "availableGeneric": "Monize 新版本已可更新",
+    "runningVersion": "（目前版本 v{version}）",
+    "releaseNotes": "版本說明",
+    "dismiss": "關閉",
+    "dismissAriaLabel": "關閉更新通知"
+  },
+  "actionHistory": {
+    "title": "操作記錄",
+    "buttonAriaLabel": "操作記錄",
+    "closeAriaLabel": "關閉",
+    "undo": "復原",
+    "redo": "重做",
+    "noRecentActions": "無最近操作",
+    "undoneLabel": "已復原",
+    "nothingToUndo": "沒有可復原的操作",
+    "nothingToRedo": "沒有可重做的操作",
+    "cannotUndoDefault": "無法復原此操作",
+    "cannotRedoDefault": "無法重做此操作",
+    "undoFailed": "復原失敗",
+    "redoFailed": "重做失敗",
+    "entityLabels": {
+      "transaction": "交易",
+      "transfer": "轉帳",
+      "investment_transaction": "投資",
+      "bulk_transaction": "批次",
+      "category": "類別",
+      "payee": "收款人",
+      "tag": "標籤",
+      "account": "科目",
+      "scheduled_transaction": "排程",
+      "security": "證券",
+      "budget": "預算",
+      "custom_report": "報表"
+    },
+    "descriptions": {
+      "createdAccount": "已建立科目「{name}」",
+      "updatedAccount": "已更新科目「{name}」",
+      "deletedAccount": "已刪除科目「{name}」",
+      "createdBudget": "已建立預算「{name}」",
+      "updatedBudget": "已更新預算「{name}」",
+      "deletedBudget": "已刪除預算「{name}」",
+      "createdCategory": "已建立類別「{name}」",
+      "updatedCategory": "已更新類別「{name}」",
+      "deletedCategory": "已刪除類別「{name}」",
+      "createdInstitution": "已建立機構「{name}」",
+      "updatedInstitution": "已更新機構「{name}」",
+      "deletedInstitution": "已刪除機構「{name}」",
+      "createdInvestmentReport": "已建立投資報表「{name}」",
+      "updatedInvestmentReport": "已更新投資報表「{name}」",
+      "deletedInvestmentReport": "已刪除投資報表「{name}」",
+      "createdPayee": "已建立收款人「{name}」",
+      "updatedPayee": "已更新收款人「{name}」",
+      "deletedPayee": "已刪除收款人「{name}」",
+      "createdReport": "已建立報表「{name}」",
+      "updatedReport": "已更新報表「{name}」",
+      "deletedReport": "已刪除報表「{name}」",
+      "createdScheduledTransaction": "已建立排程交易「{name}」",
+      "updatedScheduledTransaction": "已更新排程交易「{name}」",
+      "deletedScheduledTransaction": "已刪除排程交易「{name}」",
+      "createdSecurity": "已建立證券「{symbol}」",
+      "updatedSecurity": "已更新證券「{symbol}」",
+      "deletedSecurity": "已刪除證券「{symbol}」",
+      "createdTag": "已建立標籤「{name}」",
+      "updatedTag": "已更新標籤「{name}」",
+      "deletedTag": "已刪除標籤「{name}」",
+      "createdTransaction": "已建立交易 {payee} {amount}",
+      "updatedTransaction": "已更新交易 {payee} {amount}",
+      "deletedTransaction": "已刪除交易 {payee} {amount}",
+      "createdTransfer": "已建立轉帳 {amount} 從 {from} 至 {to}",
+      "createdInvestmentTransaction": "已建立 {action} 交易",
+      "updatedInvestmentTransaction": "已更新 {action} 交易",
+      "deletedInvestmentTransaction": "已刪除 {action} 交易",
+      "transferredSecurity": "已在科目間移轉證券",
+      "updatedSecurityTransfer": "已更新證券移轉"
+    },
+    "timeAgo": {
+      "justNow": "剛剛",
+      "minutes": "{count} 分鐘前",
+      "hours": "{count} 小時前",
+      "days": "{count} 天前"
+    },
+    "undonePrefix": "已復原：{description}",
+    "redonePrefix": "已重做：{description}"
+  },
+  "pageHeader": {
+    "helpAriaLabel": "開啟 Monize Wiki 以取得此區段的說明",
+    "helpTooltip": "開啟 Monize Wiki 以取得此區段的說明"
+  }
+}

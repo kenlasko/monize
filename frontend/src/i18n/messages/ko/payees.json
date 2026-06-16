@@ -1,0 +1,292 @@
+{
+  "page": {
+    "title": "수취인",
+    "subtitle": "수취인 및 기본 카테고리를 관리하세요",
+    "deactivateUnused": "미사용 항목 비활성화",
+    "autoAssignCategories": "카테고리 자동 지정",
+    "autoMergePayees": "수취인 자동 병합",
+    "newPayee": "+ 새 수취인",
+    "searchPlaceholder": "수취인 검색...",
+    "statusAll": "전체 ({count})",
+    "statusActive": "활성 ({count})",
+    "statusInactive": "비활성 ({count})",
+    "categoryFilterAll": "전체 수취인 ({count})",
+    "categoryFilterNoCategory": "기본 카테고리 없음 ({count})",
+    "categoryFilterUncategorized": "미분류 거래 ({count})",
+    "modalTitleEdit": "수취인 수정",
+    "modalTitleNew": "새 수취인",
+    "loading": "수취인 로드 중...",
+    "count": "{count, plural, one {수취인 #명} other {수취인 #명}}",
+    "toasts": {
+      "loadFailed": "데이터 로드에 실패했습니다",
+      "updated": "수취인이 성공적으로 업데이트되었습니다",
+      "created": "수취인이 성공적으로 생성되었습니다",
+      "reactivated": "수취인 \"{name}\"이(가) 재활성화되었습니다",
+      "reactivateFailed": "수취인 재활성화에 실패했습니다",
+      "updateFailed": "수취인 업데이트에 실패했습니다",
+      "createFailed": "수취인 생성에 실패했습니다",
+      "categorized": "{count, plural, one {거래 #건을 분류했습니다} other {거래 #건을 분류했습니다}}"
+    },
+    "summary": {
+      "totalPayees": "전체 수취인",
+      "active": "활성",
+      "inactive": "비활성",
+      "withoutCategory": "카테고리 없음"
+    },
+    "applyDefaultCategories": "기본 카테고리 적용"
+  },
+  "list": {
+    "columns": {
+      "name": "이름",
+      "defaultCategory": "기본 카테고리",
+      "count": "건수",
+      "aliases": "별칭",
+      "lastUsed": "마지막 사용",
+      "created": "생성일",
+      "status": "상태",
+      "notes": "메모",
+      "actions": "작업"
+    },
+    "density": {
+      "normal": "보통",
+      "compact": "압축",
+      "dense": "밀집",
+      "toggle": "행 밀도 전환"
+    },
+    "noCategory": "없음",
+    "statusBadge": {
+      "active": "활성",
+      "inactive": "비활성"
+    },
+    "actions": {
+      "reactivate": "재활성화",
+      "reactivateShort": "재",
+      "merge": "병합",
+      "mergeShort": "병",
+      "edit": "수정",
+      "editShort": "수",
+      "delete": "삭제",
+      "deleteShort": "X"
+    },
+    "viewTransactionsTitle": "이 수취인의 거래 보기",
+    "uncategorizedBadge": "{count, plural, one {미분류 #건} other {미분류 #건}}",
+    "uncategorizedTitle": "{count, plural, one {이 수취인의 거래 #건에 카테고리가 없습니다} other {이 수취인의 거래 #건에 카테고리가 없습니다}}",
+    "empty": {
+      "title": "수취인 없음",
+      "subtitle": "새 수취인을 만들어 시작하세요."
+    },
+    "deleteConfirm": {
+      "title": "\"{name}\"을(를) 삭제하시겠습니까?",
+      "message": "이 작업은 취소할 수 없습니다.",
+      "confirmLabel": "삭제",
+      "cancelLabel": "취소"
+    },
+    "toasts": {
+      "deleted": "수취인이 성공적으로 삭제되었습니다",
+      "deleteFailed": "수취인 삭제에 실패했습니다"
+    }
+  },
+  "form": {
+    "nameLabel": "수취인 이름",
+    "categoryLabel": "기본 카테고리",
+    "notesLabel": "메모 (선택)",
+    "submitCreate": "수취인 만들기",
+    "submitUpdate": "수취인 업데이트",
+    "applyCategoryLabel": "기존 거래에 이 카테고리 적용",
+    "applyCategoryNone": "기존 거래 변경 안 함",
+    "applyCategoryUncategorized": "카테고리 없는 거래만 ({count}건)",
+    "applyCategoryAll": "모든 거래 ({count}건)",
+    "applyCategoryHelp": "이체 및 분할 거래는 변경되지 않습니다."
+  },
+  "merge": {
+    "title": "수취인 병합",
+    "mergeFromLabel": "병합 원본 (삭제됨):",
+    "transactionCount": "{count, plural, one {거래 #건이 이전됩니다} other {거래 #건이 이전됩니다}}",
+    "mergeIntoLabel": "병합 대상 (목표 수취인)",
+    "addAsAliasLabel": "대상 수취인에 \"{name}\"을(를) 별칭으로 추가",
+    "willLabel": "이 작업은:",
+    "willMoveTransactions": "\"{source}\"의 모든 거래를 \"{target}\"으로 이동합니다",
+    "willAddAlias": "향후 가져오기에서 자동 매칭을 위해 \"{source}\"을(를) 별칭으로 추가합니다",
+    "willDelete": "\"{source}\" 수취인을 삭제합니다",
+    "merging": "병합 중...",
+    "mergeButton": "수취인 병합",
+    "toasts": {
+      "merged": "\"{target}\"으로 병합됨: {details}",
+      "transactionsMigrated": "{count, plural, one {거래 #건이 이전되었습니다} other {거래 #건이 이전되었습니다}}",
+      "aliasAdded": "별칭이 추가되었습니다",
+      "sourceDeleted": "\"{name}\"이(가) 삭제되었습니다",
+      "failed": "수취인 병합에 실패했습니다"
+    }
+  },
+  "categoryAutoAssign": {
+    "title": "기본 카테고리 자동 지정",
+    "howItWorksTitle": "작동 방식",
+    "howItWorksBody": "이 기능은 거래 내역을 분석하여 수취인의 기본 카테고리를 제안합니다. 각 수취인에 가장 많이 사용된 카테고리를 확인하고 향후 거래의 기본 카테고리로 지정하도록 제안합니다. 필요한 경우 기본 카테고리를 언제든지 변경할 수 있습니다.",
+    "minTransactionsLabel": "최소 거래 건수: {count}",
+    "minTransactionsHelp": "이 건수 이상의 거래가 있는 수취인만 고려합니다",
+    "matchPercentageLabel": "카테고리 일치 비율: {percent}%",
+    "matchPercentageHelp": "카테고리가 이 비율 이상의 거래에서 사용되어야 합니다",
+    "onlyWithoutCategoryLabel": "기본 카테고리가 없는 수취인만",
+    "backfillLabel": "{count, plural, one {기존 미분류 거래 #건도 분류} other {기존 미분류 거래 #건도 분류}}",
+    "backfillHelp": "현재 카테고리가 없는 거래에 선택한 카테고리를 적용합니다. 기존 카테고리, 이체, 분할 거래는 변경되지 않습니다.",
+    "viewUncategorizedTitle": "{name}의 {count, plural, one {미분류 거래 #건} other {미분류 거래 #건}} 보기",
+    "previewButton": "제안 미리보기",
+    "loading": "로드 중...",
+    "suggestionsHeader": "제안 ({count}개 발견)",
+    "selectAll": "모두 선택",
+    "selectNone": "모두 해제",
+    "selectPayeeLabel": "{name} 선택",
+    "empty": {
+      "line1": "현재 기준에 맞는 수취인이 없습니다.",
+      "line2": "위의 설정을 조정해 보세요."
+    },
+    "columns": {
+      "payee": "수취인",
+      "suggestedCategory": "제안 카테고리",
+      "match": "일치율"
+    },
+    "selectedCount": "{count, plural, one {수취인 #명 선택됨} other {수취인 #명 선택됨}}",
+    "applyButton": "{count, plural, one {수취인 #명에 적용} other {수취인 #명에 적용}}",
+    "applying": "적용 중...",
+    "toasts": {
+      "selectAtLeastOne": "업데이트할 수취인을 하나 이상 선택하세요",
+      "updated": "{count, plural, one {수취인 #명을 업데이트했습니다} other {수취인 #명을 업데이트했습니다}}",
+      "backfilled": "{count, plural, one {거래 #건을 분류했습니다} other {거래 #건을 분류했습니다}}",
+      "loadFailed": "제안 로드에 실패했습니다",
+      "applyFailed": "카테고리 지정 적용에 실패했습니다"
+    }
+  },
+  "autoMerge": {
+    "title": "수취인 자동 병합",
+    "howItWorksTitle": "작동 방식",
+    "howItWorksBody": "이 기능은 수취인을 검색하여 한 이름이 다른 이름을 확장하는 변형들을 그룹화합니다. 예를 들어 \"Lidl\", \"LIDL sp. z o.o.\", \"LIDL WARSZAWA 0421\"은 모두 \"Lidl\"을 기반으로 합니다. 각 그룹은 단일 표준 수취인으로 병합되고 와일드카드 별칭(예: \"*LIDL*\")이 생성되어 향후 가져오기에서 자동 매칭됩니다. 단순히 공통 단어를 공유하는 수취인(예: \"Royal Electric\"과 \"Royal City Nursery\")은 별도로 유지됩니다. 적용 전에 각 그룹을 검토하고 조정하세요.",
+    "backupRecommendation": "권장 사항: 변경하기 전에 <link>백업</link>을 만드세요.",
+    "minGroupSizeLabel": "최소 그룹 크기: {count}",
+    "minGroupSizeHelp": "이 수치 이상의 수취인이 있는 그룹만 제안합니다",
+    "similarityLabel": "유사도 임계값: {percent}%",
+    "similarityHelp": "철자 허용 범위: 낮추면 LIDL / LIDI 같은 유사 항목도 그룹화합니다. 100%는 정확한 키워드 일치가 필요합니다.",
+    "minTokenLengthLabel": "최소 키워드 길이: {count}",
+    "minTokenLengthHelp": "그룹화 시 이보다 짧은 키워드는 무시합니다",
+    "includeInactiveLabel": "비활성 수취인 포함",
+    "previewButton": "그룹 미리보기",
+    "loading": "로드 중...",
+    "groupsHeader": "그룹 ({count}개 발견)",
+    "empty": {
+      "line1": "현재 기준에 맞는 병합 그룹이 없습니다.",
+      "line2": "유사도 임계값이나 그룹 크기를 낮춰보세요."
+    },
+    "includeGroupLabel": "이 그룹 포함",
+    "canonicalNameLabel": "수취인으로 유지",
+    "aliasLabel": "향후 가져오기를 위한 별칭",
+    "defaultCategoryLabel": "기본 카테고리 (선택)",
+    "backfillLabel": "{count, plural, one {기존 미분류 거래 #건도 분류} other {기존 미분류 거래 #건도 분류}}",
+    "aliasPlaceholder": "예: *LIDL*",
+    "keepLabel": "이 수취인 유지",
+    "includeMemberLabel": "병합에 포함",
+    "keepBadge": "유지",
+    "keepColumn": "유지",
+    "mergeColumn": "병합",
+    "membersHelp": "유지할 수취인을 선택하세요. 나머지는 해당 수취인으로 병합됩니다.",
+    "memberTransactions": "{count, plural, one {거래 #건} other {거래 #건}}",
+    "selectedCount": "{count, plural, one {그룹 #개 선택됨} other {그룹 #개 선택됨}}",
+    "payeesMergedCount": "{count, plural, one {병합할 수취인 #명} other {병합할 수취인 #명}}",
+    "applyButton": "{count, plural, one {그룹 #개 병합} other {그룹 #개 병합}}",
+    "applying": "병합 중...",
+    "toasts": {
+      "selectAtLeastOne": "병합할 그룹을 하나 이상 선택하세요",
+      "applied": "{groups, plural, one {그룹 #개를 병합했습니다} other {그룹 #개를 병합했습니다}} (수취인 {payees}명 통합)",
+      "backfilled": "{count, plural, one {거래 #건을 분류했습니다} other {거래 #건을 분류했습니다}}",
+      "aliasesSkipped": "{count, plural, one {충돌로 인해 별칭 #개가 건너뜀} other {충돌로 인해 별칭 #개가 건너뜀}}",
+      "loadFailed": "병합 그룹 로드에 실패했습니다",
+      "applyFailed": "수취인 병합에 실패했습니다"
+    },
+    "categoryMatchLabel": "동일 카테고리의 수취인만 병합",
+    "categoryMatchHelp": "카테고리가 다른 수취인은 별도로 유지하여 잘못된 매칭을 줄입니다.",
+    "granularityLabel": "카테고리 일치 수준",
+    "selectAll": "모두 선택",
+    "deselectAll": "모두 해제",
+    "granularity": {
+      "category": "카테고리",
+      "subcategory": "하위 카테고리"
+    },
+    "ignoreCommonWordsLabel": "공통 단어 무시",
+    "ignoreCommonWordsHelp": "식당, 카페, 국가명 등 일반적인 단어나 많은 수취인이 공유하는 단어로 그룹을 고정하지 않습니다.",
+    "commonWordSensitivityLabel": "공통 단어 민감도: 변형 {count}개 이상",
+    "commonWordSensitivityHelp": "이 수치 이상의 다른 수취인이 같은 첫 단어로 시작하면 공통 단어로 처리합니다. 낮을수록 더 적극적으로 필터링합니다.",
+    "viewUncategorizedTitle": "{name}의 {count, plural, one {미분류 거래 #건} other {미분류 거래 #건}} 보기"
+  },
+  "deactivateUnused": {
+    "title": "미사용 수취인 비활성화",
+    "howItWorksTitle": "작동 방식",
+    "howItWorksBody": "이 기능은 거의 사용되지 않는 수취인을 찾아 비활성화합니다. 비활성화된 수취인은 거래 생성 시 수취인 드롭다운에 표시되지 않지만 과거 거래는 보존됩니다. 수취인 목록에서 언제든지 수취인을 재활성화할 수 있습니다.",
+    "maxTransactionsLabel": "{count, plural, one {거래 #건 이하} other {거래 #건 이하}}",
+    "maxTransactionsHelp": "이 건수 이하의 거래가 있는 수취인만 포함합니다",
+    "monthsUnusedLabel": "{label} 이상 사용하지 않은 항목",
+    "monthsUnusedHelp": "이 기간 이상 사용하지 않은 수취인만 포함합니다 (또는 한 번도 사용하지 않은 항목)",
+    "previewButton": "미사용 수취인 미리보기",
+    "loading": "로드 중...",
+    "candidatesHeader": "후보 ({count}개 발견)",
+    "selectAll": "모두 선택",
+    "selectNone": "모두 해제",
+    "selectPayeeLabel": "{name} 선택",
+    "neverUsed": "사용된 적 없음",
+    "empty": {
+      "line1": "현재 기준에 맞는 수취인이 없습니다.",
+      "line2": "위의 설정을 조정해 보세요."
+    },
+    "columns": {
+      "payee": "수취인",
+      "transactions": "거래",
+      "lastUsed": "마지막 사용"
+    },
+    "selectedCount": "{count, plural, one {수취인 #명 선택됨} other {수취인 #명 선택됨}}",
+    "deactivateButton": "{count, plural, one {수취인 #명 비활성화} other {수취인 #명 비활성화}}",
+    "deactivating": "비활성화 중...",
+    "toasts": {
+      "selectAtLeastOne": "비활성화할 수취인을 하나 이상 선택하세요",
+      "deactivated": "{count, plural, one {수취인 #명을 비활성화했습니다} other {수취인 #명을 비활성화했습니다}}",
+      "loadFailed": "미리보기 로드에 실패했습니다",
+      "deactivateFailed": "수취인 비활성화에 실패했습니다"
+    }
+  },
+  "reactivate": {
+    "title": "수취인을 재활성화하시겠습니까?",
+    "message": "수취인 \"{name}\"이(가) 이전에 비활성화되었습니다. 수취인 드롭다운에 다시 표시되도록 재활성화하시겠습니까?",
+    "keepInactiveButton": "아니요, 비활성 유지",
+    "reactivateButton": "재활성화",
+    "reactivating": "재활성화 중..."
+  },
+  "aliases": {
+    "heading": "별칭",
+    "description": "별칭은 가져온 수취인 이름을 이 수취인에 매핑합니다. *를 와일드카드로 사용하세요 (예: \"STARBUCKS*\"). 대소문자를 구분하지 않습니다.",
+    "loading": "로드 중...",
+    "noAliases": "설정된 별칭 없음",
+    "removeTitle": "별칭 제거",
+    "removeButton": "제거",
+    "addButton": "추가",
+    "adding": "추가 중...",
+    "placeholder": "예: STARBUCKS #*",
+    "toasts": {
+      "alreadyAdded": "별칭 \"{alias}\"이(가) 이미 추가되었습니다",
+      "added": "별칭 \"{alias}\"이(가) 추가되었습니다",
+      "removed": "별칭 \"{alias}\"이(가) 제거되었습니다",
+      "loadFailed": "별칭 로드에 실패했습니다",
+      "addFailed": "별칭 추가에 실패했습니다",
+      "removeFailed": "별칭 제거에 실패했습니다"
+    }
+  },
+  "selectCategoryPlaceholder": "카테고리 선택...",
+  "validation": {
+    "nameRequired": "수취인 이름이 필요합니다"
+  },
+  "defaultCategoryBackfill": {
+    "allConfirmTitle": "기본 카테고리를 적용하시겠습니까?",
+    "allConfirmMessage": "각 수취인의 기본 카테고리를 사용하여 {payees, plural, one {수취인 #명} other {수취인 #명}}에 걸쳐 {transactions, plural, one {미분류 거래 #건} other {미분류 거래 #건}}을 분류합니다. 수동으로 분류된 거래, 이체, 분할 거래는 변경되지 않습니다.",
+    "confirmButton": "적용",
+    "toasts": {
+      "nothingToDo": "분류할 미분류 거래가 없습니다",
+      "applied": "{count, plural, one {거래 #건을 분류했습니다} other {거래 #건을 분류했습니다}}",
+      "failed": "거래 분류에 실패했습니다"
+    }
+  }
+}

@@ -1,0 +1,875 @@
+{
+  "language": {
+    "label": "語言",
+    "browserOption": "使用瀏覽器語言設定（自動偵測為 {locale}）",
+    "helpText": "選擇 Monize 介面使用的語言。數字和日期格式在下方單獨設定。",
+    "saved": "語言已更新",
+    "saveFailed": "儲存語言失敗"
+  },
+  "profile": {
+    "heading": "個人資料",
+    "firstNameLabel": "名字",
+    "firstNamePlaceholder": "輸入您的名字",
+    "lastNameLabel": "姓氏",
+    "lastNamePlaceholder": "輸入您的姓氏",
+    "emailLabel": "電子郵件",
+    "emailPlaceholder": "輸入您的電子郵件",
+    "currentPasswordLabel": "目前密碼",
+    "currentPasswordPlaceholder": "更改電子郵件時需要",
+    "passwordRequired": "更改電子郵件時需要目前密碼",
+    "noChanges": "無變更可儲存",
+    "passwordConfirmNote": "更改電子郵件地址時需要密碼確認。",
+    "saveButton": "儲存個人資料",
+    "savingButton": "儲存中...",
+    "toasts": {
+      "success": "個人資料更新成功",
+      "updateFailed": "更新個人資料失敗"
+    },
+    "validation": {
+      "firstNameMax": "名字不得超過 100 個字元",
+      "lastNameMax": "姓氏不得超過 100 個字元",
+      "emailRequired": "電子郵件為必填",
+      "emailInvalid": "請輸入有效的電子郵件地址",
+      "emailMax": "電子郵件不得超過 254 個字元",
+      "passwordMax": "密碼不得超過 128 個字元"
+    }
+  },
+  "security": {
+    "heading": "安全性",
+    "ssoNotice": "您的帳戶使用單一登入（SSO）進行驗證。以下密碼不用於登入，但可在停用 SSO 時作為備用。",
+    "currentPasswordLabel": "目前密碼",
+    "currentPasswordPlaceholder": "輸入目前密碼",
+    "newPasswordLabel": "新密碼",
+    "newPasswordPlaceholder": "輸入新密碼",
+    "confirmPasswordLabel": "確認新密碼",
+    "confirmPasswordPlaceholder": "確認新密碼",
+    "changePasswordButton": "更改密碼",
+    "changingPasswordButton": "更改中...",
+    "toasts": {
+      "passwordChanged": "密碼更改成功",
+      "passwordChangeFailed": "更改密碼失敗"
+    },
+    "twoFactor": {
+      "heading": "雙重驗證",
+      "ssoUnavailable": "SSO 帳戶無法使用雙重驗證。驗證安全性由您的身份提供者管理。",
+      "enabledBadge": "已啟用",
+      "enabledDescription": "您的帳戶受到 TOTP 驗證保護。",
+      "requiredByAdmin": "管理員要求",
+      "addLayerDescription": "為您的帳戶新增額外的安全層。",
+      "enableButton": "啟用 2FA",
+      "disableButton": "停用 2FA",
+      "disableModal": {
+        "title": "停用雙重驗證",
+        "description": "輸入您目前的 6 位數驗證碼以確認停用 2FA。",
+        "verificationCodeLabel": "驗證碼",
+        "disablingButton": "停用中...",
+        "toasts": {
+          "disabled": "雙重驗證已停用",
+          "disableFailed": "停用 2FA 失敗"
+        }
+      }
+    },
+    "backupCodes": {
+      "heading": "備用驗證碼",
+      "description": "在無法使用驗證器 App 時，使用備用驗證碼登入。",
+      "regenerateButton": "重新產生驗證碼",
+      "regenerateModal": {
+        "title": "重新產生備用驗證碼",
+        "description": "輸入您目前的 6 位數驗證碼以確認重新產生備用驗證碼。此操作將使現有驗證碼失效。",
+        "verificationCodeLabel": "驗證碼",
+        "regeneratingButton": "重新產生中...",
+        "regenerateButton": "重新產生"
+      },
+      "toasts": {
+        "generateFailed": "產生備用驗證碼失敗"
+      }
+    },
+    "trustedDevices": {
+      "heading": "受信任的裝置",
+      "revokeAllButton": "撤銷全部",
+      "noDevices": "無受信任的裝置。在 2FA 登入時勾選「在此瀏覽器上不再詢問」後，裝置將顯示在此。",
+      "currentBadge": "目前",
+      "revokeButton": "撤銷",
+      "revokeAllModal": {
+        "title": "撤銷所有受信任的裝置",
+        "description": "此操作將移除所有受信任的裝置。您在任何裝置的下次登入時都需要輸入 2FA 驗證碼。"
+      },
+      "toasts": {
+        "revoked": "裝置已撤銷",
+        "revokedAll": "{count} 個裝置已撤銷",
+        "revokeFailed": "撤銷裝置失敗",
+        "revokeAllFailed": "撤銷裝置失敗"
+      }
+    },
+    "validation": {
+      "currentPasswordRequired": "目前密碼為必填",
+      "passwordMax": "密碼不得超過 128 個字元",
+      "confirmRequired": "請確認您的新密碼",
+      "newPasswordsNoMatch": "新密碼不相符"
+    }
+  },
+  "preferences": {
+    "heading": "偏好設定",
+    "themeLabel": "主題",
+    "defaultCurrencyLabel": "預設貨幣",
+    "preferredExchangesLabel": "偏好的交易所（用於證券查找）",
+    "preferredExchangesHelp": "按優先順序選擇最多 3 個交易所。查找證券時將優先使用這些交易所。",
+    "exchangePriorityPlaceholder": "優先順序 {n}",
+    "defaultQuoteProviderLabel": "預設股票報價提供者",
+    "defaultQuoteProviderHelp": "當證券無提供者覆寫時使用。若所選提供者失敗，Monize 將自動嘗試其他提供者。",
+    "msnNoIntradayNote": "注意：MSN Money 不提供盤中報價資料，因此使用 MSN 追蹤的持倉在投資組合價值歷史圖表上無法使用 1 日 / 1 週 / 1 月範圍。",
+    "msnNotConfigured": "MSN 已被選為預設報價提供者，但伺服器上未設定 MSN_API_KEY。在管理員設定環境變數並重啟後端之前，MSN 報價將無法使用。",
+    "dateFormatLabel": "日期格式",
+    "numberFormatLabel": "數字格式",
+    "timezoneLabel": "時區",
+    "timezonePlaceholder": "搜尋時區...",
+    "weekStartsOnLabel": "週起始日",
+    "showCreatedAtLabel": "在交易表單中顯示建立日期",
+    "showCreatedAtTooltip": "在交易表單中顯示交易最初建立的日期和時間。此時間獨立於交易日期，可幫助您了解記錄實際新增至 Monize 的時間。",
+    "timeFormatLabel": "時間格式",
+    "recentTransactionsLabel": "快速填字中的最近交易",
+    "recentTransactionsHelp": "在交易表單收款人欄位旁的歷史按鈕彈出視窗中顯示的記錄數量。",
+    "saveButton": "儲存偏好設定",
+    "savingButton": "儲存中...",
+    "toasts": {
+      "saved": "偏好設定已儲存",
+      "saveFailed": "儲存偏好設定失敗",
+      "themeSaveFailed": "儲存主題失敗",
+      "colorThemeSaveFailed": "儲存色彩主題失敗"
+    },
+    "browserLocale": "使用瀏覽器語言設定（自動偵測）",
+    "browserTimezonePrefix": "使用瀏覽器時區（自動偵測為 {tz}）",
+    "numberFormatOptions": {
+      "browser": "使用瀏覽器語言設定（自動偵測為 {sample}）",
+      "enUS": "英文（美國）- 1,234.56",
+      "enGB": "英文（英國）- 1,234.56",
+      "deDE": "德文 - 1.234,56",
+      "frFR": "法文 - 1 234,56"
+    },
+    "weekDays": {
+      "sunday": "星期日",
+      "monday": "星期一",
+      "tuesday": "星期二",
+      "wednesday": "星期三",
+      "thursday": "星期四",
+      "friday": "星期五",
+      "saturday": "星期六"
+    },
+    "themeOptions": {
+      "system": "系統（跟隨裝置設定）",
+      "light": "淺色",
+      "dark": "深色"
+    },
+    "colorThemeLabel": "色彩主題",
+    "colorThemeOptions": {
+      "default": "預設",
+      "latte": "拿鐵",
+      "msmoney": "MS Money",
+      "newspaper": "報紙",
+      "burgundy": "勃根地",
+      "nord": "Nord",
+      "forest": "森林",
+      "solarized": "Solarized",
+      "gruvbox": "Gruvbox",
+      "dracula": "Dracula",
+      "tokyonight": "Tokyo Night",
+      "rosepine": "Rosé Pine",
+      "midnight": "午夜",
+      "highcontrast": "高對比",
+      "colorblind": "色盲安全"
+    },
+    "timezoneBrowserOption": "使用瀏覽器時區（自動偵測為 {tz}）"
+  },
+  "notifications": {
+    "heading": "通知",
+    "smtpNotConfigured": "電子郵件通知不可用。管理員尚未設定 SMTP。",
+    "emailNotificationsTitle": "電子郵件通知",
+    "emailNotificationsDescription": "接收即將到期帳單和預算警示的電子郵件提醒",
+    "budgetNotificationsHeading": "預算通知",
+    "weeklyBudgetDigestTitle": "每週預算摘要",
+    "weeklyBudgetDigestDescription": "接收每週的預算警示和狀態摘要",
+    "toggleBudgetDigestLabel": "切換預算摘要",
+    "digestDayLabel": "摘要日",
+    "digestDayAriaLabel": "預算摘要日",
+    "mondayOption": "星期一",
+    "fridayOption": "星期五",
+    "immediateAlertsNote": "關鍵預算警示（超支、收入不足）無論摘要設定如何都會立即發送。",
+    "sendTestEmailDescription": "發送測試電子郵件以驗證您的通知是否正常運作。",
+    "sendTestEmailButton": "發送測試電子郵件",
+    "sendingTestEmailButton": "發送中...",
+    "toasts": {
+      "emailEnabled": "電子郵件通知已啟用",
+      "emailDisabled": "電子郵件通知已停用",
+      "digestEnabled": "預算摘要已啟用",
+      "digestDisabled": "預算摘要已停用",
+      "digestDaySet": "預算摘要日已設為 {day}",
+      "testEmailSent": "測試電子郵件已發送！請查收您的收件匣。",
+      "emailUpdateFailed": "更新通知偏好設定失敗",
+      "digestUpdateFailed": "更新預算摘要偏好設定失敗",
+      "digestDayFailed": "更新摘要日失敗",
+      "testEmailFailed": "發送測試電子郵件失敗"
+    }
+  },
+  "help": {
+    "heading": "說明與支援",
+    "description": "尋找說明文件、回報問題或加入討論。",
+    "github": {
+      "label": "GitHub",
+      "description": "查看原始碼並為專案加星。"
+    },
+    "openIssue": {
+      "label": "回報問題",
+      "description": "回報錯誤或請求功能。"
+    },
+    "discussions": {
+      "label": "討論",
+      "description": "與社群提問和分享想法。"
+    },
+    "wiki": {
+      "label": "Wiki",
+      "description": "瀏覽指南和說明文件。"
+    }
+  },
+  "dangerZone": {
+    "heading": "危險區域",
+    "deleteData": {
+      "heading": "刪除資料",
+      "description": "從您的帳戶中移除財務資料。此操作無法復原。",
+      "openButton": "刪除資料...",
+      "alwaysDeletedHeading": "以下內容將始終被刪除：",
+      "optionalHeading": "選擇性也刪除：",
+      "accountsOption": "科目",
+      "categoriesOption": "類別",
+      "payeesOption": "收款人",
+      "currencyPreferencesOption": "貨幣偏好設定",
+      "balanceResetNote": "科目結餘將重置為其開始結餘。",
+      "oidcConfirmLabel": "與您的身份提供者重新驗證以確認：",
+      "passwordConfirmLabel": "輸入您的密碼以確認：",
+      "passwordPlaceholder": "輸入您的密碼",
+      "oidcReauthButton": "重新驗證並刪除",
+      "deletingButton": "刪除中...",
+      "confirmButton": "確認刪除資料",
+      "toasts": {
+        "success": "成功刪除 {count} 筆記錄",
+        "failed": "刪除資料失敗"
+      }
+    },
+    "deleteAccount": {
+      "heading": "刪除帳戶",
+      "description": "永久刪除您的帳戶及所有相關資料。此操作無法復原。",
+      "delegateNotice": {
+        "title": "您是另一個帳戶的委派人。",
+        "body": "刪除您的帳戶將移除您自己的資料，但您的登入和他人授予您的共用存取將保留，以維持委派功能。如需撤銷該存取，請先請帳戶擁有者將您從其共用存取清單中移除。"
+      },
+      "openButton": "刪除帳戶",
+      "typeDeleteLabel": "輸入 DELETE 以確認刪除帳戶：",
+      "typeDeletePlaceholder": "輸入 DELETE",
+      "enterPasswordLabel": "輸入您的密碼：",
+      "enterPasswordPlaceholder": "輸入您的密碼",
+      "deletingButton": "刪除中...",
+      "confirmButton": "確認刪除",
+      "toasts": {
+        "downgraded": "您自己的資料已移除。您的登入和共用存取已保留，以維持委派功能。",
+        "deleted": "帳戶已刪除",
+        "failed": "刪除帳戶失敗"
+      },
+      "errors": {
+        "typeDelete": "請輸入 DELETE 以確認",
+        "passwordRequired": "請輸入您的密碼以確認"
+      }
+    }
+  },
+  "apiAccess": {
+    "heading": "API 存取",
+    "description": "建立個人存取權杖，透過 MCP 連接 Claude Desktop 等外部 AI 工具。",
+    "createTokenButton": "建立權杖",
+    "mcpServerUrlLabel": "MCP 伺服器 URL",
+    "mcpServerUrlHelp": "設定 MCP 客戶端（例如 Claude Code 或 Claude Desktop）時使用此 URL。",
+    "copyButton": "複製",
+    "copiedButton": "已複製",
+    "noTokens": "尚無 API 權杖。請建立一個以開始使用。",
+    "tokenPrefix": "上次使用",
+    "expires": "到期",
+    "created": "建立時間",
+    "lastUsed": "上次使用",
+    "revokeButton": "撤銷",
+    "revokeModal": {
+      "title": "撤銷權杖",
+      "message": "此權杖將立即失效。使用此權杖的所有 MCP 連線都將中斷。",
+      "confirmLabel": "撤銷"
+    },
+    "createModal": {
+      "title": "建立 API 權杖",
+      "tokenNameLabel": "權杖名稱",
+      "tokenNamePlaceholder": "例如：Claude Desktop",
+      "scopesLabel": "範圍",
+      "expirationLabel": "到期時間",
+      "creatingButton": "建立中...",
+      "createButton": "建立權杖",
+      "scopes": {
+        "read": {
+          "label": "讀取",
+          "description": "查看科目、交易和類別"
+        },
+        "write": {
+          "label": "寫入",
+          "description": "建立交易、收款人和類別"
+        },
+        "reports": {
+          "label": "報表",
+          "description": "產生財務報表和分析"
+        }
+      },
+      "expiry": {
+        "none": "不設到期",
+        "d30": "30 天",
+        "d90": "90 天",
+        "y1": "1 年"
+      },
+      "validation": {
+        "nameRequired": "權杖名稱為必填",
+        "nameMax": "權杖名稱不得超過 100 個字元"
+      }
+    },
+    "createdModal": {
+      "title": "權杖已建立",
+      "warningNote": "請立即複製此權杖。您將無法再次查看它。",
+      "doneButton": "完成"
+    },
+    "toasts": {
+      "copied": "權杖已複製至剪貼簿",
+      "mcpUrlCopied": "MCP URL 已複製至剪貼簿",
+      "revoked": "權杖已撤銷",
+      "selectScope": "請至少選擇一個範圍",
+      "copyTokenFailed": "複製權杖失敗",
+      "copyUrlFailed": "複製 URL 失敗",
+      "loadFailed": "載入 API 權杖失敗",
+      "createFailed": "建立權杖失敗",
+      "revokeFailed": "撤銷權杖失敗"
+    },
+    "relative": {
+      "never": "從未",
+      "today": "今天",
+      "yesterday": "昨天",
+      "daysAgo": "{count} 天前",
+      "monthsAgo": "{count} 個月前"
+    }
+  },
+  "autoBackup": {
+    "heading": "自動備份",
+    "description": "依排程自動將您的資料備份至資料夾。由於 Monize 在 Docker 中運行，您必須將主機資料夾映射至容器作為磁碟區（例如：-v /host/backups:/backups）。",
+    "loadingText": "載入中...",
+    "enableLabel": "啟用自動備份",
+    "backupFolderLabel": "備份資料夾",
+    "backupFolderPlaceholder": "/backups",
+    "browseButton": "瀏覽...",
+    "validateButton": "驗證",
+    "validatingButton": "驗證中...",
+    "folderValid": "資料夾有效且可寫入",
+    "selectThisFolder": "選擇此資料夾",
+    "noSubdirectories": "無子目錄",
+    "frequencyLabel": "備份頻率",
+    "backupTimeLabel": "備份時間（{timezone}）",
+    "backupTimeHelpInterval": "當天的第一次備份從此時間（{timezone}）開始。後續備份按設定的間隔進行。",
+    "backupTimeHelpDaily": "在您的本地時區（{timezone}）執行備份的時間。",
+    "retention": {
+      "heading": "保留策略",
+      "description": "設定要保留多少份備份。超出這些限制的舊備份將自動刪除。",
+      "dailyLabel": "每日備份",
+      "dailyHelp": "保留的最近備份份數",
+      "weeklyLabel": "每週備份",
+      "weeklyHelp": "每週保留一份",
+      "monthlyLabel": "每月備份",
+      "monthlyHelp": "每月保留一份"
+    },
+    "status": {
+      "heading": "狀態",
+      "lastBackup": "上次備份",
+      "nextBackup": "下次備份",
+      "error": "錯誤",
+      "success": "成功",
+      "failed": "失敗"
+    },
+    "saveButton": "儲存設定",
+    "savingButton": "儲存中...",
+    "runNowButton": "立即執行備份",
+    "runningButton": "執行備份中...",
+    "toasts": {
+      "saved": "自動備份設定已儲存",
+      "backupCreated": "備份已建立：{filename}",
+      "folderValid": "資料夾有效且可寫入",
+      "loadFailed": "載入自動備份設定失敗",
+      "saveFailed": "儲存設定失敗",
+      "runFailed": "執行備份失敗",
+      "browseFailed": "瀏覽資料夾失敗"
+    },
+    "folderErrors": {
+      "required": "資料夾路徑為必填",
+      "validationFailed": "資料夾驗證失敗",
+      "validationError": "驗證失敗"
+    },
+    "frequencyOptions": {
+      "every6hours": "每 6 小時",
+      "every12hours": "每 12 小時",
+      "daily": "每日",
+      "weekly": "每週"
+    }
+  },
+  "backupRestore": {
+    "heading": "備份與還原",
+    "encryption": {
+      "heading": "備份加密",
+      "descriptionOidc": "使用您在此設定的專用備份密碼加密手動和自動備份。還原時需要此密碼。",
+      "descriptionLocal": "使用您的登入密碼加密手動和自動備份。還原時需要此密碼。",
+      "loading": "載入中...",
+      "enabledBadge": "已啟用",
+      "changePasswordButton": "更改備份密碼",
+      "disableButton": "停用",
+      "setPasswordButton": "設定備份密碼",
+      "enableEncryptedButton": "啟用加密備份",
+      "setupModal": {
+        "titleOidc": "設定備份密碼",
+        "titleLocal": "啟用加密備份",
+        "descriptionOidc": "選擇用於加密備份的密碼。請妥善保存，還原時需要此密碼。",
+        "descriptionLocal": "確認您的登入密碼。它將用於加密所有備份（手動和自動）。",
+        "placeholderOidc": "新備份密碼（12+ 個字元）",
+        "placeholderLocal": "您的登入密碼",
+        "savingButton": "儲存中...",
+        "confirmButton": "確認"
+      },
+      "toasts": {
+        "enabled": "加密備份已啟用",
+        "disabled": "加密備份已停用",
+        "enableFailed": "啟用加密失敗",
+        "disableFailed": "停用加密失敗"
+      }
+    },
+    "export": {
+      "heading": "建立備份",
+      "description": "下載您財務資料的完整備份。包含科目、交易、類別、收款人、預算、投資及所有其他使用者資料。",
+      "downloadButton": "下載備份",
+      "creatingButton": "建立備份中...",
+      "exportPasswordModal": {
+        "title": "加密備份",
+        "description": "輸入密碼以加密此備份。還原時需要此密碼。",
+        "placeholderOidc": "備份密碼",
+        "placeholderLocal": "登入密碼",
+        "encryptingButton": "加密中...",
+        "downloadButton": "下載"
+      },
+      "toasts": {
+        "success": "備份下載成功",
+        "failed": "建立備份失敗"
+      }
+    },
+    "restore": {
+      "heading": "從備份還原",
+      "description": "以先前匯出的備份檔案取代您所有目前的資料。此操作將永久覆蓋您現有的資料。",
+      "openButton": "從備份還原...",
+      "warning": "警告：此操作將刪除您所有目前的資料並以備份內容取代。此操作無法復原。",
+      "selectFileLabel": "選擇備份檔案",
+      "encryptedBackupLabel": "此備份已加密。請輸入建立時使用的備份密碼：",
+      "backupPasswordPlaceholder": "備份密碼",
+      "oidcConfirmLabel": "與您的身份提供者重新驗證以確認：",
+      "passwordConfirmLabel": "輸入您的帳戶密碼以確認：",
+      "passwordPlaceholder": "輸入您的密碼",
+      "oidcRestoreButton": "重新驗證並還原",
+      "restoringButton": "還原中...",
+      "confirmRestoreButton": "確認還原",
+      "toasts": {
+        "pleaseSelectFile": "請選擇備份檔案",
+        "pleaseEnterPassword": "請輸入您的密碼以確認",
+        "encryptedNeedsPassword": "此備份已加密。請在「備份密碼」欄位輸入建立時使用的密碼後再試。",
+        "failed": "還原備份失敗"
+      }
+    },
+    "restoreResult": {
+      "title": "還原完成",
+      "description": "您的資料已成功還原。以下是已還原內容的摘要：",
+      "totalRecords": "總記錄數",
+      "doneButton": "完成"
+    }
+  },
+  "sharedAccess": {
+    "description": "委派人使用自己的憑證登入，永遠看不到您的密碼。他們只能看到您授予存取的科目和區段。",
+    "addDelegateButton": "新增委派人",
+    "loading": "載入中...",
+    "noDelegates": "尚無委派人。",
+    "statusLabel": "狀態：{status}",
+    "sectionsLabel": "區段：{count}",
+    "accountsLabel": "科目：{count}",
+    "sharedDataLabel": "共用資料：{count}",
+    "editAccessButton": "編輯存取",
+    "resetPasswordButton": "重置密碼",
+    "resetPasswordDisabledTitle": "此人自行管理密碼（他們有自己的 Monize 帳戶或其他地方的委派存取）。",
+    "removeButton": "移除",
+    "createModal": {
+      "title": "新增委派人",
+      "description": "授予另一個人對您的科目的範圍存取。",
+      "emailLabel": "電子郵件",
+      "emailPlaceholder": "委派人電子郵件",
+      "firstNameLabel": "名字",
+      "firstNamePlaceholder": "名字（選填）",
+      "lastNameLabel": "姓氏",
+      "lastNamePlaceholder": "姓氏（選填）",
+      "existingAccountNotice": "此人已有 Monize 登入帳戶。他們將保留自己的憑證，並直接獲得額外的共用存取 — 無需設定密碼或發送邀請。",
+      "sendInviteLabel": "發送電子郵件邀請而非設定密碼",
+      "passwordLabel": "密碼",
+      "passwordPlaceholder": "設定密碼",
+      "submitButton": "新增委派人"
+    },
+    "revokeDialog": {
+      "title": "移除委派人",
+      "message": "移除此委派人？他們將失去對您帳戶的存取。如果他們沒有其他共用存取且從未以自己的 Monize 帳戶認領此電子郵件，其擁有者管理的登入也將被移除。",
+      "removingButton": "移除中...",
+      "removeButton": "移除"
+    },
+    "tempPasswordModal": {
+      "title": "臨時密碼",
+      "description": "請安全地將此密碼分享給委派人。他們在第一次登入時將被要求更改密碼。此密碼不會再次顯示。",
+      "copyButton": "複製",
+      "copiedButton": "已複製",
+      "doneButton": "完成"
+    },
+    "toasts": {
+      "created": "委派人已建立",
+      "createdWithTempPassword": "委派人已建立。臨時密碼：{password}",
+      "invited": "邀請電子郵件已發送",
+      "removed": "委派人已移除"
+    },
+    "errors": {
+      "setPasswordOrInvite": "請設定密碼或發送電子郵件邀請。",
+      "loadFailed": "載入共用存取失敗",
+      "createFailed": "建立委派人失敗",
+      "revokeFailed": "撤銷委派人失敗",
+      "resetPasswordFailed": "重置密碼失敗",
+      "copyFailed": "無法複製至剪貼簿"
+    }
+  },
+  "delegateAccessModal": {
+    "title": "編輯存取",
+    "tabs": {
+      "accounts": "科目",
+      "sections": "區段",
+      "shared": "共用資料"
+    },
+    "sections": {
+      "description": "授予整個應用程式區段的唯讀存取。以科目為範圍的資料仍需要個別科目存取。"
+    },
+    "accounts": {
+      "noAccounts": "無可授予的科目。",
+      "grantAll": "授予全部"
+    },
+    "shared": {
+      "description": "收款人、類別和標籤的讀取始終允許。這些控制建立/編輯/刪除。"
+    },
+    "saveButton": "儲存",
+    "toasts": {
+      "saved": "存取已更新",
+      "saveFailed": "更新存取失敗"
+    }
+  },
+  "nav": {
+    "sectionsAriaLabel": "設定區段",
+    "profile": "個人資料",
+    "preferences": "偏好設定",
+    "notifications": "通知",
+    "security": "安全性",
+    "sharedAccess": "共用存取",
+    "emergencyAccess": "緊急存取",
+    "apiAccess": "API 存取",
+    "aiSettings": "AI 設定",
+    "backupRestore": "備份與還原",
+    "autoBackup": "自動備份",
+    "help": "說明與支援",
+    "dangerZone": "危險區域"
+  },
+  "page": {
+    "title": "設定",
+    "demoRestricted": {
+      "heading": "示範模式中受限",
+      "body": "示範模式中停用了個人資料編輯、密碼更改、雙重驗證和帳戶刪除。"
+    },
+    "sharedAccessCard": {
+      "title": "共用存取",
+      "description": "授予另一個人對特定科目的細粒度存取。"
+    },
+    "emergencyAccessCard": {
+      "title": "緊急存取",
+      "description": "指定聯絡人，若您長時間未登入，他們將自動獲得對您帳戶的完整存取。"
+    },
+    "aiSettingsCard": {
+      "title": "AI 設定",
+      "description": "設定 AI 提供者、管理 API 金鑰並查看使用統計。"
+    },
+    "delegateSecurityError": "無法載入您的安全設定。",
+    "toasts": {
+      "securityLoadFailed": "載入安全設定失敗",
+      "loadFailed": "載入設定失敗"
+    }
+  },
+  "aiSettings": {
+    "backLink": "返回設定",
+    "title": "AI 設定",
+    "subtitle": "設定 AI 提供者以使用智慧財務功能",
+    "demoRestricted": {
+      "heading": "示範模式中受限",
+      "body": "示範模式中停用了 AI 提供者設定。"
+    },
+    "toasts": {
+      "loadFailed": "載入 AI 設定失敗",
+      "usageLoadFailed": "載入使用資料失敗"
+    }
+  },
+  "sharedAccessPage": {
+    "backLink": "返回設定",
+    "title": "共用存取",
+    "subtitle": "授予另一個人對特定科目的細粒度存取",
+    "demoRestricted": {
+      "heading": "示範模式中受限",
+      "body": "示範模式中停用了委派人管理。"
+    }
+  },
+  "emergencyAccess": {
+    "backLink": "返回設定",
+    "title": "緊急存取",
+    "subtitle": "指定聯絡人，若您長時間未登入，他們將自動獲得對您帳戶的完整存取",
+    "delegateRestricted": "緊急存取只能由帳戶擁有者設定。",
+    "demoRestricted": "示範模式中停用了緊急存取。",
+    "emailNotConfigured": {
+      "heading": "電子郵件未設定",
+      "body": "緊急存取依賴電子郵件傳遞。請請管理員設定 SMTP 環境變數（SMTP_HOST、SMTP_USER、SMTP_PASSWORD）後再試。"
+    },
+    "alreadyGranted": {
+      "heading": "緊急存取已授予",
+      "description": "您指定的聯絡人已收到接管帳戶的魔法連結。如果這不是您的意圖，請清除以下的授予狀態以使未完成的連結失效。",
+      "clearButton": "清除授予狀態"
+    },
+    "loadError": "無法載入緊急存取設定。",
+    "settings": {
+      "heading": "設定",
+      "enableLabel": "啟用緊急存取",
+      "grantAfterDaysLabel": "授予存取前的非活躍天數",
+      "reminderAfterDaysLabel": "發送提醒電子郵件前的非活躍天數",
+      "saveButton": "儲存設定",
+      "toasts": {
+        "saved": "緊急存取設定已儲存",
+        "saveFailed": "儲存設定失敗"
+      }
+    },
+    "message": {
+      "heading": "給您聯絡人的留言",
+      "description": "靜態加密儲存。查看或編輯需要重新驗證身份。",
+      "unlockTimer": "已解鎖 {mins}:{secs}",
+      "messageSet": "留言已設定",
+      "charCount": "（{count} 個字元",
+      "updatedAt": "，更新於 {timestamp}）",
+      "noMessage": "未設定留言",
+      "revealButton": "顯示留言",
+      "editButton": "編輯留言",
+      "addButton": "新增留言",
+      "emptyMessage": "（空白）",
+      "lockNowButton": "立即鎖定",
+      "editMessageButton": "編輯",
+      "messagePlaceholder": "備註、指示、重要文件的位置...",
+      "maxCharsNote": "最多 4000 個字元。靜態加密儲存。",
+      "cancelButton": "取消",
+      "saveButton": "儲存留言",
+      "toasts": {
+        "saved": "留言已儲存",
+        "verifyAgain": "驗證已過期 -- 請再次驗證以儲存",
+        "loadFailed": "載入留言失敗",
+        "saveFailed": "儲存留言失敗"
+      }
+    },
+    "contacts": {
+      "heading": "緊急聯絡人",
+      "description": "授予存取時，每位聯絡人將透過電子郵件收到魔法連結。他們使用該連結設定新密碼並接管您的帳戶。第一個認領的聯絡人獲勝。",
+      "addButton": "新增聯絡人",
+      "noContacts": "尚無聯絡人。",
+      "editButton": "編輯",
+      "removeButton": "移除",
+      "contactModal": {
+        "addTitle": "新增緊急聯絡人",
+        "editTitle": "編輯聯絡人",
+        "firstNameLabel": "名字",
+        "emailLabel": "電子郵件",
+        "addButton": "新增聯絡人",
+        "saveButton": "儲存變更"
+      },
+      "removeDialog": {
+        "title": "移除聯絡人",
+        "message": "此聯絡人將不再接收緊急存取。您可以稍後再次新增他們。",
+        "removingButton": "移除中...",
+        "removeButton": "移除"
+      },
+      "toasts": {
+        "added": "聯絡人已新增",
+        "updated": "聯絡人已更新",
+        "removed": "聯絡人已移除",
+        "saveFailed": "儲存聯絡人失敗",
+        "removeFailed": "移除聯絡人失敗"
+      }
+    },
+    "status": {
+      "heading": "狀態",
+      "lastAccess": "最後存取：",
+      "lastReminderSent": "最後提醒發送：",
+      "grantStatus": "授予狀態：",
+      "unknown": "未知",
+      "never": "從未",
+      "daysAgo": "{count} 天前",
+      "grantedOn": "授予於 {timestamp}",
+      "notYetGranted": "尚未授予",
+      "timerNote": "計時器會在您每次使用應用程式時自動重置 — 登入、查看頁面、記錄交易，任何已驗證的操作。"
+    },
+    "resetConfirm": {
+      "title": "清除授予狀態",
+      "message": "此操作將使所有未完成的魔法連結失效，讓提醒週期重新開始，並讓授予機制在另一段非活躍期後再次觸發。",
+      "clearingButton": "清除中...",
+      "clearButton": "清除",
+      "toasts": {
+        "cleared": "授予狀態已清除",
+        "resetFailed": "重置授予狀態失敗"
+      }
+    },
+    "stepUp": {
+      "reason": "請重新驗證身份以查看或編輯您的緊急存取留言。"
+    },
+    "toasts": {
+      "loadFailed": "載入緊急存取失敗",
+      "reauthFailed": "確認重新驗證失敗"
+    }
+  },
+  "aiProviders": {
+    "heading": "AI 提供者",
+    "addButton": "新增提供者",
+    "encryptionWarning": "未設定 AI_ENCRYPTION_KEY。您可以使用 Ollama（本機，無需 API 金鑰），但雲端提供者需要加密以安全儲存 API 金鑰。",
+    "systemDefault": {
+      "heading": "可使用系統預設 AI 提供者",
+      "description": "管理員已設定中央 AI 提供者",
+      "usedAutomatically": "由於您未設定個人提供者，系統將自動使用此提供者。",
+      "personalPriority": "您的個人提供者優先於系統預設提供者。"
+    },
+    "noProviders": {
+      "withSystemDefault": "未設定個人 AI 提供者。將使用系統預設提供者。",
+      "withoutSystemDefault": "未設定 AI 提供者。請新增提供者以啟用 AI 功能。"
+    },
+    "providerCard": {
+      "activeBadge": "活躍",
+      "inactiveBadge": "非活躍",
+      "priorityLabel": "優先順序：{n}",
+      "modelLabel": "模型：{model}",
+      "keyLabel": "金鑰：{key}",
+      "urlLabel": "URL：{url}",
+      "costLabel": "費用/百萬（{currency}）：{input} 輸入 / {output} 輸出",
+      "disableButton": "停用",
+      "enableButton": "啟用",
+      "editButton": "編輯",
+      "deleteButton": "刪除"
+    },
+    "configForm": {
+      "addTitle": "新增 AI 提供者",
+      "editTitle": "編輯提供者",
+      "providerLabel": "提供者",
+      "displayNameLabel": "顯示名稱",
+      "modelLabel": "模型",
+      "testButton": "測試",
+      "testingButton": "測試中...",
+      "ollamaCloudNote": "模型名稱必須包含 -cloud 後綴（例如：gpt-oss:20b-cloud）。",
+      "apiKeyLabel": "API 金鑰",
+      "baseUrlLabel": "基礎 URL",
+      "priorityLabel": "優先順序",
+      "priorityHelp": "數字越小，優先順序越高。用於後備排序。",
+      "costRatesHeading": "費率（選填）",
+      "costRatesHelp": "輸入您提供者每百萬個 Token 的公布費率，以在使用儀表板中查看預估費用。留空則跳過費用估算。",
+      "inputCostLabel": "輸入費用 / 百萬 Token",
+      "outputCostLabel": "輸出費用 / 百萬 Token",
+      "rateCurrencyLabel": "費率貨幣",
+      "rateCurrencyHelp": "如果此貨幣與您的本幣不同，使用儀表板可使用您儲存的匯率換算費用。",
+      "saveButton": "儲存變更",
+      "addProviderButton": "新增提供者",
+      "modelPlaceholder": "輸入模型名稱",
+      "testModelAria": "測試模型",
+      "apiKeyPlaceholder": "輸入 API 金鑰",
+      "saveFailed": "儲存設定失敗",
+      "inputCostPlaceholder": "例如：3.00",
+      "outputCostPlaceholder": "例如：15.00",
+      "toasts": {
+        "notReachable": "無法連線到提供者。",
+        "modelUnavailable": "此提供者不支援模型「{model}」。",
+        "modelReady": "模型「{model}」已就緒。",
+        "success": "連線成功。",
+        "testFailed": "模型測試失敗"
+      },
+      "costCurrencies": {
+        "USD": "USD - 美元",
+        "EUR": "EUR - 歐元",
+        "GBP": "GBP - 英鎊",
+        "CAD": "CAD - 加拿大元",
+        "AUD": "AUD - 澳幣",
+        "JPY": "JPY - 日圓",
+        "CNY": "CNY - 人民幣",
+        "INR": "INR - 印度盧比"
+      },
+      "validation": {
+        "displayNameMax": "顯示名稱不得超過 100 個字元",
+        "mustBeNumber": "必須為數字",
+        "currencyCode": "必須為 3 個字母的貨幣代碼"
+      }
+    },
+    "testButton": {
+      "testLabel": "測試",
+      "connectionFailed": "連線失敗",
+      "modelUnavailable": "此提供者不支援模型「{model}」。",
+      "successWithModel": "連線成功。模型「{model}」已就緒。",
+      "success": "連線成功",
+      "testFailed": "連線測試失敗"
+    },
+    "toasts": {
+      "added": "提供者已新增",
+      "updated": "提供者已更新",
+      "removed": "提供者已移除",
+      "modelReady": "模型「{model}」已就緒。",
+      "notReachable": "已儲存，但無法連線到提供者。請再次確認 URL/API 金鑰。",
+      "modelUnavailable": "已儲存，但此提供者不支援模型「{model}」。",
+      "deleteFailed": "刪除提供者失敗",
+      "updateFailed": "更新提供者失敗"
+    }
+  },
+  "usage": {
+    "heading": "使用量",
+    "totalRequests": "總請求數",
+    "inputTokens": "輸入 Token",
+    "outputTokens": "輸出 Token",
+    "estCost": "預估費用",
+    "setRatesToEnable": "請在提供者上設定費率以啟用",
+    "inHomeCurrency": "以 {currency} 計算",
+    "inProviderCurrency": "以提供者貨幣計算",
+    "byProvider": {
+      "heading": "依提供者",
+      "provider": "提供者",
+      "requests": "請求數",
+      "inputTokens": "輸入 Token",
+      "outputTokens": "輸出 Token",
+      "estCost": "預估費用"
+    },
+    "recentActivity": {
+      "heading": "最近活動",
+      "date": "日期",
+      "provider": "提供者",
+      "feature": "功能",
+      "tokens": "Token",
+      "duration": "時長",
+      "estCost": "預估費用"
+    },
+    "noUsage": "尚無使用資料。開始使用 AI 功能後，使用資料將顯示在此。",
+    "periods": {
+      "d7": "7 天",
+      "d30": "30 天",
+      "d90": "90 天",
+      "all": "所有時間"
+    },
+    "estCostTooltip": "使用您在每個提供者上設定的費率進行估算。不含未設定匹配費率的活動。"
+  }
+}

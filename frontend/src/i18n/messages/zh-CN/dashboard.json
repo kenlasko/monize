@@ -1,0 +1,136 @@
+{
+  "page": {
+    "welcomePrefix": "欢迎",
+    "welcomeWithName": "欢迎，{name}！",
+    "subtitle": "这是您的财务概览"
+  },
+  "favouriteAccounts": {
+    "title": "收藏账户",
+    "empty": "暂无收藏账户。将账户标记为收藏后即可在此查看。",
+    "reorder": "重新排序",
+    "done": "完成",
+    "moveUp": "上移",
+    "moveDown": "下移",
+    "marketValue": "市值",
+    "due": "到期：{ordinal}",
+    "dueTooltip": "每月信用卡还款到期的日期",
+    "settlement": "结算：{ordinal}",
+    "settlementTooltip": "账单周期的最后一天。在此日期当天或之前入账的交易将显示在当期账单上。"
+  },
+  "upcomingBills": {
+    "title": "即将到来的账单与存款",
+    "empty": "在提醒窗口内没有逾期或即将到来的账单、存款或转账。",
+    "perReminderSettings": "根据提醒设置",
+    "postTransaction": "过账此交易",
+    "manual": "手动",
+    "manualTitle": "需要手动过账",
+    "negativeBalanceWarning": "此交易将导致账户余额低于零",
+    "viewAll": "查看所有账单与存款",
+    "totalDue": "应付总额",
+    "totalIncoming": "应收总额",
+    "moreItems": "+{count} 条",
+    "overdue": "已逾期",
+    "today": "今天",
+    "tomorrow": "明天",
+    "daysUntil": "{count} 天",
+    "typeBadge": {
+      "bill": "账单",
+      "deposit": "存款",
+      "transfer": "转账"
+    }
+  },
+  "gettingStarted": {
+    "title": "快速入门",
+    "subtitle": "几步即可完成账户设置",
+    "dismiss": "忽略",
+    "steps": {
+      "settings": {
+        "title": "检查您的设置",
+        "description": "设置您的货币、日期格式和主题"
+      },
+      "categories": {
+        "title": "设置科目",
+        "description": "创建科目或导入默认科目集"
+      },
+      "account": {
+        "title": "添加您的第一个账户",
+        "description": "创建一个银行账户开始记账"
+      },
+      "import": {
+        "title": "从 QIF 导入",
+        "description": "从 QIF 文件导入账户和交易"
+      }
+    }
+  },
+  "budgetStatus": {
+    "title": "预算状态",
+    "noBudget": "未找到活跃预算。创建预算以跟踪您的支出。",
+    "createBudget": "创建预算",
+    "viewFullBudget": "查看完整预算",
+    "daysLeft": "剩余 {count} 天",
+    "safeToSpend": "今日可安全支出",
+    "topCategories": "主要科目"
+  },
+  "insights": {
+    "title": "消费洞察",
+    "empty": "暂无洞察。请前往洞察页面生成您的第一次分析。",
+    "goToInsights": "前往洞察",
+    "viewAll": "查看所有洞察",
+    "activeCount": "{count} 条活跃"
+  },
+  "topMovers": {
+    "title": "涨跌幅榜",
+    "empty": {
+      "noInvestments": "添加投资账户以跟踪每日涨跌。",
+      "noPrices": "暂无可用的价格变动数据。",
+      "noGainers": "今日无上涨。",
+      "noLosers": "今日无下跌。"
+    },
+    "dailyChange": "日涨跌",
+    "refreshPrices": "刷新价格",
+    "viewPortfolio": "查看投资组合",
+    "filter": {
+      "all": "全部",
+      "gainers": "上涨",
+      "losers": "下跌"
+    }
+  },
+  "favouriteSecurities": {
+    "title": "收藏证券",
+    "empty": "暂无收藏证券。前往<securitiesLink>证券页面</securitiesLink>并收藏您想在此跟踪的证券。",
+    "noPriceYet": "暂无价格",
+    "dailyChange": "日涨跌",
+    "refreshPrices": "刷新价格",
+    "manage": "管理证券"
+  },
+  "netWorth": {
+    "title": "资产净值",
+    "empty": "暂无资产净值数据。",
+    "past12Months": "过去 12 个月",
+    "viewReport": "查看完整报告"
+  },
+  "assetsVsLiabilities": {
+    "title": "资产与负债",
+    "empty": "暂无资产净值数据。",
+    "current": "当前",
+    "netWorthLabel": "资产净值",
+    "assets": "资产",
+    "liabilities": "负债"
+  },
+  "expensesPieChart": {
+    "title": "按科目划分的支出",
+    "empty": "此期间无支出数据。",
+    "past30Days": "过去 30 天",
+    "total": "合计",
+    "uncategorized": "未分类",
+    "other": "其他"
+  },
+  "incomeExpenses": {
+    "title": "收入与支出",
+    "last5Weeks": "最近 5 周",
+    "weekOf": "{date} 当周",
+    "income": "收入",
+    "expenses": "支出",
+    "net": "净额"
+  }
+}

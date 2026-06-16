@@ -1,0 +1,292 @@
+{
+  "page": {
+    "title": "Penerima",
+    "subtitle": "Kelola penerima dan kategori default mereka",
+    "deactivateUnused": "Nonaktifkan yang Tidak Digunakan",
+    "autoAssignCategories": "Tetapkan Kategori Otomatis",
+    "autoMergePayees": "Gabungkan Penerima Otomatis",
+    "newPayee": "+ Penerima Baru",
+    "searchPlaceholder": "Cari penerima...",
+    "statusAll": "Semua ({count})",
+    "statusActive": "Aktif ({count})",
+    "statusInactive": "Tidak Aktif ({count})",
+    "categoryFilterAll": "Semua Penerima ({count})",
+    "categoryFilterNoCategory": "Tidak Ada Kategori Default ({count})",
+    "categoryFilterUncategorized": "Txns Tanpa Kategori ({count})",
+    "modalTitleEdit": "Edit Penerima",
+    "modalTitleNew": "Penerima Baru",
+    "loading": "Memuat penerima...",
+    "count": "{count, plural, one {# penerima} other {# penerima}}",
+    "toasts": {
+      "loadFailed": "Gagal memuat data",
+      "updated": "Penerima berhasil diperbarui",
+      "created": "Penerima berhasil dibuat",
+      "reactivated": "Penerima \"{name}\" diaktifkan kembali",
+      "reactivateFailed": "Gagal mengaktifkan kembali penerima",
+      "updateFailed": "Gagal memperbarui penerima",
+      "createFailed": "Gagal membuat penerima",
+      "categorized": "{count, plural, one {Dikategorikan # transaksi} other {Dikategorikan # transaksi}}"
+    },
+    "summary": {
+      "totalPayees": "Total Penerima",
+      "active": "Aktif",
+      "inactive": "Tidak Aktif",
+      "withoutCategory": "Tanpa Kategori"
+    },
+    "applyDefaultCategories": "Terapkan Kategori Default"
+  },
+  "list": {
+    "columns": {
+      "name": "Nama",
+      "defaultCategory": "Kategori Default",
+      "count": "Jumlah",
+      "aliases": "Alias",
+      "lastUsed": "Terakhir Digunakan",
+      "created": "Dibuat",
+      "status": "Status",
+      "notes": "Catatan",
+      "actions": "Tindakan"
+    },
+    "density": {
+      "normal": "Normal",
+      "compact": "Ringkas",
+      "dense": "Padat",
+      "toggle": "Ubah kepadatan baris"
+    },
+    "noCategory": "Tidak Ada",
+    "statusBadge": {
+      "active": "Aktif",
+      "inactive": "Tidak Aktif"
+    },
+    "actions": {
+      "reactivate": "Aktifkan Kembali",
+      "reactivateShort": "Re",
+      "merge": "Gabungkan",
+      "mergeShort": "G",
+      "edit": "Edit",
+      "editShort": "E",
+      "delete": "Hapus",
+      "deleteShort": "X"
+    },
+    "viewTransactionsTitle": "Lihat transaksi dengan penerima ini",
+    "uncategorizedBadge": "{count, plural, one {# tanpa kategori} other {# tanpa kategori}}",
+    "uncategorizedTitle": "{count, plural, one {# transaksi untuk penerima ini tidak memiliki kategori} other {# transaksi untuk penerima ini tidak memiliki kategori}}",
+    "empty": {
+      "title": "Tidak ada penerima",
+      "subtitle": "Mulai dengan membuat penerima baru."
+    },
+    "deleteConfirm": {
+      "title": "Hapus \"{name}\"?",
+      "message": "Tindakan ini tidak dapat dibatalkan.",
+      "confirmLabel": "Hapus",
+      "cancelLabel": "Batal"
+    },
+    "toasts": {
+      "deleted": "Penerima berhasil dihapus",
+      "deleteFailed": "Gagal menghapus penerima"
+    }
+  },
+  "form": {
+    "nameLabel": "Nama Penerima",
+    "categoryLabel": "Kategori Default",
+    "notesLabel": "Catatan (opsional)",
+    "submitCreate": "Buat Penerima",
+    "submitUpdate": "Perbarui Penerima",
+    "applyCategoryLabel": "Terapkan kategori ini ke transaksi yang sudah ada",
+    "applyCategoryNone": "Jangan ubah transaksi yang sudah ada",
+    "applyCategoryUncategorized": "Hanya transaksi tanpa kategori ({count})",
+    "applyCategoryAll": "Semua transaksi ({count})",
+    "applyCategoryHelp": "Transfer dan transaksi terbagi tidak pernah diubah."
+  },
+  "merge": {
+    "title": "Gabungkan Penerima",
+    "mergeFromLabel": "Gabungkan dari (akan dihapus):",
+    "transactionCount": "{count, plural, one {# transaksi akan dipindahkan} other {# transaksi akan dipindahkan}}",
+    "mergeIntoLabel": "Gabungkan ke (penerima target)",
+    "addAsAliasLabel": "Tambahkan \"{name}\" sebagai alias pada penerima target",
+    "willLabel": "Ini akan:",
+    "willMoveTransactions": "Memindahkan semua transaksi dari \"{source}\" ke \"{target}\"",
+    "willAddAlias": "Menambahkan \"{source}\" sebagai alias agar impor di masa depan cocok otomatis",
+    "willDelete": "Menghapus penerima \"{source}\"",
+    "merging": "Menggabungkan...",
+    "mergeButton": "Gabungkan Penerima",
+    "toasts": {
+      "merged": "Digabungkan ke \"{target}\": {details}",
+      "transactionsMigrated": "{count, plural, one {# transaksi dipindahkan} other {# transaksi dipindahkan}}",
+      "aliasAdded": "alias ditambahkan",
+      "sourceDeleted": "\"{name}\" dihapus",
+      "failed": "Gagal menggabungkan penerima"
+    }
+  },
+  "categoryAutoAssign": {
+    "title": "Tetapkan Kategori Default Otomatis",
+    "howItWorksTitle": "Cara kerjanya",
+    "howItWorksBody": "Fitur ini menganalisis riwayat transaksi Anda untuk menyarankan kategori default bagi penerima. Fitur ini melihat kategori mana yang paling sering digunakan untuk setiap penerima dan menyarankan penetapannya sebagai kategori default untuk transaksi di masa depan. Anda selalu dapat mengganti kategori default jika diperlukan.",
+    "minTransactionsLabel": "Minimum Transaksi: {count}",
+    "minTransactionsHelp": "Hanya pertimbangkan penerima dengan setidaknya sejumlah transaksi ini",
+    "matchPercentageLabel": "Persentase Kecocokan Kategori: {percent}%",
+    "matchPercentageHelp": "Kategori harus digunakan dalam setidaknya persentase transaksi ini",
+    "onlyWithoutCategoryLabel": "Hanya penerima tanpa kategori default",
+    "backfillLabel": "Juga kategorikan {count, plural, one {# transaksi tanpa kategori yang sudah ada} other {# transaksi tanpa kategori yang sudah ada}}",
+    "backfillHelp": "Menerapkan kategori yang dipilih ke transaksi yang saat ini tidak memiliki kategori. Kategori yang sudah ada, transfer, dan transaksi terbagi tidak berubah.",
+    "viewUncategorizedTitle": "Lihat {count, plural, one {# transaksi tanpa kategori} other {# transaksi tanpa kategori}} untuk {name}",
+    "previewButton": "Pratinjau Saran",
+    "loading": "Memuat...",
+    "suggestionsHeader": "Saran ({count} ditemukan)",
+    "selectAll": "Pilih semua",
+    "selectNone": "Batalkan pilihan",
+    "selectPayeeLabel": "Pilih {name}",
+    "empty": {
+      "line1": "Tidak ada penerima yang cocok dengan kriteria saat ini.",
+      "line2": "Coba sesuaikan pengaturan di atas."
+    },
+    "columns": {
+      "payee": "Penerima",
+      "suggestedCategory": "Kategori yang Disarankan",
+      "match": "Kecocokan"
+    },
+    "selectedCount": "{count, plural, one {# penerima dipilih} other {# penerima dipilih}}",
+    "applyButton": "Terapkan ke {count, plural, one {# Penerima} other {# Penerima}}",
+    "applying": "Menerapkan...",
+    "toasts": {
+      "selectAtLeastOne": "Pilih setidaknya satu penerima untuk diperbarui",
+      "updated": "{count, plural, one {Diperbarui # penerima} other {Diperbarui # penerima}}",
+      "backfilled": "{count, plural, one {Dikategorikan # transaksi} other {Dikategorikan # transaksi}}",
+      "loadFailed": "Gagal memuat saran",
+      "applyFailed": "Gagal menerapkan penugasan kategori"
+    }
+  },
+  "autoMerge": {
+    "title": "Gabungkan Penerima Otomatis",
+    "howItWorksTitle": "Cara kerjanya",
+    "howItWorksBody": "Fitur ini memindai penerima Anda dan mengelompokkan varian di mana satu nama memperluas yang lain - misalnya \"Lidl\", \"LIDL sp. z o.o.\" dan \"LIDL WARSZAWA 0421\" semuanya dibangun dari \"Lidl\". Setiap kelompok digabungkan menjadi satu penerima kanonik, dan alias wildcard (seperti \"*LIDL*\") dibuat sehingga impor di masa depan dicocokkan secara otomatis. Penerima yang hanya berbagi kata umum (seperti \"Royal Electric\" dan \"Royal City Nursery\") tetap dipisahkan. Tinjau dan sesuaikan setiap kelompok sebelum menerapkan.",
+    "backupRecommendation": "Disarankan: buat <link>cadangan</link> sebelum melakukan perubahan.",
+    "minGroupSizeLabel": "Ukuran Kelompok Minimum: {count}",
+    "minGroupSizeHelp": "Hanya sarankan kelompok dengan setidaknya sejumlah penerima ini",
+    "similarityLabel": "Ambang Kemiripan: {percent}%",
+    "similarityHelp": "Toleransi ejaan: turunkan untuk juga mengelompokkan yang hampir cocok seperti LIDL / LIDI; 100% memerlukan kecocokan kata kunci yang tepat.",
+    "minTokenLengthLabel": "Panjang Kata Kunci Minimum: {count}",
+    "minTokenLengthHelp": "Abaikan kata kunci yang lebih pendek dari ini saat mengelompokkan",
+    "includeInactiveLabel": "Sertakan penerima tidak aktif",
+    "previewButton": "Pratinjau Kelompok",
+    "loading": "Memuat...",
+    "groupsHeader": "Kelompok ({count} ditemukan)",
+    "empty": {
+      "line1": "Tidak ada kelompok gabungan yang cocok dengan kriteria saat ini.",
+      "line2": "Coba turunkan ambang kemiripan atau ukuran kelompok."
+    },
+    "includeGroupLabel": "Sertakan kelompok ini",
+    "canonicalNameLabel": "Pertahankan sebagai penerima",
+    "aliasLabel": "Alias untuk impor di masa depan",
+    "defaultCategoryLabel": "Kategori default (opsional)",
+    "backfillLabel": "Juga kategorikan {count, plural, one {# transaksi tanpa kategori yang sudah ada} other {# transaksi tanpa kategori yang sudah ada}}",
+    "aliasPlaceholder": "mis., *LIDL*",
+    "keepLabel": "Pertahankan penerima ini",
+    "includeMemberLabel": "Sertakan dalam penggabungan",
+    "keepBadge": "Pertahankan",
+    "keepColumn": "Pertahankan",
+    "mergeColumn": "Gabungkan",
+    "membersHelp": "Pilih penerima yang akan dipertahankan. Yang lainnya digabungkan ke dalamnya.",
+    "memberTransactions": "{count, plural, one {# transaksi} other {# transaksi}}",
+    "selectedCount": "{count, plural, one {# kelompok dipilih} other {# kelompok dipilih}}",
+    "payeesMergedCount": "{count, plural, one {# penerima untuk digabungkan} other {# penerima untuk digabungkan}}",
+    "applyButton": "Gabungkan {count, plural, one {# Kelompok} other {# Kelompok}}",
+    "applying": "Menggabungkan...",
+    "toasts": {
+      "selectAtLeastOne": "Pilih setidaknya satu kelompok untuk digabungkan",
+      "applied": "Digabungkan {groups, plural, one {# kelompok} other {# kelompok}} ({payees} penerima digabungkan)",
+      "backfilled": "{count, plural, one {Dikategorikan # transaksi} other {Dikategorikan # transaksi}}",
+      "aliasesSkipped": "{count, plural, one {# alias dilewati karena konflik} other {# alias dilewati karena konflik}}",
+      "loadFailed": "Gagal memuat kelompok gabungan",
+      "applyFailed": "Gagal menggabungkan penerima"
+    },
+    "categoryMatchLabel": "Hanya gabungkan penerima dalam kategori yang sama",
+    "categoryMatchHelp": "Pisahkan penerima ketika kategori mereka berbeda, mengurangi kecocokan yang salah.",
+    "granularityLabel": "Tingkat kecocokan kategori",
+    "selectAll": "Pilih semua",
+    "deselectAll": "Batalkan semua",
+    "granularity": {
+      "category": "Kategori",
+      "subcategory": "Subkategori"
+    },
+    "ignoreCommonWordsLabel": "Abaikan kata umum",
+    "ignoreCommonWordsHelp": "Jangan jadikan kata generik (Restoran, Kafe, nama negara) atau kata yang banyak penerima berbeda mulai dengannya sebagai jangkar kelompok.",
+    "commonWordSensitivityLabel": "Sensitivitas kata umum: {count}+ varian",
+    "commonWordSensitivityHelp": "Kata awal diperlakukan sebagai umum begitu setidaknya sejumlah penerima berbeda yang berbeda bercabang darinya. Lebih rendah = filter lebih agresif.",
+    "viewUncategorizedTitle": "Lihat {count, plural, one {# transaksi tanpa kategori} other {# transaksi tanpa kategori}} untuk {name}"
+  },
+  "deactivateUnused": {
+    "title": "Nonaktifkan Penerima yang Tidak Digunakan",
+    "howItWorksTitle": "Cara kerjanya",
+    "howItWorksBody": "Fitur ini menemukan penerima yang jarang digunakan dan menonaktifkannya. Penerima yang dinonaktifkan tidak akan muncul di dropdown penerima saat membuat transaksi, tetapi transaksi historis mereka tetap tersimpan. Anda dapat mengaktifkan kembali penerima kapan saja dari daftar penerima.",
+    "maxTransactionsLabel": "{count, plural, one {# atau kurang transaksi} other {# atau kurang transaksi}}",
+    "maxTransactionsHelp": "Hanya sertakan penerima dengan jumlah transaksi ini atau lebih sedikit",
+    "monthsUnusedLabel": "Terakhir digunakan lebih dari {label} yang lalu",
+    "monthsUnusedHelp": "Hanya sertakan penerima yang tidak digunakan sejak lama ini (atau tidak pernah digunakan)",
+    "previewButton": "Pratinjau Penerima yang Tidak Digunakan",
+    "loading": "Memuat...",
+    "candidatesHeader": "Kandidat ({count} ditemukan)",
+    "selectAll": "Pilih semua",
+    "selectNone": "Batalkan pilihan",
+    "selectPayeeLabel": "Pilih {name}",
+    "neverUsed": "Tidak pernah digunakan",
+    "empty": {
+      "line1": "Tidak ada penerima yang cocok dengan kriteria saat ini.",
+      "line2": "Coba sesuaikan pengaturan di atas."
+    },
+    "columns": {
+      "payee": "Penerima",
+      "transactions": "Transaksi",
+      "lastUsed": "Terakhir Digunakan"
+    },
+    "selectedCount": "{count, plural, one {# penerima dipilih} other {# penerima dipilih}}",
+    "deactivateButton": "Nonaktifkan {count, plural, one {# Penerima} other {# Penerima}}",
+    "deactivating": "Menonaktifkan...",
+    "toasts": {
+      "selectAtLeastOne": "Pilih setidaknya satu penerima untuk dinonaktifkan",
+      "deactivated": "{count, plural, one {Dinonaktifkan # penerima} other {Dinonaktifkan # penerima}}",
+      "loadFailed": "Gagal memuat pratinjau",
+      "deactivateFailed": "Gagal menonaktifkan penerima"
+    }
+  },
+  "reactivate": {
+    "title": "Aktifkan Kembali Penerima?",
+    "message": "Penerima \"{name}\" sebelumnya dinonaktifkan. Apakah Anda ingin mengaktifkannya kembali agar muncul di dropdown penerima lagi?",
+    "keepInactiveButton": "Tidak, Tetap Tidak Aktif",
+    "reactivateButton": "Aktifkan Kembali",
+    "reactivating": "Mengaktifkan kembali..."
+  },
+  "aliases": {
+    "heading": "Alias",
+    "description": "Alias memetakan nama penerima yang diimpor ke penerima ini. Gunakan * sebagai wildcard (mis., \"STARBUCKS*\"). Tidak peka huruf besar/kecil.",
+    "loading": "Memuat...",
+    "noAliases": "Tidak ada alias yang dikonfigurasi",
+    "removeTitle": "Hapus alias",
+    "removeButton": "Hapus",
+    "addButton": "Tambah",
+    "adding": "Menambahkan...",
+    "placeholder": "mis., STARBUCKS #*",
+    "toasts": {
+      "alreadyAdded": "Alias \"{alias}\" sudah ditambahkan",
+      "added": "Alias \"{alias}\" ditambahkan",
+      "removed": "Alias \"{alias}\" dihapus",
+      "loadFailed": "Gagal memuat alias",
+      "addFailed": "Gagal menambahkan alias",
+      "removeFailed": "Gagal menghapus alias"
+    }
+  },
+  "selectCategoryPlaceholder": "Pilih kategori...",
+  "validation": {
+    "nameRequired": "Nama penerima wajib diisi"
+  },
+  "defaultCategoryBackfill": {
+    "allConfirmTitle": "Terapkan kategori default?",
+    "allConfirmMessage": "Ini akan mengkategorikan {transactions, plural, one {# transaksi tanpa kategori} other {# transaksi tanpa kategori}} di {payees, plural, one {# penerima} other {# penerima}} menggunakan kategori default masing-masing penerima. Transaksi yang dikategorikan secara manual, transfer, dan transaksi terbagi tidak berubah.",
+    "confirmButton": "Terapkan",
+    "toasts": {
+      "nothingToDo": "Tidak ada transaksi tanpa kategori untuk dikategorikan",
+      "applied": "{count, plural, one {Dikategorikan # transaksi} other {Dikategorikan # transaksi}}",
+      "failed": "Gagal mengkategorikan transaksi"
+    }
+  }
+}

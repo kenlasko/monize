@@ -1,0 +1,548 @@
+{
+  "alerts": {
+    "title": "アラート",
+    "unread": "{count} 件未読",
+    "markAllRead": "すべて既読にする",
+    "loading": "アラートを読み込み中...",
+    "empty": "アラートなし",
+    "undo": "元に戻す",
+    "buttonTitle": "アラート",
+    "buttonAriaLabel": "アラート",
+    "dismissAriaLabel": "アラートを閉じる",
+    "severity": {
+      "critical": "緊急",
+      "warning": "警告",
+      "success": "お知らせ",
+      "info": "情報"
+    }
+  },
+  "summary503020": {
+    "title": "50/30/20 配分",
+    "groups": {
+      "NEED": "必需品",
+      "WANT": "欲しいもの",
+      "SAVING": "貯蓄"
+    },
+    "target": "目標：{percent}%",
+    "budgeted": "予算：{percent}%（{amount}）"
+  },
+  "categoryForm": {
+    "editTitle": "編集：{name}",
+    "budgetAmount": "予算額",
+    "rolloverType": "繰越タイプ",
+    "rolloverCap": "繰越上限（任意）",
+    "rolloverCapPlaceholder": "上限なし",
+    "flexGroup": "フレックスグループ（任意）",
+    "flexGroupPlaceholder": "例：娯楽費",
+    "categoryGroup": "カテゴリグループ（50/30/20）",
+    "warningAt": "警告閾値（%）",
+    "criticalAt": "緊急閾値（%）",
+    "notes": "メモ（任意）",
+    "notesPlaceholder": "このカテゴリ予算に関するメモ",
+    "rolloverOptions": {
+      "NONE": "なし（毎期間リセット）",
+      "MONTHLY": "毎月繰越",
+      "QUARTERLY": "四半期繰越",
+      "ANNUAL": "年次繰越"
+    },
+    "groupOptions": {
+      "none": "なし",
+      "NEED": "必需品",
+      "WANT": "欲しいもの",
+      "SAVING": "貯蓄"
+    },
+    "saving": "保存中..."
+  },
+  "categoryList": {
+    "title": "カテゴリ予算",
+    "empty": "この予算に支出カテゴリがありません。",
+    "sort": "並び替え：",
+    "sortAriaLabel": "カテゴリを並び替え",
+    "sortAscAriaLabel": "降順で並び替え",
+    "sortDescAriaLabel": "昇順で並び替え",
+    "sortDescTitle": "降順で並び替え",
+    "sortAscTitle": "昇順で並び替え",
+    "sortOptions": {
+      "percentUsed": "使用率",
+      "spent": "支出額",
+      "remaining": "残額",
+      "name": "名前"
+    }
+  },
+  "categoryRow": {
+    "overPace": "ペース超過",
+    "underPace": "ペース以下",
+    "onPace": "ペース通り",
+    "rollover": "繰越：{type}",
+    "remaining": "{amount} 残",
+    "over": "{amount} 超過"
+  },
+  "categoryTrend": {
+    "title": "カテゴリトレンド",
+    "empty": "カテゴリトレンドを表示するためのデータが不足しています。",
+    "tableHeaders": {
+      "category": "カテゴリ",
+      "avgBudget": "平均予算",
+      "avgActual": "平均実績",
+      "avgVariance": "平均差異"
+    }
+  },
+  "flexGroups": {
+    "title": "フレックスグループ"
+  },
+  "form": {
+    "budgetName": "予算名",
+    "description": "説明（任意）",
+    "descriptionPlaceholder": "予算の説明",
+    "budgetType": "予算タイプ",
+    "strategy": "戦略",
+    "baseIncome": "基本収入（任意）",
+    "baseIncomePlaceholder": "予想月次収入",
+    "active": "有効",
+    "saveChanges": "変更を保存",
+    "saving": "保存中...",
+    "typeOptions": {
+      "MONTHLY": "月次",
+      "ANNUAL": "年次",
+      "PAY_PERIOD": "支払期間"
+    },
+    "strategyOptions": {
+      "FIXED": "固定",
+      "ROLLOVER": "繰越",
+      "ZERO_BASED": "ゼロベース",
+      "FIFTY_THIRTY_TWENTY": "50/30/20"
+    }
+  },
+  "healthGauge": {
+    "title": "健全性スコア",
+    "labels": {
+      "excellent": "優秀",
+      "good": "良好",
+      "needsAttention": "要注意",
+      "offTrack": "逸脱"
+    }
+  },
+  "heatmap": {
+    "title": "支出ヒートマップ - {monthLabel}",
+    "ariaLabel": "支出ヒートマップ",
+    "less": "少ない",
+    "more": "多い"
+  },
+  "periodDetail": {
+    "summaryCards": {
+      "totalBudgeted": "予算合計",
+      "totalSpent": "支出合計",
+      "underBudget": "予算以下",
+      "overBudget": "予算超過",
+      "saved": "節約",
+      "overspent": "超過支出",
+      "income": "収入",
+      "savings": "貯蓄：{amount}"
+    },
+    "rolloverSummary": {
+      "title": "繰越サマリー",
+      "carriedIn": "繰越入：",
+      "carriedOut": "繰越出："
+    },
+    "overallUsage": "予算全体の使用状況",
+    "expenseCategories": "支出カテゴリ",
+    "incomeCategories": "収入カテゴリ",
+    "categorySublabel": "{count} カテゴリ",
+    "rolloverBadge": "+{amount} 繰越",
+    "underBudgetLabel": "{amount} 予算以下",
+    "overBudgetLabel": "{amount} 予算超過",
+    "carriedForward": "{amount} 繰越"
+  },
+  "periodSelector": {
+    "label": "期間：",
+    "currentPeriod": "現在の期間",
+    "current": "{label}（現在）",
+    "projected": "{label}（予測）"
+  },
+  "progressBar": {
+    "ariaLabel": "{percent}% 使用済み",
+    "paceMarkerTitle": "予想ペース：{percent}%"
+  },
+  "scenarioPlanner": {
+    "title": "仮定シナリオプランナー",
+    "empty": "計画する支出カテゴリがありません。",
+    "reset": "リセット",
+    "applyChanges": "変更を適用",
+    "currentBudget": "現在の予算",
+    "proposedBudget": "提案予算",
+    "projectedSavings": "予測貯蓄",
+    "savingsChange": "貯蓄変化",
+    "original": "元の値：{amount}"
+  },
+  "summaryCards": {
+    "totalBudget": "予算合計",
+    "spent": "支出",
+    "remaining": "残額",
+    "savings": "貯蓄",
+    "periodEnded": "期間終了",
+    "days": "{count} 日",
+    "onTrack": "順調",
+    "overBudget": "予算超過"
+  },
+  "trendChart": {
+    "title": "予算vs実績トレンド",
+    "empty": "トレンドを表示するためのデータが不足しています。",
+    "budgeted": "予算",
+    "actual": "実績"
+  },
+  "upcomingBills": {
+    "title": "支払い予定",
+    "empty": "今期間に支払うべき請求書はありません。",
+    "more": "+{count} 件の請求書",
+    "totalUpcoming": "支払い予定合計",
+    "trulyAvailable": "実際に利用可能",
+    "over": " 超過"
+  },
+  "velocity": {
+    "title": "支出速度",
+    "dailyBurnRate": "日次消費率",
+    "safeToSpend": "安全に使える額",
+    "projectedMonthEnd": "月末予測",
+    "budgetTotal": "予算合計",
+    "billsComing": "予定支払い",
+    "trulyAvailable": "実際に利用可能",
+    "over": " 超過",
+    "dayProgress": "{total} 日中 {elapsed} 日目",
+    "daysRemaining": "{count} 日残り",
+    "paceStatus": {
+      "under": "予算ペース以下",
+      "on_track": "順調",
+      "over": "予算ペース超過"
+    }
+  },
+  "wizard": {
+    "steps": {
+      "analyze": "分析",
+      "categories": "カテゴリ",
+      "configure": "設定",
+      "review": "確認"
+    },
+    "ariaLabel": "ウィザードのステップ",
+    "back": "戻る"
+  },
+  "wizardAnalysis": {
+    "chooseStrategy": "予算戦略を選択",
+    "analysisPeriod": "分析期間",
+    "analysisPeriodHint": "予算額を提案するために何ヶ月分の取引履歴を分析しますか？",
+    "budgetProfile": "予算プロファイル",
+    "analyzeButton": "支出を分析する",
+    "analysisPeriods": {
+      "3": "3ヶ月",
+      "6": "6ヶ月",
+      "12": "12ヶ月"
+    },
+    "strategies": {
+      "FIXED": {
+        "label": "固定",
+        "description": "カテゴリごとに固定額を設定します。未使用の予算は毎期間リセットされます。"
+      },
+      "ROLLOVER": {
+        "label": "繰越",
+        "description": "未使用の予算が繰り越されます。カテゴリごとに繰越ルールを設定します。"
+      },
+      "ZERO_BASED": {
+        "label": "ゼロベース",
+        "description": "収入のすべてのお金に目的を割り当てます。収入から支出を引くとゼロになります。"
+      },
+      "FIFTY_THIRTY_TWENTY": {
+        "label": "50/30/20",
+        "description": "50%を必需品、30%を欲しいもの、20%を貯蓄に。カテゴリはグループでタグ付けされます。"
+      }
+    },
+    "profiles": {
+      "COMFORTABLE": {
+        "label": "ゆとりあり",
+        "description": "75パーセンタイルの支出に基づいています。余裕があります。"
+      },
+      "ON_TRACK": {
+        "label": "標準",
+        "description": "中央値の支出に基づいています。現実的な目標。"
+      },
+      "AGGRESSIVE": {
+        "label": "積極的",
+        "description": "25パーセンタイルに基づいています。より多く貯蓄するための目標。"
+      }
+    },
+    "toasts": {
+      "analyzeFailed": "支出の分析に失敗しました"
+    }
+  },
+  "wizardCategories": {
+    "title": "カテゴリを確認",
+    "noAnalysis": "分析データがありません。戻って先に分析を実行してください。",
+    "tableHeaders": {
+      "income": "収入",
+      "expenses": "支出",
+      "transfers": "振替 / 貯蓄",
+      "trendMedian": "トレンド / 中央値",
+      "amount": "金額"
+    },
+    "totals": {
+      "totalIncome": "収入合計",
+      "totalExpenses": "支出合計",
+      "transfers": "振替",
+      "remaining": "残額"
+    },
+    "allocation503020": "50/30/20 配分",
+    "allocationTarget": "（目標 {percent}%）",
+    "nextButton": "次へ：設定",
+    "profiles": {
+      "COMFORTABLE": "ゆとりあり",
+      "ON_TRACK": "標準",
+      "AGGRESSIVE": "積極的"
+    }
+  },
+  "wizardStrategy": {
+    "title": "予算を設定する",
+    "sections": {
+      "budgetDetails": "予算の詳細",
+      "income": "収入",
+      "rolloverRules": "繰越ルール",
+      "alertThresholds": "アラート閾値",
+      "flexGroups": "フレックスグループ",
+      "excludedAccounts": "除外口座"
+    },
+    "budgetNameLabel": "予算名",
+    "budgetNameRequired": "予算名は必須です",
+    "budgetTypeLabel": "予算タイプ",
+    "startDateLabel": "開始日",
+    "startDateRequired": "開始日は必須です",
+    "strategyPrefix": "戦略：{strategy}",
+    "strategyNotSelected": "未選択",
+    "strategyDescriptions": {
+      "FIXED": "カテゴリごとに金額を設定します。未使用の予算は毎期間リセットされます。",
+      "ROLLOVER": "未使用の予算はカテゴリごとの繰越ルールに基づいて繰り越されます。",
+      "ZERO_BASED": "収入のすべてのお金が割り当てられます。収入から支出を引くとゼロになるはずです。",
+      "FIFTY_THIRTY_TWENTY": "カテゴリは必需品（50%）、欲しいもの（30%）、貯蓄（20%）としてグループ分けされます。"
+    },
+    "linkBudgetToIncome": "予算を収入にリンク",
+    "linkBudgetToIncomeHint": "カテゴリ金額が基本収入のパーセンテージになります",
+    "baseMonthlyIncome": "基本月次収入",
+    "estimatedFromAnalysis": "分析からの推定：{amount}/月",
+    "defaultRolloverType": "デフォルト繰越タイプ",
+    "rolloverHint": "これはすべてのカテゴリのデフォルトを設定します。予算作成後に個々のカテゴリをカスタマイズできます。",
+    "rolloverOptions": {
+      "NONE": "なし -- 毎期間リセット",
+      "MONTHLY": "毎月 -- 毎月繰り越す",
+      "QUARTERLY": "四半期 -- 四半期ごとに繰り越す",
+      "ANNUAL": "年次 -- 毎年繰り越す"
+    },
+    "warningAt": "警告閾値（%）",
+    "warningHint": "支出が予算のこの%に達すると警告をトリガーします",
+    "criticalAt": "緊急閾値（%）",
+    "criticalHint": "支出が予算のこの%に達すると緊急アラートをトリガーします",
+    "flexGroupsHide": "非表示",
+    "flexGroupsConfigure": "設定",
+    "flexGroupsHint": "関連する支出カテゴリをグループ化します。支出はグループ合計として追跡され、各グループ内で柔軟性が得られます。",
+    "flexGroupsTableHeaders": {
+      "category": "カテゴリ",
+      "flexGroup": "フレックスグループ"
+    },
+    "flexGroupPlaceholder": "例：娯楽費",
+    "excludedAccountsHint": "除外された口座からの取引は予算合計にカウントされません。",
+    "excludedCount": "{count} {count, plural, one {口座} other {口座}} 除外",
+    "categoriesAndTransfers": "{categories} カテゴリと {transfers} 振替が選択されています",
+    "budgetTypeOptions": {
+      "MONTHLY": "月次",
+      "ANNUAL": "年次",
+      "PAY_PERIOD": "支払期間"
+    },
+    "nextButton": "次へ：確認"
+  },
+  "wizardReview": {
+    "title": "予算を確認する",
+    "fields": {
+      "name": "名前",
+      "type": "タイプ",
+      "strategy": "戦略",
+      "startDate": "開始日",
+      "rollover": "繰越",
+      "alerts": "アラート",
+      "incomeLinked": "収入リンク",
+      "excludedAccounts": "除外口座"
+    },
+    "rolloverOff": "オフ",
+    "alertsValue": "警告 {warn}% / 緊急 {critical}%",
+    "accountCount": "{count} {count, plural, one {口座} other {口座}}",
+    "strategyNotSelected": "未選択",
+    "summaryCards": {
+      "estIncome": "推定収入",
+      "totalExpenses": "支出合計",
+      "transfers": "振替",
+      "remaining": "残額"
+    },
+    "tableHeaders": {
+      "category": "カテゴリ",
+      "amount": "金額",
+      "type": "タイプ"
+    },
+    "categoryTypes": {
+      "income": "収入",
+      "expense": "支出",
+      "transfer": "振替"
+    },
+    "createButton": "予算を作成",
+    "categoryCount": "{count} カテゴリ",
+    "accountsCount": "{count} 口座",
+    "toasts": {
+      "created": "予算が正常に作成されました",
+      "failed": "予算の作成に失敗しました"
+    }
+  },
+  "zeroBasedBar": {
+    "title": "ゼロベース割り当て",
+    "fullyAssigned": "完全に割り当て済み",
+    "overAssigned": "割り当て超過",
+    "underAssigned": "割り当て不足",
+    "assigned": "割り当て済み：{assigned} / {income}",
+    "unassigned": "{amount} 未割り当て",
+    "over": "{amount} 超過"
+  },
+  "strategyCard": {
+    "pros": "メリット",
+    "cons": "デメリット",
+    "bestFor": "最適な対象：",
+    "strategies": {
+      "FIXED": {
+        "title": "固定予算",
+        "description": "毎期間、各カテゴリに固定の支出上限を設定します。未使用のお金は期間終了時にリセットされ、繰り越されません。",
+        "pros": [
+          "設定と理解が簡単",
+          "カテゴリごとの明確な支出上限",
+          "毎月の予算が予測可能",
+          "予算初心者に良い出発点"
+        ],
+        "cons": [
+          "未使用のお金は繰り越されない",
+          "カテゴリ間の柔軟性がない",
+          "不規則な支出に対応しない",
+          "支出パターンが変動する場合は硬直感がある"
+        ],
+        "bestFor": "明確な上限と予測可能な支出パターンでシンプルな予算管理を望む人。"
+      },
+      "ROLLOVER": {
+        "title": "繰越予算",
+        "description": "未使用の予算はカテゴリごとの繰越ルールに基づいて次の期間に繰り越されます。不規則または季節的な支出のカテゴリのために準備金を積み立てます。",
+        "pros": [
+          "不規則な支出のための貯蓄を構築",
+          "カテゴリの支出節約に報いる",
+          "カテゴリごとの柔軟な繰越ルール",
+          "季節変動を自然に処理"
+        ],
+        "cons": [
+          "最初の設定がより複雑",
+          "累積残高の監視が必要",
+          "上限が高すぎると過剰支出を隠す可能性がある",
+          "繰越ルールの定期的な見直しが必要"
+        ],
+        "bestFor": "車のメンテナンス、年次サブスクリプション、季節的なコストなど不規則な支出があり、徐々に貯蓄したい人。"
+      },
+      "ZERO_BASED": {
+        "title": "ゼロベース予算",
+        "description": "収入のすべてのお金に特定の目的を割り当てます。収入からすべての予算額を引くとゼロになるべきで、未割り当てのお金がないようにします。",
+        "pros": [
+          "すべてのお金に対する最大のコントロール",
+          "意図的な支出決定を促す",
+          "無駄な支出を素早く明らかにする",
+          "借金返済の目標に非常に効果的"
+        ],
+        "cons": [
+          "事前に正確な収入を知る必要がある",
+          "毎期間の維持に時間がかかる",
+          "変動収入には柔軟性が低い",
+          "一部のユーザーには制限的に感じる場合がある"
+        ],
+        "bestFor": "財務を完全にコントロールしたく、毎期間すべてのお金の行き先を計画することをいとわない人。"
+      },
+      "FIFTY_THIRTY_TWENTY": {
+        "title": "50/30/20予算",
+        "description": "収入を3つのグループに分けるバランスの取れたアプローチ：50%を必需品（住宅、食料品、光熱費）、30%を欲しいもの（外食、娯楽）、20%を貯蓄と借金返済に。",
+        "pros": [
+          "覚えやすく実践しやすい",
+          "内蔵された貯蓄配分",
+          "支出へのバランスの取れたアプローチ",
+          "各グループ内での柔軟性"
+        ],
+        "cons": [
+          "生活コストが高い地域には合わない場合がある",
+          "固定比率がすべての状況に合わない場合がある",
+          "カテゴリレベルのコントロールが少ない",
+          "すべての支出をグループでカテゴリ分けする必要がある"
+        ],
+        "bestFor": "各カテゴリを個別に追跡せずに、バランスの取れた経験則的なアプローチを望む人。"
+      }
+    }
+  },
+  "pages": {
+    "list": {
+      "title": "予算",
+      "subtitle": "予算を管理して支出を追跡する",
+      "newBudget": "+ 新規予算",
+      "empty": {
+        "title": "予算がまだありません",
+        "description": "支出履歴を分析することで最初の予算を作成します。ウィザードが取引に基づいて現実的な金額を提案します。",
+        "cta": "最初の予算を作成する"
+      },
+      "card": {
+        "active": "有効",
+        "inactive": "無効",
+        "categories": "{count} カテゴリ",
+        "started": "{date} 開始"
+      }
+    },
+    "create": {
+      "title": "予算を作成",
+      "subtitle": "支出を分析してパーソナライズされた予算を作成する"
+    },
+    "detail": {
+      "backToBudgets": "予算に戻る",
+      "notFound": "予算が見つかりません",
+      "delete": {
+        "title": "予算を削除",
+        "message": "「{name}」を削除してもよいですか？これにより期間やアラートを含むすべての予算データが削除されます。この操作は元に戻せません。",
+        "confirm": "削除",
+        "cancel": "キャンセル"
+      },
+      "toasts": {
+        "deleted": "予算が削除されました",
+        "deleteFailed": "予算の削除に失敗しました",
+        "loadFailed": "予算の読み込みに失敗しました",
+        "periodFailed": "期間の読み込みに失敗しました"
+      }
+    },
+    "edit": {
+      "subtitlePrefix": "編集：",
+      "subtitle": "予算設定とカテゴリ配分を更新する",
+      "backToDashboard": "ダッシュボードに戻る",
+      "budgetSettings": "予算設定",
+      "categoryAllocations": "カテゴリ配分",
+      "income": "収入",
+      "expensesWithCount": "支出（{count}）",
+      "resetsEachPeriod": "毎期間リセット",
+      "percentUsed": "{percent}% 使用済み",
+      "rolloverType": "繰越：{type}",
+      "editCategoryTitle": "{name} を編集",
+      "toasts": {
+        "updated": "予算が更新されました",
+        "updateFailed": "予算の更新に失敗しました",
+        "categoryUpdated": "カテゴリが更新されました",
+        "categoryFailed": "カテゴリの更新に失敗しました",
+        "loadFailed": "予算の読み込みに失敗しました"
+      }
+    }
+  },
+  "validation": {
+    "nameRequired": "予算名は必須です",
+    "nameMax": "予算名は255文字以内でなければなりません",
+    "descriptionMax": "説明は1000文字以内でなければなりません"
+  },
+  "categoryValidation": {
+    "amountMin": "金額は0以上でなければなりません",
+    "mustBeNumber": "数値でなければなりません"
+  }
+}

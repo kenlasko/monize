@@ -1,0 +1,165 @@
+{
+  "test": {
+    "subject": "Surel Uji Monize",
+    "heading": "Surel Uji Monize",
+    "greeting": "Hai {{ name }},",
+    "body": "Ini adalah surel uji dari Monize. Jika Anda menerimanya, notifikasi surel Anda berfungsi dengan benar."
+  },
+  "billReminder": {
+    "subjectOne": "Monize: 1 tagihan yang akan datang memerlukan perhatian",
+    "subjectMany": "Monize: {{ count }} tagihan yang akan datang memerlukan perhatian",
+    "heading": "Pengingat Tagihan yang Akan Datang",
+    "greeting": "Hai {{ name }},",
+    "introOne": "Anda memiliki 1 tagihan yang akan datang yang memerlukan perhatian:",
+    "introMany": "Anda memiliki {{ count }} tagihan yang akan datang yang memerlukan perhatian:",
+    "colPayee": "Penerima",
+    "colDueDate": "Tanggal Jatuh Tempo",
+    "colType": "Tipe",
+    "colAmount": "Jumlah",
+    "typeIncome": "Pendapatan",
+    "typeExpense": "Pengeluaran",
+    "button": "Lihat Tagihan &amp; Setoran"
+  },
+  "mortgageReminder": {
+    "subject": "Monize: 1 perpanjangan hipotek yang akan datang",
+    "subjectPlural": "Monize: {{ count }} perpanjangan hipotek yang akan datang",
+    "heading": "Pengingat Perpanjangan Hipotek",
+    "greeting": "Hai {{ name }},",
+    "introOne": "Anda memiliki 1 hipotek dengan perpanjangan jangka yang akan datang. Hubungi pemberi pinjaman Anda untuk mendiskusikan opsi perpanjangan sebelum jangka berakhir:",
+    "introMany": "Anda memiliki {{ count }} hipotek dengan perpanjangan jangka yang akan datang. Hubungi pemberi pinjaman Anda untuk mendiskusikan opsi perpanjangan sebelum jangka berakhir:",
+    "colMortgage": "Hipotek",
+    "colTermEndDate": "Tanggal Akhir Jangka",
+    "colTimeRemaining": "Waktu Tersisa",
+    "daysRemainingOne": "1 hari",
+    "daysRemainingMany": "{{ count }} hari",
+    "button": "Lihat Akun"
+  },
+  "severity": {
+    "critical": "Kritis",
+    "warning": "Peringatan",
+    "success": "Kabar Baik",
+    "info": "Info"
+  },
+  "budgetAlertImmediate": {
+    "subject": "Monize: Peringatan - {{ title }}",
+    "subjectPlural": "Monize: {{ count }} peringatan memerlukan perhatian",
+    "heading": "Peringatan",
+    "greeting": "Hai {{ name }},",
+    "intro": "Anggaran Anda memerlukan perhatian:",
+    "colSeverity": "Tingkat Keparahan",
+    "colAlert": "Peringatan",
+    "colDetails": "Detail",
+    "button": "Lihat Anggaran"
+  },
+  "budgetWeeklyDigest": {
+    "subject": "Monize: Ringkasan anggaran mingguan Anda",
+    "heading": "Ringkasan Anggaran Mingguan",
+    "greeting": "Hai {{ name }},",
+    "intro": "Berikut ringkasan anggaran mingguan Anda untuk: <strong>{{ budgets }}</strong>",
+    "criticalOne": "kritis",
+    "criticalMany": "kritis",
+    "warningOne": "peringatan",
+    "warningMany": "peringatan",
+    "positiveOne": "positif",
+    "positiveMany": "positif",
+    "thisWeek": "Minggu Ini:",
+    "noAlerts": "Tidak ada peringatan",
+    "totalAlerts": "Total peringatan: {{ count }}",
+    "topAlertsHeading": "Peringatan Teratas",
+    "andMore": "...dan {{ count }} lagi",
+    "button": "Lihat Dasbor Anggaran"
+  },
+  "budgetMonthlySummary": {
+    "subject": "Monize: Ringkasan anggaran bulanan - {{ period }}",
+    "subjectPlural": "Monize: Ringkasan anggaran bulanan untuk {{ count }} anggaran",
+    "heading": "Ringkasan Anggaran Bulanan",
+    "greeting": "Hai {{ name }},",
+    "intro": "Berikut ringkasan anggaran bulanan Anda untuk periode yang baru saja berakhir:",
+    "overBudget": "Melebihi Anggaran",
+    "healthScore": "Skor Kesehatan:",
+    "labelBudgeted": "Dianggarkan",
+    "labelSpent": "Dibelanjakan",
+    "labelRemaining": "Sisa",
+    "percentUsed": "{{ percent }}% digunakan",
+    "topCategories": "Kategori Teratas",
+    "button": "Lihat Dasbor Anggaran"
+  },
+  "oidcLink": {
+    "subject": "Monize: Konfirmasi Tautan Akun SSO",
+    "heading": "Tautkan Akun SSO Anda",
+    "greeting": "Hai {{ name }},",
+    "intro": "Seseorang mencoba masuk melalui SSO dengan surel yang cocok dengan akun Monize Anda yang sudah ada. Untuk menautkan identitas SSO Anda ke akun ini, klik tombol di bawah ini:",
+    "button": "Konfirmasi Tautan Akun",
+    "disclaimer": "Jika Anda tidak memulai permintaan ini, Anda dapat mengabaikan surel ini dengan aman. Tautan ini kedaluwarsa dalam 1 jam."
+  },
+  "accountLocked": {
+    "subject": "Akun Terkunci Sementara",
+    "heading": "Akun Terkunci Sementara",
+    "greeting": "Hai {{ name }},",
+    "body1": "Akun Monize Anda telah dikunci sementara karena beberapa percobaan login yang gagal. Ini adalah langkah keamanan untuk melindungi akun Anda.",
+    "body2": "Kunci akan kedaluwarsa secara otomatis. Jika Anda tidak mencoba login, kami menyarankan untuk mengatur ulang kata sandi Anda segera."
+  },
+  "passwordReset": {
+    "subject": "Pengaturan Ulang Kata Sandi Monize",
+    "heading": "Permintaan Pengaturan Ulang Kata Sandi",
+    "greeting": "Hai {{ name }},",
+    "intro": "Kami menerima permintaan untuk mengatur ulang kata sandi Anda. Klik tombol di bawah ini untuk menetapkan kata sandi baru:",
+    "button": "Atur Ulang Kata Sandi",
+    "disclaimer": "Tautan ini akan kedaluwarsa dalam 1 jam. Jika Anda tidak meminta pengaturan ulang kata sandi, Anda dapat mengabaikan surel ini dengan aman."
+  },
+  "emailVerification": {
+    "subject": "Verifikasi surel Monize Anda",
+    "heading": "Verifikasi alamat surel Anda",
+    "greeting": "Hai {{ name }},",
+    "intro": "Terima kasih telah mendaftar untuk Monize. Silakan konfirmasi alamat surel Anda untuk mengaktifkan akun dan masuk:",
+    "button": "Verifikasi Surel",
+    "disclaimer": "Tautan ini akan kedaluwarsa dalam 24 jam. Jika Anda tidak membuat akun Monize, Anda dapat mengabaikan surel ini dengan aman."
+  },
+  "accountInvite": {
+    "subject": "Akun Monize Anda siap",
+    "heading": "Akun Monize Anda siap",
+    "greeting": "Hai {{ name }},",
+    "intro": "Administrator telah membuat akun Monize untuk Anda. Klik tombol di bawah ini untuk menetapkan kata sandi dan masuk:",
+    "button": "Tetapkan Kata Sandi Anda",
+    "disclaimer": "Tautan ini akan kedaluwarsa dalam 24 jam. Jika Anda tidak mengharapkan ini, Anda dapat mengabaikan surel ini dengan aman."
+  },
+  "delegateInvite": {
+    "subject": "Anda diundang ke Monize",
+    "heading": "Anda diundang ke Monize",
+    "greeting": "Hai {{ name }},",
+    "intro": "{{ owner }} telah mengundang Anda untuk mengakses akun Monize mereka sebagai delegasi. Klik tombol di bawah ini untuk menetapkan kata sandi dan memulai:",
+    "button": "Tetapkan Kata Sandi Anda",
+    "disclaimer": "Tautan ini akan kedaluwarsa dalam 24 jam. Jika Anda tidak mengharapkan undangan ini, Anda dapat mengabaikan surel ini dengan aman."
+  },
+  "emergencyAccessReminder": {
+    "subjectOne": "Monize: akun Anda tidak aktif selama 1 hari",
+    "subjectMany": "Monize: akun Anda tidak aktif selama {{ daysSinceLogin }} hari",
+    "heading": "Pengingat Akses Darurat Monize",
+    "greeting": "Hai {{ name }},",
+    "grantPhraseToday": "hari ini",
+    "grantPhraseFutureOne": "dalam 1 hari",
+    "grantPhraseFutureMany": "dalam {{ count }} hari",
+    "bodyOne": "Anda tidak masuk ke Monize selama <strong>1 hari</strong>. Jika Anda tetap tidak aktif, kontak darurat yang Anda tentukan akan diberikan akses penuh ke akun Anda {{ grantPhrase }}.",
+    "bodyMany": "Anda tidak masuk ke Monize selama <strong>{{ daysSinceLogin }} hari</strong>. Jika Anda tetap tidak aktif, kontak darurat yang Anda tentukan akan diberikan akses penuh ke akun Anda {{ grantPhrase }}.",
+    "contactsLabel": "Kontak yang ditentukan:",
+    "button": "Masuk sekarang",
+    "footer": "Masuk mengatur ulang penghitung waktu. Jika Anda tidak lagi ingin fitur ini diaktifkan, Anda dapat menonaktifkannya dari Pengaturan → Akses Darurat."
+  },
+  "emergencyAccessGrant": {
+    "subject": "Anda telah diberikan akses darurat ke akun Monize {{ owner }}",
+    "heading": "Akses Darurat Diberikan",
+    "greeting": "Hai {{ name }},",
+    "body": "<strong>{{ owner }}</strong> sebelumnya menunjuk Anda sebagai kontak darurat di akun Monize mereka. Karena mereka tidak masuk dalam jangka waktu yang lama, Anda sekarang diberikan akses penuh untuk mengambil alih akun.",
+    "claimIntro": "Untuk mengklaim akses, klik tautan di bawah ini dan tetapkan kata sandi baru. Anda akan masuk sebagai pemegang akun.",
+    "button": "Klaim Akses Darurat",
+    "expiry": "Tautan ini berlaku hingga <strong>{{ expiry }}</strong> dan hanya dapat digunakan sekali. Jika beberapa kontak menerima surel ini, yang pertama mengklaim akan mengambil alih akun."
+  },
+  "emergencyAccessGrantRevoked": {
+    "subject": "Monize: akses darurat diberikan saat Anda tidak ada",
+    "heading": "Akses Darurat Diberikan Saat Anda Tidak Ada",
+    "greeting": "Hai {{ name }},",
+    "body1": "Karena akun Anda tidak aktif, kontak darurat yang Anda tentukan dikirim tautan untuk mengambil alih akun Anda. Anda sekarang telah masuk kembali, jadi <strong>tautan-tautan tersebut telah dicabut</strong> dan perlindungan telah dipasang kembali.",
+    "body2": "Jika ini diharapkan, tidak diperlukan tindakan. Jika Anda tidak mengharapkan ini, tinjau aktivitas masuk Anda dan pengaturan akses darurat Anda.",
+    "button": "Tinjau Akses Darurat"
+  }
+}

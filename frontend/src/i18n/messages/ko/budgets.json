@@ -1,0 +1,548 @@
+{
+  "alerts": {
+    "title": "알림",
+    "unread": "{count}개 읽지 않음",
+    "markAllRead": "모두 읽음으로 표시",
+    "loading": "알림 로드 중...",
+    "empty": "알림 없음",
+    "undo": "실행 취소",
+    "buttonTitle": "알림",
+    "buttonAriaLabel": "알림",
+    "dismissAriaLabel": "알림 닫기",
+    "severity": {
+      "critical": "긴급",
+      "warning": "경고",
+      "success": "좋은 소식",
+      "info": "정보"
+    }
+  },
+  "summary503020": {
+    "title": "50/30/20 배분",
+    "groups": {
+      "NEED": "필수 지출",
+      "WANT": "선택 지출",
+      "SAVING": "저축"
+    },
+    "target": "목표: {percent}%",
+    "budgeted": "예산 설정: {percent}% ({amount})"
+  },
+  "categoryForm": {
+    "editTitle": "편집: {name}",
+    "budgetAmount": "예산 금액",
+    "rolloverType": "이월 유형",
+    "rolloverCap": "이월 한도 (선택)",
+    "rolloverCapPlaceholder": "한도 없음",
+    "flexGroup": "플렉스 그룹 (선택)",
+    "flexGroupPlaceholder": "예: 여가비",
+    "categoryGroup": "카테고리 그룹 (50/30/20)",
+    "warningAt": "경고 기준 (%)",
+    "criticalAt": "긴급 기준 (%)",
+    "notes": "메모 (선택)",
+    "notesPlaceholder": "이 카테고리 예산에 대한 메모",
+    "rolloverOptions": {
+      "NONE": "없음 (매 기간 초기화)",
+      "MONTHLY": "월별 이월",
+      "QUARTERLY": "분기별 이월",
+      "ANNUAL": "연간 이월"
+    },
+    "groupOptions": {
+      "none": "없음",
+      "NEED": "필수",
+      "WANT": "선택",
+      "SAVING": "저축"
+    },
+    "saving": "저장 중..."
+  },
+  "categoryList": {
+    "title": "카테고리 예산",
+    "empty": "이 예산에 지출 카테고리가 없습니다.",
+    "sort": "정렬:",
+    "sortAriaLabel": "카테고리 정렬",
+    "sortAscAriaLabel": "내림차순 정렬",
+    "sortDescAriaLabel": "오름차순 정렬",
+    "sortDescTitle": "내림차순 정렬",
+    "sortAscTitle": "오름차순 정렬",
+    "sortOptions": {
+      "percentUsed": "사용 %",
+      "spent": "지출",
+      "remaining": "잔여",
+      "name": "이름"
+    }
+  },
+  "categoryRow": {
+    "overPace": "진도 초과",
+    "underPace": "진도 미달",
+    "onPace": "진도 적절",
+    "rollover": "이월: {type}",
+    "remaining": "{amount} 남음",
+    "over": "{amount} 초과"
+  },
+  "categoryTrend": {
+    "title": "카테고리 추세",
+    "empty": "카테고리 추세를 표시하기에 데이터가 부족합니다.",
+    "tableHeaders": {
+      "category": "카테고리",
+      "avgBudget": "평균 예산",
+      "avgActual": "평균 실적",
+      "avgVariance": "평균 차이"
+    }
+  },
+  "flexGroups": {
+    "title": "플렉스 그룹"
+  },
+  "form": {
+    "budgetName": "예산 이름",
+    "description": "설명 (선택)",
+    "descriptionPlaceholder": "예산 설명",
+    "budgetType": "예산 유형",
+    "strategy": "전략",
+    "baseIncome": "기본 소득 (선택)",
+    "baseIncomePlaceholder": "예상 월 소득",
+    "active": "활성",
+    "saveChanges": "변경사항 저장",
+    "saving": "저장 중...",
+    "typeOptions": {
+      "MONTHLY": "월별",
+      "ANNUAL": "연간",
+      "PAY_PERIOD": "급여 기간"
+    },
+    "strategyOptions": {
+      "FIXED": "고정",
+      "ROLLOVER": "이월",
+      "ZERO_BASED": "제로베이스",
+      "FIFTY_THIRTY_TWENTY": "50/30/20"
+    }
+  },
+  "healthGauge": {
+    "title": "건강 점수",
+    "labels": {
+      "excellent": "우수",
+      "good": "양호",
+      "needsAttention": "주의 필요",
+      "offTrack": "이탈"
+    }
+  },
+  "heatmap": {
+    "title": "지출 히트맵 - {monthLabel}",
+    "ariaLabel": "지출 히트맵",
+    "less": "적음",
+    "more": "많음"
+  },
+  "periodDetail": {
+    "summaryCards": {
+      "totalBudgeted": "총 예산",
+      "totalSpent": "총 지출",
+      "underBudget": "예산 절감",
+      "overBudget": "예산 초과",
+      "saved": "절감",
+      "overspent": "초과 지출",
+      "income": "소득",
+      "savings": "저축: {amount}"
+    },
+    "rolloverSummary": {
+      "title": "이월 요약",
+      "carriedIn": "이월 수령:",
+      "carriedOut": "이월 발송:"
+    },
+    "overallUsage": "전체 예산 사용률",
+    "expenseCategories": "지출 카테고리",
+    "incomeCategories": "소득 카테고리",
+    "categorySublabel": "{count}개 카테고리",
+    "rolloverBadge": "+{amount} 이월",
+    "underBudgetLabel": "{amount} 예산 절감",
+    "overBudgetLabel": "{amount} 예산 초과",
+    "carriedForward": "{amount} 이월됨"
+  },
+  "periodSelector": {
+    "label": "기간:",
+    "currentPeriod": "현재 기간",
+    "current": "{label} (현재)",
+    "projected": "{label} (예상)"
+  },
+  "progressBar": {
+    "ariaLabel": "{percent}% 사용됨",
+    "paceMarkerTitle": "예상 진도: {percent}%"
+  },
+  "scenarioPlanner": {
+    "title": "가상 시나리오 플래너",
+    "empty": "계획할 지출 카테고리가 없습니다.",
+    "reset": "초기화",
+    "applyChanges": "변경사항 적용",
+    "currentBudget": "현재 예산",
+    "proposedBudget": "제안 예산",
+    "projectedSavings": "예상 저축",
+    "savingsChange": "저축 변동",
+    "original": "원래: {amount}"
+  },
+  "summaryCards": {
+    "totalBudget": "총 예산",
+    "spent": "지출",
+    "remaining": "잔여",
+    "savings": "저축",
+    "periodEnded": "기간 종료",
+    "days": "{count}일",
+    "onTrack": "적절",
+    "overBudget": "예산 초과"
+  },
+  "trendChart": {
+    "title": "예산 대 실적 추세",
+    "empty": "추세를 표시하기에 데이터가 부족합니다.",
+    "budgeted": "예산",
+    "actual": "실적"
+  },
+  "upcomingBills": {
+    "title": "예정 청구서",
+    "empty": "이번 기간에 납부할 청구서가 없습니다.",
+    "more": "+{count}개 청구서 더보기",
+    "totalUpcoming": "총 예정 금액",
+    "trulyAvailable": "실제 가용 금액",
+    "over": " 초과"
+  },
+  "velocity": {
+    "title": "지출 속도",
+    "dailyBurnRate": "일일 지출률",
+    "safeToSpend": "안전 지출 가능액",
+    "projectedMonthEnd": "월말 예상",
+    "budgetTotal": "예산 합계",
+    "billsComing": "예정 청구서",
+    "trulyAvailable": "실제 가용 금액",
+    "over": " 초과",
+    "dayProgress": "{elapsed}일 / {total}일",
+    "daysRemaining": "{count}일 남음",
+    "paceStatus": {
+      "under": "예산 진도 미달",
+      "on_track": "진도 적절",
+      "over": "예산 진도 초과"
+    }
+  },
+  "wizard": {
+    "steps": {
+      "analyze": "분석",
+      "categories": "카테고리",
+      "configure": "구성",
+      "review": "검토"
+    },
+    "ariaLabel": "마법사 단계",
+    "back": "뒤로"
+  },
+  "wizardAnalysis": {
+    "chooseStrategy": "예산 전략 선택",
+    "analysisPeriod": "분석 기간",
+    "analysisPeriodHint": "예산 금액 제안을 위해 몇 개월의 거래 내역을 분석할까요?",
+    "budgetProfile": "예산 프로필",
+    "analyzeButton": "지출 분석하기",
+    "analysisPeriods": {
+      "3": "3개월",
+      "6": "6개월",
+      "12": "12개월"
+    },
+    "strategies": {
+      "FIXED": {
+        "label": "고정",
+        "description": "카테고리별 고정 금액을 설정합니다. 미사용 예산은 기간마다 초기화됩니다."
+      },
+      "ROLLOVER": {
+        "label": "이월",
+        "description": "미사용 예산이 다음 기간으로 이월됩니다. 카테고리별 이월 규칙을 설정하세요."
+      },
+      "ZERO_BASED": {
+        "label": "제로베이스",
+        "description": "모든 소득에 용도를 지정합니다. 소득에서 지출을 빼면 0이 됩니다."
+      },
+      "FIFTY_THIRTY_TWENTY": {
+        "label": "50/30/20",
+        "description": "필수 50%, 선택 30%, 저축 20%. 카테고리는 그룹별로 분류됩니다."
+      }
+    },
+    "profiles": {
+      "COMFORTABLE": {
+        "label": "여유",
+        "description": "지출의 75번째 백분위수 기준. 여유 있는 목표."
+      },
+      "ON_TRACK": {
+        "label": "적정",
+        "description": "지출의 중앙값 기준. 현실적인 목표."
+      },
+      "AGGRESSIVE": {
+        "label": "적극",
+        "description": "지출의 25번째 백분위수 기준. 더 많이 저축하기 위한 도전적 목표."
+      }
+    },
+    "toasts": {
+      "analyzeFailed": "지출 분석에 실패했습니다"
+    }
+  },
+  "wizardCategories": {
+    "title": "카테고리 검토",
+    "noAnalysis": "분석 데이터가 없습니다. 뒤로 돌아가 분석을 먼저 실행하세요.",
+    "tableHeaders": {
+      "income": "소득",
+      "expenses": "지출",
+      "transfers": "이체 / 저축",
+      "trendMedian": "추세 / 중앙값",
+      "amount": "금액"
+    },
+    "totals": {
+      "totalIncome": "총 소득",
+      "totalExpenses": "총 지출",
+      "transfers": "이체",
+      "remaining": "잔여"
+    },
+    "allocation503020": "50/30/20 배분",
+    "allocationTarget": "(목표 {percent}%)",
+    "nextButton": "다음: 구성",
+    "profiles": {
+      "COMFORTABLE": "여유",
+      "ON_TRACK": "적정",
+      "AGGRESSIVE": "적극"
+    }
+  },
+  "wizardStrategy": {
+    "title": "예산 구성",
+    "sections": {
+      "budgetDetails": "예산 세부사항",
+      "income": "소득",
+      "rolloverRules": "이월 규칙",
+      "alertThresholds": "알림 임계값",
+      "flexGroups": "플렉스 그룹",
+      "excludedAccounts": "제외 계정"
+    },
+    "budgetNameLabel": "예산 이름",
+    "budgetNameRequired": "예산 이름은 필수입니다",
+    "budgetTypeLabel": "예산 유형",
+    "startDateLabel": "시작일",
+    "startDateRequired": "시작일은 필수입니다",
+    "strategyPrefix": "전략: {strategy}",
+    "strategyNotSelected": "선택되지 않음",
+    "strategyDescriptions": {
+      "FIXED": "카테고리별 금액을 설정합니다. 미사용 예산은 기간마다 초기화됩니다.",
+      "ROLLOVER": "미사용 예산이 카테고리별 이월 규칙에 따라 다음 기간으로 이월됩니다.",
+      "ZERO_BASED": "모든 소득에 용도가 지정됩니다. 소득에서 지출을 빼면 0이 되어야 합니다.",
+      "FIFTY_THIRTY_TWENTY": "카테고리를 필수(50%), 선택(30%), 저축(20%)으로 분류합니다."
+    },
+    "linkBudgetToIncome": "예산을 소득에 연결",
+    "linkBudgetToIncomeHint": "카테고리 금액이 기본 소득의 백분율이 됩니다",
+    "baseMonthlyIncome": "월 기본 소득",
+    "estimatedFromAnalysis": "분석 기준 예상: {amount}/월",
+    "defaultRolloverType": "기본 이월 유형",
+    "rolloverHint": "모든 카테고리의 기본값을 설정합니다. 예산 생성 후 개별 카테고리를 사용자 정의할 수 있습니다.",
+    "rolloverOptions": {
+      "NONE": "없음 -- 매 기간 초기화",
+      "MONTHLY": "월별 -- 매월 이월",
+      "QUARTERLY": "분기별 -- 매 분기 이월",
+      "ANNUAL": "연간 -- 매년 이월"
+    },
+    "warningAt": "경고 기준 (%)",
+    "warningHint": "지출이 예산의 이 %에 도달하면 경고를 발생시킵니다",
+    "criticalAt": "긴급 기준 (%)",
+    "criticalHint": "지출이 예산의 이 %에 도달하면 긴급 알림을 발생시킵니다",
+    "flexGroupsHide": "숨기기",
+    "flexGroupsConfigure": "구성",
+    "flexGroupsHint": "관련 지출 카테고리를 함께 묶습니다. 지출은 그룹 합계로 추적되어 각 그룹 내에서 유연성을 제공합니다.",
+    "flexGroupsTableHeaders": {
+      "category": "카테고리",
+      "flexGroup": "플렉스 그룹"
+    },
+    "flexGroupPlaceholder": "예: 여가비",
+    "excludedAccountsHint": "제외된 계정의 거래는 예산 합계에 포함되지 않습니다.",
+    "excludedCount": "{count}개 계정 제외됨",
+    "categoriesAndTransfers": "{categories}개 카테고리 및 {transfers}개 이체 선택됨",
+    "budgetTypeOptions": {
+      "MONTHLY": "월별",
+      "ANNUAL": "연간",
+      "PAY_PERIOD": "급여 기간"
+    },
+    "nextButton": "다음: 검토"
+  },
+  "wizardReview": {
+    "title": "예산 검토",
+    "fields": {
+      "name": "이름",
+      "type": "유형",
+      "strategy": "전략",
+      "startDate": "시작일",
+      "rollover": "이월",
+      "alerts": "알림",
+      "incomeLinked": "소득 연결",
+      "excludedAccounts": "제외 계정"
+    },
+    "rolloverOff": "끔",
+    "alertsValue": "경고 {warn}% / 긴급 {critical}%",
+    "accountCount": "{count}개 계정",
+    "strategyNotSelected": "선택되지 않음",
+    "summaryCards": {
+      "estIncome": "예상 소득",
+      "totalExpenses": "총 지출",
+      "transfers": "이체",
+      "remaining": "잔여"
+    },
+    "tableHeaders": {
+      "category": "카테고리",
+      "amount": "금액",
+      "type": "유형"
+    },
+    "categoryTypes": {
+      "income": "소득",
+      "expense": "지출",
+      "transfer": "이체"
+    },
+    "createButton": "예산 만들기",
+    "categoryCount": "{count}개 카테고리",
+    "accountsCount": "{count}개 계정",
+    "toasts": {
+      "created": "예산이 성공적으로 만들어졌습니다",
+      "failed": "예산 만들기에 실패했습니다"
+    }
+  },
+  "zeroBasedBar": {
+    "title": "제로베이스 배정",
+    "fullyAssigned": "완전 배정",
+    "overAssigned": "초과 배정",
+    "underAssigned": "미달 배정",
+    "assigned": "배정됨: {assigned} / {income}",
+    "unassigned": "{amount} 미배정",
+    "over": "{amount} 초과"
+  },
+  "strategyCard": {
+    "pros": "장점",
+    "cons": "단점",
+    "bestFor": "적합한 대상: ",
+    "strategies": {
+      "FIXED": {
+        "title": "고정 예산",
+        "description": "매 기간 카테고리별로 고정 지출 한도를 설정합니다. 미사용 금액은 기간 말에 다음으로 이월되지 않고 초기화됩니다.",
+        "pros": [
+          "설정 및 이해가 간편함",
+          "카테고리별 명확한 지출 한도",
+          "예측 가능한 월별 예산 수립",
+          "예산 초보자에게 좋은 시작점"
+        ],
+        "cons": [
+          "미사용 금액이 이월되지 않음",
+          "카테고리 간 유연성 없음",
+          "불규칙 지출에 적응하지 못함",
+          "지출 패턴이 다양하면 경직되게 느껴질 수 있음"
+        ],
+        "bestFor": "명확한 한도와 예측 가능한 지출 패턴으로 간단한 예산 관리를 원하는 분들."
+      },
+      "ROLLOVER": {
+        "title": "이월 예산",
+        "description": "미사용 예산이 카테고리별 이월 규칙에 따라 다음 기간으로 이월됩니다. 불규칙하거나 계절적인 지출이 있는 카테고리의 준비금을 쌓을 수 있습니다.",
+        "pros": [
+          "불규칙 지출을 위한 저축 형성",
+          "카테고리 절감에 대한 보상",
+          "카테고리별 유연한 이월 규칙",
+          "계절적 변동을 자연스럽게 처리"
+        ],
+        "cons": [
+          "초기 설정이 더 복잡함",
+          "누적 잔액 모니터링 필요",
+          "한도가 너무 높으면 초과 지출을 가릴 수 있음",
+          "이월 규칙의 주기적 검토 필요"
+        ],
+        "bestFor": "자동차 정비, 연간 구독, 계절별 비용 등 불규칙 지출이 있어 점진적으로 저축하고 싶은 분들."
+      },
+      "ZERO_BASED": {
+        "title": "제로베이스 예산",
+        "description": "모든 소득에 특정 용도를 지정합니다. 소득에서 예산 금액을 모두 빼면 0이 되어 미배정 금액이 없어야 합니다.",
+        "pros": [
+          "모든 금액에 대한 최대 통제",
+          "의도적인 지출 결정 유도",
+          "낭비적인 지출을 빠르게 파악",
+          "부채 상환 목표에 매우 효과적"
+        ],
+        "cons": [
+          "사전에 정확한 소득 파악 필요",
+          "매 기간 유지에 시간 소요",
+          "변동 소득에 유연성 부족",
+          "일부 사용자에게 제한적으로 느껴질 수 있음"
+        ],
+        "bestFor": "재정에 대한 완전한 통제를 원하고 매 기간 모든 금액의 용도를 계획할 의지가 있는 분들."
+      },
+      "FIFTY_THIRTY_TWENTY": {
+        "title": "50/30/20 예산",
+        "description": "소득을 세 그룹으로 나누는 균형 잡힌 접근법: 필수 지출(주거, 식료품, 공과금) 50%, 선택 지출(외식, 여가) 30%, 저축 및 부채 상환 20%.",
+        "pros": [
+          "기억하고 따르기 쉬움",
+          "내장된 저축 배분",
+          "지출에 대한 균형 잡힌 접근",
+          "각 그룹 내 유연성"
+        ],
+        "cons": [
+          "생활비가 높은 지역에는 적합하지 않을 수 있음",
+          "고정 비율이 모든 상황에 맞지 않을 수 있음",
+          "카테고리 수준의 세밀한 통제 부족",
+          "모든 지출을 그룹별로 분류해야 함"
+        ],
+        "bestFor": "카테고리를 일일이 추적하지 않고 균형 잡힌 경험 기반 접근법을 원하는 분들."
+      }
+    }
+  },
+  "pages": {
+    "list": {
+      "title": "예산",
+      "subtitle": "예산을 관리하고 지출을 추적하세요",
+      "newBudget": "+ 새 예산",
+      "empty": {
+        "title": "예산이 없습니다",
+        "description": "지출 내역을 분석하여 첫 번째 예산을 만드세요. 마법사가 거래 내역을 바탕으로 현실적인 금액을 제안해 드립니다.",
+        "cta": "첫 번째 예산 만들기"
+      },
+      "card": {
+        "active": "활성",
+        "inactive": "비활성",
+        "categories": "{count}개 카테고리",
+        "started": "{date}에 시작됨"
+      }
+    },
+    "create": {
+      "title": "예산 만들기",
+      "subtitle": "지출을 분석하고 맞춤 예산을 만드세요"
+    },
+    "detail": {
+      "backToBudgets": "예산 목록으로",
+      "notFound": "예산을 찾을 수 없습니다",
+      "delete": {
+        "title": "예산 삭제",
+        "message": "\"{name}\"을(를) 삭제하시겠습니까? 기간 및 알림을 포함한 모든 예산 데이터가 삭제됩니다. 이 작업은 취소할 수 없습니다.",
+        "confirm": "삭제",
+        "cancel": "취소"
+      },
+      "toasts": {
+        "deleted": "예산이 삭제되었습니다",
+        "deleteFailed": "예산 삭제에 실패했습니다",
+        "loadFailed": "예산 로드에 실패했습니다",
+        "periodFailed": "기간 로드에 실패했습니다"
+      }
+    },
+    "edit": {
+      "subtitlePrefix": "편집: ",
+      "subtitle": "예산 설정 및 카테고리 배분을 업데이트하세요",
+      "backToDashboard": "대시보드로",
+      "budgetSettings": "예산 설정",
+      "categoryAllocations": "카테고리 배분",
+      "income": "소득",
+      "expensesWithCount": "지출 ({count})",
+      "resetsEachPeriod": "매 기간 초기화",
+      "percentUsed": "{percent}% 사용됨",
+      "rolloverType": "이월: {type}",
+      "editCategoryTitle": "{name} 편집",
+      "toasts": {
+        "updated": "예산이 업데이트되었습니다",
+        "updateFailed": "예산 업데이트에 실패했습니다",
+        "categoryUpdated": "카테고리가 업데이트되었습니다",
+        "categoryFailed": "카테고리 업데이트에 실패했습니다",
+        "loadFailed": "예산 로드에 실패했습니다"
+      }
+    }
+  },
+  "validation": {
+    "nameRequired": "예산 이름은 필수입니다",
+    "nameMax": "예산 이름은 255자 이하여야 합니다",
+    "descriptionMax": "설명은 1000자 이하여야 합니다"
+  },
+  "categoryValidation": {
+    "amountMin": "금액은 0 이상이어야 합니다",
+    "mustBeNumber": "숫자여야 합니다"
+  }
+}

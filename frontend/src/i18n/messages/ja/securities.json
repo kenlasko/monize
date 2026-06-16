@@ -1,0 +1,304 @@
+{
+  "priceRefresh": {
+    "noneToUpdate": "更新する有価証券がありません",
+    "updated": "{count, plural, one {# 件の有価証券の株価を更新しました} other {# 件の有価証券の株価を更新しました}}",
+    "partialFailure": "株価の更新: {updated} 件成功、{failed} 件失敗{symbols}",
+    "failed": "株価の更新に失敗しました"
+  },
+  "page": {
+    "title": "有価証券",
+    "subtitle": "株式、ETF、投資信託などの有価証券を管理する",
+    "newSecurity": "+ 新しい有価証券",
+    "searchPlaceholder": "シンボルまたは名前で検索...",
+    "statusAll": "すべて ({count})",
+    "statusActive": "有効 ({count})",
+    "statusInactive": "無効 ({count})",
+    "modalTitleEdit": "有価証券を編集",
+    "modalTitleNew": "新しい有価証券",
+    "loading": "有価証券を読み込み中...",
+    "count": "{count, plural, one {# 件の有価証券} other {# 件の有価証券}}",
+    "toasts": {
+      "loadFailed": "有価証券の読み込みに失敗しました",
+      "updated": "有価証券を更新しました",
+      "created": "有価証券を作成しました",
+      "deactivated": "有価証券を無効にしました",
+      "activated": "有価証券を有効にしました",
+      "statusFailed": "有価証券のステータス更新に失敗しました",
+      "deleted": "有価証券「{symbol}」を削除しました",
+      "deleteFailed": "有価証券の削除に失敗しました",
+      "favouriteFailed": "お気に入りの更新に失敗しました",
+      "updateFailed": "有価証券の更新に失敗しました",
+      "createFailed": "有価証券の作成に失敗しました"
+    },
+    "deleteConfirm": {
+      "title": "有価証券を削除",
+      "message": "「{symbol}」を削除してもよろしいですか？すべての株価履歴も削除されます。この操作は元に戻せません。",
+      "confirmLabel": "削除",
+      "cancelLabel": "キャンセル"
+    }
+  },
+  "summary": {
+    "totalSecurities": "有価証券合計",
+    "types": "種類",
+    "exchanges": "取引所",
+    "currencies": "通貨"
+  },
+  "list": {
+    "columns": {
+      "symbol": "シンボル",
+      "name": "名前",
+      "type": "種類",
+      "shares": "株数",
+      "exchange": "取引所",
+      "currency": "通貨",
+      "provider": "プロバイダー",
+      "source": "ソース",
+      "status": "ステータス",
+      "actions": "操作",
+      "favourite": "お気に入り"
+    },
+    "density": {
+      "normal": "標準",
+      "compact": "コンパクト",
+      "dense": "密集",
+      "toggle": "行の密度を切り替え"
+    },
+    "statusBadge": {
+      "active": "有効",
+      "activeShort": "有効",
+      "inactive": "無効",
+      "inactiveShort": "無効"
+    },
+    "providerTitle": {
+      "override": "有価証券ごとのプロバイダー設定",
+      "inherited": "デフォルトの株価プロバイダー設定から継承"
+    },
+    "columnTitles": {
+      "shares": "すべての勘定科目で保有している現在の株数",
+      "source": "直近の株価のソース"
+    },
+    "actions": {
+      "history": "履歴",
+      "prices": "株価",
+      "edit": "編集",
+      "deactivate": "無効にする",
+      "activate": "有効にする",
+      "delete": "削除"
+    },
+    "favouriteButton": {
+      "add": "お気に入りに追加",
+      "remove": "お気に入りから削除"
+    },
+    "empty": {
+      "title": "有価証券がありません",
+      "subtitle": "最初の有価証券を追加して始めましょう。"
+    },
+    "contextMenu": {
+      "transactionHistory": "取引履歴",
+      "viewPrices": "株価を表示",
+      "editSecurity": "有価証券を編集",
+      "deactivate": "無効にする",
+      "activate": "有効にする",
+      "delete": "削除"
+    }
+  },
+  "typeLabels": {
+    "STOCK": "株式",
+    "ETF": "ETF",
+    "MUTUAL_FUND": "投資信託",
+    "BOND": "債券",
+    "OPTION": "オプション",
+    "CRYPTO": "暗号資産",
+    "OTHER": "その他",
+    "STOCK_short": "株式",
+    "ETF_short": "ETF",
+    "MUTUAL_FUND_short": "投信",
+    "BOND_short": "債券",
+    "OPTION_short": "オプ",
+    "CRYPTO_short": "暗号",
+    "OTHER_short": "他"
+  },
+  "form": {
+    "symbolLabel": "シンボル",
+    "nameLabel": "名前",
+    "typeLabel": "種類",
+    "exchangeLabel": "取引所",
+    "currencyLabel": "通貨",
+    "quoteProviderLabel": "株価プロバイダー",
+    "msnIdLabel": "MSN 銘柄 ID（上級者向け）",
+    "lookupProviderAriaLabel": "プロバイダーを検索",
+    "lookupButton": "検索",
+    "revertButton": "元に戻す",
+    "clearButton": "クリア",
+    "revertTitle": "元の値に戻す",
+    "clearTitle": "すべてのフィールドをクリア",
+    "favouriteLabel": "お気に入り",
+    "addToFavourites": "お気に入りに追加",
+    "removeFromFavourites": "お気に入りから削除",
+    "submitCreate": "有価証券を作成",
+    "submitUpdate": "有価証券を更新",
+    "toasts": {
+      "lookupTooShort": "検索するにはシンボルまたは名前を 2 文字以上入力してください",
+      "notFound": "「{query}」に一致する有価証券が見つかりませんでした",
+      "found": "見つかりました: {details}",
+      "lookupFailed": "検索に失敗しました。もう一度お試しください"
+    },
+    "msnNotConfigured": "MSN がデフォルトの株価プロバイダーとして選択されていますが、サーバーで MSN_API_KEY が設定されていません。管理者が環境変数を設定してバックエンドを再起動するまで、MSN の株価取得は失敗します。",
+    "providers": {
+      "auto": "自動",
+      "yahoo": "Yahoo",
+      "msn": "MSN"
+    },
+    "types": {
+      "select": "種類を選択...",
+      "stock": "株式",
+      "etf": "ETF",
+      "mutualFund": "投資信託",
+      "bond": "債券",
+      "option": "オプション",
+      "crypto": "暗号資産",
+      "other": "その他"
+    },
+    "quoteProviderUseDefault": "デフォルトを使用（{provider}）",
+    "symbolPlaceholder": "例: AAPL、XEQT、BTC",
+    "namePlaceholder": "例: Apple Inc.、iShares Core Equity ETF",
+    "exchangeSearchPlaceholder": "取引所を検索...",
+    "exchangePlaceholder": "ティッカーから自動解決されます。誤っている場合のみ上書きしてください"
+  },
+  "priceForm": {
+    "dateLabel": "日付",
+    "closePriceLabel": "終値",
+    "openPriceLabel": "始値",
+    "highPriceLabel": "高値",
+    "lowPriceLabel": "安値",
+    "volumeLabel": "出来高",
+    "optionalPlaceholder": "任意",
+    "submitCreate": "株価を追加",
+    "submitUpdate": "株価を更新"
+  },
+  "priceHistory": {
+    "title": "{symbol} - 株価履歴",
+    "forceUpdateButton": "株価を強制更新",
+    "forceUpdateTitle": "この有価証券を保有している期間全体の過去の株価を再取得する",
+    "addPriceButton": "+ 株価を追加",
+    "addPriceSection": "株価を追加",
+    "editPriceSection": "株価を編集",
+    "loading": "株価を読み込み中...",
+    "empty": "株価履歴がありません",
+    "columns": {
+      "date": "日付",
+      "close": "終値",
+      "open": "始値",
+      "high": "高値",
+      "low": "安値",
+      "volume": "出来高",
+      "source": "ソース",
+      "actions": "操作"
+    },
+    "toasts": {
+      "added": "株価を追加しました",
+      "updated": "株価を更新しました",
+      "deleted": "株価を削除しました",
+      "loadFailed": "株価履歴の読み込みに失敗しました",
+      "addFailed": "株価の追加に失敗しました",
+      "updateFailed": "株価の更新に失敗しました",
+      "deleteFailed": "株価の削除に失敗しました",
+      "updatedCount": "{count, plural, one {{symbol} の # 件の株価を更新しました} other {{symbol} の # 件の株価を更新しました}}",
+      "noPricesFound": "{symbol} の株価が見つかりませんでした",
+      "updatePricesFailed": "{symbol} の株価更新に失敗しました",
+      "updateFetchFailed": "株価の更新に失敗しました"
+    },
+    "closeButton": "閉じる",
+    "deleteConfirm": {
+      "title": "株価を削除",
+      "confirmLabel": "削除"
+    }
+  },
+  "transactionHistory": {
+    "inactiveBadge": "無効",
+    "currentShares": "現在の株数",
+    "accountLabel": "勘定科目",
+    "allAccounts": "すべての勘定科目（{shares} 株）",
+    "accountClosed": "{name}（閉鎖済み）",
+    "addTransaction": "+ 取引を追加",
+    "loading": "取引を読み込み中...",
+    "emptyAll": "この有価証券の取引はありません。",
+    "emptyAccount": "選択した勘定科目にこの有価証券の取引はありません。",
+    "editTransactionTitle": "取引を編集",
+    "columns": {
+      "date": "日付",
+      "account": "勘定科目",
+      "action": "操作",
+      "quantity": "数量",
+      "runningTotal": "累計",
+      "price": "株価",
+      "amount": "金額",
+      "actionsLabel": "操作"
+    },
+    "actionLabels": {
+      "BUY": "買い",
+      "SELL": "売り",
+      "DIVIDEND": "配当",
+      "INTEREST": "利息",
+      "CAPITAL_GAIN": "キャピタルゲイン",
+      "SPLIT": "株式分割",
+      "TRANSFER_IN": "振替入庫",
+      "TRANSFER_OUT": "振替出庫",
+      "REINVEST": "再投資",
+      "ADD_SHARES": "株数追加",
+      "REMOVE_SHARES": "株数削除"
+    },
+    "toasts": {
+      "loadHistoryFailed": "履歴の読み込みに失敗しました",
+      "loadTransactionFailed": "取引の読み込みに失敗しました"
+    }
+  },
+  "shareAdjustment": {
+    "heading": "株数を調整",
+    "accountLabel": "勘定科目",
+    "accountPlaceholder": "勘定科目を選択...",
+    "actionLabel": "操作",
+    "quantityLabel": "数量（株数）",
+    "dateLabel": "日付",
+    "descriptionLabel": "説明（任意）",
+    "descriptionPlaceholder": "例: 残余株式の整理",
+    "saving": "保存中...",
+    "submitButton": "調整を記録",
+    "accountClosed": "{name}（閉鎖済み）",
+    "adjustmentActions": {
+      "REMOVE_SHARES": "株数削除",
+      "ADD_SHARES": "株数追加"
+    },
+    "toasts": {
+      "selectAccount": "勘定科目を選択してください",
+      "quantityRequired": "数量はゼロより大きい値にしてください",
+      "recorded": "調整を記録しました",
+      "failed": "調整の記録に失敗しました"
+    }
+  },
+  "lookupPicker": {
+    "title": "「{query}」に複数の一致があります",
+    "subtitle": "使用する有価証券を選択してください。",
+    "columns": {
+      "symbol": "シンボル",
+      "name": "名前",
+      "exchange": "取引所",
+      "currency": "通貨",
+      "type": "種類",
+      "source": "ソース"
+    },
+    "selectButton": "選択"
+  },
+  "validation": {
+    "symbolRequired": "シンボルは必須です",
+    "symbolMax": "シンボルは 20 文字以内にしてください",
+    "nameRequired": "名前は必須です",
+    "nameMax": "名前は 255 文字以内にしてください",
+    "currencyRequired": "通貨は必須です"
+  },
+  "priceValidation": {
+    "dateRequired": "日付は必須です",
+    "priceRequired": "株価は必須です",
+    "priceNonNegative": "株価は 0 以上の値にしてください"
+  }
+}

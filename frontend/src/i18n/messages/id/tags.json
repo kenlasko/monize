@@ -1,0 +1,80 @@
+{
+  "page": {
+    "title": "Tag",
+    "subtitle": "Beri label transaksi Anda dengan tag kustom",
+    "newButton": "+ Tag Baru",
+    "summary": {
+      "totalTags": "Total Tag",
+      "tagsWithColour": "Tag dengan Warna",
+      "tagsWithIcon": "Tag dengan Ikon"
+    },
+    "search": {
+      "placeholder": "Cari tag..."
+    },
+    "loading": "Memuat tag...",
+    "emptyState": {
+      "title": "Belum ada tag",
+      "body": "Tag membantu Anda memberi label dan memfilter transaksi. Buat tag pertama Anda untuk memulai.",
+      "createButton": "Buat Tag Pertama Anda"
+    },
+    "modal": {
+      "newTitle": "Tag Baru",
+      "editTitle": "Edit Tag"
+    },
+    "totalCount": "{count, plural, one {# tag} other {# tag}}",
+    "delete": {
+      "title": "Hapus Tag",
+      "withTransactionsMessage": "Apakah Anda yakin ingin menghapus \"{name}\"? Tag ini digunakan pada {count, plural, one {# transaksi} other {# transaksi}}. Tag akan dihapus dari transaksi tersebut.",
+      "simpleMessage": "Apakah Anda yakin ingin menghapus \"{name}\"? Tindakan ini tidak dapat dibatalkan."
+    },
+    "toasts": {
+      "created": "Tag berhasil dibuat",
+      "updated": "Tag berhasil diperbarui",
+      "deleted": "Tag berhasil dihapus",
+      "loadFailed": "Gagal memuat tag",
+      "createFailed": "Gagal membuat tag",
+      "updateFailed": "Gagal memperbarui tag",
+      "deleteFailed": "Gagal menghapus tag"
+    }
+  },
+  "list": {
+    "empty": {
+      "title": "Tidak ada tag ditemukan",
+      "body": "Tidak ada tag yang cocok dengan pencarian Anda saat ini."
+    },
+    "density": {
+      "title": "Ubah kepadatan baris",
+      "normal": "Normal",
+      "compact": "Ringkas",
+      "dense": "Padat"
+    },
+    "header": {
+      "name": "Nama",
+      "icon": "Ikon",
+      "transactions": "Transaksi",
+      "actions": "Tindakan"
+    }
+  },
+  "form": {
+    "nameLabel": "Nama Tag",
+    "colourLabel": "Warna",
+    "iconLabel": "Ikon",
+    "noColour": "Tanpa warna",
+    "submitCreate": "Buat Tag",
+    "submitUpdate": "Perbarui Tag",
+    "colours": {
+      "red": "Merah",
+      "orange": "Oranye",
+      "yellow": "Kuning",
+      "green": "Hijau",
+      "teal": "Teal",
+      "blue": "Biru",
+      "purple": "Ungu",
+      "pink": "Merah Muda",
+      "grey": "Abu-abu"
+    }
+  },
+  "validation": {
+    "nameRequired": "Nama tag wajib diisi"
+  }
+}

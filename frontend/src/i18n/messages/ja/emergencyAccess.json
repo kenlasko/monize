@@ -1,0 +1,20 @@
+{
+  "title": "緊急アクセス",
+  "missingToken": "緊急アクセストークンがありません。",
+  "previewError": "この緊急アクセスリンクは無効、期限切れ、またはすでに使用済みです。",
+  "linkInvalid": "リンクはすでに無効です。",
+  "backToSignIn": "サインイン画面に戻る",
+  "ownerFallback": "アカウント所有者",
+  "ownerFirstNameFallback": "所有者",
+  "intro": "{contactName} さん、あなたは <b>{ownerName}</b> の Monize アカウントで緊急連絡先に指定されています。",
+  "introDetail": "ここでパスワードを設定すると、アカウント保有者としてサインインし、アカウントへのフルアクセスが付与されます。既存のセッションは無効化され、以前の認証情報は置き換えられます。",
+  "messageHeading": "{name} からのメッセージ",
+  "newPasswordLabel": "新しいパスワード",
+  "confirmPasswordLabel": "パスワードの確認",
+  "submit": "緊急アクセスを取得する",
+  "toasts": {
+    "success": "{name} のアカウントにアクセスできるようになりました。",
+    "failed": "緊急アクセスの取得に失敗しました。リンクが期限切れか、すでに使用済みの可能性があります。"
+  },
+  "passwordsNoMatch": "パスワードが一致しません"
+}

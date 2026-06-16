@@ -1,0 +1,44 @@
+{
+  "page": {
+    "title": "Wawasan Pengeluaran",
+    "subtitle": "Analisis bertenaga AI tentang pola dan anomali pengeluaran Anda"
+  },
+  "list": {
+    "lastUpdated": "Terakhir diperbarui: {date} {time}",
+    "refreshButton": "Perbarui Wawasan",
+    "generating": "Membuat...",
+    "allTypes": "Semua Jenis",
+    "allSeverities": "Semua Tingkat Keparahan",
+    "showDismissed": "Tampilkan yang ditutup",
+    "emptyNoInsights": "Belum ada wawasan yang dibuat. Klik \"Perbarui Wawasan\" untuk menganalisis pola pengeluaran Anda.",
+    "emptyFiltered": "Tidak ada wawasan yang cocok dengan filter Anda saat ini.",
+    "generateButton": "Buat Wawasan",
+    "alertCount": "{count, plural, one {# peringatan} other {# peringatan}}",
+    "warningCount": "{count, plural, one {# pemberitahuan} other {# pemberitahuan}}",
+    "errorLoadFailed": "Gagal memuat wawasan. Silakan coba lagi.",
+    "errorGenerateFailed": "Gagal membuat wawasan. Pastikan Anda telah mengonfigurasi penyedia AI.",
+    "errorTimeout": "Pembuatan wawasan memakan waktu lebih lama dari yang diharapkan. Harap tunggu atau muat ulang halaman."
+  },
+  "card": {
+    "dismiss": "Tutup",
+    "dismissing": "Menutup..."
+  },
+  "notConfigured": {
+    "heading": "AI Belum Dikonfigurasi",
+    "message": "Tidak ada penyedia AI yang dikonfigurasi. Untuk menggunakan Wawasan Pengeluaran, silakan {link} di pengaturan Anda.",
+    "linkText": "konfigurasi penyedia AI"
+  },
+  "insightTypes": {
+    "anomaly": "Anomali",
+    "trend": "Tren",
+    "subscription": "Langganan",
+    "budget_pace": "Kecepatan Anggaran",
+    "seasonal": "Musiman",
+    "new_recurring": "Berulang Baru"
+  },
+  "insightSeverities": {
+    "info": "Info",
+    "warning": "Peringatan",
+    "alert": "Peringatan Kritis"
+  }
+}

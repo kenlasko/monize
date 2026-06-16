@@ -1,0 +1,430 @@
+{
+  "accountWidget": {
+    "currentBalance": "वर्तमान शेष",
+    "nextPayment": "अगला भुगतान",
+    "viewBills": "बिल और जमा में देखें",
+    "type": "प्रकार",
+    "accountNumber": "खाता संख्या",
+    "currency": "मुद्रा",
+    "creditLimit": "क्रेडिट सीमा",
+    "interestRate": "ब्याज दर",
+    "statementSettlement": "निपटान दिवस",
+    "statementSettlementTooltip": "बिलिंग चक्र का अंतिम दिन। इस दिन या इससे पहले पोस्ट किए गए लेन-देन वर्तमान विवरण पर दिखाई देते हैं।",
+    "statementDue": "भुगतान देय",
+    "closed": "बंद",
+    "editAria": "खाता सेटिंग संपादित करें",
+    "collapseAria": "खाते की जानकारी छुपाएं",
+    "showAccountNumber": "खाता संख्या दिखाएं",
+    "hideAccountNumber": "खाता संख्या छुपाएं",
+    "show": "खाते की जानकारी दिखाएं"
+  },
+  "page": {
+    "title": "लेन-देन",
+    "subtitle": "अपनी आय और व्यय प्रबंधित करें",
+    "newButton": "+ नया लेन-देन",
+    "editModal": {
+      "editTitle": "लेन-देन संपादित करें",
+      "duplicateTitle": "लेन-देन डुप्लिकेट करें",
+      "newTitle": "नया लेन-देन",
+      "scheduleTitle": "आवर्ती के रूप में शेड्यूल करें",
+      "editPayeeTitle": "भुगतानकर्ता संपादित करें"
+    },
+    "loading": "लेन-देन लोड हो रहे हैं...",
+    "totalCount": "{count, plural, one {# लेन-देन} other {# लेन-देन}}",
+    "bulkDelete": {
+      "title": "लेन-देन हटाएं",
+      "message": "क्या आप वाकई {count, plural, one {# लेन-देन} other {# लेन-देन}} हटाना चाहते हैं? इससे सभी लिंक किए गए ट्रांसफर समकक्ष भी हटा दिए जाएंगे। यह क्रिया पूर्ववत नहीं की जा सकती।"
+    },
+    "toasts": {
+      "scheduledCreated": "शेड्यूल किया गया लेन-देन बनाया गया",
+      "investmentLinked": "यह लेन-देन एक निवेश से जुड़ा है। निवेश पृष्ठ पर खुल रहा है।"
+    }
+  },
+  "list": {
+    "empty": {
+      "title": "कोई लेन-देन नहीं",
+      "body": "नया लेन-देन बनाकर शुरू करें।"
+    },
+    "header": {
+      "date": "तिथि",
+      "account": "खाता",
+      "payee": "भुगतानकर्ता",
+      "category": "श्रेणी",
+      "description": "विवरण",
+      "refNumber": "संदर्भ #",
+      "tags": "टैग",
+      "amount": "राशि",
+      "balance": "शेष",
+      "status": "स्थिति",
+      "actions": "क्रियाएं"
+    },
+    "today": "आज",
+    "export": {
+      "button": "निर्यात",
+      "exporting": "निर्यात हो रहा है...",
+      "title": "लेन-देन को CSV में निर्यात करें",
+      "success": "{count, plural, one {# लेन-देन निर्यात किया गया} other {# लेन-देन निर्यात किए गए}}",
+      "noData": "निर्यात करने के लिए कोई लेन-देन नहीं",
+      "error": "लेन-देन निर्यात करने में विफल"
+    },
+    "density": {
+      "title": "पंक्ति घनत्व टॉगल करें",
+      "normal": "सामान्य",
+      "compact": "संक्षिप्त",
+      "dense": "सघन"
+    },
+    "delete": {
+      "transferTitle": "ट्रांसफर हटाएं",
+      "transactionTitle": "लेन-देन हटाएं",
+      "transferMessage": "क्या आप वाकई यह ट्रांसफर हटाना चाहते हैं? दोनों लिंक किए गए लेन-देन हटा दिए जाएंगे।",
+      "transactionMessage": "क्या आप वाकई यह लेन-देन हटाना चाहते हैं? यह क्रिया पूर्ववत नहीं की जा सकती।",
+      "success": "लेन-देन हटाया गया",
+      "transferSuccess": "ट्रांसफर हटाया गया",
+      "error": "लेन-देन हटाने में विफल"
+    },
+    "status": {
+      "voidError": "स्थिति को Void से बदलने के लिए लेन-देन संपादित करें",
+      "changed": "स्थिति {status} में बदली गई",
+      "updateError": "स्थिति अपडेट करने में विफल",
+      "unreconciled": "असमाधानित",
+      "cleared": "समाशोधित",
+      "reconciled": "समाधानित",
+      "void": "रद्द",
+      "unreconciledDense": "अ",
+      "clearedDense": "स",
+      "reconciledDense": "र",
+      "voidDense": "र",
+      "pendingDense": "○",
+      "pending": "लंबित",
+      "cycleTitle": "स्थिति बदलने के लिए क्लिक करें"
+    },
+    "row": {
+      "editPayeeTitle": "भुगतानकर्ता संपादित करें: {name}",
+      "ref": "संदर्भ: {number}",
+      "investmentLabel": "निवेश",
+      "linkedInvestmentTitle": "निवेश में देखें",
+      "filterByDate": "तिथि \"{date}\" से फ़िल्टर करें",
+      "filterByAccount": "\"{name}\" से फ़िल्टर करें",
+      "filterByPayee": "\"{name}\" से फ़िल्टर करें",
+      "filterByCategory": "{name} से फ़िल्टर करें",
+      "filterByTag": "टैग {name} से फ़िल्टर करें",
+      "transfer": "ट्रांसफर",
+      "transferTitle": "ट्रांसफर {direction} {name}",
+      "split": "विभाजन",
+      "uncategorized": "अवर्गीकृत",
+      "splitMore": "+{count} और",
+      "filteredAmountTitle": "फ़िल्टर की गई राशि (पूर्ण लेन-देन: {amount})",
+      "viewButton": "देखें",
+      "editButton": "संपादित करें",
+      "deleteButton": "हटाएं"
+    },
+    "itemNamePlural": "लेन-देन"
+  },
+  "row": {
+    "copyOptions": {
+      "title": "कॉपी विकल्प",
+      "duplicateTitle": "लेन-देन डुप्लिकेट करें",
+      "copy": "कॉपी",
+      "duplicate": "डुप्लिकेट",
+      "scheduleRecurring": "आवर्ती के रूप में शेड्यूल करें"
+    }
+  },
+  "actionSheet": {
+    "defaultTitle": "लेन-देन",
+    "filterByDate": "तिथि \"{date}\" से फ़िल्टर करें",
+    "filterByAccount": "\"{name}\" से फ़िल्टर करें",
+    "filterByPayee": "\"{name}\" से फ़िल्टर करें",
+    "filterByCategory": "\"{name}\" से फ़िल्टर करें",
+    "filterByTag": "टैग \"{name}\" से फ़िल्टर करें",
+    "edit": "संपादित करें",
+    "duplicate": "डुप्लिकेट",
+    "scheduleRecurring": "आवर्ती के रूप में शेड्यूल करें",
+    "delete": "हटाएं"
+  },
+  "filter": {
+    "favourites": "पसंदीदा:",
+    "panel": {
+      "title": "फ़िल्टर",
+      "clear": "साफ करें",
+      "hide": "छुपाएं",
+      "show": "दिखाएं"
+    },
+    "accounts": {
+      "label": "खाते दिखाएं:",
+      "all": "सभी",
+      "active": "सक्रिय",
+      "closed": "बंद"
+    },
+    "fields": {
+      "accounts": "खाते",
+      "payees": "भुगतानकर्ता",
+      "categories": "श्रेणियां",
+      "tags": "टैग",
+      "timePeriod": "समय अवधि",
+      "startDate": "प्रारंभ तिथि",
+      "endDate": "समाप्ति तिथि",
+      "amountFrom": "राशि से",
+      "amountTo": "राशि तक",
+      "status": "स्थिति",
+      "search": "खोज"
+    },
+    "placeholders": {
+      "accounts": "सभी खाते",
+      "payees": "सभी भुगतानकर्ता",
+      "categories": "सभी श्रेणियां",
+      "tags": "सभी टैग",
+      "statuses": "सभी स्थितियां",
+      "amountMin": "न्यूनतम",
+      "amountMax": "अधिकतम",
+      "search": "भुगतानकर्ता, श्रेणी, राशि, टैग, विवरण, संदर्भ # खोजें..."
+    },
+    "chips": {
+      "removeAccount": "{name} फ़िल्टर हटाएं",
+      "removePayee": "{name} फ़िल्टर हटाएं",
+      "removeCategory": "{name} फ़िल्टर हटाएं",
+      "removeTag": "{name} फ़िल्टर हटाएं",
+      "removeDate": "तिथि फ़िल्टर हटाएं",
+      "removeAmount": "राशि फ़िल्टर हटाएं",
+      "removeSearch": "खोज फ़िल्टर हटाएं",
+      "dateFrom": "{date} से",
+      "dateUntil": "{date} तक",
+      "amountFrom": "{amount} से",
+      "amountUpTo": "{amount} तक"
+    },
+    "bulkUpdate": "बल्क अपडेट",
+    "cancelBulk": "बल्क रद्द करें",
+    "statusLabels": {
+      "unreconciled": "असमाधानित",
+      "cleared": "समाशोधित",
+      "reconciled": "समाधानित",
+      "void": "रद्द"
+    },
+    "periods": {
+      "select": "अवधि चुनें...",
+      "today": "आज",
+      "yesterday": "कल",
+      "thisWeek": "इस सप्ताह",
+      "lastWeek": "पिछले सप्ताह",
+      "monthToDate": "महीने की शुरुआत से",
+      "lastMonth": "पिछला महीना",
+      "yearToDate": "वर्ष की शुरुआत से",
+      "lastYear": "पिछला वर्ष",
+      "custom": "कस्टम"
+    }
+  },
+  "bulk": {
+    "banner": {
+      "selected": "{count, plural, one {# लेन-देन चयनित} other {# लेन-देन चयनित}}",
+      "selectAllMatching": "सभी {count} मिलान करने वाले लेन-देन चुनें",
+      "allMatching": "(सभी मिलान करने वाले लेन-देन)",
+      "clearSelection": "चयन साफ करें",
+      "bulkUpdate": "बल्क अपडेट"
+    },
+    "modal": {
+      "title": "लेन-देन बल्क अपडेट",
+      "subtitle": "{count, plural, one {# चयनित लेन-देन} other {# चयनित लेन-देन}} अपडेट करें। जिन फ़ील्ड को बदलना चाहते हैं उन्हें टॉगल करें।",
+      "submitLabel": "{count, plural, one {# लेन-देन} other {# लेन-देन}} अपडेट करें",
+      "payee": "भुगतानकर्ता",
+      "category": "श्रेणी",
+      "description": "विवरण",
+      "status": "स्थिति",
+      "tags": "टैग",
+      "payeePlaceholder": "भुगतानकर्ता का नाम चुनें या टाइप करें...",
+      "categoryPlaceholder": "श्रेणी चुनें...",
+      "descriptionPlaceholder": "विवरण दर्ज करें (साफ करने के लिए खाली छोड़ें)",
+      "tagsPlaceholder": "टैग चुनें (सभी साफ करने के लिए खाली छोड़ें)...",
+      "statusOptions": {
+        "pending": "लंबित",
+        "cleared": "समाशोधित",
+        "void": "रद्द"
+      },
+      "notes": {
+        "transfer": "ट्रांसफर लेन-देन के लिंक किए गए समकक्ष भी अपडेट किए जाएंगे।",
+        "split": "विभाजित लेन-देन श्रेणी परिवर्तन के लिए छोड़ दिए जाएंगे।"
+      }
+    }
+  },
+  "form": {
+    "modeTransaction": "लेन-देन",
+    "modeSplit": "विभाजन",
+    "modeTransfer": "ट्रांसफर",
+    "transferBadge": "ट्रांसफर",
+    "isLinkedTransfer": "यह एक लिंक किया हुआ ट्रांसफर लेन-देन है",
+    "fields": {
+      "account": "खाता",
+      "date": "तिथि",
+      "createDate": "निर्माण तिथि",
+      "payee": "भुगतानकर्ता",
+      "category": "श्रेणी",
+      "amount": "राशि",
+      "totalAmount": "कुल राशि",
+      "referenceNumber": "संदर्भ संख्या",
+      "description": "विवरण",
+      "status": "स्थिति",
+      "tags": "टैग",
+      "fromAccount": "स्रोत खाता",
+      "toAccount": "गंतव्य खाता",
+      "transferAmount": "ट्रांसफर राशि",
+      "transferAmountWithCurrency": "ट्रांसफर राशि ({currency})",
+      "amountReceived": "प्राप्त राशि ({currency})",
+      "payeeOptional": "भुगतानकर्ता (वैकल्पिक)"
+    },
+    "placeholders": {
+      "selectAccount": "खाता चुनें...",
+      "selectDestinationAccount": "गंतव्य खाता चुनें...",
+      "selectOrTypePayee": "भुगतानकर्ता का नाम चुनें या टाइप करें...",
+      "selectOrCreateCategory": "श्रेणी चुनें या बनाएं...",
+      "referenceNumber": "चेक #, पुष्टि #...",
+      "optionalDescription": "वैकल्पिक विवरण...",
+      "selectTags": "टैग चुनें...",
+      "createNewTag": "नया टैग बनाएं..."
+    },
+    "splitSection": {
+      "title": "लेन-देन विभाजित करें",
+      "cancelSplit": "विभाजन रद्द करें"
+    },
+    "statusOptions": {
+      "unreconciled": "असमाधानित",
+      "cleared": "समाशोधित",
+      "reconciled": "समाधानित",
+      "void": "रद्द"
+    },
+    "submitCreate": "{mode} बनाएं",
+    "submitUpdate": "{mode} अपडेट करें",
+    "modeLabel": {
+      "transfer": "ट्रांसफर",
+      "transaction": "लेन-देन"
+    },
+    "transferAmountNote": "ट्रांसफर के लिए राशि सकारात्मक होनी चाहिए",
+    "amountReceivedNote": "मुद्रा रूपांतरण के बाद प्राप्त राशि",
+    "splitTransaction": "लेन-देन विभाजित करें",
+    "newTagTitle": "नया टैग",
+    "toasts": {
+      "transferCreated": "ट्रांसफर बनाया गया",
+      "transferUpdated": "ट्रांसफर अपडेट किया गया",
+      "transactionCreated": "लेन-देन बनाया गया",
+      "transactionUpdated": "लेन-देन अपडेट किया गया",
+      "saveFailed": "लेन-देन सहेजने में विफल",
+      "loadFailed": "फ़ॉर्म डेटा लोड करने में विफल",
+      "splitsNotEqual": "विभाजन कुल ({splitTotal}) लेन-देन राशि ({txAmount}) के बराबर होना चाहिए",
+      "destinationRequired": "कृपया गंतव्य खाता चुनें",
+      "sameAccount": "स्रोत और गंतव्य खाते अलग होने चाहिए",
+      "negativeTransfer": "ट्रांसफर राशि ऋणात्मक नहीं होनी चाहिए",
+      "payeeCreated": "भुगतानकर्ता \"{name}\" बनाया गया",
+      "payeeCreateFailed": "भुगतानकर्ता बनाने में विफल",
+      "payeeReactivated": "भुगतानकर्ता \"{name}\" पुनः सक्रिय किया गया",
+      "payeeReactivateFailed": "भुगतानकर्ता पुनः सक्रिय करने में विफल",
+      "categoryCreated": "श्रेणी \"{name}\" बनाई गई",
+      "categoryCreateFailed": "श्रेणी बनाने में विफल",
+      "tagCreated": "टैग \"{name}\" बनाया गया"
+    },
+    "ariaHistory": "हाल के लेन-देन दिखाएं",
+    "ariaHistoryForPayee": "इस भुगतानकर्ता के हाल के लेन-देन दिखाएं",
+    "historyTitle": "हाल के लेन-देन से त्वरित भरण"
+  },
+  "splitEditor": {
+    "header": "विभाजन विवरण",
+    "distributeProportionally": "आनुपातिक रूप से वितरित करें",
+    "distributeProportionallyTitle": "प्रत्येक विभाजन की राशि के आधार पर शेष राशि आनुपातिक रूप से वितरित करें",
+    "distributeEvenly": "समान रूप से वितरित करें",
+    "addSplit": "विभाजन जोड़ें",
+    "removeMinimum": "न्यूनतम 2 विभाजन आवश्यक हैं",
+    "removeSplit": "विभाजन हटाएं",
+    "removeAndConvert": "विभाजन हटाएं और नियमित लेन-देन में बदलें",
+    "convertConfirm": {
+      "title": "नियमित लेन-देन में बदलें?",
+      "message": "इस विभाजन को हटाने से यह शेष विभाजन की श्रेणी का उपयोग करके नियमित लेन-देन में वापस बदल जाएगा।",
+      "confirm": "बदलें"
+    },
+    "noUnassigned": "कोई असाइन न की गई राशि नहीं",
+    "addRemaining": "इस विभाजन में शेष जोड़ें",
+    "total": "कुल",
+    "balanced": "संतुलित",
+    "remaining": "शेष: {symbol}{amount}",
+    "needAmount": "{symbol}{amount} चाहिए (शेष: {symbol}{remaining})",
+    "setTotal": "कुल {symbol}{amount} निर्धारित करें",
+    "splitLabel": "विभाजन {number}",
+    "columns": {
+      "type": "प्रकार",
+      "categoryAccount": "श्रेणी / खाता",
+      "category": "श्रेणी",
+      "amount": "राशि",
+      "memo": "मेमो",
+      "tags": "टैग"
+    },
+    "splitTypes": {
+      "category": "श्रेणी",
+      "transfer": "ट्रांसफर",
+      "investment": "निवेश"
+    },
+    "selectCategory": "श्रेणी चुनें...",
+    "selectAccount": "खाता चुनें...",
+    "memoPlaceholder": "वैकल्पिक मेमो",
+    "mobileMemoPlaceholder": "मेमो",
+    "tagsPlaceholder": "टैग..."
+  },
+  "recentPopover": {
+    "recentForPayee": "{name} के हाल के लेन-देन",
+    "recentTransactions": "हाल के लेन-देन",
+    "loading": "लोड हो रहा है...",
+    "noRecent": "कोई हाल का लेन-देन नहीं।",
+    "noRecentForPayee": "इस भुगतानकर्ता के लिए कोई हाल का लेन-देन नहीं।",
+    "noPayee": "(कोई भुगतानकर्ता नहीं)",
+    "uncategorized": "(अवर्गीकृत)"
+  },
+  "investmentSplit": {
+    "ariaAction": "निवेश क्रिया",
+    "ariaSecurity": "प्रतिभूति",
+    "selectSecurity": "प्रतिभूति चुनें...",
+    "quantityPlaceholder": "मात्रा",
+    "pricePlaceholder": "मूल्य",
+    "commissionPlaceholder": "कमीशन",
+    "amountPlaceholder": "राशि ({currency})"
+  },
+  "charts": {
+    "balanceHistory": {
+      "title": "शेष इतिहास",
+      "noData": "कोई शेष डेटा उपलब्ध नहीं",
+      "starting": "प्रारंभिक",
+      "current": "वर्तमान",
+      "ending": "अंतिम",
+      "lowest": "न्यूनतम",
+      "minBalance": "न्यूनतम शेष"
+    },
+    "monthlyTotals": {
+      "title": "मासिक कुल",
+      "noData": "कोई लेन-देन डेटा उपलब्ध नहीं",
+      "monthlyAvg": "मासिक औसत",
+      "total": "कुल",
+      "transactions": "लेन-देन",
+      "tooltip": "{count, plural, one {# लेन-देन} other {# लेन-देन}}"
+    },
+    "accountBalances": {
+      "title": "खाता शेष",
+      "noData": "कोई खाता शेष डेटा उपलब्ध नहीं",
+      "average": "औसत",
+      "total": "कुल",
+      "accounts": "खाते",
+      "scaleLabel": "Y-अक्ष स्केल",
+      "auto": "स्वत:",
+      "linear": "रैखिक",
+      "log": "लॉग",
+      "autoTitle": "स्वत: ({scale})",
+      "scaleTitle": "{label} स्केल"
+    }
+  },
+  "toasts": {
+    "payeeUpdated": "भुगतानकर्ता सफलतापूर्वक अपडेट किया गया",
+    "deleted": "{count, plural, one {# लेन-देन हटाया गया} other {# लेन-देन हटाए गए}}",
+    "noneToExport": "निर्यात करने के लिए कोई लेन-देन नहीं",
+    "exported": "{count, plural, one {# लेन-देन निर्यात किया गया} other {# लेन-देन निर्यात किए गए}}",
+    "loadFormDataFailed": "फ़ॉर्म डेटा लोड करने में विफल",
+    "loadFailed": "लेन-देन लोड करने में विफल",
+    "loadPayeeFailed": "भुगतानकर्ता विवरण लोड करने में विफल",
+    "payeeUpdateFailed": "भुगतानकर्ता अपडेट करने में विफल",
+    "exportFailed": "लेन-देन निर्यात करने में विफल"
+  },
+  "validation": {
+    "dateRequired": "तिथि आवश्यक है"
+  }
+}

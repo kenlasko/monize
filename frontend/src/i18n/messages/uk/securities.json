@@ -1,0 +1,304 @@
+{
+  "priceRefresh": {
+    "noneToUpdate": "Немає цінних паперів для оновлення",
+    "updated": "{count, plural, one {Ціну # цінного паперу оновлено} other {Ціни # цінних паперів оновлено}}",
+    "partialFailure": "Ціни оновлено: {updated} успішно, {failed} невдало{symbols}",
+    "failed": "Не вдалося оновити ціни"
+  },
+  "page": {
+    "title": "Цінні папери",
+    "subtitle": "Управляйте акціями, ETF, пайовими фондами та іншими цінними паперами",
+    "newSecurity": "+ Новий цінний папір",
+    "searchPlaceholder": "Пошук за символом або назвою...",
+    "statusAll": "Всі ({count})",
+    "statusActive": "Активні ({count})",
+    "statusInactive": "Неактивні ({count})",
+    "modalTitleEdit": "Редагувати цінний папір",
+    "modalTitleNew": "Новий цінний папір",
+    "loading": "Завантаження цінних паперів...",
+    "count": "{count, plural, one {# цінний папір} other {# цінних паперів}}",
+    "toasts": {
+      "loadFailed": "Не вдалося завантажити цінні папери",
+      "updated": "Цінний папір успішно оновлено",
+      "created": "Цінний папір успішно створено",
+      "deactivated": "Цінний папір деактивовано",
+      "activated": "Цінний папір активовано",
+      "statusFailed": "Не вдалося оновити статус цінного паперу",
+      "deleted": "Цінний папір \"{symbol}\" видалено",
+      "deleteFailed": "Не вдалося видалити цінний папір",
+      "favouriteFailed": "Не вдалося оновити вибране",
+      "updateFailed": "Не вдалося оновити цінний папір",
+      "createFailed": "Не вдалося створити цінний папір"
+    },
+    "deleteConfirm": {
+      "title": "Видалити цінний папір",
+      "message": "Ви впевнені, що хочете видалити \"{symbol}\"? Уся histórico цін також буде видалена. Цю дію неможливо скасувати.",
+      "confirmLabel": "Видалити",
+      "cancelLabel": "Скасувати"
+    }
+  },
+  "summary": {
+    "totalSecurities": "Всього цінних паперів",
+    "types": "Типи",
+    "exchanges": "Біржі",
+    "currencies": "Валюти"
+  },
+  "list": {
+    "columns": {
+      "symbol": "Символ",
+      "name": "Назва",
+      "type": "Тип",
+      "shares": "Акції",
+      "exchange": "Біржа",
+      "currency": "Валюта",
+      "provider": "Провайдер",
+      "source": "Джерело",
+      "status": "Статус",
+      "actions": "Дії",
+      "favourite": "Вибране"
+    },
+    "density": {
+      "normal": "Звичайна",
+      "compact": "Компактна",
+      "dense": "Щільна",
+      "toggle": "Перемкнути щільність рядків"
+    },
+    "statusBadge": {
+      "active": "Активний",
+      "activeShort": "Акт",
+      "inactive": "Неактивний",
+      "inactiveShort": "Неакт"
+    },
+    "providerTitle": {
+      "override": "Індивідуальне налаштування провайдера для цього цінного паперу",
+      "inherited": "Успадковано від ваших налаштувань провайдера котирувань за замовчуванням"
+    },
+    "columnTitles": {
+      "shares": "Поточні акції на всіх рахунках",
+      "source": "Джерело останньої ціни"
+    },
+    "actions": {
+      "history": "Histórico",
+      "prices": "Ціни",
+      "edit": "Редагувати",
+      "deactivate": "Деактивувати",
+      "activate": "Активувати",
+      "delete": "Видалити"
+    },
+    "favouriteButton": {
+      "add": "Додати до вибраного",
+      "remove": "Видалити з вибраного"
+    },
+    "empty": {
+      "title": "Цінних паперів немає",
+      "subtitle": "Розпочніть, додавши перший цінний папір."
+    },
+    "contextMenu": {
+      "transactionHistory": "Histórico транзакцій",
+      "viewPrices": "Переглянути ціни",
+      "editSecurity": "Редагувати цінний папір",
+      "deactivate": "Деактивувати",
+      "activate": "Активувати",
+      "delete": "Видалити"
+    }
+  },
+  "typeLabels": {
+    "STOCK": "Акція",
+    "ETF": "ETF",
+    "MUTUAL_FUND": "Пайовий фонд",
+    "BOND": "Облігація",
+    "OPTION": "Опціон",
+    "CRYPTO": "Крипто",
+    "OTHER": "Інше",
+    "STOCK_short": "Акц",
+    "ETF_short": "ETF",
+    "MUTUAL_FUND_short": "ПФ",
+    "BOND_short": "Обл",
+    "OPTION_short": "Опц",
+    "CRYPTO_short": "Крп",
+    "OTHER_short": "Ін"
+  },
+  "form": {
+    "symbolLabel": "Символ",
+    "nameLabel": "Назва",
+    "typeLabel": "Тип",
+    "exchangeLabel": "Біржа",
+    "currencyLabel": "Валюта",
+    "quoteProviderLabel": "Провайдер котирувань",
+    "msnIdLabel": "MSN Instrument ID (розширено)",
+    "lookupProviderAriaLabel": "Провайдер пошуку",
+    "lookupButton": "Пошук",
+    "revertButton": "Відновити",
+    "clearButton": "Очистити",
+    "revertTitle": "Відновити початкові значення",
+    "clearTitle": "Очистити всі поля",
+    "favouriteLabel": "Вибране",
+    "addToFavourites": "Додати до вибраного",
+    "removeFromFavourites": "Видалити з вибраного",
+    "submitCreate": "Створити цінний папір",
+    "submitUpdate": "Оновити цінний папір",
+    "toasts": {
+      "lookupTooShort": "Введіть символ або назву (щонайменше 2 символи) для пошуку",
+      "notFound": "Цінний папір \"{query}\" не знайдено",
+      "found": "Знайдено: {details}",
+      "lookupFailed": "Пошук не вдався — спробуйте ще раз"
+    },
+    "msnNotConfigured": "MSN вибрано як провайдер котирувань за замовчуванням, але MSN_API_KEY не налаштовано на сервері. Котирування MSN не працюватимуть, поки адміністратор не встановить змінну середовища та не перезапустить сервер.",
+    "providers": {
+      "auto": "Авто",
+      "yahoo": "Yahoo",
+      "msn": "MSN"
+    },
+    "types": {
+      "select": "Оберіть тип...",
+      "stock": "Акція",
+      "etf": "ETF",
+      "mutualFund": "Пайовий фонд",
+      "bond": "Облігація",
+      "option": "Опціон",
+      "crypto": "Криптовалюта",
+      "other": "Інше"
+    },
+    "quoteProviderUseDefault": "Використовувати за замовчуванням ({provider})",
+    "symbolPlaceholder": "наприклад AAPL, XEQT, BTC",
+    "namePlaceholder": "наприклад Apple Inc., iShares Core Equity ETF",
+    "exchangeSearchPlaceholder": "Пошук бірж...",
+    "exchangePlaceholder": "Визначається автоматично з тикера; змінюйте лише якщо неправильно"
+  },
+  "priceForm": {
+    "dateLabel": "Дата",
+    "closePriceLabel": "Ціна закриття",
+    "openPriceLabel": "Ціна відкриття",
+    "highPriceLabel": "Максимальна ціна",
+    "lowPriceLabel": "Мінімальна ціна",
+    "volumeLabel": "Обсяг",
+    "optionalPlaceholder": "Необов'язково",
+    "submitCreate": "Додати ціну",
+    "submitUpdate": "Оновити ціну"
+  },
+  "priceHistory": {
+    "title": "{symbol} — Histórico цін",
+    "forceUpdateButton": "Примусово оновити ціни",
+    "forceUpdateTitle": "Повторно завантажити histórico цін за весь período, протягом якого ви тримали цей цінний папір",
+    "addPriceButton": "+ Додати ціну",
+    "addPriceSection": "Додати ціну",
+    "editPriceSection": "Редагувати ціну",
+    "loading": "Завантаження цін...",
+    "empty": "Histórico цін відсутня",
+    "columns": {
+      "date": "Дата",
+      "close": "Закриття",
+      "open": "Відкриття",
+      "high": "Максимум",
+      "low": "Мінімум",
+      "volume": "Обсяг",
+      "source": "Джерело",
+      "actions": "Дії"
+    },
+    "toasts": {
+      "added": "Ціну додано",
+      "updated": "Ціну оновлено",
+      "deleted": "Ціну видалено",
+      "loadFailed": "Не вдалося завантажити histórico цін",
+      "addFailed": "Не вдалося додати ціну",
+      "updateFailed": "Не вдалося оновити ціну",
+      "deleteFailed": "Не вдалося видалити ціну",
+      "updatedCount": "{count, plural, one {Оновлено # ціну для {symbol}} other {Оновлено # цін для {symbol}}}",
+      "noPricesFound": "Ціни для {symbol} не знайдено",
+      "updatePricesFailed": "Не вдалося оновити ціни для {symbol}",
+      "updateFetchFailed": "Не вдалося оновити ціни"
+    },
+    "closeButton": "Закрити",
+    "deleteConfirm": {
+      "title": "Видалити ціну",
+      "confirmLabel": "Видалити"
+    }
+  },
+  "transactionHistory": {
+    "inactiveBadge": "Неактивний",
+    "currentShares": "Поточні акції",
+    "accountLabel": "Рахунок",
+    "allAccounts": "Всі рахунки ({shares})",
+    "accountClosed": "{name} (закритий)",
+    "addTransaction": "+ Додати транзакцію",
+    "loading": "Завантаження транзакцій...",
+    "emptyAll": "Немає транзакцій для цього цінного паперу.",
+    "emptyAccount": "Немає транзакцій для цього цінного паперу на обраному рахунку.",
+    "editTransactionTitle": "Редагувати транзакцію",
+    "columns": {
+      "date": "Дата",
+      "account": "Рахунок",
+      "action": "Дія",
+      "quantity": "Кількість",
+      "runningTotal": "Поточний підсумок",
+      "price": "Ціна",
+      "amount": "Сума",
+      "actionsLabel": "Дії"
+    },
+    "actionLabels": {
+      "BUY": "Купити",
+      "SELL": "Продати",
+      "DIVIDEND": "Дивіденд",
+      "INTEREST": "Відсотки",
+      "CAPITAL_GAIN": "Приріст капіталу",
+      "SPLIT": "Дроблення",
+      "TRANSFER_IN": "Переказ вхідний",
+      "TRANSFER_OUT": "Переказ вихідний",
+      "REINVEST": "Реінвестування",
+      "ADD_SHARES": "Додати акції",
+      "REMOVE_SHARES": "Видалити акції"
+    },
+    "toasts": {
+      "loadHistoryFailed": "Не вдалося завантажити histórico",
+      "loadTransactionFailed": "Не вдалося завантажити транзакцію"
+    }
+  },
+  "shareAdjustment": {
+    "heading": "Коригування акцій",
+    "accountLabel": "Рахунок",
+    "accountPlaceholder": "Оберіть рахунок...",
+    "actionLabel": "Дія",
+    "quantityLabel": "Кількість (акцій)",
+    "dateLabel": "Дата",
+    "descriptionLabel": "Опис (необов'язково)",
+    "descriptionPlaceholder": "наприклад Очистити залишкові акції",
+    "saving": "Збереження...",
+    "submitButton": "Записати коригування",
+    "accountClosed": "{name} (закритий)",
+    "adjustmentActions": {
+      "REMOVE_SHARES": "Видалити акції",
+      "ADD_SHARES": "Додати акції"
+    },
+    "toasts": {
+      "selectAccount": "Оберіть рахунок",
+      "quantityRequired": "Кількість має бути більше нуля",
+      "recorded": "Коригування записано",
+      "failed": "Не вдалося записати коригування"
+    }
+  },
+  "lookupPicker": {
+    "title": "Кілька збігів для \"{query}\"",
+    "subtitle": "Оберіть цінний папір, який хочете використати.",
+    "columns": {
+      "symbol": "Символ",
+      "name": "Назва",
+      "exchange": "Біржа",
+      "currency": "Валюта",
+      "type": "Тип",
+      "source": "Джерело"
+    },
+    "selectButton": "Вибрати"
+  },
+  "validation": {
+    "symbolRequired": "Символ обов'язковий",
+    "symbolMax": "Символ має бути не більше 20 символів",
+    "nameRequired": "Назва обов'язкова",
+    "nameMax": "Назва має бути не більше 255 символів",
+    "currencyRequired": "Валюта обов'язкова"
+  },
+  "priceValidation": {
+    "dateRequired": "Дата обов'язкова",
+    "priceRequired": "Ціна обов'язкова",
+    "priceNonNegative": "Ціна має бути невід'ємним числом"
+  }
+}

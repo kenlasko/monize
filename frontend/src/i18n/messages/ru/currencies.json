@@ -1,0 +1,117 @@
+{
+  "page": {
+    "title": "Валюты",
+    "subtitle": "Управление валютами, используемыми в счетах и ценных бумагах",
+    "refreshRates": "Обновить курсы",
+    "refreshing": "Обновление...",
+    "newCurrency": "+ Новая валюта",
+    "searchPlaceholder": "Поиск по коду или названию...",
+    "statusAll": "Все ({count})",
+    "statusActive": "Активные ({count})",
+    "statusInactive": "Неактивные ({count})",
+    "modalTitleEdit": "Редактировать валюту",
+    "modalTitleNew": "Новая валюта",
+    "loading": "Загрузка валют...",
+    "count": "{count, plural, one {# валюта} other {# валют}}",
+    "toasts": {
+      "loadFailed": "Не удалось загрузить валюты",
+      "updated": "Валюта успешно обновлена",
+      "created": "Валюта успешно создана",
+      "updateFailed": "Не удалось обновить валюту",
+      "createFailed": "Не удалось создать валюту",
+      "deactivated": "Валюта деактивирована",
+      "activated": "Валюта активирована",
+      "statusFailed": "Не удалось обновить статус валюты",
+      "ratesRefreshed": "Курсы обновлены: обновлено {updated} пар",
+      "ratesRefreshedWithFailed": "Курсы обновлены: обновлено {updated}, ошибок {failed}",
+      "ratesFailed": "Не удалось обновить курсы валют"
+    },
+    "summary": {
+      "totalCurrencies": "Всего валют",
+      "active": "Активные",
+      "inactive": "Неактивные"
+    }
+  },
+  "list": {
+    "columns": {
+      "code": "Код",
+      "name": "Название",
+      "symbol": "Символ",
+      "decimals": "Знаки после запятой",
+      "usage": "Использование",
+      "rate": "Курс ({currency})",
+      "status": "Статус",
+      "actions": "Действия"
+    },
+    "density": {
+      "normal": "Обычная",
+      "compact": "Компактная",
+      "dense": "Плотная",
+      "toggle": "Переключить плотность строк"
+    },
+    "defaultBadge": "По умолчанию",
+    "statusBadge": {
+      "active": "Активная",
+      "activeShort": "Акт",
+      "inactive": "Неактивная",
+      "inactiveShort": "Неакт"
+    },
+    "actions": {
+      "edit": "Изменить",
+      "deactivate": "Деактивировать",
+      "activate": "Активировать"
+    },
+    "contextMenu": {
+      "editCurrency": "Редактировать валюту",
+      "deactivate": "Деактивировать",
+      "activate": "Активировать",
+      "deleteCurrency": "Удалить валюту"
+    },
+    "usageTooltip": "{accounts} счёт(ов), {securities} ценных бумаг",
+    "usageAccounts": "{count, plural, one {# счёт} other {# счетов}}",
+    "usageSecurities": "{count, plural, one {# бум.} other {# бум.}}",
+    "empty": {
+      "title": "Нет валют",
+      "subtitle": "Начните с добавления валюты."
+    },
+    "deleteConfirm": {
+      "title": "Удалить «{code}»?",
+      "message": "Эта валюта будет окончательно удалена. Удаление возможно только если валюта не используется ни в одном счёте или ценной бумаге.",
+      "confirmLabel": "Удалить",
+      "cancelLabel": "Отмена"
+    },
+    "toasts": {
+      "deleted": "Валюта успешно удалена",
+      "deleteFailed": "Не удалось удалить валюту. Возможно, она используется."
+    }
+  },
+  "form": {
+    "codeLabel": "Код валюты",
+    "codePlaceholder": "например, USD, EUR, GBP",
+    "nameLabel": "Название",
+    "namePlaceholderCreate": "например, Канадский доллар, Малайзия, Ринггит (используется также для поиска)",
+    "namePlaceholderEdit": "например, Канадский доллар",
+    "symbolLabel": "Символ",
+    "symbolPlaceholder": "например, $, €, £, ¥",
+    "decimalPlacesLabel": "Знаки после запятой",
+    "lookupButton": "Найти",
+    "lookingUp": "Поиск...",
+    "clearButton": "Очистить",
+    "clearTitle": "Очистить все поля",
+    "submitCreate": "Создать валюту",
+    "submitUpdate": "Обновить валюту",
+    "toasts": {
+      "lookupTooShort": "Введите код или название валюты (не менее 2 символов) для поиска",
+      "found": "Найдено: {details}",
+      "notFound": "Валюта не найдена для «{query}»",
+      "lookupFailed": "Поиск не удался — попробуйте снова"
+    }
+  },
+  "validation": {
+    "codeLength": "Код валюты должен состоять ровно из 3 символов",
+    "nameRequired": "Название обязательно",
+    "nameMax": "Название должно быть не длиннее 100 символов",
+    "symbolRequired": "Символ обязателен",
+    "symbolMax": "Символ должен быть не длиннее 10 символов"
+  }
+}

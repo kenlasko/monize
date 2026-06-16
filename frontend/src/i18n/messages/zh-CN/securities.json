@@ -1,0 +1,304 @@
+{
+  "priceRefresh": {
+    "noneToUpdate": "无证券需要更新",
+    "updated": "{count, plural, one {# 个证券价格已更新} other {# 个证券价格已更新}}",
+    "partialFailure": "价格已更新：{updated} 个成功，{failed} 个失败{symbols}",
+    "failed": "刷新价格失败"
+  },
+  "page": {
+    "title": "证券",
+    "subtitle": "管理您的股票、ETF、共同基金及其他证券",
+    "newSecurity": "+ 新建证券",
+    "searchPlaceholder": "按代码或名称搜索...",
+    "statusAll": "全部（{count}）",
+    "statusActive": "活跃（{count}）",
+    "statusInactive": "非活跃（{count}）",
+    "modalTitleEdit": "编辑证券",
+    "modalTitleNew": "新建证券",
+    "loading": "正在加载证券...",
+    "count": "{count, plural, one {# 个证券} other {# 个证券}}",
+    "toasts": {
+      "loadFailed": "加载证券失败",
+      "updated": "证券已成功更新",
+      "created": "证券已成功创建",
+      "deactivated": "证券已停用",
+      "activated": "证券已激活",
+      "statusFailed": "更新证券状态失败",
+      "deleted": "证券\"{symbol}\"已删除",
+      "deleteFailed": "删除证券失败",
+      "favouriteFailed": "更新收藏失败",
+      "updateFailed": "更新证券失败",
+      "createFailed": "创建证券失败"
+    },
+    "deleteConfirm": {
+      "title": "删除证券",
+      "message": "确定要删除\"{symbol}\"吗？所有价格历史也将被删除。此操作无法撤销。",
+      "confirmLabel": "删除",
+      "cancelLabel": "取消"
+    }
+  },
+  "summary": {
+    "totalSecurities": "证券总数",
+    "types": "类型",
+    "exchanges": "交易所",
+    "currencies": "货币"
+  },
+  "list": {
+    "columns": {
+      "symbol": "代码",
+      "name": "名称",
+      "type": "类型",
+      "shares": "股数",
+      "exchange": "交易所",
+      "currency": "货币",
+      "provider": "提供商",
+      "source": "来源",
+      "status": "状态",
+      "actions": "操作",
+      "favourite": "收藏"
+    },
+    "density": {
+      "normal": "正常",
+      "compact": "紧凑",
+      "dense": "密集",
+      "toggle": "切换行密度"
+    },
+    "statusBadge": {
+      "active": "活跃",
+      "activeShort": "活",
+      "inactive": "非活跃",
+      "inactiveShort": "停"
+    },
+    "providerTitle": {
+      "override": "单证券提供商覆盖",
+      "inherited": "继承自您的默认行情提供商偏好"
+    },
+    "columnTitles": {
+      "shares": "所有账户中当前持有的股数",
+      "source": "最新价格的来源"
+    },
+    "actions": {
+      "history": "历史",
+      "prices": "价格",
+      "edit": "编辑",
+      "deactivate": "停用",
+      "activate": "激活",
+      "delete": "删除"
+    },
+    "favouriteButton": {
+      "add": "添加到收藏",
+      "remove": "从收藏中移除"
+    },
+    "empty": {
+      "title": "无证券",
+      "subtitle": "添加您的第一个证券以开始使用。"
+    },
+    "contextMenu": {
+      "transactionHistory": "交易历史",
+      "viewPrices": "查看价格",
+      "editSecurity": "编辑证券",
+      "deactivate": "停用",
+      "activate": "激活",
+      "delete": "删除"
+    }
+  },
+  "typeLabels": {
+    "STOCK": "股票",
+    "ETF": "ETF",
+    "MUTUAL_FUND": "投资基金",
+    "BOND": "债券",
+    "OPTION": "期权",
+    "CRYPTO": "加密货币",
+    "OTHER": "其他",
+    "STOCK_short": "股",
+    "ETF_short": "ETF",
+    "MUTUAL_FUND_short": "基",
+    "BOND_short": "债",
+    "OPTION_short": "权",
+    "CRYPTO_short": "币",
+    "OTHER_short": "他"
+  },
+  "form": {
+    "symbolLabel": "代码",
+    "nameLabel": "名称",
+    "typeLabel": "类型",
+    "exchangeLabel": "交易所",
+    "currencyLabel": "货币",
+    "quoteProviderLabel": "行情提供商",
+    "msnIdLabel": "MSN 工具 ID（高级）",
+    "lookupProviderAriaLabel": "查询提供商",
+    "lookupButton": "查询",
+    "revertButton": "还原",
+    "clearButton": "清除",
+    "revertTitle": "还原为原始值",
+    "clearTitle": "清除所有字段",
+    "favouriteLabel": "收藏",
+    "addToFavourites": "添加到收藏",
+    "removeFromFavourites": "从收藏中移除",
+    "submitCreate": "创建证券",
+    "submitUpdate": "更新证券",
+    "toasts": {
+      "lookupTooShort": "请输入代码或名称（至少 2 个字符）进行查询",
+      "notFound": "未找到\"{query}\"对应的证券",
+      "found": "已找到：{details}",
+      "lookupFailed": "查询失败，请重试"
+    },
+    "msnNotConfigured": "MSN 已选为默认行情提供商，但服务器未配置 MSN_API_KEY。在管理员设置环境变量并重启后端之前，MSN 行情将失败。",
+    "providers": {
+      "auto": "自动",
+      "yahoo": "Yahoo",
+      "msn": "MSN"
+    },
+    "types": {
+      "select": "选择类型...",
+      "stock": "股票",
+      "etf": "ETF",
+      "mutualFund": "投资基金",
+      "bond": "债券",
+      "option": "期权",
+      "crypto": "加密货币",
+      "other": "其他"
+    },
+    "quoteProviderUseDefault": "使用默认（{provider}）",
+    "symbolPlaceholder": "例如：AAPL、XEQT、BTC",
+    "namePlaceholder": "例如：苹果公司、iShares 核心股票 ETF",
+    "exchangeSearchPlaceholder": "搜索交易所...",
+    "exchangePlaceholder": "从交易代码自动解析；仅在错误时覆盖"
+  },
+  "priceForm": {
+    "dateLabel": "日期",
+    "closePriceLabel": "收盘价",
+    "openPriceLabel": "开盘价",
+    "highPriceLabel": "最高价",
+    "lowPriceLabel": "最低价",
+    "volumeLabel": "成交量",
+    "optionalPlaceholder": "可选",
+    "submitCreate": "添加价格",
+    "submitUpdate": "更新价格"
+  },
+  "priceHistory": {
+    "title": "{symbol} - 价格历史",
+    "forceUpdateButton": "强制更新价格",
+    "forceUpdateTitle": "重新获取您持有此证券整个期间的历史价格",
+    "addPriceButton": "+ 添加价格",
+    "addPriceSection": "添加价格",
+    "editPriceSection": "编辑价格",
+    "loading": "正在加载价格...",
+    "empty": "暂无价格历史",
+    "columns": {
+      "date": "日期",
+      "close": "收盘价",
+      "open": "开盘价",
+      "high": "最高价",
+      "low": "最低价",
+      "volume": "成交量",
+      "source": "来源",
+      "actions": "操作"
+    },
+    "toasts": {
+      "added": "价格已添加",
+      "updated": "价格已更新",
+      "deleted": "价格已删除",
+      "loadFailed": "加载价格历史失败",
+      "addFailed": "添加价格失败",
+      "updateFailed": "更新价格失败",
+      "deleteFailed": "删除价格失败",
+      "updatedCount": "{count, plural, one {已更新 {symbol} 的 # 个价格} other {已更新 {symbol} 的 # 个价格}}",
+      "noPricesFound": "未找到 {symbol} 的价格",
+      "updatePricesFailed": "更新 {symbol} 价格失败",
+      "updateFetchFailed": "更新价格失败"
+    },
+    "closeButton": "关闭",
+    "deleteConfirm": {
+      "title": "删除价格",
+      "confirmLabel": "删除"
+    }
+  },
+  "transactionHistory": {
+    "inactiveBadge": "非活跃",
+    "currentShares": "当前股数",
+    "accountLabel": "账户",
+    "allAccounts": "所有账户（{shares} 股）",
+    "accountClosed": "{name}（已关闭）",
+    "addTransaction": "+ 添加交易",
+    "loading": "正在加载交易...",
+    "emptyAll": "此证券无交易记录。",
+    "emptyAccount": "所选账户中此证券无交易记录。",
+    "editTransactionTitle": "编辑交易",
+    "columns": {
+      "date": "日期",
+      "account": "账户",
+      "action": "操作",
+      "quantity": "数量",
+      "runningTotal": "累计合计",
+      "price": "价格",
+      "amount": "金额",
+      "actionsLabel": "操作"
+    },
+    "actionLabels": {
+      "BUY": "买入",
+      "SELL": "卖出",
+      "DIVIDEND": "股息",
+      "INTEREST": "利息",
+      "CAPITAL_GAIN": "资本收益",
+      "SPLIT": "拆股",
+      "TRANSFER_IN": "转入",
+      "TRANSFER_OUT": "转出",
+      "REINVEST": "再投资",
+      "ADD_SHARES": "增加股份",
+      "REMOVE_SHARES": "减少股份"
+    },
+    "toasts": {
+      "loadHistoryFailed": "加载历史失败",
+      "loadTransactionFailed": "加载交易失败"
+    }
+  },
+  "shareAdjustment": {
+    "heading": "调整股份",
+    "accountLabel": "账户",
+    "accountPlaceholder": "选择账户...",
+    "actionLabel": "操作",
+    "quantityLabel": "数量（股数）",
+    "dateLabel": "日期",
+    "descriptionLabel": "描述（可选）",
+    "descriptionPlaceholder": "例如：清理残余股份",
+    "saving": "保存中...",
+    "submitButton": "记录调整",
+    "accountClosed": "{name}（已关闭）",
+    "adjustmentActions": {
+      "REMOVE_SHARES": "减少股份",
+      "ADD_SHARES": "增加股份"
+    },
+    "toasts": {
+      "selectAccount": "请选择账户",
+      "quantityRequired": "数量必须大于零",
+      "recorded": "调整已记录",
+      "failed": "记录调整失败"
+    }
+  },
+  "lookupPicker": {
+    "title": "\"{query}\"有多个匹配结果",
+    "subtitle": "请选择您要使用的证券。",
+    "columns": {
+      "symbol": "代码",
+      "name": "名称",
+      "exchange": "交易所",
+      "currency": "货币",
+      "type": "类型",
+      "source": "来源"
+    },
+    "selectButton": "选择"
+  },
+  "validation": {
+    "symbolRequired": "代码为必填项",
+    "symbolMax": "代码不能超过 20 个字符",
+    "nameRequired": "名称为必填项",
+    "nameMax": "名称不能超过 255 个字符",
+    "currencyRequired": "货币为必填项"
+  },
+  "priceValidation": {
+    "dateRequired": "日期为必填项",
+    "priceRequired": "价格为必填项",
+    "priceNonNegative": "价格必须为非负数"
+  }
+}

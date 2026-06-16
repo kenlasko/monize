@@ -1,0 +1,91 @@
+{
+  "page": {
+    "title": "金融机构",
+    "subtitle": "您账户所属的银行和经纪商",
+    "newInstitution": "新建机构",
+    "loading": "正在加载机构...",
+    "searchPlaceholder": "搜索机构...",
+    "modalTitleNew": "新建机构",
+    "modalTitleEdit": "编辑机构",
+    "summary": {
+      "total": "机构总数",
+      "withLogo": "含标志",
+      "linkedAccounts": "关联账户"
+    },
+    "toasts": {
+      "loadFailed": "加载机构失败",
+      "created": "机构已创建",
+      "updated": "机构已更新",
+      "createFailed": "创建机构失败",
+      "updateFailed": "更新机构失败"
+    }
+  },
+  "list": {
+    "empty": "暂无机构。创建一个以开始分组您的账户。",
+    "columns": {
+      "name": "名称",
+      "website": "网站",
+      "country": "国家",
+      "accounts": "账户",
+      "actions": "操作"
+    },
+    "accountCount": "{count, plural, =0 {无账户} one {# 个账户} other {# 个账户}}",
+    "density": {
+      "title": "切换行密度",
+      "normal": "正常",
+      "compact": "紧凑",
+      "dense": "密集"
+    },
+    "statusFilter": {
+      "all": "全部",
+      "active": "活跃",
+      "closed": "已关闭"
+    },
+    "actions": {
+      "manageAccounts": "账户"
+    },
+    "deleteTitle": "删除机构",
+    "deleteMessage": "删除\"{name}\"？分配给它的账户将取消分配但不会被删除。",
+    "deleting": "删除中...",
+    "deleted": "已删除\"{name}\"",
+    "deleteFailed": "删除机构失败"
+  },
+  "form": {
+    "nameLabel": "名称",
+    "websiteLabel": "网站",
+    "websitePlaceholder": "例如：td.com",
+    "countryLabel": "国家（可选）",
+    "countryPlaceholder": "2 位字母代码，例如：CN",
+    "logoHint": "品牌标志将从网站自动获取。",
+    "submitCreate": "创建机构",
+    "submitUpdate": "保存更改"
+  },
+  "validation": {
+    "nameRequired": "名称为必填项",
+    "websiteRequired": "网站为必填项",
+    "websiteInvalid": "请输入有效网站（例如：td.com）",
+    "countryInvalid": "请使用 2 位字母国家代码"
+  },
+  "accountsManager": {
+    "title": "{name} 的账户",
+    "addLabel": "添加账户",
+    "addPlaceholder": "选择要添加的账户...",
+    "noneToAdd": "您的所有账户均已分配至某机构。",
+    "loading": "正在加载账户...",
+    "empty": "此机构尚无分配的账户。",
+    "noneMatch": "没有账户符合所选筛选条件。",
+    "filter": {
+      "all": "全部",
+      "active": "活跃",
+      "closed": "已关闭"
+    },
+    "remove": "移除",
+    "viewTransactions": "查看此账户的交易",
+    "added": "账户已添加",
+    "removed": "账户已移除",
+    "addFailed": "添加账户失败",
+    "removeFailed": "移除账户失败",
+    "loadFailed": "加载账户失败",
+    "done": "完成"
+  }
+}

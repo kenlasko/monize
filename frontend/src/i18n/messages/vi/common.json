@@ -1,0 +1,177 @@
+{
+  "chartFlag": {
+    "dismiss": "Ẩn giá trị này"
+  },
+  "appVersion": {
+    "releaseNotes": "Xem ghi chú phát hành cho v{version}"
+  },
+  "save": "Lưu",
+  "cancel": "Hủy",
+  "delete": "Xóa",
+  "edit": "Chỉnh sửa",
+  "close": "Đóng",
+  "actions": {
+    "edit": "Chỉnh sửa",
+    "delete": "Xóa",
+    "view": "Xem",
+    "duplicate": "Nhân bản",
+    "merge": "Gộp",
+    "reactivate": "Kích hoạt lại",
+    "reconcile": "Đối soát",
+    "post": "Đăng",
+    "skip": "Bỏ qua",
+    "close": "Đóng",
+    "reopen": "Mở lại",
+    "scheduleRecurring": "Lên lịch định kỳ",
+    "more": "Thêm thao tác"
+  },
+  "loading": "Đang tải...",
+  "pagination": {
+    "showing": "Hiển thị",
+    "of": "trong",
+    "firstPage": "Trang đầu",
+    "lastPage": "Trang cuối",
+    "previousPage": "Trang trước",
+    "nextPage": "Trang tiếp",
+    "back10Pages": "Lùi 10 trang",
+    "forward10Pages": "Tiến 10 trang",
+    "enterPageNumber": "Nhập số trang"
+  },
+  "confirmDialog": {
+    "confirm": "Xác nhận"
+  },
+  "unsavedChanges": {
+    "title": "Thay đổi chưa lưu",
+    "message": "Bạn có những thay đổi chưa được lưu. Bạn muốn làm gì?",
+    "discard": "Hủy bỏ"
+  },
+  "exportDropdown": {
+    "export": "Xuất",
+    "exporting": "Đang xuất...",
+    "exportPdf": "Xuất PDF",
+    "exportReport": "Xuất báo cáo",
+    "failedPdf": "Không thể xuất PDF. Vui lòng thử lại."
+  },
+  "dateRange": {
+    "custom": "Tùy chỉnh",
+    "startDate": "Ngày bắt đầu",
+    "endDate": "Ngày kết thúc"
+  },
+  "colorPicker": {
+    "custom": "Tùy chỉnh:",
+    "apply": "Áp dụng"
+  },
+  "chartDownload": {
+    "downloadAsPng": "Tải {filename} dưới dạng PNG",
+    "unableToCapture": "Không thể chụp ảnh biểu đồ",
+    "failedToDownload": "Không thể tải biểu đồ"
+  },
+  "chartViewToggle": {
+    "pieChart": "Biểu đồ tròn",
+    "barChart": "Biểu đồ cột",
+    "stackedChart": "Cột xếp chồng 100%",
+    "lineChart": "Biểu đồ đường",
+    "areaChart": "Biểu đồ vùng",
+    "table": "Bảng"
+  },
+  "formActions": {
+    "cancel": "Hủy",
+    "save": "Lưu"
+  },
+  "themeToggle": {
+    "light": "Sáng",
+    "dark": "Tối",
+    "system": "Hệ thống",
+    "title": "Giao diện: {label}. Nhấn để thay đổi."
+  },
+  "errorPage": {
+    "title": "Đã xảy ra lỗi",
+    "description": "Đã xảy ra lỗi không mong muốn. Vui lòng thử lại hoặc liên hệ hỗ trợ nếu vấn đề vẫn tiếp diễn.",
+    "errorId": "Mã lỗi: {digest}",
+    "tryAgain": "Thử lại",
+    "goToDashboard": "Đến trang tổng quan"
+  },
+  "errorBoundary": {
+    "defaultMessage": "Đã xảy ra lỗi khi hiển thị thành phần này."
+  },
+  "calendar": {
+    "clear": "Xóa",
+    "today": "Hôm nay"
+  },
+  "multiSelect": {
+    "search": "Tìm kiếm...",
+    "selectAll": "Chọn tất cả",
+    "clear": "Xóa",
+    "noOptions": "Không tìm thấy tùy chọn"
+  },
+  "combobox": {
+    "createOption": "Tạo \"{value}\""
+  },
+  "passwordInput": {
+    "show": "Hiển thị mật khẩu",
+    "hide": "Ẩn mật khẩu"
+  },
+  "currencyInput": {
+    "openCalculator": "Mở máy tính",
+    "calculator": "Máy tính"
+  },
+  "dateInput": {
+    "shortcutsTitle": "Phím tắt bàn phím",
+    "today": "Hôm nay",
+    "firstDayOfYear": "Ngày đầu năm",
+    "lastDayOfYear": "Ngày cuối năm",
+    "firstDayOfMonth": "Ngày đầu tháng",
+    "lastDayOfMonth": "Ngày cuối tháng",
+    "nextDay": "Ngày tiếp theo",
+    "previousDay": "Ngày trước",
+    "nextMonth": "Tháng tiếp theo",
+    "previousMonth": "Tháng trước"
+  },
+  "accountTypes": {
+    "CHEQUING": "Tài khoản thanh toán",
+    "SAVINGS": "Tiết kiệm",
+    "CREDIT_CARD": "Thẻ tín dụng",
+    "INVESTMENT": "Đầu tư",
+    "LOAN": "Khoản vay",
+    "MORTGAGE": "Thế chấp",
+    "CASH": "Tiền mặt",
+    "LINE_OF_CREDIT": "Hạn mức tín dụng",
+    "ASSET": "Tài sản",
+    "OTHER": "Khác"
+  },
+  "accountFilter": {
+    "allAccounts": "Tất cả tài khoản",
+    "allBut": "Tất cả trừ {names}"
+  },
+  "passwordRequirements": "Mật khẩu phải có ít nhất 12 ký tự và chứa chữ hoa, chữ thường, chữ số và ký tự đặc biệt.",
+  "passwordValidation": {
+    "min": "Mật khẩu phải có ít nhất 12 ký tự",
+    "max": "Mật khẩu phải không quá 100 ký tự",
+    "lowercase": "Phải chứa chữ thường",
+    "uppercase": "Phải chứa chữ hoa",
+    "number": "Phải chứa chữ số",
+    "special": "Phải chứa ký tự đặc biệt"
+  },
+  "codeValidation": {
+    "length": "Mã phải có đúng 6 chữ số",
+    "digits": "Mã phải có 6 chữ số"
+  },
+  "monthsShort": ["Th1", "Th2", "Th3", "Th4", "Th5", "Th6", "Th7", "Th8", "Th9", "Th10", "Th11", "Th12"],
+  "weekdaysShort": ["CN", "T2", "T3", "T4", "T5", "T6", "T7"],
+  "weekdaysMin": ["CN", "T2", "T3", "T4", "T5", "T6", "T7"],
+  "weekdaysNarrow": ["C", "2", "3", "4", "5", "6", "7"],
+  "dateFormat": {
+    "browserAuto": "Dùng ngôn ngữ trình duyệt (tự động nhận dạng: {sample})",
+    "custom": "Tùy chỉnh..."
+  },
+  "emailInvalid": "Vui lòng nhập địa chỉ email hợp lệ",
+  "noSectionAccess": "Bạn không có quyền truy cập vào mục đó.",
+  "undoRedo": {
+    "nothingToUndo": "Không có gì để hoàn tác",
+    "cannotUndo": "Không thể hoàn tác hành động này",
+    "undoFailed": "Hoàn tác thất bại",
+    "nothingToRedo": "Không có gì để làm lại",
+    "cannotRedo": "Không thể làm lại hành động này",
+    "redoFailed": "Làm lại thất bại"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "title": "Đối Soát Tài Khoản",
+  "subtitle": "Khớp hồ sơ của bạn với sao kê ngân hàng",
+  "subtitleActive": "Đang đối soát: {name}",
+  "setup": {"title": "Bắt Đầu Đối Soát","intro": "Đối soát tài khoản của bạn với sao kê ngân hàng để đảm bảo hồ sơ của bạn khớp.","accountLabel": "Tài khoản","accountPlaceholder": "Chọn tài khoản...","statementDateLabel": "Ngày sao kê","statementBalanceLabel": "Số dư cuối kỳ sao kê","start": "Bắt Đầu Đối Soát"},
+  "summary": {"statementBalance": "Số dư sao kê","reconciledBalance": "Số dư đã đối soát","selected": "Đã chọn ({count})","difference": "Chênh lệch"},
+  "list": {"heading": "Giao Dịch Chưa Đối Soát ({count})","selectAll": "Chọn Tất Cả","selectNone": "Bỏ Chọn Tất Cả","empty": "Không tìm thấy giao dịch chưa đối soát nào cho kỳ này.","colSelect": "Chọn","colDate": "Ngày","colPayee": "Người nhận thanh toán","colCategory": "Danh mục","colAmount": "Số tiền","colStatus": "Trạng thái","finish": "Hoàn Tất Đối Soát"},
+  "status": {"cleared": "Đã thanh toán","unreconciled": "Chưa đối soát","void": "Hủy","reconciled": "Đã đối soát"},
+  "complete": {"title": "Đối Soát Hoàn Tất","message": "Tài khoản của bạn đã được đối soát thành công tính đến ngày {date}.","existingPayment": "Tài khoản này có thanh toán định kỳ, <b>{name}</b>. Bạn có muốn cập nhật lần tiếp theo với số dư đã đối soát là <b>{amount}</b> không?","updatePayment": "Cập Nhật Thanh Toán Tiếp Theo","noPayment": "Không tìm thấy thanh toán định kỳ nào cho tài khoản này. Bạn có muốn tạo một thanh toán cho số dư đã đối soát là <b>{amount}</b> không?","createPayment": "Tạo Thanh Toán Định Kỳ","backToAccounts": "Quay Lại Tài Khoản","reconcileAnother": "Đối Soát Tài Khoản Khác"},
+  "toasts": {"loadAccountsFailed": "Không thể tải tài khoản","fillAllFields": "Vui lòng điền vào tất cả các trường","loadDataFailed": "Không thể tải dữ liệu đối soát","differenceRequired": "Chênh lệch phải là {amount} để hoàn tất đối soát","noneSelected": "Không có giao dịch nào được chọn để đối soát","success": "{count, plural, one {Đã đối soát thành công # giao dịch} other {Đã đối soát thành công # giao dịch}}","reconcileFailed": "Không thể đối soát giao dịch"}
+}

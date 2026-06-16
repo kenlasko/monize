@@ -1,0 +1,66 @@
+{
+  "page": {
+    "title": "Faturalar ve Mevduatlar",
+    "subtitle": "Tekrarlayan işlemlerinizi ve zamanlanmış ödemelerinizi yönetin",
+    "newButton": "+ Yeni Zamanlama",
+    "summaryActiveBills": "Aktif Faturalar",
+    "summaryActiveDeposits": "Aktif Mevduatlar",
+    "summaryMonthlyNet": "Aylık Net",
+    "summaryDueNow": "Şimdi Vadesi Gelen",
+    "loadingText": "Zamanlanmış işlemler yükleniyor...",
+    "chartUnavailable": "Grafik geçici olarak kullanılamıyor"
+  },
+  "viewTabs": {
+    "list": "Liste",
+    "calendar": "Takvim",
+    "filterAll": "Tümü ({count})",
+    "filterBills": "Faturalar ({count})",
+    "filterDeposits": "Mevduatlar ({count})",
+    "todayButton": "Bugün"
+  },
+  "form": {
+    "titleNew": "Yeni Zamanlanmış İşlem",
+    "titleEdit": "Zamanlanmış İşlemi Düzenle"
+  },
+  "overrideConfirm": {
+    "title": "Mevcut Geçersiz Kılmalar Bulundu",
+    "message": "Bu zamanlanmış işlemde özel değişikliklerle {count, plural, one {# ayrı tekrar} other {# ayrı tekrar}} var.",
+    "question": "Temel şablonu güncellerken bu değişikliklerle ne yapmak istersiniz?",
+    "keepButton": "Değişiklikleri Tut",
+    "deleteButton": "Tüm Değişiklikleri Sil"
+  },
+  "forecast": {
+    "title": "Nakit Akışı Tahmini",
+    "scheduledCount": "{count, plural, one {# zamanlanmış işlem} other {# zamanlanmış işlem}} tahmin içinde",
+    "tooltipTransactions": "İşlemler:",
+    "tooltipMore": "+{count} daha",
+    "noData": "Görüntülenecek veri yok",
+    "noAccounts": "Hesap bulunamadı",
+    "noScheduled": "Zamanlanmış işlem yok",
+    "noMatchingAccount": "Zamanlanmış işlemleri olan bir hesap seçin",
+    "noUpcoming": "Bu dönemde yaklaşan işlem yok - mevcut bakiye gösteriliyor",
+    "summaryStarting": "Başlangıç",
+    "summaryEnding": "Bitiş",
+    "summaryLowest": "En Düşük",
+    "summaryMinBalance": "Min Bakiye",
+    "allAccounts": "Tüm Hesaplar"
+  },
+  "calendar": {
+    "days": {
+      "sun": "Paz",
+      "mon": "Pzt",
+      "tue": "Sal",
+      "wed": "Çar",
+      "thu": "Per",
+      "fri": "Cum",
+      "sat": "Cmt"
+    },
+    "more": "+{count} daha"
+  },
+  "toasts": {
+    "overridesDeleted": "Geçersiz kılmalar silindi",
+    "notFound": "Zamanlanmış ödeme bulunamadı",
+    "loadFailed": "Zamanlanmış işlemler yüklenemedi",
+    "overridesDeleteFailed": "Geçersiz kılmalar silinemedi"
+  }
+}

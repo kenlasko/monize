@@ -1,0 +1,91 @@
+{
+  "page": {
+    "title": "Finansal Kurumlar",
+    "subtitle": "Hesaplarınızın bağlı olduğu bankalar ve aracı kurumlar",
+    "newInstitution": "Yeni Kurum",
+    "loading": "Kurumlar yükleniyor...",
+    "searchPlaceholder": "Kurum ara...",
+    "modalTitleNew": "Yeni Kurum",
+    "modalTitleEdit": "Kurumu Düzenle",
+    "summary": {
+      "total": "Toplam Kurum",
+      "withLogo": "Logolu",
+      "linkedAccounts": "Bağlı Hesaplar"
+    },
+    "toasts": {
+      "loadFailed": "Kurumlar yüklenemedi",
+      "created": "Kurum oluşturuldu",
+      "updated": "Kurum güncellendi",
+      "createFailed": "Kurum oluşturulamadı",
+      "updateFailed": "Kurum güncellenemedi"
+    }
+  },
+  "list": {
+    "empty": "Henüz kurum yok. Hesaplarınızı gruplandırmaya başlamak için bir tane oluşturun.",
+    "columns": {
+      "name": "Ad",
+      "website": "Web Sitesi",
+      "country": "Ülke",
+      "accounts": "Hesaplar",
+      "actions": "İşlemler"
+    },
+    "accountCount": "{count, plural, =0 {Hesap yok} one {# hesap} other {# hesap}}",
+    "density": {
+      "title": "Satır yoğunluğunu değiştir",
+      "normal": "Normal",
+      "compact": "Kompakt",
+      "dense": "Yoğun"
+    },
+    "statusFilter": {
+      "all": "Tümü",
+      "active": "Aktif",
+      "closed": "Kapalı"
+    },
+    "actions": {
+      "manageAccounts": "Hesaplar"
+    },
+    "deleteTitle": "Kurumu Sil",
+    "deleteMessage": "\"{name}\" silinsin mi? Kuruma atanmış hesapların ataması kaldırılacak ancak silinmeyecek.",
+    "deleting": "Siliniyor...",
+    "deleted": "\"{name}\" silindi",
+    "deleteFailed": "Kurum silinemedi"
+  },
+  "form": {
+    "nameLabel": "Ad",
+    "websiteLabel": "Web Sitesi",
+    "websitePlaceholder": "ör. td.com",
+    "countryLabel": "Ülke (isteğe bağlı)",
+    "countryPlaceholder": "2 harfli kod, ör. TR",
+    "logoHint": "Marka logosu web sitesinden otomatik olarak alınır.",
+    "submitCreate": "Kurum Oluştur",
+    "submitUpdate": "Değişiklikleri Kaydet"
+  },
+  "validation": {
+    "nameRequired": "Ad gereklidir",
+    "websiteRequired": "Web sitesi gereklidir",
+    "websiteInvalid": "Geçerli bir web sitesi girin (ör. td.com)",
+    "countryInvalid": "2 harfli ülke kodu kullanın"
+  },
+  "accountsManager": {
+    "title": "{name} Kurumundaki Hesaplar",
+    "addLabel": "Hesap ekle",
+    "addPlaceholder": "Eklenecek hesabı seçin...",
+    "noneToAdd": "Tüm hesaplarınız zaten bir kuruma atanmış.",
+    "loading": "Hesaplar yükleniyor...",
+    "empty": "Bu kuruma henüz hiçbir hesap atanmamış.",
+    "noneMatch": "Seçilen filtreyle eşleşen hesap yok.",
+    "filter": {
+      "all": "Tümü",
+      "active": "Aktif",
+      "closed": "Kapalı"
+    },
+    "remove": "Kaldır",
+    "viewTransactions": "Bu hesabın işlemlerini görüntüle",
+    "added": "Hesap eklendi",
+    "removed": "Hesap kaldırıldı",
+    "addFailed": "Hesap eklenemedi",
+    "removeFailed": "Hesap kaldırılamadı",
+    "loadFailed": "Hesaplar yüklenemedi",
+    "done": "Tamam"
+  }
+}

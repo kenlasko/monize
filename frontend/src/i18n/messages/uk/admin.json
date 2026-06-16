@@ -1,0 +1,108 @@
+{
+  "createUserModal": {
+    "title": "Додати користувача",
+    "description": "Створіть новий обліковий запис. Ви можете надіслати запрошення електронною поштою, встановити пароль самостійно або згенерувати тимчасовий для передачі.",
+    "emailLabel": "Електронна пошта",
+    "emailPlaceholder": "user@example.com",
+    "firstNameLabel": "Ім'я (необов'язково)",
+    "firstNamePlaceholder": "Ім'я",
+    "lastNameLabel": "Прізвище (необов'язково)",
+    "lastNamePlaceholder": "Прізвище",
+    "roleLabel": "Роль",
+    "roleUser": "Користувач",
+    "roleAdmin": "Адміністратор",
+    "credentialsLegend": "Облікові дані",
+    "inviteLabel": "Надіслати запрошення на пошту для встановлення пароля",
+    "inviteSmtpNote": "Потрібне налаштування SMTP.",
+    "setPasswordLabel": "Встановити пароль зараз",
+    "tempPasswordLabel": "Згенерувати тимчасовий пароль",
+    "tempPasswordNote": "Відображається один раз після створення. Користувач повинен змінити його при першому вході.",
+    "passwordFieldLabel": "Пароль",
+    "passwordPlaceholder": "Встановити пароль",
+    "createButton": "Створити користувача",
+    "validation": {
+      "invalidPassword": "Невірний пароль."
+    },
+    "toasts": {
+      "createFailed": "Не вдалося створити користувача"
+    }
+  },
+  "resetPasswordModal": {
+    "defaultTitle": "Пароль успішно скинуто",
+    "defaultDescription": "Для {userName} встановлено тимчасовий пароль.",
+    "temporaryPasswordLabel": "Тимчасовий пароль",
+    "copy": "Копіювати",
+    "copied": "Скопійовано",
+    "notShownAgain": "Цей пароль більше не буде відображатися.",
+    "mustChangeOnLogin": "Користувач буде зобов'язаний змінити пароль при наступному вході.",
+    "toasts": {
+      "copied": "Пароль скопійовано до буфера обміну",
+      "copyFailed": "Не вдалося скопіювати до буфера обміну"
+    }
+  },
+  "userTable": {
+    "colUser": "Користувач",
+    "colRole": "Роль",
+    "colProvider": "Провайдер",
+    "colStatus": "Статус",
+    "colLastLogin": "Останній вхід",
+    "colActions": "Дії",
+    "youSuffix": "(ви)",
+    "noEmail": "Немає пошти",
+    "unknown": "Невідомо",
+    "never": "Ніколи",
+    "providerSso": "SSO",
+    "providerLocal": "Локальний",
+    "roleAdmin": "Адміністратор",
+    "roleUser": "Користувач",
+    "statusActive": "Активний",
+    "statusDisabled": "Вимкнений",
+    "clickToDisable": "Натисніть, щоб вимкнути",
+    "clickToEnable": "Натисніть, щоб увімкнути",
+    "resetPassword": "Скинути пароль",
+    "noUsers": "Користувачів не знайдено."
+  },
+  "usersPage": {
+    "title": "Управління користувачами",
+    "userCount": "{count, plural, one {# користувач} other {# користувачів}}",
+    "newUser": "+ Новий користувач",
+    "loadingUsers": "Завантаження користувачів...",
+    "toasts": {
+      "inviteSent": "Запрошення надіслано на {email}",
+      "userCreated": "{name} створено",
+      "userUpgraded": "{name} оновлено до повного облікового запису",
+      "roleChanged": "{name} тепер є {role}",
+      "roleAdmin": "адміністратором",
+      "roleUser": "користувачем",
+      "userEnabled": "{name} увімкнено",
+      "userDisabled": "{name} вимкнено",
+      "userDeleted": "{name} видалено",
+      "userDowngraded": "Власні дані {name} видалено; доступ делегата залишається.",
+      "loadFailed": "Не вдалося завантажити користувачів",
+      "deleteFailed": "Не вдалося видалити користувача",
+      "disableFailed": "Не вдалося вимкнути користувача",
+      "resetFailed": "Не вдалося скинути пароль"
+    },
+    "dialogs": {
+      "promoteTitle": "Підвищити користувача?",
+      "demoteTitle": "Знизити користувача?",
+      "promoteMessage": "Ви впевнені, що хочете підвищити {name} до {role}?",
+      "demoteMessage": "Ви впевнені, що хочете знизити {name} до {role}?",
+      "promoteConfirm": "Підвищити до адміністратора",
+      "demoteConfirm": "Знизити до користувача",
+      "disableTitle": "Вимкнути користувача?",
+      "disableMessage": "Ви впевнені, що хочете вимкнути {name}? Вони не зможуть увійти в систему.",
+      "disableConfirm": "Вимкнути користувача",
+      "resetTitle": "Скинути пароль?",
+      "resetMessage": "Буде згенеровано новий тимчасовий пароль для {name}. При наступному вході користувач буде зобов'язаний його змінити.",
+      "resetConfirm": "Скинути пароль",
+      "deleteTitle": "Видалити користувача?",
+      "deleteMessage": "Ви впевнені, що хочете видалити {name}? Це назавжди видалить їхній обліковий запис та всі пов'язані дані. Цю дію неможливо скасувати. Якщо вони є делегатом іншого облікового запису, їхні власні дані буде видалено, але вхід збережено, щоб делегування продовжувало працювати — вони стануть користувачем лише з делегатним доступом.",
+      "deleteConfirm": "Видалити користувача",
+      "tempPasswordTitleCreated": "Користувача створено",
+      "tempPasswordTitleUpgraded": "Обліковий запис оновлено",
+      "tempPasswordDescCreated": "Для {name} згенеровано тимчасовий пароль. Поділіться ним для входу.",
+      "tempPasswordDescUpgraded": "Існуючого спільного користувача оновлено до повного облікового запису. Поділіться цим тимчасовим паролем з {name}."
+    }
+  }
+}

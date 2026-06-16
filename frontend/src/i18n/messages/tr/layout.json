@@ -1,0 +1,119 @@
+{
+  "demoBanner": {
+    "label": "Demo Modu",
+    "message": "Tüm veriler her gün saat 04:00 UTC'de sıfırlanır. Özgürce keşfedin!"
+  },
+  "delegationBanner": {
+    "viewing": "Görüntüleniyor:",
+    "sharedAccount": "Paylaşılan hesap",
+    "yourAccount": "Hesabınız",
+    "switchAccountLabel": "Hesap değiştir",
+    "selfSuffix": "{label} (siz)",
+    "error2fa": "Bu hesap iki faktörlü kimlik doğrulama gerektiriyor. Geçiş yapmadan önce Ayarlar'dan 2FA'yı etkinleştirin.",
+    "errorSwitch": "Hesap değiştirilemedi"
+  },
+  "backendDownBanner": {
+    "connectionBlockedLabel": "Bağlantı Engellendi",
+    "connectionBlockedDetail": "Güvenlik başlıkları düz HTTP üzerindeki istekleri engelliyor.",
+    "connectionLostLabel": "Bağlantı Kesildi",
+    "connectionLostDetail": "Sunucuya ulaşılamıyor. Otomatik olarak yeniden deneniyor...",
+    "httpsHint": "Ortamınızda <code>DISABLE_HTTPS_HEADERS=true</code> ayarlayın veya siteye HTTPS üzerinden erişin."
+  },
+  "httpWarningBanner": {
+    "label": "HTTPS Gerekli",
+    "detail": "Güvenlik başlıkları etkin ancak siteye düz HTTP üzerinden erişiliyor. API istekleri başarısız olabilir.",
+    "httpsHint": "Ortamınızda <code>DISABLE_HTTPS_HEADERS=true</code> ayarlayın veya siteye HTTPS üzerinden erişin.",
+    "dismiss": "Kapat",
+    "dismissAriaLabel": "HTTPS uyarısını kapat"
+  },
+  "updateBanner": {
+    "availableWithVersion": "Monize v{version} mevcut",
+    "availableGeneric": "Monize'nin yeni bir sürümü mevcut",
+    "runningVersion": "(çalışan v{version})",
+    "releaseNotes": "Sürüm notları",
+    "dismiss": "Kapat",
+    "dismissAriaLabel": "Güncelleme bildirimini kapat"
+  },
+  "actionHistory": {
+    "title": "İşlem Geçmişi",
+    "buttonAriaLabel": "İşlem Geçmişi",
+    "closeAriaLabel": "Kapat",
+    "undo": "Geri Al",
+    "redo": "Yeniden Yap",
+    "noRecentActions": "Son işlem yok",
+    "undoneLabel": "Geri Alındı",
+    "nothingToUndo": "Geri alınacak işlem yok",
+    "nothingToRedo": "Yeniden yapılacak işlem yok",
+    "cannotUndoDefault": "Bu işlem geri alınamaz",
+    "cannotRedoDefault": "Bu işlem yeniden yapılamaz",
+    "undoFailed": "Geri alma başarısız",
+    "redoFailed": "Yeniden yapma başarısız",
+    "entityLabels": {
+      "transaction": "İşlem",
+      "transfer": "Transfer",
+      "investment_transaction": "Yatırım",
+      "bulk_transaction": "Toplu",
+      "category": "Kategori",
+      "payee": "Alacaklı",
+      "tag": "Etiket",
+      "account": "Hesap",
+      "scheduled_transaction": "Zamanlanmış",
+      "security": "Menkul Kıymet",
+      "budget": "Bütçe",
+      "custom_report": "Rapor"
+    },
+    "descriptions": {
+      "createdAccount": "\"{name}\" hesabı oluşturuldu",
+      "updatedAccount": "\"{name}\" hesabı güncellendi",
+      "deletedAccount": "\"{name}\" hesabı silindi",
+      "createdBudget": "\"{name}\" bütçesi oluşturuldu",
+      "updatedBudget": "\"{name}\" bütçesi güncellendi",
+      "deletedBudget": "\"{name}\" bütçesi silindi",
+      "createdCategory": "\"{name}\" kategorisi oluşturuldu",
+      "updatedCategory": "\"{name}\" kategorisi güncellendi",
+      "deletedCategory": "\"{name}\" kategorisi silindi",
+      "createdInstitution": "\"{name}\" kurumu oluşturuldu",
+      "updatedInstitution": "\"{name}\" kurumu güncellendi",
+      "deletedInstitution": "\"{name}\" kurumu silindi",
+      "createdInvestmentReport": "\"{name}\" yatırım raporu oluşturuldu",
+      "updatedInvestmentReport": "\"{name}\" yatırım raporu güncellendi",
+      "deletedInvestmentReport": "\"{name}\" yatırım raporu silindi",
+      "createdPayee": "\"{name}\" alacaklısı oluşturuldu",
+      "updatedPayee": "\"{name}\" alacaklısı güncellendi",
+      "deletedPayee": "\"{name}\" alacaklısı silindi",
+      "createdReport": "\"{name}\" raporu oluşturuldu",
+      "updatedReport": "\"{name}\" raporu güncellendi",
+      "deletedReport": "\"{name}\" raporu silindi",
+      "createdScheduledTransaction": "\"{name}\" zamanlanmış işlemi oluşturuldu",
+      "updatedScheduledTransaction": "\"{name}\" zamanlanmış işlemi güncellendi",
+      "deletedScheduledTransaction": "\"{name}\" zamanlanmış işlemi silindi",
+      "createdSecurity": "\"{symbol}\" menkul kıymeti oluşturuldu",
+      "updatedSecurity": "\"{symbol}\" menkul kıymeti güncellendi",
+      "deletedSecurity": "\"{symbol}\" menkul kıymeti silindi",
+      "createdTag": "\"{name}\" etiketi oluşturuldu",
+      "updatedTag": "\"{name}\" etiketi güncellendi",
+      "deletedTag": "\"{name}\" etiketi silindi",
+      "createdTransaction": "{payee} {amount} işlemi oluşturuldu",
+      "updatedTransaction": "{payee} {amount} işlemi güncellendi",
+      "deletedTransaction": "{payee} {amount} işlemi silindi",
+      "createdTransfer": "{from}'dan {to}'ya {amount} transfer oluşturuldu",
+      "createdInvestmentTransaction": "{action} işlemi oluşturuldu",
+      "updatedInvestmentTransaction": "{action} işlemi güncellendi",
+      "deletedInvestmentTransaction": "{action} işlemi silindi",
+      "transferredSecurity": "Menkul kıymet hesaplar arasında transfer edildi",
+      "updatedSecurityTransfer": "Menkul kıymet transferi güncellendi"
+    },
+    "timeAgo": {
+      "justNow": "şimdi",
+      "minutes": "{count} dk önce",
+      "hours": "{count} sa önce",
+      "days": "{count} gün önce"
+    },
+    "undonePrefix": "Geri Alındı: {description}",
+    "redonePrefix": "Yeniden Yapıldı: {description}"
+  },
+  "pageHeader": {
+    "helpAriaLabel": "Bu bölümde yardım için Monize wiki'yi açın",
+    "helpTooltip": "Bu bölümde yardım için Monize wiki'yi açın"
+  }
+}

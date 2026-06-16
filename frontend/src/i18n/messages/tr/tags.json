@@ -1,0 +1,80 @@
+{
+  "page": {
+    "title": "Etiketler",
+    "subtitle": "İşlemlerinizi özel etiketlerle işaretleyin",
+    "newButton": "+ Yeni Etiket",
+    "summary": {
+      "totalTags": "Toplam Etiket",
+      "tagsWithColour": "Renkli Etiketler",
+      "tagsWithIcon": "Simgeli Etiketler"
+    },
+    "search": {
+      "placeholder": "Etiket ara..."
+    },
+    "loading": "Etiketler yükleniyor...",
+    "emptyState": {
+      "title": "Henüz etiket yok",
+      "body": "Etiketler işlemlerinizi işaretlemenize ve filtrelemenize yardımcı olur. Başlamak için ilk etiketinizi oluşturun.",
+      "createButton": "İlk Etiketinizi Oluşturun"
+    },
+    "modal": {
+      "newTitle": "Yeni Etiket",
+      "editTitle": "Etiketi Düzenle"
+    },
+    "totalCount": "{count, plural, one {# etiket} other {# etiket}}",
+    "delete": {
+      "title": "Etiketi Sil",
+      "withTransactionsMessage": "\"{name}\" silinsin mi? Bu etiket {count, plural, one {# işlemde} other {# işlemde}} kullanılmaktadır. Etiket bu işlemlerden kaldırılacaktır.",
+      "simpleMessage": "\"{name}\" silinsin mi? Bu işlem geri alınamaz."
+    },
+    "toasts": {
+      "created": "Etiket başarıyla oluşturuldu",
+      "updated": "Etiket başarıyla güncellendi",
+      "deleted": "Etiket başarıyla silindi",
+      "loadFailed": "Etiketler yüklenemedi",
+      "createFailed": "Etiket oluşturulamadı",
+      "updateFailed": "Etiket güncellenemedi",
+      "deleteFailed": "Etiket silinemedi"
+    }
+  },
+  "list": {
+    "empty": {
+      "title": "Etiket bulunamadı",
+      "body": "Mevcut aramanızla eşleşen etiket yok."
+    },
+    "density": {
+      "title": "Satır yoğunluğunu değiştir",
+      "normal": "Normal",
+      "compact": "Kompakt",
+      "dense": "Yoğun"
+    },
+    "header": {
+      "name": "Ad",
+      "icon": "Simge",
+      "transactions": "İşlemler",
+      "actions": "İşlemler"
+    }
+  },
+  "form": {
+    "nameLabel": "Etiket Adı",
+    "colourLabel": "Renk",
+    "iconLabel": "Simge",
+    "noColour": "Renk yok",
+    "submitCreate": "Etiket Oluştur",
+    "submitUpdate": "Etiketi Güncelle",
+    "colours": {
+      "red": "Kırmızı",
+      "orange": "Turuncu",
+      "yellow": "Sarı",
+      "green": "Yeşil",
+      "teal": "Deniz yeşili",
+      "blue": "Mavi",
+      "purple": "Mor",
+      "pink": "Pembe",
+      "grey": "Gri"
+    }
+  },
+  "validation": {
+    "nameRequired": "Etiket adı gereklidir"
+  }
+}

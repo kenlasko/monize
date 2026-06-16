@@ -1,0 +1,85 @@
+{
+  "page": {
+    "title": "Категорії",
+    "subtitle": "Організуйте свої транзакції за допомогою власних категорій",
+    "newButton": "+ Нова категорія",
+    "searchPlaceholder": "Пошук категорій...",
+    "filterAll": "Всі ({count})",
+    "filterExpenses": "Витрати ({count})",
+    "filterIncome": "Доходи ({count})",
+    "modalTitleNew": "Нова категорія",
+    "modalTitleEdit": "Редагувати категорію",
+    "countSingle": "1 категорія",
+    "countPlural": "{count} категорій",
+    "loadingText": "Завантаження категорій...",
+    "summaryTotal": "Всього категорій",
+    "summaryIncome": "Категорії доходів",
+    "summaryExpense": "Категорії витрат",
+    "summaryTopLevel": "Верхнього рівня"
+  },
+  "empty": {
+    "heading": "Ще немає категорій",
+    "description": "Категорії допомагають організувати ваші транзакції. Почніть з імпорту стандартного набору категорій або створіть власні.",
+    "importButton": "Імпортувати стандартні категорії",
+    "createButton": "Створити власні",
+    "hint": "Стандартний набір включає поширені категорії доходів і витрат із підкатегоріями"
+  },
+  "toasts": {
+    "created": "Категорію успішно створено",
+    "updated": "Категорію успішно оновлено",
+    "deleted": "Категорію успішно видалено",
+    "cannotDeleteSystem": "Системні категорії не можна видаляти",
+    "importSuccess": "Успішно імпортовано {count} категорій",
+    "loadFailed": "Не вдалося завантажити категорії",
+    "deleteFailed": "Не вдалося видалити категорію",
+    "createFailed": "Не вдалося створити категорію",
+    "updateFailed": "Не вдалося оновити категорію",
+    "importFailed": "Не вдалося імпортувати стандартні категорії"
+  },
+  "form": {
+    "nameLabel": "Назва категорії",
+    "parentLabel": "Батьківська категорія",
+    "noParent": "Без батьківської (верхнього рівня)",
+    "typeLabel": "Тип",
+    "typeExpense": "Витрата",
+    "typeIncome": "Дохід",
+    "typeInherited": "Тип успадкований від батьківської",
+    "colourLabel": "Колір",
+    "colourInherit": "Успадкувати від батьківської",
+    "colourNone": "Без кольору",
+    "colourInheritedFrom": "Колір успадкований від батьківської ({name})",
+    "descriptionLabel": "Опис (необов'язково)",
+    "submitCreate": "Створити категорію",
+    "submitUpdate": "Оновити категорію"
+  },
+  "list": {
+    "emptyHeading": "Немає категорій",
+    "emptyDescription": "Почніть зі створення нової категорії.",
+    "colName": "Назва",
+    "colType": "Тип",
+    "colCount": "Кількість",
+    "colDescription": "Опис",
+    "colActions": "Дії",
+    "badgeIncome": "Дохід",
+    "badgeExpense": "Витрата",
+    "systemBadge": "(Системна)",
+    "inheritedColorTitle": "Успадкований від батьківської",
+    "viewTransactionsTitle": "Переглянути транзакції в цій категорії",
+    "densityToggleTitle": "Перемкнути щільність рядків",
+    "densityNormal": "Нормальна",
+    "densityCompact": "Компактна",
+    "densityDense": "Щільна"
+  },
+  "deleteDialog": {
+    "title": "Видалити \"{name}\"?",
+    "checkingUsage": "Перевірка використання...",
+    "usedBy": "Ця категорія використовується в {count, plural, one {# елементі} other {# елементах}} (транзакції та/або заплановані рахунки й депозити).",
+    "reassignLabel": "Перепризначити на:",
+    "leaveUncategorized": "Залишити без категорії",
+    "safeToDelete": "Ця категорія не використовується. Її можна безпечно видалити.",
+    "cannotUndo": "Цю дію неможливо скасувати."
+  },
+  "validation": {
+    "nameRequired": "Назва категорії обов'язкова"
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "page": {
+    "title": "請求・入金",
+    "subtitle": "定期取引とスケジュール済み支払いを管理する",
+    "newButton": "+ 新規スケジュール",
+    "summaryActiveBills": "有効な請求",
+    "summaryActiveDeposits": "有効な入金",
+    "summaryMonthlyNet": "月次純額",
+    "summaryDueNow": "今すぐ支払い期限",
+    "loadingText": "スケジュール済み取引を読み込み中...",
+    "chartUnavailable": "チャートは一時的に利用できません"
+  },
+  "viewTabs": {
+    "list": "リスト",
+    "calendar": "カレンダー",
+    "filterAll": "すべて ({count})",
+    "filterBills": "請求 ({count})",
+    "filterDeposits": "入金 ({count})",
+    "todayButton": "今日"
+  },
+  "form": {
+    "titleNew": "新規スケジュール済み取引",
+    "titleEdit": "スケジュール済み取引を編集"
+  },
+  "overrideConfirm": {
+    "title": "既存の上書きが見つかりました",
+    "message": "このスケジュール済み取引には、カスタム変更が加えられた {count, plural, one {# 件の個別発生} other {# 件の個別発生}} があります。",
+    "question": "ベーステンプレートを更新する際、これらの変更をどのように処理しますか？",
+    "keepButton": "変更を保持する",
+    "deleteButton": "すべての変更を削除する"
+  },
+  "forecast": {
+    "title": "キャッシュフロー予測",
+    "scheduledCount": "予測に {count, plural, one {# 件のスケジュール済み取引} other {# 件のスケジュール済み取引}} があります",
+    "tooltipTransactions": "取引：",
+    "tooltipMore": "+{count} 件以上",
+    "noData": "表示するデータがありません",
+    "noAccounts": "勘定科目が見つかりません",
+    "noScheduled": "スケジュール済み取引がありません",
+    "noMatchingAccount": "スケジュール済み取引のある勘定科目を選択してください",
+    "noUpcoming": "この期間に今後の取引がありません - 現在の残高を表示しています",
+    "summaryStarting": "開始",
+    "summaryEnding": "終了",
+    "summaryLowest": "最低",
+    "summaryMinBalance": "最低残高",
+    "allAccounts": "すべての勘定科目"
+  },
+  "calendar": {
+    "days": {
+      "sun": "日",
+      "mon": "月",
+      "tue": "火",
+      "wed": "水",
+      "thu": "木",
+      "fri": "金",
+      "sat": "土"
+    },
+    "more": "+{count} 件以上"
+  },
+  "toasts": {
+    "overridesDeleted": "上書きを削除しました",
+    "notFound": "スケジュール済み支払いが見つかりません",
+    "loadFailed": "スケジュール済み取引の読み込みに失敗しました",
+    "overridesDeleteFailed": "上書きの削除に失敗しました"
+  }
+}

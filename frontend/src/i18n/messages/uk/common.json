@@ -1,0 +1,177 @@
+{
+  "chartFlag": {
+    "dismiss": "Приховати це значення"
+  },
+  "appVersion": {
+    "releaseNotes": "Переглянути нотатки до версії v{version}"
+  },
+  "save": "Зберегти",
+  "cancel": "Скасувати",
+  "delete": "Видалити",
+  "edit": "Редагувати",
+  "close": "Закрити",
+  "actions": {
+    "edit": "Редагувати",
+    "delete": "Видалити",
+    "view": "Переглянути",
+    "duplicate": "Дублювати",
+    "merge": "Об'єднати",
+    "reactivate": "Реактивувати",
+    "reconcile": "Звірити",
+    "post": "Провести",
+    "skip": "Пропустити",
+    "close": "Закрити",
+    "reopen": "Відкрити знову",
+    "scheduleRecurring": "Запланувати як повторювану",
+    "more": "Більше дій"
+  },
+  "loading": "Завантаження...",
+  "pagination": {
+    "showing": "Показано",
+    "of": "з",
+    "firstPage": "Перша сторінка",
+    "lastPage": "Остання сторінка",
+    "previousPage": "Попередня сторінка",
+    "nextPage": "Наступна сторінка",
+    "back10Pages": "На 10 сторінок назад",
+    "forward10Pages": "На 10 сторінок вперед",
+    "enterPageNumber": "Введіть номер сторінки"
+  },
+  "confirmDialog": {
+    "confirm": "Підтвердити"
+  },
+  "unsavedChanges": {
+    "title": "Незбережені зміни",
+    "message": "У вас є незбережені зміни. Що ви хочете зробити?",
+    "discard": "Відхилити"
+  },
+  "exportDropdown": {
+    "export": "Експорт",
+    "exporting": "Експортування...",
+    "exportPdf": "Експортувати PDF",
+    "exportReport": "Експортувати звіт",
+    "failedPdf": "Не вдалося експортувати PDF. Будь ласка, спробуйте ще раз."
+  },
+  "dateRange": {
+    "custom": "Довільний",
+    "startDate": "Дата початку",
+    "endDate": "Дата завершення"
+  },
+  "colorPicker": {
+    "custom": "Довільний:",
+    "apply": "Застосувати"
+  },
+  "chartDownload": {
+    "downloadAsPng": "Завантажити {filename} як PNG",
+    "unableToCapture": "Не вдалося захопити зображення графіка",
+    "failedToDownload": "Не вдалося завантажити графік"
+  },
+  "chartViewToggle": {
+    "pieChart": "Кругова діаграма",
+    "barChart": "Стовпчаста діаграма",
+    "stackedChart": "100% накопичена стовпчаста діаграма",
+    "lineChart": "Лінійна діаграма",
+    "areaChart": "Діаграма площ",
+    "table": "Таблиця"
+  },
+  "formActions": {
+    "cancel": "Скасувати",
+    "save": "Зберегти"
+  },
+  "themeToggle": {
+    "light": "Світла",
+    "dark": "Темна",
+    "system": "Системна",
+    "title": "Тема: {label}. Натисніть, щоб змінити."
+  },
+  "errorPage": {
+    "title": "Щось пішло не так",
+    "description": "Сталася непередбачена помилка. Будь ласка, спробуйте ще раз або зверніться до служби підтримки, якщо проблема не зникне.",
+    "errorId": "Ідентифікатор помилки: {digest}",
+    "tryAgain": "Спробувати знову",
+    "goToDashboard": "Перейти до панелі керування"
+  },
+  "errorBoundary": {
+    "defaultMessage": "Під час відтворення цього компонента сталася помилка."
+  },
+  "calendar": {
+    "clear": "Очистити",
+    "today": "Сьогодні"
+  },
+  "multiSelect": {
+    "search": "Пошук...",
+    "selectAll": "Вибрати все",
+    "clear": "Очистити",
+    "noOptions": "Варіанти не знайдено"
+  },
+  "combobox": {
+    "createOption": "Створити \"{value}\""
+  },
+  "passwordInput": {
+    "show": "Показати введення",
+    "hide": "Приховати введення"
+  },
+  "currencyInput": {
+    "openCalculator": "Відкрити калькулятор",
+    "calculator": "Калькулятор"
+  },
+  "dateInput": {
+    "shortcutsTitle": "Комбінації клавіш",
+    "today": "Сьогодні",
+    "firstDayOfYear": "Перший день року",
+    "lastDayOfYear": "Останній день року",
+    "firstDayOfMonth": "Перший день місяця",
+    "lastDayOfMonth": "Останній день місяця",
+    "nextDay": "Наступний день",
+    "previousDay": "Попередній день",
+    "nextMonth": "Наступний місяць",
+    "previousMonth": "Попередній місяць"
+  },
+  "accountTypes": {
+    "CHEQUING": "Поточний",
+    "SAVINGS": "Ощадний",
+    "CREDIT_CARD": "Кредитна картка",
+    "INVESTMENT": "Інвестиційний",
+    "LOAN": "Кредит",
+    "MORTGAGE": "Іпотека",
+    "CASH": "Готівка",
+    "LINE_OF_CREDIT": "Кредитна лінія",
+    "ASSET": "Актив",
+    "OTHER": "Інше"
+  },
+  "accountFilter": {
+    "allAccounts": "Усі рахунки",
+    "allBut": "Усі, крім {names}"
+  },
+  "passwordRequirements": "Пароль має містити не менше 12 символів, включаючи велику літеру, малу літеру, цифру та спеціальний символ.",
+  "passwordValidation": {
+    "min": "Пароль має містити не менше 12 символів",
+    "max": "Пароль має містити не більше 100 символів",
+    "lowercase": "Має містити малу літеру",
+    "uppercase": "Має містити велику літеру",
+    "number": "Має містити цифру",
+    "special": "Має містити спеціальний символ"
+  },
+  "codeValidation": {
+    "length": "Код має містити рівно 6 цифр",
+    "digits": "Код має складатися з 6 цифр"
+  },
+  "monthsShort": ["Січ", "Лют", "Бер", "Кві", "Тра", "Чер", "Лип", "Сер", "Вер", "Жов", "Лис", "Гру"],
+  "weekdaysShort": ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"],
+  "weekdaysMin": ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"],
+  "weekdaysNarrow": ["Н", "П", "В", "С", "Ч", "П", "С"],
+  "dateFormat": {
+    "browserAuto": "Використовувати локаль браузера (автовизначення: {sample})",
+    "custom": "Довільний..."
+  },
+  "emailInvalid": "Будь ласка, введіть дійсну адресу електронної пошти",
+  "noSectionAccess": "У вас немає доступу до цього розділу.",
+  "undoRedo": {
+    "nothingToUndo": "Немає чого скасовувати",
+    "cannotUndo": "Неможливо скасувати цю дію",
+    "undoFailed": "Скасування не вдалося",
+    "nothingToRedo": "Немає чого повторити",
+    "cannotRedo": "Неможливо повторити цю дію",
+    "redoFailed": "Повторення не вдалося"
+  }
+}

@@ -1,0 +1,548 @@
+{
+  "alerts": {
+    "title": "Uyarılar",
+    "unread": "{count} okunmamış",
+    "markAllRead": "Tümünü okundu işaretle",
+    "loading": "Uyarılar yükleniyor...",
+    "empty": "Uyarı yok",
+    "undo": "Geri Al",
+    "buttonTitle": "Uyarılar",
+    "buttonAriaLabel": "Uyarılar",
+    "dismissAriaLabel": "Uyarıyı kapat",
+    "severity": {
+      "critical": "Kritik",
+      "warning": "Uyarı",
+      "success": "İyi Haber",
+      "info": "Bilgi"
+    }
+  },
+  "summary503020": {
+    "title": "50/30/20 Dağılımı",
+    "groups": {
+      "NEED": "İhtiyaçlar",
+      "WANT": "İstekler",
+      "SAVING": "Tasarruflar"
+    },
+    "target": "Hedef: %{percent}",
+    "budgeted": "Bütçelenen: %{percent} ({amount})"
+  },
+  "categoryForm": {
+    "editTitle": "Düzenle: {name}",
+    "budgetAmount": "Bütçe Tutarı",
+    "rolloverType": "Devir Türü",
+    "rolloverCap": "Devir Üst Sınırı (isteğe bağlı)",
+    "rolloverCapPlaceholder": "Sınır yok",
+    "flexGroup": "Esnek Grup (isteğe bağlı)",
+    "flexGroupPlaceholder": "örn. Eğlence Parası",
+    "categoryGroup": "Kategori Grubu (50/30/20)",
+    "warningAt": "Uyarı Eşiği (%)",
+    "criticalAt": "Kritik Eşik (%)",
+    "notes": "Notlar (isteğe bağlı)",
+    "notesPlaceholder": "Bu kategori bütçesi hakkında notlar",
+    "rolloverOptions": {
+      "NONE": "Yok (her dönem sıfırlanır)",
+      "MONTHLY": "Aylık devir",
+      "QUARTERLY": "Üç aylık devir",
+      "ANNUAL": "Yıllık devir"
+    },
+    "groupOptions": {
+      "none": "Yok",
+      "NEED": "İhtiyaç",
+      "WANT": "İstek",
+      "SAVING": "Tasarruf"
+    },
+    "saving": "Kaydediliyor..."
+  },
+  "categoryList": {
+    "title": "Kategori Bütçeleri",
+    "empty": "Bu bütçede harcama kategorisi yok.",
+    "sort": "Sırala:",
+    "sortAriaLabel": "Kategorileri sırala",
+    "sortAscAriaLabel": "Azalan sırada sırala",
+    "sortDescAriaLabel": "Artan sırada sırala",
+    "sortDescTitle": "Azalan sırada sırala",
+    "sortAscTitle": "Artan sırada sırala",
+    "sortOptions": {
+      "percentUsed": "% Kullanım",
+      "spent": "Harcanan",
+      "remaining": "Kalan",
+      "name": "Ad"
+    }
+  },
+  "categoryRow": {
+    "overPace": "Hız üstünde",
+    "underPace": "Hız altında",
+    "onPace": "Hızda",
+    "rollover": "Devir: {type}",
+    "remaining": "{amount} kaldı",
+    "over": "{amount} aşıldı"
+  },
+  "categoryTrend": {
+    "title": "Kategori Trendleri",
+    "empty": "Henüz kategori trendlerini görüntülemek için yeterli veri yok.",
+    "tableHeaders": {
+      "category": "Kategori",
+      "avgBudget": "Ort. Bütçe",
+      "avgActual": "Ort. Gerçek",
+      "avgVariance": "Ort. Sapma"
+    }
+  },
+  "flexGroups": {
+    "title": "Esnek Gruplar"
+  },
+  "form": {
+    "budgetName": "Bütçe Adı",
+    "description": "Açıklama (isteğe bağlı)",
+    "descriptionPlaceholder": "Bütçe açıklaması",
+    "budgetType": "Bütçe Türü",
+    "strategy": "Strateji",
+    "baseIncome": "Temel Gelir (isteğe bağlı)",
+    "baseIncomePlaceholder": "Beklenen aylık gelir",
+    "active": "Aktif",
+    "saveChanges": "Değişiklikleri Kaydet",
+    "saving": "Kaydediliyor...",
+    "typeOptions": {
+      "MONTHLY": "Aylık",
+      "ANNUAL": "Yıllık",
+      "PAY_PERIOD": "Maaş Dönemi"
+    },
+    "strategyOptions": {
+      "FIXED": "Sabit",
+      "ROLLOVER": "Devir",
+      "ZERO_BASED": "Sıfır Tabanlı",
+      "FIFTY_THIRTY_TWENTY": "50/30/20"
+    }
+  },
+  "healthGauge": {
+    "title": "Sağlık Puanı",
+    "labels": {
+      "excellent": "Mükemmel",
+      "good": "İyi",
+      "needsAttention": "Dikkat Gerektirir",
+      "offTrack": "Raydan Çıktı"
+    }
+  },
+  "heatmap": {
+    "title": "Harcama Isı Haritası - {monthLabel}",
+    "ariaLabel": "Harcama ısı haritası",
+    "less": "Az",
+    "more": "Çok"
+  },
+  "periodDetail": {
+    "summaryCards": {
+      "totalBudgeted": "Toplam Bütçe",
+      "totalSpent": "Toplam Harcanan",
+      "underBudget": "Bütçe Altında",
+      "overBudget": "Bütçe Üstünde",
+      "saved": "tasarruf edildi",
+      "overspent": "fazla harcandı",
+      "income": "Gelir",
+      "savings": "Tasarruf: {amount}"
+    },
+    "rolloverSummary": {
+      "title": "Devir Özeti",
+      "carriedIn": "Devreden:",
+      "carriedOut": "Devredilen:"
+    },
+    "overallUsage": "Genel Bütçe Kullanımı",
+    "expenseCategories": "Harcama Kategorileri",
+    "incomeCategories": "Gelir Kategorileri",
+    "categorySublabel": "{count} kategori",
+    "rolloverBadge": "+{amount} devir",
+    "underBudgetLabel": "{amount} bütçe altında",
+    "overBudgetLabel": "{amount} bütçe üstünde",
+    "carriedForward": "{amount} ileriye taşındı"
+  },
+  "periodSelector": {
+    "label": "Dönem:",
+    "currentPeriod": "Geçerli Dönem",
+    "current": "{label} (Geçerli)",
+    "projected": "{label} (Tahmini)"
+  },
+  "progressBar": {
+    "ariaLabel": "%{percent} kullanıldı",
+    "paceMarkerTitle": "Beklenen hız: %{percent}"
+  },
+  "scenarioPlanner": {
+    "title": "Varsayımsal Senaryo Planlayıcısı",
+    "empty": "Planlamak için harcama kategorisi yok.",
+    "reset": "Sıfırla",
+    "applyChanges": "Değişiklikleri Uygula",
+    "currentBudget": "Mevcut Bütçe",
+    "proposedBudget": "Önerilen Bütçe",
+    "projectedSavings": "Tahmini Tasarruf",
+    "savingsChange": "Tasarruf Değişimi",
+    "original": "Orijinal: {amount}"
+  },
+  "summaryCards": {
+    "totalBudget": "Toplam Bütçe",
+    "spent": "Harcanan",
+    "remaining": "Kalan",
+    "savings": "Tasarruf",
+    "periodEnded": "Dönem sona erdi",
+    "days": "{count} gün",
+    "onTrack": "Yolunda",
+    "overBudget": "Bütçe aşıldı"
+  },
+  "trendChart": {
+    "title": "Bütçe - Gerçek Harcama Trendi",
+    "empty": "Henüz trendleri görüntülemek için yeterli veri yok.",
+    "budgeted": "Bütçelenen",
+    "actual": "Gerçek"
+  },
+  "upcomingBills": {
+    "title": "Yaklaşan Faturalar",
+    "empty": "Bu dönemde vadesi gelen fatura yok.",
+    "more": "+{count} fatura daha",
+    "totalUpcoming": "Toplam yaklaşan",
+    "trulyAvailable": "Gerçek kullanılabilir",
+    "over": " aşıldı"
+  },
+  "velocity": {
+    "title": "Harcama Hızı",
+    "dailyBurnRate": "Günlük harcama hızı",
+    "safeToSpend": "Harcamak için güvenli",
+    "projectedMonthEnd": "Tahmini ay sonu",
+    "budgetTotal": "Toplam bütçe",
+    "billsComing": "Gelen faturalar",
+    "trulyAvailable": "Gerçek kullanılabilir",
+    "over": " aşıldı",
+    "dayProgress": "Gün {elapsed} / {total}",
+    "daysRemaining": "{count} gün kaldı",
+    "paceStatus": {
+      "under": "Bütçe hızının altında",
+      "on_track": "Yolunda",
+      "over": "Bütçe hızının üstünde"
+    }
+  },
+  "wizard": {
+    "steps": {
+      "analyze": "Analiz Et",
+      "categories": "Kategoriler",
+      "configure": "Yapılandır",
+      "review": "İncele"
+    },
+    "ariaLabel": "Sihirbaz adımları",
+    "back": "Geri"
+  },
+  "wizardAnalysis": {
+    "chooseStrategy": "Bütçe Stratejisi Seçin",
+    "analysisPeriod": "Analiz Dönemi",
+    "analysisPeriodHint": "Bütçe tutarları önermek için kaç aylık işlem geçmişini analiz edelim?",
+    "budgetProfile": "Bütçe Profili",
+    "analyzeButton": "Harcamalarımı Analiz Et",
+    "analysisPeriods": {
+      "3": "3 ay",
+      "6": "6 ay",
+      "12": "12 ay"
+    },
+    "strategies": {
+      "FIXED": {
+        "label": "Sabit",
+        "description": "Kategori başına sabit tutarlar belirleyin. Kullanılmayan bütçe her dönem sıfırlanır."
+      },
+      "ROLLOVER": {
+        "label": "Devir",
+        "description": "Kullanılmayan bütçe ileriye taşınır. Kategori başına devir kuralları yapılandırın."
+      },
+      "ZERO_BASED": {
+        "label": "Sıfır Tabanlı",
+        "description": "Gelirin her lirası bir amaca atanır. Gelir eksi giderler sıfıra eşit olmalıdır."
+      },
+      "FIFTY_THIRTY_TWENTY": {
+        "label": "50/30/20",
+        "description": "%50 ihtiyaçlar, %30 istekler, %20 tasarruf. Kategoriler gruba göre etiketlenir."
+      }
+    },
+    "profiles": {
+      "COMFORTABLE": {
+        "label": "Rahat",
+        "description": "75. yüzdelik dilim harcamanıza dayalıdır. Başa çıkma alanı sağlar."
+      },
+      "ON_TRACK": {
+        "label": "Yolunda",
+        "description": "Medyan harcamanıza dayalıdır. Gerçekçi hedefler."
+      },
+      "AGGRESSIVE": {
+        "label": "Agresif",
+        "description": "25. yüzdelik dilime dayalıdır. Daha fazla tasarruf etmek için zorlayıcı hedef."
+      }
+    },
+    "toasts": {
+      "analyzeFailed": "Harcamalar analiz edilemedi"
+    }
+  },
+  "wizardCategories": {
+    "title": "Kategorileri İncele",
+    "noAnalysis": "Analiz verisi yok. Geri dönün ve önce analizi çalıştırın.",
+    "tableHeaders": {
+      "income": "Gelir",
+      "expenses": "Giderler",
+      "transfers": "Transferler / Tasarruf",
+      "trendMedian": "Trend / Medyan",
+      "amount": "Tutar"
+    },
+    "totals": {
+      "totalIncome": "Toplam Gelir",
+      "totalExpenses": "Toplam Giderler",
+      "transfers": "Transferler",
+      "remaining": "Kalan"
+    },
+    "allocation503020": "50/30/20 Dağılımı",
+    "allocationTarget": "(hedef %{percent})",
+    "nextButton": "İleri: Yapılandır",
+    "profiles": {
+      "COMFORTABLE": "Rahat",
+      "ON_TRACK": "Yolunda",
+      "AGGRESSIVE": "Agresif"
+    }
+  },
+  "wizardStrategy": {
+    "title": "Bütçenizi Yapılandırın",
+    "sections": {
+      "budgetDetails": "Bütçe Detayları",
+      "income": "Gelir",
+      "rolloverRules": "Devir Kuralları",
+      "alertThresholds": "Uyarı Eşikleri",
+      "flexGroups": "Esnek Gruplar",
+      "excludedAccounts": "Hariç Tutulan Hesaplar"
+    },
+    "budgetNameLabel": "Bütçe Adı",
+    "budgetNameRequired": "Bütçe adı zorunludur",
+    "budgetTypeLabel": "Bütçe Türü",
+    "startDateLabel": "Başlangıç Tarihi",
+    "startDateRequired": "Başlangıç tarihi zorunludur",
+    "strategyPrefix": "Strateji: {strategy}",
+    "strategyNotSelected": "Seçilmedi",
+    "strategyDescriptions": {
+      "FIXED": "Kategori başına tutarlar belirleyin. Harcanmayan bütçe her dönem sıfırlanır.",
+      "ROLLOVER": "Harcanmayan bütçe, kategori başına devir kurallarına göre ileriye taşınır.",
+      "ZERO_BASED": "Gelirin her lirası atanır. Gelir eksi giderler sıfıra eşit olmalıdır.",
+      "FIFTY_THIRTY_TWENTY": "Kategoriler İhtiyaçlar (%50), İstekler (%30), Tasarruf (%20) olarak gruplandırılır."
+    },
+    "linkBudgetToIncome": "Bütçeyi gelire bağla",
+    "linkBudgetToIncomeHint": "Kategori tutarları temel gelirinizin yüzdesi haline gelir",
+    "baseMonthlyIncome": "Temel Aylık Gelir",
+    "estimatedFromAnalysis": "Analizden tahmin: {amount}/ay",
+    "defaultRolloverType": "Varsayılan Devir Türü",
+    "rolloverHint": "Bu, tüm kategoriler için varsayılanı belirler. Bütçeyi oluşturduktan sonra bireysel kategorileri özelleştirebilirsiniz.",
+    "rolloverOptions": {
+      "NONE": "Yok -- Her dönem sıfırlanır",
+      "MONTHLY": "Aylık -- Her ay ileriye taşınır",
+      "QUARTERLY": "Üç Aylık -- Her çeyrekte ileriye taşınır",
+      "ANNUAL": "Yıllık -- Her yıl ileriye taşınır"
+    },
+    "warningAt": "Uyarı Eşiği (%)",
+    "warningHint": "Harcama bütçenin bu %'sine ulaştığında uyarı tetikler",
+    "criticalAt": "Kritik Eşik (%)",
+    "criticalHint": "Harcama bütçenin bu %'sine ulaştığında kritik uyarı tetikler",
+    "flexGroupsHide": "Gizle",
+    "flexGroupsConfigure": "Yapılandır",
+    "flexGroupsHint": "İlgili harcama kategorilerini birlikte gruplandırın. Harcama toplam grup olarak takip edilir, her grup içinde esneklik sağlar.",
+    "flexGroupsTableHeaders": {
+      "category": "Kategori",
+      "flexGroup": "Esnek Grup"
+    },
+    "flexGroupPlaceholder": "örn. Eğlence Parası",
+    "excludedAccountsHint": "Hariç tutulan hesaplardan yapılan işlemler bütçe toplamlarınıza sayılmaz.",
+    "excludedCount": "{count} {count, plural, one {hesap} other {hesap}} hariç tutuldu",
+    "categoriesAndTransfers": "{categories} kategori ve {transfers} transfer seçildi",
+    "budgetTypeOptions": {
+      "MONTHLY": "Aylık",
+      "ANNUAL": "Yıllık",
+      "PAY_PERIOD": "Maaş Dönemi"
+    },
+    "nextButton": "İleri: İncele"
+  },
+  "wizardReview": {
+    "title": "Bütçenizi İnceleyin",
+    "fields": {
+      "name": "Ad",
+      "type": "Tür",
+      "strategy": "Strateji",
+      "startDate": "Başlangıç Tarihi",
+      "rollover": "Devir",
+      "alerts": "Uyarılar",
+      "incomeLinked": "Gelire Bağlı",
+      "excludedAccounts": "Hariç Tutulan Hesaplar"
+    },
+    "rolloverOff": "Kapalı",
+    "alertsValue": "Uyarı %{warn} / Kritik %{critical}",
+    "accountCount": "{count} {count, plural, one {hesap} other {hesap}}",
+    "strategyNotSelected": "Seçilmedi",
+    "summaryCards": {
+      "estIncome": "Tahmini Gelir",
+      "totalExpenses": "Toplam Giderler",
+      "transfers": "Transferler",
+      "remaining": "Kalan"
+    },
+    "tableHeaders": {
+      "category": "Kategori",
+      "amount": "Tutar",
+      "type": "Tür"
+    },
+    "categoryTypes": {
+      "income": "Gelir",
+      "expense": "Gider",
+      "transfer": "Transfer"
+    },
+    "createButton": "Bütçe Oluştur",
+    "categoryCount": "{count} kategori",
+    "accountsCount": "{count} hesap",
+    "toasts": {
+      "created": "Bütçe başarıyla oluşturuldu",
+      "failed": "Bütçe oluşturulamadı"
+    }
+  },
+  "zeroBasedBar": {
+    "title": "Sıfır Tabanlı Atama",
+    "fullyAssigned": "Tam olarak atandı",
+    "overAssigned": "Fazla atandı",
+    "underAssigned": "Eksik atandı",
+    "assigned": "Atanan: {assigned} / {income}",
+    "unassigned": "{amount} atanmamış",
+    "over": "{amount} fazla"
+  },
+  "strategyCard": {
+    "pros": "Artılar",
+    "cons": "Eksiler",
+    "bestFor": "En iyisi: ",
+    "strategies": {
+      "FIXED": {
+        "title": "Sabit Bütçe",
+        "description": "Her dönem her kategori için sabit bir harcama limiti belirleyin. Harcanmayan para, ileriye taşınmak yerine dönem sonunda sıfırlanır.",
+        "pros": [
+          "Kurulumu ve anlaşılması kolay",
+          "Kategori başına net harcama limitleri",
+          "Öngörülebilir aylık bütçeleme",
+          "Bütçelemeye yeni başlayanlar için iyi başlangıç noktası"
+        ],
+        "cons": [
+          "Harcanmayan para aktarılmaz",
+          "Kategoriler arası esneklik yok",
+          "Düzensiz giderlere uyum sağlamaz",
+          "Harcama kalıpları değişirse katı hissettirilebilir"
+        ],
+        "bestFor": "Net limitlerle ve öngörülebilir harcama kalıplarıyla basit bütçeleme isteyen kişiler."
+      },
+      "ROLLOVER": {
+        "title": "Devir Bütçesi",
+        "description": "Kullanılmayan bütçe, kategori başına devir kurallarına göre sonraki döneme aktarılır. Düzensiz veya mevsimlik harcamalar için rezerv oluşturun.",
+        "pros": [
+          "Düzensiz giderler için tasarruf biriktirir",
+          "Kategorilerde az harcamayı ödüllendirir",
+          "Kategori başına esnek devir kuralları",
+          "Mevsimlik değişkenlikleri doğal olarak ele alır"
+        ],
+        "cons": [
+          "Başlangıçta yapılandırması daha karmaşık",
+          "Birikmiş bakiyelerin izlenmesi gerekir",
+          "Üst sınırlar çok yüksekse fazla harcamayı gizleyebilir",
+          "Devir kurallarının periyodik incelenmesi gerekir"
+        ],
+        "bestFor": "Araç bakımı, yıllık abonelikler veya mevsimlik maliyetler gibi düzensiz giderleri olan ve kademeli olarak tasarruf etmek isteyen kişiler."
+      },
+      "ZERO_BASED": {
+        "title": "Sıfır Tabanlı Bütçe",
+        "description": "Gelirin her lirası belirli bir amaca atanır. Gelirinizin tüm bütçelenen tutarlardan çıkarılması sıfıra eşit olmalıdır, böylece hiçbir para tahsis edilmeden kalmaz.",
+        "pros": [
+          "Her lira üzerinde maksimum kontrol",
+          "Bilinçli harcama kararları almayı zorlar",
+          "İsrafçı harcamaları hızlı ortaya çıkarır",
+          "Borç ödeme hedefleri için çok etkili"
+        ],
+        "cons": [
+          "Gelirin önceden tam olarak bilinmesini gerektirir",
+          "Her dönem bakımı zaman alır",
+          "Değişken gelir için daha az esnek",
+          "Bazı kullanıcılar için kısıtlayıcı hissettirilebilir"
+        ],
+        "bestFor": "Finansları üzerinde tam kontrol isteyen ve her dönem her liranın nereye gittiğini planlamaya istekli kişiler."
+      },
+      "FIFTY_THIRTY_TWENTY": {
+        "title": "50/30/20 Bütçesi",
+        "description": "Geliri üç gruba bölen dengeli bir yaklaşım: İhtiyaçlar için %50 (konut, market, faturalar), istekler için %30 (yemek, eğlence) ve tasarruf ile borç ödemesi için %20.",
+        "pros": [
+          "Hatırlaması ve uygulaması kolay",
+          "Yerleşik tasarruf dağılımı",
+          "Harcamaya dengeli yaklaşım",
+          "Her grup içinde esnek"
+        ],
+        "cons": [
+          "Yüksek yaşam maliyeti olan bölgelere uymayabilir",
+          "Sabit oranlar tüm durumlara uymayabilir",
+          "Kategori düzeyinde daha az ayrıntılı kontrol",
+          "Her gideri gruba göre kategorize etmeyi gerektirir"
+        ],
+        "bestFor": "Her kategoriyi ayrı ayrı takip etmeden dengeli, pratik bir yaklaşım isteyen kişiler."
+      }
+    }
+  },
+  "pages": {
+    "list": {
+      "title": "Bütçeler",
+      "subtitle": "Bütçelerinizi yönetin ve harcamalarınızı takip edin",
+      "newBudget": "+ Yeni Bütçe",
+      "empty": {
+        "title": "Henüz bütçe yok",
+        "description": "Harcama geçmişinizi analiz ederek ilk bütçenizi oluşturun. Sihirbaz, işlemlerinize göre gerçekçi tutarlar önerecektir.",
+        "cta": "İlk Bütçenizi Oluşturun"
+      },
+      "card": {
+        "active": "Aktif",
+        "inactive": "Pasif",
+        "categories": "{count} kategori",
+        "started": "{date} tarihinde başladı"
+      }
+    },
+    "create": {
+      "title": "Bütçe Oluştur",
+      "subtitle": "Harcamalarınızı analiz edin ve kişiselleştirilmiş bir bütçe oluşturun"
+    },
+    "detail": {
+      "backToBudgets": "Bütçelere Dön",
+      "notFound": "Bütçe bulunamadı",
+      "delete": {
+        "title": "Bütçeyi Sil",
+        "message": "\"{name}\" adlı bütçeyi silmek istediğinizden emin misiniz? Bu işlem dönemler ve uyarılar dahil tüm bütçe verilerini kaldıracaktır. Bu işlem geri alınamaz.",
+        "confirm": "Sil",
+        "cancel": "İptal"
+      },
+      "toasts": {
+        "deleted": "Bütçe silindi",
+        "deleteFailed": "Bütçe silinemedi",
+        "loadFailed": "Bütçe yüklenemedi",
+        "periodFailed": "Dönem yüklenemedi"
+      }
+    },
+    "edit": {
+      "subtitlePrefix": "Düzenle: ",
+      "subtitle": "Bütçe ayarlarını ve kategori tahsislerini güncelleyin",
+      "backToDashboard": "Gösterge Paneline Dön",
+      "budgetSettings": "Bütçe Ayarları",
+      "categoryAllocations": "Kategori Tahsisleri",
+      "income": "Gelir",
+      "expensesWithCount": "Giderler ({count})",
+      "resetsEachPeriod": "Her dönem sıfırlanır",
+      "percentUsed": "%{percent} kullanıldı",
+      "rolloverType": "Devir: {type}",
+      "editCategoryTitle": "{name} Düzenle",
+      "toasts": {
+        "updated": "Bütçe güncellendi",
+        "updateFailed": "Bütçe güncellenemedi",
+        "categoryUpdated": "Kategori güncellendi",
+        "categoryFailed": "Kategori güncellenemedi",
+        "loadFailed": "Bütçe yüklenemedi"
+      }
+    }
+  },
+  "validation": {
+    "nameRequired": "Bütçe adı zorunludur",
+    "nameMax": "Bütçe adı en fazla 255 karakter olabilir",
+    "descriptionMax": "Açıklama en fazla 1000 karakter olabilir"
+  },
+  "categoryValidation": {
+    "amountMin": "Tutar 0 veya daha büyük olmalıdır",
+    "mustBeNumber": "Sayı olmalıdır"
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "page": {
+    "title": "ИИ-ассистент",
+    "subtitle": "Задавайте вопросы о своих финансах на естественном языке"
+  },
+  "chat": {
+    "conversationSaved": "Разговор сохранён в вашем браузере",
+    "clearConversation": "Очистить разговор",
+    "inputPlaceholder": "Спросите о своих финансах...",
+    "inputPlaceholderDisabled": "Поставщик ИИ не настроен",
+    "keyboardHint": "Нажмите Enter для отправки, Shift+Enter для новой строки",
+    "cancelTitle": "Отмена",
+    "sendTitle": "Отправить"
+  },
+  "notConfigured": {
+    "heading": "ИИ не настроен",
+    "message": "Поставщик ИИ не настроен. Чтобы воспользоваться ИИ-ассистентом, пожалуйста, {link} в настройках.",
+    "linkText": "настройте поставщика ИИ"
+  },
+  "suggestedQueries": {
+    "heading": "Спросите о своих финансах",
+    "description": "Я могу ответить на вопросы о ваших расходах, доходах, остатках по счетам, чистой стоимости и многом другом.",
+    "monthlySpendingLabel": "Ежемесячные расходы",
+    "monthlySpendingQuery": "Сколько я потратил в прошлом месяце?",
+    "topCategoriesLabel": "Основные категории",
+    "topCategoriesQuery": "Каковы мои 5 основных категорий расходов в этом году?",
+    "accountBalancesLabel": "Остатки по счетам",
+    "accountBalancesQuery": "Каковы мои текущие остатки по счетам?",
+    "compareMonthsLabel": "Сравнение месяцев",
+    "compareMonthsQuery": "Сравните мои расходы в этом месяце и в прошлом",
+    "netWorthTrendLabel": "Динамика чистой стоимости",
+    "netWorthTrendQuery": "Покажите динамику моей чистой стоимости за последние 12 месяцев",
+    "savingsRateLabel": "Норма сбережений",
+    "savingsRateQuery": "Сколько я сэкономил в этом году по сравнению с доходом?"
+  },
+  "toolDetails": {
+    "inputLabel": "Ввод",
+    "resultLabel": "Результат",
+    "toolFailedAriaLabel": "Инструмент завершился с ошибкой",
+    "toolSucceededAriaLabel": "Инструмент успешно выполнен"
+  },
+  "table": {
+    "downloadTitle": "Скачать таблицу в формате CSV",
+    "downloadAriaLabel": "Скачать таблицу в формате CSV",
+    "noDataError": "Нет данных таблицы для экспорта"
+  },
+  "chart": {
+    "downloadTitle": "Скачать диаграмму в формате PNG",
+    "downloadAriaLabel": "Скачать диаграмму в формате PNG",
+    "captureError": "Не удалось захватить изображение диаграммы",
+    "downloadError": "Не удалось скачать диаграмму"
+  }
+}

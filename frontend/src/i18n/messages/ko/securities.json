@@ -1,0 +1,304 @@
+{
+  "priceRefresh": {
+    "noneToUpdate": "업데이트할 유가증권이 없습니다",
+    "updated": "{count, plural, one {# 개의 유가증권 가격이 업데이트되었습니다} other {# 개의 유가증권 가격이 업데이트되었습니다}}",
+    "partialFailure": "가격 업데이트: {updated}개 성공, {failed}개 실패{symbols}",
+    "failed": "가격 갱신에 실패했습니다"
+  },
+  "page": {
+    "title": "유가증권",
+    "subtitle": "주식, ETF, 뮤추얼 펀드 및 기타 유가증권을 관리하세요",
+    "newSecurity": "+ 새 유가증권",
+    "searchPlaceholder": "종목 코드 또는 이름으로 검색...",
+    "statusAll": "전체 ({count})",
+    "statusActive": "활성 ({count})",
+    "statusInactive": "비활성 ({count})",
+    "modalTitleEdit": "유가증권 편집",
+    "modalTitleNew": "새 유가증권",
+    "loading": "유가증권 불러오는 중...",
+    "count": "{count, plural, one {# 개의 유가증권} other {# 개의 유가증권}}",
+    "toasts": {
+      "loadFailed": "유가증권 로드에 실패했습니다",
+      "updated": "유가증권이 성공적으로 업데이트되었습니다",
+      "created": "유가증권이 성공적으로 생성되었습니다",
+      "deactivated": "유가증권이 비활성화되었습니다",
+      "activated": "유가증권이 활성화되었습니다",
+      "statusFailed": "유가증권 상태 업데이트에 실패했습니다",
+      "deleted": "유가증권 \"{symbol}\"이(가) 삭제되었습니다",
+      "deleteFailed": "유가증권 삭제에 실패했습니다",
+      "favouriteFailed": "즐겨찾기 업데이트에 실패했습니다",
+      "updateFailed": "유가증권 업데이트에 실패했습니다",
+      "createFailed": "유가증권 생성에 실패했습니다"
+    },
+    "deleteConfirm": {
+      "title": "유가증권 삭제",
+      "message": "\"{symbol}\"을(를) 삭제하시겠습니까? 모든 가격 이력도 함께 삭제됩니다. 이 작업은 취소할 수 없습니다.",
+      "confirmLabel": "삭제",
+      "cancelLabel": "취소"
+    }
+  },
+  "summary": {
+    "totalSecurities": "총 유가증권",
+    "types": "유형",
+    "exchanges": "거래소",
+    "currencies": "통화"
+  },
+  "list": {
+    "columns": {
+      "symbol": "종목 코드",
+      "name": "이름",
+      "type": "유형",
+      "shares": "주식수",
+      "exchange": "거래소",
+      "currency": "통화",
+      "provider": "제공자",
+      "source": "출처",
+      "status": "상태",
+      "actions": "작업",
+      "favourite": "즐겨찾기"
+    },
+    "density": {
+      "normal": "보통",
+      "compact": "컴팩트",
+      "dense": "조밀",
+      "toggle": "행 밀도 전환"
+    },
+    "statusBadge": {
+      "active": "활성",
+      "activeShort": "활성",
+      "inactive": "비활성",
+      "inactiveShort": "비활"
+    },
+    "providerTitle": {
+      "override": "유가증권별 제공자 재정의",
+      "inherited": "기본 시세 제공자 설정에서 상속됨"
+    },
+    "columnTitles": {
+      "shares": "모든 계정에 걸쳐 현재 보유 중인 주식수",
+      "source": "가장 최근 가격의 출처"
+    },
+    "actions": {
+      "history": "이력",
+      "prices": "가격",
+      "edit": "편집",
+      "deactivate": "비활성화",
+      "activate": "활성화",
+      "delete": "삭제"
+    },
+    "favouriteButton": {
+      "add": "즐겨찾기에 추가",
+      "remove": "즐겨찾기에서 제거"
+    },
+    "empty": {
+      "title": "유가증권 없음",
+      "subtitle": "첫 번째 유가증권을 추가하여 시작하세요."
+    },
+    "contextMenu": {
+      "transactionHistory": "거래 이력",
+      "viewPrices": "가격 보기",
+      "editSecurity": "유가증권 편집",
+      "deactivate": "비활성화",
+      "activate": "활성화",
+      "delete": "삭제"
+    }
+  },
+  "typeLabels": {
+    "STOCK": "주식",
+    "ETF": "ETF",
+    "MUTUAL_FUND": "뮤추얼 펀드",
+    "BOND": "채권",
+    "OPTION": "옵션",
+    "CRYPTO": "암호화폐",
+    "OTHER": "기타",
+    "STOCK_short": "주식",
+    "ETF_short": "ETF",
+    "MUTUAL_FUND_short": "MF",
+    "BOND_short": "채권",
+    "OPTION_short": "옵션",
+    "CRYPTO_short": "암호",
+    "OTHER_short": "기타"
+  },
+  "form": {
+    "symbolLabel": "종목 코드",
+    "nameLabel": "이름",
+    "typeLabel": "유형",
+    "exchangeLabel": "거래소",
+    "currencyLabel": "통화",
+    "quoteProviderLabel": "시세 제공자",
+    "msnIdLabel": "MSN 금융 상품 ID (고급)",
+    "lookupProviderAriaLabel": "제공자 조회",
+    "lookupButton": "조회",
+    "revertButton": "되돌리기",
+    "clearButton": "지우기",
+    "revertTitle": "원래 값으로 되돌리기",
+    "clearTitle": "모든 필드 지우기",
+    "favouriteLabel": "즐겨찾기",
+    "addToFavourites": "즐겨찾기에 추가",
+    "removeFromFavourites": "즐겨찾기에서 제거",
+    "submitCreate": "유가증권 생성",
+    "submitUpdate": "유가증권 업데이트",
+    "toasts": {
+      "lookupTooShort": "조회하려면 종목 코드 또는 이름을 2자 이상 입력하세요",
+      "notFound": "\"{query}\"에 대한 유가증권을 찾을 수 없습니다",
+      "found": "찾음: {details}",
+      "lookupFailed": "조회에 실패했습니다 - 다시 시도하세요"
+    },
+    "msnNotConfigured": "MSN이 기본 시세 제공자로 선택되어 있지만 서버에 MSN_API_KEY가 구성되어 있지 않습니다. 관리자가 환경 변수를 설정하고 백엔드를 재시작할 때까지 MSN 시세가 실패합니다.",
+    "providers": {
+      "auto": "자동",
+      "yahoo": "Yahoo",
+      "msn": "MSN"
+    },
+    "types": {
+      "select": "유형 선택...",
+      "stock": "주식",
+      "etf": "ETF",
+      "mutualFund": "뮤추얼 펀드",
+      "bond": "채권",
+      "option": "옵션",
+      "crypto": "암호화폐",
+      "other": "기타"
+    },
+    "quoteProviderUseDefault": "기본값 사용 ({provider})",
+    "symbolPlaceholder": "예: AAPL, XEQT, BTC",
+    "namePlaceholder": "예: Apple Inc., iShares Core Equity ETF",
+    "exchangeSearchPlaceholder": "거래소 검색...",
+    "exchangePlaceholder": "티커에서 자동 확인됩니다. 틀린 경우에만 재정의하세요"
+  },
+  "priceForm": {
+    "dateLabel": "날짜",
+    "closePriceLabel": "종가",
+    "openPriceLabel": "시가",
+    "highPriceLabel": "고가",
+    "lowPriceLabel": "저가",
+    "volumeLabel": "거래량",
+    "optionalPlaceholder": "선택사항",
+    "submitCreate": "가격 추가",
+    "submitUpdate": "가격 업데이트"
+  },
+  "priceHistory": {
+    "title": "{symbol} - 가격 이력",
+    "forceUpdateButton": "가격 강제 업데이트",
+    "forceUpdateTitle": "이 유가증권을 보유한 전체 기간의 과거 가격을 다시 가져옵니다",
+    "addPriceButton": "+ 가격 추가",
+    "addPriceSection": "가격 추가",
+    "editPriceSection": "가격 편집",
+    "loading": "가격 불러오는 중...",
+    "empty": "사용 가능한 가격 이력이 없습니다",
+    "columns": {
+      "date": "날짜",
+      "close": "종가",
+      "open": "시가",
+      "high": "고가",
+      "low": "저가",
+      "volume": "거래량",
+      "source": "출처",
+      "actions": "작업"
+    },
+    "toasts": {
+      "added": "가격이 추가되었습니다",
+      "updated": "가격이 업데이트되었습니다",
+      "deleted": "가격이 삭제되었습니다",
+      "loadFailed": "가격 이력 로드에 실패했습니다",
+      "addFailed": "가격 추가에 실패했습니다",
+      "updateFailed": "가격 업데이트에 실패했습니다",
+      "deleteFailed": "가격 삭제에 실패했습니다",
+      "updatedCount": "{count, plural, one {{symbol}의 # 개 가격이 업데이트되었습니다} other {{symbol}의 # 개 가격이 업데이트되었습니다}}",
+      "noPricesFound": "{symbol}의 가격을 찾을 수 없습니다",
+      "updatePricesFailed": "{symbol}의 가격 업데이트에 실패했습니다",
+      "updateFetchFailed": "가격 업데이트에 실패했습니다"
+    },
+    "closeButton": "닫기",
+    "deleteConfirm": {
+      "title": "가격 삭제",
+      "confirmLabel": "삭제"
+    }
+  },
+  "transactionHistory": {
+    "inactiveBadge": "비활성",
+    "currentShares": "현재 주식수",
+    "accountLabel": "계정",
+    "allAccounts": "모든 계정 ({shares})",
+    "accountClosed": "{name} (마감됨)",
+    "addTransaction": "+ 거래 추가",
+    "loading": "거래 불러오는 중...",
+    "emptyAll": "이 유가증권에 대한 거래가 없습니다.",
+    "emptyAccount": "선택한 계정에서 이 유가증권에 대한 거래가 없습니다.",
+    "editTransactionTitle": "거래 편집",
+    "columns": {
+      "date": "날짜",
+      "account": "계정",
+      "action": "작업",
+      "quantity": "수량",
+      "runningTotal": "누적 합계",
+      "price": "가격",
+      "amount": "금액",
+      "actionsLabel": "작업"
+    },
+    "actionLabels": {
+      "BUY": "매수",
+      "SELL": "매도",
+      "DIVIDEND": "배당금",
+      "INTEREST": "이자",
+      "CAPITAL_GAIN": "자본이득",
+      "SPLIT": "분할",
+      "TRANSFER_IN": "입고",
+      "TRANSFER_OUT": "출고",
+      "REINVEST": "재투자",
+      "ADD_SHARES": "주식수 추가",
+      "REMOVE_SHARES": "주식수 제거"
+    },
+    "toasts": {
+      "loadHistoryFailed": "이력 로드에 실패했습니다",
+      "loadTransactionFailed": "거래 로드에 실패했습니다"
+    }
+  },
+  "shareAdjustment": {
+    "heading": "주식수 조정",
+    "accountLabel": "계정",
+    "accountPlaceholder": "계정 선택...",
+    "actionLabel": "작업",
+    "quantityLabel": "수량 (주식수)",
+    "dateLabel": "날짜",
+    "descriptionLabel": "설명 (선택사항)",
+    "descriptionPlaceholder": "예: 잔여 주식 정리",
+    "saving": "저장 중...",
+    "submitButton": "조정 기록",
+    "accountClosed": "{name} (마감됨)",
+    "adjustmentActions": {
+      "REMOVE_SHARES": "주식수 제거",
+      "ADD_SHARES": "주식수 추가"
+    },
+    "toasts": {
+      "selectAccount": "계정을 선택하세요",
+      "quantityRequired": "수량은 0보다 커야 합니다",
+      "recorded": "조정이 기록되었습니다",
+      "failed": "조정 기록에 실패했습니다"
+    }
+  },
+  "lookupPicker": {
+    "title": "\"{query}\"에 대한 여러 결과",
+    "subtitle": "사용할 유가증권을 선택하세요.",
+    "columns": {
+      "symbol": "종목 코드",
+      "name": "이름",
+      "exchange": "거래소",
+      "currency": "통화",
+      "type": "유형",
+      "source": "출처"
+    },
+    "selectButton": "선택"
+  },
+  "validation": {
+    "symbolRequired": "종목 코드는 필수입니다",
+    "symbolMax": "종목 코드는 20자 이하여야 합니다",
+    "nameRequired": "이름은 필수입니다",
+    "nameMax": "이름은 255자 이하여야 합니다",
+    "currencyRequired": "통화는 필수입니다"
+  },
+  "priceValidation": {
+    "dateRequired": "날짜는 필수입니다",
+    "priceRequired": "가격은 필수입니다",
+    "priceNonNegative": "가격은 음수가 아닌 숫자여야 합니다"
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "demoBanner": {
+    "label": "Демо-режим",
+    "message": "Все данные сбрасываются ежедневно в 4:00 UTC. Исследуйте свободно!"
+  },
+  "delegationBanner": {
+    "viewing": "Просматривается:",
+    "sharedAccount": "Общий счёт",
+    "yourAccount": "Ваш счёт",
+    "switchAccountLabel": "Переключить счёт",
+    "selfSuffix": "{label} (вы)",
+    "error2fa": "Для этого счёта требуется двухфакторная аутентификация. Настройте 2FA в разделе Настройки перед переключением.",
+    "errorSwitch": "Не удалось переключить счёт"
+  },
+  "backendDownBanner": {
+    "connectionBlockedLabel": "Соединение заблокировано",
+    "connectionBlockedDetail": "Заголовки безопасности блокируют запросы по незащищённому HTTP.",
+    "connectionLostLabel": "Соединение потеряно",
+    "connectionLostDetail": "Не удаётся достичь сервера. Повторное подключение...",
+    "httpsHint": "Установите <code>DISABLE_HTTPS_HEADERS=true</code> в вашей среде или откройте сайт по HTTPS."
+  },
+  "httpWarningBanner": {
+    "label": "Требуется HTTPS",
+    "detail": "Заголовки безопасности активны, но сайт открыт по незащищённому HTTP. Запросы к API могут не работать.",
+    "httpsHint": "Установите <code>DISABLE_HTTPS_HEADERS=true</code> в вашей среде или откройте сайт по HTTPS.",
+    "dismiss": "Закрыть",
+    "dismissAriaLabel": "Закрыть предупреждение HTTPS"
+  },
+  "updateBanner": {
+    "availableWithVersion": "Доступна Monize v{version}",
+    "availableGeneric": "Доступна новая версия Monize",
+    "runningVersion": "(текущая v{version})",
+    "releaseNotes": "Примечания к выпуску",
+    "dismiss": "Закрыть",
+    "dismissAriaLabel": "Закрыть уведомление об обновлении"
+  },
+  "actionHistory": {
+    "title": "История действий",
+    "buttonAriaLabel": "История действий",
+    "closeAriaLabel": "Закрыть",
+    "undo": "Отменить",
+    "redo": "Повторить",
+    "noRecentActions": "Нет недавних действий",
+    "undoneLabel": "Отменено",
+    "nothingToUndo": "Нечего отменять",
+    "nothingToRedo": "Нечего повторять",
+    "cannotUndoDefault": "Невозможно отменить это действие",
+    "cannotRedoDefault": "Невозможно повторить это действие",
+    "undoFailed": "Ошибка при отмене",
+    "redoFailed": "Ошибка при повторе",
+    "entityLabels": {
+      "transaction": "Проводка",
+      "transfer": "Перевод",
+      "investment_transaction": "Инвестиция",
+      "bulk_transaction": "Массовая операция",
+      "category": "Категория",
+      "payee": "Получатель",
+      "tag": "Тег",
+      "account": "Счёт",
+      "scheduled_transaction": "Запланированная",
+      "security": "Ценная бумага",
+      "budget": "Бюджет",
+      "custom_report": "Отчёт"
+    },
+    "descriptions": {
+      "createdAccount": "Создан счёт \"{name}\"",
+      "updatedAccount": "Обновлён счёт \"{name}\"",
+      "deletedAccount": "Удалён счёт \"{name}\"",
+      "createdBudget": "Создан бюджет \"{name}\"",
+      "updatedBudget": "Обновлён бюджет \"{name}\"",
+      "deletedBudget": "Удалён бюджет \"{name}\"",
+      "createdCategory": "Создана категория \"{name}\"",
+      "updatedCategory": "Обновлена категория \"{name}\"",
+      "deletedCategory": "Удалена категория \"{name}\"",
+      "createdInstitution": "Создано учреждение \"{name}\"",
+      "updatedInstitution": "Обновлено учреждение \"{name}\"",
+      "deletedInstitution": "Удалено учреждение \"{name}\"",
+      "createdInvestmentReport": "Создан инвестиционный отчёт \"{name}\"",
+      "updatedInvestmentReport": "Обновлён инвестиционный отчёт \"{name}\"",
+      "deletedInvestmentReport": "Удалён инвестиционный отчёт \"{name}\"",
+      "createdPayee": "Создан получатель \"{name}\"",
+      "updatedPayee": "Обновлён получатель \"{name}\"",
+      "deletedPayee": "Удалён получатель \"{name}\"",
+      "createdReport": "Создан отчёт \"{name}\"",
+      "updatedReport": "Обновлён отчёт \"{name}\"",
+      "deletedReport": "Удалён отчёт \"{name}\"",
+      "createdScheduledTransaction": "Создана запланированная проводка \"{name}\"",
+      "updatedScheduledTransaction": "Обновлена запланированная проводка \"{name}\"",
+      "deletedScheduledTransaction": "Удалена запланированная проводка \"{name}\"",
+      "createdSecurity": "Создана ценная бумага \"{symbol}\"",
+      "updatedSecurity": "Обновлена ценная бумага \"{symbol}\"",
+      "deletedSecurity": "Удалена ценная бумага \"{symbol}\"",
+      "createdTag": "Создан тег \"{name}\"",
+      "updatedTag": "Обновлён тег \"{name}\"",
+      "deletedTag": "Удалён тег \"{name}\"",
+      "createdTransaction": "Создана проводка {payee} {amount}",
+      "updatedTransaction": "Обновлена проводка {payee} {amount}",
+      "deletedTransaction": "Удалена проводка {payee} {amount}",
+      "createdTransfer": "Создан перевод {amount} из {from} в {to}",
+      "createdInvestmentTransaction": "Создана проводка {action}",
+      "updatedInvestmentTransaction": "Обновлена проводка {action}",
+      "deletedInvestmentTransaction": "Удалена проводка {action}",
+      "transferredSecurity": "Ценная бумага перенесена между счетами",
+      "updatedSecurityTransfer": "Обновлён перевод ценной бумаги"
+    },
+    "timeAgo": {
+      "justNow": "только что",
+      "minutes": "{count} мин. назад",
+      "hours": "{count} ч. назад",
+      "days": "{count} дн. назад"
+    },
+    "undonePrefix": "Отменено: {description}",
+    "redonePrefix": "Повторено: {description}"
+  },
+  "pageHeader": {
+    "helpAriaLabel": "Открыть вики Monize для получения справки по этому разделу",
+    "helpTooltip": "Открыть вики Monize для получения справки по этому разделу"
+  }
+}

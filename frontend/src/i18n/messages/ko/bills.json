@@ -1,0 +1,66 @@
+{
+  "page": {
+    "title": "청구서 및 입금",
+    "subtitle": "반복 거래 및 예정된 결제를 관리하세요",
+    "newButton": "+ 새 일정",
+    "summaryActiveBills": "활성 청구서",
+    "summaryActiveDeposits": "활성 입금",
+    "summaryMonthlyNet": "월 순액",
+    "summaryDueNow": "현재 만기",
+    "loadingText": "예정된 거래를 불러오는 중...",
+    "chartUnavailable": "차트를 일시적으로 사용할 수 없습니다"
+  },
+  "viewTabs": {
+    "list": "목록",
+    "calendar": "달력",
+    "filterAll": "전체 ({count})",
+    "filterBills": "청구서 ({count})",
+    "filterDeposits": "입금 ({count})",
+    "todayButton": "오늘"
+  },
+  "form": {
+    "titleNew": "새 예정 거래",
+    "titleEdit": "예정 거래 편집"
+  },
+  "overrideConfirm": {
+    "title": "기존 재정의 발견",
+    "message": "이 예정 거래에는 사용자 정의 수정이 적용된 {count, plural, one {# 개별 발생} other {# 개별 발생}}이 있습니다.",
+    "question": "기본 템플릿을 업데이트할 때 이 수정 사항을 어떻게 처리하시겠습니까?",
+    "keepButton": "수정 사항 유지",
+    "deleteButton": "모든 수정 사항 삭제"
+  },
+  "forecast": {
+    "title": "현금 흐름 예측",
+    "scheduledCount": "예측에 {count, plural, one {# 예정 거래} other {# 예정 거래}} 포함",
+    "tooltipTransactions": "거래:",
+    "tooltipMore": "+{count}개 더",
+    "noData": "표시할 데이터가 없습니다",
+    "noAccounts": "계정을 찾을 수 없습니다",
+    "noScheduled": "예정된 거래가 없습니다",
+    "noMatchingAccount": "예정된 거래가 있는 계정을 선택하세요",
+    "noUpcoming": "이 기간에 예정된 거래가 없습니다 - 현재 잔액을 표시합니다",
+    "summaryStarting": "시작",
+    "summaryEnding": "종료",
+    "summaryLowest": "최저",
+    "summaryMinBalance": "최소 잔액",
+    "allAccounts": "모든 계정"
+  },
+  "calendar": {
+    "days": {
+      "sun": "일",
+      "mon": "월",
+      "tue": "화",
+      "wed": "수",
+      "thu": "목",
+      "fri": "금",
+      "sat": "토"
+    },
+    "more": "+{count}개 더"
+  },
+  "toasts": {
+    "overridesDeleted": "재정의가 삭제되었습니다",
+    "notFound": "예정된 결제를 찾을 수 없습니다",
+    "loadFailed": "예정된 거래를 불러오지 못했습니다",
+    "overridesDeleteFailed": "재정의를 삭제하지 못했습니다"
+  }
+}

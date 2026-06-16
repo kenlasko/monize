@@ -1,0 +1,548 @@
+{
+  "alerts": {
+    "title": "अलर्ट",
+    "unread": "{count} अपठित",
+    "markAllRead": "सभी पढ़ा हुआ चिह्नित करें",
+    "loading": "अलर्ट लोड हो रहे हैं...",
+    "empty": "कोई अलर्ट नहीं",
+    "undo": "पूर्ववत करें",
+    "buttonTitle": "अलर्ट",
+    "buttonAriaLabel": "अलर्ट",
+    "dismissAriaLabel": "अलर्ट खारिज करें",
+    "severity": {
+      "critical": "गंभीर",
+      "warning": "चेतावनी",
+      "success": "अच्छी खबर",
+      "info": "जानकारी"
+    }
+  },
+  "summary503020": {
+    "title": "50/30/20 आवंटन",
+    "groups": {
+      "NEED": "ज़रूरतें",
+      "WANT": "इच्छाएं",
+      "SAVING": "बचत"
+    },
+    "target": "लक्ष्य: {percent}%",
+    "budgeted": "बजटीय: {percent}% ({amount})"
+  },
+  "categoryForm": {
+    "editTitle": "संपादित करें: {name}",
+    "budgetAmount": "बजट राशि",
+    "rolloverType": "रोलओवर प्रकार",
+    "rolloverCap": "रोलओवर सीमा (वैकल्पिक)",
+    "rolloverCapPlaceholder": "कोई सीमा नहीं",
+    "flexGroup": "फ्लेक्स समूह (वैकल्पिक)",
+    "flexGroupPlaceholder": "उदा., मनोरंजन राशि",
+    "categoryGroup": "श्रेणी समूह (50/30/20)",
+    "warningAt": "चेतावनी पर (%)",
+    "criticalAt": "गंभीर पर (%)",
+    "notes": "नोट्स (वैकल्पिक)",
+    "notesPlaceholder": "इस श्रेणी बजट के बारे में नोट्स",
+    "rolloverOptions": {
+      "NONE": "कोई नहीं (प्रत्येक अवधि रीसेट होता है)",
+      "MONTHLY": "मासिक रोलओवर",
+      "QUARTERLY": "त्रैमासिक रोलओवर",
+      "ANNUAL": "वार्षिक रोलओवर"
+    },
+    "groupOptions": {
+      "none": "कोई नहीं",
+      "NEED": "ज़रूरत",
+      "WANT": "इच्छा",
+      "SAVING": "बचत"
+    },
+    "saving": "सहेजा जा रहा है..."
+  },
+  "categoryList": {
+    "title": "श्रेणी बजट",
+    "empty": "इस बजट में कोई व्यय श्रेणी नहीं।",
+    "sort": "क्रमबद्ध करें:",
+    "sortAriaLabel": "श्रेणियां क्रमबद्ध करें",
+    "sortAscAriaLabel": "अवरोही क्रम में क्रमबद्ध करें",
+    "sortDescAriaLabel": "आरोही क्रम में क्रमबद्ध करें",
+    "sortDescTitle": "अवरोही क्रम में क्रमबद्ध करें",
+    "sortAscTitle": "आरोही क्रम में क्रमबद्ध करें",
+    "sortOptions": {
+      "percentUsed": "% उपयोग",
+      "spent": "खर्च",
+      "remaining": "शेष",
+      "name": "नाम"
+    }
+  },
+  "categoryRow": {
+    "overPace": "गति से अधिक",
+    "underPace": "गति से कम",
+    "onPace": "गति पर",
+    "rollover": "रोलओवर: {type}",
+    "remaining": "{amount} शेष",
+    "over": "{amount} अधिक"
+  },
+  "categoryTrend": {
+    "title": "श्रेणी प्रवृत्तियां",
+    "empty": "अभी श्रेणी प्रवृत्तियां प्रदर्शित करने के लिए पर्याप्त डेटा नहीं।",
+    "tableHeaders": {
+      "category": "श्रेणी",
+      "avgBudget": "औसत बजट",
+      "avgActual": "औसत वास्तविक",
+      "avgVariance": "औसत अंतर"
+    }
+  },
+  "flexGroups": {
+    "title": "फ्लेक्स समूह"
+  },
+  "form": {
+    "budgetName": "बजट का नाम",
+    "description": "विवरण (वैकल्पिक)",
+    "descriptionPlaceholder": "बजट विवरण",
+    "budgetType": "बजट प्रकार",
+    "strategy": "रणनीति",
+    "baseIncome": "आधार आय (वैकल्पिक)",
+    "baseIncomePlaceholder": "अपेक्षित मासिक आय",
+    "active": "सक्रिय",
+    "saveChanges": "परिवर्तन सहेजें",
+    "saving": "सहेजा जा रहा है...",
+    "typeOptions": {
+      "MONTHLY": "मासिक",
+      "ANNUAL": "वार्षिक",
+      "PAY_PERIOD": "वेतन अवधि"
+    },
+    "strategyOptions": {
+      "FIXED": "निश्चित",
+      "ROLLOVER": "रोलओवर",
+      "ZERO_BASED": "शून्य-आधारित",
+      "FIFTY_THIRTY_TWENTY": "50/30/20"
+    }
+  },
+  "healthGauge": {
+    "title": "स्वास्थ्य स्कोर",
+    "labels": {
+      "excellent": "उत्कृष्ट",
+      "good": "अच्छा",
+      "needsAttention": "ध्यान चाहिए",
+      "offTrack": "पटरी से उतरा"
+    }
+  },
+  "heatmap": {
+    "title": "खर्च हीटमैप - {monthLabel}",
+    "ariaLabel": "खर्च हीटमैप",
+    "less": "कम",
+    "more": "अधिक"
+  },
+  "periodDetail": {
+    "summaryCards": {
+      "totalBudgeted": "कुल बजटीय",
+      "totalSpent": "कुल खर्च",
+      "underBudget": "बजट से कम",
+      "overBudget": "बजट से अधिक",
+      "saved": "बचाया",
+      "overspent": "अधिक खर्च",
+      "income": "आय",
+      "savings": "बचत: {amount}"
+    },
+    "rolloverSummary": {
+      "title": "रोलओवर सारांश",
+      "carriedIn": "आगे लाया:",
+      "carriedOut": "आगे ले जाया:"
+    },
+    "overallUsage": "समग्र बजट उपयोग",
+    "expenseCategories": "व्यय श्रेणियां",
+    "incomeCategories": "आय श्रेणियां",
+    "categorySublabel": "{count} श्रेणियां",
+    "rolloverBadge": "+{amount} रोलओवर",
+    "underBudgetLabel": "{amount} बजट से कम",
+    "overBudgetLabel": "{amount} बजट से अधिक",
+    "carriedForward": "{amount} आगे ले जाया गया"
+  },
+  "periodSelector": {
+    "label": "अवधि:",
+    "currentPeriod": "वर्तमान अवधि",
+    "current": "{label} (वर्तमान)",
+    "projected": "{label} (अनुमानित)"
+  },
+  "progressBar": {
+    "ariaLabel": "{percent}% उपयोग",
+    "paceMarkerTitle": "अपेक्षित गति: {percent}%"
+  },
+  "scenarioPlanner": {
+    "title": "क्या होगा परिदृश्य योजनाकार",
+    "empty": "योजना बनाने के लिए कोई व्यय श्रेणी नहीं।",
+    "reset": "रीसेट करें",
+    "applyChanges": "परिवर्तन लागू करें",
+    "currentBudget": "वर्तमान बजट",
+    "proposedBudget": "प्रस्तावित बजट",
+    "projectedSavings": "अनुमानित बचत",
+    "savingsChange": "बचत परिवर्तन",
+    "original": "मूल: {amount}"
+  },
+  "summaryCards": {
+    "totalBudget": "कुल बजट",
+    "spent": "खर्च",
+    "remaining": "शेष",
+    "savings": "बचत",
+    "periodEnded": "अवधि समाप्त",
+    "days": "{count} दिन",
+    "onTrack": "पटरी पर",
+    "overBudget": "बजट से अधिक"
+  },
+  "trendChart": {
+    "title": "बजट बनाम वास्तविक प्रवृत्ति",
+    "empty": "अभी प्रवृत्तियां प्रदर्शित करने के लिए पर्याप्त डेटा नहीं।",
+    "budgeted": "बजटीय",
+    "actual": "वास्तविक"
+  },
+  "upcomingBills": {
+    "title": "आगामी बिल",
+    "empty": "इस अवधि में कोई बिल देय नहीं।",
+    "more": "+{count} और बिल",
+    "totalUpcoming": "कुल आगामी",
+    "trulyAvailable": "वास्तव में उपलब्ध",
+    "over": " अधिक"
+  },
+  "velocity": {
+    "title": "खर्च वेग",
+    "dailyBurnRate": "दैनिक व्यय दर",
+    "safeToSpend": "खर्च करने के लिए सुरक्षित",
+    "projectedMonthEnd": "अनुमानित महीने का अंत",
+    "budgetTotal": "बजट कुल",
+    "billsComing": "आने वाले बिल",
+    "trulyAvailable": "वास्तव में उपलब्ध",
+    "over": " अधिक",
+    "dayProgress": "{total} में से दिन {elapsed}",
+    "daysRemaining": "{count} दिन शेष",
+    "paceStatus": {
+      "under": "बजट गति से कम",
+      "on_track": "पटरी पर",
+      "over": "बजट गति से अधिक"
+    }
+  },
+  "wizard": {
+    "steps": {
+      "analyze": "विश्लेषण",
+      "categories": "श्रेणियां",
+      "configure": "कॉन्फ़िगर करें",
+      "review": "समीक्षा"
+    },
+    "ariaLabel": "विज़ार्ड चरण",
+    "back": "वापस"
+  },
+  "wizardAnalysis": {
+    "chooseStrategy": "बजट रणनीति चुनें",
+    "analysisPeriod": "विश्लेषण अवधि",
+    "analysisPeriodHint": "बजट राशि सुझाने के लिए हमें कितने महीनों के लेनदेन इतिहास का विश्लेषण करना चाहिए?",
+    "budgetProfile": "बजट प्रोफ़ाइल",
+    "analyzeButton": "मेरा खर्च विश्लेषण करें",
+    "analysisPeriods": {
+      "3": "3 महीने",
+      "6": "6 महीने",
+      "12": "12 महीने"
+    },
+    "strategies": {
+      "FIXED": {
+        "label": "निश्चित",
+        "description": "प्रति श्रेणी निश्चित राशि सेट करें। अप्रयुक्त बजट प्रत्येक अवधि रीसेट होता है।"
+      },
+      "ROLLOVER": {
+        "label": "रोलओवर",
+        "description": "अप्रयुक्त बजट आगे ले जाया जाता है। प्रति श्रेणी रोलओवर नियम कॉन्फ़िगर करें।"
+      },
+      "ZERO_BASED": {
+        "label": "शून्य-आधारित",
+        "description": "आय का प्रत्येक रुपया एक उद्देश्य को सौंपा जाता है। आय माइनस व्यय शून्य के बराबर।"
+      },
+      "FIFTY_THIRTY_TWENTY": {
+        "label": "50/30/20",
+        "description": "50% ज़रूरतें, 30% इच्छाएं, 20% बचत। श्रेणियां समूह द्वारा टैग की जाती हैं।"
+      }
+    },
+    "profiles": {
+      "COMFORTABLE": {
+        "label": "आरामदायक",
+        "description": "आपके 75वें प्रतिशत खर्च पर आधारित। हेडरूम की अनुमति देता है।"
+      },
+      "ON_TRACK": {
+        "label": "पटरी पर",
+        "description": "आपके मध्यम खर्च पर आधारित। यथार्थवादी लक्ष्य।"
+      },
+      "AGGRESSIVE": {
+        "label": "आक्रामक",
+        "description": "आपके 25वें प्रतिशत पर आधारित। अधिक बचत करने का एक खिंचाव लक्ष्य।"
+      }
+    },
+    "toasts": {
+      "analyzeFailed": "खर्च विश्लेषण करने में विफल"
+    }
+  },
+  "wizardCategories": {
+    "title": "श्रेणियों की समीक्षा करें",
+    "noAnalysis": "कोई विश्लेषण डेटा नहीं। वापस जाएं और पहले विश्लेषण चलाएं।",
+    "tableHeaders": {
+      "income": "आय",
+      "expenses": "व्यय",
+      "transfers": "स्थानांतरण / बचत",
+      "trendMedian": "प्रवृत्ति / मध्यम",
+      "amount": "राशि"
+    },
+    "totals": {
+      "totalIncome": "कुल आय",
+      "totalExpenses": "कुल व्यय",
+      "transfers": "स्थानांतरण",
+      "remaining": "शेष"
+    },
+    "allocation503020": "50/30/20 आवंटन",
+    "allocationTarget": "(लक्ष्य {percent}%)",
+    "nextButton": "अगला: कॉन्फ़िगर करें",
+    "profiles": {
+      "COMFORTABLE": "आरामदायक",
+      "ON_TRACK": "पटरी पर",
+      "AGGRESSIVE": "आक्रामक"
+    }
+  },
+  "wizardStrategy": {
+    "title": "अपना बजट कॉन्फ़िगर करें",
+    "sections": {
+      "budgetDetails": "बजट विवरण",
+      "income": "आय",
+      "rolloverRules": "रोलओवर नियम",
+      "alertThresholds": "अलर्ट सीमाएं",
+      "flexGroups": "फ्लेक्स समूह",
+      "excludedAccounts": "बाहर किए गए खाते"
+    },
+    "budgetNameLabel": "बजट का नाम",
+    "budgetNameRequired": "बजट का नाम आवश्यक है",
+    "budgetTypeLabel": "बजट प्रकार",
+    "startDateLabel": "प्रारंभ तिथि",
+    "startDateRequired": "प्रारंभ तिथि आवश्यक है",
+    "strategyPrefix": "रणनीति: {strategy}",
+    "strategyNotSelected": "चयनित नहीं",
+    "strategyDescriptions": {
+      "FIXED": "प्रति श्रेणी राशि सेट करें। अप्रयुक्त बजट प्रत्येक अवधि रीसेट होता है।",
+      "ROLLOVER": "अप्रयुक्त बजट प्रति-श्रेणी रोलओवर नियमों के आधार पर आगे ले जाया जाता है।",
+      "ZERO_BASED": "आय का प्रत्येक रुपया सौंपा जाता है। आय माइनस व्यय शून्य होना चाहिए।",
+      "FIFTY_THIRTY_TWENTY": "श्रेणियां ज़रूरतें (50%), इच्छाएं (30%), बचत (20%) के रूप में समूहीकृत।"
+    },
+    "linkBudgetToIncome": "बजट को आय से जोड़ें",
+    "linkBudgetToIncomeHint": "श्रेणी राशियां आपकी आधार आय का प्रतिशत बन जाती हैं",
+    "baseMonthlyIncome": "आधार मासिक आय",
+    "estimatedFromAnalysis": "विश्लेषण से अनुमानित: {amount}/माह",
+    "defaultRolloverType": "डिफ़ॉल्ट रोलओवर प्रकार",
+    "rolloverHint": "यह सभी श्रेणियों के लिए डिफ़ॉल्ट सेट करता है। बजट बनाने के बाद आप अलग-अलग श्रेणियों को अनुकूलित कर सकते हैं।",
+    "rolloverOptions": {
+      "NONE": "कोई नहीं -- प्रत्येक अवधि रीसेट होता है",
+      "MONTHLY": "मासिक -- हर महीने आगे ले जाता है",
+      "QUARTERLY": "त्रैमासिक -- हर तिमाही आगे ले जाता है",
+      "ANNUAL": "वार्षिक -- हर साल आगे ले जाता है"
+    },
+    "warningAt": "चेतावनी पर (%)",
+    "warningHint": "जब खर्च बजट के इस % तक पहुंचे तो चेतावनी ट्रिगर करता है",
+    "criticalAt": "गंभीर पर (%)",
+    "criticalHint": "जब खर्च बजट के इस % तक पहुंचे तो गंभीर अलर्ट ट्रिगर करता है",
+    "flexGroupsHide": "छुपाएं",
+    "flexGroupsConfigure": "कॉन्फ़िगर करें",
+    "flexGroupsHint": "संबंधित व्यय श्रेणियों को एक साथ समूहित करें। खर्च समूह कुल के रूप में ट्रैक किया जाता है, प्रत्येक समूह के भीतर लचीलापन देता है।",
+    "flexGroupsTableHeaders": {
+      "category": "श्रेणी",
+      "flexGroup": "फ्लेक्स समूह"
+    },
+    "flexGroupPlaceholder": "उदा. मनोरंजन राशि",
+    "excludedAccountsHint": "बाहर किए गए खातों के लेनदेन आपके बजट कुल में नहीं गिने जाएंगे।",
+    "excludedCount": "{count} {count, plural, one {खाता} other {खाते}} बाहर",
+    "categoriesAndTransfers": "{categories} श्रेणियां और {transfers} स्थानांतरण चयनित",
+    "budgetTypeOptions": {
+      "MONTHLY": "मासिक",
+      "ANNUAL": "वार्षिक",
+      "PAY_PERIOD": "वेतन अवधि"
+    },
+    "nextButton": "अगला: समीक्षा"
+  },
+  "wizardReview": {
+    "title": "अपने बजट की समीक्षा करें",
+    "fields": {
+      "name": "नाम",
+      "type": "प्रकार",
+      "strategy": "रणनीति",
+      "startDate": "प्रारंभ तिथि",
+      "rollover": "रोलओवर",
+      "alerts": "अलर्ट",
+      "incomeLinked": "आय जुड़ी",
+      "excludedAccounts": "बाहर किए गए खाते"
+    },
+    "rolloverOff": "बंद",
+    "alertsValue": "चेतावनी {warn}% / गंभीर {critical}%",
+    "accountCount": "{count} {count, plural, one {खाता} other {खाते}}",
+    "strategyNotSelected": "चयनित नहीं",
+    "summaryCards": {
+      "estIncome": "अनुमानित आय",
+      "totalExpenses": "कुल व्यय",
+      "transfers": "स्थानांतरण",
+      "remaining": "शेष"
+    },
+    "tableHeaders": {
+      "category": "श्रेणी",
+      "amount": "राशि",
+      "type": "प्रकार"
+    },
+    "categoryTypes": {
+      "income": "आय",
+      "expense": "व्यय",
+      "transfer": "स्थानांतरण"
+    },
+    "createButton": "बजट बनाएं",
+    "categoryCount": "{count} श्रेणियां",
+    "accountsCount": "{count} खाते",
+    "toasts": {
+      "created": "बजट सफलतापूर्वक बनाया गया",
+      "failed": "बजट बनाने में विफल"
+    }
+  },
+  "zeroBasedBar": {
+    "title": "शून्य-आधारित आवंटन",
+    "fullyAssigned": "पूरी तरह आवंटित",
+    "overAssigned": "अधिक आवंटित",
+    "underAssigned": "कम आवंटित",
+    "assigned": "आवंटित: {assigned} / {income}",
+    "unassigned": "{amount} अनावंटित",
+    "over": "{amount} अधिक"
+  },
+  "strategyCard": {
+    "pros": "लाभ",
+    "cons": "हानि",
+    "bestFor": "इनके लिए सर्वश्रेष्ठ: ",
+    "strategies": {
+      "FIXED": {
+        "title": "निश्चित बजट",
+        "description": "प्रत्येक अवधि प्रत्येक श्रेणी के लिए एक निश्चित खर्च सीमा सेट करें। अप्रयुक्त राशि अवधि के अंत में आगे ले जाने के बजाय रीसेट हो जाती है।",
+        "pros": [
+          "सेट अप और समझने में आसान",
+          "प्रति श्रेणी स्पष्ट खर्च सीमाएं",
+          "महीने-दर-महीने अनुमानित बजट",
+          "बजट शुरुआती लोगों के लिए अच्छा प्रारंभिक बिंदु"
+        ],
+        "cons": [
+          "अप्रयुक्त राशि आगे नहीं जाती",
+          "श्रेणियों के बीच कोई लचीलापन नहीं",
+          "अनियमित खर्च के अनुकूल नहीं होता",
+          "यदि खर्च पैटर्न भिन्न हो तो कठोर लग सकता है"
+        ],
+        "bestFor": "जो लोग स्पष्ट सीमाओं और अनुमानित खर्च पैटर्न के साथ सीधा बजट चाहते हैं।"
+      },
+      "ROLLOVER": {
+        "title": "रोलओवर बजट",
+        "description": "अप्रयुक्त बजट प्रति-श्रेणी रोलओवर नियमों के आधार पर अगली अवधि में आगे ले जाया जाता है। अनियमित या मौसमी खर्च वाली श्रेणियों के लिए रिज़र्व बनाएं।",
+        "pros": [
+          "अनियमित खर्च के लिए बचत बनाता है",
+          "श्रेणियों में कम खर्च को पुरस्कृत करता है",
+          "प्रति श्रेणी लचीले रोलओवर नियम",
+          "स्वाभाविक रूप से मौसमी भिन्नता को संभालता है"
+        ],
+        "cons": [
+          "शुरुआत में अधिक जटिल कॉन्फ़िगरेशन",
+          "संचित शेष की निगरानी आवश्यक",
+          "यदि कैप बहुत अधिक हों तो अधिक खर्च छुप सकता है",
+          "रोलओवर नियमों की आवधिक समीक्षा आवश्यक"
+        ],
+        "bestFor": "जिन लोगों के अनियमित खर्च हैं जैसे कार रखरखाव, वार्षिक सदस्यता, या मौसमी लागत, जो धीरे-धीरे बचाना चाहते हैं।"
+      },
+      "ZERO_BASED": {
+        "title": "शून्य-आधारित बजट",
+        "description": "आय का प्रत्येक रुपया एक विशिष्ट उद्देश्य को सौंपा जाता है। आपकी आय माइनस सभी बजटीय राशियां शून्य के बराबर होनी चाहिए।",
+        "pros": [
+          "प्रत्येक रुपये पर अधिकतम नियंत्रण",
+          "जानबूझकर खर्च निर्णयों को मजबूर करता है",
+          "बर्बाद खर्च को जल्दी प्रकट करता है",
+          "ऋण चुकाने के लक्ष्यों के लिए अत्यंत प्रभावी"
+        ],
+        "cons": [
+          "अग्रिम में सटीक आय जानना आवश्यक",
+          "प्रत्येक अवधि बनाए रखने में समय लगता है",
+          "परिवर्तनशील आय के लिए कम लचीला",
+          "कुछ उपयोगकर्ताओं के लिए प्रतिबंधक लग सकता है"
+        ],
+        "bestFor": "जो लोग अपने वित्त पर पूर्ण नियंत्रण चाहते हैं और प्रत्येक अवधि प्रत्येक रुपये की योजना बनाने को तैयार हैं।"
+      },
+      "FIFTY_THIRTY_TWENTY": {
+        "title": "50/30/20 बजट",
+        "description": "एक संतुलित दृष्टिकोण जो आय को तीन समूहों में विभाजित करता है: 50% ज़रूरतों के लिए, 30% इच्छाओं के लिए, और 20% बचत और ऋण चुकाने के लिए।",
+        "pros": [
+          "याद रखने और पालन करने में आसान",
+          "अंतर्निहित बचत आवंटन",
+          "खर्च के लिए संतुलित दृष्टिकोण",
+          "प्रत्येक समूह के भीतर लचीला"
+        ],
+        "cons": [
+          "उच्च जीवन-यापन लागत वाले क्षेत्रों में उपयुक्त नहीं हो सकता",
+          "निश्चित अनुपात सभी स्थितियों में फिट नहीं हो सकते",
+          "श्रेणी स्तर पर कम विस्तृत नियंत्रण",
+          "प्रत्येक व्यय को समूह द्वारा वर्गीकृत करना आवश्यक"
+        ],
+        "bestFor": "जो लोग हर श्रेणी को व्यक्तिगत रूप से ट्रैक किए बिना एक संतुलित, नियम-आधारित दृष्टिकोण चाहते हैं।"
+      }
+    }
+  },
+  "pages": {
+    "list": {
+      "title": "बजट",
+      "subtitle": "अपने बजट प्रबंधित करें और खर्च ट्रैक करें",
+      "newBudget": "+ नया बजट",
+      "empty": {
+        "title": "अभी कोई बजट नहीं",
+        "description": "अपने खर्च इतिहास का विश्लेषण करके अपना पहला बजट बनाएं। विज़ार्ड आपके लेनदेन के आधार पर यथार्थवादी राशियां सुझाएगा।",
+        "cta": "अपना पहला बजट बनाएं"
+      },
+      "card": {
+        "active": "सक्रिय",
+        "inactive": "निष्क्रिय",
+        "categories": "{count} श्रेणियां",
+        "started": "{date} को शुरू हुआ"
+      }
+    },
+    "create": {
+      "title": "बजट बनाएं",
+      "subtitle": "अपने खर्च का विश्लेषण करें और एक व्यक्तिगत बजट बनाएं"
+    },
+    "detail": {
+      "backToBudgets": "बजट पर वापस",
+      "notFound": "बजट नहीं मिला",
+      "delete": {
+        "title": "बजट हटाएं",
+        "message": "क्या आप वाकई \"{name}\" को हटाना चाहते हैं? यह अवधियों और अलर्ट सहित सभी बजट डेटा हटा देगा। यह क्रिया वापस नहीं की जा सकती।",
+        "confirm": "हटाएं",
+        "cancel": "रद्द करें"
+      },
+      "toasts": {
+        "deleted": "बजट हटाया गया",
+        "deleteFailed": "बजट हटाने में विफल",
+        "loadFailed": "बजट लोड करने में विफल",
+        "periodFailed": "अवधि लोड करने में विफल"
+      }
+    },
+    "edit": {
+      "subtitlePrefix": "संपादित करें: ",
+      "subtitle": "बजट सेटिंग्स और श्रेणी आवंटन अपडेट करें",
+      "backToDashboard": "डैशबोर्ड पर वापस",
+      "budgetSettings": "बजट सेटिंग्स",
+      "categoryAllocations": "श्रेणी आवंटन",
+      "income": "आय",
+      "expensesWithCount": "व्यय ({count})",
+      "resetsEachPeriod": "प्रत्येक अवधि रीसेट होता है",
+      "percentUsed": "{percent}% उपयोग",
+      "rolloverType": "रोलओवर: {type}",
+      "editCategoryTitle": "{name} संपादित करें",
+      "toasts": {
+        "updated": "बजट अपडेट किया गया",
+        "updateFailed": "बजट अपडेट करने में विफल",
+        "categoryUpdated": "श्रेणी अपडेट की गई",
+        "categoryFailed": "श्रेणी अपडेट करने में विफल",
+        "loadFailed": "बजट लोड करने में विफल"
+      }
+    }
+  },
+  "validation": {
+    "nameRequired": "बजट का नाम आवश्यक है",
+    "nameMax": "बजट का नाम 255 अक्षरों से कम होना चाहिए",
+    "descriptionMax": "विवरण 1000 अक्षरों से कम होना चाहिए"
+  },
+  "categoryValidation": {
+    "amountMin": "राशि 0 या अधिक होनी चाहिए",
+    "mustBeNumber": "एक संख्या होनी चाहिए"
+  }
+}

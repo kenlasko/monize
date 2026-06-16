@@ -1,0 +1,548 @@
+{
+  "alerts": {
+    "title": "Cảnh báo",
+    "unread": "{count} chưa đọc",
+    "markAllRead": "Đánh dấu tất cả đã đọc",
+    "loading": "Đang tải cảnh báo...",
+    "empty": "Không có cảnh báo",
+    "undo": "Hoàn tác",
+    "buttonTitle": "Cảnh báo",
+    "buttonAriaLabel": "Cảnh báo",
+    "dismissAriaLabel": "Bỏ qua cảnh báo",
+    "severity": {
+      "critical": "Nghiêm trọng",
+      "warning": "Cảnh báo",
+      "success": "Tin vui",
+      "info": "Thông tin"
+    }
+  },
+  "summary503020": {
+    "title": "Phân bổ 50/30/20",
+    "groups": {
+      "NEED": "Nhu cầu thiết yếu",
+      "WANT": "Nhu cầu muốn có",
+      "SAVING": "Tiết kiệm"
+    },
+    "target": "Mục tiêu: {percent}%",
+    "budgeted": "Đã lập ngân sách: {percent}% ({amount})"
+  },
+  "categoryForm": {
+    "editTitle": "Chỉnh sửa: {name}",
+    "budgetAmount": "Số tiền ngân sách",
+    "rolloverType": "Loại chuyển tiếp",
+    "rolloverCap": "Giới hạn chuyển tiếp (tùy chọn)",
+    "rolloverCapPlaceholder": "Không giới hạn",
+    "flexGroup": "Nhóm linh hoạt (tùy chọn)",
+    "flexGroupPlaceholder": "ví dụ: Tiền vui chơi",
+    "categoryGroup": "Nhóm danh mục (50/30/20)",
+    "warningAt": "Cảnh báo tại (%)",
+    "criticalAt": "Nghiêm trọng tại (%)",
+    "notes": "Ghi chú (tùy chọn)",
+    "notesPlaceholder": "Ghi chú về ngân sách danh mục này",
+    "rolloverOptions": {
+      "NONE": "Không có (đặt lại mỗi kỳ)",
+      "MONTHLY": "Chuyển tiếp hàng tháng",
+      "QUARTERLY": "Chuyển tiếp hàng quý",
+      "ANNUAL": "Chuyển tiếp hàng năm"
+    },
+    "groupOptions": {
+      "none": "Không có",
+      "NEED": "Nhu cầu thiết yếu",
+      "WANT": "Nhu cầu muốn có",
+      "SAVING": "Tiết kiệm"
+    },
+    "saving": "Đang lưu..."
+  },
+  "categoryList": {
+    "title": "Ngân sách danh mục",
+    "empty": "Không có danh mục chi tiêu trong ngân sách này.",
+    "sort": "Sắp xếp:",
+    "sortAriaLabel": "Sắp xếp danh mục",
+    "sortAscAriaLabel": "Sắp xếp giảm dần",
+    "sortDescAriaLabel": "Sắp xếp tăng dần",
+    "sortDescTitle": "Sắp xếp giảm dần",
+    "sortAscTitle": "Sắp xếp tăng dần",
+    "sortOptions": {
+      "percentUsed": "% Đã dùng",
+      "spent": "Đã chi",
+      "remaining": "Còn lại",
+      "name": "Tên"
+    }
+  },
+  "categoryRow": {
+    "overPace": "Vượt tiến độ",
+    "underPace": "Chậm tiến độ",
+    "onPace": "Đúng tiến độ",
+    "rollover": "Chuyển tiếp: {type}",
+    "remaining": "Còn {amount}",
+    "over": "Vượt {amount}"
+  },
+  "categoryTrend": {
+    "title": "Xu hướng danh mục",
+    "empty": "Chưa đủ dữ liệu để hiển thị xu hướng danh mục.",
+    "tableHeaders": {
+      "category": "Danh mục",
+      "avgBudget": "Ngân sách TB",
+      "avgActual": "Thực tế TB",
+      "avgVariance": "Chênh lệch TB"
+    }
+  },
+  "flexGroups": {
+    "title": "Nhóm linh hoạt"
+  },
+  "form": {
+    "budgetName": "Tên ngân sách",
+    "description": "Mô tả (tùy chọn)",
+    "descriptionPlaceholder": "Mô tả ngân sách",
+    "budgetType": "Loại ngân sách",
+    "strategy": "Chiến lược",
+    "baseIncome": "Thu nhập cơ bản (tùy chọn)",
+    "baseIncomePlaceholder": "Thu nhập hàng tháng dự kiến",
+    "active": "Hoạt động",
+    "saveChanges": "Lưu thay đổi",
+    "saving": "Đang lưu...",
+    "typeOptions": {
+      "MONTHLY": "Hàng tháng",
+      "ANNUAL": "Hàng năm",
+      "PAY_PERIOD": "Kỳ lương"
+    },
+    "strategyOptions": {
+      "FIXED": "Cố định",
+      "ROLLOVER": "Chuyển tiếp",
+      "ZERO_BASED": "Dựa trên zero",
+      "FIFTY_THIRTY_TWENTY": "50/30/20"
+    }
+  },
+  "healthGauge": {
+    "title": "Điểm sức khỏe",
+    "labels": {
+      "excellent": "Xuất sắc",
+      "good": "Tốt",
+      "needsAttention": "Cần chú ý",
+      "offTrack": "Lệch hướng"
+    }
+  },
+  "heatmap": {
+    "title": "Biểu đồ nhiệt chi tiêu - {monthLabel}",
+    "ariaLabel": "Biểu đồ nhiệt chi tiêu",
+    "less": "Ít hơn",
+    "more": "Nhiều hơn"
+  },
+  "periodDetail": {
+    "summaryCards": {
+      "totalBudgeted": "Tổng ngân sách",
+      "totalSpent": "Tổng đã chi",
+      "underBudget": "Dưới ngân sách",
+      "overBudget": "Vượt ngân sách",
+      "saved": "đã tiết kiệm",
+      "overspent": "đã chi quá",
+      "income": "Thu nhập",
+      "savings": "Tiết kiệm: {amount}"
+    },
+    "rolloverSummary": {
+      "title": "Tóm tắt chuyển tiếp",
+      "carriedIn": "Chuyển vào:",
+      "carriedOut": "Chuyển ra:"
+    },
+    "overallUsage": "Tổng mức sử dụng ngân sách",
+    "expenseCategories": "Danh mục chi tiêu",
+    "incomeCategories": "Danh mục thu nhập",
+    "categorySublabel": "{count} danh mục",
+    "rolloverBadge": "+{amount} chuyển tiếp",
+    "underBudgetLabel": "{amount} dưới ngân sách",
+    "overBudgetLabel": "{amount} vượt ngân sách",
+    "carriedForward": "{amount} chuyển sang kỳ sau"
+  },
+  "periodSelector": {
+    "label": "Kỳ:",
+    "currentPeriod": "Kỳ hiện tại",
+    "current": "{label} (Hiện tại)",
+    "projected": "{label} (Dự báo)"
+  },
+  "progressBar": {
+    "ariaLabel": "{percent}% đã dùng",
+    "paceMarkerTitle": "Tiến độ dự kiến: {percent}%"
+  },
+  "scenarioPlanner": {
+    "title": "Trình lập kế hoạch giả định",
+    "empty": "Không có danh mục chi tiêu nào để lập kế hoạch.",
+    "reset": "Đặt lại",
+    "applyChanges": "Áp dụng thay đổi",
+    "currentBudget": "Ngân sách hiện tại",
+    "proposedBudget": "Ngân sách đề xuất",
+    "projectedSavings": "Tiết kiệm dự báo",
+    "savingsChange": "Thay đổi tiết kiệm",
+    "original": "Gốc: {amount}"
+  },
+  "summaryCards": {
+    "totalBudget": "Tổng ngân sách",
+    "spent": "Đã chi",
+    "remaining": "Còn lại",
+    "savings": "Tiết kiệm",
+    "periodEnded": "Kỳ đã kết thúc",
+    "days": "{count} ngày",
+    "onTrack": "Đúng tiến độ",
+    "overBudget": "Vượt ngân sách"
+  },
+  "trendChart": {
+    "title": "Xu hướng ngân sách so với thực tế",
+    "empty": "Chưa đủ dữ liệu để hiển thị xu hướng.",
+    "budgeted": "Ngân sách",
+    "actual": "Thực tế"
+  },
+  "upcomingBills": {
+    "title": "Hóa đơn sắp đến hạn",
+    "empty": "Không có hóa đơn đến hạn trong kỳ này.",
+    "more": "+{count} hóa đơn nữa",
+    "totalUpcoming": "Tổng sắp tới",
+    "trulyAvailable": "Thực sự khả dụng",
+    "over": " vượt"
+  },
+  "velocity": {
+    "title": "Tốc độ chi tiêu",
+    "dailyBurnRate": "Tỷ lệ chi tiêu hàng ngày",
+    "safeToSpend": "An toàn để chi",
+    "projectedMonthEnd": "Dự báo cuối tháng",
+    "budgetTotal": "Tổng ngân sách",
+    "billsComing": "Hóa đơn sắp tới",
+    "trulyAvailable": "Thực sự khả dụng",
+    "over": " vượt",
+    "dayProgress": "Ngày {elapsed} / {total}",
+    "daysRemaining": "Còn {count} ngày",
+    "paceStatus": {
+      "under": "Dưới tiến độ ngân sách",
+      "on_track": "Đúng tiến độ",
+      "over": "Vượt tiến độ ngân sách"
+    }
+  },
+  "wizard": {
+    "steps": {
+      "analyze": "Phân tích",
+      "categories": "Danh mục",
+      "configure": "Cấu hình",
+      "review": "Xem xét"
+    },
+    "ariaLabel": "Các bước thuật sĩ",
+    "back": "Quay lại"
+  },
+  "wizardAnalysis": {
+    "chooseStrategy": "Chọn chiến lược ngân sách",
+    "analysisPeriod": "Kỳ phân tích",
+    "analysisPeriodHint": "Cần phân tích bao nhiêu tháng lịch sử giao dịch để đề xuất số tiền ngân sách?",
+    "budgetProfile": "Hồ sơ ngân sách",
+    "analyzeButton": "Phân tích chi tiêu của tôi",
+    "analysisPeriods": {
+      "3": "3 tháng",
+      "6": "6 tháng",
+      "12": "12 tháng"
+    },
+    "strategies": {
+      "FIXED": {
+        "label": "Cố định",
+        "description": "Đặt số tiền cố định theo danh mục. Ngân sách chưa dùng đặt lại mỗi kỳ."
+      },
+      "ROLLOVER": {
+        "label": "Chuyển tiếp",
+        "description": "Ngân sách chưa dùng được chuyển sang kỳ sau. Cấu hình quy tắc chuyển tiếp theo danh mục."
+      },
+      "ZERO_BASED": {
+        "label": "Dựa trên zero",
+        "description": "Mỗi đồng thu nhập được phân công mục đích. Thu nhập trừ chi phí bằng zero."
+      },
+      "FIFTY_THIRTY_TWENTY": {
+        "label": "50/30/20",
+        "description": "50% nhu cầu thiết yếu, 30% nhu cầu muốn có, 20% tiết kiệm. Các danh mục được gắn nhãn theo nhóm."
+      }
+    },
+    "profiles": {
+      "COMFORTABLE": {
+        "label": "Thoải mái",
+        "description": "Dựa trên chi tiêu bách phân vị thứ 75 của bạn. Cho phép linh hoạt."
+      },
+      "ON_TRACK": {
+        "label": "Đúng tiến độ",
+        "description": "Dựa trên chi tiêu trung vị của bạn. Mục tiêu thực tế."
+      },
+      "AGGRESSIVE": {
+        "label": "Tích cực",
+        "description": "Dựa trên bách phân vị thứ 25 của bạn. Mục tiêu thử thách để tiết kiệm nhiều hơn."
+      }
+    },
+    "toasts": {
+      "analyzeFailed": "Phân tích chi tiêu thất bại"
+    }
+  },
+  "wizardCategories": {
+    "title": "Xem xét danh mục",
+    "noAnalysis": "Không có dữ liệu phân tích. Quay lại và chạy phân tích trước.",
+    "tableHeaders": {
+      "income": "Thu nhập",
+      "expenses": "Chi tiêu",
+      "transfers": "Chuyển khoản / Tiết kiệm",
+      "trendMedian": "Xu hướng / Trung vị",
+      "amount": "Số tiền"
+    },
+    "totals": {
+      "totalIncome": "Tổng thu nhập",
+      "totalExpenses": "Tổng chi tiêu",
+      "transfers": "Chuyển khoản",
+      "remaining": "Còn lại"
+    },
+    "allocation503020": "Phân bổ 50/30/20",
+    "allocationTarget": "(mục tiêu {percent}%)",
+    "nextButton": "Tiếp: Cấu hình",
+    "profiles": {
+      "COMFORTABLE": "Thoải mái",
+      "ON_TRACK": "Đúng tiến độ",
+      "AGGRESSIVE": "Tích cực"
+    }
+  },
+  "wizardStrategy": {
+    "title": "Cấu hình ngân sách của bạn",
+    "sections": {
+      "budgetDetails": "Chi tiết ngân sách",
+      "income": "Thu nhập",
+      "rolloverRules": "Quy tắc chuyển tiếp",
+      "alertThresholds": "Ngưỡng cảnh báo",
+      "flexGroups": "Nhóm linh hoạt",
+      "excludedAccounts": "Tài khoản loại trừ"
+    },
+    "budgetNameLabel": "Tên ngân sách",
+    "budgetNameRequired": "Tên ngân sách là bắt buộc",
+    "budgetTypeLabel": "Loại ngân sách",
+    "startDateLabel": "Ngày bắt đầu",
+    "startDateRequired": "Ngày bắt đầu là bắt buộc",
+    "strategyPrefix": "Chiến lược: {strategy}",
+    "strategyNotSelected": "Chưa chọn",
+    "strategyDescriptions": {
+      "FIXED": "Đặt số tiền theo danh mục. Ngân sách chưa chi đặt lại mỗi kỳ.",
+      "ROLLOVER": "Ngân sách chưa chi được chuyển tiếp dựa trên quy tắc chuyển tiếp theo danh mục.",
+      "ZERO_BASED": "Mỗi đồng thu nhập được phân công. Thu nhập trừ chi phí phải bằng zero.",
+      "FIFTY_THIRTY_TWENTY": "Danh mục được nhóm thành Nhu cầu thiết yếu (50%), Nhu cầu muốn có (30%), Tiết kiệm (20%)."
+    },
+    "linkBudgetToIncome": "Liên kết ngân sách với thu nhập",
+    "linkBudgetToIncomeHint": "Số tiền danh mục trở thành tỷ lệ phần trăm của thu nhập cơ bản",
+    "baseMonthlyIncome": "Thu nhập hàng tháng cơ bản",
+    "estimatedFromAnalysis": "Ước tính từ phân tích: {amount}/tháng",
+    "defaultRolloverType": "Loại chuyển tiếp mặc định",
+    "rolloverHint": "Đây là mặc định cho tất cả danh mục. Bạn có thể tùy chỉnh từng danh mục sau khi tạo ngân sách.",
+    "rolloverOptions": {
+      "NONE": "Không có -- Đặt lại mỗi kỳ",
+      "MONTHLY": "Hàng tháng -- Chuyển tiếp mỗi tháng",
+      "QUARTERLY": "Hàng quý -- Chuyển tiếp mỗi quý",
+      "ANNUAL": "Hàng năm -- Chuyển tiếp mỗi năm"
+    },
+    "warningAt": "Cảnh báo tại (%)",
+    "warningHint": "Kích hoạt cảnh báo khi chi tiêu đạt đến % ngân sách này",
+    "criticalAt": "Nghiêm trọng tại (%)",
+    "criticalHint": "Kích hoạt cảnh báo nghiêm trọng khi chi tiêu đạt đến % ngân sách này",
+    "flexGroupsHide": "Ẩn",
+    "flexGroupsConfigure": "Cấu hình",
+    "flexGroupsHint": "Nhóm các danh mục chi tiêu liên quan lại với nhau. Chi tiêu được theo dõi theo tổng nhóm, tạo sự linh hoạt trong từng nhóm.",
+    "flexGroupsTableHeaders": {
+      "category": "Danh mục",
+      "flexGroup": "Nhóm linh hoạt"
+    },
+    "flexGroupPlaceholder": "ví dụ: Tiền vui chơi",
+    "excludedAccountsHint": "Các giao dịch từ tài khoản bị loại trừ sẽ không tính vào tổng ngân sách của bạn.",
+    "excludedCount": "{count} {count, plural, one {tài khoản} other {tài khoản}} bị loại trừ",
+    "categoriesAndTransfers": "{categories} danh mục và {transfers} chuyển khoản đã chọn",
+    "budgetTypeOptions": {
+      "MONTHLY": "Hàng tháng",
+      "ANNUAL": "Hàng năm",
+      "PAY_PERIOD": "Kỳ lương"
+    },
+    "nextButton": "Tiếp: Xem xét"
+  },
+  "wizardReview": {
+    "title": "Xem xét ngân sách của bạn",
+    "fields": {
+      "name": "Tên",
+      "type": "Loại",
+      "strategy": "Chiến lược",
+      "startDate": "Ngày bắt đầu",
+      "rollover": "Chuyển tiếp",
+      "alerts": "Cảnh báo",
+      "incomeLinked": "Liên kết thu nhập",
+      "excludedAccounts": "Tài khoản loại trừ"
+    },
+    "rolloverOff": "Tắt",
+    "alertsValue": "Cảnh báo {warn}% / Nghiêm trọng {critical}%",
+    "accountCount": "{count} {count, plural, one {tài khoản} other {tài khoản}}",
+    "strategyNotSelected": "Chưa chọn",
+    "summaryCards": {
+      "estIncome": "Thu nhập ước tính",
+      "totalExpenses": "Tổng chi tiêu",
+      "transfers": "Chuyển khoản",
+      "remaining": "Còn lại"
+    },
+    "tableHeaders": {
+      "category": "Danh mục",
+      "amount": "Số tiền",
+      "type": "Loại"
+    },
+    "categoryTypes": {
+      "income": "Thu nhập",
+      "expense": "Chi tiêu",
+      "transfer": "Chuyển khoản"
+    },
+    "createButton": "Tạo ngân sách",
+    "categoryCount": "{count} danh mục",
+    "accountsCount": "{count} tài khoản",
+    "toasts": {
+      "created": "Tạo ngân sách thành công",
+      "failed": "Tạo ngân sách thất bại"
+    }
+  },
+  "zeroBasedBar": {
+    "title": "Phân công dựa trên zero",
+    "fullyAssigned": "Đã phân công đầy đủ",
+    "overAssigned": "Phân công vượt mức",
+    "underAssigned": "Phân công chưa đủ",
+    "assigned": "Đã phân công: {assigned} / {income}",
+    "unassigned": "{amount} chưa phân công",
+    "over": "{amount} vượt mức"
+  },
+  "strategyCard": {
+    "pros": "Ưu điểm",
+    "cons": "Nhược điểm",
+    "bestFor": "Phù hợp nhất cho: ",
+    "strategies": {
+      "FIXED": {
+        "title": "Ngân sách cố định",
+        "description": "Đặt giới hạn chi tiêu cố định cho mỗi danh mục mỗi kỳ. Tiền chưa chi đặt lại vào cuối kỳ thay vì chuyển sang kỳ sau.",
+        "pros": [
+          "Đơn giản để thiết lập và hiểu",
+          "Giới hạn chi tiêu rõ ràng theo danh mục",
+          "Lập ngân sách dự đoán được từ tháng này sang tháng khác",
+          "Điểm khởi đầu tốt cho người mới lập ngân sách"
+        ],
+        "cons": [
+          "Tiền chưa chi không được chuyển tiếp",
+          "Không linh hoạt giữa các danh mục",
+          "Không thích nghi với các chi tiêu không đều đặn",
+          "Có thể cảm thấy cứng nhắc nếu mô hình chi tiêu thay đổi"
+        ],
+        "bestFor": "Những người muốn lập ngân sách đơn giản với giới hạn rõ ràng và mô hình chi tiêu có thể dự đoán."
+      },
+      "ROLLOVER": {
+        "title": "Ngân sách chuyển tiếp",
+        "description": "Ngân sách chưa chi được chuyển sang kỳ tiếp theo dựa trên quy tắc chuyển tiếp theo danh mục. Tích lũy dự trữ cho các danh mục có chi tiêu không đều đặn hoặc theo mùa.",
+        "pros": [
+          "Tích lũy tiết kiệm cho các chi tiêu không đều đặn",
+          "Thưởng cho việc chi tiêu dưới mức trong danh mục",
+          "Quy tắc chuyển tiếp linh hoạt theo danh mục",
+          "Xử lý biến đổi theo mùa một cách tự nhiên"
+        ],
+        "cons": [
+          "Phức tạp hơn để cấu hình ban đầu",
+          "Số dư tích lũy cần được theo dõi",
+          "Có thể che giấu chi tiêu quá mức nếu giới hạn quá cao",
+          "Cần xem xét định kỳ các quy tắc chuyển tiếp"
+        ],
+        "bestFor": "Những người có chi tiêu không đều đặn như bảo dưỡng xe, đăng ký hàng năm hoặc chi phí theo mùa và muốn tiết kiệm dần dần."
+      },
+      "ZERO_BASED": {
+        "title": "Ngân sách dựa trên zero",
+        "description": "Mỗi đồng thu nhập được phân công mục đích cụ thể. Thu nhập của bạn trừ đi tất cả các khoản ngân sách phải bằng zero, đảm bảo không có tiền nào bị bỏ lại chưa phân công.",
+        "pros": [
+          "Kiểm soát tối đa từng đồng",
+          "Buộc phải đưa ra quyết định chi tiêu có chủ đích",
+          "Nhanh chóng phát hiện chi tiêu lãng phí",
+          "Rất hiệu quả cho mục tiêu trả nợ"
+        ],
+        "cons": [
+          "Cần biết thu nhập chính xác trước",
+          "Tốn nhiều thời gian để duy trì mỗi kỳ",
+          "Ít linh hoạt hơn cho thu nhập biến đổi",
+          "Có thể cảm thấy hạn chế đối với một số người dùng"
+        ],
+        "bestFor": "Những người muốn kiểm soát hoàn toàn tài chính của mình và sẵn sàng lập kế hoạch từng đồng mỗi kỳ."
+      },
+      "FIFTY_THIRTY_TWENTY": {
+        "title": "Ngân sách 50/30/20",
+        "description": "Cách tiếp cận cân bằng chia thu nhập thành ba nhóm: 50% cho nhu cầu thiết yếu (nhà ở, thực phẩm, tiện ích), 30% cho nhu cầu muốn có (ăn ngoài, giải trí), và 20% cho tiết kiệm và trả nợ.",
+        "pros": [
+          "Dễ nhớ và tuân theo",
+          "Phân bổ tiết kiệm tích hợp sẵn",
+          "Cách tiếp cận cân bằng cho chi tiêu",
+          "Linh hoạt trong từng nhóm"
+        ],
+        "cons": [
+          "Có thể không phù hợp với vùng có chi phí sinh hoạt cao",
+          "Tỷ lệ cố định có thể không phù hợp với mọi tình huống",
+          "Ít kiểm soát chi tiết hơn theo danh mục",
+          "Yêu cầu phân loại từng chi tiêu theo nhóm"
+        ],
+        "bestFor": "Những người muốn cách tiếp cận cân bằng, dễ nhớ mà không cần theo dõi từng danh mục riêng lẻ."
+      }
+    }
+  },
+  "pages": {
+    "list": {
+      "title": "Ngân sách",
+      "subtitle": "Quản lý ngân sách và theo dõi chi tiêu",
+      "newBudget": "+ Ngân sách mới",
+      "empty": {
+        "title": "Chưa có ngân sách",
+        "description": "Tạo ngân sách đầu tiên bằng cách phân tích lịch sử chi tiêu. Trình thuật sĩ sẽ đề xuất số tiền thực tế dựa trên các giao dịch của bạn.",
+        "cta": "Tạo ngân sách đầu tiên"
+      },
+      "card": {
+        "active": "Hoạt động",
+        "inactive": "Không hoạt động",
+        "categories": "{count} danh mục",
+        "started": "Bắt đầu {date}"
+      }
+    },
+    "create": {
+      "title": "Tạo ngân sách",
+      "subtitle": "Phân tích chi tiêu và tạo ngân sách cá nhân hóa"
+    },
+    "detail": {
+      "backToBudgets": "Quay lại ngân sách",
+      "notFound": "Không tìm thấy ngân sách",
+      "delete": {
+        "title": "Xóa ngân sách",
+        "message": "Bạn có chắc chắn muốn xóa \"{name}\"? Thao tác này sẽ xóa tất cả dữ liệu ngân sách bao gồm các kỳ và cảnh báo. Không thể hoàn tác.",
+        "confirm": "Xóa",
+        "cancel": "Hủy"
+      },
+      "toasts": {
+        "deleted": "Đã xóa ngân sách",
+        "deleteFailed": "Xóa ngân sách thất bại",
+        "loadFailed": "Tải ngân sách thất bại",
+        "periodFailed": "Tải kỳ thất bại"
+      }
+    },
+    "edit": {
+      "subtitlePrefix": "Chỉnh sửa: ",
+      "subtitle": "Cập nhật cài đặt ngân sách và phân bổ danh mục",
+      "backToDashboard": "Quay lại tổng quan",
+      "budgetSettings": "Cài đặt ngân sách",
+      "categoryAllocations": "Phân bổ danh mục",
+      "income": "Thu nhập",
+      "expensesWithCount": "Chi tiêu ({count})",
+      "resetsEachPeriod": "Đặt lại mỗi kỳ",
+      "percentUsed": "{percent}% đã dùng",
+      "rolloverType": "Chuyển tiếp: {type}",
+      "editCategoryTitle": "Chỉnh sửa {name}",
+      "toasts": {
+        "updated": "Đã cập nhật ngân sách",
+        "updateFailed": "Cập nhật ngân sách thất bại",
+        "categoryUpdated": "Đã cập nhật danh mục",
+        "categoryFailed": "Cập nhật danh mục thất bại",
+        "loadFailed": "Tải ngân sách thất bại"
+      }
+    }
+  },
+  "validation": {
+    "nameRequired": "Tên ngân sách là bắt buộc",
+    "nameMax": "Tên ngân sách phải có 255 ký tự trở xuống",
+    "descriptionMax": "Mô tả phải có 1000 ký tự trở xuống"
+  },
+  "categoryValidation": {
+    "amountMin": "Số tiền phải từ 0 trở lên",
+    "mustBeNumber": "Phải là số"
+  }
+}

@@ -1,0 +1,177 @@
+{
+  "chartFlag": {
+    "dismiss": "Sembunyikan nilai ini"
+  },
+  "appVersion": {
+    "releaseNotes": "Lihat catatan rilis untuk v{version}"
+  },
+  "save": "Simpan",
+  "cancel": "Batal",
+  "delete": "Hapus",
+  "edit": "Ubah",
+  "close": "Tutup",
+  "actions": {
+    "edit": "Edit",
+    "delete": "Hapus",
+    "view": "Lihat",
+    "duplicate": "Duplikat",
+    "merge": "Gabungkan",
+    "reactivate": "Aktifkan Kembali",
+    "reconcile": "Rekonsiliasi",
+    "post": "Posting",
+    "skip": "Lewati",
+    "close": "Tutup",
+    "reopen": "Buka kembali",
+    "scheduleRecurring": "Jadwalkan sebagai Berulang",
+    "more": "Tindakan Lainnya"
+  },
+  "loading": "Memuat...",
+  "pagination": {
+    "showing": "Menampilkan",
+    "of": "dari",
+    "firstPage": "Halaman pertama",
+    "lastPage": "Halaman terakhir",
+    "previousPage": "Halaman sebelumnya",
+    "nextPage": "Halaman berikutnya",
+    "back10Pages": "Mundur 10 halaman",
+    "forward10Pages": "Maju 10 halaman",
+    "enterPageNumber": "Masukkan nomor halaman"
+  },
+  "confirmDialog": {
+    "confirm": "Konfirmasi"
+  },
+  "unsavedChanges": {
+    "title": "Perubahan Belum Disimpan",
+    "message": "Anda memiliki perubahan yang belum disimpan. Apa yang ingin Anda lakukan?",
+    "discard": "Buang"
+  },
+  "exportDropdown": {
+    "export": "Ekspor",
+    "exporting": "Mengekspor...",
+    "exportPdf": "Ekspor PDF",
+    "exportReport": "Ekspor laporan",
+    "failedPdf": "Gagal mengekspor PDF. Silakan coba lagi."
+  },
+  "dateRange": {
+    "custom": "Kustom",
+    "startDate": "Tanggal Mulai",
+    "endDate": "Tanggal Selesai"
+  },
+  "colorPicker": {
+    "custom": "Kustom:",
+    "apply": "Terapkan"
+  },
+  "chartDownload": {
+    "downloadAsPng": "Unduh {filename} sebagai PNG",
+    "unableToCapture": "Tidak dapat mengambil gambar grafik",
+    "failedToDownload": "Gagal mengunduh grafik"
+  },
+  "chartViewToggle": {
+    "pieChart": "Diagram Lingkaran",
+    "barChart": "Diagram Batang",
+    "stackedChart": "Batang Bertumpuk 100%",
+    "lineChart": "Diagram Garis",
+    "areaChart": "Diagram Area",
+    "table": "Tabel"
+  },
+  "formActions": {
+    "cancel": "Batal",
+    "save": "Simpan"
+  },
+  "themeToggle": {
+    "light": "Terang",
+    "dark": "Gelap",
+    "system": "Sistem",
+    "title": "Tema: {label}. Klik untuk mengubah."
+  },
+  "errorPage": {
+    "title": "Terjadi Kesalahan",
+    "description": "Terjadi kesalahan yang tidak terduga. Silakan coba lagi atau hubungi dukungan jika masalah berlanjut.",
+    "errorId": "ID Kesalahan: {digest}",
+    "tryAgain": "Coba lagi",
+    "goToDashboard": "Ke Dasbor"
+  },
+  "errorBoundary": {
+    "defaultMessage": "Terjadi kesalahan saat merender komponen ini."
+  },
+  "calendar": {
+    "clear": "Hapus",
+    "today": "Hari ini"
+  },
+  "multiSelect": {
+    "search": "Cari...",
+    "selectAll": "Pilih Semua",
+    "clear": "Hapus",
+    "noOptions": "Tidak ada opsi ditemukan"
+  },
+  "combobox": {
+    "createOption": "Buat \"{value}\""
+  },
+  "passwordInput": {
+    "show": "Tampilkan input",
+    "hide": "Sembunyikan input"
+  },
+  "currencyInput": {
+    "openCalculator": "Buka kalkulator",
+    "calculator": "Kalkulator"
+  },
+  "dateInput": {
+    "shortcutsTitle": "Pintasan keyboard",
+    "today": "Hari ini",
+    "firstDayOfYear": "Hari pertama tahun ini",
+    "lastDayOfYear": "Hari terakhir tahun ini",
+    "firstDayOfMonth": "Hari pertama bulan ini",
+    "lastDayOfMonth": "Hari terakhir bulan ini",
+    "nextDay": "Hari berikutnya",
+    "previousDay": "Hari sebelumnya",
+    "nextMonth": "Bulan berikutnya",
+    "previousMonth": "Bulan sebelumnya"
+  },
+  "accountTypes": {
+    "CHEQUING": "Giro",
+    "SAVINGS": "Tabungan",
+    "CREDIT_CARD": "Kartu Kredit",
+    "INVESTMENT": "Investasi",
+    "LOAN": "Pinjaman",
+    "MORTGAGE": "Hipotek",
+    "CASH": "Tunai",
+    "LINE_OF_CREDIT": "Kredit Talangan",
+    "ASSET": "Aset",
+    "OTHER": "Lainnya"
+  },
+  "accountFilter": {
+    "allAccounts": "Semua Akun",
+    "allBut": "Semua kecuali {names}"
+  },
+  "passwordRequirements": "Kata sandi harus minimal 12 karakter dan mengandung huruf besar, huruf kecil, angka, dan karakter khusus.",
+  "passwordValidation": {
+    "min": "Kata sandi harus minimal 12 karakter",
+    "max": "Kata sandi maksimal 100 karakter",
+    "lowercase": "Harus mengandung huruf kecil",
+    "uppercase": "Harus mengandung huruf besar",
+    "number": "Harus mengandung angka",
+    "special": "Harus mengandung karakter khusus"
+  },
+  "codeValidation": {
+    "length": "Kode harus tepat 6 digit",
+    "digits": "Kode harus 6 digit"
+  },
+  "monthsShort": ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"],
+  "weekdaysShort": ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"],
+  "weekdaysMin": ["Mi", "Se", "Sl", "Ra", "Ka", "Ju", "Sa"],
+  "weekdaysNarrow": ["M", "S", "S", "R", "K", "J", "S"],
+  "dateFormat": {
+    "browserAuto": "Gunakan lokal browser (deteksi otomatis: {sample})",
+    "custom": "Kustom..."
+  },
+  "emailInvalid": "Masukkan alamat email yang valid",
+  "noSectionAccess": "Anda tidak memiliki akses ke bagian tersebut.",
+  "undoRedo": {
+    "nothingToUndo": "Tidak ada yang dapat dibatalkan",
+    "cannotUndo": "Tindakan ini tidak dapat dibatalkan",
+    "undoFailed": "Pembatalan gagal",
+    "nothingToRedo": "Tidak ada yang dapat diulang",
+    "cannotRedo": "Tindakan ini tidak dapat diulang",
+    "redoFailed": "Pengulangan gagal"
+  }
+}

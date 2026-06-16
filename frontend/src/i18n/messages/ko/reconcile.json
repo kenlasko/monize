@@ -1,0 +1,58 @@
+{
+  "title": "계정 조정",
+  "subtitle": "은행 명세서와 기록을 대조하세요",
+  "subtitleActive": "조정 중: {name}",
+  "setup": {
+    "title": "조정 시작",
+    "intro": "은행 명세서와 계정을 대조하여 기록이 일치하는지 확인하세요.",
+    "accountLabel": "계정",
+    "accountPlaceholder": "계정 선택...",
+    "statementDateLabel": "명세서 날짜",
+    "statementBalanceLabel": "명세서 최종 잔액",
+    "start": "조정 시작"
+  },
+  "summary": {
+    "statementBalance": "명세서 잔액",
+    "reconciledBalance": "조정된 잔액",
+    "selected": "선택됨 ({count})",
+    "difference": "차이"
+  },
+  "list": {
+    "heading": "미조정 거래 ({count})",
+    "selectAll": "모두 선택",
+    "selectNone": "선택 해제",
+    "empty": "이 기간에 미조정 거래가 없습니다.",
+    "colSelect": "선택",
+    "colDate": "날짜",
+    "colPayee": "수취인",
+    "colCategory": "카테고리",
+    "colAmount": "금액",
+    "colStatus": "상태",
+    "finish": "조정 완료"
+  },
+  "status": {
+    "cleared": "결제됨",
+    "unreconciled": "미조정",
+    "void": "무효",
+    "reconciled": "조정됨"
+  },
+  "complete": {
+    "title": "조정 완료",
+    "message": "{date} 기준으로 계정이 성공적으로 조정되었습니다.",
+    "existingPayment": "이 계정에 예정된 결제 <b>{name}</b>이 있습니다. 다음 항목을 조정된 잔액 <b>{amount}</b>으로 업데이트하시겠습니까?",
+    "updatePayment": "다음 결제 업데이트",
+    "noPayment": "이 계정에 예정된 결제가 없습니다. 조정된 잔액 <b>{amount}</b>으로 새로 생성하시겠습니까?",
+    "createPayment": "예정된 결제 생성",
+    "backToAccounts": "계정으로 돌아가기",
+    "reconcileAnother": "다른 계정 조정"
+  },
+  "toasts": {
+    "loadAccountsFailed": "계정을 불러오지 못했습니다",
+    "fillAllFields": "모든 필드를 입력해 주세요",
+    "loadDataFailed": "조정 데이터를 불러오지 못했습니다",
+    "differenceRequired": "조정을 완료하려면 차이가 {amount}이어야 합니다",
+    "noneSelected": "조정할 거래가 선택되지 않았습니다",
+    "success": "{count, plural, one {# 건의 거래가 성공적으로 조정되었습니다} other {# 건의 거래가 성공적으로 조정되었습니다}}",
+    "reconcileFailed": "거래를 조정하지 못했습니다"
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "title": "账户对账",
+  "subtitle": "将您的记录与银行账单核对",
+  "subtitleActive": "正在对账：{name}",
+  "setup": {
+    "title": "开始对账",
+    "intro": "将您的账户与银行账单核对，以确保记录一致。",
+    "accountLabel": "账户",
+    "accountPlaceholder": "选择账户...",
+    "statementDateLabel": "账单日期",
+    "statementBalanceLabel": "账单期末余额",
+    "start": "开始对账"
+  },
+  "summary": {
+    "statementBalance": "账单余额",
+    "reconciledBalance": "已对账余额",
+    "selected": "已选（{count}）",
+    "difference": "差额"
+  },
+  "list": {
+    "heading": "未对账交易（{count}）",
+    "selectAll": "全选",
+    "selectNone": "取消全选",
+    "empty": "此期间未找到未对账交易。",
+    "colSelect": "选择",
+    "colDate": "日期",
+    "colPayee": "收款人",
+    "colCategory": "分类",
+    "colAmount": "金额",
+    "colStatus": "状态",
+    "finish": "完成对账"
+  },
+  "status": {
+    "cleared": "已结算",
+    "unreconciled": "未对账",
+    "void": "作废",
+    "reconciled": "已对账"
+  },
+  "complete": {
+    "title": "对账完成",
+    "message": "您的账户已成功对账至 {date}。",
+    "existingPayment": "此账户有一笔计划还款 <b>{name}</b>。是否将其下次还款更新为已对账余额 <b>{amount}</b>？",
+    "updatePayment": "更新下次还款",
+    "noPayment": "未找到此账户的计划还款。是否为已对账余额 <b>{amount}</b> 创建一笔计划还款？",
+    "createPayment": "创建计划还款",
+    "backToAccounts": "返回账户",
+    "reconcileAnother": "对账另一个账户"
+  },
+  "toasts": {
+    "loadAccountsFailed": "加载账户失败",
+    "fillAllFields": "请填写所有字段",
+    "loadDataFailed": "加载对账数据失败",
+    "differenceRequired": "差额必须为 {amount} 才能完成对账",
+    "noneSelected": "未选择任何交易进行对账",
+    "success": "{count, plural, one {成功对账 # 笔交易} other {成功对账 # 笔交易}}",
+    "reconcileFailed": "对账交易失败"
+  }
+}

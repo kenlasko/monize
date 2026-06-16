@@ -1,0 +1,53 @@
+{
+  "page": {
+    "title": "AI-асистент",
+    "subtitle": "Задавайте питання про свої фінанси зрозумілою мовою"
+  },
+  "chat": {
+    "conversationSaved": "Розмову збережено у вашому браузері",
+    "clearConversation": "Очистити розмову",
+    "inputPlaceholder": "Запитайте про свої фінанси...",
+    "inputPlaceholderDisabled": "AI-провайдер не налаштований",
+    "keyboardHint": "Натисніть Enter для надсилання, Shift+Enter для нового рядка",
+    "cancelTitle": "Скасувати",
+    "sendTitle": "Надіслати"
+  },
+  "notConfigured": {
+    "heading": "AI не налаштовано",
+    "message": "Не налаштовано жодного AI-провайдера. Щоб скористатися AI-асистентом, будь ласка, {link} у налаштуваннях.",
+    "linkText": "налаштуйте AI-провайдер"
+  },
+  "suggestedQueries": {
+    "heading": "Запитайте про свої фінанси",
+    "description": "Я можу відповісти на запитання про ваші витрати, доходи, залишки на рахунках, чисті активи тощо.",
+    "monthlySpendingLabel": "Місячні витрати",
+    "monthlySpendingQuery": "Скільки я витратив минулого місяця?",
+    "topCategoriesLabel": "Топ категорії",
+    "topCategoriesQuery": "Які мої 5 найбільших категорій витрат цього року?",
+    "accountBalancesLabel": "Залишки на рахунках",
+    "accountBalancesQuery": "Які поточні залишки на моїх рахунках?",
+    "compareMonthsLabel": "Порівняти місяці",
+    "compareMonthsQuery": "Порівняй мої витрати цього місяця з минулим",
+    "netWorthTrendLabel": "Динаміка чистих активів",
+    "netWorthTrendQuery": "Покажи динаміку моїх чистих активів за останні 12 місяців",
+    "savingsRateLabel": "Норма заощаджень",
+    "savingsRateQuery": "Скільки я заощадив цього року порівняно з доходами?"
+  },
+  "toolDetails": {
+    "inputLabel": "Вхідні дані",
+    "resultLabel": "Результат",
+    "toolFailedAriaLabel": "Помилка інструменту",
+    "toolSucceededAriaLabel": "Інструмент успішно виконано"
+  },
+  "table": {
+    "downloadTitle": "Завантажити таблицю як CSV",
+    "downloadAriaLabel": "Завантажити таблицю як CSV",
+    "noDataError": "Немає даних таблиці для експорту"
+  },
+  "chart": {
+    "downloadTitle": "Завантажити графік як PNG",
+    "downloadAriaLabel": "Завантажити графік як PNG",
+    "captureError": "Не вдалося захопити зображення графіка",
+    "downloadError": "Не вдалося завантажити графік"
+  }
+}

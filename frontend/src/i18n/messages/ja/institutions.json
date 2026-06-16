@@ -1,0 +1,91 @@
+{
+  "page": {
+    "title": "金融機関",
+    "subtitle": "勘定科目が属する銀行および証券会社",
+    "newInstitution": "新しい金融機関",
+    "loading": "金融機関を読み込み中...",
+    "searchPlaceholder": "金融機関を検索...",
+    "modalTitleNew": "新しい金融機関",
+    "modalTitleEdit": "金融機関を編集",
+    "summary": {
+      "total": "金融機関の合計",
+      "withLogo": "ロゴあり",
+      "linkedAccounts": "紐付け済み勘定科目"
+    },
+    "toasts": {
+      "loadFailed": "金融機関の読み込みに失敗しました",
+      "created": "金融機関を作成しました",
+      "updated": "金融機関を更新しました",
+      "createFailed": "金融機関の作成に失敗しました",
+      "updateFailed": "金融機関の更新に失敗しました"
+    }
+  },
+  "list": {
+    "empty": "金融機関がまだありません。作成して勘定科目をグループ化してください。",
+    "columns": {
+      "name": "名称",
+      "website": "ウェブサイト",
+      "country": "国",
+      "accounts": "勘定科目",
+      "actions": "操作"
+    },
+    "accountCount": "{count, plural, =0 {勘定科目なし} one {# 件の勘定科目} other {# 件の勘定科目}}",
+    "density": {
+      "title": "行の密度を切り替え",
+      "normal": "標準",
+      "compact": "コンパクト",
+      "dense": "高密度"
+    },
+    "statusFilter": {
+      "all": "すべて",
+      "active": "有効",
+      "closed": "閉鎖済み"
+    },
+    "actions": {
+      "manageAccounts": "勘定科目"
+    },
+    "deleteTitle": "金融機関を削除",
+    "deleteMessage": "「{name}」を削除しますか？紐付けられた勘定科目は紐付けが解除されますが、削除はされません。",
+    "deleting": "削除中...",
+    "deleted": "「{name}」を削除しました",
+    "deleteFailed": "金融機関の削除に失敗しました"
+  },
+  "form": {
+    "nameLabel": "名称",
+    "websiteLabel": "ウェブサイト",
+    "websitePlaceholder": "例: td.com",
+    "countryLabel": "国（任意）",
+    "countryPlaceholder": "2文字コード（例: JP）",
+    "logoHint": "ブランドロゴはウェブサイトから自動的に取得されます。",
+    "submitCreate": "金融機関を作成",
+    "submitUpdate": "変更を保存"
+  },
+  "validation": {
+    "nameRequired": "名称は必須です",
+    "websiteRequired": "ウェブサイトは必須です",
+    "websiteInvalid": "有効なウェブサイトを入力してください（例: td.com）",
+    "countryInvalid": "2文字の国コードを使用してください"
+  },
+  "accountsManager": {
+    "title": "{name} の勘定科目",
+    "addLabel": "勘定科目を追加",
+    "addPlaceholder": "追加する勘定科目を選択...",
+    "noneToAdd": "すべての勘定科目がすでに金融機関に紐付けられています。",
+    "loading": "勘定科目を読み込み中...",
+    "empty": "この金融機関に紐付けられた勘定科目はまだありません。",
+    "noneMatch": "選択したフィルターに一致する勘定科目はありません。",
+    "filter": {
+      "all": "すべて",
+      "active": "有効",
+      "closed": "閉鎖済み"
+    },
+    "remove": "削除",
+    "viewTransactions": "この勘定科目の取引を表示",
+    "added": "勘定科目を追加しました",
+    "removed": "勘定科目を削除しました",
+    "addFailed": "勘定科目の追加に失敗しました",
+    "removeFailed": "勘定科目の削除に失敗しました",
+    "loadFailed": "勘定科目の読み込みに失敗しました",
+    "done": "完了"
+  }
+}

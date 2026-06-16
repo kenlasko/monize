@@ -1,0 +1,108 @@
+{
+  "createUserModal": {
+    "title": "添加用户",
+    "description": "创建新账户。您可以发送邀请邮件、自行设置密码，或生成一个临时密码进行分享。",
+    "emailLabel": "电子邮件",
+    "emailPlaceholder": "user@example.com",
+    "firstNameLabel": "名（可选）",
+    "firstNamePlaceholder": "名",
+    "lastNameLabel": "姓（可选）",
+    "lastNamePlaceholder": "姓",
+    "roleLabel": "角色",
+    "roleUser": "用户",
+    "roleAdmin": "管理员",
+    "credentialsLegend": "凭据",
+    "inviteLabel": "发送邮件邀请以设置密码",
+    "inviteSmtpNote": "需要配置 SMTP。",
+    "setPasswordLabel": "立即设置密码",
+    "tempPasswordLabel": "生成临时密码",
+    "tempPasswordNote": "创建后仅显示一次。用户必须在首次登录时更改密码。",
+    "passwordFieldLabel": "密码",
+    "passwordPlaceholder": "设置密码",
+    "createButton": "创建用户",
+    "validation": {
+      "invalidPassword": "密码无效。"
+    },
+    "toasts": {
+      "createFailed": "创建用户失败"
+    }
+  },
+  "resetPasswordModal": {
+    "defaultTitle": "密码重置成功",
+    "defaultDescription": "已为 {userName} 设置临时密码。",
+    "temporaryPasswordLabel": "临时密码",
+    "copy": "复制",
+    "copied": "已复制",
+    "notShownAgain": "此密码不会再次显示。",
+    "mustChangeOnLogin": "用户下次登录时将被要求更改密码。",
+    "toasts": {
+      "copied": "密码已复制到剪贴板",
+      "copyFailed": "复制到剪贴板失败"
+    }
+  },
+  "userTable": {
+    "colUser": "用户",
+    "colRole": "角色",
+    "colProvider": "提供商",
+    "colStatus": "状态",
+    "colLastLogin": "最后登录",
+    "colActions": "操作",
+    "youSuffix": "（您）",
+    "noEmail": "无电子邮件",
+    "unknown": "未知",
+    "never": "从未",
+    "providerSso": "SSO",
+    "providerLocal": "本地",
+    "roleAdmin": "管理员",
+    "roleUser": "用户",
+    "statusActive": "活跃",
+    "statusDisabled": "已禁用",
+    "clickToDisable": "点击禁用",
+    "clickToEnable": "点击启用",
+    "resetPassword": "重置密码",
+    "noUsers": "未找到用户。"
+  },
+  "usersPage": {
+    "title": "用户管理",
+    "userCount": "{count, plural, one {# 个用户} other {# 个用户}}",
+    "newUser": "+ 新建用户",
+    "loadingUsers": "正在加载用户...",
+    "toasts": {
+      "inviteSent": "邀请邮件已发送至 {email}",
+      "userCreated": "{name} 已创建",
+      "userUpgraded": "{name} 已升级为完整账户",
+      "roleChanged": "{name} 现在是 {role}",
+      "roleAdmin": "管理员",
+      "roleUser": "用户",
+      "userEnabled": "{name} 已启用",
+      "userDisabled": "{name} 已禁用",
+      "userDeleted": "{name} 已删除",
+      "userDowngraded": "{name} 的自有数据已删除；其委托访问权限保留。",
+      "loadFailed": "加载用户失败",
+      "deleteFailed": "删除用户失败",
+      "disableFailed": "禁用用户失败",
+      "resetFailed": "重置密码失败"
+    },
+    "dialogs": {
+      "promoteTitle": "提升用户权限？",
+      "demoteTitle": "降低用户权限？",
+      "promoteMessage": "您确定要将 {name} 提升为 {role} 吗？",
+      "demoteMessage": "您确定要将 {name} 降级为 {role} 吗？",
+      "promoteConfirm": "提升为管理员",
+      "demoteConfirm": "降级为用户",
+      "disableTitle": "禁用用户？",
+      "disableMessage": "您确定要禁用 {name} 吗？他们将无法登录。",
+      "disableConfirm": "禁用用户",
+      "resetTitle": "重置密码？",
+      "resetMessage": "这将为 {name} 生成新的临时密码。他们下次登录时将被要求更改密码。",
+      "resetConfirm": "重置密码",
+      "deleteTitle": "删除用户？",
+      "deleteMessage": "您确定要删除 {name} 吗？这将永久删除其账户及所有相关数据。此操作无法撤销。如果他们是另一账户的委托人，其自有数据将被删除，但登录凭据将保留以维持委托关系——他们将成为仅委托用户。",
+      "deleteConfirm": "删除用户",
+      "tempPasswordTitleCreated": "用户已创建",
+      "tempPasswordTitleUpgraded": "账户已升级",
+      "tempPasswordDescCreated": "已为 {name} 生成临时密码。请将其分享给他们以供登录使用。",
+      "tempPasswordDescUpgraded": "现有共享用户已升级为完整账户。请将此临时密码分享给 {name}。"
+    }
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "title": "勘定科目の照合",
+  "subtitle": "銀行の明細と記録を照合します",
+  "subtitleActive": "照合中: {name}",
+  "setup": {
+    "title": "照合の開始",
+    "intro": "銀行の明細と勘定科目を照合して、記録が一致していることを確認します。",
+    "accountLabel": "勘定科目",
+    "accountPlaceholder": "勘定科目を選択...",
+    "statementDateLabel": "明細日付",
+    "statementBalanceLabel": "明細終了残高",
+    "start": "照合を開始"
+  },
+  "summary": {
+    "statementBalance": "明細残高",
+    "reconciledBalance": "照合済み残高",
+    "selected": "選択中（{count} 件）",
+    "difference": "差額"
+  },
+  "list": {
+    "heading": "未照合の取引（{count} 件）",
+    "selectAll": "すべて選択",
+    "selectNone": "すべて解除",
+    "empty": "この期間に未照合の取引はありません。",
+    "colSelect": "選択",
+    "colDate": "日付",
+    "colPayee": "支払先",
+    "colCategory": "カテゴリ",
+    "colAmount": "金額",
+    "colStatus": "ステータス",
+    "finish": "照合を完了"
+  },
+  "status": {
+    "cleared": "確認済み",
+    "unreconciled": "未照合",
+    "void": "無効",
+    "reconciled": "照合済み"
+  },
+  "complete": {
+    "title": "照合完了",
+    "message": "{date} 時点で勘定科目の照合が正常に完了しました。",
+    "existingPayment": "この勘定科目には定期支払い <b>{name}</b> が設定されています。次回の支払いを照合済み残高 <b>{amount}</b> に更新しますか？",
+    "updatePayment": "次回の支払いを更新",
+    "noPayment": "この勘定科目に定期支払いが見つかりませんでした。照合済み残高 <b>{amount}</b> で定期支払いを作成しますか？",
+    "createPayment": "定期支払いを作成",
+    "backToAccounts": "勘定科目一覧に戻る",
+    "reconcileAnother": "別の勘定科目を照合"
+  },
+  "toasts": {
+    "loadAccountsFailed": "勘定科目の読み込みに失敗しました",
+    "fillAllFields": "すべての項目を入力してください",
+    "loadDataFailed": "照合データの読み込みに失敗しました",
+    "differenceRequired": "照合を完了するには差額が {amount} である必要があります",
+    "noneSelected": "照合する取引が選択されていません",
+    "success": "{count, plural, one {# 件の取引を正常に照合しました} other {# 件の取引を正常に照合しました}}",
+    "reconcileFailed": "取引の照合に失敗しました"
+  }
+}

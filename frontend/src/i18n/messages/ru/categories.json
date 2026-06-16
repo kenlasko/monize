@@ -1,0 +1,85 @@
+{
+  "page": {
+    "title": "Категории",
+    "subtitle": "Упорядочивайте проводки с помощью пользовательских категорий",
+    "newButton": "+ Новая категория",
+    "searchPlaceholder": "Поиск категорий...",
+    "filterAll": "Все ({count})",
+    "filterExpenses": "Расходы ({count})",
+    "filterIncome": "Доходы ({count})",
+    "modalTitleNew": "Новая категория",
+    "modalTitleEdit": "Редактировать категорию",
+    "countSingle": "1 категория",
+    "countPlural": "{count} категорий",
+    "loadingText": "Загрузка категорий...",
+    "summaryTotal": "Всего категорий",
+    "summaryIncome": "Категории доходов",
+    "summaryExpense": "Категории расходов",
+    "summaryTopLevel": "Верхнего уровня"
+  },
+  "empty": {
+    "heading": "Категорий ещё нет",
+    "description": "Категории помогают упорядочивать проводки. Начните с импорта стандартного набора категорий или создайте собственные с нуля.",
+    "importButton": "Импортировать стандартные категории",
+    "createButton": "Создать свои",
+    "hint": "Стандартный набор включает распространённые категории доходов и расходов с подкатегориями"
+  },
+  "toasts": {
+    "created": "Категория успешно создана",
+    "updated": "Категория успешно обновлена",
+    "deleted": "Категория успешно удалена",
+    "cannotDeleteSystem": "Системные категории нельзя удалить",
+    "importSuccess": "Успешно импортировано {count} категорий",
+    "loadFailed": "Не удалось загрузить категории",
+    "deleteFailed": "Не удалось удалить категорию",
+    "createFailed": "Не удалось создать категорию",
+    "updateFailed": "Не удалось обновить категорию",
+    "importFailed": "Не удалось импортировать стандартные категории"
+  },
+  "form": {
+    "nameLabel": "Название категории",
+    "parentLabel": "Родительская категория",
+    "noParent": "Без родителя (верхний уровень)",
+    "typeLabel": "Тип",
+    "typeExpense": "Расход",
+    "typeIncome": "Доход",
+    "typeInherited": "Тип унаследован от родителя",
+    "colourLabel": "Цвет",
+    "colourInherit": "Унаследовать от родителя",
+    "colourNone": "Без цвета",
+    "colourInheritedFrom": "Цвет унаследован от родителя ({name})",
+    "descriptionLabel": "Описание (необязательно)",
+    "submitCreate": "Создать категорию",
+    "submitUpdate": "Обновить категорию"
+  },
+  "list": {
+    "emptyHeading": "Нет категорий",
+    "emptyDescription": "Начните с создания новой категории.",
+    "colName": "Название",
+    "colType": "Тип",
+    "colCount": "Количество",
+    "colDescription": "Описание",
+    "colActions": "Действия",
+    "badgeIncome": "Доход",
+    "badgeExpense": "Расход",
+    "systemBadge": "(Система)",
+    "inheritedColorTitle": "Унаследован от родителя",
+    "viewTransactionsTitle": "Просмотреть проводки в этой категории",
+    "densityToggleTitle": "Переключить плотность строк",
+    "densityNormal": "Обычная",
+    "densityCompact": "Компактная",
+    "densityDense": "Плотная"
+  },
+  "deleteDialog": {
+    "title": "Удалить «{name}»?",
+    "checkingUsage": "Проверка использования...",
+    "usedBy": "Эта категория используется в {count, plural, one {# элементе} other {# элементах}} (проводки и/или запланированные счета и поступления).",
+    "reassignLabel": "Переназначить в:",
+    "leaveUncategorized": "Оставить без категории",
+    "safeToDelete": "Эта категория не используется. Её можно безопасно удалить.",
+    "cannotUndo": "Это действие нельзя отменить."
+  },
+  "validation": {
+    "nameRequired": "Название категории обязательно"
+  }
+}

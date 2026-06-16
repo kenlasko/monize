@@ -1,0 +1,117 @@
+{
+  "page": {
+    "title": "通貨",
+    "subtitle": "勘定科目と有価証券で使用される通貨を管理する",
+    "refreshRates": "レートを更新",
+    "refreshing": "更新中...",
+    "newCurrency": "+ 新規通貨",
+    "searchPlaceholder": "コードまたは名前で検索...",
+    "statusAll": "すべて ({count})",
+    "statusActive": "有効 ({count})",
+    "statusInactive": "無効 ({count})",
+    "modalTitleEdit": "通貨を編集",
+    "modalTitleNew": "新規通貨",
+    "loading": "通貨を読み込み中...",
+    "count": "{count, plural, one {# 通貨} other {# 通貨}}",
+    "toasts": {
+      "loadFailed": "通貨の読み込みに失敗しました",
+      "updated": "通貨を更新しました",
+      "created": "通貨を作成しました",
+      "updateFailed": "通貨の更新に失敗しました",
+      "createFailed": "通貨の作成に失敗しました",
+      "deactivated": "通貨を無効化しました",
+      "activated": "通貨を有効化しました",
+      "statusFailed": "通貨のステータス更新に失敗しました",
+      "ratesRefreshed": "為替レートを更新しました：{updated} ペアを更新",
+      "ratesRefreshedWithFailed": "為替レートを更新しました：{updated} 件更新、{failed} 件失敗",
+      "ratesFailed": "為替レートの更新に失敗しました"
+    },
+    "summary": {
+      "totalCurrencies": "通貨合計",
+      "active": "有効",
+      "inactive": "無効"
+    }
+  },
+  "list": {
+    "columns": {
+      "code": "コード",
+      "name": "名前",
+      "symbol": "記号",
+      "decimals": "小数桁数",
+      "usage": "使用状況",
+      "rate": "レート ({currency})",
+      "status": "ステータス",
+      "actions": "操作"
+    },
+    "density": {
+      "normal": "通常",
+      "compact": "コンパクト",
+      "dense": "密集",
+      "toggle": "行の密度を切り替え"
+    },
+    "defaultBadge": "デフォルト",
+    "statusBadge": {
+      "active": "有効",
+      "activeShort": "有効",
+      "inactive": "無効",
+      "inactiveShort": "無効"
+    },
+    "actions": {
+      "edit": "編集",
+      "deactivate": "無効化",
+      "activate": "有効化"
+    },
+    "contextMenu": {
+      "editCurrency": "通貨を編集",
+      "deactivate": "無効化",
+      "activate": "有効化",
+      "deleteCurrency": "通貨を削除"
+    },
+    "usageTooltip": "{accounts} 勘定科目、{securities} 有価証券",
+    "usageAccounts": "{count, plural, one {# 勘定} other {# 勘定}}",
+    "usageSecurities": "{count, plural, one {# 証券} other {# 証券}}",
+    "empty": {
+      "title": "通貨がありません",
+      "subtitle": "通貨を追加して始めましょう。"
+    },
+    "deleteConfirm": {
+      "title": "「{code}」を削除しますか？",
+      "message": "この通貨は完全に削除されます。これは、通貨がどの勘定科目や有価証券にも使用されていない場合にのみ実行できます。",
+      "confirmLabel": "削除",
+      "cancelLabel": "キャンセル"
+    },
+    "toasts": {
+      "deleted": "通貨を削除しました",
+      "deleteFailed": "通貨の削除に失敗しました。使用中の可能性があります。"
+    }
+  },
+  "form": {
+    "codeLabel": "通貨コード",
+    "codePlaceholder": "例：USD、EUR、GBP",
+    "nameLabel": "名前",
+    "namePlaceholderCreate": "例：カナダドル、マレーシアリンギット（検索にも使用）",
+    "namePlaceholderEdit": "例：カナダドル",
+    "symbolLabel": "記号",
+    "symbolPlaceholder": "例：$、€、£、¥",
+    "decimalPlacesLabel": "小数桁数",
+    "lookupButton": "検索",
+    "lookingUp": "検索中...",
+    "clearButton": "クリア",
+    "clearTitle": "すべてのフィールドをクリア",
+    "submitCreate": "通貨を作成",
+    "submitUpdate": "通貨を更新",
+    "toasts": {
+      "lookupTooShort": "検索するには通貨コードまたは名前を入力してください（2文字以上）",
+      "found": "見つかりました：{details}",
+      "notFound": "「{query}」に一致する通貨が見つかりません",
+      "lookupFailed": "検索に失敗しました - もう一度試してください"
+    }
+  },
+  "validation": {
+    "codeLength": "通貨コードは正確に3文字でなければなりません",
+    "nameRequired": "名前は必須です",
+    "nameMax": "名前は100文字以内でなければなりません",
+    "symbolRequired": "記号は必須です",
+    "symbolMax": "記号は10文字以内でなければなりません"
+  }
+}

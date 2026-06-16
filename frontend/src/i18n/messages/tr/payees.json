@@ -1,0 +1,292 @@
+{
+  "page": {
+    "title": "Alacaklılar",
+    "subtitle": "Alacaklılarınızı ve varsayılan kategorilerini yönetin",
+    "deactivateUnused": "Kullanılmayanları Devre Dışı Bırak",
+    "autoAssignCategories": "Kategorileri Otomatik Ata",
+    "autoMergePayees": "Alacaklıları Otomatik Birleştir",
+    "newPayee": "+ Yeni Alacaklı",
+    "searchPlaceholder": "Alacaklı ara...",
+    "statusAll": "Tümü ({count})",
+    "statusActive": "Aktif ({count})",
+    "statusInactive": "Pasif ({count})",
+    "categoryFilterAll": "Tüm Alacaklılar ({count})",
+    "categoryFilterNoCategory": "Varsayılan Kategorisi Olmayanlar ({count})",
+    "categoryFilterUncategorized": "Kategorisiz İşlemler ({count})",
+    "modalTitleEdit": "Alacaklıyı Düzenle",
+    "modalTitleNew": "Yeni Alacaklı",
+    "loading": "Alacaklılar yükleniyor...",
+    "count": "{count, plural, one {# alacaklı} other {# alacaklı}}",
+    "toasts": {
+      "loadFailed": "Veriler yüklenemedi",
+      "updated": "Alacaklı başarıyla güncellendi",
+      "created": "Alacaklı başarıyla oluşturuldu",
+      "reactivated": "\"{name}\" alacaklısı yeniden etkinleştirildi",
+      "reactivateFailed": "Alacaklı yeniden etkinleştirilemedi",
+      "updateFailed": "Alacaklı güncellenemedi",
+      "createFailed": "Alacaklı oluşturulamadı",
+      "categorized": "{count, plural, one {# işlem kategorize edildi} other {# işlem kategorize edildi}}"
+    },
+    "summary": {
+      "totalPayees": "Toplam Alacaklı",
+      "active": "Aktif",
+      "inactive": "Pasif",
+      "withoutCategory": "Kategorisiz"
+    },
+    "applyDefaultCategories": "Varsayılan Kategorileri Uygula"
+  },
+  "list": {
+    "columns": {
+      "name": "Ad",
+      "defaultCategory": "Varsayılan Kategori",
+      "count": "Sayı",
+      "aliases": "Takma Adlar",
+      "lastUsed": "Son Kullanım",
+      "created": "Oluşturuldu",
+      "status": "Durum",
+      "notes": "Notlar",
+      "actions": "İşlemler"
+    },
+    "density": {
+      "normal": "Normal",
+      "compact": "Kompakt",
+      "dense": "Yoğun",
+      "toggle": "Satır yoğunluğunu değiştir"
+    },
+    "noCategory": "Yok",
+    "statusBadge": {
+      "active": "Aktif",
+      "inactive": "Pasif"
+    },
+    "actions": {
+      "reactivate": "Yeniden Etkinleştir",
+      "reactivateShort": "YE",
+      "merge": "Birleştir",
+      "mergeShort": "B",
+      "edit": "Düzenle",
+      "editShort": "D",
+      "delete": "Sil",
+      "deleteShort": "S"
+    },
+    "viewTransactionsTitle": "Bu alacaklının işlemlerini görüntüle",
+    "uncategorizedBadge": "{count, plural, one {# kategorisiz} other {# kategorisiz}}",
+    "uncategorizedTitle": "{count, plural, one {Bu alacaklının # işleminin kategorisi yok} other {Bu alacaklının # işleminin kategorisi yok}}",
+    "empty": {
+      "title": "Alacaklı yok",
+      "subtitle": "Yeni bir alacaklı oluşturarak başlayın."
+    },
+    "deleteConfirm": {
+      "title": "\"{name}\" silinsin mi?",
+      "message": "Bu işlem geri alınamaz.",
+      "confirmLabel": "Sil",
+      "cancelLabel": "İptal"
+    },
+    "toasts": {
+      "deleted": "Alacaklı başarıyla silindi",
+      "deleteFailed": "Alacaklı silinemedi"
+    }
+  },
+  "form": {
+    "nameLabel": "Alacaklı Adı",
+    "categoryLabel": "Varsayılan Kategori",
+    "notesLabel": "Notlar (isteğe bağlı)",
+    "submitCreate": "Alacaklı Oluştur",
+    "submitUpdate": "Alacaklıyı Güncelle",
+    "applyCategoryLabel": "Bu kategoriyi mevcut işlemlere uygula",
+    "applyCategoryNone": "Mevcut işlemleri değiştirme",
+    "applyCategoryUncategorized": "Yalnızca kategorisi olmayan işlemler ({count})",
+    "applyCategoryAll": "Tüm işlemler ({count})",
+    "applyCategoryHelp": "Transferler ve bölünmüş işlemler hiçbir zaman değiştirilmez."
+  },
+  "merge": {
+    "title": "Alacaklıyı Birleştir",
+    "mergeFromLabel": "Birleştirme kaynağı (silinecek):",
+    "transactionCount": "{count, plural, one {# işlem taşınacak} other {# işlem taşınacak}}",
+    "mergeIntoLabel": "Birleştirme hedefi (hedef alacaklı)",
+    "addAsAliasLabel": "\"{name}\"i hedef alacaklıya takma ad olarak ekle",
+    "willLabel": "Bu işlem şunları yapacak:",
+    "willMoveTransactions": "\"{source}\"daki tüm işlemleri \"{target}\"a taşı",
+    "willAddAlias": "Gelecekteki içe aktarmaların otomatik eşleşmesi için \"{source}\"u takma ad olarak ekle",
+    "willDelete": "\"{source}\" alacaklısını sil",
+    "merging": "Birleştiriliyor...",
+    "mergeButton": "Alacaklıyı Birleştir",
+    "toasts": {
+      "merged": "\"{target}\" ile birleştirildi: {details}",
+      "transactionsMigrated": "{count, plural, one {# işlem taşındı} other {# işlem taşındı}}",
+      "aliasAdded": "takma ad eklendi",
+      "sourceDeleted": "\"{name}\" silindi",
+      "failed": "Alacaklılar birleştirilemedi"
+    }
+  },
+  "categoryAutoAssign": {
+    "title": "Varsayılan Kategorileri Otomatik Ata",
+    "howItWorksTitle": "Nasıl çalışır",
+    "howItWorksBody": "Bu özellik, alacaklılara varsayılan kategoriler önermek için işlem geçmişinizi analiz eder. Her alacaklı için en sık kullanılan kategoriyi belirler ve bunu gelecekteki işlemler için varsayılan kategori olarak önerir. Gerektiğinde varsayılan kategoriyi her zaman değiştirebilirsiniz.",
+    "minTransactionsLabel": "Minimum İşlem: {count}",
+    "minTransactionsHelp": "Yalnızca en az bu kadar işlemi olan alacaklıları değerlendir",
+    "matchPercentageLabel": "Kategori Eşleşme Yüzdesi: %{percent}",
+    "matchPercentageHelp": "Kategori, işlemlerin en az bu yüzdesinde kullanılmalıdır",
+    "onlyWithoutCategoryLabel": "Yalnızca varsayılan kategorisi olmayan alacaklılar",
+    "backfillLabel": "Ayrıca {count, plural, one {# mevcut kategorisiz işlemi} other {# mevcut kategorisiz işlemi}} kategorize et",
+    "backfillHelp": "Seçilen kategoriyi şu anda kategorisi olmayan işlemlere uygular. Mevcut kategoriler, transferler ve bölünmüş işlemler değiştirilmez.",
+    "viewUncategorizedTitle": "{name} için {count, plural, one {# kategorisiz işlemi} other {# kategorisiz işlemi}} görüntüle",
+    "previewButton": "Önerileri Önizle",
+    "loading": "Yükleniyor...",
+    "suggestionsHeader": "Öneriler ({count} bulundu)",
+    "selectAll": "Tümünü seç",
+    "selectNone": "Hiçbirini seçme",
+    "selectPayeeLabel": "{name} seç",
+    "empty": {
+      "line1": "Mevcut kriterlerle eşleşen alacaklı yok.",
+      "line2": "Yukarıdaki ayarları değiştirmeyi deneyin."
+    },
+    "columns": {
+      "payee": "Alacaklı",
+      "suggestedCategory": "Önerilen Kategori",
+      "match": "Eşleşme"
+    },
+    "selectedCount": "{count, plural, one {# alacaklı seçildi} other {# alacaklı seçildi}}",
+    "applyButton": "{count, plural, one {# Alacaklıya} other {# Alacaklıya}} Uygula",
+    "applying": "Uygulanıyor...",
+    "toasts": {
+      "selectAtLeastOne": "Güncellenecek en az bir alacaklı seçin",
+      "updated": "{count, plural, one {# alacaklı güncellendi} other {# alacaklı güncellendi}}",
+      "backfilled": "{count, plural, one {# işlem kategorize edildi} other {# işlem kategorize edildi}}",
+      "loadFailed": "Öneriler yüklenemedi",
+      "applyFailed": "Kategori atamaları uygulanamadı"
+    }
+  },
+  "autoMerge": {
+    "title": "Alacaklıları Otomatik Birleştir",
+    "howItWorksTitle": "Nasıl çalışır",
+    "howItWorksBody": "Bu özellik alacaklılarınızı tarar ve bir adın diğerini genişlettiği varyantları gruplandırır; örneğin \"Migros\", \"MİGROS A.Ş.\" ve \"MİGROS MARKET 0421\" hepsi \"Migros\"u temel alır. Her grup tek bir kanonik alacaklıda birleştirilir ve gelecekteki içe aktarmaların otomatik eşleşmesi için joker takma ad (örn. \"*MİGROS*\") oluşturulur. Yalnızca ortak bir kelimeyi paylaşan alacaklılar (örn. \"Royal Elektrik\" ve \"Royal Şehir Fidanlığı\") ayrı tutulur. Uygulamadan önce her grubu inceleyin ve ayarlayın.",
+    "backupRecommendation": "Önerilen: Değişiklik yapmadan önce bir <link>yedek</link> oluşturun.",
+    "minGroupSizeLabel": "Minimum Grup Boyutu: {count}",
+    "minGroupSizeHelp": "Yalnızca en az bu kadar alacaklıya sahip grupları öner",
+    "similarityLabel": "Benzerlik Eşiği: %{percent}",
+    "similarityHelp": "Yazım toleransı: MIGROS / MİGROS gibi yakın eşleşmeleri de gruplandırmak için düşürün; %100 tam anahtar kelime eşleşmesi gerektirir.",
+    "minTokenLengthLabel": "Minimum Anahtar Kelime Uzunluğu: {count}",
+    "minTokenLengthHelp": "Gruplandırırken bundan kısa anahtar kelimeleri yoksay",
+    "includeInactiveLabel": "Pasif alacaklıları dahil et",
+    "previewButton": "Grupları Önizle",
+    "loading": "Yükleniyor...",
+    "groupsHeader": "Gruplar ({count} bulundu)",
+    "empty": {
+      "line1": "Mevcut kriterlerle eşleşen birleştirme grubu yok.",
+      "line2": "Benzerlik eşiğini veya grup boyutunu düşürmeyi deneyin."
+    },
+    "includeGroupLabel": "Bu grubu dahil et",
+    "canonicalNameLabel": "Alacaklı olarak sakla",
+    "aliasLabel": "Gelecekteki içe aktarmalar için takma ad",
+    "defaultCategoryLabel": "Varsayılan kategori (isteğe bağlı)",
+    "backfillLabel": "Ayrıca {count, plural, one {# mevcut kategorisiz işlemi} other {# mevcut kategorisiz işlemi}} kategorize et",
+    "aliasPlaceholder": "ör. *MİGROS*",
+    "keepLabel": "Bu alacaklıyı sakla",
+    "includeMemberLabel": "Birleştirmeye dahil et",
+    "keepBadge": "Sakla",
+    "keepColumn": "Sakla",
+    "mergeColumn": "Birleştir",
+    "membersHelp": "Saklanacak alacaklıyı seçin. Diğerleri bu alacaklıda birleştirilir.",
+    "memberTransactions": "{count, plural, one {# işlem} other {# işlem}}",
+    "selectedCount": "{count, plural, one {# grup seçildi} other {# grup seçildi}}",
+    "payeesMergedCount": "{count, plural, one {# birleştirilecek alacaklı} other {# birleştirilecek alacaklı}}",
+    "applyButton": "{count, plural, one {# Grubu} other {# Grubu}} Birleştir",
+    "applying": "Birleştiriliyor...",
+    "toasts": {
+      "selectAtLeastOne": "Birleştirilecek en az bir grup seçin",
+      "applied": "{groups, plural, one {# grup} other {# grup}} birleştirildi ({payees} alacaklı birleştirildi)",
+      "backfilled": "{count, plural, one {# işlem kategorize edildi} other {# işlem kategorize edildi}}",
+      "aliasesSkipped": "{count, plural, one {# takma ad çakışma nedeniyle atlandı} other {# takma ad çakışma nedeniyle atlandı}}",
+      "loadFailed": "Birleştirme grupları yüklenemedi",
+      "applyFailed": "Alacaklılar birleştirilemedi"
+    },
+    "categoryMatchLabel": "Yalnızca aynı kategorideki alacaklıları birleştir",
+    "categoryMatchHelp": "Kategorileri farklı olduğunda alacaklıları ayırın, böylece yanlış eşleşmeler azalır.",
+    "granularityLabel": "Kategori eşleşme düzeyi",
+    "selectAll": "Tümünü seç",
+    "deselectAll": "Tümünün seçimini kaldır",
+    "granularity": {
+      "category": "Kategori",
+      "subcategory": "Alt kategori"
+    },
+    "ignoreCommonWordsLabel": "Yaygın kelimeleri yoksay",
+    "ignoreCommonWordsHelp": "Grupları genel kelimelere (Restoran, Kafe, ülke adları) veya pek çok farklı alacaklının başladığı kelimelere dayandırma.",
+    "commonWordSensitivityLabel": "Yaygın kelime duyarlılığı: {count}+ varyant",
+    "commonWordSensitivityHelp": "Bir baş kelime, en az bu kadar farklı alacaklı ondan dallanırsa yaygın kabul edilir. Daha düşük = daha agresif filtrele.",
+    "viewUncategorizedTitle": "{name} için {count, plural, one {# kategorisiz işlemi} other {# kategorisiz işlemi}} görüntüle"
+  },
+  "deactivateUnused": {
+    "title": "Kullanılmayan Alacaklıları Devre Dışı Bırak",
+    "howItWorksTitle": "Nasıl çalışır",
+    "howItWorksBody": "Bu özellik nadiren kullanılan alacaklıları bulur ve devre dışı bırakır. Devre dışı bırakılan alacaklılar işlem oluştururken alacaklı açılır menüsünde görünmez, ancak geçmiş işlemleri korunur. Bir alacaklıyı istediğiniz zaman alacaklılar listesinden yeniden etkinleştirebilirsiniz.",
+    "maxTransactionsLabel": "{count, plural, one {# veya daha az işlem} other {# veya daha az işlem}}",
+    "maxTransactionsHelp": "Yalnızca bu kadar veya daha az işlemi olan alacaklıları dahil et",
+    "monthsUnusedLabel": "{label} önce en son kullanılan",
+    "monthsUnusedHelp": "Yalnızca bu kadar süredir kullanılmayan (veya hiç kullanılmamış) alacaklıları dahil et",
+    "previewButton": "Kullanılmayan Alacaklıları Önizle",
+    "loading": "Yükleniyor...",
+    "candidatesHeader": "Adaylar ({count} bulundu)",
+    "selectAll": "Tümünü seç",
+    "selectNone": "Hiçbirini seçme",
+    "selectPayeeLabel": "{name} seç",
+    "neverUsed": "Hiç kullanılmadı",
+    "empty": {
+      "line1": "Mevcut kriterlerle eşleşen alacaklı yok.",
+      "line2": "Yukarıdaki ayarları değiştirmeyi deneyin."
+    },
+    "columns": {
+      "payee": "Alacaklı",
+      "transactions": "İşlemler",
+      "lastUsed": "Son Kullanım"
+    },
+    "selectedCount": "{count, plural, one {# alacaklı seçildi} other {# alacaklı seçildi}}",
+    "deactivateButton": "{count, plural, one {# Alacaklıyı} other {# Alacaklıyı}} Devre Dışı Bırak",
+    "deactivating": "Devre dışı bırakılıyor...",
+    "toasts": {
+      "selectAtLeastOne": "Devre dışı bırakılacak en az bir alacaklı seçin",
+      "deactivated": "{count, plural, one {# alacaklı devre dışı bırakıldı} other {# alacaklı devre dışı bırakıldı}}",
+      "loadFailed": "Önizleme yüklenemedi",
+      "deactivateFailed": "Alacaklılar devre dışı bırakılamadı"
+    }
+  },
+  "reactivate": {
+    "title": "Alacaklı Yeniden Etkinleştirilsin mi?",
+    "message": "\"{name}\" alacaklısı daha önce devre dışı bırakıldı. Alacaklı açılır menülerinde tekrar görünmesi için yeniden etkinleştirmek ister misiniz?",
+    "keepInactiveButton": "Hayır, Pasif Kalsın",
+    "reactivateButton": "Yeniden Etkinleştir",
+    "reactivating": "Yeniden etkinleştiriliyor..."
+  },
+  "aliases": {
+    "heading": "Takma Adlar",
+    "description": "Takma adlar, içe aktarılan alacaklı adlarını bu alacaklıyla eşleştirir. Joker karakter olarak * kullanın (ör. \"STARBUCKS*\"). Büyük/küçük harf duyarsız.",
+    "loading": "Yükleniyor...",
+    "noAliases": "Takma ad yapılandırılmamış",
+    "removeTitle": "Takma adı kaldır",
+    "removeButton": "Kaldır",
+    "addButton": "Ekle",
+    "adding": "Ekleniyor...",
+    "placeholder": "ör. STARBUCKS #*",
+    "toasts": {
+      "alreadyAdded": "\"{alias}\" takma adı zaten eklendi",
+      "added": "\"{alias}\" takma adı eklendi",
+      "removed": "\"{alias}\" takma adı kaldırıldı",
+      "loadFailed": "Takma adlar yüklenemedi",
+      "addFailed": "Takma ad eklenemedi",
+      "removeFailed": "Takma ad kaldırılamadı"
+    }
+  },
+  "selectCategoryPlaceholder": "Kategori seçin...",
+  "validation": {
+    "nameRequired": "Alacaklı adı gereklidir"
+  },
+  "defaultCategoryBackfill": {
+    "allConfirmTitle": "Varsayılan kategoriler uygulansin mı?",
+    "allConfirmMessage": "Bu işlem, {payees, plural, one {# alacaklı} other {# alacaklı}} genelinde {transactions, plural, one {# kategorisiz işlemi} other {# kategorisiz işlemi}} her alacaklının varsayılan kategorisiyle kategorize edecektir. Manuel olarak kategorize edilmiş işlemler, transferler ve bölünmüş işlemler değiştirilmez.",
+    "confirmButton": "Uygula",
+    "toasts": {
+      "nothingToDo": "Kategorize edilecek kategorisiz işlem yok",
+      "applied": "{count, plural, one {# işlem kategorize edildi} other {# işlem kategorize edildi}}",
+      "failed": "İşlemler kategorize edilemedi"
+    }
+  }
+}

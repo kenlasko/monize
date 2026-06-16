@@ -1,0 +1,304 @@
+{
+  "priceRefresh": {
+    "noneToUpdate": "Нет ценных бумаг для обновления",
+    "updated": "{count, plural, one {# цена ценной бумаги обновлена} other {# цен ценных бумаг обновлено}}",
+    "partialFailure": "Цены обновлены: {updated} успешно, {failed} не удалось{symbols}",
+    "failed": "Не удалось обновить цены"
+  },
+  "page": {
+    "title": "Ценные бумаги",
+    "subtitle": "Управляйте акциями, ETF, паевыми фондами и другими ценными бумагами",
+    "newSecurity": "+ Новая ценная бумага",
+    "searchPlaceholder": "Поиск по символу или имени...",
+    "statusAll": "Все ({count})",
+    "statusActive": "Активные ({count})",
+    "statusInactive": "Неактивные ({count})",
+    "modalTitleEdit": "Редактировать ценную бумагу",
+    "modalTitleNew": "Новая ценная бумага",
+    "loading": "Загрузка ценных бумаг...",
+    "count": "{count, plural, one {# ценная бумага} other {# ценных бумаг}}",
+    "toasts": {
+      "loadFailed": "Не удалось загрузить ценные бумаги",
+      "updated": "Ценная бумага успешно обновлена",
+      "created": "Ценная бумага успешно создана",
+      "deactivated": "Ценная бумага деактивирована",
+      "activated": "Ценная бумага активирована",
+      "statusFailed": "Не удалось обновить статус ценной бумаги",
+      "deleted": "Ценная бумага \"{symbol}\" удалена",
+      "deleteFailed": "Не удалось удалить ценную бумагу",
+      "favouriteFailed": "Не удалось обновить избранное",
+      "updateFailed": "Не удалось обновить ценную бумагу",
+      "createFailed": "Не удалось создать ценную бумагу"
+    },
+    "deleteConfirm": {
+      "title": "Удалить ценную бумагу",
+      "message": "Вы уверены, что хотите удалить \"{symbol}\"? Вся история цен также будет удалена. Это действие нельзя отменить.",
+      "confirmLabel": "Удалить",
+      "cancelLabel": "Отмена"
+    }
+  },
+  "summary": {
+    "totalSecurities": "Всего ценных бумаг",
+    "types": "Типы",
+    "exchanges": "Биржи",
+    "currencies": "Валюты"
+  },
+  "list": {
+    "columns": {
+      "symbol": "Символ",
+      "name": "Имя",
+      "type": "Тип",
+      "shares": "Акции",
+      "exchange": "Биржа",
+      "currency": "Валюта",
+      "provider": "Провайдер",
+      "source": "Источник",
+      "status": "Статус",
+      "actions": "Действия",
+      "favourite": "Избранное"
+    },
+    "density": {
+      "normal": "Обычная",
+      "compact": "Компактная",
+      "dense": "Плотная",
+      "toggle": "Изменить плотность строк"
+    },
+    "statusBadge": {
+      "active": "Активная",
+      "activeShort": "Акт",
+      "inactive": "Неактивная",
+      "inactiveShort": "Неак"
+    },
+    "providerTitle": {
+      "override": "Переопределение провайдера для данной ценной бумаги",
+      "inherited": "Унаследовано из настроек провайдера котировок по умолчанию"
+    },
+    "columnTitles": {
+      "shares": "Текущее количество акций во всех счетах",
+      "source": "Источник последней цены"
+    },
+    "actions": {
+      "history": "История",
+      "prices": "Цены",
+      "edit": "Изменить",
+      "deactivate": "Деактивировать",
+      "activate": "Активировать",
+      "delete": "Удалить"
+    },
+    "favouriteButton": {
+      "add": "Добавить в избранное",
+      "remove": "Удалить из избранного"
+    },
+    "empty": {
+      "title": "Нет ценных бумаг",
+      "subtitle": "Начните с добавления вашей первой ценной бумаги."
+    },
+    "contextMenu": {
+      "transactionHistory": "История проводок",
+      "viewPrices": "Просмотр цен",
+      "editSecurity": "Редактировать ценную бумагу",
+      "deactivate": "Деактивировать",
+      "activate": "Активировать",
+      "delete": "Удалить"
+    }
+  },
+  "typeLabels": {
+    "STOCK": "Акция",
+    "ETF": "ETF",
+    "MUTUAL_FUND": "Паевой фонд",
+    "BOND": "Облигация",
+    "OPTION": "Опцион",
+    "CRYPTO": "Криптовалюта",
+    "OTHER": "Другое",
+    "STOCK_short": "Акц",
+    "ETF_short": "ETF",
+    "MUTUAL_FUND_short": "ПФ",
+    "BOND_short": "Обл",
+    "OPTION_short": "Опц",
+    "CRYPTO_short": "Кри",
+    "OTHER_short": "Др"
+  },
+  "form": {
+    "symbolLabel": "Символ",
+    "nameLabel": "Имя",
+    "typeLabel": "Тип",
+    "exchangeLabel": "Биржа",
+    "currencyLabel": "Валюта",
+    "quoteProviderLabel": "Провайдер котировок",
+    "msnIdLabel": "Идентификатор инструмента MSN (расширенный)",
+    "lookupProviderAriaLabel": "Поиск провайдера",
+    "lookupButton": "Найти",
+    "revertButton": "Отменить",
+    "clearButton": "Очистить",
+    "revertTitle": "Вернуться к исходным значениям",
+    "clearTitle": "Очистить все поля",
+    "favouriteLabel": "Избранное",
+    "addToFavourites": "Добавить в избранное",
+    "removeFromFavourites": "Удалить из избранного",
+    "submitCreate": "Создать ценную бумагу",
+    "submitUpdate": "Обновить ценную бумагу",
+    "toasts": {
+      "lookupTooShort": "Введите символ или имя (не менее 2 символов) для поиска",
+      "notFound": "Ценная бумага \"{query}\" не найдена",
+      "found": "Найдено: {details}",
+      "lookupFailed": "Поиск не удался — попробуйте снова"
+    },
+    "msnNotConfigured": "MSN выбран как провайдер котировок по умолчанию, но MSN_API_KEY не настроен на сервере. Котировки MSN будут недоступны до тех пор, пока администратор не установит переменную среды и не перезапустит сервер.",
+    "providers": {
+      "auto": "Авто",
+      "yahoo": "Yahoo",
+      "msn": "MSN"
+    },
+    "types": {
+      "select": "Выберите тип...",
+      "stock": "Акция",
+      "etf": "ETF",
+      "mutualFund": "Паевой фонд",
+      "bond": "Облигация",
+      "option": "Опцион",
+      "crypto": "Криптовалюта",
+      "other": "Другое"
+    },
+    "quoteProviderUseDefault": "Использовать по умолчанию ({provider})",
+    "symbolPlaceholder": "например, AAPL, XEQT, BTC",
+    "namePlaceholder": "например, Apple Inc., iShares Core Equity ETF",
+    "exchangeSearchPlaceholder": "Поиск бирж...",
+    "exchangePlaceholder": "Определяется автоматически по тикеру; переопределите только при необходимости"
+  },
+  "priceForm": {
+    "dateLabel": "Дата",
+    "closePriceLabel": "Цена закрытия",
+    "openPriceLabel": "Цена открытия",
+    "highPriceLabel": "Максимальная цена",
+    "lowPriceLabel": "Минимальная цена",
+    "volumeLabel": "Объём",
+    "optionalPlaceholder": "Необязательно",
+    "submitCreate": "Добавить цену",
+    "submitUpdate": "Обновить цену"
+  },
+  "priceHistory": {
+    "title": "{symbol} — История цен",
+    "forceUpdateButton": "Принудительно обновить цены",
+    "forceUpdateTitle": "Повторно загрузить исторические цены за весь период владения этой ценной бумагой",
+    "addPriceButton": "+ Добавить цену",
+    "addPriceSection": "Добавить цену",
+    "editPriceSection": "Редактировать цену",
+    "loading": "Загрузка цен...",
+    "empty": "История цен недоступна",
+    "columns": {
+      "date": "Дата",
+      "close": "Закрытие",
+      "open": "Открытие",
+      "high": "Максимум",
+      "low": "Минимум",
+      "volume": "Объём",
+      "source": "Источник",
+      "actions": "Действия"
+    },
+    "toasts": {
+      "added": "Цена добавлена",
+      "updated": "Цена обновлена",
+      "deleted": "Цена удалена",
+      "loadFailed": "Не удалось загрузить историю цен",
+      "addFailed": "Не удалось добавить цену",
+      "updateFailed": "Не удалось обновить цену",
+      "deleteFailed": "Не удалось удалить цену",
+      "updatedCount": "{count, plural, one {Обновлена # цена для {symbol}} other {Обновлено # цен для {symbol}}}",
+      "noPricesFound": "Цены для {symbol} не найдены",
+      "updatePricesFailed": "Не удалось обновить цены для {symbol}",
+      "updateFetchFailed": "Не удалось обновить цены"
+    },
+    "closeButton": "Закрыть",
+    "deleteConfirm": {
+      "title": "Удалить цену",
+      "confirmLabel": "Удалить"
+    }
+  },
+  "transactionHistory": {
+    "inactiveBadge": "Неактивная",
+    "currentShares": "Текущие акции",
+    "accountLabel": "Счёт",
+    "allAccounts": "Все счета ({shares})",
+    "accountClosed": "{name} (закрыт)",
+    "addTransaction": "+ Добавить проводку",
+    "loading": "Загрузка проводок...",
+    "emptyAll": "Нет проводок для этой ценной бумаги.",
+    "emptyAccount": "Нет проводок для этой ценной бумаги на выбранном счёте.",
+    "editTransactionTitle": "Редактировать проводку",
+    "columns": {
+      "date": "Дата",
+      "account": "Счёт",
+      "action": "Операция",
+      "quantity": "Количество",
+      "runningTotal": "Нарастающий итог",
+      "price": "Цена",
+      "amount": "Сумма",
+      "actionsLabel": "Действия"
+    },
+    "actionLabels": {
+      "BUY": "Покупка",
+      "SELL": "Продажа",
+      "DIVIDEND": "Дивиденд",
+      "INTEREST": "Процент",
+      "CAPITAL_GAIN": "Доход от прироста капитала",
+      "SPLIT": "Дробление",
+      "TRANSFER_IN": "Перевод входящий",
+      "TRANSFER_OUT": "Перевод исходящий",
+      "REINVEST": "Реинвестирование",
+      "ADD_SHARES": "Добавить акции",
+      "REMOVE_SHARES": "Удалить акции"
+    },
+    "toasts": {
+      "loadHistoryFailed": "Не удалось загрузить историю",
+      "loadTransactionFailed": "Не удалось загрузить проводку"
+    }
+  },
+  "shareAdjustment": {
+    "heading": "Скорректировать акции",
+    "accountLabel": "Счёт",
+    "accountPlaceholder": "Выберите счёт...",
+    "actionLabel": "Операция",
+    "quantityLabel": "Количество (акции)",
+    "dateLabel": "Дата",
+    "descriptionLabel": "Описание (необязательно)",
+    "descriptionPlaceholder": "например, Очистка остаточных акций",
+    "saving": "Сохранение...",
+    "submitButton": "Зафиксировать корректировку",
+    "accountClosed": "{name} (закрыт)",
+    "adjustmentActions": {
+      "REMOVE_SHARES": "Удалить акции",
+      "ADD_SHARES": "Добавить акции"
+    },
+    "toasts": {
+      "selectAccount": "Выберите счёт",
+      "quantityRequired": "Количество должно быть больше нуля",
+      "recorded": "Корректировка зафиксирована",
+      "failed": "Не удалось зафиксировать корректировку"
+    }
+  },
+  "lookupPicker": {
+    "title": "Несколько совпадений для \"{query}\"",
+    "subtitle": "Выберите нужную ценную бумагу.",
+    "columns": {
+      "symbol": "Символ",
+      "name": "Имя",
+      "exchange": "Биржа",
+      "currency": "Валюта",
+      "type": "Тип",
+      "source": "Источник"
+    },
+    "selectButton": "Выбрать"
+  },
+  "validation": {
+    "symbolRequired": "Символ обязателен",
+    "symbolMax": "Символ должен содержать не более 20 символов",
+    "nameRequired": "Имя обязательно",
+    "nameMax": "Имя должно содержать не более 255 символов",
+    "currencyRequired": "Валюта обязательна"
+  },
+  "priceValidation": {
+    "dateRequired": "Дата обязательна",
+    "priceRequired": "Цена обязательна",
+    "priceNonNegative": "Цена должна быть неотрицательным числом"
+  }
+}

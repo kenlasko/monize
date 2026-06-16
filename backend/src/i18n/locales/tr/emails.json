@@ -1,0 +1,165 @@
+{
+  "test": {
+    "subject": "Monize Test E-postası",
+    "heading": "Monize Test E-postası",
+    "greeting": "Merhaba {{ name }},",
+    "body": "Bu, Monize'den gelen bir test e-postasıdır. Bu e-postayı aldıysanız, e-posta bildirimleriniz düzgün çalışıyor demektir."
+  },
+  "billReminder": {
+    "subjectOne": "Monize: Dikkat gerektiren 1 yaklaşan fatura var",
+    "subjectMany": "Monize: Dikkat gerektiren {{ count }} yaklaşan fatura var",
+    "heading": "Yaklaşan Fatura Hatırlatması",
+    "greeting": "Merhaba {{ name }},",
+    "introOne": "Dikkat gerektiren 1 yaklaşan faturanız var:",
+    "introMany": "Dikkat gerektiren {{ count }} yaklaşan faturanız var:",
+    "colPayee": "Alacaklı",
+    "colDueDate": "Son Ödeme Tarihi",
+    "colType": "Tür",
+    "colAmount": "Miktar",
+    "typeIncome": "Gelir",
+    "typeExpense": "Harcama",
+    "button": "Faturaları ve Mevduatları Görüntüle"
+  },
+  "mortgageReminder": {
+    "subject": "Monize: Yaklaşan 1 ipotek yenileme",
+    "subjectPlural": "Monize: Yaklaşan {{ count }} ipotek yenileme",
+    "heading": "İpotek Yenileme Hatırlatması",
+    "greeting": "Merhaba {{ name }},",
+    "introOne": "Vadesi yaklaşan 1 ipotekiniz var. Vade sona ermeden önce yenileme seçeneklerini görüşmek için bankanızla iletişime geçin:",
+    "introMany": "Vadesi yaklaşan {{ count }} ipoteğiniz var. Vade sona ermeden önce yenileme seçeneklerini görüşmek için bankanızla iletişime geçin:",
+    "colMortgage": "İpotek",
+    "colTermEndDate": "Vade Bitiş Tarihi",
+    "colTimeRemaining": "Kalan Süre",
+    "daysRemainingOne": "1 gün",
+    "daysRemainingMany": "{{ count }} gün",
+    "button": "Hesapları Görüntüle"
+  },
+  "severity": {
+    "critical": "Kritik",
+    "warning": "Uyarı",
+    "success": "İyi Haber",
+    "info": "Bilgi"
+  },
+  "budgetAlertImmediate": {
+    "subject": "Monize: Uyarı - {{ title }}",
+    "subjectPlural": "Monize: Dikkat gerektiren {{ count }} uyarı var",
+    "heading": "Uyarı",
+    "greeting": "Merhaba {{ name }},",
+    "intro": "Bütçeniz dikkat gerektiriyor:",
+    "colSeverity": "Önem Derecesi",
+    "colAlert": "Uyarı",
+    "colDetails": "Ayrıntılar",
+    "button": "Bütçeyi Görüntüle"
+  },
+  "budgetWeeklyDigest": {
+    "subject": "Monize: Haftalık bütçe özetiniz",
+    "heading": "Haftalık Bütçe Özeti",
+    "greeting": "Merhaba {{ name }},",
+    "intro": "İşte haftalık bütçe özetiniz: <strong>{{ budgets }}</strong>",
+    "criticalOne": "kritik",
+    "criticalMany": "kritik",
+    "warningOne": "uyarı",
+    "warningMany": "uyarı",
+    "positiveOne": "olumlu",
+    "positiveMany": "olumlu",
+    "thisWeek": "Bu Hafta:",
+    "noAlerts": "Uyarı yok",
+    "totalAlerts": "Toplam uyarı: {{ count }}",
+    "topAlertsHeading": "Önemli Uyarılar",
+    "andMore": "...ve {{ count }} tane daha",
+    "button": "Bütçe Panosunu Görüntüle"
+  },
+  "budgetMonthlySummary": {
+    "subject": "Monize: Aylık bütçe özeti - {{ period }}",
+    "subjectPlural": "Monize: {{ count }} bütçe için aylık özet",
+    "heading": "Aylık Bütçe Özeti",
+    "greeting": "Merhaba {{ name }},",
+    "intro": "İşte az önce kapanan dönemin aylık bütçe özeti:",
+    "overBudget": "Bütçe Aşıldı",
+    "healthScore": "Sağlık Puanı:",
+    "labelBudgeted": "Bütçelenen",
+    "labelSpent": "Harcanan",
+    "labelRemaining": "Kalan",
+    "percentUsed": "%{{ percent }} kullanıldı",
+    "topCategories": "En Yüksek Kategoriler",
+    "button": "Bütçe Panosunu Görüntüle"
+  },
+  "oidcLink": {
+    "subject": "Monize: SSO Hesap Bağlantısını Onayla",
+    "heading": "SSO Hesabınızı Bağlayın",
+    "greeting": "Merhaba {{ name }},",
+    "intro": "Birisi, mevcut Monize hesabınızla eşleşen bir e-posta adresiyle SSO aracılığıyla oturum açmaya çalıştı. SSO kimliğinizi bu hesaba bağlamak için aşağıdaki düğmeye tıklayın:",
+    "button": "Hesap Bağlantısını Onayla",
+    "disclaimer": "Bu isteği siz başlatmadıysanız, bu e-postayı güvenle yoksayabilirsiniz. Bağlantının geçerlilik süresi 1 saattir."
+  },
+  "accountLocked": {
+    "subject": "Hesap Geçici Olarak Kilitlendi",
+    "heading": "Hesap Geçici Olarak Kilitlendi",
+    "greeting": "Merhaba {{ name }},",
+    "body1": "Birden fazla başarısız giriş denemesi nedeniyle Monize hesabınız geçici olarak kilitlendi. Bu, hesabınızı korumak için alınan bir güvenlik önlemidir.",
+    "body2": "Kilit otomatik olarak kalkacaktır. Oturum açmayı siz denemediyseniz, şifrenizi hemen sıfırlamanızı öneririz."
+  },
+  "passwordReset": {
+    "subject": "Monize Şifre Sıfırlama",
+    "heading": "Şifre Sıfırlama İsteği",
+    "greeting": "Merhaba {{ name }},",
+    "intro": "Şifrenizi sıfırlama isteği aldık. Yeni bir şifre belirlemek için aşağıdaki düğmeye tıklayın:",
+    "button": "Şifreyi Sıfırla",
+    "disclaimer": "Bu bağlantının geçerlilik süresi 1 saattir. Şifre sıfırlama isteğinde bulunmadıysanız, bu e-postayı güvenle yoksayabilirsiniz."
+  },
+  "emailVerification": {
+    "subject": "Monize e-postanızı doğrulayın",
+    "heading": "E-posta adresinizi doğrulayın",
+    "greeting": "Merhaba {{ name }},",
+    "intro": "Monize'ye kaydolduğunuz için teşekkürler. Hesabınızı etkinleştirmek ve oturum açmak için lütfen e-posta adresinizi onaylayın:",
+    "button": "E-postayı Doğrula",
+    "disclaimer": "Bu bağlantının geçerlilik süresi 24 saattir. Bir Monize hesabı oluşturmadıysanız, bu e-postayı güvenle yoksayabilirsiniz."
+  },
+  "accountInvite": {
+    "subject": "Monize hesabınız hazır",
+    "heading": "Monize hesabınız hazır",
+    "greeting": "Merhaba {{ name }},",
+    "intro": "Bir yönetici sizin için bir Monize hesabı oluşturdu. Şifrenizi belirlemek ve oturum açmak için aşağıdaki düğmeye tıklayın:",
+    "button": "Şifrenizi Belirleyin",
+    "disclaimer": "Bu bağlantının geçerlilik süresi 24 saattir. Bunu beklemiyorsanız, bu e-postayı güvenle yoksayabilirsiniz."
+  },
+  "delegateInvite": {
+    "subject": "Monize'ye davet edildiniz",
+    "heading": "Monize'ye davet edildiniz",
+    "greeting": "Merhaba {{ name }},",
+    "intro": "{{ owner }}, Monize hesabına delege olarak erişmeniz için sizi davet etti. Şifrenizi belirlemek ve başlamak için aşağıdaki düğmeye tıklayın:",
+    "button": "Şifrenizi Belirleyin",
+    "disclaimer": "Bu bağlantının geçerlilik süresi 24 saattir. Bu daveti beklemiyorsanız, bu e-postayı güvenle yoksayabilirsiniz."
+  },
+  "emergencyAccessReminder": {
+    "subjectOne": "Monize: hesabınız 1 gündür aktif değil",
+    "subjectMany": "Monize: hesabınız {{ daysSinceLogin }} gündür aktif değil",
+    "heading": "Monize Acil Erişim Hatırlatması",
+    "greeting": "Merhaba {{ name }},",
+    "grantPhraseToday": "bugün",
+    "grantPhraseFutureOne": "1 gün içinde",
+    "grantPhraseFutureMany": "{{ count }} gün içinde",
+    "bodyOne": "Monize'ye <strong>1 gündür</strong> giriş yapmadınız. Etkisiz olmaya devam ederseniz, belirlediğiniz acil durum kişilerine hesabınıza tam erişim {{ grantPhrase }} verilecektir.",
+    "bodyMany": "Monize'ye <strong>{{ daysSinceLogin }} gündür</strong> giriş yapmadınız. Etkisiz olmaya devam ederseniz, belirlediğiniz acil durum kişilerine hesabınıza tam erişim {{ grantPhrase }} verilecektir.",
+    "contactsLabel": "Belirlenen kişiler:",
+    "button": "Şimdi giriş yap",
+    "footer": "Giriş yapmak zamanlayıcıyı sıfırlar. Bu özelliği artık istemiyorsanız, Ayarlar → Acil Erişim bölümünden devre dışı bırakabilirsiniz."
+  },
+  "emergencyAccessGrant": {
+    "subject": "{{ owner }}'ın Monize hesabına acil erişim verildi",
+    "heading": "Acil Erişim Verildi",
+    "greeting": "Merhaba {{ name }},",
+    "body": "<strong>{{ owner }}</strong> sizi daha önce Monize hesabında acil durum kişisi olarak belirledi. Uzun süredir giriş yapmadığından, hesabı devralmanız için size tam erişim verilmektedir.",
+    "claimIntro": "Erişimi talep etmek için aşağıdaki bağlantıya tıklayın ve yeni bir şifre belirleyin. Hesap sahibi olarak oturum açacaksınız.",
+    "button": "Acil Erişimi Talep Et",
+    "expiry": "Bu bağlantı <strong>{{ expiry }}</strong> tarihine kadar geçerlidir ve yalnızca bir kez kullanılabilir. Birden fazla kişi bu e-postayı aldıysa, ilk talep eden hesabı devralacaktır."
+  },
+  "emergencyAccessGrantRevoked": {
+    "subject": "Monize: siz yokken acil erişim verildi",
+    "heading": "Siz Yokken Acil Erişim Verildi",
+    "greeting": "Merhaba {{ name }},",
+    "body1": "Hesabınız etkisiz olduğu için belirlediğiniz acil durum kişilerine hesabınızı devralmaları için bağlantılar gönderildi. Şimdi yeniden oturum açtığınız için <strong>bu bağlantılar iptal edildi</strong> ve güvenlik önlemi yeniden etkinleştirildi.",
+    "body2": "Bu bekleniyorsa herhangi bir işlem yapmanıza gerek yoktur. Beklenmedik bir durumsa, giriş etkinliğinizi ve acil erişim ayarlarınızı inceleyin.",
+    "button": "Acil Erişimi İncele"
+  }
+}

@@ -1,0 +1,177 @@
+{
+  "chartFlag": {
+    "dismiss": "Bu değeri gizle"
+  },
+  "appVersion": {
+    "releaseNotes": "v{version} sürüm notlarını görüntüle"
+  },
+  "save": "Kaydet",
+  "cancel": "İptal",
+  "delete": "Sil",
+  "edit": "Düzenle",
+  "close": "Kapat",
+  "actions": {
+    "edit": "Düzenle",
+    "delete": "Sil",
+    "view": "Görüntüle",
+    "duplicate": "Çoğalt",
+    "merge": "Birleştir",
+    "reactivate": "Yeniden Etkinleştir",
+    "reconcile": "Mutabakat",
+    "post": "Kaydet",
+    "skip": "Atla",
+    "close": "Kapat",
+    "reopen": "Yeniden Aç",
+    "scheduleRecurring": "Tekrarlayan Olarak Zamanla",
+    "more": "Daha Fazla İşlem"
+  },
+  "loading": "Yükleniyor...",
+  "pagination": {
+    "showing": "Gösterilen",
+    "of": "/",
+    "firstPage": "İlk sayfa",
+    "lastPage": "Son sayfa",
+    "previousPage": "Önceki sayfa",
+    "nextPage": "Sonraki sayfa",
+    "back10Pages": "10 sayfa geri",
+    "forward10Pages": "10 sayfa ileri",
+    "enterPageNumber": "Sayfa numarası girin"
+  },
+  "confirmDialog": {
+    "confirm": "Onayla"
+  },
+  "unsavedChanges": {
+    "title": "Kaydedilmemiş Değişiklikler",
+    "message": "Kaydedilmemiş değişiklikleriniz var. Ne yapmak istersiniz?",
+    "discard": "Vazgeç"
+  },
+  "exportDropdown": {
+    "export": "Dışa Aktar",
+    "exporting": "Dışa aktarılıyor...",
+    "exportPdf": "PDF Olarak Dışa Aktar",
+    "exportReport": "Raporu dışa aktar",
+    "failedPdf": "PDF dışa aktarılamadı. Lütfen tekrar deneyin."
+  },
+  "dateRange": {
+    "custom": "Özel",
+    "startDate": "Başlangıç Tarihi",
+    "endDate": "Bitiş Tarihi"
+  },
+  "colorPicker": {
+    "custom": "Özel:",
+    "apply": "Uygula"
+  },
+  "chartDownload": {
+    "downloadAsPng": "{filename} dosyasını PNG olarak indir",
+    "unableToCapture": "Grafik görüntüsü yakalanamıyor",
+    "failedToDownload": "Grafik indirilemedi"
+  },
+  "chartViewToggle": {
+    "pieChart": "Pasta Grafik",
+    "barChart": "Çubuk Grafik",
+    "stackedChart": "%100 Yığılmış Çubuk",
+    "lineChart": "Çizgi Grafik",
+    "areaChart": "Alan Grafik",
+    "table": "Tablo"
+  },
+  "formActions": {
+    "cancel": "İptal",
+    "save": "Kaydet"
+  },
+  "themeToggle": {
+    "light": "Açık",
+    "dark": "Koyu",
+    "system": "Sistem",
+    "title": "Tema: {label}. Değiştirmek için tıklayın."
+  },
+  "errorPage": {
+    "title": "Bir şeyler ters gitti",
+    "description": "Beklenmedik bir hata oluştu. Lütfen tekrar deneyin veya sorun devam ederse destek ile iletişime geçin.",
+    "errorId": "Hata Kimliği: {digest}",
+    "tryAgain": "Tekrar dene",
+    "goToDashboard": "Gösterge Paneline Git"
+  },
+  "errorBoundary": {
+    "defaultMessage": "Bu bileşen oluşturulurken bir şeyler ters gitti."
+  },
+  "calendar": {
+    "clear": "Temizle",
+    "today": "Bugün"
+  },
+  "multiSelect": {
+    "search": "Ara...",
+    "selectAll": "Tümünü Seç",
+    "clear": "Temizle",
+    "noOptions": "Seçenek bulunamadı"
+  },
+  "combobox": {
+    "createOption": "\"{value}\" oluştur"
+  },
+  "passwordInput": {
+    "show": "Girdiyi göster",
+    "hide": "Girdiyi gizle"
+  },
+  "currencyInput": {
+    "openCalculator": "Hesap makinesi aç",
+    "calculator": "Hesap Makinesi"
+  },
+  "dateInput": {
+    "shortcutsTitle": "Klavye kısayolları",
+    "today": "Bugün",
+    "firstDayOfYear": "Yılın ilk günü",
+    "lastDayOfYear": "Yılın son günü",
+    "firstDayOfMonth": "Ayın ilk günü",
+    "lastDayOfMonth": "Ayın son günü",
+    "nextDay": "Sonraki gün",
+    "previousDay": "Önceki gün",
+    "nextMonth": "Sonraki ay",
+    "previousMonth": "Önceki ay"
+  },
+  "accountTypes": {
+    "CHEQUING": "Vadesiz Hesap",
+    "SAVINGS": "Birikim Hesabı",
+    "CREDIT_CARD": "Kredi Kartı",
+    "INVESTMENT": "Yatırım",
+    "LOAN": "Kredi",
+    "MORTGAGE": "İpotek",
+    "CASH": "Nakit",
+    "LINE_OF_CREDIT": "Kredi Hattı",
+    "ASSET": "Varlık",
+    "OTHER": "Diğer"
+  },
+  "accountFilter": {
+    "allAccounts": "Tüm Hesaplar",
+    "allBut": "{names} hariç tümü"
+  },
+  "passwordRequirements": "Şifre en az 12 karakter olmalı ve büyük harf, küçük harf, rakam ve özel karakter içermelidir.",
+  "passwordValidation": {
+    "min": "Şifre en az 12 karakter olmalıdır",
+    "max": "Şifre en fazla 100 karakter olabilir",
+    "lowercase": "Küçük harf içermelidir",
+    "uppercase": "Büyük harf içermelidir",
+    "number": "Rakam içermelidir",
+    "special": "Özel karakter içermelidir"
+  },
+  "codeValidation": {
+    "length": "Kod tam olarak 6 haneli olmalıdır",
+    "digits": "Kod 6 haneli olmalıdır"
+  },
+  "monthsShort": ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"],
+  "weekdaysShort": ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"],
+  "weekdaysMin": ["Pz", "Pt", "Sa", "Ça", "Pe", "Cu", "Ct"],
+  "weekdaysNarrow": ["P", "P", "S", "Ç", "P", "C", "C"],
+  "dateFormat": {
+    "browserAuto": "Tarayıcı yerel ayarını kullan (otomatik algılama: {sample})",
+    "custom": "Özel..."
+  },
+  "emailInvalid": "Lütfen geçerli bir e-posta adresi girin",
+  "noSectionAccess": "O bölüme erişiminiz yok.",
+  "undoRedo": {
+    "nothingToUndo": "Geri alınacak işlem yok",
+    "cannotUndo": "Bu işlem geri alınamaz",
+    "undoFailed": "Geri alma başarısız",
+    "nothingToRedo": "Yeniden yapılacak işlem yok",
+    "cannotRedo": "Bu işlem yeniden yapılamaz",
+    "redoFailed": "Yeniden yapma başarısız"
+  }
+}

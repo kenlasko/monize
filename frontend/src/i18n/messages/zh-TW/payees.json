@@ -1,0 +1,292 @@
+{
+  "page": {
+    "title": "收款人",
+    "subtitle": "管理您的收款人及其預設類別",
+    "deactivateUnused": "停用未使用",
+    "autoAssignCategories": "自動指定類別",
+    "autoMergePayees": "自動合併收款人",
+    "newPayee": "+ 新增收款人",
+    "searchPlaceholder": "搜尋收款人...",
+    "statusAll": "全部（{count}）",
+    "statusActive": "啟用中（{count}）",
+    "statusInactive": "未啟用（{count}）",
+    "categoryFilterAll": "全部收款人（{count}）",
+    "categoryFilterNoCategory": "無預設類別（{count}）",
+    "categoryFilterUncategorized": "未分類交易（{count}）",
+    "modalTitleEdit": "編輯收款人",
+    "modalTitleNew": "新增收款人",
+    "loading": "載入收款人中...",
+    "count": "{count, plural, one {# 個收款人} other {# 個收款人}}",
+    "toasts": {
+      "loadFailed": "載入資料失敗",
+      "updated": "收款人更新成功",
+      "created": "收款人建立成功",
+      "reactivated": "收款人「{name}」已重新啟用",
+      "reactivateFailed": "重新啟用收款人失敗",
+      "updateFailed": "更新收款人失敗",
+      "createFailed": "建立收款人失敗",
+      "categorized": "{count, plural, one {已分類 # 筆交易} other {已分類 # 筆交易}}"
+    },
+    "summary": {
+      "totalPayees": "收款人總數",
+      "active": "啟用中",
+      "inactive": "未啟用",
+      "withoutCategory": "無類別"
+    },
+    "applyDefaultCategories": "套用預設類別"
+  },
+  "list": {
+    "columns": {
+      "name": "名稱",
+      "defaultCategory": "預設類別",
+      "count": "數量",
+      "aliases": "別名",
+      "lastUsed": "最後使用",
+      "created": "建立日期",
+      "status": "狀態",
+      "notes": "備註",
+      "actions": "操作"
+    },
+    "density": {
+      "normal": "標準",
+      "compact": "緊湊",
+      "dense": "密集",
+      "toggle": "切換列間距"
+    },
+    "noCategory": "無",
+    "statusBadge": {
+      "active": "啟用中",
+      "inactive": "未啟用"
+    },
+    "actions": {
+      "reactivate": "重新啟用",
+      "reactivateShort": "啟",
+      "merge": "合併",
+      "mergeShort": "合",
+      "edit": "編輯",
+      "editShort": "編",
+      "delete": "刪除",
+      "deleteShort": "刪"
+    },
+    "viewTransactionsTitle": "檢視此收款人的交易",
+    "uncategorizedBadge": "{count, plural, one {# 筆未分類} other {# 筆未分類}}",
+    "uncategorizedTitle": "{count, plural, one {此收款人有 # 筆交易無類別} other {此收款人有 # 筆交易無類別}}",
+    "empty": {
+      "title": "無收款人",
+      "subtitle": "開始建立新的收款人。"
+    },
+    "deleteConfirm": {
+      "title": "刪除「{name}」？",
+      "message": "此操作無法復原。",
+      "confirmLabel": "刪除",
+      "cancelLabel": "取消"
+    },
+    "toasts": {
+      "deleted": "收款人刪除成功",
+      "deleteFailed": "刪除收款人失敗"
+    }
+  },
+  "form": {
+    "nameLabel": "收款人名稱",
+    "categoryLabel": "預設類別",
+    "notesLabel": "備註（選填）",
+    "submitCreate": "建立收款人",
+    "submitUpdate": "更新收款人",
+    "applyCategoryLabel": "將此類別套用至現有交易",
+    "applyCategoryNone": "不更改現有交易",
+    "applyCategoryUncategorized": "僅限無類別的交易（{count}）",
+    "applyCategoryAll": "所有交易（{count}）",
+    "applyCategoryHelp": "轉帳與分帳交易不會被更改。"
+  },
+  "merge": {
+    "title": "合併收款人",
+    "mergeFromLabel": "合併來源（將被刪除）：",
+    "transactionCount": "{count, plural, one {# 筆交易將被遷移} other {# 筆交易將被遷移}}",
+    "mergeIntoLabel": "合併目標（目標收款人）",
+    "addAsAliasLabel": "將「{name}」新增為目標收款人的別名",
+    "willLabel": "此操作將：",
+    "willMoveTransactions": "將所有交易從「{source}」移至「{target}」",
+    "willAddAlias": "將「{source}」新增為別名，以便未來匯入時自動比對",
+    "willDelete": "刪除「{source}」收款人",
+    "merging": "合併中...",
+    "mergeButton": "合併收款人",
+    "toasts": {
+      "merged": "已合併至「{target}」：{details}",
+      "transactionsMigrated": "{count, plural, one {已遷移 # 筆交易} other {已遷移 # 筆交易}}",
+      "aliasAdded": "別名已新增",
+      "sourceDeleted": "「{name}」已刪除",
+      "failed": "合併收款人失敗"
+    }
+  },
+  "categoryAutoAssign": {
+    "title": "自動指定預設類別",
+    "howItWorksTitle": "運作方式",
+    "howItWorksBody": "此功能分析您的交易歷史，為收款人建議預設類別。它會查看每個收款人最常使用的類別，並建議將其設為未來交易的預設類別。您可以隨時覆蓋預設類別。",
+    "minTransactionsLabel": "最少交易數：{count}",
+    "minTransactionsHelp": "僅考慮至少有此筆數交易的收款人",
+    "matchPercentageLabel": "類別符合百分比：{percent}%",
+    "matchPercentageHelp": "該類別必須至少在此百分比的交易中使用",
+    "onlyWithoutCategoryLabel": "僅限無預設類別的收款人",
+    "backfillLabel": "同時為 {count, plural, one {# 筆現有未分類交易} other {# 筆現有未分類交易}} 分類",
+    "backfillHelp": "將所選類別套用至目前無類別的交易。現有類別、轉帳和分帳交易保持不變。",
+    "viewUncategorizedTitle": "檢視 {name} 的 {count, plural, one {# 筆未分類交易} other {# 筆未分類交易}}",
+    "previewButton": "預覽建議",
+    "loading": "載入中...",
+    "suggestionsHeader": "建議（找到 {count} 項）",
+    "selectAll": "全選",
+    "selectNone": "取消全選",
+    "selectPayeeLabel": "選取 {name}",
+    "empty": {
+      "line1": "沒有收款人符合目前條件。",
+      "line2": "請嘗試調整上方設定。"
+    },
+    "columns": {
+      "payee": "收款人",
+      "suggestedCategory": "建議類別",
+      "match": "符合度"
+    },
+    "selectedCount": "{count, plural, one {已選取 # 個收款人} other {已選取 # 個收款人}}",
+    "applyButton": "套用至 {count, plural, one {# 個收款人} other {# 個收款人}}",
+    "applying": "套用中...",
+    "toasts": {
+      "selectAtLeastOne": "請至少選取一個收款人以更新",
+      "updated": "{count, plural, one {已更新 # 個收款人} other {已更新 # 個收款人}}",
+      "backfilled": "{count, plural, one {已分類 # 筆交易} other {已分類 # 筆交易}}",
+      "loadFailed": "載入建議失敗",
+      "applyFailed": "套用類別指定失敗"
+    }
+  },
+  "autoMerge": {
+    "title": "自動合併收款人",
+    "howItWorksTitle": "運作方式",
+    "howItWorksBody": "此功能掃描您的收款人，並將名稱有包含關係的變體分組——例如「Lidl」、「LIDL sp. z o.o.」和「LIDL WARSZAWA 0421」都以「Lidl」為基礎。每個群組會合併為單一標準收款人，並建立萬用字元別名（例如「*LIDL*」），以便未來匯入時自動比對。僅共用常見詞彙的收款人（如「Royal Electric」和「Royal City Nursery」）將保持獨立。請在套用前審查並調整每個群組。",
+    "backupRecommendation": "建議：在進行變更前先建立 <link>備份</link>。",
+    "minGroupSizeLabel": "最小群組大小：{count}",
+    "minGroupSizeHelp": "僅建議至少有此數量收款人的群組",
+    "similarityLabel": "相似度閾值：{percent}%",
+    "similarityHelp": "拼字容忍度：降低此值以將近似字（如 LIDL / LIDI）納入同組；100% 要求完全符合關鍵字。",
+    "minTokenLengthLabel": "最短關鍵字長度：{count}",
+    "minTokenLengthHelp": "分組時忽略短於此長度的關鍵字",
+    "includeInactiveLabel": "包含未啟用的收款人",
+    "previewButton": "預覽群組",
+    "loading": "載入中...",
+    "groupsHeader": "群組（找到 {count} 個）",
+    "empty": {
+      "line1": "沒有合併群組符合目前條件。",
+      "line2": "請嘗試降低相似度閾值或群組大小。"
+    },
+    "includeGroupLabel": "包含此群組",
+    "canonicalNameLabel": "保留為收款人",
+    "aliasLabel": "未來匯入的別名",
+    "defaultCategoryLabel": "預設類別（選填）",
+    "backfillLabel": "同時為 {count, plural, one {# 筆現有未分類交易} other {# 筆現有未分類交易}} 分類",
+    "aliasPlaceholder": "例如：*LIDL*",
+    "keepLabel": "保留此收款人",
+    "includeMemberLabel": "納入合併",
+    "keepBadge": "保留",
+    "keepColumn": "保留",
+    "mergeColumn": "合併",
+    "membersHelp": "選擇要保留的收款人，其他收款人將合併至此。",
+    "memberTransactions": "{count, plural, one {# 筆交易} other {# 筆交易}}",
+    "selectedCount": "{count, plural, one {已選取 # 個群組} other {已選取 # 個群組}}",
+    "payeesMergedCount": "{count, plural, one {# 個待合併收款人} other {# 個待合併收款人}}",
+    "applyButton": "合併 {count, plural, one {# 個群組} other {# 個群組}}",
+    "applying": "合併中...",
+    "toasts": {
+      "selectAtLeastOne": "請至少選取一個群組以合併",
+      "applied": "已合併 {groups, plural, one {# 個群組} other {# 個群組}}（合計 {payees} 個收款人）",
+      "backfilled": "{count, plural, one {已分類 # 筆交易} other {已分類 # 筆交易}}",
+      "aliasesSkipped": "{count, plural, one {# 個別名因衝突而略過} other {# 個別名因衝突而略過}}",
+      "loadFailed": "載入合併群組失敗",
+      "applyFailed": "合併收款人失敗"
+    },
+    "categoryMatchLabel": "僅合併同類別的收款人",
+    "categoryMatchHelp": "當類別不同時保持收款人獨立，以減少誤判。",
+    "granularityLabel": "類別比對層級",
+    "selectAll": "全選",
+    "deselectAll": "取消全選",
+    "granularity": {
+      "category": "類別",
+      "subcategory": "子類別"
+    },
+    "ignoreCommonWordsLabel": "忽略常見詞彙",
+    "ignoreCommonWordsHelp": "不以通用詞彙（餐廳、咖啡廳、國家名稱）或許多不同收款人共用的起始詞作為分組依據。",
+    "commonWordSensitivityLabel": "常見詞彙敏感度：{count}+ 個變體",
+    "commonWordSensitivityHelp": "當至少此數量的不同收款人以某個起始詞開頭時，該詞將被視為常見詞彙。數值越低，過濾越積極。",
+    "viewUncategorizedTitle": "檢視 {name} 的 {count, plural, one {# 筆未分類交易} other {# 筆未分類交易}}"
+  },
+  "deactivateUnused": {
+    "title": "停用未使用的收款人",
+    "howItWorksTitle": "運作方式",
+    "howItWorksBody": "此功能找出鮮少使用的收款人並停用它們。停用的收款人不會出現在建立交易時的收款人下拉選單中，但其歷史交易將被保留。您可以隨時從收款人列表重新啟用收款人。",
+    "maxTransactionsLabel": "{count, plural, one {# 筆或更少的交易} other {# 筆或更少的交易}}",
+    "maxTransactionsHelp": "僅包含此筆數或更少交易的收款人",
+    "monthsUnusedLabel": "最後使用超過 {label} 前",
+    "monthsUnusedHelp": "僅包含在此時間之前未使用（或從未使用）的收款人",
+    "previewButton": "預覽未使用收款人",
+    "loading": "載入中...",
+    "candidatesHeader": "候選項目（找到 {count} 個）",
+    "selectAll": "全選",
+    "selectNone": "取消全選",
+    "selectPayeeLabel": "選取 {name}",
+    "neverUsed": "從未使用",
+    "empty": {
+      "line1": "沒有收款人符合目前條件。",
+      "line2": "請嘗試調整上方設定。"
+    },
+    "columns": {
+      "payee": "收款人",
+      "transactions": "交易",
+      "lastUsed": "最後使用"
+    },
+    "selectedCount": "{count, plural, one {已選取 # 個收款人} other {已選取 # 個收款人}}",
+    "deactivateButton": "停用 {count, plural, one {# 個收款人} other {# 個收款人}}",
+    "deactivating": "停用中...",
+    "toasts": {
+      "selectAtLeastOne": "請至少選取一個收款人以停用",
+      "deactivated": "{count, plural, one {已停用 # 個收款人} other {已停用 # 個收款人}}",
+      "loadFailed": "載入預覽失敗",
+      "deactivateFailed": "停用收款人失敗"
+    }
+  },
+  "reactivate": {
+    "title": "重新啟用收款人？",
+    "message": "收款人「{name}」先前已被停用。是否要重新啟用，使其再次出現在收款人下拉選單中？",
+    "keepInactiveButton": "否，保持停用",
+    "reactivateButton": "重新啟用",
+    "reactivating": "重新啟用中..."
+  },
+  "aliases": {
+    "heading": "別名",
+    "description": "別名將匯入的收款人名稱對應至此收款人。使用 * 作為萬用字元（例如：「STARBUCKS*」）。不區分大小寫。",
+    "loading": "載入中...",
+    "noAliases": "尚未設定別名",
+    "removeTitle": "移除別名",
+    "removeButton": "移除",
+    "addButton": "新增",
+    "adding": "新增中...",
+    "placeholder": "例如：STARBUCKS #*",
+    "toasts": {
+      "alreadyAdded": "別名「{alias}」已存在",
+      "added": "別名「{alias}」已新增",
+      "removed": "別名「{alias}」已移除",
+      "loadFailed": "載入別名失敗",
+      "addFailed": "新增別名失敗",
+      "removeFailed": "移除別名失敗"
+    }
+  },
+  "selectCategoryPlaceholder": "選擇類別...",
+  "validation": {
+    "nameRequired": "收款人名稱為必填"
+  },
+  "defaultCategoryBackfill": {
+    "allConfirmTitle": "套用預設類別？",
+    "allConfirmMessage": "此操作將使用每個收款人的預設類別，為 {transactions, plural, one {# 筆未分類交易} other {# 筆未分類交易}}（跨 {payees, plural, one {# 個收款人} other {# 個收款人}}）進行分類。手動分類的交易、轉帳和分帳交易保持不變。",
+    "confirmButton": "套用",
+    "toasts": {
+      "nothingToDo": "沒有未分類的交易可分類",
+      "applied": "{count, plural, one {已分類 # 筆交易} other {已分類 # 筆交易}}",
+      "failed": "分類交易失敗"
+    }
+  }
+}

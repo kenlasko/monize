@@ -1,0 +1,53 @@
+{
+  "page": {
+    "title": "AI 어시스턴트",
+    "subtitle": "자연어로 재정에 관한 질문을 하세요"
+  },
+  "chat": {
+    "conversationSaved": "대화가 브라우저에 저장되었습니다",
+    "clearConversation": "대화 지우기",
+    "inputPlaceholder": "재정에 관해 질문하세요...",
+    "inputPlaceholderDisabled": "AI 제공자가 설정되지 않았습니다",
+    "keyboardHint": "Enter로 전송, Shift+Enter로 줄 바꿈",
+    "cancelTitle": "취소",
+    "sendTitle": "전송"
+  },
+  "notConfigured": {
+    "heading": "AI가 설정되지 않았습니다",
+    "message": "설정된 AI 제공자가 없습니다. AI 어시스턴트를 사용하려면 설정에서 {link}하세요.",
+    "linkText": "AI 제공자를 설정"
+  },
+  "suggestedQueries": {
+    "heading": "재정에 관해 질문하세요",
+    "description": "지출, 수입, 계정 잔액, 순자산가액 등에 관한 질문에 답변할 수 있습니다.",
+    "monthlySpendingLabel": "월별 지출",
+    "monthlySpendingQuery": "지난달에 얼마나 지출했나요?",
+    "topCategoriesLabel": "주요 카테고리",
+    "topCategoriesQuery": "올해 상위 5개 지출 카테고리는 무엇인가요?",
+    "accountBalancesLabel": "계정 잔액",
+    "accountBalancesQuery": "현재 계정 잔액은 얼마인가요?",
+    "compareMonthsLabel": "월 비교",
+    "compareMonthsQuery": "이번 달과 지난달 지출을 비교해 주세요",
+    "netWorthTrendLabel": "순자산가액 추이",
+    "netWorthTrendQuery": "지난 12개월간 순자산가액 추이를 보여주세요",
+    "savingsRateLabel": "저축률",
+    "savingsRateQuery": "올해 수입 대비 얼마나 저축했나요?"
+  },
+  "toolDetails": {
+    "inputLabel": "입력",
+    "resultLabel": "결과",
+    "toolFailedAriaLabel": "도구 실패",
+    "toolSucceededAriaLabel": "도구 성공"
+  },
+  "table": {
+    "downloadTitle": "CSV로 표 다운로드",
+    "downloadAriaLabel": "CSV로 표 다운로드",
+    "noDataError": "내보낼 표 데이터가 없습니다"
+  },
+  "chart": {
+    "downloadTitle": "PNG로 차트 다운로드",
+    "downloadAriaLabel": "PNG로 차트 다운로드",
+    "captureError": "차트 이미지를 캡처할 수 없습니다",
+    "downloadError": "차트 다운로드에 실패했습니다"
+  }
+}

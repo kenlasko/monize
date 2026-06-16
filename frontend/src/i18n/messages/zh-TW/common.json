@@ -1,0 +1,177 @@
+{
+  "chartFlag": {
+    "dismiss": "隱藏此數值"
+  },
+  "appVersion": {
+    "releaseNotes": "查看 v{version} 版本說明"
+  },
+  "save": "儲存",
+  "cancel": "取消",
+  "delete": "刪除",
+  "edit": "編輯",
+  "close": "關閉",
+  "actions": {
+    "edit": "編輯",
+    "delete": "刪除",
+    "view": "檢視",
+    "duplicate": "複製",
+    "merge": "合併",
+    "reactivate": "重新啟用",
+    "reconcile": "對帳",
+    "post": "過帳",
+    "skip": "跳過",
+    "close": "關閉",
+    "reopen": "重新開啟",
+    "scheduleRecurring": "設為固定排程",
+    "more": "更多操作"
+  },
+  "loading": "載入中...",
+  "pagination": {
+    "showing": "顯示",
+    "of": "/",
+    "firstPage": "第一頁",
+    "lastPage": "最後一頁",
+    "previousPage": "上一頁",
+    "nextPage": "下一頁",
+    "back10Pages": "往前 10 頁",
+    "forward10Pages": "往後 10 頁",
+    "enterPageNumber": "輸入頁碼"
+  },
+  "confirmDialog": {
+    "confirm": "確認"
+  },
+  "unsavedChanges": {
+    "title": "未儲存的變更",
+    "message": "您有未儲存的變更。您想怎麼處理？",
+    "discard": "捨棄"
+  },
+  "exportDropdown": {
+    "export": "匯出",
+    "exporting": "匯出中...",
+    "exportPdf": "匯出 PDF",
+    "exportReport": "匯出報告",
+    "failedPdf": "匯出 PDF 失敗，請再試一次。"
+  },
+  "dateRange": {
+    "custom": "自訂",
+    "startDate": "開始日期",
+    "endDate": "結束日期"
+  },
+  "colorPicker": {
+    "custom": "自訂：",
+    "apply": "套用"
+  },
+  "chartDownload": {
+    "downloadAsPng": "下載 {filename} 為 PNG",
+    "unableToCapture": "無法擷取圖表影像",
+    "failedToDownload": "下載圖表失敗"
+  },
+  "chartViewToggle": {
+    "pieChart": "圓餅圖",
+    "barChart": "長條圖",
+    "stackedChart": "100% 堆疊長條圖",
+    "lineChart": "折線圖",
+    "areaChart": "面積圖",
+    "table": "表格"
+  },
+  "formActions": {
+    "cancel": "取消",
+    "save": "儲存"
+  },
+  "themeToggle": {
+    "light": "淺色",
+    "dark": "深色",
+    "system": "系統",
+    "title": "主題：{label}。點擊以變更。"
+  },
+  "errorPage": {
+    "title": "發生錯誤",
+    "description": "發生非預期的錯誤。請再試一次，若問題持續發生，請聯絡支援人員。",
+    "errorId": "錯誤 ID：{digest}",
+    "tryAgain": "再試一次",
+    "goToDashboard": "前往儀表板"
+  },
+  "errorBoundary": {
+    "defaultMessage": "轉譯此元件時發生錯誤。"
+  },
+  "calendar": {
+    "clear": "清除",
+    "today": "今天"
+  },
+  "multiSelect": {
+    "search": "搜尋...",
+    "selectAll": "全選",
+    "clear": "清除",
+    "noOptions": "找不到選項"
+  },
+  "combobox": {
+    "createOption": "建立「{value}」"
+  },
+  "passwordInput": {
+    "show": "顯示輸入",
+    "hide": "隱藏輸入"
+  },
+  "currencyInput": {
+    "openCalculator": "開啟計算機",
+    "calculator": "計算機"
+  },
+  "dateInput": {
+    "shortcutsTitle": "鍵盤快速鍵",
+    "today": "今天",
+    "firstDayOfYear": "年初第一天",
+    "lastDayOfYear": "年末最後一天",
+    "firstDayOfMonth": "月初第一天",
+    "lastDayOfMonth": "月末最後一天",
+    "nextDay": "下一天",
+    "previousDay": "上一天",
+    "nextMonth": "下個月",
+    "previousMonth": "上個月"
+  },
+  "accountTypes": {
+    "CHEQUING": "活期存款",
+    "SAVINGS": "儲蓄",
+    "CREDIT_CARD": "信用卡",
+    "INVESTMENT": "投資",
+    "LOAN": "貸款",
+    "MORTGAGE": "抵押貸款",
+    "CASH": "現金",
+    "LINE_OF_CREDIT": "信用額度",
+    "ASSET": "資產",
+    "OTHER": "其他"
+  },
+  "accountFilter": {
+    "allAccounts": "所有科目",
+    "allBut": "除 {names} 外全部"
+  },
+  "passwordRequirements": "密碼必須至少 12 個字元，並包含大寫字母、小寫字母、數字及特殊字元。",
+  "passwordValidation": {
+    "min": "密碼必須至少 12 個字元",
+    "max": "密碼不得超過 100 個字元",
+    "lowercase": "必須包含小寫字母",
+    "uppercase": "必須包含大寫字母",
+    "number": "必須包含數字",
+    "special": "必須包含特殊字元"
+  },
+  "codeValidation": {
+    "length": "驗證碼必須恰好為 6 位數字",
+    "digits": "驗證碼必須為 6 位數字"
+  },
+  "monthsShort": ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"],
+  "weekdaysShort": ["週日", "週一", "週二", "週三", "週四", "週五", "週六"],
+  "weekdaysMin": ["日", "一", "二", "三", "四", "五", "六"],
+  "weekdaysNarrow": ["日", "一", "二", "三", "四", "五", "六"],
+  "dateFormat": {
+    "browserAuto": "使用瀏覽器語言設定（自動偵測為 {sample}）",
+    "custom": "自訂..."
+  },
+  "emailInvalid": "請輸入有效的電子郵件地址",
+  "noSectionAccess": "您沒有存取該區段的權限。",
+  "undoRedo": {
+    "nothingToUndo": "沒有可復原的操作",
+    "cannotUndo": "無法復原此操作",
+    "undoFailed": "復原失敗",
+    "nothingToRedo": "沒有可重做的操作",
+    "cannotRedo": "無法重做此操作",
+    "redoFailed": "重做失敗"
+  }
+}

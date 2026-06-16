@@ -1,0 +1,117 @@
+{
+  "page": {
+    "title": "货币",
+    "subtitle": "管理您账户和证券中使用的货币",
+    "refreshRates": "刷新汇率",
+    "refreshing": "刷新中...",
+    "newCurrency": "+ 新增货币",
+    "searchPlaceholder": "按代码或名称搜索...",
+    "statusAll": "全部 ({count})",
+    "statusActive": "启用 ({count})",
+    "statusInactive": "停用 ({count})",
+    "modalTitleEdit": "编辑货币",
+    "modalTitleNew": "新增货币",
+    "loading": "加载货币中...",
+    "count": "{count, plural, one {# 种货币} other {# 种货币}}",
+    "toasts": {
+      "loadFailed": "加载货币失败",
+      "updated": "货币更新成功",
+      "created": "货币创建成功",
+      "updateFailed": "更新货币失败",
+      "createFailed": "创建货币失败",
+      "deactivated": "货币已停用",
+      "activated": "货币已启用",
+      "statusFailed": "更新货币状态失败",
+      "ratesRefreshed": "汇率已刷新：{updated} 对已更新",
+      "ratesRefreshedWithFailed": "汇率已刷新：{updated} 对成功，{failed} 对失败",
+      "ratesFailed": "刷新汇率失败"
+    },
+    "summary": {
+      "totalCurrencies": "货币总数",
+      "active": "启用",
+      "inactive": "停用"
+    }
+  },
+  "list": {
+    "columns": {
+      "code": "代码",
+      "name": "名称",
+      "symbol": "符号",
+      "decimals": "小数位",
+      "usage": "使用情况",
+      "rate": "汇率 ({currency})",
+      "status": "状态",
+      "actions": "操作"
+    },
+    "density": {
+      "normal": "普通",
+      "compact": "紧凑",
+      "dense": "密集",
+      "toggle": "切换行密度"
+    },
+    "defaultBadge": "默认",
+    "statusBadge": {
+      "active": "启用",
+      "activeShort": "启",
+      "inactive": "停用",
+      "inactiveShort": "停"
+    },
+    "actions": {
+      "edit": "编辑",
+      "deactivate": "停用",
+      "activate": "启用"
+    },
+    "contextMenu": {
+      "editCurrency": "编辑货币",
+      "deactivate": "停用",
+      "activate": "启用",
+      "deleteCurrency": "删除货币"
+    },
+    "usageTooltip": "{accounts} 个账户，{securities} 种证券",
+    "usageAccounts": "{count, plural, one {# 个账户} other {# 个账户}}",
+    "usageSecurities": "{count, plural, one {# 种证券} other {# 种证券}}",
+    "empty": {
+      "title": "无货币",
+      "subtitle": "从添加一种货币开始。"
+    },
+    "deleteConfirm": {
+      "title": "删除 \"{code}\"？",
+      "message": "该货币将被永久删除。仅当货币未被任何账户或证券使用时才能删除。",
+      "confirmLabel": "删除",
+      "cancelLabel": "取消"
+    },
+    "toasts": {
+      "deleted": "货币删除成功",
+      "deleteFailed": "删除货币失败，该货币可能正在使用中。"
+    }
+  },
+  "form": {
+    "codeLabel": "货币代码",
+    "codePlaceholder": "例如：USD、EUR、GBP",
+    "nameLabel": "名称",
+    "namePlaceholderCreate": "例如：Canadian Dollar、Malaysia、Ringgit（也用于查询）",
+    "namePlaceholderEdit": "例如：加拿大元",
+    "symbolLabel": "符号",
+    "symbolPlaceholder": "例如：$、€、£、¥",
+    "decimalPlacesLabel": "小数位数",
+    "lookupButton": "查询",
+    "lookingUp": "查询中...",
+    "clearButton": "清除",
+    "clearTitle": "清除所有字段",
+    "submitCreate": "创建货币",
+    "submitUpdate": "更新货币",
+    "toasts": {
+      "lookupTooShort": "请输入货币代码或名称（至少 2 个字符）进行查询",
+      "found": "已找到：{details}",
+      "notFound": "未找到 \"{query}\" 对应的货币",
+      "lookupFailed": "查询失败，请重试"
+    }
+  },
+  "validation": {
+    "codeLength": "货币代码必须恰好为 3 个字符",
+    "nameRequired": "名称为必填项",
+    "nameMax": "名称不能超过 100 个字符",
+    "symbolRequired": "符号为必填项",
+    "symbolMax": "符号不能超过 10 个字符"
+  }
+}

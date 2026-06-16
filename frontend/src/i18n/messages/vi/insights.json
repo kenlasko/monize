@@ -1,0 +1,8 @@
+{
+  "page": {"title": "Thông tin chi tiêu","subtitle": "Phân tích xu hướng và bất thường trong chi tiêu của bạn dựa trên AI"},
+  "list": {"lastUpdated": "Cập nhật lần cuối: {date} {time}","refreshButton": "Làm mới thông tin","generating": "Đang tạo...","allTypes": "Tất cả loại","allSeverities": "Tất cả mức độ","showDismissed": "Hiển thị đã ẩn","emptyNoInsights": "Chưa có thông tin nào được tạo. Nhấn \"Làm mới thông tin\" để phân tích xu hướng chi tiêu của bạn.","emptyFiltered": "Không có thông tin nào khớp với bộ lọc hiện tại của bạn.","generateButton": "Tạo thông tin","alertCount": "{count, plural, one {# cảnh báo} other {# cảnh báo}}","warningCount": "{count, plural, one {# lưu ý} other {# lưu ý}}","errorLoadFailed": "Không thể tải thông tin. Vui lòng thử lại.","errorGenerateFailed": "Không thể tạo thông tin. Đảm bảo bạn đã cấu hình nhà cung cấp AI.","errorTimeout": "Quá trình tạo thông tin mất nhiều thời gian hơn dự kiến. Vui lòng chờ hoặc làm mới trang."},
+  "card": {"dismiss": "Ẩn","dismissing": "Đang ẩn..."},
+  "notConfigured": {"heading": "AI chưa được cấu hình","message": "Chưa có nhà cung cấp AI nào được cấu hình. Để sử dụng Thông tin chi tiêu, vui lòng {link} trong cài đặt của bạn.","linkText": "cấu hình nhà cung cấp AI"},
+  "insightTypes": {"anomaly": "Bất thường","trend": "Xu hướng","subscription": "Đăng ký","budget_pace": "Tiến độ ngân sách","seasonal": "Theo mùa","new_recurring": "Định kỳ mới"},
+  "insightSeverities": {"info": "Thông tin","warning": "Lưu ý","alert": "Cảnh báo"}
+}

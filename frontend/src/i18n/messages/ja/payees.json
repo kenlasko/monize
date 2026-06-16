@@ -1,0 +1,292 @@
+{
+  "page": {
+    "title": "支払先",
+    "subtitle": "支払先とデフォルトカテゴリを管理する",
+    "deactivateUnused": "未使用を無効化",
+    "autoAssignCategories": "カテゴリを自動割り当て",
+    "autoMergePayees": "支払先を自動マージ",
+    "newPayee": "+ 新規支払先",
+    "searchPlaceholder": "支払先を検索...",
+    "statusAll": "すべて（{count}）",
+    "statusActive": "有効（{count}）",
+    "statusInactive": "無効（{count}）",
+    "categoryFilterAll": "すべての支払先（{count}）",
+    "categoryFilterNoCategory": "デフォルトカテゴリなし（{count}）",
+    "categoryFilterUncategorized": "未分類の取引（{count}）",
+    "modalTitleEdit": "支払先を編集",
+    "modalTitleNew": "新規支払先",
+    "loading": "支払先を読み込み中...",
+    "count": "{count, plural, one {# 件の支払先} other {# 件の支払先}}",
+    "toasts": {
+      "loadFailed": "データの読み込みに失敗しました",
+      "updated": "支払先が正常に更新されました",
+      "created": "支払先が正常に作成されました",
+      "reactivated": "支払先「{name}」が再有効化されました",
+      "reactivateFailed": "支払先の再有効化に失敗しました",
+      "updateFailed": "支払先の更新に失敗しました",
+      "createFailed": "支払先の作成に失敗しました",
+      "categorized": "{count, plural, one {# 件の取引を分類しました} other {# 件の取引を分類しました}}"
+    },
+    "summary": {
+      "totalPayees": "支払先合計",
+      "active": "有効",
+      "inactive": "無効",
+      "withoutCategory": "カテゴリなし"
+    },
+    "applyDefaultCategories": "デフォルトカテゴリを適用"
+  },
+  "list": {
+    "columns": {
+      "name": "名前",
+      "defaultCategory": "デフォルトカテゴリ",
+      "count": "件数",
+      "aliases": "エイリアス",
+      "lastUsed": "最終使用",
+      "created": "作成日",
+      "status": "ステータス",
+      "notes": "メモ",
+      "actions": "操作"
+    },
+    "density": {
+      "normal": "標準",
+      "compact": "コンパクト",
+      "dense": "密集",
+      "toggle": "行の密度を切り替え"
+    },
+    "noCategory": "なし",
+    "statusBadge": {
+      "active": "有効",
+      "inactive": "無効"
+    },
+    "actions": {
+      "reactivate": "再有効化",
+      "reactivateShort": "再",
+      "merge": "マージ",
+      "mergeShort": "M",
+      "edit": "編集",
+      "editShort": "E",
+      "delete": "削除",
+      "deleteShort": "X"
+    },
+    "viewTransactionsTitle": "この支払先の取引を確認",
+    "uncategorizedBadge": "{count, plural, one {# 件未分類} other {# 件未分類}}",
+    "uncategorizedTitle": "{count, plural, one {この支払先の # 件の取引にカテゴリがありません} other {この支払先の # 件の取引にカテゴリがありません}}",
+    "empty": {
+      "title": "支払先がありません",
+      "subtitle": "新規支払先を作成して始めてください。"
+    },
+    "deleteConfirm": {
+      "title": "「{name}」を削除しますか？",
+      "message": "この操作は元に戻せません。",
+      "confirmLabel": "削除",
+      "cancelLabel": "キャンセル"
+    },
+    "toasts": {
+      "deleted": "支払先が正常に削除されました",
+      "deleteFailed": "支払先の削除に失敗しました"
+    }
+  },
+  "form": {
+    "nameLabel": "支払先名",
+    "categoryLabel": "デフォルトカテゴリ",
+    "notesLabel": "メモ（任意）",
+    "submitCreate": "支払先を作成",
+    "submitUpdate": "支払先を更新",
+    "applyCategoryLabel": "このカテゴリを既存の取引に適用",
+    "applyCategoryNone": "既存の取引は変更しない",
+    "applyCategoryUncategorized": "カテゴリのない取引のみ（{count}）",
+    "applyCategoryAll": "すべての取引（{count}）",
+    "applyCategoryHelp": "振替と分割取引は変更されません。"
+  },
+  "merge": {
+    "title": "支払先をマージ",
+    "mergeFromLabel": "マージ元（削除されます）：",
+    "transactionCount": "{count, plural, one {# 件の取引が移行されます} other {# 件の取引が移行されます}}",
+    "mergeIntoLabel": "マージ先（ターゲット支払先）",
+    "addAsAliasLabel": "ターゲット支払先にエイリアスとして「{name}」を追加",
+    "willLabel": "これにより：",
+    "willMoveTransactions": "「{source}」からすべての取引を「{target}」に移動",
+    "willAddAlias": "将来のインポートが自動マッチするようにエイリアスとして「{source}」を追加",
+    "willDelete": "「{source}」支払先を削除",
+    "merging": "マージ中...",
+    "mergeButton": "支払先をマージ",
+    "toasts": {
+      "merged": "「{target}」にマージしました：{details}",
+      "transactionsMigrated": "{count, plural, one {# 件の取引が移行されました} other {# 件の取引が移行されました}}",
+      "aliasAdded": "エイリアスが追加されました",
+      "sourceDeleted": "「{name}」が削除されました",
+      "failed": "支払先のマージに失敗しました"
+    }
+  },
+  "categoryAutoAssign": {
+    "title": "デフォルトカテゴリを自動割り当て",
+    "howItWorksTitle": "仕組み",
+    "howItWorksBody": "この機能は取引履歴を分析して、支払先のデフォルトカテゴリを提案します。各支払先で最も一般的に使用されているカテゴリを確認し、将来の取引のデフォルトカテゴリとして割り当てることを提案します。必要に応じてデフォルトカテゴリをいつでも上書きできます。",
+    "minTransactionsLabel": "最小取引数：{count}",
+    "minTransactionsHelp": "少なくともこの数の取引がある支払先のみを考慮します",
+    "matchPercentageLabel": "カテゴリ一致率：{percent}%",
+    "matchPercentageHelp": "カテゴリは取引の少なくともこの割合で使用されなければなりません",
+    "onlyWithoutCategoryLabel": "デフォルトカテゴリのない支払先のみ",
+    "backfillLabel": "既存の未分類取引 {count, plural, one {# 件} other {# 件}} にも分類を適用",
+    "backfillHelp": "現在カテゴリのない取引に選択したカテゴリを適用します。既存のカテゴリ、振替、分割取引は変更されません。",
+    "viewUncategorizedTitle": "{name} の未分類取引 {count, plural, one {# 件} other {# 件}} を表示",
+    "previewButton": "提案をプレビュー",
+    "loading": "読み込み中...",
+    "suggestionsHeader": "提案（{count} 件見つかりました）",
+    "selectAll": "すべて選択",
+    "selectNone": "すべて解除",
+    "selectPayeeLabel": "{name} を選択",
+    "empty": {
+      "line1": "現在の条件に一致する支払先がありません。",
+      "line2": "上の設定を調整してみてください。"
+    },
+    "columns": {
+      "payee": "支払先",
+      "suggestedCategory": "提案カテゴリ",
+      "match": "一致率"
+    },
+    "selectedCount": "{count, plural, one {# 件の支払先が選択されました} other {# 件の支払先が選択されました}}",
+    "applyButton": "{count, plural, one {# 件の支払先} other {# 件の支払先}} に適用",
+    "applying": "適用中...",
+    "toasts": {
+      "selectAtLeastOne": "更新する支払先を少なくとも1件選択してください",
+      "updated": "{count, plural, one {# 件の支払先を更新しました} other {# 件の支払先を更新しました}}",
+      "backfilled": "{count, plural, one {# 件の取引を分類しました} other {# 件の取引を分類しました}}",
+      "loadFailed": "提案の読み込みに失敗しました",
+      "applyFailed": "カテゴリ割り当ての適用に失敗しました"
+    }
+  },
+  "autoMerge": {
+    "title": "支払先を自動マージ",
+    "howItWorksTitle": "仕組み",
+    "howItWorksBody": "この機能は支払先をスキャンして、一方の名前がもう一方を拡張するバリアントをグループ化します。例えば「Lidl」、「LIDL sp. z o.o.」、「LIDL WARSZAWA 0421」はすべて「Lidl」を基にしています。各グループは単一の正規支払先にマージされ、将来のインポートが自動的に一致するようにワイルドカードエイリアス（「*LIDL*」など）が作成されます。単に一般的な単語を共有する支払先（「Royal Electric」と「Royal City Nursery」など）は別々に保持されます。適用する前に各グループを確認して調整してください。",
+    "backupRecommendation": "推奨：変更を加える前に<link>バックアップ</link>を作成してください。",
+    "minGroupSizeLabel": "最小グループサイズ：{count}",
+    "minGroupSizeHelp": "少なくともこの数の支払先を持つグループのみを提案します",
+    "similarityLabel": "類似度閾値：{percent}%",
+    "similarityHelp": "スペルの許容度：LIDL / LIDIのような近い一致もグループ化する場合は下げてください。100%は完全なキーワード一致を必要とします。",
+    "minTokenLengthLabel": "最小キーワード長：{count}",
+    "minTokenLengthHelp": "グループ化時にこれより短いキーワードを無視します",
+    "includeInactiveLabel": "無効な支払先を含める",
+    "previewButton": "グループをプレビュー",
+    "loading": "読み込み中...",
+    "groupsHeader": "グループ（{count} 件見つかりました）",
+    "empty": {
+      "line1": "現在の条件に一致するマージグループがありません。",
+      "line2": "類似度の閾値またはグループサイズを下げてみてください。"
+    },
+    "includeGroupLabel": "このグループを含める",
+    "canonicalNameLabel": "支払先として保持",
+    "aliasLabel": "将来のインポート用エイリアス",
+    "defaultCategoryLabel": "デフォルトカテゴリ（任意）",
+    "backfillLabel": "既存の未分類取引 {count, plural, one {# 件} other {# 件}} にも分類を適用",
+    "aliasPlaceholder": "例：*LIDL*",
+    "keepLabel": "この支払先を保持",
+    "includeMemberLabel": "マージに含める",
+    "keepBadge": "保持",
+    "keepColumn": "保持",
+    "mergeColumn": "マージ",
+    "membersHelp": "保持する支払先を選択します。その他はその支払先にマージされます。",
+    "memberTransactions": "{count, plural, one {# 件の取引} other {# 件の取引}}",
+    "selectedCount": "{count, plural, one {# 件のグループが選択されました} other {# 件のグループが選択されました}}",
+    "payeesMergedCount": "{count, plural, one {# 件の支払先をマージ} other {# 件の支払先をマージ}}",
+    "applyButton": "{count, plural, one {# 件のグループ} other {# 件のグループ}} をマージ",
+    "applying": "マージ中...",
+    "toasts": {
+      "selectAtLeastOne": "マージするグループを少なくとも1件選択してください",
+      "applied": "{groups, plural, one {# 件のグループ} other {# 件のグループ}} をマージしました（{payees} 件の支払先が統合されました）",
+      "backfilled": "{count, plural, one {# 件の取引を分類しました} other {# 件の取引を分類しました}}",
+      "aliasesSkipped": "{count, plural, one {# 件のエイリアスが競合のためスキップされました} other {# 件のエイリアスが競合のためスキップされました}}",
+      "loadFailed": "マージグループの読み込みに失敗しました",
+      "applyFailed": "支払先のマージに失敗しました"
+    },
+    "categoryMatchLabel": "同じカテゴリの支払先のみをマージ",
+    "categoryMatchHelp": "カテゴリが異なる場合は支払先を分けておき、誤った一致を減らします。",
+    "granularityLabel": "カテゴリ一致レベル",
+    "selectAll": "すべて選択",
+    "deselectAll": "すべて解除",
+    "granularity": {
+      "category": "カテゴリ",
+      "subcategory": "サブカテゴリ"
+    },
+    "ignoreCommonWordsLabel": "一般的な単語を無視",
+    "ignoreCommonWordsHelp": "一般的な単語（レストラン、カフェ、国名）や多くの支払先が使用する単語をグループのアンカーにしません。",
+    "commonWordSensitivityLabel": "一般語感度：{count}+ バリアント",
+    "commonWordSensitivityHelp": "先頭の単語は、少なくともこの数の異なる支払先がそこから分岐した場合に一般語として扱われます。低くするほど積極的にフィルタリングします。",
+    "viewUncategorizedTitle": "{name} の未分類取引 {count, plural, one {# 件} other {# 件}} を表示"
+  },
+  "deactivateUnused": {
+    "title": "未使用の支払先を無効化",
+    "howItWorksTitle": "仕組み",
+    "howItWorksBody": "この機能はほとんど使用されていない支払先を検索して無効化します。無効化された支払先は取引作成時の支払先ドロップダウンに表示されませんが、過去の取引は保持されます。支払先リストからいつでも支払先を再有効化できます。",
+    "maxTransactionsLabel": "{count, plural, one {# 件以下の取引} other {# 件以下の取引}}",
+    "maxTransactionsHelp": "この数以下の取引がある支払先のみを含めます",
+    "monthsUnusedLabel": "{label} 以上前に最後に使用",
+    "monthsUnusedHelp": "この期間以上使用されていない支払先のみを含めます（または一度も使用されていない）",
+    "previewButton": "未使用の支払先をプレビュー",
+    "loading": "読み込み中...",
+    "candidatesHeader": "候補（{count} 件見つかりました）",
+    "selectAll": "すべて選択",
+    "selectNone": "すべて解除",
+    "selectPayeeLabel": "{name} を選択",
+    "neverUsed": "使用なし",
+    "empty": {
+      "line1": "現在の条件に一致する支払先がありません。",
+      "line2": "上の設定を調整してみてください。"
+    },
+    "columns": {
+      "payee": "支払先",
+      "transactions": "取引数",
+      "lastUsed": "最終使用"
+    },
+    "selectedCount": "{count, plural, one {# 件の支払先が選択されました} other {# 件の支払先が選択されました}}",
+    "deactivateButton": "{count, plural, one {# 件の支払先} other {# 件の支払先}} を無効化",
+    "deactivating": "無効化中...",
+    "toasts": {
+      "selectAtLeastOne": "無効化する支払先を少なくとも1件選択してください",
+      "deactivated": "{count, plural, one {# 件の支払先を無効化しました} other {# 件の支払先を無効化しました}}",
+      "loadFailed": "プレビューの読み込みに失敗しました",
+      "deactivateFailed": "支払先の無効化に失敗しました"
+    }
+  },
+  "reactivate": {
+    "title": "支払先を再有効化しますか？",
+    "message": "支払先「{name}」は以前に無効化されました。支払先のドロップダウンに再び表示されるように再有効化しますか？",
+    "keepInactiveButton": "いいえ、無効のままにする",
+    "reactivateButton": "再有効化",
+    "reactivating": "再有効化中..."
+  },
+  "aliases": {
+    "heading": "エイリアス",
+    "description": "エイリアスはインポートされた支払先名をこの支払先にマッピングします。ワイルドカードとして * を使用します（例：「STARBUCKS*」）。大文字小文字を区別しません。",
+    "loading": "読み込み中...",
+    "noAliases": "エイリアスが設定されていません",
+    "removeTitle": "エイリアスを削除",
+    "removeButton": "削除",
+    "addButton": "追加",
+    "adding": "追加中...",
+    "placeholder": "例：STARBUCKS #*",
+    "toasts": {
+      "alreadyAdded": "エイリアス「{alias}」はすでに追加されています",
+      "added": "エイリアス「{alias}」が追加されました",
+      "removed": "エイリアス「{alias}」が削除されました",
+      "loadFailed": "エイリアスの読み込みに失敗しました",
+      "addFailed": "エイリアスの追加に失敗しました",
+      "removeFailed": "エイリアスの削除に失敗しました"
+    }
+  },
+  "selectCategoryPlaceholder": "カテゴリを選択...",
+  "validation": {
+    "nameRequired": "支払先名は必須です"
+  },
+  "defaultCategoryBackfill": {
+    "allConfirmTitle": "デフォルトカテゴリを適用しますか？",
+    "allConfirmMessage": "これにより、{payees, plural, one {# 件の支払先} other {# 件の支払先}} にわたる {transactions, plural, one {# 件の未分類取引} other {# 件の未分類取引}} が各支払先のデフォルトカテゴリを使用して分類されます。手動で分類した取引、振替、分割取引は変更されません。",
+    "confirmButton": "適用",
+    "toasts": {
+      "nothingToDo": "分類する未分類の取引がありません",
+      "applied": "{count, plural, one {# 件の取引を分類しました} other {# 件の取引を分類しました}}",
+      "failed": "取引の分類に失敗しました"
+    }
+  }
+}

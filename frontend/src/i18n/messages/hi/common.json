@@ -1,0 +1,177 @@
+{
+  "chartFlag": {
+    "dismiss": "इस मान को छुपाएं"
+  },
+  "appVersion": {
+    "releaseNotes": "v{version} के लिए रिलीज़ नोट्स देखें"
+  },
+  "save": "सहेजें",
+  "cancel": "रद्द करें",
+  "delete": "हटाएं",
+  "edit": "संपादित करें",
+  "close": "बंद करें",
+  "actions": {
+    "edit": "संपादित करें",
+    "delete": "हटाएं",
+    "view": "देखें",
+    "duplicate": "डुप्लिकेट",
+    "merge": "मर्ज करें",
+    "reactivate": "पुनः सक्रिय करें",
+    "reconcile": "मिलान करें",
+    "post": "पोस्ट करें",
+    "skip": "छोड़ें",
+    "close": "बंद करें",
+    "reopen": "पुनः खोलें",
+    "scheduleRecurring": "आवर्ती के रूप में शेड्यूल करें",
+    "more": "अधिक क्रियाएं"
+  },
+  "loading": "लोड हो रहा है...",
+  "pagination": {
+    "showing": "दिखाया जा रहा है",
+    "of": "में से",
+    "firstPage": "पहला पृष्ठ",
+    "lastPage": "अंतिम पृष्ठ",
+    "previousPage": "पिछला पृष्ठ",
+    "nextPage": "अगला पृष्ठ",
+    "back10Pages": "10 पृष्ठ पीछे",
+    "forward10Pages": "10 पृष्ठ आगे",
+    "enterPageNumber": "पृष्ठ संख्या दर्ज करें"
+  },
+  "confirmDialog": {
+    "confirm": "पुष्टि करें"
+  },
+  "unsavedChanges": {
+    "title": "असहेजे परिवर्तन",
+    "message": "आपके पास असहेजे परिवर्तन हैं। आप क्या करना चाहेंगे?",
+    "discard": "त्यागें"
+  },
+  "exportDropdown": {
+    "export": "निर्यात",
+    "exporting": "निर्यात हो रहा है...",
+    "exportPdf": "PDF निर्यात करें",
+    "exportReport": "रिपोर्ट निर्यात करें",
+    "failedPdf": "PDF निर्यात करने में विफल। कृपया पुनः प्रयास करें।"
+  },
+  "dateRange": {
+    "custom": "कस्टम",
+    "startDate": "प्रारंभ तिथि",
+    "endDate": "समाप्ति तिथि"
+  },
+  "colorPicker": {
+    "custom": "कस्टम:",
+    "apply": "लागू करें"
+  },
+  "chartDownload": {
+    "downloadAsPng": "{filename} PNG के रूप में डाउनलोड करें",
+    "unableToCapture": "चार्ट छवि कैप्चर करने में असमर्थ",
+    "failedToDownload": "चार्ट डाउनलोड करने में विफल"
+  },
+  "chartViewToggle": {
+    "pieChart": "पाई चार्ट",
+    "barChart": "बार चार्ट",
+    "stackedChart": "100% स्टैक्ड बार",
+    "lineChart": "लाइन चार्ट",
+    "areaChart": "क्षेत्र चार्ट",
+    "table": "तालिका"
+  },
+  "formActions": {
+    "cancel": "रद्द करें",
+    "save": "सहेजें"
+  },
+  "themeToggle": {
+    "light": "हल्का",
+    "dark": "गहरा",
+    "system": "सिस्टम",
+    "title": "थीम: {label}। बदलने के लिए क्लिक करें।"
+  },
+  "errorPage": {
+    "title": "कुछ गड़बड़ हो गई",
+    "description": "एक अप्रत्याशित त्रुटि हुई। कृपया पुनः प्रयास करें या यदि समस्या बनी रहे तो सहायता से संपर्क करें।",
+    "errorId": "त्रुटि ID: {digest}",
+    "tryAgain": "पुनः प्रयास करें",
+    "goToDashboard": "डैशबोर्ड पर जाएं"
+  },
+  "errorBoundary": {
+    "defaultMessage": "इस घटक को रेंडर करने में कुछ गड़बड़ हो गई।"
+  },
+  "calendar": {
+    "clear": "साफ़ करें",
+    "today": "आज"
+  },
+  "multiSelect": {
+    "search": "खोजें...",
+    "selectAll": "सभी चुनें",
+    "clear": "साफ़ करें",
+    "noOptions": "कोई विकल्प नहीं मिला"
+  },
+  "combobox": {
+    "createOption": "\"{value}\" बनाएं"
+  },
+  "passwordInput": {
+    "show": "इनपुट दिखाएं",
+    "hide": "इनपुट छुपाएं"
+  },
+  "currencyInput": {
+    "openCalculator": "कैलकुलेटर खोलें",
+    "calculator": "कैलकुलेटर"
+  },
+  "dateInput": {
+    "shortcutsTitle": "कीबोर्ड शॉर्टकट",
+    "today": "आज",
+    "firstDayOfYear": "वर्ष का पहला दिन",
+    "lastDayOfYear": "वर्ष का अंतिम दिन",
+    "firstDayOfMonth": "महीने का पहला दिन",
+    "lastDayOfMonth": "महीने का अंतिम दिन",
+    "nextDay": "अगला दिन",
+    "previousDay": "पिछला दिन",
+    "nextMonth": "अगला महीना",
+    "previousMonth": "पिछला महीना"
+  },
+  "accountTypes": {
+    "CHEQUING": "चेकिंग",
+    "SAVINGS": "बचत",
+    "CREDIT_CARD": "क्रेडिट कार्ड",
+    "INVESTMENT": "निवेश",
+    "LOAN": "ऋण",
+    "MORTGAGE": "बंधक",
+    "CASH": "नकद",
+    "LINE_OF_CREDIT": "क्रेडिट लाइन",
+    "ASSET": "संपत्ति",
+    "OTHER": "अन्य"
+  },
+  "accountFilter": {
+    "allAccounts": "सभी खाते",
+    "allBut": "{names} को छोड़कर सभी"
+  },
+  "passwordRequirements": "पासवर्ड कम से कम 12 अक्षरों का होना चाहिए और एक बड़ा अक्षर, एक छोटा अक्षर, एक अंक और एक विशेष अक्षर होना चाहिए।",
+  "passwordValidation": {
+    "min": "पासवर्ड कम से कम 12 अक्षरों का होना चाहिए",
+    "max": "पासवर्ड 100 अक्षरों से कम होना चाहिए",
+    "lowercase": "एक छोटा अक्षर होना चाहिए",
+    "uppercase": "एक बड़ा अक्षर होना चाहिए",
+    "number": "एक अंक होना चाहिए",
+    "special": "एक विशेष अक्षर होना चाहिए"
+  },
+  "codeValidation": {
+    "length": "कोड बिल्कुल 6 अंकों का होना चाहिए",
+    "digits": "कोड 6 अंकों का होना चाहिए"
+  },
+  "monthsShort": ["जन", "फ़र", "मार्च", "अप्रैल", "मई", "जून", "जुल", "अग", "सित", "अक्टू", "नव", "दिस"],
+  "weekdaysShort": ["रवि", "सोम", "मंगल", "बुध", "गुरु", "शुक्र", "शनि"],
+  "weekdaysMin": ["रव", "सो", "मं", "बु", "गु", "शु", "श"],
+  "weekdaysNarrow": ["र", "स", "म", "ब", "ग", "श", "श"],
+  "dateFormat": {
+    "browserAuto": "ब्राउज़र लोकेल का उपयोग करें (स्वत:-पहचान {sample})",
+    "custom": "कस्टम..."
+  },
+  "emailInvalid": "कृपया एक वैध ईमेल पता दर्ज करें",
+  "noSectionAccess": "आपके पास उस अनुभाग तक पहुंच नहीं है।",
+  "undoRedo": {
+    "nothingToUndo": "पूर्ववत करने के लिए कुछ नहीं",
+    "cannotUndo": "यह क्रिया पूर्ववत नहीं की जा सकती",
+    "undoFailed": "पूर्ववत करने में विफल",
+    "nothingToRedo": "फिर से करने के लिए कुछ नहीं",
+    "cannotRedo": "यह क्रिया फिर से नहीं की जा सकती",
+    "redoFailed": "फिर से करने में विफल"
+  }
+}

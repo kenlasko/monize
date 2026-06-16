@@ -1,0 +1,44 @@
+{
+  "page": {
+    "title": "消费洞察",
+    "subtitle": "AI 驱动的消费模式与异常分析"
+  },
+  "list": {
+    "lastUpdated": "上次更新：{date} {time}",
+    "refreshButton": "刷新洞察",
+    "generating": "生成中...",
+    "allTypes": "所有类型",
+    "allSeverities": "所有级别",
+    "showDismissed": "显示已忽略",
+    "emptyNoInsights": "尚未生成任何洞察。点击\"刷新洞察\"以分析您的消费模式。",
+    "emptyFiltered": "没有洞察符合您当前的筛选条件。",
+    "generateButton": "生成洞察",
+    "alertCount": "{count, plural, one {# 条警报} other {# 条警报}}",
+    "warningCount": "{count, plural, one {# 条警告} other {# 条警告}}",
+    "errorLoadFailed": "加载洞察失败，请重试。",
+    "errorGenerateFailed": "生成洞察失败。请确保已配置 AI 提供商。",
+    "errorTimeout": "洞察生成耗时超出预期，请稍候或刷新页面。"
+  },
+  "card": {
+    "dismiss": "忽略",
+    "dismissing": "忽略中..."
+  },
+  "notConfigured": {
+    "heading": "AI 未配置",
+    "message": "未配置 AI 提供商。要使用消费洞察，请在设置中{link}。",
+    "linkText": "配置 AI 提供商"
+  },
+  "insightTypes": {
+    "anomaly": "异常",
+    "trend": "趋势",
+    "subscription": "订阅",
+    "budget_pace": "预算节奏",
+    "seasonal": "季节性",
+    "new_recurring": "新增定期"
+  },
+  "insightSeverities": {
+    "info": "信息",
+    "warning": "警告",
+    "alert": "警报"
+  }
+}

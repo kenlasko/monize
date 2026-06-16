@@ -1,0 +1,304 @@
+{
+  "priceRefresh": {
+    "noneToUpdate": "Không có giấy chứng khoán nào để cập nhật",
+    "updated": "{count, plural, one {Đã cập nhật giá # giấy chứng khoán} other {Đã cập nhật giá # giấy chứng khoán}}",
+    "partialFailure": "Đã cập nhật giá: {updated} thành công, {failed} thất bại{symbols}",
+    "failed": "Không thể làm mới giá"
+  },
+  "page": {
+    "title": "Giấy chứng khoán",
+    "subtitle": "Quản lý cổ phiếu, ETF, quỹ lẫn nhau và các giấy chứng khoán khác của bạn",
+    "newSecurity": "+ Giấy chứng khoán mới",
+    "searchPlaceholder": "Tìm kiếm theo ký hiệu hoặc tên...",
+    "statusAll": "Tất cả ({count})",
+    "statusActive": "Hoạt động ({count})",
+    "statusInactive": "Không hoạt động ({count})",
+    "modalTitleEdit": "Chỉnh sửa giấy chứng khoán",
+    "modalTitleNew": "Giấy chứng khoán mới",
+    "loading": "Đang tải giấy chứng khoán...",
+    "count": "{count, plural, one {# giấy chứng khoán} other {# giấy chứng khoán}}",
+    "toasts": {
+      "loadFailed": "Không thể tải giấy chứng khoán",
+      "updated": "Giấy chứng khoán đã được cập nhật thành công",
+      "created": "Giấy chứng khoán đã được tạo thành công",
+      "deactivated": "Giấy chứng khoán đã bị vô hiệu hóa",
+      "activated": "Giấy chứng khoán đã được kích hoạt",
+      "statusFailed": "Không thể cập nhật trạng thái giấy chứng khoán",
+      "deleted": "Giấy chứng khoán \"{symbol}\" đã bị xóa",
+      "deleteFailed": "Không thể xóa giấy chứng khoán",
+      "favouriteFailed": "Không thể cập nhật yêu thích",
+      "updateFailed": "Không thể cập nhật giấy chứng khoán",
+      "createFailed": "Không thể tạo giấy chứng khoán"
+    },
+    "deleteConfirm": {
+      "title": "Xóa giấy chứng khoán",
+      "message": "Bạn có chắc muốn xóa \"{symbol}\"? Toàn bộ lịch sử giá cũng sẽ bị xóa. Không thể hoàn tác.",
+      "confirmLabel": "Xóa",
+      "cancelLabel": "Hủy"
+    }
+  },
+  "summary": {
+    "totalSecurities": "Tổng giấy chứng khoán",
+    "types": "Loại",
+    "exchanges": "Sàn giao dịch",
+    "currencies": "Tiền tệ"
+  },
+  "list": {
+    "columns": {
+      "symbol": "Ký hiệu",
+      "name": "Tên",
+      "type": "Loại",
+      "shares": "Cổ phiếu",
+      "exchange": "Sàn giao dịch",
+      "currency": "Tiền tệ",
+      "provider": "Nhà cung cấp",
+      "source": "Nguồn",
+      "status": "Trạng thái",
+      "actions": "Hành động",
+      "favourite": "Yêu thích"
+    },
+    "density": {
+      "normal": "Bình thường",
+      "compact": "Thu gọn",
+      "dense": "Dày đặc",
+      "toggle": "Chuyển đổi mật độ hàng"
+    },
+    "statusBadge": {
+      "active": "Hoạt động",
+      "activeShort": "HĐ",
+      "inactive": "Không hoạt động",
+      "inactiveShort": "KHĐ"
+    },
+    "providerTitle": {
+      "override": "Ghi đè nhà cung cấp theo giấy chứng khoán",
+      "inherited": "Kế thừa từ tùy chọn Nhà cung cấp báo giá mặc định của bạn"
+    },
+    "columnTitles": {
+      "shares": "Cổ phiếu hiện đang nắm giữ trên tất cả tài khoản",
+      "source": "Nguồn của giá gần nhất"
+    },
+    "actions": {
+      "history": "Lịch sử",
+      "prices": "Giá",
+      "edit": "Chỉnh sửa",
+      "deactivate": "Vô hiệu hóa",
+      "activate": "Kích hoạt",
+      "delete": "Xóa"
+    },
+    "favouriteButton": {
+      "add": "Thêm vào yêu thích",
+      "remove": "Xóa khỏi yêu thích"
+    },
+    "empty": {
+      "title": "Không có giấy chứng khoán",
+      "subtitle": "Bắt đầu bằng cách thêm giấy chứng khoán đầu tiên của bạn."
+    },
+    "contextMenu": {
+      "transactionHistory": "Lịch sử giao tác",
+      "viewPrices": "Xem giá",
+      "editSecurity": "Chỉnh sửa giấy chứng khoán",
+      "deactivate": "Vô hiệu hóa",
+      "activate": "Kích hoạt",
+      "delete": "Xóa"
+    }
+  },
+  "typeLabels": {
+    "STOCK": "Cổ phiếu",
+    "ETF": "ETF",
+    "MUTUAL_FUND": "Quỹ lẫn nhau",
+    "BOND": "Trái phiếu",
+    "OPTION": "Quyền chọn",
+    "CRYPTO": "Tiền điện tử",
+    "OTHER": "Khác",
+    "STOCK_short": "CP",
+    "ETF_short": "ETF",
+    "MUTUAL_FUND_short": "QLN",
+    "BOND_short": "TP",
+    "OPTION_short": "QC",
+    "CRYPTO_short": "CKT",
+    "OTHER_short": "Khác"
+  },
+  "form": {
+    "symbolLabel": "Ký hiệu",
+    "nameLabel": "Tên",
+    "typeLabel": "Loại",
+    "exchangeLabel": "Sàn giao dịch",
+    "currencyLabel": "Tiền tệ",
+    "quoteProviderLabel": "Nhà cung cấp báo giá",
+    "msnIdLabel": "ID công cụ MSN (nâng cao)",
+    "lookupProviderAriaLabel": "Tra cứu nhà cung cấp",
+    "lookupButton": "Tra cứu",
+    "revertButton": "Hoàn nguyên",
+    "clearButton": "Xóa",
+    "revertTitle": "Hoàn nguyên về giá trị ban đầu",
+    "clearTitle": "Xóa tất cả các trường",
+    "favouriteLabel": "Yêu thích",
+    "addToFavourites": "Thêm vào yêu thích",
+    "removeFromFavourites": "Xóa khỏi yêu thích",
+    "submitCreate": "Tạo giấy chứng khoán",
+    "submitUpdate": "Cập nhật giấy chứng khoán",
+    "toasts": {
+      "lookupTooShort": "Nhập ký hiệu hoặc tên (ít nhất 2 ký tự) để tra cứu",
+      "notFound": "Không tìm thấy giấy chứng khoán cho \"{query}\"",
+      "found": "Đã tìm thấy: {details}",
+      "lookupFailed": "Tra cứu thất bại - vui lòng thử lại"
+    },
+    "msnNotConfigured": "MSN được chọn làm nhà cung cấp báo giá mặc định, nhưng MSN_API_KEY chưa được cấu hình trên máy chủ. Báo giá MSN sẽ thất bại cho đến khi quản trị viên đặt biến môi trường và khởi động lại backend.",
+    "providers": {
+      "auto": "Tự động",
+      "yahoo": "Yahoo",
+      "msn": "MSN"
+    },
+    "types": {
+      "select": "Chọn loại...",
+      "stock": "Cổ phiếu",
+      "etf": "ETF",
+      "mutualFund": "Quỹ lẫn nhau",
+      "bond": "Trái phiếu",
+      "option": "Quyền chọn",
+      "crypto": "Tiền điện tử",
+      "other": "Khác"
+    },
+    "quoteProviderUseDefault": "Sử dụng mặc định ({provider})",
+    "symbolPlaceholder": "VD: AAPL, XEQT, BTC",
+    "namePlaceholder": "VD: Apple Inc., iShares Core Equity ETF",
+    "exchangeSearchPlaceholder": "Tìm kiếm sàn giao dịch...",
+    "exchangePlaceholder": "Tự động xác định từ mã chứng khoán; chỉ ghi đè nếu sai"
+  },
+  "priceForm": {
+    "dateLabel": "Ngày",
+    "closePriceLabel": "Giá đóng cửa",
+    "openPriceLabel": "Giá mở cửa",
+    "highPriceLabel": "Giá cao nhất",
+    "lowPriceLabel": "Giá thấp nhất",
+    "volumeLabel": "Khối lượng",
+    "optionalPlaceholder": "Tùy chọn",
+    "submitCreate": "Thêm giá",
+    "submitUpdate": "Cập nhật giá"
+  },
+  "priceHistory": {
+    "title": "{symbol} - Lịch sử giá",
+    "forceUpdateButton": "Buộc cập nhật giá",
+    "forceUpdateTitle": "Tải lại giá lịch sử cho toàn bộ thời gian bạn nắm giữ giấy chứng khoán này",
+    "addPriceButton": "+ Thêm giá",
+    "addPriceSection": "Thêm giá",
+    "editPriceSection": "Chỉnh sửa giá",
+    "loading": "Đang tải giá...",
+    "empty": "Không có lịch sử giá",
+    "columns": {
+      "date": "Ngày",
+      "close": "Đóng cửa",
+      "open": "Mở cửa",
+      "high": "Cao nhất",
+      "low": "Thấp nhất",
+      "volume": "Khối lượng",
+      "source": "Nguồn",
+      "actions": "Hành động"
+    },
+    "toasts": {
+      "added": "Đã thêm giá",
+      "updated": "Đã cập nhật giá",
+      "deleted": "Đã xóa giá",
+      "loadFailed": "Không thể tải lịch sử giá",
+      "addFailed": "Không thể thêm giá",
+      "updateFailed": "Không thể cập nhật giá",
+      "deleteFailed": "Không thể xóa giá",
+      "updatedCount": "{count, plural, one {Đã cập nhật # giá cho {symbol}} other {Đã cập nhật # giá cho {symbol}}}",
+      "noPricesFound": "Không tìm thấy giá cho {symbol}",
+      "updatePricesFailed": "Không thể cập nhật giá cho {symbol}",
+      "updateFetchFailed": "Không thể cập nhật giá"
+    },
+    "closeButton": "Đóng",
+    "deleteConfirm": {
+      "title": "Xóa giá",
+      "confirmLabel": "Xóa"
+    }
+  },
+  "transactionHistory": {
+    "inactiveBadge": "Không hoạt động",
+    "currentShares": "Cổ phiếu hiện tại",
+    "accountLabel": "Tài khoản",
+    "allAccounts": "Tất cả tài khoản ({shares})",
+    "accountClosed": "{name} (đã đóng)",
+    "addTransaction": "+ Thêm giao tác",
+    "loading": "Đang tải giao tác...",
+    "emptyAll": "Không có giao tác nào cho giấy chứng khoán này.",
+    "emptyAccount": "Không có giao tác nào cho giấy chứng khoán này trong tài khoản đã chọn.",
+    "editTransactionTitle": "Chỉnh sửa giao tác",
+    "columns": {
+      "date": "Ngày",
+      "account": "Tài khoản",
+      "action": "Hành động",
+      "quantity": "Số lượng",
+      "runningTotal": "Tổng lũy kế",
+      "price": "Giá",
+      "amount": "Số tiền",
+      "actionsLabel": "Hành động"
+    },
+    "actionLabels": {
+      "BUY": "Mua",
+      "SELL": "Bán",
+      "DIVIDEND": "Cổ tức",
+      "INTEREST": "Lãi",
+      "CAPITAL_GAIN": "Khoản lãi vốn",
+      "SPLIT": "Chia",
+      "TRANSFER_IN": "Chuyển vào",
+      "TRANSFER_OUT": "Chuyển ra",
+      "REINVEST": "Tái đầu tư",
+      "ADD_SHARES": "Thêm cổ phiếu",
+      "REMOVE_SHARES": "Xóa cổ phiếu"
+    },
+    "toasts": {
+      "loadHistoryFailed": "Không thể tải lịch sử",
+      "loadTransactionFailed": "Không thể tải giao tác"
+    }
+  },
+  "shareAdjustment": {
+    "heading": "Điều chỉnh cổ phiếu",
+    "accountLabel": "Tài khoản",
+    "accountPlaceholder": "Chọn tài khoản...",
+    "actionLabel": "Hành động",
+    "quantityLabel": "Số lượng (cổ phiếu)",
+    "dateLabel": "Ngày",
+    "descriptionLabel": "Mô tả (tùy chọn)",
+    "descriptionPlaceholder": "VD: Dọn dẹp cổ phiếu còn dư",
+    "saving": "Đang lưu...",
+    "submitButton": "Ghi nhận điều chỉnh",
+    "accountClosed": "{name} (đã đóng)",
+    "adjustmentActions": {
+      "REMOVE_SHARES": "Xóa cổ phiếu",
+      "ADD_SHARES": "Thêm cổ phiếu"
+    },
+    "toasts": {
+      "selectAccount": "Chọn tài khoản",
+      "quantityRequired": "Số lượng phải lớn hơn không",
+      "recorded": "Điều chỉnh đã được ghi nhận",
+      "failed": "Không thể ghi nhận điều chỉnh"
+    }
+  },
+  "lookupPicker": {
+    "title": "Nhiều kết quả cho \"{query}\"",
+    "subtitle": "Chọn giấy chứng khoán bạn muốn sử dụng.",
+    "columns": {
+      "symbol": "Ký hiệu",
+      "name": "Tên",
+      "exchange": "Sàn giao dịch",
+      "currency": "Tiền tệ",
+      "type": "Loại",
+      "source": "Nguồn"
+    },
+    "selectButton": "Chọn"
+  },
+  "validation": {
+    "symbolRequired": "Ký hiệu là bắt buộc",
+    "symbolMax": "Ký hiệu phải có tối đa 20 ký tự",
+    "nameRequired": "Tên là bắt buộc",
+    "nameMax": "Tên phải có tối đa 255 ký tự",
+    "currencyRequired": "Tiền tệ là bắt buộc"
+  },
+  "priceValidation": {
+    "dateRequired": "Ngày là bắt buộc",
+    "priceRequired": "Giá là bắt buộc",
+    "priceNonNegative": "Giá phải là số không âm"
+  }
+}

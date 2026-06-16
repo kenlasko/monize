@@ -1,0 +1,53 @@
+{
+  "page": {
+    "title": "AI 助手",
+    "subtitle": "以自然語言詢問您的財務問題"
+  },
+  "chat": {
+    "conversationSaved": "對話已儲存於您的瀏覽器",
+    "clearConversation": "清除對話",
+    "inputPlaceholder": "詢問您的財務問題...",
+    "inputPlaceholderDisabled": "AI 提供者未設定",
+    "keyboardHint": "按 Enter 傳送，Shift+Enter 換行",
+    "cancelTitle": "取消",
+    "sendTitle": "傳送"
+  },
+  "notConfigured": {
+    "heading": "AI 未設定",
+    "message": "尚未設定 AI 提供者。如需使用 AI 助手，請在設定中{link}。",
+    "linkText": "設定 AI 提供者"
+  },
+  "suggestedQueries": {
+    "heading": "詢問您的財務問題",
+    "description": "我可以回答有關您的消費、收入、科目結餘、資產淨值等問題。",
+    "monthlySpendingLabel": "每月消費",
+    "monthlySpendingQuery": "上個月我花了多少錢？",
+    "topCategoriesLabel": "主要類別",
+    "topCategoriesQuery": "今年我的前 5 大支出類別是什麼？",
+    "accountBalancesLabel": "科目結餘",
+    "accountBalancesQuery": "我目前各科目的結餘是多少？",
+    "compareMonthsLabel": "月份比較",
+    "compareMonthsQuery": "比較本月與上月的消費",
+    "netWorthTrendLabel": "資產淨值趨勢",
+    "netWorthTrendQuery": "顯示過去 12 個月的資產淨值趨勢",
+    "savingsRateLabel": "儲蓄率",
+    "savingsRateQuery": "今年我的儲蓄相較收入是多少？"
+  },
+  "toolDetails": {
+    "inputLabel": "輸入",
+    "resultLabel": "結果",
+    "toolFailedAriaLabel": "工具執行失敗",
+    "toolSucceededAriaLabel": "工具執行成功"
+  },
+  "table": {
+    "downloadTitle": "下載表格為 CSV",
+    "downloadAriaLabel": "下載表格為 CSV",
+    "noDataError": "無可匯出的表格資料"
+  },
+  "chart": {
+    "downloadTitle": "下載圖表為 PNG",
+    "downloadAriaLabel": "下載圖表為 PNG",
+    "captureError": "無法擷取圖表影像",
+    "downloadError": "下載圖表失敗"
+  }
+}

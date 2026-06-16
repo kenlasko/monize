@@ -1,0 +1,85 @@
+{
+  "page": {
+    "title": "分类",
+    "subtitle": "使用自定义分类整理您的交易",
+    "newButton": "+ 新增分类",
+    "searchPlaceholder": "搜索分类...",
+    "filterAll": "全部 ({count})",
+    "filterExpenses": "支出 ({count})",
+    "filterIncome": "收入 ({count})",
+    "modalTitleNew": "新增分类",
+    "modalTitleEdit": "编辑分类",
+    "countSingle": "1 个分类",
+    "countPlural": "{count} 个分类",
+    "loadingText": "加载分类中...",
+    "summaryTotal": "分类总数",
+    "summaryIncome": "收入分类",
+    "summaryExpense": "支出分类",
+    "summaryTopLevel": "顶级分类"
+  },
+  "empty": {
+    "heading": "尚无分类",
+    "description": "分类帮助您整理交易。从导入默认分类集开始，或从头创建自己的分类。",
+    "importButton": "导入默认分类",
+    "createButton": "创建自定义分类",
+    "hint": "默认集包含常见的收入和支出分类及子分类"
+  },
+  "toasts": {
+    "created": "分类创建成功",
+    "updated": "分类更新成功",
+    "deleted": "分类删除成功",
+    "cannotDeleteSystem": "系统分类无法删除",
+    "importSuccess": "成功导入 {count} 个分类",
+    "loadFailed": "加载分类失败",
+    "deleteFailed": "删除分类失败",
+    "createFailed": "创建分类失败",
+    "updateFailed": "更新分类失败",
+    "importFailed": "导入默认分类失败"
+  },
+  "form": {
+    "nameLabel": "分类名称",
+    "parentLabel": "父分类",
+    "noParent": "无父分类（顶级）",
+    "typeLabel": "类型",
+    "typeExpense": "支出",
+    "typeIncome": "收入",
+    "typeInherited": "类型继承自父分类",
+    "colourLabel": "颜色",
+    "colourInherit": "继承自父分类",
+    "colourNone": "无颜色",
+    "colourInheritedFrom": "颜色继承自父分类（{name}）",
+    "descriptionLabel": "描述（可选）",
+    "submitCreate": "创建分类",
+    "submitUpdate": "更新分类"
+  },
+  "list": {
+    "emptyHeading": "无分类",
+    "emptyDescription": "从创建新分类开始。",
+    "colName": "名称",
+    "colType": "类型",
+    "colCount": "数量",
+    "colDescription": "描述",
+    "colActions": "操作",
+    "badgeIncome": "收入",
+    "badgeExpense": "支出",
+    "systemBadge": "（系统）",
+    "inheritedColorTitle": "继承自父分类",
+    "viewTransactionsTitle": "查看此分类的交易",
+    "densityToggleTitle": "切换行密度",
+    "densityNormal": "普通",
+    "densityCompact": "紧凑",
+    "densityDense": "密集"
+  },
+  "deleteDialog": {
+    "title": "删除 \"{name}\"？",
+    "checkingUsage": "检查使用情况...",
+    "usedBy": "此分类被 {count, plural, one {# 项} other {# 项}}（交易和/或定期账单及存款）使用。",
+    "reassignLabel": "重新分配至：",
+    "leaveUncategorized": "保留未分类",
+    "safeToDelete": "此分类未被使用，可以安全删除。",
+    "cannotUndo": "此操作无法撤销。"
+  },
+  "validation": {
+    "nameRequired": "分类名称为必填项"
+  }
+}

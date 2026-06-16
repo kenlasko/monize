@@ -43,7 +43,7 @@ These are enforced in review and, where possible, in CI. Detailed, layer-specifi
 
 ### Internationalization (i18n)
 
-Every user-facing string must be translated — no hardcoded literals in toasts, labels, placeholders, validation messages, or emails. **A feature is not done until it is fully internationalized for every supported locale in the same PR** (`de`, `en`, `es`, `fr`, `it`, `nl`, `pl`, `pt`, `pt-BR`, plus the `xx` pseudo-locale). Parity tests will fail if a locale is missing a key. After editing any `en/*.json`, regenerate the pseudo-locale with `npm run i18n:pseudo`. See `frontend/src/i18n/messages/README.md` and `backend/src/i18n/README.md` for the full flow.
+Every user-facing string must be translated — no hardcoded literals in toasts, labels, placeholders, validation messages, or emails. **A feature is not done until it is fully internationalized for every supported locale in the same PR** (`de`, `en`, `es`, `fr`, `hi`, `id`, `it`, `ja`, `ko`, `nl`, `pl`, `pt`, `pt-BR`, `ru`, `tr`, `uk`, `vi`, `zh-CN`, `zh-TW`, plus the `xx` pseudo-locale). Parity tests will fail if a locale is missing a key. After editing any `en/*.json`, regenerate the pseudo-locale with `npm run i18n:pseudo`. See `frontend/src/i18n/messages/README.md` and `backend/src/i18n/README.md` for the full flow.
 
 ### Code style
 

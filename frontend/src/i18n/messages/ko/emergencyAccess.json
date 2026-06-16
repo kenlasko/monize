@@ -1,0 +1,20 @@
+{
+  "title": "긴급 접근",
+  "missingToken": "긴급 접근 토큰이 없습니다.",
+  "previewError": "이 긴급 접근 링크는 유효하지 않거나 만료되었거나 이미 사용되었습니다.",
+  "linkInvalid": "링크가 더 이상 유효하지 않습니다.",
+  "backToSignIn": "로그인 화면으로 돌아가기",
+  "ownerFallback": "계정 소유자",
+  "ownerFirstNameFallback": "소유자",
+  "intro": "{contactName}님, 귀하는 <b>{ownerName}</b>의 Monize 계정에서 긴급 연락처로 지정되었습니다.",
+  "introDetail": "여기서 비밀번호를 설정하면 계정 보유자로 로그인되어 계정에 대한 전체 액세스 권한이 부여됩니다. 기존 세션은 취소되고 이전 자격 증명은 대체됩니다.",
+  "messageHeading": "{name}의 메시지",
+  "newPasswordLabel": "새 비밀번호",
+  "confirmPasswordLabel": "비밀번호 확인",
+  "submit": "긴급 접근 신청",
+  "toasts": {
+    "success": "{name}의 계정에 접근할 수 있게 되었습니다.",
+    "failed": "긴급 접근 신청을 완료하지 못했습니다. 링크가 만료되었거나 이미 사용되었을 수 있습니다."
+  },
+  "passwordsNoMatch": "비밀번호가 일치하지 않습니다"
+}

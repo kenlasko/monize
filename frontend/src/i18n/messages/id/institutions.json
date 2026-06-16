@@ -1,0 +1,91 @@
+{
+  "page": {
+    "title": "Institusi Keuangan",
+    "subtitle": "Bank dan broker tempat akun Anda terdaftar",
+    "newInstitution": "Institusi Baru",
+    "loading": "Memuat institusi...",
+    "searchPlaceholder": "Cari institusi...",
+    "modalTitleNew": "Institusi Baru",
+    "modalTitleEdit": "Edit Institusi",
+    "summary": {
+      "total": "Total Institusi",
+      "withLogo": "Dengan Logo",
+      "linkedAccounts": "Akun Terhubung"
+    },
+    "toasts": {
+      "loadFailed": "Gagal memuat institusi",
+      "created": "Institusi dibuat",
+      "updated": "Institusi diperbarui",
+      "createFailed": "Gagal membuat institusi",
+      "updateFailed": "Gagal memperbarui institusi"
+    }
+  },
+  "list": {
+    "empty": "Belum ada institusi. Buat satu untuk mulai mengelompokkan akun Anda.",
+    "columns": {
+      "name": "Nama",
+      "website": "Website",
+      "country": "Negara",
+      "accounts": "Akun",
+      "actions": "Tindakan"
+    },
+    "accountCount": "{count, plural, =0 {Tidak ada akun} one {# akun} other {# akun}}",
+    "density": {
+      "title": "Ubah kepadatan baris",
+      "normal": "Normal",
+      "compact": "Ringkas",
+      "dense": "Padat"
+    },
+    "statusFilter": {
+      "all": "Semua",
+      "active": "Aktif",
+      "closed": "Ditutup"
+    },
+    "actions": {
+      "manageAccounts": "Akun"
+    },
+    "deleteTitle": "Hapus Institusi",
+    "deleteMessage": "Hapus \"{name}\"? Akun yang ditetapkan ke institusi ini akan dilepaskan tetapi tidak dihapus.",
+    "deleting": "Menghapus...",
+    "deleted": "\"{name}\" dihapus",
+    "deleteFailed": "Gagal menghapus institusi"
+  },
+  "form": {
+    "nameLabel": "Nama",
+    "websiteLabel": "Website",
+    "websitePlaceholder": "mis. td.com",
+    "countryLabel": "Negara (opsional)",
+    "countryPlaceholder": "Kode 2 huruf, mis. CA",
+    "logoHint": "Logo merek diambil secara otomatis dari website.",
+    "submitCreate": "Buat Institusi",
+    "submitUpdate": "Simpan Perubahan"
+  },
+  "validation": {
+    "nameRequired": "Nama wajib diisi",
+    "websiteRequired": "Website wajib diisi",
+    "websiteInvalid": "Masukkan website yang valid (mis. td.com)",
+    "countryInvalid": "Gunakan kode negara 2 huruf"
+  },
+  "accountsManager": {
+    "title": "Akun di {name}",
+    "addLabel": "Tambah akun",
+    "addPlaceholder": "Pilih akun untuk ditambahkan...",
+    "noneToAdd": "Semua akun Anda sudah ditetapkan ke institusi.",
+    "loading": "Memuat akun...",
+    "empty": "Belum ada akun yang ditetapkan ke institusi ini.",
+    "noneMatch": "Tidak ada akun yang cocok dengan filter yang dipilih.",
+    "filter": {
+      "all": "Semua",
+      "active": "Aktif",
+      "closed": "Ditutup"
+    },
+    "remove": "Hapus",
+    "viewTransactions": "Lihat transaksi untuk akun ini",
+    "added": "Akun ditambahkan",
+    "removed": "Akun dihapus",
+    "addFailed": "Gagal menambahkan akun",
+    "removeFailed": "Gagal menghapus akun",
+    "loadFailed": "Gagal memuat akun",
+    "done": "Selesai"
+  }
+}

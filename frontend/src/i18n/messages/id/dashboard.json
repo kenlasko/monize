@@ -1,0 +1,136 @@
+{
+  "page": {
+    "welcomePrefix": "Selamat datang",
+    "welcomeWithName": "Selamat datang, {name}!",
+    "subtitle": "Berikut ikhtisar keuangan Anda"
+  },
+  "favouriteAccounts": {
+    "title": "Akun Favorit",
+    "empty": "Belum ada akun favorit. Tandai akun sebagai favorit untuk melihatnya di sini.",
+    "reorder": "Susun ulang",
+    "done": "Selesai",
+    "moveUp": "Pindah ke atas",
+    "moveDown": "Pindah ke bawah",
+    "marketValue": "Nilai pasar",
+    "due": "Jatuh tempo: {ordinal}",
+    "dueTooltip": "Hari setiap bulan ketika pembayaran kartu kredit Anda jatuh tempo",
+    "settlement": "Penyelesaian: {ordinal}",
+    "settlementTooltip": "Hari terakhir siklus tagihan. Transaksi yang diposting pada atau sebelum hari ini muncul pada laporan saat ini."
+  },
+  "upcomingBills": {
+    "title": "Tagihan & Setoran Mendatang",
+    "empty": "Tidak ada tagihan, setoran, atau transfer yang lewat jatuh tempo atau mendatang dalam jendela pengingat mereka.",
+    "perReminderSettings": "Per pengaturan pengingat",
+    "postTransaction": "Posting transaksi ini",
+    "manual": "Manual",
+    "manualTitle": "Membutuhkan posting manual",
+    "negativeBalanceWarning": "Transaksi ini akan menyebabkan saldo akun menjadi di bawah nol",
+    "viewAll": "Lihat semua tagihan & setoran",
+    "totalDue": "Total jatuh tempo",
+    "totalIncoming": "Total masuk",
+    "moreItems": "+{count} lagi",
+    "overdue": "Lewat jatuh tempo",
+    "today": "Hari ini",
+    "tomorrow": "Besok",
+    "daysUntil": "{count} hari",
+    "typeBadge": {
+      "bill": "Tagihan",
+      "deposit": "Setoran",
+      "transfer": "Transfer"
+    }
+  },
+  "gettingStarted": {
+    "title": "Memulai",
+    "subtitle": "Atur akun Anda dalam beberapa langkah cepat",
+    "dismiss": "Tutup",
+    "steps": {
+      "settings": {
+        "title": "Tinjau pengaturan Anda",
+        "description": "Atur mata uang, format tanggal, dan tema"
+      },
+      "categories": {
+        "title": "Atur kategori",
+        "description": "Buat kategori atau impor set bawaan"
+      },
+      "account": {
+        "title": "Tambahkan akun pertama Anda",
+        "description": "Buat rekening bank untuk mulai melacak"
+      },
+      "import": {
+        "title": "Impor dari QIF",
+        "description": "Impor akun dan transaksi dari file QIF"
+      }
+    }
+  },
+  "budgetStatus": {
+    "title": "Status Anggaran",
+    "noBudget": "Tidak ada anggaran aktif. Buat anggaran untuk melacak pengeluaran Anda.",
+    "createBudget": "Buat Anggaran",
+    "viewFullBudget": "Lihat anggaran lengkap",
+    "daysLeft": "{count} hari tersisa",
+    "safeToSpend": "Aman untuk dibelanjakan hari ini",
+    "topCategories": "Kategori Teratas"
+  },
+  "insights": {
+    "title": "Wawasan Pengeluaran",
+    "empty": "Tidak ada wawasan tersedia. Kunjungi halaman Wawasan untuk menghasilkan analisis pertama Anda.",
+    "goToInsights": "Pergi ke Wawasan",
+    "viewAll": "Lihat semua wawasan",
+    "activeCount": "{count} aktif"
+  },
+  "topMovers": {
+    "title": "Penggerak Teratas",
+    "empty": {
+      "noInvestments": "Tambahkan akun investasi untuk melacak penggerak harian.",
+      "noPrices": "Belum ada perubahan harga yang tersedia.",
+      "noGainers": "Tidak ada yang naik hari ini.",
+      "noLosers": "Tidak ada yang turun hari ini."
+    },
+    "dailyChange": "Perubahan harian",
+    "refreshPrices": "Perbarui harga",
+    "viewPortfolio": "Lihat portofolio",
+    "filter": {
+      "all": "Semua",
+      "gainers": "Naik",
+      "losers": "Turun"
+    }
+  },
+  "favouriteSecurities": {
+    "title": "Sekuritas Favorit",
+    "empty": "Belum ada sekuritas favorit. Kunjungi <securitiesLink>halaman Sekuritas</securitiesLink> dan bintangi sekuritas yang ingin Anda lacak di sini.",
+    "noPriceYet": "Belum ada harga",
+    "dailyChange": "Perubahan harian",
+    "refreshPrices": "Perbarui harga",
+    "manage": "Kelola sekuritas"
+  },
+  "netWorth": {
+    "title": "Nilai Bersih",
+    "empty": "Belum ada data nilai bersih yang tersedia.",
+    "past12Months": "12 bulan terakhir",
+    "viewReport": "Lihat laporan lengkap"
+  },
+  "assetsVsLiabilities": {
+    "title": "Aset vs Liabilitas",
+    "empty": "Belum ada data nilai bersih yang tersedia.",
+    "current": "Saat ini",
+    "netWorthLabel": "Nilai Bersih",
+    "assets": "Aset",
+    "liabilities": "Liabilitas"
+  },
+  "expensesPieChart": {
+    "title": "Pengeluaran per Kategori",
+    "empty": "Tidak ada data pengeluaran untuk periode ini.",
+    "past30Days": "30 hari terakhir",
+    "total": "Total",
+    "uncategorized": "Tidak berkategori",
+    "other": "Lainnya"
+  },
+  "incomeExpenses": {
+    "title": "Pendapatan vs Pengeluaran",
+    "last5Weeks": "5 minggu terakhir",
+    "weekOf": "Minggu {date}",
+    "income": "Pendapatan",
+    "expenses": "Pengeluaran",
+    "net": "Bersih"
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "createUserModal": {
+    "title": "新增使用者",
+    "description": "建立新帳號。您可以寄送邀請信、自行設定密碼，或產生臨時密碼供分享。",
+    "emailLabel": "電子郵件",
+    "emailPlaceholder": "user@example.com",
+    "firstNameLabel": "名字（選填）",
+    "firstNamePlaceholder": "名字",
+    "lastNameLabel": "姓氏（選填）",
+    "lastNamePlaceholder": "姓氏",
+    "roleLabel": "角色",
+    "roleUser": "使用者",
+    "roleAdmin": "管理員",
+    "credentialsLegend": "憑證",
+    "inviteLabel": "寄送電子郵件邀請以設定密碼",
+    "inviteSmtpNote": "需要設定 SMTP。",
+    "setPasswordLabel": "立即設定密碼",
+    "tempPasswordLabel": "產生臨時密碼",
+    "tempPasswordNote": "建立後僅顯示一次。使用者首次登入時必須變更密碼。",
+    "passwordFieldLabel": "密碼",
+    "passwordPlaceholder": "設定密碼",
+    "createButton": "建立使用者",
+    "validation": {
+      "invalidPassword": "密碼無效。"
+    },
+    "toasts": {
+      "createFailed": "建立使用者失敗"
+    }
+  },
+  "resetPasswordModal": {
+    "defaultTitle": "密碼重設成功",
+    "defaultDescription": "已為 {userName} 設定臨時密碼。",
+    "temporaryPasswordLabel": "臨時密碼",
+    "copy": "複製",
+    "copied": "已複製",
+    "notShownAgain": "此密碼將不再顯示。",
+    "mustChangeOnLogin": "使用者下次登入時必須變更密碼。",
+    "toasts": {
+      "copied": "密碼已複製至剪貼簿",
+      "copyFailed": "複製至剪貼簿失敗"
+    }
+  },
+  "userTable": {
+    "colUser": "使用者",
+    "colRole": "角色",
+    "colProvider": "提供者",
+    "colStatus": "狀態",
+    "colLastLogin": "最後登入",
+    "colActions": "操作",
+    "youSuffix": "（您）",
+    "noEmail": "無電子郵件",
+    "unknown": "未知",
+    "never": "從未",
+    "providerSso": "SSO",
+    "providerLocal": "本機",
+    "roleAdmin": "管理員",
+    "roleUser": "使用者",
+    "statusActive": "有效",
+    "statusDisabled": "已停用",
+    "clickToDisable": "點擊以停用",
+    "clickToEnable": "點擊以啟用",
+    "resetPassword": "重設密碼",
+    "noUsers": "找不到使用者。"
+  },
+  "usersPage": {
+    "title": "使用者管理",
+    "userCount": "{count, plural, one {# 位使用者} other {# 位使用者}}",
+    "newUser": "+ 新增使用者",
+    "loadingUsers": "載入使用者中...",
+    "toasts": {
+      "inviteSent": "邀請信已寄送至 {email}",
+      "userCreated": "{name} 已建立",
+      "userUpgraded": "{name} 已升級為完整帳號",
+      "roleChanged": "{name} 現在是{role}",
+      "roleAdmin": "管理員",
+      "roleUser": "使用者",
+      "userEnabled": "{name} 已啟用",
+      "userDisabled": "{name} 已停用",
+      "userDeleted": "{name} 已刪除",
+      "userDowngraded": "{name} 的個人資料已移除；其委派存取權仍保留。",
+      "loadFailed": "載入使用者失敗",
+      "deleteFailed": "刪除使用者失敗",
+      "disableFailed": "停用使用者失敗",
+      "resetFailed": "重設密碼失敗"
+    },
+    "dialogs": {
+      "promoteTitle": "升級使用者？",
+      "demoteTitle": "降級使用者？",
+      "promoteMessage": "確定要將 {name} 升級為{role}嗎？",
+      "demoteMessage": "確定要將 {name} 降級為{role}嗎？",
+      "promoteConfirm": "升級為管理員",
+      "demoteConfirm": "降級為使用者",
+      "disableTitle": "停用使用者？",
+      "disableMessage": "確定要停用 {name}？他們將無法登入。",
+      "disableConfirm": "停用使用者",
+      "resetTitle": "重設密碼？",
+      "resetMessage": "這將為 {name} 產生新的臨時密碼。他們下次登入時必須變更密碼。",
+      "resetConfirm": "重設密碼",
+      "deleteTitle": "刪除使用者？",
+      "deleteMessage": "確定要刪除 {name}？這將永久移除其帳號及所有相關資料。此操作無法復原。若他們是其他帳號的委派人，其個人資料將被移除，但登入憑證將保留以維持委派關係——他們將成為僅限委派的使用者。",
+      "deleteConfirm": "刪除使用者",
+      "tempPasswordTitleCreated": "使用者已建立",
+      "tempPasswordTitleUpgraded": "帳號已升級",
+      "tempPasswordDescCreated": "已為 {name} 產生臨時密碼。請將其分享給對方以供登入。",
+      "tempPasswordDescUpgraded": "現有的共用使用者已升級為完整帳號。請將此臨時密碼分享給 {name}。"
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "title": "Akses Darurat",
+  "missingToken": "Token akses darurat tidak ada.",
+  "previewError": "Tautan akses darurat ini tidak valid, kedaluwarsa, atau telah digunakan.",
+  "linkInvalid": "Tautan tidak lagi valid.",
+  "backToSignIn": "Kembali ke halaman masuk",
+  "ownerFallback": "pemilik akun",
+  "ownerFirstNameFallback": "pemilik",
+  "intro": "Halo {contactName}, Anda ditunjuk sebagai kontak darurat pada akun Monize milik <b>{ownerName}</b>.",
+  "introDetail": "Menetapkan kata sandi di sini akan masuk ke akun sebagai pemegang akun dan memberikan Anda akses penuh ke akun. Sesi yang ada dicabut dan kredensial sebelumnya diganti.",
+  "messageHeading": "Pesan dari {name}",
+  "newPasswordLabel": "Kata Sandi Baru",
+  "confirmPasswordLabel": "Konfirmasi Kata Sandi",
+  "submit": "Klaim akses darurat",
+  "toasts": {
+    "success": "Anda sekarang memiliki akses ke akun milik {name}.",
+    "failed": "Gagal menyelesaikan klaim akses darurat. Tautan mungkin telah kedaluwarsa atau sudah digunakan."
+  },
+  "passwordsNoMatch": "Kata sandi tidak cocok"
+}

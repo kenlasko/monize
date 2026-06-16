@@ -1,0 +1,304 @@
+{
+  "priceRefresh": {
+    "noneToUpdate": "Tidak ada sekuritas untuk diperbarui",
+    "updated": "{count, plural, one {# harga sekuritas diperbarui} other {# harga sekuritas diperbarui}}",
+    "partialFailure": "Harga diperbarui: {updated} berhasil, {failed} gagal{symbols}",
+    "failed": "Gagal menyegarkan harga"
+  },
+  "page": {
+    "title": "Sekuritas",
+    "subtitle": "Kelola saham, ETF, reksa dana, dan sekuritas lainnya",
+    "newSecurity": "+ Sekuritas Baru",
+    "searchPlaceholder": "Cari berdasarkan simbol atau nama...",
+    "statusAll": "Semua ({count})",
+    "statusActive": "Aktif ({count})",
+    "statusInactive": "Tidak Aktif ({count})",
+    "modalTitleEdit": "Edit Sekuritas",
+    "modalTitleNew": "Sekuritas Baru",
+    "loading": "Memuat sekuritas...",
+    "count": "{count, plural, one {# sekuritas} other {# sekuritas}}",
+    "toasts": {
+      "loadFailed": "Gagal memuat sekuritas",
+      "updated": "Sekuritas berhasil diperbarui",
+      "created": "Sekuritas berhasil dibuat",
+      "deactivated": "Sekuritas dinonaktifkan",
+      "activated": "Sekuritas diaktifkan",
+      "statusFailed": "Gagal memperbarui status sekuritas",
+      "deleted": "Sekuritas \"{symbol}\" dihapus",
+      "deleteFailed": "Gagal menghapus sekuritas",
+      "favouriteFailed": "Gagal memperbarui favorit",
+      "updateFailed": "Gagal memperbarui sekuritas",
+      "createFailed": "Gagal membuat sekuritas"
+    },
+    "deleteConfirm": {
+      "title": "Hapus Sekuritas",
+      "message": "Apakah Anda yakin ingin menghapus \"{symbol}\"? Semua riwayat harga juga akan dihapus. Tindakan ini tidak dapat dibatalkan.",
+      "confirmLabel": "Hapus",
+      "cancelLabel": "Batal"
+    }
+  },
+  "summary": {
+    "totalSecurities": "Total Sekuritas",
+    "types": "Jenis",
+    "exchanges": "Bursa",
+    "currencies": "Mata Uang"
+  },
+  "list": {
+    "columns": {
+      "symbol": "Simbol",
+      "name": "Nama",
+      "type": "Jenis",
+      "shares": "Lembar",
+      "exchange": "Bursa",
+      "currency": "Mata Uang",
+      "provider": "Penyedia",
+      "source": "Sumber",
+      "status": "Status",
+      "actions": "Tindakan",
+      "favourite": "Favorit"
+    },
+    "density": {
+      "normal": "Normal",
+      "compact": "Kompak",
+      "dense": "Padat",
+      "toggle": "Ubah kepadatan baris"
+    },
+    "statusBadge": {
+      "active": "Aktif",
+      "activeShort": "Akt",
+      "inactive": "Tidak Aktif",
+      "inactiveShort": "Tdk"
+    },
+    "providerTitle": {
+      "override": "Penggantian penyedia per sekuritas",
+      "inherited": "Diwarisi dari preferensi Penyedia Kutipan default Anda"
+    },
+    "columnTitles": {
+      "shares": "Lembar saham saat ini yang dimiliki di semua akun",
+      "source": "Sumber harga terbaru"
+    },
+    "actions": {
+      "history": "Riwayat",
+      "prices": "Harga",
+      "edit": "Edit",
+      "deactivate": "Nonaktifkan",
+      "activate": "Aktifkan",
+      "delete": "Hapus"
+    },
+    "favouriteButton": {
+      "add": "Tambahkan ke favorit",
+      "remove": "Hapus dari favorit"
+    },
+    "empty": {
+      "title": "Tidak ada sekuritas",
+      "subtitle": "Mulai dengan menambahkan sekuritas pertama Anda."
+    },
+    "contextMenu": {
+      "transactionHistory": "Riwayat Transaksi",
+      "viewPrices": "Lihat Harga",
+      "editSecurity": "Edit Sekuritas",
+      "deactivate": "Nonaktifkan",
+      "activate": "Aktifkan",
+      "delete": "Hapus"
+    }
+  },
+  "typeLabels": {
+    "STOCK": "Saham",
+    "ETF": "ETF",
+    "MUTUAL_FUND": "Reksa Dana",
+    "BOND": "Obligasi",
+    "OPTION": "Opsi",
+    "CRYPTO": "Kripto",
+    "OTHER": "Lainnya",
+    "STOCK_short": "Shm",
+    "ETF_short": "ETF",
+    "MUTUAL_FUND_short": "RD",
+    "BOND_short": "Obl",
+    "OPTION_short": "Ops",
+    "CRYPTO_short": "Kri",
+    "OTHER_short": "Lain"
+  },
+  "form": {
+    "symbolLabel": "Simbol",
+    "nameLabel": "Nama",
+    "typeLabel": "Jenis",
+    "exchangeLabel": "Bursa",
+    "currencyLabel": "Mata Uang",
+    "quoteProviderLabel": "Penyedia Kutipan",
+    "msnIdLabel": "ID Instrumen MSN (lanjutan)",
+    "lookupProviderAriaLabel": "Cari penyedia",
+    "lookupButton": "Cari",
+    "revertButton": "Kembalikan",
+    "clearButton": "Bersihkan",
+    "revertTitle": "Kembalikan ke nilai awal",
+    "clearTitle": "Bersihkan semua kolom",
+    "favouriteLabel": "Favorit",
+    "addToFavourites": "Tambahkan ke favorit",
+    "removeFromFavourites": "Hapus dari favorit",
+    "submitCreate": "Buat Sekuritas",
+    "submitUpdate": "Perbarui Sekuritas",
+    "toasts": {
+      "lookupTooShort": "Masukkan simbol atau nama (minimal 2 karakter) untuk mencari",
+      "notFound": "Tidak ditemukan sekuritas untuk \"{query}\"",
+      "found": "Ditemukan: {details}",
+      "lookupFailed": "Pencarian gagal - silakan coba lagi"
+    },
+    "msnNotConfigured": "MSN dipilih sebagai penyedia kutipan default, tetapi MSN_API_KEY tidak dikonfigurasi di server. Kutipan MSN akan gagal hingga administrator menetapkan env var dan memulai ulang backend.",
+    "providers": {
+      "auto": "Otomatis",
+      "yahoo": "Yahoo",
+      "msn": "MSN"
+    },
+    "types": {
+      "select": "Pilih jenis...",
+      "stock": "Saham",
+      "etf": "ETF",
+      "mutualFund": "Reksa Dana",
+      "bond": "Obligasi",
+      "option": "Opsi",
+      "crypto": "Mata Uang Kripto",
+      "other": "Lainnya"
+    },
+    "quoteProviderUseDefault": "Gunakan default ({provider})",
+    "symbolPlaceholder": "mis., AAPL, XEQT, BTC",
+    "namePlaceholder": "mis., Apple Inc., iShares Core Equity ETF",
+    "exchangeSearchPlaceholder": "Cari bursa...",
+    "exchangePlaceholder": "Diselesaikan otomatis dari ticker; ganti hanya jika salah"
+  },
+  "priceForm": {
+    "dateLabel": "Tanggal",
+    "closePriceLabel": "Harga Penutupan",
+    "openPriceLabel": "Harga Pembukaan",
+    "highPriceLabel": "Harga Tertinggi",
+    "lowPriceLabel": "Harga Terendah",
+    "volumeLabel": "Volume",
+    "optionalPlaceholder": "Opsional",
+    "submitCreate": "Tambah Harga",
+    "submitUpdate": "Perbarui Harga"
+  },
+  "priceHistory": {
+    "title": "{symbol} - Riwayat Harga",
+    "forceUpdateButton": "Paksa Perbarui Harga",
+    "forceUpdateTitle": "Ambil ulang harga historis untuk seluruh periode Anda memegang sekuritas ini",
+    "addPriceButton": "+ Tambah Harga",
+    "addPriceSection": "Tambah Harga",
+    "editPriceSection": "Edit Harga",
+    "loading": "Memuat harga...",
+    "empty": "Tidak ada riwayat harga tersedia",
+    "columns": {
+      "date": "Tanggal",
+      "close": "Penutupan",
+      "open": "Pembukaan",
+      "high": "Tertinggi",
+      "low": "Terendah",
+      "volume": "Volume",
+      "source": "Sumber",
+      "actions": "Tindakan"
+    },
+    "toasts": {
+      "added": "Harga ditambahkan",
+      "updated": "Harga diperbarui",
+      "deleted": "Harga dihapus",
+      "loadFailed": "Gagal memuat riwayat harga",
+      "addFailed": "Gagal menambahkan harga",
+      "updateFailed": "Gagal memperbarui harga",
+      "deleteFailed": "Gagal menghapus harga",
+      "updatedCount": "{count, plural, one {Diperbarui # harga untuk {symbol}} other {Diperbarui # harga untuk {symbol}}}",
+      "noPricesFound": "Tidak ada harga ditemukan untuk {symbol}",
+      "updatePricesFailed": "Gagal memperbarui harga untuk {symbol}",
+      "updateFetchFailed": "Gagal memperbarui harga"
+    },
+    "closeButton": "Tutup",
+    "deleteConfirm": {
+      "title": "Hapus Harga",
+      "confirmLabel": "Hapus"
+    }
+  },
+  "transactionHistory": {
+    "inactiveBadge": "Tidak Aktif",
+    "currentShares": "Lembar saat ini",
+    "accountLabel": "Akun",
+    "allAccounts": "Semua akun ({shares})",
+    "accountClosed": "{name} (ditutup)",
+    "addTransaction": "+ Tambah transaksi",
+    "loading": "Memuat transaksi...",
+    "emptyAll": "Tidak ada transaksi untuk sekuritas ini.",
+    "emptyAccount": "Tidak ada transaksi untuk sekuritas ini di akun yang dipilih.",
+    "editTransactionTitle": "Edit Transaksi",
+    "columns": {
+      "date": "Tanggal",
+      "account": "Akun",
+      "action": "Tindakan",
+      "quantity": "Kuantitas",
+      "runningTotal": "Total Berjalan",
+      "price": "Harga",
+      "amount": "Jumlah",
+      "actionsLabel": "Tindakan"
+    },
+    "actionLabels": {
+      "BUY": "Beli",
+      "SELL": "Jual",
+      "DIVIDEND": "Dividen",
+      "INTEREST": "Bunga",
+      "CAPITAL_GAIN": "Keuntungan Modal",
+      "SPLIT": "Pemecahan Saham",
+      "TRANSFER_IN": "Transfer Masuk",
+      "TRANSFER_OUT": "Transfer Keluar",
+      "REINVEST": "Reinvestasi",
+      "ADD_SHARES": "Tambah Lembar",
+      "REMOVE_SHARES": "Hapus Lembar"
+    },
+    "toasts": {
+      "loadHistoryFailed": "Gagal memuat riwayat",
+      "loadTransactionFailed": "Gagal memuat transaksi"
+    }
+  },
+  "shareAdjustment": {
+    "heading": "Sesuaikan lembar saham",
+    "accountLabel": "Akun",
+    "accountPlaceholder": "Pilih akun...",
+    "actionLabel": "Tindakan",
+    "quantityLabel": "Kuantitas (Lembar)",
+    "dateLabel": "Tanggal",
+    "descriptionLabel": "Deskripsi (opsional)",
+    "descriptionPlaceholder": "mis. Bersihkan sisa lembar saham",
+    "saving": "Menyimpan...",
+    "submitButton": "Catat penyesuaian",
+    "accountClosed": "{name} (ditutup)",
+    "adjustmentActions": {
+      "REMOVE_SHARES": "Hapus Lembar",
+      "ADD_SHARES": "Tambah Lembar"
+    },
+    "toasts": {
+      "selectAccount": "Pilih akun",
+      "quantityRequired": "Kuantitas harus lebih dari nol",
+      "recorded": "Penyesuaian dicatat",
+      "failed": "Gagal mencatat penyesuaian"
+    }
+  },
+  "lookupPicker": {
+    "title": "Beberapa kecocokan untuk \"{query}\"",
+    "subtitle": "Pilih sekuritas yang ingin Anda gunakan.",
+    "columns": {
+      "symbol": "Simbol",
+      "name": "Nama",
+      "exchange": "Bursa",
+      "currency": "Mata Uang",
+      "type": "Jenis",
+      "source": "Sumber"
+    },
+    "selectButton": "Pilih"
+  },
+  "validation": {
+    "symbolRequired": "Simbol wajib diisi",
+    "symbolMax": "Simbol harus 20 karakter atau kurang",
+    "nameRequired": "Nama wajib diisi",
+    "nameMax": "Nama harus 255 karakter atau kurang",
+    "currencyRequired": "Mata uang wajib diisi"
+  },
+  "priceValidation": {
+    "dateRequired": "Tanggal wajib diisi",
+    "priceRequired": "Harga wajib diisi",
+    "priceNonNegative": "Harga harus berupa angka non-negatif"
+  }
+}

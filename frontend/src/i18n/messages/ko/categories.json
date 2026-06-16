@@ -1,0 +1,85 @@
+{
+  "page": {
+    "title": "카테고리",
+    "subtitle": "사용자 지정 카테고리로 거래를 정리하세요",
+    "newButton": "+ 새 카테고리",
+    "searchPlaceholder": "카테고리 검색...",
+    "filterAll": "전체 ({count})",
+    "filterExpenses": "지출 ({count})",
+    "filterIncome": "수입 ({count})",
+    "modalTitleNew": "새 카테고리",
+    "modalTitleEdit": "카테고리 편집",
+    "countSingle": "카테고리 1개",
+    "countPlural": "카테고리 {count}개",
+    "loadingText": "카테고리 로딩 중...",
+    "summaryTotal": "전체 카테고리",
+    "summaryIncome": "수입 카테고리",
+    "summaryExpense": "지출 카테고리",
+    "summaryTopLevel": "최상위"
+  },
+  "empty": {
+    "heading": "카테고리가 없습니다",
+    "description": "카테고리를 사용하면 거래를 체계적으로 정리할 수 있습니다. 기본 카테고리 세트를 가져오거나 직접 만들어 보세요.",
+    "importButton": "기본 카테고리 가져오기",
+    "createButton": "직접 만들기",
+    "hint": "기본 세트에는 하위 카테고리가 있는 일반적인 수입 및 지출 카테고리가 포함되어 있습니다"
+  },
+  "toasts": {
+    "created": "카테고리가 성공적으로 생성되었습니다",
+    "updated": "카테고리가 성공적으로 업데이트되었습니다",
+    "deleted": "카테고리가 성공적으로 삭제되었습니다",
+    "cannotDeleteSystem": "시스템 카테고리는 삭제할 수 없습니다",
+    "importSuccess": "{count}개의 카테고리를 성공적으로 가져왔습니다",
+    "loadFailed": "카테고리를 불러오는 데 실패했습니다",
+    "deleteFailed": "카테고리 삭제에 실패했습니다",
+    "createFailed": "카테고리 생성에 실패했습니다",
+    "updateFailed": "카테고리 업데이트에 실패했습니다",
+    "importFailed": "기본 카테고리 가져오기에 실패했습니다"
+  },
+  "form": {
+    "nameLabel": "카테고리 이름",
+    "parentLabel": "상위 카테고리",
+    "noParent": "상위 없음 (최상위)",
+    "typeLabel": "유형",
+    "typeExpense": "지출",
+    "typeIncome": "수입",
+    "typeInherited": "상위에서 유형 상속",
+    "colourLabel": "색상",
+    "colourInherit": "상위에서 상속",
+    "colourNone": "색상 없음",
+    "colourInheritedFrom": "상위({name})에서 색상 상속",
+    "descriptionLabel": "설명 (선택 사항)",
+    "submitCreate": "카테고리 만들기",
+    "submitUpdate": "카테고리 업데이트"
+  },
+  "list": {
+    "emptyHeading": "카테고리 없음",
+    "emptyDescription": "새 카테고리를 만들어 시작하세요.",
+    "colName": "이름",
+    "colType": "유형",
+    "colCount": "개수",
+    "colDescription": "설명",
+    "colActions": "작업",
+    "badgeIncome": "수입",
+    "badgeExpense": "지출",
+    "systemBadge": "(시스템)",
+    "inheritedColorTitle": "상위에서 상속됨",
+    "viewTransactionsTitle": "이 카테고리의 거래 보기",
+    "densityToggleTitle": "행 밀도 전환",
+    "densityNormal": "보통",
+    "densityCompact": "좁게",
+    "densityDense": "조밀하게"
+  },
+  "deleteDialog": {
+    "title": "\"{name}\" 삭제?",
+    "checkingUsage": "사용 여부 확인 중...",
+    "usedBy": "이 카테고리는 {count, plural, one {# 항목} other {# 항목}}(거래 및/또는 예정된 청구서 및 입금)에서 사용 중입니다.",
+    "reassignLabel": "재할당:",
+    "leaveUncategorized": "미분류로 남기기",
+    "safeToDelete": "이 카테고리는 사용되지 않습니다. 안전하게 삭제할 수 있습니다.",
+    "cannotUndo": "이 작업은 실행 취소할 수 없습니다."
+  },
+  "validation": {
+    "nameRequired": "카테고리 이름은 필수입니다"
+  }
+}

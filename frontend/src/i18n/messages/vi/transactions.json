@@ -1,0 +1,430 @@
+{
+  "accountWidget": {
+    "currentBalance": "Số tiền còn lại",
+    "nextPayment": "Lần thanh toán tiếp theo",
+    "viewBills": "Xem trong Hóa đơn & Tiền gửi",
+    "type": "Loại",
+    "accountNumber": "Số tài khoản",
+    "currency": "Tiền tệ",
+    "creditLimit": "Hạn mức tín dụng",
+    "interestRate": "Lãi suất",
+    "statementSettlement": "Ngày thanh toán",
+    "statementSettlementTooltip": "Ngày cuối cùng của chu kỳ thanh toán. Giao tác được đăng vào hoặc trước ngày này xuất hiện trên bảng sao kê hiện tại.",
+    "statementDue": "Ngày đến hạn thanh toán",
+    "closed": "Đã đóng",
+    "editAria": "Chỉnh sửa cài đặt tài khoản",
+    "collapseAria": "Ẩn thông tin tài khoản",
+    "showAccountNumber": "Hiển thị số tài khoản",
+    "hideAccountNumber": "Ẩn số tài khoản",
+    "show": "Hiển thị thông tin tài khoản"
+  },
+  "page": {
+    "title": "Giao tác",
+    "subtitle": "Quản lý thu nhập và chi tiêu của bạn",
+    "newButton": "+ Giao tác mới",
+    "editModal": {
+      "editTitle": "Chỉnh sửa giao tác",
+      "duplicateTitle": "Sao chép giao tác",
+      "newTitle": "Giao tác mới",
+      "scheduleTitle": "Lên lịch định kỳ",
+      "editPayeeTitle": "Chỉnh sửa người nhận"
+    },
+    "loading": "Đang tải giao tác...",
+    "totalCount": "{count, plural, one {# giao tác} other {# giao tác}}",
+    "bulkDelete": {
+      "title": "Xóa giao tác",
+      "message": "Bạn có chắc muốn xóa {count, plural, one {# giao tác} other {# giao tác}}? Điều này cũng sẽ xóa các giao tác chuyển khoản liên kết. Không thể hoàn tác."
+    },
+    "toasts": {
+      "scheduledCreated": "Giao tác đã định đã được tạo",
+      "investmentLinked": "Giao tác này được liên kết với một khoản đầu tư. Đang mở trong trang Đầu tư."
+    }
+  },
+  "list": {
+    "empty": {
+      "title": "Không có giao tác",
+      "body": "Bắt đầu bằng cách tạo giao tác mới."
+    },
+    "header": {
+      "date": "Ngày",
+      "account": "Tài khoản",
+      "payee": "Người nhận",
+      "category": "Danh mục",
+      "description": "Mô tả",
+      "refNumber": "Số tham chiếu",
+      "tags": "Thẻ",
+      "amount": "Số tiền",
+      "balance": "Số tiền còn lại",
+      "status": "Trạng thái",
+      "actions": "Hành động"
+    },
+    "today": "Hôm nay",
+    "export": {
+      "button": "Xuất",
+      "exporting": "Đang xuất...",
+      "title": "Xuất giao tác sang CSV",
+      "success": "{count, plural, one {Đã xuất # giao tác} other {Đã xuất # giao tác}}",
+      "noData": "Không có giao tác để xuất",
+      "error": "Không thể xuất giao tác"
+    },
+    "density": {
+      "title": "Chuyển đổi mật độ hàng",
+      "normal": "Bình thường",
+      "compact": "Thu gọn",
+      "dense": "Dày đặc"
+    },
+    "delete": {
+      "transferTitle": "Xóa chuyển khoản",
+      "transactionTitle": "Xóa giao tác",
+      "transferMessage": "Bạn có chắc muốn xóa chuyển khoản này? Cả hai giao tác liên kết sẽ bị xóa.",
+      "transactionMessage": "Bạn có chắc muốn xóa giao tác này? Không thể hoàn tác.",
+      "success": "Giao tác đã bị xóa",
+      "transferSuccess": "Chuyển khoản đã bị xóa",
+      "error": "Không thể xóa giao tác"
+    },
+    "status": {
+      "voidError": "Chỉnh sửa giao tác để thay đổi trạng thái từ Hủy bỏ",
+      "changed": "Trạng thái đã thay đổi thành {status}",
+      "updateError": "Không thể cập nhật trạng thái",
+      "unreconciled": "Chưa điều hoà",
+      "cleared": "Đã xong",
+      "reconciled": "Đã điều hoà",
+      "void": "Hủy bỏ",
+      "unreconciledDense": "C",
+      "clearedDense": "X",
+      "reconciledDense": "Đ",
+      "voidDense": "H",
+      "pendingDense": "○",
+      "pending": "Đang chờ",
+      "cycleTitle": "Nhấn để chuyển đổi trạng thái"
+    },
+    "row": {
+      "editPayeeTitle": "Chỉnh sửa người nhận: {name}",
+      "ref": "Tham chiếu: {number}",
+      "investmentLabel": "Đầu tư",
+      "linkedInvestmentTitle": "Xem trong Đầu tư",
+      "filterByDate": "Lọc theo ngày \"{date}\"",
+      "filterByAccount": "Lọc theo \"{name}\"",
+      "filterByPayee": "Lọc theo \"{name}\"",
+      "filterByCategory": "Lọc theo {name}",
+      "filterByTag": "Lọc theo thẻ {name}",
+      "transfer": "Chuyển khoản",
+      "transferTitle": "Chuyển khoản {direction} {name}",
+      "split": "Phần chia",
+      "uncategorized": "Chưa phân loại",
+      "splitMore": "+{count} thêm",
+      "filteredAmountTitle": "Số tiền đã lọc (giao tác đầy đủ: {amount})",
+      "viewButton": "Xem",
+      "editButton": "Chỉnh sửa",
+      "deleteButton": "Xóa"
+    },
+    "itemNamePlural": "giao tác"
+  },
+  "row": {
+    "copyOptions": {
+      "title": "Tùy chọn sao chép",
+      "duplicateTitle": "Sao chép giao tác",
+      "copy": "Sao chép",
+      "duplicate": "Nhân bản",
+      "scheduleRecurring": "Lên lịch định kỳ"
+    }
+  },
+  "actionSheet": {
+    "defaultTitle": "Giao tác",
+    "filterByDate": "Lọc theo ngày \"{date}\"",
+    "filterByAccount": "Lọc theo \"{name}\"",
+    "filterByPayee": "Lọc theo \"{name}\"",
+    "filterByCategory": "Lọc theo \"{name}\"",
+    "filterByTag": "Lọc theo thẻ \"{name}\"",
+    "edit": "Chỉnh sửa",
+    "duplicate": "Nhân bản",
+    "scheduleRecurring": "Lên lịch định kỳ",
+    "delete": "Xóa"
+  },
+  "filter": {
+    "favourites": "Yêu thích:",
+    "panel": {
+      "title": "Bộ lọc",
+      "clear": "Xóa",
+      "hide": "Ẩn",
+      "show": "Hiển thị"
+    },
+    "accounts": {
+      "label": "Hiển thị tài khoản:",
+      "all": "Tất cả",
+      "active": "Hoạt động",
+      "closed": "Đã đóng"
+    },
+    "fields": {
+      "accounts": "Tài khoản",
+      "payees": "Người nhận",
+      "categories": "Danh mục",
+      "tags": "Thẻ",
+      "timePeriod": "Khoảng thời gian",
+      "startDate": "Ngày bắt đầu",
+      "endDate": "Ngày kết thúc",
+      "amountFrom": "Số tiền từ",
+      "amountTo": "Số tiền đến",
+      "status": "Trạng thái",
+      "search": "Tìm kiếm"
+    },
+    "placeholders": {
+      "accounts": "Tất cả tài khoản",
+      "payees": "Tất cả người nhận",
+      "categories": "Tất cả danh mục",
+      "tags": "Tất cả thẻ",
+      "statuses": "Tất cả trạng thái",
+      "amountMin": "Tối thiểu",
+      "amountMax": "Tối đa",
+      "search": "Tìm kiếm người nhận, danh mục, số tiền, thẻ, mô tả, số tham chiếu..."
+    },
+    "chips": {
+      "removeAccount": "Xóa bộ lọc {name}",
+      "removePayee": "Xóa bộ lọc {name}",
+      "removeCategory": "Xóa bộ lọc {name}",
+      "removeTag": "Xóa bộ lọc {name}",
+      "removeDate": "Xóa bộ lọc ngày",
+      "removeAmount": "Xóa bộ lọc số tiền",
+      "removeSearch": "Xóa bộ lọc tìm kiếm",
+      "dateFrom": "Từ {date}",
+      "dateUntil": "Đến {date}",
+      "amountFrom": "Từ {amount}",
+      "amountUpTo": "Đến {amount}"
+    },
+    "bulkUpdate": "Cập nhật hàng loạt",
+    "cancelBulk": "Hủy hàng loạt",
+    "statusLabels": {
+      "unreconciled": "Chưa điều hoà",
+      "cleared": "Đã xong",
+      "reconciled": "Đã điều hoà",
+      "void": "Hủy bỏ"
+    },
+    "periods": {
+      "select": "Chọn khoảng thời gian...",
+      "today": "Hôm nay",
+      "yesterday": "Hôm qua",
+      "thisWeek": "Tuần này",
+      "lastWeek": "Tuần trước",
+      "monthToDate": "Tháng đến nay",
+      "lastMonth": "Tháng trước",
+      "yearToDate": "Năm đến nay",
+      "lastYear": "Năm ngoái",
+      "custom": "Tùy chọn"
+    }
+  },
+  "bulk": {
+    "banner": {
+      "selected": "{count, plural, one {# giao tác đã chọn} other {# giao tác đã chọn}}",
+      "selectAllMatching": "Chọn tất cả {count} giao tác phù hợp",
+      "allMatching": "(tất cả giao tác phù hợp)",
+      "clearSelection": "Xóa lựa chọn",
+      "bulkUpdate": "Cập nhật hàng loạt"
+    },
+    "modal": {
+      "title": "Cập nhật giao tác hàng loạt",
+      "subtitle": "Cập nhật {count, plural, one {# giao tác đã chọn} other {# giao tác đã chọn}}. Bật/tắt các trường bạn muốn thay đổi.",
+      "submitLabel": "Cập nhật {count, plural, one {# giao tác} other {# giao tác}}",
+      "payee": "Người nhận",
+      "category": "Danh mục",
+      "description": "Mô tả",
+      "status": "Trạng thái",
+      "tags": "Thẻ",
+      "payeePlaceholder": "Chọn hoặc nhập tên người nhận...",
+      "categoryPlaceholder": "Chọn danh mục...",
+      "descriptionPlaceholder": "Nhập mô tả (để trống để xóa)",
+      "tagsPlaceholder": "Chọn thẻ (để trống để xóa tất cả)...",
+      "statusOptions": {
+        "pending": "Đang chờ",
+        "cleared": "Đã xong",
+        "void": "Hủy bỏ"
+      },
+      "notes": {
+        "transfer": "Giao tác chuyển khoản cũng sẽ có giao tác liên kết được cập nhật.",
+        "split": "Giao tác chia sẽ bị bỏ qua cho các thay đổi danh mục."
+      }
+    }
+  },
+  "form": {
+    "modeTransaction": "Giao tác",
+    "modeSplit": "Phần chia",
+    "modeTransfer": "Chuyển khoản",
+    "transferBadge": "Chuyển khoản",
+    "isLinkedTransfer": "Đây là giao tác chuyển khoản liên kết",
+    "fields": {
+      "account": "Tài khoản",
+      "date": "Ngày",
+      "createDate": "Ngày tạo",
+      "payee": "Người nhận",
+      "category": "Danh mục",
+      "amount": "Số tiền",
+      "totalAmount": "Tổng số tiền",
+      "referenceNumber": "Số tham chiếu",
+      "description": "Mô tả",
+      "status": "Trạng thái",
+      "tags": "Thẻ",
+      "fromAccount": "Từ tài khoản",
+      "toAccount": "Đến tài khoản",
+      "transferAmount": "Số tiền chuyển",
+      "transferAmountWithCurrency": "Số tiền chuyển ({currency})",
+      "amountReceived": "Số tiền nhận ({currency})",
+      "payeeOptional": "Người nhận (tùy chọn)"
+    },
+    "placeholders": {
+      "selectAccount": "Chọn tài khoản...",
+      "selectDestinationAccount": "Chọn tài khoản đích...",
+      "selectOrTypePayee": "Chọn hoặc nhập tên người nhận...",
+      "selectOrCreateCategory": "Chọn hoặc tạo danh mục...",
+      "referenceNumber": "Số séc, số xác nhận...",
+      "optionalDescription": "Mô tả tùy chọn...",
+      "selectTags": "Chọn thẻ...",
+      "createNewTag": "Tạo thẻ mới..."
+    },
+    "splitSection": {
+      "title": "Chia giao tác",
+      "cancelSplit": "Hủy chia"
+    },
+    "statusOptions": {
+      "unreconciled": "Chưa điều hoà",
+      "cleared": "Đã xong",
+      "reconciled": "Đã điều hoà",
+      "void": "Hủy bỏ"
+    },
+    "submitCreate": "Tạo {mode}",
+    "submitUpdate": "Cập nhật {mode}",
+    "modeLabel": {
+      "transfer": "Chuyển khoản",
+      "transaction": "Giao tác"
+    },
+    "transferAmountNote": "Số tiền phải là dương cho chuyển khoản",
+    "amountReceivedNote": "Số tiền nhận sau khi quy đổi tiền tệ",
+    "splitTransaction": "Chia giao tác",
+    "newTagTitle": "Thẻ mới",
+    "toasts": {
+      "transferCreated": "Chuyển khoản đã được tạo",
+      "transferUpdated": "Chuyển khoản đã được cập nhật",
+      "transactionCreated": "Giao tác đã được tạo",
+      "transactionUpdated": "Giao tác đã được cập nhật",
+      "saveFailed": "Không thể lưu giao tác",
+      "loadFailed": "Không thể tải dữ liệu biểu mẫu",
+      "splitsNotEqual": "Tổng các phần ({splitTotal}) phải bằng số tiền giao tác ({txAmount})",
+      "destinationRequired": "Vui lòng chọn tài khoản đích",
+      "sameAccount": "Tài khoản nguồn và đích phải khác nhau",
+      "negativeTransfer": "Số tiền chuyển không được là âm",
+      "payeeCreated": "Người nhận \"{name}\" đã được tạo",
+      "payeeCreateFailed": "Không thể tạo người nhận",
+      "payeeReactivated": "Người nhận \"{name}\" đã được kích hoạt lại",
+      "payeeReactivateFailed": "Không thể kích hoạt lại người nhận",
+      "categoryCreated": "Danh mục \"{name}\" đã được tạo",
+      "categoryCreateFailed": "Không thể tạo danh mục",
+      "tagCreated": "Thẻ \"{name}\" đã được tạo"
+    },
+    "ariaHistory": "Hiển thị giao tác gần đây",
+    "ariaHistoryForPayee": "Hiển thị giao tác gần đây cho người nhận này",
+    "historyTitle": "Điền nhanh từ giao tác gần đây"
+  },
+  "splitEditor": {
+    "header": "Chi tiết phần chia",
+    "distributeProportionally": "Phân bổ theo tỷ lệ",
+    "distributeProportionallyTitle": "Phân bổ số tiền còn lại theo tỷ lệ dựa trên số tiền của mỗi phần",
+    "distributeEvenly": "Phân bổ đều",
+    "addSplit": "Thêm phần",
+    "removeMinimum": "Cần ít nhất 2 phần",
+    "removeSplit": "Xóa phần",
+    "removeAndConvert": "Xóa phần và chuyển đổi thành giao tác thông thường",
+    "convertConfirm": {
+      "title": "Chuyển đổi thành giao tác thông thường?",
+      "message": "Xóa phần này sẽ chuyển đổi giao tác trở lại thành giao tác thông thường sử dụng danh mục của phần còn lại.",
+      "confirm": "Chuyển đổi"
+    },
+    "noUnassigned": "Không có số tiền chưa gán",
+    "addRemaining": "Thêm số tiền còn lại vào phần này",
+    "total": "Tổng",
+    "balanced": "Cân bằng",
+    "remaining": "Còn lại: {symbol}{amount}",
+    "needAmount": "Cần {symbol}{amount} (còn lại: {symbol}{remaining})",
+    "setTotal": "Đặt tổng thành {symbol}{amount}",
+    "splitLabel": "Phần {number}",
+    "columns": {
+      "type": "Loại",
+      "categoryAccount": "Danh mục / Tài khoản",
+      "category": "Danh mục",
+      "amount": "Số tiền",
+      "memo": "Ghi nhớ",
+      "tags": "Thẻ"
+    },
+    "splitTypes": {
+      "category": "Danh mục",
+      "transfer": "Chuyển khoản",
+      "investment": "Đầu tư"
+    },
+    "selectCategory": "Chọn danh mục...",
+    "selectAccount": "Chọn tài khoản...",
+    "memoPlaceholder": "Ghi nhớ tùy chọn",
+    "mobileMemoPlaceholder": "Ghi nhớ",
+    "tagsPlaceholder": "Thẻ..."
+  },
+  "recentPopover": {
+    "recentForPayee": "Gần đây cho {name}",
+    "recentTransactions": "Giao tác gần đây",
+    "loading": "Đang tải...",
+    "noRecent": "Không có giao tác gần đây.",
+    "noRecentForPayee": "Không có giao tác gần đây cho người nhận này.",
+    "noPayee": "(không có người nhận)",
+    "uncategorized": "(chưa phân loại)"
+  },
+  "investmentSplit": {
+    "ariaAction": "Hành động đầu tư",
+    "ariaSecurity": "Giấy chứng khoán",
+    "selectSecurity": "Chọn giấy chứng khoán...",
+    "quantityPlaceholder": "Số lượng",
+    "pricePlaceholder": "Giá",
+    "commissionPlaceholder": "Hoa hồng",
+    "amountPlaceholder": "Số tiền ({currency})"
+  },
+  "charts": {
+    "balanceHistory": {
+      "title": "Lịch sử số dư",
+      "noData": "Không có dữ liệu số dư",
+      "starting": "Bắt đầu",
+      "current": "Hiện tại",
+      "ending": "Kết thúc",
+      "lowest": "Thấp nhất",
+      "minBalance": "Số dư tối thiểu"
+    },
+    "monthlyTotals": {
+      "title": "Tổng hàng tháng",
+      "noData": "Không có dữ liệu giao tác",
+      "monthlyAvg": "Trung bình tháng",
+      "total": "Tổng",
+      "transactions": "Giao tác",
+      "tooltip": "{count, plural, one {# giao tác} other {# giao tác}}"
+    },
+    "accountBalances": {
+      "title": "Số dư tài khoản",
+      "noData": "Không có dữ liệu số dư tài khoản",
+      "average": "Trung bình",
+      "total": "Tổng",
+      "accounts": "Tài khoản",
+      "scaleLabel": "Thang đo trục Y",
+      "auto": "Tự động",
+      "linear": "Tuyến tính",
+      "log": "Logarit",
+      "autoTitle": "Tự động ({scale})",
+      "scaleTitle": "Thang đo {label}"
+    }
+  },
+  "toasts": {
+    "payeeUpdated": "Người nhận đã được cập nhật thành công",
+    "deleted": "{count, plural, one {Đã xóa # giao tác} other {Đã xóa # giao tác}}",
+    "noneToExport": "Không có giao tác để xuất",
+    "exported": "{count, plural, one {Đã xuất # giao tác} other {Đã xuất # giao tác}}",
+    "loadFormDataFailed": "Không thể tải dữ liệu biểu mẫu",
+    "loadFailed": "Không thể tải giao tác",
+    "loadPayeeFailed": "Không thể tải chi tiết người nhận",
+    "payeeUpdateFailed": "Không thể cập nhật người nhận",
+    "exportFailed": "Không thể xuất giao tác"
+  },
+  "validation": {
+    "dateRequired": "Ngày là bắt buộc"
+  }
+}

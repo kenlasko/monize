@@ -1,0 +1,91 @@
+{
+  "page": {
+    "title": "金融機構",
+    "subtitle": "您帳戶所屬的銀行與券商",
+    "newInstitution": "新增機構",
+    "loading": "載入金融機構中...",
+    "searchPlaceholder": "搜尋金融機構...",
+    "modalTitleNew": "新增金融機構",
+    "modalTitleEdit": "編輯金融機構",
+    "summary": {
+      "total": "機構總數",
+      "withLogo": "含標誌",
+      "linkedAccounts": "關聯科目"
+    },
+    "toasts": {
+      "loadFailed": "載入金融機構失敗",
+      "created": "金融機構已建立",
+      "updated": "金融機構已更新",
+      "createFailed": "建立金融機構失敗",
+      "updateFailed": "更新金融機構失敗"
+    }
+  },
+  "list": {
+    "empty": "尚無金融機構。建立一個以開始分類您的帳戶。",
+    "columns": {
+      "name": "名稱",
+      "website": "網站",
+      "country": "國家",
+      "accounts": "帳戶",
+      "actions": "操作"
+    },
+    "accountCount": "{count, plural, =0 {無帳戶} one {# 個帳戶} other {# 個帳戶}}",
+    "density": {
+      "title": "切換列間距",
+      "normal": "標準",
+      "compact": "緊湊",
+      "dense": "密集"
+    },
+    "statusFilter": {
+      "all": "全部",
+      "active": "啟用中",
+      "closed": "已關閉"
+    },
+    "actions": {
+      "manageAccounts": "帳戶"
+    },
+    "deleteTitle": "刪除金融機構",
+    "deleteMessage": "刪除「{name}」？指定給此機構的帳戶將取消指定，但不會被刪除。",
+    "deleting": "刪除中...",
+    "deleted": "已刪除「{name}」",
+    "deleteFailed": "刪除金融機構失敗"
+  },
+  "form": {
+    "nameLabel": "名稱",
+    "websiteLabel": "網站",
+    "websitePlaceholder": "例如：td.com",
+    "countryLabel": "國家（選填）",
+    "countryPlaceholder": "2 碼國家代碼，例如：TW",
+    "logoHint": "品牌標誌將自動從網站取得。",
+    "submitCreate": "建立金融機構",
+    "submitUpdate": "儲存變更"
+  },
+  "validation": {
+    "nameRequired": "名稱為必填",
+    "websiteRequired": "網站為必填",
+    "websiteInvalid": "請輸入有效的網站（例如：td.com）",
+    "countryInvalid": "請使用 2 碼國家代碼"
+  },
+  "accountsManager": {
+    "title": "{name} 的帳戶",
+    "addLabel": "新增帳戶",
+    "addPlaceholder": "選擇要新增的帳戶...",
+    "noneToAdd": "您所有的帳戶已指定至某個金融機構。",
+    "loading": "載入帳戶中...",
+    "empty": "此金融機構尚未指定任何帳戶。",
+    "noneMatch": "沒有帳戶符合所選篩選條件。",
+    "filter": {
+      "all": "全部",
+      "active": "啟用中",
+      "closed": "已關閉"
+    },
+    "remove": "移除",
+    "viewTransactions": "檢視此帳戶的交易",
+    "added": "帳戶已新增",
+    "removed": "帳戶已移除",
+    "addFailed": "新增帳戶失敗",
+    "removeFailed": "移除帳戶失敗",
+    "loadFailed": "載入帳戶失敗",
+    "done": "完成"
+  }
+}

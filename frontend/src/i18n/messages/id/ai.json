@@ -1,0 +1,53 @@
+{
+  "page": {
+    "title": "Asisten AI",
+    "subtitle": "Ajukan pertanyaan tentang keuangan Anda dalam bahasa alami"
+  },
+  "chat": {
+    "conversationSaved": "Percakapan disimpan di browser Anda",
+    "clearConversation": "Hapus percakapan",
+    "inputPlaceholder": "Tanyakan tentang keuangan Anda...",
+    "inputPlaceholderDisabled": "Penyedia AI belum dikonfigurasi",
+    "keyboardHint": "Tekan Enter untuk mengirim, Shift+Enter untuk baris baru",
+    "cancelTitle": "Batal",
+    "sendTitle": "Kirim"
+  },
+  "notConfigured": {
+    "heading": "AI Belum Dikonfigurasi",
+    "message": "Tidak ada penyedia AI yang dikonfigurasi. Untuk menggunakan Asisten AI, silakan {link} di pengaturan Anda.",
+    "linkText": "konfigurasikan penyedia AI"
+  },
+  "suggestedQueries": {
+    "heading": "Tanyakan tentang keuangan Anda",
+    "description": "Saya dapat menjawab pertanyaan tentang pengeluaran, pendapatan, saldo akun, nilai bersih, dan lainnya.",
+    "monthlySpendingLabel": "Pengeluaran bulanan",
+    "monthlySpendingQuery": "Berapa banyak yang saya habiskan bulan lalu?",
+    "topCategoriesLabel": "Kategori teratas",
+    "topCategoriesQuery": "Apa 5 kategori pengeluaran teratas saya tahun ini?",
+    "accountBalancesLabel": "Saldo akun",
+    "accountBalancesQuery": "Berapa saldo akun saya saat ini?",
+    "compareMonthsLabel": "Bandingkan bulan",
+    "compareMonthsQuery": "Bandingkan pengeluaran saya bulan ini dengan bulan lalu",
+    "netWorthTrendLabel": "Tren nilai bersih",
+    "netWorthTrendQuery": "Tampilkan tren nilai bersih saya untuk 12 bulan terakhir",
+    "savingsRateLabel": "Tingkat tabungan",
+    "savingsRateQuery": "Berapa banyak yang telah saya tabung tahun ini dibandingkan pendapatan saya?"
+  },
+  "toolDetails": {
+    "inputLabel": "Masukan",
+    "resultLabel": "Hasil",
+    "toolFailedAriaLabel": "Alat gagal",
+    "toolSucceededAriaLabel": "Alat berhasil"
+  },
+  "table": {
+    "downloadTitle": "Unduh tabel sebagai CSV",
+    "downloadAriaLabel": "Unduh tabel sebagai CSV",
+    "noDataError": "Tidak ada data tabel untuk diekspor"
+  },
+  "chart": {
+    "downloadTitle": "Unduh grafik sebagai PNG",
+    "downloadAriaLabel": "Unduh grafik sebagai PNG",
+    "captureError": "Tidak dapat mengambil gambar grafik",
+    "downloadError": "Gagal mengunduh grafik"
+  }
+}

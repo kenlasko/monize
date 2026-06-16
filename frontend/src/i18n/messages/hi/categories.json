@@ -1,0 +1,85 @@
+{
+  "page": {
+    "title": "श्रेणियां",
+    "subtitle": "कस्टम श्रेणियों के साथ अपने लेनदेन व्यवस्थित करें",
+    "newButton": "+ नई श्रेणी",
+    "searchPlaceholder": "श्रेणियां खोजें...",
+    "filterAll": "सभी ({count})",
+    "filterExpenses": "व्यय ({count})",
+    "filterIncome": "आय ({count})",
+    "modalTitleNew": "नई श्रेणी",
+    "modalTitleEdit": "श्रेणी संपादित करें",
+    "countSingle": "1 श्रेणी",
+    "countPlural": "{count} श्रेणियां",
+    "loadingText": "श्रेणियां लोड हो रही हैं...",
+    "summaryTotal": "कुल श्रेणियां",
+    "summaryIncome": "आय श्रेणियां",
+    "summaryExpense": "व्यय श्रेणियां",
+    "summaryTopLevel": "शीर्ष-स्तर"
+  },
+  "empty": {
+    "heading": "अभी तक कोई श्रेणी नहीं",
+    "description": "श्रेणियां आपके लेनदेन व्यवस्थित करने में मदद करती हैं। हमारी डिफ़ॉल्ट श्रेणियों का सेट आयात करके शुरू करें, या अपनी खुद बनाएं।",
+    "importButton": "डिफ़ॉल्ट श्रेणियां आयात करें",
+    "createButton": "अपनी खुद बनाएं",
+    "hint": "डिफ़ॉल्ट सेट में उपश्रेणियों के साथ सामान्य आय और व्यय श्रेणियां शामिल हैं"
+  },
+  "toasts": {
+    "created": "श्रेणी सफलतापूर्वक बनाई गई",
+    "updated": "श्रेणी सफलतापूर्वक अपडेट की गई",
+    "deleted": "श्रेणी सफलतापूर्वक हटाई गई",
+    "cannotDeleteSystem": "सिस्टम श्रेणियां नहीं हटाई जा सकतीं",
+    "importSuccess": "सफलतापूर्वक {count} श्रेणियां आयात की गईं",
+    "loadFailed": "श्रेणियां लोड करने में विफल",
+    "deleteFailed": "श्रेणी हटाने में विफल",
+    "createFailed": "श्रेणी बनाने में विफल",
+    "updateFailed": "श्रेणी अपडेट करने में विफल",
+    "importFailed": "डिफ़ॉल्ट श्रेणियां आयात करने में विफल"
+  },
+  "form": {
+    "nameLabel": "श्रेणी का नाम",
+    "parentLabel": "मूल श्रेणी",
+    "noParent": "कोई मूल नहीं (शीर्ष-स्तर)",
+    "typeLabel": "प्रकार",
+    "typeExpense": "व्यय",
+    "typeIncome": "आय",
+    "typeInherited": "मूल से विरासत में मिला प्रकार",
+    "colourLabel": "रंग",
+    "colourInherit": "मूल से विरासत में लें",
+    "colourNone": "कोई रंग नहीं",
+    "colourInheritedFrom": "मूल ({name}) से विरासत में मिला रंग",
+    "descriptionLabel": "विवरण (वैकल्पिक)",
+    "submitCreate": "श्रेणी बनाएं",
+    "submitUpdate": "श्रेणी अपडेट करें"
+  },
+  "list": {
+    "emptyHeading": "कोई श्रेणी नहीं",
+    "emptyDescription": "नई श्रेणी बनाकर शुरू करें।",
+    "colName": "नाम",
+    "colType": "प्रकार",
+    "colCount": "संख्या",
+    "colDescription": "विवरण",
+    "colActions": "क्रियाएं",
+    "badgeIncome": "आय",
+    "badgeExpense": "व्यय",
+    "systemBadge": "(सिस्टम)",
+    "inheritedColorTitle": "मूल से विरासत में मिला",
+    "viewTransactionsTitle": "इस श्रेणी के लेनदेन देखें",
+    "densityToggleTitle": "पंक्ति घनत्व टॉगल करें",
+    "densityNormal": "सामान्य",
+    "densityCompact": "संक्षिप्त",
+    "densityDense": "घना"
+  },
+  "deleteDialog": {
+    "title": "\"{name}\" हटाएं?",
+    "checkingUsage": "उपयोग जांचा जा रहा है...",
+    "usedBy": "यह श्रेणी {count, plural, one {# आइटम} other {# आइटमों}} द्वारा उपयोग की जाती है (लेनदेन और/या अनुसूचित बिल और जमा)।",
+    "reassignLabel": "को पुनः असाइन करें:",
+    "leaveUncategorized": "वर्गीकृत न करें",
+    "safeToDelete": "यह श्रेणी उपयोग में नहीं है। इसे सुरक्षित रूप से हटाया जा सकता है।",
+    "cannotUndo": "यह क्रिया पूर्ववत नहीं की जा सकती।"
+  },
+  "validation": {
+    "nameRequired": "श्रेणी का नाम आवश्यक है"
+  }
+}

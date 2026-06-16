@@ -1,0 +1,119 @@
+{
+  "demoBanner": {
+    "label": "Mode Demo",
+    "message": "Semua data direset setiap hari pukul 04:00 UTC. Jelajahi dengan bebas!"
+  },
+  "delegationBanner": {
+    "viewing": "Melihat:",
+    "sharedAccount": "Akun bersama",
+    "yourAccount": "Akun Anda",
+    "switchAccountLabel": "Ganti akun",
+    "selfSuffix": "{label} (Anda)",
+    "error2fa": "Akun tersebut memerlukan autentikasi dua faktor. Siapkan 2FA di Pengaturan sebelum beralih.",
+    "errorSwitch": "Tidak dapat beralih akun"
+  },
+  "backendDownBanner": {
+    "connectionBlockedLabel": "Koneksi Diblokir",
+    "connectionBlockedDetail": "Header keamanan memblokir permintaan melalui HTTP biasa.",
+    "connectionLostLabel": "Koneksi Terputus",
+    "connectionLostDetail": "Tidak dapat menjangkau server. Mencoba ulang secara otomatis...",
+    "httpsHint": "Atur <code>DISABLE_HTTPS_HEADERS=true</code> di lingkungan Anda atau akses situs melalui HTTPS."
+  },
+  "httpWarningBanner": {
+    "label": "HTTPS Diperlukan",
+    "detail": "Header keamanan aktif tetapi situs ini diakses melalui HTTP biasa. Permintaan API mungkin gagal.",
+    "httpsHint": "Atur <code>DISABLE_HTTPS_HEADERS=true</code> di lingkungan Anda atau akses situs melalui HTTPS.",
+    "dismiss": "Tutup",
+    "dismissAriaLabel": "Tutup peringatan HTTPS"
+  },
+  "updateBanner": {
+    "availableWithVersion": "Monize v{version} tersedia",
+    "availableGeneric": "Versi baru Monize tersedia",
+    "runningVersion": "(menjalankan v{version})",
+    "releaseNotes": "Catatan rilis",
+    "dismiss": "Tutup",
+    "dismissAriaLabel": "Tutup notifikasi pembaruan"
+  },
+  "actionHistory": {
+    "title": "Riwayat Tindakan",
+    "buttonAriaLabel": "Riwayat Tindakan",
+    "closeAriaLabel": "Tutup",
+    "undo": "Batalkan",
+    "redo": "Ulangi",
+    "noRecentActions": "Tidak ada tindakan terbaru",
+    "undoneLabel": "Dibatalkan",
+    "nothingToUndo": "Tidak ada yang bisa dibatalkan",
+    "nothingToRedo": "Tidak ada yang bisa diulangi",
+    "cannotUndoDefault": "Tidak dapat membatalkan tindakan ini",
+    "cannotRedoDefault": "Tidak dapat mengulangi tindakan ini",
+    "undoFailed": "Pembatalan gagal",
+    "redoFailed": "Pengulangan gagal",
+    "entityLabels": {
+      "transaction": "Transaksi",
+      "transfer": "Transfer",
+      "investment_transaction": "Investasi",
+      "bulk_transaction": "Massal",
+      "category": "Kategori",
+      "payee": "Penerima",
+      "tag": "Tag",
+      "account": "Akun",
+      "scheduled_transaction": "Terjadwal",
+      "security": "Sekuritas",
+      "budget": "Anggaran",
+      "custom_report": "Laporan"
+    },
+    "descriptions": {
+      "createdAccount": "Akun \"{name}\" dibuat",
+      "updatedAccount": "Akun \"{name}\" diperbarui",
+      "deletedAccount": "Akun \"{name}\" dihapus",
+      "createdBudget": "Anggaran \"{name}\" dibuat",
+      "updatedBudget": "Anggaran \"{name}\" diperbarui",
+      "deletedBudget": "Anggaran \"{name}\" dihapus",
+      "createdCategory": "Kategori \"{name}\" dibuat",
+      "updatedCategory": "Kategori \"{name}\" diperbarui",
+      "deletedCategory": "Kategori \"{name}\" dihapus",
+      "createdInstitution": "Institusi \"{name}\" dibuat",
+      "updatedInstitution": "Institusi \"{name}\" diperbarui",
+      "deletedInstitution": "Institusi \"{name}\" dihapus",
+      "createdInvestmentReport": "Laporan investasi \"{name}\" dibuat",
+      "updatedInvestmentReport": "Laporan investasi \"{name}\" diperbarui",
+      "deletedInvestmentReport": "Laporan investasi \"{name}\" dihapus",
+      "createdPayee": "Penerima \"{name}\" dibuat",
+      "updatedPayee": "Penerima \"{name}\" diperbarui",
+      "deletedPayee": "Penerima \"{name}\" dihapus",
+      "createdReport": "Laporan \"{name}\" dibuat",
+      "updatedReport": "Laporan \"{name}\" diperbarui",
+      "deletedReport": "Laporan \"{name}\" dihapus",
+      "createdScheduledTransaction": "Transaksi terjadwal \"{name}\" dibuat",
+      "updatedScheduledTransaction": "Transaksi terjadwal \"{name}\" diperbarui",
+      "deletedScheduledTransaction": "Transaksi terjadwal \"{name}\" dihapus",
+      "createdSecurity": "Sekuritas \"{symbol}\" dibuat",
+      "updatedSecurity": "Sekuritas \"{symbol}\" diperbarui",
+      "deletedSecurity": "Sekuritas \"{symbol}\" dihapus",
+      "createdTag": "Tag \"{name}\" dibuat",
+      "updatedTag": "Tag \"{name}\" diperbarui",
+      "deletedTag": "Tag \"{name}\" dihapus",
+      "createdTransaction": "Transaksi {payee} {amount} dibuat",
+      "updatedTransaction": "Transaksi {payee} {amount} diperbarui",
+      "deletedTransaction": "Transaksi {payee} {amount} dihapus",
+      "createdTransfer": "Transfer {amount} dari {from} ke {to} dibuat",
+      "createdInvestmentTransaction": "Transaksi {action} dibuat",
+      "updatedInvestmentTransaction": "Transaksi {action} diperbarui",
+      "deletedInvestmentTransaction": "Transaksi {action} dihapus",
+      "transferredSecurity": "Sekuritas dipindahkan antar akun",
+      "updatedSecurityTransfer": "Transfer sekuritas diperbarui"
+    },
+    "timeAgo": {
+      "justNow": "baru saja",
+      "minutes": "{count} menit lalu",
+      "hours": "{count} jam lalu",
+      "days": "{count} hari lalu"
+    },
+    "undonePrefix": "Dibatalkan: {description}",
+    "redonePrefix": "Diulangi: {description}"
+  },
+  "pageHeader": {
+    "helpAriaLabel": "Buka wiki Monize untuk bantuan dengan bagian ini",
+    "helpTooltip": "Buka wiki Monize untuk bantuan dengan bagian ini"
+  }
+}

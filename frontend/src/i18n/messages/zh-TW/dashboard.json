@@ -1,0 +1,136 @@
+{
+  "page": {
+    "welcomePrefix": "歡迎",
+    "welcomeWithName": "歡迎，{name}！",
+    "subtitle": "以下是您的財務概覽"
+  },
+  "favouriteAccounts": {
+    "title": "我的最愛科目",
+    "empty": "尚無我的最愛科目。將科目標記為我的最愛即可在此顯示。",
+    "reorder": "重新排序",
+    "done": "完成",
+    "moveUp": "上移",
+    "moveDown": "下移",
+    "marketValue": "市場價值",
+    "due": "到期日：{ordinal}",
+    "dueTooltip": "每月信用卡付款到期日",
+    "settlement": "結算日：{ordinal}",
+    "settlementTooltip": "帳單週期的最後一天。在此日或之前入帳的交易將顯示在本期對帳單上。"
+  },
+  "upcomingBills": {
+    "title": "即將到期帳單與存款",
+    "empty": "在提醒期間內沒有逾期或即將到期的帳單、存款或轉帳。",
+    "perReminderSettings": "依提醒設定",
+    "postTransaction": "過帳此交易",
+    "manual": "手動",
+    "manualTitle": "需要手動過帳",
+    "negativeBalanceWarning": "此交易將導致科目結餘低於零",
+    "viewAll": "查看所有帳單與存款",
+    "totalDue": "應付總額",
+    "totalIncoming": "應收總額",
+    "moreItems": "+{count} 更多",
+    "overdue": "已逾期",
+    "today": "今天",
+    "tomorrow": "明天",
+    "daysUntil": "{count} 天後",
+    "typeBadge": {
+      "bill": "帳單",
+      "deposit": "存款",
+      "transfer": "轉帳"
+    }
+  },
+  "gettingStarted": {
+    "title": "快速入門",
+    "subtitle": "透過幾個簡單步驟設定您的帳號",
+    "dismiss": "關閉",
+    "steps": {
+      "settings": {
+        "title": "檢閱設定",
+        "description": "設定您的貨幣、日期格式及主題"
+      },
+      "categories": {
+        "title": "設定類別",
+        "description": "建立類別或匯入預設類別組"
+      },
+      "account": {
+        "title": "新增第一個科目",
+        "description": "建立銀行科目以開始追蹤"
+      },
+      "import": {
+        "title": "從 QIF 匯入",
+        "description": "從 QIF 檔案匯入科目及交易"
+      }
+    }
+  },
+  "budgetStatus": {
+    "title": "預算狀況",
+    "noBudget": "找不到有效預算。請建立預算以追蹤您的消費。",
+    "createBudget": "建立預算",
+    "viewFullBudget": "查看完整預算",
+    "daysLeft": "還剩 {count} 天",
+    "safeToSpend": "今日可安全消費",
+    "topCategories": "主要類別"
+  },
+  "insights": {
+    "title": "消費洞察",
+    "empty": "暫無洞察資料。請前往洞察頁面產生您的第一份分析。",
+    "goToInsights": "前往洞察",
+    "viewAll": "查看所有洞察",
+    "activeCount": "{count} 則有效"
+  },
+  "topMovers": {
+    "title": "漲跌幅排行",
+    "empty": {
+      "noInvestments": "新增投資科目以追蹤每日漲跌。",
+      "noPrices": "目前尚無價格變動資料。",
+      "noGainers": "今日無上漲標的。",
+      "noLosers": "今日無下跌標的。"
+    },
+    "dailyChange": "每日變動",
+    "refreshPrices": "更新價格",
+    "viewPortfolio": "查看投資組合",
+    "filter": {
+      "all": "全部",
+      "gainers": "上漲",
+      "losers": "下跌"
+    }
+  },
+  "favouriteSecurities": {
+    "title": "我的最愛證券",
+    "empty": "尚無我的最愛證券。請前往<securitiesLink>證券頁面</securitiesLink>，將您想追蹤的證券加入星號。",
+    "noPriceYet": "尚無價格",
+    "dailyChange": "每日變動",
+    "refreshPrices": "更新價格",
+    "manage": "管理證券"
+  },
+  "netWorth": {
+    "title": "資產淨值",
+    "empty": "尚無資產淨值資料。",
+    "past12Months": "過去 12 個月",
+    "viewReport": "查看完整報告"
+  },
+  "assetsVsLiabilities": {
+    "title": "資產與負債",
+    "empty": "尚無資產淨值資料。",
+    "current": "目前",
+    "netWorthLabel": "資產淨值",
+    "assets": "資產",
+    "liabilities": "負債"
+  },
+  "expensesPieChart": {
+    "title": "依類別支出",
+    "empty": "此期間無支出資料。",
+    "past30Days": "過去 30 天",
+    "total": "總計",
+    "uncategorized": "未分類",
+    "other": "其他"
+  },
+  "incomeExpenses": {
+    "title": "收入與支出",
+    "last5Weeks": "最近 5 週",
+    "weekOf": "{date} 當週",
+    "income": "收入",
+    "expenses": "支出",
+    "net": "淨額"
+  }
+}

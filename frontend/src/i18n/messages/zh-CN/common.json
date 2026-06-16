@@ -1,0 +1,177 @@
+{
+  "chartFlag": {
+    "dismiss": "隐藏此值"
+  },
+  "appVersion": {
+    "releaseNotes": "查看 v{version} 版本说明"
+  },
+  "save": "保存",
+  "cancel": "取消",
+  "delete": "删除",
+  "edit": "编辑",
+  "close": "关闭",
+  "actions": {
+    "edit": "编辑",
+    "delete": "删除",
+    "view": "查看",
+    "duplicate": "复制",
+    "merge": "合并",
+    "reactivate": "重新激活",
+    "reconcile": "对账",
+    "post": "过账",
+    "skip": "跳过",
+    "close": "关闭",
+    "reopen": "重新开启",
+    "scheduleRecurring": "设为定期计划",
+    "more": "更多操作"
+  },
+  "loading": "加载中...",
+  "pagination": {
+    "showing": "显示",
+    "of": "共",
+    "firstPage": "第一页",
+    "lastPage": "最后一页",
+    "previousPage": "上一页",
+    "nextPage": "下一页",
+    "back10Pages": "后退 10 页",
+    "forward10Pages": "前进 10 页",
+    "enterPageNumber": "输入页码"
+  },
+  "confirmDialog": {
+    "confirm": "确认"
+  },
+  "unsavedChanges": {
+    "title": "未保存的更改",
+    "message": "您有未保存的更改。您想怎么做？",
+    "discard": "丢弃"
+  },
+  "exportDropdown": {
+    "export": "导出",
+    "exporting": "导出中...",
+    "exportPdf": "导出 PDF",
+    "exportReport": "导出报告",
+    "failedPdf": "导出 PDF 失败，请重试。"
+  },
+  "dateRange": {
+    "custom": "自定义",
+    "startDate": "开始日期",
+    "endDate": "结束日期"
+  },
+  "colorPicker": {
+    "custom": "自定义：",
+    "apply": "应用"
+  },
+  "chartDownload": {
+    "downloadAsPng": "将 {filename} 下载为 PNG",
+    "unableToCapture": "无法捕获图表图像",
+    "failedToDownload": "下载图表失败"
+  },
+  "chartViewToggle": {
+    "pieChart": "饼图",
+    "barChart": "柱状图",
+    "stackedChart": "100% 堆叠条形图",
+    "lineChart": "折线图",
+    "areaChart": "面积图",
+    "table": "表格"
+  },
+  "formActions": {
+    "cancel": "取消",
+    "save": "保存"
+  },
+  "themeToggle": {
+    "light": "浅色",
+    "dark": "深色",
+    "system": "系统",
+    "title": "主题：{label}。点击更改。"
+  },
+  "errorPage": {
+    "title": "出现错误",
+    "description": "发生了意外错误。请重试，如果问题持续存在，请联系支持。",
+    "errorId": "错误 ID：{digest}",
+    "tryAgain": "重试",
+    "goToDashboard": "前往仪表盘"
+  },
+  "errorBoundary": {
+    "defaultMessage": "渲染此组件时出现错误。"
+  },
+  "calendar": {
+    "clear": "清除",
+    "today": "今天"
+  },
+  "multiSelect": {
+    "search": "搜索...",
+    "selectAll": "全选",
+    "clear": "清除",
+    "noOptions": "未找到选项"
+  },
+  "combobox": {
+    "createOption": "创建 \"{value}\""
+  },
+  "passwordInput": {
+    "show": "显示输入",
+    "hide": "隐藏输入"
+  },
+  "currencyInput": {
+    "openCalculator": "打开计算器",
+    "calculator": "计算器"
+  },
+  "dateInput": {
+    "shortcutsTitle": "键盘快捷键",
+    "today": "今天",
+    "firstDayOfYear": "年初第一天",
+    "lastDayOfYear": "年末最后一天",
+    "firstDayOfMonth": "月初第一天",
+    "lastDayOfMonth": "月末最后一天",
+    "nextDay": "明天",
+    "previousDay": "昨天",
+    "nextMonth": "下个月",
+    "previousMonth": "上个月"
+  },
+  "accountTypes": {
+    "CHEQUING": "活期账户",
+    "SAVINGS": "储蓄账户",
+    "CREDIT_CARD": "信用卡",
+    "INVESTMENT": "投资账户",
+    "LOAN": "贷款",
+    "MORTGAGE": "抵押贷款",
+    "CASH": "现金",
+    "LINE_OF_CREDIT": "信用额度",
+    "ASSET": "资产",
+    "OTHER": "其他"
+  },
+  "accountFilter": {
+    "allAccounts": "所有账户",
+    "allBut": "除 {names} 外的所有账户"
+  },
+  "passwordRequirements": "密码必须至少 12 个字符，并包含大写字母、小写字母、数字和特殊字符。",
+  "passwordValidation": {
+    "min": "密码必须至少 12 个字符",
+    "max": "密码不能超过 100 个字符",
+    "lowercase": "必须包含小写字母",
+    "uppercase": "必须包含大写字母",
+    "number": "必须包含数字",
+    "special": "必须包含特殊字符"
+  },
+  "codeValidation": {
+    "length": "验证码必须恰好为 6 位数字",
+    "digits": "验证码必须为 6 位数字"
+  },
+  "monthsShort": ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"],
+  "weekdaysShort": ["日", "一", "二", "三", "四", "五", "六"],
+  "weekdaysMin": ["日", "一", "二", "三", "四", "五", "六"],
+  "weekdaysNarrow": ["日", "一", "二", "三", "四", "五", "六"],
+  "dateFormat": {
+    "browserAuto": "使用浏览器区域设置（自动检测为 {sample}）",
+    "custom": "自定义..."
+  },
+  "emailInvalid": "请输入有效的电子邮件地址",
+  "noSectionAccess": "您没有访问该部分的权限。",
+  "undoRedo": {
+    "nothingToUndo": "没有可撤销的操作",
+    "cannotUndo": "无法撤销此操作",
+    "undoFailed": "撤销失败",
+    "nothingToRedo": "没有可重做的操作",
+    "cannotRedo": "无法重做此操作",
+    "redoFailed": "重做失败"
+  }
+}

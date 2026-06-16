@@ -1,0 +1,119 @@
+{
+  "demoBanner": {
+    "label": "Chế độ Demo",
+    "message": "Tất cả dữ liệu đặt lại hàng ngày lúc 4:00 AM UTC. Khám phá tự do!"
+  },
+  "delegationBanner": {
+    "viewing": "Đang xem:",
+    "sharedAccount": "Tài khoản chia sẻ",
+    "yourAccount": "Tài khoản của bạn",
+    "switchAccountLabel": "Chuyển tài khoản",
+    "selfSuffix": "{label} (bạn)",
+    "error2fa": "Tài khoản đó yêu cầu xác thực hai yếu tố. Thiết lập 2FA trong Cài đặt trước khi chuyển.",
+    "errorSwitch": "Không thể chuyển tài khoản"
+  },
+  "backendDownBanner": {
+    "connectionBlockedLabel": "Kết nối bị chặn",
+    "connectionBlockedDetail": "Tiêu đề bảo mật đang chặn các yêu cầu qua HTTP thông thường.",
+    "connectionLostLabel": "Mất kết nối",
+    "connectionLostDetail": "Không thể kết nối đến máy chủ. Đang tự động thử lại...",
+    "httpsHint": "Đặt <code>DISABLE_HTTPS_HEADERS=true</code> trong môi trường của bạn hoặc truy cập trang qua HTTPS."
+  },
+  "httpWarningBanner": {
+    "label": "Yêu cầu HTTPS",
+    "detail": "Tiêu đề bảo mật đang hoạt động nhưng trang này đang được truy cập qua HTTP thông thường. Các yêu cầu API có thể thất bại.",
+    "httpsHint": "Đặt <code>DISABLE_HTTPS_HEADERS=true</code> trong môi trường của bạn hoặc truy cập trang qua HTTPS.",
+    "dismiss": "Bỏ qua",
+    "dismissAriaLabel": "Bỏ qua cảnh báo HTTPS"
+  },
+  "updateBanner": {
+    "availableWithVersion": "Monize v{version} đã có sẵn",
+    "availableGeneric": "Có phiên bản mới của Monize",
+    "runningVersion": "(đang chạy v{version})",
+    "releaseNotes": "Ghi chú phát hành",
+    "dismiss": "Bỏ qua",
+    "dismissAriaLabel": "Bỏ qua thông báo cập nhật"
+  },
+  "actionHistory": {
+    "title": "Lịch sử hành động",
+    "buttonAriaLabel": "Lịch sử hành động",
+    "closeAriaLabel": "Đóng",
+    "undo": "Hoàn tác",
+    "redo": "Làm lại",
+    "noRecentActions": "Không có hành động gần đây",
+    "undoneLabel": "Đã hoàn tác",
+    "nothingToUndo": "Không có gì để hoàn tác",
+    "nothingToRedo": "Không có gì để làm lại",
+    "cannotUndoDefault": "Không thể hoàn tác hành động này",
+    "cannotRedoDefault": "Không thể làm lại hành động này",
+    "undoFailed": "Hoàn tác thất bại",
+    "redoFailed": "Làm lại thất bại",
+    "entityLabels": {
+      "transaction": "Giao dịch",
+      "transfer": "Chuyển khoản",
+      "investment_transaction": "Đầu tư",
+      "bulk_transaction": "Hàng loạt",
+      "category": "Danh mục",
+      "payee": "Người nhận",
+      "tag": "Thẻ nhãn",
+      "account": "Tài khoản",
+      "scheduled_transaction": "Đã lên lịch",
+      "security": "Chứng khoán",
+      "budget": "Ngân sách",
+      "custom_report": "Báo cáo"
+    },
+    "descriptions": {
+      "createdAccount": "Đã tạo tài khoản \"{name}\"",
+      "updatedAccount": "Đã cập nhật tài khoản \"{name}\"",
+      "deletedAccount": "Đã xóa tài khoản \"{name}\"",
+      "createdBudget": "Đã tạo ngân sách \"{name}\"",
+      "updatedBudget": "Đã cập nhật ngân sách \"{name}\"",
+      "deletedBudget": "Đã xóa ngân sách \"{name}\"",
+      "createdCategory": "Đã tạo danh mục \"{name}\"",
+      "updatedCategory": "Đã cập nhật danh mục \"{name}\"",
+      "deletedCategory": "Đã xóa danh mục \"{name}\"",
+      "createdInstitution": "Đã tạo tổ chức \"{name}\"",
+      "updatedInstitution": "Đã cập nhật tổ chức \"{name}\"",
+      "deletedInstitution": "Đã xóa tổ chức \"{name}\"",
+      "createdInvestmentReport": "Đã tạo báo cáo đầu tư \"{name}\"",
+      "updatedInvestmentReport": "Đã cập nhật báo cáo đầu tư \"{name}\"",
+      "deletedInvestmentReport": "Đã xóa báo cáo đầu tư \"{name}\"",
+      "createdPayee": "Đã tạo người nhận \"{name}\"",
+      "updatedPayee": "Đã cập nhật người nhận \"{name}\"",
+      "deletedPayee": "Đã xóa người nhận \"{name}\"",
+      "createdReport": "Đã tạo báo cáo \"{name}\"",
+      "updatedReport": "Đã cập nhật báo cáo \"{name}\"",
+      "deletedReport": "Đã xóa báo cáo \"{name}\"",
+      "createdScheduledTransaction": "Đã tạo giao dịch định kỳ \"{name}\"",
+      "updatedScheduledTransaction": "Đã cập nhật giao dịch định kỳ \"{name}\"",
+      "deletedScheduledTransaction": "Đã xóa giao dịch định kỳ \"{name}\"",
+      "createdSecurity": "Đã tạo chứng khoán \"{symbol}\"",
+      "updatedSecurity": "Đã cập nhật chứng khoán \"{symbol}\"",
+      "deletedSecurity": "Đã xóa chứng khoán \"{symbol}\"",
+      "createdTag": "Đã tạo thẻ nhãn \"{name}\"",
+      "updatedTag": "Đã cập nhật thẻ nhãn \"{name}\"",
+      "deletedTag": "Đã xóa thẻ nhãn \"{name}\"",
+      "createdTransaction": "Đã tạo giao dịch {payee} {amount}",
+      "updatedTransaction": "Đã cập nhật giao dịch {payee} {amount}",
+      "deletedTransaction": "Đã xóa giao dịch {payee} {amount}",
+      "createdTransfer": "Đã tạo chuyển khoản {amount} từ {from} đến {to}",
+      "createdInvestmentTransaction": "Đã tạo giao dịch {action}",
+      "updatedInvestmentTransaction": "Đã cập nhật giao dịch {action}",
+      "deletedInvestmentTransaction": "Đã xóa giao dịch {action}",
+      "transferredSecurity": "Đã chuyển chứng khoán giữa các tài khoản",
+      "updatedSecurityTransfer": "Đã cập nhật chuyển khoản chứng khoán"
+    },
+    "timeAgo": {
+      "justNow": "vừa xong",
+      "minutes": "{count} phút trước",
+      "hours": "{count} giờ trước",
+      "days": "{count} ngày trước"
+    },
+    "undonePrefix": "Đã hoàn tác: {description}",
+    "redonePrefix": "Đã làm lại: {description}"
+  },
+  "pageHeader": {
+    "helpAriaLabel": "Mở wiki Monize để được trợ giúp về phần này",
+    "helpTooltip": "Mở wiki Monize để được trợ giúp về phần này"
+  }
+}

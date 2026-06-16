@@ -1,0 +1,108 @@
+{
+  "createUserModal": {
+    "title": "Kullanıcı Ekle",
+    "description": "Yeni bir hesap oluşturun. E-posta ile davet gönderebilir, şifreyi kendiniz belirleyebilir veya geçici bir şifre oluşturabilirsiniz.",
+    "emailLabel": "E-posta",
+    "emailPlaceholder": "kullanici@ornek.com",
+    "firstNameLabel": "Ad (isteğe bağlı)",
+    "firstNamePlaceholder": "Ad",
+    "lastNameLabel": "Soyad (isteğe bağlı)",
+    "lastNamePlaceholder": "Soyad",
+    "roleLabel": "Rol",
+    "roleUser": "Kullanıcı",
+    "roleAdmin": "Yönetici",
+    "credentialsLegend": "Kimlik Bilgileri",
+    "inviteLabel": "Şifre belirlemek için e-posta daveti gönder",
+    "inviteSmtpNote": "SMTP yapılandırılmış olmalıdır.",
+    "setPasswordLabel": "Şimdi bir şifre belirle",
+    "tempPasswordLabel": "Geçici şifre oluştur",
+    "tempPasswordNote": "Oluşturulduktan sonra bir kez gösterilir. Kullanıcı ilk girişinde şifrelerini değiştirmelidir.",
+    "passwordFieldLabel": "Şifre",
+    "passwordPlaceholder": "Şifre belirle",
+    "createButton": "Kullanıcı Oluştur",
+    "validation": {
+      "invalidPassword": "Geçersiz şifre."
+    },
+    "toasts": {
+      "createFailed": "Kullanıcı oluşturulamadı"
+    }
+  },
+  "resetPasswordModal": {
+    "defaultTitle": "Şifre Sıfırlama Başarılı",
+    "defaultDescription": "{userName} için geçici bir şifre belirlendi.",
+    "temporaryPasswordLabel": "Geçici Şifre",
+    "copy": "Kopyala",
+    "copied": "Kopyalandı",
+    "notShownAgain": "Bu şifre bir daha gösterilmeyecektir.",
+    "mustChangeOnLogin": "Kullanıcının bir sonraki girişinde şifresini değiştirmesi gerekecektir.",
+    "toasts": {
+      "copied": "Şifre panoya kopyalandı",
+      "copyFailed": "Panoya kopyalanamadı"
+    }
+  },
+  "userTable": {
+    "colUser": "Kullanıcı",
+    "colRole": "Rol",
+    "colProvider": "Sağlayıcı",
+    "colStatus": "Durum",
+    "colLastLogin": "Son Giriş",
+    "colActions": "İşlemler",
+    "youSuffix": "(siz)",
+    "noEmail": "E-posta yok",
+    "unknown": "Bilinmiyor",
+    "never": "Hiçbir zaman",
+    "providerSso": "SSO",
+    "providerLocal": "Yerel",
+    "roleAdmin": "Yönetici",
+    "roleUser": "Kullanıcı",
+    "statusActive": "Aktif",
+    "statusDisabled": "Devre Dışı",
+    "clickToDisable": "Devre dışı bırakmak için tıklayın",
+    "clickToEnable": "Etkinleştirmek için tıklayın",
+    "resetPassword": "Şifreyi Sıfırla",
+    "noUsers": "Kullanıcı bulunamadı."
+  },
+  "usersPage": {
+    "title": "Kullanıcı Yönetimi",
+    "userCount": "{count, plural, one {# kullanıcı} other {# kullanıcı}}",
+    "newUser": "+ Yeni Kullanıcı",
+    "loadingUsers": "Kullanıcılar yükleniyor...",
+    "toasts": {
+      "inviteSent": "{email} adresine davet e-postası gönderildi",
+      "userCreated": "{name} oluşturuldu",
+      "userUpgraded": "{name} tam hesaba yükseltildi",
+      "roleChanged": "{name} artık {role}",
+      "roleAdmin": "bir yönetici",
+      "roleUser": "bir kullanıcı",
+      "userEnabled": "{name} etkinleştirildi",
+      "userDisabled": "{name} devre dışı bırakıldı",
+      "userDeleted": "{name} silindi",
+      "userDowngraded": "{name}'in kendi verileri kaldırıldı; temsilci erişimi devam ediyor.",
+      "loadFailed": "Kullanıcılar yüklenemedi",
+      "deleteFailed": "Kullanıcı silinemedi",
+      "disableFailed": "Kullanıcı devre dışı bırakılamadı",
+      "resetFailed": "Şifre sıfırlanamadı"
+    },
+    "dialogs": {
+      "promoteTitle": "Kullanıcı Yükseltilsin mi?",
+      "demoteTitle": "Kullanıcı Düşürülsün mü?",
+      "promoteMessage": "{name} adlı kullanıcıyı {role} olarak yükseltmek istediğinizden emin misiniz?",
+      "demoteMessage": "{name} adlı kullanıcıyı {role} olarak düşürmek istediğinizden emin misiniz?",
+      "promoteConfirm": "Yöneticiye Yükselt",
+      "demoteConfirm": "Kullanıcıya Düşür",
+      "disableTitle": "Kullanıcı Devre Dışı Bırakılsın mı?",
+      "disableMessage": "{name} adlı kullanıcıyı devre dışı bırakmak istediğinizden emin misiniz? Giriş yapamayacaklar.",
+      "disableConfirm": "Kullanıcıyı Devre Dışı Bırak",
+      "resetTitle": "Şifre Sıfırlansın mı?",
+      "resetMessage": "Bu işlem {name} için yeni bir geçici şifre oluşturacaktır. Bir sonraki girişlerinde şifrelerini değiştirmeleri gerekecektir.",
+      "resetConfirm": "Şifreyi Sıfırla",
+      "deleteTitle": "Kullanıcı Silinsin mi?",
+      "deleteMessage": "{name} adlı kullanıcıyı silmek istediğinizden emin misiniz? Bu işlem hesabını ve tüm ilişkili verilerini kalıcı olarak kaldıracaktır. Bu işlem geri alınamaz. Başka bir hesabın temsilcisiyse kendi verileri kaldırılır ancak delegasyon çalışmaya devam edebilmesi için girişleri korunur -- salt temsilci kullanıcı olurlar.",
+      "deleteConfirm": "Kullanıcıyı Sil",
+      "tempPasswordTitleCreated": "Kullanıcı Oluşturuldu",
+      "tempPasswordTitleUpgraded": "Hesap Yükseltildi",
+      "tempPasswordDescCreated": "{name} için geçici bir şifre oluşturuldu. Giriş yapmaları için paylaşın.",
+      "tempPasswordDescUpgraded": "Mevcut paylaşımlı bir kullanıcı tam hesaba yükseltildi. Bu geçici şifreyi {name} ile paylaşın."
+    }
+  }
+}

@@ -1,0 +1,177 @@
+{
+  "chartFlag": {
+    "dismiss": "이 값 숨기기"
+  },
+  "appVersion": {
+    "releaseNotes": "v{version} 릴리스 노트 보기"
+  },
+  "save": "저장",
+  "cancel": "취소",
+  "delete": "삭제",
+  "edit": "편집",
+  "close": "닫기",
+  "actions": {
+    "edit": "편집",
+    "delete": "삭제",
+    "view": "보기",
+    "duplicate": "복사본 만들기",
+    "merge": "병합",
+    "reactivate": "재활성화",
+    "reconcile": "조정",
+    "post": "거래 게시",
+    "skip": "건너뛰기",
+    "close": "닫기",
+    "reopen": "재개",
+    "scheduleRecurring": "반복 거래로 예약",
+    "more": "추가 작업"
+  },
+  "loading": "로딩 중...",
+  "pagination": {
+    "showing": "표시 중",
+    "of": "/",
+    "firstPage": "첫 번째 페이지",
+    "lastPage": "마지막 페이지",
+    "previousPage": "이전 페이지",
+    "nextPage": "다음 페이지",
+    "back10Pages": "10페이지 뒤로",
+    "forward10Pages": "10페이지 앞으로",
+    "enterPageNumber": "페이지 번호 입력"
+  },
+  "confirmDialog": {
+    "confirm": "확인"
+  },
+  "unsavedChanges": {
+    "title": "저장되지 않은 변경 사항",
+    "message": "저장되지 않은 변경 사항이 있습니다. 어떻게 하시겠습니까?",
+    "discard": "버리기"
+  },
+  "exportDropdown": {
+    "export": "내보내기",
+    "exporting": "내보내는 중...",
+    "exportPdf": "PDF 내보내기",
+    "exportReport": "보고서 내보내기",
+    "failedPdf": "PDF 내보내기에 실패했습니다. 다시 시도해 주세요."
+  },
+  "dateRange": {
+    "custom": "사용자 지정",
+    "startDate": "시작 날짜",
+    "endDate": "종료 날짜"
+  },
+  "colorPicker": {
+    "custom": "사용자 지정:",
+    "apply": "적용"
+  },
+  "chartDownload": {
+    "downloadAsPng": "{filename}을(를) PNG로 다운로드",
+    "unableToCapture": "차트 이미지를 캡처할 수 없습니다",
+    "failedToDownload": "차트 다운로드에 실패했습니다"
+  },
+  "chartViewToggle": {
+    "pieChart": "파이 차트",
+    "barChart": "막대 차트",
+    "stackedChart": "100% 누적 막대",
+    "lineChart": "꺾은선 차트",
+    "areaChart": "영역 차트",
+    "table": "표"
+  },
+  "formActions": {
+    "cancel": "취소",
+    "save": "저장"
+  },
+  "themeToggle": {
+    "light": "밝게",
+    "dark": "어둡게",
+    "system": "시스템",
+    "title": "테마: {label}. 클릭하여 변경."
+  },
+  "errorPage": {
+    "title": "오류가 발생했습니다",
+    "description": "예기치 않은 오류가 발생했습니다. 다시 시도하거나 문제가 지속되면 고객 지원에 문의해 주세요.",
+    "errorId": "오류 ID: {digest}",
+    "tryAgain": "다시 시도",
+    "goToDashboard": "대시보드로 이동"
+  },
+  "errorBoundary": {
+    "defaultMessage": "이 구성 요소를 렌더링하는 중 오류가 발생했습니다."
+  },
+  "calendar": {
+    "clear": "지우기",
+    "today": "오늘"
+  },
+  "multiSelect": {
+    "search": "검색...",
+    "selectAll": "모두 선택",
+    "clear": "지우기",
+    "noOptions": "옵션을 찾을 수 없습니다"
+  },
+  "combobox": {
+    "createOption": "\"{value}\" 만들기"
+  },
+  "passwordInput": {
+    "show": "입력 표시",
+    "hide": "입력 숨기기"
+  },
+  "currencyInput": {
+    "openCalculator": "계산기 열기",
+    "calculator": "계산기"
+  },
+  "dateInput": {
+    "shortcutsTitle": "키보드 단축키",
+    "today": "오늘",
+    "firstDayOfYear": "연도 첫째 날",
+    "lastDayOfYear": "연도 마지막 날",
+    "firstDayOfMonth": "월 첫째 날",
+    "lastDayOfMonth": "월 마지막 날",
+    "nextDay": "다음 날",
+    "previousDay": "이전 날",
+    "nextMonth": "다음 달",
+    "previousMonth": "이전 달"
+  },
+  "accountTypes": {
+    "CHEQUING": "당좌예금",
+    "SAVINGS": "저축",
+    "CREDIT_CARD": "신용카드",
+    "INVESTMENT": "투자",
+    "LOAN": "대출",
+    "MORTGAGE": "모기지",
+    "CASH": "현금",
+    "LINE_OF_CREDIT": "신용 한도",
+    "ASSET": "자산",
+    "OTHER": "기타"
+  },
+  "accountFilter": {
+    "allAccounts": "모든 계정",
+    "allBut": "{names} 제외 모두"
+  },
+  "passwordRequirements": "비밀번호는 최소 12자 이상이어야 하며 대문자, 소문자, 숫자, 특수 문자를 포함해야 합니다.",
+  "passwordValidation": {
+    "min": "비밀번호는 최소 12자 이상이어야 합니다",
+    "max": "비밀번호는 100자 이하이어야 합니다",
+    "lowercase": "소문자를 포함해야 합니다",
+    "uppercase": "대문자를 포함해야 합니다",
+    "number": "숫자를 포함해야 합니다",
+    "special": "특수 문자를 포함해야 합니다"
+  },
+  "codeValidation": {
+    "length": "코드는 정확히 6자리여야 합니다",
+    "digits": "코드는 6자리 숫자여야 합니다"
+  },
+  "monthsShort": ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"],
+  "weekdaysShort": ["일", "월", "화", "수", "목", "금", "토"],
+  "weekdaysMin": ["일", "월", "화", "수", "목", "금", "토"],
+  "weekdaysNarrow": ["일", "월", "화", "수", "목", "금", "토"],
+  "dateFormat": {
+    "browserAuto": "브라우저 로케일 사용 (자동 감지: {sample})",
+    "custom": "사용자 지정..."
+  },
+  "emailInvalid": "유효한 이메일 주소를 입력해 주세요",
+  "noSectionAccess": "해당 섹션에 대한 접근 권한이 없습니다.",
+  "undoRedo": {
+    "nothingToUndo": "실행 취소할 항목이 없습니다",
+    "cannotUndo": "이 작업은 실행 취소할 수 없습니다",
+    "undoFailed": "실행 취소에 실패했습니다",
+    "nothingToRedo": "다시 실행할 항목이 없습니다",
+    "cannotRedo": "이 작업은 다시 실행할 수 없습니다",
+    "redoFailed": "다시 실행에 실패했습니다"
+  }
+}

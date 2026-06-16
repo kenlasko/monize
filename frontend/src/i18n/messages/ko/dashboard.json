@@ -1,0 +1,136 @@
+{
+  "page": {
+    "welcomePrefix": "환영합니다",
+    "welcomeWithName": "{name}님, 환영합니다!",
+    "subtitle": "재정 현황을 확인하세요"
+  },
+  "favouriteAccounts": {
+    "title": "즐겨찾기 계정",
+    "empty": "즐겨찾기 계정이 없습니다. 계정을 즐겨찾기로 표시하면 여기에 나타납니다.",
+    "reorder": "순서 변경",
+    "done": "완료",
+    "moveUp": "위로 이동",
+    "moveDown": "아래로 이동",
+    "marketValue": "시장 가치",
+    "due": "납부일: {ordinal}",
+    "dueTooltip": "매월 신용카드 납부일",
+    "settlement": "결제일: {ordinal}",
+    "settlementTooltip": "청구 주기의 마지막 날. 이 날 또는 이전에 등록된 거래가 현재 명세서에 표시됩니다."
+  },
+  "upcomingBills": {
+    "title": "예정된 청구서 및 입금",
+    "empty": "연체되거나 예정된 청구서, 입금 또는 이체가 알림 기간 내에 없습니다.",
+    "perReminderSettings": "알림 설정에 따름",
+    "postTransaction": "이 거래 등록",
+    "manual": "수동",
+    "manualTitle": "수동 등록 필요",
+    "negativeBalanceWarning": "이 거래로 인해 계정 잔액이 0 미만이 됩니다",
+    "viewAll": "모든 청구서 및 입금 보기",
+    "totalDue": "총 납부액",
+    "totalIncoming": "총 수입액",
+    "moreItems": "+{count}개 더",
+    "overdue": "연체",
+    "today": "오늘",
+    "tomorrow": "내일",
+    "daysUntil": "{count}일 후",
+    "typeBadge": {
+      "bill": "청구서",
+      "deposit": "입금",
+      "transfer": "이체"
+    }
+  },
+  "gettingStarted": {
+    "title": "시작하기",
+    "subtitle": "몇 가지 빠른 단계로 계정을 설정하세요",
+    "dismiss": "닫기",
+    "steps": {
+      "settings": {
+        "title": "설정 검토",
+        "description": "통화, 날짜 형식 및 테마를 설정하세요"
+      },
+      "categories": {
+        "title": "카테고리 설정",
+        "description": "카테고리를 만들거나 기본 세트를 가져오세요"
+      },
+      "account": {
+        "title": "첫 번째 계정 추가",
+        "description": "추적을 시작할 은행 계정을 만드세요"
+      },
+      "import": {
+        "title": "QIF에서 가져오기",
+        "description": "QIF 파일에서 계정과 거래를 가져오세요"
+      }
+    }
+  },
+  "budgetStatus": {
+    "title": "예산 현황",
+    "noBudget": "활성 예산이 없습니다. 지출을 추적하려면 예산을 만드세요.",
+    "createBudget": "예산 만들기",
+    "viewFullBudget": "전체 예산 보기",
+    "daysLeft": "{count}일 남음",
+    "safeToSpend": "오늘 사용 가능 금액",
+    "topCategories": "주요 카테고리"
+  },
+  "insights": {
+    "title": "지출 인사이트",
+    "empty": "인사이트가 없습니다. 인사이트 페이지를 방문하여 첫 번째 분석을 생성하세요.",
+    "goToInsights": "인사이트로 이동",
+    "viewAll": "모든 인사이트 보기",
+    "activeCount": "{count}개 활성"
+  },
+  "topMovers": {
+    "title": "주요 등락 종목",
+    "empty": {
+      "noInvestments": "일일 등락 종목을 추적하려면 투자 계정을 추가하세요.",
+      "noPrices": "아직 가격 변동 정보가 없습니다.",
+      "noGainers": "오늘 상승 종목이 없습니다.",
+      "noLosers": "오늘 하락 종목이 없습니다."
+    },
+    "dailyChange": "일일 변동",
+    "refreshPrices": "가격 새로고침",
+    "viewPortfolio": "포트폴리오 보기",
+    "filter": {
+      "all": "전체",
+      "gainers": "상승 종목",
+      "losers": "하락 종목"
+    }
+  },
+  "favouriteSecurities": {
+    "title": "즐겨찾기 유가증권",
+    "empty": "즐겨찾기 유가증권이 없습니다. <securitiesLink>유가증권 페이지</securitiesLink>를 방문하여 여기서 추적할 유가증권에 별표를 표시하세요.",
+    "noPriceYet": "아직 가격 없음",
+    "dailyChange": "일일 변동",
+    "refreshPrices": "가격 새로고침",
+    "manage": "유가증권 관리"
+  },
+  "netWorth": {
+    "title": "순자산가액",
+    "empty": "아직 순자산가액 데이터가 없습니다.",
+    "past12Months": "지난 12개월",
+    "viewReport": "전체 보고서 보기"
+  },
+  "assetsVsLiabilities": {
+    "title": "자산 대 부채",
+    "empty": "아직 순자산가액 데이터가 없습니다.",
+    "current": "현재",
+    "netWorthLabel": "순자산가액",
+    "assets": "자산",
+    "liabilities": "부채"
+  },
+  "expensesPieChart": {
+    "title": "카테고리별 지출",
+    "empty": "해당 기간의 지출 데이터가 없습니다.",
+    "past30Days": "지난 30일",
+    "total": "합계",
+    "uncategorized": "미분류",
+    "other": "기타"
+  },
+  "incomeExpenses": {
+    "title": "수입 대 지출",
+    "last5Weeks": "지난 5주",
+    "weekOf": "{date} 주",
+    "income": "수입",
+    "expenses": "지출",
+    "net": "순액"
+  }
+}
