@@ -554,7 +554,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
   {
     name: "create_transaction",
     description:
-      "Propose creating a new transaction. This does NOT create anything immediately: it shows the user a confirmation card they must explicitly approve before the transaction is saved. Use it only when the user clearly asks to add or record a transaction in their latest message. Amount is positive for income and negative for expenses. After calling this tool, briefly tell the user to review and approve the card; never claim the transaction was created.",
+      "Propose creating a new transaction. This does NOT create anything immediately: it shows the user a confirmation card they must explicitly approve before the transaction is saved. Use it only when the user clearly asks to add or record a transaction in their latest message. Amount is positive for income and negative for expenses. The payee name is automatically matched to an existing payee and linked; if the tool result reports that no payee matched, offer to create a reusable payee with create_payee. After calling this tool, briefly tell the user to review and approve the card; never claim the transaction was created.",
     inputSchema: {
       type: "object",
       properties: {
@@ -574,7 +574,8 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
         },
         payeeName: {
           type: "string",
-          description: "Optional payee name.",
+          description:
+            "Optional payee name. Matched to an existing payee when one exists; otherwise recorded as a new free-text name.",
         },
         categoryName: {
           type: "string",

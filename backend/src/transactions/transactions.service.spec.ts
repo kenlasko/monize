@@ -103,6 +103,7 @@ describe("TransactionsService", () => {
 
     payeesService = {
       findOne: jest.fn(),
+      resolveByName: jest.fn().mockResolvedValue(null),
     };
 
     netWorthService = {
@@ -5557,8 +5558,61 @@ describe("TransactionsService", () => {
       });
       expect(preview.payeeName).not.toContain("<");
       expect(preview.description).toBeNull();
+      // No matching payee -> not linked, caller can offer to create one.
+      expect(preview.payeeId).toBeNull();
+      expect(preview.payeeMatched).toBe(false);
       // Never writes.
       expect(transactionsRepository.save).not.toHaveBeenCalled();
+    });
+
+    it("links an existing payee and adopts its default category", async () => {
+      // No explicit category; the matched payee supplies one.
+      payeesService.resolveByName.mockResolvedValueOnce({
+        id: "payee-9",
+        defaultCategoryId: "cat-default",
+        defaultCategory: { id: "cat-default", name: "Groceries" },
+      });
+
+      const preview = await service.previewCreate("user-1", {
+        accountId: "account-1",
+        amount: -40,
+        transactionDate: "2026-01-15",
+        payeeName: "Whole Foods",
+      });
+
+      expect(payeesService.resolveByName).toHaveBeenCalledWith(
+        "user-1",
+        "Whole Foods",
+      );
+      expect(preview.payeeId).toBe("payee-9");
+      expect(preview.payeeMatched).toBe(true);
+      expect(preview.categoryId).toBe("cat-default");
+      expect(preview.categoryName).toBe("Groceries");
+    });
+
+    it("keeps an explicit category over the matched payee's default", async () => {
+      categoriesRepository.findOne.mockResolvedValueOnce({
+        id: "cat-1",
+        userId: "user-1",
+        name: "Dining",
+      });
+      payeesService.resolveByName.mockResolvedValueOnce({
+        id: "payee-9",
+        defaultCategoryId: "cat-default",
+        defaultCategory: { id: "cat-default", name: "Groceries" },
+      });
+
+      const preview = await service.previewCreate("user-1", {
+        accountId: "account-1",
+        amount: -40,
+        transactionDate: "2026-01-15",
+        payeeName: "Whole Foods",
+        categoryId: "cat-1",
+      });
+
+      expect(preview.payeeId).toBe("payee-9");
+      expect(preview.categoryId).toBe("cat-1");
+      expect(preview.categoryName).toBe("Dining");
     });
 
     it("throws when the category is not owned", async () => {

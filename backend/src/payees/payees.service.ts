@@ -305,6 +305,33 @@ export class PayeesService {
       .getOne();
   }
 
+  /**
+   * Resolve a free-text payee name (as typed by a user or proposed by the AI
+   * Assistant / MCP server) to an existing payee so a new transaction can link
+   * to the payee record -- and inherit its default category -- instead of
+   * storing a detached name. Matches an exact name first (case-insensitive),
+   * then falls back to alias patterns (the same matching the importer uses).
+   * Returns null when nothing matches so the caller can offer to create one.
+   */
+  async resolveByName(userId: string, name: string): Promise<Payee | null> {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    const byName = await this.payeesRepository
+      .createQueryBuilder("payee")
+      .leftJoinAndSelect("payee.defaultCategory", "defaultCategory")
+      .where("payee.user_id = :userId", { userId })
+      .andWhere("LOWER(payee.name) = LOWER(:name)", { name: trimmed })
+      .getOne();
+    if (byName) {
+      return byName;
+    }
+
+    return this.findPayeeByAlias(userId, trimmed);
+  }
+
   async findOrCreate(
     userId: string,
     name: string,

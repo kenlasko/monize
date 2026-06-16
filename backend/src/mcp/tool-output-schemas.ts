@@ -214,7 +214,9 @@ export const createTransactionOutput = {
       accountName: str.optional(),
       amount: num.optional(),
       date: str.optional(),
+      payeeId: strNull.optional(),
       payeeName: strNull.optional(),
+      payeeMatched: bool.optional(),
       categoryId: strNull.optional(),
       categoryName: strNull.optional(),
       description: strNull.optional(),
@@ -226,7 +228,9 @@ export const createTransactionOutput = {
   id: str.optional(),
   date: str.optional(),
   amount: num.optional(),
+  payeeId: strNull.optional(),
   payeeName: strNull.optional(),
+  payeeMatched: bool.optional(),
   status: str.optional(),
 };
 

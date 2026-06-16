@@ -147,6 +147,7 @@ export class AiActionsService {
       transactionDate: descriptor.transactionDate,
       amount: descriptor.amount,
       currencyCode: descriptor.currencyCode,
+      payeeId: descriptor.payeeId ?? undefined,
       payeeName: descriptor.payeeName ?? undefined,
       categoryId: descriptor.categoryId ?? undefined,
       description: descriptor.description ?? undefined,

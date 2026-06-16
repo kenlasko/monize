@@ -419,7 +419,7 @@ export class McpTransactionsTools {
         title: "Create transaction",
         annotations: CREATE,
         description:
-          "Create a new transaction. Set dryRun=true to preview without saving.",
+          "Create a new transaction. The payee name is matched to an existing payee (by name, case-insensitive, or alias) and the transaction is linked to it, inheriting its default category when no category is given. If no payee matches, the name is still recorded as free text -- offer to create a reusable payee with create_payee first when the user wants one. Set dryRun=true to preview (the preview reports payeeMatched) without saving.",
         inputSchema: {
           accountId: z.string().uuid().describe("Account ID"),
           amount: z
@@ -428,7 +428,13 @@ export class McpTransactionsTools {
             .max(999999999999)
             .describe("Amount (positive for income, negative for expenses)"),
           date: z.string().max(10).describe("Transaction date (YYYY-MM-DD)"),
-          payeeName: z.string().max(100).optional().describe("Payee name"),
+          payeeName: z
+            .string()
+            .max(100)
+            .optional()
+            .describe(
+              "Payee name. Matched to an existing payee when one exists; otherwise recorded as a new free-text name.",
+            ),
           categoryId: z.string().uuid().optional().describe("Category ID"),
           description: z
             .string()
@@ -475,6 +481,13 @@ export class McpTransactionsTools {
             },
           );
 
+          // Surface whether the payee resolved to an existing record so the
+          // model can offer to create one when it did not.
+          const payeeMessage =
+            preview.payeeName && !preview.payeeMatched
+              ? ` No existing payee matches "${preview.payeeName}" -- it will be recorded as a free-text name. Use create_payee first if the user wants a reusable payee.`
+              : "";
+
           // Dry-run mode: return preview without persisting
           if (args.dryRun) {
             return toolResult({
@@ -484,14 +497,17 @@ export class McpTransactionsTools {
                 accountName: preview.accountName,
                 amount: preview.amount,
                 date: preview.transactionDate,
+                payeeId: preview.payeeId,
                 payeeName: preview.payeeName,
+                payeeMatched: preview.payeeMatched,
                 categoryId: preview.categoryId,
                 categoryName: preview.categoryName,
                 description: preview.description,
                 currencyCode: preview.currencyCode,
               },
               message:
-                "This is a preview. Call again with dryRun=false to create the transaction.",
+                "This is a preview. Call again with dryRun=false to create the transaction." +
+                payeeMessage,
             });
           }
 
@@ -501,6 +517,7 @@ export class McpTransactionsTools {
               accountId: preview.accountId,
               amount: preview.amount,
               transactionDate: preview.transactionDate,
+              payeeId: preview.payeeId ?? undefined,
               payeeName: preview.payeeName ?? undefined,
               categoryId: preview.categoryId ?? undefined,
               description: preview.description ?? undefined,
@@ -513,8 +530,13 @@ export class McpTransactionsTools {
           return toolResult({
             id: transaction.id,
             date: transaction.transactionDate,
-            amount: transaction.amount,
+            // amount is a decimal column with no numeric transformer, so the
+            // entity carries it as a string; coerce to a number so it satisfies
+            // the tool's output schema (and matches the dry-run preview).
+            amount: Number(transaction.amount),
+            payeeId: transaction.payeeId,
             payeeName: transaction.payeeName,
+            payeeMatched: preview.payeeMatched,
             status: transaction.status,
           });
         } catch (err: unknown) {

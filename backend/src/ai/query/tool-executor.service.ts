@@ -399,6 +399,7 @@ export class ToolExecutorService {
       accountId: preview.accountId,
       amount: preview.amount,
       transactionDate: preview.transactionDate,
+      payeeId: preview.payeeId,
       payeeName: preview.payeeName,
       categoryId: preview.categoryId,
       description: preview.description,
@@ -421,8 +422,19 @@ export class ToolExecutorService {
       },
     };
 
+    // When the payee name does not match an existing payee, tell the model so
+    // it can offer to create a reusable payee. The note rides alongside the
+    // standard "awaiting approval" status without leaking the signature.
+    const data =
+      preview.payeeName && !preview.payeeMatched
+        ? {
+            ...PENDING_ACTION_TOOL_RESULT,
+            payeeNote: `No existing payee matches "${preview.payeeName}"; the transaction will record it as a free-text name. If the user wants future transactions to link automatically, offer to create a payee with create_payee.`,
+          }
+        : PENDING_ACTION_TOOL_RESULT;
+
     return {
-      data: PENDING_ACTION_TOOL_RESULT,
+      data,
       summary: `Prepared a transaction for ${preview.accountName} (${preview.amount} ${preview.currencyCode}) dated ${preview.transactionDate}. Awaiting user confirmation.`,
       sources: [],
       pendingAction,

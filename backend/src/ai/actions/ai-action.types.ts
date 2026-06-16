@@ -42,6 +42,8 @@ export interface CreateTransactionDescriptor extends BaseDescriptor {
   accountId: string;
   amount: number;
   transactionDate: string;
+  /** Existing payee the name resolved to, or null to record a free-text name. */
+  payeeId: string | null;
   payeeName: string | null;
   categoryId: string | null;
   description: string | null;

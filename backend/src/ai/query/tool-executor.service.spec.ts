@@ -230,7 +230,9 @@ describe("ToolExecutorService", () => {
         accountName: "Checking",
         amount: -12.5,
         transactionDate: "2026-01-15",
+        payeeId: "payee-1",
         payeeName: "Starbucks",
+        payeeMatched: true,
         categoryId: "cat-1",
         categoryName: "Dining",
         description: null,
@@ -925,11 +927,42 @@ describe("ToolExecutorService", () => {
         accountId: "acc-1",
         amount: -12.5,
         currencyCode: "USD",
+        // The resolved payee id is signed into the descriptor so the confirmed
+        // transaction links to the existing payee.
+        payeeId: "payee-1",
       });
       expect(result.pendingAction?.preview).toMatchObject({
         accountName: "Checking",
         categoryName: "Dining",
       });
+    });
+
+    it("notes an unmatched payee in the model-facing data so it can offer to create one", async () => {
+      transactions.previewCreate.mockResolvedValueOnce({
+        accountId: "acc-1",
+        accountName: "Checking",
+        amount: -12.5,
+        transactionDate: "2026-01-15",
+        payeeId: null,
+        payeeName: "Brand New Store",
+        payeeMatched: false,
+        categoryId: null,
+        categoryName: null,
+        description: null,
+        currencyCode: "USD",
+      });
+
+      const result = await service.execute(userId, "create_transaction", {
+        accountName: "Checking",
+        amount: -12.5,
+        date: "2026-01-15",
+        payeeName: "Brand New Store",
+      });
+
+      expect(result.pendingAction?.descriptor).toMatchObject({ payeeId: null });
+      const data = result.data as { status: string; payeeNote?: string };
+      expect(data.status).toBe("preview_shown");
+      expect(data.payeeNote).toContain("create_payee");
     });
 
     it("does not leak the signature into the LLM-facing data", async () => {

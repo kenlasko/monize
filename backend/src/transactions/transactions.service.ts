@@ -87,7 +87,14 @@ export interface CreateTransactionPreview {
   accountName: string;
   amount: number;
   transactionDate: string;
+  /**
+   * Existing payee the name resolved to (so create() links the transaction to
+   * the payee record), or null when no payee matched the given name.
+   */
+  payeeId: string | null;
   payeeName: string | null;
+  /** True when payeeName matched an existing payee; false for a new name. */
+  payeeMatched: boolean;
   categoryId: string | null;
   categoryName: string | null;
   description: string | null;
@@ -286,10 +293,11 @@ export class TransactionsService {
   ): Promise<CreateTransactionPreview> {
     const account = await this.accountsService.findOne(userId, input.accountId);
 
+    let categoryId: string | null = input.categoryId ?? null;
     let categoryName: string | null = null;
-    if (input.categoryId) {
+    if (categoryId) {
       const cat = await this.categoriesRepository.findOne({
-        where: { id: input.categoryId, userId },
+        where: { id: categoryId, userId },
       });
       if (!cat) {
         throw new NotFoundException(
@@ -299,13 +307,36 @@ export class TransactionsService {
       categoryName = cat.name;
     }
 
+    // Resolve the payee name to an existing payee so the created transaction
+    // links to the payee record instead of recording a detached free-text name.
+    // When nothing matches, payeeId stays null and the caller can offer to
+    // create the payee.
+    const payeeName = stripHtml(input.payeeName) || null;
+    let payeeId: string | null = null;
+    let payeeMatched = false;
+    if (payeeName) {
+      const payee = await this.payeesService.resolveByName(userId, payeeName);
+      if (payee) {
+        payeeId = payee.id;
+        payeeMatched = true;
+        // Mirror create(): when the caller gave no category, adopt the matched
+        // payee's default so the preview equals what create() will persist.
+        if (!categoryId && payee.defaultCategoryId) {
+          categoryId = payee.defaultCategoryId;
+          categoryName = payee.defaultCategory?.name ?? null;
+        }
+      }
+    }
+
     return {
       accountId: input.accountId,
       accountName: account.name,
       amount: input.amount,
       transactionDate: input.transactionDate,
-      payeeName: stripHtml(input.payeeName) || null,
-      categoryId: input.categoryId ?? null,
+      payeeId,
+      payeeName,
+      payeeMatched,
+      categoryId,
       categoryName,
       description: stripHtml(input.description) || null,
       currencyCode: account.currencyCode,

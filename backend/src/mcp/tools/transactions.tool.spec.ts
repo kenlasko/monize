@@ -412,23 +412,28 @@ describe("McpTransactionsTools", () => {
       expect(result.isError).toBe(true);
     });
 
-    it("should create transaction with account currency", async () => {
+    it("should create transaction with account currency and link the resolved payee", async () => {
       resolve.mockReturnValue({ userId: "u1", scopes: "read,write" });
       transactionsService.previewCreate.mockResolvedValue({
         accountId: "a1",
         accountName: "Checking",
         amount: -50,
         transactionDate: "2025-01-15",
+        payeeId: "p1",
         payeeName: "Store",
+        payeeMatched: true,
         categoryId: null,
         categoryName: null,
         description: null,
         currencyCode: "USD",
       });
+      // The entity carries amount as a string (decimal column, no numeric
+      // transformer); the tool must coerce it to a number for the output schema.
       transactionsService.create.mockResolvedValue({
         id: "t1",
         transactionDate: "2025-01-15",
-        amount: -50,
+        amount: "-50.0000",
+        payeeId: "p1",
         payeeName: "Store",
         status: "pending",
       });
@@ -452,20 +457,27 @@ describe("McpTransactionsTools", () => {
         expect.objectContaining({
           currencyCode: "USD",
           amount: -50,
+          payeeId: "p1",
         }),
       );
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed.id).toBe("t1");
+      // dryRun=false must not error on the amount field: it comes back numeric.
+      expect(parsed.amount).toBe(-50);
+      expect(typeof parsed.amount).toBe("number");
+      expect(parsed.payeeId).toBe("p1");
     });
 
-    it("should return preview in dry-run mode without creating", async () => {
+    it("should return preview in dry-run mode without creating and offer to create an unmatched payee", async () => {
       resolve.mockReturnValue({ userId: "u1", scopes: "read,write" });
       transactionsService.previewCreate.mockResolvedValue({
         accountId: "a1",
         accountName: "Checking",
         amount: -75,
         transactionDate: "2025-02-01",
+        payeeId: null,
         payeeName: "Coffee Shop",
+        payeeMatched: false,
         categoryId: null,
         categoryName: null,
         description: null,
@@ -491,7 +503,10 @@ describe("McpTransactionsTools", () => {
       expect(parsed.preview.amount).toBe(-75);
       expect(parsed.preview.accountName).toBe("Checking");
       expect(parsed.preview.currencyCode).toBe("USD");
+      expect(parsed.preview.payeeMatched).toBe(false);
       expect(parsed.message).toContain("preview");
+      // No matching payee -> guide the model to offer creating one.
+      expect(parsed.message).toContain("create_payee");
     });
 
     it("persists the sanitized preview values (LLM07-F3)", async () => {
@@ -503,7 +518,9 @@ describe("McpTransactionsTools", () => {
         accountName: "Checking",
         amount: -50,
         transactionDate: "2025-01-15",
+        payeeId: null,
         payeeName: "scriptalert('XSS')/script",
+        payeeMatched: false,
         categoryId: null,
         categoryName: null,
         description: "Purchase at bStore/b",
@@ -512,7 +529,7 @@ describe("McpTransactionsTools", () => {
       transactionsService.create.mockResolvedValue({
         id: "t1",
         transactionDate: "2025-01-15",
-        amount: -50,
+        amount: "-50.0000",
         payeeName: "scriptalert('XSS')/script",
         status: "pending",
       });
@@ -545,7 +562,9 @@ describe("McpTransactionsTools", () => {
         accountName: "Checking",
         amount: -10,
         transactionDate: "2025-01-15",
+        payeeId: null,
         payeeName: null,
+        payeeMatched: false,
         categoryId: null,
         categoryName: null,
         description: null,
@@ -554,7 +573,7 @@ describe("McpTransactionsTools", () => {
       transactionsService.create.mockResolvedValue({
         id: "t-new",
         transactionDate: "2025-01-15",
-        amount: -10,
+        amount: "-10.0000",
         payeeName: "Store",
         status: "pending",
       });

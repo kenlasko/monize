@@ -1461,6 +1461,54 @@ describe("PayeesService", () => {
     });
   });
 
+  // ─── resolveByName ─────────────────────────────────────────────────
+
+  describe("resolveByName", () => {
+    it("matches an existing payee by case-insensitive name", async () => {
+      queryBuilderMock.getOne = jest.fn().mockResolvedValue(mockPayee);
+      payeesRepository.createQueryBuilder.mockReturnValue(queryBuilderMock);
+
+      const result = await service.resolveByName(userId, "  starbucks ");
+
+      expect(result).toEqual(mockPayee);
+      expect(queryBuilderMock.andWhere).toHaveBeenCalledWith(
+        "LOWER(payee.name) = LOWER(:name)",
+        { name: "starbucks" },
+      );
+      // Direct name match short-circuits the alias lookup.
+      expect(aliasRepository.manager.find).not.toHaveBeenCalled();
+    });
+
+    it("falls back to alias matching when no name matches", async () => {
+      queryBuilderMock.getOne = jest.fn().mockResolvedValue(null);
+      payeesRepository.createQueryBuilder.mockReturnValue(queryBuilderMock);
+      aliasRepository.manager.find = jest
+        .fn()
+        .mockResolvedValue([{ alias: "SBUX*", payee: mockPayee }]);
+
+      const result = await service.resolveByName(userId, "SBUX #123");
+
+      expect(result).toEqual(mockPayee);
+    });
+
+    it("returns null when neither name nor alias matches", async () => {
+      queryBuilderMock.getOne = jest.fn().mockResolvedValue(null);
+      payeesRepository.createQueryBuilder.mockReturnValue(queryBuilderMock);
+      aliasRepository.manager.find = jest.fn().mockResolvedValue([]);
+
+      const result = await service.resolveByName(userId, "Unknown Vendor");
+
+      expect(result).toBeNull();
+    });
+
+    it("returns null for a blank name without querying", async () => {
+      const result = await service.resolveByName(userId, "   ");
+
+      expect(result).toBeNull();
+      expect(payeesRepository.createQueryBuilder).not.toHaveBeenCalled();
+    });
+  });
+
   // ─── previewDeactivation ──────────────────────────────────────────
 
   describe("previewDeactivation", () => {
