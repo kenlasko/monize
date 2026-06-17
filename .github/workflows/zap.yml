@@ -33,13 +33,17 @@ jobs:
           persist-credentials: false
 
       - name: Build application images
-        run: docker compose -f docker-compose.e2e.yml build
+        # docker-compose.zap.yml overlays the e2e stack to run the frontend as a
+        # production build (the dev/Turbopack image inflates the scan with
+        # unsafe-eval, unminified vendor chunks and verbose 404s that never ship
+        # to users). Scanning the production image reflects what is deployed.
+        run: docker compose -f docker-compose.e2e.yml -f docker-compose.zap.yml build
 
       - name: Start application stack
-        run: docker compose -f docker-compose.e2e.yml up -d --wait --wait-timeout 600
+        run: docker compose -f docker-compose.e2e.yml -f docker-compose.zap.yml up -d --wait --wait-timeout 600
 
       - name: ZAP baseline scan
-        uses: zaproxy/action-baseline@2b5fc7f98d837319798ab7f128ea50b7d40563b6 # v0.14.0
+        uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25 # v0.15.0
         with:
           target: http://localhost:3001
           rules_file_name: .github/zap/rules.tsv
@@ -49,4 +53,4 @@ jobs:
 
       - name: Stop services
         if: always()
-        run: docker compose -f docker-compose.e2e.yml down -v
+        run: docker compose -f docker-compose.e2e.yml -f docker-compose.zap.yml down -v

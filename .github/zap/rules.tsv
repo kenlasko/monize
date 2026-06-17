@@ -8,3 +8,15 @@
 10038	IGNORE	(Content Security Policy headers - validated by Lighthouse)
 10202	IGNORE	(Absence of Anti-CSRF Tokens - we use double-submit cookie pattern; ZAP cannot see the cookie/header pair)
 10063	IGNORE	(Permissions-Policy header missing - acceptable for self-hosted; doc'd in security guide)
+# By-design: the only non-HttpOnly cookies are csrf_token (double-submit CSRF,
+# must be JS-readable) and NEXT_LOCALE (read/written by the language switcher).
+# Auth cookies (auth_token/refresh_token) are set HttpOnly by the backend.
+10010	IGNORE	(Cookie No HttpOnly Flag - csrf_token and NEXT_LOCALE are intentionally JS-readable)
+# Sec-Fetch-* are request headers the browser sends; ZAP's spider omits them,
+# so this flags ZAP's own requests, not a server-side gap.
+90005	IGNORE	(Sec-Fetch-* headers - client request headers ZAP does not send; not server controlled)
+# Informational only: detects that the app is a SPA / modern web app.
+10109	IGNORE	(Modern Web Application - informational SPA detection, not a finding)
+# Informational caching guidance on static assets and pages; no sensitive API
+# responses are cached by the frontend (those are proxied straight from the API).
+10049	IGNORE	(Storable/Non-Cacheable content - informational cache guidance, no sensitive data cached)

@@ -1,0 +1,29 @@
+# Overlay for the OWASP ZAP baseline scan (see .github/workflows/zap.yml).
+#
+# The base docker-compose.e2e.yml runs the frontend as a development image
+# (Turbopack, `npm run dev`) because that is fastest for Playwright. A DAST
+# baseline should instead scan what users actually receive, so this overlay
+# rebuilds the frontend from its `production` target with NODE_ENV=production.
+#
+# Why it matters for the scan results:
+#   - The dev CSP allows 'unsafe-eval' (gated on NODE_ENV in proxy.ts); the
+#     production build drops it.
+#   - Dev serves unminified vendor chunks that trip ZAP's "Suspicious Comments",
+#     "Dangerous JS Functions", "Base64 Disclosure" and "Timestamp Disclosure"
+#     pattern matchers; the production bundle is minified.
+#   - Dev renders verbose 404 pages (full filesystem paths, source-looking text)
+#     for unknown routes like /robots.txt and /sitemap.xml, flagged as
+#     "Full Path Disclosure" and "Source Code Disclosure - SQL"; production
+#     returns a minimal 404.
+#
+# Only the frontend changes; backend + postgres stay on their e2e definitions.
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+    environment:
+      NODE_ENV: production
+      INTERNAL_API_URL: http://backend:3000
+      PUBLIC_APP_URL: http://localhost:3001
