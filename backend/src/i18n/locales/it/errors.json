@@ -360,7 +360,9 @@
     "priceNotFound": "Prezzo titolo non trovato",
     "invalidUuid": "UUID {{ label }} non valido: {{ id }}",
     "symbolLength": "Il simbolo deve contenere tra 1 e 20 caratteri",
-    "symbolCharacters": "Il simbolo deve contenere solo lettere, cifre, punti o trattini"
+    "symbolCharacters": "Il simbolo deve contenere solo lettere, cifre, punti o trattini",
+    "ambiguousSecurity": "\"{{ query }}\" corrisponde a più titoli: {{ list }}. Usa il simbolo ticker esatto.",
+    "securityNotFoundByQuery": "Nessun titolo corrisponde a \"{{ query }}\". Aggiungi prima il titolo o verifica il simbolo ticker."
   },
   "tags": {
     "notFound": "Etichetta con ID {{ id }} non trovata",

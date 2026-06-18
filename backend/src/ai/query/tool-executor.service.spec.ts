@@ -1,4 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { BadRequestException } from "@nestjs/common";
 import { ToolExecutorService } from "./tool-executor.service";
 import { AccountsService } from "../../accounts/accounts.service";
 import { CategoriesService } from "../../categories/categories.service";
@@ -89,6 +90,7 @@ describe("ToolExecutorService", () => {
       findAll: jest.fn().mockResolvedValue([
         { id: "acc-1", name: "Checking", currencyCode: "USD" },
         { id: "acc-2", name: "Savings", currencyCode: "USD" },
+        { id: "acc-3", name: "Brokerage", currencyCode: "USD" },
       ]),
       getLlmBalances: jest.fn().mockResolvedValue({
         accounts: [
@@ -134,6 +136,27 @@ describe("ToolExecutorService", () => {
     };
 
     investmentTransactions = {
+      previewCreateInvestmentTransaction: jest.fn().mockResolvedValue({
+        accountId: "acc-3",
+        accountName: "Brokerage",
+        accountCurrency: "USD",
+        action: "BUY",
+        transactionDate: "2026-01-15",
+        securityId: "sec-1",
+        symbol: "AAPL",
+        securityName: "Apple Inc.",
+        securityCurrency: "USD",
+        quantity: 10,
+        price: 150,
+        commission: 9.99,
+        totalAmount: 1509.99,
+        exchangeRate: 1,
+        fundingAccountId: null,
+        cashAccountName: "Brokerage Cash",
+        cashCurrency: "USD",
+        cashAmount: -1509.99,
+        description: null,
+      }),
       getLlmInvestmentTransactions: jest.fn().mockResolvedValue({
         transactionCount: 3,
         totalAmount: 2325,
@@ -1074,6 +1097,143 @@ describe("ToolExecutorService", () => {
         name: "Acme",
         categoryName: "Dining",
       });
+    });
+  });
+
+  describe("create_investment_transaction (human-in-the-loop)", () => {
+    it("resolves the account and returns a signed pending action", async () => {
+      const result = await service.execute(
+        userId,
+        "create_investment_transaction",
+        {
+          accountName: "Brokerage",
+          action: "BUY",
+          date: "2026-01-15",
+          security: "AAPL",
+          quantity: 10,
+          price: 150,
+          commission: 9.99,
+        },
+      );
+
+      expect(
+        investmentTransactions.previewCreateInvestmentTransaction,
+      ).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({
+          accountId: "acc-3",
+          action: "BUY",
+          transactionDate: "2026-01-15",
+          securityQuery: "AAPL",
+          quantity: 10,
+          price: 150,
+          commission: 9.99,
+          fundingAccountId: undefined,
+        }),
+      );
+      expect(result.pendingAction?.type).toBe("create_investment_transaction");
+      expect(result.pendingAction?.signature).toBe("signature-abc");
+      expect(result.pendingAction?.descriptor).toMatchObject({
+        type: "create_investment_transaction",
+        accountId: "acc-3",
+        action: "BUY",
+        securityId: "sec-1",
+        quantity: 10,
+        price: 150,
+        commission: 9.99,
+        exchangeRate: 1,
+      });
+      expect(result.pendingAction?.preview).toMatchObject({
+        accountName: "Brokerage",
+        investmentAction: "BUY",
+        symbol: "AAPL",
+        securityName: "Apple Inc.",
+        totalAmount: 1509.99,
+        cashAccountName: "Brokerage Cash",
+        cashAmount: -1509.99,
+      });
+      // The model-facing data never leaks the signature.
+      expect(JSON.stringify(result.data)).not.toContain("signature-abc");
+    });
+
+    it("resolves an optional funding account by name", async () => {
+      await service.execute(userId, "create_investment_transaction", {
+        accountName: "Brokerage",
+        action: "SELL",
+        date: "2026-01-15",
+        security: "AAPL",
+        quantity: 5,
+        price: 160,
+        fundingAccountName: "Checking",
+      });
+
+      expect(
+        investmentTransactions.previewCreateInvestmentTransaction,
+      ).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({ fundingAccountId: "acc-1" }),
+      );
+    });
+
+    it("returns a tool error for an unknown account (no pending action)", async () => {
+      const result = await service.execute(
+        userId,
+        "create_investment_transaction",
+        {
+          accountName: "Nonexistent",
+          action: "BUY",
+          date: "2026-01-15",
+          security: "AAPL",
+          quantity: 1,
+          price: 1,
+        },
+      );
+      expect(result.isError).toBe(true);
+      expect(result.pendingAction).toBeUndefined();
+      expect(
+        investmentTransactions.previewCreateInvestmentTransaction,
+      ).not.toHaveBeenCalled();
+    });
+
+    it("returns a tool error for an unknown funding account", async () => {
+      const result = await service.execute(
+        userId,
+        "create_investment_transaction",
+        {
+          accountName: "Brokerage",
+          action: "BUY",
+          date: "2026-01-15",
+          security: "AAPL",
+          quantity: 1,
+          price: 1,
+          fundingAccountName: "Nonexistent",
+        },
+      );
+      expect(result.isError).toBe(true);
+      expect(result.pendingAction).toBeUndefined();
+    });
+
+    it("surfaces a 4xx from the preview (e.g. ambiguous security)", async () => {
+      investmentTransactions.previewCreateInvestmentTransaction.mockRejectedValueOnce(
+        new BadRequestException(
+          '"Apple" matches multiple securities: AAPL (Apple Inc.), AAPL.L (Apple London). Use the exact ticker symbol.',
+        ),
+      );
+      const result = await service.execute(
+        userId,
+        "create_investment_transaction",
+        {
+          accountName: "Brokerage",
+          action: "BUY",
+          date: "2026-01-15",
+          security: "Apple",
+          quantity: 1,
+          price: 1,
+        },
+      );
+      expect(result.isError).toBe(true);
+      expect(result.summary).toContain("multiple securities");
+      expect(result.pendingAction).toBeUndefined();
     });
   });
 });

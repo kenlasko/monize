@@ -1,3 +1,5 @@
+import type { InvestmentAction } from './investment';
+
 export type AiProviderType = 'anthropic' | 'openai' | 'ollama' | 'ollama-cloud' | 'openai-compatible';
 
 export interface AiProviderConfig {
@@ -160,7 +162,11 @@ export interface ChartPayload {
   data: Array<{ label: string; value: number }>;
 }
 
-export type AiActionType = 'create_transaction' | 'categorize_transaction' | 'create_payee';
+export type AiActionType =
+  | 'create_transaction'
+  | 'categorize_transaction'
+  | 'create_payee'
+  | 'create_investment_transaction';
 
 export type PendingActionStatus =
   | 'pending'
@@ -183,6 +189,18 @@ export interface PendingActionPreview {
   currentCategoryName?: string | null;
   description?: string | null;
   name?: string | null;
+  // create_investment_transaction display fields.
+  investmentAction?: InvestmentAction;
+  symbol?: string | null;
+  securityName?: string | null;
+  securityCurrency?: string | null;
+  quantity?: number | null;
+  price?: number | null;
+  commission?: number;
+  totalAmount?: number;
+  cashAccountName?: string | null;
+  cashCurrency?: string | null;
+  cashAmount?: number | null;
 }
 
 /**

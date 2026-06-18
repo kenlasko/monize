@@ -6,7 +6,11 @@ describe("McpInvestmentsTools", () => {
   let portfolioService: Record<string, jest.Mock>;
   let holdingsService: Record<string, jest.Mock>;
   let investmentTransactionsService: Record<string, jest.Mock>;
-  let server: { registerTool: jest.Mock };
+  let server: {
+    registerTool: jest.Mock;
+    server: { getClientCapabilities: jest.Mock; elicitInput: jest.Mock };
+  };
+  let elicitInput: jest.Mock;
   let resolve: jest.MockedFunction<UserContextResolver>;
   const handlers: Record<string, (...args: any[]) => any> = {};
 
@@ -23,6 +27,8 @@ describe("McpInvestmentsTools", () => {
     investmentTransactionsService = {
       getLlmInvestmentTransactions: jest.fn(),
       getLlmCapitalGains: jest.fn(),
+      previewCreateInvestmentTransaction: jest.fn(),
+      create: jest.fn(),
     };
 
     tool = new McpInvestmentsTools(
@@ -31,18 +37,26 @@ describe("McpInvestmentsTools", () => {
       investmentTransactionsService as any,
     );
 
+    elicitInput = jest.fn();
     server = {
       registerTool: jest.fn((name, _opts, handler) => {
         handlers[name] = handler;
       }),
+      // confirmWrite() reads capabilities + elicits via server.server. Default
+      // to no elicitation capability so writes proceed (matches a client that
+      // can't show a dialog); accept/decline tests override these.
+      server: {
+        getClientCapabilities: jest.fn().mockReturnValue({}),
+        elicitInput,
+      },
     };
 
     resolve = jest.fn();
     tool.register(server as any, resolve);
   });
 
-  it("should register 4 tools", () => {
-    expect(server.registerTool).toHaveBeenCalledTimes(4);
+  it("should register 5 tools", () => {
+    expect(server.registerTool).toHaveBeenCalledTimes(5);
   });
 
   describe("get_portfolio_summary", () => {
@@ -340,6 +354,185 @@ describe("McpInvestmentsTools", () => {
         { sessionId: "s1" },
       );
       expect(result.isError).toBe(true);
+    });
+  });
+
+  describe("create_investment_transaction", () => {
+    const preview = {
+      accountId: "a1",
+      accountName: "Brokerage",
+      accountCurrency: "USD",
+      action: "BUY",
+      transactionDate: "2026-01-15",
+      securityId: "sec-1",
+      symbol: "AAPL",
+      securityName: "Apple Inc.",
+      securityCurrency: "USD",
+      quantity: 10,
+      price: 150,
+      commission: 9.99,
+      totalAmount: 1509.99,
+      exchangeRate: 1,
+      fundingAccountId: null,
+      cashAccountName: "Brokerage Cash",
+      cashCurrency: "USD",
+      cashAmount: -1509.99,
+      description: null,
+    };
+
+    const args = {
+      accountId: "a1",
+      action: "BUY",
+      date: "2026-01-15",
+      security: "AAPL",
+      quantity: 10,
+      price: 150,
+      commission: 9.99,
+    };
+
+    it("returns error when no user context", async () => {
+      resolve.mockReturnValue(undefined);
+      const result = await handlers["create_investment_transaction"](args, {
+        sessionId: "s1",
+      });
+      expect(result.isError).toBe(true);
+    });
+
+    it("requires the write scope", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "read" });
+      const result = await handlers["create_investment_transaction"](args, {
+        sessionId: "s1",
+      });
+      expect(result.isError).toBe(true);
+      expect(
+        investmentTransactionsService.previewCreateInvestmentTransaction,
+      ).not.toHaveBeenCalled();
+    });
+
+    it("returns a preview without persisting on dryRun", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "write" });
+      investmentTransactionsService.previewCreateInvestmentTransaction.mockResolvedValue(
+        preview,
+      );
+
+      const result = await handlers["create_investment_transaction"](
+        { ...args, dryRun: true },
+        { sessionId: "s1" },
+      );
+
+      expect(
+        investmentTransactionsService.previewCreateInvestmentTransaction,
+      ).toHaveBeenCalledWith(
+        "u1",
+        expect.objectContaining({
+          accountId: "a1",
+          action: "BUY",
+          transactionDate: "2026-01-15",
+          securityQuery: "AAPL",
+        }),
+      );
+      expect(investmentTransactionsService.create).not.toHaveBeenCalled();
+      expect(elicitInput).not.toHaveBeenCalled();
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.dryRun).toBe(true);
+      expect(parsed.preview.symbol).toBe("AAPL");
+    });
+
+    it("creates when the client cannot elicit (proceeds)", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "write" });
+      investmentTransactionsService.previewCreateInvestmentTransaction.mockResolvedValue(
+        preview,
+      );
+      investmentTransactionsService.create.mockResolvedValue({
+        id: "inv-tx-1",
+        action: "BUY",
+        transactionDate: "2026-01-15",
+        quantity: 10,
+        price: 150,
+        totalAmount: 1509.99,
+      });
+
+      const result = await handlers["create_investment_transaction"](args, {
+        sessionId: "s1",
+      });
+
+      expect(investmentTransactionsService.create).toHaveBeenCalledWith(
+        "u1",
+        expect.objectContaining({
+          accountId: "a1",
+          action: "BUY",
+          securityId: "sec-1",
+          quantity: 10,
+          price: 150,
+          commission: 9.99,
+          exchangeRate: 1,
+        }),
+      );
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.id).toBe("inv-tx-1");
+      expect(parsed.symbol).toBe("AAPL");
+      expect(parsed.totalAmount).toBe(1509.99);
+    });
+
+    it("confirms via elicitation and creates when accepted", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "write" });
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput.mockResolvedValue({ action: "accept" });
+      investmentTransactionsService.previewCreateInvestmentTransaction.mockResolvedValue(
+        preview,
+      );
+      investmentTransactionsService.create.mockResolvedValue({
+        id: "inv-tx-1",
+        action: "BUY",
+        transactionDate: "2026-01-15",
+        quantity: 10,
+        price: 150,
+        totalAmount: 1509.99,
+      });
+
+      const result = await handlers["create_investment_transaction"](args, {
+        sessionId: "s1",
+      });
+
+      expect(elicitInput).toHaveBeenCalled();
+      expect(investmentTransactionsService.create).toHaveBeenCalled();
+      expect(result.isError).toBeUndefined();
+    });
+
+    it("does not create when the confirmation is declined", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "write" });
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput.mockResolvedValue({ action: "decline" });
+      investmentTransactionsService.previewCreateInvestmentTransaction.mockResolvedValue(
+        preview,
+      );
+
+      const result = await handlers["create_investment_transaction"](args, {
+        sessionId: "s1",
+      });
+
+      expect(elicitInput).toHaveBeenCalled();
+      expect(investmentTransactionsService.create).not.toHaveBeenCalled();
+      expect(result.isError).toBe(true);
+    });
+
+    it("surfaces a 4xx from the shared preview", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "write" });
+      const { BadRequestException } = await import("@nestjs/common");
+      investmentTransactionsService.previewCreateInvestmentTransaction.mockRejectedValue(
+        new BadRequestException('No security matches "ZZZZ".'),
+      );
+
+      const result = await handlers["create_investment_transaction"](
+        { ...args, security: "ZZZZ" },
+        { sessionId: "s1" },
+      );
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("No security matches");
     });
   });
 });

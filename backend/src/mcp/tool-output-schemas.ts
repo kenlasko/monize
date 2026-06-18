@@ -448,6 +448,41 @@ export const getHoldingDetailsOutput = {
   ),
 };
 
+export const createInvestmentTransactionOutput = {
+  // Dry-run preview branch.
+  dryRun: bool.optional(),
+  preview: z
+    .object({
+      accountId: str.optional(),
+      accountName: str.optional(),
+      action: str.optional(),
+      date: str.optional(),
+      securityId: strNull.optional(),
+      symbol: strNull.optional(),
+      securityName: strNull.optional(),
+      securityCurrency: strNull.optional(),
+      quantity: numNull.optional(),
+      price: numNull.optional(),
+      commission: num.optional(),
+      totalAmount: num.optional(),
+      exchangeRate: num.optional(),
+      cashAccountName: strNull.optional(),
+      cashCurrency: strNull.optional(),
+      cashAmount: numNull.optional(),
+      description: strNull.optional(),
+    })
+    .optional(),
+  message: str.optional(),
+  // Created-transaction branch.
+  id: str.optional(),
+  action: str.optional(),
+  date: str.optional(),
+  symbol: strNull.optional(),
+  quantity: numNull.optional(),
+  price: numNull.optional(),
+  totalAmount: num.optional(),
+};
+
 // ---------------------------------------------------------------------------
 // scheduled.tool.ts
 // ---------------------------------------------------------------------------

@@ -166,4 +166,85 @@ describe('TransactionConfirmationCard', () => {
     expect(screen.getByText('Uncategorized')).toBeInTheDocument();
     expect(screen.getByText('Dining')).toBeInTheDocument();
   });
+
+  function makeInvestmentAction(
+    previewOverrides: Partial<PendingAction['preview']> = {},
+    overrides: Partial<PendingAction> = {},
+  ): PendingAction {
+    return makeAction({
+      type: 'create_investment_transaction',
+      descriptor: { type: 'create_investment_transaction' },
+      preview: {
+        accountName: 'Brokerage',
+        transactionDate: '2026-01-15',
+        investmentAction: 'BUY',
+        symbol: 'AAPL',
+        securityName: 'Apple Inc.',
+        securityCurrency: 'USD',
+        quantity: 10,
+        price: 150,
+        commission: 9.99,
+        totalAmount: 1509.99,
+        cashAccountName: 'Brokerage Cash',
+        cashCurrency: 'USD',
+        cashAmount: -1509.99,
+        ...previewOverrides,
+      },
+      ...overrides,
+    });
+  }
+
+  it('renders an investment transaction preview with security and action label', () => {
+    render(
+      <TransactionConfirmationCard
+        action={makeInvestmentAction()}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByText('Create this investment transaction?'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Brokerage')).toBeInTheDocument();
+    // Action enum is rendered via its localized label.
+    expect(screen.getByText('Buy')).toBeInTheDocument();
+    expect(screen.getByText('AAPL (Apple Inc.)')).toBeInTheDocument();
+    expect(screen.getByText('10')).toBeInTheDocument();
+  });
+
+  it('omits cash and security rows for a share-only action', () => {
+    render(
+      <TransactionConfirmationCard
+        action={makeInvestmentAction({
+          investmentAction: 'ADD_SHARES',
+          commission: 0,
+          totalAmount: 0,
+          cashAccountName: null,
+          cashCurrency: null,
+          cashAmount: null,
+        })}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Add shares')).toBeInTheDocument();
+    expect(screen.queryByText('Cash impact')).toBeNull();
+    expect(screen.queryByText('Total')).toBeNull();
+  });
+
+  it('shows a view-investments link once an investment transaction is created', () => {
+    render(
+      <TransactionConfirmationCard
+        action={makeInvestmentAction({}, { status: 'confirmed', resultId: 'it-1' })}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByText('Investment transaction created'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'View investments' }),
+    ).toHaveAttribute('href', '/investments');
+  });
 });

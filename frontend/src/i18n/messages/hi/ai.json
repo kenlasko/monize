@@ -64,7 +64,30 @@
     "cancelled": "रद्द किया गया",
     "expired": "यह पुष्टि समाप्त हो गई। पुनः प्रयास के लिए फिर से पूछें।",
     "error": "कार्रवाई पूरी नहीं की जा सकी।",
-    "retry": "पुनः प्रयास करें"
+    "retry": "पुनः प्रयास करें",
+    "createInvestmentTransactionTitle": "यह निवेश लेनदेन बनाएं?",
+    "createdInvestmentTransaction": "निवेश लेनदेन बनाया गया",
+    "viewInvestments": "निवेश देखें",
+    "investmentType": "प्रकार",
+    "security": "प्रतिभूति",
+    "shares": "शेयर",
+    "price": "मूल्य",
+    "commission": "कमीशन",
+    "total": "कुल",
+    "cashImpact": "नकद प्रभाव",
+    "investmentActions": {
+      "BUY": "खरीदें",
+      "SELL": "बेचें",
+      "DIVIDEND": "लाभांश",
+      "INTEREST": "ब्याज",
+      "CAPITAL_GAIN": "पूंजी लाभ",
+      "SPLIT": "विभाजन",
+      "TRANSFER_IN": "ट्रांसफर आया",
+      "TRANSFER_OUT": "ट्रांसफर गया",
+      "REINVEST": "पुनर्निवेश",
+      "ADD_SHARES": "शेयर जोड़ें",
+      "REMOVE_SHARES": "शेयर हटाएं"
+    }
   },
   "table": {
     "downloadTitle": "तालिका CSV के रूप में डाउनलोड करें",

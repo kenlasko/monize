@@ -9,9 +9,11 @@ import { plainToInstance } from "class-transformer";
 import { validateOrReject } from "class-validator";
 import { TransactionsService } from "../../transactions/transactions.service";
 import { PayeesService } from "../../payees/payees.service";
+import { InvestmentTransactionsService } from "../../securities/investment-transactions.service";
 import { CreateTransactionDto } from "../../transactions/dto/create-transaction.dto";
 import { UpdateTransactionDto } from "../../transactions/dto/update-transaction.dto";
 import { CreatePayeeDto } from "../../payees/dto/create-payee.dto";
+import { CreateInvestmentTransactionDto } from "../../securities/dto/create-investment-transaction.dto";
 import { tr } from "../../i18n/translate";
 import { AiActionSigningService } from "./ai-action-signing.service";
 import { AiWriteLimiter } from "./ai-write-limiter";
@@ -21,6 +23,7 @@ import {
   CategorizeTransactionDescriptor,
   CreatePayeeDescriptor,
   CreateTransactionDescriptor,
+  CreateInvestmentTransactionDescriptor,
 } from "./ai-action.types";
 import { ConfirmAiActionDto } from "./dto/confirm-ai-action.dto";
 
@@ -40,6 +43,7 @@ export class AiActionsService {
     private readonly transactionsService: TransactionsService,
     @Inject(forwardRef(() => PayeesService))
     private readonly payeesService: PayeesService,
+    private readonly investmentTransactionsService: InvestmentTransactionsService,
     private readonly signingService: AiActionSigningService,
     private readonly writeLimiter: AiWriteLimiter,
   ) {}
@@ -135,6 +139,8 @@ export class AiActionsService {
         return this.executeCategorize(userId, descriptor);
       case "create_payee":
         return this.executeCreatePayee(userId, descriptor);
+      case "create_investment_transaction":
+        return this.executeCreateInvestmentTransaction(userId, descriptor);
     }
   }
 
@@ -183,6 +189,29 @@ export class AiActionsService {
     });
     const payee = await this.payeesService.create(userId, dto);
     return { type: "create_payee", id: payee.id };
+  }
+
+  private async executeCreateInvestmentTransaction(
+    userId: string,
+    descriptor: CreateInvestmentTransactionDescriptor,
+  ): Promise<ConfirmActionResult> {
+    const dto = await this.toValidatedDto(CreateInvestmentTransactionDto, {
+      accountId: descriptor.accountId,
+      action: descriptor.action,
+      transactionDate: descriptor.transactionDate,
+      securityId: descriptor.securityId ?? undefined,
+      fundingAccountId: descriptor.fundingAccountId ?? undefined,
+      quantity: descriptor.quantity ?? undefined,
+      price: descriptor.price ?? undefined,
+      commission: descriptor.commission,
+      exchangeRate: descriptor.exchangeRate,
+      description: descriptor.description ?? undefined,
+    });
+    const transaction = await this.investmentTransactionsService.create(
+      userId,
+      dto,
+    );
+    return { type: "create_investment_transaction", id: transaction.id };
   }
 
   /**

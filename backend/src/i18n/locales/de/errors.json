@@ -360,7 +360,9 @@
     "priceNotFound": "Wertpapierkurs nicht gefunden",
     "invalidUuid": "Ungültige {{ label }}-UUID: {{ id }}",
     "symbolLength": "Symbol muss zwischen 1 und 20 Zeichen lang sein",
-    "symbolCharacters": "Symbol darf nur Buchstaben, Ziffern, Punkte oder Bindestriche enthalten"
+    "symbolCharacters": "Symbol darf nur Buchstaben, Ziffern, Punkte oder Bindestriche enthalten",
+    "ambiguousSecurity": "\"{{ query }}\" entspricht mehreren Wertpapieren: {{ list }}. Verwenden Sie das genaue Tickersymbol.",
+    "securityNotFoundByQuery": "Kein Wertpapier entspricht \"{{ query }}\". Fügen Sie das Wertpapier zuerst hinzu oder überprüfen Sie das Tickersymbol."
   },
   "tags": {
     "notFound": "Etikett mit ID {{ id }} nicht gefunden",

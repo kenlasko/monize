@@ -14,6 +14,7 @@ import {
   InvestmentTransaction,
   InvestmentAction,
 } from "./entities/investment-transaction.entity";
+import { Security } from "./entities/security.entity";
 import { CreateInvestmentTransactionDto } from "./dto/create-investment-transaction.dto";
 import { UpdateInvestmentTransactionDto } from "./dto/update-investment-transaction.dto";
 import { TransferSecurityDto } from "./dto/transfer-security.dto";
@@ -31,6 +32,7 @@ import { NetWorthService } from "../net-worth/net-worth.service";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { CurrenciesService } from "../currencies/currencies.service";
 import { roundToDecimals, roundMoney, sumMoney } from "../common/round.util";
+import { stripHtml } from "../common/sanitization.util";
 import {
   buildPaginationMeta,
   clampPagination,
@@ -156,6 +158,43 @@ export interface SecurityTransactionHistory {
   transactions: SecurityHistoryTransaction[];
   /** Exact (un-snapped) total current shares across all accounts. */
   currentQuantityAll: number;
+}
+
+/**
+ * Resolved, validated preview of a proposed investment transaction -- the
+ * dry-run shape shared by the AI Assistant confirmation flow and the MCP
+ * `create_investment_transaction` tool. Mirrors exactly what `create()` would
+ * persist: quantities/prices/commission are rounded to their column scale, the
+ * total and exchange rate use the same math as the real write, and the cash
+ * fields describe the linked cash movement so a confirmation card can show it.
+ */
+export interface CreateInvestmentTransactionPreview {
+  accountId: string;
+  accountName: string;
+  accountCurrency: string;
+  action: InvestmentAction;
+  transactionDate: string;
+  securityId: string | null;
+  symbol: string | null;
+  securityName: string | null;
+  securityCurrency: string | null;
+  quantity: number | null;
+  price: number | null;
+  commission: number;
+  /** Magnitude of the transaction in the security's currency (stored totalAmount). */
+  totalAmount: number;
+  /** Rate converting the security's currency into the cash account's currency. */
+  exchangeRate: number;
+  fundingAccountId: string | null;
+  /**
+   * Account whose cash balance moves (an explicit funding account, or the
+   * brokerage's linked cash sleeve). Null when the action moves no cash.
+   */
+  cashAccountName: string | null;
+  cashCurrency: string | null;
+  /** Signed cash impact in the cash account's currency (negative = cash out). */
+  cashAmount: number | null;
+  description: string | null;
 }
 
 @Injectable()
@@ -615,6 +654,190 @@ export class InvestmentTransactionsService {
   }
 
   /**
+   * Validate and resolve a proposed investment transaction WITHOUT persisting
+   * it. Used by the MCP `create_investment_transaction` dry-run/confirm path and
+   * the AI Assistant confirmation flow so both surfaces validate, match the
+   * security by symbol or name, and compute the cash impact identically.
+   *
+   * The security reference (`securityQuery`) is matched by ticker symbol or
+   * name via `SecuritiesService.resolveBySymbolOrName`; an ambiguous or unknown
+   * reference throws a 4xx the caller can surface. Action-specific requirements
+   * mirror `create()` so the preview fails the same way the real write would.
+   */
+  async previewCreateInvestmentTransaction(
+    userId: string,
+    input: {
+      accountId: string;
+      action: InvestmentAction;
+      transactionDate: string;
+      securityQuery?: string;
+      quantity?: number;
+      price?: number;
+      commission?: number;
+      fundingAccountId?: string;
+      description?: string;
+    },
+  ): Promise<CreateInvestmentTransactionPreview> {
+    const account = await this.accountsService.findOne(userId, input.accountId);
+    if (account.accountType !== "INVESTMENT") {
+      throw new BadRequestException(
+        tr(
+          "errors.securities.accountMustBeInvestment",
+          "Account must be of type INVESTMENT",
+        ),
+      );
+    }
+
+    // Match the security by symbol or name when a reference was supplied.
+    let security: Security | null = null;
+    if (input.securityQuery && input.securityQuery.trim()) {
+      const resolved = await this.securitiesService.resolveBySymbolOrName(
+        userId,
+        input.securityQuery,
+      );
+      if (!resolved.match) {
+        if (resolved.candidates.length > 0) {
+          const list = resolved.candidates
+            .map((c) => `${c.symbol} (${c.name})`)
+            .join(", ");
+          throw new BadRequestException(
+            tr(
+              "errors.securities.ambiguousSecurity",
+              `"${input.securityQuery}" matches multiple securities: ${list}. Use the exact ticker symbol.`,
+              { query: input.securityQuery, list },
+            ),
+          );
+        }
+        throw new BadRequestException(
+          tr(
+            "errors.securities.securityNotFoundByQuery",
+            `No security matches "${input.securityQuery}". Add the security first or check the ticker symbol.`,
+            { query: input.securityQuery },
+          ),
+        );
+      }
+      security = resolved.match;
+    }
+
+    // Mirror create()'s action-specific requirements so a preview rejected here
+    // is exactly what the real write would reject.
+    const securityRequiredActions: InvestmentAction[] = [
+      InvestmentAction.BUY,
+      InvestmentAction.SELL,
+      InvestmentAction.SPLIT,
+      InvestmentAction.REINVEST,
+      InvestmentAction.ADD_SHARES,
+      InvestmentAction.REMOVE_SHARES,
+    ];
+    if (securityRequiredActions.includes(input.action) && !security) {
+      throw new BadRequestException(
+        tr(
+          "errors.securities.securityIdRequired",
+          `Security ID is required for ${input.action} transactions`,
+          { action: input.action },
+        ),
+      );
+    }
+    if (
+      input.action === InvestmentAction.SPLIT &&
+      (!input.quantity || Number(input.quantity) <= 0)
+    ) {
+      throw new BadRequestException(
+        tr(
+          "errors.securities.splitRatioRequired",
+          "Split ratio (quantity) must be greater than zero",
+        ),
+      );
+    }
+
+    let fundingAccount: Account | null = null;
+    if (input.fundingAccountId) {
+      fundingAccount = await this.accountsService.findOne(
+        userId,
+        input.fundingAccountId,
+      );
+    }
+
+    // Round to each column's scale up front so the preview, the signed
+    // descriptor, and the persisted row all carry identical values (and the
+    // confirm-time DTO validation, which caps decimal places, never trips on a
+    // value the user already approved).
+    const quantity =
+      input.quantity !== undefined && input.quantity !== null
+        ? roundToDecimals(Number(input.quantity), 8)
+        : null;
+    const price =
+      input.price !== undefined && input.price !== null
+        ? roundToDecimals(Number(input.price), 6)
+        : null;
+    const commission = roundToDecimals(Number(input.commission ?? 0), 4);
+
+    const totalAmount = this.calculateTotalAmount({
+      action: input.action,
+      quantity,
+      price,
+      commission,
+    });
+
+    const exchangeRate = await this.resolveCashExchangeRate(
+      userId,
+      input.accountId,
+      input.fundingAccountId ?? null,
+      security?.id ?? null,
+      undefined,
+    );
+
+    // Signed cash impact in the security's currency, converted to the cash
+    // account's currency for display. Zero for the share-only actions, which
+    // create no linked cash transaction.
+    const cashImpactSecurity = computeInvestmentCashImpact(
+      input.action,
+      Number(quantity ?? 0),
+      Number(price ?? 0),
+      commission,
+    );
+
+    let cashAccountName: string | null = null;
+    let cashCurrency: string | null = null;
+    let cashAmount: number | null = null;
+    if (cashImpactSecurity !== 0) {
+      const cashAccount =
+        fundingAccount ?? (await this.findCashAccount(userId, input.accountId));
+      const cashCurrencyEntity = await this.currenciesService.findOne(
+        cashAccount.currencyCode,
+      );
+      cashAccountName = cashAccount.name;
+      cashCurrency = cashAccount.currencyCode;
+      cashAmount = roundToDecimals(
+        cashImpactSecurity * exchangeRate,
+        cashCurrencyEntity.decimalPlaces,
+      );
+    }
+
+    return {
+      accountId: account.id,
+      accountName: account.name,
+      accountCurrency: account.currencyCode,
+      action: input.action,
+      transactionDate: input.transactionDate,
+      securityId: security?.id ?? null,
+      symbol: security?.symbol ?? null,
+      securityName: security?.name ?? null,
+      securityCurrency: security?.currencyCode ?? null,
+      quantity,
+      price,
+      commission,
+      totalAmount,
+      exchangeRate,
+      fundingAccountId: fundingAccount?.id ?? null,
+      cashAccountName,
+      cashCurrency,
+      cashAmount,
+      description: stripHtml(input.description) || null,
+    };
+  }
+
+  /**
    * Reject investment accounts that don't track holdings. Securities can only
    * live in brokerage / standalone investment accounts (null subtype); the cash
    * sleeve (INVESTMENT_CASH) is excluded from every holdings rebuild and
@@ -831,7 +1054,12 @@ export class InvestmentTransactionsService {
     return { transferOut, transferIn };
   }
 
-  private calculateTotalAmount(dto: CreateInvestmentTransactionDto): number {
+  private calculateTotalAmount(dto: {
+    action: InvestmentAction;
+    quantity?: number | null;
+    price?: number | null;
+    commission?: number | null;
+  }): number {
     const { action, quantity, price, commission } = dto;
 
     let result: number;
@@ -2154,7 +2382,7 @@ export class InvestmentTransactionsService {
           quantity: transaction.quantity,
           price: transaction.price,
           commission: transaction.commission,
-        } as any);
+        });
       }
 
       if (

@@ -15,15 +15,19 @@
  * assistant proposed.
  */
 
+import { InvestmentAction } from "../../securities/entities/investment-transaction.entity";
+
 export type AiActionType =
   | "create_transaction"
   | "categorize_transaction"
-  | "create_payee";
+  | "create_payee"
+  | "create_investment_transaction";
 
 export const AI_ACTION_TYPES: AiActionType[] = [
   "create_transaction",
   "categorize_transaction",
   "create_payee",
+  "create_investment_transaction",
 ];
 
 /** Fields common to every signed descriptor. */
@@ -68,10 +72,28 @@ export interface CreatePayeeDescriptor extends BaseDescriptor {
   defaultCategoryId: string | null;
 }
 
+export interface CreateInvestmentTransactionDescriptor extends BaseDescriptor {
+  type: "create_investment_transaction";
+  accountId: string;
+  action: InvestmentAction;
+  transactionDate: string;
+  /** Resolved security (matched by symbol or name); null for cash-only actions. */
+  securityId: string | null;
+  /** Explicit cash account override, or null to use the brokerage's cash sleeve. */
+  fundingAccountId: string | null;
+  quantity: number | null;
+  price: number | null;
+  commission: number;
+  /** Resolved at preview time so confirm persists the rate the user approved. */
+  exchangeRate: number;
+  description: string | null;
+}
+
 export type AiActionDescriptor =
   | CreateTransactionDescriptor
   | CategorizeTransactionDescriptor
-  | CreatePayeeDescriptor;
+  | CreatePayeeDescriptor
+  | CreateInvestmentTransactionDescriptor;
 
 /**
  * Human-readable preview shown on the confirmation card. Display-only (not part
@@ -91,6 +113,18 @@ export interface AiActionPreview {
   currentCategoryName?: string | null;
   description?: string | null;
   name?: string | null;
+  // create_investment_transaction display fields.
+  investmentAction?: InvestmentAction;
+  symbol?: string | null;
+  securityName?: string | null;
+  securityCurrency?: string | null;
+  quantity?: number | null;
+  price?: number | null;
+  commission?: number;
+  totalAmount?: number;
+  cashAccountName?: string | null;
+  cashCurrency?: string | null;
+  cashAmount?: number | null;
 }
 
 /**

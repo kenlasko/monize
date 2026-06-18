@@ -360,7 +360,9 @@
     "priceNotFound": "Waardepapierprijs niet gevonden",
     "invalidUuid": "Ongeldige {{ label }} UUID: {{ id }}",
     "symbolLength": "Symbool moet tussen 1 en 20 tekens lang zijn",
-    "symbolCharacters": "Symbool mag alleen letters, cijfers, punten of koppeltekens bevatten"
+    "symbolCharacters": "Symbool mag alleen letters, cijfers, punten of koppeltekens bevatten",
+    "ambiguousSecurity": "\"{{ query }}\" komt overeen met meerdere effecten: {{ list }}. Gebruik het exacte tickersymbool.",
+    "securityNotFoundByQuery": "Geen effect komt overeen met \"{{ query }}\". Voeg het effect eerst toe of controleer het tickersymbool."
   },
   "tags": {
     "notFound": "Label met ID {{ id }} niet gevonden",

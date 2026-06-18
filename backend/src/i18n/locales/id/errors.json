@@ -360,7 +360,9 @@
     "priceNotFound": "Harga sekuritas tidak ditemukan",
     "invalidUuid": "UUID {{ label }} tidak valid: {{ id }}",
     "symbolLength": "Simbol harus antara 1 dan 20 karakter",
-    "symbolCharacters": "Simbol hanya boleh mengandung huruf, angka, titik, atau tanda hubung"
+    "symbolCharacters": "Simbol hanya boleh mengandung huruf, angka, titik, atau tanda hubung",
+    "ambiguousSecurity": "\"{{ query }}\" cocok dengan beberapa sekuritas: {{ list }}. Gunakan simbol ticker yang tepat.",
+    "securityNotFoundByQuery": "Tidak ada sekuritas yang cocok dengan \"{{ query }}\". Tambahkan sekuritas terlebih dahulu atau periksa simbol ticker."
   },
   "tags": {
     "notFound": "Tag dengan ID {{ id }} tidak ditemukan",

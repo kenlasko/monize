@@ -15,6 +15,7 @@ import {
   CategorizeTransactionDescriptor,
   CreatePayeeDescriptor,
   CreateTransactionDescriptor,
+  CreateInvestmentTransactionDescriptor,
   PendingAiAction,
 } from "../actions/ai-action.types";
 import { AccountType } from "../../accounts/entities/account.entity";
@@ -183,6 +184,12 @@ export class ToolExecutorService {
           break;
         case "create_payee":
           result = await this.createPayeeAction(userId, validatedInput);
+          break;
+        case "create_investment_transaction":
+          result = await this.createInvestmentTransactionAction(
+            userId,
+            validatedInput,
+          );
           break;
         default:
           this.logger.warn(`execute unknown tool=${toolName} user=${userId}`);
@@ -566,6 +573,119 @@ export class ToolExecutorService {
     return {
       data: PENDING_ACTION_TOOL_RESULT,
       summary: `Prepared to create payee "${preview.name}". Awaiting user confirmation.`,
+      sources: [],
+      pendingAction,
+    };
+  }
+
+  private async createInvestmentTransactionAction(
+    userId: string,
+    input: Record<string, unknown>,
+  ): Promise<ToolResult> {
+    const accountName = input.accountName as string;
+    const action = input.action as InvestmentAction;
+    const date = input.date as string;
+    const securityQuery = input.security as string | undefined;
+    const quantity = input.quantity as number | undefined;
+    const price = input.price as number | undefined;
+    const commission = input.commission as number | undefined;
+    const fundingAccountName = input.fundingAccountName as string | undefined;
+    const description = input.description as string | undefined;
+
+    const account = await this.resolveAccountByName(userId, accountName);
+    if (!account) {
+      return this.toolError(
+        `Unknown account: ${accountName}. Use an exact name from the user's account list.`,
+      );
+    }
+
+    let fundingAccountId: string | undefined;
+    if (fundingAccountName) {
+      const funding = await this.resolveAccountByName(
+        userId,
+        fundingAccountName,
+      );
+      if (!funding) {
+        return this.toolError(
+          `Unknown funding account: ${fundingAccountName}. Use an exact name from the user's account list.`,
+        );
+      }
+      fundingAccountId = funding.id;
+    }
+
+    let preview;
+    try {
+      preview =
+        await this.investmentTransactionsService.previewCreateInvestmentTransaction(
+          userId,
+          {
+            accountId: account.id,
+            action,
+            transactionDate: date,
+            securityQuery,
+            quantity,
+            price,
+            commission,
+            fundingAccountId,
+            description,
+          },
+        );
+    } catch (err) {
+      return this.toolErrorFromException(
+        err,
+        "Could not prepare the investment transaction.",
+      );
+    }
+
+    const { actionId, expiresAt } = this.newActionEnvelope();
+    const descriptor: CreateInvestmentTransactionDescriptor = {
+      type: "create_investment_transaction",
+      userId,
+      actionId,
+      expiresAt,
+      accountId: preview.accountId,
+      action: preview.action,
+      transactionDate: preview.transactionDate,
+      securityId: preview.securityId,
+      fundingAccountId: preview.fundingAccountId,
+      quantity: preview.quantity,
+      price: preview.price,
+      commission: preview.commission,
+      exchangeRate: preview.exchangeRate,
+      description: preview.description,
+    };
+    const pendingAction: PendingAiAction = {
+      actionId,
+      type: "create_investment_transaction",
+      expiresAt,
+      descriptor,
+      signature: this.signingService.sign(descriptor),
+      preview: {
+        accountName: preview.accountName,
+        transactionDate: preview.transactionDate,
+        investmentAction: preview.action,
+        symbol: preview.symbol,
+        securityName: preview.securityName,
+        securityCurrency: preview.securityCurrency,
+        quantity: preview.quantity,
+        price: preview.price,
+        commission: preview.commission,
+        totalAmount: preview.totalAmount,
+        cashAccountName: preview.cashAccountName,
+        cashCurrency: preview.cashCurrency,
+        cashAmount: preview.cashAmount,
+        description: preview.description,
+      },
+    };
+
+    const securityLabel = preview.symbol
+      ? ` of ${preview.symbol}`
+      : preview.securityName
+        ? ` of ${preview.securityName}`
+        : "";
+    return {
+      data: PENDING_ACTION_TOOL_RESULT,
+      summary: `Prepared a ${preview.action} investment transaction${securityLabel} in ${preview.accountName} dated ${preview.transactionDate}. Awaiting user confirmation.`,
       sources: [],
       pendingAction,
     };

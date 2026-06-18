@@ -64,7 +64,30 @@
     "cancelled": "Abgebrochen",
     "expired": "Diese Bestätigung ist abgelaufen. Fragen Sie erneut, um es noch einmal zu versuchen.",
     "error": "Die Aktion konnte nicht abgeschlossen werden.",
-    "retry": "Erneut versuchen"
+    "retry": "Erneut versuchen",
+    "createInvestmentTransactionTitle": "Diese Anlagetransaktion erstellen?",
+    "createdInvestmentTransaction": "Anlagetransaktion erstellt",
+    "viewInvestments": "Anlagen anzeigen",
+    "investmentType": "Typ",
+    "security": "Wertpapier",
+    "shares": "Anteile",
+    "price": "Preis",
+    "commission": "Provision",
+    "total": "Gesamt",
+    "cashImpact": "Auswirkung auf Barbestand",
+    "investmentActions": {
+      "BUY": "Kauf",
+      "SELL": "Verkauf",
+      "DIVIDEND": "Dividende",
+      "INTEREST": "Zinsen",
+      "CAPITAL_GAIN": "Kapitalertrag",
+      "SPLIT": "Aufteilung",
+      "TRANSFER_IN": "Eingehende Überweisung",
+      "TRANSFER_OUT": "Ausgehende Überweisung",
+      "REINVEST": "Reinvestition",
+      "ADD_SHARES": "Anteile hinzufügen",
+      "REMOVE_SHARES": "Anteile entfernen"
+    }
   },
   "table": {
     "downloadTitle": "Tabelle als CSV herunterladen",

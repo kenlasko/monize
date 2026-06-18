@@ -15,17 +15,22 @@ import {
   toolResult,
   toolError,
   safeToolError,
+  confirmWrite,
 } from "../mcp-context";
+import { McpWriteLimiter } from "../mcp-write-limiter";
 import {
   getPortfolioSummaryOutput,
   queryInvestmentTransactionsOutput,
   getCapitalGainsOutput,
   getHoldingDetailsOutput,
+  createInvestmentTransactionOutput,
 } from "../tool-output-schemas";
-import { READ_ONLY } from "../mcp-annotations";
+import { READ_ONLY, CREATE } from "../mcp-annotations";
 
 @Injectable()
 export class McpInvestmentsTools {
+  private readonly writeLimiter = new McpWriteLimiter();
+
   constructor(
     private readonly portfolioService: PortfolioService,
     private readonly holdingsService: HoldingsService,
@@ -230,6 +235,204 @@ export class McpInvestmentsTools {
             args.accountId,
           );
           return toolResult(holdings);
+        } catch (err: unknown) {
+          return safeToolError(err);
+        }
+      },
+    );
+
+    server.registerTool(
+      "create_investment_transaction",
+      {
+        title: "Create investment transaction",
+        annotations: CREATE,
+        description:
+          "Create a brokerage/investment-account transaction of any type (BUY, SELL, DIVIDEND, INTEREST, CAPITAL_GAIN, SPLIT, TRANSFER_IN, TRANSFER_OUT, REINVEST, ADD_SHARES, REMOVE_SHARES). The security is matched automatically by ticker symbol or name; an ambiguous or unknown reference returns an error. Buys debit and sells/dividends/interest/capital gains credit the brokerage's linked cash account automatically -- do not also create a separate cash transaction. Set dryRun=true to preview (validates and resolves the security, computes the total and cash impact) without saving. When dryRun is false, the user is asked to confirm before the transaction is saved (clients that support it show a confirmation dialog). Uses the same shared logic as the AI Assistant's create_investment_transaction tool.",
+        inputSchema: {
+          accountId: z.string().uuid().describe("Investment account ID"),
+          action: z
+            .nativeEnum(InvestmentAction)
+            .describe("Transaction type (e.g. BUY, SELL, DIVIDEND)"),
+          date: z.string().max(10).describe("Transaction date (YYYY-MM-DD)"),
+          security: z
+            .string()
+            .min(1)
+            .max(100)
+            .optional()
+            .describe(
+              "Security ticker symbol or name. Required for BUY, SELL, SPLIT, REINVEST, ADD_SHARES, REMOVE_SHARES. Matched to one of the user's securities.",
+            ),
+          quantity: z
+            .number()
+            .min(0)
+            .max(999999999999)
+            .optional()
+            .describe(
+              "Number of shares (8 dp). For SPLIT, the split ratio (>0).",
+            ),
+          price: z
+            .number()
+            .min(0)
+            .max(999999999999)
+            .optional()
+            .describe(
+              "Price per share (6 dp). For DIVIDEND/INTEREST/CAPITAL_GAIN with no quantity, the total cash amount.",
+            ),
+          commission: z
+            .number()
+            .min(0)
+            .max(999999999999)
+            .optional()
+            .describe("Commission or fee (4 dp). Defaults to 0."),
+          fundingAccountId: z
+            .string()
+            .uuid()
+            .optional()
+            .describe(
+              "Optional cash account that funds a buy or receives a sell's proceeds. Omit to use the brokerage's own linked cash account.",
+            ),
+          description: z
+            .string()
+            .max(500)
+            .optional()
+            .describe("Description or memo"),
+          dryRun: z
+            .boolean()
+            .optional()
+            .default(false)
+            .describe(
+              "If true, validate and return a preview without creating the transaction",
+            ),
+        },
+        outputSchema: createInvestmentTransactionOutput,
+      },
+      async (args, extra) => {
+        const ctx = resolve(extra.sessionId);
+        if (!ctx) return toolError("No user context");
+        const check = requireScope(ctx.scopes, "write");
+        if (check.error) return check.result;
+
+        const limitCheck = this.writeLimiter.checkLimit(ctx.userId);
+        if (!limitCheck.allowed) {
+          return toolError(
+            `Daily write limit reached (${limitCheck.limit} operations per day). Try again tomorrow.`,
+          );
+        }
+
+        try {
+          // Shared preview: validates the account + action, matches the
+          // security by symbol/name, computes the total/FX/cash impact, and
+          // sanitizes strings -- identical to the AI Assistant flow.
+          const preview =
+            await this.investmentTransactionsService.previewCreateInvestmentTransaction(
+              ctx.userId,
+              {
+                accountId: args.accountId,
+                action: args.action,
+                transactionDate: args.date,
+                securityQuery: args.security,
+                quantity: args.quantity,
+                price: args.price,
+                commission: args.commission,
+                fundingAccountId: args.fundingAccountId,
+                description: args.description,
+              },
+            );
+
+          if (args.dryRun) {
+            return toolResult({
+              dryRun: true,
+              preview: {
+                accountId: preview.accountId,
+                accountName: preview.accountName,
+                action: preview.action,
+                date: preview.transactionDate,
+                securityId: preview.securityId,
+                symbol: preview.symbol,
+                securityName: preview.securityName,
+                securityCurrency: preview.securityCurrency,
+                quantity: preview.quantity,
+                price: preview.price,
+                commission: preview.commission,
+                totalAmount: preview.totalAmount,
+                exchangeRate: preview.exchangeRate,
+                cashAccountName: preview.cashAccountName,
+                cashCurrency: preview.cashCurrency,
+                cashAmount: preview.cashAmount,
+                description: preview.description,
+              },
+              message:
+                "This is a preview. Call again with dryRun=false to create the transaction.",
+            });
+          }
+
+          // Ask the client to confirm before persisting (AI Assistant parity).
+          const confirmLines = [
+            "Create this investment transaction?",
+            `Account: ${preview.accountName}`,
+            `Type: ${preview.action}`,
+            `Date: ${preview.transactionDate}`,
+          ];
+          if (preview.symbol) {
+            confirmLines.push(
+              `Security: ${preview.symbol}${preview.securityName ? ` (${preview.securityName})` : ""}`,
+            );
+          }
+          if (preview.quantity !== null) {
+            confirmLines.push(`Quantity: ${preview.quantity}`);
+          }
+          if (preview.price !== null) {
+            confirmLines.push(`Price: ${preview.price}`);
+          }
+          if (preview.commission) {
+            confirmLines.push(`Commission: ${preview.commission}`);
+          }
+          if (preview.cashAccountName && preview.cashAmount !== null) {
+            confirmLines.push(
+              `Cash: ${preview.cashAmount} ${preview.cashCurrency} in ${preview.cashAccountName}`,
+            );
+          }
+          const confirmation = await confirmWrite(
+            server,
+            confirmLines.join("\n"),
+          );
+          if (confirmation === "declined") {
+            return toolError(
+              "Cancelled: the confirmation was declined, so no investment transaction was created. Do not retry unless the user asks again.",
+            );
+          }
+
+          const transaction = await this.investmentTransactionsService.create(
+            ctx.userId,
+            {
+              accountId: preview.accountId,
+              action: preview.action,
+              transactionDate: preview.transactionDate,
+              securityId: preview.securityId ?? undefined,
+              fundingAccountId: preview.fundingAccountId ?? undefined,
+              quantity: preview.quantity ?? undefined,
+              price: preview.price ?? undefined,
+              commission: preview.commission,
+              exchangeRate: preview.exchangeRate,
+              description: preview.description ?? undefined,
+            },
+          );
+
+          this.writeLimiter.record(ctx.userId, "create_investment_transaction");
+
+          return toolResult({
+            id: transaction.id,
+            action: transaction.action,
+            date: transaction.transactionDate,
+            symbol: preview.symbol,
+            quantity:
+              transaction.quantity !== null
+                ? Number(transaction.quantity)
+                : null,
+            price:
+              transaction.price !== null ? Number(transaction.price) : null,
+            totalAmount: Number(transaction.totalAmount),
+          });
         } catch (err: unknown) {
           return safeToolError(err);
         }

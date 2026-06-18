@@ -735,4 +735,98 @@ describe("SecuritiesService", () => {
       expect(result).toHaveLength(0);
     });
   });
+
+  describe("resolveBySymbolOrName", () => {
+    const secA = {
+      ...mockSecurity,
+      id: "sec-a",
+      symbol: "AAPL",
+      name: "Apple Inc.",
+    };
+    const secB = {
+      ...mockSecurity,
+      id: "sec-b",
+      symbol: "AAPL.L",
+      name: "Apple London",
+    };
+
+    // Build a chainable query-builder stub returning the given getOne/getMany.
+    function qb(result: { getOne?: unknown; getMany?: unknown[] }) {
+      return {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(result.getOne ?? null),
+        getMany: jest.fn().mockResolvedValue(result.getMany ?? []),
+      };
+    }
+
+    it("returns no match for a blank query without hitting the database", async () => {
+      const result = await service.resolveBySymbolOrName("user-1", "   ");
+      expect(result).toEqual({ match: null, candidates: [] });
+      expect(securitiesRepository.createQueryBuilder).not.toHaveBeenCalled();
+    });
+
+    it("matches by exact symbol first", async () => {
+      securitiesRepository.createQueryBuilder.mockReturnValueOnce(
+        qb({ getOne: secA }),
+      );
+      const result = await service.resolveBySymbolOrName("user-1", "aapl");
+      expect(result.match).toBe(secA);
+      expect(result.candidates).toEqual([]);
+      // Resolved on the symbol step -- no name/partial queries needed.
+      expect(securitiesRepository.createQueryBuilder).toHaveBeenCalledTimes(1);
+    });
+
+    it("falls back to a unique exact-name match", async () => {
+      securitiesRepository.createQueryBuilder
+        .mockReturnValueOnce(qb({ getOne: null }))
+        .mockReturnValueOnce(qb({ getMany: [secA] }));
+      const result = await service.resolveBySymbolOrName(
+        "user-1",
+        "Apple Inc.",
+      );
+      expect(result.match).toBe(secA);
+      expect(result.candidates).toEqual([]);
+    });
+
+    it("returns candidates when a name is ambiguous", async () => {
+      securitiesRepository.createQueryBuilder
+        .mockReturnValueOnce(qb({ getOne: null }))
+        .mockReturnValueOnce(qb({ getMany: [secA, secB] }));
+      const result = await service.resolveBySymbolOrName("user-1", "Apple");
+      expect(result.match).toBeNull();
+      expect(result.candidates).toEqual([secA, secB]);
+    });
+
+    it("resolves a unique substring match", async () => {
+      securitiesRepository.createQueryBuilder
+        .mockReturnValueOnce(qb({ getOne: null }))
+        .mockReturnValueOnce(qb({ getMany: [] }))
+        .mockReturnValueOnce(qb({ getMany: [secA] }));
+      const result = await service.resolveBySymbolOrName("user-1", "appl");
+      expect(result.match).toBe(secA);
+    });
+
+    it("returns candidates for an ambiguous substring match", async () => {
+      securitiesRepository.createQueryBuilder
+        .mockReturnValueOnce(qb({ getOne: null }))
+        .mockReturnValueOnce(qb({ getMany: [] }))
+        .mockReturnValueOnce(qb({ getMany: [secA, secB] }));
+      const result = await service.resolveBySymbolOrName("user-1", "app");
+      expect(result.match).toBeNull();
+      expect(result.candidates).toEqual([secA, secB]);
+    });
+
+    it("returns no match when nothing matches at all", async () => {
+      securitiesRepository.createQueryBuilder
+        .mockReturnValueOnce(qb({ getOne: null }))
+        .mockReturnValueOnce(qb({ getMany: [] }))
+        .mockReturnValueOnce(qb({ getMany: [] }));
+      const result = await service.resolveBySymbolOrName("user-1", "ZZZZ");
+      expect(result).toEqual({ match: null, candidates: [] });
+    });
+  });
 });

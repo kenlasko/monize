@@ -64,7 +64,30 @@
     "cancelled": "キャンセルしました",
     "expired": "この確認は期限切れです。再試行するにはもう一度依頼してください。",
     "error": "操作を完了できませんでした。",
-    "retry": "もう一度お試しください"
+    "retry": "もう一度お試しください",
+    "createInvestmentTransactionTitle": "この投資取引を作成しますか？",
+    "createdInvestmentTransaction": "投資取引を作成しました",
+    "viewInvestments": "投資を表示",
+    "investmentType": "種類",
+    "security": "銘柄",
+    "shares": "株数",
+    "price": "価格",
+    "commission": "手数料",
+    "total": "合計",
+    "cashImpact": "現金への影響",
+    "investmentActions": {
+      "BUY": "買い",
+      "SELL": "売り",
+      "DIVIDEND": "配当",
+      "INTEREST": "利息",
+      "CAPITAL_GAIN": "キャピタルゲイン",
+      "SPLIT": "株式分割",
+      "TRANSFER_IN": "振替入庫",
+      "TRANSFER_OUT": "振替出庫",
+      "REINVEST": "再投資",
+      "ADD_SHARES": "株数追加",
+      "REMOVE_SHARES": "株数削除"
+    }
   },
   "table": {
     "downloadTitle": "テーブルを CSV でダウンロード",

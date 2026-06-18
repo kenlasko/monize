@@ -64,7 +64,30 @@
     "cancelled": "Cancelled",
     "expired": "This confirmation expired. Ask again to retry.",
     "error": "Could not complete the action.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "createInvestmentTransactionTitle": "Create this investment transaction?",
+    "createdInvestmentTransaction": "Investment transaction created",
+    "viewInvestments": "View investments",
+    "investmentType": "Type",
+    "security": "Security",
+    "shares": "Shares",
+    "price": "Price",
+    "commission": "Commission",
+    "total": "Total",
+    "cashImpact": "Cash impact",
+    "investmentActions": {
+      "BUY": "Buy",
+      "SELL": "Sell",
+      "DIVIDEND": "Dividend",
+      "INTEREST": "Interest",
+      "CAPITAL_GAIN": "Capital gain",
+      "SPLIT": "Split",
+      "TRANSFER_IN": "Transfer in",
+      "TRANSFER_OUT": "Transfer out",
+      "REINVEST": "Reinvest",
+      "ADD_SHARES": "Add shares",
+      "REMOVE_SHARES": "Remove shares"
+    }
   },
   "table": {
     "downloadTitle": "Download table as CSV",

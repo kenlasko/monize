@@ -29,7 +29,8 @@ export function TransactionConfirmationCard({
   onCancel,
 }: TransactionConfirmationCardProps) {
   const t = useTranslations('ai');
-  const { formatCurrency } = useNumberFormat();
+  const { formatCurrency, formatCurrencyPrecise, formatQuantity } =
+    useNumberFormat();
   const { preview, type, status } = action;
 
   const title =
@@ -37,7 +38,9 @@ export function TransactionConfirmationCard({
       ? t('confirmAction.createTransactionTitle')
       : type === 'categorize_transaction'
         ? t('confirmAction.categorizeTitle')
-        : t('confirmAction.createPayeeTitle');
+        : type === 'create_investment_transaction'
+          ? t('confirmAction.createInvestmentTransactionTitle')
+          : t('confirmAction.createPayeeTitle');
 
   const none = t('confirmAction.none');
   const rows: Array<{ label: string; value: string }> = [];
@@ -87,6 +90,63 @@ export function TransactionConfirmationCard({
       label: t('confirmAction.newCategory'),
       value: preview.newCategoryName || none,
     });
+  } else if (type === 'create_investment_transaction') {
+    if (preview.accountName)
+      rows.push({ label: t('confirmAction.account'), value: preview.accountName });
+    if (preview.investmentAction)
+      rows.push({
+        label: t('confirmAction.investmentType'),
+        value: t(
+          `confirmAction.investmentActions.${preview.investmentAction}` as Parameters<
+            typeof t
+          >[0],
+        ),
+      });
+    if (preview.transactionDate)
+      rows.push({ label: t('confirmAction.date'), value: preview.transactionDate });
+    if (preview.symbol)
+      rows.push({
+        label: t('confirmAction.security'),
+        value: preview.securityName
+          ? `${preview.symbol} (${preview.securityName})`
+          : preview.symbol,
+      });
+    if (preview.quantity !== undefined && preview.quantity !== null)
+      rows.push({
+        label: t('confirmAction.shares'),
+        value: formatQuantity(preview.quantity),
+      });
+    if (preview.price !== undefined && preview.price !== null)
+      rows.push({
+        label: t('confirmAction.price'),
+        value: formatCurrencyPrecise(preview.price, preview.securityCurrency ?? undefined),
+      });
+    if (preview.commission)
+      rows.push({
+        label: t('confirmAction.commission'),
+        value: formatCurrency(preview.commission, preview.securityCurrency ?? undefined),
+      });
+    // Share-only actions (transfers, splits, share adjustments) carry no cash
+    // total, so only surface it when there is one.
+    if (preview.totalAmount)
+      rows.push({
+        label: t('confirmAction.total'),
+        value: formatCurrency(preview.totalAmount, preview.securityCurrency ?? undefined),
+      });
+    if (
+      preview.cashAccountName &&
+      preview.cashAmount !== undefined &&
+      preview.cashAmount !== null
+    )
+      rows.push({
+        label: t('confirmAction.cashImpact'),
+        value: `${formatCurrency(preview.cashAmount, preview.cashCurrency ?? undefined)} (${preview.cashAccountName})`,
+      });
+    if (preview.description)
+      rows.push({
+        label: t('confirmAction.description'),
+        value: preview.description,
+      });
   } else {
     rows.push({
       label: t('confirmAction.name'),
@@ -98,14 +158,23 @@ export function TransactionConfirmationCard({
     });
   }
 
+  const isInvestmentResult = type === 'create_investment_transaction';
   const isTransactionResult =
     type === 'create_transaction' || type === 'categorize_transaction';
+  // The created/updated record's home, surfaced as a "view" link on success.
+  const viewLink = isInvestmentResult
+    ? { href: '/investments', label: t('confirmAction.viewInvestments') }
+    : isTransactionResult
+      ? { href: '/transactions', label: t('confirmAction.viewTransaction') }
+      : null;
   const successMessage =
     type === 'create_transaction'
       ? t('confirmAction.createdTransaction')
       : type === 'categorize_transaction'
         ? t('confirmAction.categorized')
-        : t('confirmAction.createdPayee');
+        : type === 'create_investment_transaction'
+          ? t('confirmAction.createdInvestmentTransaction')
+          : t('confirmAction.createdPayee');
 
   return (
     <div className="rounded-lg border border-blue-200 dark:border-blue-900/60 bg-blue-50/60 dark:bg-blue-900/20 overflow-hidden">
@@ -142,12 +211,12 @@ export function TransactionConfirmationCard({
             <span className="text-green-700 dark:text-green-400 font-medium">
               {successMessage}
             </span>
-            {isTransactionResult && (
+            {viewLink && (
               <Link
-                href="/transactions"
+                href={viewLink.href}
                 className="text-blue-600 dark:text-blue-400 hover:underline"
               >
-                {t('confirmAction.viewTransaction')}
+                {viewLink.label}
               </Link>
             )}
           </div>

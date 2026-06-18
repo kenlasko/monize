@@ -360,7 +360,9 @@
     "priceNotFound": "Không tìm thấy giá chứng khoán",
     "invalidUuid": "UUID {{ label }} không hợp lệ: {{ id }}",
     "symbolLength": "Ký hiệu phải có từ 1 đến 20 ký tự",
-    "symbolCharacters": "Ký hiệu chỉ được chứa chữ cái, chữ số, dấu chấm hoặc dấu gạch ngang"
+    "symbolCharacters": "Ký hiệu chỉ được chứa chữ cái, chữ số, dấu chấm hoặc dấu gạch ngang",
+    "ambiguousSecurity": "\"{{ query }}\" khớp với nhiều chứng khoán: {{ list }}. Hãy dùng mã ticker chính xác.",
+    "securityNotFoundByQuery": "Không có chứng khoán nào khớp với \"{{ query }}\". Hãy thêm chứng khoán trước hoặc kiểm tra mã ticker."
   },
   "tags": {
     "notFound": "Không tìm thấy thẻ với ID {{ id }}",

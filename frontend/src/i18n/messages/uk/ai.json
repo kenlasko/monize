@@ -64,7 +64,30 @@
     "cancelled": "Скасовано",
     "expired": "Термін дії цього підтвердження минув. Запитайте ще раз, щоб повторити.",
     "error": "Не вдалося виконати дію.",
-    "retry": "Спробувати ще раз"
+    "retry": "Спробувати ще раз",
+    "createInvestmentTransactionTitle": "Створити цю інвестиційну операцію?",
+    "createdInvestmentTransaction": "Інвестиційну операцію створено",
+    "viewInvestments": "Переглянути інвестиції",
+    "investmentType": "Тип",
+    "security": "Цінний папір",
+    "shares": "Акції",
+    "price": "Ціна",
+    "commission": "Комісія",
+    "total": "Разом",
+    "cashImpact": "Вплив на готівку",
+    "investmentActions": {
+      "BUY": "Купити",
+      "SELL": "Продати",
+      "DIVIDEND": "Дивіденд",
+      "INTEREST": "Відсотки",
+      "CAPITAL_GAIN": "Приріст капіталу",
+      "SPLIT": "Дроблення",
+      "TRANSFER_IN": "Переказ вхідний",
+      "TRANSFER_OUT": "Переказ вихідний",
+      "REINVEST": "Реінвестування",
+      "ADD_SHARES": "Додати акції",
+      "REMOVE_SHARES": "Видалити акції"
+    }
   },
   "table": {
     "downloadTitle": "Завантажити таблицю як CSV",

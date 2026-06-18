@@ -15,6 +15,7 @@ import {
   getScheduledTransactionsSchema,
   calculateSchema,
   renderChartSchema,
+  createInvestmentTransactionSchema,
 } from "./tool-input-schemas";
 
 describe("tool-input-schemas", () => {
@@ -487,6 +488,102 @@ describe("tool-input-schemas", () => {
         // symbols not uppercased by schema; preprocessing only applies to actions
         expect(result.data.symbols).toEqual(["aapl"]);
       }
+    });
+  });
+
+  describe("createInvestmentTransactionSchema", () => {
+    const valid = {
+      accountName: "Brokerage",
+      action: "BUY",
+      date: "2026-01-15",
+      security: "AAPL",
+      quantity: 10,
+      price: 150,
+      commission: 9.99,
+    };
+
+    it("accepts a full valid BUY", () => {
+      const result = createInvestmentTransactionSchema.safeParse(valid);
+      expect(result.success).toBe(true);
+    });
+
+    it("accepts the minimal required fields (cash-only action)", () => {
+      const result = createInvestmentTransactionSchema.safeParse({
+        accountName: "Brokerage",
+        action: "INTEREST",
+        date: "2026-01-15",
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("uppercases the action via preprocess", () => {
+      const result = createInvestmentTransactionSchema.safeParse({
+        ...valid,
+        action: " buy ",
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.action).toBe("BUY");
+      }
+    });
+
+    it("accepts every investment action", () => {
+      for (const action of [
+        "BUY",
+        "SELL",
+        "DIVIDEND",
+        "INTEREST",
+        "CAPITAL_GAIN",
+        "SPLIT",
+        "TRANSFER_IN",
+        "TRANSFER_OUT",
+        "REINVEST",
+        "ADD_SHARES",
+        "REMOVE_SHARES",
+      ]) {
+        const result = createInvestmentTransactionSchema.safeParse({
+          ...valid,
+          action,
+        });
+        expect(result.success).toBe(true);
+      }
+    });
+
+    it("rejects an unknown action", () => {
+      const result = createInvestmentTransactionSchema.safeParse({
+        ...valid,
+        action: "PURCHASE",
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects a missing account name", () => {
+      const result = createInvestmentTransactionSchema.safeParse({
+        action: "BUY",
+        date: "2026-01-15",
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects a negative quantity", () => {
+      const result = createInvestmentTransactionSchema.safeParse({
+        ...valid,
+        quantity: -1,
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects an invalid date", () => {
+      const result = createInvestmentTransactionSchema.safeParse({
+        ...valid,
+        date: "15-01-2026",
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("routes through validateToolInput", () => {
+      const result = validateToolInput("create_investment_transaction", valid);
+      expect(result.success).toBe(true);
     });
   });
 

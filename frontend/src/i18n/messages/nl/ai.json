@@ -64,7 +64,30 @@
     "cancelled": "Geannuleerd",
     "expired": "Deze bevestiging is verlopen. Vraag opnieuw om het nog eens te proberen.",
     "error": "Kan de actie niet voltooien.",
-    "retry": "Opnieuw proberen"
+    "retry": "Opnieuw proberen",
+    "createInvestmentTransactionTitle": "Deze beleggingstransactie aanmaken?",
+    "createdInvestmentTransaction": "Beleggingstransactie aangemaakt",
+    "viewInvestments": "Beleggingen bekijken",
+    "investmentType": "Type",
+    "security": "Effect",
+    "shares": "Aandelen",
+    "price": "Prijs",
+    "commission": "Commissie",
+    "total": "Totaal",
+    "cashImpact": "Kaseffect",
+    "investmentActions": {
+      "BUY": "Kopen",
+      "SELL": "Verkopen",
+      "DIVIDEND": "Dividend",
+      "INTEREST": "Rente",
+      "CAPITAL_GAIN": "Kapitaalwinst",
+      "SPLIT": "Splitsing",
+      "TRANSFER_IN": "Inkomend",
+      "TRANSFER_OUT": "Uitgaand",
+      "REINVEST": "Herinvesteren",
+      "ADD_SHARES": "Aandelen toevoegen",
+      "REMOVE_SHARES": "Aandelen verwijderen"
+    }
   },
   "table": {
     "downloadTitle": "Tabel downloaden als CSV",

@@ -64,7 +64,30 @@
     "cancelled": "취소됨",
     "expired": "이 확인은 만료되었습니다. 다시 시도하려면 한 번 더 요청하세요.",
     "error": "작업을 완료할 수 없습니다.",
-    "retry": "다시 시도"
+    "retry": "다시 시도",
+    "createInvestmentTransactionTitle": "이 투자 거래를 생성하시겠습니까?",
+    "createdInvestmentTransaction": "투자 거래가 생성되었습니다",
+    "viewInvestments": "투자 보기",
+    "investmentType": "유형",
+    "security": "종목",
+    "shares": "주식수",
+    "price": "가격",
+    "commission": "수수료",
+    "total": "합계",
+    "cashImpact": "현금 영향",
+    "investmentActions": {
+      "BUY": "매수",
+      "SELL": "매도",
+      "DIVIDEND": "배당금",
+      "INTEREST": "이자",
+      "CAPITAL_GAIN": "자본이득",
+      "SPLIT": "분할",
+      "TRANSFER_IN": "입고",
+      "TRANSFER_OUT": "출고",
+      "REINVEST": "재투자",
+      "ADD_SHARES": "주식수 추가",
+      "REMOVE_SHARES": "주식수 제거"
+    }
   },
   "table": {
     "downloadTitle": "CSV로 표 다운로드",

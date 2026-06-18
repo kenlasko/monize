@@ -360,7 +360,9 @@
     "priceNotFound": "Cours du titre introuvable",
     "invalidUuid": "UUID {{ label }} invalide : {{ id }}",
     "symbolLength": "Le symbole doit comporter entre 1 et 20 caractères",
-    "symbolCharacters": "Le symbole ne doit contenir que des lettres, chiffres, points ou tirets"
+    "symbolCharacters": "Le symbole ne doit contenir que des lettres, chiffres, points ou tirets",
+    "ambiguousSecurity": "\"{{ query }}\" correspond à plusieurs titres : {{ list }}. Utilisez le symbole exact.",
+    "securityNotFoundByQuery": "Aucun titre ne correspond à \"{{ query }}\". Ajoutez d'abord le titre ou vérifiez le symbole."
   },
   "tags": {
     "notFound": "Étiquette avec l'ID {{ id }} introuvable",

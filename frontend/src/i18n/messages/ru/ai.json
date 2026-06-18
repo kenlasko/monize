@@ -64,7 +64,30 @@
     "cancelled": "Отменено",
     "expired": "Срок этого подтверждения истёк. Спросите снова, чтобы повторить.",
     "error": "Не удалось выполнить действие.",
-    "retry": "Повторить попытку"
+    "retry": "Повторить попытку",
+    "createInvestmentTransactionTitle": "Создать эту инвестиционную операцию?",
+    "createdInvestmentTransaction": "Инвестиционная операция создана",
+    "viewInvestments": "Просмотреть инвестиции",
+    "investmentType": "Тип",
+    "security": "Ценная бумага",
+    "shares": "Акции",
+    "price": "Цена",
+    "commission": "Комиссия",
+    "total": "Итого",
+    "cashImpact": "Влияние на денежные средства",
+    "investmentActions": {
+      "BUY": "Покупка",
+      "SELL": "Продажа",
+      "DIVIDEND": "Дивиденд",
+      "INTEREST": "Процент",
+      "CAPITAL_GAIN": "Доход от прироста капитала",
+      "SPLIT": "Дробление",
+      "TRANSFER_IN": "Перевод входящий",
+      "TRANSFER_OUT": "Перевод исходящий",
+      "REINVEST": "Реинвестирование",
+      "ADD_SHARES": "Добавить акции",
+      "REMOVE_SHARES": "Удалить акции"
+    }
   },
   "table": {
     "downloadTitle": "Скачать таблицу в формате CSV",

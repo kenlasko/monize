@@ -360,7 +360,9 @@
     "priceNotFound": "증권 가격을 찾을 수 없습니다",
     "invalidUuid": "유효하지 않은 {{ label }} UUID입니다: {{ id }}",
     "symbolLength": "심볼은 1자에서 20자 사이여야 합니다",
-    "symbolCharacters": "심볼은 문자, 숫자, 점 또는 대시만 포함해야 합니다"
+    "symbolCharacters": "심볼은 문자, 숫자, 점 또는 대시만 포함해야 합니다",
+    "ambiguousSecurity": "\"{{ query }}\"이(가) 여러 종목과 일치합니다: {{ list }}. 정확한 티커 기호를 사용하세요.",
+    "securityNotFoundByQuery": "\"{{ query }}\"과(와) 일치하는 종목이 없습니다. 먼저 종목을 추가하거나 티커 기호를 확인하세요."
   },
   "tags": {
     "notFound": "ID가 {{ id }}인 태그를 찾을 수 없습니다",

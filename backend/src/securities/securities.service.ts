@@ -27,6 +27,17 @@ export interface FavouriteSecurityQuote {
   dailyChangePercent: number;
 }
 
+/**
+ * Outcome of resolving a free-text security reference (symbol or name).
+ * `match` is the single resolved security; when the reference is ambiguous,
+ * `match` is null and `candidates` lists the securities it could mean so the
+ * caller can ask the user to disambiguate.
+ */
+export interface SecurityMatchResult {
+  match: Security | null;
+  candidates: Security[];
+}
+
 @Injectable()
 export class SecuritiesService {
   private readonly logger = new Logger(SecuritiesService.name);
@@ -416,5 +427,71 @@ export class SecuritiesService {
       .orderBy("security.symbol", "ASC")
       .take(20)
       .getMany();
+  }
+
+  /**
+   * Resolve a free-text security reference (a ticker symbol or a security name)
+   * to a single owned security. Matching is layered so common references
+   * resolve unambiguously while a vague substring that hits several securities
+   * is reported back as candidates rather than guessed:
+   *   1. Exact symbol (case-insensitive). Symbols are unique per user, so this
+   *      yields at most one match.
+   *   2. Exact name (case-insensitive). Names are not guaranteed unique;
+   *      multiple hits become candidates.
+   *   3. Substring on symbol or name among active securities -- a single hit
+   *      wins, multiple become candidates, none resolves to no match.
+   *
+   * Shared by the AI Assistant `create_investment_transaction` tool and the MCP
+   * server so both surfaces match securities identically.
+   */
+  async resolveBySymbolOrName(
+    userId: string,
+    query: string,
+  ): Promise<SecurityMatchResult> {
+    const trimmed = (query ?? "").trim();
+    if (!trimmed) {
+      return { match: null, candidates: [] };
+    }
+
+    const bySymbol = await this.securitiesRepository
+      .createQueryBuilder("security")
+      .where("security.userId = :userId", { userId })
+      .andWhere("LOWER(security.symbol) = LOWER(:q)", { q: trimmed })
+      .getOne();
+    if (bySymbol) {
+      return { match: bySymbol, candidates: [] };
+    }
+
+    const byName = await this.securitiesRepository
+      .createQueryBuilder("security")
+      .where("security.userId = :userId", { userId })
+      .andWhere("LOWER(security.name) = LOWER(:q)", { q: trimmed })
+      // Prefer an active security when several share a name (e.g. a delisted
+      // duplicate); fall back to the symbol for a stable order.
+      .orderBy("security.isActive", "DESC")
+      .addOrderBy("security.symbol", "ASC")
+      .getMany();
+    if (byName.length === 1) {
+      return { match: byName[0], candidates: [] };
+    }
+    if (byName.length > 1) {
+      return { match: null, candidates: byName };
+    }
+
+    const partial = await this.securitiesRepository
+      .createQueryBuilder("security")
+      .where("security.userId = :userId", { userId })
+      .andWhere("security.isActive = :isActive", { isActive: true })
+      .andWhere(
+        "(LOWER(security.symbol) LIKE LOWER(:like) OR LOWER(security.name) LIKE LOWER(:like))",
+        { like: `%${trimmed}%` },
+      )
+      .orderBy("security.symbol", "ASC")
+      .take(10)
+      .getMany();
+    if (partial.length === 1) {
+      return { match: partial[0], candidates: [] };
+    }
+    return { match: null, candidates: partial };
   }
 }

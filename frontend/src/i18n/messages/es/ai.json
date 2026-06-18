@@ -64,7 +64,30 @@
     "cancelled": "Cancelado",
     "expired": "Esta confirmación caducó. Vuelve a preguntar para intentarlo de nuevo.",
     "error": "No se pudo completar la acción.",
-    "retry": "Intentar de nuevo"
+    "retry": "Intentar de nuevo",
+    "createInvestmentTransactionTitle": "¿Crear esta transacción de inversión?",
+    "createdInvestmentTransaction": "Transacción de inversión creada",
+    "viewInvestments": "Ver inversiones",
+    "investmentType": "Tipo",
+    "security": "Valor",
+    "shares": "Acciones",
+    "price": "Precio",
+    "commission": "Comisión",
+    "total": "Total",
+    "cashImpact": "Impacto en efectivo",
+    "investmentActions": {
+      "BUY": "Comprar",
+      "SELL": "Vender",
+      "DIVIDEND": "Dividendo",
+      "INTEREST": "Interés",
+      "CAPITAL_GAIN": "Ganancia de capital",
+      "SPLIT": "División",
+      "TRANSFER_IN": "Transferencia entrante",
+      "TRANSFER_OUT": "Transferencia saliente",
+      "REINVEST": "Reinvertir",
+      "ADD_SHARES": "Agregar acciones",
+      "REMOVE_SHARES": "Quitar acciones"
+    }
   },
   "table": {
     "downloadTitle": "Descargar tabla como CSV",

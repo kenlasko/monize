@@ -360,7 +360,9 @@
     "priceNotFound": "有価証券価格が見つかりません",
     "invalidUuid": "無効な {{ label }} UUID：{{ id }}",
     "symbolLength": "シンボルは1〜20文字でなければなりません",
-    "symbolCharacters": "シンボルは文字、数字、ドット、またはダッシュのみ使用できます"
+    "symbolCharacters": "シンボルは文字、数字、ドット、またはダッシュのみ使用できます",
+    "ambiguousSecurity": "「{{ query }}」は複数の銘柄に一致します：{{ list }}。正確なティッカーシンボルを使用してください。",
+    "securityNotFoundByQuery": "「{{ query }}」に一致する銘柄がありません。先に銘柄を追加するか、ティッカーシンボルを確認してください。"
   },
   "tags": {
     "notFound": "ID {{ id }} のタグが見つかりません",

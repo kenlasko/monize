@@ -64,7 +64,30 @@
     "cancelled": "Dibatalkan",
     "expired": "Konfirmasi ini telah kedaluwarsa. Minta lagi untuk mencoba ulang.",
     "error": "Tidak dapat menyelesaikan tindakan.",
-    "retry": "Coba lagi"
+    "retry": "Coba lagi",
+    "createInvestmentTransactionTitle": "Buat transaksi investasi ini?",
+    "createdInvestmentTransaction": "Transaksi investasi dibuat",
+    "viewInvestments": "Lihat investasi",
+    "investmentType": "Jenis",
+    "security": "Sekuritas",
+    "shares": "Lembar",
+    "price": "Harga",
+    "commission": "Komisi",
+    "total": "Total",
+    "cashImpact": "Dampak kas",
+    "investmentActions": {
+      "BUY": "Beli",
+      "SELL": "Jual",
+      "DIVIDEND": "Dividen",
+      "INTEREST": "Bunga",
+      "CAPITAL_GAIN": "Keuntungan Modal",
+      "SPLIT": "Pemecahan Saham",
+      "TRANSFER_IN": "Transfer Masuk",
+      "TRANSFER_OUT": "Transfer Keluar",
+      "REINVEST": "Reinvestasi",
+      "ADD_SHARES": "Tambah Lembar",
+      "REMOVE_SHARES": "Hapus Lembar"
+    }
   },
   "table": {
     "downloadTitle": "Unduh tabel sebagai CSV",

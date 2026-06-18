@@ -64,7 +64,30 @@
     "cancelled": "已取消",
     "expired": "此确认已过期。请重新询问以重试。",
     "error": "无法完成此操作。",
-    "retry": "重试"
+    "retry": "重试",
+    "createInvestmentTransactionTitle": "创建此投资交易？",
+    "createdInvestmentTransaction": "投资交易已创建",
+    "viewInvestments": "查看投资",
+    "investmentType": "类型",
+    "security": "证券",
+    "shares": "股数",
+    "price": "价格",
+    "commission": "佣金",
+    "total": "合计",
+    "cashImpact": "现金影响",
+    "investmentActions": {
+      "BUY": "买入",
+      "SELL": "卖出",
+      "DIVIDEND": "股息",
+      "INTEREST": "利息",
+      "CAPITAL_GAIN": "资本收益",
+      "SPLIT": "拆股",
+      "TRANSFER_IN": "转入",
+      "TRANSFER_OUT": "转出",
+      "REINVEST": "再投资",
+      "ADD_SHARES": "增加股份",
+      "REMOVE_SHARES": "减少股份"
+    }
   },
   "table": {
     "downloadTitle": "将表格下载为 CSV",

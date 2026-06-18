@@ -360,7 +360,9 @@
     "priceNotFound": "Menkul kıymet fiyatı bulunamadı",
     "invalidUuid": "Geçersiz {{ label }} UUID'si: {{ id }}",
     "symbolLength": "Sembol 1 ile 20 karakter arasında olmalıdır",
-    "symbolCharacters": "Sembol yalnızca harf, rakam, nokta veya tire içerebilir"
+    "symbolCharacters": "Sembol yalnızca harf, rakam, nokta veya tire içerebilir",
+    "ambiguousSecurity": "\"{{ query }}\" birden fazla menkul kıymetle eşleşiyor: {{ list }}. Tam ticker sembolünü kullanın.",
+    "securityNotFoundByQuery": "\"{{ query }}\" ile eşleşen menkul kıymet yok. Önce menkul kıymeti ekleyin veya ticker sembolünü kontrol edin."
   },
   "tags": {
     "notFound": "{{ id }} kimliğine sahip etiket bulunamadı",

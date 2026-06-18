@@ -14,11 +14,12 @@ const WRITE_TOOLS = new Set([
   "create_transaction",
   "create_payee",
   "categorize_transaction",
+  "create_investment_transaction",
 ]);
 // Write tools whose repeated calls converge to the same state.
 const IDEMPOTENT_WRITES = new Set(["categorize_transaction"]);
 
-const EXPECTED_TOOL_COUNT = 27;
+const EXPECTED_TOOL_COUNT = 28;
 
 interface ToolProvider {
   register: (server: unknown, resolve?: unknown) => void;

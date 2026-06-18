@@ -64,7 +64,30 @@
     "cancelled": "Annulé",
     "expired": "Cette confirmation a expiré. Demandez à nouveau pour réessayer.",
     "error": "Impossible de terminer l'action.",
-    "retry": "Réessayer"
+    "retry": "Réessayer",
+    "createInvestmentTransactionTitle": "Créer cette transaction de placement ?",
+    "createdInvestmentTransaction": "Transaction de placement créée",
+    "viewInvestments": "Voir les placements",
+    "investmentType": "Type",
+    "security": "Titre",
+    "shares": "Actions",
+    "price": "Prix",
+    "commission": "Commission",
+    "total": "Total",
+    "cashImpact": "Impact sur les liquidités",
+    "investmentActions": {
+      "BUY": "Achat",
+      "SELL": "Vente",
+      "DIVIDEND": "Dividende",
+      "INTEREST": "Intérêts",
+      "CAPITAL_GAIN": "Plus-value",
+      "SPLIT": "Division",
+      "TRANSFER_IN": "Transfert entrant",
+      "TRANSFER_OUT": "Transfert sortant",
+      "REINVEST": "Réinvestissement",
+      "ADD_SHARES": "Ajouter des actions",
+      "REMOVE_SHARES": "Retirer des actions"
+    }
   },
   "table": {
     "downloadTitle": "Télécharger le tableau en CSV",

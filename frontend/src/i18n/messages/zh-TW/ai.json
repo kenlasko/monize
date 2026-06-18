@@ -64,7 +64,30 @@
     "cancelled": "已取消",
     "expired": "此確認已過期。請重新詢問以重試。",
     "error": "無法完成此操作。",
-    "retry": "重試"
+    "retry": "重試",
+    "createInvestmentTransactionTitle": "建立此投資交易？",
+    "createdInvestmentTransaction": "投資交易已建立",
+    "viewInvestments": "檢視投資",
+    "investmentType": "類型",
+    "security": "證券",
+    "shares": "股數",
+    "price": "價格",
+    "commission": "手續費",
+    "total": "合計",
+    "cashImpact": "現金影響",
+    "investmentActions": {
+      "BUY": "買入",
+      "SELL": "賣出",
+      "DIVIDEND": "股利",
+      "INTEREST": "利息",
+      "CAPITAL_GAIN": "資本利得",
+      "SPLIT": "股票分割",
+      "TRANSFER_IN": "轉入",
+      "TRANSFER_OUT": "轉出",
+      "REINVEST": "再投資",
+      "ADD_SHARES": "增加股數",
+      "REMOVE_SHARES": "減少股數"
+    }
   },
   "table": {
     "downloadTitle": "下載表格為 CSV",

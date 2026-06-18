@@ -256,6 +256,9 @@ describe("InvestmentTransactionsService", () => {
 
     securitiesService = {
       findOne: jest.fn().mockResolvedValue(mockSecurity),
+      resolveBySymbolOrName: jest
+        .fn()
+        .mockResolvedValue({ match: mockSecurity, candidates: [] }),
     };
 
     securityPriceService = {
@@ -5451,6 +5454,249 @@ describe("InvestmentTransactionsService", () => {
       await expect(
         service.getSecurityTransactionHistory(userId, securityId),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe("previewCreateInvestmentTransaction", () => {
+    beforeEach(() => {
+      accountsService.findOne.mockImplementation(
+        (_uid: string, aid: string) => {
+          if (aid === accountId) return Promise.resolve(mockInvestmentAccount);
+          if (aid === cashAccountId) return Promise.resolve(mockCashAccount);
+          if (aid === fundingAccountId)
+            return Promise.resolve(mockFundingAccount);
+          return Promise.reject(new NotFoundException("Account not found"));
+        },
+      );
+      securitiesService.resolveBySymbolOrName.mockResolvedValue({
+        match: mockSecurity,
+        candidates: [],
+      });
+      securitiesService.findOne.mockResolvedValue(mockSecurity);
+    });
+
+    it("resolves the security and computes total + cash impact for a BUY", async () => {
+      const preview = await service.previewCreateInvestmentTransaction(userId, {
+        accountId,
+        action: InvestmentAction.BUY,
+        transactionDate: "2026-01-15",
+        securityQuery: "aapl",
+        quantity: 10,
+        price: 150,
+        commission: 9.99,
+      });
+
+      expect(securitiesService.resolveBySymbolOrName).toHaveBeenCalledWith(
+        userId,
+        "aapl",
+      );
+      expect(preview).toMatchObject({
+        accountId,
+        accountName: "Brokerage Account",
+        accountCurrency: "USD",
+        action: InvestmentAction.BUY,
+        transactionDate: "2026-01-15",
+        securityId,
+        symbol: "AAPL",
+        securityName: "Apple Inc.",
+        securityCurrency: "USD",
+        quantity: 10,
+        price: 150,
+        commission: 9.99,
+        totalAmount: 1509.99,
+        exchangeRate: 1,
+        fundingAccountId: null,
+        // BUY debits the brokerage's linked cash account.
+        cashAccountName: "Cash Account",
+        cashCurrency: "USD",
+        cashAmount: -1509.99,
+        description: null,
+      });
+    });
+
+    it("credits the cash account on a SELL", async () => {
+      const preview = await service.previewCreateInvestmentTransaction(userId, {
+        accountId,
+        action: InvestmentAction.SELL,
+        transactionDate: "2026-01-15",
+        securityQuery: "AAPL",
+        quantity: 5,
+        price: 160,
+        commission: 9.99,
+      });
+      expect(preview.totalAmount).toBe(790.01);
+      expect(preview.cashAmount).toBe(790.01);
+    });
+
+    it("rounds quantity/price/commission to their column scale", async () => {
+      const preview = await service.previewCreateInvestmentTransaction(userId, {
+        accountId,
+        action: InvestmentAction.BUY,
+        transactionDate: "2026-01-15",
+        securityQuery: "AAPL",
+        quantity: 1.123456789,
+        price: 2.1234567,
+        commission: 0.12345,
+      });
+      expect(preview.quantity).toBe(1.12345679);
+      expect(preview.price).toBe(2.123457);
+      expect(preview.commission).toBe(0.1235);
+    });
+
+    it("uses an explicit funding account for the cash side", async () => {
+      const preview = await service.previewCreateInvestmentTransaction(userId, {
+        accountId,
+        action: InvestmentAction.BUY,
+        transactionDate: "2026-01-15",
+        securityQuery: "AAPL",
+        quantity: 10,
+        price: 150,
+        commission: 0,
+        fundingAccountId,
+      });
+      expect(preview.fundingAccountId).toBe(fundingAccountId);
+      expect(preview.cashAccountName).toBe("Checking Account");
+    });
+
+    it("reports no cash side for a share-only action", async () => {
+      const preview = await service.previewCreateInvestmentTransaction(userId, {
+        accountId,
+        action: InvestmentAction.ADD_SHARES,
+        transactionDate: "2026-01-15",
+        securityQuery: "AAPL",
+        quantity: 5,
+      });
+      expect(preview.totalAmount).toBe(0);
+      expect(preview.cashAccountName).toBeNull();
+      expect(preview.cashCurrency).toBeNull();
+      expect(preview.cashAmount).toBeNull();
+    });
+
+    it("converts the cash impact when the security currency differs", async () => {
+      // resolveCashExchangeRate reads the source currency from findOne.
+      securitiesService.findOne.mockResolvedValue({
+        ...mockSecurity,
+        currencyCode: "EUR",
+      });
+      securitiesService.resolveBySymbolOrName.mockResolvedValue({
+        match: { ...mockSecurity, currencyCode: "EUR" },
+        candidates: [],
+      });
+      exchangeRateService.getLatestRate.mockResolvedValue(1.1);
+
+      const preview = await service.previewCreateInvestmentTransaction(userId, {
+        accountId,
+        action: InvestmentAction.BUY,
+        transactionDate: "2026-01-15",
+        securityQuery: "AAPL",
+        quantity: 10,
+        price: 100,
+        commission: 0,
+      });
+      expect(preview.exchangeRate).toBe(1.1);
+      // 1000 EUR * 1.1 = 1100 USD, debited.
+      expect(preview.cashAmount).toBe(-1100);
+    });
+
+    it("sanitizes the description", async () => {
+      const preview = await service.previewCreateInvestmentTransaction(userId, {
+        accountId,
+        action: InvestmentAction.BUY,
+        transactionDate: "2026-01-15",
+        securityQuery: "AAPL",
+        quantity: 1,
+        price: 1,
+        description: "<script>alert(1)</script>Dividend reinvest",
+      });
+      expect(preview.description).not.toContain("<script>");
+      expect(preview.description).toContain("Dividend reinvest");
+    });
+
+    it("rejects a non-investment account", async () => {
+      accountsService.findOne.mockResolvedValue(mockFundingAccount);
+      await expect(
+        service.previewCreateInvestmentTransaction(userId, {
+          accountId: fundingAccountId,
+          action: InvestmentAction.BUY,
+          transactionDate: "2026-01-15",
+          securityQuery: "AAPL",
+          quantity: 1,
+          price: 1,
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("rejects an ambiguous security with the candidate list", async () => {
+      securitiesService.resolveBySymbolOrName.mockResolvedValue({
+        match: null,
+        candidates: [
+          { ...mockSecurity, symbol: "AAPL", name: "Apple Inc." },
+          { ...mockSecurity, symbol: "AAPL.L", name: "Apple London" },
+        ],
+      });
+      await expect(
+        service.previewCreateInvestmentTransaction(userId, {
+          accountId,
+          action: InvestmentAction.BUY,
+          transactionDate: "2026-01-15",
+          securityQuery: "Apple",
+          quantity: 1,
+          price: 1,
+        }),
+      ).rejects.toThrow(/multiple securities/i);
+    });
+
+    it("rejects an unknown security", async () => {
+      securitiesService.resolveBySymbolOrName.mockResolvedValue({
+        match: null,
+        candidates: [],
+      });
+      await expect(
+        service.previewCreateInvestmentTransaction(userId, {
+          accountId,
+          action: InvestmentAction.BUY,
+          transactionDate: "2026-01-15",
+          securityQuery: "ZZZZ",
+          quantity: 1,
+          price: 1,
+        }),
+      ).rejects.toThrow(/No security matches/i);
+    });
+
+    it("requires a security for a security-bound action", async () => {
+      await expect(
+        service.previewCreateInvestmentTransaction(userId, {
+          accountId,
+          action: InvestmentAction.BUY,
+          transactionDate: "2026-01-15",
+          quantity: 1,
+          price: 1,
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(securitiesService.resolveBySymbolOrName).not.toHaveBeenCalled();
+    });
+
+    it("requires a positive ratio for a SPLIT", async () => {
+      await expect(
+        service.previewCreateInvestmentTransaction(userId, {
+          accountId,
+          action: InvestmentAction.SPLIT,
+          transactionDate: "2026-01-15",
+          securityQuery: "AAPL",
+          quantity: 0,
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("allows a cash-only INTEREST with no security", async () => {
+      const preview = await service.previewCreateInvestmentTransaction(userId, {
+        accountId,
+        action: InvestmentAction.INTEREST,
+        transactionDate: "2026-01-15",
+        price: 25,
+      });
+      expect(preview.securityId).toBeNull();
+      expect(preview.cashAmount).toBe(25);
     });
   });
 });

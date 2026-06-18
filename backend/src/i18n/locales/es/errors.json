@@ -360,7 +360,9 @@
     "priceNotFound": "Precio del valor no encontrado",
     "invalidUuid": "UUID de {{ label }} no válido: {{ id }}",
     "symbolLength": "El símbolo debe tener entre 1 y 20 caracteres",
-    "symbolCharacters": "El símbolo solo puede contener letras, dígitos, puntos o guiones"
+    "symbolCharacters": "El símbolo solo puede contener letras, dígitos, puntos o guiones",
+    "ambiguousSecurity": "\"{{ query }}\" coincide con varios valores: {{ list }}. Use el símbolo exacto.",
+    "securityNotFoundByQuery": "Ningún valor coincide con \"{{ query }}\". Agregue el valor primero o verifique el símbolo."
   },
   "tags": {
     "notFound": "Etiqueta con ID {{ id }} no encontrada",

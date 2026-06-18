@@ -360,7 +360,9 @@
     "priceNotFound": "找不到證券價格",
     "invalidUuid": "無效的 {{ label }} UUID：{{ id }}",
     "symbolLength": "代碼必須介於 1 到 20 個字元之間",
-    "symbolCharacters": "代碼只能包含字母、數字、點或連字號"
+    "symbolCharacters": "代碼只能包含字母、數字、點或連字號",
+    "ambiguousSecurity": "\"{{ query }}\" 符合多個證券：{{ list }}。請使用準確的股票代碼。",
+    "securityNotFoundByQuery": "沒有證券符合 \"{{ query }}\"。請先新增該證券或檢查股票代碼。"
   },
   "tags": {
     "notFound": "找不到 ID 為 {{ id }} 的標籤",

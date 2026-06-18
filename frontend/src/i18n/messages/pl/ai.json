@@ -64,7 +64,30 @@
     "cancelled": "Anulowano",
     "expired": "To potwierdzenie wygasło. Zapytaj ponownie, aby spróbować jeszcze raz.",
     "error": "Nie udało się ukończyć akcji.",
-    "retry": "Spróbuj ponownie"
+    "retry": "Spróbuj ponownie",
+    "createInvestmentTransactionTitle": "Utworzyć tę transakcję inwestycyjną?",
+    "createdInvestmentTransaction": "Utworzono transakcję inwestycyjną",
+    "viewInvestments": "Zobacz inwestycje",
+    "investmentType": "Typ",
+    "security": "Papier wartościowy",
+    "shares": "Udziały",
+    "price": "Cena",
+    "commission": "Prowizja",
+    "total": "Suma",
+    "cashImpact": "Wpływ na gotówkę",
+    "investmentActions": {
+      "BUY": "Kupno",
+      "SELL": "Sprzedaż",
+      "DIVIDEND": "Dywidenda",
+      "INTEREST": "Odsetki",
+      "CAPITAL_GAIN": "Zysk kapitałowy",
+      "SPLIT": "Podział akcji",
+      "TRANSFER_IN": "Przeniesienie przychodzące",
+      "TRANSFER_OUT": "Przeniesienie wychodzące",
+      "REINVEST": "Reinwestycja",
+      "ADD_SHARES": "Dodaj udziały",
+      "REMOVE_SHARES": "Usuń udziały"
+    }
   },
   "table": {
     "downloadTitle": "Pobierz tabelę jako CSV",

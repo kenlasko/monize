@@ -636,4 +636,71 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
       required: ["name"],
     },
   },
+  {
+    name: "create_investment_transaction",
+    description:
+      "Propose creating a brokerage/investment-account transaction (any type: buy, sell, dividend, interest, capital gain, stock split, transfer in/out, dividend reinvestment, or share add/remove). This does NOT create anything immediately: it shows the user a confirmation card they must explicitly approve. Use it only when the user clearly asks to record an investment transaction in their latest message. The security is matched automatically by ticker symbol or by name; if the reference is ambiguous or unknown the tool returns an error listing candidates. Buys debit, and sells/dividends/interest/capital gains credit, the brokerage's linked cash account automatically -- do not also record a separate cash transaction. After calling this tool, briefly tell the user to review and approve the card; never claim the transaction was created.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        accountName: {
+          type: "string",
+          description:
+            "Investment/brokerage account for the transaction. Use an exact name from the user's account list.",
+        },
+        action: {
+          type: "string",
+          enum: [
+            "BUY",
+            "SELL",
+            "DIVIDEND",
+            "INTEREST",
+            "CAPITAL_GAIN",
+            "SPLIT",
+            "TRANSFER_IN",
+            "TRANSFER_OUT",
+            "REINVEST",
+            "ADD_SHARES",
+            "REMOVE_SHARES",
+          ],
+          description:
+            "Transaction type. Values must be UPPER_SNAKE_CASE exactly as listed.",
+        },
+        date: {
+          type: "string",
+          description: "Transaction date (YYYY-MM-DD).",
+        },
+        security: {
+          type: "string",
+          description:
+            "Security ticker symbol (e.g. 'AAPL') or name (e.g. 'Apple Inc.'). Required for BUY, SELL, SPLIT, REINVEST, ADD_SHARES, and REMOVE_SHARES; optional for cash-only INTEREST. Matched automatically to one of the user's securities.",
+        },
+        quantity: {
+          type: "number",
+          description:
+            "Number of shares (up to 8 decimal places). For a SPLIT, the post-split-to-pre-split ratio (e.g. 2 for a 2-for-1 split); must be greater than zero.",
+        },
+        price: {
+          type: "number",
+          description:
+            "Price per share (up to 6 decimal places). For DIVIDEND/INTEREST/CAPITAL_GAIN with no quantity, the total cash amount.",
+        },
+        commission: {
+          type: "number",
+          description:
+            "Commission or fee (up to 4 decimal places). Defaults to 0.",
+        },
+        fundingAccountName: {
+          type: "string",
+          description:
+            "Optional cash account that funds a buy or receives a sell's proceeds. Use an exact account name. Omit to use the brokerage account's own linked cash account.",
+        },
+        description: {
+          type: "string",
+          description: "Optional description or memo.",
+        },
+      },
+      required: ["accountName", "action", "date"],
+    },
+  },
 ];

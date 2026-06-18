@@ -227,6 +227,26 @@ export const createPayeeSchema = z.object({
   defaultCategoryName: z.string().max(100).optional(),
 });
 
+/**
+ * A non-negative share/price/commission quantity. Bounded the same way the
+ * money amount is; per-field decimal precision is enforced downstream by the
+ * CreateInvestmentTransactionDto (and the preview rounds to column scale), so
+ * the schema only needs to reject negatives and absurd magnitudes.
+ */
+const nonNegativeAmountSchema = z.number().finite().min(0).max(999999999999);
+
+export const createInvestmentTransactionSchema = z.object({
+  accountName: z.string().min(1).max(100),
+  action: investmentActionSchema,
+  date: isoDateSchema,
+  security: z.string().min(1).max(100).optional(),
+  quantity: nonNegativeAmountSchema.optional(),
+  price: nonNegativeAmountSchema.optional(),
+  commission: nonNegativeAmountSchema.optional(),
+  fundingAccountName: z.string().min(1).max(100).optional(),
+  description: z.string().max(500).optional(),
+});
+
 export const toolInputSchemas: Record<string, z.ZodSchema> = {
   query_transactions: queryTransactionsSchema,
   get_account_balances: getAccountBalancesSchema,
@@ -248,6 +268,7 @@ export const toolInputSchemas: Record<string, z.ZodSchema> = {
   create_transaction: createTransactionSchema,
   categorize_transaction: categorizeTransactionSchema,
   create_payee: createPayeeSchema,
+  create_investment_transaction: createInvestmentTransactionSchema,
 };
 
 /**

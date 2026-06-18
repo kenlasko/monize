@@ -318,6 +318,8 @@
     "accountMustBeInvestment": "Account must be of type INVESTMENT",
     "securityIdRequired": "Security ID is required for {{ action }} transactions",
     "splitRatioRequired": "Split ratio (quantity) must be greater than zero",
+    "ambiguousSecurity": "\"{{ query }}\" matches multiple securities: {{ list }}. Use the exact ticker symbol.",
+    "securityNotFoundByQuery": "No security matches \"{{ query }}\". Add the security first or check the ticker symbol.",
     "cannotHoldSecurities": "{{ label }} cannot hold securities",
     "sourceDestMustDiffer": "Source and destination accounts must be different",
     "bothAccountsMustBeInvestment": "Both accounts must be of type INVESTMENT",

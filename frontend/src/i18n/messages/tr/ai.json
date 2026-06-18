@@ -64,7 +64,30 @@
     "cancelled": "İptal edildi",
     "expired": "Bu onayın süresi doldu. Yeniden denemek için tekrar isteyin.",
     "error": "İşlem tamamlanamadı.",
-    "retry": "Tekrar dene"
+    "retry": "Tekrar dene",
+    "createInvestmentTransactionTitle": "Bu yatırım işlemi oluşturulsun mu?",
+    "createdInvestmentTransaction": "Yatırım işlemi oluşturuldu",
+    "viewInvestments": "Yatırımları görüntüle",
+    "investmentType": "Tür",
+    "security": "Menkul kıymet",
+    "shares": "Hisse",
+    "price": "Fiyat",
+    "commission": "Komisyon",
+    "total": "Toplam",
+    "cashImpact": "Nakit etkisi",
+    "investmentActions": {
+      "BUY": "Al",
+      "SELL": "Sat",
+      "DIVIDEND": "Temettü",
+      "INTEREST": "Faiz",
+      "CAPITAL_GAIN": "Sermaye Kazancı",
+      "SPLIT": "Bölünme",
+      "TRANSFER_IN": "Transfer Girişi",
+      "TRANSFER_OUT": "Transfer Çıkışı",
+      "REINVEST": "Yeniden Yatır",
+      "ADD_SHARES": "Hisse Ekle",
+      "REMOVE_SHARES": "Hisse Çıkar"
+    }
   },
   "table": {
     "downloadTitle": "Tabloyu CSV olarak indir",

@@ -360,7 +360,9 @@
     "priceNotFound": "Preço do título não encontrado",
     "invalidUuid": "UUID de {{ label }} inválido: {{ id }}",
     "symbolLength": "O símbolo deve ter entre 1 e 20 caracteres",
-    "symbolCharacters": "O símbolo deve conter apenas letras, dígitos, pontos ou hífens"
+    "symbolCharacters": "O símbolo deve conter apenas letras, dígitos, pontos ou hífens",
+    "ambiguousSecurity": "\"{{ query }}\" corresponde a vários títulos: {{ list }}. Use o símbolo exato.",
+    "securityNotFoundByQuery": "Nenhum título corresponde a \"{{ query }}\". Adicione o título primeiro ou verifique o símbolo."
   },
   "tags": {
     "notFound": "Etiqueta com ID {{ id }} não encontrada",

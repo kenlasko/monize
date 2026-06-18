@@ -64,7 +64,30 @@
     "cancelled": "[XX-Cancelled-XX]",
     "expired": "[XX-This confirmation expired. Ask again to retry.-XX]",
     "error": "[XX-Could not complete the action.-XX]",
-    "retry": "[XX-Try again-XX]"
+    "retry": "[XX-Try again-XX]",
+    "createInvestmentTransactionTitle": "[XX-Create this investment transaction?-XX]",
+    "createdInvestmentTransaction": "[XX-Investment transaction created-XX]",
+    "viewInvestments": "[XX-View investments-XX]",
+    "investmentType": "[XX-Type-XX]",
+    "security": "[XX-Security-XX]",
+    "shares": "[XX-Shares-XX]",
+    "price": "[XX-Price-XX]",
+    "commission": "[XX-Commission-XX]",
+    "total": "[XX-Total-XX]",
+    "cashImpact": "[XX-Cash impact-XX]",
+    "investmentActions": {
+      "BUY": "[XX-Buy-XX]",
+      "SELL": "[XX-Sell-XX]",
+      "DIVIDEND": "[XX-Dividend-XX]",
+      "INTEREST": "[XX-Interest-XX]",
+      "CAPITAL_GAIN": "[XX-Capital gain-XX]",
+      "SPLIT": "[XX-Split-XX]",
+      "TRANSFER_IN": "[XX-Transfer in-XX]",
+      "TRANSFER_OUT": "[XX-Transfer out-XX]",
+      "REINVEST": "[XX-Reinvest-XX]",
+      "ADD_SHARES": "[XX-Add shares-XX]",
+      "REMOVE_SHARES": "[XX-Remove shares-XX]"
+    }
   },
   "table": {
     "downloadTitle": "[XX-Download table as CSV-XX]",
