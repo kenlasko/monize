@@ -254,7 +254,7 @@ export class MsnFinanceService implements QuoteProvider {
     const fromEnv = configService?.get<string>("MSN_API_KEY")?.trim();
     this.apiKey = fromEnv && fromEnv.length > 0 ? fromEnv : null;
     if (!this.apiKey) {
-      this.logger.error(
+      this.logger.warn(
         "MSN_API_KEY env var is not set. The MSN Quotes endpoint requires " +
           "this key — live MSN quotes will fail until it is configured. " +
           "Set MSN_API_KEY in your environment to enable.",
@@ -928,9 +928,8 @@ export class MsnFinanceService implements QuoteProvider {
     opts: QuoteProviderOptions | undefined,
   ): Promise<QuoteResult | null> {
     if (!this.apiKey) {
-      this.logger.error(
-        `MSN Quotes skipped for ${symbol} (id=${instrumentId}): MSN_API_KEY env var is not set.`,
-      );
+      // MSN_API_KEY absence is already logged once at startup; skip silently
+      // here to avoid flooding the logs with a message per symbol per fetch.
       return null;
     }
 
