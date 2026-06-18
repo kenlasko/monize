@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@/test/render';
 import { InvestmentTransactionForm } from './InvestmentTransactionForm';
 import { investmentsApi } from '@/lib/investments';
+import { getLocalDateString } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 vi.mock('@/hooks/useNumberFormat', () => ({
@@ -471,6 +472,119 @@ describe('InvestmentTransactionForm', () => {
     expect(payload.fundingAccountId).toBe('a2');
   });
 
+  describe('Remembering the last entered date', () => {
+    const INVESTMENT_DATE_KEY = 'monize-last-investment-transaction-date';
+    const REGULAR_DATE_KEY = 'monize-last-transaction-date';
+
+    beforeEach(() => {
+      sessionStorage.clear();
+    });
+
+    async function createBuy() {
+      await waitFor(() => {
+        expect(screen.getByText('Brokerage Account')).toBeInTheDocument();
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Brokerage Account'), {
+          target: { value: 'a1' },
+        });
+      });
+      await waitFor(() => {
+        expect(screen.getByLabelText('Security')).toBeInTheDocument();
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Security'), {
+          target: { value: 'sec-1' },
+        });
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText('Create Transaction'));
+      });
+      await waitFor(() => {
+        expect(investmentsApi.createTransaction).toHaveBeenCalled();
+      });
+    }
+
+    it('pre-fills the date from a recently saved value', async () => {
+      sessionStorage.setItem(
+        INVESTMENT_DATE_KEY,
+        JSON.stringify({ date: '2026-02-20', savedAt: Date.now() - 10 * 60 * 1000 }),
+      );
+      render(<InvestmentTransactionForm accounts={accounts} />);
+      await waitFor(() => {
+        expect(screen.getByLabelText('Date')).toHaveValue('2026-02-20');
+      });
+    });
+
+    it('ignores and clears a saved date older than one hour', async () => {
+      sessionStorage.setItem(
+        INVESTMENT_DATE_KEY,
+        JSON.stringify({ date: '2026-02-20', savedAt: Date.now() - 61 * 60 * 1000 }),
+      );
+      render(<InvestmentTransactionForm accounts={accounts} />);
+      await waitFor(() => {
+        expect(screen.getByLabelText('Date')).toHaveValue(getLocalDateString());
+      });
+      expect(sessionStorage.getItem(INVESTMENT_DATE_KEY)).toBeNull();
+    });
+
+    it('saves the entered date after creating a transaction', async () => {
+      render(<InvestmentTransactionForm accounts={accounts} />);
+      await waitFor(() => {
+        expect(screen.getByText('Brokerage Account')).toBeInTheDocument();
+      });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Date'), {
+          target: { value: '2026-09-09' },
+        });
+      });
+      await createBuy();
+
+      const payload = vi.mocked(investmentsApi.createTransaction).mock
+        .calls[0][0] as any;
+      expect(payload.transactionDate).toBe('2026-09-09');
+      const stored = JSON.parse(
+        sessionStorage.getItem(INVESTMENT_DATE_KEY) as string,
+      );
+      expect(stored.date).toBe('2026-09-09');
+    });
+
+    it('does not write to the regular-transaction date key', async () => {
+      render(<InvestmentTransactionForm accounts={accounts} />);
+      await createBuy();
+      expect(sessionStorage.getItem(REGULAR_DATE_KEY)).toBeNull();
+      expect(sessionStorage.getItem(INVESTMENT_DATE_KEY)).not.toBeNull();
+    });
+
+    it('does not remember the date when editing an existing transaction', async () => {
+      const transaction = {
+        id: 't1',
+        accountId: 'a1',
+        action: 'BUY' as const,
+        transactionDate: '2024-01-01',
+        securityId: 'sec-1',
+        quantity: 10,
+        price: 50,
+        commission: 5,
+        totalAmount: 505,
+        description: '',
+      } as any;
+      render(
+        <InvestmentTransactionForm accounts={accounts} transaction={transaction} />,
+      );
+      await waitFor(() => {
+        expect(screen.getByText('Update Transaction')).toBeInTheDocument();
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText('Update Transaction'));
+      });
+      await waitFor(() => {
+        expect(investmentsApi.updateTransaction).toHaveBeenCalled();
+      });
+      expect(sessionStorage.getItem(INVESTMENT_DATE_KEY)).toBeNull();
+    });
+  });
+
   describe('Transfer between accounts', () => {
     const brokerageB = {
       id: 'b1',
@@ -796,6 +910,49 @@ describe('InvestmentTransactionForm', () => {
       );
       await waitFor(() => {
         expect(investmentsApi.getTransaction).toHaveBeenCalledWith('leg-in');
+      });
+      await waitFor(() => {
+        expect(screen.getByLabelText('From Account')).toHaveValue('a1');
+        expect(screen.getByLabelText('To Account')).toHaveValue('b1');
+      });
+    });
+
+    it('shows the destination account when the opened leg is the TRANSFER_IN side', async () => {
+      // Opening the IN leg (dest b1) must still resolve and display the source
+      // (a1) and destination (b1). The destination option only enters the list
+      // once the source is resolved, so an uncontrolled select would leave
+      // "To Account" blank -- the bug this guards against.
+      const transferInLeg = {
+        id: 'leg-in',
+        accountId: 'b1',
+        action: 'TRANSFER_IN' as const,
+        transactionDate: '2026-02-01',
+        securityId: 'sec-1',
+        quantity: 100,
+        price: 1.67,
+        commission: 0,
+        totalAmount: 0,
+        description: '',
+        linkedTransactionId: 'leg-out',
+      } as any;
+      vi.mocked(investmentsApi.getTransaction).mockResolvedValue({
+        id: 'leg-out',
+        accountId: 'a1',
+        action: 'TRANSFER_OUT',
+        securityId: 'sec-1',
+        quantity: 100,
+        price: 1.67,
+        linkedTransactionId: 'leg-in',
+      } as any);
+
+      render(
+        <InvestmentTransactionForm
+          accounts={editAccounts}
+          transaction={transferInLeg}
+        />,
+      );
+      await waitFor(() => {
+        expect(investmentsApi.getTransaction).toHaveBeenCalledWith('leg-out');
       });
       await waitFor(() => {
         expect(screen.getByLabelText('From Account')).toHaveValue('a1');

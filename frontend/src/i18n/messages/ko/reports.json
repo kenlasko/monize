@@ -996,6 +996,8 @@
   },
   "monthlyCategoryBreakdown": {
     "showPercentages": "백분율 표시",
+    "showDeviations": "편차 강조 표시",
+    "investmentIncome": "투자 수익",
     "noData": "이 기간에 데이터가 없습니다.",
     "category": "카테고리",
     "total": "합계",

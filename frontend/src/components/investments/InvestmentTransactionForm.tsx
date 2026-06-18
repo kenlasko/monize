@@ -15,7 +15,11 @@ import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { SecurityForm } from '@/components/securities/SecurityForm';
 import { investmentsApi } from '@/lib/investments';
-import { getLocalDateString } from '@/lib/utils';
+import {
+  LAST_INVESTMENT_TRANSACTION_DATE_KEY,
+  getRememberedTransactionDate,
+  rememberTransactionDate,
+} from '@/lib/lastTransactionDate';
 import { Account } from '@/types/account';
 import {
   InvestmentAction,
@@ -226,6 +230,10 @@ export function InvestmentTransactionForm({
           transactionDate: transaction.transactionDate,
           securityId: transaction.securityId || transaction.security?.id || '',
           fundingAccountId: transaction.fundingAccountId || '',
+          // The destination account for a transfer leg is resolved from the
+          // paired (linked) leg once it loads; start empty so the field is
+          // known to react-hook-form from the first render.
+          destinationAccountId: '',
           quantity: transaction.quantity ?? 0,
           // For amount-only actions, use totalAmount as the price field value
           price: amountOnlyActions.includes(transaction.action)
@@ -253,7 +261,9 @@ export function InvestmentTransactionForm({
       : {
           accountId: defaultAccountId || '',
           action: 'BUY',
-          transactionDate: getLocalDateString(),
+          transactionDate: getRememberedTransactionDate(
+            LAST_INVESTMENT_TRANSACTION_DATE_KEY,
+          ),
           fundingAccountId: '',
           destinationAccountId: '',
           quantity: undefined,
@@ -673,6 +683,10 @@ export function InvestmentTransactionForm({
           description: data.description,
         });
         toast.success(t('transactionForm.toastTransferred'));
+        rememberTransactionDate(
+          LAST_INVESTMENT_TRANSACTION_DATE_KEY,
+          data.transactionDate,
+        );
         onSuccess?.();
         return;
       }
@@ -808,6 +822,10 @@ export function InvestmentTransactionForm({
       } else {
         await investmentsApi.createTransaction(payload);
         toast.success(t('transactionForm.toastCreated'));
+        rememberTransactionDate(
+          LAST_INVESTMENT_TRANSACTION_DATE_KEY,
+          data.transactionDate,
+        );
       }
       onSuccess?.();
     } catch (error) {
@@ -937,11 +955,23 @@ export function InvestmentTransactionForm({
         />
       )}
 
-      {/* Destination account - for a transfer between accounts */}
+      {/* Destination account - for a transfer between accounts.
+          Controlled (rather than registered) so it reflects the value set
+          asynchronously when editing a transfer leg: the destination option
+          only enters the list once the source account is resolved, and an
+          uncontrolled select would silently drop a value not yet in its
+          options (the cause of the blank "To Account" on TRANSFER_IN). */}
       {transferMode && (
         <Select
           label={t('transactionForm.toAccount')}
           error={errors.destinationAccountId?.message}
+          value={watchedDestinationAccountId || ''}
+          onChange={(e) =>
+            setValue('destinationAccountId', e.target.value, {
+              shouldDirty: true,
+              shouldValidate: true,
+            })
+          }
           options={[
             { value: '', label: t('transactionForm.selectAccount') },
             ...destinationAccounts.map((a) => ({
@@ -949,7 +979,6 @@ export function InvestmentTransactionForm({
               label: `${a.name} (${a.currencyCode})`,
             })),
           ]}
-          {...register('destinationAccountId')}
         />
       )}
 

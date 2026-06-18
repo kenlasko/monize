@@ -17,6 +17,11 @@ import { Modal } from '@/components/ui/Modal';
 import { TagForm } from '@/components/tags/TagForm';
 import { transactionsApi } from '@/lib/transactions';
 import { getLocalDateString, resolveTimezone, isoToDatetimeLocal, datetimeLocalToIso, formatDatetimeLocal, parseDatetimeFromFormat } from '@/lib/utils';
+import {
+  LAST_TRANSACTION_DATE_KEY,
+  getRememberedTransactionDate,
+  rememberTransactionDate,
+} from '@/lib/lastTransactionDate';
 import { payeesApi } from '@/lib/payees';
 import { categoriesApi } from '@/lib/categories';
 import { accountsApi } from '@/lib/accounts';
@@ -200,21 +205,7 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
       : {
           accountId: defaultAccountId || '',
           categoryId: defaultCategoryId || '',
-          transactionDate: (() => {
-            const stored = sessionStorage.getItem('monize-last-transaction-date');
-            if (stored) {
-              try {
-                const { date, savedAt } = JSON.parse(stored);
-                if (Date.now() - savedAt < 60 * 60 * 1000) {
-                  return date;
-                }
-              } catch {
-                // Legacy non-JSON value, ignore
-              }
-              sessionStorage.removeItem('monize-last-transaction-date');
-            }
-            return getLocalDateString();
-          })(),
+          transactionDate: getRememberedTransactionDate(LAST_TRANSACTION_DATE_KEY),
           currencyCode: defaultCurrency,
           status: TransactionStatus.UNRECONCILED,
         },
@@ -784,7 +775,7 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
         } else {
           await transactionsApi.createTransfer(transferData);
           toast.success(t('form.toasts.transferCreated'));
-          sessionStorage.setItem('monize-last-transaction-date', JSON.stringify({ date: data.transactionDate, savedAt: Date.now() }));
+          rememberTransactionDate(LAST_TRANSACTION_DATE_KEY, data.transactionDate);
         }
         onSuccess?.();
         return;
@@ -846,7 +837,7 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
       } else {
         await transactionsApi.create(payload);
         toast.success(t('form.toasts.transactionCreated'));
-        sessionStorage.setItem('monize-last-transaction-date', JSON.stringify({ date: data.transactionDate, savedAt: Date.now() }));
+        rememberTransactionDate(LAST_TRANSACTION_DATE_KEY, data.transactionDate);
       }
       onSuccess?.();
     } catch (error) {

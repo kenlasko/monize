@@ -102,6 +102,12 @@ describe("parseCategoryIds()", () => {
     expect(parseCategoryIds("transfer")).toEqual(["transfer"]);
   });
 
+  it("accepts the special 'investment-income' value", () => {
+    expect(parseCategoryIds("investment-income")).toEqual([
+      "investment-income",
+    ]);
+  });
+
   it("accepts a mix of UUIDs and special values", () => {
     expect(parseCategoryIds(`${VALID_UUID},uncategorized`)).toEqual([
       VALID_UUID,

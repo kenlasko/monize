@@ -996,6 +996,8 @@
   },
   "monthlyCategoryBreakdown": {
     "showPercentages": "パーセンテージを表示",
+    "showDeviations": "偏差を強調表示",
+    "investmentIncome": "投資収益",
     "noData": "この期間のデータがありません。",
     "category": "カテゴリ",
     "total": "合計",

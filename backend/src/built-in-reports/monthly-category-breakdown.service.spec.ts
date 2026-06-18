@@ -363,4 +363,108 @@ describe("MonthlyCategoryBreakdownService", () => {
     expect(sql).toContain("asset_category_id");
     expect(sql).toContain("parent_transaction_id IS NULL");
   });
+
+  it("counts brokerage income legs as income, not transfers, in SQL", async () => {
+    await service.getMonthlyCategoryBreakdown(
+      mockUserId,
+      "2025-01-01",
+      "2025-12-31",
+    );
+
+    const incomeSql = transactionsRepository.query.mock.calls[0][0];
+    const transferSql = transactionsRepository.query.mock.calls[1][0];
+
+    // The income query keeps a transaction whose linked investment action is an
+    // income action (interest, dividends, capital gains) even though it is
+    // flagged is_transfer = true.
+    expect(incomeSql).toContain(
+      "it.action IN ('INTEREST', 'DIVIDEND', 'CAPITAL_GAIN')",
+    );
+    expect(incomeSql).toMatch(/t\.is_transfer = false\s*\n\s*OR\s/);
+    expect(incomeSql).toMatch(/t\.is_transfer = false[\s\S]*EXISTS/);
+
+    // The income query collapses those legs into the synthetic
+    // investment-income bucket instead of their (absent) real category.
+    expect(incomeSql).toContain("'investment-income'");
+    expect(incomeSql).toContain(" as category_id");
+
+    // Investment accounts are still excluded except for income legs sitting in
+    // an INVESTMENT_CASH sub-account, where brokerage interest/dividends land.
+    expect(incomeSql).toContain("a.account_sub_type = 'INVESTMENT_CASH'");
+    expect(incomeSql).toMatch(
+      /a\.account_type != 'INVESTMENT'\s*\n\s*OR\s*\(a\.account_sub_type = 'INVESTMENT_CASH'/,
+    );
+
+    // The transfer query drops those same legs so they are not double-reported.
+    expect(transferSql).toContain("t.is_transfer = true");
+    expect(transferSql).toMatch(/NOT\s*\n\s*EXISTS/);
+    expect(transferSql).toContain(
+      "it.action IN ('INTEREST', 'DIVIDEND', 'CAPITAL_GAIN')",
+    );
+  });
+
+  it("surfaces a brokerage income leg under the Investment Income bucket", async () => {
+    // The income query tags these legs with the synthetic investment-income
+    // category id; the row must carry the 'Investment Income' label, classify as
+    // income, and stay out of the transfers section.
+    transactionsRepository.query.mockResolvedValueOnce([
+      {
+        month: "2025-03",
+        category_id: "investment-income",
+        currency_code: "USD",
+        deposits: "42.50",
+        withdrawals: "0.00",
+      },
+    ]);
+    categoriesRepository.find.mockResolvedValue([]);
+
+    const result = await service.getMonthlyCategoryBreakdown(
+      mockUserId,
+      "2025-01-01",
+      "2025-12-31",
+    );
+
+    expect(result.data).toHaveLength(1);
+    const row = result.data[0];
+    expect(row.categoryId).toBe("investment-income");
+    expect(row.categoryName).toBe("Investment Income");
+    expect(row.parentId).toBeNull();
+    expect(row.isIncome).toBe(true);
+    expect(row.valuesByMonth["2025-03"]).toBe(42.5);
+    expect(result.transfers).toEqual([]);
+  });
+
+  it("keeps the investment-income bucket separate from uncategorized rows", async () => {
+    transactionsRepository.query.mockResolvedValueOnce([
+      {
+        month: "2025-03",
+        category_id: "investment-income",
+        currency_code: "USD",
+        deposits: "42.50",
+        withdrawals: "0.00",
+      },
+      {
+        month: "2025-03",
+        category_id: null,
+        currency_code: "USD",
+        deposits: "0.00",
+        withdrawals: "10.00",
+      },
+    ]);
+    categoriesRepository.find.mockResolvedValue([]);
+
+    const result = await service.getMonthlyCategoryBreakdown(
+      mockUserId,
+      "2025-01-01",
+      "2025-12-31",
+    );
+
+    const investment = result.data.find(
+      (r) => r.categoryId === "investment-income",
+    );
+    const uncategorized = result.data.find((r) => r.categoryId === null);
+    expect(investment?.categoryName).toBe("Investment Income");
+    expect(investment?.isIncome).toBe(true);
+    expect(uncategorized?.categoryName).toBe("Uncategorized");
+  });
 });

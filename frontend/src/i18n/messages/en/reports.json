@@ -996,6 +996,8 @@
   },
   "monthlyCategoryBreakdown": {
     "showPercentages": "Show percentages",
+    "showDeviations": "Highlight deviations",
+    "investmentIncome": "Investment Income",
     "noData": "No data for this period.",
     "category": "Category",
     "total": "Total",

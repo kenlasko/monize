@@ -996,6 +996,8 @@
   },
   "monthlyCategoryBreakdown": {
     "showPercentages": "Mostrar porcentagens",
+    "showDeviations": "Destacar desvios",
+    "investmentIncome": "Rendimentos de investimentos",
     "noData": "Sem dados para este período.",
     "category": "Categoria",
     "total": "Total",

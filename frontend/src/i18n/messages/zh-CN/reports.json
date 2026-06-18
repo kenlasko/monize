@@ -996,6 +996,8 @@
   },
   "monthlyCategoryBreakdown": {
     "showPercentages": "显示百分比",
+    "showDeviations": "突出显示偏差",
+    "investmentIncome": "投资收益",
     "noData": "此期间无数据。",
     "category": "分类",
     "total": "合计",

@@ -996,6 +996,8 @@
   },
   "monthlyCategoryBreakdown": {
     "showPercentages": "Показати відсотки",
+    "showDeviations": "Виділяти відхилення",
+    "investmentIncome": "Інвестиційний дохід",
     "noData": "Даних за цей період немає.",
     "category": "Категорія",
     "total": "Разом",

@@ -996,6 +996,8 @@
   },
   "monthlyCategoryBreakdown": {
     "showPercentages": "प्रतिशत दिखाएँ",
+    "showDeviations": "विचलन हाइलाइट करें",
+    "investmentIncome": "निवेश आय",
     "noData": "इस अवधि के लिए कोई डेटा नहीं।",
     "category": "श्रेणी",
     "total": "कुल",

@@ -996,6 +996,8 @@
   },
   "monthlyCategoryBreakdown": {
     "showPercentages": "Yüzdeleri göster",
+    "showDeviations": "Sapmaları vurgula",
+    "investmentIncome": "Yatırım Geliri",
     "noData": "Bu dönem için veri yok.",
     "category": "Kategori",
     "total": "Toplam",

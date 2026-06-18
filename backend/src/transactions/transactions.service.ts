@@ -36,6 +36,7 @@ import { BulkUpdateDto, BulkDeleteDto } from "./dto/bulk-update.dto";
 import { isTransactionInFuture } from "../common/date-utils";
 import { ActionHistoryService } from "../action-history/action-history.service";
 import { getAllCategoryIdsWithChildren } from "../common/category-tree.util";
+import { INVESTMENT_INCOME_PSEUDO_CATEGORY } from "../common/query-param-utils";
 import { formatCurrency } from "../common/format-currency.util";
 import {
   buildPaginationMeta,
@@ -709,13 +710,24 @@ export class TransactionsService {
   ): Promise<void> {
     const hasUncategorized = categoryIds.includes("uncategorized");
     const hasTransfer = categoryIds.includes("transfer");
+    const hasInvestmentIncome = categoryIds.includes(
+      INVESTMENT_INCOME_PSEUDO_CATEGORY,
+    );
     const regularCategoryIds = categoryIds.filter(
-      (id) => id !== "uncategorized" && id !== "transfer",
+      (id) =>
+        id !== "uncategorized" &&
+        id !== "transfer" &&
+        id !== INVESTMENT_INCOME_PSEUDO_CATEGORY,
     );
 
     let hasCondition = false;
 
-    if (hasUncategorized || hasTransfer || regularCategoryIds.length > 0) {
+    if (
+      hasUncategorized ||
+      hasTransfer ||
+      hasInvestmentIncome ||
+      regularCategoryIds.length > 0
+    ) {
       const uniqueCategoryIds =
         regularCategoryIds.length > 0
           ? await getAllCategoryIdsWithChildren(
@@ -738,6 +750,19 @@ export class TransactionsService {
             const method = hasCondition ? "orWhere" : "where";
             hasCondition = true;
             qb[method]("transaction.isTransfer = true");
+          }
+          if (hasInvestmentIncome) {
+            const method = hasCondition ? "orWhere" : "where";
+            hasCondition = true;
+            // The cash leg of a brokerage income event, tied (directly or via its
+            // linked brokerage-side leg) to an income-type investment
+            // transaction. It lands either on a plain cash account or on an
+            // INVESTMENT_CASH sub-account; the account filter keeps both while
+            // dropping the synthetic INVESTMENT_BROKERAGE offset leg, mirroring
+            // what the monthly breakdown counts as income (any is_transfer).
+            qb[method](
+              `(account.accountType != 'INVESTMENT' OR account.accountSubType = 'INVESTMENT_CASH') AND EXISTS (SELECT 1 FROM investment_transactions it WHERE it.action IN ('INTEREST', 'DIVIDEND', 'CAPITAL_GAIN') AND (it.transaction_id = transaction.id OR it.transaction_id = transaction.linkedTransactionId))`,
+            );
           }
           if (uniqueCategoryIds.length > 0) {
             const method = hasCondition ? "orWhere" : "where";

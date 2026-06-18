@@ -996,6 +996,8 @@
   },
   "monthlyCategoryBreakdown": {
     "showPercentages": "Mostra percentuali",
+    "showDeviations": "Evidenzia scostamenti",
+    "investmentIncome": "Redditi da investimenti",
     "noData": "Nessun dato per questo periodo.",
     "category": "Categoria",
     "total": "Totale",

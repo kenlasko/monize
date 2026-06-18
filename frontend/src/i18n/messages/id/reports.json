@@ -996,6 +996,8 @@
   },
   "monthlyCategoryBreakdown": {
     "showPercentages": "Tampilkan persentase",
+    "showDeviations": "Sorot deviasi",
+    "investmentIncome": "Pendapatan Investasi",
     "noData": "Tidak ada data untuk periode ini.",
     "category": "Kategori",
     "total": "Total",

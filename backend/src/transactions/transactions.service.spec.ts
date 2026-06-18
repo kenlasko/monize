@@ -1616,6 +1616,27 @@ describe("TransactionsService", () => {
       );
     });
 
+    it("handles 'investment-income' special category filter", async () => {
+      const mockQb = createMockQueryBuilder();
+      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
+      investmentTxRepository.find.mockResolvedValue([]);
+
+      await service.findAll("user-1", undefined, undefined, undefined, [
+        "investment-income",
+      ]);
+
+      expect(mockQb.andWhere).toHaveBeenCalledWith(expect.any(Brackets));
+      expect(mockQb.where).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "it.action IN ('INTEREST', 'DIVIDEND', 'CAPITAL_GAIN')",
+        ),
+      );
+      expect(mockQb.where).toHaveBeenCalledWith(
+        expect.stringContaining("account.accountType != 'INVESTMENT'"),
+      );
+    });
+
     it("handles combined uncategorized + transfer + regular category filters", async () => {
       const mockQb = createMockQueryBuilder();
       mockQb.getManyAndCount.mockResolvedValue([[], 0]);

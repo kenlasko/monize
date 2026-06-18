@@ -6,6 +6,14 @@ export const UUID_REGEX =
 export const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
+ * Synthetic category id for brokerage income (interest, dividends, capital
+ * gains) paid into a linked cash account. These cash legs carry no real
+ * category and are flagged as transfers by the importer, so reports and the
+ * transactions list address them through this pseudo-value instead of a UUID.
+ */
+export const INVESTMENT_INCOME_PSEUDO_CATEGORY = "investment-income";
+
+/**
  * Parse comma-separated UUIDs from query params, with backward compatibility
  * for singular param fallback.
  */
@@ -64,7 +72,11 @@ export function parseUuids(value?: string): string[] | undefined {
  * like 'uncategorized' and 'transfer' in addition to UUIDs.
  */
 export function parseCategoryIds(value?: string): string[] | undefined {
-  const specialCategoryIds = new Set(["uncategorized", "transfer"]);
+  const specialCategoryIds = new Set([
+    "uncategorized",
+    "transfer",
+    INVESTMENT_INCOME_PSEUDO_CATEGORY,
+  ]);
   if (!value) return undefined;
   const ids = value
     .split(",")

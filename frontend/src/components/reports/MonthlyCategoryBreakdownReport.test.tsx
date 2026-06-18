@@ -261,6 +261,43 @@ describe('MonthlyCategoryBreakdownReport', () => {
     expect(url).toContain('categoryIds=uncategorized');
   });
 
+  it('renders the synthetic investment-income bucket and drills into it', async () => {
+    mockGetMonthlyCategoryBreakdown.mockResolvedValue({
+      currency: 'USD',
+      months: ['2025-01', '2025-02', '2025-03'],
+      data: [
+        {
+          categoryId: 'investment-income',
+          // Backend ships an English fallback; the component localizes it.
+          categoryName: 'Investment Income',
+          parentId: null,
+          parentName: null,
+          parentIsIncome: null,
+          isIncome: true,
+          valuesByMonth: { '2025-01': 42.5, '2025-02': 0, '2025-03': 10 },
+          depositTotal: 52.5,
+          withdrawalTotal: 0,
+        },
+      ],
+      transfers: [],
+    });
+    render(<MonthlyCategoryBreakdownReport />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Investment Income')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Investment Income'));
+    });
+
+    expect(mockPush).toHaveBeenCalledTimes(1);
+    const url = mockPush.mock.calls[0][0] as string;
+    expect(url).toContain('/transactions?');
+    // Drills through the dedicated pseudo-filter, not a UUID.
+    expect(url).toContain('categoryIds=investment-income');
+  });
+
   it('drills down into every child category when a section header is clicked', async () => {
     mockGetMonthlyCategoryBreakdown.mockResolvedValue(sampleResponse);
     render(<MonthlyCategoryBreakdownReport />);
@@ -372,6 +409,65 @@ describe('MonthlyCategoryBreakdownReport', () => {
     const redCells = container.querySelectorAll('[class*="bg-red-"]');
     expect(greenCells.length).toBeGreaterThan(0);
     expect(redCells.length).toBeGreaterThan(0);
+  });
+
+  it('hides deviation highlighting when the toggle is switched off', async () => {
+    mockGetMonthlyCategoryBreakdown.mockResolvedValue(sampleResponse);
+    const { container } = render(<MonthlyCategoryBreakdownReport />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Groceries')).toBeInTheDocument();
+    });
+
+    // Level-3 deviation cells (bg-{red,green}-200) are unique to the highlight
+    // logic -- group headers use the -100 ramp, palettes the -50 ramp -- so they
+    // isolate the deviation styling from the rest of the table.
+    expect(
+      container.querySelectorAll('[class*="bg-green-200"]').length,
+    ).toBeGreaterThan(0);
+    expect(
+      container.querySelectorAll('[class*="bg-red-200"]').length,
+    ).toBeGreaterThan(0);
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Highlight deviations'));
+    });
+
+    await waitFor(() => {
+      expect(
+        container.querySelectorAll('[class*="bg-green-200"]').length,
+      ).toBe(0);
+    });
+    expect(container.querySelectorAll('[class*="bg-red-200"]').length).toBe(0);
+  });
+
+  it('persists the deviation toggle to localStorage and restores it', async () => {
+    mockGetMonthlyCategoryBreakdown.mockResolvedValue(sampleResponse);
+    const first = render(<MonthlyCategoryBreakdownReport />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Groceries')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Highlight deviations'));
+    });
+    await waitFor(() => {
+      expect(
+        first.container.querySelectorAll('[class*="bg-red-200"]').length,
+      ).toBe(0);
+    });
+
+    // Re-mounting reads the persisted toggle and stays muted without any
+    // further interaction.
+    first.unmount();
+    const second = render(<MonthlyCategoryBreakdownReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Groceries')).toBeInTheDocument();
+    });
+    expect(
+      second.container.querySelectorAll('[class*="bg-red-200"]').length,
+    ).toBe(0);
   });
 
   // Two expense subcategories under one parent: a normal spend and a

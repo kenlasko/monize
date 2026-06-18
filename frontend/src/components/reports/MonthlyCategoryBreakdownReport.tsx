@@ -23,6 +23,8 @@ import { exportToCsv } from '@/lib/csv-export';
 const RANGE_STORAGE_KEY = 'monize-reports-monthly-category-breakdown-range';
 const PERCENTAGES_STORAGE_KEY =
   'monize-reports-monthly-category-breakdown-percentages';
+const DEVIATIONS_STORAGE_KEY =
+  'monize-reports-monthly-category-breakdown-deviations';
 const SORT_COLUMN_STORAGE_KEY =
   'monize-reports-monthly-category-breakdown-sort-column';
 const SORT_DIR_STORAGE_KEY =
@@ -69,6 +71,12 @@ const TRANSFER_GROUP_CLASS =
 
 const OTHER_INCOME_KEY = '__other_income__';
 const OTHER_EXPENSE_KEY = '__other_expense__';
+
+// Synthetic category id the backend assigns to brokerage income (interest,
+// dividends, capital gains) cash legs; kept in sync with the backend's
+// INVESTMENT_INCOME_PSEUDO_CATEGORY. The label is localized here rather than
+// server-side, mirroring how the report translates its other synthetic buckets.
+const INVESTMENT_INCOME_CATEGORY_ID = 'investment-income';
 const isOtherKey = (key: string): boolean =>
   key === OTHER_INCOME_KEY || key === OTHER_EXPENSE_KEY;
 
@@ -308,9 +316,16 @@ export function MonthlyCategoryBreakdownReport() {
   const { formatMonth } = useDateFormat();
   const otherExpensesLabel = t('monthlyCategoryBreakdown.otherExpenses');
   const otherIncomeLabel = t('monthlyCategoryBreakdown.otherIncome');
+  const investmentIncomeLabel = t('monthlyCategoryBreakdown.investmentIncome');
   const [showPercentages, setShowPercentages] = useLocalStorage<boolean>(
     PERCENTAGES_STORAGE_KEY,
     false,
+  );
+  // Deviation highlighting (coloured cells flagging above/below-average months)
+  // is on by default; the toggle lets users mute it for a plain table.
+  const [showDeviations, setShowDeviations] = useLocalStorage<boolean>(
+    DEVIATIONS_STORAGE_KEY,
+    true,
   );
   const [sortColumn, setSortColumn] = useLocalStorage<string>(
     SORT_COLUMN_STORAGE_KEY,
@@ -374,7 +389,13 @@ export function MonthlyCategoryBreakdownReport() {
       ? data.months
       : data.months.filter((m) => m !== currentMonth);
     const monthCount = months.length || 1;
-    const rows = data.data;
+    // Localize the synthetic investment-income bucket's label; the backend ships
+    // a stable English fallback that we replace with the translated string.
+    const rows = data.data.map((row) =>
+      row.categoryId === INVESTMENT_INCOME_CATEGORY_ID
+        ? { ...row, categoryName: investmentIncomeLabel }
+        : row,
+    );
 
     // Group categories by parent. A category with a parent forms (or joins) a
     // section keyed by that parent; parentless categories collect into the
@@ -546,6 +567,7 @@ export function MonthlyCategoryBreakdownReport() {
     data,
     otherExpensesLabel,
     otherIncomeLabel,
+    investmentIncomeLabel,
     sortColumn,
     sortDir,
     includeCurrentMonth,
@@ -790,7 +812,9 @@ export function MonthlyCategoryBreakdownReport() {
             </td>
             {months.map((m) => {
               const value = row.values[m] || 0;
-              const cls = deviationClass(value, row.nonZeroAvg, row.nonZeroCount, row.isIncome);
+              const cls = showDeviations
+                ? deviationClass(value, row.nonZeroAvg, row.nonZeroCount, row.isIncome)
+                : '';
               return (
                 <td key={m} className={`px-2 py-1 text-right ${cls}`}>
                   {value !== 0 ? (
@@ -1115,6 +1139,15 @@ export function MonthlyCategoryBreakdownReport() {
                 size="sm"
               />
               <span>{t('monthlyCategoryBreakdown.showPercentages')}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              <ToggleSwitch
+                checked={showDeviations}
+                onChange={setShowDeviations}
+                label={t('monthlyCategoryBreakdown.showDeviations')}
+                size="sm"
+              />
+              <span>{t('monthlyCategoryBreakdown.showDeviations')}</span>
             </div>
             <button
               type="button"
