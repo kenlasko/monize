@@ -80,18 +80,29 @@ test.describe('Transactions', () => {
     });
 
     await page.goto('/transactions');
-    await page
-      .locator('tr', { hasText: txn.payeeName! })
-      .getByRole('button', { name: 'Delete', exact: true })
-      .click();
 
-    await page
-      .getByRole('dialog')
-      .getByRole('button', { name: 'Delete', exact: true })
-      .click();
+    // The list is client-rendered, so a click that lands before the row's
+    // delete handler hydrates is a no-op -- retry the click until the confirm
+    // dialog opens rather than clicking once into the void.
+    const dialog = page.getByRole('dialog');
+    await expect(async () => {
+      await page
+        .locator('tr', { hasText: txn.payeeName! })
+        .getByRole('button', { name: 'Delete', exact: true })
+        .click();
+      await expect(dialog).toBeVisible({ timeout: 2000 });
+    }).toPass({ timeout: 30000 });
+
+    await dialog.getByRole('button', { name: 'Delete', exact: true }).click();
 
     await expect(page.locator('tr', { hasText: txn.payeeName! })).toHaveCount(0);
-    await page.reload();
+
+    // The confirm triggers a background list refetch. Firefox can reject
+    // reload() with NS_ERROR_FAILURE when it fires while that request is still
+    // in flight (the navigation aborts it), so retry the reload until it lands.
+    await expect(async () => {
+      await page.reload();
+    }).toPass({ timeout: 30000 });
     await expect(page.locator('tr', { hasText: txn.payeeName! })).toHaveCount(0);
   });
 
