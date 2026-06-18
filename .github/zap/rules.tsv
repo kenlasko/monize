@@ -20,3 +20,19 @@
 # Informational caching guidance on static assets and pages; no sensitive API
 # responses are cached by the frontend (those are proxied straight from the API).
 10049	IGNORE	(Storable/Non-Cacheable content - informational cache guidance, no sensitive data cached)
+# React renders dynamic styles as inline style attributes (chart/entity colours,
+# layout) and Next.js injects critical inline <style> blocks; Next does not
+# support nonce/hash-based style-src, so 'unsafe-inline' is unavoidable. Scripts
+# remain locked down (nonce + strict-dynamic, no script unsafe-inline), so the
+# residual risk is style injection only.
+10055	IGNORE	(CSP style-src unsafe-inline - required by React inline styles / Next.js; script-src stays nonce + strict-dynamic)
+# Pattern-matcher false positive: ZAP's loose SQL regex matches strings inside
+# minified vendor chunks and static text (it even fires on robots.txt and
+# sitemap.xml). No SQL or server source is served to the client.
+10099	IGNORE	(Source Code Disclosure SQL - regex false positive on minified JS / static text, no source served)
+# Pattern-matcher false positive: base64 strings are inlined fonts/assets and
+# build metadata in the minified bundle, not disclosed secrets.
+10094	IGNORE	(Base64 Disclosure - inlined font/asset data in minified chunks, not sensitive)
+# The root "/" returns a 307 redirect to /login with no body; redirects legitimately
+# omit Content-Type, and X-Content-Type-Options: nosniff blocks any sniffing.
+10019	IGNORE	(Content-Type Header Missing - bodiless 307 redirect, mitigated by nosniff)

@@ -39,8 +39,13 @@ LABEL org.opencontainers.image.title="Monize Frontend" \
       org.opencontainers.image.revision="${GIT_SHA}" \
       org.opencontainers.image.created="${BUILD_DATE}" \
       org.opencontainers.image.version="${VERSION}" 
-# Install dumb-init for proper PID 1 signal handling
-RUN apk add --no-cache dumb-init
+# Install dumb-init for proper PID 1 signal handling. Drop the npm/npx/corepack
+# CLI bundled in the base image: the standalone server runs via `node server.js`,
+# so npm is never used at runtime, and its vendored deps (tar, ip-address,
+# brace-expansion) otherwise surface as image CVEs we cannot patch directly.
+RUN apk add --no-cache dumb-init && \
+    rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+           /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack
 
 WORKDIR /app
 

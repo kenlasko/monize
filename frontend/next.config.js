@@ -34,7 +34,12 @@ const nextConfig = {
     if (!disableHttpsHeaders) {
       securityHeaders.push(
         { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+        // COOP + COEP enable cross-origin isolation. Every subresource is
+        // same-origin (CSP is default-src 'self'; img/font allow only self,
+        // data:, blob:) and already carries Cross-Origin-Resource-Policy:
+        // same-origin, so require-corp loads cleanly without external opt-ins.
         { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+        { key: 'Cross-Origin-Embedder-Policy', value: 'require-corp' },
       );
     }
     return [{ source: '/(.*)', headers: securityHeaders }];
