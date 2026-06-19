@@ -118,6 +118,16 @@ describe("MCP tool spec compliance", () => {
       expect(config.annotations.openWorldHint).toBe(false);
     });
 
+    it("explicitly declares all four behavioural hints (no implicit defaults)", () => {
+      // Every tool must spell out all four hints rather than relying on the
+      // SDK's implicit defaults (destructiveHint defaults to true, which is
+      // wrong for our read-only tools).
+      expect(typeof config.annotations.readOnlyHint).toBe("boolean");
+      expect(typeof config.annotations.destructiveHint).toBe("boolean");
+      expect(typeof config.annotations.idempotentHint).toBe("boolean");
+      expect(typeof config.annotations.openWorldHint).toBe("boolean");
+    });
+
     it("sets read/write hints matching the tool's effect", () => {
       if (WRITE_TOOLS.has(name)) {
         expect(config.annotations.readOnlyHint).toBe(false);
@@ -128,7 +138,11 @@ describe("MCP tool spec compliance", () => {
           IDEMPOTENT_WRITES.has(name),
         );
       } else {
+        // Read-only tools never mutate state, so they are non-destructive and
+        // idempotent by definition.
         expect(config.annotations.readOnlyHint).toBe(true);
+        expect(config.annotations.destructiveHint).toBe(false);
+        expect(config.annotations.idempotentHint).toBe(true);
       }
     });
   });
