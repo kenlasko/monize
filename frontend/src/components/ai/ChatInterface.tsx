@@ -109,7 +109,7 @@ export function ChatInterface() {
     !statusLoading && aiStatus && !aiStatus.configured;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)]">
+    <div className="flex flex-col h-full min-h-0">
       {/* AI not configured banner */}
       {aiNotConfigured && (
         <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg">
