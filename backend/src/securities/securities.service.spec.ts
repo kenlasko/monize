@@ -75,6 +75,10 @@ describe("SecuritiesService", () => {
     mockSecurityPriceService = {
       backfillSecurity: jest.fn().mockResolvedValue(undefined),
       lookupSecurityCandidates: jest.fn().mockResolvedValue([]),
+      // Default: provider reports no currency, so previewCreateSecurity keeps
+      // the lookup's exchange-derived currency. Tests that exercise the
+      // authoritative-currency override set their own resolved value.
+      fetchAuthoritativeCurrency: jest.fn().mockResolvedValue(null),
     };
 
     mockActionHistoryService = {
@@ -144,6 +148,52 @@ describe("SecuritiesService", () => {
         quoteProvider: "yahoo",
         msnInstrumentId: null,
       });
+    });
+
+    it("prefers the live-quote currency over the exchange-guessed one (USD ETF on LSE)", async () => {
+      // Lookup guesses GBP from the LSE exchange, but the instrument trades in
+      // USD -- the live quote is authoritative.
+      mockSecurityPriceService.lookupSecurityCandidates.mockResolvedValue([
+        {
+          symbol: "AGGG.L",
+          name: "iShares Core Global Aggregate Bond UCITS ETF USD (Dist)",
+          exchange: "LSE",
+          securityType: "ETF",
+          currencyCode: "GBP",
+          provider: "yahoo" as const,
+          msnInstrumentId: null,
+        },
+      ]);
+      mockSecurityPriceService.fetchAuthoritativeCurrency.mockResolvedValue(
+        "USD",
+      );
+      securitiesRepository.findOne.mockResolvedValue(null);
+
+      const preview = await service.previewCreateSecurity("user-1", {
+        query: "AGGG.L",
+        exchange: "LSE",
+      });
+
+      expect(preview.currencyCode).toBe("USD");
+      expect(
+        mockSecurityPriceService.fetchAuthoritativeCurrency,
+      ).toHaveBeenCalledWith("user-1", "AGGG.L", "LSE");
+    });
+
+    it("keeps the lookup currency when no live-quote currency is available", async () => {
+      mockSecurityPriceService.lookupSecurityCandidates.mockResolvedValue([
+        lookupResult,
+      ]);
+      mockSecurityPriceService.fetchAuthoritativeCurrency.mockResolvedValue(
+        null,
+      );
+      securitiesRepository.findOne.mockResolvedValue(null);
+
+      const preview = await service.previewCreateSecurity("user-1", {
+        query: "AAPL",
+      });
+
+      expect(preview.currencyCode).toBe("USD");
     });
 
     it("lets the caller override exchange/type and pin as favourite", async () => {
@@ -244,6 +294,23 @@ describe("SecuritiesService", () => {
       });
 
       expect(preview.currencyCode).toBe("EUR");
+    });
+
+    it("prefers the authoritative live-quote currency over an explicit override", async () => {
+      mockSecurityPriceService.lookupSecurityCandidates.mockResolvedValue([
+        { ...lookupResult, currencyCode: "GBP" },
+      ]);
+      mockSecurityPriceService.fetchAuthoritativeCurrency.mockResolvedValue(
+        "USD",
+      );
+      securitiesRepository.findOne.mockResolvedValue(null);
+
+      const preview = await service.previewCreateSecurity("user-1", {
+        query: "AGGG.L",
+        currencyCode: "EUR",
+      });
+
+      expect(preview.currencyCode).toBe("USD");
     });
   });
 

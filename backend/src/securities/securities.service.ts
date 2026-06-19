@@ -619,10 +619,22 @@ export class SecuritiesService {
 
     const lookup = candidates[0];
 
-    // An explicit currency override wins over the provider's value and also
-    // rescues the case where the lookup couldn't determine one.
-    const currencyCode =
+    // Currency precedence: the instrument's live-quote currency is
+    // authoritative (the lookup guesses from the exchange, which is wrong for
+    // non-local-currency listings such as a USD/EUR ETF on the LSE); an
+    // explicit override is the fallback that also rescues a lookup the provider
+    // can't price; the exchange-derived guess is the last resort.
+    let currencyCode =
       input.currencyCode?.trim() || lookup.currencyCode?.trim();
+    const authoritativeCurrency =
+      await this.securityPriceService.fetchAuthoritativeCurrency(
+        userId,
+        lookup.symbol,
+        lookup.exchange,
+      );
+    if (authoritativeCurrency) {
+      currencyCode = authoritativeCurrency;
+    }
     if (!currencyCode) {
       throw new BadRequestException(
         tr(

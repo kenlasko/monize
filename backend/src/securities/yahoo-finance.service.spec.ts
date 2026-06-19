@@ -323,6 +323,46 @@ describe("YahooFinanceService", () => {
 
       expect(result!.regularMarketPrice).toBe(185.5);
     });
+
+    it("reports the instrument currency (USD passthrough)", async () => {
+      mockFetchResponse({
+        chart: {
+          result: [
+            {
+              meta: {
+                symbol: "AGGG.L",
+                currency: "USD",
+                regularMarketPrice: 4.37,
+              },
+            },
+          ],
+        },
+      });
+
+      const result = await service.fetchQuote("AGGG.L", "LSE");
+
+      expect(result!.currencyCode).toBe("USD");
+    });
+
+    it("normalizes a GBp (pence) currency to GBP", async () => {
+      mockFetchResponse({
+        chart: {
+          result: [
+            {
+              meta: {
+                symbol: "VOD.L",
+                currency: "GBp",
+                regularMarketPrice: 7000,
+              },
+            },
+          ],
+        },
+      });
+
+      const result = await service.fetchQuote("VOD.L", "LSE");
+
+      expect(result!.currencyCode).toBe("GBP");
+    });
   });
 
   describe("fetchQuotes", () => {

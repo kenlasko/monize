@@ -2295,4 +2295,40 @@ describe("SecurityPriceService", () => {
       expect(result.created).toBe(0);
     });
   });
+
+  describe("fetchAuthoritativeCurrency", () => {
+    it("returns the instrument's currency from a live quote", async () => {
+      const spy = jest
+        .spyOn(YahooFinanceService.prototype, "fetchQuote")
+        .mockResolvedValue({
+          symbol: "AGGG.L",
+          currencyCode: "USD",
+        } as never);
+
+      const currency = await service.fetchAuthoritativeCurrency(
+        "user-1",
+        "AGGG.L",
+        "LSE",
+      );
+
+      expect(currency).toBe("USD");
+      spy.mockRestore();
+    });
+
+    it("returns null when no provider reports a currency", async () => {
+      // Yahoo returns a quote without a currency; MSN is mocked to null.
+      const spy = jest
+        .spyOn(YahooFinanceService.prototype, "fetchQuote")
+        .mockResolvedValue({ symbol: "X" } as never);
+
+      const currency = await service.fetchAuthoritativeCurrency(
+        "user-1",
+        "X",
+        null,
+      );
+
+      expect(currency).toBeNull();
+      spy.mockRestore();
+    });
+  });
 });

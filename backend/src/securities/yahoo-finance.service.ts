@@ -357,6 +357,11 @@ export class YahooFinanceService implements QuoteProvider {
           regularMarketDayLow: convert(meta.regularMarketDayLow),
           regularMarketVolume: meta.regularMarketVolume,
           regularMarketTime: meta.regularMarketTime,
+          // Authoritative currency from the instrument itself. GBX/GBp (pence,
+          // the LSE quote unit) maps to GBP since prices above are converted to
+          // pounds; otherwise pass the reported currency (e.g. USD for a
+          // USD-denominated LSE ETF, where guessing from the exchange is wrong).
+          currencyCode: meta.currency ? (gbx ? "GBP" : meta.currency) : null,
           provider: "yahoo",
         };
       }

@@ -10,6 +10,14 @@ export interface QuoteResult {
   regularMarketTime?: number;
   provider?: QuoteProviderName;
   /**
+   * The instrument's actual trading currency as reported by the provider
+   * (GBX/GBp normalized to GBP). Authoritative — unlike a currency guessed from
+   * the exchange, this is correct for non-local-currency listings (e.g. a
+   * USD-denominated ETF on the LSE). May be absent if the provider doesn't
+   * report it.
+   */
+  currencyCode?: string | null;
+  /**
    * For MSN, the SecId actually used to fetch this quote. May differ from
    * the security's stored msnInstrumentId when the stored value was in the
    * legacy FullInstrument form and we re-resolved on the fly. Lets the

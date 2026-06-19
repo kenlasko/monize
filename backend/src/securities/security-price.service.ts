@@ -725,6 +725,41 @@ export class SecurityPriceService {
     return [];
   }
 
+  /**
+   * Fetch the instrument's authoritative trading currency from a live quote
+   * (provider `meta.currency`, GBX-normalized to GBP). Used at security-create
+   * time to correct the exchange-guessed currency from the lookup, which is
+   * wrong for non-local-currency listings (e.g. a USD ETF on the LSE). Returns
+   * null if no provider reports a currency, so callers keep their fallback.
+   */
+  async fetchAuthoritativeCurrency(
+    userId: string,
+    symbol: string,
+    exchange: string | null,
+  ): Promise<string | null> {
+    const contexts = await this.loadUserContexts([userId]);
+    const ctx = contexts.get(userId) || {
+      defaultQuoteProvider: DEFAULT_QUOTE_PROVIDER,
+      preferredExchanges: [],
+    };
+    const ordered = this.providers.resolveForSecurity(
+      { quoteProvider: null },
+      ctx.defaultQuoteProvider,
+    );
+    for (const p of ordered) {
+      try {
+        const quote = await p.fetchQuote(symbol, exchange);
+        const currency = quote?.currencyCode?.trim();
+        if (currency) return currency;
+      } catch (err) {
+        this.logger.warn(
+          `${p.name} currency lookup failed for ${symbol}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+    return null;
+  }
+
   async getLastUpdateTime(): Promise<Date | null> {
     const latest = await this.securityPriceRepository.findOne({
       where: {},
