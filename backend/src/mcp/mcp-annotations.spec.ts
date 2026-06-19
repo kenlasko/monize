@@ -31,11 +31,22 @@ function collectToolConfigs(): Array<{ name: string; config: any }> {
   // register(), so empty mocks are sufficient to capture the tool configs.
   const providers: ToolProvider[] = [
     new McpAccountsTools({} as any) as unknown as ToolProvider,
-    new McpTransactionsTools({} as any, {} as any) as unknown as ToolProvider,
+    new McpTransactionsTools(
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+    ) as unknown as ToolProvider,
     new McpCategoriesTools({} as any) as unknown as ToolProvider,
-    new McpPayeesTools({} as any) as unknown as ToolProvider,
+    new McpPayeesTools(
+      {} as any,
+      {} as any,
+      {} as any,
+    ) as unknown as ToolProvider,
     new McpReportsTools({} as any) as unknown as ToolProvider,
     new McpInvestmentsTools(
+      {} as any,
+      {} as any,
       {} as any,
       {} as any,
       {} as any,

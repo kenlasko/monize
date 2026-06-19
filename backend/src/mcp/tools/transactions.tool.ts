@@ -3,6 +3,9 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { TransactionsService } from "../../transactions/transactions.service";
 import { TransactionAnalyticsService } from "../../transactions/transaction-analytics.service";
+import { AiRelayService } from "../../ai/relay/ai-relay.service";
+import { AiActionBuilderService } from "../../ai/actions/ai-action-builder.service";
+import { RELAY_PREVIEW_SHOWN } from "../mcp-relay-confirm";
 import {
   UserContextResolver,
   requireScope,
@@ -36,6 +39,8 @@ export class McpTransactionsTools {
   constructor(
     private readonly transactionsService: TransactionsService,
     private readonly analyticsService: TransactionAnalyticsService,
+    private readonly relayService: AiRelayService,
+    private readonly actionBuilder: AiActionBuilderService,
   ) {}
 
   register(server: McpServer, resolve: UserContextResolver) {
@@ -528,6 +533,19 @@ export class McpTransactionsTools {
             });
           }
 
+          // When this call is serving a prompt the user typed in the Monize web
+          // chat (reverse relay), confirm there with the same approve/reject
+          // card the native AI Assistant uses, instead of an elicitation in the
+          // agent's MCP client. The browser commits on approval; nothing is
+          // written here.
+          const pendingAction = this.actionBuilder.buildCreateTransaction(
+            ctx.userId,
+            preview,
+          );
+          if (this.relayService.emitPendingAction(ctx.userId, pendingAction)) {
+            return toolResult(RELAY_PREVIEW_SHOWN);
+          }
+
           // Ask the client to confirm before persisting (AI Assistant parity).
           // Falls through to the write only when the client cannot show a dialog.
           const confirmLines = [
@@ -631,6 +649,16 @@ export class McpTransactionsTools {
             args.transactionId,
             args.categoryId,
           );
+          // Relay path: show the approve/reject card in the web chat (see
+          // create_transaction). Nothing is written here on success.
+          const pendingAction = this.actionBuilder.buildCategorizeTransaction(
+            ctx.userId,
+            preview,
+          );
+          if (this.relayService.emitPendingAction(ctx.userId, pendingAction)) {
+            return toolResult(RELAY_PREVIEW_SHOWN);
+          }
+
           const confirmLines = [
             "Apply this category change?",
             preview.payeeName ? `Payee: ${preview.payeeName}` : null,

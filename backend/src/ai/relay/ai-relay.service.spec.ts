@@ -86,6 +86,45 @@ describe("AiRelayService", () => {
     await expect(pending).resolves.toEqual({ text: "a" });
   });
 
+  describe("emitPendingAction", () => {
+    const action = {
+      actionId: "act-1",
+      type: "create_transaction",
+      expiresAt: Date.now() + 1000,
+      descriptor: { type: "create_transaction" },
+      signature: "sig",
+      preview: {},
+    } as any;
+
+    it("returns false when the user has no in-flight prompt", () => {
+      expect(service.emitPendingAction(USER, action)).toBe(false);
+    });
+
+    it("emits a pending_action event on the in-flight prompt's stream", async () => {
+      const emit = jest.fn();
+      service.enqueuePrompt(USER, "add a transaction", [], emit);
+      await service.waitForPrompt(USER);
+
+      expect(service.emitPendingAction(USER, action)).toBe(true);
+      expect(emit).toHaveBeenCalledWith({ type: "pending_action", action });
+    });
+
+    it("does not target another user's in-flight prompt", async () => {
+      const emit = jest.fn();
+      service.enqueuePrompt(USER, "q", [], emit);
+      await service.waitForPrompt(USER);
+
+      expect(service.emitPendingAction(OTHER, action)).toBe(false);
+      expect(emit).not.toHaveBeenCalled();
+    });
+
+    it("returns false when the in-flight prompt has no emit channel", async () => {
+      service.enqueuePrompt(USER, "q", []);
+      await service.waitForPrompt(USER);
+      expect(service.emitPendingAction(USER, action)).toBe(false);
+    });
+  });
+
   describe("status", () => {
     it("is offline before any agent polls", () => {
       expect(service.getStatus(USER)).toEqual({ state: "offline", queued: 0 });

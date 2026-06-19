@@ -101,6 +101,15 @@ Checklist for a new tool:
    `toolError` without writing. `"unsupported"` means the client can't show a
    dialog -- it still gates every tool call with its own approval prompt, so
    proceeding is not a consent bypass.
+   - **Relay first.** When the call is serving a prompt the user typed in the
+     Monize web chat (reverse relay), confirm there instead of in the agent's
+     MCP client: build the signed `PendingAiAction` with `AiActionBuilderService`
+     (shared with the AI Assistant tool executor) and call
+     `AiRelayService.emitPendingAction(userId, action)`. If it returns `true`,
+     the approve/reject card is shown in the browser and committed via
+     `/ai/actions/confirm` on approval -- return `RELAY_PREVIEW_SHOWN` and do
+     NOT write or `confirmWrite`. If it returns `false` (no in-flight relay
+     prompt), fall through to `confirmWrite` as above.
 6. Update `mcp-server.service.ts` count and `mcp.module.ts` if it's a new
    provider class.
 7. Add/extend tests (below). `mcp-annotations.spec.ts` enforces that every tool

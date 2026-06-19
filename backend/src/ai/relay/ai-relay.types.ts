@@ -22,6 +22,17 @@ export interface RelayResponse {
 }
 
 /**
+ * An intermediate SSE event pushed to the browser while its prompt is still
+ * in-flight (e.g. a `pending_action` write-confirmation card). Mirrors the SSE
+ * event shape the native AI chat stream emits, so the frontend chat store
+ * handles relay and native events identically.
+ */
+export type RelayServerEvent = {
+  type: string;
+  [key: string]: unknown;
+};
+
+/**
  * Tunnel status for the chat indicator.
  * - `offline`: no agent has polled recently.
  * - `listening`: an agent is connected and idle (a poll is parked or was very

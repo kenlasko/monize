@@ -237,9 +237,12 @@ export const createTransactionOutput = {
 };
 
 export const categorizeTransactionOutput = {
-  id: str,
-  categoryId: strNull,
-  message: str,
+  // Applied branch (direct MCP client).
+  id: str.optional(),
+  categoryId: strNull.optional(),
+  message: str.optional(),
+  // Relay branch: a confirmation card was shown in the web chat instead.
+  status: str.optional(),
 };
 
 // ---------------------------------------------------------------------------
@@ -282,9 +285,12 @@ export const getPayeesOutput = {
 };
 
 export const createPayeeOutput = {
-  id: str,
-  name: str,
-  message: str,
+  // Created branch (direct MCP client).
+  id: str.optional(),
+  name: str.optional(),
+  message: str.optional(),
+  // Relay branch: a confirmation card was shown in the web chat instead.
+  status: str.optional(),
 };
 
 // ---------------------------------------------------------------------------
@@ -481,6 +487,8 @@ export const createInvestmentTransactionOutput = {
   quantity: numNull.optional(),
   price: numNull.optional(),
   totalAmount: num.optional(),
+  // Relay branch: a confirmation card was shown in the web chat instead.
+  status: str.optional(),
 };
 
 // ---------------------------------------------------------------------------

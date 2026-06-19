@@ -11,6 +11,7 @@ describe("McpTransactionsTools", () => {
     server: { getClientCapabilities: jest.Mock; elicitInput: jest.Mock };
   };
   let elicitInput: jest.Mock;
+  let relayService: { emitPendingAction: jest.Mock };
   let resolve: jest.MockedFunction<UserContextResolver>;
   const handlers: Record<string, (...args: any[]) => any> = {};
 
@@ -41,9 +42,19 @@ describe("McpTransactionsTools", () => {
       getLlmPeriodComparison: jest.fn(),
     };
 
+    // Default: not serving a relayed prompt, so the tool uses its normal
+    // (direct MCP-client) confirmation path and the existing assertions hold.
+    relayService = { emitPendingAction: jest.fn().mockReturnValue(false) };
+    const actionBuilder = {
+      buildCreateTransaction: jest.fn().mockReturnValue({}),
+      buildCategorizeTransaction: jest.fn().mockReturnValue({}),
+    };
+
     tool = new McpTransactionsTools(
       transactionsService as any,
       analyticsService as any,
+      relayService as any,
+      actionBuilder as any,
     );
 
     elicitInput = jest.fn();
@@ -581,6 +592,48 @@ describe("McpTransactionsTools", () => {
       expect(result.content[0].text).toContain("declined");
     });
 
+    it("shows a web-chat card (no elicitation, no write) when serving a relayed prompt", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "read,write" });
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      // The user is driving from the Monize web chat via the reverse relay.
+      relayService.emitPendingAction.mockReturnValue(true);
+      transactionsService.previewCreate.mockResolvedValue({
+        accountId: "a1",
+        accountName: "Checking",
+        amount: -50,
+        transactionDate: "2025-01-15",
+        payeeId: "p1",
+        payeeName: "Store",
+        payeeMatched: true,
+        payeeWillBeCreated: false,
+        categoryId: null,
+        categoryName: null,
+        description: null,
+        currencyCode: "USD",
+      });
+
+      const result = await handlers["create_transaction"](
+        {
+          accountId: "a1",
+          amount: -50,
+          date: "2025-01-15",
+          payeeName: "Store",
+          dryRun: false,
+        },
+        { sessionId: "s1", requestId: "call-1" },
+      );
+
+      // Confirmation goes to the browser card, not an MCP-client dialog, and the
+      // write is deferred to /ai/actions/confirm.
+      expect(relayService.emitPendingAction).toHaveBeenCalled();
+      expect(elicitInput).not.toHaveBeenCalled();
+      expect(transactionsService.create).not.toHaveBeenCalled();
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.status).toBe("preview_shown");
+    });
+
     it("does not elicit a confirmation in dry-run mode", async () => {
       resolve.mockReturnValue({ userId: "u1", scopes: "read,write" });
       server.server.getClientCapabilities.mockReturnValue({
@@ -830,6 +883,11 @@ describe("McpTransactionsTools", () => {
       const freshTool = new McpTransactionsTools(
         transactionsService as any,
         analyticsService as any,
+        relayService as any,
+        {
+          buildCreateTransaction: jest.fn(),
+          buildCategorizeTransaction: jest.fn(),
+        } as any,
       );
       const freshHandlers: Record<string, (...args: any[]) => any> = {};
       const freshServer = {
@@ -894,12 +952,36 @@ describe("McpTransactionsTools", () => {
       expect(result.content[0].text).toContain("declined");
     });
 
+    it("shows a web-chat card (no elicitation, no write) when serving a relayed prompt", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "read,write" });
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      relayService.emitPendingAction.mockReturnValue(true);
+
+      const result = await handlers["categorize_transaction"](
+        { transactionId: "t1", categoryId: "c1" },
+        { sessionId: "s1", requestId: "call-1" },
+      );
+
+      expect(relayService.emitPendingAction).toHaveBeenCalled();
+      expect(elicitInput).not.toHaveBeenCalled();
+      expect(transactionsService.update).not.toHaveBeenCalled();
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.status).toBe("preview_shown");
+    });
+
     it("should enforce daily write rate limit for categorization", async () => {
       resolve.mockReturnValue({ userId: "u1", scopes: "read,write" });
 
       const freshTool = new McpTransactionsTools(
         transactionsService as any,
         analyticsService as any,
+        relayService as any,
+        {
+          buildCreateTransaction: jest.fn(),
+          buildCategorizeTransaction: jest.fn(),
+        } as any,
       );
       const freshHandlers: Record<string, (...args: any[]) => any> = {};
       const freshServer = {

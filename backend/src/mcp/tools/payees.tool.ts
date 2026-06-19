@@ -2,6 +2,9 @@ import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { PayeesService } from "../../payees/payees.service";
+import { AiRelayService } from "../../ai/relay/ai-relay.service";
+import { AiActionBuilderService } from "../../ai/actions/ai-action-builder.service";
+import { RELAY_PREVIEW_SHOWN } from "../mcp-relay-confirm";
 import {
   UserContextResolver,
   requireScope,
@@ -15,7 +18,11 @@ import { READ_ONLY, CREATE } from "../mcp-annotations";
 
 @Injectable()
 export class McpPayeesTools {
-  constructor(private readonly payeesService: PayeesService) {}
+  constructor(
+    private readonly payeesService: PayeesService,
+    private readonly relayService: AiRelayService,
+    private readonly actionBuilder: AiActionBuilderService,
+  ) {}
 
   register(server: McpServer, resolve: UserContextResolver) {
     server.registerTool(
@@ -93,6 +100,16 @@ export class McpPayeesTools {
               ? `Default category: ${preview.defaultCategoryName}`
               : null,
           ].filter((line): line is string => line !== null);
+          // Relay path: confirm in the web chat via the approve/reject card
+          // rather than an elicitation in the agent's MCP client.
+          const pendingAction = this.actionBuilder.buildCreatePayee(
+            ctx.userId,
+            preview,
+          );
+          if (this.relayService.emitPendingAction(ctx.userId, pendingAction)) {
+            return toolResult(RELAY_PREVIEW_SHOWN);
+          }
+
           const confirmation = await confirmWrite(
             server,
             confirmLines.join("\n"),

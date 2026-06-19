@@ -9,6 +9,7 @@ describe("McpPayeesTools", () => {
     server: { getClientCapabilities: jest.Mock; elicitInput: jest.Mock };
   };
   let elicitInput: jest.Mock;
+  let relayService: { emitPendingAction: jest.Mock };
   let resolve: jest.MockedFunction<UserContextResolver>;
   const handlers: Record<string, (...args: any[]) => any> = {};
 
@@ -24,7 +25,16 @@ describe("McpPayeesTools", () => {
       }),
     };
 
-    tool = new McpPayeesTools(payeesService as any);
+    // Default: not serving a relayed prompt, so the tool uses its normal
+    // (direct MCP-client) confirmation path and the existing assertions hold.
+    relayService = { emitPendingAction: jest.fn().mockReturnValue(false) };
+    const actionBuilder = { buildCreatePayee: jest.fn().mockReturnValue({}) };
+
+    tool = new McpPayeesTools(
+      payeesService as any,
+      relayService as any,
+      actionBuilder as any,
+    );
 
     elicitInput = jest.fn();
     server = {
@@ -105,6 +115,25 @@ describe("McpPayeesTools", () => {
       expect(payeesService.create).not.toHaveBeenCalled();
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("declined");
+    });
+
+    it("shows a web-chat card (no elicitation, no write) when serving a relayed prompt", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "read,write" });
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      relayService.emitPendingAction.mockReturnValue(true);
+
+      const result = await handlers["create_payee"](
+        { name: "New Payee" },
+        { sessionId: "s1", requestId: "call-1" },
+      );
+
+      expect(relayService.emitPendingAction).toHaveBeenCalled();
+      expect(elicitInput).not.toHaveBeenCalled();
+      expect(payeesService.create).not.toHaveBeenCalled();
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.status).toBe("preview_shown");
     });
 
     it("returns error when no user context for create_payee", async () => {

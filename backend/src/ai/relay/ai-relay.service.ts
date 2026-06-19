@@ -3,9 +3,11 @@ import { randomUUID } from "crypto";
 import {
   RelayClaimedPrompt,
   RelayResponse,
+  RelayServerEvent,
   RelayTunnelState,
   RelayTunnelStatus,
 } from "./ai-relay.types";
+import { PendingAiAction } from "../actions/ai-action.types";
 
 /**
  * How long the browser waits for the agent to answer before giving up. The
@@ -36,6 +38,13 @@ interface PendingPrompt {
   /** Browser-side timeout handle; cleared once the prompt settles. */
   timer: ReturnType<typeof setTimeout>;
   settled: boolean;
+  /**
+   * Pushes an intermediate SSE event to the browser stream still parked on this
+   * prompt. Used to deliver a write-confirmation card (`pending_action`) while
+   * the agent is working, so the user approves it in the web chat instead of in
+   * their MCP client. Undefined for callers that do not stream (e.g. tests).
+   */
+  emit?: (event: RelayServerEvent) => void;
 }
 
 interface Waiter {
@@ -76,6 +85,7 @@ export class AiRelayService {
     userId: string,
     prompt: string,
     history: Array<{ role: "user" | "assistant"; content: string }>,
+    emit?: (event: RelayServerEvent) => void,
   ): Promise<RelayResponse> {
     return new Promise<RelayResponse>((resolve, reject) => {
       const entry: PendingPrompt = {
@@ -85,6 +95,7 @@ export class AiRelayService {
         resolve,
         reject,
         settled: false,
+        emit,
         timer: setTimeout(() => {
           this.settleTimeout(userId, entry);
         }, BROWSER_WAIT_MS),
@@ -149,6 +160,33 @@ export class AiRelayService {
     clearTimeout(prompt.timer);
     prompt.resolve({ text });
     return true;
+  }
+
+  /**
+   * Push a write-confirmation card to the browser parked on this user's
+   * in-flight relay prompt. Called by the MCP write tools when they detect they
+   * are serving a relayed prompt: instead of an MCP-client elicitation (which
+   * the user would have to accept in their CLI), the approve/reject card is
+   * rendered in the web chat, exactly like the native AI Assistant.
+   *
+   * Returns true when a card was delivered (the caller is in relay context and
+   * must NOT perform the write -- the browser commits it via /ai/actions/confirm
+   * on approval). Returns false when the user has no in-flight relay prompt, so
+   * the caller falls back to its normal (direct MCP-client) confirmation.
+   */
+  emitPendingAction(userId: string, action: PendingAiAction): boolean {
+    for (const record of this.inFlight.values()) {
+      if (record.userId !== userId) {
+        continue;
+      }
+      const { prompt } = record;
+      if (prompt.settled || !prompt.emit) {
+        return false;
+      }
+      prompt.emit({ type: "pending_action", action });
+      return true;
+    }
+    return false;
   }
 
   /** Tunnel status for the chat indicator. */

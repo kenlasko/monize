@@ -87,6 +87,9 @@ export class AiRelayController {
         userId,
         dto.query,
         history,
+        // Lets a write tool render its confirmation card in this browser stream
+        // while the agent is still working on the prompt.
+        write,
       );
       // Emit `content` (not `assistant_text`): the chat store treats
       // assistant_text as ephemeral "thinking" text and only `content` creates

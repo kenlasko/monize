@@ -12,6 +12,7 @@ import { ScheduledTransactionsService } from "../../scheduled-transactions/sched
 import { TransactionsService } from "../../transactions/transactions.service";
 import { PayeesService } from "../../payees/payees.service";
 import { AiActionSigningService } from "../actions/ai-action-signing.service";
+import { AiActionBuilderService } from "../actions/ai-action-builder.service";
 
 describe("ToolExecutorService", () => {
   let service: ToolExecutorService;
@@ -306,6 +307,9 @@ describe("ToolExecutorService", () => {
         { provide: TransactionsService, useValue: transactions },
         { provide: PayeesService, useValue: payees },
         { provide: AiActionSigningService, useValue: signing },
+        // Real builder wrapping the mocked signing service, so the executor's
+        // pending-action construction (and signing.sign assertions) still run.
+        AiActionBuilderService,
       ],
     }).compile();
 

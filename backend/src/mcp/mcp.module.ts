@@ -11,6 +11,7 @@ import { BudgetsModule } from "../budgets/budgets.module";
 import { BuiltInReportsModule } from "../built-in-reports/built-in-reports.module";
 import { OAuthModule } from "../oauth/oauth.module";
 import { AiRelayModule } from "../ai/relay/ai-relay.module";
+import { AiActionBuilderModule } from "../ai/actions/ai-action-builder.module";
 
 import { McpServerService } from "./mcp-server.service";
 import { McpHttpController } from "./mcp-http.controller";
@@ -51,6 +52,7 @@ import { McpSpendingAnalysisPrompt } from "./prompts/spending-analysis.prompt";
     BuiltInReportsModule,
     OAuthModule,
     AiRelayModule,
+    AiActionBuilderModule,
   ],
   providers: [
     McpServerService,

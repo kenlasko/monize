@@ -11,6 +11,7 @@ describe("McpInvestmentsTools", () => {
     server: { getClientCapabilities: jest.Mock; elicitInput: jest.Mock };
   };
   let elicitInput: jest.Mock;
+  let relayService: { emitPendingAction: jest.Mock };
   let resolve: jest.MockedFunction<UserContextResolver>;
   const handlers: Record<string, (...args: any[]) => any> = {};
 
@@ -31,10 +32,19 @@ describe("McpInvestmentsTools", () => {
       create: jest.fn(),
     };
 
+    // Default: not serving a relayed prompt, so the tool uses its normal
+    // (direct MCP-client) confirmation path and the existing assertions hold.
+    relayService = { emitPendingAction: jest.fn().mockReturnValue(false) };
+    const actionBuilder = {
+      buildCreateInvestmentTransaction: jest.fn().mockReturnValue({}),
+    };
+
     tool = new McpInvestmentsTools(
       portfolioService as any,
       holdingsService as any,
       investmentTransactionsService as any,
+      relayService as any,
+      actionBuilder as any,
     );
 
     elicitInput = jest.fn();
@@ -518,6 +528,28 @@ describe("McpInvestmentsTools", () => {
       expect(elicitInput).toHaveBeenCalled();
       expect(investmentTransactionsService.create).not.toHaveBeenCalled();
       expect(result.isError).toBe(true);
+    });
+
+    it("shows a web-chat card (no elicitation, no write) when serving a relayed prompt", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "write" });
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      relayService.emitPendingAction.mockReturnValue(true);
+      investmentTransactionsService.previewCreateInvestmentTransaction.mockResolvedValue(
+        preview,
+      );
+
+      const result = await handlers["create_investment_transaction"](args, {
+        sessionId: "s1",
+        requestId: "call-1",
+      });
+
+      expect(relayService.emitPendingAction).toHaveBeenCalled();
+      expect(elicitInput).not.toHaveBeenCalled();
+      expect(investmentTransactionsService.create).not.toHaveBeenCalled();
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.status).toBe("preview_shown");
     });
 
     it("surfaces a 4xx from the shared preview", async () => {

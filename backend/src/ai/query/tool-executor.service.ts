@@ -5,19 +5,11 @@ import {
   Logger,
   HttpException,
 } from "@nestjs/common";
-import { randomUUID } from "crypto";
 import { AccountsService } from "../../accounts/accounts.service";
 import { TransactionsService } from "../../transactions/transactions.service";
 import { PayeesService } from "../../payees/payees.service";
-import { AiActionSigningService } from "../actions/ai-action-signing.service";
-import { AI_ACTION_TTL_MS } from "../actions/ai-action-signing.service";
-import {
-  CategorizeTransactionDescriptor,
-  CreatePayeeDescriptor,
-  CreateTransactionDescriptor,
-  CreateInvestmentTransactionDescriptor,
-  PendingAiAction,
-} from "../actions/ai-action.types";
+import { AiActionBuilderService } from "../actions/ai-action-builder.service";
+import { PendingAiAction } from "../actions/ai-action.types";
 import { AccountType } from "../../accounts/entities/account.entity";
 import { CategoriesService } from "../../categories/categories.service";
 import { TransactionAnalyticsService } from "../../transactions/transaction-analytics.service";
@@ -88,7 +80,7 @@ export class ToolExecutorService {
     private readonly transactionsService: TransactionsService,
     @Inject(forwardRef(() => PayeesService))
     private readonly payeesService: PayeesService,
-    private readonly signingService: AiActionSigningService,
+    private readonly actionBuilder: AiActionBuilderService,
   ) {}
 
   async execute(
@@ -402,39 +394,10 @@ export class ToolExecutorService {
       );
     }
 
-    const { actionId, expiresAt } = this.newActionEnvelope();
-    const descriptor: CreateTransactionDescriptor = {
-      type: "create_transaction",
+    const pendingAction = this.actionBuilder.buildCreateTransaction(
       userId,
-      actionId,
-      expiresAt,
-      accountId: preview.accountId,
-      amount: preview.amount,
-      transactionDate: preview.transactionDate,
-      payeeId: preview.payeeId,
-      payeeName: preview.payeeName,
-      createPayee: preview.payeeWillBeCreated,
-      categoryId: preview.categoryId,
-      description: preview.description,
-      currencyCode: preview.currencyCode,
-    };
-    const pendingAction: PendingAiAction = {
-      actionId,
-      type: "create_transaction",
-      expiresAt,
-      descriptor,
-      signature: this.signingService.sign(descriptor),
-      preview: {
-        accountName: preview.accountName,
-        amount: preview.amount,
-        currencyCode: preview.currencyCode,
-        transactionDate: preview.transactionDate,
-        payeeName: preview.payeeName,
-        payeeWillBeCreated: preview.payeeWillBeCreated,
-        categoryName: preview.categoryName,
-        description: preview.description,
-      },
-    };
+      preview,
+    );
 
     // When the name does not match an existing payee, tell the model whether a
     // new payee will be created (default) or it will be stored as free text so
@@ -485,30 +448,10 @@ export class ToolExecutorService {
       );
     }
 
-    const { actionId, expiresAt } = this.newActionEnvelope();
-    const descriptor: CategorizeTransactionDescriptor = {
-      type: "categorize_transaction",
+    const pendingAction = this.actionBuilder.buildCategorizeTransaction(
       userId,
-      actionId,
-      expiresAt,
-      transactionId: preview.transactionId,
-      categoryId: preview.categoryId,
-    };
-    const pendingAction: PendingAiAction = {
-      actionId,
-      type: "categorize_transaction",
-      expiresAt,
-      descriptor,
-      signature: this.signingService.sign(descriptor),
-      preview: {
-        payeeName: preview.payeeName,
-        amount: preview.amount,
-        transactionDate: preview.transactionDate,
-        accountName: preview.accountName,
-        currentCategoryName: preview.currentCategoryName,
-        newCategoryName: preview.newCategoryName,
-      },
-    };
+      preview,
+    );
 
     return {
       data: PENDING_ACTION_TOOL_RESULT,
@@ -549,26 +492,7 @@ export class ToolExecutorService {
       return this.toolErrorFromException(err, "Could not prepare the payee.");
     }
 
-    const { actionId, expiresAt } = this.newActionEnvelope();
-    const descriptor: CreatePayeeDescriptor = {
-      type: "create_payee",
-      userId,
-      actionId,
-      expiresAt,
-      name: preview.name,
-      defaultCategoryId: preview.defaultCategoryId,
-    };
-    const pendingAction: PendingAiAction = {
-      actionId,
-      type: "create_payee",
-      expiresAt,
-      descriptor,
-      signature: this.signingService.sign(descriptor),
-      preview: {
-        name: preview.name,
-        categoryName: preview.defaultCategoryName,
-      },
-    };
+    const pendingAction = this.actionBuilder.buildCreatePayee(userId, preview);
 
     return {
       data: PENDING_ACTION_TOOL_RESULT,
@@ -637,46 +561,10 @@ export class ToolExecutorService {
       );
     }
 
-    const { actionId, expiresAt } = this.newActionEnvelope();
-    const descriptor: CreateInvestmentTransactionDescriptor = {
-      type: "create_investment_transaction",
+    const pendingAction = this.actionBuilder.buildCreateInvestmentTransaction(
       userId,
-      actionId,
-      expiresAt,
-      accountId: preview.accountId,
-      action: preview.action,
-      transactionDate: preview.transactionDate,
-      securityId: preview.securityId,
-      fundingAccountId: preview.fundingAccountId,
-      quantity: preview.quantity,
-      price: preview.price,
-      commission: preview.commission,
-      exchangeRate: preview.exchangeRate,
-      description: preview.description,
-    };
-    const pendingAction: PendingAiAction = {
-      actionId,
-      type: "create_investment_transaction",
-      expiresAt,
-      descriptor,
-      signature: this.signingService.sign(descriptor),
-      preview: {
-        accountName: preview.accountName,
-        transactionDate: preview.transactionDate,
-        investmentAction: preview.action,
-        symbol: preview.symbol,
-        securityName: preview.securityName,
-        securityCurrency: preview.securityCurrency,
-        quantity: preview.quantity,
-        price: preview.price,
-        commission: preview.commission,
-        totalAmount: preview.totalAmount,
-        cashAccountName: preview.cashAccountName,
-        cashCurrency: preview.cashCurrency,
-        cashAmount: preview.cashAmount,
-        description: preview.description,
-      },
-    };
+      preview,
+    );
 
     const securityLabel = preview.symbol
       ? ` of ${preview.symbol}`
@@ -688,13 +576,6 @@ export class ToolExecutorService {
       summary: `Prepared a ${preview.action} investment transaction${securityLabel} in ${preview.accountName} dated ${preview.transactionDate}. Awaiting user confirmation.`,
       sources: [],
       pendingAction,
-    };
-  }
-
-  private newActionEnvelope(): { actionId: string; expiresAt: number } {
-    return {
-      actionId: randomUUID(),
-      expiresAt: Date.now() + AI_ACTION_TTL_MS,
     };
   }
 

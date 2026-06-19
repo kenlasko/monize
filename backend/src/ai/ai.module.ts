@@ -26,7 +26,7 @@ import { AiForecastController } from "./forecast/ai-forecast.controller";
 import { ForecastAggregatorService } from "./forecast/forecast-aggregator.service";
 import { AiActionsController } from "./actions/ai-actions.controller";
 import { AiActionsService } from "./actions/ai-actions.service";
-import { AiActionSigningService } from "./actions/ai-action-signing.service";
+import { AiActionBuilderModule } from "./actions/ai-action-builder.module";
 import { AiWriteLimiter } from "./actions/ai-write-limiter";
 import { AccountsModule } from "../accounts/accounts.module";
 import { CategoriesModule } from "../categories/categories.module";
@@ -57,6 +57,7 @@ import { ScheduledTransactionsModule } from "../scheduled-transactions/scheduled
     forwardRef(() => BudgetsModule),
     SecuritiesModule,
     forwardRef(() => ScheduledTransactionsModule),
+    AiActionBuilderModule,
   ],
   providers: [
     AiService,
@@ -72,7 +73,6 @@ import { ScheduledTransactionsModule } from "../scheduled-transactions/scheduled
     AiForecastService,
     ForecastAggregatorService,
     AiActionsService,
-    AiActionSigningService,
     AiWriteLimiter,
   ],
   controllers: [
