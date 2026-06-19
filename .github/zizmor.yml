@@ -8,12 +8,12 @@ rules:
     # docker/build-push-action (which uses its own type=gha buildx cache - that
     # caching is intentional for build speed). This is a low-confidence false
     # positive in our setup; revisit if we ever add `cache: 'npm'` here. The
-    # build-preview job (preview publish on push to main) follows the exact same
+    # build-preview job (the PR + main preview publish) follows the exact same
     # pattern -- setup-node without npm caching, plus a docker/build-push-action
     # type=gha buildx cache -- so it carries the same documented suppression.
     ignore:
-      - ci.yml:485:9
-      - ci.yml:830:9
+      - ci.yml:486:9
+      - ci.yml:854:9
 
   artipacked:
     # The release job intentionally keeps the GITHUB_TOKEN persisted on the
@@ -21,4 +21,4 @@ rules:
     # version bump and `gh release create` the tag. Every other checkout in this
     # repo sets persist-credentials: false.
     ignore:
-      - ci.yml:638:9
+      - ci.yml:639:9

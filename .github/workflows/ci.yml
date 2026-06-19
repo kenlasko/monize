@@ -7,11 +7,12 @@ on:
     branches: [main, develop]
   # Two publish paths share this file:
   #
-  #   * Preview (push to main): every merge to main builds + pushes a
-  #     lightweight `:<next-patch>-preview` image (e.g.
-  #     monize-frontend:1.11.2-preview) so merged-but-unreleased work is pullable
-  #     without cutting a formal release (issue #727). No version bump, no GitHub
-  #     release, no cosign/SBOM -- it just moves the `<next-patch>-preview` tag.
+  #   * Preview (open PR + push to main): builds a lightweight image so work is
+  #     pullable before a formal release (issue #727). A push to main moves a
+  #     single `:beta` tag (multi-arch); an open PR publishes `:pr-<number>`
+  #     (amd64 only -- no emulated arm64 -- to keep PR builds fast). No version
+  #     bump, no GitHub release, no cosign/SBOM. PR builds run only for same-repo
+  #     PRs (fork PRs get a read-only token and cannot push to GHCR).
   #
   #   * Release (workflow_dispatch): the formal release. Trigger from the
   #     Actions tab (or `gh workflow run "CI Pipeline" --ref main`) when you
@@ -717,27 +718,34 @@ jobs:
           fi
 
   # ---------------------------------------------------------------------------
-  # Preview publish (push to main)
+  # Preview publish (open PR + push to main)
   #
-  # Every merge to main publishes a lightweight preview image so the current
-  # main is pullable before a formal release (issue #727). It reuses the same
-  # full test/security gate as the release path (those jobs already run on every
-  # push to main, so this adds only the build), but stays deliberately light on
-  # the publish side: no version-bump commit, no GitHub release, no
-  # cosign/SBOM/provenance. It only moves a single `<next-patch>-preview` tag.
+  # Publishes a lightweight image so work is pullable before a formal release
+  # (issue #727), in two flavours:
+  #   * push to main  -> moves a single multi-arch `:beta` tag (latest main).
+  #   * open PR        -> publishes `:pr-<number>` (amd64 only) so a PR can be
+  #                       pulled and tested before it merges.
+  # It reuses the same full test/security gate as the release path (those jobs
+  # already run on push and PR), but stays deliberately light on the publish
+  # side: no version-bump commit, no GitHub release, no cosign/SBOM/provenance,
+  # and it never touches `:latest`.
   # ---------------------------------------------------------------------------
 
-  # Resolve the preview version ONCE so the parallel backend/frontend preview
-  # builds stamp identical values. The preview tag is the *next* patch release
-  # with a `-preview` suffix (e.g. current 1.11.1 -> 1.11.2-preview), so all the
-  # merges in a release cycle share one moving tag that is superseded by the
-  # real `1.11.2` image when that release is cut. No commit happens here.
+  # Resolve the tag, platforms and stamped version ONCE so the parallel
+  # backend/frontend builds stamp identical values. The version build-arg is the
+  # *next* patch release (off backend/package.json, which holds the last
+  # published version) suffixed with `-beta` or `-pr.<number>`. No commit here.
   prepare-preview:
     name: Prepare Preview
     runs-on: ubuntu-latest
-    # Preview path: runs on a push to main (a merge), never on the manual
-    # release dispatch (which the prepare-release/build-and-push path handles).
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Runs on a push to main (a merge) or on a same-repo PR targeting main.
+    # Fork PRs are excluded: their GITHUB_TOKEN is read-only and cannot push to
+    # GHCR. The manual release dispatch is handled by prepare-release instead.
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.base.ref == 'main' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
     needs:
       [
         backend-lint,
@@ -757,7 +765,9 @@ jobs:
     permissions:
       contents: read
     outputs:
-      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.resolve.outputs.tag }}
+      version: ${{ steps.resolve.outputs.version }}
+      platforms: ${{ steps.resolve.outputs.platforms }}
       build_date: ${{ steps.meta.outputs.build_date }}
       git_sha: ${{ steps.meta.outputs.git_sha }}
     steps:
@@ -770,18 +780,32 @@ jobs:
           node-version: 24
           package-manager-cache: false
 
-      # Compute <next-patch>-preview off the last published version in
-      # backend/package.json. The release job commits the version bump only
-      # after a release, so package.json always holds the previously published
-      # version -- patch+1 is therefore the next release this preview targets.
-      - name: Resolve preview version
-        id: version
+      # Decide the tag, platforms and stamped version from the trigger. A push
+      # to main publishes a multi-arch `:beta`; a PR publishes amd64-only
+      # `:pr-<number>`. The PR number is read via env (never interpolated into
+      # the script) to avoid template injection.
+      - name: Resolve preview build
+        id: resolve
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           CURRENT=$(node -p "require('./backend/package.json').version")
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
-          NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))-preview"
-          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
-          echo "Resolved preview version: $CURRENT -> $NEW_VERSION"
+          NEXT="$MAJOR.$MINOR.$((PATCH + 1))"
+          if [ "$EVENT" = "pull_request" ]; then
+            TAG="pr-${PR_NUMBER}"
+            VERSION="${NEXT}-pr.${PR_NUMBER}"
+            PLATFORMS="linux/amd64"
+          else
+            TAG="beta"
+            VERSION="${NEXT}-beta"
+            PLATFORMS="linux/amd64,linux/arm64"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "platforms=$PLATFORMS" >> "$GITHUB_OUTPUT"
+          echo "Resolved: event=$EVENT tag=$TAG version=$VERSION platforms=$PLATFORMS"
 
       - name: Set build metadata
         id: meta
@@ -794,8 +818,8 @@ jobs:
   # Build + push the two preview images IN PARALLEL (one matrix leg per image).
   # Unlike the release build-and-push, this deliberately skips cosign signing,
   # SBOM/provenance attestation and the Trivy gate: a preview is a convenience
-  # image, not a signed release. It pushes only the moving `<next-patch>-preview`
-  # tag and never touches `:latest`.
+  # image, not a signed release. It pushes only the single `:beta` / `:pr-<n>`
+  # tag resolved above and never touches `:latest`.
   build-preview:
     name: Build & Push Preview (${{ matrix.name }})
     runs-on: ubuntu-latest
@@ -832,9 +856,9 @@ jobs:
           node-version: 24
           package-manager-cache: false
 
-      # Stamp the preview version into this image's package.json so the built
-      # artifact reports e.g. 1.11.2-preview. Not committed -- preview never
-      # bumps the repo version.
+      # Stamp the resolved version into this image's package.json so the built
+      # artifact reports e.g. 1.11.2-beta or 1.11.2-pr.123. Not committed --
+      # preview never bumps the repo version.
       - name: Stamp version
         env:
           VERSION: ${{ needs.prepare-preview.outputs.version }}
@@ -861,14 +885,17 @@ jobs:
           file: ${{ matrix.file }}
           target: production
           push: true
-          platforms: linux/amd64,linux/arm64
+          # amd64-only for PRs, amd64+arm64 for the :beta main build (see
+          # prepare-preview). arm64 is emulated, so dropping it keeps PR builds
+          # fast.
+          platforms: ${{ needs.prepare-preview.outputs.platforms }}
           # Plain image: no provenance/SBOM attestation manifest (unlike the
           # signed release), keeping the preview build fast and the registry
           # listing clean.
           provenance: false
           sbom: false
           tags: |
-            ${{ matrix.image }}:${{ needs.prepare-preview.outputs.version }}
+            ${{ matrix.image }}:${{ needs.prepare-preview.outputs.tag }}
           build-args: |
             GIT_SHA=${{ needs.prepare-preview.outputs.git_sha }}
             BUILD_DATE=${{ needs.prepare-preview.outputs.build_date }}
@@ -891,13 +918,13 @@ jobs:
         env:
           NAME: ${{ matrix.name }}
           IMAGE: ${{ matrix.image }}
-          VERSION: ${{ needs.prepare-preview.outputs.version }}
+          TAG: ${{ needs.prepare-preview.outputs.tag }}
         run: |
           {
             echo "### ${NAME} preview image pushed"
             echo ""
             echo '```'
-            echo "${IMAGE}:${VERSION}"
+            echo "${IMAGE}:${TAG}"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
