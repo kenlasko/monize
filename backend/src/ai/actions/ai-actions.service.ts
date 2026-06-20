@@ -300,7 +300,12 @@ export class AiActionsService {
     const ids: string[] = [];
     const skipped: BulkCreateSkip[] = [];
 
-    for (let i = 0; i < descriptor.rows.length; i++) {
+    // Bound the iteration count by the batch cap (a constant) so the loop can
+    // never run unbounded on a tampered descriptor, even though the descriptor
+    // is signature-verified and assertBulkRowCount already rejects oversize
+    // input. Defense-in-depth; also clears CodeQL's loop-bound-injection flag.
+    const rowCount = Math.min(descriptor.rows.length, MAX_BULK_ACTION_ROWS);
+    for (let i = 0; i < rowCount; i++) {
       try {
         const id = await this.executeBatchRow(
           userId,
@@ -561,7 +566,8 @@ export class AiActionsService {
     }> = [];
     const originalIndex: number[] = [];
     const skipped: BulkCreateSkip[] = [];
-    for (let i = 0; i < descriptor.rows.length; i++) {
+    const rowCount = Math.min(descriptor.rows.length, MAX_BULK_ACTION_ROWS);
+    for (let i = 0; i < rowCount; i++) {
       const row = descriptor.rows[i];
       const validated = await this.tryValidatedDto(CreateTransactionDto, {
         accountId: row.accountId,
@@ -605,7 +611,8 @@ export class AiActionsService {
     const toCreate: CreateInvestmentTransactionDto[] = [];
     const originalIndex: number[] = [];
     const skipped: BulkCreateSkip[] = [];
-    for (let i = 0; i < descriptor.rows.length; i++) {
+    const rowCount = Math.min(descriptor.rows.length, MAX_BULK_ACTION_ROWS);
+    for (let i = 0; i < rowCount; i++) {
       const row = descriptor.rows[i];
       const validated = await this.tryValidatedDto(
         CreateInvestmentTransactionDto,
