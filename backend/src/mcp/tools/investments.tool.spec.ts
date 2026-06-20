@@ -75,15 +75,38 @@ describe("McpInvestmentsTools", () => {
       buildCreateInvestmentTransactions: jest
         .fn()
         .mockReturnValue({ type: "create_investment_transactions" }),
-      buildCreateSecurity: jest
-        .fn()
-        .mockReturnValue({ type: "create_security" }),
-      buildUpdateSecurity: jest
-        .fn()
-        .mockReturnValue({ type: "update_security" }),
-      buildDeleteSecurity: jest
-        .fn()
-        .mockReturnValue({ type: "delete_security" }),
+      buildCreateSecurity: jest.fn().mockReturnValue({
+        type: "create_security",
+        preview: { symbol: "AAPL", securityName: "Apple Inc." },
+        descriptor: {
+          type: "create_security",
+          symbol: "AAPL",
+          name: "Apple Inc.",
+          securityType: "STOCK",
+          exchange: "NASDAQ",
+          currencyCode: "USD",
+          isFavourite: false,
+          quoteProvider: "yahoo",
+          msnInstrumentId: null,
+        },
+      }),
+      buildUpdateSecurity: jest.fn().mockReturnValue({
+        type: "update_security",
+        preview: { symbol: "AAPL" },
+        descriptor: {
+          type: "update_security",
+          securityId: "sec-1",
+          securityType: "ETF",
+          exchange: "NYSE",
+          currencyCode: "USD",
+          isFavourite: true,
+        },
+      }),
+      buildDeleteSecurity: jest.fn().mockReturnValue({
+        type: "delete_security",
+        preview: { symbol: "AAPL", securityName: "Apple Inc." },
+        descriptor: { type: "delete_security", securityId: "sec-1" },
+      }),
       buildBatchActions: jest.fn().mockReturnValue({ type: "batch_actions" }),
       buildUpdateInvestmentTransaction: jest
         .fn()
@@ -615,6 +638,316 @@ describe("McpInvestmentsTools", () => {
       expect(securitiesService.create).toHaveBeenCalledTimes(2);
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed.count).toBe(2);
+    });
+
+    it("bulk-updates multiple securities via confirmation", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "write" });
+      securityPrepService.prepareUpdateSecurities.mockResolvedValue({
+        okPreviews: [
+          {
+            securityId: "s1",
+            symbol: "AAPL",
+            name: "Apple",
+            securityType: "ETF",
+            exchange: "NYSE",
+            currencyCode: "USD",
+            isFavourite: true,
+          },
+          {
+            securityId: "s2",
+            symbol: "MSFT",
+            name: "Microsoft",
+            securityType: "ETF",
+            exchange: "NYSE",
+            currencyCode: "USD",
+            isFavourite: true,
+          },
+        ],
+        okRows: [
+          {
+            securityId: "s1",
+            securityType: "ETF",
+            exchange: "NYSE",
+            currencyCode: "USD",
+            isFavourite: true,
+          },
+          {
+            securityId: "s2",
+            securityType: "ETF",
+            exchange: "NYSE",
+            currencyCode: "USD",
+            isFavourite: true,
+          },
+        ],
+        previewRows: [
+          { status: "ok", symbol: "AAPL" },
+          { status: "ok", symbol: "MSFT" },
+        ],
+        okIndex: [0, 1],
+        skipped: [],
+      });
+
+      const result = await handlers["manage_securities"](
+        {
+          operation: "update",
+          items: [
+            { symbol: "AAPL", isFavourite: true },
+            { symbol: "MSFT", isFavourite: true },
+          ],
+        },
+        { sessionId: "s1" },
+      );
+
+      expect(securitiesService.update).toHaveBeenCalledTimes(2);
+      expect(JSON.parse(result.content[0].text).count).toBe(2);
+    });
+
+    it("bulk-deletes multiple securities via confirmation", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "write" });
+      securityPrepService.prepareDeleteSecurities.mockResolvedValue({
+        okPreviews: [
+          { securityId: "s1", symbol: "AAPL", name: "Apple" },
+          { securityId: "s2", symbol: "MSFT", name: "Microsoft" },
+        ],
+        okRows: [{ securityId: "s1" }, { securityId: "s2" }],
+        previewRows: [
+          { status: "ok", symbol: "AAPL" },
+          { status: "ok", symbol: "MSFT" },
+        ],
+        okIndex: [0, 1],
+        skipped: [],
+      });
+
+      const result = await handlers["manage_securities"](
+        {
+          operation: "delete",
+          items: [{ symbol: "AAPL" }, { symbol: "MSFT" }],
+        },
+        { sessionId: "s1" },
+      );
+
+      expect(securitiesService.remove).toHaveBeenCalledTimes(2);
+      expect(JSON.parse(result.content[0].text).count).toBe(2);
+    });
+
+    it("individual mode commits one security card per item (non-relay)", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "write" });
+      securityPrepService.prepareCreateSecurities.mockResolvedValue({
+        okPreviews: [securityPreview, { ...securityPreview, symbol: "MSFT" }],
+        okRows: [{ symbol: "AAPL" }, { symbol: "MSFT" }],
+        previewRows: [
+          { status: "ok", symbol: "AAPL" },
+          { status: "ok", symbol: "MSFT" },
+        ],
+        okIndex: [0, 1],
+        skipped: [],
+      });
+
+      const result = await handlers["manage_securities"](
+        {
+          operation: "create",
+          items: [{ query: "AAPL" }, { query: "MSFT" }],
+          approvalMode: "individual",
+        },
+        { sessionId: "s1" },
+      );
+
+      expect(securitiesService.create).toHaveBeenCalledTimes(2);
+      expect(JSON.parse(result.content[0].text).count).toBe(2);
+    });
+
+    it("individual mode updates each security (non-relay commit)", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "write" });
+      securityPrepService.prepareUpdateSecurities.mockResolvedValue({
+        okPreviews: [
+          {
+            securityId: "s1",
+            symbol: "AAPL",
+            name: "Apple",
+            securityType: "ETF",
+            exchange: "NYSE",
+            currencyCode: "USD",
+            isFavourite: true,
+          },
+          {
+            securityId: "s2",
+            symbol: "MSFT",
+            name: "Microsoft",
+            securityType: "ETF",
+            exchange: "NYSE",
+            currencyCode: "USD",
+            isFavourite: true,
+          },
+        ],
+        okRows: [],
+        previewRows: [
+          { status: "ok", symbol: "AAPL" },
+          { status: "ok", symbol: "MSFT" },
+        ],
+        okIndex: [0, 1],
+        skipped: [],
+      });
+
+      await handlers["manage_securities"](
+        {
+          operation: "update",
+          items: [
+            { symbol: "AAPL", isFavourite: true },
+            { symbol: "MSFT", isFavourite: true },
+          ],
+          approvalMode: "individual",
+        },
+        { sessionId: "s1" },
+      );
+      expect(securitiesService.update).toHaveBeenCalledTimes(2);
+    });
+
+    it("individual mode deletes each security (non-relay commit)", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "write" });
+      securityPrepService.prepareDeleteSecurities.mockResolvedValue({
+        okPreviews: [
+          { securityId: "s1", symbol: "AAPL", name: "Apple" },
+          { securityId: "s2", symbol: "MSFT", name: "Microsoft" },
+        ],
+        okRows: [],
+        previewRows: [
+          { status: "ok", symbol: "AAPL" },
+          { status: "ok", symbol: "MSFT" },
+        ],
+        okIndex: [0, 1],
+        skipped: [],
+      });
+
+      await handlers["manage_securities"](
+        {
+          operation: "delete",
+          items: [{ symbol: "AAPL" }, { symbol: "MSFT" }],
+          approvalMode: "individual",
+        },
+        { sessionId: "s1" },
+      );
+      expect(securitiesService.remove).toHaveBeenCalledTimes(2);
+    });
+
+    it("declines a single update without writing", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "write" });
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput.mockResolvedValue({ action: "decline" });
+
+      const result = await handlers["manage_securities"](
+        { operation: "update", items: [{ symbol: "AAPL", isFavourite: true }] },
+        { sessionId: "s1" },
+      );
+      expect(securitiesService.update).not.toHaveBeenCalled();
+      expect(result.isError).toBe(true);
+    });
+
+    it("single update/delete go through the relay when relayed", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "write" });
+      relayService.emitPendingAction.mockReturnValue(true);
+
+      const upd = await handlers["manage_securities"](
+        { operation: "update", items: [{ symbol: "AAPL", isFavourite: true }] },
+        { sessionId: "s1", requestId: "r1" },
+      );
+      const del = await handlers["manage_securities"](
+        { operation: "delete", items: [{ symbol: "AAPL" }] },
+        { sessionId: "s1", requestId: "r1" },
+      );
+      expect(securitiesService.update).not.toHaveBeenCalled();
+      expect(securitiesService.remove).not.toHaveBeenCalled();
+      expect(JSON.parse(upd.content[0].text).status).toBe("preview_shown");
+      expect(JSON.parse(del.content[0].text).status).toBe("preview_shown");
+    });
+
+    it("bulk update/delete go through the relay when relayed", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "write" });
+      relayService.emitPendingAction.mockReturnValue(true);
+      const okPrev = {
+        okPreviews: [
+          {
+            securityId: "s1",
+            symbol: "AAPL",
+            name: "Apple",
+            securityType: "ETF",
+            exchange: "NYSE",
+            currencyCode: "USD",
+            isFavourite: true,
+          },
+          {
+            securityId: "s2",
+            symbol: "MSFT",
+            name: "MS",
+            securityType: "ETF",
+            exchange: "NYSE",
+            currencyCode: "USD",
+            isFavourite: true,
+          },
+        ],
+        okRows: [{ securityId: "s1" }, { securityId: "s2" }],
+        previewRows: [{ status: "ok" }, { status: "ok" }],
+        okIndex: [0, 1],
+        skipped: [{ index: 2, reason: "x" }],
+      };
+      securityPrepService.prepareUpdateSecurities.mockResolvedValue(okPrev);
+      securityPrepService.prepareDeleteSecurities.mockResolvedValue(okPrev);
+
+      const upd = await handlers["manage_securities"](
+        {
+          operation: "update",
+          items: [{ symbol: "AAPL" }, { symbol: "MSFT" }],
+        },
+        { sessionId: "s1", requestId: "r1" },
+      );
+      const del = await handlers["manage_securities"](
+        {
+          operation: "delete",
+          items: [{ symbol: "AAPL" }, { symbol: "MSFT" }],
+        },
+        { sessionId: "s1", requestId: "r1" },
+      );
+      expect(securitiesService.update).not.toHaveBeenCalled();
+      expect(securitiesService.remove).not.toHaveBeenCalled();
+      expect(JSON.parse(upd.content[0].text).status).toBe("preview_shown");
+      expect(JSON.parse(del.content[0].text).status).toBe("preview_shown");
+    });
+
+    it("dry-run previews update and delete without writing", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "write" });
+      securityPrepService.prepareUpdateSecurities.mockResolvedValue({
+        okPreviews: [],
+        okRows: [],
+        previewRows: [{ status: "ok", symbol: "AAPL" }],
+        okIndex: [],
+        skipped: [],
+      });
+      securityPrepService.prepareDeleteSecurities.mockResolvedValue({
+        okPreviews: [],
+        okRows: [],
+        previewRows: [{ status: "ok", symbol: "AAPL" }],
+        okIndex: [],
+        skipped: [],
+      });
+
+      const upd = await handlers["manage_securities"](
+        {
+          operation: "update",
+          items: [{ symbol: "AAPL", isFavourite: true }],
+          dryRun: true,
+        },
+        { sessionId: "s1" },
+      );
+      const del = await handlers["manage_securities"](
+        { operation: "delete", items: [{ symbol: "AAPL" }], dryRun: true },
+        { sessionId: "s1" },
+      );
+
+      expect(securitiesService.update).not.toHaveBeenCalled();
+      expect(securitiesService.remove).not.toHaveBeenCalled();
+      expect(JSON.parse(upd.content[0].text).operation).toBe("update");
+      expect(JSON.parse(del.content[0].text).operation).toBe("delete");
     });
   });
   describe("manage_investment_transactions", () => {

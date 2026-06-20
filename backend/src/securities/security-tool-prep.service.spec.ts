@@ -101,4 +101,38 @@ describe("SecurityToolPrepService", () => {
       securityName: "Apple Inc.",
     });
   });
+
+  it("flags update rows that fail to resolve", async () => {
+    securities.previewUpdateSecurity.mockRejectedValue(
+      new BadRequestException('No security matches "X"'),
+    );
+
+    const result = await prep.prepareUpdateSecurities(USER, [{ query: "X" }]);
+
+    expect(result.okRows).toEqual([]);
+    expect(result.skipped).toEqual([
+      { index: 0, reason: 'No security matches "X"' },
+    ]);
+    expect(result.previewRows[0]).toMatchObject({
+      status: "error",
+      symbol: "X",
+    });
+  });
+
+  it("flags delete rows that fail to resolve", async () => {
+    securities.previewDeleteSecurity.mockRejectedValue(
+      new BadRequestException('No security matches "X"'),
+    );
+
+    const result = await prep.prepareDeleteSecurities(USER, [{ query: "X" }]);
+
+    expect(result.okRows).toEqual([]);
+    expect(result.skipped).toEqual([
+      { index: 0, reason: 'No security matches "X"' },
+    ]);
+    expect(result.previewRows[0]).toMatchObject({
+      status: "error",
+      symbol: "X",
+    });
+  });
 });

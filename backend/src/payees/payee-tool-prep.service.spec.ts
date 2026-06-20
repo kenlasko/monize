@@ -81,6 +81,23 @@ describe("PayeeToolPrepService", () => {
         categoryName: "Cat2",
       });
     });
+
+    it("flags update rows that fail to resolve", async () => {
+      payees.previewUpdatePayee.mockRejectedValue(
+        new NotFoundException('Payee "Gone" not found'),
+      );
+
+      const result = await prep.prepareUpdatePayees(USER, [{ name: "Gone" }]);
+
+      expect(result.okRows).toEqual([]);
+      expect(result.skipped).toEqual([
+        { index: 0, reason: 'Payee "Gone" not found' },
+      ]);
+      expect(result.previewRows[0]).toMatchObject({
+        status: "error",
+        name: "Gone",
+      });
+    });
   });
 
   describe("delete", () => {
@@ -102,6 +119,22 @@ describe("PayeeToolPrepService", () => {
         status: "ok",
         name: "Keep",
       });
+    });
+  });
+
+  describe("error rows with a missing name fall back to null", () => {
+    it("create/update/delete error rows null the name when none was given", async () => {
+      payees.previewCreatePayee.mockRejectedValue(new Error("boom"));
+      payees.previewUpdatePayee.mockRejectedValue(new Error("boom"));
+      payees.previewDeletePayee.mockRejectedValue(new Error("boom"));
+
+      const c = await prep.prepareCreatePayees(USER, [{} as never]);
+      const u = await prep.prepareUpdatePayees(USER, [{} as never]);
+      const d = await prep.prepareDeletePayees(USER, [{} as never]);
+
+      expect(c.previewRows[0]).toMatchObject({ status: "error", name: null });
+      expect(u.previewRows[0]).toMatchObject({ status: "error", name: null });
+      expect(d.previewRows[0]).toMatchObject({ status: "error", name: null });
     });
   });
 });

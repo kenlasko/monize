@@ -1155,6 +1155,35 @@ describe("ToolExecutorService", () => {
       ).toBe(true);
     });
 
+    it("bulk create (bulk mode) splits standard and transfer rows into two cards", async () => {
+      const result = await service.execute(userId, "manage_transactions", {
+        operation: "create",
+        items: [
+          { accountName: "Checking", amount: -10, date: "2026-01-15" },
+          {
+            fromAccountName: "Checking",
+            toAccountName: "Savings",
+            amount: 100,
+            date: "2026-01-16",
+          },
+        ],
+        approvalMode: "bulk",
+      });
+      const types = (result.pendingActions ?? []).map((a) => a.type).sort();
+      expect(types).toEqual(["batch_actions", "create_transactions"]);
+    });
+
+    it("errors when none of the bulk create rows can be prepared", async () => {
+      const result = await service.execute(userId, "manage_transactions", {
+        operation: "create",
+        items: [
+          { accountName: "Ghost", amount: -10, date: "2026-01-15" },
+          { accountName: "Ghost", amount: -20, date: "2026-01-16" },
+        ],
+      });
+      expect(result.isError).toBe(true);
+    });
+
     it("does not leak the signature into the LLM-facing data", async () => {
       const result = await service.execute(userId, "manage_transactions", {
         operation: "create",
@@ -1207,6 +1236,50 @@ describe("ToolExecutorService", () => {
       });
       expect(result.isError).toBe(true);
     });
+
+    const TXID2 = "22222222-2222-4222-8222-222222222222";
+
+    it("bulk update (bulk mode) builds one batch_actions card", async () => {
+      const result = await service.execute(userId, "manage_transactions", {
+        operation: "update",
+        items: [
+          { transactionId: TXID, amount: -5 },
+          { transactionId: TXID2, amount: -6 },
+        ],
+        approvalMode: "bulk",
+      });
+      expect(result.pendingAction?.type).toBe("batch_actions");
+      expect(
+        (result.pendingAction?.descriptor as { operation?: string }).operation,
+      ).toBe("update");
+    });
+
+    it("individual update returns one card per item", async () => {
+      const result = await service.execute(userId, "manage_transactions", {
+        operation: "update",
+        items: [
+          { transactionId: TXID, amount: -5 },
+          { transactionId: TXID2, amount: -6 },
+        ],
+        approvalMode: "individual",
+      });
+      expect(result.pendingActions).toHaveLength(2);
+    });
+
+    it("bulk update errors when none can be prepared", async () => {
+      transactions.previewUpdate.mockRejectedValue(
+        new BadRequestException("nope"),
+      );
+      const result = await service.execute(userId, "manage_transactions", {
+        operation: "update",
+        items: [
+          { transactionId: TXID, amount: -5 },
+          { transactionId: TXID2, amount: -6 },
+        ],
+        approvalMode: "individual",
+      });
+      expect(result.isError).toBe(true);
+    });
   });
 
   describe("manage_transactions (delete, human-in-the-loop)", () => {
@@ -1231,6 +1304,33 @@ describe("ToolExecutorService", () => {
         approvalMode: "bulk",
       });
       expect(result.pendingAction?.type).toBe("batch_actions");
+    });
+
+    it("individual delete returns one card per item", async () => {
+      const result = await service.execute(userId, "manage_transactions", {
+        operation: "delete",
+        items: [
+          { transactionId: "11111111-1111-4111-8111-111111111111" },
+          { transactionId: "22222222-2222-4222-8222-222222222222" },
+        ],
+        approvalMode: "individual",
+      });
+      expect(result.pendingActions).toHaveLength(2);
+    });
+
+    it("individual delete errors when none can be prepared", async () => {
+      transactions.previewDelete.mockRejectedValue(
+        new BadRequestException("nope"),
+      );
+      const result = await service.execute(userId, "manage_transactions", {
+        operation: "delete",
+        items: [
+          { transactionId: "11111111-1111-4111-8111-111111111111" },
+          { transactionId: "22222222-2222-4222-8222-222222222222" },
+        ],
+        approvalMode: "individual",
+      });
+      expect(result.isError).toBe(true);
     });
   });
 
@@ -1764,16 +1864,85 @@ describe("ToolExecutorService", () => {
     it("bulk create returns one batch pending action", async () => {
       const result = await service.execute(userId, "manage_payees", {
         operation: "create",
-        items: [
-          { name: "Acme", categoryName: "Dining" },
-          { name: "Beta" },
-        ],
+        items: [{ name: "Acme", categoryName: "Dining" }, { name: "Beta" }],
       });
 
       expect(result.pendingAction?.type).toBe("batch_actions");
       expect(
         (result.pendingAction?.descriptor as { operation?: string }).operation,
       ).toBe("create_payee");
+    });
+
+    it("bulk update returns one batch pending action", async () => {
+      const result = await service.execute(userId, "manage_payees", {
+        operation: "update",
+        items: [
+          { name: "Acme", newName: "Acme Inc" },
+          { name: "Beta", newName: "Beta Inc" },
+        ],
+      });
+      expect(
+        (result.pendingAction?.descriptor as { operation?: string }).operation,
+      ).toBe("update_payee");
+    });
+
+    it("individual update returns one card per item", async () => {
+      const result = await service.execute(userId, "manage_payees", {
+        operation: "update",
+        items: [
+          { name: "Acme", newName: "Acme Inc" },
+          { name: "Beta", newName: "Beta Inc" },
+        ],
+        approvalMode: "individual",
+      });
+      expect(result.pendingActions).toHaveLength(2);
+    });
+
+    it("bulk delete returns one batch pending action", async () => {
+      const result = await service.execute(userId, "manage_payees", {
+        operation: "delete",
+        items: [{ name: "Acme" }, { name: "Beta" }],
+      });
+      expect(
+        (result.pendingAction?.descriptor as { operation?: string }).operation,
+      ).toBe("delete_payee");
+    });
+
+    it("individual delete returns one card per item", async () => {
+      const result = await service.execute(userId, "manage_payees", {
+        operation: "delete",
+        items: [{ name: "Acme" }, { name: "Beta" }],
+        approvalMode: "individual",
+      });
+      expect(result.pendingActions).toHaveLength(2);
+    });
+
+    it("bulk create reports skipped rows that fail to prepare", async () => {
+      payees.previewCreatePayee
+        .mockResolvedValueOnce({
+          name: "Acme",
+          defaultCategoryId: null,
+          defaultCategoryName: null,
+        })
+        .mockRejectedValueOnce(new BadRequestException("dup"));
+
+      const result = await service.execute(userId, "manage_payees", {
+        operation: "create",
+        items: [{ name: "Acme" }, { name: "Dup" }],
+      });
+      expect(result.pendingAction?.type).toBe("batch_actions");
+      expect(result.summary).toContain("skipped");
+    });
+
+    it("errors when no payee could be prepared", async () => {
+      payees.previewCreatePayee.mockRejectedValue(
+        new BadRequestException("dup"),
+      );
+      const result = await service.execute(userId, "manage_payees", {
+        operation: "create",
+        items: [{ name: "A" }, { name: "B" }],
+      });
+      expect(result.isError).toBe(true);
     });
   });
 
@@ -1833,6 +2002,105 @@ describe("ToolExecutorService", () => {
       expect(
         (result.pendingAction?.descriptor as { operation?: string }).operation,
       ).toBe("create_security");
+    });
+
+    it("bulk update returns one batch pending action", async () => {
+      const result = await service.execute(userId, "manage_securities", {
+        operation: "update",
+        items: [
+          { symbol: "AAPL", isFavourite: true },
+          { symbol: "MSFT", isFavourite: true },
+        ],
+      });
+      expect(
+        (result.pendingAction?.descriptor as { operation?: string }).operation,
+      ).toBe("update_security");
+    });
+
+    it("individual update returns one card per item", async () => {
+      const result = await service.execute(userId, "manage_securities", {
+        operation: "update",
+        items: [
+          { symbol: "AAPL", isFavourite: true },
+          { symbol: "MSFT", isFavourite: true },
+        ],
+        approvalMode: "individual",
+      });
+      expect(result.pendingActions).toHaveLength(2);
+    });
+
+    it("bulk delete returns one batch pending action", async () => {
+      const result = await service.execute(userId, "manage_securities", {
+        operation: "delete",
+        items: [{ symbol: "AAPL" }, { symbol: "MSFT" }],
+      });
+      expect(
+        (result.pendingAction?.descriptor as { operation?: string }).operation,
+      ).toBe("delete_security");
+    });
+
+    it("individual delete returns one card per item", async () => {
+      const result = await service.execute(userId, "manage_securities", {
+        operation: "delete",
+        items: [{ symbol: "AAPL" }, { symbol: "MSFT" }],
+        approvalMode: "individual",
+      });
+      expect(result.pendingActions).toHaveLength(2);
+    });
+
+    it("bulk create reports skipped securities that fail to resolve", async () => {
+      securities.previewCreateSecurity
+        .mockResolvedValueOnce({
+          symbol: "AAPL",
+          name: "Apple Inc.",
+          securityType: "STOCK",
+          exchange: "NASDAQ",
+          currencyCode: "USD",
+          isFavourite: false,
+          quoteProvider: "yahoo",
+          msnInstrumentId: null,
+        })
+        .mockRejectedValueOnce(new BadRequestException("not found"));
+
+      const result = await service.execute(userId, "manage_securities", {
+        operation: "create",
+        items: [{ query: "AAPL" }, { query: "ZZZZ" }],
+      });
+      expect(result.pendingAction?.type).toBe("batch_actions");
+      expect(result.summary).toContain("skipped");
+    });
+
+    it("errors when no security could be prepared", async () => {
+      securities.previewCreateSecurity.mockRejectedValue(
+        new BadRequestException("not found"),
+      );
+      const result = await service.execute(userId, "manage_securities", {
+        operation: "create",
+        items: [{ query: "A" }, { query: "B" }],
+      });
+      expect(result.isError).toBe(true);
+    });
+
+    it("errors when no security update could be prepared", async () => {
+      securities.previewUpdateSecurity.mockRejectedValue(
+        new BadRequestException("not found"),
+      );
+      const result = await service.execute(userId, "manage_securities", {
+        operation: "update",
+        items: [{ symbol: "A" }, { symbol: "B" }],
+      });
+      expect(result.isError).toBe(true);
+    });
+
+    it("errors when no security delete could be prepared", async () => {
+      securities.previewDeleteSecurity.mockRejectedValue(
+        new BadRequestException("not found"),
+      );
+      const result = await service.execute(userId, "manage_securities", {
+        operation: "delete",
+        items: [{ symbol: "A" }, { symbol: "B" }],
+      });
+      expect(result.isError).toBe(true);
     });
 
     it("surfaces a 4xx lookup failure as a tool error without a pending action", async () => {

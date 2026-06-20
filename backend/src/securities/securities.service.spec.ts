@@ -1097,4 +1097,109 @@ describe("SecuritiesService", () => {
       expect(result).toEqual({ match: null, candidates: [] });
     });
   });
+
+  describe("manage security previews", () => {
+    const sec = {
+      ...mockSecurity,
+      id: "sec-a",
+      symbol: "AAPL",
+      name: "Apple Inc.",
+      securityType: "STOCK",
+      exchange: "NASDAQ",
+      currencyCode: "USD",
+      isFavourite: false,
+    };
+
+    function qb(result: { getOne?: unknown; getMany?: unknown[] }) {
+      return {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(result.getOne ?? null),
+        getMany: jest.fn().mockResolvedValue(result.getMany ?? []),
+      };
+    }
+
+    it("previewUpdateSecurity merges supplied fields over the resolved security", async () => {
+      securitiesRepository.createQueryBuilder.mockReturnValueOnce(
+        qb({ getOne: sec }),
+      );
+
+      const preview = await service.previewUpdateSecurity("user-1", {
+        query: "AAPL",
+        securityType: "ETF",
+        isFavourite: true,
+      });
+
+      expect(preview).toEqual({
+        securityId: "sec-a",
+        symbol: "AAPL",
+        name: "Apple Inc.",
+        securityType: "ETF",
+        exchange: "NASDAQ",
+        currencyCode: "USD",
+        isFavourite: true,
+      });
+    });
+
+    it("previewUpdateSecurity keeps current values when no change is supplied", async () => {
+      securitiesRepository.createQueryBuilder.mockReturnValueOnce(
+        qb({ getOne: sec }),
+      );
+
+      const preview = await service.previewUpdateSecurity("user-1", {
+        query: "AAPL",
+      });
+
+      expect(preview.securityType).toBe("STOCK");
+      expect(preview.exchange).toBe("NASDAQ");
+      expect(preview.isFavourite).toBe(false);
+    });
+
+    it("previewDeleteSecurity resolves the security by symbol", async () => {
+      securitiesRepository.createQueryBuilder.mockReturnValueOnce(
+        qb({ getOne: sec }),
+      );
+
+      const preview = await service.previewDeleteSecurity("user-1", {
+        query: "AAPL",
+      });
+
+      expect(preview).toEqual({
+        securityId: "sec-a",
+        symbol: "AAPL",
+        name: "Apple Inc.",
+      });
+    });
+
+    it("throws NotFound when the security cannot be resolved", async () => {
+      securitiesRepository.createQueryBuilder
+        .mockReturnValueOnce(qb({ getOne: null }))
+        .mockReturnValueOnce(qb({ getMany: [] }))
+        .mockReturnValueOnce(qb({ getMany: [] }));
+
+      await expect(
+        service.previewDeleteSecurity("user-1", { query: "ZZZZ" }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it("throws BadRequest when the reference is ambiguous", async () => {
+      securitiesRepository.createQueryBuilder
+        .mockReturnValueOnce(qb({ getOne: null }))
+        .mockReturnValueOnce(
+          qb({
+            getMany: [
+              { ...sec, id: "s1", symbol: "AAPL" },
+              { ...sec, id: "s2", symbol: "AAPL.L" },
+            ],
+          }),
+        );
+
+      await expect(
+        service.previewUpdateSecurity("user-1", { query: "Apple" }),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
 });
