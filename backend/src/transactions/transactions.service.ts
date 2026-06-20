@@ -711,6 +711,7 @@ export class TransactionsService {
     amountTo?: number,
     tagIds?: string[],
     statuses?: TransactionStatus[],
+    sortDirection: "ASC" | "DESC" = "DESC",
   ): Promise<PaginatedTransactions> {
     const clamped = clampPagination(page, limit);
     const safeLimit = clamped.limit;
@@ -740,9 +741,9 @@ export class TransactionsService {
         "linkedSplitTransferAccount",
       )
       .where("transaction.userId = :userId", { userId })
-      .orderBy("transaction.transactionDate", "DESC")
-      .addOrderBy("transaction.createdAt", "DESC")
-      .addOrderBy("transaction.id", "DESC");
+      .orderBy("transaction.transactionDate", sortDirection)
+      .addOrderBy("transaction.createdAt", sortDirection)
+      .addOrderBy("transaction.id", sortDirection);
 
     if (!includeInvestmentBrokerage) {
       queryBuilder.andWhere(
@@ -2429,9 +2430,11 @@ export class TransactionsService {
       minAmount?: number;
       maxAmount?: number;
       limit?: number;
+      sort?: "asc" | "desc";
     },
   ): Promise<LlmTransactionSearch> {
     const limit = Math.min(filters.limit || 50, 100);
+    const sortDirection = filters.sort === "asc" ? "ASC" : "DESC";
     // Push the amount filter into the SQL WHERE clause so pagination, total and
     // hasMore reflect the filtered set. Filtering only the expanded rows after
     // the page was fetched returned a biased sample with a total/hasMore that
@@ -2453,6 +2456,9 @@ export class TransactionsService {
       undefined,
       filters.minAmount,
       filters.maxAmount,
+      undefined,
+      undefined,
+      sortDirection,
     );
 
     const transactions = result.data.flatMap((t): LlmTransactionRow[] => {

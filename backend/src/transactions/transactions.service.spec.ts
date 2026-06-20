@@ -5719,7 +5719,27 @@ describe("TransactionsService", () => {
         undefined,
         25,
         500,
+        undefined,
+        undefined,
+        "DESC",
       );
+    });
+
+    it("passes ASC to findAll when sort is 'asc'", async () => {
+      const spy = jest.spyOn(service, "findAll").mockResolvedValue({
+        data: [],
+        pagination: { total: 0, hasMore: false },
+      } as any);
+
+      await service.getLlmTransactionRows("user-1", {
+        accountId: "a1",
+        startDate: "2025-01-01",
+        endDate: "2025-01-31",
+        sort: "asc",
+      });
+
+      const lastArg = spy.mock.calls[0][spy.mock.calls[0].length - 1];
+      expect(lastArg).toBe("ASC");
     });
   });
 

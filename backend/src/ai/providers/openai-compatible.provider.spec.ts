@@ -24,15 +24,15 @@ describe("parseInlineToolCalls", () => {
 
   it("parses the Llama-3.1 shape with `arguments`", () => {
     const text = JSON.stringify({
-      name: "get_spending_by_category",
-      arguments: { startDate: "2026-03-01", topN: "all" },
+      name: "list_transactions",
+      arguments: { startDate: "2026-03-01", groupBy: "category" },
     });
     const result = parseInlineToolCalls(text);
     expect(result).toHaveLength(1);
-    expect(result![0].name).toBe("get_spending_by_category");
+    expect(result![0].name).toBe("list_transactions");
     expect(result![0].input).toEqual({
       startDate: "2026-03-01",
-      topN: "all",
+      groupBy: "category",
     });
     expect(result![0].id).toMatch(/^call_inline_/);
   });

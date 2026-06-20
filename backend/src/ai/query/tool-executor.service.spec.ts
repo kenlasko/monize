@@ -111,22 +111,6 @@ describe("ToolExecutorService", () => {
         transfers: null,
         perCurrency: [],
       }),
-      getLlmSpendingByCategory: jest.fn().mockResolvedValue({
-        categories: [
-          {
-            category: "Groceries",
-            amount: 500,
-            percentage: 50,
-            transactionCount: 10,
-          },
-        ],
-        totalSpending: 1000,
-      }),
-      getLlmIncomeSummary: jest.fn().mockResolvedValue({
-        items: [{ label: "Salary", amount: 5000, count: 1 }],
-        totalIncome: 5000,
-        groupedBy: "category",
-      }),
       getLlmPeriodComparison: jest.fn().mockResolvedValue({
         period1: { start: "2025-12-01", end: "2025-12-31", total: 3000 },
         period2: { start: "2026-01-01", end: "2026-01-31", total: 3500 },
@@ -728,63 +712,6 @@ describe("ToolExecutorService", () => {
       });
     });
 
-    it("get_spending_by_category delegates to analytics.getLlmSpendingByCategory", async () => {
-      const result = await service.execute(userId, "get_spending_by_category", {
-        startDate: "2026-01-01",
-        endDate: "2026-01-31",
-        topN: 10,
-      });
-
-      expect(analytics.getLlmSpendingByCategory).toHaveBeenCalledWith(
-        userId,
-        "2026-01-01",
-        "2026-01-31",
-        10,
-      );
-      expect(result.sources[0].type).toBe("spending");
-    });
-
-    it("get_spending_by_category defaults topN to 10 and fills in dates when omitted", async () => {
-      await service.execute(userId, "get_spending_by_category", {});
-
-      expect(analytics.getLlmSpendingByCategory).toHaveBeenCalledWith(
-        userId,
-        expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
-        expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
-        10,
-      );
-    });
-
-    it("get_income_summary delegates to analytics.getLlmIncomeSummary", async () => {
-      const result = await service.execute(userId, "get_income_summary", {
-        startDate: "2026-01-01",
-        endDate: "2026-01-31",
-        groupBy: "payee",
-      });
-
-      expect(analytics.getLlmIncomeSummary).toHaveBeenCalledWith(
-        userId,
-        "2026-01-01",
-        "2026-01-31",
-        "payee",
-      );
-      expect(result.sources[0].type).toBe("income");
-    });
-
-    it("get_income_summary defaults groupBy to category", async () => {
-      await service.execute(userId, "get_income_summary", {
-        startDate: "2026-01-01",
-        endDate: "2026-01-31",
-      });
-
-      expect(analytics.getLlmIncomeSummary).toHaveBeenCalledWith(
-        userId,
-        "2026-01-01",
-        "2026-01-31",
-        "category",
-      );
-    });
-
     it("get_net_worth_history delegates to netWorthService.getLlmHistory", async () => {
       const result = await service.execute(userId, "get_net_worth_history", {});
 
@@ -848,7 +775,7 @@ describe("ToolExecutorService", () => {
       expect(result.sources[0].type).toBe("portfolio");
     });
 
-    it("query_investment_transactions delegates to investmentTransactions.getLlmInvestmentTransactions", async () => {
+    it("list_investment_transactions delegates to investmentTransactions.getLlmInvestmentTransactions", async () => {
       investmentTransactions.getLlmInvestmentTransactions.mockResolvedValueOnce(
         {
           transactionCount: 3,
@@ -872,7 +799,7 @@ describe("ToolExecutorService", () => {
       );
       const result = await service.execute(
         userId,
-        "query_investment_transactions",
+        "list_investment_transactions",
         {
           startDate: "2026-01-01",
           endDate: "2026-03-31",
@@ -898,8 +825,8 @@ describe("ToolExecutorService", () => {
       expect(result.summary).toContain("grouped by security");
     });
 
-    it("query_investment_transactions resolves account names to IDs", async () => {
-      await service.execute(userId, "query_investment_transactions", {
+    it("list_investment_transactions resolves account names to IDs", async () => {
+      await service.execute(userId, "list_investment_transactions", {
         accountNames: ["Checking"],
       });
 
@@ -912,18 +839,18 @@ describe("ToolExecutorService", () => {
       );
     });
 
-    it("query_investment_transactions handles all-dates summary", async () => {
+    it("list_investment_transactions handles all-dates summary", async () => {
       const result = await service.execute(
         userId,
-        "query_investment_transactions",
+        "list_investment_transactions",
         {},
       );
 
       expect(result.sources[0].dateRange).toBe("all dates");
     });
 
-    it("query_investment_transactions defaults groupBy to 'security' when omitted", async () => {
-      await service.execute(userId, "query_investment_transactions", {});
+    it("list_investment_transactions defaults groupBy to 'security' when omitted", async () => {
+      await service.execute(userId, "list_investment_transactions", {});
 
       expect(
         investmentTransactions.getLlmInvestmentTransactions,
@@ -973,17 +900,6 @@ describe("ToolExecutorService", () => {
           accountIds: ["acc-1"],
           groupBy: "month",
         }),
-      );
-    });
-
-    it("get_income_summary applies default date range when omitted", async () => {
-      await service.execute(userId, "get_income_summary", {});
-
-      expect(analytics.getLlmIncomeSummary).toHaveBeenCalledWith(
-        userId,
-        expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
-        expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
-        "category",
       );
     });
 

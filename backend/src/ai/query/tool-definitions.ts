@@ -8,7 +8,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
   {
     name: "list_transactions",
     description:
-      "List and aggregate the user's cash transactions. Accepts NAMES for accounts, categories, and payees (resolved internally; no need to call list_accounts/get_categories/get_payees first). Returns a rich summary by default: income/expense/net totals, per-currency totals, an optional grouped breakdown (groupBy), and an optional per-account transfer rollup (transfersOnly). Set includeTransactions=true ONLY when the user explicitly wants the individual transaction rows (this costs many more tokens); otherwise the summary alone answers spending, income, and total questions. Transfers between the user's own accounts are excluded from income/expense totals. This single tool replaces the former search_transactions, query_transactions, and get_transfers tools.",
+      "List and aggregate the user's cash transactions. Accepts NAMES for accounts, categories, and payees (resolved internally; no need to call list_accounts/get_categories/get_payees first). Returns a rich summary by default: income/expense/net totals, per-currency totals, an optional grouped breakdown (groupBy), and an optional per-account transfer rollup (transfersOnly). Set includeTransactions=true ONLY when the user explicitly wants the individual transaction rows (this costs many more tokens); otherwise the summary alone answers spending, income, and total questions. For spending by category use groupBy: 'category'; for an income breakdown use direction: 'income' with groupBy. Transfers between the user's own accounts are excluded from income/expense totals. This single tool replaces the former search_transactions, query_transactions, get_transfers, get_spending_by_category, and get_income_summary tools.",
     inputSchema: {
       type: "object",
       properties: {
@@ -81,6 +81,12 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
           description:
             "Maximum number of raw transaction rows to return when includeTransactions is true (1-100). Defaults to 50.",
         },
+        sort: {
+          type: "string",
+          enum: ["asc", "desc"],
+          description:
+            "Sort order by date for the raw transaction rows (when includeTransactions is true): 'desc' (newest first, default) or 'asc' (oldest first).",
+        },
       },
     },
   },
@@ -139,7 +145,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
   {
     name: "get_categories",
     description:
-      "List the user's categories with their hierarchy (parent names) and transaction counts. Use this for questions like 'what categories do I have', 'list my income categories', or 'do I have a category for groceries'. Returns a flat list with each category's parent name so hierarchy is visible without nested JSON. Do not use this to query spending amounts -- use get_spending_by_category for that.",
+      "List the user's categories with their hierarchy (parent names) and transaction counts. Use this for questions like 'what categories do I have', 'list my income categories', or 'do I have a category for groceries'. Returns a flat list with each category's parent name so hierarchy is visible without nested JSON. Do not use this to query spending amounts -- use list_transactions with groupBy: 'category' for that.",
     inputSchema: {
       type: "object",
       properties: {
@@ -153,56 +159,6 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
           type: "string",
           description:
             "Optional case-insensitive substring match on category name. If a matching category is a subcategory, its parent is included so the hierarchy stays visible.",
-        },
-      },
-    },
-  },
-  {
-    name: "get_spending_by_category",
-    description:
-      "Get a breakdown of spending (expenses) by category for a given date range. Returns each category with its total amount, percentage of total spending, and transaction count. Sorted by amount descending.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        startDate: {
-          type: "string",
-          description:
-            "Start date (YYYY-MM-DD). Omit to default to 30 days ago.",
-        },
-        endDate: {
-          type: "string",
-          description: "End date (YYYY-MM-DD). Omit to default to today.",
-        },
-        topN: {
-          type: "integer",
-          minimum: 1,
-          maximum: 50,
-          description:
-            'Integer between 1 and 50 to limit to the top N categories by amount. MUST be a number like 10 (not a string like "10" or "all"). Omit to default to 10.',
-        },
-      },
-    },
-  },
-  {
-    name: "get_income_summary",
-    description:
-      "Get income summary for a date range, broken down by category, payee (source), or month.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        startDate: {
-          type: "string",
-          description:
-            "Start date (YYYY-MM-DD). Omit to default to 30 days ago.",
-        },
-        endDate: {
-          type: "string",
-          description: "End date (YYYY-MM-DD). Omit to default to today.",
-        },
-        groupBy: {
-          type: "string",
-          enum: ["category", "payee", "month"],
-          description: "How to group income (default: category)",
         },
       },
     },
@@ -283,7 +239,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
     },
   },
   {
-    name: "query_investment_transactions",
+    name: "list_investment_transactions",
     description:
       "Query the user's brokerage investment-account transactions (buys, sells, dividends, interest, capital gains, splits, transfers, reinvestments, share adjustments). Returns aggregate totals (count, total amount, total commission, action breakdown) and a capped list of matching transactions. Optionally group the results by account, date, security (symbol), or transaction type (action). Use this for questions like 'what did I buy last month', 'show my AAPL trades', 'how much did I pay in commissions', or 'what dividends did I receive'. Do not use for the current portfolio holdings or unrealized gains — use get_portfolio_summary for that.",
     inputSchema: {
@@ -457,7 +413,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
   {
     name: "render_chart",
     description:
-      "Render a chart in the chat so the user can see the data visually. Call this AFTER gathering numbers with another tool (query_transactions, get_spending_by_category, get_net_worth_history, compare_periods, etc.). Choose the chart type that fits the data: 'pie' for category breakdowns with 6 or fewer slices, 'bar' for larger breakdowns or period comparisons, 'line' or 'area' for time series (months or weeks). Pass a compact subset of the data (at most 10-15 data points) and aggregate the long tail into an 'Other' bucket. Values must be positive numbers (use absolute values for expenses). Do not narrate the chart's existence in your reply; just render it and summarize the findings.",
+      "Render a chart in the chat so the user can see the data visually. Call this AFTER gathering numbers with another tool (list_transactions, get_net_worth_history, compare_periods, etc.). Choose the chart type that fits the data: 'pie' for category breakdowns with 6 or fewer slices, 'bar' for larger breakdowns or period comparisons, 'line' or 'area' for time series (months or weeks). Pass a compact subset of the data (at most 10-15 data points) and aggregate the long tail into an 'Other' bucket. Values must be positive numbers (use absolute values for expenses). Do not narrate the chart's existence in your reply; just render it and summarize the findings.",
     inputSchema: {
       type: "object",
       properties: {
@@ -689,8 +645,8 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
       "Create, update, or delete the user's brokerage/investment-account transactions (any type: buy, sell, dividend, interest, capital gain, stock split, transfer in/out, dividend reinvestment, or share add/remove). This does NOT change anything immediately: it shows the user one or more confirmation cards they must explicitly approve before anything is saved. Use it only when the user clearly asks to record, edit, or delete an investment transaction in their latest message. Accepts NAMES for account, funding account, and security -- they are resolved internally (security matched by ticker symbol or name), so you do NOT need to look up IDs first. " +
       "operation = 'create' | 'update' | 'delete'. Provide an 'items' array (1-25 rows). " +
       "create: { accountName, action, date, security?, quantity?, price?, commission?, fundingAccountName?, description? } -- security is required for BUY, SELL, SPLIT, REINVEST, ADD_SHARES, and REMOVE_SHARES; optional for cash-only INTEREST. price is the per-share price, or the total cash for a DIVIDEND/INTEREST/CAPITAL_GAIN with no quantity. Buys debit, and sells/dividends/interest/capital gains credit, the brokerage's linked cash account automatically -- do not also record a separate cash transaction; fundingAccountName overrides which cash account is used. " +
-      "update: { transactionId, action?, date?, security?, quantity?, price?, commission?, description? } -- provide only the fields to change (at least one); omitted fields keep their current value; the total and cash impact are recomputed. First call query_investment_transactions to obtain the transactionId. " +
-      "delete: { transactionId } -- deleting one leg of a security transfer removes the paired leg too and reverses any linked cash impact. First call query_investment_transactions to obtain the transactionId. " +
+      "update: { transactionId, action?, date?, security?, quantity?, price?, commission?, description? } -- provide only the fields to change (at least one); omitted fields keep their current value; the total and cash impact are recomputed. First call list_investment_transactions to obtain the transactionId. " +
+      "delete: { transactionId } -- deleting one leg of a security transfer removes the paired leg too and reverses any linked cash impact. First call list_investment_transactions to obtain the transactionId. " +
       "approvalMode = 'bulk' (default) shows one card for the whole batch; 'individual' shows one card per item the user approves separately. Ignored for a single item. Maximum 25 items per call; if the user pastes more, process the first 25 and tell them to send the rest. After calling this tool, briefly tell the user to review and approve the card(s); never claim the change was applied.",
     inputSchema: {
       type: "object",
@@ -768,7 +724,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
               transactionId: {
                 type: "string",
                 description:
-                  "update/delete: ID of the investment transaction, obtained from query_investment_transactions.",
+                  "update/delete: ID of the investment transaction, obtained from list_investment_transactions.",
               },
             },
           },

@@ -1,8 +1,8 @@
 import { FINANCIAL_TOOLS } from "./tool-definitions";
 
 describe("FINANCIAL_TOOLS", () => {
-  it("defines exactly 19 tools", () => {
-    expect(FINANCIAL_TOOLS).toHaveLength(19);
+  it("defines exactly 17 tools", () => {
+    expect(FINANCIAL_TOOLS).toHaveLength(17);
   });
 
   it("has unique tool names", () => {
@@ -14,12 +14,10 @@ describe("FINANCIAL_TOOLS", () => {
     "list_transactions",
     "list_accounts",
     "get_categories",
-    "get_spending_by_category",
-    "get_income_summary",
     "get_net_worth_history",
     "compare_periods",
     "get_portfolio_summary",
-    "query_investment_transactions",
+    "list_investment_transactions",
     "get_capital_gains",
     "get_upcoming_bills",
     "get_budget_status",
@@ -161,39 +159,6 @@ describe("FINANCIAL_TOOLS", () => {
     });
   });
 
-  describe("get_spending_by_category", () => {
-    it("has no required fields (dates default to last 30 days, topN to 10)", () => {
-      const tool = FINANCIAL_TOOLS.find(
-        (t) => t.name === "get_spending_by_category",
-      )!;
-      expect(tool.inputSchema.required).toBeUndefined();
-    });
-
-    it("supports topN parameter", () => {
-      const tool = FINANCIAL_TOOLS.find(
-        (t) => t.name === "get_spending_by_category",
-      )!;
-      const props = tool.inputSchema.properties as Record<
-        string,
-        Record<string, unknown>
-      >;
-      expect(props.topN.type).toBe("integer");
-    });
-  });
-
-  describe("get_income_summary", () => {
-    it("supports groupBy with category, payee, and month", () => {
-      const tool = FINANCIAL_TOOLS.find(
-        (t) => t.name === "get_income_summary",
-      )!;
-      const props = tool.inputSchema.properties as Record<
-        string,
-        Record<string, unknown>
-      >;
-      expect(props.groupBy.enum).toEqual(["category", "payee", "month"]);
-    });
-  });
-
   describe("get_net_worth_history", () => {
     it("has no required fields (defaults to 12 months)", () => {
       const tool = FINANCIAL_TOOLS.find(
@@ -240,17 +205,17 @@ describe("FINANCIAL_TOOLS", () => {
     });
   });
 
-  describe("query_investment_transactions", () => {
+  describe("list_investment_transactions", () => {
     it("has no required fields", () => {
       const tool = FINANCIAL_TOOLS.find(
-        (t) => t.name === "query_investment_transactions",
+        (t) => t.name === "list_investment_transactions",
       )!;
       expect(tool.inputSchema.required).toBeUndefined();
     });
 
     it("supports groupBy with account, date, security, and action", () => {
       const tool = FINANCIAL_TOOLS.find(
-        (t) => t.name === "query_investment_transactions",
+        (t) => t.name === "list_investment_transactions",
       )!;
       const props = tool.inputSchema.properties as Record<
         string,
@@ -266,7 +231,7 @@ describe("FINANCIAL_TOOLS", () => {
 
     it("exposes the full set of investment actions in the actions enum", () => {
       const tool = FINANCIAL_TOOLS.find(
-        (t) => t.name === "query_investment_transactions",
+        (t) => t.name === "list_investment_transactions",
       )!;
       const props = tool.inputSchema.properties as Record<
         string,
@@ -290,7 +255,7 @@ describe("FINANCIAL_TOOLS", () => {
 
     it("supports optional accountNames and symbols array filters", () => {
       const tool = FINANCIAL_TOOLS.find(
-        (t) => t.name === "query_investment_transactions",
+        (t) => t.name === "list_investment_transactions",
       )!;
       const props = tool.inputSchema.properties as Record<
         string,

@@ -25,14 +25,11 @@ import {
 } from "../mcp-context";
 import { McpWriteLimiter } from "../mcp-write-limiter";
 import {
-  DEFAULT_TOP_N,
   getDefaultDateRange,
   resolveComparePeriods,
 } from "../../common/tool-schemas";
 import {
   listTransactionsOutput,
-  getSpendingByCategoryOutput,
-  getIncomeSummaryOutput,
   comparePeriodsOutput,
   manageTransactionsOutput,
 } from "../tool-output-schemas";
@@ -81,7 +78,7 @@ export class McpTransactionsTools {
         title: "List transactions",
         annotations: READ_ONLY,
         description:
-          "List and aggregate the user's cash transactions. Accepts NAMES for accounts, categories, and payees -- they are resolved internally, so you do NOT need to call get_accounts/get_categories/get_payees first. Returns a rich summary by default: income/expense/net totals, per-currency totals, an optional grouped breakdown (groupBy: category/payee/year/month/week), and an optional per-account transfer rollup (transfersOnly). Set includeTransactions=true ONLY when the user wants the individual rows -- it adds the raw transaction list (which costs many tokens); otherwise the summary alone answers spending/income/total questions. Transfers between the user's own accounts are excluded from the income/expense totals (use transfersOnly to see them). Returns the same shape as the AI Assistant's list_transactions tool.",
+          "List and aggregate the user's cash transactions. Accepts NAMES for accounts, categories, and payees -- they are resolved internally, so you do NOT need to call get_accounts/get_categories/get_payees first. Returns a rich summary by default: income/expense/net totals, per-currency totals, an optional grouped breakdown (groupBy: category/payee/year/month/week), and an optional per-account transfer rollup (transfersOnly). Set includeTransactions=true ONLY when the user wants the individual rows -- it adds the raw transaction list (which costs many tokens); otherwise the summary alone answers spending/income/total questions. Transfers between the user's own accounts are excluded from the income/expense totals (use transfersOnly to see them).",
         inputSchema: {
           searchText: z
             .string()
@@ -160,6 +157,13 @@ export class McpTransactionsTools {
             .describe(
               "Max raw rows when includeTransactions is true (max 100)",
             ),
+          sort: z
+            .enum(["asc", "desc"])
+            .optional()
+            .default("desc")
+            .describe(
+              "Sort order by date for the raw rows (when includeTransactions is true): 'desc' (newest first, default) or 'asc' (oldest first)",
+            ),
         },
         outputSchema: listTransactionsOutput,
       },
@@ -214,6 +218,7 @@ export class McpTransactionsTools {
               minAmount: args.minAmount,
               maxAmount: args.maxAmount,
               limit: args.limit,
+              sort: args.sort,
             },
           );
 
@@ -224,103 +229,6 @@ export class McpTransactionsTools {
             hasMore: rows.hasMore,
             truncatedTransactionList: rows.hasMore,
           });
-        } catch (err: unknown) {
-          return safeToolError(err);
-        }
-      },
-    );
-
-    server.registerTool(
-      "get_spending_by_category",
-      {
-        title: "Spending by category",
-        annotations: READ_ONLY,
-        description:
-          "Spending breakdown by category for a date range. Returns each category with total amount, percentage of total spending, and transaction count. Sorted by amount descending. Returns the same shape as the AI Assistant's get_spending_by_category tool.",
-        inputSchema: {
-          startDate: z
-            .string()
-            .max(10)
-            .optional()
-            .describe("Start date (YYYY-MM-DD). Defaults to 30 days ago."),
-          endDate: z
-            .string()
-            .max(10)
-            .optional()
-            .describe("End date (YYYY-MM-DD). Defaults to today."),
-          topN: z
-            .number()
-            .int()
-            .min(1)
-            .max(50)
-            .optional()
-            .describe(
-              `Limit to top N categories by amount. Defaults to ${DEFAULT_TOP_N}.`,
-            ),
-        },
-        outputSchema: getSpendingByCategoryOutput,
-      },
-      async (args, extra) => {
-        const ctx = resolve(extra.sessionId);
-        if (!ctx) return toolError("No user context");
-        const check = requireScope(ctx.scopes, "read");
-        if (check.error) return check.result;
-
-        try {
-          const defaults = getDefaultDateRange();
-          const data = await this.analyticsService.getLlmSpendingByCategory(
-            ctx.userId,
-            args.startDate ?? defaults.startDate,
-            args.endDate ?? defaults.endDate,
-            args.topN ?? DEFAULT_TOP_N,
-          );
-          return toolResult(data);
-        } catch (err: unknown) {
-          return safeToolError(err);
-        }
-      },
-    );
-
-    server.registerTool(
-      "get_income_summary",
-      {
-        title: "Income summary",
-        annotations: READ_ONLY,
-        description:
-          "Income summary for a date range, grouped by category, payee, or month. Returns the same shape as the AI Assistant's get_income_summary tool.",
-        inputSchema: {
-          startDate: z
-            .string()
-            .max(10)
-            .optional()
-            .describe("Start date (YYYY-MM-DD). Defaults to 30 days ago."),
-          endDate: z
-            .string()
-            .max(10)
-            .optional()
-            .describe("End date (YYYY-MM-DD). Defaults to today."),
-          groupBy: z
-            .enum(["category", "payee", "month"])
-            .optional()
-            .describe("How to group income (default: category)"),
-        },
-        outputSchema: getIncomeSummaryOutput,
-      },
-      async (args, extra) => {
-        const ctx = resolve(extra.sessionId);
-        if (!ctx) return toolError("No user context");
-        const check = requireScope(ctx.scopes, "read");
-        if (check.error) return check.result;
-
-        try {
-          const defaults = getDefaultDateRange();
-          const data = await this.analyticsService.getLlmIncomeSummary(
-            ctx.userId,
-            args.startDate ?? defaults.startDate,
-            args.endDate ?? defaults.endDate,
-            args.groupBy ?? "category",
-          );
-          return toolResult(data);
         } catch (err: unknown) {
           return safeToolError(err);
         }

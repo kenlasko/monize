@@ -93,30 +93,6 @@ export const getNetWorthHistoryOutput = {
 // transactions.tool.ts
 // ---------------------------------------------------------------------------
 
-export const getSpendingByCategoryOutput = {
-  categories: z.array(
-    looseObject({
-      category: str,
-      amount: num,
-      percentage: num,
-      transactionCount: num,
-    }),
-  ),
-  totalSpending: num,
-};
-
-export const getIncomeSummaryOutput = {
-  items: z.array(
-    looseObject({
-      label: str,
-      amount: num,
-      count: num,
-    }),
-  ),
-  totalIncome: num,
-  groupedBy: str,
-};
-
 export const comparePeriodsOutput = {
   period1: looseObject({ start: str, end: str, total: num }),
   period2: looseObject({ start: str, end: str, total: num }),
@@ -354,7 +330,7 @@ export const getPortfolioSummaryOutput = {
   ),
 };
 
-export const queryInvestmentTransactionsOutput = {
+export const listInvestmentTransactionsOutput = {
   transactionCount: num,
   totalAmount: num,
   totalCommission: num,

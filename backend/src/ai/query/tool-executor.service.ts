@@ -39,7 +39,6 @@ import { validateToolInput } from "./tool-input-schemas";
 import { executeCalculation, CalculateInput } from "./calculate-tool";
 import { sanitizePromptValue } from "../../common/sanitization.util";
 import {
-  DEFAULT_TOP_N,
   getDefaultDateRange,
   resolveComparePeriods,
 } from "../../common/tool-schemas";
@@ -135,12 +134,6 @@ export class ToolExecutorService {
         case "get_categories":
           result = await this.getCategories(userId, validatedInput);
           break;
-        case "get_spending_by_category":
-          result = await this.getSpendingByCategory(userId, validatedInput);
-          break;
-        case "get_income_summary":
-          result = await this.getIncomeSummary(userId, validatedInput);
-          break;
         case "get_net_worth_history":
           result = await this.getNetWorthHistory(userId, validatedInput);
           break;
@@ -150,8 +143,8 @@ export class ToolExecutorService {
         case "get_portfolio_summary":
           result = await this.getPortfolioSummary(userId, validatedInput);
           break;
-        case "query_investment_transactions":
-          result = await this.queryInvestmentTransactions(
+        case "list_investment_transactions":
+          result = await this.listInvestmentTransactions(
             userId,
             validatedInput,
           );
@@ -321,6 +314,7 @@ export class ToolExecutorService {
     const includeTransactions =
       (input.includeTransactions as boolean | undefined) ?? false;
     const limit = Math.min((input.limit as number | undefined) ?? 50, 100);
+    const sort = (input.sort as "asc" | "desc" | undefined) ?? "desc";
 
     const accountIds = await this.resolveAccountIds(userId, accountNames);
 
@@ -386,6 +380,7 @@ export class ToolExecutorService {
           minAmount,
           maxAmount,
           limit,
+          sort,
         },
       );
       merged = {
@@ -1303,65 +1298,6 @@ export class ToolExecutorService {
     };
   }
 
-  private async getSpendingByCategory(
-    userId: string,
-    input: Record<string, unknown>,
-  ): Promise<ToolResult> {
-    const defaults = getDefaultDateRange();
-    const startDate = (input.startDate as string) ?? defaults.startDate;
-    const endDate = (input.endDate as string) ?? defaults.endDate;
-    const topN = (input.topN as number | undefined) ?? DEFAULT_TOP_N;
-
-    const data = await this.analyticsService.getLlmSpendingByCategory(
-      userId,
-      startDate,
-      endDate,
-      topN,
-    );
-
-    return {
-      data,
-      summary: `Total spending: ${data.totalSpending.toFixed(2)} across ${data.categories.length} categories from ${startDate} to ${endDate}`,
-      sources: [
-        {
-          type: "spending",
-          description: "Spending breakdown by category",
-          dateRange: `${startDate} to ${endDate}`,
-        },
-      ],
-    };
-  }
-
-  private async getIncomeSummary(
-    userId: string,
-    input: Record<string, unknown>,
-  ): Promise<ToolResult> {
-    const defaults = getDefaultDateRange();
-    const startDate = (input.startDate as string) ?? defaults.startDate;
-    const endDate = (input.endDate as string) ?? defaults.endDate;
-    const groupBy =
-      (input.groupBy as "category" | "payee" | "month") || "category";
-
-    const data = await this.analyticsService.getLlmIncomeSummary(
-      userId,
-      startDate,
-      endDate,
-      groupBy,
-    );
-
-    return {
-      data,
-      summary: `Total income: ${data.totalIncome.toFixed(2)} from ${startDate} to ${endDate}, grouped by ${groupBy}`,
-      sources: [
-        {
-          type: "income",
-          description: `Income summary by ${groupBy}`,
-          dateRange: `${startDate} to ${endDate}`,
-        },
-      ],
-    };
-  }
-
   private async getNetWorthHistory(
     userId: string,
     input: Record<string, unknown>,
@@ -1462,7 +1398,7 @@ export class ToolExecutorService {
     };
   }
 
-  private async queryInvestmentTransactions(
+  private async listInvestmentTransactions(
     userId: string,
     input: Record<string, unknown>,
   ): Promise<ToolResult> {

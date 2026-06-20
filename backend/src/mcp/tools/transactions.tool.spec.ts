@@ -53,8 +53,6 @@ describe("McpTransactionsTools", () => {
       getTransfersByAccount: jest.fn(),
       getLlmQueryTransactions: jest.fn(),
       getLlmListTransactions: jest.fn(),
-      getLlmSpendingByCategory: jest.fn(),
-      getLlmIncomeSummary: jest.fn(),
       getLlmPeriodComparison: jest.fn(),
       resolveLlmCategoryIds: jest
         .fn()
@@ -137,8 +135,8 @@ describe("McpTransactionsTools", () => {
     tool.register(server as any, resolve);
   });
 
-  it("should register 5 tools", () => {
-    expect(server.registerTool).toHaveBeenCalledTimes(5);
+  it("should register 3 tools", () => {
+    expect(server.registerTool).toHaveBeenCalledTimes(3);
   });
 
   describe("list_transactions", () => {
@@ -362,86 +360,6 @@ describe("McpTransactionsTools", () => {
       );
 
       expect(result.isError).toBe(true);
-    });
-  });
-
-  describe("get_spending_by_category", () => {
-    it("delegates to analyticsService.getLlmSpendingByCategory", async () => {
-      resolve.mockReturnValue({ userId: "u1", scopes: "read" });
-      analyticsService.getLlmSpendingByCategory.mockResolvedValue({
-        categories: [],
-        totalSpending: 0,
-      });
-
-      await handlers["get_spending_by_category"](
-        { startDate: "2026-01-01", endDate: "2026-01-31", topN: 5 },
-        { sessionId: "s1" },
-      );
-
-      expect(analyticsService.getLlmSpendingByCategory).toHaveBeenCalledWith(
-        "u1",
-        "2026-01-01",
-        "2026-01-31",
-        5,
-      );
-    });
-
-    it("defaults topN to 10 and fills in dates when omitted", async () => {
-      resolve.mockReturnValue({ userId: "u1", scopes: "read" });
-      analyticsService.getLlmSpendingByCategory.mockResolvedValue({
-        categories: [],
-        totalSpending: 0,
-      });
-
-      await handlers["get_spending_by_category"]({}, { sessionId: "s1" });
-
-      expect(analyticsService.getLlmSpendingByCategory).toHaveBeenCalledWith(
-        "u1",
-        expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
-        expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
-        10,
-      );
-    });
-  });
-
-  describe("get_income_summary", () => {
-    it("delegates to analyticsService.getLlmIncomeSummary with default groupBy", async () => {
-      resolve.mockReturnValue({ userId: "u1", scopes: "read" });
-      analyticsService.getLlmIncomeSummary.mockResolvedValue({
-        items: [],
-        totalIncome: 0,
-        groupedBy: "category",
-      });
-
-      await handlers["get_income_summary"](
-        { startDate: "2026-01-01", endDate: "2026-01-31" },
-        { sessionId: "s1" },
-      );
-
-      expect(analyticsService.getLlmIncomeSummary).toHaveBeenCalledWith(
-        "u1",
-        "2026-01-01",
-        "2026-01-31",
-        "category",
-      );
-    });
-
-    it("fills in default dates when omitted", async () => {
-      resolve.mockReturnValue({ userId: "u1", scopes: "read" });
-      analyticsService.getLlmIncomeSummary.mockResolvedValue({
-        items: [],
-        totalIncome: 0,
-        groupedBy: "category",
-      });
-
-      await handlers["get_income_summary"]({}, { sessionId: "s1" });
-
-      expect(analyticsService.getLlmIncomeSummary).toHaveBeenCalledWith(
-        "u1",
-        expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
-        expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
-        "category",
-      );
     });
   });
 

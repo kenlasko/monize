@@ -3,12 +3,10 @@ import {
   listTransactionsSchema,
   listAccountsSchema,
   getCategoriesSchema,
-  getSpendingByCategorySchema,
-  getIncomeSummarySchema,
   getNetWorthHistorySchema,
   comparePeriodsSchema,
   getPortfolioSummarySchema,
-  queryInvestmentTransactionsSchema,
+  listInvestmentTransactionsSchema,
   getBudgetStatusSchema,
   getUpcomingBillsSchema,
   calculateSchema,
@@ -276,91 +274,6 @@ describe("tool-input-schemas", () => {
     });
   });
 
-  describe("getSpendingByCategorySchema", () => {
-    it("accepts date fields", () => {
-      const result = getSpendingByCategorySchema.safeParse({
-        startDate: "2026-01-01",
-        endDate: "2026-01-31",
-      });
-      expect(result.success).toBe(true);
-    });
-
-    it("accepts empty input (dates are optional)", () => {
-      const result = getSpendingByCategorySchema.safeParse({});
-      expect(result.success).toBe(true);
-    });
-
-    it("accepts topN within range", () => {
-      const result = getSpendingByCategorySchema.safeParse({
-        startDate: "2026-01-01",
-        endDate: "2026-01-31",
-        topN: 10,
-      });
-      expect(result.success).toBe(true);
-    });
-
-    it("rejects topN over 50", () => {
-      const result = getSpendingByCategorySchema.safeParse({
-        startDate: "2026-01-01",
-        endDate: "2026-01-31",
-        topN: 51,
-      });
-      expect(result.success).toBe(false);
-    });
-
-    it("rejects topN of 0", () => {
-      const result = getSpendingByCategorySchema.safeParse({
-        startDate: "2026-01-01",
-        endDate: "2026-01-31",
-        topN: 0,
-      });
-      expect(result.success).toBe(false);
-    });
-
-    it("coerces numeric string topN to integer", () => {
-      const result = getSpendingByCategorySchema.safeParse({
-        startDate: "2026-01-01",
-        endDate: "2026-01-31",
-        topN: "10",
-      });
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.topN).toBe(10);
-      }
-    });
-
-    it("rejects non-numeric string topN like 'all'", () => {
-      const result = getSpendingByCategorySchema.safeParse({
-        startDate: "2026-01-01",
-        endDate: "2026-01-31",
-        topN: "all",
-      });
-      expect(result.success).toBe(false);
-    });
-  });
-
-  describe("getIncomeSummarySchema", () => {
-    it("accepts valid groupBy values", () => {
-      for (const groupBy of ["category", "payee", "month"]) {
-        const result = getIncomeSummarySchema.safeParse({
-          startDate: "2026-01-01",
-          endDate: "2026-01-31",
-          groupBy,
-        });
-        expect(result.success).toBe(true);
-      }
-    });
-
-    it("rejects invalid groupBy value", () => {
-      const result = getIncomeSummarySchema.safeParse({
-        startDate: "2026-01-01",
-        endDate: "2026-01-31",
-        groupBy: "week",
-      });
-      expect(result.success).toBe(false);
-    });
-  });
-
   describe("getNetWorthHistorySchema", () => {
     it("accepts empty input", () => {
       const result = getNetWorthHistorySchema.safeParse({});
@@ -442,14 +355,14 @@ describe("tool-input-schemas", () => {
     });
   });
 
-  describe("queryInvestmentTransactionsSchema", () => {
+  describe("listInvestmentTransactionsSchema", () => {
     it("accepts empty input (all filters optional)", () => {
-      const result = queryInvestmentTransactionsSchema.safeParse({});
+      const result = listInvestmentTransactionsSchema.safeParse({});
       expect(result.success).toBe(true);
     });
 
     it("accepts all optional filters", () => {
-      const result = queryInvestmentTransactionsSchema.safeParse({
+      const result = listInvestmentTransactionsSchema.safeParse({
         startDate: "2026-01-01",
         endDate: "2026-03-31",
         accountNames: ["Brokerage"],
@@ -461,7 +374,7 @@ describe("tool-input-schemas", () => {
     });
 
     it("uppercases action inputs via preprocess", () => {
-      const result = queryInvestmentTransactionsSchema.safeParse({
+      const result = listInvestmentTransactionsSchema.safeParse({
         actions: ["buy", " sell ", "Dividend"],
       });
       expect(result.success).toBe(true);
@@ -471,35 +384,35 @@ describe("tool-input-schemas", () => {
     });
 
     it("rejects an unknown action value", () => {
-      const result = queryInvestmentTransactionsSchema.safeParse({
+      const result = listInvestmentTransactionsSchema.safeParse({
         actions: ["NOT_REAL"],
       });
       expect(result.success).toBe(false);
     });
 
     it("rejects an invalid groupBy value", () => {
-      const result = queryInvestmentTransactionsSchema.safeParse({
+      const result = listInvestmentTransactionsSchema.safeParse({
         groupBy: "category",
       });
       expect(result.success).toBe(false);
     });
 
     it("rejects an invalid date format", () => {
-      const result = queryInvestmentTransactionsSchema.safeParse({
+      const result = listInvestmentTransactionsSchema.safeParse({
         startDate: "Jan 1 2026",
       });
       expect(result.success).toBe(false);
     });
 
     it("rejects empty symbol strings", () => {
-      const result = queryInvestmentTransactionsSchema.safeParse({
+      const result = listInvestmentTransactionsSchema.safeParse({
         symbols: [""],
       });
       expect(result.success).toBe(false);
     });
 
     it("rejects symbols longer than 20 chars", () => {
-      const result = queryInvestmentTransactionsSchema.safeParse({
+      const result = listInvestmentTransactionsSchema.safeParse({
         symbols: ["a".repeat(21)],
       });
       expect(result.success).toBe(false);
@@ -507,13 +420,13 @@ describe("tool-input-schemas", () => {
 
     it("accepts every groupBy enum value", () => {
       for (const groupBy of ["account", "date", "security", "action"]) {
-        const result = queryInvestmentTransactionsSchema.safeParse({ groupBy });
+        const result = listInvestmentTransactionsSchema.safeParse({ groupBy });
         expect(result.success).toBe(true);
       }
     });
 
     it("routes through validateToolInput", () => {
-      const result = validateToolInput("query_investment_transactions", {
+      const result = validateToolInput("list_investment_transactions", {
         symbols: ["aapl"],
       });
       expect(result.success).toBe(true);

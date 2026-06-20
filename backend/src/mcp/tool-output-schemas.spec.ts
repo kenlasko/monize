@@ -126,25 +126,6 @@ const cases: Array<{ name: string; schema: RawShape; raw: unknown }> = [
     },
   },
   {
-    name: "getSpendingByCategoryOutput",
-    schema: schemas.getSpendingByCategoryOutput,
-    raw: {
-      categories: [
-        { category: "Food", amount: 5, percentage: 100, transactionCount: 1 },
-      ],
-      totalSpending: 5,
-    },
-  },
-  {
-    name: "getIncomeSummaryOutput",
-    schema: schemas.getIncomeSummaryOutput,
-    raw: {
-      items: [{ label: "Salary", amount: 100, count: 1 }],
-      totalIncome: 100,
-      groupedBy: "category",
-    },
-  },
-  {
     name: "comparePeriodsOutput (tolerates NaN percentage from divide-by-zero)",
     schema: schemas.comparePeriodsOutput,
     raw: {
@@ -480,8 +461,8 @@ const cases: Array<{ name: string; schema: RawShape; raw: unknown }> = [
     },
   },
   {
-    name: "queryInvestmentTransactionsOutput",
-    schema: schemas.queryInvestmentTransactionsOutput,
+    name: "listInvestmentTransactionsOutput",
+    schema: schemas.listInvestmentTransactionsOutput,
     raw: {
       transactionCount: 1,
       totalAmount: 100,

@@ -35,7 +35,7 @@ import {
 import { McpWriteLimiter } from "../mcp-write-limiter";
 import {
   getPortfolioSummaryOutput,
-  queryInvestmentTransactionsOutput,
+  listInvestmentTransactionsOutput,
   getCapitalGainsOutput,
   getHoldingDetailsOutput,
   createSecurityOutput,
@@ -114,9 +114,9 @@ export class McpInvestmentsTools {
     );
 
     server.registerTool(
-      "query_investment_transactions",
+      "list_investment_transactions",
       {
-        title: "Query investment transactions",
+        title: "List investment transactions",
         annotations: READ_ONLY,
         description:
           "Query brokerage investment-account transactions (buys, sells, dividends, interest, capital gains, splits, transfers, reinvestments, share adjustments). Filter by account, security symbol, action, and date; optionally group by account, date, security, or action. Returns the same compact, LLM-friendly shape as the AI Assistant's tool.",
@@ -155,7 +155,7 @@ export class McpInvestmentsTools {
               "Grouping: by account name, transaction date, security symbol, or action type. Defaults to 'security' when omitted.",
             ),
         },
-        outputSchema: queryInvestmentTransactionsOutput,
+        outputSchema: listInvestmentTransactionsOutput,
       },
       async (args, extra) => {
         const ctx = resolve(extra.sessionId);

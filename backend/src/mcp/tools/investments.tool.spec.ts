@@ -174,10 +174,10 @@ describe("McpInvestmentsTools", () => {
     });
   });
 
-  describe("query_investment_transactions", () => {
+  describe("list_investment_transactions", () => {
     it("returns error when no user context", async () => {
       resolve.mockReturnValue(undefined);
-      const result = await handlers["query_investment_transactions"](
+      const result = await handlers["list_investment_transactions"](
         {},
         { sessionId: "s1" },
       );
@@ -208,7 +208,7 @@ describe("McpInvestmentsTools", () => {
         },
       );
 
-      const result = await handlers["query_investment_transactions"](
+      const result = await handlers["list_investment_transactions"](
         {
           startDate: "2026-01-01",
           endDate: "2026-03-31",
@@ -252,7 +252,7 @@ describe("McpInvestmentsTools", () => {
         },
       );
 
-      await handlers["query_investment_transactions"]({}, { sessionId: "s1" });
+      await handlers["list_investment_transactions"]({}, { sessionId: "s1" });
 
       expect(
         investmentTransactionsService.getLlmInvestmentTransactions,
@@ -272,7 +272,7 @@ describe("McpInvestmentsTools", () => {
         new Error("boom"),
       );
 
-      const result = await handlers["query_investment_transactions"](
+      const result = await handlers["list_investment_transactions"](
         {},
         { sessionId: "s1" },
       );

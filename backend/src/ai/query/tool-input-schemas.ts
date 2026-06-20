@@ -37,6 +37,7 @@ export const listTransactionsSchema = z.object({
   transfersOnly: z.boolean().optional(),
   includeTransactions: z.boolean().optional(),
   limit: positiveIntSchema(1, 100).optional(),
+  sort: z.enum(["asc", "desc"]).optional(),
 });
 
 const accountTypeSchema = z.preprocess(
@@ -66,18 +67,6 @@ export const listAccountsSchema = z.object({
 export const getCategoriesSchema = z.object({
   type: z.enum(["expense", "income", "all"]).optional(),
   search: z.string().max(100).optional(),
-});
-
-export const getSpendingByCategorySchema = z.object({
-  startDate: isoDateSchema.optional(),
-  endDate: isoDateSchema.optional(),
-  topN: positiveIntSchema(1, 50).optional(),
-});
-
-export const getIncomeSummarySchema = z.object({
-  startDate: isoDateSchema.optional(),
-  endDate: isoDateSchema.optional(),
-  groupBy: z.enum(["category", "payee", "month"]).optional(),
 });
 
 export const getNetWorthHistorySchema = z.object({
@@ -117,7 +106,7 @@ const investmentActionSchema = z.preprocess(
   z.enum(INVESTMENT_ACTIONS),
 );
 
-export const queryInvestmentTransactionsSchema = z.object({
+export const listInvestmentTransactionsSchema = z.object({
   startDate: isoDateSchema.optional(),
   endDate: isoDateSchema.optional(),
   accountNames: z.array(z.string().max(100)).max(50).optional(),
@@ -504,12 +493,10 @@ export const toolInputSchemas: Record<string, z.ZodSchema> = {
   list_transactions: listTransactionsSchema,
   list_accounts: listAccountsSchema,
   get_categories: getCategoriesSchema,
-  get_spending_by_category: getSpendingByCategorySchema,
-  get_income_summary: getIncomeSummarySchema,
   get_net_worth_history: getNetWorthHistorySchema,
   compare_periods: comparePeriodsSchema,
   get_portfolio_summary: getPortfolioSummarySchema,
-  query_investment_transactions: queryInvestmentTransactionsSchema,
+  list_investment_transactions: listInvestmentTransactionsSchema,
   get_capital_gains: getCapitalGainsSchema,
   get_budget_status: getBudgetStatusSchema,
   get_upcoming_bills: getUpcomingBillsSchema,

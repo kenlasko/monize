@@ -3358,7 +3358,7 @@ export class InvestmentTransactionsService {
   /**
    * Compact investment-transaction query for LLM / AI consumers. Called by
    * both the AI Assistant's tool executor and the MCP server's
-   * `query_investment_transactions` tool so the two surfaces return the same
+   * `list_investment_transactions` tool so the two surfaces return the same
    * shape. Monetary values are rounded to 4 decimals, quantities to 8.
    *
    * Filters: account, security symbol, action, and date range.
