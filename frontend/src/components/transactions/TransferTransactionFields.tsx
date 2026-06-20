@@ -40,6 +40,10 @@ interface TransferTransactionFieldsProps {
   crossCurrencyInfo: CrossCurrencyInfo | null;
   payees: Payee[];
   payeeAliasMap?: Record<string, string[]>;
+  categoryOptions: Array<{ value: string; label: string }>;
+  selectedCategoryId: string;
+  handleCategoryChange: (categoryId: string, name: string) => void;
+  handleCategoryCreate: (name: string) => void;
   transaction?: Transaction;
   createdAtSlot?: ReactNode;
 }
@@ -63,6 +67,10 @@ export function TransferTransactionFields({
   crossCurrencyInfo,
   payees,
   payeeAliasMap,
+  categoryOptions,
+  selectedCategoryId,
+  handleCategoryChange,
+  handleCategoryCreate,
   transaction,
   createdAtSlot,
 }: TransferTransactionFieldsProps) {
@@ -189,6 +197,26 @@ export function TransferTransactionFields({
           error={errors.referenceNumber?.message as string | undefined}
           {...register('referenceNumber')}
         />
+      </div>
+
+      {/* Row 5: Optional category. A transfer never counts as income/expense,
+          but a category lets it appear in the monthly category breakdown
+          (e.g. tracking monthly investment contributions). */}
+      <div>
+        <Combobox
+          label={t('form.fields.categoryOptional')}
+          placeholder={t('form.placeholders.selectOrCreateCategory')}
+          options={categoryOptions}
+          value={selectedCategoryId}
+          initialDisplayValue={transaction?.category?.name || ''}
+          onChange={handleCategoryChange}
+          onCreateNew={handleCategoryCreate}
+          allowCustomValue={true}
+          error={errors.categoryId?.message as string | undefined}
+        />
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          {t('form.transferCategoryNote')}
+        </p>
       </div>
     </div>
   );

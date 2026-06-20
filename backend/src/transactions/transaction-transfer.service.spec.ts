@@ -5,6 +5,7 @@ import { DataSource } from "typeorm";
 import { TransactionTransferService } from "./transaction-transfer.service";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
+import { Category } from "../categories/entities/category.entity";
 import { AccountsService } from "../accounts/accounts.service";
 import { PayeesService } from "../payees/payees.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
@@ -22,6 +23,7 @@ describe("TransactionTransferService", () => {
   let service: TransactionTransferService;
   let transactionsRepository: Record<string, jest.Mock>;
   let splitsRepository: Record<string, jest.Mock>;
+  let categoriesRepository: Record<string, jest.Mock>;
   let accountsService: Record<string, jest.Mock>;
   let payeesService: Record<string, jest.Mock>;
   let netWorthService: Record<string, jest.Mock>;
@@ -79,6 +81,11 @@ describe("TransactionTransferService", () => {
       findOne: jest.fn().mockResolvedValue(null),
       find: jest.fn().mockResolvedValue([]),
       remove: jest.fn().mockResolvedValue(undefined),
+    };
+
+    categoriesRepository = {
+      // Default: any category id resolves to an owned category.
+      findOne: jest.fn().mockResolvedValue({ id: "cat-1", userId: "user-1" }),
     };
 
     accountsService = {
@@ -167,6 +174,10 @@ describe("TransactionTransferService", () => {
         {
           provide: getRepositoryToken(TransactionSplit),
           useValue: splitsRepository,
+        },
+        {
+          provide: getRepositoryToken(Category),
+          useValue: categoriesRepository,
         },
         { provide: AccountsService, useValue: accountsService },
         { provide: PayeesService, useValue: payeesService },
@@ -404,6 +415,138 @@ describe("TransactionTransferService", () => {
 
       const fromCreateCall = transactionsRepository.create.mock.calls[0][0];
       expect(fromCreateCall.status).toBe(TransactionStatus.UNRECONCILED);
+    });
+  });
+
+  describe("category on transfers", () => {
+    const fromTx = {
+      id: "from-tx",
+      accountId: "from-account",
+      amount: -500,
+      isTransfer: true,
+      linkedTransactionId: "to-tx",
+      exchangeRate: 1,
+      account: mockFromAccount,
+    } as unknown as Transaction;
+
+    const toTx = {
+      id: "to-tx",
+      accountId: "to-account",
+      amount: 500,
+      isTransfer: true,
+      linkedTransactionId: "from-tx",
+      exchangeRate: 1,
+      account: mockToAccount,
+    } as unknown as Transaction;
+
+    beforeEach(() => {
+      mockFindOne.mockReset();
+    });
+
+    it("stores the category on both legs when creating", async () => {
+      mockFindOne
+        .mockResolvedValueOnce({ id: "from-tx-id", amount: -500 })
+        .mockResolvedValueOnce({ id: "to-tx-id", amount: 500 });
+
+      await service.createTransfer(
+        "user-1",
+        { ...baseTransferDto, categoryId: "cat-1" },
+        mockFindOne,
+      );
+
+      expect(transactionsRepository.create.mock.calls[0][0].categoryId).toBe(
+        "cat-1",
+      );
+      expect(transactionsRepository.create.mock.calls[1][0].categoryId).toBe(
+        "cat-1",
+      );
+    });
+
+    it("defaults the category to null when none is given", async () => {
+      mockFindOne
+        .mockResolvedValueOnce({ id: "from-tx-id", amount: -500 })
+        .mockResolvedValueOnce({ id: "to-tx-id", amount: 500 });
+
+      await service.createTransfer("user-1", baseTransferDto, mockFindOne);
+
+      expect(
+        transactionsRepository.create.mock.calls[0][0].categoryId,
+      ).toBeNull();
+      expect(
+        transactionsRepository.create.mock.calls[1][0].categoryId,
+      ).toBeNull();
+    });
+
+    it("rejects a category the user does not own", async () => {
+      categoriesRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.createTransfer(
+          "user-1",
+          { ...baseTransferDto, categoryId: "cat-x" },
+          mockFindOne,
+        ),
+      ).rejects.toThrow(BadRequestException);
+      expect(transactionsRepository.create).not.toHaveBeenCalled();
+    });
+
+    it("sets the category on both legs when updating", async () => {
+      mockFindOne
+        .mockResolvedValueOnce(fromTx)
+        .mockResolvedValueOnce(toTx)
+        .mockResolvedValueOnce(fromTx)
+        .mockResolvedValueOnce(toTx);
+
+      await service.updateTransfer(
+        "user-1",
+        "from-tx",
+        { categoryId: "cat-1" },
+        mockFindOne,
+      );
+
+      const updateCalls = transactionsRepository.update.mock.calls;
+      const fromUpdate = updateCalls.find((c) => c[0] === "from-tx")?.[1];
+      const toUpdate = updateCalls.find((c) => c[0] === "to-tx")?.[1];
+      expect(fromUpdate.categoryId).toBe("cat-1");
+      expect(toUpdate.categoryId).toBe("cat-1");
+    });
+
+    it("clears the category on both legs when updating with null", async () => {
+      mockFindOne
+        .mockResolvedValueOnce({ ...fromTx, categoryId: "cat-1" })
+        .mockResolvedValueOnce({ ...toTx, categoryId: "cat-1" })
+        .mockResolvedValueOnce(fromTx)
+        .mockResolvedValueOnce(toTx);
+
+      await service.updateTransfer(
+        "user-1",
+        "from-tx",
+        { categoryId: null },
+        mockFindOne,
+      );
+
+      const updateCalls = transactionsRepository.update.mock.calls;
+      const fromUpdate = updateCalls.find((c) => c[0] === "from-tx")?.[1];
+      const toUpdate = updateCalls.find((c) => c[0] === "to-tx")?.[1];
+      expect(fromUpdate.categoryId).toBeNull();
+      expect(toUpdate.categoryId).toBeNull();
+    });
+
+    it("does not reject when no category is provided on update", async () => {
+      mockFindOne
+        .mockResolvedValueOnce(fromTx)
+        .mockResolvedValueOnce(toTx)
+        .mockResolvedValueOnce(fromTx)
+        .mockResolvedValueOnce(toTx);
+
+      await service.updateTransfer(
+        "user-1",
+        "from-tx",
+        { description: "note" },
+        mockFindOne,
+      );
+
+      expect(categoriesRepository.findOne).not.toHaveBeenCalled();
     });
   });
 

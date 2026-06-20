@@ -276,33 +276,73 @@ export const TransactionRow = memo(function TransactionRow({
             {t('list.row.investmentLabel')}
           </span>
         ) : transaction.isTransfer ? (
-          onTransferClick && transaction.linkedTransaction?.account?.id && transaction.linkedTransactionId ? (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onTransferClick(transaction.linkedTransaction!.account!.id, transaction.linkedTransactionId!);
-              }}
-              className={`inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 truncate max-w-[160px] hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
-              title={`Click to view in ${transaction.linkedTransaction.account.name}`}
-            >
-              {Number(transaction.amount) < 0
-                ? `\u2192 ${transaction.linkedTransaction.account.name}`
-                : `${transaction.linkedTransaction.account.name} \u2192`}
-            </button>
-          ) : (
-            <span
-              className={`inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 truncate max-w-[160px] ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
-              title={transaction.linkedTransaction?.account?.name
-                ? t('list.row.transferTitle', { direction: Number(transaction.amount) < 0 ? 'to' : 'from', name: transaction.linkedTransaction.account.name })
-                : t('list.row.transfer')}
-            >
-              {transaction.linkedTransaction?.account?.name
-                ? (Number(transaction.amount) < 0
-                    ? `\u2192 ${transaction.linkedTransaction.account.name}`
-                    : `${transaction.linkedTransaction.account.name} \u2192`)
-                : t('list.row.transfer')}
-            </span>
-          )
+          // A transfer shows where the money moved (the linked-account arrow
+          // chip). When it also carries a spending category (e.g. a monthly
+          // investment contribution surfaced in the category breakdown), show
+          // the category chip alongside the arrow so the assigned category is
+          // visible, not hidden behind the transfer chip.
+          <span className="inline-flex items-center gap-1 flex-wrap">
+            {transaction.category &&
+              (onCategoryClick ? (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onCategoryClick(transaction.category!.id); }}
+                  className={`inline-flex text-xs leading-5 font-semibold rounded-full truncate max-w-[140px] hover:opacity-80 transition-opacity ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
+                  style={{
+                    backgroundColor: categoryColor
+                      ? `color-mix(in srgb, ${categoryColor} 15%, var(--category-bg-base, #e5e7eb))`
+                      : 'var(--category-bg-base, #e5e7eb)',
+                    color: categoryColor
+                      ? `color-mix(in srgb, ${categoryColor} 85%, var(--category-text-mix, #000))`
+                      : 'var(--category-text-base, #6b7280)',
+                  }}
+                  title={t('list.row.filterByCategory', { name: transaction.category.name })}
+                >
+                  {transaction.category.name}
+                </button>
+              ) : (
+                <span
+                  className={`inline-flex text-xs leading-5 font-semibold rounded-full truncate max-w-[140px] ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
+                  style={{
+                    backgroundColor: categoryColor
+                      ? `color-mix(in srgb, ${categoryColor} 15%, var(--category-bg-base, #e5e7eb))`
+                      : 'var(--category-bg-base, #e5e7eb)',
+                    color: categoryColor
+                      ? `color-mix(in srgb, ${categoryColor} 85%, var(--category-text-mix, #000))`
+                      : 'var(--category-text-base, #6b7280)',
+                  }}
+                  title={transaction.category.name}
+                >
+                  {transaction.category.name}
+                </span>
+              ))}
+            {onTransferClick && transaction.linkedTransaction?.account?.id && transaction.linkedTransactionId ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onTransferClick(transaction.linkedTransaction!.account!.id, transaction.linkedTransactionId!);
+                }}
+                className={`inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 truncate max-w-[160px] hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
+                title={`Click to view in ${transaction.linkedTransaction.account.name}`}
+              >
+                {Number(transaction.amount) < 0
+                  ? `\u2192 ${transaction.linkedTransaction.account.name}`
+                  : `${transaction.linkedTransaction.account.name} \u2192`}
+              </button>
+            ) : (
+              <span
+                className={`inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 truncate max-w-[160px] ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
+                title={transaction.linkedTransaction?.account?.name
+                  ? t('list.row.transferTitle', { direction: Number(transaction.amount) < 0 ? 'to' : 'from', name: transaction.linkedTransaction.account.name })
+                  : t('list.row.transfer')}
+              >
+                {transaction.linkedTransaction?.account?.name
+                  ? (Number(transaction.amount) < 0
+                      ? `\u2192 ${transaction.linkedTransaction.account.name}`
+                      : `${transaction.linkedTransaction.account.name} \u2192`)
+                  : t('list.row.transfer')}
+              </span>
+            )}
+          </span>
         ) : transaction.isSplit ? (
           <div>
             <span className={`inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}>

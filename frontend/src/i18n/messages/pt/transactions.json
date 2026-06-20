@@ -267,7 +267,8 @@
       "transferAmount": "Montante da Transferência",
       "transferAmountWithCurrency": "Montante da Transferência ({currency})",
       "amountReceived": "Montante Recebido ({currency})",
-      "payeeOptional": "Beneficiário (Opcional)"
+      "payeeOptional": "Beneficiário (Opcional)",
+      "categoryOptional": "Categoria (opcional)"
     },
     "placeholders": {
       "selectAccount": "Selecionar conta...",
@@ -320,7 +321,8 @@
     },
     "ariaHistory": "Mostrar transações recentes",
     "ariaHistoryForPayee": "Mostrar transações recentes deste beneficiário",
-    "historyTitle": "Preenchimento rápido a partir de uma transação recente"
+    "historyTitle": "Preenchimento rápido a partir de uma transação recente",
+    "transferCategoryNote": "Opcional. A transferência continuará a não contar como receita ou despesa, mas esta categoria permite que apareça na repartição mensal por categoria (por exemplo, contribuições mensais de investimento)."
   },
   "splitEditor": {
     "header": "Detalhes das Parcelas",

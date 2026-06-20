@@ -79,6 +79,14 @@ export class UpdateTransferDto {
   @SanitizeHtml()
   payeeName?: string | null;
 
+  @ApiPropertyOptional({
+    description:
+      "Optional spending category for the transfer (null to clear). Does not make the transfer count as income/expense; only surfaces it under this category in the monthly category breakdown.",
+  })
+  @IsOptional()
+  @IsUUID()
+  categoryId?: string | null;
+
   @ApiPropertyOptional({ description: "Transfer description/notes" })
   @IsOptional()
   @IsString()

@@ -267,7 +267,8 @@
       "transferAmount": "Transfer Amount",
       "transferAmountWithCurrency": "Transfer Amount ({currency})",
       "amountReceived": "Amount Received ({currency})",
-      "payeeOptional": "Payee (Optional)"
+      "payeeOptional": "Payee (Optional)",
+      "categoryOptional": "Category (Optional)"
     },
     "placeholders": {
       "selectAccount": "Select account...",
@@ -296,6 +297,7 @@
       "transaction": "Transaction"
     },
     "transferAmountNote": "Amount must be positive for transfers",
+    "transferCategoryNote": "Optional. The transfer still won't count as income or expense, but this category lets it appear in the monthly category breakdown (e.g. monthly investment contributions).",
     "amountReceivedNote": "Amount received after currency conversion",
     "splitTransaction": "Split Transaction",
     "newTagTitle": "New Tag",

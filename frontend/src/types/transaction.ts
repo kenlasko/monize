@@ -174,6 +174,8 @@ export interface CreateTransferData {
   description?: string;
   referenceNumber?: string;
   status?: TransactionStatus;
+  /** Optional category; surfaces the transfer in the monthly category breakdown without counting as income/expense. null clears it. */
+  categoryId?: string | null;
 }
 
 export interface TransferResult {

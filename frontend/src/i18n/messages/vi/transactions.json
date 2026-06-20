@@ -267,7 +267,8 @@
       "transferAmount": "Số tiền chuyển",
       "transferAmountWithCurrency": "Số tiền chuyển ({currency})",
       "amountReceived": "Số tiền nhận ({currency})",
-      "payeeOptional": "Người nhận (tùy chọn)"
+      "payeeOptional": "Người nhận (tùy chọn)",
+      "categoryOptional": "Danh mục (Tùy chọn)"
     },
     "placeholders": {
       "selectAccount": "Chọn tài khoản...",
@@ -320,7 +321,8 @@
     },
     "ariaHistory": "Hiển thị giao tác gần đây",
     "ariaHistoryForPayee": "Hiển thị giao tác gần đây cho người nhận này",
-    "historyTitle": "Điền nhanh từ giao tác gần đây"
+    "historyTitle": "Điền nhanh từ giao tác gần đây",
+    "transferCategoryNote": "Tùy chọn. Giao dịch chuyển khoản vẫn không được tính là thu nhập hay chi phí, nhưng danh mục này giúp nó xuất hiện trong bảng phân tích danh mục hằng tháng (ví dụ: khoản đóng góp đầu tư hằng tháng)."
   },
   "splitEditor": {
     "header": "Chi tiết phần chia",

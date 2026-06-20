@@ -531,9 +531,19 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
       setSelectedCategoryId(categoryId);
       setValue('categoryId', categoryId, { shouldDirty: true, shouldValidate: true });
 
-      // Adjust amount sign based on category type (income = positive, expense = negative)
+      // Adjust amount sign based on category type (income = positive, expense
+      // = negative) -- only in normal mode. A transfer amount is always entered
+      // as a positive number (the legs' signs are derived on save), so an
+      // expense category must not flip it negative or the transfer fails the
+      // "amount must be positive" check. Mirrors the mode guard in
+      // handleAmountChange.
       const category = categories.find(c => c.id === categoryId);
-      if (category && watchedAmount !== undefined && watchedAmount !== 0) {
+      if (
+        category &&
+        mode === 'normal' &&
+        watchedAmount !== undefined &&
+        watchedAmount !== 0
+      ) {
         const absAmount = Math.abs(watchedAmount);
         const newAmount = category.isIncome ? absAmount : -absAmount;
         if (newAmount !== watchedAmount) {
@@ -758,6 +768,9 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
           status: data.status,
           payeeId: transferPayeeId || null,
           payeeName: transferPayeeName || null,
+          // Optional category: lets the transfer surface in the monthly category
+          // breakdown without counting as income/expense. null clears it on edit.
+          categoryId: data.categoryId || null,
           tagIds: selectedTagIds.length > 0 ? selectedTagIds : [],
         };
 
@@ -1001,6 +1014,10 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
           crossCurrencyInfo={crossCurrencyInfo}
           payees={payees}
           payeeAliasMap={payeeAliasMap}
+          categoryOptions={categoryOptions}
+          selectedCategoryId={selectedCategoryId}
+          handleCategoryChange={handleCategoryChange}
+          handleCategoryCreate={handleCategoryCreate}
           transaction={transaction}
           createdAtSlot={createdAtSlot}
         />

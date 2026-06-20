@@ -267,7 +267,8 @@
       "transferAmount": "振替金額",
       "transferAmountWithCurrency": "振替金額（{currency}）",
       "amountReceived": "受取金額（{currency}）",
-      "payeeOptional": "支払先（任意）"
+      "payeeOptional": "支払先（任意）",
+      "categoryOptional": "カテゴリ（任意）"
     },
     "placeholders": {
       "selectAccount": "口座を選択...",
@@ -320,7 +321,8 @@
     },
     "ariaHistory": "最近の取引を表示",
     "ariaHistoryForPayee": "この支払先の最近の取引を表示",
-    "historyTitle": "最近の取引からクイック入力"
+    "historyTitle": "最近の取引からクイック入力",
+    "transferCategoryNote": "任意。この振替は引き続き収入や支出として計上されませんが、このカテゴリを設定すると月次カテゴリ内訳に表示されます（例: 毎月の投資拠出）。"
   },
   "splitEditor": {
     "header": "分割の詳細",

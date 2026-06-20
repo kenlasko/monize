@@ -267,7 +267,8 @@
       "transferAmount": "转账金额",
       "transferAmountWithCurrency": "转账金额（{currency}）",
       "amountReceived": "收到金额（{currency}）",
-      "payeeOptional": "收款人（可选）"
+      "payeeOptional": "收款人（可选）",
+      "categoryOptional": "类别（可选）"
     },
     "placeholders": {
       "selectAccount": "选择账户...",
@@ -320,7 +321,8 @@
     },
     "ariaHistory": "显示近期交易",
     "ariaHistoryForPayee": "显示此收款人的近期交易",
-    "historyTitle": "从近期交易快速填充"
+    "historyTitle": "从近期交易快速填充",
+    "transferCategoryNote": "可选。该转账仍不计为收入或支出，但此类别可让它显示在每月类别细分中（例如每月投资缴款）。"
   },
   "splitEditor": {
     "header": "拆分详情",

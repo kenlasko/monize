@@ -267,7 +267,8 @@
       "transferAmount": "Montant du virement",
       "transferAmountWithCurrency": "Montant du virement ({currency})",
       "amountReceived": "Montant reçu ({currency})",
-      "payeeOptional": "Bénéficiaire (facultatif)"
+      "payeeOptional": "Bénéficiaire (facultatif)",
+      "categoryOptional": "Catégorie (facultatif)"
     },
     "placeholders": {
       "selectAccount": "Sélectionner un compte...",
@@ -320,7 +321,8 @@
     },
     "ariaHistory": "Afficher les transactions récentes",
     "ariaHistoryForPayee": "Afficher les transactions récentes pour ce bénéficiaire",
-    "historyTitle": "Remplissage rapide depuis une transaction récente"
+    "historyTitle": "Remplissage rapide depuis une transaction récente",
+    "transferCategoryNote": "Facultatif. Le transfert ne comptera toujours pas comme un revenu ni une dépense, mais cette catégorie lui permet d'apparaître dans la répartition mensuelle par catégorie (par exemple des versements d'investissement mensuels)."
   },
   "splitEditor": {
     "header": "Détails de la répartition",

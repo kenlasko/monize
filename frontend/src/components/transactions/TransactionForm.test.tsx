@@ -596,8 +596,11 @@ describe('TransactionForm', () => {
         expect(screen.getByText('To Account')).toBeInTheDocument();
       });
 
-      // Category should not be visible in transfer mode
+      // The normal-mode required Category field is gone, but the optional
+      // transfer category field is available (lets the transfer surface in the
+      // monthly category breakdown).
       expect(screen.queryByText('Category')).not.toBeInTheDocument();
+      expect(screen.getByText('Category (Optional)')).toBeInTheDocument();
 
       // Switch back to normal
       fireEvent.click(screen.getByText('Transaction'));
@@ -3333,6 +3336,49 @@ describe('TransactionForm', () => {
       expect(payload.toCurrencyCode).toBe('CAD');
       // No cross-currency target amount for a same-currency transfer
       expect(payload.toAmount).toBeUndefined();
+    });
+
+    it('keeps the amount positive when an expense category is chosen on a transfer', async () => {
+      // Regression for the transfer category sign bug: selecting an expense
+      // category in transfer mode must NOT flip the amount negative, or the
+      // transfer fails the "amount must be positive" check. The sign is only
+      // derived for normal-mode transactions; a transfer's leg signs are set
+      // on save.
+      render(<TransactionForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} defaultAccountId="acc-1" />);
+      await waitFor(() => expect(screen.getByText('Transfer')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Transfer'));
+      await waitFor(() => expect(screen.getByText('To Account')).toBeInTheDocument());
+
+      const amountInput = screen.getByPlaceholderText('0.00');
+      await act(async () => {
+        fireEvent.change(amountInput, { target: { value: '125' } });
+      });
+
+      // Pick a same-currency CAD destination (acc-2).
+      const selects = document.querySelectorAll('select');
+      const toAccountSelect = Array.from(selects).find((s) =>
+        Array.from(s.options).some((o) => o.value === 'acc-2') && s.name !== 'accountId',
+      );
+      await act(async () => {
+        if (toAccountSelect) fireEvent.change(toAccountSelect, { target: { value: 'acc-2' } });
+      });
+
+      // Choose the expense category "Groceries" (cat-1, isIncome=false) on the
+      // optional transfer category field.
+      await act(async () => {
+        fireEvent.change(screen.getByTestId('combobox-input-Category (Optional)'), {
+          target: { value: 'Groceries' },
+        });
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Create Transfer/i }));
+      });
+      await waitFor(() => expect(mockCreateTransfer).toHaveBeenCalled());
+      const payload = mockCreateTransfer.mock.calls[0][0];
+      expect(payload.categoryId).toBe('cat-1');
+      // The expense category did not negate the transfer amount.
+      expect(payload.amount).toBe(125);
     });
 
     it('creates a transfer with a payee and a cross-currency target amount', async () => {

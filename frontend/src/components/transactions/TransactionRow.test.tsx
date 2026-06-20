@@ -161,8 +161,29 @@ describe('TransactionRow', () => {
   });
 
   it('renders transfer without linked account', () => {
-    renderRow({}, { isTransfer: true, linkedTransaction: null, linkedTransactionId: null });
+    renderRow({}, { isTransfer: true, linkedTransaction: null, linkedTransactionId: null, category: null, categoryId: null });
     expect(screen.getByText('Transfer')).toBeInTheDocument();
+  });
+
+  it('shows the assigned category alongside the transfer arrow for a categorized transfer', () => {
+    const onCategoryClick = vi.fn();
+    renderRow(
+      { onCategoryClick },
+      {
+        isTransfer: true,
+        linkedTransactionId: 'l1',
+        linkedTransaction: { id: 'l1', account: { id: 'a2', name: 'Savings' } } as any,
+        category: { id: 'c9', name: 'Investments', color: '#00ff00' } as any,
+        categoryId: 'c9',
+        amount: -1000,
+      },
+    );
+    // The assigned category is no longer hidden behind the transfer chip.
+    expect(screen.getByText('Investments')).toBeInTheDocument();
+    expect(screen.getByText(/Savings/)).toBeInTheDocument();
+    // The category chip filters by category, like a normal category chip.
+    fireEvent.click(screen.getByText('Investments'));
+    expect(onCategoryClick).toHaveBeenCalledWith('c9');
   });
 
   it('renders Investment badge when linkedInvestmentTransactionId', () => {

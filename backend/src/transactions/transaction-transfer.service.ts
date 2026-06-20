@@ -9,6 +9,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, DataSource, QueryRunner } from "typeorm";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
+import { Category } from "../categories/entities/category.entity";
 import { CreateTransferDto } from "./dto/create-transfer.dto";
 import { UpdateTransferDto } from "./dto/update-transfer.dto";
 import { AccountsService } from "../accounts/accounts.service";
@@ -83,6 +84,8 @@ export class TransactionTransferService {
     private transactionsRepository: Repository<Transaction>,
     @InjectRepository(TransactionSplit)
     private splitsRepository: Repository<TransactionSplit>,
+    @InjectRepository(Category)
+    private categoriesRepository: Repository<Category>,
     @Inject(forwardRef(() => AccountsService))
     private accountsService: AccountsService,
     private payeesService: PayeesService,
@@ -94,6 +97,26 @@ export class TransactionTransferService {
 
   private triggerNetWorthRecalc(accountId: string, userId: string): void {
     this.netWorthService.triggerDebouncedRecalc(accountId, userId);
+  }
+
+  /**
+   * Ensure a category belongs to the user before it is stored on a transfer
+   * leg. Mirrors the check in transactions.service.create(). A null/undefined
+   * id is allowed (no category / clearing it).
+   */
+  private async assertCategoryOwned(
+    userId: string,
+    categoryId: string | null | undefined,
+  ): Promise<void> {
+    if (!categoryId) return;
+    const category = await this.categoriesRepository.findOne({
+      where: { id: categoryId, userId },
+    });
+    if (!category) {
+      throw new BadRequestException(
+        tr("errors.transactions.categoryNotFound", "Category not found"),
+      );
+    }
   }
 
   async createTransfer(
@@ -115,6 +138,7 @@ export class TransactionTransferService {
       payeeName: customPayeeName,
       referenceNumber,
       status = TransactionStatus.UNRECONCILED,
+      categoryId,
     } = createTransferDto;
 
     if (fromAccountId === toAccountId) {
@@ -134,6 +158,8 @@ export class TransactionTransferService {
         ),
       );
     }
+
+    await this.assertCategoryOwned(userId, categoryId);
 
     const fromAccount = await this.accountsService.findOne(
       userId,
@@ -171,6 +197,7 @@ export class TransactionTransferService {
         isTransfer: true,
         payeeId: payeeId || null,
         payeeName: fromPayeeName,
+        categoryId: categoryId || null,
       });
 
       const toTransaction = queryRunner.manager.create(Transaction, {
@@ -186,6 +213,7 @@ export class TransactionTransferService {
         isTransfer: true,
         payeeId: payeeId || null,
         payeeName: toPayeeName,
+        categoryId: categoryId || null,
       });
 
       const savedFromTransaction =
@@ -755,6 +783,8 @@ export class TransactionTransferService {
     const dateChanged = oldDate !== newDate;
     const anyFuture = oldIsFuture || newIsFuture;
 
+    await this.assertCategoryOwned(userId, updateDto.categoryId);
+
     const fromUpdateData = this.buildFromUpdateData(
       updateDto,
       newAmount,
@@ -898,6 +928,8 @@ export class TransactionTransferService {
     if (updateDto.referenceNumber !== undefined)
       data.referenceNumber = updateDto.referenceNumber ?? null;
     if (updateDto.status !== undefined) data.status = updateDto.status;
+    if (updateDto.categoryId !== undefined)
+      data.categoryId = updateDto.categoryId || null;
     if (updateDto.fromCurrencyCode)
       data.currencyCode = updateDto.fromCurrencyCode;
     if (updateDto.payeeId !== undefined)
@@ -964,6 +996,8 @@ export class TransactionTransferService {
     if (updateDto.referenceNumber !== undefined)
       data.referenceNumber = updateDto.referenceNumber ?? null;
     if (updateDto.status !== undefined) data.status = updateDto.status;
+    if (updateDto.categoryId !== undefined)
+      data.categoryId = updateDto.categoryId || null;
     if (updateDto.toCurrencyCode) data.currencyCode = updateDto.toCurrencyCode;
     if (updateDto.exchangeRate) data.exchangeRate = updateDto.exchangeRate;
     if (updateDto.payeeId !== undefined)

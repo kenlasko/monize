@@ -267,7 +267,8 @@
       "transferAmount": "ट्रांसफर राशि",
       "transferAmountWithCurrency": "ट्रांसफर राशि ({currency})",
       "amountReceived": "प्राप्त राशि ({currency})",
-      "payeeOptional": "भुगतानकर्ता (वैकल्पिक)"
+      "payeeOptional": "भुगतानकर्ता (वैकल्पिक)",
+      "categoryOptional": "श्रेणी (वैकल्पिक)"
     },
     "placeholders": {
       "selectAccount": "खाता चुनें...",
@@ -320,7 +321,8 @@
     },
     "ariaHistory": "हाल के लेन-देन दिखाएं",
     "ariaHistoryForPayee": "इस भुगतानकर्ता के हाल के लेन-देन दिखाएं",
-    "historyTitle": "हाल के लेन-देन से त्वरित भरण"
+    "historyTitle": "हाल के लेन-देन से त्वरित भरण",
+    "transferCategoryNote": "वैकल्पिक। ट्रांसफर अब भी आय या व्यय के रूप में नहीं गिना जाएगा, लेकिन यह श्रेणी इसे मासिक श्रेणी विवरण में दिखने देती है (जैसे, मासिक निवेश योगदान)।"
   },
   "splitEditor": {
     "header": "विभाजन विवरण",
