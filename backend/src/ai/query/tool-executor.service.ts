@@ -30,6 +30,12 @@ import { BudgetReportsService } from "../../budgets/budget-reports.service";
 import { PortfolioService } from "../../securities/portfolio.service";
 import { SecuritiesService } from "../../securities/securities.service";
 import {
+  SecurityToolPrepService,
+  ManageCreateSecurityRow,
+  ManageUpdateSecurityRow,
+  ManageDeleteSecurityRow,
+} from "../../securities/security-tool-prep.service";
+import {
   InvestmentTransactionsService,
   InvestmentCreateRowInput,
   InvestmentUpdateRowInput,
@@ -91,6 +97,7 @@ export class ToolExecutorService {
     private readonly budgetReportsService: BudgetReportsService,
     private readonly portfolioService: PortfolioService,
     private readonly securitiesService: SecuritiesService,
+    private readonly securityPrepService: SecurityToolPrepService,
     private readonly investmentTransactionsService: InvestmentTransactionsService,
     @Inject(forwardRef(() => ScheduledTransactionsService))
     private readonly scheduledTransactionsService: ScheduledTransactionsService,
@@ -178,8 +185,8 @@ export class ToolExecutorService {
         case "manage_payees":
           result = await this.managePayees(userId, validatedInput);
           break;
-        case "create_security":
-          result = await this.createSecurityAction(userId, validatedInput);
+        case "manage_securities":
+          result = await this.manageSecurities(userId, validatedInput);
           break;
         case "lookup_securities":
           result = await this.lookupSecuritiesAction(userId, validatedInput);
@@ -1021,42 +1028,242 @@ export class ToolExecutorService {
     };
   }
 
-  private async createSecurityAction(
+  /**
+   * Unified security write handler. Mirrors manageTransactions/managePayees:
+   * resolves the lookup/symbol + builds previews via the shared
+   * SecurityToolPrepService, then emits the right pending action(s) per
+   * operation/approvalMode.
+   */
+  private async manageSecurities(
     userId: string,
     input: Record<string, unknown>,
   ): Promise<ToolResult> {
-    const query = input.query as string;
-    const exchange = input.exchange as string | undefined;
-    const securityType = input.securityType as string | undefined;
-    const isFavourite = input.isFavourite as boolean | undefined;
-    const currencyCode = input.currencyCode as string | undefined;
+    const operation = input.operation as "create" | "update" | "delete";
+    const items = (input.items as Array<Record<string, unknown>>) ?? [];
+    const approvalMode =
+      (input.approvalMode as "bulk" | "individual" | undefined) ?? "bulk";
+    const single = items.length === 1;
 
-    let preview;
-    try {
-      preview = await this.securitiesService.previewCreateSecurity(userId, {
-        query,
-        exchange,
-        securityType,
-        isFavourite,
-        currencyCode,
-      });
-    } catch (err) {
-      return this.toolErrorFromException(
-        err,
-        "Could not prepare the security.",
-      );
+    if (operation === "create") {
+      return this.manageSecurityCreate(userId, items, single, approvalMode);
+    }
+    if (operation === "update") {
+      return this.manageSecurityUpdate(userId, items, single, approvalMode);
+    }
+    return this.manageSecurityDelete(userId, items, single, approvalMode);
+  }
+
+  private toSecurityCreateRow(
+    item: Record<string, unknown>,
+  ): ManageCreateSecurityRow {
+    return {
+      query: item.query as string,
+      exchange: item.exchange as string | undefined,
+      securityType: item.securityType as string | undefined,
+      isFavourite: item.isFavourite as boolean | undefined,
+      currencyCode: item.currencyCode as string | undefined,
+    };
+  }
+
+  private toSecurityUpdateRow(
+    item: Record<string, unknown>,
+  ): ManageUpdateSecurityRow {
+    return {
+      query: item.symbol as string,
+      securityType: item.securityType as string | undefined,
+      exchange: item.exchange as string | undefined,
+      isFavourite: item.isFavourite as boolean | undefined,
+      currencyCode: item.currencyCode as string | undefined,
+    };
+  }
+
+  private toSecurityDeleteRow(
+    item: Record<string, unknown>,
+  ): ManageDeleteSecurityRow {
+    return { query: item.symbol as string };
+  }
+
+  private async manageSecurityCreate(
+    userId: string,
+    items: Array<Record<string, unknown>>,
+    single: boolean,
+    approvalMode: "bulk" | "individual",
+  ): Promise<ToolResult> {
+    if (single) {
+      try {
+        const preview =
+          await this.securityPrepService.prepareCreateSecuritySingle(
+            userId,
+            this.toSecurityCreateRow(items[0]),
+          );
+        return {
+          data: PENDING_ACTION_TOOL_RESULT,
+          summary: `Prepared to create security ${preview.symbol} (${preview.name})${preview.exchange ? ` on ${preview.exchange}` : ""}. Awaiting user confirmation.`,
+          sources: [],
+          pendingAction: this.actionBuilder.buildCreateSecurity(
+            userId,
+            preview,
+          ),
+        };
+      } catch (err) {
+        return this.toolErrorFromException(
+          err,
+          "Could not prepare the security.",
+        );
+      }
     }
 
-    const pendingAction = this.actionBuilder.buildCreateSecurity(
+    const prep = await this.securityPrepService.prepareCreateSecurities(
       userId,
-      preview,
+      items.map((i) => this.toSecurityCreateRow(i)),
     );
-
+    if (prep.okPreviews.length === 0) {
+      return this.toolError(
+        "None of the securities could be prepared. Check the ticker/name for each row.",
+      );
+    }
+    if (approvalMode === "individual") {
+      return {
+        data: PENDING_ACTION_TOOL_RESULT,
+        summary: `Prepared ${prep.okPreviews.length} individual security card${prep.okPreviews.length === 1 ? "" : "s"}${prep.skipped.length ? ` (${prep.skipped.length} skipped)` : ""}. Awaiting user confirmation.`,
+        sources: [],
+        pendingActions: prep.okPreviews.map((p) =>
+          this.actionBuilder.buildCreateSecurity(userId, p),
+        ),
+      };
+    }
     return {
       data: PENDING_ACTION_TOOL_RESULT,
-      summary: `Prepared to create security ${preview.symbol} (${preview.name})${preview.exchange ? ` on ${preview.exchange}` : ""}. Awaiting user confirmation.`,
+      summary: `Prepared ${prep.okPreviews.length} security/securities${prep.skipped.length ? ` (${prep.skipped.length} skipped)` : ""}. Awaiting user confirmation.`,
       sources: [],
-      pendingAction,
+      pendingAction: this.actionBuilder.buildBatchActions(
+        userId,
+        "create_security",
+        prep.okRows,
+        prep.previewRows,
+      ),
+    };
+  }
+
+  private async manageSecurityUpdate(
+    userId: string,
+    items: Array<Record<string, unknown>>,
+    single: boolean,
+    approvalMode: "bulk" | "individual",
+  ): Promise<ToolResult> {
+    if (single) {
+      try {
+        const preview =
+          await this.securityPrepService.prepareUpdateSecuritySingle(
+            userId,
+            this.toSecurityUpdateRow(items[0]),
+          );
+        return {
+          data: PENDING_ACTION_TOOL_RESULT,
+          summary: `Prepared an edit to security ${preview.symbol}. Awaiting user confirmation.`,
+          sources: [],
+          pendingAction: this.actionBuilder.buildUpdateSecurity(
+            userId,
+            preview,
+          ),
+        };
+      } catch (err) {
+        return this.toolErrorFromException(
+          err,
+          "Could not prepare the security edit.",
+        );
+      }
+    }
+
+    const prep = await this.securityPrepService.prepareUpdateSecurities(
+      userId,
+      items.map((i) => this.toSecurityUpdateRow(i)),
+    );
+    if (prep.okPreviews.length === 0) {
+      return this.toolError("None of the security edits could be prepared.");
+    }
+    if (approvalMode === "individual") {
+      return {
+        data: PENDING_ACTION_TOOL_RESULT,
+        summary: `Prepared ${prep.okPreviews.length} individual security edit card${prep.okPreviews.length === 1 ? "" : "s"}${prep.skipped.length ? ` (${prep.skipped.length} skipped)` : ""}. Awaiting user confirmation.`,
+        sources: [],
+        pendingActions: prep.okPreviews.map((p) =>
+          this.actionBuilder.buildUpdateSecurity(userId, p),
+        ),
+      };
+    }
+    return {
+      data: PENDING_ACTION_TOOL_RESULT,
+      summary: `Prepared ${prep.okPreviews.length} security edit${prep.okPreviews.length === 1 ? "" : "s"}${prep.skipped.length ? ` (${prep.skipped.length} skipped)` : ""}. Awaiting user confirmation.`,
+      sources: [],
+      pendingAction: this.actionBuilder.buildBatchActions(
+        userId,
+        "update_security",
+        prep.okRows,
+        prep.previewRows,
+      ),
+    };
+  }
+
+  private async manageSecurityDelete(
+    userId: string,
+    items: Array<Record<string, unknown>>,
+    single: boolean,
+    approvalMode: "bulk" | "individual",
+  ): Promise<ToolResult> {
+    if (single) {
+      try {
+        const preview =
+          await this.securityPrepService.prepareDeleteSecuritySingle(
+            userId,
+            this.toSecurityDeleteRow(items[0]),
+          );
+        return {
+          data: PENDING_ACTION_TOOL_RESULT,
+          summary: `Prepared to delete security ${preview.symbol} (${preview.name}). Awaiting user confirmation.`,
+          sources: [],
+          pendingAction: this.actionBuilder.buildDeleteSecurity(
+            userId,
+            preview,
+          ),
+        };
+      } catch (err) {
+        return this.toolErrorFromException(
+          err,
+          "Could not prepare the security deletion.",
+        );
+      }
+    }
+
+    const prep = await this.securityPrepService.prepareDeleteSecurities(
+      userId,
+      items.map((i) => this.toSecurityDeleteRow(i)),
+    );
+    if (prep.okPreviews.length === 0) {
+      return this.toolError(
+        "None of the securities could be prepared for deletion.",
+      );
+    }
+    if (approvalMode === "individual") {
+      return {
+        data: PENDING_ACTION_TOOL_RESULT,
+        summary: `Prepared ${prep.okPreviews.length} individual security delete card${prep.okPreviews.length === 1 ? "" : "s"}${prep.skipped.length ? ` (${prep.skipped.length} skipped)` : ""}. Awaiting user confirmation.`,
+        sources: [],
+        pendingActions: prep.okPreviews.map((p) =>
+          this.actionBuilder.buildDeleteSecurity(userId, p),
+        ),
+      };
+    }
+    return {
+      data: PENDING_ACTION_TOOL_RESULT,
+      summary: `Prepared to delete ${prep.okPreviews.length} security/securities${prep.skipped.length ? ` (${prep.skipped.length} skipped)` : ""}. Awaiting user confirmation.`,
+      sources: [],
+      pendingAction: this.actionBuilder.buildBatchActions(
+        userId,
+        "delete_security",
+        prep.okRows,
+        prep.previewRows,
+      ),
     };
   }
 

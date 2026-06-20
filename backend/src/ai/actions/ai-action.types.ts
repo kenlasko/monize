@@ -24,6 +24,8 @@ export type AiActionType =
   | "update_payee"
   | "delete_payee"
   | "create_security"
+  | "update_security"
+  | "delete_security"
   | "create_investment_transaction"
   | "create_transactions"
   | "create_investment_transactions"
@@ -42,6 +44,8 @@ export const AI_ACTION_TYPES: AiActionType[] = [
   "update_payee",
   "delete_payee",
   "create_security",
+  "update_security",
+  "delete_security",
   "create_investment_transaction",
   "create_transactions",
   "create_investment_transactions",
@@ -135,6 +139,26 @@ export interface CreateSecurityDescriptor extends BaseDescriptor {
   /** Per-security quote-source override carried from the lookup; null = user default. */
   quoteProvider: "yahoo" | "msn" | null;
   msnInstrumentId: string | null;
+}
+
+/**
+ * Edit an existing security's classification/display fields. Carries the
+ * resulting state so confirm applies an idempotent overwrite of the identified
+ * security.
+ */
+export interface UpdateSecurityDescriptor extends BaseDescriptor {
+  type: "update_security";
+  securityId: string;
+  securityType: string | null;
+  exchange: string | null;
+  currencyCode: string;
+  isFavourite: boolean;
+}
+
+/** Delete an existing security (identified only; confirm re-checks ownership). */
+export interface DeleteSecurityDescriptor extends BaseDescriptor {
+  type: "delete_security";
+  securityId: string;
 }
 
 export interface CreateInvestmentTransactionDescriptor extends BaseDescriptor {
@@ -372,6 +396,32 @@ export interface BatchDeletePayeeRow {
   payeeId: string;
 }
 
+/** One resolved new security inside a `batch_actions` envelope (operation `create_security`). */
+export interface BatchCreateSecurityRow {
+  symbol: string;
+  name: string;
+  securityType: string | null;
+  exchange: string | null;
+  currencyCode: string;
+  isFavourite: boolean;
+  quoteProvider: "yahoo" | "msn" | null;
+  msnInstrumentId: string | null;
+}
+
+/** One resolved security edit inside a `batch_actions` envelope (operation `update_security`). */
+export interface BatchUpdateSecurityRow {
+  securityId: string;
+  securityType: string | null;
+  exchange: string | null;
+  currencyCode: string;
+  isFavourite: boolean;
+}
+
+/** One security deletion inside a `batch_actions` envelope (operation `delete_security`). */
+export interface BatchDeleteSecurityRow {
+  securityId: string;
+}
+
 export type BatchActionRow =
   | TransactionRowDescriptor
   | BatchUpdateTransactionRow
@@ -381,7 +431,10 @@ export type BatchActionRow =
   | BatchDeleteInvestmentTransactionRow
   | BatchCreatePayeeRow
   | BatchUpdatePayeeRow
-  | BatchDeletePayeeRow;
+  | BatchDeletePayeeRow
+  | BatchCreateSecurityRow
+  | BatchUpdateSecurityRow
+  | BatchDeleteSecurityRow;
 
 /**
  * Generic homogeneous bulk envelope executed as one unit. `operation` selects
@@ -402,7 +455,10 @@ export interface BatchActionsDescriptor extends BaseDescriptor {
     | "delete_investment"
     | "create_payee"
     | "update_payee"
-    | "delete_payee";
+    | "delete_payee"
+    | "create_security"
+    | "update_security"
+    | "delete_security";
   /** Order is load-bearing: covered by the signature and preserved on confirm. */
   rows: BatchActionRow[];
 }
@@ -414,6 +470,8 @@ export type AiActionDescriptor =
   | UpdatePayeeDescriptor
   | DeletePayeeDescriptor
   | CreateSecurityDescriptor
+  | UpdateSecurityDescriptor
+  | DeleteSecurityDescriptor
   | CreateInvestmentTransactionDescriptor
   | CreateTransactionsDescriptor
   | CreateInvestmentTransactionsDescriptor

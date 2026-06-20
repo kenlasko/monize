@@ -608,7 +608,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
   {
     name: "lookup_securities",
     description:
-      "Look up a ticker symbol or company name against the user's configured price provider (Yahoo/MSN) and return the list of matching securities (symbol, name, exchange, type, currency) WITHOUT adding anything. This is read-only and does not change the user's data. Use it when the user wants to add a security but the reference is ambiguous, or to confirm the exact symbol/exchange before calling create_security: present the matches and ask the user which one they mean. Each candidate is flagged with alreadyAdded=true when a security with that symbol is already in the user's list.",
+      "Look up a ticker symbol or company name against the user's configured price provider (Yahoo/MSN) and return the list of matching securities (symbol, name, exchange, type, currency) WITHOUT adding anything. This is read-only and does not change the user's data. Use it when the user wants to add a security but the reference is ambiguous, or to confirm the exact symbol/exchange before adding it with manage_securities: present the matches and ask the user which one they mean. Each candidate is flagged with alreadyAdded=true when a security with that symbol is already in the user's list.",
     inputSchema: {
       type: "object",
       properties: {
@@ -634,41 +634,66 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
     },
   },
   {
-    name: "create_security",
+    name: "manage_securities",
     description:
-      "Propose adding a new security (stock, ETF, mutual fund, etc.) to the user's security list so it can later be traded or held. This does NOT create anything immediately: it shows the user a confirmation card they must explicitly approve before the security is saved. Use it only when the user clearly asks to add a security in their latest message. The security is looked up and validated automatically by ticker symbol or name against the user's configured price provider, which fills in the official symbol, name, exchange, type, and currency -- do not invent those. Provide the optional `exchange` only to disambiguate a symbol that trades on several exchanges (e.g. a dual-listed ticker); if the lookup is ambiguous the tool returns an error listing the candidates so you can re-call with an exchange. Only ever pass `exchange`/`securityType` values from the enumerated lists below; never guess a value outside them. One security per call -- call the tool again for each additional security. After calling this tool, briefly tell the user to review and approve the card; never claim the security was created.",
+      "Create, edit, or delete the user's securities (stocks, ETFs, mutual funds). This does NOT change anything immediately: it shows the user one or more confirmation cards they must explicitly approve before anything is saved. operation = 'create' | 'update' | 'delete' with an items array (1-25 rows). create: { query, exchange?, securityType?, isFavourite?, currencyCode? } -- the security is looked up and validated by ticker/name against the user's configured price provider, which fills the official symbol/name/exchange/type/currency (do not invent them); pass exchange only to disambiguate a dual-listed ticker. update: { symbol, securityType?, exchange?, isFavourite?, currencyCode? } -- symbol identifies an existing security (ticker or name); provide the classification/display fields to change. delete: { symbol } -- fails if the security still has holdings or investment transactions. Only ever pass exchange/securityType values from the enumerated lists below. approvalMode = 'bulk' (default) one card for all; 'individual' one card per item. After calling, briefly tell the user to review and approve the card(s); never claim the change was made.",
     inputSchema: {
       type: "object",
       properties: {
-        query: {
+        operation: {
           type: "string",
-          description:
-            "Ticker symbol (e.g. 'AAPL') or security name (e.g. 'Apple Inc.') to look up and validate. Required.",
+          enum: ["create", "update", "delete"],
+          description: "The operation to perform on every item.",
         },
-        exchange: {
+        items: {
+          type: "array",
+          description: "The rows to act on (1-25).",
+          items: {
+            type: "object",
+            properties: {
+              query: {
+                type: "string",
+                description:
+                  "create: ticker symbol or security name to look up and validate.",
+              },
+              symbol: {
+                type: "string",
+                description:
+                  "update/delete: the existing security's ticker symbol (or name).",
+              },
+              exchange: {
+                type: "string",
+                enum: [...SECURITY_EXCHANGES],
+                description:
+                  "create: exchange to disambiguate the lookup. update: new exchange. MUST be exactly one of the listed values.",
+              },
+              securityType: {
+                type: "string",
+                enum: [...SECURITY_TYPES],
+                description:
+                  "create/update: security type. MUST be exactly one of the listed values (UPPER_SNAKE_CASE).",
+              },
+              isFavourite: {
+                type: "boolean",
+                description:
+                  "create/update: pin the security to the dashboard Favourite Securities widget.",
+              },
+              currencyCode: {
+                type: "string",
+                description:
+                  "create/update: ISO 4217 currency code (e.g. 'USD', 'CAD').",
+              },
+            },
+          },
+        },
+        approvalMode: {
           type: "string",
-          enum: [...SECURITY_EXCHANGES],
+          enum: ["bulk", "individual"],
           description:
-            "Optional stock exchange used to disambiguate the lookup when a symbol trades on more than one exchange. MUST be exactly one of the listed values; omit it to let the lookup choose the best match. Do not guess an exchange not in this list.",
-        },
-        securityType: {
-          type: "string",
-          enum: [...SECURITY_TYPES],
-          description:
-            "Optional security type override. MUST be exactly one of the listed values (UPPER_SNAKE_CASE). Omit it to use the type the lookup determines. Do not guess a type not in this list.",
-        },
-        isFavourite: {
-          type: "boolean",
-          description:
-            "Optional: pin the new security to the dashboard Favourite Securities widget. Defaults to false.",
-        },
-        currencyCode: {
-          type: "string",
-          description:
-            "Optional ISO 4217 currency code (e.g. 'USD', 'CAD') for the security. Overrides the currency the lookup determines, and lets creation proceed when the lookup can't determine one. Omit to use the looked-up currency.",
+            "How multi-item batches are approved: 'bulk' (default) one card for all; 'individual' one card per item. Ignored for a single item.",
         },
       },
-      required: ["query"],
+      required: ["operation", "items"],
     },
   },
   {

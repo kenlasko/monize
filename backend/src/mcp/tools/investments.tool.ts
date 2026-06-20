@@ -4,6 +4,12 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { PortfolioService } from "../../securities/portfolio.service";
 import { HoldingsService } from "../../securities/holdings.service";
 import { SecuritiesService } from "../../securities/securities.service";
+import {
+  SecurityToolPrepService,
+  ManageCreateSecurityRow,
+  ManageUpdateSecurityRow,
+  ManageDeleteSecurityRow,
+} from "../../securities/security-tool-prep.service";
 import { AccountsService } from "../../accounts/accounts.service";
 import {
   InvestmentTransactionsService,
@@ -38,13 +44,14 @@ import {
   listInvestmentTransactionsOutput,
   getCapitalGainsOutput,
   getHoldingDetailsOutput,
-  createSecurityOutput,
+  manageSecuritiesOutput,
   lookupSecuritiesOutput,
   manageInvestmentTransactionsOutput,
 } from "../tool-output-schemas";
-import { READ_ONLY, CREATE, WRITE } from "../mcp-annotations";
+import { READ_ONLY, WRITE } from "../mcp-annotations";
 
 type ManageInvOperation = "create" | "update" | "delete";
+type ManageSecOperation = "create" | "update" | "delete";
 type ApprovalMode = "bulk" | "individual";
 
 interface ManageInvItem {
@@ -62,6 +69,16 @@ interface ManageInvItem {
   transactionId?: string;
 }
 
+interface ManageSecItem {
+  // create (lookup query) / update + delete (symbol or name)
+  query?: string;
+  symbol?: string;
+  securityType?: string;
+  exchange?: string;
+  isFavourite?: boolean;
+  currencyCode?: string;
+}
+
 @Injectable()
 export class McpInvestmentsTools {
   private readonly writeLimiter = new McpWriteLimiter();
@@ -71,6 +88,7 @@ export class McpInvestmentsTools {
     private readonly holdingsService: HoldingsService,
     private readonly investmentTransactionsService: InvestmentTransactionsService,
     private readonly securitiesService: SecuritiesService,
+    private readonly securityPrepService: SecurityToolPrepService,
     private readonly relayService: AiRelayService,
     private readonly actionBuilder: AiActionBuilderService,
     private readonly accountsService: AccountsService,
@@ -286,7 +304,7 @@ export class McpInvestmentsTools {
         title: "Look up securities",
         annotations: READ_ONLY,
         description:
-          "Look up a ticker symbol or company name against the user's configured price provider (Yahoo/MSN) and return the matching securities WITHOUT adding anything. Read-only: use it to resolve an ambiguous reference or confirm the exact symbol/exchange before calling create_security. Each candidate is flagged with alreadyAdded=true when a security with that symbol is already in the user's list. Shares the lookup logic with the AI Assistant's lookup_securities tool.",
+          "Look up a ticker symbol or company name against the user's configured price provider (Yahoo/MSN) and return the matching securities WITHOUT adding anything. Read-only: use it to resolve an ambiguous reference or confirm the exact symbol/exchange before adding it with manage_securities. Each candidate is flagged with alreadyAdded=true when a security with that symbol is already in the user's list. Shares the lookup logic with the AI Assistant's lookup_securities tool.",
         inputSchema: {
           query: z
             .string()
@@ -333,54 +351,84 @@ export class McpInvestmentsTools {
     );
 
     server.registerTool(
-      "create_security",
+      "manage_securities",
       {
-        title: "Create security",
-        annotations: CREATE,
+        title: "Manage securities",
+        annotations: WRITE,
         description:
-          "Add a new security (stock, ETF, mutual fund, etc.) to the user's security list. The security is looked up and validated by ticker symbol or name against the user's configured price provider, which fills in the official symbol, name, exchange, type, and currency -- do not invent those. Pass the optional `exchange` only to disambiguate a symbol that trades on several exchanges; an ambiguous lookup returns an error listing the candidates. `exchange` and `securityType` MUST come from the enumerated lists -- never guess a value outside them. Set dryRun=true to preview the resolved security without saving. When dryRun is false, the user is asked to confirm before it is saved (clients that support it show a confirmation dialog). Uses the same shared lookup/validation logic as the AI Assistant's create_security tool. Creates one security per call.",
+          "Create, edit, or delete the user's securities (stocks, ETFs, funds). operation = 'create' | 'update' | 'delete' with an items array (1-25 rows). " +
+          "create: { query, exchange?, securityType?, isFavourite?, currencyCode? } -- the security is looked up and validated by ticker/name against the user's configured price provider, which fills the official symbol/name/exchange/type/currency (do not invent them); exchange/securityType MUST come from the enumerated lists; exchange disambiguates a symbol traded on several exchanges. " +
+          "update: { symbol, securityType?, exchange?, isFavourite?, currencyCode? } -- symbol identifies an existing security (ticker or name); provide the classification/display fields to change. " +
+          "delete: { symbol } -- removes the security (fails if it still has holdings or investment transactions). " +
+          "approvalMode = 'bulk' (default; one card for the whole batch) or 'individual' (one card per item); ignored for a single item. Set dryRun=true to preview every item without saving. The user is asked to confirm before anything is saved (web chat card via relay, or an MCP confirmation dialog).",
         inputSchema: {
-          query: z
-            .string()
+          operation: z
+            .enum(["create", "update", "delete"])
+            .describe("The operation to perform on every item."),
+          items: z
+            .array(
+              z.object({
+                query: z
+                  .string()
+                  .min(1)
+                  .max(100)
+                  .optional()
+                  .describe(
+                    "create: ticker symbol or security name to look up and validate.",
+                  ),
+                symbol: z
+                  .string()
+                  .min(1)
+                  .max(100)
+                  .optional()
+                  .describe(
+                    "update/delete: the existing security's ticker symbol (or name).",
+                  ),
+                exchange: z
+                  .enum(SECURITY_EXCHANGES)
+                  .optional()
+                  .describe(
+                    "create: exchange to disambiguate the lookup. update: new exchange. Must be one of the enumerated values.",
+                  ),
+                securityType: z
+                  .enum(SECURITY_TYPES)
+                  .optional()
+                  .describe(
+                    "create/update: security type. Must be one of the enumerated values.",
+                  ),
+                isFavourite: z
+                  .boolean()
+                  .optional()
+                  .describe(
+                    "create/update: pin the security to the dashboard Favourite Securities widget.",
+                  ),
+                currencyCode: z
+                  .string()
+                  .regex(/^[A-Za-z]{3}$/)
+                  .optional()
+                  .describe(
+                    "create/update: ISO 4217 currency code (e.g. 'USD').",
+                  ),
+              }),
+            )
             .min(1)
-            .max(100)
-            .describe(
-              "Ticker symbol (e.g. 'AAPL') or security name to look up and validate.",
-            ),
-          exchange: z
-            .enum(SECURITY_EXCHANGES)
+            .max(MAX_BULK_ACTION_ROWS)
+            .describe("The rows to act on (1-25)."),
+          approvalMode: z
+            .enum(["bulk", "individual"])
             .optional()
             .describe(
-              "Optional exchange to disambiguate the lookup when a symbol trades on more than one exchange. Must be one of the enumerated values; omit to let the lookup choose.",
-            ),
-          securityType: z
-            .enum(SECURITY_TYPES)
-            .optional()
-            .describe(
-              "Optional security type override. Must be one of the enumerated values; omit to use the looked-up type.",
-            ),
-          isFavourite: z
-            .boolean()
-            .optional()
-            .describe(
-              "Pin the new security to the dashboard Favourite Securities widget. Defaults to false.",
-            ),
-          currencyCode: z
-            .string()
-            .regex(/^[A-Za-z]{3}$/)
-            .optional()
-            .describe(
-              "Optional ISO 4217 currency code (e.g. 'USD'). Overrides the looked-up currency and lets creation proceed when the lookup can't determine one. Omit to use the looked-up currency.",
+              "How multi-item batches are approved: 'bulk' (default) one card for all; 'individual' one card per item. Ignored for a single item.",
             ),
           dryRun: z
             .boolean()
             .optional()
             .default(false)
             .describe(
-              "If true, validate and return a preview without creating the security.",
+              "If true, validate and return a per-item preview without saving anything.",
             ),
         },
-        outputSchema: createSecurityOutput,
+        outputSchema: manageSecuritiesOutput,
       },
       async (args, extra) => {
         const ctx = resolve(extra.sessionId);
@@ -388,104 +436,39 @@ export class McpInvestmentsTools {
         const check = requireScope(ctx.scopes, "write");
         if (check.error) return check.result;
 
-        const limitCheck = this.writeLimiter.checkLimit(ctx.userId);
-        if (!limitCheck.allowed) {
-          return toolError(
-            `Daily write limit reached (${limitCheck.limit} operations per day). Try again tomorrow.`,
-          );
-        }
+        const operation = args.operation as ManageSecOperation;
+        const items = args.items as ManageSecItem[];
+        const approvalMode = (args.approvalMode ?? "bulk") as ApprovalMode;
 
         try {
-          // Shared lookup/validation: resolves the symbol/name against the
-          // user's quote provider, fills exchange/type/currency, and enforces
-          // the per-user unique symbol -- identical to the AI Assistant flow.
-          const preview = await this.securitiesService.previewCreateSecurity(
-            ctx.userId,
-            {
-              query: args.query,
-              exchange: args.exchange,
-              securityType: args.securityType,
-              isFavourite: args.isFavourite,
-              currencyCode: args.currencyCode,
-            },
-          );
-
           if (args.dryRun) {
-            return toolResult({
-              dryRun: true,
-              preview: {
-                symbol: preview.symbol,
-                name: preview.name,
-                securityType: preview.securityType,
-                exchange: preview.exchange,
-                currencyCode: preview.currencyCode,
-                isFavourite: preview.isFavourite,
-                quoteProvider: preview.quoteProvider,
-              },
-              message:
-                "This is a preview. Call again with dryRun=false to create the security.",
-            });
+            return this.manageSecDryRun(ctx.userId, operation, items);
           }
-
-          // Relay path: confirm in the web chat via the approve/reject card
-          // rather than an elicitation in the agent's MCP client.
-          const pendingAction = this.actionBuilder.buildCreateSecurity(
-            ctx.userId,
-            preview,
-          );
-          if (this.relayService.emitPendingAction(ctx.userId, pendingAction)) {
-            return toolResult(RELAY_PREVIEW_SHOWN);
-          }
-
-          // Ask the client to confirm before persisting (AI Assistant parity).
-          const confirmLines = [
-            "Create this security?",
-            `Symbol: ${preview.symbol}`,
-            `Name: ${preview.name}`,
-          ];
-          if (preview.securityType) {
-            confirmLines.push(`Type: ${preview.securityType}`);
-          }
-          if (preview.exchange) {
-            confirmLines.push(`Exchange: ${preview.exchange}`);
-          }
-          confirmLines.push(`Currency: ${preview.currencyCode}`);
-          if (preview.isFavourite) {
-            confirmLines.push("Pinned to favourites: yes");
-          }
-          const confirmation = await confirmWrite(
-            server,
-            confirmLines.join("\n"),
-            extra.requestId,
-          );
-          if (confirmation === "declined") {
-            return toolError(
-              "Cancelled: the confirmation was declined, so no security was created. Do not retry unless the user asks again.",
+          if (operation === "create") {
+            return await this.manageSecCreate(
+              server,
+              ctx.userId,
+              items,
+              approvalMode,
+              extra.requestId,
             );
           }
-
-          const security = await this.securitiesService.create(ctx.userId, {
-            symbol: preview.symbol,
-            name: preview.name,
-            securityType: preview.securityType ?? undefined,
-            exchange: preview.exchange ?? undefined,
-            currencyCode: preview.currencyCode,
-            isFavourite: preview.isFavourite,
-            quoteProvider: preview.quoteProvider ?? undefined,
-            msnInstrumentId: preview.msnInstrumentId ?? undefined,
-          });
-
-          this.writeLimiter.record(ctx.userId, "create_security");
-
-          return toolResult({
-            id: security.id,
-            symbol: security.symbol,
-            name: security.name,
-            securityType: security.securityType,
-            exchange: security.exchange,
-            currencyCode: security.currencyCode,
-            isFavourite: security.isFavourite,
-          });
+          if (operation === "update") {
+            return await this.manageSecUpdate(
+              server,
+              ctx.userId,
+              items,
+              approvalMode,
+              extra.requestId,
+            );
+          }
+          return await this.manageSecDelete(
+            server,
+            ctx.userId,
+            items,
+            approvalMode,
+            extra.requestId,
+          );
         } catch (err: unknown) {
           return safeToolError(err);
         }
@@ -1215,5 +1198,457 @@ export class McpInvestmentsTools {
       return (err as { message: string }).message;
     }
     return "Could not be prepared.";
+  }
+
+  // -------------------------------------------------------------------------
+  // manage_securities helpers
+  // -------------------------------------------------------------------------
+
+  private toSecCreateRow(item: ManageSecItem): ManageCreateSecurityRow {
+    return {
+      query: item.query as string,
+      exchange: item.exchange,
+      securityType: item.securityType,
+      isFavourite: item.isFavourite,
+      currencyCode: item.currencyCode,
+    };
+  }
+
+  private toSecUpdateRow(item: ManageSecItem): ManageUpdateSecurityRow {
+    return {
+      query: item.symbol as string,
+      securityType: item.securityType,
+      exchange: item.exchange,
+      isFavourite: item.isFavourite,
+      currencyCode: item.currencyCode,
+    };
+  }
+
+  private toSecDeleteRow(item: ManageSecItem): ManageDeleteSecurityRow {
+    return { query: item.symbol as string };
+  }
+
+  private async manageSecDryRun(
+    userId: string,
+    operation: ManageSecOperation,
+    items: ManageSecItem[],
+  ) {
+    const prep =
+      operation === "create"
+        ? await this.securityPrepService.prepareCreateSecurities(
+            userId,
+            items.map((i) => this.toSecCreateRow(i)),
+          )
+        : operation === "update"
+          ? await this.securityPrepService.prepareUpdateSecurities(
+              userId,
+              items.map((i) => this.toSecUpdateRow(i)),
+            )
+          : await this.securityPrepService.prepareDeleteSecurities(
+              userId,
+              items.map((i) => this.toSecDeleteRow(i)),
+            );
+    return toolResult({
+      dryRun: true,
+      operation,
+      previews: prep.previewRows,
+      skipped: prep.skipped,
+      message:
+        "This is a preview. Call again with dryRun=false to apply the changes.",
+    });
+  }
+
+  private async emitOrConfirmSec(
+    server: McpServer,
+    userId: string,
+    pendingAction: PendingAiAction,
+    confirmMessage: string,
+    requestId: unknown,
+  ): Promise<"relay" | "accepted" | "declined"> {
+    if (this.relayService.emitPendingAction(userId, pendingAction)) {
+      return "relay";
+    }
+    const confirmation = await confirmWrite(
+      server,
+      confirmMessage,
+      requestId as never,
+    );
+    return confirmation === "declined" ? "declined" : "accepted";
+  }
+
+  private async manageSecCreate(
+    server: McpServer,
+    userId: string,
+    items: ManageSecItem[],
+    approvalMode: ApprovalMode,
+    requestId: unknown,
+  ) {
+    if (items.length === 1) {
+      const preview =
+        await this.securityPrepService.prepareCreateSecuritySingle(
+          userId,
+          this.toSecCreateRow(items[0]),
+        );
+      const budget = this.checkWriteBudget(userId, 1);
+      if (budget) return budget;
+      const action = this.actionBuilder.buildCreateSecurity(userId, preview);
+      const outcome = await this.emitOrConfirmSec(
+        server,
+        userId,
+        action,
+        `Create this security?\nSymbol: ${preview.symbol}\nName: ${preview.name}\nCurrency: ${preview.currencyCode}`,
+        requestId,
+      );
+      if (outcome === "relay") return toolResult(RELAY_PREVIEW_SHOWN);
+      if (outcome === "declined")
+        return toolError(
+          "Cancelled: the confirmation was declined, so no security was created.",
+        );
+      const security = await this.commitSecCreate(userId, preview);
+      return toolResult({
+        id: security.id,
+        symbol: security.symbol,
+        name: security.name,
+        count: 1,
+      });
+    }
+
+    const prep = await this.securityPrepService.prepareCreateSecurities(
+      userId,
+      items.map((i) => this.toSecCreateRow(i)),
+    );
+    if (prep.okPreviews.length === 0) {
+      return toolError(
+        "None of the securities could be prepared. Check the ticker/name for each row.",
+      );
+    }
+    const budget = this.checkWriteBudget(userId, prep.okPreviews.length);
+    if (budget) return budget;
+
+    if (approvalMode === "individual") {
+      const cards = prep.okPreviews.map((p) =>
+        this.actionBuilder.buildCreateSecurity(userId, p),
+      );
+      return this.runSecIndividual(
+        server,
+        userId,
+        cards,
+        requestId,
+        prep.skipped,
+      );
+    }
+
+    const action = this.actionBuilder.buildBatchActions(
+      userId,
+      "create_security",
+      prep.okRows,
+      prep.previewRows,
+    );
+    if (this.relayService.emitPendingAction(userId, action)) {
+      return toolResult(RELAY_PREVIEW_SHOWN);
+    }
+    const confirmation = await confirmWrite(
+      server,
+      `Create ${prep.okPreviews.length} security/securities?${prep.skipped.length ? ` (${prep.skipped.length} skipped)` : ""}`,
+      requestId as never,
+    );
+    if (confirmation === "declined")
+      return toolError(
+        "Cancelled: the confirmation was declined, so nothing was created.",
+      );
+    const ids: string[] = [];
+    for (const preview of prep.okPreviews) {
+      const security = await this.commitSecCreate(userId, preview);
+      ids.push(security.id);
+    }
+    return toolResult({ ids, count: ids.length, skipped: prep.skipped });
+  }
+
+  private async manageSecUpdate(
+    server: McpServer,
+    userId: string,
+    items: ManageSecItem[],
+    approvalMode: ApprovalMode,
+    requestId: unknown,
+  ) {
+    if (items.length === 1) {
+      const preview =
+        await this.securityPrepService.prepareUpdateSecuritySingle(
+          userId,
+          this.toSecUpdateRow(items[0]),
+        );
+      const budget = this.checkWriteBudget(userId, 1);
+      if (budget) return budget;
+      const action = this.actionBuilder.buildUpdateSecurity(userId, preview);
+      const outcome = await this.emitOrConfirmSec(
+        server,
+        userId,
+        action,
+        `Apply this security edit?\nSymbol: ${preview.symbol}\nType: ${preview.securityType ?? "(none)"}\nExchange: ${preview.exchange ?? "(none)"}\nCurrency: ${preview.currencyCode}`,
+        requestId,
+      );
+      if (outcome === "relay") return toolResult(RELAY_PREVIEW_SHOWN);
+      if (outcome === "declined")
+        return toolError(
+          "Cancelled: the confirmation was declined, so the security was not changed.",
+        );
+      const security = await this.commitSecUpdate(userId, preview);
+      return toolResult({
+        id: security.id,
+        symbol: security.symbol,
+        name: security.name,
+        count: 1,
+      });
+    }
+
+    const prep = await this.securityPrepService.prepareUpdateSecurities(
+      userId,
+      items.map((i) => this.toSecUpdateRow(i)),
+    );
+    if (prep.okPreviews.length === 0) {
+      return toolError("None of the security edits could be prepared.");
+    }
+    const budget = this.checkWriteBudget(userId, prep.okPreviews.length);
+    if (budget) return budget;
+
+    if (approvalMode === "individual") {
+      const cards = prep.okPreviews.map((p) =>
+        this.actionBuilder.buildUpdateSecurity(userId, p),
+      );
+      return this.runSecIndividual(
+        server,
+        userId,
+        cards,
+        requestId,
+        prep.skipped,
+      );
+    }
+
+    const action = this.actionBuilder.buildBatchActions(
+      userId,
+      "update_security",
+      prep.okRows,
+      prep.previewRows,
+    );
+    if (this.relayService.emitPendingAction(userId, action)) {
+      return toolResult(RELAY_PREVIEW_SHOWN);
+    }
+    const confirmation = await confirmWrite(
+      server,
+      `Apply ${prep.okPreviews.length} security edit(s)?${prep.skipped.length ? ` (${prep.skipped.length} skipped)` : ""}`,
+      requestId as never,
+    );
+    if (confirmation === "declined")
+      return toolError(
+        "Cancelled: the confirmation was declined, so nothing was changed.",
+      );
+    const ids: string[] = [];
+    for (const preview of prep.okPreviews) {
+      const security = await this.commitSecUpdate(userId, preview);
+      ids.push(security.id);
+    }
+    return toolResult({ ids, count: ids.length, skipped: prep.skipped });
+  }
+
+  private async manageSecDelete(
+    server: McpServer,
+    userId: string,
+    items: ManageSecItem[],
+    approvalMode: ApprovalMode,
+    requestId: unknown,
+  ) {
+    if (items.length === 1) {
+      const preview =
+        await this.securityPrepService.prepareDeleteSecuritySingle(
+          userId,
+          this.toSecDeleteRow(items[0]),
+        );
+      const budget = this.checkWriteBudget(userId, 1);
+      if (budget) return budget;
+      const action = this.actionBuilder.buildDeleteSecurity(userId, preview);
+      const outcome = await this.emitOrConfirmSec(
+        server,
+        userId,
+        action,
+        `Delete this security?\nSymbol: ${preview.symbol}\nName: ${preview.name}`,
+        requestId,
+      );
+      if (outcome === "relay") return toolResult(RELAY_PREVIEW_SHOWN);
+      if (outcome === "declined")
+        return toolError(
+          "Cancelled: the confirmation was declined, so the security was not deleted.",
+        );
+      await this.securitiesService.remove(userId, preview.securityId);
+      this.writeLimiter.record(userId, "delete_security");
+      return toolResult({ id: preview.securityId, deleted: true, count: 1 });
+    }
+
+    const prep = await this.securityPrepService.prepareDeleteSecurities(
+      userId,
+      items.map((i) => this.toSecDeleteRow(i)),
+    );
+    if (prep.okPreviews.length === 0) {
+      return toolError("None of the securities could be prepared.");
+    }
+    const budget = this.checkWriteBudget(userId, prep.okPreviews.length);
+    if (budget) return budget;
+
+    if (approvalMode === "individual") {
+      const cards = prep.okPreviews.map((p) =>
+        this.actionBuilder.buildDeleteSecurity(userId, p),
+      );
+      return this.runSecIndividual(
+        server,
+        userId,
+        cards,
+        requestId,
+        prep.skipped,
+      );
+    }
+
+    const action = this.actionBuilder.buildBatchActions(
+      userId,
+      "delete_security",
+      prep.okRows,
+      prep.previewRows,
+    );
+    if (this.relayService.emitPendingAction(userId, action)) {
+      return toolResult(RELAY_PREVIEW_SHOWN);
+    }
+    const confirmation = await confirmWrite(
+      server,
+      `Delete ${prep.okPreviews.length} security/securities?${prep.skipped.length ? ` (${prep.skipped.length} skipped)` : ""}`,
+      requestId as never,
+    );
+    if (confirmation === "declined")
+      return toolError(
+        "Cancelled: the confirmation was declined, so nothing was deleted.",
+      );
+    const ids: string[] = [];
+    for (const preview of prep.okPreviews) {
+      await this.securitiesService.remove(userId, preview.securityId);
+      ids.push(preview.securityId);
+      this.writeLimiter.record(userId, "delete_security");
+    }
+    return toolResult({ ids, count: ids.length, skipped: prep.skipped });
+  }
+
+  private async commitSecCreate(
+    userId: string,
+    preview: {
+      symbol: string;
+      name: string;
+      securityType: string | null;
+      exchange: string | null;
+      currencyCode: string;
+      isFavourite: boolean;
+      quoteProvider: "yahoo" | "msn" | null;
+      msnInstrumentId: string | null;
+    },
+  ) {
+    const security = await this.securitiesService.create(userId, {
+      symbol: preview.symbol,
+      name: preview.name,
+      securityType: preview.securityType ?? undefined,
+      exchange: preview.exchange ?? undefined,
+      currencyCode: preview.currencyCode,
+      isFavourite: preview.isFavourite,
+      quoteProvider: preview.quoteProvider ?? undefined,
+      msnInstrumentId: preview.msnInstrumentId ?? undefined,
+    });
+    this.writeLimiter.record(userId, "create_security");
+    return security;
+  }
+
+  private async commitSecUpdate(
+    userId: string,
+    preview: {
+      securityId: string;
+      securityType: string | null;
+      exchange: string | null;
+      currencyCode: string;
+      isFavourite: boolean;
+    },
+  ) {
+    const security = await this.securitiesService.update(
+      userId,
+      preview.securityId,
+      {
+        securityType: preview.securityType ?? undefined,
+        exchange: preview.exchange ?? undefined,
+        currencyCode: preview.currencyCode,
+        isFavourite: preview.isFavourite,
+      },
+    );
+    this.writeLimiter.record(userId, "update_security");
+    return security;
+  }
+
+  /**
+   * Individual mode for securities: relay path emits every card to the web chat;
+   * otherwise confirm + commit each card in turn.
+   */
+  private async runSecIndividual(
+    server: McpServer,
+    userId: string,
+    cards: PendingAiAction[],
+    requestId: unknown,
+    skipped: { index: number; reason: string }[],
+  ) {
+    if (this.relayService.emitPendingAction(userId, cards[0])) {
+      for (let i = 1; i < cards.length; i++) {
+        this.relayService.emitPendingAction(userId, cards[i]);
+      }
+      return toolResult(RELAY_PREVIEW_SHOWN);
+    }
+    const ids: string[] = [];
+    for (const card of cards) {
+      const confirmation = await confirmWrite(
+        server,
+        this.secConfirmLineFor(card),
+        requestId as never,
+      );
+      if (confirmation === "declined") continue;
+      const id = await this.commitSecCard(userId, card);
+      if (id) ids.push(id);
+    }
+    return toolResult({ ids, count: ids.length, skipped });
+  }
+
+  private secConfirmLineFor(card: PendingAiAction): string {
+    const p = card.preview;
+    switch (card.type) {
+      case "delete_security":
+        return `Delete this security?\nSymbol: ${p.symbol}\nName: ${p.securityName}`;
+      case "update_security":
+        return `Apply this security edit?\nSymbol: ${p.symbol}\nType: ${p.securityType ?? "(none)"}\nCurrency: ${p.securityCurrency}`;
+      default:
+        return `Create this security?\nSymbol: ${p.symbol}\nName: ${p.securityName}\nCurrency: ${p.securityCurrency}`;
+    }
+  }
+
+  /** Commit one signed security card directly (non-relay individual mode). */
+  private async commitSecCard(
+    userId: string,
+    card: PendingAiAction,
+  ): Promise<string | null> {
+    const d = card.descriptor;
+    switch (d.type) {
+      case "create_security": {
+        const security = await this.commitSecCreate(userId, d);
+        return security.id;
+      }
+      case "update_security": {
+        const security = await this.commitSecUpdate(userId, d);
+        return security.id;
+      }
+      case "delete_security": {
+        await this.securitiesService.remove(userId, d.securityId);
+        this.writeLimiter.record(userId, "delete_security");
+        return d.securityId;
+      }
+      default:
+        return null;
+    }
   }
 }

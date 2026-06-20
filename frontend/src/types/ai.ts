@@ -176,6 +176,8 @@ export type AiActionType =
   | 'update_payee'
   | 'delete_payee'
   | 'create_security'
+  | 'update_security'
+  | 'delete_security'
   | 'create_investment_transaction'
   | 'create_transactions'
   | 'create_investment_transactions'

@@ -140,7 +140,17 @@
     "deletePayeesTitle": "[XX-Delete these payees?-XX]",
     "createdPayees": "[XX-{count, plural, =0 {No payees created} one {# payee created} other {# payees created}}-XX]",
     "updatedPayees": "[XX-{count, plural, =0 {No payees updated} one {# payee updated} other {# payees updated}}-XX]",
-    "deletedPayees": "[XX-{count, plural, =0 {No payees deleted} one {# payee deleted} other {# payees deleted}}-XX]"
+    "deletedPayees": "[XX-{count, plural, =0 {No payees deleted} one {# payee deleted} other {# payees deleted}}-XX]",
+    "updateSecurityTitle": "[XX-Edit this security?-XX]",
+    "deleteSecurityTitle": "[XX-Delete this security?-XX]",
+    "updatedSecurity": "[XX-Security updated-XX]",
+    "deletedSecurity": "[XX-Security deleted-XX]",
+    "createSecuritiesTitle": "[XX-Create these securities?-XX]",
+    "updateSecuritiesTitle": "[XX-Edit these securities?-XX]",
+    "deleteSecuritiesTitle": "[XX-Delete these securities?-XX]",
+    "createdSecurities": "[XX-{count, plural, =0 {No securities created} one {# security created} other {# securities created}}-XX]",
+    "updatedSecurities": "[XX-{count, plural, =0 {No securities updated} one {# security updated} other {# securities updated}}-XX]",
+    "deletedSecurities": "[XX-{count, plural, =0 {No securities deleted} one {# security deleted} other {# securities deleted}}-XX]"
   },
   "table": {
     "downloadTitle": "[XX-Download table as CSV-XX]",

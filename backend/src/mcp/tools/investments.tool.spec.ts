@@ -8,6 +8,7 @@ describe("McpInvestmentsTools", () => {
   let holdingsService: Record<string, jest.Mock>;
   let investmentTransactionsService: Record<string, jest.Mock>;
   let securitiesService: Record<string, jest.Mock>;
+  let securityPrepService: Record<string, jest.Mock>;
   let accountsService: Record<string, jest.Mock>;
   let server: {
     registerTool: jest.Mock;
@@ -51,6 +52,17 @@ describe("McpInvestmentsTools", () => {
       previewCreateSecurity: jest.fn(),
       lookupSecuritiesForLlm: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
+      remove: jest.fn().mockResolvedValue(undefined),
+    };
+
+    securityPrepService = {
+      prepareCreateSecuritySingle: jest.fn(),
+      prepareUpdateSecuritySingle: jest.fn(),
+      prepareDeleteSecuritySingle: jest.fn(),
+      prepareCreateSecurities: jest.fn(),
+      prepareUpdateSecurities: jest.fn(),
+      prepareDeleteSecurities: jest.fn(),
     };
 
     accountsService = { resolveByName: jest.fn() };
@@ -63,7 +75,16 @@ describe("McpInvestmentsTools", () => {
       buildCreateInvestmentTransactions: jest
         .fn()
         .mockReturnValue({ type: "create_investment_transactions" }),
-      buildCreateSecurity: jest.fn().mockReturnValue({}),
+      buildCreateSecurity: jest
+        .fn()
+        .mockReturnValue({ type: "create_security" }),
+      buildUpdateSecurity: jest
+        .fn()
+        .mockReturnValue({ type: "update_security" }),
+      buildDeleteSecurity: jest
+        .fn()
+        .mockReturnValue({ type: "delete_security" }),
+      buildBatchActions: jest.fn().mockReturnValue({ type: "batch_actions" }),
       buildUpdateInvestmentTransaction: jest
         .fn()
         .mockReturnValue({ type: "update_investment_transaction" }),
@@ -84,6 +105,7 @@ describe("McpInvestmentsTools", () => {
       holdingsService as any,
       investmentTransactionsService as any,
       securitiesService as any,
+      securityPrepService as any,
       relayService as any,
       actionBuilder as any,
       accountsService as any,
@@ -108,6 +130,9 @@ describe("McpInvestmentsTools", () => {
   });
 
   it("should register 7 tools", () => {
+    // get_portfolio_summary, list_investment_transactions, get_capital_gains,
+    // get_holding_details, lookup_securities, manage_securities,
+    // manage_investment_transactions.
     expect(server.registerTool).toHaveBeenCalledTimes(7);
   });
 
@@ -409,7 +434,7 @@ describe("McpInvestmentsTools", () => {
     });
   });
 
-  describe("create_security", () => {
+  describe("manage_securities", () => {
     const securityPreview = {
       symbol: "AAPL",
       name: "Apple Inc.",
@@ -421,11 +446,41 @@ describe("McpInvestmentsTools", () => {
       msnInstrumentId: null,
     };
 
-    const securityArgs = { query: "AAPL" };
+    const createArgs = { operation: "create", items: [{ query: "AAPL" }] };
+
+    beforeEach(() => {
+      securityPrepService.prepareCreateSecuritySingle.mockResolvedValue(
+        securityPreview,
+      );
+      securityPrepService.prepareUpdateSecuritySingle.mockResolvedValue({
+        securityId: "sec-1",
+        symbol: "AAPL",
+        name: "Apple Inc.",
+        securityType: "STOCK",
+        exchange: "NASDAQ",
+        currencyCode: "USD",
+        isFavourite: true,
+      });
+      securityPrepService.prepareDeleteSecuritySingle.mockResolvedValue({
+        securityId: "sec-1",
+        symbol: "AAPL",
+        name: "Apple Inc.",
+      });
+      securitiesService.create.mockResolvedValue({
+        id: "sec-1",
+        symbol: "AAPL",
+        name: "Apple Inc.",
+      });
+      securitiesService.update.mockResolvedValue({
+        id: "sec-1",
+        symbol: "AAPL",
+        name: "Apple Inc.",
+      });
+    });
 
     it("returns error when no user context", async () => {
       resolve.mockReturnValue(undefined);
-      const result = await handlers["create_security"](securityArgs, {
+      const result = await handlers["manage_securities"](createArgs, {
         sessionId: "s1",
       });
       expect(result.isError).toBe(true);
@@ -433,78 +488,85 @@ describe("McpInvestmentsTools", () => {
 
     it("requires the write scope", async () => {
       resolve.mockReturnValue({ userId: "u1", scopes: "read" });
-      const result = await handlers["create_security"](securityArgs, {
+      const result = await handlers["manage_securities"](createArgs, {
         sessionId: "s1",
       });
       expect(result.isError).toBe(true);
-      expect(securitiesService.previewCreateSecurity).not.toHaveBeenCalled();
+      expect(
+        securityPrepService.prepareCreateSecuritySingle,
+      ).not.toHaveBeenCalled();
     });
 
-    it("returns a preview without persisting on dryRun", async () => {
+    it("returns a dry-run preview without persisting", async () => {
       resolve.mockReturnValue({ userId: "u1", scopes: "write" });
-      securitiesService.previewCreateSecurity.mockResolvedValue(
-        securityPreview,
-      );
+      securityPrepService.prepareCreateSecurities.mockResolvedValue({
+        okPreviews: [securityPreview],
+        okRows: [],
+        previewRows: [{ status: "ok", symbol: "AAPL" }],
+        okIndex: [0],
+        skipped: [],
+      });
 
-      const result = await handlers["create_security"](
-        { ...securityArgs, dryRun: true },
+      const result = await handlers["manage_securities"](
+        { ...createArgs, dryRun: true },
         { sessionId: "s1" },
       );
 
-      expect(securitiesService.previewCreateSecurity).toHaveBeenCalledWith(
-        "u1",
-        expect.objectContaining({ query: "AAPL" }),
-      );
       expect(securitiesService.create).not.toHaveBeenCalled();
-      expect(elicitInput).not.toHaveBeenCalled();
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed.dryRun).toBe(true);
-      expect(parsed.preview.symbol).toBe("AAPL");
-      expect(parsed.preview.exchange).toBe("NASDAQ");
+      expect(parsed.operation).toBe("create");
     });
 
-    it("creates when the client cannot elicit (proceeds)", async () => {
+    it("creates a single security when the client cannot elicit", async () => {
       resolve.mockReturnValue({ userId: "u1", scopes: "write" });
-      securitiesService.previewCreateSecurity.mockResolvedValue(
-        securityPreview,
-      );
-      securitiesService.create.mockResolvedValue({
-        id: "sec-1",
-        symbol: "AAPL",
-        name: "Apple Inc.",
-        securityType: "STOCK",
-        exchange: "NASDAQ",
-        currencyCode: "USD",
-        isFavourite: false,
-      });
 
-      const result = await handlers["create_security"](securityArgs, {
+      const result = await handlers["manage_securities"](createArgs, {
         sessionId: "s1",
       });
 
       expect(securitiesService.create).toHaveBeenCalledWith(
         "u1",
-        expect.objectContaining({
-          symbol: "AAPL",
-          name: "Apple Inc.",
-          securityType: "STOCK",
-          exchange: "NASDAQ",
-          currencyCode: "USD",
-        }),
+        expect.objectContaining({ symbol: "AAPL", name: "Apple Inc." }),
       );
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed.id).toBe("sec-1");
-      expect(parsed.symbol).toBe("AAPL");
+    });
+
+    it("updates a single security on success", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "write" });
+      const result = await handlers["manage_securities"](
+        { operation: "update", items: [{ symbol: "AAPL", isFavourite: true }] },
+        { sessionId: "s1" },
+      );
+      expect(securitiesService.update).toHaveBeenCalledWith(
+        "u1",
+        "sec-1",
+        expect.objectContaining({ isFavourite: true }),
+      );
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.count).toBe(1);
+    });
+
+    it("deletes a single security on success", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "write" });
+      const result = await handlers["manage_securities"](
+        { operation: "delete", items: [{ symbol: "AAPL" }] },
+        { sessionId: "s1" },
+      );
+      expect(securitiesService.remove).toHaveBeenCalledWith("u1", "sec-1");
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.deleted).toBe(true);
     });
 
     it("surfaces a 4xx lookup failure to the caller", async () => {
       resolve.mockReturnValue({ userId: "u1", scopes: "write" });
-      securitiesService.previewCreateSecurity.mockRejectedValue(
+      securityPrepService.prepareCreateSecuritySingle.mockRejectedValue(
         new BadRequestException('No security found matching "ZZZZ".'),
       );
 
-      const result = await handlers["create_security"](
-        { query: "ZZZZ" },
+      const result = await handlers["manage_securities"](
+        { operation: "create", items: [{ query: "ZZZZ" }] },
         { sessionId: "s1" },
       );
 
@@ -514,18 +576,45 @@ describe("McpInvestmentsTools", () => {
 
     it("shows the web-chat card via relay instead of persisting", async () => {
       resolve.mockReturnValue({ userId: "u1", scopes: "write" });
-      securitiesService.previewCreateSecurity.mockResolvedValue(
-        securityPreview,
-      );
       relayService.emitPendingAction.mockReturnValue(true);
 
-      const result = await handlers["create_security"](securityArgs, {
+      const result = await handlers["manage_securities"](createArgs, {
         sessionId: "s1",
       });
 
       expect(relayService.emitPendingAction).toHaveBeenCalled();
       expect(securitiesService.create).not.toHaveBeenCalled();
-      expect(result.isError).toBeUndefined();
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.status).toBe("preview_shown");
+    });
+
+    it("creates multiple securities as one bulk card via confirmation", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "write" });
+      securityPrepService.prepareCreateSecurities.mockResolvedValue({
+        okPreviews: [securityPreview, { ...securityPreview, symbol: "MSFT" }],
+        okRows: [{ symbol: "AAPL" }, { symbol: "MSFT" }],
+        previewRows: [
+          { status: "ok", symbol: "AAPL" },
+          { status: "ok", symbol: "MSFT" },
+        ],
+        okIndex: [0, 1],
+        skipped: [],
+      });
+
+      const result = await handlers["manage_securities"](
+        { operation: "create", items: [{ query: "AAPL" }, { query: "MSFT" }] },
+        { sessionId: "s1" },
+      );
+
+      expect(actionBuilderRef.buildBatchActions).toHaveBeenCalledWith(
+        "u1",
+        "create_security",
+        expect.any(Array),
+        expect.any(Array),
+      );
+      expect(securitiesService.create).toHaveBeenCalledTimes(2);
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.count).toBe(2);
     });
   });
   describe("manage_investment_transactions", () => {

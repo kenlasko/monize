@@ -140,7 +140,17 @@
     "deletePayeesTitle": "Delete these payees?",
     "createdPayees": "{count, plural, =0 {No payees created} one {# payee created} other {# payees created}}",
     "updatedPayees": "{count, plural, =0 {No payees updated} one {# payee updated} other {# payees updated}}",
-    "deletedPayees": "{count, plural, =0 {No payees deleted} one {# payee deleted} other {# payees deleted}}"
+    "deletedPayees": "{count, plural, =0 {No payees deleted} one {# payee deleted} other {# payees deleted}}",
+    "updateSecurityTitle": "Edit this security?",
+    "deleteSecurityTitle": "Delete this security?",
+    "updatedSecurity": "Security updated",
+    "deletedSecurity": "Security deleted",
+    "createSecuritiesTitle": "Create these securities?",
+    "updateSecuritiesTitle": "Edit these securities?",
+    "deleteSecuritiesTitle": "Delete these securities?",
+    "createdSecurities": "{count, plural, =0 {No securities created} one {# security created} other {# securities created}}",
+    "updatedSecurities": "{count, plural, =0 {No securities updated} one {# security updated} other {# securities updated}}",
+    "deletedSecurities": "{count, plural, =0 {No securities deleted} one {# security deleted} other {# securities deleted}}"
   },
   "table": {
     "downloadTitle": "Download table as CSV",

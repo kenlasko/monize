@@ -16,6 +16,7 @@ import { AiActionSigningService } from "../actions/ai-action-signing.service";
 import { AiActionBuilderService } from "../actions/ai-action-builder.service";
 import { TransactionToolPrepService } from "../../transactions/transaction-tool-prep.service";
 import { PayeeToolPrepService } from "../../payees/payee-tool-prep.service";
+import { SecurityToolPrepService } from "../../securities/security-tool-prep.service";
 import { TransactionTransferService } from "../../transactions/transaction-transfer.service";
 
 describe("ToolExecutorService", () => {
@@ -435,6 +436,20 @@ describe("ToolExecutorService", () => {
         quoteProvider: "yahoo",
         msnInstrumentId: null,
       }),
+      previewUpdateSecurity: jest.fn().mockResolvedValue({
+        securityId: "sec-1",
+        symbol: "AAPL",
+        name: "Apple Inc.",
+        securityType: "STOCK",
+        exchange: "NASDAQ",
+        currencyCode: "USD",
+        isFavourite: true,
+      }),
+      previewDeleteSecurity: jest.fn().mockResolvedValue({
+        securityId: "sec-1",
+        symbol: "AAPL",
+        name: "Apple Inc.",
+      }),
       lookupSecuritiesForLlm: jest.fn().mockResolvedValue({
         query: "apple",
         count: 2,
@@ -525,6 +540,7 @@ describe("ToolExecutorService", () => {
         // (and signing.sign assertions) still run end-to-end.
         TransactionToolPrepService,
         PayeeToolPrepService,
+        SecurityToolPrepService,
         AiActionBuilderService,
       ],
     }).compile();
@@ -1761,10 +1777,11 @@ describe("ToolExecutorService", () => {
     });
   });
 
-  describe("create_security (human-in-the-loop)", () => {
-    it("looks the security up and returns a signed pending action", async () => {
-      const result = await service.execute(userId, "create_security", {
-        query: "AAPL",
+  describe("manage_securities (human-in-the-loop)", () => {
+    it("create looks the security up and returns a signed pending action", async () => {
+      const result = await service.execute(userId, "manage_securities", {
+        operation: "create",
+        items: [{ query: "AAPL" }],
       });
 
       expect(securities.previewCreateSecurity).toHaveBeenCalledWith(
@@ -1789,13 +1806,43 @@ describe("ToolExecutorService", () => {
       });
     });
 
+    it("update returns a signed update_security pending action", async () => {
+      const result = await service.execute(userId, "manage_securities", {
+        operation: "update",
+        items: [{ symbol: "AAPL", isFavourite: true }],
+      });
+      expect(securities.previewUpdateSecurity).toHaveBeenCalled();
+      expect(result.pendingAction?.type).toBe("update_security");
+    });
+
+    it("delete returns a signed delete_security pending action", async () => {
+      const result = await service.execute(userId, "manage_securities", {
+        operation: "delete",
+        items: [{ symbol: "AAPL" }],
+      });
+      expect(securities.previewDeleteSecurity).toHaveBeenCalled();
+      expect(result.pendingAction?.type).toBe("delete_security");
+    });
+
+    it("bulk create returns one batch pending action", async () => {
+      const result = await service.execute(userId, "manage_securities", {
+        operation: "create",
+        items: [{ query: "AAPL" }, { query: "MSFT" }],
+      });
+      expect(result.pendingAction?.type).toBe("batch_actions");
+      expect(
+        (result.pendingAction?.descriptor as { operation?: string }).operation,
+      ).toBe("create_security");
+    });
+
     it("surfaces a 4xx lookup failure as a tool error without a pending action", async () => {
       securities.previewCreateSecurity.mockRejectedValueOnce(
         new BadRequestException('No security found matching "ZZZZ".'),
       );
 
-      const result = await service.execute(userId, "create_security", {
-        query: "ZZZZ",
+      const result = await service.execute(userId, "manage_securities", {
+        operation: "create",
+        items: [{ query: "ZZZZ" }],
       });
 
       expect(result.isError).toBe(true);

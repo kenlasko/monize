@@ -217,6 +217,42 @@ describe('BulkConfirmationCard', () => {
       expect(screen.getByText('Old Payee')).toBeInTheDocument();
     });
 
+    it('renders a create_security batch with symbols and title', () => {
+      const { rerender } = render(
+        <BulkConfirmationCard
+          action={makeAction({
+            type: 'batch_actions',
+            descriptor: { type: 'batch_actions', operation: 'create_security' },
+            preview: {
+              rows: [
+                { status: 'ok', symbol: 'AAPL', securityName: 'Apple Inc.' },
+                { status: 'ok', symbol: 'MSFT', securityName: 'Microsoft' },
+              ],
+            },
+          })}
+          onConfirm={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      expect(screen.getByText('Create these securities?')).toBeInTheDocument();
+      expect(screen.getByText('AAPL')).toBeInTheDocument();
+
+      rerender(
+        <BulkConfirmationCard
+          action={makeAction({
+            type: 'batch_actions',
+            descriptor: { type: 'batch_actions', operation: 'create_security' },
+            status: 'confirmed',
+            resultCount: 2,
+            preview: { rows: [] },
+          })}
+          onConfirm={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      expect(screen.getByText(/2 securities created/)).toBeInTheDocument();
+    });
+
     it('renders a delete batch with the delete title', () => {
       render(
         <BulkConfirmationCard

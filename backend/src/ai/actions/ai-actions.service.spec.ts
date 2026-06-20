@@ -76,6 +76,8 @@ describe("AiActionsService", () => {
     };
     securities = {
       create: jest.fn().mockResolvedValue({ id: "sec-new" }),
+      update: jest.fn().mockResolvedValue({ id: "sec-1" }),
+      remove: jest.fn().mockResolvedValue(undefined),
     };
     service = new AiActionsService(
       transactions as never,
@@ -273,6 +275,40 @@ describe("AiActionsService", () => {
       }),
     );
     expect(result).toEqual({ type: "create_security", id: "sec-new" });
+  });
+
+  it("updates a security on a valid confirmation", async () => {
+    const descriptor = {
+      type: "update_security" as const,
+      userId: USER,
+      actionId: "act-sec-upd",
+      expiresAt: Date.now() + 60_000,
+      securityId: "sec-1",
+      securityType: "ETF",
+      exchange: "NYSE",
+      currencyCode: "USD",
+      isFavourite: true,
+    };
+    const result = await service.confirm(USER, dtoFor(descriptor));
+    expect(securities.update).toHaveBeenCalledWith(
+      USER,
+      "sec-1",
+      expect.objectContaining({ securityType: "ETF", isFavourite: true }),
+    );
+    expect(result).toEqual({ type: "update_security", id: "sec-1" });
+  });
+
+  it("deletes a security on a valid confirmation", async () => {
+    const descriptor = {
+      type: "delete_security" as const,
+      userId: USER,
+      actionId: "act-sec-del",
+      expiresAt: Date.now() + 60_000,
+      securityId: "sec-1",
+    };
+    const result = await service.confirm(USER, dtoFor(descriptor));
+    expect(securities.remove).toHaveBeenCalledWith(USER, "sec-1");
+    expect(result).toEqual({ type: "delete_security", id: "sec-1" });
   });
 
   it("creates an investment transaction on a valid confirmation", async () => {

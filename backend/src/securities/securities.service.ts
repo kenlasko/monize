@@ -59,6 +59,29 @@ export interface CreateSecurityPreview {
   msnInstrumentId: string | null;
 }
 
+/**
+ * Resolved preview of a proposed security edit. Carries the resulting
+ * classification/display fields so the confirmation card shows what the edit
+ * will do and confirm applies an idempotent overwrite of the identified
+ * security.
+ */
+export interface UpdateSecurityPreview {
+  securityId: string;
+  symbol: string;
+  name: string;
+  securityType: string | null;
+  exchange: string | null;
+  currencyCode: string;
+  isFavourite: boolean;
+}
+
+/** Resolved preview of a proposed security deletion. */
+export interface DeleteSecurityPreview {
+  securityId: string;
+  symbol: string;
+  name: string;
+}
+
 /** One candidate returned by the LLM/MCP security lookup tool. */
 export interface LlmSecurityLookupCandidate {
   symbol: string;
@@ -534,6 +557,88 @@ export class SecuritiesService {
       return { match: partial[0], candidates: [] };
     }
     return { match: null, candidates: partial };
+  }
+
+  /**
+   * Resolve an existing security by symbol or name for an edit/delete, throwing
+   * a clear error when nothing matches or the reference is ambiguous. Used by
+   * the manage_securities confirmation flow.
+   */
+  private async resolveSecurityForManage(
+    userId: string,
+    query: string,
+  ): Promise<Security> {
+    const { match, candidates } = await this.resolveBySymbolOrName(
+      userId,
+      query,
+    );
+    if (match) {
+      return match;
+    }
+    if (candidates.length > 1) {
+      throw new BadRequestException(
+        tr(
+          "errors.securities.ambiguousSecurity",
+          `"${query}" matches multiple securities: ${candidates
+            .map((c) => c.symbol)
+            .join(", ")}. Use the exact ticker symbol.`,
+          { query, list: candidates.map((c) => c.symbol).join(", ") },
+        ),
+      );
+    }
+    throw new NotFoundException(
+      tr(
+        "errors.securities.securityNotFoundByQuery",
+        `No security matches "${query}". Add the security first or check the ticker symbol.`,
+        { query },
+      ),
+    );
+  }
+
+  /**
+   * Validate + resolve a proposed security edit WITHOUT persisting. Resolves the
+   * target security by symbol/name and merges the supplied classification/
+   * display fields over its current values.
+   */
+  async previewUpdateSecurity(
+    userId: string,
+    input: {
+      query: string;
+      securityType?: string | null;
+      exchange?: string | null;
+      currencyCode?: string;
+      isFavourite?: boolean;
+    },
+  ): Promise<UpdateSecurityPreview> {
+    const security = await this.resolveSecurityForManage(userId, input.query);
+    return {
+      securityId: security.id,
+      symbol: security.symbol,
+      name: security.name,
+      securityType:
+        input.securityType !== undefined
+          ? input.securityType
+          : (security.securityType ?? null),
+      exchange:
+        input.exchange !== undefined
+          ? input.exchange
+          : (security.exchange ?? null),
+      currencyCode: input.currencyCode ?? security.currencyCode,
+      isFavourite: input.isFavourite ?? security.isFavourite,
+    };
+  }
+
+  /** Validate + resolve a proposed security deletion (by symbol/name). */
+  async previewDeleteSecurity(
+    userId: string,
+    input: { query: string },
+  ): Promise<DeleteSecurityPreview> {
+    const security = await this.resolveSecurityForManage(userId, input.query);
+    return {
+      securityId: security.id,
+      symbol: security.symbol,
+      name: security.name,
+    };
   }
 
   /**

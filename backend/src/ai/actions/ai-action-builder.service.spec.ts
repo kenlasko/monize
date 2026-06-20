@@ -188,6 +188,54 @@ describe("AiActionBuilderService", () => {
     });
   });
 
+  it("builds an update_security action", () => {
+    const action = builder.buildUpdateSecurity("u1", {
+      securityId: "s9",
+      symbol: "AAPL",
+      name: "Apple Inc.",
+      securityType: "ETF",
+      exchange: "NYSE",
+      currencyCode: "USD",
+      isFavourite: true,
+    });
+
+    expect(action.type).toBe("update_security");
+    expect(action.descriptor).toMatchObject({
+      type: "update_security",
+      userId: "u1",
+      securityId: "s9",
+      securityType: "ETF",
+      exchange: "NYSE",
+      currencyCode: "USD",
+      isFavourite: true,
+    });
+    expect(signing.sign).toHaveBeenCalledWith(action.descriptor);
+    expect(action.preview).toMatchObject({
+      symbol: "AAPL",
+      securityName: "Apple Inc.",
+      securityType: "ETF",
+    });
+  });
+
+  it("builds a delete_security action", () => {
+    const action = builder.buildDeleteSecurity("u1", {
+      securityId: "s9",
+      symbol: "AAPL",
+      name: "Apple Inc.",
+    });
+
+    expect(action.type).toBe("delete_security");
+    expect(action.descriptor).toMatchObject({
+      type: "delete_security",
+      userId: "u1",
+      securityId: "s9",
+    });
+    expect(action.preview).toMatchObject({
+      symbol: "AAPL",
+      securityName: "Apple Inc.",
+    });
+  });
+
   it("builds a create_investment_transaction action", () => {
     const preview: CreateInvestmentTransactionPreview = {
       accountId: "acc1",

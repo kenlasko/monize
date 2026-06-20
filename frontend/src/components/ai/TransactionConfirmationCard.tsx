@@ -61,6 +61,8 @@ export function TransactionConfirmationCard({
       'confirmAction.deleteInvestmentTransactionTitle',
     ),
     create_security: t('confirmAction.createSecurityTitle'),
+    update_security: t('confirmAction.updateSecurityTitle'),
+    delete_security: t('confirmAction.deleteSecurityTitle'),
     create_payee: t('confirmAction.createPayeeTitle'),
     update_payee: t('confirmAction.updatePayeeTitle'),
     delete_payee: t('confirmAction.deletePayeeTitle'),
@@ -219,7 +221,12 @@ export function TransactionConfirmationCard({
         label: t('confirmAction.description'),
         value: preview.description,
       });
-  } else if (type === 'create_security') {
+  } else if (type === 'delete_security') {
+    if (preview.symbol)
+      rows.push({ label: t('confirmAction.symbol'), value: preview.symbol });
+    if (preview.securityName)
+      rows.push({ label: t('confirmAction.name'), value: preview.securityName });
+  } else if (type === 'create_security' || type === 'update_security') {
     if (preview.symbol)
       rows.push({ label: t('confirmAction.symbol'), value: preview.symbol });
     if (preview.securityName)
@@ -259,13 +266,15 @@ export function TransactionConfirmationCard({
     });
   }
 
-  const isSecurityResult = type === 'create_security';
+  const isSecurityResult =
+    type === 'create_security' || type === 'update_security';
   const isPayeeWriteType = type === 'create_payee' || type === 'update_payee';
   // A deletion removes the record, so there is nothing to navigate to.
   const isDeletion =
     type === 'delete_transaction' ||
     type === 'delete_investment_transaction' ||
-    type === 'delete_payee';
+    type === 'delete_payee' ||
+    type === 'delete_security';
   // The affected record's home, surfaced as a "view" link on success.
   const viewLink = isDeletion
     ? null
@@ -293,6 +302,8 @@ export function TransactionConfirmationCard({
       'confirmAction.deletedInvestmentTransaction',
     ),
     create_security: t('confirmAction.createdSecurity'),
+    update_security: t('confirmAction.updatedSecurity'),
+    delete_security: t('confirmAction.deletedSecurity'),
     create_payee: t('confirmAction.createdPayee'),
     update_payee: t('confirmAction.updatedPayee'),
     delete_payee: t('confirmAction.deletedPayee'),

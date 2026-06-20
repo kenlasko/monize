@@ -14,7 +14,7 @@ import { McpRelayTools } from "./tools/relay.tool";
 const WRITE_TOOLS = new Set([
   "manage_transactions",
   "manage_payees",
-  "create_security",
+  "manage_securities",
   "manage_investment_transactions",
 ]);
 // Write tools whose repeated calls converge to the same state.
@@ -25,6 +25,7 @@ const IDEMPOTENT_WRITES = new Set<string>([]);
 const DESTRUCTIVE_TOOLS = new Set([
   "manage_transactions",
   "manage_payees",
+  "manage_securities",
   "manage_investment_transactions",
 ]);
 
@@ -57,6 +58,7 @@ function collectToolConfigs(): Array<{ name: string; config: any }> {
     ) as unknown as ToolProvider,
     new McpReportsTools({} as any) as unknown as ToolProvider,
     new McpInvestmentsTools(
+      {} as any,
       {} as any,
       {} as any,
       {} as any,

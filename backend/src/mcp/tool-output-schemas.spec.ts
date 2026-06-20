@@ -268,8 +268,8 @@ const cases: Array<{ name: string; schema: RawShape; raw: unknown }> = [
     },
   },
   {
-    name: "createSecurityOutput (created branch)",
-    schema: schemas.createSecurityOutput,
+    name: "manageSecuritiesOutput (single created branch)",
+    schema: schemas.manageSecuritiesOutput,
     raw: {
       id: "sec1",
       symbol: "AAPL",
@@ -278,28 +278,32 @@ const cases: Array<{ name: string; schema: RawShape; raw: unknown }> = [
       exchange: "NASDAQ",
       currencyCode: "USD",
       isFavourite: false,
+      count: 1,
     },
   },
   {
-    name: "createSecurityOutput (dry-run branch)",
-    schema: schemas.createSecurityOutput,
+    name: "manageSecuritiesOutput (dry-run branch)",
+    schema: schemas.manageSecuritiesOutput,
     raw: {
       dryRun: true,
-      preview: {
-        symbol: "AAPL",
-        name: "Apple Inc.",
-        securityType: "STOCK",
-        exchange: "NASDAQ",
-        currencyCode: "USD",
-        isFavourite: false,
-        quoteProvider: "yahoo",
-      },
+      operation: "create",
+      previews: [{ status: "ok", symbol: "AAPL", securityName: "Apple Inc." }],
+      skipped: [],
       message: "This is a preview.",
     },
   },
   {
-    name: "createSecurityOutput (relay branch)",
-    schema: schemas.createSecurityOutput,
+    name: "manageSecuritiesOutput (bulk branch)",
+    schema: schemas.manageSecuritiesOutput,
+    raw: {
+      ids: ["sec1", "sec2"],
+      count: 2,
+      skipped: [{ index: 2, reason: 'No security matches "X"' }],
+    },
+  },
+  {
+    name: "manageSecuritiesOutput (relay branch)",
+    schema: schemas.manageSecuritiesOutput,
     raw: { status: "preview_shown" },
   },
   {
@@ -381,7 +385,7 @@ const cases: Array<{ name: string; schema: RawShape; raw: unknown }> = [
     raw: {
       ids: ["p1", "p2"],
       count: 2,
-      skipped: [{ index: 2, reason: "Payee \"x\" not found" }],
+      skipped: [{ index: 2, reason: 'Payee "x" not found' }],
     },
   },
   {

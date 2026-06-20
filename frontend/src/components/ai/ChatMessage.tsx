@@ -54,6 +54,8 @@ const TOOL_LABELS: Record<string, string> = {
   manage_transactions: 'Manage Transactions',
   categorize_transaction: 'Categorize Transaction',
   manage_payees: 'Manage Payees',
+  manage_securities: 'Manage Securities',
+  lookup_securities: 'Look Up Securities',
 };
 
 function ToolDetails({ tool }: { tool: ToolInfo }) {

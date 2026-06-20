@@ -225,17 +225,28 @@ export const lookupSecuritiesSchema = z.object({
   provider: z.enum(["yahoo", "msn", "auto"]).optional(),
 });
 
-export const createSecuritySchema = z.object({
-  query: z.string().min(1).max(100),
-  exchange: z.enum(SECURITY_EXCHANGES).optional(),
-  securityType: z.enum(SECURITY_TYPES).optional(),
-  isFavourite: z.boolean().optional(),
-  // ISO 4217 alphabetic code; the confirm-time DTO re-validates it as a known
-  // currency, so the schema only needs to enforce the 3-letter shape here.
-  currencyCode: z
-    .string()
-    .regex(/^[A-Za-z]{3}$/)
-    .optional(),
+export const manageSecuritiesSchema = z.object({
+  operation: z.enum(["create", "update", "delete"]),
+  items: z
+    .array(
+      z.object({
+        // create: lookup query; update/delete: existing symbol or name.
+        query: z.string().min(1).max(100).optional(),
+        symbol: z.string().min(1).max(100).optional(),
+        exchange: z.enum(SECURITY_EXCHANGES).optional(),
+        securityType: z.enum(SECURITY_TYPES).optional(),
+        isFavourite: z.boolean().optional(),
+        // ISO 4217 alphabetic code; the confirm-time DTO re-validates it as a
+        // known currency, so the schema only enforces the 3-letter shape here.
+        currencyCode: z
+          .string()
+          .regex(/^[A-Za-z]{3}$/)
+          .optional(),
+      }),
+    )
+    .min(1)
+    .max(MAX_BULK_ACTION_ROWS),
+  approvalMode: z.enum(["bulk", "individual"]).optional(),
 });
 
 /**
@@ -515,7 +526,7 @@ export const toolInputSchemas: Record<string, z.ZodSchema> = {
   render_chart: renderChartSchema,
   manage_transactions: manageTransactionsSchema,
   manage_payees: managePayeesSchema,
-  create_security: createSecuritySchema,
+  manage_securities: manageSecuritiesSchema,
   lookup_securities: lookupSecuritiesSchema,
   manage_investment_transactions: manageInvestmentTransactionsSchema,
 };

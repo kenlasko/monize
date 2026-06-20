@@ -8,6 +8,7 @@ import { Account } from "../accounts/entities/account.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { SecuritiesService } from "./securities.service";
+import { SecurityToolPrepService } from "./security-tool-prep.service";
 import { SecurityPriceService } from "./security-price.service";
 import { YahooFinanceService } from "./yahoo-finance.service";
 import { MsnFinanceService } from "./msn-finance.service";
@@ -48,6 +49,7 @@ import { DelegationModule } from "../delegation/delegation.module";
   ],
   providers: [
     SecuritiesService,
+    SecurityToolPrepService,
     SecurityPriceService,
     YahooFinanceService,
     MsnFinanceService,
@@ -66,6 +68,7 @@ import { DelegationModule } from "../delegation/delegation.module";
   ],
   exports: [
     SecuritiesService,
+    SecurityToolPrepService,
     SecurityPriceService,
     YahooFinanceService,
     MsnFinanceService,

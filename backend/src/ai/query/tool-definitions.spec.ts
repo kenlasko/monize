@@ -26,7 +26,7 @@ describe("FINANCIAL_TOOLS", () => {
     "manage_transactions",
     "manage_payees",
     "lookup_securities",
-    "create_security",
+    "manage_securities",
     "manage_investment_transactions",
   ];
 

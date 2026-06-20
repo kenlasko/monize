@@ -312,6 +312,41 @@ describe('TransactionConfirmationCard', () => {
     ).toHaveAttribute('href', '/securities');
   });
 
+  it('renders an update_security card and success message', () => {
+    render(
+      <TransactionConfirmationCard
+        action={makeSecurityAction(
+          {},
+          {
+            type: 'update_security',
+            descriptor: { type: 'update_security' },
+            status: 'confirmed',
+          },
+        )}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Security updated')).toBeInTheDocument();
+  });
+
+  it('renders a delete_security card showing symbol and name only', () => {
+    render(
+      <TransactionConfirmationCard
+        action={makeSecurityAction(
+          {},
+          { type: 'delete_security', descriptor: { type: 'delete_security' } },
+        )}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Delete this security?')).toBeInTheDocument();
+    expect(screen.getByText('AAPL')).toBeInTheDocument();
+    // Delete card omits the classification rows.
+    expect(screen.queryByText('STOCK')).toBeNull();
+  });
+
   describe('edit and delete actions', () => {
     it('renders an update_transaction card with the resulting values', () => {
       render(
