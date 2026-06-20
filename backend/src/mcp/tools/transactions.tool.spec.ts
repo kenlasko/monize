@@ -624,7 +624,7 @@ describe("McpTransactionsTools", () => {
       );
     });
 
-    it("bulk create (bulk mode) emits one relay card", async () => {
+    it("bulk create (>= 6 items) emits one relay card", async () => {
       resolve.mockReturnValue({ userId: "u1", scopes: "write" });
       relayService.emitPendingAction.mockReturnValue(true);
       prepService.prepareCreate.mockResolvedValue({
@@ -638,11 +638,11 @@ describe("McpTransactionsTools", () => {
       const result = await handlers["manage_transactions"](
         {
           operation: "create",
-          items: [
-            { accountName: "Checking", amount: -50, date: "2025-01-15" },
-            { accountName: "Checking", amount: -20, date: "2025-01-16" },
-          ],
-          approvalMode: "bulk",
+          items: Array.from({ length: 6 }, (_, i) => ({
+            accountName: "Checking",
+            amount: -50 - i,
+            date: "2025-01-15",
+          })),
         },
         { sessionId: "s1" },
       );
@@ -752,7 +752,7 @@ describe("McpTransactionsTools", () => {
       expect(transactionsService.updateTransfer).toHaveBeenCalledTimes(1);
     });
 
-    it("bulk update (bulk mode) builds one batch card", async () => {
+    it("bulk update (>= 6 items) builds one batch card", async () => {
       resolve.mockReturnValue({ userId: "u1", scopes: "write" });
       relayService.emitPendingAction.mockReturnValue(true);
       prepService.prepareUpdateBulk.mockResolvedValue({
@@ -778,11 +778,10 @@ describe("McpTransactionsTools", () => {
       await handlers["manage_transactions"](
         {
           operation: "update",
-          items: [
-            { transactionId: "t1", categoryName: "Groceries" },
-            { transactionId: "t2", categoryName: "Groceries" },
-          ],
-          approvalMode: "bulk",
+          items: Array.from({ length: 6 }, (_, i) => ({
+            transactionId: `t${i + 1}`,
+            categoryName: "Groceries",
+          })),
         },
         { sessionId: "s1" },
       );
@@ -819,7 +818,7 @@ describe("McpTransactionsTools", () => {
       expect(parsed.deleted).toBe(true);
     });
 
-    it("bulk delete (bulk mode) builds one batch card", async () => {
+    it("bulk delete (>= 6 items) builds one batch card", async () => {
       resolve.mockReturnValue({ userId: "u1", scopes: "write" });
       relayService.emitPendingAction.mockReturnValue(true);
       prepService.prepareDeleteBulk.mockResolvedValue({
@@ -832,8 +831,9 @@ describe("McpTransactionsTools", () => {
       await handlers["manage_transactions"](
         {
           operation: "delete",
-          items: [{ transactionId: "t1" }, { transactionId: "t2" }],
-          approvalMode: "bulk",
+          items: Array.from({ length: 6 }, (_, i) => ({
+            transactionId: `t${i + 1}`,
+          })),
         },
         { sessionId: "s1" },
       );
@@ -951,11 +951,11 @@ describe("McpTransactionsTools", () => {
       const result = await handlers["manage_transactions"](
         {
           operation: "create",
-          items: [
-            { accountName: "Checking", amount: -50, date: "2025-01-15" },
-            { accountName: "Checking", amount: -20, date: "2025-01-16" },
-          ],
-          approvalMode: "bulk",
+          items: Array.from({ length: 6 }, (_, i) => ({
+            accountName: "Checking",
+            amount: -50 - i,
+            date: "2025-01-15",
+          })),
         },
         { sessionId: "s1" },
       );
@@ -973,11 +973,11 @@ describe("McpTransactionsTools", () => {
       const result = await handlers["manage_transactions"](
         {
           operation: "create",
-          items: [
-            { accountName: "Checking", amount: -50, date: "2025-01-15" },
-            { accountName: "Checking", amount: -20, date: "2025-01-16" },
-          ],
-          approvalMode: "bulk",
+          items: Array.from({ length: 6 }, (_, i) => ({
+            accountName: "Checking",
+            amount: -50 - i,
+            date: "2025-01-15",
+          })),
         },
         { sessionId: "s1" },
       );
@@ -1007,7 +1007,11 @@ describe("McpTransactionsTools", () => {
         {
           operation: "create",
           items: [
-            { accountName: "Checking", amount: -50, date: "2025-01-15" },
+            ...Array.from({ length: 5 }, (_, i) => ({
+              accountName: "Checking",
+              amount: -50 - i,
+              date: "2025-01-15",
+            })),
             {
               fromAccountName: "Checking",
               toAccountName: "Savings",
@@ -1015,7 +1019,6 @@ describe("McpTransactionsTools", () => {
               date: "2025-01-15",
             },
           ],
-          approvalMode: "bulk",
         },
         { sessionId: "s1" },
       );
@@ -1178,11 +1181,10 @@ describe("McpTransactionsTools", () => {
       const result = await handlers["manage_transactions"](
         {
           operation: "update",
-          items: [
-            { transactionId: "t1", amount: -5 },
-            { transactionId: "t2", amount: -6 },
-          ],
-          approvalMode: "bulk",
+          items: Array.from({ length: 6 }, (_, i) => ({
+            transactionId: `t${i + 1}`,
+            amount: -5 - i,
+          })),
         },
         { sessionId: "s1" },
       );
@@ -1348,8 +1350,9 @@ describe("McpTransactionsTools", () => {
       const result = await handlers["manage_transactions"](
         {
           operation: "delete",
-          items: [{ transactionId: "t1" }, { transactionId: "t2" }],
-          approvalMode: "bulk",
+          items: Array.from({ length: 6 }, (_, i) => ({
+            transactionId: `t${i + 1}`,
+          })),
         },
         { sessionId: "s1" },
       );

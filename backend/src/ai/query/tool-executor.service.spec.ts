@@ -1240,27 +1240,26 @@ describe("ToolExecutorService", () => {
       expect(result.isError).toBe(true);
     });
 
-    it("bulk create (bulk mode) builds one create_transactions card", async () => {
+    it("bulk create (>= 6 items) builds one create_transactions card", async () => {
+      const result = await service.execute(userId, "manage_transactions", {
+        operation: "create",
+        items: Array.from({ length: 6 }, (_, i) => ({
+          accountName: "Checking",
+          amount: -10 - i,
+          date: "2026-01-15",
+        })),
+      });
+      expect(result.pendingActions).toHaveLength(1);
+      expect(result.pendingActions?.[0].type).toBe("create_transactions");
+    });
+
+    it("create of 2-5 items stays per-item by default", async () => {
       const result = await service.execute(userId, "manage_transactions", {
         operation: "create",
         items: [
           { accountName: "Checking", amount: -10, date: "2026-01-15" },
           { accountName: "Checking", amount: -20, date: "2026-01-16" },
         ],
-        approvalMode: "bulk",
-      });
-      expect(result.pendingActions).toHaveLength(1);
-      expect(result.pendingActions?.[0].type).toBe("create_transactions");
-    });
-
-    it("bulk create (individual mode) builds one card per row", async () => {
-      const result = await service.execute(userId, "manage_transactions", {
-        operation: "create",
-        items: [
-          { accountName: "Checking", amount: -10, date: "2026-01-15" },
-          { accountName: "Savings", amount: -20, date: "2026-01-16" },
-        ],
-        approvalMode: "individual",
       });
       expect(result.pendingActions).toHaveLength(2);
       expect(
@@ -1268,11 +1267,46 @@ describe("ToolExecutorService", () => {
       ).toBe(true);
     });
 
-    it("bulk create (bulk mode) splits standard and transfer rows into two cards", async () => {
+    it("create of 5 items stays per-item just below the bulk threshold", async () => {
+      const result = await service.execute(userId, "manage_transactions", {
+        operation: "create",
+        items: Array.from({ length: 5 }, (_, i) => ({
+          accountName: "Checking",
+          amount: -10 - i,
+          date: "2026-01-15",
+        })),
+      });
+      expect(result.pendingActions).toHaveLength(5);
+      expect(
+        result.pendingActions?.every((a) => a.type === "create_transaction"),
+      ).toBe(true);
+    });
+
+    it("individual mode forces one card per row at 6+ items", async () => {
+      const result = await service.execute(userId, "manage_transactions", {
+        operation: "create",
+        items: Array.from({ length: 6 }, (_, i) => ({
+          accountName: "Checking",
+          amount: -10 - i,
+          date: "2026-01-15",
+        })),
+        approvalMode: "individual",
+      });
+      expect(result.pendingActions).toHaveLength(6);
+      expect(
+        result.pendingActions?.every((a) => a.type === "create_transaction"),
+      ).toBe(true);
+    });
+
+    it("bulk create (>= 6 items) splits standard and transfer rows into two cards", async () => {
       const result = await service.execute(userId, "manage_transactions", {
         operation: "create",
         items: [
-          { accountName: "Checking", amount: -10, date: "2026-01-15" },
+          ...Array.from({ length: 5 }, (_, i) => ({
+            accountName: "Checking",
+            amount: -10 - i,
+            date: "2026-01-15",
+          })),
           {
             fromAccountName: "Checking",
             toAccountName: "Savings",
@@ -1280,7 +1314,6 @@ describe("ToolExecutorService", () => {
             date: "2026-01-16",
           },
         ],
-        approvalMode: "bulk",
       });
       const types = (result.pendingActions ?? []).map((a) => a.type).sort();
       expect(types).toEqual(["batch_actions", "create_transactions"]);
@@ -1352,19 +1385,29 @@ describe("ToolExecutorService", () => {
 
     const TXID2 = "22222222-2222-4222-8222-222222222222";
 
-    it("bulk update (bulk mode) builds one batch_actions card", async () => {
+    it("bulk update (>= 6 items) builds one batch_actions card", async () => {
+      const result = await service.execute(userId, "manage_transactions", {
+        operation: "update",
+        items: Array.from({ length: 6 }, (_, i) => ({
+          transactionId: TXID,
+          amount: -5 - i,
+        })),
+      });
+      expect(result.pendingAction?.type).toBe("batch_actions");
+      expect(
+        (result.pendingAction?.descriptor as { operation?: string }).operation,
+      ).toBe("update");
+    });
+
+    it("update of 2-5 items stays per-item by default", async () => {
       const result = await service.execute(userId, "manage_transactions", {
         operation: "update",
         items: [
           { transactionId: TXID, amount: -5 },
           { transactionId: TXID2, amount: -6 },
         ],
-        approvalMode: "bulk",
       });
-      expect(result.pendingAction?.type).toBe("batch_actions");
-      expect(
-        (result.pendingAction?.descriptor as { operation?: string }).operation,
-      ).toBe("update");
+      expect(result.pendingActions).toHaveLength(2);
     });
 
     it("individual update returns one card per item", async () => {
@@ -1407,16 +1450,25 @@ describe("ToolExecutorService", () => {
       expect(result.pendingAction?.type).toBe("delete_transaction");
     });
 
-    it("bulk delete (bulk mode) builds one batch_actions card", async () => {
+    it("bulk delete (>= 6 items) builds one batch_actions card", async () => {
+      const result = await service.execute(userId, "manage_transactions", {
+        operation: "delete",
+        items: Array.from({ length: 6 }, () => ({
+          transactionId: "11111111-1111-4111-8111-111111111111",
+        })),
+      });
+      expect(result.pendingAction?.type).toBe("batch_actions");
+    });
+
+    it("delete of 2-5 items stays per-item by default", async () => {
       const result = await service.execute(userId, "manage_transactions", {
         operation: "delete",
         items: [
           { transactionId: "11111111-1111-4111-8111-111111111111" },
           { transactionId: "22222222-2222-4222-8222-222222222222" },
         ],
-        approvalMode: "bulk",
       });
-      expect(result.pendingAction?.type).toBe("batch_actions");
+      expect(result.pendingActions).toHaveLength(2);
     });
 
     it("individual delete returns one card per item", async () => {
@@ -1545,17 +1597,16 @@ describe("ToolExecutorService", () => {
       expect(result.pendingAction).toBeUndefined();
     });
 
-    it("bulk create (bulk mode) builds one create_investment_transactions card", async () => {
+    it("bulk create (>= 6 items) builds one create_investment_transactions card", async () => {
       investmentTransactions.prepareCreateInvestmentBulk.mockResolvedValueOnce({
-        okPreviews: [
-          { ...createInvestmentPreview },
-          { ...createInvestmentPreview, transactionDate: "2026-01-16" },
-        ],
-        okIndex: [0, 1],
-        previewRows: [
-          { status: "ok", accountName: "Brokerage" },
-          { status: "ok", accountName: "Brokerage" },
-        ],
+        okPreviews: Array.from({ length: 6 }, () => ({
+          ...createInvestmentPreview,
+        })),
+        okIndex: [0, 1, 2, 3, 4, 5],
+        previewRows: Array.from({ length: 6 }, () => ({
+          status: "ok",
+          accountName: "Brokerage",
+        })),
         skipped: [],
       });
       const result = await service.execute(
@@ -1563,25 +1614,14 @@ describe("ToolExecutorService", () => {
         "manage_investment_transactions",
         {
           operation: "create",
-          items: [
-            {
-              accountName: "Brokerage",
-              action: "BUY",
-              date: "2026-01-15",
-              security: "AAPL",
-              quantity: 10,
-              price: 150,
-            },
-            {
-              accountName: "Brokerage",
-              action: "BUY",
-              date: "2026-01-16",
-              security: "AAPL",
-              quantity: 5,
-              price: 151,
-            },
-          ],
-          approvalMode: "bulk",
+          items: Array.from({ length: 6 }, (_, i) => ({
+            accountName: "Brokerage",
+            action: "BUY",
+            date: "2026-01-15",
+            security: "AAPL",
+            quantity: 10 + i,
+            price: 150,
+          })),
         },
       );
 
@@ -1589,7 +1629,7 @@ describe("ToolExecutorService", () => {
       const descriptor = result.pendingAction?.descriptor;
       if (descriptor?.type !== "create_investment_transactions")
         throw new Error("expected create_investment_transactions descriptor");
-      expect(descriptor.rows).toHaveLength(2);
+      expect(descriptor.rows).toHaveLength(6);
       expect(JSON.stringify(result.data)).not.toContain("signature-abc");
     });
 
@@ -1743,20 +1783,16 @@ describe("ToolExecutorService", () => {
       expect(result.pendingAction).toBeUndefined();
     });
 
-    it("bulk update (bulk mode) builds a batch update card", async () => {
+    it("bulk update (>= 6 items) builds a batch update card", async () => {
       const result = await service.execute(
         userId,
         "manage_investment_transactions",
         {
           operation: "update",
-          items: [
-            { transactionId: TXID, quantity: 5 },
-            {
-              transactionId: "22222222-2222-4222-8222-222222222222",
-              quantity: 6,
-            },
-          ],
-          approvalMode: "bulk",
+          items: Array.from({ length: 6 }, () => ({
+            transactionId: TXID,
+            quantity: 5,
+          })),
         },
       );
       expect(
@@ -1812,7 +1848,7 @@ describe("ToolExecutorService", () => {
       expect(result.summary).toContain("1 skipped");
     });
 
-    it("bulk update (bulk mode) errors when every row is skipped", async () => {
+    it("bulk update (>= 6 items) errors when every row is skipped", async () => {
       investmentTransactions.prepareUpdateInvestmentBulk.mockResolvedValueOnce({
         okRows: [],
         okIndex: [],
@@ -1824,14 +1860,10 @@ describe("ToolExecutorService", () => {
         "manage_investment_transactions",
         {
           operation: "update",
-          items: [
-            { transactionId: TXID, quantity: 5 },
-            {
-              transactionId: "22222222-2222-4222-8222-222222222222",
-              quantity: 6,
-            },
-          ],
-          approvalMode: "bulk",
+          items: Array.from({ length: 6 }, () => ({
+            transactionId: TXID,
+            quantity: 5,
+          })),
         },
       );
       expect(result.isError).toBe(true);
@@ -1868,17 +1900,13 @@ describe("ToolExecutorService", () => {
       expect(result.pendingAction).toBeUndefined();
     });
 
-    it("bulk delete (bulk mode) builds a batch delete card", async () => {
+    it("bulk delete (>= 6 items) builds a batch delete card", async () => {
       const result = await service.execute(
         userId,
         "manage_investment_transactions",
         {
           operation: "delete",
-          items: [
-            { transactionId: TXID },
-            { transactionId: "22222222-2222-4222-8222-222222222222" },
-          ],
-          approvalMode: "bulk",
+          items: Array.from({ length: 6 }, () => ({ transactionId: TXID })),
         },
       );
       expect(
@@ -1920,11 +1948,7 @@ describe("ToolExecutorService", () => {
         "manage_investment_transactions",
         {
           operation: "delete",
-          items: [
-            { transactionId: TXID },
-            { transactionId: "22222222-2222-4222-8222-222222222222" },
-          ],
-          approvalMode: "bulk",
+          items: Array.from({ length: 6 }, () => ({ transactionId: TXID })),
         },
       );
       expect(result.isError).toBe(true);

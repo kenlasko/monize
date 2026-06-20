@@ -67,7 +67,7 @@ export class McpServerService {
           "- Amounts are signed: positive = income/deposit, negative = expense/withdrawal.",
           "- All dates use YYYY-MM-DD format. Report months use YYYY-MM.",
           "- list_transactions and list_accounts accept names (account/category/payee) and resolve them internally. For other tools that take UUIDs, use list_accounts or get_categories first to resolve names to IDs.",
-          "- To create, update, categorize, transfer, or delete transactions, use the single manage_transactions tool. It accepts NAMES for account/category/payee and resolves them internally, so you do NOT need to call get_accounts/get_categories first for writes. operation = create/update/delete; items = 1-25 rows; approvalMode = bulk (default) or individual. Set dryRun=true to preview without saving.",
+          "- To create, update, categorize, transfer, or delete transactions, use the single manage_transactions tool. It accepts NAMES for account/category/payee and resolves them internally, so you do NOT need to call get_accounts/get_categories first for writes. operation = create/update/delete; items = 1-25 rows; approvalMode defaults to one bulk confirmation at 6 or more items and one per item below that, and individual forces one per item at any count. Set dryRun=true to preview without saving.",
           "",
           "## Answering common questions",
           "- 'How much did I spend on X?' → generate_report with type spending_by_category or spending_by_payee, or list_transactions (summary only), not list_transactions with includeTransactions.",

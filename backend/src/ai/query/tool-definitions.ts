@@ -471,7 +471,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
       "update: { transactionId, amount?, date?, payeeName?, categoryName?, description?, createPayeeIfMissing? } -- provide only the fields to change (at least one); a category-only change is just transactionId + categoryName. First call search_transactions to obtain the transactionId. Transfers are auto-detected and edited correctly; for a transfer, payeeName sets its custom label (matched to an existing payee or created if missing, like a normal transaction). " +
       "split transactions (create or update): add a 'splits' array of { categoryName, amount, memo? } (>= 2 lines, category splits only) instead of a single categoryName; the split amounts must sum to the transaction amount (e.g. a -100 expense split -60 Groceries / -40 Household). On create also give accountName, amount, date; on update give transactionId and splits (replaces the whole split set). Send split transactions one at a time (a single item), not mixed into a multi-row batch. " +
       "delete: { transactionId } -- removes the transaction (and any linked transfer legs / split children). First call search_transactions to obtain the transactionId. " +
-      "approvalMode = 'bulk' (default) shows one card for the whole batch; 'individual' shows one card per item the user approves separately. Ignored for a single item. Maximum 25 items per call; if the user pastes more, process the first 25 and tell them to send the rest. After calling this tool, briefly tell the user to review and approve the card(s); never claim the change was applied.",
+      "approvalMode controls the confirmation: by default a batch of 6 or more items shows one card for the whole batch, while 1-5 items show one card per item the user approves separately. Pass 'individual' to force one card per item at any count. Ignored for a single item. Maximum 25 items per call; if the user pastes more, process the first 25 and tell them to send the rest. After calling this tool, briefly tell the user to review and approve the card(s); never claim the change was applied.",
     inputSchema: {
       type: "object",
       properties: {
@@ -580,7 +580,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
           type: "string",
           enum: ["bulk", "individual"],
           description:
-            "How multi-item batches are approved: 'bulk' (default) = one card for all items; 'individual' = one card per item. Ignored when there is a single item.",
+            "How multi-item batches are approved: by default 6 or more items show one card for the whole batch and 1-5 items show one card per item; 'individual' forces one card per item at any count. Ignored when there is a single item.",
         },
       },
       required: ["operation", "items"],
@@ -731,7 +731,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
       "create: { accountName, action, date, security?, quantity?, price?, commission?, fundingAccountName?, description? } -- security is required for BUY, SELL, SPLIT, REINVEST, ADD_SHARES, and REMOVE_SHARES; optional for cash-only INTEREST. price is the per-share price, or the total cash for a DIVIDEND/INTEREST/CAPITAL_GAIN with no quantity. Buys debit, and sells/dividends/interest/capital gains credit, the brokerage's linked cash account automatically -- do not also record a separate cash transaction; fundingAccountName overrides which cash account is used. " +
       "update: { transactionId, action?, date?, security?, quantity?, price?, commission?, description? } -- provide only the fields to change (at least one); omitted fields keep their current value; the total and cash impact are recomputed. First call list_investment_transactions to obtain the transactionId. " +
       "delete: { transactionId } -- deleting one leg of a security transfer removes the paired leg too and reverses any linked cash impact. First call list_investment_transactions to obtain the transactionId. " +
-      "approvalMode = 'bulk' (default) shows one card for the whole batch; 'individual' shows one card per item the user approves separately. Ignored for a single item. Maximum 25 items per call; if the user pastes more, process the first 25 and tell them to send the rest. After calling this tool, briefly tell the user to review and approve the card(s); never claim the change was applied.",
+      "approvalMode controls the confirmation: by default a batch of 6 or more items shows one card for the whole batch, while 1-5 items show one card per item the user approves separately. Pass 'individual' to force one card per item at any count. Ignored for a single item. Maximum 25 items per call; if the user pastes more, process the first 25 and tell them to send the rest. After calling this tool, briefly tell the user to review and approve the card(s); never claim the change was applied.",
     inputSchema: {
       type: "object",
       properties: {
@@ -822,7 +822,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
           type: "string",
           enum: ["bulk", "individual"],
           description:
-            "How multi-item batches are approved: 'bulk' (default) = one card for all items; 'individual' = one card per item. Ignored when there is a single item.",
+            "How multi-item batches are approved: by default 6 or more items show one card for the whole batch and 1-5 items show one card per item; 'individual' forces one card per item at any count. Ignored when there is a single item.",
         },
       },
       required: ["operation", "items"],

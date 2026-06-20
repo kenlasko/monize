@@ -1176,6 +1176,14 @@ describe("McpInvestmentsTools", () => {
               quantity: 1,
               price: 1,
             },
+            ...Array.from({ length: 3 }, () => ({
+              accountName: "Brokerage",
+              action: "BUY",
+              date: "2026-01-17",
+              security: "AAPL",
+              quantity: 1,
+              price: 1,
+            })),
           ],
         },
         { sessionId: "s1", requestId: "c1" },
@@ -1315,6 +1323,10 @@ describe("McpInvestmentsTools", () => {
           items: [
             { transactionId: "it1", action: "SELL" },
             { transactionId: "bad", action: "SELL" },
+            ...Array.from({ length: 4 }, (_, i) => ({
+              transactionId: `it${i + 3}`,
+              action: "SELL",
+            })),
           ],
         },
         { sessionId: "s1", requestId: "c1" },
@@ -1376,7 +1388,9 @@ describe("McpInvestmentsTools", () => {
       const result = await handlers["manage_investment_transactions"](
         {
           operation: "delete",
-          items: [{ transactionId: "it1" }, { transactionId: "it2" }],
+          items: Array.from({ length: 6 }, (_, i) => ({
+            transactionId: `it${i + 1}`,
+          })),
         },
         { sessionId: "s1", requestId: "c1" },
       );

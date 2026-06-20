@@ -13,7 +13,11 @@ import {
 } from "../../transactions/transaction-tool-prep.service";
 import { AiRelayService } from "../../ai/relay/ai-relay.service";
 import { AiActionBuilderService } from "../../ai/actions/ai-action-builder.service";
-import { PendingAiAction } from "../../ai/actions/ai-action.types";
+import {
+  ApprovalMode,
+  PendingAiAction,
+  resolveApprovalMode,
+} from "../../ai/actions/ai-action.types";
 import { RELAY_PREVIEW_SHOWN } from "../mcp-relay-confirm";
 import {
   UserContextResolver,
@@ -36,7 +40,6 @@ import {
 import { READ_ONLY, WRITE } from "../mcp-annotations";
 
 type ManageOperation = "create" | "update" | "delete";
-type ApprovalMode = "bulk" | "individual";
 
 interface ManageItem {
   // create (standard)
@@ -333,7 +336,7 @@ export class McpTransactionsTools {
           "update: { transactionId, amount?, date?, payeeName?, categoryName?, description?, createPayeeIfMissing? } (>=1 field; a category-only change is transactionId + categoryName; transfers auto-detected; payeeName sets the transfer's custom label, matched to an existing payee or created if missing). " +
           "split transactions (create or update): add a 'splits' array of { categoryName, amount, memo? } (>= 2 lines, category splits only) instead of a single categoryName; split amounts must sum to the transaction amount. Send split transactions one item at a time, not mixed into a multi-row batch. " +
           "delete: { transactionId } (removes linked transfer legs / split children too). " +
-          "approvalMode = 'bulk' (default; one confirmation for the whole batch) or 'individual' (one confirmation per item); ignored for a single item. Set dryRun=true to preview every item without saving. The user is asked to confirm before anything is saved (web chat card via relay, or an MCP confirmation dialog).",
+          "approvalMode controls the confirmation: by default 6 or more items show one confirmation for the whole batch and 1-5 items show one confirmation per item; pass 'individual' to force one confirmation per item at any count; ignored for a single item. Set dryRun=true to preview every item without saving. The user is asked to confirm before anything is saved (web chat card via relay, or an MCP confirmation dialog).",
         inputSchema: {
           operation: z
             .enum(["create", "update", "delete"])
@@ -453,7 +456,7 @@ export class McpTransactionsTools {
             .enum(["bulk", "individual"])
             .optional()
             .describe(
-              "How multi-item batches are approved: 'bulk' (default) one card for all; 'individual' one card per item. Ignored for a single item.",
+              "How multi-item batches are approved: by default 6 or more items show one card for the whole batch and 1-5 items show one card per item; 'individual' forces one card per item at any count. Ignored for a single item.",
             ),
           dryRun: z
             .boolean()
@@ -473,7 +476,10 @@ export class McpTransactionsTools {
 
         const operation = args.operation as ManageOperation;
         const items = args.items as ManageItem[];
-        const approvalMode = (args.approvalMode ?? "bulk") as ApprovalMode;
+        const approvalMode = resolveApprovalMode(
+          args.approvalMode as ApprovalMode | undefined,
+          items.length,
+        );
 
         try {
           if (args.dryRun) {

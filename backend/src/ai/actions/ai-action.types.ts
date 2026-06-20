@@ -66,6 +66,32 @@ export const AI_ACTION_TYPES: AiActionType[] = [
  */
 export const MAX_BULK_ACTION_ROWS = 25;
 
+/** How a multi-item transaction write is confirmed. */
+export type ApprovalMode = "bulk" | "individual";
+
+/**
+ * Smallest batch size that defaults to a single bulk confirmation card. Below
+ * this, a multi-item transaction batch is confirmed one card per item so small
+ * batches stay easy to review; at or above it the batch collapses to one bulk
+ * card. The user can still force per-item review at any size by asking for
+ * "individual".
+ */
+export const BULK_APPROVAL_THRESHOLD = 6;
+
+/**
+ * Resolve the effective approval mode for a batch of `count` transaction items.
+ * An explicit "individual" request is always honoured (per-item review is
+ * available at any size). Otherwise the batch only switches to bulk once it
+ * reaches BULK_APPROVAL_THRESHOLD items; smaller batches stay per-item.
+ */
+export function resolveApprovalMode(
+  requested: ApprovalMode | undefined,
+  count: number,
+): ApprovalMode {
+  if (requested === "individual") return "individual";
+  return count >= BULK_APPROVAL_THRESHOLD ? "bulk" : "individual";
+}
+
 /** Fields common to every signed descriptor. */
 interface BaseDescriptor {
   type: AiActionType;

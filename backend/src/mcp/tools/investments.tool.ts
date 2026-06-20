@@ -26,8 +26,10 @@ import {
 import { AiRelayService } from "../../ai/relay/ai-relay.service";
 import { AiActionBuilderService } from "../../ai/actions/ai-action-builder.service";
 import {
+  ApprovalMode,
   PendingAiAction,
   MAX_BULK_ACTION_ROWS,
+  resolveApprovalMode,
 } from "../../ai/actions/ai-action.types";
 import { RELAY_PREVIEW_SHOWN } from "../mcp-relay-confirm";
 import {
@@ -52,7 +54,6 @@ import { READ_ONLY, WRITE } from "../mcp-annotations";
 
 type ManageInvOperation = "create" | "update" | "delete";
 type ManageSecOperation = "create" | "update" | "delete";
-type ApprovalMode = "bulk" | "individual";
 
 interface ManageInvItem {
   // create
@@ -486,7 +487,7 @@ export class McpInvestmentsTools {
           "create: { accountName, action, date, security?, quantity?, price?, commission?, fundingAccountName?, description? } -- security is required for BUY, SELL, SPLIT, REINVEST, ADD_SHARES, REMOVE_SHARES (matched by ticker or name). Buys debit and sells/dividends/interest/capital gains credit the brokerage's linked cash account automatically -- do not also create a separate cash transaction; fundingAccountName overrides which cash account is used. " +
           "update: { transactionId, action?, date?, security?, quantity?, price?, commission?, description? } -- provide only the fields to change (>=1); omitted fields keep their current value; the total and cash impact are recomputed. " +
           "delete: { transactionId } -- deleting one leg of a security transfer removes the paired leg too and reverses any linked cash impact. " +
-          "approvalMode = 'bulk' (default; one confirmation for the whole batch) or 'individual' (one confirmation per item); ignored for a single item. The user is asked to confirm before anything is saved (web chat card via relay, or an MCP confirmation dialog).",
+          "approvalMode controls the confirmation: by default 6 or more items show one confirmation for the whole batch and 1-5 items show one confirmation per item; pass 'individual' to force one confirmation per item at any count; ignored for a single item. The user is asked to confirm before anything is saved (web chat card via relay, or an MCP confirmation dialog).",
         inputSchema: {
           operation: z
             .enum(["create", "update", "delete"])
@@ -576,7 +577,7 @@ export class McpInvestmentsTools {
             .enum(["bulk", "individual"])
             .optional()
             .describe(
-              "How multi-item batches are approved: 'bulk' (default) one card for all; 'individual' one card per item. Ignored for a single item.",
+              "How multi-item batches are approved: by default 6 or more items show one card for the whole batch and 1-5 items show one card per item; 'individual' forces one card per item at any count. Ignored for a single item.",
             ),
         },
         outputSchema: manageInvestmentTransactionsOutput,
@@ -589,7 +590,10 @@ export class McpInvestmentsTools {
 
         const operation = args.operation as ManageInvOperation;
         const items = args.items as ManageInvItem[];
-        const approvalMode = (args.approvalMode ?? "bulk") as ApprovalMode;
+        const approvalMode = resolveApprovalMode(
+          args.approvalMode as ApprovalMode | undefined,
+          items.length,
+        );
 
         try {
           if (operation === "create") {

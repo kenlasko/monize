@@ -15,7 +15,10 @@ import {
   ManageDeletePayeeRow,
 } from "../../payees/payee-tool-prep.service";
 import { AiActionBuilderService } from "../actions/ai-action-builder.service";
-import { PendingAiAction } from "../actions/ai-action.types";
+import {
+  PendingAiAction,
+  resolveApprovalMode,
+} from "../actions/ai-action.types";
 import {
   TransactionToolPrepService,
   CreateRowInput,
@@ -456,8 +459,10 @@ export class ToolExecutorService {
   ): Promise<ToolResult> {
     const operation = input.operation as "create" | "update" | "delete";
     const items = (input.items as Array<Record<string, unknown>>) ?? [];
-    const approvalMode =
-      (input.approvalMode as "bulk" | "individual" | undefined) ?? "bulk";
+    const approvalMode = resolveApprovalMode(
+      input.approvalMode as "bulk" | "individual" | undefined,
+      items.length,
+    );
     const single = items.length === 1;
 
     // Split transactions are the "rich" single unit: the bulk card paths do not
@@ -1375,8 +1380,10 @@ export class ToolExecutorService {
   ): Promise<ToolResult> {
     const operation = input.operation as "create" | "update" | "delete";
     const items = (input.items as Array<Record<string, unknown>>) ?? [];
-    const approvalMode =
-      (input.approvalMode as "bulk" | "individual" | undefined) ?? "bulk";
+    const approvalMode = resolveApprovalMode(
+      input.approvalMode as "bulk" | "individual" | undefined,
+      items.length,
+    );
     const single = items.length === 1;
 
     if (operation === "create") {
