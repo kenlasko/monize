@@ -30,7 +30,9 @@
     "updateRateClosed": "Impossibile aggiornare il tasso su un conto chiuso",
     "onlyLoanMortgageLoc": "Solo i conti prestito, mutuo e linea di credito supportano la configurazione del pagamento pianificato",
     "alreadyHasScheduledPayment": "Questo conto ha già un pagamento pianificato configurato. Modifica la transazione pianificata esistente.",
-    "sourceNotFound": "Conto di origine non trovato"
+    "sourceNotFound": "Conto di origine non trovato",
+    "ambiguousBrokerage": "\"{{ query }}\" corrisponde a più conti di intermediazione: {{ list }}. Usa il nome esatto del conto.",
+    "unknownInvestmentAccount": "Conto sconosciuto: {{ name }}. Usa un nome esatto dall'elenco dei conti dell'utente."
   },
   "actionHistory": {
     "nothingToUndo": "Niente da annullare",

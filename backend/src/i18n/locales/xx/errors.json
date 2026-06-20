@@ -30,7 +30,9 @@
     "updateRateClosed": "[XX-Cannot update rate on a closed account-XX]",
     "onlyLoanMortgageLoc": "[XX-Only loan, mortgage, and line of credit accounts support scheduled payment setup-XX]",
     "alreadyHasScheduledPayment": "[XX-This account already has a scheduled payment configured. Edit the existing scheduled transaction instead.-XX]",
-    "sourceNotFound": "[XX-Source account not found-XX]"
+    "sourceNotFound": "[XX-Source account not found-XX]",
+    "ambiguousBrokerage": "[XX-\"{{ query }}\" matches multiple brokerage accounts: {{ list }}. Use the exact account name.-XX]",
+    "unknownInvestmentAccount": "[XX-Unknown account: {{ name }}. Use an exact name from the user's account list.-XX]"
   },
   "actionHistory": {
     "nothingToUndo": "[XX-Nothing to undo-XX]",

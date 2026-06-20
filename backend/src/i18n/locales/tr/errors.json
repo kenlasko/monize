@@ -30,7 +30,9 @@
     "updateRateClosed": "Kapalı bir hesabın faiz oranı güncellenemiyor",
     "onlyLoanMortgageLoc": "Yalnızca kredi, ipotek ve kredi limiti hesapları zamanlanmış ödeme kurulumunu destekler",
     "alreadyHasScheduledPayment": "Bu hesapta zaten yapılandırılmış bir zamanlanmış ödeme var. Bunun yerine mevcut zamanlanmış işlemi düzenleyin.",
-    "sourceNotFound": "Kaynak hesap bulunamadı"
+    "sourceNotFound": "Kaynak hesap bulunamadı",
+    "ambiguousBrokerage": "\"{{ query }}\" birden fazla aracı kurum hesabıyla eşleşiyor: {{ list }}. Tam hesap adını kullanın.",
+    "unknownInvestmentAccount": "Bilinmeyen hesap: {{ name }}. Kullanıcının hesap listesinden tam bir ad kullanın."
   },
   "actionHistory": {
     "nothingToUndo": "Geri alınacak işlem yok",

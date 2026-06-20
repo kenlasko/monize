@@ -30,7 +30,9 @@
     "updateRateClosed": "Zinssatz eines geschlossenen Kontos kann nicht aktualisiert werden",
     "onlyLoanMortgageLoc": "Nur Darlehens-, Hypotheken- und Kreditlinienkonten unterstützen die Einrichtung terminierter Zahlungen",
     "alreadyHasScheduledPayment": "Dieses Konto hat bereits eine terminierte Zahlung. Bearbeiten Sie stattdessen die vorhandene terminierte Buchung.",
-    "sourceNotFound": "Quellkonto nicht gefunden"
+    "sourceNotFound": "Quellkonto nicht gefunden",
+    "ambiguousBrokerage": "\"{{ query }}\" entspricht mehreren Brokerage-Konten: {{ list }}. Verwenden Sie den genauen Kontonamen.",
+    "unknownInvestmentAccount": "Unbekanntes Konto: {{ name }}. Verwenden Sie einen genauen Namen aus der Kontoliste des Benutzers."
   },
   "actionHistory": {
     "nothingToUndo": "Nichts rückgängig zu machen",

@@ -30,7 +30,9 @@
     "updateRateClosed": "无法更新已关闭账户的利率",
     "onlyLoanMortgageLoc": "只有贷款、抵押贷款和信用额度账户支持计划还款设置",
     "alreadyHasScheduledPayment": "此账户已配置计划还款。请编辑现有计划交易。",
-    "sourceNotFound": "未找到来源账户"
+    "sourceNotFound": "未找到来源账户",
+    "ambiguousBrokerage": "\"{{ query }}\" 匹配多个经纪账户：{{ list }}。请使用准确的账户名称。",
+    "unknownInvestmentAccount": "未知账户：{{ name }}。请使用用户账户列表中的准确名称。"
   },
   "actionHistory": {
     "nothingToUndo": "没有可撤销的操作",

@@ -1112,13 +1112,28 @@ export class InvestmentTransactionsService {
     userId: string,
     row: InvestmentCreateRowInput,
   ): Promise<CreateInvestmentTransactionPreview> {
-    const account = await this.accountsService.resolveByName(
+    const resolved = await this.accountsService.resolveBrokerageByName(
       userId,
       row.accountName,
     );
+    const account = resolved.match;
     if (!account) {
+      if (resolved.candidates.length > 0) {
+        const list = resolved.candidates.map((c) => c.name).join(", ");
+        throw new BadRequestException(
+          tr(
+            "errors.accounts.ambiguousBrokerage",
+            `"${row.accountName}" matches multiple brokerage accounts: ${list}. Use the exact account name.`,
+            { query: row.accountName, list },
+          ),
+        );
+      }
       throw new NotFoundException(
-        `Unknown account: ${row.accountName}. Use an exact name from the user's account list.`,
+        tr(
+          "errors.accounts.unknownInvestmentAccount",
+          `Unknown account: ${row.accountName}. Use an exact name from the user's account list.`,
+          { name: row.accountName },
+        ),
       );
     }
     let fundingAccountId: string | undefined;
@@ -1176,12 +1191,18 @@ export class InvestmentTransactionsService {
         description: row.description ?? null,
       };
 
-      const account = await this.accountsService.resolveByName(
+      const resolved = await this.accountsService.resolveBrokerageByName(
         userId,
         row.accountName,
       );
+      const account = resolved.match;
       if (!account) {
-        const reason = `Unknown account: ${row.accountName}`;
+        const reason =
+          resolved.candidates.length > 0
+            ? `Ambiguous account: "${row.accountName}" matches ${resolved.candidates
+                .map((c) => c.name)
+                .join(", ")}`
+            : `Unknown account: ${row.accountName}`;
         skipped.push({ index: i, reason });
         previewRows.push({ ...base, error: reason });
         continue;

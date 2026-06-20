@@ -712,7 +712,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
               accountName: {
                 type: "string",
                 description:
-                  "create: investment/brokerage account. Exact name from the user's account list.",
+                  "create: investment/brokerage account. The base pair name (e.g. 'RRSP') resolves to its brokerage account ('RRSP - Brokerage'); the exact name from the user's account list also works.",
               },
               action: {
                 type: "string",

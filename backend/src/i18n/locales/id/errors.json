@@ -30,7 +30,9 @@
     "updateRateClosed": "Tidak dapat memperbarui tarif pada akun yang sudah ditutup",
     "onlyLoanMortgageLoc": "Hanya akun pinjaman, hipotek, dan kredit yang mendukung pengaturan pembayaran terjadwal",
     "alreadyHasScheduledPayment": "Akun ini sudah memiliki pembayaran terjadwal yang dikonfigurasi. Edit transaksi terjadwal yang sudah ada.",
-    "sourceNotFound": "Akun sumber tidak ditemukan"
+    "sourceNotFound": "Akun sumber tidak ditemukan",
+    "ambiguousBrokerage": "\"{{ query }}\" cocok dengan beberapa akun pialang: {{ list }}. Gunakan nama akun yang tepat.",
+    "unknownInvestmentAccount": "Akun tidak dikenal: {{ name }}. Gunakan nama yang tepat dari daftar akun pengguna."
   },
   "actionHistory": {
     "nothingToUndo": "Tidak ada yang dapat dibatalkan",

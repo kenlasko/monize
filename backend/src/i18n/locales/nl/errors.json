@@ -30,7 +30,9 @@
     "updateRateClosed": "Kan het tarief van een gesloten rekening niet bijwerken",
     "onlyLoanMortgageLoc": "Alleen lening-, hypotheek- en kredietlijnrekeningen ondersteunen het instellen van geplande betalingen",
     "alreadyHasScheduledPayment": "Deze rekening heeft al een geplande betaling ingesteld. Bewerk de bestaande geplande transactie in plaats daarvan.",
-    "sourceNotFound": "Bronrekening niet gevonden"
+    "sourceNotFound": "Bronrekening niet gevonden",
+    "ambiguousBrokerage": "\"{{ query }}\" komt overeen met meerdere effectenrekeningen: {{ list }}. Gebruik de exacte rekeningnaam.",
+    "unknownInvestmentAccount": "Onbekende rekening: {{ name }}. Gebruik een exacte naam uit de rekeninglijst van de gebruiker."
   },
   "actionHistory": {
     "nothingToUndo": "Niets om ongedaan te maken",

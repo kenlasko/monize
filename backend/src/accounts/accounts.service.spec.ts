@@ -3018,4 +3018,97 @@ describe("AccountsService", () => {
       expect(result).toBeUndefined();
     });
   });
+
+  describe("resolveBrokerageByName", () => {
+    const rrspBrokerage = {
+      id: "b1",
+      name: "RRSP - Brokerage",
+      currencyCode: "CAD",
+      accountType: AccountType.INVESTMENT,
+      accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
+    };
+    const rrspCash = {
+      id: "c1",
+      name: "RRSP - Cash",
+      currencyCode: "CAD",
+      accountType: AccountType.INVESTMENT,
+      accountSubType: AccountSubType.INVESTMENT_CASH,
+    };
+
+    it("returns an exact case-insensitive match over all open accounts", async () => {
+      jest
+        .spyOn(service, "findAll")
+        .mockResolvedValue([
+          rrspBrokerage,
+          rrspCash,
+          { id: "a1", name: "Checking", currencyCode: "USD" },
+        ] as never);
+
+      const result = await service.resolveBrokerageByName(
+        "user-1",
+        "rrsp - brokerage",
+      );
+      expect(service.findAll).toHaveBeenCalledWith("user-1", false);
+      expect(result.match).toEqual({
+        id: "b1",
+        name: "RRSP - Brokerage",
+        currencyCode: "CAD",
+      });
+      expect(result.candidates).toEqual([]);
+    });
+
+    it("resolves the base pair name to its brokerage account", async () => {
+      jest
+        .spyOn(service, "findAll")
+        .mockResolvedValue([rrspBrokerage, rrspCash] as never);
+
+      const result = await service.resolveBrokerageByName("user-1", "RRSP");
+      expect(result.match).toEqual({
+        id: "b1",
+        name: "RRSP - Brokerage",
+        currencyCode: "CAD",
+      });
+      expect(result.candidates).toEqual([]);
+    });
+
+    it("returns candidates when the base name is ambiguous", async () => {
+      jest.spyOn(service, "findAll").mockResolvedValue([
+        rrspBrokerage,
+        {
+          id: "b2",
+          name: "RRSP - Brokerage",
+          currencyCode: "CAD",
+          accountType: AccountType.INVESTMENT,
+          accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
+        },
+      ] as never);
+
+      const result = await service.resolveBrokerageByName("user-1", "RRSP");
+      expect(result.match).toBeUndefined();
+      expect(result.candidates).toEqual([
+        { id: "b1", name: "RRSP - Brokerage" },
+        { id: "b2", name: "RRSP - Brokerage" },
+      ]);
+    });
+
+    it("does not match the cash half of the pair by its base name", async () => {
+      jest
+        .spyOn(service, "findAll")
+        .mockResolvedValue([rrspCash] as never);
+
+      const result = await service.resolveBrokerageByName("user-1", "RRSP");
+      expect(result.match).toBeUndefined();
+      expect(result.candidates).toEqual([]);
+    });
+
+    it("returns no match when nothing matches", async () => {
+      jest
+        .spyOn(service, "findAll")
+        .mockResolvedValue([rrspBrokerage] as never);
+
+      const result = await service.resolveBrokerageByName("user-1", "TFSA");
+      expect(result.match).toBeUndefined();
+      expect(result.candidates).toEqual([]);
+    });
+  });
 });

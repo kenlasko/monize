@@ -30,7 +30,9 @@
     "updateRateClosed": "Không thể cập nhật lãi suất cho tài khoản đã đóng",
     "onlyLoanMortgageLoc": "Chỉ tài khoản vay, thế chấp và hạn mức tín dụng mới hỗ trợ thiết lập thanh toán theo lịch",
     "alreadyHasScheduledPayment": "Tài khoản này đã có thanh toán theo lịch được cấu hình. Hãy chỉnh sửa giao tác theo lịch hiện có.",
-    "sourceNotFound": "Không tìm thấy tài khoản nguồn"
+    "sourceNotFound": "Không tìm thấy tài khoản nguồn",
+    "ambiguousBrokerage": "\"{{ query }}\" khớp với nhiều tài khoản môi giới: {{ list }}. Hãy dùng tên tài khoản chính xác.",
+    "unknownInvestmentAccount": "Tài khoản không xác định: {{ name }}. Hãy dùng tên chính xác từ danh sách tài khoản của người dùng."
   },
   "actionHistory": {
     "nothingToUndo": "Không có gì để hoàn tác",

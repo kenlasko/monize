@@ -30,7 +30,9 @@
     "updateRateClosed": "無法更新已關閉科目的利率",
     "onlyLoanMortgageLoc": "只有貸款、抵押貸款和信用額度科目支援定期還款設定",
     "alreadyHasScheduledPayment": "此科目已設定定期還款。請改為編輯現有的定期交易。",
-    "sourceNotFound": "找不到來源科目"
+    "sourceNotFound": "找不到來源科目",
+    "ambiguousBrokerage": "「{{ query }}」符合多個券商帳戶：{{ list }}。請使用準確的帳戶名稱。",
+    "unknownInvestmentAccount": "未知帳戶：{{ name }}。請使用使用者帳戶清單中的準確名稱。"
   },
   "actionHistory": {
     "nothingToUndo": "沒有可復原的操作",

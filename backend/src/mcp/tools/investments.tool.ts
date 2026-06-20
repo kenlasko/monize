@@ -514,7 +514,9 @@ export class McpInvestmentsTools {
                   .string()
                   .max(100)
                   .optional()
-                  .describe("create: investment/brokerage account name."),
+                  .describe(
+                    "create: investment/brokerage account name. The base pair name (e.g. 'RRSP') resolves to its brokerage account ('RRSP - Brokerage'); the exact name also works.",
+                  ),
                 fundingAccountName: z
                   .string()
                   .max(100)

@@ -30,7 +30,9 @@
     "updateRateClosed": "No se puede actualizar la tasa en una cuenta cerrada",
     "onlyLoanMortgageLoc": "Solo las cuentas de préstamo, hipoteca y línea de crédito admiten configuración de pago planificado",
     "alreadyHasScheduledPayment": "Esta cuenta ya tiene un pago planificado configurado. Edita la transacción planificada existente.",
-    "sourceNotFound": "Cuenta de origen no encontrada"
+    "sourceNotFound": "Cuenta de origen no encontrada",
+    "ambiguousBrokerage": "\"{{ query }}\" coincide con varias cuentas de corretaje: {{ list }}. Use el nombre exacto de la cuenta.",
+    "unknownInvestmentAccount": "Cuenta desconocida: {{ name }}. Use un nombre exacto de la lista de cuentas del usuario."
   },
   "actionHistory": {
     "nothingToUndo": "Nada que deshacer",

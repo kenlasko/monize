@@ -30,7 +30,9 @@
     "updateRateClosed": "Não é possível atualizar a taxa de uma conta encerrada",
     "onlyLoanMortgageLoc": "Apenas contas de empréstimo, crédito habitação e linha de crédito suportam a configuração de pagamento agendado",
     "alreadyHasScheduledPayment": "Esta conta já tem um pagamento agendado configurado. Edite a transação agendada existente.",
-    "sourceNotFound": "Conta de origem não encontrada"
+    "sourceNotFound": "Conta de origem não encontrada",
+    "ambiguousBrokerage": "\"{{ query }}\" corresponde a várias contas de corretagem: {{ list }}. Utilize o nome exato da conta.",
+    "unknownInvestmentAccount": "Conta desconhecida: {{ name }}. Utilize um nome exato da lista de contas do utilizador."
   },
   "actionHistory": {
     "nothingToUndo": "Nada para desfazer",

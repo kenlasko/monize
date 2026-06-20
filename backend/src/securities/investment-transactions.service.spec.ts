@@ -235,6 +235,7 @@ describe("InvestmentTransactionsService", () => {
       updateBalance: jest.fn().mockResolvedValue(undefined),
       resetBrokerageBalances: jest.fn().mockResolvedValue(2),
       resolveByName: jest.fn(),
+      resolveBrokerageByName: jest.fn(),
     };
 
     transactionsService = {};
@@ -5794,10 +5795,13 @@ describe("InvestmentTransactionsService", () => {
 
     describe("prepareCreateInvestmentSingle", () => {
       it("resolves the account name and previews the row", async () => {
-        accountsService.resolveByName.mockResolvedValue({
-          id: accountId,
-          name: "Brokerage Account",
-          currencyCode: "USD",
+        accountsService.resolveBrokerageByName.mockResolvedValue({
+          match: {
+            id: accountId,
+            name: "Brokerage Account",
+            currencyCode: "USD",
+          },
+          candidates: [],
         });
         const spy = jest
           .spyOn(service, "previewCreateInvestmentTransaction")
@@ -5819,8 +5823,43 @@ describe("InvestmentTransactionsService", () => {
         expect(preview.symbol).toBe("AAPL");
       });
 
+      it("resolves the base pair name to its brokerage account", async () => {
+        accountsService.resolveBrokerageByName.mockResolvedValue({
+          match: {
+            id: accountId,
+            name: "RRSP - Brokerage",
+            currencyCode: "CAD",
+          },
+          candidates: [],
+        });
+        const spy = jest
+          .spyOn(service, "previewCreateInvestmentTransaction")
+          .mockResolvedValue(okPreview as never);
+
+        await service.prepareCreateInvestmentSingle(userId, {
+          accountName: "RRSP",
+          action: InvestmentAction.BUY,
+          date: "2026-01-15",
+          securityQuery: "AAPL",
+          quantity: 10,
+          price: 150,
+        });
+
+        expect(accountsService.resolveBrokerageByName).toHaveBeenCalledWith(
+          userId,
+          "RRSP",
+        );
+        expect(spy).toHaveBeenCalledWith(
+          userId,
+          expect.objectContaining({ accountId }),
+        );
+      });
+
       it("throws when the account name is unknown", async () => {
-        accountsService.resolveByName.mockResolvedValue(undefined);
+        accountsService.resolveBrokerageByName.mockResolvedValue({
+          match: undefined,
+          candidates: [],
+        });
         await expect(
           service.prepareCreateInvestmentSingle(userId, {
             accountName: "Nope",
@@ -5830,14 +5869,33 @@ describe("InvestmentTransactionsService", () => {
         ).rejects.toBeInstanceOf(NotFoundException);
       });
 
+      it("throws a bad-request error when the base name is ambiguous", async () => {
+        accountsService.resolveBrokerageByName.mockResolvedValue({
+          match: undefined,
+          candidates: [
+            { id: "a", name: "RRSP - Brokerage" },
+            { id: "b", name: "RRSP - Brokerage" },
+          ],
+        });
+        await expect(
+          service.prepareCreateInvestmentSingle(userId, {
+            accountName: "RRSP",
+            action: InvestmentAction.BUY,
+            date: "2026-01-15",
+          }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+      });
+
       it("throws when an explicit funding account name is unknown", async () => {
-        accountsService.resolveByName
-          .mockResolvedValueOnce({
+        accountsService.resolveBrokerageByName.mockResolvedValue({
+          match: {
             id: accountId,
             name: "Brokerage Account",
             currencyCode: "USD",
-          })
-          .mockResolvedValueOnce(undefined);
+          },
+          candidates: [],
+        });
+        accountsService.resolveByName.mockResolvedValue(undefined);
         await expect(
           service.prepareCreateInvestmentSingle(userId, {
             accountName: "Brokerage Account",
@@ -5851,15 +5909,18 @@ describe("InvestmentTransactionsService", () => {
 
     describe("prepareCreateInvestmentBulk", () => {
       it("collects ok rows and skips unknown account / failed preview rows", async () => {
-        accountsService.resolveByName.mockImplementation(
+        accountsService.resolveBrokerageByName.mockImplementation(
           (_uid: string, name: string) =>
             name === "Brokerage Account"
               ? Promise.resolve({
-                  id: accountId,
-                  name: "Brokerage Account",
-                  currencyCode: "USD",
+                  match: {
+                    id: accountId,
+                    name: "Brokerage Account",
+                    currencyCode: "USD",
+                  },
+                  candidates: [],
                 })
-              : Promise.resolve(undefined),
+              : Promise.resolve({ match: undefined, candidates: [] }),
         );
         jest
           .spyOn(service, "previewCreateInvestmentTransaction")
@@ -5901,14 +5962,37 @@ describe("InvestmentTransactionsService", () => {
         expect(result.skipped.map((s) => s.index)).toEqual([1, 2]);
       });
 
+      it("skips an ambiguous base account name with the matching brokerages", async () => {
+        accountsService.resolveBrokerageByName.mockResolvedValue({
+          match: undefined,
+          candidates: [
+            { id: "a", name: "RRSP - Brokerage" },
+            { id: "b", name: "RRSP - Brokerage" },
+          ],
+        });
+        const result = await service.prepareCreateInvestmentBulk(userId, [
+          {
+            accountName: "RRSP",
+            action: InvestmentAction.BUY,
+            date: "2026-01-15",
+            securityQuery: "AAPL",
+          },
+        ]);
+        expect(result.okPreviews).toHaveLength(0);
+        expect(result.previewRows[0].error).toContain("Ambiguous account");
+        expect(result.previewRows[0].error).toContain("RRSP - Brokerage");
+      });
+
       it("skips a row whose funding account name is unknown", async () => {
-        accountsService.resolveByName
-          .mockResolvedValueOnce({
+        accountsService.resolveBrokerageByName.mockResolvedValueOnce({
+          match: {
             id: accountId,
             name: "Brokerage Account",
             currencyCode: "USD",
-          })
-          .mockResolvedValueOnce(undefined);
+          },
+          candidates: [],
+        });
+        accountsService.resolveByName.mockResolvedValueOnce(undefined);
         const result = await service.prepareCreateInvestmentBulk(userId, [
           {
             accountName: "Brokerage Account",

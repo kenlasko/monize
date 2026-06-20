@@ -31,7 +31,11 @@ import {
 import { Cron } from "@nestjs/schedule";
 import { roundMoney, sumMoney } from "../common/round.util";
 import { tr } from "../i18n/translate";
-import { brokerageSuffix, cashSuffix } from "./account-name.util";
+import {
+  brokerageSuffix,
+  cashSuffix,
+  stripBrokerageSuffix,
+} from "./account-name.util";
 import { formatDateYMD, todayInTimezone, todayYMD } from "../common/date-utils";
 import { getUsersByEffectiveTimezone } from "../common/users-by-timezone.util";
 import { ActionHistoryService } from "../action-history/action-history.service";
@@ -339,6 +343,63 @@ export class AccountsService {
     return match
       ? { id: match.id, name: match.name, currencyCode: match.currencyCode }
       : undefined;
+  }
+
+  /**
+   * Resolve an account name for an investment transaction, preferring the
+   * brokerage half of a linked investment pair. Investment transactions must be
+   * booked against the brokerage account, which is auto-named "<name> -
+   * Brokerage", but users (and the AI) naturally refer to the pair by its base
+   * name (e.g. "RRSP"). So: try an exact case-insensitive match first (existing
+   * behaviour); failing that, match the base name against open brokerage
+   * accounts with the " - Brokerage" suffix stripped. Returns the resolved
+   * account, plus the candidate names when the base name is ambiguous (more than
+   * one brokerage account shares it) so the caller can surface a clear error.
+   */
+  async resolveBrokerageByName(
+    userId: string,
+    name: string,
+  ): Promise<{
+    match: { id: string; name: string; currencyCode: string } | undefined;
+    candidates: { id: string; name: string }[];
+  }> {
+    const accounts = await this.findAll(userId, false);
+    const target = name.trim().toLowerCase();
+
+    const exact = accounts.find((a) => a.name.toLowerCase() === target);
+    if (exact) {
+      return {
+        match: {
+          id: exact.id,
+          name: exact.name,
+          currencyCode: exact.currencyCode,
+        },
+        candidates: [],
+      };
+    }
+
+    const brokerageMatches = accounts.filter(
+      (a) =>
+        a.accountType === AccountType.INVESTMENT &&
+        a.accountSubType === AccountSubType.INVESTMENT_BROKERAGE &&
+        stripBrokerageSuffix(a.name).toLowerCase() === target,
+    );
+    if (brokerageMatches.length === 1) {
+      const match = brokerageMatches[0];
+      return {
+        match: {
+          id: match.id,
+          name: match.name,
+          currencyCode: match.currencyCode,
+        },
+        candidates: [],
+      };
+    }
+
+    return {
+      match: undefined,
+      candidates: brokerageMatches.map((a) => ({ id: a.id, name: a.name })),
+    };
   }
 
   /**

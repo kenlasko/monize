@@ -30,7 +30,9 @@
     "updateRateClosed": "Nie można zaktualizować oprocentowania na zamkniętym koncie",
     "onlyLoanMortgageLoc": "Tylko konta pożyczek, kredytów hipotecznych i linii kredytowych obsługują konfigurację zaplanowanych spłat",
     "alreadyHasScheduledPayment": "To konto ma już skonfigurowaną zaplanowaną płatność. Zamiast tego edytuj istniejącą zaplanowaną transakcję.",
-    "sourceNotFound": "Nie znaleziono konta źródłowego"
+    "sourceNotFound": "Nie znaleziono konta źródłowego",
+    "ambiguousBrokerage": "„{{ query }}\" pasuje do wielu kont maklerskich: {{ list }}. Użyj dokładnej nazwy konta.",
+    "unknownInvestmentAccount": "Nieznane konto: {{ name }}. Użyj dokładnej nazwy z listy kont użytkownika."
   },
   "actionHistory": {
     "nothingToUndo": "Nie ma nic do cofnięcia",
