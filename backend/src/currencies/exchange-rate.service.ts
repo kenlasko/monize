@@ -171,6 +171,29 @@ export class ExchangeRateService implements OnModuleInit {
   }
 
   /**
+   * Like fetchYahooHistoricalRates, but bounded to a [from, to] date window so a
+   * single-date lookup fetches a handful of bars instead of the entire history.
+   */
+  private async fetchYahooHistoricalRatesWindow(
+    from: string,
+    to: string,
+    fromDate: Date,
+    toDate: Date,
+  ): Promise<Array<{ date: Date; rate: number }> | null> {
+    if (from === to) return [];
+
+    const symbol = `${from}${to}=X`;
+    const prices = await this.yahooFinanceService.fetchHistoricalWindow(
+      symbol,
+      fromDate,
+      toDate,
+    );
+    if (!prices) return null;
+
+    return prices.map((p) => ({ date: p.date, rate: p.close }));
+  }
+
+  /**
    * Save or update an exchange rate for a given date,
    * and also save the inverse rate for the reverse pair.
    */
@@ -576,9 +599,10 @@ export class ExchangeRateService implements OnModuleInit {
    * rate. Precedence:
    *   1. The stored rate on the closest date on or before the target
    *      (carry-forward, matching how a missing weekend/holiday is handled).
-   *   2. A historical daily series fetched from Yahoo for the pair; the value
-   *      on the closest day on or before the target is used and persisted for
-   *      reuse.
+   *   2. A short historical daily window fetched from Yahoo around the target
+   *      date; the value on the closest day on or before the target is used and
+   *      persisted for reuse. The window (not the full "max" history) keeps the
+   *      request small and fast.
    * Returns null when no rate can be determined (so the caller can reject or
    * flag the operation rather than silently assuming 1.0).
    */
@@ -606,11 +630,20 @@ export class ExchangeRateService implements OnModuleInit {
     });
     if (stored) return Number(stored.rate);
 
-    // 2. Fetch the historical daily series from Yahoo and use the rate on the
-    //    closest day on or before the target. Persist just the chosen point
-    //    (and its inverse, via saveRate) so a repeat lookup hits the database
-    //    without re-fetching the whole series.
-    const series = await this.fetchYahooHistoricalRates(from, to);
+    // 2. Fetch a short Yahoo window around the target (not the full "max"
+    //    history) and use the rate on the closest day on or before the target.
+    //    The lower bound reaches back two weeks so weekends/holidays before the
+    //    target still resolve; the upper bound adds two days to cover the target
+    //    itself (and minor timezone slack). Persist just the chosen point (and
+    //    its inverse, via saveRate) so a repeat lookup hits the database.
+    const windowStart = new Date(targetDate.getTime() - 14 * 86_400_000);
+    const windowEnd = new Date(targetDate.getTime() + 2 * 86_400_000);
+    const series = await this.fetchYahooHistoricalRatesWindow(
+      from,
+      to,
+      windowStart,
+      windowEnd,
+    );
     if (series && series.length > 0) {
       const targetTime = targetDate.getTime();
       const sorted = [...series].sort(

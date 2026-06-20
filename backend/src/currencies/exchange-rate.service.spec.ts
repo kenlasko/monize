@@ -79,6 +79,7 @@ describe("ExchangeRateService", () => {
     yahooFinanceService = {
       fetchQuote: jest.fn(),
       fetchHistorical: jest.fn(),
+      fetchHistoricalWindow: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -779,7 +780,7 @@ describe("ExchangeRateService", () => {
 
       expect(result).toBe(1);
       expect(exchangeRateRepository.findOne).not.toHaveBeenCalled();
-      expect(yahooFinanceService.fetchHistorical).not.toHaveBeenCalled();
+      expect(yahooFinanceService.fetchHistoricalWindow).not.toHaveBeenCalled();
     });
 
     it("returns the closest stored rate on or before the target date", async () => {
@@ -794,15 +795,15 @@ describe("ExchangeRateService", () => {
       expect(call.where.toCurrency).toBe("CAD");
       expect(call.order).toEqual({ rateDate: "DESC" });
       // No Yahoo fetch needed when a stored rate exists.
-      expect(yahooFinanceService.fetchHistorical).not.toHaveBeenCalled();
+      expect(yahooFinanceService.fetchHistoricalWindow).not.toHaveBeenCalled();
     });
 
-    it("fetches the historical rate for the date from Yahoo when none is stored", async () => {
+    it("fetches a bounded Yahoo window around the date when none is stored", async () => {
       exchangeRateRepository.findOne.mockResolvedValue(null);
       exchangeRateRepository.save.mockImplementation((data) => data);
       // Daily series straddling the target 2026-06-08 (a weekend in this set):
       // the closest day on or before is 2026-06-05.
-      yahooFinanceService.fetchHistorical.mockResolvedValue([
+      yahooFinanceService.fetchHistoricalWindow.mockResolvedValue([
         { date: new Date("2026-06-05"), close: 4.25, open: null, high: null, low: null, volume: null },
         { date: new Date("2026-06-09"), close: 4.3, open: null, high: null, low: null, volume: null },
       ]);
@@ -810,14 +811,23 @@ describe("ExchangeRateService", () => {
       const result = await service.getRateForDate("EUR", "PLN", "2026-06-08");
 
       expect(result).toBe(4.25);
-      expect(yahooFinanceService.fetchHistorical).toHaveBeenCalled();
+      // A bounded window is fetched (not the full "max" history).
+      expect(yahooFinanceService.fetchHistorical).not.toHaveBeenCalled();
+      expect(yahooFinanceService.fetchHistoricalWindow).toHaveBeenCalledTimes(1);
+      const [sym, fromDate, toDate] =
+        yahooFinanceService.fetchHistoricalWindow.mock.calls[0];
+      expect(sym).toBe("EURPLN=X");
+      // Window brackets the target date (~2 weeks before, ~2 days after).
+      const target = new Date("2026-06-08T00:00:00.000Z").getTime();
+      expect((fromDate as Date).getTime()).toBeLessThan(target);
+      expect((toDate as Date).getTime()).toBeGreaterThanOrEqual(target);
       // The chosen point is persisted for reuse (forward + inverse via saveRate).
       expect(exchangeRateRepository.save).toHaveBeenCalled();
     });
 
-    it("returns null when neither a stored rate nor a Yahoo series is available", async () => {
+    it("returns null when neither a stored rate nor a Yahoo window is available", async () => {
       exchangeRateRepository.findOne.mockResolvedValue(null);
-      yahooFinanceService.fetchHistorical.mockResolvedValue(null);
+      yahooFinanceService.fetchHistoricalWindow.mockResolvedValue(null);
 
       const result = await service.getRateForDate("EUR", "PLN", "2026-06-08");
 

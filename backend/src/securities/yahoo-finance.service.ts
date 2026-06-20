@@ -395,13 +395,53 @@ export class YahooFinanceService implements QuoteProvider {
     range: string = "max",
     _opts?: QuoteProviderOptions,
   ): Promise<HistoricalPrice[] | null> {
+    return this.fetchHistoricalQuery(
+      symbol,
+      exchange,
+      `interval=1d&range=${encodeURIComponent(range)}`,
+    );
+  }
+
+  /**
+   * Fetch the daily series bounded to an explicit [from, to] date window using
+   * Yahoo's period1/period2 parameters, instead of a `range` like "max". Use
+   * this when you only need a few days around a specific date (e.g. the FX rate
+   * for one transaction's date): it returns ~a handful of bars rather than the
+   * entire multi-year history, which keeps the request fast and the parsed
+   * payload small (the "max" range can be thousands of bars / several MB).
+   */
+  async fetchHistoricalWindow(
+    symbol: string,
+    fromDate: Date,
+    toDate: Date,
+    exchange: string | null = null,
+  ): Promise<HistoricalPrice[] | null> {
+    const period1 = Math.floor(fromDate.getTime() / 1000);
+    const period2 = Math.floor(toDate.getTime() / 1000);
+    return this.fetchHistoricalQuery(
+      symbol,
+      exchange,
+      `period1=${period1}&period2=${period2}&interval=1d`,
+    );
+  }
+
+  /**
+   * Shared primary-then-alternate-symbol resolution for the v8 chart history
+   * API. `query` is the URL query fragment (either a `range=...` or a
+   * `period1=...&period2=...` window).
+   */
+  private async fetchHistoricalQuery(
+    symbol: string,
+    exchange: string | null,
+    query: string,
+  ): Promise<HistoricalPrice[] | null> {
     const primary = this.getYahooSymbol(symbol, exchange);
-    const prices = await this.fetchHistoricalRaw(primary, range);
+    const prices = await this.fetchHistoricalRaw(primary, query);
     if (prices) return prices;
 
     if (primary === symbol) {
       for (const altSymbol of this.getAlternateSymbols(symbol)) {
-        const alt = await this.fetchHistoricalRaw(altSymbol, range);
+        const alt = await this.fetchHistoricalRaw(altSymbol, query);
         if (alt) return alt;
       }
     }
@@ -410,10 +450,10 @@ export class YahooFinanceService implements QuoteProvider {
 
   private async fetchHistoricalRaw(
     yahooSymbol: string,
-    range: string,
+    query: string,
   ): Promise<HistoricalPrice[] | null> {
     try {
-      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?interval=1d&range=${encodeURIComponent(range)}`;
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?${query}`;
 
       const response = await this.throttledFetch(
         url,
