@@ -157,12 +157,19 @@ export class McpTransactionsTools {
             .describe(
               "Max raw rows when includeTransactions is true (max 100)",
             ),
-          sort: z
+          sortBy: z
+            .enum(["date", "amount", "payee"])
+            .optional()
+            .default("date")
+            .describe(
+              "Which field to sort the raw rows by (when includeTransactions is true): 'date' (default), 'amount', or 'payee'",
+            ),
+          sortDirection: z
             .enum(["asc", "desc"])
             .optional()
             .default("desc")
             .describe(
-              "Sort order by date for the raw rows (when includeTransactions is true): 'desc' (newest first, default) or 'asc' (oldest first)",
+              "Sort direction for the raw rows (when includeTransactions is true): 'desc' (newest first, default) or 'asc' (oldest first)",
             ),
         },
         outputSchema: listTransactionsOutput,
@@ -218,7 +225,8 @@ export class McpTransactionsTools {
               minAmount: args.minAmount,
               maxAmount: args.maxAmount,
               limit: args.limit,
-              sort: args.sort,
+              sortBy: args.sortBy,
+              sortDirection: args.sortDirection,
             },
           );
 

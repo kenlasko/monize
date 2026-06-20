@@ -322,7 +322,10 @@ export class ToolExecutorService {
     const includeTransactions =
       (input.includeTransactions as boolean | undefined) ?? false;
     const limit = Math.min((input.limit as number | undefined) ?? 50, 100);
-    const sort = (input.sort as "asc" | "desc" | undefined) ?? "desc";
+    const sortBy =
+      (input.sortBy as "date" | "amount" | "payee" | undefined) ?? "date";
+    const sortDirection =
+      (input.sortDirection as "asc" | "desc" | undefined) ?? "desc";
 
     const accountIds = await this.resolveAccountIds(userId, accountNames);
 
@@ -388,7 +391,8 @@ export class ToolExecutorService {
           minAmount,
           maxAmount,
           limit,
-          sort,
+          sortBy,
+          sortDirection,
         },
       );
       merged = {

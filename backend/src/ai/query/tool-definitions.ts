@@ -81,11 +81,17 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
           description:
             "Maximum number of raw transaction rows to return when includeTransactions is true (1-100). Defaults to 50.",
         },
-        sort: {
+        sortBy: {
+          type: "string",
+          enum: ["date", "amount", "payee"],
+          description:
+            "Which field to sort the raw transaction rows by (when includeTransactions is true): 'date' (default), 'amount', or 'payee'.",
+        },
+        sortDirection: {
           type: "string",
           enum: ["asc", "desc"],
           description:
-            "Sort order by date for the raw transaction rows (when includeTransactions is true): 'desc' (newest first, default) or 'asc' (oldest first).",
+            "Sort direction for the raw transaction rows (when includeTransactions is true): 'desc' (default) or 'asc'.",
         },
       },
     },

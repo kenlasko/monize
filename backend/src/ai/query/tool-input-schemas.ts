@@ -37,7 +37,8 @@ export const listTransactionsSchema = z.object({
   transfersOnly: z.boolean().optional(),
   includeTransactions: z.boolean().optional(),
   limit: positiveIntSchema(1, 100).optional(),
-  sort: z.enum(["asc", "desc"]).optional(),
+  sortBy: z.enum(["date", "amount", "payee"]).optional(),
+  sortDirection: z.enum(["asc", "desc"]).optional(),
 });
 
 const accountTypeSchema = z.preprocess(
