@@ -267,7 +267,8 @@
       "transferAmount": "Importo trasferimento",
       "transferAmountWithCurrency": "Importo trasferimento ({currency})",
       "amountReceived": "Importo ricevuto ({currency})",
-      "payeeOptional": "Beneficiario (facoltativo)"
+      "payeeOptional": "Beneficiario (facoltativo)",
+      "categoryOptional": "Categoria (facoltativa)"
     },
     "placeholders": {
       "selectAccount": "Seleziona conto...",
@@ -320,7 +321,8 @@
     },
     "ariaHistory": "Mostra transazioni recenti",
     "ariaHistoryForPayee": "Mostra transazioni recenti per questo beneficiario",
-    "historyTitle": "Compilazione rapida da una transazione recente"
+    "historyTitle": "Compilazione rapida da una transazione recente",
+    "transferCategoryNote": "Facoltativo. Il trasferimento continuerà a non contare come entrata o uscita, ma questa categoria gli consente di comparire nel riepilogo mensile per categoria (ad es. contributi di investimento mensili)."
   },
   "splitEditor": {
     "header": "Dettagli suddivisione",

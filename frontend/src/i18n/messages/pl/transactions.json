@@ -267,7 +267,8 @@
       "transferAmount": "Kwota przelewu",
       "transferAmountWithCurrency": "Kwota przelewu ({currency})",
       "amountReceived": "Kwota otrzymana ({currency})",
-      "payeeOptional": "Odbiorca (opcjonalnie)"
+      "payeeOptional": "Odbiorca (opcjonalnie)",
+      "categoryOptional": "Kategoria (opcjonalnie)"
     },
     "placeholders": {
       "selectAccount": "Wybierz konto...",
@@ -320,7 +321,8 @@
     },
     "ariaHistory": "Pokaż ostatnie transakcje",
     "ariaHistoryForPayee": "Pokaż ostatnie transakcje dla tego odbiorcy",
-    "historyTitle": "Szybkie wypełnienie z ostatniej transakcji"
+    "historyTitle": "Szybkie wypełnienie z ostatniej transakcji",
+    "transferCategoryNote": "Opcjonalnie. Transfer nadal nie będzie liczony jako przychód ani wydatek, ale ta kategoria pozwala mu pojawić się w miesięcznym zestawieniu według kategorii (np. comiesięczne wpłaty inwestycyjne)."
   },
   "splitEditor": {
     "header": "Szczegóły podziału",

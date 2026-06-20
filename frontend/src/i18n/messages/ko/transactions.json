@@ -267,7 +267,8 @@
       "transferAmount": "이체 금액",
       "transferAmountWithCurrency": "이체 금액 ({currency})",
       "amountReceived": "수령 금액 ({currency})",
-      "payeeOptional": "수취인 (선택 사항)"
+      "payeeOptional": "수취인 (선택 사항)",
+      "categoryOptional": "카테고리(선택사항)"
     },
     "placeholders": {
       "selectAccount": "계정 선택...",
@@ -320,7 +321,8 @@
     },
     "ariaHistory": "최근 거래 보기",
     "ariaHistoryForPayee": "이 수취인의 최근 거래 보기",
-    "historyTitle": "최근 거래에서 자동 완성"
+    "historyTitle": "최근 거래에서 자동 완성",
+    "transferCategoryNote": "선택사항. 이체는 여전히 수입이나 지출로 집계되지 않지만, 이 카테고리를 지정하면 월별 카테고리 분석에 표시됩니다(예: 매월 투자 납입)."
   },
   "splitEditor": {
     "header": "분할 세부 정보",

@@ -267,7 +267,8 @@
       "transferAmount": "Cantidad de transferencia",
       "transferAmountWithCurrency": "Cantidad de transferencia ({currency})",
       "amountReceived": "Cantidad recibida ({currency})",
-      "payeeOptional": "Beneficiario (opcional)"
+      "payeeOptional": "Beneficiario (opcional)",
+      "categoryOptional": "Categoría (opcional)"
     },
     "placeholders": {
       "selectAccount": "Seleccionar cuenta...",
@@ -320,7 +321,8 @@
     },
     "ariaHistory": "Mostrar transacciones recientes",
     "ariaHistoryForPayee": "Mostrar transacciones recientes de este beneficiario",
-    "historyTitle": "Completar rápidamente desde una transacción reciente"
+    "historyTitle": "Completar rápidamente desde una transacción reciente",
+    "transferCategoryNote": "Opcional. La transferencia seguirá sin contar como ingreso o gasto, pero esta categoría permite que aparezca en el desglose mensual por categorías (p. ej., aportaciones mensuales de inversión)."
   },
   "splitEditor": {
     "header": "Detalles del desglose",

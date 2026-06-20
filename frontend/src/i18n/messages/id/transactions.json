@@ -267,7 +267,8 @@
       "transferAmount": "Jumlah Transfer",
       "transferAmountWithCurrency": "Jumlah Transfer ({currency})",
       "amountReceived": "Jumlah Diterima ({currency})",
-      "payeeOptional": "Penerima (Opsional)"
+      "payeeOptional": "Penerima (Opsional)",
+      "categoryOptional": "Kategori (Opsional)"
     },
     "placeholders": {
       "selectAccount": "Pilih akun...",
@@ -320,7 +321,8 @@
     },
     "ariaHistory": "Tampilkan transaksi terbaru",
     "ariaHistoryForPayee": "Tampilkan transaksi terbaru untuk penerima ini",
-    "historyTitle": "Isi cepat dari transaksi terbaru"
+    "historyTitle": "Isi cepat dari transaksi terbaru",
+    "transferCategoryNote": "Opsional. Transfer tetap tidak dihitung sebagai pemasukan atau pengeluaran, tetapi kategori ini membuatnya muncul dalam rincian kategori bulanan (mis. kontribusi investasi bulanan)."
   },
   "splitEditor": {
     "header": "Detail Pembagian",

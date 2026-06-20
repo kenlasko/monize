@@ -267,7 +267,8 @@
       "transferAmount": "Overboekingsbedrag",
       "transferAmountWithCurrency": "Overboekingsbedrag ({currency})",
       "amountReceived": "Ontvangen bedrag ({currency})",
-      "payeeOptional": "Begunstigde (optioneel)"
+      "payeeOptional": "Begunstigde (optioneel)",
+      "categoryOptional": "Categorie (optioneel)"
     },
     "placeholders": {
       "selectAccount": "Selecteer rekening...",
@@ -320,7 +321,8 @@
     },
     "ariaHistory": "Recente transacties tonen",
     "ariaHistoryForPayee": "Recente transacties voor deze begunstigde tonen",
-    "historyTitle": "Snel invullen vanuit een recente transactie"
+    "historyTitle": "Snel invullen vanuit een recente transactie",
+    "transferCategoryNote": "Optioneel. De overboeking telt nog steeds niet mee als inkomsten of uitgaven, maar met deze categorie verschijnt hij wel in het maandelijkse categorieoverzicht (bijv. maandelijkse beleggingsinleg)."
   },
   "splitEditor": {
     "header": "Splitsingsdetails",
