@@ -28,6 +28,9 @@ const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe('aiChatStore', () => {
   beforeEach(() => {
+    // Stop any relay late-answer poll left running by a previous test before
+    // resetting, so its interval can't fire into the next test's mocks.
+    useAiChatStore.getState()._relayPollCancel?.();
     vi.clearAllMocks();
     capturedCallbacks = null;
     window.localStorage.removeItem(AI_CHAT_STORAGE_KEY);
@@ -37,6 +40,7 @@ describe('aiChatStore', () => {
       thinking: { active: false, message: '', liveText: '', tools: [] },
       _abortController: null,
       _activeAssistantId: null,
+      _relayPollCancel: null,
     });
   });
 
@@ -163,6 +167,60 @@ describe('aiChatStore', () => {
         role: 'assistant',
         content: 'Recovered.',
       });
+    });
+
+    it('keeps polling and renders an answer that arrives after the first empty pickup', async () => {
+      // Reproduces the production failure: at disconnect the answer is not yet
+      // buffered (first pickup empty); the agent reconnects and posts a moment
+      // later, so a later poll must catch it.
+      vi.useFakeTimers();
+      try {
+        mockGetRelayResponse
+          .mockResolvedValueOnce({ text: null })
+          .mockResolvedValueOnce({ text: 'Arrived late.' });
+        useAiChatStore.getState().submit('Q', { relay: true });
+
+        capturedCallbacks?.onEvent({ type: 'prompt_id', promptId: 'p-late' });
+        capturedCallbacks?.onEvent({ type: 'error', message: 'went quiet' });
+
+        // First (immediate) poll comes back empty -> placeholder shown, still polling.
+        await vi.advanceTimersByTimeAsync(0);
+        expect(mockGetRelayResponse).toHaveBeenCalledTimes(1);
+        expect(useAiChatStore.getState().messages[1]).toMatchObject({
+          error: 'went quiet',
+        });
+
+        // After the poll interval the answer is buffered and gets picked up.
+        await vi.advanceTimersByTimeAsync(4000);
+        expect(mockGetRelayResponse).toHaveBeenCalledTimes(2);
+        const message = useAiChatStore.getState().messages[1];
+        expect(message.content).toBe('Arrived late.');
+        expect(message.error).toBeUndefined();
+        expect(useAiChatStore.getState().isLoading).toBe(false);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('stops polling for a late answer once a new prompt is submitted', async () => {
+      vi.useFakeTimers();
+      try {
+        mockGetRelayResponse.mockResolvedValue({ text: null });
+        useAiChatStore.getState().submit('Q', { relay: true });
+        capturedCallbacks?.onEvent({ type: 'prompt_id', promptId: 'p-cancel' });
+        capturedCallbacks?.onEvent({ type: 'error', message: 'went quiet' });
+        await vi.advanceTimersByTimeAsync(0);
+        const callsAfterFirst = mockGetRelayResponse.mock.calls.length;
+
+        // A new prompt supersedes the poll.
+        useAiChatStore.getState().submit('Another question', { relay: true });
+        await vi.advanceTimersByTimeAsync(8000);
+
+        // The superseded poll made no further pickup calls.
+        expect(mockGetRelayResponse.mock.calls.length).toBe(callsAfterFirst);
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it('does not attempt pickup once content has streamed', async () => {
