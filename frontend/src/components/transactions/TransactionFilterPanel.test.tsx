@@ -384,7 +384,7 @@ describe('TransactionFilterPanel', () => {
         />
       );
 
-      expect(screen.getByText('2 selected')).toBeInTheDocument();
+      expect(screen.getByText('2 items selected')).toBeInTheDocument();
     });
   });
 
