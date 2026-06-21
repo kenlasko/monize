@@ -183,81 +183,103 @@ export class YahooFinanceService implements QuoteProvider {
     }
   }
 
-  private async fetchCrumb(): Promise<boolean> {
-    try {
-      const cookieStr = await new Promise<string>((resolve, reject) => {
-        const timer = setTimeout(
-          () => reject(new Error("Cookie request timeout")),
-          YahooFinanceService.FETCH_TIMEOUT_MS,
-        );
-        https
-          .get(
-            "https://finance.yahoo.com/",
-            {
-              headers: {
-                "User-Agent": YahooFinanceService.USER_AGENT,
-                Accept: "text/html",
-              },
-              maxHeaderSize: 65536,
-            },
-            (res) => {
-              clearTimeout(timer);
-              res.resume();
-              const setCookies = res.headers["set-cookie"] ?? [];
-              resolve(
-                setCookies
-                  .map((c) => c.split(";")[0])
-                  .filter(Boolean)
-                  .join("; "),
-              );
-            },
-          )
-          .on("error", (err) => {
-            clearTimeout(timer);
-            reject(err);
-          });
-      });
+  // Cookie sources tried in order when establishing a v10 session. fc.yahoo.com
+  // returns the A1 auth cookie directly (a 404 page, but the Set-Cookie is what
+  // we want) and sidesteps the GDPR consent redirect that finance.yahoo.com hits
+  // in some regions/data-centres -- that redirect yields only a consent cookie,
+  // which getcrumb then rejects with a 401. finance.yahoo.com stays as a fallback.
+  private static readonly COOKIE_SOURCES: ReadonlyArray<string> = [
+    "https://fc.yahoo.com/",
+    "https://finance.yahoo.com/",
+  ];
 
-      if (!cookieStr) {
-        this.logger.warn("Yahoo Finance: no cookies received");
-        return false;
-      }
-
-      const crumbResp = await fetch(
-        "https://query2.finance.yahoo.com/v1/test/getcrumb",
-        {
-          headers: {
-            "User-Agent": YahooFinanceService.USER_AGENT,
-            Cookie: cookieStr,
+  /**
+   * Fetch the first-party cookies Yahoo sets for `url`, joined into a single
+   * Cookie header value. Returns "" when none are offered. Resolves regardless
+   * of HTTP status (fc.yahoo.com answers 404 but still sets the cookie we need).
+   */
+  private fetchYahooCookie(url: string): Promise<string> {
+    return new Promise<string>((resolve, reject) => {
+      const timer = setTimeout(
+        () => reject(new Error("Cookie request timeout")),
+        YahooFinanceService.FETCH_TIMEOUT_MS,
+      );
+      https
+        .get(
+          url,
+          {
+            headers: {
+              "User-Agent": YahooFinanceService.USER_AGENT,
+              Accept: "text/html",
+            },
+            maxHeaderSize: 65536,
           },
-          signal: AbortSignal.timeout(YahooFinanceService.FETCH_TIMEOUT_MS),
-        },
-      );
+          (res) => {
+            clearTimeout(timer);
+            res.resume();
+            const setCookies = res.headers["set-cookie"] ?? [];
+            resolve(
+              setCookies
+                .map((c) => c.split(";")[0])
+                .filter(Boolean)
+                .join("; "),
+            );
+          },
+        )
+        .on("error", (err) => {
+          clearTimeout(timer);
+          reject(err);
+        });
+    });
+  }
 
-      if (!crumbResp.ok) {
-        this.logger.warn(
-          `Yahoo Finance crumb endpoint returned ${crumbResp.status}`,
+  private async fetchCrumb(): Promise<boolean> {
+    let lastStatus: number | string = "no cookies";
+    for (const source of YahooFinanceService.COOKIE_SOURCES) {
+      try {
+        const cookieStr = await this.fetchYahooCookie(source);
+        if (!cookieStr) {
+          lastStatus = "no cookies";
+          continue;
+        }
+
+        const crumbResp = await fetch(
+          "https://query1.finance.yahoo.com/v1/test/getcrumb",
+          {
+            headers: {
+              "User-Agent": YahooFinanceService.USER_AGENT,
+              Cookie: cookieStr,
+            },
+            signal: AbortSignal.timeout(YahooFinanceService.FETCH_TIMEOUT_MS),
+          },
         );
-        return false;
-      }
 
-      const crumbText = await crumbResp.text();
-      if (!crumbText || crumbText.length > 50 || crumbText.startsWith("{")) {
-        this.logger.warn("Yahoo Finance: invalid crumb response");
-        return false;
-      }
+        if (!crumbResp.ok) {
+          lastStatus = crumbResp.status;
+          await crumbResp.text().catch(() => undefined);
+          continue;
+        }
 
-      this.crumb = crumbText;
-      this.cookie = cookieStr;
-      this.crumbExpiresAt = Date.now() + 60 * 60 * 1000;
-      return true;
-    } catch (error) {
-      this.logger.error(
-        "Failed to obtain Yahoo Finance crumb",
-        error instanceof Error ? error.stack : undefined,
-      );
-      return false;
+        const crumbText = await crumbResp.text();
+        if (!crumbText || crumbText.length > 50 || crumbText.startsWith("{")) {
+          lastStatus = "invalid crumb";
+          continue;
+        }
+
+        this.crumb = crumbText;
+        this.cookie = cookieStr;
+        this.crumbExpiresAt = Date.now() + 60 * 60 * 1000;
+        return true;
+      } catch (error) {
+        lastStatus =
+          error instanceof Error ? error.message : "cookie/crumb error";
+      }
     }
+
+    this.logger.warn(
+      `Yahoo Finance: could not obtain a crumb (last: ${lastStatus})`,
+    );
+    return false;
   }
 
   private async fetchV10(url: string): Promise<Response | null> {
