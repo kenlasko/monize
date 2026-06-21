@@ -828,4 +828,98 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
       required: ["operation", "items"],
     },
   },
+  {
+    name: "list_payees",
+    description:
+      "List the user's payees (the people and businesses they pay or receive money from), optionally filtered by a search query. Use this for questions like 'list my payees', 'do I have a payee for Netflix', or to confirm the exact spelling of a payee name before filtering list_transactions or proposing a manage_transactions edit. Returns each payee's name and default category. To see how much was spent at a payee, use list_transactions with payeeNames or generate_report (spending_by_payee) instead.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        search: {
+          type: "string",
+          description:
+            "Optional case-insensitive substring match on the payee name. Omit to return all payees.",
+        },
+      },
+    },
+  },
+  {
+    name: "list_holding_details",
+    description:
+      "Get the detailed individual holding positions (each lot/security with quantity, cost basis, current value, and gain/loss) for the user's investment accounts. Use this only when the user asks about the holdings within a specific account; for an overall portfolio view, gains, or asset allocation use get_portfolio_summary instead. Optionally filter to a single account by name.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        accountName: {
+          type: "string",
+          description:
+            "Optional: restrict to a single investment account by name. Use an exact name from the user's account list. Omit to include holdings across all investment accounts.",
+        },
+      },
+    },
+  },
+  {
+    name: "generate_report",
+    description:
+      "Run one of the built-in financial reports over a date range. Prefer this over list_transactions for spending/income breakdown questions because it returns a ready aggregated result. Report types: 'spending_by_category' (expense totals grouped by category), 'spending_by_payee' (expense totals grouped by payee), 'income_vs_expenses' (period income, expenses, and net), 'monthly_trend' (spending per month over the range), and 'income_by_source' (income grouped by source). Use 'monthly_trend' for trend questions instead of fetching transactions month by month.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        type: {
+          type: "string",
+          enum: [
+            "spending_by_category",
+            "spending_by_payee",
+            "income_vs_expenses",
+            "monthly_trend",
+            "income_by_source",
+          ],
+          description:
+            "Which report to run. MUST be exactly one of the listed values.",
+        },
+        startDate: {
+          type: "string",
+          description:
+            "Start date in YYYY-MM-DD format. Omit to default to 30 days ago.",
+        },
+        endDate: {
+          type: "string",
+          description:
+            "End date in YYYY-MM-DD format. Omit to default to today.",
+        },
+      },
+      required: ["type"],
+    },
+  },
+  {
+    name: "list_anomalies",
+    description:
+      "Detect unusual spending: transactions that are statistically large for their category compared with the user's recent history. Use this for questions like 'any unusual spending?' or 'did I overspend anywhere this month?' instead of manually scanning transactions. Analyses a rolling window of recent months and needs enough history per category to be meaningful, so it can return an empty list for sparse data -- in that case tell the user there was nothing unusual (or not enough data) rather than implying a problem.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        months: {
+          type: "integer",
+          minimum: 1,
+          maximum: 24,
+          description: "Number of months of history to analyse. Defaults to 3.",
+        },
+      },
+    },
+  },
+  {
+    name: "monthly_comparison",
+    description:
+      "Compare one month against the previous month in a single call: income vs expenses, category spending changes, net worth, and investment performance. Use this for 'how am I doing this month?' or 'how did last month compare?'. For an arbitrary pair of date ranges use compare_periods instead.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        month: {
+          type: "string",
+          description:
+            "Month to compare in YYYY-MM format (e.g. 2026-01). Omit to default to the previous complete month.",
+        },
+      },
+    },
+  },
 ];

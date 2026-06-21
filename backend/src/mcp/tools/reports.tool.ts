@@ -30,7 +30,8 @@ export class McpReportsTools {
       {
         title: "Generate report",
         annotations: READ_ONLY,
-        description: "Run a financial report",
+        description:
+          "Run a built-in financial report over a date range. Prefer this over list_transactions for spending/income breakdown questions because it returns a ready aggregated result. Types: 'spending_by_category' (expense totals grouped by category), 'spending_by_payee' (expense totals grouped by payee), 'income_vs_expenses' (period income, expenses, and net), 'monthly_trend' (spending per month over the range -- use this for trend questions instead of fetching transactions month by month), and 'income_by_source' (income grouped by source). Dates default to the last 30 days.",
         inputSchema: {
           type: z
             .enum([
@@ -40,7 +41,9 @@ export class McpReportsTools {
               "monthly_trend",
               "income_by_source",
             ])
-            .describe("Report type"),
+            .describe(
+              "Which report to run. MUST be exactly one of the listed values.",
+            ),
           startDate: z
             .string()
             .max(10)
@@ -150,7 +153,8 @@ export class McpReportsTools {
       {
         title: "Detect spending anomalies",
         annotations: READ_ONLY,
-        description: "Find unusual transactions or spending patterns",
+        description:
+          "Detect unusual spending: transactions that are statistically large for their category compared with the user's recent history. Use this for 'any unusual spending?' rather than manually scanning transactions. Needs enough history per category to be meaningful, so it can return an empty list for sparse data -- in that case report that nothing was unusual (or there was not enough data) rather than implying a problem.",
         inputSchema: {
           months: z
             .number()
@@ -158,7 +162,9 @@ export class McpReportsTools {
             .max(24)
             .optional()
             .default(3)
-            .describe("Number of months to analyze (default 3)"),
+            .describe(
+              "How much recent history to analyze, in months (default 3).",
+            ),
         },
         outputSchema: getAnomaliesOutput,
       },

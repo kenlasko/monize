@@ -34,6 +34,7 @@ import {
   transferPreviewRow,
 } from "../ai/actions/ai-action-builder.service";
 import { BulkCreateSkip, bulkSkipReason } from "../common/bulk-create.types";
+import { didYouMean } from "../common/name-suggestions.util";
 import { tr } from "../i18n/translate";
 
 /** One category-split line on a create/update row (names; resolved internally). */
@@ -199,6 +200,28 @@ export class TransactionToolPrepService {
   }
 
   /**
+   * Build a "did you mean" fragment for an account name that failed to resolve,
+   * so the model can self-correct without a separate list_accounts round trip.
+   * Loaded only on the failure path (rare), so the extra query is cheap.
+   */
+  private async accountSuggestion(
+    userId: string,
+    name: string,
+  ): Promise<string> {
+    // Best-effort: a suggestion lookup must never break the underlying
+    // "unknown account" error, so swallow any failure and offer no hint.
+    try {
+      const accounts = await this.accountsService.findAll(userId, true);
+      return didYouMean(
+        name,
+        accounts.map((a) => a.name),
+      );
+    } catch {
+      return "";
+    }
+  }
+
+  /**
    * Resolve + preview each standard create row best-effort. Mirrors the logic
    * that previously lived in ToolExecutorService.createTransactionsAction and the
    * MCP create_transactions handler -- this method replaces that duplication.
@@ -359,7 +382,7 @@ export class TransactionToolPrepService {
     );
     if (!fromAccount) {
       throw new NotFoundException(
-        `Unknown account: ${row.fromAccountName}. Use an exact name from the user's account list.`,
+        `Unknown account: ${row.fromAccountName}.${await this.accountSuggestion(userId, row.fromAccountName)} Use an exact name from the user's account list.`,
       );
     }
     const toAccount = await this.accountsService.resolveByName(
@@ -368,7 +391,7 @@ export class TransactionToolPrepService {
     );
     if (!toAccount) {
       throw new NotFoundException(
-        `Unknown account: ${row.toAccountName}. Use an exact name from the user's account list.`,
+        `Unknown account: ${row.toAccountName}.${await this.accountSuggestion(userId, row.toAccountName)} Use an exact name from the user's account list.`,
       );
     }
     return this.transferService.previewCreateTransfer(userId, {
@@ -402,7 +425,7 @@ export class TransactionToolPrepService {
     );
     if (!account) {
       throw new NotFoundException(
-        `Unknown account: ${row.accountName}. Use an exact name from the user's account list.`,
+        `Unknown account: ${row.accountName}.${await this.accountSuggestion(userId, row.accountName)} Use an exact name from the user's account list.`,
       );
     }
     // A split row carries its categories in the splits array; the parent has no

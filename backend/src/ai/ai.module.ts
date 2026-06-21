@@ -36,6 +36,7 @@ import { NetWorthModule } from "../net-worth/net-worth.module";
 import { BudgetsModule } from "../budgets/budgets.module";
 import { SecuritiesModule } from "../securities/securities.module";
 import { ScheduledTransactionsModule } from "../scheduled-transactions/scheduled-transactions.module";
+import { BuiltInReportsModule } from "../built-in-reports/built-in-reports.module";
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { ScheduledTransactionsModule } from "../scheduled-transactions/scheduled
     forwardRef(() => BudgetsModule),
     SecuritiesModule,
     forwardRef(() => ScheduledTransactionsModule),
+    forwardRef(() => BuiltInReportsModule),
     AiActionBuilderModule,
   ],
   providers: [

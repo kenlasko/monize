@@ -48,6 +48,7 @@ describe("McpTransactionsTools", () => {
     payeesService = {
       findOrCreate: jest.fn().mockResolvedValue({ id: "new-payee-id" }),
       findByName: jest.fn(),
+      search: jest.fn().mockResolvedValue([]),
     };
 
     analyticsService = {
@@ -295,6 +296,22 @@ describe("McpTransactionsTools", () => {
       expect(result.content[0].text).toContain("Ghost");
     });
 
+    it("suggests the closest account name on a near miss", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "read" });
+      accountsService.findAll.mockResolvedValue([
+        { id: "acc-1", name: "Checking" },
+        { id: "acc-2", name: "Savings" },
+      ]);
+
+      const result = await handlers["list_transactions"](
+        { accountNames: ["Chequing"] },
+        { sessionId: "s1" },
+      );
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("Did you mean 'Checking'?");
+    });
+
     it("errors on an unknown category name", async () => {
       resolve.mockReturnValue({ userId: "u1", scopes: "read" });
       analyticsService.resolveLlmCategoryIds.mockResolvedValue({
@@ -322,6 +339,20 @@ describe("McpTransactionsTools", () => {
 
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("Nobody");
+    });
+
+    it("suggests the closest payee name on a near miss", async () => {
+      resolve.mockReturnValue({ userId: "u1", scopes: "read" });
+      payeesService.findByName.mockResolvedValue(null);
+      payeesService.search.mockResolvedValue([{ id: "p1", name: "Walmart" }]);
+
+      const result = await handlers["list_transactions"](
+        { payeeNames: ["Walmrt"] },
+        { sessionId: "s1" },
+      );
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("Did you mean 'Walmart'?");
     });
 
     it("passes transfersOnly through to the summary", async () => {

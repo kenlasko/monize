@@ -8,6 +8,8 @@ import { NetWorthService } from "../../net-worth/net-worth.service";
 import { BudgetReportsService } from "../../budgets/budget-reports.service";
 import { PortfolioService } from "../../securities/portfolio.service";
 import { SecuritiesService } from "../../securities/securities.service";
+import { BuiltInReportsService } from "../../built-in-reports/built-in-reports.service";
+import { HoldingsService } from "../../securities/holdings.service";
 import { InvestmentTransactionsService } from "../../securities/investment-transactions.service";
 import { ScheduledTransactionsService } from "../../scheduled-transactions/scheduled-transactions.service";
 import { TransactionsService } from "../../transactions/transactions.service";
@@ -36,6 +38,8 @@ describe("ToolExecutorService", () => {
   let signing: Record<string, jest.Mock>;
   let transfer: Record<string, jest.Mock>;
   let splitService: Record<string, jest.Mock>;
+  let builtInReports: Record<string, jest.Mock>;
+  let holdings: Record<string, jest.Mock>;
 
   const userId = "user-1";
 
@@ -405,6 +409,13 @@ describe("ToolExecutorService", () => {
         };
         return byName[name.toLowerCase()] ?? null;
       }),
+      findAll: jest.fn().mockResolvedValue([
+        { id: "payee-1", name: "Walmart" },
+        { id: "payee-2", name: "Starbucks" },
+      ]),
+      search: jest
+        .fn()
+        .mockResolvedValue([{ id: "payee-1", name: "Walmart" }]),
       previewCreate: jest.fn().mockResolvedValue({
         name: "Acme",
         defaultCategoryId: "cat-1",
@@ -521,6 +532,39 @@ describe("ToolExecutorService", () => {
       }),
     };
 
+    builtInReports = {
+      getSpendingByCategory: jest
+        .fn()
+        .mockResolvedValue({ categories: [], total: 0 }),
+      getSpendingByPayee: jest
+        .fn()
+        .mockResolvedValue({ payees: [], total: 0 }),
+      getIncomeVsExpenses: jest
+        .fn()
+        .mockResolvedValue({ income: 5000, expenses: 3000, net: 2000 }),
+      getMonthlySpendingTrend: jest.fn().mockResolvedValue({ months: [] }),
+      getIncomeBySource: jest.fn().mockResolvedValue({ sources: [], total: 0 }),
+      getSpendingAnomalies: jest.fn().mockResolvedValue({
+        statistics: {},
+        anomalies: [{ id: "tx-9" }, { id: "tx-10" }],
+        counts: { total: 2 },
+      }),
+      getMonthlyComparison: jest.fn().mockResolvedValue({
+        currentMonth: "2026-04",
+        previousMonth: "2026-03",
+        currentMonthLabel: "April 2026",
+        previousMonthLabel: "March 2026",
+        currency: "USD",
+      }),
+    };
+
+    holdings = {
+      findAll: jest.fn().mockResolvedValue([
+        { id: "h-1", symbol: "AAPL", quantity: 10 },
+        { id: "h-2", symbol: "MSFT", quantity: 5 },
+      ]),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ToolExecutorService,
@@ -544,6 +588,8 @@ describe("ToolExecutorService", () => {
         { provide: TransactionTransferService, useValue: transfer },
         { provide: TransactionSplitService, useValue: splitService },
         { provide: AiActionSigningService, useValue: signing },
+        { provide: BuiltInReportsService, useValue: builtInReports },
+        { provide: HoldingsService, useValue: holdings },
         // Real prep + builder wrapping the mocked services, so the executor's
         // name resolution, preview building, and pending-action construction
         // (and signing.sign assertions) still run end-to-end.
@@ -988,6 +1034,93 @@ describe("ToolExecutorService", () => {
         kind: "bill",
         accountIds: ["acc-1"],
       });
+    });
+
+    it("list_payees returns all payees when no search is given", async () => {
+      const result = await service.execute(userId, "list_payees", {});
+
+      expect(payees.findAll).toHaveBeenCalledWith(userId);
+      expect(payees.search).not.toHaveBeenCalled();
+      expect(result.sources[0].type).toBe("payees");
+      expect(result.summary).toContain("2 payees");
+    });
+
+    it("list_payees uses the search index when a query is given", async () => {
+      const result = await service.execute(userId, "list_payees", {
+        search: "wal",
+      });
+
+      expect(payees.search).toHaveBeenCalledWith(userId, "wal", 50);
+      expect(result.summary).toContain('matching "wal"');
+    });
+
+    it("list_holding_details delegates to holdings.findAll across all accounts", async () => {
+      const result = await service.execute(userId, "list_holding_details", {});
+
+      expect(holdings.findAll).toHaveBeenCalledWith(userId, undefined);
+      expect(result.sources[0].type).toBe("holdings");
+      expect(result.summary).toContain("2 holdings");
+    });
+
+    it("list_holding_details resolves an account name to its id", async () => {
+      await service.execute(userId, "list_holding_details", {
+        accountName: "Brokerage",
+      });
+
+      expect(holdings.findAll).toHaveBeenCalledWith(userId, "acc-3");
+    });
+
+    it("list_holding_details returns a did-you-mean error for an unknown account", async () => {
+      const result = await service.execute(userId, "list_holding_details", {
+        accountName: "Brokrage",
+      });
+
+      expect(result.isError).toBe(true);
+      expect(result.summary).toContain("Unknown account: Brokrage");
+      expect(result.summary).toContain("Did you mean 'Brokerage'?");
+      expect(holdings.findAll).not.toHaveBeenCalled();
+    });
+
+    it("generate_report delegates to the matching built-in report", async () => {
+      const result = await service.execute(userId, "generate_report", {
+        type: "spending_by_category",
+        startDate: "2026-01-01",
+        endDate: "2026-01-31",
+      });
+
+      expect(builtInReports.getSpendingByCategory).toHaveBeenCalledWith(
+        userId,
+        "2026-01-01",
+        "2026-01-31",
+      );
+      expect(result.sources[0].type).toBe("report");
+      expect(result.summary).toContain("spending_by_category");
+    });
+
+    it("list_anomalies delegates to builtInReports.getSpendingAnomalies", async () => {
+      const result = await service.execute(userId, "list_anomalies", {
+        months: 6,
+      });
+
+      expect(builtInReports.getSpendingAnomalies).toHaveBeenCalledWith(
+        userId,
+        6,
+      );
+      expect(result.sources[0].type).toBe("anomalies");
+      expect(result.summary).toContain("2 spending anomalies");
+    });
+
+    it("monthly_comparison delegates to builtInReports.getMonthlyComparison", async () => {
+      const result = await service.execute(userId, "monthly_comparison", {
+        month: "2026-04",
+      });
+
+      expect(builtInReports.getMonthlyComparison).toHaveBeenCalledWith(
+        userId,
+        "2026-04",
+      );
+      expect(result.sources[0].type).toBe("monthly_comparison");
+      expect(result.summary).toContain("April 2026 vs March 2026");
     });
 
     it("calculate runs locally without hitting any service", async () => {

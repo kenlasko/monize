@@ -129,6 +129,37 @@ export const getBudgetStatusSchema = z.object({
   budgetName: z.string().max(100).optional(),
 });
 
+export const listPayeesSchema = z.object({
+  search: z.string().max(200).optional(),
+});
+
+export const listHoldingDetailsSchema = z.object({
+  accountName: z.string().max(100).optional(),
+});
+
+export const generateReportSchema = z.object({
+  type: z.enum([
+    "spending_by_category",
+    "spending_by_payee",
+    "income_vs_expenses",
+    "monthly_trend",
+    "income_by_source",
+  ]),
+  startDate: isoDateSchema.optional(),
+  endDate: isoDateSchema.optional(),
+});
+
+export const listAnomaliesSchema = z.object({
+  months: positiveIntSchema(1, 24).optional(),
+});
+
+/** Report month in YYYY-MM form, matching the MCP monthly_comparison tool. */
+const reportMonthSchema = z.string().regex(/^\d{4}-\d{2}$/, "Expected YYYY-MM");
+
+export const monthlyComparisonSchema = z.object({
+  month: reportMonthSchema.optional(),
+});
+
 export const SCHEDULED_KINDS = [
   "bill",
   "deposit",
@@ -588,6 +619,11 @@ export const toolInputSchemas: Record<string, z.ZodSchema> = {
   manage_securities: manageSecuritiesSchema,
   lookup_securities: lookupSecuritiesSchema,
   manage_investment_transactions: manageInvestmentTransactionsSchema,
+  list_payees: listPayeesSchema,
+  list_holding_details: listHoldingDetailsSchema,
+  generate_report: generateReportSchema,
+  list_anomalies: listAnomaliesSchema,
+  monthly_comparison: monthlyComparisonSchema,
 };
 
 /**

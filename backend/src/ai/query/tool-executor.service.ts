@@ -51,13 +51,17 @@ import {
   ScheduledTransactionsService,
   LlmScheduledKind,
 } from "../../scheduled-transactions/scheduled-transactions.service";
+import { BuiltInReportsService } from "../../built-in-reports/built-in-reports.service";
+import { HoldingsService } from "../../securities/holdings.service";
 import { validateToolInput } from "./tool-input-schemas";
 import { executeCalculation, CalculateInput } from "./calculate-tool";
 import { sanitizePromptValue } from "../../common/sanitization.util";
 import {
   getDefaultDateRange,
+  getDefaultPreviousMonth,
   resolveComparePeriods,
 } from "../../common/tool-schemas";
+import { didYouMean } from "../../common/name-suggestions.util";
 
 interface ToolResult {
   data: unknown;
@@ -114,6 +118,8 @@ export class ToolExecutorService {
     @Inject(forwardRef(() => TransactionToolPrepService))
     private readonly prepService: TransactionToolPrepService,
     private readonly actionBuilder: AiActionBuilderService,
+    private readonly builtInReportsService: BuiltInReportsService,
+    private readonly holdingsService: HoldingsService,
   ) {}
 
   async execute(
@@ -200,6 +206,21 @@ export class ToolExecutorService {
             userId,
             validatedInput,
           );
+          break;
+        case "list_payees":
+          result = await this.listPayees(userId, validatedInput);
+          break;
+        case "list_holding_details":
+          result = await this.listHoldingDetails(userId, validatedInput);
+          break;
+        case "generate_report":
+          result = await this.generateReport(userId, validatedInput);
+          break;
+        case "list_anomalies":
+          result = await this.listAnomalies(userId, validatedInput);
+          break;
+        case "monthly_comparison":
+          result = await this.monthlyComparison(userId, validatedInput);
           break;
         default:
           this.logger.warn(`execute unknown tool=${toolName} user=${userId}`);
@@ -2012,6 +2033,201 @@ export class ToolExecutorService {
             ? `Upcoming ${kindDesc} for ${accountNames.join(", ")}`
             : `Upcoming ${kindDesc}`,
           dateRange: `next ${days} day${days === 1 ? "" : "s"}`,
+        },
+      ],
+    };
+  }
+
+  /**
+   * List the user's payees (optionally filtered by a search query). Mirrors the
+   * MCP list_payees tool: a search uses the payee search index, otherwise the
+   * full payee list is returned. Shared data shape with the MCP surface.
+   */
+  private async listPayees(
+    userId: string,
+    input: Record<string, unknown>,
+  ): Promise<ToolResult> {
+    const search = input.search as string | undefined;
+    const payees = search
+      ? await this.payeesService.search(userId, search, 50)
+      : await this.payeesService.findAll(userId);
+
+    return {
+      data: payees,
+      summary: `${payees.length} payee${payees.length === 1 ? "" : "s"}${
+        search ? ` matching "${search}"` : ""
+      }.`,
+      sources: [
+        {
+          type: "payees",
+          description: search ? `Payees matching "${search}"` : "All payees",
+        },
+      ],
+    };
+  }
+
+  /**
+   * Detailed individual holding positions, optionally restricted to one account
+   * by name. Mirrors the MCP list_holding_details tool but accepts an account
+   * NAME (resolved internally) instead of a UUID; the returned holdings array is
+   * the same shape on both surfaces.
+   */
+  private async listHoldingDetails(
+    userId: string,
+    input: Record<string, unknown>,
+  ): Promise<ToolResult> {
+    const accountName = input.accountName as string | undefined;
+    let accountId: string | undefined;
+    if (accountName) {
+      const account = await this.resolveAccountByName(userId, accountName);
+      if (!account) {
+        const accounts = await this.accountsService.findAll(userId, true);
+        const suggestion = didYouMean(
+          accountName,
+          accounts.map((a) => a.name),
+        );
+        return this.toolError(
+          `Unknown account: ${accountName}.${suggestion} Call list_accounts to look up valid names.`,
+        );
+      }
+      accountId = account.id;
+    }
+
+    const holdings = await this.holdingsService.findAll(userId, accountId);
+    return {
+      data: holdings,
+      summary: `${holdings.length} holding${holdings.length === 1 ? "" : "s"}${
+        accountName ? ` in ${accountName}` : ""
+      }.`,
+      sources: [
+        {
+          type: "holdings",
+          description: accountName
+            ? `Holding details for ${accountName}`
+            : "Holding details across all investment accounts",
+        },
+      ],
+    };
+  }
+
+  /**
+   * Run a built-in financial report. Mirrors the MCP generate_report tool and
+   * returns the same per-type data shape. Dates default to the last 30 days.
+   */
+  private async generateReport(
+    userId: string,
+    input: Record<string, unknown>,
+  ): Promise<ToolResult> {
+    const type = input.type as
+      | "spending_by_category"
+      | "spending_by_payee"
+      | "income_vs_expenses"
+      | "monthly_trend"
+      | "income_by_source";
+    const defaults = getDefaultDateRange();
+    const startDate = (input.startDate as string) ?? defaults.startDate;
+    const endDate = (input.endDate as string) ?? defaults.endDate;
+
+    let data: unknown;
+    switch (type) {
+      case "spending_by_category":
+        data = await this.builtInReportsService.getSpendingByCategory(
+          userId,
+          startDate,
+          endDate,
+        );
+        break;
+      case "spending_by_payee":
+        data = await this.builtInReportsService.getSpendingByPayee(
+          userId,
+          startDate,
+          endDate,
+        );
+        break;
+      case "income_vs_expenses":
+        data = await this.builtInReportsService.getIncomeVsExpenses(
+          userId,
+          startDate,
+          endDate,
+        );
+        break;
+      case "monthly_trend":
+        data = await this.builtInReportsService.getMonthlySpendingTrend(
+          userId,
+          startDate,
+          endDate,
+        );
+        break;
+      case "income_by_source":
+        data = await this.builtInReportsService.getIncomeBySource(
+          userId,
+          startDate,
+          endDate,
+        );
+        break;
+    }
+
+    return {
+      data,
+      summary: `Report "${type}" from ${startDate} to ${endDate}.`,
+      sources: [
+        {
+          type: "report",
+          description: `Built-in report: ${type}`,
+          dateRange: `${startDate} to ${endDate}`,
+        },
+      ],
+    };
+  }
+
+  /**
+   * Detect statistically unusual spending. Mirrors the MCP list_anomalies tool,
+   * including its argument handling, so both surfaces return the same shape.
+   */
+  private async listAnomalies(
+    userId: string,
+    input: Record<string, unknown>,
+  ): Promise<ToolResult> {
+    const months = (input.months as number | undefined) ?? 3;
+    const data = await this.builtInReportsService.getSpendingAnomalies(
+      userId,
+      months,
+    );
+
+    const count = data.anomalies.length;
+    return {
+      data,
+      summary: `${count} spending anomal${count === 1 ? "y" : "ies"} detected over the last ${months} month${months === 1 ? "" : "s"}.`,
+      sources: [
+        {
+          type: "anomalies",
+          description: "Spending anomaly detection",
+        },
+      ],
+    };
+  }
+
+  /**
+   * Compare a month against the previous month. Mirrors the MCP
+   * monthly_comparison tool and returns the same shape.
+   */
+  private async monthlyComparison(
+    userId: string,
+    input: Record<string, unknown>,
+  ): Promise<ToolResult> {
+    const month = (input.month as string) ?? getDefaultPreviousMonth();
+    const data = await this.builtInReportsService.getMonthlyComparison(
+      userId,
+      month,
+    );
+
+    return {
+      data,
+      summary: `Comparison of ${data.currentMonthLabel} vs ${data.previousMonthLabel}.`,
+      sources: [
+        {
+          type: "monthly_comparison",
+          description: `Monthly comparison for ${data.currentMonthLabel}`,
         },
       ],
     };

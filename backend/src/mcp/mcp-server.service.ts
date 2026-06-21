@@ -55,11 +55,17 @@ export class McpServerService {
   ) {}
 
   createServer(resolve: UserContextResolver): McpServer {
+    // Surface today's date so the model can resolve relative ranges ("this
+    // month", "last 30 days") into YYYY-MM-DD without an extra round trip. The
+    // server is built per session, so this reflects the connection date.
+    const today = new Date().toISOString().substring(0, 10);
     const server = new McpServer(
       { name: "monize", version: backendPkg.version },
       {
         instructions: [
           "Monize is a personal finance management service. You can query accounts, transactions, investments, and generate financial reports.",
+          "",
+          `Today's date is ${today}. Compute relative date ranges (for example 'this month' or 'last 30 days') from this date and pass them as YYYY-MM-DD.`,
           "",
           "## General guidelines",
           "- Prefer summary and report tools over listing raw transactions. Use list_accounts, generate_report, monthly_comparison, and get_portfolio_summary to answer questions when possible.",

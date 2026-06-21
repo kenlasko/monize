@@ -32,6 +32,7 @@ import {
   getDefaultDateRange,
   resolveComparePeriods,
 } from "../../common/tool-schemas";
+import { didYouMean } from "../../common/name-suggestions.util";
 import {
   listTransactionsOutput,
   comparePeriodsOutput,
@@ -556,8 +557,12 @@ export class McpTransactionsTools {
         else unresolved.push(name);
       }
       if (unresolved.length > 0) {
+        const suggestion = didYouMean(
+          unresolved[0],
+          accounts.map((a) => a.name),
+        );
         return {
-          error: `Unknown account${unresolved.length === 1 ? "" : "s"}: ${unresolved.join(", ")}. Use exact names from the user's account list.`,
+          error: `Unknown account${unresolved.length === 1 ? "" : "s"}: ${unresolved.join(", ")}.${suggestion} Use exact names from the user's account list.`,
         };
       }
       accountIds = ids;
@@ -587,8 +592,24 @@ export class McpTransactionsTools {
         else unresolved.push(name);
       }
       if (unresolved.length > 0) {
+        // Best-effort suggestion: a lookup failure must not mask the
+        // "unknown payee" error, so fall back to no hint.
+        let suggestion = "";
+        try {
+          const matches = await this.payeesService.search(
+            userId,
+            unresolved[0],
+            5,
+          );
+          suggestion = didYouMean(
+            unresolved[0],
+            matches.map((p) => p.name),
+          );
+        } catch {
+          suggestion = "";
+        }
         return {
-          error: `Unknown payee${unresolved.length === 1 ? "" : "s"}: ${unresolved.join(", ")}. Call list_payees to look up valid names.`,
+          error: `Unknown payee${unresolved.length === 1 ? "" : "s"}: ${unresolved.join(", ")}.${suggestion} Call list_payees to look up valid names.`,
         };
       }
       payeeIds = ids;
