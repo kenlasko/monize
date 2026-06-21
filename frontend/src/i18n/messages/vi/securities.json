@@ -141,7 +141,8 @@
       "lookupTooShort": "Nhập ký hiệu hoặc tên (ít nhất 2 ký tự) để tra cứu",
       "notFound": "Không tìm thấy giấy chứng khoán cho \"{query}\"",
       "found": "Đã tìm thấy: {details}",
-      "lookupFailed": "Tra cứu thất bại - vui lòng thử lại"
+      "lookupFailed": "Tra cứu thất bại - vui lòng thử lại",
+      "tagCreated": "Thẻ \"{name}\" đã được tạo"
     },
     "msnNotConfigured": "MSN được chọn làm nhà cung cấp báo giá mặc định, nhưng MSN_API_KEY chưa được cấu hình trên máy chủ. Báo giá MSN sẽ thất bại cho đến khi quản trị viên đặt biến môi trường và khởi động lại backend.",
     "providers": {
@@ -163,7 +164,13 @@
     "symbolPlaceholder": "VD: AAPL, XEQT, BTC",
     "namePlaceholder": "VD: Apple Inc., iShares Core Equity ETF",
     "exchangeSearchPlaceholder": "Tìm kiếm sàn giao dịch...",
-    "exchangePlaceholder": "Tự động xác định từ mã chứng khoán; chỉ ghi đè nếu sai"
+    "exchangePlaceholder": "Tự động xác định từ mã chứng khoán; chỉ ghi đè nếu sai",
+    "descriptionLabel": "Mô tả",
+    "descriptionPlaceholder": "Ghi chú về chứng khoán này.",
+    "tagsLabel": "Thẻ",
+    "tagsPlaceholder": "Chọn thẻ...",
+    "createNewTag": "Tạo thẻ mới...",
+    "newTagTitle": "Thẻ mới"
   },
   "priceForm": {
     "dateLabel": "Ngày",
@@ -294,7 +301,8 @@
     "symbolMax": "Ký hiệu phải có tối đa 20 ký tự",
     "nameRequired": "Tên là bắt buộc",
     "nameMax": "Tên phải có tối đa 255 ký tự",
-    "currencyRequired": "Tiền tệ là bắt buộc"
+    "currencyRequired": "Tiền tệ là bắt buộc",
+    "descriptionMax": "Mô tả không được vượt quá 5000 ký tự"
   },
   "priceValidation": {
     "dateRequired": "Ngày là bắt buộc",

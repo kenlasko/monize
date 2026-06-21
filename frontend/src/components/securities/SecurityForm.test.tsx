@@ -647,7 +647,7 @@ describe('SecurityForm', () => {
         expect(investmentsApi.getSuggestedDescription).toHaveBeenCalledWith('AAPL', 'NASDAQ');
       });
       const textarea = screen.getByPlaceholderText(
-        'Notes about this security, or fetch a summary from the price provider.',
+        'Notes about this security.',
       ) as HTMLTextAreaElement;
       await waitFor(() => {
         expect(textarea.value).toBe('Apple Inc. designs smartphones.');
@@ -661,7 +661,7 @@ describe('SecurityForm', () => {
       fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Microsoft' } });
       fireEvent.change(
         screen.getByPlaceholderText(
-          'Notes about this security, or fetch a summary from the price provider.',
+          'Notes about this security.',
         ),
         { target: { value: 'A software company.' } },
       );
@@ -689,7 +689,7 @@ describe('SecurityForm', () => {
 
       await waitFor(() => {
         const textarea = screen.getByPlaceholderText(
-          'Notes about this security, or fetch a summary from the price provider.',
+          'Notes about this security.',
         ) as HTMLTextAreaElement;
         expect(textarea.value).toBe('Existing notes.');
       });

@@ -141,7 +141,8 @@
       "lookupTooShort": "Введите символ или имя (не менее 2 символов) для поиска",
       "notFound": "Ценная бумага \"{query}\" не найдена",
       "found": "Найдено: {details}",
-      "lookupFailed": "Поиск не удался — попробуйте снова"
+      "lookupFailed": "Поиск не удался — попробуйте снова",
+      "tagCreated": "Тег \"{name}\" создан"
     },
     "msnNotConfigured": "MSN выбран как провайдер котировок по умолчанию, но MSN_API_KEY не настроен на сервере. Котировки MSN будут недоступны до тех пор, пока администратор не установит переменную среды и не перезапустит сервер.",
     "providers": {
@@ -163,7 +164,13 @@
     "symbolPlaceholder": "например, AAPL, XEQT, BTC",
     "namePlaceholder": "например, Apple Inc., iShares Core Equity ETF",
     "exchangeSearchPlaceholder": "Поиск бирж...",
-    "exchangePlaceholder": "Определяется автоматически по тикеру; переопределите только при необходимости"
+    "exchangePlaceholder": "Определяется автоматически по тикеру; переопределите только при необходимости",
+    "descriptionLabel": "Описание",
+    "descriptionPlaceholder": "Заметки об этой ценной бумаге.",
+    "tagsLabel": "Теги",
+    "tagsPlaceholder": "Выберите теги...",
+    "createNewTag": "Создать новый тег...",
+    "newTagTitle": "Новый тег"
   },
   "priceForm": {
     "dateLabel": "Дата",
@@ -294,7 +301,8 @@
     "symbolMax": "Символ должен содержать не более 20 символов",
     "nameRequired": "Имя обязательно",
     "nameMax": "Имя должно содержать не более 255 символов",
-    "currencyRequired": "Валюта обязательна"
+    "currencyRequired": "Валюта обязательна",
+    "descriptionMax": "Описание не должно превышать 5000 символов"
   },
   "priceValidation": {
     "dateRequired": "Дата обязательна",

@@ -61,7 +61,15 @@
   },
   "assetAllocation": {
     "title": "Vermögensaufteilung",
-    "noData": "Keine Aufteilungsdaten verfügbar."
+    "noData": "Keine Aufteilungsdaten verfügbar.",
+    "cash": "Barmittel",
+    "untagged": "Ohne Tags",
+    "noTagData": "Keine getaggten Positionen vorhanden. Vergib Tags an deine Wertpapiere, um die Aufteilung nach Tags zu sehen.",
+    "tagExposureNote": "Aufteilung nach Tags: Eine Position mit mehreren Tags zählt unter jedem voll, daher kann die Summe der Prozentwerte über 100 % liegen.",
+    "groupBy": {
+      "security": "Nach Wertpapier",
+      "tag": "Nach Tag"
+    }
   },
   "holdingsList": {
     "title": "Depotbestand",

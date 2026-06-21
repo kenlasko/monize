@@ -141,7 +141,8 @@
       "lookupTooShort": "조회하려면 종목 코드 또는 이름을 2자 이상 입력하세요",
       "notFound": "\"{query}\"에 대한 유가증권을 찾을 수 없습니다",
       "found": "찾음: {details}",
-      "lookupFailed": "조회에 실패했습니다 - 다시 시도하세요"
+      "lookupFailed": "조회에 실패했습니다 - 다시 시도하세요",
+      "tagCreated": "태그 \"{name}\"이(가) 생성되었습니다"
     },
     "msnNotConfigured": "MSN이 기본 시세 제공자로 선택되어 있지만 서버에 MSN_API_KEY가 구성되어 있지 않습니다. 관리자가 환경 변수를 설정하고 백엔드를 재시작할 때까지 MSN 시세가 실패합니다.",
     "providers": {
@@ -163,7 +164,13 @@
     "symbolPlaceholder": "예: AAPL, XEQT, BTC",
     "namePlaceholder": "예: Apple Inc., iShares Core Equity ETF",
     "exchangeSearchPlaceholder": "거래소 검색...",
-    "exchangePlaceholder": "티커에서 자동 확인됩니다. 틀린 경우에만 재정의하세요"
+    "exchangePlaceholder": "티커에서 자동 확인됩니다. 틀린 경우에만 재정의하세요",
+    "descriptionLabel": "설명",
+    "descriptionPlaceholder": "이 증권에 대한 메모.",
+    "tagsLabel": "태그",
+    "tagsPlaceholder": "태그 선택...",
+    "createNewTag": "새 태그 만들기...",
+    "newTagTitle": "새 태그"
   },
   "priceForm": {
     "dateLabel": "날짜",
@@ -294,7 +301,8 @@
     "symbolMax": "종목 코드는 20자 이하여야 합니다",
     "nameRequired": "이름은 필수입니다",
     "nameMax": "이름은 255자 이하여야 합니다",
-    "currencyRequired": "통화는 필수입니다"
+    "currencyRequired": "통화는 필수입니다",
+    "descriptionMax": "설명은 5000자 이하여야 합니다"
   },
   "priceValidation": {
     "dateRequired": "날짜는 필수입니다",

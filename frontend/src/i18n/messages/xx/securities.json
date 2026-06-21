@@ -166,7 +166,7 @@
     "exchangeSearchPlaceholder": "[XX-Search exchanges...-XX]",
     "exchangePlaceholder": "[XX-Auto-resolved from ticker; override only if wrong-XX]",
     "descriptionLabel": "[XX-Description-XX]",
-    "descriptionPlaceholder": "[XX-Notes about this security, or fetch a summary from the price provider.-XX]",
+    "descriptionPlaceholder": "[XX-Notes about this security.-XX]",
     "tagsLabel": "[XX-Tags-XX]",
     "tagsPlaceholder": "[XX-Select tags-XX]",
     "createNewTag": "[XX-Create new tag-XX]",

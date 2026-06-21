@@ -61,7 +61,15 @@
   },
   "assetAllocation": {
     "title": "Phân bổ tài sản",
-    "noData": "Không có dữ liệu phân bổ."
+    "noData": "Không có dữ liệu phân bổ.",
+    "cash": "Tiền mặt",
+    "untagged": "Chưa gắn thẻ",
+    "noTagData": "Không có khoản nắm giữ nào được gắn thẻ. Thêm thẻ cho chứng khoán của bạn để xem mức độ tiếp xúc theo thẻ.",
+    "tagExposureNote": "Mức độ tiếp xúc theo thẻ: một khoản nắm giữ có nhiều thẻ được tính đầy đủ dưới mỗi thẻ, nên tổng phần trăm có thể vượt quá 100%.",
+    "groupBy": {
+      "security": "Theo chứng khoán",
+      "tag": "Theo thẻ"
+    }
   },
   "holdingsList": {
     "title": "Nắm giữ",

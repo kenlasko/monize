@@ -141,7 +141,8 @@
       "lookupTooShort": "Введіть символ або назву (щонайменше 2 символи) для пошуку",
       "notFound": "Цінний папір \"{query}\" не знайдено",
       "found": "Знайдено: {details}",
-      "lookupFailed": "Пошук не вдався — спробуйте ще раз"
+      "lookupFailed": "Пошук не вдався — спробуйте ще раз",
+      "tagCreated": "Тег «{name}» створено"
     },
     "msnNotConfigured": "MSN вибрано як провайдер котирувань за замовчуванням, але MSN_API_KEY не налаштовано на сервері. Котирування MSN не працюватимуть, поки адміністратор не встановить змінну середовища та не перезапустить сервер.",
     "providers": {
@@ -163,7 +164,13 @@
     "symbolPlaceholder": "наприклад AAPL, XEQT, BTC",
     "namePlaceholder": "наприклад Apple Inc., iShares Core Equity ETF",
     "exchangeSearchPlaceholder": "Пошук бірж...",
-    "exchangePlaceholder": "Визначається автоматично з тикера; змінюйте лише якщо неправильно"
+    "exchangePlaceholder": "Визначається автоматично з тикера; змінюйте лише якщо неправильно",
+    "descriptionLabel": "Опис",
+    "descriptionPlaceholder": "Нотатки про цей цінний папір.",
+    "tagsLabel": "Теги",
+    "tagsPlaceholder": "Оберіть теги...",
+    "createNewTag": "Створити новий тег...",
+    "newTagTitle": "Новий тег"
   },
   "priceForm": {
     "dateLabel": "Дата",
@@ -294,7 +301,8 @@
     "symbolMax": "Символ має бути не більше 20 символів",
     "nameRequired": "Назва обов'язкова",
     "nameMax": "Назва має бути не більше 255 символів",
-    "currencyRequired": "Валюта обов'язкова"
+    "currencyRequired": "Валюта обов'язкова",
+    "descriptionMax": "Опис не може перевищувати 5000 символів"
   },
   "priceValidation": {
     "dateRequired": "Дата обов'язкова",

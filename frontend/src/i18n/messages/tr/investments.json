@@ -61,7 +61,15 @@
   },
   "assetAllocation": {
     "title": "Varlık Dağılımı",
-    "noData": "Dağılım verisi mevcut değil."
+    "noData": "Dağılım verisi mevcut değil.",
+    "cash": "Nakit",
+    "untagged": "Etiketsiz",
+    "noTagData": "Gösterilecek etiketli pozisyon yok. Etikete göre dağılımı görmek için menkul kıymetlerinize etiket ekleyin.",
+    "tagExposureNote": "Etikete göre dağılım: birden fazla etikete sahip bir pozisyon her birinin altında tam olarak sayılır, bu yüzden yüzdelerin toplamı %100'ü aşabilir.",
+    "groupBy": {
+      "security": "Menkul kıymete göre",
+      "tag": "Etikete göre"
+    }
   },
   "holdingsList": {
     "title": "Pozisyonlar",

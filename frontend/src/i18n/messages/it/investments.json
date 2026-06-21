@@ -61,7 +61,15 @@
   },
   "assetAllocation": {
     "title": "Allocazione attività",
-    "noData": "Nessun dato di allocazione disponibile."
+    "noData": "Nessun dato di allocazione disponibile.",
+    "cash": "Cassa",
+    "untagged": "Senza etichette",
+    "noTagData": "Nessuna posizione con etichetta da mostrare. Aggiungi etichette ai tuoi titoli per vedere l'esposizione per etichetta.",
+    "tagExposureNote": "Esposizione per etichetta: una posizione con più etichette viene conteggiata per intero sotto ciascuna, quindi la somma delle percentuali può superare il 100%.",
+    "groupBy": {
+      "security": "Per titolo",
+      "tag": "Per etichetta"
+    }
   },
   "holdingsList": {
     "title": "Posizioni",

@@ -141,7 +141,8 @@
       "lookupTooShort": "Bitte ein Symbol oder einen Namen (mindestens 2 Zeichen) eingeben",
       "notFound": "Kein Wertpapier für \"{query}\" gefunden",
       "found": "Gefunden: {details}",
-      "lookupFailed": "Suche fehlgeschlagen – bitte erneut versuchen"
+      "lookupFailed": "Suche fehlgeschlagen – bitte erneut versuchen",
+      "tagCreated": "Tag „{name}” erstellt"
     },
     "msnNotConfigured": "MSN ist als Standard-Kursanbieter ausgewählt, aber MSN_API_KEY ist auf dem Server nicht konfiguriert. MSN-Kursabfragen schlagen fehl, bis ein Administrator die Umgebungsvariable setzt und das Backend neu startet.",
     "providers": {
@@ -163,7 +164,13 @@
     "symbolPlaceholder": "z. B. AAPL, XEQT, BTC",
     "namePlaceholder": "z. B. Apple Inc., iShares Core Equity ETF",
     "exchangeSearchPlaceholder": "Börsen suchen...",
-    "exchangePlaceholder": "Automatisch aus Ticker ermittelt; nur bei Fehler überschreiben"
+    "exchangePlaceholder": "Automatisch aus Ticker ermittelt; nur bei Fehler überschreiben",
+    "descriptionLabel": "Beschreibung",
+    "descriptionPlaceholder": "Notizen zu diesem Wertpapier.",
+    "tagsLabel": "Tags",
+    "tagsPlaceholder": "Tags auswählen...",
+    "createNewTag": "Neuen Tag erstellen...",
+    "newTagTitle": "Neuer Tag"
   },
   "priceForm": {
     "dateLabel": "Datum",
@@ -294,7 +301,8 @@
     "symbolMax": "Symbol darf maximal 20 Zeichen lang sein",
     "nameRequired": "Name ist erforderlich",
     "nameMax": "Name darf maximal 255 Zeichen lang sein",
-    "currencyRequired": "Währung ist erforderlich"
+    "currencyRequired": "Währung ist erforderlich",
+    "descriptionMax": "Die Beschreibung darf höchstens 5000 Zeichen lang sein"
   },
   "priceValidation": {
     "dateRequired": "Datum ist erforderlich",

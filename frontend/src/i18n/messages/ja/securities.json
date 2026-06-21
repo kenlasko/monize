@@ -141,7 +141,8 @@
       "lookupTooShort": "検索するにはシンボルまたは名前を 2 文字以上入力してください",
       "notFound": "「{query}」に一致する有価証券が見つかりませんでした",
       "found": "見つかりました: {details}",
-      "lookupFailed": "検索に失敗しました。もう一度お試しください"
+      "lookupFailed": "検索に失敗しました。もう一度お試しください",
+      "tagCreated": "タグ「{name}」を作成しました"
     },
     "msnNotConfigured": "MSN がデフォルトの株価プロバイダーとして選択されていますが、サーバーで MSN_API_KEY が設定されていません。管理者が環境変数を設定してバックエンドを再起動するまで、MSN の株価取得は失敗します。",
     "providers": {
@@ -163,7 +164,13 @@
     "symbolPlaceholder": "例: AAPL、XEQT、BTC",
     "namePlaceholder": "例: Apple Inc.、iShares Core Equity ETF",
     "exchangeSearchPlaceholder": "取引所を検索...",
-    "exchangePlaceholder": "ティッカーから自動解決されます。誤っている場合のみ上書きしてください"
+    "exchangePlaceholder": "ティッカーから自動解決されます。誤っている場合のみ上書きしてください",
+    "descriptionLabel": "説明",
+    "descriptionPlaceholder": "この銘柄に関するメモ。",
+    "tagsLabel": "タグ",
+    "tagsPlaceholder": "タグを選択...",
+    "createNewTag": "新しいタグを作成...",
+    "newTagTitle": "新しいタグ"
   },
   "priceForm": {
     "dateLabel": "日付",
@@ -294,7 +301,8 @@
     "symbolMax": "シンボルは 20 文字以内にしてください",
     "nameRequired": "名前は必須です",
     "nameMax": "名前は 255 文字以内にしてください",
-    "currencyRequired": "通貨は必須です"
+    "currencyRequired": "通貨は必須です",
+    "descriptionMax": "説明は5000文字以内である必要があります"
   },
   "priceValidation": {
     "dateRequired": "日付は必須です",

@@ -61,7 +61,15 @@
   },
   "assetAllocation": {
     "title": "Asignación de Activos",
-    "noData": "No hay datos de asignación disponibles."
+    "noData": "No hay datos de asignación disponibles.",
+    "cash": "Efectivo",
+    "untagged": "Sin etiquetas",
+    "noTagData": "No hay posiciones etiquetadas para mostrar. Añade etiquetas a tus valores para ver la exposición por etiqueta.",
+    "tagExposureNote": "Exposición por etiqueta: una posición con varias etiquetas se cuenta íntegra en cada una, por lo que los porcentajes pueden sumar más del 100 %.",
+    "groupBy": {
+      "security": "Por valor",
+      "tag": "Por etiqueta"
+    }
   },
   "holdingsList": {
     "title": "Posiciones",

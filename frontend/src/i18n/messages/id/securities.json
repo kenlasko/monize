@@ -141,7 +141,8 @@
       "lookupTooShort": "Masukkan simbol atau nama (minimal 2 karakter) untuk mencari",
       "notFound": "Tidak ditemukan sekuritas untuk \"{query}\"",
       "found": "Ditemukan: {details}",
-      "lookupFailed": "Pencarian gagal - silakan coba lagi"
+      "lookupFailed": "Pencarian gagal - silakan coba lagi",
+      "tagCreated": "Tag \"{name}\" dibuat"
     },
     "msnNotConfigured": "MSN dipilih sebagai penyedia kutipan default, tetapi MSN_API_KEY tidak dikonfigurasi di server. Kutipan MSN akan gagal hingga administrator menetapkan env var dan memulai ulang backend.",
     "providers": {
@@ -163,7 +164,13 @@
     "symbolPlaceholder": "mis., AAPL, XEQT, BTC",
     "namePlaceholder": "mis., Apple Inc., iShares Core Equity ETF",
     "exchangeSearchPlaceholder": "Cari bursa...",
-    "exchangePlaceholder": "Diselesaikan otomatis dari ticker; ganti hanya jika salah"
+    "exchangePlaceholder": "Diselesaikan otomatis dari ticker; ganti hanya jika salah",
+    "descriptionLabel": "Keterangan",
+    "descriptionPlaceholder": "Catatan tentang sekuritas ini.",
+    "tagsLabel": "Tag",
+    "tagsPlaceholder": "Pilih tag...",
+    "createNewTag": "Buat tag baru...",
+    "newTagTitle": "Tag Baru"
   },
   "priceForm": {
     "dateLabel": "Tanggal",
@@ -294,7 +301,8 @@
     "symbolMax": "Simbol harus 20 karakter atau kurang",
     "nameRequired": "Nama wajib diisi",
     "nameMax": "Nama harus 255 karakter atau kurang",
-    "currencyRequired": "Mata uang wajib diisi"
+    "currencyRequired": "Mata uang wajib diisi",
+    "descriptionMax": "Keterangan tidak boleh lebih dari 5000 karakter"
   },
   "priceValidation": {
     "dateRequired": "Tanggal wajib diisi",

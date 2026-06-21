@@ -61,7 +61,15 @@
   },
   "assetAllocation": {
     "title": "Alocação de Ativos",
-    "noData": "Sem dados de alocação disponíveis."
+    "noData": "Sem dados de alocação disponíveis.",
+    "cash": "Numerário",
+    "untagged": "Sem etiquetas",
+    "noTagData": "Não há posições etiquetadas para mostrar. Adicione etiquetas aos seus ativos para ver a exposição por etiqueta.",
+    "tagExposureNote": "Exposição por etiqueta: uma posição com várias etiquetas é contada integralmente em cada uma, então os percentuais podem somar mais de 100%.",
+    "groupBy": {
+      "security": "Por ativo",
+      "tag": "Por etiqueta"
+    }
   },
   "holdingsList": {
     "title": "Posições",

@@ -141,7 +141,8 @@
       "lookupTooShort": "Voer een symbool of naam in (minimaal 2 tekens) om op te zoeken",
       "notFound": "Geen waardepapier gevonden voor \"{query}\"",
       "found": "Gevonden: {details}",
-      "lookupFailed": "Opzoeken mislukt — probeer het opnieuw"
+      "lookupFailed": "Opzoeken mislukt — probeer het opnieuw",
+      "tagCreated": "Label \"{name}\" aangemaakt"
     },
     "msnNotConfigured": "MSN is geselecteerd als standaard koersprovider, maar MSN_API_KEY is niet geconfigureerd op de server. MSN-koersen mislukken totdat een beheerder de omgevingsvariabele instelt en de backend herstart.",
     "providers": {
@@ -163,7 +164,13 @@
     "symbolPlaceholder": "bijv. AAPL, XEQT, BTC",
     "namePlaceholder": "bijv. Apple Inc., iShares Core Equity ETF",
     "exchangeSearchPlaceholder": "Beurzen zoeken...",
-    "exchangePlaceholder": "Automatisch bepaald via ticker; overschrijf alleen indien onjuist"
+    "exchangePlaceholder": "Automatisch bepaald via ticker; overschrijf alleen indien onjuist",
+    "descriptionLabel": "Omschrijving",
+    "descriptionPlaceholder": "Notities over dit effect.",
+    "tagsLabel": "Labels",
+    "tagsPlaceholder": "Selecteer labels...",
+    "createNewTag": "Nieuw label aanmaken...",
+    "newTagTitle": "Nieuw label"
   },
   "priceForm": {
     "dateLabel": "Datum",
@@ -294,7 +301,8 @@
     "symbolMax": "Symbool mag maximaal 20 tekens bevatten",
     "nameRequired": "Naam is verplicht",
     "nameMax": "Naam mag maximaal 255 tekens bevatten",
-    "currencyRequired": "Valuta is verplicht"
+    "currencyRequired": "Valuta is verplicht",
+    "descriptionMax": "De omschrijving mag maximaal 5000 tekens bevatten"
   },
   "priceValidation": {
     "dateRequired": "Datum is verplicht",

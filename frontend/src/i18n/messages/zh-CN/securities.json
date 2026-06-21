@@ -141,7 +141,8 @@
       "lookupTooShort": "请输入代码或名称（至少 2 个字符）进行查询",
       "notFound": "未找到\"{query}\"对应的证券",
       "found": "已找到：{details}",
-      "lookupFailed": "查询失败，请重试"
+      "lookupFailed": "查询失败，请重试",
+      "tagCreated": "标签\"{name}\"已创建"
     },
     "msnNotConfigured": "MSN 已选为默认行情提供商，但服务器未配置 MSN_API_KEY。在管理员设置环境变量并重启后端之前，MSN 行情将失败。",
     "providers": {
@@ -163,7 +164,13 @@
     "symbolPlaceholder": "例如：AAPL、XEQT、BTC",
     "namePlaceholder": "例如：苹果公司、iShares 核心股票 ETF",
     "exchangeSearchPlaceholder": "搜索交易所...",
-    "exchangePlaceholder": "从交易代码自动解析；仅在错误时覆盖"
+    "exchangePlaceholder": "从交易代码自动解析；仅在错误时覆盖",
+    "descriptionLabel": "描述",
+    "descriptionPlaceholder": "关于该证券的备注。",
+    "tagsLabel": "标签",
+    "tagsPlaceholder": "选择标签...",
+    "createNewTag": "创建新标签...",
+    "newTagTitle": "新建标签"
   },
   "priceForm": {
     "dateLabel": "日期",
@@ -294,7 +301,8 @@
     "symbolMax": "代码不能超过 20 个字符",
     "nameRequired": "名称为必填项",
     "nameMax": "名称不能超过 255 个字符",
-    "currencyRequired": "货币为必填项"
+    "currencyRequired": "货币为必填项",
+    "descriptionMax": "描述不能超过5000个字符"
   },
   "priceValidation": {
     "dateRequired": "日期为必填项",

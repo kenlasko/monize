@@ -61,7 +61,15 @@
   },
   "assetAllocation": {
     "title": "Alokacja aktywów",
-    "noData": "Brak danych o alokacji."
+    "noData": "Brak danych o alokacji.",
+    "cash": "Gotówka",
+    "untagged": "Bez tagów",
+    "noTagData": "Brak otagowanych pozycji do pokazania. Dodaj tagi do swoich papierów, aby zobaczyć ekspozycję wg tagów.",
+    "tagExposureNote": "Ekspozycja wg tagów: pozycja z kilkoma tagami liczona jest w całości pod każdym z nich, więc procenty mogą sumować się do ponad 100%.",
+    "groupBy": {
+      "security": "Wg papieru",
+      "tag": "Wg tagu"
+    }
   },
   "holdingsList": {
     "title": "Pozycje",

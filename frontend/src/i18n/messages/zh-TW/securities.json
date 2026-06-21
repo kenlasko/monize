@@ -141,7 +141,8 @@
       "lookupTooShort": "請輸入代號或名稱（至少 2 個字元）進行查找",
       "notFound": "找不到「{query}」的證券",
       "found": "已找到：{details}",
-      "lookupFailed": "查找失敗 - 請再試一次"
+      "lookupFailed": "查找失敗 - 請再試一次",
+      "tagCreated": "標籤「{name}」已建立"
     },
     "msnNotConfigured": "MSN 已被選為預設報價提供者，但伺服器上未設定 MSN_API_KEY。在管理員設定環境變數並重啟後端之前，MSN 報價將無法使用。",
     "providers": {
@@ -163,7 +164,13 @@
     "symbolPlaceholder": "例如：AAPL、XEQT、BTC",
     "namePlaceholder": "例如：Apple Inc.、iShares Core Equity ETF",
     "exchangeSearchPlaceholder": "搜尋交易所...",
-    "exchangePlaceholder": "從股票代碼自動解析；如有誤才需覆寫"
+    "exchangePlaceholder": "從股票代碼自動解析；如有誤才需覆寫",
+    "descriptionLabel": "描述",
+    "descriptionPlaceholder": "關於此證券的備註。",
+    "tagsLabel": "標籤",
+    "tagsPlaceholder": "選擇標籤...",
+    "createNewTag": "建立新標籤...",
+    "newTagTitle": "新增標籤"
   },
   "priceForm": {
     "dateLabel": "日期",
@@ -294,7 +301,8 @@
     "symbolMax": "代號不得超過 20 個字元",
     "nameRequired": "名稱為必填",
     "nameMax": "名稱不得超過 255 個字元",
-    "currencyRequired": "貨幣為必填"
+    "currencyRequired": "貨幣為必填",
+    "descriptionMax": "描述不能超過5000個字元"
   },
   "priceValidation": {
     "dateRequired": "日期為必填",

@@ -141,7 +141,8 @@
       "lookupTooShort": "Arama için sembol veya ad girin (en az 2 karakter)",
       "notFound": "\"{query}\" için menkul kıymet bulunamadı",
       "found": "Bulundu: {details}",
-      "lookupFailed": "Arama başarısız - lütfen tekrar deneyin"
+      "lookupFailed": "Arama başarısız - lütfen tekrar deneyin",
+      "tagCreated": "\"{name}\" etiketi oluşturuldu"
     },
     "msnNotConfigured": "Varsayılan fiyat teklifi sağlayıcısı olarak MSN seçildi, ancak sunucuda MSN_API_KEY yapılandırılmamış. Bir yönetici ortam değişkenini ayarlayıp arka ucu yeniden başlatana kadar MSN fiyat teklifleri başarısız olacak.",
     "providers": {
@@ -163,7 +164,13 @@
     "symbolPlaceholder": "örn., AAPL, XEQT, BTC",
     "namePlaceholder": "örn., Apple Inc., iShares Core Equity ETF",
     "exchangeSearchPlaceholder": "Borsa ara...",
-    "exchangePlaceholder": "Hisse kodundan otomatik çözümlenir; yanlışsa geçersiz kılın"
+    "exchangePlaceholder": "Hisse kodundan otomatik çözümlenir; yanlışsa geçersiz kılın",
+    "descriptionLabel": "Açıklama",
+    "descriptionPlaceholder": "Bu menkul kıymet hakkında notlar.",
+    "tagsLabel": "Etiketler",
+    "tagsPlaceholder": "Etiket seçin...",
+    "createNewTag": "Yeni etiket oluştur...",
+    "newTagTitle": "Yeni Etiket"
   },
   "priceForm": {
     "dateLabel": "Tarih",
@@ -294,7 +301,8 @@
     "symbolMax": "Sembol 20 karakter veya daha az olmalıdır",
     "nameRequired": "Ad zorunludur",
     "nameMax": "Ad 255 karakter veya daha az olmalıdır",
-    "currencyRequired": "Para birimi zorunludur"
+    "currencyRequired": "Para birimi zorunludur",
+    "descriptionMax": "Açıklama en fazla 5000 karakter olabilir"
   },
   "priceValidation": {
     "dateRequired": "Tarih zorunludur",

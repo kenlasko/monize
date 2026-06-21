@@ -141,7 +141,8 @@
       "lookupTooShort": "खोजने के लिए प्रतीक या नाम दर्ज करें (कम से कम 2 अक्षर)",
       "notFound": "\"{query}\" के लिए कोई प्रतिभूति नहीं मिली",
       "found": "मिली: {details}",
-      "lookupFailed": "खोज विफल - कृपया पुनः प्रयास करें"
+      "lookupFailed": "खोज विफल - कृपया पुनः प्रयास करें",
+      "tagCreated": "टैग \"{name}\" बनाया गया"
     },
     "msnNotConfigured": "MSN डिफ़ॉल्ट उद्धरण प्रदाता के रूप में चुना गया है, लेकिन MSN_API_KEY सर्वर पर कॉन्फ़िगर नहीं किया गया है। MSN उद्धरण तब तक विफल रहेंगे जब तक एक व्यवस्थापक env var सेट करके बैकएंड पुनः शुरू नहीं करता।",
     "providers": {
@@ -163,7 +164,13 @@
     "symbolPlaceholder": "उदा., AAPL, XEQT, BTC",
     "namePlaceholder": "उदा., Apple Inc., iShares Core Equity ETF",
     "exchangeSearchPlaceholder": "एक्सचेंज खोजें...",
-    "exchangePlaceholder": "टिकर से स्वत: निर्धारित; केवल गलत होने पर ओवरराइड करें"
+    "exchangePlaceholder": "टिकर से स्वत: निर्धारित; केवल गलत होने पर ओवरराइड करें",
+    "descriptionLabel": "विवरण",
+    "descriptionPlaceholder": "इस प्रतिभूति के बारे में नोट्स।",
+    "tagsLabel": "टैग",
+    "tagsPlaceholder": "टैग चुनें...",
+    "createNewTag": "नया टैग बनाएं...",
+    "newTagTitle": "नया टैग"
   },
   "priceForm": {
     "dateLabel": "तिथि",
@@ -294,7 +301,8 @@
     "symbolMax": "प्रतीक 20 अक्षरों या उससे कम होना चाहिए",
     "nameRequired": "नाम आवश्यक है",
     "nameMax": "नाम 255 अक्षरों या उससे कम होना चाहिए",
-    "currencyRequired": "मुद्रा आवश्यक है"
+    "currencyRequired": "मुद्रा आवश्यक है",
+    "descriptionMax": "विवरण 5000 अक्षरों से अधिक नहीं होना चाहिए"
   },
   "priceValidation": {
     "dateRequired": "तिथि आवश्यक है",

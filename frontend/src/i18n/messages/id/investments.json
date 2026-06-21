@@ -61,7 +61,15 @@
   },
   "assetAllocation": {
     "title": "Alokasi Aset",
-    "noData": "Tidak ada data alokasi tersedia."
+    "noData": "Tidak ada data alokasi tersedia.",
+    "cash": "Tunai",
+    "untagged": "Tanpa tag",
+    "noTagData": "Tidak ada kepemilikan bertag untuk ditampilkan. Tambahkan tag ke sekuritas Anda untuk melihat eksposur berdasarkan tag.",
+    "tagExposureNote": "Eksposur berdasarkan tag: kepemilikan dengan beberapa tag dihitung penuh pada masing-masing, sehingga total persentase bisa lebih dari 100%.",
+    "groupBy": {
+      "security": "Berdasarkan sekuritas",
+      "tag": "Berdasarkan tag"
+    }
   },
   "holdingsList": {
     "title": "Kepemilikan",

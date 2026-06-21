@@ -61,7 +61,15 @@
   },
   "assetAllocation": {
     "title": "Activaspreiding",
-    "noData": "Geen spreidingsgegevens beschikbaar."
+    "noData": "Geen spreidingsgegevens beschikbaar.",
+    "cash": "Kas",
+    "untagged": "Zonder labels",
+    "noTagData": "Geen gelabelde posities om te tonen. Voeg labels toe aan je effecten om de verdeling per label te zien.",
+    "tagExposureNote": "Verdeling per label: een positie met meerdere labels telt onder elk volledig mee, dus de percentages kunnen samen meer dan 100% zijn.",
+    "groupBy": {
+      "security": "Per effect",
+      "tag": "Per label"
+    }
   },
   "holdingsList": {
     "title": "Posities",

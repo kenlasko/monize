@@ -61,7 +61,15 @@
   },
   "assetAllocation": {
     "title": "資產配置",
-    "noData": "無可用的配置資料。"
+    "noData": "無可用的配置資料。",
+    "cash": "現金",
+    "untagged": "無標籤",
+    "noTagData": "沒有可顯示的帶標籤持倉。為你的證券新增標籤即可按標籤查看曝險。",
+    "tagExposureNote": "按標籤的曝險：帶有多個標籤的持倉會在每個標籤下全額計入，因此百分比合計可能超過100%。",
+    "groupBy": {
+      "security": "按證券",
+      "tag": "按標籤"
+    }
   },
   "holdingsList": {
     "title": "持倉",

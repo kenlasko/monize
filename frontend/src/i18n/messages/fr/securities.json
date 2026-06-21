@@ -141,7 +141,8 @@
       "lookupTooShort": "Saisissez un symbole ou un nom (au moins 2 caractères) pour rechercher",
       "notFound": "Aucun titre trouvé pour « {query} »",
       "found": "Trouvé : {details}",
-      "lookupFailed": "Recherche échouée — veuillez réessayer"
+      "lookupFailed": "Recherche échouée — veuillez réessayer",
+      "tagCreated": "Étiquette « {name} » créée"
     },
     "msnNotConfigured": "MSN est sélectionné comme fournisseur de cours par défaut, mais MSN_API_KEY n'est pas configuré sur le serveur. Les cours MSN échoueront jusqu'à ce qu'un administrateur définisse la variable d'environnement et redémarre le backend.",
     "providers": {
@@ -163,7 +164,13 @@
     "symbolPlaceholder": "ex. : AAPL, XEQT, BTC",
     "namePlaceholder": "ex. : Apple Inc., iShares Core Equity ETF",
     "exchangeSearchPlaceholder": "Rechercher des marchés...",
-    "exchangePlaceholder": "Résolu automatiquement depuis le symbole ; à corriger uniquement si incorrect"
+    "exchangePlaceholder": "Résolu automatiquement depuis le symbole ; à corriger uniquement si incorrect",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Notes sur ce titre.",
+    "tagsLabel": "Étiquettes",
+    "tagsPlaceholder": "Sélectionner des étiquettes...",
+    "createNewTag": "Créer une nouvelle étiquette...",
+    "newTagTitle": "Nouvelle étiquette"
   },
   "priceForm": {
     "dateLabel": "Date",
@@ -294,7 +301,8 @@
     "symbolMax": "Le symbole doit comporter 20 caractères ou moins",
     "nameRequired": "Le nom est requis",
     "nameMax": "Le nom doit comporter 255 caractères ou moins",
-    "currencyRequired": "La devise est requise"
+    "currencyRequired": "La devise est requise",
+    "descriptionMax": "La description ne doit pas dépasser 5000 caractères"
   },
   "priceValidation": {
     "dateRequired": "La date est requise",

@@ -141,7 +141,8 @@
       "lookupTooShort": "Wpisz symbol lub nazwę (co najmniej 2 znaki), aby wyszukać",
       "notFound": "Nie znaleziono papieru wartościowego dla \"{query}\"",
       "found": "Znaleziono: {details}",
-      "lookupFailed": "Wyszukiwanie nie powiodło się - spróbuj ponownie"
+      "lookupFailed": "Wyszukiwanie nie powiodło się - spróbuj ponownie",
+      "tagCreated": "Tag \"{name}\" utworzony"
     },
     "msnNotConfigured": "MSN jest wybrany jako domyślny dostawca notowań, ale na serwerze nie skonfigurowano MSN_API_KEY. Notowania MSN nie będą działać, dopóki administrator nie ustawi zmiennej środowiskowej i nie zrestartuje backendu.",
     "providers": {
@@ -163,7 +164,13 @@
     "symbolPlaceholder": "np. AAPL, XEQT, BTC",
     "namePlaceholder": "np. Apple Inc., iShares Core Equity ETF",
     "exchangeSearchPlaceholder": "Szukaj giełd...",
-    "exchangePlaceholder": "Rozpoznawany automatycznie z tickera; nadpisz tylko jeśli jest błędny"
+    "exchangePlaceholder": "Rozpoznawany automatycznie z tickera; nadpisz tylko jeśli jest błędny",
+    "descriptionLabel": "Opis",
+    "descriptionPlaceholder": "Notatki o tym papierze wartościowym.",
+    "tagsLabel": "Tagi",
+    "tagsPlaceholder": "Wybierz tagi...",
+    "createNewTag": "Utwórz nowy tag...",
+    "newTagTitle": "Nowy tag"
   },
   "priceForm": {
     "dateLabel": "Data",
@@ -294,7 +301,8 @@
     "symbolMax": "Symbol może mieć maksymalnie 20 znaków",
     "nameRequired": "Nazwa jest wymagana",
     "nameMax": "Nazwa może mieć maksymalnie 255 znaków",
-    "currencyRequired": "Waluta jest wymagana"
+    "currencyRequired": "Waluta jest wymagana",
+    "descriptionMax": "Opis może mieć maksymalnie 5000 znaków"
   },
   "priceValidation": {
     "dateRequired": "Data jest wymagana",

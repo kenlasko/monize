@@ -61,7 +61,15 @@
   },
   "assetAllocation": {
     "title": "Répartition des actifs",
-    "noData": "Aucune donnée de répartition disponible."
+    "noData": "Aucune donnée de répartition disponible.",
+    "cash": "Trésorerie",
+    "untagged": "Sans étiquette",
+    "noTagData": "Aucune position étiquetée à afficher. Ajoutez des étiquettes à vos titres pour voir la répartition par étiquette.",
+    "tagExposureNote": "Répartition par étiquette : une position comportant plusieurs étiquettes est comptée intégralement sous chacune, le total des pourcentages peut donc dépasser 100 %.",
+    "groupBy": {
+      "security": "Par titre",
+      "tag": "Par étiquette"
+    }
   },
   "holdingsList": {
     "title": "Positions",
