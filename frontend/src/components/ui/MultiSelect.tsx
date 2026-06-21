@@ -43,7 +43,13 @@ export function MultiSelect({
   const t = useTranslations('common');
   const [isOpen, setIsOpen] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [dropdownPos, setDropdownPos] = useState<{
+    top?: number;
+    bottom?: number;
+    left: number;
+    width: number;
+    maxHeight: number;
+  } | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -179,14 +185,28 @@ export function MultiSelect({
     onChange(newValue);
   };
 
-  // Calculate dropdown position from trigger button
+  // Calculate dropdown position from trigger button. Opens downward by
+  // default, but flips above the trigger when there isn't enough room below
+  // (e.g. the field sits near the bottom of the viewport / a modal). Either
+  // way the height is capped to the available space so the options list
+  // scrolls internally rather than spilling off-screen.
   const updatePosition = useCallback(() => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
+    const margin = 8;
+    const gap = 4;
+    const spaceBelow = window.innerHeight - rect.bottom - margin;
+    const spaceAbove = rect.top - margin;
+    // Prefer below; flip up only when below is cramped and above has more room.
+    const openUp = spaceBelow < 240 && spaceAbove > spaceBelow;
+    const maxHeight = Math.max(160, openUp ? spaceAbove : spaceBelow);
     setDropdownPos({
-      top: rect.bottom + 4,
       left: rect.left,
       width: rect.width,
+      maxHeight,
+      ...(openUp
+        ? { bottom: window.innerHeight - rect.top + gap }
+        : { top: rect.bottom + gap }),
     });
   }, []);
 
@@ -287,8 +307,14 @@ export function MultiSelect({
       {isOpen && dropdownPos && createPortal(
         <div
           ref={dropdownRef}
-          className="fixed z-[100] bg-white dark:bg-gray-800 shadow-lg dark:shadow-gray-700/50 rounded-md ring-1 ring-black ring-opacity-5 dark:ring-gray-600"
-          style={{ top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width }}
+          className="fixed z-[100] flex flex-col overflow-hidden bg-white dark:bg-gray-800 shadow-lg dark:shadow-gray-700/50 rounded-md ring-1 ring-black ring-opacity-5 dark:ring-gray-600"
+          style={{
+            top: dropdownPos.top,
+            bottom: dropdownPos.bottom,
+            left: dropdownPos.left,
+            width: dropdownPos.width,
+            maxHeight: dropdownPos.maxHeight,
+          }}
         >
           {/* Search input */}
           {showSearch && (
@@ -343,7 +369,7 @@ export function MultiSelect({
           </div>
 
           {/* Options list */}
-          <div className="max-h-[30rem] overflow-auto py-1">
+          <div className="flex-1 min-h-0 overflow-auto py-1">
             {filteredOptions.length === 0 && !onCreateNew ? (
               <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
                 {t('multiSelect.noOptions')}
