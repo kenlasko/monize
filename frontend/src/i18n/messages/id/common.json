@@ -103,7 +103,7 @@
     "selectAll": "Pilih Semua",
     "clear": "Hapus",
     "noOptions": "Tidak ada opsi ditemukan",
-    "selectedCount": "{count, plural, one {# item dipilih} other {# item dipilih}}"
+    "selectedCount": "{count} dipilih"
   },
   "combobox": {
     "createOption": "Buat \"{value}\""

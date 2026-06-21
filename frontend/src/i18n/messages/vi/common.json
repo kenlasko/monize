@@ -103,7 +103,7 @@
     "selectAll": "Chọn tất cả",
     "clear": "Xóa",
     "noOptions": "Không tìm thấy tùy chọn",
-    "selectedCount": "{count, plural, one {Đã chọn # mục} other {Đã chọn # mục}}"
+    "selectedCount": "Đã chọn {count}"
   },
   "combobox": {
     "createOption": "Tạo \"{value}\""

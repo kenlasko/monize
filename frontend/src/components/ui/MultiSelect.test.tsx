@@ -54,7 +54,7 @@ describe('MultiSelect', () => {
       <MultiSelect options={flatOptions} value={['a', 'b']} onChange={onChange} />,
     );
 
-    expect(screen.getByText('2 items selected')).toBeInTheDocument();
+    expect(screen.getByText('2 selected')).toBeInTheDocument();
   });
 
   it('shows single option label when one item is selected', () => {
@@ -229,12 +229,12 @@ describe('MultiSelect', () => {
     expect(screen.getByText('Pick one')).toBeInTheDocument();
   });
 
-  it('shows "1 item selected" when selected value does not match any option', () => {
+  it('shows "1 selected" when selected value does not match any option', () => {
     render(
       <MultiSelect options={flatOptions} value={['unknown']} onChange={onChange} />,
     );
 
-    expect(screen.getByText('1 item selected')).toBeInTheDocument();
+    expect(screen.getByText('1 selected')).toBeInTheDocument();
   });
 
   it('clears search text via the clear button inside the search input', () => {

@@ -103,7 +103,7 @@
     "selectAll": "Alles selecteren",
     "clear": "Wissen",
     "noOptions": "Geen opties gevonden",
-    "selectedCount": "{count, plural, one {# item geselecteerd} other {# items geselecteerd}}"
+    "selectedCount": "{count} geselecteerd"
   },
   "combobox": {
     "createOption": "Maak \"{value}\" aan"

@@ -103,7 +103,7 @@
     "selectAll": "[XX-Select All-XX]",
     "clear": "[XX-Clear-XX]",
     "noOptions": "[XX-No options found-XX]",
-    "selectedCount": "[XX-{count, plural, one {# item selected} other {# items selected}}-XX]"
+    "selectedCount": "[XX-{count} selected-XX]"
   },
   "combobox": {
     "createOption": "[XX-Create \"{value}\"-XX]"

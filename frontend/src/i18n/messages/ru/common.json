@@ -103,7 +103,7 @@
     "selectAll": "Выбрать все",
     "clear": "Очистить",
     "noOptions": "Варианты не найдены",
-    "selectedCount": "{count, plural, one {Выбран # элемент} few {Выбрано # элемента} many {Выбрано # элементов} other {Выбрано # элемента}}"
+    "selectedCount": "Выбрано {count}"
   },
   "combobox": {
     "createOption": "Создать \"{value}\""

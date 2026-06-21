@@ -103,7 +103,7 @@
     "selectAll": "全选",
     "clear": "清除",
     "noOptions": "未找到选项",
-    "selectedCount": "{count, plural, one {已选择 # 项} other {已选择 # 项}}"
+    "selectedCount": "已选择 {count}"
   },
   "combobox": {
     "createOption": "创建 \"{value}\""

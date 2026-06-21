@@ -103,7 +103,7 @@
     "selectAll": "すべて選択",
     "clear": "クリア",
     "noOptions": "オプションが見つかりません",
-    "selectedCount": "{count, plural, one {# 件選択中} other {# 件選択中}}"
+    "selectedCount": "{count} 選択中"
   },
   "combobox": {
     "createOption": "\"{value}\" を作成"

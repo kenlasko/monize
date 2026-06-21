@@ -103,7 +103,7 @@
     "selectAll": "모두 선택",
     "clear": "지우기",
     "noOptions": "옵션을 찾을 수 없습니다",
-    "selectedCount": "{count, plural, one {# 개 선택됨} other {# 개 선택됨}}"
+    "selectedCount": "{count} 선택됨"
   },
   "combobox": {
     "createOption": "\"{value}\" 만들기"

@@ -103,7 +103,7 @@
     "selectAll": "Tümünü Seç",
     "clear": "Temizle",
     "noOptions": "Seçenek bulunamadı",
-    "selectedCount": "{count, plural, one {# öğe seçildi} other {# öğe seçildi}}"
+    "selectedCount": "{count} seçildi"
   },
   "combobox": {
     "createOption": "\"{value}\" oluştur"

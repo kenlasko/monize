@@ -103,7 +103,7 @@
     "selectAll": "Zaznacz wszystko",
     "clear": "Wyczyść",
     "noOptions": "Nie znaleziono opcji",
-    "selectedCount": "{count, plural, one {Wybrano # element} few {Wybrano # elementy} many {Wybrano # elementów} other {Wybrano # elementu}}"
+    "selectedCount": "Wybrano {count}"
   },
   "combobox": {
     "createOption": "Utwórz \"{value}\""

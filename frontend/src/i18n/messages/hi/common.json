@@ -103,7 +103,7 @@
     "selectAll": "सभी चुनें",
     "clear": "साफ़ करें",
     "noOptions": "कोई विकल्प नहीं मिला",
-    "selectedCount": "{count, plural, one {# आइटम चयनित} other {# आइटम चयनित}}"
+    "selectedCount": "{count} चयनित"
   },
   "combobox": {
     "createOption": "\"{value}\" बनाएं"
