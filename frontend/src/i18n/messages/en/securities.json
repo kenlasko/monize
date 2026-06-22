@@ -170,7 +170,19 @@
     "tagsLabel": "Tags",
     "tagsPlaceholder": "Select tags",
     "createNewTag": "Create new tag",
-    "newTagTitle": "New Tag"
+    "newTagTitle": "New Tag",
+    "allocation": {
+      "help": "Price providers don't supply country exposure for ETFs and funds. Add it manually as percentages. Anything under 100% is shown as \"Other\". You can paste a breakdown into the AI Assistant to fill this in.",
+      "countryTitle": "Country allocation",
+      "countryPlaceholder": "Select or type a country",
+      "addRow": "Add country",
+      "removeRow": "Remove row",
+      "other": "Other",
+      "total": "Total: {total}%",
+      "overError": "Allocation adds up to more than 100%.",
+      "nameAriaLabel": "Country",
+      "weightAriaLabel": "Percentage"
+    }
   },
   "priceForm": {
     "dateLabel": "Date",

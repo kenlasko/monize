@@ -79,6 +79,8 @@ interface ManageSecItem {
   exchange?: string;
   isFavourite?: boolean;
   currencyCode?: string;
+  // update only: manual country allocation, weights as PERCENTAGES (0-100).
+  countryWeightings?: { name: string; weight: number }[];
 }
 
 @Injectable()
@@ -360,7 +362,7 @@ export class McpInvestmentsTools {
         description:
           "Create, edit, or delete the user's securities (stocks, ETFs, funds). operation = 'create' | 'update' | 'delete' with an items array (1-25 rows). " +
           "create: { query, exchange?, securityType?, isFavourite?, currencyCode? } -- the security is looked up and validated by ticker/name against the user's configured price provider, which fills the official symbol/name/exchange/type/currency (do not invent them); exchange/securityType MUST come from the enumerated lists; exchange disambiguates a symbol traded on several exchanges. " +
-          "update: { symbol, securityType?, exchange?, isFavourite?, currencyCode? } -- symbol identifies an existing security (ticker or name); provide the classification/display fields to change. " +
+          "update: { symbol, securityType?, exchange?, isFavourite?, currencyCode?, countryWeightings? } -- symbol identifies an existing security (ticker or name); provide the classification/display fields to change. countryWeightings sets a manual country allocation for an ETF/fund as { name, weight } with weight a PERCENTAGE (0-100); entries need not add to 100 (the rest is 'Other'). " +
           "delete: { symbol } -- removes the security (fails if it still has holdings or investment transactions). " +
           "approvalMode = 'bulk' (default; one card for the whole batch) or 'individual' (one card per item); ignored for a single item. Set dryRun=true to preview every item without saving. The user is asked to confirm before anything is saved (web chat card via relay, or an MCP confirmation dialog).",
         inputSchema: {
@@ -410,6 +412,28 @@ export class McpInvestmentsTools {
                   .optional()
                   .describe(
                     "create/update: ISO 4217 currency code (e.g. 'USD').",
+                  ),
+                countryWeightings: z
+                  .array(
+                    z.object({
+                      name: z
+                        .string()
+                        .min(1)
+                        .max(100)
+                        .describe(
+                          "Country name; prefer a canonical name (e.g. 'United States').",
+                        ),
+                      weight: z
+                        .number()
+                        .min(0)
+                        .max(100)
+                        .describe("Percentage 0-100."),
+                    }),
+                  )
+                  .max(60)
+                  .optional()
+                  .describe(
+                    "update only: manual country (geographic) allocation for an ETF/fund. Weights are PERCENTAGES (0-100) and need not sum to 100 (the rest is 'Other').",
                   ),
               }),
             )
@@ -1236,6 +1260,7 @@ export class McpInvestmentsTools {
       exchange: item.exchange,
       isFavourite: item.isFavourite,
       currencyCode: item.currencyCode,
+      countryWeightings: item.countryWeightings,
     };
   }
 
@@ -1583,6 +1608,7 @@ export class McpInvestmentsTools {
       exchange: string | null;
       currencyCode: string;
       isFavourite: boolean;
+      countryWeightings?: { name: string; weight: number }[] | null;
     },
   ) {
     const security = await this.securitiesService.update(
@@ -1593,6 +1619,7 @@ export class McpInvestmentsTools {
         exchange: preview.exchange ?? undefined,
         currencyCode: preview.currencyCode,
         isFavourite: preview.isFavourite,
+        countryWeightings: preview.countryWeightings ?? [],
       },
     );
     this.writeLimiter.record(userId, "update_security");

@@ -30,6 +30,8 @@ export interface Security {
   sector: string | null;
   industry: string | null;
   sectorWeightings: { sector: string; weight: number }[] | null;
+  /** Manual ETF/fund country breakdown; weight is a decimal 0-1 (like sectorWeightings). */
+  countryWeightings: { name: string; weight: number }[] | null;
   quoteProvider: QuoteProviderName | null;
   msnInstrumentId: string | null;
   /** Source of the most recent price row for this security (e.g. "yahoo_finance", "msn_finance", "manual"), or null if no prices exist. */
@@ -48,6 +50,22 @@ export interface SectorWeightingItem {
 
 export interface SectorWeightingResult {
   items: SectorWeightingItem[];
+  totalPortfolioValue: number;
+  totalDirectValue: number;
+  totalEtfValue: number;
+  unclassifiedValue: number;
+}
+
+export interface CountryWeightingItem {
+  country: string;
+  directValue: number;
+  etfValue: number;
+  totalValue: number;
+  percentage: number;
+}
+
+export interface CountryWeightingResult {
+  items: CountryWeightingItem[];
   totalPortfolioValue: number;
   totalDirectValue: number;
   totalEtfValue: number;
@@ -247,6 +265,8 @@ export interface CreateSecurityData {
   quoteProvider?: QuoteProviderName | null;
   msnInstrumentId?: string;
   isFavourite?: boolean;
+  /** Manual ETF/fund country breakdown; weight is a decimal 0-1 (like sectorWeightings). */
+  countryWeightings?: { name: string; weight: number }[];
 }
 
 /** A favourite security decorated with its latest price and daily change. */

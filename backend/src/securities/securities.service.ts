@@ -20,6 +20,13 @@ import { SecurityPriceService } from "./security-price.service";
 import { YahooFinanceService } from "./yahoo-finance.service";
 import { ActionHistoryService } from "../action-history/action-history.service";
 import { SecurityLookupResult } from "./providers/quote-provider.interface";
+import { normalizeCountryName } from "./security-enums";
+
+/** A single {name, weight} allocation slice; weight is a decimal 0-1. */
+export interface AllocationWeight {
+  name: string;
+  weight: number;
+}
 
 export interface FavouriteSecurityQuote {
   securityId: string;
@@ -76,6 +83,8 @@ export interface UpdateSecurityPreview {
   exchange: string | null;
   currencyCode: string;
   isFavourite: boolean;
+  /** Manual country allocation (decimal 0-1 weights), when the edit sets it. */
+  countryWeightings: { name: string; weight: number }[] | null;
 }
 
 /** Resolved preview of a proposed security deletion. */
@@ -142,13 +151,56 @@ export class SecuritiesService {
     return { symbol, description };
   }
 
+  /**
+   * Clean a manual country (or similar) allocation breakdown before persisting:
+   * snaps names to canonical countries, trims blanks, sums duplicate names,
+   * clamps each weight into [0,1], drops zero-weight slices, and rejects a set
+   * whose weights total more than 1.0 (with a small rounding tolerance). The
+   * slices need not sum to 1.0 -- the shortfall is "Other" and is not stored.
+   * Returns null when nothing meaningful remains so the column clears cleanly.
+   */
+  normalizeAllocationWeightings(
+    input: AllocationWeight[] | null | undefined,
+  ): AllocationWeight[] | null {
+    if (!input || input.length === 0) return null;
+
+    const byName = new Map<string, number>();
+    for (const slice of input) {
+      const name = normalizeCountryName(slice?.name ?? "");
+      if (!name) continue;
+      const weight = Number(slice?.weight);
+      if (!Number.isFinite(weight) || weight <= 0) continue;
+      const clamped = Math.min(weight, 1);
+      byName.set(name, (byName.get(name) ?? 0) + clamped);
+    }
+
+    if (byName.size === 0) return null;
+
+    const total = [...byName.values()].reduce((sum, w) => sum + w, 0);
+    if (total > 1.0001) {
+      throw new BadRequestException(
+        tr(
+          "errors.securities.allocationExceedsTotal",
+          "Allocation percentages add up to more than 100%.",
+        ),
+      );
+    }
+
+    return [...byName.entries()]
+      .map(([name, weight]) => ({
+        name,
+        weight: Math.round(weight * 10000) / 10000,
+      }))
+      .sort((a, b) => b.weight - a.weight);
+  }
+
   async create(
     userId: string,
     createSecurityDto: CreateSecurityDto,
   ): Promise<Security> {
     // tagIds is a relation, not a column on securities -- pull it out so the
     // spread that builds the entity never tries to persist it as a field.
-    const { tagIds, ...securityData } = createSecurityDto;
+    const { tagIds, countryWeightings, ...securityData } = createSecurityDto;
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -172,6 +224,8 @@ export class SecuritiesService {
 
       const security = queryRunner.manager.create(Security, {
         ...securityData,
+        countryWeightings:
+          this.normalizeAllocationWeightings(countryWeightings),
         userId,
       });
       saved = await queryRunner.manager.save(security);
@@ -330,6 +384,10 @@ export class SecuritiesService {
       security.quoteProvider = updateSecurityDto.quoteProvider ?? null;
     if (updateSecurityDto.msnInstrumentId !== undefined)
       security.msnInstrumentId = updateSecurityDto.msnInstrumentId ?? null;
+    if (updateSecurityDto.countryWeightings !== undefined)
+      security.countryWeightings = this.normalizeAllocationWeightings(
+        updateSecurityDto.countryWeightings,
+      );
 
     // The user explicitly opted into a quote source — auto-clear the
     // skipPriceUpdates flag that QIF/OFX import sets on auto-generated
@@ -684,6 +742,7 @@ export class SecuritiesService {
       exchange?: string | null;
       currencyCode?: string;
       isFavourite?: boolean;
+      countryWeightings?: AllocationWeight[];
     },
   ): Promise<UpdateSecurityPreview> {
     const security = await this.resolveSecurityForManage(userId, input.query);
@@ -701,6 +760,10 @@ export class SecuritiesService {
           : (security.exchange ?? null),
       currencyCode: input.currencyCode ?? security.currencyCode,
       isFavourite: input.isFavourite ?? security.isFavourite,
+      countryWeightings:
+        input.countryWeightings !== undefined
+          ? this.normalizeAllocationWeightings(input.countryWeightings)
+          : (security.countryWeightings ?? null),
     };
   }
 

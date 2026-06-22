@@ -79,6 +79,7 @@ function createSecurity(overrides: Partial<Security> = {}): Security {
     sector: null,
     industry: null,
     sectorWeightings: null,
+    countryWeightings: null,
     quoteProvider: null,
     msnInstrumentId: null,
     createdAt: '2025-01-01T00:00:00Z',
@@ -698,6 +699,57 @@ describe('SecurityForm', () => {
       await waitFor(() => {
         expect(onSubmit).toHaveBeenCalledWith(
           expect.objectContaining({ tagIds: ['tag-1'] }),
+        );
+      });
+    });
+  });
+
+  describe('country allocation', () => {
+    it('hides the country allocation editor for non-fund securities', async () => {
+      const stock = createSecurity({ securityType: 'STOCK' });
+      render(<SecurityForm security={stock} onSubmit={onSubmit} onCancel={onCancel} />);
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('AAPL')).toBeInTheDocument();
+      });
+      expect(screen.queryByText('Country allocation')).not.toBeInTheDocument();
+    });
+
+    it('shows and prefills the country allocation editor for an ETF', async () => {
+      const etf = createSecurity({
+        securityType: 'ETF',
+        countryWeightings: [
+          { name: 'United States', weight: 0.6 },
+          { name: 'Canada', weight: 0.25 },
+        ],
+      });
+      render(<SecurityForm security={etf} onSubmit={onSubmit} onCancel={onCancel} />);
+      await waitFor(() => {
+        expect(screen.getByText('Country allocation')).toBeInTheDocument();
+      });
+      // Stored decimals are shown as percentages.
+      expect(screen.getByDisplayValue('60')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('25')).toBeInTheDocument();
+    });
+
+    it('submits the country allocation back as decimals (0-1)', async () => {
+      const etf = createSecurity({
+        securityType: 'ETF',
+        countryWeightings: [{ name: 'United States', weight: 0.6 }],
+      });
+      render(<SecurityForm security={etf} onSubmit={onSubmit} onCancel={onCancel} />);
+      await waitFor(() => {
+        expect(screen.getByText('Country allocation')).toBeInTheDocument();
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByText('Update Security'));
+      });
+
+      await waitFor(() => {
+        expect(onSubmit).toHaveBeenCalledWith(
+          expect.objectContaining({
+            countryWeightings: [{ name: 'United States', weight: 0.6 }],
+          }),
         );
       });
     });

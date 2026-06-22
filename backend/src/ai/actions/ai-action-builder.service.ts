@@ -388,6 +388,7 @@ export class AiActionBuilderService {
       exchange: preview.exchange,
       currencyCode: preview.currencyCode,
       isFavourite: preview.isFavourite,
+      countryWeightings: preview.countryWeightings,
     };
     return {
       actionId,

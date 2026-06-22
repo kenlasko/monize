@@ -273,6 +273,17 @@ export const manageSecuritiesSchema = z.object({
           .string()
           .regex(/^[A-Za-z]{3}$/)
           .optional(),
+        // update only: manual country allocation for an ETF/fund. Weights are
+        // PERCENTAGES (0-100); a sub-100 total leaves the rest as "Other".
+        countryWeightings: z
+          .array(
+            z.object({
+              name: z.string().min(1).max(100),
+              weight: z.number().min(0).max(100),
+            }),
+          )
+          .max(60)
+          .optional(),
       }),
     )
     .min(1)

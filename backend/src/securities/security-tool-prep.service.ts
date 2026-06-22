@@ -30,6 +30,13 @@ export interface ManageUpdateSecurityRow {
   exchange?: string | null;
   currencyCode?: string;
   isFavourite?: boolean;
+  /**
+   * Manual country allocation, with weights as PERCENTAGES (0-100) -- the form
+   * the model receives when a user pastes a breakdown. Converted to decimal
+   * 0-1 before previewing/persisting. A sub-100 total leaves the rest as
+   * "Other".
+   */
+  countryWeightings?: { name: string; weight: number }[];
 }
 
 /** Delete-row input for manage_securities (identified by symbol or name). */
@@ -96,7 +103,23 @@ export class SecurityToolPrepService {
       exchange: preview.exchange,
       currencyCode: preview.currencyCode,
       isFavourite: preview.isFavourite,
+      countryWeightings: preview.countryWeightings,
     };
+  }
+
+  /**
+   * Convert AI-supplied country weightings (percentages 0-100) to the decimal
+   * 0-1 form the service/entity store. Returns undefined when the caller did
+   * not supply any (so the existing allocation is left untouched).
+   */
+  private static toFractionWeightings(
+    rows?: { name: string; weight: number }[],
+  ): { name: string; weight: number }[] | undefined {
+    if (rows === undefined) return undefined;
+    return rows.map((r) => ({
+      name: r.name,
+      weight: Number(r.weight) / 100,
+    }));
   }
 
   async prepareCreateSecuritySingle(
@@ -122,6 +145,9 @@ export class SecurityToolPrepService {
       exchange: row.exchange,
       currencyCode: row.currencyCode,
       isFavourite: row.isFavourite,
+      countryWeightings: SecurityToolPrepService.toFractionWeightings(
+        row.countryWeightings,
+      ),
     });
   }
 

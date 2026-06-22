@@ -7,9 +7,35 @@ import {
   IsIn,
   IsArray,
   IsUUID,
+  IsNumber,
+  Min,
+  Max,
+  ValidateNested,
+  ArrayMaxSize,
 } from "class-validator";
+import { Type } from "class-transformer";
 import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 import { IsCurrencyCode } from "../../common/validators/is-currency-code.validator";
+
+/**
+ * One slice of a manual allocation breakdown (e.g. a country and its share of
+ * the fund). `weight` is a decimal 0-1, matching the `sectorWeightings`
+ * convention. The slices need not sum to 1.0 -- any shortfall is shown as
+ * "Other" and is not stored.
+ */
+export class AllocationWeightDto {
+  @ApiProperty({ example: "United States" })
+  @IsString()
+  @MaxLength(100)
+  @SanitizeHtml()
+  name: string;
+
+  @ApiProperty({ example: 0.6, description: "Decimal 0-1 share" })
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  weight: number;
+}
 
 export class CreateSecurityDto {
   @ApiProperty({ example: "AAPL", description: "Stock symbol or ticker" })
@@ -109,4 +135,18 @@ export class CreateSecurityDto {
   @MaxLength(50)
   @SanitizeHtml()
   msnInstrumentId?: string;
+
+  @ApiProperty({
+    description:
+      "Manual country allocation for ETFs/funds: [{name, weight}] where weight " +
+      "is a decimal 0-1. Slices need not sum to 1.0 (the remainder is 'Other').",
+    required: false,
+    type: [AllocationWeightDto],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(60)
+  @ValidateNested({ each: true })
+  @Type(() => AllocationWeightDto)
+  countryWeightings?: AllocationWeightDto[];
 }

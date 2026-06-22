@@ -170,7 +170,19 @@
     "tagsLabel": "[XX-Tags-XX]",
     "tagsPlaceholder": "[XX-Select tags-XX]",
     "createNewTag": "[XX-Create new tag-XX]",
-    "newTagTitle": "[XX-New Tag-XX]"
+    "newTagTitle": "[XX-New Tag-XX]",
+    "allocation": {
+      "help": "[XX-Price providers don't supply country exposure for ETFs and funds. Add it manually as percentages. Anything under 100% is shown as \"Other\". You can paste a breakdown into the AI Assistant to fill this in.-XX]",
+      "countryTitle": "[XX-Country allocation-XX]",
+      "countryPlaceholder": "[XX-Select or type a country-XX]",
+      "addRow": "[XX-Add country-XX]",
+      "removeRow": "[XX-Remove row-XX]",
+      "other": "[XX-Other-XX]",
+      "total": "[XX-Total: {total}%-XX]",
+      "overError": "[XX-Allocation adds up to more than 100%.-XX]",
+      "nameAriaLabel": "[XX-Country-XX]",
+      "weightAriaLabel": "[XX-Percentage-XX]"
+    }
   },
   "priceForm": {
     "dateLabel": "[XX-Date-XX]",

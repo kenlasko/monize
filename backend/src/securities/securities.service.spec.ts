@@ -1225,7 +1225,27 @@ describe("SecuritiesService", () => {
         exchange: "NASDAQ",
         currencyCode: "USD",
         isFavourite: true,
+        countryWeightings: null,
       });
+    });
+
+    it("previewUpdateSecurity normalizes supplied country weightings to decimals", async () => {
+      securitiesRepository.createQueryBuilder.mockReturnValueOnce(
+        qb({ getOne: sec }),
+      );
+
+      const preview = await service.previewUpdateSecurity("user-1", {
+        query: "AAPL",
+        countryWeightings: [
+          { name: "United States", weight: 0.6 },
+          { name: "Canada", weight: 0.25 },
+        ],
+      });
+
+      expect(preview.countryWeightings).toEqual([
+        { name: "United States", weight: 0.6 },
+        { name: "Canada", weight: 0.25 },
+      ]);
     });
 
     it("previewUpdateSecurity keeps current values when no change is supplied", async () => {
@@ -1284,6 +1304,50 @@ describe("SecuritiesService", () => {
       await expect(
         service.previewUpdateSecurity("user-1", { query: "Apple" }),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe("normalizeAllocationWeightings", () => {
+    it("returns null for empty / undefined input", () => {
+      expect(service.normalizeAllocationWeightings(undefined)).toBeNull();
+      expect(service.normalizeAllocationWeightings([])).toBeNull();
+    });
+
+    it("snaps country names, drops blanks, and sorts by weight desc", () => {
+      const result = service.normalizeAllocationWeightings([
+        { name: "usa", weight: 0.3 },
+        { name: "  Canada ", weight: 0.5 },
+        { name: "", weight: 0.2 },
+      ]);
+      expect(result).toEqual([
+        { name: "Canada", weight: 0.5 },
+        { name: "United States", weight: 0.3 },
+      ]);
+    });
+
+    it("sums duplicate names and drops non-positive weights", () => {
+      const result = service.normalizeAllocationWeightings([
+        { name: "United States", weight: 0.2 },
+        { name: "USA", weight: 0.1 },
+        { name: "Canada", weight: 0 },
+      ]);
+      expect(result).toEqual([{ name: "United States", weight: 0.3 }]);
+    });
+
+    it("allows a sub-100% total (the remainder is Other)", () => {
+      const result = service.normalizeAllocationWeightings([
+        { name: "United States", weight: 0.6 },
+      ]);
+      expect(result).toEqual([{ name: "United States", weight: 0.6 }]);
+    });
+
+    it("throws when the weights total more than 100%", () => {
+      expect(() =>
+        service.normalizeAllocationWeightings([
+          { name: "United States", weight: 0.7 },
+          { name: "Canada", weight: 0.5 },
+        ]),
+      ).toThrow(BadRequestException);
     });
   });
 

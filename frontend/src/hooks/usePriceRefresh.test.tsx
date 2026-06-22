@@ -38,6 +38,7 @@ const sec = (id: string, overrides: Record<string, unknown> = {}) => ({
   sector: null,
   industry: null,
   sectorWeightings: null,
+  countryWeightings: null,
   quoteProvider: null,
   msnInstrumentId: null,
   createdAt: '',

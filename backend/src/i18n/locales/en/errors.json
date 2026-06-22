@@ -325,6 +325,7 @@
     "exchangeRateUnavailable": "Could not determine an exchange rate for {{ from }} -> {{ to }} on the transaction date. Supply an explicit exchangeRate so the cash posting is correct.",
     "splitRatioRequired": "Split ratio (quantity) must be greater than zero",
     "ambiguousSecurity": "\"{{ query }}\" matches multiple securities: {{ list }}. Use the exact ticker symbol.",
+    "allocationExceedsTotal": "Allocation percentages add up to more than 100%.",
     "securityNotFoundByQuery": "No security matches \"{{ query }}\". Add the security first or check the ticker symbol.",
     "cannotHoldSecurities": "{{ label }} cannot hold securities",
     "sourceDestMustDiffer": "Source and destination accounts must be different",

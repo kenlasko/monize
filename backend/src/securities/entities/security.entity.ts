@@ -102,6 +102,15 @@ export class Security {
   @Column({ type: "jsonb", nullable: true, name: "sector_weightings" })
   sectorWeightings: { sector: string; weight: number }[] | null;
 
+  @ApiProperty({
+    description:
+      "Manual ETF/fund country breakdown array [{name, weight}]. weight is a " +
+      "decimal 0-1 (same convention as sectorWeightings). A shortfall under 1.0 " +
+      "is shown as 'Other' at display/report time and is not stored.",
+  })
+  @Column({ type: "jsonb", nullable: true, name: "country_weightings" })
+  countryWeightings: { name: string; weight: number }[] | null;
+
   @ApiProperty({ description: "When sector data was last fetched from Yahoo" })
   @Column({ type: "timestamp", nullable: true, name: "sector_data_updated_at" })
   sectorDataUpdatedAt: Date | null;

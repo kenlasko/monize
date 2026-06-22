@@ -204,6 +204,8 @@ export interface UpdateSecurityDescriptor extends BaseDescriptor {
   exchange: string | null;
   currencyCode: string;
   isFavourite: boolean;
+  /** Manual country allocation (decimal 0-1 weights) resolved at preview time. */
+  countryWeightings: { name: string; weight: number }[] | null;
 }
 
 /** Delete an existing security (identified only; confirm re-checks ownership). */
@@ -477,6 +479,11 @@ export interface BatchUpdateSecurityRow {
   exchange: string | null;
   currencyCode: string;
   isFavourite: boolean;
+  /**
+   * Manual country allocation (decimal 0-1 weights), when the edit sets it.
+   * Omitted/undefined leaves the security's existing allocation untouched.
+   */
+  countryWeightings?: { name: string; weight: number }[] | null;
 }
 
 /** One security deletion inside a `batch_actions` envelope (operation `delete_security`). */

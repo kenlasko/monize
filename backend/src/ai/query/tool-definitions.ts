@@ -2,6 +2,7 @@ import { AiToolDefinition } from "../providers/ai-provider.interface";
 import {
   SECURITY_EXCHANGES,
   SECURITY_TYPES,
+  COUNTRY_OPTIONS,
 } from "../../securities/security-enums";
 
 export const FINANCIAL_TOOLS: AiToolDefinition[] = [
@@ -663,7 +664,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
   {
     name: "manage_securities",
     description:
-      "Create, edit, or delete the user's securities (stocks, ETFs, mutual funds). This does NOT change anything immediately: it shows the user one or more confirmation cards they must explicitly approve before anything is saved. operation = 'create' | 'update' | 'delete' with an items array (1-25 rows). create: { query, exchange?, securityType?, isFavourite?, currencyCode? } -- the security is looked up and validated by ticker/name against the user's configured price provider, which fills the official symbol/name/exchange/type/currency (do not invent them); pass exchange only to disambiguate a dual-listed ticker. update: { symbol, securityType?, exchange?, isFavourite?, currencyCode? } -- symbol identifies an existing security (ticker or name); provide the classification/display fields to change. delete: { symbol } -- fails if the security still has holdings or investment transactions. Only ever pass exchange/securityType values from the enumerated lists below. approvalMode = 'bulk' (default) one card for all; 'individual' one card per item. After calling, briefly tell the user to review and approve the card(s); never claim the change was made.",
+      "Create, edit, or delete the user's securities (stocks, ETFs, mutual funds). This does NOT change anything immediately: it shows the user one or more confirmation cards they must explicitly approve before anything is saved. operation = 'create' | 'update' | 'delete' with an items array (1-25 rows). create: { query, exchange?, securityType?, isFavourite?, currencyCode? } -- the security is looked up and validated by ticker/name against the user's configured price provider, which fills the official symbol/name/exchange/type/currency (do not invent them); pass exchange only to disambiguate a dual-listed ticker. update: { symbol, securityType?, exchange?, isFavourite?, currencyCode?, countryWeightings? } -- symbol identifies an existing security (ticker or name); provide the classification/display fields to change. countryWeightings sets a manual country (geographic) allocation for an ETF/fund as an array of { name, weight } where weight is a PERCENTAGE (0-100); the entries need not add to 100 -- the remainder is treated as 'Other'. Prefer the canonical country names listed in the countryWeightings schema below and map pasted variants to them (e.g. 'USA' -> 'United States'). delete: { symbol } -- fails if the security still has holdings or investment transactions. Only ever pass exchange/securityType values from the enumerated lists below. approvalMode = 'bulk' (default) one card for all; 'individual' one card per item. After calling, briefly tell the user to review and approve the card(s); never claim the change was made.",
     inputSchema: {
       type: "object",
       properties: {
@@ -709,6 +710,27 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
                 type: "string",
                 description:
                   "create/update: ISO 4217 currency code (e.g. 'USD', 'CAD').",
+              },
+              countryWeightings: {
+                type: "array",
+                description:
+                  "update only: manual country (geographic) allocation for an ETF/fund. Weights are PERCENTAGES (0-100) and need not sum to 100 (the rest is 'Other'). Map pasted country names to the canonical names listed under name.enum where possible.",
+                items: {
+                  type: "object",
+                  properties: {
+                    name: {
+                      type: "string",
+                      enum: [...COUNTRY_OPTIONS],
+                      description:
+                        "Country name. Prefer one of the listed canonical values; a custom value is accepted if none fits.",
+                    },
+                    weight: {
+                      type: "number",
+                      description: "Percentage 0-100.",
+                    },
+                  },
+                  required: ["name", "weight"],
+                },
               },
             },
           },

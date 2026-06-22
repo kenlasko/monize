@@ -259,4 +259,40 @@ export class PortfolioController {
       sIds,
     );
   }
+
+  @Get("country-weightings")
+  @AllowDelegate()
+  @DelegateRequiresSection("investments")
+  @ApiOperation({
+    summary:
+      "Get the country (geographic look-through) breakdown for the portfolio",
+  })
+  @ApiQuery({
+    name: "accountIds",
+    required: false,
+    description: "Comma-separated account IDs to filter by",
+  })
+  @ApiQuery({
+    name: "securityIds",
+    required: false,
+    description: "Comma-separated security IDs to filter by",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Country weightings retrieved successfully",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  async getCountryWeightings(
+    @Request() req,
+    @Query("accountIds") accountIds?: string,
+    @Query("securityIds") securityIds?: string,
+  ) {
+    const aIds = this.parseUuidList(accountIds, "account");
+    const sIds = this.parseUuidList(securityIds, "security");
+    return this.sectorWeightingService.getCountryWeightings(
+      req.user.id,
+      await this.scopeIds(req, aIds),
+      sIds,
+    );
+  }
 }

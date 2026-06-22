@@ -1120,6 +1120,9 @@ export class ToolExecutorService {
       exchange: item.exchange as string | undefined,
       isFavourite: item.isFavourite as boolean | undefined,
       currencyCode: item.currencyCode as string | undefined,
+      countryWeightings: item.countryWeightings as
+        | { name: string; weight: number }[]
+        | undefined,
     };
   }
 

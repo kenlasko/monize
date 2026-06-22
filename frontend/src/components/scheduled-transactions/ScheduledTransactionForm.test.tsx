@@ -216,6 +216,7 @@ const mockSecurities = [
     sector: null,
     industry: null,
     sectorWeightings: null,
+    countryWeightings: null,
     quoteProvider: null,
     msnInstrumentId: null,
     createdAt: '',

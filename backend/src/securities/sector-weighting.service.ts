@@ -8,6 +8,7 @@ import { SecurityPrice } from "./entities/security-price.entity";
 import { YahooFinanceService } from "./yahoo-finance.service";
 import { PortfolioCalculationService } from "./portfolio-calculation.service";
 import { roundMoney, sumMoney } from "../common/round.util";
+import { EXCHANGE_TO_COUNTRY } from "./security-enums";
 
 export interface SectorWeightingItem {
   sector: string;
@@ -22,6 +23,27 @@ export interface SectorWeightingResult {
   totalPortfolioValue: number;
   totalDirectValue: number;
   totalEtfValue: number;
+  unclassifiedValue: number;
+}
+
+export interface CountryWeightingItem {
+  country: string;
+  directValue: number;
+  etfValue: number;
+  totalValue: number;
+  percentage: number;
+}
+
+export interface CountryWeightingResult {
+  items: CountryWeightingItem[];
+  totalPortfolioValue: number;
+  totalDirectValue: number;
+  totalEtfValue: number;
+  /**
+   * Value with no country classification: ETF/fund value beyond the manual
+   * weightings (the "Other" remainder) plus stocks on exchanges we can't map.
+   * The frontend renders this as an "Other" slice.
+   */
   unclassifiedValue: number;
 }
 
@@ -303,6 +325,157 @@ export class SectorWeightingService {
     }
 
     // Sort by totalValue descending
+    items.sort((a, b) => b.totalValue - a.totalValue);
+
+    return {
+      items,
+      totalPortfolioValue: roundMoney(totalPortfolioValue),
+      totalDirectValue: roundMoney(totalDirectValue),
+      totalEtfValue: roundMoney(totalEtfValue),
+      unclassifiedValue: roundMoney(unclassifiedValue),
+    };
+  }
+
+  /**
+   * Compute a country (geographic look-through) breakdown for the portfolio.
+   *
+   * Unlike sector data, country exposure is entered manually on each ETF/fund
+   * (`security.countryWeightings`, decimal 0-1) because the providers don't
+   * supply it. Individual stocks are placed by their listing exchange via
+   * `EXCHANGE_TO_COUNTRY`. ETF/fund value beyond the manual weightings, and
+   * stocks we can't map, fall into `unclassifiedValue` ("Other").
+   */
+  async getCountryWeightings(
+    userId: string,
+    accountIds?: string[],
+    securityIds?: string[],
+  ): Promise<CountryWeightingResult> {
+    let investmentAccounts: Account[];
+    if (accountIds && accountIds.length > 0) {
+      investmentAccounts = await this.accountsRepository.find({
+        where: {
+          userId,
+          id: In(accountIds),
+          accountType: AccountType.INVESTMENT,
+        },
+      });
+    } else {
+      investmentAccounts = await this.accountsRepository.find({
+        where: { userId, accountType: AccountType.INVESTMENT },
+      });
+    }
+
+    const categorised =
+      this.portfolioCalculationService.categoriseAccounts(investmentAccounts);
+
+    let holdings: Holding[];
+    if (categorised.holdingsAccountIds.length > 0) {
+      holdings = await this.holdingsRepository.find({
+        where: { accountId: In(categorised.holdingsAccountIds) },
+        relations: ["security"],
+      });
+    } else {
+      holdings = [];
+    }
+
+    if (securityIds && securityIds.length > 0) {
+      holdings = holdings.filter((h) => securityIds.includes(h.securityId));
+    }
+    holdings = holdings.filter((h) => Math.abs(Number(h.quantity)) >= 0.0001);
+
+    if (holdings.length === 0) {
+      return {
+        items: [],
+        totalPortfolioValue: 0,
+        totalDirectValue: 0,
+        totalEtfValue: 0,
+        unclassifiedValue: 0,
+      };
+    }
+
+    const uniqueSecurityIds = [...new Set(holdings.map((h) => h.securityId))];
+    const priceMap = await this.getLatestPrices(uniqueSecurityIds);
+
+    const rateCache = new Map<string, number>();
+    const defaultCurrency =
+      investmentAccounts.length > 0
+        ? investmentAccounts[0].currencyCode
+        : "CAD";
+
+    const directMap = new Map<string, number>(); // country -> value (stocks)
+    const etfMap = new Map<string, number>(); // country -> value (funds)
+    let unclassifiedValue = 0;
+
+    for (const holding of holdings) {
+      const quantity = Number(holding.quantity);
+      const price = priceMap.get(holding.securityId);
+      if (price == null) continue;
+
+      let marketValue = quantity * price;
+      marketValue = await this.portfolioCalculationService.convertToDefault(
+        marketValue,
+        holding.security.currencyCode,
+        defaultCurrency,
+        rateCache,
+      );
+
+      const sec = holding.security;
+      const isStock =
+        sec.securityType === "STOCK" || sec.securityType === "Equity";
+      const isFund =
+        sec.securityType === "ETF" || sec.securityType === "MUTUAL_FUND";
+
+      if (isFund && sec.countryWeightings?.length) {
+        let allocatedWeight = 0;
+        for (const cw of sec.countryWeightings) {
+          const weight = Number(cw.weight);
+          if (!Number.isFinite(weight) || weight <= 0) continue;
+          etfMap.set(
+            cw.name,
+            (etfMap.get(cw.name) || 0) + marketValue * weight,
+          );
+          allocatedWeight += weight;
+        }
+        // Anything not allocated by the manual weightings is "Other".
+        const remainder = Math.max(0, 1 - allocatedWeight);
+        unclassifiedValue += marketValue * remainder;
+      } else if (isStock && sec.exchange && EXCHANGE_TO_COUNTRY[sec.exchange]) {
+        const country = EXCHANGE_TO_COUNTRY[sec.exchange];
+        directMap.set(country, (directMap.get(country) || 0) + marketValue);
+      } else {
+        unclassifiedValue += marketValue;
+      }
+    }
+
+    const allCountries = new Set([...directMap.keys(), ...etfMap.keys()]);
+    const items: CountryWeightingItem[] = [];
+    for (const country of allCountries) {
+      const dv = directMap.get(country) || 0;
+      const ev = etfMap.get(country) || 0;
+      items.push({
+        country,
+        directValue: roundMoney(dv),
+        etfValue: roundMoney(ev),
+        totalValue: roundMoney(dv + ev),
+        percentage: 0,
+      });
+    }
+
+    const totalDirectValue = sumMoney([...directMap.values()]);
+    const totalEtfValue = sumMoney([...etfMap.values()]);
+    const totalPortfolioValue = sumMoney([
+      totalDirectValue,
+      totalEtfValue,
+      unclassifiedValue,
+    ]);
+
+    for (const item of items) {
+      item.percentage =
+        totalPortfolioValue > 0
+          ? Math.round((item.totalValue / totalPortfolioValue) * 10000) / 100
+          : 0;
+    }
+
     items.sort((a, b) => b.totalValue - a.totalValue);
 
     return {

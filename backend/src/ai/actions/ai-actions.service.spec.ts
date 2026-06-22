@@ -345,6 +345,7 @@ describe("AiActionsService", () => {
       exchange: "NYSE",
       currencyCode: "USD",
       isFavourite: true,
+      countryWeightings: null,
     };
     const result = await service.confirm(USER, dtoFor(descriptor));
     expect(securities.update).toHaveBeenCalledWith(

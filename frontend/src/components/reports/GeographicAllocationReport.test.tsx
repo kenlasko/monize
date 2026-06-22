@@ -54,12 +54,14 @@ vi.mock('recharts', () => ({
 const mockGetPortfolioSummary = vi.fn();
 const mockGetInvestmentAccounts = vi.fn();
 const mockGetSecurities = vi.fn();
+const mockGetCountryWeightings = vi.fn();
 
 vi.mock('@/lib/investments', () => ({
   investmentsApi: {
     getPortfolioSummary: (...args: any[]) => mockGetPortfolioSummary(...args),
     getInvestmentAccounts: (...args: any[]) => mockGetInvestmentAccounts(...args),
     getSecurities: (...args: any[]) => mockGetSecurities(...args),
+    getCountryWeightings: (...args: any[]) => mockGetCountryWeightings(...args),
   },
 }));
 
@@ -116,9 +118,19 @@ const mockAccounts = [
   { id: 'acc-1', name: 'TFSA', accountSubType: 'INVESTMENT_BROKERAGE' },
 ];
 
+const emptyCountryWeightings = {
+  items: [],
+  totalPortfolioValue: 0,
+  totalDirectValue: 0,
+  totalEtfValue: 0,
+  unclassifiedValue: 0,
+};
+
 describe('GeographicAllocationReport', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Country look-through is fetched on mount regardless of the active view.
+    mockGetCountryWeightings.mockResolvedValue(emptyCountryWeightings);
   });
 
   it('shows loading state initially', () => {
@@ -366,5 +378,38 @@ describe('GeographicAllocationReport', () => {
         await act(async () => { fireEvent.click(__ths[__i]); });
       }
     }
+  });
+
+  it('renders the country look-through view with an "Other" remainder', async () => {
+    mockGetPortfolioSummary.mockResolvedValue({ holdings: mockHoldings });
+    mockGetInvestmentAccounts.mockResolvedValue(mockAccounts);
+    mockGetSecurities.mockResolvedValue(mockSecurities);
+    mockGetCountryWeightings.mockResolvedValue({
+      items: [
+        { country: 'United States', directValue: 0, etfValue: 600, totalValue: 600, percentage: 60 },
+        { country: 'Canada', directValue: 0, etfValue: 300, totalValue: 300, percentage: 30 },
+      ],
+      totalPortfolioValue: 1000,
+      totalDirectValue: 0,
+      totalEtfValue: 900,
+      unclassifiedValue: 100,
+    });
+
+    render(<GeographicAllocationReport />);
+
+    await waitFor(() => {
+      expect(screen.getByText('By Country')).toBeInTheDocument();
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('By Country'));
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Country Allocation (look-through)'),
+      ).toBeInTheDocument();
+    });
+    // The unclassified remainder is surfaced as an "Other" row.
+    expect(screen.getByText('Other')).toBeInTheDocument();
   });
 });

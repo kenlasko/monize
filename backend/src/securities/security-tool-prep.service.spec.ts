@@ -83,6 +83,50 @@ describe("SecurityToolPrepService", () => {
     });
   });
 
+  it("converts country weighting percentages to decimals before previewing", async () => {
+    securities.previewUpdateSecurity.mockResolvedValue({
+      securityId: "sec-1",
+      symbol: "XEQT",
+      name: "iShares Core Equity ETF",
+      securityType: "ETF",
+      exchange: "TSX",
+      currencyCode: "CAD",
+      isFavourite: false,
+      countryWeightings: [
+        { name: "United States", weight: 0.6 },
+        { name: "Canada", weight: 0.25 },
+      ],
+    });
+
+    const result = await prep.prepareUpdateSecurities(USER, [
+      {
+        query: "XEQT",
+        countryWeightings: [
+          { name: "United States", weight: 60 },
+          { name: "Canada", weight: 25 },
+        ],
+      },
+    ]);
+
+    // Percentages are divided by 100 before reaching the service.
+    expect(securities.previewUpdateSecurity).toHaveBeenCalledWith(USER, {
+      query: "XEQT",
+      securityType: undefined,
+      exchange: undefined,
+      currencyCode: undefined,
+      isFavourite: undefined,
+      countryWeightings: [
+        { name: "United States", weight: 0.6 },
+        { name: "Canada", weight: 0.25 },
+      ],
+    });
+    // The resolved (decimal) weights flow into the batch row.
+    expect(result.okRows[0].countryWeightings).toEqual([
+      { name: "United States", weight: 0.6 },
+      { name: "Canada", weight: 0.25 },
+    ]);
+  });
+
   it("prepares delete rows to id-only descriptors", async () => {
     securities.previewDeleteSecurity.mockResolvedValue({
       securityId: "sec-1",

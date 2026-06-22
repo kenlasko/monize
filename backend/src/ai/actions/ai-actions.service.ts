@@ -490,6 +490,9 @@ export class AiActionsService {
           exchange: r.exchange ?? undefined,
           currencyCode: r.currencyCode,
           isFavourite: r.isFavourite,
+          ...(r.countryWeightings !== undefined
+            ? { countryWeightings: r.countryWeightings ?? [] }
+            : {}),
         });
         const security = await this.securitiesService.update(
           userId,
@@ -701,6 +704,7 @@ export class AiActionsService {
       exchange: descriptor.exchange ?? undefined,
       currencyCode: descriptor.currencyCode,
       isFavourite: descriptor.isFavourite,
+      countryWeightings: descriptor.countryWeightings ?? [],
     });
     const security = await this.securitiesService.update(
       userId,

@@ -68,3 +68,72 @@ export const EXCHANGE_OPTIONS = [
   { value: 'BSE', label: 'BSE', subtitle: 'Bombay Stock Exchange (India)' },
   { value: 'NSE', label: 'NSE', subtitle: 'National Stock Exchange (India)' },
 ];
+
+/**
+ * Canonical country names for manual ETF/fund country allocations. Mirrors the
+ * backend `COUNTRY_OPTIONS` in `securities/security-enums.ts` -- keep the two in
+ * sync. Used by the AllocationEditor combobox; custom values are still allowed.
+ */
+export const COUNTRY_NAMES = [
+  'United States',
+  'Canada',
+  'United Kingdom',
+  'Germany',
+  'France',
+  'Switzerland',
+  'Netherlands',
+  'Italy',
+  'Spain',
+  'Sweden',
+  'Norway',
+  'Denmark',
+  'Finland',
+  'Belgium',
+  'Austria',
+  'Ireland',
+  'Portugal',
+  'Luxembourg',
+  'Poland',
+  'Greece',
+  'Czech Republic',
+  'Hungary',
+  'Russia',
+  'Turkey',
+  'Japan',
+  'China',
+  'Hong Kong',
+  'Taiwan',
+  'South Korea',
+  'India',
+  'Australia',
+  'New Zealand',
+  'Singapore',
+  'Malaysia',
+  'Indonesia',
+  'Thailand',
+  'Philippines',
+  'Vietnam',
+  'Pakistan',
+  'Israel',
+  'Saudi Arabia',
+  'United Arab Emirates',
+  'Qatar',
+  'Kuwait',
+  'South Africa',
+  'Egypt',
+  'Nigeria',
+  'Kenya',
+  'Morocco',
+  'Brazil',
+  'Mexico',
+  'Argentina',
+  'Chile',
+  'Colombia',
+  'Peru',
+] as const;
+
+/** Combobox-ready options for the manual country allocation editor. */
+export const COUNTRY_OPTIONS = COUNTRY_NAMES.map((name) => ({
+  value: name,
+  label: name,
+}));

@@ -355,7 +355,8 @@ CREATE TABLE securities (
     skip_price_updates BOOLEAN DEFAULT false, -- for auto-generated symbols that can't be looked up
     sector VARCHAR(100),             -- stock sector from Yahoo Finance (e.g. 'Technology')
     industry VARCHAR(100),           -- stock industry (e.g. 'Consumer Electronics')
-    sector_weightings JSONB,         -- ETF sector breakdown [{sector, weight}]
+    sector_weightings JSONB,         -- ETF sector breakdown [{sector, weight}] (weight is a decimal 0-1, from Yahoo)
+    country_weightings JSONB,        -- manual ETF/fund country breakdown [{name, weight}] (weight is a decimal 0-1)
     sector_data_updated_at TIMESTAMP, -- cache staleness check
     quote_provider VARCHAR(20),      -- per-security provider override: 'yahoo' | 'msn' | NULL = user default
     msn_instrument_id VARCHAR(50),   -- cached MSN Financial Instrument ID (SecId)

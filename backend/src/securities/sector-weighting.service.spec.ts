@@ -566,4 +566,98 @@ describe("SectorWeightingService", () => {
       expect(securityRepo.find).not.toHaveBeenCalled();
     });
   });
+
+  describe("getCountryWeightings", () => {
+    const account = {
+      id: "acct-1",
+      userId: "user-1",
+      accountType: "INVESTMENT",
+      currencyCode: "USD",
+    };
+
+    function withAccount() {
+      accountsRepo.find.mockResolvedValue([account]);
+      calcService.categoriseAccounts.mockReturnValue({
+        cashAccounts: [],
+        brokerageAccounts: [],
+        standaloneAccounts: [account],
+        holdingsAccountIds: ["acct-1"],
+      });
+    }
+
+    it("splits ETF value across countries and routes the remainder to Other", async () => {
+      withAccount();
+      holdingsRepo.find.mockResolvedValue([
+        {
+          id: "h1",
+          accountId: "acct-1",
+          securityId: "sec-etf-1",
+          quantity: 10,
+          security: {
+            ...mockEtfSecurity,
+            countryWeightings: [
+              { name: "United States", weight: 0.6 },
+              { name: "Canada", weight: 0.3 },
+            ],
+          },
+        },
+      ]);
+      priceRepo.query.mockResolvedValue([
+        { security_id: "sec-etf-1", close_price: "100" },
+      ]);
+
+      const result = await service.getCountryWeightings("user-1");
+
+      // 10 × $100 = $1,000: US 600, Canada 300, Other 100.
+      const us = result.items.find((i) => i.country === "United States");
+      const ca = result.items.find((i) => i.country === "Canada");
+      expect(us?.etfValue).toBe(600);
+      expect(ca?.etfValue).toBe(300);
+      expect(result.unclassifiedValue).toBe(100);
+      expect(result.totalPortfolioValue).toBe(1000);
+    });
+
+    it("places individual stocks by their listing exchange", async () => {
+      withAccount();
+      holdingsRepo.find.mockResolvedValue([
+        {
+          id: "h1",
+          accountId: "acct-1",
+          securityId: "sec-stock-1",
+          quantity: 100,
+          security: mockStockSecurity, // NASDAQ -> United States
+        },
+      ]);
+      priceRepo.query.mockResolvedValue([
+        { security_id: "sec-stock-1", close_price: "180" },
+      ]);
+
+      const result = await service.getCountryWeightings("user-1");
+
+      const us = result.items.find((i) => i.country === "United States");
+      expect(us?.directValue).toBe(18000);
+      expect(result.unclassifiedValue).toBe(0);
+    });
+
+    it("treats an ETF with no country weightings as fully Other", async () => {
+      withAccount();
+      holdingsRepo.find.mockResolvedValue([
+        {
+          id: "h1",
+          accountId: "acct-1",
+          securityId: "sec-etf-1",
+          quantity: 5,
+          security: { ...mockEtfSecurity, countryWeightings: null },
+        },
+      ]);
+      priceRepo.query.mockResolvedValue([
+        { security_id: "sec-etf-1", close_price: "100" },
+      ]);
+
+      const result = await service.getCountryWeightings("user-1");
+
+      expect(result.items).toEqual([]);
+      expect(result.unclassifiedValue).toBe(500);
+    });
+  });
 });

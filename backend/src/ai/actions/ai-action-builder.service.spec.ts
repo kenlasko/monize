@@ -197,6 +197,7 @@ describe("AiActionBuilderService", () => {
       exchange: "NYSE",
       currencyCode: "USD",
       isFavourite: true,
+      countryWeightings: null,
     });
 
     expect(action.type).toBe("update_security");

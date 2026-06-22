@@ -413,9 +413,7 @@ describe("ToolExecutorService", () => {
         { id: "payee-1", name: "Walmart" },
         { id: "payee-2", name: "Starbucks" },
       ]),
-      search: jest
-        .fn()
-        .mockResolvedValue([{ id: "payee-1", name: "Walmart" }]),
+      search: jest.fn().mockResolvedValue([{ id: "payee-1", name: "Walmart" }]),
       previewCreate: jest.fn().mockResolvedValue({
         name: "Acme",
         defaultCategoryId: "cat-1",
@@ -536,9 +534,7 @@ describe("ToolExecutorService", () => {
       getSpendingByCategory: jest
         .fn()
         .mockResolvedValue({ categories: [], total: 0 }),
-      getSpendingByPayee: jest
-        .fn()
-        .mockResolvedValue({ payees: [], total: 0 }),
+      getSpendingByPayee: jest.fn().mockResolvedValue({ payees: [], total: 0 }),
       getIncomeVsExpenses: jest
         .fn()
         .mockResolvedValue({ income: 5000, expenses: 3000, net: 2000 }),
