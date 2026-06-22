@@ -355,6 +355,8 @@ export interface CreateTransferDescriptor extends BaseDescriptor {
   payeeName: string | null;
   /** When true and payeeId is null, confirm creates a payee from payeeName. */
   createPayee: boolean;
+  /** Optional spending category applied to both transfer legs (null = none). */
+  categoryId: string | null;
 }
 
 /** Edit an existing transfer (both linked legs). */
@@ -414,6 +416,8 @@ export interface BatchCreateTransferRow {
   payeeId: string | null;
   payeeName: string | null;
   createPayee: boolean;
+  /** Optional spending category applied to both transfer legs (null = none). */
+  categoryId: string | null;
 }
 
 /**

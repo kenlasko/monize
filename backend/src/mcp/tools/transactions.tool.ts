@@ -333,7 +333,7 @@ export class McpTransactionsTools {
         description:
           "Create, update, or delete the user's cash transactions (including transfers between their own accounts). Accepts NAMES for account, category, and payee -- they are resolved internally, so you do NOT need to call get_accounts/list_categories first. operation = 'create' | 'update' | 'delete' with an items array (1-25 rows). " +
           "create (standard): { accountName, amount, date, payeeName?, categoryName?, description?, createPayeeIfMissing? } (amount positive=income, negative=expense). " +
-          "create (transfer): { fromAccountName, toAccountName, amount, date, description?, payeeName?, createPayeeIfMissing?, exchangeRate?, toAmount? } -- an item is a transfer when toAccountName is present; payeeName is an optional custom label matched to an existing payee (or created if missing, like a normal transaction) and applied to both legs (omit to auto-generate 'Transfer to/from <account>'). " +
+          "create (transfer): { fromAccountName, toAccountName, amount, date, description?, payeeName?, categoryName?, createPayeeIfMissing?, exchangeRate?, toAmount? } -- an item is a transfer when toAccountName is present; payeeName is an optional custom label matched to an existing payee (or created if missing, like a normal transaction) and applied to both legs (omit to auto-generate 'Transfer to/from <account>'); categoryName is an optional spending category stored on both legs (surfaces the transfer in the monthly category breakdown without counting as income/expense). " +
           "update: { transactionId, amount?, date?, payeeName?, categoryName?, description?, createPayeeIfMissing? } (>=1 field; a category-only change is transactionId + categoryName; transfers auto-detected; categoryName also applies to a transfer -- it is stored on both legs and surfaces the transfer in the monthly category breakdown without making it count as income/expense; payeeName sets the transfer's custom label, matched to an existing payee or created if missing). " +
           "split transactions (create or update): add a 'splits' array of { categoryName, amount, memo? } (>= 2 lines, category splits only) instead of a single categoryName; split amounts must sum to the transaction amount. Send split transactions one item at a time, not mixed into a multi-row batch. " +
           "delete: { transactionId } (removes linked transfer legs / split children too). " +
@@ -392,7 +392,7 @@ export class McpTransactionsTools {
                   .max(100)
                   .optional()
                   .describe(
-                    'Optional category name (standard create/update; "Parent: Child" for a subcategory).',
+                    'Optional category name (standard create/update, or transfer create/update -- on a transfer it is stored on both legs; "Parent: Child" for a subcategory).',
                   ),
                 description: z
                   .string()
@@ -647,6 +647,7 @@ export class McpTransactionsTools {
       date: item.date as string,
       description: item.description,
       payeeName: item.payeeName,
+      categoryName: item.categoryName,
       createPayeeIfMissing: item.createPayeeIfMissing,
       exchangeRate: item.exchangeRate,
       toAmount: item.toAmount,
@@ -1017,6 +1018,7 @@ export class McpTransactionsTools {
         description: preview.description ?? undefined,
         payeeId,
         payeeName: preview.payeeName ?? undefined,
+        categoryId: preview.categoryId ?? undefined,
       });
       this.writeLimiter.record(userId, "create_transfer");
       return toolResult({ id: result.fromTransaction.id, count: 1 });
@@ -1110,6 +1112,7 @@ export class McpTransactionsTools {
         description: preview.description ?? undefined,
         payeeId,
         payeeName: preview.payeeName ?? undefined,
+        categoryId: preview.categoryId ?? undefined,
       });
       ids.push(result.fromTransaction.id);
       this.writeLimiter.record(userId, "create_transfer");

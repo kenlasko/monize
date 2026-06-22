@@ -874,6 +874,7 @@ describe("AiActionsService", () => {
         payeeId: PAYEE,
         payeeName: "Custom transfer label",
         createPayee: false,
+        categoryId: null,
       };
       return d;
     }
@@ -894,6 +895,17 @@ describe("AiActionsService", () => {
       );
       expect(result.type).toBe("create_transfer");
       expect(result.id).toBe("tf-1");
+    });
+
+    it("executes create_transfer passing the descriptor categoryId through to the service", async () => {
+      const categoryId = "77777777-7777-4777-8777-777777777777";
+      const descriptor = createTransferDescriptor();
+      descriptor.categoryId = categoryId;
+      await service.confirm(USER, dtoFor(descriptor));
+      expect(transactions.createTransfer).toHaveBeenCalledWith(
+        USER,
+        expect.objectContaining({ categoryId }),
+      );
     });
 
     it("create_transfer find-or-creates the payee for an unmatched label and links the new id", async () => {
@@ -1072,6 +1084,7 @@ describe("AiActionsService", () => {
             payeeId: null,
             payeeName: null,
             createPayee: false,
+            categoryId: null,
           },
         ],
       };
@@ -1101,6 +1114,7 @@ describe("AiActionsService", () => {
             payeeId: null,
             payeeName: "Batch new label",
             createPayee: true,
+            categoryId: null,
           },
         ],
       };

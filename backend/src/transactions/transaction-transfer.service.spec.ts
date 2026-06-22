@@ -1907,6 +1907,51 @@ describe("TransactionTransferService", () => {
         }),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it("defaults category to null when no categoryId is given", async () => {
+      const preview = await service.previewCreateTransfer("user-1", {
+        fromAccountId: "from-account",
+        toAccountId: "to-account",
+        amount: 100,
+        transactionDate: "2026-01-15",
+      });
+      expect(preview.categoryId).toBeNull();
+      expect(preview.categoryName).toBeNull();
+      expect(categoriesRepository.findOne).not.toHaveBeenCalled();
+    });
+
+    it("resolves an owned categoryId to its id and name", async () => {
+      categoriesRepository.findOne.mockResolvedValue({
+        id: "cat-1",
+        name: "Savings Goal",
+        userId: "user-1",
+      });
+      const preview = await service.previewCreateTransfer("user-1", {
+        fromAccountId: "from-account",
+        toAccountId: "to-account",
+        amount: 100,
+        transactionDate: "2026-01-15",
+        categoryId: "cat-1",
+      });
+      expect(categoriesRepository.findOne).toHaveBeenCalledWith({
+        where: { id: "cat-1", userId: "user-1" },
+      });
+      expect(preview.categoryId).toBe("cat-1");
+      expect(preview.categoryName).toBe("Savings Goal");
+    });
+
+    it("rejects a categoryId the user does not own", async () => {
+      categoriesRepository.findOne.mockResolvedValue(null);
+      await expect(
+        service.previewCreateTransfer("user-1", {
+          fromAccountId: "from-account",
+          toAccountId: "to-account",
+          amount: 100,
+          transactionDate: "2026-01-15",
+          categoryId: "cat-x",
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
   });
 
   describe("previewUpdateTransfer", () => {

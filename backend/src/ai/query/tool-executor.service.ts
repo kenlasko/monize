@@ -529,6 +529,7 @@ export class ToolExecutorService {
       date: item.date as string,
       description: item.description as string | undefined,
       payeeName: item.payeeName as string | undefined,
+      categoryName: item.categoryName as string | undefined,
       createPayeeIfMissing: item.createPayeeIfMissing as boolean | undefined,
       exchangeRate: item.exchangeRate as number | undefined,
       toAmount: item.toAmount as number | undefined,

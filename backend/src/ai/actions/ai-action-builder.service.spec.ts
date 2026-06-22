@@ -526,6 +526,8 @@ describe("AiActionBuilderService", () => {
       payeeName: "Custom transfer label",
       payeeMatched: true,
       payeeWillBeCreated: false,
+      categoryId: "cat-1",
+      categoryName: "Savings Goal",
     };
     const action = builder.buildCreateTransfer("user-1", preview);
     expect(action.type).toBe("create_transfer");
@@ -540,6 +542,7 @@ describe("AiActionBuilderService", () => {
       payeeId: "payee-1",
       payeeName: "Custom transfer label",
       createPayee: false,
+      categoryId: "cat-1",
     });
     expect(action.preview).toMatchObject({
       fromAccountName: "Checking",
@@ -547,6 +550,7 @@ describe("AiActionBuilderService", () => {
       toAmount: 100,
       payeeName: "Custom transfer label",
       payeeWillBeCreated: false,
+      categoryName: "Savings Goal",
     });
   });
 
@@ -567,12 +571,15 @@ describe("AiActionBuilderService", () => {
       payeeName: "Brand new label",
       payeeMatched: false,
       payeeWillBeCreated: true,
+      categoryId: null,
+      categoryName: null,
     });
     expect(action.descriptor).toMatchObject({
       type: "create_transfer",
       payeeId: null,
       payeeName: "Brand new label",
       createPayee: true,
+      categoryId: null,
     });
     expect(action.preview).toMatchObject({ payeeWillBeCreated: true });
   });

@@ -65,6 +65,7 @@ export interface TransferRowInput {
   date: string;
   description?: string;
   payeeName?: string;
+  categoryName?: string;
   createPayeeIfMissing?: boolean;
   exchangeRate?: number;
   toAmount?: number;
@@ -317,6 +318,7 @@ export class TransactionToolPrepService {
         transactionDate: row.date,
         description: row.description ?? null,
         payeeName: row.payeeName ?? null,
+        categoryName: row.categoryName ?? null,
       };
 
       const fromAccount = await this.accountsService.resolveByName(
@@ -340,6 +342,18 @@ export class TransactionToolPrepService {
         continue;
       }
 
+      let categoryId: string | undefined;
+      if (row.categoryName) {
+        const resolved = await this.resolveCategoryId(userId, row.categoryName);
+        if (!resolved) {
+          const reason = `Unknown category: ${row.categoryName}`;
+          skipped.push({ index: i, reason });
+          previewRows.push({ ...base, error: reason });
+          continue;
+        }
+        categoryId = resolved;
+      }
+
       try {
         const preview = await this.transferService.previewCreateTransfer(
           userId,
@@ -353,6 +367,7 @@ export class TransactionToolPrepService {
             description: row.description,
             payeeName: row.payeeName,
             createPayeeIfMissing: row.createPayeeIfMissing ?? true,
+            categoryId,
           },
         );
         okPreviews.push(preview);
@@ -394,6 +409,12 @@ export class TransactionToolPrepService {
         `Unknown account: ${row.toAccountName}.${await this.accountSuggestion(userId, row.toAccountName)} Use an exact name from the user's account list.`,
       );
     }
+    let categoryId: string | undefined;
+    if (row.categoryName) {
+      const resolved = await this.resolveCategoryId(userId, row.categoryName);
+      if (!resolved) throw this.unknownCategoryError(row.categoryName);
+      categoryId = resolved;
+    }
     return this.transferService.previewCreateTransfer(userId, {
       fromAccountId: fromAccount.id,
       toAccountId: toAccount.id,
@@ -404,6 +425,7 @@ export class TransactionToolPrepService {
       description: row.description,
       payeeName: row.payeeName,
       createPayeeIfMissing: row.createPayeeIfMissing ?? true,
+      categoryId,
     });
   }
 
@@ -660,6 +682,7 @@ export class TransactionToolPrepService {
       payeeId: preview.payeeId,
       payeeName: preview.payeeName,
       createPayee: preview.payeeWillBeCreated,
+      categoryId: preview.categoryId,
     };
   }
 

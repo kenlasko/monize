@@ -258,6 +258,7 @@ export class AiActionsService {
       description: descriptor.description ?? undefined,
       payeeId,
       payeeName: descriptor.payeeName ?? undefined,
+      categoryId: descriptor.categoryId,
     });
     const result = await this.transactionsService.createTransfer(userId, dto);
     return { type: "create_transfer", id: result.fromTransaction.id };
@@ -390,6 +391,7 @@ export class AiActionsService {
           description: r.description ?? undefined,
           payeeId,
           payeeName: r.payeeName ?? undefined,
+          categoryId: r.categoryId,
         });
         const result = await this.transactionsService.createTransfer(
           userId,

@@ -328,6 +328,48 @@ describe("TransactionToolPrepService", () => {
       );
     });
 
+    it("resolves a categoryName and threads the categoryId to previewCreateTransfer", async () => {
+      analytics.resolveLlmCategoryIds.mockResolvedValueOnce({
+        categoryIds: ["cat-1"],
+        unresolved: [],
+      });
+      await service.prepareCreateTransfer(userId, [
+        {
+          fromAccountName: "Checking",
+          toAccountName: "Savings",
+          amount: 100,
+          date: "2026-01-15",
+          categoryName: "Savings Goal",
+        },
+      ]);
+      expect(analytics.resolveLlmCategoryIds).toHaveBeenCalledWith(userId, [
+        "Savings Goal",
+      ]);
+      expect(transfer.previewCreateTransfer).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({ categoryId: "cat-1" }),
+      );
+    });
+
+    it("skips a row with an unknown categoryName", async () => {
+      analytics.resolveLlmCategoryIds.mockResolvedValueOnce({
+        categoryIds: [],
+        unresolved: ["Nope"],
+      });
+      const result = await service.prepareCreateTransfer(userId, [
+        {
+          fromAccountName: "Checking",
+          toAccountName: "Savings",
+          amount: 100,
+          date: "2026-01-15",
+          categoryName: "Nope",
+        },
+      ]);
+      expect(result.okPreviews).toHaveLength(0);
+      expect(result.skipped[0].reason).toContain("Unknown category: Nope");
+      expect(transfer.previewCreateTransfer).not.toHaveBeenCalled();
+    });
+
     it("skips when the source account is unknown", async () => {
       const result = await service.prepareCreateTransfer(userId, [
         {
@@ -371,6 +413,40 @@ describe("TransactionToolPrepService", () => {
       });
       expect(preview.fromAccountId).toBe("a1");
       expect(transfer.previewCreateTransfer).toHaveBeenCalled();
+    });
+
+    it("resolves a categoryName and threads the categoryId to previewCreateTransfer", async () => {
+      analytics.resolveLlmCategoryIds.mockResolvedValueOnce({
+        categoryIds: ["cat-1"],
+        unresolved: [],
+      });
+      await service.prepareCreateTransferSingle(userId, {
+        fromAccountName: "Checking",
+        toAccountName: "Savings",
+        amount: 100,
+        date: "2026-01-15",
+        categoryName: "Savings Goal",
+      });
+      expect(transfer.previewCreateTransfer).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({ categoryId: "cat-1" }),
+      );
+    });
+
+    it("throws on an unknown categoryName", async () => {
+      analytics.resolveLlmCategoryIds.mockResolvedValueOnce({
+        categoryIds: [],
+        unresolved: ["Nope"],
+      });
+      await expect(
+        service.prepareCreateTransferSingle(userId, {
+          fromAccountName: "Checking",
+          toAccountName: "Savings",
+          amount: 100,
+          date: "2026-01-15",
+          categoryName: "Nope",
+        }),
+      ).rejects.toThrow(/Unknown category: Nope/);
     });
 
     it("throws on an unknown source account", async () => {
@@ -653,6 +729,8 @@ describe("TransactionToolPrepService", () => {
         payeeName: "Custom label",
         payeeMatched: true,
         payeeWillBeCreated: false,
+        categoryId: "cat-1",
+        categoryName: "Savings Goal",
       });
       expect(row).toMatchObject({
         fromAccountId: "a1",
@@ -662,6 +740,7 @@ describe("TransactionToolPrepService", () => {
         payeeId: "payee-1",
         payeeName: "Custom label",
         createPayee: false,
+        categoryId: "cat-1",
       });
     });
 
@@ -682,6 +761,8 @@ describe("TransactionToolPrepService", () => {
         payeeName: "New label",
         payeeMatched: false,
         payeeWillBeCreated: true,
+        categoryId: null,
+        categoryName: null,
       });
       expect(row.payeeId).toBeNull();
       expect(row.createPayee).toBe(true);

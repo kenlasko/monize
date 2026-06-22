@@ -53,6 +53,9 @@ export interface CreateTransferPreview {
   payeeMatched: boolean;
   /** True when approving will create a new payee from an unmatched label. */
   payeeWillBeCreated: boolean;
+  /** Spending category applied to both legs on create (null = none). */
+  categoryId: string | null;
+  categoryName: string | null;
 }
 
 /** Resolved, sanitized preview of an edit the assistant proposes to a transfer. */
@@ -341,6 +344,8 @@ export class TransactionTransferService {
       payeeName?: string;
       /** Auto-create a payee for an unmatched custom label. Defaults to true. */
       createPayeeIfMissing?: boolean;
+      /** Spending category id applied to both legs (null/undefined = none). */
+      categoryId?: string | null;
     },
   ): Promise<CreateTransferPreview> {
     if (input.fromAccountId === input.toAccountId) {
@@ -379,7 +384,8 @@ export class TransactionTransferService {
     // transaction (previewCreate): on a match link the payee and adopt its
     // canonical name; an unmatched name becomes a new payee on confirm unless
     // the caller opted out. Transfers have no category, so the matched payee's
-    // default category is deliberately NOT inherited.
+    // default category is deliberately NOT inherited (a transfer's optional
+    // spending category is set explicitly by the caller).
     const inputPayeeName = stripHtml(input.payeeName) || null;
     let payeeId: string | null = null;
     let payeeName: string | null = inputPayeeName;
@@ -398,6 +404,24 @@ export class TransactionTransferService {
     const payeeWillBeCreated =
       !!payeeName && !payeeMatched && input.createPayeeIfMissing !== false;
 
+    // Resolve an optional spending category to apply to both legs, validating
+    // ownership so the confirm step re-applies the same id (mirrors
+    // previewUpdateTransfer and the standard create path).
+    let categoryId: string | null = null;
+    let categoryName: string | null = null;
+    if (input.categoryId) {
+      const category = await this.categoriesRepository.findOne({
+        where: { id: input.categoryId, userId },
+      });
+      if (!category) {
+        throw new BadRequestException(
+          tr("errors.transactions.categoryNotFound", "Category not found"),
+        );
+      }
+      categoryId = category.id;
+      categoryName = category.name;
+    }
+
     return {
       fromAccountId: fromAccount.id,
       fromAccountName: fromAccount.name,
@@ -414,6 +438,8 @@ export class TransactionTransferService {
       payeeName,
       payeeMatched,
       payeeWillBeCreated,
+      categoryId,
+      categoryName,
     };
   }
 
