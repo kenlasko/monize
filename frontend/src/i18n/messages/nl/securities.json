@@ -173,7 +173,7 @@
     "newTagTitle": "Nieuw label",
     "allocation": {
       "help": "Koersaanbieders leveren geen landenblootstelling voor ETF’s en fondsen. Voeg deze handmatig toe in percentages. Alles onder 100% wordt weergegeven als \"Overig\". Je kunt een verdeling in de AI-assistent plakken om dit in te vullen.",
-      "countryTitle": "Landenallocatie",
+      "sectionTitle": "Geografische allocatie",
       "countryPlaceholder": "Selecteer of typ een land",
       "addRow": "Land toevoegen",
       "removeRow": "Rij verwijderen",

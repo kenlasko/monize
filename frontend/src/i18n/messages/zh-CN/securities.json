@@ -173,7 +173,7 @@
     "newTagTitle": "新建标签",
     "allocation": {
       "help": "行情提供商不提供 ETF 和基金的国家/地区敞口。请以百分比手动添加。低于 100% 的部分将显示为“其他”。你可以将明细粘贴到 AI 助手中来填写。",
-      "countryTitle": "国家/地区配置",
+      "sectionTitle": "地域配置",
       "countryPlaceholder": "选择或输入国家/地区",
       "addRow": "添加国家/地区",
       "removeRow": "删除行",

@@ -173,7 +173,7 @@
     "newTagTitle": "Nowy tag",
     "allocation": {
       "help": "Dostawcy notowań nie udostępniają ekspozycji krajowej dla ETF-ów i funduszy. Dodaj ją ręcznie w procentach. Wszystko poniżej 100% jest wyświetlane jako „Pozostałe”. Możesz wkleić zestawienie do Asystenta AI, aby je uzupełnić.",
-      "countryTitle": "Alokacja krajowa",
+      "sectionTitle": "Alokacja geograficzna",
       "countryPlaceholder": "Wybierz lub wpisz kraj",
       "addRow": "Dodaj kraj",
       "removeRow": "Usuń wiersz",

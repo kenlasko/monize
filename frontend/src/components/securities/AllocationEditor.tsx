@@ -13,8 +13,8 @@ export interface AllocationRow {
 }
 
 interface AllocationEditorProps {
-  /** Section heading (e.g. the localized "Country allocation" label). */
-  title: string;
+  /** Optional in-box heading. Omit when the section already has a title above. */
+  title?: string;
   value: AllocationRow[];
   onChange: (rows: AllocationRow[]) => void;
   /** Combobox options for the name field (canonical list; custom allowed). */
@@ -66,9 +66,13 @@ export function AllocationEditor({
   return (
     <div className="rounded-md border border-gray-200 dark:border-gray-700 p-3">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          {title}
-        </span>
+        {title ? (
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            {title}
+          </span>
+        ) : (
+          <span />
+        )}
         <span
           className={`text-xs font-medium ${
             overAllocated

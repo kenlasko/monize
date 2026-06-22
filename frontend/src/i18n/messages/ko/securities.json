@@ -173,7 +173,7 @@
     "newTagTitle": "새 태그",
     "allocation": {
       "help": "시세 제공업체는 ETF 및 펀드의 국가별 익스포저를 제공하지 않습니다. 비율로 직접 추가하세요. 100% 미만은 \"기타\"로 표시됩니다. 내역을 AI 어시스턴트에 붙여넣어 채울 수도 있습니다.",
-      "countryTitle": "국가별 배분",
+      "sectionTitle": "지역별 배분",
       "countryPlaceholder": "국가 선택 또는 입력",
       "addRow": "국가 추가",
       "removeRow": "행 삭제",

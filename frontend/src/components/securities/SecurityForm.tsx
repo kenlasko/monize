@@ -552,11 +552,13 @@ export function SecurityForm({ security, onSubmit, onCancel, onDirtyChange, subm
       {/* Manual country allocation (ETFs/funds only -- providers don't supply it) */}
       {isFundType && (
         <div>
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {t('form.allocation.sectionTitle')}
+          </h3>
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
             {t('form.allocation.help')}
           </p>
           <AllocationEditor
-            title={t('form.allocation.countryTitle')}
             value={countryRows}
             onChange={setCountryRows}
             options={COUNTRY_OPTIONS}
