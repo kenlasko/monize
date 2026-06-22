@@ -173,7 +173,7 @@
     "newTagTitle": "New Tag",
     "allocation": {
       "help": "Price providers don't supply country exposure for ETFs and funds. Add it manually as percentages. Anything under 100% is shown as \"Other\". You can paste a breakdown into the AI Assistant to fill this in.",
-      "countryTitle": "Country allocation",
+      "sectionTitle": "Geographical Allocation",
       "countryPlaceholder": "Select or type a country",
       "addRow": "Add country",
       "removeRow": "Remove row",

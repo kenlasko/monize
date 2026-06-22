@@ -173,7 +173,7 @@
     "newTagTitle": "Nova Etiqueta",
     "allocation": {
       "help": "Os provedores de cotações não fornecem a exposição por país de ETFs e fundos. Adicione-a manualmente em porcentagens. Tudo abaixo de 100% é exibido como \"Outros\". Você pode colar um detalhamento no Assistente de IA para preencher.",
-      "countryTitle": "Alocação por país",
+      "sectionTitle": "Alocação geográfica",
       "countryPlaceholder": "Selecione ou digite um país",
       "addRow": "Adicionar país",
       "removeRow": "Remover linha",

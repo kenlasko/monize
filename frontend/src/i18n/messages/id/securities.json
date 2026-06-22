@@ -173,7 +173,7 @@
     "newTagTitle": "Tag Baru",
     "allocation": {
       "help": "Penyedia harga tidak menyediakan eksposur negara untuk ETF dan reksa dana. Tambahkan secara manual dalam persentase. Apa pun di bawah 100% ditampilkan sebagai \"Lainnya\". Anda dapat menempelkan rincian ke Asisten AI untuk mengisinya.",
-      "countryTitle": "Alokasi negara",
+      "sectionTitle": "Alokasi geografis",
       "countryPlaceholder": "Pilih atau ketik negara",
       "addRow": "Tambah negara",
       "removeRow": "Hapus baris",

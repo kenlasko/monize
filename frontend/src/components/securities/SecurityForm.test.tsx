@@ -711,7 +711,7 @@ describe('SecurityForm', () => {
       await waitFor(() => {
         expect(screen.getByDisplayValue('AAPL')).toBeInTheDocument();
       });
-      expect(screen.queryByText('Country allocation')).not.toBeInTheDocument();
+      expect(screen.queryByText('Geographical Allocation')).not.toBeInTheDocument();
     });
 
     it('shows and prefills the country allocation editor for an ETF', async () => {
@@ -724,7 +724,7 @@ describe('SecurityForm', () => {
       });
       render(<SecurityForm security={etf} onSubmit={onSubmit} onCancel={onCancel} />);
       await waitFor(() => {
-        expect(screen.getByText('Country allocation')).toBeInTheDocument();
+        expect(screen.getByText('Geographical Allocation')).toBeInTheDocument();
       });
       // Stored decimals are shown as percentages.
       expect(screen.getByDisplayValue('60')).toBeInTheDocument();
@@ -741,7 +741,7 @@ describe('SecurityForm', () => {
       });
       render(<SecurityForm security={etf} onSubmit={onSubmit} onCancel={onCancel} />);
       await waitFor(() => {
-        expect(screen.getByText('Country allocation')).toBeInTheDocument();
+        expect(screen.getByText('Geographical Allocation')).toBeInTheDocument();
       });
       // The real country shows as an editable row...
       expect(screen.getByDisplayValue('60')).toBeInTheDocument();
@@ -756,7 +756,7 @@ describe('SecurityForm', () => {
       });
       render(<SecurityForm security={etf} onSubmit={onSubmit} onCancel={onCancel} />);
       await waitFor(() => {
-        expect(screen.getByText('Country allocation')).toBeInTheDocument();
+        expect(screen.getByText('Geographical Allocation')).toBeInTheDocument();
       });
 
       await act(async () => {

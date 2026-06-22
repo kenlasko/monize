@@ -173,7 +173,7 @@
     "newTagTitle": "新しいタグ",
     "allocation": {
       "help": "価格プロバイダーはETFやファンドの国別エクスポージャーを提供しません。パーセンテージで手動で追加してください。100%に満たない分は「その他」として表示されます。内訳をAIアシスタントに貼り付けて入力することもできます。",
-      "countryTitle": "国別配分",
+      "sectionTitle": "地域別配分",
       "countryPlaceholder": "国を選択または入力",
       "addRow": "国を追加",
       "removeRow": "行を削除",

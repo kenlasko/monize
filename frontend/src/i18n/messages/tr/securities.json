@@ -173,7 +173,7 @@
     "newTagTitle": "Yeni Etiket",
     "allocation": {
       "help": "Fiyat sağlayıcıları ETF’ler ve fonlar için ülke dağılımı sağlamaz. Bunu yüzde olarak elle ekleyin. %100’ün altındaki her şey \"Diğer\" olarak gösterilir. Doldurmak için bir dökümü Yapay Zekâ Asistanına yapıştırabilirsiniz.",
-      "countryTitle": "Ülke dağılımı",
+      "sectionTitle": "Coğrafi dağılım",
       "countryPlaceholder": "Ülke seçin veya yazın",
       "addRow": "Ülke ekle",
       "removeRow": "Satırı kaldır",

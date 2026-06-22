@@ -173,7 +173,7 @@
     "newTagTitle": "Nouvelle étiquette",
     "allocation": {
       "help": "Les fournisseurs de cotations ne fournissent pas l'exposition par pays des ETF et fonds. Ajoutez-la manuellement en pourcentages. Tout ce qui est inférieur à 100 % est affiché comme « Autres ». Vous pouvez coller une répartition dans l'assistant IA pour la renseigner.",
-      "countryTitle": "Répartition par pays",
+      "sectionTitle": "Répartition géographique",
       "countryPlaceholder": "Sélectionnez ou saisissez un pays",
       "addRow": "Ajouter un pays",
       "removeRow": "Supprimer la ligne",

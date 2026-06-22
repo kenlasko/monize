@@ -173,7 +173,7 @@
     "newTagTitle": "Neuer Tag",
     "allocation": {
       "help": "Kursanbieter liefern keine Länderaufteilung für ETFs und Fonds. Füge sie manuell in Prozent hinzu. Alles unter 100 % wird als „Sonstige“ angezeigt. Du kannst eine Aufstellung in den KI-Assistenten einfügen, um dies auszufüllen.",
-      "countryTitle": "Länderaufteilung",
+      "sectionTitle": "Geografische Aufteilung",
       "countryPlaceholder": "Land auswählen oder eingeben",
       "addRow": "Land hinzufügen",
       "removeRow": "Zeile entfernen",
