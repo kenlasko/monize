@@ -546,7 +546,14 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "Get current user profile" })
   async getProfile(@Request() req) {
-    return this.authService.sanitizeUser(req.user);
+    // req.user comes from the JWT strategy, which only carries the lightweight
+    // auth state (id/isActive/role/mustChangePassword) -- not profile fields
+    // like firstName/email. Load the full user so the profile is complete.
+    // req.user.id is the owner's id when acting as a delegate, which is the
+    // profile the caller expects here.
+    const user = await this.authService.getUserById(req.user.id);
+    if (!user) return null;
+    return this.authService.sanitizeUser(user);
   }
 
   @Get("me-self")

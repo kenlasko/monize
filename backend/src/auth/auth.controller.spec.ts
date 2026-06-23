@@ -548,10 +548,14 @@ describe("AuthController", () => {
 
   describe("getProfile", () => {
     it("strips sensitive fields and adds hasPassword", async () => {
-      const reqWithUser = { user: { ...mockUser } };
+      // req.user only carries lightweight JWT auth state; getProfile loads the
+      // full user by id so profile fields (email/firstName) are present.
+      authService.getUserById.mockResolvedValue({ ...mockUser });
+      const reqWithUser = { user: { id: mockUser.id } };
 
       const result = await controller.getProfile(reqWithUser);
 
+      expect(authService.getUserById).toHaveBeenCalledWith(mockUser.id);
       expect(result).not.toHaveProperty("passwordHash");
       expect(result).not.toHaveProperty("resetToken");
       expect(result).not.toHaveProperty("resetTokenExpiry");
@@ -564,17 +568,30 @@ describe("AuthController", () => {
       expect(result).not.toHaveProperty("oidcLinkToken");
       expect(result).not.toHaveProperty("oidcLinkExpiresAt");
       expect(result).not.toHaveProperty("pendingOidcSubject");
-      expect(result.hasPassword).toBe(true);
-      expect(result.email).toBe("test@example.com");
-      expect(result.id).toBe("user-1");
+      expect(result!.hasPassword).toBe(true);
+      expect(result!.email).toBe("test@example.com");
+      expect(result!.id).toBe("user-1");
     });
 
     it("hasPassword is false when passwordHash is null", async () => {
-      const reqWithUser = { user: { ...mockUser, passwordHash: null } };
+      authService.getUserById.mockResolvedValue({
+        ...mockUser,
+        passwordHash: null,
+      });
+      const reqWithUser = { user: { id: mockUser.id } };
 
       const result = await controller.getProfile(reqWithUser);
 
-      expect(result.hasPassword).toBe(false);
+      expect(result!.hasPassword).toBe(false);
+    });
+
+    it("returns null when the user no longer exists", async () => {
+      authService.getUserById.mockResolvedValue(null);
+      const reqWithUser = { user: { id: mockUser.id } };
+
+      const result = await controller.getProfile(reqWithUser);
+
+      expect(result).toBeNull();
     });
   });
 
