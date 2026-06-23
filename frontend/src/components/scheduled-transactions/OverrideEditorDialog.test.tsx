@@ -417,7 +417,7 @@ describe('OverrideEditorDialog', () => {
   });
 
   // --- Split toggle ---
-  it('shows split toggle checkbox for non-transfer transactions', () => {
+  it('shows split toggle for non-transfer transactions', () => {
     render(<OverrideEditorDialog {...defaultProps} />);
     expect(screen.getByLabelText('Split this occurrence')).toBeInTheDocument();
   });
@@ -427,11 +427,11 @@ describe('OverrideEditorDialog', () => {
     expect(screen.queryByLabelText('Split this occurrence')).not.toBeInTheDocument();
   });
 
-  it('shows split editor when split checkbox is checked', () => {
+  it('shows split editor when split toggle is enabled', () => {
     render(<OverrideEditorDialog {...defaultProps} />);
 
-    const splitCheckbox = screen.getByLabelText('Split this occurrence') as HTMLInputElement;
-    fireEvent.click(splitCheckbox);
+    const splitToggle = screen.getByLabelText('Split this occurrence') as HTMLElement;
+    fireEvent.click(splitToggle);
 
     expect(screen.getByTestId('split-editor')).toBeInTheDocument();
   });
@@ -442,8 +442,8 @@ describe('OverrideEditorDialog', () => {
     // Category combobox should be present initially
     expect(screen.getByTestId('combobox-category')).toBeInTheDocument();
 
-    const splitCheckbox = screen.getByLabelText('Split this occurrence') as HTMLInputElement;
-    fireEvent.click(splitCheckbox);
+    const splitToggle = screen.getByLabelText('Split this occurrence') as HTMLElement;
+    fireEvent.click(splitToggle);
 
     // Category combobox should be replaced by split editor
     expect(screen.queryByTestId('combobox-category')).not.toBeInTheDocument();
@@ -490,8 +490,8 @@ describe('OverrideEditorDialog', () => {
 
     render(<OverrideEditorDialog {...defaultProps} existingOverride={existingOverride} />);
 
-    const splitCheckbox = screen.getByLabelText('Split this occurrence') as HTMLInputElement;
-    expect(splitCheckbox.checked).toBe(true);
+    const splitToggle = screen.getByLabelText('Split this occurrence') as HTMLElement;
+    expect(splitToggle).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByTestId('split-editor')).toBeInTheDocument();
   });
 
@@ -499,8 +499,8 @@ describe('OverrideEditorDialog', () => {
   it('initializes split from base split transaction', () => {
     render(<OverrideEditorDialog {...defaultProps} scheduledTransaction={splitTransaction} />);
 
-    const splitCheckbox = screen.getByLabelText('Split this occurrence') as HTMLInputElement;
-    expect(splitCheckbox.checked).toBe(true);
+    const splitToggle = screen.getByLabelText('Split this occurrence') as HTMLElement;
+    expect(splitToggle).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByTestId('split-editor')).toBeInTheDocument();
   });
 
