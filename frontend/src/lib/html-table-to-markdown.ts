@@ -23,10 +23,13 @@ export function htmlTablesToMarkdown(html: string): string | null {
 }
 
 function cellText(cell: Element): string {
-  // Collapse whitespace and escape pipes so the cell can't break the table.
+  // Collapse whitespace and escape so the cell can't break the table.
+  // Backslashes are escaped first so an input backslash can't combine with the
+  // pipe-escaping below to alter the rendered text.
   return (cell.textContent || '')
     .replace(/\s+/g, ' ')
     .trim()
+    .replace(/\\/g, '\\\\')
     .replace(/\|/g, '\\|');
 }
 

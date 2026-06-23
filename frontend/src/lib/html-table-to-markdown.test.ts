@@ -26,6 +26,13 @@ describe('htmlTablesToMarkdown', () => {
     );
   });
 
+  it('escapes backslashes before pipes so input is preserved unambiguously', () => {
+    const html = '<table><tr><td>a\\</td><td>b\\|c</td></tr></table>';
+    expect(htmlTablesToMarkdown(html)).toBe(
+      ['| a\\\\ | b\\\\\\|c |', '| --- | --- |'].join('\n'),
+    );
+  });
+
   it('pads short rows to the widest row', () => {
     const html =
       '<table><tr><th>A</th><th>B</th><th>C</th></tr><tr><td>1</td></tr></table>';
