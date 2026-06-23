@@ -22,6 +22,40 @@ function resolveRequestLocale(request: NextRequest): { locale: string; fromCooki
   return { locale: fromAccept || DEFAULT_LOCALE, fromCookie: false };
 }
 
+// Security headers that mirror next.config.js. Next's `headers()` config is
+// only applied to responses Next renders (via NextResponse.next()); responses
+// the middleware returns directly -- the unauthenticated redirect to /login and
+// the 502 backend-unavailable fallback -- bypass it, so a scanner hitting the
+// site root sees a redirect with no HSTS. Applying the same set here keeps every
+// middleware-generated response consistent with the framework-rendered ones.
+const STATIC_SECURITY_HEADERS: Record<string, string> = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+  'Cross-Origin-Resource-Policy': 'same-origin',
+};
+
+// HTTPS-only headers, gated by DISABLE_HTTPS_HEADERS for plain-HTTP deployments
+// (mirrors next.config.js and the backend Helmet config).
+const HTTPS_SECURITY_HEADERS: Record<string, string> = {
+  'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
+  'Cross-Origin-Opener-Policy': 'same-origin',
+  'Cross-Origin-Embedder-Policy': 'require-corp',
+};
+
+function applySecurityHeaders(response: NextResponse): NextResponse {
+  for (const [key, value] of Object.entries(STATIC_SECURITY_HEADERS)) {
+    response.headers.set(key, value);
+  }
+  if (process.env.DISABLE_HTTPS_HEADERS !== 'true') {
+    for (const [key, value] of Object.entries(HTTPS_SECURITY_HEADERS)) {
+      response.headers.set(key, value);
+    }
+  }
+  return response;
+}
+
 function buildCspHeader(nonce: string): string {
   const isDev = process.env.NODE_ENV !== 'production';
   return [
@@ -155,7 +189,9 @@ export async function proxy(request: NextRequest) {
       });
     } catch (error) {
       logger.error('API proxy error:', error);
-      return NextResponse.json({ error: 'Backend unavailable' }, { status: 502 });
+      return applySecurityHeaders(
+        NextResponse.json({ error: 'Backend unavailable' }, { status: 502 }),
+      );
     }
   }
 
@@ -173,7 +209,7 @@ export async function proxy(request: NextRequest) {
   // Protect all other routes
   if (!token) {
     const loginUrl = new URL('/login', request.url);
-    return NextResponse.redirect(loginUrl);
+    return applySecurityHeaders(NextResponse.redirect(loginUrl));
   }
 
   return nextWithCsp(request);

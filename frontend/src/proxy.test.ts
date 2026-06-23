@@ -98,3 +98,59 @@ describe('proxy MCP-at-root routing', () => {
     expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:3001/api/v1/mcp');
   });
 });
+
+describe('proxy security headers', () => {
+  const originalDisable = process.env.DISABLE_HTTPS_HEADERS;
+
+  afterEach(() => {
+    if (originalDisable === undefined) delete process.env.DISABLE_HTTPS_HEADERS;
+    else process.env.DISABLE_HTTPS_HEADERS = originalDisable;
+    vi.unstubAllGlobals();
+  });
+
+  it('sets HSTS and static security headers on the unauthenticated /login redirect', async () => {
+    delete process.env.DISABLE_HTTPS_HEADERS;
+    const request = makeRequest('/dashboard', {
+      headers: { accept: 'text/html' },
+    });
+    const response = await proxy(request);
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe(`${BASE}/login`);
+    expect(response.headers.get('Strict-Transport-Security')).toBe(
+      'max-age=63072000; includeSubDomains; preload',
+    );
+    expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
+    expect(response.headers.get('X-Frame-Options')).toBe('DENY');
+    expect(response.headers.get('Cross-Origin-Opener-Policy')).toBe('same-origin');
+  });
+
+  it('omits HSTS on the redirect when DISABLE_HTTPS_HEADERS is set', async () => {
+    process.env.DISABLE_HTTPS_HEADERS = 'true';
+    const request = makeRequest('/dashboard', {
+      headers: { accept: 'text/html' },
+    });
+    const response = await proxy(request);
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get('Strict-Transport-Security')).toBeNull();
+    expect(response.headers.get('Cross-Origin-Opener-Policy')).toBeNull();
+    // Static (non-HTTPS-gated) headers are still present.
+    expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
+  });
+
+  it('sets security headers on the 502 backend-unavailable fallback', async () => {
+    delete process.env.DISABLE_HTTPS_HEADERS;
+    const fetchMock = vi.fn().mockRejectedValue(new Error('connection refused'));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const request = makeRequest('/api/v1/accounts');
+    const response = await proxy(request);
+
+    expect(response.status).toBe(502);
+    expect(response.headers.get('Strict-Transport-Security')).toBe(
+      'max-age=63072000; includeSubDomains; preload',
+    );
+    expect(response.headers.get('X-Frame-Options')).toBe('DENY');
+  });
+});
