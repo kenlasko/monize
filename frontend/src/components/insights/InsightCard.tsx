@@ -45,6 +45,8 @@ export function InsightCard({ insight, onDismiss, isDismissing }: InsightCardPro
   const { formatDate } = useDateFormat();
   const style = severityStyles[insight.severity] || severityStyles.info;
   const typeStyle = typeStyles[insight.type] || typeStyles.anomaly;
+  const typeKey = `insightTypes.${insight.type}`;
+  const typeLabel = t.has(typeKey) ? t(typeKey) : t('insightTypes.anomaly');
 
   return (
     <div
@@ -66,7 +68,7 @@ export function InsightCard({ insight, onDismiss, isDismissing }: InsightCardPro
             <span
               className={`px-1.5 py-0.5 text-xs font-medium rounded ${typeStyle}`}
             >
-              {t(`insightTypes.${insight.type}`)}
+              {typeLabel}
             </span>
           </div>
           <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">

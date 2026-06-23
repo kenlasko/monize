@@ -133,11 +133,16 @@ describe('GeographicAllocationReport', () => {
     mockGetCountryWeightings.mockResolvedValue(emptyCountryWeightings);
   });
 
-  it('shows loading state initially', () => {
+  it('shows loading state initially', async () => {
     mockGetPortfolioSummary.mockReturnValue(new Promise(() => {}));
     mockGetInvestmentAccounts.mockReturnValue(new Promise(() => {}));
     mockGetSecurities.mockReturnValue(new Promise(() => {}));
-    render(<GeographicAllocationReport />);
+    // Country look-through resolves on mount, so wrap the render in act() to
+    // flush that state update (the portfolio summary stays pending, keeping the
+    // skeleton on screen).
+    await act(async () => {
+      render(<GeographicAllocationReport />);
+    });
     expect(document.querySelector('.animate-pulse')).toBeTruthy();
   });
 
