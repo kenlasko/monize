@@ -329,10 +329,11 @@ export class ScheduledTransactionsService {
       userId,
       startDate: transactionData.startDate || transactionData.nextDueDate,
       totalOccurrences: transactionData.occurrencesRemaining,
-      categoryId:
-        hasSplits || isTransfer || isInvestment
-          ? null
-          : transactionData.categoryId,
+      // A transfer may carry an optional spending category (see #743): it is
+      // stored on the schedule and applied to both legs when posted, surfacing
+      // the transfer in the monthly category breakdown. Only splits (category
+      // lives on each split) and investments null it out here.
+      categoryId: hasSplits || isInvestment ? null : transactionData.categoryId,
       isSplit: hasSplits && !isTransfer,
       isTransfer: isTransfer || false,
       transferAccountId: isTransfer ? transferAccountId : null,
@@ -934,7 +935,8 @@ export class ScheduledTransactionsService {
       fieldsToUpdate.isTransfer = isTransfer;
       if (isTransfer) {
         fieldsToUpdate.isSplit = false;
-        fieldsToUpdate.categoryId = null;
+        // Keep categoryId: a transfer may carry an optional category (#743). It
+        // is controlled by updateData.categoryId above, not cleared here.
         fieldsToUpdate.isInvestment = false;
         fieldsToUpdate.investmentAction = null;
         fieldsToUpdate.investmentSecurityId = null;
@@ -1256,6 +1258,16 @@ export class ScheduledTransactionsService {
         storedOverride,
       );
     } else if (scheduled.isTransfer && scheduled.transferAccountId) {
+      // Carry the schedule's category onto the posted transfer (both legs), so
+      // a categorized scheduled transfer behaves like a one-off one (#743).
+      // Same precedence as the non-transfer branch: inline override > stored
+      // occurrence override > the schedule's own category.
+      const transferCategoryId = hasInlineCategoryId
+        ? postDto.categoryId
+        : storedOverride?.categoryId !== null &&
+            storedOverride?.categoryId !== undefined
+          ? storedOverride.categoryId
+          : scheduled.categoryId || undefined;
       await this.transactionsService.createTransfer(userId, {
         fromAccountId: scheduled.accountId,
         toAccountId: scheduled.transferAccountId,
@@ -1266,6 +1278,7 @@ export class ScheduledTransactionsService {
         referenceNumber: postDto?.referenceNumber || undefined,
         payeeId: scheduled.payeeId || undefined,
         payeeName: scheduled.payeeName || undefined,
+        categoryId: transferCategoryId || undefined,
         tagIds:
           scheduled.tagIds && scheduled.tagIds.length > 0
             ? scheduled.tagIds

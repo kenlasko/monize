@@ -200,6 +200,8 @@
     "toAccountLabel": "To Account",
     "toAccountPlaceholder": "Select destination account...",
     "transferAmountLabel": "Transfer Amount",
+    "transferCategoryLabel": "Category (Optional)",
+    "transferCategoryNote": "Optional: categorize this transfer (e.g. a recurring investment contribution) so it appears in the monthly category breakdown. It does not count as income or an expense.",
     "actionLabel": "Action",
     "securityLabel": "Security",
     "securityPlaceholder": "Select security...",
