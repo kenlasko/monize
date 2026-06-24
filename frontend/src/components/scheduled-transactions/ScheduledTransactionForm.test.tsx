@@ -2156,10 +2156,10 @@ describe('ScheduledTransactionForm', () => {
   });
 
   // ============================================================
-  // NEW TESTS: Transfer mode end condition (none in transfer mode)
+  // NEW TESTS: Transfer mode end condition (mirrors the Transaction tab)
   // ============================================================
 
-  it('does not show end condition section in transfer mode', async () => {
+  it('shows end condition section in transfer mode', async () => {
     render(<ScheduledTransactionForm />);
 
     await waitFor(() => {
@@ -2168,7 +2168,9 @@ describe('ScheduledTransactionForm', () => {
 
     await act(async () => { fireEvent.click(screen.getByText('Transfer')); });
 
-    expect(screen.queryByText('End Condition (optional)')).not.toBeInTheDocument();
+    expect(screen.getByText('End Condition (optional)')).toBeInTheDocument();
+    expect(screen.getByLabelText('End by date')).toBeInTheDocument();
+    expect(screen.getByLabelText('Number of occurrences')).toBeInTheDocument();
   });
 
   // ============================================================

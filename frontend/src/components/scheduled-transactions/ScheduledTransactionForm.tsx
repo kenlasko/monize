@@ -1378,10 +1378,13 @@ export function ScheduledTransactionForm({
           {/* Tags */}
           {renderTags()}
 
-          {/* Row 7: Description */}
+          {/* Row 7: End Condition */}
+          {renderEndCondition('Transfer')}
+
+          {/* Row 8: Description */}
           {renderDescription()}
 
-          {/* Row 8: Active/Auto-post */}
+          {/* Row 9: Active/Auto-post */}
           {renderOptions('Transfer')}
         </div>
       )}
