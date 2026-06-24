@@ -528,8 +528,8 @@ export function ScheduledTransactionForm({
       setTransferToAccountId('');
     } else if (newMode === 'transfer') {
       setSplits([]);
-      setSelectedCategoryId('');
-      setValue('categoryId', '', { shouldDirty: true });
+      // A transfer may keep an optional category (#743), so it is not cleared
+      // here -- the user sets it in the transfer tab's optional Category field.
       if (watchedAmount < 0) {
         setValue('amount', Math.abs(watchedAmount), { shouldDirty: true });
       }
@@ -637,9 +637,11 @@ export function ScheduledTransactionForm({
       setSelectedCategoryId(categoryId);
       setValue('categoryId', categoryId, { shouldDirty: true, shouldValidate: true });
 
-      // Adjust amount sign based on category type
+      // Adjust amount sign based on category type -- but never in transfer mode,
+      // where the amount is always a positive magnitude (negated on submit) and
+      // the category is just a label that does not drive income/expense sign.
       const category = categories.find((c) => c.id === categoryId);
-      if (category && watchedAmount !== undefined && watchedAmount !== 0) {
+      if (mode !== 'transfer' && category && watchedAmount !== undefined && watchedAmount !== 0) {
         const absAmount = Math.abs(watchedAmount);
         const newAmount = category.isIncome ? absAmount : -absAmount;
         if (newAmount !== watchedAmount) {
@@ -768,7 +770,9 @@ export function ScheduledTransactionForm({
           isTransfer: true,
           transferAccountId: transferToAccountId,
           isInvestment: false,
-          categoryId: undefined,
+          // A transfer may carry an optional category (#743), applied to both
+          // legs when the schedule posts.
+          categoryId: selectedCategoryId || undefined,
           splits: undefined,
         };
       } else if (mode === 'split') {
@@ -1300,7 +1304,7 @@ export function ScheduledTransactionForm({
             />
           </div>
 
-          {/* Row 4: Transfer Amount */}
+          {/* Row 4: Transfer Amount, Reference Number (mirrors the Transaction tab) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <CurrencyInput
               label={t('form.transferAmountLabel')}
@@ -1310,9 +1314,18 @@ export function ScheduledTransactionForm({
               allowNegative={false}
               error={errors.amount?.message}
             />
+            <Input
+              label={t('form.referenceNumberLabel')}
+              type="text"
+              placeholder={t('form.referenceNumberPlaceholder')}
+              error={errors.referenceNumber?.message}
+              {...register('referenceNumber')}
+            />
           </div>
 
-          {/* Row 5: Payee, Reference Number */}
+          {/* Row 5: Payee, Category. An optional category on a transfer surfaces
+              it in the monthly category breakdown without counting as
+              income/expense (#743). Laid out beside Payee like the Transaction tab. */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Combobox
               label={t('form.payeeLabel')}
@@ -1326,13 +1339,22 @@ export function ScheduledTransactionForm({
               allowCustomValue={true}
               error={errors.payeeName?.message}
             />
-            <Input
-              label={t('form.referenceNumberLabel')}
-              type="text"
-              placeholder={t('form.referenceNumberPlaceholder')}
-              error={errors.referenceNumber?.message}
-              {...register('referenceNumber')}
-            />
+            <div>
+              <Combobox
+                label={t('form.transferCategoryLabel')}
+                placeholder={t('form.categoryPlaceholder')}
+                options={categoryOptions}
+                value={selectedCategoryId}
+                initialDisplayValue={scheduledTransaction?.category?.name || ''}
+                onChange={handleCategoryChange}
+                onCreateNew={handleCategoryCreate}
+                allowCustomValue={true}
+                error={errors.categoryId?.message}
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {t('form.transferCategoryNote')}
+              </p>
+            </div>
           </div>
 
           {/* Row 6: Frequency, Remind Days Before */}

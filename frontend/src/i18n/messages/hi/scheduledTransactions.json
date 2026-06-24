@@ -90,6 +90,13 @@
     "totalAmountLabel": "कुल राशि",
     "descriptionLabel": "विवरण (वैकल्पिक)",
     "categoryLabel": "श्रेणी",
+    "transferLabel": "ट्रांसफ़र",
+    "balanceWarning": {
+      "belowZero": "शून्य से नीचे",
+      "overCreditLimit": "क्रेडिट सीमा से अधिक",
+      "single": "इस तिथि को पोस्ट करने से <b>{account}</b> <b>{amount}</b> पर आ जाएगा, {condition}।",
+      "both": "इस तिथि को पोस्ट करने से <b>{fromAccount}</b> <b>{fromAmount}</b> ({fromCondition}) और <b>{toAccount}</b> <b>{toAmount}</b> ({toCondition}) पर आ जाएगा।"
+    },
     "splitLabel": "यह लेन-देन विभाजित करें",
     "referenceNumberLabel": "संदर्भ संख्या (वैकल्पिक)",
     "noPriceHistory": "इस प्रतिभूति के लिए अभी कोई मूल्य इतिहास नहीं है। मूल्य मैन्युअल रूप से दर्ज करें।",
@@ -200,6 +207,8 @@
     "toAccountLabel": "को खाता",
     "toAccountPlaceholder": "गंतव्य खाता चुनें...",
     "transferAmountLabel": "स्थानांतरण राशि",
+    "transferCategoryLabel": "श्रेणी (वैकल्पिक)",
+    "transferCategoryNote": "वैकल्पिक: इस ट्रांसफ़र को श्रेणीबद्ध करें (उदाहरण के लिए, एक आवर्ती निवेश योगदान) ताकि यह मासिक श्रेणी विवरण में दिखाई दे। इसे आय या व्यय के रूप में नहीं गिना जाता।",
     "actionLabel": "क्रिया",
     "securityLabel": "प्रतिभूति",
     "securityPlaceholder": "प्रतिभूति चुनें...",

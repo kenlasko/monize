@@ -90,6 +90,13 @@
     "totalAmountLabel": "合計金額",
     "descriptionLabel": "説明（任意）",
     "categoryLabel": "カテゴリ",
+    "transferLabel": "振替",
+    "balanceWarning": {
+      "belowZero": "マイナス",
+      "overCreditLimit": "与信限度額を超過",
+      "single": "この日付で記帳すると <b>{account}</b> が <b>{amount}</b>（{condition}）になります。",
+      "both": "この日付で記帳すると <b>{fromAccount}</b> が <b>{fromAmount}</b>（{fromCondition}）に、<b>{toAccount}</b> が <b>{toAmount}</b>（{toCondition}）になります。"
+    },
     "splitLabel": "この取引を分割",
     "referenceNumberLabel": "参照番号（任意）",
     "noPriceHistory": "この証券の価格履歴がまだありません。価格を手動で入力してください。",
@@ -200,6 +207,8 @@
     "toAccountLabel": "振替先口座",
     "toAccountPlaceholder": "振替先口座を選択...",
     "transferAmountLabel": "振替金額",
+    "transferCategoryLabel": "カテゴリ（任意）",
+    "transferCategoryNote": "任意: この振替を分類すると（例: 定期的な投資拠出）、月別カテゴリ内訳に表示されます。収入や支出としては計上されません。",
     "actionLabel": "アクション",
     "securityLabel": "証券",
     "securityPlaceholder": "証券を選択...",

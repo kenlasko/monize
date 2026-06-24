@@ -90,6 +90,13 @@
     "totalAmountLabel": "Загальна сума",
     "descriptionLabel": "Опис (необов'язково)",
     "categoryLabel": "Категорія",
+    "transferLabel": "Переказ",
+    "balanceWarning": {
+      "belowZero": "нижче нуля",
+      "overCreditLimit": "вище кредитного ліміту",
+      "single": "Проведення цією датою приведе <b>{account}</b> до <b>{amount}</b>, {condition}.",
+      "both": "Проведення цією датою приведе <b>{fromAccount}</b> до <b>{fromAmount}</b> ({fromCondition}) та <b>{toAccount}</b> до <b>{toAmount}</b> ({toCondition})."
+    },
     "splitLabel": "Розділити цю транзакцію",
     "referenceNumberLabel": "Номер довідки (необов'язково)",
     "noPriceHistory": "Histórico цін для цього цінного паперу відсутня. Введіть ціну вручну.",
@@ -200,6 +207,8 @@
     "toAccountLabel": "На рахунок",
     "toAccountPlaceholder": "Оберіть цільовий рахунок...",
     "transferAmountLabel": "Сума переказу",
+    "transferCategoryLabel": "Категорія (необов'язково)",
+    "transferCategoryNote": "Необов'язково: задайте категорію для цього переказу (наприклад, регулярного інвестиційного внеску), щоб він відображався в місячному розподілі за категоріями. Він не враховується як дохід або витрата.",
     "actionLabel": "Дія",
     "securityLabel": "Цінний папір",
     "securityPlaceholder": "Оберіть цінний папір...",

@@ -90,6 +90,13 @@
     "totalAmountLabel": "Kwota łączna",
     "descriptionLabel": "Opis (opcjonalnie)",
     "categoryLabel": "Kategoria",
+    "transferLabel": "Przelew",
+    "balanceWarning": {
+      "belowZero": "poniżej zera",
+      "overCreditLimit": "powyżej limitu kredytowego",
+      "single": "Zaksięgowanie w tej dacie sprowadzi <b>{account}</b> do <b>{amount}</b>, {condition}.",
+      "both": "Zaksięgowanie w tej dacie sprowadzi <b>{fromAccount}</b> do <b>{fromAmount}</b> ({fromCondition}) oraz <b>{toAccount}</b> do <b>{toAmount}</b> ({toCondition})."
+    },
     "splitLabel": "Podziel tę transakcję",
     "referenceNumberLabel": "Numer referencyjny (opcjonalnie)",
     "noPriceHistory": "Brak historii cen dla tego papieru. Wprowadź cenę ręcznie.",
@@ -200,6 +207,8 @@
     "toAccountLabel": "Konto docelowe",
     "toAccountPlaceholder": "Wybierz konto docelowe...",
     "transferAmountLabel": "Kwota przelewu",
+    "transferCategoryLabel": "Kategoria (opcjonalnie)",
+    "transferCategoryNote": "Opcjonalnie: skategoryzuj ten przelew (np. cykliczną wpłatę inwestycyjną), aby pojawił się w miesięcznym zestawieniu kategorii. Nie jest liczony jako przychód ani wydatek.",
     "actionLabel": "Akcja",
     "securityLabel": "Papier wartościowy",
     "securityPlaceholder": "Wybierz papier wartościowy...",

@@ -90,6 +90,13 @@
     "totalAmountLabel": "总金额",
     "descriptionLabel": "描述（可选）",
     "categoryLabel": "分类",
+    "transferLabel": "转账",
+    "balanceWarning": {
+      "belowZero": "低于零",
+      "overCreditLimit": "超过信用额度",
+      "single": "在此日期记账会使 <b>{account}</b> 变为 <b>{amount}</b>（{condition}）。",
+      "both": "在此日期记账会使 <b>{fromAccount}</b> 变为 <b>{fromAmount}</b>（{fromCondition}）、<b>{toAccount}</b> 变为 <b>{toAmount}</b>（{toCondition}）。"
+    },
     "splitLabel": "拆分此交易",
     "referenceNumberLabel": "参考编号（可选）",
     "noPriceHistory": "此证券暂无价格历史。请手动输入价格。",
@@ -200,6 +207,8 @@
     "toAccountLabel": "目标账户",
     "toAccountPlaceholder": "选择目标账户...",
     "transferAmountLabel": "转账金额",
+    "transferCategoryLabel": "类别（可选）",
+    "transferCategoryNote": "可选：为此转账设置类别（例如定期投资缴款），使其显示在每月类别明细中。它不计为收入或支出。",
     "actionLabel": "操作",
     "securityLabel": "证券",
     "securityPlaceholder": "选择证券...",

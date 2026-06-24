@@ -90,6 +90,13 @@
     "totalAmountLabel": "Totaalbedrag",
     "descriptionLabel": "Beschrijving (optioneel)",
     "categoryLabel": "Categorie",
+    "transferLabel": "Overboeking",
+    "balanceWarning": {
+      "belowZero": "onder nul",
+      "overCreditLimit": "boven de kredietlimiet",
+      "single": "Boeken op deze datum brengt <b>{account}</b> op <b>{amount}</b>, {condition}.",
+      "both": "Boeken op deze datum brengt <b>{fromAccount}</b> op <b>{fromAmount}</b> ({fromCondition}) en <b>{toAccount}</b> op <b>{toAmount}</b> ({toCondition})."
+    },
     "splitLabel": "Transactie splitsen",
     "referenceNumberLabel": "Referentienummer (optioneel)",
     "noPriceHistory": "Nog geen koershistorie voor dit waardepapier. Voer de koers handmatig in.",
@@ -200,6 +207,8 @@
     "toAccountLabel": "Naar rekening",
     "toAccountPlaceholder": "Selecteer doelrekening...",
     "transferAmountLabel": "Overboekingsbedrag",
+    "transferCategoryLabel": "Categorie (optioneel)",
+    "transferCategoryNote": "Optioneel: categoriseer deze overboeking (bijv. een terugkerende beleggingsinleg) zodat deze in het maandelijkse categorieoverzicht verschijnt. Ze telt niet als inkomsten of uitgaven.",
     "actionLabel": "Actie",
     "securityLabel": "Waardepapier",
     "securityPlaceholder": "Selecteer waardepapier...",

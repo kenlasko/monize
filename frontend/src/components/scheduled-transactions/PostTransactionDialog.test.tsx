@@ -309,6 +309,19 @@ describe('PostTransactionDialog', () => {
     expect(screen.queryByLabelText('Split this transaction')).not.toBeInTheDocument();
   });
 
+  it('shows the category on a categorized transfer (#743)', () => {
+    const categorizedTransfer = { ...transferTransaction, categoryId: 'c1' };
+    render(<PostTransactionDialog {...defaultProps} scheduledTransaction={categorizedTransfer} />);
+    expect(screen.getByText(/Transfer:/)).toBeInTheDocument();
+    expect(screen.getByText(/Category:\s*Entertainment/)).toBeInTheDocument();
+  });
+
+  it('omits the category line on an uncategorized transfer', () => {
+    render(<PostTransactionDialog {...defaultProps} scheduledTransaction={transferTransaction} />);
+    expect(screen.getByText(/Transfer:/)).toBeInTheDocument();
+    expect(screen.queryByText(/Category:/)).not.toBeInTheDocument();
+  });
+
   // --- Regular transaction display ---
   it('shows non-transfer description for regular transactions', () => {
     render(<PostTransactionDialog {...defaultProps} />);

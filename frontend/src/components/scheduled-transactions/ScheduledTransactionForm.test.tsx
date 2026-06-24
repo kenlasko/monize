@@ -1809,6 +1809,42 @@ describe('ScheduledTransactionForm', () => {
     expect(onSuccess).toHaveBeenCalled();
   });
 
+  it('shows the optional category field in transfer mode (#743)', async () => {
+    render(<ScheduledTransactionForm />);
+    await waitFor(() => expect(screen.getByText('Transfer')).toBeInTheDocument());
+
+    await act(async () => { fireEvent.click(screen.getByText('Transfer')); });
+
+    expect(screen.getByText('Category (Optional)')).toBeInTheDocument();
+  });
+
+  it('keeps the category when submitting an existing transfer schedule (#743)', async () => {
+    const onSuccess = vi.fn();
+    const existingSt = {
+      id: 's1', accountId: 'acc-1', name: 'Monthly IKE', amount: -1000,
+      currencyCode: 'CAD', frequency: 'MONTHLY' as const,
+      nextDueDate: '2024-03-01', isActive: true, autoPost: false,
+      reminderDaysBefore: 3, isTransfer: true, transferAccountId: 'acc-2',
+      isSplit: false, categoryId: 'cat-1',
+      category: { id: 'cat-1', name: 'Investments' },
+    } as any;
+
+    const { container } = render(
+      <ScheduledTransactionForm scheduledTransaction={existingSt} onSuccess={onSuccess} />,
+    );
+    await waitFor(() => expect(mockAccountsGetAll).toHaveBeenCalled());
+
+    const submitBtn = container.querySelector('button[type="submit"]')!;
+    await act(async () => { fireEvent.click(submitBtn); });
+
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalledWith(
+        's1',
+        expect.objectContaining({ isTransfer: true, categoryId: 'cat-1' }),
+      );
+    });
+  });
+
   it('sends splits: [] when converting an existing split scheduled transaction back to regular', async () => {
     const onSuccess = vi.fn();
     const existingSt = {

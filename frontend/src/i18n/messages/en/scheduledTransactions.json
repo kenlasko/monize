@@ -90,6 +90,13 @@
     "totalAmountLabel": "Total Amount",
     "descriptionLabel": "Description (optional)",
     "categoryLabel": "Category",
+    "transferLabel": "Transfer",
+    "balanceWarning": {
+      "belowZero": "below zero",
+      "overCreditLimit": "over the credit limit",
+      "single": "Posting on this date will bring <b>{account}</b> to <b>{amount}</b>, {condition}.",
+      "both": "Posting on this date will bring <b>{fromAccount}</b> to <b>{fromAmount}</b> ({fromCondition}) and <b>{toAccount}</b> to <b>{toAmount}</b> ({toCondition})."
+    },
     "splitLabel": "Split this transaction",
     "referenceNumberLabel": "Reference Number (optional)",
     "noPriceHistory": "No price history yet for this security. Enter the price manually.",
@@ -200,6 +207,8 @@
     "toAccountLabel": "To Account",
     "toAccountPlaceholder": "Select destination account...",
     "transferAmountLabel": "Transfer Amount",
+    "transferCategoryLabel": "Category (Optional)",
+    "transferCategoryNote": "Optional: categorize this transfer (e.g. a recurring investment contribution) so it appears in the monthly category breakdown. It does not count as income or an expense.",
     "actionLabel": "Action",
     "securityLabel": "Security",
     "securityPlaceholder": "Select security...",

@@ -90,6 +90,13 @@
     "totalAmountLabel": "총 금액",
     "descriptionLabel": "설명 (선택사항)",
     "categoryLabel": "카테고리",
+    "transferLabel": "이체",
+    "balanceWarning": {
+      "belowZero": "0 미만",
+      "overCreditLimit": "신용 한도 초과",
+      "single": "이 날짜로 기재하면 <b>{account}</b>이(가) <b>{amount}</b>({condition})이 됩니다.",
+      "both": "이 날짜로 기재하면 <b>{fromAccount}</b>이(가) <b>{fromAmount}</b>({fromCondition})이 되고 <b>{toAccount}</b>이(가) <b>{toAmount}</b>({toCondition})이 됩니다."
+    },
     "splitLabel": "이 거래 분할",
     "referenceNumberLabel": "참조 번호 (선택사항)",
     "noPriceHistory": "이 유가증권에 대한 가격 이력이 아직 없습니다. 가격을 수동으로 입력하세요.",
@@ -200,6 +207,8 @@
     "toAccountLabel": "입금 계정",
     "toAccountPlaceholder": "목적지 계정 선택...",
     "transferAmountLabel": "이체 금액",
+    "transferCategoryLabel": "카테고리 (선택)",
+    "transferCategoryNote": "선택 사항: 이 이체를 분류하면(예: 정기 투자 납입) 월별 카테고리 분석에 표시됩니다. 수입이나 지출로 집계되지 않습니다.",
     "actionLabel": "작업",
     "securityLabel": "유가증권",
     "securityPlaceholder": "유가증권 선택...",

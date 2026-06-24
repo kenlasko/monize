@@ -90,6 +90,13 @@
     "totalAmountLabel": "Importo totale",
     "descriptionLabel": "Descrizione (opzionale)",
     "categoryLabel": "Categoria",
+    "transferLabel": "Trasferimento",
+    "balanceWarning": {
+      "belowZero": "sotto lo zero",
+      "overCreditLimit": "oltre il limite di credito",
+      "single": "Registrando in questa data, <b>{account}</b> arriverà a <b>{amount}</b>, {condition}.",
+      "both": "Registrando in questa data, <b>{fromAccount}</b> arriverà a <b>{fromAmount}</b> ({fromCondition}) e <b>{toAccount}</b> a <b>{toAmount}</b> ({toCondition})."
+    },
     "splitLabel": "Suddividi questa transazione",
     "referenceNumberLabel": "Numero di riferimento (opzionale)",
     "noPriceHistory": "Nessuno storico delle quotazioni per questo titolo. Inserisci il prezzo manualmente.",
@@ -200,6 +207,8 @@
     "toAccountLabel": "Al conto",
     "toAccountPlaceholder": "Seleziona conto di destinazione...",
     "transferAmountLabel": "Importo trasferimento",
+    "transferCategoryLabel": "Categoria (facoltativa)",
+    "transferCategoryNote": "Facoltativo: categorizza questo trasferimento (ad es. un contributo d'investimento ricorrente) in modo che compaia nella ripartizione mensile per categoria. Non viene conteggiato come entrata o uscita.",
     "actionLabel": "Azione",
     "securityLabel": "Titolo",
     "securityPlaceholder": "Seleziona titolo...",

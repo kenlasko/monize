@@ -90,6 +90,13 @@
     "totalAmountLabel": "Toplam Tutar",
     "descriptionLabel": "Açıklama (isteğe bağlı)",
     "categoryLabel": "Kategori",
+    "transferLabel": "Transfer",
+    "balanceWarning": {
+      "belowZero": "sıfırın altına",
+      "overCreditLimit": "kredi limitinin üzerine",
+      "single": "Bu tarihte işlemek <b>{account}</b> hesabını <b>{amount}</b> değerine, {condition} getirecek.",
+      "both": "Bu tarihte işlemek <b>{fromAccount}</b> hesabını <b>{fromAmount}</b> ({fromCondition}) ve <b>{toAccount}</b> hesabını <b>{toAmount}</b> ({toCondition}) değerine getirecek."
+    },
     "splitLabel": "Bu işlemi böl",
     "referenceNumberLabel": "Referans Numarası (isteğe bağlı)",
     "noPriceHistory": "Bu menkul kıymet için henüz fiyat geçmişi yok. Fiyatı manuel olarak girin.",
@@ -200,6 +207,8 @@
     "toAccountLabel": "Alıcı Hesap",
     "toAccountPlaceholder": "Hedef hesap seçin...",
     "transferAmountLabel": "Transfer Tutarı",
+    "transferCategoryLabel": "Kategori (İsteğe bağlı)",
+    "transferCategoryNote": "İsteğe bağlı: Bu transferi kategorilendirin (ör. düzenli bir yatırım katkısı) ki aylık kategori dökümünde görünsün. Gelir veya gider olarak sayılmaz.",
     "actionLabel": "İşlem",
     "securityLabel": "Menkul Kıymet",
     "securityPlaceholder": "Menkul kıymet seçin...",

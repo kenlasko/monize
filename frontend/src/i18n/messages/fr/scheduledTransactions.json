@@ -90,6 +90,13 @@
     "totalAmountLabel": "Montant total",
     "descriptionLabel": "Description (facultatif)",
     "categoryLabel": "Catégorie",
+    "transferLabel": "Virement",
+    "balanceWarning": {
+      "belowZero": "en dessous de zéro",
+      "overCreditLimit": "au-delà de la limite de crédit",
+      "single": "Comptabiliser à cette date amènera <b>{account}</b> à <b>{amount}</b>, {condition}.",
+      "both": "Comptabiliser à cette date amènera <b>{fromAccount}</b> à <b>{fromAmount}</b> ({fromCondition}) et <b>{toAccount}</b> à <b>{toAmount}</b> ({toCondition})."
+    },
     "splitLabel": "Répartir cette transaction",
     "referenceNumberLabel": "Numéro de référence (facultatif)",
     "noPriceHistory": "Aucun historique des cours disponible pour ce titre. Saisissez le prix manuellement.",
@@ -200,6 +207,8 @@
     "toAccountLabel": "Compte destination",
     "toAccountPlaceholder": "Sélectionner le compte de destination…",
     "transferAmountLabel": "Montant du virement",
+    "transferCategoryLabel": "Catégorie (facultatif)",
+    "transferCategoryNote": "Facultatif : catégorisez ce virement (par exemple une contribution d'investissement récurrente) pour qu'il apparaisse dans la répartition mensuelle par catégorie. Il n'est pas comptabilisé comme revenu ni comme dépense.",
     "actionLabel": "Action",
     "securityLabel": "Titre",
     "securityPlaceholder": "Sélectionner un titre…",

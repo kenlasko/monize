@@ -291,8 +291,8 @@ describe("ScheduledTransactionsService", () => {
       expect(createArg.isSplit).toBe(true);
     });
 
-    it("should set categoryId=null when isTransfer", async () => {
-      const saved = makeScheduled({ isTransfer: true, categoryId: null });
+    it("keeps categoryId on a transfer (categorized transfer, #743)", async () => {
+      const saved = makeScheduled({ isTransfer: true, categoryId: "cat-1" });
       scheduledRepo.save.mockResolvedValue(saved);
       stubFindOne(saved);
 
@@ -305,7 +305,7 @@ describe("ScheduledTransactionsService", () => {
       await service.create(userId, dto);
 
       const createArg = scheduledRepo.create.mock.calls[0][0];
-      expect(createArg.categoryId).toBeNull();
+      expect(createArg.categoryId).toBe("cat-1");
       expect(createArg.isTransfer).toBe(true);
     });
 
@@ -773,7 +773,7 @@ describe("ScheduledTransactionsService", () => {
       expect(updateArg.payeeName).toBeNull();
     });
 
-    it("should clear category and splits when switching to transfer", async () => {
+    it("clears splits when switching to transfer but does not force category null (#743)", async () => {
       const scheduled = makeScheduled({ isSplit: true });
       stubFindOne(scheduled);
 
@@ -789,7 +789,22 @@ describe("ScheduledTransactionsService", () => {
       const updateArg = mockQueryRunner.manager.update.mock.calls[0][2];
       expect(updateArg.isTransfer).toBe(true);
       expect(updateArg.isSplit).toBe(false);
-      expect(updateArg.categoryId).toBeNull();
+      // A transfer may keep a category, so the switch must not null it.
+      expect(updateArg.categoryId).toBeUndefined();
+    });
+
+    it("keeps a category set on a transfer update (#743)", async () => {
+      const scheduled = makeScheduled({ isTransfer: true });
+      stubFindOne(scheduled);
+
+      await service.update(userId, stId, {
+        isTransfer: true,
+        transferAccountId: "acc-2",
+        categoryId: "cat-9",
+      });
+
+      const updateArg = mockQueryRunner.manager.update.mock.calls[0][2];
+      expect(updateArg.categoryId).toBe("cat-9");
     });
 
     it("records action history on update", async () => {
@@ -1094,6 +1109,26 @@ describe("ScheduledTransactionsService", () => {
         }),
       );
       expect(transactionsService.create).not.toHaveBeenCalled();
+    });
+
+    it("forwards the schedule's category to createTransfer (#743)", async () => {
+      const scheduled = makeScheduled({
+        isTransfer: true,
+        transferAccountId: "acc-2",
+        categoryId: "cat-ike",
+      });
+      stubFindOne(scheduled);
+      const overrideQb = mockQueryBuilder(null);
+      overrideQb.getOne.mockResolvedValue(null);
+      overridesRepo.createQueryBuilder.mockReturnValue(overrideQb);
+      accountsRepo.findOne.mockResolvedValue(null);
+
+      await service.post(userId, stId);
+
+      expect(transactionsService.createTransfer).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({ categoryId: "cat-ike" }),
+      );
     });
 
     it("should pass payee fields to createTransfer for transfer transactions", async () => {

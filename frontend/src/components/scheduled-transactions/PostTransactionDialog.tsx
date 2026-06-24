@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
@@ -472,6 +472,11 @@ export function PostTransactionDialog({
   };
 
   const currentCategory = categoryId ? categories.find(c => c.id === categoryId) : null;
+  // Parent-qualified label (e.g. "Investments: IKE") for the category, reusing
+  // the dropdown's option labels so a categorized transfer can show it.
+  const currentCategoryLabel = categoryId
+    ? (categoryOptions.find(o => o.value === categoryId)?.label ?? currentCategory?.name ?? null)
+    : null;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="5xl" className="p-6">
@@ -540,8 +545,15 @@ export function PostTransactionDialog({
         const transferWarn = transferAccount && projectedBalances.transferAfter != null && shouldWarnBalance(transferAccount, projectedBalances.transferAfter);
         if (!sourceWarn && !transferWarn) return null;
 
-        const warningLabel = (account: Account) =>
-          isLiabilityAccount(account) ? 'over the credit limit' : 'below zero';
+        const conditionLabel = (account: Account) =>
+          isLiabilityAccount(account)
+            ? t('postDialog.balanceWarning.overCreditLimit')
+            : t('postDialog.balanceWarning.belowZero');
+        const bold = (chunks: ReactNode) => (
+          <span className="font-medium">{chunks}</span>
+        );
+        const fmt = (value: number) =>
+          formatCurrency(value, scheduledTransaction.currencyCode);
 
         return (
           <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg p-3 mb-4 flex items-start gap-2">
@@ -549,24 +561,29 @@ export function PostTransactionDialog({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
             <div className="text-sm text-amber-700 dark:text-amber-300">
-              {sourceWarn && transferWarn ? (
-                <>
-                  Posting on this date will bring <span className="font-medium">{sourceAccount?.name}</span> to{' '}
-                  <span className="font-medium">{formatCurrency(projectedBalances.sourceAfter!, scheduledTransaction.currencyCode)}</span> ({warningLabel(sourceAccount!)}) and{' '}
-                  <span className="font-medium">{transferAccount?.name}</span> to{' '}
-                  <span className="font-medium">{formatCurrency(projectedBalances.transferAfter!, scheduledTransaction.currencyCode)}</span> ({warningLabel(transferAccount!)}).
-                </>
-              ) : sourceWarn ? (
-                <>
-                  Posting on this date will bring <span className="font-medium">{sourceAccount?.name}</span> to{' '}
-                  <span className="font-medium">{formatCurrency(projectedBalances.sourceAfter!, scheduledTransaction.currencyCode)}</span>, {warningLabel(sourceAccount!)}.
-                </>
-              ) : (
-                <>
-                  Posting on this date will bring <span className="font-medium">{transferAccount?.name}</span> to{' '}
-                  <span className="font-medium">{formatCurrency(projectedBalances.transferAfter!, scheduledTransaction.currencyCode)}</span>, {warningLabel(transferAccount!)}.
-                </>
-              )}
+              {sourceWarn && transferWarn
+                ? t.rich('postDialog.balanceWarning.both', {
+                    b: bold,
+                    fromAccount: sourceAccount!.name,
+                    fromAmount: fmt(projectedBalances.sourceAfter!),
+                    fromCondition: conditionLabel(sourceAccount!),
+                    toAccount: transferAccount!.name,
+                    toAmount: fmt(projectedBalances.transferAfter!),
+                    toCondition: conditionLabel(transferAccount!),
+                  })
+                : sourceWarn
+                  ? t.rich('postDialog.balanceWarning.single', {
+                      b: bold,
+                      account: sourceAccount!.name,
+                      amount: fmt(projectedBalances.sourceAfter!),
+                      condition: conditionLabel(sourceAccount!),
+                    })
+                  : t.rich('postDialog.balanceWarning.single', {
+                      b: bold,
+                      account: transferAccount!.name,
+                      amount: fmt(projectedBalances.transferAfter!),
+                      condition: conditionLabel(transferAccount!),
+                    })}
             </div>
           </div>
         );
@@ -686,9 +703,16 @@ export function PostTransactionDialog({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
               </svg>
               <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                Transfer: {scheduledTransaction.account?.name} → {scheduledTransaction.transferAccount?.name}
+                {t('postDialog.transferLabel')}: {scheduledTransaction.account?.name} → {scheduledTransaction.transferAccount?.name}
               </span>
             </div>
+            {/* A categorized transfer (#743) shows its category here so it is
+                clear it will be applied to both legs on posting. */}
+            {currentCategoryLabel && (
+              <div className="mt-2 pl-7 text-sm text-blue-700 dark:text-blue-300">
+                {t('postDialog.categoryLabel')}: {currentCategoryLabel}
+              </div>
+            )}
           </div>
         ) : (
           <>
@@ -748,7 +772,7 @@ export function PostTransactionDialog({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Description (optional)
+              {t('postDialog.descriptionLabel')}
             </label>
             <Input
               type="text"

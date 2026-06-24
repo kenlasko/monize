@@ -90,6 +90,13 @@
     "totalAmountLabel": "Valor Total",
     "descriptionLabel": "Descrição (opcional)",
     "categoryLabel": "Categoria",
+    "transferLabel": "Transferência",
+    "balanceWarning": {
+      "belowZero": "abaixo de zero",
+      "overCreditLimit": "acima do limite de crédito",
+      "single": "Lançar nesta data deixará <b>{account}</b> em <b>{amount}</b>, {condition}.",
+      "both": "Lançar nesta data deixará <b>{fromAccount}</b> em <b>{fromAmount}</b> ({fromCondition}) e <b>{toAccount}</b> em <b>{toAmount}</b> ({toCondition})."
+    },
     "splitLabel": "Dividir esta transação",
     "referenceNumberLabel": "Número de Referência (opcional)",
     "noPriceHistory": "Ainda não existe histórico de cotações para este título. Insira o preço manualmente.",
@@ -200,6 +207,8 @@
     "toAccountLabel": "Conta de Destino",
     "toAccountPlaceholder": "Selecionar conta de destino...",
     "transferAmountLabel": "Valor da Transferência",
+    "transferCategoryLabel": "Categoria (opcional)",
+    "transferCategoryNote": "Opcional: categorize esta transferência (por exemplo, um aporte de investimento recorrente) para que apareça no detalhamento mensal por categoria. Não conta como receita nem despesa.",
     "actionLabel": "Ação",
     "securityLabel": "Título",
     "securityPlaceholder": "Selecionar título...",

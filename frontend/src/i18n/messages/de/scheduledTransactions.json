@@ -90,6 +90,13 @@
     "totalAmountLabel": "Gesamtbetrag",
     "descriptionLabel": "Beschreibung (optional)",
     "categoryLabel": "Kategorie",
+    "transferLabel": "Überweisung",
+    "balanceWarning": {
+      "belowZero": "unter null",
+      "overCreditLimit": "über das Kreditlimit",
+      "single": "Eine Buchung an diesem Datum bringt <b>{account}</b> auf <b>{amount}</b>, {condition}.",
+      "both": "Eine Buchung an diesem Datum bringt <b>{fromAccount}</b> auf <b>{fromAmount}</b> ({fromCondition}) und <b>{toAccount}</b> auf <b>{toAmount}</b> ({toCondition})."
+    },
     "splitLabel": "Diese Buchung aufteilen",
     "referenceNumberLabel": "Referenznummer (optional)",
     "noPriceHistory": "Noch kein Kursverlauf für dieses Wertpapier. Bitte den Kurs manuell eingeben.",
@@ -200,6 +207,8 @@
     "toAccountLabel": "Auf Konto",
     "toAccountPlaceholder": "Zielkonto auswählen...",
     "transferAmountLabel": "Überweisungsbetrag",
+    "transferCategoryLabel": "Kategorie (optional)",
+    "transferCategoryNote": "Optional: Kategorisieren Sie diese Überweisung (z. B. einen wiederkehrenden Anlagebeitrag), damit sie in der monatlichen Kategorienübersicht erscheint. Sie zählt nicht als Einnahme oder Ausgabe.",
     "actionLabel": "Aktion",
     "securityLabel": "Wertpapier",
     "securityPlaceholder": "Wertpapier auswählen...",
