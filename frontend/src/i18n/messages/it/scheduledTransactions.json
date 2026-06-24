@@ -200,6 +200,8 @@
     "toAccountLabel": "Al conto",
     "toAccountPlaceholder": "Seleziona conto di destinazione...",
     "transferAmountLabel": "Importo trasferimento",
+    "transferCategoryLabel": "Categoria (facoltativa)",
+    "transferCategoryNote": "Facoltativo: categorizza questo trasferimento (ad es. un contributo d'investimento ricorrente) in modo che compaia nella ripartizione mensile per categoria. Non viene conteggiato come entrata o uscita.",
     "actionLabel": "Azione",
     "securityLabel": "Titolo",
     "securityPlaceholder": "Seleziona titolo...",

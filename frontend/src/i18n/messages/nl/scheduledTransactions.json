@@ -200,6 +200,8 @@
     "toAccountLabel": "Naar rekening",
     "toAccountPlaceholder": "Selecteer doelrekening...",
     "transferAmountLabel": "Overboekingsbedrag",
+    "transferCategoryLabel": "Categorie (optioneel)",
+    "transferCategoryNote": "Optioneel: categoriseer deze overboeking (bijv. een terugkerende beleggingsinleg) zodat deze in het maandelijkse categorieoverzicht verschijnt. Ze telt niet als inkomsten of uitgaven.",
     "actionLabel": "Actie",
     "securityLabel": "Waardepapier",
     "securityPlaceholder": "Selecteer waardepapier...",

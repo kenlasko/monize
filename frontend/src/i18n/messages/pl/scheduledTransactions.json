@@ -200,6 +200,8 @@
     "toAccountLabel": "Konto docelowe",
     "toAccountPlaceholder": "Wybierz konto docelowe...",
     "transferAmountLabel": "Kwota przelewu",
+    "transferCategoryLabel": "Kategoria (opcjonalnie)",
+    "transferCategoryNote": "Opcjonalnie: skategoryzuj ten przelew (np. cykliczną wpłatę inwestycyjną), aby pojawił się w miesięcznym zestawieniu kategorii. Nie jest liczony jako przychód ani wydatek.",
     "actionLabel": "Akcja",
     "securityLabel": "Papier wartościowy",
     "securityPlaceholder": "Wybierz papier wartościowy...",

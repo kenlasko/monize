@@ -200,6 +200,8 @@
     "toAccountLabel": "Auf Konto",
     "toAccountPlaceholder": "Zielkonto auswählen...",
     "transferAmountLabel": "Überweisungsbetrag",
+    "transferCategoryLabel": "Kategorie (optional)",
+    "transferCategoryNote": "Optional: Kategorisieren Sie diese Überweisung (z. B. einen wiederkehrenden Anlagebeitrag), damit sie in der monatlichen Kategorienübersicht erscheint. Sie zählt nicht als Einnahme oder Ausgabe.",
     "actionLabel": "Aktion",
     "securityLabel": "Wertpapier",
     "securityPlaceholder": "Wertpapier auswählen...",

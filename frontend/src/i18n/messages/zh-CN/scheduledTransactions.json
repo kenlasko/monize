@@ -200,6 +200,8 @@
     "toAccountLabel": "目标账户",
     "toAccountPlaceholder": "选择目标账户...",
     "transferAmountLabel": "转账金额",
+    "transferCategoryLabel": "类别（可选）",
+    "transferCategoryNote": "可选：为此转账设置类别（例如定期投资缴款），使其显示在每月类别明细中。它不计为收入或支出。",
     "actionLabel": "操作",
     "securityLabel": "证券",
     "securityPlaceholder": "选择证券...",

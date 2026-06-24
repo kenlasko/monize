@@ -200,6 +200,8 @@
     "toAccountLabel": "Đến tài khoản",
     "toAccountPlaceholder": "Chọn tài khoản đích...",
     "transferAmountLabel": "Số tiền chuyển",
+    "transferCategoryLabel": "Danh mục (Tùy chọn)",
+    "transferCategoryNote": "Tùy chọn: phân loại khoản chuyển này (ví dụ: khoản đóng góp đầu tư định kỳ) để nó xuất hiện trong bảng phân tích danh mục hằng tháng. Khoản này không được tính là thu nhập hay chi phí.",
     "actionLabel": "Hành động",
     "securityLabel": "Giấy chứng khoán",
     "securityPlaceholder": "Chọn giấy chứng khoán...",

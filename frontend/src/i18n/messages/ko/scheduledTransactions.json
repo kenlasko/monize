@@ -200,6 +200,8 @@
     "toAccountLabel": "입금 계정",
     "toAccountPlaceholder": "목적지 계정 선택...",
     "transferAmountLabel": "이체 금액",
+    "transferCategoryLabel": "카테고리 (선택)",
+    "transferCategoryNote": "선택 사항: 이 이체를 분류하면(예: 정기 투자 납입) 월별 카테고리 분석에 표시됩니다. 수입이나 지출로 집계되지 않습니다.",
     "actionLabel": "작업",
     "securityLabel": "유가증권",
     "securityPlaceholder": "유가증권 선택...",

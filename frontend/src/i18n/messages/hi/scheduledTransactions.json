@@ -200,6 +200,8 @@
     "toAccountLabel": "को खाता",
     "toAccountPlaceholder": "गंतव्य खाता चुनें...",
     "transferAmountLabel": "स्थानांतरण राशि",
+    "transferCategoryLabel": "श्रेणी (वैकल्पिक)",
+    "transferCategoryNote": "वैकल्पिक: इस ट्रांसफ़र को श्रेणीबद्ध करें (उदाहरण के लिए, एक आवर्ती निवेश योगदान) ताकि यह मासिक श्रेणी विवरण में दिखाई दे। इसे आय या व्यय के रूप में नहीं गिना जाता।",
     "actionLabel": "क्रिया",
     "securityLabel": "प्रतिभूति",
     "securityPlaceholder": "प्रतिभूति चुनें...",

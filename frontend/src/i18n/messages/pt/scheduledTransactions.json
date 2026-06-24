@@ -200,6 +200,8 @@
     "toAccountLabel": "Conta de Destino",
     "toAccountPlaceholder": "Selecionar conta de destino...",
     "transferAmountLabel": "Montante da Transferência",
+    "transferCategoryLabel": "Categoria (opcional)",
+    "transferCategoryNote": "Opcional: categorize esta transferência (por exemplo, uma contribuição de investimento recorrente) para que apareça no resumo mensal por categoria. Não conta como receita nem despesa.",
     "actionLabel": "Ação",
     "securityLabel": "Título",
     "securityPlaceholder": "Selecionar título...",

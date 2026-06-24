@@ -200,6 +200,8 @@
     "toAccountLabel": "Cuenta destino",
     "toAccountPlaceholder": "Seleccionar cuenta destino...",
     "transferAmountLabel": "Monto de transferencia",
+    "transferCategoryLabel": "Categoría (opcional)",
+    "transferCategoryNote": "Opcional: categoriza esta transferencia (p. ej., una aportación de inversión periódica) para que aparezca en el desglose mensual por categorías. No cuenta como ingreso ni como gasto.",
     "actionLabel": "Acción",
     "securityLabel": "Valor",
     "securityPlaceholder": "Seleccionar valor...",

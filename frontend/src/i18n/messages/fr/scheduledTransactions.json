@@ -200,6 +200,8 @@
     "toAccountLabel": "Compte destination",
     "toAccountPlaceholder": "Sélectionner le compte de destination…",
     "transferAmountLabel": "Montant du virement",
+    "transferCategoryLabel": "Catégorie (facultatif)",
+    "transferCategoryNote": "Facultatif : catégorisez ce virement (par exemple une contribution d'investissement récurrente) pour qu'il apparaisse dans la répartition mensuelle par catégorie. Il n'est pas comptabilisé comme revenu ni comme dépense.",
     "actionLabel": "Action",
     "securityLabel": "Titre",
     "securityPlaceholder": "Sélectionner un titre…",
