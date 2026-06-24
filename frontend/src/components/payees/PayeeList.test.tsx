@@ -81,8 +81,8 @@ describe('PayeeList', () => {
     );
     const highlighted = screen.getByText('Netflix').closest('tr')!;
     const other = screen.getByText('Walmart').closest('tr')!;
-    expect(highlighted.className).toContain('ring-amber-400');
-    expect(other.className).not.toContain('ring-amber-400');
+    expect(highlighted.className).toContain('animate-highlight-flash');
+    expect(other.className).not.toContain('animate-highlight-flash');
     expect(scroll).toHaveBeenCalled();
   });
 

@@ -8,6 +8,7 @@ import { getIconComponent } from '@/components/ui/IconPicker';
 import { Transaction, TransactionSplit, TransactionStatus } from '@/types/transaction';
 import { CategoryBudgetStatus } from '@/types/budget';
 import { DensityLevel } from '@/hooks/useTableDensity';
+import { HIGHLIGHT_FLASH, HIGHLIGHT_FLASH_CELL } from '@/hooks/useHighlightTarget';
 import { formatAmountWithCommas, getDecimalPlacesForCurrency } from '@/lib/format';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 
@@ -239,7 +240,7 @@ export const TransactionRow = memo(function TransactionRow({
       onTouchMove={onTouchMove}
       onTouchEnd={onLongPressEnd}
       onTouchCancel={onLongPressEnd}
-      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 select-none touch-manipulation ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} ${isVoid ? 'opacity-50' : ''} ${isFuture && !isVoid ? 'opacity-60' : ''} ${onEdit ? 'cursor-pointer' : ''} ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''} ${isHighlighted ? 'ring-2 ring-inset ring-amber-400 dark:ring-amber-500 !bg-amber-50 dark:!bg-amber-900/30' : ''}`}
+      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 select-none touch-manipulation ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} ${isVoid ? 'opacity-50' : ''} ${isFuture && !isVoid ? 'opacity-60' : ''} ${onEdit ? 'cursor-pointer' : ''} ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''} ${isHighlighted ? HIGHLIGHT_FLASH : ''}`}
     >
       {selectionMode && (
         <td className={`${cellPadding} whitespace-nowrap w-10`} onClick={e => e.stopPropagation()}>
@@ -551,7 +552,7 @@ export const TransactionRow = memo(function TransactionRow({
           )}
         </button>
       </td>
-      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium space-x-2 hidden min-[480px]:table-cell sticky right-0 ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800`}>
+      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium space-x-2 hidden min-[480px]:table-cell sticky right-0 ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800 ${isHighlighted ? HIGHLIGHT_FLASH_CELL : ''}`}>
         {onEdit && (
           <button
             onClick={(e) => { e.stopPropagation(); onEdit(transaction); }}

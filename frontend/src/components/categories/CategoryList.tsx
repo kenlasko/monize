@@ -10,7 +10,7 @@ import toast from 'react-hot-toast';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
 import { useTableDensity, nextDensity, type DensityLevel } from '@/hooks/useTableDensity';
-import { HIGHLIGHT_RING, useScrollIntoViewWhen } from '@/hooks/useHighlightTarget';
+import { HIGHLIGHT_FLASH, HIGHLIGHT_FLASH_CELL, useScrollIntoViewWhen } from '@/hooks/useHighlightTarget';
 import { SortIcon } from '@/components/ui/SortIcon';
 import { useLongPress, type LongPressRowHandlers } from '@/hooks/useLongPress';
 import { RowActions } from '@/components/ui/row-actions/RowActions';
@@ -92,7 +92,7 @@ const CategoryRow = memo(function CategoryRow({
   return (
     <tr
       ref={rowRef}
-      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} ${isHighlighted ? HIGHLIGHT_RING : ''}`}
+      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} ${isHighlighted ? HIGHLIGHT_FLASH : ''}`}
       {...getRowHandlers(category)}
     >
       <td className={`${cellPadding} whitespace-nowrap`}>
@@ -142,7 +142,7 @@ const CategoryRow = memo(function CategoryRow({
           </div>
         </td>
       )}
-      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium hidden min-[480px]:table-cell sticky right-0 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800`}>
+      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium hidden min-[480px]:table-cell sticky right-0 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800 ${isHighlighted ? HIGHLIGHT_FLASH_CELL : ''}`}>
         <RowActions actions={actions} density={density} />
       </td>
     </tr>

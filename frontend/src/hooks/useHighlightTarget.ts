@@ -17,10 +17,16 @@ import { useSearchParams } from 'next/navigation';
  * securities, categories, ...).
  */
 
-// Amber flash applied to the targeted row. `!bg-` overrides the row's own
-// striping/hover background while the flash is showing.
-export const HIGHLIGHT_RING =
-  'ring-2 ring-inset ring-amber-400 dark:ring-amber-500 !bg-amber-50 dark:!bg-amber-900/30';
+// One-shot amber flash for the targeted row: a fading background + inset ring
+// (see the `highlight-flash` keyframe in globals.css) that gently fades out
+// instead of blinking off. Sticky cells (e.g. a `sticky right-0` actions
+// column) must drop their opaque background while highlighted so the flash
+// and its ring wrap the whole row -- see HIGHLIGHT_FLASH_CELL.
+export const HIGHLIGHT_FLASH = 'animate-highlight-flash motion-reduce:animate-none';
+
+// Apply to a sticky/opaque cell so the row flash shows through it (otherwise
+// the cell's own background paints over the flash and the ring stops short).
+export const HIGHLIGHT_FLASH_CELL = '!bg-transparent';
 
 // How long the flash lingers before it clears itself.
 const HIGHLIGHT_DURATION_MS = 3500;

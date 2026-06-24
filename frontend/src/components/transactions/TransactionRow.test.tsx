@@ -90,7 +90,7 @@ describe('TransactionRow', () => {
       .mockImplementation(() => {});
     renderRow({ isHighlighted: true });
     const row = screen.getByText('Coffee Co').closest('tr')!;
-    expect(row.className).toContain('ring-amber-400');
+    expect(row.className).toContain('animate-highlight-flash');
     expect(scrollSpy).toHaveBeenCalled();
     scrollSpy.mockRestore();
   });
@@ -101,7 +101,7 @@ describe('TransactionRow', () => {
       .mockImplementation(() => {});
     renderRow();
     const row = screen.getByText('Coffee Co').closest('tr')!;
-    expect(row.className).not.toContain('ring-amber-400');
+    expect(row.className).not.toContain('animate-highlight-flash');
     expect(scrollSpy).not.toHaveBeenCalled();
     scrollSpy.mockRestore();
   });

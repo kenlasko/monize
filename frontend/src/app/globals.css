@@ -43,10 +43,39 @@
       transform: none;
     }
   }
+
+  /* One-shot amber flash for a deep-linked list row (e.g. the AI chat "View
+     transaction / payees / ..." link). Fades the row background and an inset
+     ring out to transparent so the highlight gently disappears instead of
+     blinking off. Colours come from the theme vars below so it adapts to dark
+     mode; pair the utility with motion-reduce:animate-none. */
+  --animate-highlight-flash: highlight-flash 2.5s ease-out;
+
+  @keyframes highlight-flash {
+    0% {
+      background-color: var(--highlight-flash-bg);
+      box-shadow: inset 0 0 0 2px var(--highlight-flash-ring);
+    }
+    100% {
+      background-color: transparent;
+      box-shadow: inset 0 0 0 2px transparent;
+    }
+  }
 }
 
 /* Dark mode variant */
 @variant dark (&:where(.dark, .dark *));
+
+/* Flash colours (amber-50 / amber-400 in light, amber-900@30% / amber-500 in
+   dark) for the highlight-flash animation above. */
+:root {
+  --highlight-flash-bg: #fffbeb;
+  --highlight-flash-ring: #fbbf24;
+}
+.dark {
+  --highlight-flash-bg: rgb(120 53 15 / 0.3);
+  --highlight-flash-ring: #f59e0b;
+}
 
 /* Base styles -- extend background behind display cutouts */
 html {
