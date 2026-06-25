@@ -8,6 +8,7 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Account, AccountType } from "./entities/account.entity";
+import { Institution } from "../institutions/entities/institution.entity";
 import { CreateAccountDto } from "./dto/create-account.dto";
 import { CategoriesService } from "../categories/categories.service";
 import { ScheduledTransactionsService } from "../scheduled-transactions/scheduled-transactions.service";
@@ -35,11 +36,39 @@ export class LoanMortgageAccountService {
   constructor(
     @InjectRepository(Account)
     private accountsRepository: Repository<Account>,
+    @InjectRepository(Institution)
+    private institutionsRepository: Repository<Institution>,
     @Inject(forwardRef(() => CategoriesService))
     private categoriesService: CategoriesService,
     @Inject(forwardRef(() => ScheduledTransactionsService))
     private scheduledTransactionsService: ScheduledTransactionsService,
   ) {}
+
+  /**
+   * Resolve a display name for the lender/institution backing a loan or
+   * mortgage. The account form sends the selected institution as `institutionId`
+   * (the modern Institutions table) and no longer fills the legacy free-text
+   * `institution` field, so requiring the latter rejected accounts that did have
+   * an institution set. Prefer the explicit free-text value when present (legacy
+   * callers, imports), otherwise look the name up from the referenced
+   * institution. Returns null when neither is available.
+   */
+  private async resolveInstitutionName(
+    userId: string,
+    institutionId: string | undefined,
+    institution: string | undefined,
+  ): Promise<string | null> {
+    if (institution && institution.trim()) {
+      return institution.trim();
+    }
+    if (institutionId) {
+      const found = await this.institutionsRepository.findOne({
+        where: { id: institutionId, userId },
+      });
+      return found?.name ?? null;
+    }
+    return null;
+  }
 
   async createLoanAccount(
     userId: string,
@@ -78,7 +107,12 @@ export class LoanMortgageAccountService {
         ),
       );
     }
-    if (!institution) {
+    const institutionName = await this.resolveInstitutionName(
+      userId,
+      accountData.institutionId,
+      institution,
+    );
+    if (!institutionName) {
       throw new BadRequestException(
         tr(
           "errors.accounts.loanRequiresInstitution",
@@ -132,7 +166,7 @@ export class LoanMortgageAccountService {
       {
         accountId: sourceAccountId,
         name: `Loan Payment - ${savedAccount.name}`,
-        payeeName: institution,
+        payeeName: institutionName,
         amount: -paymentAmount,
         currencyCode: accountData.currencyCode,
         frequency: paymentFrequency as any,
@@ -202,7 +236,12 @@ export class LoanMortgageAccountService {
         ),
       );
     }
-    if (!institution) {
+    const institutionName = await this.resolveInstitutionName(
+      userId,
+      accountData.institutionId,
+      institution,
+    );
+    if (!institutionName) {
       throw new BadRequestException(
         tr(
           "errors.accounts.mortgageRequiresInstitution",
@@ -282,7 +321,7 @@ export class LoanMortgageAccountService {
       {
         accountId: sourceAccountId,
         name: `Mortgage Payment - ${savedAccount.name}`,
-        payeeName: institution,
+        payeeName: institutionName,
         amount: -amortization.paymentAmount,
         currencyCode: accountData.currencyCode,
         frequency: scheduledFrequency as any,

@@ -53,10 +53,17 @@ const optionalNumberWithRange = (min: number, max: number) =>
     z.number().min(min).max(max).optional()
   );
 
+// Treats the empty-string placeholder from an unselected <Select> as undefined so
+// the optional enum accepts it instead of surfacing a raw "Invalid option:
+// expected one of ..." Zod message (see issue #785). Required-ness is enforced
+// per account type in the superRefine below with localized messages.
+const emptyToUndefined = (val: unknown) =>
+  val === '' || val === undefined ? undefined : val;
+
 const paymentFrequencies = ['WEEKLY', 'BIWEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY'] as const;
 const mortgagePaymentFrequencies = ['MONTHLY', 'SEMI_MONTHLY', 'BIWEEKLY', 'ACCELERATED_BIWEEKLY', 'WEEKLY', 'ACCELERATED_WEEKLY'] as const;
 
-const buildAccountSchema = (t: (key: string) => string) => z.object({
+const buildAccountSchema = (t: (key: string) => string, isEditing: boolean) => z.object({
   name: z.string().min(1, t('validation.nameRequired')).max(255),
   accountType: z.enum([
     'CHEQUING',
@@ -85,7 +92,7 @@ const buildAccountSchema = (t: (key: string) => string) => z.object({
   statementSettlementDay: optionalNumberWithRange(1, 31),
   // Loan-specific fields
   paymentAmount: optionalNumber,
-  paymentFrequency: z.enum(paymentFrequencies).optional(),
+  paymentFrequency: z.preprocess(emptyToUndefined, z.enum(paymentFrequencies).optional()),
   paymentStartDate: z.string().optional(),
   sourceAccountId: z.string().optional(),
   interestCategoryId: z.string().optional(),
@@ -97,7 +104,44 @@ const buildAccountSchema = (t: (key: string) => string) => z.object({
   isVariableRate: z.boolean().optional(),
   termMonths: optionalNumber,
   amortizationMonths: optionalNumber,
-  mortgagePaymentFrequency: z.enum(mortgagePaymentFrequencies).optional(),
+  mortgagePaymentFrequency: z.preprocess(emptyToUndefined, z.enum(mortgagePaymentFrequencies).optional()),
+}).superRefine((data, ctx) => {
+  // Loan and mortgage payment setup is only collected when creating the account
+  // (the payment fields are hidden while editing), so only enforce these on
+  // create. The backend rejects the same gaps, but validating here gives clean,
+  // localized, inline errors instead of a generic API toast -- and stops the
+  // silent fall-through that would otherwise create a payment-less account.
+  if (isEditing) return;
+
+  const requireField = (
+    condition: boolean,
+    path: keyof typeof data,
+    messageKey: string,
+  ) => {
+    if (condition) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [path],
+        message: t(messageKey),
+      });
+    }
+  };
+
+  if (data.accountType === 'MORTGAGE') {
+    requireField(!data.institutionId, 'institutionId', 'validation.institutionRequired');
+    requireField(data.interestRate === undefined, 'interestRate', 'validation.interestRateRequired');
+    requireField(!data.mortgagePaymentFrequency, 'mortgagePaymentFrequency', 'validation.paymentFrequencyRequired');
+    requireField(!data.paymentStartDate, 'paymentStartDate', 'validation.paymentStartDateRequired');
+    requireField(!data.sourceAccountId, 'sourceAccountId', 'validation.paymentAccountRequired');
+    requireField(!data.amortizationMonths, 'amortizationMonths', 'validation.amortizationRequired');
+  } else if (data.accountType === 'LOAN') {
+    requireField(!data.institutionId, 'institutionId', 'validation.institutionRequired');
+    requireField(data.interestRate === undefined, 'interestRate', 'validation.interestRateRequired');
+    requireField(!data.paymentAmount, 'paymentAmount', 'validation.paymentAmountRequired');
+    requireField(!data.paymentFrequency, 'paymentFrequency', 'validation.paymentFrequencyRequired');
+    requireField(!data.paymentStartDate, 'paymentStartDate', 'validation.paymentStartDateRequired');
+    requireField(!data.sourceAccountId, 'sourceAccountId', 'validation.paymentAccountRequired');
+  }
 });
 
 type AccountFormData = z.infer<ReturnType<typeof buildAccountSchema>>;
@@ -157,7 +201,7 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
     getValues,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<AccountFormData>({
-    resolver: zodResolver(buildAccountSchema(t)) as Resolver<AccountFormData>,
+    resolver: zodResolver(buildAccountSchema(t, !!account)) as Resolver<AccountFormData>,
     defaultValues: account
       ? {
           name: account.name,
@@ -573,7 +617,7 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
         />
 
         <Combobox
-          label={t('form.institution')}
+          label={(isLoanAccount || isMortgageAccount) ? t('form.institutionRequired') : t('form.institution')}
           placeholder={t('form.institutionPlaceholder')}
           options={institutionOptions}
           value={selectedInstitutionId}

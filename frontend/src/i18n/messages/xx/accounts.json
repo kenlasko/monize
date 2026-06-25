@@ -299,6 +299,13 @@
   },
   "validation": {
     "nameRequired": "[XX-Account name is required-XX]",
-    "currencyCodeLength": "[XX-Currency code must be 3 characters-XX]"
+    "currencyCodeLength": "[XX-Currency code must be 3 characters-XX]",
+    "institutionRequired": "[XX-Please select or create an institution-XX]",
+    "interestRateRequired": "[XX-Interest rate is required-XX]",
+    "paymentAmountRequired": "[XX-Payment amount is required-XX]",
+    "paymentFrequencyRequired": "[XX-Payment frequency is required-XX]",
+    "paymentStartDateRequired": "[XX-First payment date is required-XX]",
+    "paymentAccountRequired": "[XX-Payment account is required-XX]",
+    "amortizationRequired": "[XX-Amortization period is required-XX]"
   }
 }

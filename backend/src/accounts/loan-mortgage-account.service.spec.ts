@@ -3,6 +3,7 @@ import { getRepositoryToken } from "@nestjs/typeorm";
 import { BadRequestException } from "@nestjs/common";
 import { LoanMortgageAccountService } from "./loan-mortgage-account.service";
 import { Account, AccountType } from "./entities/account.entity";
+import { Institution } from "../institutions/entities/institution.entity";
 import { CategoriesService } from "../categories/categories.service";
 import { ScheduledTransactionsService } from "../scheduled-transactions/scheduled-transactions.service";
 import { CreateAccountDto } from "./dto/create-account.dto";
@@ -10,6 +11,7 @@ import { CreateAccountDto } from "./dto/create-account.dto";
 describe("LoanMortgageAccountService", () => {
   let service: LoanMortgageAccountService;
   let accountsRepository: Record<string, jest.Mock>;
+  let institutionsRepository: Record<string, jest.Mock>;
   let categoriesService: Record<string, jest.Mock>;
   let scheduledTransactionsService: Record<string, jest.Mock>;
 
@@ -25,6 +27,10 @@ describe("LoanMortgageAccountService", () => {
         if (!entity.id) entity.id = "new-acc-id";
         return Promise.resolve(entity);
       }),
+      findOne: jest.fn().mockResolvedValue(null),
+    };
+
+    institutionsRepository = {
       findOne: jest.fn().mockResolvedValue(null),
     };
 
@@ -49,6 +55,10 @@ describe("LoanMortgageAccountService", () => {
         {
           provide: getRepositoryToken(Account),
           useValue: accountsRepository,
+        },
+        {
+          provide: getRepositoryToken(Institution),
+          useValue: institutionsRepository,
         },
         {
           provide: CategoriesService,
@@ -235,6 +245,37 @@ describe("LoanMortgageAccountService", () => {
       );
     });
 
+    it("should resolve the institution name from institutionId when no free-text institution is given", async () => {
+      const dto = makeValidLoanDto();
+      delete (dto as any).institution;
+      (dto as any).institutionId = "inst-1";
+      institutionsRepository.findOne.mockResolvedValue({
+        id: "inst-1",
+        name: "PKO BP",
+      });
+
+      await service.createLoanAccount(userId, dto);
+
+      expect(institutionsRepository.findOne).toHaveBeenCalledWith({
+        where: { id: "inst-1", userId },
+      });
+      expect(scheduledTransactionsService.create).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({ payeeName: "PKO BP" }),
+      );
+    });
+
+    it("should throw when institutionId references an unknown institution", async () => {
+      const dto = makeValidLoanDto();
+      delete (dto as any).institution;
+      (dto as any).institutionId = "missing";
+      institutionsRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.createLoanAccount(userId, dto)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
     it("should use provided interestCategoryId instead of looking up", async () => {
       const dto = makeValidLoanDto();
       (dto as any).interestCategoryId = "custom-cat-id";
@@ -408,6 +449,37 @@ describe("LoanMortgageAccountService", () => {
     it("should throw BadRequestException when institution is missing", async () => {
       const dto = makeValidMortgageDto();
       delete dto.institution;
+
+      await expect(service.createMortgageAccount(userId, dto)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it("should resolve the institution name from institutionId when no free-text institution is given", async () => {
+      const dto = makeValidMortgageDto();
+      delete dto.institution;
+      (dto as any).institutionId = "inst-2";
+      institutionsRepository.findOne.mockResolvedValue({
+        id: "inst-2",
+        name: "PKO BP",
+      });
+
+      await service.createMortgageAccount(userId, dto);
+
+      expect(institutionsRepository.findOne).toHaveBeenCalledWith({
+        where: { id: "inst-2", userId },
+      });
+      expect(scheduledTransactionsService.create).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({ payeeName: "PKO BP" }),
+      );
+    });
+
+    it("should throw when institutionId references an unknown institution", async () => {
+      const dto = makeValidMortgageDto();
+      delete dto.institution;
+      (dto as any).institutionId = "missing";
+      institutionsRepository.findOne.mockResolvedValue(null);
 
       await expect(service.createMortgageAccount(userId, dto)).rejects.toThrow(
         BadRequestException,

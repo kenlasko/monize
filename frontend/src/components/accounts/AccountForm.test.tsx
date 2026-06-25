@@ -559,7 +559,7 @@ describe('AccountForm', () => {
     });
   });
 
-  it('shows the institution selector for LOAN type', async () => {
+  it('shows the institution selector as required for LOAN type', async () => {
     render(
       <AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
     );
@@ -568,11 +568,12 @@ describe('AccountForm', () => {
     fireEvent.change(typeSelect, { target: { value: 'LOAN' } });
 
     await waitFor(() => {
-      expect(screen.getByText('Institution (optional)')).toBeInTheDocument();
+      expect(screen.getByText('Lender/Institution (required)')).toBeInTheDocument();
     });
+    expect(screen.queryByText('Institution (optional)')).not.toBeInTheDocument();
   });
 
-  it('shows the institution selector for MORTGAGE type', async () => {
+  it('shows the institution selector as required for MORTGAGE type', async () => {
     render(
       <AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
     );
@@ -581,8 +582,58 @@ describe('AccountForm', () => {
     fireEvent.change(typeSelect, { target: { value: 'MORTGAGE' } });
 
     await waitFor(() => {
-      expect(screen.getByText('Institution (optional)')).toBeInTheDocument();
+      expect(screen.getByText('Lender/Institution (required)')).toBeInTheDocument();
     });
+    expect(screen.queryByText('Institution (optional)')).not.toBeInTheDocument();
+  });
+
+  it('blocks new MORTGAGE submit with localized required errors and no raw Zod enum message', async () => {
+    render(<AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
+
+    const typeSelect = screen.getByLabelText('Account Type') as HTMLSelectElement;
+    await act(async () => { fireEvent.change(typeSelect, { target: { value: 'MORTGAGE' } }); });
+
+    const nameInput = screen.getByLabelText('Account Name');
+    await act(async () => { fireEvent.change(nameInput, { target: { value: 'Home Mortgage' } }); });
+
+    await waitFor(() => {
+      expect(screen.getByText('Mortgage Details')).toBeInTheDocument();
+    });
+
+    const submitButton = screen.getByRole('button', { name: /Create Account/i });
+    await act(async () => { fireEvent.click(submitButton); });
+
+    // Institution is no longer optional, and the unselected payment-frequency
+    // dropdown produces a clean localized message rather than the raw Zod
+    // "Invalid option: expected one of ..." error from issue #785.
+    await waitFor(() => {
+      expect(screen.getByText('Please select or create an institution')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Payment frequency is required')).toBeInTheDocument();
+    expect(screen.queryByText(/Invalid option/i)).not.toBeInTheDocument();
+    expect(mockOnSubmit).not.toHaveBeenCalled();
+  });
+
+  it('blocks new LOAN submit when the institution is missing', async () => {
+    render(<AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
+
+    const typeSelect = screen.getByLabelText('Account Type') as HTMLSelectElement;
+    await act(async () => { fireEvent.change(typeSelect, { target: { value: 'LOAN' } }); });
+
+    const nameInput = screen.getByLabelText('Account Name');
+    await act(async () => { fireEvent.change(nameInput, { target: { value: 'Car Loan' } }); });
+
+    await waitFor(() => {
+      expect(screen.getByText('Loan Payment Details')).toBeInTheDocument();
+    });
+
+    const submitButton = screen.getByRole('button', { name: /Create Account/i });
+    await act(async () => { fireEvent.click(submitButton); });
+
+    await waitFor(() => {
+      expect(screen.getByText('Please select or create an institution')).toBeInTheDocument();
+    });
+    expect(mockOnSubmit).not.toHaveBeenCalled();
   });
 
   it('does not show loan fields when editing existing LOAN account', async () => {
