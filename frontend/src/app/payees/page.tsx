@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
@@ -30,6 +30,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
 import { PAGE_SIZE } from '@/lib/constants';
+import { useHighlightParam } from '@/hooks/useHighlightTarget';
 
 const logger = createLogger('Payees');
 
@@ -256,6 +257,22 @@ function PayeesContent() {
     }
   };
 
+  // Deep link to a specific payee (e.g. the AI chat "View payees" link): once
+  // the list has loaded, jump to the client-side page that contains it so the
+  // row can flash and scroll into view. Runs once per arrival.
+  const highlightId = useHighlightParam();
+  const highlightJumpedRef = useRef(false);
+  useEffect(() => {
+    if (!highlightId || highlightJumpedRef.current || sortedPayees.length === 0) {
+      return;
+    }
+    const index = sortedPayees.findIndex((p) => p.id === highlightId);
+    if (index >= 0) {
+      highlightJumpedRef.current = true;
+      setCurrentPage(Math.floor(index / PAGE_SIZE) + 1);
+    }
+  }, [highlightId, sortedPayees]);
+
   // Summary counts
   const activeCount = payees.filter(p => p.isActive).length;
   const inactiveCount = payees.filter(p => !p.isActive).length;
@@ -408,6 +425,7 @@ function PayeesContent() {
               onSort={handleSort}
               categoryColorMap={categoryColorMap}
               categoryLabelMap={categoryLabelMap}
+              highlightId={highlightId}
             />
           )}
         </div>

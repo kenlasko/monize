@@ -137,10 +137,24 @@ describe('TransactionConfirmationCard', () => {
       />,
     );
     expect(screen.getByText('Transaction created')).toBeInTheDocument();
+    // The link deep-links to the created transaction so the list flashes it.
+    expect(
+      screen.getByRole('link', { name: 'View transaction' }),
+    ).toHaveAttribute('href', '/transactions?targetTransactionId=tx-1');
+    expect(screen.queryByRole('button', { name: 'Approve' })).toBeNull();
+  });
+
+  it('falls back to the unfiltered list when no result id is present', () => {
+    render(
+      <TransactionConfirmationCard
+        action={makeAction({ status: 'confirmed' })}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
     expect(
       screen.getByRole('link', { name: 'View transaction' }),
     ).toHaveAttribute('href', '/transactions');
-    expect(screen.queryByRole('button', { name: 'Approve' })).toBeNull();
   });
 
   it('shows an error message and a retry button on error', () => {
@@ -325,7 +339,7 @@ describe('TransactionConfirmationCard', () => {
     expect(screen.getByText('Pinned to dashboard')).toBeInTheDocument();
   });
 
-  it('shows a view-securities link once a security is created', () => {
+  it('deep-links the view-securities link to the created security', () => {
     render(
       <TransactionConfirmationCard
         action={makeSecurityAction({}, { status: 'confirmed', resultId: 'sec-1' })}
@@ -334,6 +348,19 @@ describe('TransactionConfirmationCard', () => {
       />,
     );
     expect(screen.getByText('Security created')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'View securities' }),
+    ).toHaveAttribute('href', '/securities?highlight=sec-1');
+  });
+
+  it('falls back to the plain securities list when no result id is present', () => {
+    render(
+      <TransactionConfirmationCard
+        action={makeSecurityAction({}, { status: 'confirmed' })}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
     expect(
       screen.getByRole('link', { name: 'View securities' }),
     ).toHaveAttribute('href', '/securities');
@@ -417,7 +444,7 @@ describe('TransactionConfirmationCard', () => {
       expect(screen.getByText('Transaction updated')).toBeInTheDocument();
       expect(
         screen.getByRole('link', { name: 'View transaction' }),
-      ).toHaveAttribute('href', '/transactions');
+      ).toHaveAttribute('href', '/transactions?targetTransactionId=tx-1');
     });
 
     it('renders a delete_transaction card and offers no view link on success', () => {
@@ -508,6 +535,25 @@ describe('TransactionConfirmationCard', () => {
       expect(screen.getByText('Create this payee?')).toBeInTheDocument();
       expect(screen.getByText('Hydro One')).toBeInTheDocument();
       expect(screen.getByText('Utilities')).toBeInTheDocument();
+    });
+
+    it('deep-links the view-payees link to the created payee', () => {
+      render(
+        <TransactionConfirmationCard
+          action={makeAction({
+            type: 'create_payee',
+            descriptor: { type: 'create_payee' },
+            status: 'confirmed',
+            resultId: 'payee-1',
+            preview: { name: 'Hydro One', categoryName: 'Utilities' },
+          })}
+          onConfirm={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      expect(
+        screen.getByRole('link', { name: 'View payees' }),
+      ).toHaveAttribute('href', '/payees?highlight=payee-1');
     });
 
     it('renders an update_payee card and success message', () => {
@@ -698,7 +744,7 @@ describe('TransactionConfirmationCard', () => {
       expect(screen.getByText('Transfer updated')).toBeInTheDocument();
       expect(
         screen.getByRole('link', { name: 'View transaction' }),
-      ).toHaveAttribute('href', '/transactions');
+      ).toHaveAttribute('href', '/transactions?targetTransactionId=tx-1');
     });
   });
 });

@@ -142,6 +142,21 @@ describe('useTransactionFilters - URL/localStorage initialization', () => {
     expect(result.current.filterAmountTo).toBe('50');
   });
 
+  it('initializes the deep-link target from a valid targetTransactionId param', () => {
+    const id = '11111111-1111-4111-8111-111111111111';
+    mockSearchParams = new URLSearchParams(`targetTransactionId=${id}`);
+    const { result } = renderHook(() => useTransactionFilters(defaultOptions));
+    expect(result.current.highlightTransactionId).toBe(id);
+    expect(result.current.targetTransactionIdRef.current).toBe(id);
+  });
+
+  it('ignores a malformed targetTransactionId param', () => {
+    mockSearchParams = new URLSearchParams('targetTransactionId=not-a-uuid');
+    const { result } = renderHook(() => useTransactionFilters(defaultOptions));
+    expect(result.current.highlightTransactionId).toBeNull();
+    expect(result.current.targetTransactionIdRef.current).toBeNull();
+  });
+
   it('reads tagIds from URL params', () => {
     mockSearchParams = new URLSearchParams('tagIds=t1,t2');
     const { result } = renderHook(() => useTransactionFilters(defaultOptions));

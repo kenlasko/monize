@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
@@ -27,6 +27,7 @@ import { getErrorMessage } from '@/lib/errors';
 import { useFormModal } from '@/hooks/useFormModal';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { PAGE_SIZE } from '@/lib/constants';
+import { useHighlightParam } from '@/hooks/useHighlightTarget';
 
 const logger = createLogger('Securities');
 
@@ -248,6 +249,22 @@ function SecuritiesContent() {
     }
   };
 
+  // Deep link to a specific security (e.g. the AI chat "View securities" link):
+  // jump to the client-side page that contains it once the list has loaded, so
+  // the row can flash and scroll into view. Runs once per arrival.
+  const highlightId = useHighlightParam();
+  const highlightJumpedRef = useRef(false);
+  useEffect(() => {
+    if (!highlightId || highlightJumpedRef.current || sortedSecurities.length === 0) {
+      return;
+    }
+    const index = sortedSecurities.findIndex((s) => s.id === highlightId);
+    if (index >= 0) {
+      highlightJumpedRef.current = true;
+      setCurrentPage(Math.floor(index / PAGE_SIZE) + 1);
+    }
+  }, [highlightId, sortedSecurities]);
+
   const activeCount = allSecurities.filter((s) => s.isActive).length;
   const inactiveCount = allSecurities.filter((s) => !s.isActive).length;
 
@@ -362,6 +379,7 @@ function SecuritiesContent() {
               sortField={sortField}
               sortDirection={sortDirection}
               onSort={handleSort}
+              highlightId={highlightId}
             />
           )}
         </div>

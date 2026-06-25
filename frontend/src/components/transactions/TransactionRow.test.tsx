@@ -84,6 +84,28 @@ describe('TransactionRow', () => {
     expect(onRowClick).toHaveBeenCalled();
   });
 
+  it('flashes and scrolls to the row when highlighted', () => {
+    const scrollSpy = vi
+      .spyOn(Element.prototype, 'scrollIntoView')
+      .mockImplementation(() => {});
+    renderRow({ isHighlighted: true });
+    const row = screen.getByText('Coffee Co').closest('tr')!;
+    expect(row.className).toContain('animate-highlight-flash');
+    expect(scrollSpy).toHaveBeenCalled();
+    scrollSpy.mockRestore();
+  });
+
+  it('does not highlight or scroll by default', () => {
+    const scrollSpy = vi
+      .spyOn(Element.prototype, 'scrollIntoView')
+      .mockImplementation(() => {});
+    renderRow();
+    const row = screen.getByText('Coffee Co').closest('tr')!;
+    expect(row.className).not.toContain('animate-highlight-flash');
+    expect(scrollSpy).not.toHaveBeenCalled();
+    scrollSpy.mockRestore();
+  });
+
   it('renders payee as button when onPayeeClick provided', () => {
     const onPayeeClick = vi.fn();
     renderRow({ onPayeeClick });

@@ -68,6 +68,24 @@ describe('PayeeList', () => {
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 
+  it('flashes the highlighted payee row and scrolls to it', () => {
+    // jsdom doesn't implement scrollIntoView.
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    const payees = [
+      makePayee({ id: 'p1', name: 'Walmart' }),
+      makePayee({ id: 'p2', name: 'Netflix' }),
+    ];
+    render(
+      <PayeeList payees={payees} onEdit={onEdit} onRefresh={onRefresh} highlightId="p2" />,
+    );
+    const highlighted = screen.getByText('Netflix').closest('tr')!;
+    const other = screen.getByText('Walmart').closest('tr')!;
+    expect(highlighted.className).toContain('animate-highlight-flash');
+    expect(other.className).not.toContain('animate-highlight-flash');
+    expect(scroll).toHaveBeenCalled();
+  });
+
   // Rendering payees
   it('renders payees table with data', () => {
     const payees = [

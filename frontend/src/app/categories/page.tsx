@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
+import { useHighlightParam } from '@/hooks/useHighlightTarget';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
 const CategoryForm = dynamic(() => import('@/components/categories/CategoryForm').then(m => m.CategoryForm), { ssr: false });
@@ -34,6 +35,9 @@ export default function CategoriesPage() {
 
 function CategoriesContent() {
   const t = useTranslations('categories');
+  // Deep link to a specific category (e.g. a "View categories" link). The tree
+  // renders all rows, so no page jump is needed -- the row flashes in place.
+  const highlightId = useHighlightParam();
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
@@ -296,6 +300,7 @@ function CategoriesContent() {
               sortField={sortField}
               sortDirection={sortDirection}
               onSort={handleSort}
+              highlightId={highlightId}
             />
           )}
         </div>

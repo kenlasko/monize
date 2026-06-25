@@ -314,6 +314,16 @@ function TransactionsContent() {
     }
   }, [filters.currentPage, filters.filterAccountIds, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterTagIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch, filters.filterAmountFrom, filters.filterAmountTo, filters.filterStatuses, filters.updateUrl, loadTransactions, filters.filtersInitialized, undoRedoTick]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Once the deep-linked transaction is actually on the page, let the flash
+  // linger briefly then clear it, so the highlight does not stick around on
+  // later interactions.
+  useEffect(() => {
+    const id = filters.highlightTransactionId;
+    if (!id || !transactions.some((tx) => tx.id === id)) return;
+    const timer = setTimeout(() => filters.setHighlightTransactionId(null), 5000);
+    return () => clearTimeout(timer);
+  }, [transactions, filters.highlightTransactionId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Patch popstate handler to skip when modals open
   useEffect(() => {
     const origHandler = (_e: PopStateEvent) => {
@@ -1016,6 +1026,7 @@ function TransactionsContent() {
               categoryColorMap={filters.categoryColorMap}
               categoryLabelMap={filters.categoryLabelMap}
               budgetStatusMap={budgetStatusMap}
+              highlightTransactionId={filters.highlightTransactionId}
             />
           )}
         </div>

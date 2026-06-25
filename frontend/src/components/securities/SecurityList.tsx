@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback, memo } from 'react';
 import { useTranslations, useMessages } from 'next-intl';
 import { Security } from '@/types/investment';
 import { DensityLevel, nextDensity } from '@/hooks/useTableDensity';
+import { HIGHLIGHT_FLASH, HIGHLIGHT_FLASH_CELL, useScrollIntoViewWhen } from '@/hooks/useHighlightTarget';
 import { SortIcon } from '@/components/ui/SortIcon';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { formatShareQuantity } from '@/lib/format';
@@ -153,6 +154,8 @@ interface SecurityListProps {
   sortField?: SecuritySortField;
   sortDirection?: SortDirection;
   onSort?: (field: SecuritySortField) => void;
+  /** Security id to flash/scroll to (e.g. arriving from a deep link). */
+  highlightId?: string | null;
 }
 
 interface SecurityRowProps {
@@ -171,6 +174,7 @@ interface SecurityRowProps {
   getRowHandlers: (security: Security) => LongPressRowHandlers;
   index: number;
   defaultQuoteProvider: 'yahoo' | 'msn';
+  isHighlighted?: boolean;
 }
 
 const SecurityRow = memo(function SecurityRow({
@@ -189,7 +193,9 @@ const SecurityRow = memo(function SecurityRow({
   getRowHandlers,
   index,
   defaultQuoteProvider,
+  isHighlighted,
 }: SecurityRowProps) {
+  const rowRef = useScrollIntoViewWhen<HTMLTableRowElement>(!!isHighlighted);
   const t = useTranslations('securities');
   const tc = useTranslations('common');
   const messages = useMessages();
@@ -224,9 +230,10 @@ const SecurityRow = memo(function SecurityRow({
 
   return (
     <tr
+      ref={rowRef}
       className={`group hover:bg-gray-100 dark:hover:bg-gray-800 select-none ${
         !security.isActive ? 'opacity-60' : ''
-      } ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'}`}
+      } ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} ${isHighlighted ? HIGHLIGHT_FLASH : ''}`}
       {...getRowHandlers(security)}
     >
       <td className={`${cellPadding} whitespace-nowrap text-center`}>
@@ -361,7 +368,7 @@ const SecurityRow = memo(function SecurityRow({
         )}
       </td>
       {/* Actions - hidden on mobile */}
-      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium hidden sm:table-cell sticky right-0 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800`}>
+      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium hidden sm:table-cell sticky right-0 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800 ${isHighlighted ? HIGHLIGHT_FLASH_CELL : ''}`}>
         <RowActions actions={actions} density={density} />
       </td>
     </tr>
@@ -383,6 +390,7 @@ export function SecurityList({
   sortField: propSortField,
   sortDirection: propSortDirection,
   onSort,
+  highlightId,
 }: SecurityListProps) {
   const t = useTranslations('securities');
   const [localDensity, setLocalDensity] = useState<DensityLevel>('normal');
@@ -574,6 +582,7 @@ export function SecurityList({
                 getRowHandlers={getRowHandlers}
                 index={index}
                 defaultQuoteProvider={defaultQuoteProvider}
+                isHighlighted={!!highlightId && security.id === highlightId}
               />
             ))}
           </tbody>

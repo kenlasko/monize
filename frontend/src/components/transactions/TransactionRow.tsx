@@ -8,6 +8,7 @@ import { getIconComponent } from '@/components/ui/IconPicker';
 import { Transaction, TransactionSplit, TransactionStatus } from '@/types/transaction';
 import { CategoryBudgetStatus } from '@/types/budget';
 import { DensityLevel } from '@/hooks/useTableDensity';
+import { HIGHLIGHT_FLASH, HIGHLIGHT_FLASH_CELL } from '@/hooks/useHighlightTarget';
 import { formatAmountWithCommas, getDecimalPlacesForCurrency } from '@/lib/format';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 
@@ -166,6 +167,8 @@ export interface TransactionRowProps {
   categoryColorMap?: Map<string, string | null>;
   budgetStatusMap?: Record<string, CategoryBudgetStatus>;
   isFuture?: boolean;
+  /** Flash and scroll to this row (e.g. when arriving from a deep link). */
+  isHighlighted?: boolean;
 }
 
 export const TransactionRow = memo(function TransactionRow({
@@ -202,11 +205,21 @@ export const TransactionRow = memo(function TransactionRow({
   categoryColorMap,
   budgetStatusMap,
   isFuture,
+  isHighlighted,
 }: TransactionRowProps) {
   const t = useTranslations('transactions');
   const tc = useTranslations('common');
   const { formatCurrency } = useNumberFormat();
   const isVoid = transaction.status === TransactionStatus.VOID;
+
+  // When this row is the deep-link target, scroll it into view once it mounts
+  // so the user lands on it rather than hunting through the page.
+  const rowRef = useRef<HTMLTableRowElement>(null);
+  useEffect(() => {
+    if (isHighlighted) {
+      rowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [isHighlighted]);
   // Prefer the denormalized payeeName, but fall back to the linked payee's name
   // so a transaction that has only payeeId set (e.g. created via the REST API
   // without payeeName) still shows the payee instead of a dash.
@@ -217,6 +230,7 @@ export const TransactionRow = memo(function TransactionRow({
 
   return (
     <tr
+      ref={rowRef}
       onClick={() => onRowClick(transaction)}
       onContextMenu={(e) => onContextMenu(transaction, e)}
       onMouseDown={(e) => onLongPressStart(transaction, e)}
@@ -226,7 +240,7 @@ export const TransactionRow = memo(function TransactionRow({
       onTouchMove={onTouchMove}
       onTouchEnd={onLongPressEnd}
       onTouchCancel={onLongPressEnd}
-      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 select-none touch-manipulation ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} ${isVoid ? 'opacity-50' : ''} ${isFuture && !isVoid ? 'opacity-60' : ''} ${onEdit ? 'cursor-pointer' : ''} ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 select-none touch-manipulation ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} ${isVoid ? 'opacity-50' : ''} ${isFuture && !isVoid ? 'opacity-60' : ''} ${onEdit ? 'cursor-pointer' : ''} ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''} ${isHighlighted ? HIGHLIGHT_FLASH : ''}`}
     >
       {selectionMode && (
         <td className={`${cellPadding} whitespace-nowrap w-10`} onClick={e => e.stopPropagation()}>
@@ -538,7 +552,7 @@ export const TransactionRow = memo(function TransactionRow({
           )}
         </button>
       </td>
-      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium space-x-2 hidden min-[480px]:table-cell sticky right-0 ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800`}>
+      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium space-x-2 hidden min-[480px]:table-cell sticky right-0 ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800 ${isHighlighted ? HIGHLIGHT_FLASH_CELL : ''}`}>
         {onEdit && (
           <button
             onClick={(e) => { e.stopPropagation(); onEdit(transaction); }}

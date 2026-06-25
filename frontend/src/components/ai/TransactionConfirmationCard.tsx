@@ -296,17 +296,30 @@ export function TransactionConfirmationCard({
     type === 'delete_investment_transaction' ||
     type === 'delete_payee' ||
     type === 'delete_security';
-  // The affected record's home, surfaced as a "view" link on success.
+  // The affected record's home, surfaced as a "view" link on success. For
+  // list-backed destinations we deep-link to the created/edited record
+  // (?highlight=<id>) so the list flashes and scrolls to it; without a result
+  // id we fall back to the plain list.
+  const highlightHref = (base: string) =>
+    action.resultId ? `${base}?highlight=${action.resultId}` : base;
   const viewLink = isDeletion
     ? null
     : isInvestmentTxType
       ? { href: '/investments', label: t('confirmAction.viewInvestments') }
       : isSecurityResult
-        ? { href: '/securities', label: t('confirmAction.viewSecurities') }
+        ? { href: highlightHref('/securities'), label: t('confirmAction.viewSecurities') }
         : isPayeeWriteType
-          ? { href: '/payees', label: t('confirmAction.viewPayees') }
+          ? { href: highlightHref('/payees'), label: t('confirmAction.viewPayees') }
           : isCashTxType || isTransferType || type === 'categorize_transaction'
-            ? { href: '/transactions', label: t('confirmAction.viewTransaction') }
+            ? {
+                // Deep-link to the affected transaction so the list jumps to and
+                // flashes that row; fall back to the unfiltered list if the id
+                // is missing (e.g. an older pending action without a result).
+                href: action.resultId
+                  ? `/transactions?targetTransactionId=${action.resultId}`
+                  : '/transactions',
+                label: t('confirmAction.viewTransaction'),
+              }
             : null;
   const successByType: Partial<Record<typeof type, string>> = {
     create_transaction: t('confirmAction.createdTransaction'),

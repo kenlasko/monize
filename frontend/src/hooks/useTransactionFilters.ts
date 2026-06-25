@@ -31,6 +31,11 @@ const STORAGE_KEYS = {
   statuses: 'transactions.filter.statuses',
 };
 
+// Mirrors the backend's targetTransactionId validation so a malformed deep-link
+// value is ignored rather than sent on to a 4xx.
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const VALID_TRANSACTION_STATUSES = new Set<string>(Object.values(TransactionStatus));
 
 function sanitizeStatuses(values: string[]): TransactionStatus[] {
@@ -135,6 +140,9 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const [filtersInitialized, setFiltersInitialized] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(true);
+  // Transaction id to flash/scroll to after a deep link (e.g. the AI chat's
+  // "View transaction" link). Initialized from the URL once on mount.
+  const [highlightTransactionId, setHighlightTransactionId] = useState<string | null>(null);
 
   // Track when we're syncing state from browser back/forward navigation
   const syncingFromPopstateRef = useRef(false);
@@ -315,7 +323,8 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
       searchParams.has('amountFrom') ||
       searchParams.has('amountTo') ||
       searchParams.has('tagIds') ||
-      searchParams.has('statuses');
+      searchParams.has('statuses') ||
+      searchParams.has('targetTransactionId');
 
     const getAccountIds = () => {
       const ids = searchParams.get('accountIds');
@@ -367,6 +376,14 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
       setFilterTimePeriod((initialStartDate || initialEndDate) ? 'custom' : '');
     } else {
       setFilterTimePeriod(getFilterValue(STORAGE_KEYS.timePeriod, null, false));
+    }
+    // Deep link to a specific transaction (e.g. the AI chat "View transaction"
+    // link). The backend resolves which page contains it; we flash/scroll to it
+    // once it renders. A bogus value is ignored so the list still loads.
+    const targetId = searchParams.get('targetTransactionId');
+    if (targetId && UUID_REGEX.test(targetId)) {
+      targetTransactionIdRef.current = targetId;
+      setHighlightTransactionId(targetId);
     }
     setFiltersInitialized(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -579,6 +596,7 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     filtersInitialized,
     filtersExpanded, setFiltersExpanded,
     activeFilterCount,
+    highlightTransactionId, setHighlightTransactionId,
 
     // Derived filter data
     filteredAccounts,

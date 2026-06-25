@@ -53,6 +53,8 @@ interface TransactionListProps {
   categoryLabelMap?: Map<string, string>;
   budgetStatusMap?: Record<string, CategoryBudgetStatus>;
   showToolbar?: boolean;
+  /** Transaction id to flash and scroll to (e.g. arriving from a deep link). */
+  highlightTransactionId?: string | null;
 }
 
 export function TransactionList({
@@ -92,6 +94,7 @@ export function TransactionList({
   categoryLabelMap,
   budgetStatusMap,
   showToolbar = true,
+  highlightTransactionId,
 }: TransactionListProps) {
   const t = useTranslations('transactions');
   const tc = useTranslations('common');
@@ -519,6 +522,7 @@ export function TransactionList({
                     categoryColorMap={categoryColorMap}
                     budgetStatusMap={budgetStatusMap}
                     isFuture={isFuture}
+                    isHighlighted={!!highlightTransactionId && transaction.id === highlightTransactionId}
                   />
                 </React.Fragment>
               );

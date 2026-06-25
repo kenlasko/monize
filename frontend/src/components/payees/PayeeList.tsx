@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
 import { useTableDensity, nextDensity, type DensityLevel } from '@/hooks/useTableDensity';
+import { HIGHLIGHT_FLASH, HIGHLIGHT_FLASH_CELL, useScrollIntoViewWhen } from '@/hooks/useHighlightTarget';
 import { SortIcon } from '@/components/ui/SortIcon';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useLongPress, type LongPressRowHandlers } from '@/hooks/useLongPress';
@@ -96,6 +97,8 @@ interface PayeeListProps {
   onSort?: (field: SortField) => void;
   categoryColorMap?: Map<string, string | null>;
   categoryLabelMap?: Map<string, string>;
+  /** Payee id to flash/scroll to (e.g. arriving from a deep link). */
+  highlightId?: string | null;
 }
 
 interface PayeeRowProps {
@@ -113,6 +116,7 @@ interface PayeeRowProps {
   categoryLabelMap?: Map<string, string>;
   formatDate: (date: string) => string;
   getRowHandlers: (payee: Payee) => LongPressRowHandlers;
+  isHighlighted?: boolean;
 }
 
 const PayeeRow = memo(function PayeeRow({
@@ -130,9 +134,11 @@ const PayeeRow = memo(function PayeeRow({
   categoryLabelMap,
   formatDate,
   getRowHandlers,
+  isHighlighted,
 }: PayeeRowProps) {
   const t = useTranslations('payees');
   const tc = useTranslations('common');
+  const rowRef = useScrollIntoViewWhen<HTMLTableRowElement>(!!isHighlighted);
   const defaultCategoryColor = payee.defaultCategory
     ? (categoryColorMap?.get(payee.defaultCategory.id) ?? payee.defaultCategory.color)
     : null;
@@ -150,7 +156,8 @@ const PayeeRow = memo(function PayeeRow({
 
   return (
     <tr
-      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} ${!payee.isActive ? 'opacity-60' : ''}`}
+      ref={rowRef}
+      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} ${!payee.isActive ? 'opacity-60' : ''} ${isHighlighted ? HIGHLIGHT_FLASH : ''}`}
       {...getRowHandlers(payee)}
     >
       <td className={`${cellPadding} whitespace-nowrap`}>
@@ -223,7 +230,7 @@ const PayeeRow = memo(function PayeeRow({
           </div>
         </td>
       )}
-      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium hidden min-[480px]:table-cell sticky right-0 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800`}>
+      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium hidden min-[480px]:table-cell sticky right-0 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800 ${isHighlighted ? HIGHLIGHT_FLASH_CELL : ''}`}>
         <RowActions actions={actions} density={density} />
       </td>
     </tr>
@@ -245,6 +252,7 @@ export function PayeeList({
   onSort,
   categoryColorMap,
   categoryLabelMap,
+  highlightId,
 }: PayeeListProps) {
   const t = useTranslations('payees');
   const tc = useTranslations('common');
@@ -449,6 +457,7 @@ export function PayeeList({
                 categoryLabelMap={categoryLabelMap}
                 formatDate={formatDate}
                 getRowHandlers={getRowHandlers}
+                isHighlighted={!!highlightId && payee.id === highlightId}
               />
             ))}
           </tbody>
