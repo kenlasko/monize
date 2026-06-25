@@ -157,9 +157,6 @@ export class ToolExecutorService {
         case "list_categories":
           result = await this.getCategories(userId, validatedInput);
           break;
-        case "get_net_worth_history":
-          result = await this.getNetWorthHistory(userId, validatedInput);
-          break;
         case "compare_periods":
           result = await this.comparePeriods(userId, validatedInput);
           break;
@@ -1717,45 +1714,6 @@ export class ToolExecutorService {
     };
   }
 
-  private async getNetWorthHistory(
-    userId: string,
-    input: Record<string, unknown>,
-  ): Promise<ToolResult> {
-    const startDate = input.startDate as string | undefined;
-    const endDate = input.endDate as string | undefined;
-
-    const history = await this.netWorthService.getLlmHistory(
-      userId,
-      startDate,
-      endDate,
-    );
-
-    const start =
-      startDate ??
-      (history.length > 0
-        ? history[0].month
-        : new Date().toISOString().substring(0, 10));
-    const end =
-      endDate ??
-      (history.length > 0
-        ? history[history.length - 1].month
-        : new Date().toISOString().substring(0, 10));
-
-    return {
-      // Return the bare array so this matches the MCP server's
-      // get_net_worth_history payload exactly (shared-tool data-shape parity).
-      data: history,
-      summary: `Net worth history: ${history.length} months from ${start} to ${end}`,
-      sources: [
-        {
-          type: "net_worth",
-          description: "Monthly net worth history",
-          dateRange: `${start} to ${end}`,
-        },
-      ],
-    };
-  }
-
   private async comparePeriods(
     userId: string,
     input: Record<string, unknown>,
@@ -2061,7 +2019,8 @@ export class ToolExecutorService {
   /**
    * Run a built-in financial report. Mirrors the MCP generate_report tool and
    * returns the same per-type data shape. The five aggregation types take a date
-   * range (default last 30 days); 'spending_anomalies' takes a months window
+   * range (default last 30 days); 'net_worth_history' takes a date range
+   * (default last 12 months); 'spending_anomalies' takes a months window
    * (default 3); 'month_comparison' takes a month (default the previous month).
    */
   private async generateReport(
@@ -2075,7 +2034,44 @@ export class ToolExecutorService {
       | "monthly_trend"
       | "income_by_source"
       | "spending_anomalies"
-      | "month_comparison";
+      | "month_comparison"
+      | "net_worth_history";
+
+    if (type === "net_worth_history") {
+      const startDate = input.startDate as string | undefined;
+      const endDate = input.endDate as string | undefined;
+
+      const history = await this.netWorthService.getLlmHistory(
+        userId,
+        startDate,
+        endDate,
+      );
+
+      const start =
+        startDate ??
+        (history.length > 0
+          ? history[0].month
+          : new Date().toISOString().substring(0, 10));
+      const end =
+        endDate ??
+        (history.length > 0
+          ? history[history.length - 1].month
+          : new Date().toISOString().substring(0, 10));
+
+      return {
+        // Bare array, matching the MCP generate_report net_worth_history payload
+        // exactly (shared-tool data-shape parity).
+        data: history,
+        summary: `Net worth history: ${history.length} months from ${start} to ${end}`,
+        sources: [
+          {
+            type: "net_worth",
+            description: "Monthly net worth history",
+            dateRange: `${start} to ${end}`,
+          },
+        ],
+      };
+    }
 
     if (type === "spending_anomalies") {
       const months = (input.months as number | undefined) ?? 3;

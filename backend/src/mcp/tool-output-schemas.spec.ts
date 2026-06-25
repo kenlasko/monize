@@ -60,11 +60,6 @@ const cases: Array<{ name: string; schema: RawShape; raw: unknown }> = [
     },
   },
   {
-    name: "getNetWorthHistoryOutput",
-    schema: schemas.getNetWorthHistoryOutput,
-    raw: [{ month: "2026-01-01", assets: 1, liabilities: 0, netWorth: 1 }],
-  },
-  {
     name: "listTransactionsOutput (summary branch)",
     schema: schemas.listTransactionsOutput,
     raw: {
@@ -412,6 +407,12 @@ const cases: Array<{ name: string; schema: RawShape; raw: unknown }> = [
       netWorth: { currentNetWorth: 1000, monthlyHistory: [] },
       investments: { accountPerformance: [], topMovers: [] },
     },
+  },
+  {
+    name: "generateReportOutput (net_worth_history type)",
+    schema: schemas.generateReportOutput,
+    // Bare array -> toolResult wraps it under `items`.
+    raw: [{ month: "2026-01-01", assets: 1, liabilities: 0, netWorth: 1 }],
   },
   {
     name: "generateReportOutput (spending_anomalies type)",

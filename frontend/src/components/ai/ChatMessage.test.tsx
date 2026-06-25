@@ -225,7 +225,6 @@ describe('ChatMessage', () => {
         { name: 'list_accounts', expected: 'Accounts' },
         { name: 'manage_payees', expected: 'Manage Payees' },
         { name: 'list_investment_transactions', expected: 'Investment Transactions' },
-        { name: 'get_net_worth_history', expected: 'Net Worth History' },
         { name: 'compare_periods', expected: 'Period Comparison' },
       ];
 

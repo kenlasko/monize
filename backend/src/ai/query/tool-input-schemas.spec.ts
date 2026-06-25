@@ -3,7 +3,6 @@ import {
   listTransactionsSchema,
   listAccountsSchema,
   getCategoriesSchema,
-  getNetWorthHistorySchema,
   comparePeriodsSchema,
   getPortfolioSummarySchema,
   listInvestmentTransactionsSchema,
@@ -269,28 +268,6 @@ describe("tool-input-schemas", () => {
     it("rejects a search string over 100 chars", () => {
       const result = getCategoriesSchema.safeParse({
         search: "a".repeat(101),
-      });
-      expect(result.success).toBe(false);
-    });
-  });
-
-  describe("getNetWorthHistorySchema", () => {
-    it("accepts empty input", () => {
-      const result = getNetWorthHistorySchema.safeParse({});
-      expect(result.success).toBe(true);
-    });
-
-    it("accepts optional startDate and endDate", () => {
-      const result = getNetWorthHistorySchema.safeParse({
-        startDate: "2025-01-01",
-        endDate: "2026-01-31",
-      });
-      expect(result.success).toBe(true);
-    });
-
-    it("rejects invalid date format", () => {
-      const result = getNetWorthHistorySchema.safeParse({
-        startDate: "Jan 2025",
       });
       expect(result.success).toBe(false);
     });

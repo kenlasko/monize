@@ -46,7 +46,6 @@ const TOOL_LABELS: Record<string, string> = {
   list_transactions: 'Transactions',
   list_accounts: 'Accounts',
   list_investment_transactions: 'Investment Transactions',
-  get_net_worth_history: 'Net Worth History',
   compare_periods: 'Period Comparison',
   get_budget_status: 'Budget Status',
   calculate: 'Calculation',

@@ -171,24 +171,6 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
     },
   },
   {
-    name: "get_net_worth_history",
-    description:
-      "Get monthly net worth history showing assets, liabilities, and net worth over time. Use for trend questions about overall financial health.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        startDate: {
-          type: "string",
-          description: "Start date (YYYY-MM-DD). Defaults to 12 months ago.",
-        },
-        endDate: {
-          type: "string",
-          description: "End date (YYYY-MM-DD). Defaults to today.",
-        },
-      },
-    },
-  },
-  {
     name: "compare_periods",
     description:
       "Compare spending or income between two time periods. Returns a side-by-side comparison showing absolute and percentage changes. Use for questions like 'compare this month vs last month'. If any of the four date fields are omitted, defaults to the previous full month (period1) vs the current month-to-date (period2).",
@@ -420,7 +402,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
   {
     name: "render_chart",
     description:
-      "Render a chart in the chat so the user can see the data visually. Call this AFTER gathering numbers with another tool (list_transactions, get_net_worth_history, compare_periods, etc.). Choose the chart type that fits the data: 'pie' for category breakdowns with 6 or fewer slices, 'bar' for larger breakdowns or period comparisons, 'line' or 'area' for time series (months or weeks). Pass a compact subset of the data (at most 10-15 data points) and aggregate the long tail into an 'Other' bucket. Values must be positive numbers (use absolute values for expenses). Do not narrate the chart's existence in your reply; just render it and summarize the findings.",
+      "Render a chart in the chat so the user can see the data visually. Call this AFTER gathering numbers with another tool (list_transactions, generate_report, compare_periods, etc.). Choose the chart type that fits the data: 'pie' for category breakdowns with 6 or fewer slices, 'bar' for larger breakdowns or period comparisons, 'line' or 'area' for time series (months or weeks). Pass a compact subset of the data (at most 10-15 data points) and aggregate the long tail into an 'Other' bucket. Values must be positive numbers (use absolute values for expenses). Do not narrate the chart's existence in your reply; just render it and summarize the findings.",
     inputSchema: {
       type: "object",
       properties: {
@@ -868,7 +850,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
   {
     name: "generate_report",
     description:
-      "Run one of the built-in financial reports. Prefer this over list_transactions for spending/income breakdown, anomaly, and month-comparison questions because it returns a ready aggregated result. Report types: 'spending_by_category' (expense totals grouped by category), 'spending_by_payee' (expense totals grouped by payee), 'income_vs_expenses' (period income, expenses, and net), 'monthly_trend' (spending per month over the range -- use this for trend questions instead of fetching transactions month by month), 'income_by_source' (income grouped by source), 'spending_anomalies' (transactions that are statistically large for their category vs recent history -- use for 'any unusual spending?'; may return an empty list for sparse data, in which case say there was nothing unusual rather than implying a problem), and 'month_comparison' (one month vs the previous month in a single call: income vs expenses, category spending changes, net worth, and investment performance -- use for 'how am I doing this month?'). Parameters apply per type: the five aggregation types use startDate/endDate (default last 30 days); 'spending_anomalies' uses months; 'month_comparison' uses month. For an arbitrary pair of date ranges use compare_periods instead.",
+      "Run one of the built-in financial reports. Prefer this over list_transactions for spending/income breakdown, anomaly, and month-comparison questions because it returns a ready aggregated result. Report types: 'spending_by_category' (expense totals grouped by category), 'spending_by_payee' (expense totals grouped by payee), 'income_vs_expenses' (period income, expenses, and net), 'monthly_trend' (spending per month over the range -- use this for trend questions instead of fetching transactions month by month), 'income_by_source' (income grouped by source), 'spending_anomalies' (transactions that are statistically large for their category vs recent history -- use for 'any unusual spending?'; may return an empty list for sparse data, in which case say there was nothing unusual rather than implying a problem), 'month_comparison' (one month vs the previous month in a single call: income vs expenses, category spending changes, net worth, and investment performance -- use for 'how am I doing this month?'), and 'net_worth_history' (monthly assets, liabilities, and net worth over time -- use for net-worth trend questions about overall financial health). Parameters apply per type: the five aggregation types use startDate/endDate (default last 30 days); 'net_worth_history' uses startDate/endDate (default last 12 months); 'spending_anomalies' uses months; 'month_comparison' uses month. For an arbitrary pair of date ranges use compare_periods instead.",
     inputSchema: {
       type: "object",
       properties: {
@@ -882,6 +864,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
             "income_by_source",
             "spending_anomalies",
             "month_comparison",
+            "net_worth_history",
           ],
           description:
             "Which report to run. MUST be exactly one of the listed values.",
@@ -889,12 +872,12 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
         startDate: {
           type: "string",
           description:
-            "Start date in YYYY-MM-DD format for the five aggregation types. Omit to default to 30 days ago.",
+            "Start date in YYYY-MM-DD format for the five aggregation types (default 30 days ago) and net_worth_history (default 12 months ago).",
         },
         endDate: {
           type: "string",
           description:
-            "End date in YYYY-MM-DD format for the five aggregation types. Omit to default to today.",
+            "End date in YYYY-MM-DD format for the five aggregation types and net_worth_history. Omit to default to today.",
         },
         months: {
           type: "integer",

@@ -202,9 +202,9 @@ export class NetWorthService {
 
   /**
    * Monthly net worth history shaped for LLM tools. Shared by the AI
-   * Assistant's `get_net_worth_history` tool and the MCP server's matching
-   * tool so both surfaces return the same data with the same default range
-   * (last 12 months if no dates provided).
+   * Assistant and MCP `generate_report` tools (type `net_worth_history`) so
+   * both surfaces return the same data with the same default range (last 12
+   * months if no dates provided).
    */
   async getLlmHistory(
     userId: string,

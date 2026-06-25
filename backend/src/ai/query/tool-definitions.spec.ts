@@ -1,8 +1,8 @@
 import { FINANCIAL_TOOLS } from "./tool-definitions";
 
 describe("FINANCIAL_TOOLS", () => {
-  it("defines exactly 19 tools", () => {
-    expect(FINANCIAL_TOOLS).toHaveLength(19);
+  it("defines exactly 18 tools", () => {
+    expect(FINANCIAL_TOOLS).toHaveLength(18);
   });
 
   it("has unique tool names", () => {
@@ -14,7 +14,6 @@ describe("FINANCIAL_TOOLS", () => {
     "list_transactions",
     "list_accounts",
     "list_categories",
-    "get_net_worth_history",
     "compare_periods",
     "get_portfolio_summary",
     "list_investment_transactions",
@@ -161,15 +160,6 @@ describe("FINANCIAL_TOOLS", () => {
     });
   });
 
-  describe("get_net_worth_history", () => {
-    it("has no required fields (defaults to 12 months)", () => {
-      const tool = FINANCIAL_TOOLS.find(
-        (t) => t.name === "get_net_worth_history",
-      )!;
-      expect(tool.inputSchema.required).toBeUndefined();
-    });
-  });
-
   describe("compare_periods", () => {
     it("has no required fields (defaults to previous month vs current month-to-date)", () => {
       const tool = FINANCIAL_TOOLS.find((t) => t.name === "compare_periods")!;
@@ -183,6 +173,18 @@ describe("FINANCIAL_TOOLS", () => {
         Record<string, unknown>
       >;
       expect(props.groupBy.enum).toEqual(["category", "payee"]);
+    });
+  });
+
+  describe("generate_report", () => {
+    it("exposes net_worth_history among the report types", () => {
+      const tool = FINANCIAL_TOOLS.find((t) => t.name === "generate_report")!;
+      const props = tool.inputSchema.properties as Record<
+        string,
+        Record<string, unknown>
+      >;
+      expect(props.type.enum).toContain("net_worth_history");
+      expect(props.type.enum).toContain("month_comparison");
     });
   });
 

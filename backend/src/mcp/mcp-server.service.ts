@@ -9,7 +9,6 @@ import { McpCategoriesTools } from "./tools/categories.tool";
 import { McpPayeesTools } from "./tools/payees.tool";
 import { McpReportsTools } from "./tools/reports.tool";
 import { McpInvestmentsTools } from "./tools/investments.tool";
-import { McpNetWorthTools } from "./tools/net-worth.tool";
 import { McpScheduledTools } from "./tools/scheduled.tool";
 import { McpCalculateTools } from "./tools/calculate.tool";
 import { McpBudgetsTools } from "./tools/budgets.tool";
@@ -38,7 +37,6 @@ export class McpServerService {
     private readonly payeesTools: McpPayeesTools,
     private readonly reportsTools: McpReportsTools,
     private readonly investmentsTools: McpInvestmentsTools,
-    private readonly netWorthTools: McpNetWorthTools,
     private readonly scheduledTools: McpScheduledTools,
     private readonly calculateTools: McpCalculateTools,
     private readonly budgetsTools: McpBudgetsTools,
@@ -78,7 +76,7 @@ export class McpServerService {
           "## Answering common questions",
           "- 'How much did I spend on X?' → generate_report with type spending_by_category or spending_by_payee, or list_transactions (summary only), not list_transactions with includeTransactions.",
           "- 'How am I doing this month?' → generate_report with type month_comparison, or the financial-review prompt.",
-          "- 'What's my net worth?' → list_accounts for current balances and the assets/liabilities/net-worth summary, get_net_worth_history for trends.",
+          "- 'What's my net worth?' → list_accounts for current balances and the assets/liabilities/net-worth summary, generate_report (type net_worth_history) for trends.",
           "- 'Any unusual spending?' → generate_report with type spending_anomalies rather than manually scanning transactions.",
           "- 'What bills are coming up?' → list_upcoming_bills.",
           "- 'How are my investments doing?' → get_portfolio_summary; it returns both the overall portfolio and a per-account holdings breakdown (holdingsByAccount), so use it for specific-account holdings questions too.",
@@ -94,7 +92,7 @@ export class McpServerService {
           "- If you need to derive a value not in the tool results (e.g., 'What percentage of income goes to rent?'), call the calculate tool with the relevant numbers.",
           "",
           "## Tips",
-          "- Combine get_net_worth_history + generate_report (type month_comparison) for a comprehensive financial overview in fewer calls.",
+          "- Combine generate_report (type net_worth_history) + generate_report (type month_comparison) for a comprehensive financial overview in fewer calls.",
           "- When the user asks about trends, prefer generate_report with type monthly_trend over fetching transactions for each month.",
           "- Keep transaction searches focused: use date ranges, category/payee filters, and reasonable limits to avoid large result sets.",
           "- Use the available prompts (financial-review, budget-check, spending-analysis, transaction-lookup) as guides for multi-step workflows.",
@@ -118,7 +116,6 @@ export class McpServerService {
     this.payeesTools.register(server, resolve);
     this.reportsTools.register(server, resolve);
     this.investmentsTools.register(server, resolve);
-    this.netWorthTools.register(server, resolve);
     this.scheduledTools.register(server, resolve);
     this.calculateTools.register(server);
     this.budgetsTools.register(server, resolve);

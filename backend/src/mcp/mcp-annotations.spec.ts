@@ -4,7 +4,6 @@ import { McpCategoriesTools } from "./tools/categories.tool";
 import { McpPayeesTools } from "./tools/payees.tool";
 import { McpReportsTools } from "./tools/reports.tool";
 import { McpInvestmentsTools } from "./tools/investments.tool";
-import { McpNetWorthTools } from "./tools/net-worth.tool";
 import { McpScheduledTools } from "./tools/scheduled.tool";
 import { McpCalculateTools } from "./tools/calculate.tool";
 import { McpBudgetsTools } from "./tools/budgets.tool";
@@ -29,7 +28,7 @@ const DESTRUCTIVE_TOOLS = new Set([
   "manage_investment_transactions",
 ]);
 
-const EXPECTED_TOOL_COUNT = 21;
+const EXPECTED_TOOL_COUNT = 20;
 
 interface ToolProvider {
   register: (server: unknown, resolve?: unknown) => void;
@@ -58,7 +57,7 @@ function collectToolConfigs(): Array<{ name: string; config: any }> {
       {} as any,
       {} as any,
     ) as unknown as ToolProvider,
-    new McpReportsTools({} as any) as unknown as ToolProvider,
+    new McpReportsTools({} as any, {} as any) as unknown as ToolProvider,
     new McpInvestmentsTools(
       {} as any,
       {} as any,
@@ -69,7 +68,6 @@ function collectToolConfigs(): Array<{ name: string; config: any }> {
       {} as any,
       {} as any,
     ) as unknown as ToolProvider,
-    new McpNetWorthTools({} as any) as unknown as ToolProvider,
     new McpScheduledTools({} as any) as unknown as ToolProvider,
     new McpCalculateTools() as unknown as ToolProvider,
     new McpBudgetsTools({} as any) as unknown as ToolProvider,

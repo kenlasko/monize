@@ -75,21 +75,6 @@ export const listAccountsOutput = {
 };
 
 // ---------------------------------------------------------------------------
-// net-worth.tool.ts
-// ---------------------------------------------------------------------------
-
-export const getNetWorthHistoryOutput = {
-  items: z.array(
-    looseObject({
-      month: str,
-      assets: num,
-      liabilities: num,
-      netWorth: num,
-    }),
-  ),
-};
-
-// ---------------------------------------------------------------------------
 // transactions.tool.ts
 // ---------------------------------------------------------------------------
 
@@ -261,11 +246,12 @@ export const managePayeesOutput = manageToolOutput({
 // ---------------------------------------------------------------------------
 
 /**
- * Unified `generate_report` output. The tool runs seven report types whose
+ * Unified `generate_report` output. The tool runs eight report types whose
  * payloads differ, so every field is optional and the object stays tolerant:
  * the five date-range aggregations return data/totals; 'month_comparison'
  * returns the current/previous-month bundle; 'spending_anomalies' returns
- * statistics/anomalies/counts.
+ * statistics/anomalies/counts; 'net_worth_history' returns a bare array of
+ * monthly snapshots, wrapped under `items` by `toolResult`.
  */
 export const generateReportOutput = {
   // Date-range aggregation types.
@@ -273,6 +259,17 @@ export const generateReportOutput = {
   totals: z.unknown().optional(),
   totalSpending: num.optional(),
   totalIncome: num.optional(),
+  // net_worth_history type: bare array wrapped under `items`.
+  items: z
+    .array(
+      looseObject({
+        month: str,
+        assets: num,
+        liabilities: num,
+        netWorth: num,
+      }),
+    )
+    .optional(),
   // month_comparison type.
   currentMonth: str.optional(),
   previousMonth: str.optional(),

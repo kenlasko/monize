@@ -821,8 +821,10 @@ describe("ToolExecutorService", () => {
       });
     });
 
-    it("get_net_worth_history delegates to netWorthService.getLlmHistory", async () => {
-      const result = await service.execute(userId, "get_net_worth_history", {});
+    it("generate_report type net_worth_history delegates to netWorthService.getLlmHistory", async () => {
+      const result = await service.execute(userId, "generate_report", {
+        type: "net_worth_history",
+      });
 
       expect(netWorth.getLlmHistory).toHaveBeenCalledWith(
         userId,
@@ -831,7 +833,7 @@ describe("ToolExecutorService", () => {
       );
       expect(result.sources[0].type).toBe("net_worth");
       // data must be the bare array returned by getLlmHistory so it matches the
-      // MCP server's get_net_worth_history payload exactly.
+      // MCP server's generate_report net_worth_history payload exactly.
       expect(result.data).toEqual([
         {
           month: "2026-01",

@@ -70,11 +70,6 @@ export const getCategoriesSchema = z.object({
   search: z.string().max(100).optional(),
 });
 
-export const getNetWorthHistorySchema = z.object({
-  startDate: isoDateSchema.optional(),
-  endDate: isoDateSchema.optional(),
-});
-
 export const comparePeriodsSchema = z.object({
   period1Start: isoDateSchema.optional(),
   period1End: isoDateSchema.optional(),
@@ -145,8 +140,10 @@ export const generateReportSchema = z.object({
     "income_by_source",
     "spending_anomalies",
     "month_comparison",
+    "net_worth_history",
   ]),
-  // Date-range types (the five aggregations). Default to the last 30 days.
+  // Date-range types: the five aggregations (default last 30 days) and
+  // net_worth_history (default last 12 months).
   startDate: isoDateSchema.optional(),
   endDate: isoDateSchema.optional(),
   // spending_anomalies only: rolling window of history to analyse.
@@ -611,7 +608,6 @@ export const toolInputSchemas: Record<string, z.ZodSchema> = {
   list_transactions: listTransactionsSchema,
   list_accounts: listAccountsSchema,
   list_categories: getCategoriesSchema,
-  get_net_worth_history: getNetWorthHistorySchema,
   compare_periods: comparePeriodsSchema,
   get_portfolio_summary: getPortfolioSummarySchema,
   list_investment_transactions: listInvestmentTransactionsSchema,

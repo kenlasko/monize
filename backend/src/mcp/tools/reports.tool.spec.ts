@@ -4,6 +4,7 @@ import { UserContextResolver } from "../mcp-context";
 describe("McpReportsTools", () => {
   let tool: McpReportsTools;
   let reportsService: Record<string, jest.Mock>;
+  let netWorthService: Record<string, jest.Mock>;
   let server: { registerTool: jest.Mock };
   let resolve: jest.MockedFunction<UserContextResolver>;
   const handlers: Record<string, (...args: any[]) => any> = {};
@@ -18,8 +19,11 @@ describe("McpReportsTools", () => {
       getMonthlyComparison: jest.fn(),
       getSpendingAnomalies: jest.fn(),
     };
+    netWorthService = {
+      getLlmHistory: jest.fn(),
+    };
 
-    tool = new McpReportsTools(reportsService as any);
+    tool = new McpReportsTools(reportsService as any, netWorthService as any);
 
     server = {
       registerTool: jest.fn((name, _opts, handler) => {
@@ -246,6 +250,71 @@ describe("McpReportsTools", () => {
           "u1",
           6,
         );
+      });
+    });
+
+    describe("type: net_worth_history", () => {
+      it("requires reports scope", async () => {
+        resolve.mockReturnValue({ userId: "u1", scopes: "read,write" });
+
+        const result = await handlers["generate_report"](
+          { type: "net_worth_history" },
+          { sessionId: "s1" },
+        );
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain("reports");
+      });
+
+      it("calls getLlmHistory and returns the monthly history", async () => {
+        resolve.mockReturnValue({ userId: "u1", scopes: "reports" });
+        netWorthService.getLlmHistory.mockResolvedValue([
+          { month: "2025-01", assets: 1, liabilities: 0, netWorth: 1 },
+          { month: "2025-02", assets: 2, liabilities: 0, netWorth: 2 },
+        ]);
+
+        const result = await handlers["generate_report"](
+          { type: "net_worth_history" },
+          { sessionId: "s1" },
+        );
+
+        expect(result.isError).toBeUndefined();
+        expect(netWorthService.getLlmHistory).toHaveBeenCalledWith(
+          "u1",
+          undefined,
+          undefined,
+        );
+        const parsed = JSON.parse(result.content[0].text);
+        expect(parsed).toHaveLength(2);
+      });
+
+      it("passes through explicit start and end dates", async () => {
+        resolve.mockReturnValue({ userId: "u1", scopes: "reports" });
+        netWorthService.getLlmHistory.mockResolvedValue([]);
+
+        await handlers["generate_report"](
+          {
+            type: "net_worth_history",
+            startDate: "2024-01-01",
+            endDate: "2024-12-31",
+          },
+          { sessionId: "s1" },
+        );
+        expect(netWorthService.getLlmHistory).toHaveBeenCalledWith(
+          "u1",
+          "2024-01-01",
+          "2024-12-31",
+        );
+      });
+
+      it("returns error on service exception", async () => {
+        resolve.mockReturnValue({ userId: "u1", scopes: "reports" });
+        netWorthService.getLlmHistory.mockRejectedValue(new Error("boom"));
+
+        const result = await handlers["generate_report"](
+          { type: "net_worth_history" },
+          { sessionId: "s1" },
+        );
+        expect(result.isError).toBe(true);
       });
     });
   });

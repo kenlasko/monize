@@ -23,7 +23,6 @@ import { McpCategoriesTools } from "./tools/categories.tool";
 import { McpPayeesTools } from "./tools/payees.tool";
 import { McpReportsTools } from "./tools/reports.tool";
 import { McpInvestmentsTools } from "./tools/investments.tool";
-import { McpNetWorthTools } from "./tools/net-worth.tool";
 import { McpScheduledTools } from "./tools/scheduled.tool";
 import { McpCalculateTools } from "./tools/calculate.tool";
 import { McpBudgetsTools } from "./tools/budgets.tool";
@@ -65,7 +64,6 @@ import { McpSpendingAnalysisPrompt } from "./prompts/spending-analysis.prompt";
     McpPayeesTools,
     McpReportsTools,
     McpInvestmentsTools,
-    McpNetWorthTools,
     McpScheduledTools,
     McpCalculateTools,
     McpBudgetsTools,
