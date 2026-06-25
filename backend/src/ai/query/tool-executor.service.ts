@@ -55,6 +55,7 @@ import { BuiltInReportsService } from "../../built-in-reports/built-in-reports.s
 import { validateToolInput } from "./tool-input-schemas";
 import { executeCalculation, CalculateInput } from "./calculate-tool";
 import { sanitizePromptValue } from "../../common/sanitization.util";
+import { formatDidYouMean } from "../../common/name-suggestions.util";
 import {
   getDefaultDateRange,
   getDefaultPreviousMonth,
@@ -336,7 +337,7 @@ export class ToolExecutorService {
       );
       if (resolved.unresolved.length > 0) {
         return this.toolError(
-          `Unknown categor${resolved.unresolved.length === 1 ? "y" : "ies"}: ${resolved.unresolved.join(", ")}. Call list_categories to look up valid names; subcategories can be referenced as "Parent: Child".`,
+          `Unknown categor${resolved.unresolved.length === 1 ? "y" : "ies"}: ${resolved.unresolved.join(", ")}.${formatDidYouMean(resolved.suggestions)} Call list_categories to look up valid names; subcategories can be referenced as "Parent: Child".`,
         );
       }
       categoryIds = resolved.categoryIds;

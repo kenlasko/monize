@@ -16,6 +16,7 @@ import {
 } from "./transaction-search.util";
 import { RecurringCharge, detectFrequency } from "./recurring-charges.util";
 import { roundMoney, sumMoney } from "../common/round.util";
+import { suggestClosestNames } from "../common/name-suggestions.util";
 
 export interface TransferAccountSummary {
   accountName: string;
@@ -656,9 +657,13 @@ export class TransactionAnalyticsService {
   async resolveLlmCategoryIds(
     userId: string,
     categoryNames: string[],
-  ): Promise<{ categoryIds: string[]; unresolved: string[] }> {
+  ): Promise<{
+    categoryIds: string[];
+    unresolved: string[];
+    suggestions: string[];
+  }> {
     if (categoryNames.length === 0) {
-      return { categoryIds: [], unresolved: [] };
+      return { categoryIds: [], unresolved: [], suggestions: [] };
     }
 
     const allCategories = await this.categoriesRepository.find({
@@ -709,8 +714,18 @@ export class TransactionAnalyticsService {
       else unresolved.push(raw);
     }
 
+    // Closest valid category names for the first unmatched input, so callers can
+    // surface a "did you mean?" hint instead of just "call list_categories".
+    const suggestions =
+      unresolved.length > 0
+        ? suggestClosestNames(
+            unresolved[0],
+            allCategories.map((c) => c.name),
+          )
+        : [];
+
     if (matched.length === 0) {
-      return { categoryIds: [], unresolved };
+      return { categoryIds: [], unresolved, suggestions };
     }
 
     const categoryIds = await getAllCategoryIdsWithChildren(
@@ -718,7 +733,7 @@ export class TransactionAnalyticsService {
       userId,
       matched,
     );
-    return { categoryIds, unresolved };
+    return { categoryIds, unresolved, suggestions };
   }
 
   /**

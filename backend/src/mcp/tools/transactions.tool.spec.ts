@@ -314,20 +314,22 @@ describe("McpTransactionsTools", () => {
       expect(result.content[0].text).toContain("Did you mean 'Checking'?");
     });
 
-    it("errors on an unknown category name", async () => {
+    it("errors on an unknown category name with a did-you-mean hint", async () => {
       resolve.mockReturnValue({ userId: "u1", scopes: "read" });
       analyticsService.resolveLlmCategoryIds.mockResolvedValue({
         categoryIds: [],
-        unresolved: ["Bogus"],
+        unresolved: ["Grocries"],
+        suggestions: ["Groceries"],
       });
 
       const result = await handlers["list_transactions"](
-        { categoryNames: ["Bogus"] },
+        { categoryNames: ["Grocries"] },
         { sessionId: "s1" },
       );
 
       expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain("Bogus");
+      expect(result.content[0].text).toContain("Unknown category: Grocries");
+      expect(result.content[0].text).toContain("Did you mean 'Groceries'?");
     });
 
     it("errors on an unknown payee name", async () => {

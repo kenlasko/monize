@@ -32,7 +32,10 @@ import {
   getDefaultDateRange,
   resolveComparePeriods,
 } from "../../common/tool-schemas";
-import { didYouMean } from "../../common/name-suggestions.util";
+import {
+  didYouMean,
+  formatDidYouMean,
+} from "../../common/name-suggestions.util";
 import {
   listTransactionsOutput,
   comparePeriodsOutput,
@@ -575,7 +578,7 @@ export class McpTransactionsTools {
       );
       if (resolved.unresolved.length > 0) {
         return {
-          error: `Unknown categor${resolved.unresolved.length === 1 ? "y" : "ies"}: ${resolved.unresolved.join(", ")}. Call list_categories to look up valid names; subcategories can be referenced as "Parent: Child".`,
+          error: `Unknown categor${resolved.unresolved.length === 1 ? "y" : "ies"}: ${resolved.unresolved.join(", ")}.${formatDidYouMean(resolved.suggestions)} Call list_categories to look up valid names; subcategories can be referenced as "Parent: Child".`,
         };
       }
       categoryIds = resolved.categoryIds;

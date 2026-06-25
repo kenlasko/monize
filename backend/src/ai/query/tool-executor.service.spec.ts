@@ -731,18 +731,20 @@ describe("ToolExecutorService", () => {
       );
     });
 
-    it("list_transactions errors when a category name cannot be resolved", async () => {
+    it("list_transactions errors with a did-you-mean hint when a category name cannot be resolved", async () => {
       analytics.resolveLlmCategoryIds.mockResolvedValueOnce({
         categoryIds: [],
-        unresolved: ["Bogus"],
+        unresolved: ["Grocries"],
+        suggestions: ["Groceries"],
       });
 
       const result = await service.execute(userId, "list_transactions", {
-        categoryNames: ["Bogus"],
+        categoryNames: ["Grocries"],
       });
 
       expect(result.isError).toBe(true);
-      expect(result.summary).toContain("Bogus");
+      expect(result.summary).toContain("Unknown category: Grocries");
+      expect(result.summary).toContain("Did you mean 'Groceries'?");
       expect(analytics.getLlmListTransactions).not.toHaveBeenCalled();
     });
 

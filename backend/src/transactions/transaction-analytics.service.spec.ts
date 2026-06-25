@@ -1573,7 +1573,11 @@ describe("TransactionAnalyticsService", () => {
 
     it("returns empty result for empty input", async () => {
       const result = await service.resolveLlmCategoryIds(userId, []);
-      expect(result).toEqual({ categoryIds: [], unresolved: [] });
+      expect(result).toEqual({
+        categoryIds: [],
+        unresolved: [],
+        suggestions: [],
+      });
     });
 
     it("matches an exact category name and expands to descendants", async () => {
@@ -1641,6 +1645,17 @@ describe("TransactionAnalyticsService", () => {
       ]);
       expect(result.categoryIds).toEqual([]);
       expect(result.unresolved).toEqual(["Bogus", "AlsoBogus"]);
+    });
+
+    it("suggests the closest valid name for a near-miss", async () => {
+      const result = await service.resolveLlmCategoryIds(userId, ["Grocries"]);
+      expect(result.unresolved).toEqual(["Grocries"]);
+      expect(result.suggestions).toContain("Groceries");
+    });
+
+    it("returns no suggestions when every name resolves", async () => {
+      const result = await service.resolveLlmCategoryIds(userId, ["Food"]);
+      expect(result.suggestions).toEqual([]);
     });
   });
 
