@@ -56,6 +56,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
+import { useOnAiAction } from '@/hooks/useOnAiAction';
 
 const logger = createLogger('Bills');
 
@@ -167,6 +168,8 @@ function BillsContent() {
   }, [loadData]);
 
   useOnUndoRedo(loadData);
+  // Refresh on AI chat-bubble writes (the forecast depends on transactions).
+  useOnAiAction(loadData);
 
   const handleCreateNew = () => {
     // Clear any stale reconcile prefill so a manual create starts blank.

@@ -10,6 +10,7 @@ const mockAbortController = { abort: vi.fn() };
 
 const mockConfirmAction = vi.fn();
 const mockGetRelayResponse = vi.fn();
+const mockNotifyAiAction = vi.fn();
 
 vi.mock('@/lib/ai', () => ({
   aiApi: {
@@ -20,6 +21,10 @@ vi.mock('@/lib/ai', () => ({
     confirmAction: (...args: unknown[]) => mockConfirmAction(...args),
     getRelayResponse: (...args: unknown[]) => mockGetRelayResponse(...args),
   },
+}));
+
+vi.mock('@/lib/aiActionSignal', () => ({
+  notifyAiAction: () => mockNotifyAiAction(),
 }));
 
 // The error / onError / onDone handlers attempt a relay pickup before
@@ -768,6 +773,25 @@ describe('aiChatStore', () => {
         status: 'confirmed',
         resultId: 'tx-1',
       });
+    });
+
+    it('confirmAction notifies list pages to refresh after a successful write', async () => {
+      mockConfirmAction.mockResolvedValueOnce({
+        type: 'create_transaction',
+        id: 'tx-1',
+      });
+      const assistant = streamWithPendingAction();
+      await useAiChatStore.getState().confirmAction(assistant.id, 'a1');
+      expect(mockNotifyAiAction).toHaveBeenCalledTimes(1);
+    });
+
+    it('confirmAction does not notify list pages when the write fails', async () => {
+      mockConfirmAction.mockRejectedValueOnce({
+        response: { data: { message: 'Nope' } },
+      });
+      const assistant = streamWithPendingAction();
+      await useAiChatStore.getState().confirmAction(assistant.id, 'a1');
+      expect(mockNotifyAiAction).not.toHaveBeenCalled();
     });
 
     it('confirmAction carries bulk count and skipped onto the confirmed card', async () => {

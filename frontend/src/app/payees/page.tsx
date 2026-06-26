@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
+import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { Button } from '@/components/ui/Button';
 import { Pagination } from '@/components/ui/Pagination';
 import { PayeeForm } from '@/components/payees/PayeeForm';
@@ -83,6 +84,8 @@ function PayeesContent() {
   }, [loadData]);
 
   useOnUndoRedo(loadData);
+  // Refresh after the AI assistant creates or edits a payee from the chat.
+  useOnAiAction(loadData);
 
   const handleFormSubmit = async (data: any) => {
     try {

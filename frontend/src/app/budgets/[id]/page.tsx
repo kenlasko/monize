@@ -13,6 +13,7 @@ import { BudgetPeriodDetail } from '@/components/budgets/BudgetPeriodDetail';
 import { BudgetPeriodSelector } from '@/components/budgets/BudgetPeriodSelector';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
+import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { budgetsApi } from '@/lib/budgets';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
@@ -117,6 +118,8 @@ function BudgetDetailContent() {
   }, [loadData]);
 
   useOnUndoRedo(loadData);
+  // Refresh on AI chat-bubble writes (actual spending can change).
+  useOnAiAction(loadData);
 
   const handlePeriodChange = useCallback(
     async (periodId: string | null) => {

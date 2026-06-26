@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
+import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { Button } from '@/components/ui/Button';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -63,6 +64,8 @@ function BudgetsContent() {
   }, [loadBudgets]);
 
   useOnUndoRedo(loadBudgets);
+  // Refresh on AI chat-bubble writes (budget spending can change).
+  useOnAiAction(loadBudgets);
 
   const handleWizardComplete = () => {
     setShowWizard(false);

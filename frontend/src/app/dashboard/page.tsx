@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { subMonths, subWeeks, startOfWeek, format } from 'date-fns';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
+import { useOnAiAction } from '@/hooks/useOnAiAction';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/store/authStore';
@@ -202,6 +203,9 @@ function DashboardContent() {
   }, [loadDashboardData]);
 
   useOnUndoRedo(loadDashboardData);
+  // An AI write (e.g. a transaction created from the chat bubble) changes the
+  // dashboard's totals and recent activity, so refresh the same way.
+  useOnAiAction(loadDashboardData);
 
   useEffect(() => {
     if (hasInvestments && !isLoading) {

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
+import { useOnAiAction } from '@/hooks/useOnAiAction';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
 const TagForm = dynamic(() => import('@/components/tags/TagForm').then(m => m.TagForm), { ssr: false });
@@ -71,6 +72,8 @@ function TagsContent() {
   }, [loadTags]);
 
   useOnUndoRedo(loadTags);
+  // Refresh on AI chat-bubble writes the same way as undo/redo.
+  useOnAiAction(loadTags);
 
   const handleFormSubmit = async (data: any) => {
     try {

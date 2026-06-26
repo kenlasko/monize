@@ -151,6 +151,11 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
   const isFilterChange = useRef(false);
   // Target transaction ID for navigating to a specific transaction
   const targetTransactionIdRef = useRef<string | null>(null);
+  // The `targetTransactionId` deep link already applied, so a soft navigation
+  // to the same id (or the mount-time init) is not re-processed. Tracked
+  // separately from targetTransactionIdRef because the latter is consumed (set
+  // back to null) by each load.
+  const appliedTargetRef = useRef<string | null>(null);
   // Debounce timer for filter-triggered loads
   const filterDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -384,9 +389,58 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     if (targetId && UUID_REGEX.test(targetId)) {
       targetTransactionIdRef.current = targetId;
       setHighlightTransactionId(targetId);
+      appliedTargetRef.current = targetId;
     }
     setFiltersInitialized(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Honour a `targetTransactionId` deep link that arrives while this page is
+  // already mounted -- e.g. the AI chat bubble's "View transaction" link
+  // clicked without navigating away. A soft navigation only rewrites the query
+  // string; the mount-time init effect above does not re-run, so the highlight
+  // never fired. Watch the param here and apply it the same way a fresh page
+  // load does: drop the existing filters (so the target is not hidden by them),
+  // then flash/scroll to the row. The deferred load reads targetTransactionIdRef
+  // and lets the backend resolve which page the row is on.
+  /* eslint-disable react-hooks/set-state-in-effect -- apply deep link from URL */
+  useEffect(() => {
+    if (!filtersInitialized) return;
+    const targetId = searchParams.get('targetTransactionId');
+    if (!targetId || !UUID_REGEX.test(targetId)) {
+      // The param has been consumed/stripped (or was never a valid deep link),
+      // so allow a future identical link to re-trigger -- e.g. clicking the
+      // same "View transaction" link again to jump back to the row.
+      appliedTargetRef.current = null;
+      return;
+    }
+    if (targetId === appliedTargetRef.current) return;
+    appliedTargetRef.current = targetId;
+    // Resolve the target's page from the backend rather than resetting to 1.
+    isFilterChange.current = false;
+    // Note: filterAccountStatus (the Show Accounts toggle) is intentionally left
+    // untouched -- the cross-page deep-link path keeps it too (it is seeded from
+    // localStorage and only overridden by an explicit ?accountStatus param), so
+    // clearing it here would diverge and permanently wipe the user's preference.
+    setFilterAccountIds([]);
+    setFilterCategoryIds([]);
+    setFilterPayeeIds([]);
+    setFilterTagIds([]);
+    setFilterStartDate('');
+    setFilterEndDate('');
+    setFilterTimePeriod('');
+    setFilterAmountFrom('');
+    setFilterAmountTo('');
+    setFilterStatuses([]);
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+      searchDebounceRef.current = null;
+    }
+    setSearchInput('');
+    setFilterSearch('');
+    targetTransactionIdRef.current = targetId;
+    setHighlightTransactionId(targetId);
+  }, [searchParams, filtersInitialized]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Persist filter changes to localStorage
