@@ -1,4 +1,5 @@
 import {
+  ArrayMaxSize,
   IsArray,
   IsIn,
   IsNotEmpty,
@@ -9,6 +10,7 @@ import {
 } from "class-validator";
 import { Type } from "class-transformer";
 import { SanitizeHtml } from "../../../common/decorators/sanitize-html.decorator";
+import { AttachmentDto, MAX_ATTACHMENTS } from "../../query/dto/ai-query.dto";
 
 class RelayMessageDto {
   @IsIn(["user", "assistant"])
@@ -38,4 +40,18 @@ export class RelayQueryDto {
   @ValidateNested({ each: true })
   @Type(() => RelayMessageDto)
   conversationHistory?: RelayMessageDto[];
+
+  /**
+   * Attachments uploaded with this prompt. Reuses the native query path's
+   * AttachmentDto (kind/mediaType/filename/base64 with the same per-field size
+   * caps) and the shared MAX_ATTACHMENTS limit. The relay stores them in memory
+   * and exposes each to the agent as an MCP resource; the service re-validates
+   * decoded size and magic bytes before persisting.
+   */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(MAX_ATTACHMENTS)
+  @ValidateNested({ each: true })
+  @Type(() => AttachmentDto)
+  attachments?: AttachmentDto[];
 }

@@ -14,6 +14,7 @@ import { McpAccountListResource } from "./resources/account-list.resource";
 import { McpCategoryTreeResource } from "./resources/category-tree.resource";
 import { McpRecentTransactionsResource } from "./resources/recent-transactions.resource";
 import { McpFinancialSummaryResource } from "./resources/financial-summary.resource";
+import { McpRelayAttachmentResource } from "./resources/relay-attachment.resource";
 import { McpFinancialReviewPrompt } from "./prompts/financial-review.prompt";
 import { McpBudgetCheckPrompt } from "./prompts/budget-check.prompt";
 import { McpTransactionLookupPrompt } from "./prompts/transaction-lookup.prompt";
@@ -55,6 +56,10 @@ describe("McpServerService", () => {
         },
         {
           provide: McpFinancialSummaryResource,
+          useValue: mockResourceProvider,
+        },
+        {
+          provide: McpRelayAttachmentResource,
           useValue: mockResourceProvider,
         },
         { provide: McpFinancialReviewPrompt, useValue: mockPromptProvider },
@@ -103,7 +108,7 @@ describe("McpServerService", () => {
   it("should register all resources", () => {
     const resolver = jest.fn();
     service.createServer(resolver);
-    expect(mockResourceProvider.register).toHaveBeenCalledTimes(4);
+    expect(mockResourceProvider.register).toHaveBeenCalledTimes(5);
   });
 
   it("should register all prompts", () => {

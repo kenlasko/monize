@@ -96,14 +96,12 @@ export const aiApi = {
     const path = relay
       ? '/api/v1/ai/relay/query/stream'
       : '/api/v1/ai/query/stream';
-    // Attachments flow only to the direct provider path -- the relay protocol
-    // is text-only, so they're omitted there.
+    // Attachments flow to both paths. On the relay path the backend stores them
+    // and exposes each to the agent as a monize-attachment:// MCP resource.
     const body = {
       query,
       conversationHistory,
-      ...(!relay && attachments && attachments.length > 0
-        ? { attachments }
-        : {}),
+      ...(attachments && attachments.length > 0 ? { attachments } : {}),
     };
 
     // Open the stream. Re-read the CSRF cookie each call so a retry after

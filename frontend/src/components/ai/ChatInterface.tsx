@@ -48,8 +48,9 @@ export function ChatInterface() {
   const attachmentsRef = useRef<ChatAttachment[]>([]);
 
   // Relay mode is on when the user's highest-priority active provider is the
-  // MCP relay; the chat then routes prompts to their own agent. The relay
-  // protocol is text-only, so attachments are unavailable in that mode.
+  // MCP relay; the chat then routes prompts to their own agent. Attachments
+  // work in relay mode too: the backend stores them and exposes each to the
+  // agent as a monize-attachment:// MCP resource.
   const relayActive = !!aiStatus?.relayActive;
 
   useEffect(() => {
@@ -163,13 +164,13 @@ export function ChatInterface() {
 
   const handleDragOver = useCallback(
     (e: React.DragEvent) => {
-      if (relayActive || isLoading) return;
+      if (isLoading) return;
       if (Array.from(e.dataTransfer.types).includes('Files')) {
         e.preventDefault();
         if (!isDragging) setIsDragging(true);
       }
     },
-    [relayActive, isLoading, isDragging],
+    [isLoading, isDragging],
   );
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
@@ -181,13 +182,13 @@ export function ChatInterface() {
     (e: React.DragEvent) => {
       e.preventDefault();
       setIsDragging(false);
-      if (relayActive || isLoading) return;
+      if (isLoading) return;
       const files = e.dataTransfer.files
         ? Array.from(e.dataTransfer.files)
         : [];
       void addFiles(files);
     },
-    [addFiles, relayActive, isLoading],
+    [addFiles, isLoading],
   );
 
   // Rich paste: when pasting a table from a web page, drop a readable Markdown
@@ -198,22 +199,20 @@ export function ChatInterface() {
     (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
       // Pasted files (e.g. a screenshot from the clipboard) become attachments.
       // Checked before the HTML-table branch so an image paste never falls
-      // through to text handling. Disabled in relay mode (text-only protocol).
-      if (!relayActive) {
-        const items = e.clipboardData?.items;
-        const files: File[] = [];
-        for (let i = 0; i < (items?.length ?? 0); i++) {
-          const item = items![i];
-          if (item.kind === 'file') {
-            const file = item.getAsFile();
-            if (file) files.push(file);
-          }
+      // through to text handling.
+      const items = e.clipboardData?.items;
+      const files: File[] = [];
+      for (let i = 0; i < (items?.length ?? 0); i++) {
+        const item = items![i];
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          if (file) files.push(file);
         }
-        if (files.length > 0) {
-          e.preventDefault();
-          void addFiles(files);
-          return;
-        }
+      }
+      if (files.length > 0) {
+        e.preventDefault();
+        void addFiles(files);
+        return;
       }
 
       const html = e.clipboardData?.getData('text/html');
@@ -226,7 +225,7 @@ export function ChatInterface() {
       const end = ta?.selectionEnd ?? input.length;
       setInput(input.slice(0, start) + markdown + input.slice(end));
     },
-    [input, addFiles, relayActive],
+    [input, addFiles],
   );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -447,30 +446,28 @@ export function ChatInterface() {
         />
 
         <div className="flex gap-2 items-end">
-          {!relayActive && (
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isLoading || !!aiNotConfigured}
-              className="flex-shrink-0 p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-500 hover:text-blue-600 hover:border-blue-400 dark:text-gray-400 dark:hover:text-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title={t('chat.attachButtonTitle')}
-              aria-label={t('chat.attachButtonAriaLabel')}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isLoading || !!aiNotConfigured}
+            className="flex-shrink-0 p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-500 hover:text-blue-600 hover:border-blue-400 dark:text-gray-400 dark:hover:text-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title={t('chat.attachButtonTitle')}
+            aria-label={t('chat.attachButtonAriaLabel')}
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
             >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 4.5v15m7.5-7.5h-15"
-                />
-              </svg>
-            </button>
-          )}
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 4.5v15m7.5-7.5h-15"
+              />
+            </svg>
+          </button>
           <textarea
             ref={textareaRef}
             value={input}

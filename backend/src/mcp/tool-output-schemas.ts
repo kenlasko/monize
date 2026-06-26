@@ -583,6 +583,19 @@ export const getNextPromptOutput = {
   promptId: str.optional(),
   prompt: str.optional(),
   history: z.array(looseObject({ role: str, content: str })).optional(),
+  // Present only when the user uploaded files with the prompt. Each ref points
+  // at a `monize-attachment://<id>` resource the agent reads to view the file.
+  attachments: z
+    .array(
+      looseObject({
+        id: str,
+        filename: str,
+        mediaType: str,
+        kind: str,
+        uri: str,
+      }),
+    )
+    .optional(),
 };
 
 export const postResponseOutput = {

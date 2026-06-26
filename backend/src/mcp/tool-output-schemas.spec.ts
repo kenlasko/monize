@@ -618,6 +618,25 @@ const cases: Array<{ name: string; schema: RawShape; raw: unknown }> = [
     },
   },
   {
+    name: "getNextPromptOutput (with attachments)",
+    schema: schemas.getNextPromptOutput,
+    raw: {
+      hasPrompt: true,
+      promptId: "p1",
+      prompt: "What is in this image?",
+      history: [],
+      attachments: [
+        {
+          id: "att-1",
+          filename: "chart.png",
+          mediaType: "image/png",
+          kind: "image",
+          uri: "monize-attachment://att-1",
+        },
+      ],
+    },
+  },
+  {
     name: "getNextPromptOutput (empty branch)",
     schema: schemas.getNextPromptOutput,
     raw: { hasPrompt: false },

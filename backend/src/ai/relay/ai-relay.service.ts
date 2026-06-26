@@ -1,12 +1,15 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { randomUUID } from "crypto";
 import {
+  RelayAttachmentRef,
   RelayClaimedPrompt,
   RelayResponse,
   RelayServerEvent,
   RelayTunnelState,
   RelayTunnelStatus,
 } from "./ai-relay.types";
+import { RelayAttachmentStore } from "./relay-attachment.store";
+import { AttachmentDto } from "../query/dto/ai-query.dto";
 import { PendingAiAction } from "../actions/ai-action.types";
 
 /**
@@ -79,6 +82,12 @@ interface PendingPrompt {
   /** True once an agent has claimed this prompt via get_next_prompt. */
   claimed: boolean;
   /**
+   * Refs to attachments the user uploaded with this prompt (bytes live in the
+   * RelayAttachmentStore). Passed to the agent on claim and released once the
+   * prompt definitively settles; the store's TTL is the backstop.
+   */
+  attachments: RelayAttachmentRef[];
+  /**
    * Absolute backstop (epoch ms) computed at claim time; the idle timer never
    * schedules past this, so a perpetually-chatty-but-stuck agent still loses the
    * browser at HARD_WAIT_MS.
@@ -116,6 +125,8 @@ interface BufferedResponse {
 @Injectable()
 export class AiRelayService {
   private readonly logger = new Logger(AiRelayService.name);
+
+  constructor(private readonly attachmentStore: RelayAttachmentStore) {}
 
   /** Prompts enqueued by the browser, not yet claimed by an agent (FIFO). */
   private readonly pending = new Map<string, PendingPrompt[]>();
@@ -162,7 +173,15 @@ export class AiRelayService {
     history: Array<{ role: "user" | "assistant"; content: string }>,
     emit?: (event: RelayServerEvent) => void,
     onEnqueued?: (promptId: string) => void,
+    attachments?: AttachmentDto[],
   ): Promise<RelayResponse> {
+    // Validate and persist any attachments up front so a bad upload rejects the
+    // request synchronously (the controller maps the thrown BadRequestException
+    // to an error SSE event) before the prompt is ever queued.
+    const attachmentRefs = this.attachmentStore.store(
+      userId,
+      attachments ?? [],
+    );
     return new Promise<RelayResponse>((resolve, reject) => {
       const entry: PendingPrompt = {
         id: randomUUID(),
@@ -173,6 +192,7 @@ export class AiRelayService {
         settled: false,
         claimed: false,
         hardDeadline: 0,
+        attachments: attachmentRefs,
         emit,
         // Queued prompts count down the queue wait; once an agent claims this
         // prompt, claim() swaps in the idle timer.
@@ -246,6 +266,7 @@ export class AiRelayService {
       // Still parked: deliver straight to the waiting browser stream.
       prompt.settled = true;
       clearTimeout(prompt.timer);
+      this.releaseAttachments(userId, prompt);
       prompt.resolve({ text });
       return true;
     }
@@ -460,6 +481,9 @@ export class AiRelayService {
       promptId: entry.id,
       prompt: entry.prompt,
       history: entry.history,
+      ...(entry.attachments.length > 0
+        ? { attachments: entry.attachments }
+        : {}),
     };
   }
 
@@ -536,7 +560,9 @@ export class AiRelayService {
     // the agent comes back and posts.
     if (entry.claimed) {
       // Remember this prompt so a late post_response is still recognised and
-      // buffered for pickup. Prune stale markers while we are here.
+      // buffered for pickup. Prune stale markers while we are here. Keep the
+      // attachments around (TTL bounds them) in case the recovered agent
+      // re-reads them before posting its late answer.
       this.pruneAwaitingLate();
       this.awaitingLate.set(entry.id, { userId, at: Date.now() });
       this.logger.warn(
@@ -545,11 +571,25 @@ export class AiRelayService {
       );
       entry.reject(new RelayTimeoutError("disconnected", entry.id));
     } else {
+      // Never claimed: no agent will ever read these attachments, so release
+      // them now instead of waiting for the TTL.
+      this.releaseAttachments(userId, entry);
       this.logger.warn(
         `Relay prompt ${entry.id} for user ${userId} timed out with no agent response`,
       );
       entry.reject(new RelayTimeoutError("no_agent", entry.id));
     }
+  }
+
+  /** Eagerly drop a settled prompt's attachments from the store (TTL backstop). */
+  private releaseAttachments(userId: string, prompt: PendingPrompt): void {
+    if (prompt.attachments.length === 0) {
+      return;
+    }
+    this.attachmentStore.releaseForPrompt(
+      userId,
+      prompt.attachments.map((a) => a.id),
+    );
   }
 }
 

@@ -85,6 +85,7 @@
     "insightNotFound": "[XX-Insight not found-XX]",
     "relayTimeout": "[XX-Your assistant did not respond. Make sure your MCP agent is connected and listening.-XX]",
     "relayDisconnected": "[XX-Your assistant went quiet before answering. If it reconnects, its answer will appear here.-XX]",
+    "relayAttachmentRejected": "[XX-An attachment could not be sent to your assistant. Check the file type and size, then try again.-XX]",
     "attachmentTypeMismatch": "[XX-An attachment's type does not match its file format.-XX]",
     "attachmentTooLarge": "[XX-An attachment exceeds the maximum file size.-XX]",
     "attachmentCorrupt": "[XX-An attachment could not be read or is not the file type it claims to be.-XX]",

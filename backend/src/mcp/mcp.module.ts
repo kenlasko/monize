@@ -32,6 +32,7 @@ import { McpAccountListResource } from "./resources/account-list.resource";
 import { McpCategoryTreeResource } from "./resources/category-tree.resource";
 import { McpRecentTransactionsResource } from "./resources/recent-transactions.resource";
 import { McpFinancialSummaryResource } from "./resources/financial-summary.resource";
+import { McpRelayAttachmentResource } from "./resources/relay-attachment.resource";
 
 import { McpFinancialReviewPrompt } from "./prompts/financial-review.prompt";
 import { McpBudgetCheckPrompt } from "./prompts/budget-check.prompt";
@@ -71,6 +72,7 @@ import { McpSpendingAnalysisPrompt } from "./prompts/spending-analysis.prompt";
     McpCategoryTreeResource,
     McpRecentTransactionsResource,
     McpFinancialSummaryResource,
+    McpRelayAttachmentResource,
     McpFinancialReviewPrompt,
     McpBudgetCheckPrompt,
     McpTransactionLookupPrompt,

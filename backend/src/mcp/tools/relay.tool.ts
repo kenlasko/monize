@@ -39,7 +39,7 @@ export class McpRelayTools {
         title: "Wait for the next chat prompt",
         annotations: READ_ONLY,
         description:
-          "Long-poll for the next prompt a user typed in the Monize web chat. Returns { hasPrompt: false } if none arrives within the poll window -- in that case call this tool again immediately to keep listening. When hasPrompt is true, handle the request using the other Monize tools, calling report_progress with short status updates as you work (before a lookup, or when sending a confirmation card), then call post_response with promptId and your final answer. 'history' is the prior conversation, oldest first.",
+          "Long-poll for the next prompt a user typed in the Monize web chat. Returns { hasPrompt: false } if none arrives within the poll window -- in that case call this tool again immediately to keep listening. When hasPrompt is true, handle the request using the other Monize tools, calling report_progress with short status updates as you work (before a lookup, or when sending a confirmation card), then call post_response with promptId and your final answer. 'history' is the prior conversation, oldest first. If 'attachments' is present, the user uploaded files with the prompt: read each attachment's 'uri' (a monize-attachment:// resource) to view the file before answering. Text files are also inlined into the prompt text, so you only need to read image and PDF attachments.",
         inputSchema: {},
         outputSchema: getNextPromptOutput,
       },
@@ -59,6 +59,9 @@ export class McpRelayTools {
             promptId: claimed.promptId,
             prompt: claimed.prompt,
             history: claimed.history,
+            ...(claimed.attachments
+              ? { attachments: claimed.attachments }
+              : {}),
           });
         } catch (err: unknown) {
           return safeToolError(err);

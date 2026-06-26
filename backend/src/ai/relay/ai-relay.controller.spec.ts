@@ -1,3 +1,4 @@
+import { BadRequestException } from "@nestjs/common";
 import { Response } from "express";
 import { AiRelayController } from "./ai-relay.controller";
 import { AiRelayService, RelayTimeoutError } from "./ai-relay.service";
@@ -56,6 +57,59 @@ describe("AiRelayController", () => {
       { type: "done" },
     ]);
     expect(events.some((e) => e.type === "assistant_text")).toBe(false);
+  });
+
+  it("forwards uploaded attachments to enqueuePrompt", async () => {
+    const enqueuePrompt = jest.fn().mockResolvedValue({ text: "ok" });
+    const controller = build({ enqueuePrompt });
+    const { res } = makeRes();
+    const attachments = [
+      {
+        kind: "image" as const,
+        mediaType: "image/png",
+        filename: "i.png",
+        data: "abc",
+      },
+    ];
+
+    await controller.streamQuery(
+      req,
+      { query: "what is this?", attachments },
+      res,
+    );
+
+    // attachments are the 6th positional argument of enqueuePrompt.
+    expect(enqueuePrompt.mock.calls[0][5]).toEqual(attachments);
+  });
+
+  it("emits the attachment-rejected error when an upload fails validation", async () => {
+    const controller = build({
+      enqueuePrompt: jest.fn().mockImplementation(() => {
+        throw new BadRequestException("bad attachment");
+      }),
+    });
+    const { res, events } = makeRes();
+
+    await controller.streamQuery(
+      req,
+      {
+        query: "what is this?",
+        attachments: [
+          {
+            kind: "image",
+            mediaType: "image/png",
+            filename: "i.png",
+            data: "abc",
+          },
+        ],
+      },
+      res,
+    );
+
+    expect(events).toHaveLength(1);
+    expect(events[0].type).toBe("error");
+    // The attachment-specific copy, not the generic timeout one.
+    expect(events[0].message).toContain("could not be sent");
   });
 
   it("emits a plain error when no agent ever claimed the prompt", async () => {

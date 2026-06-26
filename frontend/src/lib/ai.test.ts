@@ -296,7 +296,7 @@ describe('aiApi', () => {
       expect(body.attachments).toEqual(attachments);
     });
 
-    it('omits attachments on the relay path', async () => {
+    it('includes attachments on the relay path', async () => {
       const sse = 'data: {"type":"done"}\n\n';
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
@@ -311,9 +311,11 @@ describe('aiApi', () => {
       aiApi.queryStream('q', { onEvent: () => {} }, [], { relay: true }, attachments);
       await new Promise((resolve) => setTimeout(resolve, 20));
 
+      // The backend stores them and exposes each to the agent as an
+      // monize-attachment:// MCP resource, so they ride the relay path too.
       expect(mockFetch.mock.calls[0][0]).toBe('/api/v1/ai/relay/query/stream');
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.attachments).toBeUndefined();
+      expect(body.attachments).toEqual(attachments);
     });
 
     it('retries the request after a token refresh on 401', async () => {

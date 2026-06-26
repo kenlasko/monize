@@ -39,6 +39,30 @@ describe("McpRelayTools", () => {
       expect(body.prompt).toBe("hi");
     });
 
+    it("includes attachment refs when the prompt carries uploads", async () => {
+      const claimed = {
+        promptId: "p1",
+        prompt: "what is this?",
+        history: [],
+        attachments: [
+          {
+            id: "att-1",
+            filename: "chart.png",
+            mediaType: "image/png",
+            kind: "image",
+            uri: "monize-attachment://att-1",
+          },
+        ],
+      };
+      const handlers = register({
+        waitForPrompt: jest.fn().mockResolvedValue(claimed),
+      });
+      const result = await handlers.get_next_prompt({}, { sessionId: "s" });
+      const body = parse(result);
+      expect(body.attachments).toHaveLength(1);
+      expect(body.attachments[0].uri).toBe("monize-attachment://att-1");
+    });
+
     it("returns hasPrompt:false when the poll window elapses", async () => {
       const handlers = register({
         waitForPrompt: jest.fn().mockResolvedValue(null),

@@ -17,6 +17,7 @@ import { McpAccountListResource } from "./resources/account-list.resource";
 import { McpCategoryTreeResource } from "./resources/category-tree.resource";
 import { McpRecentTransactionsResource } from "./resources/recent-transactions.resource";
 import { McpFinancialSummaryResource } from "./resources/financial-summary.resource";
+import { McpRelayAttachmentResource } from "./resources/relay-attachment.resource";
 import { McpFinancialReviewPrompt } from "./prompts/financial-review.prompt";
 import { McpBudgetCheckPrompt } from "./prompts/budget-check.prompt";
 import { McpTransactionLookupPrompt } from "./prompts/transaction-lookup.prompt";
@@ -46,6 +47,7 @@ export class McpServerService {
     private readonly categoryTreeResource: McpCategoryTreeResource,
     private readonly recentTransactionsResource: McpRecentTransactionsResource,
     private readonly financialSummaryResource: McpFinancialSummaryResource,
+    private readonly relayAttachmentResource: McpRelayAttachmentResource,
     private readonly financialReviewPrompt: McpFinancialReviewPrompt,
     private readonly budgetCheckPrompt: McpBudgetCheckPrompt,
     private readonly transactionLookupPrompt: McpTransactionLookupPrompt,
@@ -125,6 +127,7 @@ export class McpServerService {
     this.categoryTreeResource.register(server, resolve);
     this.recentTransactionsResource.register(server, resolve);
     this.financialSummaryResource.register(server, resolve);
+    this.relayAttachmentResource.register(server, resolve);
 
     this.financialReviewPrompt.register(server);
     this.budgetCheckPrompt.register(server);

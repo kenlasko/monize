@@ -1,17 +1,24 @@
 import { AiRelayService } from "./ai-relay.service";
+import { RelayAttachmentStore } from "./relay-attachment.store";
 
 const USER = "user-1";
 const OTHER = "user-2";
 
+// A valid 1x1 PNG (header + minimal body) so attachment validation passes.
+const PNG_BASE64 =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+
 describe("AiRelayService", () => {
   let service: AiRelayService;
+  let attachmentStore: RelayAttachmentStore;
 
   beforeEach(() => {
     // Fake timers so the long browser-wait timer set by enqueuePrompt never
     // leaks onto the real clock in tests that intentionally leave a prompt
     // unanswered.
     jest.useFakeTimers();
-    service = new AiRelayService();
+    attachmentStore = new RelayAttachmentStore();
+    service = new AiRelayService(attachmentStore);
   });
 
   afterEach(() => {
@@ -395,6 +402,81 @@ describe("AiRelayService", () => {
           "00000000-0000-0000-0000-000000000000",
         ),
       ).toBeNull();
+    });
+  });
+
+  describe("attachments", () => {
+    const pngAttachment = {
+      kind: "image" as const,
+      mediaType: "image/png",
+      filename: "chart.png",
+      data: PNG_BASE64,
+    };
+
+    it("stores attachments and surfaces refs on the claimed prompt", async () => {
+      service.enqueuePrompt(USER, "what is this?", [], undefined, undefined, [
+        pngAttachment,
+      ]);
+      const claimed = await service.waitForPrompt(USER);
+
+      expect(claimed?.attachments).toHaveLength(1);
+      const ref = claimed!.attachments![0];
+      expect(ref.filename).toBe("chart.png");
+      expect(ref.kind).toBe("image");
+      expect(ref.mediaType).toBe("image/png");
+      expect(ref.uri).toBe(`monize-attachment://${ref.id}`);
+      // The bytes themselves live in the store, keyed by the same user + id.
+      expect(attachmentStore.get(USER, ref.id)?.data.length).toBeGreaterThan(0);
+    });
+
+    it("omits attachments from the claimed prompt when none were uploaded", async () => {
+      service.enqueuePrompt(USER, "hi", []);
+      const claimed = await service.waitForPrompt(USER);
+      expect(claimed?.attachments).toBeUndefined();
+    });
+
+    it("releases stored attachments once the prompt is answered", async () => {
+      service.enqueuePrompt(USER, "q", [], undefined, undefined, [
+        pngAttachment,
+      ]);
+      const claimed = await service.waitForPrompt(USER);
+      const id = claimed!.attachments![0].id;
+      expect(attachmentStore.get(USER, id)).toBeDefined();
+
+      service.postResponse(USER, claimed!.promptId, "done");
+      expect(attachmentStore.get(USER, id)).toBeUndefined();
+    });
+
+    it("releases stored attachments when no agent ever claims the prompt", async () => {
+      const pending = service.enqueuePrompt(
+        USER,
+        "q",
+        [],
+        undefined,
+        (promptId) => promptId,
+        [pngAttachment],
+      );
+      pending.catch(() => undefined);
+      // The ref id is not exposed without a claim; assert via store size by
+      // reading the only entry through a fresh store lookup is not possible, so
+      // drive the timeout and confirm the user's bucket is emptied.
+      jest.advanceTimersByTime(5 * 60 * 1000);
+      await expect(pending).rejects.toMatchObject({ reason: "no_agent" });
+      // A subsequent claim sees nothing, and any prior id is gone: the bucket
+      // was released. Enqueue a fresh attachment and confirm only one remains.
+      service.enqueuePrompt(USER, "q2", [], undefined, undefined, [
+        pngAttachment,
+      ]);
+      const claimed = await service.waitForPrompt(USER);
+      expect(claimed?.attachments).toHaveLength(1);
+    });
+
+    it("rejects synchronously when an attachment fails validation", () => {
+      expect(() =>
+        service.enqueuePrompt(USER, "q", [], undefined, undefined, [
+          { ...pngAttachment, mediaType: "application/pdf", kind: "pdf" },
+        ]),
+      ).toThrow();
     });
   });
 });

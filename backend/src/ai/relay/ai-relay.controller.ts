@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -96,6 +97,9 @@ export class AiRelayController {
         // before the answer arrives it can poll the pickup endpoint for a late
         // answer (Fix 1) instead of showing a hard error.
         (promptId) => write({ type: "prompt_id", promptId }),
+        // Uploaded attachments: stored in memory and exposed to the agent as
+        // MCP resources. Validated synchronously, so a bad upload throws below.
+        dto.attachments,
       );
       // Emit `content` (not `assistant_text`): the chat store treats
       // assistant_text as ephemeral "thinking" text and only `content` creates
@@ -108,20 +112,26 @@ export class AiRelayController {
       this.logger.warn(
         `Relay stream failed user=${userId} after=${Date.now() - start}ms: ${rawMessage}`,
       );
-      // A claimed-then-quiet agent gets distinct copy from a never-claimed one,
-      // and the late answer may still arrive: the client will try the pickup
-      // endpoint with the promptId it was given above.
+      // A rejected attachment (oversize/corrupt/mislabelled) is the user's to
+      // fix, not a tunnel problem: surface a distinct message rather than the
+      // generic timeout copy, before the prompt was ever queued.
       const wentQuiet =
         error instanceof RelayTimeoutError && error.reason === "disconnected";
-      const message = wentQuiet
-        ? tr(
-            "errors.ai.relayDisconnected",
-            "Your assistant went quiet before answering. If it reconnects, its answer will appear here.",
-          )
-        : tr(
-            "errors.ai.relayTimeout",
-            "Your assistant did not respond. Make sure your MCP agent is connected and listening.",
-          );
+      const message =
+        error instanceof BadRequestException
+          ? tr(
+              "errors.ai.relayAttachmentRejected",
+              "An attachment could not be sent to your assistant. Check the file type and size, then try again.",
+            )
+          : wentQuiet
+            ? tr(
+                "errors.ai.relayDisconnected",
+                "Your assistant went quiet before answering. If it reconnects, its answer will appear here.",
+              )
+            : tr(
+                "errors.ai.relayTimeout",
+                "Your assistant did not respond. Make sure your MCP agent is connected and listening.",
+              );
       write({ type: "error", message });
     } finally {
       clearInterval(heartbeat);

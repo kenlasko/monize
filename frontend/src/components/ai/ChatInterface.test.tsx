@@ -736,15 +736,38 @@ describe('ChatInterface', () => {
       expect(fileInputOf(container)).toBeInTheDocument();
     });
 
-    it('hides the attach button when relay is active', async () => {
+    it('allows attachments when relay is active and sends them on the relay path', async () => {
       const { aiApi } = await import('@/lib/ai');
       vi.mocked(aiApi.getStatus).mockResolvedValueOnce({
         configured: true,
         relayActive: true,
       } as never);
 
-      await renderChat();
-      expect(screen.queryByLabelText('Add attachment')).not.toBeInTheDocument();
+      const { container } = await renderChat();
+      // The attach button stays available in relay mode.
+      expect(screen.getByLabelText('Add attachment')).toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.change(fileInputOf(container), {
+          target: { files: [pngFile()] },
+        });
+      });
+      await waitFor(() =>
+        expect(screen.getByText('receipt.png')).toBeInTheDocument(),
+      );
+
+      const textarea = screen.getByPlaceholderText('Ask about your finances...');
+      fireEvent.change(textarea, { target: { value: 'read this' } });
+      await act(async () => {
+        fireEvent.click(screen.getByTitle('Send'));
+      });
+
+      const call = vi.mocked(aiApi.queryStream).mock.calls[0];
+      // opts (4th arg) carries relay:true; attachments (5th arg) ride along.
+      expect(call[3]).toMatchObject({ relay: true });
+      expect(call[4]).toEqual([
+        { kind: 'image', mediaType: 'image/png', filename: 'receipt.png', data: 'AQID' },
+      ]);
     });
   });
 });
