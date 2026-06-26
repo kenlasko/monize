@@ -12,7 +12,10 @@ import { UserContextResolver, hasScope } from "../mcp-context";
  * stores the bytes in the in-memory RelayAttachmentStore and the relayed prompt
  * (get_next_prompt) hands the agent a `monize-attachment://<id>` URI per file;
  * the agent reads that URI here before answering. Images are returned as a
- * base64 blob; text/CSV and PDFs (server-side extracted) are returned as text.
+ * base64 blob; text/CSV and text-extractable PDFs are returned as text. A PDF
+ * with no text layer (scanned/image-only) or one pdf-parse cannot read falls
+ * back to a base64 blob, exactly like an image, so a vision-capable client or
+ * model can still read it.
  *
  * Security: the owning userId always comes from the session context, never from
  * the URI. The `{id}` is only a lookup key within that user's bucket, so a
@@ -82,34 +85,33 @@ export class McpRelayAttachmentResource {
           };
         }
 
-        // PDFs are returned as extracted text, not a binary blob: handing the
-        // agent's MCP client a raw application/pdf blob makes it fall back to a
-        // local PDF handler that prompts the user to install extra tooling.
-        // Returning text lets the agent read the PDF just like a CSV.
+        // PDFs are preferentially returned as extracted text, not a binary
+        // blob: handing the agent's MCP client a raw application/pdf blob makes
+        // it fall back to a local PDF handler that prompts the user to install
+        // extra tooling. Returning text lets the agent read the PDF just like a
+        // CSV. But a scanned/image-only PDF (no text layer) or one pdf-parse
+        // cannot read yields no usable text -- in that case fall through to the
+        // raw bytes as a blob below, like an image, so a vision-capable client
+        // or model can still read it.
         if (attachment.kind === "pdf") {
           try {
             const extracted = await extractPdfText(attachment.data);
-            const text =
-              extracted.length > 0
-                ? extracted
-                : `[The PDF "${attachment.filename}" has no extractable text -- it may be scanned or image-only.]`;
-            return {
-              contents: [{ uri: uri.href, mimeType: "text/plain", text }],
-            };
+            if (extracted.length > 0) {
+              return {
+                contents: [
+                  { uri: uri.href, mimeType: "text/plain", text: extracted },
+                ],
+              };
+            }
+            // No extractable text: fall through to the binary blob below.
           } catch {
-            return {
-              contents: [
-                {
-                  uri: uri.href,
-                  text: `Error: could not extract text from the PDF "${attachment.filename}"`,
-                },
-              ],
-            };
+            // pdf-parse could not read the bytes: fall through to the binary
+            // blob below rather than failing the read outright.
           }
         }
 
-        // Images are returned as a base64 blob the agent's client renders
-        // multimodally.
+        // Images -- and PDFs with no extractable text -- are returned as a
+        // base64 blob the agent's client renders or relays multimodally.
         return {
           contents: [
             {

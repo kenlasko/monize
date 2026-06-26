@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
+import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { Button } from '@/components/ui/Button';
 import { Pagination } from '@/components/ui/Pagination';
 import { Modal } from '@/components/ui/Modal';
@@ -93,6 +94,8 @@ function InstitutionsContent() {
   }, [loadData]);
 
   useOnUndoRedo(loadData);
+  // Refresh on AI chat-bubble writes the same way as undo/redo.
+  useOnAiAction(loadData);
 
   const handleFormSubmit = async (data: {
     name: string;

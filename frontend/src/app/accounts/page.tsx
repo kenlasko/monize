@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
+import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { Button } from '@/components/ui/Button';
 
 import { AccountList } from '@/components/accounts/AccountList';
@@ -70,6 +71,9 @@ function AccountsContent() {
   }, [loadAccounts]);
 
   useOnUndoRedo(loadAccounts);
+  // An AI write can change account balances (e.g. a transaction created from
+  // the chat bubble), so refresh the same way as an undo/redo.
+  useOnAiAction(loadAccounts);
 
   // Build a map of brokerage account ID -> market value of holdings only.
   // Cash balance is tracked separately via the linked INVESTMENT_CASH account

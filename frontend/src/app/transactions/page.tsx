@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
+import { useOnAiAction } from '@/hooks/useOnAiAction';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { TransactionFilterPanel } from '@/components/transactions/TransactionFilterPanel';
@@ -267,6 +268,9 @@ function TransactionsContent() {
     setUndoRedoTick((t) => t + 1);
   }, []);
   useOnUndoRedo(handleUndoRedo);
+  // An AI write (e.g. a transaction created from the chat bubble) mutates the
+  // same data as an undo/redo, so refresh the list the same way.
+  useOnAiAction(handleUndoRedo);
 
   // Load static data once on mount
   useEffect(() => {

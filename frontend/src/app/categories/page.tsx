@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
+import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { useHighlightParam } from '@/hooks/useHighlightTarget';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
@@ -66,6 +67,8 @@ function CategoriesContent() {
   }, [loadCategories]);
 
   useOnUndoRedo(loadCategories);
+  // Refresh on AI chat-bubble writes (category transaction counts can change).
+  useOnAiAction(loadCategories);
 
   const refreshCategories = useCallback(async () => {
     try {

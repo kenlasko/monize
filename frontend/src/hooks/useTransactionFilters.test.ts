@@ -157,6 +157,74 @@ describe('useTransactionFilters - URL/localStorage initialization', () => {
     expect(result.current.targetTransactionIdRef.current).toBeNull();
   });
 
+  it('applies a targetTransactionId that arrives via soft navigation while mounted', () => {
+    const id = '22222222-2222-4222-8222-222222222222';
+    // A persisted Show Accounts preference must survive the deep link, the same
+    // way the cross-page path keeps it.
+    localStorage.setItem('transactions.filter.accountStatus', JSON.stringify('closed'));
+    // Mounted with an active account filter and no deep link.
+    mockSearchParams = new URLSearchParams('accountIds=acc-1');
+    const { result, rerender } = renderHook(() => useTransactionFilters(defaultOptions));
+    expect(result.current.filterAccountIds).toEqual(['acc-1']);
+    expect(result.current.filterAccountStatus).toBe('closed');
+    expect(result.current.highlightTransactionId).toBeNull();
+
+    // Soft navigation to the AI "View transaction" deep link, same page.
+    act(() => {
+      mockSearchParams = new URLSearchParams(`targetTransactionId=${id}`);
+      rerender();
+    });
+
+    expect(result.current.targetTransactionIdRef.current).toBe(id);
+    expect(result.current.highlightTransactionId).toBe(id);
+    // Existing filters are dropped so the target row is not hidden by them.
+    expect(result.current.filterAccountIds).toEqual([]);
+    // ...but the Show Accounts toggle is preserved (matches the cross-page path).
+    expect(result.current.filterAccountStatus).toBe('closed');
+  });
+
+  it('re-triggers the same targetTransactionId after the param is consumed', () => {
+    const id = '33333333-3333-4333-8333-333333333333';
+    mockSearchParams = new URLSearchParams();
+    const { result, rerender } = renderHook(() => useTransactionFilters(defaultOptions));
+
+    // First "View transaction" click.
+    act(() => {
+      mockSearchParams = new URLSearchParams(`targetTransactionId=${id}`);
+      rerender();
+    });
+    expect(result.current.highlightTransactionId).toBe(id);
+
+    // The load strips the param from the URL, and the highlight clears.
+    act(() => {
+      mockSearchParams = new URLSearchParams();
+      rerender();
+      result.current.setHighlightTransactionId(null);
+    });
+    expect(result.current.highlightTransactionId).toBeNull();
+
+    // Clicking the same link again re-applies the deep link.
+    act(() => {
+      mockSearchParams = new URLSearchParams(`targetTransactionId=${id}`);
+      rerender();
+    });
+    expect(result.current.highlightTransactionId).toBe(id);
+    expect(result.current.targetTransactionIdRef.current).toBe(id);
+  });
+
+  it('ignores a malformed targetTransactionId that arrives via soft navigation', () => {
+    mockSearchParams = new URLSearchParams();
+    const { result, rerender } = renderHook(() => useTransactionFilters(defaultOptions));
+
+    act(() => {
+      mockSearchParams = new URLSearchParams('targetTransactionId=not-a-uuid');
+      rerender();
+    });
+
+    expect(result.current.highlightTransactionId).toBeNull();
+    expect(result.current.targetTransactionIdRef.current).toBeNull();
+  });
+
   it('reads tagIds from URL params', () => {
     mockSearchParams = new URLSearchParams('tagIds=t1,t2');
     const { result } = renderHook(() => useTransactionFilters(defaultOptions));

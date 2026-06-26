@@ -17,6 +17,10 @@ vi.mock('@/hooks/useOnUndoRedo', () => ({
   useOnUndoRedo: vi.fn(),
 }));
 
+vi.mock('@/hooks/useOnAiAction', () => ({
+  useOnAiAction: vi.fn(),
+}));
+
 vi.mock('@/components/layout/PageLayout', () => ({
   PageLayout: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="page-layout">{children}</div>

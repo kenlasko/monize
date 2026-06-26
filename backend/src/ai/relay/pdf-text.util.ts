@@ -11,8 +11,10 @@ import pdfParse from "pdf-parse";
  * the resource exactly like a CSV.
  *
  * Returns the trimmed text, which is empty for a scanned / image-only PDF that
- * carries no text layer. Throws if the bytes cannot be parsed as a PDF; callers
- * surface that as a resource read error.
+ * carries no text layer. Throws if the bytes cannot be parsed as a PDF. In both
+ * the empty and throwing cases the relay attachment resource falls back to
+ * serving the raw PDF bytes as a binary blob (like an image), so the caller
+ * should treat empty/throw as "no usable text" rather than a hard failure.
  */
 export async function extractPdfText(data: Buffer): Promise<string> {
   const result = await pdfParse(data);

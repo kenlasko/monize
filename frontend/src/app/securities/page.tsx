@@ -26,6 +26,7 @@ import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
 import { useFormModal } from '@/hooks/useFormModal';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
+import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { PAGE_SIZE } from '@/lib/constants';
 import { useHighlightParam } from '@/hooks/useHighlightTarget';
 
@@ -96,6 +97,8 @@ function SecuritiesContent() {
   }, [t]);
 
   useOnUndoRedo(loadData);
+  // Refresh after the AI assistant creates or edits a security from the chat.
+  useOnAiAction(loadData);
 
   // Apply status filter
   const statusFilteredSecurities = useMemo(() => {

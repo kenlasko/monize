@@ -134,7 +134,7 @@ describe("McpRelayAttachmentResource", () => {
     expect(result.contents[0].blob).toBeUndefined();
   });
 
-  it("returns a note when a PDF has no extractable text", async () => {
+  it("falls back to a base64 blob when a PDF has no extractable text", async () => {
     mockExtractPdfText.mockResolvedValue("");
     const [ref] = store.store("u1", [
       {
@@ -151,11 +151,14 @@ describe("McpRelayAttachmentResource", () => {
       { id: ref.id },
       { sessionId: "s1" },
     );
-    expect(result.contents[0].text).toContain("no extractable text");
-    expect(result.contents[0].blob).toBeUndefined();
+    // A scanned/image-only PDF is served as raw bytes, like a picture, so a
+    // vision-capable client/model can still read it.
+    expect(result.contents[0].mimeType).toBe("application/pdf");
+    expect(result.contents[0].blob).toBe(PDF_BASE64);
+    expect(result.contents[0].text).toBeUndefined();
   });
 
-  it("returns an error when PDF extraction fails", async () => {
+  it("falls back to a base64 blob when PDF extraction fails", async () => {
     mockExtractPdfText.mockRejectedValue(new Error("corrupt pdf"));
     const [ref] = store.store("u1", [
       {
@@ -172,8 +175,10 @@ describe("McpRelayAttachmentResource", () => {
       { id: ref.id },
       { sessionId: "s1" },
     );
-    expect(result.contents[0].text).toContain("could not extract text");
-    expect(result.contents[0].blob).toBeUndefined();
+    // pdf-parse failing should not fail the read -- serve the raw bytes instead.
+    expect(result.contents[0].mimeType).toBe("application/pdf");
+    expect(result.contents[0].blob).toBe(PDF_BASE64);
+    expect(result.contents[0].text).toBeUndefined();
   });
 
   it("does not let one user read another user's attachment", async () => {

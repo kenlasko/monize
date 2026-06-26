@@ -9,6 +9,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
+import { useOnAiAction } from '@/hooks/useOnAiAction';
 
 const reportComponents: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   'spending-by-category': lazy(() => import('@/components/reports/SpendingByCategoryReport').then(m => ({ default: m.SpendingByCategoryReport }))),
@@ -100,6 +101,8 @@ function ReportContent() {
   const [refreshKey, setRefreshKey] = useState(0);
   const handleUndoRedo = useCallback(() => setRefreshKey((k) => k + 1), []);
   useOnUndoRedo(handleUndoRedo);
+  // Refresh on AI chat-bubble writes the same way as undo/redo.
+  useOnAiAction(handleUndoRedo);
 
   const ReportComponent = reportComponents[reportId];
 

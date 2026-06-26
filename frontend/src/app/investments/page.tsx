@@ -27,6 +27,7 @@ import { TransactionList } from '@/components/transactions/TransactionList';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useInvestmentData } from '@/hooks/useInvestmentData';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
+import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { useMainAccountName } from '@/hooks/useMainAccountName';
 import { Account } from '@/types/account';
 import { buildAccountFilterLabel } from '@/lib/account-utils';
@@ -56,6 +57,9 @@ function InvestmentsContent() {
     loadAllPortfolioData(selectedAccountIds, currentPage, transactionFilters);
   }, [loadAllPortfolioData, selectedAccountIds, currentPage, transactionFilters]);
   useOnUndoRedo(handleUndoRedo);
+  // An AI write (e.g. an investment transaction from the chat bubble) mutates
+  // the same data as an undo/redo, so refresh the same way.
+  useOnAiAction(handleUndoRedo);
   const [listDensity, setListDensity] = useLocalStorage<DensityLevel>('monize-investments-density', 'normal');
   const [transactionView, setTransactionView] = useLocalStorage<TransactionViewType>('monize-investments-transaction-view', 'brokerage');
   // Tracks whether the investment transaction form currently shows a currency

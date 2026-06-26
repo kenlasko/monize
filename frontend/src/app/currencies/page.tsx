@@ -23,6 +23,7 @@ import { getErrorMessage } from '@/lib/errors';
 import { useTranslations } from 'next-intl';
 import { useFormModal } from '@/hooks/useFormModal';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
+import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { PAGE_SIZE } from '@/lib/constants';
 
 const logger = createLogger('Currencies');
@@ -74,6 +75,8 @@ function CurrenciesContent() {
   }, [loadData]);
 
   useOnUndoRedo(loadData);
+  // Refresh on AI chat-bubble writes the same way as undo/redo.
+  useOnAiAction(loadData);
 
   const handleCreateNew = () => {
     openCreate();
