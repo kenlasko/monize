@@ -108,6 +108,50 @@ describe('aiChatStore', () => {
       expect(serialized).not.toContain('r.png');
     });
 
+    it('caps conversation history in relay mode to the most recent turns', async () => {
+      const { aiApi } = await import('@/lib/ai');
+      // A long prior conversation: relay must not ship all of it to the agent.
+      const seeded = Array.from({ length: 24 }, (_, i) => ({
+        id: `seed-${i}`,
+        role: (i % 2 === 0 ? 'user' : 'assistant') as 'user' | 'assistant',
+        content: `seeded turn ${i}`,
+      }));
+      useAiChatStore.setState({ messages: seeded });
+
+      useAiChatStore.getState().submit('newest question', undefined, {
+        relay: true,
+      });
+
+      const history = vi.mocked(aiApi.queryStream).mock.calls[0][2] as Array<{
+        role: string;
+        content: string;
+      }>;
+      expect(history.length).toBeLessThanOrEqual(10);
+      const serialized = JSON.stringify(history);
+      expect(serialized).not.toContain('seeded turn 0');
+      expect(serialized).toContain('newest question');
+    });
+
+    it('keeps the full conversation history on the native (non-relay) path', async () => {
+      const { aiApi } = await import('@/lib/ai');
+      const seeded = Array.from({ length: 24 }, (_, i) => ({
+        id: `seed-${i}`,
+        role: (i % 2 === 0 ? 'user' : 'assistant') as 'user' | 'assistant',
+        content: `seeded turn ${i}`,
+      }));
+      useAiChatStore.setState({ messages: seeded });
+
+      useAiChatStore.getState().submit('newest question');
+
+      const history = vi.mocked(aiApi.queryStream).mock.calls[0][2] as Array<{
+        role: string;
+        content: string;
+      }>;
+      // 24 seeded + the new user turn, untrimmed.
+      expect(history.length).toBe(25);
+      expect(JSON.stringify(history)).toContain('seeded turn 0');
+    });
+
     it('ignores empty/whitespace queries', async () => {
       const { aiApi } = await import('@/lib/ai');
       useAiChatStore.getState().submit('   ');

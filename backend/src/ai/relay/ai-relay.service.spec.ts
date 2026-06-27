@@ -1,4 +1,4 @@
-import { AiRelayService } from "./ai-relay.service";
+import { AiRelayService, trimRelayHistory } from "./ai-relay.service";
 import { RelayAttachmentStore } from "./relay-attachment.store";
 
 const USER = "user-1";
@@ -72,6 +72,20 @@ describe("AiRelayService", () => {
     service.enqueuePrompt(USER, "q", history);
     const claimed = await service.waitForPrompt(USER);
     expect(claimed?.history).toEqual(history);
+  });
+
+  it("trims a long history before handing it to the agent", async () => {
+    // 30 short turns -> only the most recent 10 reach the agent.
+    const history = Array.from({ length: 30 }, (_, i) => ({
+      role: (i % 2 === 0 ? "user" : "assistant") as "user" | "assistant",
+      content: `turn ${i}`,
+    }));
+    service.enqueuePrompt(USER, "q", history);
+    const claimed = await service.waitForPrompt(USER);
+    expect(claimed?.history).toHaveLength(10);
+    // Newest kept, oldest-first order preserved.
+    expect(claimed?.history[0].content).toBe("turn 20");
+    expect(claimed?.history[9].content).toBe("turn 29");
   });
 
   it("rejects post_response for an unknown or foreign prompt", async () => {
@@ -477,6 +491,51 @@ describe("AiRelayService", () => {
           { ...pngAttachment, mediaType: "application/pdf", kind: "pdf" },
         ]),
       ).toThrow();
+    });
+  });
+
+  describe("trimRelayHistory", () => {
+    it("returns a short history unchanged", () => {
+      const history = [
+        { role: "user" as const, content: "hi" },
+        { role: "assistant" as const, content: "hello" },
+      ];
+      expect(trimRelayHistory(history)).toEqual(history);
+    });
+
+    it("keeps only the most recent turns, oldest first", () => {
+      const history = Array.from({ length: 25 }, (_, i) => ({
+        role: "user" as const,
+        content: `m${i}`,
+      }));
+      const trimmed = trimRelayHistory(history);
+      expect(trimmed).toHaveLength(10);
+      expect(trimmed[0].content).toBe("m15");
+      expect(trimmed[9].content).toBe("m24");
+    });
+
+    it("drops older turns once the char budget is exhausted", () => {
+      // Three 5000-char turns: only the two newest fit the 12000 budget.
+      const big = (n: number) => ({
+        role: "assistant" as const,
+        content: String(n).repeat(5000),
+      });
+      const trimmed = trimRelayHistory([big(1), big(2), big(3)]);
+      expect(trimmed).toHaveLength(2);
+      expect(trimmed[0].content[0]).toBe("2");
+      expect(trimmed[1].content[0]).toBe("3");
+    });
+
+    it("keeps but truncates a single newest turn that exceeds the budget", () => {
+      const huge = { role: "assistant" as const, content: "x".repeat(20000) };
+      const trimmed = trimRelayHistory([huge]);
+      expect(trimmed).toHaveLength(1);
+      expect(trimmed[0].content.length).toBeLessThan(20000);
+      expect(trimmed[0].content.endsWith("[truncated]")).toBe(true);
+    });
+
+    it("returns an empty array for an empty history", () => {
+      expect(trimRelayHistory([])).toEqual([]);
     });
   });
 });

@@ -35,8 +35,12 @@ export class RelayQueryDto {
   @SanitizeHtml()
   query: string;
 
+  // Generous upper bound: the client trims history to a handful of recent turns
+  // and the server trims again before handing it to the agent, so this only
+  // guards against an abusive client sending an unbounded array.
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(500)
   @ValidateNested({ each: true })
   @Type(() => RelayMessageDto)
   conversationHistory?: RelayMessageDto[];

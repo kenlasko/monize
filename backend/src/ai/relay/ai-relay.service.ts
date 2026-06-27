@@ -65,6 +65,54 @@ const POLL_PARK_MS = 25 * 1000; // 25 seconds
  */
 const CONNECTED_WINDOW_MS = 45 * 1000; // 45 seconds
 
+/**
+ * Most recent conversation turns carried into a relayed prompt. The browser
+ * sends the whole conversation, but `get_next_prompt` returns it to the agent on
+ * EVERY prompt, and the agent runs the relay loop in one long-lived session that
+ * also accumulates its own context. Returning an unbounded history therefore
+ * grows the agent's context until the model degrades (multi-minute "thinking",
+ * malformed tool calls, no answer). Keep only the newest turns, within a char
+ * budget, so continuity survives without the bloat.
+ */
+const MAX_HISTORY_TURNS = 10;
+const MAX_HISTORY_CHARS = 12000;
+const HISTORY_TRUNCATION_MARKER = " … [truncated]";
+
+/**
+ * Trim a conversation history to the most recent turns within the char budget,
+ * preserving order (oldest first). Older turns that do not fit are dropped; if
+ * the single newest turn alone exceeds the budget it is kept but truncated, so
+ * the result is always bounded regardless of how long the conversation grew.
+ */
+export function trimRelayHistory(
+  history: Array<{ role: "user" | "assistant"; content: string }>,
+): Array<{ role: "user" | "assistant"; content: string }> {
+  const kept: Array<{ role: "user" | "assistant"; content: string }> = [];
+  let budget = MAX_HISTORY_CHARS;
+  for (
+    let i = history.length - 1;
+    i >= 0 && kept.length < MAX_HISTORY_TURNS && budget > 0;
+    i--
+  ) {
+    const { role, content } = history[i];
+    if (content.length <= budget) {
+      kept.push({ role, content });
+      budget -= content.length;
+    } else {
+      // Only the newest kept turn may be truncated to fit; once anything is
+      // kept, an over-budget older turn (and everything before it) is dropped.
+      if (kept.length === 0) {
+        kept.push({
+          role,
+          content: content.slice(0, budget) + HISTORY_TRUNCATION_MARKER,
+        });
+      }
+      break;
+    }
+  }
+  return kept.reverse();
+}
+
 interface PendingPrompt {
   id: string;
   prompt: string;
@@ -186,7 +234,9 @@ export class AiRelayService {
       const entry: PendingPrompt = {
         id: randomUUID(),
         prompt,
-        history,
+        // Bound the history handed to the agent: get_next_prompt returns it on
+        // every prompt, so an unbounded conversation bloats the agent's context.
+        history: trimRelayHistory(history),
         resolve,
         reject,
         settled: false,
