@@ -191,7 +191,7 @@ export function CategoryPayeeBarChart({
               tickLine={false}
               axisLine={false}
               tickFormatter={formatCurrencyAxis}
-              width={45}
+              width="auto"
             />
             <Tooltip content={<MonthlyTotalTooltip formatCurrency={formatCurrency} />} />
             <Bar

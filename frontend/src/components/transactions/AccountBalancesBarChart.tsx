@@ -290,7 +290,7 @@ export function AccountBalancesBarChart({
               tickLine={false}
               axisLine={false}
               tickFormatter={formatAxis}
-              width={45}
+              width="auto"
               scale={effectiveScale}
               domain={effectiveScale === 'log' ? ['auto', 'auto'] : undefined}
               allowDataOverflow={false}
