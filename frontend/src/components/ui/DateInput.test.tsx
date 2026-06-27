@@ -676,5 +676,68 @@ describe('DateInput', () => {
         expect(input.value).toBe('16/06/2025');
       });
     });
+
+    // When "-" is the literal separator of the active format (e.g. YYYY-MM-DD)
+    // it must be typable as a separator instead of being swallowed by the
+    // "previous day" shortcut. The +/- shortcuts still work for every format
+    // that does not use that character as a separator (covered above).
+    describe('separator vs. shortcut collision (YYYY-MM-DD)', () => {
+      beforeEach(() => {
+        mockUseDateFormat.mockReturnValue({
+          formatDate: (d: string) => d,
+          dateFormat: 'YYYY-MM-DD',
+        });
+      });
+
+      it('still steps the day back with "-" when a complete date is shown', () => {
+        const { getByLabelText } = renderDateInput('2025-06-15');
+        const input = getByLabelText('Date') as HTMLInputElement;
+        fireEvent.keyDown(input, { key: '-' });
+        // A full canonical date is displayed, so "-" resumes its shortcut role
+        expect(onDateChange).toHaveBeenCalledWith('2025-06-14');
+      });
+
+      it('does not hijack "-" while the date is incomplete (mid-typing)', () => {
+        const { getByLabelText } = renderDateInput('');
+        const input = getByLabelText('Date') as HTMLInputElement;
+        fireEvent.change(input, { target: { value: '2026' } });
+        fireEvent.keyDown(input, { key: '-' });
+        // The shortcut must not fire -- "-" is a separator while typing
+        expect(onDateChange).not.toHaveBeenCalled();
+      });
+
+      it('does not preventDefault on "-" mid-typing so it can be typed as a separator', () => {
+        const { getByLabelText } = renderDateInput('');
+        const input = getByLabelText('Date') as HTMLInputElement;
+        fireEvent.change(input, { target: { value: '2026' } });
+        const event = new KeyboardEvent('keydown', { key: '-', bubbles: true, cancelable: true });
+        const preventSpy = vi.spyOn(event, 'preventDefault');
+        input.dispatchEvent(event);
+        expect(preventSpy).not.toHaveBeenCalled();
+      });
+
+      it('lets the user type a full YYYY-MM-DD date by hand including the "-"', () => {
+        const { getByLabelText } = renderDateInput('');
+        const input = getByLabelText('Date') as HTMLInputElement;
+        // Type the year then the separator -- the separator survives stripping
+        fireEvent.change(input, { target: { value: '2026' } });
+        fireEvent.change(input, { target: { value: '2026-' } });
+        expect(input.value).toBe('2026-');
+        fireEvent.change(input, { target: { value: '2026-06-26' } });
+        expect(onDateChange).toHaveBeenLastCalledWith('2026-06-26');
+      });
+
+      it('still fires the "+" next-day shortcut (not a separator)', () => {
+        const { getByLabelText } = renderDateInput('2025-06-15');
+        fireEvent.keyDown(getByLabelText('Date'), { key: '+' });
+        expect(onDateChange).toHaveBeenCalledWith('2025-06-16');
+      });
+
+      it('still fires letter shortcuts like T', () => {
+        const { getByLabelText } = renderDateInput('2025-06-15');
+        fireEvent.keyDown(getByLabelText('Date'), { key: 't' });
+        expect(onDateChange).toHaveBeenCalledWith('2026-04-01');
+      });
+    });
   });
 });

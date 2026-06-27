@@ -178,15 +178,22 @@ function findSegmentAtCursor(format: string, cursor: number): DateSegment | null
   return segments.find(s => cursor >= s.start && cursor <= s.end) ?? null;
 }
 
+// Collect the literal separator characters of a format (everything that is not
+// a Y/M/D placeholder), e.g. "-" for YYYY-MM-DD or "/" for DD/MM/YYYY.
+function getFormatSeparators(format: string): Set<string> {
+  const separators = new Set<string>();
+  for (const ch of format) {
+    if (ch !== 'Y' && ch !== 'M' && ch !== 'D') separators.add(ch);
+  }
+  return separators;
+}
+
 // Return only characters that can legally appear in a value formatted with
 // `format` -- digits always, letters only when the format contains a month
 // name segment (MMM), and any separator that literally appears in the format.
 function stripInvalidFormatChars(text: string, format: string): string {
   const allowsLetters = format.includes('MMM');
-  const separators = new Set<string>();
-  for (const ch of format) {
-    if (ch !== 'Y' && ch !== 'M' && ch !== 'D') separators.add(ch);
-  }
+  const separators = getFormatSeparators(format);
   let result = '';
   for (const ch of text) {
     if (/\d/.test(ch)) result += ch;
@@ -337,6 +344,23 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
         }
       }
 
+      // In desktop-formatted mode the user types the date by hand, so a key that
+      // is a literal separator in the active format (e.g. "-" in YYYY-MM-DD)
+      // must be inserted as text rather than hijacked by a day-step shortcut --
+      // but only while the date is incomplete. Once a full, canonical date is
+      // shown, that same key resumes its shortcut role (e.g. "-" steps the day
+      // back), since there is nothing left to type. The +/- shortcuts are
+      // unaffected for formats that do not use the character as a separator.
+      const isCompleteDate = !!isoValue && displayValue === formatDate(isoValue, dateFormat);
+      if (
+        mode === 'desktop-formatted'
+        && !isCompleteDate
+        && getFormatSeparators(dateFormat).has(e.key)
+      ) {
+        onKeyDown?.(e);
+        return;
+      }
+
       const isFormatted = mode === 'desktop-formatted' || mode === 'touch-formatted';
       const currentIso = isFormatted ? isoValue : e.currentTarget.value;
       const newDate = resolveShortcutDate(e.key, currentIso);
@@ -356,7 +380,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       }
 
       onKeyDown?.(e);
-    }, [mode, isoValue, dateFormat, emitDateChange, onDateChange, onKeyDown]);
+    }, [mode, isoValue, displayValue, dateFormat, emitDateChange, onDateChange, onKeyDown]);
 
     // Restore a segment highlight after the controlled text input re-renders
     // with a new displayValue.

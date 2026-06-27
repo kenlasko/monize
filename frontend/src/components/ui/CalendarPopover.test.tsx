@@ -100,6 +100,47 @@ describe('CalendarPopover', () => {
     expect(screen.getByText('2024')).toBeInTheDocument();
   });
 
+  it('opens the year picker from the month view and selects a year', () => {
+    const onSelect = vi.fn();
+    render(<Wrapper value="2025-06-15" onSelect={onSelect} onClose={vi.fn()} />);
+    // days -> months
+    fireEvent.click(screen.getByText('Jun 2025'));
+    // months -> years (header now shows just the year)
+    fireEvent.click(screen.getByText('2025'));
+    // Year grid shows a block of years aligned to the page (2016-2027 for 2025)
+    expect(screen.getByText('2016 - 2027')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '2025' })).toBeInTheDocument();
+    // Pick a different year -> returns to month view for that year
+    fireEvent.click(screen.getByRole('button', { name: '2022' }));
+    expect(screen.getByText('2022')).toBeInTheDocument();
+    // Picking a month then a day yields the chosen year, not the original
+    fireEvent.click(screen.getByRole('button', { name: 'Mar' }));
+    fireEvent.click(screen.getByRole('button', { name: '10' }));
+    expect(onSelect).toHaveBeenCalledWith('2022-03-10');
+  });
+
+  it('pages the year grid by a full block with the arrows', () => {
+    render(<Wrapper value="2025-06-15" onSelect={vi.fn()} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText('Jun 2025'));
+    fireEvent.click(screen.getByText('2025'));
+    expect(screen.getByText('2016 - 2027')).toBeInTheDocument();
+    const buttons = screen.getAllByRole('button');
+    // buttons[0] = prev arrow, buttons[2] = next arrow
+    fireEvent.click(buttons[2]);
+    expect(screen.getByText('2028 - 2039')).toBeInTheDocument();
+    fireEvent.click(buttons[0]);
+    fireEvent.click(buttons[0]);
+    expect(screen.getByText('2004 - 2015')).toBeInTheDocument();
+  });
+
+  it('cycles the header button back to the day view from the year view', () => {
+    render(<Wrapper value="2025-06-15" onSelect={vi.fn()} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText('Jun 2025')); // -> months
+    fireEvent.click(screen.getByText('2025')); // -> years
+    fireEvent.click(screen.getByText('2016 - 2027')); // -> days
+    expect(screen.getByText('Jun 2025')).toBeInTheDocument();
+  });
+
   it('handles Clear button', () => {
     const onSelect = vi.fn();
     const onClose = vi.fn();

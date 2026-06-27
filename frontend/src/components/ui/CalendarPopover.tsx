@@ -33,7 +33,11 @@ function getFirstDayOfWeek(year: number, month: number): number {
   return new Date(year, month, 1).getDay();
 }
 
-type View = 'days' | 'months';
+type View = 'days' | 'months' | 'years';
+
+// Number of years shown at once in the year-selection grid (3 columns x 4 rows,
+// matching the month grid layout).
+const YEARS_PER_PAGE = 12;
 
 export function CalendarPopover({ value, onSelect, onClose, anchorRef }: CalendarPopoverProps) {
   const t = useTranslations('common');
@@ -102,6 +106,31 @@ export function CalendarPopover({ value, onSelect, onClose, anchorRef }: Calenda
     setView('days');
   }, []);
 
+  const handleYearSelect = useCallback((year: number) => {
+    setViewYear(year);
+    setView('months');
+  }, []);
+
+  // Center header button cycles through the zoom levels: day grid -> month grid
+  // -> year grid, then back to the day grid.
+  const cycleView = useCallback(() => {
+    setView((v) => (v === 'days' ? 'months' : v === 'months' ? 'years' : 'days'));
+  }, []);
+
+  // Header arrows step by month in day view, by year in month view, and by a
+  // full page of years in year view.
+  const handlePrev = useCallback(() => {
+    if (view === 'days') prevMonth();
+    else if (view === 'months') setViewYear((y) => y - 1);
+    else setViewYear((y) => y - YEARS_PER_PAGE);
+  }, [view, prevMonth]);
+
+  const handleNext = useCallback(() => {
+    if (view === 'days') nextMonth();
+    else if (view === 'months') setViewYear((y) => y + 1);
+    else setViewYear((y) => y + YEARS_PER_PAGE);
+  }, [view, nextMonth]);
+
   const handleClear = useCallback(() => {
     onSelect('');
     onClose();
@@ -114,6 +143,11 @@ export function CalendarPopover({ value, onSelect, onClose, anchorRef }: Calenda
   }, [onSelect, onClose]);
 
   if (!position) return null;
+
+  // Year grid page: a fixed-size block of years aligned so the same years always
+  // group together (e.g. 2016-2027), with viewYear somewhere inside it.
+  const yearRangeStart = viewYear - ((viewYear % YEARS_PER_PAGE) + YEARS_PER_PAGE) % YEARS_PER_PAGE;
+  const years = Array.from({ length: YEARS_PER_PAGE }, (_, i) => yearRangeStart + i);
 
   const daysInMonth = getDaysInMonth(viewYear, viewMonth);
   const firstDay = getFirstDayOfWeek(viewYear, viewMonth);
@@ -148,7 +182,7 @@ export function CalendarPopover({ value, onSelect, onClose, anchorRef }: Calenda
       <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-700">
         <button
           type="button"
-          onClick={view === 'days' ? prevMonth : () => setViewYear((y) => y - 1)}
+          onClick={handlePrev}
           className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -157,16 +191,18 @@ export function CalendarPopover({ value, onSelect, onClose, anchorRef }: Calenda
         </button>
         <button
           type="button"
-          onClick={() => setView(view === 'days' ? 'months' : 'days')}
+          onClick={cycleView}
           className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded"
         >
           {view === 'days'
             ? `${MONTHS[viewMonth]} ${viewYear}`
-            : String(viewYear)}
+            : view === 'months'
+              ? String(viewYear)
+              : `${years[0]} - ${years[years.length - 1]}`}
         </button>
         <button
           type="button"
-          onClick={view === 'days' ? nextMonth : () => setViewYear((y) => y + 1)}
+          onClick={handleNext}
           className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -213,7 +249,7 @@ export function CalendarPopover({ value, onSelect, onClose, anchorRef }: Calenda
             })}
           </div>
         </div>
-      ) : (
+      ) : view === 'months' ? (
         /* Month grid */
         <div className="p-3">
           <div className="grid grid-cols-3 gap-2">
@@ -229,6 +265,26 @@ export function CalendarPopover({ value, onSelect, onClose, anchorRef }: Calenda
                 )}
               >
                 {m}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        /* Year grid */
+        <div className="p-3">
+          <div className="grid grid-cols-3 gap-2">
+            {years.map((y) => (
+              <button
+                key={y}
+                type="button"
+                onClick={() => handleYearSelect(y)}
+                className={cn(
+                  'px-2 py-2 text-sm rounded-md text-center',
+                  'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100',
+                  y === initialYear && 'bg-blue-600 text-white hover:bg-blue-700 dark:hover:bg-blue-500',
+                )}
+              >
+                {y}
               </button>
             ))}
           </div>
