@@ -298,6 +298,52 @@ describe('aiChatStore', () => {
       }
     });
 
+    it('keeps a card delivered live before the disconnect, then recovers the answer', async () => {
+      // The agent posted confirmation cards (delivered live to the stream) while
+      // composing a large final answer; the turn then idle-timed-out before
+      // post_response. The live cards must survive the disconnect placeholder and
+      // the buffered answer is picked up after, with the cards preserved.
+      vi.useFakeTimers();
+      try {
+        const card = {
+          actionId: 'act-live',
+          type: 'create_investment_transaction' as const,
+          preview: {},
+          descriptor: { type: 'create_investment_transaction' as const },
+          signature: 'sig',
+          expiresAt: Date.now() + 60000,
+        };
+        mockGetRelayResponse
+          .mockResolvedValueOnce({ text: null, pendingActions: [] })
+          .mockResolvedValueOnce({ text: 'Done -- review the card.', pendingActions: [] });
+        useAiChatStore.getState().submit('Add it', undefined, { relay: true });
+
+        capturedCallbacks?.onEvent({ type: 'prompt_id', promptId: 'p-live' });
+        // Card arrives live (no text content yet), then the stream gives up.
+        capturedCallbacks?.onEvent({ type: 'pending_action', action: card });
+        let message = useAiChatStore.getState().messages[1];
+        expect(message.pendingActions).toHaveLength(1);
+
+        capturedCallbacks?.onEvent({ type: 'error', message: 'went quiet' });
+        // Placeholder shows, but the live card is not wiped.
+        message = useAiChatStore.getState().messages[1];
+        expect(message.error).toBe('went quiet');
+        expect(message.pendingActions).toHaveLength(1);
+        expect(message.pendingActions![0]).toMatchObject({ actionId: 'act-live' });
+
+        // The buffered answer arrives on a later poll; the card is preserved and
+        // the placeholder error is cleared.
+        await vi.advanceTimersByTimeAsync(0);
+        await vi.advanceTimersByTimeAsync(4000);
+        message = useAiChatStore.getState().messages[1];
+        expect(message.content).toBe('Done -- review the card.');
+        expect(message.error).toBeUndefined();
+        expect(message.pendingActions).toHaveLength(1);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
     it('stops polling for a late answer once a new prompt is submitted', async () => {
       vi.useFakeTimers();
       try {
