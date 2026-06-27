@@ -275,9 +275,11 @@ export const useAiChatStore = create<AiChatState>()(
         // agent composed them slowly and the turn idle-timed-out, #793). New
         // cards (by actionId) are added to the assistant message, replacing any
         // disconnect placeholder; the pickup loop keeps polling for the answer.
+        // Returns true when at least one new card was added, so the poll loop can
+        // extend its deadline while the agent is still actively delivering.
         const deliverLateActions = (
           incoming: Omit<PendingAction, 'status'>[],
-        ): void => {
+        ): boolean => {
           let added = false;
           for (const action of incoming) {
             if (!pendingActions.some((p) => p.actionId === action.actionId)) {
@@ -285,7 +287,7 @@ export const useAiChatStore = create<AiChatState>()(
               added = true;
             }
           }
-          if (!added) return;
+          if (!added) return false;
           set((state) => ({
             messages: [
               ...state.messages.filter((m) => m.id !== assistantMsgId),
@@ -297,6 +299,7 @@ export const useAiChatStore = create<AiChatState>()(
               },
             ],
           }));
+          return true;
         };
 
         // Create the assistant message, or merge the latest streamed fields into
@@ -360,7 +363,12 @@ export const useAiChatStore = create<AiChatState>()(
             },
           });
 
-          const deadline = Date.now() + RELAY_PICKUP_DEADLINE_MS;
+          // The deadline keeps the poll bounded, but each batch of new cards
+          // pushes it forward: a large import streams cards over several minutes
+          // (one per ~25 rows), and an agent that is still actively delivering
+          // should keep the browser polling rather than be abandoned mid-import.
+          // The fresh window per batch stays under the server buffer TTL.
+          let deadline = Date.now() + RELAY_PICKUP_DEADLINE_MS;
           const delay = (ms: number) =>
             new Promise<void>((resolve) => setTimeout(resolve, ms));
 
@@ -375,8 +383,12 @@ export const useAiChatStore = create<AiChatState>()(
                 if (cancelled) return;
                 // Show any confirmation cards as soon as they arrive; the answer
                 // (post_response) may still be a poll or two behind them.
-                if (latePending && latePending.length > 0) {
-                  deliverLateActions(latePending);
+                if (
+                  latePending &&
+                  latePending.length > 0 &&
+                  deliverLateActions(latePending)
+                ) {
+                  deadline = Date.now() + RELAY_PICKUP_DEADLINE_MS;
                 }
                 if (text) {
                   deliverLateAnswer(text);

@@ -344,6 +344,53 @@ describe('aiChatStore', () => {
       }
     });
 
+    it('keeps polling past the base deadline while new cards keep arriving', async () => {
+      // A large import streams confirmation cards over several minutes (one card
+      // per ~25 rows). Each new card must push the pickup deadline forward, so an
+      // agent still actively delivering is not abandoned mid-import. Without the
+      // extension the loop would give up at the base deadline (~135 polls) and the
+      // final answer (arriving later) would be lost.
+      vi.useFakeTimers();
+      try {
+        let call = 0;
+        mockGetRelayResponse.mockImplementation(() => {
+          call += 1;
+          if (call <= 150) {
+            return Promise.resolve({
+              text: null,
+              pendingActions: [
+                {
+                  actionId: `act-${call}`,
+                  type: 'create_transaction' as const,
+                  preview: {},
+                  descriptor: { type: 'create_transaction' as const },
+                  signature: 's',
+                  expiresAt: Date.now() + 600000,
+                },
+              ],
+            });
+          }
+          return Promise.resolve({ text: 'All imported.', pendingActions: [] });
+        });
+        useAiChatStore.getState().submit('Import CSV', undefined, { relay: true });
+        capturedCallbacks?.onEvent({ type: 'prompt_id', promptId: 'p-big' });
+        capturedCallbacks?.onEvent({ type: 'error', message: 'went quiet' });
+
+        // Advance well past the base 9-min deadline (135 polls of 4s): each poll
+        // delivers a fresh card that extends the window, so the answer on poll 151
+        // is still reached.
+        for (let i = 0; i < 160; i++) {
+          await vi.advanceTimersByTimeAsync(4000);
+        }
+        const message = useAiChatStore.getState().messages[1];
+        expect(message.content).toBe('All imported.');
+        expect(message.pendingActions!.length).toBeGreaterThan(100);
+        expect(message.error).toBeUndefined();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
     it('stops polling for a late answer once a new prompt is submitted', async () => {
       vi.useFakeTimers();
       try {
