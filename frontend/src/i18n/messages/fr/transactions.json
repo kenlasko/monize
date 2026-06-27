@@ -80,7 +80,8 @@
       "transactionMessage": "Êtes-vous sûr de vouloir supprimer cette transaction ? Cette action est irréversible.",
       "success": "Transaction supprimée",
       "transferSuccess": "Virement supprimé",
-      "error": "Échec de la suppression de la transaction"
+      "error": "Échec de la suppression de la transaction",
+      "reconciledWarning": "Cette transaction est rapprochée ; la supprimer affectera donc un rapprochement terminé."
     },
     "status": {
       "voidError": "Modifiez la transaction pour changer son statut depuis Annulé",
@@ -292,6 +293,11 @@
     },
     "submitCreate": "Créer {mode}",
     "submitUpdate": "Mettre à jour {mode}",
+    "reconciledConfirm": {
+      "title": "Modifier une transaction rapprochée ?",
+      "message": "Cette transaction est rapprochée. La modifier affectera un rapprochement terminé. Voulez-vous quand même enregistrer vos modifications ?",
+      "confirm": "Enregistrer les modifications"
+    },
     "modeLabel": {
       "transfer": "Virement",
       "transaction": "Transaction"

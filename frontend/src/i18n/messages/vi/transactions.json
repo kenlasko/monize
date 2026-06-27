@@ -80,7 +80,8 @@
       "transactionMessage": "Bạn có chắc muốn xóa giao tác này? Không thể hoàn tác.",
       "success": "Giao tác đã bị xóa",
       "transferSuccess": "Chuyển khoản đã bị xóa",
-      "error": "Không thể xóa giao tác"
+      "error": "Không thể xóa giao tác",
+      "reconciledWarning": "Giao dịch này đã được điều hoà, vì vậy việc xoá sẽ ảnh hưởng đến một lần điều hoà đã hoàn tất."
     },
     "status": {
       "voidError": "Chỉnh sửa giao tác để thay đổi trạng thái từ Hủy bỏ",
@@ -292,6 +293,11 @@
     },
     "submitCreate": "Tạo {mode}",
     "submitUpdate": "Cập nhật {mode}",
+    "reconciledConfirm": {
+      "title": "Chỉnh sửa giao dịch đã điều hoà?",
+      "message": "Giao dịch này đã được điều hoà. Việc thay đổi sẽ ảnh hưởng đến một lần điều hoà đã hoàn tất. Bạn vẫn muốn lưu các thay đổi chứ?",
+      "confirm": "Lưu thay đổi"
+    },
     "modeLabel": {
       "transfer": "Chuyển khoản",
       "transaction": "Giao tác"

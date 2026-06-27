@@ -795,6 +795,44 @@ describe('TransactionForm', () => {
       expect(mockOnSuccess).toHaveBeenCalledTimes(1);
     });
 
+    it('confirms before saving an edit to a reconciled transaction', async () => {
+      const existingTransaction = createExistingTransaction({
+        status: TransactionStatus.RECONCILED,
+        isReconciled: true,
+      });
+
+      render(
+        <TransactionForm
+          transaction={existingTransaction}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Update Transaction/i })).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /Update Transaction/i }));
+
+      // The edit is gated behind a confirmation; nothing is saved yet.
+      await waitFor(() => {
+        expect(screen.getByText('Edit reconciled transaction?')).toBeInTheDocument();
+      });
+      expect(mockUpdate).not.toHaveBeenCalled();
+
+      // Approving the warning saves the edit.
+      fireEvent.click(screen.getByRole('button', { name: /Save changes/i }));
+
+      await waitFor(() => {
+        expect(mockUpdate).toHaveBeenCalledWith(
+          existingTransaction.id,
+          expect.any(Object)
+        );
+      });
+      expect(mockOnSuccess).toHaveBeenCalledTimes(1);
+    });
+
     it('sends splits: [] when converting an existing split transaction back to regular', async () => {
       const splitTransaction = createSplitTransaction();
 

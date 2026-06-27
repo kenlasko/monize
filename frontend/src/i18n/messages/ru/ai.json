@@ -104,6 +104,8 @@
     "createdInvestmentTransactions": "{count, plural, =0 {Инвестиционные операции не созданы} one {Создана # инвестиционная операция} other {Создано # инвестиционных операций}}",
     "rowsSkipped": "{count, plural, one {Пропущена # строка} other {Пропущено # строк}}",
     "rowSkippedBadge": "Пропущено",
+    "reconciledBadge": "Согласована",
+    "reconciledWarning": "Эта транзакция согласована. Её изменение повлияет на завершённое согласование.",
     "investmentActions": {
       "BUY": "Покупка",
       "SELL": "Продажа",

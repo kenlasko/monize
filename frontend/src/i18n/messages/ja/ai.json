@@ -104,6 +104,8 @@
     "createdInvestmentTransactions": "{count, plural, =0 {投資取引は作成されませんでした} other {# 件の投資取引を作成しました}}",
     "rowsSkipped": "{count, plural, other {# 行をスキップしました}}",
     "rowSkippedBadge": "スキップ",
+    "reconciledBadge": "照合済み",
+    "reconciledWarning": "この取引は照合済みです。変更すると完了した照合に影響します。",
     "investmentActions": {
       "BUY": "買い",
       "SELL": "売り",

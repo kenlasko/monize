@@ -80,7 +80,8 @@
       "transactionMessage": "이 거래를 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
       "success": "거래가 삭제되었습니다",
       "transferSuccess": "이체가 삭제되었습니다",
-      "error": "거래 삭제에 실패했습니다"
+      "error": "거래 삭제에 실패했습니다",
+      "reconciledWarning": "이 거래는 조정되었으므로 삭제하면 완료된 조정에 영향을 줍니다."
     },
     "status": {
       "voidError": "상태를 무효에서 변경하려면 거래를 편집하세요",
@@ -292,6 +293,11 @@
     },
     "submitCreate": "{mode} 만들기",
     "submitUpdate": "{mode} 업데이트",
+    "reconciledConfirm": {
+      "title": "조정된 거래를 편집하시겠습니까?",
+      "message": "이 거래는 조정되었습니다. 변경하면 완료된 조정에 영향을 줍니다. 그래도 변경 사항을 저장하시겠습니까?",
+      "confirm": "변경 사항 저장"
+    },
     "modeLabel": {
       "transfer": "이체",
       "transaction": "거래"

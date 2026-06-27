@@ -80,7 +80,8 @@
       "transactionMessage": "确定要删除此交易吗？此操作无法撤销。",
       "success": "交易已删除",
       "transferSuccess": "转账已删除",
-      "error": "删除交易失败"
+      "error": "删除交易失败",
+      "reconciledWarning": "此交易已对账，因此删除它会影响已完成的对账。"
     },
     "status": {
       "voidError": "请编辑交易以将状态从\"作废\"更改",
@@ -292,6 +293,11 @@
     },
     "submitCreate": "创建{mode}",
     "submitUpdate": "更新{mode}",
+    "reconciledConfirm": {
+      "title": "编辑已对账的交易？",
+      "message": "此交易已对账。更改它会影响已完成的对账。仍要保存更改吗？",
+      "confirm": "保存更改"
+    },
     "modeLabel": {
       "transfer": "转账",
       "transaction": "交易"

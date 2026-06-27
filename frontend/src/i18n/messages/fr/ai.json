@@ -104,6 +104,8 @@
     "createdInvestmentTransactions": "{count, plural, =0 {Aucune transaction de placement créée} one {# transaction de placement créée} other {# transactions de placement créées}}",
     "rowsSkipped": "{count, plural, one {# ligne ignorée} other {# lignes ignorées}}",
     "rowSkippedBadge": "Ignorée",
+    "reconciledBadge": "Rapproché",
+    "reconciledWarning": "Cette transaction est rapprochée. La modifier affectera un rapprochement terminé.",
     "investmentActions": {
       "BUY": "Achat",
       "SELL": "Vente",

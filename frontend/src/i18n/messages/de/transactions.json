@@ -80,7 +80,8 @@
       "transactionMessage": "Möchten Sie diese Buchung wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
       "success": "Buchung gelöscht",
       "transferSuccess": "Überweisung gelöscht",
-      "error": "Buchung konnte nicht gelöscht werden"
+      "error": "Buchung konnte nicht gelöscht werden",
+      "reconciledWarning": "Diese Transaktion ist abgeglichen, daher wirkt sich das Löschen auf einen abgeschlossenen Abgleich aus."
     },
     "status": {
       "voidError": "Bearbeiten Sie die Buchung, um den Status von „Ungültig” zu ändern",
@@ -292,6 +293,11 @@
     },
     "submitCreate": "{mode} erstellen",
     "submitUpdate": "{mode} aktualisieren",
+    "reconciledConfirm": {
+      "title": "Abgeglichene Transaktion bearbeiten?",
+      "message": "Diese Transaktion ist abgeglichen. Eine Änderung wirkt sich auf einen abgeschlossenen Abgleich aus. Möchten Sie Ihre Änderungen trotzdem speichern?",
+      "confirm": "Änderungen speichern"
+    },
     "modeLabel": {
       "transfer": "Überweisung",
       "transaction": "Buchung"

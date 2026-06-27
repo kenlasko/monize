@@ -5964,6 +5964,19 @@ describe("TransactionsService", () => {
       expect(transactionsRepository.save).not.toHaveBeenCalled();
     });
 
+    it("surfaces the reconciled status of the target transaction", async () => {
+      transactionsRepository.findOne.mockResolvedValueOnce({
+        ...baseTx,
+        isReconciled: true,
+      });
+
+      const preview = await service.previewUpdate("user-1", "tx-1", {
+        amount: -30,
+      });
+
+      expect(preview.isReconciled).toBe(true);
+    });
+
     it("resolves a changed payee name to an existing payee", async () => {
       transactionsRepository.findOne.mockResolvedValueOnce({ ...baseTx });
       payeesService.resolveByName.mockResolvedValueOnce({
@@ -6089,6 +6102,25 @@ describe("TransactionsService", () => {
         currencyCode: "USD",
       });
       expect(transactionsRepository.remove).not.toHaveBeenCalled();
+    });
+
+    it("surfaces the reconciled status of the target transaction", async () => {
+      transactionsRepository.findOne.mockResolvedValueOnce({
+        id: "tx-1",
+        userId: "user-1",
+        amount: -12.5,
+        transactionDate: "2026-01-15",
+        payeeName: "Starbucks",
+        description: null,
+        currencyCode: "USD",
+        account: { name: "Checking" },
+        category: { name: "Coffee" },
+        isReconciled: true,
+      });
+
+      const preview = await service.previewDelete("user-1", "tx-1");
+
+      expect(preview.isReconciled).toBe(true);
     });
   });
 

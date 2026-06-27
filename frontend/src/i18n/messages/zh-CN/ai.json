@@ -104,6 +104,8 @@
     "createdInvestmentTransactions": "{count, plural, =0 {未创建投资交易} other {已创建 # 笔投资交易}}",
     "rowsSkipped": "{count, plural, other {已跳过 # 行}}",
     "rowSkippedBadge": "已跳过",
+    "reconciledBadge": "已对账",
+    "reconciledWarning": "此交易已对账。更改它会影响已完成的对账。",
     "investmentActions": {
       "BUY": "买入",
       "SELL": "卖出",

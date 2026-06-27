@@ -80,7 +80,8 @@
       "transactionMessage": "[XX-Are you sure you want to delete this transaction? This action cannot be undone.-XX]",
       "success": "[XX-Transaction deleted-XX]",
       "transferSuccess": "[XX-Transfer deleted-XX]",
-      "error": "[XX-Failed to delete transaction-XX]"
+      "error": "[XX-Failed to delete transaction-XX]",
+      "reconciledWarning": "[XX-This transaction is reconciled, so deleting it will affect a completed reconciliation.-XX]"
     },
     "status": {
       "voidError": "[XX-Edit the transaction to change its status from Void-XX]",
@@ -292,6 +293,11 @@
     },
     "submitCreate": "[XX-Create {mode}-XX]",
     "submitUpdate": "[XX-Update {mode}-XX]",
+    "reconciledConfirm": {
+      "title": "[XX-Edit reconciled transaction?-XX]",
+      "message": "[XX-This transaction is reconciled. Changing it will affect a completed reconciliation. Do you want to save your changes anyway?-XX]",
+      "confirm": "[XX-Save changes-XX]"
+    },
     "modeLabel": {
       "transfer": "[XX-Transfer-XX]",
       "transaction": "[XX-Transaction-XX]"

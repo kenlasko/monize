@@ -104,6 +104,8 @@
     "createdInvestmentTransactions": "{count, plural, =0 {कोई निवेश लेनदेन नहीं बनाया गया} one {# निवेश लेनदेन बनाया गया} other {# निवेश लेनदेन बनाए गए}}",
     "rowsSkipped": "{count, plural, one {# पंक्ति छोड़ी गई} other {# पंक्तियाँ छोड़ी गईं}}",
     "rowSkippedBadge": "छोड़ा गया",
+    "reconciledBadge": "समाधानित",
+    "reconciledWarning": "यह लेन-देन समाधानित है। इसे बदलने से पूर्ण किए गए समाधान पर असर पड़ेगा।",
     "investmentActions": {
       "BUY": "खरीदें",
       "SELL": "बेचें",

@@ -104,6 +104,8 @@
     "createdInvestmentTransactions": "{count, plural, =0 {Yatırım işlemi oluşturulmadı} one {# yatırım işlemi oluşturuldu} other {# yatırım işlemi oluşturuldu}}",
     "rowsSkipped": "{count, plural, one {# satır atlandı} other {# satır atlandı}}",
     "rowSkippedBadge": "Atlandı",
+    "reconciledBadge": "Mutabakatlı",
+    "reconciledWarning": "Bu işlemde mutabakat sağlandı. Değiştirmek, tamamlanmış bir mutabakatı etkiler.",
     "investmentActions": {
       "BUY": "Al",
       "SELL": "Sat",

@@ -104,6 +104,8 @@
     "createdInvestmentTransactions": "{count, plural, =0 {Không có giao dịch đầu tư nào được tạo} other {Đã tạo # giao dịch đầu tư}}",
     "rowsSkipped": "{count, plural, other {Đã bỏ qua # hàng}}",
     "rowSkippedBadge": "Đã bỏ qua",
+    "reconciledBadge": "Đã điều hoà",
+    "reconciledWarning": "Giao dịch này đã được điều hoà. Việc thay đổi sẽ ảnh hưởng đến một lần điều hoà đã hoàn tất.",
     "investmentActions": {
       "BUY": "Mua",
       "SELL": "Bán",

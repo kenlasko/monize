@@ -104,6 +104,8 @@
     "createdInvestmentTransactions": "{count, plural, =0 {Nessuna transazione di investimento creata} one {# transazione di investimento creata} other {# transazioni di investimento create}}",
     "rowsSkipped": "{count, plural, one {# riga saltata} other {# righe saltate}}",
     "rowSkippedBadge": "Saltata",
+    "reconciledBadge": "Riconciliata",
+    "reconciledWarning": "Questa transazione è riconciliata. Modificarla influirà su una riconciliazione completata.",
     "investmentActions": {
       "BUY": "Acquisto",
       "SELL": "Vendita",

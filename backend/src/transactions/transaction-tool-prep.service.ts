@@ -616,6 +616,7 @@ export class TransactionToolPrepService {
           payeeWillBeCreated: preview.payeeWillBeCreated,
           categoryName: preview.categoryName,
           description: preview.description,
+          isReconciled: preview.isReconciled,
         });
       } catch (err) {
         const reason = this.skipReason(err);
@@ -656,6 +657,7 @@ export class TransactionToolPrepService {
           payeeName: preview.payeeName,
           categoryName: preview.categoryName,
           description: preview.description,
+          isReconciled: preview.isReconciled,
         });
       } catch (err) {
         const reason = this.skipReason(err);

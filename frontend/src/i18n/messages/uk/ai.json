@@ -104,6 +104,8 @@
     "createdInvestmentTransactions": "{count, plural, =0 {Інвестиційні операції не створено} one {Створено # інвестиційну операцію} other {Створено # інвестиційних операцій}}",
     "rowsSkipped": "{count, plural, one {Пропущено # рядок} other {Пропущено # рядків}}",
     "rowSkippedBadge": "Пропущено",
+    "reconciledBadge": "Звірено",
+    "reconciledWarning": "Цю транзакцію звірено. Її зміна вплине на завершену звірку.",
     "investmentActions": {
       "BUY": "Купити",
       "SELL": "Продати",

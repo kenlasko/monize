@@ -104,6 +104,8 @@
     "createdInvestmentTransactions": "{count, plural, =0 {Nie utworzono transakcji inwestycyjnych} one {Utworzono # transakcję inwestycyjną} other {Utworzono # transakcji inwestycyjnych}}",
     "rowsSkipped": "{count, plural, one {Pominięto # wiersz} other {Pominięto # wierszy}}",
     "rowSkippedBadge": "Pominięto",
+    "reconciledBadge": "Uzgodniona",
+    "reconciledWarning": "Ta transakcja jest uzgodniona. Jej zmiana wpłynie na zakończone uzgodnienie.",
     "investmentActions": {
       "BUY": "Kupno",
       "SELL": "Sprzedaż",

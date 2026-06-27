@@ -80,7 +80,8 @@
       "transactionMessage": "Bu işlemi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
       "success": "İşlem silindi",
       "transferSuccess": "Transfer silindi",
-      "error": "İşlem silinemedi"
+      "error": "İşlem silinemedi",
+      "reconciledWarning": "Bu işlemde mutabakat sağlandı; bu nedenle silmek, tamamlanmış bir mutabakatı etkiler."
     },
     "status": {
       "voidError": "Durumunu Geçersiz'den değiştirmek için işlemi düzenleyin",
@@ -292,6 +293,11 @@
     },
     "submitCreate": "{mode} Oluştur",
     "submitUpdate": "{mode} Güncelle",
+    "reconciledConfirm": {
+      "title": "Mutabakatlı işlem düzenlensin mi?",
+      "message": "Bu işlemde mutabakat sağlandı. Değiştirmek, tamamlanmış bir mutabakatı etkiler. Yine de değişiklikleri kaydetmek istiyor musunuz?",
+      "confirm": "Değişiklikleri kaydet"
+    },
     "modeLabel": {
       "transfer": "Transfer",
       "transaction": "İşlem"

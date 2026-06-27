@@ -554,9 +554,12 @@ export function TransactionList({
         isOpen={deleteConfirm.isOpen}
         title={deleteConfirm.transaction?.isTransfer ? t('list.delete.transferTitle') : t('list.delete.transactionTitle')}
         message={
-          deleteConfirm.transaction?.isTransfer
+          (deleteConfirm.transaction?.isTransfer
             ? t('list.delete.transferMessage')
-            : t('list.delete.transactionMessage')
+            : t('list.delete.transactionMessage')) +
+          (deleteConfirm.transaction?.status === TransactionStatus.RECONCILED
+            ? ` ${t('list.delete.reconciledWarning')}`
+            : '')
         }
         confirmLabel={tc('delete')}
         cancelLabel={tc('cancel')}

@@ -518,6 +518,7 @@ export class AiActionBuilderService {
         payeeWillBeCreated: preview.payeeWillBeCreated,
         categoryName: preview.categoryName,
         description: preview.description,
+        isReconciled: preview.isReconciled,
         ...(splits ? { splits: splits.map(toSplitPreview) } : {}),
       },
     };
@@ -549,6 +550,7 @@ export class AiActionBuilderService {
         payeeName: preview.payeeName,
         categoryName: preview.categoryName,
         description: preview.description,
+        isReconciled: preview.isReconciled,
       },
     };
   }

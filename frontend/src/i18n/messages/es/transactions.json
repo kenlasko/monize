@@ -80,7 +80,8 @@
       "transactionMessage": "¿Estás seguro de que quieres eliminar esta transacción? Esta acción no se puede deshacer.",
       "success": "Transacción eliminada",
       "transferSuccess": "Transferencia eliminada",
-      "error": "Error al eliminar la transacción"
+      "error": "Error al eliminar la transacción",
+      "reconciledWarning": "Esta transacción está conciliada, por lo que eliminarla afectará a una conciliación completada."
     },
     "status": {
       "voidError": "Edita la transacción para cambiar su estado desde Anulada",
@@ -292,6 +293,11 @@
     },
     "submitCreate": "Crear {mode}",
     "submitUpdate": "Actualizar {mode}",
+    "reconciledConfirm": {
+      "title": "¿Editar transacción conciliada?",
+      "message": "Esta transacción está conciliada. Modificarla afectará a una conciliación completada. ¿Desea guardar los cambios de todas formas?",
+      "confirm": "Guardar cambios"
+    },
     "modeLabel": {
       "transfer": "Transferencia",
       "transaction": "Transacción"

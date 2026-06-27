@@ -80,7 +80,8 @@
       "transactionMessage": "この取引を削除してもよろしいですか？この操作は元に戻せません。",
       "success": "取引を削除しました",
       "transferSuccess": "振替を削除しました",
-      "error": "取引の削除に失敗しました"
+      "error": "取引の削除に失敗しました",
+      "reconciledWarning": "この取引は照合済みのため、削除すると完了した照合に影響します。"
     },
     "status": {
       "voidError": "取引を編集してVoid状態を変更してください",
@@ -292,6 +293,11 @@
     },
     "submitCreate": "{mode}を作成",
     "submitUpdate": "{mode}を更新",
+    "reconciledConfirm": {
+      "title": "照合済みの取引を編集しますか？",
+      "message": "この取引は照合済みです。変更すると完了した照合に影響します。それでも変更を保存しますか？",
+      "confirm": "変更を保存"
+    },
     "modeLabel": {
       "transfer": "振替",
       "transaction": "取引"

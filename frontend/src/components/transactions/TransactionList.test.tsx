@@ -1299,6 +1299,27 @@ describe('TransactionList', () => {
       });
     });
 
+    it('adds a reconciled warning to the delete dialog for a reconciled transaction', async () => {
+      const tx = createTransaction({ status: TransactionStatus.RECONCILED });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onDelete={mockOnDelete}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      fireEvent.click(screen.getByText('Delete'));
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/will affect a completed reconciliation/i),
+        ).toBeInTheDocument();
+      });
+    });
+
     it('shows delete confirmation dialog with transfer-specific message', async () => {
       const transferTx = createTransaction({
         isTransfer: true,

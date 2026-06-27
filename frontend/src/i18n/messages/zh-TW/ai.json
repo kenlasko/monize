@@ -104,6 +104,8 @@
     "createdInvestmentTransactions": "{count, plural, =0 {未建立投資交易} other {已建立 # 筆投資交易}}",
     "rowsSkipped": "{count, plural, other {已略過 # 行}}",
     "rowSkippedBadge": "已略過",
+    "reconciledBadge": "已對帳",
+    "reconciledWarning": "此交易已對帳。變更將影響已完成的對帳。",
     "investmentActions": {
       "BUY": "買入",
       "SELL": "賣出",

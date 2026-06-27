@@ -80,7 +80,8 @@
       "transactionMessage": "確定要刪除此交易嗎？此操作無法復原。",
       "success": "交易已刪除",
       "transferSuccess": "轉帳已刪除",
-      "error": "刪除交易失敗"
+      "error": "刪除交易失敗",
+      "reconciledWarning": "此交易已對帳，因此刪除將影響已完成的對帳。"
     },
     "status": {
       "voidError": "請編輯交易以從作廢狀態更改",
@@ -292,6 +293,11 @@
     },
     "submitCreate": "建立{mode}",
     "submitUpdate": "更新{mode}",
+    "reconciledConfirm": {
+      "title": "編輯已對帳的交易？",
+      "message": "此交易已對帳。變更將影響已完成的對帳。仍要儲存變更嗎？",
+      "confirm": "儲存變更"
+    },
     "modeLabel": {
       "transfer": "轉帳",
       "transaction": "交易"

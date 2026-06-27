@@ -164,6 +164,42 @@ describe('BulkConfirmationCard', () => {
       expect(screen.getByText(/1 transaction updated/)).toBeInTheDocument();
     });
 
+    it('flags reconciled rows in an update batch', () => {
+      render(
+        <BulkConfirmationCard
+          action={makeAction({
+            type: 'batch_actions',
+            descriptor: { type: 'batch_actions', operation: 'update' },
+            preview: {
+              rows: [
+                {
+                  status: 'ok',
+                  accountName: 'Checking',
+                  amount: -12.5,
+                  currencyCode: 'USD',
+                  transactionDate: '2026-01-15',
+                  payeeName: 'Starbucks',
+                  isReconciled: true,
+                },
+                {
+                  status: 'ok',
+                  accountName: 'Checking',
+                  amount: -8,
+                  currencyCode: 'USD',
+                  transactionDate: '2026-01-16',
+                  payeeName: 'Cafe',
+                },
+              ],
+            },
+          })}
+          onConfirm={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      // Only the reconciled row carries the badge.
+      expect(screen.getAllByText('Reconciled')).toHaveLength(1);
+    });
+
     it('renders a create_payee batch with payee names and title', () => {
       const { rerender } = render(
         <BulkConfirmationCard

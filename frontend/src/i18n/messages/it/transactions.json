@@ -80,7 +80,8 @@
       "transactionMessage": "Sei sicuro di voler eliminare questa transazione? Questa azione non può essere annullata.",
       "success": "Transazione eliminata",
       "transferSuccess": "Trasferimento eliminato",
-      "error": "Eliminazione transazione non riuscita"
+      "error": "Eliminazione transazione non riuscita",
+      "reconciledWarning": "Questa transazione è riconciliata, quindi eliminarla influirà su una riconciliazione completata."
     },
     "status": {
       "voidError": "Modifica la transazione per cambiarne lo stato da Annullata",
@@ -292,6 +293,11 @@
     },
     "submitCreate": "Crea {mode}",
     "submitUpdate": "Aggiorna {mode}",
+    "reconciledConfirm": {
+      "title": "Modificare la transazione riconciliata?",
+      "message": "Questa transazione è riconciliata. Modificarla influirà su una riconciliazione completata. Vuoi salvare comunque le modifiche?",
+      "confirm": "Salva modifiche"
+    },
     "modeLabel": {
       "transfer": "Trasferimento",
       "transaction": "Transazione"

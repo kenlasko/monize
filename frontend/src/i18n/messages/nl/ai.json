@@ -104,6 +104,8 @@
     "createdInvestmentTransactions": "{count, plural, =0 {Geen beleggingstransacties aangemaakt} one {# beleggingstransactie aangemaakt} other {# beleggingstransacties aangemaakt}}",
     "rowsSkipped": "{count, plural, one {# rij overgeslagen} other {# rijen overgeslagen}}",
     "rowSkippedBadge": "Overgeslagen",
+    "reconciledBadge": "Afgestemd",
+    "reconciledWarning": "Deze transactie is afgestemd. Het wijzigen ervan heeft invloed op een voltooide afstemming.",
     "investmentActions": {
       "BUY": "Kopen",
       "SELL": "Verkopen",

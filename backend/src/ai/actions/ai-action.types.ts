@@ -585,6 +585,12 @@ export interface AiActionPreview {
   description?: string | null;
   name?: string | null;
   /**
+   * True when an update/delete targets a reconciled transaction. The
+   * confirmation card surfaces a warning so the user knows approving will
+   * disturb a completed reconciliation.
+   */
+  isReconciled?: boolean;
+  /**
    * Resolved category-split lines for a split create/update. Display-only --
    * shown on the confirmation card in place of the single category row.
    */
@@ -643,6 +649,11 @@ export interface AiActionPreviewRow {
   payeeWillBeCreated?: boolean;
   categoryName?: string | null;
   description?: string | null;
+  /**
+   * True when this bulk update/delete row targets a reconciled transaction, so
+   * the card can flag the row before the user approves the batch.
+   */
+  isReconciled?: boolean;
   // Investment-transaction display fields.
   investmentAction?: InvestmentAction;
   symbol?: string | null;

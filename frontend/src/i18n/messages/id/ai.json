@@ -104,6 +104,8 @@
     "createdInvestmentTransactions": "{count, plural, =0 {Tidak ada transaksi investasi yang dibuat} other {# transaksi investasi dibuat}}",
     "rowsSkipped": "{count, plural, other {# baris dilewati}}",
     "rowSkippedBadge": "Dilewati",
+    "reconciledBadge": "Rekonsiliasi",
+    "reconciledWarning": "Transaksi ini telah direkonsiliasi. Mengubahnya akan memengaruhi rekonsiliasi yang telah selesai.",
     "investmentActions": {
       "BUY": "Beli",
       "SELL": "Jual",

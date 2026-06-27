@@ -358,6 +358,13 @@ export function TransactionConfirmationCard({
         {rows.map((row, i) => (
           <Row key={i} label={row.label} value={row.value} />
         ))}
+        {preview.isReconciled &&
+          (type === 'update_transaction' ||
+            type === 'delete_transaction') && (
+            <p className="text-xs text-amber-700 dark:text-amber-400 pt-1">
+              {t('confirmAction.reconciledWarning')}
+            </p>
+          )}
       </div>
       <div className="px-3 py-2 border-t border-blue-200 dark:border-blue-900/60">
         {status === 'pending' && (

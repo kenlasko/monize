@@ -32,6 +32,7 @@ import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { Tag } from '@/types/tag';
 import { ReactivatePayeeDialog } from '@/components/payees/ReactivatePayeeDialog';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
@@ -731,7 +732,12 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
     setShowTagForm(false);
   };
 
-  const onSubmit = async (data: TransactionFormData) => {
+  // Holds the validated form data while the user confirms editing a reconciled
+  // transaction; null when no such confirmation is pending.
+  const [reconciledConfirmData, setReconciledConfirmData] =
+    useState<TransactionFormData | null>(null);
+
+  const performSubmit = async (data: TransactionFormData) => {
     setIsLoading(true);
     try {
       // Handle transfer mode
@@ -859,6 +865,23 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Editing a reconciled transaction silently changes a record that was matched
+  // against a statement, so confirm before saving. New/duplicated transactions
+  // start UNRECONCILED, so this only gates genuine edits.
+  const onSubmit = async (data: TransactionFormData) => {
+    if (transaction?.status === TransactionStatus.RECONCILED) {
+      setReconciledConfirmData(data);
+      return;
+    }
+    await performSubmit(data);
+  };
+
+  const handleReconciledConfirm = async () => {
+    const data = reconciledConfirmData;
+    setReconciledConfirmData(null);
+    if (data) await performSubmit(data);
   };
 
   useFormSubmitRef(submitRef, handleSubmit, onSubmit);
@@ -1120,6 +1143,18 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
         onReactivate={handleReactivatePayee}
         onCancel={handleCancelReactivation}
         isReactivating={isReactivating}
+      />
+
+      {/* Warn before saving edits to a reconciled transaction */}
+      <ConfirmDialog
+        isOpen={reconciledConfirmData !== null}
+        title={t('form.reconciledConfirm.title')}
+        message={t('form.reconciledConfirm.message')}
+        confirmLabel={t('form.reconciledConfirm.confirm')}
+        variant="warning"
+        pushHistory
+        onConfirm={handleReconciledConfirm}
+        onCancel={() => setReconciledConfirmData(null)}
       />
     </form>
   );

@@ -104,6 +104,8 @@
     "createdInvestmentTransactions": "{count, plural, =0 {Keine Anlagetransaktionen erstellt} one {# Anlagetransaktion erstellt} other {# Anlagetransaktionen erstellt}}",
     "rowsSkipped": "{count, plural, one {# Zeile übersprungen} other {# Zeilen übersprungen}}",
     "rowSkippedBadge": "Übersprungen",
+    "reconciledBadge": "Abgeglichen",
+    "reconciledWarning": "Diese Transaktion ist abgeglichen. Eine Änderung wirkt sich auf einen abgeschlossenen Abgleich aus.",
     "investmentActions": {
       "BUY": "Kauf",
       "SELL": "Verkauf",

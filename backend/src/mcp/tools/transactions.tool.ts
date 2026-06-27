@@ -45,6 +45,14 @@ import { READ_ONLY, WRITE } from "../mcp-annotations";
 
 type ManageOperation = "create" | "update" | "delete";
 
+/**
+ * Appended to an MCP confirmation prompt when the target transaction is
+ * reconciled, so the approver knows the edit/delete disturbs a completed
+ * reconciliation. The web chat card surfaces the same warning visually.
+ */
+const RECONCILED_CONFIRM_NOTE =
+  "\nWarning: this transaction is reconciled. Changing it will affect a completed reconciliation.";
+
 interface ManageItem {
   // create (standard)
   accountName?: string;
@@ -1164,9 +1172,12 @@ export class McpTransactionsTools {
         preview,
         splits,
       );
+      const reconciledNote = preview.isReconciled
+        ? RECONCILED_CONFIRM_NOTE
+        : "";
       const confirmMessage = splits
-        ? `Apply this transaction edit?\nAccount: ${preview.accountName}\nAmount: ${preview.amount} ${preview.currencyCode}\nDate: ${preview.transactionDate}\nSplits: ${splits.map((s) => `${s.categoryName} ${s.amount}`).join(", ")}`
-        : `Apply this transaction edit?\nAccount: ${preview.accountName}\nAmount: ${preview.amount} ${preview.currencyCode}\nDate: ${preview.transactionDate}`;
+        ? `Apply this transaction edit?\nAccount: ${preview.accountName}\nAmount: ${preview.amount} ${preview.currencyCode}\nDate: ${preview.transactionDate}\nSplits: ${splits.map((s) => `${s.categoryName} ${s.amount}`).join(", ")}${reconciledNote}`
+        : `Apply this transaction edit?\nAccount: ${preview.accountName}\nAmount: ${preview.amount} ${preview.currencyCode}\nDate: ${preview.transactionDate}${reconciledNote}`;
       const outcome = await this.emitOrConfirm(
         server,
         userId,
@@ -1307,7 +1318,7 @@ export class McpTransactionsTools {
         server,
         userId,
         action,
-        `Delete this transaction?\nAccount: ${preview.accountName}\nAmount: ${preview.amount} ${preview.currencyCode}\nDate: ${preview.transactionDate}`,
+        `Delete this transaction?\nAccount: ${preview.accountName}\nAmount: ${preview.amount} ${preview.currencyCode}\nDate: ${preview.transactionDate}${preview.isReconciled ? RECONCILED_CONFIRM_NOTE : ""}`,
         requestId,
       );
       if (outcome === "relay") return toolResult(RELAY_PREVIEW_SHOWN);
@@ -1417,9 +1428,9 @@ export class McpTransactionsTools {
       case "update_transfer":
         return `${card.type === "create_transfer" ? "Create" : "Edit"} transfer?\nFrom: ${p.fromAccountName}\nTo: ${p.toAccountName}\nAmount: ${p.amount} ${p.currencyCode}`;
       case "delete_transaction":
-        return `Delete this transaction?\nAccount: ${p.accountName}`;
+        return `Delete this transaction?\nAccount: ${p.accountName}${p.isReconciled ? RECONCILED_CONFIRM_NOTE : ""}`;
       case "update_transaction":
-        return `Apply this transaction edit?\nAccount: ${p.accountName}\nAmount: ${p.amount} ${p.currencyCode}`;
+        return `Apply this transaction edit?\nAccount: ${p.accountName}\nAmount: ${p.amount} ${p.currencyCode}${p.isReconciled ? RECONCILED_CONFIRM_NOTE : ""}`;
       default:
         return `Create this transaction?\nAccount: ${p.accountName}\nAmount: ${p.amount} ${p.currencyCode}`;
     }

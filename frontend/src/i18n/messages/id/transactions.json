@@ -80,7 +80,8 @@
       "transactionMessage": "Apakah Anda yakin ingin menghapus transaksi ini? Tindakan ini tidak dapat dibatalkan.",
       "success": "Transaksi dihapus",
       "transferSuccess": "Transfer dihapus",
-      "error": "Gagal menghapus transaksi"
+      "error": "Gagal menghapus transaksi",
+      "reconciledWarning": "Transaksi ini telah direkonsiliasi, sehingga menghapusnya akan memengaruhi rekonsiliasi yang telah selesai."
     },
     "status": {
       "voidError": "Edit transaksi untuk mengubah statusnya dari Batal",
@@ -292,6 +293,11 @@
     },
     "submitCreate": "Buat {mode}",
     "submitUpdate": "Perbarui {mode}",
+    "reconciledConfirm": {
+      "title": "Edit transaksi yang telah direkonsiliasi?",
+      "message": "Transaksi ini telah direkonsiliasi. Mengubahnya akan memengaruhi rekonsiliasi yang telah selesai. Apakah Anda tetap ingin menyimpan perubahan?",
+      "confirm": "Simpan perubahan"
+    },
     "modeLabel": {
       "transfer": "Transfer",
       "transaction": "Transaksi"

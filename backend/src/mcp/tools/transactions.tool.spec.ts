@@ -1380,6 +1380,26 @@ describe("McpTransactionsTools", () => {
       expect(transactionsService.removeAny).not.toHaveBeenCalled();
     });
 
+    it("warns in the confirmation when deleting a reconciled transaction", async () => {
+      acceptingClient();
+      prepService.prepareDelete.mockResolvedValue({
+        transactionId: "t1",
+        accountName: "Checking",
+        amount: -75,
+        transactionDate: "2025-02-01",
+        payeeName: "Store",
+        categoryName: "Groceries",
+        description: null,
+        currencyCode: "USD",
+        isReconciled: true,
+      });
+      await handlers["manage_transactions"](
+        { operation: "delete", items: [{ transactionId: "t1" }] },
+        { sessionId: "s1" },
+      );
+      expect(elicitInput.mock.calls[0][0].message).toContain("reconciled");
+    });
+
     it("commits a bulk delete via confirmWrite when relay is unavailable", async () => {
       relayService.emitPendingAction.mockReturnValue(false);
       acceptingClient();

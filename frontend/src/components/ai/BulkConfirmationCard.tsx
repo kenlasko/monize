@@ -238,10 +238,16 @@ export function BulkConfirmationCard({
                 <span className="text-gray-900 dark:text-gray-100 break-words">
                   {primary || `#${i + 1}`}
                 </span>
-                {isError && (
+                {isError ? (
                   <span className="flex-shrink-0 text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
                     {t('confirmAction.rowSkippedBadge')}
                   </span>
+                ) : (
+                  row.isReconciled && (
+                    <span className="flex-shrink-0 text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
+                      {t('confirmAction.reconciledBadge')}
+                    </span>
+                  )
                 )}
               </div>
               {!isError && secondary && (

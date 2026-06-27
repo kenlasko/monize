@@ -146,6 +146,11 @@ export interface UpdateTransactionPreview {
   categoryName: string | null;
   description: string | null;
   currencyCode: string;
+  /**
+   * True when the target transaction is reconciled. Editing it disturbs a
+   * completed reconciliation, so the confirmation surfaces flag this.
+   */
+  isReconciled: boolean;
 }
 
 /** Resolved preview of a proposed transaction deletion (display-only). */
@@ -158,6 +163,11 @@ export interface DeleteTransactionPreview {
   categoryName: string | null;
   description: string | null;
   currencyCode: string;
+  /**
+   * True when the target transaction is reconciled. Deleting it disturbs a
+   * completed reconciliation, so the confirmation surfaces flag this.
+   */
+  isReconciled: boolean;
 }
 
 export { TransferResult };
@@ -611,6 +621,7 @@ export class TransactionsService {
       categoryName,
       description,
       currencyCode: existing.currencyCode,
+      isReconciled: existing.isReconciled,
     };
   }
 
@@ -633,6 +644,7 @@ export class TransactionsService {
       categoryName: existing.category?.name ?? null,
       description: existing.description ?? null,
       currencyCode: existing.currencyCode,
+      isReconciled: existing.isReconciled,
     };
   }
 

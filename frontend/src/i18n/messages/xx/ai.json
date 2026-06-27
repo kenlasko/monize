@@ -121,6 +121,8 @@
     "createdInvestmentTransactions": "[XX-{count, plural, =0 {No investment transactions created} one {# investment transaction created} other {# investment transactions created}}-XX]",
     "rowsSkipped": "[XX-{count, plural, one {# row skipped} other {# rows skipped}}-XX]",
     "rowSkippedBadge": "[XX-Skipped-XX]",
+    "reconciledBadge": "[XX-Reconciled-XX]",
+    "reconciledWarning": "[XX-This transaction is reconciled. Changing it will affect a completed reconciliation.-XX]",
     "investmentActions": {
       "BUY": "[XX-Buy-XX]",
       "SELL": "[XX-Sell-XX]",

@@ -80,7 +80,8 @@
       "transactionMessage": "Czy na pewno chcesz usunąć tę transakcję? Tej operacji nie można cofnąć.",
       "success": "Usunięto transakcję",
       "transferSuccess": "Usunięto przelew",
-      "error": "Nie udało się usunąć transakcji"
+      "error": "Nie udało się usunąć transakcji",
+      "reconciledWarning": "Ta transakcja jest uzgodniona, więc jej usunięcie wpłynie na zakończone uzgodnienie."
     },
     "status": {
       "voidError": "Edytuj transakcję, aby zmienić jej status z Anulowana",
@@ -292,6 +293,11 @@
     },
     "submitCreate": "Utwórz: {mode}",
     "submitUpdate": "Zaktualizuj: {mode}",
+    "reconciledConfirm": {
+      "title": "Edytować uzgodnioną transakcję?",
+      "message": "Ta transakcja jest uzgodniona. Jej zmiana wpłynie na zakończone uzgodnienie. Czy mimo to chcesz zapisać zmiany?",
+      "confirm": "Zapisz zmiany"
+    },
     "modeLabel": {
       "transfer": "Przelew",
       "transaction": "Transakcja"

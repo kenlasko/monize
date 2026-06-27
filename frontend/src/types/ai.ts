@@ -262,6 +262,12 @@ export interface PendingActionPreview {
   description?: string | null;
   name?: string | null;
   /**
+   * True when an update_transaction / delete_transaction targets a reconciled
+   * transaction. The card shows a warning line so the user knows approving will
+   * disturb a completed reconciliation.
+   */
+  isReconciled?: boolean;
+  /**
    * Category-split lines for a split create_transaction / update_transaction.
    * When present the card shows the breakdown in place of the single category.
    */
@@ -310,6 +316,8 @@ export interface PendingActionPreviewRow {
   payeeWillBeCreated?: boolean;
   categoryName?: string | null;
   description?: string | null;
+  /** True when this bulk update/delete row targets a reconciled transaction. */
+  isReconciled?: boolean;
   investmentAction?: InvestmentAction;
   symbol?: string | null;
   securityName?: string | null;

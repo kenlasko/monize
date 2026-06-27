@@ -383,6 +383,7 @@ describe("AiActionBuilderService", () => {
       categoryName: "Groceries",
       description: "edited",
       currencyCode: "USD",
+      isReconciled: true,
     };
 
     const action = builder.buildUpdateTransaction("u1", preview);
@@ -405,6 +406,8 @@ describe("AiActionBuilderService", () => {
       amount: -75,
       categoryName: "Groceries",
       description: "edited",
+      // Reconciled status is surfaced on the card so the user is warned.
+      isReconciled: true,
     });
   });
 
@@ -418,6 +421,7 @@ describe("AiActionBuilderService", () => {
       categoryName: "Dining",
       description: null,
       currencyCode: "USD",
+      isReconciled: true,
     };
 
     const action = builder.buildDeleteTransaction("u1", preview);
@@ -432,6 +436,7 @@ describe("AiActionBuilderService", () => {
       accountName: "Checking",
       amount: -20,
       payeeName: "Cafe",
+      isReconciled: true,
     });
   });
 

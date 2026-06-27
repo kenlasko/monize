@@ -80,7 +80,8 @@
       "transactionMessage": "Weet je zeker dat je deze transactie wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
       "success": "Transactie verwijderd",
       "transferSuccess": "Overboeking verwijderd",
-      "error": "Verwijderen van transactie mislukt"
+      "error": "Verwijderen van transactie mislukt",
+      "reconciledWarning": "Deze transactie is afgestemd, dus het verwijderen ervan heeft invloed op een voltooide afstemming."
     },
     "status": {
       "voidError": "Bewerk de transactie om de status te wijzigen van Ongeldig",
@@ -292,6 +293,11 @@
     },
     "submitCreate": "{mode} aanmaken",
     "submitUpdate": "{mode} bijwerken",
+    "reconciledConfirm": {
+      "title": "Afgestemde transactie bewerken?",
+      "message": "Deze transactie is afgestemd. Het wijzigen ervan heeft invloed op een voltooide afstemming. Wilt u uw wijzigingen toch opslaan?",
+      "confirm": "Wijzigingen opslaan"
+    },
     "modeLabel": {
       "transfer": "Overboeking",
       "transaction": "Transactie"

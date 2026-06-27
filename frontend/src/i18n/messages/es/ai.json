@@ -104,6 +104,8 @@
     "createdInvestmentTransactions": "{count, plural, =0 {No se crearon transacciones de inversión} one {# transacción de inversión creada} other {# transacciones de inversión creadas}}",
     "rowsSkipped": "{count, plural, one {# fila omitida} other {# filas omitidas}}",
     "rowSkippedBadge": "Omitida",
+    "reconciledBadge": "Conciliada",
+    "reconciledWarning": "Esta transacción está conciliada. Modificarla afectará a una conciliación completada.",
     "investmentActions": {
       "BUY": "Comprar",
       "SELL": "Vender",
