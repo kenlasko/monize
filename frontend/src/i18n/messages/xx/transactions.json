@@ -295,7 +295,7 @@
     "submitUpdate": "[XX-Update {mode}-XX]",
     "reconciledConfirm": {
       "title": "[XX-Edit reconciled transaction?-XX]",
-      "message": "[XX-This transaction is reconciled. Changing it will affect a completed reconciliation. Do you want to save your changes anyway?-XX]",
+      "message": "[XX-This transaction is reconciled. Changing its date or amount will affect a completed reconciliation. Do you want to save your changes anyway?-XX]",
       "confirm": "[XX-Save changes-XX]"
     },
     "modeLabel": {

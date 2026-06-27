@@ -795,7 +795,7 @@ describe('TransactionForm', () => {
       expect(mockOnSuccess).toHaveBeenCalledTimes(1);
     });
 
-    it('confirms before saving an edit to a reconciled transaction', async () => {
+    it('confirms before saving a reconciled transaction when the date changes', async () => {
       const existingTransaction = createExistingTransaction({
         status: TransactionStatus.RECONCILED,
         isReconciled: true,
@@ -813,6 +813,8 @@ describe('TransactionForm', () => {
         expect(screen.getByRole('button', { name: /Update Transaction/i })).toBeInTheDocument();
       });
 
+      // Changing the date affects the reconciliation, so the save is gated.
+      fireEvent.change(screen.getByLabelText('Date'), { target: { value: '2024-02-20' } });
       fireEvent.click(screen.getByRole('button', { name: /Update Transaction/i }));
 
       // The edit is gated behind a confirmation; nothing is saved yet.
@@ -830,6 +832,69 @@ describe('TransactionForm', () => {
           expect.any(Object)
         );
       });
+      expect(mockOnSuccess).toHaveBeenCalledTimes(1);
+    });
+
+    it('confirms before saving a reconciled transaction when the amount changes', async () => {
+      const existingTransaction = createExistingTransaction({
+        status: TransactionStatus.RECONCILED,
+        isReconciled: true,
+      });
+
+      render(
+        <TransactionForm
+          transaction={existingTransaction}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Update Transaction/i })).toBeInTheDocument();
+      });
+
+      // Changing the amount affects the reconciliation, so the save is gated.
+      fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '75.00' } });
+      fireEvent.click(screen.getByRole('button', { name: /Update Transaction/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText('Edit reconciled transaction?')).toBeInTheDocument();
+      });
+      expect(mockUpdate).not.toHaveBeenCalled();
+    });
+
+    it('saves a reconciled transaction without confirmation when date and amount are unchanged', async () => {
+      const existingTransaction = createExistingTransaction({
+        status: TransactionStatus.RECONCILED,
+        isReconciled: true,
+      });
+
+      render(
+        <TransactionForm
+          transaction={existingTransaction}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Update Transaction/i })).toBeInTheDocument();
+      });
+
+      // Editing a different field (here, nothing date/amount related) leaves the
+      // reconciliation intact, so the save proceeds without a warning.
+      fireEvent.change(screen.getByLabelText('Reference Number'), {
+        target: { value: 'REF-EDITED' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: /Update Transaction/i }));
+
+      await waitFor(() => {
+        expect(mockUpdate).toHaveBeenCalledWith(
+          existingTransaction.id,
+          expect.any(Object)
+        );
+      });
+      expect(screen.queryByText('Edit reconciled transaction?')).not.toBeInTheDocument();
       expect(mockOnSuccess).toHaveBeenCalledTimes(1);
     });
 

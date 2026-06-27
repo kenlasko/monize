@@ -61,6 +61,30 @@ const buildTransactionSchema = (t: (key: string) => string) => z.object({
 
 type TransactionFormData = z.infer<ReturnType<typeof buildTransactionSchema>>;
 
+/**
+ * A reconciled transaction was matched against a statement during
+ * reconciliation. Only the date and amount feed that match, so editing other
+ * fields (payee, category, notes, reference) leaves the reconciliation intact
+ * and should save without a warning. Returns true only when the submitted date
+ * or amount differs from the original, in which case the edit is gated behind a
+ * confirmation. Amounts are compared in integer cents at the same 2-decimal
+ * precision the form loads them with, so float drift never triggers a warning.
+ */
+function reconciledEditAffectsReconciliation(
+  original: Transaction,
+  data: TransactionFormData,
+): boolean {
+  const dateChanged = data.transactionDate !== original.transactionDate;
+  // Mirror the form's defaultValues normalization: transfers always load an
+  // absolute amount, everything else keeps its sign.
+  const originalAmount = original.isTransfer
+    ? Math.abs(Math.round(Number(original.amount) * 100) / 100)
+    : Math.round(Number(original.amount) * 100) / 100;
+  const amountChanged =
+    Math.round(Number(data.amount) * 100) !== Math.round(originalAmount * 100);
+  return dateChanged || amountChanged;
+}
+
 interface TransactionFormProps {
   transaction?: Transaction;
   duplicateFrom?: Transaction;
@@ -867,11 +891,16 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
     }
   };
 
-  // Editing a reconciled transaction silently changes a record that was matched
-  // against a statement, so confirm before saving. New/duplicated transactions
-  // start UNRECONCILED, so this only gates genuine edits.
+  // Editing a reconciled transaction's date or amount silently changes a record
+  // that was matched against a statement, so confirm before saving. Edits that
+  // leave the date and amount untouched (e.g. fixing a payee or category) don't
+  // affect the reconciliation and save without a prompt. New/duplicated
+  // transactions start UNRECONCILED, so this only gates genuine edits.
   const onSubmit = async (data: TransactionFormData) => {
-    if (transaction?.status === TransactionStatus.RECONCILED) {
+    if (
+      transaction?.status === TransactionStatus.RECONCILED &&
+      reconciledEditAffectsReconciliation(transaction, data)
+    ) {
       setReconciledConfirmData(data);
       return;
     }
