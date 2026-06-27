@@ -130,6 +130,56 @@ export function formatMonth(month: string, format: string = 'browser', locale?: 
 }
 
 /**
+ * date-fns-style tokens used for month markers and date labels on charts,
+ * mapped to locale-aware `Intl.DateTimeFormat` output. Charts historically
+ * formatted these with date-fns `format()`, which is English-only here (no
+ * locale was ever supplied), so month names like "Jan" never followed the
+ * user's UI language. Using Intl localizes both the month name and the
+ * locale-appropriate ordering/separators.
+ */
+export type ChartDatePattern =
+  | 'MMM' // Jan
+  | 'MMM yy' // Jan 25
+  | 'MMM yyyy' // Jan 2025
+  | 'MMMM yyyy' // January 2025
+  | 'MMM d' // Jan 5
+  | 'MMM d, yyyy' // Jan 5, 2025
+  | 'MMM d HH:mm' // Jan 5, 14:30
+  | 'HH:mm' // 14:30
+  | 'yyyy'; // 2025
+
+const CHART_DATE_OPTIONS: Record<ChartDatePattern, Intl.DateTimeFormatOptions> = {
+  MMM: { month: 'short' },
+  'MMM yy': { month: 'short', year: '2-digit' },
+  'MMM yyyy': { month: 'short', year: 'numeric' },
+  'MMMM yyyy': { month: 'long', year: 'numeric' },
+  'MMM d': { month: 'short', day: 'numeric' },
+  'MMM d, yyyy': { month: 'short', day: 'numeric', year: 'numeric' },
+  'MMM d HH:mm': { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false },
+  'HH:mm': { hour: '2-digit', minute: '2-digit', hour12: false },
+  yyyy: { year: 'numeric' },
+};
+
+/**
+ * Format a date for a chart axis tick, tooltip, or series label in the user's
+ * locale. String inputs are parsed as local dates (YYYY-MM-DD) so they do not
+ * shift across timezones; Date inputs (e.g. intraday timestamps) are formatted
+ * as given.
+ * @param date - Date object or local date string (YYYY-MM-DD)
+ * @param pattern - One of the supported chart date patterns
+ * @param locale - Optional BCP 47 locale (typically the user's UI language);
+ *                 falls back to the runtime default when omitted.
+ */
+export function formatChartDate(
+  date: Date | string,
+  pattern: ChartDatePattern,
+  locale?: string,
+): string {
+  const d = typeof date === 'string' ? parseLocalDate(date) : date;
+  return new Intl.DateTimeFormat(locale, CHART_DATE_OPTIONS[pattern]).format(d);
+}
+
+/**
  * Resolve the user's timezone preference to an IANA timezone string.
  * 'browser' (or undefined) falls back to the browser's detected timezone.
  */

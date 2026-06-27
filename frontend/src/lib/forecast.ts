@@ -21,7 +21,6 @@ export interface ForecastTransaction {
 export interface ForecastDataPoint {
   date: string;
   balance: number;
-  label: string;
   transactions: ForecastTransaction[];
 }
 
@@ -60,10 +59,6 @@ function formatDateKey(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
-}
-
-function formatDateLabel(date: Date): string {
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 /**
@@ -409,7 +404,6 @@ export function buildForecast(
       dataPoints.push({
         date: dateKey,
         balance: Math.round(currentBalance * 100) / 100,
-        label: formatDateLabel(currentDate),
         transactions: dayTransactions,
       });
       lastAddedTime = currentTime;

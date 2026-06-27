@@ -13,13 +13,12 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { format } from 'date-fns';
 import { chartColors } from '@/lib/chart-colors';
 import { netWorthApi } from '@/lib/net-worth';
 import { investmentsApi } from '@/lib/investments';
 import { PortfolioSummary } from '@/types/investment';
 import { Account } from '@/types/account';
-import { parseLocalDate } from '@/lib/utils';
+import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { gainLossColor } from '@/lib/format';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
@@ -74,6 +73,7 @@ export function PortfolioValueReport() {
   const t = useTranslations('reports');
   const tc = useTranslations('common');
   const mainAccountName = useMainAccountName();
+  const formatChartDate = useChartDateFormat();
   const { formatCurrencyCompact, formatCurrencyAxis, formatCurrencyFlag, formatCurrency: formatCurrencyFull, formatSignedPercent } = useNumberFormat();
   const { defaultCurrency } = useExchangeRates();
   const chartRef = useRef<HTMLDivElement>(null);
@@ -164,9 +164,9 @@ export function PortfolioValueReport() {
   const formatIntradayLabel = useCallback(
     (iso: string, range: string) => {
       const d = new Date(iso);
-      return range === '1d' ? format(d, 'HH:mm') : format(d, 'MMM d HH:mm');
+      return range === '1d' ? formatChartDate(d, 'HH:mm') : formatChartDate(d, 'MMM d HH:mm');
     },
-    [],
+    [formatChartDate],
   );
 
   useEffect(() => {
@@ -189,7 +189,7 @@ export function PortfolioValueReport() {
         if (loadSeqRef.current !== seq) return;
         setChartPoints(
           data.map((d) => ({
-            name: format(parseLocalDate(d.date), 'MMM d, yyyy'),
+            name: formatChartDate(d.date, 'MMM d, yyyy'),
             Value: d.value,
           })),
         );
@@ -198,7 +198,7 @@ export function PortfolioValueReport() {
         if (loadSeqRef.current !== seq) return;
         setChartPoints(
           data.map((d) => ({
-            name: format(parseLocalDate(d.month), 'MMM yyyy'),
+            name: formatChartDate(d.month, 'MMM yyyy'),
             Value: d.value,
           })),
         );
@@ -321,6 +321,7 @@ export function PortfolioValueReport() {
     isIntraday,
     dateRange,
     formatIntradayLabel,
+    formatChartDate,
   ]);
 
   const summary = useMemo(() => {

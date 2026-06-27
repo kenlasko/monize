@@ -22,7 +22,8 @@ import { chartColors } from '@/lib/chart-colors';
 import { investmentsApi } from '@/lib/investments';
 import { Security, SecurityPrice, InvestmentTransaction, HoldingWithMarketValue } from '@/types/investment';
 import { Account } from '@/types/account';
-import { parseLocalDate } from '@/lib/utils';
+import { parseLocalDate, type ChartDatePattern } from '@/lib/utils';
+import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
@@ -80,6 +81,7 @@ interface PriceChartPoint {
 export function SecurityPerformanceReport() {
   const t = useTranslations('reports');
   const tc = useTranslations('common');
+  const formatChartDate = useChartDateFormat();
   const mainAccountName = useMainAccountName();
   const { formatCurrency: formatCurrencyFull, formatCurrencyAxis, formatSignedPercent } = useNumberFormat();
   const { defaultCurrency } = useExchangeRates();
@@ -247,13 +249,13 @@ export function SecurityPerformanceReport() {
         return {
           date: p.priceDate,
           ts: parsed.getTime(),
-          label: format(parsed, 'MMM d, yyyy'),
+          label: formatChartDate(parsed, 'MMM d, yyyy'),
           close: Number(p.closePrice),
           buyMarker: txInfo?.buys ? Number(p.closePrice) : undefined,
           sellMarker: txInfo?.sells ? Number(p.closePrice) : undefined,
         };
       });
-  }, [prices, transactions]);
+  }, [prices, transactions, formatChartDate]);
 
   // Time-axis ticks: evenly spaced in real time (not by data index), so the
   // horizontal scale is consistent across the whole timeline. Without this the
@@ -264,7 +266,7 @@ export function SecurityPerformanceReport() {
       return {
         ticks: [] as number[],
         domain: ['dataMin', 'dataMax'] as [string, string],
-        tickFormat: 'MMM yyyy',
+        tickFormat: 'MMM yyyy' as ChartDatePattern,
       };
     }
     const minTs = chartData[0].ts;
@@ -273,7 +275,7 @@ export function SecurityPerformanceReport() {
     return {
       ticks,
       domain: [minTs, maxTs] as [number, number],
-      tickFormat: stepMonths >= 12 ? 'yyyy' : 'MMM yyyy',
+      tickFormat: (stepMonths >= 12 ? 'yyyy' : 'MMM yyyy') as ChartDatePattern,
     };
   }, [chartData]);
 
@@ -599,7 +601,7 @@ export function SecurityPerformanceReport() {
                         scale="time"
                         domain={xAxis.domain}
                         ticks={xAxis.ticks}
-                        tickFormatter={(ts: number) => format(ts, xAxis.tickFormat)}
+                        tickFormatter={(ts: number) => formatChartDate(new Date(ts), xAxis.tickFormat)}
                         tick={{ fontSize: 11 }}
                       />
                       <YAxis

@@ -19,6 +19,7 @@ import { format, lastDayOfMonth } from 'date-fns';
 import { parseLocalDate } from '@/lib/utils';
 import { MonthlyTotal } from '@/types/transaction';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { ChartDownloadButton } from '@/components/ui/ChartDownloadButton';
 
@@ -83,6 +84,7 @@ export function CategoryPayeeBarChart({
   const t = useTranslations('transactions');
   const chartTitle = t('charts.monthlyTotals.title');
   const { formatCurrency, formatCurrencyAxis } = useNumberFormat();
+  const formatChartDate = useChartDateFormat();
   const chartRef = useRef<HTMLDivElement>(null);
   const downloadFilename = filterLabel ? `${chartTitle} - ${filterLabel}` : chartTitle;
   const isMobile = useIsMobile();
@@ -92,13 +94,13 @@ export function CategoryPayeeBarChart({
       const parsed = parseLocalDate(`${d.month}-01`);
       return {
         month: d.month,
-        label: format(parsed, 'MMMM yyyy'),
+        label: formatChartDate(parsed, 'MMMM yyyy'),
         total: d.total,
         absTotal: Math.abs(d.total),
         count: d.count,
       };
     });
-  }, [data]);
+  }, [data, formatChartDate]);
 
   const isCrowded = chartData.length > DESKTOP_CROWDED_THRESHOLD;
   const verticalLabels = isMobile || isCrowded;
@@ -177,7 +179,7 @@ export function CategoryPayeeBarChart({
               tick={{ fill: '#6b7280', fontSize: isMobile ? 10 : 12 }}
               tickLine={false}
               axisLine={{ stroke: '#e5e7eb' }}
-              tickFormatter={(value: string) => format(parseLocalDate(`${value}-01`), 'MMM yy')}
+              tickFormatter={(value: string) => formatChartDate(`${value}-01`, 'MMM yy')}
               interval="preserveStartEnd"
               angle={isMobile ? -35 : 0}
               textAnchor={isMobile ? 'end' : 'middle'}

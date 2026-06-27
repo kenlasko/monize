@@ -15,7 +15,7 @@ import {
   Area,
   ReferenceLine,
 } from 'recharts';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { accountsApi } from '@/lib/accounts';
 import { transactionsApi } from '@/lib/transactions';
 import { Transaction } from '@/types/transaction';
@@ -24,6 +24,7 @@ import { useReportData } from '@/hooks/useReportData';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { ReportError } from '@/components/reports/ReportError';
 import { chartColors } from '@/lib/chart-colors';
+import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { useTranslations } from 'next-intl';
 
 interface PayoffScheduleItem {
@@ -112,6 +113,7 @@ function advanceDate(date: Date, frequency: string): Date {
 
 export function DebtPayoffTimelineReport() {
   const t = useTranslations('reports');
+  const formatChartDate = useChartDateFormat();
   const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } = useNumberFormat();
   const chartRef = useRef<HTMLDivElement>(null);
   const [selectedAccountIdState, setSelectedAccountId] = useState<string>('');
@@ -229,7 +231,7 @@ export function DebtPayoffTimelineReport() {
 
       schedule.push({
         date: transaction.transactionDate,
-        label: format(parseISO(transaction.transactionDate), 'MMM yyyy'),
+        label: formatChartDate(transaction.transactionDate, 'MMM yyyy'),
         balance: runningBalance,
         principalPaid: principal,
         interestPaid: interest,
@@ -285,7 +287,7 @@ export function DebtPayoffTimelineReport() {
 
         schedule.push({
           date: format(projDate, 'yyyy-MM-dd'),
-          label: format(projDate, 'MMM yyyy'),
+          label: formatChartDate(projDate, 'MMM yyyy'),
           balance: Math.round(projRunningBalance * 100) / 100,
           principalPaid: Math.round(principalPortion * 100) / 100,
           interestPaid: Math.round(interestCharge * 100) / 100,
@@ -354,7 +356,7 @@ export function DebtPayoffTimelineReport() {
     }
 
     return { payoffSchedule: monthlySchedule, projectionStartLabel: startLabel };
-  }, [selectedAccount, transactions]);
+  }, [selectedAccount, transactions, formatChartDate]);
 
   const summary = useMemo(() => {
     if (payoffSchedule.length === 0 || !selectedAccount) return null;

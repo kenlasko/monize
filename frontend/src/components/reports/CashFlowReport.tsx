@@ -22,6 +22,7 @@ import {
   IncomeSourceItem,
 } from "@/types/built-in-reports";
 import { useNumberFormat } from "@/hooks/useNumberFormat";
+import { useChartDateFormat } from "@/hooks/useChartDateFormat";
 import { useDateRange } from "@/hooks/useDateRange";
 import { useReportData } from "@/hooks/useReportData";
 import { DateRangeSelector } from "@/components/ui/DateRangeSelector";
@@ -47,6 +48,7 @@ export function CashFlowReport() {
   const chartRef = useRef<HTMLDivElement>(null);
   const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } =
     useNumberFormat();
+  const formatChartDate = useChartDateFormat();
   const {
     dateRange,
     setDateRange,
@@ -86,7 +88,7 @@ export function CashFlowReport() {
         const monthDate = parseISO(item.month + "-01");
         return {
           name: item.month,
-          fullName: format(monthDate, "MMM yyyy"),
+          fullName: formatChartDate(monthDate, "MMM yyyy"),
           Income: Math.round(item.income),
           Expenses: Math.round(item.expenses),
           Net: Math.round(item.net),
@@ -94,7 +96,7 @@ export function CashFlowReport() {
           monthEnd: format(endOfMonth(monthDate), "yyyy-MM-dd"),
         };
       }),
-    [response],
+    [response, formatChartDate],
   );
 
   const incomeItems = useMemo<IncomeSourceItem[]>(
@@ -305,7 +307,7 @@ export function CashFlowReport() {
                 dataKey="name"
                 tick={{ fontSize: 12 }}
                 tickFormatter={(value: string) =>
-                  format(parseISO(value + "-01"), "MMM")
+                  formatChartDate(`${value}-01`, "MMM")
                 }
               />
               <YAxis

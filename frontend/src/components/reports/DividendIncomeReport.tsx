@@ -21,6 +21,7 @@ import { investmentsApi } from '@/lib/investments';
 import { InvestmentTransaction, CapitalGainEntry } from '@/types/investment';
 import { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
+import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useDateRange } from '@/hooks/useDateRange';
@@ -79,6 +80,7 @@ const SERIES_COLORS: Record<SeriesKey, { positive: string; negative: string }> =
 
 export function DividendIncomeReport() {
   const t = useTranslations('reports');
+  const formatChartDate = useChartDateFormat();
   const mainAccountName = useMainAccountName();
   const { formatCurrency: formatCurrencyFull, formatCurrencyAxis } = useNumberFormat();
   const { defaultCurrency, convertToDefault } = useExchangeRates();
@@ -355,7 +357,7 @@ export function DividendIncomeReport() {
       const key = format(month, 'yyyy-MM');
       monthMap.set(key, {
         month: key,
-        label: format(month, 'MMM yyyy'),
+        label: formatChartDate(month, 'MMM yyyy'),
         startValue: 0,
         endValue: 0,
         dividends: 0,
@@ -371,7 +373,7 @@ export function DividendIncomeReport() {
       if (!bucket) {
         bucket = {
           month: monthKey,
-          label: format(txDate, 'MMM yyyy'),
+          label: formatChartDate(txDate, 'MMM yyyy'),
           startValue: 0,
           endValue: 0,
           dividends: 0,
@@ -422,7 +424,7 @@ export function DividendIncomeReport() {
     });
 
     return Array.from(monthMap.values()).sort((a, b) => a.month.localeCompare(b.month));
-  }, [filteredTransactions, filteredCapitalGains, dateRange, resolvedRange, getTxAmount, convertCapitalGain, convertFromAccountCurrency]);
+  }, [filteredTransactions, filteredCapitalGains, dateRange, resolvedRange, getTxAmount, convertCapitalGain, convertFromAccountCurrency, formatChartDate]);
 
   // Daily view: mirrors monthlyData but at daily granularity, combining
   // transaction-level income (DIVIDEND, INTEREST, CAPITAL_GAIN) with the
@@ -435,7 +437,7 @@ export function DividendIncomeReport() {
       if (!bucket) {
         bucket = {
           date: dateKey,
-          label: format(txDate, 'MMM d, yyyy'),
+          label: formatChartDate(txDate, 'MMM d, yyyy'),
           startValue: 0,
           endValue: 0,
           dividends: 0,
@@ -481,7 +483,7 @@ export function DividendIncomeReport() {
     });
 
     return Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date));
-  }, [filteredTransactions, filteredDailyCapitalGains, getTxAmount, convertCapitalGain, convertFromAccountCurrency]);
+  }, [filteredTransactions, filteredDailyCapitalGains, getTxAmount, convertCapitalGain, convertFromAccountCurrency, formatChartDate]);
 
   // When hideInactiveDays is enabled, drop rows with no income and no price
   // movement. On weekends/holidays the market is closed, so capital gains are

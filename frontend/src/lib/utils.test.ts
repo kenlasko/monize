@@ -13,6 +13,7 @@ import {
   parseTime,
   getLocalDateString,
   parseDateFromFormat,
+  formatChartDate,
 } from './utils';
 
 describe('cn', () => {
@@ -127,6 +128,43 @@ describe('formatMonth', () => {
 
   it('falls back to browser locale for unknown format', () => {
     const result = formatMonth('2026-01', 'unknown-format');
+    expect(typeof result).toBe('string');
+    expect(result.length).toBeGreaterThan(0);
+  });
+});
+
+describe('formatChartDate', () => {
+  it('localizes the short month name (en)', () => {
+    expect(formatChartDate('2026-01-15', 'MMM', 'en-US')).toBe('Jan');
+  });
+
+  it('localizes the short month name in another language (de)', () => {
+    // German abbreviates January as "Jan" too, but March differs ("Mär").
+    expect(formatChartDate('2026-03-15', 'MMM', 'de')).toBe('Mär');
+  });
+
+  it('localizes the full month with year (fr)', () => {
+    // French uses lowercase month names and day-month-year ordering.
+    expect(formatChartDate('2026-01-15', 'MMMM yyyy', 'fr')).toBe('janvier 2026');
+  });
+
+  it('parses string dates as local time without shifting', () => {
+    // A naive new Date('2026-01-01') is UTC midnight and can roll back a day
+    // in negative-offset zones; formatChartDate parses parts directly.
+    expect(formatChartDate('2026-01-01', 'MMM yyyy', 'en-US')).toBe('Jan 2026');
+  });
+
+  it('formats Date inputs (intraday timestamps) with time', () => {
+    const d = new Date(2026, 0, 5, 14, 30);
+    expect(formatChartDate(d, 'HH:mm', 'en-GB')).toBe('14:30');
+  });
+
+  it('formats year-only markers', () => {
+    expect(formatChartDate('2026-06-15', 'yyyy', 'en-US')).toBe('2026');
+  });
+
+  it('falls back to the runtime default locale when none is given', () => {
+    const result = formatChartDate('2026-01-15', 'MMM');
     expect(typeof result).toBe('string');
     expect(result.length).toBeGreaterThan(0);
   });

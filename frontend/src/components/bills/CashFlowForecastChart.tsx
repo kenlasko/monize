@@ -36,6 +36,7 @@ import {
   FORECAST_PERIOD_LABELS,
 } from '@/lib/forecast';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 
 interface CashFlowForecastChartProps {
@@ -49,10 +50,12 @@ function CashFlowTooltip({
   active,
   payload,
   formatCurrency,
+  formatChartDate,
 }: {
   active?: boolean;
   payload?: Array<{ payload: ForecastDataPoint }>;
   formatCurrency: (v: number) => string;
+  formatChartDate: (date: Date | string, pattern: 'MMM d') => string;
 }) {
   const t = useTranslations('bills');
   if (active && payload?.[0]) {
@@ -60,7 +63,7 @@ function CashFlowTooltip({
     return (
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 max-w-xs">
         <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">
-          {data.label}
+          {formatChartDate(data.date, 'MMM d')}
         </p>
         <p
           className={`text-lg font-semibold ${
@@ -127,6 +130,7 @@ export function CashFlowForecastChart({
   const tc = useTranslations('common');
   const { formatCurrency: formatCurrencyFull, formatCurrencyAxis, formatCurrencyFlag } =
     useNumberFormat();
+  const formatChartDate = useChartDateFormat();
   const { convertToDefault, defaultCurrency } = useExchangeRates();
   const [selectedPeriod, setSelectedPeriod] = useState<ForecastPeriod>(() => getStoredPeriod());
   const [selectedAccountId, setSelectedAccountId] = useState<string>(() => getStoredAccountId());
@@ -295,9 +299,9 @@ export function CashFlowForecastChart({
           <ResponsiveContainer width="100%" height="90%" minWidth={0}>
             <LineChart data={forecastData} margin={{ left: 0, right: 8, top: 5, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
-              <XAxis dataKey="label" tick={{ fill: chartColors.axis, fontSize: 12 }} tickLine={false} axisLine={{ stroke: chartColors.grid }} interval="preserveStartEnd" />
+              <XAxis dataKey="date" tickFormatter={(value: string) => formatChartDate(value, 'MMM d')} tick={{ fill: chartColors.axis, fontSize: 12 }} tickLine={false} axisLine={{ stroke: chartColors.grid }} interval="preserveStartEnd" />
               <YAxis tick={{ fill: chartColors.axis, fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={formatAxis} width={45} domain={['auto', 'auto']} />
-              <Tooltip content={<CashFlowTooltip formatCurrency={formatCurrency} />} />
+              <Tooltip content={<CashFlowTooltip formatCurrency={formatCurrency} formatChartDate={formatChartDate} />} />
               <ReferenceLine y={0} stroke={chartColors.expense} strokeDasharray="5 5" strokeOpacity={0.5} />
               <Line type="monotone" dataKey="balance" stroke={chartColors.axis} strokeWidth={2} dot={false} strokeDasharray="5 5" />
             </LineChart>
@@ -321,7 +325,8 @@ export function CashFlowForecastChart({
                 stroke={chartColors.grid}
               />
               <XAxis
-                dataKey="label"
+                dataKey="date"
+                tickFormatter={(value: string) => formatChartDate(value, 'MMM d')}
                 tick={{ fill: chartColors.axis, fontSize: 12 }}
                 tickLine={false}
                 axisLine={{ stroke: chartColors.grid }}
@@ -335,7 +340,7 @@ export function CashFlowForecastChart({
                 width={45}
                 domain={['auto', 'auto']}
               />
-              <Tooltip content={<CashFlowTooltip formatCurrency={formatCurrency} />} />
+              <Tooltip content={<CashFlowTooltip formatCurrency={formatCurrency} formatChartDate={formatChartDate} />} />
               {/* Reference line at $0 */}
               <ReferenceLine
                 y={0}

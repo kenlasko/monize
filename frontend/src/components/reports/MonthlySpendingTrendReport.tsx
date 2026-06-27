@@ -19,6 +19,7 @@ import { format, parseISO, startOfMonth, endOfMonth } from "date-fns";
 import { builtInReportsApi } from "@/lib/built-in-reports";
 import { MonthlyIncomeExpenseItem } from "@/types/built-in-reports";
 import { useNumberFormat } from "@/hooks/useNumberFormat";
+import { useChartDateFormat } from "@/hooks/useChartDateFormat";
 import { useDateRange } from "@/hooks/useDateRange";
 import { useReportData } from "@/hooks/useReportData";
 import { useSortableTable, compareValues } from "@/hooks/useSortableTable";
@@ -51,6 +52,7 @@ export function MonthlySpendingTrendReport() {
   const chartRef = useRef<HTMLDivElement>(null);
   const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } =
     useNumberFormat();
+  const formatChartDate = useChartDateFormat();
   const [viewType, setViewType] = useState<'line' | 'table'>('line');
   const {
     dateRange,
@@ -90,7 +92,7 @@ export function MonthlySpendingTrendReport() {
         const monthDate = parseISO(item.month + "-01");
         return {
           name: item.month,
-          fullName: format(monthDate, "MMM yyyy"),
+          fullName: formatChartDate(monthDate, "MMM yyyy"),
           Expenses: Math.round(item.expenses),
           Income: Math.round(item.income),
           Net: Math.round(item.net),
@@ -98,7 +100,7 @@ export function MonthlySpendingTrendReport() {
           monthEnd: format(endOfMonth(monthDate), "yyyy-MM-dd"),
         };
       }),
-    [response],
+    [response, formatChartDate],
   );
 
   const sortedTableData = useMemo(() => {
@@ -342,7 +344,7 @@ export function MonthlySpendingTrendReport() {
                     dataKey="name"
                     tick={{ fontSize: 12 }}
                     tickFormatter={(value: string) =>
-                      format(parseISO(value + "-01"), "MMM")
+                      formatChartDate(`${value}-01`, "MMM")
                     }
                   />
                   <YAxis

@@ -29,6 +29,7 @@ import { ChartTooltip } from "@/components/reports/ChartTooltip";
 import { ReportError } from "@/components/reports/ReportError";
 import { exportToCsv } from "@/lib/csv-export";
 import { chartColors } from "@/lib/chart-colors";
+import { useChartDateFormat } from "@/hooks/useChartDateFormat";
 import { useTranslations } from 'next-intl';
 
 type IncomeVsExpensesSortField = 'name' | 'income' | 'expenses' | 'savings' | 'savingsRate';
@@ -46,6 +47,7 @@ interface ChartDataItem {
 
 export function IncomeVsExpensesReport() {
   const t = useTranslations('reports');
+  const formatChartDate = useChartDateFormat();
   const router = useRouter();
   const chartRef = useRef<HTMLDivElement>(null);
   const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } =
@@ -92,7 +94,7 @@ export function IncomeVsExpensesReport() {
           item.income > 0 ? Math.round((savings / item.income) * 100) : 0;
         return {
           name: item.month,
-          fullName: format(monthDate, "MMM yyyy"),
+          fullName: formatChartDate(monthDate, "MMM yyyy"),
           Income: Math.round(item.income),
           Expenses: Math.round(item.expenses),
           Savings: Math.round(savings),
@@ -101,7 +103,7 @@ export function IncomeVsExpensesReport() {
           monthEnd: format(endOfMonth(monthDate), "yyyy-MM-dd"),
         };
       }),
-    [response],
+    [response, formatChartDate],
   );
 
   const totals = useMemo(() => {
@@ -395,7 +397,7 @@ export function IncomeVsExpensesReport() {
                     dataKey="name"
                     tick={{ fontSize: 12 }}
                     tickFormatter={(value: string) =>
-                      format(parseISO(value + "-01"), "MMM")
+                      formatChartDate(`${value}-01`, "MMM")
                     }
                   />
                   <YAxis

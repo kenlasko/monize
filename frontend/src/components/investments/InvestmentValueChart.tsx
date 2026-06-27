@@ -11,12 +11,11 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { format } from 'date-fns';
 import { chartColors } from '@/lib/chart-colors';
 import { netWorthApi } from '@/lib/net-worth';
 import { investmentsApi } from '@/lib/investments';
-import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { gainLossColor } from '@/lib/format';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useDateRange } from '@/hooks/useDateRange';
@@ -57,6 +56,7 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix 
   const t = useTranslations('investments');
   const tc = useTranslations('common');
   const { formatCurrency, formatCurrencyCompact, formatCurrencyAxis, formatCurrencyFlag, formatSignedPercent } = useNumberFormat();
+  const formatChartDate = useChartDateFormat();
   const { defaultCurrency } = useExchangeRates();
   const isMobile = useIsMobile();
   const [chartPoints, setChartPoints] = useState<Array<{ name: string; Value: number }>>([]);
@@ -136,10 +136,10 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix 
     (iso: string, range: string) => {
       const d = new Date(iso);
       return range === '1d'
-        ? format(d, 'HH:mm')
-        : format(d, 'MMM d HH:mm');
+        ? formatChartDate(d, 'HH:mm')
+        : formatChartDate(d, 'MMM d HH:mm');
     },
-    [],
+    [formatChartDate],
   );
 
   const loadDailyOrMonthly = useCallback(
@@ -157,7 +157,7 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix 
         if (loadSeqRef.current !== seq) return;
         setChartPoints(
           data.map((d) => ({
-            name: format(parseLocalDate(d.date), 'MMM d, yyyy'),
+            name: formatChartDate(d.date, 'MMM d, yyyy'),
             Value: d.value,
           })),
         );
@@ -166,13 +166,13 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix 
         if (loadSeqRef.current !== seq) return;
         setChartPoints(
           data.map((d) => ({
-            name: format(parseLocalDate(d.month), 'MMM yyyy'),
+            name: formatChartDate(d.month, 'MMM yyyy'),
             Value: d.value,
           })),
         );
       }
     },
-    [resolvedRange, accountIds, foreignCurrency, useDaily, isIntraday],
+    [resolvedRange, accountIds, foreignCurrency, useDaily, isIntraday, formatChartDate],
   );
 
   const loadData = useCallback(

@@ -48,7 +48,8 @@ vi.mock('@/hooks/useLocalStorage', () => ({
   useLocalStorage: (_key: string, defaultValue: string) => [defaultValue, vi.fn()],
 }));
 
-vi.mock('@/lib/utils', () => ({
+vi.mock('@/lib/utils', async (importActual) => ({
+  ...(await importActual<typeof import('@/lib/utils')>()),
   parseLocalDate: (d: string) => new Date(d + 'T00:00:00'),
   cn: (...inputs: any[]) => inputs.filter(Boolean).join(' '),
 }));

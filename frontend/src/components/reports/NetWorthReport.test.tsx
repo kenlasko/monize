@@ -44,7 +44,8 @@ vi.mock('@/hooks/useDateRange', () => ({
   }),
 }));
 
-vi.mock('@/lib/utils', () => ({
+vi.mock('@/lib/utils', async (importActual) => ({
+  ...(await importActual<typeof import('@/lib/utils')>()),
   parseLocalDate: (d: string) => new Date(d + 'T00:00:00'),
   cn: (...args: any[]) => args.filter(Boolean).join(' '),
 }));
@@ -64,7 +65,9 @@ vi.mock('recharts', () => ({
   ),
   XAxis: ({ tickFormatter }: any) => {
     if (tickFormatter) {
-      try { tickFormatter('Jan 2024'); tickFormatter('Jul 2024'); tickFormatter('NoSpace'); } catch {}
+      // The axis is keyed off the raw ISO month (YYYY-MM-DD), so exercise the
+      // formatter with raw values rather than pre-localized labels.
+      try { tickFormatter('2024-01-01'); tickFormatter('2024-07-01'); } catch {}
     }
     return null;
   },

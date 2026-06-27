@@ -21,6 +21,7 @@ import {
   CategorySpendingSnapshot,
 } from '@/types/monthly-comparison';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { gainLossColor } from '@/lib/format';
 import { CHART_COLOURS } from '@/lib/chart-colours';
 import { chartColors } from '@/lib/chart-colors';
@@ -66,6 +67,7 @@ function DeltaBadge({ value, percent, invert = false }: { value: number; percent
 export function MonthlyComparisonReport() {
   const t = useTranslations('reports');
   const { formatCurrency, formatCurrencyCompact, formatCurrencyAxis, formatSignedPercent } = useNumberFormat();
+  const formatChartDate = useChartDateFormat();
   const chartRef = useRef<HTMLDivElement>(null);
   const [month, setMonth] = useState(getDefaultMonth);
   const { data, isLoading, error, reload } = useReportData(
@@ -531,7 +533,7 @@ export function MonthlyComparisonReport() {
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <BarChart data={nw.monthlyHistory.map(p => ({
-                  name: format(parseMonth(p.month), 'MMM yy'),
+                  name: formatChartDate(parseMonth(p.month), 'MMM yy'),
                   netWorth: Math.round(p.netWorth),
                 }))} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />

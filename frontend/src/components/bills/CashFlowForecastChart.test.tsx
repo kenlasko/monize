@@ -38,7 +38,7 @@ vi.mock('recharts', () => ({
       payload: [
         {
           payload: {
-            label: 'Tooltip Day',
+            date: '2025-01-15',
             balance: -150,
             transactions: [
               { name: 'Rent', amount: -1000 },
@@ -578,7 +578,9 @@ describe('CashFlowForecastChart', () => {
       // The mocked Tooltip renders content with 6 transactions, so the
       // "+1 more" overflow line (component lines ~78-83) renders.
       expect(screen.getByText(/\+1 more/)).toBeInTheDocument();
-      expect(screen.getByText('Tooltip Day')).toBeInTheDocument();
+      // The tooltip date is localized from the data point's `date` via
+      // useChartDateFormat; '2025-01-15' renders as "Jan 15" in the default locale.
+      expect(screen.getByText('Jan 15')).toBeInTheDocument();
     });
   });
 });

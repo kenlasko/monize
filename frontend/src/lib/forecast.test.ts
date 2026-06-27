@@ -515,27 +515,6 @@ describe('buildForecast', () => {
     });
   });
 
-  // --- Date formatting for chart labels ---
-  describe('date formatting for chart labels', () => {
-    it('formats labels as short month and day', () => {
-      const accounts = [makeAccount()];
-      const result = buildForecast(accounts, [], 'week', 'all');
-      // Jan 15, 2025 should format as "Jan 15"
-      expect(result[0].label).toBe('Jan 15');
-    });
-
-    it('formats labels correctly across months', () => {
-      vi.setSystemTime(new Date(2025, 0, 28)); // Jan 28
-      const accounts = [makeAccount()];
-      const result = buildForecast(accounts, [], 'week', 'all');
-      // First point: Jan 28
-      expect(result[0].label).toBe('Jan 28');
-      // Some point should be in February
-      const febPoint = result.find(dp => dp.label.startsWith('Feb'));
-      expect(febPoint).toBeDefined();
-    });
-  });
-
   // --- Empty scheduled transactions input ---
   describe('empty scheduled transactions input', () => {
     it('returns flat balance line with empty transactions array', () => {
@@ -1231,9 +1210,9 @@ describe('getForecastSummary', () => {
 
   it('calculates min/max/starting/ending balances', () => {
     const dataPoints = [
-      { date: '2025-01-01', balance: 1000, label: 'Jan 1', transactions: [] },
-      { date: '2025-01-15', balance: 500, label: 'Jan 15', transactions: [] },
-      { date: '2025-01-31', balance: 1500, label: 'Jan 31', transactions: [] },
+      { date: '2025-01-01', balance: 1000, transactions: [] },
+      { date: '2025-01-15', balance: 500, transactions: [] },
+      { date: '2025-01-31', balance: 1500, transactions: [] },
     ];
     const summary = getForecastSummary(dataPoints);
     expect(summary.startingBalance).toBe(1000);
@@ -1245,8 +1224,8 @@ describe('getForecastSummary', () => {
 
   it('detects negative balances', () => {
     const dataPoints = [
-      { date: '2025-01-01', balance: 100, label: 'Jan 1', transactions: [] },
-      { date: '2025-01-15', balance: -50, label: 'Jan 15', transactions: [] },
+      { date: '2025-01-01', balance: 100, transactions: [] },
+      { date: '2025-01-15', balance: -50, transactions: [] },
     ];
     const summary = getForecastSummary(dataPoints);
     expect(summary.goesNegative).toBe(true);
@@ -1254,7 +1233,7 @@ describe('getForecastSummary', () => {
 
   it('handles single data point', () => {
     const dataPoints = [
-      { date: '2025-01-01', balance: 1000, label: 'Jan 1', transactions: [] },
+      { date: '2025-01-01', balance: 1000, transactions: [] },
     ];
     const summary = getForecastSummary(dataPoints);
     expect(summary.startingBalance).toBe(1000);
@@ -1266,8 +1245,8 @@ describe('getForecastSummary', () => {
 
   it('detects goesNegative as false when min balance is exactly zero', () => {
     const dataPoints = [
-      { date: '2025-01-01', balance: 100, label: 'Jan 1', transactions: [] },
-      { date: '2025-01-15', balance: 0, label: 'Jan 15', transactions: [] },
+      { date: '2025-01-01', balance: 100, transactions: [] },
+      { date: '2025-01-15', balance: 0, transactions: [] },
     ];
     const summary = getForecastSummary(dataPoints);
     expect(summary.goesNegative).toBe(false);

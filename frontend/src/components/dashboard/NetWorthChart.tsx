@@ -12,11 +12,10 @@ import {
   ResponsiveContainer,
   LabelList,
 } from 'recharts';
-import { format } from 'date-fns';
 import { chartColors } from '@/lib/chart-colors';
 import { MonthlyNetWorth } from '@/types/net-worth';
-import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { ChartViewToggle } from '@/components/ui/ChartViewToggle';
 
@@ -87,6 +86,7 @@ export function NetWorthChart({ data, isLoading }: NetWorthChartProps) {
   const t = useTranslations('dashboard');
   const router = useRouter();
   const { formatCurrencyCompact: formatCurrency, formatCurrencyLabel } = useNumberFormat();
+  const formatChartDate = useChartDateFormat();
   const [chartType, setChartType] = useLocalStorage<'bar' | 'stacked'>(
     'dashboard.net-worth.chartType',
     'bar',
@@ -99,13 +99,15 @@ export function NetWorthChart({ data, isLoading }: NetWorthChartProps) {
 
   const chartData = useMemo(() =>
     data.map((d) => ({
-      name: format(parseLocalDate(d.month), 'MMM yyyy'),
-      shortName: format(parseLocalDate(d.month), 'MMM'),
+      // Raw YYYY-MM keeps the X-axis category stable and locale-independent;
+      // the tick formatter localizes it to a short month for display.
+      month: d.month,
+      name: formatChartDate(`${d.month}-01`, 'MMM yyyy'),
       netWorth: Math.round(d.netWorth),
       assets: Math.round(d.assets),
       liabilities: Math.round(d.liabilities),
     })),
-  [data]);
+  [data, formatChartDate]);
 
   const summary = useMemo(() => {
     if (chartData.length === 0) return null;
@@ -205,12 +207,12 @@ export function NetWorthChart({ data, isLoading }: NetWorthChartProps) {
             <BarChart data={chartData} stackOffset="expand" margin={{ top: 12, right: 12, left: 12, bottom: 0 }}>
               <YAxis hide domain={[0, 1]} />
               <XAxis
-                dataKey="name"
+                dataKey="month"
                 tick={{ fill: chartColors.axis, fontSize: 11 }}
                 tickLine={false}
                 axisLine={false}
                 interval="preserveStartEnd"
-                tickFormatter={(value: string) => value.split(' ')[0]}
+                tickFormatter={(value: string) => formatChartDate(`${value}-01`, 'MMM')}
               />
               <Tooltip
                 content={<NetWorthCompositionTooltip formatCurrency={formatCurrency} labels={compositionLabels} />}
@@ -223,12 +225,12 @@ export function NetWorthChart({ data, isLoading }: NetWorthChartProps) {
             <BarChart data={chartData} margin={{ top: 52, right: 12, left: 12, bottom: 0 }}>
               <YAxis hide domain={yAxisDomain} />
               <XAxis
-                dataKey="name"
+                dataKey="month"
                 tick={{ fill: chartColors.axis, fontSize: 11 }}
                 tickLine={false}
                 axisLine={false}
                 interval="preserveStartEnd"
-                tickFormatter={(value: string) => value.split(' ')[0]}
+                tickFormatter={(value: string) => formatChartDate(`${value}-01`, 'MMM')}
               />
               <Tooltip
                 content={<NetWorthTooltip formatCurrency={formatCurrency} />}

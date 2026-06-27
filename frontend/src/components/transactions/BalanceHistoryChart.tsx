@@ -19,6 +19,7 @@ import { chartColors } from '@/lib/chart-colors';
 import { parseLocalDate } from '@/lib/utils';
 import { computeBalanceGradient, computeBalanceSummary } from '@/lib/balance-history';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { ChartDownloadButton } from '@/components/ui/ChartDownloadButton';
 import {
   ChartFlagShadowFilter,
@@ -81,6 +82,7 @@ export function BalanceHistoryChart({
   const chartTitle = t('charts.balanceHistory.title');
   const { formatCurrency: formatCurrencyFull, formatCurrencyAxis, formatCurrencyFlag } =
     useNumberFormat();
+  const formatChartDate = useChartDateFormat();
   const chartRef = useRef<HTMLDivElement>(null);
   // High/low value bubbles a user has temporarily dismissed, keyed by the value
   // they marked so a later data change with a new extreme shows its bubble
@@ -119,12 +121,12 @@ export function BalanceHistoryChart({
       }
       return {
         date: d.date,
-        label: format(parsed, 'MMM d, yyyy'),
+        label: formatChartDate(parsed, 'MMM d, yyyy'),
         balance: Math.round(d.balance * 100) / 100,
       };
     });
     return { chartData: points, monthTicks: ticks };
-  }, [data]);
+  }, [data, formatChartDate]);
 
   const summary = useMemo(() => computeBalanceSummary(chartData), [chartData]);
 
@@ -205,7 +207,7 @@ export function BalanceHistoryChart({
               tick={{ fill: chartColors.axis, fontSize: 12 }}
               tickLine={false}
               axisLine={{ stroke: chartColors.grid }}
-              tickFormatter={(value: string) => format(parseLocalDate(value), 'MMM')}
+              tickFormatter={(value: string) => formatChartDate(value, 'MMM')}
             />
             <YAxis
               tick={{ fill: chartColors.axis, fontSize: 11 }}

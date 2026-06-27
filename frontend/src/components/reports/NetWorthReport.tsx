@@ -18,11 +18,10 @@ import {
   ReferenceDot,
   LabelList,
 } from 'recharts';
-import { format } from 'date-fns';
 import { chartColors } from '@/lib/chart-colors';
 import { netWorthApi } from '@/lib/net-worth';
 import { MonthlyNetWorth } from '@/types/net-worth';
-import { parseLocalDate } from '@/lib/utils';
+import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { gainLossColor } from '@/lib/format';
 import { useDateRange } from '@/hooks/useDateRange';
@@ -44,6 +43,7 @@ type NetWorthSortField = 'name' | 'assets' | 'liabilities' | 'netWorth';
 
 export function NetWorthReport() {
   const t = useTranslations('reports');
+  const formatChartDate = useChartDateFormat();
   const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis, formatCurrencyLabel, formatSignedPercent } = useNumberFormat();
   const isMobile = useIsMobile();
   const [isRecalculating, setIsRecalculating] = useState(false);
@@ -113,14 +113,16 @@ export function NetWorthReport() {
     monthlyData.map((d) => ({
       // `name` is the formatted display label; `sortKey` is the ISO month
       // (YYYY-MM) so the table can sort chronologically rather than
-      // alphabetically by month-name ("Apr 2021" < "Aug 2020" lexically).
-      name: format(parseLocalDate(d.month), 'MMM yyyy'),
+      // alphabetically by month-name ("Apr 2021" < "Aug 2020" lexically) and
+      // so the chart axis can format month markers locale-aware from the raw
+      // value rather than splitting the localized label.
+      name: formatChartDate(d.month, 'MMM yyyy'),
       sortKey: d.month,
       Assets: Math.round(d.assets),
       Liabilities: Math.round(d.liabilities),
       NetWorth: Math.round(d.netWorth),
     })),
-  [monthlyData]);
+  [monthlyData, formatChartDate]);
 
   const summary = useMemo(() => {
     if (chartData.length === 0) return { current: 0, change: 0, changePercent: 0 };
@@ -154,13 +156,15 @@ export function NetWorthReport() {
     return sorted;
   }, [chartData, sortField, sortDirection]);
 
-  // For long ranges, explicitly specify which ticks to show so years don't repeat
+  // For long ranges, explicitly specify which ticks to show so years don't repeat.
+  // Ticks are keyed off the raw ISO month (sortKey, YYYY-MM-DD) so the January
+  // filter and axis formatting stay locale-independent.
   const xAxisTicks = useMemo(() => {
     if (chartData.length <= 36) return undefined; // let Recharts auto-decide for shorter ranges
     // Only show ticks on January of each year
     return chartData
-      .filter(d => d.name.startsWith('Jan '))
-      .map(d => d.name);
+      .filter(d => d.sortKey.slice(5, 7) === '01')
+      .map(d => d.sortKey);
   }, [chartData]);
 
   // Calculate Y-axis domain to avoid starting at 0 when values are significantly higher
@@ -212,15 +216,19 @@ export function NetWorthReport() {
   const barLabelsVertical = showBarLabels && (chartData.length > 14 || isMobile);
 
   // Shared between the area, bar and stacked charts so the month labels stay
-  // consistent as the range widens.
+  // consistent as the range widens. `value` is the raw ISO month (sortKey,
+  // YYYY-MM-DD) so the markers are formatted locale-aware rather than by
+  // splitting an already-localized label string.
   const formatXAxisTick = (value: string) => {
     if (chartData.length > 36) {
-      return value.split(' ')[1] || value;
+      // Long ranges show January ticks only, labelled with the year alone.
+      // Read the year straight off the raw ISO value so it is exact and
+      // locale-independent.
+      return value.slice(0, 4);
     } else if (chartData.length > 18) {
-      const parts = value.split(' ');
-      return parts.length === 2 ? `${parts[0]} '${parts[1].slice(2)}` : value;
+      return formatChartDate(value, 'MMM yy');
     }
-    return value.split(' ')[0];
+    return formatChartDate(value, 'MMM');
   };
 
   // The 100% stacked view normalises each bar to its assets/liabilities split,
@@ -426,7 +434,7 @@ export function NetWorthReport() {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
                 <XAxis
-                  dataKey="name"
+                  dataKey="sortKey"
                   tick={{ fontSize: 12 }}
                   {...(xAxisTicks ? { ticks: xAxisTicks } : {})}
                   tickFormatter={formatXAxisTick}
@@ -450,7 +458,7 @@ export function NetWorthReport() {
                 />
                 {minMax && (
                   <ReferenceDot
-                    x={minMax.max.name}
+                    x={minMax.max.sortKey}
                     y={minMax.max.NetWorth}
                     r={6}
                     fill={chartColors.income}
@@ -461,7 +469,7 @@ export function NetWorthReport() {
                 )}
                 {minMax && (
                   <ReferenceDot
-                    x={minMax.min.name}
+                    x={minMax.min.sortKey}
                     y={minMax.min.NetWorth}
                     r={6}
                     fill={chartColors.expense}
@@ -475,7 +483,7 @@ export function NetWorthReport() {
               <BarChart data={chartData} stackOffset="expand" margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
                 <XAxis
-                  dataKey="name"
+                  dataKey="sortKey"
                   tick={{ fontSize: 12 }}
                   {...(xAxisTicks ? { ticks: xAxisTicks } : {})}
                   tickFormatter={formatXAxisTick}
@@ -494,7 +502,7 @@ export function NetWorthReport() {
               <BarChart data={chartData} margin={{ top: showBarLabels ? (barLabelsVertical ? 52 : 22) : 10, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
                 <XAxis
-                  dataKey="name"
+                  dataKey="sortKey"
                   tick={{ fontSize: 12 }}
                   {...(xAxisTicks ? { ticks: xAxisTicks } : {})}
                   tickFormatter={formatXAxisTick}
