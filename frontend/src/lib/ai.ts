@@ -226,10 +226,12 @@ export const aiApi = {
   getRelayStatus: async (): Promise<{
     state: 'offline' | 'listening' | 'busy';
     queued: number;
+    idleDisconnected?: boolean;
   }> => {
     const response = await apiClient.get<{
       state: 'offline' | 'listening' | 'busy';
       queued: number;
+      idleDisconnected?: boolean;
     }>('/ai/relay/status');
     return response.data;
   },

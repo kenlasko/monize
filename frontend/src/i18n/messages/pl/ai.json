@@ -190,7 +190,8 @@
     "status": {
       "offline": "Asystent offline",
       "listening": "Asystent nasłuchuje",
-      "busy": "Asystent pracuje"
+      "busy": "Asystent pracuje",
+      "idle": "Rozłączono po bezczynności — połącz ponownie, aby kontynuować"
     },
     "howToConnect": "Jak się połączyć",
     "hideHelp": "Ukryj",

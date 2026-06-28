@@ -1,4 +1,4 @@
-import { AiRelayService } from "./ai-relay.service";
+import { AiRelayService, INACTIVITY_TIMEOUT_MS } from "./ai-relay.service";
 import { RelayAttachmentStore } from "./relay-attachment.store";
 
 const USER = "user-1";
@@ -477,6 +477,59 @@ describe("AiRelayService", () => {
           { ...pngAttachment, mediaType: "application/pdf", kind: "pdf" },
         ]),
       ).toThrow();
+    });
+  });
+
+  describe("inactivity disconnect", () => {
+    it("signals stop after the inactivity timeout of empty polls", () => {
+      // First empty poll just starts the idle clock.
+      expect(service.shouldStopForIdle(USER)).toBe(false);
+      expect(service.getStatus(USER).idleDisconnected).toBeFalsy();
+
+      // Still within the window: keep listening.
+      jest.advanceTimersByTime(INACTIVITY_TIMEOUT_MS - 1000);
+      expect(service.shouldStopForIdle(USER)).toBe(false);
+
+      // Past the window: stop and flag the disconnect for the chat.
+      jest.advanceTimersByTime(2000);
+      expect(service.shouldStopForIdle(USER)).toBe(true);
+      expect(service.getStatus(USER).idleDisconnected).toBe(true);
+    });
+
+    it("resets the idle clock when a new prompt arrives", () => {
+      expect(service.shouldStopForIdle(USER)).toBe(false);
+      jest.advanceTimersByTime(INACTIVITY_TIMEOUT_MS + 1000);
+
+      // A new prompt is activity: it clears the clock and any disconnect flag.
+      // (Swallow the eventual timeout rejection; this test never answers it.)
+      service.enqueuePrompt(USER, "still here", []).catch(() => {});
+      expect(service.getStatus(USER).idleDisconnected).toBeFalsy();
+
+      // The clock restarts from the next empty poll, so it does not immediately stop.
+      expect(service.shouldStopForIdle(USER)).toBe(false);
+    });
+
+    it("clears the idle-disconnect flag once the agent polls again (reconnect)", async () => {
+      service.shouldStopForIdle(USER);
+      jest.advanceTimersByTime(INACTIVITY_TIMEOUT_MS + 1000);
+      expect(service.shouldStopForIdle(USER)).toBe(true);
+      expect(service.getStatus(USER).idleDisconnected).toBe(true);
+
+      // The agent reconnects and polls: the flag clears (status no longer idle).
+      const poll = service.waitForPrompt(USER);
+      expect(service.getStatus(USER).idleDisconnected).toBeFalsy();
+      jest.advanceTimersByTime(30 * 1000);
+      await poll;
+    });
+
+    it("does not trip while a conversation is active (claim resets the clock)", () => {
+      // Swallow the eventual in-flight timeout rejection; this test never answers it.
+      service.enqueuePrompt(USER, "q1", []).catch(() => {});
+      // Claiming the queued prompt counts as activity and resets the clock.
+      service.waitForPrompt(USER);
+      jest.advanceTimersByTime(INACTIVITY_TIMEOUT_MS - 1000);
+      // First empty poll after the claim only starts the clock again.
+      expect(service.shouldStopForIdle(USER)).toBe(false);
     });
   });
 });

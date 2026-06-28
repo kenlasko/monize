@@ -65,6 +65,18 @@ const POLL_PARK_MS = 25 * 1000; // 25 seconds
  */
 const CONNECTED_WINDOW_MS = 45 * 1000; // 45 seconds
 
+/**
+ * How long the user can be inactive (no new prompt) before the relay tells the
+ * agent to stop its polling loop. An idle agent otherwise long-polls
+ * `get_next_prompt` forever, and every empty poll is a fresh turn that bloats
+ * the agent's own context until it degrades or its harness gives up mid-task.
+ * Stopping the loop cleanly after a quiet spell avoids that; the web chat shows
+ * an "idle disconnected" notice and the user reconnects when they want to
+ * continue. The clock resets on every prompt, so an active conversation is
+ * never interrupted.
+ */
+export const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+
 interface PendingPrompt {
   id: string;
   prompt: string;
@@ -140,6 +152,17 @@ export class AiRelayService {
   /** Last time each user's agent polled, for connection liveness. */
   private readonly lastPollAt = new Map<string, number>();
   /**
+   * When the current idle (no-prompt) streak began for a user, set on the first
+   * empty poll and reset on any prompt. Drives the inactivity disconnect.
+   */
+  private readonly idleSince = new Map<string, number>();
+  /**
+   * Users whose agent was told to stop after INACTIVITY_TIMEOUT_MS of no prompts.
+   * Surfaced in the tunnel status so the chat shows an "idle disconnected" notice
+   * until the user reconnects (the agent polls again) or sends a new prompt.
+   */
+  private readonly idleDisconnectedAt = new Map<string, number>();
+  /**
    * Late answers whose browser stream already gave up or disconnected, keyed by
    * userId then promptId. The browser picks them up via takeBufferedResponse so
    * an agent that recovers from a connection blip never loses its work.
@@ -182,6 +205,10 @@ export class AiRelayService {
       userId,
       attachments ?? [],
     );
+    // A new prompt is activity: restart the inactivity clock and clear any
+    // prior idle-disconnect notice so the chat shows the live state again.
+    this.idleSince.delete(userId);
+    this.idleDisconnectedAt.delete(userId);
     return new Promise<RelayResponse>((resolve, reject) => {
       const entry: PendingPrompt = {
         id: randomUUID(),
@@ -221,6 +248,9 @@ export class AiRelayService {
    */
   waitForPrompt(userId: string): Promise<RelayClaimedPrompt | null> {
     this.lastPollAt.set(userId, Date.now());
+    // The agent is polling, so it is connected: clear any stale idle-disconnect
+    // notice (e.g. it just reconnected after a quiet spell).
+    this.idleDisconnectedAt.delete(userId);
     // A poll proves the agent is alive: keep any prompt it is mid-task on from
     // tripping the idle timer.
     this.bumpInFlight(userId);
@@ -229,6 +259,8 @@ export class AiRelayService {
     const [next, ...rest] = queue;
     if (next) {
       this.pending.set(userId, rest);
+      // Claiming a prompt is activity: restart the inactivity clock.
+      this.idleSince.delete(userId);
       return Promise.resolve(this.claim(userId, next));
     }
 
@@ -243,6 +275,33 @@ export class AiRelayService {
       const list = this.waiters.get(userId) ?? [];
       this.waiters.set(userId, [...list, waiter]);
     });
+  }
+
+  /**
+   * Called by `get_next_prompt` after an empty poll (no prompt was waiting) to
+   * decide whether the agent should stop its loop for inactivity. The first
+   * empty poll starts the idle clock; once INACTIVITY_TIMEOUT_MS of no prompts
+   * has elapsed it returns true (and records the disconnect so the chat can show
+   * it), telling the tool to instruct the agent to exit rather than keep
+   * polling. The clock is reset by enqueuePrompt and by claiming a prompt, so an
+   * active conversation never trips it.
+   */
+  shouldStopForIdle(userId: string): boolean {
+    const since = this.idleSince.get(userId);
+    if (since === undefined) {
+      this.idleSince.set(userId, Date.now());
+      return false;
+    }
+    if (Date.now() - since >= INACTIVITY_TIMEOUT_MS) {
+      this.idleSince.delete(userId);
+      this.idleDisconnectedAt.set(userId, Date.now());
+      this.logger.log(
+        `Relay agent for user ${userId} idle ${INACTIVITY_TIMEOUT_MS}ms; ` +
+          `signalling stop`,
+      );
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -453,6 +512,11 @@ export class AiRelayService {
     return {
       state: this.computeState(userId),
       queued: (this.pending.get(userId) ?? []).length,
+      // Present only between an inactivity stop and the user reconnecting (agent
+      // polls again) or sending a new prompt, so the chat can explain it.
+      ...(this.idleDisconnectedAt.has(userId)
+        ? { idleDisconnected: true }
+        : {}),
     };
   }
 

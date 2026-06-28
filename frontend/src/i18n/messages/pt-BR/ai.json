@@ -190,7 +190,8 @@
     "status": {
       "offline": "Assistente off-line",
       "listening": "Assistente ouvindo",
-      "busy": "Assistente trabalhando"
+      "busy": "Assistente trabalhando",
+      "idle": "Desconectado por inatividade — reconecte para continuar"
     },
     "howToConnect": "Como conectar",
     "hideHelp": "Ocultar",

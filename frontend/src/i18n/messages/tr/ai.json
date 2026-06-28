@@ -190,7 +190,8 @@
     "status": {
       "offline": "Asistan çevrimdışı",
       "listening": "Asistan dinliyor",
-      "busy": "Asistan çalışıyor"
+      "busy": "Asistan çalışıyor",
+      "idle": "Hareketsizlik nedeniyle bağlantı kesildi — devam etmek için yeniden bağlanın"
     },
     "howToConnect": "Nasıl bağlanılır",
     "hideHelp": "Gizle",

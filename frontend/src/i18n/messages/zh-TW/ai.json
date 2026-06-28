@@ -190,7 +190,8 @@
     "status": {
       "offline": "助理離線",
       "listening": "助理正在接聽",
-      "busy": "助理工作中"
+      "busy": "助理工作中",
+      "idle": "因閒置已中斷連線 — 重新連線以繼續"
     },
     "howToConnect": "如何連線",
     "hideHelp": "隱藏",

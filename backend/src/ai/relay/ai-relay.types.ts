@@ -67,4 +67,9 @@ export interface RelayTunnelStatus {
   state: RelayTunnelState;
   /** Prompts waiting to be claimed by an agent. */
   queued: number;
+  /**
+   * True when the agent was told to stop after a spell of user inactivity (and
+   * has not reconnected since). The chat shows an "idle disconnected" notice.
+   */
+  idleDisconnected?: boolean;
 }

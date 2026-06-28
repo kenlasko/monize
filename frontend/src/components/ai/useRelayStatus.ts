@@ -3,15 +3,16 @@
 import { useEffect, useState } from 'react';
 import { aiApi } from '@/lib/ai';
 
-export type RelayState = 'offline' | 'listening' | 'busy';
+export type RelayState = 'offline' | 'listening' | 'busy' | 'idle';
 
 const POLL_MS = 5000;
 
 /**
  * Polls the reverse MCP relay tunnel status while `enabled`. Returns the live
  * state ('listening' = an agent is connected and idle, 'busy' = handling a
- * prompt, 'offline' = no agent). Shared by the chat indicator and the provider
- * modal so both reflect the same connection state.
+ * prompt, 'idle' = the agent was disconnected after a spell of inactivity,
+ * 'offline' = no agent). Shared by the chat indicator and the provider modal so
+ * both reflect the same connection state.
  */
 export function useRelayStatus(enabled: boolean): RelayState {
   const [state, setState] = useState<RelayState>('offline');
@@ -23,7 +24,9 @@ export function useRelayStatus(enabled: boolean): RelayState {
       aiApi
         .getRelayStatus()
         .then((s) => {
-          if (active) setState(s.state);
+          // An inactivity disconnect is shown distinctly from a plain offline so
+          // the user knows it was deliberate and that they should reconnect.
+          if (active) setState(s.idleDisconnected ? 'idle' : s.state);
         })
         .catch(() => {
           if (active) setState('offline');

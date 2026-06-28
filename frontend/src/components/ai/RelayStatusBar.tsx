@@ -10,6 +10,8 @@ const DOT_CLASS: Record<RelayState, string> = {
   listening: 'bg-green-500 animate-pulse',
   // Solid amber = connected but currently handling a prompt.
   busy: 'bg-amber-500',
+  // Solid amber (no pulse) = disconnected after inactivity; reconnect to resume.
+  idle: 'bg-amber-400 dark:bg-amber-500',
   // Grey = no agent connected.
   offline: 'bg-gray-400 dark:bg-gray-600',
 };

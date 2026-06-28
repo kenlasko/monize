@@ -579,6 +579,9 @@ export const getBudgetStatusOutput = {
 
 export const getNextPromptOutput = {
   hasPrompt: bool,
+  // True when the user has been inactive long enough that the agent should stop
+  // its polling loop and exit (only set alongside hasPrompt:false).
+  stop: bool.optional(),
   // Present only when hasPrompt is true.
   promptId: str.optional(),
   prompt: str.optional(),

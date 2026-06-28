@@ -25,6 +25,7 @@ interface ProviderListProps {
 const RELAY_DOT_CLASS = {
   listening: 'bg-green-500 animate-pulse',
   busy: 'bg-amber-500',
+  idle: 'bg-amber-400 dark:bg-amber-500',
   offline: 'bg-gray-400 dark:bg-gray-600',
 } as const;
 

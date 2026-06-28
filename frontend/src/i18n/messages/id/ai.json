@@ -190,7 +190,8 @@
     "status": {
       "offline": "Asisten offline",
       "listening": "Asisten mendengarkan",
-      "busy": "Asisten bekerja"
+      "busy": "Asisten bekerja",
+      "idle": "Terputus karena tidak aktif — sambungkan ulang untuk melanjutkan"
     },
     "howToConnect": "Cara menghubungkan",
     "hideHelp": "Sembunyikan",

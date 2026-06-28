@@ -63,12 +63,22 @@ describe("McpRelayTools", () => {
       expect(body.attachments[0].uri).toBe("monize-attachment://att-1");
     });
 
-    it("returns hasPrompt:false when the poll window elapses", async () => {
+    it("returns hasPrompt:false when the poll window elapses (still listening)", async () => {
       const handlers = register({
         waitForPrompt: jest.fn().mockResolvedValue(null),
+        shouldStopForIdle: jest.fn().mockReturnValue(false),
       });
       const result = await handlers.get_next_prompt({}, { sessionId: "s" });
       expect(parse(result)).toEqual({ hasPrompt: false });
+    });
+
+    it("returns stop:true when the user has been inactive too long", async () => {
+      const handlers = register({
+        waitForPrompt: jest.fn().mockResolvedValue(null),
+        shouldStopForIdle: jest.fn().mockReturnValue(true),
+      });
+      const result = await handlers.get_next_prompt({}, { sessionId: "s" });
+      expect(parse(result)).toEqual({ hasPrompt: false, stop: true });
     });
 
     it("errors without user context", async () => {
