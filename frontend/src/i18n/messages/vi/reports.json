@@ -1238,6 +1238,20 @@
     "pdfColTypical": "Điển hình/Tháng"
   },
   "sectorWeightings": {
+    "sectorNames": {
+      "technology": "Công nghệ",
+      "financialServices": "Dịch vụ tài chính",
+      "healthcare": "Chăm sóc sức khỏe",
+      "consumerCyclical": "Tiêu dùng không thiết yếu",
+      "consumerDefensive": "Tiêu dùng thiết yếu",
+      "industrials": "Công nghiệp",
+      "energy": "Năng lượng",
+      "utilities": "Tiện ích",
+      "realEstate": "Bất động sản",
+      "basicMaterials": "Vật liệu cơ bản",
+      "communicationServices": "Dịch vụ truyền thông",
+      "other": "Khác"
+    },
     "noData": "Không tìm thấy vị thế đầu tư có dữ liệu ngành. Thêm chứng khoán có phân loại ngành để xem phân tích.",
     "totalPortfolio": "Tổng danh mục",
     "directExposure": "Đầu tư trực tiếp",

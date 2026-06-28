@@ -1238,6 +1238,20 @@
     "pdfColTypical": "Tipik/Ay"
   },
   "sectorWeightings": {
+    "sectorNames": {
+      "technology": "Teknoloji",
+      "financialServices": "Finansal hizmetler",
+      "healthcare": "Sağlık",
+      "consumerCyclical": "Çevrimsel tüketim",
+      "consumerDefensive": "Defansif tüketim",
+      "industrials": "Sanayi",
+      "energy": "Enerji",
+      "utilities": "Kamu hizmetleri",
+      "realEstate": "Gayrimenkul",
+      "basicMaterials": "Temel malzemeler",
+      "communicationServices": "İletişim hizmetleri",
+      "other": "Diğer"
+    },
     "noData": "Sektör verisine sahip yatırım varlığı bulunamadı. Dökümü görmek için sektör sınıflandırmasına sahip menkul kıymet ekleyin.",
     "totalPortfolio": "Toplam Portföy",
     "directExposure": "Doğrudan Risk",

@@ -1238,6 +1238,20 @@
     "pdfColTypical": "Typique/Mois"
   },
   "sectorWeightings": {
+    "sectorNames": {
+      "technology": "Technologie",
+      "financialServices": "Services financiers",
+      "healthcare": "Santé",
+      "consumerCyclical": "Consommation cyclique",
+      "consumerDefensive": "Consommation de base",
+      "industrials": "Industrie",
+      "energy": "Énergie",
+      "utilities": "Services aux collectivités",
+      "realEstate": "Immobilier",
+      "basicMaterials": "Matériaux de base",
+      "communicationServices": "Services de communication",
+      "other": "Autres"
+    },
     "noData": "Aucune position d'investissement avec données sectorielles trouvée. Ajoutez des titres avec une classification sectorielle pour voir la ventilation.",
     "totalPortfolio": "Total du portefeuille",
     "directExposure": "Exposition directe",

@@ -1238,6 +1238,20 @@
     "pdfColTypical": "Typisch/mnd"
   },
   "sectorWeightings": {
+    "sectorNames": {
+      "technology": "Technologie",
+      "financialServices": "Financiële diensten",
+      "healthcare": "Gezondheidszorg",
+      "consumerCyclical": "Cyclische consumptiegoederen",
+      "consumerDefensive": "Defensieve consumptiegoederen",
+      "industrials": "Industrie",
+      "energy": "Energie",
+      "utilities": "Nutsbedrijven",
+      "realEstate": "Vastgoed",
+      "basicMaterials": "Basismaterialen",
+      "communicationServices": "Communicatiediensten",
+      "other": "Overig"
+    },
     "noData": "Geen beleggingsposities met sectorgegevens gevonden. Voeg waardepapieren met sectorclassificatie toe om de uitsplitsing te zien.",
     "totalPortfolio": "Totale portefeuille",
     "directExposure": "Directe blootstelling",

@@ -1238,6 +1238,20 @@
     "pdfColTypical": "Típico/Mes"
   },
   "sectorWeightings": {
+    "sectorNames": {
+      "technology": "Tecnología",
+      "financialServices": "Servicios financieros",
+      "healthcare": "Salud",
+      "consumerCyclical": "Consumo cíclico",
+      "consumerDefensive": "Consumo defensivo",
+      "industrials": "Industria",
+      "energy": "Energía",
+      "utilities": "Servicios públicos",
+      "realEstate": "Inmobiliario",
+      "basicMaterials": "Materiales básicos",
+      "communicationServices": "Servicios de comunicación",
+      "other": "Otros"
+    },
     "noData": "No se encontraron posiciones de inversión con datos sectoriales. Agrega valores con clasificación sectorial para ver el desglose.",
     "totalPortfolio": "Total de la cartera",
     "directExposure": "Exposición directa",

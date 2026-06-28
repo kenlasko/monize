@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@/test/render';
-import { SectorWeightingsReport } from './SectorWeightingsReport';
+import { SectorWeightingsReport, sectorNameKey } from './SectorWeightingsReport';
 
 vi.mock('@/lib/pdf-export', () => ({
   exportToPdf: vi.fn().mockResolvedValue(undefined),
@@ -84,6 +84,21 @@ const mockSecurities = [
   { id: 's-2', symbol: 'VTI', name: 'Vanguard Total Stock', isActive: true },
   { id: 's-3', symbol: 'OLD', name: 'Old Stock', isActive: false },
 ];
+
+describe('sectorNameKey', () => {
+  it('maps known provider sector names to i18n keys, case-insensitively', () => {
+    expect(sectorNameKey('Technology')).toBe('technology');
+    expect(sectorNameKey('Financial Services')).toBe('financialServices');
+    expect(sectorNameKey('REAL ESTATE')).toBe('realEstate');
+    expect(sectorNameKey('  communication services ')).toBe('communicationServices');
+    expect(sectorNameKey('Other')).toBe('other');
+  });
+
+  it('returns null for an unrecognised sector so the raw value is shown', () => {
+    expect(sectorNameKey('Quantum Widgets')).toBeNull();
+    expect(sectorNameKey('')).toBeNull();
+  });
+});
 
 describe('SectorWeightingsReport', () => {
   beforeEach(() => {

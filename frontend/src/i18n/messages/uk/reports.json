@@ -1238,6 +1238,20 @@
     "pdfColTypical": "Типово/міс"
   },
   "sectorWeightings": {
+    "sectorNames": {
+      "technology": "Технології",
+      "financialServices": "Фінансові послуги",
+      "healthcare": "Охорона здоров'я",
+      "consumerCyclical": "Циклічні споживчі товари",
+      "consumerDefensive": "Захисні споживчі товари",
+      "industrials": "Промисловість",
+      "energy": "Енергетика",
+      "utilities": "Комунальні послуги",
+      "realEstate": "Нерухомість",
+      "basicMaterials": "Сировина",
+      "communicationServices": "Комунікаційні послуги",
+      "other": "Інше"
+    },
     "noData": "Інвестиційних позицій із галузевими даними не знайдено. Додайте цінні папери з галузевою класифікацією, щоб побачити розбивку.",
     "totalPortfolio": "Усього портфеля",
     "directExposure": "Пряма експозиція",

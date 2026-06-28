@@ -1238,6 +1238,20 @@
     "pdfColTypical": "सामान्य/माह"
   },
   "sectorWeightings": {
+    "sectorNames": {
+      "technology": "प्रौद्योगिकी",
+      "financialServices": "वित्तीय सेवाएँ",
+      "healthcare": "स्वास्थ्य सेवा",
+      "consumerCyclical": "चक्रीय उपभोक्ता",
+      "consumerDefensive": "रक्षात्मक उपभोक्ता",
+      "industrials": "औद्योगिक",
+      "energy": "ऊर्जा",
+      "utilities": "उपयोगिताएँ",
+      "realEstate": "अचल संपत्ति",
+      "basicMaterials": "मूल सामग्री",
+      "communicationServices": "संचार सेवाएँ",
+      "other": "अन्य"
+    },
     "noData": "क्षेत्र डेटा के साथ कोई निवेश होल्डिंग नहीं मिली। विवरण देखने के लिए क्षेत्र वर्गीकरण के साथ प्रतिभूतियाँ जोड़ें।",
     "totalPortfolio": "कुल पोर्टफोलियो",
     "directExposure": "प्रत्यक्ष एक्सपोज़र",

@@ -1238,6 +1238,20 @@
     "pdfColTypical": "[XX-Typical/Mo-XX]"
   },
   "sectorWeightings": {
+    "sectorNames": {
+      "technology": "[XX-Technology-XX]",
+      "financialServices": "[XX-Financial Services-XX]",
+      "healthcare": "[XX-Healthcare-XX]",
+      "consumerCyclical": "[XX-Consumer Cyclical-XX]",
+      "consumerDefensive": "[XX-Consumer Defensive-XX]",
+      "industrials": "[XX-Industrials-XX]",
+      "energy": "[XX-Energy-XX]",
+      "utilities": "[XX-Utilities-XX]",
+      "realEstate": "[XX-Real Estate-XX]",
+      "basicMaterials": "[XX-Basic Materials-XX]",
+      "communicationServices": "[XX-Communication Services-XX]",
+      "other": "[XX-Other-XX]"
+    },
     "noData": "[XX-No investment holdings with sector data found. Add securities with sector classification to see the breakdown.-XX]",
     "totalPortfolio": "[XX-Total Portfolio-XX]",
     "directExposure": "[XX-Direct Exposure-XX]",

@@ -1238,6 +1238,20 @@
     "pdfColTypical": "Khas/Bln"
   },
   "sectorWeightings": {
+    "sectorNames": {
+      "technology": "Teknologi",
+      "financialServices": "Jasa keuangan",
+      "healthcare": "Kesehatan",
+      "consumerCyclical": "Konsumen siklikal",
+      "consumerDefensive": "Konsumen defensif",
+      "industrials": "Industri",
+      "energy": "Energi",
+      "utilities": "Utilitas",
+      "realEstate": "Properti",
+      "basicMaterials": "Bahan dasar",
+      "communicationServices": "Jasa komunikasi",
+      "other": "Lainnya"
+    },
     "noData": "Tidak ada kepemilikan investasi dengan data sektor ditemukan. Tambah keamanan dokumen dengan klasifikasi sektor untuk melihat rincian.",
     "totalPortfolio": "Total Portofolio",
     "directExposure": "Eksposur Langsung",

@@ -1238,6 +1238,20 @@
     "pdfColTypical": "일반/월"
   },
   "sectorWeightings": {
+    "sectorNames": {
+      "technology": "기술",
+      "financialServices": "금융 서비스",
+      "healthcare": "헬스케어",
+      "consumerCyclical": "경기소비재",
+      "consumerDefensive": "필수소비재",
+      "industrials": "산업재",
+      "energy": "에너지",
+      "utilities": "유틸리티",
+      "realEstate": "부동산",
+      "basicMaterials": "소재",
+      "communicationServices": "커뮤니케이션 서비스",
+      "other": "기타"
+    },
     "noData": "섹터 데이터가 있는 투자 보유 항목을 찾을 수 없습니다. 섹터 분류가 있는 유가증권을 추가하여 분류를 확인하세요.",
     "totalPortfolio": "총 포트폴리오",
     "directExposure": "직접 노출",

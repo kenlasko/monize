@@ -1238,6 +1238,20 @@
     "pdfColTypical": "每月典型金額"
   },
   "sectorWeightings": {
+    "sectorNames": {
+      "technology": "科技",
+      "financialServices": "金融服務",
+      "healthcare": "醫療保健",
+      "consumerCyclical": "非必需消費",
+      "consumerDefensive": "必需消費",
+      "industrials": "工業",
+      "energy": "能源",
+      "utilities": "公用事業",
+      "realEstate": "房地產",
+      "basicMaterials": "基礎材料",
+      "communicationServices": "通訊服務",
+      "other": "其他"
+    },
     "noData": "找不到有類股資料的投資持倉。請新增有類股分類的證券以查看明細。",
     "totalPortfolio": "投資組合總值",
     "directExposure": "直接曝險",

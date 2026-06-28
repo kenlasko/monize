@@ -1238,6 +1238,20 @@
     "pdfColTypical": "Typowo/mies."
   },
   "sectorWeightings": {
+    "sectorNames": {
+      "technology": "Technologia",
+      "financialServices": "Usługi finansowe",
+      "healthcare": "Ochrona zdrowia",
+      "consumerCyclical": "Dobra konsumpcyjne cykliczne",
+      "consumerDefensive": "Dobra konsumpcyjne podstawowe",
+      "industrials": "Przemysł",
+      "energy": "Energia",
+      "utilities": "Usługi komunalne",
+      "realEstate": "Nieruchomości",
+      "basicMaterials": "Surowce",
+      "communicationServices": "Usługi komunikacyjne",
+      "other": "Pozostałe"
+    },
     "noData": "Nie znaleziono pozycji inwestycyjnych z danymi sektorowymi. Dodaj papiery wartościowe z klasyfikacją sektorową, aby zobaczyć rozbicie.",
     "totalPortfolio": "Cały portfel",
     "directExposure": "Ekspozycja bezpośrednia",

@@ -1238,6 +1238,20 @@
     "pdfColTypical": "Typisch/Mo."
   },
   "sectorWeightings": {
+    "sectorNames": {
+      "technology": "Technologie",
+      "financialServices": "Finanzdienstleistungen",
+      "healthcare": "Gesundheitswesen",
+      "consumerCyclical": "Zyklische Konsumgüter",
+      "consumerDefensive": "Defensive Konsumgüter",
+      "industrials": "Industrie",
+      "energy": "Energie",
+      "utilities": "Versorger",
+      "realEstate": "Immobilien",
+      "basicMaterials": "Grundstoffe",
+      "communicationServices": "Kommunikationsdienste",
+      "other": "Sonstige"
+    },
     "noData": "Keine Anlagebestände mit Sektordaten gefunden. Fügen Sie Wertpapiere mit Sektorklassifizierung hinzu, um die Aufschlüsselung zu sehen.",
     "totalPortfolio": "Gesamtportfolio",
     "directExposure": "Direktes Exposure",

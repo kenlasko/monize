@@ -1238,6 +1238,20 @@
     "pdfColTypical": "Typical/Mo"
   },
   "sectorWeightings": {
+    "sectorNames": {
+      "technology": "Technology",
+      "financialServices": "Financial Services",
+      "healthcare": "Healthcare",
+      "consumerCyclical": "Consumer Cyclical",
+      "consumerDefensive": "Consumer Defensive",
+      "industrials": "Industrials",
+      "energy": "Energy",
+      "utilities": "Utilities",
+      "realEstate": "Real Estate",
+      "basicMaterials": "Basic Materials",
+      "communicationServices": "Communication Services",
+      "other": "Other"
+    },
     "noData": "No investment holdings with sector data found. Add securities with sector classification to see the breakdown.",
     "totalPortfolio": "Total Portfolio",
     "directExposure": "Direct Exposure",

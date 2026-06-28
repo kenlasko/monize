@@ -1238,6 +1238,20 @@
     "pdfColTypical": "典型/月"
   },
   "sectorWeightings": {
+    "sectorNames": {
+      "technology": "科技",
+      "financialServices": "金融服务",
+      "healthcare": "医疗保健",
+      "consumerCyclical": "周期性消费",
+      "consumerDefensive": "防御性消费",
+      "industrials": "工业",
+      "energy": "能源",
+      "utilities": "公用事业",
+      "realEstate": "房地产",
+      "basicMaterials": "基础材料",
+      "communicationServices": "通信服务",
+      "other": "其他"
+    },
     "noData": "未找到有行业数据的投资持仓。添加有行业分类的证券以查看明细。",
     "totalPortfolio": "投资组合总计",
     "directExposure": "直接敞口",

@@ -1238,6 +1238,20 @@
     "pdfColTypical": "Типично/мес."
   },
   "sectorWeightings": {
+    "sectorNames": {
+      "technology": "Технологии",
+      "financialServices": "Финансовые услуги",
+      "healthcare": "Здравоохранение",
+      "consumerCyclical": "Циклические потребительские товары",
+      "consumerDefensive": "Защитные потребительские товары",
+      "industrials": "Промышленность",
+      "energy": "Энергетика",
+      "utilities": "Коммунальные услуги",
+      "realEstate": "Недвижимость",
+      "basicMaterials": "Сырьё",
+      "communicationServices": "Коммуникационные услуги",
+      "other": "Прочее"
+    },
     "noData": "Инвестиционные активы с данными об отраслях не найдены. Добавьте ценные бумаги с классификацией отраслей для просмотра разбивки.",
     "totalPortfolio": "Всего портфель",
     "directExposure": "Прямая экспозиция",

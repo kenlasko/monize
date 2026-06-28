@@ -1238,6 +1238,20 @@
     "pdfColTypical": "典型値/月"
   },
   "sectorWeightings": {
+    "sectorNames": {
+      "technology": "テクノロジー",
+      "financialServices": "金融サービス",
+      "healthcare": "ヘルスケア",
+      "consumerCyclical": "一般消費財",
+      "consumerDefensive": "生活必需品",
+      "industrials": "資本財",
+      "energy": "エネルギー",
+      "utilities": "公益事業",
+      "realEstate": "不動産",
+      "basicMaterials": "素材",
+      "communicationServices": "通信サービス",
+      "other": "その他"
+    },
     "noData": "セクターデータのある投資保有銘柄が見つかりません。内訳を確認するにはセクター分類のある有価証券を追加してください。",
     "totalPortfolio": "ポートフォリオ合計",
     "directExposure": "直接エクスポージャー",

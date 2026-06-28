@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { useReportData } from '@/hooks/useReportData';
@@ -61,8 +61,46 @@ function CustomTooltip({ active, payload, formatCurrencyFull, defaultCurrency, l
   );
 }
 
+/**
+ * Map a provider-supplied sector name (Yahoo Finance, a fixed taxonomy stored in
+ * English) to its i18n key, or null for an unrecognised value. Matched
+ * case-insensitively so both the stock `sector` strings and the ETF
+ * sector-weighting display names ("Financial Services", "Real Estate", ...)
+ * resolve. Unknown values fall back to the raw string so a new provider sector
+ * still renders rather than showing a missing-key placeholder.
+ */
+const SECTOR_KEY_BY_NAME: Record<string, string> = {
+  technology: 'technology',
+  'financial services': 'financialServices',
+  healthcare: 'healthcare',
+  'consumer cyclical': 'consumerCyclical',
+  'consumer defensive': 'consumerDefensive',
+  industrials: 'industrials',
+  energy: 'energy',
+  utilities: 'utilities',
+  'real estate': 'realEstate',
+  'basic materials': 'basicMaterials',
+  'communication services': 'communicationServices',
+  other: 'other',
+};
+
+export function sectorNameKey(sector: string): string | null {
+  return SECTOR_KEY_BY_NAME[sector.trim().toLowerCase()] ?? null;
+}
+
 export function SectorWeightingsReport() {
   const t = useTranslations('reports');
+  // Localise a sector name when it is a known provider taxonomy value; otherwise
+  // show the raw string unchanged.
+  const sectorLabel = useCallback(
+    (sector: string): string => {
+      const key = sectorNameKey(sector);
+      return key
+        ? t(`sectorWeightings.sectorNames.${key}` as Parameters<typeof t>[0])
+        : sector;
+    },
+    [t],
+  );
   const { formatCurrencyCompact: formatCurrency, formatCurrency: formatCurrencyFull } = useNumberFormat();
   const { defaultCurrency } = useExchangeRates();
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -101,7 +139,7 @@ export function SectorWeightingsReport() {
       let comparison = 0;
       switch (sortField) {
         case 'sector':
-          comparison = compareValues(a.sector, b.sector);
+          comparison = compareValues(sectorLabel(a.sector), sectorLabel(b.sector));
           break;
         case 'direct':
           comparison = compareValues(a.directValue, b.directValue);
@@ -119,7 +157,7 @@ export function SectorWeightingsReport() {
       return sortDirection === 'asc' ? comparison : -comparison;
     });
     return items;
-  }, [data, sortField, sortDirection]);
+  }, [data, sortField, sortDirection, sectorLabel]);
 
   // Load accounts and securities once on mount
   useEffect(() => {
@@ -144,7 +182,7 @@ export function SectorWeightingsReport() {
       t('sectorWeightings.pdfColPortfolioPct'),
     ];
     const rows = data ? data.items.map(item => [
-      item.sector,
+      sectorLabel(item.sector),
       formatCurrencyFull(item.directValue, defaultCurrency),
       formatCurrencyFull(item.etfValue, defaultCurrency),
       formatCurrencyFull(item.totalValue, defaultCurrency),
@@ -190,7 +228,7 @@ export function SectorWeightingsReport() {
   }
 
   const chartData = data.items.map((item, idx) => ({
-    sector: item.sector,
+    sector: sectorLabel(item.sector),
     direct: item.directValue,
     etf: item.etfValue,
     total: item.totalValue,
@@ -374,7 +412,7 @@ export function SectorWeightingsReport() {
                         className="w-3 h-3 rounded-full flex-shrink-0"
                         style={{ backgroundColor: chartSeriesColor(idx) }}
                       />
-                      {item.sector}
+                      {sectorLabel(item.sector)}
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm text-right text-blue-600 dark:text-blue-400">
