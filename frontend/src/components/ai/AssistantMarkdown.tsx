@@ -8,6 +8,20 @@ interface AssistantMarkdownProps {
   content: string;
 }
 
+/**
+ * Normalise Unicode bullet glyphs at the start of a line to a Markdown `-`.
+ * LLMs often format lists with literal bullets (•, ·, ‣, ▪, ◦) instead of
+ * Markdown markers; CommonMark does not treat those as list items, so the whole
+ * block collapses into one paragraph with the line breaks rendered as spaces
+ * (the reported "all on one line" bug). Rewriting the leading glyph to `-` lets
+ * react-markdown build a real list. Only a glyph followed by whitespace at the
+ * line start (after optional indent) is touched, so prose is unaffected; dashes
+ * are deliberately excluded as they are more often legitimate line-start text.
+ */
+function normalizeBulletGlyphs(content: string): string {
+  return content.replace(/^([ \t]*)[•·‣▪◦]\s+/gm, '$1- ');
+}
+
 export function AssistantMarkdown({ content }: AssistantMarkdownProps) {
   return (
     <ReactMarkdown
@@ -95,7 +109,7 @@ export function AssistantMarkdown({ content }: AssistantMarkdownProps) {
         ),
       }}
     >
-      {content}
+      {normalizeBulletGlyphs(content)}
     </ReactMarkdown>
   );
 }

@@ -42,6 +42,32 @@ describe('AssistantMarkdown', () => {
     expect(items[2].textContent).toBe('Bananas');
   });
 
+  it('renders a Unicode-bullet (•) list as a real list, not one paragraph', () => {
+    // LLMs often emit literal • bullets; without normalisation CommonMark
+    // collapses them into a single paragraph (the "all on one line" bug).
+    const { container } = render(
+      <AssistantMarkdown
+        content={'Rules:\n• Salary → Pay\n• Bonus → Reward\n• Overtime → Extra'}
+      />,
+    );
+    const ul = container.querySelector('ul');
+    expect(ul).not.toBeNull();
+    const items = container.querySelectorAll('li');
+    expect(items).toHaveLength(3);
+    expect(items[0].textContent).toContain('Salary');
+    expect(items[2].textContent).toContain('Overtime');
+    // The literal bullet glyph must not survive into the rendered text.
+    expect(container.textContent).not.toContain('•');
+  });
+
+  it('leaves a mid-sentence bullet glyph untouched', () => {
+    const { container } = render(
+      <AssistantMarkdown content="Use the • symbol carefully" />,
+    );
+    expect(container.querySelector('ul')).toBeNull();
+    expect(container.textContent).toContain('•');
+  });
+
   it('renders an ordered list', () => {
     const { container } = render(
       <AssistantMarkdown content={'1. First\n2. Second\n3. Third'} />,
