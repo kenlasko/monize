@@ -17,7 +17,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
-import { format, differenceInDays, startOfYear, startOfMonth, addMonths } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 import { chartColors } from '@/lib/chart-colors';
 import { investmentsApi } from '@/lib/investments';
 import { Security, SecurityPrice, InvestmentTransaction, HoldingWithMarketValue } from '@/types/investment';
@@ -32,39 +32,14 @@ import { SortableHeader } from '@/components/ui/SortableHeader';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
 import { aggregateHoldingsBySecurity } from '@/lib/aggregate-holdings';
 import { renderChartFlagDot, ChartFlagShadowFilter } from '@/components/investments/portfolio-chart-utils';
+import { buildTimeAxisTicks } from '@/lib/chart-time-axis';
+import { AllSecuritiesChart } from '@/components/reports/AllSecuritiesChart';
 
 const MAX_PAGES = 50;
 
-// Candidate spacings (in months) for the price chart's time axis, smallest first.
-const TICK_STEP_MONTHS = [1, 2, 3, 6, 12, 24, 60, 120];
-
-// Build evenly-spaced, calendar-aligned tick timestamps for the time axis.
-// Picks the smallest step that keeps the tick count at or below `target`, then
-// anchors ticks to year/month boundaries. This keeps spacing uniform across the
-// whole timeline regardless of how densely the underlying prices are sampled
-// (e.g. sparse early history vs. daily recent prices), so old and new periods
-// get the same horizontal scale.
-function buildTimeAxisTicks(
-  minTs: number,
-  maxTs: number,
-  target = 10,
-): { ticks: number[]; stepMonths: number } {
-  if (!(maxTs > minTs)) return { ticks: [minTs], stepMonths: 1 };
-  const minDate = new Date(minTs);
-  const maxDate = new Date(maxTs);
-  const spanMonths =
-    (maxDate.getFullYear() - minDate.getFullYear()) * 12 +
-    (maxDate.getMonth() - minDate.getMonth());
-  const stepMonths =
-    TICK_STEP_MONTHS.find((s) => spanMonths / s <= target) ??
-    TICK_STEP_MONTHS[TICK_STEP_MONTHS.length - 1];
-  const anchor = stepMonths >= 12 ? startOfYear(minDate) : startOfMonth(minDate);
-  const ticks: number[] = [];
-  for (let cur = anchor; cur.getTime() <= maxTs; cur = addMonths(cur, stepMonths)) {
-    if (cur.getTime() >= minTs) ticks.push(cur.getTime());
-  }
-  return { ticks: ticks.length > 0 ? ticks : [minTs, maxTs], stepMonths };
-}
+// Sentinel security-selector value for the all-securities performance
+// comparison view (every security on one chart) vs. a single security's id.
+const ALL_SECURITIES = '__all__';
 
 type TradeSortField = 'date' | 'account' | 'action' | 'shares' | 'price' | 'total';
 type DividendSortField = 'date' | 'account' | 'type' | 'amount';
@@ -88,6 +63,10 @@ export function SecurityPerformanceReport() {
   const chartRef = useRef<HTMLDivElement>(null);
   const [selectedSecurityId, setSelectedSecurityId] = useState<string>('');
   const [viewType, setViewType] = useState<'chart' | 'transactions' | 'dividends'>('chart');
+  // Bumped on a manual price refresh so the all-securities comparison chart
+  // re-fetches its (separately loaded) per-security price history.
+  const [allRefreshKey, setAllRefreshKey] = useState(0);
+  const isAllView = selectedSecurityId === ALL_SECURITIES;
   // Avg-cost bubble the user has temporarily dismissed, keyed by value (mirrors
   // the high/low flag bubbles) so it re-shows when a different security's avg
   // cost differs.
@@ -439,6 +418,11 @@ export function SecurityPerformanceReport() {
               className="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm min-w-[250px]"
             >
               <option value="">{t('securityPerformance.selectSecurityPlaceholder')}</option>
+              {securities.length > 0 && (
+                <option value={ALL_SECURITIES}>
+                  {t('securityPerformance.allSecuritiesOption')}
+                </option>
+              )}
               {securities
                 .sort((a, b) => a.symbol.localeCompare(b.symbol))
                 .map((sec) => (
@@ -449,7 +433,7 @@ export function SecurityPerformanceReport() {
             </select>
           </div>
           <div className="flex gap-2 items-center">
-            {selectedSecurityId && (
+            {selectedSecurityId && !isAllView && (
               <>
                 <button
                   onClick={() => setViewType('chart')}
@@ -477,8 +461,8 @@ export function SecurityPerformanceReport() {
                 </button>
               </>
             )}
-            <RefreshPricesButton onRefreshComplete={() => { reloadBase(); reloadDetail(); }} />
-            {selectedSecurityId && <ExportDropdown onExportPdf={handleExportPdf} />}
+            <RefreshPricesButton onRefreshComplete={() => { reloadBase(); reloadDetail(); setAllRefreshKey((k) => k + 1); }} />
+            {selectedSecurityId && !isAllView && <ExportDropdown onExportPdf={handleExportPdf} />}
           </div>
         </div>
       </div>
@@ -489,6 +473,8 @@ export function SecurityPerformanceReport() {
             {t('securityPerformance.selectPrompt')}
           </p>
         </div>
+      ) : isAllView ? (
+        <AllSecuritiesChart securities={securities} reloadKey={allRefreshKey} />
       ) : isLoadingDetail ? (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
           <div className="space-y-4">

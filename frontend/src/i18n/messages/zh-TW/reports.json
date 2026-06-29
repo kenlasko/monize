@@ -1270,6 +1270,11 @@
   "securityPerformance": {
     "selectPrompt": "請在上方選擇證券以查看其績效詳情。",
     "selectSecurityPlaceholder": "選擇證券...",
+    "allSecuritiesOption": "全部證券（績效比較）",
+    "allSecuritiesTitle": "全部證券 — 績效比較",
+    "allSecuritiesSubtitle": "每檔證券的累計報酬，以其首個可用價格為基準歸零（0%），以便不論價格或幣別都能在同一刻度上比較。",
+    "allSecuritiesNoData": "沒有任何證券的價格歷史。",
+    "allSecuritiesError": "無法載入價格歷史，請重試。",
     "viewPriceChart": "價格圖表",
     "viewTransactions": "交易記錄",
     "viewDividends": "股利",

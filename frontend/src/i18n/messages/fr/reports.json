@@ -1270,6 +1270,11 @@
   "securityPerformance": {
     "selectPrompt": "Sélectionnez un titre ci-dessus pour voir ses détails de performance.",
     "selectSecurityPlaceholder": "Sélectionner un titre...",
+    "allSecuritiesOption": "Tous les titres (comparaison des performances)",
+    "allSecuritiesTitle": "Tous les titres — Comparaison des performances",
+    "allSecuritiesSubtitle": "Rendement cumulé de chaque titre, ramené à 0 % à son premier cours disponible afin de les comparer sur une même échelle, quels que soient le cours ou la devise.",
+    "allSecuritiesNoData": "Aucun historique de cours n'est disponible pour aucun titre.",
+    "allSecuritiesError": "Impossible de charger l'historique des cours. Veuillez réessayer.",
     "viewPriceChart": "Graphique des cours",
     "viewTransactions": "Transactions",
     "viewDividends": "Dividendes",

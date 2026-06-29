@@ -1270,6 +1270,11 @@
   "securityPerformance": {
     "selectPrompt": "在上方选择证券以查看其表现详情。",
     "selectSecurityPlaceholder": "选择证券...",
+    "allSecuritiesOption": "全部证券（业绩对比）",
+    "allSecuritiesTitle": "全部证券 — 业绩对比",
+    "allSecuritiesSubtitle": "每只证券的累计回报，以其首个可用价格为基准归零（0%），以便不论价格或币种都能在同一刻度上比较。",
+    "allSecuritiesNoData": "没有任何证券的价格历史。",
+    "allSecuritiesError": "无法加载价格历史，请重试。",
     "viewPriceChart": "价格图表",
     "viewTransactions": "交易",
     "viewDividends": "股息",

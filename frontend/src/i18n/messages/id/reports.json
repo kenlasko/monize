@@ -1270,6 +1270,11 @@
   "securityPerformance": {
     "selectPrompt": "Pilih keamanan dokumen di atas untuk melihat detail kinerjanya.",
     "selectSecurityPlaceholder": "Pilih keamanan dokumen...",
+    "allSecuritiesOption": "Semua efek (perbandingan kinerja)",
+    "allSecuritiesTitle": "Semua Efek — Perbandingan Kinerja",
+    "allSecuritiesSubtitle": "Imbal hasil kumulatif setiap efek, disesuaikan ke 0% pada harga pertama yang tersedia agar dapat dibandingkan dalam satu skala tanpa memandang harga atau mata uang.",
+    "allSecuritiesNoData": "Tidak ada riwayat harga yang tersedia untuk efek mana pun.",
+    "allSecuritiesError": "Tidak dapat memuat riwayat harga. Silakan coba lagi.",
     "viewPriceChart": "Grafik Harga",
     "viewTransactions": "Transaksi",
     "viewDividends": "Dividen",

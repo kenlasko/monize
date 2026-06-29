@@ -1270,6 +1270,11 @@
   "securityPerformance": {
     "selectPrompt": "अपने प्रदर्शन विवरण देखने के लिए ऊपर एक प्रतिभूति चुनें।",
     "selectSecurityPlaceholder": "एक प्रतिभूति चुनें...",
+    "allSecuritiesOption": "सभी प्रतिभूतियाँ (प्रदर्शन तुलना)",
+    "allSecuritiesTitle": "सभी प्रतिभूतियाँ — प्रदर्शन तुलना",
+    "allSecuritiesSubtitle": "प्रत्येक प्रतिभूति का संचयी प्रतिफल, उसके पहले उपलब्ध मूल्य पर 0% पर पुनः आधारित, ताकि मूल्य या मुद्रा से परे एक ही पैमाने पर तुलना की जा सके।",
+    "allSecuritiesNoData": "किसी भी प्रतिभूति के लिए मूल्य इतिहास उपलब्ध नहीं है।",
+    "allSecuritiesError": "मूल्य इतिहास लोड नहीं हो सका। कृपया पुनः प्रयास करें।",
     "viewPriceChart": "मूल्य चित्र",
     "viewTransactions": "लेनदेन",
     "viewDividends": "लाभांश",

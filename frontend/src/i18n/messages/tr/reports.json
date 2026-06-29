@@ -1270,6 +1270,11 @@
   "securityPerformance": {
     "selectPrompt": "Performans ayrıntılarını görüntülemek için yukarıdan menkul kıymet seçin.",
     "selectSecurityPlaceholder": "Menkul kıymet seçin...",
+    "allSecuritiesOption": "Tüm menkul kıymetler (performans karşılaştırması)",
+    "allSecuritiesTitle": "Tüm Menkul Kıymetler — Performans Karşılaştırması",
+    "allSecuritiesSubtitle": "Her menkul kıymetin kümülatif getirisi, ilk mevcut fiyatında %0'a sabitlenir; böylece fiyat veya para biriminden bağımsız olarak tek bir ölçekte karşılaştırılır.",
+    "allSecuritiesNoData": "Hiçbir menkul kıymet için fiyat geçmişi yok.",
+    "allSecuritiesError": "Fiyat geçmişi yüklenemedi. Lütfen tekrar deneyin.",
     "viewPriceChart": "Fiyat Grafiği",
     "viewTransactions": "İşlemler",
     "viewDividends": "Temettüler",

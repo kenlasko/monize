@@ -1270,6 +1270,11 @@
   "securityPerformance": {
     "selectPrompt": "위에서 유가증권을 선택하여 성과 세부 정보를 확인하세요.",
     "selectSecurityPlaceholder": "유가증권 선택...",
+    "allSecuritiesOption": "전체 종목 (수익률 비교)",
+    "allSecuritiesTitle": "전체 종목 — 수익률 비교",
+    "allSecuritiesSubtitle": "각 종목의 누적 수익률을 최초 이용 가능 가격에서 0%로 재기준화하여 가격이나 통화와 관계없이 동일한 척도로 비교합니다.",
+    "allSecuritiesNoData": "어떤 종목에 대해서도 가격 기록이 없습니다.",
+    "allSecuritiesError": "가격 기록을 불러올 수 없습니다. 다시 시도해 주세요.",
     "viewPriceChart": "가격 차트",
     "viewTransactions": "거래",
     "viewDividends": "배당금",

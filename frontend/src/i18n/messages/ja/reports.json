@@ -1270,6 +1270,11 @@
   "securityPerformance": {
     "selectPrompt": "上で有価証券を選択してパフォーマンスの詳細を確認してください。",
     "selectSecurityPlaceholder": "有価証券を選択...",
+    "allSecuritiesOption": "すべての銘柄（パフォーマンス比較）",
+    "allSecuritiesTitle": "すべての銘柄 — パフォーマンス比較",
+    "allSecuritiesSubtitle": "各銘柄の累積リターンを、最初に取得できた価格を0%として再基準化し、価格や通貨に関係なく同じ尺度で比較できるようにしたものです。",
+    "allSecuritiesNoData": "いずれの銘柄も価格履歴がありません。",
+    "allSecuritiesError": "価格履歴を読み込めませんでした。もう一度お試しください。",
     "viewPriceChart": "価格グラフ",
     "viewTransactions": "取引",
     "viewDividends": "配当",

@@ -1270,6 +1270,11 @@
   "securityPerformance": {
     "selectPrompt": "Selecciona un valor arriba para ver sus detalles de rendimiento.",
     "selectSecurityPlaceholder": "Seleccionar un valor...",
+    "allSecuritiesOption": "Todos los valores (comparación de rentabilidad)",
+    "allSecuritiesTitle": "Todos los valores — Comparación de rentabilidad",
+    "allSecuritiesSubtitle": "Rentabilidad acumulada de cada valor, reajustada al 0 % en su primer precio disponible para compararlos en una misma escala, sin importar el precio ni la moneda.",
+    "allSecuritiesNoData": "No hay historial de precios disponible para ningún valor.",
+    "allSecuritiesError": "No se pudo cargar el historial de precios. Inténtalo de nuevo.",
     "viewPriceChart": "Gráfico de precios",
     "viewTransactions": "Transacciones",
     "viewDividends": "Dividendos",

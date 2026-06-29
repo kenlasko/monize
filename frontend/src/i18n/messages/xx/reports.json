@@ -1270,6 +1270,11 @@
   "securityPerformance": {
     "selectPrompt": "[XX-Select a security above to view its performance details.-XX]",
     "selectSecurityPlaceholder": "[XX-Select a security...-XX]",
+    "allSecuritiesOption": "[XX-All securities (performance comparison)-XX]",
+    "allSecuritiesTitle": "[XX-All Securities — Performance Comparison-XX]",
+    "allSecuritiesSubtitle": "[XX-Cumulative return of each security, rebased to 0% at its first available price so they compare on one scale regardless of price or currency.-XX]",
+    "allSecuritiesNoData": "[XX-No price history is available for any security.-XX]",
+    "allSecuritiesError": "[XX-Could not load price history. Please try again.-XX]",
     "viewPriceChart": "[XX-Price Chart-XX]",
     "viewTransactions": "[XX-Transactions-XX]",
     "viewDividends": "[XX-Dividends-XX]",

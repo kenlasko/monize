@@ -1270,6 +1270,11 @@
   "securityPerformance": {
     "selectPrompt": "Selecione um título acima para ver os detalhes do seu desempenho.",
     "selectSecurityPlaceholder": "Selecionar um título...",
+    "allSecuritiesOption": "Todos os títulos (comparação de desempenho)",
+    "allSecuritiesTitle": "Todos os títulos — Comparação de desempenho",
+    "allSecuritiesSubtitle": "Rentabilidade acumulada de cada título, redefinida para 0% no seu primeiro preço disponível, para serem comparados numa só escala, independentemente do preço ou da moeda.",
+    "allSecuritiesNoData": "Não há histórico de preços disponível para nenhum título.",
+    "allSecuritiesError": "Não foi possível carregar o histórico de preços. Tente novamente.",
     "viewPriceChart": "Gráfico de Preços",
     "viewTransactions": "Transações",
     "viewDividends": "Dividendos",

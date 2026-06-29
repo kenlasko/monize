@@ -1270,6 +1270,11 @@
   "securityPerformance": {
     "selectPrompt": "Wybierz papier wartościowy powyżej, aby zobaczyć szczegóły jego wyników.",
     "selectSecurityPlaceholder": "Wybierz papier wartościowy...",
+    "allSecuritiesOption": "Wszystkie papiery (porównanie wyników)",
+    "allSecuritiesTitle": "Wszystkie papiery — porównanie wyników",
+    "allSecuritiesSubtitle": "Skumulowany zwrot każdego papieru, sprowadzony do 0% w dniu pierwszej dostępnej ceny, aby można je było porównać na jednej skali niezależnie od ceny i waluty.",
+    "allSecuritiesNoData": "Brak historii cen dla jakiegokolwiek papieru.",
+    "allSecuritiesError": "Nie udało się wczytać historii cen. Spróbuj ponownie.",
     "viewPriceChart": "Wykres ceny",
     "viewTransactions": "Transakcje",
     "viewDividends": "Dywidendy",

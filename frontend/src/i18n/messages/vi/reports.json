@@ -1270,6 +1270,11 @@
   "securityPerformance": {
     "selectPrompt": "Chọn một chứng khoán ở trên để xem chi tiết hiệu suất.",
     "selectSecurityPlaceholder": "Chọn một chứng khoán...",
+    "allSecuritiesOption": "Tất cả chứng khoán (so sánh hiệu suất)",
+    "allSecuritiesTitle": "Tất cả chứng khoán — So sánh hiệu suất",
+    "allSecuritiesSubtitle": "Lợi suất tích lũy của từng chứng khoán, được quy về 0% tại mức giá khả dụng đầu tiên để so sánh trên cùng một thang đo bất kể giá hay đơn vị tiền tệ.",
+    "allSecuritiesNoData": "Không có lịch sử giá cho bất kỳ chứng khoán nào.",
+    "allSecuritiesError": "Không thể tải lịch sử giá. Vui lòng thử lại.",
     "viewPriceChart": "Biểu đồ giá",
     "viewTransactions": "Giao tác",
     "viewDividends": "Cổ tức",

@@ -1270,6 +1270,11 @@
   "securityPerformance": {
     "selectPrompt": "Wählen Sie oben ein Wertpapier aus, um dessen Performancedetails anzuzeigen.",
     "selectSecurityPlaceholder": "Wertpapier auswählen...",
+    "allSecuritiesOption": "Alle Wertpapiere (Wertentwicklungsvergleich)",
+    "allSecuritiesTitle": "Alle Wertpapiere — Wertentwicklungsvergleich",
+    "allSecuritiesSubtitle": "Kumulierte Rendite jedes Wertpapiers, auf 0 % zum ersten verfügbaren Kurs normiert, sodass sie unabhängig von Kurs oder Währung auf einer Skala vergleichbar sind.",
+    "allSecuritiesNoData": "Für kein Wertpapier ist ein Kursverlauf verfügbar.",
+    "allSecuritiesError": "Kursverlauf konnte nicht geladen werden. Bitte versuchen Sie es erneut.",
     "viewPriceChart": "Kursdiagramm",
     "viewTransactions": "Buchungen",
     "viewDividends": "Dividenden",

@@ -1270,6 +1270,11 @@
   "securityPerformance": {
     "selectPrompt": "Selecteer hierboven een waardepapier om de prestatiedetails te bekijken.",
     "selectSecurityPlaceholder": "Selecteer een waardepapier...",
+    "allSecuritiesOption": "Alle effecten (rendementsvergelijking)",
+    "allSecuritiesTitle": "Alle effecten — Rendementsvergelijking",
+    "allSecuritiesSubtitle": "Cumulatief rendement van elk effect, herijkt naar 0% bij de eerste beschikbare koers, zodat ze op één schaal vergelijkbaar zijn ongeacht koers of valuta.",
+    "allSecuritiesNoData": "Voor geen enkel effect is een koershistorie beschikbaar.",
+    "allSecuritiesError": "Kon de koershistorie niet laden. Probeer het opnieuw.",
     "viewPriceChart": "Koersgrafiek",
     "viewTransactions": "Transacties",
     "viewDividends": "Dividenden",
