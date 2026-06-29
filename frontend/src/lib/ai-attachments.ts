@@ -23,9 +23,9 @@ export const ACCEPTED_MIME_TYPES = [
 ] as const;
 
 /**
- * Extension -> canonical MIME. Browsers report CSV inconsistently
- * (text/csv, application/vnd.ms-excel, or empty), so we normalise by
- * extension first and fall back to the browser-reported type.
+ * Extension -> canonical MIME. Used as a fallback when the browser-reported MIME
+ * is missing or unrecognised -- common for CSV, which browsers report as
+ * text/csv, application/vnd.ms-excel, or empty.
  */
 const EXT_TO_MIME: Record<string, string> = {
   png: 'image/png',
@@ -38,8 +38,16 @@ const EXT_TO_MIME: Record<string, string> = {
   txt: 'text/plain',
 };
 
-/** `accept` attribute for the file input. */
-export const ATTACHMENT_ACCEPT = '.png,.jpg,.jpeg,.gif,.webp,.pdf,.csv,.txt';
+/**
+ * `accept` attribute for the file input. Lists both extensions AND the accepted
+ * MIME types: an extension-only list hides files that carry the right MIME but
+ * no (or a different) extension from the OS picker -- e.g. a real application/pdf
+ * downloaded without a ".pdf" suffix, which is exactly what could not be
+ * attached. The MIME entries let the picker match those by content type.
+ */
+export const ATTACHMENT_ACCEPT =
+  '.png,.jpg,.jpeg,.gif,.webp,.pdf,.csv,.txt,' +
+  'image/png,image/jpeg,image/gif,image/webp,application/pdf,text/csv,text/plain';
 
 /** An i18n error key plus interpolation values, surfaced as a toast. */
 export interface AttachmentError {
@@ -54,11 +62,17 @@ function extensionOf(filename: string): string {
 
 /** Resolve a file to one of the accepted MIME types, or null if unsupported. */
 export function resolveMediaType(file: File): string | null {
-  const byExt = EXT_TO_MIME[extensionOf(file.name)];
-  if (byExt) return byExt;
+  // Trust the browser-reported MIME when it is one we accept: it describes the
+  // file's actual format, whereas the filename extension can be missing or
+  // misleading (e.g. a real application/pdf saved without a ".pdf" suffix, or a
+  // file renamed to the wrong extension). Fall back to the extension only when
+  // the MIME is absent or unrecognised -- common for CSV, which browsers report
+  // as text/csv, application/vnd.ms-excel, or ''.
   if ((ACCEPTED_MIME_TYPES as readonly string[]).includes(file.type)) {
     return file.type;
   }
+  const byExt = EXT_TO_MIME[extensionOf(file.name)];
+  if (byExt) return byExt;
   return null;
 }
 

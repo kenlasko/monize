@@ -40,6 +40,18 @@ describe('ai-attachments', () => {
     it('returns null for unsupported files', () => {
       expect(resolveMediaType(makeFile('a.exe', 'application/octet-stream'))).toBeNull();
     });
+
+    it('resolves a PDF by MIME when it has no extension', () => {
+      expect(resolveMediaType(makeFile('statement', 'application/pdf'))).toBe(
+        'application/pdf',
+      );
+    });
+
+    it('trusts an accepted MIME over a misleading extension (real PDF named .txt)', () => {
+      expect(resolveMediaType(makeFile('report.txt', 'application/pdf'))).toBe(
+        'application/pdf',
+      );
+    });
   });
 
   describe('kindForMediaType', () => {
