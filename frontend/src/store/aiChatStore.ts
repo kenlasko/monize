@@ -72,6 +72,38 @@ const IDLE_THINKING: ThinkingState = {
 const RELAY_PICKUP_POLL_MS = 4000;
 const RELAY_PICKUP_DEADLINE_MS = 9 * 60 * 1000;
 
+// Bound the conversation history sent in relay mode. The agent receives it on
+// every prompt via get_next_prompt and runs the loop in one long-lived session,
+// so an unbounded history bloats its context until the model degrades. Keep the
+// newest turns within a char budget (the backend trims again as the source of
+// truth). The native LLM path is unaffected.
+const RELAY_MAX_HISTORY_TURNS = 10;
+const RELAY_MAX_HISTORY_CHARS = 12000;
+
+function trimRelayHistory(
+  history: Array<{ role: 'user' | 'assistant'; content: string }>,
+): Array<{ role: 'user' | 'assistant'; content: string }> {
+  const kept: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+  let budget = RELAY_MAX_HISTORY_CHARS;
+  for (
+    let i = history.length - 1;
+    i >= 0 && kept.length < RELAY_MAX_HISTORY_TURNS && budget > 0;
+    i--
+  ) {
+    const { role, content } = history[i];
+    if (content.length <= budget) {
+      kept.push({ role, content });
+      budget -= content.length;
+    } else {
+      if (kept.length === 0) {
+        kept.push({ role, content: content.slice(0, budget) + ' … [truncated]' });
+      }
+      break;
+    }
+  }
+  return kept.reverse();
+}
+
 interface AiChatState {
   messages: ChatMessage[];
   isLoading: boolean;
@@ -445,7 +477,7 @@ export const useAiChatStore = create<AiChatState>()(
         // Build conversation history from existing messages for context.
         // Only include completed (non-streaming, non-error) messages with
         // actual content so the AI can reference prior turns.
-        const history = get()
+        const fullHistory = get()
           .messages.filter(
             (m) =>
               !m.isStreaming &&
@@ -453,6 +485,9 @@ export const useAiChatStore = create<AiChatState>()(
               m.content.length > 0,
           )
           .map((m) => ({ role: m.role, content: m.content }));
+        // In relay mode, cap history so the user's agent isn't overwhelmed by an
+        // ever-growing context; the native LLM path keeps the full history.
+        const history = relay ? trimRelayHistory(fullHistory) : fullHistory;
 
         const controller = aiApi.queryStream(trimmed, {
           onEvent: (event: StreamEvent) => {
