@@ -134,24 +134,33 @@ describe('BalanceHistoryChart', () => {
   });
 
   it('shows Ending balance when future transactions exist', () => {
-    render(
-      <BalanceHistoryChart
-        data={[
-          { date: '2026-01-01', balance: 1000 },
-          { date: '2026-03-19', balance: 800 },
-          { date: '2026-04-15', balance: 650 },
-          { date: '2026-05-01', balance: 500 },
-          { date: '2026-06-01', balance: 400 },
-          { date: '2026-07-01', balance: 300 },
-        ]}
-        isLoading={false}
-      />
-    );
+    // Lock "today" so the data points after it stay in the future forever;
+    // with a real clock this test started failing the day the last hardcoded
+    // date stopped being in the future.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-04-10T12:00:00Z'));
+    try {
+      render(
+        <BalanceHistoryChart
+          data={[
+            { date: '2026-01-01', balance: 1000 },
+            { date: '2026-03-19', balance: 800 },
+            { date: '2026-04-15', balance: 650 },
+            { date: '2026-05-01', balance: 500 },
+            { date: '2026-06-01', balance: 400 },
+            { date: '2026-07-01', balance: 300 },
+          ]}
+          isLoading={false}
+        />
+      );
 
-    expect(screen.getByText('Starting')).toBeInTheDocument();
-    expect(screen.getByText('Current')).toBeInTheDocument();
-    expect(screen.getByText('Ending')).toBeInTheDocument();
-    expect(screen.getByText('Min Balance')).toBeInTheDocument();
+      expect(screen.getByText('Starting')).toBeInTheDocument();
+      expect(screen.getByText('Current')).toBeInTheDocument();
+      expect(screen.getByText('Ending')).toBeInTheDocument();
+      expect(screen.getByText('Min Balance')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('does not show Ending balance when no future transactions', () => {
