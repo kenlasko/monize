@@ -20,6 +20,7 @@ import { MergePayeeDto } from "./dto/merge-payee.dto";
 import { ActionHistoryService } from "../action-history/action-history.service";
 import { toCountMap } from "../common/count-map.util";
 import { matchesAliasPattern } from "./alias-match.util";
+import { insertPayeeAliasIgnoringDuplicate } from "./insert-payee-alias.util";
 import {
   applyPayeeCategoryToAll,
   backfillPayeeCategory,
@@ -1395,8 +1396,16 @@ export class PayeesService {
             userId,
             alias: sourcePayee.name,
           });
-          await queryRunner.manager.save(newAlias);
-          aliasAdded = true;
+          // The existence check above and this insert are not atomic: a
+          // concurrent merge can create the same alias in between, so guard the
+          // insert against the UNIQUE(user_id, LOWER(alias)) constraint. The
+          // alias is best-effort; a duplicate must not roll back the merge
+          // (transaction/scheduled-transaction reassignment) with an opaque 409.
+          aliasAdded = await insertPayeeAliasIgnoringDuplicate(
+            queryRunner,
+            newAlias,
+            "merge_payee_alias",
+          );
         }
       }
 

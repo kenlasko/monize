@@ -302,7 +302,9 @@
     "aliasNotFound": "Alias with ID {{ id }} not found",
     "mergeSelf": "Cannot merge a payee into itself",
     "autoMergeDuplicatePayee": "A payee appears in more than one merge group",
-    "autoMergeSourceNotFound": "One or more source payees were not found"
+    "autoMergeSourceNotFound": "One or more source payees were not found",
+    "autoMergeGroupConflict": "Could not merge \"{{ name }}\": the value \"{{ value }}\" is already in use",
+    "autoMergeGroupFailed": "Could not merge \"{{ name }}\""
   },
   "reports": {
     "notFound": "Report with ID {{ id }} not found",

@@ -5,7 +5,13 @@ import {
   Logger,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { DataSource, In, QueryRunner, Repository } from "typeorm";
+import {
+  DataSource,
+  In,
+  QueryFailedError,
+  QueryRunner,
+  Repository,
+} from "typeorm";
 import { tr } from "../i18n/translate";
 import { Payee } from "./entities/payee.entity";
 import { PayeeAlias } from "./entities/payee-alias.entity";
@@ -14,6 +20,7 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { PayeesService } from "./payees.service";
 import { matchesAliasPattern } from "./alias-match.util";
+import { insertPayeeAliasIgnoringDuplicate } from "./insert-payee-alias.util";
 import { COMMON_WORD_SEED } from "./payee-common-words";
 import {
   normalizePayeeName,
@@ -80,6 +87,19 @@ export interface ApplyAutoMergeGroup {
   backfillTransactions?: boolean;
 }
 
+export interface ApplyAutoMergeFailure {
+  canonicalPayeeId: string;
+  // The canonical name the caller asked to keep (falls back to the id), so the
+  // UI can name the group that failed instead of showing an opaque error.
+  canonicalName: string;
+  // The specific value that caused the failure (the alias or new name that
+  // collided), when one can be identified; null for failures with no single
+  // offending value.
+  conflictingValue: string | null;
+  // A human-readable, already-translated reason for the failure.
+  reason: string;
+}
+
 export interface ApplyAutoMergeResult {
   groupsMerged: number;
   payeesMerged: number;
@@ -87,6 +107,10 @@ export interface ApplyAutoMergeResult {
   aliasesCreated: number;
   skippedAliases: number;
   transactionsBackfilled: number;
+  // Groups that could not be merged. The successful groups are already
+  // committed (each runs in its own transaction), so a partial batch still
+  // reports what got through and what did not, and why.
+  failures: ApplyAutoMergeFailure[];
 }
 
 // Cap the cross-bucket fuzzy pass (O(B^2) over distinct first tokens) to keep
@@ -611,19 +635,84 @@ export class PayeeAutoMergeService {
       aliasesCreated: 0,
       skippedAliases: 0,
       transactionsBackfilled: 0,
+      failures: [],
     };
 
+    // Each group commits in its own transaction, so isolate failures here too:
+    // one group that hits a constraint (e.g. a name/alias collision) must not
+    // abort the groups that follow it. Record which group failed, on what
+    // value, and why, so the caller can report a partial result instead of an
+    // opaque 409.
     for (const group of groups) {
-      const groupResult = await this.applyGroup(userId, group);
-      result.groupsMerged += 1;
-      result.payeesMerged += groupResult.payeesMerged;
-      result.transactionsMigrated += groupResult.transactionsMigrated;
-      result.aliasesCreated += groupResult.aliasCreated ? 1 : 0;
-      result.skippedAliases += groupResult.aliasSkipped ? 1 : 0;
-      result.transactionsBackfilled += groupResult.transactionsBackfilled;
+      try {
+        const groupResult = await this.applyGroup(userId, group);
+        result.groupsMerged += 1;
+        result.payeesMerged += groupResult.payeesMerged;
+        result.transactionsMigrated += groupResult.transactionsMigrated;
+        result.aliasesCreated += groupResult.aliasCreated ? 1 : 0;
+        result.skippedAliases += groupResult.aliasSkipped ? 1 : 0;
+        result.transactionsBackfilled += groupResult.transactionsBackfilled;
+      } catch (error) {
+        result.failures.push(this.describeGroupFailure(group, error));
+      }
     }
 
     return result;
+  }
+
+  /**
+   * Turn a thrown error from one merge group into a structured, named failure so
+   * the response says which group failed and on what value, instead of letting a
+   * raw QueryFailedError surface as a generic "a record with this value already
+   * exists" with no context.
+   */
+  private describeGroupFailure(
+    group: ApplyAutoMergeGroup,
+    error: unknown,
+  ): ApplyAutoMergeFailure {
+    const canonicalName = group.canonicalName?.trim() || group.canonicalPayeeId;
+    // The values a merge can collide on are the (renamed) canonical name and the
+    // wildcard alias; surface whichever the group carried.
+    const conflictingValue =
+      group.alias?.trim() || group.canonicalName?.trim() || null;
+
+    const isUniqueViolation =
+      error instanceof QueryFailedError &&
+      (error.driverError as { code?: string })?.code === "23505";
+
+    if (isUniqueViolation) {
+      return {
+        canonicalPayeeId: group.canonicalPayeeId,
+        canonicalName,
+        conflictingValue,
+        reason: tr(
+          "errors.payees.autoMergeGroupConflict",
+          conflictingValue
+            ? `Could not merge "${canonicalName}": the value "${conflictingValue}" is already in use`
+            : `Could not merge "${canonicalName}": a value is already in use`,
+          { name: canonicalName, value: conflictingValue ?? "" },
+        ),
+      };
+    }
+
+    // A NestJS HttpException (e.g. the rename ConflictException) already carries
+    // a translated, user-facing message; reuse it. Anything else falls back to a
+    // generic per-group failure so one bad group never sinks the whole batch.
+    const reason =
+      error instanceof Error && error.message
+        ? error.message
+        : tr(
+            "errors.payees.autoMergeGroupFailed",
+            `Could not merge "${canonicalName}"`,
+            { name: canonicalName },
+          );
+
+    return {
+      canonicalPayeeId: group.canonicalPayeeId,
+      canonicalName,
+      conflictingValue,
+      reason,
+    };
   }
 
   private async applyGroup(
@@ -849,7 +938,23 @@ export class PayeeAutoMergeService {
       userId,
       alias,
     });
-    await queryRunner.manager.save(newAlias);
+
+    // The in-app conflict check above is pattern-based and cannot perfectly
+    // mirror the DB's UNIQUE(user_id, LOWER(alias)) index, so the insert can
+    // still race a duplicate. The alias is a best-effort convenience, not the
+    // point of the merge, so a unique violation is downgraded to "skipped"
+    // (via a savepoint) instead of aborting the whole group transaction.
+    const created = await insertPayeeAliasIgnoringDuplicate(
+      queryRunner,
+      newAlias,
+      "create_group_alias",
+    );
+    if (!created) {
+      this.logger.warn(
+        `Skipping auto-merge alias "${alias}" for payee ${canonicalId}: already in use (unique constraint)`,
+      );
+      return "skipped";
+    }
     return "created";
   }
 }

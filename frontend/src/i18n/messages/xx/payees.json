@@ -198,7 +198,8 @@
       "backfilled": "[XX-{count, plural, one {Categorized # transaction} other {Categorized # transactions}}-XX]",
       "aliasesSkipped": "[XX-{count, plural, one {# alias was skipped due to a conflict} other {# aliases were skipped due to conflicts}}-XX]",
       "loadFailed": "[XX-Failed to load merge groups-XX]",
-      "applyFailed": "[XX-Failed to merge payees-XX]"
+      "applyFailed": "[XX-Failed to merge payees-XX]",
+      "someGroupsFailed": "[XX-{count, plural, one {# group could not be merged} other {# groups could not be merged}}: {reason}-XX]"
     },
     "categoryMatchLabel": "[XX-Only merge payees in the same category-XX]",
     "categoryMatchHelp": "[XX-Keep payees apart when their categories differ, reducing false matches.-XX]",

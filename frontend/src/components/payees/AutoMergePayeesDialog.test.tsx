@@ -35,6 +35,7 @@ vi.mock('@/lib/payees', () => ({
       aliasesCreated: 0,
       skippedAliases: 0,
       transactionsBackfilled: 0,
+      failures: [],
     }),
   },
 }));
@@ -289,6 +290,7 @@ describe('AutoMergePayeesDialog', () => {
       aliasesCreated: 1,
       skippedAliases: 0,
       transactionsBackfilled: 0,
+      failures: [],
     });
     render(<AutoMergePayeesDialog isOpen onClose={onClose} onSuccess={onSuccess} />);
 
@@ -340,6 +342,7 @@ describe('AutoMergePayeesDialog', () => {
       aliasesCreated: 1,
       skippedAliases: 0,
       transactionsBackfilled: 0,
+      failures: [],
     });
     render(<AutoMergePayeesDialog isOpen onClose={onClose} onSuccess={onSuccess} />);
 
@@ -411,6 +414,7 @@ describe('AutoMergePayeesDialog', () => {
       aliasesCreated: 1,
       skippedAliases: 0,
       transactionsBackfilled: 0,
+      failures: [],
     });
     render(<AutoMergePayeesDialog isOpen onClose={onClose} onSuccess={onSuccess} />);
 
@@ -486,6 +490,7 @@ describe('AutoMergePayeesDialog', () => {
       aliasesCreated: 1,
       skippedAliases: 0,
       transactionsBackfilled: 0,
+      failures: [],
     });
     render(
       <AutoMergePayeesDialog
@@ -563,6 +568,7 @@ describe('AutoMergePayeesDialog', () => {
       aliasesCreated: 1,
       skippedAliases: 0,
       transactionsBackfilled: 8,
+      failures: [],
     });
     render(
       <AutoMergePayeesDialog

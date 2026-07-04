@@ -217,12 +217,14 @@ export function AutoMergePayeesDialog({
       }));
 
       const result = await payeesApi.applyAutoMerge(payload);
-      toast.success(
-        t('autoMerge.toasts.applied', {
-          groups: result.groupsMerged,
-          payees: result.payeesMerged,
-        }),
-      );
+      if (result.groupsMerged > 0) {
+        toast.success(
+          t('autoMerge.toasts.applied', {
+            groups: result.groupsMerged,
+            payees: result.payeesMerged,
+          }),
+        );
+      }
       if (result.transactionsBackfilled > 0) {
         toast.success(
           t('autoMerge.toasts.backfilled', { count: result.transactionsBackfilled }),
@@ -231,6 +233,17 @@ export function AutoMergePayeesDialog({
       if (result.skippedAliases > 0) {
         toast(
           t('autoMerge.toasts.aliasesSkipped', { count: result.skippedAliases }),
+        );
+      }
+      // Some groups can fail independently (e.g. a name/alias collision) while
+      // the rest merge. Name what failed and why, instead of an opaque error.
+      if (result.failures.length > 0) {
+        toast.error(
+          t('autoMerge.toasts.someGroupsFailed', {
+            count: result.failures.length,
+            reason: result.failures[0].reason,
+          }),
+          { duration: 8000 },
         );
       }
       onSuccess();

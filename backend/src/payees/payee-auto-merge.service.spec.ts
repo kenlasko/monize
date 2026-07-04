@@ -1,7 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { BadRequestException, ConflictException } from "@nestjs/common";
+import { BadRequestException } from "@nestjs/common";
 import { PayeeAutoMergeService } from "./payee-auto-merge.service";
 import { PayeesService } from "./payees.service";
 import { Payee } from "./entities/payee.entity";
@@ -80,6 +80,7 @@ describe("PayeeAutoMergeService", () => {
       commitTransaction: jest.fn(),
       rollbackTransaction: jest.fn(),
       release: jest.fn(),
+      query: jest.fn().mockResolvedValue(undefined),
       manager: {
         findOne: jest.fn(),
         find: jest.fn().mockResolvedValue([]),
@@ -584,6 +585,7 @@ describe("PayeeAutoMergeService", () => {
         aliasesCreated: 1,
         skippedAliases: 0,
         transactionsBackfilled: 0,
+        failures: [],
       });
       expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.manager.save).toHaveBeenCalled();
@@ -697,7 +699,7 @@ describe("PayeeAutoMergeService", () => {
       );
     });
 
-    it("rejects a rename that collides with another payee", async () => {
+    it("records a rename collision as a group failure instead of aborting the batch", async () => {
       mockQueryRunner.manager.findOne.mockResolvedValue(
         makePayee("p1", "LIDL WARSZAWA 0421", 10),
       );
@@ -707,15 +709,20 @@ describe("PayeeAutoMergeService", () => {
         getMany: jest.fn().mockResolvedValue([{ id: "other" }]),
       });
 
-      await expect(
-        service.applyAutoMerge(userId, [
-          {
-            canonicalPayeeId: "p1",
-            canonicalName: "Lidl",
-            sourcePayeeIds: ["p2"],
-          },
-        ]),
-      ).rejects.toThrow(ConflictException);
+      const result = await service.applyAutoMerge(userId, [
+        {
+          canonicalPayeeId: "p1",
+          canonicalName: "Lidl",
+          sourcePayeeIds: ["p2"],
+        },
+      ]);
+
+      expect(result.groupsMerged).toBe(0);
+      expect(result.failures).toHaveLength(1);
+      expect(result.failures[0]).toMatchObject({
+        canonicalPayeeId: "p1",
+        canonicalName: "Lidl",
+      });
       expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
     });
 
@@ -760,15 +767,41 @@ describe("PayeeAutoMergeService", () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it("rolls back when a database operation fails", async () => {
+    it("rolls back the group and records the failure when a database operation fails", async () => {
       mockQueryRunner.manager.update.mockRejectedValue(new Error("DB error"));
 
-      await expect(
-        service.applyAutoMerge(userId, [
-          { canonicalPayeeId: "p1", sourcePayeeIds: ["p2"], alias: "*LIDL*" },
-        ]),
-      ).rejects.toThrow("DB error");
+      const result = await service.applyAutoMerge(userId, [
+        { canonicalPayeeId: "p1", sourcePayeeIds: ["p2"], alias: "*LIDL*" },
+      ]);
+
+      expect(result.groupsMerged).toBe(0);
+      expect(result.failures).toHaveLength(1);
+      expect(result.failures[0].reason).toContain("DB error");
       expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+    });
+
+    it("continues merging the remaining groups when one group fails", async () => {
+      // First group's update throws; the second must still be attempted and
+      // succeed, and the failure of the first must be reported (not thrown).
+      mockQueryRunner.manager.findOne
+        .mockResolvedValueOnce(makePayee("p1", "Lidl", 10))
+        .mockResolvedValueOnce(makePayee("p3", "Biedronka", 8));
+      mockQueryRunner.manager.update
+        .mockRejectedValueOnce(new Error("boom on group 1"))
+        .mockResolvedValue({ affected: 3 });
+
+      const result = await service.applyAutoMerge(userId, [
+        { canonicalPayeeId: "p1", sourcePayeeIds: ["p2"], alias: "*LIDL*" },
+        {
+          canonicalPayeeId: "p3",
+          sourcePayeeIds: ["p4"],
+          alias: "*BIEDRONKA*",
+        },
+      ]);
+
+      expect(result.groupsMerged).toBe(1);
+      expect(result.failures).toHaveLength(1);
+      expect(result.failures[0].canonicalPayeeId).toBe("p1");
     });
   });
 });

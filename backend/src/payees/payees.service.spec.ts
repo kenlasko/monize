@@ -5,7 +5,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from "@nestjs/common";
-import { DataSource, IsNull } from "typeorm";
+import { DataSource, IsNull, QueryFailedError } from "typeorm";
 import { PayeesService } from "./payees.service";
 import { Payee } from "./entities/payee.entity";
 import { PayeeAlias } from "./entities/payee-alias.entity";
@@ -144,6 +144,7 @@ describe("PayeesService", () => {
       commitTransaction: jest.fn(),
       rollbackTransaction: jest.fn(),
       release: jest.fn(),
+      query: jest.fn().mockResolvedValue(undefined),
       manager: {
         find: jest.fn().mockResolvedValue([]),
         update: jest.fn().mockResolvedValue({ affected: 0 }),
@@ -2138,6 +2139,43 @@ describe("PayeesService", () => {
       });
 
       expect(result.aliasAdded).toBe(false);
+    });
+
+    it("still merges (skips the alias) when the alias races a duplicate constraint", async () => {
+      const sourcePayee = {
+        ...mockPayeeNoCategory,
+        id: "payee-2",
+        name: "Amazon",
+      };
+      const targetPayee = { ...mockPayee, id: "payee-1", name: "Starbucks" };
+      payeesRepository.findOne
+        .mockResolvedValueOnce(targetPayee)
+        .mockResolvedValueOnce(sourcePayee);
+
+      const queryRunner = mockDataSource.createQueryRunner();
+      queryRunner.manager.update.mockResolvedValue({ affected: 3 });
+      // The alias insert loses a race to a concurrent merge: the DB rejects it
+      // with the UNIQUE(user_id, LOWER(alias)) violation. It must be swallowed
+      // (savepoint rollback) so the merge itself still commits.
+      queryRunner.manager.save.mockRejectedValueOnce(
+        new QueryFailedError("insert", undefined, {
+          code: "23505",
+        } as unknown as Error),
+      );
+
+      const result = await service.mergePayees(userId, {
+        targetPayeeId: "payee-1",
+        sourcePayeeId: "payee-2",
+        addAsAlias: true,
+      });
+
+      expect(result.aliasAdded).toBe(false);
+      expect(result.transactionsMigrated).toBe(3);
+      expect(result.sourcePayeeDeleted).toBe(true);
+      expect(queryRunner.query).toHaveBeenCalledWith(
+        "ROLLBACK TO SAVEPOINT merge_payee_alias",
+      );
+      expect(queryRunner.commitTransaction).toHaveBeenCalled();
     });
   });
 
