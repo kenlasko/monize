@@ -50,13 +50,23 @@ vi.mock('@/store/authStore', () => ({
   ),
 }));
 
-// Mock preferences store
+// Mock preferences store (mutable so tests can set a custom widget layout)
+const { prefsState } = vi.hoisted(() => ({
+  prefsState: {
+    current: {
+      twoFactorEnabled: true,
+      theme: 'system',
+      dashboardWidgets: [] as string[],
+    },
+  },
+}));
 vi.mock('@/store/preferencesStore', () => ({
   usePreferencesStore: (selector?: any) => {
     const state = {
-      preferences: { twoFactorEnabled: true, theme: 'system' },
+      preferences: prefsState.current,
       isLoaded: true,
       _hasHydrated: true,
+      updatePreferences: vi.fn(),
     };
     return selector ? selector(state) : state;
   },
@@ -178,6 +188,12 @@ vi.mock('@/components/dashboard/BudgetStatusWidget', () => ({
   BudgetStatusWidget: ({ isLoading }: any) => <div data-testid="budget-status">{isLoading ? 'loading' : 'loaded'}</div>,
 }));
 
+vi.mock('@/components/dashboard/FavouriteReportsWidget', () => ({
+  FavouriteReportsWidget: ({ isLoading }: any) => (
+    <div data-testid="favourite-reports">{isLoading ? 'loading' : 'loaded'}</div>
+  ),
+}));
+
 const mockTriggerAutoRefresh = vi.fn();
 vi.mock('@/hooks/usePriceRefresh', () => ({
   usePriceRefresh: () => ({
@@ -203,6 +219,11 @@ describe('DashboardPage', () => {
     mockGetPortfolioSummary.mockResolvedValue(null);
     authState.current.actingAsUserId = null;
     authState.current.delegateSections = null;
+    prefsState.current = {
+      twoFactorEnabled: true,
+      theme: 'system',
+      dashboardWidgets: [],
+    };
   });
 
   it('renders the welcome message with user name', async () => {
@@ -385,5 +406,51 @@ describe('DashboardPage', () => {
       expect(screen.getByTestId('top-movers')).toBeInTheDocument();
       expect(screen.getByTestId('favourite-securities')).toBeInTheDocument();
     });
+  });
+
+  it('shows the Customize button for the account owner', async () => {
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Customize')).toBeInTheDocument();
+    });
+  });
+
+  it('hides the Customize button in the delegate view', async () => {
+    authState.current.actingAsUserId = 'owner-1';
+    authState.current.delegateSections = { bills: false };
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('favourite-accounts')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Customize')).not.toBeInTheDocument();
+  });
+
+  it('renders only the configured widgets when the layout is customized', async () => {
+    prefsState.current.dashboardWidgets = ['insights', 'favourite-accounts'];
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('insights-widget')).toBeInTheDocument();
+      expect(screen.getByTestId('favourite-accounts')).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId('upcoming-bills')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('expenses-chart')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('net-worth-chart')).not.toBeInTheDocument();
+  });
+
+  it('renders the Favourite Reports widget when configured', async () => {
+    prefsState.current.dashboardWidgets = ['favourite-reports'];
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('favourite-reports')).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId('favourite-accounts')).not.toBeInTheDocument();
+  });
+
+  it('does not render the Favourite Reports widget in the default layout', async () => {
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('favourite-accounts')).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId('favourite-reports')).not.toBeInTheDocument();
   });
 });

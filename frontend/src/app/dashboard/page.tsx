@@ -1,37 +1,19 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Fragment, useState, useEffect, useCallback, useMemo } from 'react';
 import { subMonths, subWeeks, startOfWeek, format } from 'date-fns';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
-import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/store/authStore';
 import { usePreferencesStore } from '@/store/preferencesStore';
-import { FavouriteAccounts } from '@/components/dashboard/FavouriteAccounts';
-import { UpcomingBills } from '@/components/dashboard/UpcomingBills';
 import { GettingStarted } from '@/components/dashboard/GettingStarted';
-import { TopMovers } from '@/components/dashboard/TopMovers';
-import { FavouriteSecurities } from '@/components/dashboard/FavouriteSecurities';
-import { InsightsWidget } from '@/components/dashboard/InsightsWidget';
-import { BudgetStatusWidget } from '@/components/dashboard/BudgetStatusWidget';
-
-const ExpensesPieChart = dynamic(() => import('@/components/dashboard/ExpensesPieChart').then(m => m.ExpensesPieChart), {
-  ssr: false,
-  loading: () => <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 lg:min-h-[540px]" />,
-});
-const IncomeExpensesBarChart = dynamic(() => import('@/components/dashboard/IncomeExpensesBarChart').then(m => m.IncomeExpensesBarChart), {
-  ssr: false,
-  loading: () => <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[540px]" />,
-});
-const NetWorthChart = dynamic(() => import('@/components/dashboard/NetWorthChart').then(m => m.NetWorthChart), {
-  ssr: false,
-  loading: () => <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[500px]" />,
-});
-const AssetsVsLiabilities = dynamic(() => import('@/components/dashboard/AssetsVsLiabilities').then(m => m.AssetsVsLiabilities), {
-  ssr: false,
-  loading: () => <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[500px]" />,
-});
+import { CustomizeDashboardModal } from '@/components/dashboard/CustomizeDashboardModal';
+import {
+  DashboardWidgetContext,
+  delegateDashboardWidgets,
+  resolveDashboardWidgets,
+} from '@/components/dashboard/widget-registry';
 import { accountsApi } from '@/lib/accounts';
 import { transactionsApi } from '@/lib/transactions';
 import { categoriesApi } from '@/lib/categories';
@@ -74,6 +56,7 @@ function DashboardContent() {
   // path), so wait until the store has hydrated before firing.
   const authHydrated = useAuthStore((s) => s._hasHydrated);
   const weekStartsOn = (usePreferencesStore((s) => s.preferences?.weekStartsOn) ?? 1) as 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  const dashboardWidgets = usePreferencesStore((s) => s.preferences?.dashboardWidgets);
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -86,6 +69,7 @@ function DashboardContent() {
   const [favouriteSecurities, setFavouriteSecurities] = useState<FavouriteSecurityQuote[]>([]);
   const [hasSecurities, setHasSecurities] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showCustomize, setShowCustomize] = useState(false);
 
   const brokerageMarketValues = useMemo(() => {
     const map = new Map<string, number>();
@@ -213,6 +197,34 @@ function DashboardContent() {
     }
   }, [hasInvestments, isLoading, triggerAutoRefresh]);
 
+  const widgetContext: DashboardWidgetContext = {
+    accounts,
+    transactions,
+    categories,
+    scheduledTransactions,
+    topMovers,
+    favouriteSecurities,
+    netWorthData,
+    brokerageMarketValues,
+    isLoading,
+    hasInvestments,
+    hasSecurities,
+    isRefreshing,
+    onRefresh: triggerManualRefresh,
+    onAccountsChanged: loadDashboardData,
+  };
+
+  // Delegates always get the fixed delegate layout (the stored preference is
+  // the owner's); everyone else gets their own configured layout, falling
+  // back to the default when they never customized.
+  const visibleWidgets = useMemo(
+    () =>
+      isDelegateView
+        ? delegateDashboardWidgets(delegateSections)
+        : resolveDashboardWidgets(dashboardWidgets),
+    [isDelegateView, delegateSections, dashboardWidgets],
+  );
+
   return (
     <PageLayout>
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
@@ -222,69 +234,38 @@ function DashboardContent() {
             title={user?.firstName ? t('page.welcomeWithName', { name: user.firstName }) : `${t('page.welcomePrefix')}!`}
             subtitle={t('page.subtitle')}
             helpUrl="https://github.com/kenlasko/monize/wiki/Dashboard"
+            actions={
+              !isDelegateView ? (
+                <button
+                  onClick={() => setShowCustomize(true)}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  {t('customize.button')}
+                </button>
+              ) : undefined
+            }
           />
 
-          {isDelegateView ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              <FavouriteAccounts
-                accounts={accounts}
-                brokerageMarketValues={brokerageMarketValues}
-                isLoading={isLoading}
-                onAccountsChanged={loadDashboardData}
-              />
-              {delegateBills && (
-                <UpcomingBills
-                  scheduledTransactions={scheduledTransactions}
-                  accounts={accounts}
-                  isLoading={isLoading}
-                  maxItems={
-                    accounts.filter((a) => a.isFavourite && !a.isClosed)
-                      .length + 2
-                  }
-                />
-              )}
-            </div>
-          ) : (
-            <>
-              <GettingStarted />
+          {!isDelegateView && <GettingStarted />}
 
-              {/* Reports Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <FavouriteAccounts accounts={accounts} brokerageMarketValues={brokerageMarketValues} isLoading={isLoading} onAccountsChanged={loadDashboardData} />
-                <UpcomingBills
-                  scheduledTransactions={scheduledTransactions}
-                  accounts={accounts}
-                  isLoading={isLoading}
-                  maxItems={accounts.filter((a) => a.isFavourite && !a.isClosed).length + 2}
-                />
-              </div>
+          {/* Widget grid: consecutive visible widgets pair up into rows */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {visibleWidgets
+              .filter((w) => !w.shouldRender || w.shouldRender(widgetContext))
+              .map((w) => (
+                <Fragment key={w.id}>{w.render(widgetContext)}</Fragment>
+              ))}
+          </div>
 
-              {(isLoading || hasSecurities) && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                  <TopMovers movers={topMovers} isLoading={isLoading} hasInvestmentAccounts={hasInvestments} onRefresh={triggerManualRefresh} isRefreshing={isRefreshing} />
-                  <FavouriteSecurities securities={favouriteSecurities} isLoading={isLoading} onRefresh={triggerManualRefresh} isRefreshing={isRefreshing} />
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <NetWorthChart data={netWorthData} isLoading={isLoading} />
-                <AssetsVsLiabilities data={netWorthData} isLoading={isLoading} />
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <ExpensesPieChart
-                  transactions={transactions}
-                  categories={categories}
-                  isLoading={isLoading}
-                />
-                <IncomeExpensesBarChart transactions={transactions} isLoading={isLoading} />
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <BudgetStatusWidget isLoading={isLoading} />
-                <InsightsWidget isLoading={isLoading} />
-              </div>
-            </>
+          {!isDelegateView && (
+            <CustomizeDashboardModal
+              isOpen={showCustomize}
+              onClose={() => setShowCustomize(false)}
+            />
           )}
         </div>
       </main>

@@ -132,5 +132,22 @@
     "income": "Income",
     "expenses": "Expenses",
     "net": "Net"
+  },
+  "customize": {
+    "button": "Customize",
+    "title": "Customize dashboard",
+    "description": "Choose which widgets appear on your dashboard and the order they are shown in. Widgets flow left to right, two per row on large screens.",
+    "moveUp": "Move {name} up",
+    "moveDown": "Move {name} down",
+    "atLeastOne": "Select at least one widget to show on the dashboard.",
+    "reset": "Reset to default",
+    "toasts": {
+      "saveFailed": "Failed to save dashboard layout"
+    }
+  },
+  "favouriteReports": {
+    "title": "Favourite Reports",
+    "empty": "No favourite reports yet. Star reports on the Reports page to see them here.",
+    "browseReports": "Browse reports"
   }
 }

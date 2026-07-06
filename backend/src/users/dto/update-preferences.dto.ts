@@ -164,6 +164,23 @@ export class UpdatePreferencesDto {
   favouriteReportIds?: string[];
 
   @ApiPropertyOptional({
+    description:
+      "Ordered ids of the widgets shown on the dashboard (empty = default layout)",
+    example: ["favourite-accounts", "upcoming-bills"],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @MaxLength(50, { each: true })
+  @Matches(/^[a-z0-9-]+$/, {
+    each: true,
+    message:
+      "each value in dashboardWidgets must contain only lowercase letters, numbers, and hyphens",
+  })
+  @ArrayMaxSize(50)
+  dashboardWidgets?: string[];
+
+  @ApiPropertyOptional({
     description: "Show the Created At field in transaction forms",
   })
   @IsOptional()

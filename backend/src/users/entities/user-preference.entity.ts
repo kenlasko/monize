@@ -66,6 +66,16 @@ export class UserPreference {
   })
   favouriteReportIds: string[];
 
+  // Ordered ids of the widgets shown on the dashboard. Empty means the user
+  // has not customized the layout and gets the built-in default.
+  @Column({
+    name: "dashboard_widgets",
+    type: "text",
+    array: true,
+    default: "{}",
+  })
+  dashboardWidgets: string[];
+
   @Column({ name: "show_created_at", default: false })
   showCreatedAt: boolean;
 

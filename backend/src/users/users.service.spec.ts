@@ -428,6 +428,20 @@ describe("UsersService", () => {
       ]);
     });
 
+    it("updates dashboardWidgets", async () => {
+      preferencesRepository.findOne.mockResolvedValue({ ...mockPreferences });
+
+      await service.updatePreferences("user-1", {
+        dashboardWidgets: ["upcoming-bills", "favourite-accounts"],
+      });
+
+      const savedData = preferencesRepository.save.mock.calls[0][0];
+      expect(savedData.dashboardWidgets).toEqual([
+        "upcoming-bills",
+        "favourite-accounts",
+      ]);
+    });
+
     it("updates preferredExchanges", async () => {
       preferencesRepository.findOne.mockResolvedValue({ ...mockPreferences });
 

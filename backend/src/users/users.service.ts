@@ -202,6 +202,9 @@ export class UsersService {
     if (dto.favouriteReportIds !== undefined) {
       preferences.favouriteReportIds = dto.favouriteReportIds;
     }
+    if (dto.dashboardWidgets !== undefined) {
+      preferences.dashboardWidgets = dto.dashboardWidgets;
+    }
     if (dto.showCreatedAt !== undefined) {
       preferences.showCreatedAt = dto.showCreatedAt;
     }
