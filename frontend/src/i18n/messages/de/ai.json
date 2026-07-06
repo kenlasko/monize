@@ -8,7 +8,15 @@
     "title": "KI-Assistent",
     "expand": "Auf Vollbild erweitern",
     "collapse": "Auf Fenster verkleinern",
-    "close": "Schließen"
+    "close": "Schließen",
+    "moveCorner": "Panel in nächste Ecke verschieben",
+    "moveCornerTo": "Nach {corner} verschieben",
+    "corner": {
+      "bottom-right": "unten rechts",
+      "bottom-left": "unten links",
+      "top-right": "oben rechts",
+      "top-left": "oben links"
+    }
   },
   "chat": {
     "conversationSaved": "Gespräch in Ihrem Browser gespeichert",

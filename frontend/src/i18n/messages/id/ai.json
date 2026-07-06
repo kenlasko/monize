@@ -8,7 +8,15 @@
     "title": "Asisten AI",
     "expand": "Perbesar ke layar penuh",
     "collapse": "Ciutkan ke panel",
-    "close": "Tutup"
+    "close": "Tutup",
+    "moveCorner": "Pindahkan panel ke sudut berikutnya",
+    "moveCornerTo": "Pindahkan ke {corner}",
+    "corner": {
+      "bottom-right": "kanan bawah",
+      "bottom-left": "kiri bawah",
+      "top-right": "kanan atas",
+      "top-left": "kiri atas"
+    }
   },
   "chat": {
     "conversationSaved": "Percakapan disimpan di browser Anda",

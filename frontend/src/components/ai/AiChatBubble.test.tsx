@@ -43,10 +43,16 @@ const launcher = () => screen.queryByLabelText('Open AI assistant');
 
 beforeEach(() => {
   vi.clearAllMocks();
+  window.localStorage.clear();
   mockPathname = '/dashboard';
   setEnabled(true);
   setMobile(false);
 });
+
+// Viewport is jsdom's default 1024x768; panel is 420x600 with a 16px margin.
+const PLACEMENT_KEY = 'monize.aiBubble.placement';
+const DEFAULT_LEFT = `${1024 - 420 - 16}px`; // bottom-right
+const DEFAULT_TOP = `${768 - 600 - 16}px`;
 
 describe('AiChatBubble', () => {
   it('renders nothing when the preference is off', () => {
@@ -140,5 +146,70 @@ describe('AiChatBubble', () => {
     // The mobile bottom sheet sits over a scrim, so it still closes on nav.
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(launcher()).toBeInTheDocument();
+  });
+
+  it('opens the desktop panel at the default bottom-right corner', () => {
+    render(<AiChatBubble />);
+    fireEvent.click(launcher()!);
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.style.left).toBe(DEFAULT_LEFT);
+    expect(dialog.style.top).toBe(DEFAULT_TOP);
+    expect(screen.getByLabelText('Move panel to next corner')).toBeInTheDocument();
+  });
+
+  it('cycles the panel through corners and persists the new position', () => {
+    render(<AiChatBubble />);
+    fireEvent.click(launcher()!);
+
+    const move = screen.getByLabelText('Move panel to next corner');
+
+    // bottom-right -> bottom-left: hugs the left edge, keeps the same bottom.
+    fireEvent.click(move);
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.style.left).toBe('16px');
+    expect(dialog.style.top).toBe(DEFAULT_TOP);
+
+    const stored = JSON.parse(window.localStorage.getItem(PLACEMENT_KEY)!);
+    expect(stored.corner).toBe('bottom-left');
+    expect(stored.x).toBe(16);
+
+    // bottom-left -> top-right: hugs the right edge and the top.
+    fireEvent.click(move);
+    expect(dialog.style.left).toBe(DEFAULT_LEFT);
+    expect(dialog.style.top).toBe('16px');
+    expect(JSON.parse(window.localStorage.getItem(PLACEMENT_KEY)!).corner).toBe(
+      'top-right',
+    );
+  });
+
+  it('restores a persisted position when the panel is opened', () => {
+    window.localStorage.setItem(
+      PLACEMENT_KEY,
+      JSON.stringify({ x: 120, y: 90, corner: 'top-left' }),
+    );
+
+    render(<AiChatBubble />);
+    fireEvent.click(launcher()!);
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.style.left).toBe('120px');
+    expect(dialog.style.top).toBe('90px');
+  });
+
+  it('uses the fixed bottom-sheet (no floating position) on mobile', () => {
+    setMobile(true);
+    render(<AiChatBubble />);
+    fireEvent.click(launcher()!);
+
+    const dialog = screen.getByRole('dialog');
+    // Mobile keeps the CSS-driven bottom sheet: no inline positioning and no
+    // reposition control.
+    expect(dialog.style.left).toBe('');
+    expect(dialog.style.top).toBe('');
+    expect(dialog.className).toContain('bottom-0');
+    expect(
+      screen.queryByLabelText('Move panel to next corner'),
+    ).not.toBeInTheDocument();
   });
 });

@@ -8,7 +8,15 @@
     "title": "AI-assistent",
     "expand": "Naar volledig scherm vergroten",
     "collapse": "Tot paneel verkleinen",
-    "close": "Sluiten"
+    "close": "Sluiten",
+    "moveCorner": "Paneel naar volgende hoek verplaatsen",
+    "moveCornerTo": "Naar {corner} verplaatsen",
+    "corner": {
+      "bottom-right": "rechtsonder",
+      "bottom-left": "linksonder",
+      "top-right": "rechtsboven",
+      "top-left": "linksboven"
+    }
   },
   "chat": {
     "conversationSaved": "Gesprek opgeslagen in je browser",

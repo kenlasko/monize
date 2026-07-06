@@ -8,7 +8,15 @@
     "title": "AI 어시스턴트",
     "expand": "전체 화면으로 확대",
     "collapse": "패널로 축소",
-    "close": "닫기"
+    "close": "닫기",
+    "moveCorner": "패널을 다음 모서리로 이동",
+    "moveCornerTo": "{corner}(으)로 이동",
+    "corner": {
+      "bottom-right": "오른쪽 아래",
+      "bottom-left": "왼쪽 아래",
+      "top-right": "오른쪽 위",
+      "top-left": "왼쪽 위"
+    }
   },
   "chat": {
     "conversationSaved": "대화가 브라우저에 저장되었습니다",

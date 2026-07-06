@@ -8,7 +8,15 @@
     "title": "AI アシスタント",
     "expand": "全画面に拡大",
     "collapse": "パネルに戻す",
-    "close": "閉じる"
+    "close": "閉じる",
+    "moveCorner": "パネルを次の角に移動",
+    "moveCornerTo": "{corner}に移動",
+    "corner": {
+      "bottom-right": "右下",
+      "bottom-left": "左下",
+      "top-right": "右上",
+      "top-left": "左上"
+    }
   },
   "chat": {
     "conversationSaved": "会話はブラウザに保存されました",

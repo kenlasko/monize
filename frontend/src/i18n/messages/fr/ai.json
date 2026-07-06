@@ -8,7 +8,15 @@
     "title": "Assistant IA",
     "expand": "Passer en plein écran",
     "collapse": "Réduire au panneau",
-    "close": "Fermer"
+    "close": "Fermer",
+    "moveCorner": "Déplacer le panneau vers le coin suivant",
+    "moveCornerTo": "Déplacer {corner}",
+    "corner": {
+      "bottom-right": "en bas à droite",
+      "bottom-left": "en bas à gauche",
+      "top-right": "en haut à droite",
+      "top-left": "en haut à gauche"
+    }
   },
   "chat": {
     "conversationSaved": "Conversation enregistrée dans votre navigateur",
