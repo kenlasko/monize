@@ -27,7 +27,12 @@
       "closed": "Closed",
       "netWorthAll": "Net Worth: All",
       "inNetWorth": "In Net Worth",
-      "excludedFromNetWorth": "Excluded from Net Worth"
+      "excludedFromNetWorth": "Excluded from Net Worth",
+      "typePlaceholder": "Account Type: All",
+      "typeAriaLabel": "Filter by account type",
+      "searchPlaceholder": "Search accounts...",
+      "searchAriaLabel": "Search accounts by name",
+      "searchClear": "Clear search"
     },
     "accountCount": "{filtered} of {total} accounts",
     "groupCount": "{count, plural, one {# account} other {# accounts}}",

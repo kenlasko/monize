@@ -27,7 +27,12 @@
       "closed": "已關閉",
       "netWorthAll": "資產淨值：全部",
       "inNetWorth": "計入資產淨值",
-      "excludedFromNetWorth": "排除於資產淨值外"
+      "excludedFromNetWorth": "排除於資產淨值外",
+      "typePlaceholder": "帳戶類型：全部",
+      "typeAriaLabel": "依帳戶類型篩選",
+      "searchPlaceholder": "搜尋帳戶...",
+      "searchAriaLabel": "依名稱搜尋帳戶",
+      "searchClear": "清除搜尋"
     },
     "accountCount": "{filtered} / {total} 個科目",
     "groupCount": "{count, plural, one {# 個科目} other {# 個科目}}",

@@ -27,7 +27,12 @@
       "closed": "Chiusi",
       "netWorthAll": "Patrimonio netto: Tutti",
       "inNetWorth": "Incluso nel patrimonio netto",
-      "excludedFromNetWorth": "Escluso dal patrimonio netto"
+      "excludedFromNetWorth": "Escluso dal patrimonio netto",
+      "typePlaceholder": "Tipo di conto: Tutti",
+      "typeAriaLabel": "Filtra per tipo di conto",
+      "searchPlaceholder": "Cerca conti...",
+      "searchAriaLabel": "Cerca conti per nome",
+      "searchClear": "Cancella ricerca"
     },
     "accountCount": "{filtered} di {total} conti",
     "groupCount": "{count, plural, one {# conto} other {# conti}}",

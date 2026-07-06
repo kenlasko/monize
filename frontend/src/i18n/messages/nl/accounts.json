@@ -27,7 +27,12 @@
       "closed": "Gesloten",
       "netWorthAll": "Nettowaarde: alle",
       "inNetWorth": "In nettowaarde",
-      "excludedFromNetWorth": "Uitgesloten van nettowaarde"
+      "excludedFromNetWorth": "Uitgesloten van nettowaarde",
+      "typePlaceholder": "Rekeningtype: Alle",
+      "typeAriaLabel": "Filteren op rekeningtype",
+      "searchPlaceholder": "Rekeningen zoeken...",
+      "searchAriaLabel": "Rekeningen op naam zoeken",
+      "searchClear": "Zoekopdracht wissen"
     },
     "accountCount": "{filtered} van {total} rekeningen",
     "groupCount": "{count, plural, one {# rekening} other {# rekeningen}}",

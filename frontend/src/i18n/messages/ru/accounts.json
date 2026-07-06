@@ -27,7 +27,12 @@
       "closed": "Закрытые",
       "netWorthAll": "Чистая стоимость: все",
       "inNetWorth": "Включён в чистую стоимость",
-      "excludedFromNetWorth": "Исключён из чистой стоимости"
+      "excludedFromNetWorth": "Исключён из чистой стоимости",
+      "typePlaceholder": "Тип счёта: Все",
+      "typeAriaLabel": "Фильтровать по типу счёта",
+      "searchPlaceholder": "Поиск счетов...",
+      "searchAriaLabel": "Поиск счетов по имени",
+      "searchClear": "Очистить поиск"
     },
     "accountCount": "{filtered} из {total} счетов",
     "groupCount": "{count, plural, one {# счёт} other {# счетов}}",

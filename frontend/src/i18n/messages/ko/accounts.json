@@ -27,7 +27,12 @@
       "closed": "종료",
       "netWorthAll": "순자산가액: 전체",
       "inNetWorth": "순자산가액 포함",
-      "excludedFromNetWorth": "순자산가액 제외"
+      "excludedFromNetWorth": "순자산가액 제외",
+      "typePlaceholder": "계좌 유형: 전체",
+      "typeAriaLabel": "계좌 유형으로 필터링",
+      "searchPlaceholder": "계좌 검색...",
+      "searchAriaLabel": "이름으로 계좌 검색",
+      "searchClear": "검색 지우기"
     },
     "accountCount": "{total}개 중 {filtered}개 계정",
     "groupCount": "{count, plural, one {계정 #개} other {계정 #개}}",

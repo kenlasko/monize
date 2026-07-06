@@ -27,7 +27,12 @@
       "closed": "閉鎖済み",
       "netWorthAll": "純資産：すべて",
       "inNetWorth": "純資産に含む",
-      "excludedFromNetWorth": "純資産から除外"
+      "excludedFromNetWorth": "純資産から除外",
+      "typePlaceholder": "勘定科目の種類：すべて",
+      "typeAriaLabel": "勘定科目の種類で絞り込む",
+      "searchPlaceholder": "勘定科目を検索...",
+      "searchAriaLabel": "名前で勘定科目を検索",
+      "searchClear": "検索をクリア"
     },
     "accountCount": "{total} 件中 {filtered} 件の勘定科目",
     "groupCount": "{count, plural, one {# 件の勘定科目} other {# 件の勘定科目}}",

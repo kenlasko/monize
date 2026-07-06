@@ -27,7 +27,12 @@
       "closed": "Geschlossen",
       "netWorthAll": "Reinvermögen: Alle",
       "inNetWorth": "Im Reinvermögen",
-      "excludedFromNetWorth": "Vom Reinvermögen ausgeschlossen"
+      "excludedFromNetWorth": "Vom Reinvermögen ausgeschlossen",
+      "typePlaceholder": "Kontotyp: Alle",
+      "typeAriaLabel": "Nach Kontotyp filtern",
+      "searchPlaceholder": "Konten suchen...",
+      "searchAriaLabel": "Konten nach Namen suchen",
+      "searchClear": "Suche löschen"
     },
     "accountCount": "{filtered} von {total} Konten",
     "groupCount": "{count, plural, one {# Konto} other {# Konten}}",

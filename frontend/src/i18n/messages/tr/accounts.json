@@ -27,7 +27,12 @@
       "closed": "Kapalı",
       "netWorthAll": "Net Değer: Tümü",
       "inNetWorth": "Net Değerde",
-      "excludedFromNetWorth": "Net Değerden Hariç"
+      "excludedFromNetWorth": "Net Değerden Hariç",
+      "typePlaceholder": "Hesap Türü: Tümü",
+      "typeAriaLabel": "Hesap türüne göre filtrele",
+      "searchPlaceholder": "Hesap ara...",
+      "searchAriaLabel": "Hesapları ada göre ara",
+      "searchClear": "Aramayı temizle"
     },
     "accountCount": "{total} hesaptan {filtered} tanesi",
     "groupCount": "{count, plural, one {# hesap} other {# hesap}}",

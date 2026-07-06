@@ -16,6 +16,7 @@ import { useLongPress } from '@/hooks/useLongPress';
 import { RowActionSheet } from '@/components/ui/row-actions/RowActionSheet';
 import { useTableDensity, nextDensity, type DensityLevel } from '@/hooks/useTableDensity';
 import { SortIcon } from '@/components/ui/SortIcon';
+import { MultiSelect, MultiSelectOption } from '@/components/ui/MultiSelect';
 import { formatAccountType, countLogicalAccounts } from '@/lib/account-utils';
 
 type SortField = 'name' | 'type' | 'balance' | 'status';
@@ -26,6 +27,8 @@ const STORAGE_KEYS = {
   showFilters: 'accounts.filter.showFilters',
   status: 'accounts.filter.status',
   netWorth: 'accounts.filter.netWorth',
+  types: 'accounts.filter.types',
+  search: 'accounts.filter.search',
   sortField: 'accounts.filter.sortField',
   sortDirection: 'accounts.filter.sortDirection',
   density: 'accounts.filter.density',
@@ -131,6 +134,15 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, def
   const [filterNetWorth, setFilterNetWorth] = useState<'included' | 'excluded' | ''>(() =>
     getStoredValue<'included' | 'excluded' | ''>(STORAGE_KEYS.netWorth, '')
   );
+  // Account-type filter: an empty list means "all types". Persisted so the
+  // chosen types survive navigating away and back to the page.
+  const [filterTypes, setFilterTypes] = useState<AccountType[]>(() =>
+    getStoredValue<AccountType[]>(STORAGE_KEYS.types, [])
+  );
+  // Free-text filter on account name.
+  const [filterSearch, setFilterSearch] = useState<string>(() =>
+    getStoredValue<string>(STORAGE_KEYS.search, '')
+  );
 
   // Density state - initialize from localStorage
   const [density, setDensity] = useState<DensityLevel>(() =>
@@ -167,6 +179,14 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, def
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.netWorth, JSON.stringify(filterNetWorth));
   }, [filterNetWorth]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.types, JSON.stringify(filterTypes));
+  }, [filterTypes]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.search, JSON.stringify(filterSearch));
+  }, [filterSearch]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.sortField, JSON.stringify(sortField));
@@ -238,6 +258,14 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, def
         filterNetWorth === 'excluded' ? a.excludeFromNetWorth : !a.excludeFromNetWorth
       );
     }
+    if (filterTypes.length > 0) {
+      const typeSet = new Set(filterTypes);
+      result = result.filter((a) => typeSet.has(a.accountType));
+    }
+    const search = filterSearch.trim().toLowerCase();
+    if (search) {
+      result = result.filter((a) => a.name.toLowerCase().includes(search));
+    }
 
     // Apply sorting
     result.sort((a, b) => {
@@ -261,7 +289,18 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, def
     });
 
     return result;
-  }, [accounts, favOverrides, filterStatus, filterNetWorth, sortField, sortDirection]);
+  }, [accounts, favOverrides, filterStatus, filterNetWorth, filterTypes, filterSearch, sortField, sortDirection]);
+
+  // Account-type options for the type filter, limited to the types actually
+  // present and ordered to match the grouped list below (unknown types last).
+  const typeOptions = useMemo<MultiSelectOption[]>(() => {
+    const present = new Set(accounts.map((a) => a.accountType));
+    const ordered = ACCOUNT_TYPE_ORDER.filter((type) => present.has(type));
+    for (const type of present) {
+      if (!ordered.includes(type)) ordered.push(type);
+    }
+    return ordered.map((type) => ({ value: type, label: formatAccountType(type, tc) }));
+  }, [accounts, tc]);
 
   // Build a map of account IDs to names for showing linked account pairs
   const accountNameMap = useMemo(() => {
@@ -407,8 +446,12 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, def
   const clearFilters = () => {
     setFilterStatus('');
     setFilterNetWorth('');
+    setFilterTypes([]);
+    setFilterSearch('');
     localStorage.removeItem(STORAGE_KEYS.status);
     localStorage.removeItem(STORAGE_KEYS.netWorth);
+    localStorage.removeItem(STORAGE_KEYS.types);
+    localStorage.removeItem(STORAGE_KEYS.search);
   };
 
 
@@ -569,6 +612,41 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, def
               >
                 {t('list.filter.closed')}
               </button>
+              </div>
+
+              {/* Account-type filter (multi-select) */}
+              <div className="w-full sm:w-52">
+                <MultiSelect
+                  ariaLabel={t('list.filter.typeAriaLabel')}
+                  options={typeOptions}
+                  value={filterTypes}
+                  onChange={(vals) => setFilterTypes(vals as AccountType[])}
+                  placeholder={t('list.filter.typePlaceholder')}
+                />
+              </div>
+
+              {/* Free-text name filter */}
+              <div className="relative w-full sm:w-52">
+                <input
+                  type="text"
+                  value={filterSearch}
+                  onChange={(e) => setFilterSearch(e.target.value)}
+                  placeholder={t('list.filter.searchPlaceholder')}
+                  aria-label={t('list.filter.searchAriaLabel')}
+                  className="w-full text-sm font-sans border border-gray-300 dark:border-gray-600 rounded-md pl-3 pr-8 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 dark:placeholder-gray-400"
+                />
+                {filterSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setFilterSearch('')}
+                    aria-label={t('list.filter.searchClear')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
               </div>
 
               {/* Net Worth filter -- only shown when at least one account is excluded */}

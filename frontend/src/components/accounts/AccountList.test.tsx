@@ -452,6 +452,126 @@ describe('AccountList', () => {
     expect(screen.queryByDisplayValue('Net Worth: All')).not.toBeInTheDocument();
   });
 
+  it('filters accounts by text search on name', () => {
+    const accounts = [
+      createAccount({ id: 'a1', name: 'My Chequing', accountType: 'CHEQUING' }),
+      createAccount({ id: 'a2', name: 'My Savings', accountType: 'SAVINGS' }),
+    ];
+
+    render(
+      <AccountList accounts={accounts} onEdit={mockOnEdit} defaultCurrency="CAD" convertToDefault={exchangeMocks.convertToDefault} onRefresh={mockOnRefresh} />
+    );
+
+    fireEvent.change(screen.getByLabelText('Search accounts by name'), {
+      target: { value: 'chequing' },
+    });
+
+    expect(screen.getByText('1 of 2 accounts')).toBeInTheDocument();
+    expect(screen.getByText('My Chequing')).toBeInTheDocument();
+    expect(screen.queryByText('My Savings')).not.toBeInTheDocument();
+  });
+
+  it('clears the text search via the clear button', () => {
+    const accounts = [
+      createAccount({ id: 'a1', name: 'My Chequing', accountType: 'CHEQUING' }),
+      createAccount({ id: 'a2', name: 'My Savings', accountType: 'SAVINGS' }),
+    ];
+
+    render(
+      <AccountList accounts={accounts} onEdit={mockOnEdit} defaultCurrency="CAD" convertToDefault={exchangeMocks.convertToDefault} onRefresh={mockOnRefresh} />
+    );
+
+    fireEvent.change(screen.getByLabelText('Search accounts by name'), {
+      target: { value: 'chequing' },
+    });
+    expect(screen.getByText('1 of 2 accounts')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText('Clear search'));
+    expect(screen.getByText('2 of 2 accounts')).toBeInTheDocument();
+  });
+
+  it('filters accounts by one or more account types', () => {
+    const accounts = [
+      createAccount({ id: 'a1', name: 'My Chequing', accountType: 'CHEQUING' }),
+      createAccount({ id: 'a2', name: 'My Savings', accountType: 'SAVINGS' }),
+    ];
+
+    render(
+      <AccountList accounts={accounts} onEdit={mockOnEdit} defaultCurrency="CAD" convertToDefault={exchangeMocks.convertToDefault} onRefresh={mockOnRefresh} />
+    );
+
+    // Open the account-type multi-select. Options render as checkboxes ordered
+    // by ACCOUNT_TYPE_ORDER, so index 1 is SAVINGS (after CHEQUING).
+    fireEvent.click(screen.getByRole('button', { name: 'Filter by account type' }));
+    const checkboxes = screen.getAllByRole('checkbox');
+    fireEvent.click(checkboxes[1]);
+
+    expect(screen.getByText('1 of 2 accounts')).toBeInTheDocument();
+    expect(screen.getByText('My Savings')).toBeInTheDocument();
+    expect(screen.queryByText('My Chequing')).not.toBeInTheDocument();
+  });
+
+  it('persists type and search filters to localStorage', () => {
+    const accounts = [
+      createAccount({ id: 'a1', name: 'My Chequing', accountType: 'CHEQUING' }),
+      createAccount({ id: 'a2', name: 'My Savings', accountType: 'SAVINGS' }),
+    ];
+
+    render(
+      <AccountList accounts={accounts} onEdit={mockOnEdit} defaultCurrency="CAD" convertToDefault={exchangeMocks.convertToDefault} onRefresh={mockOnRefresh} />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Filter by account type' }));
+    fireEvent.click(screen.getAllByRole('checkbox')[1]);
+    fireEvent.change(screen.getByLabelText('Search accounts by name'), {
+      target: { value: 'sav' },
+    });
+
+    expect(localStorage.getItem('accounts.filter.types')).toBe(JSON.stringify(['SAVINGS']));
+    expect(localStorage.getItem('accounts.filter.search')).toBe(JSON.stringify('sav'));
+  });
+
+  it('initializes type and search filters from localStorage', () => {
+    localStorage.setItem('accounts.filter.types', JSON.stringify(['SAVINGS']));
+    localStorage.setItem('accounts.filter.search', JSON.stringify(''));
+    const accounts = [
+      createAccount({ id: 'a1', name: 'My Chequing', accountType: 'CHEQUING' }),
+      createAccount({ id: 'a2', name: 'My Savings', accountType: 'SAVINGS' }),
+    ];
+
+    render(
+      <AccountList accounts={accounts} onEdit={mockOnEdit} defaultCurrency="CAD" convertToDefault={exchangeMocks.convertToDefault} onRefresh={mockOnRefresh} />
+    );
+
+    expect(screen.getByText('1 of 2 accounts')).toBeInTheDocument();
+    expect(screen.getByText('My Savings')).toBeInTheDocument();
+    expect(screen.queryByText('My Chequing')).not.toBeInTheDocument();
+  });
+
+  it('Clear Filters resets the type and search filters', () => {
+    const accounts = [
+      createAccount({ id: 'a1', name: 'My Chequing', accountType: 'CHEQUING' }),
+      createAccount({ id: 'a2', name: 'My Savings', accountType: 'SAVINGS' }),
+    ];
+
+    render(
+      <AccountList accounts={accounts} onEdit={mockOnEdit} defaultCurrency="CAD" convertToDefault={exchangeMocks.convertToDefault} onRefresh={mockOnRefresh} />
+    );
+
+    // A search matching nothing empties the list and surfaces Clear Filters.
+    fireEvent.change(screen.getByLabelText('Search accounts by name'), {
+      target: { value: 'no-such-account' },
+    });
+    expect(screen.getByText('No accounts match your filters.')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Clear Filters'));
+
+    expect(screen.getByText('2 of 2 accounts')).toBeInTheDocument();
+    // The persistence effect re-writes the reset (empty) value after clearing.
+    expect(localStorage.getItem('accounts.filter.search')).toBe(JSON.stringify(''));
+    expect(localStorage.getItem('accounts.filter.types')).toBe(JSON.stringify([]));
+  });
+
   it('shows "No accounts match your filters" and Clear Filters button when filters exclude all accounts', () => {
     const accounts = [
       createAccount({ id: 'a1', name: 'Chequing Only', accountType: 'CHEQUING', isClosed: false }),

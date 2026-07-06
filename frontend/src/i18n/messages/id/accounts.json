@@ -27,7 +27,12 @@
       "closed": "Ditutup",
       "netWorthAll": "Nilai Bersih: Semua",
       "inNetWorth": "Dalam Nilai Bersih",
-      "excludedFromNetWorth": "Dikecualikan dari Nilai Bersih"
+      "excludedFromNetWorth": "Dikecualikan dari Nilai Bersih",
+      "typePlaceholder": "Jenis Akun: Semua",
+      "typeAriaLabel": "Filter menurut jenis akun",
+      "searchPlaceholder": "Cari akun...",
+      "searchAriaLabel": "Cari akun berdasarkan nama",
+      "searchClear": "Hapus pencarian"
     },
     "accountCount": "{filtered} dari {total} akun",
     "groupCount": "{count, plural, one {# akun} other {# akun}}",

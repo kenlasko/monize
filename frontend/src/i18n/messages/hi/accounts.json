@@ -27,7 +27,12 @@
       "closed": "बंद",
       "netWorthAll": "शुद्ध संपत्ति: सभी",
       "inNetWorth": "शुद्ध संपत्ति में",
-      "excludedFromNetWorth": "शुद्ध संपत्ति से बाहर"
+      "excludedFromNetWorth": "शुद्ध संपत्ति से बाहर",
+      "typePlaceholder": "खाता प्रकार: सभी",
+      "typeAriaLabel": "खाता प्रकार के अनुसार फ़िल्टर करें",
+      "searchPlaceholder": "खाते खोजें...",
+      "searchAriaLabel": "नाम से खाते खोजें",
+      "searchClear": "खोज साफ़ करें"
     },
     "accountCount": "{total} में से {filtered} खाते",
     "groupCount": "{count, plural, one {# खाता} other {# खाते}}",

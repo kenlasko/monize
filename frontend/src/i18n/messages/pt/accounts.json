@@ -27,7 +27,12 @@
       "closed": "Fechadas",
       "netWorthAll": "Valor Líquido: Todas",
       "inNetWorth": "Incluída no Valor Líquido",
-      "excludedFromNetWorth": "Excluída do Valor Líquido"
+      "excludedFromNetWorth": "Excluída do Valor Líquido",
+      "typePlaceholder": "Tipo de conta: Todas",
+      "typeAriaLabel": "Filtrar por tipo de conta",
+      "searchPlaceholder": "Pesquisar contas...",
+      "searchAriaLabel": "Pesquisar contas por nome",
+      "searchClear": "Limpar pesquisa"
     },
     "accountCount": "{filtered} de {total} contas",
     "groupCount": "{count, plural, one {# conta} other {# contas}}",

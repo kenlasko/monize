@@ -27,7 +27,12 @@
       "closed": "Закриті",
       "netWorthAll": "Чистий капітал: усі",
       "inNetWorth": "У чистому капіталі",
-      "excludedFromNetWorth": "Виключені з чистого капіталу"
+      "excludedFromNetWorth": "Виключені з чистого капіталу",
+      "typePlaceholder": "Тип рахунку: Усі",
+      "typeAriaLabel": "Фільтрувати за типом рахунку",
+      "searchPlaceholder": "Пошук рахунків...",
+      "searchAriaLabel": "Пошук рахунків за назвою",
+      "searchClear": "Очистити пошук"
     },
     "accountCount": "{filtered} з {total} рахунків",
     "groupCount": "{count, plural, one {# рахунок} other {# рахунків}}",

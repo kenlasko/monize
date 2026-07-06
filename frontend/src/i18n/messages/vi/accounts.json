@@ -27,7 +27,12 @@
       "closed": "Đã đóng",
       "netWorthAll": "Tài sản ròng: Tất cả",
       "inNetWorth": "Trong tài sản ròng",
-      "excludedFromNetWorth": "Loại khỏi tài sản ròng"
+      "excludedFromNetWorth": "Loại khỏi tài sản ròng",
+      "typePlaceholder": "Loại tài khoản: Tất cả",
+      "typeAriaLabel": "Lọc theo loại tài khoản",
+      "searchPlaceholder": "Tìm kiếm tài khoản...",
+      "searchAriaLabel": "Tìm kiếm tài khoản theo tên",
+      "searchClear": "Xóa tìm kiếm"
     },
     "accountCount": "{filtered} trong {total} tài khoản",
     "groupCount": "{count, plural, one {# tài khoản} other {# tài khoản}}",

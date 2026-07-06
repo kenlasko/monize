@@ -27,7 +27,12 @@
       "closed": "Zamknięte",
       "netWorthAll": "Wartość netto: wszystkie",
       "inNetWorth": "W wartości netto",
-      "excludedFromNetWorth": "Wykluczone z wartości netto"
+      "excludedFromNetWorth": "Wykluczone z wartości netto",
+      "typePlaceholder": "Typ konta: Wszystkie",
+      "typeAriaLabel": "Filtruj według typu konta",
+      "searchPlaceholder": "Szukaj kont...",
+      "searchAriaLabel": "Szukaj kont według nazwy",
+      "searchClear": "Wyczyść wyszukiwanie"
     },
     "accountCount": "{filtered} z {total} kont",
     "groupCount": "{count, plural, one {# konto} few {# konta} many {# kont} other {# konta}}",

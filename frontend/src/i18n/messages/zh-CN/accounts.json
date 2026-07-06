@@ -27,7 +27,12 @@
       "closed": "已关闭",
       "netWorthAll": "资产净值：全部",
       "inNetWorth": "计入资产净值",
-      "excludedFromNetWorth": "不计入资产净值"
+      "excludedFromNetWorth": "不计入资产净值",
+      "typePlaceholder": "账户类型：全部",
+      "typeAriaLabel": "按账户类型筛选",
+      "searchPlaceholder": "搜索账户...",
+      "searchAriaLabel": "按名称搜索账户",
+      "searchClear": "清除搜索"
     },
     "accountCount": "{total} 个账户中的 {filtered} 个",
     "groupCount": "{count, plural, one {# 个账户} other {# 个账户}}",

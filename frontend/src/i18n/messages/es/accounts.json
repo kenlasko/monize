@@ -27,7 +27,12 @@
       "closed": "Cerradas",
       "netWorthAll": "Patrimonio neto: Todas",
       "inNetWorth": "En patrimonio neto",
-      "excludedFromNetWorth": "Excluidas del patrimonio neto"
+      "excludedFromNetWorth": "Excluidas del patrimonio neto",
+      "typePlaceholder": "Tipo de cuenta: Todas",
+      "typeAriaLabel": "Filtrar por tipo de cuenta",
+      "searchPlaceholder": "Buscar cuentas...",
+      "searchAriaLabel": "Buscar cuentas por nombre",
+      "searchClear": "Borrar búsqueda"
     },
     "accountCount": "{filtered} de {total} cuentas",
     "groupCount": "{count, plural, one {# cuenta} other {# cuentas}}",

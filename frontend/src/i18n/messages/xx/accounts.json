@@ -27,7 +27,12 @@
       "closed": "[XX-Closed-XX]",
       "netWorthAll": "[XX-Net Worth: All-XX]",
       "inNetWorth": "[XX-In Net Worth-XX]",
-      "excludedFromNetWorth": "[XX-Excluded from Net Worth-XX]"
+      "excludedFromNetWorth": "[XX-Excluded from Net Worth-XX]",
+      "typePlaceholder": "[XX-Account Type: All-XX]",
+      "typeAriaLabel": "[XX-Filter by account type-XX]",
+      "searchPlaceholder": "[XX-Search accounts...-XX]",
+      "searchAriaLabel": "[XX-Search accounts by name-XX]",
+      "searchClear": "[XX-Clear search-XX]"
     },
     "accountCount": "[XX-{filtered} of {total} accounts-XX]",
     "groupCount": "[XX-{count, plural, one {# account} other {# accounts}}-XX]",
