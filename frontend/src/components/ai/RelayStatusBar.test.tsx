@@ -27,7 +27,7 @@ describe('RelayStatusBar', () => {
       render(<RelayStatusBar enabled />);
     });
     await waitFor(() =>
-      expect(screen.getByText('Assistant listening')).toBeInTheDocument(),
+      expect(screen.getByText('MCP Agent listening')).toBeInTheDocument(),
     );
   });
 
@@ -37,7 +37,7 @@ describe('RelayStatusBar', () => {
       render(<RelayStatusBar enabled />);
     });
     await waitFor(() =>
-      expect(screen.getByText('Assistant offline')).toBeInTheDocument(),
+      expect(screen.getByText('MCP Agent offline')).toBeInTheDocument(),
     );
   });
 

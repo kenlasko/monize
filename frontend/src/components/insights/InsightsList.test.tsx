@@ -351,7 +351,7 @@ describe('InsightsList', () => {
 
     // Live tunnel status from the shared RelayStatusBar, polled via getRelayStatus.
     await waitFor(() => {
-      expect(screen.getByText('Assistant listening')).toBeInTheDocument();
+      expect(screen.getByText('MCP Agent listening')).toBeInTheDocument();
     });
     expect(mockGetRelayStatus).toHaveBeenCalled();
     // Generation stays available: it is served by the connected relay agent

@@ -51,7 +51,7 @@ describe('ProviderList — MCP Relay row', () => {
 
     expect(screen.getByText('MCP Relay')).toBeInTheDocument();
     await waitFor(() =>
-      expect(screen.getByText('Assistant listening')).toBeInTheDocument(),
+      expect(screen.getByText('MCP Agent listening')).toBeInTheDocument(),
     );
     // Relay rows have no connection Test button (nothing to probe).
     expect(screen.queryByText('Test')).not.toBeInTheDocument();

@@ -57,7 +57,7 @@ describe('ProviderConfigForm — MCP Relay provider type', () => {
 
     // Live status reflects the polled relay state.
     await waitFor(() =>
-      expect(screen.getByText('Assistant listening')).toBeInTheDocument(),
+      expect(screen.getByText('MCP Agent listening')).toBeInTheDocument(),
     );
   });
 });
