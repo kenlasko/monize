@@ -8,6 +8,7 @@
     "title": "Cuentas favoritas",
     "empty": "Aún no hay cuentas favoritas. Marca cuentas como favoritas para verlas aquí.",
     "reorder": "Reordenar",
+    "dragToReorder": "Arrastra las cuentas para reordenarlas o usa los botones de flecha.",
     "done": "Listo",
     "moveUp": "Mover arriba",
     "moveDown": "Mover abajo",
@@ -132,5 +133,26 @@
     "income": "Ingresos",
     "expenses": "Gastos",
     "net": "Neto"
+  },
+  "customize": {
+    "button": "Personalizar",
+    "title": "Personalizar el panel",
+    "description": "El diseño de abajo refleja tu panel de control: los widgets fluyen de izquierda a derecha, dos por fila en pantallas grandes.",
+    "moveEarlier": "Mover {name} hacia adelante",
+    "moveLater": "Mover {name} hacia atrás",
+    "dragToReorder": "Arrastra los widgets para reorganizarlos o usa los botones de flecha.",
+    "hiddenWidgets": "Widgets ocultos",
+    "hide": "Ocultar {name}",
+    "show": "Mostrar {name}",
+    "atLeastOne": "Selecciona al menos un widget para mostrar en el panel.",
+    "reset": "Restablecer valores predeterminados",
+    "toasts": {
+      "saveFailed": "No se pudo guardar el diseño del panel"
+    }
+  },
+  "favouriteReports": {
+    "title": "Informes favoritos",
+    "empty": "Aún no hay informes favoritos. Marca informes con una estrella en la página de Informes para verlos aquí.",
+    "browseReports": "Explorar informes"
   }
 }

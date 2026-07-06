@@ -8,6 +8,7 @@
     "title": "Conti preferiti",
     "empty": "Nessun conto preferito. Aggiungi conti ai preferiti per visualizzarli qui.",
     "reorder": "Riordina",
+    "dragToReorder": "Trascina i conti per riordinarli oppure usa i pulsanti freccia.",
     "done": "Fine",
     "moveUp": "Sposta su",
     "moveDown": "Sposta giù",
@@ -132,5 +133,26 @@
     "income": "Entrate",
     "expenses": "Uscite",
     "net": "Netto"
+  },
+  "customize": {
+    "button": "Personalizza",
+    "title": "Personalizza il pannello",
+    "description": "Il layout qui sotto rispecchia il tuo pannello di controllo: i widget scorrono da sinistra a destra, due per riga sugli schermi grandi.",
+    "moveEarlier": "Sposta {name} prima",
+    "moveLater": "Sposta {name} dopo",
+    "dragToReorder": "Trascina i widget per riorganizzarli oppure usa i pulsanti freccia.",
+    "hiddenWidgets": "Widget nascosti",
+    "hide": "Nascondi {name}",
+    "show": "Mostra {name}",
+    "atLeastOne": "Seleziona almeno un widget da mostrare nel pannello.",
+    "reset": "Ripristina predefiniti",
+    "toasts": {
+      "saveFailed": "Impossibile salvare il layout del pannello"
+    }
+  },
+  "favouriteReports": {
+    "title": "Report preferiti",
+    "empty": "Nessun report preferito. Aggiungi una stella ai report nella pagina Report per vederli qui.",
+    "browseReports": "Sfoglia i report"
   }
 }

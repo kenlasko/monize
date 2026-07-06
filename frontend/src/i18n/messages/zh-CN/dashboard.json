@@ -8,6 +8,7 @@
     "title": "收藏账户",
     "empty": "暂无收藏账户。将账户标记为收藏后即可在此查看。",
     "reorder": "重新排序",
+    "dragToReorder": "拖动账户以调整顺序，或使用箭头按钮。",
     "done": "完成",
     "moveUp": "上移",
     "moveDown": "下移",
@@ -132,5 +133,26 @@
     "income": "收入",
     "expenses": "支出",
     "net": "净额"
+  },
+  "customize": {
+    "button": "自定义",
+    "title": "自定义仪表盘",
+    "description": "下方布局与仪表盘一致：小组件从左到右排列，大屏幕上每行两个。",
+    "moveEarlier": "将{name}前移",
+    "moveLater": "将{name}后移",
+    "dragToReorder": "拖动小组件以重新排列，或使用箭头按钮。",
+    "hiddenWidgets": "已隐藏的小组件",
+    "hide": "隐藏{name}",
+    "show": "显示{name}",
+    "atLeastOne": "请至少选择一个要在仪表盘上显示的小组件。",
+    "reset": "恢复默认",
+    "toasts": {
+      "saveFailed": "保存仪表盘布局失败"
+    }
+  },
+  "favouriteReports": {
+    "title": "收藏报告",
+    "empty": "暂无收藏报告。在报告页面为报告加星后即可在此查看。",
+    "browseReports": "浏览报告"
   }
 }

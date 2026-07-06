@@ -8,6 +8,7 @@
     "title": "Favori Hesaplar",
     "empty": "Henüz favori hesap yok. Burada görmek istediğiniz hesapları favori olarak işaretleyin.",
     "reorder": "Yeniden Sırala",
+    "dragToReorder": "Hesapları sürükleyerek yeniden sıralayın veya ok düğmelerini kullanın.",
     "done": "Tamam",
     "moveUp": "Yukarı taşı",
     "moveDown": "Aşağı taşı",
@@ -132,5 +133,26 @@
     "income": "Gelir",
     "expenses": "Giderler",
     "net": "Net"
+  },
+  "customize": {
+    "button": "Özelleştir",
+    "title": "Panoyu özelleştir",
+    "description": "Aşağıdaki düzen panonuzu yansıtır: widget'lar soldan sağa akar, büyük ekranlarda her satırda iki tane bulunur.",
+    "moveEarlier": "{name} öğesini öne taşı",
+    "moveLater": "{name} öğesini arkaya taşı",
+    "dragToReorder": "Widget'ları sürükleyerek yeniden düzenleyin veya ok düğmelerini kullanın.",
+    "hiddenWidgets": "Gizli widget'lar",
+    "hide": "{name} gizle",
+    "show": "{name} göster",
+    "atLeastOne": "Panoda göstermek için en az bir widget seçin.",
+    "reset": "Varsayılana sıfırla",
+    "toasts": {
+      "saveFailed": "Pano düzeni kaydedilemedi"
+    }
+  },
+  "favouriteReports": {
+    "title": "Favori Raporlar",
+    "empty": "Henüz favori rapor yok. Burada görmek için Raporlar sayfasında raporları yıldızlayın.",
+    "browseReports": "Raporlara göz at"
   }
 }

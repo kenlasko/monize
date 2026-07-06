@@ -8,6 +8,7 @@
     "title": "Comptes favoris",
     "empty": "Aucun compte favori pour l'instant. Marquez des comptes comme favoris pour les voir ici.",
     "reorder": "Réorganiser",
+    "dragToReorder": "Faites glisser les comptes pour les réorganiser, ou utilisez les boutons fléchés.",
     "done": "Terminé",
     "moveUp": "Déplacer vers le haut",
     "moveDown": "Déplacer vers le bas",
@@ -132,5 +133,26 @@
     "income": "Revenus",
     "expenses": "Dépenses",
     "net": "Net"
+  },
+  "customize": {
+    "button": "Personnaliser",
+    "title": "Personnaliser le tableau de bord",
+    "description": "La disposition ci-dessous reflète votre tableau de bord : les widgets s'enchaînent de gauche à droite, deux par ligne sur les grands écrans.",
+    "moveEarlier": "Avancer {name}",
+    "moveLater": "Reculer {name}",
+    "dragToReorder": "Faites glisser les widgets pour les réorganiser, ou utilisez les boutons fléchés.",
+    "hiddenWidgets": "Widgets masqués",
+    "hide": "Masquer {name}",
+    "show": "Afficher {name}",
+    "atLeastOne": "Sélectionnez au moins un widget à afficher sur le tableau de bord.",
+    "reset": "Réinitialiser par défaut",
+    "toasts": {
+      "saveFailed": "Échec de l'enregistrement de la disposition du tableau de bord"
+    }
+  },
+  "favouriteReports": {
+    "title": "Rapports favoris",
+    "empty": "Aucun rapport favori pour l’instant. Mettez des rapports en favori sur la page Rapports pour les voir ici.",
+    "browseReports": "Parcourir les rapports"
   }
 }

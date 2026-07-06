@@ -6,5 +6,9 @@
   "favouriteSecurities": {
     "title": "Favorite Securities",
     "empty": "No favorite securities yet. Visit the <securitiesLink>Securities page</securitiesLink> and star the securities you want to track here."
+  },
+  "favouriteReports": {
+    "title": "Favorite Reports",
+    "empty": "No favorite reports yet. Star reports on the Reports page to see them here."
   }
 }

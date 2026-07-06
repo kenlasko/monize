@@ -8,6 +8,7 @@
     "title": "Akun Favorit",
     "empty": "Belum ada akun favorit. Tandai akun sebagai favorit untuk melihatnya di sini.",
     "reorder": "Susun ulang",
+    "dragToReorder": "Seret akun untuk menyusun ulang, atau gunakan tombol panah.",
     "done": "Selesai",
     "moveUp": "Pindah ke atas",
     "moveDown": "Pindah ke bawah",
@@ -132,5 +133,26 @@
     "income": "Pendapatan",
     "expenses": "Pengeluaran",
     "net": "Bersih"
+  },
+  "customize": {
+    "button": "Sesuaikan",
+    "title": "Sesuaikan dasbor",
+    "description": "Tata letak di bawah mencerminkan dasbor Anda: widget mengalir dari kiri ke kanan, dua per baris di layar besar.",
+    "moveEarlier": "Pindahkan {name} lebih awal",
+    "moveLater": "Pindahkan {name} lebih akhir",
+    "dragToReorder": "Seret widget untuk menata ulang, atau gunakan tombol panah.",
+    "hiddenWidgets": "Widget tersembunyi",
+    "hide": "Sembunyikan {name}",
+    "show": "Tampilkan {name}",
+    "atLeastOne": "Pilih setidaknya satu widget untuk ditampilkan di dasbor.",
+    "reset": "Atur ulang ke bawaan",
+    "toasts": {
+      "saveFailed": "Gagal menyimpan tata letak dasbor"
+    }
+  },
+  "favouriteReports": {
+    "title": "Laporan Favorit",
+    "empty": "Belum ada laporan favorit. Bintangi laporan di halaman Laporan untuk melihatnya di sini.",
+    "browseReports": "Jelajahi laporan"
   }
 }

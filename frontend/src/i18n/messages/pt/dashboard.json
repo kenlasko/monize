@@ -8,6 +8,7 @@
     "title": "Contas Favoritas",
     "empty": "Ainda não tem contas favoritas. Marque contas como favoritas para as ver aqui.",
     "reorder": "Reordenar",
+    "dragToReorder": "Arraste as contas para as reordenar, ou use os botões de seta.",
     "done": "Concluído",
     "moveUp": "Mover para cima",
     "moveDown": "Mover para baixo",
@@ -132,5 +133,26 @@
     "income": "Receitas",
     "expenses": "Despesas",
     "net": "Líquido"
+  },
+  "customize": {
+    "button": "Personalizar",
+    "title": "Personalizar painel",
+    "description": "A disposição abaixo reflete o seu painel: os widgets fluem da esquerda para a direita, dois por linha em ecrãs grandes.",
+    "moveEarlier": "Mover {name} para a frente",
+    "moveLater": "Mover {name} para trás",
+    "dragToReorder": "Arraste os widgets para os reorganizar, ou use os botões de seta.",
+    "hiddenWidgets": "Widgets ocultos",
+    "hide": "Ocultar {name}",
+    "show": "Mostrar {name}",
+    "atLeastOne": "Selecione pelo menos um widget para mostrar no painel.",
+    "reset": "Repor predefinições",
+    "toasts": {
+      "saveFailed": "Falha ao guardar a disposição do painel"
+    }
+  },
+  "favouriteReports": {
+    "title": "Relatórios Favoritos",
+    "empty": "Ainda sem relatórios favoritos. Marque relatórios com estrela na página de Relatórios para os ver aqui.",
+    "browseReports": "Explorar relatórios"
   }
 }

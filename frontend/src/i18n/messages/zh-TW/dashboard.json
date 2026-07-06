@@ -8,6 +8,7 @@
     "title": "我的最愛科目",
     "empty": "尚無我的最愛科目。將科目標記為我的最愛即可在此顯示。",
     "reorder": "重新排序",
+    "dragToReorder": "拖曳科目以調整順序，或使用箭頭按鈕。",
     "done": "完成",
     "moveUp": "上移",
     "moveDown": "下移",
@@ -132,5 +133,26 @@
     "income": "收入",
     "expenses": "支出",
     "net": "淨額"
+  },
+  "customize": {
+    "button": "自訂",
+    "title": "自訂儀表板",
+    "description": "下方版面配置與儀表板一致：小工具由左至右排列，大螢幕上每列兩個。",
+    "moveEarlier": "將{name}往前移",
+    "moveLater": "將{name}往後移",
+    "dragToReorder": "拖曳小工具以重新排列，或使用箭頭按鈕。",
+    "hiddenWidgets": "已隱藏的小工具",
+    "hide": "隱藏{name}",
+    "show": "顯示{name}",
+    "atLeastOne": "請至少選擇一個要顯示在儀表板上的小工具。",
+    "reset": "重設為預設值",
+    "toasts": {
+      "saveFailed": "無法儲存儀表板版面配置"
+    }
+  },
+  "favouriteReports": {
+    "title": "我的最愛報表",
+    "empty": "尚無我的最愛報表。請在報表頁面為報表加上星號，即可在此顯示。",
+    "browseReports": "瀏覽報表"
   }
 }

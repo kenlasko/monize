@@ -8,6 +8,7 @@
     "title": "Favoritenkonten",
     "empty": "Noch keine Favoritenkonten. Markieren Sie Konten als Favoriten, um sie hier zu sehen.",
     "reorder": "Neu anordnen",
+    "dragToReorder": "Ziehen Sie Konten, um sie neu anzuordnen, oder verwenden Sie die Pfeilschaltflächen.",
     "done": "Fertig",
     "moveUp": "Nach oben",
     "moveDown": "Nach unten",
@@ -132,5 +133,26 @@
     "income": "Einnahmen",
     "expenses": "Ausgaben",
     "net": "Netto"
+  },
+  "customize": {
+    "button": "Anpassen",
+    "title": "Dashboard anpassen",
+    "description": "Das Layout unten entspricht Ihrem Dashboard: Widgets fließen von links nach rechts, auf großen Bildschirmen zwei pro Zeile.",
+    "moveEarlier": "{name} nach vorne verschieben",
+    "moveLater": "{name} nach hinten verschieben",
+    "dragToReorder": "Ziehen Sie Widgets, um sie neu anzuordnen, oder verwenden Sie die Pfeilschaltflächen.",
+    "hiddenWidgets": "Ausgeblendete Widgets",
+    "hide": "{name} ausblenden",
+    "show": "{name} einblenden",
+    "atLeastOne": "Wählen Sie mindestens ein Widget für das Dashboard aus.",
+    "reset": "Auf Standard zurücksetzen",
+    "toasts": {
+      "saveFailed": "Dashboard-Layout konnte nicht gespeichert werden"
+    }
+  },
+  "favouriteReports": {
+    "title": "Favoritenberichte",
+    "empty": "Noch keine Favoritenberichte. Markieren Sie Berichte auf der Berichteseite mit einem Stern, um sie hier zu sehen.",
+    "browseReports": "Berichte durchsuchen"
   }
 }

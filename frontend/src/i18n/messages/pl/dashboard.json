@@ -8,6 +8,7 @@
     "title": "Ulubione konta",
     "empty": "Brak ulubionych kont. Oznacz konta jako ulubione, aby zobaczyć je tutaj.",
     "reorder": "Zmień kolejność",
+    "dragToReorder": "Przeciągnij konta, aby zmienić ich kolejność, lub użyj przycisków strzałek.",
     "done": "Gotowe",
     "moveUp": "Przesuń w górę",
     "moveDown": "Przesuń w dół",
@@ -132,5 +133,26 @@
     "income": "Przychody",
     "expenses": "Wydatki",
     "net": "Saldo"
+  },
+  "customize": {
+    "button": "Dostosuj",
+    "title": "Dostosuj pulpit",
+    "description": "Poniższy układ odzwierciedla pulpit: widżety układają się od lewej do prawej, po dwa w wierszu na dużych ekranach.",
+    "moveEarlier": "Przesuń {name} wcześniej",
+    "moveLater": "Przesuń {name} później",
+    "dragToReorder": "Przeciągnij widżety, aby zmienić ich układ, lub użyj przycisków strzałek.",
+    "hiddenWidgets": "Ukryte widżety",
+    "hide": "Ukryj {name}",
+    "show": "Pokaż {name}",
+    "atLeastOne": "Wybierz co najmniej jeden widżet do wyświetlenia na pulpicie.",
+    "reset": "Przywróć domyślne",
+    "toasts": {
+      "saveFailed": "Nie udało się zapisać układu pulpitu"
+    }
+  },
+  "favouriteReports": {
+    "title": "Ulubione raporty",
+    "empty": "Brak ulubionych raportów. Oznacz raporty gwiazdką na stronie Raporty, aby zobaczyć je tutaj.",
+    "browseReports": "Przeglądaj raporty"
   }
 }

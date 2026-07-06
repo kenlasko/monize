@@ -8,6 +8,7 @@
     "title": "Favoriete rekeningen",
     "empty": "Nog geen favoriete rekeningen. Markeer rekeningen als favoriet om ze hier te zien.",
     "reorder": "Herordenen",
+    "dragToReorder": "Sleep rekeningen om ze te herordenen, of gebruik de pijlknoppen.",
     "done": "Klaar",
     "moveUp": "Omhoog",
     "moveDown": "Omlaag",
@@ -132,5 +133,26 @@
     "income": "Inkomsten",
     "expenses": "Uitgaven",
     "net": "Netto"
+  },
+  "customize": {
+    "button": "Aanpassen",
+    "title": "Dashboard aanpassen",
+    "description": "De indeling hieronder komt overeen met je dashboard: widgets lopen van links naar rechts, twee per rij op grote schermen.",
+    "moveEarlier": "{name} naar voren verplaatsen",
+    "moveLater": "{name} naar achteren verplaatsen",
+    "dragToReorder": "Sleep widgets om ze te herschikken, of gebruik de pijlknoppen.",
+    "hiddenWidgets": "Verborgen widgets",
+    "hide": "{name} verbergen",
+    "show": "{name} tonen",
+    "atLeastOne": "Selecteer minstens één widget om op het dashboard te tonen.",
+    "reset": "Standaardinstellingen herstellen",
+    "toasts": {
+      "saveFailed": "Dashboardindeling opslaan mislukt"
+    }
+  },
+  "favouriteReports": {
+    "title": "Favoriete rapporten",
+    "empty": "Nog geen favoriete rapporten. Markeer rapporten met een ster op de pagina Rapporten om ze hier te zien.",
+    "browseReports": "Rapporten bekijken"
   }
 }
