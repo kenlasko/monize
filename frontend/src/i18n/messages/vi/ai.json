@@ -188,9 +188,9 @@
   },
   "relay": {
     "status": {
-      "offline": "Trợ lý ngoại tuyến",
-      "listening": "Trợ lý đang lắng nghe",
-      "busy": "Trợ lý đang làm việc",
+      "offline": "Tác nhân MCP ngoại tuyến",
+      "listening": "Tác nhân MCP đang lắng nghe",
+      "busy": "Tác nhân MCP đang làm việc",
       "idle": "Đã ngắt kết nối do không hoạt động — kết nối lại để tiếp tục"
     },
     "howToConnect": "Cách kết nối",

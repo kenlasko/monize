@@ -188,9 +188,9 @@
   },
   "relay": {
     "status": {
-      "offline": "Assistent offline",
-      "listening": "Assistent luistert",
-      "busy": "Assistent werkt",
+      "offline": "MCP-agent offline",
+      "listening": "MCP-agent luistert",
+      "busy": "MCP-agent werkt",
       "idle": "Verbroken na inactiviteit — verbind opnieuw om door te gaan"
     },
     "howToConnect": "Hoe verbinden",

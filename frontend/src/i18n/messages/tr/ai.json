@@ -188,9 +188,9 @@
   },
   "relay": {
     "status": {
-      "offline": "Asistan çevrimdışı",
-      "listening": "Asistan dinliyor",
-      "busy": "Asistan çalışıyor",
+      "offline": "MCP aracı çevrimdışı",
+      "listening": "MCP aracı dinliyor",
+      "busy": "MCP aracı çalışıyor",
       "idle": "Hareketsizlik nedeniyle bağlantı kesildi — devam etmek için yeniden bağlanın"
     },
     "howToConnect": "Nasıl bağlanılır",

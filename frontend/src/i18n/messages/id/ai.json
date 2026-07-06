@@ -188,9 +188,9 @@
   },
   "relay": {
     "status": {
-      "offline": "Asisten offline",
-      "listening": "Asisten mendengarkan",
-      "busy": "Asisten bekerja",
+      "offline": "Agen MCP offline",
+      "listening": "Agen MCP mendengarkan",
+      "busy": "Agen MCP bekerja",
       "idle": "Terputus karena tidak aktif — sambungkan ulang untuk melanjutkan"
     },
     "howToConnect": "Cara menghubungkan",

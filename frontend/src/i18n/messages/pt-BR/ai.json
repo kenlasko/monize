@@ -188,9 +188,9 @@
   },
   "relay": {
     "status": {
-      "offline": "Assistente off-line",
-      "listening": "Assistente ouvindo",
-      "busy": "Assistente trabalhando",
+      "offline": "Agente MCP off-line",
+      "listening": "Agente MCP ouvindo",
+      "busy": "Agente MCP trabalhando",
       "idle": "Desconectado por inatividade — reconecte para continuar"
     },
     "howToConnect": "Como conectar",

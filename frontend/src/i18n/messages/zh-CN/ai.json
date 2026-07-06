@@ -188,9 +188,9 @@
   },
   "relay": {
     "status": {
-      "offline": "助手离线",
-      "listening": "助手正在侦听",
-      "busy": "助手工作中",
+      "offline": "MCP 代理离线",
+      "listening": "MCP 代理正在侦听",
+      "busy": "MCP 代理工作中",
       "idle": "因闲置已断开连接 — 重新连接以继续"
     },
     "howToConnect": "如何连接",

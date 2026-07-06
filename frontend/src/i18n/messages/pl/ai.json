@@ -188,9 +188,9 @@
   },
   "relay": {
     "status": {
-      "offline": "Asystent offline",
-      "listening": "Asystent nasłuchuje",
-      "busy": "Asystent pracuje",
+      "offline": "Agent MCP offline",
+      "listening": "Agent MCP nasłuchuje",
+      "busy": "Agent MCP pracuje",
       "idle": "Rozłączono po bezczynności — połącz ponownie, aby kontynuować"
     },
     "howToConnect": "Jak się połączyć",
