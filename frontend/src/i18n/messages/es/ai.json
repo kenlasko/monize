@@ -8,7 +8,15 @@
     "title": "Asistente AI",
     "expand": "Ampliar a pantalla completa",
     "collapse": "Contraer al panel",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "moveCorner": "Mover el panel a la siguiente esquina",
+    "moveCornerTo": "Mover a {corner}",
+    "corner": {
+      "bottom-right": "abajo a la derecha",
+      "bottom-left": "abajo a la izquierda",
+      "top-right": "arriba a la derecha",
+      "top-left": "arriba a la izquierda"
+    }
   },
   "chat": {
     "conversationSaved": "Conversación guardada en tu navegador",

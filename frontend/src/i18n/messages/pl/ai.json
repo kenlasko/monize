@@ -8,7 +8,15 @@
     "title": "Asystent AI",
     "expand": "Rozwiń na pełny ekran",
     "collapse": "Zwiń do panelu",
-    "close": "Zamknij"
+    "close": "Zamknij",
+    "moveCorner": "Przenieś panel do następnego rogu",
+    "moveCornerTo": "Przenieś w {corner}",
+    "corner": {
+      "bottom-right": "prawy dolny róg",
+      "bottom-left": "lewy dolny róg",
+      "top-right": "prawy górny róg",
+      "top-left": "lewy górny róg"
+    }
   },
   "chat": {
     "conversationSaved": "Rozmowa zapisana w przeglądarce",

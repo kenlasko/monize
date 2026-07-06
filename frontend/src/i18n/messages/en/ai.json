@@ -8,7 +8,15 @@
     "title": "AI Assistant",
     "expand": "Expand to full screen",
     "collapse": "Collapse to panel",
-    "close": "Close"
+    "close": "Close",
+    "moveCorner": "Move panel to next corner",
+    "moveCornerTo": "Move to {corner}",
+    "corner": {
+      "bottom-right": "bottom right",
+      "bottom-left": "bottom left",
+      "top-right": "top right",
+      "top-left": "top left"
+    }
   },
   "chat": {
     "conversationSaved": "Conversation saved in your browser",

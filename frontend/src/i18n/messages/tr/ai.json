@@ -8,7 +8,15 @@
     "title": "Yapay Zeka Asistanı",
     "expand": "Tam ekrana genişlet",
     "collapse": "Panele küçült",
-    "close": "Kapat"
+    "close": "Kapat",
+    "moveCorner": "Paneli sonraki köşeye taşı",
+    "moveCornerTo": "{corner} taşı",
+    "corner": {
+      "bottom-right": "sağ alt köşeye",
+      "bottom-left": "sol alt köşeye",
+      "top-right": "sağ üst köşeye",
+      "top-left": "sol üst köşeye"
+    }
   },
   "chat": {
     "conversationSaved": "Konuşma tarayıcınıza kaydedildi",

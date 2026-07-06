@@ -8,7 +8,15 @@
     "title": "AI 助手",
     "expand": "展開為全螢幕",
     "collapse": "收合為面板",
-    "close": "關閉"
+    "close": "關閉",
+    "moveCorner": "將面板移到下一個角落",
+    "moveCornerTo": "移到{corner}",
+    "corner": {
+      "bottom-right": "右下角",
+      "bottom-left": "左下角",
+      "top-right": "右上角",
+      "top-left": "左上角"
+    }
   },
   "chat": {
     "conversationSaved": "對話已儲存於您的瀏覽器",

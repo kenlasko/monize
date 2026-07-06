@@ -8,7 +8,15 @@
     "title": "Trợ lý AI",
     "expand": "Mở rộng toàn màn hình",
     "collapse": "Thu gọn về bảng",
-    "close": "Đóng"
+    "close": "Đóng",
+    "moveCorner": "Di chuyển bảng đến góc tiếp theo",
+    "moveCornerTo": "Di chuyển đến {corner}",
+    "corner": {
+      "bottom-right": "góc dưới bên phải",
+      "bottom-left": "góc dưới bên trái",
+      "top-right": "góc trên bên phải",
+      "top-left": "góc trên bên trái"
+    }
   },
   "chat": {
     "conversationSaved": "Cuộc trò chuyện được lưu trong trình duyệt của bạn",

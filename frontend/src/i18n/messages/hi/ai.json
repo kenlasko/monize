@@ -8,7 +8,15 @@
     "title": "AI सहायक",
     "expand": "पूर्ण स्क्रीन पर विस्तृत करें",
     "collapse": "पैनल में छोटा करें",
-    "close": "बंद करें"
+    "close": "बंद करें",
+    "moveCorner": "पैनल को अगले कोने में ले जाएँ",
+    "moveCornerTo": "{corner} में ले जाएँ",
+    "corner": {
+      "bottom-right": "नीचे दाईं ओर",
+      "bottom-left": "नीचे बाईं ओर",
+      "top-right": "ऊपर दाईं ओर",
+      "top-left": "ऊपर बाईं ओर"
+    }
   },
   "chat": {
     "conversationSaved": "बातचीत आपके ब्राउज़र में सहेजी गई",
