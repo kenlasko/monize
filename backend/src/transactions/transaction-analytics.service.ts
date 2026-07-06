@@ -3,6 +3,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Brackets, Repository } from "typeorm";
 import { Transaction } from "./entities/transaction.entity";
 import { Category } from "../categories/entities/category.entity";
+import { UserPreference } from "../users/entities/user-preference.entity";
 import { getAllCategoryIdsWithChildren } from "../common/category-tree.util";
 import { applyInvestmentTransactionFilters } from "../common/investment-filter.util";
 import {
@@ -15,6 +16,10 @@ import {
   buildTransactionSearchClause,
   escapeLikePattern,
 } from "./transaction-search.util";
+import {
+  parseSearchTerm,
+  ParsedSearchTerm,
+} from "./transaction-search-parse.util";
 import { RecurringCharge, detectFrequency } from "./recurring-charges.util";
 import { roundMoney, sumMoney } from "../common/round.util";
 import { suggestClosestNames } from "../common/name-suggestions.util";
@@ -161,7 +166,27 @@ export class TransactionAnalyticsService {
     private transactionsRepository: Repository<Transaction>,
     @InjectRepository(Category)
     private categoriesRepository: Repository<Category>,
+    @InjectRepository(UserPreference)
+    private userPreferenceRepository: Repository<UserPreference>,
   ) {}
+
+  /**
+   * Interprets the search term as an exact amount and/or date using the user's
+   * number/date-format preferences, so locale-formatted values also match.
+   */
+  private async resolveSearchTerm(
+    userId: string,
+    term?: string,
+  ): Promise<ParsedSearchTerm> {
+    if (!term || !term.trim()) return { amount: null, date: null };
+    const prefs = await this.userPreferenceRepository.findOne({
+      where: { userId },
+    });
+    return parseSearchTerm(term, {
+      numberFormat: prefs?.numberFormat,
+      dateFormat: prefs?.dateFormat,
+    });
+  }
 
   /**
    * Per-account transfer activity between the user's own accounts for a date
@@ -523,12 +548,17 @@ export class TransactionAnalyticsService {
 
     if (search && search.trim()) {
       const searchPattern = `%${escapeLikePattern(search.trim())}%`;
+      const parsedSearch = await this.resolveSearchTerm(userId, search);
       queryBuilder.andWhere(
         buildTransactionSearchClause({
           transaction: "transaction",
           splits: "splits",
         }),
-        { search: searchPattern },
+        {
+          search: searchPattern,
+          searchAmount: parsedSearch.amount,
+          searchDate: parsedSearch.date,
+        },
       );
     }
 
@@ -753,6 +783,7 @@ export class TransactionAnalyticsService {
 
     if (search && search.trim()) {
       const searchPattern = `%${escapeLikePattern(search.trim())}%`;
+      const parsedSearch = await this.resolveSearchTerm(userId, search);
       if (!splitsJoined) {
         queryBuilder.leftJoin("transaction.splits", "splits");
         splitsJoined = true;
@@ -762,7 +793,11 @@ export class TransactionAnalyticsService {
           transaction: "transaction",
           splits: "splits",
         }),
-        { search: searchPattern },
+        {
+          search: searchPattern,
+          searchAmount: parsedSearch.amount,
+          searchDate: parsedSearch.date,
+        },
       );
     }
 
@@ -1111,9 +1146,14 @@ export class TransactionAnalyticsService {
     }
 
     if (safeSearchText) {
+      const parsedSearch = await this.resolveSearchTerm(userId, safeSearchText);
       qb.andWhere(
         buildTransactionSearchClause({ transaction: "t", splits: "ts" }),
-        { search: `%${safeSearchText}%` },
+        {
+          search: `%${safeSearchText}%`,
+          searchAmount: parsedSearch.amount,
+          searchDate: parsedSearch.date,
+        },
       );
     }
 

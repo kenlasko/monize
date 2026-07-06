@@ -4,12 +4,14 @@ import { Brackets } from "typeorm";
 import { TransactionAnalyticsService } from "./transaction-analytics.service";
 import { Transaction } from "./entities/transaction.entity";
 import { Category } from "../categories/entities/category.entity";
+import { UserPreference } from "../users/entities/user-preference.entity";
 import { buildTransactionSearchClause } from "./transaction-search.util";
 
 describe("TransactionAnalyticsService", () => {
   let service: TransactionAnalyticsService;
   let transactionsRepository: Record<string, jest.Mock>;
   let categoriesRepository: Record<string, jest.Mock>;
+  let userPreferenceRepository: Record<string, jest.Mock>;
 
   const userId = "user-1";
 
@@ -56,6 +58,10 @@ describe("TransactionAnalyticsService", () => {
       find: jest.fn().mockResolvedValue([]),
     };
 
+    userPreferenceRepository = {
+      findOne: jest.fn().mockResolvedValue(null),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TransactionAnalyticsService,
@@ -66,6 +72,10 @@ describe("TransactionAnalyticsService", () => {
         {
           provide: getRepositoryToken(Category),
           useValue: categoriesRepository,
+        },
+        {
+          provide: getRepositoryToken(UserPreference),
+          useValue: userPreferenceRepository,
         },
       ],
     }).compile();
@@ -762,7 +772,7 @@ describe("TransactionAnalyticsService", () => {
             transaction: "transaction",
             splits: "splits",
           }),
-          { search: "%grocery%" },
+          { search: "%grocery%", searchAmount: null, searchDate: null },
         );
       });
 
@@ -782,7 +792,7 @@ describe("TransactionAnalyticsService", () => {
             transaction: "transaction",
             splits: "splits",
           }),
-          { search: "%coffee%" },
+          { search: "%coffee%", searchAmount: null, searchDate: null },
         );
       });
 
@@ -899,7 +909,7 @@ describe("TransactionAnalyticsService", () => {
         );
         expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
           expect.stringContaining("ILIKE"),
-          { search: "%rent%" },
+          { search: "%rent%", searchAmount: null, searchDate: null },
         );
       });
 
@@ -1329,7 +1339,7 @@ describe("TransactionAnalyticsService", () => {
           transaction: "transaction",
           splits: "splits",
         }),
-        { search: "%grocery%" },
+        { search: "%grocery%", searchAmount: null, searchDate: null },
       );
     });
 
@@ -2017,7 +2027,7 @@ describe("TransactionAnalyticsService", () => {
           transaction: "transaction",
           splits: "splits",
         }),
-        { search: "%coffee%" },
+        { search: "%coffee%", searchAmount: null, searchDate: null },
       );
     });
 

@@ -6,6 +6,7 @@ import { buildTransactionSearchClause } from "./transaction-search.util";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { Category } from "../categories/entities/category.entity";
 import { Payee } from "../payees/entities/payee.entity";
+import { UserPreference } from "../users/entities/user-preference.entity";
 import { AccountsService } from "../accounts/accounts.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { TagsService } from "../tags/tags.service";
@@ -22,6 +23,7 @@ describe("TransactionBulkUpdateService", () => {
   let transactionsRepository: Record<string, jest.Mock>;
   let categoriesRepository: Record<string, jest.Mock>;
   let payeesRepository: Record<string, jest.Mock>;
+  let userPreferenceRepository: Record<string, jest.Mock>;
   let accountsService: Record<string, jest.Mock>;
   let netWorthService: Record<string, jest.Mock>;
   let tagsService: Record<string, jest.Mock>;
@@ -95,6 +97,10 @@ describe("TransactionBulkUpdateService", () => {
       findOne: jest.fn().mockResolvedValue(null),
     };
 
+    userPreferenceRepository = {
+      findOne: jest.fn().mockResolvedValue(null),
+    };
+
     accountsService = {
       updateBalance: jest.fn().mockResolvedValue(undefined),
       recalculateCurrentBalance: jest.fn().mockResolvedValue(undefined),
@@ -150,6 +156,10 @@ describe("TransactionBulkUpdateService", () => {
         {
           provide: getRepositoryToken(Payee),
           useValue: payeesRepository,
+        },
+        {
+          provide: getRepositoryToken(UserPreference),
+          useValue: userPreferenceRepository,
         },
         { provide: AccountsService, useValue: accountsService },
         { provide: NetWorthService, useValue: netWorthService },
@@ -1676,7 +1686,7 @@ describe("TransactionBulkUpdateService", () => {
           transaction: "transaction",
           splits: "searchSplits",
         }),
-        { search: "%groceries%" },
+        { search: "%groceries%", searchAmount: null, searchDate: null },
       );
     });
 
@@ -1722,7 +1732,7 @@ describe("TransactionBulkUpdateService", () => {
           transaction: "transaction",
           splits: "filterSplits",
         }),
-        { search: "%food%" },
+        { search: "%food%", searchAmount: null, searchDate: null },
       );
     });
 
@@ -1941,7 +1951,11 @@ describe("TransactionBulkUpdateService", () => {
           transaction: "transaction",
           splits: "searchSplits",
         }),
-        { search: "%100\\% off\\_sale\\\\deal%" },
+        {
+          search: "%100\\% off\\_sale\\\\deal%",
+          searchAmount: null,
+          searchDate: null,
+        },
       );
     });
 

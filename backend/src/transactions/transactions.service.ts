@@ -12,6 +12,7 @@ import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
 import { InvestmentTransaction } from "../securities/entities/investment-transaction.entity";
+import { UserPreference } from "../users/entities/user-preference.entity";
 import { CreateTransactionDto } from "./dto/create-transaction.dto";
 import { UpdateTransactionDto } from "./dto/update-transaction.dto";
 import { CreateTransactionSplitDto } from "./dto/create-transaction-split.dto";
@@ -47,6 +48,10 @@ import {
   buildTransactionSearchClause,
   escapeLikePattern,
 } from "./transaction-search.util";
+import {
+  parseSearchTerm,
+  ParsedSearchTerm,
+} from "./transaction-search-parse.util";
 import { tr } from "../i18n/translate";
 import { stripHtml } from "../common/sanitization.util";
 import {
@@ -185,6 +190,8 @@ export class TransactionsService {
     private categoriesRepository: Repository<Category>,
     @InjectRepository(InvestmentTransaction)
     private investmentTransactionsRepository: Repository<InvestmentTransaction>,
+    @InjectRepository(UserPreference)
+    private userPreferenceRepository: Repository<UserPreference>,
     @Inject(forwardRef(() => AccountsService))
     private accountsService: AccountsService,
     private payeesService: PayeesService,
@@ -199,6 +206,26 @@ export class TransactionsService {
     private dataSource: DataSource,
     private actionHistoryService: ActionHistoryService,
   ) {}
+
+  /**
+   * Interprets the search box term as an exact amount and/or date using the
+   * user's number/date-format preferences, so a value typed in the user's own
+   * locale format (e.g. "1 234,56" or "02.07.2026") also matches. Returns
+   * `{ amount: null, date: null }` for a blank/non-parseable term.
+   */
+  private async resolveSearchTerm(
+    userId: string,
+    term?: string,
+  ): Promise<ParsedSearchTerm> {
+    if (!term || !term.trim()) return { amount: null, date: null };
+    const prefs = await this.userPreferenceRepository.findOne({
+      where: { userId },
+    });
+    return parseSearchTerm(term, {
+      numberFormat: prefs?.numberFormat,
+      dateFormat: prefs?.dateFormat,
+    });
+  }
 
   async create(
     userId: string,
@@ -730,6 +757,11 @@ export class TransactionsService {
     const safeLimit = clamped.limit;
     let safePage = clamped.page;
 
+    // Interpret the search term once (amount/date in the user's locale format)
+    // and thread it through the query, the target-page count, and the running
+    // balance so all three match the same rows.
+    const parsedSearch = await this.resolveSearchTerm(userId, search);
+
     const queryBuilder = this.transactionsRepository
       .createQueryBuilder("transaction")
       .leftJoinAndSelect("transaction.account", "account")
@@ -806,7 +838,11 @@ export class TransactionsService {
           transaction: "transaction",
           splits: "splits",
         }),
-        { search: searchPattern },
+        {
+          search: searchPattern,
+          searchAmount: parsedSearch.amount,
+          searchDate: parsedSearch.date,
+        },
       );
     }
 
@@ -852,6 +888,7 @@ export class TransactionsService {
         search,
         includeInvestmentBrokerage,
         safePage,
+        parsedSearch,
       );
     }
 
@@ -886,6 +923,8 @@ export class TransactionsService {
           payeeIds,
           tagIds,
           search,
+          searchAmount: parsedSearch.amount,
+          searchDate: parsedSearch.date,
           amountFrom,
           amountTo,
         },
@@ -908,6 +947,8 @@ export class TransactionsService {
           payeeIds,
           tagIds,
           search,
+          searchAmount: parsedSearch.amount,
+          searchDate: parsedSearch.date,
           amountFrom,
           amountTo,
         },
@@ -929,6 +970,8 @@ export class TransactionsService {
           payeeIds,
           tagIds,
           search,
+          searchAmount: parsedSearch.amount,
+          searchDate: parsedSearch.date,
           amountFrom,
           amountTo,
         },
@@ -1017,6 +1060,7 @@ export class TransactionsService {
     search?: string,
     includeInvestmentBrokerage?: boolean,
     fallbackPage: number = 1,
+    parsedSearch: ParsedSearchTerm = { amount: null, date: null },
   ): Promise<number> {
     try {
       const targetTx = await this.transactionsRepository.findOne({
@@ -1053,7 +1097,11 @@ export class TransactionsService {
         const searchPattern = `%${escapeLikePattern(search.trim())}%`;
         countQuery.andWhere(
           buildTransactionSearchClause({ transaction: "t", splits: "s" }),
-          { search: searchPattern },
+          {
+            search: searchPattern,
+            searchAmount: parsedSearch.amount,
+            searchDate: parsedSearch.date,
+          },
         );
       }
 
@@ -1091,6 +1139,8 @@ export class TransactionsService {
       payeeIds?: string[];
       tagIds?: string[];
       search?: string;
+      searchAmount?: number | null;
+      searchDate?: string | null;
       amountFrom?: number;
       amountTo?: number;
     },
@@ -1231,6 +1281,8 @@ export class TransactionsService {
       payeeIds?: string[];
       tagIds?: string[];
       search?: string;
+      searchAmount?: number | null;
+      searchDate?: string | null;
       amountFrom?: number;
       amountTo?: number;
     },
@@ -1479,6 +1531,8 @@ export class TransactionsService {
       payeeIds?: string[];
       tagIds?: string[];
       search?: string;
+      searchAmount?: number | null;
+      searchDate?: string | null;
       amountFrom?: number;
       amountTo?: number;
     },
@@ -1544,7 +1598,11 @@ export class TransactionsService {
           splits: "bfSplits",
           paramName: "bfSearch",
         }),
-        { bfSearch: searchPattern },
+        {
+          bfSearch: searchPattern,
+          bfSearchAmount: filters.searchAmount ?? null,
+          bfSearchDate: filters.searchDate ?? null,
+        },
       );
     }
 

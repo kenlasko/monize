@@ -11,6 +11,7 @@ import { Brackets, Repository, SelectQueryBuilder, DataSource } from "typeorm";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { Category } from "../categories/entities/category.entity";
 import { Payee } from "../payees/entities/payee.entity";
+import { UserPreference } from "../users/entities/user-preference.entity";
 import { AccountsService } from "../accounts/accounts.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { TagsService } from "../tags/tags.service";
@@ -28,6 +29,10 @@ import {
   buildTransactionSearchClause,
   escapeLikePattern,
 } from "./transaction-search.util";
+import {
+  parseSearchTerm,
+  ParsedSearchTerm,
+} from "./transaction-search-parse.util";
 import { tr } from "../i18n/translate";
 
 export interface BulkDeleteResult {
@@ -51,6 +56,8 @@ export class TransactionBulkUpdateService {
     private categoriesRepository: Repository<Category>,
     @InjectRepository(Payee)
     private payeesRepository: Repository<Payee>,
+    @InjectRepository(UserPreference)
+    private userPreferenceRepository: Repository<UserPreference>,
     @Inject(forwardRef(() => AccountsService))
     private accountsService: AccountsService,
     @Inject(forwardRef(() => NetWorthService))
@@ -58,6 +65,24 @@ export class TransactionBulkUpdateService {
     private tagsService: TagsService,
     private dataSource: DataSource,
   ) {}
+
+  /**
+   * Interprets the search term as an exact amount and/or date using the user's
+   * number/date-format preferences, so locale-formatted values also match.
+   */
+  private async resolveSearchTerm(
+    userId: string,
+    term?: string,
+  ): Promise<ParsedSearchTerm> {
+    if (!term || !term.trim()) return { amount: null, date: null };
+    const prefs = await this.userPreferenceRepository.findOne({
+      where: { userId },
+    });
+    return parseSearchTerm(term, {
+      numberFormat: prefs?.numberFormat,
+      dateFormat: prefs?.dateFormat,
+    });
+  }
 
   async bulkUpdate(
     userId: string,
@@ -587,6 +612,7 @@ export class TransactionBulkUpdateService {
 
     if (filters.search && filters.search.trim()) {
       const searchPattern = `%${escapeLikePattern(filters.search.trim())}%`;
+      const parsedSearch = await this.resolveSearchTerm(userId, filters.search);
       if (!filters.categoryIds || filters.categoryIds.length === 0) {
         queryBuilder.leftJoin("transaction.splits", "searchSplits");
         queryBuilder.andWhere(
@@ -594,7 +620,11 @@ export class TransactionBulkUpdateService {
             transaction: "transaction",
             splits: "searchSplits",
           }),
-          { search: searchPattern },
+          {
+            search: searchPattern,
+            searchAmount: parsedSearch.amount,
+            searchDate: parsedSearch.date,
+          },
         );
       } else {
         queryBuilder.andWhere(
@@ -602,7 +632,11 @@ export class TransactionBulkUpdateService {
             transaction: "transaction",
             splits: "filterSplits",
           }),
-          { search: searchPattern },
+          {
+            search: searchPattern,
+            searchAmount: parsedSearch.amount,
+            searchDate: parsedSearch.date,
+          },
         );
       }
     }

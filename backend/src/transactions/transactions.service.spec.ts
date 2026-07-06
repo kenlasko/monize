@@ -8,6 +8,7 @@ import { TransactionSplit } from "./entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
 import { InvestmentTransaction } from "../securities/entities/investment-transaction.entity";
 import { Payee } from "../payees/entities/payee.entity";
+import { UserPreference } from "../users/entities/user-preference.entity";
 import { AccountsService } from "../accounts/accounts.service";
 import { PayeesService } from "../payees/payees.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
@@ -37,6 +38,7 @@ describe("TransactionsService", () => {
   let splitsRepository: Record<string, jest.Mock>;
   let categoriesRepository: Record<string, jest.Mock>;
   let investmentTxRepository: Record<string, jest.Mock>;
+  let userPreferenceRepository: Record<string, jest.Mock>;
   let accountsService: Record<string, jest.Mock>;
   let payeesService: Record<string, jest.Mock>;
   let netWorthService: Record<string, jest.Mock>;
@@ -92,6 +94,10 @@ describe("TransactionsService", () => {
 
     investmentTxRepository = {
       find: jest.fn().mockResolvedValue([]),
+    };
+
+    userPreferenceRepository = {
+      findOne: jest.fn().mockResolvedValue(null),
     };
 
     accountsService = {
@@ -194,6 +200,10 @@ describe("TransactionsService", () => {
         {
           provide: getRepositoryToken(InvestmentTransaction),
           useValue: investmentTxRepository,
+        },
+        {
+          provide: getRepositoryToken(UserPreference),
+          useValue: userPreferenceRepository,
         },
         {
           provide: getRepositoryToken(Payee),
@@ -1814,7 +1824,80 @@ describe("TransactionsService", () => {
           transaction: "transaction",
           splits: "splits",
         }),
-        { search: "%groceries%" },
+        { search: "%groceries%", searchAmount: null, searchDate: null },
+      );
+    });
+
+    it("interprets an amount typed in the user's locale format", async () => {
+      const mockQb = createMockQueryBuilder();
+      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
+      investmentTxRepository.find.mockResolvedValue([]);
+      // de-DE: "." thousands, "," decimal -> "1.234,56" means 1234.56.
+      userPreferenceRepository.findOne.mockResolvedValue({
+        numberFormat: "de-DE",
+        dateFormat: "DD.MM.YYYY",
+      });
+
+      await service.findAll(
+        "user-1",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        1,
+        50,
+        false,
+        "1.234,56",
+      );
+
+      expect(mockQb.andWhere).toHaveBeenCalledWith(
+        buildTransactionSearchClause({
+          transaction: "transaction",
+          splits: "splits",
+        }),
+        {
+          search: "%1.234,56%",
+          searchAmount: 1234.56,
+          searchDate: null,
+        },
+      );
+    });
+
+    it("interprets a date typed in the user's display format", async () => {
+      const mockQb = createMockQueryBuilder();
+      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
+      investmentTxRepository.find.mockResolvedValue([]);
+      userPreferenceRepository.findOne.mockResolvedValue({
+        numberFormat: "de-DE",
+        dateFormat: "DD.MM.YYYY",
+      });
+
+      await service.findAll(
+        "user-1",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        1,
+        50,
+        false,
+        "02.07.2026",
+      );
+
+      expect(mockQb.andWhere).toHaveBeenCalledWith(
+        buildTransactionSearchClause({
+          transaction: "transaction",
+          splits: "splits",
+        }),
+        {
+          search: "%02.07.2026%",
+          searchAmount: null,
+          searchDate: "2026-07-02",
+        },
       );
     });
 
@@ -2690,7 +2773,11 @@ describe("TransactionsService", () => {
             splits: "bfSplits",
             paramName: "bfSearch",
           }),
-          { bfSearch: "%grocery%" },
+          {
+            bfSearch: "%grocery%",
+            bfSearchAmount: null,
+            bfSearchDate: null,
+          },
         );
       });
 
@@ -3737,7 +3824,7 @@ describe("TransactionsService", () => {
           transaction: "transaction",
           splits: "splits",
         }),
-        { search: "%test search%" },
+        { search: "%test search%", searchAmount: null, searchDate: null },
       );
     });
 

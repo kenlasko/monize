@@ -17,6 +17,20 @@ export interface TransactionSearchAliases {
   splits: string;
   /** Bound parameter name (default: "search"). The caller binds `%pattern%` to this. */
   paramName?: string;
+  /**
+   * Bound parameter name for the interpreted exact amount (default:
+   * `${paramName}Amount`). The caller ALWAYS binds it -- the parsed amount, or
+   * null when the term did not parse as a number. When non-null the clause
+   * additionally matches rows whose absolute amount equals it exactly.
+   */
+  amountParamName?: string;
+  /**
+   * Bound parameter name for the interpreted exact date (default:
+   * `${paramName}Date`). The caller ALWAYS binds it -- the parsed ISO date, or
+   * null. When non-null the clause additionally matches rows on that
+   * transaction date exactly.
+   */
+  dateParamName?: string;
 }
 
 export function escapeLikePattern(input: string): string {
@@ -29,7 +43,15 @@ export function buildTransactionSearchClause(
   const t = aliases.transaction;
   const s = aliases.splits;
   const p = aliases.paramName ?? "search";
+  const ap = aliases.amountParamName ?? `${p}Amount`;
+  const dp = aliases.dateParamName ?? `${p}Date`;
 
+  // The amount/date params are ALWAYS bound by callers (null when the term did
+  // not parse). They are cast so the null bind type-checks in Postgres, and
+  // guarded so the extra predicates are inert unless the term parsed. This
+  // keeps the original substring behaviour as the base and OR-s the
+  // interpreted matches on top of it. Absolute value on the amount lets a
+  // pasted statement figure find both the debit and credit legs.
   return (
     `(${t}.description ILIKE :${p}` +
     ` OR ${t}.payeeName ILIKE :${p}` +
@@ -37,6 +59,9 @@ export function buildTransactionSearchClause(
     ` OR ${s}.memo ILIKE :${p}` +
     ` OR CAST(${t}.amount AS TEXT) ILIKE :${p}` +
     ` OR CAST(${s}.amount AS TEXT) ILIKE :${p}` +
+    ` OR (CAST(:${ap} AS numeric) IS NOT NULL AND ABS(${t}.amount) = ABS(CAST(:${ap} AS numeric)))` +
+    ` OR (CAST(:${ap} AS numeric) IS NOT NULL AND ABS(${s}.amount) = ABS(CAST(:${ap} AS numeric)))` +
+    ` OR (CAST(:${dp} AS date) IS NOT NULL AND ${t}.transactionDate = CAST(:${dp} AS date))` +
     ` OR EXISTS (SELECT 1 FROM payees search_p WHERE search_p.id = ${t}.payee_id AND search_p.name ILIKE :${p})` +
     ` OR EXISTS (SELECT 1 FROM categories search_c WHERE search_c.id = ${t}.category_id AND search_c.name ILIKE :${p})` +
     ` OR EXISTS (SELECT 1 FROM categories search_sc WHERE search_sc.id = ${s}.category_id AND search_sc.name ILIKE :${p})` +
