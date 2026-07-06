@@ -65,10 +65,14 @@
     "cash": "Gotówka",
     "untagged": "Bez tagów",
     "noTagData": "Brak otagowanych pozycji do pokazania. Dodaj tagi do swoich papierów, aby zobaczyć ekspozycję wg tagów.",
+    "noCountryData": "Brak danych o alokacji krajowej.",
     "tagExposureNote": "Ekspozycja wg tagów: pozycja z kilkoma tagami liczona jest w całości pod każdym z nich, więc procenty mogą sumować się do ponad 100%.",
+    "countryExposureNote": "Prześwietlenie krajów: pozycje w funduszach są dzielone według ich wag krajowych. Wyświetlanych jest 10 największych krajów; pozostałe są grupowane jako „Pozostałe kraje”.",
+    "otherCountries": "Pozostałe kraje",
     "groupBy": {
       "security": "Wg papieru",
-      "tag": "Wg tagu"
+      "tag": "Wg tagu",
+      "country": "Wg kraju"
     }
   },
   "holdingsList": {

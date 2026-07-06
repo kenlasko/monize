@@ -65,10 +65,14 @@
     "cash": "Trésorerie",
     "untagged": "Sans étiquette",
     "noTagData": "Aucune position étiquetée à afficher. Ajoutez des étiquettes à vos titres pour voir la répartition par étiquette.",
+    "noCountryData": "Aucune donnée de répartition par pays disponible.",
     "tagExposureNote": "Répartition par étiquette : une position comportant plusieurs étiquettes est comptée intégralement sous chacune, le total des pourcentages peut donc dépasser 100 %.",
+    "countryExposureNote": "Transparence par pays : les positions en fonds sont réparties selon leur pondération par pays. Les 10 principaux pays sont affichés ; le reste est regroupé sous « Autres pays ».",
+    "otherCountries": "Autres pays",
     "groupBy": {
       "security": "Par titre",
-      "tag": "Par étiquette"
+      "tag": "Par étiquette",
+      "country": "Par pays"
     }
   },
   "holdingsList": {

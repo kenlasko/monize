@@ -65,10 +65,14 @@
     "cash": "现金",
     "untagged": "无标签",
     "noTagData": "没有可显示的带标签持仓。为你的证券添加标签即可按标签查看敞口。",
+    "noCountryData": "暂无国家/地区配置数据。",
     "tagExposureNote": "按标签的敞口：带有多个标签的持仓会在每个标签下全额计入，因此百分比合计可能超过100%。",
+    "countryExposureNote": "国家/地区穿透：基金持仓会按其国家/地区权重拆分。显示前 10 个国家/地区，其余归为“其他国家/地区”。",
+    "otherCountries": "其他国家/地区",
     "groupBy": {
       "security": "按证券",
-      "tag": "按标签"
+      "tag": "按标签",
+      "country": "按国家/地区"
     }
   },
   "holdingsList": {

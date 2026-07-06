@@ -65,10 +65,14 @@
     "cash": "Tiền mặt",
     "untagged": "Chưa gắn thẻ",
     "noTagData": "Không có khoản nắm giữ nào được gắn thẻ. Thêm thẻ cho chứng khoán của bạn để xem mức độ tiếp xúc theo thẻ.",
+    "noCountryData": "Không có dữ liệu phân bổ theo quốc gia.",
     "tagExposureNote": "Mức độ tiếp xúc theo thẻ: một khoản nắm giữ có nhiều thẻ được tính đầy đủ dưới mỗi thẻ, nên tổng phần trăm có thể vượt quá 100%.",
+    "countryExposureNote": "Nhìn xuyên theo quốc gia: các khoản nắm giữ quỹ được chia theo trọng số quốc gia của chúng. 10 quốc gia hàng đầu được hiển thị; phần còn lại được gộp thành \"Quốc gia khác\".",
+    "otherCountries": "Quốc gia khác",
     "groupBy": {
       "security": "Theo chứng khoán",
-      "tag": "Theo thẻ"
+      "tag": "Theo thẻ",
+      "country": "Theo quốc gia"
     }
   },
   "holdingsList": {

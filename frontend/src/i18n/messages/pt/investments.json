@@ -65,10 +65,14 @@
     "cash": "Numerário",
     "untagged": "Sem etiquetas",
     "noTagData": "Não há posições etiquetadas para mostrar. Adicione etiquetas aos seus títulos para ver a exposição por etiqueta.",
+    "noCountryData": "Sem dados de alocação por país disponíveis.",
     "tagExposureNote": "Exposição por etiqueta: uma posição com várias etiquetas é contada na íntegra em cada uma, pelo que os percentuais podem somar mais de 100%.",
+    "countryExposureNote": "Transparência por país: as posições em fundos são repartidas segundo a sua alocação por país. São mostrados os 10 principais países; os restantes são agrupados como «Outros países».",
+    "otherCountries": "Outros países",
     "groupBy": {
       "security": "Por título",
-      "tag": "Por etiqueta"
+      "tag": "Por etiqueta",
+      "country": "Por país"
     }
   },
   "holdingsList": {

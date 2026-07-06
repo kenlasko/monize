@@ -65,10 +65,14 @@
     "cash": "Nakit",
     "untagged": "Etiketsiz",
     "noTagData": "Gösterilecek etiketli pozisyon yok. Etikete göre dağılımı görmek için menkul kıymetlerinize etiket ekleyin.",
+    "noCountryData": "Ülke dağılımı verisi mevcut değil.",
     "tagExposureNote": "Etikete göre dağılım: birden fazla etikete sahip bir pozisyon her birinin altında tam olarak sayılır, bu yüzden yüzdelerin toplamı %100'ü aşabilir.",
+    "countryExposureNote": "Ülke şeffaf bakışı: fon pozisyonları ülke ağırlıklarına göre bölünür. En büyük 10 ülke gösterilir; geri kalanı \"Diğer ülkeler\" olarak gruplanır.",
+    "otherCountries": "Diğer ülkeler",
     "groupBy": {
       "security": "Menkul kıymete göre",
-      "tag": "Etikete göre"
+      "tag": "Etikete göre",
+      "country": "Ülkeye göre"
     }
   },
   "holdingsList": {

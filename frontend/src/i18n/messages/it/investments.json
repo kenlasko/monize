@@ -65,10 +65,14 @@
     "cash": "Cassa",
     "untagged": "Senza etichette",
     "noTagData": "Nessuna posizione con etichetta da mostrare. Aggiungi etichette ai tuoi titoli per vedere l'esposizione per etichetta.",
+    "noCountryData": "Nessun dato di allocazione per paese disponibile.",
     "tagExposureNote": "Esposizione per etichetta: una posizione con più etichette viene conteggiata per intero sotto ciascuna, quindi la somma delle percentuali può superare il 100%.",
+    "countryExposureNote": "Trasparenza per paese: le posizioni in fondi sono suddivise in base alla loro allocazione per paese. Vengono mostrati i 10 paesi principali; il resto è raggruppato come «Altri paesi».",
+    "otherCountries": "Altri paesi",
     "groupBy": {
       "security": "Per titolo",
-      "tag": "Per etichetta"
+      "tag": "Per etichetta",
+      "country": "Per paese"
     }
   },
   "holdingsList": {
