@@ -92,6 +92,53 @@ describe('CustomizeDashboardModal', () => {
     expect(updatePreferencesMock).toHaveBeenCalledWith({ dashboardWidgets: expected });
   });
 
+  it('saves the new order after dragging a widget onto another', async () => {
+    await renderModal();
+    // Drag Insights (last default widget) onto Favourite Accounts (first).
+    await act(async () => {
+      fireEvent.dragStart(screen.getByTestId('widget-row-insights'));
+    });
+    await act(async () => {
+      fireEvent.dragOver(screen.getByTestId('widget-row-favourite-accounts'));
+    });
+    await act(async () => {
+      fireEvent.drop(screen.getByTestId('widget-row-favourite-accounts'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+    const expected = [
+      'insights',
+      ...DEFAULT_DASHBOARD_WIDGET_IDS.filter((id) => id !== 'insights'),
+    ];
+    expect(updatePreferencesMock).toHaveBeenCalledWith({ dashboardWidgets: expected });
+  });
+
+  it('dropping a widget onto itself keeps the default layout', async () => {
+    await renderModal();
+    await act(async () => {
+      fireEvent.dragStart(screen.getByTestId('widget-row-insights'));
+    });
+    await act(async () => {
+      fireEvent.drop(screen.getByTestId('widget-row-insights'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+    expect(updatePreferencesMock).toHaveBeenCalledWith({ dashboardWidgets: [] });
+  });
+
+  it('a drop with no drag in progress changes nothing', async () => {
+    await renderModal();
+    await act(async () => {
+      fireEvent.drop(screen.getByTestId('widget-row-favourite-accounts'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+    expect(updatePreferencesMock).toHaveBeenCalledWith({ dashboardWidgets: [] });
+  });
+
   it('enabling Favourite Reports saves it at its list position', async () => {
     await renderModal();
     await act(async () => {

@@ -139,6 +139,7 @@
     "description": "Choose which widgets appear on your dashboard and the order they are shown in. Widgets flow left to right, two per row on large screens.",
     "moveUp": "Move {name} up",
     "moveDown": "Move {name} down",
+    "dragToReorder": "Drag widgets to reorder them, or use the arrow buttons.",
     "atLeastOne": "Select at least one widget to show on the dashboard.",
     "reset": "Reset to default",
     "toasts": {
