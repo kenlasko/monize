@@ -92,7 +92,7 @@ export function CustomizeDashboardModal({ isOpen, onClose }: CustomizeDashboardM
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} maxWidth="lg" className="p-6" pushHistory>
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="2xl" className="p-6" pushHistory>
       <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
         {t('customize.title')}
       </h3>
