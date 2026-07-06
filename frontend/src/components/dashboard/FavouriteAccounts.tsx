@@ -173,7 +173,7 @@ export function FavouriteAccounts({ accounts, brokerageMarketValues, isLoading, 
               reordering ? 'cursor-grab' : ''
             } ${dragIndex === index ? 'opacity-50' : ''} ${
               overIndex === index && dragIndex !== null && dragIndex !== index
-                ? 'bg-blue-50 dark:bg-blue-900/20'
+                ? 'bg-blue-100 dark:bg-blue-500/20 ring-2 ring-inset ring-blue-500 dark:ring-blue-400'
                 : ''
             }`}
           >
