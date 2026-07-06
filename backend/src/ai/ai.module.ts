@@ -37,6 +37,7 @@ import { BudgetsModule } from "../budgets/budgets.module";
 import { SecuritiesModule } from "../securities/securities.module";
 import { ScheduledTransactionsModule } from "../scheduled-transactions/scheduled-transactions.module";
 import { BuiltInReportsModule } from "../built-in-reports/built-in-reports.module";
+import { AiRelayModule } from "./relay/ai-relay.module";
 
 @Module({
   imports: [
@@ -60,6 +61,10 @@ import { BuiltInReportsModule } from "../built-in-reports/built-in-reports.modul
     forwardRef(() => ScheduledTransactionsModule),
     forwardRef(() => BuiltInReportsModule),
     AiActionBuilderModule,
+    // AiService routes non-chat completions (insights, forecast) through the
+    // reverse MCP relay when the user's provider list reaches an mcp_relay
+    // config.
+    AiRelayModule,
   ],
   providers: [
     AiService,

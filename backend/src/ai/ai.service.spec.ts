@@ -7,6 +7,7 @@ import { AiProviderConfig } from "./entities/ai-provider-config.entity";
 import { AiEncryptionService } from "./ai-encryption.service";
 import { AiProviderFactory } from "./ai-provider.factory";
 import { AiUsageService } from "./ai-usage.service";
+import { AiRelayService, RelayTimeoutError } from "./relay/ai-relay.service";
 
 describe("AiService", () => {
   let service: AiService;
@@ -17,6 +18,7 @@ describe("AiService", () => {
   let mockProviderFactory: Partial<Record<keyof AiProviderFactory, jest.Mock>>;
   let mockUsageService: Partial<Record<keyof AiUsageService, jest.Mock>>;
   let mockConfigService: Partial<Record<keyof ConfigService, jest.Mock>>;
+  let mockRelayService: Partial<Record<keyof AiRelayService, jest.Mock>>;
 
   const userId = "user-1";
 
@@ -96,6 +98,11 @@ describe("AiService", () => {
       get: jest.fn().mockReturnValue(undefined),
     };
 
+    mockRelayService = {
+      getStatus: jest.fn().mockReturnValue({ state: "offline", queued: 0 }),
+      enqueuePrompt: jest.fn().mockResolvedValue({ text: "Relay answer" }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AiService,
@@ -107,6 +114,7 @@ describe("AiService", () => {
         { provide: AiProviderFactory, useValue: mockProviderFactory },
         { provide: AiUsageService, useValue: mockUsageService },
         { provide: ConfigService, useValue: mockConfigService },
+        { provide: AiRelayService, useValue: mockRelayService },
       ],
     }).compile();
 
@@ -569,7 +577,76 @@ describe("AiService", () => {
       ).rejects.toThrow("All AI providers failed");
     });
 
-    it("skips mcp_relay and completes with the next real provider", async () => {
+    it("routes through the relay agent when the provider is mcp_relay", async () => {
+      const relayConfig = makeConfig({
+        provider: "mcp_relay",
+        apiKeyEnc: null,
+        model: null,
+      });
+      mockConfigRepository.find.mockResolvedValue([relayConfig]);
+      mockRelayService.getStatus!.mockReturnValue({
+        state: "listening",
+        queued: 0,
+      });
+      mockRelayService.enqueuePrompt!.mockResolvedValue({
+        text: '{"insights": []}',
+      });
+
+      const result = await service.complete(
+        userId,
+        {
+          systemPrompt: "You analyze spending.",
+          messages: [{ role: "user", content: "Currency: USD" }],
+          responseFormat: "json",
+        },
+        "insight",
+      );
+
+      expect(result.content).toBe('{"insights": []}');
+      expect(result.provider).toBe("mcp_relay");
+      expect(mockProviderFactory.createProvider).not.toHaveBeenCalled();
+      // The flattened prompt carries the system prompt, the user message,
+      // and (for JSON requests) the strict-JSON instruction.
+      const [enqueueUserId, prompt, history] =
+        mockRelayService.enqueuePrompt!.mock.calls[0];
+      expect(enqueueUserId).toBe(userId);
+      expect(prompt).toContain("You analyze spending.");
+      expect(prompt).toContain("Currency: USD");
+      expect(prompt).toContain("Respond with ONLY the JSON");
+      expect(history).toEqual([]);
+      expect(mockUsageService.logUsage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId,
+          provider: "mcp_relay",
+          model: "relay-agent",
+          feature: "insight",
+        }),
+      );
+    });
+
+    it("omits the JSON instruction from relay prompts for text requests", async () => {
+      const relayConfig = makeConfig({
+        provider: "mcp_relay",
+        apiKeyEnc: null,
+        model: null,
+      });
+      mockConfigRepository.find.mockResolvedValue([relayConfig]);
+      mockRelayService.getStatus!.mockReturnValue({
+        state: "listening",
+        queued: 0,
+      });
+
+      await service.complete(
+        userId,
+        { systemPrompt: "test", messages: [{ role: "user", content: "hi" }] },
+        "query",
+      );
+
+      const [, prompt] = mockRelayService.enqueuePrompt!.mock.calls[0];
+      expect(prompt).not.toContain("Respond with ONLY the JSON");
+    });
+
+    it("fails fast to the next provider when the relay agent is offline", async () => {
       const relayConfig = makeConfig({
         id: "c1",
         provider: "mcp_relay",
@@ -589,13 +666,22 @@ describe("AiService", () => {
       );
 
       expect(result.content).toBe("Response text");
-      expect(mockProviderFactory.createProvider).toHaveBeenCalledTimes(1);
+      // The relay was never enqueued (offline pre-check), and the native
+      // provider served the completion.
+      expect(mockRelayService.enqueuePrompt).not.toHaveBeenCalled();
       expect(mockProviderFactory.createProvider).toHaveBeenCalledWith(
         anthropicConfig,
       );
+      // The relay failure is logged as a provider error before the fallback.
+      expect(mockUsageService.logUsage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          provider: "mcp_relay",
+          error: expect.stringContaining("not connected"),
+        }),
+      );
     });
 
-    it("throws a relay-specific error when the only provider is mcp_relay", async () => {
+    it("surfaces the offline error when the only provider is the relay", async () => {
       const relayConfig = makeConfig({
         provider: "mcp_relay",
         apiKeyEnc: null,
@@ -609,9 +695,63 @@ describe("AiService", () => {
           "insight",
         ),
       ).rejects.toThrow(
-        "This feature needs a native AI provider (Anthropic, OpenAI, or Ollama). The MCP relay only powers the chat. Please configure one in AI Settings.",
+        "Your MCP relay agent is not connected. Connect your agent and try again.",
       );
-      expect(mockProviderFactory.createProvider).not.toHaveBeenCalled();
+    });
+
+    it("surfaces a timeout error when the relay agent does not answer", async () => {
+      const relayConfig = makeConfig({
+        provider: "mcp_relay",
+        apiKeyEnc: null,
+      });
+      mockConfigRepository.find.mockResolvedValue([relayConfig]);
+      mockRelayService.getStatus!.mockReturnValue({
+        state: "listening",
+        queued: 0,
+      });
+      mockRelayService.enqueuePrompt!.mockRejectedValue(
+        new RelayTimeoutError("no_agent", "prompt-1"),
+      );
+
+      await expect(
+        service.complete(
+          userId,
+          { systemPrompt: "test", messages: [{ role: "user", content: "hi" }] },
+          "insight",
+        ),
+      ).rejects.toThrow("Your MCP relay agent did not answer in time");
+    });
+
+    it("falls back to the next provider when the relay times out", async () => {
+      const relayConfig = makeConfig({
+        id: "c1",
+        provider: "mcp_relay",
+        priority: 0,
+        apiKeyEnc: null,
+      });
+      const anthropicConfig = makeConfig({ id: "c2", priority: 1 });
+      mockConfigRepository.find.mockResolvedValue([
+        relayConfig,
+        anthropicConfig,
+      ]);
+      mockRelayService.getStatus!.mockReturnValue({
+        state: "listening",
+        queued: 0,
+      });
+      mockRelayService.enqueuePrompt!.mockRejectedValue(
+        new RelayTimeoutError("disconnected", "prompt-1"),
+      );
+
+      const result = await service.complete(
+        userId,
+        { systemPrompt: "test", messages: [{ role: "user", content: "hi" }] },
+        "insight",
+      );
+
+      expect(result.content).toBe("Response text");
+      expect(mockProviderFactory.createProvider).toHaveBeenCalledWith(
+        anthropicConfig,
+      );
     });
 
     it("uses system default when user has no configs", async () => {
@@ -696,16 +836,7 @@ describe("AiService", () => {
       expect(result.systemDefaultModel).toBe("claude-sonnet-4-20250514");
     });
 
-    it("reports a completion provider for a native user config", async () => {
-      mockConfigRepository.find.mockResolvedValue([makeConfig()]);
-
-      const result = await service.getStatus(userId);
-
-      expect(result.relayActive).toBe(false);
-      expect(result.hasCompletionProvider).toBe(true);
-    });
-
-    it("reports no completion provider for a relay-only setup", async () => {
+    it("reports relayActive when the top-priority provider is the relay", async () => {
       const relayConfig = makeConfig({
         provider: "mcp_relay",
         apiKeyEnc: null,
@@ -716,47 +847,14 @@ describe("AiService", () => {
 
       expect(result.configured).toBe(true);
       expect(result.relayActive).toBe(true);
-      expect(result.hasCompletionProvider).toBe(false);
     });
 
-    it("reports no completion provider for relay-only even with a system default", async () => {
-      // getActiveConfigs() only falls back to the system default when the
-      // user has NO configs, so a relay-only user cannot complete() even
-      // when the server defines a default provider.
-      const relayConfig = makeConfig({
-        provider: "mcp_relay",
-        apiKeyEnc: null,
-      });
-      mockConfigRepository.find.mockResolvedValue([relayConfig]);
-      mockConfigService.get!.mockImplementation((key: string) => {
-        if (key === "AI_DEFAULT_PROVIDER") return "anthropic";
-        return undefined;
-      });
+    it("does not report relayActive for a native top-priority provider", async () => {
+      mockConfigRepository.find.mockResolvedValue([makeConfig()]);
 
       const result = await service.getStatus(userId);
 
-      expect(result.hasSystemDefault).toBe(true);
-      expect(result.hasCompletionProvider).toBe(false);
-    });
-
-    it("reports a completion provider when only the system default exists", async () => {
-      mockConfigRepository.find.mockResolvedValue([]);
-      mockConfigService.get!.mockImplementation((key: string) => {
-        if (key === "AI_DEFAULT_PROVIDER") return "openai";
-        return undefined;
-      });
-
-      const result = await service.getStatus(userId);
-
-      expect(result.hasCompletionProvider).toBe(true);
-    });
-
-    it("reports no completion provider when nothing is configured", async () => {
-      mockConfigRepository.find.mockResolvedValue([]);
-
-      const result = await service.getStatus(userId);
-
-      expect(result.hasCompletionProvider).toBe(false);
+      expect(result.relayActive).toBe(false);
     });
 
     it("returns null model when system default has no model", async () => {

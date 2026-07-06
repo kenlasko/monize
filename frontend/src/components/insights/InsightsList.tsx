@@ -141,13 +141,10 @@ export function InsightsList() {
   const alertCount = insights.filter((i) => i.severity === 'alert' && !i.isDismissed).length;
   const warningCount = insights.filter((i) => i.severity === 'warning' && !i.isDismissed).length;
   const aiNotConfigured = aiStatus !== null && !aiStatus.configured;
-  // Providers are configured but none can serve completions (relay-only
-  // setup): the chat works, but insights generation would always fail.
-  const aiRelayOnly =
-    aiStatus !== null &&
-    aiStatus.configured &&
-    aiStatus.hasCompletionProvider === false;
-  const generationUnavailable = aiNotConfigured || aiRelayOnly;
+  // Insights will be generated through the user's own agent via the reverse
+  // MCP relay, which only works while that agent is connected -- worth a
+  // heads-up before they trigger a generation.
+  const relayActive = aiStatus?.relayActive === true;
 
   if (isLoading) {
     return (
@@ -189,25 +186,16 @@ export function InsightsList() {
         </div>
       )}
 
-      {/* Relay-only banner: chat works, but insights need a native provider */}
-      {aiRelayOnly && (
-        <div className="p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+      {/* Relay note: generation goes through the user's own MCP agent */}
+      {!aiNotConfigured && relayActive && (
+        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
           <div className="flex items-start gap-3">
-            <svg className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            <svg className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
             </svg>
-            <div>
-              <h3 className="text-sm font-medium text-amber-800 dark:text-amber-200">{t('relayOnly.heading')}</h3>
-              <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
-                {t.rich('relayOnly.message', {
-                  link: (chunks) => (
-                    <Link href="/settings/ai" className="font-medium underline hover:text-amber-900 dark:hover:text-amber-100">
-                      {chunks}
-                    </Link>
-                  ),
-                })}
-              </p>
-            </div>
+            <p className="text-sm text-blue-700 dark:text-blue-300">
+              {t('relayNote')}
+            </p>
           </div>
         </div>
       )}
@@ -237,7 +225,7 @@ export function InsightsList() {
         </div>
         <button
           onClick={handleGenerate}
-          disabled={isGenerating || generationUnavailable}
+          disabled={isGenerating || aiNotConfigured}
           className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {isGenerating ? t('list.generating') : t('list.refreshButton')}
@@ -296,7 +284,7 @@ export function InsightsList() {
               ? t('list.emptyNoInsights')
               : t('list.emptyFiltered')}
           </p>
-          {total === 0 && !generationUnavailable && (
+          {total === 0 && !aiNotConfigured && (
             <button
               onClick={handleGenerate}
               disabled={isGenerating}

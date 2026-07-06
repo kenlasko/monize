@@ -109,13 +109,6 @@ export interface AiStatus {
    * chat routes prompts to the user's own agent instead of an LLM.
    */
   relayActive: boolean;
-  /**
-   * True when at least one provider can serve non-chat completions (Insights,
-   * Forecast): a native (non-relay) user config, or the system default when
-   * the user has no configs. False for a relay-only setup, where the chat
-   * works but Insights/Forecast cannot run.
-   */
-  hasCompletionProvider: boolean;
 }
 
 export interface AiConnectionTestResult {

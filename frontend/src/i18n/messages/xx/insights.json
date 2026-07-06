@@ -28,11 +28,7 @@
     "message": "[XX-No AI provider is configured. To use Spending Insights, please {link} in your settings.-XX]",
     "linkText": "[XX-configure an AI provider-XX]"
   },
-  "relayOnly": {
-    "heading": "[XX-Insights Need a Native AI Provider-XX]",
-    "message": "[XX-Your only AI provider is the MCP relay, which only powers the chat. To use Spending Insights, please {link} (Anthropic, OpenAI, or Ollama) in your settings.-XX]",
-    "linkText": "[XX-add a native AI provider-XX]"
-  },
+  "relayNote": "[XX-Insights are generated through your MCP relay agent. Make sure your agent is connected before generating.-XX]",
   "insightTypes": {
     "anomaly": "[XX-Anomaly-XX]",
     "trend": "[XX-Trend-XX]",

@@ -72,11 +72,6 @@ export interface AiStatusResponse {
   // True when the highest-priority active provider is the MCP relay, so the
   // chat should route prompts to the user's own agent instead of an LLM.
   relayActive: boolean;
-  // True when at least one provider usable by AiService.complete() exists:
-  // a native (non-relay) user config, or the system default when the user
-  // has no configs. False for a relay-only setup, so the UI can explain
-  // that Insights/Forecast are unavailable even though the chat works.
-  hasCompletionProvider: boolean;
 }
 
 export interface AiConnectionTestResponse {

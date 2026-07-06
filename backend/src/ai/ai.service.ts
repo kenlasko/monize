@@ -26,7 +26,9 @@ import {
   AiCompletionRequest,
   AiCompletionResponse,
   AiProvider,
+  AiTextBlock,
 } from "./providers/ai-provider.interface";
+import { AiRelayService, RelayTimeoutError } from "./relay/ai-relay.service";
 import {
   validateUrlIsSafe,
   validateUrlBasicSafety,
@@ -38,6 +40,13 @@ import {
 } from "./entities/ai-provider-config.entity";
 
 const DEFAULT_MAX_AI_PROVIDERS_PER_USER = 10;
+
+/**
+ * Model label recorded in usage logs for completions answered by the user's
+ * own agent through the reverse MCP relay. The relay has no model of its own
+ * and never learns which model the agent runs.
+ */
+const RELAY_MODEL_LABEL = "relay-agent";
 
 @Injectable()
 export class AiService {
@@ -55,6 +64,7 @@ export class AiService {
     private readonly providerFactory: AiProviderFactory,
     private readonly usageService: AiUsageService,
     private readonly configService: ConfigService,
+    private readonly relayService: AiRelayService,
   ) {
     const envVal = this.configService.get<number>("AI_MAX_PROVIDERS_PER_USER");
     this.maxProvidersPerUser =
@@ -379,31 +389,20 @@ export class AiService {
       );
     }
 
-    // mcp_relay is not a callable LLM -- it routes chat to the user's own
-    // agent. Non-chat features (insights, forecast) can only run on a real
-    // provider, so drop relay configs and fail with a specific message when
-    // nothing callable remains (relay-only setup), instead of the misleading
-    // generic "all providers failed".
-    const callableConfigs = configs.filter(
-      (config) => config.provider !== "mcp_relay",
-    );
-
-    if (callableConfigs.length === 0) {
-      throw new BadRequestException(
-        tr(
-          "errors.ai.relayOnlyProvider",
-          "This feature needs a native AI provider (Anthropic, OpenAI, or Ollama). The MCP relay only powers the chat. Please configure one in AI Settings.",
-        ),
-      );
-    }
-
     const errors: string[] = [];
+    let relayError: BadRequestException | null = null;
 
-    for (const config of callableConfigs) {
+    for (const config of configs) {
+      const isRelay = config.provider === "mcp_relay";
       const startTime = Date.now();
       try {
-        const provider = this.providerFactory.createProvider(config);
-        const response = await provider.complete(request);
+        // mcp_relay is not a directly callable LLM -- route the completion
+        // through the user's own agent, the same prompt/response round-trip
+        // the chat uses. Failures (agent offline, timed out) fall through to
+        // the next provider like any other provider failure.
+        const response = isRelay
+          ? await this.completeViaRelay(userId, request)
+          : await this.providerFactory.createProvider(config).complete(request);
         const durationMs = Date.now() - startTime;
 
         await this.usageService.logUsage({
@@ -423,12 +422,16 @@ export class AiService {
           error instanceof Error ? error.message : "Unknown error";
         errors.push(`${config.provider}: ${message}`);
 
+        if (isRelay && error instanceof BadRequestException && !relayError) {
+          relayError = error;
+        }
+
         this.logger.warn(`AI provider ${config.provider} failed: ${message}`);
 
         await this.usageService.logUsage({
           userId,
           provider: config.provider,
-          model: config.model || "unknown",
+          model: config.model || (isRelay ? RELAY_MODEL_LABEL : "unknown"),
           feature,
           inputTokens: 0,
           outputTokens: 0,
@@ -439,12 +442,102 @@ export class AiService {
     }
 
     this.logger.error(`All AI providers failed: ${errors.join("; ")}`);
+
+    // A relay-only setup has no other provider to fall back to: surface the
+    // relay's own failure (agent offline / did not answer), which the user can
+    // act on, instead of the generic message that suggests a misconfiguration.
+    if (relayError && configs.every((c) => c.provider === "mcp_relay")) {
+      throw relayError;
+    }
+
     throw new BadRequestException(
       tr(
         "errors.ai.allProvidersFailed",
         "All AI providers failed. Please check your provider configuration and try again.",
       ),
     );
+  }
+
+  /**
+   * Serve a completion through the reverse MCP relay: enqueue the prompt to
+   * the user's own agent and await its answer, the same round-trip the chat
+   * uses. Used by non-chat features (insights, forecast) when the user's
+   * provider list reaches an mcp_relay config.
+   *
+   * Fails fast when no agent is connected -- enqueueing would otherwise park
+   * the request for the full queue wait (minutes) with nothing listening.
+   */
+  private async completeViaRelay(
+    userId: string,
+    request: AiCompletionRequest,
+  ): Promise<AiCompletionResponse> {
+    const tunnel = this.relayService.getStatus(userId);
+    if (tunnel.state === "offline") {
+      throw new BadRequestException(
+        tr(
+          "errors.ai.relayAgentOffline",
+          "Your MCP relay agent is not connected. Connect your agent and try again.",
+        ),
+      );
+    }
+
+    try {
+      const response = await this.relayService.enqueuePrompt(
+        userId,
+        this.buildRelayPrompt(request),
+        [],
+      );
+      return {
+        content: response.text,
+        usage: { inputTokens: 0, outputTokens: 0 },
+        model: RELAY_MODEL_LABEL,
+        provider: "mcp_relay",
+      };
+    } catch (error) {
+      if (error instanceof RelayTimeoutError) {
+        throw new BadRequestException(
+          tr(
+            "errors.ai.relayCompletionTimedOut",
+            "Your MCP relay agent did not answer in time. Make sure it is connected, then try again.",
+          ),
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Flatten an AiCompletionRequest into the single prompt string the relay
+   * hands the agent. The agent is a chat-style assistant, so JSON-format
+   * requests get an explicit trailing instruction to answer with raw JSON
+   * only -- the analysis parsers reject prose and markdown fences.
+   */
+  private buildRelayPrompt(request: AiCompletionRequest): string {
+    const parts: string[] = [];
+    if (request.systemPrompt) {
+      parts.push(request.systemPrompt);
+    }
+    for (const message of request.messages) {
+      const text =
+        typeof message.content === "string"
+          ? message.content
+          : message.content
+              .filter((block): block is AiTextBlock => block.type === "text")
+              .map((block) => block.text)
+              .join("\n");
+      if (text) {
+        parts.push(text);
+      }
+    }
+    if (request.responseFormat === "json") {
+      parts.push(
+        "This is an automated analysis request from Monize, not a chat " +
+          "message from the user. Respond with ONLY the JSON described " +
+          "above -- no prose, no markdown code fences, and no commentary " +
+          "before or after the JSON.",
+      );
+    }
+    return parts.join("\n\n");
   }
 
   async getUsageSummary(
@@ -473,14 +566,6 @@ export class AiService {
       // The chat routes to the reverse MCP relay when the highest-priority
       // active provider is mcp_relay (priority ASC -> [0] is top).
       relayActive: configs[0]?.provider === "mcp_relay",
-      // Mirrors what complete() can actually call: the relay is not an LLM,
-      // and the system default only applies when the user has no configs of
-      // their own. False for a relay-only setup, where Insights/Forecast
-      // cannot run even though the chat works.
-      hasCompletionProvider:
-        configs.length > 0
-          ? configs.some((c) => c.provider !== "mcp_relay")
-          : hasSystemDefault,
     };
   }
 

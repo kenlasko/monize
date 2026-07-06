@@ -40,7 +40,7 @@ describe('InsightsList', () => {
     vi.useRealTimers();
     mockGetStatus.mockResolvedValue({
       configured: true,
-      hasCompletionProvider: true,
+      relayActive: false,
     });
     mockGetInsights.mockResolvedValue({
       insights: [],
@@ -337,32 +337,32 @@ describe('InsightsList', () => {
     });
   });
 
-  it('shows the relay-only banner and disables generation when the only provider is the MCP relay', async () => {
+  it('shows the relay note without blocking generation when the relay is active', async () => {
     mockGetStatus.mockResolvedValue({
       configured: true,
-      hasCompletionProvider: false,
+      relayActive: true,
     });
 
     await renderInsights();
 
     await waitFor(() => {
       expect(
-        screen.getByText('Insights Need a Native AI Provider'),
+        screen.getByText(/generated through your MCP relay agent/),
       ).toBeInTheDocument();
     });
-    // Header refresh button is disabled; the empty-state generate button is hidden
-    expect(screen.getByText('Refresh Insights')).toBeDisabled();
-    expect(screen.queryByText('Generate Insights')).not.toBeInTheDocument();
+    // Generation stays available: it is served by the connected relay agent
+    expect(screen.getByText('Refresh Insights')).not.toBeDisabled();
+    expect(screen.getByText('Generate Insights')).toBeInTheDocument();
   });
 
-  it('does not show the relay-only banner when a native provider exists', async () => {
+  it('does not show the relay note for a native provider', async () => {
     await renderInsights();
 
     await waitFor(() => {
       expect(screen.getByText('Generate Insights')).toBeInTheDocument();
     });
     expect(
-      screen.queryByText('Insights Need a Native AI Provider'),
+      screen.queryByText(/generated through your MCP relay agent/),
     ).not.toBeInTheDocument();
   });
 
