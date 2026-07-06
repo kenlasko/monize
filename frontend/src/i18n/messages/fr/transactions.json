@@ -1,4 +1,52 @@
 {
+  "payeeWidget": {
+    "totalSpent": "Dépenses totales",
+    "income": "Revenus",
+    "net": "Net",
+    "transactions": "Transactions",
+    "averageAmount": "Montant moyen",
+    "lastTransaction": "Dernière transaction",
+    "defaultCategory": "Catégorie par défaut",
+    "nextBill": "Prochaine facture",
+    "viewBills": "Voir dans Factures & Dépôts",
+    "topCategories": "Principales catégories",
+    "uncategorized": "Non catégorisé",
+    "aliases": "Alias",
+    "recurring": "Récurrent : {cadence} · {amount}",
+    "recurringTooltip": "Détecté à partir de débits répétés sur la période sélectionnée (ou les 12 derniers mois si aucun filtre de date n'est défini).",
+    "cadence": {
+      "weekly": "Hebdomadaire",
+      "biweekly": "Toutes les 2 semaines",
+      "monthly": "Mensuel",
+      "quarterly": "Trimestriel",
+      "yearly": "Annuel"
+    },
+    "inactive": "Inactif",
+    "noTransactions": "Aucune transaction sur cette période",
+    "editAria": "Modifier le bénéficiaire",
+    "collapseAria": "Masquer les informations du bénéficiaire",
+    "show": "Afficher les informations du bénéficiaire"
+  },
+  "categoryWidget": {
+    "totalSpent": "Dépenses totales",
+    "totalEarned": "Revenus totaux",
+    "income": "Revenu",
+    "expense": "Dépense",
+    "budgetThisMonth": "Budget de ce mois",
+    "budgetProgress": "{spent} sur {budgeted}",
+    "transactions": "Transactions",
+    "averageAmount": "Montant moyen",
+    "monthlyAverage": "Moyenne mensuelle",
+    "subcategories": "Sous-catégories",
+    "thisCategory": "Cette catégorie",
+    "topPayees": "Principaux bénéficiaires",
+    "noPayee": "Aucun bénéficiaire",
+    "nextScheduled": "Prochaine transaction planifiée",
+    "noTransactions": "Aucune transaction sur cette période",
+    "editAria": "Modifier la catégorie",
+    "collapseAria": "Masquer les informations de la catégorie",
+    "show": "Afficher les informations de la catégorie"
+  },
   "accountWidget": {
     "currentBalance": "Solde actuel",
     "nextPayment": "Prochain paiement",
@@ -27,7 +75,8 @@
       "duplicateTitle": "Dupliquer la transaction",
       "newTitle": "Nouvelle transaction",
       "scheduleTitle": "Planifier comme récurrente",
-      "editPayeeTitle": "Modifier le bénéficiaire"
+      "editPayeeTitle": "Modifier le bénéficiaire",
+      "editCategoryTitle": "Modifier la catégorie"
     },
     "loading": "Chargement des transactions...",
     "totalCount": "{count, plural, one {# transaction} other {# transactions}}",
@@ -430,6 +479,8 @@
     "loadFailed": "Échec du chargement des transactions",
     "loadPayeeFailed": "Échec du chargement des détails du bénéficiaire",
     "payeeUpdateFailed": "Échec de la mise à jour du bénéficiaire",
+    "categoryUpdated": "Catégorie mise à jour",
+    "categoryUpdateFailed": "Échec de la mise à jour de la catégorie",
     "exportFailed": "Échec de l'exportation des transactions"
   },
   "validation": {

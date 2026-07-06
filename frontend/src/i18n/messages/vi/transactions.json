@@ -1,4 +1,52 @@
 {
+  "payeeWidget": {
+    "totalSpent": "Tổng chi tiêu",
+    "income": "Thu nhập",
+    "net": "Ròng",
+    "transactions": "Giao tác",
+    "averageAmount": "Số tiền trung bình",
+    "lastTransaction": "Giao tác gần nhất",
+    "defaultCategory": "Danh mục mặc định",
+    "nextBill": "Hóa đơn tiếp theo",
+    "viewBills": "Xem trong Hóa đơn & Tiền gửi",
+    "topCategories": "Danh mục hàng đầu",
+    "uncategorized": "Chưa phân loại",
+    "aliases": "Bí danh",
+    "recurring": "Định kỳ: {cadence} · {amount}",
+    "recurringTooltip": "Được phát hiện từ các khoản thanh toán lặp lại trong khoảng thời gian đã chọn (hoặc 12 tháng gần nhất nếu không có bộ lọc ngày).",
+    "cadence": {
+      "weekly": "Hàng tuần",
+      "biweekly": "Mỗi 2 tuần",
+      "monthly": "Hàng tháng",
+      "quarterly": "Hàng quý",
+      "yearly": "Hàng năm"
+    },
+    "inactive": "Không hoạt động",
+    "noTransactions": "Không có giao tác trong khoảng thời gian này",
+    "editAria": "Chỉnh sửa người nhận",
+    "collapseAria": "Ẩn thông tin người nhận",
+    "show": "Hiển thị thông tin người nhận"
+  },
+  "categoryWidget": {
+    "totalSpent": "Tổng chi tiêu",
+    "totalEarned": "Tổng thu nhập",
+    "income": "Thu nhập",
+    "expense": "Chi tiêu",
+    "budgetThisMonth": "Ngân sách tháng này",
+    "budgetProgress": "{spent} trên {budgeted}",
+    "transactions": "Giao tác",
+    "averageAmount": "Số tiền trung bình",
+    "monthlyAverage": "Trung bình hàng tháng",
+    "subcategories": "Danh mục con",
+    "thisCategory": "Danh mục này",
+    "topPayees": "Người nhận hàng đầu",
+    "noPayee": "Không có người nhận",
+    "nextScheduled": "Lịch tiếp theo",
+    "noTransactions": "Không có giao tác trong khoảng thời gian này",
+    "editAria": "Chỉnh sửa danh mục",
+    "collapseAria": "Ẩn thông tin danh mục",
+    "show": "Hiển thị thông tin danh mục"
+  },
   "accountWidget": {
     "currentBalance": "Số tiền còn lại",
     "nextPayment": "Lần thanh toán tiếp theo",
@@ -27,7 +75,8 @@
       "duplicateTitle": "Sao chép giao tác",
       "newTitle": "Giao tác mới",
       "scheduleTitle": "Lên lịch định kỳ",
-      "editPayeeTitle": "Chỉnh sửa người nhận"
+      "editPayeeTitle": "Chỉnh sửa người nhận",
+      "editCategoryTitle": "Chỉnh sửa danh mục"
     },
     "loading": "Đang tải giao tác...",
     "totalCount": "{count, plural, one {# giao tác} other {# giao tác}}",
@@ -430,6 +479,8 @@
     "loadFailed": "Không thể tải giao tác",
     "loadPayeeFailed": "Không thể tải chi tiết người nhận",
     "payeeUpdateFailed": "Không thể cập nhật người nhận",
+    "categoryUpdated": "Danh mục đã được cập nhật thành công",
+    "categoryUpdateFailed": "Không thể cập nhật danh mục",
     "exportFailed": "Không thể xuất giao tác"
   },
   "validation": {

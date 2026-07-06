@@ -1,4 +1,52 @@
 {
+  "payeeWidget": {
+    "totalSpent": "Gasto total",
+    "income": "Ingresos",
+    "net": "Neto",
+    "transactions": "Transacciones",
+    "averageAmount": "Importe promedio",
+    "lastTransaction": "Última transacción",
+    "defaultCategory": "Categoría predeterminada",
+    "nextBill": "Próxima factura",
+    "viewBills": "Ver en Facturas y depósitos",
+    "topCategories": "Categorías principales",
+    "uncategorized": "Sin categoría",
+    "aliases": "Alias",
+    "recurring": "Recurrente: {cadence} · {amount}",
+    "recurringTooltip": "Detectado a partir de cargos repetidos durante el período seleccionado (o los últimos 12 meses si no hay filtro de fechas).",
+    "cadence": {
+      "weekly": "Semanal",
+      "biweekly": "Cada 2 semanas",
+      "monthly": "Mensual",
+      "quarterly": "Trimestral",
+      "yearly": "Anual"
+    },
+    "inactive": "Inactivo",
+    "noTransactions": "No hay transacciones en este período",
+    "editAria": "Editar beneficiario",
+    "collapseAria": "Ocultar información del beneficiario",
+    "show": "Mostrar información del beneficiario"
+  },
+  "categoryWidget": {
+    "totalSpent": "Gasto total",
+    "totalEarned": "Ingreso total",
+    "income": "Ingreso",
+    "expense": "Gasto",
+    "budgetThisMonth": "Presupuesto de este mes",
+    "budgetProgress": "{spent} de {budgeted}",
+    "transactions": "Transacciones",
+    "averageAmount": "Importe promedio",
+    "monthlyAverage": "Promedio mensual",
+    "subcategories": "Subcategorías",
+    "thisCategory": "Esta categoría",
+    "topPayees": "Beneficiarios principales",
+    "noPayee": "Sin beneficiario",
+    "nextScheduled": "Próxima programada",
+    "noTransactions": "No hay transacciones en este período",
+    "editAria": "Editar categoría",
+    "collapseAria": "Ocultar información de la categoría",
+    "show": "Mostrar información de la categoría"
+  },
   "accountWidget": {
     "currentBalance": "Saldo actual",
     "nextPayment": "Próximo pago",
@@ -27,7 +75,8 @@
       "duplicateTitle": "Duplicar transacción",
       "newTitle": "Nueva transacción",
       "scheduleTitle": "Programar como recurrente",
-      "editPayeeTitle": "Editar beneficiario"
+      "editPayeeTitle": "Editar beneficiario",
+      "editCategoryTitle": "Editar categoría"
     },
     "loading": "Cargando transacciones...",
     "totalCount": "{count, plural, one {# transacción} other {# transacciones}}",
@@ -430,6 +479,8 @@
     "loadFailed": "Error al cargar las transacciones",
     "loadPayeeFailed": "Error al cargar los detalles del beneficiario",
     "payeeUpdateFailed": "Error al actualizar el beneficiario",
+    "categoryUpdated": "Categoría actualizada correctamente",
+    "categoryUpdateFailed": "Error al actualizar la categoría",
     "exportFailed": "Error al exportar transacciones"
   },
   "validation": {

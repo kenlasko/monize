@@ -1,4 +1,52 @@
 {
+  "payeeWidget": {
+    "totalSpent": "Gesamtausgaben",
+    "income": "Einnahmen",
+    "net": "Netto",
+    "transactions": "Buchungen",
+    "averageAmount": "Durchschnittsbetrag",
+    "lastTransaction": "Letzte Buchung",
+    "defaultCategory": "Standardkategorie",
+    "nextBill": "Nächste Rechnung",
+    "viewBills": "In Rechnungen & Einzahlungen anzeigen",
+    "topCategories": "Top-Kategorien",
+    "uncategorized": "Nicht kategorisiert",
+    "aliases": "Aliasse",
+    "recurring": "Wiederkehrend: {cadence} · {amount}",
+    "recurringTooltip": "Erkannt anhand wiederholter Abbuchungen im ausgewählten Zeitraum (oder in den letzten 12 Monaten, wenn kein Datumsfilter gesetzt ist).",
+    "cadence": {
+      "weekly": "Wöchentlich",
+      "biweekly": "Alle 2 Wochen",
+      "monthly": "Monatlich",
+      "quarterly": "Vierteljährlich",
+      "yearly": "Jährlich"
+    },
+    "inactive": "Inaktiv",
+    "noTransactions": "Keine Buchungen in diesem Zeitraum",
+    "editAria": "Zahlungsempfänger bearbeiten",
+    "collapseAria": "Zahlungsempfänger-Informationen ausblenden",
+    "show": "Zahlungsempfänger-Informationen anzeigen"
+  },
+  "categoryWidget": {
+    "totalSpent": "Gesamtausgaben",
+    "totalEarned": "Gesamteinnahmen",
+    "income": "Einnahmen",
+    "expense": "Ausgaben",
+    "budgetThisMonth": "Budget diesen Monat",
+    "budgetProgress": "{spent} von {budgeted}",
+    "transactions": "Buchungen",
+    "averageAmount": "Durchschnittsbetrag",
+    "monthlyAverage": "Monatsdurchschnitt",
+    "subcategories": "Unterkategorien",
+    "thisCategory": "Diese Kategorie",
+    "topPayees": "Top-Zahlungsempfänger",
+    "noPayee": "Kein Zahlungsempfänger",
+    "nextScheduled": "Nächste geplante Buchung",
+    "noTransactions": "Keine Buchungen in diesem Zeitraum",
+    "editAria": "Kategorie bearbeiten",
+    "collapseAria": "Kategorie-Informationen ausblenden",
+    "show": "Kategorie-Informationen anzeigen"
+  },
   "accountWidget": {
     "currentBalance": "Aktueller Saldo",
     "nextPayment": "Nächste Zahlung",
@@ -27,7 +75,8 @@
       "duplicateTitle": "Buchung duplizieren",
       "newTitle": "Neue Buchung",
       "scheduleTitle": "Als wiederkehrend planen",
-      "editPayeeTitle": "Zahlungsempfänger bearbeiten"
+      "editPayeeTitle": "Zahlungsempfänger bearbeiten",
+      "editCategoryTitle": "Kategorie bearbeiten"
     },
     "loading": "Buchungen werden geladen...",
     "totalCount": "{count, plural, one {# Buchung} other {# Buchungen}}",
@@ -430,6 +479,8 @@
     "loadFailed": "Buchungen konnten nicht geladen werden",
     "loadPayeeFailed": "Details des Zahlungsempfängers konnten nicht geladen werden",
     "payeeUpdateFailed": "Zahlungsempfänger konnte nicht aktualisiert werden",
+    "categoryUpdated": "Kategorie erfolgreich aktualisiert",
+    "categoryUpdateFailed": "Kategorie konnte nicht aktualisiert werden",
     "exportFailed": "Buchungen konnten nicht exportiert werden"
   },
   "validation": {

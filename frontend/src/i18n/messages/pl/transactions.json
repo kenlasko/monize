@@ -1,4 +1,52 @@
 {
+  "payeeWidget": {
+    "totalSpent": "Łączne wydatki",
+    "income": "Przychody",
+    "net": "Netto",
+    "transactions": "Transakcje",
+    "averageAmount": "Średnia kwota",
+    "lastTransaction": "Ostatnia transakcja",
+    "defaultCategory": "Domyślna kategoria",
+    "nextBill": "Następny rachunek",
+    "viewBills": "Zobacz w Rachunki i wpłaty",
+    "topCategories": "Najczęstsze kategorie",
+    "uncategorized": "Bez kategorii",
+    "aliases": "Aliasy",
+    "recurring": "Cykliczne: {cadence} · {amount}",
+    "recurringTooltip": "Wykryto na podstawie powtarzających się obciążeń w wybranym okresie (lub z ostatnich 12 miesięcy, gdy brak filtra dat).",
+    "cadence": {
+      "weekly": "Co tydzień",
+      "biweekly": "Co 2 tygodnie",
+      "monthly": "Co miesiąc",
+      "quarterly": "Co kwartał",
+      "yearly": "Co rok"
+    },
+    "inactive": "Nieaktywny",
+    "noTransactions": "Brak transakcji w tym okresie",
+    "editAria": "Edytuj odbiorcę",
+    "collapseAria": "Ukryj informacje o odbiorcy",
+    "show": "Pokaż informacje o odbiorcy"
+  },
+  "categoryWidget": {
+    "totalSpent": "Łączne wydatki",
+    "totalEarned": "Łączne przychody",
+    "income": "Przychód",
+    "expense": "Wydatek",
+    "budgetThisMonth": "Budżet w tym miesiącu",
+    "budgetProgress": "{spent} z {budgeted}",
+    "transactions": "Transakcje",
+    "averageAmount": "Średnia kwota",
+    "monthlyAverage": "Średnia miesięczna",
+    "subcategories": "Podkategorie",
+    "thisCategory": "Ta kategoria",
+    "topPayees": "Najczęstsi odbiorcy",
+    "noPayee": "Brak odbiorcy",
+    "nextScheduled": "Następna zaplanowana",
+    "noTransactions": "Brak transakcji w tym okresie",
+    "editAria": "Edytuj kategorię",
+    "collapseAria": "Ukryj informacje o kategorii",
+    "show": "Pokaż informacje o kategorii"
+  },
   "accountWidget": {
     "currentBalance": "Bieżące saldo",
     "nextPayment": "Następna płatność",
@@ -27,7 +75,8 @@
       "duplicateTitle": "Duplikuj transakcję",
       "newTitle": "Nowa transakcja",
       "scheduleTitle": "Zaplanuj jako cykliczną",
-      "editPayeeTitle": "Edytuj odbiorcę"
+      "editPayeeTitle": "Edytuj odbiorcę",
+      "editCategoryTitle": "Edytuj kategorię"
     },
     "loading": "Ładowanie transakcji...",
     "totalCount": "{count, plural, one {# transakcja} few {# transakcje} many {# transakcji} other {# transakcji}}",
@@ -430,6 +479,8 @@
     "loadFailed": "Nie udało się załadować transakcji",
     "loadPayeeFailed": "Nie udało się załadować szczegółów odbiorcy",
     "payeeUpdateFailed": "Nie udało się zaktualizować odbiorcy",
+    "categoryUpdated": "Zaktualizowano kategorię",
+    "categoryUpdateFailed": "Nie udało się zaktualizować kategorii",
     "exportFailed": "Nie udało się wyeksportować transakcji"
   },
   "validation": {

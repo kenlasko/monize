@@ -1,4 +1,52 @@
 {
+  "payeeWidget": {
+    "totalSpent": "총 지출",
+    "income": "수입",
+    "net": "순액",
+    "transactions": "거래",
+    "averageAmount": "평균 금액",
+    "lastTransaction": "마지막 거래",
+    "defaultCategory": "기본 카테고리",
+    "nextBill": "다음 청구서",
+    "viewBills": "청구서 및 입금에서 보기",
+    "topCategories": "상위 카테고리",
+    "uncategorized": "미분류",
+    "aliases": "별칭",
+    "recurring": "반복: {cadence} · {amount}",
+    "recurringTooltip": "선택한 기간(날짜 필터가 없으면 최근 12개월)의 반복 청구에서 감지되었습니다.",
+    "cadence": {
+      "weekly": "매주",
+      "biweekly": "2주마다",
+      "monthly": "매월",
+      "quarterly": "분기별",
+      "yearly": "매년"
+    },
+    "inactive": "비활성",
+    "noTransactions": "이 기간에 거래가 없습니다",
+    "editAria": "수취인 편집",
+    "collapseAria": "수취인 정보 숨기기",
+    "show": "수취인 정보 표시"
+  },
+  "categoryWidget": {
+    "totalSpent": "총 지출",
+    "totalEarned": "총 수입",
+    "income": "수입",
+    "expense": "지출",
+    "budgetThisMonth": "이번 달 예산",
+    "budgetProgress": "{budgeted} 중 {spent}",
+    "transactions": "거래",
+    "averageAmount": "평균 금액",
+    "monthlyAverage": "월 평균",
+    "subcategories": "하위 카테고리",
+    "thisCategory": "이 카테고리",
+    "topPayees": "상위 수취인",
+    "noPayee": "수취인 없음",
+    "nextScheduled": "다음 예약",
+    "noTransactions": "이 기간에 거래가 없습니다",
+    "editAria": "카테고리 편집",
+    "collapseAria": "카테고리 정보 숨기기",
+    "show": "카테고리 정보 표시"
+  },
   "accountWidget": {
     "currentBalance": "현재 잔액",
     "nextPayment": "다음 지불",
@@ -27,7 +75,8 @@
       "duplicateTitle": "거래 복사",
       "newTitle": "새 거래",
       "scheduleTitle": "반복 거래로 예약",
-      "editPayeeTitle": "수취인 편집"
+      "editPayeeTitle": "수취인 편집",
+      "editCategoryTitle": "카테고리 편집"
     },
     "loading": "거래를 불러오는 중...",
     "totalCount": "{count, plural, one {# 건의 거래} other {# 건의 거래}}",
@@ -430,6 +479,8 @@
     "loadFailed": "거래 불러오기에 실패했습니다",
     "loadPayeeFailed": "수취인 세부 정보 불러오기에 실패했습니다",
     "payeeUpdateFailed": "수취인 업데이트에 실패했습니다",
+    "categoryUpdated": "카테고리가 성공적으로 업데이트되었습니다",
+    "categoryUpdateFailed": "카테고리 업데이트에 실패했습니다",
     "exportFailed": "거래 내보내기에 실패했습니다"
   },
   "validation": {

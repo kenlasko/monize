@@ -1,4 +1,52 @@
 {
+  "payeeWidget": {
+    "totalSpent": "Spesa totale",
+    "income": "Entrate",
+    "net": "Netto",
+    "transactions": "Transazioni",
+    "averageAmount": "Importo medio",
+    "lastTransaction": "Ultima transazione",
+    "defaultCategory": "Categoria predefinita",
+    "nextBill": "Prossima fattura",
+    "viewBills": "Visualizza in Fatture e Versamenti",
+    "topCategories": "Categorie principali",
+    "uncategorized": "Non categorizzata",
+    "aliases": "Alias",
+    "recurring": "Ricorrente: {cadence} · {amount}",
+    "recurringTooltip": "Rilevato da addebiti ripetuti nel periodo selezionato (o negli ultimi 12 mesi se non è impostato un filtro data).",
+    "cadence": {
+      "weekly": "Settimanale",
+      "biweekly": "Ogni 2 settimane",
+      "monthly": "Mensile",
+      "quarterly": "Trimestrale",
+      "yearly": "Annuale"
+    },
+    "inactive": "Inattivo",
+    "noTransactions": "Nessuna transazione in questo periodo",
+    "editAria": "Modifica beneficiario",
+    "collapseAria": "Nascondi info beneficiario",
+    "show": "Mostra info beneficiario"
+  },
+  "categoryWidget": {
+    "totalSpent": "Spesa totale",
+    "totalEarned": "Entrate totali",
+    "income": "Entrata",
+    "expense": "Spesa",
+    "budgetThisMonth": "Budget di questo mese",
+    "budgetProgress": "{spent} di {budgeted}",
+    "transactions": "Transazioni",
+    "averageAmount": "Importo medio",
+    "monthlyAverage": "Media mensile",
+    "subcategories": "Sottocategorie",
+    "thisCategory": "Questa categoria",
+    "topPayees": "Beneficiari principali",
+    "noPayee": "Nessun beneficiario",
+    "nextScheduled": "Prossima pianificata",
+    "noTransactions": "Nessuna transazione in questo periodo",
+    "editAria": "Modifica categoria",
+    "collapseAria": "Nascondi info categoria",
+    "show": "Mostra info categoria"
+  },
   "accountWidget": {
     "currentBalance": "Saldo attuale",
     "nextPayment": "Prossimo pagamento",
@@ -27,7 +75,8 @@
       "duplicateTitle": "Duplica transazione",
       "newTitle": "Nuova transazione",
       "scheduleTitle": "Pianifica come ricorrente",
-      "editPayeeTitle": "Modifica beneficiario"
+      "editPayeeTitle": "Modifica beneficiario",
+      "editCategoryTitle": "Modifica categoria"
     },
     "loading": "Caricamento transazioni...",
     "totalCount": "{count, plural, one {# transazione} other {# transazioni}}",
@@ -430,6 +479,8 @@
     "loadFailed": "Caricamento transazioni non riuscito",
     "loadPayeeFailed": "Caricamento dettagli beneficiario non riuscito",
     "payeeUpdateFailed": "Aggiornamento beneficiario non riuscito",
+    "categoryUpdated": "Categoria aggiornata con successo",
+    "categoryUpdateFailed": "Aggiornamento categoria non riuscito",
     "exportFailed": "Esportazione transazioni non riuscita"
   },
   "validation": {

@@ -1,4 +1,52 @@
 {
+  "payeeWidget": {
+    "totalSpent": "Total Gasto",
+    "income": "Receitas",
+    "net": "Líquido",
+    "transactions": "Transações",
+    "averageAmount": "Valor Médio",
+    "lastTransaction": "Última Transação",
+    "defaultCategory": "Categoria Predefinida",
+    "nextBill": "Próxima Fatura",
+    "viewBills": "Ver em Faturas e Depósitos",
+    "topCategories": "Categorias Principais",
+    "uncategorized": "Sem categoria",
+    "aliases": "Alias",
+    "recurring": "Recorrente: {cadence} · {amount}",
+    "recurringTooltip": "Detetado a partir de débitos repetidos no período selecionado (ou nos últimos 12 meses sem filtro de datas).",
+    "cadence": {
+      "weekly": "Semanal",
+      "biweekly": "A cada 2 Semanas",
+      "monthly": "Mensal",
+      "quarterly": "Trimestral",
+      "yearly": "Anual"
+    },
+    "inactive": "Inativo",
+    "noTransactions": "Sem transações neste período",
+    "editAria": "Editar beneficiário",
+    "collapseAria": "Ocultar informações do beneficiário",
+    "show": "Mostrar informações do beneficiário"
+  },
+  "categoryWidget": {
+    "totalSpent": "Total Gasto",
+    "totalEarned": "Total Recebido",
+    "income": "Receita",
+    "expense": "Despesa",
+    "budgetThisMonth": "Orçamento deste mês",
+    "budgetProgress": "{spent} de {budgeted}",
+    "transactions": "Transações",
+    "averageAmount": "Valor Médio",
+    "monthlyAverage": "Média Mensal",
+    "subcategories": "Subcategorias",
+    "thisCategory": "Esta categoria",
+    "topPayees": "Beneficiários Principais",
+    "noPayee": "Sem beneficiário",
+    "nextScheduled": "Próxima Agendada",
+    "noTransactions": "Sem transações neste período",
+    "editAria": "Editar categoria",
+    "collapseAria": "Ocultar informações da categoria",
+    "show": "Mostrar informações da categoria"
+  },
   "accountWidget": {
     "currentBalance": "Saldo Atual",
     "nextPayment": "Próximo Pagamento",
@@ -27,7 +75,8 @@
       "duplicateTitle": "Duplicar Transação",
       "newTitle": "Nova Transação",
       "scheduleTitle": "Agendar como Recorrente",
-      "editPayeeTitle": "Editar Beneficiário"
+      "editPayeeTitle": "Editar Beneficiário",
+      "editCategoryTitle": "Editar Categoria"
     },
     "loading": "A carregar transações...",
     "totalCount": "{count, plural, one {# transação} other {# transações}}",
@@ -430,6 +479,8 @@
     "loadFailed": "Falha ao carregar as transações",
     "loadPayeeFailed": "Falha ao carregar os detalhes do beneficiário",
     "payeeUpdateFailed": "Falha ao atualizar o beneficiário",
+    "categoryUpdated": "Categoria atualizada com sucesso",
+    "categoryUpdateFailed": "Falha ao atualizar a categoria",
     "exportFailed": "Falha ao exportar transações"
   },
   "validation": {

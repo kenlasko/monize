@@ -1,4 +1,52 @@
 {
+  "payeeWidget": {
+    "totalSpent": "Всего потрачено",
+    "income": "Доход",
+    "net": "Итог",
+    "transactions": "Проводки",
+    "averageAmount": "Средняя сумма",
+    "lastTransaction": "Последняя проводка",
+    "defaultCategory": "Категория по умолчанию",
+    "nextBill": "Следующий счёт",
+    "viewBills": "Просмотр в разделе Счета и депозиты",
+    "topCategories": "Основные категории",
+    "uncategorized": "Без категории",
+    "aliases": "Псевдонимы",
+    "recurring": "Регулярно: {cadence} · {amount}",
+    "recurringTooltip": "Определено по повторяющимся списаниям за выбранный период (или за последние 12 месяцев, если фильтр по дате не задан).",
+    "cadence": {
+      "weekly": "Еженедельно",
+      "biweekly": "Каждые 2 недели",
+      "monthly": "Ежемесячно",
+      "quarterly": "Ежеквартально",
+      "yearly": "Ежегодно"
+    },
+    "inactive": "Неактивен",
+    "noTransactions": "Нет проводок за этот период",
+    "editAria": "Редактировать получателя",
+    "collapseAria": "Скрыть информацию о получателе",
+    "show": "Показать информацию о получателе"
+  },
+  "categoryWidget": {
+    "totalSpent": "Всего потрачено",
+    "totalEarned": "Всего получено",
+    "income": "Доход",
+    "expense": "Расход",
+    "budgetThisMonth": "Бюджет на этот месяц",
+    "budgetProgress": "{spent} из {budgeted}",
+    "transactions": "Проводки",
+    "averageAmount": "Средняя сумма",
+    "monthlyAverage": "Среднее за месяц",
+    "subcategories": "Подкатегории",
+    "thisCategory": "Эта категория",
+    "topPayees": "Основные получатели",
+    "noPayee": "Без получателя",
+    "nextScheduled": "Следующая запланированная",
+    "noTransactions": "Нет проводок за этот период",
+    "editAria": "Редактировать категорию",
+    "collapseAria": "Скрыть информацию о категории",
+    "show": "Показать информацию о категории"
+  },
   "accountWidget": {
     "currentBalance": "Текущий остаток",
     "nextPayment": "Следующий платёж",
@@ -27,7 +75,8 @@
       "duplicateTitle": "Дублировать проводку",
       "newTitle": "Новая проводка",
       "scheduleTitle": "Запланировать как повторяющуюся",
-      "editPayeeTitle": "Редактировать получателя"
+      "editPayeeTitle": "Редактировать получателя",
+      "editCategoryTitle": "Редактировать категорию"
     },
     "loading": "Загрузка проводок...",
     "totalCount": "{count, plural, one {# проводка} other {# проводок}}",
@@ -430,6 +479,8 @@
     "loadFailed": "Не удалось загрузить проводки",
     "loadPayeeFailed": "Не удалось загрузить данные получателя",
     "payeeUpdateFailed": "Не удалось обновить получателя",
+    "categoryUpdated": "Категория успешно обновлена",
+    "categoryUpdateFailed": "Не удалось обновить категорию",
     "exportFailed": "Не удалось экспортировать проводки"
   },
   "validation": {

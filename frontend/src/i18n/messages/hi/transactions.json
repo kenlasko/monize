@@ -1,4 +1,52 @@
 {
+  "payeeWidget": {
+    "totalSpent": "कुल खर्च",
+    "income": "आय",
+    "net": "शुद्ध",
+    "transactions": "लेन-देन",
+    "averageAmount": "औसत राशि",
+    "lastTransaction": "अंतिम लेन-देन",
+    "defaultCategory": "डिफ़ॉल्ट श्रेणी",
+    "nextBill": "अगला बिल",
+    "viewBills": "बिल और जमा में देखें",
+    "topCategories": "शीर्ष श्रेणियाँ",
+    "uncategorized": "अवर्गीकृत",
+    "aliases": "उपनाम",
+    "recurring": "आवर्ती: {cadence} · {amount}",
+    "recurringTooltip": "चयनित अवधि (या दिनांक फ़िल्टर न होने पर पिछले 12 महीनों) में बार-बार हुए शुल्कों से पता चला।",
+    "cadence": {
+      "weekly": "साप्ताहिक",
+      "biweekly": "हर 2 सप्ताह",
+      "monthly": "मासिक",
+      "quarterly": "त्रैमासिक",
+      "yearly": "वार्षिक"
+    },
+    "inactive": "निष्क्रिय",
+    "noTransactions": "इस अवधि में कोई लेन-देन नहीं",
+    "editAria": "भुगतानकर्ता संपादित करें",
+    "collapseAria": "भुगतानकर्ता जानकारी छुपाएं",
+    "show": "भुगतानकर्ता जानकारी दिखाएं"
+  },
+  "categoryWidget": {
+    "totalSpent": "कुल खर्च",
+    "totalEarned": "कुल आय",
+    "income": "आय",
+    "expense": "व्यय",
+    "budgetThisMonth": "इस महीने का बजट",
+    "budgetProgress": "{budgeted} में से {spent}",
+    "transactions": "लेन-देन",
+    "averageAmount": "औसत राशि",
+    "monthlyAverage": "मासिक औसत",
+    "subcategories": "उपश्रेणियाँ",
+    "thisCategory": "यह श्रेणी",
+    "topPayees": "शीर्ष भुगतानकर्ता",
+    "noPayee": "कोई भुगतानकर्ता नहीं",
+    "nextScheduled": "अगला नियोजित",
+    "noTransactions": "इस अवधि में कोई लेन-देन नहीं",
+    "editAria": "श्रेणी संपादित करें",
+    "collapseAria": "श्रेणी जानकारी छुपाएं",
+    "show": "श्रेणी जानकारी दिखाएं"
+  },
   "accountWidget": {
     "currentBalance": "वर्तमान शेष",
     "nextPayment": "अगला भुगतान",
@@ -27,7 +75,8 @@
       "duplicateTitle": "लेन-देन डुप्लिकेट करें",
       "newTitle": "नया लेन-देन",
       "scheduleTitle": "आवर्ती के रूप में शेड्यूल करें",
-      "editPayeeTitle": "भुगतानकर्ता संपादित करें"
+      "editPayeeTitle": "भुगतानकर्ता संपादित करें",
+      "editCategoryTitle": "श्रेणी संपादित करें"
     },
     "loading": "लेन-देन लोड हो रहे हैं...",
     "totalCount": "{count, plural, one {# लेन-देन} other {# लेन-देन}}",
@@ -430,6 +479,8 @@
     "loadFailed": "लेन-देन लोड करने में विफल",
     "loadPayeeFailed": "भुगतानकर्ता विवरण लोड करने में विफल",
     "payeeUpdateFailed": "भुगतानकर्ता अपडेट करने में विफल",
+    "categoryUpdated": "श्रेणी सफलतापूर्वक अपडेट की गई",
+    "categoryUpdateFailed": "श्रेणी अपडेट करने में विफल",
     "exportFailed": "लेन-देन निर्यात करने में विफल"
   },
   "validation": {

@@ -1,4 +1,52 @@
 {
+  "payeeWidget": {
+    "totalSpent": "Total Pengeluaran",
+    "income": "Pemasukan",
+    "net": "Bersih",
+    "transactions": "Transaksi",
+    "averageAmount": "Jumlah Rata-rata",
+    "lastTransaction": "Transaksi Terakhir",
+    "defaultCategory": "Kategori Default",
+    "nextBill": "Tagihan Berikutnya",
+    "viewBills": "Lihat di Tagihan & Setoran",
+    "topCategories": "Kategori Teratas",
+    "uncategorized": "Belum Dikategorikan",
+    "aliases": "Alias",
+    "recurring": "Berulang: {cadence} · {amount}",
+    "recurringTooltip": "Terdeteksi dari tagihan berulang selama periode yang dipilih (atau 12 bulan terakhir jika tidak ada filter tanggal).",
+    "cadence": {
+      "weekly": "Mingguan",
+      "biweekly": "Setiap 2 Minggu",
+      "monthly": "Bulanan",
+      "quarterly": "Kuartalan",
+      "yearly": "Tahunan"
+    },
+    "inactive": "Tidak Aktif",
+    "noTransactions": "Tidak ada transaksi pada periode ini",
+    "editAria": "Edit penerima",
+    "collapseAria": "Sembunyikan info penerima",
+    "show": "Tampilkan info penerima"
+  },
+  "categoryWidget": {
+    "totalSpent": "Total Pengeluaran",
+    "totalEarned": "Total Pemasukan",
+    "income": "Pemasukan",
+    "expense": "Pengeluaran",
+    "budgetThisMonth": "Anggaran Bulan Ini",
+    "budgetProgress": "{spent} dari {budgeted}",
+    "transactions": "Transaksi",
+    "averageAmount": "Jumlah Rata-rata",
+    "monthlyAverage": "Rata-rata Bulanan",
+    "subcategories": "Subkategori",
+    "thisCategory": "Kategori ini",
+    "topPayees": "Penerima Teratas",
+    "noPayee": "Tanpa penerima",
+    "nextScheduled": "Terjadwal Berikutnya",
+    "noTransactions": "Tidak ada transaksi pada periode ini",
+    "editAria": "Edit kategori",
+    "collapseAria": "Sembunyikan info kategori",
+    "show": "Tampilkan info kategori"
+  },
   "accountWidget": {
     "currentBalance": "Saldo Saat Ini",
     "nextPayment": "Pembayaran Berikutnya",
@@ -27,7 +75,8 @@
       "duplicateTitle": "Duplikat Transaksi",
       "newTitle": "Transaksi Baru",
       "scheduleTitle": "Jadwalkan sebagai Berulang",
-      "editPayeeTitle": "Edit Penerima"
+      "editPayeeTitle": "Edit Penerima",
+      "editCategoryTitle": "Edit Kategori"
     },
     "loading": "Memuat transaksi...",
     "totalCount": "{count, plural, one {# transaksi} other {# transaksi}}",
@@ -430,6 +479,8 @@
     "loadFailed": "Gagal memuat transaksi",
     "loadPayeeFailed": "Gagal memuat detail penerima",
     "payeeUpdateFailed": "Gagal memperbarui penerima",
+    "categoryUpdated": "Kategori berhasil diperbarui",
+    "categoryUpdateFailed": "Gagal memperbarui kategori",
     "exportFailed": "Gagal mengekspor transaksi"
   },
   "validation": {

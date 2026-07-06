@@ -1,4 +1,52 @@
 {
+  "payeeWidget": {
+    "totalSpent": "Всього витрачено",
+    "income": "Дохід",
+    "net": "Підсумок",
+    "transactions": "Транзакції",
+    "averageAmount": "Середня сума",
+    "lastTransaction": "Остання транзакція",
+    "defaultCategory": "Категорія за замовчуванням",
+    "nextBill": "Наступний рахунок",
+    "viewBills": "Переглянути в рахунках та депозитах",
+    "topCategories": "Основні категорії",
+    "uncategorized": "Без категорії",
+    "aliases": "Псевдоніми",
+    "recurring": "Регулярно: {cadence} · {amount}",
+    "recurringTooltip": "Визначено за повторюваними списаннями за вибраний період (або за останні 12 місяців, якщо фільтр за датою не задано).",
+    "cadence": {
+      "weekly": "Щотижня",
+      "biweekly": "Кожні 2 тижні",
+      "monthly": "Щомісяця",
+      "quarterly": "Щокварталу",
+      "yearly": "Щороку"
+    },
+    "inactive": "Неактивний",
+    "noTransactions": "Немає транзакцій за цей період",
+    "editAria": "Редагувати одержувача платежу",
+    "collapseAria": "Приховати інформацію про одержувача",
+    "show": "Показати інформацію про одержувача"
+  },
+  "categoryWidget": {
+    "totalSpent": "Всього витрачено",
+    "totalEarned": "Всього отримано",
+    "income": "Дохід",
+    "expense": "Витрата",
+    "budgetThisMonth": "Бюджет на цей місяць",
+    "budgetProgress": "{spent} із {budgeted}",
+    "transactions": "Транзакції",
+    "averageAmount": "Середня сума",
+    "monthlyAverage": "Середнє за місяць",
+    "subcategories": "Підкатегорії",
+    "thisCategory": "Ця категорія",
+    "topPayees": "Основні одержувачі",
+    "noPayee": "Без одержувача",
+    "nextScheduled": "Наступна запланована",
+    "noTransactions": "Немає транзакцій за цей період",
+    "editAria": "Редагувати категорію",
+    "collapseAria": "Приховати інформацію про категорію",
+    "show": "Показати інформацію про категорію"
+  },
   "accountWidget": {
     "currentBalance": "Поточний баланс",
     "nextPayment": "Наступний платіж",
@@ -27,7 +75,8 @@
       "duplicateTitle": "Дублювати транзакцію",
       "newTitle": "Нова транзакція",
       "scheduleTitle": "Запланувати як повторювану",
-      "editPayeeTitle": "Редагувати одержувача платежу"
+      "editPayeeTitle": "Редагувати одержувача платежу",
+      "editCategoryTitle": "Редагувати категорію"
     },
     "loading": "Завантаження транзакцій...",
     "totalCount": "{count, plural, one {# транзакція} other {# транзакцій}}",
@@ -430,6 +479,8 @@
     "loadFailed": "Не вдалося завантажити транзакції",
     "loadPayeeFailed": "Не вдалося завантажити дані одержувача",
     "payeeUpdateFailed": "Не вдалося оновити одержувача платежу",
+    "categoryUpdated": "Категорію оновлено",
+    "categoryUpdateFailed": "Не вдалося оновити категорію",
     "exportFailed": "Не вдалося експортувати транзакції"
   },
   "validation": {

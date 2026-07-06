@@ -1,4 +1,52 @@
 {
+  "payeeWidget": {
+    "totalSpent": "支出合計",
+    "income": "収入",
+    "net": "純額",
+    "transactions": "取引",
+    "averageAmount": "平均金額",
+    "lastTransaction": "最終取引",
+    "defaultCategory": "デフォルトカテゴリ",
+    "nextBill": "次回請求",
+    "viewBills": "請求書と入金で表示",
+    "topCategories": "上位カテゴリ",
+    "uncategorized": "未分類",
+    "aliases": "エイリアス",
+    "recurring": "定期: {cadence} · {amount}",
+    "recurringTooltip": "選択した期間(日付フィルターがない場合は過去12か月)の繰り返し請求から検出されました。",
+    "cadence": {
+      "weekly": "毎週",
+      "biweekly": "2週間ごと",
+      "monthly": "毎月",
+      "quarterly": "四半期ごと",
+      "yearly": "毎年"
+    },
+    "inactive": "無効",
+    "noTransactions": "この期間の取引はありません",
+    "editAria": "支払先を編集",
+    "collapseAria": "支払先情報を非表示",
+    "show": "支払先情報を表示"
+  },
+  "categoryWidget": {
+    "totalSpent": "支出合計",
+    "totalEarned": "収入合計",
+    "income": "収入",
+    "expense": "支出",
+    "budgetThisMonth": "今月の予算",
+    "budgetProgress": "{budgeted} 中 {spent}",
+    "transactions": "取引",
+    "averageAmount": "平均金額",
+    "monthlyAverage": "月平均",
+    "subcategories": "サブカテゴリ",
+    "thisCategory": "このカテゴリ",
+    "topPayees": "上位支払先",
+    "noPayee": "支払先なし",
+    "nextScheduled": "次回予定",
+    "noTransactions": "この期間の取引はありません",
+    "editAria": "カテゴリを編集",
+    "collapseAria": "カテゴリ情報を非表示",
+    "show": "カテゴリ情報を表示"
+  },
   "accountWidget": {
     "currentBalance": "現在残高",
     "nextPayment": "次回支払い",
@@ -27,7 +75,8 @@
       "duplicateTitle": "取引を複製",
       "newTitle": "新規取引",
       "scheduleTitle": "定期取引としてスケジュール",
-      "editPayeeTitle": "支払先を編集"
+      "editPayeeTitle": "支払先を編集",
+      "editCategoryTitle": "カテゴリを編集"
     },
     "loading": "取引を読み込み中...",
     "totalCount": "{count, plural, one {# 件の取引} other {# 件の取引}}",
@@ -430,6 +479,8 @@
     "loadFailed": "取引の読み込みに失敗しました",
     "loadPayeeFailed": "支払先の詳細の読み込みに失敗しました",
     "payeeUpdateFailed": "支払先の更新に失敗しました",
+    "categoryUpdated": "カテゴリを更新しました",
+    "categoryUpdateFailed": "カテゴリの更新に失敗しました",
     "exportFailed": "取引のエクスポートに失敗しました"
   },
   "validation": {

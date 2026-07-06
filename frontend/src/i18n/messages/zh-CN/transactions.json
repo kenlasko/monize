@@ -1,4 +1,52 @@
 {
+  "payeeWidget": {
+    "totalSpent": "总支出",
+    "income": "收入",
+    "net": "净额",
+    "transactions": "交易",
+    "averageAmount": "平均金额",
+    "lastTransaction": "最近交易",
+    "defaultCategory": "默认分类",
+    "nextBill": "下一笔账单",
+    "viewBills": "在账单与存款中查看",
+    "topCategories": "主要分类",
+    "uncategorized": "未分类",
+    "aliases": "别名",
+    "recurring": "定期:{cadence} · {amount}",
+    "recurringTooltip": "根据所选期间(未设置日期筛选时为最近12个月)内的重复扣款检测得出。",
+    "cadence": {
+      "weekly": "每周",
+      "biweekly": "每两周",
+      "monthly": "每月",
+      "quarterly": "每季",
+      "yearly": "每年"
+    },
+    "inactive": "已停用",
+    "noTransactions": "此期间没有交易",
+    "editAria": "编辑收款人",
+    "collapseAria": "隐藏收款人信息",
+    "show": "显示收款人信息"
+  },
+  "categoryWidget": {
+    "totalSpent": "总支出",
+    "totalEarned": "总收入",
+    "income": "收入",
+    "expense": "支出",
+    "budgetThisMonth": "本月预算",
+    "budgetProgress": "{spent} / {budgeted}",
+    "transactions": "交易",
+    "averageAmount": "平均金额",
+    "monthlyAverage": "月平均",
+    "subcategories": "子分类",
+    "thisCategory": "此分类",
+    "topPayees": "主要收款人",
+    "noPayee": "无收款人",
+    "nextScheduled": "下一笔计划交易",
+    "noTransactions": "此期间没有交易",
+    "editAria": "编辑分类",
+    "collapseAria": "隐藏分类信息",
+    "show": "显示分类信息"
+  },
   "accountWidget": {
     "currentBalance": "当前余额",
     "nextPayment": "下次还款",
@@ -27,7 +75,8 @@
       "duplicateTitle": "复制交易",
       "newTitle": "新建交易",
       "scheduleTitle": "设为定期计划",
-      "editPayeeTitle": "编辑收款人"
+      "editPayeeTitle": "编辑收款人",
+      "editCategoryTitle": "编辑分类"
     },
     "loading": "正在加载交易...",
     "totalCount": "{count, plural, one {# 笔交易} other {# 笔交易}}",
@@ -430,6 +479,8 @@
     "loadFailed": "加载交易失败",
     "loadPayeeFailed": "加载收款人详情失败",
     "payeeUpdateFailed": "更新收款人失败",
+    "categoryUpdated": "分类已成功更新",
+    "categoryUpdateFailed": "更新分类失败",
     "exportFailed": "导出交易失败"
   },
   "validation": {

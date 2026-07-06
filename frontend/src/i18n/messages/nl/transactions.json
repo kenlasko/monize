@@ -1,4 +1,52 @@
 {
+  "payeeWidget": {
+    "totalSpent": "Totaal uitgegeven",
+    "income": "Inkomsten",
+    "net": "Netto",
+    "transactions": "Transacties",
+    "averageAmount": "Gemiddeld bedrag",
+    "lastTransaction": "Laatste transactie",
+    "defaultCategory": "Standaardcategorie",
+    "nextBill": "Volgende rekening",
+    "viewBills": "Bekijk in rekeningen & stortingen",
+    "topCategories": "Topcategorieën",
+    "uncategorized": "Zonder categorie",
+    "aliases": "Aliassen",
+    "recurring": "Terugkerend: {cadence} · {amount}",
+    "recurringTooltip": "Gedetecteerd op basis van herhaalde afschrijvingen in de geselecteerde periode (of de laatste 12 maanden zonder datumfilter).",
+    "cadence": {
+      "weekly": "Wekelijks",
+      "biweekly": "Elke 2 weken",
+      "monthly": "Maandelijks",
+      "quarterly": "Elk kwartaal",
+      "yearly": "Jaarlijks"
+    },
+    "inactive": "Inactief",
+    "noTransactions": "Geen transacties in deze periode",
+    "editAria": "Begunstigde bewerken",
+    "collapseAria": "Begunstigde-info verbergen",
+    "show": "Begunstigde-info tonen"
+  },
+  "categoryWidget": {
+    "totalSpent": "Totaal uitgegeven",
+    "totalEarned": "Totaal ontvangen",
+    "income": "Inkomsten",
+    "expense": "Uitgaven",
+    "budgetThisMonth": "Budget deze maand",
+    "budgetProgress": "{spent} van {budgeted}",
+    "transactions": "Transacties",
+    "averageAmount": "Gemiddeld bedrag",
+    "monthlyAverage": "Maandgemiddelde",
+    "subcategories": "Subcategorieën",
+    "thisCategory": "Deze categorie",
+    "topPayees": "Topbegunstigden",
+    "noPayee": "Geen begunstigde",
+    "nextScheduled": "Volgende gepland",
+    "noTransactions": "Geen transacties in deze periode",
+    "editAria": "Categorie bewerken",
+    "collapseAria": "Categorie-info verbergen",
+    "show": "Categorie-info tonen"
+  },
   "accountWidget": {
     "currentBalance": "Huidig saldo",
     "nextPayment": "Volgende betaling",
@@ -27,7 +75,8 @@
       "duplicateTitle": "Transactie dupliceren",
       "newTitle": "Nieuwe transactie",
       "scheduleTitle": "Plannen als terugkerend",
-      "editPayeeTitle": "Begunstigde bewerken"
+      "editPayeeTitle": "Begunstigde bewerken",
+      "editCategoryTitle": "Categorie bewerken"
     },
     "loading": "Transacties laden...",
     "totalCount": "{count, plural, one {# transactie} other {# transacties}}",
@@ -430,6 +479,8 @@
     "loadFailed": "Laden van transacties mislukt",
     "loadPayeeFailed": "Laden van gegevens van begunstigde mislukt",
     "payeeUpdateFailed": "Bijwerken van begunstigde mislukt",
+    "categoryUpdated": "Categorie succesvol bijgewerkt",
+    "categoryUpdateFailed": "Bijwerken van categorie mislukt",
     "exportFailed": "Exporteren van transacties mislukt"
   },
   "validation": {

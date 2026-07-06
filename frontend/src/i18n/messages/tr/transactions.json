@@ -1,4 +1,52 @@
 {
+  "payeeWidget": {
+    "totalSpent": "Toplam Harcama",
+    "income": "Gelir",
+    "net": "Net",
+    "transactions": "İşlemler",
+    "averageAmount": "Ortalama Tutar",
+    "lastTransaction": "Son İşlem",
+    "defaultCategory": "Varsayılan Kategori",
+    "nextBill": "Sonraki Fatura",
+    "viewBills": "Faturalar ve Mevduatlarda Görüntüle",
+    "topCategories": "En Çok Kullanılan Kategoriler",
+    "uncategorized": "Kategorisiz",
+    "aliases": "Takma Adlar",
+    "recurring": "Yinelenen: {cadence} · {amount}",
+    "recurringTooltip": "Seçilen dönemdeki (veya tarih filtresi yoksa son 12 aydaki) tekrarlanan ödemelerden tespit edildi.",
+    "cadence": {
+      "weekly": "Haftalık",
+      "biweekly": "Her 2 Haftada Bir",
+      "monthly": "Aylık",
+      "quarterly": "Üç Aylık",
+      "yearly": "Yıllık"
+    },
+    "inactive": "Pasif",
+    "noTransactions": "Bu dönemde işlem yok",
+    "editAria": "Alacaklıyı düzenle",
+    "collapseAria": "Alacaklı bilgisini gizle",
+    "show": "Alacaklı bilgisini göster"
+  },
+  "categoryWidget": {
+    "totalSpent": "Toplam Harcama",
+    "totalEarned": "Toplam Kazanç",
+    "income": "Gelir",
+    "expense": "Gider",
+    "budgetThisMonth": "Bu Ayın Bütçesi",
+    "budgetProgress": "{spent} / {budgeted}",
+    "transactions": "İşlemler",
+    "averageAmount": "Ortalama Tutar",
+    "monthlyAverage": "Aylık Ortalama",
+    "subcategories": "Alt Kategoriler",
+    "thisCategory": "Bu kategori",
+    "topPayees": "En Çok Kullanılan Alacaklılar",
+    "noPayee": "Alacaklı yok",
+    "nextScheduled": "Sonraki Planlanan",
+    "noTransactions": "Bu dönemde işlem yok",
+    "editAria": "Kategoriyi düzenle",
+    "collapseAria": "Kategori bilgisini gizle",
+    "show": "Kategori bilgisini göster"
+  },
   "accountWidget": {
     "currentBalance": "Mevcut Bakiye",
     "nextPayment": "Sonraki Ödeme",
@@ -27,7 +75,8 @@
       "duplicateTitle": "İşlemi Çoğalt",
       "newTitle": "Yeni İşlem",
       "scheduleTitle": "Tekrarlayan Olarak Zamanla",
-      "editPayeeTitle": "Alacaklıyı Düzenle"
+      "editPayeeTitle": "Alacaklıyı Düzenle",
+      "editCategoryTitle": "Kategoriyi Düzenle"
     },
     "loading": "İşlemler yükleniyor...",
     "totalCount": "{count, plural, one {# işlem} other {# işlem}}",
@@ -430,6 +479,8 @@
     "loadFailed": "İşlemler yüklenemedi",
     "loadPayeeFailed": "Alacaklı ayrıntıları yüklenemedi",
     "payeeUpdateFailed": "Alacaklı güncellenemedi",
+    "categoryUpdated": "Kategori başarıyla güncellendi",
+    "categoryUpdateFailed": "Kategori güncellenemedi",
     "exportFailed": "İşlemler dışa aktarılamadı"
   },
   "validation": {
