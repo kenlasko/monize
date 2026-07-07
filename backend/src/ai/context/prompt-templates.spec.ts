@@ -77,6 +77,20 @@ describe("prompt-templates", () => {
       expect(QUERY_SYSTEM_PROMPT).toMatch(/positive.*income/i);
       expect(QUERY_SYSTEM_PROMPT).toMatch(/negative.*expense/i);
     });
+
+    it("includes entity link rules with the structured URI forms", () => {
+      expect(QUERY_SYSTEM_PROMPT).toMatch(/ENTITY LINK RULES/);
+      expect(QUERY_SYSTEM_PROMPT).toMatch(/monize:\/\/account\/<id>/);
+      expect(QUERY_SYSTEM_PROMPT).toMatch(/monize:\/\/payee\/<id>/);
+      expect(QUERY_SYSTEM_PROMPT).toMatch(/monize:\/\/category\/<id>/);
+      expect(QUERY_SYSTEM_PROMPT).toMatch(/monize:\/\/transaction\/<id>/);
+    });
+
+    it("forbids invented ids and links on id-less rows", () => {
+      expect(QUERY_SYSTEM_PROMPT).toMatch(/VERBATIM/);
+      expect(QUERY_SYSTEM_PROMPT).toMatch(/never construct, guess/i);
+      expect(QUERY_SYSTEM_PROMPT).toMatch(/Other \(aggregated\)/);
+    });
   });
 
   describe("INSIGHT_SYSTEM_PROMPT", () => {
