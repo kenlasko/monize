@@ -119,6 +119,11 @@ export interface AssetAllocation {
  * to answer holdings questions.
  */
 export interface LlmPortfolioHolding {
+  // The owned security's UUID, surfaced so the assistant can deep-link a
+  // holding to its row on the Securities page (monize://security/<id>). It is
+  // the Security id, not the holding-row id, matching what /securities?highlight=
+  // resolves against.
+  securityId: string;
   symbol: string;
   name: string;
   securityType: string;
@@ -481,6 +486,7 @@ export class PortfolioService {
       v === null || v === undefined ? null : Math.round(Number(v) * 100) / 100;
 
     const toLlmHolding = (h: HoldingWithMarketValue): LlmPortfolioHolding => ({
+      securityId: h.securityId,
       symbol: h.symbol,
       name: h.name,
       securityType: h.securityType,

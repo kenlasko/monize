@@ -28,14 +28,28 @@ describe('resolveEntityHref', () => {
     );
   });
 
+  it('maps a security link to the securities page highlight', () => {
+    expect(resolveEntityHref(`monize://security/${uuid}`)).toBe(
+      `/securities?highlight=${uuid}`,
+    );
+  });
+
+  it('maps a scheduled link to the bills page highlight', () => {
+    expect(resolveEntityHref(`monize://scheduled/${uuid}`)).toBe(
+      `/bills?highlight=${uuid}`,
+    );
+  });
+
   it('accepts an uppercase UUID and scheme', () => {
     expect(
       resolveEntityHref(`MONIZE://payee/${uuid.toUpperCase()}`),
     ).toBe(`/transactions?payeeId=${uuid.toUpperCase()}`);
   });
 
-  it('rejects unknown entity types (including MCP resource URIs)', () => {
-    expect(resolveEntityHref(`monize://security/${uuid}`)).toBeNull();
+  it('rejects unknown entity types (including MCP resource URIs and out-of-scope entities)', () => {
+    // budget/report were intentionally left out of Phase 2.
+    expect(resolveEntityHref(`monize://budget/${uuid}`)).toBeNull();
+    expect(resolveEntityHref(`monize://report/${uuid}`)).toBeNull();
     expect(resolveEntityHref('monize://accounts')).toBeNull();
     expect(resolveEntityHref('monize://financial-summary')).toBeNull();
   });

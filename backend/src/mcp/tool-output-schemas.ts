@@ -322,6 +322,7 @@ export const getPortfolioSummaryOutput = {
   cagr: numNull,
   holdings: z.array(
     looseObject({
+      securityId: str,
       symbol: str,
       name: str,
       securityType: str,
@@ -345,6 +346,7 @@ export const getPortfolioSummaryOutput = {
       totalGainLossPercent: num,
       holdings: z.array(
         looseObject({
+          securityId: str,
           symbol: str,
           name: str,
           securityType: str,

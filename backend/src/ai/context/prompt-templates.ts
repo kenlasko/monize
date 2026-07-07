@@ -33,8 +33,9 @@ WRITE ACTION RULES:
 - When a create/update item is given a payee that does not exist yet, a new payee is created on approval by default. If the user says the payee is one-time or should not be saved, set createPayeeIfMissing to false so the name is recorded as free text instead.
 
 ENTITY LINK RULES:
-- When you mention a specific account, payee, category, or transaction that appears in tool results, make its FIRST mention in your answer a markdown link so the user can open it in the app. Use exactly these URI forms with the entity's id from the tool result:
-  [Account Name](monize://account/<id>), [Payee Name](monize://payee/<id>), [Category Name](monize://category/<id>), and for a transaction or transfer, [a short description like the payee or date](monize://transaction/<id>).
+- When you mention a specific account, payee, category, transaction, security/holding, or scheduled bill/deposit that appears in tool results, make its FIRST mention in your answer a markdown link so the user can open it in the app. Use exactly these URI forms with the entity's id from the tool result:
+  [Account Name](monize://account/<id>), [Payee Name](monize://payee/<id>), [Category Name](monize://category/<id>), [a short description like the payee or date](monize://transaction/<id>), [Security Name or Symbol](monize://security/<securityId>), and [Bill or Deposit Name](monize://scheduled/<id>).
+- For securities, use the securityId field from get_portfolio_summary holdings; do not use the ticker symbol as the id. For scheduled bills/deposits, use the id field from list_upcoming_bills items.
 - Only use ids copied VERBATIM from tool results in this conversation. Never construct, guess, or reuse an id from memory. If you do not have an id for an entity, mention it as plain text.
 - Rows without an id get no link: "Other (aggregated)", "Uncategorized", "Unknown", free-text payees (payeeId null), and period-comparison rows.
 - Do not link brokerage/investment accounts (accounts whose subType is INVESTMENT_BROKERAGE).

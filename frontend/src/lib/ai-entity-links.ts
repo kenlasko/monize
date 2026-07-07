@@ -19,7 +19,7 @@
 export const AI_ENTITY_LINK_EVENT = 'ai:entityLinkNavigate';
 
 const ENTITY_URI_REGEX =
-  /^monize:\/\/(account|payee|category|transaction)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
+  /^monize:\/\/(account|payee|category|transaction|security|scheduled)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
 
 export function isMonizeHref(href: string | undefined): boolean {
   return typeof href === 'string' && /^monize:/i.test(href);
@@ -27,11 +27,13 @@ export function isMonizeHref(href: string | undefined): boolean {
 
 /**
  * Map a `monize://` entity URI to its in-app route, or null when the URI is
- * not a valid entity link (unknown type, malformed id, trailing junk). All
- * entity types resolve to the Transactions page: single-entity filters also
- * surface the matching info sidebar, and `targetTransactionId` highlights the
- * row. Account links carry `accountStatus=all` so a closed account is not
- * pruned by the stored Show Accounts toggle (Institutions-page precedent).
+ * not a valid entity link (unknown type, malformed id, trailing junk).
+ * Account/payee/category/transaction resolve to the Transactions page (single-
+ * entity filters also surface the matching info sidebar; `targetTransactionId`
+ * highlights the row). Securities and scheduled transactions resolve to their
+ * own list pages with a passive `?highlight=` that flashes/scrolls to the row.
+ * Account links carry `accountStatus=all` so a closed account is not pruned by
+ * the stored Show Accounts toggle (Institutions-page precedent).
  */
 export function resolveEntityHref(href: string | undefined): string | null {
   if (!href) return null;
@@ -47,6 +49,10 @@ export function resolveEntityHref(href: string | undefined): string | null {
       return `/transactions?categoryId=${id}`;
     case 'transaction':
       return `/transactions?targetTransactionId=${id}`;
+    case 'security':
+      return `/securities?highlight=${id}`;
+    case 'scheduled':
+      return `/bills?highlight=${id}`;
     default:
       return null;
   }

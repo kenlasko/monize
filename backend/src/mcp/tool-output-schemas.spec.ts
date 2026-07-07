@@ -464,6 +464,7 @@ const cases: Array<{ name: string; schema: RawShape; raw: unknown }> = [
       cagr: null,
       holdings: [
         {
+          securityId: "sec-aapl",
           symbol: "AAPL",
           name: "Apple",
           securityType: "stock",
@@ -487,6 +488,7 @@ const cases: Array<{ name: string; schema: RawShape; raw: unknown }> = [
           totalGainLossPercent: 25,
           holdings: [
             {
+              securityId: "sec-aapl",
               symbol: "AAPL",
               name: "Apple",
               securityType: "stock",

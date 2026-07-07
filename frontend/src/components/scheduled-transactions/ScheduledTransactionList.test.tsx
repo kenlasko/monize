@@ -134,6 +134,31 @@ describe('ScheduledTransactionList', () => {
     expect(screen.getByText('Salary')).toBeInTheDocument();
   });
 
+  // --- Deep-link highlight ---
+  it('flashes only the row matching highlightId', () => {
+    const transactions = [
+      createTransaction({ id: 's1', name: 'Netflix' }),
+      createTransaction({ id: 's2', name: 'Spotify' }),
+    ];
+    const { container } = render(
+      <ScheduledTransactionList transactions={transactions} highlightId="s2" />,
+    );
+    const flashed = container.querySelectorAll('.animate-highlight-flash');
+    // The row and its sticky actions cell both carry the flash class.
+    expect(flashed.length).toBeGreaterThan(0);
+    const flashedRow = container.querySelector('tr.animate-highlight-flash');
+    expect(flashedRow?.textContent).toContain('Spotify');
+    expect(flashedRow?.textContent).not.toContain('Netflix');
+  });
+
+  it('does not flash any row when highlightId is absent', () => {
+    const transactions = [createTransaction()];
+    const { container } = render(
+      <ScheduledTransactionList transactions={transactions} />,
+    );
+    expect(container.querySelector('.animate-highlight-flash')).toBeNull();
+  });
+
   // --- Inactive transaction styling ---
   it('shows inactive transactions with reduced opacity', () => {
     const transactions = [createTransaction({ isActive: false, name: 'Cancelled Sub' })];

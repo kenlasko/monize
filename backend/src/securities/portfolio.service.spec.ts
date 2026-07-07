@@ -1434,6 +1434,9 @@ describe("PortfolioService", () => {
       expect(result.timeWeightedReturn).toBe(8.57);
       expect(result.cagr).toBeNull();
       expect(result.holdings[0]).toMatchObject({
+        // The security's own id is surfaced (not the holding-row id) so the
+        // assistant can deep-link the holding to its Securities-page row.
+        securityId: "s1",
         symbol: "AAPL",
         name: "Apple Inc.",
         securityType: "STOCK",

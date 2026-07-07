@@ -16,6 +16,11 @@ import { useLongPress, type LongPressRowHandlers } from '@/hooks/useLongPress';
 import { RowActions } from '@/components/ui/row-actions/RowActions';
 import { RowActionSheet } from '@/components/ui/row-actions/RowActionSheet';
 import type { RowAction } from '@/components/ui/row-actions/rowAction';
+import {
+  HIGHLIGHT_FLASH,
+  HIGHLIGHT_FLASH_CELL,
+  useScrollIntoViewWhen,
+} from '@/hooks/useHighlightTarget';
 
 interface ScheduledActionLabels {
   post: string;
@@ -151,6 +156,7 @@ interface ScheduledTransactionRowProps {
   onEdit?: (transaction: ScheduledTransaction) => void;
   onEditOccurrence?: (transaction: ScheduledTransaction) => void;
   categoryColorMap?: Map<string, string | null>;
+  isHighlighted?: boolean;
 }
 
 const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
@@ -165,7 +171,9 @@ const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
   onEdit,
   onEditOccurrence,
   categoryColorMap,
+  isHighlighted,
 }: ScheduledTransactionRowProps) {
+  const rowRef = useScrollIntoViewWhen<HTMLTableRowElement>(!!isHighlighted);
   const t = useTranslations('scheduledTransactions');
   const actions = buildScheduledActions(
     transaction,
@@ -188,7 +196,8 @@ const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
 
   return (
     <tr
-      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none ${!transaction.isActive ? 'opacity-50' : ''} ${dueDateStatus?.label === t('list.dueDateStatus.overdue') ? 'bg-red-50 dark:bg-red-900/10' : 'bg-white dark:bg-gray-900'}`}
+      ref={rowRef}
+      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none ${!transaction.isActive ? 'opacity-50' : ''} ${dueDateStatus?.label === t('list.dueDateStatus.overdue') ? 'bg-red-50 dark:bg-red-900/10' : 'bg-white dark:bg-gray-900'} ${isHighlighted ? HIGHLIGHT_FLASH : ''}`}
       {...getRowHandlers(transaction)}
     >
       {/* Name / Payee */}
@@ -348,7 +357,7 @@ const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
       </td>
 
       {/* Actions */}
-      <td className={`px-4 py-3 whitespace-nowrap text-right hidden min-[480px]:table-cell sticky right-0 ${dueDateStatus?.label === t('list.dueDateStatus.overdue') ? 'bg-red-50 dark:bg-red-900/10' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800`} onClick={(e) => e.stopPropagation()}>
+      <td className={`px-4 py-3 whitespace-nowrap text-right hidden min-[480px]:table-cell sticky right-0 ${dueDateStatus?.label === t('list.dueDateStatus.overdue') ? 'bg-red-50 dark:bg-red-900/10' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800 ${isHighlighted ? HIGHLIGHT_FLASH_CELL : ''}`} onClick={(e) => e.stopPropagation()}>
         <RowActions actions={actions} density="compact" />
       </td>
     </tr>
@@ -362,6 +371,8 @@ interface ScheduledTransactionListProps {
   onPost?: (transaction: ScheduledTransaction) => void;
   onRefresh?: () => void;
   categoryColorMap?: Map<string, string | null>;
+  /** Scheduled-transaction id to flash/scroll to (deep-link target). */
+  highlightId?: string | null;
 }
 
 export function ScheduledTransactionList({
@@ -371,6 +382,7 @@ export function ScheduledTransactionList({
   onPost,
   onRefresh,
   categoryColorMap,
+  highlightId,
 }: ScheduledTransactionListProps) {
   const t = useTranslations('scheduledTransactions');
   const { formatDate } = useDateFormat();
@@ -573,6 +585,7 @@ export function ScheduledTransactionList({
               onEdit={onEdit}
               onEditOccurrence={onEditOccurrence}
               categoryColorMap={categoryColorMap}
+              isHighlighted={!!highlightId && transaction.id === highlightId}
             />
           ))}
         </tbody>
