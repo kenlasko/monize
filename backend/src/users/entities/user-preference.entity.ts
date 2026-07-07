@@ -76,6 +76,15 @@ export class UserPreference {
   })
   dashboardWidgets: string[];
 
+  // Per-widget settings (timeframe, account selection, chart type, etc.) keyed
+  // by widget id. Empty object = every widget uses its built-in defaults.
+  @Column({
+    name: "dashboard_widget_config",
+    type: "jsonb",
+    default: {},
+  })
+  dashboardWidgetConfig: Record<string, unknown>;
+
   @Column({ name: "show_created_at", default: false })
   showCreatedAt: boolean;
 

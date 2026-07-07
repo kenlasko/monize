@@ -81,18 +81,51 @@ describe('widget-registry', () => {
   });
 
   it('gates the securities widgets on data, not the rest', () => {
-    const ctx = { isLoading: false, hasSecurities: false } as Parameters<
+    const ctx = { isLoading: false, hasSecurities: false, hasInvestments: false } as Parameters<
       NonNullable<(typeof DASHBOARD_WIDGETS)[number]['shouldRender']>
     >[0];
+    // Investment chart widgets are hidden until the user has investments.
+    const investmentGated = new Set([
+      'portfolio-value',
+      'sector-weightings',
+      'security-type-allocation',
+      'geographic-allocation',
+    ]);
     for (const w of DASHBOARD_WIDGETS) {
       const rendered = !w.shouldRender || w.shouldRender(ctx);
       if (w.id === 'top-movers' || w.id === 'favourite-securities') {
         expect(rendered).toBe(false);
         expect(w.shouldRender!({ ...ctx, isLoading: true })).toBe(true);
         expect(w.shouldRender!({ ...ctx, hasSecurities: true })).toBe(true);
+      } else if (investmentGated.has(w.id)) {
+        expect(rendered).toBe(false);
+        expect(w.shouldRender!({ ...ctx, isLoading: true })).toBe(true);
+        expect(w.shouldRender!({ ...ctx, hasInvestments: true })).toBe(true);
       } else {
         expect(rendered).toBe(true);
       }
+    }
+  });
+
+  it('registers all report-derived widgets as opt-in (not in the default layout)', () => {
+    const reportWidgetIds = [
+      'portfolio-value',
+      'spending-by-payee',
+      'monthly-spending-trend',
+      'income-by-source',
+      'credit-utilization-accounts',
+      'credit-utilization-total',
+      'sector-weightings',
+      'security-type-allocation',
+      'geographic-allocation',
+      'recurring-expenses',
+      'weekend-weekday',
+    ];
+    for (const id of reportWidgetIds) {
+      const def = DASHBOARD_WIDGETS.find((w) => w.id === id);
+      expect(def, `widget ${id} should be registered`).toBeDefined();
+      expect(def!.defaultEnabled).toBe(false);
+      expect(DEFAULT_DASHBOARD_WIDGET_IDS).not.toContain(id);
     }
   });
 });

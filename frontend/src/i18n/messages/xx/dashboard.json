@@ -154,5 +154,96 @@
     "title": "[XX-Favourite Reports-XX]",
     "empty": "[XX-No favourite reports yet. Star reports on the Reports page to see them here.-XX]",
     "browseReports": "[XX-Browse reports-XX]"
+  },
+  "widgets": {
+    "configure": "[XX-Configure {name}-XX]",
+    "done": "[XX-Done-XX]",
+    "configSaveFailed": "[XX-Couldn't save widget settings. Please try again.-XX]",
+    "timeframe": "[XX-Timeframe-XX]",
+    "accounts": "[XX-Accounts-XX]",
+    "chartType": "[XX-Chart type-XX]",
+    "view": "[XX-View-XX]",
+    "rangeLabels": {
+      "1m": "[XX-1M-XX]",
+      "3m": "[XX-3M-XX]",
+      "6m": "[XX-6M-XX]",
+      "1y": "[XX-1Y-XX]",
+      "2y": "[XX-2Y-XX]",
+      "5y": "[XX-5Y-XX]",
+      "ytd": "[XX-YTD-XX]",
+      "all": "[XX-All-XX]"
+    }
+  },
+  "portfolioValue": {
+    "title": "[XX-Portfolio Value-XX]",
+    "empty": "[XX-No investment history to show yet.-XX]"
+  },
+  "spendingByPayee": {
+    "title": "[XX-Spending by Payee-XX]",
+    "empty": "[XX-No spending in this period.-XX]",
+    "totalLabel": "[XX-Total-XX]"
+  },
+  "monthlySpendingTrend": {
+    "title": "[XX-Monthly Spending Trend-XX]",
+    "empty": "[XX-No data for this period.-XX]",
+    "expenses": "[XX-Expenses-XX]",
+    "income": "[XX-Income-XX]"
+  },
+  "incomeBySource": {
+    "title": "[XX-Income by Source-XX]",
+    "empty": "[XX-No income in this period.-XX]",
+    "totalLabel": "[XX-Total income-XX]"
+  },
+  "creditUtilizationAccounts": {
+    "title": "[XX-Credit Utilization by Account-XX]",
+    "empty": "[XX-No credit accounts with a limit set.-XX]",
+    "utilization": "[XX-Utilization-XX]",
+    "used": "[XX-Used-XX]"
+  },
+  "creditUtilizationTotal": {
+    "title": "[XX-Total Credit Utilization-XX]",
+    "empty": "[XX-No credit accounts with a limit set.-XX]",
+    "used": "[XX-Used-XX]",
+    "available": "[XX-Available-XX]"
+  },
+  "sectorWeightings": {
+    "title": "[XX-Sector Allocation-XX]",
+    "empty": "[XX-No sector data available.-XX]",
+    "direct": "[XX-Direct-XX]",
+    "etf": "[XX-ETF-XX]"
+  },
+  "securityTypeAllocation": {
+    "title": "[XX-Security Type Allocation-XX]",
+    "empty": "[XX-No holdings to show.-XX]",
+    "types": {
+      "STOCK": "[XX-Stocks-XX]",
+      "ETF": "[XX-ETFs-XX]",
+      "MUTUAL_FUND": "[XX-Mutual Funds-XX]",
+      "BOND": "[XX-Bonds-XX]",
+      "CASH": "[XX-Cash-XX]"
+    }
+  },
+  "geographicAllocation": {
+    "title": "[XX-Geographic Allocation-XX]",
+    "empty": "[XX-No holdings to show.-XX]",
+    "viewRegion": "[XX-Region-XX]",
+    "viewExchange": "[XX-Exchange-XX]",
+    "viewCountry": "[XX-Country-XX]"
+  },
+  "recurringExpenses": {
+    "title": "[XX-Top Recurring Expenses-XX]",
+    "empty": "[XX-No recurring expenses found.-XX]",
+    "minOccurrences": "[XX-Minimum occurrences-XX]",
+    "minOccurrencesOption": "[XX-{count} or more-XX]",
+    "occurrences": "[XX-{count} occurrences-XX]",
+    "monthlyEstimate": "[XX-Monthly estimate-XX]"
+  },
+  "weekendVsWeekday": {
+    "title": "[XX-Weekend vs Weekday Spending-XX]",
+    "empty": "[XX-No spending in this period.-XX]",
+    "weekendLabel": "[XX-Weekend-XX]",
+    "weekdayLabel": "[XX-Weekday-XX]",
+    "viewOverview": "[XX-Overview-XX]",
+    "viewByDay": "[XX-By day-XX]"
   }
 }

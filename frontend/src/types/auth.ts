@@ -105,6 +105,7 @@ export interface UserPreferences {
   budgetDigestDay: 'MONDAY' | 'FRIDAY';
   favouriteReportIds: string[];
   dashboardWidgets: string[]; // ordered visible widget ids; empty = default layout
+  dashboardWidgetConfig: Record<string, Record<string, unknown>>; // per-widget settings keyed by widget id
   showCreatedAt: boolean;
   timeFormat: '24h' | '12h';
   preferredExchanges: string[];
@@ -167,6 +168,7 @@ export interface UpdatePreferencesData {
   budgetDigestDay?: 'MONDAY' | 'FRIDAY';
   favouriteReportIds?: string[];
   dashboardWidgets?: string[];
+  dashboardWidgetConfig?: Record<string, Record<string, unknown>>;
   showCreatedAt?: boolean;
   timeFormat?: '24h' | '12h';
   preferredExchanges?: string[];

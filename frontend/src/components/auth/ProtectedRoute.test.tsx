@@ -158,6 +158,7 @@ describe('ProtectedRoute', () => {
         timeFormat: '24h',
         favouriteReportIds: [],
         dashboardWidgets: [],
+        dashboardWidgetConfig: {},
         preferredExchanges: [],
     defaultQuoteProvider: 'yahoo' as const,
     recentTransactionsLimit: 5,

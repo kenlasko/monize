@@ -40,6 +40,7 @@ const mockPreferences: UserPreferences = {
   timeFormat: '24h',
   favouriteReportIds: [],
   dashboardWidgets: [],
+  dashboardWidgetConfig: {},
   preferredExchanges: [],
     defaultQuoteProvider: 'yahoo' as const,
     recentTransactionsLimit: 5,
