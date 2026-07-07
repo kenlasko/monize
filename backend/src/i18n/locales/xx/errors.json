@@ -281,7 +281,8 @@
   "netWorth": {
     "invalidStartDate": "[XX-startDate must be YYYY-MM-DD-XX]",
     "invalidEndDate": "[XX-endDate must be YYYY-MM-DD-XX]",
-    "invalidAccountIds": "[XX-accountIds must be comma-separated UUIDs-XX]"
+    "invalidAccountIds": "[XX-accountIds must be comma-separated UUIDs-XX]",
+    "invalidGranularity": "[XX-granularity must be 'daily' or 'monthly'-XX]"
   },
   "notifications": {
     "smtpNotConfigured": "[XX-SMTP is not configured. Set SMTP environment variables.-XX]",

@@ -44,8 +44,14 @@ vi.mock('@/hooks/useDateRange', () => ({
   }),
 }));
 
+let mockSeriesMode = 'total';
 vi.mock('@/hooks/useLocalStorage', () => ({
-  useLocalStorage: (_key: string, defaultValue: string) => [defaultValue, vi.fn()],
+  useLocalStorage: (key: string, defaultValue: string) => {
+    if (key === 'monize-reports-portfolio-value-series-mode') {
+      return [mockSeriesMode, vi.fn()];
+    }
+    return [defaultValue, vi.fn()];
+  },
 }));
 
 vi.mock('@/lib/utils', async (importActual) => ({
@@ -76,6 +82,7 @@ vi.mock('@/components/ui/ExportDropdown', () => ({
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
   AreaChart: ({ children }: any) => <div data-testid="area-chart">{children}</div>,
+  Legend: () => null,
   // Invoke the dot render-prop so the high/low bubble wiring (and its dismiss
   // control) is exercised. Indices 0..2 cover both extremes of the 3-point
   // series the dismiss test renders.
@@ -124,6 +131,7 @@ vi.mock('@/components/investments/portfolio-chart-utils', () => ({
 
 const mockGetInvestmentsMonthly = vi.fn();
 const mockGetInvestmentsDaily = vi.fn();
+const mockGetInvestmentsBreakdown = vi.fn();
 const mockGetPortfolioSummary = vi.fn();
 const mockGetInvestmentAccounts = vi.fn();
 const mockGetIntradayValue = vi.fn();
@@ -132,6 +140,7 @@ vi.mock('@/lib/net-worth', () => ({
   netWorthApi: {
     getInvestmentsMonthly: (...args: any[]) => mockGetInvestmentsMonthly(...args),
     getInvestmentsDaily: (...args: any[]) => mockGetInvestmentsDaily(...args),
+    getInvestmentsBreakdown: (...args: any[]) => mockGetInvestmentsBreakdown(...args),
   },
 }));
 
@@ -166,6 +175,7 @@ describe('PortfolioValueReport', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDateRangeValue = '2y';
+    mockSeriesMode = 'total';
   });
 
   it('shows loading state initially', () => {
@@ -792,5 +802,91 @@ describe('PortfolioValueReport', () => {
     }
     // Trigger CSV export.
     await act(async () => { fireEvent.click(screen.getByTestId('export-csv')); });
+  });
+
+  const breakdownFixture = {
+    granularity: 'monthly' as const,
+    currency: 'CAD',
+    series: [
+      { key: 'sec-1', type: 'security' as const, symbol: 'AAPL', name: 'Apple Inc.' },
+      { key: 'other', type: 'other' as const, symbol: null, name: '' },
+      { key: 'cash', type: 'cash' as const, symbol: null, name: '' },
+    ],
+    points: [
+      { date: '2024-06-01', total: 1500, values: { 'sec-1': 800, other: 200, cash: 500 } },
+      { date: '2024-07-01', total: 1700, values: { 'sec-1': 900, other: 300, cash: 500 } },
+    ],
+  };
+
+  it('loads the per-security breakdown and renders the stacked chart when By security is active', async () => {
+    mockSeriesMode = 'securities';
+    mockGetInvestmentsBreakdown.mockResolvedValue(breakdownFixture);
+    mockGetPortfolioSummary.mockResolvedValue(emptyPortfolio);
+    mockGetInvestmentAccounts.mockResolvedValue([]);
+    render(<PortfolioValueReport />);
+    await waitFor(() => {
+      expect(screen.getByTestId('area-chart')).toBeInTheDocument();
+    });
+    expect(mockGetInvestmentsBreakdown).toHaveBeenCalledWith(
+      expect.objectContaining({ granularity: 'monthly' }),
+    );
+    // The total-only endpoints are not used while By security is active.
+    expect(mockGetInvestmentsMonthly).not.toHaveBeenCalled();
+  });
+
+  it('uses daily granularity for the breakdown on shorter ranges', async () => {
+    mockSeriesMode = 'securities';
+    mockDateRangeValue = '3m';
+    mockGetInvestmentsBreakdown.mockResolvedValue({ ...breakdownFixture, granularity: 'daily' });
+    mockGetPortfolioSummary.mockResolvedValue(emptyPortfolio);
+    mockGetInvestmentAccounts.mockResolvedValue([]);
+    render(<PortfolioValueReport />);
+    await waitFor(() => {
+      expect(mockGetInvestmentsBreakdown).toHaveBeenCalledWith(
+        expect.objectContaining({ granularity: 'daily' }),
+      );
+    });
+  });
+
+  it('renders the per-security table with a column per band and exports CSV', async () => {
+    mockSeriesMode = 'securities';
+    mockGetInvestmentsBreakdown.mockResolvedValue(breakdownFixture);
+    mockGetPortfolioSummary.mockResolvedValue(emptyPortfolio);
+    mockGetInvestmentAccounts.mockResolvedValue([]);
+    render(<PortfolioValueReport />);
+    await waitFor(() => expect(screen.getByTitle('Table')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTitle('Table')); });
+    // Security band (symbol), rolled-up "Other securities" and "Cash" bands
+    // each get a column header.
+    await waitFor(() => expect(screen.getByText('AAPL')).toBeInTheDocument());
+    expect(screen.getByText('Other securities')).toBeInTheDocument();
+    expect(screen.getByText('Cash')).toBeInTheDocument();
+    // A per-band cell value is formatted with the currency formatter.
+    expect(screen.getAllByText('$800.00').length).toBeGreaterThanOrEqual(1);
+    await act(async () => { fireEvent.click(screen.getByTestId('export-csv')); });
+  });
+
+  it('disables the By security toggle and skips the breakdown for the 1d range', async () => {
+    mockSeriesMode = 'securities';
+    mockDateRangeValue = '1d';
+    mockGetIntradayValue.mockResolvedValue({
+      points: [{ timestamp: '2024-06-01T10:00:00Z', value: 50000 }],
+      interval: '5m',
+      currency: 'CAD',
+      range: '1d',
+      fetchedAt: new Date().toISOString(),
+      skippedSymbols: [],
+      fallbackToDaily: false,
+    });
+    mockGetPortfolioSummary.mockResolvedValue(emptyPortfolio);
+    mockGetInvestmentAccounts.mockResolvedValue([]);
+    render(<PortfolioValueReport />);
+    await waitFor(() => {
+      expect(screen.getByTestId('area-chart')).toBeInTheDocument();
+    });
+    // The 1d range falls back to the intraday total path, not the breakdown.
+    expect(mockGetInvestmentsBreakdown).not.toHaveBeenCalled();
+    const securitiesBtn = screen.getByRole('button', { name: 'By security' });
+    expect(securitiesBtn).toBeDisabled();
   });
 });

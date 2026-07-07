@@ -54,4 +54,19 @@ describe('netWorthApi', () => {
       params: undefined,
     });
   });
+
+  it('getInvestmentsBreakdown fetches /net-worth/investments-breakdown', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: { granularity: 'monthly', currency: 'CAD', series: [], points: [] },
+    });
+    const result = await netWorthApi.getInvestmentsBreakdown({
+      granularity: 'monthly',
+      accountIds: 'a1',
+      displayCurrency: 'CAD',
+    });
+    expect(apiClient.get).toHaveBeenCalledWith('/net-worth/investments-breakdown', {
+      params: { granularity: 'monthly', accountIds: 'a1', displayCurrency: 'CAD' },
+    });
+    expect(result.granularity).toBe('monthly');
+  });
 });

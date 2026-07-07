@@ -12,11 +12,13 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Legend,
 } from 'recharts';
-import { chartColors } from '@/lib/chart-colors';
+import { chartColors, chartSeriesColor } from '@/lib/chart-colors';
 import { netWorthApi } from '@/lib/net-worth';
 import { investmentsApi } from '@/lib/investments';
 import { PortfolioSummary } from '@/types/investment';
+import { InvestmentBreakdown, InvestmentBreakdownSeries } from '@/types/net-worth';
 import { Account } from '@/types/account';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -69,6 +71,37 @@ function CustomTooltip({ active, payload, fmtFull, portfolioLabel }: {
   );
 }
 
+function SecuritiesTooltip({ active, payload, fmtFull, totalLabel }: {
+  active?: boolean;
+  payload?: Array<{ name?: string; value?: number; color?: string; payload?: { name: string } }>;
+  fmtFull: (v: number) => string;
+  totalLabel: string;
+}) {
+  if (!active || !payload?.length) return null;
+  const name = payload[0]?.payload?.name;
+  // Largest contribution first, so the tooltip reads top-down like the stack.
+  const entries = payload
+    .filter((e) => typeof e.value === 'number' && e.value !== 0)
+    .sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
+  const total = payload.reduce((sum, e) => sum + (e.value ?? 0), 0);
+  return (
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 max-h-72 overflow-y-auto">
+      <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">{name}</p>
+      {entries.map((e, i) => (
+        <p key={i} className="text-sm flex items-center gap-2" style={{ color: e.color }}>
+          <span className="inline-block w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: e.color }} />
+          <span className="text-gray-600 dark:text-gray-300">{e.name}</span>
+          <span className="ml-auto text-gray-900 dark:text-gray-100 whitespace-nowrap">{fmtFull(e.value ?? 0)}</span>
+        </p>
+      ))}
+      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mt-1 pt-1 border-t border-gray-100 dark:border-gray-700 flex items-center gap-2">
+        <span>{totalLabel}</span>
+        <span className="ml-auto whitespace-nowrap">{fmtFull(total)}</span>
+      </p>
+    </div>
+  );
+}
+
 export function PortfolioValueReport() {
   const t = useTranslations('reports');
   const tc = useTranslations('common');
@@ -84,6 +117,13 @@ export function PortfolioValueReport() {
   const [reloadKey, setReloadKey] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [chartViewType, setChartViewType] = useState<'area' | 'table'>('area');
+  // Whether the chart stacks per-security contribution bands instead of a
+  // single portfolio-total area. Persisted so the choice survives navigation.
+  const [seriesMode, setSeriesMode] = useLocalStorage<'total' | 'securities'>(
+    'monize-reports-portfolio-value-series-mode',
+    'total',
+  );
+  const [breakdown, setBreakdown] = useState<InvestmentBreakdown | null>(null);
   // High/low value bubbles the user has temporarily dismissed, keyed by the
   // value they marked so a later data change with a new extreme shows the
   // bubble again. Component-local (not persisted), so it resets on navigation.
@@ -126,6 +166,19 @@ export function PortfolioValueReport() {
 
   const isIntraday = INTRADAY_RANGES.has(dateRange);
   const useDaily = !isIntraday && DAILY_RANGES.has(dateRange);
+
+  // Per-security stacked view. Not offered for the single-day (1D) range, which
+  // would collapse to a single point. It always reads the daily/monthly
+  // breakdown endpoint (never intraday), so pick the point resolution to match
+  // the selected range: daily for the shorter ranges, monthly for 2y/5y/all.
+  const securitiesActive = seriesMode === 'securities' && dateRange !== '1d';
+  const breakdownGranularity: 'daily' | 'monthly' =
+    isIntraday || useDaily ? 'daily' : 'monthly';
+  // X-axis label formatting must follow the data actually plotted. The
+  // securities view never plots intraday bars, so drive the axis off the
+  // breakdown granularity rather than the range's intraday/daily flags.
+  const axisIntraday = securitiesActive ? false : isIntraday;
+  const axisDaily = securitiesActive ? breakdownGranularity === 'daily' : useDaily;
 
   const selectedAccount = isSingleAccount
     ? accounts.find((a) => a.id === selectedAccountIds[0])
@@ -205,6 +258,28 @@ export function PortfolioValueReport() {
       }
     };
 
+    const loadBreakdown = async () => {
+      const { start, end } = resolvedRange;
+      const data = await netWorthApi.getInvestmentsBreakdown({
+        granularity: breakdownGranularity,
+        startDate: start,
+        endDate: end,
+        accountIds: accountIdsCsv,
+        displayCurrency: foreignCurrency || undefined,
+      });
+      if (loadSeqRef.current !== seq) return;
+      setBreakdown(data);
+      setChartPoints(
+        data.points.map((p) => ({
+          name:
+            breakdownGranularity === 'monthly'
+              ? formatChartDate(p.date, 'MMM yyyy')
+              : formatChartDate(p.date, 'MMM d, yyyy'),
+          Value: p.total,
+        })),
+      );
+    };
+
     const loadData = async () => {
       setIsLoading(true);
       setIntradayUnavailable(null);
@@ -224,7 +299,10 @@ export function PortfolioValueReport() {
           return null;
         });
 
-        if (isIntraday) {
+        if (securitiesActive) {
+          await loadBreakdown();
+        } else if (isIntraday) {
+          setBreakdown(null);
           const cacheKey = buildIntradayCacheKey(
             dateRange,
             accountIds,
@@ -290,6 +368,7 @@ export function PortfolioValueReport() {
             );
           }
         } else {
+          setBreakdown(null);
           await loadDailyOrMonthly();
         }
 
@@ -320,6 +399,8 @@ export function PortfolioValueReport() {
     useDaily,
     isIntraday,
     dateRange,
+    securitiesActive,
+    breakdownGranularity,
     formatIntradayLabel,
     formatChartDate,
   ]);
@@ -354,18 +435,100 @@ export function PortfolioValueReport() {
 
   const xAxisTicks = useMemo(() => {
     if (chartPoints.length <= 36) return undefined;
-    if (isIntraday || useDaily) {
+    if (axisIntraday || axisDaily) {
       const step = Math.ceil(chartPoints.length / 7);
       return chartPoints.filter((_, i) => i % step === 0).map((d) => d.name);
     }
     return chartPoints
       .filter((d) => d.name.startsWith('Jan '))
       .map((d) => d.name);
-  }, [chartPoints, isIntraday, useDaily]);
+  }, [chartPoints, axisIntraday, axisDaily]);
 
   const yAxisDomain = useMemo(
-    () => computeTightYAxisDomain(chartPoints.map((d) => d.Value)),
-    [chartPoints],
+    () =>
+      // A stacked area builds up from zero, so anchor its axis at 0 rather than
+      // zooming to the total's min/max (which would clip the lower bands).
+      securitiesActive
+        ? ([0, 'auto'] as [number, 'auto'])
+        : computeTightYAxisDomain(chartPoints.map((d) => d.Value)),
+    [chartPoints, securitiesActive],
+  );
+
+  // Localized label + stacking colour for each per-security band. Securities
+  // cycle the categorical palette in stack order; cash and the rolled-up
+  // "other" bucket get fixed, distinct tokens so they read consistently.
+  const securitiesSeries = useMemo(() => {
+    if (!breakdown) return [] as Array<InvestmentBreakdownSeries & { label: string; color: string }>;
+    return breakdown.series.map((s, index) => ({
+      ...s,
+      label:
+        s.type === 'cash'
+          ? t('portfolioValue.seriesCash')
+          : s.type === 'other'
+            ? t('portfolioValue.seriesOther')
+            : s.symbol || s.name,
+      color:
+        s.type === 'cash'
+          ? chartColors.primary
+          : s.type === 'other'
+            ? chartColors.warning
+            : chartSeriesColor(index),
+    }));
+  }, [breakdown, t]);
+
+  const stackedChartData = useMemo(() => {
+    if (!breakdown) return [] as Array<Record<string, number | string>>;
+    return breakdown.points.map((p) => ({
+      name:
+        breakdownGranularity === 'monthly'
+          ? formatChartDate(p.date, 'MMM yyyy')
+          : formatChartDate(p.date, 'MMM d, yyyy'),
+      total: p.total,
+      ...p.values,
+    }));
+  }, [breakdown, breakdownGranularity, formatChartDate]);
+
+  const sortedBreakdownRows = useMemo(() => {
+    if (!breakdown) return [];
+    const rows = breakdown.points.map((p, idx) => ({
+      index: idx,
+      name:
+        breakdownGranularity === 'monthly'
+          ? formatChartDate(p.date, 'MMM yyyy')
+          : formatChartDate(p.date, 'MMM d, yyyy'),
+      total: p.total,
+      values: p.values,
+    }));
+    rows.sort((a, b) => {
+      const comparison =
+        chartTableSort.sortField === 'name'
+          ? compareValues(a.index, b.index)
+          : compareValues(a.total, b.total);
+      return chartTableSort.sortDirection === 'asc' ? comparison : -comparison;
+    });
+    return rows;
+  }, [breakdown, breakdownGranularity, formatChartDate, chartTableSort.sortField, chartTableSort.sortDirection]);
+
+  // Shared x-axis label formatter for the total and stacked charts. Driven by
+  // the axis granularity flags so the securities view (which never plots
+  // intraday bars) labels correctly regardless of the range's intraday flag.
+  const formatXAxisTick = useCallback(
+    (value: string) => {
+      if (axisIntraday) return value;
+      if (axisDaily) {
+        const parts = value.split(', ');
+        return parts[0] || value;
+      }
+      if (chartPoints.length > 36) {
+        return value.split(' ')[1] || value;
+      }
+      if (chartPoints.length > 18) {
+        const parts = value.split(' ');
+        return parts.length === 2 ? `${parts[0]} '${parts[1].slice(2)}` : value;
+      }
+      return value.split(' ')[0];
+    },
+    [axisIntraday, axisDaily, chartPoints.length],
   );
 
   // Index of the first point at the highest / lowest value, for the
@@ -419,6 +582,20 @@ export function PortfolioValueReport() {
   };
 
   const handleExportCsv = () => {
+    if (securitiesActive && breakdown) {
+      const headers = [
+        t('portfolioValue.csvColDate'),
+        ...securitiesSeries.map((s) => s.label),
+        t('portfolioValue.colTotal'),
+      ];
+      const rows = sortedBreakdownRows.map((row) => [
+        row.name,
+        ...securitiesSeries.map((s) => row.values[s.key] ?? 0),
+        row.total,
+      ]);
+      exportToCsv('portfolio-value-by-security', headers, rows);
+      return;
+    }
     const headers = [t('portfolioValue.csvColDate'), t('portfolioValue.csvColValue')];
     const rows = sortedChartTableData.map((p) => [p.name, p.Value]);
     exportToCsv('portfolio-value', headers, rows);
@@ -485,6 +662,33 @@ export function PortfolioValueReport() {
             />
           </div>
           <div className="flex items-center gap-3">
+            {/* Total vs. per-security stacked view. Disabled for the 1D range,
+                which has too few points for a meaningful breakdown. */}
+            <div className="inline-flex rounded-md overflow-hidden border border-gray-200 dark:border-gray-600">
+              {(['total', 'securities'] as const).map((mode) => {
+                const isActive = (securitiesActive ? 'securities' : 'total') === mode;
+                const disabled = mode === 'securities' && dateRange === '1d';
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setSeriesMode(mode)}
+                    disabled={disabled}
+                    aria-pressed={isActive}
+                    title={disabled ? t('portfolioValue.securitiesRangeHint') : undefined}
+                    className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                    } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    {mode === 'total'
+                      ? t('portfolioValue.viewTotal')
+                      : t('portfolioValue.viewSecurities')}
+                  </button>
+                );
+              })}
+            </div>
             <ChartViewToggle
               value={chartViewType}
               onChange={(v) => setChartViewType(v as 'area' | 'table')}
@@ -569,6 +773,97 @@ export function PortfolioValueReport() {
           <p className="text-gray-500 dark:text-gray-400 text-center py-8">
             {t('portfolioValue.noData')}
           </p>
+        ) : securitiesActive && breakdown ? (
+          chartViewType === 'table' ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-900/50">
+                  <tr>
+                    <SortableHeader<PortfolioChartSortField>
+                      field="name"
+                      sortField={chartTableSort.sortField}
+                      sortDirection={chartTableSort.sortDirection}
+                      onSort={chartTableSort.handleSort}
+                      className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase whitespace-nowrap"
+                    >
+                      {t('portfolioValue.colDate')}
+                    </SortableHeader>
+                    {securitiesSeries.map((s) => (
+                      <th
+                        key={s.key}
+                        className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase whitespace-nowrap"
+                      >
+                        <span className="inline-flex items-center gap-1.5 justify-end">
+                          <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: s.color }} />
+                          {s.label}
+                        </span>
+                      </th>
+                    ))}
+                    <SortableHeader<PortfolioChartSortField>
+                      field="value"
+                      sortField={chartTableSort.sortField}
+                      sortDirection={chartTableSort.sortDirection}
+                      onSort={chartTableSort.handleSort}
+                      align="right"
+                      className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase whitespace-nowrap"
+                    >
+                      {t('portfolioValue.colTotal')}
+                    </SortableHeader>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {sortedBreakdownRows.map((row) => (
+                    <tr key={`${row.index}-${row.name}`} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap">{row.name}</td>
+                      {securitiesSeries.map((s) => (
+                        <td key={s.key} className="px-4 py-3 text-right text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                          {fmtFull(row.values[s.key] ?? 0)}
+                        </td>
+                      ))}
+                      <td className="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                        {fmtFull(row.total)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div
+              className={`h-80 transition-opacity duration-200 ${
+                isLoading ? 'opacity-60' : 'opacity-100'
+              }`}
+            >
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                <AreaChart data={stackedChartData} margin={{ top: 20, right: 30, left: 0, bottom: 30 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 12 }}
+                    {...(xAxisTicks ? { ticks: xAxisTicks } : {})}
+                    tickFormatter={formatXAxisTick}
+                  />
+                  <YAxis domain={yAxisDomain} tickFormatter={fmtAxis} tick={{ fontSize: 12 }} />
+                  <Tooltip content={<SecuritiesTooltip fmtFull={fmtFull} totalLabel={t('portfolioValue.colTotal')} />} />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  {securitiesSeries.map((s) => (
+                    <Area
+                      key={s.key}
+                      type="monotone"
+                      dataKey={s.key}
+                      stackId="pf"
+                      stroke={s.color}
+                      strokeWidth={1}
+                      fill={s.color}
+                      fillOpacity={0.85}
+                      name={s.label}
+                      isAnimationActive={false}
+                    />
+                  ))}
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )
         ) : chartViewType === 'table' ? (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -627,22 +922,7 @@ export function PortfolioValueReport() {
                   dataKey="name"
                   tick={{ fontSize: 12 }}
                   {...(xAxisTicks ? { ticks: xAxisTicks } : {})}
-                  tickFormatter={(value: string) => {
-                    if (isIntraday) {
-                      return value;
-                    }
-                    if (useDaily) {
-                      const parts = value.split(', ');
-                      return parts[0] || value;
-                    }
-                    if (chartPoints.length > 36) {
-                      return value.split(' ')[1] || value;
-                    } else if (chartPoints.length > 18) {
-                      const parts = value.split(' ');
-                      return parts.length === 2 ? `${parts[0]} '${parts[1].slice(2)}` : value;
-                    }
-                    return value.split(' ')[0];
-                  }}
+                  tickFormatter={formatXAxisTick}
                 />
                 <YAxis
                   domain={yAxisDomain}

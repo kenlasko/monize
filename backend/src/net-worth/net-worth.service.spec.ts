@@ -2736,4 +2736,221 @@ describe("NetWorthService", () => {
       expect(result[0].value).toBe(3466);
     });
   });
+
+  describe("getInvestmentBreakdown", () => {
+    it("returns an empty breakdown when no accounts match", async () => {
+      prefRepository.findOne.mockResolvedValue({ defaultCurrency: "USD" });
+      // accounts query returns empty
+      dataSource.query.mockResolvedValueOnce([]);
+
+      const result = await service.getInvestmentBreakdown("user-1", {
+        granularity: "monthly",
+      });
+
+      expect(result).toEqual({
+        granularity: "monthly",
+        currency: "USD",
+        series: [],
+        points: [],
+      });
+    });
+
+    it("builds a monthly per-security breakdown with a cash band", async () => {
+      prefRepository.findOne.mockResolvedValue({ defaultCurrency: "USD" });
+
+      // accounts: one brokerage + one cash account
+      dataSource.query.mockResolvedValueOnce([
+        {
+          id: "brok-1",
+          account_type: "INVESTMENT",
+          account_sub_type: "INVESTMENT_BROKERAGE",
+          currency_code: "USD",
+          opening_balance: 0,
+        },
+        {
+          id: "cash-1",
+          account_type: "INVESTMENT",
+          account_sub_type: "INVESTMENT_CASH",
+          currency_code: "USD",
+          opening_balance: 5000,
+        },
+      ]);
+
+      // investment transactions
+      dataSource.query.mockResolvedValueOnce([
+        {
+          account_id: "brok-1",
+          security_id: "sec-1",
+          action: "BUY",
+          quantity: "10",
+          transaction_date: "2024-05-15",
+        },
+      ]);
+
+      securityRepository.findByIds.mockResolvedValue([
+        {
+          id: "sec-1",
+          symbol: "AAPL",
+          name: "Apple Inc.",
+          currencyCode: "USD",
+          skipPriceUpdates: false,
+        },
+      ]);
+
+      // month-end security prices (loadSecurityPrices)
+      dataSource.query.mockResolvedValueOnce([
+        { security_id: "sec-1", price_date: "2024-05-31", close_price: "100" },
+        { security_id: "sec-1", price_date: "2024-06-28", close_price: "110" },
+      ]);
+
+      // monthly cash balances
+      dataSource.query.mockResolvedValueOnce([
+        { account_id: "cash-1", month: "2024-05-01", balance: "5000" },
+        { account_id: "cash-1", month: "2024-06-01", balance: "5000" },
+      ]);
+
+      const result = await service.getInvestmentBreakdown("user-1", {
+        granularity: "monthly",
+        startDate: "2024-05-01",
+        endDate: "2024-06-30",
+      });
+
+      expect(result.currency).toBe("USD");
+      expect(result.series).toEqual([
+        { key: "sec-1", type: "security", symbol: "AAPL", name: "Apple Inc." },
+        { key: "cash", type: "cash", symbol: null, name: "" },
+      ]);
+      expect(result.points).toHaveLength(2);
+      expect(result.points[0]).toEqual({
+        date: "2024-05-01",
+        total: 6000,
+        values: { "sec-1": 1000, cash: 5000 },
+      });
+      expect(result.points[1]).toEqual({
+        date: "2024-06-01",
+        total: 6100,
+        values: { "sec-1": 1100, cash: 5000 },
+      });
+    });
+
+    it("values each daily point at the latest close before the date", async () => {
+      prefRepository.findOne.mockResolvedValue({ defaultCurrency: "USD" });
+
+      dataSource.query.mockResolvedValueOnce([
+        {
+          id: "brok-1",
+          account_type: "INVESTMENT",
+          account_sub_type: "INVESTMENT_BROKERAGE",
+          currency_code: "USD",
+          opening_balance: 0,
+        },
+      ]);
+      dataSource.query.mockResolvedValueOnce([
+        {
+          account_id: "brok-1",
+          security_id: "sec-1",
+          action: "BUY",
+          quantity: "10",
+          transaction_date: "2025-02-01",
+        },
+      ]);
+      securityRepository.findByIds.mockResolvedValue([
+        {
+          id: "sec-1",
+          symbol: "MSFT",
+          name: "Microsoft",
+          currencyCode: "USD",
+          skipPriceUpdates: false,
+        },
+      ]);
+      dataSource.query.mockResolvedValueOnce([
+        { security_id: "sec-1", price_date: "2025-02-28", close_price: "99" },
+        { security_id: "sec-1", price_date: "2025-03-01", close_price: "100" },
+      ]);
+
+      const result = await service.getInvestmentBreakdown("user-1", {
+        granularity: "daily",
+        startDate: "2025-03-01",
+        endDate: "2025-03-02",
+      });
+
+      expect(result.series).toEqual([
+        { key: "sec-1", type: "security", symbol: "MSFT", name: "Microsoft" },
+      ]);
+      expect(result.points).toEqual([
+        { date: "2025-03-01", total: 990, values: { "sec-1": 990 } },
+        { date: "2025-03-02", total: 1000, values: { "sec-1": 1000 } },
+      ]);
+    });
+
+    it("rolls securities beyond the limit into a single 'other' band", async () => {
+      prefRepository.findOne.mockResolvedValue({ defaultCurrency: "USD" });
+
+      dataSource.query.mockResolvedValueOnce([
+        {
+          id: "brok-1",
+          account_type: "INVESTMENT",
+          account_sub_type: "INVESTMENT_BROKERAGE",
+          currency_code: "USD",
+          opening_balance: 0,
+        },
+      ]);
+      dataSource.query.mockResolvedValueOnce([
+        {
+          account_id: "brok-1",
+          security_id: "sec-1",
+          action: "BUY",
+          quantity: "10",
+          transaction_date: "2024-05-15",
+        },
+        {
+          account_id: "brok-1",
+          security_id: "sec-2",
+          action: "BUY",
+          quantity: "5",
+          transaction_date: "2024-05-15",
+        },
+      ]);
+      securityRepository.findByIds.mockResolvedValue([
+        {
+          id: "sec-1",
+          symbol: "AAA",
+          name: "Alpha",
+          currencyCode: "USD",
+          skipPriceUpdates: false,
+        },
+        {
+          id: "sec-2",
+          symbol: "BBB",
+          name: "Beta",
+          currencyCode: "USD",
+          skipPriceUpdates: false,
+        },
+      ]);
+      dataSource.query.mockResolvedValueOnce([
+        { security_id: "sec-1", price_date: "2024-05-31", close_price: "100" },
+        { security_id: "sec-2", price_date: "2024-05-31", close_price: "50" },
+      ]);
+
+      const result = await service.getInvestmentBreakdown("user-1", {
+        granularity: "monthly",
+        startDate: "2024-05-01",
+        endDate: "2024-05-31",
+        limit: 1,
+      });
+
+      // sec-1 (peak 1000) keeps its band; sec-2 (peak 250) rolls into "other".
+      expect(result.series).toEqual([
+        { key: "sec-1", type: "security", symbol: "AAA", name: "Alpha" },
+        { key: "other", type: "other", symbol: null, name: "" },
+      ]);
+      expect(result.points).toEqual([
+        {
+          date: "2024-05-01",
+          total: 1250,
+          values: { "sec-1": 1000, other: 250 },
+        },
+      ]);
+    });
+  });
 });

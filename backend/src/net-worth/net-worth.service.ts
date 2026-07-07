@@ -27,6 +27,39 @@ const LIABILITY_TYPES: AccountType[] = [
 
 type RateIndex = Map<string, Array<{ date: string; rate: number }>>;
 
+export type InvestmentBreakdownGranularity = "daily" | "monthly";
+
+/**
+ * One stacked band on the Portfolio Value Over Time "by security" chart. A
+ * band is either an individual held security, the rolled-up "other" bucket of
+ * smaller holdings beyond the top-N cutoff, or the aggregate cash band. Only
+ * securities carry `symbol`/`name`; `cash` and `other` are labelled on the
+ * client so their copy stays localized.
+ */
+export interface InvestmentBreakdownSeries {
+  /** securityId for a real holding, or the sentinel "cash" / "other". */
+  key: string;
+  type: "security" | "cash" | "other";
+  symbol: string | null;
+  name: string;
+}
+
+export interface InvestmentBreakdownPoint {
+  /** YYYY-MM-DD; the month-first date for monthly granularity. */
+  date: string;
+  /** Sum of every band's value at this point (in the display currency). */
+  total: number;
+  /** Per-series value keyed by {@link InvestmentBreakdownSeries.key}. */
+  values: Record<string, number>;
+}
+
+export interface InvestmentBreakdown {
+  granularity: InvestmentBreakdownGranularity;
+  currency: string;
+  series: InvestmentBreakdownSeries[];
+  points: InvestmentBreakdownPoint[];
+}
+
 @Injectable()
 export class NetWorthService {
   private readonly logger = new Logger(NetWorthService.name);
@@ -975,7 +1008,615 @@ export class NetWorthService {
     return result;
   }
 
+  /**
+   * Per-security contribution to the portfolio value over time, for the
+   * Portfolio Value Over Time report's "by security" view. Replays holdings
+   * over the requested window (day-by-day for daily granularity, month-by-month
+   * for monthly) and values each security individually, so the returned bands
+   * stack up to the total portfolio value. Cash held in investment cash /
+   * standalone accounts is returned as its own aggregate band.
+   *
+   * The `limit` largest securities (ranked by their peak contribution across
+   * the window) keep their own band; the rest roll into a single "other" band
+   * so a large portfolio stays legible. Read-only; does not touch the stored
+   * monthly snapshots that the aggregate views use.
+   */
+  async getInvestmentBreakdown(
+    userId: string,
+    opts: {
+      granularity: InvestmentBreakdownGranularity;
+      startDate?: string;
+      endDate?: string;
+      accountIds?: string[];
+      displayCurrency?: string;
+      limit?: number;
+    },
+  ): Promise<InvestmentBreakdown> {
+    const { granularity } = opts;
+    const limit = opts.limit ?? 10;
+
+    const pref = await this.prefRepo.findOne({ where: { userId } });
+    const defaultCurrency =
+      opts.displayCurrency || pref?.defaultCurrency || "USD";
+
+    const end = opts.endDate || new Date().toISOString().slice(0, 10);
+    const start = opts.startDate || "1990-01-01";
+
+    const empty: InvestmentBreakdown = {
+      granularity,
+      currency: defaultCurrency,
+      series: [],
+      points: [],
+    };
+
+    const investAccounts = await this.resolveScopedInvestmentAccounts(
+      userId,
+      opts.accountIds,
+    );
+    if (investAccounts.length === 0) return empty;
+
+    const brokerageIds = investAccounts
+      .filter(
+        (a) =>
+          a.account_sub_type === "INVESTMENT_BROKERAGE" ||
+          (a.account_type === "INVESTMENT" && !a.account_sub_type),
+      )
+      .map((a) => a.id);
+    const cashIds = investAccounts
+      .filter(
+        (a) =>
+          a.account_sub_type === "INVESTMENT_CASH" ||
+          (a.account_type === "INVESTMENT" && !a.account_sub_type),
+      )
+      .map((a) => a.id);
+
+    // Investment transactions from inception up to the window end, so holdings
+    // can be replayed forward to each sample point.
+    const invTxs: any[] =
+      brokerageIds.length > 0
+        ? await this.dataSource.query(
+            `SELECT account_id, security_id, action, quantity, transaction_date
+             FROM investment_transactions
+             WHERE account_id = ANY($1::UUID[])
+               AND transaction_date <= $2
+             ORDER BY transaction_date ASC`,
+            [brokerageIds, end],
+          )
+        : [];
+
+    const securityIds = [
+      ...new Set(
+        invTxs.filter((t: any) => t.security_id).map((t: any) => t.security_id),
+      ),
+    ];
+    const securities =
+      securityIds.length > 0
+        ? await this.securityRepo.findByIds(securityIds)
+        : [];
+    const securityMap = new Map(securities.map((s) => [s.id, s]));
+
+    const marketSecIds = securityIds.filter(
+      (id) => !securityMap.get(id)?.skipPriceUpdates,
+    );
+    const skipSecIds = securityIds.filter(
+      (id) => securityMap.get(id)?.skipPriceUpdates,
+    );
+
+    // Build the ordered list of sample dates and, for each, a valuation date
+    // (the date whose close values that point) plus a price lookup.
+    const sampleDates =
+      granularity === "monthly"
+        ? this.enumerateMonths(start, end)
+        : this.enumerateDays(start, end);
+    if (sampleDates.length === 0) return empty;
+
+    // --- Price lookups -------------------------------------------------------
+    // Daily values each point at the latest close strictly before the date
+    // (start-of-day convention, matching getDailyInvestments). Monthly values
+    // each point at the latest close on or before the month end (matching the
+    // stored monthly snapshots).
+    const pricesBySec = new Map<
+      string,
+      Array<{ date: string; price: number }>
+    >();
+    const txPricesBySec = new Map<
+      string,
+      Array<{ date: string; price: number }>
+    >();
+    const monthPrices = new Map<string, Map<string, number>>();
+    const monthTxPrices = new Map<string, Map<string, number>>();
+
+    if (granularity === "daily") {
+      if (marketSecIds.length > 0) {
+        const priceRows: any[] = await this.dataSource.query(
+          `SELECT security_id, price_date, close_price
+             FROM security_prices
+             WHERE security_id = ANY($1::UUID[])
+               AND price_date >= ($2::DATE - INTERVAL '7 days')
+               AND price_date <= $3
+             ORDER BY security_id, price_date`,
+          [marketSecIds, start, end],
+        );
+        for (const p of priceRows) {
+          const arr = pricesBySec.get(p.security_id) ?? [];
+          arr.push({
+            date: this.toDateString(p.price_date),
+            price: Number(p.close_price),
+          });
+          pricesBySec.set(p.security_id, arr);
+        }
+      }
+      if (skipSecIds.length > 0) {
+        const txPriceRows: any[] = await this.dataSource.query(
+          `SELECT security_id, transaction_date, price
+             FROM investment_transactions
+             WHERE security_id = ANY($1::UUID[])
+               AND action IN ('BUY', 'SELL', 'REINVEST')
+               AND price IS NOT NULL AND price > 0
+             ORDER BY security_id, transaction_date`,
+          [skipSecIds],
+        );
+        for (const r of txPriceRows) {
+          const arr = txPricesBySec.get(r.security_id) ?? [];
+          arr.push({
+            date: this.toDateString(r.transaction_date),
+            price: Number(r.price),
+          });
+          txPricesBySec.set(r.security_id, arr);
+        }
+      }
+    } else {
+      // Monthly: reuse the month-end price loaders (keyed by month-first date).
+      await Promise.all([
+        this.loadSecurityPrices(
+          securityIds,
+          securityMap,
+          sampleDates,
+          monthPrices,
+        ),
+        this.loadTransactionPrices(
+          securityIds,
+          securityMap,
+          sampleDates,
+          monthTxPrices,
+        ),
+      ]);
+    }
+
+    // --- Cash balances -------------------------------------------------------
+    const cashBalances = new Map<string, Map<string, number>>();
+    if (cashIds.length > 0) {
+      const cashRows: any[] =
+        granularity === "monthly"
+          ? await this.loadMonthlyCashBalances(cashIds, start, end)
+          : await this.loadDailyCashBalances(cashIds, start, end);
+      for (const r of cashRows) {
+        if (!cashBalances.has(r.account_id))
+          cashBalances.set(r.account_id, new Map());
+        cashBalances
+          .get(r.account_id)!
+          .set(this.toDateString(r.date ?? r.month), Number(r.balance));
+      }
+    }
+
+    // --- Currency conversion -------------------------------------------------
+    const currencies = new Set<string>();
+    for (const a of investAccounts) {
+      if (a.currency_code !== defaultCurrency) currencies.add(a.currency_code);
+    }
+    for (const sec of securities) {
+      if (sec.currencyCode && sec.currencyCode !== defaultCurrency) {
+        currencies.add(sec.currencyCode);
+      }
+    }
+    const rateIndex = await this.buildRateIndex(
+      currencies,
+      defaultCurrency,
+      start,
+      end,
+    );
+
+    const acctCurrency = new Map<string, string>();
+    for (const a of investAccounts) acctCurrency.set(a.id, a.currency_code);
+
+    // --- Replay holdings, accumulating per security --------------------------
+    const holdings = new Map<string, number>(); // securityId -> quantity
+    let txIdx = 0;
+
+    const ungrouped: Array<{
+      date: string;
+      valuesBySec: Map<string, number>;
+      cash: number;
+    }> = [];
+
+    for (const sampleDate of sampleDates) {
+      const valuationDate =
+        granularity === "monthly" ? this.monthEndDate(sampleDate) : sampleDate;
+      const monthKey = granularity === "monthly" ? sampleDate : null;
+
+      // Apply every transaction up to this sample point. Daily includes
+      // transactions dated on the day itself; monthly includes any transaction
+      // whose month is at or before the sample month.
+      while (txIdx < invTxs.length) {
+        const tx = invTxs[txIdx];
+        const txDate = this.toDateString(tx.transaction_date);
+        if (granularity === "monthly") {
+          if (txDate.substring(0, 7) > sampleDate.substring(0, 7)) break;
+        } else if (txDate > sampleDate) {
+          break;
+        }
+
+        const secId = tx.security_id;
+        const qty = Number(tx.quantity) || 0;
+        if (secId) {
+          switch (tx.action) {
+            case "BUY":
+            case "REINVEST":
+            case "TRANSFER_IN":
+            case "SPLIT":
+              holdings.set(secId, (holdings.get(secId) || 0) + qty);
+              break;
+            case "SELL":
+            case "TRANSFER_OUT":
+              holdings.set(secId, (holdings.get(secId) || 0) - qty);
+              break;
+          }
+        }
+        txIdx++;
+      }
+
+      const valuesBySec = new Map<string, number>();
+      for (const [secId, qty] of holdings) {
+        if (Math.abs(qty) < 0.00000001) continue;
+        const security = securityMap.get(secId);
+        const price = this.priceForSample(
+          secId,
+          security,
+          granularity,
+          sampleDate,
+          monthKey,
+          { pricesBySec, txPricesBySec, monthPrices, monthTxPrices },
+        );
+        if (price == null) continue;
+        const secCurrency = security?.currencyCode || defaultCurrency;
+        const value = this.convertCurrency(
+          qty * price,
+          secCurrency,
+          defaultCurrency,
+          valuationDate,
+          rateIndex,
+        );
+        valuesBySec.set(secId, (valuesBySec.get(secId) ?? 0) + value);
+      }
+
+      // Cash maps are keyed by the sample date itself: day strings for daily,
+      // month-first strings for monthly.
+      let cash = 0;
+      for (const [acctId, dailyMap] of cashBalances) {
+        const bal = dailyMap.get(sampleDate) ?? 0;
+        if (bal === 0) continue;
+        const currency = acctCurrency.get(acctId) || defaultCurrency;
+        cash += this.convertCurrency(
+          bal,
+          currency,
+          defaultCurrency,
+          valuationDate,
+          rateIndex,
+        );
+      }
+
+      ungrouped.push({ date: sampleDate, valuesBySec, cash });
+    }
+
+    const { series, points } = this.groupSecurityBreakdown(
+      ungrouped,
+      securityMap,
+      limit,
+    );
+    return { granularity, currency: defaultCurrency, series, points };
+  }
+
   // ---- Private helpers ----
+
+  /**
+   * Resolve the investment accounts in scope for a breakdown request, mirroring
+   * getDailyInvestments: an explicit id list resolves its linked pairs, an
+   * empty list falls back to all of the user's investment cash / brokerage /
+   * standalone accounts. Returns the lightweight account rows the replay needs.
+   */
+  private async resolveScopedInvestmentAccounts(
+    userId: string,
+    accountIds?: string[],
+  ): Promise<
+    Array<{
+      id: string;
+      account_type: string;
+      account_sub_type: string | null;
+      currency_code: string;
+      opening_balance: string | number;
+    }>
+  > {
+    let accountFilter = "";
+    const acctParams: any[] = [userId];
+
+    if (accountIds && accountIds.length > 0) {
+      const resolved: { id: string }[] = await this.dataSource.query(
+        `SELECT id FROM accounts
+         WHERE user_id = $2
+           AND (
+             id = ANY($1)
+             OR linked_account_id = ANY($1)
+             OR id IN (
+               SELECT linked_account_id FROM accounts
+               WHERE id = ANY($1) AND user_id = $2
+             )
+           )`,
+        [accountIds, userId],
+      );
+      const idArray = [...new Set(resolved.map((a) => a.id))];
+      if (idArray.length === 0) return [];
+      const placeholders = idArray.map((_, i) => `$${i + 2}`).join(", ");
+      accountFilter = `AND a.id IN (${placeholders})`;
+      acctParams.push(...idArray);
+    } else {
+      accountFilter = `AND (a.account_sub_type IN ('INVESTMENT_CASH', 'INVESTMENT_BROKERAGE') OR (a.account_type = 'INVESTMENT' AND a.account_sub_type IS NULL))`;
+    }
+
+    return this.dataSource.query(
+      `SELECT a.id, a.account_type, a.account_sub_type, a.currency_code, a.opening_balance
+       FROM accounts a
+       WHERE a.user_id = $1 ${accountFilter}`,
+      acctParams,
+    );
+  }
+
+  /** Latest close valuing a security at one sample point (see granularity notes). */
+  private priceForSample(
+    secId: string,
+    security: Security | undefined,
+    granularity: InvestmentBreakdownGranularity,
+    sampleDate: string,
+    monthKey: string | null,
+    maps: {
+      pricesBySec: Map<string, Array<{ date: string; price: number }>>;
+      txPricesBySec: Map<string, Array<{ date: string; price: number }>>;
+      monthPrices: Map<string, Map<string, number>>;
+      monthTxPrices: Map<string, Map<string, number>>;
+    },
+  ): number | undefined {
+    if (granularity === "monthly") {
+      const map = security?.skipPriceUpdates
+        ? maps.monthTxPrices
+        : maps.monthPrices;
+      return map.get(secId)?.get(monthKey!);
+    }
+    const series = security?.skipPriceUpdates
+      ? maps.txPricesBySec.get(secId)
+      : maps.pricesBySec.get(secId);
+    if (!series) return undefined;
+    let price: number | undefined;
+    for (const p of series) {
+      if (p.date < sampleDate) price = p.price;
+      else break;
+    }
+    return price;
+  }
+
+  /** All calendar days in [start, end] inclusive, as YYYY-MM-DD strings. */
+  private enumerateDays(start: string, end: string): string[] {
+    const dates: string[] = [];
+    const d = new Date(start + "T00:00:00");
+    const endD = new Date(end + "T00:00:00");
+    while (d <= endD) {
+      dates.push(d.toISOString().substring(0, 10));
+      d.setDate(d.getDate() + 1);
+    }
+    return dates;
+  }
+
+  /** Month-first dates for every month spanned by [start, end], YYYY-MM-01. */
+  private enumerateMonths(start: string, end: string): string[] {
+    const months: string[] = [];
+    const [sy, sm] = start.split("-").map(Number);
+    const [ey, em] = end.split("-").map(Number);
+    let y = sy;
+    let m = sm;
+    while (y < ey || (y === ey && m <= em)) {
+      months.push(`${y}-${String(m).padStart(2, "0")}-01`);
+      m += 1;
+      if (m > 12) {
+        m = 1;
+        y += 1;
+      }
+    }
+    return months;
+  }
+
+  /** Per-day cash balances for investment cash / standalone accounts. */
+  private async loadDailyCashBalances(
+    cashIds: string[],
+    start: string,
+    end: string,
+  ): Promise<any[]> {
+    return this.dataSource.query(
+      `WITH target_accounts AS (
+          SELECT id, opening_balance
+          FROM accounts WHERE id = ANY($1::UUID[])
+        ),
+        pre_period AS (
+          SELECT t.account_id, SUM(t.amount) as total
+          FROM transactions t
+          JOIN target_accounts ta ON ta.id = t.account_id
+          WHERE (t.status IS NULL OR t.status != 'VOID')
+            AND t.parent_transaction_id IS NULL
+            AND t.transaction_date < $2
+          GROUP BY t.account_id
+        ),
+        daily_tx AS (
+          SELECT t.account_id, t.transaction_date::DATE as tx_date, SUM(t.amount) as total
+          FROM transactions t
+          JOIN target_accounts ta ON ta.id = t.account_id
+          WHERE (t.status IS NULL OR t.status != 'VOID')
+            AND t.parent_transaction_id IS NULL
+            AND t.transaction_date >= $2
+            AND t.transaction_date <= $3
+          GROUP BY t.account_id, t.transaction_date::DATE
+        ),
+        account_daily AS (
+          SELECT d.dt::DATE as date, ta.id as account_id,
+            (ta.opening_balance + COALESCE(pp.total, 0) +
+              COALESCE(SUM(dtx.total) OVER (
+                PARTITION BY ta.id ORDER BY d.dt ROWS UNBOUNDED PRECEDING
+              ), 0)
+            ) as balance
+          FROM target_accounts ta
+          CROSS JOIN generate_series($2::TIMESTAMP, $3::TIMESTAMP, '1 day') d(dt)
+          LEFT JOIN pre_period pp ON pp.account_id = ta.id
+          LEFT JOIN daily_tx dtx ON dtx.account_id = ta.id AND dtx.tx_date = d.dt::DATE
+        )
+        SELECT date::TEXT, balance::NUMERIC, account_id FROM account_daily ORDER BY date`,
+      [cashIds, start, end],
+    );
+  }
+
+  /** Per-month-end cash balances for investment cash / standalone accounts. */
+  private async loadMonthlyCashBalances(
+    cashIds: string[],
+    start: string,
+    end: string,
+  ): Promise<any[]> {
+    return this.dataSource.query(
+      `WITH target_accounts AS (
+          SELECT id, opening_balance FROM accounts WHERE id = ANY($1::UUID[])
+        ),
+        bounds AS (
+          SELECT date_trunc('month', $2::DATE)::DATE AS start_m,
+                 date_trunc('month', $3::DATE)::DATE AS end_m
+        ),
+        pre_period AS (
+          SELECT t.account_id, SUM(t.amount) as total
+          FROM transactions t
+          JOIN target_accounts ta ON ta.id = t.account_id
+          CROSS JOIN bounds b
+          WHERE (t.status IS NULL OR t.status != 'VOID')
+            AND t.parent_transaction_id IS NULL
+            AND t.transaction_date < b.start_m
+          GROUP BY t.account_id
+        ),
+        monthly_tx AS (
+          SELECT t.account_id, date_trunc('month', t.transaction_date)::DATE as month,
+                 SUM(t.amount) as total
+          FROM transactions t
+          JOIN target_accounts ta ON ta.id = t.account_id
+          CROSS JOIN bounds b
+          WHERE (t.status IS NULL OR t.status != 'VOID')
+            AND t.parent_transaction_id IS NULL
+            AND t.transaction_date >= b.start_m
+            AND t.transaction_date <= $3
+          GROUP BY t.account_id, date_trunc('month', t.transaction_date)
+        ),
+        month_series AS (
+          SELECT gs::DATE AS m FROM bounds b,
+            generate_series(b.start_m, b.end_m, '1 month') gs
+        )
+        SELECT ta.id as account_id, s.m::TEXT as month,
+          (ta.opening_balance + COALESCE(pp.total, 0) +
+            COALESCE(SUM(mt.total) OVER (
+              PARTITION BY ta.id ORDER BY s.m ROWS UNBOUNDED PRECEDING
+            ), 0)
+          )::NUMERIC as balance
+        FROM target_accounts ta
+        CROSS JOIN month_series s
+        LEFT JOIN pre_period pp ON pp.account_id = ta.id
+        LEFT JOIN monthly_tx mt ON mt.account_id = ta.id AND mt.month = s.m
+        ORDER BY s.m`,
+      [cashIds, start, end],
+    );
+  }
+
+  /**
+   * Rank securities by peak contribution, keep the top `limit` as their own
+   * bands, roll the remainder into a single "other" band, and append a cash
+   * band when any cash is present. Each band value is rounded to whole units so
+   * the stacked bands add up exactly to the point total shown to the user.
+   */
+  private groupSecurityBreakdown(
+    ungrouped: Array<{
+      date: string;
+      valuesBySec: Map<string, number>;
+      cash: number;
+    }>,
+    securityMap: Map<string, Security>,
+    limit: number,
+  ): {
+    series: InvestmentBreakdownSeries[];
+    points: InvestmentBreakdownPoint[];
+  } {
+    const peak = new Map<string, number>();
+    for (const pt of ungrouped) {
+      for (const [secId, val] of pt.valuesBySec) {
+        if (Math.abs(val) > Math.abs(peak.get(secId) ?? 0)) {
+          peak.set(secId, val);
+        }
+      }
+    }
+
+    const rankedSecIds = [...peak.entries()]
+      .filter(([, v]) => Math.abs(v) >= 0.005)
+      .sort((a, b) => {
+        const diff = Math.abs(b[1]) - Math.abs(a[1]);
+        if (diff !== 0) return diff;
+        const an = securityMap.get(a[0])?.name ?? "";
+        const bn = securityMap.get(b[0])?.name ?? "";
+        return an.localeCompare(bn);
+      })
+      .map(([secId]) => secId);
+
+    const topIds = rankedSecIds.slice(0, limit);
+    const otherIds = new Set(rankedSecIds.slice(limit));
+    const hasOther = otherIds.size > 0;
+    const hasCash = ungrouped.some((pt) => Math.abs(pt.cash) >= 0.005);
+
+    const series: InvestmentBreakdownSeries[] = topIds.map((secId) => {
+      const sec = securityMap.get(secId);
+      return {
+        key: secId,
+        type: "security",
+        symbol: sec?.symbol ?? null,
+        name: sec?.name ?? sec?.symbol ?? secId,
+      };
+    });
+    if (hasOther)
+      series.push({ key: "other", type: "other", symbol: null, name: "" });
+    if (hasCash)
+      series.push({ key: "cash", type: "cash", symbol: null, name: "" });
+
+    const points: InvestmentBreakdownPoint[] = ungrouped.map((pt) => {
+      const values: Record<string, number> = {};
+      let total = 0;
+      for (const secId of topIds) {
+        const v = Math.round(pt.valuesBySec.get(secId) ?? 0);
+        values[secId] = v;
+        total += v;
+      }
+      if (hasOther) {
+        let otherSum = 0;
+        for (const secId of otherIds)
+          otherSum += pt.valuesBySec.get(secId) ?? 0;
+        const v = Math.round(otherSum);
+        values.other = v;
+        total += v;
+      }
+      if (hasCash) {
+        const v = Math.round(pt.cash);
+        values.cash = v;
+        total += v;
+      }
+      return { date: pt.date, total, values };
+    });
+
+    return { series, points };
+  }
 
   private async recalculateRegularAccount(
     userId: string,

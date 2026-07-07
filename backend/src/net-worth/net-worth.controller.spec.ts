@@ -17,6 +17,7 @@ describe("NetWorthController", () => {
       getMonthlyNetWorth: jest.fn(),
       getMonthlyInvestments: jest.fn(),
       getDailyInvestments: jest.fn(),
+      getInvestmentBreakdown: jest.fn(),
       recalculateAllAccounts: jest.fn(),
     };
     delegationService = {
@@ -242,6 +243,99 @@ describe("NetWorthController", () => {
           undefined,
         ),
       ).rejects.toThrow("accountIds must be comma-separated UUIDs");
+    });
+  });
+
+  describe("getInvestmentBreakdown()", () => {
+    it("delegates to the service with parsed granularity, dates and accountIds", async () => {
+      mockNetWorthService.getInvestmentBreakdown!.mockResolvedValue("bd");
+
+      const result = await controller.getInvestmentBreakdown(
+        mockReq,
+        "monthly",
+        "2024-01-01",
+        "2024-12-31",
+        UUID_A,
+        "usd",
+      );
+
+      expect(result).toBe("bd");
+      expect(mockNetWorthService.getInvestmentBreakdown).toHaveBeenCalledWith(
+        "user-1",
+        {
+          granularity: "monthly",
+          startDate: "2024-01-01",
+          endDate: "2024-12-31",
+          accountIds: [UUID_A],
+          displayCurrency: "USD",
+        },
+      );
+    });
+
+    it("throws on an unknown granularity", async () => {
+      await expect(
+        controller.getInvestmentBreakdown(mockReq, "hourly"),
+      ).rejects.toThrow(/granularity/);
+    });
+
+    it("throws when granularity is omitted", async () => {
+      await expect(
+        controller.getInvestmentBreakdown(mockReq, undefined),
+      ).rejects.toThrow(/granularity/);
+    });
+
+    it("throws on an invalid startDate", async () => {
+      await expect(
+        controller.getInvestmentBreakdown(mockReq, "daily", "nope"),
+      ).rejects.toThrow(/startDate/);
+    });
+
+    it("rejects malformed accountIds", async () => {
+      await expect(
+        controller.getInvestmentBreakdown(
+          mockReq,
+          "daily",
+          undefined,
+          undefined,
+          "not-a-uuid",
+        ),
+      ).rejects.toThrow(/accountIds/);
+    });
+
+    it("scopes accountIds to readable accounts for an acting delegate", async () => {
+      mockNetWorthService.getInvestmentBreakdown!.mockResolvedValue("ok");
+      delegationService.readableAccountIds.mockResolvedValue([UUID_A]);
+      const actReq = {
+        user: { id: "owner-1", isActing: true, delegationId: "d-1" },
+      };
+
+      await controller.getInvestmentBreakdown(
+        actReq,
+        "monthly",
+        undefined,
+        undefined,
+        `${UUID_A},${UUID_B}`,
+      );
+
+      expect(mockNetWorthService.getInvestmentBreakdown).toHaveBeenCalledWith(
+        "owner-1",
+        expect.objectContaining({ accountIds: [UUID_A] }),
+      );
+    });
+
+    it("returns the no-readable-account sentinel for a delegate with no access", async () => {
+      mockNetWorthService.getInvestmentBreakdown!.mockResolvedValue("ok");
+      delegationService.readableAccountIds.mockResolvedValue([]);
+      const actReq = {
+        user: { id: "owner-1", isActing: true, delegationId: "d-1" },
+      };
+
+      await controller.getInvestmentBreakdown(actReq, "daily");
+
+      expect(mockNetWorthService.getInvestmentBreakdown).toHaveBeenCalledWith(
+        "owner-1",
+        expect.objectContaining({ accountIds: [NO_READABLE] }),
+      );
     });
   });
 

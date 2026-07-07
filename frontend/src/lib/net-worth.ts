@@ -1,5 +1,11 @@
 import apiClient from './api';
-import { MonthlyNetWorth, MonthlyInvestmentValue, DailyInvestmentValue } from '@/types/net-worth';
+import {
+  MonthlyNetWorth,
+  MonthlyInvestmentValue,
+  DailyInvestmentValue,
+  InvestmentBreakdown,
+  InvestmentBreakdownGranularity,
+} from '@/types/net-worth';
 
 export const netWorthApi = {
   getMonthly: async (params?: {
@@ -34,6 +40,20 @@ export const netWorthApi = {
   }): Promise<DailyInvestmentValue[]> => {
     const response = await apiClient.get<DailyInvestmentValue[]>(
       '/net-worth/investments-daily',
+      { params },
+    );
+    return response.data;
+  },
+
+  getInvestmentsBreakdown: async (params: {
+    granularity: InvestmentBreakdownGranularity;
+    startDate?: string;
+    endDate?: string;
+    accountIds?: string;
+    displayCurrency?: string;
+  }): Promise<InvestmentBreakdown> => {
+    const response = await apiClient.get<InvestmentBreakdown>(
+      '/net-worth/investments-breakdown',
       { params },
     );
     return response.data;
