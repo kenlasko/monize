@@ -133,13 +133,15 @@ describe('AssistantMarkdown', () => {
       expect(link?.textContent).toBe('Costco');
     });
 
-    it('maps account, category, and transaction links to their filter URLs', () => {
+    it('maps account, category, transaction, security, and scheduled links to their URLs', () => {
       const { container } = render(
         <AssistantMarkdown
           content={[
             `[Chequing](monize://account/${uuid})`,
             `[Groceries](monize://category/${uuid})`,
             `[March rent](monize://transaction/${uuid})`,
+            `[AAPL](monize://security/${uuid})`,
+            `[Netflix](monize://scheduled/${uuid})`,
           ].join(' ')}
         />,
       );
@@ -150,6 +152,8 @@ describe('AssistantMarkdown', () => {
         `/transactions?accountId=${uuid}&accountStatus=all`,
         `/transactions?categoryId=${uuid}`,
         `/transactions?targetTransactionId=${uuid}`,
+        `/securities?highlight=${uuid}`,
+        `/bills?highlight=${uuid}`,
       ]);
     });
 
