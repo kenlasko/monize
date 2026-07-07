@@ -154,5 +154,96 @@
     "title": "Ulubione raporty",
     "empty": "Brak ulubionych raportów. Oznacz raporty gwiazdką na stronie Raporty, aby zobaczyć je tutaj.",
     "browseReports": "Przeglądaj raporty"
+  },
+  "widgets": {
+    "configure": "Konfiguruj {name}",
+    "done": "Gotowe",
+    "configSaveFailed": "Nie udało się zapisać ustawień widżetu. Spróbuj ponownie.",
+    "timeframe": "Zakres czasu",
+    "accounts": "Konta",
+    "chartType": "Typ wykresu",
+    "view": "Widok",
+    "rangeLabels": {
+      "1m": "1M",
+      "3m": "3M",
+      "6m": "6M",
+      "1y": "1Y",
+      "2y": "2Y",
+      "5y": "5Y",
+      "ytd": "YTD",
+      "all": "Wszystkie"
+    }
+  },
+  "portfolioValue": {
+    "title": "Wartość portfela",
+    "empty": "Brak historii inwestycji do wyświetlenia."
+  },
+  "spendingByPayee": {
+    "title": "Wydatki według odbiorcy",
+    "empty": "Brak wydatków w tym okresie.",
+    "totalLabel": "Suma"
+  },
+  "monthlySpendingTrend": {
+    "title": "Trend wydatków miesięcznych",
+    "empty": "Brak danych dla tego okresu.",
+    "expenses": "Wydatki",
+    "income": "Przychody"
+  },
+  "incomeBySource": {
+    "title": "Przychody według źródła",
+    "empty": "Brak przychodów w tym okresie.",
+    "totalLabel": "Przychody łącznie"
+  },
+  "creditUtilizationAccounts": {
+    "title": "Wykorzystanie według konta",
+    "empty": "Brak kont kredytowych z ustawionym limitem.",
+    "utilization": "Wykorzystanie",
+    "used": "Wykorzystano"
+  },
+  "creditUtilizationTotal": {
+    "title": "Całkowite wykorzystanie",
+    "empty": "Brak kont kredytowych z ustawionym limitem.",
+    "used": "Wykorzystano",
+    "available": "Dostępne"
+  },
+  "sectorWeightings": {
+    "title": "Alokacja sektorowa",
+    "empty": "Brak dostępnych danych sektorowych.",
+    "direct": "Bezpośrednia",
+    "etf": "ETF"
+  },
+  "securityTypeAllocation": {
+    "title": "Alokacja według typu papieru wartościowego",
+    "empty": "Brak pozycji do wyświetlenia.",
+    "types": {
+      "STOCK": "Akcje",
+      "ETF": "ETF-y",
+      "MUTUAL_FUND": "Fundusze inwestycyjne",
+      "BOND": "Obligacje",
+      "CASH": "Gotówka"
+    }
+  },
+  "geographicAllocation": {
+    "title": "Alokacja geograficzna",
+    "empty": "Brak pozycji do wyświetlenia.",
+    "viewRegion": "Region",
+    "viewExchange": "Giełda",
+    "viewCountry": "Kraj"
+  },
+  "recurringExpenses": {
+    "title": "Największe wydatki cykliczne",
+    "empty": "Nie znaleziono wydatków cyklicznych.",
+    "minOccurrences": "Minimalna liczba wystąpień",
+    "minOccurrencesOption": "{count} lub więcej",
+    "occurrences": "{count} wystąpień",
+    "monthlyEstimate": "Szacunek miesięczny"
+  },
+  "weekendVsWeekday": {
+    "title": "Wydatki w weekend a w dni robocze",
+    "empty": "Brak wydatków w tym okresie.",
+    "weekendLabel": "Weekend",
+    "weekdayLabel": "Dzień powszedni",
+    "viewOverview": "Przegląd",
+    "viewByDay": "Wg dnia"
   }
 }

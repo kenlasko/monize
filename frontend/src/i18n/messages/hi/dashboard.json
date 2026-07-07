@@ -154,5 +154,96 @@
     "title": "पसंदीदा रिपोर्ट",
     "empty": "अभी कोई पसंदीदा रिपोर्ट नहीं। यहाँ देखने के लिए रिपोर्ट पृष्ठ पर रिपोर्ट को स्टार करें।",
     "browseReports": "रिपोर्ट ब्राउज़ करें"
+  },
+  "widgets": {
+    "configure": "{name} कॉन्फ़िगर करें",
+    "done": "हो गया",
+    "configSaveFailed": "विजेट सेटिंग्स सहेजी नहीं जा सकीं। कृपया पुनः प्रयास करें।",
+    "timeframe": "समय-सीमा",
+    "accounts": "खाते",
+    "chartType": "चार्ट प्रकार",
+    "view": "दृश्य",
+    "rangeLabels": {
+      "1m": "1M",
+      "3m": "3M",
+      "6m": "6M",
+      "1y": "1Y",
+      "2y": "2Y",
+      "5y": "5Y",
+      "ytd": "YTD",
+      "all": "सभी"
+    }
+  },
+  "portfolioValue": {
+    "title": "पोर्टफोलियो मूल्य",
+    "empty": "अभी दिखाने के लिए कोई निवेश इतिहास नहीं।"
+  },
+  "spendingByPayee": {
+    "title": "भुगतानकर्ता के अनुसार व्यय",
+    "empty": "इस अवधि में कोई व्यय नहीं।",
+    "totalLabel": "कुल"
+  },
+  "monthlySpendingTrend": {
+    "title": "मासिक व्यय प्रवृत्ति",
+    "empty": "इस अवधि के लिए कोई डेटा नहीं।",
+    "expenses": "व्यय",
+    "income": "आय"
+  },
+  "incomeBySource": {
+    "title": "स्रोत के अनुसार आय",
+    "empty": "इस अवधि में कोई आय नहीं।",
+    "totalLabel": "कुल आय"
+  },
+  "creditUtilizationAccounts": {
+    "title": "खाते के अनुसार उपयोग",
+    "empty": "सीमा सेट वाला कोई क्रेडिट खाता नहीं।",
+    "utilization": "उपयोग",
+    "used": "उपयोग"
+  },
+  "creditUtilizationTotal": {
+    "title": "कुल उपयोग",
+    "empty": "सीमा सेट वाला कोई क्रेडिट खाता नहीं।",
+    "used": "उपयोग",
+    "available": "उपलब्ध"
+  },
+  "sectorWeightings": {
+    "title": "क्षेत्र आवंटन",
+    "empty": "कोई क्षेत्र डेटा उपलब्ध नहीं।",
+    "direct": "प्रत्यक्ष",
+    "etf": "ETF"
+  },
+  "securityTypeAllocation": {
+    "title": "प्रतिभूति प्रकार आवंटन",
+    "empty": "दिखाने के लिए कोई होल्डिंग नहीं।",
+    "types": {
+      "STOCK": "शेयर",
+      "ETF": "ETFs",
+      "MUTUAL_FUND": "म्यूचुअल फंड",
+      "BOND": "बांड",
+      "CASH": "नकद"
+    }
+  },
+  "geographicAllocation": {
+    "title": "भौगोलिक आवंटन",
+    "empty": "दिखाने के लिए कोई होल्डिंग नहीं।",
+    "viewRegion": "क्षेत्र",
+    "viewExchange": "एक्सचेंज",
+    "viewCountry": "देश"
+  },
+  "recurringExpenses": {
+    "title": "शीर्ष आवर्ती व्यय",
+    "empty": "कोई आवर्ती व्यय नहीं मिला।",
+    "minOccurrences": "न्यूनतम घटनाएँ",
+    "minOccurrencesOption": "{count} या अधिक",
+    "occurrences": "{count} घटनाएँ",
+    "monthlyEstimate": "मासिक अनुमान"
+  },
+  "weekendVsWeekday": {
+    "title": "सप्ताहांत बनाम कार्यदिवस व्यय",
+    "empty": "इस अवधि में कोई व्यय नहीं।",
+    "weekendLabel": "सप्ताहांत",
+    "weekdayLabel": "कार्यदिवस",
+    "viewOverview": "अवलोकन",
+    "viewByDay": "दिन के अनुसार"
   }
 }

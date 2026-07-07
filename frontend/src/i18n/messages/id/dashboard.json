@@ -154,5 +154,96 @@
     "title": "Laporan Favorit",
     "empty": "Belum ada laporan favorit. Bintangi laporan di halaman Laporan untuk melihatnya di sini.",
     "browseReports": "Jelajahi laporan"
+  },
+  "widgets": {
+    "configure": "Konfigurasikan {name}",
+    "done": "Selesai",
+    "configSaveFailed": "Tidak dapat menyimpan pengaturan widget. Silakan coba lagi.",
+    "timeframe": "Kerangka Waktu",
+    "accounts": "Akun",
+    "chartType": "Tipe Grafik",
+    "view": "Tampilan",
+    "rangeLabels": {
+      "1m": "1M",
+      "3m": "3M",
+      "6m": "6M",
+      "1y": "1Y",
+      "2y": "2Y",
+      "5y": "5Y",
+      "ytd": "YTD",
+      "all": "Semua"
+    }
+  },
+  "portfolioValue": {
+    "title": "Nilai Portofolio",
+    "empty": "Belum ada riwayat investasi untuk ditampilkan."
+  },
+  "spendingByPayee": {
+    "title": "Pengeluaran per Penerima",
+    "empty": "Tidak ada pengeluaran dalam periode ini.",
+    "totalLabel": "Total"
+  },
+  "monthlySpendingTrend": {
+    "title": "Tren Pengeluaran Bulanan",
+    "empty": "Tidak ada data untuk periode ini.",
+    "expenses": "Pengeluaran",
+    "income": "Pendapatan"
+  },
+  "incomeBySource": {
+    "title": "Pendapatan per Sumber",
+    "empty": "Tidak ada pendapatan dalam periode ini.",
+    "totalLabel": "Total Pendapatan"
+  },
+  "creditUtilizationAccounts": {
+    "title": "Utilisasi per Akun",
+    "empty": "Tidak ada akun kredit dengan batas yang ditetapkan.",
+    "utilization": "Utilisasi",
+    "used": "Digunakan"
+  },
+  "creditUtilizationTotal": {
+    "title": "Total Utilisasi",
+    "empty": "Tidak ada akun kredit dengan batas yang ditetapkan.",
+    "used": "Digunakan",
+    "available": "Tersedia"
+  },
+  "sectorWeightings": {
+    "title": "Alokasi Sektor",
+    "empty": "Tidak ada data sektor tersedia.",
+    "direct": "Langsung",
+    "etf": "ETF"
+  },
+  "securityTypeAllocation": {
+    "title": "Alokasi Tipe Keamanan Dokumen",
+    "empty": "Tidak ada kepemilikan untuk ditampilkan.",
+    "types": {
+      "STOCK": "Saham",
+      "ETF": "ETF",
+      "MUTUAL_FUND": "Reksadana",
+      "BOND": "Obligasi",
+      "CASH": "Tunai"
+    }
+  },
+  "geographicAllocation": {
+    "title": "Alokasi Geografis",
+    "empty": "Tidak ada kepemilikan untuk ditampilkan.",
+    "viewRegion": "Wilayah",
+    "viewExchange": "Bursa",
+    "viewCountry": "Negara"
+  },
+  "recurringExpenses": {
+    "title": "Pengeluaran Berulang Teratas",
+    "empty": "Tidak ada pengeluaran berulang ditemukan.",
+    "minOccurrences": "Kejadian minimum",
+    "minOccurrencesOption": "{count} atau lebih",
+    "occurrences": "{count} kejadian",
+    "monthlyEstimate": "Perkiraan Bulanan"
+  },
+  "weekendVsWeekday": {
+    "title": "Pengeluaran Akhir Pekan vs Hari Kerja",
+    "empty": "Tidak ada pengeluaran dalam periode ini.",
+    "weekendLabel": "Akhir Pekan",
+    "weekdayLabel": "Hari Kerja",
+    "viewOverview": "Ikhtisar",
+    "viewByDay": "Per Hari"
   }
 }

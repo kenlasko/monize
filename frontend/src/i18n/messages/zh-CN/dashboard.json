@@ -154,5 +154,96 @@
     "title": "收藏报告",
     "empty": "暂无收藏报告。在报告页面为报告加星后即可在此查看。",
     "browseReports": "浏览报告"
+  },
+  "widgets": {
+    "configure": "配置{name}",
+    "done": "完成",
+    "configSaveFailed": "无法保存小组件设置。请重试。",
+    "timeframe": "时间范围",
+    "accounts": "账户",
+    "chartType": "图表类型",
+    "view": "视图",
+    "rangeLabels": {
+      "1m": "1M",
+      "3m": "3M",
+      "6m": "6M",
+      "1y": "1Y",
+      "2y": "2Y",
+      "5y": "5Y",
+      "ytd": "YTD",
+      "all": "全部"
+    }
+  },
+  "portfolioValue": {
+    "title": "投资组合价值",
+    "empty": "暂无投资历史可显示。"
+  },
+  "spendingByPayee": {
+    "title": "按收款人支出",
+    "empty": "此期间无支出。",
+    "totalLabel": "合计"
+  },
+  "monthlySpendingTrend": {
+    "title": "月度支出趋势",
+    "empty": "此期间无数据。",
+    "expenses": "支出",
+    "income": "收入"
+  },
+  "incomeBySource": {
+    "title": "按来源收入",
+    "empty": "此期间无收入。",
+    "totalLabel": "总收入"
+  },
+  "creditUtilizationAccounts": {
+    "title": "按账户信用额度使用率",
+    "empty": "没有设置额度的信用账户。",
+    "utilization": "使用率",
+    "used": "已用"
+  },
+  "creditUtilizationTotal": {
+    "title": "总信用额度使用率",
+    "empty": "没有设置额度的信用账户。",
+    "used": "已用",
+    "available": "可用"
+  },
+  "sectorWeightings": {
+    "title": "行业配置",
+    "empty": "暂无行业数据。",
+    "direct": "直接",
+    "etf": "ETF"
+  },
+  "securityTypeAllocation": {
+    "title": "证券类型配置",
+    "empty": "无持仓可显示。",
+    "types": {
+      "STOCK": "股票",
+      "ETF": "ETF",
+      "MUTUAL_FUND": "共同基金",
+      "BOND": "债券",
+      "CASH": "现金"
+    }
+  },
+  "geographicAllocation": {
+    "title": "地理配置",
+    "empty": "无持仓可显示。",
+    "viewRegion": "地区",
+    "viewExchange": "交易所",
+    "viewCountry": "国家/地区"
+  },
+  "recurringExpenses": {
+    "title": "主要定期支出",
+    "empty": "未找到定期支出。",
+    "minOccurrences": "最少发生次数",
+    "minOccurrencesOption": "{count} 次或以上",
+    "occurrences": "发生 {count} 次",
+    "monthlyEstimate": "月度估算"
+  },
+  "weekendVsWeekday": {
+    "title": "周末与工作日支出",
+    "empty": "此期间无支出。",
+    "weekendLabel": "周末",
+    "weekdayLabel": "工作日",
+    "viewOverview": "概览",
+    "viewByDay": "按日"
   }
 }

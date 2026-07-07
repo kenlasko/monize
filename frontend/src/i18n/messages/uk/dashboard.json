@@ -154,5 +154,96 @@
     "title": "Обрані звіти",
     "empty": "Ще немає обраних звітів. Позначте звіти зірочкою на сторінці звітів, щоб бачити їх тут.",
     "browseReports": "Переглянути звіти"
+  },
+  "widgets": {
+    "configure": "Налаштувати {name}",
+    "done": "Готово",
+    "configSaveFailed": "Не вдалося зберегти налаштування віджета. Будь ласка, спробуйте ще раз.",
+    "timeframe": "Часовий проміжок",
+    "accounts": "Рахунки",
+    "chartType": "Тип діаграми",
+    "view": "Вигляд",
+    "rangeLabels": {
+      "1m": "1M",
+      "3m": "3M",
+      "6m": "6M",
+      "1y": "1Y",
+      "2y": "2Y",
+      "5y": "5Y",
+      "ytd": "YTD",
+      "all": "Всі"
+    }
+  },
+  "portfolioValue": {
+    "title": "Вартість портфеля",
+    "empty": "Ще немає інвестиційної історії для відображення."
+  },
+  "spendingByPayee": {
+    "title": "Витрати за одержувачами",
+    "empty": "Витрат за цей період немає.",
+    "totalLabel": "Разом"
+  },
+  "monthlySpendingTrend": {
+    "title": "Тенденція місячних витрат",
+    "empty": "Даних за цей період немає.",
+    "expenses": "Витрати",
+    "income": "Дохід"
+  },
+  "incomeBySource": {
+    "title": "Дохід за джерелами",
+    "empty": "Доходу за цей період немає.",
+    "totalLabel": "Загальний дохід"
+  },
+  "creditUtilizationAccounts": {
+    "title": "Використання кредиту за рахунком",
+    "empty": "Немає кредитних рахунків із встановленим лімітом.",
+    "utilization": "Використання",
+    "used": "Використано"
+  },
+  "creditUtilizationTotal": {
+    "title": "Загальне використання кредиту",
+    "empty": "Немає кредитних рахунків із встановленим лімітом.",
+    "used": "Використано",
+    "available": "Доступно"
+  },
+  "sectorWeightings": {
+    "title": "Розподіл за секторами",
+    "empty": "Немає доступних даних за секторами.",
+    "direct": "Прямий",
+    "etf": "ETF"
+  },
+  "securityTypeAllocation": {
+    "title": "Розподіл за типами цінних паперів",
+    "empty": "Немає позицій для відображення.",
+    "types": {
+      "STOCK": "Акції",
+      "ETF": "ETF",
+      "MUTUAL_FUND": "Пайові фонди",
+      "BOND": "Облігації",
+      "CASH": "Готівка"
+    }
+  },
+  "geographicAllocation": {
+    "title": "Географічний розподіл",
+    "empty": "Немає позицій для відображення.",
+    "viewRegion": "Регіон",
+    "viewExchange": "Біржа",
+    "viewCountry": "Країна"
+  },
+  "recurringExpenses": {
+    "title": "Основні регулярні витрати",
+    "empty": "Регулярних витрат не знайдено.",
+    "minOccurrences": "Мінімальна кількість повторень",
+    "minOccurrencesOption": "{count} або більше",
+    "occurrences": "{count} повторень",
+    "monthlyEstimate": "Місячна оцінка"
+  },
+  "weekendVsWeekday": {
+    "title": "Витрати у вихідні проти будніх",
+    "empty": "Витрат за цей період немає.",
+    "weekendLabel": "Вихідні",
+    "weekdayLabel": "Будні",
+    "viewOverview": "Огляд",
+    "viewByDay": "За днем"
   }
 }
