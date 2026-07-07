@@ -7,12 +7,17 @@
 
 export interface RecurringCharge {
   payeeName: string;
+  // Id of the linked payee record, or null for free-text payee names (e.g.
+  // imported rows). Lets AI surfaces deep-link a recurring charge back to its
+  // payee; a null id is rendered as plain text instead of a link.
+  payeeId: string | null;
   amounts: number[];
   dates: string[];
   frequency: string;
   currentAmount: number;
   previousAmount: number;
   categoryName: string | null;
+  categoryId: string | null;
 }
 
 /**

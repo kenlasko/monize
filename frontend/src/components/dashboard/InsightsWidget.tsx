@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { aiApi } from '@/lib/ai';
 import { AiInsight } from '@/types/ai';
+import { stripLinkMarkup } from '@/lib/ai-entity-links';
 
 const severityColors: Record<string, string> = {
   alert: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800',
@@ -104,7 +105,7 @@ export function InsightsWidget({ isLoading: parentLoading }: InsightsWidgetProps
             >
               <div className="font-medium text-sm">{insight.title}</div>
               <div className="text-xs mt-0.5 opacity-80 line-clamp-2">
-                {insight.description}
+                {stripLinkMarkup(insight.description)}
               </div>
             </div>
           );

@@ -1,7 +1,31 @@
 import { describe, it, expect } from 'vitest';
-import { isMonizeHref, resolveEntityHref } from './ai-entity-links';
+import {
+  isMonizeHref,
+  resolveEntityHref,
+  stripLinkMarkup,
+} from './ai-entity-links';
 
 const uuid = '123e4567-e89b-42d3-a456-426614174000';
+
+describe('stripLinkMarkup', () => {
+  it('collapses a markdown link to its label text', () => {
+    expect(
+      stripLinkMarkup(`Spending on [Dining](monize://category/${uuid}) is up.`),
+    ).toBe('Spending on Dining is up.');
+  });
+
+  it('collapses multiple links in one string', () => {
+    expect(
+      stripLinkMarkup(
+        `[Netflix](monize://payee/${uuid}) in [Streaming](monize://category/${uuid})`,
+      ),
+    ).toBe('Netflix in Streaming');
+  });
+
+  it('leaves plain text without links unchanged', () => {
+    expect(stripLinkMarkup('No links here')).toBe('No links here');
+  });
+});
 
 describe('resolveEntityHref', () => {
   it('maps an account link to the transactions page with accountStatus=all', () => {

@@ -83,6 +83,13 @@ IMPORTANT RULES:
 14. CRITICAL: The data labels ABOVE/BELOW are pre-computed and authoritative. If the data says "BELOW average", the current amount IS lower than the average -- do NOT say "above". If the data says "ABOVE average", the current amount IS higher. Always verify: if current < average, it MUST be "below"; if current > average, it MUST be "above". Get this right.
 15. When the current month is still in progress (days elapsed < days in month), acknowledge that partial-month data may not reflect the full picture. Do NOT treat partial-month totals as if they represent the full month.
 
+ENTITY LINK RULES:
+- In each insight's "description", make the FIRST mention of a category or payee that has an id in the data a markdown link so the user can open it in the app. Use exactly these URI forms with the id copied VERBATIM from the aggregates:
+  [Category Name](monize://category/<categoryId>) and [Payee Name](monize://payee/<payeeId>).
+- Only link entities whose id is present in the data (categoryId / payeeId). If an entity has no id (e.g. a free-text payee or an "unknown" category), mention it as plain text -- never invent, guess, or reuse an id.
+- Put links only in the "description" field. Keep "title" and every value inside "data" as plain text with no markdown.
+- Always give a link a human-readable label (the category or payee name); never print a raw monize:// URI, and do not link the same entity more than once per description.
+
 OUTPUT FORMAT (STRICT):
 - Respond with ONLY a single valid JSON object. No preamble, no explanation, no trailing text.
 - Do NOT wrap the response in markdown code fences (no triple backticks, no "json" language tag).

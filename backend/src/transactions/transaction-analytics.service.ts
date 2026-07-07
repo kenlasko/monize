@@ -1387,7 +1387,9 @@ export class TransactionAnalyticsService {
       .leftJoin("t.category", "cat")
       .leftJoin("t.payee", "chargePayee")
       .select(payeeNameExpr, "payeeName")
+      .addSelect("chargePayee.id", "payeeId")
       .addSelect(categoryNameSelect, "categoryName")
+      .addSelect("cat.id", "categoryId")
       .addSelect(
         "ARRAY_AGG(ABS(t.amount) ORDER BY t.transactionDate ASC)",
         "amounts",
@@ -1416,7 +1418,9 @@ export class TransactionAnalyticsService {
           : {},
       )
       .groupBy(payeeNameExpr)
+      .addGroupBy("chargePayee.id")
       .addGroupBy("cat.name")
+      .addGroupBy("cat.id")
       .having("COUNT(*) >= 3")
       .orderBy("COUNT(*)", "DESC");
 
@@ -1440,12 +1444,14 @@ export class TransactionAnalyticsService {
 
         return {
           payeeName: r.payeeName,
+          payeeId: r.payeeId || null,
           amounts,
           dates,
           frequency,
           currentAmount,
           previousAmount,
           categoryName: r.categoryName,
+          categoryId: r.categoryId || null,
         };
       })
       .filter((r) => r.frequency !== "irregular");

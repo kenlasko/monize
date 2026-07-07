@@ -35,6 +35,26 @@ describe('InsightCard', () => {
     ).toBeInTheDocument();
   });
 
+  it('renders entity deep-links in the description as in-app links', () => {
+    const uuid = '123e4567-e89b-42d3-a456-426614174000';
+    const { container } = render(
+      <InsightCard
+        insight={makeInsight({
+          description: `Spending on [Dining](monize://category/${uuid}) is up.`,
+        })}
+        onDismiss={vi.fn()}
+        isDismissing={false}
+      />,
+    );
+
+    const link = container.querySelector('a');
+    expect(link).not.toBeNull();
+    expect(link?.getAttribute('href')).toBe(
+      `/transactions?categoryId=${uuid}`,
+    );
+    expect(link?.textContent).toBe('Dining');
+  });
+
   it('renders insight type badge', () => {
     render(
       <InsightCard

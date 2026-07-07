@@ -5,6 +5,7 @@ import { AccountsService } from "../../accounts/accounts.service";
 import { CategoriesService } from "../../categories/categories.service";
 import { UserPreference } from "../../users/entities/user-preference.entity";
 import { QUERY_SYSTEM_PROMPT } from "./prompt-templates";
+import { aiLanguageInstruction } from "./language-directive";
 import { sanitizePromptValue } from "../../common/sanitization.util";
 
 interface CategoryNode {
@@ -46,7 +47,7 @@ export class FinancialContextBuilder {
 
     const categoryList = this.formatCategoryTree(categoryTree);
 
-    return `${QUERY_SYSTEM_PROMPT}
+    return `${QUERY_SYSTEM_PROMPT}${aiLanguageInstruction(preferences?.language)}
 
 TODAY'S DATE: ${today}
 USER'S DEFAULT CURRENCY: ${currency}

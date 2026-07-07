@@ -17,6 +17,7 @@ import {
   SpendingAggregates,
 } from "./insights-aggregator.service";
 import { INSIGHT_SYSTEM_PROMPT } from "../context/prompt-templates";
+import { aiLanguageInstruction } from "../context/language-directive";
 import { sanitizePromptValue } from "../../common/sanitization.util";
 import { UserPreference } from "../../users/entities/user-preference.entity";
 import { AiInsightResponse, InsightsListResponse } from "./dto/ai-insights.dto";
@@ -194,7 +195,9 @@ export class AiInsightsService {
         const response = await this.aiService.complete(
           userId,
           {
-            systemPrompt: INSIGHT_SYSTEM_PROMPT,
+            systemPrompt:
+              INSIGHT_SYSTEM_PROMPT +
+              aiLanguageInstruction(preferences?.language),
             messages: [{ role: "user", content: prompt }],
             maxTokens: 4096,
             temperature: 0.3,
@@ -423,8 +426,11 @@ export class AiInsightsService {
                 : "EQUAL to previous month"
             : "no previous month data";
 
+        const catIdSuffix = cat.categoryId
+          ? `, categoryId=${cat.categoryId}`
+          : "";
         sections.push(
-          `${sanitizePromptValue(cat.categoryName)}: current=${cat.currentMonthTotal.toFixed(2)}, prev=${cat.previousMonthTotal.toFixed(2)}, avg=${cat.averageMonthlyTotal.toFixed(2)}, vs avg: ${vsAvgLabel}, vs prev: ${vsPrevLabel}, months=${cat.monthCount}, txns=${cat.transactionCount}`,
+          `${sanitizePromptValue(cat.categoryName)}: current=${cat.currentMonthTotal.toFixed(2)}, prev=${cat.previousMonthTotal.toFixed(2)}, avg=${cat.averageMonthlyTotal.toFixed(2)}, vs avg: ${vsAvgLabel}, vs prev: ${vsPrevLabel}, months=${cat.monthCount}, txns=${cat.transactionCount}${catIdSuffix}`,
         );
       }
     }
@@ -456,8 +462,14 @@ export class AiInsightsService {
                 100
               ).toFixed(1)
             : "N/A";
+        const payeeIdSuffix = charge.payeeId
+          ? `, payeeId=${charge.payeeId}`
+          : "";
+        const chargeCatIdSuffix = charge.categoryId
+          ? `, categoryId=${charge.categoryId}`
+          : "";
         sections.push(
-          `${sanitizePromptValue(charge.payeeName)} (${charge.frequency}): current=${charge.currentAmount.toFixed(2)}, previous=${charge.previousAmount.toFixed(2)}, change=${amountChange}%, category=${sanitizePromptValue(charge.categoryName || "unknown")}, occurrences=${charge.amounts.length}`,
+          `${sanitizePromptValue(charge.payeeName)} (${charge.frequency}): current=${charge.currentAmount.toFixed(2)}, previous=${charge.previousAmount.toFixed(2)}, change=${amountChange}%, category=${sanitizePromptValue(charge.categoryName || "unknown")}, occurrences=${charge.amounts.length}${payeeIdSuffix}${chargeCatIdSuffix}`,
         );
       }
     }
