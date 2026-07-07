@@ -26,6 +26,16 @@ export function isMonizeHref(href: string | undefined): boolean {
 }
 
 /**
+ * Collapse markdown links `[label](href)` down to their plain `label` text.
+ * Used by compact previews (e.g. the dashboard insights widget) that show a
+ * truncated snippet and can't render clickable links, so the raw
+ * `[Groceries](monize://category/...)` markup would otherwise leak into the UI.
+ */
+export function stripLinkMarkup(text: string): string {
+  return text.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
+}
+
+/**
  * Map a `monize://` entity URI to its in-app route, or null when the URI is
  * not a valid entity link (unknown type, malformed id, trailing junk).
  * Account/payee/category/transaction resolve to the Transactions page (single-

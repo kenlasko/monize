@@ -10,6 +10,7 @@ import {
   ForecastAggregates,
 } from "./forecast-aggregator.service";
 import { FORECAST_SYSTEM_PROMPT } from "../context/prompt-templates";
+import { aiLanguageInstruction } from "../context/language-directive";
 import { sanitizePromptValue } from "../../common/sanitization.util";
 import { formatCurrencyAmount } from "../../common/format-currency.util";
 import { UserPreference } from "../../users/entities/user-preference.entity";
@@ -89,7 +90,9 @@ export class AiForecastService {
       const response = await this.aiService.complete(
         userId,
         {
-          systemPrompt: FORECAST_SYSTEM_PROMPT,
+          systemPrompt:
+            FORECAST_SYSTEM_PROMPT +
+            aiLanguageInstruction(preferences?.language),
           messages: [{ role: "user", content: prompt }],
           maxTokens: 4096,
           temperature: 0.3,

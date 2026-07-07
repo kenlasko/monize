@@ -2333,7 +2333,9 @@ describe("TransactionAnalyticsService", () => {
       mockQueryBuilder.getRawMany.mockResolvedValue([
         {
           payeeName: "Netflix",
+          payeeId: "payee-1",
           categoryName: "Entertainment",
+          categoryId: "cat-1",
           amounts: [15.99, 15.99, 15.99, 17.99],
           dates: ["2025-09-01", "2025-10-01", "2025-11-01", "2025-12-01"],
           txnCount: "4",
@@ -2344,10 +2346,30 @@ describe("TransactionAnalyticsService", () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].payeeName).toBe("Netflix");
+      expect(result[0].payeeId).toBe("payee-1");
       expect(result[0].frequency).toBe("monthly");
       expect(result[0].currentAmount).toBe(17.99);
       expect(result[0].previousAmount).toBe(15.99);
       expect(result[0].categoryName).toBe("Entertainment");
+      expect(result[0].categoryId).toBe("cat-1");
+    });
+
+    it("returns null payeeId and categoryId for free-text charges", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        {
+          payeeName: "Corner Shop",
+          categoryName: null,
+          amounts: [12.5, 12.5, 12.5],
+          dates: ["2025-10-01", "2025-11-01", "2025-12-01"],
+          txnCount: "3",
+        },
+      ]);
+
+      const result = await service.getRecurringCharges(userId, start, end);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].payeeId).toBeNull();
+      expect(result[0].categoryId).toBeNull();
     });
 
     it("treats a single repeated amount as both current and previous", async () => {

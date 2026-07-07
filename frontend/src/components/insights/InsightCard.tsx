@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { AiInsight } from '@/types/ai';
 import { useDateFormat } from '@/hooks/useDateFormat';
+import { AssistantMarkdown } from '@/components/ai/AssistantMarkdown';
 
 interface InsightCardProps {
   insight: AiInsight;
@@ -71,9 +72,9 @@ export function InsightCard({ insight, onDismiss, isDismissing }: InsightCardPro
               {typeLabel}
             </span>
           </div>
-          <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
-            {insight.description}
-          </p>
+          <div className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+            <AssistantMarkdown content={insight.description} />
+          </div>
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-500 dark:text-gray-400">
               {formatDate(new Date(insight.generatedAt))}
