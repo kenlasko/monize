@@ -107,6 +107,8 @@
   },
   "investmentValueChart": {
     "title": "Portfolio Value Over Time",
+    "viewReport": "View report",
+    "viewReportTitle": "Open the full Portfolio Value report",
     "updatingLabel": "Updating…",
     "updatingAriaLabel": "Updating",
     "intradayFallbackWarningAriaLabel": "Detailed intraday pricing unavailable",

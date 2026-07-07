@@ -147,6 +147,12 @@ describe('InvestmentValueChart', () => {
     expect(title).toBeInTheDocument();
   });
 
+  it('links to the full Portfolio Value report', async () => {
+    render(<InvestmentValueChart />);
+    const link = await screen.findByRole('link', { name: /View report/i });
+    expect(link).toHaveAttribute('href', '/reports/portfolio-value');
+  });
+
   it('renders summary cards after data loads', async () => {
     render(<InvestmentValueChart />);
     const highest = await screen.findByText('Highest Value');

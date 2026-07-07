@@ -261,7 +261,7 @@ function InvestmentsContent() {
           </div>
 
           {/* Portfolio Value Over Time */}
-          <div className="mb-6">
+          <div className="mb-3">
             <InvestmentValueChart
               accountIds={data.selectedAccountIds}
               displayCurrency={
