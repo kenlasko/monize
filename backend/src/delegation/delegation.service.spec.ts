@@ -1189,6 +1189,26 @@ describe("DelegationService", () => {
       expect(emailService.sendMail).toHaveBeenCalled();
     });
 
+    it("resolves the invite email language from the delegate's stored preference", async () => {
+      usersRepo.findOne.mockResolvedValue({ id: "o1", email: "own@x.y" });
+      emailService.getStatus.mockReturnValue({ configured: true });
+      emailService.sendMail.mockResolvedValue(undefined);
+      configService.get.mockReturnValue("http://app");
+      prefsRepo.findOne.mockResolvedValue({ userId: "g-new", language: "fr" });
+      const manager = makeManager();
+      manager.findOne.mockResolvedValue(null);
+      dataSource.transaction.mockImplementation(async (cb: any) => cb(manager));
+
+      await service.createDelegate("o1", {
+        email: "new@x.y",
+        sendInvite: true,
+      } as any);
+
+      expect(prefsRepo.findOne).toHaveBeenCalledWith({
+        where: { userId: "g-new" },
+      });
+    });
+
     it("rejects an invite when SMTP is not configured", async () => {
       usersRepo.findOne.mockResolvedValue({ id: "o1", email: "own@x.y" });
       emailService.getStatus.mockReturnValue({ configured: false });

@@ -35,7 +35,7 @@ import { tr } from "../i18n/translate";
 import { currentRequestLocale } from "../i18n/request-locale";
 import { I18nService } from "nestjs-i18n";
 import { emailTranslator } from "../i18n/email-translator";
-import { DEFAULT_LOCALE } from "../i18n/config";
+import { resolveUserEmailLocale } from "../i18n/resolve-user-email-locale";
 
 @Injectable()
 export class AuthService {
@@ -323,7 +323,10 @@ export class AuthService {
         );
         // Fire-and-forget lockout email
         if (user.email) {
-          const lang = DEFAULT_LOCALE;
+          const lang = await resolveUserEmailLocale(
+            this.preferencesRepository,
+            user.id,
+          );
           const t = emailTranslator(this.i18n, lang);
           this.emailService
             .sendMail(
@@ -697,7 +700,10 @@ export class AuthService {
         this.configService.get<string>("PUBLIC_APP_URL") ||
         "http://localhost:3000";
       const confirmUrl = `${frontendUrl}/api/v1/auth/oidc/confirm-link?token=${linkToken}`;
-      const lang = DEFAULT_LOCALE;
+      const lang = await resolveUserEmailLocale(
+        this.preferencesRepository,
+        user.id,
+      );
       const t = emailTranslator(this.i18n, lang);
       const html = oidcLinkTemplate(user.firstName || "", confirmUrl, t);
       await this.emailService.sendMail(

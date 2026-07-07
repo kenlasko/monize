@@ -46,8 +46,11 @@ import {
 } from "../notifications/email-templates";
 import { SwitchContextDto } from "./dto/switch-context.dto";
 import { I18nService } from "nestjs-i18n";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { UserPreference } from "../users/entities/user-preference.entity";
 import { emailTranslator } from "../i18n/email-translator";
-import { DEFAULT_LOCALE } from "../i18n/config";
+import { resolveUserEmailLocale } from "../i18n/resolve-user-email-locale";
 import { DelegationService } from "../delegation/delegation.service";
 import { AllowDelegate } from "../delegation/decorators/delegate-access.decorator";
 import { SkipCsrf } from "../common/decorators/skip-csrf.decorator";
@@ -78,6 +81,8 @@ export class AuthController {
     private tokenService: TokenService,
     private delegationService: DelegationService,
     private readonly i18n: I18nService,
+    @InjectRepository(UserPreference)
+    private readonly preferencesRepository: Repository<UserPreference>,
   ) {
     // Default to true if not explicitly set to 'false'
     const localAuthSetting = this.configService.get<string>(
@@ -267,6 +272,7 @@ export class AuthController {
     // the client to show its "check your email" state.
     if (result.verificationRequired) {
       await this.sendVerificationEmail(
+        result.user.id,
         result.user.email!,
         result.user.firstName ?? "",
         result.verificationToken,
@@ -289,6 +295,7 @@ export class AuthController {
    * does not reveal whether delivery succeeded (mirrors password-reset).
    */
   private async sendVerificationEmail(
+    userId: string,
     email: string,
     firstName: string,
     token: string,
@@ -298,7 +305,10 @@ export class AuthController {
       "http://localhost:3000",
     );
     const verifyUrl = `${frontendUrl}/verify-email?token=${token}`;
-    const lang = DEFAULT_LOCALE;
+    const lang = await resolveUserEmailLocale(
+      this.preferencesRepository,
+      userId,
+    );
     const t = emailTranslator(this.i18n, lang);
     const html = emailVerificationTemplate(firstName, verifyUrl, t);
 
@@ -686,7 +696,10 @@ export class AuthController {
         "http://localhost:3000",
       );
       const resetUrl = `${frontendUrl}/reset-password?token=${result.token}`;
-      const lang = DEFAULT_LOCALE;
+      const lang = await resolveUserEmailLocale(
+        this.preferencesRepository,
+        result.user.id,
+      );
       const t = emailTranslator(this.i18n, lang);
       const html = passwordResetTemplate(
         result.user.firstName || "",
@@ -772,6 +785,7 @@ export class AuthController {
       );
       if (result) {
         await this.sendVerificationEmail(
+          result.user.id,
           result.user.email!,
           result.user.firstName ?? "",
           result.token,

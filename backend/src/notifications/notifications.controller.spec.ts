@@ -1,14 +1,17 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { BadRequestException } from "@nestjs/common";
+import { getRepositoryToken } from "@nestjs/typeorm";
 import { I18nService } from "nestjs-i18n";
 import { NotificationsController } from "./notifications.controller";
 import { EmailService } from "./email.service";
 import { UsersService } from "../users/users.service";
+import { UserPreference } from "../users/entities/user-preference.entity";
 
 describe("NotificationsController", () => {
   let controller: NotificationsController;
   let mockEmailService: Partial<Record<keyof EmailService, jest.Mock>>;
   let mockUsersService: Partial<Record<keyof UsersService, jest.Mock>>;
+  let mockPreferencesRepo: Record<string, jest.Mock>;
   const mockReq = { user: { id: "user-1" } };
 
   beforeEach(async () => {
@@ -19,6 +22,10 @@ describe("NotificationsController", () => {
 
     mockUsersService = {
       findById: jest.fn(),
+    };
+
+    mockPreferencesRepo = {
+      findOne: jest.fn().mockResolvedValue(null),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -35,9 +42,18 @@ describe("NotificationsController", () => {
         {
           provide: I18nService,
           useValue: {
-            translate: (key: string, opts?: { defaultValue?: string }) =>
-              opts?.defaultValue ?? key,
+            translate: (
+              key: string,
+              opts?: { lang?: string; defaultValue?: string },
+            ) =>
+              opts?.lang === "fr" && key === "emails.test.subject"
+                ? "Monize Test Email (fr)"
+                : (opts?.defaultValue ?? key),
           },
+        },
+        {
+          provide: getRepositoryToken(UserPreference),
+          useValue: mockPreferencesRepo,
         },
       ],
     }).compile();
@@ -61,6 +77,7 @@ describe("NotificationsController", () => {
     it("sends test email when SMTP is configured and user has email", async () => {
       mockEmailService.getStatus!.mockReturnValue({ configured: true });
       mockUsersService.findById!.mockResolvedValue({
+        id: "user-1",
         email: "test@example.com",
         firstName: "John",
       });
@@ -73,6 +90,31 @@ describe("NotificationsController", () => {
       expect(mockEmailService.sendMail).toHaveBeenCalledWith(
         "test@example.com",
         "Monize Test Email",
+        expect.any(String),
+      );
+    });
+
+    it("renders the test email in the recipient's stored language", async () => {
+      mockEmailService.getStatus!.mockReturnValue({ configured: true });
+      mockUsersService.findById!.mockResolvedValue({
+        id: "user-1",
+        email: "test@example.com",
+        firstName: "John",
+      });
+      mockPreferencesRepo.findOne.mockResolvedValue({
+        userId: "user-1",
+        language: "fr",
+      });
+      mockEmailService.sendMail!.mockResolvedValue(undefined);
+
+      await controller.sendTestEmail(mockReq);
+
+      expect(mockPreferencesRepo.findOne).toHaveBeenCalledWith({
+        where: { userId: "user-1" },
+      });
+      expect(mockEmailService.sendMail).toHaveBeenCalledWith(
+        "test@example.com",
+        "Monize Test Email (fr)",
         expect.any(String),
       );
     });

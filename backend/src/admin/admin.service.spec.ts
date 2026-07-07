@@ -75,6 +75,7 @@ describe("AdminService", () => {
 
     preferencesRepository = {
       delete: jest.fn(),
+      findOne: jest.fn().mockResolvedValue(null),
     };
 
     refreshTokensRepository = {
@@ -271,6 +272,24 @@ describe("AdminService", () => {
         "Your Monize account is ready",
         expect.stringContaining("reset-password?token="),
       );
+    });
+
+    it("resolves the invite email language from the invitee's stored preference", async () => {
+      transactionManager.findOne.mockResolvedValue(null);
+      preferencesRepository.findOne.mockResolvedValue({
+        userId: "new-user-id",
+        language: "fr",
+      });
+
+      await service.createUser({
+        email: "invitee@example.com",
+        firstName: "Invitee",
+        sendInvite: true,
+      });
+
+      expect(preferencesRepository.findOne).toHaveBeenCalledWith({
+        where: { userId: "new-user-id" },
+      });
     });
 
     it("rejects sendInvite when SMTP is not configured", async () => {

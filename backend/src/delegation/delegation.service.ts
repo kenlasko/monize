@@ -29,7 +29,7 @@ import { generateReadablePassword } from "../admin/utils/password-generator";
 import { I18nService } from "nestjs-i18n";
 import { tr } from "../i18n/translate";
 import { emailTranslator } from "../i18n/email-translator";
-import { DEFAULT_LOCALE } from "../i18n/config";
+import { resolveUserEmailLocale } from "../i18n/resolve-user-email-locale";
 import { EmailService } from "../notifications/email.service";
 import { delegateInviteTemplate } from "../notifications/email-templates";
 import { ConfigService } from "@nestjs/config";
@@ -901,7 +901,10 @@ export class DelegationService {
           "http://localhost:3000",
         );
         const inviteUrl = `${frontendUrl}/reset-password?token=${inviteToken}`;
-        const lang = DEFAULT_LOCALE;
+        const lang = await resolveUserEmailLocale(
+          this.preferencesRepository,
+          delegateUser.id,
+        );
         const t = emailTranslator(this.i18n, lang);
         this.emailService
           .sendMail(

@@ -1,10 +1,12 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { getRepositoryToken } from "@nestjs/typeorm";
 import {
   BadRequestException,
   ForbiddenException,
   UnauthorizedException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { UserPreference } from "../users/entities/user-preference.entity";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { OidcService } from "./oidc/oidc.service";
@@ -169,6 +171,10 @@ describe("AuthController", () => {
               opts?.defaultValue ?? key,
           },
         },
+        {
+          provide: getRepositoryToken(UserPreference),
+          useValue: { findOne: jest.fn().mockResolvedValue(null) },
+        },
       ],
     }).compile();
 
@@ -225,6 +231,10 @@ describe("AuthController", () => {
               translate: (key: string, opts?: { defaultValue?: string }) =>
                 opts?.defaultValue ?? key,
             },
+          },
+          {
+            provide: getRepositoryToken(UserPreference),
+            useValue: { findOne: jest.fn().mockResolvedValue(null) },
           },
         ],
       }).compile();
@@ -286,6 +296,10 @@ describe("AuthController", () => {
               translate: (key: string, opts?: { defaultValue?: string }) =>
                 opts?.defaultValue ?? key,
             },
+          },
+          {
+            provide: getRepositoryToken(UserPreference),
+            useValue: { findOne: jest.fn().mockResolvedValue(null) },
           },
         ],
       }).compile();
@@ -403,6 +417,10 @@ describe("AuthController", () => {
               translate: (key: string, opts?: { defaultValue?: string }) =>
                 opts?.defaultValue ?? key,
             },
+          },
+          {
+            provide: getRepositoryToken(UserPreference),
+            useValue: { findOne: jest.fn().mockResolvedValue(null) },
           },
         ],
       }).compile();
@@ -683,6 +701,10 @@ describe("AuthController", () => {
                 opts?.defaultValue ?? key,
             },
           },
+          {
+            provide: getRepositoryToken(UserPreference),
+            useValue: { findOne: jest.fn().mockResolvedValue(null) },
+          },
         ],
       }).compile();
 
@@ -845,6 +867,10 @@ describe("AuthController", () => {
               translate: (key: string, opts?: { defaultValue?: string }) =>
                 opts?.defaultValue ?? key,
             },
+          },
+          {
+            provide: getRepositoryToken(UserPreference),
+            useValue: { findOne: jest.fn().mockResolvedValue(null) },
           },
         ],
       }).compile();
@@ -1743,6 +1769,10 @@ describe("AuthController", () => {
                 opts?.defaultValue ?? key,
             },
           },
+          {
+            provide: getRepositoryToken(UserPreference),
+            useValue: { findOne: jest.fn().mockResolvedValue(null) },
+          },
         ],
       }).compile();
 
@@ -1813,6 +1843,10 @@ describe("AuthController", () => {
               translate: (key: string, opts?: { defaultValue?: string }) =>
                 opts?.defaultValue ?? key,
             },
+          },
+          {
+            provide: getRepositoryToken(UserPreference),
+            useValue: { findOne: jest.fn().mockResolvedValue(null) },
           },
         ],
       }).compile();
@@ -1908,6 +1942,10 @@ describe("AuthController", () => {
                 opts?.defaultValue ?? key,
             },
           },
+          {
+            provide: getRepositoryToken(UserPreference),
+            useValue: { findOne: jest.fn().mockResolvedValue(null) },
+          },
         ],
       }).compile();
       const c = force2faModule.get<AuthController>(AuthController);
@@ -1989,6 +2027,10 @@ describe("AuthController", () => {
               translate: (key: string, opts?: { defaultValue?: string }) =>
                 opts?.defaultValue ?? key,
             },
+          },
+          {
+            provide: getRepositoryToken(UserPreference),
+            useValue: { findOne: jest.fn().mockResolvedValue(null) },
           },
         ],
       }).compile();
@@ -2074,6 +2116,10 @@ describe("AuthController", () => {
                   opts?.defaultValue ?? key,
               },
             },
+            {
+              provide: getRepositoryToken(UserPreference),
+              useValue: { findOne: jest.fn().mockResolvedValue(null) },
+            },
           ],
         }).compile();
         const c = m.get<AuthController>(AuthController);
@@ -2129,6 +2175,10 @@ describe("AuthController", () => {
               translate: (key: string, opts?: { defaultValue?: string }) =>
                 opts?.defaultValue ?? key,
             },
+          },
+          {
+            provide: getRepositoryToken(UserPreference),
+            useValue: { findOne: jest.fn().mockResolvedValue(null) },
           },
         ],
       }).compile();
@@ -2186,6 +2236,10 @@ describe("AuthController", () => {
               translate: (key: string, opts?: { defaultValue?: string }) =>
                 opts?.defaultValue ?? key,
             },
+          },
+          {
+            provide: getRepositoryToken(UserPreference),
+            useValue: { findOne: jest.fn().mockResolvedValue(null) },
           },
         ],
       }).compile();
@@ -2254,6 +2308,10 @@ describe("AuthController", () => {
                 opts?.defaultValue ?? key,
             },
           },
+          {
+            provide: getRepositoryToken(UserPreference),
+            useValue: { findOne: jest.fn().mockResolvedValue(null) },
+          },
         ],
       }).compile();
       const c = m.get<AuthController>(AuthController);
@@ -2306,6 +2364,10 @@ describe("AuthController", () => {
               translate: (key: string, opts?: { defaultValue?: string }) =>
                 opts?.defaultValue ?? key,
             },
+          },
+          {
+            provide: getRepositoryToken(UserPreference),
+            useValue: { findOne: jest.fn().mockResolvedValue(null) },
           },
         ],
       }).compile();
@@ -2497,6 +2559,10 @@ describe("AuthController", () => {
               translate: (key: string, opts?: { defaultValue?: string }) =>
                 opts?.defaultValue ?? key,
             },
+          },
+          {
+            provide: getRepositoryToken(UserPreference),
+            useValue: { findOne: jest.fn().mockResolvedValue(null) },
           },
         ],
       }).compile();
