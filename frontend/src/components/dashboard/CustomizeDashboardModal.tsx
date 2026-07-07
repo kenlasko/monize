@@ -92,7 +92,7 @@ export function CustomizeDashboardModal({ isOpen, onClose }: CustomizeDashboardM
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} maxWidth="2xl" className="p-6" pushHistory>
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="2xl" className="p-3 sm:p-6" pushHistory>
       <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
         {t('customize.title')}
       </h3>
@@ -100,10 +100,10 @@ export function CustomizeDashboardModal({ isOpen, onClose }: CustomizeDashboardM
         {t('customize.description')}
       </p>
 
-      {/* Mockup of the dashboard grid: two columns, flowing left to right,
-          exactly like the real page on large screens. */}
-      <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900/40 p-3 mb-2">
-        <div className="grid grid-cols-2 gap-3">
+      {/* Mockup of the dashboard grid: single column on mobile, two columns on
+          larger screens -- exactly like the real page. */}
+      <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900/40 p-2 sm:p-3 mb-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
           {visible.map((id, index) => (
             <div
               key={id}
@@ -125,7 +125,7 @@ export function CustomizeDashboardModal({ isOpen, onClose }: CustomizeDashboardM
                 onClick={() => moveWidget(index, index - 1)}
                 disabled={index === 0}
                 aria-label={t('customize.moveEarlier', { name: widgetName(id) })}
-                className="p-0.5 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
+                className="hidden sm:block p-0.5 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
               >
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -136,7 +136,7 @@ export function CustomizeDashboardModal({ isOpen, onClose }: CustomizeDashboardM
                 onClick={() => moveWidget(index, index + 1)}
                 disabled={index === visible.length - 1}
                 aria-label={t('customize.moveLater', { name: widgetName(id) })}
-                className="p-0.5 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
+                className="hidden sm:block p-0.5 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
               >
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -155,7 +155,7 @@ export function CustomizeDashboardModal({ isOpen, onClose }: CustomizeDashboardM
             </div>
           ))}
           {visible.length === 0 && (
-            <p className="col-span-2 text-sm text-amber-600 dark:text-amber-400 text-center py-4">
+            <p className="col-span-full text-sm text-amber-600 dark:text-amber-400 text-center py-4">
               {t('customize.atLeastOne')}
             </p>
           )}
