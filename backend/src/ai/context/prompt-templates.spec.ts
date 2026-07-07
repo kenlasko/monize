@@ -84,6 +84,8 @@ describe("prompt-templates", () => {
       expect(QUERY_SYSTEM_PROMPT).toMatch(/monize:\/\/payee\/<id>/);
       expect(QUERY_SYSTEM_PROMPT).toMatch(/monize:\/\/category\/<id>/);
       expect(QUERY_SYSTEM_PROMPT).toMatch(/monize:\/\/transaction\/<id>/);
+      expect(QUERY_SYSTEM_PROMPT).toMatch(/monize:\/\/security\/<securityId>/);
+      expect(QUERY_SYSTEM_PROMPT).toMatch(/monize:\/\/scheduled\/<id>/);
     });
 
     it("forbids invented ids and links on id-less rows", () => {
