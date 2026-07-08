@@ -66,11 +66,13 @@ function makeHistory(account: Account) {
 }
 
 describe('PastImpactSection', () => {
-  it('shows months and interest already saved with the three series', () => {
+  it('shows extra principal paid plus months and interest saved and the series', () => {
     const account = makeAccount();
     render(<PastImpactSection account={account} history={makeHistory(account)} />);
 
     expect(screen.getByText('Impact of Overpayments Made')).toBeInTheDocument();
+    expect(screen.getByText('Extra Principal Paid')).toBeInTheDocument();
+    expect(screen.getByText('How far ahead of the original schedule you are')).toBeInTheDocument();
     expect(screen.getByText('Time Already Saved')).toBeInTheDocument();
     expect(screen.getByText(/\d+ months?/)).toBeInTheDocument();
     expect(screen.getByText('Interest Already Saved')).toBeInTheDocument();
@@ -80,8 +82,19 @@ describe('PastImpactSection', () => {
     expect(screen.getByText('Current Projection')).toBeInTheDocument();
   });
 
-  it('shows a data hint when the original schedule cannot be reconstructed', () => {
+  it('still renders when only the opening balance is set (no originalPrincipal)', () => {
     const account = makeAccount({ originalPrincipal: null });
+    render(<PastImpactSection account={account} history={makeHistory(account)} />);
+
+    // Falls back to the opening balance; the section renders rather than hinting
+    expect(screen.getByText('Extra Principal Paid')).toBeInTheDocument();
+    expect(
+      screen.queryByText(/set the original principal and first payment date/),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows a data hint when the original schedule cannot be reconstructed', () => {
+    const account = makeAccount({ interestRate: null });
     render(<PastImpactSection account={account} history={makeHistory(account)} />);
 
     expect(

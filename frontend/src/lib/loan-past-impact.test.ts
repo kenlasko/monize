@@ -40,17 +40,92 @@ function makeHistory(account: Account, principals: number[]): LoanHistoryResult 
 }
 
 describe('computePastImpact', () => {
-  it('returns null when originalPrincipal or paymentStartDate is missing', () => {
+  it('returns null without a rate, frequency, or determinable payment', () => {
     const account = makeAccount();
     const history = makeHistory(account, [450]);
 
-    expect(computePastImpact(makeAccount({ originalPrincipal: null }), history)).toBeNull();
-    expect(computePastImpact(makeAccount({ paymentStartDate: null }), history)).toBeNull();
     expect(computePastImpact(makeAccount({ interestRate: null }), history)).toBeNull();
     expect(computePastImpact(makeAccount({ paymentFrequency: null }), history)).toBeNull();
-    expect(
-      computePastImpact(makeAccount({ paymentAmount: null }), history),
-    ).toBeNull();
+    // A loan with no amortization period and no payment amount has no
+    // contractual payment to build a schedule from.
+    expect(computePastImpact(makeAccount({ paymentAmount: null }), history)).toBeNull();
+  });
+
+  it('returns null when there is no principal, start date, or history', () => {
+    const bare = makeAccount({
+      originalPrincipal: null,
+      openingBalance: 0,
+      currentBalance: 0,
+      paymentStartDate: null,
+    });
+    const emptyHistory = deriveLoanPaymentHistory(bare, []);
+
+    expect(computePastImpact(bare, emptyHistory)).toBeNull();
+  });
+
+  it('falls back to the opening balance for the original principal', () => {
+    // A mortgage imported with only its opening balance set, not originalPrincipal
+    const account = makeAccount({
+      accountType: 'MORTGAGE',
+      originalPrincipal: null,
+      openingBalance: -300000,
+      currentBalance: -280000,
+      amortizationMonths: 300,
+      interestRate: 5,
+      paymentAmount: 1750,
+    });
+    const history = makeHistory(account, [1750, 1750]);
+
+    const impact = computePastImpact(account, history);
+
+    expect(impact).not.toBeNull();
+    // Schedule anchored at the 300k opening balance
+    expect(impact!.originalSchedule.rows[0].balance).toBeLessThan(300000);
+    expect(impact!.originalSchedule.rows[0].balance).toBeGreaterThan(290000);
+  });
+
+  it('falls back to the earliest payment date when the start date is unset', () => {
+    const account = makeAccount({ paymentStartDate: null });
+    const history = makeHistory(account, [450, 450]); // events on 2025-01-15, 2025-02-15
+
+    const impact = computePastImpact(account, history);
+
+    expect(impact).not.toBeNull();
+    expect(impact!.originalSchedule.rows[0].date).toBe('2025-01-15');
+  });
+
+  it('measures extra principal against the contractual schedule', () => {
+    // Paid down to 5000 while the contract would still have a higher balance
+    const account = makeAccount({ currentBalance: -5000 });
+    const history = makeHistory(account, [500, 500]);
+    const asOf = new Date(2025, 5, 20); // 2025-06-20
+
+    const impact = computePastImpact(account, history, asOf)!;
+
+    const contractual = generateLoanSchedule({
+      startingBalance: 10000,
+      annualRate: 6,
+      paymentAmount: 500,
+      frequency: 'MONTHLY',
+      firstPaymentDate: new Date(2025, 0, 15),
+    });
+    const dueByAsOf = contractual.rows.filter((r) => r.date <= '2025-06-20');
+    const expected =
+      Math.round((dueByAsOf[dueByAsOf.length - 1].balance - 5000) * 100) / 100;
+
+    expect(impact.extraPrincipalPaid).toBeCloseTo(expected, 2);
+    expect(impact.extraPrincipalPaid).toBeGreaterThan(0);
+  });
+
+  it('reports zero extra principal when behind the contractual schedule', () => {
+    // Actual balance higher than the contract would have it -> not ahead
+    const account = makeAccount({ currentBalance: -9800 });
+    const history = makeHistory(account, [200]);
+    const asOf = new Date(2025, 5, 20);
+
+    const impact = computePastImpact(account, history, asOf)!;
+
+    expect(impact.extraPrincipalPaid).toBe(0);
   });
 
   it('shows positive savings when extra principal was paid', () => {

@@ -78,7 +78,18 @@ export function PastImpactSection({ account, history }: PastImpactSectionProps) 
         {t('loanDetail.pastImpact.description')}
       </p>
 
-      <div className="grid grid-cols-2 gap-4 mb-6 px-4 sm:px-0">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6 px-4 sm:px-0">
+        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            {t('loanDetail.pastImpact.extraPrincipalPaid')}
+          </div>
+          <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
+            {formatCurrency(impact.extraPrincipalPaid, account.currencyCode)}
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            {t('loanDetail.pastImpact.extraPrincipalNote')}
+          </div>
+        </div>
         <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
           <div className="text-sm text-gray-500 dark:text-gray-400">
             {t('loanDetail.pastImpact.monthsAlreadySaved')}
