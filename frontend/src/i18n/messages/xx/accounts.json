@@ -77,7 +77,8 @@
       "closeTitleDisabled": "[XX-Account must have zero balance to close-XX]",
       "closeTitleEnabled": "[XX-Close account-XX]",
       "balanceMustBeZero": "[XX-Balance must be zero-XX]",
-      "closedPrefix": "[XX- — Closed-XX]"
+      "closedPrefix": "[XX- — Closed-XX]",
+      "loanDetails": "[XX-Loan Details-XX]"
     }
   },
   "contextMenu": {
@@ -312,5 +313,48 @@
     "paymentStartDateRequired": "[XX-First payment date is required-XX]",
     "paymentAccountRequired": "[XX-Payment account is required-XX]",
     "amortizationRequired": "[XX-Amortization period is required-XX]"
+  },
+  "loanDetail": {
+    "backToAccounts": "[XX-Back to Accounts-XX]",
+    "viewTransactions": "[XX-View Transactions-XX]",
+    "notFound": "[XX-Account not found-XX]",
+    "loadFailed": "[XX-Failed to load account details-XX]",
+    "frequency": {
+      "WEEKLY": "[XX-Weekly-XX]",
+      "BIWEEKLY": "[XX-Bi-Weekly-XX]",
+      "SEMI_MONTHLY": "[XX-Semi-Monthly-XX]",
+      "MONTHLY": "[XX-Monthly-XX]",
+      "QUARTERLY": "[XX-Quarterly-XX]",
+      "YEARLY": "[XX-Yearly-XX]",
+      "ACCELERATED_BIWEEKLY": "[XX-Accelerated Bi-Weekly-XX]",
+      "ACCELERATED_WEEKLY": "[XX-Accelerated Weekly-XX]"
+    },
+    "summary": {
+      "currentBalance": "[XX-Current Balance-XX]",
+      "originalAmount": "[XX-Original Amount-XX]",
+      "interestRate": "[XX-Interest Rate-XX]",
+      "effectiveRate": "[XX-{rate}% effective-XX]",
+      "payment": "[XX-Payment-XX]",
+      "estPayoff": "[XX-Est. Payoff-XX]",
+      "estRemainingInterest": "[XX-Est. Remaining Interest-XX]",
+      "notSet": "[XX-Not set-XX]",
+      "notAvailable": "[XX-N/A-XX]",
+      "paidOff": "[XX-Paid off-XX]"
+    },
+    "schedule": {
+      "title": "[XX-Installment Schedule-XX]",
+      "subtitle": "[XX-{historical, plural, one {# payment made} other {# payments made}}, {projected, plural, one {# projected} other {# projected}}-XX]",
+      "colNumber": "[XX-#-XX]",
+      "colDate": "[XX-Date-XX]",
+      "colPayment": "[XX-Payment-XX]",
+      "colPrincipal": "[XX-Principal-XX]",
+      "colInterest": "[XX-Interest-XX]",
+      "colExtra": "[XX-Extra Principal-XX]",
+      "colBalance": "[XX-Balance-XX]",
+      "projectedFuturePayments": "[XX-Projected Future Payments-XX]",
+      "showAll": "[XX-Show all {count} payments-XX]",
+      "showLess": "[XX-Show less-XX]",
+      "noPayments": "[XX-No payments found-XX]"
+    }
   }
 }

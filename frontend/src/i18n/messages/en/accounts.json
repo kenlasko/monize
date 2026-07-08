@@ -77,7 +77,8 @@
       "closeTitleDisabled": "Account must have zero balance to close",
       "closeTitleEnabled": "Close account",
       "balanceMustBeZero": "Balance must be zero",
-      "closedPrefix": " — Closed"
+      "closedPrefix": " — Closed",
+      "loanDetails": "Loan Details"
     }
   },
   "contextMenu": {
@@ -312,5 +313,48 @@
     "paymentStartDateRequired": "First payment date is required",
     "paymentAccountRequired": "Payment account is required",
     "amortizationRequired": "Amortization period is required"
+  },
+  "loanDetail": {
+    "backToAccounts": "Back to Accounts",
+    "viewTransactions": "View Transactions",
+    "notFound": "Account not found",
+    "loadFailed": "Failed to load account details",
+    "frequency": {
+      "WEEKLY": "Weekly",
+      "BIWEEKLY": "Bi-Weekly",
+      "SEMI_MONTHLY": "Semi-Monthly",
+      "MONTHLY": "Monthly",
+      "QUARTERLY": "Quarterly",
+      "YEARLY": "Yearly",
+      "ACCELERATED_BIWEEKLY": "Accelerated Bi-Weekly",
+      "ACCELERATED_WEEKLY": "Accelerated Weekly"
+    },
+    "summary": {
+      "currentBalance": "Current Balance",
+      "originalAmount": "Original Amount",
+      "interestRate": "Interest Rate",
+      "effectiveRate": "{rate}% effective",
+      "payment": "Payment",
+      "estPayoff": "Est. Payoff",
+      "estRemainingInterest": "Est. Remaining Interest",
+      "notSet": "Not set",
+      "notAvailable": "N/A",
+      "paidOff": "Paid off"
+    },
+    "schedule": {
+      "title": "Installment Schedule",
+      "subtitle": "{historical, plural, one {# payment made} other {# payments made}}, {projected, plural, one {# projected} other {# projected}}",
+      "colNumber": "#",
+      "colDate": "Date",
+      "colPayment": "Payment",
+      "colPrincipal": "Principal",
+      "colInterest": "Interest",
+      "colExtra": "Extra Principal",
+      "colBalance": "Balance",
+      "projectedFuturePayments": "Projected Future Payments",
+      "showAll": "Show all {count} payments",
+      "showLess": "Show less",
+      "noPayments": "No payments found"
+    }
   }
 }

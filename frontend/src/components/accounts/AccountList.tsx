@@ -225,6 +225,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, def
 
   const accountActionLabels = useMemo<AccountActionLabels>(() => ({
     viewTransactions: t('row.actions.viewTransactions'),
+    loanDetails: t('row.actions.loanDetails'),
     edit: tc('actions.edit'),
     reconcile: tc('actions.reconcile'),
     close: tc('actions.close'),
@@ -465,6 +466,10 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, def
 
   const handleReconcile = useCallback((account: Account) => {
     router.push(`/reconcile?accountId=${account.id}`);
+  }, [router]);
+
+  const handleLoanDetails = useCallback((account: Account) => {
+    router.push(`/accounts/${account.id}`);
   }, [router]);
 
   const handleCloseClick = useCallback((account: Account) => {
@@ -803,6 +808,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, def
                   formatAccountType={(type) => formatAccountType(type, tc)}
                   getAccountTypeColor={getAccountTypeColor}
                   actionLabels={accountActionLabels}
+                  onLoanDetails={handleLoanDetails}
                   onEdit={onEdit}
                   onReconcile={handleReconcile}
                   onCloseClick={handleCloseClick}
@@ -831,6 +837,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, def
         actions={contextAccount
           ? buildAccountActions(contextAccount, deletableAccounts.has(contextAccount.id), accountActionLabels, {
               onViewTransactions: handleViewTransactions,
+              onLoanDetails: handleLoanDetails,
               onEdit,
               onReconcile: handleReconcile,
               onCloseClick: handleCloseClick,
