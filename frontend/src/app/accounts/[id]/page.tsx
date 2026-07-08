@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
@@ -9,32 +9,20 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { LoanSummaryCards } from '@/components/accounts/loan-detail/LoanSummaryCards';
-import { AmortizationScheduleTable } from '@/components/accounts/loan-detail/AmortizationScheduleTable';
-import { OverpaymentSimulator } from '@/components/accounts/loan-detail/OverpaymentSimulator';
-import { PayoffComparisonChart } from '@/components/accounts/loan-detail/PayoffComparisonChart';
-import { ComparisonSummaryCards } from '@/components/accounts/loan-detail/ComparisonSummaryCards';
-import { SavedScenariosPanel } from '@/components/accounts/loan-detail/SavedScenariosPanel';
-import { PastImpactSection } from '@/components/accounts/loan-detail/PastImpactSection';
+import { LoanDetailView } from '@/components/accounts/loan-detail/LoanDetailView';
+import { LineOfCreditView } from '@/components/accounts/loan-detail/LineOfCreditView';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { accountsApi } from '@/lib/accounts';
 import { loanScenariosApi } from '@/lib/loan-scenarios';
-import { deriveLoanPaymentHistory, fetchAllAccountTransactions } from '@/lib/loan-history';
-import {
-  OverpaymentPlan,
-  ScheduleFrequency,
-  advanceDate,
-  compareSchedules,
-  generateLoanSchedule,
-} from '@/lib/loan-schedule';
+import { fetchAllAccountTransactions } from '@/lib/loan-history';
 import { formatAccountType } from '@/lib/account-utils';
 import { getErrorMessage } from '@/lib/errors';
 import type { Account, AccountType } from '@/types/account';
 import type { Transaction } from '@/types/transaction';
 import type { LoanScenario } from '@/types/loan-scenario';
 
-const LOAN_ACCOUNT_TYPES: AccountType[] = ['LOAN', 'MORTGAGE', 'LINE_OF_CREDIT'];
+const DEBT_ACCOUNT_TYPES: AccountType[] = ['LOAN', 'MORTGAGE', 'LINE_OF_CREDIT'];
 
 export default function AccountDetailPage() {
   return (
@@ -53,21 +41,28 @@ function AccountDetailContent() {
 
   const [account, setAccount] = useState<Account | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [scenarios, setScenarios] = useState<LoanScenario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [plan, setPlan] = useState<OverpaymentPlan | null>(null);
-  const [scenarios, setScenarios] = useState<LoanScenario[]>([]);
-  const [loadedPlan, setLoadedPlan] = useState<OverpaymentPlan | null>(null);
-  const [loadedPlanVersion, setLoadedPlanVersion] = useState(0);
+
+  const isRevolving = account?.accountType === 'LINE_OF_CREDIT';
+  const isDebtAccount = !account || DEBT_ACCOUNT_TYPES.includes(account.accountType);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const [accountData, transactionsData, scenariosData] = await Promise.all([
-        accountsApi.getById(accountId),
+      const accountData = await accountsApi.getById(accountId);
+      // A revolving line of credit uses the balance-history view, which loads
+      // its own daily balances; only the amortizing view needs transactions.
+      if (accountData.accountType === 'LINE_OF_CREDIT') {
+        setAccount(accountData);
+        setTransactions([]);
+        setScenarios([]);
+        return;
+      }
+      const [transactionsData, scenariosData] = await Promise.all([
         fetchAllAccountTransactions(accountId),
-        // Non-loan accounts reject scenarios; the page redirects them anyway
         loanScenariosApi.getAll(accountId).catch(() => [] as LoanScenario[]),
       ]);
       setAccount(accountData);
@@ -97,66 +92,13 @@ function AccountDetailContent() {
     }
   }, [accountId]);
 
-  const handleLoadScenario = useCallback((loaded: OverpaymentPlan | null) => {
-    setPlan(loaded);
-    setLoadedPlan(loaded);
-    setLoadedPlanVersion((version) => version + 1);
-  }, []);
-
-  const isLoanAccount = !account || LOAN_ACCOUNT_TYPES.includes(account.accountType);
-
   // The detail view only exists for debt accounts; anything else lands on its
   // transaction register instead.
   useEffect(() => {
-    if (account && !LOAN_ACCOUNT_TYPES.includes(account.accountType)) {
+    if (account && !DEBT_ACCOUNT_TYPES.includes(account.accountType)) {
       router.replace(`/transactions?accountId=${account.id}`);
     }
   }, [account, router]);
-
-  const history = useMemo(
-    () => (account && isLoanAccount ? deriveLoanPaymentHistory(account, transactions) : null),
-    [account, transactions, isLoanAccount],
-  );
-
-  const projectionInput = useMemo(() => {
-    if (!account || !history) return null;
-    const canProject =
-      history.currentBalance > 0.01 &&
-      account.interestRate != null &&
-      account.paymentAmount &&
-      account.paymentAmount > 0 &&
-      account.paymentFrequency;
-    if (!canProject) return null;
-
-    const frequency = account.paymentFrequency as ScheduleFrequency;
-    return {
-      startingBalance: history.currentBalance,
-      annualRate: account.interestRate!,
-      paymentAmount: account.paymentAmount!,
-      frequency,
-      isCanadian: account.isCanadianMortgage || false,
-      isVariableRate: account.isVariableRate || false,
-      firstPaymentDate: advanceDate(new Date(), frequency),
-    };
-  }, [account, history]);
-
-  const baseline = useMemo(
-    () => (projectionInput ? generateLoanSchedule(projectionInput) : null),
-    [projectionInput],
-  );
-
-  const scenario = useMemo(
-    () =>
-      projectionInput && plan
-        ? generateLoanSchedule({ ...projectionInput, overpayments: plan })
-        : null,
-    [projectionInput, plan],
-  );
-
-  const comparison = useMemo(
-    () => (baseline && scenario ? compareSchedules(baseline, scenario) : null),
-    [baseline, scenario],
-  );
 
   if (isLoading) {
     return (
@@ -168,7 +110,7 @@ function AccountDetailContent() {
     );
   }
 
-  if (error || !account || !history) {
+  if (error || !account) {
     return (
       <PageLayout>
         <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
@@ -185,7 +127,7 @@ function AccountDetailContent() {
     );
   }
 
-  if (!isLoanAccount) {
+  if (!isDebtAccount) {
     // Redirecting to the transaction register (see effect above)
     return (
       <PageLayout>
@@ -217,50 +159,16 @@ function AccountDetailContent() {
           }
         />
 
-        <div className="space-y-6">
-          <LoanSummaryCards
+        {isRevolving ? (
+          <LineOfCreditView account={account} />
+        ) : (
+          <LoanDetailView
             account={account}
-            startingBalance={history.startingBalance}
-            baseline={baseline}
+            transactions={transactions}
+            scenarios={scenarios}
+            onScenariosChanged={reloadScenarios}
           />
-
-          {projectionInput && (
-            <OverpaymentSimulator
-              accountId={account.id}
-              onPlanChange={setPlan}
-              loadedPlan={loadedPlan}
-              loadedPlanVersion={loadedPlanVersion}
-            />
-          )}
-
-          {projectionInput && (
-            <SavedScenariosPanel
-              accountId={account.id}
-              scenarios={scenarios}
-              activePlan={plan}
-              onLoad={handleLoadScenario}
-              onScenariosChanged={reloadScenarios}
-            />
-          )}
-
-          {comparison && (
-            <ComparisonSummaryCards comparison={comparison} currencyCode={account.currencyCode} />
-          )}
-
-          <PayoffComparisonChart
-            historyEvents={history.events}
-            baseline={baseline}
-            scenario={scenario}
-          />
-
-          <PastImpactSection account={account} history={history} />
-
-          <AmortizationScheduleTable
-            historyEvents={history.events}
-            projectionRows={(scenario ?? baseline)?.rows ?? []}
-            currencyCode={account.currencyCode}
-          />
-        </div>
+        )}
       </main>
     </PageLayout>
   );

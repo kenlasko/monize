@@ -46,11 +46,19 @@ vi.mock('@/hooks/useNumberFormat', () => ({
 
 const mockGetById = vi.fn();
 const mockDetectLoanPayments = vi.fn();
+const mockGetDailyBalances = vi.fn();
 vi.mock('@/lib/accounts', () => ({
   accountsApi: {
     getById: (...args: unknown[]) => mockGetById(...args),
     detectLoanPayments: (...args: unknown[]) => mockDetectLoanPayments(...args),
+    getDailyBalances: (...args: unknown[]) => mockGetDailyBalances(...args),
   },
+}));
+
+// The line-of-credit view renders the register's balance-history chart; keep
+// it light here (it has its own tests).
+vi.mock('@/components/transactions/BalanceHistoryChart', () => ({
+  BalanceHistoryChart: () => <div data-testid="balance-history-chart" />,
 }));
 
 const mockGetAllTransactions = vi.fn();
@@ -120,6 +128,7 @@ async function renderPage() {
 beforeEach(() => {
   vi.clearAllMocks();
   mockDetectLoanPayments.mockResolvedValue(null);
+  mockGetDailyBalances.mockResolvedValue([]);
   mockGetAllScenarios.mockResolvedValue([]);
   mockGetAllTransactions.mockResolvedValue({
     data: [
@@ -164,6 +173,30 @@ describe('AccountDetailPage', () => {
     await renderPage();
 
     expect(mockReplace).toHaveBeenCalledWith('/transactions?accountId=loan-1');
+  });
+
+  it('shows the revolving balance-history view for a line of credit', async () => {
+    mockGetById.mockResolvedValue(
+      makeAccount({
+        accountType: 'LINE_OF_CREDIT',
+        name: 'Home Equity Line',
+        openingBalance: 0,
+        currentBalance: -3000,
+        creditLimit: 10000,
+      }),
+    );
+
+    await renderPage();
+
+    expect(screen.getByText('Home Equity Line')).toBeInTheDocument();
+    expect(screen.getByText('Credit Limit')).toBeInTheDocument();
+    expect(screen.getByText('Balance History')).toBeInTheDocument();
+    // Revolving accounts get the balance view, not the amortization schedule
+    expect(screen.queryByText('Installment Schedule')).not.toBeInTheDocument();
+    expect(mockGetDailyBalances).toHaveBeenCalledWith({ accountIds: 'loan-1' });
+    // Transactions are not fetched for the revolving view
+    expect(mockGetAllTransactions).not.toHaveBeenCalled();
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 
   it('shows an error state with a back button when loading fails', async () => {
