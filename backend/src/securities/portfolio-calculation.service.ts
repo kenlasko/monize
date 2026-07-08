@@ -1341,7 +1341,6 @@ export class PortfolioCalculationService {
     sortedHoldings: HoldingWithMarketValue[],
     holdings: Holding[],
     totalCashValue: number,
-    totalPortfolioValue: number,
     defaultCurrency: string,
     rateCache: Map<string, number>,
   ): Promise<AllocationItem[]> {
@@ -1356,21 +1355,6 @@ export class PortfolioCalculationService {
       "#eab308",
       "#ef4444",
     ];
-
-    if (totalCashValue > 0) {
-      allocation.push({
-        name: "Cash",
-        symbol: null,
-        type: "cash",
-        value: totalCashValue,
-        percentage:
-          totalPortfolioValue > 0
-            ? (totalCashValue / totalPortfolioValue) * 100
-            : 0,
-        color: "#6b7280",
-        currencyCode: defaultCurrency,
-      });
-    }
 
     // Consolidate holdings by security so the same security held across
     // multiple accounts appears as a single allocation slice.
@@ -1412,6 +1396,30 @@ export class PortfolioCalculationService {
       (a, b) => b.value - a.value,
     );
 
+    // Percentages are measured against the sum of the slices actually drawn
+    // (positive security values plus positive cash), not the net portfolio
+    // value. Using the net value would let a negative cash balance (margin /
+    // loan) or a short position shrink the denominator and inflate every
+    // slice past 100%; the drawn total always reconciles to ~100%.
+    const positiveCash = totalCashValue > 0 ? totalCashValue : 0;
+    const drawnTotal =
+      consolidatedItems.reduce((sum, item) => sum + item.value, 0) +
+      positiveCash;
+    const pct = (value: number) =>
+      drawnTotal > 0 ? (value / drawnTotal) * 100 : 0;
+
+    if (totalCashValue > 0) {
+      allocation.push({
+        name: "Cash",
+        symbol: null,
+        type: "cash",
+        value: totalCashValue,
+        percentage: pct(totalCashValue),
+        color: "#6b7280",
+        currencyCode: defaultCurrency,
+      });
+    }
+
     let colorIndex = 0;
     for (const item of consolidatedItems) {
       allocation.push({
@@ -1419,10 +1427,7 @@ export class PortfolioCalculationService {
         symbol: item.symbol,
         type: "security",
         value: item.value,
-        percentage:
-          totalPortfolioValue > 0
-            ? (item.value / totalPortfolioValue) * 100
-            : 0,
+        percentage: pct(item.value),
         color: colors[colorIndex % colors.length],
         currencyCode: item.currencyCode,
       });
@@ -1457,7 +1462,6 @@ export class PortfolioCalculationService {
       Array<{ id: string; name: string; color: string | null }>
     >,
     totalCashValue: number,
-    totalPortfolioValue: number,
     defaultCurrency: string,
   ): AllocationItem[] {
     const palette = [
@@ -1477,9 +1481,14 @@ export class PortfolioCalculationService {
       { name: string; color: string | null; value: number }
     >();
     let untaggedValue = 0;
+    // Sum of every security slice that lands on the chart (tagged or not).
+    // This, plus positive cash, is the denominator so tag and Untagged slices
+    // share one base and reconcile to ~100%.
+    let includedSecuritiesValue = 0;
 
     for (const item of securityItems) {
       if (item.type !== "security" || item.value <= 0) continue;
+      includedSecuritiesValue += item.value;
       const tags = item.symbol ? (tagsBySymbol.get(item.symbol) ?? []) : [];
       if (tags.length === 0) {
         untaggedValue += item.value;
@@ -1499,8 +1508,10 @@ export class PortfolioCalculationService {
       }
     }
 
+    const positiveCash = totalCashValue > 0 ? totalCashValue : 0;
+    const drawnTotal = includedSecuritiesValue + positiveCash;
     const pct = (value: number) =>
-      totalPortfolioValue > 0 ? (value / totalPortfolioValue) * 100 : 0;
+      drawnTotal > 0 ? (value / drawnTotal) * 100 : 0;
 
     const allocation: AllocationItem[] = [];
 
