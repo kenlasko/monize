@@ -5,6 +5,7 @@ import {
   IsBoolean,
   IsInt,
   IsArray,
+  IsObject,
   Min,
   Max,
   MaxLength,
@@ -12,6 +13,7 @@ import {
   Matches,
   IsIn,
 } from "class-validator";
+import { IsDashboardWidgetConfig } from "../validators/is-dashboard-widget-config.validator";
 
 export class UpdatePreferencesDto {
   @ApiPropertyOptional({
@@ -179,6 +181,19 @@ export class UpdatePreferencesDto {
   })
   @ArrayMaxSize(50)
   dashboardWidgets?: string[];
+
+  @ApiPropertyOptional({
+    description:
+      "Per-widget dashboard settings (timeframe, account selection, chart type) keyed by widget id",
+    example: {
+      "spending-by-payee": { range: "3m" },
+      "income-by-source": { range: "1y", chartType: "pie" },
+    },
+  })
+  @IsOptional()
+  @IsObject()
+  @IsDashboardWidgetConfig()
+  dashboardWidgetConfig?: Record<string, unknown>;
 
   @ApiPropertyOptional({
     description: "Show the Created At field in transaction forms",

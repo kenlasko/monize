@@ -154,5 +154,96 @@
     "title": "즐겨찾기 보고서",
     "empty": "즐겨찾기 보고서가 없습니다. 보고서 페이지에서 보고서에 별표를 표시하면 여기에 나타납니다.",
     "browseReports": "보고서 둘러보기"
+  },
+  "widgets": {
+    "configure": "{name} 구성",
+    "done": "완료",
+    "configSaveFailed": "위젯 설정을 저장하지 못했습니다. 다시 시도해 주세요.",
+    "timeframe": "기간",
+    "accounts": "계정",
+    "chartType": "차트 유형",
+    "view": "보기",
+    "rangeLabels": {
+      "1m": "1M",
+      "3m": "3M",
+      "6m": "6M",
+      "1y": "1Y",
+      "2y": "2Y",
+      "5y": "5Y",
+      "ytd": "YTD",
+      "all": "전체"
+    }
+  },
+  "portfolioValue": {
+    "title": "포트폴리오 가치",
+    "empty": "아직 표시할 투자 내역이 없습니다."
+  },
+  "spendingByPayee": {
+    "title": "수취인별 지출",
+    "empty": "이 기간에 지출이 없습니다.",
+    "totalLabel": "합계"
+  },
+  "monthlySpendingTrend": {
+    "title": "월별 지출 추세",
+    "empty": "이 기간에 데이터가 없습니다.",
+    "expenses": "지출",
+    "income": "수익"
+  },
+  "incomeBySource": {
+    "title": "출처별 수익",
+    "empty": "이 기간에 수익이 없습니다.",
+    "totalLabel": "총 수익"
+  },
+  "creditUtilizationAccounts": {
+    "title": "계정별 신용 활용도",
+    "empty": "한도가 설정된 신용 계정이 없습니다.",
+    "utilization": "활용도",
+    "used": "사용액"
+  },
+  "creditUtilizationTotal": {
+    "title": "총 신용 활용도",
+    "empty": "한도가 설정된 신용 계정이 없습니다.",
+    "used": "사용액",
+    "available": "가용 한도"
+  },
+  "sectorWeightings": {
+    "title": "섹터 배분",
+    "empty": "이용 가능한 섹터 데이터가 없습니다.",
+    "direct": "직접",
+    "etf": "ETF"
+  },
+  "securityTypeAllocation": {
+    "title": "유가증권 유형 배분",
+    "empty": "표시할 보유 항목이 없습니다.",
+    "types": {
+      "STOCK": "주식",
+      "ETF": "ETF",
+      "MUTUAL_FUND": "뮤추얼 펀드",
+      "BOND": "채권",
+      "CASH": "현금"
+    }
+  },
+  "geographicAllocation": {
+    "title": "지역별 배분",
+    "empty": "표시할 보유 항목이 없습니다.",
+    "viewRegion": "지역",
+    "viewExchange": "거래소",
+    "viewCountry": "국가"
+  },
+  "recurringExpenses": {
+    "title": "주요 반복 지출",
+    "empty": "반복 지출을 찾을 수 없습니다.",
+    "minOccurrences": "최소 발생 횟수",
+    "minOccurrencesOption": "{count}회 이상",
+    "occurrences": "{count}회 발생",
+    "monthlyEstimate": "월 예상액"
+  },
+  "weekendVsWeekday": {
+    "title": "주말 대 평일 지출",
+    "empty": "이 기간에 지출이 없습니다.",
+    "weekendLabel": "주말",
+    "weekdayLabel": "평일",
+    "viewOverview": "개요",
+    "viewByDay": "요일별"
   }
 }

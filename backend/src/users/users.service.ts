@@ -205,6 +205,9 @@ export class UsersService {
     if (dto.dashboardWidgets !== undefined) {
       preferences.dashboardWidgets = dto.dashboardWidgets;
     }
+    if (dto.dashboardWidgetConfig !== undefined) {
+      preferences.dashboardWidgetConfig = dto.dashboardWidgetConfig;
+    }
     if (dto.showCreatedAt !== undefined) {
       preferences.showCreatedAt = dto.showCreatedAt;
     }

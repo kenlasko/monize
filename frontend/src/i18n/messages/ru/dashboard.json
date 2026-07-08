@@ -154,5 +154,96 @@
     "title": "Избранные отчёты",
     "empty": "Нет избранных отчётов. Отметьте отчёты звёздочкой на странице отчётов, чтобы видеть их здесь.",
     "browseReports": "Просмотреть отчёты"
+  },
+  "widgets": {
+    "configure": "Настроить {name}",
+    "done": "Готово",
+    "configSaveFailed": "Не удалось сохранить настройки виджета. Повторите попытку.",
+    "timeframe": "Период",
+    "accounts": "Счета",
+    "chartType": "Тип диаграммы",
+    "view": "Вид",
+    "rangeLabels": {
+      "1m": "1M",
+      "3m": "3M",
+      "6m": "6M",
+      "1y": "1Y",
+      "2y": "2Y",
+      "5y": "5Y",
+      "ytd": "YTD",
+      "all": "Всё"
+    }
+  },
+  "portfolioValue": {
+    "title": "Стоимость портфеля",
+    "empty": "Пока нет истории инвестиций для отображения."
+  },
+  "spendingByPayee": {
+    "title": "Расходы по получателям",
+    "empty": "Нет расходов за этот период.",
+    "totalLabel": "Итого"
+  },
+  "monthlySpendingTrend": {
+    "title": "Ежемесячная тенденция расходов",
+    "empty": "Нет данных за этот период.",
+    "expenses": "Расходы",
+    "income": "Доходы"
+  },
+  "incomeBySource": {
+    "title": "Доходы по источникам",
+    "empty": "Нет доходов за этот период.",
+    "totalLabel": "Всего доходов"
+  },
+  "creditUtilizationAccounts": {
+    "title": "Использование кредита по счёту",
+    "empty": "Нет кредитных счетов с установленным лимитом.",
+    "utilization": "Использование",
+    "used": "Использовано"
+  },
+  "creditUtilizationTotal": {
+    "title": "Общее использование кредита",
+    "empty": "Нет кредитных счетов с установленным лимитом.",
+    "used": "Использовано",
+    "available": "Доступно"
+  },
+  "sectorWeightings": {
+    "title": "Отраслевое распределение",
+    "empty": "Нет данных по отраслям.",
+    "direct": "Прямое",
+    "etf": "ETF"
+  },
+  "securityTypeAllocation": {
+    "title": "Распределение по типам ценных бумаг",
+    "empty": "Нет активов для отображения.",
+    "types": {
+      "STOCK": "Акции",
+      "ETF": "ETF",
+      "MUTUAL_FUND": "Паевые фонды",
+      "BOND": "Облигации",
+      "CASH": "Наличные"
+    }
+  },
+  "geographicAllocation": {
+    "title": "Географическое распределение",
+    "empty": "Нет активов для отображения.",
+    "viewRegion": "Регион",
+    "viewExchange": "Биржа",
+    "viewCountry": "Страна"
+  },
+  "recurringExpenses": {
+    "title": "Основные регулярные расходы",
+    "empty": "Регулярные расходы не найдены.",
+    "minOccurrences": "Минимальное количество вхождений",
+    "minOccurrencesOption": "{count} или более",
+    "occurrences": "{count} вхождений",
+    "monthlyEstimate": "Ежемесячная оценка"
+  },
+  "weekendVsWeekday": {
+    "title": "Расходы в выходные против будней",
+    "empty": "Нет расходов за этот период.",
+    "weekendLabel": "Выходные",
+    "weekdayLabel": "Будни",
+    "viewOverview": "Обзор",
+    "viewByDay": "По дням"
   }
 }

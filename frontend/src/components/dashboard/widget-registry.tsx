@@ -34,6 +34,24 @@ const AssetsVsLiabilities = dynamic(() => import('./AssetsVsLiabilities').then(m
   loading: () => <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[500px]" />,
 });
 
+// Report-derived chart widgets (opt-in). Each self-fetches from the report APIs
+// and persists its own settings via the cross-device `dashboardWidgetConfig`
+// preference, so they are lazy-loaded to keep them off the default bundle.
+const widgetSkeleton = () => (
+  <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 sm:p-6 lg:min-h-[540px]" />
+);
+const PortfolioValueWidget = dynamic(() => import('./PortfolioValueWidget').then(m => m.PortfolioValueWidget), { ssr: false, loading: widgetSkeleton });
+const SpendingByPayeeWidget = dynamic(() => import('./SpendingByPayeeWidget').then(m => m.SpendingByPayeeWidget), { ssr: false, loading: widgetSkeleton });
+const MonthlySpendingTrendWidget = dynamic(() => import('./MonthlySpendingTrendWidget').then(m => m.MonthlySpendingTrendWidget), { ssr: false, loading: widgetSkeleton });
+const IncomeBySourceWidget = dynamic(() => import('./IncomeBySourceWidget').then(m => m.IncomeBySourceWidget), { ssr: false, loading: widgetSkeleton });
+const CreditUtilizationAccountsWidget = dynamic(() => import('./CreditUtilizationAccountsWidget').then(m => m.CreditUtilizationAccountsWidget), { ssr: false, loading: widgetSkeleton });
+const CreditUtilizationTotalWidget = dynamic(() => import('./CreditUtilizationTotalWidget').then(m => m.CreditUtilizationTotalWidget), { ssr: false, loading: widgetSkeleton });
+const SectorWeightingsWidget = dynamic(() => import('./SectorWeightingsWidget').then(m => m.SectorWeightingsWidget), { ssr: false, loading: widgetSkeleton });
+const SecurityTypeAllocationWidget = dynamic(() => import('./SecurityTypeAllocationWidget').then(m => m.SecurityTypeAllocationWidget), { ssr: false, loading: widgetSkeleton });
+const GeographicAllocationWidget = dynamic(() => import('./GeographicAllocationWidget').then(m => m.GeographicAllocationWidget), { ssr: false, loading: widgetSkeleton });
+const RecurringExpensesWidget = dynamic(() => import('./RecurringExpensesWidget').then(m => m.RecurringExpensesWidget), { ssr: false, loading: widgetSkeleton });
+const WeekendVsWeekdayWidget = dynamic(() => import('./WeekendVsWeekdayWidget').then(m => m.WeekendVsWeekdayWidget), { ssr: false, loading: widgetSkeleton });
+
 export type DashboardWidgetId =
   | 'favourite-accounts'
   | 'upcoming-bills'
@@ -45,7 +63,18 @@ export type DashboardWidgetId =
   | 'income-expenses'
   | 'budget-status'
   | 'insights'
-  | 'favourite-reports';
+  | 'favourite-reports'
+  | 'portfolio-value'
+  | 'spending-by-payee'
+  | 'monthly-spending-trend'
+  | 'income-by-source'
+  | 'credit-utilization-accounts'
+  | 'credit-utilization-total'
+  | 'sector-weightings'
+  | 'security-type-allocation'
+  | 'geographic-allocation'
+  | 'recurring-expenses'
+  | 'weekend-weekday';
 
 /** Everything the dashboard page loads, handed to each widget's render. */
 export interface DashboardWidgetContext {
@@ -193,6 +222,78 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     titleSection: 'favouriteReports',
     defaultEnabled: false,
     render: (ctx) => <FavouriteReportsWidget isLoading={ctx.isLoading} />,
+  },
+  // Report-derived chart widgets: all opt-in, each with its own persisted
+  // settings. Investment widgets are hidden unless the user has investments.
+  {
+    id: 'portfolio-value',
+    titleSection: 'portfolioValue',
+    defaultEnabled: false,
+    shouldRender: (ctx) => ctx.isLoading || ctx.hasInvestments,
+    render: (ctx) => <PortfolioValueWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
+  },
+  {
+    id: 'spending-by-payee',
+    titleSection: 'spendingByPayee',
+    defaultEnabled: false,
+    render: (ctx) => <SpendingByPayeeWidget isLoading={ctx.isLoading} />,
+  },
+  {
+    id: 'monthly-spending-trend',
+    titleSection: 'monthlySpendingTrend',
+    defaultEnabled: false,
+    render: (ctx) => <MonthlySpendingTrendWidget isLoading={ctx.isLoading} />,
+  },
+  {
+    id: 'income-by-source',
+    titleSection: 'incomeBySource',
+    defaultEnabled: false,
+    render: (ctx) => <IncomeBySourceWidget isLoading={ctx.isLoading} />,
+  },
+  {
+    id: 'credit-utilization-accounts',
+    titleSection: 'creditUtilizationAccounts',
+    defaultEnabled: false,
+    render: (ctx) => <CreditUtilizationAccountsWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
+  },
+  {
+    id: 'credit-utilization-total',
+    titleSection: 'creditUtilizationTotal',
+    defaultEnabled: false,
+    render: (ctx) => <CreditUtilizationTotalWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
+  },
+  {
+    id: 'sector-weightings',
+    titleSection: 'sectorWeightings',
+    defaultEnabled: false,
+    shouldRender: (ctx) => ctx.isLoading || ctx.hasInvestments,
+    render: (ctx) => <SectorWeightingsWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
+  },
+  {
+    id: 'security-type-allocation',
+    titleSection: 'securityTypeAllocation',
+    defaultEnabled: false,
+    shouldRender: (ctx) => ctx.isLoading || ctx.hasInvestments,
+    render: (ctx) => <SecurityTypeAllocationWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
+  },
+  {
+    id: 'geographic-allocation',
+    titleSection: 'geographicAllocation',
+    defaultEnabled: false,
+    shouldRender: (ctx) => ctx.isLoading || ctx.hasInvestments,
+    render: (ctx) => <GeographicAllocationWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
+  },
+  {
+    id: 'recurring-expenses',
+    titleSection: 'recurringExpenses',
+    defaultEnabled: false,
+    render: (ctx) => <RecurringExpensesWidget isLoading={ctx.isLoading} />,
+  },
+  {
+    id: 'weekend-weekday',
+    titleSection: 'weekendVsWeekday',
+    defaultEnabled: false,
+    render: (ctx) => <WeekendVsWeekdayWidget isLoading={ctx.isLoading} />,
   },
 ];
 

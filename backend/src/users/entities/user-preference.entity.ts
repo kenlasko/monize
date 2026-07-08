@@ -76,6 +76,18 @@ export class UserPreference {
   })
   dashboardWidgets: string[];
 
+  // Per-widget settings (timeframe, account selection, chart type, etc.) keyed
+  // by widget id. Empty object = every widget uses its built-in defaults.
+  // Typed as Record<string, any> (matching the other jsonb columns on
+  // relation-reachable entities, e.g. action-history) so TypeORM's DeepPartial
+  // stays satisfiable where UserPreference is reached through the User relation.
+  @Column({
+    name: "dashboard_widget_config",
+    type: "jsonb",
+    default: {},
+  })
+  dashboardWidgetConfig: Record<string, any>;
+
   @Column({ name: "show_created_at", default: false })
   showCreatedAt: boolean;
 

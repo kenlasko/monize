@@ -154,5 +154,96 @@
     "title": "Báo cáo yêu thích",
     "empty": "Chưa có báo cáo yêu thích nào. Gắn sao các báo cáo trên trang Báo cáo để xem tại đây.",
     "browseReports": "Xem các báo cáo"
+  },
+  "widgets": {
+    "configure": "Cấu hình {name}",
+    "done": "Xong",
+    "configSaveFailed": "Không thể lưu cài đặt tiện ích. Vui lòng thử lại.",
+    "timeframe": "Khung thời gian",
+    "accounts": "Tài khoản",
+    "chartType": "Loại biểu đồ",
+    "view": "Chế độ xem",
+    "rangeLabels": {
+      "1m": "1M",
+      "3m": "3M",
+      "6m": "6M",
+      "1y": "1Y",
+      "2y": "2Y",
+      "5y": "5Y",
+      "ytd": "YTD",
+      "all": "Tất cả"
+    }
+  },
+  "portfolioValue": {
+    "title": "Giá trị danh mục đầu tư",
+    "empty": "Chưa có lịch sử đầu tư để hiển thị."
+  },
+  "spendingByPayee": {
+    "title": "Chi tiêu theo người nhận",
+    "empty": "Không có chi tiêu trong kỳ này.",
+    "totalLabel": "Tổng"
+  },
+  "monthlySpendingTrend": {
+    "title": "Xu hướng chi tiêu hàng tháng",
+    "empty": "Không có dữ liệu trong kỳ này.",
+    "expenses": "Chi phí",
+    "income": "Thu nhập"
+  },
+  "incomeBySource": {
+    "title": "Thu nhập theo nguồn",
+    "empty": "Không có thu nhập trong kỳ này.",
+    "totalLabel": "Tổng thu nhập"
+  },
+  "creditUtilizationAccounts": {
+    "title": "Mức sử dụng tín dụng theo tài khoản",
+    "empty": "Không có tài khoản tín dụng nào được đặt hạn mức.",
+    "utilization": "Mức sử dụng",
+    "used": "Đã dùng"
+  },
+  "creditUtilizationTotal": {
+    "title": "Tổng mức sử dụng tín dụng",
+    "empty": "Không có tài khoản tín dụng nào được đặt hạn mức.",
+    "used": "Đã dùng",
+    "available": "Khả dụng"
+  },
+  "sectorWeightings": {
+    "title": "Phân bổ ngành",
+    "empty": "Không có dữ liệu ngành.",
+    "direct": "Trực tiếp",
+    "etf": "ETF"
+  },
+  "securityTypeAllocation": {
+    "title": "Phân bổ theo loại chứng khoán",
+    "empty": "Không có vị thế để hiển thị.",
+    "types": {
+      "STOCK": "Cổ phiếu",
+      "ETF": "ETFs",
+      "MUTUAL_FUND": "Quỹ tương hỗ",
+      "BOND": "Trái phiếu",
+      "CASH": "Tiền mặt"
+    }
+  },
+  "geographicAllocation": {
+    "title": "Phân bổ theo địa lý",
+    "empty": "Không có vị thế để hiển thị.",
+    "viewRegion": "Khu vực",
+    "viewExchange": "Sàn giao dịch",
+    "viewCountry": "Quốc gia"
+  },
+  "recurringExpenses": {
+    "title": "Chi phí định kỳ hàng đầu",
+    "empty": "Không tìm thấy chi phí định kỳ nào.",
+    "minOccurrences": "Số lần xuất hiện tối thiểu",
+    "minOccurrencesOption": "{count} trở lên",
+    "occurrences": "{count} lần xuất hiện",
+    "monthlyEstimate": "Ước tính hàng tháng"
+  },
+  "weekendVsWeekday": {
+    "title": "Chi tiêu cuối tuần so với ngày thường",
+    "empty": "Không có chi tiêu trong kỳ này.",
+    "weekendLabel": "Cuối tuần",
+    "weekdayLabel": "Ngày thường",
+    "viewOverview": "Tổng quan",
+    "viewByDay": "Theo ngày"
   }
 }

@@ -154,5 +154,96 @@
     "title": "Favoritenberichte",
     "empty": "Noch keine Favoritenberichte. Markieren Sie Berichte auf der Berichteseite mit einem Stern, um sie hier zu sehen.",
     "browseReports": "Berichte durchsuchen"
+  },
+  "widgets": {
+    "configure": "{name} konfigurieren",
+    "done": "Fertig",
+    "configSaveFailed": "Widget-Einstellungen konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.",
+    "timeframe": "Zeitraum",
+    "accounts": "Konten",
+    "chartType": "Diagrammtyp",
+    "view": "Ansicht",
+    "rangeLabels": {
+      "1m": "1M",
+      "3m": "3M",
+      "6m": "6M",
+      "1y": "1Y",
+      "2y": "2Y",
+      "5y": "5Y",
+      "ytd": "YTD",
+      "all": "Alle"
+    }
+  },
+  "portfolioValue": {
+    "title": "Portfolio-Wert",
+    "empty": "Noch keine Anlagehistorie vorhanden."
+  },
+  "spendingByPayee": {
+    "title": "Ausgaben nach Zahlungsempfänger",
+    "empty": "Keine Ausgaben in diesem Zeitraum.",
+    "totalLabel": "Gesamt"
+  },
+  "monthlySpendingTrend": {
+    "title": "Monatlicher Ausgabentrend",
+    "empty": "Keine Daten für diesen Zeitraum.",
+    "expenses": "Ausgaben",
+    "income": "Einnahmen"
+  },
+  "incomeBySource": {
+    "title": "Einnahmen nach Quelle",
+    "empty": "Keine Einnahmen in diesem Zeitraum.",
+    "totalLabel": "Gesamteinnahmen"
+  },
+  "creditUtilizationAccounts": {
+    "title": "Kreditauslastung nach Konto",
+    "empty": "Keine Kreditkonten mit festgelegtem Limit.",
+    "utilization": "Auslastung",
+    "used": "Genutzt"
+  },
+  "creditUtilizationTotal": {
+    "title": "Gesamte Kreditauslastung",
+    "empty": "Keine Kreditkonten mit festgelegtem Limit.",
+    "used": "Genutzt",
+    "available": "Verfügbar"
+  },
+  "sectorWeightings": {
+    "title": "Sektorallokation",
+    "empty": "Keine Sektordaten verfügbar.",
+    "direct": "Direkt",
+    "etf": "ETF"
+  },
+  "securityTypeAllocation": {
+    "title": "Wertpapiertyp-Allokation",
+    "empty": "Keine Bestände vorhanden.",
+    "types": {
+      "STOCK": "Aktien",
+      "ETF": "ETFs",
+      "MUTUAL_FUND": "Investmentfonds",
+      "BOND": "Anleihen",
+      "CASH": "Bargeld"
+    }
+  },
+  "geographicAllocation": {
+    "title": "Geografische Allokation",
+    "empty": "Keine Bestände vorhanden.",
+    "viewRegion": "Region",
+    "viewExchange": "Börse",
+    "viewCountry": "Land"
+  },
+  "recurringExpenses": {
+    "title": "Top wiederkehrende Ausgaben",
+    "empty": "Keine wiederkehrenden Ausgaben gefunden.",
+    "minOccurrences": "Mindestanzahl Vorkommen",
+    "minOccurrencesOption": "{count} oder mehr",
+    "occurrences": "{count} Vorkommen",
+    "monthlyEstimate": "Monatliche Schätzung"
+  },
+  "weekendVsWeekday": {
+    "title": "Wochenend- vs. Wochentagsausgaben",
+    "empty": "Keine Ausgaben in diesem Zeitraum.",
+    "weekendLabel": "Wochenende",
+    "weekdayLabel": "Wochentag",
+    "viewOverview": "Übersicht",
+    "viewByDay": "Nach Tag"
   }
 }

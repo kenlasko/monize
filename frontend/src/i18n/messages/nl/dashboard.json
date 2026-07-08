@@ -154,5 +154,96 @@
     "title": "Favoriete rapporten",
     "empty": "Nog geen favoriete rapporten. Markeer rapporten met een ster op de pagina Rapporten om ze hier te zien.",
     "browseReports": "Rapporten bekijken"
+  },
+  "widgets": {
+    "configure": "{name} configureren",
+    "done": "Klaar",
+    "configSaveFailed": "Kon de widgetinstellingen niet opslaan. Probeer het opnieuw.",
+    "timeframe": "Tijdsbestek",
+    "accounts": "Rekeningen",
+    "chartType": "Grafiektype",
+    "view": "Weergave",
+    "rangeLabels": {
+      "1m": "1M",
+      "3m": "3M",
+      "6m": "6M",
+      "1y": "1Y",
+      "2y": "2Y",
+      "5y": "5Y",
+      "ytd": "YTD",
+      "all": "Alle"
+    }
+  },
+  "portfolioValue": {
+    "title": "Portefeuillewaarde",
+    "empty": "Nog geen beleggingsgeschiedenis om te tonen."
+  },
+  "spendingByPayee": {
+    "title": "Uitgaven per begunstigde",
+    "empty": "Geen uitgaven in deze periode.",
+    "totalLabel": "Totaal"
+  },
+  "monthlySpendingTrend": {
+    "title": "Maandelijkse uitgaventrend",
+    "empty": "Geen gegevens voor deze periode.",
+    "expenses": "Uitgaven",
+    "income": "Inkomsten"
+  },
+  "incomeBySource": {
+    "title": "Inkomsten per bron",
+    "empty": "Geen inkomsten in deze periode.",
+    "totalLabel": "Totale inkomsten"
+  },
+  "creditUtilizationAccounts": {
+    "title": "Benutting per rekening",
+    "empty": "Geen kredietrekeningen met een ingestelde limiet.",
+    "utilization": "Benutting",
+    "used": "Gebruikt"
+  },
+  "creditUtilizationTotal": {
+    "title": "Totale benutting",
+    "empty": "Geen kredietrekeningen met een ingestelde limiet.",
+    "used": "Gebruikt",
+    "available": "Beschikbaar"
+  },
+  "sectorWeightings": {
+    "title": "Sectorallocatie",
+    "empty": "Geen sectorgegevens beschikbaar.",
+    "direct": "Direct",
+    "etf": "ETF"
+  },
+  "securityTypeAllocation": {
+    "title": "Allocatie per type waardepapier",
+    "empty": "Geen posities om te tonen.",
+    "types": {
+      "STOCK": "Aandelen",
+      "ETF": "ETFs",
+      "MUTUAL_FUND": "Beleggingsfondsen",
+      "BOND": "Obligaties",
+      "CASH": "Contanten"
+    }
+  },
+  "geographicAllocation": {
+    "title": "Geografische allocatie",
+    "empty": "Geen posities om te tonen.",
+    "viewRegion": "Regio",
+    "viewExchange": "Beurs",
+    "viewCountry": "Land"
+  },
+  "recurringExpenses": {
+    "title": "Grootste terugkerende uitgaven",
+    "empty": "Geen terugkerende uitgaven gevonden.",
+    "minOccurrences": "Minimaal aantal keer",
+    "minOccurrencesOption": "{count} of meer",
+    "occurrences": "{count} keer",
+    "monthlyEstimate": "Maandelijkse schatting"
+  },
+  "weekendVsWeekday": {
+    "title": "Weekend- vs. weekdaguitgaven",
+    "empty": "Geen uitgaven in deze periode.",
+    "weekendLabel": "Weekend",
+    "weekdayLabel": "Weekdag",
+    "viewOverview": "Overzicht",
+    "viewByDay": "Per dag"
   }
 }

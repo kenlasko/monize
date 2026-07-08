@@ -154,5 +154,96 @@
     "title": "お気に入りのレポート",
     "empty": "お気に入りのレポートがまだありません。レポートページでレポートをスターするとここに表示されます。",
     "browseReports": "レポートを見る"
+  },
+  "widgets": {
+    "configure": "{name}を設定",
+    "done": "完了",
+    "configSaveFailed": "ウィジェット設定を保存できませんでした。もう一度お試しください。",
+    "timeframe": "期間",
+    "accounts": "口座",
+    "chartType": "グラフの種類",
+    "view": "表示",
+    "rangeLabels": {
+      "1m": "1M",
+      "3m": "3M",
+      "6m": "6M",
+      "1y": "1Y",
+      "2y": "2Y",
+      "5y": "5Y",
+      "ytd": "YTD",
+      "all": "すべて"
+    }
+  },
+  "portfolioValue": {
+    "title": "ポートフォリオ価値",
+    "empty": "表示する投資履歴がまだありません。"
+  },
+  "spendingByPayee": {
+    "title": "支払先別支出",
+    "empty": "この期間に支出がありません。",
+    "totalLabel": "合計"
+  },
+  "monthlySpendingTrend": {
+    "title": "月次支出トレンド",
+    "empty": "この期間のデータがありません。",
+    "expenses": "支出",
+    "income": "収入"
+  },
+  "incomeBySource": {
+    "title": "収入源別収入",
+    "empty": "この期間に収入がありません。",
+    "totalLabel": "総収入"
+  },
+  "creditUtilizationAccounts": {
+    "title": "口座別使用率",
+    "empty": "限度額が設定されたクレジット口座がありません。",
+    "utilization": "使用率",
+    "used": "使用額"
+  },
+  "creditUtilizationTotal": {
+    "title": "合計使用率",
+    "empty": "限度額が設定されたクレジット口座がありません。",
+    "used": "使用額",
+    "available": "利用可能額"
+  },
+  "sectorWeightings": {
+    "title": "セクター配分",
+    "empty": "セクターデータがありません。",
+    "direct": "直接",
+    "etf": "ETF"
+  },
+  "securityTypeAllocation": {
+    "title": "有価証券タイプ配分",
+    "empty": "表示する保有銘柄がありません。",
+    "types": {
+      "STOCK": "株式",
+      "ETF": "ETF",
+      "MUTUAL_FUND": "投資信託",
+      "BOND": "債券",
+      "CASH": "現金"
+    }
+  },
+  "geographicAllocation": {
+    "title": "地域配分",
+    "empty": "表示する保有銘柄がありません。",
+    "viewRegion": "地域",
+    "viewExchange": "取引所",
+    "viewCountry": "国"
+  },
+  "recurringExpenses": {
+    "title": "上位定期費用",
+    "empty": "定期費用が見つかりません。",
+    "minOccurrences": "最小発生回数",
+    "minOccurrencesOption": "{count} 回以上",
+    "occurrences": "{count} 回",
+    "monthlyEstimate": "月次見積もり"
+  },
+  "weekendVsWeekday": {
+    "title": "週末 vs 平日の支出",
+    "empty": "この期間に支出がありません。",
+    "weekendLabel": "週末",
+    "weekdayLabel": "平日",
+    "viewOverview": "概要",
+    "viewByDay": "曜日別"
   }
 }

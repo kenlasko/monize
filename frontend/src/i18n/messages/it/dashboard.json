@@ -154,5 +154,96 @@
     "title": "Report preferiti",
     "empty": "Nessun report preferito. Aggiungi una stella ai report nella pagina Report per vederli qui.",
     "browseReports": "Sfoglia i report"
+  },
+  "widgets": {
+    "configure": "Configura {name}",
+    "done": "Fine",
+    "configSaveFailed": "Impossibile salvare le impostazioni del widget. Riprova.",
+    "timeframe": "Intervallo di tempo",
+    "accounts": "Conti",
+    "chartType": "Tipo di grafico",
+    "view": "Vista",
+    "rangeLabels": {
+      "1m": "1M",
+      "3m": "3M",
+      "6m": "6M",
+      "1y": "1Y",
+      "2y": "2Y",
+      "5y": "5Y",
+      "ytd": "YTD",
+      "all": "Tutti"
+    }
+  },
+  "portfolioValue": {
+    "title": "Valore del portafoglio",
+    "empty": "Nessuno storico investimenti da mostrare per ora."
+  },
+  "spendingByPayee": {
+    "title": "Uscite per beneficiario",
+    "empty": "Nessuna uscita in questo periodo.",
+    "totalLabel": "Totale"
+  },
+  "monthlySpendingTrend": {
+    "title": "Andamento mensile delle uscite",
+    "empty": "Nessun dato per questo periodo.",
+    "expenses": "Uscite",
+    "income": "Entrate"
+  },
+  "incomeBySource": {
+    "title": "Entrate per fonte",
+    "empty": "Nessuna entrata in questo periodo.",
+    "totalLabel": "Totale entrate"
+  },
+  "creditUtilizationAccounts": {
+    "title": "Utilizzo per conto",
+    "empty": "Nessun conto di credito con un limite impostato.",
+    "utilization": "Utilizzo",
+    "used": "Utilizzato"
+  },
+  "creditUtilizationTotal": {
+    "title": "Utilizzo totale",
+    "empty": "Nessun conto di credito con un limite impostato.",
+    "used": "Utilizzato",
+    "available": "Disponibile"
+  },
+  "sectorWeightings": {
+    "title": "Allocazione per settore",
+    "empty": "Nessun dato di settore disponibile.",
+    "direct": "Diretta",
+    "etf": "ETF"
+  },
+  "securityTypeAllocation": {
+    "title": "Allocazione per tipo di titolo",
+    "empty": "Nessuna posizione da mostrare.",
+    "types": {
+      "STOCK": "Azioni",
+      "ETF": "ETF",
+      "MUTUAL_FUND": "Fondi comuni",
+      "BOND": "Obbligazioni",
+      "CASH": "Contanti"
+    }
+  },
+  "geographicAllocation": {
+    "title": "Allocazione geografica",
+    "empty": "Nessuna posizione da mostrare.",
+    "viewRegion": "Regione",
+    "viewExchange": "Borsa",
+    "viewCountry": "Paese"
+  },
+  "recurringExpenses": {
+    "title": "Principali spese ricorrenti",
+    "empty": "Nessuna spesa ricorrente trovata.",
+    "minOccurrences": "Occorrenze minime",
+    "minOccurrencesOption": "{count} o più",
+    "occurrences": "{count} occorrenze",
+    "monthlyEstimate": "Stima mensile"
+  },
+  "weekendVsWeekday": {
+    "title": "Uscite weekend vs giorni feriali",
+    "empty": "Nessuna uscita in questo periodo.",
+    "weekendLabel": "Weekend",
+    "weekdayLabel": "Giorni feriali",
+    "viewOverview": "Panoramica",
+    "viewByDay": "Per giorno"
   }
 }
