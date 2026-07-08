@@ -22,6 +22,13 @@ vi.mock('@/lib/loan-scenarios', () => ({
   },
 }));
 
+const mockRateChangesGetAll = vi.fn();
+vi.mock('@/lib/loan-rate-changes', () => ({
+  loanRateChangesApi: {
+    getAll: (...args: unknown[]) => mockRateChangesGetAll(...args),
+  },
+}));
+
 const mockFetchAllTransactions = vi.fn();
 vi.mock('@/lib/loan-history', () => ({
   fetchAllAccountTransactions: (...args: unknown[]) => mockFetchAllTransactions(...args),
@@ -74,6 +81,7 @@ beforeEach(() => {
   loanViewProps = undefined;
   locViewAccount = undefined;
   mockScenariosGetAll.mockResolvedValue([]);
+  mockRateChangesGetAll.mockResolvedValue([]);
   mockFetchAllTransactions.mockResolvedValue([
     { id: 'tx-1', accountId: 'loan-1', transactionDate: '2026-01-15', amount: 450 },
   ]);

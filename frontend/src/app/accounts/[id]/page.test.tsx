@@ -82,6 +82,17 @@ vi.mock('@/lib/loan-scenarios', async (importOriginal) => {
   };
 });
 
+const mockGetAllRateChanges = vi.fn();
+vi.mock('@/lib/loan-rate-changes', () => ({
+  loanRateChangesApi: {
+    getAll: (...args: unknown[]) => mockGetAllRateChanges(...args),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    detect: vi.fn(),
+  },
+}));
+
 vi.mock('@/components/layout/PageLayout', () => ({
   PageLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
@@ -130,6 +141,7 @@ beforeEach(() => {
   mockDetectLoanPayments.mockResolvedValue(null);
   mockGetDailyBalances.mockResolvedValue([]);
   mockGetAllScenarios.mockResolvedValue([]);
+  mockGetAllRateChanges.mockResolvedValue([]);
   mockGetAllTransactions.mockResolvedValue({
     data: [
       {
