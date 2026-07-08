@@ -491,7 +491,6 @@ export class PortfolioService {
       sortedHoldings,
       holdingsResult.holdings,
       totalCashValue,
-      totalPortfolioValue,
       defaultCurrency,
       rateCache,
     );
@@ -939,7 +938,6 @@ export class PortfolioService {
       securityItems,
       tagsBySymbol,
       totalCashValue,
-      summary.totalPortfolioValue,
       defaultCurrency,
     );
     return { allocation, totalValue: summary.totalPortfolioValue };
