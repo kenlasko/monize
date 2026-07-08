@@ -163,6 +163,9 @@
     "accounts": "계정",
     "chartType": "차트 유형",
     "view": "보기",
+    "displayName": "표시 이름",
+    "description": "설명",
+    "descriptionPlaceholder": "선택적인 설명을 추가하세요",
     "rangeLabels": {
       "1m": "1M",
       "3m": "3M",

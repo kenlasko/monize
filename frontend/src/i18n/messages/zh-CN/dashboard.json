@@ -163,6 +163,9 @@
     "accounts": "账户",
     "chartType": "图表类型",
     "view": "视图",
+    "displayName": "显示名称",
+    "description": "描述",
+    "descriptionPlaceholder": "添加可选描述",
     "rangeLabels": {
       "1m": "1M",
       "3m": "3M",

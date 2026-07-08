@@ -163,6 +163,9 @@
     "accounts": "Tài khoản",
     "chartType": "Loại biểu đồ",
     "view": "Chế độ xem",
+    "displayName": "Tên hiển thị",
+    "description": "Mô tả",
+    "descriptionPlaceholder": "Thêm mô tả tùy chọn",
     "rangeLabels": {
       "1m": "1M",
       "3m": "3M",

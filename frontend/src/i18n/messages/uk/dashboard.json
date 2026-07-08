@@ -163,6 +163,9 @@
     "accounts": "Рахунки",
     "chartType": "Тип діаграми",
     "view": "Вигляд",
+    "displayName": "Відображуване ім'я",
+    "description": "Опис",
+    "descriptionPlaceholder": "Додайте необов’язковий опис",
     "rangeLabels": {
       "1m": "1M",
       "3m": "3M",

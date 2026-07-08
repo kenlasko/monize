@@ -163,6 +163,9 @@
     "accounts": "Konta",
     "chartType": "Typ wykresu",
     "view": "Widok",
+    "displayName": "Nazwa wyświetlana",
+    "description": "Opis",
+    "descriptionPlaceholder": "Dodaj opcjonalny opis",
     "rangeLabels": {
       "1m": "1M",
       "3m": "3M",

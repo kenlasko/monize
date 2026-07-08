@@ -163,6 +163,9 @@
     "accounts": "Rekeningen",
     "chartType": "Grafiektype",
     "view": "Weergave",
+    "displayName": "Weergavenaam",
+    "description": "Beschrijving",
+    "descriptionPlaceholder": "Voeg een optionele beschrijving toe",
     "rangeLabels": {
       "1m": "1M",
       "3m": "3M",

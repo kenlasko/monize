@@ -163,6 +163,9 @@
     "accounts": "Счета",
     "chartType": "Тип диаграммы",
     "view": "Вид",
+    "displayName": "Отображаемое имя",
+    "description": "Описание",
+    "descriptionPlaceholder": "Добавьте необязательное описание",
     "rangeLabels": {
       "1m": "1M",
       "3m": "3M",

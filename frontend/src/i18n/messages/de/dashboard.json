@@ -163,6 +163,9 @@
     "accounts": "Konten",
     "chartType": "Diagrammtyp",
     "view": "Ansicht",
+    "displayName": "Anzeigename",
+    "description": "Beschreibung",
+    "descriptionPlaceholder": "Optionale Beschreibung hinzufügen",
     "rangeLabels": {
       "1m": "1M",
       "3m": "3M",

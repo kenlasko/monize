@@ -163,6 +163,9 @@
     "accounts": "Akun",
     "chartType": "Tipe Grafik",
     "view": "Tampilan",
+    "displayName": "Nama tampilan",
+    "description": "Deskripsi",
+    "descriptionPlaceholder": "Tambahkan deskripsi opsional",
     "rangeLabels": {
       "1m": "1M",
       "3m": "3M",

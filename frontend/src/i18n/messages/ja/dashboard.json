@@ -163,6 +163,9 @@
     "accounts": "口座",
     "chartType": "グラフの種類",
     "view": "表示",
+    "displayName": "表示名",
+    "description": "説明",
+    "descriptionPlaceholder": "任意の説明を追加",
     "rangeLabels": {
       "1m": "1M",
       "3m": "3M",

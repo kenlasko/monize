@@ -163,6 +163,9 @@
     "accounts": "Conti",
     "chartType": "Tipo di grafico",
     "view": "Vista",
+    "displayName": "Nome visualizzato",
+    "description": "Descrizione",
+    "descriptionPlaceholder": "Aggiungi una descrizione facoltativa",
     "rangeLabels": {
       "1m": "1M",
       "3m": "3M",

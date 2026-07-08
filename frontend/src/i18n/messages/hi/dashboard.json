@@ -163,6 +163,9 @@
     "accounts": "खाते",
     "chartType": "चार्ट प्रकार",
     "view": "दृश्य",
+    "displayName": "प्रदर्शन नाम",
+    "description": "विवरण",
+    "descriptionPlaceholder": "एक वैकल्पिक विवरण जोड़ें",
     "rangeLabels": {
       "1m": "1M",
       "3m": "3M",

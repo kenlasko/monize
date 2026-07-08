@@ -163,6 +163,9 @@
     "accounts": "Hesaplar",
     "chartType": "Grafik türü",
     "view": "Görünüm",
+    "displayName": "Görünen ad",
+    "description": "Açıklama",
+    "descriptionPlaceholder": "İsteğe bağlı bir açıklama ekleyin",
     "rangeLabels": {
       "1m": "1M",
       "3m": "3M",

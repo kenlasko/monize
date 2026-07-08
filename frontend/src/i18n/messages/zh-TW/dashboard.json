@@ -163,6 +163,9 @@
     "accounts": "科目",
     "chartType": "圖表類型",
     "view": "檢視",
+    "displayName": "顯示名稱",
+    "description": "描述",
+    "descriptionPlaceholder": "新增選填的描述",
     "rangeLabels": {
       "1m": "1M",
       "3m": "3M",
