@@ -15,6 +15,7 @@ import {
 } from 'recharts';
 import { Account } from '@/types/account';
 import { LoanHistoryResult } from '@/lib/loan-history';
+import { LoanRateChange } from '@/types/loan-rate-change';
 import { computePastImpact } from '@/lib/loan-past-impact';
 import { buildPayoffComparisonSeries } from './PayoffComparisonChart';
 import { chartColors } from '@/lib/chart-colors';
@@ -24,19 +25,30 @@ import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 interface PastImpactSectionProps {
   account: Account;
   history: LoanHistoryResult;
+  /** Persisted rate history; the baseline applies these steps as they happened */
+  rateChanges?: LoanRateChange[];
 }
 
 /**
  * Shows how overpayments already made have shortened the loan: the original
  * contractual schedule versus the actual balance and current projection,
- * with months and interest already saved.
+ * with months and interest already saved. With a rate history present, the
+ * contractual baseline starts at the origination rate and follows the
+ * recorded rate changes, so the comparison isolates the overpayment effect.
  */
-export function PastImpactSection({ account, history }: PastImpactSectionProps) {
+export function PastImpactSection({
+  account,
+  history,
+  rateChanges = [],
+}: PastImpactSectionProps) {
   const t = useTranslations('accounts');
   const formatChartDate = useChartDateFormat();
   const { formatCurrency, formatCurrencyCompact, formatCurrencyAxis } = useNumberFormat();
 
-  const impact = useMemo(() => computePastImpact(account, history), [account, history]);
+  const impact = useMemo(
+    () => computePastImpact(account, history, undefined, rateChanges),
+    [account, history, rateChanges],
+  );
 
   const chartData = useMemo(() => {
     if (!impact) return [];

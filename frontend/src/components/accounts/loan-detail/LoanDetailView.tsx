@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
+import { format } from 'date-fns';
 import { LoanSummaryCards } from '@/components/accounts/loan-detail/LoanSummaryCards';
 import { AmortizationScheduleTable } from '@/components/accounts/loan-detail/AmortizationScheduleTable';
 import { OverpaymentSimulator } from '@/components/accounts/loan-detail/OverpaymentSimulator';
@@ -8,23 +9,28 @@ import { PayoffComparisonChart } from '@/components/accounts/loan-detail/PayoffC
 import { ComparisonSummaryCards } from '@/components/accounts/loan-detail/ComparisonSummaryCards';
 import { SavedScenariosPanel } from '@/components/accounts/loan-detail/SavedScenariosPanel';
 import { PastImpactSection } from '@/components/accounts/loan-detail/PastImpactSection';
+import { RateHistoryPanel } from '@/components/accounts/loan-detail/RateHistoryPanel';
 import { deriveLoanPaymentHistory } from '@/lib/loan-history';
 import {
   OverpaymentPlan,
   ScheduleFrequency,
   advanceDate,
+  buildRateTimeline,
   compareSchedules,
   generateLoanSchedule,
 } from '@/lib/loan-schedule';
 import type { Account } from '@/types/account';
 import type { Transaction } from '@/types/transaction';
 import type { LoanScenario } from '@/types/loan-scenario';
+import type { LoanRateChange } from '@/types/loan-rate-change';
 
 interface LoanDetailViewProps {
   account: Account;
   transactions: Transaction[];
   scenarios: LoanScenario[];
+  rateChanges: LoanRateChange[];
   onScenariosChanged: () => void;
+  onRateChangesChanged: () => void;
 }
 
 /**
@@ -39,7 +45,9 @@ export function LoanDetailView({
   account,
   transactions,
   scenarios,
+  rateChanges,
   onScenariosChanged,
+  onRateChangesChanged,
 }: LoanDetailViewProps) {
   const [plan, setPlan] = useState<OverpaymentPlan | null>(null);
   const [loadedPlan, setLoadedPlan] = useState<OverpaymentPlan | null>(null);
@@ -66,6 +74,10 @@ export function LoanDetailView({
     if (!canProject) return null;
 
     const frequency = account.paymentFrequency as ScheduleFrequency;
+    // The account's scalar rate is already current; only future-dated steps
+    // from the rate history bend the projection ahead.
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const futureTimeline = buildRateTimeline(rateChanges, today, account.interestRate!);
     return {
       startingBalance: history.currentBalance,
       annualRate: account.interestRate!,
@@ -74,8 +86,9 @@ export function LoanDetailView({
       isCanadian: account.isCanadianMortgage || false,
       isVariableRate: account.isVariableRate || false,
       firstPaymentDate: advanceDate(new Date(), frequency),
+      rateChanges: futureTimeline.rateChanges,
     };
-  }, [account, history]);
+  }, [account, history, rateChanges]);
 
   const baseline = useMemo(
     () => (projectionInput ? generateLoanSchedule(projectionInput) : null),
@@ -101,6 +114,12 @@ export function LoanDetailView({
         account={account}
         startingBalance={history.startingBalance}
         baseline={baseline}
+      />
+
+      <RateHistoryPanel
+        account={account}
+        rateChanges={rateChanges}
+        onChanged={onRateChangesChanged}
       />
 
       {projectionInput && (
@@ -133,7 +152,7 @@ export function LoanDetailView({
         scenario={scenario}
       />
 
-      <PastImpactSection account={account} history={history} />
+      <PastImpactSection account={account} history={history} rateChanges={rateChanges} />
 
       <AmortizationScheduleTable
         historyEvents={history.events}

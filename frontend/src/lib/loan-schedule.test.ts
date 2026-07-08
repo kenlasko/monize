@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   ScheduleFrequency,
   advanceDate,
+  buildRateTimeline,
   calculateMortgagePaymentAmount,
   compareSchedules,
   generateLoanSchedule,
@@ -314,6 +315,155 @@ describe('generateLoanSchedule', () => {
       expect(only.balance).toBe(0);
       expect(only.extraPrincipal).toBeCloseTo(10000 - only.principal, 2);
     });
+  });
+});
+
+describe('generateLoanSchedule with rate changes', () => {
+  it('is identical to the plain schedule when rateChanges is empty', () => {
+    const plain = generateLoanSchedule(baseInput());
+    const withEmpty = generateLoanSchedule(baseInput({ rateChanges: [] }));
+    expect(withEmpty).toEqual(plain);
+  });
+
+  it('applies a mid-schedule rate step from the first payment on/after its date', () => {
+    const result = generateLoanSchedule(
+      baseInput({
+        rateChanges: [{ effectiveDate: '2026-03-01', annualRate: 12 }],
+      }),
+    );
+
+    // Rows 1-2 (Jan 15, Feb 15) at 6%; row 3 (Mar 15) onwards at 12%
+    expect(result.rows[0].annualRate).toBe(6);
+    expect(result.rows[1].annualRate).toBe(6);
+    expect(result.rows[2].annualRate).toBe(12);
+
+    // Row 2 still accrues at 6%/12 on row 1's closing balance
+    expect(result.rows[1].interest).toBeCloseTo(result.rows[0].balance * 0.005, 2);
+    // Row 3 accrues at the doubled periodic rate on row 2's closing balance
+    expect(result.rows[2].interest).toBeCloseTo(result.rows[1].balance * 0.01, 2);
+  });
+
+  it('keeps the payment unchanged when the step has no payment amount', () => {
+    const result = generateLoanSchedule(
+      baseInput({
+        rateChanges: [{ effectiveDate: '2026-03-01', annualRate: 12 }],
+      }),
+    );
+    for (const row of result.rows.slice(0, -1)) {
+      expect(row.payment).toBeCloseTo(500, 2);
+    }
+  });
+
+  it('changes the payment when the step carries one', () => {
+    const result = generateLoanSchedule(
+      baseInput({
+        rateChanges: [{ effectiveDate: '2026-03-01', annualRate: 12, paymentAmount: 600 }],
+      }),
+    );
+    expect(result.rows[1].payment).toBeCloseTo(500, 2);
+    expect(result.rows[2].payment).toBeCloseTo(600, 2);
+  });
+
+  it('extends the payoff when the rate rises with a fixed payment', () => {
+    const baseline = generateLoanSchedule(baseInput());
+    const stepped = generateLoanSchedule(
+      baseInput({
+        rateChanges: [{ effectiveDate: '2026-03-01', annualRate: 12 }],
+      }),
+    );
+    expect(stepped.numPayments).toBeGreaterThan(baseline.numPayments);
+    expect(stepped.totalInterest).toBeGreaterThan(baseline.totalInterest);
+  });
+
+  it('applies a step dated before the first payment to row 1', () => {
+    const result = generateLoanSchedule(
+      baseInput({
+        rateChanges: [{ effectiveDate: '2020-01-01', annualRate: 12 }],
+      }),
+    );
+    expect(result.rows[0].annualRate).toBe(12);
+    expect(result.rows[0].interest).toBeCloseTo(10000 * 0.01, 2);
+  });
+
+  it('recomputes the periodic rate per segment with Canadian semi-annual compounding', () => {
+    const result = generateLoanSchedule(
+      baseInput({
+        isCanadian: true,
+        rateChanges: [{ effectiveDate: '2026-03-01', annualRate: 12 }],
+      }),
+    );
+    const firstSegmentRate = getPeriodicRate(6, 12, true, false);
+    const secondSegmentRate = getPeriodicRate(12, 12, true, false);
+    expect(result.rows[0].interest).toBeCloseTo(10000 * firstSegmentRate, 2);
+    expect(result.rows[2].interest).toBeCloseTo(result.rows[1].balance * secondSegmentRate, 2);
+  });
+
+  it('composes with overpayments: extra principal still applies after the step', () => {
+    const result = generateLoanSchedule(
+      baseInput({
+        rateChanges: [{ effectiveDate: '2026-03-01', annualRate: 12 }],
+        overpayments: { recurringExtra: { amount: 100 } },
+      }),
+    );
+    expect(result.rows[2].annualRate).toBe(12);
+    expect(result.rows[2].extraPrincipal).toBe(100);
+  });
+
+  it('applies multiple steps in date order regardless of input order', () => {
+    const result = generateLoanSchedule(
+      baseInput({
+        rateChanges: [
+          { effectiveDate: '2026-05-01', annualRate: 9 },
+          { effectiveDate: '2026-03-01', annualRate: 12 },
+        ],
+      }),
+    );
+    expect(result.rows[1].annualRate).toBe(6);
+    expect(result.rows[2].annualRate).toBe(12);
+    expect(result.rows[3].annualRate).toBe(12);
+    expect(result.rows[4].annualRate).toBe(9);
+  });
+});
+
+describe('buildRateTimeline', () => {
+  const rows = [
+    { effectiveDate: '2022-01-01', annualRate: 5.5, newPaymentAmount: 2500 },
+    { effectiveDate: '2023-06-01', annualRate: 6.2, newPaymentAmount: null },
+    { effectiveDate: '2024-03-01', annualRate: 4.9, newPaymentAmount: 2650 },
+  ];
+
+  it('falls back to the account rate when there is no history', () => {
+    const timeline = buildRateTimeline([], '2022-01-01', 6);
+    expect(timeline.startingAnnualRate).toBe(6);
+    expect(timeline.startingPaymentAmount).toBeNull();
+    expect(timeline.rateChanges).toEqual([]);
+  });
+
+  it('starts at the latest row on or before the schedule start', () => {
+    const timeline = buildRateTimeline(rows, '2023-08-01', 99);
+    expect(timeline.startingAnnualRate).toBe(6.2);
+    // Latest non-null payment at/before the start is the initial snapshot
+    expect(timeline.startingPaymentAmount).toBe(2500);
+    expect(timeline.rateChanges).toEqual([
+      { effectiveDate: '2024-03-01', annualRate: 4.9, paymentAmount: 2650 },
+    ]);
+  });
+
+  it('uses the earliest row before the timeline begins', () => {
+    const timeline = buildRateTimeline(rows, '2020-01-01', 99);
+    expect(timeline.startingAnnualRate).toBe(5.5);
+    expect(timeline.startingPaymentAmount).toBeNull();
+    expect(timeline.rateChanges).toHaveLength(3);
+  });
+
+  it('turns the full history into steps for a schedule starting at origination', () => {
+    const timeline = buildRateTimeline(rows, '2022-01-01', 99);
+    expect(timeline.startingAnnualRate).toBe(5.5);
+    expect(timeline.startingPaymentAmount).toBe(2500);
+    expect(timeline.rateChanges).toEqual([
+      { effectiveDate: '2023-06-01', annualRate: 6.2, paymentAmount: null },
+      { effectiveDate: '2024-03-01', annualRate: 4.9, paymentAmount: 2650 },
+    ]);
   });
 });
 

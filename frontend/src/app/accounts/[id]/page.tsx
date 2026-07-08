@@ -15,12 +15,14 @@ import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { accountsApi } from '@/lib/accounts';
 import { loanScenariosApi } from '@/lib/loan-scenarios';
+import { loanRateChangesApi } from '@/lib/loan-rate-changes';
 import { fetchAllAccountTransactions } from '@/lib/loan-history';
 import { formatAccountType } from '@/lib/account-utils';
 import { getErrorMessage } from '@/lib/errors';
 import type { Account, AccountType } from '@/types/account';
 import type { Transaction } from '@/types/transaction';
 import type { LoanScenario } from '@/types/loan-scenario';
+import type { LoanRateChange } from '@/types/loan-rate-change';
 
 const DEBT_ACCOUNT_TYPES: AccountType[] = ['LOAN', 'MORTGAGE', 'LINE_OF_CREDIT'];
 
@@ -42,6 +44,7 @@ function AccountDetailContent() {
   const [account, setAccount] = useState<Account | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [scenarios, setScenarios] = useState<LoanScenario[]>([]);
+  const [rateChanges, setRateChanges] = useState<LoanRateChange[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,15 +62,18 @@ function AccountDetailContent() {
         setAccount(accountData);
         setTransactions([]);
         setScenarios([]);
+        setRateChanges([]);
         return;
       }
-      const [transactionsData, scenariosData] = await Promise.all([
+      const [transactionsData, scenariosData, rateChangesData] = await Promise.all([
         fetchAllAccountTransactions(accountId),
         loanScenariosApi.getAll(accountId).catch(() => [] as LoanScenario[]),
+        loanRateChangesApi.getAll(accountId).catch(() => [] as LoanRateChange[]),
       ]);
       setAccount(accountData);
       setTransactions(transactionsData);
       setScenarios(scenariosData);
+      setRateChanges(rateChangesData);
     } catch (err) {
       const message = getErrorMessage(err, t('loanDetail.loadFailed'));
       setError(message);
@@ -87,6 +93,21 @@ function AccountDetailContent() {
   const reloadScenarios = useCallback(async () => {
     try {
       setScenarios(await loanScenariosApi.getAll(accountId));
+    } catch {
+      // The list stays as-is; individual actions already surfaced their error
+    }
+  }, [accountId]);
+
+  // Rate-change mutations can move the account's current rate/payment, so the
+  // account reloads together with the timeline.
+  const reloadRateChanges = useCallback(async () => {
+    try {
+      const [accountData, rateChangesData] = await Promise.all([
+        accountsApi.getById(accountId),
+        loanRateChangesApi.getAll(accountId),
+      ]);
+      setAccount(accountData);
+      setRateChanges(rateChangesData);
     } catch {
       // The list stays as-is; individual actions already surfaced their error
     }
@@ -166,7 +187,9 @@ function AccountDetailContent() {
             account={account}
             transactions={transactions}
             scenarios={scenarios}
+            rateChanges={rateChanges}
             onScenariosChanged={reloadScenarios}
+            onRateChangesChanged={reloadRateChanges}
           />
         )}
       </main>

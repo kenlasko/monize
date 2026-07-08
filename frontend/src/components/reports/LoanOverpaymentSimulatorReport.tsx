@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { accountsApi } from '@/lib/accounts';
 import { loanScenariosApi } from '@/lib/loan-scenarios';
+import { loanRateChangesApi } from '@/lib/loan-rate-changes';
 import { fetchAllAccountTransactions } from '@/lib/loan-history';
 import { useReportData } from '@/hooks/useReportData';
 import { ReportError } from '@/components/reports/ReportError';
@@ -15,6 +16,7 @@ import { LineOfCreditView } from '@/components/accounts/loan-detail/LineOfCredit
 import type { AccountType } from '@/types/account';
 import type { Transaction } from '@/types/transaction';
 import type { LoanScenario } from '@/types/loan-scenario';
+import type { LoanRateChange } from '@/types/loan-rate-change';
 
 const DEBT_ACCOUNT_TYPES: AccountType[] = ['LOAN', 'MORTGAGE', 'LINE_OF_CREDIT'];
 
@@ -55,19 +57,25 @@ export function LoanOverpaymentSimulatorReport() {
   } = useReportData(
     async () => {
       if (!selectedAccountId || isRevolving) {
-        return { transactions: [] as Transaction[], scenarios: [] as LoanScenario[] };
+        return {
+          transactions: [] as Transaction[],
+          scenarios: [] as LoanScenario[],
+          rateChanges: [] as LoanRateChange[],
+        };
       }
-      const [transactions, scenarios] = await Promise.all([
+      const [transactions, scenarios, rateChanges] = await Promise.all([
         fetchAllAccountTransactions(selectedAccountId),
         loanScenariosApi.getAll(selectedAccountId).catch(() => [] as LoanScenario[]),
+        loanRateChangesApi.getAll(selectedAccountId).catch(() => [] as LoanRateChange[]),
       ]);
-      return { transactions, scenarios };
+      return { transactions, scenarios, rateChanges };
     },
     [selectedAccountId, isRevolving],
   );
 
   const transactions = accountData?.transactions ?? [];
   const scenarios = accountData?.scenarios ?? [];
+  const rateChanges = accountData?.rateChanges ?? [];
 
   const error = accountsError || dataError;
   const reload = () => {
@@ -147,7 +155,9 @@ export function LoanOverpaymentSimulatorReport() {
           account={selectedAccount}
           transactions={transactions}
           scenarios={scenarios}
+          rateChanges={rateChanges}
           onScenariosChanged={reloadAccountData}
+          onRateChangesChanged={reload}
         />
       )}
     </div>

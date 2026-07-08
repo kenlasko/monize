@@ -2,8 +2,10 @@ import { Account } from '@/types/account';
 import { LoanHistoryResult } from '@/lib/loan-history';
 import {
   LoanScheduleResult,
+  RateTimelineRow,
   ScheduleFrequency,
   advanceDate,
+  buildRateTimeline,
   calculateMortgagePaymentAmount,
   generateLoanSchedule,
 } from '@/lib/loan-schedule';
@@ -44,12 +46,20 @@ const ORIGINAL_SCHEDULE_MAX_PAYMENTS = 10000;
  * data to reconstruct its original schedule (a positive original principal,
  * a start date, rate, frequency, and a determinable contractual payment).
  *
+ * `rateChanges` is the account's persisted rate history. The contractual
+ * baseline starts at the origination rate (the timeline's initial row, not
+ * the account's current scalar) and applies the recorded steps as they
+ * happened -- without overpayments -- so the comparison isolates the pure
+ * effect of extra payments even across rate changes. The current projection
+ * applies only future-dated steps.
+ *
  * `asOf` defaults to now; it is injectable for deterministic tests.
  */
 export function computePastImpact(
   account: Account,
   history: LoanHistoryResult,
   asOf: Date = new Date(),
+  rateChanges: RateTimelineRow[] = [],
 ): PastImpactResult | null {
   // The original principal is the configured value, or the loan's opening
   // balance (mortgages store the original amount as the negative opening
@@ -76,35 +86,48 @@ export function computePastImpact(
   const isCanadian = account.isCanadianMortgage || false;
   const isVariableRate = account.isVariableRate || false;
 
+  // The origination rate comes from the rate history when one exists; the
+  // account's scalar rate is only the *current* rate and would corrupt the
+  // baseline after any recorded change.
+  const timeline = buildRateTimeline(rateChanges, startDate, account.interestRate);
+
   // Mortgages derive their contractual payment from the amortization period;
-  // plain loans use the configured payment amount.
+  // plain loans use the payment in effect at origination.
   const contractualPayment =
     account.accountType === 'MORTGAGE' && account.amortizationMonths
       ? calculateMortgagePaymentAmount(
           originalPrincipal,
-          account.interestRate,
+          timeline.startingAnnualRate,
           account.amortizationMonths,
           frequency,
           isCanadian,
           isVariableRate,
         )
-      : (account.paymentAmount ?? 0);
+      : (timeline.startingPaymentAmount ?? account.paymentAmount ?? 0);
   if (contractualPayment <= 0) return null;
 
   const originalSchedule = generateLoanSchedule({
     startingBalance: originalPrincipal,
-    annualRate: account.interestRate,
+    annualRate: timeline.startingAnnualRate,
     paymentAmount: contractualPayment,
     frequency,
     isCanadian,
     isVariableRate,
     firstPaymentDate: parseIsoDate(startDate),
+    rateChanges: timeline.rateChanges,
     maxPayments: ORIGINAL_SCHEDULE_MAX_PAYMENTS,
   });
 
   const isPaidOff = history.currentBalance <= 0.01;
   const canProjectCurrent =
     !isPaidOff && account.paymentAmount != null && account.paymentAmount > 0;
+
+  // The scalar rate is already current; only future-dated steps apply ahead
+  const futureTimeline = buildRateTimeline(
+    rateChanges,
+    isoDate(asOf),
+    account.interestRate,
+  );
 
   const currentProjection = canProjectCurrent
     ? generateLoanSchedule({
@@ -115,6 +138,7 @@ export function computePastImpact(
         isCanadian,
         isVariableRate,
         firstPaymentDate: advanceDate(asOf, frequency),
+        rateChanges: futureTimeline.rateChanges,
       })
     : null;
 

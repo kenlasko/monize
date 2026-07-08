@@ -44,6 +44,32 @@ export interface OverpaymentPlan {
   lumpSums?: LumpSum[];
 }
 
+/** A step on the loan's interest-rate timeline, applied during generation */
+export interface RateChange {
+  /** ISO date (yyyy-MM-dd) the new rate takes effect */
+  effectiveDate: string;
+  /** Annual rate as a percentage, e.g. 4.9 */
+  annualRate: number;
+  /** New regular payment from this date; omitted/null = payment unchanged */
+  paymentAmount?: number | null;
+}
+
+/** A persisted rate-history row, as returned by the rate-changes API */
+export interface RateTimelineRow {
+  effectiveDate: string;
+  annualRate: number;
+  newPaymentAmount?: number | null;
+}
+
+export interface RateTimeline {
+  /** Rate in effect at the schedule start */
+  startingAnnualRate: number;
+  /** Payment in effect at the schedule start, when the timeline knows it */
+  startingPaymentAmount: number | null;
+  /** Steps dated after the schedule start, ready for generateLoanSchedule */
+  rateChanges: RateChange[];
+}
+
 export interface LoanScheduleInput {
   /** Positive remaining balance to amortize */
   startingBalance: number;
@@ -58,6 +84,8 @@ export interface LoanScheduleInput {
   /** Date of the first projected payment (row 1) */
   firstPaymentDate: Date;
   overpayments?: OverpaymentPlan;
+  /** Known rate steps; each applies from the first payment on/after its date */
+  rateChanges?: RateChange[];
   /** Maximum projected payments; defaults to 600, clamped to 10000 */
   maxPayments?: number;
   /** Seed for cumulative principal (e.g. historical principal already paid) */
@@ -79,6 +107,8 @@ export interface ScheduleRow {
   extraPrincipal: number;
   /** Balance after this payment */
   balance: number;
+  /** Annual rate (percentage) in effect for this payment */
+  annualRate: number;
   /** Running principal incl. extra, seeded by initialCumulativePrincipal */
   cumulativePrincipal: number;
   /** Running interest, seeded by initialCumulativeInterest */
@@ -245,7 +275,19 @@ export function generateLoanSchedule(input: LoanScheduleInput): LoanScheduleResu
   );
 
   const periodsPerYear = getPeriodsPerYear(frequency);
-  const periodicRate = getPeriodicRate(annualRate, periodsPerYear, isCanadian, isVariableRate);
+
+  const rateChanges = [...(input.rateChanges ?? [])].sort((a, b) =>
+    a.effectiveDate.localeCompare(b.effectiveDate),
+  );
+  let currentAnnualRate = annualRate;
+  let currentPayment = paymentAmount;
+  let currentPeriodicRate = getPeriodicRate(
+    currentAnnualRate,
+    periodsPerYear,
+    isCanadian,
+    isVariableRate,
+  );
+  let rateChangeIndex = 0;
 
   const recurringExtra = overpayments?.recurringExtra;
   const lumpSums = [...(overpayments?.lumpSums ?? [])].sort((a, b) =>
@@ -269,8 +311,28 @@ export function generateLoanSchedule(input: LoanScheduleInput): LoanScheduleResu
   while (balance > PAYOFF_EPSILON && paymentNumber < maxPayments) {
     const rowDate = format(currentDate, 'yyyy-MM-dd');
 
-    const interest = balance * periodicRate;
-    let principal = paymentAmount - interest;
+    // Rate steps land on the first payment on or after their effective date
+    // (steps dated before the first payment apply to row 1)
+    while (
+      rateChangeIndex < rateChanges.length &&
+      rateChanges[rateChangeIndex].effectiveDate <= rowDate
+    ) {
+      const change = rateChanges[rateChangeIndex];
+      currentAnnualRate = change.annualRate;
+      currentPeriodicRate = getPeriodicRate(
+        currentAnnualRate,
+        periodsPerYear,
+        isCanadian,
+        isVariableRate,
+      );
+      if (change.paymentAmount != null && change.paymentAmount > 0) {
+        currentPayment = change.paymentAmount;
+      }
+      rateChangeIndex++;
+    }
+
+    const interest = balance * currentPeriodicRate;
+    let principal = currentPayment - interest;
 
     if (principal <= 0) {
       // Payment doesn't cover interest: the loan never amortizes
@@ -316,6 +378,7 @@ export function generateLoanSchedule(input: LoanScheduleInput): LoanScheduleResu
       interest: round2(interest),
       extraPrincipal: round2(extraPrincipal),
       balance: round2(balance),
+      annualRate: round4(currentAnnualRate),
       cumulativePrincipal: round2(cumulativePrincipal),
       cumulativeInterest: round2(cumulativeInterest),
     });
@@ -334,6 +397,45 @@ export function generateLoanSchedule(input: LoanScheduleInput): LoanScheduleResu
     numPayments: rows.length,
     paidOff,
   };
+}
+
+/**
+ * Resolve a persisted rate history into engine inputs for a schedule that
+ * starts at `scheduleStartIso`: the rate in effect at the start is the
+ * latest row on or before that date (before the earliest row, the earliest
+ * row's rate applies; with no rows, the fallback), the payment in effect is
+ * the latest non-null payment on or before the start, and the remaining
+ * rows become steps for generateLoanSchedule.
+ */
+export function buildRateTimeline(
+  rows: RateTimelineRow[],
+  scheduleStartIso: string,
+  fallbackAnnualRate: number,
+): RateTimeline {
+  const sorted = [...rows].sort((a, b) =>
+    a.effectiveDate.localeCompare(b.effectiveDate),
+  );
+
+  const atOrBefore = sorted.filter(
+    (row) => row.effectiveDate <= scheduleStartIso,
+  );
+  const startingAnnualRate =
+    atOrBefore.length > 0
+      ? atOrBefore[atOrBefore.length - 1].annualRate
+      : (sorted[0]?.annualRate ?? fallbackAnnualRate);
+  const startingPaymentAmount =
+    [...atOrBefore].reverse().find((row) => row.newPaymentAmount != null)
+      ?.newPaymentAmount ?? null;
+
+  const rateChanges = sorted
+    .filter((row) => row.effectiveDate > scheduleStartIso)
+    .map((row) => ({
+      effectiveDate: row.effectiveDate,
+      annualRate: row.annualRate,
+      paymentAmount: row.newPaymentAmount ?? null,
+    }));
+
+  return { startingAnnualRate, startingPaymentAmount, rateChanges };
 }
 
 export function compareSchedules(

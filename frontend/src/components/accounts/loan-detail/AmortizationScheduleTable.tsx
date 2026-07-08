@@ -24,6 +24,8 @@ interface DisplayRow {
   extraPrincipal: number;
   balance: number;
   isProjected: boolean;
+  /** Set on the first projected row of a new rate segment */
+  rateChange?: { from: number; to: number };
 }
 
 /**
@@ -52,16 +54,22 @@ export function AmortizationScheduleTable({
       balance: event.balance,
       isProjected: false,
     }));
-    const projected = projectionRows.map((row) => ({
-      paymentNumber: historyEvents.length + row.paymentNumber,
-      date: row.date,
-      payment: row.payment,
-      principal: row.principal,
-      interest: row.interest,
-      extraPrincipal: row.extraPrincipal,
-      balance: row.balance,
-      isProjected: true,
-    }));
+    const projected = projectionRows.map((row, index) => {
+      const previousRate = index > 0 ? projectionRows[index - 1].annualRate : row.annualRate;
+      return {
+        paymentNumber: historyEvents.length + row.paymentNumber,
+        date: row.date,
+        payment: row.payment,
+        principal: row.principal,
+        interest: row.interest,
+        extraPrincipal: row.extraPrincipal,
+        balance: row.balance,
+        isProjected: true,
+        ...(previousRate !== row.annualRate
+          ? { rateChange: { from: previousRate, to: row.annualRate } }
+          : {}),
+      };
+    });
     return [...historical, ...projected];
   }, [historyEvents, projectionRows]);
 
@@ -139,6 +147,14 @@ export function AmortizationScheduleTable({
                           {format(parseISO(row.date), 'MMM d, yyyy')}
                           {row.isProjected && (
                             <span className="ml-1.5 text-xs text-blue-500 dark:text-blue-400">*</span>
+                          )}
+                          {row.rateChange && (
+                            <span className="ml-1.5 inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
+                              {t('loanDetail.schedule.rateChangeBadge', {
+                                from: row.rateChange.from,
+                                to: row.rateChange.to,
+                              })}
+                            </span>
                           )}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-100">

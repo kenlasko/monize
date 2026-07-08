@@ -29,6 +29,9 @@ vi.mock('./ComparisonSummaryCards', () => ({
 vi.mock('./SavedScenariosPanel', () => ({
   SavedScenariosPanel: () => <div data-testid="scenarios-panel" />,
 }));
+vi.mock('./RateHistoryPanel', () => ({
+  RateHistoryPanel: () => <div data-testid="rate-history-panel" />,
+}));
 
 let capturedOnPlanChange: ((plan: OverpaymentPlan | null) => void) | undefined;
 vi.mock('./OverpaymentSimulator', () => ({
@@ -63,7 +66,9 @@ function renderView(account: Account) {
       account={account}
       transactions={noTransactions}
       scenarios={[]}
+      rateChanges={[]}
       onScenariosChanged={vi.fn()}
+      onRateChangesChanged={vi.fn()}
     />,
   );
 }
@@ -74,12 +79,18 @@ beforeEach(() => {
 });
 
 describe('LoanDetailView', () => {
-  it('always renders the summary, chart, past-impact, and schedule', () => {
+  it('always renders the summary, rate history, chart, past-impact, and schedule', () => {
     renderView(makeAccount());
     expect(screen.getByTestId('summary')).toBeInTheDocument();
+    expect(screen.getByTestId('rate-history-panel')).toBeInTheDocument();
     expect(screen.getByTestId('chart')).toBeInTheDocument();
     expect(screen.getByTestId('past-impact')).toBeInTheDocument();
     expect(screen.getByTestId('schedule')).toBeInTheDocument();
+  });
+
+  it('shows the rate history even when the loan cannot be projected', () => {
+    renderView(makeAccount({ paymentAmount: null, interestRate: null, paymentFrequency: null }));
+    expect(screen.getByTestId('rate-history-panel')).toBeInTheDocument();
   });
 
   it('passes the anchored opening balance to the summary', () => {
