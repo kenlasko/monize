@@ -73,6 +73,7 @@ export function RecurringExpensesWidget({ isLoading }: RecurringExpensesWidgetPr
   return (
     <WidgetCard
       title={t('recurringExpenses.title')}
+      widgetId={WIDGET_ID}
       configControls={configControls}
       configTitle={t('recurringExpenses.title')}
     >

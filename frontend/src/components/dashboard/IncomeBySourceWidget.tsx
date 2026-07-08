@@ -127,6 +127,7 @@ export function IncomeBySourceWidget({ isLoading }: IncomeBySourceWidgetProps) {
   return (
     <WidgetCard
       title={t('incomeBySource.title')}
+      widgetId={WIDGET_ID}
       configControls={configControls}
       configTitle={t('incomeBySource.title')}
     >

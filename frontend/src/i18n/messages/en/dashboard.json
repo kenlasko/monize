@@ -163,6 +163,9 @@
     "accounts": "Accounts",
     "chartType": "Chart type",
     "view": "View",
+    "displayName": "Display name",
+    "description": "Description",
+    "descriptionPlaceholder": "Add an optional description",
     "rangeLabels": {
       "1m": "1M",
       "3m": "3M",

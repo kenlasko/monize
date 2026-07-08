@@ -4,22 +4,36 @@ import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { format, subDays } from 'date-fns';
-import { Transaction } from '@/types/transaction';
+import { Account } from '@/types/account';
 import { Category } from '@/types/category';
+import { transactionsApi } from '@/lib/transactions';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
+import { useReportData } from '@/hooks/useReportData';
+import { useWidgetConfig } from '@/hooks/useWidgetConfig';
+import { resolveRangePreset } from '@/lib/date-range';
 import { CHART_COLOURS } from '@/lib/chart-colours';
+import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
+import { ReportAccountMultiSelect } from '@/components/reports/ReportAccountMultiSelect';
+import { WidgetCard, WidgetConfigRow, WidgetMessage } from './WidgetCard';
+import {
+  EXPENSES_PIE_DEFAULT,
+  SPENDING_RANGES,
+  RangeAccountsConfig,
+} from './widget-config';
+
+const WIDGET_ID = 'expenses-pie';
+
+const nonInvestmentAccounts = (a: Account) => a.accountType !== 'INVESTMENT';
 
 interface ExpensesPieChartProps {
-  transactions: Transaction[];
+  accounts: Account[];
   categories: Category[];
   isLoading: boolean;
 }
 
-
 export function ExpensesPieChart({
-  transactions,
+  accounts,
   categories,
   isLoading,
 }: ExpensesPieChartProps) {
@@ -27,6 +41,23 @@ export function ExpensesPieChart({
   const router = useRouter();
   const { formatCurrencyCompact: formatCurrency } = useNumberFormat();
   const { convertToDefault } = useExchangeRates();
+  const { config, updateConfig } = useWidgetConfig<RangeAccountsConfig>(
+    WIDGET_ID,
+    EXPENSES_PIE_DEFAULT,
+  );
+
+  const { start, end } = useMemo(() => resolveRangePreset(config.range), [config.range]);
+  const accountIdsKey = config.accountIds.join(',');
+
+  const { data: transactions, isLoading: dataLoading } = useReportData(
+    () =>
+      transactionsApi.getAllPages({
+        startDate: start || undefined,
+        endDate: end,
+        accountIds: config.accountIds.length > 0 ? config.accountIds : undefined,
+      }),
+    [start, end, accountIdsKey],
+  );
 
   // Calculate spending by category
   const chartData = useMemo(() => {
@@ -36,7 +67,7 @@ export function ExpensesPieChart({
     // Build category lookup
     const categoryLookup = new Map(categories.map((c) => [c.id, c]));
 
-    transactions.forEach((tx) => {
+    (transactions ?? []).forEach((tx) => {
       // Skip transfers and investment account transactions
       if (tx.isTransfer) return;
       if (tx.account?.accountType === 'INVESTMENT') return;
@@ -133,9 +164,10 @@ export function ExpensesPieChart({
 
   const handleCategoryClick = (categoryId: string) => {
     if (categoryId) {
-      const startDate = format(subDays(new Date(), 30), 'yyyy-MM-dd');
-      const endDate = format(new Date(), 'yyyy-MM-dd');
-      router.push(`/transactions?categoryIds=${categoryId}&startDate=${startDate}&endDate=${endDate}`);
+      const params = new URLSearchParams({ categoryIds: categoryId });
+      if (start) params.set('startDate', start);
+      params.set('endDate', end);
+      router.push(`/transactions?${params.toString()}`);
     }
   };
 
@@ -155,84 +187,96 @@ export function ExpensesPieChart({
     return null;
   };
 
-  if (isLoading) {
-    return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 lg:min-h-[540px]">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          {t('expensesPieChart.title')}
-        </h3>
+  const configControls = (
+    <>
+      <WidgetConfigRow label={t('widgets.timeframe')}>
+        <DateRangeSelector
+          ranges={SPENDING_RANGES}
+          value={config.range}
+          onChange={(range) => updateConfig({ range })}
+          size="sm"
+        />
+      </WidgetConfigRow>
+      <WidgetConfigRow label={t('widgets.accounts')}>
+        <ReportAccountMultiSelect
+          accounts={accounts}
+          value={config.accountIds}
+          onChange={(accountIds) => updateConfig({ accountIds })}
+          filter={nonInvestmentAccounts}
+          className="w-full"
+        />
+      </WidgetConfigRow>
+    </>
+  );
+
+  const loading = isLoading || dataLoading;
+
+  return (
+    <WidgetCard
+      title={t('expensesPieChart.title')}
+      widgetId={WIDGET_ID}
+      configTitle={t('expensesPieChart.title')}
+      configControls={configControls}
+      headerRight={
+        <span className="text-sm text-gray-500 dark:text-gray-400">
+          {t(`widgets.rangeLabels.${config.range}` as Parameters<typeof t>[0])}
+        </span>
+      }
+    >
+      {loading ? (
         <div className="h-64 flex items-center justify-center">
           <div className="animate-pulse w-48 h-48 rounded-full bg-gray-200 dark:bg-gray-700" />
         </div>
-      </div>
-    );
-  }
-
-  if (chartData.length === 0) {
-    return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 lg:min-h-[540px]">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          {t('expensesPieChart.title')}
-        </h3>
-        <p className="text-gray-500 dark:text-gray-400 text-sm">
-          {t('expensesPieChart.empty')}
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 lg:min-h-[540px] flex flex-col h-full">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          {t('expensesPieChart.title')}
-        </h3>
-        <span className="text-sm text-gray-500 dark:text-gray-400">{t('expensesPieChart.past30Days')}</span>
-      </div>
-      <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-          <PieChart>
-            <Pie
-              data={chartData}
-              cx="50%"
-              cy="50%"
-              innerRadius={50}
-              outerRadius={80}
-              paddingAngle={2}
-              dataKey="value"
-              cursor="pointer"
-              onClick={(data) => data.id && handleCategoryClick(data.id)}
-            >
-              {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.colour} />
-              ))}
-            </Pie>
-            <Tooltip content={<CustomTooltip />} />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-      <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1.5">
-        {chartData.map((item, index) => (
-          <button
-            key={index}
-            onClick={() => handleCategoryClick(item.id)}
-            className={`flex items-center gap-2 text-sm text-left ${item.id ? 'hover:underline cursor-pointer' : ''}`}
-            disabled={!item.id}
-          >
-            <div
-              className="w-3 h-3 rounded-full flex-shrink-0"
-              style={{ backgroundColor: item.colour }}
-            />
-            <span className="text-gray-600 dark:text-gray-400 truncate">{item.name}</span>
-          </button>
-        ))}
-      </div>
-      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 text-center flex-shrink-0">
-        <div className="text-sm text-gray-500 dark:text-gray-400">{t('expensesPieChart.total')}</div>
-        <div className="font-semibold text-gray-900 dark:text-gray-100">
-          {formatCurrency(totalExpenses)}
-        </div>
-      </div>
-    </div>
+      ) : chartData.length === 0 ? (
+        <WidgetMessage>{t('expensesPieChart.empty')}</WidgetMessage>
+      ) : (
+        <>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={80}
+                  paddingAngle={2}
+                  dataKey="value"
+                  cursor="pointer"
+                  onClick={(data) => data.id && handleCategoryClick(data.id)}
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.colour} />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1.5">
+            {chartData.map((item, index) => (
+              <button
+                key={index}
+                onClick={() => handleCategoryClick(item.id)}
+                className={`flex items-center gap-2 text-sm text-left ${item.id ? 'hover:underline cursor-pointer' : ''}`}
+                disabled={!item.id}
+              >
+                <div
+                  className="w-3 h-3 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: item.colour }}
+                />
+                <span className="text-gray-600 dark:text-gray-400 truncate">{item.name}</span>
+              </button>
+            ))}
+          </div>
+          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 text-center flex-shrink-0">
+            <div className="text-sm text-gray-500 dark:text-gray-400">{t('expensesPieChart.total')}</div>
+            <div className="font-semibold text-gray-900 dark:text-gray-100">
+              {formatCurrency(totalExpenses)}
+            </div>
+          </div>
+        </>
+      )}
+    </WidgetCard>
   );
 }

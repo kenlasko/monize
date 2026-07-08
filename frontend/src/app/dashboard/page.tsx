@@ -1,7 +1,7 @@
 'use client';
 
 import { Fragment, useState, useEffect, useCallback, useMemo } from 'react';
-import { subMonths, subWeeks, startOfWeek, format } from 'date-fns';
+import { subMonths, format } from 'date-fns';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { useTranslations } from 'next-intl';
@@ -15,14 +15,12 @@ import {
   resolveDashboardWidgets,
 } from '@/components/dashboard/widget-registry';
 import { accountsApi } from '@/lib/accounts';
-import { transactionsApi } from '@/lib/transactions';
 import { categoriesApi } from '@/lib/categories';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { investmentsApi } from '@/lib/investments';
 import { netWorthApi } from '@/lib/net-worth';
 import { invalidateCache } from '@/lib/apiCache';
 import { Account } from '@/types/account';
-import { Transaction } from '@/types/transaction';
 import { Category } from '@/types/category';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { TopMover, PortfolioSummary, FavouriteSecurityQuote } from '@/types/investment';
@@ -55,11 +53,9 @@ function DashboardContent() {
   // delegate on the owner endpoints (and then re-run with the right
   // path), so wait until the store has hydrated before firing.
   const authHydrated = useAuthStore((s) => s._hasHydrated);
-  const weekStartsOn = (usePreferencesStore((s) => s.preferences?.weekStartsOn) ?? 1) as 0 | 1 | 2 | 3 | 4 | 5 | 6;
   const dashboardWidgets = usePreferencesStore((s) => s.preferences?.dashboardWidgets);
 
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [scheduledTransactions, setScheduledTransactions] = useState<ScheduledTransaction[]>([]);
   const [topMovers, setTopMovers] = useState<TopMover[]>([]);
@@ -133,16 +129,12 @@ function DashboardContent() {
       }
 
       const now = new Date();
-      const currentWeekStart = startOfWeek(now, { weekStartsOn });
-      const fiveWeeksAgoStart = subWeeks(currentWeekStart, 4);
-      const chartStartDate = format(fiveWeeksAgoStart, 'yyyy-MM-dd');
       const today = format(now, 'yyyy-MM-dd');
 
       const twelveMonthsAgo = format(subMonths(new Date(), 12), 'yyyy-MM-dd');
 
-      const [accountsData, allTransactions, categoriesData, scheduledData, netWorth, favouriteSecs, securitiesList] = await Promise.all([
+      const [accountsData, categoriesData, scheduledData, netWorth, favouriteSecs, securitiesList] = await Promise.all([
         accountsApi.getAll(),
-        transactionsApi.getAllPages({ startDate: chartStartDate, endDate: today }),
         categoriesApi.getAll(),
         scheduledTransactionsApi.getAll(),
         netWorthApi.getMonthly({ startDate: twelveMonthsAgo, endDate: today }).catch(() => [] as MonthlyNetWorth[]),
@@ -151,7 +143,6 @@ function DashboardContent() {
       ]);
 
       setAccounts(accountsData);
-      setTransactions(allTransactions);
       setCategories(categoriesData);
       setScheduledTransactions(scheduledData);
       setNetWorthData(netWorth);
@@ -180,7 +171,7 @@ function DashboardContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [authHydrated, weekStartsOn, isDelegateView, delegateBills]);
+  }, [authHydrated, isDelegateView, delegateBills]);
 
   useEffect(() => {
     loadDashboardData();
@@ -199,7 +190,6 @@ function DashboardContent() {
 
   const widgetContext: DashboardWidgetContext = {
     accounts,
-    transactions,
     categories,
     scheduledTransactions,
     topMovers,

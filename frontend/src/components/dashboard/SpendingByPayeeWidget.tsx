@@ -93,6 +93,7 @@ export function SpendingByPayeeWidget({ isLoading }: SpendingByPayeeWidgetProps)
   return (
     <WidgetCard
       title={t('spendingByPayee.title')}
+      widgetId={WIDGET_ID}
       headerRight={
         <span className="text-sm text-gray-500 dark:text-gray-400">
           {t(`widgets.rangeLabels.${config.range}` as Parameters<typeof t>[0])}

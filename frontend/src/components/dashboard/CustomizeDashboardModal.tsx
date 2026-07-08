@@ -13,12 +13,78 @@ import {
   DASHBOARD_WIDGETS,
   DEFAULT_DASHBOARD_WIDGET_IDS,
   DashboardWidgetId,
+  WidgetIconType,
   resolveDashboardWidgets,
 } from './widget-registry';
 
 interface CustomizeDashboardModalProps {
   isOpen: boolean;
   onClose: () => void;
+}
+
+/**
+ * Small glyph hinting at the kind of visualization a widget renders (bar, line,
+ * pie, table, or list), so users can tell widgets apart at a glance in the
+ * layout picker.
+ */
+function WidgetTypeIcon({ type }: { type: WidgetIconType }) {
+  const common = {
+    className: 'h-4 w-4 text-gray-400 dark:text-gray-500 flex-shrink-0',
+    fill: 'none',
+    viewBox: '0 0 24 24',
+    stroke: 'currentColor',
+    strokeWidth: 2,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+    'aria-hidden': true,
+    'data-testid': `widget-type-icon-${type}`,
+  };
+  switch (type) {
+    case 'bar':
+      return (
+        <svg {...common}>
+          <path d="M3 21h18" />
+          <path d="M6 21v-7" />
+          <path d="M12 21V5" />
+          <path d="M18 21v-11" />
+        </svg>
+      );
+    case 'line':
+      return (
+        <svg {...common}>
+          <path d="M3 21h18" />
+          <path d="M4 15l5-5 4 3 7-8" />
+        </svg>
+      );
+    case 'pie':
+      return (
+        <svg {...common}>
+          <path d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6Z" />
+          <path d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5Z" />
+        </svg>
+      );
+    case 'table':
+      return (
+        <svg {...common}>
+          <rect x="3.5" y="5.5" width="17" height="13" rx="1.5" />
+          <path d="M3.5 10.5h17" />
+          <path d="M3.5 14.5h17" />
+          <path d="M9.5 5.5v13" />
+        </svg>
+      );
+    case 'list':
+    default:
+      return (
+        <svg {...common}>
+          <path d="M8 6.5h12" />
+          <path d="M8 12h12" />
+          <path d="M8 17.5h12" />
+          <path d="M4 6.5h.01" />
+          <path d="M4 12h.01" />
+          <path d="M4 17.5h.01" />
+        </svg>
+      );
+  }
 }
 
 export function CustomizeDashboardModal({ isOpen, onClose }: CustomizeDashboardModalProps) {
@@ -46,6 +112,9 @@ export function CustomizeDashboardModal({ isOpen, onClose }: CustomizeDashboardM
     const section = DASHBOARD_WIDGETS.find((w) => w.id === id)!.titleSection;
     return t(`${section}.title` as Parameters<typeof t>[0]);
   };
+
+  const widgetIcon = (id: DashboardWidgetId): WidgetIconType =>
+    DASHBOARD_WIDGETS.find((w) => w.id === id)!.iconType;
 
   const moveWidget = (from: number, to: number) => {
     setVisible((prev) => {
@@ -92,7 +161,7 @@ export function CustomizeDashboardModal({ isOpen, onClose }: CustomizeDashboardM
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} maxWidth="2xl" className="p-3 sm:p-6" pushHistory>
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="4xl" className="p-4 sm:p-8" pushHistory>
       <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
         {t('customize.title')}
       </h3>
@@ -117,6 +186,7 @@ export function CustomizeDashboardModal({ isOpen, onClose }: CustomizeDashboardM
               <span aria-hidden="true" className="select-none text-gray-400 flex-shrink-0">
                 ⠿
               </span>
+              <WidgetTypeIcon type={widgetIcon(id)} />
               <span className="flex-1 min-w-0 truncate text-sm text-gray-900 dark:text-gray-100">
                 {widgetName(id)}
               </span>
@@ -191,6 +261,7 @@ export function CustomizeDashboardModal({ isOpen, onClose }: CustomizeDashboardM
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
+                <WidgetTypeIcon type={widgetIcon(id)} />
                 {widgetName(id)}
               </button>
             ))}

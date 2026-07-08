@@ -120,6 +120,7 @@ export function SecurityTypeAllocationWidget({
   return (
     <WidgetCard
       title={t('securityTypeAllocation.title')}
+      widgetId={WIDGET_ID}
       configControls={configControls}
       configTitle={t('securityTypeAllocation.title')}
     >

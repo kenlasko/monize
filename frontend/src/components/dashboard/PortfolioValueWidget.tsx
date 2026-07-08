@@ -126,6 +126,7 @@ export function PortfolioValueWidget({ accounts, isLoading }: PortfolioValueWidg
   return (
     <WidgetCard
       title={t('portfolioValue.title')}
+      widgetId={WIDGET_ID}
       headerRight={
         !loading && latestValue > 0 ? (
           <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">

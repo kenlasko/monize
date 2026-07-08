@@ -87,6 +87,7 @@ export function CreditUtilizationAccountsWidget({
   return (
     <WidgetCard
       title={t('creditUtilizationAccounts.title')}
+      widgetId={WIDGET_ID}
       configControls={creditAccounts.length > 0 ? configControls : undefined}
       configTitle={t('creditUtilizationAccounts.title')}
     >

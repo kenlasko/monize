@@ -175,6 +175,7 @@ export function GeographicAllocationWidget({
   return (
     <WidgetCard
       title={t('geographicAllocation.title')}
+      widgetId={WIDGET_ID}
       configControls={configControls}
       configTitle={t('geographicAllocation.title')}
     >

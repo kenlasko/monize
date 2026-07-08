@@ -163,6 +163,9 @@
     "accounts": "[XX-Accounts-XX]",
     "chartType": "[XX-Chart type-XX]",
     "view": "[XX-View-XX]",
+    "displayName": "[XX-Display name-XX]",
+    "description": "[XX-Description-XX]",
+    "descriptionPlaceholder": "[XX-Add an optional description-XX]",
     "rangeLabels": {
       "1m": "[XX-1M-XX]",
       "3m": "[XX-3M-XX]",

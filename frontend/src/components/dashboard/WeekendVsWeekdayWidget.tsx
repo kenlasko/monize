@@ -109,6 +109,7 @@ export function WeekendVsWeekdayWidget({ isLoading }: WeekendVsWeekdayWidgetProp
   return (
     <WidgetCard
       title={t('weekendVsWeekday.title')}
+      widgetId={WIDGET_ID}
       configControls={configControls}
       configTitle={t('weekendVsWeekday.title')}
     >

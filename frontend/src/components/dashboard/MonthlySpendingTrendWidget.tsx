@@ -86,6 +86,7 @@ export function MonthlySpendingTrendWidget({ isLoading }: MonthlySpendingTrendWi
   return (
     <WidgetCard
       title={t('monthlySpendingTrend.title')}
+      widgetId={WIDGET_ID}
       configControls={configControls}
       configTitle={t('monthlySpendingTrend.title')}
     >

@@ -86,6 +86,7 @@ export function SectorWeightingsWidget({ accounts, isLoading }: SectorWeightings
   return (
     <WidgetCard
       title={t('sectorWeightings.title')}
+      widgetId={WIDGET_ID}
       configControls={configControls}
       configTitle={t('sectorWeightings.title')}
     >

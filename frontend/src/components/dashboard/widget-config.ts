@@ -14,6 +14,22 @@ export const PORTFOLIO_RANGES = ['3m', '6m', '1y', '2y', '5y', 'all'] as const;
 /** Range presets for the weekend/weekday widget. */
 export const WEEKEND_RANGES = ['1m', '3m', '6m', '1y'] as const;
 
+/**
+ * Identity overrides available on every configurable widget: a custom display
+ * name replacing the built-in title, and an optional description shown in
+ * smaller type under the title. Managed centrally by WidgetCard (keyed by the
+ * same widget id as the rest of the widget's settings), so individual widgets
+ * only opt in by passing their `widgetId`.
+ */
+export interface WidgetIdentityConfig {
+  displayName?: string;
+  description?: string;
+}
+
+/** Max lengths for the identity fields (backend caps config strings at 100). */
+export const WIDGET_DISPLAY_NAME_MAX = 60;
+export const WIDGET_DESCRIPTION_MAX = 100;
+
 export interface RangeConfig {
   range: string;
 }
@@ -29,6 +45,12 @@ export interface IncomeBySourceConfig {
 }
 
 export interface AccountsConfig {
+  accountIds: string[];
+}
+
+/** Timeframe + accounts config for the transaction-based summary charts. */
+export interface RangeAccountsConfig {
+  range: string;
   accountIds: string[];
 }
 
@@ -84,4 +106,16 @@ export const RECURRING_EXPENSES_DEFAULT: RecurringConfig = { minOccurrences: 3 }
 export const WEEKEND_WEEKDAY_DEFAULT: WeekendConfig = {
   range: '3m',
   view: 'overview',
+};
+
+// The two default summary charts default to their historical windows: the pie
+// showed the past 30 days, the income/expenses bars the recent weeks.
+export const EXPENSES_PIE_DEFAULT: RangeAccountsConfig = {
+  range: '1m',
+  accountIds: [],
+};
+
+export const INCOME_EXPENSES_DEFAULT: RangeAccountsConfig = {
+  range: '1m',
+  accountIds: [],
 };

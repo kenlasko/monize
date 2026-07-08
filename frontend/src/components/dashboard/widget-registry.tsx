@@ -3,7 +3,6 @@
 import { ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { Account } from '@/types/account';
-import { Transaction } from '@/types/transaction';
 import { Category } from '@/types/category';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { TopMover, FavouriteSecurityQuote } from '@/types/investment';
@@ -76,10 +75,12 @@ export type DashboardWidgetId =
   | 'recurring-expenses'
   | 'weekend-weekday';
 
+/** The kind of visualization a widget renders, shown as an icon in Customize. */
+export type WidgetIconType = 'bar' | 'line' | 'pie' | 'table' | 'list';
+
 /** Everything the dashboard page loads, handed to each widget's render. */
 export interface DashboardWidgetContext {
   accounts: Account[];
-  transactions: Transaction[];
   categories: Category[];
   scheduledTransactions: ScheduledTransaction[];
   topMovers: TopMover[];
@@ -98,6 +99,8 @@ export interface DashboardWidgetDefinition {
   id: DashboardWidgetId;
   /** Key inside the `dashboard` namespace whose `.title` names the widget. */
   titleSection: string;
+  /** Visualization kind, surfaced as an icon in the Customize dashboard modal. */
+  iconType: WidgetIconType;
   /** Part of the default layout shown to users who never customized. */
   defaultEnabled: boolean;
   /** Rendered for a delegate acting on behalf of the account owner. */
@@ -118,6 +121,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
   {
     id: 'favourite-accounts',
     titleSection: 'favouriteAccounts',
+    iconType: 'table',
     defaultEnabled: true,
     delegateVisible: () => true,
     render: (ctx) => (
@@ -132,6 +136,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
   {
     id: 'upcoming-bills',
     titleSection: 'upcomingBills',
+    iconType: 'table',
     defaultEnabled: true,
     delegateVisible: (sections) => !!sections?.bills,
     render: (ctx) => (
@@ -146,6 +151,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
   {
     id: 'top-movers',
     titleSection: 'topMovers',
+    iconType: 'table',
     defaultEnabled: true,
     shouldRender: (ctx) => ctx.isLoading || ctx.hasSecurities,
     render: (ctx) => (
@@ -161,6 +167,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
   {
     id: 'favourite-securities',
     titleSection: 'favouriteSecurities',
+    iconType: 'table',
     defaultEnabled: true,
     shouldRender: (ctx) => ctx.isLoading || ctx.hasSecurities,
     render: (ctx) => (
@@ -175,22 +182,25 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
   {
     id: 'net-worth',
     titleSection: 'netWorth',
+    iconType: 'line',
     defaultEnabled: true,
     render: (ctx) => <NetWorthChart data={ctx.netWorthData} isLoading={ctx.isLoading} />,
   },
   {
     id: 'assets-liabilities',
     titleSection: 'assetsVsLiabilities',
+    iconType: 'bar',
     defaultEnabled: true,
     render: (ctx) => <AssetsVsLiabilities data={ctx.netWorthData} isLoading={ctx.isLoading} />,
   },
   {
     id: 'expenses-pie',
     titleSection: 'expensesPieChart',
+    iconType: 'pie',
     defaultEnabled: true,
     render: (ctx) => (
       <ExpensesPieChart
-        transactions={ctx.transactions}
+        accounts={ctx.accounts}
         categories={ctx.categories}
         isLoading={ctx.isLoading}
       />
@@ -199,20 +209,23 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
   {
     id: 'income-expenses',
     titleSection: 'incomeExpenses',
+    iconType: 'bar',
     defaultEnabled: true,
     render: (ctx) => (
-      <IncomeExpensesBarChart transactions={ctx.transactions} isLoading={ctx.isLoading} />
+      <IncomeExpensesBarChart accounts={ctx.accounts} isLoading={ctx.isLoading} />
     ),
   },
   {
     id: 'budget-status',
     titleSection: 'budgetStatus',
+    iconType: 'bar',
     defaultEnabled: true,
     render: (ctx) => <BudgetStatusWidget isLoading={ctx.isLoading} />,
   },
   {
     id: 'insights',
     titleSection: 'insights',
+    iconType: 'list',
     defaultEnabled: true,
     render: (ctx) => <InsightsWidget isLoading={ctx.isLoading} />,
   },
@@ -220,6 +233,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
   {
     id: 'favourite-reports',
     titleSection: 'favouriteReports',
+    iconType: 'list',
     defaultEnabled: false,
     render: (ctx) => <FavouriteReportsWidget isLoading={ctx.isLoading} />,
   },
@@ -228,6 +242,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
   {
     id: 'portfolio-value',
     titleSection: 'portfolioValue',
+    iconType: 'line',
     defaultEnabled: false,
     shouldRender: (ctx) => ctx.isLoading || ctx.hasInvestments,
     render: (ctx) => <PortfolioValueWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
@@ -235,36 +250,42 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
   {
     id: 'spending-by-payee',
     titleSection: 'spendingByPayee',
+    iconType: 'bar',
     defaultEnabled: false,
     render: (ctx) => <SpendingByPayeeWidget isLoading={ctx.isLoading} />,
   },
   {
     id: 'monthly-spending-trend',
     titleSection: 'monthlySpendingTrend',
+    iconType: 'line',
     defaultEnabled: false,
     render: (ctx) => <MonthlySpendingTrendWidget isLoading={ctx.isLoading} />,
   },
   {
     id: 'income-by-source',
     titleSection: 'incomeBySource',
+    iconType: 'pie',
     defaultEnabled: false,
     render: (ctx) => <IncomeBySourceWidget isLoading={ctx.isLoading} />,
   },
   {
     id: 'credit-utilization-accounts',
     titleSection: 'creditUtilizationAccounts',
+    iconType: 'bar',
     defaultEnabled: false,
     render: (ctx) => <CreditUtilizationAccountsWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
   },
   {
     id: 'credit-utilization-total',
     titleSection: 'creditUtilizationTotal',
+    iconType: 'pie',
     defaultEnabled: false,
     render: (ctx) => <CreditUtilizationTotalWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
   },
   {
     id: 'sector-weightings',
     titleSection: 'sectorWeightings',
+    iconType: 'pie',
     defaultEnabled: false,
     shouldRender: (ctx) => ctx.isLoading || ctx.hasInvestments,
     render: (ctx) => <SectorWeightingsWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
@@ -272,6 +293,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
   {
     id: 'security-type-allocation',
     titleSection: 'securityTypeAllocation',
+    iconType: 'pie',
     defaultEnabled: false,
     shouldRender: (ctx) => ctx.isLoading || ctx.hasInvestments,
     render: (ctx) => <SecurityTypeAllocationWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
@@ -279,6 +301,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
   {
     id: 'geographic-allocation',
     titleSection: 'geographicAllocation',
+    iconType: 'pie',
     defaultEnabled: false,
     shouldRender: (ctx) => ctx.isLoading || ctx.hasInvestments,
     render: (ctx) => <GeographicAllocationWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
@@ -286,12 +309,14 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
   {
     id: 'recurring-expenses',
     titleSection: 'recurringExpenses',
+    iconType: 'table',
     defaultEnabled: false,
     render: (ctx) => <RecurringExpensesWidget isLoading={ctx.isLoading} />,
   },
   {
     id: 'weekend-weekday',
     titleSection: 'weekendVsWeekday',
+    iconType: 'bar',
     defaultEnabled: false,
     render: (ctx) => <WeekendVsWeekdayWidget isLoading={ctx.isLoading} />,
   },

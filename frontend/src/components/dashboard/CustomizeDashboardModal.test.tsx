@@ -287,6 +287,16 @@ describe('CustomizeDashboardModal', () => {
     expect(updatePreferencesMock).toHaveBeenCalledWith({ dashboardWidgets: [] });
   });
 
+  it('shows a widget-type icon in each visible tile and hidden chip', async () => {
+    await renderModal();
+    // Expenses by Category is a pie; Income vs Expenses is a bar chart.
+    expect(within(tile('expenses-pie')).getByTestId('widget-type-icon-pie')).toBeInTheDocument();
+    expect(within(tile('income-expenses')).getByTestId('widget-type-icon-bar')).toBeInTheDocument();
+    // Hidden chips carry their type icon too.
+    const chip = screen.getByTestId('widget-hidden-portfolio-value');
+    expect(within(chip).getByTestId('widget-type-icon-line')).toBeInTheDocument();
+  });
+
   it('every registered widget appears exactly once (tile or hidden chip)', async () => {
     await renderModal();
     for (const w of DASHBOARD_WIDGETS) {
