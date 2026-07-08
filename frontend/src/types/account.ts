@@ -46,9 +46,11 @@ export interface Account {
   // Credit card statement fields
   statementDueDay: number | null;
   statementSettlementDay: number | null;
-  // Loan-specific fields
+  // Loan-specific fields. Mortgages persist their (possibly accelerated or
+  // semi-monthly) cadence in this same column, so the stored value may be a
+  // MortgagePaymentFrequency, not only a loan PaymentFrequency.
   paymentAmount: number | null;
-  paymentFrequency: PaymentFrequency | null;
+  paymentFrequency: PaymentFrequency | MortgagePaymentFrequency | null;
   paymentStartDate: string | null;
   sourceAccountId: string | null;
   principalCategoryId: string | null;
