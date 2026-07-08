@@ -449,5 +449,10 @@
     "deleteLastAdmin": "Tidak dapat menghapus akun admin terakhir. Promosikan pengguna lain terlebih dahulu.",
     "oidcReauthRequiredForDataDelete": "Autentikasi ulang OIDC diperlukan untuk mengonfirmasi penghapusan data",
     "passwordRequiredForDataDelete": "Kata sandi diperlukan untuk mengonfirmasi penghapusan data"
+  },
+  "loanScenarios": {
+    "notFound": "Skenario pinjaman dengan ID {{ id }} tidak ditemukan",
+    "nameConflict": "Skenario bernama \"{{ name }}\" sudah ada untuk akun ini",
+    "notLoanAccount": "Skenario pinjaman hanya tersedia untuk akun pinjaman, hipotek, dan jalur kredit"
   }
 }

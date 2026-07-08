@@ -77,7 +77,8 @@
       "closeTitleDisabled": "Для закриття рахунку баланс має бути нульовим",
       "closeTitleEnabled": "Закрити рахунок",
       "balanceMustBeZero": "Баланс має бути нульовим",
-      "closedPrefix": " — Закритий"
+      "closedPrefix": " — Закритий",
+      "loanDetails": "Деталі кредиту"
     }
   },
   "contextMenu": {
@@ -312,5 +313,117 @@
     "paymentStartDateRequired": "Дата першого платежу є обов'язковою",
     "paymentAccountRequired": "Рахунок списання є обов'язковим",
     "amortizationRequired": "Амортизаційний період є обов'язковим"
+  },
+  "loanDetail": {
+    "backToAccounts": "Назад до рахунків",
+    "viewTransactions": "Переглянути операції",
+    "notFound": "Рахунок не знайдено",
+    "loadFailed": "Не вдалося завантажити деталі рахунку",
+    "frequency": {
+      "WEEKLY": "Щотижня",
+      "BIWEEKLY": "Раз на два тижні",
+      "SEMI_MONTHLY": "Двічі на місяць",
+      "MONTHLY": "Щомісяця",
+      "QUARTERLY": "Щокварталу",
+      "YEARLY": "Щороку",
+      "ACCELERATED_BIWEEKLY": "Прискорено раз на два тижні",
+      "ACCELERATED_WEEKLY": "Прискорено щотижня"
+    },
+    "summary": {
+      "currentBalance": "Поточний баланс",
+      "originalAmount": "Початкова сума",
+      "interestRate": "Відсоткова ставка",
+      "effectiveRate": "{rate}% ефективна",
+      "payment": "Платіж",
+      "estPayoff": "Очік. погашення",
+      "estRemainingInterest": "Очік. залишок відсотків",
+      "notSet": "Не задано",
+      "notAvailable": "Н/Д",
+      "paidOff": "Погашено"
+    },
+    "schedule": {
+      "title": "Графік платежів",
+      "subtitle": "{historical, plural, one {# платіж внесено} few {# платежі внесено} many {# платежів внесено} other {# платежу внесено}}, {projected, plural, one {# прогнозований} few {# прогнозовані} many {# прогнозованих} other {# прогнозованого}}",
+      "colNumber": "№",
+      "colDate": "Дата",
+      "colPayment": "Платіж",
+      "colPrincipal": "Основний борг",
+      "colInterest": "Відсотки",
+      "colExtra": "Дострокове погашення",
+      "colBalance": "Залишок",
+      "projectedFuturePayments": "Прогнозовані майбутні платежі",
+      "showAll": "Показати всі платежі ({count})",
+      "showLess": "Показати менше",
+      "noPayments": "Платежів не знайдено"
+    },
+    "simulator": {
+      "title": "Симулятор дострокового погашення",
+      "description": "Змоделюйте додаткові платежі, щоб побачити, наскільки раніше можна погасити кредит і скільки відсотків ви заощадите. Симуляції не змінюють ваші реальні платежі.",
+      "reset": "Скинути",
+      "detectedExtraHint": "Історія платежів показує в середньому {amount} додаткового погашення основного боргу за платіж.",
+      "applyDetected": "Використати",
+      "recurringAmount": "Додатково до платежу",
+      "recurringStart": "З (необов'язково)",
+      "recurringEnd": "До (необов'язково)",
+      "lumpSums": "Разові платежі",
+      "addLumpSum": "Додати разовий платіж",
+      "noLumpSums": "Разових платежів не додано.",
+      "lumpSumDate": "Дата",
+      "lumpSumAmount": "Сума",
+      "removeLumpSum": "Видалити"
+    },
+    "comparison": {
+      "newPayoff": "Нова дата погашення",
+      "timeSaved": "Заощаджений час",
+      "monthsSaved": "{count, plural, one {# місяць} few {# місяці} many {# місяців} other {# місяця}}",
+      "paymentsSaved": "{count, plural, one {# платіж} few {# платежі} many {# платежів} other {# платежу}}",
+      "interestSaved": "Заощаджені відсотки",
+      "totalExtraContributed": "Усього внесено додатково",
+      "beyondProjection": "Поза прогнозом"
+    },
+    "chart": {
+      "title": "Хронологія погашення",
+      "empty": "Немає історії платежів і прогнозу.",
+      "seriesHistorical": "Фактичний залишок",
+      "seriesBaseline": "Поточний прогноз",
+      "seriesScenario": "З достроковими платежами",
+      "today": "Сьогодні",
+      "scenarioNote": "Сценарій дострокового погашення — це симуляція; він не змінює ваші заплановані платежі."
+    },
+    "scenarios": {
+      "title": "Збережені сценарії",
+      "saveCurrent": "Зберегти поточний сценарій",
+      "empty": "Збережених сценаріїв поки немає. Налаштуйте дострокове погашення вище та збережіть його, щоб порівнювати плани з часом.",
+      "load": "Завантажити",
+      "rename": "Перейменувати",
+      "delete": "Видалити",
+      "cancel": "Скасувати",
+      "save": "Зберегти",
+      "saveTitle": "Зберегти сценарій",
+      "renameTitle": "Перейменувати сценарій",
+      "nameLabel": "Назва сценарію",
+      "recurringSummary": "{amount} додатково до платежу",
+      "lumpSumSummary": "{count, plural, one {# разовий платіж} few {# разові платежі} many {# разових платежів} other {# разового платежу}}",
+      "emptyScenario": "Без дострокових платежів",
+      "savedToast": "Сценарій «{name}» збережено",
+      "renamedToast": "Сценарій перейменовано на «{name}»",
+      "deletedToast": "Сценарій «{name}» видалено",
+      "saveFailed": "Не вдалося зберегти сценарій",
+      "deleteFailed": "Не вдалося видалити сценарій"
+    },
+    "pastImpact": {
+      "title": "Ефект уже здійснених дострокових платежів",
+      "description": "Як уже здійснені платежі співвідносяться з початковим договірним графіком.",
+      "missingData": "Щоб побачити, наскільки дострокові платежі скоротили цей кредит, задайте початкову суму та дату першого платежу в налаштуваннях рахунку.",
+      "monthsAlreadySaved": "Уже заощаджений час",
+      "monthsValue": "{count, plural, one {# місяць} few {# місяці} many {# місяців} other {# місяця}}",
+      "payoffComparison": "Спочатку {original}, тепер {current}",
+      "interestAlreadySaved": "Уже заощаджені відсотки",
+      "vsOriginalInterest": "проти початково прогнозованих {amount}",
+      "seriesOriginal": "Початковий графік",
+      "seriesActual": "Фактичний залишок",
+      "seriesCurrent": "Поточний прогноз",
+      "unknown": "Невідомо"
+    }
   }
 }

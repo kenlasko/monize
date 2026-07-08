@@ -77,7 +77,8 @@
       "closeTitleDisabled": "閉鎖するには残高がゼロである必要があります",
       "closeTitleEnabled": "勘定科目を閉鎖",
       "balanceMustBeZero": "残高はゼロである必要があります",
-      "closedPrefix": " — 閉鎖済み"
+      "closedPrefix": " — 閉鎖済み",
+      "loanDetails": "ローン詳細"
     }
   },
   "contextMenu": {
@@ -312,5 +313,117 @@
     "paymentStartDateRequired": "初回支払日は必須です",
     "paymentAccountRequired": "支払い元勘定科目は必須です",
     "amortizationRequired": "償却期間は必須です"
+  },
+  "loanDetail": {
+    "backToAccounts": "勘定科目一覧に戻る",
+    "viewTransactions": "取引を表示",
+    "notFound": "勘定科目が見つかりません",
+    "loadFailed": "勘定科目の詳細を読み込めませんでした",
+    "frequency": {
+      "WEEKLY": "毎週",
+      "BIWEEKLY": "隔週",
+      "SEMI_MONTHLY": "月2回",
+      "MONTHLY": "毎月",
+      "QUARTERLY": "四半期ごと",
+      "YEARLY": "毎年",
+      "ACCELERATED_BIWEEKLY": "加速隔週",
+      "ACCELERATED_WEEKLY": "加速毎週"
+    },
+    "summary": {
+      "currentBalance": "現在残高",
+      "originalAmount": "当初借入額",
+      "interestRate": "金利",
+      "effectiveRate": "実効 {rate}%",
+      "payment": "返済額",
+      "estPayoff": "完済予定",
+      "estRemainingInterest": "残り利息（推定）",
+      "notSet": "未設定",
+      "notAvailable": "なし",
+      "paidOff": "完済"
+    },
+    "schedule": {
+      "title": "返済スケジュール",
+      "subtitle": "{historical, plural, one {支払済み # 回} other {支払済み # 回}}、{projected, plural, one {予測 # 回} other {予測 # 回}}",
+      "colNumber": "No.",
+      "colDate": "日付",
+      "colPayment": "返済額",
+      "colPrincipal": "元金",
+      "colInterest": "利息",
+      "colExtra": "繰上返済",
+      "colBalance": "残高",
+      "projectedFuturePayments": "予測される今後の返済",
+      "showAll": "全 {count} 回の返済を表示",
+      "showLess": "表示を減らす",
+      "noPayments": "返済が見つかりません"
+    },
+    "simulator": {
+      "title": "繰上返済シミュレーター",
+      "description": "追加返済をシミュレーションして、ローンをどれだけ早く完済でき、利息をいくら節約できるかを確認できます。シミュレーションは実際の返済には影響しません。",
+      "reset": "リセット",
+      "detectedExtraHint": "返済履歴によると、1回あたり平均 {amount} の繰上返済を行っています。",
+      "applyDetected": "使用する",
+      "recurringAmount": "毎回の追加額",
+      "recurringStart": "開始日（任意）",
+      "recurringEnd": "終了日（任意）",
+      "lumpSums": "一括繰上返済",
+      "addLumpSum": "一括返済を追加",
+      "noLumpSums": "一括返済は追加されていません。",
+      "lumpSumDate": "日付",
+      "lumpSumAmount": "金額",
+      "removeLumpSum": "削除"
+    },
+    "comparison": {
+      "newPayoff": "新しい完済日",
+      "timeSaved": "短縮期間",
+      "monthsSaved": "{count, plural, one {# か月} other {# か月}}",
+      "paymentsSaved": "{count, plural, one {# 回} other {# 回}}",
+      "interestSaved": "節約できる利息",
+      "totalExtraContributed": "追加返済の合計",
+      "beyondProjection": "予測範囲外"
+    },
+    "chart": {
+      "title": "完済タイムライン",
+      "empty": "返済履歴や予測はありません。",
+      "seriesHistorical": "実際の残高",
+      "seriesBaseline": "現在の予測",
+      "seriesScenario": "繰上返済あり",
+      "today": "今日",
+      "scenarioNote": "繰上返済シナリオはシミュレーションであり、予定されている返済を変更するものではありません。"
+    },
+    "scenarios": {
+      "title": "保存済みシナリオ",
+      "saveCurrent": "現在のシナリオを保存",
+      "empty": "保存済みのシナリオはまだありません。上で繰上返済を設定して保存すると、プランを比較できます。",
+      "load": "読み込む",
+      "rename": "名前を変更",
+      "delete": "削除",
+      "cancel": "キャンセル",
+      "save": "保存",
+      "saveTitle": "シナリオを保存",
+      "renameTitle": "シナリオの名前を変更",
+      "nameLabel": "シナリオ名",
+      "recurringSummary": "毎回 {amount} 追加",
+      "lumpSumSummary": "{count, plural, one {一括返済 # 件} other {一括返済 # 件}}",
+      "emptyScenario": "繰上返済なし",
+      "savedToast": "シナリオ「{name}」を保存しました",
+      "renamedToast": "シナリオ名を「{name}」に変更しました",
+      "deletedToast": "シナリオ「{name}」を削除しました",
+      "saveFailed": "シナリオを保存できませんでした",
+      "deleteFailed": "シナリオを削除できませんでした"
+    },
+    "pastImpact": {
+      "title": "これまでの繰上返済の効果",
+      "description": "これまでの返済が当初の契約スケジュールと比べてどう推移しているかを示します。",
+      "missingData": "繰上返済によってこのローンがどれだけ短縮されたかを見るには、勘定科目に当初借入額と初回返済日を設定してください。",
+      "monthsAlreadySaved": "すでに短縮された期間",
+      "monthsValue": "{count, plural, one {# か月} other {# か月}}",
+      "payoffComparison": "当初 {original} → 現在 {current}",
+      "interestAlreadySaved": "すでに節約した利息",
+      "vsOriginalInterest": "当初予測 {amount} に対して",
+      "seriesOriginal": "当初スケジュール",
+      "seriesActual": "実際の残高",
+      "seriesCurrent": "現在の予測",
+      "unknown": "不明"
+    }
   }
 }

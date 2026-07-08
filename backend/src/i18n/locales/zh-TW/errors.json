@@ -449,5 +449,10 @@
     "deleteLastAdmin": "無法刪除最後一個管理員帳戶。請先晉升其他使用者。",
     "oidcReauthRequiredForDataDelete": "需要 OIDC 重新驗證以確認資料刪除",
     "passwordRequiredForDataDelete": "需要密碼以確認資料刪除"
+  },
+  "loanScenarios": {
+    "notFound": "找不到 ID 為 {{ id }} 的貸款情境",
+    "nameConflict": "此帳戶已存在名為「{{ name }}」的情境",
+    "notLoanAccount": "貸款情境僅適用於貸款、抵押貸款和信用額度帳戶"
   }
 }

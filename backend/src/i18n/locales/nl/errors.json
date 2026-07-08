@@ -449,5 +449,10 @@
     "deleteLastAdmin": "Kan het laatste beheerdersaccount niet verwijderen. Promoveer eerst een andere gebruiker.",
     "oidcReauthRequiredForDataDelete": "OIDC-herauthenticatie is vereist om het verwijderen van gegevens te bevestigen",
     "passwordRequiredForDataDelete": "Wachtwoord is vereist om het verwijderen van gegevens te bevestigen"
+  },
+  "loanScenarios": {
+    "notFound": "Leningscenario met ID {{ id }} niet gevonden",
+    "nameConflict": "Er bestaat al een scenario met de naam \"{{ name }}\" voor deze rekening",
+    "notLoanAccount": "Leningscenario's zijn alleen beschikbaar voor lening-, hypotheek- en kredietlijnrekeningen"
   }
 }

@@ -449,5 +449,10 @@
     "deleteLastAdmin": "无法删除最后一个管理员账户。请先提升其他用户。",
     "oidcReauthRequiredForDataDelete": "需要 OIDC 重新验证以确认数据删除",
     "passwordRequiredForDataDelete": "确认数据删除需要密码"
+  },
+  "loanScenarios": {
+    "notFound": "未找到 ID 为 {{ id }} 的贷款方案",
+    "nameConflict": "此账户已存在名为\"{{ name }}\"的方案",
+    "notLoanAccount": "贷款方案仅适用于贷款、抵押贷款和信用额度账户"
   }
 }

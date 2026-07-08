@@ -449,5 +449,10 @@
     "deleteLastAdmin": "Không thể xóa tài khoản quản trị viên cuối cùng. Hãy thăng cấp người dùng khác trước.",
     "oidcReauthRequiredForDataDelete": "Yêu cầu xác thực lại OIDC để xác nhận xóa dữ liệu",
     "passwordRequiredForDataDelete": "Cần mật khẩu để xác nhận xóa dữ liệu"
+  },
+  "loanScenarios": {
+    "notFound": "Không tìm thấy kịch bản khoản vay có ID {{ id }}",
+    "nameConflict": "Kịch bản có tên \"{{ name }}\" đã tồn tại cho tài khoản này",
+    "notLoanAccount": "Kịch bản khoản vay chỉ khả dụng cho tài khoản khoản vay, thế chấp và hạn mức tín dụng"
   }
 }

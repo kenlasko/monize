@@ -77,7 +77,8 @@
       "closeTitleDisabled": "账户余额必须为零才能关闭",
       "closeTitleEnabled": "关闭账户",
       "balanceMustBeZero": "余额必须为零",
-      "closedPrefix": " — 已关闭"
+      "closedPrefix": " — 已关闭",
+      "loanDetails": "贷款详情"
     }
   },
   "contextMenu": {
@@ -312,5 +313,117 @@
     "paymentStartDateRequired": "首次还款日期为必填项",
     "paymentAccountRequired": "还款来源账户为必填项",
     "amortizationRequired": "摊销期为必填项"
+  },
+  "loanDetail": {
+    "backToAccounts": "返回账户",
+    "viewTransactions": "查看交易",
+    "notFound": "未找到账户",
+    "loadFailed": "无法加载账户详情",
+    "frequency": {
+      "WEEKLY": "每周",
+      "BIWEEKLY": "每两周",
+      "SEMI_MONTHLY": "每月两次",
+      "MONTHLY": "每月",
+      "QUARTERLY": "每季度",
+      "YEARLY": "每年",
+      "ACCELERATED_BIWEEKLY": "加速双周",
+      "ACCELERATED_WEEKLY": "加速每周"
+    },
+    "summary": {
+      "currentBalance": "当前余额",
+      "originalAmount": "原始金额",
+      "interestRate": "利率",
+      "effectiveRate": "实际利率 {rate}%",
+      "payment": "还款额",
+      "estPayoff": "预计还清",
+      "estRemainingInterest": "预计剩余利息",
+      "notSet": "未设置",
+      "notAvailable": "无",
+      "paidOff": "已还清"
+    },
+    "schedule": {
+      "title": "还款计划",
+      "subtitle": "{historical, plural, one {已还款 # 期} other {已还款 # 期}}，{projected, plural, one {预测 # 期} other {预测 # 期}}",
+      "colNumber": "期数",
+      "colDate": "日期",
+      "colPayment": "还款额",
+      "colPrincipal": "本金",
+      "colInterest": "利息",
+      "colExtra": "额外本金",
+      "colBalance": "余额",
+      "projectedFuturePayments": "预测的未来还款",
+      "showAll": "显示全部 {count} 期还款",
+      "showLess": "收起",
+      "noPayments": "未找到还款记录"
+    },
+    "simulator": {
+      "title": "提前还款模拟器",
+      "description": "模拟额外还款，看看贷款能提前多久还清、能节省多少利息。模拟不会改变您的实际还款。",
+      "reset": "重置",
+      "detectedExtraHint": "您的还款历史显示，平均每期额外偿还本金 {amount}。",
+      "applyDetected": "使用",
+      "recurringAmount": "每期额外还款",
+      "recurringStart": "开始日期（可选）",
+      "recurringEnd": "结束日期（可选）",
+      "lumpSums": "一次性还款",
+      "addLumpSum": "添加一次性还款",
+      "noLumpSums": "尚未添加一次性还款。",
+      "lumpSumDate": "日期",
+      "lumpSumAmount": "金额",
+      "removeLumpSum": "移除"
+    },
+    "comparison": {
+      "newPayoff": "新的还清日期",
+      "timeSaved": "节省的时间",
+      "monthsSaved": "{count, plural, one {# 个月} other {# 个月}}",
+      "paymentsSaved": "{count, plural, one {# 期} other {# 期}}",
+      "interestSaved": "节省的利息",
+      "totalExtraContributed": "额外还款总额",
+      "beyondProjection": "超出预测范围"
+    },
+    "chart": {
+      "title": "还清时间线",
+      "empty": "没有可用的还款历史或预测。",
+      "seriesHistorical": "实际余额",
+      "seriesBaseline": "当前预测",
+      "seriesScenario": "含提前还款",
+      "today": "今天",
+      "scenarioNote": "提前还款方案只是模拟，不会改变您的计划还款。"
+    },
+    "scenarios": {
+      "title": "已保存的方案",
+      "saveCurrent": "保存当前方案",
+      "empty": "尚无已保存的方案。在上方设置提前还款并保存，以便长期比较不同计划。",
+      "load": "加载",
+      "rename": "重命名",
+      "delete": "删除",
+      "cancel": "取消",
+      "save": "保存",
+      "saveTitle": "保存方案",
+      "renameTitle": "重命名方案",
+      "nameLabel": "方案名称",
+      "recurringSummary": "每期额外 {amount}",
+      "lumpSumSummary": "{count, plural, one {# 笔一次性还款} other {# 笔一次性还款}}",
+      "emptyScenario": "无提前还款",
+      "savedToast": "方案\"{name}\"已保存",
+      "renamedToast": "方案已重命名为\"{name}\"",
+      "deletedToast": "方案\"{name}\"已删除",
+      "saveFailed": "无法保存方案",
+      "deleteFailed": "无法删除方案"
+    },
+    "pastImpact": {
+      "title": "已还提前还款的影响",
+      "description": "您已完成的还款与原始合同还款计划的对比。",
+      "missingData": "要查看提前还款为这笔贷款缩短了多少时间，请在账户中设置原始本金和首次还款日期。",
+      "monthsAlreadySaved": "已节省的时间",
+      "monthsValue": "{count, plural, one {# 个月} other {# 个月}}",
+      "payoffComparison": "原为 {original}，现为 {current}",
+      "interestAlreadySaved": "已节省的利息",
+      "vsOriginalInterest": "对比原预测的 {amount}",
+      "seriesOriginal": "原始计划",
+      "seriesActual": "实际余额",
+      "seriesCurrent": "当前预测",
+      "unknown": "未知"
+    }
   }
 }

@@ -77,7 +77,8 @@
       "closeTitleDisabled": "Le solde du compte doit être nul pour le clôturer",
       "closeTitleEnabled": "Clôturer le compte",
       "balanceMustBeZero": "Le solde doit être nul",
-      "closedPrefix": " — Clôturé"
+      "closedPrefix": " — Clôturé",
+      "loanDetails": "Détails du prêt"
     }
   },
   "contextMenu": {
@@ -312,5 +313,117 @@
     "paymentStartDateRequired": "La date du premier paiement est obligatoire",
     "paymentAccountRequired": "Le compte de paiement est obligatoire",
     "amortizationRequired": "La période d'amortissement est obligatoire"
+  },
+  "loanDetail": {
+    "backToAccounts": "Retour aux comptes",
+    "viewTransactions": "Voir les transactions",
+    "notFound": "Compte introuvable",
+    "loadFailed": "Échec du chargement des détails du compte",
+    "frequency": {
+      "WEEKLY": "Hebdomadaire",
+      "BIWEEKLY": "Aux deux semaines",
+      "SEMI_MONTHLY": "Bimensuel",
+      "MONTHLY": "Mensuel",
+      "QUARTERLY": "Trimestriel",
+      "YEARLY": "Annuel",
+      "ACCELERATED_BIWEEKLY": "Accéléré aux deux semaines",
+      "ACCELERATED_WEEKLY": "Accéléré hebdomadaire"
+    },
+    "summary": {
+      "currentBalance": "Solde actuel",
+      "originalAmount": "Montant initial",
+      "interestRate": "Taux d'intérêt",
+      "effectiveRate": "{rate} % effectif",
+      "payment": "Versement",
+      "estPayoff": "Remboursement est.",
+      "estRemainingInterest": "Intérêts restants est.",
+      "notSet": "Non défini",
+      "notAvailable": "N/D",
+      "paidOff": "Remboursé"
+    },
+    "schedule": {
+      "title": "Calendrier d'amortissement",
+      "subtitle": "{historical, plural, one {# versement effectué} other {# versements effectués}}, {projected, plural, one {# projeté} other {# projetés}}",
+      "colNumber": "Nº",
+      "colDate": "Date",
+      "colPayment": "Versement",
+      "colPrincipal": "Capital",
+      "colInterest": "Intérêts",
+      "colExtra": "Capital supplémentaire",
+      "colBalance": "Solde",
+      "projectedFuturePayments": "Versements futurs projetés",
+      "showAll": "Afficher les {count} versements",
+      "showLess": "Afficher moins",
+      "noPayments": "Aucun versement trouvé"
+    },
+    "simulator": {
+      "title": "Simulateur de remboursement anticipé",
+      "description": "Simulez des versements supplémentaires pour voir combien de temps plus tôt le prêt pourrait être remboursé et combien d'intérêts vous économiseriez. Les simulations ne modifient pas vos versements réels.",
+      "reset": "Réinitialiser",
+      "detectedExtraHint": "Votre historique de paiements montre une moyenne de {amount} de capital supplémentaire par versement.",
+      "applyDetected": "Utiliser",
+      "recurringAmount": "Supplément par versement",
+      "recurringStart": "À partir de (facultatif)",
+      "recurringEnd": "Jusqu'à (facultatif)",
+      "lumpSums": "Versements forfaitaires ponctuels",
+      "addLumpSum": "Ajouter un versement forfaitaire",
+      "noLumpSums": "Aucun versement forfaitaire ajouté.",
+      "lumpSumDate": "Date",
+      "lumpSumAmount": "Montant",
+      "removeLumpSum": "Retirer"
+    },
+    "comparison": {
+      "newPayoff": "Nouvelle date de remboursement",
+      "timeSaved": "Temps économisé",
+      "monthsSaved": "{count, plural, one {# mois} other {# mois}}",
+      "paymentsSaved": "{count, plural, one {# versement} other {# versements}}",
+      "interestSaved": "Intérêts économisés",
+      "totalExtraContributed": "Total des versements supplémentaires",
+      "beyondProjection": "Au-delà de la projection"
+    },
+    "chart": {
+      "title": "Chronologie du remboursement",
+      "empty": "Aucun historique de paiements ni projection disponible.",
+      "seriesHistorical": "Solde réel",
+      "seriesBaseline": "Projection actuelle",
+      "seriesScenario": "Avec remboursements anticipés",
+      "today": "Aujourd'hui",
+      "scenarioNote": "Le scénario de remboursement anticipé est une simulation et ne modifie pas vos versements planifiés."
+    },
+    "scenarios": {
+      "title": "Scénarios enregistrés",
+      "saveCurrent": "Enregistrer le scénario actuel",
+      "empty": "Aucun scénario enregistré pour l'instant. Configurez un remboursement anticipé ci-dessus et enregistrez-le pour comparer vos plans au fil du temps.",
+      "load": "Charger",
+      "rename": "Renommer",
+      "delete": "Supprimer",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "saveTitle": "Enregistrer le scénario",
+      "renameTitle": "Renommer le scénario",
+      "nameLabel": "Nom du scénario",
+      "recurringSummary": "{amount} de plus par versement",
+      "lumpSumSummary": "{count, plural, one {# versement forfaitaire} other {# versements forfaitaires}}",
+      "emptyScenario": "Aucun remboursement anticipé",
+      "savedToast": "Scénario « {name} » enregistré",
+      "renamedToast": "Scénario renommé en « {name} »",
+      "deletedToast": "Scénario « {name} » supprimé",
+      "saveFailed": "Échec de l'enregistrement du scénario",
+      "deleteFailed": "Échec de la suppression du scénario"
+    },
+    "pastImpact": {
+      "title": "Impact des remboursements anticipés effectués",
+      "description": "Comment les versements que vous avez déjà effectués se comparent au calendrier contractuel initial.",
+      "missingData": "Pour voir comment vos remboursements anticipés ont raccourci ce prêt, définissez le capital initial et la date du premier versement sur le compte.",
+      "monthsAlreadySaved": "Temps déjà économisé",
+      "monthsValue": "{count, plural, one {# mois} other {# mois}}",
+      "payoffComparison": "Initialement {original}, maintenant {current}",
+      "interestAlreadySaved": "Intérêts déjà économisés",
+      "vsOriginalInterest": "contre {amount} projetés initialement",
+      "seriesOriginal": "Calendrier initial",
+      "seriesActual": "Solde réel",
+      "seriesCurrent": "Projection actuelle",
+      "unknown": "Inconnu"
+    }
   }
 }

@@ -77,7 +77,8 @@
       "closeTitleDisabled": "Hesabı kapatmak için bakiyenin sıfır olması gerekir",
       "closeTitleEnabled": "Hesabı kapat",
       "balanceMustBeZero": "Bakiye sıfır olmalıdır",
-      "closedPrefix": " — Kapalı"
+      "closedPrefix": " — Kapalı",
+      "loanDetails": "Kredi Ayrıntıları"
     }
   },
   "contextMenu": {
@@ -312,5 +313,117 @@
     "paymentStartDateRequired": "İlk ödeme tarihi zorunludur",
     "paymentAccountRequired": "Ödeme hesabı zorunludur",
     "amortizationRequired": "Amortisman süresi zorunludur"
+  },
+  "loanDetail": {
+    "backToAccounts": "Hesaplara Dön",
+    "viewTransactions": "İşlemleri Görüntüle",
+    "notFound": "Hesap bulunamadı",
+    "loadFailed": "Hesap ayrıntıları yüklenemedi",
+    "frequency": {
+      "WEEKLY": "Haftalık",
+      "BIWEEKLY": "İki haftada bir",
+      "SEMI_MONTHLY": "Ayda iki kez",
+      "MONTHLY": "Aylık",
+      "QUARTERLY": "Üç aylık",
+      "YEARLY": "Yıllık",
+      "ACCELERATED_BIWEEKLY": "Hızlandırılmış iki haftalık",
+      "ACCELERATED_WEEKLY": "Hızlandırılmış haftalık"
+    },
+    "summary": {
+      "currentBalance": "Güncel Bakiye",
+      "originalAmount": "Başlangıç Tutarı",
+      "interestRate": "Faiz Oranı",
+      "effectiveRate": "%{rate} efektif",
+      "payment": "Taksit",
+      "estPayoff": "Tah. Kapanış",
+      "estRemainingInterest": "Tah. Kalan Faiz",
+      "notSet": "Ayarlanmadı",
+      "notAvailable": "Yok",
+      "paidOff": "Kapandı"
+    },
+    "schedule": {
+      "title": "Ödeme Planı",
+      "subtitle": "{historical, plural, one {# taksit ödendi} other {# taksit ödendi}}, {projected, plural, one {# öngörülen} other {# öngörülen}}",
+      "colNumber": "No",
+      "colDate": "Tarih",
+      "colPayment": "Taksit",
+      "colPrincipal": "Anapara",
+      "colInterest": "Faiz",
+      "colExtra": "Ek Anapara",
+      "colBalance": "Bakiye",
+      "projectedFuturePayments": "Öngörülen Gelecek Taksitler",
+      "showAll": "Tüm {count} taksiti göster",
+      "showLess": "Daha az göster",
+      "noPayments": "Taksit bulunamadı"
+    },
+    "simulator": {
+      "title": "Erken Ödeme Simülatörü",
+      "description": "Kredinin ne kadar erken kapanabileceğini ve ne kadar faiz tasarrufu sağlayacağınızı görmek için ek ödemeleri simüle edin. Simülasyonlar gerçek ödemelerinizi değiştirmez.",
+      "reset": "Sıfırla",
+      "detectedExtraHint": "Ödeme geçmişinize göre taksit başına ortalama {amount} ek anapara ödüyorsunuz.",
+      "applyDetected": "Kullan",
+      "recurringAmount": "Taksit başına ek",
+      "recurringStart": "Başlangıç (isteğe bağlı)",
+      "recurringEnd": "Bitiş (isteğe bağlı)",
+      "lumpSums": "Tek seferlik toplu ödemeler",
+      "addLumpSum": "Toplu ödeme ekle",
+      "noLumpSums": "Toplu ödeme eklenmedi.",
+      "lumpSumDate": "Tarih",
+      "lumpSumAmount": "Tutar",
+      "removeLumpSum": "Kaldır"
+    },
+    "comparison": {
+      "newPayoff": "Yeni Kapanış Tarihi",
+      "timeSaved": "Kazanılan Süre",
+      "monthsSaved": "{count, plural, one {# ay} other {# ay}}",
+      "paymentsSaved": "{count, plural, one {# taksit} other {# taksit}}",
+      "interestSaved": "Tasarruf Edilen Faiz",
+      "totalExtraContributed": "Toplam Ek Ödeme",
+      "beyondProjection": "Öngörünün ötesinde"
+    },
+    "chart": {
+      "title": "Kapanış Zaman Çizelgesi",
+      "empty": "Ödeme geçmişi veya öngörü yok.",
+      "seriesHistorical": "Gerçek Bakiye",
+      "seriesBaseline": "Mevcut Öngörü",
+      "seriesScenario": "Erken Ödemelerle",
+      "today": "Bugün",
+      "scenarioNote": "Erken ödeme senaryosu bir simülasyondur ve planlanan ödemelerinizi değiştirmez."
+    },
+    "scenarios": {
+      "title": "Kayıtlı Senaryolar",
+      "saveCurrent": "Mevcut senaryoyu kaydet",
+      "empty": "Henüz kayıtlı senaryo yok. Yukarıda bir erken ödeme ayarlayın ve planları zaman içinde karşılaştırmak için kaydedin.",
+      "load": "Yükle",
+      "rename": "Yeniden adlandır",
+      "delete": "Sil",
+      "cancel": "İptal",
+      "save": "Kaydet",
+      "saveTitle": "Senaryoyu Kaydet",
+      "renameTitle": "Senaryoyu Yeniden Adlandır",
+      "nameLabel": "Senaryo adı",
+      "recurringSummary": "Taksit başına {amount} ek",
+      "lumpSumSummary": "{count, plural, one {# toplu ödeme} other {# toplu ödeme}}",
+      "emptyScenario": "Erken ödeme yok",
+      "savedToast": "\"{name}\" senaryosu kaydedildi",
+      "renamedToast": "Senaryo \"{name}\" olarak yeniden adlandırıldı",
+      "deletedToast": "\"{name}\" senaryosu silindi",
+      "saveFailed": "Senaryo kaydedilemedi",
+      "deleteFailed": "Senaryo silinemedi"
+    },
+    "pastImpact": {
+      "title": "Yapılan Erken Ödemelerin Etkisi",
+      "description": "Şimdiye kadar yaptığınız ödemelerin orijinal sözleşme planıyla karşılaştırması.",
+      "missingData": "Erken ödemelerinizin bu krediyi ne kadar kısalttığını görmek için hesapta başlangıç anaparasını ve ilk ödeme tarihini ayarlayın.",
+      "monthsAlreadySaved": "Şimdiden Kazanılan Süre",
+      "monthsValue": "{count, plural, one {# ay} other {# ay}}",
+      "payoffComparison": "Başlangıçta {original}, şimdi {current}",
+      "interestAlreadySaved": "Şimdiden Tasarruf Edilen Faiz",
+      "vsOriginalInterest": "başlangıçta öngörülen {amount} tutara karşı",
+      "seriesOriginal": "Orijinal Plan",
+      "seriesActual": "Gerçek Bakiye",
+      "seriesCurrent": "Mevcut Öngörü",
+      "unknown": "Bilinmiyor"
+    }
   }
 }

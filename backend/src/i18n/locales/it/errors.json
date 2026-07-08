@@ -449,5 +449,10 @@
     "deleteLastAdmin": "Impossibile eliminare l'ultimo account amministratore. Promuovi prima un altro utente.",
     "oidcReauthRequiredForDataDelete": "La riautenticazione OIDC è richiesta per confermare l'eliminazione dei dati",
     "passwordRequiredForDataDelete": "La password è obbligatoria per confermare l'eliminazione dei dati"
+  },
+  "loanScenarios": {
+    "notFound": "Scenario di prestito con ID {{ id }} non trovato",
+    "nameConflict": "Uno scenario denominato \"{{ name }}\" esiste già per questo conto",
+    "notLoanAccount": "Gli scenari di prestito sono disponibili solo per conti di prestito, mutuo e linea di credito"
   }
 }

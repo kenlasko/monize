@@ -77,7 +77,8 @@
       "closeTitleDisabled": "O saldo da conta deve ser zero para fechar",
       "closeTitleEnabled": "Fechar conta",
       "balanceMustBeZero": "O saldo deve ser zero",
-      "closedPrefix": " — Fechada"
+      "closedPrefix": " — Fechada",
+      "loanDetails": "Detalhes do empréstimo"
     }
   },
   "contextMenu": {
@@ -312,5 +313,117 @@
     "paymentStartDateRequired": "A data do primeiro pagamento é obrigatória",
     "paymentAccountRequired": "A conta de pagamento é obrigatória",
     "amortizationRequired": "O período de amortização é obrigatório"
+  },
+  "loanDetail": {
+    "backToAccounts": "Voltar às contas",
+    "viewTransactions": "Ver transações",
+    "notFound": "Conta não encontrada",
+    "loadFailed": "Não foi possível carregar os detalhes da conta",
+    "frequency": {
+      "WEEKLY": "Semanal",
+      "BIWEEKLY": "Quinzenal",
+      "SEMI_MONTHLY": "Bimensal",
+      "MONTHLY": "Mensal",
+      "QUARTERLY": "Trimestral",
+      "YEARLY": "Anual",
+      "ACCELERATED_BIWEEKLY": "Quinzenal acelerado",
+      "ACCELERATED_WEEKLY": "Semanal acelerado"
+    },
+    "summary": {
+      "currentBalance": "Saldo atual",
+      "originalAmount": "Montante original",
+      "interestRate": "Taxa de juro",
+      "effectiveRate": "{rate}% efetiva",
+      "payment": "Prestação",
+      "estPayoff": "Liquidação est.",
+      "estRemainingInterest": "Juros restantes est.",
+      "notSet": "Não definido",
+      "notAvailable": "N/D",
+      "paidOff": "Liquidado"
+    },
+    "schedule": {
+      "title": "Plano de amortização",
+      "subtitle": "{historical, plural, one {# prestação paga} other {# prestações pagas}}, {projected, plural, one {# projetada} other {# projetadas}}",
+      "colNumber": "N.º",
+      "colDate": "Data",
+      "colPayment": "Prestação",
+      "colPrincipal": "Capital",
+      "colInterest": "Juros",
+      "colExtra": "Capital extra",
+      "colBalance": "Saldo",
+      "projectedFuturePayments": "Prestações futuras projetadas",
+      "showAll": "Mostrar as {count} prestações",
+      "showLess": "Mostrar menos",
+      "noPayments": "Nenhuma prestação encontrada"
+    },
+    "simulator": {
+      "title": "Simulador de amortização antecipada",
+      "description": "Simule pagamentos extra para ver quanto mais cedo o empréstimo poderia ser liquidado e quantos juros pouparia. As simulações não alteram os seus pagamentos reais.",
+      "reset": "Repor",
+      "detectedExtraHint": "O seu histórico de pagamentos mostra uma média de {amount} de capital extra por prestação.",
+      "applyDetected": "Usar",
+      "recurringAmount": "Extra por prestação",
+      "recurringStart": "A partir de (opcional)",
+      "recurringEnd": "Até (opcional)",
+      "lumpSums": "Pagamentos únicos",
+      "addLumpSum": "Adicionar pagamento único",
+      "noLumpSums": "Nenhum pagamento único adicionado.",
+      "lumpSumDate": "Data",
+      "lumpSumAmount": "Montante",
+      "removeLumpSum": "Remover"
+    },
+    "comparison": {
+      "newPayoff": "Nova data de liquidação",
+      "timeSaved": "Tempo poupado",
+      "monthsSaved": "{count, plural, one {# mês} other {# meses}}",
+      "paymentsSaved": "{count, plural, one {# prestação} other {# prestações}}",
+      "interestSaved": "Juros poupados",
+      "totalExtraContributed": "Total extra contribuído",
+      "beyondProjection": "Além da projeção"
+    },
+    "chart": {
+      "title": "Cronologia de liquidação",
+      "empty": "Sem histórico de pagamentos nem projeção disponível.",
+      "seriesHistorical": "Saldo real",
+      "seriesBaseline": "Projeção atual",
+      "seriesScenario": "Com amortizações antecipadas",
+      "today": "Hoje",
+      "scenarioNote": "O cenário de amortização antecipada é uma simulação e não altera os seus pagamentos agendados."
+    },
+    "scenarios": {
+      "title": "Cenários guardados",
+      "saveCurrent": "Guardar cenário atual",
+      "empty": "Ainda não há cenários guardados. Configure uma amortização antecipada acima e guarde-a para comparar planos ao longo do tempo.",
+      "load": "Carregar",
+      "rename": "Mudar o nome",
+      "delete": "Eliminar",
+      "cancel": "Cancelar",
+      "save": "Guardar",
+      "saveTitle": "Guardar cenário",
+      "renameTitle": "Mudar o nome do cenário",
+      "nameLabel": "Nome do cenário",
+      "recurringSummary": "{amount} extra por prestação",
+      "lumpSumSummary": "{count, plural, one {# pagamento único} other {# pagamentos únicos}}",
+      "emptyScenario": "Sem amortizações antecipadas",
+      "savedToast": "Cenário \"{name}\" guardado",
+      "renamedToast": "Cenário renomeado para \"{name}\"",
+      "deletedToast": "Cenário \"{name}\" eliminado",
+      "saveFailed": "Não foi possível guardar o cenário",
+      "deleteFailed": "Não foi possível eliminar o cenário"
+    },
+    "pastImpact": {
+      "title": "Impacto das amortizações antecipadas efetuadas",
+      "description": "Como os pagamentos que já efetuou se comparam com o plano contratual original.",
+      "missingData": "Para ver quanto as suas amortizações antecipadas encurtaram este empréstimo, defina o capital original e a data da primeira prestação na conta.",
+      "monthsAlreadySaved": "Tempo já poupado",
+      "monthsValue": "{count, plural, one {# mês} other {# meses}}",
+      "payoffComparison": "Originalmente {original}, agora {current}",
+      "interestAlreadySaved": "Juros já poupados",
+      "vsOriginalInterest": "face a {amount} projetados originalmente",
+      "seriesOriginal": "Plano original",
+      "seriesActual": "Saldo real",
+      "seriesCurrent": "Projeção atual",
+      "unknown": "Desconhecido"
+    }
   }
 }

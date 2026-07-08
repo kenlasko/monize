@@ -449,5 +449,10 @@
     "deleteLastAdmin": "Son yönetici hesabı silinemez. Önce başka bir kullanıcıyı yönetici yapın.",
     "oidcReauthRequiredForDataDelete": "Veri silmeyi onaylamak için OIDC yeniden kimlik doğrulaması gerekli",
     "passwordRequiredForDataDelete": "Veri silmeyi onaylamak için şifre gereklidir"
+  },
+  "loanScenarios": {
+    "notFound": "{{ id }} kimlikli kredi senaryosu bulunamadı",
+    "nameConflict": "Bu hesap için \"{{ name }}\" adlı bir senaryo zaten var",
+    "notLoanAccount": "Kredi senaryoları yalnızca kredi, ipotek ve kredi limiti hesapları için kullanılabilir"
   }
 }

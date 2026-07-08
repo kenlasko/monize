@@ -77,7 +77,8 @@
       "closeTitleDisabled": "बंद करने के लिए खाते का शेष शून्य होना चाहिए",
       "closeTitleEnabled": "खाता बंद करें",
       "balanceMustBeZero": "शेष राशि शून्य होनी चाहिए",
-      "closedPrefix": " — बंद"
+      "closedPrefix": " — बंद",
+      "loanDetails": "ऋण विवरण"
     }
   },
   "contextMenu": {
@@ -312,5 +313,117 @@
     "paymentStartDateRequired": "पहली भुगतान तिथि आवश्यक है",
     "paymentAccountRequired": "भुगतान खाता आवश्यक है",
     "amortizationRequired": "परिशोधन अवधि आवश्यक है"
+  },
+  "loanDetail": {
+    "backToAccounts": "खातों पर वापस जाएँ",
+    "viewTransactions": "लेन-देन देखें",
+    "notFound": "खाता नहीं मिला",
+    "loadFailed": "खाते का विवरण लोड नहीं हो सका",
+    "frequency": {
+      "WEEKLY": "साप्ताहिक",
+      "BIWEEKLY": "पाक्षिक",
+      "SEMI_MONTHLY": "महीने में दो बार",
+      "MONTHLY": "मासिक",
+      "QUARTERLY": "त्रैमासिक",
+      "YEARLY": "वार्षिक",
+      "ACCELERATED_BIWEEKLY": "त्वरित पाक्षिक",
+      "ACCELERATED_WEEKLY": "त्वरित साप्ताहिक"
+    },
+    "summary": {
+      "currentBalance": "वर्तमान शेष",
+      "originalAmount": "मूल राशि",
+      "interestRate": "ब्याज दर",
+      "effectiveRate": "{rate}% प्रभावी",
+      "payment": "किस्त",
+      "estPayoff": "अनुमानित चुकौती",
+      "estRemainingInterest": "अनुमानित शेष ब्याज",
+      "notSet": "सेट नहीं",
+      "notAvailable": "उपलब्ध नहीं",
+      "paidOff": "चुकता"
+    },
+    "schedule": {
+      "title": "किस्त अनुसूची",
+      "subtitle": "{historical, plural, one {# किस्त चुकाई गई} other {# किस्तें चुकाई गईं}}, {projected, plural, one {# अनुमानित} other {# अनुमानित}}",
+      "colNumber": "क्र.",
+      "colDate": "तिथि",
+      "colPayment": "किस्त",
+      "colPrincipal": "मूलधन",
+      "colInterest": "ब्याज",
+      "colExtra": "अतिरिक्त मूलधन",
+      "colBalance": "शेष",
+      "projectedFuturePayments": "अनुमानित भविष्य की किस्तें",
+      "showAll": "सभी {count} किस्तें दिखाएँ",
+      "showLess": "कम दिखाएँ",
+      "noPayments": "कोई किस्त नहीं मिली"
+    },
+    "simulator": {
+      "title": "पूर्व-भुगतान सिम्युलेटर",
+      "description": "अतिरिक्त भुगतानों का अनुकरण करके देखें कि ऋण कितनी जल्दी चुक सकता है और आप कितना ब्याज बचा सकते हैं। सिमुलेशन आपके वास्तविक भुगतानों को नहीं बदलते।",
+      "reset": "रीसेट करें",
+      "detectedExtraHint": "आपके भुगतान इतिहास के अनुसार आप प्रति किस्त औसतन {amount} अतिरिक्त मूलधन चुकाते हैं।",
+      "applyDetected": "इस्तेमाल करें",
+      "recurringAmount": "प्रति किस्त अतिरिक्त",
+      "recurringStart": "प्रारंभ (वैकल्पिक)",
+      "recurringEnd": "समाप्ति (वैकल्पिक)",
+      "lumpSums": "एकमुश्त भुगतान",
+      "addLumpSum": "एकमुश्त भुगतान जोड़ें",
+      "noLumpSums": "कोई एकमुश्त भुगतान नहीं जोड़ा गया।",
+      "lumpSumDate": "तिथि",
+      "lumpSumAmount": "राशि",
+      "removeLumpSum": "हटाएँ"
+    },
+    "comparison": {
+      "newPayoff": "नई चुकौती तिथि",
+      "timeSaved": "बचा हुआ समय",
+      "monthsSaved": "{count, plural, one {# महीना} other {# महीने}}",
+      "paymentsSaved": "{count, plural, one {# किस्त} other {# किस्तें}}",
+      "interestSaved": "बचा हुआ ब्याज",
+      "totalExtraContributed": "कुल अतिरिक्त योगदान",
+      "beyondProjection": "अनुमान से परे"
+    },
+    "chart": {
+      "title": "चुकौती समयरेखा",
+      "empty": "कोई भुगतान इतिहास या अनुमान उपलब्ध नहीं है।",
+      "seriesHistorical": "वास्तविक शेष",
+      "seriesBaseline": "वर्तमान अनुमान",
+      "seriesScenario": "पूर्व-भुगतान सहित",
+      "today": "आज",
+      "scenarioNote": "पूर्व-भुगतान परिदृश्य एक सिमुलेशन है और यह आपके निर्धारित भुगतानों को नहीं बदलता।"
+    },
+    "scenarios": {
+      "title": "सहेजे गए परिदृश्य",
+      "saveCurrent": "वर्तमान परिदृश्य सहेजें",
+      "empty": "अभी तक कोई परिदृश्य सहेजा नहीं गया। ऊपर पूर्व-भुगतान सेट करें और योजनाओं की तुलना करने के लिए उसे सहेजें।",
+      "load": "लोड करें",
+      "rename": "नाम बदलें",
+      "delete": "हटाएँ",
+      "cancel": "रद्द करें",
+      "save": "सहेजें",
+      "saveTitle": "परिदृश्य सहेजें",
+      "renameTitle": "परिदृश्य का नाम बदलें",
+      "nameLabel": "परिदृश्य का नाम",
+      "recurringSummary": "प्रति किस्त {amount} अतिरिक्त",
+      "lumpSumSummary": "{count, plural, one {# एकमुश्त भुगतान} other {# एकमुश्त भुगतान}}",
+      "emptyScenario": "कोई पूर्व-भुगतान नहीं",
+      "savedToast": "परिदृश्य \"{name}\" सहेजा गया",
+      "renamedToast": "परिदृश्य का नाम बदलकर \"{name}\" किया गया",
+      "deletedToast": "परिदृश्य \"{name}\" हटाया गया",
+      "saveFailed": "परिदृश्य सहेजा नहीं जा सका",
+      "deleteFailed": "परिदृश्य हटाया नहीं जा सका"
+    },
+    "pastImpact": {
+      "title": "किए गए पूर्व-भुगतानों का प्रभाव",
+      "description": "आपके अब तक किए गए भुगतान मूल अनुबंध अनुसूची की तुलना में कैसे हैं।",
+      "missingData": "यह देखने के लिए कि आपके पूर्व-भुगतानों ने इस ऋण को कितना छोटा किया है, खाते में मूल मूलधन और पहली किस्त की तिथि सेट करें।",
+      "monthsAlreadySaved": "अब तक बचा समय",
+      "monthsValue": "{count, plural, one {# महीना} other {# महीने}}",
+      "payoffComparison": "मूल रूप से {original}, अब {current}",
+      "interestAlreadySaved": "अब तक बचा ब्याज",
+      "vsOriginalInterest": "मूल अनुमानित {amount} की तुलना में",
+      "seriesOriginal": "मूल अनुसूची",
+      "seriesActual": "वास्तविक शेष",
+      "seriesCurrent": "वर्तमान अनुमान",
+      "unknown": "अज्ञात"
+    }
   }
 }

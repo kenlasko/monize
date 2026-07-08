@@ -449,5 +449,10 @@
     "deleteLastAdmin": "Das letzte Administratorkonto kann nicht gelöscht werden. Befördern Sie zuerst einen anderen Benutzer.",
     "oidcReauthRequiredForDataDelete": "OIDC-Neuauthentifizierung ist zur Bestätigung der Datenlöschung erforderlich",
     "passwordRequiredForDataDelete": "Passwort ist zur Bestätigung der Datenlöschung erforderlich"
+  },
+  "loanScenarios": {
+    "notFound": "Kreditszenario mit ID {{ id }} nicht gefunden",
+    "nameConflict": "Ein Szenario namens \"{{ name }}\" existiert bereits für dieses Konto",
+    "notLoanAccount": "Kreditszenarien sind nur für Kredit-, Hypotheken- und Kreditlinienkonten verfügbar"
   }
 }

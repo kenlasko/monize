@@ -449,5 +449,10 @@
     "deleteLastAdmin": "No se puede eliminar la última cuenta de administrador. Promueve a otro usuario primero.",
     "oidcReauthRequiredForDataDelete": "Se requiere reautenticación OIDC para confirmar la eliminación de datos",
     "passwordRequiredForDataDelete": "Se requiere contraseña para confirmar la eliminación de datos"
+  },
+  "loanScenarios": {
+    "notFound": "No se encontró el escenario de préstamo con ID {{ id }}",
+    "nameConflict": "Ya existe un escenario llamado \"{{ name }}\" para esta cuenta",
+    "notLoanAccount": "Los escenarios de préstamo solo están disponibles para cuentas de préstamo, hipoteca y línea de crédito"
   }
 }

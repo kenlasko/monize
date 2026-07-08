@@ -77,7 +77,8 @@
       "closeTitleDisabled": "科目結餘必須為零才能關閉",
       "closeTitleEnabled": "關閉科目",
       "balanceMustBeZero": "結餘必須為零",
-      "closedPrefix": " — 已關閉"
+      "closedPrefix": " — 已關閉",
+      "loanDetails": "貸款詳情"
     }
   },
   "contextMenu": {
@@ -312,5 +313,117 @@
     "paymentStartDateRequired": "首次還款日期為必填",
     "paymentAccountRequired": "付款科目為必填",
     "amortizationRequired": "攤還期為必填"
+  },
+  "loanDetail": {
+    "backToAccounts": "返回帳戶",
+    "viewTransactions": "檢視交易",
+    "notFound": "找不到帳戶",
+    "loadFailed": "無法載入帳戶詳情",
+    "frequency": {
+      "WEEKLY": "每週",
+      "BIWEEKLY": "每兩週",
+      "SEMI_MONTHLY": "每月兩次",
+      "MONTHLY": "每月",
+      "QUARTERLY": "每季",
+      "YEARLY": "每年",
+      "ACCELERATED_BIWEEKLY": "加速雙週",
+      "ACCELERATED_WEEKLY": "加速每週"
+    },
+    "summary": {
+      "currentBalance": "目前餘額",
+      "originalAmount": "原始金額",
+      "interestRate": "利率",
+      "effectiveRate": "實際利率 {rate}%",
+      "payment": "還款額",
+      "estPayoff": "預計還清",
+      "estRemainingInterest": "預計剩餘利息",
+      "notSet": "未設定",
+      "notAvailable": "無",
+      "paidOff": "已還清"
+    },
+    "schedule": {
+      "title": "還款計畫",
+      "subtitle": "{historical, plural, one {已還款 # 期} other {已還款 # 期}}，{projected, plural, one {預測 # 期} other {預測 # 期}}",
+      "colNumber": "期數",
+      "colDate": "日期",
+      "colPayment": "還款額",
+      "colPrincipal": "本金",
+      "colInterest": "利息",
+      "colExtra": "額外本金",
+      "colBalance": "餘額",
+      "projectedFuturePayments": "預測的未來還款",
+      "showAll": "顯示全部 {count} 期還款",
+      "showLess": "收合",
+      "noPayments": "找不到還款紀錄"
+    },
+    "simulator": {
+      "title": "提前還款模擬器",
+      "description": "模擬額外還款，看看貸款能提前多久還清、能節省多少利息。模擬不會改變您的實際還款。",
+      "reset": "重設",
+      "detectedExtraHint": "您的還款紀錄顯示，平均每期額外償還本金 {amount}。",
+      "applyDetected": "使用",
+      "recurringAmount": "每期額外還款",
+      "recurringStart": "開始日期（選填）",
+      "recurringEnd": "結束日期（選填）",
+      "lumpSums": "一次性還款",
+      "addLumpSum": "新增一次性還款",
+      "noLumpSums": "尚未新增一次性還款。",
+      "lumpSumDate": "日期",
+      "lumpSumAmount": "金額",
+      "removeLumpSum": "移除"
+    },
+    "comparison": {
+      "newPayoff": "新的還清日期",
+      "timeSaved": "節省的時間",
+      "monthsSaved": "{count, plural, one {# 個月} other {# 個月}}",
+      "paymentsSaved": "{count, plural, one {# 期} other {# 期}}",
+      "interestSaved": "節省的利息",
+      "totalExtraContributed": "額外還款總額",
+      "beyondProjection": "超出預測範圍"
+    },
+    "chart": {
+      "title": "還清時間軸",
+      "empty": "沒有可用的還款紀錄或預測。",
+      "seriesHistorical": "實際餘額",
+      "seriesBaseline": "目前預測",
+      "seriesScenario": "含提前還款",
+      "today": "今天",
+      "scenarioNote": "提前還款情境只是模擬，不會改變您排定的還款。"
+    },
+    "scenarios": {
+      "title": "已儲存的情境",
+      "saveCurrent": "儲存目前情境",
+      "empty": "尚無已儲存的情境。在上方設定提前還款並儲存，以便長期比較不同計畫。",
+      "load": "載入",
+      "rename": "重新命名",
+      "delete": "刪除",
+      "cancel": "取消",
+      "save": "儲存",
+      "saveTitle": "儲存情境",
+      "renameTitle": "重新命名情境",
+      "nameLabel": "情境名稱",
+      "recurringSummary": "每期額外 {amount}",
+      "lumpSumSummary": "{count, plural, one {# 筆一次性還款} other {# 筆一次性還款}}",
+      "emptyScenario": "無提前還款",
+      "savedToast": "情境「{name}」已儲存",
+      "renamedToast": "情境已重新命名為「{name}」",
+      "deletedToast": "情境「{name}」已刪除",
+      "saveFailed": "無法儲存情境",
+      "deleteFailed": "無法刪除情境"
+    },
+    "pastImpact": {
+      "title": "已完成提前還款的影響",
+      "description": "您已完成的還款與原始合約還款計畫的比較。",
+      "missingData": "若要查看提前還款為這筆貸款縮短了多少時間，請在帳戶中設定原始本金和首次還款日期。",
+      "monthsAlreadySaved": "已節省的時間",
+      "monthsValue": "{count, plural, one {# 個月} other {# 個月}}",
+      "payoffComparison": "原為 {original}，現為 {current}",
+      "interestAlreadySaved": "已節省的利息",
+      "vsOriginalInterest": "相較於原預測的 {amount}",
+      "seriesOriginal": "原始計畫",
+      "seriesActual": "實際餘額",
+      "seriesCurrent": "目前預測",
+      "unknown": "未知"
+    }
   }
 }

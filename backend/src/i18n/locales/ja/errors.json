@@ -449,5 +449,10 @@
     "deleteLastAdmin": "最後の管理者アカウントは削除できません。まず別のユーザーを管理者に昇格させてください。",
     "oidcReauthRequiredForDataDelete": "データ削除を確認するにはOIDC再認証が必要です",
     "passwordRequiredForDataDelete": "データ削除を確認するにはパスワードが必要です"
+  },
+  "loanScenarios": {
+    "notFound": "ID {{ id }} のローンシナリオが見つかりません",
+    "nameConflict": "この勘定科目には「{{ name }}」という名前のシナリオが既に存在します",
+    "notLoanAccount": "ローンシナリオはローン、住宅ローン、与信枠の勘定科目でのみ利用できます"
   }
 }

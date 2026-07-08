@@ -77,7 +77,8 @@
       "closeTitleDisabled": "Saldo akun harus nol untuk menutupnya",
       "closeTitleEnabled": "Tutup akun",
       "balanceMustBeZero": "Saldo harus nol",
-      "closedPrefix": " — Ditutup"
+      "closedPrefix": " — Ditutup",
+      "loanDetails": "Detail Pinjaman"
     }
   },
   "contextMenu": {
@@ -312,5 +313,117 @@
     "paymentStartDateRequired": "Tanggal pembayaran pertama wajib diisi",
     "paymentAccountRequired": "Akun pembayaran wajib dipilih",
     "amortizationRequired": "Periode amortisasi wajib diisi"
+  },
+  "loanDetail": {
+    "backToAccounts": "Kembali ke Akun",
+    "viewTransactions": "Lihat Transaksi",
+    "notFound": "Akun tidak ditemukan",
+    "loadFailed": "Gagal memuat detail akun",
+    "frequency": {
+      "WEEKLY": "Mingguan",
+      "BIWEEKLY": "Dua mingguan",
+      "SEMI_MONTHLY": "Dua kali sebulan",
+      "MONTHLY": "Bulanan",
+      "QUARTERLY": "Triwulanan",
+      "YEARLY": "Tahunan",
+      "ACCELERATED_BIWEEKLY": "Dua mingguan dipercepat",
+      "ACCELERATED_WEEKLY": "Mingguan dipercepat"
+    },
+    "summary": {
+      "currentBalance": "Saldo Saat Ini",
+      "originalAmount": "Jumlah Awal",
+      "interestRate": "Suku Bunga",
+      "effectiveRate": "{rate}% efektif",
+      "payment": "Angsuran",
+      "estPayoff": "Perkiraan Lunas",
+      "estRemainingInterest": "Perkiraan Sisa Bunga",
+      "notSet": "Belum diatur",
+      "notAvailable": "T/A",
+      "paidOff": "Lunas"
+    },
+    "schedule": {
+      "title": "Jadwal Angsuran",
+      "subtitle": "{historical, plural, one {# angsuran dibayar} other {# angsuran dibayar}}, {projected, plural, one {# diproyeksikan} other {# diproyeksikan}}",
+      "colNumber": "No.",
+      "colDate": "Tanggal",
+      "colPayment": "Angsuran",
+      "colPrincipal": "Pokok",
+      "colInterest": "Bunga",
+      "colExtra": "Pokok Tambahan",
+      "colBalance": "Saldo",
+      "projectedFuturePayments": "Angsuran Mendatang yang Diproyeksikan",
+      "showAll": "Tampilkan semua {count} angsuran",
+      "showLess": "Tampilkan lebih sedikit",
+      "noPayments": "Tidak ada angsuran ditemukan"
+    },
+    "simulator": {
+      "title": "Simulator Pelunasan Dipercepat",
+      "description": "Simulasikan pembayaran tambahan untuk melihat seberapa cepat pinjaman bisa lunas dan berapa banyak bunga yang bisa Anda hemat. Simulasi tidak mengubah pembayaran Anda yang sebenarnya.",
+      "reset": "Atur ulang",
+      "detectedExtraHint": "Riwayat pembayaran Anda menunjukkan rata-rata {amount} pokok tambahan per angsuran.",
+      "applyDetected": "Gunakan",
+      "recurringAmount": "Tambahan per angsuran",
+      "recurringStart": "Mulai (opsional)",
+      "recurringEnd": "Sampai (opsional)",
+      "lumpSums": "Pembayaran sekaligus",
+      "addLumpSum": "Tambah pembayaran sekaligus",
+      "noLumpSums": "Belum ada pembayaran sekaligus.",
+      "lumpSumDate": "Tanggal",
+      "lumpSumAmount": "Jumlah",
+      "removeLumpSum": "Hapus"
+    },
+    "comparison": {
+      "newPayoff": "Tanggal Lunas Baru",
+      "timeSaved": "Waktu yang Dihemat",
+      "monthsSaved": "{count, plural, one {# bulan} other {# bulan}}",
+      "paymentsSaved": "{count, plural, one {# angsuran} other {# angsuran}}",
+      "interestSaved": "Bunga yang Dihemat",
+      "totalExtraContributed": "Total Pembayaran Tambahan",
+      "beyondProjection": "Di luar proyeksi"
+    },
+    "chart": {
+      "title": "Linimasa Pelunasan",
+      "empty": "Tidak ada riwayat pembayaran atau proyeksi.",
+      "seriesHistorical": "Saldo Aktual",
+      "seriesBaseline": "Proyeksi Saat Ini",
+      "seriesScenario": "Dengan Pembayaran Tambahan",
+      "today": "Hari ini",
+      "scenarioNote": "Skenario pembayaran tambahan hanyalah simulasi dan tidak mengubah pembayaran terjadwal Anda."
+    },
+    "scenarios": {
+      "title": "Skenario Tersimpan",
+      "saveCurrent": "Simpan skenario saat ini",
+      "empty": "Belum ada skenario tersimpan. Atur pembayaran tambahan di atas dan simpan untuk membandingkan rencana dari waktu ke waktu.",
+      "load": "Muat",
+      "rename": "Ganti nama",
+      "delete": "Hapus",
+      "cancel": "Batal",
+      "save": "Simpan",
+      "saveTitle": "Simpan Skenario",
+      "renameTitle": "Ganti Nama Skenario",
+      "nameLabel": "Nama skenario",
+      "recurringSummary": "{amount} tambahan per angsuran",
+      "lumpSumSummary": "{count, plural, one {# pembayaran sekaligus} other {# pembayaran sekaligus}}",
+      "emptyScenario": "Tanpa pembayaran tambahan",
+      "savedToast": "Skenario \"{name}\" disimpan",
+      "renamedToast": "Skenario diganti nama menjadi \"{name}\"",
+      "deletedToast": "Skenario \"{name}\" dihapus",
+      "saveFailed": "Gagal menyimpan skenario",
+      "deleteFailed": "Gagal menghapus skenario"
+    },
+    "pastImpact": {
+      "title": "Dampak Pembayaran Tambahan yang Sudah Dilakukan",
+      "description": "Bagaimana pembayaran yang sudah Anda lakukan dibandingkan dengan jadwal kontrak awal.",
+      "missingData": "Untuk melihat seberapa besar pembayaran tambahan Anda mempersingkat pinjaman ini, atur pokok awal dan tanggal pembayaran pertama pada akun.",
+      "monthsAlreadySaved": "Waktu yang Sudah Dihemat",
+      "monthsValue": "{count, plural, one {# bulan} other {# bulan}}",
+      "payoffComparison": "Semula {original}, sekarang {current}",
+      "interestAlreadySaved": "Bunga yang Sudah Dihemat",
+      "vsOriginalInterest": "dibandingkan {amount} yang diproyeksikan semula",
+      "seriesOriginal": "Jadwal Awal",
+      "seriesActual": "Saldo Aktual",
+      "seriesCurrent": "Proyeksi Saat Ini",
+      "unknown": "Tidak diketahui"
+    }
   }
 }

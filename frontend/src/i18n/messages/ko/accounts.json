@@ -77,7 +77,8 @@
       "closeTitleDisabled": "잔액이 0이어야 종료할 수 있습니다",
       "closeTitleEnabled": "계정 종료",
       "balanceMustBeZero": "잔액이 0이어야 합니다",
-      "closedPrefix": " — 종료됨"
+      "closedPrefix": " — 종료됨",
+      "loanDetails": "대출 상세 정보"
     }
   },
   "contextMenu": {
@@ -312,5 +313,117 @@
     "paymentStartDateRequired": "첫 납부일은 필수입니다",
     "paymentAccountRequired": "납부 출금 계정은 필수입니다",
     "amortizationRequired": "상환 기간은 필수입니다"
+  },
+  "loanDetail": {
+    "backToAccounts": "계좌 목록으로 돌아가기",
+    "viewTransactions": "거래 보기",
+    "notFound": "계좌를 찾을 수 없습니다",
+    "loadFailed": "계좌 상세 정보를 불러오지 못했습니다",
+    "frequency": {
+      "WEEKLY": "매주",
+      "BIWEEKLY": "격주",
+      "SEMI_MONTHLY": "월 2회",
+      "MONTHLY": "매월",
+      "QUARTERLY": "분기별",
+      "YEARLY": "매년",
+      "ACCELERATED_BIWEEKLY": "가속 격주",
+      "ACCELERATED_WEEKLY": "가속 매주"
+    },
+    "summary": {
+      "currentBalance": "현재 잔액",
+      "originalAmount": "최초 대출금",
+      "interestRate": "이자율",
+      "effectiveRate": "실효 {rate}%",
+      "payment": "상환액",
+      "estPayoff": "예상 완납",
+      "estRemainingInterest": "예상 잔여 이자",
+      "notSet": "설정 안 됨",
+      "notAvailable": "없음",
+      "paidOff": "완납"
+    },
+    "schedule": {
+      "title": "상환 일정",
+      "subtitle": "{historical, plural, one {# 회 납부} other {# 회 납부}}, {projected, plural, one {# 회 예상} other {# 회 예상}}",
+      "colNumber": "번호",
+      "colDate": "날짜",
+      "colPayment": "상환액",
+      "colPrincipal": "원금",
+      "colInterest": "이자",
+      "colExtra": "추가 원금",
+      "colBalance": "잔액",
+      "projectedFuturePayments": "예상되는 향후 상환",
+      "showAll": "{count}회 상환 모두 보기",
+      "showLess": "간략히 보기",
+      "noPayments": "상환 내역이 없습니다"
+    },
+    "simulator": {
+      "title": "조기 상환 시뮬레이터",
+      "description": "추가 상환을 시뮬레이션하여 대출을 얼마나 빨리 갚을 수 있고 이자를 얼마나 절약할 수 있는지 확인해 보세요. 시뮬레이션은 실제 납부에 영향을 주지 않습니다.",
+      "reset": "초기화",
+      "detectedExtraHint": "납부 이력에 따르면 회당 평균 {amount}의 추가 원금을 상환하고 있습니다.",
+      "applyDetected": "사용하기",
+      "recurringAmount": "회당 추가 금액",
+      "recurringStart": "시작일(선택)",
+      "recurringEnd": "종료일(선택)",
+      "lumpSums": "일시 상환",
+      "addLumpSum": "일시 상환 추가",
+      "noLumpSums": "추가된 일시 상환이 없습니다.",
+      "lumpSumDate": "날짜",
+      "lumpSumAmount": "금액",
+      "removeLumpSum": "제거"
+    },
+    "comparison": {
+      "newPayoff": "새 완납일",
+      "timeSaved": "단축 기간",
+      "monthsSaved": "{count, plural, one {#개월} other {#개월}}",
+      "paymentsSaved": "{count, plural, one {# 회} other {# 회}}",
+      "interestSaved": "절약되는 이자",
+      "totalExtraContributed": "총 추가 상환액",
+      "beyondProjection": "예측 범위 초과"
+    },
+    "chart": {
+      "title": "완납 타임라인",
+      "empty": "납부 이력이나 예측이 없습니다.",
+      "seriesHistorical": "실제 잔액",
+      "seriesBaseline": "현재 예측",
+      "seriesScenario": "조기 상환 시",
+      "today": "오늘",
+      "scenarioNote": "조기 상환 시나리오는 시뮬레이션이며 예정된 납부를 변경하지 않습니다."
+    },
+    "scenarios": {
+      "title": "저장된 시나리오",
+      "saveCurrent": "현재 시나리오 저장",
+      "empty": "저장된 시나리오가 아직 없습니다. 위에서 조기 상환을 설정하고 저장하여 계획을 비교해 보세요.",
+      "load": "불러오기",
+      "rename": "이름 변경",
+      "delete": "삭제",
+      "cancel": "취소",
+      "save": "저장",
+      "saveTitle": "시나리오 저장",
+      "renameTitle": "시나리오 이름 변경",
+      "nameLabel": "시나리오 이름",
+      "recurringSummary": "회당 {amount} 추가",
+      "lumpSumSummary": "{count, plural, one {일시 상환 #건} other {일시 상환 #건}}",
+      "emptyScenario": "조기 상환 없음",
+      "savedToast": "시나리오 \"{name}\"이(가) 저장되었습니다",
+      "renamedToast": "시나리오 이름이 \"{name}\"(으)로 변경되었습니다",
+      "deletedToast": "시나리오 \"{name}\"이(가) 삭제되었습니다",
+      "saveFailed": "시나리오를 저장하지 못했습니다",
+      "deleteFailed": "시나리오를 삭제하지 못했습니다"
+    },
+    "pastImpact": {
+      "title": "지금까지의 조기 상환 효과",
+      "description": "지금까지의 납부가 최초 계약 일정과 어떻게 비교되는지 보여줍니다.",
+      "missingData": "조기 상환으로 이 대출이 얼마나 단축되었는지 보려면 계좌에 최초 원금과 첫 납부일을 설정하세요.",
+      "monthsAlreadySaved": "이미 단축된 기간",
+      "monthsValue": "{count, plural, one {#개월} other {#개월}}",
+      "payoffComparison": "원래 {original}, 현재 {current}",
+      "interestAlreadySaved": "이미 절약한 이자",
+      "vsOriginalInterest": "최초 예상 {amount} 대비",
+      "seriesOriginal": "최초 일정",
+      "seriesActual": "실제 잔액",
+      "seriesCurrent": "현재 예측",
+      "unknown": "알 수 없음"
+    }
   }
 }

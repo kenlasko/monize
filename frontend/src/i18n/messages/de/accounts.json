@@ -77,7 +77,8 @@
       "closeTitleDisabled": "Kontostand muss null sein, um das Konto zu schließen",
       "closeTitleEnabled": "Konto schließen",
       "balanceMustBeZero": "Saldo muss null sein",
-      "closedPrefix": " – Geschlossen"
+      "closedPrefix": " – Geschlossen",
+      "loanDetails": "Kreditdetails"
     }
   },
   "contextMenu": {
@@ -312,5 +313,117 @@
     "paymentStartDateRequired": "Datum der ersten Zahlung ist erforderlich",
     "paymentAccountRequired": "Zahlungskonto ist erforderlich",
     "amortizationRequired": "Tilgungszeitraum ist erforderlich"
+  },
+  "loanDetail": {
+    "backToAccounts": "Zurück zu den Konten",
+    "viewTransactions": "Transaktionen anzeigen",
+    "notFound": "Konto nicht gefunden",
+    "loadFailed": "Kontodetails konnten nicht geladen werden",
+    "frequency": {
+      "WEEKLY": "Wöchentlich",
+      "BIWEEKLY": "Alle zwei Wochen",
+      "SEMI_MONTHLY": "Halbmonatlich",
+      "MONTHLY": "Monatlich",
+      "QUARTERLY": "Vierteljährlich",
+      "YEARLY": "Jährlich",
+      "ACCELERATED_BIWEEKLY": "Beschleunigt alle zwei Wochen",
+      "ACCELERATED_WEEKLY": "Beschleunigt wöchentlich"
+    },
+    "summary": {
+      "currentBalance": "Aktueller Saldo",
+      "originalAmount": "Ursprünglicher Betrag",
+      "interestRate": "Zinssatz",
+      "effectiveRate": "{rate} % effektiv",
+      "payment": "Rate",
+      "estPayoff": "Voraus. Tilgung",
+      "estRemainingInterest": "Voraus. Restzinsen",
+      "notSet": "Nicht festgelegt",
+      "notAvailable": "N/V",
+      "paidOff": "Getilgt"
+    },
+    "schedule": {
+      "title": "Tilgungsplan",
+      "subtitle": "{historical, plural, one {# Zahlung geleistet} other {# Zahlungen geleistet}}, {projected, plural, one {# prognostiziert} other {# prognostiziert}}",
+      "colNumber": "Nr.",
+      "colDate": "Datum",
+      "colPayment": "Rate",
+      "colPrincipal": "Tilgung",
+      "colInterest": "Zinsen",
+      "colExtra": "Sondertilgung",
+      "colBalance": "Saldo",
+      "projectedFuturePayments": "Prognostizierte zukünftige Zahlungen",
+      "showAll": "Alle {count} Zahlungen anzeigen",
+      "showLess": "Weniger anzeigen",
+      "noPayments": "Keine Zahlungen gefunden"
+    },
+    "simulator": {
+      "title": "Sondertilgungs-Simulator",
+      "description": "Simulieren Sie zusätzliche Zahlungen, um zu sehen, wie viel früher der Kredit getilgt wäre und wie viel Zinsen Sie sparen würden. Simulationen ändern Ihre tatsächlichen Zahlungen nicht.",
+      "reset": "Zurücksetzen",
+      "detectedExtraHint": "Ihre Zahlungshistorie zeigt durchschnittlich {amount} an zusätzlicher Tilgung pro Zahlung.",
+      "applyDetected": "Übernehmen",
+      "recurringAmount": "Zusätzlich pro Rate",
+      "recurringStart": "Ab (optional)",
+      "recurringEnd": "Bis (optional)",
+      "lumpSums": "Einmalige Sonderzahlungen",
+      "addLumpSum": "Sonderzahlung hinzufügen",
+      "noLumpSums": "Keine Sonderzahlungen hinzugefügt.",
+      "lumpSumDate": "Datum",
+      "lumpSumAmount": "Betrag",
+      "removeLumpSum": "Entfernen"
+    },
+    "comparison": {
+      "newPayoff": "Neues Tilgungsdatum",
+      "timeSaved": "Gesparte Zeit",
+      "monthsSaved": "{count, plural, one {# Monat} other {# Monate}}",
+      "paymentsSaved": "{count, plural, one {# Zahlung} other {# Zahlungen}}",
+      "interestSaved": "Gesparte Zinsen",
+      "totalExtraContributed": "Gesamte Sondertilgung",
+      "beyondProjection": "Außerhalb der Prognose"
+    },
+    "chart": {
+      "title": "Tilgungsverlauf",
+      "empty": "Keine Zahlungshistorie oder Prognose verfügbar.",
+      "seriesHistorical": "Tatsächlicher Saldo",
+      "seriesBaseline": "Aktuelle Prognose",
+      "seriesScenario": "Mit Sondertilgungen",
+      "today": "Heute",
+      "scenarioNote": "Das Sondertilgungsszenario ist eine Simulation und ändert Ihre geplanten Zahlungen nicht."
+    },
+    "scenarios": {
+      "title": "Gespeicherte Szenarien",
+      "saveCurrent": "Aktuelles Szenario speichern",
+      "empty": "Noch keine gespeicherten Szenarien. Richten Sie oben eine Sondertilgung ein und speichern Sie sie, um Pläne im Zeitverlauf zu vergleichen.",
+      "load": "Laden",
+      "rename": "Umbenennen",
+      "delete": "Löschen",
+      "cancel": "Abbrechen",
+      "save": "Speichern",
+      "saveTitle": "Szenario speichern",
+      "renameTitle": "Szenario umbenennen",
+      "nameLabel": "Szenarioname",
+      "recurringSummary": "{amount} zusätzlich pro Rate",
+      "lumpSumSummary": "{count, plural, one {# Sonderzahlung} other {# Sonderzahlungen}}",
+      "emptyScenario": "Keine Sondertilgungen",
+      "savedToast": "Szenario \"{name}\" gespeichert",
+      "renamedToast": "Szenario umbenannt in \"{name}\"",
+      "deletedToast": "Szenario \"{name}\" gelöscht",
+      "saveFailed": "Szenario konnte nicht gespeichert werden",
+      "deleteFailed": "Szenario konnte nicht gelöscht werden"
+    },
+    "pastImpact": {
+      "title": "Wirkung bisheriger Sondertilgungen",
+      "description": "Wie sich Ihre bereits geleisteten Zahlungen im Vergleich zum ursprünglichen vertraglichen Tilgungsplan auswirken.",
+      "missingData": "Um zu sehen, wie Ihre Sondertilgungen diesen Kredit verkürzt haben, legen Sie den ursprünglichen Kreditbetrag und das erste Zahlungsdatum im Konto fest.",
+      "monthsAlreadySaved": "Bereits gesparte Zeit",
+      "monthsValue": "{count, plural, one {# Monat} other {# Monate}}",
+      "payoffComparison": "Ursprünglich {original}, jetzt {current}",
+      "interestAlreadySaved": "Bereits gesparte Zinsen",
+      "vsOriginalInterest": "gegenüber ursprünglich prognostizierten {amount}",
+      "seriesOriginal": "Ursprünglicher Plan",
+      "seriesActual": "Tatsächlicher Saldo",
+      "seriesCurrent": "Aktuelle Prognose",
+      "unknown": "Unbekannt"
+    }
   }
 }

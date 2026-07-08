@@ -77,7 +77,8 @@
       "closeTitleDisabled": "Il saldo del conto deve essere zero per chiuderlo",
       "closeTitleEnabled": "Chiudi conto",
       "balanceMustBeZero": "Il saldo deve essere zero",
-      "closedPrefix": " — Chiuso"
+      "closedPrefix": " — Chiuso",
+      "loanDetails": "Dettagli del prestito"
     }
   },
   "contextMenu": {
@@ -312,5 +313,117 @@
     "paymentStartDateRequired": "La data del primo pagamento è obbligatoria",
     "paymentAccountRequired": "Il conto di pagamento è obbligatorio",
     "amortizationRequired": "Il periodo di ammortamento è obbligatorio"
+  },
+  "loanDetail": {
+    "backToAccounts": "Torna ai conti",
+    "viewTransactions": "Vedi transazioni",
+    "notFound": "Conto non trovato",
+    "loadFailed": "Impossibile caricare i dettagli del conto",
+    "frequency": {
+      "WEEKLY": "Settimanale",
+      "BIWEEKLY": "Quindicinale",
+      "SEMI_MONTHLY": "Bimensile",
+      "MONTHLY": "Mensile",
+      "QUARTERLY": "Trimestrale",
+      "YEARLY": "Annuale",
+      "ACCELERATED_BIWEEKLY": "Quindicinale accelerato",
+      "ACCELERATED_WEEKLY": "Settimanale accelerato"
+    },
+    "summary": {
+      "currentBalance": "Saldo attuale",
+      "originalAmount": "Importo originario",
+      "interestRate": "Tasso d'interesse",
+      "effectiveRate": "{rate}% effettivo",
+      "payment": "Rata",
+      "estPayoff": "Estinzione stim.",
+      "estRemainingInterest": "Interessi residui stim.",
+      "notSet": "Non impostato",
+      "notAvailable": "N/D",
+      "paidOff": "Estinto"
+    },
+    "schedule": {
+      "title": "Piano di ammortamento",
+      "subtitle": "{historical, plural, one {# rata pagata} other {# rate pagate}}, {projected, plural, one {# prevista} other {# previste}}",
+      "colNumber": "N.",
+      "colDate": "Data",
+      "colPayment": "Rata",
+      "colPrincipal": "Capitale",
+      "colInterest": "Interessi",
+      "colExtra": "Capitale extra",
+      "colBalance": "Saldo",
+      "projectedFuturePayments": "Rate future previste",
+      "showAll": "Mostra tutte le {count} rate",
+      "showLess": "Mostra meno",
+      "noPayments": "Nessuna rata trovata"
+    },
+    "simulator": {
+      "title": "Simulatore di rimborso anticipato",
+      "description": "Simula pagamenti extra per vedere quanto prima potrebbe essere estinto il prestito e quanti interessi risparmieresti. Le simulazioni non modificano i tuoi pagamenti reali.",
+      "reset": "Reimposta",
+      "detectedExtraHint": "La tua cronologia dei pagamenti mostra una media di {amount} di capitale extra per rata.",
+      "applyDetected": "Usalo",
+      "recurringAmount": "Extra per rata",
+      "recurringStart": "Da (facoltativo)",
+      "recurringEnd": "Fino a (facoltativo)",
+      "lumpSums": "Versamenti una tantum",
+      "addLumpSum": "Aggiungi versamento una tantum",
+      "noLumpSums": "Nessun versamento una tantum aggiunto.",
+      "lumpSumDate": "Data",
+      "lumpSumAmount": "Importo",
+      "removeLumpSum": "Rimuovi"
+    },
+    "comparison": {
+      "newPayoff": "Nuova data di estinzione",
+      "timeSaved": "Tempo risparmiato",
+      "monthsSaved": "{count, plural, one {# mese} other {# mesi}}",
+      "paymentsSaved": "{count, plural, one {# rata} other {# rate}}",
+      "interestSaved": "Interessi risparmiati",
+      "totalExtraContributed": "Totale extra versato",
+      "beyondProjection": "Oltre la proiezione"
+    },
+    "chart": {
+      "title": "Cronologia di estinzione",
+      "empty": "Nessuna cronologia dei pagamenti o proiezione disponibile.",
+      "seriesHistorical": "Saldo effettivo",
+      "seriesBaseline": "Proiezione attuale",
+      "seriesScenario": "Con rimborsi anticipati",
+      "today": "Oggi",
+      "scenarioNote": "Lo scenario di rimborso anticipato è una simulazione e non modifica i tuoi pagamenti pianificati."
+    },
+    "scenarios": {
+      "title": "Scenari salvati",
+      "saveCurrent": "Salva scenario attuale",
+      "empty": "Nessuno scenario salvato. Configura un rimborso anticipato qui sopra e salvalo per confrontare i piani nel tempo.",
+      "load": "Carica",
+      "rename": "Rinomina",
+      "delete": "Elimina",
+      "cancel": "Annulla",
+      "save": "Salva",
+      "saveTitle": "Salva scenario",
+      "renameTitle": "Rinomina scenario",
+      "nameLabel": "Nome dello scenario",
+      "recurringSummary": "{amount} extra per rata",
+      "lumpSumSummary": "{count, plural, one {# versamento una tantum} other {# versamenti una tantum}}",
+      "emptyScenario": "Nessun rimborso anticipato",
+      "savedToast": "Scenario \"{name}\" salvato",
+      "renamedToast": "Scenario rinominato in \"{name}\"",
+      "deletedToast": "Scenario \"{name}\" eliminato",
+      "saveFailed": "Impossibile salvare lo scenario",
+      "deleteFailed": "Impossibile eliminare lo scenario"
+    },
+    "pastImpact": {
+      "title": "Impatto dei rimborsi anticipati effettuati",
+      "description": "Come i pagamenti già effettuati si confrontano con il piano contrattuale originario.",
+      "missingData": "Per vedere quanto i tuoi rimborsi anticipati hanno accorciato questo prestito, imposta il capitale originario e la data della prima rata sul conto.",
+      "monthsAlreadySaved": "Tempo già risparmiato",
+      "monthsValue": "{count, plural, one {# mese} other {# mesi}}",
+      "payoffComparison": "In origine {original}, ora {current}",
+      "interestAlreadySaved": "Interessi già risparmiati",
+      "vsOriginalInterest": "rispetto a {amount} previsti in origine",
+      "seriesOriginal": "Piano originario",
+      "seriesActual": "Saldo effettivo",
+      "seriesCurrent": "Proiezione attuale",
+      "unknown": "Sconosciuto"
+    }
   }
 }

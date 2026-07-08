@@ -449,5 +449,10 @@
     "deleteLastAdmin": "Impossible de supprimer le dernier compte administrateur. Promouvez d'abord un autre utilisateur.",
     "oidcReauthRequiredForDataDelete": "Une ré-authentification OIDC est requise pour confirmer la suppression des données",
     "passwordRequiredForDataDelete": "Un mot de passe est requis pour confirmer la suppression des données"
+  },
+  "loanScenarios": {
+    "notFound": "Scénario de prêt avec l'ID {{ id }} introuvable",
+    "nameConflict": "Un scénario nommé « {{ name }} » existe déjà pour ce compte",
+    "notLoanAccount": "Les scénarios de prêt ne sont disponibles que pour les comptes de prêt, d'hypothèque et de marge de crédit"
   }
 }

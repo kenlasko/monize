@@ -77,7 +77,8 @@
       "closeTitleDisabled": "Tài khoản phải có số dư bằng không để đóng",
       "closeTitleEnabled": "Đóng tài khoản",
       "balanceMustBeZero": "Số dư phải bằng không",
-      "closedPrefix": " — Đã đóng"
+      "closedPrefix": " — Đã đóng",
+      "loanDetails": "Chi tiết khoản vay"
     }
   },
   "contextMenu": {
@@ -312,5 +313,117 @@
     "paymentStartDateRequired": "Ngày thanh toán đầu tiên là bắt buộc",
     "paymentAccountRequired": "Tài khoản thanh toán là bắt buộc",
     "amortizationRequired": "Thời gian khấu hao là bắt buộc"
+  },
+  "loanDetail": {
+    "backToAccounts": "Quay lại danh sách tài khoản",
+    "viewTransactions": "Xem giao dịch",
+    "notFound": "Không tìm thấy tài khoản",
+    "loadFailed": "Không thể tải chi tiết tài khoản",
+    "frequency": {
+      "WEEKLY": "Hằng tuần",
+      "BIWEEKLY": "Hai tuần một lần",
+      "SEMI_MONTHLY": "Hai lần mỗi tháng",
+      "MONTHLY": "Hằng tháng",
+      "QUARTERLY": "Hằng quý",
+      "YEARLY": "Hằng năm",
+      "ACCELERATED_BIWEEKLY": "Hai tuần một lần (tăng tốc)",
+      "ACCELERATED_WEEKLY": "Hằng tuần (tăng tốc)"
+    },
+    "summary": {
+      "currentBalance": "Số dư hiện tại",
+      "originalAmount": "Số tiền gốc ban đầu",
+      "interestRate": "Lãi suất",
+      "effectiveRate": "{rate}% thực tế",
+      "payment": "Khoản trả",
+      "estPayoff": "Dự kiến trả hết",
+      "estRemainingInterest": "Lãi còn lại (ước tính)",
+      "notSet": "Chưa đặt",
+      "notAvailable": "Không có",
+      "paidOff": "Đã trả hết"
+    },
+    "schedule": {
+      "title": "Lịch trả nợ",
+      "subtitle": "{historical, plural, one {Đã trả # kỳ} other {Đã trả # kỳ}}, {projected, plural, one {dự kiến # kỳ} other {dự kiến # kỳ}}",
+      "colNumber": "Số",
+      "colDate": "Ngày",
+      "colPayment": "Khoản trả",
+      "colPrincipal": "Gốc",
+      "colInterest": "Lãi",
+      "colExtra": "Gốc trả thêm",
+      "colBalance": "Số dư",
+      "projectedFuturePayments": "Các kỳ trả dự kiến trong tương lai",
+      "showAll": "Hiện tất cả {count} kỳ trả",
+      "showLess": "Thu gọn",
+      "noPayments": "Không tìm thấy khoản trả nào"
+    },
+    "simulator": {
+      "title": "Trình mô phỏng trả nợ trước hạn",
+      "description": "Mô phỏng các khoản trả thêm để xem khoản vay có thể được trả hết sớm hơn bao nhiêu và bạn tiết kiệm được bao nhiêu tiền lãi. Mô phỏng không thay đổi các khoản trả thực tế của bạn.",
+      "reset": "Đặt lại",
+      "detectedExtraHint": "Lịch sử thanh toán cho thấy trung bình bạn trả thêm {amount} tiền gốc mỗi kỳ.",
+      "applyDetected": "Dùng số này",
+      "recurringAmount": "Trả thêm mỗi kỳ",
+      "recurringStart": "Từ ngày (tùy chọn)",
+      "recurringEnd": "Đến ngày (tùy chọn)",
+      "lumpSums": "Các khoản trả một lần",
+      "addLumpSum": "Thêm khoản trả một lần",
+      "noLumpSums": "Chưa thêm khoản trả một lần nào.",
+      "lumpSumDate": "Ngày",
+      "lumpSumAmount": "Số tiền",
+      "removeLumpSum": "Xóa"
+    },
+    "comparison": {
+      "newPayoff": "Ngày trả hết mới",
+      "timeSaved": "Thời gian tiết kiệm",
+      "monthsSaved": "{count, plural, one {# tháng} other {# tháng}}",
+      "paymentsSaved": "{count, plural, one {# kỳ} other {# kỳ}}",
+      "interestSaved": "Tiền lãi tiết kiệm",
+      "totalExtraContributed": "Tổng số tiền trả thêm",
+      "beyondProjection": "Ngoài phạm vi dự báo"
+    },
+    "chart": {
+      "title": "Dòng thời gian trả nợ",
+      "empty": "Không có lịch sử thanh toán hoặc dự báo.",
+      "seriesHistorical": "Số dư thực tế",
+      "seriesBaseline": "Dự báo hiện tại",
+      "seriesScenario": "Có trả trước hạn",
+      "today": "Hôm nay",
+      "scenarioNote": "Kịch bản trả trước hạn chỉ là mô phỏng và không thay đổi các khoản trả đã lên lịch của bạn."
+    },
+    "scenarios": {
+      "title": "Kịch bản đã lưu",
+      "saveCurrent": "Lưu kịch bản hiện tại",
+      "empty": "Chưa có kịch bản nào được lưu. Thiết lập khoản trả trước hạn ở trên và lưu lại để so sánh các kế hoạch theo thời gian.",
+      "load": "Tải",
+      "rename": "Đổi tên",
+      "delete": "Xóa",
+      "cancel": "Hủy",
+      "save": "Lưu",
+      "saveTitle": "Lưu kịch bản",
+      "renameTitle": "Đổi tên kịch bản",
+      "nameLabel": "Tên kịch bản",
+      "recurringSummary": "Trả thêm {amount} mỗi kỳ",
+      "lumpSumSummary": "{count, plural, one {# khoản trả một lần} other {# khoản trả một lần}}",
+      "emptyScenario": "Không có khoản trả trước hạn",
+      "savedToast": "Đã lưu kịch bản \"{name}\"",
+      "renamedToast": "Đã đổi tên kịch bản thành \"{name}\"",
+      "deletedToast": "Đã xóa kịch bản \"{name}\"",
+      "saveFailed": "Không thể lưu kịch bản",
+      "deleteFailed": "Không thể xóa kịch bản"
+    },
+    "pastImpact": {
+      "title": "Tác động của các khoản trả trước hạn đã thực hiện",
+      "description": "So sánh các khoản bạn đã trả với lịch trả nợ theo hợp đồng ban đầu.",
+      "missingData": "Để xem các khoản trả trước hạn đã rút ngắn khoản vay này bao nhiêu, hãy đặt số tiền gốc ban đầu và ngày trả đầu tiên trên tài khoản.",
+      "monthsAlreadySaved": "Thời gian đã tiết kiệm",
+      "monthsValue": "{count, plural, one {# tháng} other {# tháng}}",
+      "payoffComparison": "Ban đầu {original}, hiện tại {current}",
+      "interestAlreadySaved": "Tiền lãi đã tiết kiệm",
+      "vsOriginalInterest": "so với {amount} dự kiến ban đầu",
+      "seriesOriginal": "Lịch ban đầu",
+      "seriesActual": "Số dư thực tế",
+      "seriesCurrent": "Dự báo hiện tại",
+      "unknown": "Không rõ"
+    }
   }
 }

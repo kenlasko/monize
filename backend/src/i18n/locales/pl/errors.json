@@ -449,5 +449,10 @@
     "deleteLastAdmin": "Nie można usunąć ostatniego konta administratora. Najpierw awansuj innego użytkownika.",
     "oidcReauthRequiredForDataDelete": "Do potwierdzenia usunięcia danych wymagane jest ponowne uwierzytelnienie OIDC",
     "passwordRequiredForDataDelete": "Do potwierdzenia usunięcia danych wymagane jest hasło"
+  },
+  "loanScenarios": {
+    "notFound": "Nie znaleziono scenariusza kredytu o identyfikatorze {{ id }}",
+    "nameConflict": "Scenariusz o nazwie \"{{ name }}\" już istnieje dla tego konta",
+    "notLoanAccount": "Scenariusze kredytowe są dostępne tylko dla kont kredytów, hipotek i linii kredytowych"
   }
 }

@@ -77,7 +77,8 @@
       "closeTitleDisabled": "Konto musi mieć zerowe saldo, aby je zamknąć",
       "closeTitleEnabled": "Zamknij konto",
       "balanceMustBeZero": "Saldo musi wynosić zero",
-      "closedPrefix": " — Zamknięte"
+      "closedPrefix": " — Zamknięte",
+      "loanDetails": "Szczegóły kredytu"
     }
   },
   "contextMenu": {
@@ -312,5 +313,117 @@
     "paymentStartDateRequired": "Data pierwszej płatności jest wymagana",
     "paymentAccountRequired": "Konto płatności jest wymagane",
     "amortizationRequired": "Okres amortyzacji jest wymagany"
+  },
+  "loanDetail": {
+    "backToAccounts": "Powrót do kont",
+    "viewTransactions": "Zobacz transakcje",
+    "notFound": "Nie znaleziono konta",
+    "loadFailed": "Nie udało się wczytać szczegółów konta",
+    "frequency": {
+      "WEEKLY": "Co tydzień",
+      "BIWEEKLY": "Co dwa tygodnie",
+      "SEMI_MONTHLY": "Dwa razy w miesiącu",
+      "MONTHLY": "Co miesiąc",
+      "QUARTERLY": "Co kwartał",
+      "YEARLY": "Co rok",
+      "ACCELERATED_BIWEEKLY": "Przyspieszony co dwa tygodnie",
+      "ACCELERATED_WEEKLY": "Przyspieszony co tydzień"
+    },
+    "summary": {
+      "currentBalance": "Bieżące saldo",
+      "originalAmount": "Kwota początkowa",
+      "interestRate": "Oprocentowanie",
+      "effectiveRate": "{rate}% efektywnie",
+      "payment": "Rata",
+      "estPayoff": "Szac. spłata",
+      "estRemainingInterest": "Szac. pozostałe odsetki",
+      "notSet": "Nie ustawiono",
+      "notAvailable": "Brak danych",
+      "paidOff": "Spłacony"
+    },
+    "schedule": {
+      "title": "Harmonogram spłat",
+      "subtitle": "{historical, plural, one {# zapłacona rata} few {# zapłacone raty} many {# zapłaconych rat} other {# zapłaconej raty}}, {projected, plural, one {# prognozowana} few {# prognozowane} many {# prognozowanych} other {# prognozowanej}}",
+      "colNumber": "Nr",
+      "colDate": "Data",
+      "colPayment": "Rata",
+      "colPrincipal": "Kapitał",
+      "colInterest": "Odsetki",
+      "colExtra": "Dodatkowy kapitał",
+      "colBalance": "Saldo",
+      "projectedFuturePayments": "Prognozowane przyszłe raty",
+      "showAll": "Pokaż wszystkie raty ({count})",
+      "showLess": "Pokaż mniej",
+      "noPayments": "Nie znaleziono rat"
+    },
+    "simulator": {
+      "title": "Symulator nadpłat",
+      "description": "Zasymuluj dodatkowe wpłaty, aby zobaczyć, o ile wcześniej kredyt mógłby zostać spłacony i ile odsetek byś zaoszczędził. Symulacje nie zmieniają Twoich rzeczywistych płatności.",
+      "reset": "Resetuj",
+      "detectedExtraHint": "Twoja historia płatności pokazuje średnio {amount} dodatkowego kapitału na ratę.",
+      "applyDetected": "Użyj",
+      "recurringAmount": "Dodatkowo na ratę",
+      "recurringStart": "Od (opcjonalnie)",
+      "recurringEnd": "Do (opcjonalnie)",
+      "lumpSums": "Jednorazowe nadpłaty",
+      "addLumpSum": "Dodaj nadpłatę jednorazową",
+      "noLumpSums": "Nie dodano nadpłat jednorazowych.",
+      "lumpSumDate": "Data",
+      "lumpSumAmount": "Kwota",
+      "removeLumpSum": "Usuń"
+    },
+    "comparison": {
+      "newPayoff": "Nowa data spłaty",
+      "timeSaved": "Zaoszczędzony czas",
+      "monthsSaved": "{count, plural, one {# miesiąc} few {# miesiące} many {# miesięcy} other {# miesiąca}}",
+      "paymentsSaved": "{count, plural, one {# rata} few {# raty} many {# rat} other {# raty}}",
+      "interestSaved": "Zaoszczędzone odsetki",
+      "totalExtraContributed": "Łączna kwota nadpłat",
+      "beyondProjection": "Poza prognozą"
+    },
+    "chart": {
+      "title": "Oś czasu spłaty",
+      "empty": "Brak historii płatności i prognozy.",
+      "seriesHistorical": "Rzeczywiste saldo",
+      "seriesBaseline": "Bieżąca prognoza",
+      "seriesScenario": "Z nadpłatami",
+      "today": "Dzisiaj",
+      "scenarioNote": "Scenariusz nadpłat jest symulacją i nie zmienia zaplanowanych płatności."
+    },
+    "scenarios": {
+      "title": "Zapisane scenariusze",
+      "saveCurrent": "Zapisz bieżący scenariusz",
+      "empty": "Brak zapisanych scenariuszy. Skonfiguruj nadpłatę powyżej i zapisz ją, aby porównywać plany w czasie.",
+      "load": "Wczytaj",
+      "rename": "Zmień nazwę",
+      "delete": "Usuń",
+      "cancel": "Anuluj",
+      "save": "Zapisz",
+      "saveTitle": "Zapisz scenariusz",
+      "renameTitle": "Zmień nazwę scenariusza",
+      "nameLabel": "Nazwa scenariusza",
+      "recurringSummary": "{amount} dodatkowo na ratę",
+      "lumpSumSummary": "{count, plural, one {# nadpłata jednorazowa} few {# nadpłaty jednorazowe} many {# nadpłat jednorazowych} other {# nadpłaty jednorazowej}}",
+      "emptyScenario": "Brak nadpłat",
+      "savedToast": "Zapisano scenariusz \"{name}\"",
+      "renamedToast": "Zmieniono nazwę scenariusza na \"{name}\"",
+      "deletedToast": "Usunięto scenariusz \"{name}\"",
+      "saveFailed": "Nie udało się zapisać scenariusza",
+      "deleteFailed": "Nie udało się usunąć scenariusza"
+    },
+    "pastImpact": {
+      "title": "Wpływ dokonanych nadpłat",
+      "description": "Jak dokonane już płatności wypadają na tle pierwotnego harmonogramu umownego.",
+      "missingData": "Aby zobaczyć, o ile Twoje nadpłaty skróciły ten kredyt, ustaw pierwotny kapitał i datę pierwszej raty na koncie.",
+      "monthsAlreadySaved": "Już zaoszczędzony czas",
+      "monthsValue": "{count, plural, one {# miesiąc} few {# miesiące} many {# miesięcy} other {# miesiąca}}",
+      "payoffComparison": "Pierwotnie {original}, teraz {current}",
+      "interestAlreadySaved": "Już zaoszczędzone odsetki",
+      "vsOriginalInterest": "wobec pierwotnie prognozowanych {amount}",
+      "seriesOriginal": "Pierwotny harmonogram",
+      "seriesActual": "Rzeczywiste saldo",
+      "seriesCurrent": "Bieżąca prognoza",
+      "unknown": "Nieznane"
+    }
   }
 }

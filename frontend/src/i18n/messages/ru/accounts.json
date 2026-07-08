@@ -77,7 +77,8 @@
       "closeTitleDisabled": "Для закрытия счёт должен иметь нулевой остаток",
       "closeTitleEnabled": "Закрыть счёт",
       "balanceMustBeZero": "Остаток должен быть нулевым",
-      "closedPrefix": " — Закрыт"
+      "closedPrefix": " — Закрыт",
+      "loanDetails": "Сведения о кредите"
     }
   },
   "contextMenu": {
@@ -312,5 +313,117 @@
     "paymentStartDateRequired": "Дата первого платежа обязательна",
     "paymentAccountRequired": "Счёт списания обязателен",
     "amortizationRequired": "Период амортизации обязателен"
+  },
+  "loanDetail": {
+    "backToAccounts": "Назад к счетам",
+    "viewTransactions": "Показать операции",
+    "notFound": "Счёт не найден",
+    "loadFailed": "Не удалось загрузить сведения о счёте",
+    "frequency": {
+      "WEEKLY": "Еженедельно",
+      "BIWEEKLY": "Раз в две недели",
+      "SEMI_MONTHLY": "Дважды в месяц",
+      "MONTHLY": "Ежемесячно",
+      "QUARTERLY": "Ежеквартально",
+      "YEARLY": "Ежегодно",
+      "ACCELERATED_BIWEEKLY": "Ускоренно раз в две недели",
+      "ACCELERATED_WEEKLY": "Ускоренно еженедельно"
+    },
+    "summary": {
+      "currentBalance": "Текущий баланс",
+      "originalAmount": "Первоначальная сумма",
+      "interestRate": "Процентная ставка",
+      "effectiveRate": "{rate}% эффективная",
+      "payment": "Платёж",
+      "estPayoff": "Ожид. погашение",
+      "estRemainingInterest": "Ожид. остаток процентов",
+      "notSet": "Не задано",
+      "notAvailable": "Н/Д",
+      "paidOff": "Погашен"
+    },
+    "schedule": {
+      "title": "График платежей",
+      "subtitle": "{historical, plural, one {# платёж внесён} few {# платежа внесено} many {# платежей внесено} other {# платежа внесено}}, {projected, plural, one {# прогнозируемый} few {# прогнозируемых} many {# прогнозируемых} other {# прогнозируемого}}",
+      "colNumber": "№",
+      "colDate": "Дата",
+      "colPayment": "Платёж",
+      "colPrincipal": "Основной долг",
+      "colInterest": "Проценты",
+      "colExtra": "Досрочное погашение",
+      "colBalance": "Остаток",
+      "projectedFuturePayments": "Прогнозируемые будущие платежи",
+      "showAll": "Показать все платежи ({count})",
+      "showLess": "Показать меньше",
+      "noPayments": "Платежи не найдены"
+    },
+    "simulator": {
+      "title": "Симулятор досрочного погашения",
+      "description": "Смоделируйте дополнительные платежи, чтобы увидеть, насколько раньше кредит может быть погашен и сколько процентов вы сэкономите. Симуляции не меняют ваши реальные платежи.",
+      "reset": "Сбросить",
+      "detectedExtraHint": "По истории платежей вы в среднем вносите {amount} сверх основного платежа.",
+      "applyDetected": "Использовать",
+      "recurringAmount": "Дополнительно к платежу",
+      "recurringStart": "С (необязательно)",
+      "recurringEnd": "По (необязательно)",
+      "lumpSums": "Разовые платежи",
+      "addLumpSum": "Добавить разовый платёж",
+      "noLumpSums": "Разовые платежи не добавлены.",
+      "lumpSumDate": "Дата",
+      "lumpSumAmount": "Сумма",
+      "removeLumpSum": "Удалить"
+    },
+    "comparison": {
+      "newPayoff": "Новая дата погашения",
+      "timeSaved": "Сэкономленное время",
+      "monthsSaved": "{count, plural, one {# месяц} few {# месяца} many {# месяцев} other {# месяца}}",
+      "paymentsSaved": "{count, plural, one {# платёж} few {# платежа} many {# платежей} other {# платежа}}",
+      "interestSaved": "Сэкономленные проценты",
+      "totalExtraContributed": "Всего внесено дополнительно",
+      "beyondProjection": "За пределами прогноза"
+    },
+    "chart": {
+      "title": "График погашения",
+      "empty": "Нет истории платежей и прогноза.",
+      "seriesHistorical": "Фактический остаток",
+      "seriesBaseline": "Текущий прогноз",
+      "seriesScenario": "С досрочными платежами",
+      "today": "Сегодня",
+      "scenarioNote": "Сценарий досрочного погашения — это симуляция; он не меняет ваши запланированные платежи."
+    },
+    "scenarios": {
+      "title": "Сохранённые сценарии",
+      "saveCurrent": "Сохранить текущий сценарий",
+      "empty": "Сохранённых сценариев пока нет. Настройте досрочное погашение выше и сохраните его, чтобы сравнивать планы со временем.",
+      "load": "Загрузить",
+      "rename": "Переименовать",
+      "delete": "Удалить",
+      "cancel": "Отмена",
+      "save": "Сохранить",
+      "saveTitle": "Сохранить сценарий",
+      "renameTitle": "Переименовать сценарий",
+      "nameLabel": "Название сценария",
+      "recurringSummary": "{amount} дополнительно к платежу",
+      "lumpSumSummary": "{count, plural, one {# разовый платёж} few {# разовых платежа} many {# разовых платежей} other {# разового платежа}}",
+      "emptyScenario": "Без досрочных платежей",
+      "savedToast": "Сценарий «{name}» сохранён",
+      "renamedToast": "Сценарий переименован в «{name}»",
+      "deletedToast": "Сценарий «{name}» удалён",
+      "saveFailed": "Не удалось сохранить сценарий",
+      "deleteFailed": "Не удалось удалить сценарий"
+    },
+    "pastImpact": {
+      "title": "Эффект уже внесённых досрочных платежей",
+      "description": "Как уже внесённые платежи соотносятся с первоначальным договорным графиком.",
+      "missingData": "Чтобы увидеть, насколько досрочные платежи сократили этот кредит, задайте первоначальную сумму и дату первого платежа в настройках счёта.",
+      "monthsAlreadySaved": "Уже сэкономленное время",
+      "monthsValue": "{count, plural, one {# месяц} few {# месяца} many {# месяцев} other {# месяца}}",
+      "payoffComparison": "Изначально {original}, теперь {current}",
+      "interestAlreadySaved": "Уже сэкономленные проценты",
+      "vsOriginalInterest": "против изначально прогнозируемых {amount}",
+      "seriesOriginal": "Первоначальный график",
+      "seriesActual": "Фактический остаток",
+      "seriesCurrent": "Текущий прогноз",
+      "unknown": "Неизвестно"
+    }
   }
 }

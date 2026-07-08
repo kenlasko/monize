@@ -77,7 +77,8 @@
       "closeTitleDisabled": "Rekening moet een saldo van nul hebben om te sluiten",
       "closeTitleEnabled": "Rekening sluiten",
       "balanceMustBeZero": "Saldo moet nul zijn",
-      "closedPrefix": " — Gesloten"
+      "closedPrefix": " — Gesloten",
+      "loanDetails": "Leninggegevens"
     }
   },
   "contextMenu": {
@@ -312,5 +313,117 @@
     "paymentStartDateRequired": "Datum eerste betaling is vereist",
     "paymentAccountRequired": "Betaalrekening is vereist",
     "amortizationRequired": "Afschrijvingstermijn is vereist"
+  },
+  "loanDetail": {
+    "backToAccounts": "Terug naar rekeningen",
+    "viewTransactions": "Transacties bekijken",
+    "notFound": "Rekening niet gevonden",
+    "loadFailed": "Kan rekeninggegevens niet laden",
+    "frequency": {
+      "WEEKLY": "Wekelijks",
+      "BIWEEKLY": "Tweewekelijks",
+      "SEMI_MONTHLY": "Halfmaandelijks",
+      "MONTHLY": "Maandelijks",
+      "QUARTERLY": "Per kwartaal",
+      "YEARLY": "Jaarlijks",
+      "ACCELERATED_BIWEEKLY": "Versneld tweewekelijks",
+      "ACCELERATED_WEEKLY": "Versneld wekelijks"
+    },
+    "summary": {
+      "currentBalance": "Huidig saldo",
+      "originalAmount": "Oorspronkelijk bedrag",
+      "interestRate": "Rentetarief",
+      "effectiveRate": "{rate}% effectief",
+      "payment": "Betaling",
+      "estPayoff": "Gesch. aflossing",
+      "estRemainingInterest": "Gesch. resterende rente",
+      "notSet": "Niet ingesteld",
+      "notAvailable": "N.v.t.",
+      "paidOff": "Afgelost"
+    },
+    "schedule": {
+      "title": "Aflossingsschema",
+      "subtitle": "{historical, plural, one {# betaling gedaan} other {# betalingen gedaan}}, {projected, plural, one {# geprojecteerd} other {# geprojecteerd}}",
+      "colNumber": "Nr.",
+      "colDate": "Datum",
+      "colPayment": "Betaling",
+      "colPrincipal": "Hoofdsom",
+      "colInterest": "Rente",
+      "colExtra": "Extra hoofdsom",
+      "colBalance": "Saldo",
+      "projectedFuturePayments": "Geprojecteerde toekomstige betalingen",
+      "showAll": "Alle {count} betalingen tonen",
+      "showLess": "Minder tonen",
+      "noPayments": "Geen betalingen gevonden"
+    },
+    "simulator": {
+      "title": "Simulator extra aflossen",
+      "description": "Simuleer extra betalingen om te zien hoeveel eerder de lening afgelost zou zijn en hoeveel rente u zou besparen. Simulaties wijzigen uw echte betalingen niet.",
+      "reset": "Opnieuw instellen",
+      "detectedExtraHint": "Uw betalingsgeschiedenis toont gemiddeld {amount} aan extra hoofdsom per betaling.",
+      "applyDetected": "Gebruiken",
+      "recurringAmount": "Extra per betaling",
+      "recurringStart": "Vanaf (optioneel)",
+      "recurringEnd": "Tot (optioneel)",
+      "lumpSums": "Eenmalige extra stortingen",
+      "addLumpSum": "Extra storting toevoegen",
+      "noLumpSums": "Geen extra stortingen toegevoegd.",
+      "lumpSumDate": "Datum",
+      "lumpSumAmount": "Bedrag",
+      "removeLumpSum": "Verwijderen"
+    },
+    "comparison": {
+      "newPayoff": "Nieuwe aflossingsdatum",
+      "timeSaved": "Bespaarde tijd",
+      "monthsSaved": "{count, plural, one {# maand} other {# maanden}}",
+      "paymentsSaved": "{count, plural, one {# betaling} other {# betalingen}}",
+      "interestSaved": "Bespaarde rente",
+      "totalExtraContributed": "Totaal extra ingelegd",
+      "beyondProjection": "Buiten de projectie"
+    },
+    "chart": {
+      "title": "Aflossingstijdlijn",
+      "empty": "Geen betalingsgeschiedenis of projectie beschikbaar.",
+      "seriesHistorical": "Werkelijk saldo",
+      "seriesBaseline": "Huidige projectie",
+      "seriesScenario": "Met extra aflossingen",
+      "today": "Vandaag",
+      "scenarioNote": "Het scenario met extra aflossingen is een simulatie en wijzigt uw geplande betalingen niet."
+    },
+    "scenarios": {
+      "title": "Opgeslagen scenario's",
+      "saveCurrent": "Huidig scenario opslaan",
+      "empty": "Nog geen opgeslagen scenario's. Stel hierboven een extra aflossing in en sla deze op om plannen in de loop van de tijd te vergelijken.",
+      "load": "Laden",
+      "rename": "Hernoemen",
+      "delete": "Verwijderen",
+      "cancel": "Annuleren",
+      "save": "Opslaan",
+      "saveTitle": "Scenario opslaan",
+      "renameTitle": "Scenario hernoemen",
+      "nameLabel": "Scenarionaam",
+      "recurringSummary": "{amount} extra per betaling",
+      "lumpSumSummary": "{count, plural, one {# eenmalige storting} other {# eenmalige stortingen}}",
+      "emptyScenario": "Geen extra aflossingen",
+      "savedToast": "Scenario \"{name}\" opgeslagen",
+      "renamedToast": "Scenario hernoemd naar \"{name}\"",
+      "deletedToast": "Scenario \"{name}\" verwijderd",
+      "saveFailed": "Kan scenario niet opslaan",
+      "deleteFailed": "Kan scenario niet verwijderen"
+    },
+    "pastImpact": {
+      "title": "Effect van gedane extra aflossingen",
+      "description": "Hoe de betalingen die u al hebt gedaan zich verhouden tot het oorspronkelijke contractuele schema.",
+      "missingData": "Om te zien hoeveel uw extra aflossingen deze lening hebben verkort, stelt u de oorspronkelijke hoofdsom en de eerste betaaldatum in op de rekening.",
+      "monthsAlreadySaved": "Reeds bespaarde tijd",
+      "monthsValue": "{count, plural, one {# maand} other {# maanden}}",
+      "payoffComparison": "Oorspronkelijk {original}, nu {current}",
+      "interestAlreadySaved": "Reeds bespaarde rente",
+      "vsOriginalInterest": "tegenover oorspronkelijk geprojecteerde {amount}",
+      "seriesOriginal": "Oorspronkelijk schema",
+      "seriesActual": "Werkelijk saldo",
+      "seriesCurrent": "Huidige projectie",
+      "unknown": "Onbekend"
+    }
   }
 }
