@@ -53,15 +53,30 @@ const optionalNumberWithRange = (min: number, max: number) =>
     z.number().min(min).max(max).optional()
   );
 
-// Treats the empty-string placeholder from an unselected <Select> as undefined so
-// the optional enum accepts it instead of surfacing a raw "Invalid option:
-// expected one of ..." Zod message (see issue #785). Required-ness is enforced
-// per account type in the superRefine below with localized messages.
-const emptyToUndefined = (val: unknown) =>
-  val === '' || val === undefined ? undefined : val;
-
 const paymentFrequencies = ['WEEKLY', 'BIWEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY'] as const;
 const mortgagePaymentFrequencies = ['MONTHLY', 'SEMI_MONTHLY', 'BIWEEKLY', 'ACCELERATED_BIWEEKLY', 'WEEKLY', 'ACCELERATED_WEEKLY'] as const;
+
+// An optional enum that maps any value outside its allowed set to undefined
+// rather than failing validation. This also absorbs the empty-string
+// placeholder from an unselected <Select> (issue #785); required-ness is
+// enforced per account type in the superRefine below with localized messages.
+// It further matters on the edit form: a mortgage
+// stores its (often accelerated/semi-monthly) cadence in the same
+// paymentFrequency column, which is not a member of the loan-only enum. The
+// frequency field is not rendered while editing, so a stored value like
+// ACCELERATED_BIWEEKLY loaded as the paymentFrequency default would otherwise
+// make the base schema reject the form, silently blocking submit with no
+// visible error. Coercing it to undefined lets the form save; the cleanup in
+// AccountFormModal drops the undefined field from the payload, so the stored
+// frequency round-trips untouched.
+const optionalEnum = <T extends readonly [string, ...string[]]>(values: T) =>
+  z.preprocess(
+    (val: unknown) =>
+      typeof val === 'string' && (values as readonly string[]).includes(val)
+        ? val
+        : undefined,
+    z.enum(values).optional(),
+  );
 
 const buildAccountSchema = (t: (key: string) => string, isEditing: boolean) => z.object({
   name: z.string().min(1, t('validation.nameRequired')).max(255),
@@ -92,7 +107,7 @@ const buildAccountSchema = (t: (key: string) => string, isEditing: boolean) => z
   statementSettlementDay: optionalNumberWithRange(1, 31),
   // Loan-specific fields
   paymentAmount: optionalNumber,
-  paymentFrequency: z.preprocess(emptyToUndefined, z.enum(paymentFrequencies).optional()),
+  paymentFrequency: optionalEnum(paymentFrequencies),
   paymentStartDate: z.string().optional(),
   sourceAccountId: z.string().optional(),
   interestCategoryId: z.string().optional(),
@@ -104,7 +119,7 @@ const buildAccountSchema = (t: (key: string) => string, isEditing: boolean) => z
   isVariableRate: z.boolean().optional(),
   termMonths: optionalNumber,
   amortizationMonths: optionalNumber,
-  mortgagePaymentFrequency: z.preprocess(emptyToUndefined, z.enum(mortgagePaymentFrequencies).optional()),
+  mortgagePaymentFrequency: optionalEnum(mortgagePaymentFrequencies),
 }).superRefine((data, ctx) => {
   // Loan and mortgage payment setup is only collected when creating the account
   // (the payment fields are hidden while editing), so only enforce these on

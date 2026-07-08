@@ -644,6 +644,43 @@ describe('AccountForm', () => {
     expect(mockOnSubmit.mock.calls[0][0].institutionId).toBeNull();
   });
 
+  it('saves a MORTGAGE edit whose stored frequency is an accelerated cadence (not in the loan enum)', async () => {
+    // Regression: a mortgage stores its cadence in paymentFrequency, and
+    // accelerated/semi-monthly values are not members of the loan-only enum.
+    // Loaded as the (unrendered) paymentFrequency default on the edit form,
+    // such a value used to fail base-schema validation and silently block
+    // submit -- "Update Account" did nothing.
+    const account = createExistingAccount({
+      accountType: 'MORTGAGE',
+      name: 'Home Mortgage',
+      paymentFrequency: 'ACCELERATED_BIWEEKLY',
+      interestRate: 5,
+      paymentAmount: 1200,
+      amortizationMonths: 300,
+      paymentStartDate: '2024-01-01',
+      originalPrincipal: 400000,
+    });
+
+    render(
+      <AccountForm account={account} onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Update Account/i })).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Update Account/i }));
+    });
+
+    await waitFor(() => {
+      expect(mockOnSubmit).toHaveBeenCalled();
+    });
+    // The unrendered loan-only frequency field is dropped rather than sent,
+    // so the stored mortgage cadence round-trips untouched.
+    expect(mockOnSubmit.mock.calls[0][0].paymentFrequency).toBeUndefined();
+  });
+
   it('blocks new MORTGAGE submit with localized required errors and no raw Zod enum message', async () => {
     render(<AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
 
