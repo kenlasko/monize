@@ -7,6 +7,8 @@ vi.mock('@/lib/investments', () => ({
   investmentsApi: {
     getAllocationByTag: vi.fn(),
     getCountryWeightings: vi.fn(),
+    getPortfolioTagKeys: vi.fn(),
+    getAllocationByTagKey: vi.fn(),
   },
 }));
 
@@ -57,6 +59,8 @@ describe('AssetAllocationChart', () => {
     vi.clearAllMocks();
     (investmentsApi.getAllocationByTag as any).mockResolvedValue(emptyTag);
     (investmentsApi.getCountryWeightings as any).mockResolvedValue(emptyCountry);
+    (investmentsApi.getPortfolioTagKeys as any).mockResolvedValue([]);
+    (investmentsApi.getAllocationByTagKey as any).mockResolvedValue(emptyTag);
   });
 
   it('renders loading state', async () => {
