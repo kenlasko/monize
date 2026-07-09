@@ -19,6 +19,7 @@ const NAMESPACES = [
   "accountDetail",
   "accountDetail-creditCard",
   "accountDetail-banking",
+  "accountDetail-investment",
   "admin",
   "ai",
   "bills",

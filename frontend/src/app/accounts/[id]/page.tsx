@@ -13,6 +13,7 @@ import { LoanDetailView } from '@/components/accounts/loan-detail/LoanDetailView
 import { LineOfCreditView } from '@/components/accounts/loan-detail/LineOfCreditView';
 import { CreditCardDetailView } from '@/components/accounts/credit-card-detail/CreditCardDetailView';
 import { BankingDetailView } from '@/components/accounts/banking-detail/BankingDetailView';
+import { InvestmentDetailView } from '@/components/accounts/investment-detail/InvestmentDetailView';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { accountsApi } from '@/lib/accounts';
@@ -31,7 +32,7 @@ import type { LoanRateChange } from '@/types/loan-rate-change';
  * here. A type absent from the registry has no dedicated page yet and
  * redirects to its transaction register.
  */
-type DetailViewKind = 'loan' | 'lineOfCredit' | 'creditCard' | 'banking';
+type DetailViewKind = 'loan' | 'lineOfCredit' | 'creditCard' | 'banking' | 'investment';
 
 const DETAIL_VIEW_REGISTRY: Partial<Record<AccountType, DetailViewKind>> = {
   LOAN: 'loan',
@@ -41,6 +42,7 @@ const DETAIL_VIEW_REGISTRY: Partial<Record<AccountType, DetailViewKind>> = {
   CHEQUING: 'banking',
   SAVINGS: 'banking',
   CASH: 'banking',
+  INVESTMENT: 'investment',
 };
 
 function resolveDetailView(type: AccountType): DetailViewKind | null {
@@ -188,7 +190,12 @@ function AccountDetailContent() {
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <AccountDetailShell
           account={account}
-          onViewTransactions={() => router.push(`/transactions?accountId=${account.id}`)}
+          onViewTransactions={
+            // The investment view links to the full /investments page instead.
+            detailView === 'investment'
+              ? undefined
+              : () => router.push(`/transactions?accountId=${account.id}`)
+          }
           onReconcile={
             detailView === 'creditCard' || detailView === 'banking'
               ? () => router.push(`/reconcile?accountId=${account.id}`)
@@ -200,6 +207,8 @@ function AccountDetailContent() {
             <CreditCardDetailView account={account} onAccountChanged={loadData} />
           ) : detailView === 'banking' ? (
             <BankingDetailView account={account} />
+          ) : detailView === 'investment' ? (
+            <InvestmentDetailView account={account} />
           ) : isRevolving ? (
             <LineOfCreditView account={account} />
           ) : (
