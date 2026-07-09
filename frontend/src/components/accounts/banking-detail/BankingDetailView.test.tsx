@@ -1,7 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, act, waitFor } from '@/test/render';
+import { render, screen, act, waitFor, fireEvent } from '@/test/render';
 import { BankingDetailView } from './BankingDetailView';
 import type { Account } from '@/types/account';
+
+const mockPush = vi.fn();
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: mockPush, replace: vi.fn() }),
+  usePathname: () => '/accounts/chq-1',
+  useParams: () => ({ id: 'chq-1' }),
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({ formatCurrency: (a: number) => `$${a.toFixed(2)}` }),
@@ -11,8 +19,12 @@ vi.mock('@/components/transactions/BalanceHistoryChart', () => ({
 }));
 
 const mockGetDailyBalances = vi.fn();
+const mockGetBalanceForecast = vi.fn();
 vi.mock('@/lib/accounts', () => ({
-  accountsApi: { getDailyBalances: (...a: unknown[]) => mockGetDailyBalances(...a) },
+  accountsApi: {
+    getDailyBalances: (...a: unknown[]) => mockGetDailyBalances(...a),
+    getBalanceForecast: (...a: unknown[]) => mockGetBalanceForecast(...a),
+  },
 }));
 
 const mockGetSummary = vi.fn();
@@ -48,6 +60,14 @@ beforeEach(() => {
     { date: '2026-06-01', balance: 1000 },
     { date: '2026-06-15', balance: 1500 },
   ]);
+  mockGetBalanceForecast.mockResolvedValue({
+    accountId: 'chq-1',
+    currencyCode: 'CAD',
+    points: [
+      { date: '2026-06-15', balance: 1500 },
+      { date: '2026-07-01', balance: 2200 },
+    ],
+  });
   mockGetSummary.mockResolvedValue({
     totalIncome: 2000,
     totalExpenses: 1500,
@@ -84,10 +104,15 @@ describe('BankingDetailView', () => {
     expect(screen.getByText('1.5%')).toBeInTheDocument();
   });
 
-  it('projects the balance from the last daily-balance point', async () => {
+  it('projects the balance from the forecast and caps history at today', async () => {
     await renderView();
-    await waitFor(() => expect(mockGetDailyBalances).toHaveBeenCalled());
-    // Projected balance = last daily balance (1500); average = (1000+1500)/2 = 1250.
+    await waitFor(() => expect(mockGetBalanceForecast).toHaveBeenCalledWith('chq-1'));
+    // History is requested up to today so the forecast owns the future.
+    expect(mockGetDailyBalances).toHaveBeenCalledWith(
+      expect.objectContaining({ accountIds: 'chq-1', endDate: expect.any(String) }),
+    );
+    // Projected balance = last forecast point (2200); average from history = 1250.
+    expect(screen.getByText('$2200.00')).toBeInTheDocument();
     expect(screen.getByText('$1250.00')).toBeInTheDocument();
   });
 
@@ -111,5 +136,19 @@ describe('BankingDetailView', () => {
     await renderView();
     await waitFor(() => expect(screen.getByText('Interest Earned')).toBeInTheDocument());
     expect(screen.getByText('$12.34')).toBeInTheDocument();
+  });
+
+  it('links a top category to its filtered transactions', async () => {
+    await renderView();
+    await waitFor(() => expect(screen.getByText('Groceries')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByText('Groceries'));
+    });
+    expect(mockPush).toHaveBeenCalledWith('/transactions?accountId=chq-1&categoryId=c1');
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Corner Store'));
+    });
+    expect(mockPush).toHaveBeenCalledWith('/transactions?accountId=chq-1&payeeId=p1');
   });
 });

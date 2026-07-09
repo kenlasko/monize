@@ -13,6 +13,7 @@ import {
   Res,
   ParseBoolPipe,
   ParseUUIDPipe,
+  ParseIntPipe,
   BadRequestException,
 } from "@nestjs/common";
 import {
@@ -35,6 +36,7 @@ import { AccountExportService } from "./account-export.service";
 import { LoanPaymentDetectorService } from "./loan-payment-detector.service";
 import { LoanPaymentSetupService } from "./loan-payment-setup.service";
 import { StatementCycleService } from "./statement-cycle.service";
+import { BalanceForecastService } from "./balance-forecast.service";
 import { CreateAccountDto } from "./dto/create-account.dto";
 import { UpdateAccountDto } from "./dto/update-account.dto";
 import { ReorderFavouriteAccountsDto } from "./dto/reorder-favourite-accounts.dto";
@@ -112,6 +114,7 @@ export class AccountsController {
     private readonly loanPaymentDetectorService: LoanPaymentDetectorService,
     private readonly loanPaymentSetupService: LoanPaymentSetupService,
     private readonly statementCycleService: StatementCycleService,
+    private readonly balanceForecastService: BalanceForecastService,
     private readonly delegationService: DelegationService,
   ) {}
 
@@ -540,6 +543,39 @@ export class AccountsController {
   @ApiResponse({ status: 404, description: "Account not found" })
   getStatementCycle(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
     return this.statementCycleService.getStatementCycle(req.user.id, id);
+  }
+
+  @Get(":id/balance-forecast")
+  @ApiOperation({
+    summary:
+      "Project an account's balance forward including scheduled transactions",
+    description:
+      "Returns a forecast balance series from today through the given horizon, applying future-dated transactions and expanded scheduled-transaction occurrences. Complements GET /accounts/daily-balances (history only).",
+  })
+  @ApiParam({ name: "id", description: "Account UUID" })
+  @ApiQuery({
+    name: "days",
+    required: false,
+    type: Number,
+    description: "Forecast horizon in days (default 90, max 730)",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Balance forecast computed successfully",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Account not found" })
+  getBalanceForecast(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Query("days", new ParseIntPipe({ optional: true })) days?: number,
+  ) {
+    const horizon = Math.min(Math.max(days ?? 90, 1), 730);
+    return this.balanceForecastService.getBalanceForecast(
+      req.user.id,
+      id,
+      horizon,
+    );
   }
 
   @Get(":id/interest-paid")

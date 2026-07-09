@@ -6,6 +6,7 @@ import { AccountExportService } from "./account-export.service";
 import { LoanPaymentDetectorService } from "./loan-payment-detector.service";
 import { LoanPaymentSetupService } from "./loan-payment-setup.service";
 import { StatementCycleService } from "./statement-cycle.service";
+import { BalanceForecastService } from "./balance-forecast.service";
 import { DelegationService } from "../delegation/delegation.service";
 
 describe("AccountsController", () => {
@@ -13,6 +14,7 @@ describe("AccountsController", () => {
   let mockAccountsService: Partial<Record<keyof AccountsService, jest.Mock>>;
   let mockExportService: Partial<Record<keyof AccountExportService, jest.Mock>>;
   let mockStatementCycleService: Record<string, jest.Mock>;
+  let mockBalanceForecastService: Record<string, jest.Mock>;
   let mockDelegationService: Record<string, jest.Mock>;
   const mockReq = { user: { id: "user-1" } };
 
@@ -46,6 +48,10 @@ describe("AccountsController", () => {
       getInterestPaid: jest.fn(),
     };
 
+    mockBalanceForecastService = {
+      getBalanceForecast: jest.fn(),
+    };
+
     mockDelegationService = {
       readableAccountIds: jest.fn().mockResolvedValue([]),
       hasReadAccess: jest.fn().mockResolvedValue(true),
@@ -76,6 +82,10 @@ describe("AccountsController", () => {
         {
           provide: StatementCycleService,
           useValue: mockStatementCycleService,
+        },
+        {
+          provide: BalanceForecastService,
+          useValue: mockBalanceForecastService,
         },
         {
           provide: DelegationService,
@@ -319,6 +329,31 @@ describe("AccountsController", () => {
         "user-1",
         "account-1",
       );
+    });
+  });
+
+  describe("getBalanceForecast()", () => {
+    it("delegates to balanceForecastService with a clamped horizon", () => {
+      mockBalanceForecastService.getBalanceForecast.mockReturnValue("forecast");
+
+      const result = controller.getBalanceForecast(mockReq, "account-1", 30);
+
+      expect(result).toBe("forecast");
+      expect(
+        mockBalanceForecastService.getBalanceForecast,
+      ).toHaveBeenCalledWith("user-1", "account-1", 30);
+    });
+
+    it("defaults the horizon to 90 days and clamps to 730", () => {
+      controller.getBalanceForecast(mockReq, "account-1", undefined);
+      expect(
+        mockBalanceForecastService.getBalanceForecast,
+      ).toHaveBeenLastCalledWith("user-1", "account-1", 90);
+
+      controller.getBalanceForecast(mockReq, "account-1", 5000);
+      expect(
+        mockBalanceForecastService.getBalanceForecast,
+      ).toHaveBeenLastCalledWith("user-1", "account-1", 730);
     });
   });
 

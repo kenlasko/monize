@@ -12,6 +12,8 @@ interface TopGroupsPanelProps {
   currencyCode: string;
   isLoading: boolean;
   limit?: number;
+  /** When set, each identified row becomes a link to its filtered transactions. */
+  onSelect?: (id: string) => void;
 }
 
 /**
@@ -27,6 +29,7 @@ export function TopGroupsPanel({
   currencyCode,
   isLoading,
   limit = 6,
+  onSelect,
 }: TopGroupsPanelProps) {
   const { formatCurrency } = useNumberFormat();
 
@@ -51,8 +54,9 @@ export function TopGroupsPanel({
           <ul className="space-y-3">
             {rows.ranked.map((g, i) => {
               const amount = Number(g.total) || 0;
-              return (
-                <li key={`${g.id ?? 'none'}-${i}`}>
+              const clickable = !!onSelect && !!g.id;
+              const body = (
+                <>
                   <div className="flex items-center justify-between text-sm mb-1">
                     <span className="text-gray-700 dark:text-gray-200 truncate">
                       {g.name ?? fallbackLabel}
@@ -75,6 +79,21 @@ export function TopGroupsPanel({
                       style={{ width: `${rows.max > 0 ? (Math.abs(amount) / rows.max) * 100 : 0}%` }}
                     />
                   </div>
+                </>
+              );
+              return (
+                <li key={`${g.id ?? 'none'}-${i}`}>
+                  {clickable ? (
+                    <button
+                      type="button"
+                      onClick={() => onSelect!(g.id!)}
+                      className="block w-full text-left -mx-1 px-1 py-1 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    >
+                      {body}
+                    </button>
+                  ) : (
+                    body
+                  )}
                 </li>
               );
             })}

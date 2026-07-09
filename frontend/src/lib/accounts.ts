@@ -16,6 +16,7 @@ import {
   SetupLoanPaymentsResponse,
 } from '@/types/account';
 import { StatementCycle, InterestPaid } from '@/types/credit-card-detail';
+import { BalanceForecast } from '@/types/banking-detail';
 import { dedupe, invalidateCache } from './apiCache';
 
 export const accountsApi = {
@@ -60,6 +61,14 @@ export const accountsApi = {
   // Get the current statement cycle for a credit card
   getStatementCycle: async (id: string): Promise<StatementCycle> => {
     const response = await apiClient.get<StatementCycle>(`/accounts/${id}/statement-cycle`);
+    return response.data;
+  },
+
+  // Project the balance forward including scheduled transactions
+  getBalanceForecast: async (id: string, days?: number): Promise<BalanceForecast> => {
+    const response = await apiClient.get<BalanceForecast>(`/accounts/${id}/balance-forecast`, {
+      params: days ? { days } : undefined,
+    });
     return response.data;
   },
 

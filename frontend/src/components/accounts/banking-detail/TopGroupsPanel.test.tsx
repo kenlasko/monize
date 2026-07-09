@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@/test/render';
+import { render, screen, fireEvent } from '@/test/render';
 import { TopGroupsPanel } from './TopGroupsPanel';
 import type { GroupedTotal } from '@/types/transaction';
 
@@ -30,6 +30,25 @@ describe('TopGroupsPanel', () => {
     expect(items[0]).toHaveTextContent('Salary');
     expect(items[1]).toHaveTextContent('Rent');
     expect(screen.getByText('Uncategorised')).toBeInTheDocument();
+  });
+
+  it('calls onSelect with the group id for identified rows only', () => {
+    const onSelect = vi.fn();
+    render(
+      <TopGroupsPanel
+        title="Top Categories"
+        emptyLabel="No activity"
+        fallbackLabel="Uncategorised"
+        totals={totals}
+        currencyCode="CAD"
+        isLoading={false}
+        onSelect={onSelect}
+      />,
+    );
+    fireEvent.click(screen.getByText('Salary'));
+    expect(onSelect).toHaveBeenCalledWith('c2');
+    // The uncategorised (null id) row is not a button.
+    expect(screen.getByText('Uncategorised').closest('button')).toBeNull();
   });
 
   it('shows the empty label when there is nothing to rank', () => {

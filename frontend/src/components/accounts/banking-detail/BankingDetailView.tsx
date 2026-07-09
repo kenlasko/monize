@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { format, startOfMonth, subMonths } from 'date-fns';
 import { accountsApi } from '@/lib/accounts';
@@ -36,9 +37,11 @@ function sumInterestIncome(categories: GroupedTotal[]): number {
  */
 export function BankingDetailView({ account }: BankingDetailViewProps) {
   const t = useTranslations('accountDetail-banking');
+  const router = useRouter();
   const currency = account.currencyCode;
 
-  const [dailyBalances, setDailyBalances] = useState<DailyBalancePoint[]>([]);
+  const [historicalBalances, setHistoricalBalances] = useState<DailyBalancePoint[]>([]);
+  const [forecastPoints, setForecastPoints] = useState<DailyBalancePoint[]>([]);
   const [moneyIn, setMoneyIn] = useState(0);
   const [moneyOut, setMoneyOut] = useState(0);
   const [monthly, setMonthly] = useState<MonthlyTotal[]>([]);
@@ -57,11 +60,19 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
       const yearStart = `${now.getFullYear()}-01-01`;
       const twelveMonthsAgo = format(subMonths(now, 11), 'yyyy-MM-dd');
 
-      const [balances, summary, monthlyTotals, categories, payees, ytdCategories] =
+      const [balances, forecast, summary, monthlyTotals, categories, payees, ytdCategories] =
         await Promise.all([
-          accountsApi.getDailyBalances({ accountIds: account.id }).catch((error) => {
-            logger.error('Failed to load balance history:', error);
-            return [] as { date: string; balance: number }[];
+          // Cap history at today so the forecast owns everything after it (the
+          // forecast already includes any future-dated real transactions).
+          accountsApi
+            .getDailyBalances({ accountIds: account.id, endDate: today })
+            .catch((error) => {
+              logger.error('Failed to load balance history:', error);
+              return [] as { date: string; balance: number }[];
+            }),
+          accountsApi.getBalanceForecast(account.id).catch((error) => {
+            logger.error('Failed to load balance forecast:', error);
+            return null;
           }),
           transactionsApi
             .getSummary({ accountId: account.id, startDate: monthStart, endDate: today })
@@ -96,7 +107,10 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
         ]);
 
       if (cancelled) return;
-      setDailyBalances(balances.map((r) => ({ date: r.date, balance: r.balance })));
+      setHistoricalBalances(balances.map((r) => ({ date: r.date, balance: r.balance })));
+      setForecastPoints(
+        forecast ? forecast.points.map((p) => ({ date: p.date, balance: p.balance })) : [],
+      );
       setMoneyIn(summary?.totalIncome ?? 0);
       setMoneyOut(summary?.totalExpenses ?? 0);
       setMonthly(monthlyTotals);
@@ -110,13 +124,22 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
     };
   }, [account.id]);
 
-  const projectedBalance = dailyBalances.length
-    ? dailyBalances[dailyBalances.length - 1].balance
+  // One chart series: history up to today, then the projected forecast. The
+  // forecast's first point is today (== the last history point), so drop it.
+  const chartData = useMemo(
+    () => [...historicalBalances, ...forecastPoints.slice(1)],
+    [historicalBalances, forecastPoints],
+  );
+
+  // Projected balance is the end of the forecast (falls back to current).
+  const projectedBalance = forecastPoints.length
+    ? forecastPoints[forecastPoints.length - 1].balance
     : Number(account.currentBalance) || 0;
 
-  const averageBalance = dailyBalances.length
+  const averageBalance = historicalBalances.length
     ? Math.round(
-        (dailyBalances.reduce((sum, p) => sum + p.balance, 0) / dailyBalances.length) * 100,
+        (historicalBalances.reduce((sum, p) => sum + p.balance, 0) / historicalBalances.length) *
+          100,
       ) / 100
     : Number(account.currentBalance) || 0;
 
@@ -136,11 +159,11 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
           {t('chart.title')}
         </h2>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
-          {!isLoading && dailyBalances.length === 0 ? (
+          {!isLoading && chartData.length === 0 ? (
             <p className="text-gray-500 dark:text-gray-400 text-center py-8">{t('chart.empty')}</p>
           ) : (
             <BalanceHistoryChart
-              data={dailyBalances}
+              data={chartData}
               isLoading={isLoading}
               currencyCode={currency}
               accountName={account.name}
@@ -159,6 +182,9 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
           totals={topCategories}
           currencyCode={currency}
           isLoading={isLoading}
+          onSelect={(categoryId) =>
+            router.push(`/transactions?accountId=${account.id}&categoryId=${categoryId}`)
+          }
         />
         <TopGroupsPanel
           title={t('topPayees.title')}
@@ -167,6 +193,9 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
           totals={topPayees}
           currencyCode={currency}
           isLoading={isLoading}
+          onSelect={(payeeId) =>
+            router.push(`/transactions?accountId=${account.id}&payeeId=${payeeId}`)
+          }
         />
       </div>
 
