@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { act, screen } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 import { render } from '@/test/render';
 import { Account } from '@/types/account';
 import { PortfolioValueWidget } from './PortfolioValueWidget';
@@ -32,6 +32,18 @@ vi.mock('@/lib/net-worth', () => ({
   },
 }));
 
+const getPortfolioSummary = vi.fn();
+vi.mock('@/lib/investments', () => ({
+  investmentsApi: {
+    getPortfolioSummary: (...a: unknown[]) => getPortfolioSummary(...a),
+  },
+}));
+
+const triggerManualRefresh = vi.fn();
+vi.mock('@/hooks/usePriceRefresh', () => ({
+  usePriceRefresh: () => ({ isRefreshing: false, triggerManualRefresh }),
+}));
+
 const investmentAccount = { id: 'i1', accountType: 'INVESTMENT', accountSubType: 'INVESTMENT_BROKERAGE', name: 'Brokerage' } as Account;
 
 async function renderWidget() {
@@ -44,10 +56,13 @@ describe('PortfolioValueWidget', () => {
   beforeEach(() => {
     getInvestmentsMonthly.mockReset();
     getInvestmentsDaily.mockReset();
+    getPortfolioSummary.mockReset();
+    getPortfolioSummary.mockResolvedValue({ totalPortfolioValue: 12345, holdings: [] });
+    triggerManualRefresh.mockReset();
     configState.current = { range: '1y', accountIds: [] };
   });
 
-  it('renders the area chart and latest value using monthly data for long ranges', async () => {
+  it('renders the area chart and the Total Portfolio Value from the summary for long ranges', async () => {
     getInvestmentsMonthly.mockResolvedValue([
       { month: '2026-05', value: 9000 },
       { month: '2026-06', value: 10000 },
@@ -57,7 +72,10 @@ describe('PortfolioValueWidget', () => {
     expect(screen.getByText('1Y')).toBeInTheDocument();
     expect(getInvestmentsMonthly).toHaveBeenCalled();
     expect(getInvestmentsDaily).not.toHaveBeenCalled();
-    expect(screen.getByText('$10000')).toBeInTheDocument();
+    // Header shows the live summary total (same value as the Investments page),
+    // not the last point of the historical series.
+    expect(screen.getByText('$12345')).toBeInTheDocument();
+    expect(screen.queryByText('$10000')).not.toBeInTheDocument();
     expect(screen.getByTestId('responsive-container')).toBeInTheDocument();
   });
 
@@ -73,5 +91,30 @@ describe('PortfolioValueWidget', () => {
     getInvestmentsMonthly.mockResolvedValue([]);
     await renderWidget();
     expect(screen.getByText('No investment history to show yet.')).toBeInTheDocument();
+  });
+
+  it('refreshes prices when the refresh button is clicked', async () => {
+    getInvestmentsMonthly.mockResolvedValue([{ month: '2026-06', value: 10000 }]);
+    await renderWidget();
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Refresh current value'));
+    });
+    expect(triggerManualRefresh).toHaveBeenCalledTimes(1);
+    // No account filter -> refresh every eligible security (undefined scope).
+    expect(triggerManualRefresh).toHaveBeenCalledWith(undefined);
+  });
+
+  it('scopes the refresh to the shown holdings when an account filter is active', async () => {
+    configState.current = { range: '1y', accountIds: ['i1'] };
+    getInvestmentsMonthly.mockResolvedValue([{ month: '2026-06', value: 10000 }]);
+    getPortfolioSummary.mockResolvedValue({
+      totalPortfolioValue: 5000,
+      holdings: [{ securityId: 's1' }, { securityId: 's2' }, { securityId: 's1' }],
+    });
+    await renderWidget();
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Refresh current value'));
+    });
+    expect(triggerManualRefresh).toHaveBeenCalledWith(['s1', 's2']);
   });
 });

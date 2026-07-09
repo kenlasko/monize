@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { parseISO } from 'date-fns';
 import {
@@ -14,9 +14,11 @@ import {
 } from 'recharts';
 import { Account } from '@/types/account';
 import { netWorthApi } from '@/lib/net-worth';
+import { investmentsApi } from '@/lib/investments';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useReportData } from '@/hooks/useReportData';
+import { usePriceRefresh } from '@/hooks/usePriceRefresh';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { useWidgetConfig } from '@/hooks/useWidgetConfig';
 import { resolveRangePreset } from '@/lib/date-range';
@@ -68,7 +70,7 @@ export function PortfolioValueWidget({ accounts, isLoading }: PortfolioValueWidg
   const accountIdsCsv =
     config.accountIds.length > 0 ? config.accountIds.join(',') : undefined;
 
-  const { data: series, isLoading: dataLoading } = useReportData(() => {
+  const { data: series, isLoading: dataLoading, reload: reloadSeries } = useReportData(() => {
     const params = {
       startDate: start || undefined,
       endDate: end,
@@ -84,6 +86,34 @@ export function PortfolioValueWidget({ accounts, isLoading }: PortfolioValueWidg
           .then((rows) => rows.map((r) => ({ date: r.month, value: r.value })));
   }, [start, end, accountIdsCsv, defaultCurrency, isDaily]);
 
+  // Fetch the same portfolio summary the Investments page uses so the header
+  // shows live "Total Portfolio Value" (holdings + cash, from current prices),
+  // rather than the last point of the historical snapshot series. Scope it to
+  // the widget's configured accounts so it stays in sync with the chart.
+  const { data: summary, reload: reloadSummary } = useReportData(
+    () => investmentsApi.getPortfolioSummary(config.accountIds),
+    [accountIdsCsv],
+  );
+
+  const reloadValueData = useCallback(() => {
+    reloadSeries();
+    reloadSummary();
+  }, [reloadSeries, reloadSummary]);
+
+  const { isRefreshing, triggerManualRefresh } = usePriceRefresh({
+    onRefreshComplete: reloadValueData,
+  });
+
+  const handleRefresh = useCallback(() => {
+    // Scope the price refresh to the holdings this widget shows when an account
+    // filter is active; otherwise refresh every eligible security.
+    const scope =
+      config.accountIds.length > 0 && summary
+        ? [...new Set(summary.holdings.map((h) => h.securityId))]
+        : undefined;
+    void triggerManualRefresh(scope);
+  }, [config.accountIds, summary, triggerManualRefresh]);
+
   const chartData = useMemo(
     () =>
       (series ?? []).map((row) => {
@@ -97,7 +127,7 @@ export function PortfolioValueWidget({ accounts, isLoading }: PortfolioValueWidg
     [series, formatChartDate, isDaily],
   );
 
-  const latestValue = chartData.length > 0 ? chartData[chartData.length - 1].value : 0;
+  const totalPortfolioValue = summary?.totalPortfolioValue ?? null;
 
   const configControls = (
     <>
@@ -129,14 +159,32 @@ export function PortfolioValueWidget({ accounts, isLoading }: PortfolioValueWidg
       widgetId={WIDGET_ID}
       headerRight={
         <div className="flex items-center gap-2">
-          {!loading && latestValue > 0 && (
+          {totalPortfolioValue !== null && (
             <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-              {formatCurrency(latestValue, defaultCurrency)}
+              {formatCurrency(totalPortfolioValue, defaultCurrency)}
             </span>
           )}
           <span className="text-sm text-gray-500 dark:text-gray-400">
             {t(`widgets.rangeLabels.${config.range}` as Parameters<typeof t>[0])}
           </span>
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            aria-label={t('portfolioValue.refresh')}
+            title={t('portfolioValue.refresh')}
+            className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg
+              className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
         </div>
       }
       configControls={configControls}
