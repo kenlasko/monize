@@ -32,7 +32,9 @@
     "alreadyHasScheduledPayment": "[XX-This account already has a scheduled payment configured. Edit the existing scheduled transaction instead.-XX]",
     "sourceNotFound": "[XX-Source account not found-XX]",
     "ambiguousBrokerage": "[XX-\"{{ query }}\" matches multiple brokerage accounts: {{ list }}. Use the exact account name.-XX]",
-    "unknownInvestmentAccount": "[XX-Unknown account: {{ name }}. Use an exact name from the user's account list.-XX]"
+    "unknownInvestmentAccount": "[XX-Unknown account: {{ name }}. Use an exact name from the user's account list.-XX]",
+    "notACreditCard": "[XX-Statement cycles are only available for credit card accounts-XX]",
+    "noStatementSettlementDay": "[XX-This credit card has no statement settlement day configured-XX]"
   },
   "actionHistory": {
     "nothingToUndo": "[XX-Nothing to undo-XX]",

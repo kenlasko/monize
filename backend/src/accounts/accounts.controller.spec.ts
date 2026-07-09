@@ -5,12 +5,14 @@ import { AccountsService } from "./accounts.service";
 import { AccountExportService } from "./account-export.service";
 import { LoanPaymentDetectorService } from "./loan-payment-detector.service";
 import { LoanPaymentSetupService } from "./loan-payment-setup.service";
+import { StatementCycleService } from "./statement-cycle.service";
 import { DelegationService } from "../delegation/delegation.service";
 
 describe("AccountsController", () => {
   let controller: AccountsController;
   let mockAccountsService: Partial<Record<keyof AccountsService, jest.Mock>>;
   let mockExportService: Partial<Record<keyof AccountExportService, jest.Mock>>;
+  let mockStatementCycleService: Record<string, jest.Mock>;
   let mockDelegationService: Record<string, jest.Mock>;
   const mockReq = { user: { id: "user-1" } };
 
@@ -39,6 +41,11 @@ describe("AccountsController", () => {
       exportQif: jest.fn(),
     };
 
+    mockStatementCycleService = {
+      getStatementCycle: jest.fn(),
+      getInterestPaid: jest.fn(),
+    };
+
     mockDelegationService = {
       readableAccountIds: jest.fn().mockResolvedValue([]),
       hasReadAccess: jest.fn().mockResolvedValue(true),
@@ -65,6 +72,10 @@ describe("AccountsController", () => {
         {
           provide: LoanPaymentSetupService,
           useValue: { setupLoanPayments: jest.fn() },
+        },
+        {
+          provide: StatementCycleService,
+          useValue: mockStatementCycleService,
         },
         {
           provide: DelegationService,
@@ -294,6 +305,74 @@ describe("AccountsController", () => {
         "user-1",
         "account-1",
       );
+    });
+  });
+
+  describe("getStatementCycle()", () => {
+    it("delegates to statementCycleService.getStatementCycle with userId and id", () => {
+      mockStatementCycleService.getStatementCycle.mockReturnValue("cycle");
+
+      const result = controller.getStatementCycle(mockReq, "account-1");
+
+      expect(result).toBe("cycle");
+      expect(mockStatementCycleService.getStatementCycle).toHaveBeenCalledWith(
+        "user-1",
+        "account-1",
+      );
+    });
+  });
+
+  describe("getInterestPaid()", () => {
+    it("delegates to statementCycleService.getInterestPaid with validated dates", () => {
+      mockStatementCycleService.getInterestPaid.mockReturnValue("interest");
+
+      const result = controller.getInterestPaid(
+        mockReq,
+        "account-1",
+        "2026-01-01",
+        "2026-12-31",
+      );
+
+      expect(result).toBe("interest");
+      expect(mockStatementCycleService.getInterestPaid).toHaveBeenCalledWith(
+        "user-1",
+        "account-1",
+        "2026-01-01",
+        "2026-12-31",
+      );
+    });
+
+    it("rejects a missing or malformed startDate", () => {
+      expect(() =>
+        controller.getInterestPaid(
+          mockReq,
+          "account-1",
+          undefined,
+          "2026-12-31",
+        ),
+      ).toThrow(BadRequestException);
+      expect(() =>
+        controller.getInterestPaid(
+          mockReq,
+          "account-1",
+          "2026/01/01",
+          "2026-12-31",
+        ),
+      ).toThrow(BadRequestException);
+    });
+
+    it("rejects a missing or malformed endDate", () => {
+      expect(() =>
+        controller.getInterestPaid(
+          mockReq,
+          "account-1",
+          "2026-01-01",
+          undefined,
+        ),
+      ).toThrow(BadRequestException);
+      expect(() =>
+        controller.getInterestPaid(mockReq, "account-1", "2026-01-01", "bad"),
+      ).toThrow(BadRequestException);
     });
   });
 

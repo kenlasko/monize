@@ -14,6 +14,7 @@ import { LoanPaymentDetectorService } from "./loan-payment-detector.service";
 import { LoanPaymentSetupService } from "./loan-payment-setup.service";
 import { AccountsController } from "./accounts.controller";
 import { MortgageReminderService } from "./mortgage-reminder.service";
+import { StatementCycleService } from "./statement-cycle.service";
 import { CategoriesModule } from "../categories/categories.module";
 import { ScheduledTransactionsModule } from "../scheduled-transactions/scheduled-transactions.module";
 import { NetWorthModule } from "../net-worth/net-worth.module";
@@ -50,8 +51,9 @@ import { LoanRateChangesModule } from "../loan-rate-changes/loan-rate-changes.mo
     LoanPaymentDetectorService,
     LoanPaymentSetupService,
     MortgageReminderService,
+    StatementCycleService,
   ],
   controllers: [AccountsController],
-  exports: [AccountsService],
+  exports: [AccountsService, StatementCycleService],
 })
 export class AccountsModule {}

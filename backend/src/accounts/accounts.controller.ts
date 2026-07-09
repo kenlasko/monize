@@ -34,6 +34,7 @@ import {
 import { AccountExportService } from "./account-export.service";
 import { LoanPaymentDetectorService } from "./loan-payment-detector.service";
 import { LoanPaymentSetupService } from "./loan-payment-setup.service";
+import { StatementCycleService } from "./statement-cycle.service";
 import { CreateAccountDto } from "./dto/create-account.dto";
 import { UpdateAccountDto } from "./dto/update-account.dto";
 import { ReorderFavouriteAccountsDto } from "./dto/reorder-favourite-accounts.dto";
@@ -110,6 +111,7 @@ export class AccountsController {
     private readonly accountExportService: AccountExportService,
     private readonly loanPaymentDetectorService: LoanPaymentDetectorService,
     private readonly loanPaymentSetupService: LoanPaymentSetupService,
+    private readonly statementCycleService: StatementCycleService,
     private readonly delegationService: DelegationService,
   ) {}
 
@@ -516,6 +518,66 @@ export class AccountsController {
   @ApiResponse({ status: 404, description: "Account not found" })
   getInvestmentPair(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
     return this.accountsService.getInvestmentAccountPair(req.user.id, id);
+  }
+
+  @Get(":id/statement-cycle")
+  @ApiOperation({
+    summary: "Get the current statement cycle for a credit card",
+    description:
+      "Computes the current statement-cycle window, statement balance as of the last settlement, next settlement/payment due dates, and amount paid since the statement, from the card's day-of-month statement fields and its transactions.",
+  })
+  @ApiParam({ name: "id", description: "Credit card account UUID" })
+  @ApiResponse({
+    status: 200,
+    description: "Statement cycle computed successfully",
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      "Bad request - not a credit card or no settlement day configured",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Account not found" })
+  getStatementCycle(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
+    return this.statementCycleService.getStatementCycle(req.user.id, id);
+  }
+
+  @Get(":id/interest-paid")
+  @ApiOperation({
+    summary: "Get interest/fees charged to a card in a date range",
+    description:
+      "Sums transactions in interest categories (detected by name) on the account within the given date range. Returns the charged amount as a positive magnitude and the transaction count.",
+  })
+  @ApiParam({ name: "id", description: "Account UUID" })
+  @ApiQuery({ name: "startDate", required: true, example: "2026-01-01" })
+  @ApiQuery({ name: "endDate", required: true, example: "2026-12-31" })
+  @ApiResponse({
+    status: 200,
+    description: "Interest paid computed successfully",
+  })
+  @ApiResponse({ status: 400, description: "Bad request - invalid date range" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Account not found" })
+  getInterestPaid(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+  ) {
+    const sd = assertStringParam(startDate, "startDate");
+    const ed = assertStringParam(endDate, "endDate");
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!sd || !dateRegex.test(sd)) {
+      throw new BadRequestException(
+        tr("errors.accounts.startDateFormat", "startDate must be YYYY-MM-DD"),
+      );
+    }
+    if (!ed || !dateRegex.test(ed)) {
+      throw new BadRequestException(
+        tr("errors.accounts.endDateFormat", "endDate must be YYYY-MM-DD"),
+      );
+    }
+    return this.statementCycleService.getInterestPaid(req.user.id, id, sd, ed);
   }
 
   @Patch(":id")
