@@ -87,6 +87,11 @@ export function MonthlySpendingTrendWidget({ isLoading }: MonthlySpendingTrendWi
     <WidgetCard
       title={t('monthlySpendingTrend.title')}
       widgetId={WIDGET_ID}
+      headerRight={
+        <span className="text-sm text-gray-500 dark:text-gray-400">
+          {t(`widgets.rangeLabels.${config.range}` as Parameters<typeof t>[0])}
+        </span>
+      }
       configControls={configControls}
       configTitle={t('monthlySpendingTrend.title')}
     >

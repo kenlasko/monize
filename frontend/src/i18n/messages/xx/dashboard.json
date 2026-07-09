@@ -178,7 +178,7 @@
     }
   },
   "portfolioValue": {
-    "title": "[XX-Portfolio Value-XX]",
+    "title": "[XX-Portfolio Value over Time-XX]",
     "empty": "[XX-No investment history to show yet.-XX]"
   },
   "spendingByPayee": {

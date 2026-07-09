@@ -39,6 +39,7 @@ describe('MonthlySpendingTrendWidget', () => {
     });
     await renderWidget();
     expect(screen.getByText('Monthly Spending Trend')).toBeInTheDocument();
+    expect(screen.getByText('1Y')).toBeInTheDocument();
     expect(getIncomeVsExpenses).toHaveBeenCalled();
     expect(screen.getByTestId('responsive-container')).toBeInTheDocument();
   });

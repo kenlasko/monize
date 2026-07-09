@@ -46,6 +46,7 @@ describe('WeekendVsWeekdayWidget', () => {
   it('renders the overview donut with the weekend percentage', async () => {
     await renderWidget();
     expect(screen.getByText('Weekend vs Weekday Spending')).toBeInTheDocument();
+    expect(screen.getByText('3M')).toBeInTheDocument();
     // 400 / 1000 = 40%
     expect(screen.getByText('40%')).toBeInTheDocument();
     expect(screen.getByTestId('responsive-container')).toBeInTheDocument();

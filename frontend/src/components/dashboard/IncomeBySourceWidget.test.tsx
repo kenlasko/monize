@@ -36,6 +36,7 @@ describe('IncomeBySourceWidget', () => {
     });
     await renderWidget();
     expect(screen.getByText('Income by Source')).toBeInTheDocument();
+    expect(screen.getByText('1Y')).toBeInTheDocument();
     expect(screen.getByText('$5000')).toBeInTheDocument();
     expect(screen.getByTestId('responsive-container')).toBeInTheDocument();
   });

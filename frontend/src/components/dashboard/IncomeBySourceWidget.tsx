@@ -128,6 +128,11 @@ export function IncomeBySourceWidget({ isLoading }: IncomeBySourceWidgetProps) {
     <WidgetCard
       title={t('incomeBySource.title')}
       widgetId={WIDGET_ID}
+      headerRight={
+        <span className="text-sm text-gray-500 dark:text-gray-400">
+          {t(`widgets.rangeLabels.${config.range}` as Parameters<typeof t>[0])}
+        </span>
+      }
       configControls={configControls}
       configTitle={t('incomeBySource.title')}
     >
