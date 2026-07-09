@@ -138,17 +138,58 @@ describe('BankingDetailView', () => {
     expect(screen.getByText('$12.34')).toBeInTheDocument();
   });
 
-  it('links a top category to its filtered transactions', async () => {
+  it('links a top category to its filtered transactions with the month range', async () => {
     await renderView();
     await waitFor(() => expect(screen.getByText('Groceries')).toBeInTheDocument());
     await act(async () => {
       fireEvent.click(screen.getByText('Groceries'));
     });
-    expect(mockPush).toHaveBeenCalledWith('/transactions?accountId=chq-1&categoryId=c1');
+    expect(mockPush).toHaveBeenCalledWith(
+      expect.stringMatching(/^\/transactions\?accountId=chq-1&categoryId=c1&startDate=.+&endDate=.+$/),
+    );
 
     await act(async () => {
       fireEvent.click(screen.getByText('Corner Store'));
     });
-    expect(mockPush).toHaveBeenCalledWith('/transactions?accountId=chq-1&payeeId=p1');
+    expect(mockPush).toHaveBeenCalledWith(
+      expect.stringMatching(/^\/transactions\?accountId=chq-1&payeeId=p1&startDate=.+&endDate=.+$/),
+    );
+  });
+
+  it('links Money In and Money Out to amount-filtered transactions', async () => {
+    await renderView();
+    await waitFor(() => expect(screen.getByText('Money In')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Money In' }));
+    });
+    expect(mockPush).toHaveBeenCalledWith(
+      expect.stringMatching(/accountId=chq-1&amountFrom=0\.01&startDate=/),
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Money Out' }));
+    });
+    expect(mockPush).toHaveBeenCalledWith(
+      expect.stringMatching(/accountId=chq-1&amountTo=-0\.01&startDate=/),
+    );
+  });
+
+  it('links Interest Earned to its category, filtered YTD', async () => {
+    mockGetGroupedTotals
+      .mockResolvedValueOnce([{ id: 'c1', name: 'Groceries', currencyCode: 'CAD', total: -450, count: 5 }])
+      .mockResolvedValueOnce([{ id: 'p1', name: 'Store', currencyCode: 'CAD', total: -450, count: 5 }])
+      .mockResolvedValueOnce([
+        { id: 'int-1', name: 'Interest Income', currencyCode: 'CAD', total: 12.34, count: 4 },
+      ]);
+    await renderView();
+    await waitFor(() => expect(screen.getByText('Interest Earned')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Interest Earned' }));
+    });
+    expect(mockPush).toHaveBeenCalledWith(
+      expect.stringMatching(/accountId=chq-1&categoryIds=int-1&startDate=\d{4}-01-01&endDate=/),
+    );
   });
 });

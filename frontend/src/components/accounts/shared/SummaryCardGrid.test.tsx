@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@/test/render';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@/test/render';
 import { SummaryCardGrid, DEFAULT_SUMMARY_GRID, SummaryCardItem } from './SummaryCardGrid';
 
 describe('SummaryCardGrid', () => {
@@ -55,5 +55,13 @@ describe('SummaryCardGrid', () => {
   it('falls back to the label as the accessible name', () => {
     render(<SummaryCardGrid cards={[{ label: 'Interest Rate', value: '19.99%' }]} />);
     expect(screen.getByLabelText('Interest Rate')).toBeInTheDocument();
+  });
+
+  it('renders a clickable card as a button when onClick is set', () => {
+    const onClick = vi.fn();
+    render(<SummaryCardGrid cards={[{ label: 'Money In', value: '$100', onClick }]} />);
+    const button = screen.getByRole('button', { name: 'Money In' });
+    fireEvent.click(button);
+    expect(onClick).toHaveBeenCalledTimes(1);
   });
 });

@@ -12,8 +12,10 @@ interface TopGroupsPanelProps {
   currencyCode: string;
   isLoading: boolean;
   limit?: number;
-  /** When set, each identified row becomes a link to its filtered transactions. */
-  onSelect?: (id: string) => void;
+  /** When set, each row becomes a link to its filtered transactions (id may be null). */
+  onSelect?: (id: string | null) => void;
+  /** Allow the unidentified (e.g. uncategorised) row to be selectable too. */
+  selectableWhenUnidentified?: boolean;
 }
 
 /**
@@ -30,6 +32,7 @@ export function TopGroupsPanel({
   isLoading,
   limit = 6,
   onSelect,
+  selectableWhenUnidentified = false,
 }: TopGroupsPanelProps) {
   const { formatCurrency } = useNumberFormat();
 
@@ -54,7 +57,7 @@ export function TopGroupsPanel({
           <ul className="space-y-3">
             {rows.ranked.map((g, i) => {
               const amount = Number(g.total) || 0;
-              const clickable = !!onSelect && !!g.id;
+              const clickable = !!onSelect && (g.id != null || selectableWhenUnidentified);
               const body = (
                 <>
                   <div className="flex items-center justify-between text-sm mb-1">
@@ -86,7 +89,7 @@ export function TopGroupsPanel({
                   {clickable ? (
                     <button
                       type="button"
-                      onClick={() => onSelect!(g.id!)}
+                      onClick={() => onSelect!(g.id)}
                       className="block w-full text-left -mx-1 px-1 py-1 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                     >
                       {body}

@@ -22,11 +22,21 @@ interface BankingDetailViewProps {
   account: Account;
 }
 
-/** Detect year-to-date interest income by category name (an "interest" match). */
-function sumInterestIncome(categories: GroupedTotal[]): number {
-  return categories
-    .filter((c) => c.name && /interest/i.test(c.name) && Number(c.total) > 0)
-    .reduce((sum, c) => sum + Number(c.total), 0);
+/**
+ * Detect year-to-date interest income by category name (an "interest" match),
+ * returning both the summed amount and the matched category ids (for a drill-in).
+ */
+function matchInterestIncome(categories: GroupedTotal[]): {
+  amount: number;
+  categoryIds: string[];
+} {
+  const matches = categories.filter(
+    (c) => c.name && /interest/i.test(c.name) && Number(c.total) > 0,
+  );
+  return {
+    amount: matches.reduce((sum, c) => sum + Number(c.total), 0),
+    categoryIds: matches.map((c) => c.id).filter((id): id is string => !!id),
+  };
 }
 
 /**
@@ -40,6 +50,18 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
   const router = useRouter();
   const currency = account.currencyCode;
 
+  // The panels summarise the current month; deep links carry the same window so
+  // the transaction register shows the matching set.
+  const { monthStart, yearStart, today } = useMemo(() => {
+    const now = new Date();
+    return {
+      monthStart: format(startOfMonth(now), 'yyyy-MM-dd'),
+      yearStart: `${now.getFullYear()}-01-01`,
+      today: format(now, 'yyyy-MM-dd'),
+    };
+  }, []);
+  const monthRangeQuery = `startDate=${monthStart}&endDate=${today}`;
+
   const [historicalBalances, setHistoricalBalances] = useState<DailyBalancePoint[]>([]);
   const [forecastPoints, setForecastPoints] = useState<DailyBalancePoint[]>([]);
   const [moneyIn, setMoneyIn] = useState(0);
@@ -48,6 +70,7 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
   const [topCategories, setTopCategories] = useState<GroupedTotal[]>([]);
   const [topPayees, setTopPayees] = useState<GroupedTotal[]>([]);
   const [interestEarnedYtd, setInterestEarnedYtd] = useState(0);
+  const [interestCategoryIds, setInterestCategoryIds] = useState<string[]>([]);
   const [loadedForId, setLoadedForId] = useState<string | null>(null);
   const isLoading = loadedForId !== account.id;
 
@@ -116,7 +139,9 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
       setMonthly(monthlyTotals);
       setTopCategories(categories);
       setTopPayees(payees);
-      setInterestEarnedYtd(sumInterestIncome(ytdCategories));
+      const interest = matchInterestIncome(ytdCategories);
+      setInterestEarnedYtd(interest.amount);
+      setInterestCategoryIds(interest.categoryIds);
       setLoadedForId(account.id);
     })();
     return () => {
@@ -152,6 +177,22 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
         moneyOut={moneyOut}
         interestEarnedYtd={interestEarnedYtd}
         averageBalance={averageBalance}
+        onMoneyInClick={() =>
+          router.push(`/transactions?accountId=${account.id}&amountFrom=0.01&${monthRangeQuery}`)
+        }
+        onMoneyOutClick={() =>
+          router.push(`/transactions?accountId=${account.id}&amountTo=-0.01&${monthRangeQuery}`)
+        }
+        onInterestClick={
+          interestCategoryIds.length
+            ? () =>
+                router.push(
+                  `/transactions?accountId=${account.id}&categoryIds=${interestCategoryIds.join(
+                    ',',
+                  )}&startDate=${yearStart}&endDate=${today}`,
+                )
+            : undefined
+        }
       />
 
       <section>
@@ -182,8 +223,11 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
           totals={topCategories}
           currencyCode={currency}
           isLoading={isLoading}
+          selectableWhenUnidentified
           onSelect={(categoryId) =>
-            router.push(`/transactions?accountId=${account.id}&categoryId=${categoryId}`)
+            router.push(
+              `/transactions?accountId=${account.id}&categoryId=${categoryId ?? 'uncategorized'}&${monthRangeQuery}`,
+            )
           }
         />
         <TopGroupsPanel
@@ -194,7 +238,10 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
           currencyCode={currency}
           isLoading={isLoading}
           onSelect={(payeeId) =>
-            router.push(`/transactions?accountId=${account.id}&payeeId=${payeeId}`)
+            payeeId &&
+            router.push(
+              `/transactions?accountId=${account.id}&payeeId=${payeeId}&${monthRangeQuery}`,
+            )
           }
         />
       </div>

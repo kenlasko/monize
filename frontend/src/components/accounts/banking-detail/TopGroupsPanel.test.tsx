@@ -47,8 +47,26 @@ describe('TopGroupsPanel', () => {
     );
     fireEvent.click(screen.getByText('Salary'));
     expect(onSelect).toHaveBeenCalledWith('c2');
-    // The uncategorised (null id) row is not a button.
+    // The uncategorised (null id) row is not a button by default.
     expect(screen.getByText('Uncategorised').closest('button')).toBeNull();
+  });
+
+  it('lets the unidentified row be selected when opted in', () => {
+    const onSelect = vi.fn();
+    render(
+      <TopGroupsPanel
+        title="Top Categories"
+        emptyLabel="No activity"
+        fallbackLabel="Uncategorised"
+        totals={totals}
+        currencyCode="CAD"
+        isLoading={false}
+        onSelect={onSelect}
+        selectableWhenUnidentified
+      />,
+    );
+    fireEvent.click(screen.getByText('Uncategorised'));
+    expect(onSelect).toHaveBeenCalledWith(null);
   });
 
   it('shows the empty label when there is nothing to rank', () => {

@@ -12,6 +12,9 @@ interface BankingSummaryCardsProps {
   moneyOut: number;
   interestEarnedYtd: number;
   averageBalance: number;
+  onMoneyInClick?: () => void;
+  onMoneyOutClick?: () => void;
+  onInterestClick?: () => void;
 }
 
 function signClass(value: number): string {
@@ -26,6 +29,9 @@ export function BankingSummaryCards({
   moneyOut,
   interestEarnedYtd,
   averageBalance,
+  onMoneyInClick,
+  onMoneyOutClick,
+  onInterestClick,
 }: BankingSummaryCardsProps) {
   const t = useTranslations('accountDetail-banking');
   const { formatCurrency } = useNumberFormat();
@@ -49,12 +55,14 @@ export function BankingSummaryCards({
       value: formatCurrency(Math.abs(moneyIn), currency),
       valueClass: 'text-green-600 dark:text-green-400',
       note: t('summary.thisMonth'),
+      onClick: onMoneyInClick,
     },
     {
       label: t('summary.moneyOut'),
       value: formatCurrency(Math.abs(moneyOut), currency),
       valueClass: 'text-red-600 dark:text-red-400',
       note: t('summary.thisMonth'),
+      onClick: onMoneyOutClick,
     },
     {
       label: t('summary.averageBalance'),
@@ -76,6 +84,7 @@ export function BankingSummaryCards({
       value: formatCurrency(interestEarnedYtd, currency),
       valueClass: 'text-green-600 dark:text-green-400',
       note: t('summary.ytd'),
+      onClick: onInterestClick,
     });
   }
 
