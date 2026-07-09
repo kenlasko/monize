@@ -497,5 +497,10 @@
   },
   "validation": {
     "dateRequired": "[XX-Date is required-XX]"
+  },
+  "tagKeyBreakdown": {
+    "title": "[XX-Spending by {key}-XX]",
+    "other": "[XX-Other-XX]",
+    "noData": "[XX-No tagged spending to break down for this key.-XX]"
   }
 }

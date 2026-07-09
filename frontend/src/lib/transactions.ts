@@ -285,6 +285,40 @@ export const transactionsApi = {
     return response.data;
   },
 
+  // Spending broken down by the value of a KEY:VALUE tag key (e.g. key
+  // "country" -> a total per country). Rows are per-currency, like grouped
+  // totals, so the caller converts to one display currency.
+  getTagKeyBreakdown: async (params: {
+    key: string;
+    accountIds?: string[];
+    startDate?: string;
+    endDate?: string;
+    categoryIds?: string[];
+    payeeIds?: string[];
+    tagIds?: string[];
+    search?: string;
+    amountFrom?: number;
+    amountTo?: number;
+    limit?: number;
+  }): Promise<GroupedTotal[]> => {
+    const apiParams = {
+      ...buildFilterParams(params),
+      key: params.key,
+      startDate: params.startDate,
+      endDate: params.endDate,
+      search: params.search,
+      amountFrom: params.amountFrom,
+      amountTo: params.amountTo,
+      limit: params.limit,
+    };
+
+    const response = await apiClient.get<GroupedTotal[]>(
+      '/transactions/tag-key-breakdown',
+      { params: apiParams, timeout: 60000 },
+    );
+    return response.data;
+  },
+
   // Detect recurring charges (cadence + typical amount) for the given payees
   getRecurringCharges: async (params: {
     payeeIds: string[];

@@ -38,6 +38,7 @@ describe("TransactionsController", () => {
       updateTransfer: jest.fn(),
       getSummary: jest.fn(),
       getGroupedTotals: jest.fn(),
+      getTagKeyBreakdown: jest.fn(),
       getRecurringCharges: jest.fn(),
       bulkUpdate: jest.fn(),
       getRecent: jest.fn(),
@@ -1088,6 +1089,57 @@ describe("TransactionsController", () => {
           "0",
         ),
       ).toThrow(BadRequestException);
+    });
+  });
+
+  describe("getTagKeyBreakdown()", () => {
+    it("delegates to service.getTagKeyBreakdown with the key and parsed filters", async () => {
+      const expected = [
+        { id: "usa", name: "usa", currencyCode: "CAD", total: 200, count: 2 },
+      ];
+      mockService.getTagKeyBreakdown.mockResolvedValue(expected);
+
+      const result = await controller.getTagKeyBreakdown(
+        mockReq,
+        "country",
+        `${uuid1},${uuid2}`,
+        "2024-01-01",
+        "2024-12-31",
+        undefined,
+        uuid3,
+        undefined,
+        "coffee",
+        "-500",
+        "0",
+        "25",
+      );
+
+      expect(result).toBe(expected);
+      expect(mockService.getTagKeyBreakdown).toHaveBeenCalledWith(
+        "user-1",
+        "country",
+        {
+          accountIds: [uuid1, uuid2],
+          startDate: "2024-01-01",
+          endDate: "2024-12-31",
+          categoryIds: undefined,
+          payeeIds: [uuid3],
+          tagIds: undefined,
+          search: "coffee",
+          amountFrom: -500,
+          amountTo: 0,
+          limit: 25,
+        },
+      );
+    });
+
+    it("rejects a missing key", () => {
+      expect(() => controller.getTagKeyBreakdown(mockReq, "  ")).toThrow(
+        BadRequestException,
+      );
+      expect(() => controller.getTagKeyBreakdown(mockReq)).toThrow(
+        BadRequestException,
+      );
     });
   });
 

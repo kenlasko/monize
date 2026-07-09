@@ -2295,6 +2295,29 @@ export class TransactionsService {
     return this.analyticsService.getGroupedTotals(userId, params);
   }
 
+  async getTagKeyBreakdown(
+    userId: string,
+    key: string,
+    params: {
+      accountIds?: string[];
+      startDate?: string;
+      endDate?: string;
+      categoryIds?: string[];
+      payeeIds?: string[];
+      tagIds?: string[];
+      search?: string;
+      amountFrom?: number;
+      amountTo?: number;
+      limit?: number;
+    },
+  ) {
+    return this.analyticsService.getTransactionBreakdownByTagKey(
+      userId,
+      key,
+      params,
+    );
+  }
+
   async getRecurringCharges(
     userId: string,
     startDate: string,

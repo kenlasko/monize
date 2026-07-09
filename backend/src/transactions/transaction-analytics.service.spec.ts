@@ -40,6 +40,7 @@ describe("TransactionAnalyticsService", () => {
         return mockQueryBuilder;
       }),
       leftJoin: jest.fn().mockReturnValue(mockQueryBuilder),
+      innerJoin: jest.fn().mockReturnValue(mockQueryBuilder),
       groupBy: jest.fn().mockReturnValue(mockQueryBuilder),
       addGroupBy: jest.fn().mockReturnValue(mockQueryBuilder),
       having: jest.fn().mockReturnValue(mockQueryBuilder),
@@ -2593,6 +2594,51 @@ describe("TransactionAnalyticsService", () => {
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         "transaction.transactionDate >= :startDate",
         { startDate: "2026-01-01" },
+      );
+    });
+  });
+
+  describe("getTransactionBreakdownByTagKey", () => {
+    it("maps per-currency rows keyed by the parsed tag value", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        { value: "usa", currencyCode: "CAD", total: "200", count: "2" },
+        { value: "poland", currencyCode: "CAD", total: "100", count: "1" },
+      ]);
+
+      const result = await service.getTransactionBreakdownByTagKey(
+        "user-1",
+        "country",
+        { accountIds: ["a1"] },
+      );
+
+      expect(result).toEqual([
+        { id: "usa", name: "usa", currencyCode: "CAD", total: 200, count: 2 },
+        {
+          id: "poland",
+          name: "poland",
+          currencyCode: "CAD",
+          total: 100,
+          count: 1,
+        },
+      ]);
+      // Joins the transaction's tags and groups by value + currency.
+      expect(mockQueryBuilder.innerJoin).toHaveBeenCalledWith(
+        "transaction.tags",
+        "brkTag",
+      );
+      expect(mockQueryBuilder.addGroupBy).toHaveBeenCalledWith(
+        "transaction.currencyCode",
+      );
+    });
+
+    it("binds the key (never interpolates it)", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([]);
+
+      await service.getTransactionBreakdownByTagKey("user-1", "Country", {});
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "LOWER(TRIM(SPLIT_PART(brkTag.name, ':', 1))) = LOWER(:brkKey)",
+        { brkKey: "Country" },
       );
     });
   });

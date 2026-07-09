@@ -8,6 +8,7 @@ import { useOnAiAction } from '@/hooks/useOnAiAction';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { TransactionFilterPanel } from '@/components/transactions/TransactionFilterPanel';
+import { TagKeyBreakdownChart } from '@/components/transactions/TagKeyBreakdownChart';
 import { Pagination } from '@/components/ui/Pagination';
 import { TransactionList } from '@/components/transactions/TransactionList';
 import { type DensityLevel } from '@/hooks/useTableDensity';
@@ -1103,6 +1104,31 @@ function TransactionsContent() {
           }}
           onClearFilters={filters.clearFilters}
         />
+
+        {/* Spending broken down by the selected KEY:VALUE tag key. */}
+        {filters.filterTagKey && (
+          <div className="mb-6">
+            <TagKeyBreakdownChart
+              tagKey={filters.filterTagKey}
+              params={{
+                accountIds: accountIdsForQuery,
+                startDate: filters.filterStartDate || undefined,
+                endDate: filters.filterEndDate || undefined,
+                tagIds:
+                  filters.filterTagIds.length > 0
+                    ? filters.filterTagIds
+                    : undefined,
+                search: filters.filterSearch || undefined,
+                amountFrom: filters.filterAmountFrom
+                  ? parseFloat(filters.filterAmountFrom)
+                  : undefined,
+                amountTo: filters.filterAmountTo
+                  ? parseFloat(filters.filterAmountTo)
+                  : undefined,
+              }}
+            />
+          </div>
+        )}
 
         {/* Bulk Selection Banner */}
         {selection.hasSelection && (

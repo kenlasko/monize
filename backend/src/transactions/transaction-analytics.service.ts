@@ -670,6 +670,82 @@ export class TransactionAnalyticsService {
     }));
   }
 
+  /**
+   * Spending broken down by the VALUE of a single KEY:VALUE tag key, over the
+   * standard transaction-list filter surface. Each transaction's absolute
+   * amount is attributed to the value(s) of its own `<key>:*` tags (a
+   * transaction tagged both `country:usa` and `country:poland` counts under
+   * each, so shares can sum past 100%). Split amounts are summed via
+   * `COALESCE(splits.amount, transaction.amount)`, so split transactions still
+   * total correctly; transfers and brokerage side-transactions are excluded by
+   * the shared base query. Attribution is transaction-level -- split-level tags
+   * are not considered here. Rows are per-currency (like `getGroupedTotals`) so
+   * the caller converts to a single display currency.
+   */
+  async getTransactionBreakdownByTagKey(
+    userId: string,
+    key: string,
+    params: {
+      accountIds?: string[];
+      startDate?: string;
+      endDate?: string;
+      categoryIds?: string[];
+      payeeIds?: string[];
+      tagIds?: string[];
+      search?: string;
+      amountFrom?: number;
+      amountTo?: number;
+      limit?: number;
+    } = {},
+  ): Promise<
+    Array<{
+      id: string;
+      name: string;
+      currencyCode: string;
+      total: number;
+      count: number;
+    }>
+  > {
+    const { limit, ...filters } = params;
+    const queryBuilder = await this.createFilteredAnalyticsQuery(
+      userId,
+      filters,
+    );
+
+    const amountExpr = "COALESCE(splits.amount, transaction.amount)";
+    const valueExpr =
+      "TRIM(SUBSTRING(brkTag.name FROM POSITION(':' IN brkTag.name) + 1))";
+
+    queryBuilder
+      .innerJoin("transaction.tags", "brkTag")
+      .andWhere("POSITION(':' IN brkTag.name) > 1")
+      .andWhere(
+        "LOWER(TRIM(SPLIT_PART(brkTag.name, ':', 1))) = LOWER(:brkKey)",
+        {
+          brkKey: key.trim(),
+        },
+      )
+      .andWhere(`${valueExpr} <> ''`)
+      .select(valueExpr, "value")
+      .addSelect("transaction.currencyCode", "currencyCode")
+      .addSelect(`SUM(ABS(${amountExpr}))`, "total")
+      .addSelect("COUNT(DISTINCT transaction.id)", "count")
+      .groupBy(valueExpr)
+      .addGroupBy("transaction.currencyCode")
+      .orderBy(`SUM(ABS(${amountExpr}))`, "DESC")
+      .limit(Math.min(Math.max(limit ?? 100, 1), 500));
+
+    const rows = await queryBuilder.getRawMany();
+
+    return rows.map((row) => ({
+      id: row.value,
+      name: row.value,
+      currencyCode: row.currencyCode,
+      total: roundMoney(Number(row.total) || 0),
+      count: Number(row.count) || 0,
+    }));
+  }
+
   async getMonthlyTotals(
     userId: string,
     accountIds?: string[],

@@ -405,6 +405,7 @@
     "tagKeyTooLong": "tagKey must not exceed 100 characters",
     "invalidTagKeyOp": "Invalid tagKeyOp: {{ op }}",
     "tagKeyValueRequired": "tagKeyValue is required for contains / notContains",
+    "tagKeyRequired": "A tag key (1-100 characters) is required",
     "invalidGroupBy": "groupBy must be 'category' or 'payee'",
     "limitMustBePositive": "limit must be a positive number",
     "recurringPayeeRequired": "payeeIds is required",

@@ -663,6 +663,107 @@ export class TransactionsController {
     });
   }
 
+  @Get("tag-key-breakdown")
+  @ApiOperation({
+    summary: "Spending broken down by the value of a KEY:VALUE tag key",
+    description:
+      "Value-weighted breakdown: each transaction's absolute amount is attributed to the value(s) of its `<key>:*` tags. Overlapping (a transaction tagged under several values counts under each). Rows are per-currency; the client converts to one display currency.",
+  })
+  @ApiQuery({
+    name: "key",
+    required: true,
+    description: "Tag key (e.g. country)",
+  })
+  @ApiQuery({ name: "accountIds", required: false })
+  @ApiQuery({ name: "startDate", required: false })
+  @ApiQuery({ name: "endDate", required: false })
+  @ApiQuery({ name: "categoryIds", required: false })
+  @ApiQuery({ name: "payeeIds", required: false })
+  @ApiQuery({ name: "tagIds", required: false })
+  @ApiQuery({ name: "search", required: false })
+  @ApiQuery({ name: "amountFrom", required: false })
+  @ApiQuery({ name: "amountTo", required: false })
+  @ApiQuery({ name: "limit", required: false })
+  @ApiResponse({ status: 200, description: "Breakdown retrieved successfully" })
+  @ApiResponse({ status: 400, description: "Missing or invalid key" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  getTagKeyBreakdown(
+    @Request() req,
+    @Query("key") key?: string,
+    @Query("accountIds") accountIds?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+    @Query("categoryIds") categoryIds?: string,
+    @Query("payeeIds") payeeIds?: string,
+    @Query("tagIds") tagIdsParam?: string,
+    @Query("search") search?: string,
+    @Query("amountFrom") amountFrom?: string,
+    @Query("amountTo") amountTo?: string,
+    @Query("limit") limit?: string,
+  ) {
+    const trimmedKey = (key ?? "").trim();
+    if (trimmedKey === "" || trimmedKey.length > 100) {
+      throw new BadRequestException(
+        tr(
+          "errors.transactions.tagKeyRequired",
+          "A tag key (1-100 characters) is required",
+        ),
+      );
+    }
+
+    validateDateParam(startDate, "startDate");
+    validateDateParam(endDate, "endDate");
+
+    const parsedAmountFrom =
+      amountFrom !== undefined ? parseFloat(amountFrom) : undefined;
+    if (parsedAmountFrom !== undefined && isNaN(parsedAmountFrom)) {
+      throw new BadRequestException(
+        tr(
+          "errors.transactions.amountFromMustBeNumber",
+          "amountFrom must be a number",
+        ),
+      );
+    }
+
+    const parsedAmountTo =
+      amountTo !== undefined ? parseFloat(amountTo) : undefined;
+    if (parsedAmountTo !== undefined && isNaN(parsedAmountTo)) {
+      throw new BadRequestException(
+        tr(
+          "errors.transactions.amountToMustBeNumber",
+          "amountTo must be a number",
+        ),
+      );
+    }
+
+    const parsedLimit = limit !== undefined ? parseInt(limit, 10) : undefined;
+    if (parsedLimit !== undefined && (isNaN(parsedLimit) || parsedLimit < 1)) {
+      throw new BadRequestException(
+        tr(
+          "errors.transactions.limitMustBePositive",
+          "limit must be a positive number",
+        ),
+      );
+    }
+
+    return this.transactionsService.getTagKeyBreakdown(
+      req.user.id,
+      trimmedKey,
+      {
+        accountIds: parseUuids(accountIds),
+        startDate,
+        endDate,
+        categoryIds: parseCategoryIds(categoryIds),
+        payeeIds: parseUuids(payeeIds),
+        tagIds: parseUuids(tagIdsParam),
+        search,
+        amountFrom: parsedAmountFrom,
+        amountTo: parsedAmountTo,
+        limit: parsedLimit,
+      },
+    );
+  }
+
   @Get("recurring-charges")
   @ApiOperation({
     summary:
