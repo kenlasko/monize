@@ -1026,7 +1026,21 @@ export class TransactionsService {
             const method = hasCondition ? "orWhere" : "where";
             hasCondition = true;
             qb[method](
-              "transaction.categoryId IS NULL AND transaction.isSplit = false AND transaction.isTransfer = false AND account.accountType != 'INVESTMENT'",
+              new Brackets((unc) => {
+                unc
+                  .where(
+                    "transaction.categoryId IS NULL AND transaction.isSplit = false AND transaction.isTransfer = false AND account.accountType != 'INVESTMENT'",
+                  )
+                  // A split transaction is uncategorised when any of its
+                  // non-transfer split lines has no category. Match those too so
+                  // the list agrees with the account-detail category breakdown,
+                  // which buckets uncategorised split lines the same way. Only
+                  // the matching (null-category) splits hydrate, giving the
+                  // frontend a filtered partial total.
+                  .orWhere(
+                    "transaction.isSplit = true AND transaction.isTransfer = false AND account.accountType != 'INVESTMENT' AND splits.categoryId IS NULL AND splits.transferAccountId IS NULL",
+                  );
+              }),
             );
           }
           if (hasTransfer) {

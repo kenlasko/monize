@@ -511,7 +511,19 @@ export class TransactionAnalyticsService {
               const method = hasCondition ? "orWhere" : "where";
               hasCondition = true;
               qb[method](
-                "transaction.categoryId IS NULL AND transaction.isSplit = false AND transaction.isTransfer = false AND summaryAccount.accountType != 'INVESTMENT'",
+                new Brackets((unc) => {
+                  unc
+                    .where(
+                      "transaction.categoryId IS NULL AND transaction.isSplit = false AND transaction.isTransfer = false AND summaryAccount.accountType != 'INVESTMENT'",
+                    )
+                    // A split transaction counts as uncategorised when any of
+                    // its non-transfer split lines has no category (transfer
+                    // splits are already excluded by the base query), matching
+                    // the category breakdown grouping.
+                    .orWhere(
+                      "transaction.isSplit = true AND transaction.isTransfer = false AND summaryAccount.accountType != 'INVESTMENT' AND splits.categoryId IS NULL",
+                    );
+                }),
               );
             }
             if (hasTransfer) {
@@ -811,7 +823,7 @@ export class TransactionAnalyticsService {
               )
             : [];
 
-        if (uniqueCategoryIds.length > 0) {
+        if (hasUncategorized || uniqueCategoryIds.length > 0) {
           queryBuilder.leftJoin("transaction.splits", "splits");
           splitsJoined = true;
         }
@@ -822,7 +834,18 @@ export class TransactionAnalyticsService {
               const method = hasCondition ? "orWhere" : "where";
               hasCondition = true;
               qb[method](
-                "transaction.categoryId IS NULL AND transaction.isSplit = false AND transaction.isTransfer = false AND summaryAccount.accountType != 'INVESTMENT'",
+                new Brackets((unc) => {
+                  unc
+                    .where(
+                      "transaction.categoryId IS NULL AND transaction.isSplit = false AND transaction.isTransfer = false AND summaryAccount.accountType != 'INVESTMENT'",
+                    )
+                    // A split transaction counts as uncategorised when any of
+                    // its non-transfer split lines has no category, matching the
+                    // category breakdown grouping.
+                    .orWhere(
+                      "transaction.isSplit = true AND transaction.isTransfer = false AND summaryAccount.accountType != 'INVESTMENT' AND splits.categoryId IS NULL AND splits.transferAccountId IS NULL",
+                    );
+                }),
               );
             }
             if (hasTransfer) {

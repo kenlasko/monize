@@ -27,7 +27,7 @@
   },
   "spending": {
     "title": "[XX-Spending This Cycle-XX]",
-    "uncategorised": "[XX-Uncategorised-XX]",
+    "uncategorised": "[XX-Uncategorized-XX]",
     "empty": "[XX-No spending recorded this cycle-XX]"
   },
   "interestAndFees": {

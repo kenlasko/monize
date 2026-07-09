@@ -1735,6 +1735,13 @@ describe("TransactionsService", () => {
       expect(mockQb.where).toHaveBeenCalledWith(
         expect.stringContaining("transaction.categoryId IS NULL"),
       );
+      // Split transactions with an uncategorised, non-transfer split line are
+      // also matched so the list agrees with the account-detail breakdown.
+      expect(mockQb.orWhere).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "transaction.isSplit = true AND transaction.isTransfer = false AND account.accountType != 'INVESTMENT' AND splits.categoryId IS NULL AND splits.transferAccountId IS NULL",
+        ),
+      );
     });
 
     it("handles 'transfer' special category filter", async () => {

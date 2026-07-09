@@ -163,6 +163,26 @@ describe("TransactionAnalyticsService", () => {
       );
     });
 
+    it("treats split lines without a category as uncategorised", async () => {
+      await service.getSummary(userId, undefined, undefined, undefined, [
+        "uncategorized",
+      ]);
+
+      // Non-split uncategorised transactions...
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "transaction.categoryId IS NULL AND transaction.isSplit = false",
+        ),
+      );
+      // ...plus split transactions whose split line has no category, matching
+      // the account-detail category breakdown.
+      expect(mockQueryBuilder.orWhere).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "transaction.isSplit = true AND transaction.isTransfer = false AND summaryAccount.accountType != 'INVESTMENT' AND splits.categoryId IS NULL",
+        ),
+      );
+    });
+
     it("aggregates single currency data correctly", async () => {
       mockQueryBuilder.getRawMany.mockResolvedValue([
         {

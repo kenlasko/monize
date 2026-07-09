@@ -36,6 +36,6 @@ describe('SpendingBreakdown', () => {
         isLoading={false}
       />,
     );
-    expect(screen.getByText('Uncategorised')).toBeInTheDocument();
+    expect(screen.getByText('Uncategorized')).toBeInTheDocument();
   });
 });
