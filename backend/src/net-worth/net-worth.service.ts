@@ -952,22 +952,22 @@ export class NetWorthService {
           const security = securityMap.get(secId);
           let price: number | undefined;
 
-          // Use the previous day's close to value each point on the series,
-          // matching the convention used by the Gain/Dividends/Interest report
-          // (which looks up the close on `periodStart - 1` for opening values).
-          // The chart point at date X therefore represents the portfolio's
-          // value as of the start of day X, i.e. the latest close strictly
-          // before X.
+          // Value each point at the latest close on or before that day
+          // (end-of-day convention). The chart point at date X therefore
+          // represents the portfolio's value as of the close of day X, so the
+          // series lines up with the month-end-valued monthly snapshots and the
+          // final point reflects the most recent available close rather than
+          // lagging a trading day behind it.
           if (security?.skipPriceUpdates) {
             const txPrices = txPricesBySec.get(secId) || [];
             for (const tp of txPrices) {
-              if (tp.date < dateStr) price = tp.price;
+              if (tp.date <= dateStr) price = tp.price;
               else break;
             }
           } else {
             const secPrices = pricesBySec.get(secId) || [];
             for (const sp of secPrices) {
-              if (sp.date < dateStr) price = sp.price;
+              if (sp.date <= dateStr) price = sp.price;
               else break;
             }
           }
@@ -1111,10 +1111,11 @@ export class NetWorthService {
     if (sampleDates.length === 0) return empty;
 
     // --- Price lookups -------------------------------------------------------
-    // Daily values each point at the latest close strictly before the date
-    // (start-of-day convention, matching getDailyInvestments). Monthly values
+    // Daily values each point at the latest close on or before the date
+    // (end-of-day convention, matching getDailyInvestments). Monthly values
     // each point at the latest close on or before the month end (matching the
-    // stored monthly snapshots).
+    // stored monthly snapshots). Both are inclusive of their period end so the
+    // daily and monthly series line up at overlapping dates.
     const pricesBySec = new Map<
       string,
       Array<{ date: string; price: number }>
@@ -1396,7 +1397,7 @@ export class NetWorthService {
     if (!series) return undefined;
     let price: number | undefined;
     for (const p of series) {
-      if (p.date < sampleDate) price = p.price;
+      if (p.date <= sampleDate) price = p.price;
       else break;
     }
     return price;

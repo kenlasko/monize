@@ -2110,7 +2110,7 @@ describe("NetWorthService", () => {
       ]);
 
       // security prices query (includes a price from the prior trading day so
-      // the first chart point can be valued using yesterday's close)
+      // a first chart point with no same-day close can still fall back to it)
       dataSource.query.mockResolvedValueOnce([
         {
           security_id: "sec-1",
@@ -2140,12 +2140,13 @@ describe("NetWorthService", () => {
         "2025-03-03",
       );
 
-      // Each point uses the previous day's close: 03-01 -> 02-28, 03-02 ->
-      // 03-01, 03-03 -> 03-02. Matches the Gain/Dividend report's convention.
+      // Each point uses that day's close (end-of-day convention): 03-01 ->
+      // 03-01, 03-02 -> 03-02, 03-03 -> 03-03. This lines the daily series up
+      // with the month-end-valued monthly snapshots.
       expect(result).toHaveLength(3);
-      expect(result[0]).toEqual({ date: "2025-03-01", value: 990 });
-      expect(result[1]).toEqual({ date: "2025-03-02", value: 1000 });
-      expect(result[2]).toEqual({ date: "2025-03-03", value: 1020 });
+      expect(result[0]).toEqual({ date: "2025-03-01", value: 1000 });
+      expect(result[1]).toEqual({ date: "2025-03-02", value: 1020 });
+      expect(result[2]).toEqual({ date: "2025-03-03", value: 1010 });
     });
 
     it("includes cash balances from INVESTMENT_CASH accounts", async () => {
@@ -2833,7 +2834,7 @@ describe("NetWorthService", () => {
       });
     });
 
-    it("values each daily point at the latest close before the date", async () => {
+    it("values each daily point at the latest close on or before the date", async () => {
       prefRepository.findOne.mockResolvedValue({ defaultCurrency: "USD" });
 
       dataSource.query.mockResolvedValueOnce([
@@ -2878,7 +2879,7 @@ describe("NetWorthService", () => {
         { key: "sec-1", type: "security", symbol: "MSFT", name: "Microsoft" },
       ]);
       expect(result.points).toEqual([
-        { date: "2025-03-01", total: 990, values: { "sec-1": 990 } },
+        { date: "2025-03-01", total: 1000, values: { "sec-1": 1000 } },
         { date: "2025-03-02", total: 1000, values: { "sec-1": 1000 } },
       ]);
     });
