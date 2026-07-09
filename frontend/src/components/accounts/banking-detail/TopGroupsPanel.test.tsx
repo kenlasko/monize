@@ -82,4 +82,19 @@ describe('TopGroupsPanel', () => {
     );
     expect(screen.getByText('No payee activity')).toBeInTheDocument();
   });
+
+  it('shows the timeframe subtitle when provided', () => {
+    render(
+      <TopGroupsPanel
+        title="Top Categories"
+        subtitle="This month"
+        emptyLabel="No activity"
+        fallbackLabel="Uncategorised"
+        totals={totals}
+        currencyCode="CAD"
+        isLoading={false}
+      />,
+    );
+    expect(screen.getByText('This month')).toBeInTheDocument();
+  });
 });

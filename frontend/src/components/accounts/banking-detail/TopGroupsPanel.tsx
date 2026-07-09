@@ -6,6 +6,8 @@ import type { GroupedTotal } from '@/types/transaction';
 
 interface TopGroupsPanelProps {
   title: string;
+  /** Optional timeframe caption shown under the title (e.g. "This month"). */
+  subtitle?: string;
   emptyLabel: string;
   fallbackLabel: string;
   totals: GroupedTotal[];
@@ -25,6 +27,7 @@ interface TopGroupsPanelProps {
  */
 export function TopGroupsPanel({
   title,
+  subtitle,
   emptyLabel,
   fallbackLabel,
   totals,
@@ -47,7 +50,10 @@ export function TopGroupsPanel({
 
   return (
     <section>
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{title}</h2>
+      <div className="mb-4">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
+        {subtitle && <p className="text-sm text-gray-500 dark:text-gray-400">{subtitle}</p>}
+      </div>
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
         {isLoading ? (
           <div className="h-24 rounded bg-gray-100 dark:bg-gray-700 animate-pulse" />

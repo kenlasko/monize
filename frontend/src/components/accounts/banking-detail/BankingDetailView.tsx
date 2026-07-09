@@ -218,6 +218,7 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
       <div className="grid gap-6 lg:grid-cols-2">
         <TopGroupsPanel
           title={t('topCategories.title')}
+          subtitle={t('summary.thisMonth')}
           emptyLabel={t('topCategories.empty')}
           fallbackLabel={t('uncategorised')}
           totals={topCategories}
@@ -232,6 +233,7 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
         />
         <TopGroupsPanel
           title={t('topPayees.title')}
+          subtitle={t('summary.thisMonth')}
           emptyLabel={t('topPayees.empty')}
           fallbackLabel={t('uncategorised')}
           totals={topPayees}
