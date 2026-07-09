@@ -61,6 +61,47 @@ export const investmentsApi = {
     return response.data;
   },
 
+  // List the KEY:VALUE tag keys present on the portfolio's securities (e.g.
+  // "country", "sector"), so the UI can offer an aggregate-by-key chart.
+  getPortfolioTagKeys: async (accountIds?: string[]): Promise<string[]> => {
+    const cacheKey = `investments:tag-keys:${accountIds?.join(',') || 'all'}`;
+    const cached = getCached<string[]>(cacheKey);
+    if (cached) return cached;
+    const response = await apiClient.get<string[]>('/portfolio/tag-keys', {
+      params:
+        accountIds && accountIds.length > 0
+          ? { accountIds: accountIds.join(',') }
+          : undefined,
+    });
+    setCache(cacheKey, response.data, 60_000);
+    return response.data;
+  },
+
+  // Get portfolio allocation aggregated by the value of one KEY:VALUE tag key
+  // (e.g. key "country" -> a slice per country). Value-weighted; a mixed
+  // holding tagged under several values counts in full under each.
+  getAllocationByTagKey: async (
+    key: string,
+    accountIds?: string[],
+  ): Promise<AssetAllocation> => {
+    const cacheKey = `investments:allocation-by-tag-key:${key}:${accountIds?.join(',') || 'all'}`;
+    const cached = getCached<AssetAllocation>(cacheKey);
+    if (cached) return cached;
+    const response = await apiClient.get<AssetAllocation>(
+      '/portfolio/allocation/by-tag-key',
+      {
+        params: {
+          key,
+          ...(accountIds && accountIds.length > 0
+            ? { accountIds: accountIds.join(',') }
+            : {}),
+        },
+      },
+    );
+    setCache(cacheKey, response.data, 60_000);
+    return response.data;
+  },
+
   // Suggest a description for a security from the Yahoo provider profile
   // (advisory pre-fill for the "Fetch from Yahoo" button). Not cached.
   getSuggestedDescription: async (

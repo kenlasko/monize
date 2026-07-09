@@ -52,6 +52,7 @@ import {
   parseSearchTerm,
   ParsedSearchTerm,
 } from "./transaction-search-parse.util";
+import { buildTagKeyFilterClause, TagKeyFilter } from "./tag-key-filter.util";
 import { tr } from "../i18n/translate";
 import { stripHtml } from "../common/sanitization.util";
 import {
@@ -752,6 +753,7 @@ export class TransactionsService {
     statuses?: TransactionStatus[],
     sortBy: "date" | "amount" | "payee" = "date",
     sortDirection: "ASC" | "DESC" = "DESC",
+    tagKeyFilter?: TagKeyFilter,
   ): Promise<PaginatedTransactions> {
     const clamped = clampPagination(page, limit);
     const safeLimit = clamped.limit;
@@ -868,6 +870,14 @@ export class TransactionsService {
           });
         }),
       );
+    }
+
+    if (tagKeyFilter) {
+      const { clause, params } = buildTagKeyFilterClause(
+        "transaction",
+        tagKeyFilter,
+      );
+      queryBuilder.andWhere(clause, params);
     }
 
     if (statuses && statuses.length > 0) {

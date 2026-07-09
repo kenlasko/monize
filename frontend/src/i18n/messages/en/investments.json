@@ -65,13 +65,16 @@
     "cash": "Cash",
     "untagged": "Untagged",
     "noTagData": "No tagged holdings to show. Add tags to your securities to see exposure by tag.",
+    "noKeyData": "No holdings carry a value for this tag key. Tag securities as key:value (e.g. country:usa) to see this breakdown.",
     "noCountryData": "No country allocation data available.",
+    "keySelectorLabel": "Tag key to aggregate by",
     "tagExposureNote": "Exposure by tag: a holding with several tags counts in full under each, so percentages can total more than 100%.",
     "countryExposureNote": "Geographic look-through: fund holdings are split by their country weightings. The 10 largest countries are shown; the rest are grouped as Other Countries.",
     "otherCountries": "Other Countries",
     "groupBy": {
       "security": "By security",
       "tag": "By tag",
+      "tagKey": "By key",
       "country": "By country"
     }
   },

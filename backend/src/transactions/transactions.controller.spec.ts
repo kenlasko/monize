@@ -159,6 +159,9 @@ describe("TransactionsController", () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
+        undefined,
       );
     });
 
@@ -189,6 +192,9 @@ describe("TransactionsController", () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
+        undefined,
       );
     });
 
@@ -207,6 +213,9 @@ describe("TransactionsController", () => {
         undefined,
         undefined,
         false,
+        undefined,
+        undefined,
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -243,6 +252,9 @@ describe("TransactionsController", () => {
         2,
         25,
         false,
+        undefined,
+        undefined,
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -286,6 +298,9 @@ describe("TransactionsController", () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
+        undefined,
       );
     });
 
@@ -321,6 +336,9 @@ describe("TransactionsController", () => {
         false,
         "grocery",
         uuid3,
+        undefined,
+        undefined,
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -505,6 +523,9 @@ describe("TransactionsController", () => {
         undefined,
         undefined,
         ["UNRECONCILED", "CLEARED"],
+        undefined,
+        undefined,
+        undefined,
       );
     });
 
@@ -1159,6 +1180,9 @@ describe("TransactionsController", () => {
         500.25,
         undefined,
         undefined,
+        undefined,
+        undefined,
+        undefined,
       );
     });
 
@@ -1268,6 +1292,82 @@ describe("TransactionsController", () => {
       const call = mockService.findAll.mock.calls[0];
       expect(call[11]).toBeUndefined(); // amountFrom
       expect(call[12]).toBe(200); // amountTo
+    });
+  });
+
+  describe("findAll() tag key filter", () => {
+    const callWithTagKey = (
+      tagKey?: string,
+      tagKeyOp?: string,
+      tagKeyValue?: string,
+    ) =>
+      controller.findAll(
+        mockReq,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        tagKey,
+        tagKeyOp,
+        tagKeyValue,
+      );
+
+    it("builds a hasValue filter and passes it to the service (arg 17)", async () => {
+      mockService.findAll.mockResolvedValue({ data: [], total: 0 });
+      await callWithTagKey("country", "hasValue");
+      expect(mockService.findAll.mock.calls[0][17]).toEqual({
+        key: "country",
+        op: "hasValue",
+        value: undefined,
+      });
+    });
+
+    it("builds a contains filter with the value", async () => {
+      mockService.findAll.mockResolvedValue({ data: [], total: 0 });
+      await callWithTagKey("country", "contains", "usa");
+      expect(mockService.findAll.mock.calls[0][17]).toEqual({
+        key: "country",
+        op: "contains",
+        value: "usa",
+      });
+    });
+
+    it("defaults the op to hasValue when omitted", async () => {
+      mockService.findAll.mockResolvedValue({ data: [], total: 0 });
+      await callWithTagKey("country");
+      expect(mockService.findAll.mock.calls[0][17]).toEqual({
+        key: "country",
+        op: "hasValue",
+        value: undefined,
+      });
+    });
+
+    it("passes undefined when no tagKey is given", async () => {
+      mockService.findAll.mockResolvedValue({ data: [], total: 0 });
+      await controller.findAll(mockReq);
+      expect(mockService.findAll.mock.calls[0][17]).toBeUndefined();
+    });
+
+    it("rejects an invalid op", async () => {
+      await expect(callWithTagKey("country", "bogus")).rejects.toThrow();
+    });
+
+    it("requires a value for contains / notContains", async () => {
+      await expect(callWithTagKey("country", "contains")).rejects.toThrow();
+      await expect(callWithTagKey("country", "notContains")).rejects.toThrow();
     });
   });
 

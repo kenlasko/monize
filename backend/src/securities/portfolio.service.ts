@@ -12,6 +12,7 @@ import {
 import { YahooFinanceService } from "./yahoo-finance.service";
 import { QuoteProviderRegistry } from "./providers/quote-provider.registry";
 import { roundMoney } from "../common/round.util";
+import { collectTagKeys } from "../tags/tag-key-value.util";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import { formatDateYMD } from "../common/date-utils";
 import {
@@ -918,6 +919,72 @@ export class PortfolioService {
     userId: string,
     accountIds?: string[],
   ): Promise<AssetAllocation> {
+    const inputs = await this.loadTaggedAllocationInputs(userId, accountIds);
+    const allocation = this.calculationService.buildAllocationByTag(
+      inputs.securityItems,
+      inputs.tagsBySymbol,
+      inputs.totalCashValue,
+      inputs.defaultCurrency,
+    );
+    return { allocation, totalValue: inputs.totalValue };
+  }
+
+  /**
+   * Portfolio allocation aggregated by the VALUE of a single KEY:VALUE tag key
+   * (e.g. key `country` -> slices per country). See
+   * `PortfolioCalculationService.buildAllocationByTagKey` for the value-weighted
+   * (overlapping) semantics.
+   */
+  async getAllocationByTagKey(
+    userId: string,
+    key: string,
+    accountIds?: string[],
+  ): Promise<AssetAllocation> {
+    const inputs = await this.loadTaggedAllocationInputs(userId, accountIds);
+    const allocation = this.calculationService.buildAllocationByTagKey(
+      inputs.securityItems,
+      inputs.tagsBySymbol,
+      inputs.totalCashValue,
+      inputs.defaultCurrency,
+      key,
+    );
+    return { allocation, totalValue: inputs.totalValue };
+  }
+
+  /**
+   * Distinct KEY:VALUE tag keys present on the portfolio's securities, so the
+   * UI can offer "aggregate by key" choices. Case-folded and sorted.
+   */
+  async getPortfolioTagKeys(
+    userId: string,
+    accountIds?: string[],
+  ): Promise<string[]> {
+    const inputs = await this.loadTaggedAllocationInputs(userId, accountIds);
+    const names: string[] = [];
+    for (const tags of inputs.tagsBySymbol.values()) {
+      for (const tag of tags) names.push(tag.name);
+    }
+    return collectTagKeys(names);
+  }
+
+  /**
+   * Shared prep for the by-tag / by-tag-key allocation views: the per-security
+   * slices (values already in the default currency), the cash total, the
+   * default currency, and each security's tags keyed by symbol.
+   */
+  private async loadTaggedAllocationInputs(
+    userId: string,
+    accountIds?: string[],
+  ): Promise<{
+    securityItems: AllocationItem[];
+    totalCashValue: number;
+    defaultCurrency: string;
+    tagsBySymbol: Map<
+      string,
+      Array<{ id: string; name: string; color: string | null }>
+    >;
+    totalValue: number;
+  }> {
     const summary = await this.getPortfolioSummary(userId, accountIds);
     const securityItems = summary.allocation.filter(
       (a) => a.type === "security",
@@ -934,13 +1001,13 @@ export class PortfolioService {
       .filter((s): s is string => Boolean(s));
     const tagsBySymbol = await this.loadTagsBySymbol(userId, symbols);
 
-    const allocation = this.calculationService.buildAllocationByTag(
+    return {
       securityItems,
-      tagsBySymbol,
       totalCashValue,
       defaultCurrency,
-    );
-    return { allocation, totalValue: summary.totalPortfolioValue };
+      tagsBySymbol,
+      totalValue: summary.totalPortfolioValue,
+    };
   }
 
   /** The user's default display currency, falling back to CAD. */

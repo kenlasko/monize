@@ -14,7 +14,7 @@ import { CHART_SERIES, chartColors } from '@/lib/chart-colors';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 
-type GroupBy = 'security' | 'tag' | 'country';
+type GroupBy = 'security' | 'tag' | 'tagKey' | 'country';
 
 /**
  * Collapse a country look-through result into pie slices: the ten largest
@@ -141,6 +141,13 @@ export function AssetAllocationChart({
   const [countryCache, setCountryCache] = useState<
     Record<string, CountryWeightingResult>
   >({});
+  // KEY:VALUE aggregation: the available keys per account-filter, the key the
+  // user picked, and the by-key allocation cached per `accountKey|key`.
+  const [tagKeysCache, setTagKeysCache] = useState<Record<string, string[]>>({});
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [tagKeyCache, setTagKeyCache] = useState<Record<string, AssetAllocation>>(
+    {},
+  );
   const accountKey =
     accountIds && accountIds.length > 0 ? [...accountIds].sort().join(',') : 'all';
 
@@ -164,6 +171,17 @@ export function AssetAllocationChart({
               ...prev,
               [accountKey]: { allocation: [], totalValue: 0 },
             }));
+        });
+
+      investmentsApi
+        .getPortfolioTagKeys(ids)
+        .then((keys) => {
+          if (!cancelled)
+            setTagKeysCache((prev) => ({ ...prev, [accountKey]: keys }));
+        })
+        .catch(() => {
+          if (!cancelled)
+            setTagKeysCache((prev) => ({ ...prev, [accountKey]: [] }));
         });
     }
 
@@ -209,28 +227,69 @@ export function AssetAllocationChart({
     (tagCache[accountKey]?.allocation.some((i) => i.type === 'tag') ?? false);
   const countryAvailable = (countryResult?.items.length ?? 0) > 0;
 
+  // KEY:VALUE aggregation: keys present for this account filter and the key the
+  // chart is currently aggregating by (the user's pick, or the first key).
+  const availableKeys = enableTagGrouping ? (tagKeysCache[accountKey] ?? []) : [];
+  const keysAvailable = availableKeys.length > 0;
+  const resolvedKey =
+    selectedKey && availableKeys.includes(selectedKey)
+      ? selectedKey
+      : (availableKeys[0] ?? null);
+  const tagKeyCacheKey = resolvedKey ? `${accountKey}|${resolvedKey}` : null;
+
+  // Fetch the by-key allocation lazily, only while the key view is active.
+  useEffect(() => {
+    if (groupBy !== 'tagKey' || !resolvedKey || !tagKeyCacheKey) return;
+    if (tagKeyCache[tagKeyCacheKey]) return;
+    let cancelled = false;
+    const ids = accountKey === 'all' ? undefined : accountKey.split(',');
+    investmentsApi
+      .getAllocationByTagKey(resolvedKey, ids)
+      .then((res) => {
+        if (!cancelled)
+          setTagKeyCache((prev) => ({ ...prev, [tagKeyCacheKey]: res }));
+      })
+      .catch(() => {
+        if (!cancelled)
+          setTagKeyCache((prev) => ({
+            ...prev,
+            [tagKeyCacheKey]: { allocation: [], totalValue: 0 },
+          }));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [groupBy, resolvedKey, tagKeyCacheKey, accountKey, tagKeyCache]);
+
   // If the active grouping is no longer available (e.g. the account filter
   // changed to a set without tags or country data), fall back to "By security"
   // for rendering while keeping the user's stored choice for when it returns.
   const effectiveGroupBy: GroupBy =
     groupBy === 'tag' && !tagsAvailable
       ? 'security'
-      : groupBy === 'country' && !countryAvailable
+      : groupBy === 'tagKey' && (!keysAvailable || !resolvedKey)
         ? 'security'
-        : groupBy;
+        : groupBy === 'country' && !countryAvailable
+          ? 'security'
+          : groupBy;
 
   const isTagView = effectiveGroupBy === 'tag';
+  const isTagKeyView = effectiveGroupBy === 'tagKey';
   const isCountryView = effectiveGroupBy === 'country';
   const activeAllocation = isTagView
     ? (tagCache[accountKey] ?? null)
-    : isCountryView
-      ? countryAllocation
-      : allocation;
+    : isTagKeyView
+      ? (tagKeyCacheKey ? (tagKeyCache[tagKeyCacheKey] ?? null) : null)
+      : isCountryView
+        ? countryAllocation
+        : allocation;
   const activeLoading = isTagView
     ? !tagCache[accountKey]
-    : isCountryView
-      ? !countryResult
-      : isLoading;
+    : isTagKeyView
+      ? !tagKeyCacheKey || !tagKeyCache[tagKeyCacheKey]
+      : isCountryView
+        ? !countryResult
+        : isLoading;
 
   // When viewing a single foreign-currency account, show values in that
   // currency. The by-tag and by-country allocations are always returned in the
@@ -282,7 +341,7 @@ export function AssetAllocationChart({
   // bounded to 10 countries plus "Other Countries", so show all of them.
   const legendData = isCountryView ? chartData : chartData.slice(0, 10);
 
-  const showToggle = tagsAvailable || countryAvailable;
+  const showToggle = tagsAvailable || keysAvailable || countryAvailable;
   const toggleButtonClass = (selected: boolean) =>
     `px-2 py-1 ${
       selected
@@ -310,6 +369,16 @@ export function AssetAllocationChart({
           {t('assetAllocation.groupBy.tag')}
         </button>
       )}
+      {keysAvailable && (
+        <button
+          type="button"
+          onClick={() => setGroupBy('tagKey')}
+          className={toggleButtonClass(isTagKeyView)}
+          aria-pressed={isTagKeyView}
+        >
+          {t('assetAllocation.groupBy.tagKey')}
+        </button>
+      )}
       {countryAvailable && (
         <button
           type="button"
@@ -323,13 +392,32 @@ export function AssetAllocationChart({
     </div>
   ) : null;
 
+  const keySelector =
+    isTagKeyView && availableKeys.length > 0 ? (
+      <select
+        value={resolvedKey ?? ''}
+        onChange={(e) => setSelectedKey(e.target.value)}
+        aria-label={t('assetAllocation.keySelectorLabel')}
+        className="text-xs rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 px-2 py-1"
+      >
+        {availableKeys.map((key) => (
+          <option key={key} value={key}>
+            {key}
+          </option>
+        ))}
+      </select>
+    ) : null;
+
   const heading = (
     <div className="flex items-center justify-between gap-2 mb-4">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
         {t('assetAllocation.title')}
         {titleSuffix ? ` (${titleSuffix})` : ''}
       </h3>
-      {groupToggle}
+      <div className="flex items-center gap-2">
+        {keySelector}
+        {groupToggle}
+      </div>
     </div>
   );
 
@@ -351,9 +439,11 @@ export function AssetAllocationChart({
         <p className="text-gray-500 dark:text-gray-400">
           {isTagView
             ? t('assetAllocation.noTagData')
-            : isCountryView
-              ? t('assetAllocation.noCountryData')
-              : t('assetAllocation.noData')}
+            : isTagKeyView
+              ? t('assetAllocation.noKeyData')
+              : isCountryView
+                ? t('assetAllocation.noCountryData')
+                : t('assetAllocation.noData')}
         </p>
       </div>
     );

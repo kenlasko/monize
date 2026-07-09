@@ -166,6 +166,71 @@ export class PortfolioController {
     );
   }
 
+  @Get("tag-keys")
+  @AllowDelegate()
+  @DelegateRequiresSection("investments")
+  @ApiOperation({
+    summary:
+      "List the KEY:VALUE tag keys present on the portfolio's securities",
+    description:
+      "Distinct, case-folded, sorted keys (e.g. `country`, `sector`) so the UI can offer an aggregate-by-key chart.",
+  })
+  @ApiQuery({ name: "accountIds", required: false })
+  @ApiResponse({ status: 200, description: "Tag keys retrieved successfully" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  async getPortfolioTagKeys(
+    @Request() req,
+    @Query("accountIds") accountIds?: string,
+  ) {
+    const ids = this.parseUuidList(accountIds, "account");
+    return this.portfolioService.getPortfolioTagKeys(
+      req.user.id,
+      await this.scopeIds(req, ids),
+    );
+  }
+
+  @Get("allocation/by-tag-key")
+  @AllowDelegate()
+  @DelegateRequiresSection("investments")
+  @ApiOperation({
+    summary: "Get portfolio allocation aggregated by the value of one tag key",
+    description:
+      "Value-weighted: each security's value is attributed to the value(s) of its `<key>:*` tags (e.g. key `country` -> a slice per country). A mixed holding tagged under several values counts in full under each, so percentages can sum past 100%. Cash and securities without a value for the key are explicit slices.",
+  })
+  @ApiQuery({
+    name: "key",
+    required: true,
+    description: "The tag key to aggregate by (e.g. `country`).",
+  })
+  @ApiQuery({ name: "accountIds", required: false })
+  @ApiResponse({
+    status: 200,
+    description: "Tag-key allocation retrieved successfully",
+  })
+  @ApiResponse({ status: 400, description: "Missing or invalid key" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  async getAllocationByTagKey(
+    @Request() req,
+    @Query("key") key?: string,
+    @Query("accountIds") accountIds?: string,
+  ) {
+    const trimmedKey = (key ?? "").trim();
+    if (trimmedKey === "" || trimmedKey.length > 100) {
+      throw new BadRequestException(
+        tr(
+          "errors.securities.invalidTagKey",
+          "A tag key (1-100 characters) is required",
+        ),
+      );
+    }
+    const ids = this.parseUuidList(accountIds, "account");
+    return this.portfolioService.getAllocationByTagKey(
+      req.user.id,
+      trimmedKey,
+      await this.scopeIds(req, ids),
+    );
+  }
+
   @Get("top-movers")
   @ApiOperation({
     summary: "Get top daily movers among held securities",
