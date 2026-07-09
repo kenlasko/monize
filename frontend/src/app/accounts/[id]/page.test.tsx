@@ -191,8 +191,12 @@ describe('AccountDetailPage', () => {
     expect(screen.getByText('Est. Payoff')).toBeInTheDocument();
   });
 
-  it('redirects account types without a detail view to their register', async () => {
-    mockGetById.mockResolvedValue(makeAccount({ accountType: 'OTHER' }));
+  it('redirects account types without a registered detail view to their register', async () => {
+    // Every real account type now has a detail page; an unrecognised type falls
+    // back to the register.
+    mockGetById.mockResolvedValue(
+      makeAccount({ accountType: 'UNKNOWN' as unknown as Account['accountType'] }),
+    );
 
     await renderPage();
 

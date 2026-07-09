@@ -14,6 +14,7 @@ import { LineOfCreditView } from '@/components/accounts/loan-detail/LineOfCredit
 import { CreditCardDetailView } from '@/components/accounts/credit-card-detail/CreditCardDetailView';
 import { BankingDetailView } from '@/components/accounts/banking-detail/BankingDetailView';
 import { InvestmentDetailView } from '@/components/accounts/investment-detail/InvestmentDetailView';
+import { AssetDetailView } from '@/components/accounts/asset-detail/AssetDetailView';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { accountsApi } from '@/lib/accounts';
@@ -32,7 +33,13 @@ import type { LoanRateChange } from '@/types/loan-rate-change';
  * here. A type absent from the registry has no dedicated page yet and
  * redirects to its transaction register.
  */
-type DetailViewKind = 'loan' | 'lineOfCredit' | 'creditCard' | 'banking' | 'investment';
+type DetailViewKind =
+  | 'loan'
+  | 'lineOfCredit'
+  | 'creditCard'
+  | 'banking'
+  | 'investment'
+  | 'asset';
 
 const DETAIL_VIEW_REGISTRY: Partial<Record<AccountType, DetailViewKind>> = {
   LOAN: 'loan',
@@ -43,6 +50,8 @@ const DETAIL_VIEW_REGISTRY: Partial<Record<AccountType, DetailViewKind>> = {
   SAVINGS: 'banking',
   CASH: 'banking',
   INVESTMENT: 'investment',
+  ASSET: 'asset',
+  OTHER: 'asset',
 };
 
 function resolveDetailView(type: AccountType): DetailViewKind | null {
@@ -209,6 +218,8 @@ function AccountDetailContent() {
             <BankingDetailView account={account} />
           ) : detailView === 'investment' ? (
             <InvestmentDetailView account={account} />
+          ) : detailView === 'asset' ? (
+            <AssetDetailView account={account} onAccountChanged={loadData} />
           ) : isRevolving ? (
             <LineOfCreditView account={account} />
           ) : (

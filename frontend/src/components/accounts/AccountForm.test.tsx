@@ -216,6 +216,7 @@ function createExistingAccount(overrides: Partial<Account> = {}): Account {
     scheduledTransactionId: null,
     assetCategoryId: null,
     dateAcquired: null,
+    linkedLoanAccountId: null,
     isCanadianMortgage: false,
     isVariableRate: false,
     termMonths: null,
@@ -1324,6 +1325,7 @@ describe('AccountForm', () => {
     const account = createExistingAccount({
       accountType: 'ASSET',
       dateAcquired: '2022-01-01T00:00:00Z',
+      linkedLoanAccountId: null,
     });
     render(<AccountForm account={account} onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
     await waitFor(() => {

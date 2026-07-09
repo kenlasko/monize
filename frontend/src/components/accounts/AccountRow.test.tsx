@@ -33,6 +33,7 @@ function createAccount(overrides: Partial<Account> = {}): Account {
     scheduledTransactionId: null,
     assetCategoryId: null,
     dateAcquired: null,
+    linkedLoanAccountId: null,
     isCanadianMortgage: false,
     isVariableRate: false,
     termMonths: null,

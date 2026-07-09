@@ -59,6 +59,8 @@ export interface Account {
   // Asset-specific fields
   assetCategoryId: string | null;
   dateAcquired: string | null;
+  // Links an asset/other account to its financing loan/mortgage (equity view)
+  linkedLoanAccountId: string | null;
   // Mortgage-specific fields
   isCanadianMortgage: boolean;
   isVariableRate: boolean;
@@ -99,6 +101,7 @@ export interface CreateAccountData {
   // Asset-specific fields
   assetCategoryId?: string;
   dateAcquired?: string;
+  linkedLoanAccountId?: string | null;
   // Mortgage-specific fields
   isCanadianMortgage?: boolean;
   isVariableRate?: boolean;

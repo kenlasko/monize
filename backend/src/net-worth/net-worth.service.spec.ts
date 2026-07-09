@@ -50,6 +50,8 @@ describe("NetWorthService", () => {
     closedDate: null,
     linkedAccountId: null,
     linkedAccount: null,
+    linkedLoanAccountId: null,
+    linkedLoanAccount: null,
     description: null,
     accountNumber: null,
     institution: null,

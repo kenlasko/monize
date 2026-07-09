@@ -735,6 +735,8 @@ export class AccountsService {
         account.dateAcquired = updateAccountDto.dateAcquired
           ? new Date(updateAccountDto.dateAcquired)
           : null;
+      if (updateAccountDto.linkedLoanAccountId !== undefined)
+        account.linkedLoanAccountId = updateAccountDto.linkedLoanAccountId;
       // Mortgage-specific fields
       if (updateAccountDto.isCanadianMortgage !== undefined)
         account.isCanadianMortgage = updateAccountDto.isCanadianMortgage;

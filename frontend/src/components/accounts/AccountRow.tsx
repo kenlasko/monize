@@ -44,6 +44,8 @@ export const DETAIL_ACCOUNT_TYPES: AccountType[] = [
   'SAVINGS',
   'CASH',
   'INVESTMENT',
+  'ASSET',
+  'OTHER',
 ];
 
 /**

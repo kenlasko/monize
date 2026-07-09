@@ -1,0 +1,45 @@
+{
+  "summary": {
+    "currentValue": "[XX-Current Value-XX]",
+    "purchaseValue": "[XX-Purchase Value-XX]",
+    "appreciation": "[XX-Total Appreciation-XX]",
+    "annualized": "[XX-Annualized-XX]",
+    "category": "[XX-Category-XX]",
+    "notSet": "[XX-Not set-XX]",
+    "acquired": "[XX-Acquired {date}-XX]"
+  },
+  "chart": {
+    "title": "[XX-Value History-XX]",
+    "empty": "[XX-No value history yet-XX]"
+  },
+  "equity": {
+    "title": "[XX-Equity-XX]",
+    "subtitle": "[XX-Asset value minus the linked loan balance-XX]",
+    "assetValue": "[XX-Asset Value-XX]",
+    "loanBalance": "[XX-Loan Balance-XX]",
+    "equity": "[XX-Equity-XX]",
+    "chartTitle": "[XX-Equity Over Time-XX]",
+    "linkPrompt": "[XX-Link a loan or mortgage to track equity on this asset.-XX]",
+    "selectLoan": "[XX-Select a loan-XX]",
+    "link": "[XX-Link Loan-XX]",
+    "linkedTo": "[XX-Linked to {name}-XX]",
+    "unlink": "[XX-Unlink-XX]",
+    "noLoans": "[XX-No loan or mortgage accounts are available to link.-XX]",
+    "linked": "[XX-Loan linked-XX]",
+    "unlinked": "[XX-Loan unlinked-XX]",
+    "actionFailed": "[XX-Failed to update the linked loan-XX]"
+  },
+  "updateValue": {
+    "open": "[XX-Update Value-XX]",
+    "title": "[XX-Update Asset Value-XX]",
+    "newValue": "[XX-New Value-XX]",
+    "date": "[XX-As of date-XX]",
+    "save": "[XX-Save-XX]",
+    "saving": "[XX-Saving...-XX]",
+    "cancel": "[XX-Cancel-XX]",
+    "saved": "[XX-Value updated-XX]",
+    "failed": "[XX-Failed to update the value-XX]",
+    "invalid": "[XX-Enter a value and a date-XX]",
+    "memo": "[XX-Value adjustment-XX]"
+  }
+}

@@ -229,6 +229,15 @@ export class UpdateAccountDto {
   @IsDateString()
   dateAcquired?: string;
 
+  @ApiPropertyOptional({
+    description:
+      "Linked loan/mortgage account ID for the asset equity view (null to unlink)",
+  })
+  @IsOptional()
+  @ValidateIf((o) => o.linkedLoanAccountId !== null)
+  @IsUUID()
+  linkedLoanAccountId?: string | null;
+
   // Mortgage-specific fields
   @ApiPropertyOptional({
     example: true,
