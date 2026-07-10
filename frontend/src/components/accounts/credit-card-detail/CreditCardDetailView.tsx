@@ -1,13 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { format, startOfMonth } from 'date-fns';
 import { accountsApi } from '@/lib/accounts';
 import { transactionsApi } from '@/lib/transactions';
 import { DailyBalancePoint } from '@/lib/balance-history';
 import { createLogger } from '@/lib/logger';
-import { Button } from '@/components/ui/Button';
 import { BalanceHistoryChart } from '@/components/transactions/BalanceHistoryChart';
 import { CreditCardSummaryCards } from './CreditCardSummaryCards';
 import { StatementPanel } from './StatementPanel';
@@ -15,7 +14,6 @@ import { SpendingBreakdown } from './SpendingBreakdown';
 import { InterestAndFeesPanel } from './InterestAndFeesPanel';
 import { RecurringChargesPanel } from '@/components/accounts/shared/RecurringChargesPanel';
 import { PayoffCalculator } from './PayoffCalculator';
-import { PaymentSetupDialog } from './PaymentSetupDialog';
 import type { Account } from '@/types/account';
 import type { GroupedTotal } from '@/types/transaction';
 import type { StatementCycle, InterestPaid } from '@/types/credit-card-detail';
@@ -24,18 +22,15 @@ const logger = createLogger('CreditCardDetailView');
 
 interface CreditCardDetailViewProps {
   account: Account;
-  /** Reload the account itself (e.g. after a payment changes the balance). */
-  onAccountChanged?: () => void;
 }
 
 /**
  * The credit card detail body: key figures, statement cycle, balance history,
  * cycle spending breakdown, recurring charges, YTD interest/fees, and a payoff
- * calculator, plus a record/schedule payment action. Loads its own analytics
- * (the statement cycle is unavailable until a settlement day is configured, in
- * which case the panel shows a hint).
+ * calculator. Loads its own analytics (the statement cycle is unavailable until
+ * a settlement day is configured, in which case the panel shows a hint).
  */
-export function CreditCardDetailView({ account, onAccountChanged }: CreditCardDetailViewProps) {
+export function CreditCardDetailView({ account }: CreditCardDetailViewProps) {
   const t = useTranslations('accountDetail-creditCard');
   const currency = account.currencyCode;
 
@@ -46,8 +41,6 @@ export function CreditCardDetailView({ account, onAccountChanged }: CreditCardDe
   // Deriving loading from the last-resolved id avoids a synchronous setState in
   // the effect (matching LineOfCreditView).
   const [loadedForId, setLoadedForId] = useState<string | null>(null);
-  const [reloadKey, setReloadKey] = useState(0);
-  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const isLoading = loadedForId !== account.id;
 
   useEffect(() => {
@@ -69,6 +62,10 @@ export function CreditCardDetailView({ account, onAccountChanged }: CreditCardDe
             accountIds: [account.id],
             startDate: spendStart,
             endDate: spendEnd,
+            // Include charges from before the cycle start that have not yet
+            // been reconciled -- they usually cleared late but still count
+            // toward this cycle's spending.
+            includeUnreconciledBeforeStart: true,
           })
           .catch((error) => {
             logger.error('Failed to load spending breakdown:', error);
@@ -91,20 +88,10 @@ export function CreditCardDetailView({ account, onAccountChanged }: CreditCardDe
     return () => {
       cancelled = true;
     };
-  }, [account.id, reloadKey]);
-
-  const handlePaymentComplete = useCallback(() => {
-    // Refresh this view's analytics and let the page reload the account balance.
-    setReloadKey((k) => k + 1);
-    onAccountChanged?.();
-  }, [onAccountChanged]);
+  }, [account.id]);
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
-        <Button onClick={() => setIsPaymentOpen(true)}>{t('payment.open')}</Button>
-      </div>
-
       <CreditCardSummaryCards account={account} />
 
       <StatementPanel cycle={cycle} isLoading={isLoading} />
@@ -137,14 +124,6 @@ export function CreditCardDetailView({ account, onAccountChanged }: CreditCardDe
         balance={Math.abs(Number(account.currentBalance) || 0)}
         interestRate={account.interestRate}
         currencyCode={currency}
-      />
-
-      <PaymentSetupDialog
-        isOpen={isPaymentOpen}
-        onClose={() => setIsPaymentOpen(false)}
-        account={account}
-        cycle={cycle}
-        onComplete={handlePaymentComplete}
       />
     </div>
   );

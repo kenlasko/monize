@@ -2624,6 +2624,35 @@ describe("TransactionAnalyticsService", () => {
         { startDate: "2026-01-01" },
       );
     });
+
+    it("also keeps unreconciled pre-start charges when the flag is set", async () => {
+      await service.getGroupedTotals(userId, {
+        groupBy: "payee",
+        startDate: "2026-06-10",
+        endDate: "2026-07-09",
+        includeUnreconciledBeforeStart: true,
+      });
+
+      // The plain start-date lower bound is replaced by an OR that also keeps
+      // pre-cycle charges that are not yet reconciled (or voided).
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        "transaction.transactionDate >= :startDate",
+        { startDate: "2026-06-10" },
+      );
+      expect(mockQueryBuilder.orWhere).toHaveBeenCalledWith(
+        "(transaction.status IS NULL OR transaction.status NOT IN ('RECONCILED', 'VOID'))",
+      );
+      // endDate stays a hard upper bound.
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "transaction.transactionDate <= :endDate",
+        { endDate: "2026-07-09" },
+      );
+      // The unconditional start-date andWhere is not used in this mode.
+      expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith(
+        "transaction.transactionDate >= :startDate",
+        { startDate: "2026-06-10" },
+      );
+    });
   });
 
   describe("getTransactionBreakdownByTagKey", () => {

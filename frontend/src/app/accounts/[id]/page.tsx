@@ -213,7 +213,7 @@ function AccountDetailContent() {
           onBack={() => router.push('/accounts')}
         >
           {detailView === 'creditCard' ? (
-            <CreditCardDetailView account={account} onAccountChanged={loadData} />
+            <CreditCardDetailView account={account} />
           ) : detailView === 'banking' ? (
             <BankingDetailView account={account} />
           ) : detailView === 'investment' ? (

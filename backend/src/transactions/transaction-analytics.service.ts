@@ -408,6 +408,7 @@ export class TransactionAnalyticsService {
       excludeInvestmentLinked?: boolean;
       excludeTransfers?: boolean;
       tagIds?: string[];
+      includeUnreconciledBeforeStart?: boolean;
     },
   ) {
     const {
@@ -422,6 +423,7 @@ export class TransactionAnalyticsService {
       excludeInvestmentLinked,
       excludeTransfers,
       tagIds,
+      includeUnreconciledBeforeStart,
     } = filters;
 
     const queryBuilder = this.transactionsRepository
@@ -475,9 +477,26 @@ export class TransactionAnalyticsService {
     }
 
     if (startDate) {
-      queryBuilder.andWhere("transaction.transactionDate >= :startDate", {
-        startDate,
-      });
+      if (includeUnreconciledBeforeStart) {
+        // Credit-card "spending this cycle" widget: also count charges dated
+        // before the cycle start that have not yet been reconciled onto a
+        // statement. They usually posted late but still belong to what is
+        // owed. Reconciled and voided prior transactions stay excluded; a NULL
+        // status predates the status column and counts as unreconciled.
+        queryBuilder.andWhere(
+          new Brackets((qb) => {
+            qb.where("transaction.transactionDate >= :startDate", {
+              startDate,
+            }).orWhere(
+              "(transaction.status IS NULL OR transaction.status NOT IN ('RECONCILED', 'VOID'))",
+            );
+          }),
+        );
+      } else {
+        queryBuilder.andWhere("transaction.transactionDate >= :startDate", {
+          startDate,
+        });
+      }
     }
 
     if (endDate) {
@@ -625,6 +644,7 @@ export class TransactionAnalyticsService {
       amountFrom?: number;
       amountTo?: number;
       limit?: number;
+      includeUnreconciledBeforeStart?: boolean;
     },
   ): Promise<
     Array<{

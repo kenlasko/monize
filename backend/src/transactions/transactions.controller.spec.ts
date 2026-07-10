@@ -1057,7 +1057,33 @@ describe("TransactionsController", () => {
         amountFrom: -500,
         amountTo: 0,
         limit: 25,
+        includeUnreconciledBeforeStart: false,
       });
+    });
+
+    it("passes includeUnreconciledBeforeStart through as a boolean", async () => {
+      mockService.getGroupedTotals.mockResolvedValue([]);
+
+      await controller.getGroupedTotals(
+        mockReq,
+        "category",
+        undefined,
+        "2024-06-10",
+        "2024-07-09",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        "true",
+      );
+
+      expect(mockService.getGroupedTotals).toHaveBeenCalledWith(
+        "user-1",
+        expect.objectContaining({ includeUnreconciledBeforeStart: true }),
+      );
     });
 
     it("rejects a missing or invalid groupBy", () => {

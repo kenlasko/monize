@@ -585,6 +585,12 @@ export class TransactionsController {
     required: false,
     description: "Maximum number of groups returned (default 100, max 500)",
   })
+  @ApiQuery({
+    name: "includeUnreconciledBeforeStart",
+    required: false,
+    description:
+      "When true, also include transactions dated before startDate that are not yet reconciled (used by the credit-card cycle spending widget)",
+  })
   @ApiResponse({
     status: 200,
     description: "Grouped totals retrieved successfully",
@@ -603,6 +609,8 @@ export class TransactionsController {
     @Query("amountFrom") amountFrom?: string,
     @Query("amountTo") amountTo?: string,
     @Query("limit") limit?: string,
+    @Query("includeUnreconciledBeforeStart")
+    includeUnreconciledBeforeStart?: string,
   ) {
     if (groupBy !== "category" && groupBy !== "payee") {
       throw new BadRequestException(
@@ -660,6 +668,7 @@ export class TransactionsController {
       amountFrom: parsedAmountFrom,
       amountTo: parsedAmountTo,
       limit: parsedLimit,
+      includeUnreconciledBeforeStart: includeUnreconciledBeforeStart === "true",
     });
   }
 

@@ -266,6 +266,12 @@ export const transactionsApi = {
     amountFrom?: number;
     amountTo?: number;
     limit?: number;
+    /**
+     * Also include transactions dated before startDate that are not yet
+     * reconciled. Used by the credit-card cycle spending widget so late-posting
+     * charges from the previous cycle still show as owed.
+     */
+    includeUnreconciledBeforeStart?: boolean;
   }): Promise<GroupedTotal[]> => {
     const apiParams = {
       ...buildFilterParams(params),
@@ -276,6 +282,7 @@ export const transactionsApi = {
       amountFrom: params.amountFrom,
       amountTo: params.amountTo,
       limit: params.limit,
+      includeUnreconciledBeforeStart: params.includeUnreconciledBeforeStart,
     };
 
     const response = await apiClient.get<GroupedTotal[]>('/transactions/grouped-totals', {

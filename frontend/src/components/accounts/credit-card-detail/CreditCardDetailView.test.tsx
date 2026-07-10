@@ -121,6 +121,16 @@ describe('CreditCardDetailView', () => {
     );
   });
 
+  it('includes unreconciled pre-cycle charges in the spending breakdown', async () => {
+    await renderView();
+    await waitFor(() => expect(screen.getByText('Groceries')).toBeInTheDocument());
+    // Late-posting charges from before the cycle start still count toward the
+    // cycle's spending until they are reconciled.
+    expect(mockGetGroupedTotals).toHaveBeenCalledWith(
+      expect.objectContaining({ includeUnreconciledBeforeStart: true }),
+    );
+  });
+
   it('shows YTD interest and fees', async () => {
     await renderView();
     await waitFor(() => expect(screen.getByText('3 charges')).toBeInTheDocument());
@@ -142,9 +152,11 @@ describe('CreditCardDetailView', () => {
     );
   });
 
-  it('offers a make-a-payment action', async () => {
+  it('does not offer a make-a-payment action', async () => {
     await renderView();
-    expect(screen.getByRole('button', { name: 'Make a Payment' })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Make a Payment' }),
+    ).not.toBeInTheDocument();
   });
 
   it('shows the unavailable hint when no settlement day is configured', async () => {

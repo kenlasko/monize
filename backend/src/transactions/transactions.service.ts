@@ -2304,6 +2304,7 @@ export class TransactionsService {
       amountFrom?: number;
       amountTo?: number;
       limit?: number;
+      includeUnreconciledBeforeStart?: boolean;
     },
   ) {
     return this.analyticsService.getGroupedTotals(userId, params);
