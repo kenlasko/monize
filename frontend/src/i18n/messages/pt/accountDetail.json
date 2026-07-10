@@ -1,0 +1,33 @@
+{
+  "header": {
+    "viewTransactions": "Ver Transações",
+    "reconcile": "Reconciliar",
+    "edit": "Editar Conta",
+    "export": "Exportar",
+    "back": "Voltar às Contas"
+  },
+  "loading": "A carregar os detalhes da conta...",
+  "error": {
+    "retry": "Tentar novamente"
+  },
+  "recurring": {
+    "title": "Cobranças Recorrentes",
+    "subtitle": "Faturas agendadas nesta conta, além de possíveis subscrições encontradas nas suas transações",
+    "empty": "Nenhuma cobrança recorrente detetada nesta conta",
+    "scheduledTitle": "Agendadas",
+    "detectedTitle": "Possíveis cobranças recorrentes",
+    "detectedSubtitle": "Encontradas no seu histórico de transações mas ainda não agendadas",
+    "nextDue": "Próximo vencimento {date}",
+    "createBill": "Criar fatura",
+    "createBillAria": "Criar uma fatura agendada para {payee}",
+    "createTitle": "Nova Fatura Agendada",
+    "frequency": {
+      "weekly": "Semanal",
+      "biweekly": "Quinzenal",
+      "monthly": "Mensal",
+      "quarterly": "Trimestral",
+      "yearly": "Anual",
+      "irregular": "Irregular"
+    }
+  }
+}

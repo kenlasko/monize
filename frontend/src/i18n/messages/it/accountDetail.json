@@ -1,0 +1,33 @@
+{
+  "header": {
+    "viewTransactions": "Visualizza transazioni",
+    "reconcile": "Riconcilia",
+    "edit": "Modifica conto",
+    "export": "Esporta",
+    "back": "Torna ai conti"
+  },
+  "loading": "Caricamento dettagli conto...",
+  "error": {
+    "retry": "Riprova"
+  },
+  "recurring": {
+    "title": "Addebiti ricorrenti",
+    "subtitle": "Fatture pianificate su questo conto, oltre a possibili abbonamenti rilevati nelle sue transazioni",
+    "empty": "Nessun addebito ricorrente rilevato su questo conto",
+    "scheduledTitle": "Pianificati",
+    "detectedTitle": "Possibili addebiti ricorrenti",
+    "detectedSubtitle": "Rilevati nella cronologia delle transazioni ma non ancora pianificati",
+    "nextDue": "Prossima scadenza {date}",
+    "createBill": "Crea fattura",
+    "createBillAria": "Crea una fattura pianificata per {payee}",
+    "createTitle": "Nuova fattura pianificata",
+    "frequency": {
+      "weekly": "Settimanale",
+      "biweekly": "Ogni 2 settimane",
+      "monthly": "Mensile",
+      "quarterly": "Trimestrale",
+      "yearly": "Annuale",
+      "irregular": "Irregolare"
+    }
+  }
+}

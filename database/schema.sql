@@ -141,6 +141,7 @@ CREATE TABLE accounts (
     -- Asset-specific fields
     asset_category_id UUID, -- category for tracking value changes on asset accounts (FK added after categories table)
     date_acquired DATE, -- date the asset was acquired (for net worth historical accuracy)
+    linked_loan_account_id UUID, -- asset's financing loan/mortgage (self-referential FK added below; for the equity view)
     -- Mortgage-specific fields
     is_canadian_mortgage BOOLEAN DEFAULT false, -- Canadian mortgages use semi-annual compounding for fixed rates
     is_variable_rate BOOLEAN DEFAULT false, -- Variable rate mortgages use monthly compounding
@@ -164,6 +165,7 @@ CREATE INDEX idx_accounts_user ON accounts(user_id);
 CREATE INDEX idx_accounts_type ON accounts(account_type);
 CREATE INDEX idx_accounts_account_sub_type ON accounts(account_sub_type);
 CREATE INDEX idx_accounts_linked_account_id ON accounts(linked_account_id);
+CREATE INDEX idx_accounts_linked_loan_account_id ON accounts(linked_loan_account_id);
 CREATE INDEX idx_accounts_asset_category ON accounts(asset_category_id);
 CREATE INDEX idx_accounts_term_end_date ON accounts(term_end_date) WHERE account_type = 'MORTGAGE' AND term_end_date IS NOT NULL;
 CREATE INDEX idx_accounts_interest_category ON accounts(interest_category_id);
@@ -481,6 +483,8 @@ ALTER TABLE accounts ADD CONSTRAINT fk_accounts_asset_category
     FOREIGN KEY (asset_category_id) REFERENCES categories(id) ON DELETE SET NULL;
 ALTER TABLE accounts ADD CONSTRAINT fk_accounts_institution
     FOREIGN KEY (institution_id) REFERENCES institutions(id) ON DELETE SET NULL;
+ALTER TABLE accounts ADD CONSTRAINT fk_accounts_linked_loan_account
+    FOREIGN KEY (linked_loan_account_id) REFERENCES accounts(id) ON DELETE SET NULL;
 
 -- Scheduled Transaction Overrides (for modifying individual occurrences)
 CREATE TABLE scheduled_transaction_overrides (

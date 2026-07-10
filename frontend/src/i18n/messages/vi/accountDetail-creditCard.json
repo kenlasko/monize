@@ -1,0 +1,75 @@
+{
+  "summary": {
+    "currentBalance": "Số dư hiện tại",
+    "creditLimit": "Hạn mức tín dụng",
+    "availableCredit": "Tín dụng khả dụng",
+    "utilization": "Mức sử dụng",
+    "interestRate": "Lãi suất",
+    "notSet": "Chưa đặt"
+  },
+  "statement": {
+    "title": "Chu kỳ sao kê hiện tại",
+    "cycleWindow": "Chu kỳ: {start} đến {end}",
+    "statementBalance": "Số dư sao kê",
+    "statementBalanceNote": "Tính đến ngày {date}",
+    "amountPaid": "Đã trả từ khi sao kê",
+    "paymentDue": "Khoản phải trả",
+    "settlement": "Sao kê chốt",
+    "settlesIn": "{days, plural, =0 {Chốt hôm nay} one {Chốt sau # ngày} other {Chốt sau # ngày}}",
+    "dueIn": "{days, plural, =0 {Đến hạn hôm nay} one {Còn # ngày} other {Còn # ngày}}",
+    "noDueDate": "Chưa đặt ngày đến hạn",
+    "unavailable": "Chu kỳ sao kê không khả dụng",
+    "unavailableHint": "Đặt ngày chốt sao kê cho thẻ này để xem chu kỳ của nó."
+  },
+  "chart": {
+    "title": "Lịch sử số dư",
+    "empty": "Chưa có lịch sử số dư"
+  },
+  "spending": {
+    "title": "Chi tiêu trong chu kỳ này",
+    "uncategorised": "Chưa phân loại",
+    "empty": "Không có chi tiêu nào được ghi nhận trong chu kỳ này"
+  },
+  "interestAndFees": {
+    "title": "Lãi & Phí",
+    "ytd": "Từ đầu năm đến nay",
+    "charges": "{count, plural, one {# khoản phí} other {# khoản phí}}",
+    "none": "Không có lãi hoặc phí nào trong năm nay"
+  },
+  "payoff": {
+    "title": "Công cụ tính trả hết nợ",
+    "description": "Ước tính số dư hiện tại mất bao lâu để trả hết với một khoản trả cố định hàng tháng.",
+    "monthlyPayment": "Khoản trả hàng tháng",
+    "payoffTime": "Trả hết trong",
+    "totalInterest": "Tổng lãi",
+    "payoffDate": "Ngày trả hết",
+    "months": "{count, plural, one {# tháng} other {# tháng}}",
+    "neverPaysOff": "Với khoản trả này, số dư không bao giờ hết -- nó không đủ bù lãi hàng tháng.",
+    "noBalance": "Thẻ này không có số dư để trả."
+  },
+  "payment": {
+    "open": "Thực hiện thanh toán",
+    "title": "Thực hiện thanh toán",
+    "amountType": "Số tiền",
+    "statementBalance": "Số dư sao kê",
+    "fullBalance": "Toàn bộ số dư",
+    "custom": "Tùy chỉnh",
+    "fromAccount": "Từ tài khoản",
+    "selectAccount": "Chọn một tài khoản",
+    "noFundingAccounts": "Không có tài khoản thanh toán, tiết kiệm hoặc tiền mặt cùng loại tiền tệ để thanh toán.",
+    "date": "Ngày thanh toán",
+    "mode": "Khi nào",
+    "recordNow": "Ghi nhận ngay",
+    "scheduleMonthly": "Lên lịch hàng tháng",
+    "cancel": "Hủy",
+    "submitRecord": "Ghi nhận thanh toán",
+    "submitSchedule": "Lên lịch thanh toán",
+    "submitting": "Đang gửi...",
+    "recordName": "Thanh toán cho {name}",
+    "toastRecorded": "Đã ghi nhận thanh toán",
+    "toastScheduled": "Đã lên lịch thanh toán hàng tháng",
+    "toastFailed": "Không thể gửi thanh toán",
+    "fillRequired": "Chọn số tiền, một tài khoản thanh toán và một ngày"
+  },
+  "loadFailed": "Không thể tải chi tiết thẻ tín dụng"
+}

@@ -1,0 +1,33 @@
+{
+  "summary": {
+    "currentBalance": "目前結餘",
+    "projectedBalance": "預估結餘",
+    "projectedNote": "90 天後",
+    "moneyIn": "收入",
+    "moneyOut": "支出",
+    "thisMonth": "本月",
+    "interestRate": "利率",
+    "interestEarnedYtd": "已賺取利息",
+    "ytd": "年初至今",
+    "averageBalance": "平均結餘",
+    "averageNote": "過去 12 個月"
+  },
+  "chart": {
+    "title": "結餘歷史",
+    "empty": "尚無結餘歷史"
+  },
+  "cashFlow": {
+    "title": "現金流",
+    "subtitle": "過去 12 個月的淨流量",
+    "empty": "過去 12 個月無活動"
+  },
+  "topCategories": {
+    "title": "主要類別",
+    "empty": "本月無已分類活動"
+  },
+  "topPayees": {
+    "title": "主要收款人",
+    "empty": "本月無收款人活動"
+  },
+  "uncategorised": "未分類"
+}

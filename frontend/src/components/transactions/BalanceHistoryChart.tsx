@@ -130,6 +130,21 @@ export function BalanceHistoryChart({
 
   const summary = useMemo(() => computeBalanceSummary(chartData), [chartData]);
 
+  // Date of the last point on or before today, when future (projected) points
+  // follow it -- used to draw the "history vs projection" divider line.
+  const futureDivider = useMemo(() => {
+    if (chartData.length === 0) return null;
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    let anchor: string | null = null;
+    let hasFuture = false;
+    for (const point of chartData) {
+      if (point.date <= todayStr) anchor = point.date;
+      else hasFuture = true;
+    }
+    return hasFuture ? anchor : null;
+  }, [chartData]);
+
   const areaGradient = useMemo(
     () => computeBalanceGradient(chartData.map((point) => point.balance)),
     [chartData],
@@ -227,6 +242,20 @@ export function BalanceHistoryChart({
               strokeDasharray="5 5"
               strokeOpacity={0.5}
             />
+            {futureDivider && (
+              <ReferenceLine
+                x={futureDivider}
+                stroke={chartColors.axis}
+                strokeDasharray="4 4"
+                strokeWidth={2}
+                label={{
+                  value: t('charts.balanceHistory.projected'),
+                  position: 'insideTopRight',
+                  fill: chartColors.axis,
+                  fontSize: 11,
+                }}
+              />
+            )}
             {summary && summary.minBalance !== summary.startBalance && (
               <ReferenceLine
                 y={summary.minBalance}

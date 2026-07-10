@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { format, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -13,6 +12,7 @@ import { LoanRateChange } from '@/types/loan-rate-change';
 import { Account } from '@/types/account';
 import { getErrorMessage } from '@/lib/errors';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useDateFormat } from '@/hooks/useDateFormat';
 
 type PaymentMode = 'keep' | 'set' | 'recalculate';
 
@@ -48,6 +48,7 @@ const emptyForm = (): FormState => ({
 export function RateHistoryPanel({ account, rateChanges, onChanged }: RateHistoryPanelProps) {
   const t = useTranslations('accounts');
   const { formatCurrency } = useNumberFormat();
+  const { formatDate } = useDateFormat();
 
   const [formModal, setFormModal] = useState<
     { mode: 'add' } | { mode: 'edit'; change: LoanRateChange } | null
@@ -214,7 +215,7 @@ export function RateHistoryPanel({ account, rateChanges, onChanged }: RateHistor
             >
               <div className="min-w-0">
                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                  <span>{format(parseISO(change.effectiveDate), 'MMM d, yyyy')}</span>
+                  <span>{formatDate(change.effectiveDate)}</span>
                   <span className="text-blue-600 dark:text-blue-400">
                     {t('loanDetail.rateHistory.rateValue', { rate: change.annualRate })}
                   </span>
@@ -338,7 +339,7 @@ export function RateHistoryPanel({ account, rateChanges, onChanged }: RateHistor
         title={t('loanDetail.rateHistory.deleteTitle')}
         message={t('loanDetail.rateHistory.deleteMessage', {
           date: changeToDelete
-            ? format(parseISO(changeToDelete.effectiveDate), 'MMM d, yyyy')
+            ? formatDate(changeToDelete.effectiveDate)
             : '',
         })}
         confirmLabel={t('loanDetail.rateHistory.delete')}

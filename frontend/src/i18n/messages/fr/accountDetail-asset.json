@@ -1,0 +1,45 @@
+{
+  "summary": {
+    "currentValue": "Valeur actuelle",
+    "purchaseValue": "Valeur d'achat",
+    "appreciation": "Plus-value totale",
+    "annualized": "Annualisé",
+    "category": "Catégorie",
+    "notSet": "Non défini",
+    "acquired": "Acquis le {date}"
+  },
+  "chart": {
+    "title": "Historique de la valeur",
+    "empty": "Aucun historique de valeur pour l'instant"
+  },
+  "equity": {
+    "title": "Valeur nette",
+    "subtitle": "Valeur de l'actif moins le solde du prêt lié",
+    "assetValue": "Valeur de l'actif",
+    "loanBalance": "Solde du prêt",
+    "equity": "Valeur nette",
+    "chartTitle": "Valeur nette dans le temps",
+    "linkPrompt": "Liez un prêt ou un prêt hypothécaire pour suivre la valeur nette de cet actif.",
+    "selectLoan": "Sélectionner un prêt",
+    "link": "Lier un prêt",
+    "linkedTo": "Lié à {name}",
+    "unlink": "Dissocier",
+    "noLoans": "Aucun compte de prêt ou de prêt hypothécaire disponible à lier.",
+    "linked": "Prêt lié",
+    "unlinked": "Prêt dissocié",
+    "actionFailed": "Échec de la mise à jour du prêt lié"
+  },
+  "updateValue": {
+    "open": "Mettre à jour la valeur",
+    "title": "Mettre à jour la valeur de l'actif",
+    "newValue": "Nouvelle valeur",
+    "date": "En date du",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "cancel": "Annuler",
+    "saved": "Valeur mise à jour",
+    "failed": "Échec de la mise à jour de la valeur",
+    "invalid": "Saisissez une valeur et une date",
+    "memo": "Ajustement de valeur"
+  }
+}

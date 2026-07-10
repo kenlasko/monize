@@ -51,7 +51,7 @@
     "currentBalance": "当前余额",
     "nextPayment": "下次还款",
     "viewBills": "在账单与存款中查看",
-    "loanDetails": "查看详情",
+    "viewDetailsAria": "查看账户详情",
     "type": "类型",
     "accountNumber": "账户号码",
     "currency": "货币",
@@ -458,7 +458,8 @@
       "current": "当前",
       "ending": "结算",
       "lowest": "最低",
-      "minBalance": "最低余额"
+      "minBalance": "最低余额",
+      "projected": "预测"
     },
     "monthlyTotals": {
       "title": "月度合计",

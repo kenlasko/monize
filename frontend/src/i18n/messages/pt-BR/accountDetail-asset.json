@@ -1,0 +1,45 @@
+{
+  "summary": {
+    "currentValue": "Valor Atual",
+    "purchaseValue": "Valor de Compra",
+    "appreciation": "Valorização Total",
+    "annualized": "Anualizada",
+    "category": "Categoria",
+    "notSet": "Não definido",
+    "acquired": "Adquirido em {date}"
+  },
+  "chart": {
+    "title": "Histórico de Valor",
+    "empty": "Ainda não há histórico de valor"
+  },
+  "equity": {
+    "title": "Patrimônio",
+    "subtitle": "Valor do ativo menos o saldo do empréstimo associado",
+    "assetValue": "Valor do Ativo",
+    "loanBalance": "Saldo do Empréstimo",
+    "equity": "Patrimônio",
+    "chartTitle": "Patrimônio ao Longo do Tempo",
+    "linkPrompt": "Associe um empréstimo ou hipoteca para acompanhar o patrimônio deste ativo.",
+    "selectLoan": "Selecione um empréstimo",
+    "link": "Associar Empréstimo",
+    "linkedTo": "Associado a {name}",
+    "unlink": "Desassociar",
+    "noLoans": "Não há contas de empréstimo ou hipoteca disponíveis para associar.",
+    "linked": "Empréstimo associado",
+    "unlinked": "Empréstimo desassociado",
+    "actionFailed": "Falha ao atualizar o empréstimo associado"
+  },
+  "updateValue": {
+    "open": "Atualizar Valor",
+    "title": "Atualizar Valor do Ativo",
+    "newValue": "Novo Valor",
+    "date": "Na data de",
+    "save": "Salvar",
+    "saving": "Salvando...",
+    "cancel": "Cancelar",
+    "saved": "Valor atualizado",
+    "failed": "Falha ao atualizar o valor",
+    "invalid": "Insira um valor e uma data",
+    "memo": "Ajuste de valor"
+  }
+}

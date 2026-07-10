@@ -8,6 +8,7 @@ import {
   ChevronDoubleLeftIcon,
   EyeIcon,
   EyeSlashIcon,
+  ChartBarIcon,
 } from '@heroicons/react/24/outline';
 import { Account } from '@/types/account';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
@@ -71,9 +72,6 @@ export function AccountInfoWidget({
 
   const isCreditCard = account.accountType === 'CREDIT_CARD';
   const isLiability = ['CREDIT_CARD', 'LOAN', 'MORTGAGE', 'LINE_OF_CREDIT'].includes(
-    account.accountType,
-  );
-  const hasLoanDetails = ['LOAN', 'MORTGAGE', 'LINE_OF_CREDIT'].includes(
     account.accountType,
   );
   const balance = currentBalance ?? (Number(account.currentBalance) || 0);
@@ -172,6 +170,15 @@ export function AccountInfoWidget({
           </div>
         </div>
         <div className="flex items-center gap-0.5 flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => router.push(`/accounts/${account.id}`)}
+            aria-label={t('accountWidget.viewDetailsAria')}
+            title={t('accountWidget.viewDetailsAria')}
+            className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-1"
+          >
+            <ChartBarIcon className="h-5 w-5" />
+          </button>
           <button
             type="button"
             onClick={onEdit}
@@ -295,15 +302,6 @@ export function AccountInfoWidget({
         </p>
       )}
 
-      {hasLoanDetails && (
-        <button
-          type="button"
-          onClick={() => router.push(`/accounts/${account.id}`)}
-          className="mt-4 w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors"
-        >
-          {t('accountWidget.loanDetails')}
-        </button>
-      )}
     </div>
   );
 }

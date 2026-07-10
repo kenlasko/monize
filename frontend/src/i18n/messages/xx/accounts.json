@@ -78,7 +78,7 @@
       "closeTitleEnabled": "[XX-Close account-XX]",
       "balanceMustBeZero": "[XX-Balance must be zero-XX]",
       "closedPrefix": "[XX- — Closed-XX]",
-      "loanDetails": "[XX-Loan Details-XX]"
+      "details": "[XX-Details-XX]"
     }
   },
   "contextMenu": {
@@ -388,6 +388,8 @@
       "deletedToast": "[XX-Rate change deleted-XX]",
       "saveFailed": "[XX-Failed to save rate change-XX]",
       "deleteFailed": "[XX-Failed to delete rate change-XX]",
+      "deleteTitle": "[XX-Delete Rate Change-XX]",
+      "deleteMessage": "[XX-Delete the rate change effective {date}? This cannot be undone.-XX]",
       "detectTitle": "[XX-Detect Rate Changes-XX]",
       "detectMessage": "[XX-This analyzes your payment history and replaces previously detected entries. Entries you added or edited yourself are kept.-XX]",
       "detectedToast": "[XX-{count, plural, =0 {No new rate changes detected} one {# rate change detected} other {# rate changes detected}}-XX]",
@@ -446,7 +448,9 @@
       "renamedToast": "[XX-Scenario renamed to \"{name}\"-XX]",
       "deletedToast": "[XX-Scenario \"{name}\" deleted-XX]",
       "saveFailed": "[XX-Failed to save scenario-XX]",
-      "deleteFailed": "[XX-Failed to delete scenario-XX]"
+      "deleteFailed": "[XX-Failed to delete scenario-XX]",
+      "deleteTitle": "[XX-Delete Scenario-XX]",
+      "deleteMessage": "[XX-Delete the scenario \"{name}\"? This cannot be undone.-XX]"
     },
     "pastImpact": {
       "title": "[XX-Impact of Overpayments Made-XX]",

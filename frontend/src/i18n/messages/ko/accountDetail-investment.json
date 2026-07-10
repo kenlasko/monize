@@ -1,0 +1,10 @@
+{
+  "openInInvestments": "투자에서 열기",
+  "income": {
+    "title": "투자 수익",
+    "dividendsInterest": "배당 및 이자",
+    "realizedGains": "실현 손익",
+    "ytd": "연초 이후",
+    "empty": "올해 투자 수익이 없습니다"
+  }
+}

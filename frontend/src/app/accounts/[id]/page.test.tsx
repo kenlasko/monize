@@ -47,11 +47,13 @@ vi.mock('@/hooks/useNumberFormat', () => ({
 const mockGetById = vi.fn();
 const mockDetectLoanPayments = vi.fn();
 const mockGetDailyBalances = vi.fn();
+const mockGetBalanceForecast = vi.fn();
 vi.mock('@/lib/accounts', () => ({
   accountsApi: {
     getById: (...args: unknown[]) => mockGetById(...args),
     detectLoanPayments: (...args: unknown[]) => mockDetectLoanPayments(...args),
     getDailyBalances: (...args: unknown[]) => mockGetDailyBalances(...args),
+    getBalanceForecast: (...args: unknown[]) => mockGetBalanceForecast(...args),
   },
 }));
 
@@ -62,9 +64,17 @@ vi.mock('@/components/transactions/BalanceHistoryChart', () => ({
 }));
 
 const mockGetAllTransactions = vi.fn();
+const mockGetSummary = vi.fn();
+const mockGetMonthlyTotals = vi.fn();
+const mockGetGroupedTotals = vi.fn();
+const mockGetRecurringCharges = vi.fn();
 vi.mock('@/lib/transactions', () => ({
   transactionsApi: {
     getAll: (...args: unknown[]) => mockGetAllTransactions(...args),
+    getSummary: (...args: unknown[]) => mockGetSummary(...args),
+    getMonthlyTotals: (...args: unknown[]) => mockGetMonthlyTotals(...args),
+    getGroupedTotals: (...args: unknown[]) => mockGetGroupedTotals(...args),
+    getRecurringCharges: (...args: unknown[]) => mockGetRecurringCharges(...args),
   },
 }));
 
@@ -111,6 +121,14 @@ vi.mock('@/components/ui/LoadingSpinner', () => ({
   LoadingSpinner: () => <div data-testid="loading-spinner">Loading...</div>,
 }));
 
+// RecurringChargesPanel (rendered by the banking/credit-card views) loads
+// scheduled transactions; stub it so the panel makes no real request.
+vi.mock('@/lib/scheduled-transactions', () => ({
+  scheduledTransactionsApi: {
+    getAll: () => Promise.resolve([]),
+  },
+}));
+
 function makeAccount(overrides: Partial<Account> = {}): Account {
   return {
     id: 'loan-1',
@@ -154,6 +172,11 @@ beforeEach(() => {
     ],
     pagination: { hasMore: false },
   });
+  mockGetSummary.mockResolvedValue({ totalIncome: 100, totalExpenses: 40, netCashFlow: 60, transactionCount: 3 });
+  mockGetBalanceForecast.mockResolvedValue({ accountId: 'loan-1', currencyCode: 'CAD', points: [] });
+  mockGetMonthlyTotals.mockResolvedValue([]);
+  mockGetGroupedTotals.mockResolvedValue([]);
+  mockGetRecurringCharges.mockResolvedValue([]);
 });
 
 describe('AccountDetailPage', () => {
@@ -179,12 +202,28 @@ describe('AccountDetailPage', () => {
     expect(screen.getByText('Est. Payoff')).toBeInTheDocument();
   });
 
-  it('redirects non-loan accounts to their transaction register', async () => {
-    mockGetById.mockResolvedValue(makeAccount({ accountType: 'CHEQUING' }));
+  it('redirects account types without a registered detail view to their register', async () => {
+    // Every real account type now has a detail page; an unrecognised type falls
+    // back to the register.
+    mockGetById.mockResolvedValue(
+      makeAccount({ accountType: 'UNKNOWN' as unknown as Account['accountType'] }),
+    );
 
     await renderPage();
 
     expect(mockReplace).toHaveBeenCalledWith('/transactions?accountId=loan-1');
+  });
+
+  it('renders the banking detail view for a chequing account', async () => {
+    mockGetById.mockResolvedValue(makeAccount({ accountType: 'CHEQUING', name: 'Everyday Chequing' }));
+
+    await renderPage();
+
+    expect(screen.getByText('Everyday Chequing')).toBeInTheDocument();
+    expect(screen.getByText('Cash Flow')).toBeInTheDocument();
+    expect(mockReplace).not.toHaveBeenCalled();
+    // Banking uses its own analytics, not the loan transaction history.
+    expect(mockGetAllScenarios).not.toHaveBeenCalled();
   });
 
   it('shows the revolving balance-history view for a line of credit', async () => {

@@ -1,0 +1,10 @@
+{
+  "openInInvestments": "Open in Investments",
+  "income": {
+    "title": "Investment Income",
+    "dividendsInterest": "Dividends & Interest",
+    "realizedGains": "Realized Gains",
+    "ytd": "Year to date",
+    "empty": "No investment income this year"
+  }
+}

@@ -78,7 +78,7 @@
       "closeTitleEnabled": "Hesabı kapat",
       "balanceMustBeZero": "Bakiye sıfır olmalıdır",
       "closedPrefix": " — Kapalı",
-      "loanDetails": "Kredi Ayrıntıları"
+      "details": "Ayrıntılar"
     }
   },
   "contextMenu": {
@@ -411,7 +411,9 @@
       "renamedToast": "Senaryo \"{name}\" olarak yeniden adlandırıldı",
       "deletedToast": "\"{name}\" senaryosu silindi",
       "saveFailed": "Senaryo kaydedilemedi",
-      "deleteFailed": "Senaryo silinemedi"
+      "deleteFailed": "Senaryo silinemedi",
+      "deleteTitle": "Senaryoyu Sil",
+      "deleteMessage": "\"{name}\" senaryosu silinsin mi? Bu işlem geri alınamaz."
     },
     "pastImpact": {
       "title": "Yapılan Erken Ödemelerin Etkisi",
@@ -468,6 +470,8 @@
       "deletedToast": "Faiz değişikliği silindi",
       "saveFailed": "Faiz değişikliği kaydedilemedi",
       "deleteFailed": "Faiz değişikliği silinemedi",
+      "deleteTitle": "Faiz Değişikliğini Sil",
+      "deleteMessage": "{date} tarihinde geçerli olan faiz değişikliği silinsin mi? Bu işlem geri alınamaz.",
       "detectTitle": "Faiz Değişikliklerini Algıla",
       "detectMessage": "Bu, ödeme geçmişinizi analiz eder ve önceden algılanan girişleri değiştirir. Kendiniz eklediğiniz veya düzenlediğiniz girişler korunur.",
       "detectedToast": "{count, plural, =0 {Yeni faiz değişikliği algılanmadı} one {# faiz değişikliği algılandı} other {# faiz değişikliği algılandı}}",

@@ -1,0 +1,33 @@
+{
+  "header": {
+    "viewTransactions": "Voir les transactions",
+    "reconcile": "Rapprocher",
+    "edit": "Modifier le compte",
+    "export": "Exporter",
+    "back": "Retour aux comptes"
+  },
+  "loading": "Chargement des détails du compte…",
+  "error": {
+    "retry": "Réessayer"
+  },
+  "recurring": {
+    "title": "Frais récurrents",
+    "subtitle": "Factures planifiées sur ce compte, ainsi que d'éventuels abonnements détectés dans ses transactions",
+    "empty": "Aucun frais récurrent détecté sur ce compte",
+    "scheduledTitle": "Planifiés",
+    "detectedTitle": "Frais récurrents possibles",
+    "detectedSubtitle": "Trouvés dans votre historique de transactions mais pas encore planifiés",
+    "nextDue": "Prochaine échéance {date}",
+    "createBill": "Créer une facture",
+    "createBillAria": "Créer une facture planifiée pour {payee}",
+    "createTitle": "Nouvelle facture planifiée",
+    "frequency": {
+      "weekly": "Hebdomadaire",
+      "biweekly": "Toutes les 2 semaines",
+      "monthly": "Mensuel",
+      "quarterly": "Trimestriel",
+      "yearly": "Annuel",
+      "irregular": "Irrégulier"
+    }
+  }
+}

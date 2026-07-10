@@ -1,0 +1,75 @@
+{
+  "summary": {
+    "currentBalance": "現在残高",
+    "creditLimit": "クレジット限度額",
+    "availableCredit": "利用可能枠",
+    "utilization": "利用率",
+    "interestRate": "金利",
+    "notSet": "未設定"
+  },
+  "statement": {
+    "title": "現在の請求サイクル",
+    "cycleWindow": "サイクル: {start}～{end}",
+    "statementBalance": "請求残高",
+    "statementBalanceNote": "{date}時点",
+    "amountPaid": "請求後の支払額",
+    "paymentDue": "支払期日",
+    "settlement": "請求締め",
+    "settlesIn": "{days, plural, =0 {本日締め} one {あと#日で締め} other {あと#日で締め}}",
+    "dueIn": "{days, plural, =0 {本日期日} one {残り#日} other {残り#日}}",
+    "noDueDate": "支払期日が未設定です",
+    "unavailable": "請求サイクルを利用できません",
+    "unavailableHint": "このカードに請求締め日を設定すると、サイクルが表示されます。"
+  },
+  "chart": {
+    "title": "残高履歴",
+    "empty": "まだ残高の履歴がありません"
+  },
+  "spending": {
+    "title": "今サイクルの支出",
+    "uncategorised": "未分類",
+    "empty": "今サイクルに記録された支出はありません"
+  },
+  "interestAndFees": {
+    "title": "利息と手数料",
+    "ytd": "年初来",
+    "charges": "{count, plural, one {#件の請求} other {#件の請求}}",
+    "none": "今年は利息や手数料の請求はありません"
+  },
+  "payoff": {
+    "title": "完済シミュレーター",
+    "description": "毎月一定額を支払った場合に現在の残高を完済するまでの期間を試算します。",
+    "monthlyPayment": "毎月の支払額",
+    "payoffTime": "完済まで",
+    "totalInterest": "総利息",
+    "payoffDate": "完済日",
+    "months": "{count, plural, one {#か月} other {#か月}}",
+    "neverPaysOff": "この支払額では残高が完済されません。毎月の利息を賄えていません。",
+    "noBalance": "このカードには完済すべき残高がありません。"
+  },
+  "payment": {
+    "open": "支払いを行う",
+    "title": "支払いを行う",
+    "amountType": "金額",
+    "statementBalance": "請求残高",
+    "fullBalance": "全額",
+    "custom": "カスタム",
+    "fromAccount": "支払元口座",
+    "selectAccount": "口座を選択",
+    "noFundingAccounts": "支払いに利用できる同一通貨の当座、普通、または現金の口座がありません。",
+    "date": "支払日",
+    "mode": "実行タイミング",
+    "recordNow": "今すぐ記録",
+    "scheduleMonthly": "毎月予定",
+    "cancel": "キャンセル",
+    "submitRecord": "支払いを記録",
+    "submitSchedule": "支払いを予定",
+    "submitting": "送信中...",
+    "recordName": "{name}への支払い",
+    "toastRecorded": "支払いを記録しました",
+    "toastScheduled": "毎月の支払いを予定しました",
+    "toastFailed": "支払いの送信に失敗しました",
+    "fillRequired": "金額、支払元口座、日付を選択してください"
+  },
+  "loadFailed": "クレジットカードの詳細の読み込みに失敗しました"
+}

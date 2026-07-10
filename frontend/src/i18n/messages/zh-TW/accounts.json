@@ -78,7 +78,7 @@
       "closeTitleEnabled": "關閉科目",
       "balanceMustBeZero": "結餘必須為零",
       "closedPrefix": " — 已關閉",
-      "loanDetails": "貸款詳情"
+      "details": "詳情"
     }
   },
   "contextMenu": {
@@ -411,7 +411,9 @@
       "renamedToast": "情境已重新命名為「{name}」",
       "deletedToast": "情境「{name}」已刪除",
       "saveFailed": "無法儲存情境",
-      "deleteFailed": "無法刪除情境"
+      "deleteFailed": "無法刪除情境",
+      "deleteTitle": "刪除情境",
+      "deleteMessage": "刪除情境 \"{name}\"？此操作無法復原。"
     },
     "pastImpact": {
       "title": "已完成提前還款的影響",
@@ -468,6 +470,8 @@
       "deletedToast": "已刪除利率變更",
       "saveFailed": "無法儲存利率變更",
       "deleteFailed": "無法刪除利率變更",
+      "deleteTitle": "刪除利率變更",
+      "deleteMessage": "刪除自 {date} 起生效的利率變更？此操作無法復原。",
       "detectTitle": "偵測利率變更",
       "detectMessage": "此操作會分析您的還款紀錄並取代先前偵測到的項目。您自己新增或編輯的項目將予以保留。",
       "detectedToast": "{count, plural, =0 {未偵測到新的利率變更} one {偵測到 # 項利率變更} other {偵測到 # 項利率變更}}",

@@ -2,10 +2,10 @@
 
 import { Fragment, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { format, parseISO } from 'date-fns';
 import { LoanPaymentEvent } from '@/lib/loan-history';
 import { ScheduleRow } from '@/lib/loan-schedule';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useDateFormat } from '@/hooks/useDateFormat';
 
 const COLLAPSED_ROW_COUNT = 24;
 
@@ -41,6 +41,7 @@ export function AmortizationScheduleTable({
 }: AmortizationScheduleTableProps) {
   const t = useTranslations('accounts');
   const { formatCurrency } = useNumberFormat();
+  const { formatDate } = useDateFormat();
   const [showAllRows, setShowAllRows] = useState(false);
 
   const rows = useMemo((): DisplayRow[] => {
@@ -144,7 +145,7 @@ export function AmortizationScheduleTable({
                           {row.paymentNumber}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                          {format(parseISO(row.date), 'MMM d, yyyy')}
+                          {formatDate(row.date)}
                           {row.isProjected && (
                             <span className="ml-1.5 text-xs text-blue-500 dark:text-blue-400">*</span>
                           )}

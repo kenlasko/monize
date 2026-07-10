@@ -1,0 +1,10 @@
+{
+  "openInInvestments": "[XX-Open in Investments-XX]",
+  "income": {
+    "title": "[XX-Investment Income-XX]",
+    "dividendsInterest": "[XX-Dividends & Interest-XX]",
+    "realizedGains": "[XX-Realized Gains-XX]",
+    "ytd": "[XX-Year to date-XX]",
+    "empty": "[XX-No investment income this year-XX]"
+  }
+}

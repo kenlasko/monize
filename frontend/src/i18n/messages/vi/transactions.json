@@ -51,7 +51,7 @@
     "currentBalance": "Số tiền còn lại",
     "nextPayment": "Lần thanh toán tiếp theo",
     "viewBills": "Xem trong Hóa đơn & Tiền gửi",
-    "loanDetails": "Xem chi tiết",
+    "viewDetailsAria": "Xem chi tiết tài khoản",
     "type": "Loại",
     "accountNumber": "Số tài khoản",
     "currency": "Tiền tệ",
@@ -458,7 +458,8 @@
       "current": "Hiện tại",
       "ending": "Kết thúc",
       "lowest": "Thấp nhất",
-      "minBalance": "Số dư tối thiểu"
+      "minBalance": "Số dư tối thiểu",
+      "projected": "Dự kiến"
     },
     "monthlyTotals": {
       "title": "Tổng hàng tháng",

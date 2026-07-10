@@ -78,7 +78,7 @@
       "closeTitleEnabled": "Cerrar cuenta",
       "balanceMustBeZero": "El saldo debe ser cero",
       "closedPrefix": " — Cerrada",
-      "loanDetails": "Detalles del préstamo"
+      "details": "Detalles"
     }
   },
   "contextMenu": {
@@ -411,7 +411,9 @@
       "renamedToast": "Escenario renombrado a \"{name}\"",
       "deletedToast": "Escenario \"{name}\" eliminado",
       "saveFailed": "No se pudo guardar el escenario",
-      "deleteFailed": "No se pudo eliminar el escenario"
+      "deleteFailed": "No se pudo eliminar el escenario",
+      "deleteTitle": "Eliminar escenario",
+      "deleteMessage": "¿Eliminar el escenario \"{name}\"? Esta acción no se puede deshacer."
     },
     "pastImpact": {
       "title": "Impacto de los pagos anticipados realizados",
@@ -468,6 +470,8 @@
       "deletedToast": "Cambio de tasa eliminado",
       "saveFailed": "No se pudo guardar el cambio de tasa",
       "deleteFailed": "No se pudo eliminar el cambio de tasa",
+      "deleteTitle": "Eliminar cambio de tasa",
+      "deleteMessage": "¿Eliminar el cambio de tasa con efecto el {date}? Esta acción no se puede deshacer.",
       "detectTitle": "Detectar cambios de tasa",
       "detectMessage": "Esto analiza su historial de pagos y reemplaza las entradas detectadas anteriormente. Las entradas que añadió o editó usted mismo se conservan.",
       "detectedToast": "{count, plural, =0 {No se detectaron nuevos cambios de tasa} one {# cambio de tasa detectado} other {# cambios de tasa detectados}}",

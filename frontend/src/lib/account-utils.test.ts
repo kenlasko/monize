@@ -20,7 +20,7 @@ function makeAccount(overrides: Partial<Account> & { id: string; name: string })
     statementDueDay: null, statementSettlementDay: null,
     paymentAmount: null, paymentFrequency: null, paymentStartDate: null,
     sourceAccountId: null, principalCategoryId: null, interestCategoryId: null,
-    scheduledTransactionId: null, assetCategoryId: null, dateAcquired: null,
+    scheduledTransactionId: null, assetCategoryId: null, dateAcquired: null, linkedLoanAccountId: null,
     isCanadianMortgage: false, isVariableRate: false, termMonths: null,
     termEndDate: null, amortizationMonths: null, originalPrincipal: null,
     createdAt: '', updatedAt: '',

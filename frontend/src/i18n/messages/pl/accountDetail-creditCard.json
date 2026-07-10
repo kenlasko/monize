@@ -1,0 +1,75 @@
+{
+  "summary": {
+    "currentBalance": "Bieżące saldo",
+    "creditLimit": "Limit kredytowy",
+    "availableCredit": "Dostępny kredyt",
+    "utilization": "Wykorzystanie",
+    "interestRate": "Oprocentowanie",
+    "notSet": "Nie ustawiono"
+  },
+  "statement": {
+    "title": "Bieżący cykl rozliczeniowy",
+    "cycleWindow": "Cykl: od {start} do {end}",
+    "statementBalance": "Saldo z wyciągu",
+    "statementBalanceNote": "Na dzień {date}",
+    "amountPaid": "Zapłacone od wyciągu",
+    "paymentDue": "Do zapłaty",
+    "settlement": "Zamknięcie wyciągu",
+    "settlesIn": "{days, plural, =0 {Rozlicza się dzisiaj} one {Rozlicza się za # dzień} few {Rozlicza się za # dni} many {Rozlicza się za # dni} other {Rozlicza się za # dnia}}",
+    "dueIn": "{days, plural, =0 {Termin dzisiaj} one {Pozostał # dzień} few {Pozostały # dni} many {Pozostało # dni} other {Pozostało # dnia}}",
+    "noDueDate": "Brak ustawionego terminu płatności",
+    "unavailable": "Cykl rozliczeniowy niedostępny",
+    "unavailableHint": "Ustaw dzień rozliczenia wyciągu dla tej karty, aby zobaczyć jej cykl."
+  },
+  "chart": {
+    "title": "Historia salda",
+    "empty": "Brak historii salda"
+  },
+  "spending": {
+    "title": "Wydatki w tym cyklu",
+    "uncategorised": "Bez kategorii",
+    "empty": "Brak zarejestrowanych wydatków w tym cyklu"
+  },
+  "interestAndFees": {
+    "title": "Odsetki i opłaty",
+    "ytd": "Od początku roku",
+    "charges": "{count, plural, one {# obciążenie} few {# obciążenia} many {# obciążeń} other {# obciążenia}}",
+    "none": "Brak naliczonych odsetek lub opłat w tym roku"
+  },
+  "payoff": {
+    "title": "Kalkulator spłaty",
+    "description": "Oszacuj, ile czasu zajmie spłata bieżącego salda przy stałej racie miesięcznej.",
+    "monthlyPayment": "Rata miesięczna",
+    "payoffTime": "Spłata w",
+    "totalInterest": "Suma odsetek",
+    "payoffDate": "Data spłaty",
+    "months": "{count, plural, one {# miesiąc} few {# miesiące} many {# miesięcy} other {# miesiąca}}",
+    "neverPaysOff": "Przy tej racie saldo nigdy nie zostanie spłacone -- nie pokrywa ona miesięcznych odsetek.",
+    "noBalance": "Ta karta nie ma salda do spłaty."
+  },
+  "payment": {
+    "open": "Dokonaj płatności",
+    "title": "Dokonaj płatności",
+    "amountType": "Kwota",
+    "statementBalance": "Saldo z wyciągu",
+    "fullBalance": "Pełne saldo",
+    "custom": "Niestandardowa",
+    "fromAccount": "Z konta",
+    "selectAccount": "Wybierz konto",
+    "noFundingAccounts": "Brak konta osobistego, oszczędnościowego lub gotówkowego w tej samej walucie do wykonania płatności.",
+    "date": "Data płatności",
+    "mode": "Kiedy",
+    "recordNow": "Zarejestruj teraz",
+    "scheduleMonthly": "Zaplanuj co miesiąc",
+    "cancel": "Anuluj",
+    "submitRecord": "Zarejestruj płatność",
+    "submitSchedule": "Zaplanuj płatność",
+    "submitting": "Przesyłanie...",
+    "recordName": "Płatność do {name}",
+    "toastRecorded": "Płatność zarejestrowana",
+    "toastScheduled": "Zaplanowano płatność miesięczną",
+    "toastFailed": "Nie udało się przesłać płatności",
+    "fillRequired": "Wybierz kwotę, konto źródłowe i datę"
+  },
+  "loadFailed": "Nie udało się załadować szczegółów karty kredytowej"
+}

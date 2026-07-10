@@ -1,0 +1,33 @@
+{
+  "summary": {
+    "currentBalance": "Güncel Bakiye",
+    "projectedBalance": "Öngörülen Bakiye",
+    "projectedNote": "90 gün içinde",
+    "moneyIn": "Gelen Para",
+    "moneyOut": "Giden Para",
+    "thisMonth": "Bu ay",
+    "interestRate": "Faiz Oranı",
+    "interestEarnedYtd": "Kazanılan Faiz",
+    "ytd": "Yıl başından bugüne",
+    "averageBalance": "Ortalama Bakiye",
+    "averageNote": "Son 12 ay"
+  },
+  "chart": {
+    "title": "Bakiye Geçmişi",
+    "empty": "Henüz bakiye geçmişi yok"
+  },
+  "cashFlow": {
+    "title": "Nakit Akışı",
+    "subtitle": "Son 12 ayın net akışı",
+    "empty": "Son 12 ayda etkinlik yok"
+  },
+  "topCategories": {
+    "title": "En Çok Kullanılan Kategoriler",
+    "empty": "Bu ay kategorize edilmiş etkinlik yok"
+  },
+  "topPayees": {
+    "title": "En Çok Ödeme Yapılan Alacaklılar",
+    "empty": "Bu ay alacaklı etkinliği yok"
+  },
+  "uncategorised": "Kategorisiz"
+}

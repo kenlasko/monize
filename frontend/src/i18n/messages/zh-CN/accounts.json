@@ -78,7 +78,7 @@
       "closeTitleEnabled": "关闭账户",
       "balanceMustBeZero": "余额必须为零",
       "closedPrefix": " — 已关闭",
-      "loanDetails": "贷款详情"
+      "details": "详情"
     }
   },
   "contextMenu": {
@@ -411,7 +411,9 @@
       "renamedToast": "方案已重命名为\"{name}\"",
       "deletedToast": "方案\"{name}\"已删除",
       "saveFailed": "无法保存方案",
-      "deleteFailed": "无法删除方案"
+      "deleteFailed": "无法删除方案",
+      "deleteTitle": "删除方案",
+      "deleteMessage": "删除方案 \"{name}\"？此操作无法撤销。"
     },
     "pastImpact": {
       "title": "已还提前还款的影响",
@@ -468,6 +470,8 @@
       "deletedToast": "已删除利率变更",
       "saveFailed": "无法保存利率变更",
       "deleteFailed": "无法删除利率变更",
+      "deleteTitle": "删除利率变更",
+      "deleteMessage": "删除自 {date} 起生效的利率变更？此操作无法撤销。",
       "detectTitle": "检测利率变更",
       "detectMessage": "此操作会分析您的还款历史并替换先前检测到的条目。您自己添加或编辑的条目将予以保留。",
       "detectedToast": "{count, plural, =0 {未检测到新的利率变更} one {检测到 # 项利率变更} other {检测到 # 项利率变更}}",

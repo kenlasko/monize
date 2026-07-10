@@ -1,0 +1,33 @@
+{
+  "header": {
+    "viewTransactions": "[XX-View Transactions-XX]",
+    "reconcile": "[XX-Reconcile-XX]",
+    "edit": "[XX-Edit Account-XX]",
+    "export": "[XX-Export-XX]",
+    "back": "[XX-Back to Accounts-XX]"
+  },
+  "loading": "[XX-Loading account details...-XX]",
+  "error": {
+    "retry": "[XX-Retry-XX]"
+  },
+  "recurring": {
+    "title": "[XX-Recurring Charges-XX]",
+    "subtitle": "[XX-Scheduled bills on this account, plus possible subscriptions found in its transactions-XX]",
+    "empty": "[XX-No recurring charges detected on this account-XX]",
+    "scheduledTitle": "[XX-Scheduled-XX]",
+    "detectedTitle": "[XX-Possible recurring charges-XX]",
+    "detectedSubtitle": "[XX-Found in your transaction history but not yet scheduled-XX]",
+    "nextDue": "[XX-Next due {date}-XX]",
+    "createBill": "[XX-Create bill-XX]",
+    "createBillAria": "[XX-Create a scheduled bill for {payee}-XX]",
+    "createTitle": "[XX-New Scheduled Bill-XX]",
+    "frequency": {
+      "weekly": "[XX-Weekly-XX]",
+      "biweekly": "[XX-Every 2 weeks-XX]",
+      "monthly": "[XX-Monthly-XX]",
+      "quarterly": "[XX-Quarterly-XX]",
+      "yearly": "[XX-Yearly-XX]",
+      "irregular": "[XX-Irregular-XX]"
+    }
+  }
+}

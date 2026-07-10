@@ -1,0 +1,75 @@
+{
+  "summary": {
+    "currentBalance": "Saldo Atual",
+    "creditLimit": "Limite de Crédito",
+    "availableCredit": "Crédito Disponível",
+    "utilization": "Utilização",
+    "interestRate": "Taxa de Juro",
+    "notSet": "Não definido"
+  },
+  "statement": {
+    "title": "Ciclo de Extrato Atual",
+    "cycleWindow": "Ciclo: {start} a {end}",
+    "statementBalance": "Saldo do Extrato",
+    "statementBalanceNote": "À data de {date}",
+    "amountPaid": "Pago Desde o Extrato",
+    "paymentDue": "Pagamento a Vencer",
+    "settlement": "Fecho do Extrato",
+    "settlesIn": "{days, plural, =0 {Fecha hoje} one {Fecha em # dia} other {Fecha em # dias}}",
+    "dueIn": "{days, plural, =0 {Vence hoje} one {# dia restante} other {# dias restantes}}",
+    "noDueDate": "Sem data de vencimento definida",
+    "unavailable": "Ciclo de extrato indisponível",
+    "unavailableHint": "Defina um dia de liquidação de extrato neste cartão para ver o seu ciclo."
+  },
+  "chart": {
+    "title": "Histórico de Saldo",
+    "empty": "Ainda não há histórico de saldo"
+  },
+  "spending": {
+    "title": "Gastos Deste Ciclo",
+    "uncategorised": "Sem categoria",
+    "empty": "Nenhum gasto registado neste ciclo"
+  },
+  "interestAndFees": {
+    "title": "Juros e Comissões",
+    "ytd": "Desde o início do ano",
+    "charges": "{count, plural, one {# cobrança} other {# cobranças}}",
+    "none": "Sem juros ou comissões cobrados este ano"
+  },
+  "payoff": {
+    "title": "Calculadora de Liquidação",
+    "description": "Estime quanto tempo demora a saldar o saldo atual com um pagamento mensal fixo.",
+    "monthlyPayment": "Pagamento Mensal",
+    "payoffTime": "Liquidado em",
+    "totalInterest": "Total de Juros",
+    "payoffDate": "Data de Liquidação",
+    "months": "{count, plural, one {# mês} other {# meses}}",
+    "neverPaysOff": "Com este pagamento o saldo nunca é saldado -- não cobre os juros mensais.",
+    "noBalance": "Este cartão não tem saldo a saldar."
+  },
+  "payment": {
+    "open": "Efetuar um Pagamento",
+    "title": "Efetuar um Pagamento",
+    "amountType": "Montante",
+    "statementBalance": "Saldo do extrato",
+    "fullBalance": "Saldo total",
+    "custom": "Personalizado",
+    "fromAccount": "Da conta",
+    "selectAccount": "Selecionar uma conta",
+    "noFundingAccounts": "Não há nenhuma conta à ordem, poupança ou numerário na mesma moeda disponível para pagar.",
+    "date": "Data do pagamento",
+    "mode": "Quando",
+    "recordNow": "Registar agora",
+    "scheduleMonthly": "Agendar mensalmente",
+    "cancel": "Cancelar",
+    "submitRecord": "Registar Pagamento",
+    "submitSchedule": "Agendar Pagamento",
+    "submitting": "A submeter...",
+    "recordName": "Pagamento a {name}",
+    "toastRecorded": "Pagamento registado",
+    "toastScheduled": "Pagamento mensal agendado",
+    "toastFailed": "Falha ao submeter o pagamento",
+    "fillRequired": "Escolha um montante, uma conta de pagamento e uma data"
+  },
+  "loadFailed": "Falha ao carregar os detalhes do cartão de crédito"
+}

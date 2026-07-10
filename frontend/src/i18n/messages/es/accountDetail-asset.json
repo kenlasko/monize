@@ -1,0 +1,45 @@
+{
+  "summary": {
+    "currentValue": "Valor actual",
+    "purchaseValue": "Valor de compra",
+    "appreciation": "Apreciación total",
+    "annualized": "Anualizada",
+    "category": "Categoría",
+    "notSet": "Sin definir",
+    "acquired": "Adquirido el {date}"
+  },
+  "chart": {
+    "title": "Historial de valor",
+    "empty": "Aún no hay historial de valor"
+  },
+  "equity": {
+    "title": "Patrimonio",
+    "subtitle": "Valor del activo menos el saldo del préstamo vinculado",
+    "assetValue": "Valor del activo",
+    "loanBalance": "Saldo del préstamo",
+    "equity": "Patrimonio",
+    "chartTitle": "Patrimonio a lo largo del tiempo",
+    "linkPrompt": "Vincula un préstamo o hipoteca para hacer seguimiento del patrimonio de este activo.",
+    "selectLoan": "Selecciona un préstamo",
+    "link": "Vincular préstamo",
+    "linkedTo": "Vinculado a {name}",
+    "unlink": "Desvincular",
+    "noLoans": "No hay cuentas de préstamo o hipoteca disponibles para vincular.",
+    "linked": "Préstamo vinculado",
+    "unlinked": "Préstamo desvinculado",
+    "actionFailed": "No se pudo actualizar el préstamo vinculado"
+  },
+  "updateValue": {
+    "open": "Actualizar valor",
+    "title": "Actualizar valor del activo",
+    "newValue": "Nuevo valor",
+    "date": "A fecha de",
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "cancel": "Cancelar",
+    "saved": "Valor actualizado",
+    "failed": "No se pudo actualizar el valor",
+    "invalid": "Introduce un valor y una fecha",
+    "memo": "Ajuste de valor"
+  }
+}

@@ -78,7 +78,7 @@
       "closeTitleEnabled": "Clôturer le compte",
       "balanceMustBeZero": "Le solde doit être nul",
       "closedPrefix": " — Clôturé",
-      "loanDetails": "Détails du prêt"
+      "details": "Détails"
     }
   },
   "contextMenu": {
@@ -411,7 +411,9 @@
       "renamedToast": "Scénario renommé en « {name} »",
       "deletedToast": "Scénario « {name} » supprimé",
       "saveFailed": "Échec de l'enregistrement du scénario",
-      "deleteFailed": "Échec de la suppression du scénario"
+      "deleteFailed": "Échec de la suppression du scénario",
+      "deleteTitle": "Supprimer le scénario",
+      "deleteMessage": "Supprimer le scénario \"{name}\" ? Cette action est irréversible."
     },
     "pastImpact": {
       "title": "Impact des remboursements anticipés effectués",
@@ -468,6 +470,8 @@
       "deletedToast": "Changement de taux supprimé",
       "saveFailed": "Échec de l'enregistrement du changement de taux",
       "deleteFailed": "Échec de la suppression du changement de taux",
+      "deleteTitle": "Supprimer le changement de taux",
+      "deleteMessage": "Supprimer le changement de taux prenant effet le {date} ? Cette action est irréversible.",
       "detectTitle": "Détecter les changements de taux",
       "detectMessage": "Cela analyse votre historique de paiements et remplace les entrées détectées précédemment. Les entrées que vous avez ajoutées ou modifiées vous-même sont conservées.",
       "detectedToast": "{count, plural, =0 {Aucun nouveau changement de taux détecté} one {# changement de taux détecté} other {# changements de taux détectés}}",

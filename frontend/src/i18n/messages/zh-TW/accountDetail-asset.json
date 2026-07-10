@@ -1,0 +1,45 @@
+{
+  "summary": {
+    "currentValue": "目前價值",
+    "purchaseValue": "購入價值",
+    "appreciation": "總增值",
+    "annualized": "年化",
+    "category": "類別",
+    "notSet": "未設定",
+    "acquired": "取得於 {date}"
+  },
+  "chart": {
+    "title": "價值歷史",
+    "empty": "尚無價值歷史"
+  },
+  "equity": {
+    "title": "淨值",
+    "subtitle": "資產價值減去關聯貸款餘額",
+    "assetValue": "資產價值",
+    "loanBalance": "貸款餘額",
+    "equity": "淨值",
+    "chartTitle": "淨值變化",
+    "linkPrompt": "關聯貸款或抵押貸款以追蹤此資產的淨值。",
+    "selectLoan": "選擇貸款",
+    "link": "關聯貸款",
+    "linkedTo": "已關聯至 {name}",
+    "unlink": "解除關聯",
+    "noLoans": "沒有可關聯的貸款或抵押貸款科目。",
+    "linked": "貸款已關聯",
+    "unlinked": "貸款已解除關聯",
+    "actionFailed": "更新關聯貸款失敗"
+  },
+  "updateValue": {
+    "open": "更新價值",
+    "title": "更新資產價值",
+    "newValue": "新價值",
+    "date": "截至日期",
+    "save": "儲存",
+    "saving": "儲存中...",
+    "cancel": "取消",
+    "saved": "價值已更新",
+    "failed": "更新價值失敗",
+    "invalid": "請輸入價值和日期",
+    "memo": "價值調整"
+  }
+}

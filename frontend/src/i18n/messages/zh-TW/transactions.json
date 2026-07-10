@@ -51,7 +51,7 @@
     "currentBalance": "目前結餘",
     "nextPayment": "下次付款",
     "viewBills": "在帳單與存款中查看",
-    "loanDetails": "檢視詳情",
+    "viewDetailsAria": "檢視帳戶詳情",
     "type": "類型",
     "accountNumber": "科目號碼",
     "currency": "貨幣",
@@ -458,7 +458,8 @@
       "current": "目前",
       "ending": "結束",
       "lowest": "最低",
-      "minBalance": "最低結餘"
+      "minBalance": "最低結餘",
+      "projected": "預測"
     },
     "monthlyTotals": {
       "title": "每月總計",

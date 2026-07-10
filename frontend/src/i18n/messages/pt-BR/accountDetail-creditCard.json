@@ -1,0 +1,75 @@
+{
+  "summary": {
+    "currentBalance": "Saldo Atual",
+    "creditLimit": "Limite de Crédito",
+    "availableCredit": "Crédito Disponível",
+    "utilization": "Utilização",
+    "interestRate": "Taxa de Juros",
+    "notSet": "Não definido"
+  },
+  "statement": {
+    "title": "Ciclo de Fatura Atual",
+    "cycleWindow": "Ciclo: de {start} a {end}",
+    "statementBalance": "Saldo da Fatura",
+    "statementBalanceNote": "Na data de {date}",
+    "amountPaid": "Pago Desde a Fatura",
+    "paymentDue": "Pagamento a Vencer",
+    "settlement": "Fechamento da Fatura",
+    "settlesIn": "{days, plural, =0 {Fecha hoje} one {Fecha em # dia} other {Fecha em # dias}}",
+    "dueIn": "{days, plural, =0 {Vence hoje} one {# dia restante} other {# dias restantes}}",
+    "noDueDate": "Nenhuma data de vencimento definida",
+    "unavailable": "Ciclo de fatura indisponível",
+    "unavailableHint": "Defina um dia de liquidação da fatura neste cartão para ver o seu ciclo."
+  },
+  "chart": {
+    "title": "Histórico de Saldo",
+    "empty": "Ainda não há histórico de saldo"
+  },
+  "spending": {
+    "title": "Gastos Neste Ciclo",
+    "uncategorised": "Sem categoria",
+    "empty": "Nenhum gasto registrado neste ciclo"
+  },
+  "interestAndFees": {
+    "title": "Juros e Tarifas",
+    "ytd": "Ano até hoje",
+    "charges": "{count, plural, one {# cobrança} other {# cobranças}}",
+    "none": "Nenhum juro ou tarifa cobrado este ano"
+  },
+  "payoff": {
+    "title": "Calculadora de Quitação",
+    "description": "Estime quanto tempo o saldo atual leva para ser quitado com um pagamento mensal fixo.",
+    "monthlyPayment": "Pagamento Mensal",
+    "payoffTime": "Quitado em",
+    "totalInterest": "Total de Juros",
+    "payoffDate": "Data de Quitação",
+    "months": "{count, plural, one {# mês} other {# meses}}",
+    "neverPaysOff": "Com este pagamento o saldo nunca é quitado -- ele não cobre os juros mensais.",
+    "noBalance": "Este cartão não tem saldo a quitar."
+  },
+  "payment": {
+    "open": "Fazer um Pagamento",
+    "title": "Fazer um Pagamento",
+    "amountType": "Valor",
+    "statementBalance": "Saldo da fatura",
+    "fullBalance": "Saldo total",
+    "custom": "Personalizado",
+    "fromAccount": "Da conta",
+    "selectAccount": "Selecione uma conta",
+    "noFundingAccounts": "Não há conta corrente, poupança ou dinheiro na mesma moeda disponível para pagar.",
+    "date": "Data do pagamento",
+    "mode": "Quando",
+    "recordNow": "Registrar agora",
+    "scheduleMonthly": "Agendar mensalmente",
+    "cancel": "Cancelar",
+    "submitRecord": "Registrar Pagamento",
+    "submitSchedule": "Agendar Pagamento",
+    "submitting": "Enviando...",
+    "recordName": "Pagamento para {name}",
+    "toastRecorded": "Pagamento registrado",
+    "toastScheduled": "Pagamento mensal agendado",
+    "toastFailed": "Falha ao enviar o pagamento",
+    "fillRequired": "Escolha um valor, uma conta de origem e uma data"
+  },
+  "loadFailed": "Falha ao carregar os detalhes do cartão de crédito"
+}

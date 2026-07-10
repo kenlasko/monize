@@ -1,0 +1,45 @@
+{
+  "summary": {
+    "currentValue": "Wartość bieżąca",
+    "purchaseValue": "Wartość zakupu",
+    "appreciation": "Łączny wzrost wartości",
+    "annualized": "W ujęciu rocznym",
+    "category": "Kategoria",
+    "notSet": "Nie ustawiono",
+    "acquired": "Nabyto {date}"
+  },
+  "chart": {
+    "title": "Historia wartości",
+    "empty": "Brak historii wartości"
+  },
+  "equity": {
+    "title": "Kapitał własny",
+    "subtitle": "Wartość aktywa pomniejszona o saldo powiązanego kredytu",
+    "assetValue": "Wartość aktywa",
+    "loanBalance": "Saldo kredytu",
+    "equity": "Kapitał własny",
+    "chartTitle": "Kapitał własny w czasie",
+    "linkPrompt": "Powiąż kredyt lub hipotekę, aby śledzić kapitał własny w tym aktywie.",
+    "selectLoan": "Wybierz kredyt",
+    "link": "Powiąż kredyt",
+    "linkedTo": "Powiązano z {name}",
+    "unlink": "Odłącz",
+    "noLoans": "Brak dostępnych kont kredytowych lub hipotecznych do powiązania.",
+    "linked": "Kredyt powiązany",
+    "unlinked": "Kredyt odłączony",
+    "actionFailed": "Nie udało się zaktualizować powiązanego kredytu"
+  },
+  "updateValue": {
+    "open": "Aktualizuj wartość",
+    "title": "Aktualizuj wartość aktywa",
+    "newValue": "Nowa wartość",
+    "date": "Na dzień",
+    "save": "Zapisz",
+    "saving": "Zapisywanie...",
+    "cancel": "Anuluj",
+    "saved": "Wartość zaktualizowana",
+    "failed": "Nie udało się zaktualizować wartości",
+    "invalid": "Wprowadź wartość i datę",
+    "memo": "Korekta wartości"
+  }
+}

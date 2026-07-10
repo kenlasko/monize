@@ -1,0 +1,33 @@
+{
+  "summary": {
+    "currentBalance": "当前余额",
+    "projectedBalance": "预计余额",
+    "projectedNote": "90 天后",
+    "moneyIn": "收入",
+    "moneyOut": "支出",
+    "thisMonth": "本月",
+    "interestRate": "利率",
+    "interestEarnedYtd": "已获利息",
+    "ytd": "年初至今",
+    "averageBalance": "平均余额",
+    "averageNote": "过去 12 个月"
+  },
+  "chart": {
+    "title": "余额历史",
+    "empty": "暂无余额历史"
+  },
+  "cashFlow": {
+    "title": "现金流",
+    "subtitle": "过去 12 个月的净流量",
+    "empty": "过去 12 个月无活动"
+  },
+  "topCategories": {
+    "title": "主要类别",
+    "empty": "本月无已分类活动"
+  },
+  "topPayees": {
+    "title": "主要收款人",
+    "empty": "本月无收款人活动"
+  },
+  "uncategorised": "未分类"
+}

@@ -210,6 +210,15 @@ export class Account {
   @Column({ type: "date", name: "date_acquired", nullable: true })
   dateAcquired: Date | null;
 
+  // Links an asset/other account to its financing loan or mortgage so the
+  // detail page can show equity (asset value minus the loan balance).
+  @Column({ type: "uuid", name: "linked_loan_account_id", nullable: true })
+  linkedLoanAccountId: string | null;
+
+  @ManyToOne(() => Account, { nullable: true })
+  @JoinColumn({ name: "linked_loan_account_id" })
+  linkedLoanAccount: Account | null;
+
   // Mortgage-specific fields
   @Column({ name: "is_canadian_mortgage", default: false })
   isCanadianMortgage: boolean;

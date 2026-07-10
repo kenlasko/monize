@@ -32,7 +32,9 @@
     "alreadyHasScheduledPayment": "此科目已設定定期還款。請改為編輯現有的定期交易。",
     "sourceNotFound": "找不到來源科目",
     "ambiguousBrokerage": "「{{ query }}」符合多個券商帳戶：{{ list }}。請使用準確的帳戶名稱。",
-    "unknownInvestmentAccount": "未知帳戶：{{ name }}。請使用使用者帳戶清單中的準確名稱。"
+    "unknownInvestmentAccount": "未知帳戶：{{ name }}。請使用使用者帳戶清單中的準確名稱。",
+    "notACreditCard": "對帳單週期僅適用於信用卡科目",
+    "noStatementSettlementDay": "此信用卡未設定對帳單結算日"
   },
   "actionHistory": {
     "nothingToUndo": "沒有可復原的操作",

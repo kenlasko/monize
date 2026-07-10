@@ -5,6 +5,7 @@ import { format, parseISO } from 'date-fns';
 import { Account } from '@/types/account';
 import { LoanScheduleResult } from '@/lib/loan-schedule';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { SummaryCardGrid, SummaryCardItem } from '@/components/accounts/shared/SummaryCardGrid';
 
 interface LoanSummaryCardsProps {
   account: Account;
@@ -37,65 +38,45 @@ export function LoanSummaryCards({ account, startingBalance, baseline }: LoanSum
     ? format(parseISO(baseline.payoffDate), 'MMM yyyy')
     : null;
 
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-      <SummaryCard
-        label={t('loanDetail.summary.currentBalance')}
-        value={formatCurrency(Math.abs(account.currentBalance), currency)}
-        valueClass="text-red-600 dark:text-red-400"
-      />
-      <SummaryCard
-        label={t('loanDetail.summary.originalAmount')}
-        value={formatCurrency(startingBalance, currency)}
-      />
-      <SummaryCard
-        label={t('loanDetail.summary.interestRate')}
-        value={account.interestRate != null ? `${account.interestRate}%` : t('loanDetail.summary.notSet')}
-        note={
-          effectiveRate != null
-            ? t('loanDetail.summary.effectiveRate', { rate: effectiveRate.toFixed(3) })
-            : undefined
-        }
-      />
-      <SummaryCard
-        label={t('loanDetail.summary.payment')}
-        value={account.paymentAmount ? formatCurrency(account.paymentAmount, currency) : t('loanDetail.summary.notSet')}
-        note={frequencyLabel ?? undefined}
-      />
-      <SummaryCard
-        label={t('loanDetail.summary.estPayoff')}
-        value={
-          Math.abs(account.currentBalance) <= 0.01
-            ? t('loanDetail.summary.paidOff')
-            : payoffLabel ?? t('loanDetail.summary.notAvailable')
-        }
-        valueClass="text-purple-600 dark:text-purple-400"
-      />
-      <SummaryCard
-        label={t('loanDetail.summary.estRemainingInterest')}
-        value={baseline ? formatCurrency(baseline.totalInterest, currency) : t('loanDetail.summary.notAvailable')}
-        valueClass="text-orange-600 dark:text-orange-400"
-      />
-    </div>
-  );
-}
+  const cards: SummaryCardItem[] = [
+    {
+      label: t('loanDetail.summary.currentBalance'),
+      value: formatCurrency(Math.abs(account.currentBalance), currency),
+      valueClass: 'text-red-600 dark:text-red-400',
+    },
+    {
+      label: t('loanDetail.summary.originalAmount'),
+      value: formatCurrency(startingBalance, currency),
+    },
+    {
+      label: t('loanDetail.summary.interestRate'),
+      value: account.interestRate != null ? `${account.interestRate}%` : t('loanDetail.summary.notSet'),
+      note:
+        effectiveRate != null
+          ? t('loanDetail.summary.effectiveRate', { rate: effectiveRate.toFixed(3) })
+          : undefined,
+    },
+    {
+      label: t('loanDetail.summary.payment'),
+      value: account.paymentAmount
+        ? formatCurrency(account.paymentAmount, currency)
+        : t('loanDetail.summary.notSet'),
+      note: frequencyLabel ?? undefined,
+    },
+    {
+      label: t('loanDetail.summary.estPayoff'),
+      value:
+        Math.abs(account.currentBalance) <= 0.01
+          ? t('loanDetail.summary.paidOff')
+          : payoffLabel ?? t('loanDetail.summary.notAvailable'),
+      valueClass: 'text-purple-600 dark:text-purple-400',
+    },
+    {
+      label: t('loanDetail.summary.estRemainingInterest'),
+      value: baseline ? formatCurrency(baseline.totalInterest, currency) : t('loanDetail.summary.notAvailable'),
+      valueClass: 'text-orange-600 dark:text-orange-400',
+    },
+  ];
 
-function SummaryCard({
-  label,
-  value,
-  note,
-  valueClass = 'text-gray-900 dark:text-gray-100',
-}: {
-  label: string;
-  value: string;
-  note?: string;
-  valueClass?: string;
-}) {
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
-      <div className="text-sm text-gray-500 dark:text-gray-400">{label}</div>
-      <div className={`text-lg font-bold ${valueClass}`}>{value}</div>
-      {note && <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{note}</div>}
-    </div>
-  );
+  return <SummaryCardGrid cards={cards} />;
 }

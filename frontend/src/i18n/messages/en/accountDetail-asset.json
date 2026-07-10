@@ -1,0 +1,45 @@
+{
+  "summary": {
+    "currentValue": "Current Value",
+    "purchaseValue": "Purchase Value",
+    "appreciation": "Total Appreciation",
+    "annualized": "Annualized",
+    "category": "Category",
+    "notSet": "Not set",
+    "acquired": "Acquired {date}"
+  },
+  "chart": {
+    "title": "Value History",
+    "empty": "No value history yet"
+  },
+  "equity": {
+    "title": "Equity",
+    "subtitle": "Asset value minus the linked loan balance",
+    "assetValue": "Asset Value",
+    "loanBalance": "Loan Balance",
+    "equity": "Equity",
+    "chartTitle": "Equity Over Time",
+    "linkPrompt": "Link a loan or mortgage to track equity on this asset.",
+    "selectLoan": "Select a loan",
+    "link": "Link Loan",
+    "linkedTo": "Linked to {name}",
+    "unlink": "Unlink",
+    "noLoans": "No loan or mortgage accounts are available to link.",
+    "linked": "Loan linked",
+    "unlinked": "Loan unlinked",
+    "actionFailed": "Failed to update the linked loan"
+  },
+  "updateValue": {
+    "open": "Update Value",
+    "title": "Update Asset Value",
+    "newValue": "New Value",
+    "date": "As of date",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "saved": "Value updated",
+    "failed": "Failed to update the value",
+    "invalid": "Enter a value and a date",
+    "memo": "Value adjustment"
+  }
+}

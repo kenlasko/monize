@@ -1,0 +1,33 @@
+{
+  "header": {
+    "viewTransactions": "Pokaż transakcje",
+    "reconcile": "Uzgodnij",
+    "edit": "Edytuj konto",
+    "export": "Eksportuj",
+    "back": "Powrót do kont"
+  },
+  "loading": "Ładowanie szczegółów konta...",
+  "error": {
+    "retry": "Ponów"
+  },
+  "recurring": {
+    "title": "Płatności cykliczne",
+    "subtitle": "Zaplanowane rachunki na tym koncie oraz możliwe subskrypcje wykryte w jego transakcjach",
+    "empty": "Nie wykryto płatności cyklicznych na tym koncie",
+    "scheduledTitle": "Zaplanowane",
+    "detectedTitle": "Możliwe płatności cykliczne",
+    "detectedSubtitle": "Wykryte w historii transakcji, ale jeszcze niezaplanowane",
+    "nextDue": "Następny termin {date}",
+    "createBill": "Utwórz rachunek",
+    "createBillAria": "Utwórz zaplanowany rachunek dla {payee}",
+    "createTitle": "Nowy zaplanowany rachunek",
+    "frequency": {
+      "weekly": "Co tydzień",
+      "biweekly": "Co 2 tygodnie",
+      "monthly": "Co miesiąc",
+      "quarterly": "Co kwartał",
+      "yearly": "Co rok",
+      "irregular": "Nieregularnie"
+    }
+  }
+}

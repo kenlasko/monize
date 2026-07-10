@@ -51,7 +51,7 @@
     "currentBalance": "Mevcut Bakiye",
     "nextPayment": "Sonraki Ödeme",
     "viewBills": "Faturalar ve Mevduatlarda Görüntüle",
-    "loanDetails": "Ayrıntıları Görüntüle",
+    "viewDetailsAria": "Hesap ayrıntılarını görüntüle",
     "type": "Tür",
     "accountNumber": "Hesap Numarası",
     "currency": "Para Birimi",
@@ -458,7 +458,8 @@
       "current": "Mevcut",
       "ending": "Bitiş",
       "lowest": "En Düşük",
-      "minBalance": "Min Bakiye"
+      "minBalance": "Min Bakiye",
+      "projected": "Öngörülen"
     },
     "monthlyTotals": {
       "title": "Aylık Toplamlar",

@@ -1,0 +1,75 @@
+{
+  "summary": {
+    "currentBalance": "[XX-Current Balance-XX]",
+    "creditLimit": "[XX-Credit Limit-XX]",
+    "availableCredit": "[XX-Available Credit-XX]",
+    "utilization": "[XX-Utilization-XX]",
+    "interestRate": "[XX-Interest Rate-XX]",
+    "notSet": "[XX-Not set-XX]"
+  },
+  "statement": {
+    "title": "[XX-Current Statement Cycle-XX]",
+    "cycleWindow": "[XX-Cycle: {start} to {end}-XX]",
+    "statementBalance": "[XX-Statement Balance-XX]",
+    "statementBalanceNote": "[XX-As of {date}-XX]",
+    "amountPaid": "[XX-Paid Since Statement-XX]",
+    "paymentDue": "[XX-Payment Due-XX]",
+    "settlement": "[XX-Statement Closes-XX]",
+    "settlesIn": "[XX-{days, plural, =0 {Settles today} one {Settles in # day} other {Settles in # days}}-XX]",
+    "dueIn": "[XX-{days, plural, =0 {Due today} one {# day remaining} other {# days remaining}}-XX]",
+    "noDueDate": "[XX-No due date set-XX]",
+    "unavailable": "[XX-Statement cycle unavailable-XX]",
+    "unavailableHint": "[XX-Set a statement settlement day on this card to see its cycle.-XX]"
+  },
+  "chart": {
+    "title": "[XX-Balance History-XX]",
+    "empty": "[XX-No balance history yet-XX]"
+  },
+  "spending": {
+    "title": "[XX-Spending This Cycle-XX]",
+    "uncategorised": "[XX-Uncategorized-XX]",
+    "empty": "[XX-No spending recorded this cycle-XX]"
+  },
+  "interestAndFees": {
+    "title": "[XX-Interest & Fees-XX]",
+    "ytd": "[XX-Year to date-XX]",
+    "charges": "[XX-{count, plural, one {# charge} other {# charges}}-XX]",
+    "none": "[XX-No interest or fees charged this year-XX]"
+  },
+  "payoff": {
+    "title": "[XX-Payoff Calculator-XX]",
+    "description": "[XX-Estimate how long the current balance takes to clear at a fixed monthly payment.-XX]",
+    "monthlyPayment": "[XX-Monthly Payment-XX]",
+    "payoffTime": "[XX-Paid off in-XX]",
+    "totalInterest": "[XX-Total Interest-XX]",
+    "payoffDate": "[XX-Payoff Date-XX]",
+    "months": "[XX-{count, plural, one {# month} other {# months}}-XX]",
+    "neverPaysOff": "[XX-At this payment the balance never clears -- it does not cover the monthly interest.-XX]",
+    "noBalance": "[XX-This card has no balance to pay off.-XX]"
+  },
+  "payment": {
+    "open": "[XX-Make a Payment-XX]",
+    "title": "[XX-Make a Payment-XX]",
+    "amountType": "[XX-Amount-XX]",
+    "statementBalance": "[XX-Statement balance-XX]",
+    "fullBalance": "[XX-Full balance-XX]",
+    "custom": "[XX-Custom-XX]",
+    "fromAccount": "[XX-From account-XX]",
+    "selectAccount": "[XX-Select an account-XX]",
+    "noFundingAccounts": "[XX-No same-currency chequing, savings, or cash account is available to pay from.-XX]",
+    "date": "[XX-Payment date-XX]",
+    "mode": "[XX-When-XX]",
+    "recordNow": "[XX-Record now-XX]",
+    "scheduleMonthly": "[XX-Schedule monthly-XX]",
+    "cancel": "[XX-Cancel-XX]",
+    "submitRecord": "[XX-Record Payment-XX]",
+    "submitSchedule": "[XX-Schedule Payment-XX]",
+    "submitting": "[XX-Submitting...-XX]",
+    "recordName": "[XX-Payment to {name}-XX]",
+    "toastRecorded": "[XX-Payment recorded-XX]",
+    "toastScheduled": "[XX-Monthly payment scheduled-XX]",
+    "toastFailed": "[XX-Failed to submit payment-XX]",
+    "fillRequired": "[XX-Choose an amount, a funding account, and a date-XX]"
+  },
+  "loadFailed": "[XX-Failed to load credit card details-XX]"
+}

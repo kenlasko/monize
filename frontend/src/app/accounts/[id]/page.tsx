@@ -6,25 +6,57 @@ import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { PageLayout } from '@/components/layout/PageLayout';
-import { PageHeader } from '@/components/layout/PageHeader';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { AccountDetailShell } from '@/components/accounts/shared/AccountDetailShell';
 import { LoanDetailView } from '@/components/accounts/loan-detail/LoanDetailView';
 import { LineOfCreditView } from '@/components/accounts/loan-detail/LineOfCreditView';
+import { CreditCardDetailView } from '@/components/accounts/credit-card-detail/CreditCardDetailView';
+import { BankingDetailView } from '@/components/accounts/banking-detail/BankingDetailView';
+import { InvestmentDetailView } from '@/components/accounts/investment-detail/InvestmentDetailView';
+import { AssetDetailView } from '@/components/accounts/asset-detail/AssetDetailView';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { accountsApi } from '@/lib/accounts';
 import { loanScenariosApi } from '@/lib/loan-scenarios';
 import { loanRateChangesApi } from '@/lib/loan-rate-changes';
 import { fetchAllAccountTransactions } from '@/lib/loan-history';
-import { formatAccountType } from '@/lib/account-utils';
 import { getErrorMessage } from '@/lib/errors';
 import type { Account, AccountType } from '@/types/account';
 import type { Transaction } from '@/types/transaction';
 import type { LoanScenario } from '@/types/loan-scenario';
 import type { LoanRateChange } from '@/types/loan-rate-change';
 
-const DEBT_ACCOUNT_TYPES: AccountType[] = ['LOAN', 'MORTGAGE', 'LINE_OF_CREDIT'];
+/**
+ * Per-account-type detail-view registry. Phase 0 ships the two debt views;
+ * later phases register credit-card, banking, investment, and asset views
+ * here. A type absent from the registry has no dedicated page yet and
+ * redirects to its transaction register.
+ */
+type DetailViewKind =
+  | 'loan'
+  | 'lineOfCredit'
+  | 'creditCard'
+  | 'banking'
+  | 'investment'
+  | 'asset';
+
+const DETAIL_VIEW_REGISTRY: Partial<Record<AccountType, DetailViewKind>> = {
+  LOAN: 'loan',
+  MORTGAGE: 'loan',
+  LINE_OF_CREDIT: 'lineOfCredit',
+  CREDIT_CARD: 'creditCard',
+  CHEQUING: 'banking',
+  SAVINGS: 'banking',
+  CASH: 'banking',
+  INVESTMENT: 'investment',
+  ASSET: 'asset',
+  OTHER: 'asset',
+};
+
+function resolveDetailView(type: AccountType): DetailViewKind | null {
+  return DETAIL_VIEW_REGISTRY[type] ?? null;
+}
 
 export default function AccountDetailPage() {
   return (
@@ -36,7 +68,6 @@ export default function AccountDetailPage() {
 
 function AccountDetailContent() {
   const t = useTranslations('accounts');
-  const tc = useTranslations('common');
   const params = useParams();
   const router = useRouter();
   const accountId = params.id as string;
@@ -48,17 +79,21 @@ function AccountDetailContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const isRevolving = account?.accountType === 'LINE_OF_CREDIT';
-  const isDebtAccount = !account || DEBT_ACCOUNT_TYPES.includes(account.accountType);
+  // Until the account loads, assume it has a dedicated page so the register
+  // redirect below never fires prematurely.
+  const detailView = account ? resolveDetailView(account.accountType) : 'loan';
+  const isRevolving = detailView === 'lineOfCredit';
+  const hasDetailPage = detailView !== null;
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
       const accountData = await accountsApi.getById(accountId);
-      // A revolving line of credit uses the balance-history view, which loads
-      // its own daily balances; only the amortizing view needs transactions.
-      if (accountData.accountType === 'LINE_OF_CREDIT') {
+      // Only the amortizing loan/mortgage view needs transaction history and
+      // scenarios; the line-of-credit and credit-card views load their own
+      // analytics, so just resolve the account for them.
+      if (resolveDetailView(accountData.accountType) !== 'loan') {
         setAccount(accountData);
         setTransactions([]);
         setScenarios([]);
@@ -113,10 +148,10 @@ function AccountDetailContent() {
     }
   }, [accountId]);
 
-  // The detail view only exists for debt accounts; anything else lands on its
-  // transaction register instead.
+  // Account types without a registered detail view land on their transaction
+  // register instead.
   useEffect(() => {
-    if (account && !DEBT_ACCOUNT_TYPES.includes(account.accountType)) {
+    if (account && resolveDetailView(account.accountType) === null) {
       router.replace(`/transactions?accountId=${account.id}`);
     }
   }, [account, router]);
@@ -148,7 +183,7 @@ function AccountDetailContent() {
     );
   }
 
-  if (!isDebtAccount) {
+  if (!hasDetailPage) {
     // Redirecting to the transaction register (see effect above)
     return (
       <PageLayout>
@@ -162,36 +197,42 @@ function AccountDetailContent() {
   return (
     <PageLayout>
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
-        <PageHeader
-          title={account.name}
-          subtitle={`${formatAccountType(account.accountType, tc)} - ${account.currencyCode}`}
-          actions={
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                onClick={() => router.push(`/transactions?accountId=${account.id}`)}
-              >
-                {t('loanDetail.viewTransactions')}
-              </Button>
-              <Button variant="outline" onClick={() => router.push('/accounts')}>
-                {t('loanDetail.backToAccounts')}
-              </Button>
-            </div>
+        <AccountDetailShell
+          account={account}
+          onViewTransactions={
+            // The investment view links to the full /investments page instead.
+            detailView === 'investment'
+              ? undefined
+              : () => router.push(`/transactions?accountId=${account.id}`)
           }
-        />
-
-        {isRevolving ? (
-          <LineOfCreditView account={account} />
-        ) : (
-          <LoanDetailView
-            account={account}
-            transactions={transactions}
-            scenarios={scenarios}
-            rateChanges={rateChanges}
-            onScenariosChanged={reloadScenarios}
-            onRateChangesChanged={reloadRateChanges}
-          />
-        )}
+          onReconcile={
+            detailView === 'creditCard' || detailView === 'banking'
+              ? () => router.push(`/reconcile?accountId=${account.id}`)
+              : undefined
+          }
+          onBack={() => router.push('/accounts')}
+        >
+          {detailView === 'creditCard' ? (
+            <CreditCardDetailView account={account} onAccountChanged={loadData} />
+          ) : detailView === 'banking' ? (
+            <BankingDetailView account={account} />
+          ) : detailView === 'investment' ? (
+            <InvestmentDetailView account={account} />
+          ) : detailView === 'asset' ? (
+            <AssetDetailView account={account} onAccountChanged={loadData} />
+          ) : isRevolving ? (
+            <LineOfCreditView account={account} />
+          ) : (
+            <LoanDetailView
+              account={account}
+              transactions={transactions}
+              scenarios={scenarios}
+              rateChanges={rateChanges}
+              onScenariosChanged={reloadScenarios}
+              onRateChangesChanged={reloadRateChanges}
+            />
+          )}
+        </AccountDetailShell>
       </main>
     </PageLayout>
   );

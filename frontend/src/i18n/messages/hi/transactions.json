@@ -51,7 +51,7 @@
     "currentBalance": "वर्तमान शेष",
     "nextPayment": "अगला भुगतान",
     "viewBills": "बिल और जमा में देखें",
-    "loanDetails": "विवरण देखें",
+    "viewDetailsAria": "खाता विवरण देखें",
     "type": "प्रकार",
     "accountNumber": "खाता संख्या",
     "currency": "मुद्रा",
@@ -458,7 +458,8 @@
       "current": "वर्तमान",
       "ending": "अंतिम",
       "lowest": "न्यूनतम",
-      "minBalance": "न्यूनतम शेष"
+      "minBalance": "न्यूनतम शेष",
+      "projected": "अनुमानित"
     },
     "monthlyTotals": {
       "title": "मासिक कुल",

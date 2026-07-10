@@ -94,7 +94,7 @@ describe('AccountInfoWidget', () => {
     expect(onCollapse).toHaveBeenCalledTimes(1);
   });
 
-  it('links to the loan detail page for a loan account', () => {
+  it('links to the account detail page from the details icon', () => {
     render(
       <AccountInfoWidget
         account={makeAccount({ id: 'loan-9', accountType: 'MORTGAGE' })}
@@ -102,19 +102,20 @@ describe('AccountInfoWidget', () => {
         onCollapse={vi.fn()}
       />,
     );
-    fireEvent.click(screen.getByText('View Details'));
+    fireEvent.click(screen.getByLabelText('View account details'));
     expect(mockPush).toHaveBeenCalledWith('/accounts/loan-9');
   });
 
-  it('does not show the loan details link for a non-loan account', () => {
+  it('shows the details icon for every account type', () => {
     render(
       <AccountInfoWidget
-        account={makeAccount({ accountType: 'CHEQUING' })}
+        account={makeAccount({ id: 'chq-1', accountType: 'CHEQUING' })}
         onEdit={vi.fn()}
         onCollapse={vi.fn()}
       />,
     );
-    expect(screen.queryByText('View Details')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText('View account details'));
+    expect(mockPush).toHaveBeenCalledWith('/accounts/chq-1');
   });
 
   it('renders optional fields and a closed badge when present', () => {

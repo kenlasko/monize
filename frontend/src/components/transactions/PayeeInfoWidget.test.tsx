@@ -99,12 +99,14 @@ describe('PayeeInfoWidget', () => {
     mockedTransactions.getRecurringCharges.mockResolvedValue([
       {
         payeeName: 'Hydro One',
+        payeeId: 'p-hydro',
         amounts: [100, 100, 100.5],
         dates: ['2026-04-28', '2026-05-28', '2026-06-28'],
         frequency: 'monthly',
         currentAmount: 100.5,
         previousAmount: 100,
         categoryName: 'Electricity',
+        categoryId: 'c-2',
       },
     ]);
     mockedPayees.getAliases.mockResolvedValue([

@@ -78,7 +78,7 @@
       "closeTitleEnabled": "Rekening sluiten",
       "balanceMustBeZero": "Saldo moet nul zijn",
       "closedPrefix": " — Gesloten",
-      "loanDetails": "Leninggegevens"
+      "details": "Details"
     }
   },
   "contextMenu": {
@@ -411,7 +411,9 @@
       "renamedToast": "Scenario hernoemd naar \"{name}\"",
       "deletedToast": "Scenario \"{name}\" verwijderd",
       "saveFailed": "Kan scenario niet opslaan",
-      "deleteFailed": "Kan scenario niet verwijderen"
+      "deleteFailed": "Kan scenario niet verwijderen",
+      "deleteTitle": "Scenario verwijderen",
+      "deleteMessage": "Het scenario \"{name}\" verwijderen? Dit kan niet ongedaan worden gemaakt."
     },
     "pastImpact": {
       "title": "Effect van gedane extra aflossingen",
@@ -468,6 +470,8 @@
       "deletedToast": "Renteverandering verwijderd",
       "saveFailed": "Kan renteverandering niet opslaan",
       "deleteFailed": "Kan renteverandering niet verwijderen",
+      "deleteTitle": "Renteverandering verwijderen",
+      "deleteMessage": "De renteverandering die ingaat op {date} verwijderen? Dit kan niet ongedaan worden gemaakt.",
       "detectTitle": "Renteveranderingen detecteren",
       "detectMessage": "Dit analyseert uw betalingsgeschiedenis en vervangt eerder gedetecteerde vermeldingen. Vermeldingen die u zelf hebt toegevoegd of bewerkt, blijven behouden.",
       "detectedToast": "{count, plural, =0 {Geen nieuwe renteveranderingen gedetecteerd} one {# renteverandering gedetecteerd} other {# renteveranderingen gedetecteerd}}",

@@ -11,7 +11,7 @@ import type { RowAction } from '@/components/ui/row-actions/rowAction';
 
 export interface AccountActionLabels {
   viewTransactions: string;
-  loanDetails: string;
+  details: string;
   edit: string;
   reconcile: string;
   close: string;
@@ -23,7 +23,7 @@ export interface AccountActionLabels {
 
 export interface AccountActionHandlers {
   onViewTransactions?: (account: Account) => void;
-  onLoanDetails?: (account: Account) => void;
+  onDetails?: (account: Account) => void;
   onEdit: (account: Account) => void;
   onReconcile: (account: Account) => void;
   onCloseClick: (account: Account) => void;
@@ -31,8 +31,22 @@ export interface AccountActionHandlers {
   onDeleteClick: (account: Account) => void;
 }
 
-/** Debt account types that have a loan detail page. */
-export const LOAN_DETAIL_ACCOUNT_TYPES: AccountType[] = ['LOAN', 'MORTGAGE', 'LINE_OF_CREDIT'];
+/**
+ * Account types with a dedicated detail page (the "Details" row action). Grows
+ * as per-type detail views land; today it is the debt accounts.
+ */
+export const DETAIL_ACCOUNT_TYPES: AccountType[] = [
+  'LOAN',
+  'MORTGAGE',
+  'LINE_OF_CREDIT',
+  'CREDIT_CARD',
+  'CHEQUING',
+  'SAVINGS',
+  'CASH',
+  'INVESTMENT',
+  'ASSET',
+  'OTHER',
+];
 
 /**
  * Builds the standard row actions for an account. Shared by the desktop
@@ -64,13 +78,13 @@ export function buildAccountActions(
       hidden: !handlers.onViewTransactions,
     },
     {
-      key: 'loanDetails',
-      label: labels.loanDetails,
+      key: 'details',
+      label: labels.details,
       icon: 'prices',
       tone: 'primary',
-      onClick: () => handlers.onLoanDetails?.(account),
+      onClick: () => handlers.onDetails?.(account),
       hidden:
-        !handlers.onLoanDetails || !LOAN_DETAIL_ACCOUNT_TYPES.includes(account.accountType),
+        !handlers.onDetails || !DETAIL_ACCOUNT_TYPES.includes(account.accountType),
     },
     {
       key: 'edit',
@@ -136,7 +150,7 @@ export interface AccountRowProps {
   formatAccountType: (type: AccountType) => string;
   getAccountTypeColor: (type: AccountType) => string;
   actionLabels: AccountActionLabels;
-  onLoanDetails: (account: Account) => void;
+  onDetails: (account: Account) => void;
   onEdit: (account: Account) => void;
   onReconcile: (account: Account) => void;
   onCloseClick: (account: Account) => void;
@@ -164,7 +178,7 @@ export const AccountRow = memo(function AccountRow({
   formatAccountType,
   getAccountTypeColor,
   actionLabels,
-  onLoanDetails,
+  onDetails,
   onEdit,
   onReconcile,
   onCloseClick,
@@ -175,7 +189,7 @@ export const AccountRow = memo(function AccountRow({
 }: AccountRowProps) {
   const t = useTranslations('accounts');
   const actions = buildAccountActions(account, isDeletable, actionLabels, {
-    onLoanDetails,
+    onDetails,
     onEdit,
     onReconcile,
     onCloseClick,

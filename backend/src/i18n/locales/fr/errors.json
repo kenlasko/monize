@@ -32,7 +32,9 @@
     "alreadyHasScheduledPayment": "Ce compte a déjà un paiement récurrent configuré. Modifiez la transaction récurrente existante.",
     "sourceNotFound": "Compte source introuvable",
     "ambiguousBrokerage": "« {{ query }} » correspond à plusieurs comptes de courtage : {{ list }}. Utilisez le nom exact du compte.",
-    "unknownInvestmentAccount": "Compte inconnu : {{ name }}. Utilisez un nom exact de la liste des comptes de l'utilisateur."
+    "unknownInvestmentAccount": "Compte inconnu : {{ name }}. Utilisez un nom exact de la liste des comptes de l'utilisateur.",
+    "notACreditCard": "Les cycles de facturation ne sont disponibles que pour les comptes de carte de crédit",
+    "noStatementSettlementDay": "Cette carte de crédit n'a aucun jour de clôture de relevé configuré"
   },
   "actionHistory": {
     "nothingToUndo": "Rien à annuler",

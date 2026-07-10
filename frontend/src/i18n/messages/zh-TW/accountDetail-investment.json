@@ -1,0 +1,10 @@
+{
+  "openInInvestments": "在投資中開啟",
+  "income": {
+    "title": "投資收益",
+    "dividendsInterest": "股息與利息",
+    "realizedGains": "已實現收益",
+    "ytd": "年初至今",
+    "empty": "本年度無投資收益"
+  }
+}

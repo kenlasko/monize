@@ -78,7 +78,7 @@
       "closeTitleEnabled": "Close account",
       "balanceMustBeZero": "Balance must be zero",
       "closedPrefix": " — Closed",
-      "loanDetails": "Loan Details"
+      "details": "Details"
     }
   },
   "contextMenu": {
@@ -388,6 +388,8 @@
       "deletedToast": "Rate change deleted",
       "saveFailed": "Failed to save rate change",
       "deleteFailed": "Failed to delete rate change",
+      "deleteTitle": "Delete Rate Change",
+      "deleteMessage": "Delete the rate change effective {date}? This cannot be undone.",
       "detectTitle": "Detect Rate Changes",
       "detectMessage": "This analyzes your payment history and replaces previously detected entries. Entries you added or edited yourself are kept.",
       "detectedToast": "{count, plural, =0 {No new rate changes detected} one {# rate change detected} other {# rate changes detected}}",
@@ -446,7 +448,9 @@
       "renamedToast": "Scenario renamed to \"{name}\"",
       "deletedToast": "Scenario \"{name}\" deleted",
       "saveFailed": "Failed to save scenario",
-      "deleteFailed": "Failed to delete scenario"
+      "deleteFailed": "Failed to delete scenario",
+      "deleteTitle": "Delete Scenario",
+      "deleteMessage": "Delete the scenario \"{name}\"? This cannot be undone."
     },
     "pastImpact": {
       "title": "Impact of Overpayments Made",

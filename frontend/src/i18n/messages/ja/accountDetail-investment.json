@@ -1,0 +1,10 @@
+{
+  "openInInvestments": "投資で開く",
+  "income": {
+    "title": "投資収益",
+    "dividendsInterest": "配当・利息",
+    "realizedGains": "実現利益",
+    "ytd": "年初来",
+    "empty": "今年の投資収益はありません"
+  }
+}

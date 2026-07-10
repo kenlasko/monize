@@ -1,0 +1,33 @@
+{
+  "header": {
+    "viewTransactions": "Lihat Transaksi",
+    "reconcile": "Rekonsiliasi",
+    "edit": "Edit Akun",
+    "export": "Ekspor",
+    "back": "Kembali ke Akun"
+  },
+  "loading": "Memuat detail akun...",
+  "error": {
+    "retry": "Coba lagi"
+  },
+  "recurring": {
+    "title": "Tagihan Berulang",
+    "subtitle": "Tagihan terjadwal pada akun ini, ditambah kemungkinan langganan yang ditemukan dalam transaksinya",
+    "empty": "Tidak ada tagihan berulang terdeteksi pada akun ini",
+    "scheduledTitle": "Terjadwal",
+    "detectedTitle": "Kemungkinan tagihan berulang",
+    "detectedSubtitle": "Ditemukan dalam riwayat transaksi Anda tetapi belum dijadwalkan",
+    "nextDue": "Jatuh tempo berikutnya {date}",
+    "createBill": "Buat tagihan",
+    "createBillAria": "Buat tagihan terjadwal untuk {payee}",
+    "createTitle": "Tagihan Terjadwal Baru",
+    "frequency": {
+      "weekly": "Mingguan",
+      "biweekly": "Setiap 2 minggu",
+      "monthly": "Bulanan",
+      "quarterly": "Triwulanan",
+      "yearly": "Tahunan",
+      "irregular": "Tidak teratur"
+    }
+  }
+}

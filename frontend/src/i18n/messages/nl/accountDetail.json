@@ -1,0 +1,33 @@
+{
+  "header": {
+    "viewTransactions": "Transacties bekijken",
+    "reconcile": "Afstemmen",
+    "edit": "Rekening bewerken",
+    "export": "Exporteren",
+    "back": "Terug naar rekeningen"
+  },
+  "loading": "Rekeninggegevens laden...",
+  "error": {
+    "retry": "Opnieuw proberen"
+  },
+  "recurring": {
+    "title": "Terugkerende kosten",
+    "subtitle": "Geplande rekeningen op deze rekening, plus mogelijke abonnementen gevonden in de transacties",
+    "empty": "Geen terugkerende kosten gedetecteerd op deze rekening",
+    "scheduledTitle": "Gepland",
+    "detectedTitle": "Mogelijke terugkerende kosten",
+    "detectedSubtitle": "Gevonden in jouw transactiegeschiedenis maar nog niet gepland",
+    "nextDue": "Volgende vervaldatum {date}",
+    "createBill": "Rekening aanmaken",
+    "createBillAria": "Een geplande rekening aanmaken voor {payee}",
+    "createTitle": "Nieuwe geplande rekening",
+    "frequency": {
+      "weekly": "Wekelijks",
+      "biweekly": "Elke 2 weken",
+      "monthly": "Maandelijks",
+      "quarterly": "Driemaandelijks",
+      "yearly": "Jaarlijks",
+      "irregular": "Onregelmatig"
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "summary": {
+    "currentBalance": "Current Balance",
+    "projectedBalance": "Projected Balance",
+    "projectedNote": "In 90 days",
+    "moneyIn": "Money In",
+    "moneyOut": "Money Out",
+    "thisMonth": "This month",
+    "interestRate": "Interest Rate",
+    "interestEarnedYtd": "Interest Earned",
+    "ytd": "Year to date",
+    "averageBalance": "Average Balance",
+    "averageNote": "Trailing 12 months"
+  },
+  "chart": {
+    "title": "Balance History",
+    "empty": "No balance history yet"
+  },
+  "cashFlow": {
+    "title": "Cash Flow",
+    "subtitle": "Net flow over the last 12 months",
+    "empty": "No activity in the last 12 months"
+  },
+  "topCategories": {
+    "title": "Top Categories",
+    "empty": "No categorised activity this month"
+  },
+  "topPayees": {
+    "title": "Top Payees",
+    "empty": "No payee activity this month"
+  },
+  "uncategorised": "Uncategorized"
+}

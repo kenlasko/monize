@@ -1,0 +1,33 @@
+{
+  "summary": {
+    "currentBalance": "現在残高",
+    "projectedBalance": "予測残高",
+    "projectedNote": "90日後",
+    "moneyIn": "入金",
+    "moneyOut": "出金",
+    "thisMonth": "今月",
+    "interestRate": "金利",
+    "interestEarnedYtd": "受取利息",
+    "ytd": "年初来",
+    "averageBalance": "平均残高",
+    "averageNote": "直近12か月"
+  },
+  "chart": {
+    "title": "残高の推移",
+    "empty": "残高の履歴はまだありません"
+  },
+  "cashFlow": {
+    "title": "資金の流れ",
+    "subtitle": "直近12か月の純増減",
+    "empty": "直近12か月の取引はありません"
+  },
+  "topCategories": {
+    "title": "上位カテゴリ",
+    "empty": "今月は分類済みの取引がありません"
+  },
+  "topPayees": {
+    "title": "上位の支払先",
+    "empty": "今月は支払先の取引がありません"
+  },
+  "uncategorised": "未分類"
+}

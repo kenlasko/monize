@@ -1,0 +1,75 @@
+{
+  "summary": {
+    "currentBalance": "Güncel Bakiye",
+    "creditLimit": "Kredi Limiti",
+    "availableCredit": "Kullanılabilir Kredi",
+    "utilization": "Kullanım Oranı",
+    "interestRate": "Faiz Oranı",
+    "notSet": "Ayarlanmadı"
+  },
+  "statement": {
+    "title": "Güncel Ekstre Dönemi",
+    "cycleWindow": "Dönem: {start} - {end}",
+    "statementBalance": "Ekstre Bakiyesi",
+    "statementBalanceNote": "{date} itibarıyla",
+    "amountPaid": "Ekstreden Bu Yana Ödenen",
+    "paymentDue": "Ödenecek Tutar",
+    "settlement": "Ekstre Kapanışı",
+    "settlesIn": "{days, plural, =0 {Bugün kapanıyor} one {# gün içinde kapanıyor} other {# gün içinde kapanıyor}}",
+    "dueIn": "{days, plural, =0 {Bugün ödenmeli} one {# gün kaldı} other {# gün kaldı}}",
+    "noDueDate": "Son ödeme tarihi ayarlanmadı",
+    "unavailable": "Ekstre dönemi kullanılamıyor",
+    "unavailableHint": "Dönemini görmek için bu karta bir ekstre kesim günü ayarlayın."
+  },
+  "chart": {
+    "title": "Bakiye Geçmişi",
+    "empty": "Henüz bakiye geçmişi yok"
+  },
+  "spending": {
+    "title": "Bu Dönemdeki Harcamalar",
+    "uncategorised": "Kategorisiz",
+    "empty": "Bu dönemde kayıtlı harcama yok"
+  },
+  "interestAndFees": {
+    "title": "Faiz ve Ücretler",
+    "ytd": "Yıl başından bugüne",
+    "charges": "{count, plural, one {# ücret} other {# ücret}}",
+    "none": "Bu yıl faiz veya ücret alınmadı"
+  },
+  "payoff": {
+    "title": "Borç Kapatma Hesaplayıcı",
+    "description": "Sabit bir aylık ödemeyle mevcut bakiyenin ne kadar sürede kapanacağını tahmin edin.",
+    "monthlyPayment": "Aylık Ödeme",
+    "payoffTime": "Kapanma Süresi",
+    "totalInterest": "Toplam Faiz",
+    "payoffDate": "Kapanma Tarihi",
+    "months": "{count, plural, one {# ay} other {# ay}}",
+    "neverPaysOff": "Bu ödemeyle bakiye asla kapanmaz -- aylık faizi karşılamıyor.",
+    "noBalance": "Bu kartın kapatılacak bakiyesi yok."
+  },
+  "payment": {
+    "open": "Ödeme Yap",
+    "title": "Ödeme Yap",
+    "amountType": "Tutar",
+    "statementBalance": "Ekstre bakiyesi",
+    "fullBalance": "Tüm bakiye",
+    "custom": "Özel",
+    "fromAccount": "Kaynak hesap",
+    "selectAccount": "Bir hesap seçin",
+    "noFundingAccounts": "Ödeme yapılabilecek aynı para biriminde vadesiz, tasarruf veya nakit hesabı yok.",
+    "date": "Ödeme tarihi",
+    "mode": "Ne zaman",
+    "recordNow": "Şimdi kaydet",
+    "scheduleMonthly": "Aylık zamanla",
+    "cancel": "İptal",
+    "submitRecord": "Ödemeyi Kaydet",
+    "submitSchedule": "Ödemeyi Zamanla",
+    "submitting": "Gönderiliyor...",
+    "recordName": "{name} hesabına ödeme",
+    "toastRecorded": "Ödeme kaydedildi",
+    "toastScheduled": "Aylık ödeme zamanlandı",
+    "toastFailed": "Ödeme gönderilemedi",
+    "fillRequired": "Bir tutar, kaynak hesap ve tarih seçin"
+  },
+  "loadFailed": "Kredi kartı ayrıntıları yüklenemedi"
+}

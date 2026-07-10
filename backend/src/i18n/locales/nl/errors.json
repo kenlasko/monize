@@ -32,7 +32,9 @@
     "alreadyHasScheduledPayment": "Deze rekening heeft al een geplande betaling ingesteld. Bewerk de bestaande geplande transactie in plaats daarvan.",
     "sourceNotFound": "Bronrekening niet gevonden",
     "ambiguousBrokerage": "\"{{ query }}\" komt overeen met meerdere effectenrekeningen: {{ list }}. Gebruik de exacte rekeningnaam.",
-    "unknownInvestmentAccount": "Onbekende rekening: {{ name }}. Gebruik een exacte naam uit de rekeninglijst van de gebruiker."
+    "unknownInvestmentAccount": "Onbekende rekening: {{ name }}. Gebruik een exacte naam uit de rekeninglijst van de gebruiker.",
+    "notACreditCard": "Afschriftperiodes zijn alleen beschikbaar voor creditcardrekeningen",
+    "noStatementSettlementDay": "Voor deze creditcard is geen afsluitdag van het afschrift ingesteld"
   },
   "actionHistory": {
     "nothingToUndo": "Niets om ongedaan te maken",

@@ -1,0 +1,10 @@
+{
+  "openInInvestments": "Yatırımlarda Aç",
+  "income": {
+    "title": "Yatırım Geliri",
+    "dividendsInterest": "Temettü ve Faiz",
+    "realizedGains": "Gerçekleşen Kazançlar",
+    "ytd": "Yıl başından bugüne",
+    "empty": "Bu yıl yatırım geliri yok"
+  }
+}

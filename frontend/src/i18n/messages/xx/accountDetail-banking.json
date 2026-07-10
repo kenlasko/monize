@@ -1,0 +1,33 @@
+{
+  "summary": {
+    "currentBalance": "[XX-Current Balance-XX]",
+    "projectedBalance": "[XX-Projected Balance-XX]",
+    "projectedNote": "[XX-In 90 days-XX]",
+    "moneyIn": "[XX-Money In-XX]",
+    "moneyOut": "[XX-Money Out-XX]",
+    "thisMonth": "[XX-This month-XX]",
+    "interestRate": "[XX-Interest Rate-XX]",
+    "interestEarnedYtd": "[XX-Interest Earned-XX]",
+    "ytd": "[XX-Year to date-XX]",
+    "averageBalance": "[XX-Average Balance-XX]",
+    "averageNote": "[XX-Trailing 12 months-XX]"
+  },
+  "chart": {
+    "title": "[XX-Balance History-XX]",
+    "empty": "[XX-No balance history yet-XX]"
+  },
+  "cashFlow": {
+    "title": "[XX-Cash Flow-XX]",
+    "subtitle": "[XX-Net flow over the last 12 months-XX]",
+    "empty": "[XX-No activity in the last 12 months-XX]"
+  },
+  "topCategories": {
+    "title": "[XX-Top Categories-XX]",
+    "empty": "[XX-No categorised activity this month-XX]"
+  },
+  "topPayees": {
+    "title": "[XX-Top Payees-XX]",
+    "empty": "[XX-No payee activity this month-XX]"
+  },
+  "uncategorised": "[XX-Uncategorized-XX]"
+}

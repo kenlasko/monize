@@ -1,0 +1,33 @@
+{
+  "summary": {
+    "currentBalance": "वर्तमान शेष",
+    "projectedBalance": "अनुमानित शेष",
+    "projectedNote": "90 दिनों में",
+    "moneyIn": "आया धन",
+    "moneyOut": "गया धन",
+    "thisMonth": "इस महीने",
+    "interestRate": "ब्याज दर",
+    "interestEarnedYtd": "अर्जित ब्याज",
+    "ytd": "वर्ष अब तक",
+    "averageBalance": "औसत शेष",
+    "averageNote": "पिछले 12 महीने"
+  },
+  "chart": {
+    "title": "शेष इतिहास",
+    "empty": "अभी तक कोई शेष इतिहास नहीं"
+  },
+  "cashFlow": {
+    "title": "नकदी प्रवाह",
+    "subtitle": "पिछले 12 महीनों में शुद्ध प्रवाह",
+    "empty": "पिछले 12 महीनों में कोई गतिविधि नहीं"
+  },
+  "topCategories": {
+    "title": "शीर्ष श्रेणियां",
+    "empty": "इस महीने कोई वर्गीकृत गतिविधि नहीं"
+  },
+  "topPayees": {
+    "title": "शीर्ष आदाता",
+    "empty": "इस महीने कोई आदाता गतिविधि नहीं"
+  },
+  "uncategorised": "अवर्गीकृत"
+}

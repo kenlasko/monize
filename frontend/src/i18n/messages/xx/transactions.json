@@ -51,7 +51,7 @@
     "currentBalance": "[XX-Current Balance-XX]",
     "nextPayment": "[XX-Next Payment-XX]",
     "viewBills": "[XX-View in Bills & Deposits-XX]",
-    "loanDetails": "[XX-View Details-XX]",
+    "viewDetailsAria": "[XX-View account details-XX]",
     "type": "[XX-Type-XX]",
     "accountNumber": "[XX-Account Number-XX]",
     "currency": "[XX-Currency-XX]",
@@ -458,7 +458,8 @@
       "current": "[XX-Current-XX]",
       "ending": "[XX-Ending-XX]",
       "lowest": "[XX-Lowest-XX]",
-      "minBalance": "[XX-Min Balance-XX]"
+      "minBalance": "[XX-Min Balance-XX]",
+      "projected": "[XX-Projected-XX]"
     },
     "monthlyTotals": {
       "title": "[XX-Monthly Totals-XX]",

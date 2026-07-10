@@ -51,7 +51,7 @@
     "currentBalance": "Saldo Saat Ini",
     "nextPayment": "Pembayaran Berikutnya",
     "viewBills": "Lihat di Tagihan & Setoran",
-    "loanDetails": "Lihat Detail",
+    "viewDetailsAria": "Lihat detail akun",
     "type": "Tipe",
     "accountNumber": "Nomor Akun",
     "currency": "Mata Uang",
@@ -458,7 +458,8 @@
       "current": "Saat ini",
       "ending": "Akhir",
       "lowest": "Terendah",
-      "minBalance": "Saldo Minimum"
+      "minBalance": "Saldo Minimum",
+      "projected": "Proyeksi"
     },
     "monthlyTotals": {
       "title": "Total Bulanan",

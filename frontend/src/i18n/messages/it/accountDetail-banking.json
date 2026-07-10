@@ -1,0 +1,33 @@
+{
+  "summary": {
+    "currentBalance": "Saldo attuale",
+    "projectedBalance": "Saldo previsto",
+    "projectedNote": "Tra 90 giorni",
+    "moneyIn": "Entrate",
+    "moneyOut": "Uscite",
+    "thisMonth": "Questo mese",
+    "interestRate": "Tasso d'interesse",
+    "interestEarnedYtd": "Interessi maturati",
+    "ytd": "Da inizio anno",
+    "averageBalance": "Saldo medio",
+    "averageNote": "Ultimi 12 mesi"
+  },
+  "chart": {
+    "title": "Storico saldo",
+    "empty": "Nessuno storico saldo disponibile"
+  },
+  "cashFlow": {
+    "title": "Flusso di cassa",
+    "subtitle": "Flusso netto negli ultimi 12 mesi",
+    "empty": "Nessuna attività negli ultimi 12 mesi"
+  },
+  "topCategories": {
+    "title": "Categorie principali",
+    "empty": "Nessuna attività categorizzata questo mese"
+  },
+  "topPayees": {
+    "title": "Beneficiari principali",
+    "empty": "Nessuna attività di beneficiari questo mese"
+  },
+  "uncategorised": "Non categorizzato"
+}

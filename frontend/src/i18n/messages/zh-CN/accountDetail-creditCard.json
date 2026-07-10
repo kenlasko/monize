@@ -1,0 +1,75 @@
+{
+  "summary": {
+    "currentBalance": "当前余额",
+    "creditLimit": "信用额度",
+    "availableCredit": "可用额度",
+    "utilization": "使用率",
+    "interestRate": "利率",
+    "notSet": "未设置"
+  },
+  "statement": {
+    "title": "当前账单周期",
+    "cycleWindow": "周期：{start} 至 {end}",
+    "statementBalance": "账单余额",
+    "statementBalanceNote": "截至 {date}",
+    "amountPaid": "出账单后已还",
+    "paymentDue": "应还款额",
+    "settlement": "账单结算",
+    "settlesIn": "{days, plural, =0 {今日结算} one {# 天后结算} other {# 天后结算}}",
+    "dueIn": "{days, plural, =0 {今日到期} one {剩余 # 天} other {剩余 # 天}}",
+    "noDueDate": "未设置到期日",
+    "unavailable": "账单周期不可用",
+    "unavailableHint": "为此卡设置账单结算日以查看其周期。"
+  },
+  "chart": {
+    "title": "余额历史",
+    "empty": "暂无余额历史"
+  },
+  "spending": {
+    "title": "本周期支出",
+    "uncategorised": "未分类",
+    "empty": "本周期未记录支出"
+  },
+  "interestAndFees": {
+    "title": "利息与费用",
+    "ytd": "年初至今",
+    "charges": "{count, plural, one {# 笔费用} other {# 笔费用}}",
+    "none": "今年未收取利息或费用"
+  },
+  "payoff": {
+    "title": "还清计算器",
+    "description": "估算按固定月还款额还清当前余额需要多长时间。",
+    "monthlyPayment": "每月还款额",
+    "payoffTime": "还清时长",
+    "totalInterest": "利息总额",
+    "payoffDate": "还清日期",
+    "months": "{count, plural, one {# 个月} other {# 个月}}",
+    "neverPaysOff": "按此还款额，余额永远无法还清——不足以覆盖每月利息。",
+    "noBalance": "此卡没有需要还清的余额。"
+  },
+  "payment": {
+    "open": "还款",
+    "title": "还款",
+    "amountType": "金额",
+    "statementBalance": "账单余额",
+    "fullBalance": "全部余额",
+    "custom": "自定义",
+    "fromAccount": "从账户",
+    "selectAccount": "选择账户",
+    "noFundingAccounts": "没有可用于付款的同币种支票、储蓄或现金账户。",
+    "date": "付款日期",
+    "mode": "时间",
+    "recordNow": "立即记录",
+    "scheduleMonthly": "设置每月计划",
+    "cancel": "取消",
+    "submitRecord": "记录付款",
+    "submitSchedule": "计划付款",
+    "submitting": "正在提交...",
+    "recordName": "向 {name} 付款",
+    "toastRecorded": "付款已记录",
+    "toastScheduled": "每月付款已计划",
+    "toastFailed": "提交付款失败",
+    "fillRequired": "请选择金额、付款账户和日期"
+  },
+  "loadFailed": "加载信用卡详情失败"
+}

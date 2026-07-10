@@ -18,13 +18,18 @@ interface PageHeaderProps {
    * of stacking them full-width below it. Use for compact, icon-sized actions.
    */
   compactMobileActions?: boolean;
+  /**
+   * Optional leading element rendered to the left of the title (e.g. an
+   * institution logo on account detail pages). Omitted by default.
+   */
+  icon?: ReactNode;
 }
 
 /**
  * Inline page header with title, subtitle, and action buttons.
  * Renders directly in the content area without a separate background bar.
  */
-export function PageHeader({ title, subtitle, actions, helpUrl, compactMobileActions }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, actions, helpUrl, compactMobileActions, icon }: PageHeaderProps) {
   const t = useTranslations('layout');
 
   const layoutClasses = actions
@@ -33,14 +38,13 @@ export function PageHeader({ title, subtitle, actions, helpUrl, compactMobileAct
       : 'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'
     : '';
 
-  return (
-    <div className={`${layoutClasses} mb-6`}>
-      <div>
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {title}
-          </h1>
-          {helpUrl && (
+  const titleBlock = (
+    <div>
+      <div className="flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          {title}
+        </h1>
+        {helpUrl && (
             <span className="relative inline-flex items-center group/help">
               <a
                 href={helpUrl}
@@ -60,12 +64,24 @@ export function PageHeader({ title, subtitle, actions, helpUrl, compactMobileAct
             </span>
           )}
         </div>
-        {subtitle && (
-          <p className="text-gray-500 dark:text-gray-400">
-            {subtitle}
-          </p>
-        )}
-      </div>
+      {subtitle && (
+        <p className="text-gray-500 dark:text-gray-400">
+          {subtitle}
+        </p>
+      )}
+    </div>
+  );
+
+  return (
+    <div className={`${layoutClasses} mb-6`}>
+      {icon ? (
+        <div className="flex items-center gap-3">
+          {icon}
+          {titleBlock}
+        </div>
+      ) : (
+        titleBlock
+      )}
       {actions && (
         <div
           className={`flex flex-wrap items-center gap-3 ${

@@ -1,0 +1,33 @@
+{
+  "summary": {
+    "currentBalance": "Huidig saldo",
+    "projectedBalance": "Geprojecteerd saldo",
+    "projectedNote": "Over 90 dagen",
+    "moneyIn": "Inkomend geld",
+    "moneyOut": "Uitgaand geld",
+    "thisMonth": "Deze maand",
+    "interestRate": "Rentepercentage",
+    "interestEarnedYtd": "Ontvangen rente",
+    "ytd": "Jaar tot nu",
+    "averageBalance": "Gemiddeld saldo",
+    "averageNote": "Voortschrijdend 12 maanden"
+  },
+  "chart": {
+    "title": "Saldogeschiedenis",
+    "empty": "Nog geen saldogeschiedenis"
+  },
+  "cashFlow": {
+    "title": "Kasstroom",
+    "subtitle": "Nettostroom over de laatste 12 maanden",
+    "empty": "Geen activiteit in de laatste 12 maanden"
+  },
+  "topCategories": {
+    "title": "Belangrijkste categorieën",
+    "empty": "Geen gecategoriseerde activiteit deze maand"
+  },
+  "topPayees": {
+    "title": "Belangrijkste begunstigden",
+    "empty": "Geen begunstigde-activiteit deze maand"
+  },
+  "uncategorised": "Niet-gecategoriseerd"
+}

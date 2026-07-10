@@ -511,7 +511,19 @@ export class TransactionAnalyticsService {
               const method = hasCondition ? "orWhere" : "where";
               hasCondition = true;
               qb[method](
-                "transaction.categoryId IS NULL AND transaction.isSplit = false AND transaction.isTransfer = false AND summaryAccount.accountType != 'INVESTMENT'",
+                new Brackets((unc) => {
+                  unc
+                    .where(
+                      "transaction.categoryId IS NULL AND transaction.isSplit = false AND transaction.isTransfer = false AND summaryAccount.accountType != 'INVESTMENT'",
+                    )
+                    // A split transaction counts as uncategorised when any of
+                    // its non-transfer split lines has no category (transfer
+                    // splits are already excluded by the base query), matching
+                    // the category breakdown grouping.
+                    .orWhere(
+                      "transaction.isSplit = true AND transaction.isTransfer = false AND summaryAccount.accountType != 'INVESTMENT' AND splits.categoryId IS NULL",
+                    );
+                }),
               );
             }
             if (hasTransfer) {
@@ -641,7 +653,19 @@ export class TransactionAnalyticsService {
         .select(idExpr, "id")
         .addSelect("COALESCE(groupSplitCat.name, groupCat.name)", "name")
         .groupBy(idExpr)
-        .addGroupBy("COALESCE(groupSplitCat.name, groupCat.name)");
+        .addGroupBy("COALESCE(groupSplitCat.name, groupCat.name)")
+        // Transfers are movements between own accounts, not spending, so a
+        // transfer with no category must not swell the "Uncategorized" bucket.
+        // This matches the transaction-list filter, which excludes transfers
+        // from "uncategorized". A transfer carrying an optional category still
+        // shows under that category.
+        .andWhere(
+          new Brackets((qb) => {
+            qb.where(`${idExpr} IS NOT NULL`).orWhere(
+              "transaction.isTransfer = false",
+            );
+          }),
+        );
     } else {
       queryBuilder
         .leftJoin("transaction.payee", "groupPayee")
@@ -811,7 +835,7 @@ export class TransactionAnalyticsService {
               )
             : [];
 
-        if (uniqueCategoryIds.length > 0) {
+        if (hasUncategorized || uniqueCategoryIds.length > 0) {
           queryBuilder.leftJoin("transaction.splits", "splits");
           splitsJoined = true;
         }
@@ -822,7 +846,18 @@ export class TransactionAnalyticsService {
               const method = hasCondition ? "orWhere" : "where";
               hasCondition = true;
               qb[method](
-                "transaction.categoryId IS NULL AND transaction.isSplit = false AND transaction.isTransfer = false AND summaryAccount.accountType != 'INVESTMENT'",
+                new Brackets((unc) => {
+                  unc
+                    .where(
+                      "transaction.categoryId IS NULL AND transaction.isSplit = false AND transaction.isTransfer = false AND summaryAccount.accountType != 'INVESTMENT'",
+                    )
+                    // A split transaction counts as uncategorised when any of
+                    // its non-transfer split lines has no category, matching the
+                    // category breakdown grouping.
+                    .orWhere(
+                      "transaction.isSplit = true AND transaction.isTransfer = false AND summaryAccount.accountType != 'INVESTMENT' AND splits.categoryId IS NULL AND splits.transferAccountId IS NULL",
+                    );
+                }),
               );
             }
             if (hasTransfer) {

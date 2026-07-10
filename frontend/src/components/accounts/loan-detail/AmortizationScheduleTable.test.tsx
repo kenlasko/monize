@@ -9,6 +9,14 @@ vi.mock('@/hooks/useNumberFormat', () => ({
     formatCurrency: (amount: number) => `$${amount.toFixed(2)}`,
   }),
 }));
+vi.mock('@/hooks/useDateFormat', async () => {
+  const { format, parseISO } = await import('date-fns');
+  return {
+    useDateFormat: () => ({
+      formatDate: (d: string) => format(parseISO(d), 'MMM d, yyyy'),
+    }),
+  };
+});
 
 function makeHistoryEvents(count: number): LoanPaymentEvent[] {
   return Array.from({ length: count }, (_, i) => ({

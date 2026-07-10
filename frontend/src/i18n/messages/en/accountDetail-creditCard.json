@@ -1,0 +1,75 @@
+{
+  "summary": {
+    "currentBalance": "Current Balance",
+    "creditLimit": "Credit Limit",
+    "availableCredit": "Available Credit",
+    "utilization": "Utilization",
+    "interestRate": "Interest Rate",
+    "notSet": "Not set"
+  },
+  "statement": {
+    "title": "Current Statement Cycle",
+    "cycleWindow": "Cycle: {start} to {end}",
+    "statementBalance": "Statement Balance",
+    "statementBalanceNote": "As of {date}",
+    "amountPaid": "Paid Since Statement",
+    "paymentDue": "Payment Due",
+    "settlement": "Statement Closes",
+    "settlesIn": "{days, plural, =0 {Settles today} one {Settles in # day} other {Settles in # days}}",
+    "dueIn": "{days, plural, =0 {Due today} one {# day remaining} other {# days remaining}}",
+    "noDueDate": "No due date set",
+    "unavailable": "Statement cycle unavailable",
+    "unavailableHint": "Set a statement settlement day on this card to see its cycle."
+  },
+  "chart": {
+    "title": "Balance History",
+    "empty": "No balance history yet"
+  },
+  "spending": {
+    "title": "Spending This Cycle",
+    "uncategorised": "Uncategorized",
+    "empty": "No spending recorded this cycle"
+  },
+  "interestAndFees": {
+    "title": "Interest & Fees",
+    "ytd": "Year to date",
+    "charges": "{count, plural, one {# charge} other {# charges}}",
+    "none": "No interest or fees charged this year"
+  },
+  "payoff": {
+    "title": "Payoff Calculator",
+    "description": "Estimate how long the current balance takes to clear at a fixed monthly payment.",
+    "monthlyPayment": "Monthly Payment",
+    "payoffTime": "Paid off in",
+    "totalInterest": "Total Interest",
+    "payoffDate": "Payoff Date",
+    "months": "{count, plural, one {# month} other {# months}}",
+    "neverPaysOff": "At this payment the balance never clears -- it does not cover the monthly interest.",
+    "noBalance": "This card has no balance to pay off."
+  },
+  "payment": {
+    "open": "Make a Payment",
+    "title": "Make a Payment",
+    "amountType": "Amount",
+    "statementBalance": "Statement balance",
+    "fullBalance": "Full balance",
+    "custom": "Custom",
+    "fromAccount": "From account",
+    "selectAccount": "Select an account",
+    "noFundingAccounts": "No same-currency chequing, savings, or cash account is available to pay from.",
+    "date": "Payment date",
+    "mode": "When",
+    "recordNow": "Record now",
+    "scheduleMonthly": "Schedule monthly",
+    "cancel": "Cancel",
+    "submitRecord": "Record Payment",
+    "submitSchedule": "Schedule Payment",
+    "submitting": "Submitting...",
+    "recordName": "Payment to {name}",
+    "toastRecorded": "Payment recorded",
+    "toastScheduled": "Monthly payment scheduled",
+    "toastFailed": "Failed to submit payment",
+    "fillRequired": "Choose an amount, a funding account, and a date"
+  },
+  "loadFailed": "Failed to load credit card details"
+}

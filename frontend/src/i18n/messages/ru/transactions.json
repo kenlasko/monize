@@ -51,7 +51,7 @@
     "currentBalance": "Текущий остаток",
     "nextPayment": "Следующий платёж",
     "viewBills": "Просмотр в разделе Счета и депозиты",
-    "loanDetails": "Показать сведения",
+    "viewDetailsAria": "Просмотреть сведения о счёте",
     "type": "Тип",
     "accountNumber": "Номер счёта",
     "currency": "Валюта",
@@ -458,7 +458,8 @@
       "current": "Текущий",
       "ending": "Конечный",
       "lowest": "Минимальный",
-      "minBalance": "Мин. остаток"
+      "minBalance": "Мин. остаток",
+      "projected": "Прогноз"
     },
     "monthlyTotals": {
       "title": "Месячные итоги",

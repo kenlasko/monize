@@ -1,0 +1,10 @@
+{
+  "openInInvestments": "In Investitionen öffnen",
+  "income": {
+    "title": "Anlageerträge",
+    "dividendsInterest": "Dividenden & Zinsen",
+    "realizedGains": "Realisierte Gewinne",
+    "ytd": "Seit Jahresbeginn",
+    "empty": "Keine Anlageerträge in diesem Jahr"
+  }
+}

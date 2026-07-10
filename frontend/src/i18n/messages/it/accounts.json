@@ -78,7 +78,7 @@
       "closeTitleEnabled": "Chiudi conto",
       "balanceMustBeZero": "Il saldo deve essere zero",
       "closedPrefix": " — Chiuso",
-      "loanDetails": "Dettagli del prestito"
+      "details": "Dettagli"
     }
   },
   "contextMenu": {
@@ -411,7 +411,9 @@
       "renamedToast": "Scenario rinominato in \"{name}\"",
       "deletedToast": "Scenario \"{name}\" eliminato",
       "saveFailed": "Impossibile salvare lo scenario",
-      "deleteFailed": "Impossibile eliminare lo scenario"
+      "deleteFailed": "Impossibile eliminare lo scenario",
+      "deleteTitle": "Elimina scenario",
+      "deleteMessage": "Eliminare lo scenario \"{name}\"? Questa operazione non può essere annullata."
     },
     "pastImpact": {
       "title": "Impatto dei rimborsi anticipati effettuati",
@@ -468,6 +470,8 @@
       "deletedToast": "Variazione del tasso eliminata",
       "saveFailed": "Impossibile salvare la variazione del tasso",
       "deleteFailed": "Impossibile eliminare la variazione del tasso",
+      "deleteTitle": "Elimina variazione del tasso",
+      "deleteMessage": "Eliminare la variazione del tasso con effetto dal {date}? Questa operazione non può essere annullata.",
       "detectTitle": "Rileva variazioni del tasso",
       "detectMessage": "Questa operazione analizza il tuo storico dei pagamenti e sostituisce le voci rilevate in precedenza. Le voci che hai aggiunto o modificato manualmente vengono conservate.",
       "detectedToast": "{count, plural, =0 {Nessuna nuova variazione del tasso rilevata} one {# variazione del tasso rilevata} other {# variazioni del tasso rilevate}}",

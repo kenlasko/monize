@@ -32,7 +32,9 @@
     "alreadyHasScheduledPayment": "Tài khoản này đã có thanh toán theo lịch được cấu hình. Hãy chỉnh sửa giao tác theo lịch hiện có.",
     "sourceNotFound": "Không tìm thấy tài khoản nguồn",
     "ambiguousBrokerage": "\"{{ query }}\" khớp với nhiều tài khoản môi giới: {{ list }}. Hãy dùng tên tài khoản chính xác.",
-    "unknownInvestmentAccount": "Tài khoản không xác định: {{ name }}. Hãy dùng tên chính xác từ danh sách tài khoản của người dùng."
+    "unknownInvestmentAccount": "Tài khoản không xác định: {{ name }}. Hãy dùng tên chính xác từ danh sách tài khoản của người dùng.",
+    "notACreditCard": "Chu kỳ sao kê chỉ khả dụng cho tài khoản thẻ tín dụng",
+    "noStatementSettlementDay": "Thẻ tín dụng này chưa được cấu hình ngày chốt sao kê"
   },
   "actionHistory": {
     "nothingToUndo": "Không có gì để hoàn tác",

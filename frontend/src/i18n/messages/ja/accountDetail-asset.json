@@ -1,0 +1,45 @@
+{
+  "summary": {
+    "currentValue": "現在の価値",
+    "purchaseValue": "購入価格",
+    "appreciation": "総評価益",
+    "annualized": "年率換算",
+    "category": "カテゴリー",
+    "notSet": "未設定",
+    "acquired": "取得日 {date}"
+  },
+  "chart": {
+    "title": "価値の推移",
+    "empty": "まだ価値の履歴がありません"
+  },
+  "equity": {
+    "title": "純資産",
+    "subtitle": "資産価値から連携したローン残高を差し引いた額",
+    "assetValue": "資産価値",
+    "loanBalance": "ローン残高",
+    "equity": "純資産",
+    "chartTitle": "純資産の推移",
+    "linkPrompt": "この資産の純資産を追跡するには、ローンまたは住宅ローンを連携してください。",
+    "selectLoan": "ローンを選択",
+    "link": "ローンを連携",
+    "linkedTo": "{name}に連携済み",
+    "unlink": "連携を解除",
+    "noLoans": "連携できるローンまたは住宅ローンの勘定科目がありません。",
+    "linked": "ローンを連携しました",
+    "unlinked": "ローンの連携を解除しました",
+    "actionFailed": "連携したローンの更新に失敗しました"
+  },
+  "updateValue": {
+    "open": "価値を更新",
+    "title": "資産価値を更新",
+    "newValue": "新しい価値",
+    "date": "基準日",
+    "save": "保存",
+    "saving": "保存中...",
+    "cancel": "キャンセル",
+    "saved": "価値を更新しました",
+    "failed": "価値の更新に失敗しました",
+    "invalid": "価値と日付を入力してください",
+    "memo": "価値調整"
+  }
+}

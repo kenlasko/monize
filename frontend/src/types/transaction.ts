@@ -144,12 +144,14 @@ export interface GroupedTotal {
 
 export interface RecurringChargeInfo {
   payeeName: string;
+  payeeId: string | null;
   amounts: number[];
   dates: string[];
   frequency: string;
   currentAmount: number;
   previousAmount: number;
   categoryName: string | null;
+  categoryId: string | null;
 }
 
 export interface MonthlyTotal {
