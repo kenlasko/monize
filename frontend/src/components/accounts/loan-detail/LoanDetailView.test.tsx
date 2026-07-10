@@ -33,10 +33,6 @@ vi.mock('./RateHistoryPanel', () => ({
   RateHistoryPanel: () => <div data-testid="rate-history-panel" />,
 }));
 
-vi.mock('./OverpaymentCategoryPanel', () => ({
-  OverpaymentCategoryPanel: () => <div data-testid="overpayment-category-panel" />,
-}));
-
 let capturedOnPlanChange: ((plan: OverpaymentPlan | null) => void) | undefined;
 vi.mock('./OverpaymentSimulator', () => ({
   OverpaymentSimulator: (props: { onPlanChange: (p: OverpaymentPlan | null) => void }) => {

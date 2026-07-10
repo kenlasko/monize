@@ -32,6 +32,10 @@ vi.mock('@/hooks/useChartDateFormat', () => ({
   useChartDateFormat: () => (date: string) => date.slice(0, 7),
 }));
 
+vi.mock('./OverpaymentCategoryControl', () => ({
+  OverpaymentCategoryControl: () => <div data-testid="overpayment-category-control" />,
+}));
+
 function makeAccount(overrides: Partial<Account> = {}): Account {
   return {
     id: 'loan-1',
@@ -68,7 +72,14 @@ function makeHistory(account: Account) {
 describe('PastImpactSection', () => {
   it('shows extra principal paid plus months and interest saved and the series', () => {
     const account = makeAccount();
-    render(<PastImpactSection account={account} history={makeHistory(account)} />);
+    render(
+      <PastImpactSection
+        account={account}
+        history={makeHistory(account)}
+        overpaymentCategoryId={null}
+        onOverpaymentCategoryChange={() => {}}
+      />,
+    );
 
     expect(screen.getByText('Impact of Overpayments Made')).toBeInTheDocument();
     expect(screen.getByText('Extra Principal Paid')).toBeInTheDocument();
@@ -84,7 +95,14 @@ describe('PastImpactSection', () => {
 
   it('still renders when only the opening balance is set (no originalPrincipal)', () => {
     const account = makeAccount({ originalPrincipal: null });
-    render(<PastImpactSection account={account} history={makeHistory(account)} />);
+    render(
+      <PastImpactSection
+        account={account}
+        history={makeHistory(account)}
+        overpaymentCategoryId={null}
+        onOverpaymentCategoryChange={() => {}}
+      />,
+    );
 
     // Falls back to the opening balance; the section renders rather than hinting
     expect(screen.getByText('Extra Principal Paid')).toBeInTheDocument();
@@ -95,7 +113,14 @@ describe('PastImpactSection', () => {
 
   it('shows a data hint when the original schedule cannot be reconstructed', () => {
     const account = makeAccount({ interestRate: null });
-    render(<PastImpactSection account={account} history={makeHistory(account)} />);
+    render(
+      <PastImpactSection
+        account={account}
+        history={makeHistory(account)}
+        overpaymentCategoryId={null}
+        onOverpaymentCategoryChange={() => {}}
+      />,
+    );
 
     expect(
       screen.getByText(/needs an interest rate, a payment frequency/),

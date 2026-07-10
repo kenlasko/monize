@@ -400,6 +400,7 @@
       "title": "Overpayment Category",
       "description": "Pick the category you tag standalone overpayments with. Payments in this category count as 100% principal, so the schedule flags them instead of treating them as a regular installment.",
       "label": "Overpayment category",
+      "placeholder": "Select a category",
       "none": "None",
       "saveError": "Failed to save the overpayment category"
     },

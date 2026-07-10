@@ -10,7 +10,6 @@ import { ComparisonSummaryCards } from '@/components/accounts/loan-detail/Compar
 import { SavedScenariosPanel } from '@/components/accounts/loan-detail/SavedScenariosPanel';
 import { PastImpactSection } from '@/components/accounts/loan-detail/PastImpactSection';
 import { RateHistoryPanel } from '@/components/accounts/loan-detail/RateHistoryPanel';
-import { OverpaymentCategoryPanel } from '@/components/accounts/loan-detail/OverpaymentCategoryPanel';
 import { deriveCurrentInstallment, deriveLoanPaymentHistory } from '@/lib/loan-history';
 import {
   OverpaymentMode,
@@ -182,7 +181,13 @@ export function LoanDetailView({
         scenario={scenario}
       />
 
-      <PastImpactSection account={account} history={history} rateChanges={rateChanges} />
+      <PastImpactSection
+        account={account}
+        history={history}
+        rateChanges={rateChanges}
+        overpaymentCategoryId={overpaymentCategoryId}
+        onOverpaymentCategoryChange={setOverpaymentCategoryId}
+      />
 
       <AmortizationScheduleTable
         historyEvents={history.events}
@@ -194,12 +199,6 @@ export function LoanDetailView({
         account={account}
         rateChanges={rateChanges}
         onChanged={onRateChangesChanged}
-      />
-
-      <OverpaymentCategoryPanel
-        accountId={account.id}
-        value={overpaymentCategoryId}
-        onChange={setOverpaymentCategoryId}
       />
     </div>
   );
