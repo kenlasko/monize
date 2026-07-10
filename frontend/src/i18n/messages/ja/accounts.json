@@ -449,6 +449,14 @@
       "noHistory": "残高の履歴はありません。"
     },
     "rateHistory": {
+      "scheduledUpdateTitle": "予定支払いを更新しますか？",
+      "scheduledUpdateMessage": "予定された請求支払い「{name}」を新しい金利に合わせて更新できます：合計 {payment}（元金 {principal}、利息 {interest}）。今すぐ更新しますか？",
+      "scheduledUpdateDefaultName": "この住宅ローン",
+      "scheduledUpdateConfirm": "支払いを更新",
+      "scheduledUpdateSkip": "そのままにする",
+      "scheduledUpdateAppliedToast": "予定支払いを更新しました",
+      "scheduledUpdateSkippedToast": "予定支払いは変更していません",
+      "scheduledUpdateFailed": "予定支払いを更新できませんでした",
       "title": "金利履歴",
       "description": "変動金利の見直しから期間の更新まで、ローン期間全体にわたる金利の変更を記録します。",
       "add": "金利変更を追加",

@@ -449,6 +449,14 @@
       "noHistory": "कोई शेष इतिहास उपलब्ध नहीं है।"
     },
     "rateHistory": {
+      "scheduledUpdateTitle": "निर्धारित भुगतान अपडेट करें?",
+      "scheduledUpdateMessage": "निर्धारित बिल भुगतान \"{name}\" को नई दर के अनुसार अपडेट किया जा सकता है: कुल {payment}, जिसमें {principal} मूलधन और {interest} ब्याज शामिल है। अभी अपडेट करें?",
+      "scheduledUpdateDefaultName": "यह बंधक",
+      "scheduledUpdateConfirm": "भुगतान अपडेट करें",
+      "scheduledUpdateSkip": "जैसा है वैसा रहने दें",
+      "scheduledUpdateAppliedToast": "निर्धारित भुगतान अपडेट किया गया",
+      "scheduledUpdateSkippedToast": "निर्धारित भुगतान अपरिवर्तित रखा गया",
+      "scheduledUpdateFailed": "निर्धारित भुगतान अपडेट नहीं किया जा सका",
       "title": "दर इतिहास",
       "description": "ऋण की अवधि के दौरान ब्याज दर में परिवर्तनों को ट्रैक करें, परिवर्तनशील-दर रीसेट से लेकर अवधि नवीनीकरण तक।",
       "add": "दर परिवर्तन जोड़ें",

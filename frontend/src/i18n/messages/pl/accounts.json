@@ -449,6 +449,14 @@
       "noHistory": "Brak historii salda."
     },
     "rateHistory": {
+      "scheduledUpdateTitle": "Zaktualizować zaplanowaną płatność?",
+      "scheduledUpdateMessage": "Zaplanowaną płatność rachunku „{name}” można zaktualizować do nowej stopy: {payment} łącznie, w tym {principal} kapitału i {interest} odsetek. Zaktualizować teraz?",
+      "scheduledUpdateDefaultName": "ten kredyt hipoteczny",
+      "scheduledUpdateConfirm": "Zaktualizuj płatność",
+      "scheduledUpdateSkip": "Pozostaw bez zmian",
+      "scheduledUpdateAppliedToast": "Zaktualizowano zaplanowaną płatność",
+      "scheduledUpdateSkippedToast": "Zaplanowana płatność bez zmian",
+      "scheduledUpdateFailed": "Nie udało się zaktualizować zaplanowanej płatności",
       "title": "Historia oprocentowania",
       "description": "Śledź zmiany oprocentowania przez cały okres kredytu, od zmian oprocentowania zmiennego po odnowienia okresu kredytowania.",
       "add": "Dodaj zmianę oprocentowania",

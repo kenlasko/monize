@@ -31,8 +31,10 @@ export interface PastImpactResult {
   monthsAlreadySaved: number;
   interestAlreadySaved: number;
   /**
-   * How far ahead of the original contractual balance you are today, i.e. the
-   * net extra principal already applied. Floored at zero.
+   * Total extra principal already paid: the principal from payments recognized
+   * as overpayments (by the loan's overpayment category or memo). Matches the
+   * Extra Principal column of the installment schedule, which surfaces the same
+   * classified payments.
    */
   extraPrincipalPaid: number;
 }
@@ -168,18 +170,14 @@ export function computePastImpact(
     ),
   );
 
-  // Extra principal already paid = how far the actual balance is below where
-  // the contract would have it today. Captures every form of overpayment
-  // because it is measured purely from the balance.
-  const contractualBalanceToday = scheduledBalanceAsOf(
-    originalSchedule,
-    originalPrincipal,
-    isoDate(asOf),
-  );
-  const extraPrincipalPaid = Math.max(
-    0,
-    round2(contractualBalanceToday - history.currentBalance),
-  );
+  // Extra principal already paid = the principal from payments recognized as
+  // overpayments (by the loan's overpayment category or memo). This is the sum
+  // the installment schedule shows in its Extra Principal column, so the two
+  // views agree. Integer-cents arithmetic avoids floating-point drift.
+  const extraPrincipalCents = history.events
+    .filter((event) => event.type === 'OVERPAYMENT')
+    .reduce((sum, event) => sum + Math.round(event.principal * 100), 0);
+  const extraPrincipalPaid = extraPrincipalCents / 100;
 
   return {
     originalSchedule,
@@ -193,24 +191,6 @@ export function computePastImpact(
     interestAlreadySaved,
     extraPrincipalPaid,
   };
-}
-
-/** Contractual remaining balance at `isoAsOf`: the last scheduled row on or
- * before that date, or the full principal when no payment is yet due. */
-function scheduledBalanceAsOf(
-  schedule: LoanScheduleResult,
-  originalPrincipal: number,
-  isoAsOf: string,
-): number {
-  let balance = originalPrincipal;
-  for (const row of schedule.rows) {
-    if (row.date <= isoAsOf) {
-      balance = row.balance;
-    } else {
-      break;
-    }
-  }
-  return balance;
 }
 
 /** Whole months from `fromDate` to `toDate` (0 when either is missing) */

@@ -20,6 +20,30 @@ export interface LoanRateChange {
   updatedAt: string;
 }
 
+/**
+ * Before/after summary of how a mortgage's linked scheduled bill payment would
+ * change to match a newly recorded rate/payment. Present on a create response
+ * when the account has an applicable linked scheduled payment; the user is
+ * asked for permission before it is applied.
+ */
+export interface ScheduledPaymentPreview {
+  scheduledTransactionId: string;
+  scheduledTransactionName: string | null;
+  currencyCode: string;
+  currentPaymentAmount: number | null;
+  proposedPaymentAmount: number;
+  currentPrincipal: number | null;
+  proposedPrincipal: number;
+  currentInterest: number | null;
+  proposedInterest: number;
+  extraPrincipal: number;
+}
+
+/** A created rate change plus the pending scheduled-payment change, if any. */
+export interface CreateLoanRateChangeResult extends LoanRateChange {
+  scheduledPaymentPreview: ScheduledPaymentPreview | null;
+}
+
 export interface CreateLoanRateChangeData {
   effectiveDate: string;
   annualRate: number;

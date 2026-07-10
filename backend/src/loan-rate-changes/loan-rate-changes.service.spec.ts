@@ -464,6 +464,125 @@ describe("LoanRateChangesService", () => {
         }),
       ).resolves.toBeDefined();
     });
+
+    it("defers the scheduled-payment sync and returns a preview instead of applying it", async () => {
+      const account = makeAccount();
+      accountsRepository.findOne.mockResolvedValue(account);
+      manager.find.mockResolvedValue([
+        makeRow({ effectiveDate: "2024-06-01", annualRate: 4.9 }),
+      ]);
+      scheduledTransactionsService.findOne.mockResolvedValue({
+        id: "sched-1",
+        name: "Mortgage",
+        currencyCode: "CAD",
+        amount: -2500,
+        splits: [
+          { transferAccountId: accountId, amount: -800, memo: "Principal" },
+          { categoryId: "cat-interest", amount: -1700, memo: "Interest" },
+        ],
+      });
+
+      const result = await service.create(
+        userId,
+        accountId,
+        { effectiveDate: "2024-06-01", annualRate: 4.9 },
+        { deferScheduledSync: true },
+      );
+
+      // Nothing is applied to the schedule yet -- the user must confirm first
+      expect(scheduledTransactionsService.update).not.toHaveBeenCalled();
+
+      const expectedInterest =
+        Math.round(400000 * (4.9 / 100 / 12) * 10000) / 10000;
+      expect(result.scheduledPaymentPreview).toMatchObject({
+        scheduledTransactionId: "sched-1",
+        scheduledTransactionName: "Mortgage",
+        currencyCode: "CAD",
+        currentPaymentAmount: 2500,
+        proposedPaymentAmount: 2500,
+        currentPrincipal: 800,
+        proposedPrincipal: 2500 - expectedInterest,
+        currentInterest: 1700,
+        proposedInterest: expectedInterest,
+        extraPrincipal: 0,
+      });
+    });
+
+    it("returns a null preview when deferring on an account with no linked schedule", async () => {
+      const account = makeAccount({ scheduledTransactionId: null });
+      accountsRepository.findOne.mockResolvedValue(account);
+      manager.find.mockResolvedValue([
+        makeRow({ effectiveDate: "2024-06-01", annualRate: 4.9 }),
+      ]);
+
+      const result = await service.create(
+        userId,
+        accountId,
+        { effectiveDate: "2024-06-01", annualRate: 4.9 },
+        { deferScheduledSync: true },
+      );
+
+      expect(result.scheduledPaymentPreview).toBeNull();
+      expect(scheduledTransactionsService.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("applyScheduledPaymentSync", () => {
+    it("resyncs the linked scheduled payment and returns the applied change", async () => {
+      const account = makeAccount({ interestRate: 4.9 });
+      accountsRepository.findOne.mockResolvedValue(account);
+      scheduledTransactionsService.findOne.mockResolvedValue({
+        id: "sched-1",
+        name: "Mortgage",
+        currencyCode: "CAD",
+        amount: -2500,
+        splits: [],
+      });
+
+      const result = await service.applyScheduledPaymentSync(userId, accountId);
+
+      const expectedInterest =
+        Math.round(400000 * (4.9 / 100 / 12) * 10000) / 10000;
+      expect(scheduledTransactionsService.update).toHaveBeenCalledWith(
+        userId,
+        "sched-1",
+        expect.objectContaining({
+          amount: -2500,
+          splits: [
+            expect.objectContaining({
+              transferAccountId: accountId,
+              amount: -(2500 - expectedInterest),
+              memo: "Principal",
+            }),
+            expect.objectContaining({
+              categoryId: "cat-interest",
+              amount: -expectedInterest,
+              memo: "Interest",
+            }),
+          ],
+        }),
+      );
+      expect(result?.proposedInterest).toBe(expectedInterest);
+    });
+
+    it("returns null and applies nothing when there is no linked schedule", async () => {
+      accountsRepository.findOne.mockResolvedValue(
+        makeAccount({ scheduledTransactionId: null }),
+      );
+
+      const result = await service.applyScheduledPaymentSync(userId, accountId);
+
+      expect(result).toBeNull();
+      expect(scheduledTransactionsService.update).not.toHaveBeenCalled();
+    });
+
+    it("rejects for an account the user does not own", async () => {
+      accountsRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.applyScheduledPaymentSync(userId, accountId),
+      ).rejects.toThrow(NotFoundException);
+    });
   });
 
   describe("update", () => {

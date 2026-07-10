@@ -97,6 +97,36 @@ describe('AmortizationScheduleTable', () => {
     expect(screen.getAllByText('$200.00').length).toBeGreaterThan(0);
   });
 
+  it('surfaces a historical overpayment as extra principal', () => {
+    const events: LoanPaymentEvent[] = [
+      ...makeHistoryEvents(1),
+      {
+        date: '2025-02-15',
+        principal: 1000,
+        interest: 0,
+        balance: 8550,
+        cumulativePrincipal: 1450,
+        cumulativeInterest: 50,
+        type: 'OVERPAYMENT' as const,
+      },
+    ];
+    render(
+      <AmortizationScheduleTable
+        historyEvents={events}
+        projectionRows={makeProjection().rows}
+        currencyCode="CAD"
+      />,
+    );
+
+    // The extra-principal column appears for a historical overpayment even
+    // without a simulator scenario, and shows the overpaid amount.
+    expect(screen.getByText('Extra Principal')).toBeInTheDocument();
+    const overpaymentRow = screen
+      .getAllByRole('row')
+      .find((row) => row.textContent?.includes('Feb 15, 2025'));
+    expect(overpaymentRow?.textContent).toContain('$1000.00');
+  });
+
   it('collapses to 10 rows and expands with the show-all toggle', () => {
     const projection = makeProjection();
     render(

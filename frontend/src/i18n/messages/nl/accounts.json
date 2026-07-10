@@ -449,6 +449,14 @@
       "noHistory": "Geen saldogeschiedenis beschikbaar."
     },
     "rateHistory": {
+      "scheduledUpdateTitle": "Geplande betaling bijwerken?",
+      "scheduledUpdateMessage": "De geplande factuurbetaling \"{name}\" kan worden aangepast aan het nieuwe tarief: {payment} totaal, verdeeld in {principal} aflossing en {interest} rente. Nu bijwerken?",
+      "scheduledUpdateDefaultName": "deze hypotheek",
+      "scheduledUpdateConfirm": "Betaling bijwerken",
+      "scheduledUpdateSkip": "Ongewijzigd laten",
+      "scheduledUpdateAppliedToast": "Geplande betaling bijgewerkt",
+      "scheduledUpdateSkippedToast": "Geplande betaling ongewijzigd gelaten",
+      "scheduledUpdateFailed": "Kan de geplande betaling niet bijwerken",
       "title": "Rentehistorie",
       "description": "Volg renteveranderingen gedurende de looptijd van de lening, van variabele renteherzieningen tot verlengingen van de rentevaste periode.",
       "add": "Renteverandering toevoegen",

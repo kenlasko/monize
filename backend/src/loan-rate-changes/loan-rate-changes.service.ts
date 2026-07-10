@@ -28,6 +28,40 @@ import { todayYMD, formatDateYMDLocal } from "../common/date-utils";
 
 const RATE_CHANGE_ACCOUNT_TYPES = [AccountType.LOAN, AccountType.MORTGAGE];
 
+/**
+ * A before/after summary of how a linked scheduled bill payment would change
+ * to match the account's new rate/payment. Returned by `create` when the caller
+ * defers the sync so the UI can ask the user for permission before applying it.
+ */
+export interface ScheduledPaymentPreview {
+  scheduledTransactionId: string;
+  scheduledTransactionName: string | null;
+  currencyCode: string;
+  /** Absolute total payment amounts (null when unknown from the schedule) */
+  currentPaymentAmount: number | null;
+  proposedPaymentAmount: number;
+  /** Absolute principal/interest portions; current values are null when the
+   * schedule's splits do not clearly separate them */
+  currentPrincipal: number | null;
+  proposedPrincipal: number;
+  currentInterest: number | null;
+  proposedInterest: number;
+  /** Extra-principal split preserved as-is (0 when there is none) */
+  extraPrincipal: number;
+}
+
+/** The scheduled-payment update to apply, plus its user-facing preview. */
+interface ScheduledUpdatePlan {
+  scheduledTransactionId: string;
+  payload: Parameters<ScheduledTransactionsService["update"]>[2];
+  preview: ScheduledPaymentPreview;
+}
+
+/** A created rate change plus the pending scheduled-payment change, if any. */
+export type CreateLoanRateChangeResult = LoanRateChange & {
+  scheduledPaymentPreview: ScheduledPaymentPreview | null;
+};
+
 /** Normalize a DATE column value (string at runtime, Date in tests) to YYYY-MM-DD */
 export function toYmd(value: Date | string | null | undefined): string | null {
   if (!value) return null;
@@ -70,11 +104,19 @@ export class LoanRateChangesService {
     });
   }
 
+  /**
+   * Record a rate change and realign the account scalars. By default the linked
+   * scheduled bill payment is resynced immediately (the legacy mortgage-rate
+   * behaviour). Pass `deferScheduledSync` to instead return a preview of the
+   * pending scheduled-payment change and leave it unapplied, so the caller can
+   * confirm with the user before applying it via `applyScheduledPaymentSync`.
+   */
   async create(
     userId: string,
     accountId: string,
     dto: CreateLoanRateChangeDto,
-  ): Promise<LoanRateChange> {
+    options?: { deferScheduledSync?: boolean },
+  ): Promise<CreateLoanRateChangeResult> {
     const account = await this.verifyLoanAccount(userId, accountId);
 
     if (dto.newPaymentAmount != null && dto.recalculatePayment) {
@@ -150,10 +192,16 @@ export class LoanRateChangesService {
       await queryRunner.release();
     }
 
+    let scheduledPaymentPreview: ScheduledPaymentPreview | null = null;
     if (applied) {
-      await this.syncScheduledTransaction(userId, account);
+      if (options?.deferScheduledSync) {
+        const plan = await this.buildScheduledUpdate(userId, account);
+        scheduledPaymentPreview = plan?.preview ?? null;
+      } else {
+        await this.syncScheduledTransaction(userId, account);
+      }
     }
-    return saved;
+    return { ...saved, scheduledPaymentPreview };
   }
 
   async update(
@@ -276,93 +324,174 @@ export class LoanRateChangesService {
 
   /**
    * Resync the linked scheduled payment to the account's current rate and
-   * payment: recompute the principal/interest split from the current balance,
-   * preserving any separate extra-principal split (memo contains "extra").
-   * Best-effort, mirroring the tolerance of the mortgage-rate update flow --
-   * the rate history itself is already committed.
+   * payment. Best-effort, mirroring the tolerance of the mortgage-rate update
+   * flow -- the rate history itself is already committed.
    */
   async syncScheduledTransaction(
     userId: string,
     account: Account,
   ): Promise<void> {
-    if (account.isClosed || !account.scheduledTransactionId) return;
-    if (
-      account.interestRate == null ||
-      !account.paymentAmount ||
-      !account.paymentFrequency
-    ) {
-      return;
-    }
-    const balance = Math.abs(Number(account.currentBalance));
-    if (balance <= 0.01) return;
-
+    const plan = await this.buildScheduledUpdate(userId, account);
+    if (!plan) return;
     try {
-      const scheduled = await this.scheduledTransactionsService.findOne(
-        userId,
-        account.scheduledTransactionId,
-      );
-
-      const isMortgage = account.accountType === AccountType.MORTGAGE;
-      const periodicRate = isMortgage
-        ? getPeriodicRate(
-            account.interestRate,
-            getMortgagePeriodsPerYear(
-              account.paymentFrequency as MortgagePaymentFrequency,
-            ),
-            account.isCanadianMortgage || false,
-            account.isVariableRate || false,
-          )
-        : account.interestRate /
-          100 /
-          getPeriodsPerYear(account.paymentFrequency as PaymentFrequency);
-
-      const paymentAmount = Number(account.paymentAmount);
-      let interest = roundMoney(balance * periodicRate);
-      if (interest > paymentAmount) interest = paymentAmount;
-      let principal = roundMoney(paymentAmount - interest);
-      if (principal > balance) principal = roundMoney(balance);
-
-      const splits = scheduled.splits || [];
-      const extraSplit = splits.find(
-        (s) =>
-          s.transferAccountId === account.id &&
-          s.memo?.toLowerCase().includes("extra"),
-      );
-      const extraAmount = extraSplit ? Math.abs(Number(extraSplit.amount)) : 0;
-
       await this.scheduledTransactionsService.update(
         userId,
-        account.scheduledTransactionId,
-        {
-          amount: -roundMoney(paymentAmount + extraAmount),
-          splits: [
-            {
-              transferAccountId: account.id,
-              amount: -principal,
-              memo: "Principal",
-            },
-            {
-              categoryId: account.interestCategoryId || undefined,
-              amount: -interest,
-              memo: "Interest",
-            },
-            ...(extraSplit
-              ? [
-                  {
-                    transferAccountId: account.id,
-                    amount: -extraAmount,
-                    memo: extraSplit.memo || "Extra Principal",
-                  },
-                ]
-              : []),
-          ],
-        },
+        plan.scheduledTransactionId,
+        plan.payload,
       );
     } catch (error) {
       this.logger.warn(
         `Could not update scheduled transaction: ${error.message}`,
       );
     }
+  }
+
+  /**
+   * Apply the pending scheduled-payment change for an account after the user
+   * has granted permission. Recomputes from the account's current (already
+   * updated) rate/payment so it matches the preview shown at rate-change time.
+   * Returns the applied change, or null when there is nothing to sync.
+   */
+  async applyScheduledPaymentSync(
+    userId: string,
+    accountId: string,
+  ): Promise<ScheduledPaymentPreview | null> {
+    const account = await this.verifyLoanAccount(userId, accountId);
+    const plan = await this.buildScheduledUpdate(userId, account);
+    if (!plan) return null;
+    await this.scheduledTransactionsService.update(
+      userId,
+      plan.scheduledTransactionId,
+      plan.payload,
+    );
+    return plan.preview;
+  }
+
+  /**
+   * Recompute the linked scheduled payment's principal/interest split from the
+   * account's current balance and rate, preserving any separate extra-principal
+   * split (memo contains "extra"). Returns the update to apply plus a
+   * before/after preview, or null when the account has no applicable linked
+   * scheduled bill payment. Does not apply anything.
+   */
+  async buildScheduledUpdate(
+    userId: string,
+    account: Account,
+  ): Promise<ScheduledUpdatePlan | null> {
+    if (account.isClosed || !account.scheduledTransactionId) return null;
+    if (
+      account.interestRate == null ||
+      !account.paymentAmount ||
+      !account.paymentFrequency
+    ) {
+      return null;
+    }
+    const balance = Math.abs(Number(account.currentBalance));
+    if (balance <= 0.01) return null;
+
+    let scheduled: Awaited<
+      ReturnType<ScheduledTransactionsService["findOne"]>
+    >;
+    try {
+      scheduled = await this.scheduledTransactionsService.findOne(
+        userId,
+        account.scheduledTransactionId,
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Could not load scheduled transaction: ${error.message}`,
+      );
+      return null;
+    }
+
+    const isMortgage = account.accountType === AccountType.MORTGAGE;
+    const periodicRate = isMortgage
+      ? getPeriodicRate(
+          account.interestRate,
+          getMortgagePeriodsPerYear(
+            account.paymentFrequency as MortgagePaymentFrequency,
+          ),
+          account.isCanadianMortgage || false,
+          account.isVariableRate || false,
+        )
+      : account.interestRate /
+        100 /
+        getPeriodsPerYear(account.paymentFrequency as PaymentFrequency);
+
+    const paymentAmount = Number(account.paymentAmount);
+    let interest = roundMoney(balance * periodicRate);
+    if (interest > paymentAmount) interest = paymentAmount;
+    let principal = roundMoney(paymentAmount - interest);
+    if (principal > balance) principal = roundMoney(balance);
+
+    const splits = scheduled.splits || [];
+    const extraSplit = splits.find(
+      (s) =>
+        s.transferAccountId === account.id &&
+        s.memo?.toLowerCase().includes("extra"),
+    );
+    const extraAmount = extraSplit ? Math.abs(Number(extraSplit.amount)) : 0;
+    const proposedPaymentAmount = roundMoney(paymentAmount + extraAmount);
+
+    const payload = {
+      amount: -proposedPaymentAmount,
+      splits: [
+        {
+          transferAccountId: account.id,
+          amount: -principal,
+          memo: "Principal",
+        },
+        {
+          categoryId: account.interestCategoryId || undefined,
+          amount: -interest,
+          memo: "Interest",
+        },
+        ...(extraSplit
+          ? [
+              {
+                transferAccountId: account.id,
+                amount: -extraAmount,
+                memo: extraSplit.memo || "Extra Principal",
+              },
+            ]
+          : []),
+      ],
+    };
+
+    const principalSplit = splits.find(
+      (s) =>
+        s.transferAccountId === account.id &&
+        !s.memo?.toLowerCase().includes("extra"),
+    );
+    const interestSplit = splits.find(
+      (s) =>
+        !s.transferAccountId &&
+        (s.categoryId != null || s.memo?.toLowerCase().includes("interest")),
+    );
+
+    const preview: ScheduledPaymentPreview = {
+      scheduledTransactionId: account.scheduledTransactionId,
+      scheduledTransactionName: scheduled.name ?? null,
+      currencyCode: scheduled.currencyCode ?? account.currencyCode ?? "",
+      currentPaymentAmount:
+        scheduled.amount != null ? Math.abs(Number(scheduled.amount)) : null,
+      proposedPaymentAmount,
+      currentPrincipal: principalSplit
+        ? Math.abs(Number(principalSplit.amount))
+        : null,
+      proposedPrincipal: principal,
+      currentInterest: interestSplit
+        ? Math.abs(Number(interestSplit.amount))
+        : null,
+      proposedInterest: interest,
+      extraPrincipal: extraAmount,
+    };
+
+    return {
+      scheduledTransactionId: account.scheduledTransactionId,
+      payload,
+      preview,
+    };
   }
 
   /**

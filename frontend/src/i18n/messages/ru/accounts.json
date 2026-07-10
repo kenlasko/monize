@@ -449,6 +449,14 @@
       "noHistory": "История баланса недоступна."
     },
     "rateHistory": {
+      "scheduledUpdateTitle": "Обновить запланированный платёж?",
+      "scheduledUpdateMessage": "Запланированный платёж по счёту «{name}» можно обновить в соответствии с новой ставкой: всего {payment}, из них {principal} основного долга и {interest} процентов. Обновить сейчас?",
+      "scheduledUpdateDefaultName": "эта ипотека",
+      "scheduledUpdateConfirm": "Обновить платёж",
+      "scheduledUpdateSkip": "Оставить как есть",
+      "scheduledUpdateAppliedToast": "Запланированный платёж обновлён",
+      "scheduledUpdateSkippedToast": "Запланированный платёж оставлен без изменений",
+      "scheduledUpdateFailed": "Не удалось обновить запланированный платёж",
       "title": "История ставок",
       "description": "Отслеживайте изменения процентной ставки на протяжении всего срока кредита — от пересмотра переменной ставки до продления срока.",
       "add": "Добавить изменение ставки",

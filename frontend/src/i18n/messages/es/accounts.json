@@ -449,6 +449,14 @@
       "noHistory": "No hay historial de saldo disponible."
     },
     "rateHistory": {
+      "scheduledUpdateTitle": "¿Actualizar el pago programado?",
+      "scheduledUpdateMessage": "El pago programado de la factura \"{name}\" puede actualizarse según la nueva tasa: {payment} en total, dividido en {principal} de capital y {interest} de intereses. ¿Actualizarlo ahora?",
+      "scheduledUpdateDefaultName": "esta hipoteca",
+      "scheduledUpdateConfirm": "Actualizar pago",
+      "scheduledUpdateSkip": "Dejar como está",
+      "scheduledUpdateAppliedToast": "Pago programado actualizado",
+      "scheduledUpdateSkippedToast": "Pago programado sin cambios",
+      "scheduledUpdateFailed": "No se pudo actualizar el pago programado",
       "title": "Historial de tasas",
       "description": "Registre los cambios en la tasa de interés a lo largo de la vida del préstamo, desde ajustes de tasa variable hasta renovaciones de plazo.",
       "add": "Añadir cambio de tasa",

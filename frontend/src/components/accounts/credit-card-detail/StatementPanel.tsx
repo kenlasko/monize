@@ -62,14 +62,13 @@ export function StatementPanel({ cycle, isLoading }: StatementPanelProps) {
     {
       label: t('statement.statementBalance'),
       value: formatCurrency(Math.abs(cycle.statementBalance), currency),
+      // "As of" the last reconciliation; falls back to the cycle's settlement
+      // date when nothing has been reconciled yet.
       note: t('statement.statementBalanceNote', {
-        date: formatDate(toLocalDate(cycle.lastSettlementDate)),
+        date: formatDate(
+          toLocalDate(cycle.statementBalanceDate ?? cycle.lastSettlementDate),
+        ),
       }),
-    },
-    {
-      label: t('statement.amountPaid'),
-      value: formatCurrency(cycle.amountPaidSinceStatement, currency),
-      valueClass: 'text-green-600 dark:text-green-400',
     },
     {
       label: t('statement.paymentDue'),
@@ -80,6 +79,17 @@ export function StatementPanel({ cycle, isLoading }: StatementPanelProps) {
         cycle.daysUntilPaymentDue != null
           ? t('statement.dueIn', { days: cycle.daysUntilPaymentDue })
           : undefined,
+    },
+    {
+      label: t('statement.expensesSinceStatement'),
+      value: formatCurrency(cycle.expensesSinceStatement, currency),
+      valueClass: 'text-red-600 dark:text-red-400',
+      note: t('statement.expensesSinceStatementNote'),
+    },
+    {
+      label: t('statement.amountPaid'),
+      value: formatCurrency(cycle.amountPaidSinceStatement, currency),
+      valueClass: 'text-green-600 dark:text-green-400',
     },
     {
       label: t('statement.settlement'),
@@ -99,7 +109,7 @@ export function StatementPanel({ cycle, isLoading }: StatementPanelProps) {
           end: formatDate(toLocalDate(cycle.cycleEnd)),
         })}
       </p>
-      <SummaryCardGrid cards={cards} className="grid grid-cols-2 lg:grid-cols-4 gap-4" />
+      <SummaryCardGrid cards={cards} className="grid grid-cols-2 lg:grid-cols-5 gap-4" />
     </section>
   );
 }

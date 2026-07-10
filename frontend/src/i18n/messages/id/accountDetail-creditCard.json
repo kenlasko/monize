@@ -12,6 +12,8 @@
     "cycleWindow": "Siklus: {start} hingga {end}",
     "statementBalance": "Saldo Laporan",
     "statementBalanceNote": "Per {date}",
+    "expensesSinceStatement": "Pengeluaran Sejak Tagihan",
+    "expensesSinceStatementNote": "Transaksi baru, termasuk yang belum direkonsiliasi",
     "amountPaid": "Dibayar Sejak Laporan",
     "paymentDue": "Jatuh Tempo Pembayaran",
     "settlement": "Laporan Ditutup",

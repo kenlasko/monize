@@ -12,6 +12,8 @@
     "cycleWindow": "Цикл: з {start} по {end}",
     "statementBalance": "Баланс виписки",
     "statementBalanceNote": "Станом на {date}",
+    "expensesSinceStatement": "Витрати з дати виписки",
+    "expensesSinceStatementNote": "Нові операції, зокрема неузгоджені",
     "amountPaid": "Сплачено після виписки",
     "paymentDue": "До сплати",
     "settlement": "Виписка закривається",

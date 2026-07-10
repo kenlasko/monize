@@ -12,6 +12,8 @@
     "cycleWindow": "Ciclo: del {start} al {end}",
     "statementBalance": "Saldo del estado de cuenta",
     "statementBalanceNote": "A fecha de {date}",
+    "expensesSinceStatement": "Gastos desde el extracto",
+    "expensesSinceStatementNote": "Cargos nuevos, incluidos los no conciliados",
     "amountPaid": "Pagado desde el estado de cuenta",
     "paymentDue": "Pago pendiente",
     "settlement": "Cierre del estado de cuenta",

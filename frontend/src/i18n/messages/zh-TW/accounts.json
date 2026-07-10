@@ -449,6 +449,14 @@
       "noHistory": "沒有可用的餘額歷史。"
     },
     "rateHistory": {
+      "scheduledUpdateTitle": "更新排定的付款？",
+      "scheduledUpdateMessage": "排定的帳單付款「{name}」可更新以符合新利率：共 {payment}，其中本金 {principal}、利息 {interest}。立即更新？",
+      "scheduledUpdateDefaultName": "此抵押貸款",
+      "scheduledUpdateConfirm": "更新付款",
+      "scheduledUpdateSkip": "維持不變",
+      "scheduledUpdateAppliedToast": "排定的付款已更新",
+      "scheduledUpdateSkippedToast": "排定的付款維持不變",
+      "scheduledUpdateFailed": "無法更新排定的付款",
       "title": "利率變更歷史",
       "description": "追蹤貸款存續期間的利率變更，從浮動利率重設到期限續約。",
       "add": "新增利率變更",

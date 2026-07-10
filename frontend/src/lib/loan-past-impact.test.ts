@@ -128,33 +128,28 @@ describe('computePastImpact', () => {
     expect(impact!.originalSchedule.rows[0].date).toBe('2025-01-15');
   });
 
-  it('measures extra principal against the contractual schedule', () => {
-    // Paid down to 5000 while the contract would still have a higher balance
-    const account = makeAccount({ currentBalance: -5000 });
-    const history = makeHistory(account, [500, 500]);
-    const asOf = new Date(2025, 5, 20); // 2025-06-20
+  it('sums the principal of payments tagged as overpayments', () => {
+    // Two regular payments plus two overpayments recognized by the loan's
+    // overpayment memo; the extra principal paid is the sum of the two
+    // overpayments, matching what the installment schedule surfaces.
+    const account = makeAccount({ currentBalance: -5000, overpaymentMemo: 'extra' });
+    const transactions = [
+      { id: 'r1', accountId: account.id, transactionDate: '2025-01-15', amount: 500, linkedTransaction: null },
+      { id: 'o1', accountId: account.id, transactionDate: '2025-02-10', amount: 1500, description: 'extra principal', linkedTransaction: null },
+      { id: 'r2', accountId: account.id, transactionDate: '2025-02-15', amount: 500, linkedTransaction: null },
+      { id: 'o2', accountId: account.id, transactionDate: '2025-03-10', amount: 2500, description: 'EXTRA to principal', linkedTransaction: null },
+    ] as Transaction[];
+    const history = deriveLoanPaymentHistory(account, transactions);
 
-    const impact = computePastImpact(account, history, asOf)!;
+    const impact = computePastImpact(account, history, new Date(2025, 5, 20))!;
 
-    const contractual = generateLoanSchedule({
-      startingBalance: 10000,
-      annualRate: 6,
-      paymentAmount: 500,
-      frequency: 'MONTHLY',
-      firstPaymentDate: new Date(2025, 0, 15),
-    });
-    const dueByAsOf = contractual.rows.filter((r) => r.date <= '2025-06-20');
-    const expected =
-      Math.round((dueByAsOf[dueByAsOf.length - 1].balance - 5000) * 100) / 100;
-
-    expect(impact.extraPrincipalPaid).toBeCloseTo(expected, 2);
-    expect(impact.extraPrincipalPaid).toBeGreaterThan(0);
+    expect(impact.extraPrincipalPaid).toBeCloseTo(1500 + 2500, 2);
   });
 
-  it('reports zero extra principal when behind the contractual schedule', () => {
-    // Actual balance higher than the contract would have it -> not ahead
-    const account = makeAccount({ currentBalance: -9800 });
-    const history = makeHistory(account, [200]);
+  it('reports zero extra principal when no payment is tagged as an overpayment', () => {
+    // Plain payments with no overpayment category or memo -> nothing classified
+    const account = makeAccount({ currentBalance: -5000 });
+    const history = makeHistory(account, [500, 500]);
     const asOf = new Date(2025, 5, 20);
 
     const impact = computePastImpact(account, history, asOf)!;

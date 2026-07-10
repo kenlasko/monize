@@ -449,6 +449,14 @@
       "noHistory": "잔액 내역이 없습니다."
     },
     "rateHistory": {
+      "scheduledUpdateTitle": "예약된 결제를 업데이트할까요?",
+      "scheduledUpdateMessage": "예약된 청구서 결제 \"{name}\"을(를) 새 금리에 맞게 업데이트할 수 있습니다: 총 {payment}, 원금 {principal} 및 이자 {interest}로 구성. 지금 업데이트할까요?",
+      "scheduledUpdateDefaultName": "이 대출",
+      "scheduledUpdateConfirm": "결제 업데이트",
+      "scheduledUpdateSkip": "그대로 두기",
+      "scheduledUpdateAppliedToast": "예약된 결제가 업데이트됨",
+      "scheduledUpdateSkippedToast": "예약된 결제를 변경하지 않음",
+      "scheduledUpdateFailed": "예약된 결제를 업데이트할 수 없습니다",
       "title": "금리 내역",
       "description": "변동 금리 재설정부터 기간 갱신까지, 대출 기간 전반에 걸친 금리 변경을 추적합니다.",
       "add": "금리 변경 추가",

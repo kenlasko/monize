@@ -12,6 +12,8 @@
     "cycleWindow": "Cykl: od {start} do {end}",
     "statementBalance": "Saldo z wyciągu",
     "statementBalanceNote": "Na dzień {date}",
+    "expensesSinceStatement": "Wydatki od wyciągu",
+    "expensesSinceStatementNote": "Nowe obciążenia, w tym nieuzgodnione",
     "amountPaid": "Zapłacone od wyciągu",
     "paymentDue": "Do zapłaty",
     "settlement": "Zamknięcie wyciągu",

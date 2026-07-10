@@ -12,6 +12,8 @@
     "cycleWindow": "週期：{start} 至 {end}",
     "statementBalance": "對帳單結餘",
     "statementBalanceNote": "截至 {date}",
+    "expensesSinceStatement": "帳單日後的支出",
+    "expensesSinceStatementNote": "新增消費，含未對帳",
     "amountPaid": "自對帳單後已付",
     "paymentDue": "應付款",
     "settlement": "對帳單結算",

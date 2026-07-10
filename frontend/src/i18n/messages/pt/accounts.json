@@ -449,6 +449,14 @@
       "noHistory": "Sem histórico de saldo disponível."
     },
     "rateHistory": {
+      "scheduledUpdateTitle": "Atualizar o pagamento agendado?",
+      "scheduledUpdateMessage": "O pagamento agendado da fatura \"{name}\" pode ser atualizado para corresponder à nova taxa: {payment} no total, dividido em {principal} de capital e {interest} de juros. Atualizar agora?",
+      "scheduledUpdateDefaultName": "esta hipoteca",
+      "scheduledUpdateConfirm": "Atualizar pagamento",
+      "scheduledUpdateSkip": "Deixar como está",
+      "scheduledUpdateAppliedToast": "Pagamento agendado atualizado",
+      "scheduledUpdateSkippedToast": "Pagamento agendado mantido inalterado",
+      "scheduledUpdateFailed": "Não foi possível atualizar o pagamento agendado",
       "title": "Histórico de taxas",
       "description": "Acompanhe as alterações da taxa de juro ao longo da vida do empréstimo, desde revisões de taxa variável a renovações de prazo.",
       "add": "Adicionar alteração de taxa",

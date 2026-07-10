@@ -12,6 +12,8 @@
     "cycleWindow": "[XX-Cycle: {start} to {end}-XX]",
     "statementBalance": "[XX-Statement Balance-XX]",
     "statementBalanceNote": "[XX-As of {date}-XX]",
+    "expensesSinceStatement": "[XX-Expenses Since Statement-XX]",
+    "expensesSinceStatementNote": "[XX-New charges, including unreconciled-XX]",
     "amountPaid": "[XX-Paid Since Statement-XX]",
     "paymentDue": "[XX-Payment Due-XX]",
     "settlement": "[XX-Statement Closes-XX]",

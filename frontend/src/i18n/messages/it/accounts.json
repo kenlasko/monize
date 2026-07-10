@@ -449,6 +449,14 @@
       "noHistory": "Nessuna cronologia del saldo disponibile."
     },
     "rateHistory": {
+      "scheduledUpdateTitle": "Aggiornare il pagamento pianificato?",
+      "scheduledUpdateMessage": "Il pagamento pianificato della bolletta \"{name}\" può essere aggiornato in base al nuovo tasso: {payment} totali, suddivisi in {principal} di capitale e {interest} di interessi. Aggiornarlo ora?",
+      "scheduledUpdateDefaultName": "questo mutuo",
+      "scheduledUpdateConfirm": "Aggiorna pagamento",
+      "scheduledUpdateSkip": "Lascia invariato",
+      "scheduledUpdateAppliedToast": "Pagamento pianificato aggiornato",
+      "scheduledUpdateSkippedToast": "Pagamento pianificato invariato",
+      "scheduledUpdateFailed": "Impossibile aggiornare il pagamento pianificato",
       "title": "Storico dei tassi",
       "description": "Tieni traccia delle variazioni del tasso d'interesse per tutta la durata del prestito, dagli adeguamenti del tasso variabile ai rinnovi di scadenza.",
       "add": "Aggiungi variazione del tasso",

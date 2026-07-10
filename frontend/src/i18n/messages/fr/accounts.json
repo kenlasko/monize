@@ -449,6 +449,14 @@
       "noHistory": "Aucun historique de solde disponible."
     },
     "rateHistory": {
+      "scheduledUpdateTitle": "Mettre à jour le paiement planifié ?",
+      "scheduledUpdateMessage": "Le paiement de facture planifié « {name} » peut être mis à jour selon le nouveau taux : {payment} au total, réparti en {principal} de capital et {interest} d’intérêts. Le mettre à jour maintenant ?",
+      "scheduledUpdateDefaultName": "ce prêt hypothécaire",
+      "scheduledUpdateConfirm": "Mettre à jour le paiement",
+      "scheduledUpdateSkip": "Laisser tel quel",
+      "scheduledUpdateAppliedToast": "Paiement planifié mis à jour",
+      "scheduledUpdateSkippedToast": "Paiement planifié inchangé",
+      "scheduledUpdateFailed": "Impossible de mettre à jour le paiement planifié",
       "title": "Historique des taux",
       "description": "Suivez les changements de taux d'intérêt tout au long de la vie du prêt, des révisions de taux variable aux renouvellements de terme.",
       "add": "Ajouter un changement de taux",

@@ -3,8 +3,10 @@ import { dedupe, invalidateCache } from './apiCache';
 import {
   LoanRateChange,
   CreateLoanRateChangeData,
+  CreateLoanRateChangeResult,
   UpdateLoanRateChangeData,
   DetectRateChangesResult,
+  ScheduledPaymentPreview,
 } from '@/types/loan-rate-change';
 
 const cachePrefix = (accountId: string) => `loan-rate-changes:${accountId}`;
@@ -32,10 +34,25 @@ export const loanRateChangesApi = {
   create: async (
     accountId: string,
     data: CreateLoanRateChangeData,
-  ): Promise<LoanRateChange> => {
-    const response = await apiClient.post<LoanRateChange>(
+  ): Promise<CreateLoanRateChangeResult> => {
+    const response = await apiClient.post<CreateLoanRateChangeResult>(
       `/accounts/${accountId}/rate-changes`,
       data,
+    );
+    invalidateAfterMutation(accountId);
+    return response.data;
+  },
+
+  /**
+   * Apply the pending scheduled bill-payment change after the user grants
+   * permission from the rate-change confirmation prompt. Returns the applied
+   * change, or null when there was nothing to sync.
+   */
+  applyScheduledPayment: async (
+    accountId: string,
+  ): Promise<ScheduledPaymentPreview | null> => {
+    const response = await apiClient.post<ScheduledPaymentPreview | null>(
+      `/accounts/${accountId}/rate-changes/apply-scheduled-payment`,
     );
     invalidateAfterMutation(accountId);
     return response.data;

@@ -449,6 +449,14 @@
       "noHistory": "Історія балансу недоступна."
     },
     "rateHistory": {
+      "scheduledUpdateTitle": "Оновити запланований платіж?",
+      "scheduledUpdateMessage": "Запланований платіж за рахунком «{name}» можна оновити відповідно до нової ставки: усього {payment}, з них {principal} основної суми та {interest} відсотків. Оновити зараз?",
+      "scheduledUpdateDefaultName": "ця іпотека",
+      "scheduledUpdateConfirm": "Оновити платіж",
+      "scheduledUpdateSkip": "Залишити як є",
+      "scheduledUpdateAppliedToast": "Запланований платіж оновлено",
+      "scheduledUpdateSkippedToast": "Запланований платіж залишено без змін",
+      "scheduledUpdateFailed": "Не вдалося оновити запланований платіж",
       "title": "Історія ставок",
       "description": "Відстежуйте зміни відсоткової ставки протягом усього терміну кредиту — від перегляду плаваючої ставки до поновлення умов.",
       "add": "Додати зміну ставки",

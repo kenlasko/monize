@@ -354,6 +354,9 @@ describe("TransactionSplitService", () => {
           amount: 50,
           isTransfer: true,
           payeeName: "Store",
+          // The counterpart's date is the parent's calendar day as a plain
+          // yyyy-MM-dd string, not a Date object that would shift west of UTC.
+          transactionDate: "2026-01-15",
         }),
       );
       expect(splitsRepository.update).toHaveBeenCalledWith(

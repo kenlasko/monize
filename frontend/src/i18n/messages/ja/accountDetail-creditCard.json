@@ -12,6 +12,8 @@
     "cycleWindow": "サイクル: {start}～{end}",
     "statementBalance": "請求残高",
     "statementBalanceNote": "{date}時点",
+    "expensesSinceStatement": "明細書発行後の支出",
+    "expensesSinceStatementNote": "未消込を含む新規請求",
     "amountPaid": "請求後の支払額",
     "paymentDue": "支払期日",
     "settlement": "請求締め",

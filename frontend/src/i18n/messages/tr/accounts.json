@@ -449,6 +449,14 @@
       "noHistory": "Bakiye geçmişi yok."
     },
     "rateHistory": {
+      "scheduledUpdateTitle": "Planlanan ödeme güncellensin mi?",
+      "scheduledUpdateMessage": "Planlanan fatura ödemesi \"{name}\" yeni orana göre güncellenebilir: toplam {payment}, {principal} anapara ve {interest} faiz. Şimdi güncellensin mi?",
+      "scheduledUpdateDefaultName": "bu konut kredisi",
+      "scheduledUpdateConfirm": "Ödemeyi güncelle",
+      "scheduledUpdateSkip": "Olduğu gibi bırak",
+      "scheduledUpdateAppliedToast": "Planlanan ödeme güncellendi",
+      "scheduledUpdateSkippedToast": "Planlanan ödeme değiştirilmedi",
+      "scheduledUpdateFailed": "Planlanan ödeme güncellenemedi",
       "title": "Faiz Geçmişi",
       "description": "Değişken faiz sıfırlamalarından vade yenilemelerine kadar, kredi süresi boyunca faiz oranı değişikliklerini takip edin.",
       "add": "Faiz değişikliği ekle",

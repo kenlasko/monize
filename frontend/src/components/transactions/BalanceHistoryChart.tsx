@@ -250,7 +250,9 @@ export function BalanceHistoryChart({
                 strokeWidth={2}
                 label={{
                   value: t('charts.balanceHistory.projected'),
-                  position: 'insideTopRight',
+                  // Bottom of the divider, clear of the high-value ("Max
+                  // Balance") bubble that sits in the top headroom.
+                  position: 'insideBottomRight',
                   fill: chartColors.axis,
                   fontSize: 11,
                 }}

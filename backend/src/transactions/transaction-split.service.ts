@@ -323,10 +323,21 @@ export class TransactionSplitService {
         sourceAccountId!,
       );
 
+      // Persist the transfer counterpart's date as a plain yyyy-MM-dd string,
+      // not the Date object. The Date arrives as UTC midnight
+      // (new Date("2024-01-05")), so saving it directly lets node-postgres
+      // serialize it in the server's local time and Postgres truncates it to
+      // the previous calendar day west of UTC -- shifting every split transfer
+      // (e.g. loan payments) a day earlier than its parent. The ISO date part
+      // recovers the intended day and matches the parent transaction.
+      const dateStr = transactionDate
+        ? transactionDate.toISOString().substring(0, 10)
+        : "";
+
       const linkedTransaction = queryRunner.manager.create(Transaction, {
         userId,
         accountId: split.transferAccountId,
-        transactionDate: transactionDate as any,
+        transactionDate: (dateStr || null) as any,
         amount: -split.amount,
         currencyCode: targetAccount.currencyCode,
         exchangeRate: 1,
@@ -346,9 +357,6 @@ export class TransactionSplitService {
         linkedTransactionId: transactionId,
       });
 
-      const dateStr = transactionDate
-        ? transactionDate.toISOString().substring(0, 10)
-        : "";
       if (dateStr && isTransactionInFuture(dateStr)) {
         await this.accountsService.recalculateCurrentBalance(
           split.transferAccountId!,

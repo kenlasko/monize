@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@/test/render';
+import { render, screen, fireEvent } from '@/test/render';
 import { SpendingBreakdown } from './SpendingBreakdown';
 import type { GroupedTotal } from '@/types/transaction';
 
@@ -37,5 +37,33 @@ describe('SpendingBreakdown', () => {
       />,
     );
     expect(screen.getByText('Uncategorized')).toBeInTheDocument();
+  });
+
+  it('invokes onSelect with the category id when a row is clicked', () => {
+    const onSelect = vi.fn();
+    render(
+      <SpendingBreakdown
+        totals={totals}
+        currencyCode="CAD"
+        isLoading={false}
+        onSelect={onSelect}
+      />,
+    );
+    fireEvent.click(screen.getByText('Groceries'));
+    expect(onSelect).toHaveBeenCalledWith('c1');
+  });
+
+  it('passes null to onSelect for an uncategorised row', () => {
+    const onSelect = vi.fn();
+    render(
+      <SpendingBreakdown
+        totals={[{ id: null, name: null, currencyCode: 'CAD', total: -50, count: 1 }]}
+        currencyCode="CAD"
+        isLoading={false}
+        onSelect={onSelect}
+      />,
+    );
+    fireEvent.click(screen.getByText('Uncategorized'));
+    expect(onSelect).toHaveBeenCalledWith(null);
   });
 });

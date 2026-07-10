@@ -394,7 +394,15 @@
       "detectTitle": "[XX-Detect Rate Changes-XX]",
       "detectMessage": "[XX-This analyzes your payment history and replaces previously detected entries. Entries you added or edited yourself are kept.-XX]",
       "detectedToast": "[XX-{count, plural, =0 {No new rate changes detected} one {# rate change detected} other {# rate changes detected}}-XX]",
-      "detectFailed": "[XX-Could not detect rate changes from the payment history-XX]"
+      "detectFailed": "[XX-Could not detect rate changes from the payment history-XX]",
+      "scheduledUpdateTitle": "[XX-Update scheduled payment?-XX]",
+      "scheduledUpdateMessage": "[XX-The scheduled bill payment \"{name}\" can be updated to match the new rate: {payment} total, split into {principal} principal and {interest} interest. Update it now?-XX]",
+      "scheduledUpdateDefaultName": "[XX-this mortgage-XX]",
+      "scheduledUpdateConfirm": "[XX-Update payment-XX]",
+      "scheduledUpdateSkip": "[XX-Leave as-is-XX]",
+      "scheduledUpdateAppliedToast": "[XX-Scheduled payment updated-XX]",
+      "scheduledUpdateSkippedToast": "[XX-Scheduled payment left unchanged-XX]",
+      "scheduledUpdateFailed": "[XX-Could not update the scheduled payment-XX]"
     },
     "overpaymentCategory": {
       "title": "[XX-Overpayment Detection-XX]",
@@ -474,7 +482,7 @@
       "title": "[XX-Impact of Overpayments Made-XX]",
       "description": "[XX-How the payments you have already made compare against the original contractual schedule.-XX]",
       "extraPrincipalPaid": "[XX-Extra Principal Paid-XX]",
-      "extraPrincipalNote": "[XX-How far ahead of the original schedule you are-XX]",
+      "extraPrincipalNote": "[XX-Total extra principal paid on top of your scheduled payments-XX]",
       "missingData": "[XX-To see how your overpayments have shortened this loan, this account needs an interest rate, a payment frequency, and some recorded payments to reconstruct its original schedule.-XX]",
       "monthsAlreadySaved": "[XX-Time Already Saved-XX]",
       "monthsValue": "[XX-{count, plural, one {# month} other {# months}}-XX]",

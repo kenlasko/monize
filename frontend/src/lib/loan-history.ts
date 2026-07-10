@@ -1,5 +1,5 @@
 import { Account } from '@/types/account';
-import { Transaction } from '@/types/transaction';
+import { Transaction, TransactionSplit } from '@/types/transaction';
 import { transactionsApi } from '@/lib/transactions';
 import {
   ScheduleFrequency,
@@ -209,6 +209,7 @@ function classifyPayment(
       transaction,
       account.overpaymentCategoryId,
       account.overpaymentMemo,
+      loanAccountId,
     )
   ) {
     return { interest: 0, type: 'OVERPAYMENT' };
@@ -236,26 +237,64 @@ function isOverpayment(
   transaction: Transaction,
   overpaymentCategoryId: string | null | undefined,
   overpaymentMemo: string | null | undefined,
+  loanAccountId: string,
 ): boolean {
   return (
-    matchesOverpaymentCategory(transaction, overpaymentCategoryId) ||
-    matchesOverpaymentMemo(transaction, overpaymentMemo)
+    matchesOverpaymentCategory(transaction, overpaymentCategoryId, loanAccountId) ||
+    matchesOverpaymentMemo(transaction, overpaymentMemo, loanAccountId)
+  );
+}
+
+/**
+ * The parent-transaction split that produced this loan-side transfer. A split
+ * source payment posts one loan transfer per transfer-split (e.g. a regular
+ * principal transfer alongside an extra-principal one), and every such loan
+ * transaction shares the same parent -- so only the single split that links
+ * back to *this* transaction actually describes it. Correlated by the split's
+ * linkedTransactionId, or, when that is unavailable (older data or imports),
+ * by its transfer target and amount. Null when the parent is not a split (a
+ * plain transfer) or no split corresponds.
+ */
+function correspondingParentSplit(
+  transaction: Transaction,
+  loanAccountId: string,
+): TransactionSplit | null {
+  const splits = transaction.linkedTransaction?.splits;
+  if (!splits || splits.length === 0) return null;
+  const byLink = splits.find(
+    (s) => s.linkedTransactionId != null && s.linkedTransactionId === transaction.id,
+  );
+  if (byLink) return byLink;
+  const txAmount = Math.abs(Number(transaction.amount));
+  return (
+    splits.find(
+      (s) =>
+        s.transferAccountId === loanAccountId &&
+        Math.abs(Number(s.amount)) === txAmount,
+    ) ?? null
   );
 }
 
 /**
  * Whether the overpayment category tags the transaction itself, its linked
- * source-account transaction, or any split of that linked transaction.
+ * source-account transaction, or the specific split of that linked transaction
+ * that produced this transfer. When several transfers share one split parent,
+ * scanning every split would wrongly flag a regular-principal sibling as an
+ * overpayment, so only the correlated split is considered; scanning all splits
+ * is kept solely as a fallback for data where the split cannot be correlated.
  */
 function matchesOverpaymentCategory(
   transaction: Transaction,
   overpaymentCategoryId: string | null | undefined,
+  loanAccountId: string,
 ): boolean {
   if (!overpaymentCategoryId) return false;
   if (transaction.categoryId === overpaymentCategoryId) return true;
   const linkedTx = transaction.linkedTransaction;
   if (!linkedTx) return false;
   if (linkedTx.categoryId === overpaymentCategoryId) return true;
+  const own = correspondingParentSplit(transaction, loanAccountId);
+  if (own) return own.categoryId === overpaymentCategoryId;
   return Boolean(
     linkedTx.splits?.some((s) => s.categoryId === overpaymentCategoryId),
   );
@@ -263,21 +302,29 @@ function matchesOverpaymentCategory(
 
 /**
  * Whether the overpayment memo text appears (case-insensitive substring) in the
- * transaction's memo, its linked source-account transaction's memo, or any
- * split memo of that linked transaction. The transaction-level memo is stored
- * as `description`.
+ * transaction's memo, its linked source-account transaction's memo, or the
+ * split that produced this transfer. As with the category match, only the
+ * correlated split is inspected so a regular-principal sibling of an
+ * overpayment split is not misflagged; all split memos are considered only when
+ * the split cannot be correlated. The transaction-level memo is stored as
+ * `description`.
  */
 function matchesOverpaymentMemo(
   transaction: Transaction,
   overpaymentMemo: string | null | undefined,
+  loanAccountId: string,
 ): boolean {
   const needle = overpaymentMemo?.trim().toLowerCase();
   if (!needle) return false;
   const linkedTx = transaction.linkedTransaction;
+  const own = correspondingParentSplit(transaction, loanAccountId);
+  const splitMemos = own
+    ? [own.memo]
+    : (linkedTx?.splits?.map((s) => s.memo) ?? []);
   const haystacks: (string | null | undefined)[] = [
     transaction.description,
     linkedTx?.description,
-    ...(linkedTx?.splits?.map((s) => s.memo) ?? []),
+    ...splitMemos,
   ];
   return haystacks.some(
     (text) => !!text && text.toLowerCase().includes(needle),

@@ -16,11 +16,13 @@ vi.mock('@/components/transactions/BalanceHistoryChart', () => ({
 const mockGetStatementCycle = vi.fn();
 const mockGetInterestPaid = vi.fn();
 const mockGetDailyBalances = vi.fn();
+const mockGetBalanceForecast = vi.fn();
 vi.mock('@/lib/accounts', () => ({
   accountsApi: {
     getStatementCycle: (...a: unknown[]) => mockGetStatementCycle(...a),
     getInterestPaid: (...a: unknown[]) => mockGetInterestPaid(...a),
     getDailyBalances: (...a: unknown[]) => mockGetDailyBalances(...a),
+    getBalanceForecast: (...a: unknown[]) => mockGetBalanceForecast(...a),
   },
 }));
 
@@ -59,7 +61,9 @@ const cycle = {
   paymentDueDate: '2026-07-15',
   daysUntilPaymentDue: 7,
   statementBalance: -1000,
+  statementBalanceDate: '2026-06-08',
   amountPaidSinceStatement: 200,
+  expensesSinceStatement: 350,
   currentBalance: -1200,
 };
 
@@ -68,6 +72,7 @@ beforeEach(() => {
   mockGetStatementCycle.mockResolvedValue(cycle);
   mockGetInterestPaid.mockResolvedValue({ amount: 45.5, count: 3 });
   mockGetDailyBalances.mockResolvedValue([{ date: '2026-06-01', balance: -1000 }]);
+  mockGetBalanceForecast.mockResolvedValue({ points: [{ date: '2026-06-01', balance: -1000 }] });
   mockGetGroupedTotals.mockResolvedValue([
     { id: 'c1', name: 'Groceries', currencyCode: 'CAD', total: -450, count: 5 },
     { id: 'c2', name: 'Gas', currencyCode: 'CAD', total: -200, count: 2 },

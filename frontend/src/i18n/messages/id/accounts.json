@@ -449,6 +449,14 @@
       "noHistory": "Tidak ada riwayat saldo."
     },
     "rateHistory": {
+      "scheduledUpdateTitle": "Perbarui pembayaran terjadwal?",
+      "scheduledUpdateMessage": "Pembayaran tagihan terjadwal \"{name}\" dapat diperbarui sesuai suku bunga baru: total {payment}, terbagi menjadi {principal} pokok dan {interest} bunga. Perbarui sekarang?",
+      "scheduledUpdateDefaultName": "hipotek ini",
+      "scheduledUpdateConfirm": "Perbarui pembayaran",
+      "scheduledUpdateSkip": "Biarkan apa adanya",
+      "scheduledUpdateAppliedToast": "Pembayaran terjadwal diperbarui",
+      "scheduledUpdateSkippedToast": "Pembayaran terjadwal dibiarkan",
+      "scheduledUpdateFailed": "Tidak dapat memperbarui pembayaran terjadwal",
       "title": "Riwayat Suku Bunga",
       "description": "Lacak perubahan suku bunga sepanjang masa pinjaman, dari penyesuaian suku bunga variabel hingga pembaruan jangka waktu.",
       "add": "Tambah perubahan suku bunga",

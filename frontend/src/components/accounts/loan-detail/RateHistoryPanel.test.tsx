@@ -9,6 +9,7 @@ const mockCreate = vi.fn();
 const mockUpdate = vi.fn();
 const mockDelete = vi.fn();
 const mockDetect = vi.fn();
+const mockApplyScheduled = vi.fn();
 vi.mock('@/lib/loan-rate-changes', () => ({
   loanRateChangesApi: {
     getAll: vi.fn(),
@@ -16,8 +17,22 @@ vi.mock('@/lib/loan-rate-changes', () => ({
     update: (...args: unknown[]) => mockUpdate(...args),
     delete: (...args: unknown[]) => mockDelete(...args),
     detect: (...args: unknown[]) => mockDetect(...args),
+    applyScheduledPayment: (...args: unknown[]) => mockApplyScheduled(...args),
   },
 }));
+
+const scheduledPreview = {
+  scheduledTransactionId: 'sched-1',
+  scheduledTransactionName: 'Home Mortgage',
+  currencyCode: 'CAD',
+  currentPaymentAmount: 2500,
+  proposedPaymentAmount: 2500,
+  currentPrincipal: 800,
+  proposedPrincipal: 867,
+  currentInterest: 1700,
+  proposedInterest: 1633,
+  extraPrincipal: 0,
+};
 
 vi.mock('@/lib/errors', () => ({
   getErrorMessage: vi.fn((_e: unknown, fallback: string) => fallback),
@@ -299,6 +314,61 @@ describe('RateHistoryPanel', () => {
     expect(toast.error).toHaveBeenCalledWith(
       'Could not detect rate changes from the payment history',
     );
+  });
+
+  async function addRateChangeReturning(preview: unknown) {
+    mockCreate.mockResolvedValue({ ...makeRateChange(), scheduledPaymentPreview: preview });
+    renderPanel();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add rate change'));
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Effective date'), {
+        target: { value: '2025-01-01' },
+      });
+      fireEvent.change(screen.getByLabelText('New annual rate (%)'), {
+        target: { value: '4.5' },
+      });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+  }
+
+  it('asks permission and updates the linked scheduled payment on confirm', async () => {
+    mockApplyScheduled.mockResolvedValue(scheduledPreview);
+    await addRateChangeReturning(scheduledPreview);
+
+    // The permission prompt names the scheduled payment
+    expect(screen.getByText('Update scheduled payment?')).toBeInTheDocument();
+    expect(screen.getByText(/Home Mortgage/)).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Update payment' }));
+    });
+
+    expect(mockApplyScheduled).toHaveBeenCalledWith('account-1');
+    expect(toast.success).toHaveBeenCalledWith('Scheduled payment updated');
+  });
+
+  it('leaves the scheduled payment untouched when permission is declined', async () => {
+    await addRateChangeReturning(scheduledPreview);
+
+    expect(screen.getByText('Update scheduled payment?')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Leave as-is' }));
+    });
+
+    expect(mockApplyScheduled).not.toHaveBeenCalled();
+  });
+
+  it('shows no permission prompt when there is no linked scheduled payment', async () => {
+    await addRateChangeReturning(null);
+
+    expect(screen.queryByText('Update scheduled payment?')).not.toBeInTheDocument();
+    expect(mockApplyScheduled).not.toHaveBeenCalled();
   });
 
   it('surfaces save failures as an error toast', async () => {

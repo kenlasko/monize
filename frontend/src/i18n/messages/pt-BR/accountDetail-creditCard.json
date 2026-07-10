@@ -12,6 +12,8 @@
     "cycleWindow": "Ciclo: de {start} a {end}",
     "statementBalance": "Saldo da Fatura",
     "statementBalanceNote": "Na data de {date}",
+    "expensesSinceStatement": "Despesas desde a fatura",
+    "expensesSinceStatementNote": "Novas cobranças, incluindo não conciliadas",
     "amountPaid": "Pago Desde a Fatura",
     "paymentDue": "Pagamento a Vencer",
     "settlement": "Fechamento da Fatura",

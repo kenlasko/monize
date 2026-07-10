@@ -12,6 +12,8 @@
     "cycleWindow": "Ciclo: da {start} a {end}",
     "statementBalance": "Saldo dell'estratto conto",
     "statementBalanceNote": "Al {date}",
+    "expensesSinceStatement": "Spese dall'estratto conto",
+    "expensesSinceStatementNote": "Nuovi addebiti, inclusi quelli non riconciliati",
     "amountPaid": "Pagato dall'estratto conto",
     "paymentDue": "Pagamento dovuto",
     "settlement": "Chiusura estratto conto",

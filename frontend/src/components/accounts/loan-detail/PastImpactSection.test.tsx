@@ -85,7 +85,9 @@ describe('PastImpactSection', () => {
 
     expect(screen.getByText('Impact of Overpayments Made')).toBeInTheDocument();
     expect(screen.getByText('Extra Principal Paid')).toBeInTheDocument();
-    expect(screen.getByText('How far ahead of the original schedule you are')).toBeInTheDocument();
+    expect(
+      screen.getByText('Total extra principal paid on top of your scheduled payments'),
+    ).toBeInTheDocument();
     expect(screen.getByText('Time Already Saved')).toBeInTheDocument();
     expect(screen.getByText(/\d+ months?/)).toBeInTheDocument();
     expect(screen.getByText('Interest Already Saved')).toBeInTheDocument();

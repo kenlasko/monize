@@ -12,6 +12,8 @@
     "cycleWindow": "Период: с {start} по {end}",
     "statementBalance": "Остаток по выписке",
     "statementBalanceNote": "На {date}",
+    "expensesSinceStatement": "Расходы с даты выписки",
+    "expensesSinceStatementNote": "Новые операции, включая несверенные",
     "amountPaid": "Оплачено с даты выписки",
     "paymentDue": "К оплате",
     "settlement": "Выписка закрывается",

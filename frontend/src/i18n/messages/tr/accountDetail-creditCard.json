@@ -12,6 +12,8 @@
     "cycleWindow": "Dönem: {start} - {end}",
     "statementBalance": "Ekstre Bakiyesi",
     "statementBalanceNote": "{date} itibarıyla",
+    "expensesSinceStatement": "Ekstre Sonrası Harcamalar",
+    "expensesSinceStatementNote": "Mutabakatsızlar dahil yeni harcamalar",
     "amountPaid": "Ekstreden Bu Yana Ödenen",
     "paymentDue": "Ödenecek Tutar",
     "settlement": "Ekstre Kapanışı",

@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { format, startOfMonth } from 'date-fns';
 import { accountsApi } from '@/lib/accounts';
@@ -32,12 +33,14 @@ interface CreditCardDetailViewProps {
  */
 export function CreditCardDetailView({ account }: CreditCardDetailViewProps) {
   const t = useTranslations('accountDetail-creditCard');
+  const router = useRouter();
   const currency = account.currencyCode;
 
   const [cycle, setCycle] = useState<StatementCycle | null>(null);
   const [spending, setSpending] = useState<GroupedTotal[]>([]);
   const [interest, setInterest] = useState<InterestPaid | null>(null);
-  const [dailyBalances, setDailyBalances] = useState<DailyBalancePoint[]>([]);
+  const [historicalBalances, setHistoricalBalances] = useState<DailyBalancePoint[]>([]);
+  const [forecastPoints, setForecastPoints] = useState<DailyBalancePoint[]>([]);
   // Deriving loading from the last-resolved id avoids a synchronous setState in
   // the effect (matching LineOfCreditView).
   const [loadedForId, setLoadedForId] = useState<string | null>(null);
@@ -55,7 +58,7 @@ export function CreditCardDetailView({ account }: CreditCardDetailViewProps) {
       const spendEnd = cycleData ? cycleData.cycleEnd : today;
       const yearStart = `${now.getFullYear()}-01-01`;
 
-      const [totalsData, interestData, balancesData] = await Promise.all([
+      const [totalsData, interestData, balancesData, forecastData] = await Promise.all([
         transactionsApi
           .getGroupedTotals({
             groupBy: 'category',
@@ -72,9 +75,17 @@ export function CreditCardDetailView({ account }: CreditCardDetailViewProps) {
             return [] as GroupedTotal[];
           }),
         accountsApi.getInterestPaid(account.id, yearStart, today).catch(() => null),
-        accountsApi.getDailyBalances({ accountIds: account.id }).catch((error) => {
+        // Cap history at today so the forecast owns everything after it (the
+        // forecast already includes any future-dated real transactions).
+        accountsApi.getDailyBalances({ accountIds: account.id, endDate: today }).catch((error) => {
           logger.error('Failed to load balance history:', error);
           return [] as { date: string; balance: number }[];
+        }),
+        // 90-day forward projection from scheduled transactions (same horizon
+        // as the chequing/savings detail chart).
+        accountsApi.getBalanceForecast(account.id).catch((error) => {
+          logger.error('Failed to load balance forecast:', error);
+          return null;
         }),
       ]);
 
@@ -82,13 +93,41 @@ export function CreditCardDetailView({ account }: CreditCardDetailViewProps) {
       setCycle(cycleData);
       setSpending(totalsData);
       setInterest(interestData);
-      setDailyBalances(balancesData.map((r) => ({ date: r.date, balance: r.balance })));
+      setHistoricalBalances(balancesData.map((r) => ({ date: r.date, balance: r.balance })));
+      setForecastPoints(
+        forecastData ? forecastData.points.map((p) => ({ date: p.date, balance: p.balance })) : [],
+      );
       setLoadedForId(account.id);
     })();
     return () => {
       cancelled = true;
     };
   }, [account.id]);
+
+  // One chart series: history up to today, then the projected forecast. The
+  // forecast's first point is today (== the last history point), so drop it.
+  const dailyBalances = useMemo(
+    () => [...historicalBalances, ...forecastPoints.slice(1)],
+    [historicalBalances, forecastPoints],
+  );
+
+  // Deep link into the register filtered to this card and category for the
+  // current cycle window (uncategorised charges use the "uncategorized" token).
+  const spendingRange = useMemo(() => {
+    const now = new Date();
+    const today = format(now, 'yyyy-MM-dd');
+    return {
+      start: cycle ? cycle.cycleStart : format(startOfMonth(now), 'yyyy-MM-dd'),
+      end: cycle ? cycle.cycleEnd : today,
+    };
+  }, [cycle]);
+
+  const handleCategorySelect = (categoryId: string | null) => {
+    router.push(
+      `/transactions?accountId=${account.id}&categoryId=${categoryId ?? 'uncategorized'}` +
+        `&startDate=${spendingRange.start}&endDate=${spendingRange.end}`,
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -115,16 +154,20 @@ export function CreditCardDetailView({ account }: CreditCardDetailViewProps) {
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <SpendingBreakdown totals={spending} currencyCode={currency} isLoading={isLoading} />
+        <SpendingBreakdown
+          totals={spending}
+          currencyCode={currency}
+          isLoading={isLoading}
+          onSelect={handleCategorySelect}
+        />
         <RecurringChargesPanel accountId={account.id} currencyCode={currency} />
         <InterestAndFeesPanel interest={interest} currencyCode={currency} isLoading={isLoading} />
+        <PayoffCalculator
+          balance={Math.abs(Number(account.currentBalance) || 0)}
+          interestRate={account.interestRate}
+          currencyCode={currency}
+        />
       </div>
-
-      <PayoffCalculator
-        balance={Math.abs(Number(account.currentBalance) || 0)}
-        interestRate={account.interestRate}
-        currencyCode={currency}
-      />
     </div>
   );
 }

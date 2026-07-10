@@ -47,17 +47,23 @@ export function AmortizationScheduleTable({
   const [showAllRows, setShowAllRows] = useState(false);
 
   const rows = useMemo((): DisplayRow[] => {
-    const historical = historyEvents.map((event, index) => ({
-      paymentNumber: index + 1,
-      date: event.date,
-      payment: event.principal + event.interest,
-      principal: event.principal,
-      interest: event.interest,
-      extraPrincipal: 0,
-      balance: event.balance,
-      isProjected: false,
-      isOverpayment: event.type === 'OVERPAYMENT',
-    }));
+    const historical = historyEvents.map((event, index) => {
+      const isOverpayment = event.type === 'OVERPAYMENT';
+      return {
+        paymentNumber: index + 1,
+        date: event.date,
+        payment: event.principal + event.interest,
+        // A standalone overpayment is entirely extra principal, not a scheduled
+        // installment, so surface its amount in the extra-principal column
+        // rather than the regular principal column.
+        principal: isOverpayment ? 0 : event.principal,
+        interest: event.interest,
+        extraPrincipal: isOverpayment ? event.principal : 0,
+        balance: event.balance,
+        isProjected: false,
+        isOverpayment,
+      };
+    });
     const projected = projectionRows.map((row, index) => {
       const previousRate = index > 0 ? projectionRows[index - 1].annualRate : row.annualRate;
       return {
@@ -78,8 +84,10 @@ export function AmortizationScheduleTable({
   }, [historyEvents, projectionRows]);
 
   const showExtraColumn = useMemo(
-    () => projectionRows.some((row) => row.extraPrincipal > 0),
-    [projectionRows],
+    () =>
+      historyEvents.some((event) => event.type === 'OVERPAYMENT') ||
+      projectionRows.some((row) => row.extraPrincipal > 0),
+    [historyEvents, projectionRows],
   );
 
   const displayedRows = showAllRows ? rows : rows.slice(0, COLLAPSED_ROW_COUNT);

@@ -12,6 +12,8 @@
     "cycleWindow": "주기: {start} ~ {end}",
     "statementBalance": "명세서 잔액",
     "statementBalanceNote": "{date} 기준",
+    "expensesSinceStatement": "명세서 이후 지출",
+    "expensesSinceStatementNote": "미대사 항목 포함 신규 청구",
     "amountPaid": "명세서 이후 납부액",
     "paymentDue": "납부 금액",
     "settlement": "명세서 마감",

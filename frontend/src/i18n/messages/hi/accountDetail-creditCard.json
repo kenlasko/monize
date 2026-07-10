@@ -12,6 +12,8 @@
     "cycleWindow": "चक्र: {start} से {end} तक",
     "statementBalance": "स्टेटमेंट शेष",
     "statementBalanceNote": "{date} के अनुसार",
+    "expensesSinceStatement": "स्टेटमेंट के बाद के व्यय",
+    "expensesSinceStatementNote": "नए शुल्क, बिना मिलान वाले सहित",
     "amountPaid": "स्टेटमेंट के बाद से भुगतान किया गया",
     "paymentDue": "देय भुगतान",
     "settlement": "स्टेटमेंट बंद होता है",

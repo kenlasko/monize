@@ -12,6 +12,8 @@
     "cycleWindow": "Zeitraum: {start} bis {end}",
     "statementBalance": "Abrechnungssaldo",
     "statementBalanceNote": "Stand {date}",
+    "expensesSinceStatement": "Ausgaben seit Abrechnung",
+    "expensesSinceStatementNote": "Neue Buchungen, inkl. nicht abgeglichener",
     "amountPaid": "Seit Abrechnung gezahlt",
     "paymentDue": "Fällige Zahlung",
     "settlement": "Abrechnungsabschluss",

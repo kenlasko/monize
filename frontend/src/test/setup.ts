@@ -52,16 +52,20 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-// Mock react-hot-toast
-vi.mock('react-hot-toast', () => ({
-  default: {
+// Mock react-hot-toast. The default export is callable (toast(msg, opts)) with
+// success/error/loading/dismiss attached, mirroring the real module.
+vi.mock('react-hot-toast', () => {
+  const toast = Object.assign(vi.fn(), {
     success: vi.fn(),
     error: vi.fn(),
     loading: vi.fn(),
     dismiss: vi.fn(),
-  },
-  Toaster: () => null,
-}));
+  });
+  return {
+    default: toast,
+    Toaster: () => null,
+  };
+});
 
 // Mock localStorage
 const localStorageMock = (() => {

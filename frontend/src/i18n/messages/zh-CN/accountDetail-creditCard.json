@@ -12,6 +12,8 @@
     "cycleWindow": "周期：{start} 至 {end}",
     "statementBalance": "账单余额",
     "statementBalanceNote": "截至 {date}",
+    "expensesSinceStatement": "账单日后的支出",
+    "expensesSinceStatementNote": "新增消费，含未对账",
     "amountPaid": "出账单后已还",
     "paymentDue": "应还款额",
     "settlement": "账单结算",

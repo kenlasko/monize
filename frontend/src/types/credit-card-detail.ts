@@ -9,10 +9,17 @@ export interface StatementCycle {
   daysUntilSettlement: number;
   paymentDueDate: string | null;
   daysUntilPaymentDue: number | null;
-  /** Running balance as of the last settlement (same sign as currentBalance). */
+  /** Ending balance of the last reconciled statement (same sign as currentBalance). */
   statementBalance: number;
-  /** Payments/credits applied since the last settlement (positive). */
+  /** Date of the most recent reconciliation, or null when nothing is reconciled. */
+  statementBalanceDate: string | null;
+  /** Payments/credits made since the last reconciled statement (positive). */
   amountPaidSinceStatement: number;
+  /**
+   * Expenses (charges) incurred since the last reconciled statement (positive
+   * magnitude) -- unreconciled charges not yet on a closed statement.
+   */
+  expensesSinceStatement: number;
   currentBalance: number;
 }
 

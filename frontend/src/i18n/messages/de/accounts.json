@@ -449,6 +449,14 @@
       "noHistory": "Kein Saldoverlauf verfügbar."
     },
     "rateHistory": {
+      "scheduledUpdateTitle": "Geplante Zahlung aktualisieren?",
+      "scheduledUpdateMessage": "Die geplante Rechnungszahlung \"{name}\" kann an den neuen Zinssatz angepasst werden: {payment} gesamt, aufgeteilt in {principal} Tilgung und {interest} Zinsen. Jetzt aktualisieren?",
+      "scheduledUpdateDefaultName": "diese Hypothek",
+      "scheduledUpdateConfirm": "Zahlung aktualisieren",
+      "scheduledUpdateSkip": "Unverändert lassen",
+      "scheduledUpdateAppliedToast": "Geplante Zahlung aktualisiert",
+      "scheduledUpdateSkippedToast": "Geplante Zahlung unverändert gelassen",
+      "scheduledUpdateFailed": "Geplante Zahlung konnte nicht aktualisiert werden",
       "title": "Zinsverlauf",
       "description": "Verfolgen Sie Zinssatzänderungen über die Laufzeit des Kredits, von variablen Zinsanpassungen bis zu Verlängerungen der Zinsbindung.",
       "add": "Zinssatzänderung hinzufügen",

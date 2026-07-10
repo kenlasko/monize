@@ -449,6 +449,14 @@
       "noHistory": "Không có lịch sử số dư."
     },
     "rateHistory": {
+      "scheduledUpdateTitle": "Cập nhật khoản thanh toán đã lên lịch?",
+      "scheduledUpdateMessage": "Khoản thanh toán hóa đơn đã lên lịch \"{name}\" có thể được cập nhật theo lãi suất mới: tổng {payment}, gồm {principal} gốc và {interest} lãi. Cập nhật ngay?",
+      "scheduledUpdateDefaultName": "khoản thế chấp này",
+      "scheduledUpdateConfirm": "Cập nhật thanh toán",
+      "scheduledUpdateSkip": "Giữ nguyên",
+      "scheduledUpdateAppliedToast": "Đã cập nhật khoản thanh toán đã lên lịch",
+      "scheduledUpdateSkippedToast": "Giữ nguyên khoản thanh toán đã lên lịch",
+      "scheduledUpdateFailed": "Không thể cập nhật khoản thanh toán đã lên lịch",
       "title": "Lịch sử lãi suất",
       "description": "Theo dõi các thay đổi lãi suất trong suốt thời hạn khoản vay, từ việc đặt lại lãi suất thả nổi đến gia hạn kỳ hạn.",
       "add": "Thêm thay đổi lãi suất",

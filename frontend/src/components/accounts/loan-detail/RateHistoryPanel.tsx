@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { loanRateChangesApi } from '@/lib/loan-rate-changes';
-import { LoanRateChange } from '@/types/loan-rate-change';
+import { LoanRateChange, ScheduledPaymentPreview } from '@/types/loan-rate-change';
 import { Account } from '@/types/account';
 import { getErrorMessage } from '@/lib/errors';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -58,10 +58,12 @@ export function RateHistoryPanel({ account, rateChanges, onChanged }: RateHistor
   const [changeToDelete, setChangeToDelete] = useState<LoanRateChange | null>(null);
   const [showDetectConfirm, setShowDetectConfirm] = useState(false);
   const [isDetecting, setIsDetecting] = useState(false);
+  const [scheduledPreview, setScheduledPreview] = useState<ScheduledPaymentPreview | null>(null);
 
   const isMortgage = account.accountType === 'MORTGAGE';
+  // Earliest to latest, matching the installment schedule's ordering.
   const sortedChanges = [...rateChanges].sort((a, b) =>
-    b.effectiveDate.localeCompare(a.effectiveDate),
+    a.effectiveDate.localeCompare(b.effectiveDate),
   );
 
   const openAdd = () => {
@@ -95,7 +97,7 @@ export function RateHistoryPanel({ account, rateChanges, onChanged }: RateHistor
     try {
       const note = form.note.trim();
       if (formModal.mode === 'add') {
-        await loanRateChangesApi.create(account.id, {
+        const result = await loanRateChangesApi.create(account.id, {
           effectiveDate: form.effectiveDate,
           annualRate: parsedRate,
           newPaymentAmount: form.paymentMode === 'set' ? parsedPayment : null,
@@ -103,6 +105,14 @@ export function RateHistoryPanel({ account, rateChanges, onChanged }: RateHistor
           note: note || null,
         });
         toast.success(t('loanDetail.rateHistory.addedToast'));
+        setFormModal(null);
+        onChanged();
+        // A linked scheduled bill payment can be resynced to the new rate, but
+        // only with the user's permission -- surface the pending change.
+        if (result.scheduledPaymentPreview) {
+          setScheduledPreview(result.scheduledPaymentPreview);
+        }
+        return;
       } else {
         await loanRateChangesApi.update(account.id, formModal.change.id, {
           effectiveDate: form.effectiveDate,
@@ -133,6 +143,45 @@ export function RateHistoryPanel({ account, rateChanges, onChanged }: RateHistor
       setChangeToDelete(null);
     }
   };
+
+  const applyScheduledPayment = async () => {
+    if (!scheduledPreview) return;
+    setScheduledPreview(null);
+    try {
+      await loanRateChangesApi.applyScheduledPayment(account.id);
+      toast.success(t('loanDetail.rateHistory.scheduledUpdateAppliedToast'));
+      onChanged();
+    } catch (err) {
+      toast.error(
+        getErrorMessage(err, t('loanDetail.rateHistory.scheduledUpdateFailed')),
+      );
+    }
+  };
+
+  const skipScheduledPayment = () => {
+    setScheduledPreview(null);
+    toast(t('loanDetail.rateHistory.scheduledUpdateSkippedToast'), { icon: 'ℹ️' });
+  };
+
+  const scheduledUpdateMessage = scheduledPreview
+    ? t('loanDetail.rateHistory.scheduledUpdateMessage', {
+        name:
+          scheduledPreview.scheduledTransactionName ||
+          t('loanDetail.rateHistory.scheduledUpdateDefaultName'),
+        payment: formatCurrency(
+          scheduledPreview.proposedPaymentAmount,
+          scheduledPreview.currencyCode,
+        ),
+        principal: formatCurrency(
+          scheduledPreview.proposedPrincipal,
+          scheduledPreview.currencyCode,
+        ),
+        interest: formatCurrency(
+          scheduledPreview.proposedInterest,
+          scheduledPreview.currencyCode,
+        ),
+      })
+    : '';
 
   const runDetect = async () => {
     setShowDetectConfirm(false);
@@ -357,6 +406,17 @@ export function RateHistoryPanel({ account, rateChanges, onChanged }: RateHistor
         cancelLabel={t('loanDetail.rateHistory.cancel')}
         onConfirm={runDetect}
         onCancel={() => setShowDetectConfirm(false)}
+      />
+
+      <ConfirmDialog
+        isOpen={scheduledPreview !== null}
+        variant="info"
+        title={t('loanDetail.rateHistory.scheduledUpdateTitle')}
+        message={scheduledUpdateMessage}
+        confirmLabel={t('loanDetail.rateHistory.scheduledUpdateConfirm')}
+        cancelLabel={t('loanDetail.rateHistory.scheduledUpdateSkip')}
+        onConfirm={applyScheduledPayment}
+        onCancel={skipScheduledPayment}
       />
     </div>
   );

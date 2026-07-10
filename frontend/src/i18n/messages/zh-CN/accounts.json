@@ -449,6 +449,14 @@
       "noHistory": "没有可用的余额历史。"
     },
     "rateHistory": {
+      "scheduledUpdateTitle": "更新预定付款？",
+      "scheduledUpdateMessage": "预定账单付款“{name}”可更新以匹配新利率：共 {payment}，其中本金 {principal}、利息 {interest}。立即更新？",
+      "scheduledUpdateDefaultName": "此抵押贷款",
+      "scheduledUpdateConfirm": "更新付款",
+      "scheduledUpdateSkip": "保持不变",
+      "scheduledUpdateAppliedToast": "预定付款已更新",
+      "scheduledUpdateSkippedToast": "预定付款保持不变",
+      "scheduledUpdateFailed": "无法更新预定付款",
       "title": "利率变更历史",
       "description": "追踪贷款存续期内的利率变更，从浮动利率重置到期限续约。",
       "add": "添加利率变更",

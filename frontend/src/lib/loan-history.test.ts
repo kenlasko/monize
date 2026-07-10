@@ -303,6 +303,81 @@ describe('deriveLoanPaymentHistory', () => {
     expect(result.events[0].type).toBe('OVERPAYMENT');
   });
 
+  it('flags only the extra-principal split of a split payment, not the regular sibling', () => {
+    // A single source payment splits into a regular principal transfer, its
+    // interest, and a separate extra-principal transfer tagged for overpayment.
+    // Both transfers post to the loan and share one parent; only the extra one
+    // is an overpayment.
+    const account = makeAccount({ overpaymentMemo: 'extra principal' });
+    const parent = {
+      id: 'p1',
+      description: 'Mortgage payment',
+      splits: [
+        {
+          transferAccountId: LOAN_ID,
+          amount: -800,
+          memo: 'Principal',
+          linkedTransactionId: 'loan-reg',
+        },
+        { transferAccountId: null, categoryId: 'cat-interest', amount: -200, memo: 'Interest' },
+        {
+          transferAccountId: LOAN_ID,
+          amount: -150,
+          memo: 'Extra principal',
+          linkedTransactionId: 'loan-extra',
+        },
+      ] as unknown as TransactionSplit[],
+    } as unknown as Transaction;
+    const regular = {
+      ...makeTransaction({ transactionDate: '2026-01-15', amount: 800 }),
+      id: 'loan-reg',
+      linkedTransaction: parent,
+    };
+    const extra = {
+      ...makeTransaction({ transactionDate: '2026-01-15', amount: 150 }),
+      id: 'loan-extra',
+      linkedTransaction: parent,
+    };
+
+    const result = deriveLoanPaymentHistory(account, [regular, extra]);
+
+    const regularEvent = result.events.find((e) => e.principal === 800);
+    const extraEvent = result.events.find((e) => e.principal === 150);
+    expect(regularEvent?.type).toBe('REGULAR');
+    expect(regularEvent?.interest).toBe(200);
+    expect(extraEvent?.type).toBe('OVERPAYMENT');
+    expect(extraEvent?.interest).toBe(0);
+  });
+
+  it('correlates split-payment overpayments by amount when the per-split link is absent', () => {
+    // Same shape but without linkedTransactionId on the splits (legacy data):
+    // the regular and extra transfers are still told apart by their amounts.
+    const account = makeAccount({ overpaymentMemo: 'extra' });
+    const parent = {
+      id: 'p1',
+      description: 'Mortgage payment',
+      splits: [
+        { transferAccountId: LOAN_ID, amount: -800, memo: 'Principal' },
+        { transferAccountId: LOAN_ID, amount: -150, memo: 'Extra' },
+      ] as unknown as TransactionSplit[],
+    } as unknown as Transaction;
+    const regular = {
+      ...makeTransaction({ transactionDate: '2026-01-15', amount: 800 }),
+      id: 'loan-reg',
+      linkedTransaction: parent,
+    };
+    const extra = {
+      ...makeTransaction({ transactionDate: '2026-01-15', amount: 150 }),
+      id: 'loan-extra',
+      linkedTransaction: parent,
+    };
+
+    const result = deriveLoanPaymentHistory(account, [regular, extra]);
+
+    expect(result.events.find((e) => e.principal === 800)?.type).toBe('REGULAR');
+    expect(result.events.find((e) => e.principal === 150)?.type).toBe('OVERPAYMENT');
+  });
+
   it('does not derive analytic interest for revolving credit', () => {
     const loc = makeAccount({
       accountType: 'LINE_OF_CREDIT',

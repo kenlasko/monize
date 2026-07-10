@@ -17,6 +17,7 @@ describe("LoanRateChangesController", () => {
       create: jest.fn().mockResolvedValue({ id: "rc-1" }),
       update: jest.fn().mockResolvedValue({ id: "rc-1" }),
       remove: jest.fn().mockResolvedValue(undefined),
+      applyScheduledPaymentSync: jest.fn().mockResolvedValue(null),
     };
     inferenceService = {
       detectAndPersist: jest
@@ -42,10 +43,20 @@ describe("LoanRateChangesController", () => {
     expect(service.findAll).toHaveBeenCalledWith("user-1", accountId);
   });
 
-  it("creates a rate change", async () => {
+  it("creates a rate change, deferring the scheduled-payment sync for confirmation", async () => {
     const dto = { effectiveDate: "2024-06-01", annualRate: 4.9 };
     await controller.create(req, accountId, dto as any);
-    expect(service.create).toHaveBeenCalledWith("user-1", accountId, dto);
+    expect(service.create).toHaveBeenCalledWith("user-1", accountId, dto, {
+      deferScheduledSync: true,
+    });
+  });
+
+  it("applies the pending scheduled-payment change", async () => {
+    await controller.applyScheduledPayment(req, accountId);
+    expect(service.applyScheduledPaymentSync).toHaveBeenCalledWith(
+      "user-1",
+      accountId,
+    );
   });
 
   it("runs detection", async () => {

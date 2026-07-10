@@ -48,7 +48,12 @@ describe("StatementCycleService", () => {
     it("returns the cycle window and statement figures", async () => {
       repo.findOne.mockResolvedValue(makeCard());
       dataSource.query.mockResolvedValue([
-        { statement_balance: "-1200", amount_paid: "300" },
+        {
+          statement_balance: "-1200",
+          statement_balance_date: "2024-06-08",
+          amount_paid: "300",
+          expenses_since_statement: "450",
+        },
       ]);
 
       const result = await service.getStatementCycle("user-1", "cc-1");
@@ -64,21 +69,27 @@ describe("StatementCycleService", () => {
         paymentDueDate: "2024-07-15",
         daysUntilPaymentDue: 7,
         statementBalance: -1200,
+        statementBalanceDate: "2024-06-08",
         amountPaidSinceStatement: 300,
+        expensesSinceStatement: 450,
         currentBalance: -1500,
       });
-      // The balance query is parameterised on the last settlement date.
+      // The statement balance is derived from reconciliation status, so the
+      // query only needs the account and owner (no settlement-date cutoff).
       expect(dataSource.query).toHaveBeenCalledWith(expect.any(String), [
         "cc-1",
         "user-1",
-        "2024-06-10",
       ]);
+      // The statement balance sums reconciled transactions, not a date cutoff.
+      const sql = dataSource.query.mock.calls[0][0] as string;
+      expect(sql).toContain("status = 'RECONCILED'");
+      expect(sql).not.toContain("transaction_date <=");
     });
 
     it("scopes the account lookup to the owner", async () => {
       repo.findOne.mockResolvedValue(makeCard());
       dataSource.query.mockResolvedValue([
-        { statement_balance: "0", amount_paid: "0" },
+        { statement_balance: "0", statement_balance_date: null, amount_paid: "0" },
       ]);
 
       await service.getStatementCycle("user-1", "cc-1");
@@ -97,7 +108,9 @@ describe("StatementCycleService", () => {
       const result = await service.getStatementCycle("user-1", "cc-1");
 
       expect(result.statementBalance).toBe(-50);
+      expect(result.statementBalanceDate).toBeNull();
       expect(result.amountPaidSinceStatement).toBe(0);
+      expect(result.expensesSinceStatement).toBe(0);
     });
 
     it("throws NotFound when the account is not owned", async () => {

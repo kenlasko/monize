@@ -12,6 +12,8 @@
     "cycleWindow": "Chu kỳ: {start} đến {end}",
     "statementBalance": "Số dư sao kê",
     "statementBalanceNote": "Tính đến ngày {date}",
+    "expensesSinceStatement": "Chi tiêu kể từ sao kê",
+    "expensesSinceStatementNote": "Khoản mới, gồm cả chưa đối soát",
     "amountPaid": "Đã trả từ khi sao kê",
     "paymentDue": "Khoản phải trả",
     "settlement": "Sao kê chốt",

@@ -65,6 +65,25 @@ export class LoanRateChangesController {
       req.user.id,
       accountId,
       createDto,
+      { deferScheduledSync: true },
+    );
+  }
+
+  @Post("apply-scheduled-payment")
+  @ApiOperation({
+    summary: "Apply the pending scheduled-payment change for a loan account",
+    description:
+      "Resyncs the account's linked scheduled bill payment to its current rate and payment. Called after the user grants permission from the rate-change confirmation prompt.",
+  })
+  @ApiResponse({ status: 201, description: "Scheduled payment synced" })
+  @ApiResponse({ status: 404, description: "Account not found" })
+  applyScheduledPayment(
+    @Request() req,
+    @Param("accountId", ParseUUIDPipe) accountId: string,
+  ) {
+    return this.loanRateChangesService.applyScheduledPaymentSync(
+      req.user.id,
+      accountId,
     );
   }
 

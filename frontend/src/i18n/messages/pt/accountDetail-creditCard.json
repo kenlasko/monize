@@ -12,6 +12,8 @@
     "cycleWindow": "Ciclo: {start} a {end}",
     "statementBalance": "Saldo do Extrato",
     "statementBalanceNote": "À data de {date}",
+    "expensesSinceStatement": "Despesas desde o extrato",
+    "expensesSinceStatementNote": "Novos lançamentos, incluindo não reconciliados",
     "amountPaid": "Pago Desde o Extrato",
     "paymentDue": "Pagamento a Vencer",
     "settlement": "Fecho do Extrato",

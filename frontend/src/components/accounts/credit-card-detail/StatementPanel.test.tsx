@@ -21,7 +21,9 @@ const cycle: StatementCycle = {
   paymentDueDate: '2026-07-15',
   daysUntilPaymentDue: 7,
   statementBalance: -1000,
+  statementBalanceDate: '2026-06-08',
   amountPaidSinceStatement: 200,
+  expensesSinceStatement: 350,
   currentBalance: -1200,
 };
 
@@ -32,6 +34,8 @@ describe('StatementPanel', () => {
     expect(screen.getByText(/Cycle:/)).toBeInTheDocument();
     expect(screen.getByText('$1000.00')).toBeInTheDocument(); // abs statement balance
     expect(screen.getByText('$200.00')).toBeInTheDocument();
+    expect(screen.getByText('Expenses Since Statement')).toBeInTheDocument();
+    expect(screen.getByText('$350.00')).toBeInTheDocument(); // expenses since statement
     expect(screen.getByText('7 days remaining')).toBeInTheDocument();
     expect(screen.getByText('Settles in 2 days')).toBeInTheDocument();
   });

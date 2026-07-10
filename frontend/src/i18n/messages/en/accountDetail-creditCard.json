@@ -12,6 +12,8 @@
     "cycleWindow": "Cycle: {start} to {end}",
     "statementBalance": "Statement Balance",
     "statementBalanceNote": "As of {date}",
+    "expensesSinceStatement": "Expenses Since Statement",
+    "expensesSinceStatementNote": "New charges, including unreconciled",
     "amountPaid": "Paid Since Statement",
     "paymentDue": "Payment Due",
     "settlement": "Statement Closes",

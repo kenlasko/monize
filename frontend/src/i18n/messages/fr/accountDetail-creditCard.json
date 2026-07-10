@@ -12,6 +12,8 @@
     "cycleWindow": "Cycle : du {start} au {end}",
     "statementBalance": "Solde du relevé",
     "statementBalanceNote": "En date du {date}",
+    "expensesSinceStatement": "Dépenses depuis le relevé",
+    "expensesSinceStatementNote": "Nouvelles dépenses, y compris non rapprochées",
     "amountPaid": "Payé depuis le relevé",
     "paymentDue": "Paiement dû",
     "settlement": "Clôture du relevé",

@@ -12,6 +12,8 @@
     "cycleWindow": "Periode: {start} tot {end}",
     "statementBalance": "Afschriftsaldo",
     "statementBalanceNote": "Per {date}",
+    "expensesSinceStatement": "Uitgaven sinds afschrift",
+    "expensesSinceStatementNote": "Nieuwe transacties, incl. niet-afgestemde",
     "amountPaid": "Betaald sinds afschrift",
     "paymentDue": "Te betalen bedrag",
     "settlement": "Afschrift sluit",
