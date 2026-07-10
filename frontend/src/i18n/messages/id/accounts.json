@@ -486,11 +486,14 @@
       "detectFailed": "Tidak dapat mendeteksi perubahan suku bunga dari riwayat pembayaran"
     },
     "overpaymentCategory": {
-      "title": "Kategori Pembayaran Ekstra",
-      "description": "Pilih kategori yang Anda gunakan untuk menandai pembayaran ekstra tersendiri. Pembayaran dalam kategori ini dihitung 100% sebagai pokok, sehingga jadwal menandainya alih-alih memperlakukannya sebagai angsuran biasa.",
+      "title": "Deteksi pembayaran ekstra",
+      "description": "Kenali pembayaran ekstra mandiri berdasarkan kategori, teks memo, atau keduanya. Kecocokan apa pun menghitung pembayaran sebagai 100% pokok, sehingga jadwal menandainya alih-alih memperlakukannya sebagai angsuran biasa.",
       "label": "Kategori pembayaran ekstra",
       "placeholder": "Pilih kategori",
-      "saveError": "Gagal menyimpan kategori pembayaran ekstra"
+      "memoLabel": "Memo pembayaran ekstra",
+      "memoPlaceholder": "mis. Pokok tambahan",
+      "memoHelp": "Pembayaran yang memonya berisi teks ini dihitung sebagai pembayaran ekstra (tidak membedakan huruf besar/kecil).",
+      "saveError": "Gagal menyimpan pengaturan pembayaran ekstra"
     }
   }
 }

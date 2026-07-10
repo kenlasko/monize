@@ -486,11 +486,14 @@
       "detectFailed": "Não foi possível detetar alterações de taxa a partir do histórico de pagamentos"
     },
     "overpaymentCategory": {
-      "title": "Categoria de amortização antecipada",
-      "description": "Escolha a categoria com que marca as amortizações antecipadas avulsas. Os pagamentos nesta categoria contam 100% como capital, pelo que o plano os assinala em vez de os tratar como uma prestação normal.",
+      "title": "Deteção de amortizações antecipadas",
+      "description": "Reconheça amortizações antecipadas pontuais por categoria, por texto da nota ou por ambos. Qualquer correspondência conta o pagamento como 100% de capital, pelo que o plano o assinala em vez de o tratar como uma prestação normal.",
       "label": "Categoria de amortização antecipada",
       "placeholder": "Selecione uma categoria",
-      "saveError": "Não foi possível guardar a categoria de amortização antecipada"
+      "memoLabel": "Nota de amortização antecipada",
+      "memoPlaceholder": "ex. Capital adicional",
+      "memoHelp": "Os pagamentos cuja nota contém este texto são contabilizados como amortizações antecipadas (não distingue maiúsculas de minúsculas).",
+      "saveError": "Não foi possível guardar as definições de amortização antecipada"
     }
   }
 }

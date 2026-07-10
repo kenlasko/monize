@@ -486,11 +486,14 @@
       "detectFailed": "Não foi possível detectar alterações de taxa a partir do histórico de pagamentos"
     },
     "overpaymentCategory": {
-      "title": "Categoria de amortização extra",
-      "description": "Escolha a categoria com que você marca as amortizações extras avulsas. Os pagamentos nesta categoria contam 100% como principal, então o cronograma os destaca em vez de tratá-los como uma parcela normal.",
+      "title": "Detecção de amortizações extras",
+      "description": "Reconheça amortizações extras avulsas por categoria, por texto da nota ou por ambos. Qualquer correspondência conta o pagamento como 100% de principal, então o cronograma o sinaliza em vez de tratá-lo como uma parcela normal.",
       "label": "Categoria de amortização extra",
       "placeholder": "Selecione uma categoria",
-      "saveError": "Não foi possível salvar a categoria de amortização extra"
+      "memoLabel": "Nota de amortização extra",
+      "memoPlaceholder": "ex. Principal adicional",
+      "memoHelp": "Os pagamentos cuja nota contém este texto são contabilizados como amortizações extras (não diferencia maiúsculas de minúsculas).",
+      "saveError": "Não foi possível salvar as configurações de amortização extra"
     }
   }
 }

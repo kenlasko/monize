@@ -486,11 +486,14 @@
       "detectFailed": "Impossible de détecter les changements de taux à partir de l'historique de paiements"
     },
     "overpaymentCategory": {
-      "title": "Catégorie de remboursement anticipé",
-      "description": "Choisissez la catégorie avec laquelle vous marquez les remboursements anticipés ponctuels. Les paiements de cette catégorie comptent à 100 % comme capital ; l'échéancier les signale au lieu de les traiter comme une mensualité normale.",
+      "title": "Détection des remboursements anticipés",
+      "description": "Reconnaissez les remboursements anticipés ponctuels par catégorie, par texte de note, ou les deux. Toute correspondance compte le paiement comme 100 % de capital, de sorte que l'échéancier le signale au lieu de le traiter comme une mensualité normale.",
       "label": "Catégorie de remboursement anticipé",
       "placeholder": "Sélectionner une catégorie",
-      "saveError": "Échec de l'enregistrement de la catégorie de remboursement anticipé"
+      "memoLabel": "Note de remboursement anticipé",
+      "memoPlaceholder": "ex. Capital supplémentaire",
+      "memoHelp": "Les paiements dont la note contient ce texte sont comptés comme des remboursements anticipés (insensible à la casse).",
+      "saveError": "Échec de l'enregistrement des paramètres de remboursement anticipé"
     }
   }
 }

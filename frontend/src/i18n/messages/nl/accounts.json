@@ -486,11 +486,14 @@
       "detectFailed": "Kan geen renteveranderingen detecteren uit de betalingsgeschiedenis"
     },
     "overpaymentCategory": {
-      "title": "Categorie voor extra aflossingen",
-      "description": "Kies de categorie waarmee u losse extra aflossingen labelt. Betalingen in deze categorie tellen voor 100% als aflossing, zodat het schema ze markeert in plaats van ze als een gewone termijn te behandelen.",
+      "title": "Detectie van extra aflossingen",
+      "description": "Herken losse extra aflossingen op categorie, op memotekst of beide. Bij een overeenkomst telt een betaling voor 100% als aflossing, zodat het schema deze markeert in plaats van als een gewone termijn te behandelen.",
       "label": "Categorie voor extra aflossingen",
       "placeholder": "Selecteer een categorie",
-      "saveError": "Kan de categorie voor extra aflossingen niet opslaan"
+      "memoLabel": "Memo voor extra aflossing",
+      "memoPlaceholder": "bijv. Extra aflossing",
+      "memoHelp": "Betalingen waarvan het memo deze tekst bevat, tellen als extra aflossingen (niet hoofdlettergevoelig).",
+      "saveError": "Kan de instellingen voor extra aflossingen niet opslaan"
     }
   }
 }

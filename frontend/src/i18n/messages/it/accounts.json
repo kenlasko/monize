@@ -486,11 +486,14 @@
       "detectFailed": "Impossibile rilevare le variazioni del tasso dallo storico dei pagamenti"
     },
     "overpaymentCategory": {
-      "title": "Categoria di rimborso anticipato",
-      "description": "Scegli la categoria con cui contrassegni i singoli rimborsi anticipati. I pagamenti di questa categoria contano al 100% come capitale, quindi il piano li evidenzia invece di trattarli come una rata normale.",
+      "title": "Rilevamento dei rimborsi anticipati",
+      "description": "Riconosci i singoli rimborsi anticipati per categoria, per testo del memo o per entrambi. Qualsiasi corrispondenza conta il pagamento come 100% capitale, quindi il piano lo contrassegna invece di trattarlo come una rata normale.",
       "label": "Categoria di rimborso anticipato",
       "placeholder": "Seleziona una categoria",
-      "saveError": "Impossibile salvare la categoria di rimborso anticipato"
+      "memoLabel": "Memo di rimborso anticipato",
+      "memoPlaceholder": "es. Capitale aggiuntivo",
+      "memoHelp": "I pagamenti il cui memo contiene questo testo vengono conteggiati come rimborsi anticipati (senza distinzione tra maiuscole e minuscole).",
+      "saveError": "Impossibile salvare le impostazioni di rimborso anticipato"
     }
   }
 }

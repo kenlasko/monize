@@ -486,11 +486,14 @@
       "detectFailed": "Không thể phát hiện thay đổi lãi suất từ lịch sử thanh toán"
     },
     "overpaymentCategory": {
-      "title": "Danh mục trả thêm gốc",
-      "description": "Chọn danh mục bạn dùng để gắn nhãn các khoản trả thêm gốc riêng lẻ. Các khoản thanh toán trong danh mục này được tính 100% là gốc, nên lịch trả nợ đánh dấu chúng thay vì coi là một kỳ trả thông thường.",
+      "title": "Phát hiện khoản trả thêm gốc",
+      "description": "Nhận diện các khoản trả thêm gốc riêng lẻ theo danh mục, theo nội dung ghi nhớ hoặc cả hai. Bất kỳ khớp nào cũng tính khoản thanh toán là 100% gốc, nên lịch trả nợ đánh dấu khoản đó thay vì coi là một kỳ trả thông thường.",
       "label": "Danh mục trả thêm gốc",
       "placeholder": "Chọn một danh mục",
-      "saveError": "Không thể lưu danh mục trả thêm gốc"
+      "memoLabel": "Ghi nhớ khoản trả thêm gốc",
+      "memoPlaceholder": "vd. Gốc bổ sung",
+      "memoHelp": "Các khoản thanh toán có ghi nhớ chứa nội dung này được tính là khoản trả thêm gốc (không phân biệt chữ hoa/thường).",
+      "saveError": "Không thể lưu cài đặt khoản trả thêm gốc"
     }
   }
 }

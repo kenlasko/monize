@@ -486,11 +486,14 @@
       "detectFailed": "No se pudieron detectar cambios de tasa a partir del historial de pagos"
     },
     "overpaymentCategory": {
-      "title": "Categoría de pagos anticipados",
-      "description": "Elige la categoría con la que etiquetas los pagos anticipados individuales. Los pagos de esta categoría cuentan como 100 % capital, por lo que el calendario los marca en lugar de tratarlos como un pago normal.",
+      "title": "Detección de pagos anticipados",
+      "description": "Reconoce pagos anticipados puntuales por categoría, por texto de la nota o por ambos. Cualquier coincidencia cuenta el pago como 100 % de capital, por lo que el calendario lo marca en lugar de tratarlo como una cuota normal.",
       "label": "Categoría de pagos anticipados",
       "placeholder": "Selecciona una categoría",
-      "saveError": "No se pudo guardar la categoría de pagos anticipados"
+      "memoLabel": "Nota de pago anticipado",
+      "memoPlaceholder": "p. ej. Capital adicional",
+      "memoHelp": "Los pagos cuya nota contenga este texto se cuentan como pagos anticipados (no distingue mayúsculas de minúsculas).",
+      "saveError": "No se pudo guardar la configuración de pagos anticipados"
     }
   }
 }

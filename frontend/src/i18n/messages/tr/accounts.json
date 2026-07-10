@@ -486,11 +486,14 @@
       "detectFailed": "Ödeme geçmişinden faiz değişiklikleri algılanamadı"
     },
     "overpaymentCategory": {
-      "title": "Ek Ödeme Kategorisi",
-      "description": "Tek seferlik ek ödemeleri etiketlediğiniz kategoriyi seçin. Bu kategorideki ödemeler %100 anapara sayılır; böylece plan bunları normal taksit gibi ele almak yerine işaretler.",
+      "title": "Ek ödeme algılama",
+      "description": "Tekil ek ödemeleri kategoriye, not metnine veya her ikisine göre tanıyın. Herhangi bir eşleşme, ödemeyi %100 anapara olarak sayar; böylece plan onu normal bir taksit olarak ele almak yerine işaretler.",
       "label": "Ek ödeme kategorisi",
       "placeholder": "Bir kategori seçin",
-      "saveError": "Ek ödeme kategorisi kaydedilemedi"
+      "memoLabel": "Ek ödeme notu",
+      "memoPlaceholder": "örn. Ek anapara",
+      "memoHelp": "Notu bu metni içeren ödemeler ek ödeme olarak sayılır (büyük/küçük harfe duyarlı değildir).",
+      "saveError": "Ek ödeme ayarları kaydedilemedi"
     }
   }
 }

@@ -486,11 +486,14 @@
       "detectFailed": "Nie udało się wykryć zmian oprocentowania z historii płatności"
     },
     "overpaymentCategory": {
-      "title": "Kategoria nadpłat",
-      "description": "Wybierz kategorię, którą oznaczasz pojedyncze nadpłaty. Płatności w tej kategorii liczą się w 100% jako kapitał, więc harmonogram je oznacza zamiast traktować jak zwykłą ratę.",
+      "title": "Wykrywanie nadpłat",
+      "description": "Rozpoznawaj pojedyncze nadpłaty według kategorii, tekstu notatki lub obu tych elementów. Każde dopasowanie liczy płatność jako 100% kapitału, więc harmonogram oznacza ją zamiast traktować jako zwykłą ratę.",
       "label": "Kategoria nadpłat",
       "placeholder": "Wybierz kategorię",
-      "saveError": "Nie udało się zapisać kategorii nadpłat"
+      "memoLabel": "Notatka nadpłaty",
+      "memoPlaceholder": "np. Dodatkowy kapitał",
+      "memoHelp": "Płatności, których notatka zawiera ten tekst, są liczone jako nadpłaty (bez rozróżniania wielkości liter).",
+      "saveError": "Nie udało się zapisać ustawień nadpłat"
     }
   }
 }

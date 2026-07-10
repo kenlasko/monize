@@ -486,11 +486,14 @@
       "detectFailed": "Zinssatzänderungen konnten nicht aus der Zahlungshistorie erkannt werden"
     },
     "overpaymentCategory": {
-      "title": "Sondertilgungs-Kategorie",
-      "description": "Wählen Sie die Kategorie, mit der Sie einzelne Sondertilgungen kennzeichnen. Zahlungen in dieser Kategorie zählen zu 100 % als Tilgung, sodass der Tilgungsplan sie markiert, statt sie als reguläre Rate zu behandeln.",
+      "title": "Sondertilgungs-Erkennung",
+      "description": "Erkennen Sie einzelne Sondertilgungen anhand einer Kategorie, eines Memo-Textes oder beidem. Bei einer Übereinstimmung zählt eine Zahlung zu 100 % als Tilgung, sodass der Tilgungsplan sie markiert, statt sie als reguläre Rate zu behandeln.",
       "label": "Sondertilgungs-Kategorie",
       "placeholder": "Kategorie auswählen",
-      "saveError": "Sondertilgungs-Kategorie konnte nicht gespeichert werden"
+      "memoLabel": "Sondertilgungs-Memo",
+      "memoPlaceholder": "z. B. Zusätzliche Tilgung",
+      "memoHelp": "Zahlungen, deren Memo diesen Text enthält, zählen als Sondertilgungen (Groß-/Kleinschreibung wird ignoriert).",
+      "saveError": "Sondertilgungs-Einstellungen konnten nicht gespeichert werden"
     }
   }
 }
