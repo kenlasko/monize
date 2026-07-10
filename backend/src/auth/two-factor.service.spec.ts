@@ -9,7 +9,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { DataSource } from "typeorm";
-import * as bcrypt from "bcryptjs";
+import bcrypt from "bcryptjs";
 import * as otplib from "otplib";
 import { TwoFactorService } from "./two-factor.service";
 import { TokenService } from "./token.service";

@@ -60,7 +60,7 @@
     "msw": "^2.12.9",
     "postcss": "^8.5.10",
     "tailwindcss": "^4.1.18",
-    "typescript": "^5.9.3",
+    "typescript": "~6.0.3",
     "vitest": "^4.1.8"
   }
 }

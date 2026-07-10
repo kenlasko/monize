@@ -1,4 +1,4 @@
-import * as fs from "fs";
+import fs from "fs";
 
 // Mock pg Client
 const mockQuery = jest.fn();

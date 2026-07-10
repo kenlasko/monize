@@ -10,7 +10,7 @@ import {
   ForbiddenException,
 } from "@nestjs/common";
 import { DataSource } from "typeorm";
-import * as bcrypt from "bcryptjs";
+import bcrypt from "bcryptjs";
 import * as otplib from "otplib";
 import * as QRCode from "qrcode";
 import { AuthService } from "./auth.service";

@@ -518,16 +518,24 @@ describe("AccountsService", () => {
 
     it("links and unlinks a loan account for the equity view", async () => {
       mockQueryRunner.manager.findOne.mockResolvedValue({ ...mockAccount });
-      await service.update("user-1", "account-1", { linkedLoanAccountId: "loan-1" });
-      expect(mockQueryRunner.manager.save.mock.calls[0][0].linkedLoanAccountId).toBe("loan-1");
+      await service.update("user-1", "account-1", {
+        linkedLoanAccountId: "loan-1",
+      });
+      expect(
+        mockQueryRunner.manager.save.mock.calls[0][0].linkedLoanAccountId,
+      ).toBe("loan-1");
 
       mockQueryRunner.manager.save.mockClear();
       mockQueryRunner.manager.findOne.mockResolvedValue({
         ...mockAccount,
         linkedLoanAccountId: "loan-1",
       });
-      await service.update("user-1", "account-1", { linkedLoanAccountId: null });
-      expect(mockQueryRunner.manager.save.mock.calls[0][0].linkedLoanAccountId).toBeNull();
+      await service.update("user-1", "account-1", {
+        linkedLoanAccountId: null,
+      });
+      expect(
+        mockQueryRunner.manager.save.mock.calls[0][0].linkedLoanAccountId,
+      ).toBeNull();
     });
 
     it("throws BadRequestException for closed account", async () => {

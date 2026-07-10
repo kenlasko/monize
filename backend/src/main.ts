@@ -3,7 +3,7 @@ import { Logger, RequestMethod, ValidationPipe } from "@nestjs/common";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import helmet from "helmet";
 import * as express from "express";
-import * as cookieParser from "cookie-parser";
+import cookieParser from "cookie-parser";
 import * as pg from "pg";
 import { AppModule } from "./app.module";
 import { OAuthProviderService } from "./oauth/oauth-provider.service";
