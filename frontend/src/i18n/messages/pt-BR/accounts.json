@@ -494,6 +494,16 @@
       "detectedToast": "{count, plural, =0 {Nenhuma nova alteração de taxa detectada} one {# alteração de taxa detectada} other {# alterações de taxa detectadas}}",
       "detectFailed": "Não foi possível detectar alterações de taxa a partir do histórico de pagamentos"
     },
+    "recognitionSettings": {
+      "title": "Reconhecimento de pagamentos"
+    },
+    "interestCategory": {
+      "title": "Categoria de juros",
+      "description": "Onde os juros deste empréstimo são registrados. Quando os juros são lançados como uma transação separada em vez de uma divisão do pagamento, indicar sua categoria permite que o cronograma mostre os juros reais e que \"Detectar do histórico\" encontre juros suficientes para funcionar.",
+      "label": "Categoria de juros",
+      "placeholder": "Selecione uma categoria de juros",
+      "saveError": "Não foi possível salvar a categoria de juros"
+    },
     "overpaymentCategory": {
       "title": "Detecção de amortizações extras",
       "description": "Reconheça amortizações extras avulsas por categoria, por texto da nota ou por ambos. Qualquer correspondência conta o pagamento como 100% de principal, então o cronograma o sinaliza em vez de tratá-lo como uma parcela normal.",

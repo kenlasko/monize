@@ -494,6 +494,16 @@
       "detectedToast": "{count, plural, =0 {Geen nieuwe renteveranderingen gedetecteerd} one {# renteverandering gedetecteerd} other {# renteveranderingen gedetecteerd}}",
       "detectFailed": "Kan geen renteveranderingen detecteren uit de betalingsgeschiedenis"
     },
+    "recognitionSettings": {
+      "title": "Betalingsherkenning"
+    },
+    "interestCategory": {
+      "title": "Rentecategorie",
+      "description": "Waar de rente van deze lening wordt geregistreerd. Wanneer rente als een aparte transactie wordt geboekt in plaats van als onderdeel van de betaling, zorgt het benoemen van de categorie ervoor dat het schema de werkelijke rente toont en dat 'Detecteren uit geschiedenis' genoeg rente vindt om te werken.",
+      "label": "Rentecategorie",
+      "placeholder": "Selecteer een rentecategorie",
+      "saveError": "Kan de rentecategorie niet opslaan"
+    },
     "overpaymentCategory": {
       "title": "Detectie van extra aflossingen",
       "description": "Herken losse extra aflossingen op categorie, op memotekst of beide. Bij een overeenkomst telt een betaling voor 100% als aflossing, zodat het schema deze markeert in plaats van als een gewone termijn te behandelen.",

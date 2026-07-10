@@ -494,6 +494,16 @@
       "detectedToast": "{count, plural, =0 {Nie wykryto nowych zmian oprocentowania} one {# wykryta zmiana oprocentowania} few {# wykryte zmiany oprocentowania} many {# wykrytych zmian oprocentowania} other {# wykrytej zmiany oprocentowania}}",
       "detectFailed": "Nie udało się wykryć zmian oprocentowania z historii płatności"
     },
+    "recognitionSettings": {
+      "title": "Rozpoznawanie płatności"
+    },
+    "interestCategory": {
+      "title": "Kategoria odsetek",
+      "description": "Gdzie zapisywane są odsetki tego kredytu. Gdy odsetki są księgowane jako osobna transakcja, a nie jako część płatności, wskazanie ich kategorii sprawia, że harmonogram pokazuje rzeczywiste odsetki, a „Wykryj z historii” znajduje wystarczająco dużo odsetek, aby zadziałać.",
+      "label": "Kategoria odsetek",
+      "placeholder": "Wybierz kategorię odsetek",
+      "saveError": "Nie udało się zapisać kategorii odsetek"
+    },
     "overpaymentCategory": {
       "title": "Wykrywanie nadpłat",
       "description": "Rozpoznawaj pojedyncze nadpłaty według kategorii, tekstu notatki lub obu tych elementów. Każde dopasowanie liczy płatność jako 100% kapitału, więc harmonogram oznacza ją zamiast traktować jako zwykłą ratę.",

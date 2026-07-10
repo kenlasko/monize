@@ -494,6 +494,16 @@
       "detectedToast": "{count, plural, =0 {未偵測到新的利率變更} one {偵測到 # 項利率變更} other {偵測到 # 項利率變更}}",
       "detectFailed": "無法從還款紀錄中偵測利率變更"
     },
+    "recognitionSettings": {
+      "title": "付款識別"
+    },
+    "interestCategory": {
+      "title": "利息類別",
+      "description": "記錄這筆貸款利息的位置。當利息以獨立交易而非付款的拆分項目入帳時，指定其類別可讓還款排程顯示真實利息，並讓「從紀錄中偵測」找到足夠的利息以運作。",
+      "label": "利息類別",
+      "placeholder": "選擇利息類別",
+      "saveError": "無法儲存利息類別"
+    },
     "overpaymentCategory": {
       "title": "提前還款偵測",
       "description": "透過類別、備註文字或兩者來辨識個別的提前還款。任一相符都會將該筆付款計為 100% 本金，因此還款排程會將其標示出來，而不是視為一般分期。",

@@ -494,6 +494,16 @@
       "detectedToast": "{count, plural, =0 {Nenhuma nova alteração de taxa detetada} one {# alteração de taxa detetada} other {# alterações de taxa detetadas}}",
       "detectFailed": "Não foi possível detetar alterações de taxa a partir do histórico de pagamentos"
     },
+    "recognitionSettings": {
+      "title": "Reconhecimento de pagamentos"
+    },
+    "interestCategory": {
+      "title": "Categoria de juros",
+      "description": "Onde os juros deste empréstimo são registados. Quando os juros são lançados como uma transação separada em vez de uma divisão do pagamento, indicar a sua categoria permite que o plano mostre os juros reais e que «Detetar a partir do histórico» encontre juros suficientes para funcionar.",
+      "label": "Categoria de juros",
+      "placeholder": "Selecione uma categoria de juros",
+      "saveError": "Não foi possível guardar a categoria de juros"
+    },
     "overpaymentCategory": {
       "title": "Deteção de amortizações antecipadas",
       "description": "Reconheça amortizações antecipadas pontuais por categoria, por texto da nota ou por ambos. Qualquer correspondência conta o pagamento como 100% de capital, pelo que o plano o assinala em vez de o tratar como uma prestação normal.",

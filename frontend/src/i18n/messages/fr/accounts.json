@@ -494,6 +494,16 @@
       "detectedToast": "{count, plural, =0 {Aucun nouveau changement de taux détecté} one {# changement de taux détecté} other {# changements de taux détectés}}",
       "detectFailed": "Impossible de détecter les changements de taux à partir de l'historique de paiements"
     },
+    "recognitionSettings": {
+      "title": "Reconnaissance des paiements"
+    },
+    "interestCategory": {
+      "title": "Catégorie d'intérêts",
+      "description": "Où les intérêts de ce prêt sont enregistrés. Lorsque les intérêts sont saisis comme une transaction distincte plutôt que comme une ventilation du paiement, indiquer leur catégorie permet à l'échéancier d'afficher les intérêts réels et à « Détecter à partir de l'historique » de trouver suffisamment d'intérêts pour fonctionner.",
+      "label": "Catégorie d'intérêts",
+      "placeholder": "Sélectionner une catégorie d'intérêts",
+      "saveError": "Échec de l'enregistrement de la catégorie d'intérêts"
+    },
     "overpaymentCategory": {
       "title": "Détection des remboursements anticipés",
       "description": "Reconnaissez les remboursements anticipés ponctuels par catégorie, par texte de note, ou les deux. Toute correspondance compte le paiement comme 100 % de capital, de sorte que l'échéancier le signale au lieu de le traiter comme une mensualité normale.",

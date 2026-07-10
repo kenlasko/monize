@@ -494,6 +494,16 @@
       "detectedToast": "{count, plural, =0 {Nessuna nuova variazione del tasso rilevata} one {# variazione del tasso rilevata} other {# variazioni del tasso rilevate}}",
       "detectFailed": "Impossibile rilevare le variazioni del tasso dallo storico dei pagamenti"
     },
+    "recognitionSettings": {
+      "title": "Riconoscimento dei pagamenti"
+    },
+    "interestCategory": {
+      "title": "Categoria degli interessi",
+      "description": "Dove vengono registrati gli interessi di questo prestito. Quando gli interessi sono registrati come transazione separata anziché come parte del pagamento, indicarne la categoria permette al piano di ammortamento di mostrare gli interessi reali e a «Rileva dallo storico» di trovare interessi sufficienti per funzionare.",
+      "label": "Categoria degli interessi",
+      "placeholder": "Seleziona una categoria di interessi",
+      "saveError": "Impossibile salvare la categoria degli interessi"
+    },
     "overpaymentCategory": {
       "title": "Rilevamento dei rimborsi anticipati",
       "description": "Riconosci i singoli rimborsi anticipati per categoria, per testo del memo o per entrambi. Qualsiasi corrispondenza conta il pagamento come 100% capitale, quindi il piano lo contrassegna invece di trattarlo come una rata normale.",

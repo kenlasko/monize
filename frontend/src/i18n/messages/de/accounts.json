@@ -494,6 +494,16 @@
       "detectedToast": "{count, plural, =0 {Keine neuen Zinssatzänderungen erkannt} one {# Zinssatzänderung erkannt} other {# Zinssatzänderungen erkannt}}",
       "detectFailed": "Zinssatzänderungen konnten nicht aus der Zahlungshistorie erkannt werden"
     },
+    "recognitionSettings": {
+      "title": "Zahlungserkennung"
+    },
+    "interestCategory": {
+      "title": "Zinskategorie",
+      "description": "Wo die Zinsen dieses Kredits erfasst werden. Wenn Zinsen als separate Buchung statt als Aufteilung der Zahlung erfasst werden, sorgt die Angabe ihrer Kategorie dafür, dass der Tilgungsplan die tatsächlichen Zinsen anzeigt und „Aus Verlauf erkennen“ genügend Zinsen findet.",
+      "label": "Zinskategorie",
+      "placeholder": "Zinskategorie auswählen",
+      "saveError": "Zinskategorie konnte nicht gespeichert werden"
+    },
     "overpaymentCategory": {
       "title": "Sondertilgungs-Erkennung",
       "description": "Erkennen Sie einzelne Sondertilgungen anhand einer Kategorie, eines Memo-Textes oder beidem. Bei einer Übereinstimmung zählt eine Zahlung zu 100 % als Tilgung, sodass der Tilgungsplan sie markiert, statt sie als reguläre Rate zu behandeln.",

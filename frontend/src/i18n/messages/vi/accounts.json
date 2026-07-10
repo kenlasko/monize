@@ -494,6 +494,16 @@
       "detectedToast": "{count, plural, =0 {Không phát hiện thay đổi lãi suất mới nào} one {Đã phát hiện # thay đổi lãi suất} other {Đã phát hiện # thay đổi lãi suất}}",
       "detectFailed": "Không thể phát hiện thay đổi lãi suất từ lịch sử thanh toán"
     },
+    "recognitionSettings": {
+      "title": "Nhận dạng thanh toán"
+    },
+    "interestCategory": {
+      "title": "Danh mục lãi",
+      "description": "Nơi ghi nhận lãi của khoản vay này. Khi lãi được ghi thành một giao dịch riêng thay vì một phần của khoản thanh toán, việc chỉ định danh mục của nó giúp lịch trả nợ hiển thị lãi thực tế và giúp \"Phát hiện từ lịch sử\" tìm đủ lãi để hoạt động.",
+      "label": "Danh mục lãi",
+      "placeholder": "Chọn danh mục lãi",
+      "saveError": "Không thể lưu danh mục lãi"
+    },
     "overpaymentCategory": {
       "title": "Phát hiện khoản trả thêm gốc",
       "description": "Nhận diện các khoản trả thêm gốc riêng lẻ theo danh mục, theo nội dung ghi nhớ hoặc cả hai. Bất kỳ khớp nào cũng tính khoản thanh toán là 100% gốc, nên lịch trả nợ đánh dấu khoản đó thay vì coi là một kỳ trả thông thường.",

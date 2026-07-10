@@ -494,6 +494,16 @@
       "detectedToast": "{count, plural, =0 {Yeni faiz değişikliği algılanmadı} one {# faiz değişikliği algılandı} other {# faiz değişikliği algılandı}}",
       "detectFailed": "Ödeme geçmişinden faiz değişiklikleri algılanamadı"
     },
+    "recognitionSettings": {
+      "title": "Ödeme tanıma"
+    },
+    "interestCategory": {
+      "title": "Faiz kategorisi",
+      "description": "Bu kredinin faizinin nereye kaydedildiği. Faiz, ödemenin bir bölümü yerine ayrı bir işlem olarak kaydedildiğinde, kategorisini belirtmek ödeme planının gerçek faizi göstermesini ve \"Geçmişten algıla\" işlevinin çalışmak için yeterli faizi bulmasını sağlar.",
+      "label": "Faiz kategorisi",
+      "placeholder": "Bir faiz kategorisi seçin",
+      "saveError": "Faiz kategorisi kaydedilemedi"
+    },
     "overpaymentCategory": {
       "title": "Ek ödeme algılama",
       "description": "Tekil ek ödemeleri kategoriye, not metnine veya her ikisine göre tanıyın. Herhangi bir eşleşme, ödemeyi %100 anapara olarak sayar; böylece plan onu normal bir taksit olarak ele almak yerine işaretler.",
