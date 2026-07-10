@@ -62,8 +62,12 @@ export function StatementPanel({ cycle, isLoading }: StatementPanelProps) {
     {
       label: t('statement.statementBalance'),
       value: formatCurrency(Math.abs(cycle.statementBalance), currency),
+      // "As of" the last reconciliation; falls back to the cycle's settlement
+      // date when nothing has been reconciled yet.
       note: t('statement.statementBalanceNote', {
-        date: formatDate(toLocalDate(cycle.lastSettlementDate)),
+        date: formatDate(
+          toLocalDate(cycle.statementBalanceDate ?? cycle.lastSettlementDate),
+        ),
       }),
     },
     {

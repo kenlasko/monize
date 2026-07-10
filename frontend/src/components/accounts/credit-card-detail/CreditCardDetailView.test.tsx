@@ -61,6 +61,7 @@ const cycle = {
   paymentDueDate: '2026-07-15',
   daysUntilPaymentDue: 7,
   statementBalance: -1000,
+  statementBalanceDate: '2026-06-08',
   amountPaidSinceStatement: 200,
   expensesSinceStatement: 350,
   currentBalance: -1200,

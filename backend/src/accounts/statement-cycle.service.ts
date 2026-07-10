@@ -21,14 +21,21 @@ export interface StatementCycleResult {
   daysUntilSettlement: number;
   paymentDueDate: string | null;
   daysUntilPaymentDue: number | null;
-  /** Running balance as of the last settlement (same sign as currentBalance). */
+  /**
+   * Ending balance of the last reconciled statement: the opening balance plus
+   * every reconciled transaction (same sign as currentBalance). Unreconciled
+   * current-cycle activity is excluded, so this is what was owed when the last
+   * statement closed, not the live balance.
+   */
   statementBalance: number;
-  /** Total payments/credits applied since the last settlement (positive). */
+  /** Date of the most recent reconciliation, or null when nothing is reconciled. */
+  statementBalanceDate: string | null;
+  /** Payments/credits made since the last reconciled statement (unreconciled, positive). */
   amountPaidSinceStatement: number;
   /**
-   * Total expenses (charges) incurred since the last settlement (positive
-   * magnitude). Includes charges dated before the settlement that are not yet
-   * reconciled onto a statement, since they still belong to the current cycle.
+   * Expenses (charges) incurred since the last reconciled statement (positive
+   * magnitude) -- i.e. unreconciled charges that are not yet on a closed
+   * statement.
    */
   expensesSinceStatement: number;
   /** The account's current balance (same sign convention). */
@@ -106,20 +113,22 @@ export class StatementCycleService {
 
     const rows: {
       statement_balance: string;
+      statement_balance_date: string | null;
       amount_paid: string;
       expenses_since_statement: string;
     }[] = await this.dataSource.query(
       `SELECT
            COALESCE(a.opening_balance, 0)
-             + COALESCE(SUM(CASE WHEN t.transaction_date <= $3 THEN t.amount ELSE 0 END), 0)
+             + COALESCE(SUM(CASE WHEN t.status = 'RECONCILED' THEN t.amount ELSE 0 END), 0)
              AS statement_balance,
-           COALESCE(SUM(CASE WHEN t.transaction_date > $3 AND t.amount > 0 THEN t.amount ELSE 0 END), 0)
+           MAX(CASE WHEN t.status = 'RECONCILED' THEN t.reconciled_date END)
+             AS statement_balance_date,
+           COALESCE(SUM(CASE
+             WHEN (t.status IS NULL OR t.status != 'RECONCILED') AND t.amount > 0
+             THEN t.amount ELSE 0 END), 0)
              AS amount_paid,
            COALESCE(SUM(CASE
-             WHEN t.amount < 0
-               AND (t.transaction_date > $3
-                 OR t.status IS NULL
-                 OR t.status NOT IN ('RECONCILED', 'VOID'))
+             WHEN (t.status IS NULL OR t.status != 'RECONCILED') AND t.amount < 0
              THEN -t.amount ELSE 0 END), 0)
              AS expenses_since_statement
          FROM accounts a
@@ -129,8 +138,8 @@ export class StatementCycleService {
            AND t.parent_transaction_id IS NULL
          WHERE a.id = $1 AND a.user_id = $2
          GROUP BY a.id, a.opening_balance`,
-        [accountId, userId, dates.lastSettlementDate],
-      );
+      [accountId, userId],
+    );
 
     const row = rows?.[0];
     return {
@@ -146,6 +155,7 @@ export class StatementCycleService {
       statementBalance: roundMoney(
         Number(row?.statement_balance ?? account.openingBalance),
       ),
+      statementBalanceDate: row?.statement_balance_date ?? null,
       amountPaidSinceStatement: roundMoney(Number(row?.amount_paid ?? 0)),
       expensesSinceStatement: roundMoney(
         Number(row?.expenses_since_statement ?? 0),
