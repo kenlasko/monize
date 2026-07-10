@@ -411,7 +411,9 @@
       "renamedToast": "시나리오 이름이 \"{name}\"(으)로 변경되었습니다",
       "deletedToast": "시나리오 \"{name}\"이(가) 삭제되었습니다",
       "saveFailed": "시나리오를 저장하지 못했습니다",
-      "deleteFailed": "시나리오를 삭제하지 못했습니다"
+      "deleteFailed": "시나리오를 삭제하지 못했습니다",
+      "deleteTitle": "시나리오 삭제",
+      "deleteMessage": "시나리오 \"{name}\"을(를) 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다."
     },
     "pastImpact": {
       "title": "지금까지의 조기 상환 효과",
@@ -468,6 +470,8 @@
       "deletedToast": "금리 변경이 삭제되었습니다",
       "saveFailed": "금리 변경을 저장하지 못했습니다",
       "deleteFailed": "금리 변경을 삭제하지 못했습니다",
+      "deleteTitle": "금리 변경 삭제",
+      "deleteMessage": "{date}부터 적용되는 금리 변경을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
       "detectTitle": "금리 변경 검출",
       "detectMessage": "상환 내역을 분석하여 이전에 검출된 항목을 대체합니다. 직접 추가하거나 편집한 항목은 유지됩니다.",
       "detectedToast": "{count, plural, =0 {새로운 금리 변경이 검출되지 않았습니다} one {# 건의 금리 변경을 검출했습니다} other {# 건의 금리 변경을 검출했습니다}}",

@@ -411,7 +411,9 @@
       "renamedToast": "Skenario diganti nama menjadi \"{name}\"",
       "deletedToast": "Skenario \"{name}\" dihapus",
       "saveFailed": "Gagal menyimpan skenario",
-      "deleteFailed": "Gagal menghapus skenario"
+      "deleteFailed": "Gagal menghapus skenario",
+      "deleteTitle": "Hapus Skenario",
+      "deleteMessage": "Hapus skenario \"{name}\"? Tindakan ini tidak dapat dibatalkan."
     },
     "pastImpact": {
       "title": "Dampak Pembayaran Tambahan yang Sudah Dilakukan",
@@ -468,6 +470,8 @@
       "deletedToast": "Perubahan suku bunga dihapus",
       "saveFailed": "Gagal menyimpan perubahan suku bunga",
       "deleteFailed": "Gagal menghapus perubahan suku bunga",
+      "deleteTitle": "Hapus Perubahan Suku Bunga",
+      "deleteMessage": "Hapus perubahan suku bunga yang berlaku {date}? Tindakan ini tidak dapat dibatalkan.",
       "detectTitle": "Deteksi Perubahan Suku Bunga",
       "detectMessage": "Ini menganalisis riwayat pembayaran Anda dan menggantikan entri yang sebelumnya terdeteksi. Entri yang Anda tambahkan atau edit sendiri tetap dipertahankan.",
       "detectedToast": "{count, plural, =0 {Tidak ada perubahan suku bunga baru terdeteksi} one {# perubahan suku bunga terdeteksi} other {# perubahan suku bunga terdeteksi}}",

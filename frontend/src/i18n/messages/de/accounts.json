@@ -411,7 +411,9 @@
       "renamedToast": "Szenario umbenannt in \"{name}\"",
       "deletedToast": "Szenario \"{name}\" gelöscht",
       "saveFailed": "Szenario konnte nicht gespeichert werden",
-      "deleteFailed": "Szenario konnte nicht gelöscht werden"
+      "deleteFailed": "Szenario konnte nicht gelöscht werden",
+      "deleteTitle": "Szenario löschen",
+      "deleteMessage": "Das Szenario \"{name}\" löschen? Dies kann nicht rückgängig gemacht werden."
     },
     "pastImpact": {
       "title": "Wirkung bisheriger Sondertilgungen",
@@ -468,6 +470,8 @@
       "deletedToast": "Zinssatzänderung gelöscht",
       "saveFailed": "Zinssatzänderung konnte nicht gespeichert werden",
       "deleteFailed": "Zinssatzänderung konnte nicht gelöscht werden",
+      "deleteTitle": "Zinssatzänderung löschen",
+      "deleteMessage": "Die zum {date} wirksame Zinssatzänderung löschen? Dies kann nicht rückgängig gemacht werden.",
       "detectTitle": "Zinssatzänderungen erkennen",
       "detectMessage": "Dies analysiert Ihre Zahlungshistorie und ersetzt zuvor erkannte Einträge. Von Ihnen selbst hinzugefügte oder bearbeitete Einträge bleiben erhalten.",
       "detectedToast": "{count, plural, =0 {Keine neuen Zinssatzänderungen erkannt} one {# Zinssatzänderung erkannt} other {# Zinssatzänderungen erkannt}}",

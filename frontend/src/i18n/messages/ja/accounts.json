@@ -411,7 +411,9 @@
       "renamedToast": "シナリオ名を「{name}」に変更しました",
       "deletedToast": "シナリオ「{name}」を削除しました",
       "saveFailed": "シナリオを保存できませんでした",
-      "deleteFailed": "シナリオを削除できませんでした"
+      "deleteFailed": "シナリオを削除できませんでした",
+      "deleteTitle": "シナリオを削除",
+      "deleteMessage": "シナリオ \"{name}\" を削除しますか？この操作は元に戻せません。"
     },
     "pastImpact": {
       "title": "これまでの繰上返済の効果",
@@ -468,6 +470,8 @@
       "deletedToast": "金利変更を削除しました",
       "saveFailed": "金利変更の保存に失敗しました",
       "deleteFailed": "金利変更の削除に失敗しました",
+      "deleteTitle": "金利変更を削除",
+      "deleteMessage": "{date} 付けの金利変更を削除しますか？この操作は元に戻せません。",
       "detectTitle": "金利変更を検出",
       "detectMessage": "返済履歴を分析し、以前に検出されたエントリを置き換えます。ご自身で追加または編集したエントリは保持されます。",
       "detectedToast": "{count, plural, =0 {新しい金利変更は検出されませんでした} one {# 件の金利変更を検出しました} other {# 件の金利変更を検出しました}}",

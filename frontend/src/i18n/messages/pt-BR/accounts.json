@@ -411,7 +411,9 @@
       "renamedToast": "Cenário renomeado para \"{name}\"",
       "deletedToast": "Cenário \"{name}\" excluído",
       "saveFailed": "Não foi possível salvar o cenário",
-      "deleteFailed": "Não foi possível excluir o cenário"
+      "deleteFailed": "Não foi possível excluir o cenário",
+      "deleteTitle": "Excluir cenário",
+      "deleteMessage": "Excluir o cenário \"{name}\"? Esta ação não pode ser desfeita."
     },
     "pastImpact": {
       "title": "Impacto das amortizações extras realizadas",
@@ -468,6 +470,8 @@
       "deletedToast": "Alteração de taxa excluída",
       "saveFailed": "Falha ao salvar a alteração de taxa",
       "deleteFailed": "Falha ao excluir a alteração de taxa",
+      "deleteTitle": "Excluir alteração de taxa",
+      "deleteMessage": "Excluir a alteração de taxa em vigor em {date}? Esta ação não pode ser desfeita.",
       "detectTitle": "Detectar alterações de taxa",
       "detectMessage": "Isso analisa seu histórico de pagamentos e substitui as entradas detectadas anteriormente. As entradas que você adicionou ou editou manualmente são mantidas.",
       "detectedToast": "{count, plural, =0 {Nenhuma nova alteração de taxa detectada} one {# alteração de taxa detectada} other {# alterações de taxa detectadas}}",

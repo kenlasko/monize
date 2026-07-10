@@ -411,7 +411,9 @@
       "renamedToast": "Đã đổi tên kịch bản thành \"{name}\"",
       "deletedToast": "Đã xóa kịch bản \"{name}\"",
       "saveFailed": "Không thể lưu kịch bản",
-      "deleteFailed": "Không thể xóa kịch bản"
+      "deleteFailed": "Không thể xóa kịch bản",
+      "deleteTitle": "Xóa kịch bản",
+      "deleteMessage": "Xóa kịch bản \"{name}\"? Không thể hoàn tác thao tác này."
     },
     "pastImpact": {
       "title": "Tác động của các khoản trả trước hạn đã thực hiện",
@@ -468,6 +470,8 @@
       "deletedToast": "Đã xóa thay đổi lãi suất",
       "saveFailed": "Không thể lưu thay đổi lãi suất",
       "deleteFailed": "Không thể xóa thay đổi lãi suất",
+      "deleteTitle": "Xóa thay đổi lãi suất",
+      "deleteMessage": "Xóa thay đổi lãi suất có hiệu lực từ {date}? Không thể hoàn tác thao tác này.",
       "detectTitle": "Phát hiện thay đổi lãi suất",
       "detectMessage": "Thao tác này phân tích lịch sử thanh toán của bạn và thay thế các mục đã phát hiện trước đó. Các mục bạn tự thêm hoặc chỉnh sửa sẽ được giữ lại.",
       "detectedToast": "{count, plural, =0 {Không phát hiện thay đổi lãi suất mới nào} one {Đã phát hiện # thay đổi lãi suất} other {Đã phát hiện # thay đổi lãi suất}}",
