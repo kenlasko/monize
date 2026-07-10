@@ -78,7 +78,7 @@
       "closeTitleEnabled": "खाता बंद करें",
       "balanceMustBeZero": "शेष राशि शून्य होनी चाहिए",
       "closedPrefix": " — बंद",
-      "loanDetails": "ऋण विवरण"
+      "details": "विवरण"
     }
   },
   "contextMenu": {

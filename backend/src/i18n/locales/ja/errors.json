@@ -32,7 +32,9 @@
     "alreadyHasScheduledPayment": "この口座にはすでに定期支払いが設定されています。既存のスケジュール取引を編集してください。",
     "sourceNotFound": "ソース口座が見つかりません",
     "ambiguousBrokerage": "「{{ query }}」は複数の証券口座に一致します: {{ list }}。正確な口座名を使用してください。",
-    "unknownInvestmentAccount": "不明な口座: {{ name }}。ユーザーの口座リストから正確な名前を使用してください。"
+    "unknownInvestmentAccount": "不明な口座: {{ name }}。ユーザーの口座リストから正確な名前を使用してください。",
+    "notACreditCard": "請求サイクルはクレジットカードの勘定科目でのみ利用できます",
+    "noStatementSettlementDay": "このクレジットカードには請求締め日が設定されていません"
   },
   "actionHistory": {
     "nothingToUndo": "元に戻すものがありません",

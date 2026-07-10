@@ -1,0 +1,33 @@
+{
+  "header": {
+    "viewTransactions": "İşlemleri Görüntüle",
+    "reconcile": "Mutabakat",
+    "edit": "Hesabı Düzenle",
+    "export": "Dışa Aktar",
+    "back": "Hesaplara Dön"
+  },
+  "loading": "Hesap ayrıntıları yükleniyor...",
+  "error": {
+    "retry": "Yeniden Dene"
+  },
+  "recurring": {
+    "title": "Yinelenen Ödemeler",
+    "subtitle": "Bu hesaptaki zamanlanmış faturalar ve işlemlerinde bulunan olası abonelikler",
+    "empty": "Bu hesapta yinelenen ödeme algılanmadı",
+    "scheduledTitle": "Zamanlanmış",
+    "detectedTitle": "Olası yinelenen ödemeler",
+    "detectedSubtitle": "İşlem geçmişinizde bulundu ancak henüz zamanlanmadı",
+    "nextDue": "Sonraki vade {date}",
+    "createBill": "Fatura oluştur",
+    "createBillAria": "{payee} için zamanlanmış bir fatura oluştur",
+    "createTitle": "Yeni Zamanlanmış Fatura",
+    "frequency": {
+      "weekly": "Haftalık",
+      "biweekly": "2 haftada bir",
+      "monthly": "Aylık",
+      "quarterly": "Üç aylık",
+      "yearly": "Yıllık",
+      "irregular": "Düzensiz"
+    }
+  }
+}

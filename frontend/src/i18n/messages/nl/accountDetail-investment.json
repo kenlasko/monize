@@ -1,0 +1,10 @@
+{
+  "openInInvestments": "Openen in Beleggingen",
+  "income": {
+    "title": "Beleggingsinkomsten",
+    "dividendsInterest": "Dividenden & rente",
+    "realizedGains": "Gerealiseerde winsten",
+    "ytd": "Jaar tot nu",
+    "empty": "Dit jaar geen beleggingsinkomsten"
+  }
+}

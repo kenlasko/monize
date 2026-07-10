@@ -78,7 +78,7 @@
       "closeTitleEnabled": "Rekening sluiten",
       "balanceMustBeZero": "Saldo moet nul zijn",
       "closedPrefix": " — Gesloten",
-      "loanDetails": "Leninggegevens"
+      "details": "Details"
     }
   },
   "contextMenu": {

@@ -32,7 +32,9 @@
     "alreadyHasScheduledPayment": "Akun ini sudah memiliki pembayaran terjadwal yang dikonfigurasi. Edit transaksi terjadwal yang sudah ada.",
     "sourceNotFound": "Akun sumber tidak ditemukan",
     "ambiguousBrokerage": "\"{{ query }}\" cocok dengan beberapa akun pialang: {{ list }}. Gunakan nama akun yang tepat.",
-    "unknownInvestmentAccount": "Akun tidak dikenal: {{ name }}. Gunakan nama yang tepat dari daftar akun pengguna."
+    "unknownInvestmentAccount": "Akun tidak dikenal: {{ name }}. Gunakan nama yang tepat dari daftar akun pengguna.",
+    "notACreditCard": "Siklus laporan hanya tersedia untuk akun kartu kredit",
+    "noStatementSettlementDay": "Kartu kredit ini tidak memiliki hari penyelesaian laporan yang dikonfigurasi"
   },
   "actionHistory": {
     "nothingToUndo": "Tidak ada yang dapat dibatalkan",

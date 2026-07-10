@@ -1,0 +1,75 @@
+{
+  "summary": {
+    "currentBalance": "현재 잔액",
+    "creditLimit": "신용 한도",
+    "availableCredit": "사용 가능 한도",
+    "utilization": "사용률",
+    "interestRate": "이자율",
+    "notSet": "설정 안 됨"
+  },
+  "statement": {
+    "title": "현재 청구 주기",
+    "cycleWindow": "주기: {start} ~ {end}",
+    "statementBalance": "명세서 잔액",
+    "statementBalanceNote": "{date} 기준",
+    "amountPaid": "명세서 이후 납부액",
+    "paymentDue": "납부 금액",
+    "settlement": "명세서 마감",
+    "settlesIn": "{days, plural, =0 {오늘 마감} one {# 일 후 마감} other {# 일 후 마감}}",
+    "dueIn": "{days, plural, =0 {오늘 기한} one {# 일 남음} other {# 일 남음}}",
+    "noDueDate": "납부 기한이 설정되지 않음",
+    "unavailable": "청구 주기를 사용할 수 없음",
+    "unavailableHint": "이 카드의 주기를 보려면 명세서 결제일을 설정하세요."
+  },
+  "chart": {
+    "title": "잔액 이력",
+    "empty": "아직 잔액 이력이 없습니다"
+  },
+  "spending": {
+    "title": "이번 주기 지출",
+    "uncategorised": "미분류",
+    "empty": "이번 주기에 기록된 지출이 없습니다"
+  },
+  "interestAndFees": {
+    "title": "이자 및 수수료",
+    "ytd": "연초 이후",
+    "charges": "{count, plural, one {# 건 청구} other {# 건 청구}}",
+    "none": "올해 청구된 이자 또는 수수료가 없습니다"
+  },
+  "payoff": {
+    "title": "상환 계산기",
+    "description": "고정 월 납부액으로 현재 잔액을 모두 상환하는 데 걸리는 기간을 추정합니다.",
+    "monthlyPayment": "월 납부액",
+    "payoffTime": "상환 완료까지",
+    "totalInterest": "총 이자",
+    "payoffDate": "상환 완료일",
+    "months": "{count, plural, one {# 개월} other {# 개월}}",
+    "neverPaysOff": "이 납부액으로는 잔액이 상환되지 않습니다 -- 월 이자를 충당하지 못합니다.",
+    "noBalance": "이 카드에는 상환할 잔액이 없습니다."
+  },
+  "payment": {
+    "open": "결제하기",
+    "title": "결제하기",
+    "amountType": "금액",
+    "statementBalance": "명세서 잔액",
+    "fullBalance": "전액",
+    "custom": "직접 입력",
+    "fromAccount": "출금 계정",
+    "selectAccount": "계정 선택",
+    "noFundingAccounts": "결제에 사용할 수 있는 동일 통화의 당좌, 예금 또는 현금 계정이 없습니다.",
+    "date": "결제일",
+    "mode": "시점",
+    "recordNow": "지금 기록",
+    "scheduleMonthly": "매월 예약",
+    "cancel": "취소",
+    "submitRecord": "결제 기록",
+    "submitSchedule": "결제 예약",
+    "submitting": "제출 중...",
+    "recordName": "{name} 결제",
+    "toastRecorded": "결제가 기록되었습니다",
+    "toastScheduled": "매월 결제가 예약되었습니다",
+    "toastFailed": "결제를 제출하지 못했습니다",
+    "fillRequired": "금액, 출금 계정, 날짜를 선택하세요"
+  },
+  "loadFailed": "신용카드 상세 정보를 불러오지 못했습니다"
+}

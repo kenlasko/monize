@@ -1,0 +1,45 @@
+{
+  "summary": {
+    "currentValue": "Aktueller Wert",
+    "purchaseValue": "Kaufwert",
+    "appreciation": "Gesamtwertsteigerung",
+    "annualized": "Annualisiert",
+    "category": "Kategorie",
+    "notSet": "Nicht festgelegt",
+    "acquired": "Erworben am {date}"
+  },
+  "chart": {
+    "title": "Wertverlauf",
+    "empty": "Noch kein Wertverlauf"
+  },
+  "equity": {
+    "title": "Eigenkapital",
+    "subtitle": "Vermögenswert abzüglich des verknüpften Darlehenssaldos",
+    "assetValue": "Vermögenswert",
+    "loanBalance": "Darlehenssaldo",
+    "equity": "Eigenkapital",
+    "chartTitle": "Eigenkapital im Zeitverlauf",
+    "linkPrompt": "Verknüpfen Sie ein Darlehen oder eine Hypothek, um das Eigenkapital dieses Vermögenswerts zu verfolgen.",
+    "selectLoan": "Darlehen auswählen",
+    "link": "Darlehen verknüpfen",
+    "linkedTo": "Verknüpft mit {name}",
+    "unlink": "Verknüpfung aufheben",
+    "noLoans": "Keine Darlehens- oder Hypothekenkonten zum Verknüpfen verfügbar.",
+    "linked": "Darlehen verknüpft",
+    "unlinked": "Darlehensverknüpfung aufgehoben",
+    "actionFailed": "Das verknüpfte Darlehen konnte nicht aktualisiert werden"
+  },
+  "updateValue": {
+    "open": "Wert aktualisieren",
+    "title": "Vermögenswert aktualisieren",
+    "newValue": "Neuer Wert",
+    "date": "Stichtag",
+    "save": "Speichern",
+    "saving": "Wird gespeichert...",
+    "cancel": "Abbrechen",
+    "saved": "Wert aktualisiert",
+    "failed": "Der Wert konnte nicht aktualisiert werden",
+    "invalid": "Geben Sie einen Wert und ein Datum ein",
+    "memo": "Wertanpassung"
+  }
+}

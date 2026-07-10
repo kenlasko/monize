@@ -1,0 +1,33 @@
+{
+  "summary": {
+    "currentBalance": "Số dư hiện tại",
+    "projectedBalance": "Số dư dự kiến",
+    "projectedNote": "Trong 90 ngày",
+    "moneyIn": "Tiền vào",
+    "moneyOut": "Tiền ra",
+    "thisMonth": "Tháng này",
+    "interestRate": "Lãi suất",
+    "interestEarnedYtd": "Lãi đã nhận",
+    "ytd": "Từ đầu năm đến nay",
+    "averageBalance": "Số dư trung bình",
+    "averageNote": "12 tháng gần nhất"
+  },
+  "chart": {
+    "title": "Lịch sử số dư",
+    "empty": "Chưa có lịch sử số dư"
+  },
+  "cashFlow": {
+    "title": "Dòng tiền",
+    "subtitle": "Dòng tiền ròng trong 12 tháng qua",
+    "empty": "Không có hoạt động nào trong 12 tháng qua"
+  },
+  "topCategories": {
+    "title": "Danh mục hàng đầu",
+    "empty": "Không có hoạt động được phân loại nào trong tháng này"
+  },
+  "topPayees": {
+    "title": "Người nhận hàng đầu",
+    "empty": "Không có hoạt động người nhận nào trong tháng này"
+  },
+  "uncategorised": "Chưa phân loại"
+}

@@ -78,7 +78,7 @@
       "closeTitleEnabled": "勘定科目を閉鎖",
       "balanceMustBeZero": "残高はゼロである必要があります",
       "closedPrefix": " — 閉鎖済み",
-      "loanDetails": "ローン詳細"
+      "details": "詳細"
     }
   },
   "contextMenu": {

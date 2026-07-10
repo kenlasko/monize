@@ -51,7 +51,7 @@
     "currentBalance": "현재 잔액",
     "nextPayment": "다음 지불",
     "viewBills": "청구서 및 입금에서 보기",
-    "loanDetails": "상세 보기",
+    "viewDetailsAria": "계정 상세 정보 보기",
     "type": "유형",
     "accountNumber": "계정 번호",
     "currency": "통화",
@@ -458,7 +458,8 @@
       "current": "현재",
       "ending": "종료",
       "lowest": "최저",
-      "minBalance": "최소 잔액"
+      "minBalance": "최소 잔액",
+      "projected": "예상"
     },
     "monthlyTotals": {
       "title": "월별 합계",

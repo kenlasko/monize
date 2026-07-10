@@ -51,7 +51,7 @@
     "currentBalance": "Saldo actual",
     "nextPayment": "Próximo pago",
     "viewBills": "Ver en Facturas y depósitos",
-    "loanDetails": "Ver detalles",
+    "viewDetailsAria": "Ver detalles de la cuenta",
     "type": "Tipo",
     "accountNumber": "Número de cuenta",
     "currency": "Moneda",
@@ -458,7 +458,8 @@
       "current": "Actual",
       "ending": "Final",
       "lowest": "Más bajo",
-      "minBalance": "Saldo mínimo"
+      "minBalance": "Saldo mínimo",
+      "projected": "Proyectado"
     },
     "monthlyTotals": {
       "title": "Totales mensuales",

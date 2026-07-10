@@ -32,7 +32,9 @@
     "alreadyHasScheduledPayment": "Questo conto ha già un pagamento pianificato configurato. Modifica la transazione pianificata esistente.",
     "sourceNotFound": "Conto di origine non trovato",
     "ambiguousBrokerage": "\"{{ query }}\" corrisponde a più conti di intermediazione: {{ list }}. Usa il nome esatto del conto.",
-    "unknownInvestmentAccount": "Conto sconosciuto: {{ name }}. Usa un nome esatto dall'elenco dei conti dell'utente."
+    "unknownInvestmentAccount": "Conto sconosciuto: {{ name }}. Usa un nome esatto dall'elenco dei conti dell'utente.",
+    "notACreditCard": "I cicli di fatturazione sono disponibili solo per i conti carta di credito",
+    "noStatementSettlementDay": "Questa carta di credito non ha un giorno di chiusura dell'estratto conto configurato"
   },
   "actionHistory": {
     "nothingToUndo": "Niente da annullare",

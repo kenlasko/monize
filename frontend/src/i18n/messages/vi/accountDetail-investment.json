@@ -1,0 +1,10 @@
+{
+  "openInInvestments": "Mở trong Đầu tư",
+  "income": {
+    "title": "Thu nhập đầu tư",
+    "dividendsInterest": "Cổ tức & Lãi",
+    "realizedGains": "Lãi đã thực hiện",
+    "ytd": "Từ đầu năm đến nay",
+    "empty": "Không có thu nhập đầu tư nào trong năm nay"
+  }
+}

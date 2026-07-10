@@ -1,0 +1,10 @@
+{
+  "openInInvestments": "Otwórz w Inwestycjach",
+  "income": {
+    "title": "Dochód z inwestycji",
+    "dividendsInterest": "Dywidendy i odsetki",
+    "realizedGains": "Zrealizowane zyski",
+    "ytd": "Od początku roku",
+    "empty": "Brak dochodu z inwestycji w tym roku"
+  }
+}

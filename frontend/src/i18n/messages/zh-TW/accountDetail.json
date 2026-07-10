@@ -1,0 +1,33 @@
+{
+  "header": {
+    "viewTransactions": "查看交易",
+    "reconcile": "對帳",
+    "edit": "編輯科目",
+    "export": "匯出",
+    "back": "返回科目"
+  },
+  "loading": "載入科目詳情中...",
+  "error": {
+    "retry": "重試"
+  },
+  "recurring": {
+    "title": "定期費用",
+    "subtitle": "此科目上的排程帳單，以及在其交易中發現的可能訂閱",
+    "empty": "此科目未偵測到定期費用",
+    "scheduledTitle": "已排程",
+    "detectedTitle": "可能的定期費用",
+    "detectedSubtitle": "在您的交易記錄中發現，但尚未排程",
+    "nextDue": "下次到期 {date}",
+    "createBill": "建立帳單",
+    "createBillAria": "為 {payee} 建立排程帳單",
+    "createTitle": "新增排程帳單",
+    "frequency": {
+      "weekly": "每週",
+      "biweekly": "每兩週",
+      "monthly": "每月",
+      "quarterly": "每季",
+      "yearly": "每年",
+      "irregular": "不定期"
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "header": {
+    "viewTransactions": "Xem giao dịch",
+    "reconcile": "Đối soát",
+    "edit": "Chỉnh sửa tài khoản",
+    "export": "Xuất",
+    "back": "Quay lại danh sách tài khoản"
+  },
+  "loading": "Đang tải chi tiết tài khoản...",
+  "error": {
+    "retry": "Thử lại"
+  },
+  "recurring": {
+    "title": "Khoản phí định kỳ",
+    "subtitle": "Các hóa đơn theo lịch trên tài khoản này, cùng với các gói đăng ký có thể có được tìm thấy trong giao dịch của nó",
+    "empty": "Không phát hiện khoản phí định kỳ nào trên tài khoản này",
+    "scheduledTitle": "Theo lịch",
+    "detectedTitle": "Khoản phí định kỳ có thể có",
+    "detectedSubtitle": "Được tìm thấy trong lịch sử giao dịch của bạn nhưng chưa được lên lịch",
+    "nextDue": "Đến hạn tiếp theo {date}",
+    "createBill": "Tạo hóa đơn",
+    "createBillAria": "Tạo hóa đơn theo lịch cho {payee}",
+    "createTitle": "Hóa đơn theo lịch mới",
+    "frequency": {
+      "weekly": "Hàng tuần",
+      "biweekly": "Mỗi 2 tuần",
+      "monthly": "Hàng tháng",
+      "quarterly": "Hàng quý",
+      "yearly": "Hàng năm",
+      "irregular": "Không đều"
+    }
+  }
+}

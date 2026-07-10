@@ -1,0 +1,45 @@
+{
+  "summary": {
+    "currentValue": "Huidige waarde",
+    "purchaseValue": "Aankoopwaarde",
+    "appreciation": "Totale waardestijging",
+    "annualized": "Op jaarbasis",
+    "category": "Categorie",
+    "notSet": "Niet ingesteld",
+    "acquired": "Verworven {date}"
+  },
+  "chart": {
+    "title": "Waardegeschiedenis",
+    "empty": "Nog geen waardegeschiedenis"
+  },
+  "equity": {
+    "title": "Eigen vermogen",
+    "subtitle": "Waarde van het actief minus het gekoppelde leningsaldo",
+    "assetValue": "Waarde actief",
+    "loanBalance": "Leningsaldo",
+    "equity": "Eigen vermogen",
+    "chartTitle": "Eigen vermogen in de tijd",
+    "linkPrompt": "Koppel een lening of hypotheek om het eigen vermogen van dit actief bij te houden.",
+    "selectLoan": "Selecteer een lening",
+    "link": "Lening koppelen",
+    "linkedTo": "Gekoppeld aan {name}",
+    "unlink": "Ontkoppelen",
+    "noLoans": "Er zijn geen leningen of hypotheken beschikbaar om te koppelen.",
+    "linked": "Lening gekoppeld",
+    "unlinked": "Lening ontkoppeld",
+    "actionFailed": "Bijwerken van de gekoppelde lening mislukt"
+  },
+  "updateValue": {
+    "open": "Waarde bijwerken",
+    "title": "Waarde van actief bijwerken",
+    "newValue": "Nieuwe waarde",
+    "date": "Per datum",
+    "save": "Opslaan",
+    "saving": "Opslaan...",
+    "cancel": "Annuleren",
+    "saved": "Waarde bijgewerkt",
+    "failed": "Bijwerken van de waarde mislukt",
+    "invalid": "Voer een waarde en een datum in",
+    "memo": "Waardeaanpassing"
+  }
+}

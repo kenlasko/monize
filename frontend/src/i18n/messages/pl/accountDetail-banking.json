@@ -1,0 +1,33 @@
+{
+  "summary": {
+    "currentBalance": "Bieżące saldo",
+    "projectedBalance": "Prognozowane saldo",
+    "projectedNote": "Za 90 dni",
+    "moneyIn": "Wpływy",
+    "moneyOut": "Wydatki",
+    "thisMonth": "W tym miesiącu",
+    "interestRate": "Oprocentowanie",
+    "interestEarnedYtd": "Uzyskane odsetki",
+    "ytd": "Od początku roku",
+    "averageBalance": "Średnie saldo",
+    "averageNote": "Ostatnie 12 miesięcy"
+  },
+  "chart": {
+    "title": "Historia salda",
+    "empty": "Brak historii salda"
+  },
+  "cashFlow": {
+    "title": "Przepływ środków",
+    "subtitle": "Przepływ netto w ciągu ostatnich 12 miesięcy",
+    "empty": "Brak aktywności w ciągu ostatnich 12 miesięcy"
+  },
+  "topCategories": {
+    "title": "Główne kategorie",
+    "empty": "Brak sklasyfikowanej aktywności w tym miesiącu"
+  },
+  "topPayees": {
+    "title": "Główni odbiorcy",
+    "empty": "Brak aktywności odbiorców w tym miesiącu"
+  },
+  "uncategorised": "Bez kategorii"
+}

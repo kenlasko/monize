@@ -32,7 +32,9 @@
     "alreadyHasScheduledPayment": "Bu hesapta zaten yapılandırılmış bir zamanlanmış ödeme var. Bunun yerine mevcut zamanlanmış işlemi düzenleyin.",
     "sourceNotFound": "Kaynak hesap bulunamadı",
     "ambiguousBrokerage": "\"{{ query }}\" birden fazla aracı kurum hesabıyla eşleşiyor: {{ list }}. Tam hesap adını kullanın.",
-    "unknownInvestmentAccount": "Bilinmeyen hesap: {{ name }}. Kullanıcının hesap listesinden tam bir ad kullanın."
+    "unknownInvestmentAccount": "Bilinmeyen hesap: {{ name }}. Kullanıcının hesap listesinden tam bir ad kullanın.",
+    "notACreditCard": "Ekstre dönemleri yalnızca kredi kartı hesapları için kullanılabilir",
+    "noStatementSettlementDay": "Bu kredi kartı için yapılandırılmış bir ekstre kesim günü yok"
   },
   "actionHistory": {
     "nothingToUndo": "Geri alınacak işlem yok",

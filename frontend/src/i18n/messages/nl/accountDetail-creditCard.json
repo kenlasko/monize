@@ -1,0 +1,75 @@
+{
+  "summary": {
+    "currentBalance": "Huidig saldo",
+    "creditLimit": "Kredietlimiet",
+    "availableCredit": "Beschikbaar krediet",
+    "utilization": "Benutting",
+    "interestRate": "Rentepercentage",
+    "notSet": "Niet ingesteld"
+  },
+  "statement": {
+    "title": "Huidige afschriftperiode",
+    "cycleWindow": "Periode: {start} tot {end}",
+    "statementBalance": "Afschriftsaldo",
+    "statementBalanceNote": "Per {date}",
+    "amountPaid": "Betaald sinds afschrift",
+    "paymentDue": "Te betalen bedrag",
+    "settlement": "Afschrift sluit",
+    "settlesIn": "{days, plural, =0 {Sluit vandaag} one {Sluit over # dag} other {Sluit over # dagen}}",
+    "dueIn": "{days, plural, =0 {Vandaag verschuldigd} one {# dag resterend} other {# dagen resterend}}",
+    "noDueDate": "Geen vervaldatum ingesteld",
+    "unavailable": "Afschriftperiode niet beschikbaar",
+    "unavailableHint": "Stel een afsluitdag in op deze kaart om de periode te zien."
+  },
+  "chart": {
+    "title": "Saldogeschiedenis",
+    "empty": "Nog geen saldogeschiedenis"
+  },
+  "spending": {
+    "title": "Uitgaven deze periode",
+    "uncategorised": "Niet-gecategoriseerd",
+    "empty": "Geen uitgaven vastgelegd deze periode"
+  },
+  "interestAndFees": {
+    "title": "Rente & kosten",
+    "ytd": "Jaar tot nu",
+    "charges": "{count, plural, one {# afschrijving} other {# afschrijvingen}}",
+    "none": "Dit jaar geen rente of kosten in rekening gebracht"
+  },
+  "payoff": {
+    "title": "Aflossingscalculator",
+    "description": "Schat in hoe lang het duurt om het huidige saldo af te lossen bij een vaste maandelijkse betaling.",
+    "monthlyPayment": "Maandelijkse betaling",
+    "payoffTime": "Afgelost in",
+    "totalInterest": "Totale rente",
+    "payoffDate": "Aflossingsdatum",
+    "months": "{count, plural, one {# maand} other {# maanden}}",
+    "neverPaysOff": "Bij deze betaling wordt het saldo nooit afgelost -- het dekt de maandelijkse rente niet.",
+    "noBalance": "Deze kaart heeft geen af te lossen saldo."
+  },
+  "payment": {
+    "open": "Een betaling doen",
+    "title": "Een betaling doen",
+    "amountType": "Bedrag",
+    "statementBalance": "Afschriftsaldo",
+    "fullBalance": "Volledig saldo",
+    "custom": "Aangepast",
+    "fromAccount": "Van rekening",
+    "selectAccount": "Selecteer een rekening",
+    "noFundingAccounts": "Er is geen betaal-, spaar- of kasrekening in dezelfde valuta beschikbaar om vanaf te betalen.",
+    "date": "Betaaldatum",
+    "mode": "Wanneer",
+    "recordNow": "Nu vastleggen",
+    "scheduleMonthly": "Maandelijks plannen",
+    "cancel": "Annuleren",
+    "submitRecord": "Betaling vastleggen",
+    "submitSchedule": "Betaling plannen",
+    "submitting": "Verzenden...",
+    "recordName": "Betaling aan {name}",
+    "toastRecorded": "Betaling vastgelegd",
+    "toastScheduled": "Maandelijkse betaling gepland",
+    "toastFailed": "Verzenden van betaling mislukt",
+    "fillRequired": "Kies een bedrag, een betaalrekening en een datum"
+  },
+  "loadFailed": "Laden van creditcardgegevens mislukt"
+}

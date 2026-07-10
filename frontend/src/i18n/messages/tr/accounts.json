@@ -78,7 +78,7 @@
       "closeTitleEnabled": "Hesabı kapat",
       "balanceMustBeZero": "Bakiye sıfır olmalıdır",
       "closedPrefix": " — Kapalı",
-      "loanDetails": "Kredi Ayrıntıları"
+      "details": "Ayrıntılar"
     }
   },
   "contextMenu": {

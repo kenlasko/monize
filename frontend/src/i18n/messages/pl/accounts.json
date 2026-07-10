@@ -78,7 +78,7 @@
       "closeTitleEnabled": "Zamknij konto",
       "balanceMustBeZero": "Saldo musi wynosić zero",
       "closedPrefix": " — Zamknięte",
-      "loanDetails": "Szczegóły kredytu"
+      "details": "Szczegóły"
     }
   },
   "contextMenu": {

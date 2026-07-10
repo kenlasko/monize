@@ -1,0 +1,33 @@
+{
+  "header": {
+    "viewTransactions": "거래 내역 보기",
+    "reconcile": "조정",
+    "edit": "계정 수정",
+    "export": "내보내기",
+    "back": "계정으로 돌아가기"
+  },
+  "loading": "계정 상세 정보를 불러오는 중...",
+  "error": {
+    "retry": "다시 시도"
+  },
+  "recurring": {
+    "title": "정기 청구",
+    "subtitle": "이 계정의 예약된 청구서와 거래 내역에서 발견된 구독 가능성",
+    "empty": "이 계정에서 감지된 정기 청구가 없습니다",
+    "scheduledTitle": "예약됨",
+    "detectedTitle": "정기 청구 가능 항목",
+    "detectedSubtitle": "거래 내역에서 발견되었지만 아직 예약되지 않음",
+    "nextDue": "다음 기한 {date}",
+    "createBill": "청구서 생성",
+    "createBillAria": "{payee}에 대한 예약 청구서 생성",
+    "createTitle": "새 예약 청구서",
+    "frequency": {
+      "weekly": "매주",
+      "biweekly": "격주",
+      "monthly": "매월",
+      "quarterly": "분기별",
+      "yearly": "매년",
+      "irregular": "불규칙"
+    }
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "summary": {
+    "currentBalance": "目前結餘",
+    "creditLimit": "信用額度",
+    "availableCredit": "可用額度",
+    "utilization": "使用率",
+    "interestRate": "利率",
+    "notSet": "未設定"
+  },
+  "statement": {
+    "title": "本期對帳單週期",
+    "cycleWindow": "週期：{start} 至 {end}",
+    "statementBalance": "對帳單結餘",
+    "statementBalanceNote": "截至 {date}",
+    "amountPaid": "自對帳單後已付",
+    "paymentDue": "應付款",
+    "settlement": "對帳單結算",
+    "settlesIn": "{days, plural, =0 {今日結算} one {# 天後結算} other {# 天後結算}}",
+    "dueIn": "{days, plural, =0 {今日到期} one {剩餘 # 天} other {剩餘 # 天}}",
+    "noDueDate": "未設定到期日",
+    "unavailable": "無法取得對帳單週期",
+    "unavailableHint": "在此卡上設定對帳單結算日以查看其週期。"
+  },
+  "chart": {
+    "title": "結餘歷史",
+    "empty": "尚無結餘歷史"
+  },
+  "spending": {
+    "title": "本週期支出",
+    "uncategorised": "未分類",
+    "empty": "本週期尚無支出記錄"
+  },
+  "interestAndFees": {
+    "title": "利息與費用",
+    "ytd": "年初至今",
+    "charges": "{count, plural, one {# 筆費用} other {# 筆費用}}",
+    "none": "本年度無利息或費用"
+  },
+  "payoff": {
+    "title": "還清計算器",
+    "description": "估算以固定月付款額清償目前結餘所需的時間。",
+    "monthlyPayment": "每月付款",
+    "payoffTime": "還清時間",
+    "totalInterest": "總利息",
+    "payoffDate": "還清日期",
+    "months": "{count, plural, one {# 個月} other {# 個月}}",
+    "neverPaysOff": "以此付款額，結餘永遠無法清償 -- 它不足以支付每月利息。",
+    "noBalance": "此卡沒有需要償還的結餘。"
+  },
+  "payment": {
+    "open": "進行付款",
+    "title": "進行付款",
+    "amountType": "金額",
+    "statementBalance": "對帳單結餘",
+    "fullBalance": "全部結餘",
+    "custom": "自訂",
+    "fromAccount": "從科目",
+    "selectAccount": "選擇科目",
+    "noFundingAccounts": "沒有可付款的同幣別活期存款、儲蓄或現金科目。",
+    "date": "付款日期",
+    "mode": "時間",
+    "recordNow": "立即記錄",
+    "scheduleMonthly": "每月排程",
+    "cancel": "取消",
+    "submitRecord": "記錄付款",
+    "submitSchedule": "排程付款",
+    "submitting": "提交中...",
+    "recordName": "付款給 {name}",
+    "toastRecorded": "付款已記錄",
+    "toastScheduled": "每月付款已排程",
+    "toastFailed": "提交付款失敗",
+    "fillRequired": "請選擇金額、付款科目和日期"
+  },
+  "loadFailed": "載入信用卡詳情失敗"
+}

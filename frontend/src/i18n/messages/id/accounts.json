@@ -78,7 +78,7 @@
       "closeTitleEnabled": "Tutup akun",
       "balanceMustBeZero": "Saldo harus nol",
       "closedPrefix": " — Ditutup",
-      "loanDetails": "Detail Pinjaman"
+      "details": "Detail"
     }
   },
   "contextMenu": {

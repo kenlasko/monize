@@ -1,0 +1,75 @@
+{
+  "summary": {
+    "currentBalance": "Saldo Saat Ini",
+    "creditLimit": "Batas Kredit",
+    "availableCredit": "Kredit Tersedia",
+    "utilization": "Pemanfaatan",
+    "interestRate": "Suku Bunga",
+    "notSet": "Belum diatur"
+  },
+  "statement": {
+    "title": "Siklus Laporan Saat Ini",
+    "cycleWindow": "Siklus: {start} hingga {end}",
+    "statementBalance": "Saldo Laporan",
+    "statementBalanceNote": "Per {date}",
+    "amountPaid": "Dibayar Sejak Laporan",
+    "paymentDue": "Jatuh Tempo Pembayaran",
+    "settlement": "Laporan Ditutup",
+    "settlesIn": "{days, plural, =0 {Diselesaikan hari ini} one {Diselesaikan dalam # hari} other {Diselesaikan dalam # hari}}",
+    "dueIn": "{days, plural, =0 {Jatuh tempo hari ini} one {# hari tersisa} other {# hari tersisa}}",
+    "noDueDate": "Tidak ada tanggal jatuh tempo yang diatur",
+    "unavailable": "Siklus laporan tidak tersedia",
+    "unavailableHint": "Atur hari penyelesaian laporan pada kartu ini untuk melihat siklusnya."
+  },
+  "chart": {
+    "title": "Riwayat Saldo",
+    "empty": "Belum ada riwayat saldo"
+  },
+  "spending": {
+    "title": "Pengeluaran Siklus Ini",
+    "uncategorised": "Tidak Berkategori",
+    "empty": "Tidak ada pengeluaran tercatat pada siklus ini"
+  },
+  "interestAndFees": {
+    "title": "Bunga & Biaya",
+    "ytd": "Sejak awal tahun",
+    "charges": "{count, plural, one {# tagihan} other {# tagihan}}",
+    "none": "Tidak ada bunga atau biaya yang dibebankan tahun ini"
+  },
+  "payoff": {
+    "title": "Kalkulator Pelunasan",
+    "description": "Perkirakan berapa lama saldo saat ini terlunasi dengan pembayaran bulanan tetap.",
+    "monthlyPayment": "Pembayaran Bulanan",
+    "payoffTime": "Lunas dalam",
+    "totalInterest": "Total Bunga",
+    "payoffDate": "Tanggal Pelunasan",
+    "months": "{count, plural, one {# bulan} other {# bulan}}",
+    "neverPaysOff": "Dengan pembayaran ini saldo tidak akan pernah lunas -- tidak menutupi bunga bulanan.",
+    "noBalance": "Kartu ini tidak memiliki saldo untuk dilunasi."
+  },
+  "payment": {
+    "open": "Lakukan Pembayaran",
+    "title": "Lakukan Pembayaran",
+    "amountType": "Jumlah",
+    "statementBalance": "Saldo laporan",
+    "fullBalance": "Saldo penuh",
+    "custom": "Kustom",
+    "fromAccount": "Dari akun",
+    "selectAccount": "Pilih akun",
+    "noFundingAccounts": "Tidak ada akun giro, tabungan, atau tunai dengan mata uang yang sama untuk melakukan pembayaran.",
+    "date": "Tanggal pembayaran",
+    "mode": "Kapan",
+    "recordNow": "Catat sekarang",
+    "scheduleMonthly": "Jadwalkan bulanan",
+    "cancel": "Batal",
+    "submitRecord": "Catat Pembayaran",
+    "submitSchedule": "Jadwalkan Pembayaran",
+    "submitting": "Mengirim...",
+    "recordName": "Pembayaran ke {name}",
+    "toastRecorded": "Pembayaran dicatat",
+    "toastScheduled": "Pembayaran bulanan dijadwalkan",
+    "toastFailed": "Gagal mengirim pembayaran",
+    "fillRequired": "Pilih jumlah, akun pendanaan, dan tanggal"
+  },
+  "loadFailed": "Gagal memuat detail kartu kredit"
+}

@@ -1,0 +1,10 @@
+{
+  "openInInvestments": "Apri in Investimenti",
+  "income": {
+    "title": "Reddito da investimenti",
+    "dividendsInterest": "Dividendi e interessi",
+    "realizedGains": "Plusvalenze realizzate",
+    "ytd": "Da inizio anno",
+    "empty": "Nessun reddito da investimenti quest'anno"
+  }
+}

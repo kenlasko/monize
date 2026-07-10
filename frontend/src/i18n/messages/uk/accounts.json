@@ -78,7 +78,7 @@
       "closeTitleEnabled": "Закрити рахунок",
       "balanceMustBeZero": "Баланс має бути нульовим",
       "closedPrefix": " — Закритий",
-      "loanDetails": "Деталі кредиту"
+      "details": "Деталі"
     }
   },
   "contextMenu": {

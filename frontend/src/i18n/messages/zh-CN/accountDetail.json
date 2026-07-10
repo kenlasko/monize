@@ -1,0 +1,33 @@
+{
+  "header": {
+    "viewTransactions": "查看交易",
+    "reconcile": "对账",
+    "edit": "编辑账户",
+    "export": "导出",
+    "back": "返回账户"
+  },
+  "loading": "正在加载账户详情...",
+  "error": {
+    "retry": "重试"
+  },
+  "recurring": {
+    "title": "定期扣款",
+    "subtitle": "此账户上的计划账单，以及在其交易中发现的可能订阅",
+    "empty": "此账户未检测到定期扣款",
+    "scheduledTitle": "已计划",
+    "detectedTitle": "可能的定期扣款",
+    "detectedSubtitle": "在您的交易历史中发现，但尚未计划",
+    "nextDue": "下次到期 {date}",
+    "createBill": "创建账单",
+    "createBillAria": "为 {payee} 创建计划账单",
+    "createTitle": "新建计划账单",
+    "frequency": {
+      "weekly": "每周",
+      "biweekly": "每两周",
+      "monthly": "每月",
+      "quarterly": "每季度",
+      "yearly": "每年",
+      "irregular": "不定期"
+    }
+  }
+}

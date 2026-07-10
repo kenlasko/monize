@@ -78,7 +78,7 @@
       "closeTitleEnabled": "계정 종료",
       "balanceMustBeZero": "잔액이 0이어야 합니다",
       "closedPrefix": " — 종료됨",
-      "loanDetails": "대출 상세 정보"
+      "details": "상세 정보"
     }
   },
   "contextMenu": {

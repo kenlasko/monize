@@ -1,0 +1,45 @@
+{
+  "summary": {
+    "currentValue": "Güncel Değer",
+    "purchaseValue": "Satın Alma Değeri",
+    "appreciation": "Toplam Değer Artışı",
+    "annualized": "Yıllık",
+    "category": "Kategori",
+    "notSet": "Ayarlanmadı",
+    "acquired": "{date} tarihinde edinildi"
+  },
+  "chart": {
+    "title": "Değer Geçmişi",
+    "empty": "Henüz değer geçmişi yok"
+  },
+  "equity": {
+    "title": "Öz Sermaye",
+    "subtitle": "Varlık değeri eksi bağlı kredi bakiyesi",
+    "assetValue": "Varlık Değeri",
+    "loanBalance": "Kredi Bakiyesi",
+    "equity": "Öz Sermaye",
+    "chartTitle": "Zaman İçinde Öz Sermaye",
+    "linkPrompt": "Bu varlıktaki öz sermayeyi takip etmek için bir kredi veya ipotek bağlayın.",
+    "selectLoan": "Bir kredi seçin",
+    "link": "Krediyi Bağla",
+    "linkedTo": "{name} ile bağlantılı",
+    "unlink": "Bağlantıyı Kaldır",
+    "noLoans": "Bağlanabilecek kredi veya ipotek hesabı yok.",
+    "linked": "Kredi bağlandı",
+    "unlinked": "Kredi bağlantısı kaldırıldı",
+    "actionFailed": "Bağlı kredi güncellenemedi"
+  },
+  "updateValue": {
+    "open": "Değeri Güncelle",
+    "title": "Varlık Değerini Güncelle",
+    "newValue": "Yeni Değer",
+    "date": "Şu tarih itibarıyla",
+    "save": "Kaydet",
+    "saving": "Kaydediliyor...",
+    "cancel": "İptal",
+    "saved": "Değer güncellendi",
+    "failed": "Değer güncellenemedi",
+    "invalid": "Bir değer ve tarih girin",
+    "memo": "Değer düzeltmesi"
+  }
+}

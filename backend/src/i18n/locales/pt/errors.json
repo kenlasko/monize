@@ -32,7 +32,9 @@
     "alreadyHasScheduledPayment": "Esta conta já tem um pagamento agendado configurado. Edite a transação agendada existente.",
     "sourceNotFound": "Conta de origem não encontrada",
     "ambiguousBrokerage": "\"{{ query }}\" corresponde a várias contas de corretagem: {{ list }}. Utilize o nome exato da conta.",
-    "unknownInvestmentAccount": "Conta desconhecida: {{ name }}. Utilize um nome exato da lista de contas do utilizador."
+    "unknownInvestmentAccount": "Conta desconhecida: {{ name }}. Utilize um nome exato da lista de contas do utilizador.",
+    "notACreditCard": "Os ciclos de extrato só estão disponíveis para contas de cartão de crédito",
+    "noStatementSettlementDay": "Este cartão de crédito não tem um dia de liquidação de extrato configurado"
   },
   "actionHistory": {
     "nothingToUndo": "Nada para desfazer",

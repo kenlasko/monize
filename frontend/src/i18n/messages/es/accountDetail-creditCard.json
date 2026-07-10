@@ -1,0 +1,75 @@
+{
+  "summary": {
+    "currentBalance": "Saldo actual",
+    "creditLimit": "Límite de crédito",
+    "availableCredit": "Crédito disponible",
+    "utilization": "Utilización",
+    "interestRate": "Tasa de interés",
+    "notSet": "Sin definir"
+  },
+  "statement": {
+    "title": "Ciclo de facturación actual",
+    "cycleWindow": "Ciclo: del {start} al {end}",
+    "statementBalance": "Saldo del estado de cuenta",
+    "statementBalanceNote": "A fecha de {date}",
+    "amountPaid": "Pagado desde el estado de cuenta",
+    "paymentDue": "Pago pendiente",
+    "settlement": "Cierre del estado de cuenta",
+    "settlesIn": "{days, plural, =0 {Cierra hoy} one {Cierra en # día} other {Cierra en # días}}",
+    "dueIn": "{days, plural, =0 {Vence hoy} one {Queda # día} other {Quedan # días}}",
+    "noDueDate": "No hay fecha de vencimiento definida",
+    "unavailable": "Ciclo de facturación no disponible",
+    "unavailableHint": "Configura un día de cierre del estado de cuenta en esta tarjeta para ver su ciclo."
+  },
+  "chart": {
+    "title": "Historial de saldo",
+    "empty": "Aún no hay historial de saldo"
+  },
+  "spending": {
+    "title": "Gastos de este ciclo",
+    "uncategorised": "Sin categorizar",
+    "empty": "No se registraron gastos en este ciclo"
+  },
+  "interestAndFees": {
+    "title": "Intereses y comisiones",
+    "ytd": "En lo que va del año",
+    "charges": "{count, plural, one {# cargo} other {# cargos}}",
+    "none": "No se cobraron intereses ni comisiones este año"
+  },
+  "payoff": {
+    "title": "Calculadora de amortización",
+    "description": "Estima cuánto tardará en liquidarse el saldo actual con un pago mensual fijo.",
+    "monthlyPayment": "Pago mensual",
+    "payoffTime": "Liquidado en",
+    "totalInterest": "Intereses totales",
+    "payoffDate": "Fecha de liquidación",
+    "months": "{count, plural, one {# mes} other {# meses}}",
+    "neverPaysOff": "Con este pago el saldo nunca se liquida: no cubre los intereses mensuales.",
+    "noBalance": "Esta tarjeta no tiene saldo por liquidar."
+  },
+  "payment": {
+    "open": "Realizar un pago",
+    "title": "Realizar un pago",
+    "amountType": "Importe",
+    "statementBalance": "Saldo del estado de cuenta",
+    "fullBalance": "Saldo total",
+    "custom": "Personalizado",
+    "fromAccount": "Desde la cuenta",
+    "selectAccount": "Selecciona una cuenta",
+    "noFundingAccounts": "No hay ninguna cuenta corriente, de ahorros o de efectivo en la misma moneda disponible para pagar.",
+    "date": "Fecha de pago",
+    "mode": "Cuándo",
+    "recordNow": "Registrar ahora",
+    "scheduleMonthly": "Programar mensualmente",
+    "cancel": "Cancelar",
+    "submitRecord": "Registrar pago",
+    "submitSchedule": "Programar pago",
+    "submitting": "Enviando...",
+    "recordName": "Pago a {name}",
+    "toastRecorded": "Pago registrado",
+    "toastScheduled": "Pago mensual programado",
+    "toastFailed": "No se pudo enviar el pago",
+    "fillRequired": "Elige un importe, una cuenta de origen y una fecha"
+  },
+  "loadFailed": "No se pudieron cargar los detalles de la tarjeta de crédito"
+}

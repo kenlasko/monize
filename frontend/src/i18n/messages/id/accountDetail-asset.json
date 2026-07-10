@@ -1,0 +1,45 @@
+{
+  "summary": {
+    "currentValue": "Nilai Saat Ini",
+    "purchaseValue": "Nilai Pembelian",
+    "appreciation": "Total Apresiasi",
+    "annualized": "Tahunan",
+    "category": "Kategori",
+    "notSet": "Belum diatur",
+    "acquired": "Diperoleh {date}"
+  },
+  "chart": {
+    "title": "Riwayat Nilai",
+    "empty": "Belum ada riwayat nilai"
+  },
+  "equity": {
+    "title": "Ekuitas",
+    "subtitle": "Nilai aset dikurangi saldo pinjaman yang terkait",
+    "assetValue": "Nilai Aset",
+    "loanBalance": "Saldo Pinjaman",
+    "equity": "Ekuitas",
+    "chartTitle": "Ekuitas dari Waktu ke Waktu",
+    "linkPrompt": "Tautkan pinjaman atau hipotek untuk melacak ekuitas pada aset ini.",
+    "selectLoan": "Pilih pinjaman",
+    "link": "Tautkan Pinjaman",
+    "linkedTo": "Ditautkan ke {name}",
+    "unlink": "Batalkan tautan",
+    "noLoans": "Tidak ada akun pinjaman atau hipotek yang tersedia untuk ditautkan.",
+    "linked": "Pinjaman ditautkan",
+    "unlinked": "Tautan pinjaman dibatalkan",
+    "actionFailed": "Gagal memperbarui pinjaman yang ditautkan"
+  },
+  "updateValue": {
+    "open": "Perbarui Nilai",
+    "title": "Perbarui Nilai Aset",
+    "newValue": "Nilai Baru",
+    "date": "Per tanggal",
+    "save": "Simpan",
+    "saving": "Menyimpan...",
+    "cancel": "Batal",
+    "saved": "Nilai diperbarui",
+    "failed": "Gagal memperbarui nilai",
+    "invalid": "Masukkan nilai dan tanggal",
+    "memo": "Penyesuaian nilai"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "summary": {
+    "currentValue": "Valore attuale",
+    "purchaseValue": "Valore di acquisto",
+    "appreciation": "Rivalutazione totale",
+    "annualized": "Annualizzato",
+    "category": "Categoria",
+    "notSet": "Non impostato",
+    "acquired": "Acquisito il {date}"
+  },
+  "chart": {
+    "title": "Storico del valore",
+    "empty": "Nessuno storico del valore disponibile"
+  },
+  "equity": {
+    "title": "Capitale netto",
+    "subtitle": "Valore dell'attività meno il saldo del prestito collegato",
+    "assetValue": "Valore dell'attività",
+    "loanBalance": "Saldo del prestito",
+    "equity": "Capitale netto",
+    "chartTitle": "Capitale netto nel tempo",
+    "linkPrompt": "Collega un prestito o un mutuo per monitorare il capitale netto di questa attività.",
+    "selectLoan": "Seleziona un prestito",
+    "link": "Collega prestito",
+    "linkedTo": "Collegato a {name}",
+    "unlink": "Scollega",
+    "noLoans": "Nessun conto di prestito o mutuo disponibile da collegare.",
+    "linked": "Prestito collegato",
+    "unlinked": "Prestito scollegato",
+    "actionFailed": "Impossibile aggiornare il prestito collegato"
+  },
+  "updateValue": {
+    "open": "Aggiorna valore",
+    "title": "Aggiorna valore dell'attività",
+    "newValue": "Nuovo valore",
+    "date": "Alla data",
+    "save": "Salva",
+    "saving": "Salvataggio...",
+    "cancel": "Annulla",
+    "saved": "Valore aggiornato",
+    "failed": "Impossibile aggiornare il valore",
+    "invalid": "Inserisci un valore e una data",
+    "memo": "Rettifica del valore"
+  }
+}

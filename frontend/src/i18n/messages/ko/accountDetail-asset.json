@@ -1,0 +1,45 @@
+{
+  "summary": {
+    "currentValue": "현재 가치",
+    "purchaseValue": "매입 가치",
+    "appreciation": "총 평가 상승액",
+    "annualized": "연 환산",
+    "category": "카테고리",
+    "notSet": "설정 안 됨",
+    "acquired": "{date} 취득"
+  },
+  "chart": {
+    "title": "가치 이력",
+    "empty": "아직 가치 이력이 없습니다"
+  },
+  "equity": {
+    "title": "순자산",
+    "subtitle": "자산 가치에서 연결된 대출 잔액을 뺀 금액",
+    "assetValue": "자산 가치",
+    "loanBalance": "대출 잔액",
+    "equity": "순자산",
+    "chartTitle": "기간별 순자산",
+    "linkPrompt": "이 자산의 순자산을 추적하려면 대출 또는 담보 대출을 연결하세요.",
+    "selectLoan": "대출 선택",
+    "link": "대출 연결",
+    "linkedTo": "{name}에 연결됨",
+    "unlink": "연결 해제",
+    "noLoans": "연결할 수 있는 대출 또는 담보 대출 계정이 없습니다.",
+    "linked": "대출이 연결되었습니다",
+    "unlinked": "대출 연결이 해제되었습니다",
+    "actionFailed": "연결된 대출을 업데이트하지 못했습니다"
+  },
+  "updateValue": {
+    "open": "가치 업데이트",
+    "title": "자산 가치 업데이트",
+    "newValue": "새 가치",
+    "date": "기준일",
+    "save": "저장",
+    "saving": "저장 중...",
+    "cancel": "취소",
+    "saved": "가치가 업데이트되었습니다",
+    "failed": "가치를 업데이트하지 못했습니다",
+    "invalid": "가치와 날짜를 입력하세요",
+    "memo": "가치 조정"
+  }
+}

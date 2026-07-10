@@ -78,7 +78,7 @@
       "closeTitleEnabled": "关闭账户",
       "balanceMustBeZero": "余额必须为零",
       "closedPrefix": " — 已关闭",
-      "loanDetails": "贷款详情"
+      "details": "详情"
     }
   },
   "contextMenu": {

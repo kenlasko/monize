@@ -1,0 +1,75 @@
+{
+  "summary": {
+    "currentBalance": "Saldo attuale",
+    "creditLimit": "Limite di credito",
+    "availableCredit": "Credito disponibile",
+    "utilization": "Utilizzo",
+    "interestRate": "Tasso d'interesse",
+    "notSet": "Non impostato"
+  },
+  "statement": {
+    "title": "Ciclo di fatturazione corrente",
+    "cycleWindow": "Ciclo: da {start} a {end}",
+    "statementBalance": "Saldo dell'estratto conto",
+    "statementBalanceNote": "Al {date}",
+    "amountPaid": "Pagato dall'estratto conto",
+    "paymentDue": "Pagamento dovuto",
+    "settlement": "Chiusura estratto conto",
+    "settlesIn": "{days, plural, =0 {Si chiude oggi} one {Si chiude tra # giorno} other {Si chiude tra # giorni}}",
+    "dueIn": "{days, plural, =0 {Scade oggi} one {# giorno rimanente} other {# giorni rimanenti}}",
+    "noDueDate": "Nessuna data di scadenza impostata",
+    "unavailable": "Ciclo di fatturazione non disponibile",
+    "unavailableHint": "Imposta un giorno di chiusura dell'estratto conto su questa carta per visualizzarne il ciclo."
+  },
+  "chart": {
+    "title": "Storico saldo",
+    "empty": "Nessuno storico saldo disponibile"
+  },
+  "spending": {
+    "title": "Spese di questo ciclo",
+    "uncategorised": "Non categorizzato",
+    "empty": "Nessuna spesa registrata in questo ciclo"
+  },
+  "interestAndFees": {
+    "title": "Interessi e commissioni",
+    "ytd": "Da inizio anno",
+    "charges": "{count, plural, one {# addebito} other {# addebiti}}",
+    "none": "Nessun interesse o commissione addebitato quest'anno"
+  },
+  "payoff": {
+    "title": "Calcolatore di rimborso",
+    "description": "Stima quanto tempo serve per estinguere il saldo attuale con un pagamento mensile fisso.",
+    "monthlyPayment": "Pagamento mensile",
+    "payoffTime": "Estinto in",
+    "totalInterest": "Interessi totali",
+    "payoffDate": "Data di estinzione",
+    "months": "{count, plural, one {# mese} other {# mesi}}",
+    "neverPaysOff": "Con questo pagamento il saldo non si estingue mai -- non copre gli interessi mensili.",
+    "noBalance": "Questa carta non ha alcun saldo da estinguere."
+  },
+  "payment": {
+    "open": "Effettua un pagamento",
+    "title": "Effettua un pagamento",
+    "amountType": "Importo",
+    "statementBalance": "Saldo dell'estratto conto",
+    "fullBalance": "Saldo completo",
+    "custom": "Personalizzato",
+    "fromAccount": "Dal conto",
+    "selectAccount": "Seleziona un conto",
+    "noFundingAccounts": "Nessun conto corrente, di risparmio o contanti nella stessa valuta disponibile per il pagamento.",
+    "date": "Data del pagamento",
+    "mode": "Quando",
+    "recordNow": "Registra ora",
+    "scheduleMonthly": "Pianifica mensilmente",
+    "cancel": "Annulla",
+    "submitRecord": "Registra pagamento",
+    "submitSchedule": "Pianifica pagamento",
+    "submitting": "Invio in corso...",
+    "recordName": "Pagamento a {name}",
+    "toastRecorded": "Pagamento registrato",
+    "toastScheduled": "Pagamento mensile pianificato",
+    "toastFailed": "Impossibile inviare il pagamento",
+    "fillRequired": "Scegli un importo, un conto di provenienza e una data"
+  },
+  "loadFailed": "Impossibile caricare i dettagli della carta di credito"
+}

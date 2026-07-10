@@ -1,0 +1,33 @@
+{
+  "summary": {
+    "currentBalance": "Saldo Saat Ini",
+    "projectedBalance": "Saldo Proyeksi",
+    "projectedNote": "Dalam 90 hari",
+    "moneyIn": "Uang Masuk",
+    "moneyOut": "Uang Keluar",
+    "thisMonth": "Bulan ini",
+    "interestRate": "Suku Bunga",
+    "interestEarnedYtd": "Bunga Diperoleh",
+    "ytd": "Sejak awal tahun",
+    "averageBalance": "Saldo Rata-rata",
+    "averageNote": "12 bulan terakhir"
+  },
+  "chart": {
+    "title": "Riwayat Saldo",
+    "empty": "Belum ada riwayat saldo"
+  },
+  "cashFlow": {
+    "title": "Arus Kas",
+    "subtitle": "Arus bersih selama 12 bulan terakhir",
+    "empty": "Tidak ada aktivitas dalam 12 bulan terakhir"
+  },
+  "topCategories": {
+    "title": "Kategori Teratas",
+    "empty": "Tidak ada aktivitas berkategori bulan ini"
+  },
+  "topPayees": {
+    "title": "Penerima Pembayaran Teratas",
+    "empty": "Tidak ada aktivitas penerima pembayaran bulan ini"
+  },
+  "uncategorised": "Tidak Berkategori"
+}

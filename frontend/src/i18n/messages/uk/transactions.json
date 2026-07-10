@@ -51,7 +51,7 @@
     "currentBalance": "Поточний баланс",
     "nextPayment": "Наступний платіж",
     "viewBills": "Переглянути в рахунках та депозитах",
-    "loanDetails": "Переглянути деталі",
+    "viewDetailsAria": "Переглянути деталі рахунку",
     "type": "Тип",
     "accountNumber": "Номер рахунку",
     "currency": "Валюта",
@@ -458,7 +458,8 @@
       "current": "Поточний",
       "ending": "Кінцевий",
       "lowest": "Найнижчий",
-      "minBalance": "Мін. баланс"
+      "minBalance": "Мін. баланс",
+      "projected": "Прогнозовано"
     },
     "monthlyTotals": {
       "title": "Місячні підсумки",

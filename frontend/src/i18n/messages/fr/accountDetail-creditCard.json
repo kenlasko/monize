@@ -1,0 +1,75 @@
+{
+  "summary": {
+    "currentBalance": "Solde actuel",
+    "creditLimit": "Limite de crédit",
+    "availableCredit": "Crédit disponible",
+    "utilization": "Utilisation",
+    "interestRate": "Taux d'intérêt",
+    "notSet": "Non défini"
+  },
+  "statement": {
+    "title": "Cycle de facturation courant",
+    "cycleWindow": "Cycle : du {start} au {end}",
+    "statementBalance": "Solde du relevé",
+    "statementBalanceNote": "En date du {date}",
+    "amountPaid": "Payé depuis le relevé",
+    "paymentDue": "Paiement dû",
+    "settlement": "Clôture du relevé",
+    "settlesIn": "{days, plural, =0 {Clôture aujourd'hui} one {Clôture dans # jour} other {Clôture dans # jours}}",
+    "dueIn": "{days, plural, =0 {Dû aujourd'hui} one {# jour restant} other {# jours restants}}",
+    "noDueDate": "Aucune date d'échéance définie",
+    "unavailable": "Cycle de facturation indisponible",
+    "unavailableHint": "Définissez un jour de clôture de relevé sur cette carte pour voir son cycle."
+  },
+  "chart": {
+    "title": "Historique du solde",
+    "empty": "Aucun historique de solde pour l'instant"
+  },
+  "spending": {
+    "title": "Dépenses de ce cycle",
+    "uncategorised": "Non catégorisé",
+    "empty": "Aucune dépense enregistrée ce cycle"
+  },
+  "interestAndFees": {
+    "title": "Intérêts et frais",
+    "ytd": "Depuis le début de l'année",
+    "charges": "{count, plural, one {# frais} other {# frais}}",
+    "none": "Aucun intérêt ni frais facturé cette année"
+  },
+  "payoff": {
+    "title": "Calculateur de remboursement",
+    "description": "Estimez le temps nécessaire pour rembourser le solde actuel avec un paiement mensuel fixe.",
+    "monthlyPayment": "Paiement mensuel",
+    "payoffTime": "Remboursé en",
+    "totalInterest": "Total des intérêts",
+    "payoffDate": "Date de remboursement",
+    "months": "{count, plural, one {# mois} other {# mois}}",
+    "neverPaysOff": "À ce paiement, le solde n'est jamais remboursé — il ne couvre pas les intérêts mensuels.",
+    "noBalance": "Cette carte n'a aucun solde à rembourser."
+  },
+  "payment": {
+    "open": "Effectuer un paiement",
+    "title": "Effectuer un paiement",
+    "amountType": "Montant",
+    "statementBalance": "Solde du relevé",
+    "fullBalance": "Solde total",
+    "custom": "Personnalisé",
+    "fromAccount": "Depuis le compte",
+    "selectAccount": "Sélectionner un compte",
+    "noFundingAccounts": "Aucun compte courant, d'épargne ou de trésorerie dans la même devise n'est disponible pour effectuer le paiement.",
+    "date": "Date du paiement",
+    "mode": "Quand",
+    "recordNow": "Enregistrer maintenant",
+    "scheduleMonthly": "Planifier mensuellement",
+    "cancel": "Annuler",
+    "submitRecord": "Enregistrer le paiement",
+    "submitSchedule": "Planifier le paiement",
+    "submitting": "Envoi…",
+    "recordName": "Paiement à {name}",
+    "toastRecorded": "Paiement enregistré",
+    "toastScheduled": "Paiement mensuel planifié",
+    "toastFailed": "Échec de l'envoi du paiement",
+    "fillRequired": "Choisissez un montant, un compte de financement et une date"
+  },
+  "loadFailed": "Échec du chargement des détails de la carte de crédit"
+}

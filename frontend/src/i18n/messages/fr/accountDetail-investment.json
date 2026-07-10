@@ -1,0 +1,10 @@
+{
+  "openInInvestments": "Ouvrir dans Investissements",
+  "income": {
+    "title": "Revenus de placement",
+    "dividendsInterest": "Dividendes et intérêts",
+    "realizedGains": "Gains réalisés",
+    "ytd": "Depuis le début de l'année",
+    "empty": "Aucun revenu de placement cette année"
+  }
+}

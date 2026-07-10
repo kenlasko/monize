@@ -32,7 +32,9 @@
     "alreadyHasScheduledPayment": "To konto ma już skonfigurowaną zaplanowaną płatność. Zamiast tego edytuj istniejącą zaplanowaną transakcję.",
     "sourceNotFound": "Nie znaleziono konta źródłowego",
     "ambiguousBrokerage": "„{{ query }}\" pasuje do wielu kont maklerskich: {{ list }}. Użyj dokładnej nazwy konta.",
-    "unknownInvestmentAccount": "Nieznane konto: {{ name }}. Użyj dokładnej nazwy z listy kont użytkownika."
+    "unknownInvestmentAccount": "Nieznane konto: {{ name }}. Użyj dokładnej nazwy z listy kont użytkownika.",
+    "notACreditCard": "Cykle rozliczeniowe są dostępne tylko dla kont kart kredytowych",
+    "noStatementSettlementDay": "Ta karta kredytowa nie ma skonfigurowanego dnia rozliczenia wyciągu"
   },
   "actionHistory": {
     "nothingToUndo": "Nie ma nic do cofnięcia",

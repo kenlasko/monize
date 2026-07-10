@@ -32,7 +32,9 @@
     "alreadyHasScheduledPayment": "Dieses Konto hat bereits eine terminierte Zahlung. Bearbeiten Sie stattdessen die vorhandene terminierte Buchung.",
     "sourceNotFound": "Quellkonto nicht gefunden",
     "ambiguousBrokerage": "\"{{ query }}\" entspricht mehreren Brokerage-Konten: {{ list }}. Verwenden Sie den genauen Kontonamen.",
-    "unknownInvestmentAccount": "Unbekanntes Konto: {{ name }}. Verwenden Sie einen genauen Namen aus der Kontoliste des Benutzers."
+    "unknownInvestmentAccount": "Unbekanntes Konto: {{ name }}. Verwenden Sie einen genauen Namen aus der Kontoliste des Benutzers.",
+    "notACreditCard": "Abrechnungszeiträume sind nur für Kreditkartenkonten verfügbar",
+    "noStatementSettlementDay": "Für diese Kreditkarte ist kein Abrechnungstag konfiguriert"
   },
   "actionHistory": {
     "nothingToUndo": "Nichts rückgängig zu machen",

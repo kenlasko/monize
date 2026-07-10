@@ -1,0 +1,33 @@
+{
+  "header": {
+    "viewTransactions": "Ver transacciones",
+    "reconcile": "Conciliar",
+    "edit": "Editar cuenta",
+    "export": "Exportar",
+    "back": "Volver a Cuentas"
+  },
+  "loading": "Cargando detalles de la cuenta...",
+  "error": {
+    "retry": "Reintentar"
+  },
+  "recurring": {
+    "title": "Cargos recurrentes",
+    "subtitle": "Facturas programadas en esta cuenta, además de posibles suscripciones encontradas en sus transacciones",
+    "empty": "No se detectaron cargos recurrentes en esta cuenta",
+    "scheduledTitle": "Programados",
+    "detectedTitle": "Posibles cargos recurrentes",
+    "detectedSubtitle": "Encontrados en tu historial de transacciones pero aún no programados",
+    "nextDue": "Próximo vencimiento el {date}",
+    "createBill": "Crear factura",
+    "createBillAria": "Crear una factura programada para {payee}",
+    "createTitle": "Nueva factura programada",
+    "frequency": {
+      "weekly": "Semanal",
+      "biweekly": "Cada 2 semanas",
+      "monthly": "Mensual",
+      "quarterly": "Trimestral",
+      "yearly": "Anual",
+      "irregular": "Irregular"
+    }
+  }
+}

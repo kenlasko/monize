@@ -1,0 +1,33 @@
+{
+  "summary": {
+    "currentBalance": "현재 잔액",
+    "projectedBalance": "예상 잔액",
+    "projectedNote": "90일 후",
+    "moneyIn": "입금",
+    "moneyOut": "출금",
+    "thisMonth": "이번 달",
+    "interestRate": "이자율",
+    "interestEarnedYtd": "발생 이자",
+    "ytd": "연초 이후",
+    "averageBalance": "평균 잔액",
+    "averageNote": "최근 12개월"
+  },
+  "chart": {
+    "title": "잔액 이력",
+    "empty": "아직 잔액 이력이 없습니다"
+  },
+  "cashFlow": {
+    "title": "현금 흐름",
+    "subtitle": "최근 12개월 순 흐름",
+    "empty": "최근 12개월 동안 활동이 없습니다"
+  },
+  "topCategories": {
+    "title": "상위 카테고리",
+    "empty": "이번 달 분류된 활동이 없습니다"
+  },
+  "topPayees": {
+    "title": "상위 거래처",
+    "empty": "이번 달 거래처 활동이 없습니다"
+  },
+  "uncategorised": "미분류"
+}

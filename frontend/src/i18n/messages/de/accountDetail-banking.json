@@ -1,0 +1,33 @@
+{
+  "summary": {
+    "currentBalance": "Aktueller Saldo",
+    "projectedBalance": "Prognostizierter Saldo",
+    "projectedNote": "In 90 Tagen",
+    "moneyIn": "Eingänge",
+    "moneyOut": "Ausgänge",
+    "thisMonth": "Diesen Monat",
+    "interestRate": "Zinssatz",
+    "interestEarnedYtd": "Verdiente Zinsen",
+    "ytd": "Seit Jahresbeginn",
+    "averageBalance": "Durchschnittlicher Saldo",
+    "averageNote": "Letzte 12 Monate"
+  },
+  "chart": {
+    "title": "Saldoverlauf",
+    "empty": "Noch kein Saldoverlauf"
+  },
+  "cashFlow": {
+    "title": "Cashflow",
+    "subtitle": "Nettofluss der letzten 12 Monate",
+    "empty": "Keine Aktivität in den letzten 12 Monaten"
+  },
+  "topCategories": {
+    "title": "Top-Kategorien",
+    "empty": "Keine kategorisierte Aktivität in diesem Monat"
+  },
+  "topPayees": {
+    "title": "Top-Zahlungsempfänger",
+    "empty": "Keine Zahlungsempfänger-Aktivität in diesem Monat"
+  },
+  "uncategorised": "Nicht kategorisiert"
+}

@@ -78,7 +78,7 @@
       "closeTitleEnabled": "Clôturer le compte",
       "balanceMustBeZero": "Le solde doit être nul",
       "closedPrefix": " — Clôturé",
-      "loanDetails": "Détails du prêt"
+      "details": "Détails"
     }
   },
   "contextMenu": {

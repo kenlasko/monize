@@ -1,0 +1,75 @@
+{
+  "summary": {
+    "currentBalance": "Aktueller Saldo",
+    "creditLimit": "Kreditlimit",
+    "availableCredit": "Verfügbarer Kredit",
+    "utilization": "Auslastung",
+    "interestRate": "Zinssatz",
+    "notSet": "Nicht festgelegt"
+  },
+  "statement": {
+    "title": "Aktueller Abrechnungszeitraum",
+    "cycleWindow": "Zeitraum: {start} bis {end}",
+    "statementBalance": "Abrechnungssaldo",
+    "statementBalanceNote": "Stand {date}",
+    "amountPaid": "Seit Abrechnung gezahlt",
+    "paymentDue": "Fällige Zahlung",
+    "settlement": "Abrechnungsabschluss",
+    "settlesIn": "{days, plural, =0 {Schließt heute} one {Schließt in # Tag} other {Schließt in # Tagen}}",
+    "dueIn": "{days, plural, =0 {Heute fällig} one {noch # Tag} other {noch # Tage}}",
+    "noDueDate": "Kein Fälligkeitsdatum festgelegt",
+    "unavailable": "Abrechnungszeitraum nicht verfügbar",
+    "unavailableHint": "Legen Sie für diese Karte einen Abrechnungstag fest, um ihren Zeitraum zu sehen."
+  },
+  "chart": {
+    "title": "Saldoverlauf",
+    "empty": "Noch kein Saldoverlauf"
+  },
+  "spending": {
+    "title": "Ausgaben in diesem Zeitraum",
+    "uncategorised": "Nicht kategorisiert",
+    "empty": "Keine Ausgaben in diesem Zeitraum erfasst"
+  },
+  "interestAndFees": {
+    "title": "Zinsen & Gebühren",
+    "ytd": "Seit Jahresbeginn",
+    "charges": "{count, plural, one {# Belastung} other {# Belastungen}}",
+    "none": "In diesem Jahr keine Zinsen oder Gebühren berechnet"
+  },
+  "payoff": {
+    "title": "Tilgungsrechner",
+    "description": "Schätzen Sie, wie lange es dauert, den aktuellen Saldo bei einer festen monatlichen Zahlung zu tilgen.",
+    "monthlyPayment": "Monatliche Zahlung",
+    "payoffTime": "Getilgt in",
+    "totalInterest": "Gesamtzinsen",
+    "payoffDate": "Tilgungsdatum",
+    "months": "{count, plural, one {# Monat} other {# Monate}}",
+    "neverPaysOff": "Bei dieser Zahlung wird der Saldo nie getilgt – sie deckt nicht die monatlichen Zinsen.",
+    "noBalance": "Diese Karte hat keinen zu tilgenden Saldo."
+  },
+  "payment": {
+    "open": "Zahlung leisten",
+    "title": "Zahlung leisten",
+    "amountType": "Betrag",
+    "statementBalance": "Abrechnungssaldo",
+    "fullBalance": "Gesamtsaldo",
+    "custom": "Benutzerdefiniert",
+    "fromAccount": "Von Konto",
+    "selectAccount": "Konto auswählen",
+    "noFundingAccounts": "Kein Giro-, Spar- oder Barkonto in derselben Währung verfügbar, von dem gezahlt werden kann.",
+    "date": "Zahlungsdatum",
+    "mode": "Wann",
+    "recordNow": "Jetzt erfassen",
+    "scheduleMonthly": "Monatlich planen",
+    "cancel": "Abbrechen",
+    "submitRecord": "Zahlung erfassen",
+    "submitSchedule": "Zahlung planen",
+    "submitting": "Wird übermittelt...",
+    "recordName": "Zahlung an {name}",
+    "toastRecorded": "Zahlung erfasst",
+    "toastScheduled": "Monatliche Zahlung geplant",
+    "toastFailed": "Zahlung konnte nicht übermittelt werden",
+    "fillRequired": "Wählen Sie einen Betrag, ein Quellkonto und ein Datum"
+  },
+  "loadFailed": "Kreditkartendetails konnten nicht geladen werden"
+}

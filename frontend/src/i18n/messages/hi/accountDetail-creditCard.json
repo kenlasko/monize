@@ -1,0 +1,75 @@
+{
+  "summary": {
+    "currentBalance": "वर्तमान शेष",
+    "creditLimit": "क्रेडिट सीमा",
+    "availableCredit": "उपलब्ध क्रेडिट",
+    "utilization": "उपयोग",
+    "interestRate": "ब्याज दर",
+    "notSet": "सेट नहीं"
+  },
+  "statement": {
+    "title": "वर्तमान स्टेटमेंट चक्र",
+    "cycleWindow": "चक्र: {start} से {end} तक",
+    "statementBalance": "स्टेटमेंट शेष",
+    "statementBalanceNote": "{date} के अनुसार",
+    "amountPaid": "स्टेटमेंट के बाद से भुगतान किया गया",
+    "paymentDue": "देय भुगतान",
+    "settlement": "स्टेटमेंट बंद होता है",
+    "settlesIn": "{days, plural, =0 {आज निपटान होगा} one {# दिन में निपटान होगा} other {# दिनों में निपटान होगा}}",
+    "dueIn": "{days, plural, =0 {आज देय} one {# दिन शेष} other {# दिन शेष}}",
+    "noDueDate": "कोई देय तिथि सेट नहीं",
+    "unavailable": "स्टेटमेंट चक्र अनुपलब्ध",
+    "unavailableHint": "इसका चक्र देखने के लिए इस कार्ड पर स्टेटमेंट निपटान दिन सेट करें।"
+  },
+  "chart": {
+    "title": "शेष इतिहास",
+    "empty": "अभी तक कोई शेष इतिहास नहीं"
+  },
+  "spending": {
+    "title": "इस चक्र का खर्च",
+    "uncategorised": "अवर्गीकृत",
+    "empty": "इस चक्र में कोई खर्च दर्ज नहीं"
+  },
+  "interestAndFees": {
+    "title": "ब्याज और शुल्क",
+    "ytd": "वर्ष अब तक",
+    "charges": "{count, plural, one {# शुल्क} other {# शुल्क}}",
+    "none": "इस वर्ष कोई ब्याज या शुल्क नहीं लगाया गया"
+  },
+  "payoff": {
+    "title": "भुगतान कैलकुलेटर",
+    "description": "अनुमान लगाएं कि निश्चित मासिक भुगतान पर वर्तमान शेष चुकाने में कितना समय लगेगा।",
+    "monthlyPayment": "मासिक भुगतान",
+    "payoffTime": "इसमें चुकता",
+    "totalInterest": "कुल ब्याज",
+    "payoffDate": "भुगतान तिथि",
+    "months": "{count, plural, one {# महीना} other {# महीने}}",
+    "neverPaysOff": "इस भुगतान पर शेष कभी नहीं चुकता -- यह मासिक ब्याज को भी कवर नहीं करता।",
+    "noBalance": "इस कार्ड पर चुकाने के लिए कोई शेष नहीं है।"
+  },
+  "payment": {
+    "open": "भुगतान करें",
+    "title": "भुगतान करें",
+    "amountType": "राशि",
+    "statementBalance": "स्टेटमेंट शेष",
+    "fullBalance": "पूर्ण शेष",
+    "custom": "कस्टम",
+    "fromAccount": "खाते से",
+    "selectAccount": "एक खाता चुनें",
+    "noFundingAccounts": "भुगतान करने के लिए कोई समान-मुद्रा चेकिंग, बचत या नकद खाता उपलब्ध नहीं है।",
+    "date": "भुगतान तिथि",
+    "mode": "कब",
+    "recordNow": "अभी दर्ज करें",
+    "scheduleMonthly": "मासिक निर्धारित करें",
+    "cancel": "रद्द करें",
+    "submitRecord": "भुगतान दर्ज करें",
+    "submitSchedule": "भुगतान निर्धारित करें",
+    "submitting": "सबमिट हो रहा है...",
+    "recordName": "{name} को भुगतान",
+    "toastRecorded": "भुगतान दर्ज किया गया",
+    "toastScheduled": "मासिक भुगतान निर्धारित किया गया",
+    "toastFailed": "भुगतान सबमिट करने में विफल",
+    "fillRequired": "एक राशि, एक भुगतान खाता और एक तिथि चुनें"
+  },
+  "loadFailed": "क्रेडिट कार्ड विवरण लोड करने में विफल"
+}

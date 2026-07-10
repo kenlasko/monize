@@ -51,7 +51,7 @@
     "currentBalance": "Huidig saldo",
     "nextPayment": "Volgende betaling",
     "viewBills": "Bekijk in rekeningen & stortingen",
-    "loanDetails": "Details bekijken",
+    "viewDetailsAria": "Rekeninggegevens bekijken",
     "type": "Type",
     "accountNumber": "Rekeningnummer",
     "currency": "Valuta",
@@ -458,7 +458,8 @@
       "current": "Huidig",
       "ending": "Eind",
       "lowest": "Laagste",
-      "minBalance": "Minimumsaldo"
+      "minBalance": "Minimumsaldo",
+      "projected": "Geprojecteerd"
     },
     "monthlyTotals": {
       "title": "Maandtotalen",

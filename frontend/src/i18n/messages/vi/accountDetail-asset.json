@@ -1,0 +1,45 @@
+{
+  "summary": {
+    "currentValue": "Giá trị hiện tại",
+    "purchaseValue": "Giá trị mua",
+    "appreciation": "Tổng mức tăng giá",
+    "annualized": "Theo năm",
+    "category": "Danh mục",
+    "notSet": "Chưa đặt",
+    "acquired": "Mua ngày {date}"
+  },
+  "chart": {
+    "title": "Lịch sử giá trị",
+    "empty": "Chưa có lịch sử giá trị"
+  },
+  "equity": {
+    "title": "Vốn chủ sở hữu",
+    "subtitle": "Giá trị tài sản trừ số dư khoản vay được liên kết",
+    "assetValue": "Giá trị tài sản",
+    "loanBalance": "Số dư khoản vay",
+    "equity": "Vốn chủ sở hữu",
+    "chartTitle": "Vốn chủ sở hữu theo thời gian",
+    "linkPrompt": "Liên kết một khoản vay hoặc thế chấp để theo dõi vốn chủ sở hữu của tài sản này.",
+    "selectLoan": "Chọn một khoản vay",
+    "link": "Liên kết khoản vay",
+    "linkedTo": "Đã liên kết với {name}",
+    "unlink": "Hủy liên kết",
+    "noLoans": "Không có tài khoản vay hoặc thế chấp nào để liên kết.",
+    "linked": "Đã liên kết khoản vay",
+    "unlinked": "Đã hủy liên kết khoản vay",
+    "actionFailed": "Không thể cập nhật khoản vay được liên kết"
+  },
+  "updateValue": {
+    "open": "Cập nhật giá trị",
+    "title": "Cập nhật giá trị tài sản",
+    "newValue": "Giá trị mới",
+    "date": "Tính đến ngày",
+    "save": "Lưu",
+    "saving": "Đang lưu...",
+    "cancel": "Hủy",
+    "saved": "Đã cập nhật giá trị",
+    "failed": "Không thể cập nhật giá trị",
+    "invalid": "Nhập một giá trị và một ngày",
+    "memo": "Điều chỉnh giá trị"
+  }
+}

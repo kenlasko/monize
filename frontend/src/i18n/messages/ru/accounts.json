@@ -78,7 +78,7 @@
       "closeTitleEnabled": "Закрыть счёт",
       "balanceMustBeZero": "Остаток должен быть нулевым",
       "closedPrefix": " — Закрыт",
-      "loanDetails": "Сведения о кредите"
+      "details": "Подробнее"
     }
   },
   "contextMenu": {

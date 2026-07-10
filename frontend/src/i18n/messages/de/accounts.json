@@ -78,7 +78,7 @@
       "closeTitleEnabled": "Konto schließen",
       "balanceMustBeZero": "Saldo muss null sein",
       "closedPrefix": " – Geschlossen",
-      "loanDetails": "Kreditdetails"
+      "details": "Details"
     }
   },
   "contextMenu": {

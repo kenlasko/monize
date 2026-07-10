@@ -78,7 +78,7 @@
       "closeTitleEnabled": "Đóng tài khoản",
       "balanceMustBeZero": "Số dư phải bằng không",
       "closedPrefix": " — Đã đóng",
-      "loanDetails": "Chi tiết khoản vay"
+      "details": "Chi tiết"
     }
   },
   "contextMenu": {

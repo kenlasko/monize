@@ -1,0 +1,33 @@
+{
+  "header": {
+    "viewTransactions": "Buchungen anzeigen",
+    "reconcile": "Abgleichen",
+    "edit": "Konto bearbeiten",
+    "export": "Exportieren",
+    "back": "Zurück zu den Konten"
+  },
+  "loading": "Kontodetails werden geladen...",
+  "error": {
+    "retry": "Erneut versuchen"
+  },
+  "recurring": {
+    "title": "Wiederkehrende Zahlungen",
+    "subtitle": "Terminierte Rechnungen auf diesem Konto sowie mögliche Abonnements, die in den Buchungen gefunden wurden",
+    "empty": "Keine wiederkehrenden Zahlungen auf diesem Konto erkannt",
+    "scheduledTitle": "Terminiert",
+    "detectedTitle": "Mögliche wiederkehrende Zahlungen",
+    "detectedSubtitle": "In Ihrer Buchungshistorie gefunden, aber noch nicht terminiert",
+    "nextDue": "Nächste Fälligkeit {date}",
+    "createBill": "Rechnung erstellen",
+    "createBillAria": "Terminierte Rechnung für {payee} erstellen",
+    "createTitle": "Neue terminierte Rechnung",
+    "frequency": {
+      "weekly": "Wöchentlich",
+      "biweekly": "Alle 2 Wochen",
+      "monthly": "Monatlich",
+      "quarterly": "Vierteljährlich",
+      "yearly": "Jährlich",
+      "irregular": "Unregelmäßig"
+    }
+  }
+}

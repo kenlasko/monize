@@ -51,7 +51,7 @@
     "currentBalance": "現在残高",
     "nextPayment": "次回支払い",
     "viewBills": "請求書と入金で表示",
-    "loanDetails": "詳細を表示",
+    "viewDetailsAria": "口座詳細を表示",
     "type": "種類",
     "accountNumber": "口座番号",
     "currency": "通貨",
@@ -458,7 +458,8 @@
       "current": "現在",
       "ending": "終了",
       "lowest": "最低",
-      "minBalance": "最小残高"
+      "minBalance": "最小残高",
+      "projected": "予測"
     },
     "monthlyTotals": {
       "title": "月次合計",

@@ -1,0 +1,45 @@
+{
+  "summary": {
+    "currentValue": "当前价值",
+    "purchaseValue": "购入价值",
+    "appreciation": "总增值",
+    "annualized": "年化",
+    "category": "类别",
+    "notSet": "未设置",
+    "acquired": "购入于 {date}"
+  },
+  "chart": {
+    "title": "价值历史",
+    "empty": "暂无价值历史"
+  },
+  "equity": {
+    "title": "净值",
+    "subtitle": "资产价值减去关联贷款余额",
+    "assetValue": "资产价值",
+    "loanBalance": "贷款余额",
+    "equity": "净值",
+    "chartTitle": "净值随时间变化",
+    "linkPrompt": "关联一笔贷款或抵押贷款，以跟踪此资产的净值。",
+    "selectLoan": "选择一笔贷款",
+    "link": "关联贷款",
+    "linkedTo": "已关联至 {name}",
+    "unlink": "取消关联",
+    "noLoans": "没有可关联的贷款或抵押贷款账户。",
+    "linked": "贷款已关联",
+    "unlinked": "贷款已取消关联",
+    "actionFailed": "更新关联贷款失败"
+  },
+  "updateValue": {
+    "open": "更新价值",
+    "title": "更新资产价值",
+    "newValue": "新价值",
+    "date": "截至日期",
+    "save": "保存",
+    "saving": "正在保存...",
+    "cancel": "取消",
+    "saved": "价值已更新",
+    "failed": "更新价值失败",
+    "invalid": "请输入价值和日期",
+    "memo": "价值调整"
+  }
+}

@@ -32,7 +32,9 @@
     "alreadyHasScheduledPayment": "Esta cuenta ya tiene un pago planificado configurado. Edita la transacción planificada existente.",
     "sourceNotFound": "Cuenta de origen no encontrada",
     "ambiguousBrokerage": "\"{{ query }}\" coincide con varias cuentas de corretaje: {{ list }}. Use el nombre exacto de la cuenta.",
-    "unknownInvestmentAccount": "Cuenta desconocida: {{ name }}. Use un nombre exacto de la lista de cuentas del usuario."
+    "unknownInvestmentAccount": "Cuenta desconocida: {{ name }}. Use un nombre exacto de la lista de cuentas del usuario.",
+    "notACreditCard": "Los ciclos de facturación solo están disponibles para cuentas de tarjeta de crédito",
+    "noStatementSettlementDay": "Esta tarjeta de crédito no tiene configurado un día de cierre del estado de cuenta"
   },
   "actionHistory": {
     "nothingToUndo": "Nada que deshacer",
