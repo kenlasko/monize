@@ -392,7 +392,14 @@ describe('deriveLoanPaymentHistory', () => {
 });
 
 describe('deriveCurrentInstallment', () => {
-  const history = (events: Array<{ principal: number; interest: number; type: 'REGULAR' | 'OVERPAYMENT' }>) => ({
+  const history = (
+    events: Array<{
+      principal: number;
+      interest: number;
+      type: 'REGULAR' | 'OVERPAYMENT';
+      interestRecorded?: boolean;
+    }>,
+  ) => ({
     events: events.map((e, i) => ({
       date: `2026-0${i + 1}-15`,
       principal: e.principal,
@@ -401,6 +408,9 @@ describe('deriveCurrentInstallment', () => {
       cumulativePrincipal: 0,
       cumulativeInterest: 0,
       type: e.type,
+      // Regular installments here stand for real recorded installments unless a
+      // case overrides it (e.g. analytic interest from a separate booking).
+      interestRecorded: e.interestRecorded ?? e.type === 'REGULAR',
     })),
     startingBalance: 0,
     currentBalance: 0,
@@ -440,6 +450,21 @@ describe('deriveCurrentInstallment', () => {
 
   it('falls back to the contractual payment with no regular history', () => {
     expect(deriveCurrentInstallment(history([]), 1279)).toBe(1279);
+  });
+
+  it('falls back to contractual when interest was not recorded (separate booking)', () => {
+    // Regression: interest booked as a separate transaction leaves regular rows
+    // with analytic/partial interest, so principal + interest is not a real
+    // installment. Trusting it would seed a payment below the period interest
+    // and the projection would never pay off (payoff "beyond forecast").
+    const result = deriveCurrentInstallment(
+      history([
+        { principal: 300, interest: 300, type: 'REGULAR', interestRecorded: false },
+        { principal: 300, interest: 300, type: 'REGULAR', interestRecorded: false },
+      ]),
+      1279,
+    );
+    expect(result).toBe(1279);
   });
 });
 

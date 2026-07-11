@@ -41,6 +41,13 @@ export interface LoanPaymentEvent {
   cumulativeInterest: number;
   /** REGULAR installment or a standalone OVERPAYMENT (extra principal) */
   type: LoanPaymentType;
+  /**
+   * True only when `interest` came from a real recorded interest split, so
+   * `principal + interest` is a genuine full installment. False for
+   * overpayments and for analytically-derived interest (e.g. interest booked
+   * as a separate transaction), where the sum is not a reliable installment.
+   */
+  interestRecorded: boolean;
 }
 
 export interface LoanHistoryResult {
@@ -97,7 +104,7 @@ export function deriveLoanPaymentHistory(
     let runningBalance = startingBalance;
     for (const transaction of repayments) {
       const principal = Math.abs(Number(transaction.amount));
-      const { interest, type } = classifyPayment(
+      const { interest, type, interestRecorded } = classifyPayment(
         transaction,
         runningBalance,
         account,
@@ -115,6 +122,7 @@ export function deriveLoanPaymentHistory(
         cumulativePrincipal,
         cumulativeInterest,
         type,
+        interestRecorded,
       });
     }
   } else {
@@ -127,7 +135,7 @@ export function deriveLoanPaymentHistory(
       runningSigned += Number(transaction.amount);
       if (Number(transaction.amount) <= 0) continue; // draws move the balance, no row
       const principal = Math.abs(Number(transaction.amount));
-      const { interest, type } = classifyPayment(
+      const { interest, type, interestRecorded } = classifyPayment(
         transaction,
         balanceBefore,
         account,
@@ -144,6 +152,7 @@ export function deriveLoanPaymentHistory(
         cumulativePrincipal,
         cumulativeInterest,
         type,
+        interestRecorded,
       });
     }
   }
@@ -174,6 +183,13 @@ function debtMagnitude(signedBalance: number): number {
  * reduction is trusted -- a figure above the contractual usually reflects
  * analytic interest on a payment recorded without an interest split rather than
  * a real raise, so it is ignored to avoid projecting too high a payment.
+ *
+ * Crucially, only an installment whose interest was actually *recorded* (a real
+ * split) is trusted: without a recorded interest leg, `principal + interest` is
+ * principal plus at most an analytic estimate -- often below the period's true
+ * interest -- which would seed the projection with a payment that never
+ * amortizes (payoff "beyond forecast", 0 months saved). In that case we fall
+ * back to the contractual payment, which does amortize.
  */
 export function deriveCurrentInstallment(
   history: LoanHistoryResult,
@@ -181,7 +197,7 @@ export function deriveCurrentInstallment(
 ): number {
   const lastRegular = [...history.events]
     .reverse()
-    .find((event) => event.type === 'REGULAR');
+    .find((event) => event.type === 'REGULAR' && event.interestRecorded);
   if (!lastRegular) return contractualPayment;
   const observed =
     Math.round((lastRegular.principal + lastRegular.interest) * 100) / 100;
@@ -203,7 +219,7 @@ function classifyPayment(
   account: Account,
   loanAccountId: string,
   processedParentIds: Set<string>,
-): { interest: number; type: LoanPaymentType } {
+): { interest: number; type: LoanPaymentType; interestRecorded: boolean } {
   if (
     isOverpayment(
       transaction,
@@ -212,7 +228,7 @@ function classifyPayment(
       loanAccountId,
     )
   ) {
-    return { interest: 0, type: 'OVERPAYMENT' };
+    return { interest: 0, type: 'OVERPAYMENT', interestRecorded: false };
   }
   const recorded = readRecordedInterest(
     transaction,
@@ -220,11 +236,14 @@ function classifyPayment(
     processedParentIds,
   );
   if (recorded !== null) {
-    return { interest: recorded, type: 'REGULAR' };
+    // A positive recorded split is a real installment leg; 0 means the source
+    // split carried no interest (e.g. an extra-principal sibling), which is not.
+    return { interest: recorded, type: 'REGULAR', interestRecorded: recorded > 0 };
   }
   return {
     interest: analyticInterest(balanceBefore, account, transaction),
     type: 'REGULAR',
+    interestRecorded: false,
   };
 }
 

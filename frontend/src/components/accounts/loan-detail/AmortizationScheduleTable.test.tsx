@@ -27,6 +27,7 @@ function makeHistoryEvents(count: number): LoanPaymentEvent[] {
     cumulativePrincipal: 450 * (i + 1),
     cumulativeInterest: 50 * (i + 1),
     type: 'REGULAR' as const,
+    interestRecorded: true,
   }));
 }
 
@@ -108,6 +109,7 @@ describe('AmortizationScheduleTable', () => {
         cumulativePrincipal: 1450,
         cumulativeInterest: 50,
         type: 'OVERPAYMENT' as const,
+        interestRecorded: false,
       },
     ];
     render(
