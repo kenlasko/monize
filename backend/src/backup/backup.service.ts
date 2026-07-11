@@ -42,6 +42,78 @@ const BACKUP_VERSION = 1;
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/**
+ * Tables that `insertRows` is permitted to write during a restore. This is the
+ * single source of truth for the restore allowlist -- the export side derives
+ * its coverage from `getTableQueries()`, and the two are kept in lockstep by the
+ * coverage guard test (backup-restore.integration.spec.ts).
+ *
+ * `currencies` is intentionally absent: it is restored separately via
+ * `ensureCurrenciesExist` (shared, code-keyed rows), not through `insertRows`.
+ */
+export const RESTORABLE_TABLES: ReadonlySet<string> = new Set([
+  "user_preferences",
+  "user_currency_preferences",
+  "categories",
+  "payees",
+  "payee_aliases",
+  "institutions",
+  "accounts",
+  "tags",
+  "transactions",
+  "transaction_splits",
+  "transaction_tags",
+  "transaction_split_tags",
+  "scheduled_transactions",
+  "scheduled_transaction_splits",
+  "scheduled_transaction_overrides",
+  "scheduled_transaction_split_tags",
+  "securities",
+  "security_prices",
+  "holdings",
+  "security_tags",
+  "investment_transactions",
+  "loan_rate_changes",
+  "loan_scenarios",
+  "budgets",
+  "budget_categories",
+  "budget_periods",
+  "budget_period_categories",
+  "budget_alerts",
+  "custom_reports",
+  "investment_reports",
+  "import_column_mappings",
+  "monthly_account_balances",
+  "auto_backup_settings",
+  "ai_provider_configs",
+  "monte_carlo_scenarios",
+  "monte_carlo_cash_flows",
+]);
+
+/**
+ * User-owned tables that are deliberately NOT part of a backup, each with the
+ * reason. The coverage guard test asserts every table in the database is either
+ * exported (see `getBackedUpTableNames`) or listed here, so adding a new entity
+ * forces an explicit decision instead of silently dropping data on restore.
+ */
+const INTENTIONALLY_EXCLUDED_TABLES: ReadonlySet<string> = new Set([
+  "users", // the account row itself; a restore targets an existing user
+  "action_history", // undo/redo log, wiped on restore (not undoable to prior state)
+  "ai_insights", // regenerable AI cache
+  "ai_usage_logs", // usage telemetry, not user content
+  "exchange_rates", // global shared reference data, not per-user
+  "account_delegates", // cross-user sharing relationship
+  "account_delegate_grants", // cross-user sharing relationship
+  "delegate_account_favourites", // cross-user sharing state
+  "emergency_access_contacts", // cross-user emergency-access config
+  "emergency_access_settings", // cross-user emergency-access config
+  "oauth_payloads", // transient OIDC state
+  "personal_access_tokens", // auth credentials -- never exported
+  "refresh_tokens", // auth session tokens -- never exported
+  "trusted_devices", // 2FA device registrations -- never exported
+  "schema_migrations", // migration bookkeeping (no entity; system table)
+]);
+
 interface BackupData {
   version: number;
   exportedAt: string;
@@ -65,6 +137,9 @@ interface BackupData {
   security_prices: Record<string, unknown>[];
   holdings: Record<string, unknown>[];
   investment_transactions: Record<string, unknown>[];
+  loan_rate_changes: Record<string, unknown>[];
+  loan_scenarios: Record<string, unknown>[];
+  security_tags: Record<string, unknown>[];
   budgets: Record<string, unknown>[];
   budget_categories: Record<string, unknown>[];
   budget_periods: Record<string, unknown>[];
@@ -181,6 +256,20 @@ export class BackupService {
     this.logger.log(`Backup export completed for user ${userId}`);
   }
 
+  /**
+   * The set of tables the export writes (and the restore repopulates). Exposed
+   * so the coverage guard test can assert every database table is either backed
+   * up or explicitly excluded (see INTENTIONALLY_EXCLUDED_TABLES).
+   */
+  getBackedUpTableNames(): string[] {
+    return this.getTableQueries().map((q) => q.key);
+  }
+
+  /** The tables deliberately omitted from backups, exposed for the guard test. */
+  getIntentionallyExcludedTableNames(): string[] {
+    return Array.from(INTENTIONALLY_EXCLUDED_TABLES);
+  }
+
   private getTableQueries(): Array<{ key: string; sql: string }> {
     return [
       {
@@ -289,6 +378,22 @@ export class BackupService {
       {
         key: "investment_transactions",
         sql: "SELECT * FROM investment_transactions WHERE user_id = $1",
+      },
+      {
+        // Join tags between securities and tags. Owned transitively via the
+        // securities/tags rows, so scope by the security's owner.
+        key: "security_tags",
+        sql: `SELECT st.* FROM security_tags st
+              JOIN securities s ON st.security_id = s.id
+              WHERE s.user_id = $1`,
+      },
+      {
+        key: "loan_rate_changes",
+        sql: "SELECT * FROM loan_rate_changes WHERE user_id = $1",
+      },
+      {
+        key: "loan_scenarios",
+        sql: "SELECT * FROM loan_scenarios WHERE user_id = $1",
       },
       { key: "budgets", sql: "SELECT * FROM budgets WHERE user_id = $1" },
       {
@@ -506,6 +611,12 @@ export class BackupService {
         data.holdings,
         null,
       );
+      restored.securityTags = await this.insertRows(
+        queryRunner,
+        "security_tags",
+        data.security_tags,
+        null,
+      );
       restored.transactions = await this.insertRows(
         queryRunner,
         "transactions",
@@ -534,6 +645,18 @@ export class BackupService {
         queryRunner,
         "investment_transactions",
         data.investment_transactions,
+        userId,
+      );
+      restored.loanRateChanges = await this.insertRows(
+        queryRunner,
+        "loan_rate_changes",
+        data.loan_rate_changes,
+        userId,
+      );
+      restored.loanScenarios = await this.insertRows(
+        queryRunner,
+        "loan_scenarios",
+        data.loan_scenarios,
         userId,
       );
       restored.budgets = await this.insertRows(
@@ -892,6 +1015,13 @@ export class BackupService {
       "DELETE FROM investment_transactions WHERE user_id = $1",
       [userId],
     );
+    // Security tags (join rows cascade from securities/tags, deleted here
+    // explicitly before securities so the delete order is self-documenting)
+    await queryRunner.query(
+      `DELETE FROM security_tags WHERE security_id IN
+       (SELECT id FROM securities WHERE user_id = $1)`,
+      [userId],
+    );
     await queryRunner.query(
       `DELETE FROM holdings WHERE account_id IN
        (SELECT id FROM accounts WHERE user_id = $1)`,
@@ -1028,6 +1158,16 @@ export class BackupService {
       userId,
     ]);
     await queryRunner.query("DELETE FROM payees WHERE user_id = $1", [userId]);
+
+    // Loan rate-change history and saved overpayment scenarios (both cascade
+    // from accounts, deleted here explicitly before accounts)
+    await queryRunner.query(
+      "DELETE FROM loan_rate_changes WHERE user_id = $1",
+      [userId],
+    );
+    await queryRunner.query("DELETE FROM loan_scenarios WHERE user_id = $1", [
+      userId,
+    ]);
 
     // Clear account FK references to categories before deleting accounts
     await queryRunner.query(
@@ -1313,44 +1453,9 @@ export class BackupService {
       return 0;
     }
 
-    // Allowlist of tables that can be restored
-    const allowedTables = new Set([
-      "user_preferences",
-      "user_currency_preferences",
-      "categories",
-      "payees",
-      "payee_aliases",
-      "institutions",
-      "accounts",
-      "tags",
-      "transactions",
-      "transaction_splits",
-      "transaction_tags",
-      "transaction_split_tags",
-      "scheduled_transactions",
-      "scheduled_transaction_splits",
-      "scheduled_transaction_overrides",
-      "scheduled_transaction_split_tags",
-      "securities",
-      "security_prices",
-      "holdings",
-      "investment_transactions",
-      "budgets",
-      "budget_categories",
-      "budget_periods",
-      "budget_period_categories",
-      "budget_alerts",
-      "custom_reports",
-      "investment_reports",
-      "import_column_mappings",
-      "monthly_account_balances",
-      "auto_backup_settings",
-      "ai_provider_configs",
-      "monte_carlo_scenarios",
-      "monte_carlo_cash_flows",
-    ]);
-
-    if (!allowedTables.has(table)) {
+    // Allowlist of tables that can be restored (single source of truth defined
+    // at module scope and cross-checked by the coverage guard test).
+    if (!RESTORABLE_TABLES.has(table)) {
       throw new BadRequestException(
         tr(
           "errors.backup.tableNotAllowed",

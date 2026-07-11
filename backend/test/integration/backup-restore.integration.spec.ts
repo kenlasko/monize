@@ -7,6 +7,7 @@ import { gunzipSync } from "zlib";
 import {
   BackupService,
   BackupPasswordRequiredError,
+  RESTORABLE_TABLES,
 } from "@/backup/backup.service";
 import { User } from "@/users/entities/user.entity";
 import { OidcService } from "@/auth/oidc/oidc.service";
@@ -42,6 +43,9 @@ describe("Backup export/restore round-trip (integration)", () => {
     accountId: string;
     savingsAccountId: string;
     tagId: string;
+    securityId: string;
+    loanRateChangeId: string;
+    loanScenarioId: string;
     expenseTxId: string;
     splitParentTxId: string;
     transferOutTxId: string;
@@ -134,6 +138,9 @@ describe("Backup export/restore round-trip (integration)", () => {
       accountId: randomUUID(),
       savingsAccountId: randomUUID(),
       tagId: randomUUID(),
+      securityId: randomUUID(),
+      loanRateChangeId: randomUUID(),
+      loanScenarioId: randomUUID(),
       expenseTxId: randomUUID(),
       splitParentTxId: randomUUID(),
       transferOutTxId: randomUUID(),
@@ -189,6 +196,34 @@ describe("Backup export/restore round-trip (integration)", () => {
     await dataSource.query(
       `INSERT INTO tags (id, user_id, name) VALUES ($1, $2, 'essential')`,
       [ids.tagId, userId],
+    );
+
+    // A security tagged with the user's tag -- exercises the security_tags
+    // join table (composite PK, no id/user_id column of its own).
+    await dataSource.query(
+      `INSERT INTO securities (id, user_id, symbol, name, currency_code)
+       VALUES ($1, $2, 'ACME', 'Acme Corp', 'USD')`,
+      [ids.securityId, userId],
+    );
+    await dataSource.query(
+      `INSERT INTO security_tags (security_id, tag_id) VALUES ($1, $2)`,
+      [ids.securityId, ids.tagId],
+    );
+
+    // Loan rate-change history and a saved overpayment scenario on the
+    // chequing account -- both reference accounts via account_id.
+    await dataSource.query(
+      `INSERT INTO loan_rate_changes (id, user_id, account_id, effective_date,
+                                      annual_rate, new_payment_amount, source, note)
+       VALUES ($1, $2, $3, '2026-01-01', 5.25, 1500, 'initial', 'Origination rate')`,
+      [ids.loanRateChangeId, userId, ids.accountId],
+    );
+    await dataSource.query(
+      `INSERT INTO loan_scenarios (id, user_id, account_id, name,
+                                   recurring_extra_amount, lump_sums)
+       VALUES ($1, $2, $3, 'Pay extra 200', 200,
+               '[{"date":"2026-06-01","amount":5000}]')`,
+      [ids.loanScenarioId, userId, ids.accountId],
     );
 
     await dataSource.query(
@@ -277,6 +312,10 @@ describe("Backup export/restore round-trip (integration)", () => {
     expect(parsed.version).toBe(1);
     expect(parsed.exportedAt).toBeDefined();
     expect(parsed.transactions).toHaveLength(4);
+    // Recently-added tables must be present in the export payload.
+    expect(parsed.security_tags).toHaveLength(1);
+    expect(parsed.loan_rate_changes).toHaveLength(1);
+    expect(parsed.loan_scenarios).toHaveLength(1);
 
     const result = await service.restoreData(userB.id, {
       compressedData: buffer,
@@ -380,6 +419,48 @@ describe("Backup export/restore round-trip (integration)", () => {
     )[0].n;
     expect(taggedCount).toBe(1);
 
+    // security_tags round-trips: B's security is linked to B's tag, both
+    // rescoped to B (the composite PK has no id/user_id of its own -- the
+    // link survives purely via the remapped security_id/tag_id).
+    expect(await countRows("securities", userB.id)).toBe(1);
+    const securityTagCount = (
+      await dataSource.query(
+        `SELECT COUNT(*)::int AS n FROM security_tags st
+         JOIN securities s ON st.security_id = s.id
+         JOIN tags g ON st.tag_id = g.id
+         WHERE s.user_id = $1 AND g.user_id = $1`,
+        [userB.id],
+      )
+    )[0].n;
+    expect(securityTagCount).toBe(1);
+
+    // loan_rate_changes round-trips and its account_id resolves to B's account.
+    expect(await countRows("loan_rate_changes", userB.id)).toBe(1);
+    const rateChange = (
+      await dataSource.query(
+        `SELECT lrc.annual_rate, lrc.source,
+                a.user_id AS acct_user_id, a.name AS acct_name
+         FROM loan_rate_changes lrc JOIN accounts a ON lrc.account_id = a.id
+         WHERE lrc.user_id = $1`,
+        [userB.id],
+      )
+    )[0];
+    expect(rateChange.acct_user_id).toBe(userB.id);
+    expect(rateChange.acct_name).toBe("Checking");
+    expect(Number(rateChange.annual_rate)).toBe(5.25);
+    expect(rateChange.source).toBe("initial");
+
+    // loan_scenarios round-trips with its JSONB lump_sums intact.
+    expect(await countRows("loan_scenarios", userB.id)).toBe(1);
+    const scenario = (
+      await dataSource.query(
+        `SELECT name, lump_sums FROM loan_scenarios WHERE user_id = $1`,
+        [userB.id],
+      )
+    )[0];
+    expect(scenario.name).toBe("Pay extra 200");
+    expect(scenario.lump_sums).toEqual([{ date: "2026-06-01", amount: 5000 }]);
+
     // The restore must NOT touch user A's data.
     expect(await countRows("accounts", userA.id)).toBe(2);
     expect(await countRows("transactions", userA.id)).toBe(4);
@@ -454,5 +535,58 @@ describe("Backup export/restore round-trip (integration)", () => {
     ).rejects.toThrow("Invalid password");
 
     expect(await countRows("accounts", userB.id)).toBe(0);
+  });
+
+  // Guard against the class of bug this change fixed: a new entity/table added
+  // to the schema but never wired into the backup, so its data is silently lost
+  // on restore. The synchronize:true test DB is built from entity metadata, so
+  // it contains every @Entity table -- exactly where new tables come from.
+  describe("schema coverage guard", () => {
+    async function listPublicTables(): Promise<string[]> {
+      const rows: Array<{ table_name: string }> = await dataSource.query(
+        `SELECT table_name FROM information_schema.tables
+         WHERE table_schema = 'public' AND table_type = 'BASE TABLE'`,
+      );
+      return rows.map((r) => r.table_name);
+    }
+
+    it("backs up or explicitly excludes every table in the database", async () => {
+      const dbTables = await listPublicTables();
+      const covered = new Set(service.getBackedUpTableNames());
+      const excluded = new Set(service.getIntentionallyExcludedTableNames());
+
+      const unclassified = dbTables.filter(
+        (t) => !covered.has(t) && !excluded.has(t),
+      );
+
+      // If this fails, a new table was added without deciding whether it belongs
+      // in a backup. Add it to getTableQueries()/RESTORABLE_TABLES (and the
+      // restore inserts) to back it up, or to INTENTIONALLY_EXCLUDED_TABLES with
+      // a reason if it should never be exported.
+      expect(unclassified).toEqual([]);
+    });
+
+    it("keeps the backed-up and excluded sets disjoint and real", async () => {
+      const dbTables = new Set(await listPublicTables());
+      const covered = service.getBackedUpTableNames();
+      const excluded = service.getIntentionallyExcludedTableNames();
+
+      // No table is both backed up and excluded.
+      const overlap = covered.filter((t) => new Set(excluded).has(t));
+      expect(overlap).toEqual([]);
+
+      // Every backed-up table actually exists (catch typos / renamed tables).
+      const missing = covered.filter((t) => !dbTables.has(t));
+      expect(missing).toEqual([]);
+    });
+
+    it("keeps the export coverage and restore allowlist in lockstep", () => {
+      // The restore repopulates exactly what the export writes. currencies is the
+      // one deliberate difference: it is restored via ensureCurrenciesExist, not
+      // through insertRows/RESTORABLE_TABLES.
+      const covered = new Set(service.getBackedUpTableNames());
+      const expected = new Set([...RESTORABLE_TABLES, "currencies"]);
+      expect([...covered].sort()).toEqual([...expected].sort());
+    });
   });
 });
