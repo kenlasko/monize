@@ -1,15 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { UseFormRegister, UseFormSetValue, FieldErrors } from 'react-hook-form';
 import { DateInput } from '@/components/ui/DateInput';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Select } from '@/components/ui/Select';
-import { Combobox } from '@/components/ui/Combobox';
 import { Account, AmortizationPreview, PaymentFrequency } from '@/types/account';
 import { Category } from '@/types/category';
-import { buildCategoryTree } from '@/lib/categoryUtils';
 import { accountsApi } from '@/lib/accounts';
 import { buildAccountDropdownOptions } from '@/lib/account-utils';
 import { createLogger } from '@/lib/logger';
@@ -105,25 +103,6 @@ export function LoanFields({
     return () => clearTimeout(timer);
   }, [calculatePreview]);
 
-  const interestCategoryOptions = useMemo(() =>
-    buildCategoryTree(categories).map(({ category }) => {
-      const parentCategory = category.parentId
-        ? categories.find(c => c.id === category.parentId)
-        : null;
-      return {
-        value: category.id,
-        label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
-      };
-    }),
-  [categories]);
-
-  const initialInterestCategoryName = useMemo(() => {
-    if (!selectedInterestCategoryId) return '';
-    const cat = categories.find(c => c.id === selectedInterestCategoryId);
-    if (!cat) return '';
-    const parent = cat.parentId ? categories.find(c => c.id === cat.parentId) : null;
-    return parent ? `${parent.name}: ${cat.name}` : cat.name;
-  }, [selectedInterestCategoryId, categories]);
 
   return (
     <div className="space-y-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
@@ -175,18 +154,10 @@ export function LoanFields({
         />
       </div>
 
-      <Combobox
-        label={t('loanFields.interestCategory')}
-        placeholder={t('loanFields.selectCategory')}
-        options={interestCategoryOptions}
-        value={selectedInterestCategoryId}
-        initialDisplayValue={initialInterestCategoryName}
-        onChange={handleInterestCategoryChange}
-        error={errors.interestCategoryId?.message as string | undefined}
-      />
-
       <OverpaymentRecognitionFields
         categories={categories}
+        selectedInterestCategoryId={selectedInterestCategoryId}
+        onInterestCategoryChange={handleInterestCategoryChange}
         selectedOverpaymentCategoryId={selectedOverpaymentCategoryId}
         onOverpaymentCategoryChange={handleOverpaymentCategoryChange}
         selectedOverpaymentPayeeId={selectedOverpaymentPayeeId}

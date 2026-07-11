@@ -15,6 +15,9 @@ const logger = createLogger('OverpaymentRecognitionFields');
 
 interface OverpaymentRecognitionFieldsProps {
   categories: Category[];
+  /** Where this loan's interest is booked, so the schedule/detection find it. */
+  selectedInterestCategoryId: string;
+  onInterestCategoryChange: (categoryId: string) => void;
   selectedOverpaymentCategoryId: string;
   onOverpaymentCategoryChange: (categoryId: string) => void;
   selectedOverpaymentPayeeId: string;
@@ -25,14 +28,17 @@ interface OverpaymentRecognitionFieldsProps {
 }
 
 /**
- * The per-loan "overpayment recognition" settings shared by the loan and
- * mortgage edit forms: the category, payee, and memo that mark a payment as a
- * standalone overpayment (100% principal). Any single match is sufficient.
- * These only feed the derived views (schedule split, past impact, projection,
- * rate detection) -- never the account balance.
+ * The per-loan payment-recognition settings shared by the loan and mortgage
+ * forms (create and edit): the interest category, plus the category / payee /
+ * memo that mark a payment as a standalone overpayment (100% principal). Any
+ * single overpayment match is sufficient. These only feed the derived views
+ * (schedule split, past impact, projection, rate detection) -- never the
+ * account balance.
  */
 export function OverpaymentRecognitionFields({
   categories,
+  selectedInterestCategoryId,
+  onInterestCategoryChange,
   selectedOverpaymentCategoryId,
   onOverpaymentCategoryChange,
   selectedOverpaymentPayeeId,
@@ -87,10 +93,27 @@ export function OverpaymentRecognitionFields({
     () => payees.find((p) => p.id === selectedOverpaymentPayeeId)?.name ?? '',
     [payees, selectedOverpaymentPayeeId],
   );
+  const initialInterestCategoryName = useMemo(() => {
+    if (!selectedInterestCategoryId) return '';
+    const cat = categories.find((c) => c.id === selectedInterestCategoryId);
+    if (!cat) return '';
+    const parent = cat.parentId ? categories.find((c) => c.id === cat.parentId) : null;
+    return parent ? `${parent.name}: ${cat.name}` : cat.name;
+  }, [selectedInterestCategoryId, categories]);
 
   return (
     <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
-      <h4 className="text-sm font-medium text-gray-800 dark:text-gray-200">
+      <Combobox
+        label={t('mortgageFields.interestCategory')}
+        placeholder={t('mortgageFields.selectCategory')}
+        options={categoryOptions}
+        value={selectedInterestCategoryId}
+        initialDisplayValue={initialInterestCategoryName}
+        onChange={onInterestCategoryChange}
+        error={errors.interestCategoryId?.message as string | undefined}
+      />
+
+      <h4 className="mt-4 text-sm font-medium text-gray-800 dark:text-gray-200">
         {t('mortgageFields.overpaymentRecognition.title')}
       </h4>
       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-3">

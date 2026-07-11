@@ -50,6 +50,8 @@ const categories: Category[] = [
 function renderFields(overrides = {}) {
   const props = {
     categories,
+    selectedInterestCategoryId: '',
+    onInterestCategoryChange: vi.fn(),
     selectedOverpaymentCategoryId: '',
     onOverpaymentCategoryChange: vi.fn(),
     selectedOverpaymentPayeeId: '',
@@ -58,7 +60,11 @@ function renderFields(overrides = {}) {
     errors: {},
     ...overrides,
   };
-  render(<OverpaymentRecognitionFields {...(props as never)} />);
+  render(
+    <OverpaymentRecognitionFields
+      {...(props as unknown as Parameters<typeof OverpaymentRecognitionFields>[0])}
+    />,
+  );
   return props;
 }
 
@@ -71,7 +77,8 @@ describe('OverpaymentRecognitionFields', () => {
     await waitFor(() => {
       expect(screen.getByRole('option', { name: 'Bank Overpayment' })).toBeInTheDocument();
     });
-    expect(screen.getByRole('option', { name: 'Loan Overpayment' })).toBeInTheDocument();
+    // The category appears in both the interest and overpayment pickers.
+    expect(screen.getAllByRole('option', { name: 'Loan Overpayment' }).length).toBeGreaterThanOrEqual(1);
   });
 
   it('reports the chosen payee', async () => {

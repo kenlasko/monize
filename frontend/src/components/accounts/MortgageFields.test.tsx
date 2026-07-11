@@ -290,11 +290,13 @@ describe('MortgageFields', () => {
     expect(screen.getByText('Term Length')).toBeInTheDocument();
     expect(screen.getByText('Amortization Period (required)')).toBeInTheDocument();
     expect(screen.getByText('Canadian Mortgage')).toBeInTheDocument();
-    // Payment fields should be hidden
+    // Payment-setup fields (create-only) should be hidden
     expect(screen.queryByText('Payment Frequency (required)')).not.toBeInTheDocument();
     expect(screen.queryByText('First Payment Date (required)')).not.toBeInTheDocument();
     expect(screen.queryByText('Payment From Account (required)')).not.toBeInTheDocument();
-    expect(screen.queryByText('Interest Category')).not.toBeInTheDocument();
+    // Recognition settings (interest category + overpayment) stay available on edit
+    expect(screen.getByText('Interest Category')).toBeInTheDocument();
+    expect(screen.getByText('Overpayment recognition')).toBeInTheDocument();
   });
 
   it('shows the Loan Details link when editing and onViewLoanDetails is provided', () => {
