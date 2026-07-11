@@ -188,7 +188,7 @@ describe('AccountDetailPage', () => {
     expect(screen.getByText('Car Loan')).toBeInTheDocument();
     expect(screen.getByText(/Loan - CAD/)).toBeInTheDocument();
     expect(screen.getByText('Current Balance')).toBeInTheDocument();
-    expect(screen.getByText('Installment Schedule')).toBeInTheDocument();
+    expect(screen.getByText('Loan Schedule')).toBeInTheDocument();
     expect(mockGetById).toHaveBeenCalledWith('loan-1');
     expect(mockReplace).not.toHaveBeenCalled();
   });
@@ -243,7 +243,7 @@ describe('AccountDetailPage', () => {
     expect(screen.getByText('Credit Limit')).toBeInTheDocument();
     expect(screen.getByText('Balance History')).toBeInTheDocument();
     // Revolving accounts get the balance view, not the amortization schedule
-    expect(screen.queryByText('Installment Schedule')).not.toBeInTheDocument();
+    expect(screen.queryByText('Loan Schedule')).not.toBeInTheDocument();
     expect(mockGetDailyBalances).toHaveBeenCalledWith({ accountIds: 'loan-1' });
     // Transactions are not fetched for the revolving view
     expect(mockGetAllTransactions).not.toHaveBeenCalled();

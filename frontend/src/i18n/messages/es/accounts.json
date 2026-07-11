@@ -362,13 +362,15 @@
       "colPrincipal": "Capital",
       "colInterest": "Intereses",
       "colExtra": "Capital adicional",
+      "colRate": "Tasa",
       "colBalance": "Saldo",
       "projectedFuturePayments": "Pagos futuros proyectados",
       "showAll": "Mostrar los {count} pagos",
       "showLess": "Mostrar menos",
       "noPayments": "No se encontraron pagos",
       "rateChangeBadge": "{from}% → {to}%",
-      "overpaymentBadge": "Pago anticipado"
+      "overpaymentBadge": "Pago anticipado",
+      "editRateLabel": "Editar la tasa de interés de {date}"
     },
     "simulator": {
       "title": "Simulador de pagos anticipados",

@@ -499,3 +499,50 @@ describe('fetchAllAccountTransactions', () => {
     });
   });
 });
+
+describe('deriveLoanPaymentHistory interest from the rate timeline', () => {
+  it('derives uncapped interest from the effective per-date rate for separately-booked interest', () => {
+    // A principal-only loan-side payment (interest booked as a separate
+    // transaction), so there is no recorded interest split.
+    const account = makeAccount({
+      accountType: 'MORTGAGE',
+      openingBalance: -200000,
+      currentBalance: -199715,
+      interestRate: 5.5,
+    });
+    const transactions = [
+      makeTransaction({ transactionDate: '2022-05-05', amount: 285 }),
+    ];
+    const rateChanges = [{ effectiveDate: '2022-04-05', annualRate: 5.5 }];
+
+    const { events } = deriveLoanPaymentHistory(account, transactions, rateChanges);
+    const monthly = 200000 * (5.5 / 100 / 12);
+
+    // Interest tracks balance x rate/12 (~916), NOT capped at the 285 principal.
+    expect(events[0].interest).toBeCloseTo(monthly, 0);
+    expect(events[0].interest).toBeGreaterThan(events[0].principal);
+    expect(events[0].interestRecorded).toBe(false);
+  });
+
+  it('reprices each month from the timeline for a variable-rate loan', () => {
+    const account = makeAccount({
+      accountType: 'MORTGAGE',
+      openingBalance: -200000,
+      currentBalance: -199430,
+      interestRate: 5.5,
+    });
+    const transactions = [
+      makeTransaction({ transactionDate: '2021-08-05', amount: 285 }),
+      makeTransaction({ transactionDate: '2022-05-05', amount: 285 }),
+    ];
+    const rateChanges = [
+      { effectiveDate: '2021-07-05', annualRate: 1.95 },
+      { effectiveDate: '2022-04-05', annualRate: 5.5 },
+    ];
+
+    const { events } = deriveLoanPaymentHistory(account, transactions, rateChanges);
+    // First payment at 1.95%, second (later) at 5.5% -> higher interest.
+    expect(events[0].interest).toBeCloseTo(200000 * (1.95 / 100 / 12), 0);
+    expect(events[1].interest).toBeGreaterThan(events[0].interest);
+  });
+});

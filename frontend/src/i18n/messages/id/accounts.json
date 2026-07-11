@@ -362,13 +362,15 @@
       "colPrincipal": "Pokok",
       "colInterest": "Bunga",
       "colExtra": "Pokok Tambahan",
+      "colRate": "Suku Bunga",
       "colBalance": "Saldo",
       "projectedFuturePayments": "Angsuran Mendatang yang Diproyeksikan",
       "showAll": "Tampilkan semua {count} angsuran",
       "showLess": "Tampilkan lebih sedikit",
       "noPayments": "Tidak ada angsuran ditemukan",
       "rateChangeBadge": "{from}% → {to}%",
-      "overpaymentBadge": "Pembayaran ekstra"
+      "overpaymentBadge": "Pembayaran ekstra",
+      "editRateLabel": "Edit suku bunga untuk {date}"
     },
     "simulator": {
       "title": "Simulator Pelunasan Dipercepat",

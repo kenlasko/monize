@@ -362,13 +362,15 @@
       "colPrincipal": "Основной долг",
       "colInterest": "Проценты",
       "colExtra": "Досрочное погашение",
+      "colRate": "Ставка",
       "colBalance": "Остаток",
       "projectedFuturePayments": "Прогнозируемые будущие платежи",
       "showAll": "Показать все платежи ({count})",
       "showLess": "Показать меньше",
       "noPayments": "Платежи не найдены",
       "rateChangeBadge": "{from}% → {to}%",
-      "overpaymentBadge": "Досрочный платёж"
+      "overpaymentBadge": "Досрочный платёж",
+      "editRateLabel": "Изменить процентную ставку для {date}"
     },
     "simulator": {
       "title": "Симулятор досрочного погашения",

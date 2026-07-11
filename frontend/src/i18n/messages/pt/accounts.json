@@ -362,13 +362,15 @@
       "colPrincipal": "Capital",
       "colInterest": "Juros",
       "colExtra": "Capital extra",
+      "colRate": "Taxa",
       "colBalance": "Saldo",
       "projectedFuturePayments": "Prestações futuras projetadas",
       "showAll": "Mostrar as {count} prestações",
       "showLess": "Mostrar menos",
       "noPayments": "Nenhuma prestação encontrada",
       "rateChangeBadge": "{from}% → {to}%",
-      "overpaymentBadge": "Amortização antecipada"
+      "overpaymentBadge": "Amortização antecipada",
+      "editRateLabel": "Editar taxa de juro para {date}"
     },
     "simulator": {
       "title": "Simulador de amortização antecipada",

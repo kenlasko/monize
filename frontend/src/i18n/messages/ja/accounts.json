@@ -362,13 +362,15 @@
       "colPrincipal": "元金",
       "colInterest": "利息",
       "colExtra": "繰上返済",
+      "colRate": "金利",
       "colBalance": "残高",
       "projectedFuturePayments": "予測される今後の返済",
       "showAll": "全 {count} 回の返済を表示",
       "showLess": "表示を減らす",
       "noPayments": "返済が見つかりません",
       "rateChangeBadge": "{from}% → {to}%",
-      "overpaymentBadge": "繰り上げ返済"
+      "overpaymentBadge": "繰り上げ返済",
+      "editRateLabel": "{date}の金利を編集"
     },
     "simulator": {
       "title": "繰上返済シミュレーター",

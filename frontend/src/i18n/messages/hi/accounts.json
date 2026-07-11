@@ -362,13 +362,15 @@
       "colPrincipal": "मूलधन",
       "colInterest": "ब्याज",
       "colExtra": "अतिरिक्त मूलधन",
+      "colRate": "दर",
       "colBalance": "शेष",
       "projectedFuturePayments": "अनुमानित भविष्य की किस्तें",
       "showAll": "सभी {count} किस्तें दिखाएँ",
       "showLess": "कम दिखाएँ",
       "noPayments": "कोई किस्त नहीं मिली",
       "rateChangeBadge": "{from}% → {to}%",
-      "overpaymentBadge": "अतिरिक्त भुगतान"
+      "overpaymentBadge": "अतिरिक्त भुगतान",
+      "editRateLabel": "{date} के लिए ब्याज दर संपादित करें"
     },
     "simulator": {
       "title": "पूर्व-भुगतान सिम्युलेटर",

@@ -362,13 +362,15 @@
       "colPrincipal": "Principal",
       "colInterest": "Juros",
       "colExtra": "Principal extra",
+      "colRate": "Taxa",
       "colBalance": "Saldo",
       "projectedFuturePayments": "Parcelas futuras projetadas",
       "showAll": "Mostrar todas as {count} parcelas",
       "showLess": "Mostrar menos",
       "noPayments": "Nenhuma parcela encontrada",
       "rateChangeBadge": "{from}% → {to}%",
-      "overpaymentBadge": "Amortização extra"
+      "overpaymentBadge": "Amortização extra",
+      "editRateLabel": "Editar taxa de juros de {date}"
     },
     "simulator": {
       "title": "Simulador de amortização extra",

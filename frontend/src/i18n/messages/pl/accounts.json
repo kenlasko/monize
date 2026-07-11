@@ -362,13 +362,15 @@
       "colPrincipal": "Kapitał",
       "colInterest": "Odsetki",
       "colExtra": "Dodatkowy kapitał",
+      "colRate": "Oprocentowanie",
       "colBalance": "Saldo",
       "projectedFuturePayments": "Prognozowane przyszłe raty",
       "showAll": "Pokaż wszystkie raty ({count})",
       "showLess": "Pokaż mniej",
       "noPayments": "Nie znaleziono rat",
       "rateChangeBadge": "{from}% → {to}%",
-      "overpaymentBadge": "Nadpłata"
+      "overpaymentBadge": "Nadpłata",
+      "editRateLabel": "Edytuj oprocentowanie dla {date}"
     },
     "simulator": {
       "title": "Symulator nadpłat",

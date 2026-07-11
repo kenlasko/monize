@@ -362,13 +362,15 @@
       "colPrincipal": "원금",
       "colInterest": "이자",
       "colExtra": "추가 원금",
+      "colRate": "금리",
       "colBalance": "잔액",
       "projectedFuturePayments": "예상되는 향후 상환",
       "showAll": "{count}회 상환 모두 보기",
       "showLess": "간략히 보기",
       "noPayments": "상환 내역이 없습니다",
       "rateChangeBadge": "{from}% → {to}%",
-      "overpaymentBadge": "추가 상환"
+      "overpaymentBadge": "추가 상환",
+      "editRateLabel": "{date}의 금리 편집"
     },
     "simulator": {
       "title": "조기 상환 시뮬레이터",

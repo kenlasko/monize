@@ -362,13 +362,15 @@
       "colPrincipal": "Capital",
       "colInterest": "Intérêts",
       "colExtra": "Capital supplémentaire",
+      "colRate": "Taux",
       "colBalance": "Solde",
       "projectedFuturePayments": "Versements futurs projetés",
       "showAll": "Afficher les {count} versements",
       "showLess": "Afficher moins",
       "noPayments": "Aucun versement trouvé",
       "rateChangeBadge": "{from}% → {to}%",
-      "overpaymentBadge": "Remboursement anticipé"
+      "overpaymentBadge": "Remboursement anticipé",
+      "editRateLabel": "Modifier le taux d'intérêt pour {date}"
     },
     "simulator": {
       "title": "Simulateur de remboursement anticipé",

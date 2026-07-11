@@ -3,6 +3,27 @@ import { render, screen, fireEvent } from '@/test/render';
 import { AmortizationScheduleTable } from './AmortizationScheduleTable';
 import { generateLoanSchedule } from '@/lib/loan-schedule';
 import { LoanPaymentEvent } from '@/lib/loan-history';
+import type { LoanRateChange } from '@/types/loan-rate-change';
+import type { LoanRateEditing } from './useLoanRateEditing';
+
+// Stub the rate controls (modals) so these tests focus on the table + rate cell.
+vi.mock('./LoanRateControls', () => ({
+  LoanRateControls: () => <div data-testid="rate-controls" />,
+}));
+
+const makeRateChange = (overrides: Partial<LoanRateChange> = {}): LoanRateChange =>
+  ({
+    id: 'rc-1',
+    accountId: 'loan-1',
+    effectiveDate: '2025-01-05',
+    annualRate: 5.5,
+    newPaymentAmount: null,
+    source: 'inferred',
+    note: null,
+    createdAt: '',
+    updatedAt: '',
+    ...overrides,
+  }) as LoanRateChange;
 
 vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({
@@ -52,7 +73,7 @@ describe('AmortizationScheduleTable', () => {
       />,
     );
 
-    expect(screen.getByText('Installment Schedule')).toBeInTheDocument();
+    expect(screen.getByText('Loan Schedule')).toBeInTheDocument();
     expect(screen.getByText('Projected Future Payments')).toBeInTheDocument();
     expect(screen.getByText('Jan 15, 2025')).toBeInTheDocument();
     expect(screen.getByText('Aug 15, 2026')).toBeInTheDocument();
@@ -156,5 +177,52 @@ describe('AmortizationScheduleTable', () => {
     );
 
     expect(screen.getByText('No payments found')).toBeInTheDocument();
+  });
+
+  it('shows a read-only Rate column from the timeline when not editable', () => {
+    render(
+      <AmortizationScheduleTable
+        historyEvents={makeHistoryEvents(1)}
+        projectionRows={[]}
+        currencyCode="CAD"
+        rateChanges={[makeRateChange({ effectiveDate: '2024-12-01', annualRate: 5.5 })]}
+        fallbackAnnualRate={5.5}
+      />,
+    );
+
+    expect(screen.getByText('Rate')).toBeInTheDocument();
+    expect(screen.getByText('5.50%')).toBeInTheDocument();
+    // No controls and no editable button when `editing` is absent.
+    expect(screen.queryByTestId('rate-controls')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Edit interest rate/)).not.toBeInTheDocument();
+  });
+
+  it('edits a rate inline and reports the row date, rate, and change id', () => {
+    const commitInlineRate = vi.fn();
+    const editing = {
+      savingDate: null,
+      commitInlineRate,
+      openEdit: vi.fn(),
+    } as unknown as LoanRateEditing;
+
+    render(
+      <AmortizationScheduleTable
+        historyEvents={makeHistoryEvents(1)}
+        projectionRows={[]}
+        currencyCode="CAD"
+        rateChanges={[makeRateChange({ effectiveDate: '2024-12-01', annualRate: 5.5 })]}
+        fallbackAnnualRate={5.5}
+        editing={editing}
+      />,
+    );
+
+    expect(screen.getByTestId('rate-controls')).toBeInTheDocument();
+    // The single historical row is dated 2025-01-15 (no exact change on it).
+    fireEvent.click(screen.getByLabelText(/Edit interest rate/));
+    const input = screen.getByLabelText(/Edit interest rate/);
+    fireEvent.change(input, { target: { value: '6.1' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect(commitInlineRate).toHaveBeenCalledWith('2025-01-15', 6.1, undefined);
   });
 });

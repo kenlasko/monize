@@ -484,6 +484,28 @@ export function generateLoanSchedule(input: LoanScheduleInput): LoanScheduleResu
 }
 
 /**
+ * The annual rate (percentage) in effect on a given date: the latest row with
+ * `effectiveDate <= date`, else the earliest row's rate (a date before the
+ * first recorded change still amortizes at the origination rate), else the
+ * fallback. Shared by the schedule table (per-row historical rate) and
+ * `buildRateTimeline`'s starting rate.
+ */
+export function effectiveAnnualRateOn(
+  rows: RateTimelineRow[],
+  dateIso: string,
+  fallbackAnnualRate: number,
+): number {
+  const sorted = [...rows].sort((a, b) =>
+    a.effectiveDate.localeCompare(b.effectiveDate),
+  );
+  const atOrBefore = sorted.filter((row) => row.effectiveDate <= dateIso);
+  if (atOrBefore.length > 0) {
+    return atOrBefore[atOrBefore.length - 1].annualRate;
+  }
+  return sorted[0]?.annualRate ?? fallbackAnnualRate;
+}
+
+/**
  * Resolve a persisted rate history into engine inputs for a schedule that
  * starts at `scheduleStartIso`: the rate in effect at the start is the
  * latest row on or before that date (before the earliest row, the earliest
@@ -503,10 +525,11 @@ export function buildRateTimeline(
   const atOrBefore = sorted.filter(
     (row) => row.effectiveDate <= scheduleStartIso,
   );
-  const startingAnnualRate =
-    atOrBefore.length > 0
-      ? atOrBefore[atOrBefore.length - 1].annualRate
-      : (sorted[0]?.annualRate ?? fallbackAnnualRate);
+  const startingAnnualRate = effectiveAnnualRateOn(
+    rows,
+    scheduleStartIso,
+    fallbackAnnualRate,
+  );
   const startingPaymentAmount =
     [...atOrBefore].reverse().find((row) => row.newPaymentAmount != null)
       ?.newPaymentAmount ?? null;

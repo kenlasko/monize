@@ -3,8 +3,10 @@ import { Transaction, TransactionSplit } from '@/types/transaction';
 import { transactionsApi } from '@/lib/transactions';
 import {
   ScheduleFrequency,
+  RateTimelineRow,
   getPeriodicRate,
   getPeriodsPerYear,
+  effectiveAnnualRateOn,
 } from '@/lib/loan-schedule';
 
 /**
@@ -21,8 +23,10 @@ import {
  *      split (the shape ScheduledTransactionLoanService builds), that recorded
  *      interest is used -- exact even on variable-rate loans;
  *   3. otherwise the interest is derived analytically from the running balance
- *      (`balance * periodicRate`), so a payment entered as a plain transfer no
- *      longer shows interest = 0 / rata = 100% principal.
+ *      at the rate in effect on that date (`balance * periodicRate`, using the
+ *      rate timeline when supplied), so a payment recorded without an interest
+ *      split -- including loans whose interest is booked separately -- shows a
+ *      realistic interest that tracks the bank rather than 100% principal.
  *
  * The balance walk is unchanged -- it always tracks the actual ledger amount,
  * so the projected balance still ends at the account's current balance.
@@ -62,6 +66,7 @@ export interface LoanHistoryResult {
 export function deriveLoanPaymentHistory(
   account: Account,
   transactions: Transaction[],
+  rateChanges: RateTimelineRow[] = [],
 ): LoanHistoryResult {
   const loanAccountId = account.id;
 
@@ -110,6 +115,7 @@ export function deriveLoanPaymentHistory(
         account,
         loanAccountId,
         processedParentIds,
+        rateChanges,
       );
       runningBalance = Math.max(0, runningBalance - principal);
       cumulativePrincipal += principal;
@@ -141,6 +147,7 @@ export function deriveLoanPaymentHistory(
         account,
         loanAccountId,
         processedParentIds,
+        rateChanges,
       );
       cumulativePrincipal += principal;
       cumulativeInterest += interest;
@@ -219,6 +226,7 @@ function classifyPayment(
   account: Account,
   loanAccountId: string,
   processedParentIds: Set<string>,
+  rateChanges: RateTimelineRow[],
 ): { interest: number; type: LoanPaymentType; interestRecorded: boolean } {
   if (
     isOverpayment(
@@ -242,7 +250,7 @@ function classifyPayment(
     return { interest: recorded, type: 'REGULAR', interestRecorded: recorded > 0 };
   }
   return {
-    interest: analyticInterest(balanceBefore, account, transaction),
+    interest: analyticInterest(balanceBefore, account, transaction, rateChanges),
     type: 'REGULAR',
     interestRecorded: false,
   };
@@ -392,19 +400,28 @@ function readRecordedInterest(
 /**
  * Interest a regular payment accrued over the period, `balance * periodicRate`,
  * for amortizing debt with a positive rate. Only loans and mortgages get an
- * analytic estimate (revolving credit has no fixed installment schedule);
- * capped at the payment amount and floored at zero so it never goes negative
- * or dwarfs the payment.
+ * analytic estimate (revolving credit has no fixed installment schedule). The
+ * rate is the one in effect on the payment date from the rate timeline (falling
+ * back to the account's rate), so a variable-rate loan reprices each month and
+ * the figure tracks the bank's amortization. Not capped at the loan-side
+ * transaction amount: that amount is principal-only when interest is booked as
+ * a separate transaction, and capping there collapses interest to the principal
+ * (the artifact this replaces). Floored at zero.
  */
 function analyticInterest(
   balanceBefore: number,
   account: Account,
   transaction: Transaction,
+  rateChanges: RateTimelineRow[],
 ): number {
   if (account.accountType !== 'LOAN' && account.accountType !== 'MORTGAGE') {
     return 0;
   }
-  const annualRate = Number(account.interestRate);
+  const annualRate = effectiveAnnualRateOn(
+    rateChanges,
+    transaction.transactionDate,
+    Number(account.interestRate),
+  );
   if (!annualRate || annualRate <= 0 || balanceBefore <= 0) return 0;
   const frequency = (account.paymentFrequency as ScheduleFrequency) || 'MONTHLY';
   const periodicRate = getPeriodicRate(
@@ -414,8 +431,7 @@ function analyticInterest(
     account.isVariableRate || false,
   );
   const interest = balanceBefore * periodicRate;
-  const capped = Math.min(Math.max(0, interest), Math.abs(Number(transaction.amount)));
-  return Math.round(capped * 100) / 100;
+  return Math.round(Math.max(0, interest) * 100) / 100;
 }
 
 /**

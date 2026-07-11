@@ -362,13 +362,15 @@
       "colPrincipal": "本金",
       "colInterest": "利息",
       "colExtra": "额外本金",
+      "colRate": "利率",
       "colBalance": "余额",
       "projectedFuturePayments": "预测的未来还款",
       "showAll": "显示全部 {count} 期还款",
       "showLess": "收起",
       "noPayments": "未找到还款记录",
       "rateChangeBadge": "{from}% → {to}%",
-      "overpaymentBadge": "提前还款"
+      "overpaymentBadge": "提前还款",
+      "editRateLabel": "编辑 {date} 的利率"
     },
     "simulator": {
       "title": "提前还款模拟器",

@@ -362,13 +362,15 @@
       "colPrincipal": "Tilgung",
       "colInterest": "Zinsen",
       "colExtra": "Sondertilgung",
+      "colRate": "Zinssatz",
       "colBalance": "Saldo",
       "projectedFuturePayments": "Prognostizierte zukünftige Zahlungen",
       "showAll": "Alle {count} Zahlungen anzeigen",
       "showLess": "Weniger anzeigen",
       "noPayments": "Keine Zahlungen gefunden",
       "rateChangeBadge": "{from}% → {to}%",
-      "overpaymentBadge": "Sondertilgung"
+      "overpaymentBadge": "Sondertilgung",
+      "editRateLabel": "Zinssatz für {date} bearbeiten"
     },
     "simulator": {
       "title": "Sondertilgungs-Simulator",

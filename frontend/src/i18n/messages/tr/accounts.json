@@ -362,13 +362,15 @@
       "colPrincipal": "Anapara",
       "colInterest": "Faiz",
       "colExtra": "Ek Anapara",
+      "colRate": "Oran",
       "colBalance": "Bakiye",
       "projectedFuturePayments": "Öngörülen Gelecek Taksitler",
       "showAll": "Tüm {count} taksiti göster",
       "showLess": "Daha az göster",
       "noPayments": "Taksit bulunamadı",
       "rateChangeBadge": "{from}% → {to}%",
-      "overpaymentBadge": "Ek ödeme"
+      "overpaymentBadge": "Ek ödeme",
+      "editRateLabel": "{date} için faiz oranını düzenle"
     },
     "simulator": {
       "title": "Erken Ödeme Simülatörü",

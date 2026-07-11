@@ -6,6 +6,7 @@ import {
   calculateMortgagePaymentAmount,
   calculatePaymentForTerm,
   compareSchedules,
+  effectiveAnnualRateOn,
   generateLoanSchedule,
   getPeriodicRate,
   getPeriodsPerYear,
@@ -562,5 +563,27 @@ describe('generateLoanSchedule LOWER_INSTALLMENT mode', () => {
     const comparison = compareSchedules(baseline, lower);
     expect(comparison.installmentReduction).toBeGreaterThan(0);
     expect(comparison.monthsSaved).toBe(0);
+  });
+});
+
+describe('effectiveAnnualRateOn', () => {
+  const rows = [
+    { effectiveDate: '2021-07-05', annualRate: 1.95 },
+    { effectiveDate: '2022-01-05', annualRate: 4.21 },
+    { effectiveDate: '2022-04-05', annualRate: 5.5 },
+  ];
+
+  it('returns the latest rate on or before the date', () => {
+    expect(effectiveAnnualRateOn(rows, '2022-04-05', 9)).toBe(5.5);
+    expect(effectiveAnnualRateOn(rows, '2022-03-01', 9)).toBe(4.21);
+    expect(effectiveAnnualRateOn(rows, '2025-06-05', 9)).toBe(5.5);
+  });
+
+  it('uses the earliest row for a date before the first change', () => {
+    expect(effectiveAnnualRateOn(rows, '2020-01-01', 9)).toBe(1.95);
+  });
+
+  it('falls back to the account rate when there are no rows', () => {
+    expect(effectiveAnnualRateOn([], '2024-01-01', 5.5)).toBe(5.5);
   });
 });

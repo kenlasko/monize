@@ -9,7 +9,7 @@ import { PayoffComparisonChart } from '@/components/accounts/loan-detail/PayoffC
 import { ComparisonSummaryCards } from '@/components/accounts/loan-detail/ComparisonSummaryCards';
 import { SavedScenariosPanel } from '@/components/accounts/loan-detail/SavedScenariosPanel';
 import { PastImpactSection } from '@/components/accounts/loan-detail/PastImpactSection';
-import { RateHistoryPanel } from '@/components/accounts/loan-detail/RateHistoryPanel';
+import { useLoanRateEditing } from '@/components/accounts/loan-detail/useLoanRateEditing';
 import { deriveCurrentInstallment, deriveLoanPaymentHistory } from '@/lib/loan-history';
 import {
   OverpaymentMode,
@@ -54,6 +54,7 @@ export function LoanDetailView({
   const [mode, setMode] = useState<OverpaymentMode>('SHORTEN_TERM');
   const [loadedPlan, setLoadedPlan] = useState<OverpaymentPlan | null>(null);
   const [loadedPlanVersion, setLoadedPlanVersion] = useState(0);
+  const rateEditing = useLoanRateEditing(account, onRateChangesChanged);
 
   const handleLoadScenario = useCallback((loaded: OverpaymentPlan | null) => {
     setPlan(loaded);
@@ -64,8 +65,8 @@ export function LoanDetailView({
   // Overpayment recognition settings (category / memo / payee) now live in the
   // account edit form, so the `account` prop always carries the saved values.
   const history = useMemo(
-    () => deriveLoanPaymentHistory(account, transactions),
-    [account, transactions],
+    () => deriveLoanPaymentHistory(account, transactions, rateChanges),
+    [account, transactions, rateChanges],
   );
 
   const projectionInput = useMemo(() => {
@@ -173,12 +174,9 @@ export function LoanDetailView({
         historyEvents={history.events}
         projectionRows={(scenario ?? baseline)?.rows ?? []}
         currencyCode={account.currencyCode}
-      />
-
-      <RateHistoryPanel
-        account={account}
         rateChanges={rateChanges}
-        onChanged={onRateChangesChanged}
+        fallbackAnnualRate={account.interestRate}
+        editing={rateEditing}
       />
     </div>
   );

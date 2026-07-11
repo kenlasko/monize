@@ -354,7 +354,7 @@
       "paidOff": "[XX-Paid off-XX]"
     },
     "schedule": {
-      "title": "[XX-Installment Schedule-XX]",
+      "title": "[XX-Loan Schedule-XX]",
       "subtitle": "[XX-{historical, plural, one {# payment made} other {# payments made}}, {projected, plural, one {# projected} other {# projected}}-XX]",
       "colNumber": "[XX-#-XX]",
       "colDate": "[XX-Date-XX]",
@@ -362,10 +362,12 @@
       "colPrincipal": "[XX-Principal-XX]",
       "colInterest": "[XX-Interest-XX]",
       "colExtra": "[XX-Extra Principal-XX]",
+      "colRate": "[XX-Rate-XX]",
       "colBalance": "[XX-Balance-XX]",
       "projectedFuturePayments": "[XX-Projected Future Payments-XX]",
       "rateChangeBadge": "[XX-{from}% → {to}%-XX]",
       "overpaymentBadge": "[XX-Overpayment-XX]",
+      "editRateLabel": "[XX-Edit interest rate for {date}-XX]",
       "showAll": "[XX-Show all {count} payments-XX]",
       "showLess": "[XX-Show less-XX]",
       "noPayments": "[XX-No payments found-XX]"

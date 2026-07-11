@@ -362,13 +362,15 @@
       "colPrincipal": "Gốc",
       "colInterest": "Lãi",
       "colExtra": "Gốc trả thêm",
+      "colRate": "Lãi suất",
       "colBalance": "Số dư",
       "projectedFuturePayments": "Các kỳ trả dự kiến trong tương lai",
       "showAll": "Hiện tất cả {count} kỳ trả",
       "showLess": "Thu gọn",
       "noPayments": "Không tìm thấy khoản trả nào",
       "rateChangeBadge": "{from}% → {to}%",
-      "overpaymentBadge": "Trả thêm gốc"
+      "overpaymentBadge": "Trả thêm gốc",
+      "editRateLabel": "Chỉnh sửa lãi suất cho {date}"
     },
     "simulator": {
       "title": "Trình mô phỏng trả nợ trước hạn",

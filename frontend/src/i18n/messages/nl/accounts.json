@@ -362,13 +362,15 @@
       "colPrincipal": "Hoofdsom",
       "colInterest": "Rente",
       "colExtra": "Extra hoofdsom",
+      "colRate": "Rente",
       "colBalance": "Saldo",
       "projectedFuturePayments": "Geprojecteerde toekomstige betalingen",
       "showAll": "Alle {count} betalingen tonen",
       "showLess": "Minder tonen",
       "noPayments": "Geen betalingen gevonden",
       "rateChangeBadge": "{from}% → {to}%",
-      "overpaymentBadge": "Extra aflossing"
+      "overpaymentBadge": "Extra aflossing",
+      "editRateLabel": "Rente voor {date} bewerken"
     },
     "simulator": {
       "title": "Simulator extra aflossen",

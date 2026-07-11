@@ -362,13 +362,15 @@
       "colPrincipal": "Capitale",
       "colInterest": "Interessi",
       "colExtra": "Capitale extra",
+      "colRate": "Tasso",
       "colBalance": "Saldo",
       "projectedFuturePayments": "Rate future previste",
       "showAll": "Mostra tutte le {count} rate",
       "showLess": "Mostra meno",
       "noPayments": "Nessuna rata trovata",
       "rateChangeBadge": "{from}% → {to}%",
-      "overpaymentBadge": "Rimborso anticipato"
+      "overpaymentBadge": "Rimborso anticipato",
+      "editRateLabel": "Modifica il tasso di interesse per {date}"
     },
     "simulator": {
       "title": "Simulatore di rimborso anticipato",

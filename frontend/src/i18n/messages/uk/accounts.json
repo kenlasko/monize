@@ -362,13 +362,15 @@
       "colPrincipal": "Основний борг",
       "colInterest": "Відсотки",
       "colExtra": "Дострокове погашення",
+      "colRate": "Ставка",
       "colBalance": "Залишок",
       "projectedFuturePayments": "Прогнозовані майбутні платежі",
       "showAll": "Показати всі платежі ({count})",
       "showLess": "Показати менше",
       "noPayments": "Платежів не знайдено",
       "rateChangeBadge": "{from}% → {to}%",
-      "overpaymentBadge": "Дострокове погашення"
+      "overpaymentBadge": "Дострокове погашення",
+      "editRateLabel": "Змінити відсоткову ставку для {date}"
     },
     "simulator": {
       "title": "Симулятор дострокового погашення",

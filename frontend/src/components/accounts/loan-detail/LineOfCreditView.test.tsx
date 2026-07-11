@@ -82,7 +82,7 @@ describe('LineOfCreditView', () => {
     await renderView(makeAccount());
 
     expect(screen.queryByText('Original Amount')).not.toBeInTheDocument();
-    expect(screen.queryByText('Installment Schedule')).not.toBeInTheDocument();
+    expect(screen.queryByText('Loan Schedule')).not.toBeInTheDocument();
     expect(screen.queryByText('Overpayment Simulator')).not.toBeInTheDocument();
   });
 
