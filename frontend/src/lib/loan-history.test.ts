@@ -549,3 +549,85 @@ describe('deriveLoanPaymentHistory interest from the rate timeline', () => {
     expect(events[1].interest).toBeGreaterThan(events[0].interest);
   });
 });
+
+describe('deriveLoanPaymentHistory with paired separate interest expenses', () => {
+  it('uses the actual interest expense per row and shows overpayment interest', () => {
+    const account = makeAccount({
+      accountType: 'MORTGAGE',
+      openingBalance: -200000,
+      currentBalance: -197206.78,
+      interestRate: 5.5,
+      overpaymentMemo: 'nadplata',
+    });
+    // Loan-account rows: a regular principal transfer, then an overpayment.
+    const transactions = [
+      makeTransaction({ transactionDate: '2024-06-05', amount: 259.13 }),
+      makeTransaction({
+        transactionDate: '2024-07-15',
+        amount: 2534.09,
+        description: 'nadplata',
+      }),
+    ];
+    // Separate interest expenses on the source account (never on the loan).
+    const interestTransactions = [
+      { transactionDate: '2024-06-05', amount: -849.93, isTransfer: false } as Transaction,
+      { transactionDate: '2024-07-15', amount: -535.91, isTransfer: false } as Transaction,
+      // A principal transfer that shares the interest category -> excluded, so
+      // it is not folded into the regular row's interest.
+      { transactionDate: '2024-06-05', amount: -259.13, isTransfer: true } as Transaction,
+    ];
+
+    const { events } = deriveLoanPaymentHistory(
+      account,
+      transactions,
+      [],
+      interestTransactions,
+    );
+
+    // Regular row: exactly the expense (849.93), not analytic, not + the 259.13 transfer.
+    expect(events[0].type).toBe('REGULAR');
+    expect(events[0].interest).toBeCloseTo(849.93, 2);
+    // Overpayment row: the real interest charged alongside it (not 0).
+    expect(events[1].type).toBe('OVERPAYMENT');
+    expect(events[1].interest).toBeCloseTo(535.91, 2);
+    // Principal walk unchanged: the overpayment reduces the balance by 2534.09.
+    expect(events[1].principal).toBeCloseTo(2534.09, 2);
+  });
+
+  it('adds interest-only rows for grace-period interest with no principal', () => {
+    const account = makeAccount({
+      accountType: 'MORTGAGE',
+      openingBalance: -200000,
+      currentBalance: -199740.87,
+      interestRate: 5.5,
+    });
+    // One principal payment; interest-only grace expenses long before it.
+    const transactions = [
+      makeTransaction({ transactionDate: '2021-07-05', amount: 259.13 }),
+    ];
+    const interestTransactions = [
+      { transactionDate: '2019-08-05', amount: -388.14, isTransfer: false } as Transaction,
+      { transactionDate: '2019-09-05', amount: -286.49, isTransfer: false } as Transaction,
+      { transactionDate: '2021-07-05', amount: -335.92, isTransfer: false } as Transaction,
+    ];
+
+    const { events, cumulativeInterest } = deriveLoanPaymentHistory(
+      account,
+      transactions,
+      [],
+      interestTransactions,
+    );
+
+    // Two interest-only grace rows (principal 0, balance = opening) + the payment.
+    expect(events).toHaveLength(3);
+    expect(events[0].date).toContain('2019-08');
+    expect(events[0].principal).toBe(0);
+    expect(events[0].interest).toBeCloseTo(388.14, 2);
+    expect(events[0].balance).toBeCloseTo(200000, 2);
+    // The principal payment keeps its principal and its own (paired) interest.
+    expect(events[2].principal).toBeCloseTo(259.13, 2);
+    expect(events[2].interest).toBeCloseTo(335.92, 2);
+    // Grace interest is counted in the running total.
+    expect(cumulativeInterest).toBeCloseTo(388.14 + 286.49 + 335.92, 2);
+  });
+});

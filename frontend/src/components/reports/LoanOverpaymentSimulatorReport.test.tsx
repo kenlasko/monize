@@ -32,6 +32,7 @@ vi.mock('@/lib/loan-rate-changes', () => ({
 const mockFetchAllTransactions = vi.fn();
 vi.mock('@/lib/loan-history', () => ({
   fetchAllAccountTransactions: (...args: unknown[]) => mockFetchAllTransactions(...args),
+  fetchLoanInterestTransactions: () => Promise.resolve([]),
 }));
 
 let loanViewProps: { account: Account; transactions: unknown[]; scenarios: unknown[] } | undefined;

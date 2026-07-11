@@ -30,6 +30,9 @@ interface LoanDetailViewProps {
   transactions: Transaction[];
   scenarios: LoanScenario[];
   rateChanges: LoanRateChange[];
+  /** Separate interest expenses (see fetchLoanInterestTransactions), for exact
+   *  per-row interest including overpayments. */
+  interestTransactions?: Transaction[];
   onScenariosChanged: () => void;
   onRateChangesChanged: () => void;
 }
@@ -47,6 +50,7 @@ export function LoanDetailView({
   transactions,
   scenarios,
   rateChanges,
+  interestTransactions = [],
   onScenariosChanged,
   onRateChangesChanged,
 }: LoanDetailViewProps) {
@@ -65,8 +69,14 @@ export function LoanDetailView({
   // Overpayment recognition settings (category / memo / payee) now live in the
   // account edit form, so the `account` prop always carries the saved values.
   const history = useMemo(
-    () => deriveLoanPaymentHistory(account, transactions, rateChanges),
-    [account, transactions, rateChanges],
+    () =>
+      deriveLoanPaymentHistory(
+        account,
+        transactions,
+        rateChanges,
+        interestTransactions,
+      ),
+    [account, transactions, rateChanges, interestTransactions],
   );
 
   const projectionInput = useMemo(() => {

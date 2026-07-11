@@ -67,6 +67,13 @@ export function deriveLoanPaymentHistory(
   account: Account,
   transactions: Transaction[],
   rateChanges: RateTimelineRow[] = [],
+  // Interest booked as separate categorized expenses (not a split leg) on the
+  // payment's source account. When supplied, each payment's interest is the
+  // actual expense paired to its date -- exact, matching the lender -- and
+  // overpayments show the interest charged alongside them. Excludes transfers
+  // (a principal transfer that happens to share the interest category is not
+  // interest). Falls back to the split/analytic paths when none is paired.
+  interestTransactions: Transaction[] = [],
 ): LoanHistoryResult {
   const loanAccountId = account.id;
 
@@ -101,6 +108,16 @@ export function deriveLoanPaymentHistory(
   // A source-account payment covering multiple loan transfers (e.g. regular +
   // extra principal) carries one interest split; count it once.
   const processedParentIds = new Set<string>();
+  // Actual interest expenses paired to each payment date. Each date's interest
+  // is consumed once, so two rows on the same date can't double-count it.
+  // Expenses with no payment in range (interest-only periods) become their own
+  // rows below.
+  const { byDate: separateInterestByDate, orphans: orphanInterest } =
+    pairSeparateInterestByDate(
+      interestTransactions,
+      repayments.map((t) => t.transactionDate.split('T')[0]),
+    );
+  const usedInterestDates = new Set<string>();
   const events: LoanPaymentEvent[] = [];
 
   if (useReconstruction) {
@@ -116,6 +133,8 @@ export function deriveLoanPaymentHistory(
         loanAccountId,
         processedParentIds,
         rateChanges,
+        separateInterestByDate,
+        usedInterestDates,
       );
       runningBalance = Math.max(0, runningBalance - principal);
       cumulativePrincipal += principal;
@@ -148,6 +167,8 @@ export function deriveLoanPaymentHistory(
         loanAccountId,
         processedParentIds,
         rateChanges,
+        separateInterestByDate,
+        usedInterestDates,
       );
       cumulativePrincipal += principal;
       cumulativeInterest += interest;
@@ -164,12 +185,56 @@ export function deriveLoanPaymentHistory(
     }
   }
 
+  if (orphanInterest.length === 0) {
+    return {
+      events,
+      startingBalance,
+      currentBalance,
+      cumulativePrincipal,
+      cumulativeInterest,
+    };
+  }
+
+  // Merge interest-only rows for interest expenses with no matching principal
+  // payment (an interest-only grace period before repayment begins). They carry
+  // no principal, so they never move the balance; interleave them by date and
+  // re-walk the cumulative totals and the balance shown on each row.
+  const orphanEvents: LoanPaymentEvent[] = orphanInterest.map((tx) => ({
+    date: tx.transactionDate,
+    principal: 0,
+    interest: Math.round(Math.abs(Number(tx.amount)) * 100) / 100,
+    balance: 0,
+    cumulativePrincipal: 0,
+    cumulativeInterest: 0,
+    type: 'REGULAR' as const,
+    interestRecorded: true,
+  }));
+  const merged = [...events, ...orphanEvents].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+  );
+  let runningPrincipal = 0;
+  let runningInterest = 0;
+  let lastBalance = startingBalance;
+  for (const event of merged) {
+    runningPrincipal += event.principal;
+    runningInterest += event.interest;
+    event.cumulativePrincipal = runningPrincipal;
+    event.cumulativeInterest = runningInterest;
+    if (event.principal > 0) {
+      // A principal payment already carries its post-payment balance.
+      lastBalance = event.balance;
+    } else {
+      // Interest-only row: the debt is whatever it was at that point.
+      event.balance = lastBalance;
+    }
+  }
+
   return {
-    events,
+    events: merged,
     startingBalance,
     currentBalance,
-    cumulativePrincipal,
-    cumulativeInterest,
+    cumulativePrincipal: runningPrincipal,
+    cumulativeInterest: runningInterest,
   };
 }
 
@@ -209,10 +274,12 @@ export function deriveCurrentInstallment(
 
 /**
  * Classify a positive loan-account transaction into its interest portion and
- * row type. An overpayment (recognized by the loan's overpayment category or
- * overpayment memo text) is 100% principal; a regular installment prefers its
- * recorded interest split and otherwise derives interest analytically from the
- * running balance.
+ * row type. Interest is resolved in order: a recorded interest split of the
+ * payment; else the actual separate interest expense paired to this date; else
+ * an analytic estimate from the running balance and rate. An overpayment
+ * (recognized by the loan's overpayment category / memo / payee) is extra
+ * principal, but still shows any real interest charged alongside it (paired) --
+ * never an analytic estimate.
  */
 function classifyPayment(
   transaction: Transaction,
@@ -221,7 +288,19 @@ function classifyPayment(
   loanAccountId: string,
   processedParentIds: Set<string>,
   rateChanges: RateTimelineRow[],
+  separateInterestByDate: Map<string, number>,
+  usedInterestDates: Set<string>,
 ): { interest: number; type: LoanPaymentType; interestRecorded: boolean } {
+  const dateKey = transaction.transactionDate.split('T')[0];
+  // The actual interest expense paired to this date, consumed once.
+  const takeSeparateInterest = (): number | null => {
+    if (usedInterestDates.has(dateKey)) return null;
+    const amount = separateInterestByDate.get(dateKey);
+    if (amount == null || amount <= 0) return null;
+    usedInterestDates.add(dateKey);
+    return Math.round(amount * 100) / 100;
+  };
+
   if (
     isOverpayment(
       transaction,
@@ -231,7 +310,12 @@ function classifyPayment(
       loanAccountId,
     )
   ) {
-    return { interest: 0, type: 'OVERPAYMENT', interestRecorded: false };
+    const paired = takeSeparateInterest();
+    return {
+      interest: paired ?? 0,
+      type: 'OVERPAYMENT',
+      interestRecorded: paired != null,
+    };
   }
   const recorded = readRecordedInterest(
     transaction,
@@ -242,6 +326,10 @@ function classifyPayment(
     // A positive recorded split is a real installment leg; 0 means the source
     // split carried no interest (e.g. an extra-principal sibling), which is not.
     return { interest: recorded, type: 'REGULAR', interestRecorded: recorded > 0 };
+  }
+  const paired = takeSeparateInterest();
+  if (paired != null) {
+    return { interest: paired, type: 'REGULAR', interestRecorded: true };
   }
   return {
     interest: analyticInterest(balanceBefore, account, transaction, rateChanges),
@@ -429,6 +517,80 @@ function analyticInterest(
 }
 
 /**
+ * Pair separate interest expenses to payment dates: each expense (never a
+ * transfer -- a principal transfer that happens to share the interest category
+ * is not interest) is attributed to the nearest payment date within half a
+ * payment interval, and amounts landing on the same date are summed. Expenses
+ * with no payment in range are returned as `orphans` -- these are interest-only
+ * periods (e.g. an interest-only grace period before principal repayment
+ * begins) that get their own rows.
+ */
+function pairSeparateInterestByDate(
+  interestTransactions: Transaction[],
+  paymentDateKeys: string[],
+): { byDate: Map<string, number>; orphans: Transaction[] } {
+  const byDate = new Map<string, number>();
+  const orphans: Transaction[] = [];
+  if (interestTransactions.length === 0) return { byDate, orphans };
+  const sortedDates = [...new Set(paymentDateKeys)].sort();
+  const tolerance = paymentIntervalToleranceDays(sortedDates);
+  for (const tx of interestTransactions) {
+    if (tx.isTransfer) continue; // interest is never a transfer to the loan
+    const amount = Math.abs(Number(tx.amount));
+    if (!(amount > 0)) continue;
+    const nearest =
+      sortedDates.length > 0
+        ? nearestDateKey(tx.transactionDate.split('T')[0], sortedDates, tolerance)
+        : null;
+    if (nearest) {
+      byDate.set(nearest, (byDate.get(nearest) ?? 0) + amount);
+    } else {
+      orphans.push(tx);
+    }
+  }
+  return { byDate, orphans };
+}
+
+/** Half the median gap between payment dates (min 15 days) -- the window within
+ *  which a separate interest expense counts toward a payment. */
+function paymentIntervalToleranceDays(sortedDateKeys: string[]): number {
+  if (sortedDateKeys.length < 2) return 20;
+  const gaps: number[] = [];
+  for (let i = 1; i < sortedDateKeys.length; i++) {
+    gaps.push(daysBetween(sortedDateKeys[i - 1], sortedDateKeys[i]));
+  }
+  gaps.sort((a, b) => a - b);
+  const median = gaps[Math.floor(gaps.length / 2)];
+  return median > 0 ? Math.max(15, Math.round(median / 2)) : 20;
+}
+
+/** The payment date nearest a given date, or null when the closest one is
+ *  further away than the tolerance. */
+function nearestDateKey(
+  dateKey: string,
+  sortedDateKeys: string[],
+  toleranceDays: number,
+): string | null {
+  let best: string | null = null;
+  let bestDiff = Infinity;
+  for (const key of sortedDateKeys) {
+    const diff = Math.abs(daysBetween(key, dateKey));
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      best = key;
+    }
+  }
+  return best != null && bestDiff <= toleranceDays ? best : null;
+}
+
+/** Whole days from `aKey` to `bKey` (both yyyy-MM-dd), timezone-safe. */
+function daysBetween(aKey: string, bKey: string): number {
+  const a = new Date(`${aKey}T00:00:00Z`).getTime();
+  const b = new Date(`${bKey}T00:00:00Z`).getTime();
+  return Math.round((b - a) / (1000 * 60 * 60 * 24));
+}
+
+/**
  * Fetch every transaction for an account, paginating through the API's
  * 200-per-page limit.
  */
@@ -447,4 +609,25 @@ export async function fetchAllAccountTransactions(accountId: string): Promise<Tr
     page++;
   }
   return allTransactions;
+}
+
+/**
+ * Fetch the loan's separate interest expenses: transactions in the loan's
+ * interest category on its payment source account. Pass the result to
+ * `deriveLoanPaymentHistory` so each row shows the actual interest booked
+ * (rather than an analytic estimate) and overpayments show their interest too.
+ * Returns [] when the loan has no interest category or source account set.
+ */
+export async function fetchLoanInterestTransactions(
+  account: Account,
+): Promise<Transaction[]> {
+  if (!account.interestCategoryId || !account.sourceAccountId) return [];
+  try {
+    return await transactionsApi.getAllPages({
+      categoryIds: [account.interestCategoryId],
+      accountIds: [account.sourceAccountId],
+    });
+  } catch {
+    return [];
+  }
 }

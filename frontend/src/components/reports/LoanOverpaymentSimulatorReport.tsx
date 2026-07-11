@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { accountsApi } from '@/lib/accounts';
 import { loanScenariosApi } from '@/lib/loan-scenarios';
 import { loanRateChangesApi } from '@/lib/loan-rate-changes';
-import { fetchAllAccountTransactions } from '@/lib/loan-history';
+import { fetchAllAccountTransactions, fetchLoanInterestTransactions } from '@/lib/loan-history';
 import { useReportData } from '@/hooks/useReportData';
 import { ReportError } from '@/components/reports/ReportError';
 import { LoanDetailView } from '@/components/accounts/loan-detail/LoanDetailView';
@@ -59,21 +59,27 @@ export function LoanOverpaymentSimulatorReport() {
       if (!selectedAccountId || isRevolving) {
         return {
           transactions: [] as Transaction[],
+          interestTransactions: [] as Transaction[],
           scenarios: [] as LoanScenario[],
           rateChanges: [] as LoanRateChange[],
         };
       }
-      const [transactions, scenarios, rateChanges] = await Promise.all([
-        fetchAllAccountTransactions(selectedAccountId),
-        loanScenariosApi.getAll(selectedAccountId).catch(() => [] as LoanScenario[]),
-        loanRateChangesApi.getAll(selectedAccountId).catch(() => [] as LoanRateChange[]),
-      ]);
-      return { transactions, scenarios, rateChanges };
+      const [transactions, interestTransactions, scenarios, rateChanges] =
+        await Promise.all([
+          fetchAllAccountTransactions(selectedAccountId),
+          selectedAccount
+            ? fetchLoanInterestTransactions(selectedAccount)
+            : Promise.resolve([] as Transaction[]),
+          loanScenariosApi.getAll(selectedAccountId).catch(() => [] as LoanScenario[]),
+          loanRateChangesApi.getAll(selectedAccountId).catch(() => [] as LoanRateChange[]),
+        ]);
+      return { transactions, interestTransactions, scenarios, rateChanges };
     },
-    [selectedAccountId, isRevolving],
+    [selectedAccountId, selectedAccount, isRevolving],
   );
 
   const transactions = accountData?.transactions ?? [];
+  const interestTransactions = accountData?.interestTransactions ?? [];
   const scenarios = accountData?.scenarios ?? [];
   const rateChanges = accountData?.rateChanges ?? [];
 
@@ -154,6 +160,7 @@ export function LoanOverpaymentSimulatorReport() {
         <LoanDetailView
           account={selectedAccount}
           transactions={transactions}
+          interestTransactions={interestTransactions}
           scenarios={scenarios}
           rateChanges={rateChanges}
           onScenariosChanged={reloadAccountData}

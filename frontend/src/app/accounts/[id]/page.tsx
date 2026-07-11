@@ -20,7 +20,7 @@ import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { accountsApi } from '@/lib/accounts';
 import { loanScenariosApi } from '@/lib/loan-scenarios';
 import { loanRateChangesApi } from '@/lib/loan-rate-changes';
-import { fetchAllAccountTransactions } from '@/lib/loan-history';
+import { fetchAllAccountTransactions, fetchLoanInterestTransactions } from '@/lib/loan-history';
 import { getErrorMessage } from '@/lib/errors';
 import type { Account, AccountType } from '@/types/account';
 import type { Transaction } from '@/types/transaction';
@@ -74,6 +74,7 @@ function AccountDetailContent() {
 
   const [account, setAccount] = useState<Account | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [interestTransactions, setInterestTransactions] = useState<Transaction[]>([]);
   const [scenarios, setScenarios] = useState<LoanScenario[]>([]);
   const [rateChanges, setRateChanges] = useState<LoanRateChange[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -96,17 +97,21 @@ function AccountDetailContent() {
       if (resolveDetailView(accountData.accountType) !== 'loan') {
         setAccount(accountData);
         setTransactions([]);
+        setInterestTransactions([]);
         setScenarios([]);
         setRateChanges([]);
         return;
       }
-      const [transactionsData, scenariosData, rateChangesData] = await Promise.all([
-        fetchAllAccountTransactions(accountId),
-        loanScenariosApi.getAll(accountId).catch(() => [] as LoanScenario[]),
-        loanRateChangesApi.getAll(accountId).catch(() => [] as LoanRateChange[]),
-      ]);
+      const [transactionsData, interestData, scenariosData, rateChangesData] =
+        await Promise.all([
+          fetchAllAccountTransactions(accountId),
+          fetchLoanInterestTransactions(accountData),
+          loanScenariosApi.getAll(accountId).catch(() => [] as LoanScenario[]),
+          loanRateChangesApi.getAll(accountId).catch(() => [] as LoanRateChange[]),
+        ]);
       setAccount(accountData);
       setTransactions(transactionsData);
+      setInterestTransactions(interestData);
       setScenarios(scenariosData);
       setRateChanges(rateChangesData);
     } catch (err) {
@@ -226,6 +231,7 @@ function AccountDetailContent() {
             <LoanDetailView
               account={account}
               transactions={transactions}
+              interestTransactions={interestTransactions}
               scenarios={scenarios}
               rateChanges={rateChanges}
               onScenariosChanged={reloadScenarios}
