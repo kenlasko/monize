@@ -292,6 +292,7 @@ describe('deriveLoanPaymentHistory', () => {
     const account = makeAccount({
       overpaymentCategoryId: null,
       overpaymentMemo: 'lump sum',
+      overpaymentPayeeId: null,
     });
     const result = deriveLoanPaymentHistory(account, [
       makeTransaction({

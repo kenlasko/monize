@@ -244,6 +244,14 @@ export class CreateAccountDto {
   @SanitizeHtml()
   overpaymentMemo?: string;
 
+  @ApiPropertyOptional({
+    description:
+      "Payee ID whose payments count as standalone overpayments (extra principal); usable with or without the overpayment category / memo",
+  })
+  @IsOptional()
+  @IsUUID()
+  overpaymentPayeeId?: string;
+
   // Asset-specific fields
   @ApiPropertyOptional({
     description: "Category ID for tracking value changes on asset accounts",

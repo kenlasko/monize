@@ -19,7 +19,7 @@ function makeAccount(overrides: Partial<Account> & { id: string; name: string })
     isFavourite: false, favouriteSortOrder: 0, excludeFromNetWorth: false,
     statementDueDay: null, statementSettlementDay: null,
     paymentAmount: null, paymentFrequency: null, paymentStartDate: null,
-    sourceAccountId: null, principalCategoryId: null, interestCategoryId: null, overpaymentCategoryId: null, overpaymentMemo: null,
+    sourceAccountId: null, principalCategoryId: null, interestCategoryId: null, overpaymentCategoryId: null, overpaymentMemo: null, overpaymentPayeeId: null,
     scheduledTransactionId: null, assetCategoryId: null, dateAcquired: null, linkedLoanAccountId: null,
     isCanadianMortgage: false, isVariableRate: false, termMonths: null,
     termEndDate: null, amortizationMonths: null, originalPrincipal: null,

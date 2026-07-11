@@ -225,6 +225,7 @@ function classifyPayment(
       transaction,
       account.overpaymentCategoryId,
       account.overpaymentMemo,
+      account.overpaymentPayeeId,
       loanAccountId,
     )
   ) {
@@ -248,19 +249,37 @@ function classifyPayment(
 }
 
 /**
- * Whether a payment is a standalone overpayment. Recognized either by the
- * loan's overpayment category or its overpayment memo text -- each usable on
- * its own or together, so either match is sufficient.
+ * Whether a payment is a standalone overpayment. Recognized by the loan's
+ * overpayment category, its overpayment memo text, or its overpayment payee --
+ * each usable on its own or together, so any single match is sufficient.
  */
 function isOverpayment(
   transaction: Transaction,
   overpaymentCategoryId: string | null | undefined,
   overpaymentMemo: string | null | undefined,
+  overpaymentPayeeId: string | null | undefined,
   loanAccountId: string,
 ): boolean {
   return (
     matchesOverpaymentCategory(transaction, overpaymentCategoryId, loanAccountId) ||
-    matchesOverpaymentMemo(transaction, overpaymentMemo, loanAccountId)
+    matchesOverpaymentMemo(transaction, overpaymentMemo, loanAccountId) ||
+    matchesOverpaymentPayee(transaction, overpaymentPayeeId)
+  );
+}
+
+/**
+ * Whether the overpayment payee is the payee of the transaction itself or of
+ * its linked source-account transaction (the payment is usually recorded with
+ * the payee on the source side).
+ */
+function matchesOverpaymentPayee(
+  transaction: Transaction,
+  overpaymentPayeeId: string | null | undefined,
+): boolean {
+  if (!overpaymentPayeeId) return false;
+  return (
+    transaction.payeeId === overpaymentPayeeId ||
+    transaction.linkedTransaction?.payeeId === overpaymentPayeeId
   );
 }
 

@@ -735,6 +735,8 @@ export class AccountsService {
         account.overpaymentMemo = updateAccountDto.overpaymentMemo?.trim()
           ? updateAccountDto.overpaymentMemo.trim()
           : null;
+      if (updateAccountDto.overpaymentPayeeId !== undefined)
+        account.overpaymentPayeeId = updateAccountDto.overpaymentPayeeId;
       if (updateAccountDto.assetCategoryId !== undefined)
         account.assetCategoryId = updateAccountDto.assetCategoryId;
       if (updateAccountDto.dateAcquired !== undefined)

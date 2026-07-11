@@ -235,6 +235,15 @@ export class UpdateAccountDto {
   @SanitizeHtml()
   overpaymentMemo?: string | null;
 
+  @ApiPropertyOptional({
+    description:
+      "Payee ID whose payments count as standalone overpayments (extra principal). Pass null to clear.",
+  })
+  @IsOptional()
+  @ValidateIf((o) => o.overpaymentPayeeId !== null)
+  @IsUUID()
+  overpaymentPayeeId?: string | null;
+
   // Asset-specific fields
   @ApiPropertyOptional({
     description: "Category ID for tracking value changes on asset accounts",

@@ -61,6 +61,9 @@ export interface Account {
   // Memo text marking a payment as a standalone overpayment (case-insensitive
   // substring match); usable with or instead of the overpayment category.
   overpaymentMemo: string | null;
+  // Payee whose payments count as standalone overpayments (extra principal),
+  // usable with or instead of the overpayment category / memo.
+  overpaymentPayeeId: string | null;
   scheduledTransactionId: string | null;
   // Asset-specific fields
   assetCategoryId: string | null;
@@ -106,6 +109,7 @@ export interface CreateAccountData {
   interestCategoryId?: string | null;
   overpaymentCategoryId?: string | null;
   overpaymentMemo?: string | null;
+  overpaymentPayeeId?: string | null;
   // Asset-specific fields
   assetCategoryId?: string;
   dateAcquired?: string;

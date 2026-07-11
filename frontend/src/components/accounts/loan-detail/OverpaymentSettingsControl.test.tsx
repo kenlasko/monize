@@ -124,6 +124,7 @@ describe('OverpaymentSettingsControl', () => {
     await waitFor(() =>
       expect(accountsApi.update).toHaveBeenCalledWith('loan-1', {
         overpaymentMemo: 'Extra principal',
+        overpaymentPayeeId: null,
       }),
     );
     expect(onMemoChange).toHaveBeenCalledWith('Extra principal');
@@ -142,6 +143,7 @@ describe('OverpaymentSettingsControl', () => {
     await waitFor(() =>
       expect(accountsApi.update).toHaveBeenCalledWith('loan-1', {
         overpaymentMemo: null,
+        overpaymentPayeeId: null,
       }),
     );
     expect(onMemoChange).toHaveBeenCalledWith(null);

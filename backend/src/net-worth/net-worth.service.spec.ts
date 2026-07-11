@@ -76,6 +76,8 @@ describe("NetWorthService", () => {
     overpaymentCategoryId: null,
     overpaymentCategory: null,
     overpaymentMemo: null,
+    overpaymentPayeeId: null,
+    overpaymentPayee: null,
     assetCategoryId: null,
     assetCategory: null,
     dateAcquired: null,

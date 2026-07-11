@@ -10,6 +10,7 @@ import {
 } from "typeorm";
 import { Transaction } from "../../transactions/entities/transaction.entity";
 import { Category } from "../../categories/entities/category.entity";
+import { Payee } from "../../payees/entities/payee.entity";
 import { ScheduledTransaction } from "../../scheduled-transactions/entities/scheduled-transaction.entity";
 import { User } from "../../users/entities/user.entity";
 import { Institution } from "../../institutions/entities/institution.entity";
@@ -220,6 +221,16 @@ export class Account {
     nullable: true,
   })
   overpaymentMemo: string | null;
+
+  // Payee whose payments count as standalone overpayments (extra principal),
+  // usable on its own or alongside the overpayment category / memo. Optional,
+  // per-loan setting.
+  @Column({ type: "uuid", name: "overpayment_payee_id", nullable: true })
+  overpaymentPayeeId: string | null;
+
+  @ManyToOne(() => Payee, { nullable: true })
+  @JoinColumn({ name: "overpayment_payee_id" })
+  overpaymentPayee: Payee | null;
 
   // Asset-specific fields
   @Column({ type: "uuid", name: "asset_category_id", nullable: true })
