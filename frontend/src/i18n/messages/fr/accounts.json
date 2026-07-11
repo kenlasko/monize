@@ -273,6 +273,17 @@
       "SPLIT": "Ligne fractionnée du paiement",
       "SEPARATE": "Dépense séparée (le capital est un virement)"
     },
+    "bookingHelp": {
+      "title": "Comment enregistrer les paiements de prêt",
+      "intro": "Chaque échéance comporte deux parts qui n'ont pas le même sens en finances, on les enregistre donc séparément :",
+      "principalTitle": "Le capital est un virement.",
+      "principalBody": "Il rembourse l'argent emprunté, ce n'est pas une charge. Enregistrez-le en virement de votre compte bancaire vers le compte de prêt, sans catégorie, pour qu'il réduise le solde sans figurer dans les dépenses.",
+      "interestTitle": "Les intérêts sont une dépense.",
+      "interestBody": "Ils sont le coût réel du prêt. Enregistrez-les en dépense avec une catégorie (par exemple « Prêts »).",
+      "avoid": "À éviter : n'enregistrez pas toute l'échéance en une seule dépense. Cela gonfle vos coûts et le solde du prêt ne diminue jamais.",
+      "overpayments": "Les remboursements anticipés fonctionnent comme le capital : un virement vers le compte de prêt, sans catégorie. Si la banque a ajouté des intérêts, isolez cette part en dépense séparée.",
+      "tip": "Astuce : créez un compte de prêt ou d'hypothèque dans Monize — il suit la dette restante, et les virements de capital la réduisent."
+    },
     "selectFrequency": "Sélectionner la fréquence…",
     "selectAccount": "Sélectionner un compte…",
     "selectCategory": "Sélectionner une catégorie…",

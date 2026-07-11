@@ -273,6 +273,17 @@
       "SPLIT": "Bagian split dari pembayaran",
       "SEPARATE": "Pengeluaran terpisah (pokok berupa transfer)"
     },
+    "bookingHelp": {
+      "title": "Cara mencatat pembayaran pinjaman",
+      "intro": "Setiap angsuran punya dua bagian yang berbeda arti dalam keuangan, jadi catat terpisah:",
+      "principalTitle": "Pokok adalah transfer.",
+      "principalBody": "Ini mengembalikan uang pinjaman, bukan biaya. Catat sebagai transfer dari rekening bank ke akun pinjaman tanpa kategori, agar menurunkan saldo tanpa muncul sebagai pengeluaran.",
+      "interestTitle": "Bunga adalah pengeluaran.",
+      "interestBody": "Ini biaya nyata pinjaman. Catat sebagai pengeluaran dengan kategori (misalnya \"Pinjaman\").",
+      "avoid": "Hindari: jangan catat seluruh angsuran sebagai satu pengeluaran. Itu membesarkan biaya dan saldo pinjaman tak pernah turun.",
+      "overpayments": "Pelunasan dipercepat seperti pokok: transfer ke akun pinjaman, tanpa kategori. Jika bank menambahkan bunga, pisahkan bagian itu sebagai pengeluaran tersendiri.",
+      "tip": "Tips: buat akun pinjaman/KPR di Monize — akun ini melacak sisa utang, dan transfer pokok menguranginya."
+    },
     "selectFrequency": "Pilih frekuensi...",
     "selectAccount": "Pilih akun...",
     "selectCategory": "Pilih kategori...",

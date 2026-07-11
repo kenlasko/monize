@@ -6,6 +6,7 @@ import { UseFormRegister, FieldErrors } from 'react-hook-form';
 import { Input } from '@/components/ui/Input';
 import { Combobox } from '@/components/ui/Combobox';
 import { Select } from '@/components/ui/Select';
+import { LoanBookingHelp } from './LoanBookingHelp';
 import { Category } from '@/types/category';
 import { Payee } from '@/types/payee';
 import { InterestBookingMode, INTEREST_BOOKING_MODES } from '@/types/account';
@@ -110,6 +111,8 @@ export function OverpaymentRecognitionFields({
 
   return (
     <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+      <LoanBookingHelp />
+
       <Combobox
         label={t('mortgageFields.interestCategory')}
         placeholder={t('mortgageFields.selectCategory')}

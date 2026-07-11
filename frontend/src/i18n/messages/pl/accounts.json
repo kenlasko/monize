@@ -273,6 +273,17 @@
       "SPLIT": "Noga splitu w płatności",
       "SEPARATE": "Osobny wydatek (kapitał to przelew)"
     },
+    "bookingHelp": {
+      "title": "Jak prawidłowo księgować spłatę kredytu",
+      "intro": "Każda rata składa się z dwóch części, które w finansach znaczą co innego — dlatego księguje się je osobno:",
+      "principalTitle": "Kapitał to przelew.",
+      "principalBody": "To zwrot pożyczonych pieniędzy, nie koszt. Zaksięguj go jako przelew z konta bankowego na konto kredytu i nie nadawaj kategorii, żeby obniżał saldo kredytu, ale nie pojawiał się w wydatkach ani w rozbiciu po kategoriach.",
+      "interestTitle": "Odsetki to wydatek.",
+      "interestBody": "To realny koszt kredytu. Zaksięguj je jako wydatek i przypisz kategorię (np. „Kredyty”).",
+      "avoid": "Unikaj: nie wrzucaj całej raty jako jednego wydatku. Zawyży to Twoje koszty (realny koszt to same odsetki), a dług na koncie kredytu w ogóle się nie zmniejszy.",
+      "overpayments": "Nadpłaty działają jak kapitał: przelew na konto kredytu, bez kategorii. Jeśli bank doliczył do nadpłaty odsetki, wydziel tę część jako osobny wydatek.",
+      "tip": "Wskazówka: załóż w Monize konto typu kredyt/hipoteka — to ono pokazuje pozostały dług, a przelewy kapitału go pomniejszają."
+    },
     "selectFrequency": "Wybierz częstotliwość...",
     "selectAccount": "Wybierz konto...",
     "selectCategory": "Wybierz kategorię...",

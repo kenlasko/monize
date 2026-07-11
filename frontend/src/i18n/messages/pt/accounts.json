@@ -273,6 +273,17 @@
       "SPLIT": "Parte dividida do pagamento",
       "SEPARATE": "Despesa separada (o capital é uma transferência)"
     },
+    "bookingHelp": {
+      "title": "Como registar os pagamentos do empréstimo",
+      "intro": "Cada prestação tem duas partes que significam coisas diferentes nas finanças, por isso registam-se em separado:",
+      "principalTitle": "O capital é uma transferência.",
+      "principalBody": "Devolve o dinheiro emprestado, não é um custo. Registe-o como transferência da conta bancária para a conta do empréstimo, sem categoria, para baixar o saldo sem surgir nas despesas.",
+      "interestTitle": "Os juros são uma despesa.",
+      "interestBody": "São o custo real do empréstimo. Registe-os como despesa com uma categoria (por exemplo, \"Empréstimos\").",
+      "avoid": "Evite: não registe a prestação inteira como uma única despesa. Inflaciona os custos e o saldo do empréstimo nunca desce.",
+      "overpayments": "Os pagamentos antecipados funcionam como o capital: uma transferência para a conta do empréstimo, sem categoria. Se o banco somou juros, separe essa parte como despesa à parte.",
+      "tip": "Dica: crie uma conta de empréstimo ou hipoteca no Monize — acompanha a dívida restante, e as transferências de capital reduzem-na."
+    },
     "selectFrequency": "Selecionar frequência...",
     "selectAccount": "Selecionar conta...",
     "selectCategory": "Selecionar categoria...",

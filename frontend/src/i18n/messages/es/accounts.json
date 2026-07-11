@@ -273,6 +273,17 @@
       "SPLIT": "Parte dividida del pago",
       "SEPARATE": "Gasto separado (el capital es una transferencia)"
     },
+    "bookingHelp": {
+      "title": "Cómo registrar los pagos del préstamo",
+      "intro": "Cada cuota tiene dos partes que significan cosas distintas en tus finanzas, así que se registran por separado:",
+      "principalTitle": "El capital es una transferencia.",
+      "principalBody": "Devuelve el dinero prestado, no es un gasto. Regístralo como transferencia de tu cuenta bancaria a la del préstamo, sin categoría, para que reduzca el saldo sin aparecer en los gastos.",
+      "interestTitle": "Los intereses son un gasto.",
+      "interestBody": "Son el coste real del préstamo. Regístralos como gasto con una categoría (por ejemplo, «Préstamos»).",
+      "avoid": "Evita: no registres toda la cuota como un solo gasto. Infla tus costes y el saldo del préstamo nunca baja.",
+      "overpayments": "Las amortizaciones anticipadas funcionan como el capital: transferencia a la cuenta del préstamo, sin categoría. Si el banco añadió intereses, separa esa parte como gasto aparte.",
+      "tip": "Consejo: crea una cuenta de préstamo o hipoteca en Monize; muestra la deuda pendiente y las transferencias de capital la reducen."
+    },
     "selectFrequency": "Seleccionar frecuencia...",
     "selectAccount": "Seleccionar cuenta...",
     "selectCategory": "Seleccionar categoría...",

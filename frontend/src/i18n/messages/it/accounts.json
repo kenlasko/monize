@@ -273,6 +273,17 @@
       "SPLIT": "Voce divisa del pagamento",
       "SEPARATE": "Spesa separata (il capitale è un trasferimento)"
     },
+    "bookingHelp": {
+      "title": "Come registrare i pagamenti del prestito",
+      "intro": "Ogni rata ha due parti che in finanza significano cose diverse, quindi si registrano separatamente:",
+      "principalTitle": "Il capitale è un trasferimento.",
+      "principalBody": "Restituisce il denaro preso in prestito, non è un costo. Registralo come trasferimento dal conto bancario al conto del prestito, senza categoria, così riduce il saldo senza comparire nelle spese.",
+      "interestTitle": "Gli interessi sono una spesa.",
+      "interestBody": "Sono il costo reale del prestito. Registrali come spesa con una categoria (ad esempio \"Prestiti\").",
+      "avoid": "Da evitare: non registrare l'intera rata come un'unica spesa. Gonfia i costi e il saldo del prestito non scende mai.",
+      "overpayments": "Le estinzioni anticipate funzionano come il capitale: un trasferimento al conto del prestito, senza categoria. Se la banca ha aggiunto interessi, separa quella parte come spesa a sé.",
+      "tip": "Suggerimento: crea un conto prestito o mutuo in Monize — tiene traccia del debito residuo e i trasferimenti di capitale lo riducono."
+    },
     "selectFrequency": "Seleziona frequenza...",
     "selectAccount": "Seleziona conto...",
     "selectCategory": "Seleziona categoria...",

@@ -273,6 +273,17 @@
       "SPLIT": "Phần tách của khoản thanh toán",
       "SEPARATE": "Chi phí riêng (gốc là chuyển khoản)"
     },
+    "bookingHelp": {
+      "title": "Cách ghi nhận các khoản trả nợ vay",
+      "intro": "Mỗi kỳ trả gồm hai phần mang ý nghĩa khác nhau về tài chính, nên hãy ghi riêng:",
+      "principalTitle": "Gốc là một khoản chuyển khoản.",
+      "principalBody": "Nó hoàn lại tiền đã vay, không phải chi phí. Ghi dưới dạng chuyển khoản từ tài khoản ngân hàng sang tài khoản vay, không gán danh mục, để giảm dư nợ mà không hiện trong chi tiêu.",
+      "interestTitle": "Lãi là một khoản chi.",
+      "interestBody": "Đây là chi phí thực của khoản vay. Ghi dưới dạng chi tiêu kèm danh mục (ví dụ \"Khoản vay\").",
+      "avoid": "Tránh: đừng ghi toàn bộ kỳ trả thành một khoản chi. Nó thổi phồng chi phí và dư nợ vay không bao giờ giảm.",
+      "overpayments": "Trả trước hoạt động như gốc: chuyển khoản vào tài khoản vay, không danh mục. Nếu ngân hàng cộng thêm lãi, tách phần đó thành khoản chi riêng.",
+      "tip": "Mẹo: tạo tài khoản vay/thế chấp trong Monize — nó theo dõi dư nợ còn lại, và các khoản chuyển gốc sẽ trừ dần."
+    },
     "selectFrequency": "Chọn tần suất...",
     "selectAccount": "Chọn tài khoản...",
     "selectCategory": "Chọn danh mục...",

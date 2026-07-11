@@ -273,6 +273,17 @@
       "SPLIT": "Gesplitst deel van de betaling",
       "SEPARATE": "Aparte uitgave (hoofdsom is een overboeking)"
     },
+    "bookingHelp": {
+      "title": "Hoe je leningbetalingen boekt",
+      "intro": "Elke termijn heeft twee delen die financieel iets anders betekenen, dus boek ze apart:",
+      "principalTitle": "Aflossing is een overboeking.",
+      "principalBody": "Ze betaalt geleend geld terug en is geen kost. Boek haar als overboeking van je bankrekening naar de leningrekening, zonder categorie, zodat het saldo daalt zonder in de uitgaven te verschijnen.",
+      "interestTitle": "Rente is een uitgave.",
+      "interestBody": "Dit is de echte kost van de lening. Boek ze als uitgave met een categorie (bijvoorbeeld \"Leningen\").",
+      "avoid": "Vermijd: boek niet de hele termijn als één uitgave. Dat overdrijft je kosten en het leningsaldo daalt nooit.",
+      "overpayments": "Extra aflossingen werken als aflossing: een overboeking naar de leningrekening, zonder categorie. Voegde de bank rente toe, splits dat deel dan af als aparte uitgave.",
+      "tip": "Tip: maak in Monize een lening- of hypotheekrekening aan — die volgt de restschuld, en aflossingsoverboekingen bouwen die af."
+    },
     "selectFrequency": "Selecteer frequentie...",
     "selectAccount": "Selecteer rekening...",
     "selectCategory": "Selecteer categorie...",

@@ -273,6 +273,17 @@
       "SPLIT": "Parte dividida do pagamento",
       "SEPARATE": "Despesa separada (o principal é uma transferência)"
     },
+    "bookingHelp": {
+      "title": "Como registrar os pagamentos do empréstimo",
+      "intro": "Cada parcela tem duas partes que significam coisas diferentes nas finanças, então registre-as separadamente:",
+      "principalTitle": "O principal é uma transferência.",
+      "principalBody": "Devolve o dinheiro emprestado, não é um custo. Registre-o como transferência da conta bancária para a conta do empréstimo, sem categoria, para reduzir o saldo sem aparecer nas despesas.",
+      "interestTitle": "Os juros são uma despesa.",
+      "interestBody": "São o custo real do empréstimo. Registre-os como despesa com uma categoria (por exemplo, \"Empréstimos\").",
+      "avoid": "Evite: não registre a parcela inteira como uma única despesa. Isso infla os custos e o saldo do empréstimo nunca diminui.",
+      "overpayments": "As amortizações funcionam como o principal: uma transferência para a conta do empréstimo, sem categoria. Se o banco somou juros, separe essa parte como despesa à parte.",
+      "tip": "Dica: crie uma conta de empréstimo ou financiamento no Monize — ela acompanha a dívida restante, e as transferências de principal a reduzem."
+    },
     "selectFrequency": "Selecionar frequência...",
     "selectAccount": "Selecionar conta...",
     "selectCategory": "Selecionar categoria...",

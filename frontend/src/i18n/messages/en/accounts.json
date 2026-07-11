@@ -273,6 +273,17 @@
       "SPLIT": "Split leg of the payment",
       "SEPARATE": "Separate expense (principal is a transfer)"
     },
+    "bookingHelp": {
+      "title": "How to record loan payments",
+      "intro": "Each installment has two parts that mean different things in your finances, so record them separately:",
+      "principalTitle": "Principal is a transfer.",
+      "principalBody": "It repays borrowed money, not a cost. Record it as a transfer from your bank account to the loan account and leave it uncategorized, so it lowers the loan balance without showing up in expenses or category breakdowns.",
+      "interestTitle": "Interest is an expense.",
+      "interestBody": "It is the real cost of the loan. Record it as an expense with a category (for example \"Loans\").",
+      "avoid": "Avoid: don't record the whole installment as a single expense. It overstates your costs (the real cost is only the interest) and the debt on the loan account never goes down.",
+      "overpayments": "Overpayments work like principal: a transfer to the loan account, uncategorized. If the bank added interest to an overpayment, split that part out as a separate expense.",
+      "tip": "Tip: create a loan or mortgage account in Monize -- it tracks the remaining debt, and principal transfers pay it down."
+    },
     "selectFrequency": "Select frequency...",
     "selectAccount": "Select account...",
     "selectCategory": "Select category...",

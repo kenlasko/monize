@@ -273,6 +273,17 @@
       "SPLIT": "Ödemenin bölünmüş kalemi",
       "SEPARATE": "Ayrı gider (anapara bir transferdir)"
     },
+    "bookingHelp": {
+      "title": "Kredi ödemeleri nasıl kaydedilir",
+      "intro": "Her taksitin, finansal olarak farklı anlam taşıyan iki parçası vardır; bu yüzden ayrı kaydedin:",
+      "principalTitle": "Anapara bir transferdir.",
+      "principalBody": "Ödünç alınan parayı geri öder, bir gider değildir. Banka hesabından kredi hesabına transfer olarak, kategorisiz kaydedin; böylece bakiyeyi düşürür ama giderlerde görünmez.",
+      "interestTitle": "Faiz bir giderdir.",
+      "interestBody": "Kredinin gerçek maliyetidir. Bir kategoriyle (örneğin \"Krediler\") gider olarak kaydedin.",
+      "avoid": "Kaçının: taksidin tamamını tek bir gider olarak kaydetmeyin. Maliyetleri şişirir ve kredi bakiyesi hiç azalmaz.",
+      "overpayments": "Erken ödemeler anapara gibidir: kredi hesabına transfer, kategorisiz. Banka faiz eklediyse o kısmı ayrı gider olarak ayırın.",
+      "tip": "İpucu: Monize'de bir kredi/konut kredisi hesabı oluşturun — kalan borcu izler ve anapara transferleri onu azaltır."
+    },
     "selectFrequency": "Sıklık seçin...",
     "selectAccount": "Hesap seçin...",
     "selectCategory": "Kategori seçin...",
