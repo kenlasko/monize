@@ -416,6 +416,8 @@
     },
     "comparison": {
       "newPayoff": "新的還清日期",
+      "title": "模擬結果",
+      "placeholder": "在上方填寫額外還款即可在此查看其影響。",
       "timeSaved": "節省的時間",
       "monthsSaved": "{count, plural, one {# 個月} other {# 個月}}",
       "paymentsSaved": "{count, plural, one {# 期} other {# 期}}",

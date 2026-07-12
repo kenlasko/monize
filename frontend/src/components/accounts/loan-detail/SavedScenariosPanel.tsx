@@ -107,11 +107,11 @@ export function SavedScenariosPanel({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+    <div className="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
           {t('loanDetail.scenarios.title')}
-        </h3>
+        </h4>
         <Button variant="outline" size="sm" onClick={openSave} disabled={!activePlan}>
           {t('loanDetail.scenarios.saveCurrent')}
         </Button>

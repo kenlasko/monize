@@ -416,6 +416,8 @@
     },
     "comparison": {
       "newPayoff": "Nova data de quitação",
+      "title": "Resultados da simulação",
+      "placeholder": "Preencha um pagamento extra acima para ver o impacto aqui.",
       "timeSaved": "Tempo economizado",
       "monthsSaved": "{count, plural, one {# mês} other {# meses}}",
       "paymentsSaved": "{count, plural, one {# parcela} other {# parcelas}}",

@@ -416,6 +416,8 @@
     },
     "comparison": {
       "newPayoff": "Ngày trả hết mới",
+      "title": "Kết quả mô phỏng",
+      "placeholder": "Nhập một khoản trả thêm ở trên để xem tác động tại đây.",
       "timeSaved": "Thời gian tiết kiệm",
       "monthsSaved": "{count, plural, one {# tháng} other {# tháng}}",
       "paymentsSaved": "{count, plural, one {# kỳ} other {# kỳ}}",

@@ -416,6 +416,8 @@
     },
     "comparison": {
       "newPayoff": "Yeni Kapanış Tarihi",
+      "title": "Simülasyon Sonuçları",
+      "placeholder": "Etkisini burada görmek için yukarıya bir ek ödeme girin.",
       "timeSaved": "Kazanılan Süre",
       "monthsSaved": "{count, plural, one {# ay} other {# ay}}",
       "paymentsSaved": "{count, plural, one {# taksit} other {# taksit}}",

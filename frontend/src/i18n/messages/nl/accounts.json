@@ -416,6 +416,8 @@
     },
     "comparison": {
       "newPayoff": "Nieuwe aflossingsdatum",
+      "title": "Simulatieresultaten",
+      "placeholder": "Vul hierboven een extra aflossing in om het effect hier te zien.",
       "timeSaved": "Bespaarde tijd",
       "monthsSaved": "{count, plural, one {# maand} other {# maanden}}",
       "paymentsSaved": "{count, plural, one {# betaling} other {# betalingen}}",

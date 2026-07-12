@@ -416,6 +416,8 @@
     },
     "comparison": {
       "newPayoff": "새 완납일",
+      "title": "시뮬레이션 결과",
+      "placeholder": "위에서 추가 상환을 입력하면 그 효과가 여기에 표시됩니다.",
       "timeSaved": "단축 기간",
       "monthsSaved": "{count, plural, one {#개월} other {#개월}}",
       "paymentsSaved": "{count, plural, one {# 회} other {# 회}}",

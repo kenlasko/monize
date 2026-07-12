@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { format } from 'date-fns';
 import { LoanSummaryCards } from '@/components/accounts/loan-detail/LoanSummaryCards';
 import { AmortizationScheduleTable } from '@/components/accounts/loan-detail/AmortizationScheduleTable';
@@ -57,6 +58,7 @@ export function LoanDetailView({
   onScenariosChanged,
   onRateChangesChanged,
 }: LoanDetailViewProps) {
+  const t = useTranslations('accounts');
   const [plan, setPlan] = useState<OverpaymentPlan | null>(null);
   const [mode, setMode] = useState<OverpaymentMode>('SHORTEN_TERM');
   const [loadedPlan, setLoadedPlan] = useState<OverpaymentPlan | null>(null);
@@ -175,30 +177,45 @@ export function LoanDetailView({
         baseline={baseline}
       />
 
-      {projectionInput && (
-        <OverpaymentSimulator
-          accountId={account.id}
-          currencyCode={account.currencyCode}
-          onPlanChange={setPlan}
-          mode={mode}
-          onModeChange={setMode}
-          loadedPlan={loadedPlan}
-          loadedPlanVersion={loadedPlanVersion}
-        />
-      )}
+      <PastImpactSection account={account} impact={impact} />
 
       {projectionInput && (
-        <SavedScenariosPanel
-          accountId={account.id}
-          scenarios={scenarios}
-          activePlan={plan}
-          onLoad={handleLoadScenario}
-          onScenariosChanged={onScenariosChanged}
-        />
-      )}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          <OverpaymentSimulator
+            accountId={account.id}
+            currencyCode={account.currencyCode}
+            onPlanChange={setPlan}
+            mode={mode}
+            onModeChange={setMode}
+            loadedPlan={loadedPlan}
+            loadedPlanVersion={loadedPlanVersion}
+            footer={
+              <SavedScenariosPanel
+                accountId={account.id}
+                scenarios={scenarios}
+                activePlan={plan}
+                onLoad={handleLoadScenario}
+                onScenariosChanged={onScenariosChanged}
+              />
+            }
+          />
 
-      {comparison && (
-        <ComparisonSummaryCards comparison={comparison} currencyCode={account.currencyCode} />
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {t('loanDetail.comparison.title')}
+            </h3>
+            {comparison ? (
+              <ComparisonSummaryCards
+                comparison={comparison}
+                currencyCode={account.currencyCode}
+              />
+            ) : (
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {t('loanDetail.comparison.placeholder')}
+              </p>
+            )}
+          </div>
+        </div>
       )}
 
       <PayoffComparisonChart
@@ -207,8 +224,6 @@ export function LoanDetailView({
         scenario={scenario}
         original={impact?.originalSchedule ?? null}
       />
-
-      <PastImpactSection account={account} impact={impact} />
 
       <AmortizationScheduleTable
         historyEvents={history.events}

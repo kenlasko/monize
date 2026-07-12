@@ -416,6 +416,8 @@
     },
     "comparison": {
       "newPayoff": "新しい完済日",
+      "title": "シミュレーション結果",
+      "placeholder": "上で繰上返済を入力すると、その効果がここに表示されます。",
       "timeSaved": "短縮期間",
       "monthsSaved": "{count, plural, one {# か月} other {# か月}}",
       "paymentsSaved": "{count, plural, one {# 回} other {# 回}}",

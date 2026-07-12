@@ -416,6 +416,8 @@
     },
     "comparison": {
       "newPayoff": "Nowa data spłaty",
+      "title": "Wyniki symulacji",
+      "placeholder": "Wypełnij nadpłatę powyżej, aby zobaczyć jej wpływ.",
       "timeSaved": "Zaoszczędzony czas",
       "monthsSaved": "{count, plural, one {# miesiąc} few {# miesiące} many {# miesięcy} other {# miesiąca}}",
       "paymentsSaved": "{count, plural, one {# rata} few {# raty} many {# rat} other {# raty}}",

@@ -481,6 +481,8 @@
     },
     "comparison": {
       "newPayoff": "[XX-New Payoff Date-XX]",
+      "title": "[XX-Simulation Results-XX]",
+      "placeholder": "[XX-Fill in an overpayment above to see its impact here.-XX]",
       "timeSaved": "[XX-Time Saved-XX]",
       "monthsSaved": "[XX-{count, plural, one {# month} other {# months}}-XX]",
       "paymentsSaved": "[XX-{count, plural, one {# payment} other {# payments}}-XX]",

@@ -416,6 +416,8 @@
     },
     "comparison": {
       "newPayoff": "नई चुकौती तिथि",
+      "title": "सिमुलेशन परिणाम",
+      "placeholder": "इसका असर यहाँ देखने के लिए ऊपर एक अतिरिक्त भुगतान भरें।",
       "timeSaved": "बचा हुआ समय",
       "monthsSaved": "{count, plural, one {# महीना} other {# महीने}}",
       "paymentsSaved": "{count, plural, one {# किस्त} other {# किस्तें}}",

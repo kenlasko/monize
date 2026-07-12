@@ -416,6 +416,8 @@
     },
     "comparison": {
       "newPayoff": "Нова дата погашення",
+      "title": "Результати симуляції",
+      "placeholder": "Вкажіть додатковий платіж вище, щоб побачити його вплив тут.",
       "timeSaved": "Заощаджений час",
       "monthsSaved": "{count, plural, one {# місяць} few {# місяці} many {# місяців} other {# місяця}}",
       "paymentsSaved": "{count, plural, one {# платіж} few {# платежі} many {# платежів} other {# платежу}}",

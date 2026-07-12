@@ -48,6 +48,8 @@ interface OverpaymentSimulatorProps {
   loadedPlanVersion?: number;
   /** Extra header content (e.g. a save-scenario button) */
   headerActions?: React.ReactNode;
+  /** Content rendered at the bottom of the card (e.g. saved scenarios) */
+  footer?: React.ReactNode;
 }
 
 function planToForm(plan: OverpaymentPlan | null): SimulatorFormState {
@@ -104,6 +106,7 @@ export function OverpaymentSimulator({
   loadedPlan = null,
   loadedPlanVersion = 0,
   headerActions,
+  footer,
 }: OverpaymentSimulatorProps) {
   const t = useTranslations('accounts');
   const { formatCurrency } = useNumberFormat();
@@ -320,6 +323,8 @@ export function OverpaymentSimulator({
           </div>
         )}
       </div>
+
+      {footer}
     </div>
   );
 }

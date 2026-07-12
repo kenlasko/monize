@@ -416,6 +416,8 @@
     },
     "comparison": {
       "newPayoff": "新的还清日期",
+      "title": "模拟结果",
+      "placeholder": "在上方填写额外还款即可在此查看其影响。",
       "timeSaved": "节省的时间",
       "monthsSaved": "{count, plural, one {# 个月} other {# 个月}}",
       "paymentsSaved": "{count, plural, one {# 期} other {# 期}}",

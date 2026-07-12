@@ -416,6 +416,8 @@
     },
     "comparison": {
       "newPayoff": "Nouvelle date de remboursement",
+      "title": "Résultats de la simulation",
+      "placeholder": "Renseignez un remboursement anticipé ci-dessus pour voir son impact ici.",
       "timeSaved": "Temps économisé",
       "monthsSaved": "{count, plural, one {# mois} other {# mois}}",
       "paymentsSaved": "{count, plural, one {# versement} other {# versements}}",

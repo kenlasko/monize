@@ -3,6 +3,7 @@ import { render, screen, act } from '@/test/render';
 import { LoanDetailView } from './LoanDetailView';
 import { Account } from '@/types/account';
 import { Transaction } from '@/types/transaction';
+import type { ReactNode } from 'react';
 import type { OverpaymentPlan } from '@/lib/loan-schedule';
 
 // Mock the presentational children so this test focuses on LoanDetailView's
@@ -32,9 +33,13 @@ vi.mock('./SavedScenariosPanel', () => ({
 
 let capturedOnPlanChange: ((plan: OverpaymentPlan | null) => void) | undefined;
 vi.mock('./OverpaymentSimulator', () => ({
-  OverpaymentSimulator: (props: { onPlanChange: (p: OverpaymentPlan | null) => void }) => {
+  OverpaymentSimulator: (props: {
+    onPlanChange: (p: OverpaymentPlan | null) => void;
+    footer?: ReactNode;
+  }) => {
     capturedOnPlanChange = props.onPlanChange;
-    return <div data-testid="simulator" />;
+    // The saved-scenarios panel is now rendered inside the simulator's footer.
+    return <div data-testid="simulator">{props.footer}</div>;
   },
 }));
 

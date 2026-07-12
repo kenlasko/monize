@@ -416,6 +416,8 @@
     },
     "comparison": {
       "newPayoff": "Nuova data di estinzione",
+      "title": "Risultati della simulazione",
+      "placeholder": "Inserisci un rimborso anticipato sopra per vederne l'impatto qui.",
       "timeSaved": "Tempo risparmiato",
       "monthsSaved": "{count, plural, one {# mese} other {# mesi}}",
       "paymentsSaved": "{count, plural, one {# rata} other {# rate}}",

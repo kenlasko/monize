@@ -416,6 +416,8 @@
     },
     "comparison": {
       "newPayoff": "Tanggal Lunas Baru",
+      "title": "Hasil Simulasi",
+      "placeholder": "Isi pembayaran ekstra di atas untuk melihat dampaknya di sini.",
       "timeSaved": "Waktu yang Dihemat",
       "monthsSaved": "{count, plural, one {# bulan} other {# bulan}}",
       "paymentsSaved": "{count, plural, one {# angsuran} other {# angsuran}}",

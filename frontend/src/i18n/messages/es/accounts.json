@@ -416,6 +416,8 @@
     },
     "comparison": {
       "newPayoff": "Nueva fecha de liquidación",
+      "title": "Resultados de la simulación",
+      "placeholder": "Introduce una amortización anticipada arriba para ver su impacto aquí.",
       "timeSaved": "Tiempo ahorrado",
       "monthsSaved": "{count, plural, one {# mes} other {# meses}}",
       "paymentsSaved": "{count, plural, one {# pago} other {# pagos}}",

@@ -416,6 +416,8 @@
     },
     "comparison": {
       "newPayoff": "Новая дата погашения",
+      "title": "Результаты моделирования",
+      "placeholder": "Укажите досрочный платёж выше, чтобы увидеть его эффект здесь.",
       "timeSaved": "Сэкономленное время",
       "monthsSaved": "{count, plural, one {# месяц} few {# месяца} many {# месяцев} other {# месяца}}",
       "paymentsSaved": "{count, plural, one {# платёж} few {# платежа} many {# платежей} other {# платежа}}",

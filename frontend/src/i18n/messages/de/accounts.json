@@ -416,6 +416,8 @@
     },
     "comparison": {
       "newPayoff": "Neues Tilgungsdatum",
+      "title": "Simulationsergebnis",
+      "placeholder": "Geben Sie oben eine Sondertilgung ein, um die Auswirkung hier zu sehen.",
       "timeSaved": "Gesparte Zeit",
       "monthsSaved": "{count, plural, one {# Monat} other {# Monate}}",
       "paymentsSaved": "{count, plural, one {# Zahlung} other {# Zahlungen}}",
