@@ -3,6 +3,7 @@ import { render, screen, fireEvent, act } from '@/test/render';
 import toast from 'react-hot-toast';
 import { SavedScenariosPanel } from './SavedScenariosPanel';
 import { LoanScenario } from '@/types/loan-scenario';
+import type { ScenarioComparison } from '@/lib/loan-schedule';
 
 const mockCreate = vi.fn();
 const mockUpdate = vi.fn();
@@ -50,6 +51,8 @@ function renderPanel(overrides: Partial<React.ComponentProps<typeof SavedScenari
   const props = {
     accountId: 'account-1',
     scenarios: [makeScenario()],
+    comparisons: new Map<string, ScenarioComparison | null>(),
+    currencyCode: 'CAD',
     activePlan: { recurringExtra: { amount: 100 } },
     onLoad: vi.fn(),
     onScenariosChanged: vi.fn(),
@@ -70,6 +73,20 @@ describe('SavedScenariosPanel', () => {
     expect(screen.getByText('Saved Scenarios')).toBeInTheDocument();
     expect(screen.getByText('Extra 200')).toBeInTheDocument();
     expect(screen.getByText('$200.00 extra per payment + 1 lump sum')).toBeInTheDocument();
+  });
+
+  it('shows each scenario outcome as a comparison row', () => {
+    const comparison = {
+      scenario: { payoffDate: '2040-06-15', finalPaymentAmount: 500 },
+      paymentsSaved: 24,
+      monthsSaved: 24,
+      interestSaved: 15000,
+      installmentReduction: 0,
+    } as unknown as ScenarioComparison;
+    renderPanel({ comparisons: new Map([['scenario-1', comparison]]) });
+
+    expect(screen.getByText('24 months')).toBeInTheDocument();
+    expect(screen.getByText('$15000.00')).toBeInTheDocument();
   });
 
   it('shows an empty state without scenarios', () => {

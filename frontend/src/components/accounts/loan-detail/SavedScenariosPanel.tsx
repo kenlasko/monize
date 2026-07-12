@@ -7,15 +7,20 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { OverpaymentPlan } from '@/lib/loan-schedule';
+import { OverpaymentPlan, ScenarioComparison } from '@/lib/loan-schedule';
 import { loanScenariosApi, planToScenarioData, scenarioToPlan } from '@/lib/loan-scenarios';
 import { LoanScenario } from '@/types/loan-scenario';
 import { getErrorMessage } from '@/lib/errors';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 
 interface SavedScenariosPanelProps {
   accountId: string;
   scenarios: LoanScenario[];
+  /** Each scenario's outcome vs the baseline, keyed by scenario id, so the
+   *  list shows a comparison table. Null for a scenario that can't project. */
+  comparisons: Map<string, ScenarioComparison | null>;
+  currencyCode: string;
   /** The simulator's current plan; enables saving when non-null */
   activePlan: OverpaymentPlan | null;
   onLoad: (plan: OverpaymentPlan | null, scenario: LoanScenario) => void;
@@ -29,12 +34,15 @@ interface SavedScenariosPanelProps {
 export function SavedScenariosPanel({
   accountId,
   scenarios,
+  comparisons,
+  currencyCode,
   activePlan,
   onLoad,
   onScenariosChanged,
 }: SavedScenariosPanelProps) {
   const t = useTranslations('accounts');
   const { formatCurrency } = useNumberFormat();
+  const formatChartDate = useChartDateFormat();
 
   const [nameModal, setNameModal] = useState<
     | { mode: 'save' }
@@ -106,6 +114,33 @@ export function SavedScenariosPanel({
     return parts.join(' + ') || t('loanDetail.scenarios.emptyScenario');
   };
 
+  const payoffLabel = (comparison: ScenarioComparison | null) =>
+    comparison
+      ? comparison.scenario.payoffDate
+        ? formatChartDate(comparison.scenario.payoffDate, 'MMM yyyy')
+        : t('loanDetail.comparison.beyondProjection')
+      : '—';
+
+  const timeSavedLabel = (comparison: ScenarioComparison | null) => {
+    if (!comparison) return '—';
+    if (comparison.installmentReduction > 0.005) {
+      return t('loanDetail.comparison.installmentDrop', {
+        payment: formatCurrency(comparison.scenario.finalPaymentAmount, currencyCode),
+        reduction: formatCurrency(comparison.installmentReduction, currencyCode),
+      });
+    }
+    return comparison.monthsSaved > 0
+      ? t('loanDetail.comparison.monthsSaved', { count: comparison.monthsSaved })
+      : t('loanDetail.comparison.paymentsSaved', {
+          count: Math.max(comparison.paymentsSaved, 0),
+        });
+  };
+
+  const interestSavedLabel = (comparison: ScenarioComparison | null) =>
+    comparison ? formatCurrency(Math.max(0, comparison.interestSaved), currencyCode) : '—';
+
+  const headerCell = 'px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400';
+
   return (
     <div className="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
@@ -122,39 +157,72 @@ export function SavedScenariosPanel({
           {t('loanDetail.scenarios.empty')}
         </p>
       ) : (
-        <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-          {scenarios.map((scenario) => (
-            <li key={scenario.id} className="py-2 flex flex-wrap items-center justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                  {scenario.name}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {describeScenario(scenario)}
-                </p>
-              </div>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onLoad(scenarioToPlan(scenario), scenario)}
-                >
-                  {t('loanDetail.scenarios.load')}
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => openRename(scenario)}>
-                  {t('loanDetail.scenarios.rename')}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setScenarioToDelete(scenario)}
-                >
-                  {t('loanDetail.scenarios.delete')}
-                </Button>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left">
+                <th className={headerCell}>{t('loanDetail.scenarios.nameLabel')}</th>
+                <th className={`${headerCell} text-right`}>
+                  {t('loanDetail.comparison.newPayoff')}
+                </th>
+                <th className={`${headerCell} text-right`}>
+                  {t('loanDetail.comparison.timeSaved')}
+                </th>
+                <th className={`${headerCell} text-right`}>
+                  {t('loanDetail.comparison.interestSaved')}
+                </th>
+                <th className={headerCell} />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              {scenarios.map((scenario) => {
+                const comparison = comparisons.get(scenario.id) ?? null;
+                return (
+                  <tr key={scenario.id}>
+                    <td className="px-3 py-2 align-top">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {scenario.name}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {describeScenario(scenario)}
+                      </p>
+                    </td>
+                    <td className="px-3 py-2 text-right whitespace-nowrap text-purple-600 dark:text-purple-400">
+                      {payoffLabel(comparison)}
+                    </td>
+                    <td className="px-3 py-2 text-right whitespace-nowrap text-green-600 dark:text-green-400">
+                      {timeSavedLabel(comparison)}
+                    </td>
+                    <td className="px-3 py-2 text-right whitespace-nowrap text-green-600 dark:text-green-400">
+                      {interestSavedLabel(comparison)}
+                    </td>
+                    <td className="px-3 py-2 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onLoad(scenarioToPlan(scenario), scenario)}
+                        >
+                          {t('loanDetail.scenarios.load')}
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => openRename(scenario)}>
+                          {t('loanDetail.scenarios.rename')}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setScenarioToDelete(scenario)}
+                        >
+                          {t('loanDetail.scenarios.delete')}
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
 
       <Modal isOpen={nameModal !== null} onClose={() => setNameModal(null)} maxWidth="sm">

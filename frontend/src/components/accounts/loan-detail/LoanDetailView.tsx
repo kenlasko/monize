@@ -16,6 +16,7 @@ import { computePastImpact } from '@/lib/loan-past-impact';
 import {
   OverpaymentMode,
   OverpaymentPlan,
+  ScenarioComparison,
   ScheduleFrequency,
   advanceDate,
   buildRateTimeline,
@@ -24,6 +25,7 @@ import {
   getPeriodicRate,
   getPeriodsPerYear,
 } from '@/lib/loan-schedule';
+import { scenarioToPlan } from '@/lib/loan-scenarios';
 import type { Account } from '@/types/account';
 import type { Transaction } from '@/types/transaction';
 import type { LoanScenario } from '@/types/loan-scenario';
@@ -161,6 +163,23 @@ export function LoanDetailView({
     [baseline, scenario],
   );
 
+  // Each saved scenario's outcome vs the baseline, so the list can show a
+  // comparison table without loading each one. Uses the current mode, matching
+  // what the simulator shows when a scenario is loaded.
+  const scenarioComparisons = useMemo(() => {
+    const map = new Map<string, ScenarioComparison | null>();
+    if (!projectionInput || !baseline) return map;
+    for (const saved of scenarios) {
+      const scenarioSchedule = generateLoanSchedule({
+        ...projectionInput,
+        overpayments: scenarioToPlan(saved) ?? undefined,
+        overpaymentMode: mode,
+      });
+      map.set(saved.id, compareSchedules(baseline, scenarioSchedule));
+    }
+    return map;
+  }, [scenarios, projectionInput, baseline, mode]);
+
   // Past impact of overpayments. It reuses the baseline (no-overpayment)
   // projection as the current projection -- computed once here, not twice --
   // and its original contractual schedule also feeds the payoff chart's
@@ -206,6 +225,8 @@ export function LoanDetailView({
               <SavedScenariosPanel
                 accountId={account.id}
                 scenarios={scenarios}
+                comparisons={scenarioComparisons}
+                currencyCode={account.currencyCode}
                 activePlan={plan}
                 onLoad={handleLoadScenario}
                 onScenariosChanged={onScenariosChanged}
