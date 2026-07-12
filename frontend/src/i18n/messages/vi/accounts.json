@@ -431,6 +431,7 @@
       "seriesHistorical": "Số dư thực tế",
       "seriesBaseline": "Dự báo hiện tại",
       "seriesScenario": "Có trả trước hạn",
+      "seriesOriginal": "Lịch ban đầu",
       "today": "Hôm nay",
       "scenarioNote": "Kịch bản trả trước hạn chỉ là mô phỏng và không thay đổi các khoản trả đã lên lịch của bạn."
     },

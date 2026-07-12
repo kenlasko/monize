@@ -431,6 +431,7 @@
       "seriesHistorical": "실제 잔액",
       "seriesBaseline": "현재 예측",
       "seriesScenario": "조기 상환 시",
+      "seriesOriginal": "최초 일정",
       "today": "오늘",
       "scenarioNote": "조기 상환 시나리오는 시뮬레이션이며 예정된 납부를 변경하지 않습니다."
     },

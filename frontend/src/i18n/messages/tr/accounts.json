@@ -431,6 +431,7 @@
       "seriesHistorical": "Gerçek Bakiye",
       "seriesBaseline": "Mevcut Öngörü",
       "seriesScenario": "Erken Ödemelerle",
+      "seriesOriginal": "Orijinal Plan",
       "today": "Bugün",
       "scenarioNote": "Erken ödeme senaryosu bir simülasyondur ve planlanan ödemelerinizi değiştirmez."
     },

@@ -1,30 +1,14 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@/test/render';
 import { PastImpactSection } from './PastImpactSection';
+import { computePastImpact } from '@/lib/loan-past-impact';
 import { deriveLoanPaymentHistory } from '@/lib/loan-history';
 import { Account } from '@/types/account';
 import { Transaction } from '@/types/transaction';
 
-vi.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="responsive-container">{children}</div>
-  ),
-  AreaChart: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="area-chart">{children}</div>
-  ),
-  Area: ({ name }: { name?: string }) => <div data-testid="area">{name}</div>,
-  XAxis: () => null,
-  YAxis: () => null,
-  CartesianGrid: () => null,
-  Tooltip: () => null,
-  Legend: () => null,
-}));
-
 vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({
     formatCurrency: (amount: number) => `$${amount.toFixed(2)}`,
-    formatCurrencyCompact: (amount: number) => `$${amount.toFixed(0)}`,
-    formatCurrencyAxis: (amount: number) => `$${amount}`,
   }),
 }));
 
@@ -66,14 +50,10 @@ function makeHistory(account: Account) {
 }
 
 describe('PastImpactSection', () => {
-  it('shows extra principal paid plus months and interest saved and the series', () => {
+  it('shows extra principal paid plus months and interest saved', () => {
     const account = makeAccount();
-    render(
-      <PastImpactSection
-        account={account}
-        history={makeHistory(account)}
-      />,
-    );
+    const impact = computePastImpact(account, makeHistory(account));
+    render(<PastImpactSection account={account} impact={impact} />);
 
     expect(screen.getByText('Impact of Overpayments Made')).toBeInTheDocument();
     expect(screen.getByText('Extra Principal Paid')).toBeInTheDocument();
@@ -84,19 +64,12 @@ describe('PastImpactSection', () => {
     expect(screen.getByText(/\d+ months?/)).toBeInTheDocument();
     expect(screen.getByText('Interest Already Saved')).toBeInTheDocument();
     expect(screen.getByText(/Originally .+, now .+/)).toBeInTheDocument();
-    expect(screen.getByText('Original Schedule')).toBeInTheDocument();
-    expect(screen.getByText('Actual Balance')).toBeInTheDocument();
-    expect(screen.getByText('Current Projection')).toBeInTheDocument();
   });
 
   it('still renders when only the opening balance is set (no originalPrincipal)', () => {
     const account = makeAccount({ originalPrincipal: null });
-    render(
-      <PastImpactSection
-        account={account}
-        history={makeHistory(account)}
-      />,
-    );
+    const impact = computePastImpact(account, makeHistory(account));
+    render(<PastImpactSection account={account} impact={impact} />);
 
     // Falls back to the opening balance; the section renders rather than hinting
     expect(screen.getByText('Extra Principal Paid')).toBeInTheDocument();
@@ -105,18 +78,11 @@ describe('PastImpactSection', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('shows a data hint when the original schedule cannot be reconstructed', () => {
-    const account = makeAccount({ interestRate: null });
-    render(
-      <PastImpactSection
-        account={account}
-        history={makeHistory(account)}
-      />,
-    );
+  it('shows a data hint when the impact cannot be computed', () => {
+    render(<PastImpactSection account={makeAccount()} impact={null} />);
 
     expect(
       screen.getByText(/needs an interest rate, a payment frequency/),
     ).toBeInTheDocument();
-    expect(screen.queryByTestId('area-chart')).not.toBeInTheDocument();
   });
 });

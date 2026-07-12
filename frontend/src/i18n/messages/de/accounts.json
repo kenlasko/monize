@@ -431,6 +431,7 @@
       "seriesHistorical": "Tatsächlicher Saldo",
       "seriesBaseline": "Aktuelle Prognose",
       "seriesScenario": "Mit Sondertilgungen",
+      "seriesOriginal": "Ursprünglicher Plan",
       "today": "Heute",
       "scenarioNote": "Das Sondertilgungsszenario ist eine Simulation und ändert Ihre geplanten Zahlungen nicht."
     },

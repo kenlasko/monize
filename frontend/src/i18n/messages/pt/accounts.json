@@ -431,6 +431,7 @@
       "seriesHistorical": "Saldo real",
       "seriesBaseline": "Projeção atual",
       "seriesScenario": "Com amortizações antecipadas",
+      "seriesOriginal": "Plano original",
       "today": "Hoje",
       "scenarioNote": "O cenário de amortização antecipada é uma simulação e não altera os seus pagamentos agendados."
     },

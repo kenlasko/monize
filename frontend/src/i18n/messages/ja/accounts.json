@@ -431,6 +431,7 @@
       "seriesHistorical": "実際の残高",
       "seriesBaseline": "現在の予測",
       "seriesScenario": "繰上返済あり",
+      "seriesOriginal": "当初スケジュール",
       "today": "今日",
       "scenarioNote": "繰上返済シナリオはシミュレーションであり、予定されている返済を変更するものではありません。"
     },

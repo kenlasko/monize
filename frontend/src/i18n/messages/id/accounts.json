@@ -431,6 +431,7 @@
       "seriesHistorical": "Saldo Aktual",
       "seriesBaseline": "Proyeksi Saat Ini",
       "seriesScenario": "Dengan Pembayaran Tambahan",
+      "seriesOriginal": "Jadwal Awal",
       "today": "Hari ini",
       "scenarioNote": "Skenario pembayaran tambahan hanyalah simulasi dan tidak mengubah pembayaran terjadwal Anda."
     },

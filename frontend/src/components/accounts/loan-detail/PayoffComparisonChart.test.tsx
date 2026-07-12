@@ -133,6 +133,12 @@ describe('buildPayoffComparisonSeries', () => {
     expect(points[points.length - 1].monthKey).toBe(lastRow.date.slice(0, 7));
   });
 
+  it('adds the original contractual series from the fourth argument', () => {
+    const original = makeProjection();
+    const { points } = buildPayoffComparisonSeries(makeHistory(), null, null, original);
+    expect(points.some((p) => p.originalBalance !== undefined)).toBe(true);
+  });
+
   it('returns no projection start without projections', () => {
     const { projectionStartKey } = buildPayoffComparisonSeries(makeHistory(), null, null);
     expect(projectionStartKey).toBeNull();
@@ -154,6 +160,19 @@ describe('PayoffComparisonChart', () => {
     expect(screen.getByText('Current Projection')).toBeInTheDocument();
     expect(screen.queryByText('With Overpayments')).not.toBeInTheDocument();
     expect(screen.getByTestId('reference-line')).toHaveTextContent('Today');
+  });
+
+  it('renders the original contractual series when provided', () => {
+    render(
+      <PayoffComparisonChart
+        historyEvents={makeHistory()}
+        baseline={makeProjection()}
+        scenario={null}
+        original={makeProjection()}
+      />,
+    );
+
+    expect(screen.getByText('Original Schedule')).toBeInTheDocument();
   });
 
   it('adds the scenario series and note when a simulation is active', () => {

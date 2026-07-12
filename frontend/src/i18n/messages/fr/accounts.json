@@ -431,6 +431,7 @@
       "seriesHistorical": "Solde réel",
       "seriesBaseline": "Projection actuelle",
       "seriesScenario": "Avec remboursements anticipés",
+      "seriesOriginal": "Calendrier initial",
       "today": "Aujourd'hui",
       "scenarioNote": "Le scénario de remboursement anticipé est une simulation et ne modifie pas vos versements planifiés."
     },

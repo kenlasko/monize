@@ -431,6 +431,7 @@
       "seriesHistorical": "Rzeczywiste saldo",
       "seriesBaseline": "Bieżąca prognoza",
       "seriesScenario": "Z nadpłatami",
+      "seriesOriginal": "Pierwotny harmonogram",
       "today": "Dzisiaj",
       "scenarioNote": "Scenariusz nadpłat jest symulacją i nie zmienia zaplanowanych płatności."
     },

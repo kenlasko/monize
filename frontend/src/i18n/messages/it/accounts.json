@@ -431,6 +431,7 @@
       "seriesHistorical": "Saldo effettivo",
       "seriesBaseline": "Proiezione attuale",
       "seriesScenario": "Con rimborsi anticipati",
+      "seriesOriginal": "Piano originario",
       "today": "Oggi",
       "scenarioNote": "Lo scenario di rimborso anticipato è una simulazione e non modifica i tuoi pagamenti pianificati."
     },

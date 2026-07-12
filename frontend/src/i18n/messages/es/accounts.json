@@ -431,6 +431,7 @@
       "seriesHistorical": "Saldo real",
       "seriesBaseline": "Proyección actual",
       "seriesScenario": "Con pagos anticipados",
+      "seriesOriginal": "Calendario original",
       "today": "Hoy",
       "scenarioNote": "El escenario de pagos anticipados es una simulación y no cambia sus pagos programados."
     },

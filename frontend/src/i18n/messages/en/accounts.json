@@ -496,6 +496,7 @@
       "seriesHistorical": "Actual Balance",
       "seriesBaseline": "Current Projection",
       "seriesScenario": "With Overpayments",
+      "seriesOriginal": "Original Schedule",
       "today": "Today",
       "scenarioNote": "The overpayment scenario is a simulation and does not change your scheduled payments."
     },

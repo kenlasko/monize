@@ -431,6 +431,7 @@
       "seriesHistorical": "Saldo real",
       "seriesBaseline": "Projeção atual",
       "seriesScenario": "Com amortizações extras",
+      "seriesOriginal": "Tabela original",
       "today": "Hoje",
       "scenarioNote": "O cenário de amortização extra é uma simulação e não altera seus pagamentos agendados."
     },

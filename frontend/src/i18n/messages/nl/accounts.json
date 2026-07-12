@@ -431,6 +431,7 @@
       "seriesHistorical": "Werkelijk saldo",
       "seriesBaseline": "Huidige projectie",
       "seriesScenario": "Met extra aflossingen",
+      "seriesOriginal": "Oorspronkelijk schema",
       "today": "Vandaag",
       "scenarioNote": "Het scenario met extra aflossingen is een simulatie en wijzigt uw geplande betalingen niet."
     },

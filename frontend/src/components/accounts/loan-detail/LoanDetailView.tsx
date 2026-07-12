@@ -11,6 +11,7 @@ import { SavedScenariosPanel } from '@/components/accounts/loan-detail/SavedScen
 import { PastImpactSection } from '@/components/accounts/loan-detail/PastImpactSection';
 import { useLoanRateEditing } from '@/components/accounts/loan-detail/useLoanRateEditing';
 import { deriveCurrentInstallment, deriveLoanPaymentHistory } from '@/lib/loan-history';
+import { computePastImpact } from '@/lib/loan-past-impact';
 import {
   OverpaymentMode,
   OverpaymentPlan,
@@ -158,6 +159,13 @@ export function LoanDetailView({
     [baseline, scenario],
   );
 
+  // Past impact of overpayments; its original contractual schedule also feeds
+  // the payoff chart's contractual curve, so the two views stay consistent.
+  const impact = useMemo(
+    () => computePastImpact(account, history, undefined, rateChanges),
+    [account, history, rateChanges],
+  );
+
   return (
     <div className="space-y-6">
       <LoanSummaryCards
@@ -197,13 +205,10 @@ export function LoanDetailView({
         historyEvents={history.events}
         baseline={baseline}
         scenario={scenario}
+        original={impact?.originalSchedule ?? null}
       />
 
-      <PastImpactSection
-        account={account}
-        history={history}
-        rateChanges={rateChanges}
-      />
+      <PastImpactSection account={account} impact={impact} />
 
       <AmortizationScheduleTable
         historyEvents={history.events}

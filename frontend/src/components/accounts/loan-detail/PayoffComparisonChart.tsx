@@ -27,23 +27,29 @@ export interface PayoffChartPoint {
   historicalBalance?: number;
   baselineBalance?: number;
   scenarioBalance?: number;
+  /** Original contractual balance (the "if I never overpaid" curve) */
+  originalBalance?: number;
 }
 
 /**
- * Merge history and the two projections into one monthly series. Each series
- * contributes its last balance per month; the projections are stitched to the
- * final historical point so the areas connect at "today".
+ * Merge history and the projections into one monthly series. Each series
+ * contributes its last balance per month; the forward projections (baseline,
+ * scenario) are stitched to the final historical point so the areas connect at
+ * "today". The original contractual curve spans origination to payoff and is
+ * left continuous (not stitched), since it overlaps the historical period to
+ * show what the balance would have been without any overpayments.
  */
 export function buildPayoffComparisonSeries(
   historyEvents: LoanPaymentEvent[],
   baseline: LoanScheduleResult | null,
   scenario: LoanScheduleResult | null,
+  original: LoanScheduleResult | null = null,
 ): { points: PayoffChartPoint[]; projectionStartKey: string | null } {
   const byMonth = new Map<string, PayoffChartPoint>();
 
   const setValue = (
     date: string,
-    field: 'historicalBalance' | 'baselineBalance' | 'scenarioBalance',
+    field: 'historicalBalance' | 'baselineBalance' | 'scenarioBalance' | 'originalBalance',
     balance: number,
   ) => {
     const monthKey = date.slice(0, 7);
@@ -55,6 +61,9 @@ export function buildPayoffComparisonSeries(
     }
   };
 
+  for (const row of original?.rows ?? []) {
+    setValue(row.date, 'originalBalance', row.balance);
+  }
   for (const event of historyEvents) {
     setValue(event.date, 'historicalBalance', event.balance);
   }
@@ -116,24 +125,30 @@ interface PayoffComparisonChartProps {
   baseline: LoanScheduleResult | null;
   /** Scenario projection; omitted when no overpayments are active */
   scenario: LoanScheduleResult | null;
+  /** Original contractual schedule ("if I never overpaid"); omitted when unknown */
+  original?: LoanScheduleResult | null;
 }
 
 /**
- * Payoff curves for the loan detail page: historical balance, the baseline
- * projection, and (when a simulation is active) the overpayment scenario.
+ * Payoff curves for the loan detail page: the original contractual balance,
+ * the actual historical balance, the current projection, and (when a
+ * simulation is active) the overpayment scenario -- one chart, so the past
+ * impact (actual vs contractual) and the future impact (projection vs
+ * scenario) read off the same axes.
  */
 export function PayoffComparisonChart({
   historyEvents,
   baseline,
   scenario,
+  original = null,
 }: PayoffComparisonChartProps) {
   const t = useTranslations('accounts');
   const formatChartDate = useChartDateFormat();
   const { formatCurrencyCompact, formatCurrencyAxis } = useNumberFormat();
 
   const { points, projectionStartKey } = useMemo(
-    () => buildPayoffComparisonSeries(historyEvents, baseline, scenario),
-    [historyEvents, baseline, scenario],
+    () => buildPayoffComparisonSeries(historyEvents, baseline, scenario, original),
+    [historyEvents, baseline, scenario, original],
   );
 
   const chartData = useMemo(
@@ -176,6 +191,19 @@ export function PayoffComparisonChart({
               }
             />
             <Legend />
+            {original && (
+              <Area
+                type="monotone"
+                dataKey="originalBalance"
+                stroke={chartColors.axis}
+                fill={chartColors.axis}
+                fillOpacity={0.08}
+                strokeWidth={2}
+                strokeDasharray="2 4"
+                name={t('loanDetail.chart.seriesOriginal')}
+                connectNulls
+              />
+            )}
             <Area
               type="monotone"
               dataKey="historicalBalance"

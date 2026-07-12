@@ -431,6 +431,7 @@
       "seriesHistorical": "实际余额",
       "seriesBaseline": "当前预测",
       "seriesScenario": "含提前还款",
+      "seriesOriginal": "原始计划",
       "today": "今天",
       "scenarioNote": "提前还款方案只是模拟，不会改变您的计划还款。"
     },
