@@ -716,4 +716,36 @@ describe('deriveLoanPaymentHistory with paired separate interest expenses', () =
     expect(events[2].annualRate).toBeGreaterThan(3);
     expect(events[2].annualRate).toBeLessThan(8);
   });
+
+  it('shows no rate on an overpayment even when it carries interest', () => {
+    const account = makeAccount({
+      accountType: 'MORTGAGE',
+      openingBalance: -200000,
+      currentBalance: -194500,
+      interestRate: 6,
+      overpaymentCategoryId: 'cat-over',
+    });
+    const balanceBeforeSecondRegular = 200000 - 250 - 5000;
+    const secondInterest = (balanceBeforeSecondRegular * 0.06 * 16) / 365;
+    const transactions = [
+      makeTransaction({ transactionDate: '2024-01-05', amount: 250 }),
+      makeTransaction({ transactionDate: '2024-01-20', amount: 5000, categoryId: 'cat-over' }),
+      makeTransaction({ transactionDate: '2024-02-05', amount: 250 }),
+    ];
+    const interestTransactions = [
+      { transactionDate: '2024-01-05', amount: -1000, isTransfer: false } as Transaction,
+      { transactionDate: '2024-01-20', amount: -400, isTransfer: false } as Transaction,
+      { transactionDate: '2024-02-05', amount: -secondInterest, isTransfer: false } as Transaction,
+    ];
+
+    const { events } = deriveLoanPaymentHistory(account, transactions, [], interestTransactions);
+
+    // The overpayment has interest but shows no rate...
+    expect(events[1].type).toBe('OVERPAYMENT');
+    expect(events[1].interest).toBeGreaterThan(0);
+    expect(events[1].annualRate).toBeNull();
+    // ...yet it settled interest, so the next installment measures from it (16
+    // days) and reads ~6%, not a full month.
+    expect(events[2].annualRate).toBeCloseTo(6, 0);
+  });
 });

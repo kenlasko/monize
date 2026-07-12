@@ -629,8 +629,12 @@ function assignObservedRates(events: LoanPaymentEvent[], periodsPerYear: number)
     // month of interest across the whole gap. Shorter gaps (an overpayment that
     // settled interest mid-cycle) keep their actual span.
     const days = gap > periodDays * 1.5 ? periodDays : gap;
+    // Only a scheduled installment carries a meaningful rate. An overpayment is
+    // an ad-hoc extra payment whose attached interest spans an odd partial
+    // period, so it shows no rate -- but its interest still settles the accrual
+    // clock for the following installment.
     event.annualRate =
-      event.interest > 0 && balanceBefore > 0 && days > 0
+      event.type === 'REGULAR' && event.interest > 0 && balanceBefore > 0 && days > 0
         ? (event.interest / balanceBefore) * (365 / days) * 100
         : null;
     if (event.interest > 0) lastInterestDateKey = dateKey;
