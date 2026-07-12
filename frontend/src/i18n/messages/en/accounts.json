@@ -383,6 +383,8 @@
       "colBalance": "Balance",
       "projectedFuturePayments": "Projected Future Payments",
       "total": "Total",
+      "monthEntries": "{count, plural, one {# entry} other {# entries}}",
+      "toggleMonth": "Show or hide the payments made in {month}",
       "rateChangeBadge": "{from}% → {to}%",
       "overpaymentBadge": "Overpayment",
       "editRateLabel": "Edit interest rate for {date}",

@@ -6,10 +6,10 @@ import { LoanPaymentEvent } from '@/lib/loan-history';
 import { ScheduleRow } from '@/lib/loan-schedule';
 import { LoanRateChange } from '@/types/loan-rate-change';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-import { useDateFormat } from '@/hooks/useDateFormat';
-import { RateCell } from './RateCell';
+import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { LoanRateControls } from './LoanRateControls';
 import { LoanRateEditing } from './useLoanRateEditing';
+import { ScheduleTableRow, DisplayRow } from './ScheduleTableRow';
 
 const COLLAPSED_PAST_ROWS = 5;
 const COLLAPSED_FUTURE_ROWS = 5;
@@ -24,32 +24,25 @@ interface AmortizationScheduleTableProps {
   editing?: LoanRateEditing;
 }
 
-interface DisplayRow {
-  paymentNumber: number;
-  date: string;
-  payment: number;
-  principal: number;
-  interest: number;
-  extraPrincipal: number;
-  balance: number;
-  isProjected: boolean;
-  /** Annual rate (percentage) in effect on this row's date, when known */
-  annualRate: number | null;
-  /** The rate-change effective exactly on this date, if any (a change point) */
-  change?: LoanRateChange;
-  /** Historical row tagged as a standalone overpayment (100% principal) */
-  isOverpayment?: boolean;
-  /** Set on the first projected row of a new rate segment */
-  rateChange?: { from: number; to: number };
-}
+/** A month with a single entry renders as one row; a month with several
+ *  (e.g. a regular installment plus an overpayment) collapses into an
+ *  aggregate row that expands to its per-date detail. Projected rows are
+ *  always single (one per period). */
+type ScheduleUnit =
+  | { kind: 'single'; row: DisplayRow }
+  | { kind: 'group'; monthKey: string; aggregate: DisplayRow; children: DisplayRow[] };
+
+const sumField = (rows: DisplayRow[], field: keyof DisplayRow): number =>
+  rows.reduce((acc, row) => acc + Math.round(Number(row[field]) * 10000), 0) / 10000;
 
 /**
  * Loan Schedule for the loan detail page: historical payments followed by the
- * projected rows, with a separator at the transition. Shows an extra-principal
- * column whenever the projection contains overpayments, and a per-row interest
- * rate. When `editing` is supplied the rate is inline-editable (each edit
- * upserts a rate change on that date) and the rate controls (detect / add /
- * per-change edit + delete) are shown.
+ * projected rows, with a separator at the transition. Months with more than one
+ * entry collapse into an aggregate row that expands to its per-date detail. A
+ * totals row sums each money column across the whole loan. Shows an
+ * extra-principal column whenever there are overpayments, and a per-row
+ * interest rate (observed from the interest charged on historical rows,
+ * inline-editable on projected rows when `editing` is supplied).
  */
 export function AmortizationScheduleTable({
   historyEvents,
@@ -60,8 +53,17 @@ export function AmortizationScheduleTable({
 }: AmortizationScheduleTableProps) {
   const t = useTranslations('accounts');
   const { formatCurrency } = useNumberFormat();
-  const { formatDate } = useDateFormat();
+  const formatMonthLabel = useChartDateFormat();
   const [showAllRows, setShowAllRows] = useState(false);
+  const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
+
+  const toggleMonth = (monthKey: string) =>
+    setExpandedMonths((prev) => {
+      const next = new Set(prev);
+      if (next.has(monthKey)) next.delete(monthKey);
+      else next.add(monthKey);
+      return next;
+    });
 
   const changeByDate = useMemo(
     () => new Map(rateChanges.map((change) => [change.effectiveDate, change])),
@@ -109,6 +111,51 @@ export function AmortizationScheduleTable({
     return [...historical, ...projected];
   }, [historyEvents, projectionRows, changeByDate]);
 
+  // Collapse each historical month with more than one entry into an aggregate
+  // row (expandable to its detail); every projected row stays on its own.
+  const units = useMemo((): ScheduleUnit[] => {
+    const byMonth = new Map<string, DisplayRow[]>();
+    const projectedUnits: ScheduleUnit[] = [];
+    for (const row of rows) {
+      if (row.isProjected) {
+        projectedUnits.push({ kind: 'single', row });
+        continue;
+      }
+      const monthKey = row.date.slice(0, 7);
+      const existing = byMonth.get(monthKey);
+      if (existing) existing.push(row);
+      else byMonth.set(monthKey, [row]);
+    }
+    const historicalUnits: ScheduleUnit[] = [];
+    for (const [monthKey, monthRows] of byMonth) {
+      if (monthRows.length === 1) {
+        historicalUnits.push({ kind: 'single', row: monthRows[0] });
+        continue;
+      }
+      const last = monthRows[monthRows.length - 1];
+      // The month's rate is the regular installment's observed rate, not the
+      // blended figure an overpayment's interest would produce.
+      const regular = monthRows.find((r) => !r.isOverpayment && r.annualRate != null);
+      historicalUnits.push({
+        kind: 'group',
+        monthKey,
+        children: monthRows,
+        aggregate: {
+          paymentNumber: monthRows[0].paymentNumber,
+          date: `${monthKey}-01`,
+          payment: sumField(monthRows, 'payment'),
+          principal: sumField(monthRows, 'principal'),
+          interest: sumField(monthRows, 'interest'),
+          extraPrincipal: sumField(monthRows, 'extraPrincipal'),
+          balance: last.balance,
+          isProjected: false,
+          annualRate: regular?.annualRate ?? null,
+        },
+      });
+    }
+    return [...historicalUnits, ...projectedUnits];
+  }, [rows]);
+
   const showExtraColumn = useMemo(
     () =>
       historyEvents.some((event) => event.type === 'OVERPAYMENT') ||
@@ -116,43 +163,37 @@ export function AmortizationScheduleTable({
     [historyEvents, projectionRows],
   );
 
-  // Collapsed by default around "today": the last few paid rows and the first
-  // few projected rows, so upcoming installments are visible without expanding.
-  // When there is no projection yet, show the most recent rows instead of the
+  // Collapsed by default around "today": the last few months and the first few
+  // projected rows, so upcoming installments are visible without expanding.
+  // When there is no projection yet, show the most recent units instead of the
   // oldest. "Show all" expands to the full schedule.
-  const displayedRows = useMemo(() => {
-    if (showAllRows) return rows;
-    const firstProjected = rows.findIndex((row) => row.isProjected);
+  const displayedUnits = useMemo(() => {
+    if (showAllRows) return units;
+    const firstProjected = units.findIndex(
+      (unit) => unit.kind === 'single' && unit.row.isProjected,
+    );
     if (firstProjected === -1) {
-      return rows.slice(-(COLLAPSED_PAST_ROWS + COLLAPSED_FUTURE_ROWS));
+      return units.slice(-(COLLAPSED_PAST_ROWS + COLLAPSED_FUTURE_ROWS));
     }
     const start = Math.max(0, firstProjected - COLLAPSED_PAST_ROWS);
-    const end = Math.min(rows.length, firstProjected + COLLAPSED_FUTURE_ROWS);
-    return rows.slice(start, end);
-  }, [showAllRows, rows]);
-  const hasHiddenRows = displayedRows.length < rows.length;
+    const end = Math.min(units.length, firstProjected + COLLAPSED_FUTURE_ROWS);
+    return units.slice(start, end);
+  }, [showAllRows, units]);
+  const hasHiddenRows = displayedUnits.length < units.length;
   // Nr, Date, Payment, Principal, Interest, [Extra], Rate, Balance
   const columnCount = showExtraColumn ? 8 : 7;
 
   // Whole-loan column totals (every row, not just the visible window), summed
   // in integer ten-thousandths to avoid floating-point drift.
-  const totals = useMemo(() => {
-    const cents = rows.reduce(
-      (acc, row) => ({
-        payment: acc.payment + Math.round(row.payment * 10000),
-        principal: acc.principal + Math.round(row.principal * 10000),
-        interest: acc.interest + Math.round(row.interest * 10000),
-        extra: acc.extra + Math.round(row.extraPrincipal * 10000),
-      }),
-      { payment: 0, principal: 0, interest: 0, extra: 0 },
-    );
-    return {
-      payment: cents.payment / 10000,
-      principal: cents.principal / 10000,
-      interest: cents.interest / 10000,
-      extra: cents.extra / 10000,
-    };
-  }, [rows]);
+  const totals = useMemo(
+    () => ({
+      payment: sumField(rows, 'payment'),
+      principal: sumField(rows, 'principal'),
+      interest: sumField(rows, 'interest'),
+      extra: sumField(rows, 'extraPrincipal'),
+    }),
+    [rows],
+  );
 
   const headerClass =
     'px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider';
@@ -197,98 +238,61 @@ export function AmortizationScheduleTable({
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {displayedRows.map((row, idx) => {
-                  const prevRow = idx > 0 ? displayedRows[idx - 1] : null;
-                  const showSeparator = row.isProjected && prevRow && !prevRow.isProjected;
-                  return (
-                    <Fragment key={row.paymentNumber}>
-                      {showSeparator && (
-                        <tr className="bg-gray-100 dark:bg-gray-700">
-                          <td
-                            colSpan={columnCount}
-                            className="px-4 py-2 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-                          >
-                            {t('loanDetail.schedule.projectedFuturePayments')}
-                          </td>
-                        </tr>
-                      )}
-                      <tr
-                        className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
-                          row.isProjected ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
-                        }`}
+                {displayedUnits.map((unit, idx) => {
+                  const prev = idx > 0 ? displayedUnits[idx - 1] : null;
+                  const isProjectedUnit = unit.kind === 'single' && unit.row.isProjected;
+                  const prevProjected =
+                    prev !== null && prev.kind === 'single' && prev.row.isProjected;
+                  const separator = isProjectedUnit && prev !== null && !prevProjected && (
+                    <tr className="bg-gray-100 dark:bg-gray-700">
+                      <td
+                        colSpan={columnCount}
+                        className="px-4 py-2 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                       >
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                          {row.paymentNumber}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                          {formatDate(row.date)}
-                          {row.isProjected && (
-                            <span className="ml-1.5 text-xs text-blue-500 dark:text-blue-400">*</span>
-                          )}
-                          {row.isOverpayment && (
-                            <span className="ml-1.5 inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                              {t('loanDetail.schedule.overpaymentBadge')}
-                            </span>
-                          )}
-                          {row.change?.source === 'inferred' && (
-                            <span className="ml-1.5 inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
-                              {t('loanDetail.rateHistory.badgeInferred')}
-                            </span>
-                          )}
-                          {row.change?.source === 'initial' && (
-                            <span className="ml-1.5 inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-                              {t('loanDetail.rateHistory.badgeInitial')}
-                            </span>
-                          )}
-                          {editing && row.change && (
-                            <button
-                              type="button"
-                              onClick={() => editing.openEdit(row.change!)}
-                              className="ml-1.5 text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                            >
-                              {t('loanDetail.rateHistory.edit')}
-                            </button>
-                          )}
-                          {row.rateChange && (
-                            <span className="ml-1.5 inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
-                              {t('loanDetail.schedule.rateChangeBadge', {
-                                from: row.rateChange.from,
-                                to: row.rateChange.to,
-                              })}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-100">
-                          {formatCurrency(row.payment, currencyCode)}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-green-600 dark:text-green-400">
-                          {formatCurrency(row.principal, currencyCode)}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-orange-600 dark:text-orange-400">
-                          {formatCurrency(row.interest, currencyCode)}
-                        </td>
-                        {showExtraColumn && (
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-blue-600 dark:text-blue-400">
-                            {row.extraPrincipal > 0 ? formatCurrency(row.extraPrincipal, currencyCode) : '—'}
-                          </td>
-                        )}
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-right">
-                          <RateCell
-                            annualRate={row.annualRate}
-                            editable={!!editing && row.isProjected}
-                            saving={editing?.savingDate === row.date}
-                            onCommit={(rate) =>
-                              editing?.commitInlineRate(row.date, rate, row.change?.id)
-                            }
-                            editLabel={t('loanDetail.schedule.editRateLabel', {
-                              date: formatDate(row.date),
-                            })}
+                        {t('loanDetail.schedule.projectedFuturePayments')}
+                      </td>
+                    </tr>
+                  );
+
+                  if (unit.kind === 'single') {
+                    return (
+                      <Fragment key={`s-${unit.row.paymentNumber}`}>
+                        {separator}
+                        <ScheduleTableRow
+                          row={unit.row}
+                          currencyCode={currencyCode}
+                          showExtraColumn={showExtraColumn}
+                          editing={editing}
+                        />
+                      </Fragment>
+                    );
+                  }
+
+                  const expanded = expandedMonths.has(unit.monthKey);
+                  return (
+                    <Fragment key={`g-${unit.monthKey}`}>
+                      {separator}
+                      <ScheduleTableRow
+                        row={unit.aggregate}
+                        currencyCode={currencyCode}
+                        showExtraColumn={showExtraColumn}
+                        monthGroup={{
+                          label: formatMonthLabel(`${unit.monthKey}-01`, 'MMM yyyy'),
+                          expanded,
+                          count: unit.children.length,
+                          onToggle: () => toggleMonth(unit.monthKey),
+                        }}
+                      />
+                      {expanded &&
+                        unit.children.map((child, ci) => (
+                          <ScheduleTableRow
+                            key={`c-${unit.monthKey}-${ci}`}
+                            row={child}
+                            currencyCode={currencyCode}
+                            showExtraColumn={showExtraColumn}
+                            isChild
                           />
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-gray-900 dark:text-gray-100">
-                          {formatCurrency(row.balance, currencyCode)}
-                        </td>
-                      </tr>
+                        ))}
                     </Fragment>
                   );
                 })}

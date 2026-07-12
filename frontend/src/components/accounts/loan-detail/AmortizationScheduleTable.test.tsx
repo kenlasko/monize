@@ -176,6 +176,64 @@ describe('AmortizationScheduleTable', () => {
     expect(screen.getAllByText('$0.00').length).toBeGreaterThan(0);
   });
 
+  it('collapses a month with several entries and expands to per-date detail', () => {
+    // May 2026: a regular installment and an overpayment on different days.
+    const events: LoanPaymentEvent[] = [
+      {
+        date: '2026-05-05',
+        principal: 765,
+        interest: 154,
+        balance: 142000,
+        cumulativePrincipal: 765,
+        cumulativeInterest: 154,
+        type: 'REGULAR' as const,
+        interestRecorded: true,
+        annualRate: 5.5,
+      },
+      {
+        date: '2026-05-29',
+        principal: 2534,
+        interest: 536,
+        balance: 139466,
+        cumulativePrincipal: 3299,
+        cumulativeInterest: 690,
+        type: 'OVERPAYMENT' as const,
+        interestRecorded: false,
+        annualRate: null,
+      },
+    ];
+    render(
+      <AmortizationScheduleTable historyEvents={events} projectionRows={[]} currencyCode="CAD" />,
+    );
+
+    // Collapsed: the per-date rows are hidden; an aggregate month row shows the
+    // month total (payment 765 + 2534 interest-inclusive) and an entry count.
+    expect(screen.getByText('2 entries')).toBeInTheDocument();
+    expect(screen.queryByText('May 5, 2026')).not.toBeInTheDocument();
+    // Aggregate payment = 919 + 3070 = 3989 (also echoed in the totals row).
+    expect(screen.getAllByText('$3989.00').length).toBeGreaterThan(0);
+
+    // Expanding reveals the two dated detail rows.
+    fireEvent.click(screen.getByRole('button', { name: /Show or hide the payments/ }));
+    expect(screen.getByText('May 5, 2026')).toBeInTheDocument();
+    expect(screen.getByText('May 29, 2026')).toBeInTheDocument();
+  });
+
+  it('leaves a single-entry month as a plain row (no toggle)', () => {
+    render(
+      <AmortizationScheduleTable
+        historyEvents={makeHistoryEvents(2)}
+        projectionRows={[]}
+        currencyCode="CAD"
+      />,
+    );
+
+    // Two distinct months, one entry each: no aggregate toggle appears.
+    expect(screen.queryByRole('button', { name: /Show or hide the payments/ })).not.toBeInTheDocument();
+    expect(screen.getByText('Jan 15, 2025')).toBeInTheDocument();
+    expect(screen.getByText('Feb 15, 2025')).toBeInTheDocument();
+  });
+
   it('shows an empty state when there are no rows', () => {
     render(
       <AmortizationScheduleTable historyEvents={[]} projectionRows={[]} currencyCode="CAD" />,
