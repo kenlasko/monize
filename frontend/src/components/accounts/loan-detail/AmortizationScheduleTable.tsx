@@ -95,7 +95,11 @@ export function AmortizationScheduleTable({
       return {
         paymentNumber: historyEvents.length + row.paymentNumber,
         date: row.date,
-        payment: row.payment,
+        // Payment is the total cash that period. The schedule's `payment` is
+        // principal + interest only, so add the overpayment to match the
+        // historical rows (where an overpayment's amount is part of its
+        // payment) -- otherwise the totals row mixes the two conventions.
+        payment: row.payment + row.extraPrincipal,
         principal: row.principal,
         interest: row.interest,
         extraPrincipal: row.extraPrincipal,

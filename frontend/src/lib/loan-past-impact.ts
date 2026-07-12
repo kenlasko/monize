@@ -1,5 +1,5 @@
 import { Account } from '@/types/account';
-import { LoanHistoryResult } from '@/lib/loan-history';
+import { LoanHistoryResult, deriveCurrentInstallment } from '@/lib/loan-history';
 import {
   LoanScheduleResult,
   RateTimelineRow,
@@ -8,6 +8,8 @@ import {
   buildRateTimeline,
   calculateMortgagePaymentAmount,
   generateLoanSchedule,
+  getPeriodicRate,
+  getPeriodsPerYear,
 } from '@/lib/loan-schedule';
 
 /**
@@ -104,8 +106,24 @@ export function computePastImpact(
   // baseline after any recorded change.
   const timeline = buildRateTimeline(rateChanges, startDate, account.interestRate);
 
+  const periodsPerYear = getPeriodsPerYear(frequency);
+
+  // The borrower's real installment (principal + interest) from history. The
+  // stored paymentAmount is often principal-only for separately-booked interest
+  // (and can be a stale detected value) and then cannot amortize the balance,
+  // which left both schedules non-amortizing -- reporting "unknown" payoffs and
+  // near-zero saved interest. Where a stored/contractual payment does cover the
+  // period's interest it is kept (it is the true contractual installment);
+  // otherwise fall back to the derived one, which always amortizes.
+  const installment = deriveCurrentInstallment(history, account.paymentAmount ?? 0);
+  const amortizes = (payment: number, balance: number, annualRate: number) =>
+    payment > balance * getPeriodicRate(annualRate, periodsPerYear, isCanadian, isVariableRate);
+
   // Mortgages derive their contractual payment from the amortization period;
-  // plain loans use the payment in effect at origination.
+  // plain loans use the payment in effect at origination, falling back to the
+  // real installment when the recorded payment cannot amortize.
+  const seededContractual =
+    timeline.startingPaymentAmount ?? account.paymentAmount ?? 0;
   const contractualPayment =
     account.accountType === 'MORTGAGE' && account.amortizationMonths
       ? calculateMortgagePaymentAmount(
@@ -116,7 +134,9 @@ export function computePastImpact(
           isCanadian,
           isVariableRate,
         )
-      : (timeline.startingPaymentAmount ?? account.paymentAmount ?? 0);
+      : amortizes(seededContractual, originalPrincipal, timeline.startingAnnualRate)
+        ? seededContractual
+        : installment;
   if (contractualPayment <= 0) return null;
 
   const originalSchedule = generateLoanSchedule({
@@ -132,8 +152,16 @@ export function computePastImpact(
   });
 
   const isPaidOff = history.currentBalance <= 0.01;
-  const canProjectCurrent =
-    !isPaidOff && account.paymentAmount != null && account.paymentAmount > 0;
+  // Same fallback for the forward projection: keep the stored payment when it
+  // amortizes today's balance, else use the derived installment.
+  const currentPayment = amortizes(
+    account.paymentAmount ?? 0,
+    history.currentBalance,
+    account.interestRate,
+  )
+    ? account.paymentAmount!
+    : installment;
+  const canProjectCurrent = !isPaidOff && currentPayment > 0;
 
   // The scalar rate is already current; only future-dated steps apply ahead
   const futureTimeline = buildRateTimeline(
@@ -146,7 +174,7 @@ export function computePastImpact(
     ? generateLoanSchedule({
         startingBalance: history.currentBalance,
         annualRate: account.interestRate,
-        paymentAmount: account.paymentAmount!,
+        paymentAmount: currentPayment,
         frequency,
         isCanadian,
         isVariableRate,

@@ -46,9 +46,22 @@ describe('computePastImpact', () => {
 
     expect(computePastImpact(makeAccount({ interestRate: null }), history)).toBeNull();
     expect(computePastImpact(makeAccount({ paymentFrequency: null }), history)).toBeNull();
-    // A loan with no amortization period and no payment amount has no
-    // contractual payment to build a schedule from.
-    expect(computePastImpact(makeAccount({ paymentAmount: null }), history)).toBeNull();
+    // With no stored payment AND no payment history, there is nothing to derive
+    // a contractual installment from.
+    const noHistory = makeHistory(account, []);
+    expect(computePastImpact(makeAccount({ paymentAmount: null }), noHistory)).toBeNull();
+  });
+
+  it('derives the contractual payment from history when none is stored', () => {
+    // No stored paymentAmount, but a real installment is recoverable from the
+    // payments made, so the schedules still build (instead of returning null).
+    const account = makeAccount({ paymentAmount: null });
+    const history = makeHistory(makeAccount(), [450, 450, 450]);
+
+    const impact = computePastImpact(account, history);
+
+    expect(impact).not.toBeNull();
+    expect(impact!.originalSchedule.totalInterest).toBeGreaterThan(0);
   });
 
   it('returns null when there is no principal, start date, or history', () => {
