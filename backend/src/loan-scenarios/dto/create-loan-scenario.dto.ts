@@ -4,6 +4,7 @@ import {
   IsNumber,
   IsDateString,
   IsArray,
+  IsIn,
   MaxLength,
   Min,
   Max,
@@ -13,6 +14,10 @@ import {
 import { Type } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
+import {
+  OVERPAYMENT_MODES,
+  OverpaymentMode,
+} from "../entities/loan-scenario.entity";
 
 const MAX_AMOUNT = 100_000_000;
 
@@ -26,6 +31,14 @@ export class LumpSumDto {
   @Min(0.01)
   @Max(MAX_AMOUNT)
   amount: number;
+
+  @ApiPropertyOptional({
+    description: "Effect: shorten the term or lower the installment",
+    enum: OVERPAYMENT_MODES,
+  })
+  @IsOptional()
+  @IsIn(OVERPAYMENT_MODES)
+  mode?: OverpaymentMode;
 }
 
 export class CreateLoanScenarioDto {
@@ -41,6 +54,14 @@ export class CreateLoanScenarioDto {
   @Min(0)
   @Max(MAX_AMOUNT)
   recurringExtraAmount?: number | null;
+
+  @ApiPropertyOptional({
+    description: "Effect of the recurring extra: shorten term or lower installment",
+    enum: OVERPAYMENT_MODES,
+  })
+  @IsOptional()
+  @IsIn(OVERPAYMENT_MODES)
+  recurringExtraMode?: OverpaymentMode | null;
 
   @ApiPropertyOptional({
     description: "First date the recurring extra applies",

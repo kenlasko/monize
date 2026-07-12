@@ -27,6 +27,7 @@ function makeScenario(overrides: Partial<LoanScenario> = {}): LoanScenario {
     accountId,
     name: 'Extra 200',
     recurringExtraAmount: 200,
+    recurringExtraMode: null,
     recurringExtraStartDate: null,
     recurringExtraEndDate: null,
     lumpSums: [],
@@ -120,17 +121,18 @@ describe('planToScenarioData', () => {
     expect(
       planToScenarioData(
         {
-          recurringExtra: { amount: 300, startDate: '2026-01-01' },
-          lumpSums: [{ date: '2026-06-01', amount: 5000 }],
+          recurringExtra: { amount: 300, mode: 'LOWER_INSTALLMENT', startDate: '2026-01-01' },
+          lumpSums: [{ date: '2026-06-01', amount: 5000, mode: 'SHORTEN_TERM' }],
         },
         'Aggressive',
       ),
     ).toEqual({
       name: 'Aggressive',
       recurringExtraAmount: 300,
+      recurringExtraMode: 'LOWER_INSTALLMENT',
       recurringExtraStartDate: '2026-01-01',
       recurringExtraEndDate: null,
-      lumpSums: [{ date: '2026-06-01', amount: 5000 }],
+      lumpSums: [{ date: '2026-06-01', amount: 5000, mode: 'SHORTEN_TERM' }],
     });
   });
 
@@ -138,6 +140,7 @@ describe('planToScenarioData', () => {
     expect(planToScenarioData(null, 'Empty')).toEqual({
       name: 'Empty',
       recurringExtraAmount: null,
+      recurringExtraMode: null,
       recurringExtraStartDate: null,
       recurringExtraEndDate: null,
       lumpSums: [],

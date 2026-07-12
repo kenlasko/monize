@@ -46,6 +46,7 @@ export class LoanScenariosService {
     const scenario = this.scenariosRepository.create({
       name: dto.name,
       recurringExtraAmount: dto.recurringExtraAmount ?? null,
+      recurringExtraMode: dto.recurringExtraMode ?? null,
       recurringExtraStartDate: dto.recurringExtraStartDate ?? null,
       recurringExtraEndDate: dto.recurringExtraEndDate ?? null,
       lumpSums: dto.lumpSums ?? [],
@@ -71,6 +72,9 @@ export class LoanScenariosService {
       ...(dto.name !== undefined ? { name: dto.name } : {}),
       ...(dto.recurringExtraAmount !== undefined
         ? { recurringExtraAmount: dto.recurringExtraAmount }
+        : {}),
+      ...(dto.recurringExtraMode !== undefined
+        ? { recurringExtraMode: dto.recurringExtraMode }
         : {}),
       ...(dto.recurringExtraStartDate !== undefined
         ? { recurringExtraStartDate: dto.recurringExtraStartDate }

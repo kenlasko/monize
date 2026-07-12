@@ -1,4 +1,4 @@
-import { LumpSum } from '@/lib/loan-schedule';
+import { LumpSum, OverpaymentMode } from '@/lib/loan-schedule';
 
 /** A saved overpayment simulation for a loan/mortgage account */
 export interface LoanScenario {
@@ -7,6 +7,8 @@ export interface LoanScenario {
   accountId: string;
   name: string;
   recurringExtraAmount: number | null;
+  /** Whether the recurring overpayment shortens the term or lowers the installment */
+  recurringExtraMode: OverpaymentMode | null;
   recurringExtraStartDate: string | null;
   recurringExtraEndDate: string | null;
   lumpSums: LumpSum[];
@@ -17,6 +19,7 @@ export interface LoanScenario {
 export interface CreateLoanScenarioData {
   name: string;
   recurringExtraAmount?: number | null;
+  recurringExtraMode?: OverpaymentMode | null;
   recurringExtraStartDate?: string | null;
   recurringExtraEndDate?: string | null;
   lumpSums?: LumpSum[];

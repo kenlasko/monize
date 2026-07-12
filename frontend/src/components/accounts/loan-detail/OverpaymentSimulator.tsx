@@ -15,16 +15,21 @@ const logger = createLogger('OverpaymentSimulator');
 
 const MAX_LUMP_SUMS = 50;
 
+const DEFAULT_MODE: OverpaymentMode = 'SHORTEN_TERM';
+
 interface LumpSumFormRow {
   id: number;
   date: string;
   amount: number | undefined;
+  /** Whether this overpayment shortens the term or lowers the installment */
+  mode: OverpaymentMode;
 }
 
 interface SimulatorFormState {
   recurringAmount: number | undefined;
   recurringStart: string;
   recurringEnd: string;
+  recurringMode: OverpaymentMode;
   lumpSums: LumpSumFormRow[];
 }
 
@@ -32,6 +37,7 @@ const EMPTY_FORM: SimulatorFormState = {
   recurringAmount: undefined,
   recurringStart: '',
   recurringEnd: '',
+  recurringMode: DEFAULT_MODE,
   lumpSums: [],
 };
 
@@ -40,9 +46,6 @@ interface OverpaymentSimulatorProps {
   /** Account currency, for the amount inputs' symbol. */
   currencyCode: string;
   onPlanChange: (plan: OverpaymentPlan | null) => void;
-  /** Whether overpayments shorten the term or lower the installment */
-  mode: OverpaymentMode;
-  onModeChange: (mode: OverpaymentMode) => void;
   /** Externally loaded plan (e.g. a saved scenario); applied when version changes */
   loadedPlan?: OverpaymentPlan | null;
   loadedPlanVersion?: number;
@@ -58,10 +61,12 @@ function planToForm(plan: OverpaymentPlan | null): SimulatorFormState {
     recurringAmount: plan.recurringExtra ? plan.recurringExtra.amount : undefined,
     recurringStart: plan.recurringExtra?.startDate ?? '',
     recurringEnd: plan.recurringExtra?.endDate ?? '',
+    recurringMode: plan.recurringExtra?.mode ?? DEFAULT_MODE,
     lumpSums: (plan.lumpSums ?? []).map((lumpSum, index) => ({
       id: index,
       date: lumpSum.date,
       amount: lumpSum.amount,
+      mode: lumpSum.mode ?? DEFAULT_MODE,
     })),
   };
 }
@@ -72,15 +77,16 @@ function formToPlan(form: SimulatorFormState): OverpaymentPlan | null {
     recurringAmount !== undefined && recurringAmount > 0
       ? {
           amount: recurringAmount,
+          mode: form.recurringMode,
           ...(form.recurringStart ? { startDate: form.recurringStart } : {}),
           ...(form.recurringEnd ? { endDate: form.recurringEnd } : {}),
         }
       : undefined;
 
   const lumpSums = form.lumpSums
-    .map((row) => ({ date: row.date, amount: row.amount }))
+    .map((row) => ({ date: row.date, amount: row.amount, mode: row.mode }))
     .filter(
-      (lumpSum): lumpSum is { date: string; amount: number } =>
+      (lumpSum): lumpSum is { date: string; amount: number; mode: OverpaymentMode } =>
         !!lumpSum.date && lumpSum.amount !== undefined && lumpSum.amount > 0,
     );
 
@@ -101,8 +107,6 @@ export function OverpaymentSimulator({
   accountId,
   currencyCode,
   onPlanChange,
-  mode,
-  onModeChange,
   loadedPlan = null,
   loadedPlanVersion = 0,
   headerActions,
@@ -154,7 +158,10 @@ export function OverpaymentSimulator({
     if (form.lumpSums.length >= MAX_LUMP_SUMS) return;
     update({
       ...form,
-      lumpSums: [...form.lumpSums, { id: nextLumpSumId, date: '', amount: undefined }],
+      lumpSums: [
+        ...form.lumpSums,
+        { id: nextLumpSumId, date: '', amount: undefined, mode: DEFAULT_MODE },
+      ],
     });
     setNextLumpSumId(nextLumpSumId + 1);
   };
@@ -199,41 +206,6 @@ export function OverpaymentSimulator({
         {t('loanDetail.simulator.description')}
       </p>
 
-      <div className="mb-4">
-        <span className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-          {t('loanDetail.simulator.modeLabel')}
-        </span>
-        <div
-          role="radiogroup"
-          aria-label={t('loanDetail.simulator.modeLabel')}
-          className="inline-flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden"
-        >
-          {(['SHORTEN_TERM', 'LOWER_INSTALLMENT'] as const).map((option) => (
-            <button
-              key={option}
-              type="button"
-              role="radio"
-              aria-checked={mode === option}
-              onClick={() => onModeChange(option)}
-              className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                mode === option
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-              }`}
-            >
-              {option === 'SHORTEN_TERM'
-                ? t('loanDetail.simulator.modeShortenTerm')
-                : t('loanDetail.simulator.modeLowerInstallment')}
-            </button>
-          ))}
-        </div>
-        <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-          {mode === 'SHORTEN_TERM'
-            ? t('loanDetail.simulator.modeShortenTermHint')
-            : t('loanDetail.simulator.modeLowerInstallmentHint')}
-        </p>
-      </div>
-
       {detectedExtra !== null && form.recurringAmount === undefined && (
         <div className="mb-4 flex flex-wrap items-center gap-2 rounded-md bg-blue-50 dark:bg-blue-900/20 px-3 py-2 text-sm text-blue-800 dark:text-blue-200">
           <span>
@@ -251,7 +223,7 @@ export function OverpaymentSimulator({
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <CurrencyInput
           prefix={currencySymbol}
           allowNegative={false}
@@ -268,6 +240,11 @@ export function OverpaymentSimulator({
           label={t('loanDetail.simulator.recurringEnd')}
           value={form.recurringEnd}
           onDateChange={(date) => update({ ...form, recurringEnd: date })}
+        />
+        <ModeSelect
+          label={t('loanDetail.simulator.modeLabel')}
+          value={form.recurringMode}
+          onChange={(recurringMode) => update({ ...form, recurringMode })}
         />
       </div>
 
@@ -310,6 +287,13 @@ export function OverpaymentSimulator({
                     onChange={(value) => updateLumpSum(row.id, { amount: value })}
                   />
                 </div>
+                <div className="w-full sm:w-52">
+                  <ModeSelect
+                    label={t('loanDetail.simulator.modeLabel')}
+                    value={row.mode}
+                    onChange={(m) => updateLumpSum(row.id, { mode: m })}
+                  />
+                </div>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -325,6 +309,35 @@ export function OverpaymentSimulator({
       </div>
 
       {footer}
+    </div>
+  );
+}
+
+/** Per-overpayment effect selector: shorten the term or lower the installment. */
+function ModeSelect({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: OverpaymentMode;
+  onChange: (mode: OverpaymentMode) => void;
+}) {
+  const t = useTranslations('accounts');
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        {label}
+      </label>
+      <select
+        aria-label={label}
+        value={value}
+        onChange={(e) => onChange(e.target.value as OverpaymentMode)}
+        className="block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+      >
+        <option value="SHORTEN_TERM">{t('loanDetail.simulator.modeShortenTerm')}</option>
+        <option value="LOWER_INSTALLMENT">{t('loanDetail.simulator.modeLowerInstallment')}</option>
+      </select>
     </div>
   );
 }

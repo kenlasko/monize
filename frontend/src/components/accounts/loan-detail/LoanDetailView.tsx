@@ -14,7 +14,6 @@ import { useLoanRateEditing } from '@/components/accounts/loan-detail/useLoanRat
 import { deriveCurrentInstallment, deriveLoanPaymentHistory } from '@/lib/loan-history';
 import { computePastImpact } from '@/lib/loan-past-impact';
 import {
-  OverpaymentMode,
   OverpaymentPlan,
   ScenarioComparison,
   ScheduleFrequency,
@@ -62,7 +61,6 @@ export function LoanDetailView({
 }: LoanDetailViewProps) {
   const t = useTranslations('accounts');
   const [plan, setPlan] = useState<OverpaymentPlan | null>(null);
-  const [mode, setMode] = useState<OverpaymentMode>('SHORTEN_TERM');
   const [loadedPlan, setLoadedPlan] = useState<OverpaymentPlan | null>(null);
   const [loadedPlanVersion, setLoadedPlanVersion] = useState(0);
   const rateEditing = useLoanRateEditing(account, onRateChangesChanged);
@@ -149,13 +147,9 @@ export function LoanDetailView({
   const scenario = useMemo(
     () =>
       projectionInput && plan
-        ? generateLoanSchedule({
-            ...projectionInput,
-            overpayments: plan,
-            overpaymentMode: mode,
-          })
+        ? generateLoanSchedule({ ...projectionInput, overpayments: plan })
         : null,
-    [projectionInput, plan, mode],
+    [projectionInput, plan],
   );
 
   const comparison = useMemo(
@@ -164,8 +158,8 @@ export function LoanDetailView({
   );
 
   // Each saved scenario's outcome vs the baseline, so the list can show a
-  // comparison table without loading each one. Uses the current mode, matching
-  // what the simulator shows when a scenario is loaded.
+  // comparison table without loading each one. Each scenario's overpayments
+  // carry their own mode (shorten term / lower installment).
   const scenarioComparisons = useMemo(() => {
     const map = new Map<string, ScenarioComparison | null>();
     if (!projectionInput || !baseline) return map;
@@ -173,12 +167,11 @@ export function LoanDetailView({
       const scenarioSchedule = generateLoanSchedule({
         ...projectionInput,
         overpayments: scenarioToPlan(saved) ?? undefined,
-        overpaymentMode: mode,
       });
       map.set(saved.id, compareSchedules(baseline, scenarioSchedule));
     }
     return map;
-  }, [scenarios, projectionInput, baseline, mode]);
+  }, [scenarios, projectionInput, baseline]);
 
   // Past impact of overpayments. It reuses the baseline (no-overpayment)
   // projection as the current projection -- computed once here, not twice --
@@ -205,8 +198,6 @@ export function LoanDetailView({
           accountId={account.id}
           currencyCode={account.currencyCode}
           onPlanChange={setPlan}
-          mode={mode}
-          onModeChange={setMode}
           loadedPlan={loadedPlan}
           loadedPlanVersion={loadedPlanVersion}
           footer={

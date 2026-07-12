@@ -38,6 +38,7 @@ function makeScenario(overrides: Partial<LoanScenario> = {}): LoanScenario {
     accountId: 'account-1',
     name: 'Extra 200',
     recurringExtraAmount: 200,
+    recurringExtraMode: null,
     recurringExtraStartDate: null,
     recurringExtraEndDate: null,
     lumpSums: [{ date: '2026-06-01', amount: 5000 }],
@@ -129,6 +130,7 @@ describe('SavedScenariosPanel', () => {
     expect(mockCreate).toHaveBeenCalledWith('account-1', {
       name: 'My plan',
       recurringExtraAmount: 100,
+      recurringExtraMode: null,
       recurringExtraStartDate: null,
       recurringExtraEndDate: null,
       lumpSums: [],

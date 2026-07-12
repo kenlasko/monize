@@ -142,6 +142,7 @@ describe("LoanScenariosService", () => {
       expect(scenariosRepository.create).toHaveBeenCalledWith({
         name: "Aggressive",
         recurringExtraAmount: 300,
+        recurringExtraMode: null,
         recurringExtraStartDate: null,
         recurringExtraEndDate: null,
         lumpSums: [{ date: "2026-06-01", amount: 5000 }],

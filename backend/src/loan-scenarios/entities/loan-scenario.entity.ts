@@ -16,10 +16,19 @@ const numericTransformer = {
     value === null ? null : Number(value),
 };
 
+/** Whether an overpayment shortens the term or lowers the installment. */
+export type OverpaymentMode = "SHORTEN_TERM" | "LOWER_INSTALLMENT";
+export const OVERPAYMENT_MODES: OverpaymentMode[] = [
+  "SHORTEN_TERM",
+  "LOWER_INSTALLMENT",
+];
+
 export interface LoanScenarioLumpSum {
   /** ISO date (yyyy-MM-dd) */
   date: string;
   amount: number;
+  /** Effect of this overpayment; defaults to SHORTEN_TERM when absent. */
+  mode?: OverpaymentMode;
 }
 
 /**
@@ -58,6 +67,14 @@ export class LoanScenario {
     transformer: numericTransformer,
   })
   recurringExtraAmount: number | null;
+
+  @Column({
+    type: "varchar",
+    length: 16,
+    name: "recurring_extra_mode",
+    nullable: true,
+  })
+  recurringExtraMode: OverpaymentMode | null;
 
   @Column({ type: "date", name: "recurring_extra_start_date", nullable: true })
   recurringExtraStartDate: string | null;

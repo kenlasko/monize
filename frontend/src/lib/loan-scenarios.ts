@@ -1,5 +1,6 @@
 import apiClient from './api';
 import { dedupe, invalidateCache } from './apiCache';
+import type { OverpaymentPlan } from '@/lib/loan-schedule';
 import {
   LoanScenario,
   CreateLoanScenarioData,
@@ -51,11 +52,12 @@ export const loanScenariosApi = {
 };
 
 /** Convert a saved scenario's inputs to the simulator's plan shape */
-export function scenarioToPlan(scenario: LoanScenario) {
+export function scenarioToPlan(scenario: LoanScenario): OverpaymentPlan | null {
   const recurringExtra =
     scenario.recurringExtraAmount && scenario.recurringExtraAmount > 0
       ? {
           amount: scenario.recurringExtraAmount,
+          ...(scenario.recurringExtraMode ? { mode: scenario.recurringExtraMode } : {}),
           ...(scenario.recurringExtraStartDate
             ? { startDate: scenario.recurringExtraStartDate }
             : {}),
@@ -74,15 +76,13 @@ export function scenarioToPlan(scenario: LoanScenario) {
 
 /** Convert the simulator's current plan to a create/update payload */
 export function planToScenarioData(
-  plan: {
-    recurringExtra?: { amount: number; startDate?: string; endDate?: string };
-    lumpSums?: { date: string; amount: number }[];
-  } | null,
+  plan: OverpaymentPlan | null,
   name: string,
 ): CreateLoanScenarioData {
   return {
     name,
     recurringExtraAmount: plan?.recurringExtra?.amount ?? null,
+    recurringExtraMode: plan?.recurringExtra?.mode ?? null,
     recurringExtraStartDate: plan?.recurringExtra?.startDate ?? null,
     recurringExtraEndDate: plan?.recurringExtra?.endDate ?? null,
     lumpSums: plan?.lumpSums ?? [],

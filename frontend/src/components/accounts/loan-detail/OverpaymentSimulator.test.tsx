@@ -25,8 +25,6 @@ async function renderSimulator(props: Partial<React.ComponentProps<typeof Overpa
         accountId="loan-1"
         currencyCode="USD"
         onPlanChange={onPlanChange}
-        mode="SHORTEN_TERM"
-        onModeChange={vi.fn()}
         {...props}
       />,
     );
@@ -49,19 +47,25 @@ describe('OverpaymentSimulator', () => {
     });
 
     expect(onPlanChange).toHaveBeenLastCalledWith({
-      recurringExtra: { amount: 200 },
+      recurringExtra: { amount: 200, mode: 'SHORTEN_TERM' },
     } satisfies OverpaymentPlan);
   });
 
-  it('reports a mode change when the lower-installment toggle is clicked', async () => {
-    const onModeChange = vi.fn();
-    await renderSimulator({ onModeChange });
+  it('carries the recurring extra mode chosen in the plan', async () => {
+    const { onPlanChange } = await renderSimulator();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Lower installment'));
+      fireEvent.change(screen.getByLabelText('Extra per payment'), { target: { value: '200' } });
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('After an overpayment'), {
+        target: { value: 'LOWER_INSTALLMENT' },
+      });
     });
 
-    expect(onModeChange).toHaveBeenCalledWith('LOWER_INSTALLMENT');
+    expect(onPlanChange).toHaveBeenLastCalledWith({
+      recurringExtra: { amount: 200, mode: 'LOWER_INSTALLMENT' },
+    } satisfies OverpaymentPlan);
   });
 
   it('includes the optional date window in the emitted plan', async () => {
@@ -74,7 +78,12 @@ describe('OverpaymentSimulator', () => {
     });
 
     expect(onPlanChange).toHaveBeenLastCalledWith({
-      recurringExtra: { amount: 150, startDate: '2026-08-01', endDate: '2027-08-01' },
+      recurringExtra: {
+        amount: 150,
+        mode: 'SHORTEN_TERM',
+        startDate: '2026-08-01',
+        endDate: '2027-08-01',
+      },
     });
   });
 
@@ -104,7 +113,7 @@ describe('OverpaymentSimulator', () => {
     });
 
     expect(onPlanChange).toHaveBeenLastCalledWith({
-      lumpSums: [{ date: '2026-09-01', amount: 1000 }],
+      lumpSums: [{ date: '2026-09-01', amount: 1000, mode: 'SHORTEN_TERM' }],
     });
 
     await act(async () => {
@@ -140,7 +149,7 @@ describe('OverpaymentSimulator', () => {
     });
 
     expect(onPlanChange).toHaveBeenLastCalledWith({
-      recurringExtra: { amount: 250.5 },
+      recurringExtra: { amount: 250.5, mode: 'SHORTEN_TERM' },
     });
   });
 
@@ -173,8 +182,6 @@ describe('OverpaymentSimulator', () => {
           accountId="loan-1"
           currencyCode="USD"
           onPlanChange={vi.fn()}
-          mode="SHORTEN_TERM"
-          onModeChange={vi.fn()}
           loadedPlan={loaded}
           loadedPlanVersion={1}
         />,

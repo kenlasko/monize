@@ -29,6 +29,12 @@ export interface LumpSum {
   /** ISO date (yyyy-MM-dd) the lump sum is paid */
   date: string;
   amount: number;
+  /**
+   * Whether this overpayment shortens the term (keep the installment) or lowers
+   * the installment (keep the end date). Defaults to the schedule's
+   * `overpaymentMode` when omitted.
+   */
+  mode?: OverpaymentMode;
 }
 
 export interface RecurringExtra {
@@ -37,6 +43,11 @@ export interface RecurringExtra {
   startDate?: string;
   /** ISO date (yyyy-MM-dd); applies until payoff when omitted */
   endDate?: string;
+  /**
+   * Whether this overpayment shortens the term or lowers the installment.
+   * Defaults to the schedule's `overpaymentMode` when omitted.
+   */
+  mode?: OverpaymentMode;
 }
 
 export interface OverpaymentPlan {
@@ -331,22 +342,32 @@ export function generateLoanSchedule(input: LoanScheduleInput): LoanScheduleResu
     HARD_MAX_PAYMENTS,
   );
 
-  const mode = input.overpaymentMode ?? 'SHORTEN_TERM';
+  // Each overpayment carries its own mode; the input's overpaymentMode is only
+  // the default for those that omit one.
+  const defaultMode = input.overpaymentMode ?? 'SHORTEN_TERM';
+  const modeOf = (m?: OverpaymentMode): OverpaymentMode => m ?? defaultMode;
   const hasOverpayments = Boolean(
     overpayments?.recurringExtra || (overpayments?.lumpSums?.length ?? 0) > 0,
   );
-  // LOWER_INSTALLMENT keeps the end date fixed: the term is the baseline
-  // (no-overpayment) payoff length, and the installment is recomputed each
-  // period to amortize the remaining balance over the remaining periods. The
-  // baseline runs once with overpayments stripped (no further recursion).
-  const fixedEndPeriod =
-    mode === 'LOWER_INSTALLMENT' && hasOverpayments
-      ? generateLoanSchedule({
-          ...input,
-          overpayments: undefined,
-          overpaymentMode: 'SHORTEN_TERM',
-        }).numPayments
-      : (input.fixedEndPeriod ?? null);
+  const anyLowerOverpayment =
+    hasOverpayments &&
+    ((overpayments?.recurringExtra != null &&
+      modeOf(overpayments.recurringExtra.mode) === 'LOWER_INSTALLMENT') ||
+      (overpayments?.lumpSums ?? []).some((l) => modeOf(l.mode) === 'LOWER_INSTALLMENT'));
+
+  // Two re-levelling ends. `reLevelEveryPeriod` (a passed fixedEndPeriod) holds
+  // a variable-rate contractual schedule on its term every period. `lowerEnd`
+  // is the no-overpayment payoff length that a LOWER_INSTALLMENT overpayment
+  // re-levels the installment toward -- applied only in the period such an
+  // overpayment lands, so SHORTEN_TERM overpayments keep the installment (and
+  // shorten the term) alongside it.
+  const reLevelEveryPeriod = input.fixedEndPeriod ?? null;
+  const lowerEnd =
+    reLevelEveryPeriod === null && anyLowerOverpayment
+      ? generateLoanSchedule({ ...input, overpayments: undefined }).numPayments
+      : null;
+  // Term to re-level toward if a rate rise would otherwise stall the payment.
+  const rescueEnd = reLevelEveryPeriod ?? lowerEnd;
 
   const periodsPerYear = getPeriodsPerYear(frequency);
 
@@ -408,12 +429,12 @@ export function generateLoanSchedule(input: LoanScheduleInput): LoanScheduleResu
     const interest = balance * currentPeriodicRate;
     let principal = currentPayment - interest;
 
-    if (principal <= 0 && fixedEndPeriod !== null) {
+    if (principal <= 0 && rescueEnd !== null) {
       // Holding a fixed term: a rate rise can push the current installment
       // below the interest for a period. Re-level it now, at the new rate, to
       // amortize the remaining balance over the periods left -- so the schedule
       // adjusts on the rate change instead of stalling.
-      const remaining = fixedEndPeriod - paymentNumber;
+      const remaining = rescueEnd - paymentNumber;
       if (remaining > 0) {
         currentPayment = calculatePaymentForTerm(
           balance,
@@ -438,6 +459,9 @@ export function generateLoanSchedule(input: LoanScheduleInput): LoanScheduleResu
     balance = Math.max(0, balance - principal);
 
     let extraPrincipal = 0;
+    // Whether a LOWER_INSTALLMENT-mode overpayment landed this period, so the
+    // installment is re-levelled below (SHORTEN_TERM ones leave it unchanged).
+    let lowerApplied = false;
     if (
       recurringExtra &&
       recurringExtra.amount > 0 &&
@@ -445,11 +469,13 @@ export function generateLoanSchedule(input: LoanScheduleInput): LoanScheduleResu
       (!recurringExtra.endDate || rowDate <= recurringExtra.endDate)
     ) {
       extraPrincipal += recurringExtra.amount;
+      if (modeOf(recurringExtra.mode) === 'LOWER_INSTALLMENT') lowerApplied = true;
     }
     // Lump sums land on the first payment on or after their date (sums dated
     // before the first payment attach to row 1)
     while (lumpSumIndex < lumpSums.length && lumpSums[lumpSumIndex].date <= rowDate) {
       extraPrincipal += lumpSums[lumpSumIndex].amount;
+      if (modeOf(lumpSums[lumpSumIndex].mode) === 'LOWER_INSTALLMENT') lowerApplied = true;
       lumpSumIndex++;
     }
     if (extraPrincipal > balance) {
@@ -463,12 +489,16 @@ export function generateLoanSchedule(input: LoanScheduleInput): LoanScheduleResu
     totalExtraPrincipal += extraPrincipal;
     paymentNumber++;
 
-    // LOWER_INSTALLMENT: recompute the installment to amortize the remaining
-    // balance over the periods left to the fixed end date. Between overpayments
-    // this reproduces the current payment; after one it steps the payment down.
-    // Also re-levels the payment after a rate change on a variable-rate loan.
-    if (fixedEndPeriod !== null) {
-      const remaining = fixedEndPeriod - paymentNumber;
+    // Re-level the installment to amortize the remaining balance over the
+    // periods left to the target end. `reLevelEveryPeriod` (contractual
+    // variable-rate schedule) re-levels every period, so it also tracks rate
+    // changes; a LOWER_INSTALLMENT overpayment re-levels toward `lowerEnd`
+    // only in the period it lands, stepping the payment down while
+    // SHORTEN_TERM overpayments leave it unchanged (shortening the term).
+    const reLevelEnd =
+      reLevelEveryPeriod !== null ? reLevelEveryPeriod : lowerApplied ? lowerEnd : null;
+    if (reLevelEnd !== null) {
+      const remaining = reLevelEnd - paymentNumber;
       if (remaining > 0 && balance > PAYOFF_EPSILON) {
         currentPayment = calculatePaymentForTerm(
           balance,

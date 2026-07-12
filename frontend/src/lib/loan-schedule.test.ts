@@ -566,6 +566,49 @@ describe('generateLoanSchedule LOWER_INSTALLMENT mode', () => {
   });
 });
 
+describe('generateLoanSchedule per-overpayment mode', () => {
+  const base = () =>
+    baseInput({ startingBalance: 275400, annualRate: 5, paymentAmount: 1610.46, maxPayments: 400 });
+
+  it("applies each lump sum's own mode", () => {
+    const baseline = generateLoanSchedule(base());
+    const shorten = generateLoanSchedule({
+      ...base(),
+      overpayments: { lumpSums: [{ date: '2026-01-15', amount: 50000, mode: 'SHORTEN_TERM' }] },
+    });
+    const lower = generateLoanSchedule({
+      ...base(),
+      overpayments: { lumpSums: [{ date: '2026-01-15', amount: 50000, mode: 'LOWER_INSTALLMENT' }] },
+    });
+
+    // SHORTEN keeps the installment and ends sooner.
+    expect(shorten.finalPaymentAmount).toBeCloseTo(baseline.finalPaymentAmount, 0);
+    expect(shorten.numPayments).toBeLessThan(baseline.numPayments);
+    // LOWER drops the installment and keeps ~the original term.
+    expect(lower.finalPaymentAmount).toBeLessThan(baseline.finalPaymentAmount);
+    expect(Math.abs(lower.numPayments - baseline.numPayments)).toBeLessThanOrEqual(1);
+  });
+
+  it('handles mixed modes in one plan', () => {
+    const baseline = generateLoanSchedule(base());
+    const mixed = generateLoanSchedule({
+      ...base(),
+      overpayments: {
+        lumpSums: [
+          { date: '2026-02-15', amount: 40000, mode: 'LOWER_INSTALLMENT' },
+          { date: '2027-02-15', amount: 40000, mode: 'SHORTEN_TERM' },
+        ],
+      },
+    });
+
+    expect(mixed.paidOff).toBe(true);
+    // The LOWER lump lowered the installment...
+    expect(mixed.finalPaymentAmount).toBeLessThan(baseline.finalPaymentAmount);
+    // ...and the later SHORTEN lump ended it before the original term.
+    expect(mixed.numPayments).toBeLessThan(baseline.numPayments);
+  });
+});
+
 describe('effectiveAnnualRateOn', () => {
   const rows = [
     { effectiveDate: '2021-07-05', annualRate: 1.95 },
