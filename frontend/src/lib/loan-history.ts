@@ -227,7 +227,7 @@ export function deriveLoanPaymentHistory(
   }
 
   if (orphanInterest.length === 0) {
-    assignObservedRates(events, periodsPerYear);
+    assignObservedRates(events, periodsPerYear, rateChanges, account);
     return {
       events,
       startingBalance,
@@ -270,7 +270,7 @@ export function deriveLoanPaymentHistory(
       event.balance = lastBalance;
     }
   }
-  assignObservedRates(merged, periodsPerYear);
+  assignObservedRates(merged, periodsPerYear, rateChanges, account);
 
   return {
     events: merged,
@@ -627,6 +627,18 @@ function nearestDateKey(
 }
 
 /**
+ * The share of a full period's expected interest a regular installment must
+ * carry for its observed rate to be trusted. Below this, the booked interest is
+ * only a stub (an overpayment settled most of the period's interest with
+ * itself, or a payment holiday left an odd partial charge), so annualizing it
+ * yields an absurdly low rate; such rows show the contractual timeline rate
+ * instead. The two populations are far apart in practice -- a full installment
+ * lands near 1.0, a split stub near 0.0-0.2 -- so the exact threshold is not
+ * sensitive.
+ */
+const FULL_PERIOD_INTEREST_RATIO = 0.5;
+
+/**
  * Fill each event's observed annual rate: the interest charged, annualized over
  * the actual days since interest was last settled (`interest / balanceBefore x
  * 365 / days`). The period runs from the previous *interest-bearing* event, not
@@ -639,9 +651,26 @@ function nearestDateKey(
  * falls back to the nominal period length. Events must be sorted by date;
  * `balanceBefore` is the post-payment balance plus the principal paid, i.e. the
  * debt the interest accrued on.
+ *
+ * When a period's interest was booked irregularly -- most of it charged
+ * alongside an overpayment, or a payment holiday leaving only a partial stub on
+ * the regular installment -- the true accrual span is unrecoverable and the
+ * annualized observed rate is misleadingly low. Such a row (booked interest
+ * below `FULL_PERIOD_INTEREST_RATIO` of a full period's expected accrual at the
+ * contractual rate) shows the timeline rate in effect on its date instead. A
+ * full-period installment keeps its observed rate, which tracks the real
+ * variable rate month to month. Falls back to the plain observed rate when no
+ * timeline rate is available to compare against.
  */
-function assignObservedRates(events: LoanPaymentEvent[], periodsPerYear: number): void {
+function assignObservedRates(
+  events: LoanPaymentEvent[],
+  periodsPerYear: number,
+  rateChanges: RateTimelineRow[],
+  account: Account,
+): void {
   const periodDays = 365 / periodsPerYear;
+  const isCanadian = account.isCanadianMortgage || false;
+  const isVariable = account.isVariableRate || false;
   let lastInterestDateKey: string | null = null;
   for (const event of events) {
     const balanceBefore = event.balance + event.principal;
@@ -658,10 +687,24 @@ function assignObservedRates(events: LoanPaymentEvent[], periodsPerYear: number)
     // an ad-hoc extra payment whose attached interest spans an odd partial
     // period, so it shows no rate -- but its interest still settles the accrual
     // clock for the following installment.
-    event.annualRate =
-      event.type === 'REGULAR' && event.interest > 0 && balanceBefore > 0 && days > 0
-        ? (event.interest / balanceBefore) * (365 / days) * 100
-        : null;
+    if (event.type === 'REGULAR' && event.interest > 0 && balanceBefore > 0 && days > 0) {
+      const observed = (event.interest / balanceBefore) * (365 / days) * 100;
+      const timelineRate = effectiveAnnualRateOn(
+        rateChanges,
+        event.date,
+        Number(account.interestRate),
+      );
+      const expectedFullPeriodInterest =
+        timelineRate > 0
+          ? balanceBefore * getPeriodicRate(timelineRate, periodsPerYear, isCanadian, isVariable)
+          : 0;
+      const isFullPeriod =
+        expectedFullPeriodInterest <= 0 ||
+        event.interest >= expectedFullPeriodInterest * FULL_PERIOD_INTEREST_RATIO;
+      event.annualRate = isFullPeriod ? observed : timelineRate;
+    } else {
+      event.annualRate = null;
+    }
     if (event.interest > 0) lastInterestDateKey = dateKey;
   }
 }

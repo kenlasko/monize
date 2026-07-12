@@ -783,4 +783,51 @@ describe('deriveLoanPaymentHistory with paired separate interest expenses', () =
     // days) and reads ~6%, not a full month.
     expect(events[2].annualRate).toBeCloseTo(6, 0);
   });
+
+  it('falls back to the timeline rate when the installment carries only a partial-period stub', () => {
+    // Real case: aggressive overpayments settle most of a period's interest with
+    // themselves, leaving the regular installment a tiny stub (146 on ~198k).
+    // Annualizing that stub reports an absurd ~0.9%; since it is far below a full
+    // period's expected accrual, the row must instead show the contractual 5.5%.
+    const account = makeAccount({
+      accountType: 'MORTGAGE',
+      openingBalance: -200000,
+      currentBalance: -197350,
+      interestRate: 5.5,
+      overpaymentCategoryId: 'cat-over',
+    });
+    const rateChanges = [{ effectiveDate: '2022-04-05', annualRate: 5.5 }];
+    const transactions = [
+      makeTransaction({ transactionDate: '2022-08-05', amount: 1650, categoryId: 'cat-over' }),
+      makeTransaction({ transactionDate: '2022-10-05', amount: 1000 }),
+    ];
+    const interestTransactions = [
+      { transactionDate: '2022-08-05', amount: -415, isTransfer: false } as Transaction,
+      { transactionDate: '2022-10-05', amount: -146, isTransfer: false } as Transaction,
+    ];
+
+    const withTimeline = deriveLoanPaymentHistory(
+      account,
+      transactions,
+      rateChanges,
+      interestTransactions,
+    );
+    // The regular installment shows the contractual rate, not the ~0.9% stub.
+    expect(withTimeline.events[1].type).toBe('REGULAR');
+    expect(withTimeline.events[1].interest).toBeCloseTo(146, 2);
+    expect(withTimeline.events[1].annualRate).toBeCloseTo(5.5, 1);
+
+    // Without any timeline rate (no rate changes and no account rate) there is
+    // no better figure than the plain observed rate, so the stub's low rate is
+    // kept.
+    const rateless = makeAccount({
+      accountType: 'MORTGAGE',
+      openingBalance: -200000,
+      currentBalance: -197350,
+      interestRate: 0,
+      overpaymentCategoryId: 'cat-over',
+    });
+    const noTimeline = deriveLoanPaymentHistory(rateless, transactions, [], interestTransactions);
+    expect(noTimeline.events[1].annualRate).toBeLessThan(2);
+  });
 });

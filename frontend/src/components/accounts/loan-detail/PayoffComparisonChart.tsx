@@ -213,7 +213,14 @@ export function PayoffComparisonChart({
               fillOpacity={0.3}
               strokeWidth={2}
               name={t('loanDetail.chart.seriesHistorical')}
-              connectNulls={false}
+              // Bridge months with no payment (a payment holiday, or a skipped
+              // installment) so the actual-balance curve stays continuous. The
+              // continuous contractual curve creates entries for those months,
+              // which would otherwise leave `historicalBalance` undefined and
+              // break the line -- but the debt persisted across them, so the
+              // curve should carry through. Trailing nulls after "today" have no
+              // later point to bridge to, so this never extends into the future.
+              connectNulls
             />
             {baseline && (
               <Area
