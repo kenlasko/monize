@@ -1,9 +1,9 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { format, parseISO } from 'date-fns';
 import { ScenarioComparison } from '@/lib/loan-schedule';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 
 interface ComparisonSummaryCardsProps {
   comparison: ScenarioComparison;
@@ -17,10 +17,11 @@ interface ComparisonSummaryCardsProps {
 export function ComparisonSummaryCards({ comparison, currencyCode }: ComparisonSummaryCardsProps) {
   const t = useTranslations('accounts');
   const { formatCurrency } = useNumberFormat();
+  const formatChartDate = useChartDateFormat();
   const { scenario } = comparison;
 
   const newPayoffLabel = scenario.payoffDate
-    ? format(parseISO(scenario.payoffDate), 'MMM yyyy')
+    ? formatChartDate(scenario.payoffDate, 'MMM yyyy')
     : t('loanDetail.comparison.beyondProjection');
 
   // Lower-installment scenarios keep the end date (no time saved); their headline

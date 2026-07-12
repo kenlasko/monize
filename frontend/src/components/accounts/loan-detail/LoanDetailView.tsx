@@ -81,6 +81,15 @@ export function LoanDetailView({
     [account, transactions, rateChanges, interestTransactions],
   );
 
+  // The borrower's real current installment (principal + interest) from the
+  // payment history, shown on the summary card and used to seed the projection.
+  // The stored paymentAmount is often principal-only for separately-booked
+  // interest, so it is only a fallback when there is no usable history yet.
+  const currentInstallment = useMemo(() => {
+    const derived = deriveCurrentInstallment(history, account.paymentAmount ?? 0);
+    return derived > 0 ? derived : account.paymentAmount ?? null;
+  }, [history, account.paymentAmount]);
+
   const projectionInput = useMemo(() => {
     const canProject =
       history.currentBalance > 0.01 &&
@@ -154,6 +163,7 @@ export function LoanDetailView({
       <LoanSummaryCards
         account={account}
         startingBalance={history.startingBalance}
+        currentInstallment={currentInstallment}
         baseline={baseline}
       />
 

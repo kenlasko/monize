@@ -40,7 +40,12 @@ function makeBaseline() {
 describe('LoanSummaryCards', () => {
   it('renders balance, original amount, rate, and payment figures', () => {
     render(
-      <LoanSummaryCards account={makeAccount()} startingBalance={10000} baseline={makeBaseline()} />,
+      <LoanSummaryCards
+        account={makeAccount()}
+        startingBalance={10000}
+        currentInstallment={500}
+        baseline={makeBaseline()}
+      />,
     );
 
     expect(screen.getByText('Current Balance')).toBeInTheDocument();
@@ -55,7 +60,12 @@ describe('LoanSummaryCards', () => {
   it('shows payoff date and remaining interest from the baseline projection', () => {
     const baseline = makeBaseline();
     render(
-      <LoanSummaryCards account={makeAccount()} startingBalance={10000} baseline={baseline} />,
+      <LoanSummaryCards
+        account={makeAccount()}
+        startingBalance={10000}
+        currentInstallment={500}
+        baseline={baseline}
+      />,
     );
 
     expect(screen.getByText('Est. Payoff')).toBeInTheDocument();
@@ -69,6 +79,7 @@ describe('LoanSummaryCards', () => {
       <LoanSummaryCards
         account={makeAccount({ accountType: 'MORTGAGE', isCanadianMortgage: true, interestRate: 5 })}
         startingBalance={10000}
+        currentInstallment={500}
         baseline={null}
       />,
     );
@@ -82,6 +93,7 @@ describe('LoanSummaryCards', () => {
       <LoanSummaryCards
         account={makeAccount({ isCanadianMortgage: true, isVariableRate: true, interestRate: 5 })}
         startingBalance={10000}
+        currentInstallment={500}
         baseline={null}
       />,
     );
@@ -94,6 +106,7 @@ describe('LoanSummaryCards', () => {
       <LoanSummaryCards
         account={makeAccount({ interestRate: null, paymentAmount: null, paymentFrequency: null })}
         startingBalance={10000}
+        currentInstallment={null}
         baseline={null}
       />,
     );
@@ -107,6 +120,7 @@ describe('LoanSummaryCards', () => {
       <LoanSummaryCards
         account={makeAccount({ currentBalance: 0 })}
         startingBalance={10000}
+        currentInstallment={500}
         baseline={null}
       />,
     );

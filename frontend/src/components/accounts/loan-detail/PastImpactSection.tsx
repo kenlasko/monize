@@ -2,7 +2,6 @@
 
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
-import { format, parseISO } from 'date-fns';
 import {
   AreaChart,
   Area,
@@ -79,7 +78,7 @@ export function PastImpactSection({
   }
 
   const formatMonth = (date: string | null) =>
-    date ? format(parseISO(date), 'MMM yyyy') : t('loanDetail.pastImpact.unknown');
+    date ? formatChartDate(date, 'MMM yyyy') : t('loanDetail.pastImpact.unknown');
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
