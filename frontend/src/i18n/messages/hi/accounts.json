@@ -383,6 +383,7 @@
       "colBalance": "शेष",
       "projectedFuturePayments": "अनुमानित भविष्य की किस्तें",
       "total": "कुल",
+      "paidToDate": "अब तक भुगतान किया गया",
       "monthEntries": "{count, plural, one {# प्रविष्टि} other {# प्रविष्टियाँ}}",
       "toggleMonth": "{month} में किए गए भुगतान दिखाएँ या छिपाएँ",
       "showAll": "सभी {count} किस्तें दिखाएँ",

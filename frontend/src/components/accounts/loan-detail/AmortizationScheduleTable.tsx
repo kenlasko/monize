@@ -195,6 +195,20 @@ export function AmortizationScheduleTable({
     [rows],
   );
 
+  // Subtotal of everything paid so far, shown just above the projected section
+  // so the transition to the forecast carries a running "paid to date" line.
+  const paidTotals = useMemo(() => {
+    const paid = rows.filter((row) => !row.isProjected);
+    return {
+      any: paid.length > 0,
+      payment: sumField(paid, 'payment'),
+      principal: sumField(paid, 'principal'),
+      interest: sumField(paid, 'interest'),
+      extra: sumField(paid, 'extraPrincipal'),
+      balance: paid.length > 0 ? paid[paid.length - 1].balance : 0,
+    };
+  }, [rows]);
+
   const headerClass =
     'px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider';
 
@@ -244,14 +258,41 @@ export function AmortizationScheduleTable({
                   const prevProjected =
                     prev !== null && prev.kind === 'single' && prev.row.isProjected;
                   const separator = isProjectedUnit && prev !== null && !prevProjected && (
-                    <tr className="bg-gray-100 dark:bg-gray-700">
-                      <td
-                        colSpan={columnCount}
-                        className="px-4 py-2 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-                      >
-                        {t('loanDetail.schedule.projectedFuturePayments')}
-                      </td>
-                    </tr>
+                    <>
+                      {paidTotals.any && (
+                        <tr className="bg-gray-50 dark:bg-gray-900/40 font-semibold text-gray-900 dark:text-gray-100">
+                          <td colSpan={2} className="px-4 py-3 text-left text-sm">
+                            {t('loanDetail.schedule.paidToDate')}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-right">
+                            {formatCurrency(paidTotals.payment, currencyCode)}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-green-600 dark:text-green-400">
+                            {formatCurrency(paidTotals.principal, currencyCode)}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-orange-600 dark:text-orange-400">
+                            {formatCurrency(paidTotals.interest, currencyCode)}
+                          </td>
+                          {showExtraColumn && (
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-blue-600 dark:text-blue-400">
+                              {paidTotals.extra > 0 ? formatCurrency(paidTotals.extra, currencyCode) : '—'}
+                            </td>
+                          )}
+                          <td className="px-4 py-3" />
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-right">
+                            {formatCurrency(paidTotals.balance, currencyCode)}
+                          </td>
+                        </tr>
+                      )}
+                      <tr className="bg-gray-100 dark:bg-gray-700">
+                        <td
+                          colSpan={columnCount}
+                          className="px-4 py-2 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                        >
+                          {t('loanDetail.schedule.projectedFuturePayments')}
+                        </td>
+                      </tr>
+                    </>
                   );
 
                   if (unit.kind === 'single') {

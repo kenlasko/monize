@@ -383,6 +383,7 @@
       "colBalance": "残高",
       "projectedFuturePayments": "予測される今後の返済",
       "total": "合計",
+      "paidToDate": "これまでの支払い",
       "monthEntries": "{count, plural, other {# 件}}",
       "toggleMonth": "{month} の支払いを表示または非表示にする",
       "showAll": "全 {count} 回の返済を表示",

@@ -176,6 +176,25 @@ describe('AmortizationScheduleTable', () => {
     expect(screen.getAllByText('$0.00').length).toBeGreaterThan(0);
   });
 
+  it('shows a "paid to date" subtotal just above the projected section', () => {
+    render(
+      <AmortizationScheduleTable
+        historyEvents={makeHistoryEvents(2)}
+        projectionRows={makeProjection().rows}
+        currencyCode="CAD"
+      />,
+    );
+
+    // Two paid rows of 450 principal + 50 interest each => 1000 paid so far.
+    expect(screen.getByText('Paid to date')).toBeInTheDocument();
+    const paidRow = screen
+      .getAllByRole('row')
+      .find((row) => row.textContent?.includes('Paid to date'));
+    expect(paidRow?.textContent).toContain('$1000.00'); // total payment
+    expect(paidRow?.textContent).toContain('$900.00'); // principal 450 x 2
+    expect(paidRow?.textContent).toContain('$100.00'); // interest 50 x 2
+  });
+
   it('collapses a month with several entries and expands to per-date detail', () => {
     // May 2026: a regular installment and an overpayment on different days.
     const events: LoanPaymentEvent[] = [

@@ -383,6 +383,7 @@
       "colBalance": "Saldo",
       "projectedFuturePayments": "Prognozowane przyszłe raty",
       "total": "Razem",
+      "paidToDate": "Spłacono do teraz",
       "monthEntries": "{count, plural, one {# wpłata} few {# wpłaty} many {# wpłat} other {# wpłaty}}",
       "toggleMonth": "Pokaż lub ukryj wpłaty z {month}",
       "showAll": "Pokaż wszystkie raty ({count})",

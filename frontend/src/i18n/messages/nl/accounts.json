@@ -383,6 +383,7 @@
       "colBalance": "Saldo",
       "projectedFuturePayments": "Geprojecteerde toekomstige betalingen",
       "total": "Totaal",
+      "paidToDate": "Tot nu toe betaald",
       "monthEntries": "{count, plural, one {# item} other {# items}}",
       "toggleMonth": "Betalingen van {month} tonen of verbergen",
       "showAll": "Alle {count} betalingen tonen",

@@ -383,6 +383,7 @@
       "colBalance": "Saldo",
       "projectedFuturePayments": "Parcelas futuras projetadas",
       "total": "Total",
+      "paidToDate": "Pago até o momento",
       "monthEntries": "{count, plural, one {# entrada} other {# entradas}}",
       "toggleMonth": "Mostrar ou ocultar os pagamentos de {month}",
       "showAll": "Mostrar todas as {count} parcelas",

@@ -383,6 +383,7 @@
       "colBalance": "Залишок",
       "projectedFuturePayments": "Прогнозовані майбутні платежі",
       "total": "Разом",
+      "paidToDate": "Сплачено на цей момент",
       "monthEntries": "{count, plural, one {# запис} few {# записи} many {# записів} other {# записи}}",
       "toggleMonth": "Показати або приховати платежі за {month}",
       "showAll": "Показати всі платежі ({count})",

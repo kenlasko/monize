@@ -603,27 +603,33 @@ function nearestDateKey(
 
 /**
  * Fill each event's observed annual rate: the interest charged, annualized over
- * the actual days since the previous payment (`interest / balanceBefore x 365 /
- * days`). Using the real gap -- not an assumed month -- keeps the rate correct
- * across partial first periods, payment holidays, and months where an
- * overpayment resets the accrual clock mid-cycle. The first row has no prior
- * payment, so it falls back to the nominal period length. Events must be sorted
- * by date. `balanceBefore` is the post-payment balance plus the principal paid,
- * i.e. the debt the interest accrued on.
+ * the actual days since interest was last settled (`interest / balanceBefore x
+ * 365 / days`). The period runs from the previous *interest-bearing* event, not
+ * merely the previous row: a pure-principal overpayment (no interest) does not
+ * reset the accrual clock, so the following installment still covers the whole
+ * month -- measuring from the overpayment instead would divide a full month's
+ * interest by a few days and report an absurd rate. Using the real gap keeps
+ * the rate correct across partial first periods, payment holidays, and
+ * mid-cycle overpayments that do carry interest. The first interest-bearing row
+ * falls back to the nominal period length. Events must be sorted by date;
+ * `balanceBefore` is the post-payment balance plus the principal paid, i.e. the
+ * debt the interest accrued on.
  */
 function assignObservedRates(events: LoanPaymentEvent[], periodsPerYear: number): void {
   const fallbackDays = 365 / periodsPerYear;
-  for (let i = 0; i < events.length; i++) {
-    const event = events[i];
+  let lastInterestDateKey: string | null = null;
+  for (const event of events) {
     const balanceBefore = event.balance + event.principal;
+    const dateKey = event.date.split('T')[0];
     const days =
-      i > 0
-        ? daysBetween(events[i - 1].date.split('T')[0], event.date.split('T')[0])
+      lastInterestDateKey !== null
+        ? daysBetween(lastInterestDateKey, dateKey)
         : fallbackDays;
     event.annualRate =
       event.interest > 0 && balanceBefore > 0 && days > 0
         ? (event.interest / balanceBefore) * (365 / days) * 100
         : null;
+    if (event.interest > 0) lastInterestDateKey = dateKey;
   }
 }
 

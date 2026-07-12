@@ -383,6 +383,7 @@
       "colBalance": "Saldo",
       "projectedFuturePayments": "Prognostizierte zukünftige Zahlungen",
       "total": "Gesamt",
+      "paidToDate": "Bisher gezahlt",
       "monthEntries": "{count, plural, one {# Eintrag} other {# Einträge}}",
       "toggleMonth": "Zahlungen aus {month} ein- oder ausblenden",
       "showAll": "Alle {count} Zahlungen anzeigen",

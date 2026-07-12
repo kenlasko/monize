@@ -657,4 +657,37 @@ describe('deriveLoanPaymentHistory with paired separate interest expenses', () =
     expect(events[1].interest).toBeCloseTo(secondInterest, 2);
     expect(events[1].annualRate).toBeCloseTo(5.5, 1);
   });
+
+  it('does not let a zero-interest overpayment inflate the next rate', () => {
+    // A pure-principal overpayment (no interest) six days before a regular
+    // installment must not reset the accrual clock: the installment's interest
+    // still covers the whole month, so measuring from the overpayment would
+    // report an absurd rate (~25%). The gap is taken from the last interest.
+    const account = makeAccount({
+      accountType: 'MORTGAGE',
+      openingBalance: -200000,
+      currentBalance: -196468,
+      interestRate: 5.5,
+      overpaymentCategoryId: 'cat-over',
+    });
+    const transactions = [
+      makeTransaction({ transactionDate: '2025-10-06', amount: 281 }),
+      makeTransaction({ transactionDate: '2025-10-30', amount: 3000, categoryId: 'cat-over' }),
+      makeTransaction({ transactionDate: '2025-11-05', amount: 251 }),
+    ];
+    const interestTransactions = [
+      { transactionDate: '2025-10-06', amount: -786, isTransfer: false } as Transaction,
+      { transactionDate: '2025-11-05', amount: -796.93, isTransfer: false } as Transaction,
+    ];
+
+    const { events } = deriveLoanPaymentHistory(account, transactions, [], interestTransactions);
+
+    // The overpayment carries no interest, so it has no rate.
+    expect(events[1].type).toBe('OVERPAYMENT');
+    expect(events[1].annualRate).toBeNull();
+    // The following installment's rate is sane (~5%), not the ~25% a 6-day gap
+    // would produce.
+    expect(events[2].annualRate).toBeGreaterThan(3);
+    expect(events[2].annualRate).toBeLessThan(8);
+  });
 });

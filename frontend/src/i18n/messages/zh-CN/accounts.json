@@ -383,6 +383,7 @@
       "colBalance": "余额",
       "projectedFuturePayments": "预测的未来还款",
       "total": "总计",
+      "paidToDate": "已还款",
       "monthEntries": "{count, plural, other {# 笔}}",
       "toggleMonth": "显示或隐藏 {month} 的还款",
       "showAll": "显示全部 {count} 期还款",

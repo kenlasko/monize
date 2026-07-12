@@ -383,6 +383,7 @@
       "colBalance": "Solde",
       "projectedFuturePayments": "Versements futurs projetés",
       "total": "Total",
+      "paidToDate": "Payé à ce jour",
       "monthEntries": "{count, plural, one {# entrée} other {# entrées}}",
       "toggleMonth": "Afficher ou masquer les paiements de {month}",
       "showAll": "Afficher les {count} versements",

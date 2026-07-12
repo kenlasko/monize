@@ -383,6 +383,7 @@
       "colBalance": "잔액",
       "projectedFuturePayments": "예상되는 향후 상환",
       "total": "합계",
+      "paidToDate": "현재까지 납입",
       "monthEntries": "{count, plural, other {#건}}",
       "toggleMonth": "{month}의 납입 내역 표시 또는 숨기기",
       "showAll": "{count}회 상환 모두 보기",

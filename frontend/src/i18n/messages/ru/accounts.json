@@ -383,6 +383,7 @@
       "colBalance": "Остаток",
       "projectedFuturePayments": "Прогнозируемые будущие платежи",
       "total": "Итого",
+      "paidToDate": "Выплачено на текущий момент",
       "monthEntries": "{count, plural, one {# запись} few {# записи} many {# записей} other {# записи}}",
       "toggleMonth": "Показать или скрыть платежи за {month}",
       "showAll": "Показать все платежи ({count})",

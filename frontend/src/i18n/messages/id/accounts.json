@@ -383,6 +383,7 @@
       "colBalance": "Saldo",
       "projectedFuturePayments": "Angsuran Mendatang yang Diproyeksikan",
       "total": "Total",
+      "paidToDate": "Dibayar sampai saat ini",
       "monthEntries": "{count, plural, other {# entri}}",
       "toggleMonth": "Tampilkan atau sembunyikan pembayaran pada {month}",
       "showAll": "Tampilkan semua {count} angsuran",

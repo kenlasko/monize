@@ -383,6 +383,7 @@
       "colBalance": "Số dư",
       "projectedFuturePayments": "Các kỳ trả dự kiến trong tương lai",
       "total": "Tổng",
+      "paidToDate": "Đã trả đến nay",
       "monthEntries": "{count, plural, other {# mục}}",
       "toggleMonth": "Hiển thị hoặc ẩn các khoản thanh toán trong {month}",
       "showAll": "Hiện tất cả {count} kỳ trả",

@@ -383,6 +383,7 @@
       "colBalance": "Balance",
       "projectedFuturePayments": "Projected Future Payments",
       "total": "Total",
+      "paidToDate": "Paid to date",
       "monthEntries": "{count, plural, one {# entry} other {# entries}}",
       "toggleMonth": "Show or hide the payments made in {month}",
       "rateChangeBadge": "{from}% → {to}%",

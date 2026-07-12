@@ -383,6 +383,7 @@
       "colBalance": "Bakiye",
       "projectedFuturePayments": "Öngörülen Gelecek Taksitler",
       "total": "Toplam",
+      "paidToDate": "Bugüne kadar ödenen",
       "monthEntries": "{count, plural, one {# giriş} other {# giriş}}",
       "toggleMonth": "{month} ayındaki ödemeleri göster veya gizle",
       "showAll": "Tüm {count} taksiti göster",
