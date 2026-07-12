@@ -16,6 +16,7 @@ import {
 import { LoanPaymentEvent } from '@/lib/loan-history';
 import { LoanScheduleResult } from '@/lib/loan-schedule';
 import { chartColors } from '@/lib/chart-colors';
+import { ChartTooltip } from '@/components/reports/ChartTooltip';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 
@@ -186,9 +187,7 @@ export function PayoffComparisonChart({
             <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
             <YAxis tickFormatter={formatCurrencyAxis} tick={{ fontSize: 12 }} />
             <Tooltip
-              formatter={(value: number | string | undefined) =>
-                value === undefined ? '' : formatCurrencyCompact(Number(value))
-              }
+              content={<ChartTooltip formatValue={(value) => formatCurrencyCompact(value)} />}
             />
             <Legend />
             {original && (

@@ -73,6 +73,25 @@ describe('computePastImpact', () => {
     expect(impact!.originalPayoffDate).not.toBeNull();
   });
 
+  it('floors the contractual payment so it amortizes within a standard term', () => {
+    // A payment barely above the interest (sized for a much smaller, overpaid
+    // balance) would take 50+ years to clear the full original principal. The
+    // floor keeps the contractual schedule within a ~30-year term.
+    const account = makeAccount({
+      originalPrincipal: 200000,
+      currentBalance: -100000,
+      interestRate: 6,
+      paymentAmount: 1050,
+      paymentStartDate: '2020-01-15',
+    });
+    const history = makeHistory(account, [1050, 1050]);
+
+    const impact = computePastImpact(account, history)!;
+
+    expect(impact.originalSchedule.paidOff).toBe(true);
+    expect(impact.originalSchedule.numPayments).toBeLessThanOrEqual(365);
+  });
+
   it('derives the contractual payment from history when none is stored', () => {
     // No stored paymentAmount, but a real installment is recoverable from the
     // payments made, so the schedules still build (instead of returning null).
