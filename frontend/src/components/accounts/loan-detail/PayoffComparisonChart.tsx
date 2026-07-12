@@ -82,40 +82,42 @@ export function buildPayoffComparisonSeries(
   // Stitch the projections onto the last historical point so the chart areas
   // connect at the transition instead of leaving a gap
   const hasProjection = (baseline?.rows.length ?? 0) > 0 || (scenario?.rows.length ?? 0) > 0;
+  const lastHistoricalIndex = points.reduce(
+    (last, point, index) => (point.historicalBalance !== undefined ? index : last),
+    -1,
+  );
   let projectionStartKey: string | null = null;
-  if (hasProjection) {
-    const lastHistoricalIndex = points.reduce(
-      (last, point, index) => (point.historicalBalance !== undefined ? index : last),
-      -1,
+  if (hasProjection && lastHistoricalIndex >= 0) {
+    const lastHistorical = points[lastHistoricalIndex];
+    points = points.map((point, index) =>
+      index === lastHistoricalIndex
+        ? {
+            ...point,
+            baselineBalance: point.baselineBalance ?? lastHistorical.historicalBalance,
+            scenarioBalance:
+              scenario !== null
+                ? point.scenarioBalance ?? lastHistorical.historicalBalance
+                : point.scenarioBalance,
+          }
+        : point,
     );
-    if (lastHistoricalIndex >= 0) {
-      const lastHistorical = points[lastHistoricalIndex];
-      points = points.map((point, index) =>
-        index === lastHistoricalIndex
-          ? {
-              ...point,
-              baselineBalance: point.baselineBalance ?? lastHistorical.historicalBalance,
-              scenarioBalance:
-                scenario !== null
-                  ? point.scenarioBalance ?? lastHistorical.historicalBalance
-                  : point.scenarioBalance,
-            }
-          : point,
-      );
-      projectionStartKey = points[lastHistoricalIndex + 1]?.monthKey ?? null;
-    } else {
-      projectionStartKey = points[0]?.monthKey ?? null;
-    }
+    projectionStartKey = points[lastHistoricalIndex + 1]?.monthKey ?? null;
+  } else if (hasProjection) {
+    projectionStartKey = points[0]?.monthKey ?? null;
   }
 
-  // Sample long series down to a readable number of points, keeping the last
+  // Sample long series down to a readable number of points. Always keep the
+  // endpoints and the history->projection transition (last historical point
+  // and the first projected point), so uniform sampling can't drop them and
+  // leave a visual gap at "today".
   if (points.length > MAX_CHART_POINTS) {
     const step = Math.ceil(points.length / MAX_CHART_POINTS);
-    const sampled = points.filter((_, index) => index % step === 0);
-    if (sampled[sampled.length - 1] !== points[points.length - 1]) {
-      sampled.push(points[points.length - 1]);
+    const keep = new Set<number>([0, points.length - 1]);
+    if (lastHistoricalIndex >= 0) {
+      keep.add(lastHistoricalIndex);
+      if (lastHistoricalIndex + 1 < points.length) keep.add(lastHistoricalIndex + 1);
     }
-    points = sampled;
+    points = points.filter((_, index) => index % step === 0 || keep.has(index));
   }
 
   return { points, projectionStartKey };

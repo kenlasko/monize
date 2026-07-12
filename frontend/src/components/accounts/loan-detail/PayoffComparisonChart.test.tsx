@@ -133,6 +133,41 @@ describe('buildPayoffComparisonSeries', () => {
     expect(points[points.length - 1].monthKey).toBe(lastRow.date.slice(0, 7));
   });
 
+  it('keeps the history/projection transition after sampling a long series', () => {
+    // ~90 months of history plus a long projection, so sampling kicks in and
+    // could otherwise drop the "today" transition, leaving a visual gap.
+    const history: LoanPaymentEvent[] = Array.from({ length: 90 }, (_, i) => {
+      const year = 2019 + Math.floor(i / 12);
+      const month = String((i % 12) + 1).padStart(2, '0');
+      return {
+        date: `${year}-${month}-15`,
+        principal: 100,
+        interest: 10,
+        balance: 200000 - i * 100,
+        cumulativePrincipal: (i + 1) * 100,
+        cumulativeInterest: (i + 1) * 10,
+        type: 'REGULAR' as const,
+        interestRecorded: true,
+      };
+    });
+    const lastHistMonth = history[history.length - 1].date.slice(0, 7); // 2026-06
+    const projection = generateLoanSchedule({
+      startingBalance: 191000,
+      annualRate: 5,
+      paymentAmount: 1100,
+      frequency: 'MONTHLY',
+      firstPaymentDate: new Date(2026, 6, 15),
+    });
+
+    const { points, projectionStartKey } = buildPayoffComparisonSeries(history, projection, null);
+
+    // The last historical month keeps its balance, and the first projected
+    // month is present -- the transition is not dropped.
+    const lastHist = points.find((p) => p.monthKey === lastHistMonth);
+    expect(lastHist?.historicalBalance).toBeDefined();
+    expect(points.some((p) => p.monthKey === projectionStartKey)).toBe(true);
+  });
+
   it('adds the original contractual series from the fourth argument', () => {
     const original = makeProjection();
     const { points } = buildPayoffComparisonSeries(makeHistory(), null, null, original);
