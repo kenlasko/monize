@@ -24,6 +24,8 @@ export interface DisplayRow {
   isOverpayment?: boolean;
   /** Set on the first projected row of a new rate segment */
   rateChange?: { from: number; to: number };
+  /** This row's date follows a gap in payments (missing installments). */
+  precededByGap?: boolean;
 }
 
 interface ScheduleTableRowProps {
@@ -68,9 +70,12 @@ export function ScheduleTableRow({
 
   return (
     <tr
+      title={row.precededByGap ? t('loanDetail.schedule.gapTooltip') : undefined}
       className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
         row.isProjected ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
-      } ${isChild ? 'bg-gray-50/60 dark:bg-gray-900/20' : ''}`}
+      } ${isChild ? 'bg-gray-50/60 dark:bg-gray-900/20' : ''} ${
+        row.precededByGap ? 'bg-red-50 dark:bg-red-900/20' : ''
+      }`}
     >
       <td className={`${cellClass} text-gray-500 dark:text-gray-400`}>
         {isChild ? '' : row.paymentNumber}

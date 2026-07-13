@@ -35,6 +35,36 @@ type ScheduleUnit =
 const sumField = (rows: DisplayRow[], field: keyof DisplayRow): number =>
   rows.reduce((acc, row) => acc + Math.round(Number(row[field]) * 10000), 0) / 10000;
 
+/** Whole days between two yyyy-MM-dd keys, timezone-safe. */
+function daysBetween(aKey: string, bKey: string): number {
+  const a = new Date(`${aKey}T00:00:00Z`).getTime();
+  const b = new Date(`${bKey}T00:00:00Z`).getTime();
+  return Math.round((b - a) / (1000 * 60 * 60 * 24));
+}
+
+/**
+ * The set of historical payment dates that follow a gap -- a stretch longer
+ * than ~1.8x the typical interval between payments, i.e. one or more expected
+ * installments with no recorded payment (a payment holiday, or missing data).
+ * The row on such a date is flagged so the schedule can highlight it. Needs at
+ * least three payments to establish a median interval; returns empty otherwise.
+ */
+function datesFollowingAGap(dateKeys: string[]): Set<string> {
+  const flagged = new Set<string>();
+  const dates = [...dateKeys].sort();
+  if (dates.length < 3) return flagged;
+  const gaps: number[] = [];
+  for (let i = 1; i < dates.length; i++) gaps.push(daysBetween(dates[i - 1], dates[i]));
+  const sorted = [...gaps].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)];
+  if (!(median > 0)) return flagged;
+  const threshold = median * 1.8;
+  for (let i = 1; i < dates.length; i++) {
+    if (daysBetween(dates[i - 1], dates[i]) > threshold) flagged.add(dates[i]);
+  }
+  return flagged;
+}
+
 interface ColumnTotals {
   payment: number;
   interest: number;
@@ -125,6 +155,13 @@ export function AmortizationScheduleTable({
     [rateChanges],
   );
 
+  // Historical payment dates that follow a gap (missing installments), so the
+  // schedule can flag "data missing here" on the row after the gap.
+  const gapDates = useMemo(
+    () => datesFollowingAGap(historyEvents.map((e) => e.date.split('T')[0])),
+    [historyEvents],
+  );
+
   const rows = useMemo((): DisplayRow[] => {
     const historical = historyEvents.map((event, index) => {
       const isOverpayment = event.type === 'OVERPAYMENT';
@@ -142,6 +179,7 @@ export function AmortizationScheduleTable({
         isProjected: false,
         isOverpayment,
         annualRate: event.annualRate ?? null,
+        precededByGap: gapDates.has(event.date.split('T')[0]),
         change: changeByDate.get(event.date),
       };
     });
@@ -168,7 +206,7 @@ export function AmortizationScheduleTable({
       };
     });
     return [...historical, ...projected];
-  }, [historyEvents, projectionRows, changeByDate]);
+  }, [historyEvents, projectionRows, changeByDate, gapDates]);
 
   // Collapse each historical month with more than one entry into an aggregate
   // row (expandable to its detail); every projected row stays on its own.
@@ -209,6 +247,8 @@ export function AmortizationScheduleTable({
           balance: last.balance,
           isProjected: false,
           annualRate: regular?.annualRate ?? null,
+          // The month follows a gap if its first payment does.
+          precededByGap: monthRows[0].precededByGap,
         },
       });
     }

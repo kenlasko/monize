@@ -49,6 +49,37 @@ function makeProjection(overpayments?: Parameters<typeof generateLoanSchedule>[0
 }
 
 describe('AmortizationScheduleTable', () => {
+  it('flags the row after a gap in payments', () => {
+    // Jan/Feb/Mar then a jump to August -- the ~5-month gap (missing Apr-Jul)
+    // marks the August row so the schedule can highlight the missing data.
+    const row = (date: string, i: number): LoanPaymentEvent => ({
+      date,
+      principal: 450,
+      interest: 50,
+      balance: 10000 - 450 * (i + 1),
+      cumulativePrincipal: 450 * (i + 1),
+      cumulativeInterest: 50 * (i + 1),
+      type: 'REGULAR' as const,
+      annualRate: 5,
+    });
+    render(
+      <AmortizationScheduleTable
+        historyEvents={[
+          row('2025-01-15', 0),
+          row('2025-02-15', 1),
+          row('2025-03-15', 2),
+          row('2025-08-15', 3),
+        ]}
+        projectionRows={[]}
+        currencyCode="CAD"
+      />,
+    );
+
+    const flagged = screen.getAllByTitle(/Gap in payments/);
+    expect(flagged).toHaveLength(1);
+    expect(flagged[0].textContent).toContain('Aug 15, 2025');
+  });
+
   it('renders historical and projected rows with a separator', () => {
     render(
       <AmortizationScheduleTable

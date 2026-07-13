@@ -386,6 +386,7 @@
       "paidToDate": "[XX-Paid to date-XX]",
       "monthEntries": "[XX-{count, plural, one {# entry} other {# entries}}-XX]",
       "toggleMonth": "[XX-Show or hide the payments made in {month}-XX]",
+      "gapTooltip": "[XX-Gap in payments: one or more expected installments before this date have no recorded payment.-XX]",
       "rateChangeBadge": "[XX-{from}% → {to}%-XX]",
       "overpaymentBadge": "[XX-Overpayment-XX]",
       "editRateLabel": "[XX-Edit interest rate for {date}-XX]",
