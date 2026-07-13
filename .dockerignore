@@ -1,0 +1,23 @@
+# Build context is the repo root (see docker-compose*.yml `context: .`), so
+# these patterns are matched from there. Keep host-only and generated artifacts
+# out of the image build context: they bloat/slow the build and -- critically --
+# a stale tsconfig.tsbuildinfo copied in makes an incremental `nest build`
+# emit an incomplete dist/ (missing db-init.js etc.).
+**/node_modules
+**/dist
+**/.next
+**/*.tsbuildinfo
+**/coverage
+**/.nyc_output
+**/*.log
+
+# VCS and local tooling
+.git
+.gitignore
+**/.vscode
+**/.idea
+
+# Secrets and local env (the image gets config via runtime env vars)
+**/.env
+**/.env.*
+!**/.env.example

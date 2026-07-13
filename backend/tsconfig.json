@@ -12,6 +12,12 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "incremental": true,
+    // Keep the incremental buildinfo inside outDir so nest-cli's deleteOutDir
+    // clears it on every build. TypeScript 6 changed the default location to the
+    // project root, where deleteOutDir no longer reaches it -- a stale buildinfo
+    // there makes `nest build` skip unchanged files (e.g. db-init.ts) while the
+    // wiped dist loses them, producing an incomplete dist/ and a broken image.
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",
     "skipLibCheck": true,
     "strict": false,
     "strictNullChecks": true,
