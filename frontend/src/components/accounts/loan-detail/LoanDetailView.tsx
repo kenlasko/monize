@@ -15,7 +15,6 @@ import {
   buildLoanProjectionInput,
   deriveCurrentInstallment,
   deriveLoanPaymentHistory,
-  deriveRateChangePoints,
 } from '@/lib/loan-history';
 import { computePastImpact } from '@/lib/loan-past-impact';
 import {
@@ -141,17 +140,12 @@ export function LoanDetailView({
     [account, history, baseline, rateChanges],
   );
 
-  // The points where the effective rate changed, for the narrow Rate History
-  // panel beside the simulator, and the last payment date to close its chart.
-  const rateChangePoints = useMemo(
-    () => deriveRateChangePoints(history.events),
-    [history.events],
-  );
+  // Last payment date, so the Rate History chart can hold the final recorded
+  // rate out to the end of the timeline.
   const rateSeriesEndDate =
     history.events.length > 0
       ? history.events[history.events.length - 1].date.split('T')[0]
       : null;
-  const showRateHistory = rateChangePoints.length > 0;
 
   return (
     <div className="space-y-6">
@@ -164,10 +158,9 @@ export function LoanDetailView({
 
       <PastImpactSection account={account} impact={impact} />
 
-      {(projectionInput || showRateHistory) && (
-        <div className="flex flex-col lg:flex-row gap-6 items-start">
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
           {projectionInput && (
-            <div className={showRateHistory ? 'w-full lg:w-[70%]' : 'w-full'}>
+            <div className="w-full lg:w-[70%]">
               <OverpaymentSimulator
                 accountId={account.id}
                 currencyCode={account.currencyCode}
@@ -201,13 +194,15 @@ export function LoanDetailView({
               />
             </div>
           )}
-          {showRateHistory && (
-            <div className={projectionInput ? 'w-full lg:w-[30%]' : 'w-full'}>
-              <RateHistorySidebar points={rateChangePoints} endDate={rateSeriesEndDate} />
-            </div>
-          )}
-        </div>
-      )}
+          <div className={projectionInput ? 'w-full lg:w-[30%]' : 'w-full'}>
+            <RateHistorySidebar
+              account={account}
+              rateChanges={rateChanges}
+              editing={rateEditing}
+              endDate={rateSeriesEndDate}
+            />
+          </div>
+      </div>
 
       <PayoffComparisonChart
         historyEvents={history.events}

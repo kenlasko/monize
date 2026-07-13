@@ -28,12 +28,11 @@ const emptyForm = (): RateFormState => ({
 });
 
 /**
- * The rate-timeline editing behaviour shared by the Loan Schedule table's
- * inline rate cells and its rate controls (Add / per-change edit + delete):
- * the create/update/delete mutations plus the scheduled-payment "ask
- * permission" prompt. Historical rates are observed from the interest actually
- * charged, so there is no detection step. Kept out of the table component so
- * both the inline cell and the modal UI can drive the same logic.
+ * The rate-timeline editing behaviour shared by the Loan Schedule's inline rate
+ * cells, its rate controls (Add / per-change edit + delete), and the Rate
+ * History panel: the create/update/delete mutations, the scheduled-payment "ask
+ * permission" prompt, and detect-from-history. Kept out of the components so the
+ * inline cell, the controls, and the panel all drive one instance.
  */
 export function useLoanRateEditing(account: Account, onChanged: () => void) {
   const t = useTranslations('accounts');
@@ -45,6 +44,8 @@ export function useLoanRateEditing(account: Account, onChanged: () => void) {
   const [form, setForm] = useState<RateFormState>(emptyForm());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [changeToDelete, setChangeToDelete] = useState<LoanRateChange | null>(null);
+  const [showDetectConfirm, setShowDetectConfirm] = useState(false);
+  const [isDetecting, setIsDetecting] = useState(false);
   const [scheduledPreview, setScheduledPreview] =
     useState<ScheduledPaymentPreview | null>(null);
   // The effective date of the row whose rate is currently being saved inline.
@@ -192,6 +193,28 @@ export function useLoanRateEditing(account: Account, onChanged: () => void) {
     toast(t('loanDetail.rateHistory.scheduledUpdateSkippedToast'), { icon: 'ℹ️' });
   };
 
+  // Detect rate changes from the payment history (backend segmentation). It is
+  // non-destructive: only previously *inferred* rows are replaced; manual and
+  // initial rows, and the account's own rate/payment, are left untouched.
+  const openDetect = () => setShowDetectConfirm(true);
+  const cancelDetect = () => setShowDetectConfirm(false);
+  const runDetect = async () => {
+    setShowDetectConfirm(false);
+    setIsDetecting(true);
+    try {
+      const result = await loanRateChangesApi.detect(account.id);
+      toast.success(
+        t('loanDetail.rateHistory.detectedToast', { count: result.created.length }),
+      );
+      for (const warning of result.warnings) toast(warning, { icon: '⚠️' });
+      onChanged();
+    } catch (err) {
+      toast.error(getErrorMessage(err, t('loanDetail.rateHistory.detectFailed')));
+    } finally {
+      setIsDetecting(false);
+    }
+  };
+
   const scheduledUpdateMessage = scheduledPreview
     ? t('loanDetail.rateHistory.scheduledUpdateMessage', {
         name:
@@ -234,6 +257,12 @@ export function useLoanRateEditing(account: Account, onChanged: () => void) {
     changeToDelete,
     confirmDelete,
     cancelDelete,
+    // detect from history
+    openDetect,
+    cancelDetect,
+    showDetectConfirm,
+    isDetecting,
+    runDetect,
     // scheduled-payment prompt
     scheduledPreview,
     scheduledUpdateMessage,

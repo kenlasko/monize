@@ -2,10 +2,8 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   deriveCurrentInstallment,
   deriveLoanPaymentHistory,
-  deriveRateChangePoints,
   fetchAllAccountTransactions,
   fetchLoanInterestTransactions,
-  LoanPaymentEvent,
 } from './loan-history';
 import { transactionsApi } from '@/lib/transactions';
 import { Account } from '@/types/account';
@@ -469,52 +467,6 @@ describe('deriveCurrentInstallment', () => {
       1279,
     );
     expect(result).toBe(600);
-  });
-});
-
-describe('deriveRateChangePoints', () => {
-  const ev = (
-    date: string,
-    annualRate: number | null,
-    type: 'REGULAR' | 'OVERPAYMENT' = 'REGULAR',
-  ): LoanPaymentEvent => ({
-    date,
-    principal: 100,
-    interest: 10,
-    balance: 0,
-    cumulativePrincipal: 0,
-    cumulativeInterest: 0,
-    type,
-    annualRate,
-  });
-
-  it('emits a point only where the rate changes, not once per payment', () => {
-    const points = deriveRateChangePoints([
-      ev('2022-01-15', 5.5),
-      ev('2022-02-15', 5.5),
-      ev('2022-03-15', 6.0),
-      ev('2022-04-15', 6.0),
-      ev('2022-05-15', 5.75),
-    ]);
-    expect(points).toEqual([
-      { date: '2022-01-15', annualRate: 5.5 },
-      { date: '2022-03-15', annualRate: 6.0 },
-      { date: '2022-05-15', annualRate: 5.75 },
-    ]);
-  });
-
-  it('skips overpayments and rateless rows, and rounds to absorb jitter', () => {
-    const points = deriveRateChangePoints([
-      ev('2022-01-15', 5.501),
-      ev('2022-01-20', null, 'OVERPAYMENT'),
-      ev('2022-02-15', 5.499), // rounds to 5.5 -> same, no new point
-      ev('2022-03-15', null), // no rate -> skipped
-      ev('2022-04-15', 6.0),
-    ]);
-    expect(points).toEqual([
-      { date: '2022-01-15', annualRate: 5.5 },
-      { date: '2022-04-15', annualRate: 6.0 },
-    ]);
   });
 });
 
