@@ -309,6 +309,36 @@ export function deriveCurrentInstallment(
   return observed > 0 ? observed : contractualPayment;
 }
 
+export interface RateChangePoint {
+  /** ISO date (yyyy-MM-dd) the rate took effect -- the first payment at it */
+  date: string;
+  /** Annual rate (percentage) from this date */
+  annualRate: number;
+}
+
+/**
+ * Collapse the per-installment effective rate into just the points where it
+ * changed -- a handful of rows over a loan's life instead of one per payment.
+ * A point is emitted only when the rate (rounded to 2 dp, to absorb tiny
+ * day-count jitter) differs from the last emitted one. Overpayment rows and
+ * rows without a rate are skipped. The rate read is each event's effective
+ * `annualRate` (the recorded timeline rate when a rate history exists, else the
+ * reconstructed one), so this reflects whatever rate the schedule shows.
+ */
+export function deriveRateChangePoints(events: LoanPaymentEvent[]): RateChangePoint[] {
+  const points: RateChangePoint[] = [];
+  let lastRounded: number | null = null;
+  for (const event of events) {
+    if (event.type !== 'REGULAR' || event.annualRate == null) continue;
+    const rounded = Math.round(event.annualRate * 100) / 100;
+    if (lastRounded === null || rounded !== lastRounded) {
+      points.push({ date: event.date.split('T')[0], annualRate: rounded });
+      lastRounded = rounded;
+    }
+  }
+  return points;
+}
+
 /**
  * The forward-projection input shared by the loan detail view and the loan
  * reports: a schedule that continues from today's balance at the loan's real

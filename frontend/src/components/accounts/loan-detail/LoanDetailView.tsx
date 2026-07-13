@@ -6,6 +6,7 @@ import { LoanSummaryCards } from '@/components/accounts/loan-detail/LoanSummaryC
 import { AmortizationScheduleTable } from '@/components/accounts/loan-detail/AmortizationScheduleTable';
 import { OverpaymentSimulator } from '@/components/accounts/loan-detail/OverpaymentSimulator';
 import { PayoffComparisonChart } from '@/components/accounts/loan-detail/PayoffComparisonChart';
+import { RateHistorySidebar } from '@/components/accounts/loan-detail/RateHistorySidebar';
 import { ComparisonSummaryCards } from '@/components/accounts/loan-detail/ComparisonSummaryCards';
 import { SavedScenariosPanel } from '@/components/accounts/loan-detail/SavedScenariosPanel';
 import { PastImpactSection } from '@/components/accounts/loan-detail/PastImpactSection';
@@ -14,6 +15,7 @@ import {
   buildLoanProjectionInput,
   deriveCurrentInstallment,
   deriveLoanPaymentHistory,
+  deriveRateChangePoints,
 } from '@/lib/loan-history';
 import { computePastImpact } from '@/lib/loan-past-impact';
 import {
@@ -139,6 +141,18 @@ export function LoanDetailView({
     [account, history, baseline, rateChanges],
   );
 
+  // The points where the effective rate changed, for the narrow Rate History
+  // panel beside the simulator, and the last payment date to close its chart.
+  const rateChangePoints = useMemo(
+    () => deriveRateChangePoints(history.events),
+    [history.events],
+  );
+  const rateSeriesEndDate =
+    history.events.length > 0
+      ? history.events[history.events.length - 1].date.split('T')[0]
+      : null;
+  const showRateHistory = rateChangePoints.length > 0;
+
   return (
     <div className="space-y-6">
       <LoanSummaryCards
@@ -150,38 +164,49 @@ export function LoanDetailView({
 
       <PastImpactSection account={account} impact={impact} />
 
-      {projectionInput && (
-        <OverpaymentSimulator
-          accountId={account.id}
-          currencyCode={account.currencyCode}
-          onPlanChange={setPlan}
-          loadedPlan={loadedPlan}
-          loadedPlanVersion={loadedPlanVersion}
-          footer={
-            <>
-              {comparison && (
-                <div className="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700">
-                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                    {t('loanDetail.comparison.title')}
-                  </h4>
-                  <ComparisonSummaryCards
-                    comparison={comparison}
-                    currencyCode={account.currencyCode}
-                  />
-                </div>
-              )}
-              <SavedScenariosPanel
+      {(projectionInput || showRateHistory) && (
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
+          {projectionInput && (
+            <div className={showRateHistory ? 'w-full lg:w-[70%]' : 'w-full'}>
+              <OverpaymentSimulator
                 accountId={account.id}
-                scenarios={scenarios}
-                comparisons={scenarioComparisons}
                 currencyCode={account.currencyCode}
-                activePlan={plan}
-                onLoad={handleLoadScenario}
-                onScenariosChanged={onScenariosChanged}
+                onPlanChange={setPlan}
+                loadedPlan={loadedPlan}
+                loadedPlanVersion={loadedPlanVersion}
+                footer={
+                  <>
+                    {comparison && (
+                      <div className="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700">
+                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                          {t('loanDetail.comparison.title')}
+                        </h4>
+                        <ComparisonSummaryCards
+                          comparison={comparison}
+                          currencyCode={account.currencyCode}
+                        />
+                      </div>
+                    )}
+                    <SavedScenariosPanel
+                      accountId={account.id}
+                      scenarios={scenarios}
+                      comparisons={scenarioComparisons}
+                      currencyCode={account.currencyCode}
+                      activePlan={plan}
+                      onLoad={handleLoadScenario}
+                      onScenariosChanged={onScenariosChanged}
+                    />
+                  </>
+                }
               />
-            </>
-          }
-        />
+            </div>
+          )}
+          {showRateHistory && (
+            <div className={projectionInput ? 'w-full lg:w-[30%]' : 'w-full'}>
+              <RateHistorySidebar points={rateChangePoints} endDate={rateSeriesEndDate} />
+            </div>
+          )}
+        </div>
       )}
 
       <PayoffComparisonChart
