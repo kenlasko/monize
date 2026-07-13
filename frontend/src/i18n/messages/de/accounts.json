@@ -386,6 +386,7 @@
       "paidToDate": "Bisher gezahlt",
       "monthEntries": "{count, plural, one {# Eintrag} other {# Einträge}}",
       "toggleMonth": "Zahlungen aus {month} ein- oder ausblenden",
+      "gapRow": "Keine erfassten Zahlungen – hier fehlen eine oder mehrere erwartete Raten",
       "showAll": "Alle {count} Zahlungen anzeigen",
       "showLess": "Weniger anzeigen",
       "noPayments": "Keine Zahlungen gefunden",
@@ -432,7 +433,7 @@
       "empty": "Keine Zahlungshistorie oder Prognose verfügbar.",
       "seriesHistorical": "Tatsächlicher Saldo",
       "seriesBaseline": "Aktuelle Prognose",
-      "seriesScenario": "Mit Sondertilgungen",
+      "seriesScenario": "Mit simulierten Sondertilgungen",
       "seriesOriginal": "Ursprünglicher Plan",
       "today": "Heute",
       "scenarioNote": "Das Sondertilgungsszenario ist eine Simulation und ändert Ihre geplanten Zahlungen nicht."

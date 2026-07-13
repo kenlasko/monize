@@ -386,6 +386,7 @@
       "paidToDate": "Bugüne kadar ödenen",
       "monthEntries": "{count, plural, one {# giriş} other {# giriş}}",
       "toggleMonth": "{month} ayındaki ödemeleri göster veya gizle",
+      "gapRow": "Kayıtlı ödeme yok — burada beklenen bir veya daha fazla taksit eksik",
       "showAll": "Tüm {count} taksiti göster",
       "showLess": "Daha az göster",
       "noPayments": "Taksit bulunamadı",
@@ -432,7 +433,7 @@
       "empty": "Ödeme geçmişi veya öngörü yok.",
       "seriesHistorical": "Gerçek Bakiye",
       "seriesBaseline": "Mevcut Öngörü",
-      "seriesScenario": "Erken Ödemelerle",
+      "seriesScenario": "Simüle edilmiş fazla ödemelerle",
       "seriesOriginal": "Orijinal Plan",
       "today": "Bugün",
       "scenarioNote": "Erken ödeme senaryosu bir simülasyondur ve planlanan ödemelerinizi değiştirmez."

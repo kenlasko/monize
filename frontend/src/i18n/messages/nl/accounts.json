@@ -386,6 +386,7 @@
       "paidToDate": "Tot nu toe betaald",
       "monthEntries": "{count, plural, one {# item} other {# items}}",
       "toggleMonth": "Betalingen van {month} tonen of verbergen",
+      "gapRow": "Geen geregistreerde betalingen — een of meer verwachte termijnen ontbreken hier",
       "showAll": "Alle {count} betalingen tonen",
       "showLess": "Minder tonen",
       "noPayments": "Geen betalingen gevonden",
@@ -432,7 +433,7 @@
       "empty": "Geen betalingsgeschiedenis of projectie beschikbaar.",
       "seriesHistorical": "Werkelijk saldo",
       "seriesBaseline": "Huidige projectie",
-      "seriesScenario": "Met extra aflossingen",
+      "seriesScenario": "Met gesimuleerde extra aflossingen",
       "seriesOriginal": "Oorspronkelijk schema",
       "today": "Vandaag",
       "scenarioNote": "Het scenario met extra aflossingen is een simulatie en wijzigt uw geplande betalingen niet."

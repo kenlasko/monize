@@ -386,6 +386,7 @@
       "paidToDate": "Dibayar sampai saat ini",
       "monthEntries": "{count, plural, other {# entri}}",
       "toggleMonth": "Tampilkan atau sembunyikan pembayaran pada {month}",
+      "gapRow": "Tidak ada pembayaran tercatat — satu atau beberapa angsuran yang diharapkan tidak ada di sini",
       "showAll": "Tampilkan semua {count} angsuran",
       "showLess": "Tampilkan lebih sedikit",
       "noPayments": "Tidak ada angsuran ditemukan",
@@ -432,7 +433,7 @@
       "empty": "Tidak ada riwayat pembayaran atau proyeksi.",
       "seriesHistorical": "Saldo Aktual",
       "seriesBaseline": "Proyeksi Saat Ini",
-      "seriesScenario": "Dengan Pembayaran Tambahan",
+      "seriesScenario": "Dengan pembayaran ekstra tersimulasi",
       "seriesOriginal": "Jadwal Awal",
       "today": "Hari ini",
       "scenarioNote": "Skenario pembayaran tambahan hanyalah simulasi dan tidak mengubah pembayaran terjadwal Anda."

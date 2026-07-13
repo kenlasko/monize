@@ -386,6 +386,7 @@
       "paidToDate": "Spłacono do teraz",
       "monthEntries": "{count, plural, one {# wpłata} few {# wpłaty} many {# wpłat} other {# wpłaty}}",
       "toggleMonth": "Pokaż lub ukryj wpłaty z {month}",
+      "gapRow": "Brak zarejestrowanych płatności — brakuje tu jednej lub więcej oczekiwanych rat",
       "showAll": "Pokaż wszystkie raty ({count})",
       "showLess": "Pokaż mniej",
       "noPayments": "Nie znaleziono rat",

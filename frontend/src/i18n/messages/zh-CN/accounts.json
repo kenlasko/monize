@@ -386,6 +386,7 @@
       "paidToDate": "已还款",
       "monthEntries": "{count, plural, other {# 笔}}",
       "toggleMonth": "显示或隐藏 {month} 的还款",
+      "gapRow": "无还款记录 — 此处缺少一笔或多笔预期分期",
       "showAll": "显示全部 {count} 期还款",
       "showLess": "收起",
       "noPayments": "未找到还款记录",
@@ -432,7 +433,7 @@
       "empty": "没有可用的还款历史或预测。",
       "seriesHistorical": "实际余额",
       "seriesBaseline": "当前预测",
-      "seriesScenario": "含提前还款",
+      "seriesScenario": "含模拟额外还款",
       "seriesOriginal": "原始计划",
       "today": "今天",
       "scenarioNote": "提前还款方案只是模拟，不会改变您的计划还款。"

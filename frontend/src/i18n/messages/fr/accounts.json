@@ -386,6 +386,7 @@
       "paidToDate": "Payé à ce jour",
       "monthEntries": "{count, plural, one {# entrée} other {# entrées}}",
       "toggleMonth": "Afficher ou masquer les paiements de {month}",
+      "gapRow": "Aucun paiement enregistré — une ou plusieurs échéances attendues manquent ici",
       "showAll": "Afficher les {count} versements",
       "showLess": "Afficher moins",
       "noPayments": "Aucun versement trouvé",
@@ -432,7 +433,7 @@
       "empty": "Aucun historique de paiements ni projection disponible.",
       "seriesHistorical": "Solde réel",
       "seriesBaseline": "Projection actuelle",
-      "seriesScenario": "Avec remboursements anticipés",
+      "seriesScenario": "Avec remboursements anticipés simulés",
       "seriesOriginal": "Calendrier initial",
       "today": "Aujourd'hui",
       "scenarioNote": "Le scénario de remboursement anticipé est une simulation et ne modifie pas vos versements planifiés."

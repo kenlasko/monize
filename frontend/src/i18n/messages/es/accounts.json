@@ -386,6 +386,7 @@
       "paidToDate": "Pagado hasta la fecha",
       "monthEntries": "{count, plural, one {# entrada} other {# entradas}}",
       "toggleMonth": "Mostrar u ocultar los pagos de {month}",
+      "gapRow": "Sin pagos registrados: faltan una o más cuotas previstas aquí",
       "showAll": "Mostrar los {count} pagos",
       "showLess": "Mostrar menos",
       "noPayments": "No se encontraron pagos",
@@ -432,7 +433,7 @@
       "empty": "No hay historial de pagos ni proyección disponible.",
       "seriesHistorical": "Saldo real",
       "seriesBaseline": "Proyección actual",
-      "seriesScenario": "Con pagos anticipados",
+      "seriesScenario": "Con pagos extra simulados",
       "seriesOriginal": "Calendario original",
       "today": "Hoy",
       "scenarioNote": "El escenario de pagos anticipados es una simulación y no cambia sus pagos programados."

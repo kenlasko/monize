@@ -386,6 +386,7 @@
       "paidToDate": "Pagato finora",
       "monthEntries": "{count, plural, one {# voce} other {# voci}}",
       "toggleMonth": "Mostra o nascondi i pagamenti di {month}",
+      "gapRow": "Nessun pagamento registrato — qui mancano una o più rate previste",
       "showAll": "Mostra tutte le {count} rate",
       "showLess": "Mostra meno",
       "noPayments": "Nessuna rata trovata",
@@ -432,7 +433,7 @@
       "empty": "Nessuna cronologia dei pagamenti o proiezione disponibile.",
       "seriesHistorical": "Saldo effettivo",
       "seriesBaseline": "Proiezione attuale",
-      "seriesScenario": "Con rimborsi anticipati",
+      "seriesScenario": "Con sovrapagamenti simulati",
       "seriesOriginal": "Piano originario",
       "today": "Oggi",
       "scenarioNote": "Lo scenario di rimborso anticipato è una simulazione e non modifica i tuoi pagamenti pianificati."

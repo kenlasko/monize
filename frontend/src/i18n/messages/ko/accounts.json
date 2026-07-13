@@ -386,6 +386,7 @@
       "paidToDate": "현재까지 납입",
       "monthEntries": "{count, plural, other {#건}}",
       "toggleMonth": "{month}의 납입 내역 표시 또는 숨기기",
+      "gapRow": "기록된 납입 없음 — 예상된 하나 이상의 상환이 여기에 없습니다",
       "showAll": "{count}회 상환 모두 보기",
       "showLess": "간략히 보기",
       "noPayments": "상환 내역이 없습니다",
@@ -432,7 +433,7 @@
       "empty": "납부 이력이나 예측이 없습니다.",
       "seriesHistorical": "실제 잔액",
       "seriesBaseline": "현재 예측",
-      "seriesScenario": "조기 상환 시",
+      "seriesScenario": "시뮬레이션된 추가 상환 포함",
       "seriesOriginal": "최초 일정",
       "today": "오늘",
       "scenarioNote": "조기 상환 시나리오는 시뮬레이션이며 예정된 납부를 변경하지 않습니다."

@@ -386,6 +386,7 @@
       "paidToDate": "Đã trả đến nay",
       "monthEntries": "{count, plural, other {# mục}}",
       "toggleMonth": "Hiển thị hoặc ẩn các khoản thanh toán trong {month}",
+      "gapRow": "Không có khoản thanh toán nào được ghi nhận — thiếu một hoặc nhiều kỳ trả góp dự kiến ở đây",
       "showAll": "Hiện tất cả {count} kỳ trả",
       "showLess": "Thu gọn",
       "noPayments": "Không tìm thấy khoản trả nào",
@@ -432,7 +433,7 @@
       "empty": "Không có lịch sử thanh toán hoặc dự báo.",
       "seriesHistorical": "Số dư thực tế",
       "seriesBaseline": "Dự báo hiện tại",
-      "seriesScenario": "Có trả trước hạn",
+      "seriesScenario": "Có trả trước mô phỏng",
       "seriesOriginal": "Lịch ban đầu",
       "today": "Hôm nay",
       "scenarioNote": "Kịch bản trả trước hạn chỉ là mô phỏng và không thay đổi các khoản trả đã lên lịch của bạn."

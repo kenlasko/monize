@@ -386,6 +386,7 @@
       "paidToDate": "これまでの支払い",
       "monthEntries": "{count, plural, other {# 件}}",
       "toggleMonth": "{month} の支払いを表示または非表示にする",
+      "gapRow": "記録された支払いがありません — 予定されていた1回以上の返済がここにありません",
       "showAll": "全 {count} 回の返済を表示",
       "showLess": "表示を減らす",
       "noPayments": "返済が見つかりません",
@@ -432,7 +433,7 @@
       "empty": "返済履歴や予測はありません。",
       "seriesHistorical": "実際の残高",
       "seriesBaseline": "現在の予測",
-      "seriesScenario": "繰上返済あり",
+      "seriesScenario": "シミュレーションした繰上返済あり",
       "seriesOriginal": "当初スケジュール",
       "today": "今日",
       "scenarioNote": "繰上返済シナリオはシミュレーションであり、予定されている返済を変更するものではありません。"
