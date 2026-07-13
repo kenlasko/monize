@@ -630,6 +630,61 @@ describe('useInvestmentData – cash transaction loading', () => {
   });
 });
 
+describe('useInvestmentData – selectableAccounts ordering', () => {
+  const makeAccount = (id: string, name: string, subType = 'INVESTMENT_BROKERAGE') => ({
+    id,
+    name,
+    accountType: 'INVESTMENT',
+    accountSubType: subType,
+    linkedAccountId: null,
+    currencyCode: 'CAD',
+    currentBalance: 0,
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSearchParamsGet = () => null;
+    mockGetTransactions.mockResolvedValue({ data: [], pagination: null });
+    mockGetPortfolioSummary.mockResolvedValue(mockSummary);
+    mockGetAllAccounts.mockResolvedValue([]);
+  });
+
+  it('sorts selectable accounts alphabetically regardless of API order', async () => {
+    // The API returns accounts in a non-alphabetical (effectively arbitrary) order.
+    mockGetInvestmentAccounts.mockResolvedValue([
+      makeAccount('3', 'Zebra Brokerage'),
+      makeAccount('1', 'Apple Brokerage'),
+      makeAccount('2', 'Mango Brokerage'),
+    ]);
+
+    const { result } = renderHook(() => useInvestmentData(), { wrapper });
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+
+    expect(result.current.selectableAccounts.map(a => a.name)).toEqual([
+      'Apple Brokerage',
+      'Mango Brokerage',
+      'Zebra Brokerage',
+    ]);
+  });
+
+  it('excludes the cash half of investment pairs from the selectable list', async () => {
+    mockGetInvestmentAccounts.mockResolvedValue([
+      makeAccount('b1', 'Broker One'),
+      makeAccount('c1', 'Broker One Cash', 'INVESTMENT_CASH'),
+      makeAccount('s1', 'Standalone Fund', undefined as unknown as string),
+    ]);
+
+    const { result } = renderHook(() => useInvestmentData(), { wrapper });
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+
+    // Cash sub-accounts are filtered out; the remaining two stay alphabetical.
+    expect(result.current.selectableAccounts.map(a => a.name)).toEqual([
+      'Broker One',
+      'Standalone Fund',
+    ]);
+  });
+});
+
 describe('useInvestmentData – pruning stale account IDs', () => {
   beforeEach(() => {
     vi.clearAllMocks();

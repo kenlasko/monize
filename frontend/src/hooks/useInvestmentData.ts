@@ -498,10 +498,14 @@ export function useInvestmentData() {
     return selectedAccountIds[0];
   };
 
-  // Get selectable investment accounts (brokerage and standalone)
-  const selectableAccounts = accounts.filter(
-    (a) => a.accountSubType === 'INVESTMENT_BROKERAGE' || !a.accountSubType,
-  );
+  // Get selectable investment accounts (brokerage and standalone), sorted
+  // alphabetically by name. Without an explicit sort the dropdown order follows
+  // whatever order the API returned the accounts in, which can shift between
+  // loads and makes the selection dropdown appear to reorder at random.
+  // filter() returns a fresh array, so sorting it in place does not mutate state.
+  const selectableAccounts = accounts
+    .filter((a) => a.accountSubType === 'INVESTMENT_BROKERAGE' || !a.accountSubType)
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   return {
     // Accounts
