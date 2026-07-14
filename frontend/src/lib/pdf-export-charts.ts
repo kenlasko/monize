@@ -226,7 +226,15 @@ export async function captureSvgAsImage(
   container: HTMLElement,
   scale: number = 3,
 ): Promise<CapturedChart | null> {
-  const svg = container.querySelector('svg.recharts-surface') as SVGSVGElement | null;
+  // Target the main chart SVG (a direct child of .recharts-wrapper). Recharts
+  // also renders tiny svg.recharts-surface elements for legend icons, and in
+  // recharts v3 those appear BEFORE the main surface in the DOM -- so a bare
+  // `svg.recharts-surface` query grabs a 14x14 legend icon instead of the chart
+  // whenever the chart has a <Legend>, producing a near-blank export sized to
+  // the container (issue #886). Fall back to the loose selector for any
+  // container that isn't wrapped (e.g. a bare test fixture).
+  const svg = (container.querySelector('.recharts-wrapper > svg.recharts-surface') ??
+    container.querySelector('svg.recharts-surface')) as SVGSVGElement | null;
   if (!svg) return null;
 
   try {
