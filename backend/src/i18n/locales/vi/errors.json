@@ -431,6 +431,7 @@
     "transferSameAccount": "Tài khoản nguồn và đích phải khác nhau",
     "transferAmountNegative": "Số tiền chuyển không được âm",
     "notATransfer": "Giao tác không phải là chuyển tiền",
+    "splitTransferLegAccountLocked": "Chuyển khoản này là một phần của giao tác chia nhỏ. Hãy thay đổi tài khoản bằng cách chỉnh sửa phần chia trên giao tác nguồn.",
     "notFoundById": "Không tìm thấy giao tác với ID {{ id }}",
     "bulkUpdateNoFields": "Phải cung cấp ít nhất một trường cập nhật",
     "payeeNotFound": "Không tìm thấy người nhận",

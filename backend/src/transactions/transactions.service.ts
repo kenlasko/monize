@@ -313,23 +313,14 @@ export class TransactionsService {
           userId,
           createTransactionDto.accountId,
           new Date(createTransactionDto.transactionDate),
-          transactionData.payeeName,
+          resolvedPayeeName,
           queryRunner,
+          resolvedPayeeId,
         );
 
-        // Set split-level tags
+        // Set split-level tags (and mirror them onto any transfer counterpart)
         if (savedSplits && splits) {
-          for (let i = 0; i < splits.length; i++) {
-            const splitTagIds = splits[i].tagIds;
-            if (splitTagIds && splitTagIds.length > 0 && savedSplits[i]) {
-              await this.tagsService.setSplitTags(
-                savedSplits[i].id,
-                splitTagIds,
-                userId,
-                queryRunner,
-              );
-            }
-          }
+          await this.applySplitTags(savedSplits, splits, userId, queryRunner);
         }
       }
 
@@ -1836,21 +1827,12 @@ export class TransactionsService {
             new Date(txDate),
             updateData.payeeName ?? transaction.payeeName,
             queryRunner,
+            updateData.payeeId ?? transaction.payeeId,
           );
 
-          // Set split-level tags
+          // Set split-level tags (and mirror them onto any transfer counterpart)
           if (savedSplits) {
-            for (let i = 0; i < splits.length; i++) {
-              const splitTagIds = splits[i].tagIds;
-              if (splitTagIds && splitTagIds.length > 0 && savedSplits[i]) {
-                await this.tagsService.setSplitTags(
-                  savedSplits[i].id,
-                  splitTagIds,
-                  userId,
-                  queryRunner,
-                );
-              }
-            }
+            await this.applySplitTags(savedSplits, splits, userId, queryRunner);
           }
         } else if (Array.isArray(splits) && splits.length === 0) {
           await this.splitService.deleteSplitSideEffects(
@@ -2465,6 +2447,41 @@ export class TransactionsService {
     return this.remove(userId, transactionId);
   }
 
+  /**
+   * Persist split-level tags and mirror them onto each split's transfer
+   * counterpart. A transfer split's tags live on both the split row (shown on
+   * the source transaction) and the counterpart leg's transaction tags (shown
+   * on the target account), so the two stay in agreement in both directions.
+   */
+  private async applySplitTags(
+    savedSplits: TransactionSplit[],
+    splits: CreateTransactionSplitDto[],
+    userId: string,
+    queryRunner: QueryRunner,
+  ): Promise<void> {
+    for (let i = 0; i < splits.length; i++) {
+      const splitTagIds = splits[i].tagIds;
+      const saved = savedSplits[i];
+      if (!saved || !splitTagIds || splitTagIds.length === 0) continue;
+
+      await this.tagsService.setSplitTags(
+        saved.id,
+        splitTagIds,
+        userId,
+        queryRunner,
+      );
+
+      if (saved.linkedTransactionId) {
+        await this.tagsService.setTransactionTags(
+          saved.linkedTransactionId,
+          splitTagIds,
+          userId,
+          queryRunner,
+        );
+      }
+    }
+  }
+
   async updateTransfer(
     userId: string,
     transactionId: string,
@@ -2488,6 +2505,22 @@ export class TransactionsService {
         updateDto.tagIds,
         userId,
       );
+
+      // When the edited leg belongs to a split transfer, mirror the tags onto
+      // the owning split so the source transaction's split reflects them too
+      // (parallels the description<->memo and amount mirroring done in
+      // transferService.updateSplitTransferLeg).
+      const parentSplit =
+        await this.splitService.getTransferSplitByLinkedTransaction(
+          transactionId,
+        );
+      if (parentSplit) {
+        await this.tagsService.setSplitTags(
+          parentSplit.id,
+          updateDto.tagIds,
+          userId,
+        );
+      }
 
       return {
         fromTransaction: await this.findOne(userId, result.fromTransaction.id),

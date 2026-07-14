@@ -431,6 +431,7 @@
     "transferSameAccount": "來源和目的科目必須不同",
     "transferAmountNegative": "轉帳金額不得為負數",
     "notATransfer": "交易不是轉帳",
+    "splitTransferLegAccountLocked": "此轉帳屬於分割交易的一部分。請改為在來源交易中編輯分割以變更其帳戶。",
     "notFoundById": "找不到 ID 為 {{ id }} 的交易",
     "bulkUpdateNoFields": "至少需要提供一個更新欄位",
     "payeeNotFound": "找不到收款人",

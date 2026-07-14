@@ -7,8 +7,15 @@ import {
   Logger,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Brackets, Repository, SelectQueryBuilder, DataSource } from "typeorm";
+import {
+  Brackets,
+  In,
+  Repository,
+  SelectQueryBuilder,
+  DataSource,
+} from "typeorm";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
+import { TransactionSplit } from "./entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
 import { Payee } from "../payees/entities/payee.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
@@ -186,6 +193,16 @@ export class TransactionBulkUpdateService {
           eligibleIds,
           dto.tagIds ?? [],
           userId,
+          queryRunner,
+        );
+
+        // Keep transfer counterparts in step, mirroring the single-edit flow
+        // (updateTransfer wrapper): plain transfer legs share tags with their
+        // mirror leg; split-transfer legs mirror tags onto the owning split.
+        await this.syncTransferTags(
+          userId,
+          eligibleIds,
+          dto.tagIds ?? [],
           queryRunner,
         );
       }
@@ -479,30 +496,113 @@ export class TransactionBulkUpdateService {
 
     if (Object.keys(syncFields).length === 0) return;
 
-    // Find linked transaction IDs for transfers in the batch
+    const { plainLinkedIds, owningSplitIds } = await this.classifyTransferLegs(
+      userId,
+      eligibleIds,
+      queryRunner,
+    );
+
+    if (plainLinkedIds.length > 0) {
+      await queryRunner.manager
+        .createQueryBuilder()
+        .update(Transaction)
+        .set(syncFields as Partial<Transaction>)
+        .where("id IN (:...ids)", { ids: plainLinkedIds })
+        .andWhere("userId = :userId", { userId })
+        .execute();
+    }
+
+    // Split-transfer legs mirror the description onto the owning split's memo
+    // instead (matching updateSplitTransferLeg); payee changes stay on the leg.
+    if ("description" in syncFields && owningSplitIds.length > 0) {
+      await queryRunner.manager
+        .createQueryBuilder()
+        .update(TransactionSplit)
+        .set({ memo: (syncFields.description as string | null) ?? null })
+        .where("id IN (:...ids)", { ids: owningSplitIds })
+        .execute();
+    }
+  }
+
+  /**
+   * Mirror a bulk tag change onto transfer counterparts, matching the
+   * single-edit flow (the updateTransfer wrapper): plain transfer legs share
+   * one tag set with their mirror leg; split-transfer legs mirror the tags
+   * onto the owning split's split-level tags (never the split parent).
+   */
+  private async syncTransferTags(
+    userId: string,
+    eligibleIds: string[],
+    tagIds: string[],
+    queryRunner: import("typeorm").QueryRunner,
+  ): Promise<void> {
+    const { plainLinkedIds, owningSplitIds } = await this.classifyTransferLegs(
+      userId,
+      eligibleIds,
+      queryRunner,
+    );
+
+    // Mirror legs not already covered by the batch itself.
+    const eligibleSet = new Set(eligibleIds);
+    const linkedToUpdate = plainLinkedIds.filter((id) => !eligibleSet.has(id));
+    if (linkedToUpdate.length > 0) {
+      await this.tagsService.setTransactionTagsBulk(
+        linkedToUpdate,
+        tagIds,
+        userId,
+        queryRunner,
+      );
+    }
+
+    if (owningSplitIds.length > 0) {
+      await this.tagsService.setSplitTagsBulk(
+        owningSplitIds,
+        tagIds,
+        userId,
+        queryRunner,
+      );
+    }
+  }
+
+  /**
+   * Classify the transfer legs among a batch. A split-transfer leg is owned by
+   * a transaction_splits row and its linkedTransactionId points at the split
+   * PARENT (whose fields aggregate the whole split) -- syncing there would
+   * clobber the parent. A plain transfer leg's linkedTransactionId is its
+   * mirror leg, which is safe to sync.
+   */
+  private async classifyTransferLegs(
+    userId: string,
+    eligibleIds: string[],
+    queryRunner: import("typeorm").QueryRunner,
+  ): Promise<{ plainLinkedIds: string[]; owningSplitIds: string[] }> {
     const repo = queryRunner.manager.getRepository(Transaction);
     const transfers = await repo
       .createQueryBuilder("t")
-      .select(["t.linkedTransactionId"])
+      .select(["t.id", "t.linkedTransactionId"])
       .where("t.id IN (:...ids)", { ids: eligibleIds })
       .andWhere("t.userId = :userId", { userId })
       .andWhere("t.isTransfer = true")
       .andWhere("t.linkedTransactionId IS NOT NULL")
       .getMany();
 
-    const linkedIds = transfers
-      .map((t) => t.linkedTransactionId)
-      .filter((id): id is string => id !== null);
+    if (transfers.length === 0) {
+      return { plainLinkedIds: [], owningSplitIds: [] };
+    }
 
-    if (linkedIds.length === 0) return;
+    const owningSplits = await queryRunner.manager.find(TransactionSplit, {
+      where: { linkedTransactionId: In(transfers.map((t) => t.id)) },
+      select: ["id", "linkedTransactionId"],
+    });
+    const splitLegIds = new Set(owningSplits.map((s) => s.linkedTransactionId));
 
-    await queryRunner.manager
-      .createQueryBuilder()
-      .update(Transaction)
-      .set(syncFields as Partial<Transaction>)
-      .where("id IN (:...ids)", { ids: linkedIds })
-      .andWhere("userId = :userId", { userId })
-      .execute();
+    return {
+      plainLinkedIds: transfers
+        .filter((t) => !splitLegIds.has(t.id))
+        .map((t) => t.linkedTransactionId)
+        .filter((id): id is string => id !== null),
+      owningSplitIds: owningSplits.map((s) => s.id),
+    };
   }
 
   private async handleStatusBalanceChanges(

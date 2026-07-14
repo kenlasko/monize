@@ -150,6 +150,7 @@ export class TransactionSplitService {
     transactionDate?: Date,
     parentPayeeName?: string | null,
     externalQueryRunner?: QueryRunner,
+    parentPayeeId?: string | null,
   ): Promise<TransactionSplit[]> {
     const ownTransaction = !externalQueryRunner;
     const queryRunner =
@@ -169,6 +170,7 @@ export class TransactionSplitService {
         sourceAccountId,
         transactionDate,
         parentPayeeName,
+        parentPayeeId,
       );
 
       if (ownTransaction) {
@@ -196,6 +198,7 @@ export class TransactionSplitService {
     sourceAccountId?: string,
     transactionDate?: Date,
     parentPayeeName?: string | null,
+    parentPayeeId?: string | null,
   ): Promise<TransactionSplit[]> {
     if (userId) {
       const categoryIds = [
@@ -263,29 +266,42 @@ export class TransactionSplitService {
         : "";
     }
 
-    const savedSplits: TransactionSplit[] = [];
+    // Saved rows are placed back at their original input position so callers
+    // that pair splits[i] with the result (e.g. split-level tag assignment) stay
+    // aligned regardless of the batched/looped save ordering below.
+    const savedSplits: TransactionSplit[] = new Array(splits.length);
 
     // Plain category splits (and transfers without userId/sourceAccountId
-    // context, e.g. import flows) are batch-saved together.
-    const regularSplits = splits.filter((s) => {
-      const k = inferSplitKind(s);
-      if (k === SplitKind.INVESTMENT) return false;
-      if (k === SplitKind.TRANSFER && userId && sourceAccountId) return false;
-      return true;
-    });
-    const transferSplits = splits.filter(
-      (s) =>
-        inferSplitKind(s) === SplitKind.TRANSFER &&
-        s.transferAccountId &&
+    // context, e.g. import flows) are batch-saved together. Each bucket keeps
+    // the split's original index.
+    const regularSplits: { split: CreateTransactionSplitDto; index: number }[] =
+      [];
+    const transferSplits: {
+      split: CreateTransactionSplitDto;
+      index: number;
+    }[] = [];
+    const investmentSplits: {
+      split: CreateTransactionSplitDto;
+      index: number;
+    }[] = [];
+    splits.forEach((split, index) => {
+      const k = inferSplitKind(split);
+      if (k === SplitKind.INVESTMENT) {
+        investmentSplits.push({ split, index });
+      } else if (
+        k === SplitKind.TRANSFER &&
+        split.transferAccountId &&
         userId &&
-        sourceAccountId,
-    );
-    const investmentSplits = splits.filter(
-      (s) => inferSplitKind(s) === SplitKind.INVESTMENT,
-    );
+        sourceAccountId
+      ) {
+        transferSplits.push({ split, index });
+      } else {
+        regularSplits.push({ split, index });
+      }
+    });
 
     if (regularSplits.length > 0) {
-      const regularEntities = regularSplits.map((split) => {
+      const regularEntities = regularSplits.map(({ split }) => {
         const kind = split.transferAccountId
           ? SplitKind.TRANSFER
           : SplitKind.CATEGORY;
@@ -299,10 +315,12 @@ export class TransactionSplitService {
         });
       });
       const batchSaved = await queryRunner.manager.save(regularEntities);
-      savedSplits.push(...batchSaved);
+      batchSaved.forEach((saved, j) => {
+        savedSplits[regularSplits[j].index] = saved;
+      });
     }
 
-    for (const split of transferSplits) {
+    for (const { split, index } of transferSplits) {
       const splitEntity = queryRunner.manager.create(TransactionSplit, {
         transactionId,
         kind: SplitKind.TRANSFER,
@@ -343,6 +361,7 @@ export class TransactionSplitService {
         exchangeRate: 1,
         description: split.memo || null,
         isTransfer: true,
+        payeeId: parentPayeeId || null,
         payeeName: parentPayeeName || `Transfer from ${sourceAccount.name}`,
       });
 
@@ -371,10 +390,10 @@ export class TransactionSplitService {
       }
 
       savedSplit.linkedTransactionId = savedLinkedTransaction.id;
-      savedSplits.push(savedSplit);
+      savedSplits[index] = savedSplit;
     }
 
-    for (const split of investmentSplits) {
+    for (const { split, index } of investmentSplits) {
       const splitEntity = queryRunner.manager.create(TransactionSplit, {
         transactionId,
         kind: SplitKind.INVESTMENT,
@@ -395,7 +414,7 @@ export class TransactionSplitService {
         split.investment!,
       );
 
-      savedSplits.push(savedSplit);
+      savedSplits[index] = savedSplit;
     }
 
     if (hasInvestment && userId && brokerageAccountId) {
@@ -516,6 +535,19 @@ export class TransactionSplitService {
     }
   }
 
+  /**
+   * Find the split that owns a given transfer counterpart (the leg living in the
+   * target account), or null if the transaction is not a split-transfer leg.
+   * Used to mirror edits made on the counterpart back onto its split.
+   */
+  async getTransferSplitByLinkedTransaction(
+    linkedTransactionId: string,
+  ): Promise<TransactionSplit | null> {
+    return this.splitsRepository.findOne({
+      where: { linkedTransactionId },
+    });
+  }
+
   async getSplits(transactionId: string): Promise<TransactionSplit[]> {
     return this.splitsRepository.find({
       where: { transactionId },
@@ -550,6 +582,7 @@ export class TransactionSplitService {
         new Date(transaction.transactionDate),
         transaction.payeeName,
         queryRunner,
+        transaction.payeeId,
       );
 
       await queryRunner.manager.update(Transaction, transaction.id, {
@@ -646,6 +679,7 @@ export class TransactionSplitService {
           exchangeRate: 1,
           description: splitDto.memo || null,
           isTransfer: true,
+          payeeId: transaction.payeeId || null,
           payeeName:
             transaction.payeeName || `Transfer from ${sourceAccount.name}`,
         });

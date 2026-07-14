@@ -775,6 +775,24 @@ export class TransactionTransferService {
       );
     }
 
+    // When this leg is the counterpart of a SPLIT transfer, its
+    // linkedTransactionId points at the split PARENT (whose amount is the sum of
+    // all its splits), not at a mirror leg. Routing it through the two-leg
+    // update below would overwrite the parent's aggregate amount and fields with
+    // this single leg's values. Handle it separately instead.
+    const parentSplit = await this.splitsRepository.findOne({
+      where: { linkedTransactionId: transactionId },
+    });
+    if (parentSplit) {
+      return this.updateSplitTransferLeg(
+        userId,
+        transaction,
+        parentSplit,
+        updateDto,
+        findOne,
+      );
+    }
+
     const linkedTransaction = await findOne(
       userId,
       transaction.linkedTransactionId,
@@ -965,6 +983,176 @@ export class TransactionTransferService {
     return {
       fromTransaction: await findOne(userId, fromTransaction.id),
       toTransaction: await findOne(userId, toTransaction.id),
+    };
+  }
+
+  /**
+   * Update a single leg of a SPLIT transfer (the counterpart living in the
+   * target account) without disturbing the split parent's aggregate amount.
+   *
+   * Only the counterpart's own presentational fields are edited in place. When
+   * the amount changes, the matching split row and the parent's total (sum of
+   * all splits) are kept in sync and both accounts rebalanced, so the split set
+   * never drifts out of agreement with the parent. Structural edits (moving the
+   * transfer to different accounts) are rejected -- those belong to the split
+   * editor on the source transaction.
+   */
+  private async updateSplitTransferLeg(
+    userId: string,
+    counterpart: Transaction,
+    parentSplit: TransactionSplit,
+    updateDto: Partial<UpdateTransferDto>,
+    findOne: (userId: string, id: string) => Promise<Transaction>,
+  ): Promise<TransferResult> {
+    const parentTransaction = await findOne(userId, parentSplit.transactionId);
+
+    // Reject account restructuring from the target side. The form always resends
+    // the current accounts (from = source/parent account, to = this leg's
+    // account); only a genuine change is blocked.
+    const movesSource =
+      !!updateDto.fromAccountId &&
+      updateDto.fromAccountId !== parentTransaction.accountId;
+    const movesTarget =
+      !!updateDto.toAccountId &&
+      updateDto.toAccountId !== counterpart.accountId;
+    if (movesSource || movesTarget) {
+      throw new BadRequestException(
+        tr(
+          "errors.transactions.splitTransferLegAccountLocked",
+          "This transfer is part of a split transaction. Change its accounts by editing the split on the source transaction instead.",
+        ),
+      );
+    }
+
+    await this.assertCategoryOwned(userId, updateDto.categoryId);
+
+    const oldCounterpartAmount = Number(counterpart.amount);
+    const sign = oldCounterpartAmount < 0 ? -1 : 1;
+    const newCounterpartAmount =
+      updateDto.amount !== undefined
+        ? roundMoney(sign * Math.abs(updateDto.amount))
+        : oldCounterpartAmount;
+    const amountChanged = newCounterpartAmount !== oldCounterpartAmount;
+
+    const oldDate = counterpart.transactionDate;
+    const newDate = updateDto.transactionDate ?? oldDate;
+    const dateChanged = oldDate !== newDate;
+
+    // The counterpart's own editable fields. Currency / exchange-rate / toAmount
+    // are intentionally ignored: split transfers are 1:1 same-currency, and the
+    // form resends the current currency on every edit.
+    const legData: Partial<Transaction> = {};
+    if (updateDto.transactionDate)
+      legData.transactionDate = updateDto.transactionDate as any;
+    if (updateDto.description !== undefined)
+      legData.description = updateDto.description ?? null;
+    if (updateDto.referenceNumber !== undefined)
+      legData.referenceNumber = updateDto.referenceNumber ?? null;
+    if (updateDto.status !== undefined) legData.status = updateDto.status;
+    if (updateDto.categoryId !== undefined)
+      legData.categoryId = updateDto.categoryId || null;
+    if (updateDto.payeeId !== undefined)
+      legData.payeeId = updateDto.payeeId || null;
+    if (updateDto.payeeName !== undefined)
+      legData.payeeName = updateDto.payeeName || null;
+    if (amountChanged) legData.amount = newCounterpartAmount;
+
+    // The split row on the source transaction is kept in step with the leg: its
+    // memo mirrors the leg's description (they are seeded from each other on
+    // create), and its amount mirrors the leg's negated amount.
+    const newSplitAmount = amountChanged
+      ? roundMoney(-newCounterpartAmount)
+      : undefined;
+    const splitData: Partial<TransactionSplit> = {};
+    if (updateDto.description !== undefined)
+      splitData.memo = updateDto.description ?? null;
+    if (newSplitAmount !== undefined) splitData.amount = newSplitAmount as any;
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      if (Object.keys(legData).length > 0) {
+        await queryRunner.manager.update(Transaction, counterpart.id, legData);
+      }
+
+      // Rebalance the counterpart's own account for an amount and/or date change.
+      if (amountChanged || dateChanged) {
+        if (
+          isTransactionInFuture(oldDate) ||
+          isTransactionInFuture(newDate)
+        ) {
+          await this.accountsService.recalculateCurrentBalance(
+            counterpart.accountId,
+            queryRunner,
+          );
+        } else {
+          await this.accountsService.updateBalance(
+            counterpart.accountId,
+            newCounterpartAmount - oldCounterpartAmount,
+            queryRunner,
+          );
+        }
+      }
+
+      // Write the split row (memo mirror and/or amount) in one update.
+      if (Object.keys(splitData).length > 0) {
+        await queryRunner.manager.update(
+          TransactionSplit,
+          parentSplit.id,
+          splitData,
+        );
+      }
+
+      // When the amount changed, re-total the parent and rebalance the source.
+      if (amountChanged && newSplitAmount !== undefined) {
+        const siblingSplits = await queryRunner.manager.find(TransactionSplit, {
+          where: { transactionId: parentTransaction.id },
+        });
+        const sumCents = siblingSplits.reduce((acc, s) => {
+          const amt =
+            s.id === parentSplit.id ? newSplitAmount : Number(s.amount);
+          return acc + Math.round(amt * 10000);
+        }, 0);
+        const newParentAmount = sumCents / 10000;
+        const oldParentAmount = Number(parentTransaction.amount);
+
+        await queryRunner.manager.update(Transaction, parentTransaction.id, {
+          amount: newParentAmount,
+        });
+
+        if (isTransactionInFuture(parentTransaction.transactionDate)) {
+          await this.accountsService.recalculateCurrentBalance(
+            parentTransaction.accountId,
+            queryRunner,
+          );
+        } else {
+          await this.accountsService.updateBalance(
+            parentTransaction.accountId,
+            newParentAmount - oldParentAmount,
+            queryRunner,
+          );
+        }
+      }
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+
+    this.triggerNetWorthRecalc(counterpart.accountId, userId);
+    this.triggerNetWorthRecalc(parentTransaction.accountId, userId);
+
+    // Return the edited leg as both slots so the wrapper's tag-sync touches only
+    // this leg, never the split parent's tags.
+    const refreshedLeg = await findOne(userId, counterpart.id);
+    return {
+      fromTransaction: refreshedLeg,
+      toTransaction: refreshedLeg,
     };
   }
 

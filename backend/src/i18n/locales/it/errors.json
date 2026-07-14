@@ -431,6 +431,7 @@
     "transferSameAccount": "I conti di origine e destinazione devono essere diversi",
     "transferAmountNegative": "L'importo del trasferimento non deve essere negativo",
     "notATransfer": "La transazione non è un trasferimento",
+    "splitTransferLegAccountLocked": "Questo trasferimento fa parte di una transazione suddivisa. Per cambiarne i conti, modifica la suddivisione nella transazione di origine.",
     "notFoundById": "Transazione con ID {{ id }} non trovata",
     "bulkUpdateNoFields": "Deve essere fornito almeno un campo di aggiornamento",
     "payeeNotFound": "Beneficiario non trovato",

@@ -431,6 +431,7 @@
     "transferSameAccount": "Les comptes source et destination doivent être différents",
     "transferAmountNegative": "Le montant du virement ne doit pas être négatif",
     "notATransfer": "La transaction n'est pas un virement",
+    "splitTransferLegAccountLocked": "Ce virement fait partie d'une transaction fractionnée. Pour changer ses comptes, modifiez la fraction sur la transaction d'origine.",
     "notFoundById": "Transaction avec l'ID {{ id }} introuvable",
     "bulkUpdateNoFields": "Au moins un champ de mise à jour doit être fourni",
     "payeeNotFound": "Bénéficiaire introuvable",

@@ -431,6 +431,7 @@
     "transferSameAccount": "Quell- und Zielkonto müssen verschieden sein",
     "transferAmountNegative": "Überweisungsbetrag darf nicht negativ sein",
     "notATransfer": "Buchung ist keine Überweisung",
+    "splitTransferLegAccountLocked": "Diese Überweisung ist Teil einer geteilten Buchung. Ändern Sie die Konten, indem Sie stattdessen den Buchungsteil in der Ursprungsbuchung bearbeiten.",
     "notFoundById": "Buchung mit ID {{ id }} nicht gefunden",
     "bulkUpdateNoFields": "Mindestens ein Aktualisierungsfeld muss angegeben werden",
     "payeeNotFound": "Zahlungsempfänger nicht gefunden",
