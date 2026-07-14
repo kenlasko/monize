@@ -27,13 +27,17 @@ function makeAccount(overrides: Partial<Account> = {}): Account {
   } as Account;
 }
 
-function makeHistory(account: Account, principals: number[]): LoanHistoryResult {
+function makeHistory(
+  account: Account,
+  principals: number[],
+  dates?: string[],
+): LoanHistoryResult {
   const transactions = principals.map(
     (amount, i) =>
       ({
         id: `tx-${i}`,
         accountId: account.id,
-        transactionDate: `2025-${String(i + 1).padStart(2, '0')}-15`,
+        transactionDate: dates?.[i] ?? `2025-${String(i + 1).padStart(2, '0')}-15`,
         amount,
         linkedTransaction: null,
       }) as Transaction,
@@ -176,7 +180,14 @@ describe('computePastImpact', () => {
       isCanadianMortgage: true,
       isVariableRate: true,
     });
-    const history = makeHistory(account, [3200, 3200, 3200]);
+    // The schedule now starts at the earliest actual payment, so the recorded
+    // transactions sit on the real installment dates (2022-05-13 onward), not a
+    // synthetic 2025 stub -- otherwise the baseline would start years late.
+    const history = makeHistory(
+      account,
+      [3200, 3200, 3200],
+      ['2022-05-13', '2022-06-24', '2022-08-05'],
+    );
     const rateChanges = [
       { effectiveDate: '2022-05-13', annualRate: 1.75, newPaymentAmount: 3200 },
       { effectiveDate: '2022-06-24', annualRate: 2.25, newPaymentAmount: 3233.04 },

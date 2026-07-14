@@ -87,9 +87,11 @@ export function computePastImpact(
         ? history.startingBalance
         : reconstructedPrincipal;
 
-  // The schedule starts at the configured first-payment date, or the earliest
-  // actual payment when that is unset.
-  const startDate = account.paymentStartDate || history.events[0]?.date || null;
+  // The schedule starts at the earliest actual payment; the configured
+  // first-payment date is only a fallback for when there are no payments yet.
+  // Preferring the real transaction keeps the baseline aligned with the data
+  // the user actually has, rather than a stale configured value.
+  const startDate = history.events[0]?.date || account.paymentStartDate || null;
 
   // The configured repayment period. Prefer the amortization period; fall back
   // to the term. It is required (the loan/mortgage form collects it), so

@@ -98,11 +98,11 @@ export function RateHistorySidebar({
 
   return (
     <div
-      className={`relative overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 scroll-mt-4 ${
+      className={`relative flex flex-col overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 scroll-mt-4 ${
         fillHeight ? 'lg:h-full' : ''
       }`}
     >
-      <div className="relative z-10 p-4 flex flex-col gap-3">
+      <div className="relative z-10 min-h-0 flex-1 p-4 flex flex-col gap-3">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <button
             type="button"
@@ -149,7 +149,11 @@ export function RateHistorySidebar({
               {t('loanDetail.rateHistory.empty')}
             </p>
           ) : (
-            <ul className="max-h-96 overflow-y-auto divide-y divide-gray-200/70 dark:divide-gray-700/70">
+            <ul
+              className={`overflow-y-auto min-h-0 divide-y divide-gray-200/70 dark:divide-gray-700/70 ${
+                fillHeight ? 'max-h-96 lg:max-h-none lg:flex-1' : 'max-h-96'
+              }`}
+            >
               {sorted.map((change) => (
                 <li
                   key={change.id}
