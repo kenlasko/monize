@@ -124,6 +124,40 @@ describe('captureSingleSvg via captureSvgAsImage (with mocked Image)', () => {
     (global as any).Image = originalImage;
   });
 
+  it('captures the main chart surface, not a legend-icon surface that precedes it', async () => {
+    // Recharts v3 renders legend-item icon SVGs (svg.recharts-surface, ~14x14)
+    // BEFORE the main chart surface in the DOM. A loose `svg.recharts-surface`
+    // query would grab the legend icon and produce a near-blank export sized to
+    // the container (issue #886). The main surface must win.
+    const container = document.createElement('div');
+
+    // Legend icon surface first in DOM, nested in a legend item.
+    const legendItem = document.createElement('div');
+    legendItem.classList.add('recharts-legend-item');
+    const legendSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    legendSvg.classList.add('recharts-surface');
+    legendSvg.setAttribute('width', '14');
+    legendSvg.setAttribute('height', '14');
+    legendItem.appendChild(legendSvg);
+    container.appendChild(legendItem);
+
+    // Main chart surface, a direct child of .recharts-wrapper.
+    const wrapper = document.createElement('div');
+    wrapper.classList.add('recharts-wrapper');
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.classList.add('recharts-surface');
+    svg.setAttribute('width', '800');
+    svg.setAttribute('height', '400');
+    wrapper.appendChild(svg);
+    container.appendChild(wrapper);
+
+    const result = await captureSvgAsImage(container);
+    expect(result).not.toBeNull();
+    // 800x400 proves the main surface was captured, not the 14x14 legend icon.
+    expect(result?.width).toBe(800);
+    expect(result?.height).toBe(400);
+  });
+
   it('captures an SVG with width/height attributes', async () => {
     const container = document.createElement('div');
     const wrapper = document.createElement('div');
