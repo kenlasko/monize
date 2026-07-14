@@ -216,6 +216,7 @@ describe("TransactionsService", () => {
           useValue: {
             findByIds: jest.fn().mockResolvedValue([]),
             setTransactionTags: jest.fn().mockResolvedValue(undefined),
+            setSplitTags: jest.fn().mockResolvedValue(undefined),
           },
         },
         { provide: NetWorthService, useValue: netWorthService },
@@ -4825,6 +4826,120 @@ describe("TransactionsService", () => {
 
       await service.updateTransfer("user-1", "tx-from", { amount: 300 });
 
+      expect(tagsService.setTransactionTags).not.toHaveBeenCalled();
+    });
+
+    it("mirrors tags onto the owning split when editing a split-transfer leg", async () => {
+      const counterpartLeg = {
+        id: "leg-tx",
+        userId: "user-1",
+        accountId: "account-2",
+        amount: 200,
+        isTransfer: true,
+        linkedTransactionId: "parent-tx",
+        transactionDate: "2020-01-01",
+        exchangeRate: 1,
+        splits: [],
+      };
+      const parentTransaction = {
+        id: "parent-tx",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -200,
+        isSplit: true,
+        transactionDate: "2020-01-01",
+        splits: [],
+      };
+      const parentSplit = {
+        id: "split-1",
+        transactionId: "parent-tx",
+        transferAccountId: "account-2",
+        amount: -200,
+        linkedTransactionId: "leg-tx",
+      };
+
+      transactionsRepository.findOne.mockImplementation((opts: any) =>
+        Promise.resolve(
+          opts?.where?.id === "parent-tx" ? parentTransaction : counterpartLeg,
+        ),
+      );
+      // Routes updateTransfer to the split-leg path AND resolves the owning
+      // split in the wrapper's tag-mirroring step.
+      splitsRepository.findOne.mockResolvedValue(parentSplit);
+
+      await service.updateTransfer("user-1", "leg-tx", {
+        tagIds: ["tag-1"],
+      } as any);
+
+      // The leg keeps its own transaction tags...
+      expect(tagsService.setTransactionTags).toHaveBeenCalledWith(
+        "leg-tx",
+        ["tag-1"],
+        "user-1",
+      );
+      // ...and the same tags are mirrored onto the source split.
+      expect(tagsService.setSplitTags).toHaveBeenCalledWith(
+        "split-1",
+        ["tag-1"],
+        "user-1",
+      );
+      // The split parent's amount is never rewritten by a tag-only edit.
+      expect(transactionsRepository.update).not.toHaveBeenCalledWith(
+        "parent-tx",
+        expect.anything(),
+      );
+    });
+  });
+
+  describe("applySplitTags (split <-> transfer-leg tag mirroring)", () => {
+    it("mirrors a transfer split's tags onto its counterpart leg, but not plain splits", async () => {
+      const savedSplits = [
+        { id: "split-cat", linkedTransactionId: null },
+        { id: "split-xfer", linkedTransactionId: "leg-tx" },
+      ];
+      const splits = [
+        { amount: -50, categoryId: "cat-1", tagIds: ["tag-a"] },
+        { amount: -50, transferAccountId: "acc-2", tagIds: ["tag-b"] },
+      ];
+      const qr = {} as any;
+
+      await (service as any).applySplitTags(savedSplits, splits, "user-1", qr);
+
+      // Both splits get their split-level tags.
+      expect(tagsService.setSplitTags).toHaveBeenCalledWith(
+        "split-cat",
+        ["tag-a"],
+        "user-1",
+        qr,
+      );
+      expect(tagsService.setSplitTags).toHaveBeenCalledWith(
+        "split-xfer",
+        ["tag-b"],
+        "user-1",
+        qr,
+      );
+      // Only the transfer split mirrors its tags onto the counterpart leg.
+      expect(tagsService.setTransactionTags).toHaveBeenCalledTimes(1);
+      expect(tagsService.setTransactionTags).toHaveBeenCalledWith(
+        "leg-tx",
+        ["tag-b"],
+        "user-1",
+        qr,
+      );
+    });
+
+    it("skips splits with no tags", async () => {
+      const savedSplits = [{ id: "split-1", linkedTransactionId: "leg-tx" }];
+      const splits = [{ amount: -50, transferAccountId: "acc-2", tagIds: [] }];
+
+      await (service as any).applySplitTags(
+        savedSplits,
+        splits,
+        "user-1",
+        {} as any,
+      );
+
+      expect(tagsService.setSplitTags).not.toHaveBeenCalled();
       expect(tagsService.setTransactionTags).not.toHaveBeenCalled();
     });
   });

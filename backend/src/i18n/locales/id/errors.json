@@ -431,6 +431,7 @@
     "transferSameAccount": "Akun sumber dan tujuan harus berbeda",
     "transferAmountNegative": "Jumlah transfer tidak boleh negatif",
     "notATransfer": "Transaksi bukan merupakan transfer",
+    "splitTransferLegAccountLocked": "Transfer ini adalah bagian dari transaksi terbagi. Ubah akunnya dengan mengedit pembagian pada transaksi sumber.",
     "notFoundById": "Transaksi dengan ID {{ id }} tidak ditemukan",
     "bulkUpdateNoFields": "Minimal satu kolom pembaruan harus diberikan",
     "payeeNotFound": "Penerima tidak ditemukan",

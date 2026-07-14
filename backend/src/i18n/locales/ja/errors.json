@@ -431,6 +431,7 @@
     "transferSameAccount": "ソース口座と振替先口座は異なる必要があります",
     "transferAmountNegative": "振替金額はマイナスにできません",
     "notATransfer": "取引は振替ではありません",
+    "splitTransferLegAccountLocked": "この振替は分割取引の一部です。口座を変更するには、元の取引の分割を編集してください。",
     "notFoundById": "ID {{ id }} の取引が見つかりません",
     "bulkUpdateNoFields": "少なくとも1つの更新フィールドが必要です",
     "payeeNotFound": "支払先が見つかりません",

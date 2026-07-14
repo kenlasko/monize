@@ -438,6 +438,7 @@
     "transferSameAccount": "[XX-Source and destination accounts must be different-XX]",
     "transferAmountNegative": "[XX-Transfer amount must not be negative-XX]",
     "notATransfer": "[XX-Transaction is not a transfer-XX]",
+    "splitTransferLegAccountLocked": "[XX-This transfer is part of a split transaction. Change its accounts by editing the split on the source transaction instead.-XX]",
     "notFoundById": "[XX-Transaction with ID {{ id }} not found-XX]",
     "bulkUpdateNoFields": "[XX-At least one update field must be provided-XX]",
     "payeeNotFound": "[XX-Payee not found-XX]"

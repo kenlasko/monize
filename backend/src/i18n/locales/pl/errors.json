@@ -431,6 +431,7 @@
     "transferSameAccount": "Konto źródłowe i docelowe muszą być różne",
     "transferAmountNegative": "Kwota przelewu nie może być ujemna",
     "notATransfer": "Transakcja nie jest przelewem",
+    "splitTransferLegAccountLocked": "Ten przelew jest częścią transakcji podzielonej. Aby zmienić jego konta, edytuj podział w transakcji źródłowej.",
     "notFoundById": "Nie znaleziono transakcji o ID {{ id }}",
     "bulkUpdateNoFields": "Należy podać co najmniej jedno pole do aktualizacji",
     "payeeNotFound": "Nie znaleziono odbiorcy",

@@ -431,6 +431,7 @@
     "transferSameAccount": "Kaynak ve hedef hesaplar farklı olmalıdır",
     "transferAmountNegative": "Transfer tutarı negatif olmamalıdır",
     "notATransfer": "İşlem bir transfer değil",
+    "splitTransferLegAccountLocked": "Bu transfer, bölünmüş bir işlemin parçasıdır. Hesaplarını değiştirmek için kaynak işlemdeki bölümü düzenleyin.",
     "notFoundById": "{{ id }} kimliğine sahip işlem bulunamadı",
     "bulkUpdateNoFields": "En az bir güncelleme alanı sağlanmalıdır",
     "payeeNotFound": "Alacaklı bulunamadı",

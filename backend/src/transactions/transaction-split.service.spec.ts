@@ -337,6 +337,8 @@ describe("TransactionSplitService", () => {
         "account-1",
         new Date("2026-01-15"),
         "Store",
+        undefined,
+        "payee-uuid-1",
       );
 
       expect(accountsService.findOne).toHaveBeenCalledWith(
@@ -353,6 +355,9 @@ describe("TransactionSplitService", () => {
           accountId: "account-2",
           amount: 50,
           isTransfer: true,
+          // The counterpart adopts the parent split's payee UUID (not just the
+          // display name) so the target account's leg is filterable by payee.
+          payeeId: "payee-uuid-1",
           payeeName: "Store",
           // The counterpart's date is the parent's calendar day as a plain
           // yyyy-MM-dd string, not a Date object that would shift west of UTC.
@@ -413,6 +418,7 @@ describe("TransactionSplitService", () => {
 
       expect(transactionsRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
+          payeeId: null,
           payeeName: "Transfer from Checking",
         }),
       );

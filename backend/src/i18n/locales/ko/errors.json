@@ -431,6 +431,7 @@
     "transferSameAccount": "출금 계정과 입금 계정은 서로 달라야 합니다",
     "transferAmountNegative": "이체 금액은 음수일 수 없습니다",
     "notATransfer": "거래가 이체가 아닙니다",
+    "splitTransferLegAccountLocked": "이 이체는 분할 거래의 일부입니다. 계좌를 변경하려면 원본 거래의 분할을 편집하세요.",
     "notFoundById": "ID가 {{ id }}인 거래를 찾을 수 없습니다",
     "bulkUpdateNoFields": "하나 이상의 업데이트 필드를 제공해야 합니다",
     "payeeNotFound": "수취인을 찾을 수 없습니다",

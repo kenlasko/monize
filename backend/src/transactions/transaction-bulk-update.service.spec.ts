@@ -30,6 +30,7 @@ describe("TransactionBulkUpdateService", () => {
   let mockQueryRunner: Record<string, any>;
   let mockManagerCreateQueryBuilder: jest.Mock;
   let mockManagerGetRepository: jest.Mock;
+  let mockManagerFind: jest.Mock;
 
   const userId = "user-1";
 
@@ -114,10 +115,12 @@ describe("TransactionBulkUpdateService", () => {
     tagsService = {
       setTransactionTags: jest.fn().mockResolvedValue(undefined),
       setTransactionTagsBulk: jest.fn().mockResolvedValue(undefined),
+      setSplitTagsBulk: jest.fn().mockResolvedValue(undefined),
     };
 
     // Mock QueryRunner with manager that has createQueryBuilder and getRepository
     mockManagerCreateQueryBuilder = jest.fn();
+    mockManagerFind = jest.fn().mockResolvedValue([]);
     mockManagerGetRepository = jest.fn().mockReturnValue({
       createQueryBuilder: jest.fn().mockReturnValue(
         createMockQueryBuilder({
@@ -135,6 +138,9 @@ describe("TransactionBulkUpdateService", () => {
       manager: {
         createQueryBuilder: mockManagerCreateQueryBuilder,
         getRepository: mockManagerGetRepository,
+        // syncLinkedTransfers looks up owning splits to tell split-transfer
+        // legs apart from plain transfer legs. Default: none (plain transfers).
+        find: mockManagerFind,
       },
     };
 
@@ -503,6 +509,68 @@ describe("TransactionBulkUpdateService", () => {
       expect(syncUpdateQb.execute).toHaveBeenCalled();
     });
 
+    it("mirrors description to the owning split's memo (not the parent) for split-transfer legs", async () => {
+      // tx-1 is the counterpart leg of a SPLIT transfer: its
+      // linkedTransactionId points at the split PARENT, and a split row owns
+      // it. The description must land on the split memo, never on the parent.
+      const tx1 = makeTransaction({
+        id: "tx-1",
+        isTransfer: true,
+        linkedTransactionId: "parent-tx",
+      });
+
+      const resolveQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([{ id: "tx-1" }]),
+      });
+      const exclusionsQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([tx1]),
+      });
+      transactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(resolveQb)
+        .mockReturnValueOnce(exclusionsQb);
+
+      const updateQb = createMockQueryBuilder({
+        execute: jest.fn().mockResolvedValue({ affected: 1 }),
+      });
+      const syncFindQb = createMockQueryBuilder({
+        getMany: jest
+          .fn()
+          .mockResolvedValue([
+            { id: "tx-1", linkedTransactionId: "parent-tx" },
+          ]),
+      });
+      const memoUpdateQb = createMockQueryBuilder({
+        execute: jest.fn().mockResolvedValue({ affected: 1 }),
+      });
+      mockManagerGetRepository.mockReturnValue({
+        createQueryBuilder: jest.fn().mockReturnValue(syncFindQb),
+      });
+      // The owning-split lookup identifies tx-1 as a split-transfer leg.
+      mockManagerFind.mockResolvedValue([
+        { id: "split-1", linkedTransactionId: "tx-1" },
+      ]);
+      mockManagerCreateQueryBuilder
+        .mockReturnValueOnce(updateQb)
+        .mockReturnValueOnce(memoUpdateQb);
+
+      const dto: BulkUpdateDto = {
+        mode: "ids",
+        transactionIds: ["tx-1"],
+        description: "Y",
+      };
+
+      const result = await service.bulkUpdate(userId, dto);
+
+      expect(result.updated).toBe(1);
+      // Exactly two manager updates: the main field update and the split-memo
+      // mirror. No third update writing syncFields to the parent transaction.
+      expect(mockManagerCreateQueryBuilder).toHaveBeenCalledTimes(2);
+      expect(memoUpdateQb.set).toHaveBeenCalledWith({ memo: "Y" });
+      expect(memoUpdateQb.where).toHaveBeenCalledWith("id IN (:...ids)", {
+        ids: ["split-1"],
+      });
+    });
+
     it("does not sync when no transfers have linked IDs", async () => {
       const tx1 = makeTransaction({
         id: "tx-1",
@@ -804,6 +872,113 @@ describe("TransactionBulkUpdateService", () => {
         userId,
         mockQueryRunner,
       );
+    });
+
+    it("mirrors bulk tags onto the owning split for split-transfer legs", async () => {
+      const tx1 = makeTransaction({
+        id: "tx-1",
+        isTransfer: true,
+        linkedTransactionId: "parent-tx",
+      });
+
+      const resolveQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([{ id: "tx-1" }]),
+      });
+      const exclusionsQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([tx1]),
+      });
+      transactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(resolveQb)
+        .mockReturnValueOnce(exclusionsQb);
+
+      // classifyTransferLegs: the batch's one transfer leg...
+      const syncFindQb = createMockQueryBuilder({
+        getMany: jest
+          .fn()
+          .mockResolvedValue([
+            { id: "tx-1", linkedTransactionId: "parent-tx" },
+          ]),
+      });
+      mockManagerGetRepository.mockReturnValue({
+        createQueryBuilder: jest.fn().mockReturnValue(syncFindQb),
+      });
+      // ...is owned by a split row, so it is a split-transfer leg.
+      mockManagerFind.mockResolvedValue([
+        { id: "split-1", linkedTransactionId: "tx-1" },
+      ]);
+
+      const dto: BulkUpdateDto = {
+        mode: "ids",
+        transactionIds: ["tx-1"],
+        tagIds: ["tag-a"],
+      };
+
+      await service.bulkUpdate(userId, dto);
+
+      // The leg itself gets the tags via the normal bulk call...
+      expect(tagsService.setTransactionTagsBulk).toHaveBeenCalledTimes(1);
+      expect(tagsService.setTransactionTagsBulk).toHaveBeenCalledWith(
+        ["tx-1"],
+        ["tag-a"],
+        userId,
+        mockQueryRunner,
+      );
+      // ...and the owning split mirrors them; the parent is never tagged.
+      expect(tagsService.setSplitTagsBulk).toHaveBeenCalledWith(
+        ["split-1"],
+        ["tag-a"],
+        userId,
+        mockQueryRunner,
+      );
+    });
+
+    it("syncs bulk tags to the mirror leg of a plain transfer", async () => {
+      const tx1 = makeTransaction({
+        id: "tx-1",
+        isTransfer: true,
+        linkedTransactionId: "tx-1-linked",
+      });
+
+      const resolveQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([{ id: "tx-1" }]),
+      });
+      const exclusionsQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([tx1]),
+      });
+      transactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(resolveQb)
+        .mockReturnValueOnce(exclusionsQb);
+
+      const syncFindQb = createMockQueryBuilder({
+        getMany: jest
+          .fn()
+          .mockResolvedValue([
+            { id: "tx-1", linkedTransactionId: "tx-1-linked" },
+          ]),
+      });
+      mockManagerGetRepository.mockReturnValue({
+        createQueryBuilder: jest.fn().mockReturnValue(syncFindQb),
+      });
+      // No owning split: a plain transfer leg.
+      mockManagerFind.mockResolvedValue([]);
+
+      const dto: BulkUpdateDto = {
+        mode: "ids",
+        transactionIds: ["tx-1"],
+        tagIds: ["tag-a"],
+      };
+
+      await service.bulkUpdate(userId, dto);
+
+      // Batch call plus a second call covering the mirror leg.
+      expect(tagsService.setTransactionTagsBulk).toHaveBeenCalledTimes(2);
+      expect(tagsService.setTransactionTagsBulk).toHaveBeenCalledWith(
+        ["tx-1-linked"],
+        ["tag-a"],
+        userId,
+        mockQueryRunner,
+      );
+      expect(tagsService.setSplitTagsBulk).not.toHaveBeenCalled();
     });
 
     it("applies filters in filter mode", async () => {

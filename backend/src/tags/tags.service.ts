@@ -255,6 +255,47 @@ export class TagsService {
     }
   }
 
+  /**
+   * Set the same tag set on many transaction splits at once. Bulk counterpart
+   * of setSplitTags, mirroring setTransactionTagsBulk: one validation pass,
+   * one bulk DELETE, one multi-row INSERT.
+   */
+  async setSplitTagsBulk(
+    transactionSplitIds: string[],
+    tagIds: string[],
+    userId: string,
+    queryRunner?: QueryRunner,
+  ): Promise<void> {
+    if (transactionSplitIds.length === 0) {
+      return;
+    }
+    const manager = queryRunner ? queryRunner.manager : this.dataSource.manager;
+
+    if (tagIds.length > 0) {
+      const tags = await manager.find(Tag, {
+        where: { id: In(tagIds), userId },
+      });
+      if (tags.length !== tagIds.length) {
+        throw new NotFoundException(
+          tr("errors.tags.oneOrMoreNotFound", "One or more tags not found"),
+        );
+      }
+    }
+
+    await manager.delete(TransactionSplitTag, {
+      transactionSplitId: In(transactionSplitIds),
+    });
+
+    if (tagIds.length > 0) {
+      const newTags = transactionSplitIds.flatMap((transactionSplitId) =>
+        tagIds.map((tagId) =>
+          manager.create(TransactionSplitTag, { transactionSplitId, tagId }),
+        ),
+      );
+      await manager.save(TransactionSplitTag, newTags);
+    }
+  }
+
   async setSplitTags(
     transactionSplitId: string,
     tagIds: string[],

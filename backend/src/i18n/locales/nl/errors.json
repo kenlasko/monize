@@ -431,6 +431,7 @@
     "transferSameAccount": "Bron- en doelrekeningen moeten verschillend zijn",
     "transferAmountNegative": "Overboekingsbedrag mag niet negatief zijn",
     "notATransfer": "Transactie is geen overboeking",
+    "splitTransferLegAccountLocked": "Deze overboeking maakt deel uit van een gesplitste transactie. Wijzig de rekeningen door de splitsing op de brontransactie te bewerken.",
     "notFoundById": "Transactie met ID {{ id }} niet gevonden",
     "bulkUpdateNoFields": "Er moet minimaal één bijwerkveld worden opgegeven",
     "payeeNotFound": "Begunstigde niet gevonden",

@@ -533,6 +533,65 @@ describe("TagsService", () => {
     });
   });
 
+  describe("setSplitTagsBulk()", () => {
+    beforeEach(() => {
+      mockManager.find.mockReset();
+      mockManager.delete.mockReset();
+      mockManager.create.mockReset();
+      mockManager.save.mockReset();
+    });
+
+    it("validates once and replaces split tags with a single delete + insert", async () => {
+      const splitIds = ["split-1", "split-2"];
+      const tagIds = ["tag-1", "tag-2"];
+      mockManager.find.mockResolvedValue([mockTag, mockTag2]);
+      mockManager.delete.mockResolvedValue(undefined);
+      mockManager.create.mockImplementation((_entity, data) => data);
+      mockManager.save.mockResolvedValue(undefined);
+
+      await service.setSplitTagsBulk(splitIds, tagIds, userId);
+
+      expect(mockManager.find).toHaveBeenCalledTimes(1);
+      expect(mockManager.delete).toHaveBeenCalledTimes(1);
+      expect(mockManager.delete).toHaveBeenCalledWith(TransactionSplitTag, {
+        transactionSplitId: expect.anything(),
+      });
+      expect(mockManager.save).toHaveBeenCalledTimes(1);
+      expect(mockManager.save).toHaveBeenCalledWith(TransactionSplitTag, [
+        { transactionSplitId: "split-1", tagId: "tag-1" },
+        { transactionSplitId: "split-1", tagId: "tag-2" },
+        { transactionSplitId: "split-2", tagId: "tag-1" },
+        { transactionSplitId: "split-2", tagId: "tag-2" },
+      ]);
+    });
+
+    it("clears tags across all splits when tagIds is empty", async () => {
+      mockManager.delete.mockResolvedValue(undefined);
+
+      await service.setSplitTagsBulk(["split-1", "split-2"], [], userId);
+
+      expect(mockManager.delete).toHaveBeenCalledTimes(1);
+      expect(mockManager.find).not.toHaveBeenCalled();
+      expect(mockManager.save).not.toHaveBeenCalled();
+    });
+
+    it("does nothing when there are no splits", async () => {
+      await service.setSplitTagsBulk([], ["tag-1"], userId);
+
+      expect(mockManager.find).not.toHaveBeenCalled();
+      expect(mockManager.delete).not.toHaveBeenCalled();
+      expect(mockManager.save).not.toHaveBeenCalled();
+    });
+
+    it("throws NotFoundException when a tag does not belong to the user", async () => {
+      mockManager.find.mockResolvedValue([mockTag]); // 1 of 2 found
+
+      await expect(
+        service.setSplitTagsBulk(["split-1"], ["tag-1", "tag-nope"], userId),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
   describe("setSplitTags()", () => {
     const splitId = "split-1";
 
