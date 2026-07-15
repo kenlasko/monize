@@ -815,6 +815,10 @@ describe('deriveLoanPaymentHistory with paired separate interest expenses', () =
     expect(events.some((e) => e.date.startsWith('2012'))).toBe(true);
     expect(events.some((e) => e.date.startsWith('2020'))).toBe(true);
     expect(events.some((e) => e.date.startsWith('2022'))).toBe(true);
+    // ...and this loan's own interest is still attributed to the right date,
+    // so a pairing regression can't slip through the date-presence checks.
+    const aug = events.find((e) => e.date.startsWith('2022-08'));
+    expect(aug?.interest).toBeCloseTo(1250, 0);
   });
 
   it('excludes interest booked after the final payment once the loan is paid off', () => {
