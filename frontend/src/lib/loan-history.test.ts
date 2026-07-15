@@ -803,10 +803,39 @@ describe('deriveLoanPaymentHistory with paired separate interest expenses', () =
     expect(regRow!.interest).toBe(0);
   });
 
-  it('scopes separate interest to the loan lifetime, ignoring an earlier loan that shares the category', () => {
-    // Sequential refinanced mortgages share the interest category and source
-    // account. A loan that started in 2022 must not show interest-only rows
-    // from a previous mortgage (2012-2021).
+  it('includes interest booked before the configured start date (interest-only grace period)', () => {
+    // Real dataset shape: the interest-only grace period starts 2019-08, but
+    // paymentStartDate was set later (2020-04, e.g. guessed at setup). Interest
+    // is scoped by category, not date, so the pre-start grace interest still
+    // shows and counts instead of being truncated at the configured start.
+    const account = makeAccount({
+      accountType: 'MORTGAGE',
+      openingBalance: -206718.35,
+      currentBalance: -142332.03,
+      interestRate: 5.5,
+      paymentStartDate: '2020-04-05',
+    });
+    const transactions = [makeTransaction({ transactionDate: '2021-07-05', amount: 469.58 })];
+    const interestTransactions = [
+      { transactionDate: '2019-08-05', amount: -388.14, isTransfer: false } as Transaction,
+      { transactionDate: '2019-09-05', amount: -286.49, isTransfer: false } as Transaction,
+      { transactionDate: '2021-07-05', amount: -335.92, isTransfer: false } as Transaction,
+    ];
+
+    const { events } = deriveLoanPaymentHistory(account, transactions, [], interestTransactions);
+
+    // Grace interest from 2019-08 appears, ahead of the 2020-04 start date.
+    expect(events[0].date).toContain('2019-08');
+    expect(events.some((e) => e.date.startsWith('2019-09'))).toBe(true);
+    expect(events[0].interest).toBeCloseTo(388.14, 2);
+  });
+
+  it('includes all category interest regardless of date; refinances need distinct categories', () => {
+    // Interest is scoped by the configured interest category and source account,
+    // not by date, so an active loan shows every payment in that category. The
+    // flip side, called out for reviewers: sequential refinanced mortgages that
+    // reuse ONE interest category can no longer be separated by date -- give
+    // each refinance its own interest category to keep them apart.
     const account = makeAccount({
       accountType: 'MORTGAGE',
       openingBalance: -300000,
@@ -819,21 +848,42 @@ describe('deriveLoanPaymentHistory with paired separate interest expenses', () =
       makeTransaction({ transactionDate: '2022-09-05', amount: 500 }),
     ];
     const interestTransactions = [
-      // Previous mortgage on the same category/source, years earlier:
       { transactionDate: '2012-06-05', amount: -900, isTransfer: false } as Transaction,
       { transactionDate: '2020-06-05', amount: -800, isTransfer: false } as Transaction,
-      // This loan's interest:
       { transactionDate: '2022-08-05', amount: -1250, isTransfer: false } as Transaction,
       { transactionDate: '2022-09-05', amount: -1245, isTransfer: false } as Transaction,
     ];
 
     const { events } = deriveLoanPaymentHistory(account, transactions, [], interestTransactions);
 
-    // Only this loan's two payments -- no phantom rows from 2012-2020.
-    expect(events).toHaveLength(2);
-    expect(events.every((e) => e.date >= '2022-08-01')).toBe(true);
-    // This loan's own interest is still attributed.
-    expect(events[0].interest).toBeCloseTo(1250, 0);
+    // All category interest is now included, including the earlier dates.
+    expect(events.some((e) => e.date.startsWith('2012'))).toBe(true);
+    expect(events.some((e) => e.date.startsWith('2020'))).toBe(true);
+    expect(events.some((e) => e.date.startsWith('2022'))).toBe(true);
+    // ...and this loan's own interest is still attributed to the right date,
+    // so a pairing regression can't slip through the date-presence checks.
+    const aug = events.find((e) => e.date.startsWith('2022-08'));
+    expect(aug?.interest).toBeCloseTo(1250, 0);
+  });
+
+  it('excludes interest booked after the final payment once the loan is paid off', () => {
+    // A paid-off loan should not absorb interest later booked in the same
+    // category (e.g. a subsequent loan). Active loans keep accruing to today.
+    const account = makeAccount({
+      accountType: 'MORTGAGE',
+      openingBalance: -100000,
+      currentBalance: 0,
+      interestRate: 5,
+    });
+    const transactions = [makeTransaction({ transactionDate: '2023-01-05', amount: 100000 })];
+    const interestTransactions = [
+      { transactionDate: '2023-01-05', amount: -400, isTransfer: false } as Transaction,
+      { transactionDate: '2024-06-05', amount: -300, isTransfer: false } as Transaction,
+    ];
+
+    const { events } = deriveLoanPaymentHistory(account, transactions, [], interestTransactions);
+
+    expect(events.some((e) => e.date.startsWith('2024'))).toBe(false);
   });
 
   it('derives the observed rate from the actual days between payments', () => {

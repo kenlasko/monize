@@ -115,29 +115,24 @@ export function deriveLoanPaymentHistory(
   let cumulativePrincipal = 0;
   let cumulativeInterest = 0;
 
-  // Scope separately-booked interest to this loan's own lifetime. Sequential
-  // refinanced mortgages often share one interest category and source account
-  // (e.g. Canadian mortgages re-financed every few years), so an unrelated
-  // earlier or later loan's interest would otherwise be pulled in and shown as
-  // phantom interest-only rows. Bound it below by the configured first-payment
-  // date -- the loan's origination, which precedes the first principal payment
-  // during an interest-only grace period -- and above by the final payment once
-  // the loan is paid off (an active loan still accrues interest to today).
-  const originationDate =
-    account.paymentStartDate ||
-    (sortedTransactions.length > 0
-      ? sortedTransactions[0].transactionDate.split('T')[0]
-      : null);
+  // Separately-booked interest is already scoped to this loan by its configured
+  // interest category and source account (see fetchLoanInterestTransactions), so
+  // include all of it regardless of date. A loan account legitimately has
+  // activity before its configured start date -- an interest-only grace period,
+  // or history migrated from another tool -- and those payments must still show
+  // and count in the schedule and every figure derived from it, rather than
+  // being truncated at a start date that is often set later than the real first
+  // payment. The only bound kept is the upper one for a fully paid-off loan, so
+  // interest later booked in the same category (e.g. a subsequent loan) is not
+  // absorbed after this one is gone; an active loan still accrues to today.
   const lastTransactionDate =
     sortedTransactions.length > 0
       ? sortedTransactions[sortedTransactions.length - 1].transactionDate.split('T')[0]
       : null;
   const loanPaidOff = currentBalance <= 0.01;
   const scopedInterestTransactions = interestTransactions.filter((tx) => {
-    const date = tx.transactionDate.split('T')[0];
-    if (originationDate && date < originationDate) return false;
-    if (loanPaidOff && lastTransactionDate && date > lastTransactionDate) return false;
-    return true;
+    if (!loanPaidOff || !lastTransactionDate) return true;
+    return tx.transactionDate.split('T')[0] <= lastTransactionDate;
   });
 
   // A source-account payment covering multiple loan transfers (e.g. regular +
@@ -850,14 +845,17 @@ export async function fetchAllAccountTransactions(accountId: string): Promise<Tr
  * Only genuinely standalone interest expenses are returned. The category filter
  * also matches interest booked as a *split leg* of a payment (the backend
  * matches `splits.categoryId`), but that interest is already attributed to its
- * own loan through the payment's recorded interest split -- and a run of
- * sequential loans that share one interest category and funding account (e.g.
- * a mortgage refinanced every few years, each paid from the same chequing
- * account) would otherwise each pull in every sibling loan's split-leg
- * interest, producing phantom interest-only rows and a bogus payoff timeline.
- * A standalone expense carries the interest category at the top level
- * (split parents have a null top-level category) and is not a transfer, so
- * filtering on that keeps only interest this path is meant to handle.
+ * payment through the recorded interest split (path 2 of
+ * `deriveLoanPaymentHistory`); returning it here as well would double-count it.
+ * A standalone expense carries the interest category at the top level (split
+ * parents have a null top-level category) and is not a transfer, so filtering
+ * on that keeps only the interest this separate-expense path is meant to handle.
+ *
+ * Scoping to this loan is by the configured interest category + source account:
+ * `deriveLoanPaymentHistory` no longer date-bounds the result, so all of it
+ * counts (an interest-only grace period or migrated history included). Pointing
+ * two loans at one interest category would therefore merge them -- give each
+ * loan its own interest category to keep them apart.
  */
 export async function fetchLoanInterestTransactions(
   account: Account,
