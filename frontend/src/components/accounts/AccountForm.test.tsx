@@ -591,7 +591,7 @@ describe('AccountForm', () => {
     expect(screen.queryByText('Institution (optional)')).not.toBeInTheDocument();
   });
 
-  it('keeps the existing institutionId on submit when the field is untouched (issue #806)', async () => {
+  it('omits institutionId on submit when the field is untouched, so the backend keeps it (issue #806)', async () => {
     vi.mocked(institutionsApi.getAll).mockResolvedValueOnce([
       { id: 'inst-1', name: 'RBC', website: 'rbc.com' } as never,
     ]);
@@ -612,7 +612,66 @@ describe('AccountForm', () => {
     await waitFor(() => {
       expect(mockOnSubmit).toHaveBeenCalled();
     });
-    expect(mockOnSubmit.mock.calls[0][0].institutionId).toBe('inst-1');
+    // Untouched -> not sent at all, so the stored institution is retained.
+    expect(mockOnSubmit.mock.calls[0][0]).not.toHaveProperty('institutionId');
+  });
+
+  it('retains the institution when editing another field and leaving institution untouched', async () => {
+    vi.mocked(institutionsApi.getAll).mockResolvedValueOnce([
+      { id: 'inst-1', name: 'RBC', website: 'rbc.com' } as never,
+    ]);
+    const account = createExistingAccount({ institutionId: 'inst-1' });
+
+    render(
+      <AccountForm account={account} onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('RBC')).toBeInTheDocument();
+    });
+
+    // Edit an unrelated field (the account name) without touching institution.
+    await act(async () => {
+      fireEvent.change(screen.getByDisplayValue('My Chequing'), {
+        target: { value: 'Renamed Chequing' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Update Account/i }));
+    });
+
+    await waitFor(() => {
+      expect(mockOnSubmit).toHaveBeenCalled();
+    });
+    const payload = mockOnSubmit.mock.calls[0][0];
+    expect(payload.name).toBe('Renamed Chequing');
+    // The institution must not be overwritten by an edit that never touched it.
+    expect(payload).not.toHaveProperty('institutionId');
+  });
+
+  it('retains the institution even when the institutions list fails to load', async () => {
+    // Institutions never populate, so the combobox cannot resolve the stored id
+    // to a label. An untouched edit must still not clear the institution.
+    vi.mocked(institutionsApi.getAll).mockResolvedValueOnce([] as never);
+    const account = createExistingAccount({ institutionId: 'inst-1' });
+
+    render(
+      <AccountForm account={account} onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('My Chequing')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Update Account/i }));
+    });
+
+    await waitFor(() => {
+      expect(mockOnSubmit).toHaveBeenCalled();
+    });
+    expect(mockOnSubmit.mock.calls[0][0]).not.toHaveProperty('institutionId');
   });
 
   it('submits an explicit null when the user clears the institution while editing', async () => {
