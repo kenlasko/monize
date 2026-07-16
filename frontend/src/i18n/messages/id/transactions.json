@@ -256,12 +256,15 @@
     },
     "periods": {
       "select": "Pilih periode...",
+      "allDates": "Semua Tanggal",
       "today": "Hari ini",
       "yesterday": "Kemarin",
       "thisWeek": "Minggu Ini",
       "lastWeek": "Minggu Lalu",
+      "last30Days": "30 Hari Terakhir",
       "monthToDate": "Bulan Berjalan",
       "lastMonth": "Bulan Lalu",
+      "last365Days": "365 Hari Terakhir",
       "yearToDate": "Tahun Berjalan",
       "lastYear": "Tahun Lalu",
       "custom": "Kustom"

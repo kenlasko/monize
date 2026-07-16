@@ -256,12 +256,15 @@
     },
     "periods": {
       "select": "Выберите период...",
+      "allDates": "Все даты",
       "today": "Сегодня",
       "yesterday": "Вчера",
       "thisWeek": "Эта неделя",
       "lastWeek": "Прошлая неделя",
+      "last30Days": "Последние 30 дней",
       "monthToDate": "Текущий месяц",
       "lastMonth": "Прошлый месяц",
+      "last365Days": "Последние 365 дней",
       "yearToDate": "Текущий год",
       "lastYear": "Прошлый год",
       "custom": "Произвольный"

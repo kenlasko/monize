@@ -256,12 +256,15 @@
     },
     "periods": {
       "select": "अवधि चुनें...",
+      "allDates": "सभी तिथियाँ",
       "today": "आज",
       "yesterday": "कल",
       "thisWeek": "इस सप्ताह",
       "lastWeek": "पिछले सप्ताह",
+      "last30Days": "पिछले 30 दिन",
       "monthToDate": "महीने की शुरुआत से",
       "lastMonth": "पिछला महीना",
+      "last365Days": "पिछले 365 दिन",
       "yearToDate": "वर्ष की शुरुआत से",
       "lastYear": "पिछला वर्ष",
       "custom": "कस्टम"

@@ -256,12 +256,15 @@
     },
     "periods": {
       "select": "選擇期間...",
+      "allDates": "所有日期",
       "today": "今天",
       "yesterday": "昨天",
       "thisWeek": "本週",
       "lastWeek": "上週",
+      "last30Days": "最近30天",
       "monthToDate": "本月至今",
       "lastMonth": "上個月",
+      "last365Days": "最近365天",
       "yearToDate": "年初至今",
       "lastYear": "去年",
       "custom": "自訂"

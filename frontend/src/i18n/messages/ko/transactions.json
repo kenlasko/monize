@@ -256,12 +256,15 @@
     },
     "periods": {
       "select": "기간 선택...",
+      "allDates": "모든 날짜",
       "today": "오늘",
       "yesterday": "어제",
       "thisWeek": "이번 주",
       "lastWeek": "지난 주",
+      "last30Days": "지난 30일",
       "monthToDate": "이번 달",
       "lastMonth": "지난 달",
+      "last365Days": "지난 365일",
       "yearToDate": "올해",
       "lastYear": "지난 해",
       "custom": "사용자 정의"

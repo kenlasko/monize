@@ -1393,12 +1393,15 @@ describe('TransactionFilterPanel', () => {
       const options = select.querySelectorAll('option');
       const labels = Array.from(options).map(o => o.textContent);
       expect(labels).toContain('Select period...');
+      expect(labels).toContain('All Dates');
       expect(labels).toContain('Today');
       expect(labels).toContain('Yesterday');
       expect(labels).toContain('This Week');
       expect(labels).toContain('Last Week');
+      expect(labels).toContain('Last 30 Days');
       expect(labels).toContain('Month to Date');
       expect(labels).toContain('Last Month');
+      expect(labels).toContain('Last 365 Days');
       expect(labels).toContain('Year to Date');
       expect(labels).toContain('Last Year');
       expect(labels).toContain('Custom');
@@ -1419,6 +1422,31 @@ describe('TransactionFilterPanel', () => {
       expect(defaultProps.handleFilterChange).toHaveBeenCalledWith(
         defaultProps.setFilterEndDate,
         expect.any(String)
+      );
+    });
+
+    it('clears the start and end dates when All Dates is selected', () => {
+      render(
+        <TransactionFilterPanel
+          {...defaultProps}
+          filtersExpanded={true}
+          filterStartDate="2025-01-01"
+          filterEndDate="2025-06-30"
+        />
+      );
+
+      const select = screen.getByLabelText('Time Period');
+      fireEvent.change(select, { target: { value: 'all_dates' } });
+
+      expect(defaultProps.setFilterTimePeriod).toHaveBeenCalledWith('all_dates');
+      // All Dates resolves to empty bounds, removing the date filters.
+      expect(defaultProps.handleFilterChange).toHaveBeenCalledWith(
+        defaultProps.setFilterStartDate,
+        ''
+      );
+      expect(defaultProps.handleFilterChange).toHaveBeenCalledWith(
+        defaultProps.setFilterEndDate,
+        ''
       );
     });
 

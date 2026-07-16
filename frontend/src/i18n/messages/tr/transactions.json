@@ -256,12 +256,15 @@
     },
     "periods": {
       "select": "Dönem seçin...",
+      "allDates": "Tüm Tarihler",
       "today": "Bugün",
       "yesterday": "Dün",
       "thisWeek": "Bu Hafta",
       "lastWeek": "Geçen Hafta",
+      "last30Days": "Son 30 Gün",
       "monthToDate": "Aybaşından Bugüne",
       "lastMonth": "Geçen Ay",
+      "last365Days": "Son 365 Gün",
       "yearToDate": "Yılbaşından Bugüne",
       "lastYear": "Geçen Yıl",
       "custom": "Özel"

@@ -263,12 +263,15 @@
     },
     "periods": {
       "select": "[XX-Select period...-XX]",
+      "allDates": "[XX-All Dates-XX]",
       "today": "[XX-Today-XX]",
       "yesterday": "[XX-Yesterday-XX]",
       "thisWeek": "[XX-This Week-XX]",
       "lastWeek": "[XX-Last Week-XX]",
+      "last30Days": "[XX-Last 30 Days-XX]",
       "monthToDate": "[XX-Month to Date-XX]",
       "lastMonth": "[XX-Last Month-XX]",
+      "last365Days": "[XX-Last 365 Days-XX]",
       "yearToDate": "[XX-Year to Date-XX]",
       "lastYear": "[XX-Last Year-XX]",
       "custom": "[XX-Custom-XX]"

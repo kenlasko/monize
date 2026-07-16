@@ -8,7 +8,7 @@ describe('time-periods', () => {
 
   describe('TIME_PERIOD_OPTIONS', () => {
     it('has the correct number of options', () => {
-      expect(TIME_PERIOD_OPTIONS).toHaveLength(10);
+      expect(TIME_PERIOD_OPTIONS).toHaveLength(13);
     });
 
     it('starts with placeholder option', () => {
@@ -17,12 +17,15 @@ describe('time-periods', () => {
 
     it('includes all expected periods', () => {
       const values = TIME_PERIOD_OPTIONS.map(o => o.value);
+      expect(values).toContain('all_dates');
       expect(values).toContain('today');
       expect(values).toContain('yesterday');
       expect(values).toContain('this_week');
       expect(values).toContain('last_week');
+      expect(values).toContain('last_30_days');
       expect(values).toContain('month_to_date');
       expect(values).toContain('last_month');
+      expect(values).toContain('last_365_days');
       expect(values).toContain('year_to_date');
       expect(values).toContain('last_year');
       expect(values).toContain('custom');
@@ -104,6 +107,25 @@ describe('time-periods', () => {
       vi.setSystemTime(new Date(2025, 5, 18));
       const result = resolveTimePeriod('last_year');
       expect(result).toEqual({ startDate: '2024-01-01', endDate: '2024-12-31' });
+    });
+
+    it('returns the last 30 days for "last_30_days"', () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2025, 5, 18)); // June 18, 2025
+      const result = resolveTimePeriod('last_30_days');
+      expect(result).toEqual({ startDate: '2025-05-19', endDate: '2025-06-18' });
+    });
+
+    it('returns the last 365 days for "last_365_days"', () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2025, 5, 18)); // June 18, 2025
+      const result = resolveTimePeriod('last_365_days');
+      expect(result).toEqual({ startDate: '2024-06-18', endDate: '2025-06-18' });
+    });
+
+    it('returns empty strings for "all_dates"', () => {
+      const result = resolveTimePeriod('all_dates');
+      expect(result).toEqual({ startDate: '', endDate: '' });
     });
 
     it('returns empty strings for "custom"', () => {

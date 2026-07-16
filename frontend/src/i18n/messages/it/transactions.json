@@ -256,12 +256,15 @@
     },
     "periods": {
       "select": "Seleziona periodo...",
+      "allDates": "Tutte le date",
       "today": "Oggi",
       "yesterday": "Ieri",
       "thisWeek": "Questa settimana",
       "lastWeek": "Settimana scorsa",
+      "last30Days": "Ultimi 30 giorni",
       "monthToDate": "Mese corrente",
       "lastMonth": "Mese scorso",
+      "last365Days": "Ultimi 365 giorni",
       "yearToDate": "Anno corrente",
       "lastYear": "Anno scorso",
       "custom": "Personalizzato"

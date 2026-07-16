@@ -256,12 +256,15 @@
     },
     "periods": {
       "select": "Selecteer periode...",
+      "allDates": "Alle datums",
       "today": "Vandaag",
       "yesterday": "Gisteren",
       "thisWeek": "Deze week",
       "lastWeek": "Vorige week",
+      "last30Days": "Laatste 30 dagen",
       "monthToDate": "Maand tot nu toe",
       "lastMonth": "Vorige maand",
+      "last365Days": "Laatste 365 dagen",
       "yearToDate": "Jaar tot nu toe",
       "lastYear": "Vorig jaar",
       "custom": "Aangepast"

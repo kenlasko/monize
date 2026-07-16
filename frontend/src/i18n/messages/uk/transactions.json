@@ -256,12 +256,15 @@
     },
     "periods": {
       "select": "Оберіть період...",
+      "allDates": "Усі дати",
       "today": "Сьогодні",
       "yesterday": "Вчора",
       "thisWeek": "Цей тиждень",
       "lastWeek": "Минулий тиждень",
+      "last30Days": "Останні 30 днів",
       "monthToDate": "З початку місяця",
       "lastMonth": "Минулий місяць",
+      "last365Days": "Останні 365 днів",
       "yearToDate": "З початку року",
       "lastYear": "Минулий рік",
       "custom": "Довільний"
