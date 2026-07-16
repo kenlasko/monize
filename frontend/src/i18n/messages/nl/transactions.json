@@ -459,7 +459,11 @@
       "ending": "Eind",
       "lowest": "Laagste",
       "minBalance": "Minimumsaldo",
-      "projected": "Geprojecteerd"
+      "projected": "Geprojecteerd",
+      "range": "{start} – {end}"
+    },
+    "zeroBalances": {
+      "message": "Alle geselecteerde rekeningen hebben een saldo van nul, dus er is geen saldografiek om weer te geven."
     },
     "monthlyTotals": {
       "title": "Maandtotalen",

@@ -459,7 +459,11 @@
       "ending": "終了",
       "lowest": "最低",
       "minBalance": "最小残高",
-      "projected": "予測"
+      "projected": "予測",
+      "range": "{start} – {end}"
+    },
+    "zeroBalances": {
+      "message": "選択したすべての口座の残高がゼロのため、表示する残高チャートはありません。"
     },
     "monthlyTotals": {
       "title": "月次合計",

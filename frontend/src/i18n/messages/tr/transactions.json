@@ -459,7 +459,11 @@
       "ending": "Bitiş",
       "lowest": "En Düşük",
       "minBalance": "Min Bakiye",
-      "projected": "Öngörülen"
+      "projected": "Öngörülen",
+      "range": "{start} – {end}"
+    },
+    "zeroBalances": {
+      "message": "Seçili tüm hesapların bakiyesi sıfır olduğundan gösterilecek bakiye grafiği yok."
     },
     "monthlyTotals": {
       "title": "Aylık Toplamlar",

@@ -75,6 +75,26 @@ describe('BalanceHistoryChart', () => {
     expect(screen.getByText('$750.00')).toBeInTheDocument();
   });
 
+  it('shows the covered date range under the title', () => {
+    // A multi-year span also exercises the year-based axis tick branch.
+    render(
+      <BalanceHistoryChart
+        data={[
+          { date: '2021-01-01', balance: 1000 },
+          { date: '2025-06-01', balance: 900 },
+        ]}
+        isLoading={false}
+      />
+    );
+
+    expect(screen.getByText(/2021.*–.*2025/)).toBeInTheDocument();
+  });
+
+  it('does not render a date-range caption in the empty state', () => {
+    render(<BalanceHistoryChart data={[]} isLoading={false} />);
+    expect(screen.queryByText(/–/)).not.toBeInTheDocument();
+  });
+
   it('renders a download button titled after the chart when data is present', () => {
     render(
       <BalanceHistoryChart

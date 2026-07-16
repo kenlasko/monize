@@ -459,7 +459,11 @@
       "ending": "Kết thúc",
       "lowest": "Thấp nhất",
       "minBalance": "Số dư tối thiểu",
-      "projected": "Dự kiến"
+      "projected": "Dự kiến",
+      "range": "{start} – {end}"
+    },
+    "zeroBalances": {
+      "message": "Tất cả tài khoản đã chọn đều có số dư bằng 0, nên không có biểu đồ số dư để hiển thị."
     },
     "monthlyTotals": {
       "title": "Tổng hàng tháng",

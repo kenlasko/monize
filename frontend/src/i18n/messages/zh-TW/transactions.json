@@ -459,7 +459,11 @@
       "ending": "結束",
       "lowest": "最低",
       "minBalance": "最低結餘",
-      "projected": "預測"
+      "projected": "預測",
+      "range": "{start} – {end}"
+    },
+    "zeroBalances": {
+      "message": "所選帳戶的餘額皆為零，因此沒有可顯示的餘額圖表。"
     },
     "monthlyTotals": {
       "title": "每月總計",

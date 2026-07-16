@@ -459,7 +459,11 @@
       "ending": "अंतिम",
       "lowest": "न्यूनतम",
       "minBalance": "न्यूनतम शेष",
-      "projected": "अनुमानित"
+      "projected": "अनुमानित",
+      "range": "{start} – {end}"
+    },
+    "zeroBalances": {
+      "message": "सभी चयनित खातों का शेष शून्य है, इसलिए दिखाने के लिए कोई शेष चार्ट नहीं है।"
     },
     "monthlyTotals": {
       "title": "मासिक कुल",

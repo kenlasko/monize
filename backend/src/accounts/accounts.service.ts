@@ -1458,6 +1458,7 @@ export class AccountsService {
     startDate?: string,
     endDate?: string,
     accountIds?: string[],
+    allTime = false,
   ): Promise<
     Array<{
       date: string;
@@ -1466,12 +1467,15 @@ export class AccountsService {
       currencyCode: string;
     }>
   > {
+    const accountIdsParam =
+      accountIds && accountIds.length > 0 ? accountIds : null;
+
     let end = endDate || todayYMD();
 
-    // When no explicit endDate, extend to include future transactions
-    if (!endDate) {
-      const accountIdsFilter =
-        accountIds && accountIds.length > 0 ? accountIds : null;
+    // When no explicit endDate, extend to include future transactions. Skipped
+    // in all-time mode, where the MIN/MAX probe below already yields the last
+    // transaction date (future-dated ones included) and clamps `end` to it.
+    if (!endDate && !allTime) {
       const maxDateResult = await this.dataSource.query(
         `SELECT MAX(t.transaction_date)::TEXT as max_date
          FROM transactions t
@@ -1481,7 +1485,7 @@ export class AccountsService {
            AND (t.status IS NULL OR t.status != 'VOID')
            AND t.parent_transaction_id IS NULL
            AND t.transaction_date > $3`,
-        [userId, accountIdsFilter, end],
+        [userId, accountIdsParam, end],
       );
       const maxFutureDate = maxDateResult?.[0]?.max_date;
       if (maxFutureDate && maxFutureDate > end) {
@@ -1489,16 +1493,57 @@ export class AccountsService {
       }
     }
 
-    const start =
-      startDate ||
-      (() => {
-        const d = new Date();
-        d.setFullYear(d.getFullYear() - 1);
-        return formatDateYMD(d);
-      })();
+    const oneYearAgo = () => {
+      const d = new Date();
+      d.setFullYear(d.getFullYear() - 1);
+      return formatDateYMD(d);
+    };
 
-    const accountIdsParam =
-      accountIds && accountIds.length > 0 ? accountIds : null;
+    let start: string;
+    if (startDate) {
+      start = startDate;
+    } else if (allTime) {
+      // "All time" mirrors the transaction list's default (no start filter):
+      // span the account's actual activity, from its earliest to its latest
+      // transaction. Ending at the last transaction (rather than today) keeps a
+      // closed or dormant account from trailing a long flat line to today; the
+      // unbounded MAX still includes future-dated transactions, so projections
+      // remain visible. Both fall back to the one-year default / today when the
+      // account has no transactions yet.
+      const range = await this.dataSource.query(
+        `SELECT MIN(t.transaction_date)::TEXT as min_date,
+                MAX(t.transaction_date)::TEXT as max_date
+         FROM transactions t
+         JOIN accounts a ON a.id = t.account_id
+         WHERE a.user_id = $1
+           AND ($2::UUID[] IS NULL OR t.account_id = ANY($2::UUID[]))
+           AND (t.status IS NULL OR t.status != 'VOID')
+           AND t.parent_transaction_id IS NULL`,
+        [userId, accountIdsParam],
+      );
+      start = range?.[0]?.min_date || oneYearAgo();
+      const maxDate = range?.[0]?.max_date;
+      if (!endDate && maxDate) {
+        end = maxDate;
+      }
+    } else {
+      start = oneYearAgo();
+    }
+
+    // Downsample wide ranges so the series stays light to transfer and render.
+    // A running balance is a point-in-time value, so we thin by keeping every
+    // Nth day (plus always the final/latest point) rather than averaging.
+    // Ranges up to MAX_POINTS days (including a full year) keep every day, so
+    // callers that rely on the one-year default are byte-identical.
+    const MAX_POINTS = 400;
+    const totalDays =
+      Math.round(
+        (new Date(`${end}T00:00:00Z`).getTime() -
+          new Date(`${start}T00:00:00Z`).getTime()) /
+          86_400_000,
+      ) + 1;
+    const step =
+      totalDays <= MAX_POINTS ? 1 : Math.ceil(totalDays / MAX_POINTS);
 
     const rows: Array<{
       date: string;
@@ -1548,11 +1593,20 @@ export class AccountsService {
           CROSS JOIN generate_series($3::TIMESTAMP, $4::TIMESTAMP, '1 day') d(dt)
           LEFT JOIN pre_period pp ON pp.account_id = ta.id
           LEFT JOIN daily_tx dtx ON dtx.account_id = ta.id AND dtx.tx_date = d.dt::DATE
+        ),
+        numbered AS (
+          SELECT date, balance, account_id, currency_code,
+                 ROW_NUMBER() OVER (PARTITION BY account_id ORDER BY date) - 1 AS idx,
+                 COUNT(*) OVER (PARTITION BY account_id) AS cnt
+          FROM account_daily
         )
+        -- Downsample: keep every $5th day (aligned across accounts, since all
+        -- share the same date series) plus always the final/latest point.
         SELECT date::TEXT, balance::NUMERIC, account_id, currency_code
-        FROM account_daily
+        FROM numbered
+        WHERE $5::int <= 1 OR idx % $5::int = 0 OR idx = cnt - 1
         ORDER BY date, account_id`,
-      [userId, accountIdsParam, start, end],
+      [userId, accountIdsParam, start, end, step],
     );
 
     return rows.map((r) => ({

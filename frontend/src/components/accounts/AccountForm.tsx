@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import '@/lib/zodConfig';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useState, useEffect, useMemo, MutableRefObject } from 'react';
+import { useState, useEffect, useMemo, useCallback, MutableRefObject } from 'react';
 import { Input } from '@/components/ui/Input';
 import { Combobox } from '@/components/ui/Combobox';
 import { Modal } from '@/components/ui/Modal';
@@ -221,7 +221,7 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
     control,
     setValue,
     getValues,
-    formState: { errors, isSubmitting, isDirty },
+    formState: { errors, isSubmitting, isDirty, dirtyFields },
   } = useForm<AccountFormData>({
     resolver: zodResolver(buildAccountSchema(t, !!account)) as Resolver<AccountFormData>,
     defaultValues: account
@@ -276,7 +276,26 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
 
   useFormDirtyNotify(isDirty, onDirtyChange);
 
-  useFormSubmitRef(submitRef, handleSubmit, onSubmit);
+  // Retain the account's stored institution unless the user actually changed
+  // the Institution field. The institution combobox marks the field dirty only
+  // on real interaction (selecting, clearing, or creating an institution), so
+  // an untouched edit of any other property omits institutionId entirely and
+  // the backend keeps the stored value -- the form can never clobber it. Only
+  // an explicit change or removal (which dirties the field, null on a clear) is
+  // sent through (issue #806). Omitting rather than resending the loaded value
+  // also avoids overwriting the stored institution with a stale form value.
+  const handleValidatedSubmit = useCallback(
+    (data: AccountFormData) => {
+      if (account && !dirtyFields.institutionId) {
+        const { institutionId: _untouched, ...rest } = data;
+        return onSubmit(rest);
+      }
+      return onSubmit(data);
+    },
+    [account, dirtyFields.institutionId, onSubmit],
+  );
+
+  useFormSubmitRef(submitRef, handleSubmit, handleValidatedSubmit);
 
   const watchedCurrency = useWatch({ control, name: 'currencyCode' });
   const watchedIsFavourite = useWatch({ control, name: 'isFavourite' });
@@ -606,7 +625,7 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(handleValidatedSubmit)} className="space-y-4">
       <Input
         label={t('form.accountName')}
         error={errors.name?.message}

@@ -459,7 +459,11 @@
       "ending": "Конечный",
       "lowest": "Минимальный",
       "minBalance": "Мин. остаток",
-      "projected": "Прогноз"
+      "projected": "Прогноз",
+      "range": "{start} – {end}"
+    },
+    "zeroBalances": {
+      "message": "У всех выбранных счетов нулевой баланс, поэтому график баланса отсутствует."
     },
     "monthlyTotals": {
       "title": "Месячные итоги",

@@ -155,6 +155,14 @@ describe('accountsApi', () => {
     });
   });
 
+  it('getDailyBalances forwards the allTime flag', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
+    await accountsApi.getDailyBalances({ accountIds: 'acc-9', allTime: true });
+    expect(apiClient.get).toHaveBeenCalledWith('/accounts/daily-balances', {
+      params: { accountIds: 'acc-9', allTime: true },
+    });
+  });
+
   describe('exportAccount', () => {
     let createObjectURL: any;
     let revokeObjectURL: any;

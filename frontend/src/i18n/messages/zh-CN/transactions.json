@@ -459,7 +459,11 @@
       "ending": "结算",
       "lowest": "最低",
       "minBalance": "最低余额",
-      "projected": "预测"
+      "projected": "预测",
+      "range": "{start} – {end}"
+    },
+    "zeroBalances": {
+      "message": "所选账户的余额均为零，因此没有可显示的余额图表。"
     },
     "monthlyTotals": {
       "title": "月度合计",

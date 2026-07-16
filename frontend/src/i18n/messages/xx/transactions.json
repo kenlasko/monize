@@ -459,7 +459,11 @@
       "ending": "[XX-Ending-XX]",
       "lowest": "[XX-Lowest-XX]",
       "minBalance": "[XX-Min Balance-XX]",
-      "projected": "[XX-Projected-XX]"
+      "projected": "[XX-Projected-XX]",
+      "range": "[XX-{start} – {end}-XX]"
+    },
+    "zeroBalances": {
+      "message": "[XX-All selected accounts have a zero balance, so there's no balance chart to show.-XX]"
     },
     "monthlyTotals": {
       "title": "[XX-Monthly Totals-XX]",

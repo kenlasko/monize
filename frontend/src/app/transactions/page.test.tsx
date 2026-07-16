@@ -909,6 +909,41 @@ describe('TransactionsPage', () => {
       expect(screen.queryByTestId('chart-account-balances')).not.toBeInTheDocument();
     });
 
+    it('shows the zero-balance banner when multiple accounts all have a zero balance', async () => {
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+      // Two accounts, each ending at a zero balance (e.g. closed accounts).
+      mockGetDailyBalances.mockResolvedValue([
+        { date: '2026-02-01', balance: 500, accountId: 'acc-1', currencyCode: 'USD' },
+        { date: '2026-02-15', balance: 0, accountId: 'acc-1', currencyCode: 'USD' },
+        { date: '2026-02-01', balance: 300, accountId: 'acc-2', currencyCode: 'USD' },
+        { date: '2026-02-15', balance: 0, accountId: 'acc-2', currencyCode: 'USD' },
+      ]);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('chart-zero-balances')).toBeInTheDocument();
+      });
+      // Neither the bar chart nor the line chart is shown for the all-zero case.
+      expect(screen.queryByTestId('chart-account-balances')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('chart-balance-history')).not.toBeInTheDocument();
+    });
+
+    it('requests all-time daily balances when no start-date filter is set', async () => {
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+      mockGetDailyBalances.mockResolvedValue([]);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(mockGetDailyBalances).toHaveBeenCalled();
+      });
+
+      const callArgs = mockGetDailyBalances.mock.calls.at(-1)?.[0];
+      expect(callArgs?.allTime).toBe(true);
+      expect(callArgs?.startDate).toBeUndefined();
+    });
+
     it('forwards the Show Accounts filter (active) to the daily-balances chart query', async () => {
       mockGetAllAccounts.mockResolvedValue(mockAccounts);
 

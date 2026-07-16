@@ -459,7 +459,11 @@
       "ending": "종료",
       "lowest": "최저",
       "minBalance": "최소 잔액",
-      "projected": "예상"
+      "projected": "예상",
+      "range": "{start} – {end}"
+    },
+    "zeroBalances": {
+      "message": "선택한 모든 계좌의 잔액이 0이므로 표시할 잔액 차트가 없습니다."
     },
     "monthlyTotals": {
       "title": "월별 합계",

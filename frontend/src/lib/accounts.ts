@@ -160,11 +160,15 @@ export const accountsApi = {
     startDate?: string;
     endDate?: string;
     accountIds?: string;
+    // Span the account's full history (from its earliest transaction) instead
+    // of the backend's default one-year window. Only honoured when no
+    // startDate is given.
+    allTime?: boolean;
   }): Promise<Array<{ date: string; balance: number; accountId: string; currencyCode: string }>> => {
     // Dedupe so multiple components requesting the same range/accounts share
     // a single network call. Daily balances roll forward as transactions
     // change, so cache TTL is short.
-    const cacheKey = `accounts:daily-balances:${params?.startDate ?? ''}:${params?.endDate ?? ''}:${params?.accountIds ?? ''}`;
+    const cacheKey = `accounts:daily-balances:${params?.startDate ?? ''}:${params?.endDate ?? ''}:${params?.accountIds ?? ''}:${params?.allTime ? 'all' : ''}`;
     return dedupe(
       cacheKey,
       async () => {

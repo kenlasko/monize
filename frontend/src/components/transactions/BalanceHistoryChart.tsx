@@ -14,9 +14,8 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
-import { format } from 'date-fns';
 import { chartColors } from '@/lib/chart-colors';
-import { parseLocalDate } from '@/lib/utils';
+import { parseLocalDate, type ChartDatePattern } from '@/lib/utils';
 import { computeBalanceGradient, computeBalanceSummary } from '@/lib/balance-history';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
@@ -107,26 +106,58 @@ export function BalanceHistoryChart({
     [formatCurrencyFlag, currencyCode],
   );
 
-  const { chartData, monthTicks } = useMemo(() => {
-    if (data.length === 0) return { chartData: [], monthTicks: [] };
+  const { chartData, axisTicks, axisPattern } = useMemo(() => {
+    if (data.length === 0) {
+      return {
+        chartData: [] as ChartPoint[],
+        axisTicks: [] as string[],
+        axisPattern: 'MMM' as ChartDatePattern,
+      };
+    }
+
+    const points = data.map((d) => ({
+      date: d.date,
+      label: formatChartDate(parseLocalDate(d.date), 'MMM d, yyyy'),
+      balance: Math.round(d.balance * 100) / 100,
+    }));
+
+    // A month tick per month reads well over ~2 years or less; beyond that the
+    // axis is crowded and yearless, so switch to one tick per year. Dates are
+    // ISO `yyyy-MM-dd`, so year/month keys come from a plain string slice.
+    const spanDays =
+      (parseLocalDate(points[points.length - 1].date).getTime() -
+        parseLocalDate(points[0].date).getTime()) /
+      86_400_000;
+    const useYearTicks = spanDays > 730;
 
     const ticks: string[] = [];
-    let lastMonth = '';
-    const points = data.map((d) => {
-      const parsed = parseLocalDate(d.date);
-      const monthKey = format(parsed, 'yyyy-MM');
-      if (monthKey !== lastMonth) {
-        ticks.push(d.date);
-        lastMonth = monthKey;
+    let lastKey = '';
+    for (const p of points) {
+      const key = useYearTicks ? p.date.slice(0, 4) : p.date.slice(0, 7);
+      if (key !== lastKey) {
+        ticks.push(p.date);
+        lastKey = key;
       }
-      return {
-        date: d.date,
-        label: formatChartDate(parsed, 'MMM d, yyyy'),
-        balance: Math.round(d.balance * 100) / 100,
-      };
-    });
-    return { chartData: points, monthTicks: ticks };
+    }
+
+    return {
+      chartData: points,
+      axisTicks: ticks,
+      axisPattern: (useYearTicks ? 'yyyy' : 'MMM') as ChartDatePattern,
+    };
   }, [data, formatChartDate]);
+
+  // The exact span the chart covers, shown under the title so the timeframe is
+  // always explicit (e.g. the all-history default is no longer a silent range).
+  const rangeLabel = useMemo(() => {
+    if (chartData.length === 0) return '';
+    const start = formatChartDate(parseLocalDate(chartData[0].date), 'MMM d, yyyy');
+    const end = formatChartDate(
+      parseLocalDate(chartData[chartData.length - 1].date),
+      'MMM d, yyyy',
+    );
+    return t('charts.balanceHistory.range', { start, end });
+  }, [chartData, formatChartDate, t]);
 
   const summary = useMemo(() => computeBalanceSummary(chartData), [chartData]);
 
@@ -193,10 +224,17 @@ export function BalanceHistoryChart({
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 mb-6 min-h-[420px]">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          {chartTitle}
-        </h3>
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            {chartTitle}
+          </h3>
+          {rangeLabel && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+              {rangeLabel}
+            </p>
+          )}
+        </div>
         <ChartDownloadButton chartRef={chartRef} filename={downloadFilename} />
       </div>
 
@@ -218,11 +256,11 @@ export function BalanceHistoryChart({
             <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
             <XAxis
               dataKey="date"
-              ticks={monthTicks}
+              ticks={axisTicks}
               tick={{ fill: chartColors.axis, fontSize: 12 }}
               tickLine={false}
               axisLine={{ stroke: chartColors.grid }}
-              tickFormatter={(value: string) => formatChartDate(value, 'MMM')}
+              tickFormatter={(value: string) => formatChartDate(value, axisPattern)}
             />
             {/* width="auto" lets recharts size the axis to its widest tick
                 label so long localized currency values (e.g. "1.234.567 €")

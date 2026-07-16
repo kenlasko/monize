@@ -459,7 +459,11 @@
       "ending": "Final",
       "lowest": "Más bajo",
       "minBalance": "Saldo mínimo",
-      "projected": "Proyectado"
+      "projected": "Proyectado",
+      "range": "{start} – {end}"
+    },
+    "zeroBalances": {
+      "message": "Todas las cuentas seleccionadas tienen saldo cero, por lo que no hay ningún gráfico de saldo para mostrar."
     },
     "monthlyTotals": {
       "title": "Totales mensuales",

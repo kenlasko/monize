@@ -459,7 +459,11 @@
       "ending": "Ende",
       "lowest": "Niedrigster",
       "minBalance": "Mindestsaldo",
-      "projected": "Prognostiziert"
+      "projected": "Prognostiziert",
+      "range": "{start} – {end}"
+    },
+    "zeroBalances": {
+      "message": "Alle ausgewählten Konten haben einen Saldo von null, daher gibt es kein Saldodiagramm anzuzeigen."
     },
     "monthlyTotals": {
       "title": "Monatliche Summen",

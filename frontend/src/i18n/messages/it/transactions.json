@@ -459,7 +459,11 @@
       "ending": "Finale",
       "lowest": "Minimo",
       "minBalance": "Saldo minimo",
-      "projected": "Previsto"
+      "projected": "Previsto",
+      "range": "{start} – {end}"
+    },
+    "zeroBalances": {
+      "message": "Tutti i conti selezionati hanno saldo zero, quindi non c'è alcun grafico dei saldi da mostrare."
     },
     "monthlyTotals": {
       "title": "Totali mensili",

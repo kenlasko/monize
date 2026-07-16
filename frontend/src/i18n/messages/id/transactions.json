@@ -459,7 +459,11 @@
       "ending": "Akhir",
       "lowest": "Terendah",
       "minBalance": "Saldo Minimum",
-      "projected": "Proyeksi"
+      "projected": "Proyeksi",
+      "range": "{start} – {end}"
+    },
+    "zeroBalances": {
+      "message": "Semua akun yang dipilih memiliki saldo nol, sehingga tidak ada grafik saldo untuk ditampilkan."
     },
     "monthlyTotals": {
       "title": "Total Bulanan",
