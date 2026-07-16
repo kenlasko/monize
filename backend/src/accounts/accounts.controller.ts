@@ -254,10 +254,12 @@ export class AccountsController {
     @Query("startDate") startDate?: string,
     @Query("endDate") endDate?: string,
     @Query("accountIds") accountIds?: string,
+    @Query("allTime") allTime?: string,
   ) {
     const sd = assertStringParam(startDate, "startDate");
     const ed = assertStringParam(endDate, "endDate");
     const aIds = assertStringParam(accountIds, "accountIds");
+    const allTimeFlag = assertStringParam(allTime, "allTime") === "true";
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (sd && !dateRegex.test(sd))
       throw new BadRequestException(
@@ -281,7 +283,13 @@ export class AccountsController {
           : readable;
       if (ids.length === 0) return [];
     }
-    return this.accountsService.getDailyBalances(req.user.id, sd, ed, ids);
+    return this.accountsService.getDailyBalances(
+      req.user.id,
+      sd,
+      ed,
+      ids,
+      allTimeFlag,
+    );
   }
 
   @Get("summary")

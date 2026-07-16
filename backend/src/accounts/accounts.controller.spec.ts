@@ -512,6 +512,7 @@ describe("AccountsController", () => {
         "2025-01-01",
         "2025-12-31",
         ["acc-1", "acc-2"],
+        false,
       );
     });
 
@@ -530,6 +531,27 @@ describe("AccountsController", () => {
         "2025-01-01",
         "2025-12-31",
         undefined,
+        false,
+      );
+    });
+
+    it("forwards allTime=true as a boolean flag", async () => {
+      mockAccountsService.getDailyBalances!.mockReturnValue("balances");
+
+      await controller.getDailyBalances(
+        mockReq,
+        undefined,
+        undefined,
+        "acc-1",
+        "true",
+      );
+
+      expect(mockAccountsService.getDailyBalances).toHaveBeenCalledWith(
+        "user-1",
+        undefined,
+        undefined,
+        ["acc-1"],
+        true,
       );
     });
   });

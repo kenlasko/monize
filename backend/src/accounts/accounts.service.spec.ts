@@ -3045,6 +3045,82 @@ describe("AccountsService", () => {
       await service.getDailyBalances("user-1", "2024-01-01", "2024-12-31", []);
       expect(ds.query).toHaveBeenCalled();
     });
+
+    it("keeps every day (step 1) for ranges within the point budget", async () => {
+      const ds = service["dataSource"] as unknown as { query: jest.Mock };
+      ds.query = jest.fn().mockResolvedValue([]);
+      await service.getDailyBalances("user-1", "2024-01-01", "2024-12-31", [
+        "a1",
+      ]);
+      const params = ds.query.mock.calls[0][1];
+      expect(params[2]).toBe("2024-01-01");
+      expect(params[3]).toBe("2024-12-31");
+      expect(params[4]).toBe(1); // 366 days <= 400 -> no downsampling
+    });
+
+    it("downsamples wide ranges with a step greater than 1", async () => {
+      const ds = service["dataSource"] as unknown as { query: jest.Mock };
+      ds.query = jest.fn().mockResolvedValue([]);
+      await service.getDailyBalances("user-1", "2010-01-01", "2024-12-31", [
+        "a1",
+      ]);
+      const params = ds.query.mock.calls[0][1];
+      expect(params[4]).toBeGreaterThan(1); // ~5479 days / 400 -> step 14
+    });
+
+    it("starts at the earliest transaction when allTime and no startDate", async () => {
+      const ds = service["dataSource"] as unknown as { query: jest.Mock };
+      ds.query = jest
+        .fn()
+        // no endDate -> future-extension probe
+        .mockResolvedValueOnce([{ max_date: null }])
+        // allTime -> earliest-transaction probe
+        .mockResolvedValueOnce([{ min_date: "2015-06-01" }])
+        // main rows query
+        .mockResolvedValueOnce([]);
+      await service.getDailyBalances(
+        "user-1",
+        undefined,
+        undefined,
+        ["a1"],
+        true,
+      );
+      const params = ds.query.mock.calls[2][1];
+      expect(params[2]).toBe("2015-06-01");
+    });
+
+    it("falls back to the one-year default when allTime finds no transactions", async () => {
+      const ds = service["dataSource"] as unknown as { query: jest.Mock };
+      ds.query = jest
+        .fn()
+        .mockResolvedValueOnce([{ max_date: null }])
+        .mockResolvedValueOnce([{ min_date: null }])
+        .mockResolvedValueOnce([]);
+      await service.getDailyBalances(
+        "user-1",
+        undefined,
+        undefined,
+        ["a1"],
+        true,
+      );
+      const params = ds.query.mock.calls[2][1];
+      expect(params[2]).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    });
+
+    it("does not probe for earliest transaction when startDate is given", async () => {
+      const ds = service["dataSource"] as unknown as { query: jest.Mock };
+      ds.query = jest.fn().mockResolvedValue([]);
+      await service.getDailyBalances(
+        "user-1",
+        "2024-01-01",
+        "2024-12-31",
+        ["a1"],
+        true,
+      );
+      // endDate + startDate both supplied -> only the main query runs
+      expect(ds.query).toHaveBeenCalledTimes(1);
+      expect(ds.query.mock.calls[0][1][2]).toBe("2024-01-01");
+    });
   });
 
   describe("applyDueTransactionBalances cron", () => {

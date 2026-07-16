@@ -459,7 +459,8 @@
       "ending": "[XX-Ending-XX]",
       "lowest": "[XX-Lowest-XX]",
       "minBalance": "[XX-Min Balance-XX]",
-      "projected": "[XX-Projected-XX]"
+      "projected": "[XX-Projected-XX]",
+      "range": "[XX-{start} – {end}-XX]"
     },
     "monthlyTotals": {
       "title": "[XX-Monthly Totals-XX]",

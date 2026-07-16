@@ -189,9 +189,13 @@ function TransactionsContent() {
 
       const hasCategoryOrPayeeFilter = filters.filterCategoryIds.length > 0 || filters.filterPayeeIds.length > 0 || filters.filterTagIds.length > 0 || filters.filterSearch.length > 0;
 
-      const chartParams: { startDate?: string; endDate?: string; accountIds?: string } = {};
+      const chartParams: { startDate?: string; endDate?: string; accountIds?: string; allTime?: boolean } = {};
       if (filters.filterStartDate) chartParams.startDate = filters.filterStartDate;
       if (filters.filterEndDate) chartParams.endDate = filters.filterEndDate;
+      // With no start-date filter the transaction list shows the account's full
+      // history, so the Balance History chart should span it too (downsampled
+      // server-side) rather than the backend's default one-year window.
+      if (!filters.filterStartDate) chartParams.allTime = true;
       // Mirror the Show Accounts filter (Active/Closed/All) into the chart query
       // so the Account Balances and Balance History charts only include accounts
       // that the transaction list is actually showing.

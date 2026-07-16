@@ -909,6 +909,21 @@ describe('TransactionsPage', () => {
       expect(screen.queryByTestId('chart-account-balances')).not.toBeInTheDocument();
     });
 
+    it('requests all-time daily balances when no start-date filter is set', async () => {
+      mockGetAllAccounts.mockResolvedValue(mockAccounts);
+      mockGetDailyBalances.mockResolvedValue([]);
+
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(mockGetDailyBalances).toHaveBeenCalled();
+      });
+
+      const callArgs = mockGetDailyBalances.mock.calls.at(-1)?.[0];
+      expect(callArgs?.allTime).toBe(true);
+      expect(callArgs?.startDate).toBeUndefined();
+    });
+
     it('forwards the Show Accounts filter (active) to the daily-balances chart query', async () => {
       mockGetAllAccounts.mockResolvedValue(mockAccounts);
 
