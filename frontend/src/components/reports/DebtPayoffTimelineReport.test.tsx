@@ -131,6 +131,53 @@ describe('DebtPayoffTimelineReport', () => {
     );
   });
 
+  it('stays in the loading state until the interest fetch resolves (no analytic-estimate flicker)', async () => {
+    mockGetAllAccounts.mockResolvedValue([
+      {
+        id: 'loan-1',
+        name: 'Mortgage',
+        accountType: 'MORTGAGE',
+        currentBalance: -100000,
+        openingBalance: -120000,
+        interestRate: 5.0,
+        paymentAmount: 800,
+        paymentFrequency: 'MONTHLY',
+        interestCategoryId: 'cat-int',
+        sourceAccountId: 'src-1',
+        isCanadianMortgage: false,
+        isVariableRate: false,
+        isClosed: false,
+      },
+    ]);
+    mockGetAllTransactions.mockResolvedValue({
+      data: [{ id: 'tx-1', transactionDate: '2024-06-01', amount: 800, linkedTransaction: null }],
+      pagination: { hasMore: false },
+    });
+    let resolveInterest!: (value: unknown[]) => void;
+    mockGetAllPages.mockReturnValue(
+      new Promise((resolve) => {
+        resolveInterest = resolve;
+      }),
+    );
+
+    render(<DebtPayoffTimelineReport />);
+
+    // Accounts and transactions have resolved, but the separate-interest fetch
+    // is still in flight: the report must keep the skeleton instead of painting
+    // the schedule with the analytic interest estimate.
+    await act(async () => {});
+    await act(async () => {});
+    expect(document.querySelector('.animate-pulse')).toBeTruthy();
+    expect(screen.queryByText('Current Balance')).not.toBeInTheDocument();
+
+    await act(async () => {
+      resolveInterest([]);
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Current Balance')).toBeInTheDocument();
+    });
+  });
+
   it('renders controls with account selector when accounts exist', async () => {
     mockGetAllAccounts.mockResolvedValue([
       {

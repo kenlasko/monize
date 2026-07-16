@@ -96,8 +96,15 @@ export function DebtPayoffTimelineReport() {
   const transactions = useMemo<Transaction[]>(() => transactionsData ?? [], [transactionsData]);
 
   // The loan's separately-booked interest expenses, so derived interest matches
-  // the loan detail page (see #893).
-  const { data: interestData } = useReportData(
+  // the loan detail page (see #893). Folded into the combined isLoading/error/
+  // reload below like the other loaders, so the schedule never paints with the
+  // analytic interest estimate and then snaps to the booked interest.
+  const {
+    data: interestData,
+    isLoading: interestLoading,
+    error: interestError,
+    reload: reloadInterest,
+  } = useReportData(
     async () => {
       const account = accounts.find((a) => a.id === selectedAccountId);
       if (!account) return [] as Transaction[];
@@ -107,11 +114,12 @@ export function DebtPayoffTimelineReport() {
   );
   const interestTransactions = useMemo<Transaction[]>(() => interestData ?? [], [interestData]);
 
-  const isLoading = accountsLoading || transactionsLoading;
-  const error = accountsError || transactionsError;
+  const isLoading = accountsLoading || transactionsLoading || interestLoading;
+  const error = accountsError || transactionsError || interestError;
   const reload = () => {
     reloadAccounts();
     reloadTransactions();
+    reloadInterest();
   };
 
   // Build payment timeline from actual transactions + projected future payments
