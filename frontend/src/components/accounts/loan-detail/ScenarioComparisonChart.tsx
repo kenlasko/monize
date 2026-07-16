@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   CartesianGrid,
@@ -59,24 +60,6 @@ export function ScenarioComparisonChart({
   const formatChartDate = useChartDateFormat();
   const { formatCurrency, formatCurrencyCompact, formatCurrencyAxis } = useNumberFormat();
 
-  const now = new Date();
-  const startYear = now.getFullYear();
-  const startMonth = now.getMonth();
-
-  // Whole months from the start of the current month to the given date; at
-  // least 1 so an arc always has a visible span.
-  const monthIndexOf = (iso: string): number => {
-    const d = new Date(iso);
-    return Math.max(
-      1,
-      (d.getUTCFullYear() - startYear) * 12 + (d.getUTCMonth() - startMonth),
-    );
-  };
-  const isoAt = (index: number): string => {
-    const d = new Date(Date.UTC(startYear, startMonth + index, 1));
-    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-01`;
-  };
-
   const payoffLabel = (payoffDate: string | null): string =>
     payoffDate
       ? formatChartDate(payoffDate, 'MMM yyyy')
@@ -97,53 +80,84 @@ export function ScenarioComparisonChart({
     return parts.join(' + ') || t('loanDetail.scenarios.emptyScenario');
   };
 
-  const baselineIndex = baseline.payoffDate ? monthIndexOf(baseline.payoffDate) : null;
-  const series = outcomes.map((o, i) => ({
-    ...o,
-    color: chartSeriesColor(i),
-    payoffIndex: o.payoffDate ? monthIndexOf(o.payoffDate) : null,
-  }));
-  const lastIndex = Math.max(
-    12,
-    baselineIndex ?? 0,
-    ...series.map((s) => s.payoffIndex ?? 0),
-  );
+  const { series, baselineIndex, chartData } = useMemo(() => {
+    const now = new Date();
+    const startYear = now.getUTCFullYear();
+    const startMonth = now.getUTCMonth();
 
-  // Sample the monthly timeline down to a readable number of points, always
-  // keeping the endpoints, each arc's payoff month (where it lands on zero)
-  // and its midpoint (so the apex hits the exact interest-saved value).
-  const keep = new Set<number>([0, lastIndex]);
-  if (baselineIndex !== null) keep.add(baselineIndex);
-  for (const s of series) {
-    const payoff = s.payoffIndex ?? lastIndex;
-    keep.add(payoff);
-    keep.add(Math.round(payoff / 2));
-  }
-  const step = Math.ceil(lastIndex / MAX_CHART_POINTS);
-  const indices: number[] = [];
-  for (let i = 0; i <= lastIndex; i++) {
-    if (i % step === 0 || keep.has(i)) indices.push(i);
-  }
-
-  // The parabola through (0, 0), (payoff/2, saved) and (payoff, 0):
-  // value(i) = saved * 4 * f * (1 - f) with f = i / payoff.
-  const chartData = indices.map((i) => {
-    const row: Record<string, number | string> = {
-      label: formatChartDate(isoAt(i), 'MMM yyyy'),
+    // Whole months from the start of the current month to the given date (all
+    // in UTC, matching the yyyy-MM-dd DATE strings); at least 1 so an arc
+    // always has a visible span.
+    const monthIndexOf = (iso: string): number => {
+      const d = new Date(iso);
+      return Math.max(
+        1,
+        (d.getUTCFullYear() - startYear) * 12 + (d.getUTCMonth() - startMonth),
+      );
     };
-    for (const s of series) {
+    const isoAt = (index: number): string => {
+      const d = new Date(Date.UTC(startYear, startMonth + index, 1));
+      return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-01`;
+    };
+
+    const baselinePayoffIndex = baseline.payoffDate
+      ? monthIndexOf(baseline.payoffDate)
+      : null;
+    const scenarioSeries = outcomes.map((o, i) => ({
+      ...o,
+      color: chartSeriesColor(i),
+      payoffIndex: o.payoffDate ? monthIndexOf(o.payoffDate) : null,
+    }));
+    const lastIndex = Math.max(
+      12,
+      baselinePayoffIndex ?? 0,
+      ...scenarioSeries.map((s) => s.payoffIndex ?? 0),
+    );
+
+    // Sample the monthly timeline down to a readable number of points, always
+    // keeping the endpoints, each arc's payoff month (where it lands on zero)
+    // and its midpoint. Midpoints of odd payoff spans fall between two months;
+    // the row builder below pins the kept midpoint to the exact interest-saved
+    // value so short arcs still peak at the true amount.
+    const midpoints = new Map<string, number>();
+    const keep = new Set<number>([0, lastIndex]);
+    if (baselinePayoffIndex !== null) keep.add(baselinePayoffIndex);
+    for (const s of scenarioSeries) {
       const payoff = s.payoffIndex ?? lastIndex;
-      if (i <= payoff) {
-        const f = i / payoff;
+      const mid = Math.round(payoff / 2);
+      midpoints.set(s.id, mid);
+      keep.add(payoff);
+      keep.add(mid);
+    }
+    const step = Math.ceil(lastIndex / MAX_CHART_POINTS);
+    const indices: number[] = [];
+    for (let i = 0; i <= lastIndex; i++) {
+      if (i % step === 0 || keep.has(i)) indices.push(i);
+    }
+
+    // The parabola through (0, 0), (payoff/2, saved) and (payoff, 0):
+    // value(i) = saved * 4 * f * (1 - f) with f = i / payoff.
+    const rows = indices.map((i) => {
+      const row: Record<string, number | string> = {
+        label: formatChartDate(isoAt(i), 'MMM yyyy'),
+      };
+      for (const s of scenarioSeries) {
+        const payoff = s.payoffIndex ?? lastIndex;
+        if (i > payoff) continue;
         const saved = Math.max(0, s.interestSaved);
-        row[s.id] = Math.round(saved * 4 * f * (1 - f) * 100) / 100;
+        row[s.id] =
+          i === midpoints.get(s.id)
+            ? saved
+            : Math.round(saved * 4 * (i / payoff) * (1 - i / payoff) * 100) / 100;
       }
-    }
-    if (baselineIndex !== null && i <= baselineIndex) {
-      row.baseline = 0;
-    }
-    return row;
-  });
+      if (baselinePayoffIndex !== null && i <= baselinePayoffIndex) {
+        row.baseline = 0;
+      }
+      return row;
+    });
+
+    return { series: scenarioSeries, baselineIndex: baselinePayoffIndex, chartData: rows };
+  }, [outcomes, baseline.payoffDate, formatChartDate]);
 
   return (
     <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -201,7 +215,11 @@ export function ScenarioComparisonChart({
                 strokeWidth={2}
                 strokeDasharray={s.payoffDate ? undefined : '6 4'}
                 dot={false}
-                name={`${s.name} · ${overpaymentLabel(s)}`}
+                name={
+                  s.payoffDate
+                    ? `${s.name} · ${overpaymentLabel(s)}`
+                    : `${s.name} · ${overpaymentLabel(s)} · ${t('loanDetail.comparison.beyondProjection')}`
+                }
               />
             ))}
           </LineChart>

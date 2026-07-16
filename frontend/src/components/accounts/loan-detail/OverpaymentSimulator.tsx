@@ -146,6 +146,10 @@ export function OverpaymentSimulator({
     const loadedForm = planToForm(loadedPlan);
     setForm(loadedForm);
     setNextLumpSumId(loadedForm.lumpSums.length);
+    // A loaded scenario replaces the form, so any goal-seek line no longer
+    // describes the schedule on screen.
+    setInterestSolve(null);
+    setDateSolve(null);
   }
 
   // Suggest the historically detected extra principal as a starting point
@@ -167,8 +171,14 @@ export function OverpaymentSimulator({
     };
   }, [accountId]);
 
+  // Every form change invalidates a previously solved goal-seek line -- the
+  // required-extra text would describe a schedule that is no longer on screen.
+  // The solve handlers re-set their result right after calling update(), so a
+  // fresh solve survives its own apply.
   const update = (next: SimulatorFormState) => {
     setForm(next);
+    setInterestSolve(null);
+    setDateSolve(null);
     onPlanChange(formToPlan(next));
   };
 
@@ -202,15 +212,17 @@ export function OverpaymentSimulator({
   const runInterestSolve = () => {
     if (!projectionInput || goalInterest === undefined || goalInterest < 0) return;
     const solve = solveRecurringForInterestSavings(projectionInput, goalInterest);
-    setInterestSolve(solve);
     if (solve.status === 'ok' && solve.amount != null) applySolvedAmount(solve.amount);
+    // After applySolvedAmount: update() cleared both solve lines, so setting
+    // this one leaves exactly the fresh result visible.
+    setInterestSolve(solve);
   };
 
   const runDateSolve = () => {
     if (!projectionInput || !goalDate) return;
     const solve = solveRecurringForPayoffMonth(projectionInput, goalDate);
-    setDateSolve(solve);
     if (solve.status === 'ok' && solve.amount != null) applySolvedAmount(solve.amount);
+    setDateSolve(solve);
   };
 
   // A solved recurring extra is applied to the simulator immediately -- like

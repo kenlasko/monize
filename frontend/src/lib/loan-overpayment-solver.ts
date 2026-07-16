@@ -74,7 +74,24 @@ export function solveRecurringForTargetInterest(
   mode: OverpaymentMode = 'SHORTEN_TERM',
   step = 1,
 ): SolveResult {
-  const baseline = scheduleWith(base, 0, mode);
+  return solveTargetInterestWithBaseline(
+    base,
+    scheduleWith(base, 0, mode),
+    targetInterest,
+    mode,
+    step,
+  );
+}
+
+/** Core of the target-interest solve, reusing an already-computed baseline so
+ *  callers that derive the target from the baseline don't run it twice. */
+function solveTargetInterestWithBaseline(
+  base: LoanScheduleInput,
+  baseline: LoanScheduleResult,
+  targetInterest: number,
+  mode: OverpaymentMode,
+  step: number,
+): SolveResult {
   if (baseline.totalInterest <= targetInterest) {
     return { status: 'already-met', amount: 0, result: baseline, interestSaved: 0 };
   }
@@ -115,8 +132,9 @@ export function solveRecurringForInterestSavings(
   step = 1,
 ): SolveResult {
   const baseline = scheduleWith(base, 0, mode);
-  return solveRecurringForTargetInterest(
+  return solveTargetInterestWithBaseline(
     base,
+    baseline,
     baseline.totalInterest - targetSavings,
     mode,
     step,
