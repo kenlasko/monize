@@ -21,10 +21,10 @@ const outcomes: ScenarioOutcome[] = [
   },
 ];
 
-const baseline = { totalInterest: 50000, payoffDate: '2040-01-15' };
+const baseline = { payoffDate: '2040-01-15' };
 
 describe('ScenarioComparisonChart', () => {
-  it('shows the overpayment, interest saved, and payoff date for every scenario', () => {
+  it('draws an arc per scenario labelled with all three figures', () => {
     render(
       <ScenarioComparisonChart
         outcomes={outcomes}
@@ -34,22 +34,22 @@ describe('ScenarioComparisonChart', () => {
     );
 
     expect(screen.getByText('Scenario comparison')).toBeInTheDocument();
+    expect(screen.getAllByTestId('scenario-arc')).toHaveLength(2);
 
-    // Per-scenario name + recurring overpayment summary (with lump sums when present)
-    expect(screen.getByText('Aggressive')).toBeInTheDocument();
-    expect(screen.getByText(/1,500.*extra per payment/)).toBeInTheDocument();
-    expect(screen.getByText('Moderate')).toBeInTheDocument();
-    expect(screen.getByText(/500.*extra per payment \+ 2 lump sums/)).toBeInTheDocument();
+    // Apex labels: scenario name + the extra paid per installment (with lump
+    // sums when present); the legend restates them, hence getAllByText.
+    expect(screen.getAllByText('Aggressive').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/\+.*1,500.*\/ payment/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/\+.*500.*\/ payment \+ 2 lump sums/).length).toBeGreaterThan(0);
 
-    // Interest saved and payoff date are labelled directly on each row
-    expect(screen.getByText(/30,000/)).toBeInTheDocument();
-    expect(screen.getByText(/15,000/)).toBeInTheDocument();
-    expect(screen.getByText('Jun 2030')).toBeInTheDocument();
-    expect(screen.getByText('Mar 2035')).toBeInTheDocument();
+    // Interest saved at the apex and the payoff date at the arc's foot
+    expect(screen.getAllByText(/30,000/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/15,000/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Jun 2030').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Mar 2035').length).toBeGreaterThan(0);
 
-    // The no-overpayment baseline renders as a context line, not a bar
-    expect(screen.getByText(/Without overpayments/)).toBeInTheDocument();
-    expect(screen.getByText(/Jan 2040/)).toBeInTheDocument();
+    // The no-overpayment baseline is a marker at the original payoff date
+    expect(screen.getByText(/No overpayments/)).toHaveTextContent('Jan 2040');
   });
 
   it('labels a scenario that never pays off within the projection', () => {
@@ -61,6 +61,6 @@ describe('ScenarioComparisonChart', () => {
       />,
     );
 
-    expect(screen.getByText('Beyond projection')).toBeInTheDocument();
+    expect(screen.getAllByText('Beyond projection').length).toBeGreaterThan(0);
   });
 });

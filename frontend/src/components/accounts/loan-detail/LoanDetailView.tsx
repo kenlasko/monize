@@ -241,10 +241,7 @@ export function LoanDetailView({
             <div className="mt-4">
               <ScenarioComparisonChart
                 outcomes={scenarioChartOutcomes}
-                baseline={{
-                  totalInterest: baseline.totalInterest,
-                  payoffDate: baseline.payoffDate,
-                }}
+                baseline={{ payoffDate: baseline.payoffDate }}
                 currencyCode={account.currencyCode}
               />
             </div>

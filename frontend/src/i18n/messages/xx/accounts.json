@@ -505,8 +505,9 @@
     },
     "scenarioChart": {
       "title": "[XX-Scenario comparison-XX]",
-      "description": "[XX-Each saved overpayment with the extra paid per installment, the interest it saves, and the new payoff date.-XX]",
-      "baselineSummary": "[XX-Without overpayments: {interest} total interest, paid off {date}.-XX]",
+      "description": "[XX-Each saved overpayment is an arc on the timeline: the arc ends at its payoff date, the peak is the interest it saves, and the label shows the extra paid per installment. Narrower and taller is better.-XX]",
+      "baselineMarker": "[XX-No overpayments · {date}-XX]",
+      "extraShort": "[XX-+{amount} / payment-XX]",
       "show": "[XX-Show scenario comparison chart-XX]",
       "hide": "[XX-Hide scenario comparison chart-XX]"
     },
