@@ -135,11 +135,14 @@ export function LoanDetailView({
         ...projectionInput,
         overpayments: scenarioToPlan(saved) ?? undefined,
       });
-      map.set(saved.id, compareSchedules(baseline, scenarioSchedule));
+      const scenarioComparison = compareSchedules(baseline, scenarioSchedule);
+      map.set(saved.id, scenarioComparison);
       outcomes.push({
         id: saved.id,
         name: saved.name,
-        totalInterest: scenarioSchedule.totalInterest,
+        recurringExtra: saved.recurringExtraAmount,
+        lumpSumCount: saved.lumpSums.length,
+        interestSaved: scenarioComparison.interestSaved,
         payoffDate: scenarioSchedule.payoffDate,
       });
     }
@@ -147,20 +150,11 @@ export function LoanDetailView({
   }, [scenarios, projectionInput, baseline]);
 
   // The comparison chart is only meaningful with more than one saved scenario;
-  // the no-overpayment baseline is prepended as a reference bar.
-  const scenarioChartOutcomes = useMemo<ScenarioOutcome[]>(() => {
-    if (scenarioOutcomes.length < 2 || !baseline) return [];
-    return [
-      {
-        id: '__baseline__',
-        name: t('loanDetail.scenarioChart.baselineLabel'),
-        totalInterest: baseline.totalInterest,
-        payoffDate: baseline.payoffDate,
-        isBaseline: true,
-      },
-      ...scenarioOutcomes,
-    ];
-  }, [scenarioOutcomes, baseline, t]);
+  // the no-overpayment baseline renders as a context line, not a bar.
+  const scenarioChartOutcomes = useMemo<ScenarioOutcome[]>(
+    () => (scenarioOutcomes.length < 2 || !baseline ? [] : scenarioOutcomes),
+    [scenarioOutcomes, baseline],
+  );
 
   // Past impact of overpayments. It reuses the baseline (no-overpayment)
   // projection as the current projection -- computed once here, not twice --
@@ -231,7 +225,7 @@ export function LoanDetailView({
         </div>
       )}
 
-      {scenarioChartOutcomes.length > 0 && (
+      {scenarioChartOutcomes.length > 0 && baseline && (
         <div>
           <Button
             variant="outline"
@@ -247,6 +241,10 @@ export function LoanDetailView({
             <div className="mt-4">
               <ScenarioComparisonChart
                 outcomes={scenarioChartOutcomes}
+                baseline={{
+                  totalInterest: baseline.totalInterest,
+                  payoffDate: baseline.payoffDate,
+                }}
                 currencyCode={account.currencyCode}
               />
             </div>

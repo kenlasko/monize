@@ -505,12 +505,10 @@
     },
     "scenarioChart": {
       "title": "Scenario comparison",
-      "description": "Interest cost and payoff date for each saved scenario, against the no-overpayment baseline.",
+      "description": "Each saved overpayment with the extra paid per installment, the interest it saves, and the new payoff date.",
+      "baselineSummary": "Without overpayments: {interest} total interest, paid off {date}.",
       "show": "Show scenario comparison chart",
-      "hide": "Hide scenario comparison chart",
-      "baselineLabel": "No overpayment",
-      "interestSeries": "Total interest",
-      "payoffTooltip": "Payoff: {date}"
+      "hide": "Hide scenario comparison chart"
     },
     "comparison": {
       "newPayoff": "New Payoff Date",

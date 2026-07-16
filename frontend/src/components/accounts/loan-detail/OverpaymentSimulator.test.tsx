@@ -29,7 +29,7 @@ async function renderSimulator(props: Partial<React.ComponentProps<typeof Overpa
       />,
     );
   });
-  return { result: result!, onPlanChange: props.onPlanChange ?? onPlanChange };
+  return { result: result!, onPlanChange };
 }
 
 beforeEach(() => {
