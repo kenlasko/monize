@@ -416,7 +416,20 @@
       "modeShortenTerm": "Rút ngắn kỳ hạn",
       "modeLowerInstallment": "Giảm kỳ trả",
       "modeShortenTermHint": "Giữ nguyên số tiền trả và tất toán khoản vay sớm hơn. Tiết kiệm lãi tối đa.",
-      "modeLowerInstallmentHint": "Giữ nguyên ngày tất toán và tính lại số tiền trả nhỏ hơn trên dư nợ đã giảm."
+      "modeLowerInstallmentHint": "Giữ nguyên ngày tất toán và tính lại số tiền trả nhỏ hơn trên dư nợ đã giảm.",
+      "goalSeek": {
+        "title": "Tìm mục tiêu",
+        "description": "Tính ngược: cần trả thêm bao nhiêu mỗi kỳ để đạt mục tiêu.",
+        "targetInterestLabel": "Tổng lãi mục tiêu",
+        "targetDateLabel": "Tháng tất toán mục tiêu",
+        "compute": "Tính",
+        "apply": "Áp dụng",
+        "required": "Cần trả thêm: {amount} mỗi kỳ",
+        "effect": "→ lãi {interest}, tất toán {date}",
+        "alreadyMet": "Đã đạt được mà không cần trả thêm.",
+        "unreachableInterest": "Ngoài tầm với — khoản trả thêm rất lớn cũng không thể giảm lãi đến mức đó.",
+        "unreachableDate": "Ngoài tầm với — tháng đó sớm hơn thời điểm tất toán sớm nhất có thể."
+      }
     },
     "comparison": {
       "newPayoff": "Ngày trả hết mới",
@@ -465,6 +478,14 @@
       "deleteTitle": "Xóa kịch bản",
       "deleteMessage": "Xóa kịch bản \"{name}\"? Không thể hoàn tác thao tác này.",
       "loadFailed": "Không thể tải các kịch bản đã lưu. Chúng vẫn được lưu trữ — tải lại trang để thử lại."
+    },
+    "scenarioChart": {
+      "title": "So sánh kịch bản",
+      "description": "Mỗi khoản trả thêm đã lưu là một cung trên dòng thời gian: cung kết thúc tại ngày tất toán, đỉnh là số lãi tiết kiệm được và nhãn cho biết số tiền trả thêm mỗi kỳ. Càng hẹp và càng cao càng tốt.",
+      "baselineMarker": "Không trả thêm · {date}",
+      "extraShort": "+{amount} / kỳ",
+      "show": "Hiện biểu đồ so sánh kịch bản",
+      "hide": "Ẩn biểu đồ so sánh kịch bản"
     },
     "pastImpact": {
       "title": "Tác động của các khoản trả trước hạn đã thực hiện",

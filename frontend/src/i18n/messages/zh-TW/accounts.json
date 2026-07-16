@@ -416,7 +416,20 @@
       "modeShortenTerm": "縮短期限",
       "modeLowerInstallment": "降低月付金",
       "modeShortenTermHint": "維持相同還款額，更快還清貸款。利息節省最多。",
-      "modeLowerInstallmentHint": "維持相同的還清日期，並依減少後的餘額重新計算較低的還款額。"
+      "modeLowerInstallmentHint": "維持相同的還清日期，並依減少後的餘額重新計算較低的還款額。",
+      "goalSeek": {
+        "title": "目標搜尋",
+        "description": "反向計算:每期需額外還多少才能達成目標。",
+        "targetInterestLabel": "目標利息總額",
+        "targetDateLabel": "目標還清月份",
+        "compute": "計算",
+        "apply": "套用",
+        "required": "所需額外還款:每期 {amount}",
+        "effect": "→ 利息 {interest},還清 {date}",
+        "alreadyMet": "無需任何額外還款即已達成。",
+        "unreachableInterest": "無法達成——即使非常大的額外還款也無法把利息降到這麼低。",
+        "unreachableDate": "無法達成——該月份早於最早可能的還清時間。"
+      }
     },
     "comparison": {
       "newPayoff": "新的還清日期",
@@ -465,6 +478,14 @@
       "deleteTitle": "刪除情境",
       "deleteMessage": "刪除情境 \"{name}\"？此操作無法復原。",
       "loadFailed": "無法載入已儲存的方案。它們仍然保存著——請重新載入頁面重試。"
+    },
+    "scenarioChart": {
+      "title": "方案比較",
+      "description": "每個已儲存的額外還款方案都是時間軸上的一道弧線:弧線止於還清日期,頂點是節省的利息,標籤顯示每期額外還款額。越窄越高越好。",
+      "baselineMarker": "無額外還款 · {date}",
+      "extraShort": "+{amount} / 期",
+      "show": "顯示方案比較圖",
+      "hide": "隱藏方案比較圖"
     },
     "pastImpact": {
       "title": "已完成提前還款的影響",

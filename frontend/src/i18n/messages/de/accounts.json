@@ -416,7 +416,20 @@
       "modeShortenTerm": "Laufzeit verkürzen",
       "modeLowerInstallment": "Rate senken",
       "modeShortenTermHint": "Gleiche Rate beibehalten und das Darlehen früher abbezahlen. Maximale Zinsersparnis.",
-      "modeLowerInstallmentHint": "Gleiches Tilgungsdatum beibehalten und eine niedrigere Rate auf den reduzierten Saldo berechnen."
+      "modeLowerInstallmentHint": "Gleiches Tilgungsdatum beibehalten und eine niedrigere Rate auf den reduzierten Saldo berechnen.",
+      "goalSeek": {
+        "title": "Zielwertsuche",
+        "description": "Rückwärts rechnen: wie viel extra pro Rate, um ein Ziel zu erreichen.",
+        "targetInterestLabel": "Zielsumme der Zinsen",
+        "targetDateLabel": "Ziel-Tilgungsmonat",
+        "compute": "Berechnen",
+        "apply": "Anwenden",
+        "required": "Benötigte Sondertilgung: {amount} pro Rate",
+        "effect": "→ Zinsen {interest}, Tilgung {date}",
+        "alreadyMet": "Bereits ohne Sondertilgung erreicht.",
+        "unreachableInterest": "Unerreichbar — selbst eine sehr hohe Sondertilgung kann die Zinsen nicht so weit senken.",
+        "unreachableDate": "Unerreichbar — dieser Monat liegt vor dem frühestmöglichen Tilgungstermin."
+      }
     },
     "comparison": {
       "newPayoff": "Neues Tilgungsdatum",
@@ -465,6 +478,14 @@
       "deleteTitle": "Szenario löschen",
       "deleteMessage": "Das Szenario \"{name}\" löschen? Dies kann nicht rückgängig gemacht werden.",
       "loadFailed": "Die gespeicherten Szenarien konnten nicht geladen werden. Sie sind weiterhin gespeichert — laden Sie die Seite neu, um es erneut zu versuchen."
+    },
+    "scenarioChart": {
+      "title": "Szenariovergleich",
+      "description": "Jede gespeicherte Sondertilgung ist ein Bogen auf der Zeitachse: Der Bogen endet am Tilgungsdatum, der Scheitel zeigt die gesparten Zinsen und die Beschriftung die Extra-Zahlung pro Rate. Schmaler und höher ist besser.",
+      "baselineMarker": "Ohne Sondertilgungen · {date}",
+      "extraShort": "+{amount} / Rate",
+      "show": "Szenariovergleichsdiagramm anzeigen",
+      "hide": "Szenariovergleichsdiagramm ausblenden"
     },
     "pastImpact": {
       "title": "Wirkung bisheriger Sondertilgungen",

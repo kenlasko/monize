@@ -416,7 +416,20 @@
       "modeShortenTerm": "Acortar plazo",
       "modeLowerInstallment": "Reducir cuota",
       "modeShortenTermHint": "Mantener la misma cuota y liquidar el préstamo antes. Máximo ahorro de intereses.",
-      "modeLowerInstallmentHint": "Mantener la misma fecha de liquidación y recalcular una cuota menor sobre el saldo reducido."
+      "modeLowerInstallmentHint": "Mantener la misma fecha de liquidación y recalcular una cuota menor sobre el saldo reducido.",
+      "goalSeek": {
+        "title": "Búsqueda de objetivo",
+        "description": "Calcula hacia atrás: cuánto extra por cuota para alcanzar un objetivo.",
+        "targetInterestLabel": "Interés total objetivo",
+        "targetDateLabel": "Mes objetivo de liquidación",
+        "compute": "Calcular",
+        "apply": "Aplicar",
+        "required": "Extra necesario: {amount} por cuota",
+        "effect": "→ intereses {interest}, liquidación {date}",
+        "alreadyMet": "Ya se cumple sin ningún pago extra.",
+        "unreachableInterest": "Inalcanzable: ni siquiera un pago extra muy grande puede reducir tanto los intereses.",
+        "unreachableDate": "Inalcanzable: ese mes es anterior a la liquidación más temprana posible."
+      }
     },
     "comparison": {
       "newPayoff": "Nueva fecha de liquidación",
@@ -465,6 +478,14 @@
       "deleteTitle": "Eliminar escenario",
       "deleteMessage": "¿Eliminar el escenario \"{name}\"? Esta acción no se puede deshacer.",
       "loadFailed": "No se pudieron cargar los escenarios guardados. Siguen almacenados: recargue la página para volver a intentarlo."
+    },
+    "scenarioChart": {
+      "title": "Comparación de escenarios",
+      "description": "Cada pago extra guardado es un arco en la línea de tiempo: el arco termina en su fecha de liquidación, el pico son los intereses que ahorra y la etiqueta muestra el extra pagado por cuota. Más estrecho y más alto es mejor.",
+      "baselineMarker": "Sin pagos extra · {date}",
+      "extraShort": "+{amount} / cuota",
+      "show": "Mostrar gráfico de comparación de escenarios",
+      "hide": "Ocultar gráfico de comparación de escenarios"
     },
     "pastImpact": {
       "title": "Impacto de los pagos anticipados realizados",

@@ -416,7 +416,20 @@
       "modeShortenTerm": "Looptijd verkorten",
       "modeLowerInstallment": "Termijn verlagen",
       "modeShortenTermHint": "Houd dezelfde termijn aan en los de lening eerder af. Maximale rentebesparing.",
-      "modeLowerInstallmentHint": "Houd dezelfde einddatum aan en herbereken een lagere termijn op het verlaagde saldo."
+      "modeLowerInstallmentHint": "Houd dezelfde einddatum aan en herbereken een lagere termijn op het verlaagde saldo.",
+      "goalSeek": {
+        "title": "Doelzoeken",
+        "description": "Terugrekenen: hoeveel extra per termijn om een doel te bereiken.",
+        "targetInterestLabel": "Beoogde totale rente",
+        "targetDateLabel": "Beoogde aflossingsmaand",
+        "compute": "Berekenen",
+        "apply": "Toepassen",
+        "required": "Benodigd extra: {amount} per termijn",
+        "effect": "→ rente {interest}, aflossing {date}",
+        "alreadyMet": "Al bereikt zonder extra aflossing.",
+        "unreachableInterest": "Onhaalbaar — zelfs een zeer grote extra aflossing kan de rente niet zo ver verlagen.",
+        "unreachableDate": "Onhaalbaar — die maand ligt vóór de vroegst mogelijke aflossing."
+      }
     },
     "comparison": {
       "newPayoff": "Nieuwe aflossingsdatum",
@@ -465,6 +478,14 @@
       "deleteTitle": "Scenario verwijderen",
       "deleteMessage": "Het scenario \"{name}\" verwijderen? Dit kan niet ongedaan worden gemaakt.",
       "loadFailed": "De opgeslagen scenario's konden niet worden geladen. Ze zijn nog opgeslagen — herlaad de pagina om het opnieuw te proberen."
+    },
+    "scenarioChart": {
+      "title": "Scenariovergelijking",
+      "description": "Elke opgeslagen extra aflossing is een boog op de tijdlijn: de boog eindigt op de aflossingsdatum, de top is de bespaarde rente en het label toont het extra bedrag per termijn. Smaller en hoger is beter.",
+      "baselineMarker": "Zonder extra aflossingen · {date}",
+      "extraShort": "+{amount} / termijn",
+      "show": "Scenariovergelijkingsgrafiek tonen",
+      "hide": "Scenariovergelijkingsgrafiek verbergen"
     },
     "pastImpact": {
       "title": "Effect van gedane extra aflossingen",

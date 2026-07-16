@@ -416,7 +416,20 @@
       "modeShortenTerm": "Perpendek tenor",
       "modeLowerInstallment": "Turunkan angsuran",
       "modeShortenTermHint": "Pertahankan angsuran yang sama dan lunasi pinjaman lebih cepat. Penghematan bunga maksimal.",
-      "modeLowerInstallmentHint": "Pertahankan tanggal pelunasan yang sama dan hitung ulang angsuran yang lebih kecil atas saldo yang berkurang."
+      "modeLowerInstallmentHint": "Pertahankan tanggal pelunasan yang sama dan hitung ulang angsuran yang lebih kecil atas saldo yang berkurang.",
+      "goalSeek": {
+        "title": "Pencarian target",
+        "description": "Hitung mundur: berapa tambahan per angsuran untuk mencapai target.",
+        "targetInterestLabel": "Target total bunga",
+        "targetDateLabel": "Target bulan pelunasan",
+        "compute": "Hitung",
+        "apply": "Terapkan",
+        "required": "Tambahan yang dibutuhkan: {amount} per angsuran",
+        "effect": "→ bunga {interest}, pelunasan {date}",
+        "alreadyMet": "Sudah tercapai tanpa pembayaran ekstra.",
+        "unreachableInterest": "Tidak terjangkau — pembayaran ekstra yang sangat besar pun tidak dapat menurunkan bunga sejauh itu.",
+        "unreachableDate": "Tidak terjangkau — bulan itu lebih awal dari pelunasan tercepat yang mungkin."
+      }
     },
     "comparison": {
       "newPayoff": "Tanggal Lunas Baru",
@@ -465,6 +478,14 @@
       "deleteTitle": "Hapus Skenario",
       "deleteMessage": "Hapus skenario \"{name}\"? Tindakan ini tidak dapat dibatalkan.",
       "loadFailed": "Tidak dapat memuat skenario tersimpan. Skenario masih tersimpan — muat ulang halaman untuk mencoba lagi."
+    },
+    "scenarioChart": {
+      "title": "Perbandingan skenario",
+      "description": "Setiap pembayaran ekstra yang tersimpan adalah busur pada garis waktu: busur berakhir pada tanggal pelunasan, puncaknya adalah bunga yang dihemat, dan label menunjukkan tambahan yang dibayar per angsuran. Makin sempit dan tinggi, makin baik.",
+      "baselineMarker": "Tanpa pembayaran ekstra · {date}",
+      "extraShort": "+{amount} / angsuran",
+      "show": "Tampilkan grafik perbandingan skenario",
+      "hide": "Sembunyikan grafik perbandingan skenario"
     },
     "pastImpact": {
       "title": "Dampak Pembayaran Tambahan yang Sudah Dilakukan",

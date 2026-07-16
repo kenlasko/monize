@@ -416,7 +416,20 @@
       "modeShortenTerm": "Raccourcir la durée",
       "modeLowerInstallment": "Réduire la mensualité",
       "modeShortenTermHint": "Conserver la même mensualité et rembourser le prêt plus tôt. Économie d'intérêts maximale.",
-      "modeLowerInstallmentHint": "Conserver la même date de remboursement et recalculer une mensualité plus faible sur le solde réduit."
+      "modeLowerInstallmentHint": "Conserver la même date de remboursement et recalculer une mensualité plus faible sur le solde réduit.",
+      "goalSeek": {
+        "title": "Recherche d'objectif",
+        "description": "Calcul inverse : combien de supplément par échéance pour atteindre un objectif.",
+        "targetInterestLabel": "Intérêts totaux cibles",
+        "targetDateLabel": "Mois de remboursement cible",
+        "compute": "Calculer",
+        "apply": "Appliquer",
+        "required": "Supplément nécessaire : {amount} par échéance",
+        "effect": "→ intérêts {interest}, remboursement {date}",
+        "alreadyMet": "Objectif déjà atteint sans aucun remboursement anticipé.",
+        "unreachableInterest": "Hors de portée — même un très gros remboursement anticipé ne peut pas réduire autant les intérêts.",
+        "unreachableDate": "Hors de portée — ce mois est antérieur au remboursement le plus tôt possible."
+      }
     },
     "comparison": {
       "newPayoff": "Nouvelle date de remboursement",
@@ -465,6 +478,14 @@
       "deleteTitle": "Supprimer le scénario",
       "deleteMessage": "Supprimer le scénario \"{name}\" ? Cette action est irréversible.",
       "loadFailed": "Impossible de charger les scénarios enregistrés. Ils sont toujours stockés — rechargez la page pour réessayer."
+    },
+    "scenarioChart": {
+      "title": "Comparaison des scénarios",
+      "description": "Chaque remboursement anticipé enregistré est un arc sur la chronologie : l'arc se termine à sa date de remboursement, le sommet représente les intérêts économisés et l'étiquette indique le supplément payé par échéance. Plus étroit et plus haut, c'est mieux.",
+      "baselineMarker": "Sans remboursement anticipé · {date}",
+      "extraShort": "+{amount} / échéance",
+      "show": "Afficher le graphique de comparaison des scénarios",
+      "hide": "Masquer le graphique de comparaison des scénarios"
     },
     "pastImpact": {
       "title": "Impact des remboursements anticipés effectués",

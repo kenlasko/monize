@@ -416,7 +416,20 @@
       "modeShortenTerm": "期間を短縮",
       "modeLowerInstallment": "返済額を減額",
       "modeShortenTermHint": "返済額を維持し、ローンをより早く完済します。利息の節約が最大になります。",
-      "modeLowerInstallmentHint": "完済日を維持し、減少した残高に対してより少ない返済額を再計算します。"
+      "modeLowerInstallmentHint": "完済日を維持し、減少した残高に対してより少ない返済額を再計算します。",
+      "goalSeek": {
+        "title": "ゴールシーク",
+        "description": "逆算します:目標を達成するには1回あたりいくら追加返済が必要か。",
+        "targetInterestLabel": "目標の利息総額",
+        "targetDateLabel": "目標の完済月",
+        "compute": "計算",
+        "apply": "適用",
+        "required": "必要な追加返済:1回あたり {amount}",
+        "effect": "→ 利息 {interest}、完済 {date}",
+        "alreadyMet": "追加返済なしで既に達成しています。",
+        "unreachableInterest": "達成不可 — どれほど大きな追加返済でも利息をそこまで下げられません。",
+        "unreachableDate": "達成不可 — その月は最短の完済時期より前です。"
+      }
     },
     "comparison": {
       "newPayoff": "新しい完済日",
@@ -465,6 +478,14 @@
       "deleteTitle": "シナリオを削除",
       "deleteMessage": "シナリオ \"{name}\" を削除しますか？この操作は元に戻せません。",
       "loadFailed": "保存済みシナリオを読み込めませんでした。データは保存されています。ページを再読み込みして再試行してください。"
+    },
+    "scenarioChart": {
+      "title": "シナリオ比較",
+      "description": "保存した追加返済はタイムライン上の弧で表されます。弧の終点は完済日、頂点は節約できる利息、ラベルは1回あたりの追加返済額です。弧が狭く高いほど有利です。",
+      "baselineMarker": "追加返済なし · {date}",
+      "extraShort": "+{amount} / 回",
+      "show": "シナリオ比較チャートを表示",
+      "hide": "シナリオ比較チャートを非表示"
     },
     "pastImpact": {
       "title": "これまでの繰上返済の効果",

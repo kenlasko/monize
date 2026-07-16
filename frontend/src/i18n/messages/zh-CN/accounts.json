@@ -416,7 +416,20 @@
       "modeShortenTerm": "缩短期限",
       "modeLowerInstallment": "降低月供",
       "modeShortenTermHint": "保持相同还款额，更快还清贷款。利息节省最多。",
-      "modeLowerInstallmentHint": "保持相同的还清日期，并按减少后的余额重新计算较低的还款额。"
+      "modeLowerInstallmentHint": "保持相同的还清日期，并按减少后的余额重新计算较低的还款额。",
+      "goalSeek": {
+        "title": "目标求解",
+        "description": "反向计算:每期需额外还多少才能达到目标。",
+        "targetInterestLabel": "目标利息总额",
+        "targetDateLabel": "目标还清月份",
+        "compute": "计算",
+        "apply": "应用",
+        "required": "所需额外还款:每期 {amount}",
+        "effect": "→ 利息 {interest},还清 {date}",
+        "alreadyMet": "无需任何额外还款即已达成。",
+        "unreachableInterest": "无法达成——即使非常大的额外还款也无法把利息降到这么低。",
+        "unreachableDate": "无法达成——该月份早于最早可能的还清时间。"
+      }
     },
     "comparison": {
       "newPayoff": "新的还清日期",
@@ -465,6 +478,14 @@
       "deleteTitle": "删除方案",
       "deleteMessage": "删除方案 \"{name}\"？此操作无法撤销。",
       "loadFailed": "无法加载已保存的方案。它们仍然保存着——请重新加载页面重试。"
+    },
+    "scenarioChart": {
+      "title": "方案对比",
+      "description": "每个已保存的额外还款方案都是时间轴上的一道弧线:弧线止于还清日期,顶点是节省的利息,标签显示每期额外还款额。越窄越高越好。",
+      "baselineMarker": "无额外还款 · {date}",
+      "extraShort": "+{amount} / 期",
+      "show": "显示方案对比图",
+      "hide": "隐藏方案对比图"
     },
     "pastImpact": {
       "title": "已还提前还款的影响",

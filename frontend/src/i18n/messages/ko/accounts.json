@@ -416,7 +416,20 @@
       "modeShortenTerm": "상환 기간 단축",
       "modeLowerInstallment": "상환액 낮추기",
       "modeShortenTermHint": "같은 상환액을 유지하고 대출을 더 빨리 상환합니다. 이자 절감 최대.",
-      "modeLowerInstallmentHint": "같은 상환 완료일을 유지하고 줄어든 잔액에 대해 더 낮은 상환액을 다시 계산합니다."
+      "modeLowerInstallmentHint": "같은 상환 완료일을 유지하고 줄어든 잔액에 대해 더 낮은 상환액을 다시 계산합니다.",
+      "goalSeek": {
+        "title": "목표값 찾기",
+        "description": "역산합니다: 목표를 달성하려면 회당 얼마를 추가 상환해야 하는지.",
+        "targetInterestLabel": "목표 총 이자",
+        "targetDateLabel": "목표 상환 완료 월",
+        "compute": "계산",
+        "apply": "적용",
+        "required": "필요한 추가 상환: 회당 {amount}",
+        "effect": "→ 이자 {interest}, 상환 완료 {date}",
+        "alreadyMet": "추가 상환 없이도 이미 달성되었습니다.",
+        "unreachableInterest": "달성 불가 — 아무리 큰 추가 상환으로도 이자를 그만큼 줄일 수 없습니다.",
+        "unreachableDate": "달성 불가 — 해당 월은 가장 빠른 상환 완료 시점보다 이릅니다."
+      }
     },
     "comparison": {
       "newPayoff": "새 완납일",
@@ -465,6 +478,14 @@
       "deleteTitle": "시나리오 삭제",
       "deleteMessage": "시나리오 \"{name}\"을(를) 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
       "loadFailed": "저장된 시나리오를 불러오지 못했습니다. 데이터는 그대로 저장되어 있습니다. 페이지를 새로고침하여 다시 시도하세요."
+    },
+    "scenarioChart": {
+      "title": "시나리오 비교",
+      "description": "저장된 각 추가 상환은 타임라인 위의 호로 표시됩니다. 호의 끝은 상환 완료일, 꼭대기는 절약되는 이자, 라벨은 회당 추가 상환액입니다. 좁고 높을수록 좋습니다.",
+      "baselineMarker": "추가 상환 없음 · {date}",
+      "extraShort": "+{amount} / 회",
+      "show": "시나리오 비교 차트 표시",
+      "hide": "시나리오 비교 차트 숨기기"
     },
     "pastImpact": {
       "title": "지금까지의 조기 상환 효과",

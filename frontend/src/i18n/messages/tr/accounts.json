@@ -416,7 +416,20 @@
       "modeShortenTerm": "Vadeyi kısalt",
       "modeLowerInstallment": "Taksiti düşür",
       "modeShortenTermHint": "Aynı taksiti koruyun ve krediyi daha erken kapatın. Maksimum faiz tasarrufu.",
-      "modeLowerInstallmentHint": "Aynı kapanış tarihini koruyun ve azalan bakiye üzerinden daha düşük bir taksit hesaplayın."
+      "modeLowerInstallmentHint": "Aynı kapanış tarihini koruyun ve azalan bakiye üzerinden daha düşük bir taksit hesaplayın.",
+      "goalSeek": {
+        "title": "Hedef arama",
+        "description": "Geriye doğru hesapla: hedefe ulaşmak için taksit başına ne kadar ek ödeme gerekir.",
+        "targetInterestLabel": "Hedef toplam faiz",
+        "targetDateLabel": "Hedef kapanış ayı",
+        "compute": "Hesapla",
+        "apply": "Uygula",
+        "required": "Gereken ek ödeme: taksit başına {amount}",
+        "effect": "→ faiz {interest}, kapanış {date}",
+        "alreadyMet": "Hiç ek ödeme yapmadan zaten karşılanıyor.",
+        "unreachableInterest": "Ulaşılamaz — çok büyük bir ek ödeme bile faizi o kadar düşüremez.",
+        "unreachableDate": "Ulaşılamaz — bu ay, mümkün olan en erken kapanıştan daha önce."
+      }
     },
     "comparison": {
       "newPayoff": "Yeni Kapanış Tarihi",
@@ -465,6 +478,14 @@
       "deleteTitle": "Senaryoyu Sil",
       "deleteMessage": "\"{name}\" senaryosu silinsin mi? Bu işlem geri alınamaz.",
       "loadFailed": "Kayıtlı senaryolar yüklenemedi. Hâlâ kayıtlılar — tekrar denemek için sayfayı yenileyin."
+    },
+    "scenarioChart": {
+      "title": "Senaryo karşılaştırması",
+      "description": "Kaydedilen her ek ödeme zaman çizelgesinde bir yaydır: yay kapanış tarihinde biter, tepe noktası tasarruf edilen faizdir ve etiket taksit başına ödenen ek tutarı gösterir. Daha dar ve daha yüksek daha iyidir.",
+      "baselineMarker": "Ek ödeme yok · {date}",
+      "extraShort": "+{amount} / taksit",
+      "show": "Senaryo karşılaştırma grafiğini göster",
+      "hide": "Senaryo karşılaştırma grafiğini gizle"
     },
     "pastImpact": {
       "title": "Yapılan Erken Ödemelerin Etkisi",

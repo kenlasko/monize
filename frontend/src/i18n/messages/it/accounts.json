@@ -416,7 +416,20 @@
       "modeShortenTerm": "Accorcia la durata",
       "modeLowerInstallment": "Riduci la rata",
       "modeShortenTermHint": "Mantieni la stessa rata e salda il prestito prima. Massimo risparmio di interessi.",
-      "modeLowerInstallmentHint": "Mantieni la stessa data di estinzione e ricalcola una rata più bassa sul saldo ridotto."
+      "modeLowerInstallmentHint": "Mantieni la stessa data di estinzione e ricalcola una rata più bassa sul saldo ridotto.",
+      "goalSeek": {
+        "title": "Ricerca obiettivo",
+        "description": "Calcolo a ritroso: quanto extra per rata per raggiungere un obiettivo.",
+        "targetInterestLabel": "Interessi totali obiettivo",
+        "targetDateLabel": "Mese di estinzione obiettivo",
+        "compute": "Calcola",
+        "apply": "Applica",
+        "required": "Extra necessario: {amount} per rata",
+        "effect": "→ interessi {interest}, estinzione {date}",
+        "alreadyMet": "Già raggiunto senza alcun pagamento extra.",
+        "unreachableInterest": "Irraggiungibile: nemmeno un pagamento extra molto grande può ridurre così tanto gli interessi.",
+        "unreachableDate": "Irraggiungibile: quel mese è precedente alla prima estinzione possibile."
+      }
     },
     "comparison": {
       "newPayoff": "Nuova data di estinzione",
@@ -465,6 +478,14 @@
       "deleteTitle": "Elimina scenario",
       "deleteMessage": "Eliminare lo scenario \"{name}\"? Questa operazione non può essere annullata.",
       "loadFailed": "Impossibile caricare gli scenari salvati. Sono ancora memorizzati: ricarica la pagina per riprovare."
+    },
+    "scenarioChart": {
+      "title": "Confronto scenari",
+      "description": "Ogni pagamento extra salvato è un arco sulla linea temporale: l'arco termina alla data di estinzione, il picco sono gli interessi risparmiati e l'etichetta mostra l'extra pagato per rata. Più stretto e più alto è meglio.",
+      "baselineMarker": "Senza pagamenti extra · {date}",
+      "extraShort": "+{amount} / rata",
+      "show": "Mostra grafico di confronto scenari",
+      "hide": "Nascondi grafico di confronto scenari"
     },
     "pastImpact": {
       "title": "Impatto dei rimborsi anticipati effettuati",

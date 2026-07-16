@@ -416,7 +416,20 @@
       "modeShortenTerm": "Skrócenie okresu",
       "modeLowerInstallment": "Obniżenie raty",
       "modeShortenTermHint": "Zachowaj tę samą ratę i spłać kredyt szybciej. Maksymalna oszczędność na odsetkach.",
-      "modeLowerInstallmentHint": "Zachowaj tę samą datę spłaty i przelicz niższą ratę od zmniejszonego salda."
+      "modeLowerInstallmentHint": "Zachowaj tę samą datę spłaty i przelicz niższą ratę od zmniejszonego salda.",
+      "goalSeek": {
+        "title": "Szukanie celu",
+        "description": "Od końca: ile nadpłaty na ratę, aby osiągnąć cel.",
+        "targetInterestLabel": "Docelowa suma odsetek",
+        "targetDateLabel": "Docelowy miesiąc spłaty",
+        "compute": "Oblicz",
+        "apply": "Zastosuj",
+        "required": "Potrzebna nadpłata: {amount} na ratę",
+        "effect": "→ odsetki {interest}, spłata {date}",
+        "alreadyMet": "Cel osiągnięty już bez nadpłat.",
+        "unreachableInterest": "Poza zasięgiem — nawet bardzo duża nadpłata nie obniży odsetek do tego poziomu.",
+        "unreachableDate": "Poza zasięgiem — ten miesiąc jest wcześniejszy niż najwcześniejsza możliwa spłata."
+      }
     },
     "comparison": {
       "newPayoff": "Nowa data spłaty",
@@ -465,6 +478,14 @@
       "deleteTitle": "Usuń scenariusz",
       "deleteMessage": "Usunąć scenariusz \"{name}\"? Tej operacji nie można cofnąć.",
       "loadFailed": "Nie udało się wczytać zapisanych scenariuszy. Nadal są zapisane — odśwież stronę, aby spróbować ponownie."
+    },
+    "scenarioChart": {
+      "title": "Porównanie scenariuszy",
+      "description": "Każda zapisana nadpłata to łuk na osi czasu: łuk kończy się w dacie spłaty, wierzchołek to zaoszczędzone odsetki, a etykieta pokazuje nadpłatę do raty. Węższy i wyższy znaczy lepszy.",
+      "baselineMarker": "Bez nadpłat · {date}",
+      "extraShort": "+{amount} / rata",
+      "show": "Pokaż wykres porównania scenariuszy",
+      "hide": "Ukryj wykres porównania scenariuszy"
     },
     "pastImpact": {
       "title": "Wpływ dokonanych nadpłat",

@@ -416,7 +416,20 @@
       "modeShortenTerm": "Encurtar prazo",
       "modeLowerInstallment": "Reduzir prestação",
       "modeShortenTermHint": "Manter a mesma prestação e liquidar o empréstimo mais cedo. Poupança máxima de juros.",
-      "modeLowerInstallmentHint": "Manter a mesma data de liquidação e recalcular uma prestação menor sobre o saldo reduzido."
+      "modeLowerInstallmentHint": "Manter a mesma data de liquidação e recalcular uma prestação menor sobre o saldo reduzido.",
+      "goalSeek": {
+        "title": "Procura de objetivo",
+        "description": "Calcular ao contrário: quanto extra por prestação para atingir um objetivo.",
+        "targetInterestLabel": "Juros totais alvo",
+        "targetDateLabel": "Mês de liquidação alvo",
+        "compute": "Calcular",
+        "apply": "Aplicar",
+        "required": "Extra necessário: {amount} por prestação",
+        "effect": "→ juros {interest}, liquidação {date}",
+        "alreadyMet": "Já alcançado sem qualquer amortização extra.",
+        "unreachableInterest": "Fora de alcance — nem uma amortização extra muito grande consegue reduzir tanto os juros.",
+        "unreachableDate": "Fora de alcance — esse mês é anterior à liquidação mais cedo possível."
+      }
     },
     "comparison": {
       "newPayoff": "Nova data de liquidação",
@@ -465,6 +478,14 @@
       "deleteTitle": "Eliminar cenário",
       "deleteMessage": "Eliminar o cenário \"{name}\"? Esta ação não pode ser anulada.",
       "loadFailed": "Não foi possível carregar os cenários guardados. Continuam armazenados — recarregue a página para tentar novamente."
+    },
+    "scenarioChart": {
+      "title": "Comparação de cenários",
+      "description": "Cada amortização extra guardada é um arco na linha temporal: o arco termina na data de liquidação, o pico são os juros poupados e a etiqueta mostra o extra pago por prestação. Mais estreito e mais alto é melhor.",
+      "baselineMarker": "Sem amortizações extra · {date}",
+      "extraShort": "+{amount} / prestação",
+      "show": "Mostrar gráfico de comparação de cenários",
+      "hide": "Ocultar gráfico de comparação de cenários"
     },
     "pastImpact": {
       "title": "Impacto das amortizações antecipadas efetuadas",
