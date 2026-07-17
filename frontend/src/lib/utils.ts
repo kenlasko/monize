@@ -32,6 +32,21 @@ export function getLocalDateString(date: Date = new Date()): string {
 }
 
 /**
+ * Get a date as a YYYY-MM-DD string in the given IANA timezone.
+ * The sv-SE locale always formats as YYYY-MM-DD, so this yields the calendar
+ * date as it reads in that timezone -- which may differ from both UTC and the
+ * browser's own local date (e.g. a US/Eastern browser rendering an
+ * Australia/Sydney date). Pair with `resolveTimezone()` to honour the user's
+ * timezone preference.
+ */
+export function getDateStringInTimezone(
+  timezone: string,
+  date: Date = new Date(),
+): string {
+  return date.toLocaleDateString('sv-SE', { timeZone: timezone });
+}
+
+/**
  * Parse a date string (YYYY-MM-DD) into a Date object without timezone conversion.
  * This prevents the date from shifting when displayed in local time.
  *

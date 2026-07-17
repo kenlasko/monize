@@ -15,7 +15,8 @@ import {
   RestoreResult,
 } from '@/lib/backupApi';
 import { getErrorMessage } from '@/lib/errors';
-import { getLocalDateString } from '@/lib/utils';
+import { getDateStringInTimezone, resolveTimezone } from '@/lib/utils';
+import { usePreferencesStore } from '@/store/preferencesStore';
 import { User } from '@/types/auth';
 
 const RESTORE_LABELS: Record<string, string> = {
@@ -68,6 +69,7 @@ interface BackupRestoreSectionProps {
 export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
   const t = useTranslations('settings.backupRestore');
   const isOidc = user.authProvider === 'oidc';
+  const timezonePref = usePreferencesStore((s) => s.preferences?.timezone);
 
   const [encryption, setEncryption] = useState<BackupEncryptionStatus | null>(
     null,
@@ -115,10 +117,12 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
     try {
       const blob = await backupApi.exportBackup(encryptionPassword);
       const url = URL.createObjectURL(blob);
-      // Use the user's local calendar date, not UTC. `toISOString()` renders in
-      // UTC, so for negative-offset timezones (e.g. North America) an evening
-      // export would be stamped with tomorrow's date.
-      const today = getLocalDateString();
+      // Date the filename by the user's configured timezone preference, not UTC
+      // or the browser's timezone. `toISOString()` renders in UTC (an evening
+      // export in a negative-offset zone would be stamped with tomorrow), and
+      // the browser's own timezone can differ from the preference the user set
+      // in Settings (e.g. an Australia/Sydney preference viewed from US/Eastern).
+      const today = getDateStringInTimezone(resolveTimezone(timezonePref));
       const filename = encryptionPassword
         ? `monize-backup-${today}.mzbe`
         : `monize-backup-${today}.json.gz`;

@@ -12,6 +12,7 @@ import {
   formatTime,
   parseTime,
   getLocalDateString,
+  getDateStringInTimezone,
   parseDateFromFormat,
   formatChartDate,
 } from './utils';
@@ -450,6 +451,27 @@ describe('getLocalDateString', () => {
   it('uses current date when called with no argument', () => {
     const result = getLocalDateString();
     expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+});
+
+describe('getDateStringInTimezone', () => {
+  // 2026-07-17 20:00 UTC is already 2026-07-18 in Australia/Sydney (UTC+10)
+  // but still 2026-07-17 in US/Eastern (UTC-4), so the calendar date depends
+  // entirely on the timezone argument, not the machine running the test.
+  const instant = new Date('2026-07-17T20:00:00Z');
+
+  it('returns the calendar date as it reads in the given timezone', () => {
+    expect(getDateStringInTimezone('Australia/Sydney', instant)).toBe(
+      '2026-07-18',
+    );
+    expect(getDateStringInTimezone('America/New_York', instant)).toBe(
+      '2026-07-17',
+    );
+    expect(getDateStringInTimezone('UTC', instant)).toBe('2026-07-17');
+  });
+
+  it('uses current date when called with no explicit date', () => {
+    expect(getDateStringInTimezone('UTC')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });
 
