@@ -428,7 +428,18 @@
         "alreadyMet": "無需任何額外還款即已達成。",
         "unreachableInterest": "無法達成——即使非常大的額外還款也無法節省這麼多利息。",
         "unreachableDate": "無法達成——該月份早於最早可能的還清時間。"
-      }
+      },
+      "optionalGroup": "選填",
+      "simulationTypeLabel": "模擬類型",
+      "overpaymentAmount": "額外還款金額",
+      "frequencyLabel": "頻率",
+      "frequencyOneOff": "一次性",
+      "frequencyWeekly": "每週",
+      "frequencyBiweekly": "每兩週",
+      "frequencyMonthly": "每月",
+      "frequencyQuarterly": "每季",
+      "frequencyAnnually": "每年",
+      "oneOffDateLabel": "日期"
     },
     "comparison": {
       "newPayoff": "新的還清日期",
@@ -441,7 +452,9 @@
       "totalExtraContributed": "額外還款總額",
       "beyondProjection": "超出預測範圍",
       "newInstallment": "新還款額",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "每月還款",
+      "monthlyPaymentExtra": "+ 每期額外 {amount}"
     },
     "chart": {
       "title": "還清時間軸",
@@ -476,7 +489,8 @@
       "deleteFailed": "無法刪除情境",
       "deleteTitle": "刪除情境",
       "deleteMessage": "刪除情境 \"{name}\"？此操作無法復原。",
-      "loadFailed": "無法載入已儲存的方案。它們仍然保存著——請重新載入頁面重試。"
+      "loadFailed": "無法載入已儲存的方案。它們仍然保存著——請重新載入頁面重試。",
+      "colMonthlyOverpayment": "每月額外還款"
     },
     "scenarioChart": {
       "title": "方案比較",

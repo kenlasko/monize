@@ -428,7 +428,18 @@
         "alreadyMet": "无需任何额外还款即已达成。",
         "unreachableInterest": "无法达成——即使非常大的额外还款也无法节省这么多利息。",
         "unreachableDate": "无法达成——该月份早于最早可能的还清时间。"
-      }
+      },
+      "optionalGroup": "可选",
+      "simulationTypeLabel": "模拟类型",
+      "overpaymentAmount": "额外还款金额",
+      "frequencyLabel": "频率",
+      "frequencyOneOff": "一次性",
+      "frequencyWeekly": "每周",
+      "frequencyBiweekly": "每两周",
+      "frequencyMonthly": "每月",
+      "frequencyQuarterly": "每季度",
+      "frequencyAnnually": "每年",
+      "oneOffDateLabel": "日期"
     },
     "comparison": {
       "newPayoff": "新的还清日期",
@@ -441,7 +452,9 @@
       "totalExtraContributed": "额外还款总额",
       "beyondProjection": "超出预测范围",
       "newInstallment": "新还款额",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "每月还款",
+      "monthlyPaymentExtra": "+ 每期额外 {amount}"
     },
     "chart": {
       "title": "还清时间线",
@@ -476,7 +489,8 @@
       "deleteFailed": "无法删除方案",
       "deleteTitle": "删除方案",
       "deleteMessage": "删除方案 \"{name}\"？此操作无法撤销。",
-      "loadFailed": "无法加载已保存的方案。它们仍然保存着——请重新加载页面重试。"
+      "loadFailed": "无法加载已保存的方案。它们仍然保存着——请重新加载页面重试。",
+      "colMonthlyOverpayment": "每月额外还款"
     },
     "scenarioChart": {
       "title": "方案对比",

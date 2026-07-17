@@ -428,7 +428,18 @@
         "alreadyMet": "Objectif déjà atteint sans aucun remboursement anticipé.",
         "unreachableInterest": "Hors de portée — même un très gros remboursement anticipé ne peut pas économiser autant d'intérêts.",
         "unreachableDate": "Hors de portée — ce mois est antérieur au remboursement le plus tôt possible."
-      }
+      },
+      "optionalGroup": "Facultatif",
+      "simulationTypeLabel": "Type de simulation",
+      "overpaymentAmount": "Montant du remboursement anticipé",
+      "frequencyLabel": "Fréquence",
+      "frequencyOneOff": "Ponctuel",
+      "frequencyWeekly": "Hebdomadaire",
+      "frequencyBiweekly": "Toutes les deux semaines",
+      "frequencyMonthly": "Mensuel",
+      "frequencyQuarterly": "Trimestriel",
+      "frequencyAnnually": "Annuel",
+      "oneOffDateLabel": "Date"
     },
     "comparison": {
       "newPayoff": "Nouvelle date de remboursement",
@@ -441,7 +452,9 @@
       "totalExtraContributed": "Total des versements supplémentaires",
       "beyondProjection": "Au-delà de la projection",
       "newInstallment": "Nouvelle mensualité",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "Paiement mensuel",
+      "monthlyPaymentExtra": "+ {amount} de plus par paiement"
     },
     "chart": {
       "title": "Chronologie du remboursement",
@@ -476,7 +489,8 @@
       "deleteFailed": "Échec de la suppression du scénario",
       "deleteTitle": "Supprimer le scénario",
       "deleteMessage": "Supprimer le scénario \"{name}\" ? Cette action est irréversible.",
-      "loadFailed": "Impossible de charger les scénarios enregistrés. Ils sont toujours stockés — rechargez la page pour réessayer."
+      "loadFailed": "Impossible de charger les scénarios enregistrés. Ils sont toujours stockés — rechargez la page pour réessayer.",
+      "colMonthlyOverpayment": "Remboursement mensuel"
     },
     "scenarioChart": {
       "title": "Comparaison des scénarios",

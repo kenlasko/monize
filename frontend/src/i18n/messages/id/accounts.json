@@ -428,7 +428,18 @@
         "alreadyMet": "Sudah tercapai tanpa pembayaran ekstra.",
         "unreachableInterest": "Tidak terjangkau — pembayaran ekstra yang sangat besar pun tidak dapat menghemat bunga sebanyak itu.",
         "unreachableDate": "Tidak terjangkau — bulan itu lebih awal dari pelunasan tercepat yang mungkin."
-      }
+      },
+      "optionalGroup": "Opsional",
+      "simulationTypeLabel": "Jenis simulasi",
+      "overpaymentAmount": "Jumlah pembayaran ekstra",
+      "frequencyLabel": "Frekuensi",
+      "frequencyOneOff": "Sekali bayar",
+      "frequencyWeekly": "Mingguan",
+      "frequencyBiweekly": "Dua mingguan",
+      "frequencyMonthly": "Bulanan",
+      "frequencyQuarterly": "Triwulanan",
+      "frequencyAnnually": "Tahunan",
+      "oneOffDateLabel": "Tanggal"
     },
     "comparison": {
       "newPayoff": "Tanggal Lunas Baru",
@@ -441,7 +452,9 @@
       "totalExtraContributed": "Total Pembayaran Tambahan",
       "beyondProjection": "Di luar proyeksi",
       "newInstallment": "Angsuran Baru",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "Pembayaran bulanan",
+      "monthlyPaymentExtra": "+ {amount} ekstra per pembayaran"
     },
     "chart": {
       "title": "Linimasa Pelunasan",
@@ -476,7 +489,8 @@
       "deleteFailed": "Gagal menghapus skenario",
       "deleteTitle": "Hapus Skenario",
       "deleteMessage": "Hapus skenario \"{name}\"? Tindakan ini tidak dapat dibatalkan.",
-      "loadFailed": "Tidak dapat memuat skenario tersimpan. Skenario masih tersimpan — muat ulang halaman untuk mencoba lagi."
+      "loadFailed": "Tidak dapat memuat skenario tersimpan. Skenario masih tersimpan — muat ulang halaman untuk mencoba lagi.",
+      "colMonthlyOverpayment": "Pembayaran ekstra bulanan"
     },
     "scenarioChart": {
       "title": "Perbandingan skenario",

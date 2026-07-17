@@ -428,7 +428,18 @@
         "alreadyMet": "Hiç ek ödeme yapmadan zaten karşılanıyor.",
         "unreachableInterest": "Ulaşılamaz — çok büyük bir ek ödeme bile o kadar faiz tasarrufu sağlayamaz.",
         "unreachableDate": "Ulaşılamaz — bu ay, mümkün olan en erken kapanıştan daha önce."
-      }
+      },
+      "optionalGroup": "İsteğe bağlı",
+      "simulationTypeLabel": "Simülasyon türü",
+      "overpaymentAmount": "Ek ödeme tutarı",
+      "frequencyLabel": "Sıklık",
+      "frequencyOneOff": "Tek seferlik",
+      "frequencyWeekly": "Haftalık",
+      "frequencyBiweekly": "İki haftada bir",
+      "frequencyMonthly": "Aylık",
+      "frequencyQuarterly": "Üç aylık",
+      "frequencyAnnually": "Yıllık",
+      "oneOffDateLabel": "Tarih"
     },
     "comparison": {
       "newPayoff": "Yeni Kapanış Tarihi",
@@ -441,7 +452,9 @@
       "totalExtraContributed": "Toplam Ek Ödeme",
       "beyondProjection": "Öngörünün ötesinde",
       "newInstallment": "Yeni Taksit",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "Aylık ödeme",
+      "monthlyPaymentExtra": "+ ödeme başına {amount} ek"
     },
     "chart": {
       "title": "Kapanış Zaman Çizelgesi",
@@ -476,7 +489,8 @@
       "deleteFailed": "Senaryo silinemedi",
       "deleteTitle": "Senaryoyu Sil",
       "deleteMessage": "\"{name}\" senaryosu silinsin mi? Bu işlem geri alınamaz.",
-      "loadFailed": "Kayıtlı senaryolar yüklenemedi. Hâlâ kayıtlılar — tekrar denemek için sayfayı yenileyin."
+      "loadFailed": "Kayıtlı senaryolar yüklenemedi. Hâlâ kayıtlılar — tekrar denemek için sayfayı yenileyin.",
+      "colMonthlyOverpayment": "Aylık ek ödeme"
     },
     "scenarioChart": {
       "title": "Senaryo karşılaştırması",

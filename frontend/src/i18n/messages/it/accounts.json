@@ -428,7 +428,18 @@
         "alreadyMet": "Già raggiunto senza alcun pagamento extra.",
         "unreachableInterest": "Irraggiungibile: nemmeno un pagamento extra molto grande può far risparmiare così tanti interessi.",
         "unreachableDate": "Irraggiungibile: quel mese è precedente alla prima estinzione possibile."
-      }
+      },
+      "optionalGroup": "Facoltativo",
+      "simulationTypeLabel": "Tipo di simulazione",
+      "overpaymentAmount": "Importo del versamento extra",
+      "frequencyLabel": "Frequenza",
+      "frequencyOneOff": "Una tantum",
+      "frequencyWeekly": "Settimanale",
+      "frequencyBiweekly": "Quindicinale",
+      "frequencyMonthly": "Mensile",
+      "frequencyQuarterly": "Trimestrale",
+      "frequencyAnnually": "Annuale",
+      "oneOffDateLabel": "Data"
     },
     "comparison": {
       "newPayoff": "Nuova data di estinzione",
@@ -441,7 +452,9 @@
       "totalExtraContributed": "Totale extra versato",
       "beyondProjection": "Oltre la proiezione",
       "newInstallment": "Nuova rata",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "Rata mensile",
+      "monthlyPaymentExtra": "+ {amount} extra per rata"
     },
     "chart": {
       "title": "Cronologia di estinzione",
@@ -476,7 +489,8 @@
       "deleteFailed": "Impossibile eliminare lo scenario",
       "deleteTitle": "Elimina scenario",
       "deleteMessage": "Eliminare lo scenario \"{name}\"? Questa operazione non può essere annullata.",
-      "loadFailed": "Impossibile caricare gli scenari salvati. Sono ancora memorizzati: ricarica la pagina per riprovare."
+      "loadFailed": "Impossibile caricare gli scenari salvati. Sono ancora memorizzati: ricarica la pagina per riprovare.",
+      "colMonthlyOverpayment": "Versamento extra mensile"
     },
     "scenarioChart": {
       "title": "Confronto scenari",

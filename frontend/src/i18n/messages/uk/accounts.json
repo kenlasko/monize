@@ -428,7 +428,18 @@
         "alreadyMet": "Ціль уже досягнуто без дострокових платежів.",
         "unreachableInterest": "Недосяжно — навіть дуже велика доплата не дасть такої економії на відсотках.",
         "unreachableDate": "Недосяжно — цей місяць раніший за найранішнє можливе погашення."
-      }
+      },
+      "optionalGroup": "Необов'язково",
+      "simulationTypeLabel": "Тип симуляції",
+      "overpaymentAmount": "Сума дострокового платежу",
+      "frequencyLabel": "Періодичність",
+      "frequencyOneOff": "Одноразовий",
+      "frequencyWeekly": "Щотижня",
+      "frequencyBiweekly": "Раз на два тижні",
+      "frequencyMonthly": "Щомісяця",
+      "frequencyQuarterly": "Щокварталу",
+      "frequencyAnnually": "Щороку",
+      "oneOffDateLabel": "Дата"
     },
     "comparison": {
       "newPayoff": "Нова дата погашення",
@@ -441,7 +452,9 @@
       "totalExtraContributed": "Усього внесено додатково",
       "beyondProjection": "Поза прогнозом",
       "newInstallment": "Новий платіж",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "Щомісячний платіж",
+      "monthlyPaymentExtra": "+ {amount} додатково до платежу"
     },
     "chart": {
       "title": "Хронологія погашення",
@@ -476,7 +489,8 @@
       "deleteFailed": "Не вдалося видалити сценарій",
       "deleteTitle": "Видалити сценарій",
       "deleteMessage": "Видалити сценарій \"{name}\"? Цю дію не можна скасувати.",
-      "loadFailed": "Не вдалося завантажити збережені сценарії. Вони й далі збережені — оновіть сторінку, щоб спробувати ще раз."
+      "loadFailed": "Не вдалося завантажити збережені сценарії. Вони й далі збережені — оновіть сторінку, щоб спробувати ще раз.",
+      "colMonthlyOverpayment": "Щомісячний достроковий платіж"
     },
     "scenarioChart": {
       "title": "Порівняння сценаріїв",

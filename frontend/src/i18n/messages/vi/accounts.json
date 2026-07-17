@@ -428,7 +428,18 @@
         "alreadyMet": "Đã đạt được mà không cần trả thêm.",
         "unreachableInterest": "Ngoài tầm với — khoản trả thêm rất lớn cũng không thể tiết kiệm được nhiều lãi đến vậy.",
         "unreachableDate": "Ngoài tầm với — tháng đó sớm hơn thời điểm tất toán sớm nhất có thể."
-      }
+      },
+      "optionalGroup": "Tùy chọn",
+      "simulationTypeLabel": "Loại mô phỏng",
+      "overpaymentAmount": "Số tiền trả thêm",
+      "frequencyLabel": "Tần suất",
+      "frequencyOneOff": "Một lần",
+      "frequencyWeekly": "Hàng tuần",
+      "frequencyBiweekly": "Hai tuần một lần",
+      "frequencyMonthly": "Hàng tháng",
+      "frequencyQuarterly": "Hàng quý",
+      "frequencyAnnually": "Hàng năm",
+      "oneOffDateLabel": "Ngày"
     },
     "comparison": {
       "newPayoff": "Ngày trả hết mới",
@@ -441,7 +452,9 @@
       "totalExtraContributed": "Tổng số tiền trả thêm",
       "beyondProjection": "Ngoài phạm vi dự báo",
       "newInstallment": "Kỳ trả mới",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "Khoản trả hàng tháng",
+      "monthlyPaymentExtra": "+ {amount} trả thêm mỗi kỳ"
     },
     "chart": {
       "title": "Dòng thời gian trả nợ",
@@ -476,7 +489,8 @@
       "deleteFailed": "Không thể xóa kịch bản",
       "deleteTitle": "Xóa kịch bản",
       "deleteMessage": "Xóa kịch bản \"{name}\"? Không thể hoàn tác thao tác này.",
-      "loadFailed": "Không thể tải các kịch bản đã lưu. Chúng vẫn được lưu trữ — tải lại trang để thử lại."
+      "loadFailed": "Không thể tải các kịch bản đã lưu. Chúng vẫn được lưu trữ — tải lại trang để thử lại.",
+      "colMonthlyOverpayment": "Trả thêm hàng tháng"
     },
     "scenarioChart": {
       "title": "So sánh kịch bản",

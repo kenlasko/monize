@@ -428,7 +428,18 @@
         "alreadyMet": "Cel osiągnięty już bez nadpłat.",
         "unreachableInterest": "Poza zasięgiem — nawet bardzo duża nadpłata nie da tak dużej oszczędności na odsetkach.",
         "unreachableDate": "Poza zasięgiem — ten miesiąc jest wcześniejszy niż najwcześniejsza możliwa spłata."
-      }
+      },
+      "optionalGroup": "Opcjonalne",
+      "simulationTypeLabel": "Typ symulacji",
+      "overpaymentAmount": "Kwota nadpłaty",
+      "frequencyLabel": "Częstotliwość",
+      "frequencyOneOff": "Jednorazowa",
+      "frequencyWeekly": "Tygodniowa",
+      "frequencyBiweekly": "Dwutygodniowa",
+      "frequencyMonthly": "Miesięczna",
+      "frequencyQuarterly": "Kwartalna",
+      "frequencyAnnually": "Roczna",
+      "oneOffDateLabel": "Data"
     },
     "comparison": {
       "newPayoff": "Nowa data spłaty",
@@ -441,7 +452,9 @@
       "totalExtraContributed": "Łączna kwota nadpłat",
       "beyondProjection": "Poza prognozą",
       "newInstallment": "Nowa rata",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "Miesięczna płatność",
+      "monthlyPaymentExtra": "+ {amount} nadpłaty na ratę"
     },
     "chart": {
       "title": "Oś czasu spłaty",
@@ -476,7 +489,8 @@
       "deleteFailed": "Nie udało się usunąć scenariusza",
       "deleteTitle": "Usuń scenariusz",
       "deleteMessage": "Usunąć scenariusz \"{name}\"? Tej operacji nie można cofnąć.",
-      "loadFailed": "Nie udało się wczytać zapisanych scenariuszy. Nadal są zapisane — odśwież stronę, aby spróbować ponownie."
+      "loadFailed": "Nie udało się wczytać zapisanych scenariuszy. Nadal są zapisane — odśwież stronę, aby spróbować ponownie.",
+      "colMonthlyOverpayment": "Nadpłata miesięczna"
     },
     "scenarioChart": {
       "title": "Porównanie scenariuszy",

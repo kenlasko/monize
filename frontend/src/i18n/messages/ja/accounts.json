@@ -428,7 +428,18 @@
         "alreadyMet": "追加返済なしで既に達成しています。",
         "unreachableInterest": "達成不可 — どれほど大きな追加返済でもそこまで利息を節約できません。",
         "unreachableDate": "達成不可 — その月は最短の完済時期より前です。"
-      }
+      },
+      "optionalGroup": "任意",
+      "simulationTypeLabel": "シミュレーションの種類",
+      "overpaymentAmount": "繰上返済額",
+      "frequencyLabel": "頻度",
+      "frequencyOneOff": "一回のみ",
+      "frequencyWeekly": "毎週",
+      "frequencyBiweekly": "隔週",
+      "frequencyMonthly": "毎月",
+      "frequencyQuarterly": "四半期ごと",
+      "frequencyAnnually": "毎年",
+      "oneOffDateLabel": "日付"
     },
     "comparison": {
       "newPayoff": "新しい完済日",
@@ -441,7 +452,9 @@
       "totalExtraContributed": "追加返済の合計",
       "beyondProjection": "予測範囲外",
       "newInstallment": "新しい返済額",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "毎月の返済額",
+      "monthlyPaymentExtra": "+ 返済ごとに{amount}追加"
     },
     "chart": {
       "title": "完済タイムライン",
@@ -476,7 +489,8 @@
       "deleteFailed": "シナリオを削除できませんでした",
       "deleteTitle": "シナリオを削除",
       "deleteMessage": "シナリオ \"{name}\" を削除しますか？この操作は元に戻せません。",
-      "loadFailed": "保存済みシナリオを読み込めませんでした。データは保存されています。ページを再読み込みして再試行してください。"
+      "loadFailed": "保存済みシナリオを読み込めませんでした。データは保存されています。ページを再読み込みして再試行してください。",
+      "colMonthlyOverpayment": "毎月の繰上返済"
     },
     "scenarioChart": {
       "title": "シナリオ比較",

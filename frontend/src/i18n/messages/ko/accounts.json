@@ -428,7 +428,18 @@
         "alreadyMet": "추가 상환 없이도 이미 달성되었습니다.",
         "unreachableInterest": "달성 불가 — 아무리 큰 추가 상환으로도 그만큼 이자를 절약할 수 없습니다.",
         "unreachableDate": "달성 불가 — 해당 월은 가장 빠른 상환 완료 시점보다 이릅니다."
-      }
+      },
+      "optionalGroup": "선택 사항",
+      "simulationTypeLabel": "시뮬레이션 유형",
+      "overpaymentAmount": "추가 상환 금액",
+      "frequencyLabel": "주기",
+      "frequencyOneOff": "일회성",
+      "frequencyWeekly": "매주",
+      "frequencyBiweekly": "격주",
+      "frequencyMonthly": "매월",
+      "frequencyQuarterly": "분기별",
+      "frequencyAnnually": "매년",
+      "oneOffDateLabel": "날짜"
     },
     "comparison": {
       "newPayoff": "새 완납일",
@@ -441,7 +452,9 @@
       "totalExtraContributed": "총 추가 상환액",
       "beyondProjection": "예측 범위 초과",
       "newInstallment": "새 상환액",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "월 상환액",
+      "monthlyPaymentExtra": "+ 회차당 {amount} 추가"
     },
     "chart": {
       "title": "완납 타임라인",
@@ -476,7 +489,8 @@
       "deleteFailed": "시나리오를 삭제하지 못했습니다",
       "deleteTitle": "시나리오 삭제",
       "deleteMessage": "시나리오 \"{name}\"을(를) 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
-      "loadFailed": "저장된 시나리오를 불러오지 못했습니다. 데이터는 그대로 저장되어 있습니다. 페이지를 새로고침하여 다시 시도하세요."
+      "loadFailed": "저장된 시나리오를 불러오지 못했습니다. 데이터는 그대로 저장되어 있습니다. 페이지를 새로고침하여 다시 시도하세요.",
+      "colMonthlyOverpayment": "월 추가 상환액"
     },
     "scenarioChart": {
       "title": "시나리오 비교",

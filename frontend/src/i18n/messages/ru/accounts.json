@@ -428,7 +428,18 @@
         "alreadyMet": "Цель уже достигнута без досрочных платежей.",
         "unreachableInterest": "Недостижимо — даже очень большая доплата не даст такой экономии на процентах.",
         "unreachableDate": "Недостижимо — этот месяц раньше самого раннего возможного погашения."
-      }
+      },
+      "optionalGroup": "Необязательно",
+      "simulationTypeLabel": "Тип симуляции",
+      "overpaymentAmount": "Сумма досрочного платежа",
+      "frequencyLabel": "Периодичность",
+      "frequencyOneOff": "Разовый",
+      "frequencyWeekly": "Еженедельно",
+      "frequencyBiweekly": "Раз в две недели",
+      "frequencyMonthly": "Ежемесячно",
+      "frequencyQuarterly": "Ежеквартально",
+      "frequencyAnnually": "Ежегодно",
+      "oneOffDateLabel": "Дата"
     },
     "comparison": {
       "newPayoff": "Новая дата погашения",
@@ -441,7 +452,9 @@
       "totalExtraContributed": "Всего внесено дополнительно",
       "beyondProjection": "За пределами прогноза",
       "newInstallment": "Новый платёж",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "Ежемесячный платёж",
+      "monthlyPaymentExtra": "+ {amount} дополнительно к платежу"
     },
     "chart": {
       "title": "График погашения",
@@ -476,7 +489,8 @@
       "deleteFailed": "Не удалось удалить сценарий",
       "deleteTitle": "Удалить сценарий",
       "deleteMessage": "Удалить сценарий \"{name}\"? Это действие нельзя отменить.",
-      "loadFailed": "Не удалось загрузить сохранённые сценарии. Они по-прежнему сохранены — обновите страницу, чтобы повторить попытку."
+      "loadFailed": "Не удалось загрузить сохранённые сценарии. Они по-прежнему сохранены — обновите страницу, чтобы повторить попытку.",
+      "colMonthlyOverpayment": "Ежемесячный досрочный платёж"
     },
     "scenarioChart": {
       "title": "Сравнение сценариев",

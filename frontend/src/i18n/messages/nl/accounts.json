@@ -428,7 +428,18 @@
         "alreadyMet": "Al bereikt zonder extra aflossing.",
         "unreachableInterest": "Onhaalbaar — zelfs een zeer grote extra aflossing kan niet zoveel rente besparen.",
         "unreachableDate": "Onhaalbaar — die maand ligt vóór de vroegst mogelijke aflossing."
-      }
+      },
+      "optionalGroup": "Optioneel",
+      "simulationTypeLabel": "Simulatietype",
+      "overpaymentAmount": "Bedrag extra aflossing",
+      "frequencyLabel": "Frequentie",
+      "frequencyOneOff": "Eenmalig",
+      "frequencyWeekly": "Wekelijks",
+      "frequencyBiweekly": "Tweewekelijks",
+      "frequencyMonthly": "Maandelijks",
+      "frequencyQuarterly": "Per kwartaal",
+      "frequencyAnnually": "Jaarlijks",
+      "oneOffDateLabel": "Datum"
     },
     "comparison": {
       "newPayoff": "Nieuwe aflossingsdatum",
@@ -441,7 +452,9 @@
       "totalExtraContributed": "Totaal extra ingelegd",
       "beyondProjection": "Buiten de projectie",
       "newInstallment": "Nieuwe termijn",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "Maandelijkse betaling",
+      "monthlyPaymentExtra": "+ {amount} extra per betaling"
     },
     "chart": {
       "title": "Aflossingstijdlijn",
@@ -476,7 +489,8 @@
       "deleteFailed": "Kan scenario niet verwijderen",
       "deleteTitle": "Scenario verwijderen",
       "deleteMessage": "Het scenario \"{name}\" verwijderen? Dit kan niet ongedaan worden gemaakt.",
-      "loadFailed": "De opgeslagen scenario's konden niet worden geladen. Ze zijn nog opgeslagen — herlaad de pagina om het opnieuw te proberen."
+      "loadFailed": "De opgeslagen scenario's konden niet worden geladen. Ze zijn nog opgeslagen — herlaad de pagina om het opnieuw te proberen.",
+      "colMonthlyOverpayment": "Maandelijkse extra aflossing"
     },
     "scenarioChart": {
       "title": "Scenariovergelijking",

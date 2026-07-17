@@ -428,7 +428,18 @@
         "alreadyMet": "Ya se cumple sin ningún pago extra.",
         "unreachableInterest": "Inalcanzable: ni siquiera un pago extra muy grande puede ahorrar tantos intereses.",
         "unreachableDate": "Inalcanzable: ese mes es anterior a la liquidación más temprana posible."
-      }
+      },
+      "optionalGroup": "Opcional",
+      "simulationTypeLabel": "Tipo de simulación",
+      "overpaymentAmount": "Importe de amortización",
+      "frequencyLabel": "Frecuencia",
+      "frequencyOneOff": "Única",
+      "frequencyWeekly": "Semanal",
+      "frequencyBiweekly": "Quincenal",
+      "frequencyMonthly": "Mensual",
+      "frequencyQuarterly": "Trimestral",
+      "frequencyAnnually": "Anual",
+      "oneOffDateLabel": "Fecha"
     },
     "comparison": {
       "newPayoff": "Nueva fecha de liquidación",
@@ -441,7 +452,9 @@
       "totalExtraContributed": "Total adicional aportado",
       "beyondProjection": "Más allá de la proyección",
       "newInstallment": "Nueva cuota",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "Cuota mensual",
+      "monthlyPaymentExtra": "+ {amount} extra por cuota"
     },
     "chart": {
       "title": "Cronología de liquidación",
@@ -476,7 +489,8 @@
       "deleteFailed": "No se pudo eliminar el escenario",
       "deleteTitle": "Eliminar escenario",
       "deleteMessage": "¿Eliminar el escenario \"{name}\"? Esta acción no se puede deshacer.",
-      "loadFailed": "No se pudieron cargar los escenarios guardados. Siguen almacenados: recargue la página para volver a intentarlo."
+      "loadFailed": "No se pudieron cargar los escenarios guardados. Siguen almacenados: recargue la página para volver a intentarlo.",
+      "colMonthlyOverpayment": "Amortización mensual"
     },
     "scenarioChart": {
       "title": "Comparación de escenarios",

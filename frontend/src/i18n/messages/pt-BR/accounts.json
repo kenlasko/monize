@@ -428,7 +428,18 @@
         "alreadyMet": "Já alcançado sem nenhum pagamento extra.",
         "unreachableInterest": "Fora de alcance — nem um pagamento extra muito grande consegue economizar tantos juros.",
         "unreachableDate": "Fora de alcance — esse mês é anterior à quitação mais cedo possível."
-      }
+      },
+      "optionalGroup": "Opcional",
+      "simulationTypeLabel": "Tipo de simulação",
+      "overpaymentAmount": "Valor do pagamento extra",
+      "frequencyLabel": "Frequência",
+      "frequencyOneOff": "Único",
+      "frequencyWeekly": "Semanal",
+      "frequencyBiweekly": "Quinzenal",
+      "frequencyMonthly": "Mensal",
+      "frequencyQuarterly": "Trimestral",
+      "frequencyAnnually": "Anual",
+      "oneOffDateLabel": "Data"
     },
     "comparison": {
       "newPayoff": "Nova data de quitação",
@@ -441,7 +452,9 @@
       "totalExtraContributed": "Total extra contribuído",
       "beyondProjection": "Além da projeção",
       "newInstallment": "Nova parcela",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "Pagamento mensal",
+      "monthlyPaymentExtra": "+ {amount} extra por pagamento"
     },
     "chart": {
       "title": "Linha do tempo de quitação",
@@ -476,7 +489,8 @@
       "deleteFailed": "Não foi possível excluir o cenário",
       "deleteTitle": "Excluir cenário",
       "deleteMessage": "Excluir o cenário \"{name}\"? Esta ação não pode ser desfeita.",
-      "loadFailed": "Não foi possível carregar os cenários salvos. Eles continuam armazenados — recarregue a página para tentar novamente."
+      "loadFailed": "Não foi possível carregar os cenários salvos. Eles continuam armazenados — recarregue a página para tentar novamente.",
+      "colMonthlyOverpayment": "Pagamento extra mensal"
     },
     "scenarioChart": {
       "title": "Comparação de cenários",

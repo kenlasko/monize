@@ -428,7 +428,18 @@
         "alreadyMet": "Bereits ohne Sondertilgung erreicht.",
         "unreachableInterest": "Unerreichbar — selbst eine sehr hohe Sondertilgung kann nicht so viel Zinsen sparen.",
         "unreachableDate": "Unerreichbar — dieser Monat liegt vor dem frühestmöglichen Tilgungstermin."
-      }
+      },
+      "optionalGroup": "Optional",
+      "simulationTypeLabel": "Simulationstyp",
+      "overpaymentAmount": "Sondertilgungsbetrag",
+      "frequencyLabel": "Häufigkeit",
+      "frequencyOneOff": "Einmalig",
+      "frequencyWeekly": "Wöchentlich",
+      "frequencyBiweekly": "Zweiwöchentlich",
+      "frequencyMonthly": "Monatlich",
+      "frequencyQuarterly": "Vierteljährlich",
+      "frequencyAnnually": "Jährlich",
+      "oneOffDateLabel": "Datum"
     },
     "comparison": {
       "newPayoff": "Neues Tilgungsdatum",
@@ -441,7 +452,9 @@
       "totalExtraContributed": "Gesamte Sondertilgung",
       "beyondProjection": "Außerhalb der Prognose",
       "newInstallment": "Neue Rate",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "Monatliche Rate",
+      "monthlyPaymentExtra": "+ {amount} zusätzlich pro Rate"
     },
     "chart": {
       "title": "Tilgungsverlauf",
@@ -476,7 +489,8 @@
       "deleteFailed": "Szenario konnte nicht gelöscht werden",
       "deleteTitle": "Szenario löschen",
       "deleteMessage": "Das Szenario \"{name}\" löschen? Dies kann nicht rückgängig gemacht werden.",
-      "loadFailed": "Die gespeicherten Szenarien konnten nicht geladen werden. Sie sind weiterhin gespeichert — laden Sie die Seite neu, um es erneut zu versuchen."
+      "loadFailed": "Die gespeicherten Szenarien konnten nicht geladen werden. Sie sind weiterhin gespeichert — laden Sie die Seite neu, um es erneut zu versuchen.",
+      "colMonthlyOverpayment": "Monatliche Sondertilgung"
     },
     "scenarioChart": {
       "title": "Szenariovergleich",

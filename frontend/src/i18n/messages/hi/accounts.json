@@ -428,7 +428,18 @@
         "alreadyMet": "बिना किसी अतिरिक्त भुगतान के ही लक्ष्य पूरा है।",
         "unreachableInterest": "पहुँच से बाहर — बहुत बड़ा अतिरिक्त भुगतान भी इतना ब्याज नहीं बचा सकता।",
         "unreachableDate": "पहुँच से बाहर — यह माह जल्द से जल्द संभव चुकौती से पहले है।"
-      }
+      },
+      "optionalGroup": "वैकल्पिक",
+      "simulationTypeLabel": "सिमुलेशन प्रकार",
+      "overpaymentAmount": "अतिरिक्त भुगतान राशि",
+      "frequencyLabel": "आवृत्ति",
+      "frequencyOneOff": "एकमुश्त",
+      "frequencyWeekly": "साप्ताहिक",
+      "frequencyBiweekly": "पाक्षिक",
+      "frequencyMonthly": "मासिक",
+      "frequencyQuarterly": "त्रैमासिक",
+      "frequencyAnnually": "वार्षिक",
+      "oneOffDateLabel": "तारीख"
     },
     "comparison": {
       "newPayoff": "नई चुकौती तिथि",
@@ -441,7 +452,9 @@
       "totalExtraContributed": "कुल अतिरिक्त योगदान",
       "beyondProjection": "अनुमान से परे",
       "newInstallment": "नई किस्त",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "मासिक भुगतान",
+      "monthlyPaymentExtra": "+ {amount} अतिरिक्त प्रति भुगतान"
     },
     "chart": {
       "title": "चुकौती समयरेखा",
@@ -476,7 +489,8 @@
       "deleteFailed": "परिदृश्य हटाया नहीं जा सका",
       "deleteTitle": "परिदृश्य हटाएँ",
       "deleteMessage": "परिदृश्य \"{name}\" हटाएँ? इसे पूर्ववत नहीं किया जा सकता।",
-      "loadFailed": "सहेजे गए परिदृश्य लोड नहीं हो सके। वे अभी भी संग्रहीत हैं — पुनः प्रयास के लिए पृष्ठ फिर से लोड करें।"
+      "loadFailed": "सहेजे गए परिदृश्य लोड नहीं हो सके। वे अभी भी संग्रहीत हैं — पुनः प्रयास के लिए पृष्ठ फिर से लोड करें।",
+      "colMonthlyOverpayment": "मासिक अतिरिक्त भुगतान"
     },
     "scenarioChart": {
       "title": "परिदृश्य तुलना",
