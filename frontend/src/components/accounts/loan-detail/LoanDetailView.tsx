@@ -352,6 +352,7 @@ export function LoanDetailView({
                       <ComparisonSummaryCards
                         comparison={comparison}
                         currencyCode={account.currencyCode}
+                        recurringExtra={plan?.recurringExtra?.amount ?? 0}
                       />
                     </div>
                   )}

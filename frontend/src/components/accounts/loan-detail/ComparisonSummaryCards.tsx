@@ -8,13 +8,21 @@ import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 interface ComparisonSummaryCardsProps {
   comparison: ScenarioComparison;
   currencyCode: string;
+  /** The scenario's recurring extra per payment, when any -- added to the
+   *  installment to show the resulting monthly payment. */
+  recurringExtra?: number;
 }
 
 /**
  * Baseline-versus-scenario outcome cards: the new payoff date, time saved,
- * interest saved, and the total extra principal the scenario contributes.
+ * interest saved, the resulting monthly payment, and the total extra principal
+ * the scenario contributes.
  */
-export function ComparisonSummaryCards({ comparison, currencyCode }: ComparisonSummaryCardsProps) {
+export function ComparisonSummaryCards({
+  comparison,
+  currencyCode,
+  recurringExtra = 0,
+}: ComparisonSummaryCardsProps) {
   const t = useTranslations('accounts');
   const { formatCurrency } = useNumberFormat();
   const formatChartDate = useChartDateFormat();
@@ -28,8 +36,14 @@ export function ComparisonSummaryCards({ comparison, currencyCode }: ComparisonS
   // outcome is the smaller installment instead.
   const isLowerInstallment = comparison.installmentReduction > 0.005;
 
+  // The resulting monthly outlay: for lower-installment the recomputed smaller
+  // installment; otherwise the unchanged installment plus the recurring extra.
+  const monthlyPayment = isLowerInstallment
+    ? scenario.finalPaymentAmount
+    : Math.round((scenario.finalPaymentAmount + recurringExtra) * 100) / 100;
+
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
       <Card
         label={t('loanDetail.comparison.newPayoff')}
         value={newPayoffLabel}
@@ -59,6 +73,11 @@ export function ComparisonSummaryCards({ comparison, currencyCode }: ComparisonS
         label={t('loanDetail.comparison.interestSaved')}
         value={formatCurrency(Math.max(comparison.interestSaved, 0), currencyCode)}
         valueClass="text-green-600 dark:text-green-400"
+      />
+      <Card
+        label={t('loanDetail.comparison.monthlyPayment')}
+        value={formatCurrency(monthlyPayment, currencyCode)}
+        valueClass="text-gray-900 dark:text-gray-100"
       />
       <Card
         label={t('loanDetail.comparison.totalExtraContributed')}

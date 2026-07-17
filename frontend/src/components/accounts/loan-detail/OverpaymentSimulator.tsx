@@ -8,13 +8,14 @@ import { DateInput } from '@/components/ui/DateInput';
 import { LoanScheduleInput, OverpaymentMode, OverpaymentPlan } from '@/lib/loan-schedule';
 import {
   SolveResult,
+  SolveStatus,
+  SolveWindow,
   solveRecurringForInterestSavings,
   solveRecurringForPayoffMonth,
 } from '@/lib/loan-overpayment-solver';
 import { accountsApi } from '@/lib/accounts';
 import { getCurrencySymbol } from '@/lib/format';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-import { useDateFormat } from '@/hooks/useDateFormat';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('OverpaymentSimulator');
@@ -55,8 +56,8 @@ interface OverpaymentSimulatorProps {
   /** Externally loaded plan (e.g. a saved scenario); applied when version changes */
   loadedPlan?: OverpaymentPlan | null;
   loadedPlanVersion?: number;
-  /** The no-overpayment projection base. When supplied, the goal-seek block is
-   *  shown (solve the recurring extra for a target interest or payoff month). */
+  /** The no-overpayment projection base. When supplied, the goal-seek inputs
+   *  are shown (solve the recurring extra for a target interest or payoff month). */
   projectionInput?: LoanScheduleInput | null;
   /** Extra header content (e.g. a save-scenario button) */
   headerActions?: React.ReactNode;
@@ -106,9 +107,18 @@ function formToPlan(form: SimulatorFormState): OverpaymentPlan | null {
   };
 }
 
+const buildWindow = (start: string, end: string): SolveWindow => ({
+  ...(start ? { startDate: start } : {}),
+  ...(end ? { endDate: end } : {}),
+});
+
 /**
  * What-if inputs for the loan detail page: a recurring extra payment with an
- * optional date window plus one-off lump sums. Emits the resulting
+ * optional date window plus one-off lump sums. The recurring extra can be
+ * entered directly, or driven backwards from a goal -- a target interest saving
+ * or a target payoff month -- which live-solves the required amount into the
+ * "Extra per payment" field (no separate Calculate step). Entering an amount by
+ * hand and picking a goal are mutually exclusive. Emits the resulting
  * OverpaymentPlan upward on every change; the page recomputes the scenario
  * schedule synchronously.
  */
@@ -124,19 +134,22 @@ export function OverpaymentSimulator({
 }: OverpaymentSimulatorProps) {
   const t = useTranslations('accounts');
   const { formatCurrency } = useNumberFormat();
-  const { formatDate } = useDateFormat();
   const currencySymbol = getCurrencySymbol(currencyCode);
 
   const [form, setForm] = useState<SimulatorFormState>(EMPTY_FORM);
   const [nextLumpSumId, setNextLumpSumId] = useState(0);
   const [detectedExtra, setDetectedExtra] = useState<number | null>(null);
 
-  // Goal-seek: solve the recurring extra for a target interest saving or payoff
-  // month. Results are computed on demand (each solve runs the schedule engine).
+  // Goal-seek: the required recurring extra is solved live from whichever
+  // target the user fills in (only one at a time). goalStatus surfaces an
+  // "already met" / "out of reach" note when no positive amount is required.
   const [goalInterest, setGoalInterest] = useState<number | undefined>(undefined);
   const [goalDate, setGoalDate] = useState('');
-  const [interestSolve, setInterestSolve] = useState<SolveResult | null>(null);
-  const [dateSolve, setDateSolve] = useState<SolveResult | null>(null);
+  const [goalStatus, setGoalStatus] = useState<SolveStatus | null>(null);
+
+  const goalActive = goalInterest !== undefined || goalDate !== '';
+  // A hand-entered amount locks the goal inputs (and vice versa) until cleared.
+  const manualAmountActive = !goalActive && form.recurringAmount !== undefined;
 
   // Apply an externally loaded plan when its version changes (info-from-
   // previous-render pattern; no setState in effect)
@@ -146,10 +159,11 @@ export function OverpaymentSimulator({
     const loadedForm = planToForm(loadedPlan);
     setForm(loadedForm);
     setNextLumpSumId(loadedForm.lumpSums.length);
-    // A loaded scenario replaces the form, so any goal-seek line no longer
-    // describes the schedule on screen.
-    setInterestSolve(null);
-    setDateSolve(null);
+    // A loaded scenario replaces the form, so any goal line no longer describes
+    // the schedule on screen.
+    setGoalInterest(undefined);
+    setGoalDate('');
+    setGoalStatus(null);
   }
 
   // Suggest the historically detected extra principal as a starting point
@@ -171,20 +185,110 @@ export function OverpaymentSimulator({
     };
   }, [accountId]);
 
-  // Every form change invalidates a previously solved goal-seek line -- the
-  // required-extra text would describe a schedule that is no longer on screen.
-  // The solve handlers re-set their result right after calling update(), so a
-  // fresh solve survives its own apply.
-  const update = (next: SimulatorFormState) => {
+  // Plain form update (lump sums, and hand-entered recurring fields). Does not
+  // touch the goal state.
+  const emit = (next: SimulatorFormState) => {
     setForm(next);
-    setInterestSolve(null);
-    setDateSolve(null);
     onPlanChange(formToPlan(next));
   };
 
+  // Solve the required recurring extra for the active goal and write it into the
+  // form. A date goal forces SHORTEN_TERM (lowering the installment keeps the
+  // end date, so it can never hit an earlier payoff). The date window is honored
+  // by the solver, so a short window can legitimately make a target unreachable.
+  const runGoal = (opts: {
+    goalInterest: number | undefined;
+    goalDate: string;
+    mode: OverpaymentMode;
+    start: string;
+    end: string;
+  }) => {
+    setGoalInterest(opts.goalInterest);
+    setGoalDate(opts.goalDate);
+    const forcedMode = opts.goalDate ? 'SHORTEN_TERM' : opts.mode;
+
+    let solve: SolveResult | null = null;
+    if (projectionInput) {
+      const window = buildWindow(opts.start, opts.end);
+      if (opts.goalDate) {
+        solve = solveRecurringForPayoffMonth(projectionInput, opts.goalDate, 'SHORTEN_TERM', 1, window);
+      } else if (opts.goalInterest !== undefined && opts.goalInterest > 0) {
+        solve = solveRecurringForInterestSavings(projectionInput, opts.goalInterest, opts.mode, 1, window);
+      }
+    }
+    setGoalStatus(solve ? solve.status : null);
+
+    const amount = solve && solve.status === 'ok' && solve.amount != null ? solve.amount : undefined;
+    const next: SimulatorFormState = {
+      ...form,
+      recurringStart: opts.start,
+      recurringEnd: opts.end,
+      recurringMode: forcedMode,
+      recurringAmount: amount,
+    };
+    setForm(next);
+    onPlanChange(formToPlan(next));
+  };
+
+  const handleAmountChange = (value: number | undefined) => {
+    // A hand-entered amount takes over from any goal target.
+    setGoalInterest(undefined);
+    setGoalDate('');
+    setGoalStatus(null);
+    emit({ ...form, recurringAmount: value });
+  };
+
+  const handleModeChange = (mode: OverpaymentMode) => {
+    if (goalInterest !== undefined) {
+      runGoal({
+        goalInterest,
+        goalDate: '',
+        mode,
+        start: form.recurringStart,
+        end: form.recurringEnd,
+      });
+    } else {
+      emit({ ...form, recurringMode: mode });
+    }
+  };
+
+  const handleStartChange = (start: string) => {
+    if (goalActive) {
+      runGoal({ goalInterest, goalDate, mode: form.recurringMode, start, end: form.recurringEnd });
+    } else {
+      emit({ ...form, recurringStart: start });
+    }
+  };
+
+  const handleEndChange = (end: string) => {
+    if (goalActive) {
+      runGoal({ goalInterest, goalDate, mode: form.recurringMode, start: form.recurringStart, end });
+    } else {
+      emit({ ...form, recurringEnd: end });
+    }
+  };
+
+  const handleInterestGoalChange = (value: number | undefined) =>
+    runGoal({
+      goalInterest: value,
+      goalDate: '',
+      mode: form.recurringMode,
+      start: form.recurringStart,
+      end: form.recurringEnd,
+    });
+
+  const handleDateGoalChange = (value: string) =>
+    runGoal({
+      goalInterest: undefined,
+      goalDate: value,
+      mode: 'SHORTEN_TERM',
+      start: form.recurringStart,
+      end: form.recurringEnd,
+    });
+
   const addLumpSum = () => {
     if (form.lumpSums.length >= MAX_LUMP_SUMS) return;
-    update({
+    emit({
       ...form,
       lumpSums: [
         ...form.lumpSums,
@@ -195,55 +299,31 @@ export function OverpaymentSimulator({
   };
 
   const updateLumpSum = (id: number, patch: Partial<LumpSumFormRow>) => {
-    update({
+    emit({
       ...form,
       lumpSums: form.lumpSums.map((row) => (row.id === id ? { ...row, ...patch } : row)),
     });
   };
 
   const removeLumpSum = (id: number) => {
-    update({ ...form, lumpSums: form.lumpSums.filter((row) => row.id !== id) });
+    emit({ ...form, lumpSums: form.lumpSums.filter((row) => row.id !== id) });
   };
 
   const reset = () => {
-    update(EMPTY_FORM);
-  };
-
-  const runInterestSolve = () => {
-    if (!projectionInput || goalInterest === undefined || goalInterest < 0) return;
-    const solve = solveRecurringForInterestSavings(projectionInput, goalInterest);
-    if (solve.status === 'ok' && solve.amount != null) applySolvedAmount(solve.amount);
-    // After applySolvedAmount: update() cleared both solve lines, so setting
-    // this one leaves exactly the fresh result visible.
-    setInterestSolve(solve);
-  };
-
-  const runDateSolve = () => {
-    if (!projectionInput || !goalDate) return;
-    const solve = solveRecurringForPayoffMonth(projectionInput, goalDate);
-    if (solve.status === 'ok' && solve.amount != null) applySolvedAmount(solve.amount);
-    setDateSolve(solve);
-  };
-
-  // A solved recurring extra is applied to the simulator immediately -- like
-  // typing into "Extra per payment" -- so the schedule, chart and savings cards
-  // recompute without a separate Apply step. SHORTEN_TERM with no date window
-  // matches how the solver modelled it.
-  const applySolvedAmount = (amount: number) => {
-    update({
-      ...form,
-      recurringAmount: amount,
-      recurringMode: 'SHORTEN_TERM',
-      recurringStart: '',
-      recurringEnd: '',
-    });
+    setGoalInterest(undefined);
+    setGoalDate('');
+    setGoalStatus(null);
+    emit(EMPTY_FORM);
   };
 
   const hasInput =
+    goalActive ||
     form.recurringAmount !== undefined ||
     form.recurringStart !== '' ||
     form.recurringEnd !== '' ||
     form.lumpSums.length > 0;
+
+  const dateGoalActive = goalDate !== '';
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
@@ -264,7 +344,7 @@ export function OverpaymentSimulator({
         {t('loanDetail.simulator.description')}
       </p>
 
-      {detectedExtra !== null && form.recurringAmount === undefined && (
+      {detectedExtra !== null && !goalActive && form.recurringAmount === undefined && (
         <div className="mb-4 flex flex-wrap items-center gap-2 rounded-md bg-blue-50 dark:bg-blue-900/20 px-3 py-2 text-sm text-blue-800 dark:text-blue-200">
           <span>
             {t('loanDetail.simulator.detectedExtraHint', {
@@ -274,108 +354,94 @@ export function OverpaymentSimulator({
           <button
             type="button"
             className="font-medium underline hover:no-underline"
-            onClick={() => update({ ...form, recurringAmount: detectedExtra })}
+            onClick={() => handleAmountChange(detectedExtra)}
           >
             {t('loanDetail.simulator.applyDetected')}
           </button>
         </div>
       )}
 
-      {/* The form is split into three columns: the overpayment itself, and --
-          when a projection is available -- the two goal-seek tools that solve
-          the required overpayment for a target interest saving or payoff date. */}
-      <div className={projectionInput ? 'grid grid-cols-1 lg:grid-cols-3 gap-4' : 'grid grid-cols-1 gap-4'}>
-        {/* Column 1: the overpayment */}
-        <div className="rounded-md border border-gray-200 dark:border-gray-700 p-3 space-y-3">
-          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            {t('loanDetail.simulator.overpaymentColumnTitle')}
-          </h4>
+      {/* The goal targets and the date window are all optional refinements,
+          grouped in one frame; the core amount and mode sit outside it. Inside
+          the frame the two goal targets stack in the first column, vertically
+          centered against the date-window fields beside them. */}
+      <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+        <fieldset className="rounded-md border border-gray-200 dark:border-gray-700 px-4 pb-4 pt-1 lg:flex-1">
+          <legend className="px-1.5 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
+            {t('loanDetail.simulator.optionalGroup')}
+          </legend>
+          <div
+            className={
+              projectionInput
+                ? 'grid grid-cols-1 sm:grid-cols-3 gap-4 lg:items-center'
+                : 'grid grid-cols-1 sm:grid-cols-2 gap-4'
+            }
+          >
+            {projectionInput && (
+              <div className="space-y-3">
+                <CurrencyInput
+                  prefix={currencySymbol}
+                  allowNegative={false}
+                  label={t('loanDetail.simulator.goalSeek.targetInterestLabel')}
+                  value={goalInterest}
+                  onChange={handleInterestGoalChange}
+                  disabled={manualAmountActive}
+                />
+                <DateInput
+                  label={t('loanDetail.simulator.goalSeek.targetDateLabel')}
+                  value={goalDate}
+                  onDateChange={handleDateGoalChange}
+                  disabled={manualAmountActive}
+                />
+              </div>
+            )}
+            <DateInput
+              label={t('loanDetail.simulator.recurringStart')}
+              value={form.recurringStart}
+              onDateChange={handleStartChange}
+            />
+            <DateInput
+              label={t('loanDetail.simulator.recurringEnd')}
+              value={form.recurringEnd}
+              onDateChange={handleEndChange}
+            />
+          </div>
+        </fieldset>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:w-[34%]">
           <CurrencyInput
             prefix={currencySymbol}
             allowNegative={false}
             label={t('loanDetail.simulator.recurringAmount')}
             value={form.recurringAmount}
-            onChange={(value) => update({ ...form, recurringAmount: value })}
+            onChange={handleAmountChange}
+            disabled={goalActive}
           />
           <ModeSelect
             label={t('loanDetail.simulator.modeLabel')}
             value={form.recurringMode}
-            onChange={(recurringMode) => update({ ...form, recurringMode })}
-          />
-          <DateInput
-            label={t('loanDetail.simulator.recurringStart')}
-            value={form.recurringStart}
-            onDateChange={(date) => update({ ...form, recurringStart: date })}
-          />
-          <DateInput
-            label={t('loanDetail.simulator.recurringEnd')}
-            value={form.recurringEnd}
-            onDateChange={(date) => update({ ...form, recurringEnd: date })}
+            onChange={handleModeChange}
+            disabled={dateGoalActive}
           />
         </div>
-
-        {/* Column 2: goal-seek a target interest saving -> required overpayment */}
-        {projectionInput && (
-          <div className="rounded-md border border-gray-200 dark:border-gray-700 p-3 space-y-2">
-            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              {t('loanDetail.simulator.goalSeek.interestColumnTitle')}
-            </h4>
-            <CurrencyInput
-              prefix={currencySymbol}
-              allowNegative={false}
-              label={t('loanDetail.simulator.goalSeek.targetInterestLabel')}
-              value={goalInterest}
-              onChange={setGoalInterest}
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={runInterestSolve}
-              disabled={goalInterest === undefined}
-            >
-              {t('loanDetail.simulator.goalSeek.compute')}
-            </Button>
-            <SolveResultLine
-              solve={interestSolve}
-              formatCurrency={formatCurrency}
-              formatDate={formatDate}
-              currencyCode={currencyCode}
-              unreachableKey="loanDetail.simulator.goalSeek.unreachableInterest"
-            />
-          </div>
-        )}
-
-        {/* Column 3: goal-seek a target payoff month -> required overpayment */}
-        {projectionInput && (
-          <div className="rounded-md border border-gray-200 dark:border-gray-700 p-3 space-y-2">
-            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              {t('loanDetail.simulator.goalSeek.dateColumnTitle')}
-            </h4>
-            <DateInput
-              label={t('loanDetail.simulator.goalSeek.targetDateLabel')}
-              value={goalDate}
-              onDateChange={setGoalDate}
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={runDateSolve}
-              disabled={!goalDate}
-            >
-              {t('loanDetail.simulator.goalSeek.compute')}
-            </Button>
-            <SolveResultLine
-              solve={dateSolve}
-              formatCurrency={formatCurrency}
-              formatDate={formatDate}
-              currencyCode={currencyCode}
-              unreachableKey="loanDetail.simulator.goalSeek.unreachableDate"
-            />
-          </div>
-        )}
       </div>
 
-      {/* Lump sums span the full card width, below the three columns. */}
+      {goalStatus === 'unreachable' && (
+        <p className="mt-2 text-sm text-amber-700 dark:text-amber-400">
+          {t(
+            dateGoalActive
+              ? 'loanDetail.simulator.goalSeek.unreachableDate'
+              : 'loanDetail.simulator.goalSeek.unreachableInterest',
+          )}
+        </p>
+      )}
+      {goalStatus === 'already-met' && (
+        <p className="mt-2 text-sm text-green-700 dark:text-green-400">
+          {t('loanDetail.simulator.goalSeek.alreadyMet')}
+        </p>
+      )}
+
+      {/* Lump sums span the full card width, below the row above. */}
       <div className="mt-5">
         <div className="flex items-center justify-between mb-2">
           <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -441,61 +507,17 @@ export function OverpaymentSimulator({
   );
 }
 
-/** Renders a goal-seek outcome: the required recurring extra with its effect
- *  (already applied to the simulator), or an already-met / unreachable note. */
-function SolveResultLine({
-  solve,
-  formatCurrency,
-  formatDate,
-  currencyCode,
-  unreachableKey,
-}: {
-  solve: SolveResult | null;
-  formatCurrency: (amount: number, currency?: string) => string;
-  formatDate: (date: string) => string;
-  currencyCode: string;
-  unreachableKey: string;
-}) {
-  const t = useTranslations('accounts');
-  if (!solve) return null;
-
-  if (solve.status === 'unreachable') {
-    return <p className="mt-2 text-sm text-amber-700 dark:text-amber-400">{t(unreachableKey)}</p>;
-  }
-  if (solve.status === 'already-met') {
-    return (
-      <p className="mt-2 text-sm text-green-700 dark:text-green-400">
-        {t('loanDetail.simulator.goalSeek.alreadyMet')}
-      </p>
-    );
-  }
-  const result = solve.result!;
-  return (
-    <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-      <span className="font-medium text-gray-900 dark:text-gray-100">
-        {t('loanDetail.simulator.goalSeek.required', {
-          amount: formatCurrency(solve.amount ?? 0, currencyCode),
-        })}
-      </span>
-      <span className="text-gray-500 dark:text-gray-400">
-        {t('loanDetail.simulator.goalSeek.effect', {
-          interest: formatCurrency(solve.interestSaved ?? 0, currencyCode),
-          date: result.payoffDate ? formatDate(result.payoffDate) : '—',
-        })}
-      </span>
-    </div>
-  );
-}
-
 /** Per-overpayment effect selector: shorten the term or lower the installment. */
 function ModeSelect({
   label,
   value,
   onChange,
+  disabled,
 }: {
   label: string;
   value: OverpaymentMode;
   onChange: (mode: OverpaymentMode) => void;
+  disabled?: boolean;
 }) {
   const t = useTranslations('accounts');
   return (
@@ -506,8 +528,9 @@ function ModeSelect({
       <select
         aria-label={label}
         value={value}
+        disabled={disabled}
         onChange={(e) => onChange(e.target.value as OverpaymentMode)}
-        className="block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+        className="block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <option value="SHORTEN_TERM">{t('loanDetail.simulator.modeShortenTerm')}</option>
         <option value="LOWER_INSTALLMENT">{t('loanDetail.simulator.modeLowerInstallment')}</option>

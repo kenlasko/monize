@@ -73,8 +73,8 @@ describe('OverpaymentSimulator', () => {
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Extra per payment'), { target: { value: '150' } });
-      fireEvent.change(screen.getByLabelText('Starting (optional)'), { target: { value: '2026-08-01' } });
-      fireEvent.change(screen.getByLabelText('Until (optional)'), { target: { value: '2027-08-01' } });
+      fireEvent.change(screen.getByLabelText('Starting'), { target: { value: '2026-08-01' } });
+      fireEvent.change(screen.getByLabelText('Until'), { target: { value: '2027-08-01' } });
     });
 
     expect(onPlanChange).toHaveBeenLastCalledWith({
@@ -169,38 +169,74 @@ describe('OverpaymentSimulator', () => {
     expect(screen.getByText('Overpayment Simulator')).toBeInTheDocument();
   });
 
-  it('solves the recurring extra for a target interest saving and applies it immediately', async () => {
-    const projectionInput = {
-      startingBalance: 100000,
-      annualRate: 5,
-      paymentAmount: 600,
-      frequency: 'MONTHLY' as const,
-      firstPaymentDate: new Date('2025-01-15'),
-    };
+  const projectionInput = {
+    startingBalance: 100000,
+    annualRate: 5,
+    paymentAmount: 600,
+    frequency: 'MONTHLY' as const,
+    firstPaymentDate: new Date('2025-01-15'),
+  };
+
+  it('live-solves the recurring extra for a target interest saving and fills the amount', async () => {
     const { onPlanChange } = await renderSimulator({ projectionInput });
 
+    // No Calculate button: entering the target fills "Extra per payment" and
+    // emits the plan immediately.
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Target interest savings'), {
         target: { value: '10000' },
       });
     });
-    await act(async () => {
-      fireEvent.click(screen.getAllByText('Calculate')[0]);
-    });
-
-    // The solved extra is applied to the plan without a separate Apply step,
-    // exactly like typing into "Extra per payment".
-    await waitFor(() => expect(screen.getByText(/Extra needed:/)).toBeInTheDocument());
-    expect(screen.queryByText('Apply')).not.toBeInTheDocument();
 
     const lastPlan = onPlanChange.mock.calls.at(-1)?.[0];
     expect(lastPlan?.recurringExtra?.mode).toBe('SHORTEN_TERM');
     expect(lastPlan?.recurringExtra?.amount).toBeGreaterThan(0);
+    // The solved amount lands in "Extra per payment", which is now read-only.
+    expect(screen.getByLabelText('Extra per payment')).toBeDisabled();
+    expect(screen.getByLabelText('Extra per payment')).not.toHaveValue('');
+    expect(screen.queryByText('Calculate')).not.toBeInTheDocument();
   });
 
-  it('hides the goal-seek block without a projection input', async () => {
+  it('honors the date window when solving a payoff-month goal and forces shorten-term', async () => {
+    const { onPlanChange } = await renderSimulator({ projectionInput });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Target payoff month'), {
+        target: { value: '2030-01-01' },
+      });
+      fireEvent.change(screen.getByLabelText('Starting'), {
+        target: { value: '2025-06-01' },
+      });
+    });
+
+    const lastPlan = onPlanChange.mock.calls.at(-1)?.[0];
+    expect(lastPlan?.recurringExtra?.mode).toBe('SHORTEN_TERM');
+    expect(lastPlan?.recurringExtra?.startDate).toBe('2025-06-01');
+    // A payoff-month goal locks the mode selector to shorten-term.
+    expect(screen.getByLabelText('After an overpayment')).toBeDisabled();
+  });
+
+  it('makes the amount and the goal targets mutually exclusive', async () => {
+    await renderSimulator({ projectionInput });
+
+    // Typing an amount by hand disables the goal targets.
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Extra per payment'), { target: { value: '300' } });
+    });
+    expect(screen.getByLabelText('Target interest savings')).toBeDisabled();
+    expect(screen.getByLabelText('Target payoff month')).toBeDisabled();
+
+    // Clearing the amount re-enables them.
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Extra per payment'), { target: { value: '' } });
+    });
+    expect(screen.getByLabelText('Target interest savings')).not.toBeDisabled();
+  });
+
+  it('hides the goal-seek inputs without a projection input', async () => {
     await renderSimulator();
-    expect(screen.queryByText('Goal seek')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Target interest savings')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Target payoff month')).not.toBeInTheDocument();
   });
 
   it('applies an externally loaded plan when the version changes', async () => {

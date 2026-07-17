@@ -34,17 +34,26 @@ export interface SolveResult {
 
 const ITERATIONS = 60;
 
+/** Optional window that limits the recurring extra to a date range. When set,
+ *  the solved amount only applies within [startDate, endDate], so a short
+ *  window naturally makes tighter targets unreachable. */
+export interface SolveWindow {
+  startDate?: string;
+  endDate?: string;
+}
+
 function scheduleWith(
   base: LoanScheduleInput,
   amount: number,
   mode: OverpaymentMode,
+  window: SolveWindow = {},
 ): LoanScheduleResult {
   if (amount <= 0) {
     return generateLoanSchedule({ ...base, overpayments: undefined });
   }
   return generateLoanSchedule({
     ...base,
-    overpayments: { recurringExtra: { amount, mode } },
+    overpayments: { recurringExtra: { amount, mode, ...window } },
   });
 }
 
@@ -73,6 +82,7 @@ export function solveRecurringForTargetInterest(
   targetInterest: number,
   mode: OverpaymentMode = 'SHORTEN_TERM',
   step = 1,
+  window: SolveWindow = {},
 ): SolveResult {
   return solveTargetInterestWithBaseline(
     base,
@@ -80,6 +90,7 @@ export function solveRecurringForTargetInterest(
     targetInterest,
     mode,
     step,
+    window,
   );
 }
 
@@ -91,23 +102,24 @@ function solveTargetInterestWithBaseline(
   targetInterest: number,
   mode: OverpaymentMode,
   step: number,
+  window: SolveWindow = {},
 ): SolveResult {
   if (baseline.totalInterest <= targetInterest) {
     return { status: 'already-met', amount: 0, result: baseline, interestSaved: 0 };
   }
   const hi0 = upperBound(base);
-  if (scheduleWith(base, hi0, mode).totalInterest > targetInterest) {
+  if (scheduleWith(base, hi0, mode, window).totalInterest > targetInterest) {
     return { status: 'unreachable', amount: null, result: null, interestSaved: null };
   }
   let lo = 0;
   let hi = hi0;
   for (let i = 0; i < ITERATIONS; i++) {
     const mid = (lo + hi) / 2;
-    if (scheduleWith(base, mid, mode).totalInterest <= targetInterest) hi = mid;
+    if (scheduleWith(base, mid, mode, window).totalInterest <= targetInterest) hi = mid;
     else lo = mid;
   }
   const amount = roundUpTo(hi, step);
-  const result = scheduleWith(base, amount, mode);
+  const result = scheduleWith(base, amount, mode, window);
   return {
     status: 'ok',
     amount,
@@ -130,6 +142,7 @@ export function solveRecurringForInterestSavings(
   targetSavings: number,
   mode: OverpaymentMode = 'SHORTEN_TERM',
   step = 1,
+  window: SolveWindow = {},
 ): SolveResult {
   const baseline = scheduleWith(base, 0, mode);
   return solveTargetInterestWithBaseline(
@@ -138,6 +151,7 @@ export function solveRecurringForInterestSavings(
     baseline.totalInterest - targetSavings,
     mode,
     step,
+    window,
   );
 }
 
@@ -157,6 +171,7 @@ export function solveRecurringForPayoffMonth(
   targetDate: string,
   mode: OverpaymentMode = 'SHORTEN_TERM',
   step = 1,
+  window: SolveWindow = {},
 ): SolveResult {
   const targetMonth = targetDate.slice(0, 7);
   const paysOffBy = (r: LoanScheduleResult): boolean =>
@@ -167,18 +182,18 @@ export function solveRecurringForPayoffMonth(
     return { status: 'already-met', amount: 0, result: baseline, interestSaved: 0 };
   }
   const hi0 = upperBound(base);
-  if (!paysOffBy(scheduleWith(base, hi0, mode))) {
+  if (!paysOffBy(scheduleWith(base, hi0, mode, window))) {
     return { status: 'unreachable', amount: null, result: null, interestSaved: null };
   }
   let lo = 0;
   let hi = hi0;
   for (let i = 0; i < ITERATIONS; i++) {
     const mid = (lo + hi) / 2;
-    if (paysOffBy(scheduleWith(base, mid, mode))) hi = mid;
+    if (paysOffBy(scheduleWith(base, mid, mode, window))) hi = mid;
     else lo = mid;
   }
   const amount = roundUpTo(hi, step);
-  const result = scheduleWith(base, amount, mode);
+  const result = scheduleWith(base, amount, mode, window);
   return {
     status: 'ok',
     amount,
