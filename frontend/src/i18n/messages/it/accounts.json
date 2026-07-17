@@ -454,7 +454,7 @@
       "newInstallment": "Nuova rata",
       "installmentDrop": "{payment} (−{reduction})",
       "monthlyPayment": "Rata mensile",
-      "monthlyPaymentExtra": "+ {amount} extra per rata"
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "Cronologia di estinzione",

@@ -37,7 +37,6 @@ import {
   ScenarioComparison,
   compareSchedules,
   generateLoanSchedule,
-  perPaymentExtraAmount,
 } from '@/lib/loan-schedule';
 import { scenarioToPlan } from '@/lib/loan-scenarios';
 import type { Account } from '@/types/account';
@@ -353,17 +352,15 @@ export function LoanDetailView({
                       <ComparisonSummaryCards
                         comparison={comparison}
                         currencyCode={account.currencyCode}
-                        recurringExtra={
-                          plan?.recurringExtra && projectionInput
-                            ? plan.recurringExtra.frequency
-                              ? perPaymentExtraAmount(
-                                  plan.recurringExtra.amount,
-                                  plan.recurringExtra.frequency,
-                                  projectionInput.frequency,
-                                )
-                              : plan.recurringExtra.amount
-                            : 0
+                        recurringOverpayment={
+                          plan?.recurringExtra
+                            ? {
+                                amount: plan.recurringExtra.amount,
+                                frequency: plan.recurringExtra.frequency,
+                              }
+                            : undefined
                         }
+                        loanFrequency={projectionInput?.frequency}
                       />
                     </div>
                   )}

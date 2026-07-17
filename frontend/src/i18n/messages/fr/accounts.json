@@ -454,7 +454,7 @@
       "newInstallment": "Nouvelle mensualité",
       "installmentDrop": "{payment} (−{reduction})",
       "monthlyPayment": "Paiement mensuel",
-      "monthlyPaymentExtra": "+ {amount} de plus par paiement"
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "Chronologie du remboursement",

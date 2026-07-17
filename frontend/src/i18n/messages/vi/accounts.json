@@ -454,7 +454,7 @@
       "newInstallment": "Kỳ trả mới",
       "installmentDrop": "{payment} (−{reduction})",
       "monthlyPayment": "Khoản trả hàng tháng",
-      "monthlyPaymentExtra": "+ {amount} trả thêm mỗi kỳ"
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "Dòng thời gian trả nợ",

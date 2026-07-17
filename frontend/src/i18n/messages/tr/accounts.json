@@ -454,7 +454,7 @@
       "newInstallment": "Yeni Taksit",
       "installmentDrop": "{payment} (−{reduction})",
       "monthlyPayment": "Aylık ödeme",
-      "monthlyPaymentExtra": "+ ödeme başına {amount} ek"
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "Kapanış Zaman Çizelgesi",

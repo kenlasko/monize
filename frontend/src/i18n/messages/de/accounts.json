@@ -454,7 +454,7 @@
       "newInstallment": "Neue Rate",
       "installmentDrop": "{payment} (−{reduction})",
       "monthlyPayment": "Monatliche Rate",
-      "monthlyPaymentExtra": "+ {amount} zusätzlich pro Rate"
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "Tilgungsverlauf",

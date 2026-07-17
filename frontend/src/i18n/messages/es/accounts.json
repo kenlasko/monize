@@ -454,7 +454,7 @@
       "newInstallment": "Nueva cuota",
       "installmentDrop": "{payment} (−{reduction})",
       "monthlyPayment": "Cuota mensual",
-      "monthlyPaymentExtra": "+ {amount} extra por cuota"
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "Cronología de liquidación",

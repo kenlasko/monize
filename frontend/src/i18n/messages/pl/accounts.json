@@ -454,7 +454,7 @@
       "newInstallment": "Nowa rata",
       "installmentDrop": "{payment} (−{reduction})",
       "monthlyPayment": "Miesięczna płatność",
-      "monthlyPaymentExtra": "+ {amount} nadpłaty na ratę"
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "Oś czasu spłaty",

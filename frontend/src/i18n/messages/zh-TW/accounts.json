@@ -454,7 +454,7 @@
       "newInstallment": "新還款額",
       "installmentDrop": "{payment} (−{reduction})",
       "monthlyPayment": "每月還款",
-      "monthlyPaymentExtra": "+ 每期額外 {amount}"
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "還清時間軸",

@@ -1,17 +1,34 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { ScenarioComparison } from '@/lib/loan-schedule';
+import {
+  OverpaymentFrequency,
+  ScenarioComparison,
+  ScheduleFrequency,
+  getPeriodsPerYear,
+  overpaymentsPerYear,
+  perPaymentExtraAmount,
+} from '@/lib/loan-schedule';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 
 interface ComparisonSummaryCardsProps {
   comparison: ScenarioComparison;
   currencyCode: string;
-  /** The scenario's recurring extra per payment, when any -- added to the
-   *  installment to show the resulting monthly payment. */
-  recurringExtra?: number;
+  /** The scenario's recurring overpayment (amount at its cadence), when any. */
+  recurringOverpayment?: { amount: number; frequency?: OverpaymentFrequency };
+  /** The loan's own payment cadence, needed to place a recurring overpayment. */
+  loanFrequency?: ScheduleFrequency;
 }
+
+const FREQUENCY_LABEL_KEY: Record<OverpaymentFrequency, string> = {
+  ONE_OFF: 'loanDetail.simulator.frequencyOneOff',
+  WEEKLY: 'loanDetail.simulator.frequencyWeekly',
+  BIWEEKLY: 'loanDetail.simulator.frequencyBiweekly',
+  MONTHLY: 'loanDetail.simulator.frequencyMonthly',
+  QUARTERLY: 'loanDetail.simulator.frequencyQuarterly',
+  ANNUALLY: 'loanDetail.simulator.frequencyAnnually',
+};
 
 /**
  * Baseline-versus-scenario outcome cards: the new payoff date, time saved,
@@ -21,7 +38,8 @@ interface ComparisonSummaryCardsProps {
 export function ComparisonSummaryCards({
   comparison,
   currencyCode,
-  recurringExtra = 0,
+  recurringOverpayment,
+  loanFrequency,
 }: ComparisonSummaryCardsProps) {
   const t = useTranslations('accounts');
   const { formatCurrency } = useNumberFormat();
@@ -36,11 +54,36 @@ export function ComparisonSummaryCards({
   // outcome is the smaller installment instead.
   const isLowerInstallment = comparison.installmentReduction > 0.005;
 
+  const opAmount = recurringOverpayment?.amount ?? 0;
+  const opFrequency = recurringOverpayment?.frequency;
+  // A cadence sparser than the loan's payments (e.g. quarterly on a monthly
+  // loan) does not fall on every payment, so it is not part of the regular
+  // monthly payment -- it shows only as the periodic overpayment note below.
+  const isSparse =
+    !!opFrequency &&
+    !!loanFrequency &&
+    overpaymentsPerYear(opFrequency) > 0 &&
+    overpaymentsPerYear(opFrequency) < getPeriodsPerYear(loanFrequency);
+  const perPaymentExtra =
+    opAmount > 0 && !isSparse
+      ? opFrequency && loanFrequency
+        ? perPaymentExtraAmount(opAmount, opFrequency, loanFrequency)
+        : opAmount
+      : 0;
+
   // The resulting monthly outlay: for lower-installment the recomputed smaller
-  // installment; otherwise the unchanged installment plus the recurring extra.
+  // installment; otherwise the unchanged installment plus any per-payment extra.
   const monthlyPayment = isLowerInstallment
     ? scenario.finalPaymentAmount
-    : Math.round((scenario.finalPaymentAmount + recurringExtra) * 100) / 100;
+    : Math.round((scenario.finalPaymentAmount + perPaymentExtra) * 100) / 100;
+
+  const overpaymentNote =
+    !isLowerInstallment && opAmount > 0
+      ? t('loanDetail.comparison.overpaymentAtFrequency', {
+          frequency: t(FREQUENCY_LABEL_KEY[opFrequency ?? 'MONTHLY']),
+          amount: formatCurrency(opAmount, currencyCode),
+        })
+      : undefined;
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
@@ -78,13 +121,7 @@ export function ComparisonSummaryCards({
         label={t('loanDetail.comparison.monthlyPayment')}
         value={formatCurrency(monthlyPayment, currencyCode)}
         valueClass="text-gray-900 dark:text-gray-100"
-        subvalue={
-          !isLowerInstallment && recurringExtra > 0
-            ? t('loanDetail.comparison.monthlyPaymentExtra', {
-                amount: formatCurrency(recurringExtra, currencyCode),
-              })
-            : undefined
-        }
+        subvalue={overpaymentNote}
       />
       <Card
         label={t('loanDetail.comparison.totalExtraContributed')}

@@ -454,7 +454,7 @@
       "newInstallment": "Новий платіж",
       "installmentDrop": "{payment} (−{reduction})",
       "monthlyPayment": "Щомісячний платіж",
-      "monthlyPaymentExtra": "+ {amount} додатково до платежу"
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "Хронологія погашення",

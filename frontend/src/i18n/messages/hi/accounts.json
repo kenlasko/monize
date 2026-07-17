@@ -454,7 +454,7 @@
       "newInstallment": "नई किस्त",
       "installmentDrop": "{payment} (−{reduction})",
       "monthlyPayment": "मासिक भुगतान",
-      "monthlyPaymentExtra": "+ {amount} अतिरिक्त प्रति भुगतान"
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "चुकौती समयरेखा",

@@ -454,7 +454,7 @@
       "newInstallment": "Nova parcela",
       "installmentDrop": "{payment} (−{reduction})",
       "monthlyPayment": "Pagamento mensal",
-      "monthlyPaymentExtra": "+ {amount} extra por pagamento"
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "Linha do tempo de quitação",

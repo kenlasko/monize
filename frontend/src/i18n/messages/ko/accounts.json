@@ -454,7 +454,7 @@
       "newInstallment": "새 상환액",
       "installmentDrop": "{payment} (−{reduction})",
       "monthlyPayment": "월 상환액",
-      "monthlyPaymentExtra": "+ 회차당 {amount} 추가"
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "완납 타임라인",

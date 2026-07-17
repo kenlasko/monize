@@ -454,7 +454,7 @@
       "newInstallment": "Angsuran Baru",
       "installmentDrop": "{payment} (−{reduction})",
       "monthlyPayment": "Pembayaran bulanan",
-      "monthlyPaymentExtra": "+ {amount} ekstra per pembayaran"
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "Linimasa Pelunasan",

@@ -530,11 +530,11 @@
       "paymentsSaved": "[XX-{count, plural, one {# payment} other {# payments}}-XX]",
       "interestSaved": "[XX-Interest Saved-XX]",
       "monthlyPayment": "[XX-Monthly Payment-XX]",
-      "monthlyPaymentExtra": "[XX-+ {amount} extra per payment-XX]",
       "newInstallment": "[XX-New Installment-XX]",
       "installmentDrop": "[XX-{payment} (−{reduction})-XX]",
       "totalExtraContributed": "[XX-Total Extra Contributed-XX]",
-      "beyondProjection": "[XX-Beyond projection-XX]"
+      "beyondProjection": "[XX-Beyond projection-XX]",
+      "overpaymentAtFrequency": "[XX-{frequency}: +{amount}-XX]"
     },
     "chart": {
       "title": "[XX-Payoff Timeline-XX]",

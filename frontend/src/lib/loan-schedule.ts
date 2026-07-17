@@ -84,19 +84,6 @@ export function perPaymentExtraAmount(
   return (amount * per) / getPeriodsPerYear(loanFrequency);
 }
 
-/** Inverse of perPaymentExtraAmount: the per-frequency amount that yields a
- *  given per-payment extra. Used to render a solved (per-payment) result back in
- *  the user's chosen cadence. */
-export function frequencyAmountFromPerPayment(
-  perPayment: number,
-  frequency: OverpaymentFrequency,
-  loanFrequency: ScheduleFrequency,
-): number {
-  const per = overpaymentsPerYear(frequency);
-  if (per <= 0) return 0;
-  return (perPayment * getPeriodsPerYear(loanFrequency)) / per;
-}
-
 export interface RecurringExtra {
   /** Amount per `frequency` (levelled across loan payments during projection). */
   amount: number;

@@ -454,7 +454,7 @@
       "newInstallment": "新しい返済額",
       "installmentDrop": "{payment} (−{reduction})",
       "monthlyPayment": "毎月の返済額",
-      "monthlyPaymentExtra": "+ 返済ごとに{amount}追加"
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "完済タイムライン",
