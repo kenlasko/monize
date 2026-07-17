@@ -86,6 +86,10 @@ describe('SupportBackupModal', () => {
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Generate' }));
     });
+    // The password-saved confirmation gates the actual export
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'I saved it -- generate' }));
+    });
 
     await waitFor(() => expect(mockExport).toHaveBeenCalledTimes(1));
     const input = mockExport.mock.calls[0][0];
@@ -113,6 +117,10 @@ describe('SupportBackupModal', () => {
     });
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Generate' }));
+    });
+    // The password-saved confirmation gates the actual export
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'I saved it -- generate' }));
     });
 
     await waitFor(() => expect(mockExport).toHaveBeenCalledTimes(1));
@@ -156,11 +164,29 @@ describe('SupportBackupModal', () => {
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Generate' }));
     });
+    // The password-saved confirmation gates the actual export
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'I saved it -- generate' }));
+    });
 
     await waitFor(() => expect(mockExport).toHaveBeenCalledTimes(1));
     const input = mockExport.mock.calls[0][0];
     expect(input.dateFrom).toBe('2026-01-01');
     expect(input.dateTo).toBe('2026-06-30');
+  });
+
+  it('does not export when the password-saved confirmation is cancelled', async () => {
+    await open();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Generate' }));
+    });
+    expect(screen.getByText('Did you save the password?')).toBeInTheDocument();
+    await act(async () => {
+      // Two Cancel buttons are on screen (modal footer + dialog); the
+      // dialog's renders last.
+      fireEvent.click(screen.getAllByRole('button', { name: 'Cancel' }).at(-1)!);
+    });
+    expect(mockExport).not.toHaveBeenCalled();
   });
 
   it('blocks generating when the password is cleared', async () => {

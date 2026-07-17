@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { Modal } from '@/components/ui/Modal';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { DateInput } from '@/components/ui/DateInput';
@@ -53,6 +54,9 @@ export function SupportBackupModal({ isOpen, onClose }: SupportBackupModalProps)
   } | null>(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  // Generate first asks whether the password was saved somewhere -- the file
+  // is unreadable without it and it cannot be recovered later.
+  const [confirmPasswordSaved, setConfirmPasswordSaved] = useState(false);
 
   const multiplier = Number(multiplierText);
 
@@ -120,6 +124,7 @@ export function SupportBackupModal({ isOpen, onClose }: SupportBackupModalProps)
   };
 
   const runGenerate = async () => {
+    setConfirmPasswordSaved(false);
     if (!canRun) return;
     setIsGenerating(true);
     try {
@@ -324,11 +329,26 @@ export function SupportBackupModal({ isOpen, onClose }: SupportBackupModalProps)
           >
             {t('preview')}
           </Button>
-          <Button onClick={runGenerate} isLoading={isGenerating} disabled={!canRun}>
+          <Button
+            onClick={() => setConfirmPasswordSaved(true)}
+            isLoading={isGenerating}
+            disabled={!canRun}
+          >
             {t('generate')}
           </Button>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmPasswordSaved}
+        title={t('confirmPasswordTitle')}
+        message={t('confirmPasswordMessage')}
+        confirmLabel={t('confirmPasswordConfirm')}
+        cancelLabel={tc('cancel')}
+        variant="warning"
+        onConfirm={runGenerate}
+        onCancel={() => setConfirmPasswordSaved(false)}
+      />
     </Modal>
   );
 }
