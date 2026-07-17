@@ -376,6 +376,7 @@ export const RULES: Record<string, TableRules> = {
     name: mask,
     recurring_extra_amount: scale,
     recurring_extra_mode: keep,
+    recurring_extra_frequency: keep,
     recurring_extra_start_date: keep,
     recurring_extra_end_date: keep,
     lump_sums: jsonb("lumpSums"),
