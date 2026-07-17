@@ -1614,6 +1614,85 @@ LFood/
       expect(tx.tagNames).toEqual([]);
     });
   });
+
+  describe("parseQif - voided (Microsoft Money) transactions", () => {
+    it("strips a VOID payee prefix, marks the row void, and flags it", () => {
+      const qif = `!Type:Bank
+D01/15/2026
+T0.00
+PVOID Grocery Store
+MWeekly shop
+^`;
+      const result = parseQif(qif);
+      expect(result.transactions).toHaveLength(1);
+      const tx = result.transactions[0];
+      expect(tx.payee).toBe("Grocery Store");
+      expect(tx.void).toBe(true);
+      expect(tx.voidedByExport).toBe(true);
+      // The memo is left untouched; the importer appends the void note.
+      expect(tx.memo).toBe("Weekly shop");
+    });
+
+    it("collapses extra whitespace after the VOID prefix", () => {
+      const qif = `!Type:Bank
+D01/15/2026
+T0.00
+PVOID   Coffee Shop
+^`;
+      const tx = parseQif(qif).transactions[0];
+      expect(tx.payee).toBe("Coffee Shop");
+      expect(tx.void).toBe(true);
+      expect(tx.voidedByExport).toBe(true);
+    });
+
+    it("leaves a normal payee unvoided", () => {
+      const qif = `!Type:Bank
+D01/15/2026
+T-50.00
+PGrocery Store
+^`;
+      const tx = parseQif(qif).transactions[0];
+      expect(tx.payee).toBe("Grocery Store");
+      expect(tx.void).toBeFalsy();
+      expect(tx.voidedByExport).toBeFalsy();
+    });
+
+    it("does not void a payee where VOID is only the start of a longer word", () => {
+      const qif = `!Type:Bank
+D01/15/2026
+T-50.00
+PVOIDANCE Systems
+^`;
+      const tx = parseQif(qif).transactions[0];
+      expect(tx.payee).toBe("VOIDANCE Systems");
+      expect(tx.void).toBeFalsy();
+      expect(tx.voidedByExport).toBeFalsy();
+    });
+
+    it("does not void a payee that is exactly VOID with no following text", () => {
+      const qif = `!Type:Bank
+D01/15/2026
+T-50.00
+PVOID
+^`;
+      const tx = parseQif(qif).transactions[0];
+      expect(tx.payee).toBe("VOID");
+      expect(tx.void).toBeFalsy();
+      expect(tx.voidedByExport).toBeFalsy();
+    });
+
+    it("matches VOID case-sensitively so lowercase 'void ' payees are kept", () => {
+      const qif = `!Type:Bank
+D01/15/2026
+T-50.00
+Pvoid where prohibited
+^`;
+      const tx = parseQif(qif).transactions[0];
+      expect(tx.payee).toBe("void where prohibited");
+      expect(tx.void).toBeFalsy();
+      expect(tx.voidedByExport).toBeFalsy();
+    });
+  });
 });
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -2121,6 +2200,17 @@ T-50.00
       const qif = `!Account\nNChecking\nTBank\n^\n!Type:Bank\nD01/15/2026\nT-50.00\n^\n`;
       const result = parseQifFull(qif, "MM/DD/YYYY");
       expect(result.tagDefs).toHaveLength(0);
+    });
+  });
+
+  describe("voided (Microsoft Money) transactions", () => {
+    it("strips a VOID payee prefix and flags the row in an account block", () => {
+      const qif = `!Account\nNChecking\nTBank\n^\n!Type:Bank\nD01/15/2026\nT0.00\nPVOID Grocery Store\n^\n`;
+      const result = parseQifFull(qif, "MM/DD/YYYY");
+      const tx = result.accountBlocks[0].transactions[0];
+      expect(tx.payee).toBe("Grocery Store");
+      expect(tx.void).toBe(true);
+      expect(tx.voidedByExport).toBe(true);
     });
   });
 });

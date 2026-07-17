@@ -3,5 +3,8 @@
   "accountSuffix": {
     "cash": "[XX-Cash-XX]",
     "brokerage": "[XX-Brokerage-XX]"
+  },
+  "import": {
+    "voidedTransactionNote": "[XX-Voided in the source; the original amount was omitted from the export and imported as zero.-XX]"
   }
 }

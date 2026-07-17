@@ -11,6 +11,7 @@ import { PayeeAlias } from "../payees/entities/payee-alias.entity";
 import { TransactionTag } from "../tags/entities/transaction-tag.entity";
 import { TransactionSplitTag } from "../tags/entities/transaction-split-tag.entity";
 import { ImportContext, updateAccountBalance } from "./import-context";
+import { tr } from "../i18n/translate";
 
 @Injectable()
 export class ImportRegularProcessorService {
@@ -70,7 +71,7 @@ export class ImportRegularProcessorService {
       amount: qifTx.amount,
       payeeName: resolvedPayee.payeeName,
       payeeId: resolvedPayee.payeeId,
-      description: qifTx.memo,
+      description: this.buildImportDescription(qifTx),
       referenceNumber: qifTx.number,
       categoryId: effectiveCategoryId,
       status,
@@ -107,6 +108,24 @@ export class ImportRegularProcessorService {
     }
 
     ctx.importResult.imported++;
+  }
+
+  /**
+   * Build the stored description for an imported transaction. When the row was
+   * voided by stripping a Microsoft Money "VOID " payee prefix, append an
+   * explanatory note: Money drops the original amount from the export, so the
+   * transaction lands with a zero amount and the note records that it was
+   * altered during the export/import process.
+   */
+  private buildImportDescription(qifTx: any): string {
+    if (!qifTx.voidedByExport) {
+      return qifTx.memo;
+    }
+    const note = tr(
+      "common.import.voidedTransactionNote",
+      "Voided in the source; the original amount was omitted from the export and imported as zero.",
+    );
+    return qifTx.memo ? `${qifTx.memo} ${note}` : note;
   }
 
   private async isDuplicateTransfer(

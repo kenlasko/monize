@@ -194,6 +194,68 @@ describe("ImportRegularProcessorService", () => {
       expect(createCall[1].status).toBe(TransactionStatus.VOID);
     });
 
+    // A transaction may be preceded by a payee create call, so locate the
+    // transaction create by its transaction-only transactionDate field.
+    const findTxCreate = (ctx: ImportContext) =>
+      ctx.queryRunner.manager.create.mock.calls.find(
+        (call: any[]) => call[1].transactionDate !== undefined,
+      );
+
+    it("appends the void note to the description for export-voided rows", async () => {
+      const ctx = makeContext();
+      const qifTx = {
+        date: "2025-01-15",
+        amount: 0,
+        payee: "Grocery Store",
+        memo: "Weekly groceries",
+        void: true,
+        voidedByExport: true,
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      const createCall = findTxCreate(ctx);
+      expect(createCall[1].status).toBe(TransactionStatus.VOID);
+      expect(createCall[1].description).toBe(
+        "Weekly groceries Voided in the source; the original amount was omitted from the export and imported as zero.",
+      );
+    });
+
+    it("uses only the void note when an export-voided row has no memo", async () => {
+      const ctx = makeContext();
+      const qifTx = {
+        date: "2025-01-15",
+        amount: 0,
+        payee: "Grocery Store",
+        memo: "",
+        void: true,
+        voidedByExport: true,
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      const createCall = findTxCreate(ctx);
+      expect(createCall[1].description).toBe(
+        "Voided in the source; the original amount was omitted from the export and imported as zero.",
+      );
+    });
+
+    it("does not append the void note for a CSV-style void without the export flag", async () => {
+      const ctx = makeContext();
+      const qifTx = {
+        date: "2025-01-15",
+        amount: -25,
+        memo: "Cancelled payment",
+        void: true,
+      };
+
+      await service.processTransaction(ctx, qifTx);
+
+      const createCall = findTxCreate(ctx);
+      expect(createCall[1].status).toBe(TransactionStatus.VOID);
+      expect(createCall[1].description).toBe("Cancelled payment");
+    });
+
     it("should map category from categoryMap", async () => {
       const categoryMap = new Map<string, string | null>();
       categoryMap.set("Groceries", "cat-groceries");

@@ -34,11 +34,19 @@ export interface QifTransaction {
   reconciled: boolean;
   /**
    * True when the source marked the transaction as void / cancelled / deleted.
-   * QIF itself has no void flag, so this is always false for QIF-sourced
-   * transactions but may be set by CSV imports that map a reconciliation
-   * status column.
+   * QIF itself has no void flag, so this is set for QIF-sourced transactions
+   * only when a Microsoft Money "VOID " payee prefix is detected (see
+   * `voidedByExport`); it may also be set by CSV imports that map a
+   * reconciliation status column.
    */
   void?: boolean;
+  /**
+   * True when this row was voided by stripping a Microsoft Money "VOID " payee
+   * prefix. Money exports voided transactions as $0.00 rows with the amount
+   * dropped, so the importer flags these to append an explanatory note that
+   * the original amount was lost in the export. Never set by CSV imports.
+   */
+  voidedByExport?: boolean;
   category: string;
   tagNames?: string[];
   isTransfer: boolean;
@@ -94,6 +102,27 @@ function truncate(value: string, maxLength: number): string {
   return sanitized.length > maxLength
     ? sanitized.substring(0, maxLength)
     : sanitized;
+}
+
+// Microsoft Money exports voided transactions as $0.00 rows whose payee is
+// prefixed with the literal word "VOID " (uppercase, followed by whitespace).
+// QIF has no native void flag, so this is a lossy encoding: the real amount is
+// dropped so the row never affects the imported balance. Recover the intent by
+// stripping the prefix -- so the payee matches its non-voided counterparts
+// instead of spawning a distinct "VOID ..." payee -- and flag the row so the
+// importer marks it VOID and records that the amount was lost in the export.
+const VOID_PAYEE_PREFIX = /^VOID\s+/;
+
+// Detect and strip a Money "VOID " payee prefix, flagging the transaction when
+// found. Returns the payee with the prefix removed (or unchanged when absent).
+function stripVoidedPayeePrefix(
+  tx: Partial<QifTransaction>,
+  rawPayee: string,
+): string {
+  if (!VOID_PAYEE_PREFIX.test(rawPayee)) return rawPayee;
+  tx.void = true;
+  tx.voidedByExport = true;
+  return rawPayee.replace(VOID_PAYEE_PREFIX, "").trim();
 }
 
 // Field length limits matching database column constraints
@@ -262,9 +291,13 @@ export function parseQif(
         currentTransaction.amount = parseQifAmount(value) ?? 0;
         break;
 
-      case "P": // Payee
-        currentTransaction.payee = truncate(value, FIELD_LIMITS.PAYEE);
+      case "P": {
+        // Payee. Strip a Money "VOID " prefix so voided rows match their
+        // normal payee and get flagged for VOID status.
+        const payee = stripVoidedPayeePrefix(currentTransaction, value);
+        currentTransaction.payee = truncate(payee, FIELD_LIMITS.PAYEE);
         break;
+      }
 
       case "M": // Memo
         currentTransaction.memo = truncate(value, FIELD_LIMITS.MEMO);
@@ -1150,9 +1183,13 @@ export function parseQifFull(
         currentTransaction.amount = parseQifAmount(value) ?? 0;
         break;
 
-      case "P":
-        currentTransaction.payee = truncate(value, FIELD_LIMITS.PAYEE);
+      case "P": {
+        // Payee. Strip a Money "VOID " prefix so voided rows match their
+        // normal payee and get flagged for VOID status (see parseQif).
+        const payee = stripVoidedPayeePrefix(currentTransaction, value);
+        currentTransaction.payee = truncate(payee, FIELD_LIMITS.PAYEE);
         break;
+      }
 
       case "M":
         currentTransaction.memo = truncate(value, FIELD_LIMITS.MEMO);
