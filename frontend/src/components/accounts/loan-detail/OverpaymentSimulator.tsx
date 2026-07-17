@@ -281,31 +281,101 @@ export function OverpaymentSimulator({
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <CurrencyInput
-          prefix={currencySymbol}
-          allowNegative={false}
-          label={t('loanDetail.simulator.recurringAmount')}
-          value={form.recurringAmount}
-          onChange={(value) => update({ ...form, recurringAmount: value })}
-        />
-        <DateInput
-          label={t('loanDetail.simulator.recurringStart')}
-          value={form.recurringStart}
-          onDateChange={(date) => update({ ...form, recurringStart: date })}
-        />
-        <DateInput
-          label={t('loanDetail.simulator.recurringEnd')}
-          value={form.recurringEnd}
-          onDateChange={(date) => update({ ...form, recurringEnd: date })}
-        />
-        <ModeSelect
-          label={t('loanDetail.simulator.modeLabel')}
-          value={form.recurringMode}
-          onChange={(recurringMode) => update({ ...form, recurringMode })}
-        />
+      {/* The form is split into three columns: the overpayment itself, and --
+          when a projection is available -- the two goal-seek tools that solve
+          the required overpayment for a target interest saving or payoff date. */}
+      <div className={projectionInput ? 'grid grid-cols-1 lg:grid-cols-3 gap-4' : 'grid grid-cols-1 gap-4'}>
+        {/* Column 1: the overpayment */}
+        <div className="rounded-md border border-gray-200 dark:border-gray-700 p-3 space-y-3">
+          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+            {t('loanDetail.simulator.overpaymentColumnTitle')}
+          </h4>
+          <CurrencyInput
+            prefix={currencySymbol}
+            allowNegative={false}
+            label={t('loanDetail.simulator.recurringAmount')}
+            value={form.recurringAmount}
+            onChange={(value) => update({ ...form, recurringAmount: value })}
+          />
+          <ModeSelect
+            label={t('loanDetail.simulator.modeLabel')}
+            value={form.recurringMode}
+            onChange={(recurringMode) => update({ ...form, recurringMode })}
+          />
+          <DateInput
+            label={t('loanDetail.simulator.recurringStart')}
+            value={form.recurringStart}
+            onDateChange={(date) => update({ ...form, recurringStart: date })}
+          />
+          <DateInput
+            label={t('loanDetail.simulator.recurringEnd')}
+            value={form.recurringEnd}
+            onDateChange={(date) => update({ ...form, recurringEnd: date })}
+          />
+        </div>
+
+        {/* Column 2: goal-seek a target interest saving -> required overpayment */}
+        {projectionInput && (
+          <div className="rounded-md border border-gray-200 dark:border-gray-700 p-3 space-y-2">
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              {t('loanDetail.simulator.goalSeek.interestColumnTitle')}
+            </h4>
+            <CurrencyInput
+              prefix={currencySymbol}
+              allowNegative={false}
+              label={t('loanDetail.simulator.goalSeek.targetInterestLabel')}
+              value={goalInterest}
+              onChange={setGoalInterest}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={runInterestSolve}
+              disabled={goalInterest === undefined}
+            >
+              {t('loanDetail.simulator.goalSeek.compute')}
+            </Button>
+            <SolveResultLine
+              solve={interestSolve}
+              formatCurrency={formatCurrency}
+              formatDate={formatDate}
+              currencyCode={currencyCode}
+              unreachableKey="loanDetail.simulator.goalSeek.unreachableInterest"
+            />
+          </div>
+        )}
+
+        {/* Column 3: goal-seek a target payoff month -> required overpayment */}
+        {projectionInput && (
+          <div className="rounded-md border border-gray-200 dark:border-gray-700 p-3 space-y-2">
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              {t('loanDetail.simulator.goalSeek.dateColumnTitle')}
+            </h4>
+            <DateInput
+              label={t('loanDetail.simulator.goalSeek.targetDateLabel')}
+              value={goalDate}
+              onDateChange={setGoalDate}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={runDateSolve}
+              disabled={!goalDate}
+            >
+              {t('loanDetail.simulator.goalSeek.compute')}
+            </Button>
+            <SolveResultLine
+              solve={dateSolve}
+              formatCurrency={formatCurrency}
+              formatDate={formatDate}
+              currencyCode={currencyCode}
+              unreachableKey="loanDetail.simulator.goalSeek.unreachableDate"
+            />
+          </div>
+        )}
       </div>
 
+      {/* Lump sums span the full card width, below the three columns. */}
       <div className="mt-5">
         <div className="flex items-center justify-between mb-2">
           <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -365,77 +435,6 @@ export function OverpaymentSimulator({
           </div>
         )}
       </div>
-
-      {projectionInput && (
-        <div className="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700">
-          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            {t('loanDetail.simulator.goalSeek.title')}
-          </h4>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-            {t('loanDetail.simulator.goalSeek.description')}
-          </p>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Target interest savings -> required recurring extra */}
-            <div className="rounded-md border border-gray-200 dark:border-gray-700 p-3">
-              <div className="flex flex-wrap items-end gap-2">
-                <div className="flex-1 min-w-[10rem]">
-                  <CurrencyInput
-                    prefix={currencySymbol}
-                    allowNegative={false}
-                    label={t('loanDetail.simulator.goalSeek.targetInterestLabel')}
-                    value={goalInterest}
-                    onChange={setGoalInterest}
-                  />
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={runInterestSolve}
-                  disabled={goalInterest === undefined}
-                >
-                  {t('loanDetail.simulator.goalSeek.compute')}
-                </Button>
-              </div>
-              <SolveResultLine
-                solve={interestSolve}
-                formatCurrency={formatCurrency}
-                formatDate={formatDate}
-                currencyCode={currencyCode}
-                unreachableKey="loanDetail.simulator.goalSeek.unreachableInterest"
-              />
-            </div>
-
-            {/* Target payoff month -> required recurring extra */}
-            <div className="rounded-md border border-gray-200 dark:border-gray-700 p-3">
-              <div className="flex flex-wrap items-end gap-2">
-                <div className="flex-1 min-w-[10rem]">
-                  <DateInput
-                    label={t('loanDetail.simulator.goalSeek.targetDateLabel')}
-                    value={goalDate}
-                    onDateChange={setGoalDate}
-                  />
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={runDateSolve}
-                  disabled={!goalDate}
-                >
-                  {t('loanDetail.simulator.goalSeek.compute')}
-                </Button>
-              </div>
-              <SolveResultLine
-                solve={dateSolve}
-                formatCurrency={formatCurrency}
-                formatDate={formatDate}
-                currencyCode={currencyCode}
-                unreachableKey="loanDetail.simulator.goalSeek.unreachableDate"
-              />
-            </div>
-          </div>
-        </div>
-      )}
 
       {footer}
     </div>

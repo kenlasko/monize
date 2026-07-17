@@ -113,8 +113,13 @@ export function SavedScenariosPanel({
     }
   };
 
-  const { describeScenario, payoffLabel, timeSavedLabel, interestSavedLabel } =
-    createScenarioLabels({ t, formatCurrency, formatChartDate, currencyCode });
+  const {
+    describeScenario,
+    monthlyOverpaymentLabel,
+    payoffLabel,
+    timeSavedLabel,
+    interestSavedLabel,
+  } = createScenarioLabels({ t, formatCurrency, formatChartDate, currencyCode });
 
   const headerCell = 'px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400';
 
@@ -154,6 +159,9 @@ export function SavedScenariosPanel({
               <tr className="border-b border-gray-200 dark:border-gray-700 text-left">
                 <th className={headerCell}>{t('loanDetail.scenarios.nameLabel')}</th>
                 <th className={`${headerCell} text-right`}>
+                  {t('loanDetail.scenarios.colMonthlyOverpayment')}
+                </th>
+                <th className={`${headerCell} text-right`}>
                   {t('loanDetail.comparison.newPayoff')}
                 </th>
                 <th className={`${headerCell} text-right`}>
@@ -177,6 +185,9 @@ export function SavedScenariosPanel({
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         {describeScenario(scenario)}
                       </p>
+                    </td>
+                    <td className="px-3 py-2 text-right whitespace-nowrap text-gray-900 dark:text-gray-100">
+                      {monthlyOverpaymentLabel(scenario)}
                     </td>
                     <td className="px-3 py-2 text-right whitespace-nowrap text-purple-600 dark:text-purple-400">
                       {payoffLabel(comparison)}

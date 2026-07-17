@@ -1,6 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MutableRefObject,
+} from 'react';
 import { useTranslations } from 'next-intl';
 import { LoanSummaryCards } from '@/components/accounts/loan-detail/LoanSummaryCards';
 import { AmortizationScheduleTable } from '@/components/accounts/loan-detail/AmortizationScheduleTable';
@@ -13,6 +20,8 @@ import type { ScenarioOutcome } from '@/components/accounts/loan-detail/Scenario
 import { createScenarioLabels } from '@/components/accounts/loan-detail/loan-scenario-labels';
 import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { sanitizeFilename } from '@/lib/export-filename';
+import { buildScheduleDisplayRows, type DisplayRow } from '@/lib/loan-schedule-rows';
+import type { CellValue, PdfTableSection } from '@/lib/pdf-export';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { PastImpactSection } from '@/components/accounts/loan-detail/PastImpactSection';
@@ -45,6 +54,13 @@ interface LoanDetailViewProps {
   interestTransactions?: Transaction[];
   onScenariosChanged: () => void;
   onRateChangesChanged: () => void;
+  /**
+   * When provided, the loan's PDF export handler is published here (so a parent
+   * -- e.g. the account detail header -- can trigger it) and the inline export
+   * button is not rendered. Left unset on the reports surface, which keeps the
+   * inline button.
+   */
+  exportPdfRef?: MutableRefObject<(() => Promise<void>) | null>;
 }
 
 /**
@@ -63,6 +79,7 @@ export function LoanDetailView({
   interestTransactions = [],
   onScenariosChanged,
   onRateChangesChanged,
+  exportPdfRef,
 }: LoanDetailViewProps) {
   const t = useTranslations('accounts');
   const { formatCurrency } = useNumberFormat();
@@ -81,6 +98,13 @@ export function LoanDetailView({
   const simulatorColRef = useRef<HTMLDivElement>(null);
   const rateColRef = useRef<HTMLDivElement>(null);
   const [rateStacked, setRateStacked] = useState(false);
+  // The rate panel's height while it sits in the narrow 30% sidebar (its tall,
+  // text-wrapped form). Once stacked it renders full-width and short, so that
+  // live height can't decide whether it now fits beside the simulator again --
+  // we compare this remembered narrow-column height against the live simulator
+  // height instead, so shrinking the simulator (e.g. deleting scenarios) can
+  // send the panel back to the right without a page reload.
+  const rateSideHeightRef = useRef(0);
 
   const handleLoadScenario = useCallback((loaded: OverpaymentPlan | null) => {
     setPlan(loaded);
@@ -187,8 +211,13 @@ export function LoanDetailView({
       const simHeight = sim.offsetHeight;
       const rateHeight = rate.offsetHeight;
       if (simHeight <= 0) return;
-      const fill = rateHeight / simHeight;
       setRateStacked((prev) => {
+        // Side-by-side: the live rate height is its tall narrow-column form;
+        // remember it. Stacked: reuse that remembered height, since the live
+        // full-width panel is too short to compare fairly.
+        if (!prev) rateSideHeightRef.current = rateHeight;
+        const sideHeight = prev ? rateSideHeightRef.current || rateHeight : rateHeight;
+        const fill = sideHeight / simHeight;
         if (!prev && fill < 0.5) return true;
         if (prev && fill > 0.58) return false;
         return prev;
@@ -209,6 +238,18 @@ export function LoanDetailView({
       formatCurrency,
       formatChartDate,
       currencyCode: account.currencyCode,
+    });
+    const additionalTables = buildLoanReportTables({
+      t,
+      formatCurrency,
+      formatChartDate,
+      currencyCode: account.currencyCode,
+      rateChanges,
+      scheduleRows: buildScheduleDisplayRows(
+        history.events,
+        (scenario ?? baseline)?.rows ?? [],
+        rateChanges,
+      ),
     });
     await exportToPdf({
       title: account.name,
@@ -249,15 +290,24 @@ export function LoanDetailView({
         scenarios.length > 0
           ? labels.comparisonTable(scenarios, scenarioComparisons)
           : undefined,
+      additionalTables,
       filename: sanitizeFilename(account.name, 'loan'),
     });
   };
 
+  // Published to the parent (account header) so it can render the export button
+  // on the same row as View Transactions; when set, the inline button below is
+  // suppressed. Assigned during render (not in an effect) so the latest closure
+  // -- with the current scenarios/schedule -- is always what fires on click.
+  if (exportPdfRef) exportPdfRef.current = handleExportPdf;
+
   return (
     <div className="space-y-6" ref={viewRef}>
-      <div className="flex justify-end">
-        <ExportDropdown onExportPdf={handleExportPdf} />
-      </div>
+      {!exportPdfRef && (
+        <div className="flex justify-end">
+          <ExportDropdown onExportPdf={handleExportPdf} />
+        </div>
+      )}
 
       <LoanSummaryCards
         account={account}
@@ -361,4 +411,110 @@ export function LoanDetailView({
       )}
     </div>
   );
+}
+
+interface LoanReportTableDeps {
+  t(key: string, values?: Record<string, string | number>): string;
+  formatCurrency(amount: number, currency?: string): string;
+  formatChartDate(date: string, format: 'MMM d, yyyy'): string;
+  currencyCode: string;
+  rateChanges: LoanRateChange[];
+  scheduleRows: DisplayRow[];
+}
+
+/**
+ * The rate-history timeline and the full per-payment schedule as PDF tables.
+ * Both are rendered fully expanded -- every recorded rate change and every
+ * payment on its own row -- regardless of what is collapsed on screen, so the
+ * exported report is self-contained.
+ */
+function buildLoanReportTables({
+  t,
+  formatCurrency,
+  formatChartDate,
+  currencyCode,
+  rateChanges,
+  scheduleRows,
+}: LoanReportTableDeps): PdfTableSection[] {
+  const money = (amount: number) => formatCurrency(amount, currencyCode);
+  const day = (date: string) => formatChartDate(date.split('T')[0], 'MMM d, yyyy');
+  const tables: PdfTableSection[] = [];
+
+  const sortedRates = [...rateChanges].sort((a, b) =>
+    a.effectiveDate.localeCompare(b.effectiveDate),
+  );
+  if (sortedRates.length > 0) {
+    const sourceLabel = (change: LoanRateChange) => {
+      if (change.source === 'inferred') return t('loanDetail.rateHistory.badgeInferred');
+      if (change.source === 'initial') return t('loanDetail.rateHistory.badgeInitial');
+      return t('loanDetail.rateHistory.sourceManual');
+    };
+    tables.push({
+      title: t('loanDetail.rateHistory.title'),
+      headers: [
+        t('loanDetail.rateHistory.colDate'),
+        t('loanDetail.rateHistory.colRate'),
+        t('loanDetail.rateHistory.colSource'),
+        t('loanDetail.rateHistory.colPayment'),
+        t('loanDetail.rateHistory.colNote'),
+      ],
+      rows: sortedRates.map((change) => [
+        day(change.effectiveDate),
+        `${change.annualRate}%`,
+        sourceLabel(change),
+        change.newPaymentAmount != null
+          ? money(change.newPaymentAmount)
+          : t('loanDetail.rateHistory.paymentUnchanged'),
+        change.note ?? '',
+      ]),
+    });
+  }
+
+  if (scheduleRows.length > 0) {
+    const showExtra = scheduleRows.some((row) => row.extraPrincipal > 0);
+    const sum = (field: 'payment' | 'interest' | 'principal' | 'extraPrincipal') =>
+      scheduleRows.reduce((acc, row) => acc + Math.round(Number(row[field]) * 10000), 0) / 10000;
+    const rows: CellValue[][] = scheduleRows.map((row) => [
+      row.paymentNumber,
+      day(row.date),
+      row.isProjected
+        ? t('loanDetail.schedule.typeProjected')
+        : t('loanDetail.schedule.typeHistorical'),
+      money(row.payment),
+      money(row.interest),
+      money(row.principal),
+      ...(showExtra ? [row.extraPrincipal > 0 ? money(row.extraPrincipal) : '—'] : []),
+      row.annualRate != null ? `${row.annualRate}%` : '—',
+      money(row.balance),
+    ]);
+    const totalRow: (string | number)[] = [
+      t('loanDetail.schedule.total'),
+      '',
+      '',
+      money(sum('payment')),
+      money(sum('interest')),
+      money(sum('principal')),
+      ...(showExtra ? [money(sum('extraPrincipal'))] : []),
+      '',
+      '',
+    ];
+    tables.push({
+      title: t('loanDetail.schedule.title'),
+      headers: [
+        t('loanDetail.schedule.colNumber'),
+        t('loanDetail.schedule.colDate'),
+        t('loanDetail.schedule.colType'),
+        t('loanDetail.schedule.colPayment'),
+        t('loanDetail.schedule.colInterest'),
+        t('loanDetail.schedule.colPrincipal'),
+        ...(showExtra ? [t('loanDetail.schedule.colExtra')] : []),
+        t('loanDetail.schedule.colRate'),
+        t('loanDetail.schedule.colBalance'),
+      ],
+      rows,
+      totalRow,
+    });
+  }
+
+  return tables;
 }

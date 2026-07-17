@@ -38,6 +38,11 @@ export function createScenarioLabels({
     return parts.join(' + ') || t('loanDetail.scenarios.emptyScenario');
   };
 
+  const monthlyOverpaymentLabel = (scenario: LoanScenario): string =>
+    scenario.recurringExtraAmount && scenario.recurringExtraAmount > 0
+      ? formatCurrency(scenario.recurringExtraAmount, currencyCode)
+      : '—';
+
   const payoffLabel = (comparison: ScenarioComparison | null): string =>
     comparison
       ? comparison.scenario.payoffDate
@@ -72,6 +77,7 @@ export function createScenarioLabels({
   ): { headers: string[]; rows: string[][] } => ({
     headers: [
       t('loanDetail.scenarios.nameLabel'),
+      t('loanDetail.scenarios.colMonthlyOverpayment'),
       t('loanDetail.scenarios.colDetails'),
       t('loanDetail.comparison.newPayoff'),
       t('loanDetail.comparison.timeSaved'),
@@ -81,6 +87,7 @@ export function createScenarioLabels({
       const comparison = comparisons.get(scenario.id) ?? null;
       return [
         scenario.name,
+        monthlyOverpaymentLabel(scenario),
         describeScenario(scenario),
         payoffLabel(comparison),
         timeSavedLabel(comparison),
@@ -91,6 +98,7 @@ export function createScenarioLabels({
 
   return {
     describeScenario,
+    monthlyOverpaymentLabel,
     payoffLabel,
     timeSavedLabel,
     interestSavedLabel,

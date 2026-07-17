@@ -3,6 +3,7 @@
 import { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
+import { ExportDropdown } from '@/components/ui/ExportDropdown';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { InstitutionLogo, InstitutionLogoData } from '@/components/institutions/InstitutionLogo';
 import { formatAccountType } from '@/lib/account-utils';
@@ -55,8 +56,29 @@ export function AccountDetailShell({
   const t = useTranslations('accountDetail');
   const tc = useTranslations('common');
 
+  // "Back to Accounts" leads the action row, set off from the page-specific
+  // actions by a minimalist vertical divider.
+  const hasTrailingActions = !!(
+    headerActions ||
+    onViewTransactions ||
+    onReconcile ||
+    onEdit ||
+    onExport
+  );
+
   const actions = (
     <>
+      {onBack && (
+        <Button variant="outline" onClick={onBack}>
+          {t('header.back')}
+        </Button>
+      )}
+      {onBack && hasTrailingActions && (
+        <span
+          aria-hidden="true"
+          className="hidden sm:block h-6 border-l border-gray-300 dark:border-gray-600"
+        />
+      )}
       {headerActions}
       {onViewTransactions && (
         <Button variant="outline" onClick={onViewTransactions}>
@@ -73,16 +95,7 @@ export function AccountDetailShell({
           {t('header.edit')}
         </Button>
       )}
-      {onExport && (
-        <Button variant="outline" onClick={onExport}>
-          {t('header.export')}
-        </Button>
-      )}
-      {onBack && (
-        <Button variant="outline" onClick={onBack}>
-          {t('header.back')}
-        </Button>
-      )}
+      {onExport && <ExportDropdown onExportPdf={onExport} />}
     </>
   );
 

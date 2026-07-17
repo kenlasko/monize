@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
@@ -79,6 +79,9 @@ function AccountDetailContent() {
   const [rateChanges, setRateChanges] = useState<LoanRateChange[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Populated by LoanDetailView so the loan's PDF export can live in the shared
+  // header, on the same row as View Transactions.
+  const loanExportRef = useRef<(() => Promise<void>) | null>(null);
 
   // Until the account loads, assume it has a dedicated page so the register
   // redirect below never fires prematurely.
@@ -227,6 +230,9 @@ function AccountDetailContent() {
               ? () => router.push(`/reconcile?accountId=${account.id}`)
               : undefined
           }
+          onExport={
+            detailView === 'loan' ? () => loanExportRef.current?.() : undefined
+          }
           onBack={() => router.push('/accounts')}
         >
           {detailView === 'creditCard' ? (
@@ -248,6 +254,7 @@ function AccountDetailContent() {
               rateChanges={rateChanges}
               onScenariosChanged={reloadScenarios}
               onRateChangesChanged={reloadRateChanges}
+              exportPdfRef={loanExportRef}
             />
           )}
         </AccountDetailShell>

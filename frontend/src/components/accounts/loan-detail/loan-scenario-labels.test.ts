@@ -29,10 +29,11 @@ describe('createScenarioLabels', () => {
   it('builds the comparison table exactly as the panel displays it', () => {
     const table = labels.comparisonTable([scenario], new Map([['s1', comparison]]));
 
-    expect(table.headers).toHaveLength(5);
+    expect(table.headers).toHaveLength(6);
     expect(table.rows).toEqual([
       [
         'Extra 200',
+        '$200.00',
         'loanDetail.scenarios.recurringSummary:$200.00 + loanDetail.scenarios.lumpSumSummary:1',
         '2040-06',
         'loanDetail.comparison.monthsSaved:24',
@@ -43,6 +44,6 @@ describe('createScenarioLabels', () => {
 
   it('renders em dashes for scenarios without a projectable comparison', () => {
     const table = labels.comparisonTable([scenario], new Map([['s1', null]]));
-    expect(table.rows[0].slice(2)).toEqual(['—', '—', '—']);
+    expect(table.rows[0].slice(3)).toEqual(['—', '—', '—']);
   });
 });
