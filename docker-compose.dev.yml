@@ -74,7 +74,7 @@ services:
       DISABLE_HTTPS_HEADERS: ${DISABLE_HTTPS_HEADERS:-true}
     volumes:
       - ./backend:/app
-      # - ./database/schema.sql:/app/schema.sql:ro
+      - ./database:/database:ro
       - ./database/migrations:/app/migrations:ro
       - /app/node_modules
     ports:
