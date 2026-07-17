@@ -5,7 +5,10 @@ import { BackupService } from "../backup.service";
 import { encryptBackup } from "../backup-crypto.util";
 import { applyJsonbHandler } from "./support-backup-jsonb";
 import { collectRowIdRemap, deepRemapIds } from "../backup-id-remap.util";
-import { scrubDanglingRefs } from "./support-backup-integrity";
+import {
+  dedupeMaskedText,
+  scrubDanglingRefs,
+} from "./support-backup-integrity";
 import {
   applyDateRange,
   countsTowardBalance,
@@ -234,7 +237,9 @@ export class SupportBackupService {
         this.applyRules(row, rules, multiplier),
       );
     }
-    return this.reconcile(result);
+    // Masking can collapse distinct values to the same string; restore uniqueness
+    // on UNIQUE columns before reconciling so no row is later dropped on insert.
+    return this.reconcile(dedupeMaskedText(result));
   }
 
   private applyRules(

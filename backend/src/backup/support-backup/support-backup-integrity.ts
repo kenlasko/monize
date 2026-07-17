@@ -361,3 +361,112 @@ export function scrubDanglingRefs(tables: TableMap): TableMap {
 
   return out;
 }
+
+/**
+ * A masked text column that carries a UNIQUE constraint. Masking is not
+ * injective (short values collapse to all-asterisks, and any two values
+ * sharing their first/last two characters and length coincide), so two
+ * originally-distinct rows can end up with the same masked value. On restore
+ * that collides on the UNIQUE index and `INSERT ... ON CONFLICT DO NOTHING`
+ * silently drops the second row -- orphaning its children (e.g. a dropped
+ * payee leaves its NOT NULL payee_aliases pointing at nothing, which fails the
+ * FK). `dedupeMaskedText` restores uniqueness by suffixing collisions.
+ *
+ * `groupBy` lists the other columns of the unique key (besides user_id, which
+ * is constant across a single user's export): a value need only be unique
+ * within its group (e.g. a category name per parent). `caseInsensitive` mirrors
+ * a `LOWER(col)` unique index. `maxLen` caps the column's varchar width so the
+ * suffix truncates the base instead of overflowing it.
+ */
+interface UniqueTextKey {
+  column: string;
+  groupBy?: string[];
+  caseInsensitive?: boolean;
+  maxLen?: number;
+}
+
+const UNIQUE_MASKED_TEXT: Record<string, UniqueTextKey[]> = {
+  payees: [{ column: "name" }],
+  categories: [{ column: "name", groupBy: ["parent_id"] }],
+  tags: [{ column: "name", caseInsensitive: true }],
+  institutions: [{ column: "name" }],
+  payee_aliases: [{ column: "alias", caseInsensitive: true }],
+  securities: [{ column: "symbol", maxLen: 20 }],
+  loan_scenarios: [
+    { column: "name", groupBy: ["account_id"], caseInsensitive: true },
+  ],
+  import_column_mappings: [{ column: "name", maxLen: 100 }],
+};
+
+/**
+ * Exposed for the integration completeness guard, which asserts this map covers
+ * every UNIQUE index over a masked text column (mirroring the golden guards for
+ * RULES and REFS). Not part of the runtime API.
+ */
+export const UNIQUE_MASKED_TEXT_FOR_TEST: ReadonlyMap<
+  string,
+  ReadonlyArray<{ column: string }>
+> = new Map(
+  Object.entries(UNIQUE_MASKED_TEXT).map(([table, keys]) => [
+    table,
+    keys.map((k) => ({ column: k.column })),
+  ]),
+);
+
+/** Appends a ` (n)` disambiguator, truncating the base to fit `maxLen`. */
+function withSuffix(base: string, n: number, maxLen?: number): string {
+  const suffix = ` (${n})`;
+  if (maxLen === undefined || base.length + suffix.length <= maxLen) {
+    return base + suffix;
+  }
+  return base.slice(0, Math.max(0, maxLen - suffix.length)) + suffix;
+}
+
+function dedupeColumn(
+  rows: Record<string, unknown>[],
+  key: UniqueTextKey,
+): Record<string, unknown>[] {
+  const fold = (s: string): string =>
+    key.caseInsensitive ? s.toLowerCase() : s;
+  const seenByGroup = new Map<string, Set<string>>();
+  return rows.map((row) => {
+    const value = row[key.column];
+    if (typeof value !== "string") return row;
+    const group = (key.groupBy ?? []).map((c) => String(row[c] ?? "")).join(" ");
+    let seen = seenByGroup.get(group);
+    if (!seen) {
+      seen = new Set();
+      seenByGroup.set(group, seen);
+    }
+    if (!seen.has(fold(value))) {
+      seen.add(fold(value));
+      return row;
+    }
+    let n = 2;
+    let candidate = withSuffix(value, n, key.maxLen);
+    while (seen.has(fold(candidate))) {
+      candidate = withSuffix(value, ++n, key.maxLen);
+    }
+    seen.add(fold(candidate));
+    return { ...row, [key.column]: candidate };
+  });
+}
+
+/**
+ * Makes every masked value on a UNIQUE column distinct again so the file
+ * restores without `ON CONFLICT DO NOTHING` silently dropping a collided row.
+ * Runs on every export (collisions are a property of masking, independent of
+ * any trimming), and only touches display text -- ids (the FK targets) are
+ * untouched, so referential integrity is preserved.
+ */
+export function dedupeMaskedText(tables: TableMap): TableMap {
+  const out = { ...tables };
+  for (const [table, keys] of Object.entries(UNIQUE_MASKED_TEXT)) {
+    const rows = out[table];
+    if (!rows || rows.length === 0) continue;
+    let current = rows;
+    for (const key of keys) current = dedupeColumn(current, key);
+    out[table] = current;
+  }
+  return out;
+}

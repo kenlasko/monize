@@ -9,7 +9,10 @@ import {
   ALWAYS_EXCLUDED_TABLES,
   RULES,
 } from "@/backup/support-backup/support-backup-rules";
-import { REFS_FOR_TEST } from "@/backup/support-backup/support-backup-integrity";
+import {
+  REFS_FOR_TEST,
+  UNIQUE_MASKED_TEXT_FOR_TEST,
+} from "@/backup/support-backup/support-backup-integrity";
 import { User } from "@/users/entities/user.entity";
 import { OidcService } from "@/auth/oidc/oidc.service";
 import { AiEncryptionService } from "@/ai/ai-encryption.service";
@@ -243,5 +246,96 @@ describe("Support backup (integration)", () => {
     );
     expect(payee.name).toBe("Bi*****ka");
     expect(payee.notes).toBeNull();
+  });
+
+  it("keeps colliding masked names distinct so every row still restores", async () => {
+    const userA = await createTestUserDirect(dataSource);
+    const userB = await createTestUserDirect(dataSource);
+
+    // Two payees whose masked names collide ("Visa"/"Amex" -> "****", four
+    // characters or fewer are fully masked), each with an alias. Before the
+    // dedup fix the second payee was dropped by ON CONFLICT DO NOTHING on
+    // UNIQUE(user_id, name) and its NOT NULL alias then failed the FK.
+    const visaId = randomUUID();
+    const amexId = randomUUID();
+    await dataSource.query(
+      `INSERT INTO payees (id, user_id, name) VALUES ($1, $2, 'Visa'), ($3, $2, 'Amex')`,
+      [visaId, userA.id, amexId],
+    );
+    await dataSource.query(
+      `INSERT INTO payee_aliases (id, payee_id, user_id, alias)
+       VALUES ($1, $2, $3, 'VisaAlias'), ($4, $5, $3, 'AmexAlias')`,
+      [randomUUID(), visaId, userA.id, randomUUID(), amexId],
+    );
+
+    const { buffer } = await supportService.generate(userA.id, {
+      multiplier: 2.5,
+    });
+    const result = await backupService.restoreData(userB.id, {
+      compressedData: buffer,
+      password: PASSWORD,
+    });
+
+    // Both payees and both aliases survive the round trip.
+    expect(result.restored.payees).toBe(2);
+    expect(result.restored.payeeAliases).toBe(2);
+    const [{ count: payeeCount }] = await dataSource.query(
+      `SELECT COUNT(*)::int AS count FROM payees WHERE user_id = $1`,
+      [userB.id],
+    );
+    expect(payeeCount).toBe(2);
+    const names: Array<{ name: string }> = await dataSource.query(
+      `SELECT name FROM payees WHERE user_id = $1`,
+      [userB.id],
+    );
+    expect(new Set(names.map((r) => r.name)).size).toBe(2);
+  });
+
+  it("dedupes every masked text column carried by a UNIQUE index", async () => {
+    const exported = new Set(backupService.getBackedUpTableNames());
+    const indexes: Array<{ table: string; def: string }> =
+      await dataSource.query(
+        `SELECT t.relname AS table, pg_get_indexdef(x.indexrelid) AS def
+         FROM pg_index x
+         JOIN pg_class i ON i.oid = x.indexrelid
+         JOIN pg_class t ON t.oid = x.indrelid
+         JOIN pg_namespace n ON n.oid = t.relnamespace
+         WHERE x.indisunique AND n.nspname = 'public'`,
+      );
+
+    const covered = (table: string, column: string): boolean =>
+      (UNIQUE_MASKED_TEXT_FOR_TEST.get(table) ?? []).some(
+        (k) => k.column === column,
+      );
+
+    // Any masked column that participates in a unique index (plain or a
+    // LOWER()-style expression index) will be hit by ON CONFLICT DO NOTHING on
+    // restore, so the dedup map must cover it.
+    const uncovered: string[] = [];
+    for (const { table, def } of indexes) {
+      if (!exported.has(table)) continue;
+      const rules = RULES[table] ?? {};
+      const spanned = def.slice(def.indexOf("(") + 1, def.lastIndexOf(")"));
+      for (const [column, rule] of Object.entries(rules)) {
+        if (rule.t !== "mask") continue;
+        const inIndex = new RegExp(`\\b${column}\\b`).test(spanned);
+        if (inIndex && !covered(table, column)) {
+          uncovered.push(`${table}.${column}`);
+        }
+      }
+    }
+
+    // Reverse guard: every declared entry must still name a masked column.
+    const stale: string[] = [];
+    for (const [table, keys] of UNIQUE_MASKED_TEXT_FOR_TEST) {
+      for (const { column } of keys) {
+        if (RULES[table]?.[column]?.t !== "mask") {
+          stale.push(`${table}.${column}`);
+        }
+      }
+    }
+
+    expect({ uncovered }).toEqual({ uncovered: [] });
+    expect({ stale }).toEqual({ stale: [] });
   });
 });

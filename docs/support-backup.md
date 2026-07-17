@@ -31,6 +31,13 @@ Starting from the same rows the normal export produces, the support backup:
   transactions — so nothing drifts by a rounding cent.
 - **Remaps** every identifier (and the user's own id) to fresh UUIDs, so a
   shared file can't be correlated with the account or with another shared file.
+- **Keeps masked values unique** on every UNIQUE column: masking is not
+  injective (short values collapse to all-asterisks, e.g. tickers `AAPL`/`MSFT`
+  both become `****`, and any two values sharing their first/last two characters
+  and length coincide), so a collision would make `INSERT ... ON CONFLICT DO
+  NOTHING` silently drop the second row on restore and orphan its children (a
+  dropped payee leaves its NOT NULL `payee_aliases` dangling). Colliding masked
+  values get a ` (n)` suffix so every row still restores.
 - **Excludes the securities price history by default**: a full OHLCV series
   matches public market data exactly and would identify a masked ticker. An
   explicit opt-in checkbox includes it for price/valuation bugs.
@@ -83,7 +90,11 @@ Backend, under `backend/src/backup/support-backup/`:
   exported tables (`information_schema`), the same completeness guard the golden
   test gives the column rules — so a future migration can't add an FK the scrub
   silently ignores. The scrub is skipped for a full untrimmed export (nothing
-  can dangle).
+  can dangle). The same file also holds `dedupeMaskedText`, which restores
+  uniqueness on masked UNIQUE columns (see above); unlike the scrub it runs on
+  every export, since masking collisions are independent of trimming, and an
+  integration test asserts its map covers every UNIQUE index over a masked
+  column.
 
 A short-lived per-user cache holds the raw export so a preview followed by
 generate collects the database once, and the preview obfuscates only the rows
