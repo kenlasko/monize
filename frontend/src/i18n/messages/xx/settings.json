@@ -231,13 +231,12 @@
     },
     "supportBackup": {
       "label": "[XX-Create a support backup-XX]",
-      "description": "[XX-Share a de-identified copy of your data so a maintainer can reproduce a bug without seeing your real names or amounts.-XX]",
-      "action": "[XX-Create-XX]"
+      "description": "[XX-Share a de-identified, encrypted copy of your data so a maintainer can reproduce a bug without seeing your real names or amounts.-XX]"
     }
   },
   "supportBackup": {
     "title": "[XX-Create support backup-XX]",
-    "howItWorks": "[XX-This produces a de-identified copy of your backup: names are masked (first and last two characters kept), notes/descriptions/account numbers are removed, and every amount is multiplied by a single hidden factor while public values (exchange rates, prices, interest rates) are left intact. It is a normal backup file you can attach to a GitHub issue and we can restore to debug. This protects against casual exposure, not against someone who already knows you -- dates, frequencies and structure are preserved so bugs still reproduce.-XX]",
+    "howItWorks": "[XX-This produces a de-identified copy of your backup: names are masked (first and last two characters kept), notes/descriptions/account numbers are removed, and every amount is multiplied by a single hidden factor while public values (exchange rates, prices, interest rates) are left intact. The file is always encrypted with the password below and restores like a normal backup. This protects against casual exposure, not against someone who already knows you -- dates, frequencies and structure are preserved so bugs still reproduce.-XX]",
     "sectionsLabel": "[XX-What to include-XX]",
     "sections": {
       "investments": "[XX-Investments (securities, holdings, prices)-XX]",
@@ -249,12 +248,15 @@
     },
     "accountsLabel": "[XX-Limit to specific accounts-XX]",
     "accountsHint": "[XX-Leave all unchecked to include every account. Picking a subset also pulls in the accounts and payees they reference.-XX]",
+    "dateRangeLabel": "[XX-Date range (optional)-XX]",
+    "dateRangeHint": "[XX-Limit exported history to these dates. Opening balances are adjusted so the trimmed file still reconciles.-XX]",
+    "dateFromLabel": "[XX-From-XX]",
+    "dateToLabel": "[XX-To-XX]",
     "multiplierLabel": "[XX-Amount multiplier-XX]",
     "multiplierHint": "[XX-Every private amount is multiplied by this. Any non-integer greater than 1 works; Regenerate picks a new random value.-XX]",
     "multiplierInvalid": "[XX-Enter a non-integer greater than 1.-XX]",
     "regenerate": "[XX-Regenerate-XX]",
-    "passwordLabel": "[XX-Password (optional)-XX]",
-    "passwordPlaceholder": "[XX-Encrypt the file with a password-XX]",
+    "passwordLabel": "[XX-Encryption password-XX]",
     "preview": "[XX-Preview-XX]",
     "previewBefore": "[XX-Before-XX]",
     "previewAfter": "[XX-After-XX]",
@@ -263,7 +265,8 @@
     "generate": "[XX-Generate-XX]",
     "generatedToast": "[XX-Support backup downloaded.-XX]",
     "generateFailed": "[XX-Could not generate the support backup. Please try again.-XX]",
-    "cancel": "[XX-Cancel-XX]"
+    "passwordHint": "[XX-The file is always encrypted. Share this password with the investigator through a separate channel, not alongside the file.-XX]",
+    "passwordInvalid": "[XX-Enter at least 8 characters.-XX]"
   },
   "dangerZone": {
     "heading": "[XX-Danger Zone-XX]",

@@ -60,10 +60,10 @@ describe('HelpSection', () => {
     }
   });
 
-  it('offers a button to create a support backup', () => {
+  it('offers a tile-style button to create a support backup', () => {
     render(<HelpSection />);
     expect(
-      screen.getByRole('button', { name: 'Create' }),
+      screen.getByRole('button', { name: /Create a support backup/ }),
     ).toBeInTheDocument();
   });
 });

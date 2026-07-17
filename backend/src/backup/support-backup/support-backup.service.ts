@@ -4,7 +4,13 @@ import { gzipSync } from "zlib";
 import { BackupService } from "../backup.service";
 import { encryptBackup } from "../backup-crypto.util";
 import { applyJsonbHandler } from "./support-backup-jsonb";
-import { scopeToAccounts, TableMap } from "./support-backup-scope";
+import { scrubDanglingRefs } from "./support-backup-integrity";
+import {
+  applyDateRange,
+  countsTowardBalance,
+  scopeToAccounts,
+  TableMap,
+} from "./support-backup-scope";
 import { maskText, scaleMoney, scaleQuantity } from "./support-backup.util";
 import {
   ALWAYS_EXCLUDED_TABLES,
@@ -20,17 +26,13 @@ const ALL_SECTIONS = Object.keys(SECTION_TABLES) as SupportBackupSection[];
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Reverse map: table -> the section that owns it (undefined = always-in core). */
-const TABLE_SECTION = new Map<string, SupportBackupSection>();
-for (const section of ALL_SECTIONS) {
-  for (const table of SECTION_TABLES[section])
-    TABLE_SECTION.set(table, section);
-}
-
 export interface SupportBackupOptions {
   multiplier: number;
   sections?: SupportBackupSection[];
   accountIds?: string[];
+  /** Inclusive yyyy-MM-dd bounds on transaction/price/balance history. */
+  dateFrom?: string;
+  dateTo?: string;
   password?: string;
 }
 
@@ -41,6 +43,12 @@ export interface SupportBackupPreviewSample {
 }
 
 const PREVIEW_TABLES = ["transactions", "accounts", "payees"];
+/** Tables the preview must obfuscate: the shown ones plus the splits that the
+ *  balance reconciliation folds into split parents. */
+const PREVIEW_PIPELINE_TABLES = new Set([
+  ...PREVIEW_TABLES,
+  "transaction_splits",
+]);
 const PREVIEW_ROWS = 5;
 
 /**
@@ -48,9 +56,9 @@ const PREVIEW_ROWS = 5;
  * maintainer: free text is masked or dropped, private amounts are multiplied by
  * a single hidden factor while public rates/prices are left intact, every
  * identifier is remapped, and the file is otherwise a normal restorable backup.
- * This protects against casual exposure, not a determined party who already
- * knows the user -- dates, frequencies and structure survive by design so bugs
- * still reproduce.
+ * This protects against casual/opportunistic exposure, not a determined party
+ * who already knows the user -- dates, frequencies and structure survive by
+ * design so bugs still reproduce.
  */
 @Injectable()
 export class SupportBackupService {
@@ -62,7 +70,8 @@ export class SupportBackupService {
   ): Promise<{ buffer: Buffer; encrypted: boolean }> {
     const raw = await this.backupService.collectRawExport(userId);
     const sections = this.resolveSections(options.sections);
-    const obfuscated = this.buildObfuscated(raw.tables, sections, options);
+    const scoped = this.scopeAndSection(raw.tables, sections, options);
+    const obfuscated = this.obfuscate(scoped, options.multiplier);
     const remapped = this.remapIdentifiers(obfuscated, userId);
 
     const payload: Record<string, unknown> = {
@@ -85,7 +94,13 @@ export class SupportBackupService {
     const raw = await this.backupService.collectRawExport(userId);
     const sections = this.resolveSections(options.sections);
     const scoped = this.scopeAndSection(raw.tables, sections, options);
-    const obfuscated = this.buildObfuscated(raw.tables, sections, options);
+    // The preview only shows a handful of rows from a few tables, so only
+    // those tables (plus the splits reconciliation needs) run the pipeline.
+    const obfuscated = this.obfuscate(
+      scoped,
+      options.multiplier,
+      PREVIEW_PIPELINE_TABLES,
+    );
 
     const samples = PREVIEW_TABLES.filter(
       (t) => (scoped[t]?.length ?? 0) > 0,
@@ -104,13 +119,18 @@ export class SupportBackupService {
     return ALL_SECTIONS.filter((s) => requested.includes(s));
   }
 
-  /** Applies account scope (if any) then drops disabled-section tables. */
+  /**
+   * Trims the raw export to the requested date range, account scope and
+   * sections, then repairs every reference the trimming severed so the file
+   * stays restorable.
+   */
   private scopeAndSection(
     rawTables: Record<string, Record<string, unknown>[]>,
     sections: SupportBackupSection[],
     options: SupportBackupOptions,
   ): TableMap {
     let tables: TableMap = { ...rawTables };
+    tables = applyDateRange(tables, options.dateFrom, options.dateTo);
     if (options.accountIds && options.accountIds.length > 0) {
       tables = scopeToAccounts(tables, options.accountIds);
     }
@@ -127,26 +147,30 @@ export class SupportBackupService {
       }
     }
     for (const table of ALWAYS_EXCLUDED_TABLES) delete tables[table];
-    return tables;
+
+    return scrubDanglingRefs(tables);
   }
 
-  /** Full obfuscation without id remap: scope + sections + rules + reconcile. */
-  private buildObfuscated(
-    rawTables: Record<string, Record<string, unknown>[]>,
-    sections: SupportBackupSection[],
-    options: SupportBackupOptions,
+  /**
+   * Applies the per-column rules and reconciles derived money. `only` limits
+   * the work to a subset of tables (the preview path); omitted tables are
+   * excluded from the result.
+   */
+  private obfuscate(
+    scoped: TableMap,
+    multiplier: number,
+    only?: ReadonlySet<string>,
   ): TableMap {
-    const scoped = this.scopeAndSection(rawTables, sections, options);
     const result: TableMap = {};
     for (const [table, rows] of Object.entries(scoped)) {
+      if (only && !only.has(table)) continue;
       const rules = RULES[table];
       if (!rules) continue; // unclassified table: never emitted (allowlist)
       result[table] = rows.map((row) =>
-        this.applyRules(row, rules, options.multiplier),
+        this.applyRules(row, rules, multiplier),
       );
     }
-    this.reconcile(result, options.multiplier);
-    return result;
+    return this.reconcile(result);
   }
 
   private applyRules(
@@ -190,39 +214,52 @@ export class SupportBackupService {
    * Recomputes derived money from the already-scaled values so nothing drifts:
    * a split transaction's amount becomes the exact sum of its scaled splits,
    * and each account's current balance becomes its scaled opening balance plus
-   * the sum of its scaled transaction amounts. Integer arithmetic (units of
-   * 1e-4) avoids floating-point accumulation.
+   * the sum of its scaled transaction amounts -- counting only the rows the
+   * app itself counts (VOID transactions and legacy split-child rows are
+   * excluded, mirroring the balance guards in the transactions domain).
+   * Integer arithmetic (units of 1e-4) avoids floating-point accumulation.
+   * Returns new row objects; the input map is not mutated.
    */
-  private reconcile(tables: TableMap, _multiplier: number): void {
+  private reconcile(tables: TableMap): TableMap {
     const UNIT = 10000;
     const toUnits = (value: unknown): number => {
       const num = typeof value === "number" ? value : Number(value);
       return Number.isFinite(num) ? Math.round(num * UNIT) : 0;
     };
 
-    // Split parents = sum of their scaled splits.
     const splitSum = new Map<string, number>();
     for (const split of tables.transaction_splits ?? []) {
       const txId = String(split.transaction_id);
       splitSum.set(txId, (splitSum.get(txId) ?? 0) + toUnits(split.amount));
     }
-    for (const tx of tables.transactions ?? []) {
-      if (tx.is_split && splitSum.has(String(tx.id))) {
-        tx.amount = splitSum.get(String(tx.id))! / UNIT;
-      }
-    }
 
-    // Account balance = scaled opening + sum of scaled transaction amounts.
     const txSum = new Map<string, number>();
-    for (const tx of tables.transactions ?? []) {
-      const acc = String(tx.account_id);
-      txSum.set(acc, (txSum.get(acc) ?? 0) + toUnits(tx.amount));
-    }
-    for (const account of tables.accounts ?? []) {
+    const transactions = (tables.transactions ?? []).map((tx) => {
+      const withSplits =
+        tx.is_split && splitSum.has(String(tx.id))
+          ? { ...tx, amount: splitSum.get(String(tx.id))! / UNIT }
+          : tx;
+      if (countsTowardBalance(withSplits)) {
+        const account = String(withSplits.account_id);
+        txSum.set(
+          account,
+          (txSum.get(account) ?? 0) + toUnits(withSplits.amount),
+        );
+      }
+      return withSplits;
+    });
+
+    const accounts = (tables.accounts ?? []).map((account) => {
       const opening = toUnits(account.opening_balance);
       const moves = txSum.get(String(account.id)) ?? 0;
-      account.current_balance = (opening + moves) / UNIT;
-    }
+      return { ...account, current_balance: (opening + moves) / UNIT };
+    });
+
+    return {
+      ...tables,
+      ...(tables.transactions ? { transactions } : {}),
+      ...(tables.accounts ? { accounts } : {}),
+    };
   }
 
   /**

@@ -5,9 +5,11 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Matches,
   Max,
   MaxLength,
   Min,
+  MinLength,
   Validate,
   ValidatorConstraint,
   ValidatorConstraintInterface,
@@ -70,9 +72,23 @@ export class CreateSupportBackupDto {
   @IsUUID("4", { each: true })
   accountIds?: string[];
 
-  /** Optional password to encrypt the produced file (AES-256-GCM). */
+  /** Optional inclusive lower bound (yyyy-MM-dd) on exported history. */
   @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  dateFrom?: string;
+
+  /** Optional inclusive upper bound (yyyy-MM-dd) on exported history. */
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  dateTo?: string;
+
+  /**
+   * Password encrypting the produced file (AES-256-GCM). Required: a support
+   * backup is made to leave the user's machine, so it never ships unencrypted.
+   * The client pre-fills a random one the user can edit or regenerate.
+   */
   @IsString()
+  @MinLength(8)
   @MaxLength(256)
-  password?: string;
+  password: string;
 }

@@ -42,7 +42,11 @@ export interface SupportBackupInput {
   multiplier: number;
   sections?: SupportBackupSection[];
   accountIds?: string[];
-  password?: string;
+  /** Inclusive yyyy-MM-dd bounds on exported history. */
+  dateFrom?: string;
+  dateTo?: string;
+  /** Required: support backups always leave the machine encrypted. */
+  password: string;
 }
 
 export interface SupportBackupPreviewSample {
@@ -64,6 +68,37 @@ export function randomSupportMultiplier(): number {
   const value = 1.1 + Math.random() * 8.89;
   const rounded = Math.round(value * 1e5) / 1e5;
   return Number.isInteger(rounded) ? rounded + 0.12345 : rounded;
+}
+
+/**
+ * A random 20-character password from an unambiguous alphabet (no 0/O, 1/l/I),
+ * generated with the Web Crypto API. Pre-fills the required encryption
+ * password so a support backup never ships with a weak ad-hoc one; the user
+ * can still edit or regenerate it.
+ */
+export function randomSupportPassword(): string {
+  const alphabet = '23456789ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz';
+  const bytes = new Uint8Array(20);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join('');
+}
+
+/**
+ * Axios delivers error bodies as Blobs when the request used
+ * `responseType: 'blob'`, which hides the backend's JSON `message` from
+ * getErrorMessage. Parse the Blob back into the response data so error
+ * toasts show the real reason (demo restriction, validation error).
+ */
+async function normalizeBlobError(error: unknown): Promise<never> {
+  const response = (error as { response?: { data?: unknown } })?.response;
+  if (response && response.data instanceof Blob) {
+    try {
+      response.data = JSON.parse(await response.data.text());
+    } catch {
+      // Not JSON -- leave the Blob; the caller falls back to its default text.
+    }
+  }
+  throw error;
 }
 
 export interface BackupEncryptionStatus {
@@ -120,11 +155,15 @@ export const backupApi = {
   },
 
   supportExport: async (input: SupportBackupInput): Promise<Blob> => {
-    const response = await apiClient.post('/backup/support-export', input, {
-      responseType: 'blob',
-      timeout: 120000,
-    });
-    return response.data;
+    try {
+      const response = await apiClient.post('/backup/support-export', input, {
+        responseType: 'blob',
+        timeout: 120000,
+      });
+      return response.data;
+    } catch (error) {
+      return normalizeBlobError(error);
+    }
   },
 
   supportExportPreview: async (

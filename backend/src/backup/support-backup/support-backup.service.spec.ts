@@ -12,6 +12,12 @@ const TX2 = "dddddddd-2222-4111-8111-111111111111";
 const TX3 = "dddddddd-3333-4111-8111-111111111111";
 const SP1 = "eeeeeeee-1111-4111-8111-111111111111";
 const SP2 = "eeeeeeee-2222-4111-8111-111111111111";
+const ACC3 = "aaaaaaaa-3333-4111-8111-111111111111";
+const TXV = "dddddddd-4444-4111-8111-111111111111";
+const TXM = "dddddddd-5555-4111-8111-111111111111";
+const SP3 = "eeeeeeee-3333-4111-8111-111111111111";
+const SCH1 = "12121212-1111-4111-8111-111111111111";
+const MC1 = "34343434-1111-4111-8111-111111111111";
 
 function fixtureTables(): Record<string, Record<string, unknown>[]> {
   return {
@@ -23,6 +29,7 @@ function fixtureTables(): Record<string, Record<string, unknown>[]> {
         timezone: "Europe/Warsaw",
         last_client_timezone: "Europe/Warsaw",
         language: "pl",
+        dashboard_widget_config: { netWorth: { accountIds: [ACC3] } },
       },
     ],
     user_currency_preferences: [],
@@ -73,6 +80,19 @@ function fixtureTables(): Record<string, Record<string, unknown>[]> {
         interest_rate: 3,
         linked_account_id: null,
       },
+      {
+        id: ACC3,
+        user_id: USER,
+        account_type: "SAVINGS",
+        name: "Outside",
+        description: null,
+        currency_code: "PLN",
+        account_number: null,
+        opening_balance: 0,
+        current_balance: 0,
+        interest_rate: 1,
+        linked_account_id: null,
+      },
     ],
     tags: [],
     transactions: [
@@ -107,6 +127,38 @@ function fixtureTables(): Record<string, Record<string, unknown>[]> {
         is_split: true,
       },
       {
+        id: TXV,
+        user_id: USER,
+        account_id: ACC1,
+        transaction_date: "2026-01-05",
+        payee_id: null,
+        payee_name: null,
+        category_id: null,
+        amount: 40,
+        currency_code: "PLN",
+        exchange_rate: 1,
+        description: null,
+        reference_number: null,
+        is_split: false,
+        status: "VOID",
+      },
+      {
+        id: TXM,
+        user_id: USER,
+        account_id: ACC2,
+        transaction_date: "2026-01-02",
+        payee_id: null,
+        payee_name: null,
+        category_id: null,
+        amount: 10,
+        currency_code: "PLN",
+        exchange_rate: 1,
+        description: null,
+        reference_number: null,
+        is_split: false,
+        is_transfer: true,
+      },
+      {
         id: TX3,
         user_id: USER,
         account_id: ACC2,
@@ -123,6 +175,16 @@ function fixtureTables(): Record<string, Record<string, unknown>[]> {
       },
     ],
     transaction_splits: [
+      {
+        id: SP3,
+        transaction_id: TX2,
+        kind: "transfer",
+        category_id: null,
+        transfer_account_id: ACC2,
+        linked_transaction_id: TXM,
+        amount: 10,
+        memo: "to savings",
+      },
       {
         id: SP1,
         transaction_id: TX2,
@@ -142,7 +204,23 @@ function fixtureTables(): Record<string, Record<string, unknown>[]> {
     ],
     transaction_tags: [],
     transaction_split_tags: [],
-    scheduled_transactions: [],
+    scheduled_transactions: [
+      {
+        id: SCH1,
+        user_id: USER,
+        account_id: ACC1,
+        name: "Monthly move",
+        amount: 25,
+        currency_code: "PLN",
+        frequency: "MONTHLY",
+        next_due_date: "2026-08-01",
+        start_date: "2026-01-01",
+        is_transfer: true,
+        transfer_account_id: ACC3,
+        investment_funding_account_id: null,
+        investment_security_id: null,
+      },
+    ],
     scheduled_transaction_splits: [],
     scheduled_transaction_overrides: [],
     scheduled_transaction_split_tags: [],
@@ -181,7 +259,22 @@ function fixtureTables(): Record<string, Record<string, unknown>[]> {
         provider: "anthropic",
       },
     ],
-    monte_carlo_scenarios: [],
+    monte_carlo_scenarios: [
+      {
+        id: MC1,
+        user_id: USER,
+        name: "Retire",
+        description: null,
+        account_ids: [ACC1, ACC2, ACC3],
+        starting_value: 1000,
+        annual_contribution: 100,
+        annual_withdrawal: 0,
+        target_value: null,
+        expected_return: 0.05,
+        volatility: 0.1,
+        inflation_rate: 0.02,
+      },
+    ],
     monte_carlo_cash_flows: [],
   };
 }
@@ -236,14 +329,15 @@ describe("SupportBackupService.generate", () => {
     expect(data.user_preferences[0].last_client_timezone).toBeNull();
   });
 
-  it("reconciles split parents and account balances from the scaled values", async () => {
+  it("reconciles split parents and balances from scaled values, excluding VOID rows", async () => {
     const data = await generateParsed(makeService(), { multiplier: 2.5 });
     const splitParent = data.transactions.find((t: any) => t.is_split === true);
-    // splits scaled 30->75 and 20->50, parent becomes their sum
-    expect(splitParent.amount).toBe(125);
-    // balance = scaled opening (250) + scaled tx (250) + split parent (125)
+    // splits scaled 10->25, 30->75, 20->50; parent becomes their sum
+    expect(splitParent.amount).toBe(150);
+    // balance = scaled opening (250) + scaled tx (250) + split parent (150);
+    // the VOID transaction (40 -> 100) must NOT count, matching the app
     const acc = data.accounts.find((a: any) => a.opening_balance === 250);
-    expect(acc.current_balance).toBe(625);
+    expect(acc.current_balance).toBe(650);
   });
 
   it("remaps every id and the user id while preserving referential integrity", async () => {
@@ -274,14 +368,51 @@ describe("SupportBackupService.generate", () => {
     expect(full.ai_provider_configs).toBeUndefined();
   });
 
-  it("scopes to the selected account and its transactions", async () => {
+  it("scopes to the selected account, pulling split-transfer mirrors and shells", async () => {
     const data = await generateParsed(makeService(), {
       multiplier: 2.5,
       accountIds: [ACC1],
     });
-    expect(data.accounts).toHaveLength(1);
-    // only ACC1's two transactions, not ACC2's
-    expect(data.transactions).toHaveLength(2);
+    // ACC1 (primary) + ACC2 (shell: split-transfer target), never ACC3
+    expect(data.accounts).toHaveLength(2);
+    // ACC1's three transactions + the split-transfer mirror leg on ACC2,
+    // reached through transaction_splits.linked_transaction_id
+    expect(data.transactions).toHaveLength(4);
+    expect(
+      data.transactions.filter((t: any) => t.is_transfer === true),
+    ).toHaveLength(1);
+  });
+
+  it("repairs references severed by scoping so the file stays restorable", async () => {
+    const data = await generateParsed(makeService(), {
+      multiplier: 2.5,
+      accountIds: [ACC1],
+    });
+    // The scheduled transfer to out-of-scope ACC3 survives with its dangling
+    // transfer_account_id cleared instead of pointing at a missing account
+    expect(data.scheduled_transactions).toHaveLength(1);
+    expect(data.scheduled_transactions[0].transfer_account_id).toBeNull();
+    // Monte Carlo account_ids are filtered to accounts present in the file
+    expect(data.monte_carlo_scenarios[0].account_ids).toHaveLength(2);
+    // Dashboard widget config (free-form JSON with account ids) is reset
+    expect(data.user_preferences[0].dashboard_widget_config).toEqual({});
+    // ...and the excluded account's real UUID appears nowhere in the payload
+    expect(JSON.stringify(data)).not.toContain(ACC3);
+  });
+
+  it("trims to a date range and shifts opening balances by the removed history", async () => {
+    const data = await generateParsed(makeService(), {
+      multiplier: 2.5,
+      dateFrom: "2026-01-02",
+    });
+    // TX1 (2026-01-01, 100) is trimmed; its amount moves into the opening
+    expect(
+      data.transactions.some((t: any) => t.transaction_date === "2026-01-01"),
+    ).toBe(false);
+    const acc = data.accounts.find((a: any) => a.opening_balance === 500);
+    expect(acc).toBeDefined();
+    // balance = shifted+scaled opening (500) + split parent (150); VOID excluded
+    expect(acc.current_balance).toBe(650);
   });
 
   it("leaks no original name, free text, account number, secret or id", async () => {

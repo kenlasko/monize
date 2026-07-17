@@ -10,7 +10,6 @@ import {
   ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
-import { Button } from '@/components/ui/Button';
 import { SupportBackupModal } from '@/components/settings/SupportBackupModal';
 
 const REPO_URL = 'https://github.com/kenlasko/monize';
@@ -35,22 +34,24 @@ export function HelpSection() {
         {t('description')}
       </p>
 
-      <div className="mb-4 flex items-start gap-3 rounded-md border border-gray-200 dark:border-gray-700 px-4 py-3">
-        <ShieldCheckIcon className="h-6 w-6 shrink-0 text-gray-400 dark:text-gray-500" />
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-            {t('supportBackup.label')}
-          </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {t('supportBackup.description')}
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => setSupportBackupOpen(true)}>
-          {t('supportBackup.action')}
-        </Button>
-      </div>
-
       <ul className="space-y-2">
+        <li>
+          <button
+            type="button"
+            onClick={() => setSupportBackupOpen(true)}
+            className="flex w-full items-center gap-3 rounded-md border border-gray-200 dark:border-gray-700 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            <ShieldCheckIcon className="h-6 w-6 shrink-0 text-gray-400 dark:text-gray-500" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">
+                {t('supportBackup.label')}
+              </span>
+              <span className="block text-sm text-gray-500 dark:text-gray-400">
+                {t('supportBackup.description')}
+              </span>
+            </span>
+          </button>
+        </li>
         {HELP_LINK_KEYS.map(({ key, href, Icon }) => {
           const label = t(`${key}.label`);
           const description = t(`${key}.description`);

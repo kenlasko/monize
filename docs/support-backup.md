@@ -31,14 +31,28 @@ Starting from the same rows the normal export produces, the support backup:
   transactions — so nothing drifts by a rounding cent.
 - **Remaps** every identifier (and the user's own id) to fresh UUIDs, so a
   shared file can't be correlated with the account or with another shared file.
+- **Always encrypts** the file: the modal pre-fills a random password (editable,
+  regenerable) and the export refuses to run without one -- a support backup is
+  made to leave the user's machine, so it never ships in the clear. Share the
+  password through a separate channel.
+- Supports an optional **date range**: history outside the window is trimmed
+  and each account's opening balance is advanced by the removed transactions,
+  so the trimmed file still reconciles to the true balance.
+- Runs a **referential-integrity scrub** after any trimming (account scope,
+  date range, disabled sections): a declarative map of every FK between
+  exported tables nulls or drops each dangling reference, so a trimmed file
+  always restores. Id arrays outside FK constraints (Monte Carlo account lists,
+  report filters) are filtered to accounts present in the file, and the
+  free-form dashboard widget config is reset under account scoping, so no
+  excluded account's identifier survives un-remapped.
 
 ## Honest limits
 
 This protects against **casual/opportunistic exposure** (someone browsing a
 GitHub issue), not a determined party who already knows the user. Dates,
 frequencies and structure are preserved by design so bugs still reproduce, and
-those can re-identify a person regardless of `M`. Optional password encryption
-is offered for the file; the UI states the de-identification caveat plainly.
+those can re-identify a person regardless of `M`. The file is always
+password-encrypted; the UI states the de-identification caveat plainly.
 
 ## Implementation
 
