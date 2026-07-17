@@ -23,6 +23,8 @@ import { Response } from "express";
 import { BackupService } from "./backup.service";
 import { AutoBackupService } from "./auto-backup.service";
 import { BackupEncryptionService } from "./backup-encryption.service";
+import { SupportBackupService } from "./support-backup/support-backup.service";
+import { CreateSupportBackupDto } from "./support-backup/dto/create-support-backup.dto";
 import {
   UpdateAutoBackupSettingsDto,
   ValidateFolderDto,
@@ -52,6 +54,7 @@ export class BackupController {
     private readonly backupService: BackupService,
     private readonly autoBackupService: AutoBackupService,
     private readonly backupEncryption: BackupEncryptionService,
+    private readonly supportBackupService: SupportBackupService,
   ) {}
 
   @Post("export")
@@ -77,6 +80,49 @@ export class BackupController {
     res.setHeader("Content-Type", contentType);
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
     await this.backupService.streamExport(req.user.id, res, encryptionPassword);
+  }
+
+  @Post("support-export")
+  @DemoRestricted()
+  @ApiOperation({
+    summary:
+      "Export a de-identified backup for sharing with support (masked text, scaled amounts)",
+  })
+  @ApiResponse({ status: 200, description: "De-identified backup downloaded" })
+  async supportExport(
+    @Request() req,
+    @Body() dto: CreateSupportBackupDto,
+    @Res() res: Response,
+  ) {
+    const { buffer, encrypted } = await this.supportBackupService.generate(
+      req.user.id,
+      dto,
+    );
+    const today = new Date().toISOString().slice(0, 10);
+    const filename = encrypted
+      ? `monize-support-backup-${today}.mzbe`
+      : `monize-support-backup-${today}.json.gz`;
+    res.setHeader(
+      "Content-Type",
+      encrypted ? "application/octet-stream" : "application/gzip",
+    );
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.send(buffer);
+  }
+
+  @Post("support-export/preview")
+  @DemoRestricted()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      "Preview the de-identified backup: before/after samples of key tables",
+  })
+  @ApiResponse({ status: 200, description: "Preview samples returned" })
+  async supportExportPreview(
+    @Request() req,
+    @Body() dto: CreateSupportBackupDto,
+  ) {
+    return this.supportBackupService.preview(req.user.id, dto);
   }
 
   @Post("restore")

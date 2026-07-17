@@ -21,6 +21,51 @@ export interface RestoreResult {
   restored: Record<string, number>;
 }
 
+export type SupportBackupSection =
+  | 'investments'
+  | 'scheduled'
+  | 'budgets'
+  | 'reports'
+  | 'importMappings'
+  | 'autoBackup';
+
+export const SUPPORT_BACKUP_SECTIONS: SupportBackupSection[] = [
+  'investments',
+  'scheduled',
+  'budgets',
+  'reports',
+  'importMappings',
+  'autoBackup',
+];
+
+export interface SupportBackupInput {
+  multiplier: number;
+  sections?: SupportBackupSection[];
+  accountIds?: string[];
+  password?: string;
+}
+
+export interface SupportBackupPreviewSample {
+  table: string;
+  before: Record<string, unknown>[];
+  after: Record<string, unknown>[];
+}
+
+export interface SupportBackupPreview {
+  samples: SupportBackupPreviewSample[];
+}
+
+/**
+ * A random multiplier in [1.1, 9.99] with 5 decimal places, never an integer,
+ * matching the backend contract: > 1 (so nothing rounds to zero) and
+ * non-integer (so it can't be trivially guessed from a round value).
+ */
+export function randomSupportMultiplier(): number {
+  const value = 1.1 + Math.random() * 8.89;
+  const rounded = Math.round(value * 1e5) / 1e5;
+  return Number.isInteger(rounded) ? rounded + 0.12345 : rounded;
+}
+
 export interface BackupEncryptionStatus {
   enabled: boolean;
   needsBackupPassword: boolean;
@@ -71,6 +116,25 @@ export const backupApi = {
       timeout: 120000,
       headers,
     });
+    return response.data;
+  },
+
+  supportExport: async (input: SupportBackupInput): Promise<Blob> => {
+    const response = await apiClient.post('/backup/support-export', input, {
+      responseType: 'blob',
+      timeout: 120000,
+    });
+    return response.data;
+  },
+
+  supportExportPreview: async (
+    input: SupportBackupInput,
+  ): Promise<SupportBackupPreview> => {
+    const response = await apiClient.post<SupportBackupPreview>(
+      '/backup/support-export/preview',
+      input,
+      { timeout: 120000 },
+    );
     return response.data;
   },
 

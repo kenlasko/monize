@@ -268,6 +268,29 @@ export class BackupService {
     return Array.from(INTENTIONALLY_EXCLUDED_TABLES);
   }
 
+  /**
+   * Collects the full export as an in-memory map of table -> rows, using the
+   * same queries as the streamed/gzipped export. Consumed by the support
+   * (de-identified) backup, which must hold every table at once to reconcile
+   * scaled balances before serializing. Returns the same version/exportedAt
+   * envelope fields the file format uses.
+   */
+  async collectRawExport(userId: string): Promise<{
+    version: number;
+    exportedAt: string;
+    tables: Record<string, Record<string, unknown>[]>;
+  }> {
+    const tables: Record<string, Record<string, unknown>[]> = {};
+    for (const { key, sql } of this.getTableQueries()) {
+      tables[key] = await this.query(sql, [userId]);
+    }
+    return {
+      version: BACKUP_VERSION,
+      exportedAt: new Date().toISOString(),
+      tables,
+    };
+  }
+
   private getTableQueries(): Array<{ key: string; sql: string }> {
     return [
       {

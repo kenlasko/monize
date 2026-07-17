@@ -9,6 +9,13 @@ vi.mock('@heroicons/react/24/outline', () => ({
   ChatBubbleLeftRightIcon: (props: any) => <svg data-testid="chat-icon" {...props} />,
   CodeBracketIcon: (props: any) => <svg data-testid="code-icon" {...props} />,
   ExclamationTriangleIcon: (props: any) => <svg data-testid="warning-icon" {...props} />,
+  ShieldCheckIcon: (props: any) => <svg data-testid="shield-icon" {...props} />,
+}));
+
+// The support-backup modal loads accounts on open; stub it to a no-op panel so
+// this section test stays focused on the help links.
+vi.mock('./SupportBackupModal', () => ({
+  SupportBackupModal: () => null,
 }));
 
 const REPO_URL = 'https://github.com/kenlasko/monize';
@@ -51,5 +58,12 @@ describe('HelpSection', () => {
       expect(link).toHaveAttribute('target', '_blank');
       expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     }
+  });
+
+  it('offers a button to create a support backup', () => {
+    render(<HelpSection />);
+    expect(
+      screen.getByRole('button', { name: 'Create' }),
+    ).toBeInTheDocument();
   });
 });

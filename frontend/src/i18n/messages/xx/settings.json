@@ -228,7 +228,42 @@
     "wiki": {
       "label": "[XX-Wiki-XX]",
       "description": "[XX-Browse guides and documentation.-XX]"
+    },
+    "supportBackup": {
+      "label": "[XX-Create a support backup-XX]",
+      "description": "[XX-Share a de-identified copy of your data so a maintainer can reproduce a bug without seeing your real names or amounts.-XX]",
+      "action": "[XX-Create-XX]"
     }
+  },
+  "supportBackup": {
+    "title": "[XX-Create support backup-XX]",
+    "howItWorks": "[XX-This produces a de-identified copy of your backup: names are masked (first and last two characters kept), notes/descriptions/account numbers are removed, and every amount is multiplied by a single hidden factor while public values (exchange rates, prices, interest rates) are left intact. It is a normal backup file you can attach to a GitHub issue and we can restore to debug. This protects against casual exposure, not against someone who already knows you -- dates, frequencies and structure are preserved so bugs still reproduce.-XX]",
+    "sectionsLabel": "[XX-What to include-XX]",
+    "sections": {
+      "investments": "[XX-Investments (securities, holdings, prices)-XX]",
+      "scheduled": "[XX-Scheduled transactions-XX]",
+      "budgets": "[XX-Budgets-XX]",
+      "reports": "[XX-Reports & projections-XX]",
+      "importMappings": "[XX-Import column mappings-XX]",
+      "autoBackup": "[XX-Auto-backup settings-XX]"
+    },
+    "accountsLabel": "[XX-Limit to specific accounts-XX]",
+    "accountsHint": "[XX-Leave all unchecked to include every account. Picking a subset also pulls in the accounts and payees they reference.-XX]",
+    "multiplierLabel": "[XX-Amount multiplier-XX]",
+    "multiplierHint": "[XX-Every private amount is multiplied by this. Any non-integer greater than 1 works; Regenerate picks a new random value.-XX]",
+    "multiplierInvalid": "[XX-Enter a non-integer greater than 1.-XX]",
+    "regenerate": "[XX-Regenerate-XX]",
+    "passwordLabel": "[XX-Password (optional)-XX]",
+    "passwordPlaceholder": "[XX-Encrypt the file with a password-XX]",
+    "preview": "[XX-Preview-XX]",
+    "previewBefore": "[XX-Before-XX]",
+    "previewAfter": "[XX-After-XX]",
+    "previewEmpty": "[XX-No sample rows to preview for this selection.-XX]",
+    "previewFailed": "[XX-Could not build the preview. Please try again.-XX]",
+    "generate": "[XX-Generate-XX]",
+    "generatedToast": "[XX-Support backup downloaded.-XX]",
+    "generateFailed": "[XX-Could not generate the support backup. Please try again.-XX]",
+    "cancel": "[XX-Cancel-XX]"
   },
   "dangerZone": {
     "heading": "[XX-Danger Zone-XX]",

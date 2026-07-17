@@ -1,13 +1,17 @@
 'use client';
 
+import { useState } from 'react';
 import {
   ArrowTopRightOnSquareIcon,
   BookOpenIcon,
   ChatBubbleLeftRightIcon,
   CodeBracketIcon,
   ExclamationTriangleIcon,
+  ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
+import { Button } from '@/components/ui/Button';
+import { SupportBackupModal } from '@/components/settings/SupportBackupModal';
 
 const REPO_URL = 'https://github.com/kenlasko/monize';
 
@@ -20,6 +24,7 @@ const HELP_LINK_KEYS = [
 
 export function HelpSection() {
   const t = useTranslations('settings.help');
+  const [supportBackupOpen, setSupportBackupOpen] = useState(false);
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
@@ -29,6 +34,22 @@ export function HelpSection() {
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
         {t('description')}
       </p>
+
+      <div className="mb-4 flex items-start gap-3 rounded-md border border-gray-200 dark:border-gray-700 px-4 py-3">
+        <ShieldCheckIcon className="h-6 w-6 shrink-0 text-gray-400 dark:text-gray-500" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+            {t('supportBackup.label')}
+          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {t('supportBackup.description')}
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => setSupportBackupOpen(true)}>
+          {t('supportBackup.action')}
+        </Button>
+      </div>
+
       <ul className="space-y-2">
         {HELP_LINK_KEYS.map(({ key, href, Icon }) => {
           const label = t(`${key}.label`);
@@ -56,6 +77,11 @@ export function HelpSection() {
           );
         })}
       </ul>
+
+      <SupportBackupModal
+        isOpen={supportBackupOpen}
+        onClose={() => setSupportBackupOpen(false)}
+      />
     </div>
   );
 }
