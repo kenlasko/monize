@@ -35,6 +35,9 @@ export interface ScenarioOutcome {
   interestSaved: number;
   /** Projected payoff date (yyyy-MM-dd), or null when not paid off in range */
   payoffDate: string | null;
+  /** Date the overpayments begin (yyyy-MM-dd); undefined/past means from today,
+   *  so the arc starts later when a scenario's overpayment is date-scheduled. */
+  startDate?: string;
 }
 
 export interface BaselineOutcome {
@@ -156,6 +159,14 @@ export function ScenarioComparisonChart({
       return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-01`;
     };
 
+    // Whole months from the current month to a date; unlike monthIndexOf this is
+    // not clamped up to 1, so a start on/before today lands at 0 (the arc begins
+    // at today) rather than being pushed a month out.
+    const monthOffset = (iso: string): number => {
+      const d = new Date(iso);
+      return (d.getUTCFullYear() - startYear) * 12 + (d.getUTCMonth() - startMonth);
+    };
+
     const baselinePayoffIndex = baseline.payoffDate
       ? monthIndexOf(baseline.payoffDate)
       : null;
@@ -163,6 +174,7 @@ export function ScenarioComparisonChart({
       ...o,
       color: chartSeriesColor(i),
       payoffIndex: o.payoffDate ? monthIndexOf(o.payoffDate) : null,
+      startIndex: o.startDate ? Math.max(0, monthOffset(o.startDate)) : 0,
     }));
     const lastIndex = Math.max(
       12,
@@ -170,18 +182,26 @@ export function ScenarioComparisonChart({
       ...scenarioSeries.map((s) => s.payoffIndex ?? 0),
     );
 
+    // Per-arc geometry: it rises from 0 at its start month to the interest saved
+    // at the midpoint and back to 0 at payoff. The start clamps below payoff so
+    // there is always a visible span.
+    const arcOf = (s: (typeof scenarioSeries)[number]) => {
+      const payoff = s.payoffIndex ?? lastIndex;
+      const start = Math.min(Math.max(0, s.startIndex), Math.max(0, payoff - 1));
+      return { payoff, start, mid: Math.round((start + payoff) / 2) };
+    };
+
     // Sample the monthly timeline down to a readable number of points, always
     // keeping the endpoints, each arc's payoff month (where it lands on zero)
     // and its midpoint. Midpoints of odd payoff spans fall between two months;
     // the row builder below pins the kept midpoint to the exact interest-saved
     // value so short arcs still peak at the true amount.
-    const midpoints = new Map<string, number>();
+    const arcs = new Map(scenarioSeries.map((s) => [s.id, arcOf(s)]));
     const keep = new Set<number>([0, lastIndex]);
     if (baselinePayoffIndex !== null) keep.add(baselinePayoffIndex);
     for (const s of scenarioSeries) {
-      const payoff = s.payoffIndex ?? lastIndex;
-      const mid = Math.round(payoff / 2);
-      midpoints.set(s.id, mid);
+      const { payoff, start, mid } = arcs.get(s.id)!;
+      keep.add(start);
       keep.add(payoff);
       keep.add(mid);
     }
@@ -191,20 +211,21 @@ export function ScenarioComparisonChart({
       if (i % step === 0 || keep.has(i)) indices.push(i);
     }
 
-    // The parabola through (0, 0), (payoff/2, saved) and (payoff, 0):
-    // value(i) = saved * 4 * f * (1 - f) with f = i / payoff.
+    // The parabola through (start, 0), (mid, saved) and (payoff, 0):
+    // value(i) = saved * 4 * f * (1 - f) with f = (i - start) / (payoff - start).
+    // Nothing is drawn before the start month, so a date-scheduled overpayment's
+    // arc begins on that date rather than at today.
     const rows = indices.map((i) => {
       const row: Record<string, number | string> = {
         label: formatChartDate(isoAt(i), 'MMM yyyy'),
       };
       for (const s of scenarioSeries) {
-        const payoff = s.payoffIndex ?? lastIndex;
-        if (i > payoff) continue;
+        const { payoff, start, mid } = arcs.get(s.id)!;
+        if (i < start || i > payoff) continue;
         const saved = Math.max(0, s.interestSaved);
-        row[s.id] =
-          i === midpoints.get(s.id)
-            ? saved
-            : Math.round(saved * 4 * (i / payoff) * (1 - i / payoff) * 100) / 100;
+        const span = payoff - start || 1;
+        const f = (i - start) / span;
+        row[s.id] = i === mid ? saved : Math.round(saved * 4 * f * (1 - f) * 100) / 100;
       }
       if (baselinePayoffIndex !== null && i <= baselinePayoffIndex) {
         row.baseline = 0;

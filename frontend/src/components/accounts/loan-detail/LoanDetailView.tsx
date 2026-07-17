@@ -181,6 +181,7 @@ export function LoanDetailView({
         lumpSumCount: saved.lumpSums.length,
         interestSaved: scenarioComparison.interestSaved,
         payoffDate: scenarioSchedule.payoffDate,
+        startDate: scenarioOverpaymentStart(saved),
       });
     }
     return { scenarioComparisons: map, scenarioOutcomes: outcomes };
@@ -527,4 +528,22 @@ function buildLoanReportTables({
   }
 
   return tables;
+}
+
+/**
+ * The date a saved scenario's overpayments first apply -- the earliest of a
+ * recurring extra's start date and any lump-sum dates. Undefined when a
+ * recurring extra runs from origination (it applies from today), so the
+ * comparison chart's arc simply starts at today.
+ */
+function scenarioOverpaymentStart(scenario: LoanScenario): string | undefined {
+  const hasRecurring = !!scenario.recurringExtraAmount && scenario.recurringExtraAmount > 0;
+  // A recurring extra without a start date is active from today.
+  if (hasRecurring && !scenario.recurringExtraStartDate) return undefined;
+  const dates: string[] = [];
+  if (hasRecurring && scenario.recurringExtraStartDate) {
+    dates.push(scenario.recurringExtraStartDate);
+  }
+  for (const lump of scenario.lumpSums) dates.push(lump.date);
+  return dates.length ? dates.reduce((a, b) => (a < b ? a : b)) : undefined;
 }
