@@ -464,7 +464,8 @@
       "seriesScenario": "Avec remboursements anticipés simulés",
       "seriesOriginal": "Calendrier initial",
       "today": "Aujourd'hui",
-      "scenarioNote": "Le scénario de remboursement anticipé est une simulation et ne modifie pas vos versements planifiés."
+      "scenarioNote": "Le scénario de remboursement anticipé est une simulation et ne modifie pas vos versements planifiés.",
+      "axisPrincipal": "Capital restant dû"
     },
     "scenarios": {
       "title": "Scénarios enregistrés",
@@ -499,7 +500,9 @@
       "baselineMarker": "Sans remboursement anticipé · {date}",
       "extraShort": "+{amount} / échéance",
       "show": "Afficher le graphique de comparaison des scénarios",
-      "hide": "Masquer le graphique de comparaison des scénarios"
+      "hide": "Masquer le graphique de comparaison des scénarios",
+      "axisInterestSaved": "Intérêts économisés",
+      "axisMonths": "Mois jusqu’au remboursement"
     },
     "pastImpact": {
       "title": "Impact des remboursements anticipés effectués",

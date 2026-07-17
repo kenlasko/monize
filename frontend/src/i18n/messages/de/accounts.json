@@ -464,7 +464,8 @@
       "seriesScenario": "Mit simulierten Sondertilgungen",
       "seriesOriginal": "Ursprünglicher Plan",
       "today": "Heute",
-      "scenarioNote": "Das Sondertilgungsszenario ist eine Simulation und ändert Ihre geplanten Zahlungen nicht."
+      "scenarioNote": "Das Sondertilgungsszenario ist eine Simulation und ändert Ihre geplanten Zahlungen nicht.",
+      "axisPrincipal": "Restschuld"
     },
     "scenarios": {
       "title": "Gespeicherte Szenarien",
@@ -499,7 +500,9 @@
       "baselineMarker": "Ohne Sondertilgungen · {date}",
       "extraShort": "+{amount} / Rate",
       "show": "Szenariovergleichsdiagramm anzeigen",
-      "hide": "Szenariovergleichsdiagramm ausblenden"
+      "hide": "Szenariovergleichsdiagramm ausblenden",
+      "axisInterestSaved": "Gesparte Zinsen",
+      "axisMonths": "Monate bis zur Tilgung"
     },
     "pastImpact": {
       "title": "Wirkung bisheriger Sondertilgungen",

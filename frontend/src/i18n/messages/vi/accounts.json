@@ -464,7 +464,8 @@
       "seriesScenario": "Có trả trước mô phỏng",
       "seriesOriginal": "Lịch ban đầu",
       "today": "Hôm nay",
-      "scenarioNote": "Kịch bản trả trước hạn chỉ là mô phỏng và không thay đổi các khoản trả đã lên lịch của bạn."
+      "scenarioNote": "Kịch bản trả trước hạn chỉ là mô phỏng và không thay đổi các khoản trả đã lên lịch của bạn.",
+      "axisPrincipal": "Dư nợ gốc"
     },
     "scenarios": {
       "title": "Kịch bản đã lưu",
@@ -499,7 +500,9 @@
       "baselineMarker": "Không trả thêm · {date}",
       "extraShort": "+{amount} / kỳ",
       "show": "Hiện biểu đồ so sánh kịch bản",
-      "hide": "Ẩn biểu đồ so sánh kịch bản"
+      "hide": "Ẩn biểu đồ so sánh kịch bản",
+      "axisInterestSaved": "Lãi tiết kiệm",
+      "axisMonths": "Số tháng đến khi tất toán"
     },
     "pastImpact": {
       "title": "Tác động của các khoản trả trước hạn đã thực hiện",

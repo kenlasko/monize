@@ -519,7 +519,9 @@
       "baselineMarker": "[XX-No overpayments · {date}-XX]",
       "extraShort": "[XX-+{amount} / payment-XX]",
       "show": "[XX-Show scenario comparison chart-XX]",
-      "hide": "[XX-Hide scenario comparison chart-XX]"
+      "hide": "[XX-Hide scenario comparison chart-XX]",
+      "axisInterestSaved": "[XX-Interest saved-XX]",
+      "axisMonths": "[XX-Months to payoff-XX]"
     },
     "comparison": {
       "newPayoff": "[XX-New Payoff Date-XX]",
@@ -544,7 +546,8 @@
       "seriesScenario": "[XX-With Simulated Overpayments-XX]",
       "seriesOriginal": "[XX-Original Schedule-XX]",
       "today": "[XX-Today-XX]",
-      "scenarioNote": "[XX-The overpayment scenario is a simulation and does not change your scheduled payments.-XX]"
+      "scenarioNote": "[XX-The overpayment scenario is a simulation and does not change your scheduled payments.-XX]",
+      "axisPrincipal": "[XX-Remaining principal-XX]"
     },
     "scenarios": {
       "title": "[XX-Saved Scenarios-XX]",

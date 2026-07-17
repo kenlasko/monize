@@ -464,7 +464,8 @@
       "seriesScenario": "시뮬레이션된 추가 상환 포함",
       "seriesOriginal": "최초 일정",
       "today": "오늘",
-      "scenarioNote": "조기 상환 시나리오는 시뮬레이션이며 예정된 납부를 변경하지 않습니다."
+      "scenarioNote": "조기 상환 시나리오는 시뮬레이션이며 예정된 납부를 변경하지 않습니다.",
+      "axisPrincipal": "남은 원금"
     },
     "scenarios": {
       "title": "저장된 시나리오",
@@ -499,7 +500,9 @@
       "baselineMarker": "추가 상환 없음 · {date}",
       "extraShort": "+{amount} / 회",
       "show": "시나리오 비교 차트 표시",
-      "hide": "시나리오 비교 차트 숨기기"
+      "hide": "시나리오 비교 차트 숨기기",
+      "axisInterestSaved": "절약한 이자",
+      "axisMonths": "완납까지 개월"
     },
     "pastImpact": {
       "title": "지금까지의 조기 상환 효과",

@@ -464,7 +464,8 @@
       "seriesScenario": "Com amortizações extra simuladas",
       "seriesOriginal": "Plano original",
       "today": "Hoje",
-      "scenarioNote": "O cenário de amortização antecipada é uma simulação e não altera os seus pagamentos agendados."
+      "scenarioNote": "O cenário de amortização antecipada é uma simulação e não altera os seus pagamentos agendados.",
+      "axisPrincipal": "Capital em dívida"
     },
     "scenarios": {
       "title": "Cenários guardados",
@@ -499,7 +500,9 @@
       "baselineMarker": "Sem amortizações extra · {date}",
       "extraShort": "+{amount} / prestação",
       "show": "Mostrar gráfico de comparação de cenários",
-      "hide": "Ocultar gráfico de comparação de cenários"
+      "hide": "Ocultar gráfico de comparação de cenários",
+      "axisInterestSaved": "Juros poupados",
+      "axisMonths": "Meses até a quitação"
     },
     "pastImpact": {
       "title": "Impacto das amortizações antecipadas efetuadas",

@@ -464,7 +464,8 @@
       "seriesScenario": "含模擬額外還款",
       "seriesOriginal": "原始計畫",
       "today": "今天",
-      "scenarioNote": "提前還款情境只是模擬，不會改變您排定的還款。"
+      "scenarioNote": "提前還款情境只是模擬，不會改變您排定的還款。",
+      "axisPrincipal": "剩餘本金"
     },
     "scenarios": {
       "title": "已儲存的情境",
@@ -499,7 +500,9 @@
       "baselineMarker": "無額外還款 · {date}",
       "extraShort": "+{amount} / 期",
       "show": "顯示方案比較圖",
-      "hide": "隱藏方案比較圖"
+      "hide": "隱藏方案比較圖",
+      "axisInterestSaved": "節省的利息",
+      "axisMonths": "距還清月數"
     },
     "pastImpact": {
       "title": "已完成提前還款的影響",

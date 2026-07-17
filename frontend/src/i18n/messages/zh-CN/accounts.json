@@ -464,7 +464,8 @@
       "seriesScenario": "含模拟额外还款",
       "seriesOriginal": "原始计划",
       "today": "今天",
-      "scenarioNote": "提前还款方案只是模拟，不会改变您的计划还款。"
+      "scenarioNote": "提前还款方案只是模拟，不会改变您的计划还款。",
+      "axisPrincipal": "剩余本金"
     },
     "scenarios": {
       "title": "已保存的方案",
@@ -499,7 +500,9 @@
       "baselineMarker": "无额外还款 · {date}",
       "extraShort": "+{amount} / 期",
       "show": "显示方案对比图",
-      "hide": "隐藏方案对比图"
+      "hide": "隐藏方案对比图",
+      "axisInterestSaved": "节省的利息",
+      "axisMonths": "距还清月数"
     },
     "pastImpact": {
       "title": "已还提前还款的影响",

@@ -230,8 +230,29 @@ export function ScenarioComparisonChart({
         <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
-            <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
-            <YAxis tickFormatter={formatCurrencyAxis} tick={{ fontSize: 12 }} />
+            <XAxis
+              dataKey="label"
+              tick={{ fontSize: 11 }}
+              interval="preserveStartEnd"
+              height={48}
+              label={{
+                value: t('loanDetail.scenarioChart.axisMonths'),
+                position: 'insideBottom',
+                offset: 0,
+                style: { fontSize: 11, fill: chartColors.axis, textAnchor: 'middle' },
+              }}
+            />
+            <YAxis
+              tickFormatter={formatCurrencyAxis}
+              tick={{ fontSize: 12 }}
+              width={72}
+              label={{
+                value: t('loanDetail.scenarioChart.axisInterestSaved'),
+                angle: -90,
+                position: 'insideLeft',
+                style: { fontSize: 11, fill: chartColors.axis, textAnchor: 'middle' },
+              }}
+            />
             <Tooltip
               content={({ active, payload, label }) => {
                 if (!active || !payload || payload.length === 0) return null;

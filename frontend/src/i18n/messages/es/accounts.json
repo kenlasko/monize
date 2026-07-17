@@ -464,7 +464,8 @@
       "seriesScenario": "Con pagos extra simulados",
       "seriesOriginal": "Calendario original",
       "today": "Hoy",
-      "scenarioNote": "El escenario de pagos anticipados es una simulación y no cambia sus pagos programados."
+      "scenarioNote": "El escenario de pagos anticipados es una simulación y no cambia sus pagos programados.",
+      "axisPrincipal": "Capital pendiente"
     },
     "scenarios": {
       "title": "Escenarios guardados",
@@ -499,7 +500,9 @@
       "baselineMarker": "Sin pagos extra · {date}",
       "extraShort": "+{amount} / cuota",
       "show": "Mostrar gráfico de comparación de escenarios",
-      "hide": "Ocultar gráfico de comparación de escenarios"
+      "hide": "Ocultar gráfico de comparación de escenarios",
+      "axisInterestSaved": "Intereses ahorrados",
+      "axisMonths": "Meses hasta la cancelación"
     },
     "pastImpact": {
       "title": "Impacto de los pagos anticipados realizados",

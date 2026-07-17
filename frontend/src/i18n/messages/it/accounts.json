@@ -464,7 +464,8 @@
       "seriesScenario": "Con sovrapagamenti simulati",
       "seriesOriginal": "Piano originario",
       "today": "Oggi",
-      "scenarioNote": "Lo scenario di rimborso anticipato è una simulazione e non modifica i tuoi pagamenti pianificati."
+      "scenarioNote": "Lo scenario di rimborso anticipato è una simulazione e non modifica i tuoi pagamenti pianificati.",
+      "axisPrincipal": "Capitale residuo"
     },
     "scenarios": {
       "title": "Scenari salvati",
@@ -499,7 +500,9 @@
       "baselineMarker": "Senza pagamenti extra · {date}",
       "extraShort": "+{amount} / rata",
       "show": "Mostra grafico di confronto scenari",
-      "hide": "Nascondi grafico di confronto scenari"
+      "hide": "Nascondi grafico di confronto scenari",
+      "axisInterestSaved": "Interessi risparmiati",
+      "axisMonths": "Mesi al rimborso"
     },
     "pastImpact": {
       "title": "Impatto dei rimborsi anticipati effettuati",

@@ -464,7 +464,8 @@
       "seriesScenario": "Dengan pembayaran ekstra tersimulasi",
       "seriesOriginal": "Jadwal Awal",
       "today": "Hari ini",
-      "scenarioNote": "Skenario pembayaran tambahan hanyalah simulasi dan tidak mengubah pembayaran terjadwal Anda."
+      "scenarioNote": "Skenario pembayaran tambahan hanyalah simulasi dan tidak mengubah pembayaran terjadwal Anda.",
+      "axisPrincipal": "Sisa pokok"
     },
     "scenarios": {
       "title": "Skenario Tersimpan",
@@ -499,7 +500,9 @@
       "baselineMarker": "Tanpa pembayaran ekstra · {date}",
       "extraShort": "+{amount} / angsuran",
       "show": "Tampilkan grafik perbandingan skenario",
-      "hide": "Sembunyikan grafik perbandingan skenario"
+      "hide": "Sembunyikan grafik perbandingan skenario",
+      "axisInterestSaved": "Bunga yang dihemat",
+      "axisMonths": "Bulan hingga lunas"
     },
     "pastImpact": {
       "title": "Dampak Pembayaran Tambahan yang Sudah Dilakukan",

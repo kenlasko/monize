@@ -464,7 +464,8 @@
       "seriesScenario": "Simüle edilmiş fazla ödemelerle",
       "seriesOriginal": "Orijinal Plan",
       "today": "Bugün",
-      "scenarioNote": "Erken ödeme senaryosu bir simülasyondur ve planlanan ödemelerinizi değiştirmez."
+      "scenarioNote": "Erken ödeme senaryosu bir simülasyondur ve planlanan ödemelerinizi değiştirmez.",
+      "axisPrincipal": "Kalan anapara"
     },
     "scenarios": {
       "title": "Kayıtlı Senaryolar",
@@ -499,7 +500,9 @@
       "baselineMarker": "Ek ödeme yok · {date}",
       "extraShort": "+{amount} / taksit",
       "show": "Senaryo karşılaştırma grafiğini göster",
-      "hide": "Senaryo karşılaştırma grafiğini gizle"
+      "hide": "Senaryo karşılaştırma grafiğini gizle",
+      "axisInterestSaved": "Tasarruf edilen faiz",
+      "axisMonths": "Ödemeye kalan ay"
     },
     "pastImpact": {
       "title": "Yapılan Erken Ödemelerin Etkisi",

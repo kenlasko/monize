@@ -464,7 +464,8 @@
       "seriesScenario": "シミュレーションした繰上返済あり",
       "seriesOriginal": "当初スケジュール",
       "today": "今日",
-      "scenarioNote": "繰上返済シナリオはシミュレーションであり、予定されている返済を変更するものではありません。"
+      "scenarioNote": "繰上返済シナリオはシミュレーションであり、予定されている返済を変更するものではありません。",
+      "axisPrincipal": "残元本"
     },
     "scenarios": {
       "title": "保存済みシナリオ",
@@ -499,7 +500,9 @@
       "baselineMarker": "追加返済なし · {date}",
       "extraShort": "+{amount} / 回",
       "show": "シナリオ比較チャートを表示",
-      "hide": "シナリオ比較チャートを非表示"
+      "hide": "シナリオ比較チャートを非表示",
+      "axisInterestSaved": "節約できる利息",
+      "axisMonths": "完済までの月数"
     },
     "pastImpact": {
       "title": "これまでの繰上返済の効果",

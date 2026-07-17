@@ -464,7 +464,8 @@
       "seriesScenario": "Z symulowanymi nadpłatami",
       "seriesOriginal": "Pierwotny harmonogram",
       "today": "Dzisiaj",
-      "scenarioNote": "Scenariusz nadpłat jest symulacją i nie zmienia zaplanowanych płatności."
+      "scenarioNote": "Scenariusz nadpłat jest symulacją i nie zmienia zaplanowanych płatności.",
+      "axisPrincipal": "Pozostały kapitał"
     },
     "scenarios": {
       "title": "Zapisane scenariusze",
@@ -499,7 +500,9 @@
       "baselineMarker": "Bez nadpłat · {date}",
       "extraShort": "+{amount} / rata",
       "show": "Pokaż wykres porównania scenariuszy",
-      "hide": "Ukryj wykres porównania scenariuszy"
+      "hide": "Ukryj wykres porównania scenariuszy",
+      "axisInterestSaved": "Zaoszczędzone odsetki",
+      "axisMonths": "Miesiące do spłaty"
     },
     "pastImpact": {
       "title": "Wpływ dokonanych nadpłat",

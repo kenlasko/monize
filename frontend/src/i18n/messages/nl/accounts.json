@@ -464,7 +464,8 @@
       "seriesScenario": "Met gesimuleerde extra aflossingen",
       "seriesOriginal": "Oorspronkelijk schema",
       "today": "Vandaag",
-      "scenarioNote": "Het scenario met extra aflossingen is een simulatie en wijzigt uw geplande betalingen niet."
+      "scenarioNote": "Het scenario met extra aflossingen is een simulatie en wijzigt uw geplande betalingen niet.",
+      "axisPrincipal": "Resterende hoofdsom"
     },
     "scenarios": {
       "title": "Opgeslagen scenario's",
@@ -499,7 +500,9 @@
       "baselineMarker": "Zonder extra aflossingen · {date}",
       "extraShort": "+{amount} / termijn",
       "show": "Scenariovergelijkingsgrafiek tonen",
-      "hide": "Scenariovergelijkingsgrafiek verbergen"
+      "hide": "Scenariovergelijkingsgrafiek verbergen",
+      "axisInterestSaved": "Bespaarde rente",
+      "axisMonths": "Maanden tot aflossing"
     },
     "pastImpact": {
       "title": "Effect van gedane extra aflossingen",
