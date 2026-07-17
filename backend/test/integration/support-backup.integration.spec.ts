@@ -140,21 +140,39 @@ describe("Support backup (integration)", () => {
       .filter((fk) => !covered(fk.table, fk.column))
       .map((fk) => `${fk.table}.${fk.column} -> ${fk.refTable}`);
 
-    // Reverse guard: a REFS entry that no longer matches a real FK is stale.
+    // FKs declared in database/schema.sql (production truth) that the TypeORM
+    // entities do NOT model as relations, so `synchronize` never creates the
+    // constraint in this entity-derived test DB -- yet they exist in prod, and
+    // a real export carries these columns, so REFS must keep covering them.
+    // (Both are self-referential columns stored as plain UUIDs on the entity.)
+    const SCHEMA_ONLY_FKS = new Set([
+      "transactions.parent_transaction_id->transactions",
+      "investment_transactions.linked_transaction_id->investment_transactions",
+    ]);
+
+    // Reverse guard: a REFS entry that matches neither a real FK nor a known
+    // schema-only FK is stale.
     const realFkKeys = new Set(
       fks.map((fk) => `${fk.table}.${fk.column}->${fk.refTable}`),
     );
     const staleRefs: string[] = [];
     for (const [table, rules] of REFS_FOR_TEST) {
       for (const r of rules) {
-        if (!realFkKeys.has(`${table}.${r.column}->${r.refTable}`)) {
+        const key = `${table}.${r.column}->${r.refTable}`;
+        if (!realFkKeys.has(key) && !SCHEMA_ONLY_FKS.has(key)) {
           staleRefs.push(`${table}.${r.column} -> ${r.refTable}`);
         }
       }
     }
+    // Keep the exception list honest: if an entity gains the relation back, the
+    // constraint appears in the test DB and the exception becomes obsolete.
+    const obsoleteExceptions = [...SCHEMA_ONLY_FKS].filter((key) =>
+      realFkKeys.has(key),
+    );
 
     expect({ uncoveredFks }).toEqual({ uncoveredFks: [] });
     expect({ staleRefs }).toEqual({ staleRefs: [] });
+    expect({ obsoleteExceptions }).toEqual({ obsoleteExceptions: [] });
   });
 
   it("generates a de-identified backup that restores into another user", async () => {
