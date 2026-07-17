@@ -3,7 +3,6 @@
     "viewTransactions": "查看交易",
     "reconcile": "對帳",
     "edit": "編輯科目",
-    "export": "匯出",
     "back": "返回科目"
   },
   "loading": "載入科目詳情中...",

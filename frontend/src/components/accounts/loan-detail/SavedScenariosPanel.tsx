@@ -9,11 +9,14 @@ import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { OverpaymentPlan, ScenarioComparison } from '@/lib/loan-schedule';
 import { loanScenariosApi, planToScenarioData, scenarioToPlan } from '@/lib/loan-scenarios';
+import {
+  BaselineOutcome,
+  ScenarioComparisonChart,
+  ScenarioOutcome,
+} from '@/components/accounts/loan-detail/ScenarioComparisonChart';
 import { LoanScenario } from '@/types/loan-scenario';
 import { getErrorMessage } from '@/lib/errors';
-import { exportToCsv } from '@/lib/csv-export';
-import { sanitizeFilename } from '@/lib/export-filename';
-import { ExportIconButton } from '@/components/ui/ExportIconButton';
+import { createScenarioLabels } from '@/components/accounts/loan-detail/loan-scenario-labels';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 
@@ -26,6 +29,11 @@ interface SavedScenariosPanelProps {
   currencyCode: string;
   /** The simulator's current plan; enables saving when non-null */
   activePlan: OverpaymentPlan | null;
+  /** Outcomes for the comparison chart; the chart toggle only shows when
+   *  there are at least two (comparing one scenario has nothing to say). */
+  chartOutcomes?: ScenarioOutcome[];
+  /** No-overpayment baseline for the comparison chart's context marker */
+  chartBaseline?: BaselineOutcome | null;
   onLoad: (plan: OverpaymentPlan | null, scenario: LoanScenario) => void;
   onScenariosChanged: () => void;
 }
@@ -40,11 +48,12 @@ export function SavedScenariosPanel({
   comparisons,
   currencyCode,
   activePlan,
+  chartOutcomes = [],
+  chartBaseline = null,
   onLoad,
   onScenariosChanged,
 }: SavedScenariosPanelProps) {
   const t = useTranslations('accounts');
-  const tc = useTranslations('common');
   const { formatCurrency } = useNumberFormat();
   const formatChartDate = useChartDateFormat();
 
@@ -56,6 +65,9 @@ export function SavedScenariosPanel({
   const [nameInput, setNameInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [scenarioToDelete, setScenarioToDelete] = useState<LoanScenario | null>(null);
+  const [showChart, setShowChart] = useState(false);
+
+  const chartAvailable = chartOutcomes.length > 0 && chartBaseline !== null;
 
   const openSave = () => {
     setNameInput('');
@@ -101,70 +113,13 @@ export function SavedScenariosPanel({
     }
   };
 
-  const describeScenario = (scenario: LoanScenario): string => {
-    const parts: string[] = [];
-    if (scenario.recurringExtraAmount && scenario.recurringExtraAmount > 0) {
-      parts.push(
-        t('loanDetail.scenarios.recurringSummary', {
-          amount: formatCurrency(scenario.recurringExtraAmount),
-        }),
-      );
-    }
-    if (scenario.lumpSums.length > 0) {
-      parts.push(
-        t('loanDetail.scenarios.lumpSumSummary', { count: scenario.lumpSums.length }),
-      );
-    }
-    return parts.join(' + ') || t('loanDetail.scenarios.emptyScenario');
-  };
-
-  const payoffLabel = (comparison: ScenarioComparison | null) =>
-    comparison
-      ? comparison.scenario.payoffDate
-        ? formatChartDate(comparison.scenario.payoffDate, 'MMM yyyy')
-        : t('loanDetail.comparison.beyondProjection')
-      : '—';
-
-  const timeSavedLabel = (comparison: ScenarioComparison | null) => {
-    if (!comparison) return '—';
-    if (comparison.installmentReduction > 0.005) {
-      return t('loanDetail.comparison.installmentDrop', {
-        payment: formatCurrency(comparison.scenario.finalPaymentAmount, currencyCode),
-        reduction: formatCurrency(comparison.installmentReduction, currencyCode),
-      });
-    }
-    return comparison.monthsSaved > 0
-      ? t('loanDetail.comparison.monthsSaved', { count: comparison.monthsSaved })
-      : t('loanDetail.comparison.paymentsSaved', {
-          count: Math.max(comparison.paymentsSaved, 0),
-        });
-  };
-
-  const interestSavedLabel = (comparison: ScenarioComparison | null) =>
-    comparison ? formatCurrency(Math.max(0, comparison.interestSaved), currencyCode) : '—';
-
-  // The comparison table as displayed: names, the scenario summary, and the
-  // formatted payoff / time-saved / interest-saved outcomes.
-  const handleExportCsv = () => {
-    const headers = [
-      t('loanDetail.scenarios.nameLabel'),
-      t('loanDetail.scenarios.colDetails'),
-      t('loanDetail.comparison.newPayoff'),
-      t('loanDetail.comparison.timeSaved'),
-      t('loanDetail.comparison.interestSaved'),
-    ];
-    const rows = scenarios.map((scenario) => {
-      const comparison = comparisons.get(scenario.id) ?? null;
-      return [
-        scenario.name,
-        describeScenario(scenario),
-        payoffLabel(comparison),
-        timeSavedLabel(comparison),
-        interestSavedLabel(comparison),
-      ];
-    });
-    exportToCsv(sanitizeFilename(t('loanDetail.scenarios.title')), headers, rows);
-  };
+  const {
+    describeScenario,
+    overpaymentLabel,
+    payoffLabel,
+    timeSavedLabel,
+    interestSavedLabel,
+  } = createScenarioLabels({ t, formatCurrency, formatChartDate, currencyCode });
 
   const headerCell = 'px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400';
 
@@ -175,11 +130,18 @@ export function SavedScenariosPanel({
           {t('loanDetail.scenarios.title')}
         </h4>
         <div className="flex items-center gap-2">
-          <ExportIconButton
-            onExport={handleExportCsv}
-            title={tc('csvDownload.downloadAsCsv', { filename: t('loanDetail.scenarios.title') })}
-            disabled={scenarios.length === 0}
-          />
+          {chartAvailable && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowChart((v) => !v)}
+              aria-expanded={showChart}
+            >
+              {showChart
+                ? t('loanDetail.scenarioChart.hide')
+                : t('loanDetail.scenarioChart.show')}
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={openSave} disabled={!activePlan}>
             {t('loanDetail.scenarios.saveCurrent')}
           </Button>
@@ -197,6 +159,9 @@ export function SavedScenariosPanel({
               <tr className="border-b border-gray-200 dark:border-gray-700 text-left">
                 <th className={headerCell}>{t('loanDetail.scenarios.nameLabel')}</th>
                 <th className={`${headerCell} text-right`}>
+                  {t('loanDetail.scenarios.colOverpayment')}
+                </th>
+                <th className={`${headerCell} text-right`}>
                   {t('loanDetail.comparison.newPayoff')}
                 </th>
                 <th className={`${headerCell} text-right`}>
@@ -211,8 +176,22 @@ export function SavedScenariosPanel({
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {scenarios.map((scenario) => {
                 const comparison = comparisons.get(scenario.id) ?? null;
+                const load = () => onLoad(scenarioToPlan(scenario), scenario);
                 return (
-                  <tr key={scenario.id}>
+                  <tr
+                    key={scenario.id}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={t('loanDetail.scenarios.loadAria', { name: scenario.name })}
+                    onClick={load}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        load();
+                      }
+                    }}
+                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset"
+                  >
                     <td className="px-3 py-2 align-top">
                       <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                         {scenario.name}
@@ -220,6 +199,9 @@ export function SavedScenariosPanel({
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         {describeScenario(scenario)}
                       </p>
+                    </td>
+                    <td className="px-3 py-2 text-right whitespace-nowrap text-gray-900 dark:text-gray-100">
+                      {overpaymentLabel(scenario)}
                     </td>
                     <td className="px-3 py-2 text-right whitespace-nowrap text-purple-600 dark:text-purple-400">
                       {payoffLabel(comparison)}
@@ -231,21 +213,26 @@ export function SavedScenariosPanel({
                       {interestSavedLabel(comparison)}
                     </td>
                     <td className="px-3 py-2 text-right whitespace-nowrap">
+                      {/* Row-level actions stop propagation so they don't also
+                          load the scenario (the row's own click does that). */}
                       <div className="flex items-center justify-end gap-1">
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => onLoad(scenarioToPlan(scenario), scenario)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openRename(scenario);
+                          }}
                         >
-                          {t('loanDetail.scenarios.load')}
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => openRename(scenario)}>
                           {t('loanDetail.scenarios.rename')}
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setScenarioToDelete(scenario)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setScenarioToDelete(scenario);
+                          }}
                         >
                           {t('loanDetail.scenarios.delete')}
                         </Button>
@@ -257,6 +244,14 @@ export function SavedScenariosPanel({
             </tbody>
           </table>
         </div>
+      )}
+
+      {chartAvailable && showChart && chartBaseline && (
+        <ScenarioComparisonChart
+          outcomes={chartOutcomes}
+          baseline={chartBaseline}
+          currencyCode={currencyCode}
+        />
       )}
 
       <Modal isOpen={nameModal !== null} onClose={() => setNameModal(null)} maxWidth="sm">

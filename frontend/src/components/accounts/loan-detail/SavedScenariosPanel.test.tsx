@@ -3,12 +3,7 @@ import { render, screen, fireEvent, act } from '@/test/render';
 import toast from 'react-hot-toast';
 import { SavedScenariosPanel } from './SavedScenariosPanel';
 import { LoanScenario } from '@/types/loan-scenario';
-import { exportToCsv } from '@/lib/csv-export';
 import type { ScenarioComparison } from '@/lib/loan-schedule';
-
-vi.mock('@/lib/csv-export', () => ({
-  exportToCsv: vi.fn(),
-}));
 
 const mockCreate = vi.fn();
 const mockUpdate = vi.fn();
@@ -36,6 +31,10 @@ vi.mock('@/hooks/useNumberFormat', () => ({
   }),
 }));
 
+vi.mock('@/components/accounts/loan-detail/ScenarioComparisonChart', () => ({
+  ScenarioComparisonChart: () => <div data-testid="scenario-chart" />,
+}));
+
 function makeScenario(overrides: Partial<LoanScenario> = {}): LoanScenario {
   return {
     id: 'scenario-1',
@@ -44,6 +43,7 @@ function makeScenario(overrides: Partial<LoanScenario> = {}): LoanScenario {
     name: 'Extra 200',
     recurringExtraAmount: 200,
     recurringExtraMode: null,
+    recurringExtraFrequency: null,
     recurringExtraStartDate: null,
     recurringExtraEndDate: null,
     lumpSums: [{ date: '2026-06-01', amount: 5000 }],
@@ -100,46 +100,26 @@ describe('SavedScenariosPanel', () => {
     expect(screen.getByText(/No saved scenarios yet/)).toBeInTheDocument();
   });
 
-  it('exports the comparison table to CSV as displayed', async () => {
-    const comparison = {
-      scenario: { payoffDate: '2040-06-15', finalPaymentAmount: 500 },
-      paymentsSaved: 24,
-      monthsSaved: 24,
-      interestSaved: 15000,
-      installmentReduction: 0,
-    } as unknown as ScenarioComparison;
-    renderPanel({ comparisons: new Map([['scenario-1', comparison]]) });
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Download Saved Scenarios as CSV' }));
+  it('shows the chart toggle next to Save current and reveals the chart on click', async () => {
+    renderPanel({
+      chartOutcomes: [
+        { id: 's1', name: 'A', recurringExtra: 100, lumpSumCount: 0, interestSaved: 1000, payoffDate: '2030-01-01' },
+        { id: 's2', name: 'B', recurringExtra: 200, lumpSumCount: 0, interestSaved: 2000, payoffDate: '2029-01-01' },
+      ],
+      chartBaseline: { payoffDate: '2032-01-01' },
     });
 
-    expect(exportToCsv).toHaveBeenCalledTimes(1);
-    const [filename, headers, rows] = vi.mocked(exportToCsv).mock.calls[0];
-    expect(filename).toBe('saved-scenarios');
-    expect(headers).toEqual([
-      'Scenario name',
-      'Details',
-      'New Payoff Date',
-      'Time Saved',
-      'Interest Saved',
-    ]);
-    expect(rows).toEqual([
-      [
-        'Extra 200',
-        '$200.00 extra per payment + 1 lump sum',
-        expect.stringContaining('2040'),
-        '24 months',
-        '$15000.00',
-      ],
-    ]);
+    expect(screen.queryByTestId('scenario-chart')).not.toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByText('Show scenario comparison chart'));
+    });
+    expect(screen.getByTestId('scenario-chart')).toBeInTheDocument();
+    expect(screen.getByText('Hide scenario comparison chart')).toBeInTheDocument();
   });
 
-  it('disables the CSV export without scenarios', () => {
-    renderPanel({ scenarios: [] });
-    expect(
-      screen.getByRole('button', { name: 'Download Saved Scenarios as CSV' }),
-    ).toBeDisabled();
+  it('offers no chart toggle without chart data', () => {
+    renderPanel();
+    expect(screen.queryByText('Show scenario comparison chart')).not.toBeInTheDocument();
   });
 
   it('disables saving when no plan is active', () => {
@@ -147,15 +127,24 @@ describe('SavedScenariosPanel', () => {
     expect(screen.getByText('Save current scenario')).toBeDisabled();
   });
 
-  it('loads a scenario back into the simulator', () => {
+  it('loads a scenario when its row is clicked', () => {
     const { props } = renderPanel();
 
-    fireEvent.click(screen.getByText('Load'));
+    // No dedicated Load button: clicking anywhere on the row loads it.
+    fireEvent.click(screen.getByText('Extra 200'));
 
     expect(props.onLoad).toHaveBeenCalledWith(
       { recurringExtra: { amount: 200 }, lumpSums: [{ date: '2026-06-01', amount: 5000 }] },
       expect.objectContaining({ id: 'scenario-1' }),
     );
+  });
+
+  it('does not load when a row action button is clicked', () => {
+    const { props } = renderPanel();
+
+    fireEvent.click(screen.getByText('Rename'));
+
+    expect(props.onLoad).not.toHaveBeenCalled();
   });
 
   it('saves the active plan under a name', async () => {
@@ -178,6 +167,7 @@ describe('SavedScenariosPanel', () => {
       name: 'My plan',
       recurringExtraAmount: 100,
       recurringExtraMode: null,
+      recurringExtraFrequency: null,
       recurringExtraStartDate: null,
       recurringExtraEndDate: null,
       lumpSums: [],

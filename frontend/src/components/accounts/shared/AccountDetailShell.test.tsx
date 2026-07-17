@@ -67,7 +67,7 @@ describe('AccountDetailShell', () => {
     fireEvent.click(screen.getByText('View Transactions'));
     fireEvent.click(screen.getByText('Reconcile'));
     fireEvent.click(screen.getByText('Edit Account'));
-    fireEvent.click(screen.getByText('Export'));
+    fireEvent.click(screen.getByText('Export PDF'));
     fireEvent.click(screen.getByText('Back to Accounts'));
 
     expect(onViewTransactions).toHaveBeenCalledTimes(1);

@@ -416,7 +416,30 @@
       "modeShortenTerm": "Encurtar prazo",
       "modeLowerInstallment": "Reduzir prestação",
       "modeShortenTermHint": "Manter a mesma prestação e liquidar o empréstimo mais cedo. Poupança máxima de juros.",
-      "modeLowerInstallmentHint": "Manter a mesma data de liquidação e recalcular uma prestação menor sobre o saldo reduzido."
+      "modeLowerInstallmentHint": "Manter a mesma data de liquidação e recalcular uma prestação menor sobre o saldo reduzido.",
+      "goalSeek": {
+        "title": "Procura de objetivo",
+        "description": "Calcular ao contrário: quanto extra por prestação para atingir um objetivo.",
+        "targetInterestLabel": "Poupança de juros alvo",
+        "targetDateLabel": "Mês de liquidação alvo",
+        "compute": "Calcular",
+        "required": "Extra necessário: {amount} por prestação",
+        "effect": "→ poupa {interest}, liquidação {date}",
+        "alreadyMet": "Já alcançado sem qualquer amortização extra.",
+        "unreachableInterest": "Fora de alcance — nem uma amortização extra muito grande consegue poupar tantos juros.",
+        "unreachableDate": "Fora de alcance — esse mês é anterior à liquidação mais cedo possível."
+      },
+      "optionalGroup": "Opcional",
+      "simulationTypeLabel": "Tipo de simulação",
+      "overpaymentAmount": "Valor do pagamento extra",
+      "frequencyLabel": "Frequência",
+      "frequencyOneOff": "Único",
+      "frequencyWeekly": "Semanal",
+      "frequencyBiweekly": "Quinzenal",
+      "frequencyMonthly": "Mensal",
+      "frequencyQuarterly": "Trimestral",
+      "frequencyAnnually": "Anual",
+      "oneOffDateLabel": "Data"
     },
     "comparison": {
       "newPayoff": "Nova data de liquidação",
@@ -429,7 +452,9 @@
       "totalExtraContributed": "Total extra contribuído",
       "beyondProjection": "Além da projeção",
       "newInstallment": "Nova prestação",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "Pagamento mensal",
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "Cronologia de liquidação",
@@ -439,13 +464,13 @@
       "seriesScenario": "Com amortizações extra simuladas",
       "seriesOriginal": "Plano original",
       "today": "Hoje",
-      "scenarioNote": "O cenário de amortização antecipada é uma simulação e não altera os seus pagamentos agendados."
+      "scenarioNote": "O cenário de amortização antecipada é uma simulação e não altera os seus pagamentos agendados.",
+      "axisPrincipal": "Capital em dívida"
     },
     "scenarios": {
       "title": "Cenários guardados",
       "saveCurrent": "Guardar cenário atual",
       "empty": "Ainda não há cenários guardados. Configure uma amortização antecipada acima e guarde-a para comparar planos ao longo do tempo.",
-      "load": "Carregar",
       "rename": "Mudar o nome",
       "delete": "Eliminar",
       "cancel": "Cancelar",
@@ -464,7 +489,20 @@
       "deleteFailed": "Não foi possível eliminar o cenário",
       "deleteTitle": "Eliminar cenário",
       "deleteMessage": "Eliminar o cenário \"{name}\"? Esta ação não pode ser anulada.",
-      "loadFailed": "Não foi possível carregar os cenários guardados. Continuam armazenados — recarregue a página para tentar novamente."
+      "loadFailed": "Não foi possível carregar os cenários guardados. Continuam armazenados — recarregue a página para tentar novamente.",
+      "colOverpayment": "Pagamento extra",
+      "overpaymentWithFrequency": "{amount} ({frequency})",
+      "loadAria": "Carregar cenário \"{name}\""
+    },
+    "scenarioChart": {
+      "title": "Comparação de cenários",
+      "description": "Cada amortização extra guardada é um arco na linha temporal: o arco termina na data de liquidação, o pico são os juros poupados e a etiqueta mostra o extra pago por prestação. Mais estreito e mais alto é melhor.",
+      "baselineMarker": "Sem amortizações extra · {date}",
+      "extraShort": "+{amount} / prestação",
+      "show": "Mostrar gráfico de comparação de cenários",
+      "hide": "Ocultar gráfico de comparação de cenários",
+      "axisInterestSaved": "Juros poupados",
+      "axisMonths": "Meses até a quitação"
     },
     "pastImpact": {
       "title": "Impacto das amortizações antecipadas efetuadas",

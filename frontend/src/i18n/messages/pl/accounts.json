@@ -416,7 +416,30 @@
       "modeShortenTerm": "Skrócenie okresu",
       "modeLowerInstallment": "Obniżenie raty",
       "modeShortenTermHint": "Zachowaj tę samą ratę i spłać kredyt szybciej. Maksymalna oszczędność na odsetkach.",
-      "modeLowerInstallmentHint": "Zachowaj tę samą datę spłaty i przelicz niższą ratę od zmniejszonego salda."
+      "modeLowerInstallmentHint": "Zachowaj tę samą datę spłaty i przelicz niższą ratę od zmniejszonego salda.",
+      "goalSeek": {
+        "title": "Szukanie celu",
+        "description": "Od końca: ile nadpłaty na ratę, aby osiągnąć cel.",
+        "targetInterestLabel": "Docelowa oszczędność na odsetkach",
+        "targetDateLabel": "Docelowy miesiąc spłaty",
+        "compute": "Oblicz",
+        "required": "Potrzebna nadpłata: {amount} na ratę",
+        "effect": "→ oszczędza {interest}, spłata {date}",
+        "alreadyMet": "Cel osiągnięty już bez nadpłat.",
+        "unreachableInterest": "Poza zasięgiem — nawet bardzo duża nadpłata nie da tak dużej oszczędności na odsetkach.",
+        "unreachableDate": "Poza zasięgiem — ten miesiąc jest wcześniejszy niż najwcześniejsza możliwa spłata."
+      },
+      "optionalGroup": "Opcjonalne",
+      "simulationTypeLabel": "Typ symulacji",
+      "overpaymentAmount": "Kwota nadpłaty",
+      "frequencyLabel": "Częstotliwość",
+      "frequencyOneOff": "Jednorazowa",
+      "frequencyWeekly": "Tygodniowa",
+      "frequencyBiweekly": "Dwutygodniowa",
+      "frequencyMonthly": "Miesięczna",
+      "frequencyQuarterly": "Kwartalna",
+      "frequencyAnnually": "Roczna",
+      "oneOffDateLabel": "Data"
     },
     "comparison": {
       "newPayoff": "Nowa data spłaty",
@@ -429,7 +452,9 @@
       "totalExtraContributed": "Łączna kwota nadpłat",
       "beyondProjection": "Poza prognozą",
       "newInstallment": "Nowa rata",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "Miesięczna płatność",
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "Oś czasu spłaty",
@@ -439,13 +464,13 @@
       "seriesScenario": "Z symulowanymi nadpłatami",
       "seriesOriginal": "Pierwotny harmonogram",
       "today": "Dzisiaj",
-      "scenarioNote": "Scenariusz nadpłat jest symulacją i nie zmienia zaplanowanych płatności."
+      "scenarioNote": "Scenariusz nadpłat jest symulacją i nie zmienia zaplanowanych płatności.",
+      "axisPrincipal": "Pozostały kapitał"
     },
     "scenarios": {
       "title": "Zapisane scenariusze",
       "saveCurrent": "Zapisz bieżący scenariusz",
       "empty": "Brak zapisanych scenariuszy. Skonfiguruj nadpłatę powyżej i zapisz ją, aby porównywać plany w czasie.",
-      "load": "Wczytaj",
       "rename": "Zmień nazwę",
       "delete": "Usuń",
       "cancel": "Anuluj",
@@ -464,7 +489,20 @@
       "deleteFailed": "Nie udało się usunąć scenariusza",
       "deleteTitle": "Usuń scenariusz",
       "deleteMessage": "Usunąć scenariusz \"{name}\"? Tej operacji nie można cofnąć.",
-      "loadFailed": "Nie udało się wczytać zapisanych scenariuszy. Nadal są zapisane — odśwież stronę, aby spróbować ponownie."
+      "loadFailed": "Nie udało się wczytać zapisanych scenariuszy. Nadal są zapisane — odśwież stronę, aby spróbować ponownie.",
+      "colOverpayment": "Nadpłata",
+      "overpaymentWithFrequency": "{amount} ({frequency})",
+      "loadAria": "Wczytaj scenariusz „{name}“"
+    },
+    "scenarioChart": {
+      "title": "Porównanie scenariuszy",
+      "description": "Każda zapisana nadpłata to łuk na osi czasu: łuk kończy się w dacie spłaty, wierzchołek to zaoszczędzone odsetki, a etykieta pokazuje nadpłatę do raty. Węższy i wyższy znaczy lepszy.",
+      "baselineMarker": "Bez nadpłat · {date}",
+      "extraShort": "+{amount} / rata",
+      "show": "Pokaż wykres porównania scenariuszy",
+      "hide": "Ukryj wykres porównania scenariuszy",
+      "axisInterestSaved": "Zaoszczędzone odsetki",
+      "axisMonths": "Miesiące do spłaty"
     },
     "pastImpact": {
       "title": "Wpływ dokonanych nadpłat",

@@ -29,8 +29,16 @@ async function renderSimulator(props: Partial<React.ComponentProps<typeof Overpa
       />,
     );
   });
-  return { result: result!, onPlanChange: props.onPlanChange ?? onPlanChange };
+  return { result: result!, onPlanChange };
 }
+
+const projectionInput = {
+  startingBalance: 100000,
+  annualRate: 5,
+  paymentAmount: 600,
+  frequency: 'MONTHLY' as const,
+  firstPaymentDate: new Date('2025-01-15'),
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -38,33 +46,31 @@ beforeEach(() => {
 });
 
 describe('OverpaymentSimulator', () => {
-  it('emits a recurring extra plan when an amount is entered', async () => {
+  it('emits a monthly recurring extra plan when an amount is entered', async () => {
     const { onPlanChange } = await renderSimulator();
 
-    const amountInput = screen.getByLabelText('Extra per payment');
     await act(async () => {
-      fireEvent.change(amountInput, { target: { value: '200' } });
+      fireEvent.change(screen.getByLabelText('Overpayment amount'), { target: { value: '200' } });
     });
 
     expect(onPlanChange).toHaveBeenLastCalledWith({
-      recurringExtra: { amount: 200, mode: 'SHORTEN_TERM' },
+      recurringExtra: { amount: 200, frequency: 'MONTHLY', mode: 'SHORTEN_TERM' },
     } satisfies OverpaymentPlan);
   });
 
-  it('carries the recurring extra mode chosen in the plan', async () => {
+  it('carries the chosen frequency and mode in the plan', async () => {
     const { onPlanChange } = await renderSimulator();
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Extra per payment'), { target: { value: '200' } });
-    });
-    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Frequency'), { target: { value: 'QUARTERLY' } });
+      fireEvent.change(screen.getByLabelText('Overpayment amount'), { target: { value: '300' } });
       fireEvent.change(screen.getByLabelText('After an overpayment'), {
         target: { value: 'LOWER_INSTALLMENT' },
       });
     });
 
     expect(onPlanChange).toHaveBeenLastCalledWith({
-      recurringExtra: { amount: 200, mode: 'LOWER_INSTALLMENT' },
+      recurringExtra: { amount: 300, frequency: 'QUARTERLY', mode: 'LOWER_INSTALLMENT' },
     } satisfies OverpaymentPlan);
   });
 
@@ -72,7 +78,7 @@ describe('OverpaymentSimulator', () => {
     const { onPlanChange } = await renderSimulator();
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Extra per payment'), { target: { value: '150' } });
+      fireEvent.change(screen.getByLabelText('Overpayment amount'), { target: { value: '150' } });
       fireEvent.change(screen.getByLabelText('Starting (optional)'), { target: { value: '2026-08-01' } });
       fireEvent.change(screen.getByLabelText('Until (optional)'), { target: { value: '2027-08-01' } });
     });
@@ -80,6 +86,7 @@ describe('OverpaymentSimulator', () => {
     expect(onPlanChange).toHaveBeenLastCalledWith({
       recurringExtra: {
         amount: 150,
+        frequency: 'MONTHLY',
         mode: 'SHORTEN_TERM',
         startDate: '2026-08-01',
         endDate: '2027-08-01',
@@ -87,10 +94,30 @@ describe('OverpaymentSimulator', () => {
     });
   });
 
+  it('emits a one-off lump sum when the frequency is one-off', async () => {
+    const { onPlanChange } = await renderSimulator();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Frequency'), { target: { value: 'ONE_OFF' } });
+    });
+    // One-off hides the recurring window and shows a single date field.
+    expect(screen.queryByLabelText('Starting (optional)')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Until (optional)')).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Overpayment amount'), { target: { value: '5000' } });
+      fireEvent.change(screen.getByLabelText('Date'), { target: { value: '2026-09-01' } });
+    });
+
+    expect(onPlanChange).toHaveBeenLastCalledWith({
+      lumpSums: [{ date: '2026-09-01', amount: 5000, mode: 'SHORTEN_TERM' }],
+    });
+  });
+
   it('emits null when inputs do not form a valid plan', async () => {
     const { onPlanChange } = await renderSimulator();
 
-    const amountInput = screen.getByLabelText('Extra per payment');
+    const amountInput = screen.getByLabelText('Overpayment amount');
     await act(async () => {
       fireEvent.change(amountInput, { target: { value: '200' } });
     });
@@ -101,39 +128,18 @@ describe('OverpaymentSimulator', () => {
     expect(onPlanChange).toHaveBeenLastCalledWith(null);
   });
 
-  it('adds, edits, and removes lump sums', async () => {
-    const { onPlanChange } = await renderSimulator();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Add lump sum'));
-    });
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText('Date'), { target: { value: '2026-09-01' } });
-      fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '1000' } });
-    });
-
-    expect(onPlanChange).toHaveBeenLastCalledWith({
-      lumpSums: [{ date: '2026-09-01', amount: 1000, mode: 'SHORTEN_TERM' }],
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Remove'));
-    });
-    expect(onPlanChange).toHaveBeenLastCalledWith(null);
-  });
-
   it('resets all inputs', async () => {
     const { onPlanChange } = await renderSimulator();
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Extra per payment'), { target: { value: '200' } });
+      fireEvent.change(screen.getByLabelText('Overpayment amount'), { target: { value: '200' } });
     });
     await act(async () => {
       fireEvent.click(screen.getByText('Reset'));
     });
 
     expect(onPlanChange).toHaveBeenLastCalledWith(null);
-    expect(screen.getByLabelText('Extra per payment')).toHaveValue('');
+    expect(screen.getByLabelText('Overpayment amount')).toHaveValue('');
   });
 
   it('offers the detected extra principal as a pre-fill', async () => {
@@ -149,7 +155,7 @@ describe('OverpaymentSimulator', () => {
     });
 
     expect(onPlanChange).toHaveBeenLastCalledWith({
-      recurringExtra: { amount: 250.5, mode: 'SHORTEN_TERM' },
+      recurringExtra: { amount: 250.5, frequency: 'MONTHLY', mode: 'SHORTEN_TERM' },
     });
   });
 
@@ -169,10 +175,53 @@ describe('OverpaymentSimulator', () => {
     expect(screen.getByText('Overpayment Simulator')).toBeInTheDocument();
   });
 
-  it('applies an externally loaded plan when the version changes', async () => {
+  it('live-solves the required amount for a target interest saving', async () => {
+    const { onPlanChange } = await renderSimulator({ projectionInput });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Simulation type'), { target: { value: 'INTEREST' } });
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Target interest savings'), {
+        target: { value: '10000' },
+      });
+    });
+
+    const lastPlan = onPlanChange.mock.calls.at(-1)?.[0];
+    expect(lastPlan?.recurringExtra?.mode).toBe('SHORTEN_TERM');
+    expect(lastPlan?.recurringExtra?.frequency).toBe('MONTHLY');
+    expect(lastPlan?.recurringExtra?.amount).toBeGreaterThan(0);
+  });
+
+  it('honors the date window for a payoff-month goal and forces shorten-term', async () => {
+    const { onPlanChange } = await renderSimulator({ projectionInput });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Simulation type'), { target: { value: 'PAYOFF' } });
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Target payoff month'), {
+        target: { value: '2030-01-01' },
+      });
+      fireEvent.change(screen.getByLabelText('Starting (optional)'), { target: { value: '2025-06-01' } });
+    });
+
+    const lastPlan = onPlanChange.mock.calls.at(-1)?.[0];
+    expect(lastPlan?.recurringExtra?.mode).toBe('SHORTEN_TERM');
+    expect(lastPlan?.recurringExtra?.startDate).toBe('2025-06-01');
+    // A payoff-month goal locks the mode selector to shorten-term.
+    expect(screen.getByLabelText('After an overpayment')).toBeDisabled();
+  });
+
+  it('disables the goal-seek simulation types without a projection input', async () => {
+    await renderSimulator();
+    expect(screen.getByRole('option', { name: 'Target interest savings' })).toBeDisabled();
+    expect(screen.getByRole('option', { name: 'Target payoff month' })).toBeDisabled();
+  });
+
+  it('applies an externally loaded recurring plan when the version changes', async () => {
     const loaded: OverpaymentPlan = {
-      recurringExtra: { amount: 300, startDate: '2026-01-01' },
-      lumpSums: [{ date: '2026-06-01', amount: 5000 }],
+      recurringExtra: { amount: 300, frequency: 'QUARTERLY', startDate: '2026-01-01' },
     };
     const { result } = await renderSimulator({ loadedPlan: null, loadedPlanVersion: 0 });
 
@@ -188,8 +237,31 @@ describe('OverpaymentSimulator', () => {
       );
     });
 
-    expect(screen.getByLabelText('Extra per payment')).toHaveValue('300.00');
+    expect(screen.getByLabelText('Overpayment amount')).toHaveValue('300.00');
+    expect(screen.getByLabelText('Frequency')).toHaveValue('QUARTERLY');
+    expect(screen.getByLabelText('Starting (optional)')).toHaveValue('2026-01-01');
+  });
+
+  it('applies an externally loaded one-off plan when the version changes', async () => {
+    const loaded: OverpaymentPlan = {
+      lumpSums: [{ date: '2026-06-01', amount: 5000, mode: 'SHORTEN_TERM' }],
+    };
+    const { result } = await renderSimulator({ loadedPlan: null, loadedPlanVersion: 0 });
+
+    await act(async () => {
+      result.rerender(
+        <OverpaymentSimulator
+          accountId="loan-1"
+          currencyCode="USD"
+          onPlanChange={vi.fn()}
+          loadedPlan={loaded}
+          loadedPlanVersion={1}
+        />,
+      );
+    });
+
+    expect(screen.getByLabelText('Frequency')).toHaveValue('ONE_OFF');
+    expect(screen.getByLabelText('Overpayment amount')).toHaveValue('5,000.00');
     expect(screen.getByLabelText('Date')).toHaveValue('2026-06-01');
-    expect(screen.getByLabelText('Amount')).toHaveValue('5,000.00');
   });
 });

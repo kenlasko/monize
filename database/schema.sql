@@ -1276,6 +1276,7 @@ CREATE TABLE loan_scenarios (
     name VARCHAR(100) NOT NULL,
     recurring_extra_amount DECIMAL(20,4),
     recurring_extra_mode VARCHAR(16),
+    recurring_extra_frequency VARCHAR(16),
     recurring_extra_start_date DATE,
     recurring_extra_end_date DATE,
     lump_sums JSONB NOT NULL DEFAULT '[]',

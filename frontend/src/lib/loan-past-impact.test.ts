@@ -217,6 +217,55 @@ describe('computePastImpact', () => {
     expect(impact.originalSchedule.payoffDate! > '2025-01-01').toBe(true);
   });
 
+  it('runs a fresh accelerated bi-weekly contractual schedule to its early payoff (issue #909)', () => {
+    // No recorded installment yet (fresh mortgage) -> the PMT fallback path. The
+    // accelerated payment (monthly / 2) is larger than the amortizing bi-weekly
+    // installment, so the contractual loan must pay off before its nominal
+    // 25-year term and NOT be re-levelled down to fill it.
+    const account = makeAccount({
+      accountType: 'MORTGAGE',
+      originalPrincipal: 300000,
+      currentBalance: -300000,
+      interestRate: 4,
+      paymentAmount: 0,
+      paymentFrequency: 'ACCELERATED_BIWEEKLY',
+      amortizationMonths: 300,
+      termMonths: 60,
+      paymentStartDate: '2025-01-15',
+      isCanadianMortgage: true,
+      isVariableRate: false,
+    });
+    const history = makeHistory(account, []);
+
+    const impact = computePastImpact(account, history)!;
+
+    // Reference: the same fixed accelerated payment run to payoff, i.e. what the
+    // current-projection curve draws. The contractual curve must match it.
+    const accelPayment = calculateMortgagePaymentAmount(
+      300000,
+      4,
+      300,
+      'ACCELERATED_BIWEEKLY',
+      true,
+      false,
+    );
+    const reference = generateLoanSchedule({
+      startingBalance: 300000,
+      annualRate: 4,
+      paymentAmount: accelPayment,
+      frequency: 'ACCELERATED_BIWEEKLY',
+      isCanadian: true,
+      isVariableRate: false,
+      firstPaymentDate: new Date('2025-01-15'),
+    });
+
+    expect(impact.originalSchedule.paidOff).toBe(true);
+    // Pays off well before the 650-period (25y) nominal amortization, matching
+    // the accelerated schedule rather than a re-levelled full-term one.
+    expect(impact.originalSchedule.numPayments).toBeLessThan(650);
+    expect(impact.originalSchedule.numPayments).toBe(reference.numPayments);
+  });
+
   it('falls back to the term when interest is booked separately (no recorded installment)', () => {
     // The same mortgage, but interest booked separately leaves the rate rows'
     // payment null (see rate-change inference). With no recorded installment the

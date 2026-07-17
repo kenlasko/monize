@@ -416,7 +416,30 @@
       "modeShortenTerm": "Encurtar prazo",
       "modeLowerInstallment": "Reduzir parcela",
       "modeShortenTermHint": "Manter a mesma parcela e quitar o empréstimo mais cedo. Máxima economia de juros.",
-      "modeLowerInstallmentHint": "Manter a mesma data de quitação e recalcular uma parcela menor sobre o saldo reduzido."
+      "modeLowerInstallmentHint": "Manter a mesma data de quitação e recalcular uma parcela menor sobre o saldo reduzido.",
+      "goalSeek": {
+        "title": "Busca de meta",
+        "description": "Calcule de trás para frente: quanto extra por parcela para atingir uma meta.",
+        "targetInterestLabel": "Economia de juros desejada",
+        "targetDateLabel": "Mês de quitação desejado",
+        "compute": "Calcular",
+        "required": "Extra necessário: {amount} por parcela",
+        "effect": "→ economiza {interest}, quitação {date}",
+        "alreadyMet": "Já alcançado sem nenhum pagamento extra.",
+        "unreachableInterest": "Fora de alcance — nem um pagamento extra muito grande consegue economizar tantos juros.",
+        "unreachableDate": "Fora de alcance — esse mês é anterior à quitação mais cedo possível."
+      },
+      "optionalGroup": "Opcional",
+      "simulationTypeLabel": "Tipo de simulação",
+      "overpaymentAmount": "Valor do pagamento extra",
+      "frequencyLabel": "Frequência",
+      "frequencyOneOff": "Único",
+      "frequencyWeekly": "Semanal",
+      "frequencyBiweekly": "Quinzenal",
+      "frequencyMonthly": "Mensal",
+      "frequencyQuarterly": "Trimestral",
+      "frequencyAnnually": "Anual",
+      "oneOffDateLabel": "Data"
     },
     "comparison": {
       "newPayoff": "Nova data de quitação",
@@ -429,7 +452,9 @@
       "totalExtraContributed": "Total extra contribuído",
       "beyondProjection": "Além da projeção",
       "newInstallment": "Nova parcela",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "Pagamento mensal",
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "Linha do tempo de quitação",
@@ -439,13 +464,13 @@
       "seriesScenario": "Com amortizações extras simuladas",
       "seriesOriginal": "Tabela original",
       "today": "Hoje",
-      "scenarioNote": "O cenário de amortização extra é uma simulação e não altera seus pagamentos agendados."
+      "scenarioNote": "O cenário de amortização extra é uma simulação e não altera seus pagamentos agendados.",
+      "axisPrincipal": "Principal em aberto"
     },
     "scenarios": {
       "title": "Cenários salvos",
       "saveCurrent": "Salvar cenário atual",
       "empty": "Nenhum cenário salvo ainda. Configure uma amortização extra acima e salve-a para comparar planos ao longo do tempo.",
-      "load": "Carregar",
       "rename": "Renomear",
       "delete": "Excluir",
       "cancel": "Cancelar",
@@ -464,7 +489,20 @@
       "deleteFailed": "Não foi possível excluir o cenário",
       "deleteTitle": "Excluir cenário",
       "deleteMessage": "Excluir o cenário \"{name}\"? Esta ação não pode ser desfeita.",
-      "loadFailed": "Não foi possível carregar os cenários salvos. Eles continuam armazenados — recarregue a página para tentar novamente."
+      "loadFailed": "Não foi possível carregar os cenários salvos. Eles continuam armazenados — recarregue a página para tentar novamente.",
+      "colOverpayment": "Pagamento extra",
+      "overpaymentWithFrequency": "{amount} ({frequency})",
+      "loadAria": "Carregar cenário \"{name}\""
+    },
+    "scenarioChart": {
+      "title": "Comparação de cenários",
+      "description": "Cada pagamento extra salvo é um arco na linha do tempo: o arco termina na data de quitação, o pico são os juros economizados e o rótulo mostra o extra pago por parcela. Mais estreito e mais alto é melhor.",
+      "baselineMarker": "Sem pagamentos extras · {date}",
+      "extraShort": "+{amount} / parcela",
+      "show": "Mostrar gráfico de comparação de cenários",
+      "hide": "Ocultar gráfico de comparação de cenários",
+      "axisInterestSaved": "Juros economizados",
+      "axisMonths": "Meses até a quitação"
     },
     "pastImpact": {
       "title": "Impacto das amortizações extras realizadas",

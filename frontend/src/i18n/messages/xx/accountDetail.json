@@ -3,7 +3,6 @@
     "viewTransactions": "[XX-View Transactions-XX]",
     "reconcile": "[XX-Reconcile-XX]",
     "edit": "[XX-Edit Account-XX]",
-    "export": "[XX-Export-XX]",
     "back": "[XX-Back to Accounts-XX]"
   },
   "loading": "[XX-Loading account details...-XX]",

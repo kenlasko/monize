@@ -480,6 +480,17 @@
       "modeLowerInstallmentHint": "Keep the same payoff date and recalculate a smaller payment on the reduced balance.",
       "detectedExtraHint": "Your payment history shows an average of {amount} in extra principal per payment.",
       "applyDetected": "Use it",
+      "optionalGroup": "Optional",
+      "simulationTypeLabel": "Simulation type",
+      "overpaymentAmount": "Overpayment amount",
+      "frequencyLabel": "Frequency",
+      "frequencyOneOff": "One-off",
+      "frequencyWeekly": "Weekly",
+      "frequencyBiweekly": "Biweekly",
+      "frequencyMonthly": "Monthly",
+      "frequencyQuarterly": "Quarterly",
+      "frequencyAnnually": "Annually",
+      "oneOffDateLabel": "Date",
       "recurringAmount": "Extra per payment",
       "recurringStart": "Starting (optional)",
       "recurringEnd": "Until (optional)",
@@ -488,7 +499,29 @@
       "noLumpSums": "No lump sums added.",
       "lumpSumDate": "Date",
       "lumpSumAmount": "Amount",
-      "removeLumpSum": "Remove"
+      "removeLumpSum": "Remove",
+      "goalSeek": {
+        "title": "Goal seek",
+        "description": "Work backwards: how much extra per payment to hit a target.",
+        "targetInterestLabel": "Target interest savings",
+        "targetDateLabel": "Target payoff month",
+        "compute": "Calculate",
+        "required": "Extra needed: {amount} per payment",
+        "effect": "→ saves {interest}, payoff {date}",
+        "alreadyMet": "Already met without any overpayment.",
+        "unreachableInterest": "Out of reach — even a very large overpayment cannot save that much interest.",
+        "unreachableDate": "Out of reach — that month is earlier than the soonest possible payoff."
+      }
+    },
+    "scenarioChart": {
+      "title": "Scenario comparison",
+      "description": "Each saved overpayment is an arc on the timeline: the arc ends at its payoff date, the peak is the interest it saves, and the label shows the extra paid per installment. Narrower and taller is better.",
+      "baselineMarker": "No overpayments · {date}",
+      "extraShort": "+{amount} / payment",
+      "show": "Show scenario comparison chart",
+      "hide": "Hide scenario comparison chart",
+      "axisInterestSaved": "Interest saved",
+      "axisMonths": "Months to payoff"
     },
     "comparison": {
       "newPayoff": "New Payoff Date",
@@ -498,10 +531,12 @@
       "monthsSaved": "{count, plural, one {# month} other {# months}}",
       "paymentsSaved": "{count, plural, one {# payment} other {# payments}}",
       "interestSaved": "Interest Saved",
+      "monthlyPayment": "Monthly Payment",
       "newInstallment": "New Installment",
       "installmentDrop": "{payment} (−{reduction})",
       "totalExtraContributed": "Total Extra Contributed",
-      "beyondProjection": "Beyond projection"
+      "beyondProjection": "Beyond projection",
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "Payoff Timeline",
@@ -511,13 +546,13 @@
       "seriesScenario": "With Simulated Overpayments",
       "seriesOriginal": "Original Schedule",
       "today": "Today",
-      "scenarioNote": "The overpayment scenario is a simulation and does not change your scheduled payments."
+      "scenarioNote": "The overpayment scenario is a simulation and does not change your scheduled payments.",
+      "axisPrincipal": "Remaining principal"
     },
     "scenarios": {
       "title": "Saved Scenarios",
       "saveCurrent": "Save current scenario",
       "empty": "No saved scenarios yet. Set up an overpayment above and save it to compare plans over time.",
-      "load": "Load",
       "rename": "Rename",
       "delete": "Delete",
       "cancel": "Cancel",
@@ -536,7 +571,10 @@
       "deleteFailed": "Failed to delete scenario",
       "deleteTitle": "Delete Scenario",
       "deleteMessage": "Delete the scenario \"{name}\"? This cannot be undone.",
-      "loadFailed": "Couldn't load the saved scenarios. They are still stored — reload the page to try again."
+      "loadFailed": "Couldn't load the saved scenarios. They are still stored — reload the page to try again.",
+      "colOverpayment": "Overpayment",
+      "overpaymentWithFrequency": "{amount} ({frequency})",
+      "loadAria": "Load scenario \"{name}\""
     },
     "pastImpact": {
       "title": "Impact of Overpayments Made",

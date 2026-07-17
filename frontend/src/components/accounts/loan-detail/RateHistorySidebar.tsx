@@ -20,8 +20,6 @@ interface RateHistorySidebarProps {
   rateChanges: LoanRateChange[];
   /** Shared rate-timeline editing (add / edit / delete / detect). */
   editing: LoanRateEditing;
-  /** Stretch to the sibling's height (used beside the simulator, 70/30). */
-  fillHeight?: boolean;
 }
 
 /**
@@ -34,7 +32,6 @@ export function RateHistorySidebar({
   account,
   rateChanges,
   editing,
-  fillHeight = false,
 }: RateHistorySidebarProps) {
   const t = useTranslations('accounts');
   const tc = useTranslations('common');
@@ -98,9 +95,7 @@ export function RateHistorySidebar({
 
   return (
     <div
-      className={`relative flex flex-col overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 scroll-mt-4 ${
-        fillHeight ? 'lg:h-full' : ''
-      }`}
+      className="relative flex flex-col overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 scroll-mt-4"
     >
       <div className="relative z-10 min-h-0 flex-1 p-4 flex flex-col gap-3">
         <div className="flex flex-wrap items-start justify-between gap-2">
@@ -150,9 +145,7 @@ export function RateHistorySidebar({
             </p>
           ) : (
             <ul
-              className={`overflow-y-auto min-h-0 divide-y divide-gray-200/70 dark:divide-gray-700/70 ${
-                fillHeight ? 'max-h-96 lg:max-h-none lg:flex-1' : 'max-h-96'
-              }`}
+              className="max-h-96 overflow-y-auto min-h-0 divide-y divide-gray-200/70 dark:divide-gray-700/70"
             >
               {sorted.map((change) => (
                 <li

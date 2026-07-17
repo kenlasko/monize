@@ -261,7 +261,17 @@ export function PayoffComparisonChart({
           <AreaChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
             <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
-            <YAxis tickFormatter={formatCurrencyAxis} tick={{ fontSize: 12 }} />
+            <YAxis
+              tickFormatter={formatCurrencyAxis}
+              tick={{ fontSize: 12 }}
+              width={72}
+              label={{
+                value: t('loanDetail.chart.axisPrincipal'),
+                angle: -90,
+                position: 'insideLeft',
+                style: { fontSize: 11, fill: chartColors.axis, textAnchor: 'middle' },
+              }}
+            />
             <Tooltip
               content={
                 <ChartTooltip

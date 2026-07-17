@@ -1,32 +1,13 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { LoanRateChange } from '@/types/loan-rate-change';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { RateCell } from './RateCell';
 import { LoanRateEditing } from './useLoanRateEditing';
+import type { DisplayRow } from '@/lib/loan-schedule-rows';
 
-export interface DisplayRow {
-  paymentNumber: number;
-  date: string;
-  payment: number;
-  principal: number;
-  interest: number;
-  extraPrincipal: number;
-  balance: number;
-  isProjected: boolean;
-  /** Annual rate (percentage) in effect on this row's date, when known */
-  annualRate: number | null;
-  /** The rate-change effective exactly on this date, if any (a change point) */
-  change?: LoanRateChange;
-  /** Historical row tagged as a standalone overpayment (100% principal) */
-  isOverpayment?: boolean;
-  /** Set on the first projected row of a new rate segment */
-  rateChange?: { from: number; to: number };
-  /** This row's date follows a gap in payments (missing installments). */
-  precededByGap?: boolean;
-}
+export type { DisplayRow } from '@/lib/loan-schedule-rows';
 
 interface ScheduleTableRowProps {
   row: DisplayRow;

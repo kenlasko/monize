@@ -416,7 +416,30 @@
       "modeShortenTerm": "Acortar plazo",
       "modeLowerInstallment": "Reducir cuota",
       "modeShortenTermHint": "Mantener la misma cuota y liquidar el préstamo antes. Máximo ahorro de intereses.",
-      "modeLowerInstallmentHint": "Mantener la misma fecha de liquidación y recalcular una cuota menor sobre el saldo reducido."
+      "modeLowerInstallmentHint": "Mantener la misma fecha de liquidación y recalcular una cuota menor sobre el saldo reducido.",
+      "goalSeek": {
+        "title": "Búsqueda de objetivo",
+        "description": "Calcula hacia atrás: cuánto extra por cuota para alcanzar un objetivo.",
+        "targetInterestLabel": "Ahorro de intereses objetivo",
+        "targetDateLabel": "Mes objetivo de liquidación",
+        "compute": "Calcular",
+        "required": "Extra necesario: {amount} por cuota",
+        "effect": "→ ahorra {interest}, liquidación {date}",
+        "alreadyMet": "Ya se cumple sin ningún pago extra.",
+        "unreachableInterest": "Inalcanzable: ni siquiera un pago extra muy grande puede ahorrar tantos intereses.",
+        "unreachableDate": "Inalcanzable: ese mes es anterior a la liquidación más temprana posible."
+      },
+      "optionalGroup": "Opcional",
+      "simulationTypeLabel": "Tipo de simulación",
+      "overpaymentAmount": "Importe de amortización",
+      "frequencyLabel": "Frecuencia",
+      "frequencyOneOff": "Única",
+      "frequencyWeekly": "Semanal",
+      "frequencyBiweekly": "Quincenal",
+      "frequencyMonthly": "Mensual",
+      "frequencyQuarterly": "Trimestral",
+      "frequencyAnnually": "Anual",
+      "oneOffDateLabel": "Fecha"
     },
     "comparison": {
       "newPayoff": "Nueva fecha de liquidación",
@@ -429,7 +452,9 @@
       "totalExtraContributed": "Total adicional aportado",
       "beyondProjection": "Más allá de la proyección",
       "newInstallment": "Nueva cuota",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "Cuota mensual",
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "Cronología de liquidación",
@@ -439,13 +464,13 @@
       "seriesScenario": "Con pagos extra simulados",
       "seriesOriginal": "Calendario original",
       "today": "Hoy",
-      "scenarioNote": "El escenario de pagos anticipados es una simulación y no cambia sus pagos programados."
+      "scenarioNote": "El escenario de pagos anticipados es una simulación y no cambia sus pagos programados.",
+      "axisPrincipal": "Capital pendiente"
     },
     "scenarios": {
       "title": "Escenarios guardados",
       "saveCurrent": "Guardar escenario actual",
       "empty": "Aún no hay escenarios guardados. Configure un pago anticipado arriba y guárdelo para comparar planes a lo largo del tiempo.",
-      "load": "Cargar",
       "rename": "Renombrar",
       "delete": "Eliminar",
       "cancel": "Cancelar",
@@ -464,7 +489,20 @@
       "deleteFailed": "No se pudo eliminar el escenario",
       "deleteTitle": "Eliminar escenario",
       "deleteMessage": "¿Eliminar el escenario \"{name}\"? Esta acción no se puede deshacer.",
-      "loadFailed": "No se pudieron cargar los escenarios guardados. Siguen almacenados: recargue la página para volver a intentarlo."
+      "loadFailed": "No se pudieron cargar los escenarios guardados. Siguen almacenados: recargue la página para volver a intentarlo.",
+      "colOverpayment": "Amortización",
+      "overpaymentWithFrequency": "{amount} ({frequency})",
+      "loadAria": "Cargar escenario «{name}»"
+    },
+    "scenarioChart": {
+      "title": "Comparación de escenarios",
+      "description": "Cada pago extra guardado es un arco en la línea de tiempo: el arco termina en su fecha de liquidación, el pico son los intereses que ahorra y la etiqueta muestra el extra pagado por cuota. Más estrecho y más alto es mejor.",
+      "baselineMarker": "Sin pagos extra · {date}",
+      "extraShort": "+{amount} / cuota",
+      "show": "Mostrar gráfico de comparación de escenarios",
+      "hide": "Ocultar gráfico de comparación de escenarios",
+      "axisInterestSaved": "Intereses ahorrados",
+      "axisMonths": "Meses hasta la cancelación"
     },
     "pastImpact": {
       "title": "Impacto de los pagos anticipados realizados",

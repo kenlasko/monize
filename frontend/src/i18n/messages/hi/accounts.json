@@ -416,7 +416,30 @@
       "modeShortenTerm": "अवधि घटाएँ",
       "modeLowerInstallment": "किस्त घटाएँ",
       "modeShortenTermHint": "वही किस्त बनाए रखें और ऋण जल्दी चुकाएँ। अधिकतम ब्याज बचत।",
-      "modeLowerInstallmentHint": "वही भुगतान तिथि बनाए रखें और घटे हुए शेष पर कम किस्त की पुनर्गणना करें।"
+      "modeLowerInstallmentHint": "वही भुगतान तिथि बनाए रखें और घटे हुए शेष पर कम किस्त की पुनर्गणना करें।",
+      "goalSeek": {
+        "title": "लक्ष्य खोज",
+        "description": "उलटा हिसाब: लक्ष्य पाने के लिए प्रति किस्त कितना अतिरिक्त भुगतान चाहिए।",
+        "targetInterestLabel": "लक्षित ब्याज बचत",
+        "targetDateLabel": "लक्षित चुकौती माह",
+        "compute": "गणना करें",
+        "required": "आवश्यक अतिरिक्त: {amount} प्रति किस्त",
+        "effect": "→ {interest} की बचत, चुकौती {date}",
+        "alreadyMet": "बिना किसी अतिरिक्त भुगतान के ही लक्ष्य पूरा है।",
+        "unreachableInterest": "पहुँच से बाहर — बहुत बड़ा अतिरिक्त भुगतान भी इतना ब्याज नहीं बचा सकता।",
+        "unreachableDate": "पहुँच से बाहर — यह माह जल्द से जल्द संभव चुकौती से पहले है।"
+      },
+      "optionalGroup": "वैकल्पिक",
+      "simulationTypeLabel": "सिमुलेशन प्रकार",
+      "overpaymentAmount": "अतिरिक्त भुगतान राशि",
+      "frequencyLabel": "आवृत्ति",
+      "frequencyOneOff": "एकमुश्त",
+      "frequencyWeekly": "साप्ताहिक",
+      "frequencyBiweekly": "पाक्षिक",
+      "frequencyMonthly": "मासिक",
+      "frequencyQuarterly": "त्रैमासिक",
+      "frequencyAnnually": "वार्षिक",
+      "oneOffDateLabel": "तारीख"
     },
     "comparison": {
       "newPayoff": "नई चुकौती तिथि",
@@ -429,7 +452,9 @@
       "totalExtraContributed": "कुल अतिरिक्त योगदान",
       "beyondProjection": "अनुमान से परे",
       "newInstallment": "नई किस्त",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "मासिक भुगतान",
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "चुकौती समयरेखा",
@@ -439,13 +464,13 @@
       "seriesScenario": "सिम्युलेटेड अतिरिक्त भुगतान के साथ",
       "seriesOriginal": "मूल अनुसूची",
       "today": "आज",
-      "scenarioNote": "पूर्व-भुगतान परिदृश्य एक सिमुलेशन है और यह आपके निर्धारित भुगतानों को नहीं बदलता।"
+      "scenarioNote": "पूर्व-भुगतान परिदृश्य एक सिमुलेशन है और यह आपके निर्धारित भुगतानों को नहीं बदलता।",
+      "axisPrincipal": "शेष मूलधन"
     },
     "scenarios": {
       "title": "सहेजे गए परिदृश्य",
       "saveCurrent": "वर्तमान परिदृश्य सहेजें",
       "empty": "अभी तक कोई परिदृश्य सहेजा नहीं गया। ऊपर पूर्व-भुगतान सेट करें और योजनाओं की तुलना करने के लिए उसे सहेजें।",
-      "load": "लोड करें",
       "rename": "नाम बदलें",
       "delete": "हटाएँ",
       "cancel": "रद्द करें",
@@ -464,7 +489,20 @@
       "deleteFailed": "परिदृश्य हटाया नहीं जा सका",
       "deleteTitle": "परिदृश्य हटाएँ",
       "deleteMessage": "परिदृश्य \"{name}\" हटाएँ? इसे पूर्ववत नहीं किया जा सकता।",
-      "loadFailed": "सहेजे गए परिदृश्य लोड नहीं हो सके। वे अभी भी संग्रहीत हैं — पुनः प्रयास के लिए पृष्ठ फिर से लोड करें।"
+      "loadFailed": "सहेजे गए परिदृश्य लोड नहीं हो सके। वे अभी भी संग्रहीत हैं — पुनः प्रयास के लिए पृष्ठ फिर से लोड करें।",
+      "colOverpayment": "अतिरिक्त भुगतान",
+      "overpaymentWithFrequency": "{amount} ({frequency})",
+      "loadAria": "परिदृश्य \"{name}\" लोड करें"
+    },
+    "scenarioChart": {
+      "title": "परिदृश्य तुलना",
+      "description": "हर सहेजा गया अतिरिक्त भुगतान समय-रेखा पर एक चाप है: चाप चुकौती तिथि पर समाप्त होता है, शिखर बचाया गया ब्याज है, और लेबल प्रति किस्त अतिरिक्त भुगतान दिखाता है। जितना संकरा और ऊँचा, उतना बेहतर।",
+      "baselineMarker": "बिना अतिरिक्त भुगतान · {date}",
+      "extraShort": "+{amount} / किस्त",
+      "show": "परिदृश्य तुलना चार्ट दिखाएँ",
+      "hide": "परिदृश्य तुलना चार्ट छिपाएँ",
+      "axisInterestSaved": "बचाया गया ब्याज",
+      "axisMonths": "पूर्ण भुगतान तक महीने"
     },
     "pastImpact": {
       "title": "किए गए पूर्व-भुगतानों का प्रभाव",

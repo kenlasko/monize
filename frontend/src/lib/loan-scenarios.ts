@@ -58,6 +58,9 @@ export function scenarioToPlan(scenario: LoanScenario): OverpaymentPlan | null {
       ? {
           amount: scenario.recurringExtraAmount,
           ...(scenario.recurringExtraMode ? { mode: scenario.recurringExtraMode } : {}),
+          ...(scenario.recurringExtraFrequency
+            ? { frequency: scenario.recurringExtraFrequency }
+            : {}),
           ...(scenario.recurringExtraStartDate
             ? { startDate: scenario.recurringExtraStartDate }
             : {}),
@@ -83,6 +86,7 @@ export function planToScenarioData(
     name,
     recurringExtraAmount: plan?.recurringExtra?.amount ?? null,
     recurringExtraMode: plan?.recurringExtra?.mode ?? null,
+    recurringExtraFrequency: plan?.recurringExtra?.frequency ?? null,
     recurringExtraStartDate: plan?.recurringExtra?.startDate ?? null,
     recurringExtraEndDate: plan?.recurringExtra?.endDate ?? null,
     lumpSums: plan?.lumpSums ?? [],

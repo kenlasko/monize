@@ -416,7 +416,30 @@
       "modeShortenTerm": "Rút ngắn kỳ hạn",
       "modeLowerInstallment": "Giảm kỳ trả",
       "modeShortenTermHint": "Giữ nguyên số tiền trả và tất toán khoản vay sớm hơn. Tiết kiệm lãi tối đa.",
-      "modeLowerInstallmentHint": "Giữ nguyên ngày tất toán và tính lại số tiền trả nhỏ hơn trên dư nợ đã giảm."
+      "modeLowerInstallmentHint": "Giữ nguyên ngày tất toán và tính lại số tiền trả nhỏ hơn trên dư nợ đã giảm.",
+      "goalSeek": {
+        "title": "Tìm mục tiêu",
+        "description": "Tính ngược: cần trả thêm bao nhiêu mỗi kỳ để đạt mục tiêu.",
+        "targetInterestLabel": "Mục tiêu tiết kiệm lãi",
+        "targetDateLabel": "Tháng tất toán mục tiêu",
+        "compute": "Tính",
+        "required": "Cần trả thêm: {amount} mỗi kỳ",
+        "effect": "→ tiết kiệm {interest}, tất toán {date}",
+        "alreadyMet": "Đã đạt được mà không cần trả thêm.",
+        "unreachableInterest": "Ngoài tầm với — khoản trả thêm rất lớn cũng không thể tiết kiệm được nhiều lãi đến vậy.",
+        "unreachableDate": "Ngoài tầm với — tháng đó sớm hơn thời điểm tất toán sớm nhất có thể."
+      },
+      "optionalGroup": "Tùy chọn",
+      "simulationTypeLabel": "Loại mô phỏng",
+      "overpaymentAmount": "Số tiền trả thêm",
+      "frequencyLabel": "Tần suất",
+      "frequencyOneOff": "Một lần",
+      "frequencyWeekly": "Hàng tuần",
+      "frequencyBiweekly": "Hai tuần một lần",
+      "frequencyMonthly": "Hàng tháng",
+      "frequencyQuarterly": "Hàng quý",
+      "frequencyAnnually": "Hàng năm",
+      "oneOffDateLabel": "Ngày"
     },
     "comparison": {
       "newPayoff": "Ngày trả hết mới",
@@ -429,7 +452,9 @@
       "totalExtraContributed": "Tổng số tiền trả thêm",
       "beyondProjection": "Ngoài phạm vi dự báo",
       "newInstallment": "Kỳ trả mới",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "Khoản trả hàng tháng",
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "Dòng thời gian trả nợ",
@@ -439,13 +464,13 @@
       "seriesScenario": "Có trả trước mô phỏng",
       "seriesOriginal": "Lịch ban đầu",
       "today": "Hôm nay",
-      "scenarioNote": "Kịch bản trả trước hạn chỉ là mô phỏng và không thay đổi các khoản trả đã lên lịch của bạn."
+      "scenarioNote": "Kịch bản trả trước hạn chỉ là mô phỏng và không thay đổi các khoản trả đã lên lịch của bạn.",
+      "axisPrincipal": "Dư nợ gốc"
     },
     "scenarios": {
       "title": "Kịch bản đã lưu",
       "saveCurrent": "Lưu kịch bản hiện tại",
       "empty": "Chưa có kịch bản nào được lưu. Thiết lập khoản trả trước hạn ở trên và lưu lại để so sánh các kế hoạch theo thời gian.",
-      "load": "Tải",
       "rename": "Đổi tên",
       "delete": "Xóa",
       "cancel": "Hủy",
@@ -464,7 +489,20 @@
       "deleteFailed": "Không thể xóa kịch bản",
       "deleteTitle": "Xóa kịch bản",
       "deleteMessage": "Xóa kịch bản \"{name}\"? Không thể hoàn tác thao tác này.",
-      "loadFailed": "Không thể tải các kịch bản đã lưu. Chúng vẫn được lưu trữ — tải lại trang để thử lại."
+      "loadFailed": "Không thể tải các kịch bản đã lưu. Chúng vẫn được lưu trữ — tải lại trang để thử lại.",
+      "colOverpayment": "Trả thêm",
+      "overpaymentWithFrequency": "{amount} ({frequency})",
+      "loadAria": "Tải kịch bản \"{name}\""
+    },
+    "scenarioChart": {
+      "title": "So sánh kịch bản",
+      "description": "Mỗi khoản trả thêm đã lưu là một cung trên dòng thời gian: cung kết thúc tại ngày tất toán, đỉnh là số lãi tiết kiệm được và nhãn cho biết số tiền trả thêm mỗi kỳ. Càng hẹp và càng cao càng tốt.",
+      "baselineMarker": "Không trả thêm · {date}",
+      "extraShort": "+{amount} / kỳ",
+      "show": "Hiện biểu đồ so sánh kịch bản",
+      "hide": "Ẩn biểu đồ so sánh kịch bản",
+      "axisInterestSaved": "Lãi tiết kiệm",
+      "axisMonths": "Số tháng đến khi tất toán"
     },
     "pastImpact": {
       "title": "Tác động của các khoản trả trước hạn đã thực hiện",

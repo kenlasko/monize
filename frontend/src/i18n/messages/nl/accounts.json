@@ -416,7 +416,30 @@
       "modeShortenTerm": "Looptijd verkorten",
       "modeLowerInstallment": "Termijn verlagen",
       "modeShortenTermHint": "Houd dezelfde termijn aan en los de lening eerder af. Maximale rentebesparing.",
-      "modeLowerInstallmentHint": "Houd dezelfde einddatum aan en herbereken een lagere termijn op het verlaagde saldo."
+      "modeLowerInstallmentHint": "Houd dezelfde einddatum aan en herbereken een lagere termijn op het verlaagde saldo.",
+      "goalSeek": {
+        "title": "Doelzoeken",
+        "description": "Terugrekenen: hoeveel extra per termijn om een doel te bereiken.",
+        "targetInterestLabel": "Beoogde rentebesparing",
+        "targetDateLabel": "Beoogde aflossingsmaand",
+        "compute": "Berekenen",
+        "required": "Benodigd extra: {amount} per termijn",
+        "effect": "→ bespaart {interest}, aflossing {date}",
+        "alreadyMet": "Al bereikt zonder extra aflossing.",
+        "unreachableInterest": "Onhaalbaar — zelfs een zeer grote extra aflossing kan niet zoveel rente besparen.",
+        "unreachableDate": "Onhaalbaar — die maand ligt vóór de vroegst mogelijke aflossing."
+      },
+      "optionalGroup": "Optioneel",
+      "simulationTypeLabel": "Simulatietype",
+      "overpaymentAmount": "Bedrag extra aflossing",
+      "frequencyLabel": "Frequentie",
+      "frequencyOneOff": "Eenmalig",
+      "frequencyWeekly": "Wekelijks",
+      "frequencyBiweekly": "Tweewekelijks",
+      "frequencyMonthly": "Maandelijks",
+      "frequencyQuarterly": "Per kwartaal",
+      "frequencyAnnually": "Jaarlijks",
+      "oneOffDateLabel": "Datum"
     },
     "comparison": {
       "newPayoff": "Nieuwe aflossingsdatum",
@@ -429,7 +452,9 @@
       "totalExtraContributed": "Totaal extra ingelegd",
       "beyondProjection": "Buiten de projectie",
       "newInstallment": "Nieuwe termijn",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "Maandelijkse betaling",
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "Aflossingstijdlijn",
@@ -439,13 +464,13 @@
       "seriesScenario": "Met gesimuleerde extra aflossingen",
       "seriesOriginal": "Oorspronkelijk schema",
       "today": "Vandaag",
-      "scenarioNote": "Het scenario met extra aflossingen is een simulatie en wijzigt uw geplande betalingen niet."
+      "scenarioNote": "Het scenario met extra aflossingen is een simulatie en wijzigt uw geplande betalingen niet.",
+      "axisPrincipal": "Resterende hoofdsom"
     },
     "scenarios": {
       "title": "Opgeslagen scenario's",
       "saveCurrent": "Huidig scenario opslaan",
       "empty": "Nog geen opgeslagen scenario's. Stel hierboven een extra aflossing in en sla deze op om plannen in de loop van de tijd te vergelijken.",
-      "load": "Laden",
       "rename": "Hernoemen",
       "delete": "Verwijderen",
       "cancel": "Annuleren",
@@ -464,7 +489,20 @@
       "deleteFailed": "Kan scenario niet verwijderen",
       "deleteTitle": "Scenario verwijderen",
       "deleteMessage": "Het scenario \"{name}\" verwijderen? Dit kan niet ongedaan worden gemaakt.",
-      "loadFailed": "De opgeslagen scenario's konden niet worden geladen. Ze zijn nog opgeslagen — herlaad de pagina om het opnieuw te proberen."
+      "loadFailed": "De opgeslagen scenario's konden niet worden geladen. Ze zijn nog opgeslagen — herlaad de pagina om het opnieuw te proberen.",
+      "colOverpayment": "Extra aflossing",
+      "overpaymentWithFrequency": "{amount} ({frequency})",
+      "loadAria": "Scenario \"{name}\" laden"
+    },
+    "scenarioChart": {
+      "title": "Scenariovergelijking",
+      "description": "Elke opgeslagen extra aflossing is een boog op de tijdlijn: de boog eindigt op de aflossingsdatum, de top is de bespaarde rente en het label toont het extra bedrag per termijn. Smaller en hoger is beter.",
+      "baselineMarker": "Zonder extra aflossingen · {date}",
+      "extraShort": "+{amount} / termijn",
+      "show": "Scenariovergelijkingsgrafiek tonen",
+      "hide": "Scenariovergelijkingsgrafiek verbergen",
+      "axisInterestSaved": "Bespaarde rente",
+      "axisMonths": "Maanden tot aflossing"
     },
     "pastImpact": {
       "title": "Effect van gedane extra aflossingen",

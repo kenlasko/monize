@@ -171,6 +171,14 @@ export function computePastImpact(
     isVariableRate,
     firstPaymentDate: parseIsoDate(startDate),
   };
+  // Accelerated payments (monthly / 2 or / 4) are larger than the amortizing
+  // installment, so the contractual loan pays off before its nominal term.
+  // fixedEndPeriod would re-level them down to fill the full term and erase the
+  // acceleration, so those keep the fixed payment and run to their natural,
+  // earlier payoff (only rescuing a rate-rise stall) -- matching how the current
+  // projection is computed.
+  const isAccelerated =
+    frequency === 'ACCELERATED_WEEKLY' || frequency === 'ACCELERATED_BIWEEKLY';
   const originalSchedule = generateLoanSchedule(
     useRecordedInstallment
       ? {
@@ -191,12 +199,20 @@ export function computePastImpact(
           // principal-only figures that would stall a fixed payment);
           // re-levelling sets the installment instead.
           rateChanges: timeline.rateChanges.map((change) => ({ ...change, paymentAmount: null })),
-          fixedEndPeriod: configuredTermPeriods,
-          // One-period buffer so a rounding remainder on the final payment is kept.
-          maxPayments: Math.min(
-            configuredTermPeriods + Math.ceil(periodsPerYear / 12),
-            ORIGINAL_SCHEDULE_MAX_PAYMENTS,
-          ),
+          ...(isAccelerated
+            ? {
+                rescueEndPeriod: configuredTermPeriods,
+                maxPayments: ORIGINAL_SCHEDULE_MAX_PAYMENTS,
+              }
+            : {
+                fixedEndPeriod: configuredTermPeriods,
+                // One-period buffer so a rounding remainder on the final
+                // payment is kept.
+                maxPayments: Math.min(
+                  configuredTermPeriods + Math.ceil(periodsPerYear / 12),
+                  ORIGINAL_SCHEDULE_MAX_PAYMENTS,
+                ),
+              }),
         },
   );
 

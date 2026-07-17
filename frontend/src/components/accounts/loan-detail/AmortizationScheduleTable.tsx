@@ -7,11 +7,12 @@ import { ScheduleRow } from '@/lib/loan-schedule';
 import { LoanRateChange } from '@/types/loan-rate-change';
 import { exportToCsv } from '@/lib/csv-export';
 import { sanitizeFilename } from '@/lib/export-filename';
+import { buildScheduleDisplayRows, type DisplayRow } from '@/lib/loan-schedule-rows';
 import { ExportIconButton } from '@/components/ui/ExportIconButton';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { LoanRateEditing } from './useLoanRateEditing';
-import { ScheduleTableRow, DisplayRow } from './ScheduleTableRow';
+import { ScheduleTableRow } from './ScheduleTableRow';
 
 const COLLAPSED_PAST_ROWS = 5;
 const COLLAPSED_FUTURE_ROWS = 5;
@@ -39,36 +40,6 @@ type ScheduleUnit =
 
 const sumField = (rows: DisplayRow[], field: keyof DisplayRow): number =>
   rows.reduce((acc, row) => acc + Math.round(Number(row[field]) * 10000), 0) / 10000;
-
-/** Whole days between two yyyy-MM-dd keys, timezone-safe. */
-function daysBetween(aKey: string, bKey: string): number {
-  const a = new Date(`${aKey}T00:00:00Z`).getTime();
-  const b = new Date(`${bKey}T00:00:00Z`).getTime();
-  return Math.round((b - a) / (1000 * 60 * 60 * 24));
-}
-
-/**
- * The set of historical payment dates that follow a gap -- a stretch longer
- * than ~1.8x the typical interval between payments, i.e. one or more expected
- * installments with no recorded payment (a payment holiday, or missing data).
- * The row on such a date is flagged so the schedule can highlight it. Needs at
- * least three payments to establish a median interval; returns empty otherwise.
- */
-function datesFollowingAGap(dateKeys: string[]): Set<string> {
-  const flagged = new Set<string>();
-  const dates = [...dateKeys].sort();
-  if (dates.length < 3) return flagged;
-  const gaps: number[] = [];
-  for (let i = 1; i < dates.length; i++) gaps.push(daysBetween(dates[i - 1], dates[i]));
-  const sorted = [...gaps].sort((a, b) => a - b);
-  const median = sorted[Math.floor(sorted.length / 2)];
-  if (!(median > 0)) return flagged;
-  const threshold = median * 1.8;
-  for (let i = 1; i < dates.length; i++) {
-    if (daysBetween(dates[i - 1], dates[i]) > threshold) flagged.add(dates[i]);
-  }
-  return flagged;
-}
 
 interface ColumnTotals {
   payment: number;
@@ -156,63 +127,10 @@ export function AmortizationScheduleTable({
       return next;
     });
 
-  const changeByDate = useMemo(
-    () => new Map(rateChanges.map((change) => [change.effectiveDate, change])),
-    [rateChanges],
+  const rows = useMemo(
+    () => buildScheduleDisplayRows(historyEvents, projectionRows, rateChanges),
+    [historyEvents, projectionRows, rateChanges],
   );
-
-  // Historical payment dates that follow a gap (missing installments), so the
-  // schedule can flag "data missing here" on the row after the gap.
-  const gapDates = useMemo(
-    () => datesFollowingAGap(historyEvents.map((e) => e.date.split('T')[0])),
-    [historyEvents],
-  );
-
-  const rows = useMemo((): DisplayRow[] => {
-    const historical = historyEvents.map((event, index) => {
-      const isOverpayment = event.type === 'OVERPAYMENT';
-      return {
-        paymentNumber: index + 1,
-        date: event.date,
-        payment: event.principal + event.interest,
-        // A standalone overpayment is entirely extra principal, not a scheduled
-        // installment, so surface its amount in the extra-principal column
-        // rather than the regular principal column.
-        principal: isOverpayment ? 0 : event.principal,
-        interest: event.interest,
-        extraPrincipal: isOverpayment ? event.principal : 0,
-        balance: event.balance,
-        isProjected: false,
-        isOverpayment,
-        annualRate: event.annualRate ?? null,
-        precededByGap: gapDates.has(event.date.split('T')[0]),
-        change: changeByDate.get(event.date),
-      };
-    });
-    const projected = projectionRows.map((row, index) => {
-      const previousRate = index > 0 ? projectionRows[index - 1].annualRate : row.annualRate;
-      return {
-        paymentNumber: historyEvents.length + row.paymentNumber,
-        date: row.date,
-        // Payment is the total cash that period. The schedule's `payment` is
-        // principal + interest only, so add the overpayment to match the
-        // historical rows (where an overpayment's amount is part of its
-        // payment) -- otherwise the totals row mixes the two conventions.
-        payment: row.payment + row.extraPrincipal,
-        principal: row.principal,
-        interest: row.interest,
-        extraPrincipal: row.extraPrincipal,
-        balance: row.balance,
-        isProjected: true,
-        annualRate: row.annualRate,
-        change: changeByDate.get(row.date),
-        ...(previousRate !== row.annualRate
-          ? { rateChange: { from: previousRate, to: row.annualRate } }
-          : {}),
-      };
-    });
-    return [...historical, ...projected];
-  }, [historyEvents, projectionRows, changeByDate, gapDates]);
 
   // Collapse each historical month with more than one entry into an aggregate
   // row (expandable to its detail); every projected row stays on its own.

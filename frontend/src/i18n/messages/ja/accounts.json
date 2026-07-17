@@ -416,7 +416,30 @@
       "modeShortenTerm": "期間を短縮",
       "modeLowerInstallment": "返済額を減額",
       "modeShortenTermHint": "返済額を維持し、ローンをより早く完済します。利息の節約が最大になります。",
-      "modeLowerInstallmentHint": "完済日を維持し、減少した残高に対してより少ない返済額を再計算します。"
+      "modeLowerInstallmentHint": "完済日を維持し、減少した残高に対してより少ない返済額を再計算します。",
+      "goalSeek": {
+        "title": "ゴールシーク",
+        "description": "逆算します:目標を達成するには1回あたりいくら追加返済が必要か。",
+        "targetInterestLabel": "目標の利息節約額",
+        "targetDateLabel": "目標の完済月",
+        "compute": "計算",
+        "required": "必要な追加返済:1回あたり {amount}",
+        "effect": "→ {interest} 節約、完済 {date}",
+        "alreadyMet": "追加返済なしで既に達成しています。",
+        "unreachableInterest": "達成不可 — どれほど大きな追加返済でもそこまで利息を節約できません。",
+        "unreachableDate": "達成不可 — その月は最短の完済時期より前です。"
+      },
+      "optionalGroup": "任意",
+      "simulationTypeLabel": "シミュレーションの種類",
+      "overpaymentAmount": "繰上返済額",
+      "frequencyLabel": "頻度",
+      "frequencyOneOff": "一回のみ",
+      "frequencyWeekly": "毎週",
+      "frequencyBiweekly": "隔週",
+      "frequencyMonthly": "毎月",
+      "frequencyQuarterly": "四半期ごと",
+      "frequencyAnnually": "毎年",
+      "oneOffDateLabel": "日付"
     },
     "comparison": {
       "newPayoff": "新しい完済日",
@@ -429,7 +452,9 @@
       "totalExtraContributed": "追加返済の合計",
       "beyondProjection": "予測範囲外",
       "newInstallment": "新しい返済額",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "毎月の返済額",
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "完済タイムライン",
@@ -439,13 +464,13 @@
       "seriesScenario": "シミュレーションした繰上返済あり",
       "seriesOriginal": "当初スケジュール",
       "today": "今日",
-      "scenarioNote": "繰上返済シナリオはシミュレーションであり、予定されている返済を変更するものではありません。"
+      "scenarioNote": "繰上返済シナリオはシミュレーションであり、予定されている返済を変更するものではありません。",
+      "axisPrincipal": "残元本"
     },
     "scenarios": {
       "title": "保存済みシナリオ",
       "saveCurrent": "現在のシナリオを保存",
       "empty": "保存済みのシナリオはまだありません。上で繰上返済を設定して保存すると、プランを比較できます。",
-      "load": "読み込む",
       "rename": "名前を変更",
       "delete": "削除",
       "cancel": "キャンセル",
@@ -464,7 +489,20 @@
       "deleteFailed": "シナリオを削除できませんでした",
       "deleteTitle": "シナリオを削除",
       "deleteMessage": "シナリオ \"{name}\" を削除しますか？この操作は元に戻せません。",
-      "loadFailed": "保存済みシナリオを読み込めませんでした。データは保存されています。ページを再読み込みして再試行してください。"
+      "loadFailed": "保存済みシナリオを読み込めませんでした。データは保存されています。ページを再読み込みして再試行してください。",
+      "colOverpayment": "繰上返済",
+      "overpaymentWithFrequency": "{amount} ({frequency})",
+      "loadAria": "シナリオ「{name}」を読み込む"
+    },
+    "scenarioChart": {
+      "title": "シナリオ比較",
+      "description": "保存した追加返済はタイムライン上の弧で表されます。弧の終点は完済日、頂点は節約できる利息、ラベルは1回あたりの追加返済額です。弧が狭く高いほど有利です。",
+      "baselineMarker": "追加返済なし · {date}",
+      "extraShort": "+{amount} / 回",
+      "show": "シナリオ比較チャートを表示",
+      "hide": "シナリオ比較チャートを非表示",
+      "axisInterestSaved": "節約できる利息",
+      "axisMonths": "完済までの月数"
     },
     "pastImpact": {
       "title": "これまでの繰上返済の効果",

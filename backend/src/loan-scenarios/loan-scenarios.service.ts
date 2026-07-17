@@ -47,6 +47,7 @@ export class LoanScenariosService {
       name: dto.name,
       recurringExtraAmount: dto.recurringExtraAmount ?? null,
       recurringExtraMode: dto.recurringExtraMode ?? null,
+      recurringExtraFrequency: dto.recurringExtraFrequency ?? null,
       recurringExtraStartDate: dto.recurringExtraStartDate ?? null,
       recurringExtraEndDate: dto.recurringExtraEndDate ?? null,
       lumpSums: dto.lumpSums ?? [],
@@ -75,6 +76,9 @@ export class LoanScenariosService {
         : {}),
       ...(dto.recurringExtraMode !== undefined
         ? { recurringExtraMode: dto.recurringExtraMode }
+        : {}),
+      ...(dto.recurringExtraFrequency !== undefined
+        ? { recurringExtraFrequency: dto.recurringExtraFrequency }
         : {}),
       ...(dto.recurringExtraStartDate !== undefined
         ? { recurringExtraStartDate: dto.recurringExtraStartDate }

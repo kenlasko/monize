@@ -3,7 +3,6 @@
     "viewTransactions": "거래 내역 보기",
     "reconcile": "조정",
     "edit": "계정 수정",
-    "export": "내보내기",
     "back": "계정으로 돌아가기"
   },
   "loading": "계정 상세 정보를 불러오는 중...",

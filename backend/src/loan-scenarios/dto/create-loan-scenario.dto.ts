@@ -17,6 +17,8 @@ import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 import {
   OVERPAYMENT_MODES,
   OverpaymentMode,
+  OVERPAYMENT_FREQUENCIES,
+  OverpaymentFrequency,
 } from "../entities/loan-scenario.entity";
 
 const MAX_AMOUNT = 100_000_000;
@@ -62,6 +64,15 @@ export class CreateLoanScenarioDto {
   @IsOptional()
   @IsIn(OVERPAYMENT_MODES)
   recurringExtraMode?: OverpaymentMode | null;
+
+  @ApiPropertyOptional({
+    description:
+      "Cadence of the recurring overpayment (null = every loan payment)",
+    enum: OVERPAYMENT_FREQUENCIES,
+  })
+  @IsOptional()
+  @IsIn(OVERPAYMENT_FREQUENCIES)
+  recurringExtraFrequency?: OverpaymentFrequency | null;
 
   @ApiPropertyOptional({
     description: "First date the recurring extra applies",

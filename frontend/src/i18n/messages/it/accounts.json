@@ -416,7 +416,30 @@
       "modeShortenTerm": "Accorcia la durata",
       "modeLowerInstallment": "Riduci la rata",
       "modeShortenTermHint": "Mantieni la stessa rata e salda il prestito prima. Massimo risparmio di interessi.",
-      "modeLowerInstallmentHint": "Mantieni la stessa data di estinzione e ricalcola una rata più bassa sul saldo ridotto."
+      "modeLowerInstallmentHint": "Mantieni la stessa data di estinzione e ricalcola una rata più bassa sul saldo ridotto.",
+      "goalSeek": {
+        "title": "Ricerca obiettivo",
+        "description": "Calcolo a ritroso: quanto extra per rata per raggiungere un obiettivo.",
+        "targetInterestLabel": "Risparmio di interessi obiettivo",
+        "targetDateLabel": "Mese di estinzione obiettivo",
+        "compute": "Calcola",
+        "required": "Extra necessario: {amount} per rata",
+        "effect": "→ risparmia {interest}, estinzione {date}",
+        "alreadyMet": "Già raggiunto senza alcun pagamento extra.",
+        "unreachableInterest": "Irraggiungibile: nemmeno un pagamento extra molto grande può far risparmiare così tanti interessi.",
+        "unreachableDate": "Irraggiungibile: quel mese è precedente alla prima estinzione possibile."
+      },
+      "optionalGroup": "Facoltativo",
+      "simulationTypeLabel": "Tipo di simulazione",
+      "overpaymentAmount": "Importo del versamento extra",
+      "frequencyLabel": "Frequenza",
+      "frequencyOneOff": "Una tantum",
+      "frequencyWeekly": "Settimanale",
+      "frequencyBiweekly": "Quindicinale",
+      "frequencyMonthly": "Mensile",
+      "frequencyQuarterly": "Trimestrale",
+      "frequencyAnnually": "Annuale",
+      "oneOffDateLabel": "Data"
     },
     "comparison": {
       "newPayoff": "Nuova data di estinzione",
@@ -429,7 +452,9 @@
       "totalExtraContributed": "Totale extra versato",
       "beyondProjection": "Oltre la proiezione",
       "newInstallment": "Nuova rata",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "Rata mensile",
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "Cronologia di estinzione",
@@ -439,13 +464,13 @@
       "seriesScenario": "Con sovrapagamenti simulati",
       "seriesOriginal": "Piano originario",
       "today": "Oggi",
-      "scenarioNote": "Lo scenario di rimborso anticipato è una simulazione e non modifica i tuoi pagamenti pianificati."
+      "scenarioNote": "Lo scenario di rimborso anticipato è una simulazione e non modifica i tuoi pagamenti pianificati.",
+      "axisPrincipal": "Capitale residuo"
     },
     "scenarios": {
       "title": "Scenari salvati",
       "saveCurrent": "Salva scenario attuale",
       "empty": "Nessuno scenario salvato. Configura un rimborso anticipato qui sopra e salvalo per confrontare i piani nel tempo.",
-      "load": "Carica",
       "rename": "Rinomina",
       "delete": "Elimina",
       "cancel": "Annulla",
@@ -464,7 +489,20 @@
       "deleteFailed": "Impossibile eliminare lo scenario",
       "deleteTitle": "Elimina scenario",
       "deleteMessage": "Eliminare lo scenario \"{name}\"? Questa operazione non può essere annullata.",
-      "loadFailed": "Impossibile caricare gli scenari salvati. Sono ancora memorizzati: ricarica la pagina per riprovare."
+      "loadFailed": "Impossibile caricare gli scenari salvati. Sono ancora memorizzati: ricarica la pagina per riprovare.",
+      "colOverpayment": "Versamento extra",
+      "overpaymentWithFrequency": "{amount} ({frequency})",
+      "loadAria": "Carica lo scenario \"{name}\""
+    },
+    "scenarioChart": {
+      "title": "Confronto scenari",
+      "description": "Ogni pagamento extra salvato è un arco sulla linea temporale: l'arco termina alla data di estinzione, il picco sono gli interessi risparmiati e l'etichetta mostra l'extra pagato per rata. Più stretto e più alto è meglio.",
+      "baselineMarker": "Senza pagamenti extra · {date}",
+      "extraShort": "+{amount} / rata",
+      "show": "Mostra grafico di confronto scenari",
+      "hide": "Nascondi grafico di confronto scenari",
+      "axisInterestSaved": "Interessi risparmiati",
+      "axisMonths": "Mesi al rimborso"
     },
     "pastImpact": {
       "title": "Impatto dei rimborsi anticipati effettuati",

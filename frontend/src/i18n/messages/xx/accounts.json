@@ -480,6 +480,17 @@
       "modeLowerInstallmentHint": "[XX-Keep the same payoff date and recalculate a smaller payment on the reduced balance.-XX]",
       "detectedExtraHint": "[XX-Your payment history shows an average of {amount} in extra principal per payment.-XX]",
       "applyDetected": "[XX-Use it-XX]",
+      "optionalGroup": "[XX-Optional-XX]",
+      "simulationTypeLabel": "[XX-Simulation type-XX]",
+      "overpaymentAmount": "[XX-Overpayment amount-XX]",
+      "frequencyLabel": "[XX-Frequency-XX]",
+      "frequencyOneOff": "[XX-One-off-XX]",
+      "frequencyWeekly": "[XX-Weekly-XX]",
+      "frequencyBiweekly": "[XX-Biweekly-XX]",
+      "frequencyMonthly": "[XX-Monthly-XX]",
+      "frequencyQuarterly": "[XX-Quarterly-XX]",
+      "frequencyAnnually": "[XX-Annually-XX]",
+      "oneOffDateLabel": "[XX-Date-XX]",
       "recurringAmount": "[XX-Extra per payment-XX]",
       "recurringStart": "[XX-Starting (optional)-XX]",
       "recurringEnd": "[XX-Until (optional)-XX]",
@@ -488,7 +499,29 @@
       "noLumpSums": "[XX-No lump sums added.-XX]",
       "lumpSumDate": "[XX-Date-XX]",
       "lumpSumAmount": "[XX-Amount-XX]",
-      "removeLumpSum": "[XX-Remove-XX]"
+      "removeLumpSum": "[XX-Remove-XX]",
+      "goalSeek": {
+        "title": "[XX-Goal seek-XX]",
+        "description": "[XX-Work backwards: how much extra per payment to hit a target.-XX]",
+        "targetInterestLabel": "[XX-Target interest savings-XX]",
+        "targetDateLabel": "[XX-Target payoff month-XX]",
+        "compute": "[XX-Calculate-XX]",
+        "required": "[XX-Extra needed: {amount} per payment-XX]",
+        "effect": "[XX-→ saves {interest}, payoff {date}-XX]",
+        "alreadyMet": "[XX-Already met without any overpayment.-XX]",
+        "unreachableInterest": "[XX-Out of reach — even a very large overpayment cannot save that much interest.-XX]",
+        "unreachableDate": "[XX-Out of reach — that month is earlier than the soonest possible payoff.-XX]"
+      }
+    },
+    "scenarioChart": {
+      "title": "[XX-Scenario comparison-XX]",
+      "description": "[XX-Each saved overpayment is an arc on the timeline: the arc ends at its payoff date, the peak is the interest it saves, and the label shows the extra paid per installment. Narrower and taller is better.-XX]",
+      "baselineMarker": "[XX-No overpayments · {date}-XX]",
+      "extraShort": "[XX-+{amount} / payment-XX]",
+      "show": "[XX-Show scenario comparison chart-XX]",
+      "hide": "[XX-Hide scenario comparison chart-XX]",
+      "axisInterestSaved": "[XX-Interest saved-XX]",
+      "axisMonths": "[XX-Months to payoff-XX]"
     },
     "comparison": {
       "newPayoff": "[XX-New Payoff Date-XX]",
@@ -498,10 +531,12 @@
       "monthsSaved": "[XX-{count, plural, one {# month} other {# months}}-XX]",
       "paymentsSaved": "[XX-{count, plural, one {# payment} other {# payments}}-XX]",
       "interestSaved": "[XX-Interest Saved-XX]",
+      "monthlyPayment": "[XX-Monthly Payment-XX]",
       "newInstallment": "[XX-New Installment-XX]",
       "installmentDrop": "[XX-{payment} (−{reduction})-XX]",
       "totalExtraContributed": "[XX-Total Extra Contributed-XX]",
-      "beyondProjection": "[XX-Beyond projection-XX]"
+      "beyondProjection": "[XX-Beyond projection-XX]",
+      "overpaymentAtFrequency": "[XX-{frequency}: +{amount}-XX]"
     },
     "chart": {
       "title": "[XX-Payoff Timeline-XX]",
@@ -511,13 +546,13 @@
       "seriesScenario": "[XX-With Simulated Overpayments-XX]",
       "seriesOriginal": "[XX-Original Schedule-XX]",
       "today": "[XX-Today-XX]",
-      "scenarioNote": "[XX-The overpayment scenario is a simulation and does not change your scheduled payments.-XX]"
+      "scenarioNote": "[XX-The overpayment scenario is a simulation and does not change your scheduled payments.-XX]",
+      "axisPrincipal": "[XX-Remaining principal-XX]"
     },
     "scenarios": {
       "title": "[XX-Saved Scenarios-XX]",
       "saveCurrent": "[XX-Save current scenario-XX]",
       "empty": "[XX-No saved scenarios yet. Set up an overpayment above and save it to compare plans over time.-XX]",
-      "load": "[XX-Load-XX]",
       "rename": "[XX-Rename-XX]",
       "delete": "[XX-Delete-XX]",
       "cancel": "[XX-Cancel-XX]",
@@ -536,7 +571,10 @@
       "deleteFailed": "[XX-Failed to delete scenario-XX]",
       "deleteTitle": "[XX-Delete Scenario-XX]",
       "deleteMessage": "[XX-Delete the scenario \"{name}\"? This cannot be undone.-XX]",
-      "loadFailed": "[XX-Couldn't load the saved scenarios. They are still stored — reload the page to try again.-XX]"
+      "loadFailed": "[XX-Couldn't load the saved scenarios. They are still stored — reload the page to try again.-XX]",
+      "colOverpayment": "[XX-Overpayment-XX]",
+      "overpaymentWithFrequency": "[XX-{amount} ({frequency})-XX]",
+      "loadAria": "[XX-Load scenario \"{name}\"-XX]"
     },
     "pastImpact": {
       "title": "[XX-Impact of Overpayments Made-XX]",

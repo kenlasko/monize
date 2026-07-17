@@ -416,7 +416,30 @@
       "modeShortenTerm": "Vadeyi kısalt",
       "modeLowerInstallment": "Taksiti düşür",
       "modeShortenTermHint": "Aynı taksiti koruyun ve krediyi daha erken kapatın. Maksimum faiz tasarrufu.",
-      "modeLowerInstallmentHint": "Aynı kapanış tarihini koruyun ve azalan bakiye üzerinden daha düşük bir taksit hesaplayın."
+      "modeLowerInstallmentHint": "Aynı kapanış tarihini koruyun ve azalan bakiye üzerinden daha düşük bir taksit hesaplayın.",
+      "goalSeek": {
+        "title": "Hedef arama",
+        "description": "Geriye doğru hesapla: hedefe ulaşmak için taksit başına ne kadar ek ödeme gerekir.",
+        "targetInterestLabel": "Hedef faiz tasarrufu",
+        "targetDateLabel": "Hedef kapanış ayı",
+        "compute": "Hesapla",
+        "required": "Gereken ek ödeme: taksit başına {amount}",
+        "effect": "→ {interest} tasarruf, kapanış {date}",
+        "alreadyMet": "Hiç ek ödeme yapmadan zaten karşılanıyor.",
+        "unreachableInterest": "Ulaşılamaz — çok büyük bir ek ödeme bile o kadar faiz tasarrufu sağlayamaz.",
+        "unreachableDate": "Ulaşılamaz — bu ay, mümkün olan en erken kapanıştan daha önce."
+      },
+      "optionalGroup": "İsteğe bağlı",
+      "simulationTypeLabel": "Simülasyon türü",
+      "overpaymentAmount": "Ek ödeme tutarı",
+      "frequencyLabel": "Sıklık",
+      "frequencyOneOff": "Tek seferlik",
+      "frequencyWeekly": "Haftalık",
+      "frequencyBiweekly": "İki haftada bir",
+      "frequencyMonthly": "Aylık",
+      "frequencyQuarterly": "Üç aylık",
+      "frequencyAnnually": "Yıllık",
+      "oneOffDateLabel": "Tarih"
     },
     "comparison": {
       "newPayoff": "Yeni Kapanış Tarihi",
@@ -429,7 +452,9 @@
       "totalExtraContributed": "Toplam Ek Ödeme",
       "beyondProjection": "Öngörünün ötesinde",
       "newInstallment": "Yeni Taksit",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "Aylık ödeme",
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "Kapanış Zaman Çizelgesi",
@@ -439,13 +464,13 @@
       "seriesScenario": "Simüle edilmiş fazla ödemelerle",
       "seriesOriginal": "Orijinal Plan",
       "today": "Bugün",
-      "scenarioNote": "Erken ödeme senaryosu bir simülasyondur ve planlanan ödemelerinizi değiştirmez."
+      "scenarioNote": "Erken ödeme senaryosu bir simülasyondur ve planlanan ödemelerinizi değiştirmez.",
+      "axisPrincipal": "Kalan anapara"
     },
     "scenarios": {
       "title": "Kayıtlı Senaryolar",
       "saveCurrent": "Mevcut senaryoyu kaydet",
       "empty": "Henüz kayıtlı senaryo yok. Yukarıda bir erken ödeme ayarlayın ve planları zaman içinde karşılaştırmak için kaydedin.",
-      "load": "Yükle",
       "rename": "Yeniden adlandır",
       "delete": "Sil",
       "cancel": "İptal",
@@ -464,7 +489,20 @@
       "deleteFailed": "Senaryo silinemedi",
       "deleteTitle": "Senaryoyu Sil",
       "deleteMessage": "\"{name}\" senaryosu silinsin mi? Bu işlem geri alınamaz.",
-      "loadFailed": "Kayıtlı senaryolar yüklenemedi. Hâlâ kayıtlılar — tekrar denemek için sayfayı yenileyin."
+      "loadFailed": "Kayıtlı senaryolar yüklenemedi. Hâlâ kayıtlılar — tekrar denemek için sayfayı yenileyin.",
+      "colOverpayment": "Ek ödeme",
+      "overpaymentWithFrequency": "{amount} ({frequency})",
+      "loadAria": "\"{name}\" senaryosunu yükle"
+    },
+    "scenarioChart": {
+      "title": "Senaryo karşılaştırması",
+      "description": "Kaydedilen her ek ödeme zaman çizelgesinde bir yaydır: yay kapanış tarihinde biter, tepe noktası tasarruf edilen faizdir ve etiket taksit başına ödenen ek tutarı gösterir. Daha dar ve daha yüksek daha iyidir.",
+      "baselineMarker": "Ek ödeme yok · {date}",
+      "extraShort": "+{amount} / taksit",
+      "show": "Senaryo karşılaştırma grafiğini göster",
+      "hide": "Senaryo karşılaştırma grafiğini gizle",
+      "axisInterestSaved": "Tasarruf edilen faiz",
+      "axisMonths": "Ödemeye kalan ay"
     },
     "pastImpact": {
       "title": "Yapılan Erken Ödemelerin Etkisi",

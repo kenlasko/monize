@@ -3,7 +3,6 @@
     "viewTransactions": "取引を表示",
     "reconcile": "照合",
     "edit": "勘定科目を編集",
-    "export": "エクスポート",
     "back": "勘定科目一覧に戻る"
   },
   "loading": "勘定科目の詳細を読み込み中...",

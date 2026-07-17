@@ -79,9 +79,87 @@ function inlineCssVariableColors(original: SVGSVGElement, clone: SVGSVGElement):
   });
 }
 
+interface LegendEntry {
+  color: string;
+  text: string;
+}
+
+/**
+ * Reads the chart's HTML legend (Recharts renders it as a sibling div of the
+ * SVG inside .recharts-wrapper, so a bare SVG capture drops it). Colours come
+ * from the legend icon's computed style, which also resolves the CSS-variable
+ * theme colours.
+ */
+function readLegendEntries(svg: SVGSVGElement): LegendEntry[] {
+  const wrapper = svg.closest('.recharts-wrapper');
+  if (!wrapper) return [];
+  const entries: LegendEntry[] = [];
+  wrapper.querySelectorAll('.recharts-legend-item').forEach((item) => {
+    const text = item.querySelector('.recharts-legend-item-text')?.textContent?.trim();
+    if (!text) return;
+    let color = '#374151';
+    const icon = item.querySelector('path, line, rect, circle');
+    if (icon) {
+      const computed = getComputedStyle(icon);
+      if (computed.stroke && computed.stroke !== 'none') color = computed.stroke;
+      else if (computed.fill && computed.fill !== 'none') color = computed.fill;
+    }
+    entries.push({ color, text });
+  });
+  return entries;
+}
+
+/**
+ * Draws the legend entries onto the canvas below the chart image, wrapping
+ * onto multiple centred lines. Returns nothing; layout was precomputed by
+ * `layoutLegend`.
+ */
+interface LegendLayoutItem extends LegendEntry {
+  x: number;
+  line: number;
+  textWidth: number;
+}
+
+function layoutLegend(
+  ctx: CanvasRenderingContext2D,
+  entries: LegendEntry[],
+  maxWidth: number,
+  scale: number,
+): { items: LegendLayoutItem[]; lineCount: number } {
+  const iconWidth = 16 * scale;
+  const iconGap = 5 * scale;
+  const itemGap = 18 * scale;
+  const items: LegendLayoutItem[] = [];
+  let line = 0;
+  let cursor = 0;
+  const lineWidths: number[] = [0];
+
+  for (const entry of entries) {
+    const textWidth = ctx.measureText(entry.text).width;
+    const itemWidth = iconWidth + iconGap + textWidth;
+    if (cursor > 0 && cursor + itemWidth > maxWidth) {
+      lineWidths[line] = cursor - itemGap;
+      line += 1;
+      cursor = 0;
+      lineWidths.push(0);
+    }
+    items.push({ ...entry, x: cursor, line, textWidth });
+    cursor += itemWidth + itemGap;
+  }
+  lineWidths[line] = cursor - itemGap;
+
+  // Centre each line horizontally
+  for (const item of items) {
+    item.x += (maxWidth - lineWidths[item.line]) / 2;
+  }
+  return { items, lineCount: entries.length > 0 ? line + 1 : 0 };
+}
+
 /**
  * Captures a single SVG element and converts it to a PNG data URL.
  * Forces a white background regardless of dark mode for print-friendly output.
+ * The chart's HTML legend (which lives outside the SVG) is re-drawn onto the
+ * canvas below the plot, so exports match what is on screen.
  *
  * The SVG clone is rendered at (width*scale x height*scale) with a viewBox at the
  * original dimensions, so the browser's SVG renderer natively produces a high-resolution
@@ -160,25 +238,63 @@ function captureSingleSvg(
   const base64 = btoa(unescape(encodeURIComponent(svgString)));
   const dataUri = `data:image/svg+xml;base64,${base64}`;
 
+  // Read the HTML legend from the live DOM now (the clone has no legend --
+  // Recharts renders it outside the SVG).
+  const legendEntries = readLegendEntries(svg);
+
   return new Promise<CapturedChart>((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      canvas.width = scaledWidth;
-      canvas.height = scaledHeight;
       const ctx = canvas.getContext('2d');
       if (!ctx) {
         reject(new Error('Failed to get canvas 2d context'));
         return;
       }
+
+      // Lay the legend out first so the canvas can be sized to fit it; the
+      // font must be re-applied after every canvas resize (resizing resets
+      // the context state).
+      const fontSize = 12 * scale;
+      const lineHeight = Math.round(20 * scale);
+      const sideMargin = 12 * scale;
+      const legendFont = `${fontSize}px ${CHART_FONT_FAMILY}`;
+      canvas.width = scaledWidth;
+      ctx.font = legendFont;
+      const { items, lineCount } = layoutLegend(
+        ctx,
+        legendEntries,
+        scaledWidth - 2 * sideMargin,
+        scale,
+      );
+      const legendHeight = lineCount > 0 ? lineCount * lineHeight + Math.round(6 * scale) : 0;
+
+      canvas.height = scaledHeight + legendHeight;
       ctx.fillStyle = 'white';
-      ctx.fillRect(0, 0, scaledWidth, scaledHeight);
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
       // Draw at 1:1 -- the SVG was already rendered at scaled resolution
       ctx.drawImage(img, 0, 0, scaledWidth, scaledHeight);
+
+      ctx.font = legendFont;
+      ctx.textBaseline = 'middle';
+      for (const item of items) {
+        const y = scaledHeight + item.line * lineHeight + lineHeight / 2;
+        const x = sideMargin + item.x;
+        ctx.strokeStyle = item.color;
+        ctx.lineWidth = 2.5 * scale;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 16 * scale, y);
+        ctx.stroke();
+        // Text in print-friendly ink; the coloured icon carries the identity
+        ctx.fillStyle = '#374151';
+        ctx.fillText(item.text, x + 16 * scale + 5 * scale, y);
+      }
+
       resolve({
         dataUrl: canvas.toDataURL('image/png'),
         width,
-        height,
+        height: height + legendHeight / scale,
       });
     };
     img.onerror = () => {

@@ -23,6 +23,21 @@ export const OVERPAYMENT_MODES: OverpaymentMode[] = [
   "LOWER_INSTALLMENT",
 ];
 
+/** Cadence of a recurring overpayment (ONE_OFF is stored as a lump sum). */
+export type OverpaymentFrequency =
+  | "WEEKLY"
+  | "BIWEEKLY"
+  | "MONTHLY"
+  | "QUARTERLY"
+  | "ANNUALLY";
+export const OVERPAYMENT_FREQUENCIES: OverpaymentFrequency[] = [
+  "WEEKLY",
+  "BIWEEKLY",
+  "MONTHLY",
+  "QUARTERLY",
+  "ANNUALLY",
+];
+
 export interface LoanScenarioLumpSum {
   /** ISO date (yyyy-MM-dd) */
   date: string;
@@ -75,6 +90,15 @@ export class LoanScenario {
     nullable: true,
   })
   recurringExtraMode: OverpaymentMode | null;
+
+  /** Cadence of the recurring overpayment; null means every loan payment. */
+  @Column({
+    type: "varchar",
+    length: 16,
+    name: "recurring_extra_frequency",
+    nullable: true,
+  })
+  recurringExtraFrequency: OverpaymentFrequency | null;
 
   @Column({ type: "date", name: "recurring_extra_start_date", nullable: true })
   recurringExtraStartDate: string | null;

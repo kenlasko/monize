@@ -416,7 +416,30 @@
       "modeShortenTerm": "Raccourcir la durée",
       "modeLowerInstallment": "Réduire la mensualité",
       "modeShortenTermHint": "Conserver la même mensualité et rembourser le prêt plus tôt. Économie d'intérêts maximale.",
-      "modeLowerInstallmentHint": "Conserver la même date de remboursement et recalculer une mensualité plus faible sur le solde réduit."
+      "modeLowerInstallmentHint": "Conserver la même date de remboursement et recalculer une mensualité plus faible sur le solde réduit.",
+      "goalSeek": {
+        "title": "Recherche d'objectif",
+        "description": "Calcul inverse : combien de supplément par échéance pour atteindre un objectif.",
+        "targetInterestLabel": "Économie d'intérêts cible",
+        "targetDateLabel": "Mois de remboursement cible",
+        "compute": "Calculer",
+        "required": "Supplément nécessaire : {amount} par échéance",
+        "effect": "→ économise {interest}, remboursement {date}",
+        "alreadyMet": "Objectif déjà atteint sans aucun remboursement anticipé.",
+        "unreachableInterest": "Hors de portée — même un très gros remboursement anticipé ne peut pas économiser autant d'intérêts.",
+        "unreachableDate": "Hors de portée — ce mois est antérieur au remboursement le plus tôt possible."
+      },
+      "optionalGroup": "Facultatif",
+      "simulationTypeLabel": "Type de simulation",
+      "overpaymentAmount": "Montant du remboursement anticipé",
+      "frequencyLabel": "Fréquence",
+      "frequencyOneOff": "Ponctuel",
+      "frequencyWeekly": "Hebdomadaire",
+      "frequencyBiweekly": "Toutes les deux semaines",
+      "frequencyMonthly": "Mensuel",
+      "frequencyQuarterly": "Trimestriel",
+      "frequencyAnnually": "Annuel",
+      "oneOffDateLabel": "Date"
     },
     "comparison": {
       "newPayoff": "Nouvelle date de remboursement",
@@ -429,7 +452,9 @@
       "totalExtraContributed": "Total des versements supplémentaires",
       "beyondProjection": "Au-delà de la projection",
       "newInstallment": "Nouvelle mensualité",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "Paiement mensuel",
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "Chronologie du remboursement",
@@ -439,13 +464,13 @@
       "seriesScenario": "Avec remboursements anticipés simulés",
       "seriesOriginal": "Calendrier initial",
       "today": "Aujourd'hui",
-      "scenarioNote": "Le scénario de remboursement anticipé est une simulation et ne modifie pas vos versements planifiés."
+      "scenarioNote": "Le scénario de remboursement anticipé est une simulation et ne modifie pas vos versements planifiés.",
+      "axisPrincipal": "Capital restant dû"
     },
     "scenarios": {
       "title": "Scénarios enregistrés",
       "saveCurrent": "Enregistrer le scénario actuel",
       "empty": "Aucun scénario enregistré pour l'instant. Configurez un remboursement anticipé ci-dessus et enregistrez-le pour comparer vos plans au fil du temps.",
-      "load": "Charger",
       "rename": "Renommer",
       "delete": "Supprimer",
       "cancel": "Annuler",
@@ -464,7 +489,20 @@
       "deleteFailed": "Échec de la suppression du scénario",
       "deleteTitle": "Supprimer le scénario",
       "deleteMessage": "Supprimer le scénario \"{name}\" ? Cette action est irréversible.",
-      "loadFailed": "Impossible de charger les scénarios enregistrés. Ils sont toujours stockés — rechargez la page pour réessayer."
+      "loadFailed": "Impossible de charger les scénarios enregistrés. Ils sont toujours stockés — rechargez la page pour réessayer.",
+      "colOverpayment": "Remboursement",
+      "overpaymentWithFrequency": "{amount} ({frequency})",
+      "loadAria": "Charger le scénario « {name} »"
+    },
+    "scenarioChart": {
+      "title": "Comparaison des scénarios",
+      "description": "Chaque remboursement anticipé enregistré est un arc sur la chronologie : l'arc se termine à sa date de remboursement, le sommet représente les intérêts économisés et l'étiquette indique le supplément payé par échéance. Plus étroit et plus haut, c'est mieux.",
+      "baselineMarker": "Sans remboursement anticipé · {date}",
+      "extraShort": "+{amount} / échéance",
+      "show": "Afficher le graphique de comparaison des scénarios",
+      "hide": "Masquer le graphique de comparaison des scénarios",
+      "axisInterestSaved": "Intérêts économisés",
+      "axisMonths": "Mois jusqu’au remboursement"
     },
     "pastImpact": {
       "title": "Impact des remboursements anticipés effectués",

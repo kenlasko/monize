@@ -3,7 +3,6 @@
     "viewTransactions": "查看交易",
     "reconcile": "对账",
     "edit": "编辑账户",
-    "export": "导出",
     "back": "返回账户"
   },
   "loading": "正在加载账户详情...",

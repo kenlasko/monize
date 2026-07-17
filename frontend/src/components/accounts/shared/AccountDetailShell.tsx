@@ -1,7 +1,8 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { InstitutionLogo, InstitutionLogoData } from '@/components/institutions/InstitutionLogo';
@@ -54,10 +55,55 @@ export function AccountDetailShell({
 }: AccountDetailShellProps) {
   const t = useTranslations('accountDetail');
   const tc = useTranslations('common');
+  const [isExporting, setIsExporting] = useState(false);
+  // Guards the async export's setState against an unmount mid-generation.
+  const mountedRef = useRef(true);
+  useEffect(() => () => {
+    mountedRef.current = false;
+  }, []);
+
+  const handleExport = async () => {
+    if (!onExport) return;
+    setIsExporting(true);
+    try {
+      await onExport();
+    } catch (error) {
+      console.error('PDF export failed:', error);
+      toast.error(tc('exportDropdown.failedPdf'));
+    } finally {
+      if (mountedRef.current) setIsExporting(false);
+    }
+  };
+
+  // Export PDF leads the action row, set off from the navigation actions by a
+  // minimalist vertical divider. Every action is the same outline Button so the
+  // row reads as one consistent set.
+  const hasNavActions = !!(
+    onBack ||
+    onViewTransactions ||
+    onReconcile ||
+    onEdit ||
+    headerActions
+  );
 
   const actions = (
     <>
-      {headerActions}
+      {onExport && (
+        <Button variant="outline" onClick={handleExport} isLoading={isExporting}>
+          {tc('exportDropdown.exportPdf')}
+        </Button>
+      )}
+      {onExport && hasNavActions && (
+        <span
+          aria-hidden="true"
+          className="hidden sm:block h-6 border-l border-gray-300 dark:border-gray-600"
+        />
+      )}
+      {onBack && (
+        <Button variant="outline" onClick={onBack}>
+          {t('header.back')}
+        </Button>
+      )}
       {onViewTransactions && (
         <Button variant="outline" onClick={onViewTransactions}>
           {t('header.viewTransactions')}
@@ -73,16 +119,7 @@ export function AccountDetailShell({
           {t('header.edit')}
         </Button>
       )}
-      {onExport && (
-        <Button variant="outline" onClick={onExport}>
-          {t('header.export')}
-        </Button>
-      )}
-      {onBack && (
-        <Button variant="outline" onClick={onBack}>
-          {t('header.back')}
-        </Button>
-      )}
+      {headerActions}
     </>
   );
 

@@ -416,7 +416,30 @@
       "modeShortenTerm": "Perpendek tenor",
       "modeLowerInstallment": "Turunkan angsuran",
       "modeShortenTermHint": "Pertahankan angsuran yang sama dan lunasi pinjaman lebih cepat. Penghematan bunga maksimal.",
-      "modeLowerInstallmentHint": "Pertahankan tanggal pelunasan yang sama dan hitung ulang angsuran yang lebih kecil atas saldo yang berkurang."
+      "modeLowerInstallmentHint": "Pertahankan tanggal pelunasan yang sama dan hitung ulang angsuran yang lebih kecil atas saldo yang berkurang.",
+      "goalSeek": {
+        "title": "Pencarian target",
+        "description": "Hitung mundur: berapa tambahan per angsuran untuk mencapai target.",
+        "targetInterestLabel": "Target penghematan bunga",
+        "targetDateLabel": "Target bulan pelunasan",
+        "compute": "Hitung",
+        "required": "Tambahan yang dibutuhkan: {amount} per angsuran",
+        "effect": "→ menghemat {interest}, pelunasan {date}",
+        "alreadyMet": "Sudah tercapai tanpa pembayaran ekstra.",
+        "unreachableInterest": "Tidak terjangkau — pembayaran ekstra yang sangat besar pun tidak dapat menghemat bunga sebanyak itu.",
+        "unreachableDate": "Tidak terjangkau — bulan itu lebih awal dari pelunasan tercepat yang mungkin."
+      },
+      "optionalGroup": "Opsional",
+      "simulationTypeLabel": "Jenis simulasi",
+      "overpaymentAmount": "Jumlah pembayaran ekstra",
+      "frequencyLabel": "Frekuensi",
+      "frequencyOneOff": "Sekali bayar",
+      "frequencyWeekly": "Mingguan",
+      "frequencyBiweekly": "Dua mingguan",
+      "frequencyMonthly": "Bulanan",
+      "frequencyQuarterly": "Triwulanan",
+      "frequencyAnnually": "Tahunan",
+      "oneOffDateLabel": "Tanggal"
     },
     "comparison": {
       "newPayoff": "Tanggal Lunas Baru",
@@ -429,7 +452,9 @@
       "totalExtraContributed": "Total Pembayaran Tambahan",
       "beyondProjection": "Di luar proyeksi",
       "newInstallment": "Angsuran Baru",
-      "installmentDrop": "{payment} (−{reduction})"
+      "installmentDrop": "{payment} (−{reduction})",
+      "monthlyPayment": "Pembayaran bulanan",
+      "overpaymentAtFrequency": "{frequency}: +{amount}"
     },
     "chart": {
       "title": "Linimasa Pelunasan",
@@ -439,13 +464,13 @@
       "seriesScenario": "Dengan pembayaran ekstra tersimulasi",
       "seriesOriginal": "Jadwal Awal",
       "today": "Hari ini",
-      "scenarioNote": "Skenario pembayaran tambahan hanyalah simulasi dan tidak mengubah pembayaran terjadwal Anda."
+      "scenarioNote": "Skenario pembayaran tambahan hanyalah simulasi dan tidak mengubah pembayaran terjadwal Anda.",
+      "axisPrincipal": "Sisa pokok"
     },
     "scenarios": {
       "title": "Skenario Tersimpan",
       "saveCurrent": "Simpan skenario saat ini",
       "empty": "Belum ada skenario tersimpan. Atur pembayaran tambahan di atas dan simpan untuk membandingkan rencana dari waktu ke waktu.",
-      "load": "Muat",
       "rename": "Ganti nama",
       "delete": "Hapus",
       "cancel": "Batal",
@@ -464,7 +489,20 @@
       "deleteFailed": "Gagal menghapus skenario",
       "deleteTitle": "Hapus Skenario",
       "deleteMessage": "Hapus skenario \"{name}\"? Tindakan ini tidak dapat dibatalkan.",
-      "loadFailed": "Tidak dapat memuat skenario tersimpan. Skenario masih tersimpan — muat ulang halaman untuk mencoba lagi."
+      "loadFailed": "Tidak dapat memuat skenario tersimpan. Skenario masih tersimpan — muat ulang halaman untuk mencoba lagi.",
+      "colOverpayment": "Pembayaran ekstra",
+      "overpaymentWithFrequency": "{amount} ({frequency})",
+      "loadAria": "Muat skenario \"{name}\""
+    },
+    "scenarioChart": {
+      "title": "Perbandingan skenario",
+      "description": "Setiap pembayaran ekstra yang tersimpan adalah busur pada garis waktu: busur berakhir pada tanggal pelunasan, puncaknya adalah bunga yang dihemat, dan label menunjukkan tambahan yang dibayar per angsuran. Makin sempit dan tinggi, makin baik.",
+      "baselineMarker": "Tanpa pembayaran ekstra · {date}",
+      "extraShort": "+{amount} / angsuran",
+      "show": "Tampilkan grafik perbandingan skenario",
+      "hide": "Sembunyikan grafik perbandingan skenario",
+      "axisInterestSaved": "Bunga yang dihemat",
+      "axisMonths": "Bulan hingga lunas"
     },
     "pastImpact": {
       "title": "Dampak Pembayaran Tambahan yang Sudah Dilakukan",
