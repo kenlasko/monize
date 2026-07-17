@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { LoanSummaryCards } from '@/components/accounts/loan-detail/LoanSummaryCards';
 import { AmortizationScheduleTable } from '@/components/accounts/loan-detail/AmortizationScheduleTable';
@@ -10,6 +10,11 @@ import { RateHistorySidebar } from '@/components/accounts/loan-detail/RateHistor
 import { ComparisonSummaryCards } from '@/components/accounts/loan-detail/ComparisonSummaryCards';
 import { SavedScenariosPanel } from '@/components/accounts/loan-detail/SavedScenariosPanel';
 import type { ScenarioOutcome } from '@/components/accounts/loan-detail/ScenarioComparisonChart';
+import { createScenarioLabels } from '@/components/accounts/loan-detail/loan-scenario-labels';
+import { ExportDropdown } from '@/components/ui/ExportDropdown';
+import { sanitizeFilename } from '@/lib/export-filename';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { PastImpactSection } from '@/components/accounts/loan-detail/PastImpactSection';
 import { useLoanRateEditing } from '@/components/accounts/loan-detail/useLoanRateEditing';
 import {
@@ -60,10 +65,22 @@ export function LoanDetailView({
   onRateChangesChanged,
 }: LoanDetailViewProps) {
   const t = useTranslations('accounts');
+  const { formatCurrency } = useNumberFormat();
+  const formatChartDate = useChartDateFormat();
   const [plan, setPlan] = useState<OverpaymentPlan | null>(null);
   const [loadedPlan, setLoadedPlan] = useState<OverpaymentPlan | null>(null);
   const [loadedPlanVersion, setLoadedPlanVersion] = useState(0);
   const rateEditing = useLoanRateEditing(account, onRateChangesChanged);
+  const viewRef = useRef<HTMLDivElement>(null);
+
+  // Rate History sits beside the simulator as a 30% sidebar, but a tall
+  // simulator (many saved scenarios, the comparison chart open) leaves that
+  // column mostly empty. When the panel fills less than half the simulator's
+  // height it moves above the simulator at full width instead; hysteresis
+  // between the two thresholds keeps it from flip-flopping at the boundary.
+  const simulatorColRef = useRef<HTMLDivElement>(null);
+  const rateColRef = useRef<HTMLDivElement>(null);
+  const [rateStacked, setRateStacked] = useState(false);
 
   const handleLoadScenario = useCallback((loaded: OverpaymentPlan | null) => {
     setPlan(loaded);
@@ -160,8 +177,88 @@ export function LoanDetailView({
     [account, history, baseline, rateChanges],
   );
 
+  const hasSimulator = !!projectionInput;
+
+  useEffect(() => {
+    const sim = simulatorColRef.current;
+    const rate = rateColRef.current;
+    if (!sim || !rate || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => {
+      const simHeight = sim.offsetHeight;
+      const rateHeight = rate.offsetHeight;
+      if (simHeight <= 0) return;
+      const fill = rateHeight / simHeight;
+      setRateStacked((prev) => {
+        if (!prev && fill < 0.5) return true;
+        if (prev && fill > 0.58) return false;
+        return prev;
+      });
+    });
+    observer.observe(sim);
+    observer.observe(rate);
+    return () => observer.disconnect();
+  }, [hasSimulator]);
+
+  // The whole loan page as a PDF report: headline cards, every chart
+  // currently rendered on the page (payoff timeline + the scenario comparison
+  // when its toggle is open) and the saved-scenarios comparison table.
+  const handleExportPdf = async () => {
+    const { exportToPdf } = await import('@/lib/pdf-export');
+    const labels = createScenarioLabels({
+      t,
+      formatCurrency,
+      formatChartDate,
+      currencyCode: account.currencyCode,
+    });
+    await exportToPdf({
+      title: account.name,
+      summaryCards: [
+        {
+          label: t('loanDetail.summary.currentBalance'),
+          value: formatCurrency(Math.abs(account.currentBalance), account.currencyCode),
+          color: '#dc2626',
+        },
+        {
+          label: t('loanDetail.summary.payment'),
+          value:
+            currentInstallment != null
+              ? formatCurrency(currentInstallment, account.currencyCode)
+              : t('loanDetail.summary.notSet'),
+          color: '#2563eb',
+        },
+        {
+          label: t('loanDetail.summary.interestRate'),
+          value:
+            account.interestRate != null
+              ? `${account.interestRate}%`
+              : t('loanDetail.summary.notSet'),
+          color: '#ea580c',
+        },
+        ...(baseline?.payoffDate
+          ? [
+              {
+                label: t('loanDetail.summary.estPayoff'),
+                value: formatChartDate(baseline.payoffDate, 'MMM yyyy'),
+                color: '#9333ea',
+              },
+            ]
+          : []),
+      ],
+      chartContainer: viewRef.current,
+      tableData:
+        scenarios.length > 0
+          ? labels.comparisonTable(scenarios, scenarioComparisons)
+          : undefined,
+      filename: sanitizeFilename(account.name, 'loan'),
+    });
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" ref={viewRef}>
+      <div className="flex justify-end">
+        <ExportDropdown onExportPdf={handleExportPdf} />
+      </div>
+
       <LoanSummaryCards
         account={account}
         startingBalance={history.startingBalance}
@@ -171,11 +268,23 @@ export function LoanDetailView({
 
       <PastImpactSection account={account} impact={impact} />
 
-      {/* Active loan: simulator (70%) with the Rate History panel beside it
-          (30%), stacking on narrow screens. */}
+      {/* Active loan: simulator with the Rate History panel beside it (30%
+          sidebar), or -- when the sidebar would sit more than half empty --
+          stacked above the now full-width simulator. Both children stay
+          mounted across the switch (only their flex order/width change), so
+          the simulator keeps its form state. */}
       {projectionInput && (
-        <div className="flex flex-col lg:flex-row gap-6 lg:items-stretch">
-          <div className="w-full lg:w-[70%]">
+        <div
+          className={
+            rateStacked
+              ? 'flex flex-col gap-6'
+              : 'flex flex-col lg:flex-row gap-6 lg:items-start'
+          }
+        >
+          <div
+            ref={simulatorColRef}
+            className={rateStacked ? 'w-full order-2' : 'w-full lg:w-[70%]'}
+          >
             <OverpaymentSimulator
               accountId={account.id}
               currencyCode={account.currencyCode}
@@ -213,12 +322,14 @@ export function LoanDetailView({
               }
             />
           </div>
-          <div className="w-full lg:w-[30%]">
+          <div
+            ref={rateColRef}
+            className={rateStacked ? 'w-full order-1' : 'w-full lg:w-[30%]'}
+          >
             <RateHistorySidebar
               account={account}
               rateChanges={rateChanges}
               editing={rateEditing}
-              fillHeight
             />
           </div>
         </div>

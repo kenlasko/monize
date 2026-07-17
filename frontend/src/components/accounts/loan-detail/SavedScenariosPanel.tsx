@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
@@ -16,9 +16,7 @@ import {
 } from '@/components/accounts/loan-detail/ScenarioComparisonChart';
 import { LoanScenario } from '@/types/loan-scenario';
 import { getErrorMessage } from '@/lib/errors';
-import { exportToCsv } from '@/lib/csv-export';
-import { sanitizeFilename } from '@/lib/export-filename';
-import { ExportDropdown } from '@/components/ui/ExportDropdown';
+import { createScenarioLabels } from '@/components/accounts/loan-detail/loan-scenario-labels';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 
@@ -68,7 +66,6 @@ export function SavedScenariosPanel({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [scenarioToDelete, setScenarioToDelete] = useState<LoanScenario | null>(null);
   const [showChart, setShowChart] = useState(false);
-  const chartRef = useRef<HTMLDivElement>(null);
 
   const chartAvailable = chartOutcomes.length > 0 && chartBaseline !== null;
 
@@ -116,130 +113,8 @@ export function SavedScenariosPanel({
     }
   };
 
-  const describeScenario = (scenario: LoanScenario): string => {
-    const parts: string[] = [];
-    if (scenario.recurringExtraAmount && scenario.recurringExtraAmount > 0) {
-      parts.push(
-        t('loanDetail.scenarios.recurringSummary', {
-          amount: formatCurrency(scenario.recurringExtraAmount),
-        }),
-      );
-    }
-    if (scenario.lumpSums.length > 0) {
-      parts.push(
-        t('loanDetail.scenarios.lumpSumSummary', { count: scenario.lumpSums.length }),
-      );
-    }
-    return parts.join(' + ') || t('loanDetail.scenarios.emptyScenario');
-  };
-
-  const payoffLabel = (comparison: ScenarioComparison | null) =>
-    comparison
-      ? comparison.scenario.payoffDate
-        ? formatChartDate(comparison.scenario.payoffDate, 'MMM yyyy')
-        : t('loanDetail.comparison.beyondProjection')
-      : '—';
-
-  const timeSavedLabel = (comparison: ScenarioComparison | null) => {
-    if (!comparison) return '—';
-    if (comparison.installmentReduction > 0.005) {
-      return t('loanDetail.comparison.installmentDrop', {
-        payment: formatCurrency(comparison.scenario.finalPaymentAmount, currencyCode),
-        reduction: formatCurrency(comparison.installmentReduction, currencyCode),
-      });
-    }
-    return comparison.monthsSaved > 0
-      ? t('loanDetail.comparison.monthsSaved', { count: comparison.monthsSaved })
-      : t('loanDetail.comparison.paymentsSaved', {
-          count: Math.max(comparison.paymentsSaved, 0),
-        });
-  };
-
-  const interestSavedLabel = (comparison: ScenarioComparison | null) =>
-    comparison ? formatCurrency(Math.max(0, comparison.interestSaved), currencyCode) : '—';
-
-  // The comparison table as displayed: names, the scenario summary, and the
-  // formatted payoff / time-saved / interest-saved outcomes.
-  const handleExportCsv = () => {
-    const headers = [
-      t('loanDetail.scenarios.nameLabel'),
-      t('loanDetail.scenarios.colDetails'),
-      t('loanDetail.comparison.newPayoff'),
-      t('loanDetail.comparison.timeSaved'),
-      t('loanDetail.comparison.interestSaved'),
-    ];
-    const rows = scenarios.map((scenario) => {
-      const comparison = comparisons.get(scenario.id) ?? null;
-      return [
-        scenario.name,
-        describeScenario(scenario),
-        payoffLabel(comparison),
-        timeSavedLabel(comparison),
-        interestSavedLabel(comparison),
-      ];
-    });
-    exportToCsv(sanitizeFilename(t('loanDetail.scenarios.title')), headers, rows);
-  };
-
-  // The scenarios as a PDF report: headline outcomes, the comparison chart
-  // (when open on screen), and the same table the CSV export produces.
-  const handleExportPdf = async () => {
-    const { exportToPdf } = await import('@/lib/pdf-export');
-    const outcomes = scenarios
-      .map((scenario) => comparisons.get(scenario.id))
-      .filter((c): c is ScenarioComparison => c != null);
-    const bestSaved = outcomes.length
-      ? Math.max(...outcomes.map((c) => c.interestSaved))
-      : null;
-    const earliestPayoff = outcomes
-      .map((c) => c.scenario.payoffDate)
-      .filter((d): d is string => d != null)
-      .sort()[0];
-    await exportToPdf({
-      title: t('loanDetail.scenarios.title'),
-      summaryCards: [
-        ...(bestSaved !== null
-          ? [
-              {
-                label: t('loanDetail.comparison.interestSaved'),
-                value: formatCurrency(Math.max(0, bestSaved), currencyCode),
-                color: '#16a34a',
-              },
-            ]
-          : []),
-        ...(earliestPayoff
-          ? [
-              {
-                label: t('loanDetail.comparison.newPayoff'),
-                value: formatChartDate(earliestPayoff, 'MMM yyyy'),
-                color: '#9333ea',
-              },
-            ]
-          : []),
-      ],
-      chartContainer: chartRef.current,
-      tableData: {
-        headers: [
-          t('loanDetail.scenarios.nameLabel'),
-          t('loanDetail.scenarios.colDetails'),
-          t('loanDetail.comparison.newPayoff'),
-          t('loanDetail.comparison.timeSaved'),
-          t('loanDetail.comparison.interestSaved'),
-        ],
-        rows: scenarios.map((scenario) => {
-          const comparison = comparisons.get(scenario.id) ?? null;
-          return [
-            scenario.name,
-            describeScenario(scenario),
-            payoffLabel(comparison),
-            timeSavedLabel(comparison),
-            interestSavedLabel(comparison),
-          ];
-        }),
-      },
-      filename: sanitizeFilename(t('loanDetail.scenarios.title')),
-    });
-  };
+  const { describeScenario, payoffLabel, timeSavedLabel, interestSavedLabel } =
+    createScenarioLabels({ t, formatCurrency, formatChartDate, currencyCode });
 
   const headerCell = 'px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400';
 
@@ -250,11 +125,6 @@ export function SavedScenariosPanel({
           {t('loanDetail.scenarios.title')}
         </h4>
         <div className="flex items-center gap-2">
-          <ExportDropdown
-            onExportCsv={handleExportCsv}
-            onExportPdf={handleExportPdf}
-            disabled={scenarios.length === 0}
-          />
           {chartAvailable && (
             <Button
               variant="outline"
@@ -347,13 +217,11 @@ export function SavedScenariosPanel({
       )}
 
       {chartAvailable && showChart && chartBaseline && (
-        <div ref={chartRef}>
-          <ScenarioComparisonChart
-            outcomes={chartOutcomes}
-            baseline={chartBaseline}
-            currencyCode={currencyCode}
-          />
-        </div>
+        <ScenarioComparisonChart
+          outcomes={chartOutcomes}
+          baseline={chartBaseline}
+          currencyCode={currencyCode}
+        />
       )}
 
       <Modal isOpen={nameModal !== null} onClose={() => setNameModal(null)} maxWidth="sm">

@@ -1,18 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, act, waitFor } from '@/test/render';
+import { render, screen, fireEvent, act } from '@/test/render';
 import toast from 'react-hot-toast';
 import { SavedScenariosPanel } from './SavedScenariosPanel';
 import { LoanScenario } from '@/types/loan-scenario';
-import { exportToCsv } from '@/lib/csv-export';
 import type { ScenarioComparison } from '@/lib/loan-schedule';
-
-vi.mock('@/lib/csv-export', () => ({
-  exportToCsv: vi.fn(),
-}));
-
-vi.mock('@/lib/pdf-export', () => ({
-  exportToPdf: vi.fn().mockResolvedValue(undefined),
-}));
 
 const mockCreate = vi.fn();
 const mockUpdate = vi.fn();
@@ -106,86 +97,6 @@ describe('SavedScenariosPanel', () => {
   it('shows an empty state without scenarios', () => {
     renderPanel({ scenarios: [] });
     expect(screen.getByText(/No saved scenarios yet/)).toBeInTheDocument();
-  });
-
-  it('exports the comparison table to CSV as displayed', async () => {
-    const comparison = {
-      scenario: { payoffDate: '2040-06-15', finalPaymentAmount: 500 },
-      paymentsSaved: 24,
-      monthsSaved: 24,
-      interestSaved: 15000,
-      installmentReduction: 0,
-    } as unknown as ScenarioComparison;
-    renderPanel({ comparisons: new Map([['scenario-1', comparison]]) });
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /Export/ }));
-    });
-    await act(async () => {
-      fireEvent.click(screen.getByText('CSV'));
-    });
-
-    expect(exportToCsv).toHaveBeenCalledTimes(1);
-    const [filename, headers, rows] = vi.mocked(exportToCsv).mock.calls[0];
-    expect(filename).toBe('saved-scenarios');
-    expect(headers).toEqual([
-      'Scenario name',
-      'Details',
-      'New Payoff Date',
-      'Time Saved',
-      'Interest Saved',
-    ]);
-    expect(rows).toEqual([
-      [
-        'Extra 200',
-        '$200.00 extra per payment + 1 lump sum',
-        expect.stringContaining('2040'),
-        '24 months',
-        '$15000.00',
-      ],
-    ]);
-  });
-
-  it('disables the export dropdown without scenarios', () => {
-    renderPanel({ scenarios: [] });
-    expect(screen.getByRole('button', { name: /Export/ })).toBeDisabled();
-  });
-
-  it('exports the scenarios as a PDF report with the comparison table', async () => {
-    const comparison = {
-      scenario: { payoffDate: '2040-06-15', finalPaymentAmount: 500 },
-      paymentsSaved: 24,
-      monthsSaved: 24,
-      interestSaved: 15000,
-      installmentReduction: 0,
-    } as unknown as ScenarioComparison;
-    renderPanel({ comparisons: new Map([['scenario-1', comparison]]) });
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /Export/ }));
-    });
-    await act(async () => {
-      fireEvent.click(screen.getByText('PDF'));
-    });
-
-    const { exportToPdf } = await import('@/lib/pdf-export');
-    await waitFor(() => expect(exportToPdf).toHaveBeenCalledTimes(1));
-    const options = vi.mocked(exportToPdf).mock.calls[0][0];
-    expect(options.filename).toBe('saved-scenarios');
-    expect(options.tableData?.rows).toEqual([
-      [
-        'Extra 200',
-        '$200.00 extra per payment + 1 lump sum',
-        expect.stringContaining('2040'),
-        '24 months',
-        '$15000.00',
-      ],
-    ]);
-    // Best interest saved and earliest payoff appear as summary cards
-    expect(options.summaryCards?.map((c) => c.label)).toEqual([
-      'Interest Saved',
-      'New Payoff Date',
-    ]);
   });
 
   it('shows the chart toggle next to Save current and reveals the chart on click', async () => {
