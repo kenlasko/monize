@@ -27,9 +27,12 @@ import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { ChartDownloadButton } from '@/components/ui/ChartDownloadButton';
 
-// Desktop goes vertical on the bar-top labels and widens the top margin only
-// once the column count crosses this threshold (3 years of monthly buckets).
-const DESKTOP_CROWDED_THRESHOLD = 36;
+// Desktop switches the bar-top value labels to vertical (and widens the top
+// margin) once there are more than this many bars. Kept low because full
+// currency labels are wide and overlap while still horizontal well before the
+// bars themselves look crowded -- especially when the info widget narrows the
+// chart to ~75% width.
+const DESKTOP_CROWDED_THRESHOLD = 10;
 
 // 'auto' follows the data span; the fixed modes let the user override it.
 type GranularityMode = 'auto' | Granularity;
