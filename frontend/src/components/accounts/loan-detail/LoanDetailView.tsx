@@ -2,7 +2,6 @@
 
 import {
   useCallback,
-  useEffect,
   useMemo,
   useRef,
   useState,
@@ -89,22 +88,6 @@ export function LoanDetailView({
   const [loadedPlanVersion, setLoadedPlanVersion] = useState(0);
   const rateEditing = useLoanRateEditing(account, onRateChangesChanged);
   const viewRef = useRef<HTMLDivElement>(null);
-
-  // Rate History sits beside the simulator as a 30% sidebar, but a tall
-  // simulator (many saved scenarios, the comparison chart open) leaves that
-  // column mostly empty. When the panel fills less than half the simulator's
-  // height it moves above the simulator at full width instead; hysteresis
-  // between the two thresholds keeps it from flip-flopping at the boundary.
-  const simulatorColRef = useRef<HTMLDivElement>(null);
-  const rateColRef = useRef<HTMLDivElement>(null);
-  const [rateStacked, setRateStacked] = useState(false);
-  // The rate panel's height while it sits in the narrow 30% sidebar (its tall,
-  // text-wrapped form). Once stacked it renders full-width and short, so that
-  // live height can't decide whether it now fits beside the simulator again --
-  // we compare this remembered narrow-column height against the live simulator
-  // height instead, so shrinking the simulator (e.g. deleting scenarios) can
-  // send the panel back to the right without a page reload.
-  const rateSideHeightRef = useRef(0);
 
   const handleLoadScenario = useCallback((loaded: OverpaymentPlan | null) => {
     setPlan(loaded);
@@ -203,33 +186,6 @@ export function LoanDetailView({
     [account, history, baseline, rateChanges],
   );
 
-  const hasSimulator = !!projectionInput;
-
-  useEffect(() => {
-    const sim = simulatorColRef.current;
-    const rate = rateColRef.current;
-    if (!sim || !rate || typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(() => {
-      const simHeight = sim.offsetHeight;
-      const rateHeight = rate.offsetHeight;
-      if (simHeight <= 0) return;
-      setRateStacked((prev) => {
-        // Side-by-side: the live rate height is its tall narrow-column form;
-        // remember it. Stacked: reuse that remembered height, since the live
-        // full-width panel is too short to compare fairly.
-        if (!prev) rateSideHeightRef.current = rateHeight;
-        const sideHeight = prev ? rateSideHeightRef.current || rateHeight : rateHeight;
-        const fill = sideHeight / simHeight;
-        if (!prev && fill < 0.5) return true;
-        if (prev && fill > 0.58) return false;
-        return prev;
-      });
-    });
-    observer.observe(sim);
-    observer.observe(rate);
-    return () => observer.disconnect();
-  }, [hasSimulator]);
-
   // The whole loan page as a PDF report: headline cards, every chart
   // currently rendered on the page (payoff timeline + the scenario comparison
   // when its toggle is open) and the saved-scenarios comparison table.
@@ -320,23 +276,16 @@ export function LoanDetailView({
 
       <PastImpactSection account={account} impact={impact} />
 
-      {/* Active loan: simulator with the Rate History panel beside it (30%
-          sidebar), or -- when the sidebar would sit more than half empty --
-          stacked above the now full-width simulator. Both children stay
-          mounted across the switch (only their flex order/width change), so
-          the simulator keeps its form state. */}
+      {/* Active loan: the Rate History panel sits full-width above the
+          Overpayment Simulator, never beside it. */}
       {projectionInput && (
-        <div
-          className={
-            rateStacked
-              ? 'flex flex-col gap-6'
-              : 'flex flex-col lg:flex-row gap-6 lg:items-start'
-          }
-        >
-          <div
-            ref={simulatorColRef}
-            className={rateStacked ? 'w-full order-2' : 'w-full lg:w-[70%]'}
-          >
+        <div className="flex flex-col gap-6">
+          <RateHistorySidebar
+            account={account}
+            rateChanges={rateChanges}
+            editing={rateEditing}
+          />
+          <div className="w-full">
             <OverpaymentSimulator
               accountId={account.id}
               currencyCode={account.currencyCode}
@@ -381,16 +330,6 @@ export function LoanDetailView({
                   />
                 </>
               }
-            />
-          </div>
-          <div
-            ref={rateColRef}
-            className={rateStacked ? 'w-full order-1' : 'w-full lg:w-[30%]'}
-          >
-            <RateHistorySidebar
-              account={account}
-              rateChanges={rateChanges}
-              editing={rateEditing}
             />
           </div>
         </div>
