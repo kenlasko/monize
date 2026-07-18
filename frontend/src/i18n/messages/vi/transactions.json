@@ -472,9 +472,22 @@
       "title": "Tổng hàng tháng",
       "noData": "Không có dữ liệu giao tác",
       "monthlyAvg": "Trung bình tháng",
+      "quarterlyAvg": "Trung bình quý",
+      "yearlyAvg": "Trung bình năm",
       "total": "Tổng",
       "transactions": "Giao tác",
-      "tooltip": "{count, plural, one {# giao tác} other {# giao tác}}"
+      "tooltip": "{count, plural, one {# giao tác} other {# giao tác}}",
+      "quarterLabel": "Q{quarter} {year}",
+      "quarterTick": "Q{quarter} {year}",
+      "granularityLabel": "Nhóm theo",
+      "granularity": {
+        "auto": "Tự động",
+        "month": "Tháng",
+        "quarter": "Quý",
+        "year": "Năm"
+      },
+      "granularityAutoTitle": "Tự động ({granularity})",
+      "granularityTitle": "Xem theo {label}"
     },
     "accountBalances": {
       "title": "Số dư tài khoản",

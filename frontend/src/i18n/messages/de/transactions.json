@@ -472,9 +472,22 @@
       "title": "Monatliche Summen",
       "noData": "Keine Buchungsdaten verfügbar",
       "monthlyAvg": "Monatsdurchschnitt",
+      "quarterlyAvg": "Quartalsdurchschnitt",
+      "yearlyAvg": "Jahresdurchschnitt",
       "total": "Gesamt",
       "transactions": "Buchungen",
-      "tooltip": "{count, plural, one {# Buchung} other {# Buchungen}}"
+      "tooltip": "{count, plural, one {# Buchung} other {# Buchungen}}",
+      "quarterLabel": "Q{quarter} {year}",
+      "quarterTick": "Q{quarter} {year}",
+      "granularityLabel": "Gruppierung",
+      "granularity": {
+        "auto": "Auto",
+        "month": "Monat",
+        "quarter": "Quartal",
+        "year": "Jahr"
+      },
+      "granularityAutoTitle": "Auto ({granularity})",
+      "granularityTitle": "{label}-Ansicht"
     },
     "accountBalances": {
       "title": "Kontosalden",

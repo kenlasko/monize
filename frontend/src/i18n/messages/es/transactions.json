@@ -472,9 +472,22 @@
       "title": "Totales mensuales",
       "noData": "No hay datos de transacciones disponibles",
       "monthlyAvg": "Prom. mensual",
+      "quarterlyAvg": "Prom. trimestral",
+      "yearlyAvg": "Prom. anual",
       "total": "Total",
       "transactions": "Transacciones",
-      "tooltip": "{count, plural, one {# transacción} other {# transacciones}}"
+      "tooltip": "{count, plural, one {# transacción} other {# transacciones}}",
+      "quarterLabel": "T{quarter} {year}",
+      "quarterTick": "T{quarter} {year}",
+      "granularityLabel": "Agrupación",
+      "granularity": {
+        "auto": "Auto",
+        "month": "Mes",
+        "quarter": "Trimestre",
+        "year": "Año"
+      },
+      "granularityAutoTitle": "Auto ({granularity})",
+      "granularityTitle": "Vista por {label}"
     },
     "accountBalances": {
       "title": "Saldos de cuentas",

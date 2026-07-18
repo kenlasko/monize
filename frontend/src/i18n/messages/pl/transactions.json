@@ -472,9 +472,22 @@
       "title": "Sumy miesięczne",
       "noData": "Brak danych o transakcjach",
       "monthlyAvg": "Średnia miesięczna",
+      "quarterlyAvg": "Średnia kwartalna",
+      "yearlyAvg": "Średnia roczna",
       "total": "Suma",
       "transactions": "Transakcje",
-      "tooltip": "{count, plural, one {# transakcja} few {# transakcje} many {# transakcji} other {# transakcji}}"
+      "tooltip": "{count, plural, one {# transakcja} few {# transakcje} many {# transakcji} other {# transakcji}}",
+      "quarterLabel": "K{quarter} {year}",
+      "quarterTick": "K{quarter} {year}",
+      "granularityLabel": "Grupowanie",
+      "granularity": {
+        "auto": "Auto",
+        "month": "Miesiąc",
+        "quarter": "Kwartał",
+        "year": "Rok"
+      },
+      "granularityAutoTitle": "Auto ({granularity})",
+      "granularityTitle": "Widok: {label}"
     },
     "accountBalances": {
       "title": "Salda kont",

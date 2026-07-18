@@ -472,9 +472,22 @@
       "title": "Totali mensili",
       "noData": "Nessun dato transazione disponibile",
       "monthlyAvg": "Media mensile",
+      "quarterlyAvg": "Media trimestrale",
+      "yearlyAvg": "Media annuale",
       "total": "Totale",
       "transactions": "Transazioni",
-      "tooltip": "{count, plural, one {# transazione} other {# transazioni}}"
+      "tooltip": "{count, plural, one {# transazione} other {# transazioni}}",
+      "quarterLabel": "T{quarter} {year}",
+      "quarterTick": "T{quarter} {year}",
+      "granularityLabel": "Raggruppamento",
+      "granularity": {
+        "auto": "Auto",
+        "month": "Mese",
+        "quarter": "Trimestre",
+        "year": "Anno"
+      },
+      "granularityAutoTitle": "Auto ({granularity})",
+      "granularityTitle": "Vista per {label}"
     },
     "accountBalances": {
       "title": "Saldi dei conti",

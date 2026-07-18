@@ -472,9 +472,22 @@
       "title": "Месячные итоги",
       "noData": "Нет данных о проводках",
       "monthlyAvg": "Средн. в месяц",
+      "quarterlyAvg": "Средн. в квартал",
+      "yearlyAvg": "Средн. в год",
       "total": "Итого",
       "transactions": "Проводки",
-      "tooltip": "{count, plural, one {# проводка} other {# проводок}}"
+      "tooltip": "{count, plural, one {# проводка} other {# проводок}}",
+      "quarterLabel": "{quarter} кв. {year}",
+      "quarterTick": "{quarter} кв. {year}",
+      "granularityLabel": "Группировка",
+      "granularity": {
+        "auto": "Авто",
+        "month": "Месяц",
+        "quarter": "Квартал",
+        "year": "Год"
+      },
+      "granularityAutoTitle": "Авто ({granularity})",
+      "granularityTitle": "Вид: {label}"
     },
     "accountBalances": {
       "title": "Остатки по счетам",

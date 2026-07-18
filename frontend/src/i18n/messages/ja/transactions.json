@@ -472,9 +472,22 @@
       "title": "月次合計",
       "noData": "取引データがありません",
       "monthlyAvg": "月次平均",
+      "quarterlyAvg": "四半期平均",
+      "yearlyAvg": "年次平均",
       "total": "合計",
       "transactions": "取引",
-      "tooltip": "{count, plural, one {# 件の取引} other {# 件の取引}}"
+      "tooltip": "{count, plural, one {# 件の取引} other {# 件の取引}}",
+      "quarterLabel": "{year}年Q{quarter}",
+      "quarterTick": "{year}年Q{quarter}",
+      "granularityLabel": "グループ化",
+      "granularity": {
+        "auto": "自動",
+        "month": "月",
+        "quarter": "四半期",
+        "year": "年"
+      },
+      "granularityAutoTitle": "自動（{granularity}）",
+      "granularityTitle": "{label}表示"
     },
     "accountBalances": {
       "title": "口座残高",

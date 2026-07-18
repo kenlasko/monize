@@ -472,9 +472,22 @@
       "title": "Total Bulanan",
       "noData": "Tidak ada data transaksi yang tersedia",
       "monthlyAvg": "Rata-rata Bulanan",
+      "quarterlyAvg": "Rata-rata Kuartalan",
+      "yearlyAvg": "Rata-rata Tahunan",
       "total": "Total",
       "transactions": "Transaksi",
-      "tooltip": "{count, plural, one {# transaksi} other {# transaksi}}"
+      "tooltip": "{count, plural, one {# transaksi} other {# transaksi}}",
+      "quarterLabel": "K{quarter} {year}",
+      "quarterTick": "K{quarter} {year}",
+      "granularityLabel": "Pengelompokan",
+      "granularity": {
+        "auto": "Otomatis",
+        "month": "Bulan",
+        "quarter": "Kuartal",
+        "year": "Tahun"
+      },
+      "granularityAutoTitle": "Otomatis ({granularity})",
+      "granularityTitle": "Tampilan {label}"
     },
     "accountBalances": {
       "title": "Saldo Akun",

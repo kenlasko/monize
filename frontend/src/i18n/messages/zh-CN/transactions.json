@@ -472,9 +472,22 @@
       "title": "月度合计",
       "noData": "无交易数据",
       "monthlyAvg": "月均",
+      "quarterlyAvg": "季均",
+      "yearlyAvg": "年均",
       "total": "合计",
       "transactions": "交易",
-      "tooltip": "{count, plural, one {# 笔交易} other {# 笔交易}}"
+      "tooltip": "{count, plural, one {# 笔交易} other {# 笔交易}}",
+      "quarterLabel": "{year}年Q{quarter}",
+      "quarterTick": "{year}年Q{quarter}",
+      "granularityLabel": "分组方式",
+      "granularity": {
+        "auto": "自动",
+        "month": "月",
+        "quarter": "季度",
+        "year": "年"
+      },
+      "granularityAutoTitle": "自动（{granularity}）",
+      "granularityTitle": "{label}视图"
     },
     "accountBalances": {
       "title": "账户余额",

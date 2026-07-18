@@ -472,9 +472,22 @@
       "title": "मासिक कुल",
       "noData": "कोई लेन-देन डेटा उपलब्ध नहीं",
       "monthlyAvg": "मासिक औसत",
+      "quarterlyAvg": "त्रैमासिक औसत",
+      "yearlyAvg": "वार्षिक औसत",
       "total": "कुल",
       "transactions": "लेन-देन",
-      "tooltip": "{count, plural, one {# लेन-देन} other {# लेन-देन}}"
+      "tooltip": "{count, plural, one {# लेन-देन} other {# लेन-देन}}",
+      "quarterLabel": "Q{quarter} {year}",
+      "quarterTick": "Q{quarter} {year}",
+      "granularityLabel": "समूहन",
+      "granularity": {
+        "auto": "ऑटो",
+        "month": "माह",
+        "quarter": "तिमाही",
+        "year": "वर्ष"
+      },
+      "granularityAutoTitle": "ऑटो ({granularity})",
+      "granularityTitle": "{label} दृश्य"
     },
     "accountBalances": {
       "title": "खाता शेष",

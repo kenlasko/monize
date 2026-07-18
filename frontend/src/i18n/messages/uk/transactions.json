@@ -472,9 +472,22 @@
       "title": "Місячні підсумки",
       "noData": "Немає даних транзакцій",
       "monthlyAvg": "Місячне середнє",
+      "quarterlyAvg": "Квартальне середнє",
+      "yearlyAvg": "Річне середнє",
       "total": "Разом",
       "transactions": "Транзакції",
-      "tooltip": "{count, plural, one {# транзакція} other {# транзакцій}}"
+      "tooltip": "{count, plural, one {# транзакція} other {# транзакцій}}",
+      "quarterLabel": "{quarter} кв. {year}",
+      "quarterTick": "{quarter} кв. {year}",
+      "granularityLabel": "Групування",
+      "granularity": {
+        "auto": "Авто",
+        "month": "Місяць",
+        "quarter": "Квартал",
+        "year": "Рік"
+      },
+      "granularityAutoTitle": "Авто ({granularity})",
+      "granularityTitle": "Вигляд: {label}"
     },
     "accountBalances": {
       "title": "Баланси рахунків",

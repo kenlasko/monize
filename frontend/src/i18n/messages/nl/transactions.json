@@ -472,9 +472,22 @@
       "title": "Maandtotalen",
       "noData": "Geen transactiegegevens beschikbaar",
       "monthlyAvg": "Maandgemiddelde",
+      "quarterlyAvg": "Kwartaalgemiddelde",
+      "yearlyAvg": "Jaargemiddelde",
       "total": "Totaal",
       "transactions": "Transacties",
-      "tooltip": "{count, plural, one {# transactie} other {# transacties}}"
+      "tooltip": "{count, plural, one {# transactie} other {# transacties}}",
+      "quarterLabel": "K{quarter} {year}",
+      "quarterTick": "K{quarter} {year}",
+      "granularityLabel": "Groepering",
+      "granularity": {
+        "auto": "Auto",
+        "month": "Maand",
+        "quarter": "Kwartaal",
+        "year": "Jaar"
+      },
+      "granularityAutoTitle": "Auto ({granularity})",
+      "granularityTitle": "Weergave per {label}"
     },
     "accountBalances": {
       "title": "Rekeningsaldi",

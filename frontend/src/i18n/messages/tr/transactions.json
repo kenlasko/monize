@@ -472,9 +472,22 @@
       "title": "Aylık Toplamlar",
       "noData": "İşlem verisi mevcut değil",
       "monthlyAvg": "Aylık Ort.",
+      "quarterlyAvg": "Üç Aylık Ort.",
+      "yearlyAvg": "Yıllık Ort.",
       "total": "Toplam",
       "transactions": "İşlemler",
-      "tooltip": "{count, plural, one {# işlem} other {# işlem}}"
+      "tooltip": "{count, plural, one {# işlem} other {# işlem}}",
+      "quarterLabel": "Ç{quarter} {year}",
+      "quarterTick": "Ç{quarter} {year}",
+      "granularityLabel": "Gruplama",
+      "granularity": {
+        "auto": "Otomatik",
+        "month": "Ay",
+        "quarter": "Çeyrek",
+        "year": "Yıl"
+      },
+      "granularityAutoTitle": "Otomatik ({granularity})",
+      "granularityTitle": "{label} görünümü"
     },
     "accountBalances": {
       "title": "Hesap Bakiyeleri",

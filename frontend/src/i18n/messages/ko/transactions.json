@@ -472,9 +472,22 @@
       "title": "월별 합계",
       "noData": "거래 데이터가 없습니다",
       "monthlyAvg": "월 평균",
+      "quarterlyAvg": "분기 평균",
+      "yearlyAvg": "연 평균",
       "total": "합계",
       "transactions": "거래",
-      "tooltip": "{count, plural, one {# 건의 거래} other {# 건의 거래}}"
+      "tooltip": "{count, plural, one {# 건의 거래} other {# 건의 거래}}",
+      "quarterLabel": "{year}년 Q{quarter}",
+      "quarterTick": "{year}년 Q{quarter}",
+      "granularityLabel": "그룹화",
+      "granularity": {
+        "auto": "자동",
+        "month": "월",
+        "quarter": "분기",
+        "year": "연"
+      },
+      "granularityAutoTitle": "자동 ({granularity})",
+      "granularityTitle": "{label} 보기"
     },
     "accountBalances": {
       "title": "계정 잔액",

@@ -472,9 +472,22 @@
       "title": "每月總計",
       "noData": "無可用的交易資料",
       "monthlyAvg": "月平均",
+      "quarterlyAvg": "季平均",
+      "yearlyAvg": "年平均",
       "total": "總計",
       "transactions": "交易",
-      "tooltip": "{count, plural, one {# 筆交易} other {# 筆交易}}"
+      "tooltip": "{count, plural, one {# 筆交易} other {# 筆交易}}",
+      "quarterLabel": "{year}年Q{quarter}",
+      "quarterTick": "{year}年Q{quarter}",
+      "granularityLabel": "分組方式",
+      "granularity": {
+        "auto": "自動",
+        "month": "月",
+        "quarter": "季度",
+        "year": "年"
+      },
+      "granularityAutoTitle": "自動（{granularity}）",
+      "granularityTitle": "{label}檢視"
     },
     "accountBalances": {
       "title": "科目結餘",
