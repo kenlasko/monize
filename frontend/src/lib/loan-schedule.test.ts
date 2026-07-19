@@ -689,6 +689,65 @@ describe('effectiveAnnualRateOn', () => {
   });
 });
 
+describe('generateBudgetSchedule (fixed monthly budget)', () => {
+  const budgetInput = () => {
+    const installment = calculateMortgagePaymentAmount(200000, 4, 300, 'MONTHLY', false, false);
+    return baseInput({
+      startingBalance: 200000,
+      annualRate: 4,
+      paymentAmount: installment, // contractual installment -> ~300-month term
+      frequency: 'MONTHLY',
+      firstPaymentDate: new Date('2025-01-15'),
+    });
+  };
+
+  it('spends the whole budget each period, splitting into a shrinking installment and a growing overpayment', () => {
+    const budget = 4000;
+    const result = generateLoanSchedule({
+      ...budgetInput(),
+      overpayments: { targetMonthlyPayment: budget },
+    });
+
+    expect(result.paidOff).toBe(true);
+    // Paying 4000/mo on a 200k loan clears it in well under the 300-month term.
+    expect(result.numPayments).toBeLessThan(70);
+
+    // Every non-final period spends exactly the budget = installment + overpayment.
+    for (const row of result.rows.slice(0, -1)) {
+      expect(row.payment + row.extraPrincipal).toBeCloseTo(budget, 1);
+      expect(row.extraPrincipal).toBeGreaterThan(0);
+    }
+
+    // The installment steps down and the overpayment grows to fill the budget.
+    const first = result.rows[0];
+    const later = result.rows[result.rows.length - 5];
+    expect(later.payment).toBeLessThan(first.payment);
+    expect(later.extraPrincipal).toBeGreaterThan(first.extraPrincipal);
+  });
+
+  it('never lets the total exceed the budget and pays off on the last row', () => {
+    const budget = 3000;
+    const result = generateLoanSchedule({
+      ...budgetInput(),
+      overpayments: { targetMonthlyPayment: budget },
+    });
+    for (const row of result.rows) {
+      expect(row.payment + row.extraPrincipal).toBeLessThanOrEqual(budget + 0.01);
+    }
+    expect(result.rows[result.rows.length - 1].balance).toBe(0);
+  });
+
+  it('does not amortize when the budget cannot cover the first period interest', () => {
+    const result = generateLoanSchedule({
+      ...budgetInput(),
+      // 200k at 4% -> ~667/mo interest; a 500 budget never amortizes.
+      overpayments: { targetMonthlyPayment: 500 },
+    });
+    expect(result.paidOff).toBe(false);
+    expect(result.numPayments).toBe(0);
+  });
+});
+
 describe('recurring extra frequency', () => {
   it('lands a sparse cadence as a real overpayment every Nth payment', () => {
     const base = baseInput({ startingBalance: 100000, paymentAmount: 600 });
