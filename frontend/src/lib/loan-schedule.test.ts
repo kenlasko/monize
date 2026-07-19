@@ -763,6 +763,33 @@ describe('generateBudgetSchedule (fixed monthly budget)', () => {
     expect(result.rows[result.rows.length - 1].balance).toBe(0);
   });
 
+  it('applies the budget only within its date window', () => {
+    const result = generateLoanSchedule({
+      ...budgetInput(),
+      overpayments: {
+        targetMonthlyPayment: 4000,
+        targetMonthlyPaymentMode: 'SHORTEN_TERM',
+        targetMonthlyPaymentStart: '2025-04-01',
+        targetMonthlyPaymentEnd: '2025-12-31',
+      },
+    });
+
+    // Before the window (Jan-Mar): only the installment, no overpayment.
+    const early = result.rows.filter((r) => r.date < '2025-04-01');
+    expect(early.length).toBeGreaterThan(0);
+    for (const r of early) expect(r.extraPrincipal).toBe(0);
+
+    // Within the window: the budget tops up (overpayment > 0).
+    const inWindow = result.rows.filter((r) => r.date >= '2025-04-01' && r.date <= '2025-12-31');
+    expect(inWindow.length).toBeGreaterThan(0);
+    for (const r of inWindow) expect(r.extraPrincipal).toBeGreaterThan(0);
+
+    // After the window: back to just the installment.
+    const after = result.rows.filter((r) => r.date > '2025-12-31');
+    expect(after.length).toBeGreaterThan(0);
+    for (const r of after) expect(r.extraPrincipal).toBe(0);
+  });
+
   it('does not amortize when the budget cannot cover the first period interest', () => {
     const result = generateLoanSchedule({
       ...budgetInput(),

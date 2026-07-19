@@ -499,7 +499,7 @@
       "colOverpayment": "额外还款",
       "overpaymentWithFrequency": "{amount} ({frequency})",
       "loadAria": "加载方案“{name}”",
-      "saveBudgetUnsupported": "暂不支持保存预算方案。"
+      "budgetSummary": "预算 {amount}/月"
     },
     "scenarioChart": {
       "title": "方案对比",

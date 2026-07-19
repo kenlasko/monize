@@ -581,7 +581,7 @@
       "colOverpayment": "Overpayment",
       "overpaymentWithFrequency": "{amount} ({frequency})",
       "loadAria": "Load scenario \"{name}\"",
-      "saveBudgetUnsupported": "Saving budget scenarios isn't supported yet."
+      "budgetSummary": "Budget {amount}/month"
     },
     "pastImpact": {
       "title": "Impact of Overpayments Made",

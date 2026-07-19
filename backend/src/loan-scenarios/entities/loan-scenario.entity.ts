@@ -106,6 +106,40 @@ export class LoanScenario {
   @Column({ type: "date", name: "recurring_extra_end_date", nullable: true })
   recurringExtraEndDate: string | null;
 
+  /** Fixed total to spend on the loan each period (installment + overpayment). */
+  @Column({
+    type: "decimal",
+    precision: 20,
+    scale: 4,
+    name: "target_monthly_payment",
+    nullable: true,
+    transformer: numericTransformer,
+  })
+  targetMonthlyPayment: number | null;
+
+  /** How the budget's installment/overpayment split is shown. */
+  @Column({
+    type: "varchar",
+    length: 16,
+    name: "target_monthly_payment_mode",
+    nullable: true,
+  })
+  targetMonthlyPaymentMode: OverpaymentMode | null;
+
+  @Column({
+    type: "date",
+    name: "target_monthly_payment_start_date",
+    nullable: true,
+  })
+  targetMonthlyPaymentStartDate: string | null;
+
+  @Column({
+    type: "date",
+    name: "target_monthly_payment_end_date",
+    nullable: true,
+  })
+  targetMonthlyPaymentEndDate: string | null;
+
   @Column({ type: "jsonb", name: "lump_sums", default: () => "'[]'" })
   lumpSums: LoanScenarioLumpSum[];
 

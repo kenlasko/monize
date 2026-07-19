@@ -499,7 +499,7 @@
       "colOverpayment": "추가 상환",
       "overpaymentWithFrequency": "{amount} ({frequency})",
       "loadAria": "시나리오 \"{name}\" 불러오기",
-      "saveBudgetUnsupported": "예산 시나리오 저장은 아직 지원되지 않습니다."
+      "budgetSummary": "예산 {amount}/월"
     },
     "scenarioChart": {
       "title": "시나리오 비교",

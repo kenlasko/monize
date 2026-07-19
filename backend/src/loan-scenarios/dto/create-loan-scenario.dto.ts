@@ -58,7 +58,8 @@ export class CreateLoanScenarioDto {
   recurringExtraAmount?: number | null;
 
   @ApiPropertyOptional({
-    description: "Effect of the recurring extra: shorten term or lower installment",
+    description:
+      "Effect of the recurring extra: shorten term or lower installment",
     enum: OVERPAYMENT_MODES,
   })
   @IsOptional()
@@ -85,6 +86,33 @@ export class CreateLoanScenarioDto {
   @IsOptional()
   @IsDateString()
   recurringExtraEndDate?: string | null;
+
+  @ApiPropertyOptional({
+    description: "Fixed total spent on the loan each period (budget mode)",
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(MAX_AMOUNT)
+  targetMonthlyPayment?: number | null;
+
+  @ApiPropertyOptional({
+    description: "How the budget's installment/overpayment split is shown",
+    enum: OVERPAYMENT_MODES,
+  })
+  @IsOptional()
+  @IsIn(OVERPAYMENT_MODES)
+  targetMonthlyPaymentMode?: OverpaymentMode | null;
+
+  @ApiPropertyOptional({ description: "First date the budget applies" })
+  @IsOptional()
+  @IsDateString()
+  targetMonthlyPaymentStartDate?: string | null;
+
+  @ApiPropertyOptional({ description: "Last date the budget applies" })
+  @IsOptional()
+  @IsDateString()
+  targetMonthlyPaymentEndDate?: string | null;
 
   @ApiPropertyOptional({
     description: "One-off lump sum payments",

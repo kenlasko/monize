@@ -70,10 +70,26 @@ export function scenarioToPlan(scenario: LoanScenario): OverpaymentPlan | null {
         }
       : undefined;
   const lumpSums = scenario.lumpSums ?? [];
-  if (!recurringExtra && lumpSums.length === 0) return null;
+  const budget =
+    scenario.targetMonthlyPayment && scenario.targetMonthlyPayment > 0
+      ? {
+          targetMonthlyPayment: scenario.targetMonthlyPayment,
+          ...(scenario.targetMonthlyPaymentMode
+            ? { targetMonthlyPaymentMode: scenario.targetMonthlyPaymentMode }
+            : {}),
+          ...(scenario.targetMonthlyPaymentStartDate
+            ? { targetMonthlyPaymentStart: scenario.targetMonthlyPaymentStartDate }
+            : {}),
+          ...(scenario.targetMonthlyPaymentEndDate
+            ? { targetMonthlyPaymentEnd: scenario.targetMonthlyPaymentEndDate }
+            : {}),
+        }
+      : null;
+  if (!recurringExtra && lumpSums.length === 0 && !budget) return null;
   return {
     ...(recurringExtra ? { recurringExtra } : {}),
     ...(lumpSums.length > 0 ? { lumpSums } : {}),
+    ...(budget ?? {}),
   };
 }
 
@@ -89,6 +105,10 @@ export function planToScenarioData(
     recurringExtraFrequency: plan?.recurringExtra?.frequency ?? null,
     recurringExtraStartDate: plan?.recurringExtra?.startDate ?? null,
     recurringExtraEndDate: plan?.recurringExtra?.endDate ?? null,
+    targetMonthlyPayment: plan?.targetMonthlyPayment ?? null,
+    targetMonthlyPaymentMode: plan?.targetMonthlyPaymentMode ?? null,
+    targetMonthlyPaymentStartDate: plan?.targetMonthlyPaymentStart ?? null,
+    targetMonthlyPaymentEndDate: plan?.targetMonthlyPaymentEnd ?? null,
     lumpSums: plan?.lumpSums ?? [],
   };
 }

@@ -499,7 +499,7 @@
       "colOverpayment": "Amortización",
       "overpaymentWithFrequency": "{amount} ({frequency})",
       "loadAria": "Cargar escenario «{name}»",
-      "saveBudgetUnsupported": "Aún no se pueden guardar escenarios de presupuesto."
+      "budgetSummary": "Presupuesto {amount}/mes"
     },
     "scenarioChart": {
       "title": "Comparación de escenarios",

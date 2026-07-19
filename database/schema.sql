@@ -1280,6 +1280,10 @@ CREATE TABLE loan_scenarios (
     recurring_extra_frequency VARCHAR(16),
     recurring_extra_start_date DATE,
     recurring_extra_end_date DATE,
+    target_monthly_payment DECIMAL(20,4),
+    target_monthly_payment_mode VARCHAR(16),
+    target_monthly_payment_start_date DATE,
+    target_monthly_payment_end_date DATE,
     lump_sums JSONB NOT NULL DEFAULT '[]',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

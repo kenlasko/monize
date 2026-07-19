@@ -111,6 +111,8 @@ function planToForm(plan: OverpaymentPlan | null): SimulatorFormState {
       simType: 'BUDGET',
       budget: plan.targetMonthlyPayment,
       mode: plan.targetMonthlyPaymentMode ?? 'LOWER_INSTALLMENT',
+      startDate: plan.targetMonthlyPaymentStart ?? '',
+      endDate: plan.targetMonthlyPaymentEnd ?? '',
     };
   }
   const first = plan.lumpSums?.[0];
@@ -197,7 +199,12 @@ export function OverpaymentSimulator({
     if (next.simType === 'BUDGET') {
       plan =
         next.budget !== undefined && next.budget > 0
-          ? { targetMonthlyPayment: next.budget, targetMonthlyPaymentMode: next.mode }
+          ? {
+              targetMonthlyPayment: next.budget,
+              targetMonthlyPaymentMode: next.mode,
+              ...(next.startDate ? { targetMonthlyPaymentStart: next.startDate } : {}),
+              ...(next.endDate ? { targetMonthlyPaymentEnd: next.endDate } : {}),
+            }
           : null;
     } else if (next.frequency === 'ONE_OFF') {
       plan =
@@ -397,45 +404,44 @@ export function OverpaymentSimulator({
 
         <div className={fieldClass}>{valueField}</div>
 
-        {/* A budget is a single monthly total, so it hides the cadence and the
-            window -- but keeps the mode: shorten the term (overpay principal) or
-            lower the installment both stay meaningful. */}
+        {/* A budget hides the cadence and one-off date (it is a single monthly
+            total), but keeps the optional window and the mode. */}
         {!isBudget && (
+          <div className={fieldClass}>
+            <FrequencySelect
+              label={t('loanDetail.simulator.frequencyLabel')}
+              value={form.frequency}
+              onChange={handleFrequencyChange}
+            />
+          </div>
+        )}
+
+        {!isBudget && isOneOff && (
+          <div className={fieldClass}>
+            <DateInput
+              label={t('loanDetail.simulator.oneOffDateLabel')}
+              value={form.oneOffDate}
+              onDateChange={handleOneOffDateChange}
+            />
+          </div>
+        )}
+
+        {(isBudget || !isOneOff) && (
           <>
             <div className={fieldClass}>
-              <FrequencySelect
-                label={t('loanDetail.simulator.frequencyLabel')}
-                value={form.frequency}
-                onChange={handleFrequencyChange}
+              <DateInput
+                label={t('loanDetail.simulator.recurringStart')}
+                value={form.startDate}
+                onDateChange={handleStartChange}
               />
             </div>
-
-            {isOneOff ? (
-              <div className={fieldClass}>
-                <DateInput
-                  label={t('loanDetail.simulator.oneOffDateLabel')}
-                  value={form.oneOffDate}
-                  onDateChange={handleOneOffDateChange}
-                />
-              </div>
-            ) : (
-              <>
-                <div className={fieldClass}>
-                  <DateInput
-                    label={t('loanDetail.simulator.recurringStart')}
-                    value={form.startDate}
-                    onDateChange={handleStartChange}
-                  />
-                </div>
-                <div className={fieldClass}>
-                  <DateInput
-                    label={t('loanDetail.simulator.recurringEnd')}
-                    value={form.endDate}
-                    onDateChange={handleEndChange}
-                  />
-                </div>
-              </>
-            )}
+            <div className={fieldClass}>
+              <DateInput
+                label={t('loanDetail.simulator.recurringEnd')}
+                value={form.endDate}
+                onDateChange={handleEndChange}
+              />
+            </div>
           </>
         )}
 

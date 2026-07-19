@@ -499,7 +499,7 @@
       "colOverpayment": "Nadpłata",
       "overpaymentWithFrequency": "{amount} ({frequency})",
       "loadAria": "Wczytaj scenariusz „{name}“",
-      "saveBudgetUnsupported": "Zapisywanie scenariuszy budżetu nie jest jeszcze obsługiwane."
+      "budgetSummary": "Budżet {amount}/mies."
     },
     "scenarioChart": {
       "title": "Porównanie scenariuszy",

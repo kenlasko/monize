@@ -124,6 +124,12 @@ export interface OverpaymentPlan {
    * only the split differs.
    */
   targetMonthlyPaymentMode?: OverpaymentMode;
+  /** ISO date (yyyy-MM-dd); the budget applies from the first payment when
+   *  omitted. Before it, only the regular installment is paid. */
+  targetMonthlyPaymentStart?: string;
+  /** ISO date (yyyy-MM-dd); the budget applies until payoff when omitted. After
+   *  it, the loan reverts to the regular installment. */
+  targetMonthlyPaymentEnd?: string;
 }
 
 /**
@@ -427,6 +433,7 @@ export function generateBudgetSchedule(
   input: LoanScheduleInput,
   budget: number,
   mode: OverpaymentMode = 'SHORTEN_TERM',
+  window: { startDate?: string; endDate?: string } = {},
 ): LoanScheduleResult {
   const {
     startingBalance,
@@ -494,11 +501,6 @@ export function generateBudgetSchedule(
     }
 
     const interest = balance * currentPeriodicRate;
-    // The budget must at least cover the interest, or the loan never amortizes.
-    if (budget <= interest) {
-      coveredInterest = false;
-      break;
-    }
 
     // The installment for the split: re-amortized over the remaining
     // contractual term (LOWER_INSTALLMENT) or the fixed contractual installment
@@ -514,10 +516,20 @@ export function generateBudgetSchedule(
         )
       : paymentAmount;
 
-    // Total cash this period is the budget, except the final period pays only
-    // the remaining balance plus its interest.
+    // The budget only tops up within its window; outside it (before the start
+    // or after the end) the loan pays just the regular installment.
+    const budgetActive =
+      (!window.startDate || window.startDate <= rowDate) &&
+      (!window.endDate || rowDate <= window.endDate);
+    // Total cash this period: the budget while active, else the installment --
+    // capped at the payoff amount on the final period.
     const totalDue = balance + interest;
-    const payment = Math.min(budget, totalDue);
+    const payment = Math.min(budgetActive ? budget : installment, totalDue);
+    // A payment that can't cover the interest never amortizes.
+    if (payment <= interest) {
+      coveredInterest = false;
+      break;
+    }
     // The installment can't exceed the total actually paid this period.
     const regularInstallment = Math.min(installment, payment);
     const regularPrincipal = Math.max(0, regularInstallment - interest);
@@ -573,6 +585,10 @@ export function generateLoanSchedule(input: LoanScheduleInput): LoanScheduleResu
       input,
       budget,
       input.overpayments?.targetMonthlyPaymentMode ?? 'SHORTEN_TERM',
+      {
+        startDate: input.overpayments?.targetMonthlyPaymentStart,
+        endDate: input.overpayments?.targetMonthlyPaymentEnd,
+      },
     );
   }
   const {

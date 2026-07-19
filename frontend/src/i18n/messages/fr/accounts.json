@@ -499,7 +499,7 @@
       "colOverpayment": "Remboursement",
       "overpaymentWithFrequency": "{amount} ({frequency})",
       "loadAria": "Charger le scénario « {name} »",
-      "saveBudgetUnsupported": "L'enregistrement des scénarios de budget n'est pas encore pris en charge."
+      "budgetSummary": "Budget {amount}/mois"
     },
     "scenarioChart": {
       "title": "Comparaison des scénarios",

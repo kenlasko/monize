@@ -499,7 +499,7 @@
       "colOverpayment": "Pembayaran ekstra",
       "overpaymentWithFrequency": "{amount} ({frequency})",
       "loadAria": "Muat skenario \"{name}\"",
-      "saveBudgetUnsupported": "Menyimpan skenario anggaran belum didukung."
+      "budgetSummary": "Anggaran {amount}/bulan"
     },
     "scenarioChart": {
       "title": "Perbandingan skenario",

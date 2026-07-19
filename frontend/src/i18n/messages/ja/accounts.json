@@ -499,7 +499,7 @@
       "colOverpayment": "繰上返済",
       "overpaymentWithFrequency": "{amount} ({frequency})",
       "loadAria": "シナリオ「{name}」を読み込む",
-      "saveBudgetUnsupported": "予算シナリオの保存はまだ対応していません。"
+      "budgetSummary": "予算 {amount}/月"
     },
     "scenarioChart": {
       "title": "シナリオ比較",

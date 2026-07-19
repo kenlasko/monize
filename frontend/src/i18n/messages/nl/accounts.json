@@ -499,7 +499,7 @@
       "colOverpayment": "Extra aflossing",
       "overpaymentWithFrequency": "{amount} ({frequency})",
       "loadAria": "Scenario \"{name}\" laden",
-      "saveBudgetUnsupported": "Budgetscenario's kunnen nog niet worden opgeslagen."
+      "budgetSummary": "Budget {amount}/maand"
     },
     "scenarioChart": {
       "title": "Scenariovergelijking",

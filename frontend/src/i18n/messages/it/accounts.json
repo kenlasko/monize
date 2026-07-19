@@ -499,7 +499,7 @@
       "colOverpayment": "Versamento extra",
       "overpaymentWithFrequency": "{amount} ({frequency})",
       "loadAria": "Carica lo scenario \"{name}\"",
-      "saveBudgetUnsupported": "Il salvataggio degli scenari di budget non è ancora supportato."
+      "budgetSummary": "Budget {amount}/mese"
     },
     "scenarioChart": {
       "title": "Confronto scenari",

@@ -499,7 +499,7 @@
       "colOverpayment": "Sondertilgung",
       "overpaymentWithFrequency": "{amount} ({frequency})",
       "loadAria": "Szenario „{name}“ laden",
-      "saveBudgetUnsupported": "Budget-Szenarien können noch nicht gespeichert werden."
+      "budgetSummary": "Budget {amount}/Monat"
     },
     "scenarioChart": {
       "title": "Szenariovergleich",

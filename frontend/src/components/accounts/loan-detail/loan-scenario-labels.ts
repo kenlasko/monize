@@ -33,6 +33,11 @@ export function createScenarioLabels({
   currencyCode,
 }: ScenarioLabelDeps) {
   const describeScenario = (scenario: LoanScenario): string => {
+    if (scenario.targetMonthlyPayment && scenario.targetMonthlyPayment > 0) {
+      return t('loanDetail.scenarios.budgetSummary', {
+        amount: formatCurrency(scenario.targetMonthlyPayment, currencyCode),
+      });
+    }
     const parts: string[] = [];
     if (scenario.recurringExtraAmount && scenario.recurringExtraAmount > 0) {
       const freq = scenario.recurringExtraFrequency;
@@ -58,6 +63,9 @@ export function createScenarioLabels({
   // The saved recurring overpayment with its cadence (e.g. "$300.00
   // (Quarterly)"); a plain amount for a monthly/legacy cadence.
   const overpaymentLabel = (scenario: LoanScenario): string => {
+    if (scenario.targetMonthlyPayment && scenario.targetMonthlyPayment > 0) {
+      return formatCurrency(scenario.targetMonthlyPayment, currencyCode);
+    }
     if (!scenario.recurringExtraAmount || scenario.recurringExtraAmount <= 0) return '—';
     const amount = formatCurrency(scenario.recurringExtraAmount, currencyCode);
     const freq = scenario.recurringExtraFrequency;

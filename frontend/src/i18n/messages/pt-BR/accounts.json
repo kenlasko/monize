@@ -499,7 +499,7 @@
       "colOverpayment": "Pagamento extra",
       "overpaymentWithFrequency": "{amount} ({frequency})",
       "loadAria": "Carregar cenário \"{name}\"",
-      "saveBudgetUnsupported": "Ainda não é possível salvar cenários de orçamento."
+      "budgetSummary": "Orçamento {amount}/mês"
     },
     "scenarioChart": {
       "title": "Comparação de cenários",

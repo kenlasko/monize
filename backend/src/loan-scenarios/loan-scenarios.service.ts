@@ -50,6 +50,10 @@ export class LoanScenariosService {
       recurringExtraFrequency: dto.recurringExtraFrequency ?? null,
       recurringExtraStartDate: dto.recurringExtraStartDate ?? null,
       recurringExtraEndDate: dto.recurringExtraEndDate ?? null,
+      targetMonthlyPayment: dto.targetMonthlyPayment ?? null,
+      targetMonthlyPaymentMode: dto.targetMonthlyPaymentMode ?? null,
+      targetMonthlyPaymentStartDate: dto.targetMonthlyPaymentStartDate ?? null,
+      targetMonthlyPaymentEndDate: dto.targetMonthlyPaymentEndDate ?? null,
       lumpSums: dto.lumpSums ?? [],
       userId,
       accountId,
@@ -85,6 +89,18 @@ export class LoanScenariosService {
         : {}),
       ...(dto.recurringExtraEndDate !== undefined
         ? { recurringExtraEndDate: dto.recurringExtraEndDate }
+        : {}),
+      ...(dto.targetMonthlyPayment !== undefined
+        ? { targetMonthlyPayment: dto.targetMonthlyPayment }
+        : {}),
+      ...(dto.targetMonthlyPaymentMode !== undefined
+        ? { targetMonthlyPaymentMode: dto.targetMonthlyPaymentMode }
+        : {}),
+      ...(dto.targetMonthlyPaymentStartDate !== undefined
+        ? { targetMonthlyPaymentStartDate: dto.targetMonthlyPaymentStartDate }
+        : {}),
+      ...(dto.targetMonthlyPaymentEndDate !== undefined
+        ? { targetMonthlyPaymentEndDate: dto.targetMonthlyPaymentEndDate }
         : {}),
       ...(dto.lumpSums !== undefined ? { lumpSums: dto.lumpSums } : {}),
     });

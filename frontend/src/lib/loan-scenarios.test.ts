@@ -31,6 +31,10 @@ function makeScenario(overrides: Partial<LoanScenario> = {}): LoanScenario {
     recurringExtraFrequency: null,
     recurringExtraStartDate: null,
     recurringExtraEndDate: null,
+    targetMonthlyPayment: null,
+    targetMonthlyPaymentMode: null,
+    targetMonthlyPaymentStartDate: null,
+    targetMonthlyPaymentEndDate: null,
     lumpSums: [],
     createdAt: '2026-01-01',
     updatedAt: '2026-01-01',
@@ -134,6 +138,10 @@ describe('planToScenarioData', () => {
       recurringExtraFrequency: null,
       recurringExtraStartDate: '2026-01-01',
       recurringExtraEndDate: null,
+      targetMonthlyPayment: null,
+      targetMonthlyPaymentMode: null,
+      targetMonthlyPaymentStartDate: null,
+      targetMonthlyPaymentEndDate: null,
       lumpSums: [{ date: '2026-06-01', amount: 5000, mode: 'SHORTEN_TERM' }],
     });
   });
@@ -146,6 +154,32 @@ describe('planToScenarioData', () => {
       recurringExtraFrequency: null,
       recurringExtraStartDate: null,
       recurringExtraEndDate: null,
+      targetMonthlyPayment: null,
+      targetMonthlyPaymentMode: null,
+      targetMonthlyPaymentStartDate: null,
+      targetMonthlyPaymentEndDate: null,
+      lumpSums: [],
+    });
+  });
+
+  it('maps a budget scenario to the plan and back', () => {
+    const scenario = makeScenario({
+      recurringExtraAmount: null,
+      targetMonthlyPayment: 4000,
+      targetMonthlyPaymentMode: 'LOWER_INSTALLMENT',
+      targetMonthlyPaymentStartDate: '2026-08-01',
+    });
+    const plan = scenarioToPlan(scenario);
+    expect(plan).toEqual({
+      targetMonthlyPayment: 4000,
+      targetMonthlyPaymentMode: 'LOWER_INSTALLMENT',
+      targetMonthlyPaymentStart: '2026-08-01',
+    });
+    expect(planToScenarioData(plan, 'Budget')).toMatchObject({
+      targetMonthlyPayment: 4000,
+      targetMonthlyPaymentMode: 'LOWER_INSTALLMENT',
+      targetMonthlyPaymentStartDate: '2026-08-01',
+      recurringExtraAmount: null,
       lumpSums: [],
     });
   });

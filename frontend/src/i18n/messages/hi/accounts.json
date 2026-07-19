@@ -499,7 +499,7 @@
       "colOverpayment": "अतिरिक्त भुगतान",
       "overpaymentWithFrequency": "{amount} ({frequency})",
       "loadAria": "परिदृश्य \"{name}\" लोड करें",
-      "saveBudgetUnsupported": "बजट परिदृश्य अभी सहेजे नहीं जा सकते।"
+      "budgetSummary": "बजट {amount}/माह"
     },
     "scenarioChart": {
       "title": "परिदृश्य तुलना",

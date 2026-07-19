@@ -46,6 +46,10 @@ function makeScenario(overrides: Partial<LoanScenario> = {}): LoanScenario {
     recurringExtraFrequency: null,
     recurringExtraStartDate: null,
     recurringExtraEndDate: null,
+    targetMonthlyPayment: null,
+    targetMonthlyPaymentMode: null,
+    targetMonthlyPaymentStartDate: null,
+    targetMonthlyPaymentEndDate: null,
     lumpSums: [{ date: '2026-06-01', amount: 5000 }],
     createdAt: '2026-01-01',
     updatedAt: '2026-01-01',
@@ -170,6 +174,10 @@ describe('SavedScenariosPanel', () => {
       recurringExtraFrequency: null,
       recurringExtraStartDate: null,
       recurringExtraEndDate: null,
+      targetMonthlyPayment: null,
+      targetMonthlyPaymentMode: null,
+      targetMonthlyPaymentStartDate: null,
+      targetMonthlyPaymentEndDate: null,
       lumpSums: [],
     });
     expect(props.onScenariosChanged).toHaveBeenCalled();

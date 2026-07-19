@@ -499,7 +499,7 @@
       "colOverpayment": "Достроковий платіж",
       "overpaymentWithFrequency": "{amount} ({frequency})",
       "loadAria": "Завантажити сценарій «{name}»",
-      "saveBudgetUnsupported": "Збереження бюджетних сценаріїв поки не підтримується."
+      "budgetSummary": "Бюджет {amount}/міс."
     },
     "scenarioChart": {
       "title": "Порівняння сценаріїв",

@@ -499,7 +499,7 @@
       "colOverpayment": "Trả thêm",
       "overpaymentWithFrequency": "{amount} ({frequency})",
       "loadAria": "Tải kịch bản \"{name}\"",
-      "saveBudgetUnsupported": "Chưa hỗ trợ lưu kịch bản ngân sách."
+      "budgetSummary": "Ngân sách {amount}/tháng"
     },
     "scenarioChart": {
       "title": "So sánh kịch bản",

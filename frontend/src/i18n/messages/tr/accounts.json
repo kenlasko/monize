@@ -499,7 +499,7 @@
       "colOverpayment": "Ek ödeme",
       "overpaymentWithFrequency": "{amount} ({frequency})",
       "loadAria": "\"{name}\" senaryosunu yükle",
-      "saveBudgetUnsupported": "Bütçe senaryolarını kaydetmek henüz desteklenmiyor."
+      "budgetSummary": "Bütçe {amount}/ay"
     },
     "scenarioChart": {
       "title": "Senaryo karşılaştırması",
