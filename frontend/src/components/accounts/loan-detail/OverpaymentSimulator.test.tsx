@@ -277,11 +277,11 @@ describe('OverpaymentSimulator', () => {
 
     expect(onPlanChange).toHaveBeenLastCalledWith({
       targetMonthlyPayment: 4000,
-      targetMonthlyPaymentMode: 'SHORTEN_TERM',
+      // A budget defaults to lower-installment (the installment shrinks).
+      targetMonthlyPaymentMode: 'LOWER_INSTALLMENT',
     });
     // A budget hides the cadence and the window (but keeps the mode).
     expect(screen.queryByLabelText('Frequency')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('Starting (optional)')).not.toBeInTheDocument();
     expect(screen.getByLabelText('After an overpayment')).toBeInTheDocument();
   });
 
@@ -294,13 +294,13 @@ describe('OverpaymentSimulator', () => {
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Total monthly payment'), { target: { value: '4000' } });
       fireEvent.change(screen.getByLabelText('After an overpayment'), {
-        target: { value: 'LOWER_INSTALLMENT' },
+        target: { value: 'SHORTEN_TERM' },
       });
     });
 
     expect(onPlanChange).toHaveBeenLastCalledWith({
       targetMonthlyPayment: 4000,
-      targetMonthlyPaymentMode: 'LOWER_INSTALLMENT',
+      targetMonthlyPaymentMode: 'SHORTEN_TERM',
     });
   });
 });

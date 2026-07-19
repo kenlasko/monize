@@ -110,7 +110,7 @@ function planToForm(plan: OverpaymentPlan | null): SimulatorFormState {
       ...EMPTY_FORM,
       simType: 'BUDGET',
       budget: plan.targetMonthlyPayment,
-      mode: plan.targetMonthlyPaymentMode ?? DEFAULT_MODE,
+      mode: plan.targetMonthlyPaymentMode ?? 'LOWER_INSTALLMENT',
     };
   }
   const first = plan.lumpSums?.[0];
@@ -250,7 +250,20 @@ export function OverpaymentSimulator({
   };
 
   const handleSimTypeChange = (simType: SimulationType) =>
-    apply({ ...form, simType, mode: simType === 'PAYOFF' ? 'SHORTEN_TERM' : form.mode });
+    apply({
+      ...form,
+      simType,
+      // A payoff goal only makes sense as shorten-term; a budget defaults to
+      // lower-installment (the installment shrinks as the balance falls, which
+      // is how banks apply overpayments -- and what makes the total-budget view
+      // interesting). Both stay switchable.
+      mode:
+        simType === 'PAYOFF'
+          ? 'SHORTEN_TERM'
+          : simType === 'BUDGET'
+            ? 'LOWER_INSTALLMENT'
+            : form.mode,
+    });
 
   const handleFrequencyChange = (frequency: OverpaymentFrequency) =>
     // One-off cannot be goal-sought (there is no recurring amount to solve),
