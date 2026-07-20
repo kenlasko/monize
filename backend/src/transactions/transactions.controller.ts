@@ -51,6 +51,7 @@ import {
   parseIds,
   parseUuids,
   parseCategoryIds,
+  parseCurrencyCodes,
   validateDateParam,
   assertStringParam,
   UUID_REGEX,
@@ -254,6 +255,12 @@ export class TransactionsController {
     description:
       "Navigate to the page containing this transaction ID (overrides page parameter)",
   })
+  @ApiQuery({
+    name: "originalCurrencyCodes",
+    required: false,
+    description:
+      "Filter by the currency a transaction was entered in (comma-separated ISO codes, foreign-currency entries only)",
+  })
   @ApiResponse({
     status: 200,
     description: "List of transactions retrieved successfully",
@@ -283,6 +290,7 @@ export class TransactionsController {
     @Query("tagKey") tagKey?: string,
     @Query("tagKeyOp") tagKeyOp?: string,
     @Query("tagKeyValue") tagKeyValue?: string,
+    @Query("originalCurrencyCodes") originalCurrencyCodes?: string,
   ) {
     // Validate pagination parameters
     if (page !== undefined) {
@@ -403,6 +411,7 @@ export class TransactionsController {
       undefined,
       undefined,
       tagKeyFilter,
+      parseCurrencyCodes(originalCurrencyCodes),
     );
   }
 

@@ -161,7 +161,7 @@ export class McpTransactionsTools {
             .optional()
             .default(false)
             .describe(
-              "When true, also include the raw transaction list (costs more tokens). Default false -- the summary alone usually suffices.",
+              "When true, also include the raw transaction list (costs more tokens). Default false -- the summary alone usually suffices. Foreign-currency rows also carry read-only originalAmount, originalCurrencyCode, and exchangeRate metadata (amount stays in the account currency); informational only, creating foreign-currency transactions is not supported.",
             ),
           limit: z
             .number()

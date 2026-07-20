@@ -4,6 +4,31 @@ import { tr } from "../i18n/translate";
 export const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const CURRENCY_CODE_REGEX = /^[A-Za-z]{3}$/;
+
+/**
+ * Parse comma-separated ISO 4217 currency codes from a query param, normalized
+ * to uppercase. Returns undefined when nothing valid is provided.
+ */
+export function parseCurrencyCodes(value?: string): string[] | undefined {
+  if (!value) return undefined;
+  const codes = value
+    .split(",")
+    .map((c) => c.trim().toUpperCase())
+    .filter((c) => c);
+  for (const code of codes) {
+    if (!CURRENCY_CODE_REGEX.test(code)) {
+      throw new BadRequestException(
+        tr(
+          "errors.common.invalidCurrencyCode",
+          `Invalid currency code: ${code}`,
+          { code },
+        ),
+      );
+    }
+  }
+  return codes.length > 0 ? codes : undefined;
+}
 
 /**
  * Parse comma-separated UUIDs from query params, with backward compatibility

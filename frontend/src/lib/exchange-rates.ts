@@ -68,6 +68,25 @@ export const exchangeRatesApi = {
     return response.data;
   },
 
+  // Resolve the exchange rate for a specific currency pair and date (account
+  // currency units per 1 unit of `from`). The backend applies carry-forward and
+  // Yahoo backfill; it returns null when no rate can be determined. Deduped per
+  // from:to:date so repeated form edits for the same day hit the network once.
+  getRateForDate: async (from: string, to: string, date: string): Promise<number | null> => {
+    if (from === to) return 1;
+    return dedupe(
+      `exchange-rates:rate:${from}:${to}:${date}`,
+      async () => {
+        const response = await apiClient.get<{ rate: number | null }>(
+          '/currencies/exchange-rates/rate',
+          { params: { from, to, date } },
+        );
+        return response.data.rate;
+      },
+      3_600_000, // 1 hour
+    );
+  },
+
   refreshRates: async () => {
     invalidateCache('exchange-rates:');
     const response = await apiClient.post('/currencies/exchange-rates/refresh');

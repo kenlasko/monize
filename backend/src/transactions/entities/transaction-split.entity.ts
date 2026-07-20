@@ -79,6 +79,14 @@ export class TransactionSplit {
   @Column({ type: "text", nullable: true })
   memo: string | null;
 
+  @ApiProperty({
+    example: false,
+    description:
+      "Marks the auto-generated foreign-transaction fee split. Rendered read-only in the UI and re-identified on edit.",
+  })
+  @Column({ name: "is_fx_fee", type: "boolean", default: false })
+  isFxFee: boolean;
+
   @ManyToMany(() => Tag)
   @JoinTable({
     name: "transaction_split_tags",

@@ -11,6 +11,7 @@ import {
   UseGuards,
   DefaultValuePipe,
   ParseBoolPipe,
+  BadRequestException,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -39,6 +40,7 @@ import {
 import { ExchangeRate } from "./entities/exchange-rate.entity";
 import { CreateCurrencyDto } from "./dto/create-currency.dto";
 import { UpdateCurrencyDto } from "./dto/update-currency.dto";
+import { tr } from "../i18n/translate";
 
 @ApiTags("Currencies")
 @ApiBearerAuth()
@@ -128,6 +130,40 @@ export class CurrenciesController {
     @Query("endDate") endDate?: string,
   ): Promise<ExchangeRate[]> {
     return this.exchangeRateService.getRateHistory(startDate, endDate);
+  }
+
+  @Get("exchange-rates/rate")
+  @AllowDelegate()
+  @Throttle({ default: { ttl: 60000, limit: 10 } }) // L2: 10 requests per minute
+  @ApiOperation({
+    summary: "Get the exchange rate for a specific currency pair and date",
+    description:
+      "Returns account-currency units per 1 unit of the from currency on the given date, using carry-forward and Yahoo backfill. Returns null when no rate can be determined.",
+  })
+  @ApiQuery({ name: "from", required: true, type: String })
+  @ApiQuery({ name: "to", required: true, type: String })
+  @ApiQuery({
+    name: "date",
+    required: true,
+    type: String,
+    example: "2026-07-20",
+  })
+  @ApiResponse({ status: 200, description: "Rate for the requested date" })
+  async getRateForDate(
+    @Query("from", ParseCurrencyCodePipe) from: string,
+    @Query("to", ParseCurrencyCodePipe) to: string,
+    @Query("date") date: string,
+  ): Promise<{ rate: number | null }> {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date ?? "")) {
+      throw new BadRequestException(
+        tr(
+          "errors.currencies.invalidRateDate",
+          "date must be in YYYY-MM-DD format",
+        ),
+      );
+    }
+    const rate = await this.exchangeRateService.getRateForDate(from, to, date);
+    return { rate };
   }
 
   @Get("exchange-rates/status")

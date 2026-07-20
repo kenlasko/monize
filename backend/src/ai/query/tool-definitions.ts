@@ -73,7 +73,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
         includeTransactions: {
           type: "boolean",
           description:
-            "When true, also include the raw individual transaction list (with IDs) in addition to the summary. Costs many more tokens; default false. Set true only when the user asks to see specific transactions or you need a transaction ID to act on it.",
+            "When true, also include the raw individual transaction list (with IDs) in addition to the summary. Costs many more tokens; default false. Set true only when the user asks to see specific transactions or you need a transaction ID to act on it. Rows entered in a foreign currency also carry read-only originalAmount, originalCurrencyCode, and exchangeRate metadata (the transaction's amount stays in the account currency); these are informational only -- creating foreign-currency transactions is not supported here.",
         },
         limit: {
           type: "integer",

@@ -90,6 +90,36 @@ export class AccountsService {
   }
 
   /**
+   * Validate the foreign-transaction fee configuration:
+   * - a fee category (if provided) must exist and belong to the user;
+   * - a fee percent cannot be set without a category to book the fee against.
+   * `effectiveCategoryId` is the category that will end up on the account after
+   * the operation (so an update clearing the category is checked correctly).
+   */
+  private async assertFxFeeConfig(
+    userId: string,
+    fxFeePercent: number | null | undefined,
+    fxFeeCategoryId: string | null | undefined,
+    effectiveCategoryId: string | null | undefined,
+  ): Promise<void> {
+    if (fxFeeCategoryId) {
+      await this.categoriesService.findOne(userId, fxFeeCategoryId);
+    }
+    const hasPercent =
+      fxFeePercent !== null &&
+      fxFeePercent !== undefined &&
+      Number(fxFeePercent) > 0;
+    if (hasPercent && !effectiveCategoryId) {
+      throw new BadRequestException(
+        tr(
+          "errors.accounts.fxFeeCategoryRequired",
+          "A foreign-transaction fee category is required when a fee percent is set",
+        ),
+      );
+    }
+  }
+
+  /**
    * Create a new account for a user
    */
   async create(
@@ -103,6 +133,12 @@ export class AccountsService {
     } = createAccountDto;
 
     await this.assertInstitutionOwned(userId, accountData.institutionId);
+    await this.assertFxFeeConfig(
+      userId,
+      accountData.fxFeePercent,
+      accountData.fxFeeCategoryId,
+      accountData.fxFeeCategoryId,
+    );
 
     // If creating an investment account pair, delegate to the pair creation method
     if (
@@ -739,6 +775,23 @@ export class AccountsService {
           : null;
       if (updateAccountDto.overpaymentPayeeId !== undefined)
         account.overpaymentPayeeId = updateAccountDto.overpaymentPayeeId;
+      if (updateAccountDto.fxFeePercent !== undefined)
+        account.fxFeePercent = updateAccountDto.fxFeePercent;
+      if (updateAccountDto.fxFeeCategoryId !== undefined)
+        account.fxFeeCategoryId = updateAccountDto.fxFeeCategoryId;
+      // Validate the resulting FX fee configuration against the final values on
+      // the account (a fee percent needs a category to book against).
+      if (
+        updateAccountDto.fxFeePercent !== undefined ||
+        updateAccountDto.fxFeeCategoryId !== undefined
+      ) {
+        await this.assertFxFeeConfig(
+          userId,
+          account.fxFeePercent,
+          updateAccountDto.fxFeeCategoryId,
+          account.fxFeeCategoryId,
+        );
+      }
       if (updateAccountDto.assetCategoryId !== undefined)
         account.assetCategoryId = updateAccountDto.assetCategoryId;
       if (updateAccountDto.dateAcquired !== undefined)

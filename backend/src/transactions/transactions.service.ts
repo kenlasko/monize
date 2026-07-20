@@ -80,6 +80,11 @@ export interface LlmTransactionRow {
   description: string | null;
   status: string;
   isSplit?: boolean;
+  // Foreign-currency entry metadata (read-only). Present only when the
+  // transaction was entered in a currency other than the account currency.
+  originalAmount?: number;
+  originalCurrencyCode?: string;
+  exchangeRate?: number;
 }
 
 export interface LlmTransactionSearch {
@@ -228,12 +233,86 @@ export class TransactionsService {
     });
   }
 
+  /**
+   * Validate and normalize the foreign-currency entry fields against the
+   * account currency. Returns the values to persist:
+   * - Both fields null when no foreign entry is present.
+   * - Both stripped to null when the entered currency equals the account
+   *   currency (tolerant: an ordinary transaction, not an error).
+   * - Otherwise both retained, after checking the pair is complete, the rate is
+   *   positive, and the original amount matches the sign of the (account
+   *   currency) amount.
+   * The account-currency `amount` and `currencyCode` are never modified here.
+   */
+  private normalizeFxEntry(
+    input: {
+      originalAmount?: number | null;
+      originalCurrencyCode?: string | null;
+      exchangeRate?: number | null;
+      amount: number;
+    },
+    accountCurrencyCode: string,
+  ): { originalAmount: number | null; originalCurrencyCode: string | null } {
+    const hasAmount =
+      input.originalAmount !== undefined && input.originalAmount !== null;
+    const hasCode =
+      typeof input.originalCurrencyCode === "string" &&
+      input.originalCurrencyCode.length > 0;
+
+    if (!hasAmount && !hasCode) {
+      return { originalAmount: null, originalCurrencyCode: null };
+    }
+
+    if (hasAmount !== hasCode) {
+      throw new BadRequestException(
+        tr(
+          "errors.transactions.fxFieldsIncomplete",
+          "originalAmount and originalCurrencyCode must be provided together",
+        ),
+      );
+    }
+
+    const code = (input.originalCurrencyCode as string).toUpperCase();
+
+    // Entered in the account currency after all -- treat as an ordinary
+    // transaction and strip the foreign metadata.
+    if (code === accountCurrencyCode.toUpperCase()) {
+      return { originalAmount: null, originalCurrencyCode: null };
+    }
+
+    const rate = input.exchangeRate;
+    if (rate === undefined || rate === null || Number(rate) <= 0) {
+      throw new BadRequestException(
+        tr(
+          "errors.transactions.fxRateRequired",
+          "A positive exchange rate is required for a foreign-currency transaction",
+        ),
+      );
+    }
+
+    const original = Number(input.originalAmount);
+    const amount = Number(input.amount);
+    if (original > 0 !== amount > 0 && original !== 0 && amount !== 0) {
+      throw new BadRequestException(
+        tr(
+          "errors.transactions.fxSignMismatch",
+          "originalAmount and amount must have the same sign",
+        ),
+      );
+    }
+
+    return { originalAmount: original, originalCurrencyCode: code };
+  }
+
   async create(
     userId: string,
     createTransactionDto: CreateTransactionDto,
     options?: { createPayeeIfMissing?: boolean },
   ): Promise<Transaction> {
-    await this.accountsService.findOne(userId, createTransactionDto.accountId);
+    const account = await this.accountsService.findOne(
+      userId,
+      createTransactionDto.accountId,
+    );
 
     const { splits, tagIds, ...transactionData } = createTransactionDto;
     const hasSplits = splits && splits.length > 0;
@@ -241,6 +320,17 @@ export class TransactionsService {
     if (hasSplits) {
       this.splitService.validateSplits(splits, createTransactionDto.amount);
     }
+
+    // Normalize/validate foreign-currency entry against the account currency.
+    const fx = this.normalizeFxEntry(
+      {
+        originalAmount: transactionData.originalAmount,
+        originalCurrencyCode: transactionData.originalCurrencyCode,
+        exchangeRate: transactionData.exchangeRate,
+        amount: transactionData.amount,
+      },
+      account.currencyCode,
+    );
 
     // Validate ownership of a referenced payee, or -- when the caller opts in
     // (createPayeeIfMissing) and only a free-text name was given -- find or
@@ -301,6 +391,8 @@ export class TransactionsService {
         isSplit: hasSplits,
         userId,
         exchangeRate: transactionData.exchangeRate || 1,
+        originalAmount: fx.originalAmount,
+        originalCurrencyCode: fx.originalCurrencyCode,
       });
 
       const savedTransaction = await queryRunner.manager.save(transaction);
@@ -745,6 +837,7 @@ export class TransactionsService {
     sortBy: "date" | "amount" | "payee" = "date",
     sortDirection: "ASC" | "DESC" = "DESC",
     tagKeyFilter?: TagKeyFilter,
+    originalCurrencyCodes?: string[],
   ): Promise<PaginatedTransactions> {
     const clamped = clampPagination(page, limit);
     const safeLimit = clamped.limit;
@@ -875,6 +968,13 @@ export class TransactionsService {
       queryBuilder.andWhere("transaction.status IN (:...statuses)", {
         statuses,
       });
+    }
+
+    if (originalCurrencyCodes && originalCurrencyCodes.length > 0) {
+      queryBuilder.andWhere(
+        "transaction.original_currency_code IN (:...originalCurrencyCodes)",
+        { originalCurrencyCodes },
+      );
     }
 
     if (targetTransactionId) {
@@ -1868,6 +1968,34 @@ export class TransactionsService {
         transactionUpdateData.currencyCode = updateData.currencyCode;
       if ("exchangeRate" in updateData)
         transactionUpdateData.exchangeRate = updateData.exchangeRate;
+      // Foreign-currency entry: only re-normalize when either field is touched.
+      // Validate against the effective (possibly changed) account currency,
+      // amount, and rate; a null on either field clears the foreign metadata.
+      if (
+        "originalAmount" in updateData ||
+        "originalCurrencyCode" in updateData
+      ) {
+        const effectiveAccountCurrency =
+          updateData.currencyCode ?? transaction.currencyCode;
+        const fx = this.normalizeFxEntry(
+          {
+            originalAmount:
+              "originalAmount" in updateData
+                ? updateData.originalAmount
+                : transaction.originalAmount,
+            originalCurrencyCode:
+              "originalCurrencyCode" in updateData
+                ? updateData.originalCurrencyCode
+                : transaction.originalCurrencyCode,
+            exchangeRate:
+              updateData.exchangeRate ?? Number(transaction.exchangeRate),
+            amount: updateData.amount ?? Number(transaction.amount),
+          },
+          effectiveAccountCurrency,
+        );
+        transactionUpdateData.originalAmount = fx.originalAmount;
+        transactionUpdateData.originalCurrencyCode = fx.originalCurrencyCode;
+      }
       if ("description" in updateData)
         transactionUpdateData.description = updateData.description ?? null;
       if ("referenceNumber" in updateData)
@@ -2685,6 +2813,15 @@ export class TransactionsService {
                 accountName: t.account?.name,
                 description: t.description,
                 status: t.status,
+                // Read-only foreign-currency metadata, emitted only for a
+                // foreign-entered transaction.
+                ...(t.originalCurrencyCode
+                  ? {
+                      originalAmount: Number(t.originalAmount),
+                      originalCurrencyCode: t.originalCurrencyCode,
+                      exchangeRate: Number(t.exchangeRate),
+                    }
+                  : {}),
               },
             ];
       return rows.filter((row) => {

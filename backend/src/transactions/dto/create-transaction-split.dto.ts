@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsUUID,
   IsArray,
+  IsBoolean,
   IsEnum,
   ValidateNested,
   MaxLength,
@@ -112,6 +113,15 @@ export class CreateTransactionSplitDto {
   @MaxLength(500)
   @SanitizeHtml()
   memo?: string;
+
+  @ApiPropertyOptional({
+    description:
+      "Marks this split as the auto-generated foreign-transaction fee. At most one fee split per transaction; must be a category split.",
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isFxFee?: boolean;
 
   @ApiPropertyOptional({
     description:

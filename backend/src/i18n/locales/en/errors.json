@@ -34,7 +34,8 @@
     "ambiguousBrokerage": "\"{{ query }}\" matches multiple brokerage accounts: {{ list }}. Use the exact account name.",
     "unknownInvestmentAccount": "Unknown account: {{ name }}. Use an exact name from the user's account list.",
     "notACreditCard": "Statement cycles are only available for credit card accounts",
-    "noStatementSettlementDay": "This credit card has no statement settlement day configured"
+    "noStatementSettlementDay": "This credit card has no statement settlement day configured",
+    "fxFeeCategoryRequired": "A foreign-transaction fee category is required when a fee percent is set"
   },
   "actionHistory": {
     "nothingToUndo": "Nothing to undo",
@@ -219,14 +220,16 @@
     "csrfInvalid": "Invalid CSRF token",
     "demoModeRestricted": "This action is not available in demo mode.",
     "serviceNotReady": "Service not ready",
-    "oauthProviderNotInitialized": "OAuth provider not initialized"
+    "oauthProviderNotInitialized": "OAuth provider not initialized",
+    "invalidCurrencyCode": "Invalid currency code: {{ code }}"
   },
   "currencies": {
     "alreadyInList": "Currency \"{{ code }}\" is already in your list",
     "notFound": "Currency \"{{ code }}\" not found",
     "cannotModifySystem": "Cannot modify system currency metadata",
     "cannotModifyOther": "Cannot modify another user's currency",
-    "inUse": "Currency \"{{ code }}\" is in use by your accounts, securities, or other records. Deactivate it instead."
+    "inUse": "Currency \"{{ code }}\" is in use by your accounts, securities, or other records. Deactivate it instead.",
+    "invalidRateDate": "date must be in YYYY-MM-DD format"
   },
   "delegation": {
     "delegatedAccessInvalid": "Delegated access is no longer valid",
@@ -441,7 +444,12 @@
     "splitTransferLegAccountLocked": "This transfer is part of a split transaction. Change its accounts by editing the split on the source transaction instead.",
     "notFoundById": "Transaction with ID {{ id }} not found",
     "bulkUpdateNoFields": "At least one update field must be provided",
-    "payeeNotFound": "Payee not found"
+    "payeeNotFound": "Payee not found",
+    "fxFieldsIncomplete": "originalAmount and originalCurrencyCode must be provided together",
+    "fxRateRequired": "A positive exchange rate is required for a foreign-currency transaction",
+    "fxSignMismatch": "originalAmount and amount must have the same sign",
+    "multipleFxFeeSplits": "A transaction can have at most one foreign-transaction fee split",
+    "fxFeeSplitMustBeCategory": "The foreign-transaction fee split must be a category split"
   },
   "users": {
     "userNotFound": "User not found",

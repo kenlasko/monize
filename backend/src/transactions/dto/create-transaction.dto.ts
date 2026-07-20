@@ -70,6 +70,24 @@ export class CreateTransactionDto {
   @Min(0.000001)
   exchangeRate?: number;
 
+  @ApiPropertyOptional({
+    description:
+      "Original amount as entered in the foreign currency the user actually paid in. Provided together with originalCurrencyCode; amount stays in the account currency.",
+  })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 4 })
+  @Min(-999999999999)
+  @Max(999999999999)
+  originalAmount?: number | null;
+
+  @ApiPropertyOptional({
+    description:
+      "Currency the transaction was actually paid in (foreign entry). Provided together with originalAmount.",
+  })
+  @IsOptional()
+  @IsCurrencyCode()
+  originalCurrencyCode?: string | null;
+
   @ApiPropertyOptional({ description: "Transaction description/notes" })
   @IsOptional()
   @IsString()
