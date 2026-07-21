@@ -266,7 +266,7 @@ CREATE TABLE transactions (
     -- Foreign-currency entry: amount actually paid, stored alongside the
     -- account-currency amount. NULL for ordinary transactions.
     original_amount NUMERIC(20, 4), -- amount as typed in the original currency
-    original_currency_code VARCHAR(3) REFERENCES currencies(code), -- currency actually paid in
+    original_currency_code VARCHAR(3) CONSTRAINT fk_transactions_original_currency REFERENCES currencies(code), -- currency actually paid in
     description TEXT,
     reference_number VARCHAR(100), -- check number, confirmation number, etc
     is_cleared BOOLEAN DEFAULT false, -- LEGACY: replaced by status field

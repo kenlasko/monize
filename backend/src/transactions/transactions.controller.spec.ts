@@ -163,6 +163,7 @@ describe("TransactionsController", () => {
         undefined,
         undefined,
         undefined,
+        undefined,
       );
     });
 
@@ -196,6 +197,7 @@ describe("TransactionsController", () => {
         undefined,
         undefined,
         undefined,
+        undefined,
       );
     });
 
@@ -214,6 +216,7 @@ describe("TransactionsController", () => {
         undefined,
         undefined,
         false,
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -253,6 +256,7 @@ describe("TransactionsController", () => {
         2,
         25,
         false,
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -302,6 +306,7 @@ describe("TransactionsController", () => {
         undefined,
         undefined,
         undefined,
+        undefined,
       );
     });
 
@@ -337,6 +342,7 @@ describe("TransactionsController", () => {
         false,
         "grocery",
         uuid3,
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -524,6 +530,7 @@ describe("TransactionsController", () => {
         undefined,
         undefined,
         ["UNRECONCILED", "CLEARED"],
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -1256,6 +1263,7 @@ describe("TransactionsController", () => {
         undefined,
         -100.5,
         500.25,
+        undefined,
         undefined,
         undefined,
         undefined,

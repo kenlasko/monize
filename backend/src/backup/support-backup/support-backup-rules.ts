@@ -143,6 +143,7 @@ export const RULES: Record<string, TableRules> = {
     current_balance: scale, // refined by reconciliation
     credit_limit: scale,
     interest_rate: keep, // public rate
+    fx_fee_percent: keep, // public foreign-transaction fee rate
     statement_due_day: keep,
     statement_settlement_day: keep,
     is_closed: keep,
@@ -192,6 +193,8 @@ export const RULES: Record<string, TableRules> = {
     category_id: keep,
     amount: scale, // split parents refined by reconciliation
     currency_code: keep,
+    original_amount: scale, // private money magnitude, in foreign currency
+    original_currency_code: keep, // public reference value
     exchange_rate: keep, // public FX rate
     description: drop,
     reference_number: drop,
@@ -215,6 +218,7 @@ export const RULES: Record<string, TableRules> = {
     linked_transaction_id: keep,
     amount: scale,
     memo: drop,
+    is_fx_fee: keep,
     created_at: keep,
   },
   transaction_tags: { transaction_id: keep, tag_id: keep },
