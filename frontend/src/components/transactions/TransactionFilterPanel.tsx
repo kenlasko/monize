@@ -419,6 +419,24 @@ export function TransactionFilterPanel({
                   </button>
                 </span>
               ))}
+              {/* Currency chips - Cyan */}
+              {filterOriginalCurrencyCodes.map(code => (
+                <span
+                  key={`currency-${code}`}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-cyan-100 dark:bg-cyan-900 text-cyan-800 dark:text-cyan-200 whitespace-nowrap"
+                >
+                  {code}
+                  <button
+                    onClick={() => handleArrayFilterChange(setFilterOriginalCurrencyCodes, filterOriginalCurrencyCodes.filter(c => c !== code))}
+                    className="ml-0.5 -mr-1 p-0.5 rounded-full inline-flex items-center justify-center hover:bg-cyan-200 dark:hover:bg-cyan-800"
+                    aria-label={t('filter.chips.removeCurrency', { name: code })}
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </span>
+              ))}
               {/* Search chip - Gray */}
               {filterSearch && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 whitespace-nowrap">

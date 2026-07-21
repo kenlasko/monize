@@ -1745,5 +1745,39 @@ describe('TransactionFilterPanel', () => {
         ['UNRECONCILED'],
       );
     });
+
+    it('shows a chip per selected currency when collapsed', () => {
+      render(
+        <TransactionFilterPanel
+          {...defaultProps}
+          filtersExpanded={false}
+          activeFilterCount={2}
+          filterOriginalCurrencyCodes={['EUR', 'GBP']}
+        />,
+      );
+
+      expect(screen.getByText('EUR')).toBeInTheDocument();
+      expect(screen.getByText('GBP')).toBeInTheDocument();
+      expect(screen.getByLabelText('Remove EUR currency filter')).toBeInTheDocument();
+      expect(screen.getByLabelText('Remove GBP currency filter')).toBeInTheDocument();
+    });
+
+    it('removes a currency from filterOriginalCurrencyCodes when its chip remove button is clicked', () => {
+      render(
+        <TransactionFilterPanel
+          {...defaultProps}
+          filtersExpanded={false}
+          activeFilterCount={2}
+          filterOriginalCurrencyCodes={['EUR', 'GBP']}
+        />,
+      );
+
+      fireEvent.click(screen.getByLabelText('Remove EUR currency filter'));
+
+      expect(defaultProps.handleArrayFilterChange).toHaveBeenCalledWith(
+        defaultProps.setFilterOriginalCurrencyCodes,
+        ['GBP'],
+      );
+    });
   });
 });
