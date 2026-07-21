@@ -55,6 +55,11 @@ interface TransactionListProps {
   showToolbar?: boolean;
   /** Transaction id to flash and scroll to (e.g. arriving from a deep link). */
   highlightTransactionId?: string | null;
+  /**
+   * Adds foreign-currency columns (paid currency, paid amount, fee paid) for
+   * the account-detail Foreign Currency Transaction Fees section.
+   */
+  showFxColumns?: boolean;
 }
 
 export function TransactionList({
@@ -95,6 +100,7 @@ export function TransactionList({
   budgetStatusMap,
   showToolbar = true,
   highlightTransactionId,
+  showFxColumns = false,
 }: TransactionListProps) {
   const t = useTranslations('transactions');
   const tc = useTranslations('common');
@@ -462,6 +468,13 @@ export function TransactionList({
               <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden 2xl:table-cell`}>{t('list.header.refNumber')}</th>
               <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden xl:table-cell`}>{t('list.header.tags')}</th>
               <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>{t('list.header.amount')}</th>
+              {showFxColumns && (
+                <>
+                  <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>{t('list.header.currency')}</th>
+                  <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>{t('list.header.paidAmount')}</th>
+                  <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>{t('list.header.feePaid')}</th>
+                </>
+              )}
               {showRunningBalance && (
                 <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>{t('list.header.balance')}</th>
               )}
@@ -474,7 +487,8 @@ export function TransactionList({
               const isFuture = index < futureBoundaryIndex;
               const colCount = 10
                 + (selectionMode ? 1 : 0)
-                + (showRunningBalance ? 1 : 0);
+                + (showRunningBalance ? 1 : 0)
+                + (showFxColumns ? 3 : 0);
               return (
                 <React.Fragment key={transaction.id}>
                   {index === futureBoundaryIndex && futureBoundaryIndex > 0 && (
@@ -523,6 +537,7 @@ export function TransactionList({
                     budgetStatusMap={budgetStatusMap}
                     isFuture={isFuture}
                     isHighlighted={!!highlightTransactionId && transaction.id === highlightTransactionId}
+                    showFxColumns={showFxColumns}
                   />
                 </React.Fragment>
               );

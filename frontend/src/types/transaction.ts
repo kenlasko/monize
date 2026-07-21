@@ -174,6 +174,18 @@ export interface MonthlyTotal {
   count: number;
 }
 
+/**
+ * Monthly foreign-transaction fee totals for one account, per paid currency.
+ * feeTotal is positive, in the account currency; count is the number of
+ * foreign-entered transactions that month (fee split or not).
+ */
+export interface FxFeeMonthlyTotal {
+  month: string;
+  currencyCode: string;
+  feeTotal: number;
+  count: number;
+}
+
 export interface TransactionFilters {
   accountId?: string;
   startDate?: string;

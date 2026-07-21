@@ -2830,4 +2830,107 @@ describe('TransactionList', () => {
       expect(screen.queryByText('Duplicate')).not.toBeInTheDocument();
     });
   });
+
+  describe('foreign-currency columns (showFxColumns)', () => {
+    const foreignTransaction = () =>
+      createTransaction({
+        amount: -138.0,
+        currencyCode: 'CAD',
+        originalAmount: -100.0,
+        originalCurrencyCode: 'EUR',
+        isSplit: true,
+        splits: [
+          {
+            id: 'split-1',
+            transactionId: '123e4567-e89b-12d3-a456-426614174000',
+            categoryId: 'cat-1',
+            category: { id: 'cat-1', name: 'Groceries', color: null } as any,
+            transferAccountId: null,
+            transferAccount: null,
+            linkedTransactionId: null,
+            amount: -134.5,
+            memo: null,
+            createdAt: '2024-01-15T00:00:00Z',
+          },
+          {
+            id: 'split-2',
+            transactionId: '123e4567-e89b-12d3-a456-426614174000',
+            categoryId: 'cat-2',
+            category: { id: 'cat-2', name: 'Bank Fees', color: null } as any,
+            transferAccountId: null,
+            transferAccount: null,
+            linkedTransactionId: null,
+            amount: -3.5,
+            memo: null,
+            isFxFee: true,
+            createdAt: '2024-01-15T00:00:00Z',
+          },
+        ],
+      });
+
+    it('hides the FX columns by default', async () => {
+      render(
+        <TransactionList
+          transactions={[foreignTransaction()]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Grocery Store')).toBeInTheDocument();
+      });
+      expect(screen.queryByText('Paid Amount')).not.toBeInTheDocument();
+      expect(screen.queryByText('Fee Paid')).not.toBeInTheDocument();
+    });
+
+    it('renders paid currency, paid amount, and the fee split amount', async () => {
+      render(
+        <TransactionList
+          transactions={[foreignTransaction()]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          showFxColumns
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Currency')).toBeInTheDocument();
+      });
+      expect(screen.getByText('Paid Amount')).toBeInTheDocument();
+      expect(screen.getByText('Fee Paid')).toBeInTheDocument();
+      expect(screen.getByText('EUR')).toBeInTheDocument();
+      // Paid amount: -100 EUR through the +/- formatter.
+      expect(screen.getByText(/-\$100\.00/)).toBeInTheDocument();
+      // Fee: the -3.50 fee split shown as a positive cost.
+      expect(screen.getByText('$3.50')).toBeInTheDocument();
+    });
+
+    it('shows a dash in the fee column when a foreign transaction has no fee split', async () => {
+      const noFee = createTransaction({
+        amount: -138.0,
+        originalAmount: -100.0,
+        originalCurrencyCode: 'EUR',
+      });
+
+      render(
+        <TransactionList
+          transactions={[noFee]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+          showFxColumns
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('EUR')).toBeInTheDocument();
+      });
+      const row = screen.getByText('Grocery Store').closest('tr')!;
+      const cells = row.querySelectorAll('td');
+      // Fee column is the last cell before balance/status/actions; assert a
+      // dash is present somewhere in the row's fee cell.
+      const feeCell = cells[cells.length - 3];
+      expect(feeCell.textContent).toBe('-');
+    });
+  });
 });

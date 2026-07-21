@@ -1,0 +1,33 @@
+{
+  "title": "Foreign Currency Transaction Fees",
+  "currencyFilter": {
+    "label": "Currencies",
+    "placeholder": "All currencies"
+  },
+  "chart": {
+    "title": "Fees Over Time",
+    "noData": "No foreign currency transactions yet",
+    "monthlyAvg": "Monthly Avg",
+    "quarterlyAvg": "Quarterly Avg",
+    "yearlyAvg": "Yearly Avg",
+    "total": "Total Fees",
+    "transactions": "Transactions",
+    "tooltip": "{count, plural, one {# transaction} other {# transactions}}",
+    "quarterLabel": "Q{quarter} {year}",
+    "quarterTick": "Q{quarter} {year}",
+    "granularityLabel": "Bucket size",
+    "granularity": {
+      "auto": "Auto",
+      "month": "Month",
+      "quarter": "Quarter",
+      "year": "Year"
+    },
+    "granularityAutoTitle": "Auto ({granularity})",
+    "granularityTitle": "{label} view"
+  },
+  "list": {
+    "title": "Foreign Currency Transactions",
+    "editTitle": "Edit Transaction",
+    "investmentLinked": "This transaction is linked to an investment. Opening the investment editor."
+  }
+}

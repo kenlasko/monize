@@ -1,0 +1,33 @@
+{
+  "title": "[XX-Foreign Currency Transaction Fees-XX]",
+  "currencyFilter": {
+    "label": "[XX-Currencies-XX]",
+    "placeholder": "[XX-All currencies-XX]"
+  },
+  "chart": {
+    "title": "[XX-Fees Over Time-XX]",
+    "noData": "[XX-No foreign currency transactions yet-XX]",
+    "monthlyAvg": "[XX-Monthly Avg-XX]",
+    "quarterlyAvg": "[XX-Quarterly Avg-XX]",
+    "yearlyAvg": "[XX-Yearly Avg-XX]",
+    "total": "[XX-Total Fees-XX]",
+    "transactions": "[XX-Transactions-XX]",
+    "tooltip": "[XX-{count, plural, one {# transaction} other {# transactions}}-XX]",
+    "quarterLabel": "[XX-Q{quarter} {year}-XX]",
+    "quarterTick": "[XX-Q{quarter} {year}-XX]",
+    "granularityLabel": "[XX-Bucket size-XX]",
+    "granularity": {
+      "auto": "[XX-Auto-XX]",
+      "month": "[XX-Month-XX]",
+      "quarter": "[XX-Quarter-XX]",
+      "year": "[XX-Year-XX]"
+    },
+    "granularityAutoTitle": "[XX-Auto ({granularity})-XX]",
+    "granularityTitle": "[XX-{label} view-XX]"
+  },
+  "list": {
+    "title": "[XX-Foreign Currency Transactions-XX]",
+    "editTitle": "[XX-Edit Transaction-XX]",
+    "investmentLinked": "[XX-This transaction is linked to an investment. Opening the investment editor.-XX]"
+  }
+}

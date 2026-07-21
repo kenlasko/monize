@@ -15,6 +15,7 @@ import { CreditCardDetailView } from '@/components/accounts/credit-card-detail/C
 import { BankingDetailView } from '@/components/accounts/banking-detail/BankingDetailView';
 import { InvestmentDetailView } from '@/components/accounts/investment-detail/InvestmentDetailView';
 import { AssetDetailView } from '@/components/accounts/asset-detail/AssetDetailView';
+import { ForeignCurrencyFeesSection } from '@/components/accounts/shared/ForeignCurrencyFeesSection';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { accountsApi } from '@/lib/accounts';
@@ -235,28 +236,33 @@ function AccountDetailContent() {
           }
           onBack={() => router.push('/accounts')}
         >
-          {detailView === 'creditCard' ? (
-            <CreditCardDetailView account={account} />
-          ) : detailView === 'banking' ? (
-            <BankingDetailView account={account} />
-          ) : detailView === 'investment' ? (
-            <InvestmentDetailView account={account} />
-          ) : detailView === 'asset' ? (
-            <AssetDetailView account={account} onAccountChanged={loadData} />
-          ) : isRevolving ? (
-            <LineOfCreditView account={account} />
-          ) : (
-            <LoanDetailView
-              account={account}
-              transactions={transactions}
-              interestTransactions={interestTransactions}
-              scenarios={scenarios}
-              rateChanges={rateChanges}
-              onScenariosChanged={reloadScenarios}
-              onRateChangesChanged={reloadRateChanges}
-              exportPdfRef={loanExportRef}
-            />
-          )}
+          <div className="space-y-6">
+            {detailView === 'creditCard' ? (
+              <CreditCardDetailView account={account} />
+            ) : detailView === 'banking' ? (
+              <BankingDetailView account={account} />
+            ) : detailView === 'investment' ? (
+              <InvestmentDetailView account={account} />
+            ) : detailView === 'asset' ? (
+              <AssetDetailView account={account} onAccountChanged={loadData} />
+            ) : isRevolving ? (
+              <LineOfCreditView account={account} />
+            ) : (
+              <LoanDetailView
+                account={account}
+                transactions={transactions}
+                interestTransactions={interestTransactions}
+                scenarios={scenarios}
+                rateChanges={rateChanges}
+                onScenariosChanged={reloadScenarios}
+                onRateChangesChanged={reloadRateChanges}
+                exportPdfRef={loanExportRef}
+              />
+            )}
+            {Number(account.fxFeePercent) > 0 && (
+              <ForeignCurrencyFeesSection account={account} />
+            )}
+          </div>
         </AccountDetailShell>
       </main>
     </PageLayout>

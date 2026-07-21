@@ -955,6 +955,37 @@ export class TransactionsController {
     );
   }
 
+  @Get("fx-fee-summary")
+  @ApiOperation({
+    summary:
+      "Get monthly foreign-transaction fee totals for an account, grouped by the currency the transaction was paid in",
+  })
+  @ApiQuery({
+    name: "accountId",
+    required: true,
+    description: "Account UUID",
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      "Monthly foreign-transaction fee totals retrieved successfully",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @AllowDelegate()
+  async getFxFeeSummary(
+    @Request() req,
+    @Query("accountId", ParseUUIDPipe) accountId: string,
+  ) {
+    if (req.user.isActing) {
+      // A delegate only sees fee analytics for accounts they can READ.
+      const readable = await this.delegationService.readableAccountIds(
+        req.user.delegationId,
+      );
+      if (!readable.includes(accountId)) return [];
+    }
+    return this.transactionsService.getFxFeeSummary(req.user.id, accountId);
+  }
+
   @Get("recent")
   @ApiOperation({
     summary:

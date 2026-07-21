@@ -17,6 +17,7 @@ import {
   BulkDeleteData,
   BulkDeleteResult,
   MonthlyTotal,
+  FxFeeMonthlyTotal,
   GroupedTotal,
   RecurringChargeInfo,
 } from '@/types/transaction';
@@ -375,6 +376,16 @@ export const transactionsApi = {
       params: apiParams,
       timeout: 60000,
     });
+    return response.data;
+  },
+
+  // Monthly foreign-transaction fee totals for one account, grouped by the
+  // currency the transaction was paid in (for the account-detail fees section)
+  getFxFeeSummary: async (accountId: string): Promise<FxFeeMonthlyTotal[]> => {
+    const response = await apiClient.get<FxFeeMonthlyTotal[]>(
+      '/transactions/fx-fee-summary',
+      { params: { accountId }, timeout: 60000 },
+    );
     return response.data;
   },
 

@@ -104,6 +104,9 @@
       "refNumber": "Ref #",
       "tags": "Tags",
       "amount": "Amount",
+      "currency": "Currency",
+      "paidAmount": "Paid Amount",
+      "feePaid": "Fee Paid",
       "balance": "Balance",
       "status": "Status",
       "actions": "Actions"

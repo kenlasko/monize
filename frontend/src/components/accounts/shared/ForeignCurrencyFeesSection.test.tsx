@@ -1,0 +1,252 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, waitFor, act } from '@/test/render';
+import { ForeignCurrencyFeesSection } from './ForeignCurrencyFeesSection';
+import type { Account } from '@/types/account';
+
+const mockGetFxFeeSummary = vi.fn();
+const mockGetAll = vi.fn();
+const mockGetById = vi.fn();
+
+vi.mock('@/lib/transactions', () => ({
+  transactionsApi: {
+    getFxFeeSummary: (...args: unknown[]) => mockGetFxFeeSummary(...args),
+    getAll: (...args: unknown[]) => mockGetAll(...args),
+    getById: (...args: unknown[]) => mockGetById(...args),
+  },
+}));
+
+vi.mock('@/lib/logger', () => ({
+  createLogger: () => ({
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+  }),
+}));
+
+// Capture chart props so tests can assert on the aggregated monthly fee data.
+const chartProps: { current: any } = { current: null };
+vi.mock('./ForeignCurrencyFeeChart', () => ({
+  ForeignCurrencyFeeChart: (props: any) => {
+    chartProps.current = props;
+    return <div data-testid="fee-chart" />;
+  },
+}));
+
+// Lightweight list stub exposing the callbacks the section wires up.
+const listProps: { current: any } = { current: null };
+vi.mock('@/components/transactions/TransactionList', () => ({
+  TransactionList: (props: any) => {
+    listProps.current = props;
+    return (
+      <div data-testid="transaction-list">
+        {props.transactions.map((tx: any) => (
+          <button key={tx.id} onClick={() => props.onEdit(tx)}>
+            {tx.payeeName}
+          </button>
+        ))}
+        <button onClick={() => props.onRefresh()}>refresh-list</button>
+      </div>
+    );
+  },
+}));
+
+vi.mock('@/components/transactions/TransactionForm', () => ({
+  TransactionForm: ({ onSuccess }: any) => (
+    <div data-testid="transaction-form">
+      <button onClick={onSuccess}>save-form</button>
+    </div>
+  ),
+}));
+
+// Simple multiselect stub: one button per option, clicking selects just it.
+vi.mock('@/components/ui/MultiSelect', () => ({
+  MultiSelect: ({ options, onChange, value }: any) => (
+    <div data-testid="currency-filter" data-selected={value.join(',')}>
+      {options.map((o: any) => (
+        <button key={o.value} onClick={() => onChange([o.value])}>
+          {`option-${o.label}`}
+        </button>
+      ))}
+      <button onClick={() => onChange([])}>clear-currencies</button>
+    </div>
+  ),
+}));
+
+const account = {
+  id: 'acc-1',
+  name: 'Travel Card',
+  currencyCode: 'CAD',
+  fxFeePercent: 2.5,
+} as unknown as Account;
+
+const summaryRows = [
+  { month: '2025-01', currencyCode: 'EUR', feeTotal: 10, count: 2 },
+  { month: '2025-01', currencyCode: 'USD', feeTotal: 5, count: 1 },
+  { month: '2025-02', currencyCode: 'EUR', feeTotal: 2.5, count: 1 },
+];
+
+const page1 = {
+  data: [
+    { id: 'tx-1', payeeName: 'Hotel Paris', isTransfer: false, isSplit: false },
+  ],
+  pagination: { page: 1, limit: 25, total: 1, totalPages: 1, hasMore: false },
+};
+
+async function renderSection() {
+  let result: ReturnType<typeof render>;
+  await act(async () => {
+    result = render(<ForeignCurrencyFeesSection account={account} />);
+  });
+  return result!;
+}
+
+describe('ForeignCurrencyFeesSection', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    chartProps.current = null;
+    listProps.current = null;
+    mockGetFxFeeSummary.mockResolvedValue(summaryRows);
+    mockGetAll.mockResolvedValue(page1);
+  });
+
+  it('renders the section title, chart, and transaction list', async () => {
+    await renderSection();
+
+    expect(screen.getByText('Foreign Currency Transaction Fees')).toBeInTheDocument();
+    expect(screen.getByTestId('fee-chart')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId('transaction-list')).toBeInTheDocument();
+    });
+    expect(mockGetFxFeeSummary).toHaveBeenCalledWith('acc-1');
+  });
+
+  it('aggregates per-currency rows into one fee total per month for the chart', async () => {
+    await renderSection();
+
+    await waitFor(() => {
+      expect(chartProps.current?.isLoading).toBe(false);
+    });
+    expect(chartProps.current.data).toEqual([
+      { month: '2025-01', total: 15, count: 3 },
+      { month: '2025-02', total: 2.5, count: 1 },
+    ]);
+    expect(chartProps.current.currencyCode).toBe('CAD');
+  });
+
+  it('loads foreign transactions for every paid currency when no filter is set', async () => {
+    await renderSection();
+
+    await waitFor(() => {
+      expect(mockGetAll).toHaveBeenCalledWith({
+        accountId: 'acc-1',
+        originalCurrencyCodes: ['EUR', 'USD'],
+        page: 1,
+        limit: 25,
+      });
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Hotel Paris')).toBeInTheDocument();
+    });
+  });
+
+  it('filters both the chart and the list when a currency is selected', async () => {
+    await renderSection();
+    await waitFor(() => {
+      expect(screen.getByText('option-EUR')).toBeInTheDocument();
+    });
+    mockGetAll.mockClear();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('option-EUR'));
+    });
+
+    await waitFor(() => {
+      expect(mockGetAll).toHaveBeenCalledWith({
+        accountId: 'acc-1',
+        originalCurrencyCodes: ['EUR'],
+        page: 1,
+        limit: 25,
+      });
+    });
+    expect(chartProps.current.data).toEqual([
+      { month: '2025-01', total: 10, count: 2 },
+      { month: '2025-02', total: 2.5, count: 1 },
+    ]);
+  });
+
+  it('skips the transaction fetch when the account has no foreign transactions', async () => {
+    mockGetFxFeeSummary.mockResolvedValue([]);
+    await renderSection();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('transaction-list')).toBeInTheDocument();
+    });
+    expect(mockGetAll).not.toHaveBeenCalled();
+    expect(listProps.current.transactions).toEqual([]);
+  });
+
+  it('opens the edit modal from the list and refreshes on save', async () => {
+    await renderSection();
+    await waitFor(() => {
+      expect(screen.getByText('Hotel Paris')).toBeInTheDocument();
+    });
+    expect(mockGetFxFeeSummary).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Hotel Paris'));
+    });
+    expect(screen.getByTestId('transaction-form')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('save-form'));
+    });
+
+    // Saving closes the modal and reloads both the summary and the list.
+    await waitFor(() => {
+      expect(mockGetFxFeeSummary).toHaveBeenCalledTimes(2);
+    });
+    expect(screen.queryByTestId('transaction-form')).not.toBeInTheDocument();
+  });
+
+  it('fetches the full transaction before editing a split or transfer', async () => {
+    const splitTx = {
+      id: 'tx-2',
+      payeeName: 'Split Vendor',
+      isTransfer: false,
+      isSplit: true,
+    };
+    mockGetAll.mockResolvedValue({
+      data: [splitTx],
+      pagination: { page: 1, limit: 25, total: 1, totalPages: 1, hasMore: false },
+    });
+    mockGetById.mockResolvedValue({ ...splitTx, splits: [] });
+    await renderSection();
+    await waitFor(() => {
+      expect(screen.getByText('Split Vendor')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Split Vendor'));
+    });
+
+    expect(mockGetById).toHaveBeenCalledWith('tx-2');
+    expect(screen.getByTestId('transaction-form')).toBeInTheDocument();
+  });
+
+  it('reloads data when the list requests a refresh (e.g. after delete)', async () => {
+    await renderSection();
+    await waitFor(() => {
+      expect(screen.getByText('refresh-list')).toBeInTheDocument();
+    });
+    expect(mockGetFxFeeSummary).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('refresh-list'));
+    });
+
+    await waitFor(() => {
+      expect(mockGetFxFeeSummary).toHaveBeenCalledTimes(2);
+    });
+  });
+});

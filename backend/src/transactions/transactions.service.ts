@@ -2483,6 +2483,10 @@ export class TransactionsService {
     );
   }
 
+  async getFxFeeSummary(userId: string, accountId: string) {
+    return this.analyticsService.getFxFeeSummary(userId, accountId);
+  }
+
   async getSplits(userId: string, transactionId: string) {
     await this.findOne(userId, transactionId);
     return this.splitService.getSplits(transactionId);

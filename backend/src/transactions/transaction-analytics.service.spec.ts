@@ -45,6 +45,7 @@ describe("TransactionAnalyticsService", () => {
       addGroupBy: jest.fn().mockReturnValue(mockQueryBuilder),
       having: jest.fn().mockReturnValue(mockQueryBuilder),
       orderBy: jest.fn().mockReturnValue(mockQueryBuilder),
+      addOrderBy: jest.fn().mockReturnValue(mockQueryBuilder),
       limit: jest.fn().mockReturnValue(mockQueryBuilder),
       setParameter: jest.fn().mockReturnValue(mockQueryBuilder),
       setParameters: jest.fn().mockReturnValue(mockQueryBuilder),
@@ -2702,6 +2703,66 @@ describe("TransactionAnalyticsService", () => {
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         "LOWER(TRIM(SPLIT_PART(brkTag.name, ':', 1))) = LOWER(:brkKey)",
         { brkKey: "Country" },
+      );
+    });
+  });
+
+  describe("getFxFeeSummary", () => {
+    it("returns empty array when the account has no foreign transactions", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([]);
+
+      const result = await service.getFxFeeSummary(userId, "acc-1");
+
+      expect(result).toEqual([]);
+    });
+
+    it("maps monthly rows per paid currency with numeric fee totals", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        { month: "2026-01", currencyCode: "EUR", feeTotal: "12.5", count: "3" },
+        { month: "2026-01", currencyCode: "USD", feeTotal: "0", count: "2" },
+        { month: "2026-02", currencyCode: "EUR", feeTotal: "4.25", count: "1" },
+      ]);
+
+      const result = await service.getFxFeeSummary(userId, "acc-1");
+
+      expect(result).toEqual([
+        { month: "2026-01", currencyCode: "EUR", feeTotal: 12.5, count: 3 },
+        { month: "2026-01", currencyCode: "USD", feeTotal: 0, count: 2 },
+        { month: "2026-02", currencyCode: "EUR", feeTotal: 4.25, count: 1 },
+      ]);
+    });
+
+    it("scopes to the user and account, joins only fee splits, and excludes void and child rows", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([]);
+
+      await service.getFxFeeSummary(userId, "acc-1");
+
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        "transaction.userId = :userId",
+        { userId },
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "transaction.accountId = :accountId",
+        { accountId: "acc-1" },
+      );
+      expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith(
+        "transaction.splits",
+        "fxFeeSplit",
+        "fxFeeSplit.isFxFee = :isFxFee",
+        { isFxFee: true },
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "transaction.originalCurrencyCode IS NOT NULL",
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "transaction.parentTransactionId IS NULL",
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "transaction.status != :voidStatus",
+        { voidStatus: "VOID" },
+      );
+      expect(mockQueryBuilder.addGroupBy).toHaveBeenCalledWith(
+        "transaction.originalCurrencyCode",
       );
     });
   });

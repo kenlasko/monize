@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Brackets, Repository } from "typeorm";
-import { Transaction } from "./entities/transaction.entity";
+import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { Category } from "../categories/entities/category.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { getAllCategoryIdsWithChildren } from "../common/category-tree.util";
@@ -23,6 +23,17 @@ import {
 import { RecurringCharge, detectFrequency } from "./recurring-charges.util";
 import { roundMoney, sumMoney } from "../common/round.util";
 import { suggestClosestNames } from "../common/name-suggestions.util";
+
+export interface FxFeeMonthlySummaryRow {
+  /** Calendar month in 'YYYY-MM'. */
+  month: string;
+  /** The currency the transaction was paid in (originalCurrencyCode). */
+  currencyCode: string;
+  /** Foreign-transaction fees for the month, positive, in account currency. */
+  feeTotal: number;
+  /** Number of foreign-entered transactions in the month. */
+  count: number;
+}
 
 export interface TransferAccountSummary {
   accountId: string | null;
@@ -840,6 +851,52 @@ export class TransactionAnalyticsService {
     return rows.map((row) => ({
       month: row.month,
       total: roundMoney(Number(row.total) || 0),
+      count: Number(row.count) || 0,
+    }));
+  }
+
+  /**
+   * Per-month foreign-transaction fee totals for one account, grouped by the
+   * currency the transaction was paid in. Rows cover every non-void
+   * foreign-entered transaction on the account (original_currency_code set);
+   * the fee itself comes from the auto-generated is_fx_fee split, so a month
+   * whose transactions predate the account's configured fee percentage sums
+   * to 0 rather than being dropped. Fee amounts are returned positive in the
+   * account currency (the stored fee split amount is negative for a charge).
+   */
+  async getFxFeeSummary(
+    userId: string,
+    accountId: string,
+  ): Promise<FxFeeMonthlySummaryRow[]> {
+    const rows = await this.transactionsRepository
+      .createQueryBuilder("transaction")
+      .leftJoin(
+        "transaction.splits",
+        "fxFeeSplit",
+        "fxFeeSplit.isFxFee = :isFxFee",
+        { isFxFee: true },
+      )
+      .where("transaction.userId = :userId", { userId })
+      .andWhere("transaction.accountId = :accountId", { accountId })
+      .andWhere("transaction.originalCurrencyCode IS NOT NULL")
+      .andWhere("transaction.parentTransactionId IS NULL")
+      .andWhere("transaction.status != :voidStatus", {
+        voidStatus: TransactionStatus.VOID,
+      })
+      .select("TO_CHAR(transaction.transactionDate, 'YYYY-MM')", "month")
+      .addSelect("transaction.originalCurrencyCode", "currencyCode")
+      .addSelect("COALESCE(SUM(-fxFeeSplit.amount), 0)", "feeTotal")
+      .addSelect("COUNT(DISTINCT transaction.id)", "count")
+      .groupBy("month")
+      .addGroupBy("transaction.originalCurrencyCode")
+      .orderBy("month", "ASC")
+      .addOrderBy("transaction.originalCurrencyCode", "ASC")
+      .getRawMany();
+
+    return rows.map((row) => ({
+      month: row.month,
+      currencyCode: row.currencyCode,
+      feeTotal: roundMoney(Number(row.feeTotal) || 0),
       count: Number(row.count) || 0,
     }));
   }

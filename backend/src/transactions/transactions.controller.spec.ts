@@ -42,6 +42,7 @@ describe("TransactionsController", () => {
       getRecurringCharges: jest.fn(),
       bulkUpdate: jest.fn(),
       getRecent: jest.fn(),
+      getFxFeeSummary: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -1516,6 +1517,34 @@ describe("TransactionsController", () => {
           "xyz",
         ),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe("getFxFeeSummary()", () => {
+    it("delegates to service.getFxFeeSummary with userId and accountId", async () => {
+      const expected = [
+        { month: "2026-01", currencyCode: "EUR", feeTotal: 12.5, count: 3 },
+      ];
+      mockService.getFxFeeSummary.mockResolvedValue(expected);
+
+      const result = await controller.getFxFeeSummary(mockReq, uuid1);
+
+      expect(result).toEqual(expected);
+      expect(mockService.getFxFeeSummary).toHaveBeenCalledWith(
+        "user-1",
+        uuid1,
+      );
+    });
+
+    it("returns empty for a delegate without READ access to the account", async () => {
+      const delegateReq = {
+        user: { id: "user-1", isActing: true, delegationId: "delegation-1" },
+      };
+
+      const result = await controller.getFxFeeSummary(delegateReq, uuid1);
+
+      expect(result).toEqual([]);
+      expect(mockService.getFxFeeSummary).not.toHaveBeenCalled();
     });
   });
 });
