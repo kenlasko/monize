@@ -405,7 +405,7 @@
       "optionLabel": "[XX-{symbol} -- {code} {name}-XX]"
     },
     "fx": {
-      "convertedAmount": "[XX-Converted amount ({currency})-XX]",
+      "totalInCurrency": "[XX-Total in {currency}-XX]",
       "rateCaption": "[XX-1 {from} = {rate} {to} ({date})-XX]",
       "noRateWarning": "[XX-No exchange rate found for {from} to {to} on {date}. Enter the converted amount manually.-XX]",
       "usingLatestRateHint": "[XX-Using the latest available rate (not dated {date}).-XX]",

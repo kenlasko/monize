@@ -44,6 +44,9 @@ interface SplitTransactionFieldsProps {
   amountValue?: number;
   /** Overrides the currency whose symbol prefixes the Total Amount input. */
   amountCurrencyCode?: string;
+  /** Overrides the Total Amount input's label (e.g. "Total in USD" when entering
+   *  a foreign currency). Defaults to the plain "Total Amount" label. */
+  amountLabel?: string;
 }
 
 export function SplitTransactionFields({
@@ -68,6 +71,7 @@ export function SplitTransactionFields({
   fxCaptionSlot,
   amountValue,
   amountCurrencyCode,
+  amountLabel,
 }: SplitTransactionFieldsProps) {
   const t = useTranslations('transactions');
   const historyButtonRef = useRef<HTMLButtonElement>(null);
@@ -171,7 +175,7 @@ export function SplitTransactionFields({
             {(() => {
               const totalInput = (
                 <CurrencyInput
-                  label={t('form.fields.totalAmount')}
+                  label={amountLabel ?? t('form.fields.totalAmount')}
                   prefix={getCurrencySymbol(amountCurrencyCode || watchedCurrencyCode)}
                   value={amountValue !== undefined ? amountValue : watchedAmount}
                   onChange={handleAmountChange}

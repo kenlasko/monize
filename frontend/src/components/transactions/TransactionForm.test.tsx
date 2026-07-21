@@ -3601,8 +3601,10 @@ describe('TransactionForm', () => {
         ),
       );
       await waitFor(() =>
-        expect(screen.getByText(/Converted amount \(CAD\)/)).toBeInTheDocument(),
+        expect(screen.getByText('Total in CAD')).toBeInTheDocument(),
       );
+      // The primary amount field is relabelled to the entry currency.
+      expect(screen.getByText('Total in EUR')).toBeInTheDocument();
     });
 
     it('folds the bank fee into the amount without creating a split', async () => {

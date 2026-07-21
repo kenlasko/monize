@@ -184,6 +184,29 @@ describe('NormalTransactionFields', () => {
     expect(screen.getByText('Reference Number')).toBeInTheDocument();
   });
 
+  it('uses the amountLabel override for the Amount input when provided', () => {
+    render(<NormalTransactionFields {...defaultProps} amountLabel="Total in USD" />);
+
+    expect(screen.getByText('Total in USD')).toBeInTheDocument();
+    expect(screen.queryByText('Amount')).not.toBeInTheDocument();
+  });
+
+  it('drops Reference Number to its own line on mobile in the foreign-currency layout', () => {
+    const { container } = render(
+      <NormalTransactionFields
+        {...defaultProps}
+        amountLabel="Total in EUR"
+        convertedAmountSlot={<div data-testid="converted-slot" />}
+      />,
+    );
+
+    // The two amount fields share a row on mobile (grid-cols-2) while Reference
+    // Number spans the full width on its own line (col-span-2, md:col-span-1).
+    const refWrapper = container.querySelector('.col-span-2');
+    expect(refWrapper).not.toBeNull();
+    expect(refWrapper).toHaveTextContent('Reference Number');
+  });
+
   // --- New tests below ---
 
   it('filters out investment brokerage accounts from the Account dropdown', () => {

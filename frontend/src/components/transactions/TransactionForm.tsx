@@ -1167,7 +1167,7 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
   // and fee text render together on one line below, spanning both columns.
   const convertedAmountSlot = isForeign ? (
     <CurrencyInput
-      label={t('form.fx.convertedAmount', { currency: accountCurrency })}
+      label={t('form.fx.totalInCurrency', { currency: accountCurrency })}
       prefix={getCurrencySymbol(accountCurrency)}
       value={fxTotal}
       onChange={handleConvertedTotalOverride}
@@ -1289,6 +1289,7 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
           fxCaptionSlot={fxCaptionSlot}
           amountValue={isForeign ? foreignAmount : undefined}
           amountCurrencyCode={isForeign ? entryCurrency : undefined}
+          amountLabel={isForeign ? t('form.fx.totalInCurrency', { currency: entryCurrency }) : undefined}
         />
       )}
 
@@ -1315,6 +1316,7 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
           fxCaptionSlot={fxCaptionSlot}
           amountValue={isForeign ? foreignAmount : undefined}
           amountCurrencyCode={isForeign ? entryCurrency : undefined}
+          amountLabel={isForeign ? t('form.fx.totalInCurrency', { currency: entryCurrency }) : undefined}
         />
       )}
 

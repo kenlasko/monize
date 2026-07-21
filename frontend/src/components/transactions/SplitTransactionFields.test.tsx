@@ -166,6 +166,13 @@ describe('SplitTransactionFields', () => {
     expect(screen.getByText('Total Amount')).toBeInTheDocument();
   });
 
+  it('uses the amountLabel override for the Total Amount input when provided', () => {
+    render(<SplitTransactionFields {...defaultProps} amountLabel="Total in USD" />);
+
+    expect(screen.getByText('Total in USD')).toBeInTheDocument();
+    expect(screen.queryByText('Total Amount')).not.toBeInTheDocument();
+  });
+
   it('renders Reference Number input', () => {
     render(<SplitTransactionFields {...defaultProps} />);
 

@@ -54,6 +54,9 @@ interface NormalTransactionFieldsProps {
   /** Overrides the currency whose symbol prefixes the Amount input. Defaults to
    *  watchedCurrencyCode (the account currency). */
   amountCurrencyCode?: string;
+  /** Overrides the Amount input's label (e.g. "Total in USD" when entering a
+   *  foreign currency). Defaults to the plain "Amount" label. */
+  amountLabel?: string;
 }
 
 export function NormalTransactionFields({
@@ -84,6 +87,7 @@ export function NormalTransactionFields({
   fxCaptionSlot,
   amountValue,
   amountCurrencyCode,
+  amountLabel,
 }: NormalTransactionFieldsProps) {
   const t = useTranslations('transactions');
   const historyButtonRef = useRef<HTMLButtonElement>(null);
@@ -226,7 +230,7 @@ export function NormalTransactionFields({
       {(() => {
         const amountInput = (
           <CurrencyInput
-            label={t('form.fields.amount')}
+            label={amountLabel ?? t('form.fields.amount')}
             prefix={getCurrencySymbol(amountCurrencyCode || watchedCurrencyCode)}
             value={amountValue !== undefined ? amountValue : watchedAmount}
             onChange={handleAmountChange}
@@ -247,10 +251,12 @@ export function NormalTransactionFields({
           <div>
             <div className="flex items-stretch space-x-2">
               {currencyPickerSlot}
-              <div className="grid grid-cols-3 gap-4 flex-1 min-w-0">
+              {/* On mobile the two amount fields sit side by side and Reference
+                  Number wraps to its own line; on md+ all three share a row. */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 flex-1 min-w-0">
                 {amountInput}
                 {convertedAmountSlot}
-                {referenceInput}
+                <div className="col-span-2 md:col-span-1">{referenceInput}</div>
               </div>
             </div>
             {fxCaptionSlot}
