@@ -238,6 +238,18 @@ vi.mock('@/lib/tags', () => ({
   },
 }));
 
+const mockGetRateForDate = vi.fn();
+const mockGetCurrencies = vi.fn();
+vi.mock('@/lib/exchange-rates', () => ({
+  exchangeRatesApi: {
+    getRateForDate: (...args: any[]) => mockGetRateForDate(...args),
+    getCurrencies: (...args: any[]) => mockGetCurrencies(...args),
+    createCurrency: vi.fn(),
+  },
+  CurrencyInfo: {},
+  CreateCurrencyData: {},
+}));
+
 vi.mock('@/hooks/useNumberFormat', () => ({
   useNumberFormat: () => ({ defaultCurrency: 'CAD' }),
 }));
@@ -430,6 +442,11 @@ describe('TransactionForm', () => {
     mockPayeesGetAll.mockResolvedValue(mockPayees);
     mockCategoriesGetAll.mockResolvedValue(mockCategories);
     mockGetRecent.mockResolvedValue([]);
+    mockGetRateForDate.mockResolvedValue(1.5);
+    mockGetCurrencies.mockResolvedValue([
+      { code: 'CAD', name: 'Canadian Dollar', symbol: 'CA$', decimalPlaces: 2, isActive: true },
+      { code: 'EUR', name: 'Euro', symbol: '€', decimalPlaces: 2, isActive: true },
+    ]);
   });
 
   // =========================================================================
@@ -3547,6 +3564,41 @@ describe('TransactionForm', () => {
 
       fireEvent.click(screen.getByText('Cancel Split'));
       await waitFor(() => expect(screen.queryByTestId('split-editor')).not.toBeInTheDocument());
+    });
+  });
+
+  describe('foreign-currency entry', () => {
+    it('fetches the rate and shows the converted-amount panel after picking a foreign currency', async () => {
+      render(
+        <TransactionForm
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+          defaultAccountId="acc-1"
+        />,
+      );
+      await waitFor(() => expect(mockAccountsGetAll).toHaveBeenCalled());
+
+      // Open the entry-currency picker and choose EUR.
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText('Change entry currency'));
+      });
+      await waitFor(() => expect(screen.getByText(/EUR Euro/)).toBeInTheDocument());
+      await act(async () => {
+        fireEvent.click(screen.getByText(/EUR Euro/));
+      });
+
+      // The rate is fetched for EUR -> account currency (CAD), and the FX panel
+      // with the converted account-currency amount appears.
+      await waitFor(() =>
+        expect(mockGetRateForDate).toHaveBeenCalledWith(
+          'EUR',
+          'CAD',
+          expect.any(String),
+        ),
+      );
+      await waitFor(() =>
+        expect(screen.getByText(/Converted amount \(CAD\)/)).toBeInTheDocument(),
+      );
     });
   });
 });
