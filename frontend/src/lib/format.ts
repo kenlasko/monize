@@ -15,6 +15,22 @@ export function getCurrencySymbol(currencyCode: string): string {
 }
 
 /**
+ * Resolve the currency symbol to display for a currency row. Prefers an
+ * explicit stored symbol when it holds a real value, and falls back to the
+ * Intl-derived symbol for the code when the stored value is blank/whitespace
+ * (or missing entirely). This keeps the currencies table consistent with the
+ * rest of the app, which always derives symbols from the code, so the Symbol
+ * column never renders empty.
+ */
+export function resolveCurrencySymbol(
+  storedSymbol: string | null | undefined,
+  currencyCode: string,
+): string {
+  const trimmed = storedSymbol?.trim();
+  return trimmed || getCurrencySymbol(currencyCode);
+}
+
+/**
  * Format a number as currency with the specified currency code.
  *
  * **Prefer `useNumberFormat()` for any user-facing render.** This pure
