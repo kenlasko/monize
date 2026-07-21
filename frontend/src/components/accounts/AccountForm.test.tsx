@@ -249,6 +249,18 @@ describe('AccountForm', () => {
     });
   });
 
+  it('loads categories on mount for any account type (so the fee-category picker has options)', async () => {
+    // Default new account is CHEQUING (not loan/mortgage/asset); the FX fee
+    // category dropdown still needs the category list.
+    render(
+      <AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
+    );
+
+    await waitFor(() => {
+      expect(categoriesApi.getAll).toHaveBeenCalled();
+    });
+  });
+
   it('renders account type select with options', async () => {
     render(
       <AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />

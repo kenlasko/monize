@@ -473,26 +473,26 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
     [categories],
   );
 
-  // Load accounts and categories when LOAN, MORTGAGE, LINE_OF_CREDIT, or ASSET type is selected
-  // For assets: always (to allow editing the value change category)
-  // For loans/mortgages: for new creation or when editing accounts that need payment setup
+  // Categories are always loaded so the foreign-transaction fee category picker
+  // has options for every account type. Source accounts (and the loan/mortgage
+  // default-category logic) are only needed for LOAN, MORTGAGE, LINE_OF_CREDIT,
+  // or ASSET accounts, so that heavier fetch stays gated.
   const isLineOfCreditAccount = watchedAccountType === 'LINE_OF_CREDIT';
   useEffect(() => {
-    const shouldLoadForLoan = isLoanAccount;
-    const shouldLoadForMortgage = isMortgageAccount;
-    const shouldLoadForLineOfCredit = isLineOfCreditAccount;
-    const shouldLoadForAsset = isAssetAccount;
+    const needAccounts =
+      isLoanAccount || isMortgageAccount || isLineOfCreditAccount || isAssetAccount;
 
-    if (shouldLoadForLoan || shouldLoadForMortgage || shouldLoadForLineOfCredit || shouldLoadForAsset) {
-      const loadData = async () => {
-        try {
-          const [accountsData, categoriesData] = await Promise.all([
-            accountsApi.getAll(false),
-            categoriesApi.getAll(),
-          ]);
+    const loadData = async () => {
+      try {
+        const [categoriesData, accountsData] = await Promise.all([
+          categoriesApi.getAll(),
+          needAccounts ? accountsApi.getAll(false) : Promise.resolve(null),
+        ]);
+        setCategories(categoriesData);
+        if (accountsData) {
           // Filter out loan and mortgage accounts from source account options
           setAccounts(accountsData.filter(a => a.accountType !== 'LOAN' && a.accountType !== 'MORTGAGE'));
-          setCategories(categoriesData);
+        }
 
           if (isLoanAccount && !account) {
             // Find default loan interest category
@@ -528,12 +528,11 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
               }
             }
           }
-        } catch (error) {
-          logger.error('Failed to load accounts/categories:', error);
-        }
-      };
-      loadData();
-    }
+      } catch (error) {
+        logger.error('Failed to load accounts/categories:', error);
+      }
+    };
+    loadData();
   }, [isLoanAccount, isMortgageAccount, isLineOfCreditAccount, isAssetAccount, account, setValue, getValues]);
 
   const toggleFavourite = () => {
