@@ -170,30 +170,35 @@ export function SplitTransactionFields({
           )}
         </div>
         <div>
-          <div className="flex items-stretch space-x-2">
-            {currencyPickerSlot}
-            {(() => {
-              const totalInput = (
-                <CurrencyInput
-                  label={amountLabel ?? t('form.fields.totalAmount')}
-                  prefix={getCurrencySymbol(amountCurrencyCode || watchedCurrencyCode)}
-                  value={amountValue !== undefined ? amountValue : watchedAmount}
-                  onChange={handleAmountChange}
-                  error={errors.amount?.message as string | undefined}
-                />
-              );
-              // In foreign mode the converted amount sits beside the total at
-              // equal width; otherwise the total fills the column.
-              return convertedAmountSlot ? (
-                <div className="grid grid-cols-2 gap-4 flex-1 min-w-0">
-                  {totalInput}
-                  {convertedAmountSlot}
-                </div>
-              ) : (
+          {(() => {
+            const totalInput = (
+              <CurrencyInput
+                label={amountLabel ?? t('form.fields.totalAmount')}
+                prefix={getCurrencySymbol(amountCurrencyCode || watchedCurrencyCode)}
+                value={amountValue !== undefined ? amountValue : watchedAmount}
+                onChange={handleAmountChange}
+                error={errors.amount?.message as string | undefined}
+              />
+            );
+            // The currency picker stays attached to the total input.
+            const pickerAndTotal = (
+              <div className="flex items-stretch space-x-2">
+                {currencyPickerSlot}
                 <div className="flex-1 min-w-0">{totalInput}</div>
-              );
-            })()}
-          </div>
+              </div>
+            );
+            // In foreign mode the total and converted amount each sit on their
+            // own line on mobile and share a row from md up; otherwise the
+            // total fills the column.
+            return convertedAmountSlot ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {pickerAndTotal}
+                {convertedAmountSlot}
+              </div>
+            ) : (
+              pickerAndTotal
+            );
+          })()}
           {fxCaptionSlot}
         </div>
       </div>

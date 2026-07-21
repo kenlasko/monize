@@ -173,6 +173,25 @@ describe('SplitTransactionFields', () => {
     expect(screen.queryByText('Total Amount')).not.toBeInTheDocument();
   });
 
+  it('stacks the total and converted amount fields on their own lines on mobile in the foreign-currency layout', () => {
+    render(
+      <SplitTransactionFields
+        {...defaultProps}
+        amountLabel="Total in USD"
+        convertedAmountSlot={<div data-testid="converted-slot">Total in CAD</div>}
+      />,
+    );
+
+    // The converted amount slot is a direct child of the amount grid, which
+    // stacks on mobile (grid-cols-1) and only pairs the two currency fields
+    // from md up (md:grid-cols-2).
+    const grid = screen.getByTestId('converted-slot').parentElement;
+    expect(grid?.className).toContain('grid-cols-1');
+    expect(grid?.className).toContain('md:grid-cols-2');
+    expect(grid).toHaveTextContent('Total in USD');
+    expect(grid).toHaveTextContent('Total in CAD');
+  });
+
   it('renders Reference Number input', () => {
     render(<SplitTransactionFields {...defaultProps} />);
 

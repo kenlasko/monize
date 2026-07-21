@@ -191,20 +191,23 @@ describe('NormalTransactionFields', () => {
     expect(screen.queryByText('Amount')).not.toBeInTheDocument();
   });
 
-  it('drops Reference Number to its own line on mobile in the foreign-currency layout', () => {
+  it('stacks each currency field and Reference Number on its own line on mobile in the foreign-currency layout', () => {
     const { container } = render(
       <NormalTransactionFields
         {...defaultProps}
         amountLabel="Total in EUR"
-        convertedAmountSlot={<div data-testid="converted-slot" />}
+        convertedAmountSlot={<div data-testid="converted-slot">Total in CAD</div>}
       />,
     );
 
-    // The two amount fields share a row on mobile (grid-cols-2) while Reference
-    // Number spans the full width on its own line (col-span-2, md:col-span-1).
-    const refWrapper = container.querySelector('.col-span-2');
-    expect(refWrapper).not.toBeNull();
-    expect(refWrapper).toHaveTextContent('Reference Number');
+    // The foreign layout stacks every field on mobile (grid-cols-1) and only
+    // packs the amount, converted amount, and Reference Number into one row
+    // from md up (md:grid-cols-3).
+    const grid = container.querySelector('.grid-cols-1.md\\:grid-cols-3');
+    expect(grid).not.toBeNull();
+    expect(grid).toHaveTextContent('Total in EUR');
+    expect(grid).toHaveTextContent('Total in CAD');
+    expect(grid).toHaveTextContent('Reference Number');
   });
 
   // --- New tests below ---
