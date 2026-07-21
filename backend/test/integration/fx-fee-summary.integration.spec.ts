@@ -144,7 +144,10 @@ describe("TransactionsService.getFxFeeSummary (integration)", () => {
     ]);
   });
 
-  it("uses the is_fx_fee split amount for a split foreign transaction", async () => {
+  it("recovers the folded-in fee for a split foreign transaction", async () => {
+    // A split foreign transaction folds the fee into the parent amount exactly
+    // like an ordinary one; the category splits sum to that fee-inclusive total
+    // (-101.19 + -63.02 = -164.21). base 160.20 - amount 164.21 = 4.01.
     const category = await createTestCategory(dataSource, userId);
     const parent = await insertTransaction({
       amount: -164.21,
@@ -157,16 +160,14 @@ describe("TransactionsService.getFxFeeSummary (integration)", () => {
       dataSource.manager.create(TransactionSplit, {
         transactionId: parent.id,
         categoryId: category.id,
-        amount: -160.2,
-        isFxFee: false,
+        amount: -101.19,
       } as Partial<TransactionSplit>),
     );
     await dataSource.manager.save(
       dataSource.manager.create(TransactionSplit, {
         transactionId: parent.id,
         categoryId: category.id,
-        amount: -4.01,
-        isFxFee: true,
+        amount: -63.02,
       } as Partial<TransactionSplit>),
     );
 

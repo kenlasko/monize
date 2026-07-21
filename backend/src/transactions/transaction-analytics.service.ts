@@ -860,11 +860,11 @@ export class TransactionAnalyticsService {
    * currency the transaction was paid in. Rows cover every non-void
    * foreign-entered transaction on the account (original_currency_code set).
    *
-   * The fee is recovered per transaction: for an ordinary foreign entry the
-   * bank's fee is folded into `amount` (amount = round(originalAmount x
-   * exchangeRate) + fee, with fee <= 0), so the fee is
-   * round(originalAmount x exchangeRate) - amount. A split transaction instead
-   * carries the fee as its explicit is_fx_fee split. Either way a month whose
+   * The fee is recovered per transaction: the bank's fee is folded into
+   * `amount` (amount = round(originalAmount x exchangeRate) + fee, with
+   * fee <= 0) for both ordinary and split transactions -- a split's category
+   * lines simply sum to that fee-inclusive total -- so the fee is
+   * round(originalAmount x exchangeRate) - amount in every case. A month whose
    * transactions predate the account's fee percentage sums to 0 rather than
    * being dropped. Fee amounts are returned positive in the account currency.
    */
@@ -872,25 +872,13 @@ export class TransactionAnalyticsService {
     userId: string,
     accountId: string,
   ): Promise<FxFeeMonthlySummaryRow[]> {
-    // The join alias is referenced with its explicit quoted form: TypeORM
-    // rewrites `alias.property` tokens in raw expressions for the main entity,
-    // but not for a bare leftJoin alias, so an unquoted `fxFeeSplit.amount`
-    // reaches Postgres folded to lowercase and misses the "fxFeeSplit" join.
     const feeExpr =
-      "CASE WHEN transaction.isSplit = true " +
-      'THEN COALESCE(-"fxFeeSplit"."amount", 0) ' +
-      "WHEN transaction.originalAmount IS NULL THEN 0 " +
+      "CASE WHEN transaction.originalAmount IS NULL THEN 0 " +
       "ELSE ROUND(transaction.originalAmount * transaction.exchangeRate, 2) - transaction.amount " +
       "END";
 
     const rows = await this.transactionsRepository
       .createQueryBuilder("transaction")
-      .leftJoin(
-        "transaction.splits",
-        "fxFeeSplit",
-        "fxFeeSplit.isFxFee = :isFxFee",
-        { isFxFee: true },
-      )
       .where("transaction.userId = :userId", { userId })
       .andWhere("transaction.accountId = :accountId", { accountId })
       .andWhere("transaction.originalCurrencyCode IS NOT NULL")

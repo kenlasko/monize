@@ -79,27 +79,31 @@ describe('foreignTransactionFee', () => {
     expect(result).toBeCloseTo(5.5, 4);
   });
 
-  it('sums is_fx_fee splits for a split transaction', () => {
+  it('recovers the folded-in fee for a split transaction (amount includes the fee)', () => {
+    // base = round(-100 x 1.38) = -138; amount -141.45 = base + fee, splits sum
+    // to that fee-inclusive total. fee = 3.45, regardless of the split lines.
     const result = foreignTransactionFee(
       tx({
         originalAmount: -100,
         originalCurrencyCode: 'EUR',
-        amount: -138,
+        exchangeRate: 1.38,
+        amount: -141.45,
         isSplit: true,
         splits: [
-          { id: 's1', amount: -134.5 } as TransactionSplit,
-          { id: 's2', amount: -3.5, isFxFee: true } as TransactionSplit,
+          { id: 's1', amount: -100 } as TransactionSplit,
+          { id: 's2', amount: -41.45 } as TransactionSplit,
         ],
       }),
     );
-    expect(result).toBeCloseTo(3.5, 4);
+    expect(result).toBeCloseTo(3.45, 4);
   });
 
-  it('returns 0 for a split transaction without a fee split', () => {
+  it('returns 0 for a split foreign transaction recorded without a fee', () => {
     const result = foreignTransactionFee(
       tx({
         originalAmount: -100,
         originalCurrencyCode: 'EUR',
+        exchangeRate: 1.38,
         amount: -138,
         isSplit: true,
         splits: [{ id: 's1', amount: -138 } as TransactionSplit],

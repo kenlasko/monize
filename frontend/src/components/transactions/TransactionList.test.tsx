@@ -2843,11 +2843,14 @@ describe('TransactionList', () => {
         originalCurrencyCode: 'EUR',
       });
 
-    // A split foreign transaction carries the fee as an explicit is_fx_fee split.
+    // A split foreign transaction folds the fee into `amount` exactly like an
+    // ordinary one; its category lines sum to that fee-inclusive total
+    // (-100 + -41.45 = -141.45). base 138 - amount 141.45 => fee 3.45.
     const splitFeeTransaction = () =>
       createTransaction({
-        amount: -138.0,
+        amount: -141.45,
         currencyCode: 'CAD',
+        exchangeRate: 1.38,
         originalAmount: -100.0,
         originalCurrencyCode: 'EUR',
         isSplit: true,
@@ -2860,7 +2863,7 @@ describe('TransactionList', () => {
             transferAccountId: null,
             transferAccount: null,
             linkedTransactionId: null,
-            amount: -134.5,
+            amount: -100.0,
             memo: null,
             createdAt: '2024-01-15T00:00:00Z',
           },
@@ -2868,13 +2871,12 @@ describe('TransactionList', () => {
             id: 'split-2',
             transactionId: '123e4567-e89b-12d3-a456-426614174000',
             categoryId: 'cat-2',
-            category: { id: 'cat-2', name: 'Bank Fees', color: null } as any,
+            category: { id: 'cat-2', name: 'Dining', color: null } as any,
             transferAccountId: null,
             transferAccount: null,
             linkedTransactionId: null,
-            amount: -3.5,
+            amount: -41.45,
             memo: null,
-            isFxFee: true,
             createdAt: '2024-01-15T00:00:00Z',
           },
         ],
@@ -2918,7 +2920,7 @@ describe('TransactionList', () => {
       expect(screen.getByText('$3.45')).toBeInTheDocument();
     });
 
-    it('uses the is_fx_fee split amount for a split foreign transaction', async () => {
+    it('derives the folded-in fee for a split foreign transaction', async () => {
       render(
         <TransactionList
           transactions={[splitFeeTransaction()]}
@@ -2931,8 +2933,8 @@ describe('TransactionList', () => {
       await waitFor(() => {
         expect(screen.getByText('EUR')).toBeInTheDocument();
       });
-      // Fee: the -3.50 fee split shown as a positive cost.
-      expect(screen.getByText('$3.50')).toBeInTheDocument();
+      // Fee: base 138 - amount 141.45 = 3.45, from the parent amount not a split.
+      expect(screen.getByText('$3.45')).toBeInTheDocument();
     });
 
     it('shows a dash in the fee column when a foreign transaction has no fee', async () => {

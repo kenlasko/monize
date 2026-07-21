@@ -2732,7 +2732,7 @@ describe("TransactionAnalyticsService", () => {
       ]);
     });
 
-    it("scopes to the user and account, joins only fee splits, and excludes void and child rows", async () => {
+    it("scopes to the user and account and excludes void and child rows", async () => {
       mockQueryBuilder.getRawMany.mockResolvedValue([]);
 
       await service.getFxFeeSummary(userId, "acc-1");
@@ -2744,12 +2744,6 @@ describe("TransactionAnalyticsService", () => {
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         "transaction.accountId = :accountId",
         { accountId: "acc-1" },
-      );
-      expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith(
-        "transaction.splits",
-        "fxFeeSplit",
-        "fxFeeSplit.isFxFee = :isFxFee",
-        { isFxFee: true },
       );
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         "transaction.originalCurrencyCode IS NOT NULL",
@@ -2766,7 +2760,7 @@ describe("TransactionAnalyticsService", () => {
       );
     });
 
-    it("derives the fee from the folded-in amount for ordinary entries and the is_fx_fee split for split transactions", async () => {
+    it("derives the fee from the folded-in amount for every foreign entry", async () => {
       mockQueryBuilder.getRawMany.mockResolvedValue([]);
 
       await service.getFxFeeSummary(userId, "acc-1");
@@ -2776,13 +2770,13 @@ describe("TransactionAnalyticsService", () => {
       );
       expect(feeSelect).toBeDefined();
       const expr = feeSelect[0] as string;
-      // Ordinary foreign entry: fee folded into amount.
+      // The fee is folded into amount for both ordinary and split entries.
       expect(expr).toContain(
         "ROUND(transaction.originalAmount * transaction.exchangeRate, 2) - transaction.amount",
       );
-      // Split transaction: explicit is_fx_fee split (quoted join alias).
-      expect(expr).toContain('COALESCE(-"fxFeeSplit"."amount", 0)');
-      expect(expr).toContain("transaction.isSplit = true");
+      // No dependency on the dormant is_fx_fee split mechanism.
+      expect(expr).not.toContain("fxFeeSplit");
+      expect(mockQueryBuilder.leftJoin).not.toHaveBeenCalled();
     });
   });
 });
