@@ -18,9 +18,9 @@ vi.mock('next/navigation', async () => {
 
 vi.mock('@/lib/exchange-rates', () => ({
   exchangeRatesApi: {
-    getCurrencies: vi.fn().mockResolvedValue([
-      { code: 'USD', name: 'US Dollar' },
-      { code: 'CAD', name: 'Canadian Dollar' },
+    getCurrencyCatalog: vi.fn().mockResolvedValue([
+      { code: 'USD', name: 'US Dollar', symbol: '$', decimalPlaces: 2 },
+      { code: 'CAD', name: 'Canadian Dollar', symbol: 'CA$', decimalPlaces: 2 },
     ]),
   },
 }));
@@ -53,7 +53,7 @@ describe('OnboardingPreferences', () => {
     expect(screen.getByText('Language')).toBeInTheDocument();
     expect(screen.getByText('Default currency')).toBeInTheDocument();
     await waitFor(() =>
-      expect(screen.getByText('CAD - Canadian Dollar')).toBeInTheDocument(),
+      expect(screen.getByText('CA$ - Canadian Dollar (CAD)')).toBeInTheDocument(),
     );
   });
 
@@ -62,7 +62,7 @@ describe('OnboardingPreferences', () => {
     const { onComplete } = await renderOnboarding();
 
     await waitFor(() =>
-      expect(screen.getByText('CAD - Canadian Dollar')).toBeInTheDocument(),
+      expect(screen.getByText('CA$ - Canadian Dollar (CAD)')).toBeInTheDocument(),
     );
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Default currency'), {

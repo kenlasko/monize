@@ -77,6 +77,18 @@ export class CurrenciesController {
 
   // ── Static-segment routes (must be BEFORE :code param route) ────
 
+  @Get("catalog")
+  @AllowDelegate()
+  @ApiOperation({
+    summary: "Get the catalog of known currencies",
+    description:
+      "Curated currency metadata (code, name, symbol, decimal places) used to pick a currency before any are installed, e.g. at onboarding.",
+  })
+  @ApiResponse({ status: 200, description: "Known currency catalog" })
+  getCatalog(): CurrencyLookupResult[] {
+    return this.currenciesService.getCatalog();
+  }
+
   @Get("lookup")
   @AllowDelegate()
   @Throttle({ default: { ttl: 60000, limit: 10 } }) // L2: 10 lookups per minute

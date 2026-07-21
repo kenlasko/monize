@@ -125,6 +125,14 @@ export const exchangeRatesApi = {
     await apiClient.delete(`/currencies/${code}`);
   },
 
+  // The catalog of known currencies (code, name, symbol, decimal places) used
+  // to pick a currency before any are installed (e.g. at onboarding), since
+  // currencies are created on demand rather than pre-seeded.
+  getCurrencyCatalog: async (): Promise<CurrencyLookupResult[]> => {
+    const response = await apiClient.get<CurrencyLookupResult[]>('/currencies/catalog');
+    return response.data;
+  },
+
   lookupCurrency: async (query: string): Promise<CurrencyLookupResult | null> => {
     const response = await apiClient.get<CurrencyLookupResult | null>('/currencies/lookup', {
       params: { q: query },

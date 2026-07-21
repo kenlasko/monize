@@ -19,6 +19,7 @@ import {
   BackupDecryptionError,
 } from "./backup-crypto.util";
 import { collectRowIdRemap, deepRemapIds } from "./backup-id-remap.util";
+import { resolveCurrencyMetadata } from "../currencies/currency-metadata";
 import { tr } from "../i18n/translate";
 
 export interface RestoreBackupInput {
@@ -1427,13 +1428,18 @@ export class BackupService {
     const existingSet = new Set(existing.map((r) => r.code));
     const missing = codeArray.filter((c) => !existingSet.has(c));
 
-    // Auto-create minimal entries for any still-missing currencies
+    // Auto-create entries for any still-missing currencies. System currencies
+    // (USD, EUR, ...) are not part of a user backup, so on a fresh instance the
+    // codes referenced by restored accounts/transactions land here. Resolve a
+    // proper name/symbol/decimal-places from the currency metadata rather than
+    // defaulting the symbol to the bare code.
     for (const code of missing) {
+      const meta = resolveCurrencyMetadata(code);
       await queryRunner.query(
         `INSERT INTO "currencies" ("code", "name", "symbol", "decimal_places", "is_active", "created_by_user_id")
-         VALUES ($1, $2, $3, 2, true, $4)
+         VALUES ($1, $2, $3, $4, true, $5)
          ON CONFLICT (code) DO NOTHING`,
-        [code, code, code, userId],
+        [code, meta.name, meta.symbol, meta.decimalPlaces, userId],
       );
       this.logger.log(
         `Auto-created missing currency ${code} during backup restore`,

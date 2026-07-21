@@ -18,6 +18,7 @@ import { PasswordBreachService } from "../auth/password-breach.service";
 import { ModuleRef } from "@nestjs/core";
 import { I18nContext } from "nestjs-i18n";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
+import { CurrenciesService } from "../currencies/currencies.service";
 import { BackupEncryptionService } from "../backup/backup-encryption.service";
 
 describe("UsersService", () => {
@@ -29,6 +30,7 @@ describe("UsersService", () => {
   let trustedDevicesRepository: Record<string, jest.Mock>;
   let passwordBreachService: { isBreached: jest.Mock };
   let exchangeRateService: { refreshAllRates: jest.Mock };
+  let currenciesService: { ensureSystemCurrency: jest.Mock };
   let backupEncryptionService: { syncOnPasswordChange: jest.Mock };
   let moduleRef: { get: jest.Mock };
   let mockQueryRunner: Record<string, jest.Mock>;
@@ -111,10 +113,15 @@ describe("UsersService", () => {
       syncOnPasswordChange: jest.fn().mockResolvedValue(undefined),
     };
 
+    currenciesService = {
+      ensureSystemCurrency: jest.fn().mockResolvedValue(undefined),
+    };
+
     moduleRef = {
       get: jest.fn((token) => {
         if (token === ExchangeRateService) return exchangeRateService;
         if (token === BackupEncryptionService) return backupEncryptionService;
+        if (token === CurrenciesService) return currenciesService;
         return undefined;
       }),
     };
@@ -395,6 +402,22 @@ describe("UsersService", () => {
 
       // First save for creating defaults, second for updating
       expect(preferencesRepository.save).toHaveBeenCalled();
+    });
+
+    it("ensures the chosen default currency exists when it changes", async () => {
+      preferencesRepository.findOne.mockResolvedValue({ ...mockPreferences });
+
+      await service.updatePreferences("user-1", { defaultCurrency: "EUR" });
+
+      expect(currenciesService.ensureSystemCurrency).toHaveBeenCalledWith("EUR");
+    });
+
+    it("does not ensure a currency when the default is unchanged", async () => {
+      preferencesRepository.findOne.mockResolvedValue({ ...mockPreferences });
+
+      await service.updatePreferences("user-1", { defaultCurrency: "USD" });
+
+      expect(currenciesService.ensureSystemCurrency).not.toHaveBeenCalled();
     });
 
     it("updates multiple fields at once", async () => {

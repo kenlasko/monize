@@ -126,6 +126,17 @@ describe('exchangeRatesApi', () => {
     });
   });
 
+  describe('getCurrencyCatalog', () => {
+    it('fetches the known-currency catalog from /currencies/catalog', async () => {
+      vi.mocked(apiClient.get).mockResolvedValue({
+        data: [{ code: 'USD', name: 'US Dollar', symbol: '$', decimalPlaces: 2 }],
+      });
+      const result = await exchangeRatesApi.getCurrencyCatalog();
+      expect(apiClient.get).toHaveBeenCalledWith('/currencies/catalog');
+      expect(result[0].symbol).toBe('$');
+    });
+  });
+
   describe('createCurrency', () => {
     it('posts new currency to /currencies', async () => {
       const newCurrency = { code: 'BTC', name: 'Bitcoin', symbol: 'B', decimalPlaces: 8 };

@@ -25,6 +25,7 @@ import { DeleteDataDto } from "./dto/delete-data.dto";
 import { PasswordBreachService } from "../auth/password-breach.service";
 import { ModuleRef } from "@nestjs/core";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
+import { CurrenciesService } from "../currencies/currencies.service";
 import { BackupEncryptionService } from "../backup/backup-encryption.service";
 
 @Injectable()
@@ -238,6 +239,19 @@ export class UsersService {
       dto.defaultCurrency !== undefined &&
       dto.defaultCurrency !== previousDefaultCurrency
     ) {
+      // Currencies are created on demand rather than seeded up front, so make
+      // sure the newly chosen default currency exists (with a proper symbol)
+      // before anything tries to display or convert it.
+      try {
+        const currenciesService = this.moduleRef.get(CurrenciesService, {
+          strict: false,
+        });
+        await currenciesService.ensureSystemCurrency(dto.defaultCurrency);
+      } catch (err) {
+        this.logger.warn(
+          `Could not ensure default currency ${dto.defaultCurrency} exists: ${err.message}`,
+        );
+      }
       try {
         const exchangeRateService = this.moduleRef.get(ExchangeRateService, {
           strict: false,

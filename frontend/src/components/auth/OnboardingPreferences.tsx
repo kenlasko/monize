@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { userSettingsApi } from '@/lib/user-settings';
-import { exchangeRatesApi, CurrencyInfo } from '@/lib/exchange-rates';
+import { exchangeRatesApi, CurrencyLookupResult } from '@/lib/exchange-rates';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { LOCALE_COOKIE, SUPPORTED_LOCALES } from '@/i18n/config';
 import { getErrorMessage } from '@/lib/errors';
@@ -43,12 +43,15 @@ export function OnboardingPreferences({
 
   const [language, setLanguage] = useState(initialLanguage);
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
-  const [currencies, setCurrencies] = useState<CurrencyInfo[]>([]);
+  const [currencies, setCurrencies] = useState<CurrencyLookupResult[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Currencies are created on demand (the chosen one is created when saved), so
+  // the picker is populated from the full known-currency catalog rather than the
+  // installed list, which is empty on a fresh instance.
   useEffect(() => {
     exchangeRatesApi
-      .getCurrencies()
+      .getCurrencyCatalog()
       .then(setCurrencies)
       .catch((error) => logger.error(error));
   }, []);
@@ -60,7 +63,10 @@ export function OnboardingPreferences({
 
   const currencyOptions = useMemo(
     () =>
-      currencies.map((c) => ({ value: c.code, label: `${c.code} - ${c.name}` })),
+      currencies.map((c) => ({
+        value: c.code,
+        label: `${c.symbol} - ${c.name} (${c.code})`,
+      })),
     [currencies],
   );
 

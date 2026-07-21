@@ -891,16 +891,9 @@ CREATE TRIGGER update_investment_reports_updated_at BEFORE UPDATE ON investment_
 -- (accounts.service.ts, transactions.service.ts, import.service.ts) via updateBalance() calls.
 -- No database trigger is used for balance tracking.
 
--- Insert default currencies
-INSERT INTO currencies (code, name, symbol, decimal_places) VALUES
-    ('USD', 'US Dollar', '$', 2),
-    ('CAD', 'Canadian Dollar', 'CA$', 2),
-    ('EUR', 'Euro', '€', 2),
-    ('GBP', 'British Pound', '£', 2),
-    ('JPY', 'Japanese Yen', '¥', 0),
-    ('CHF', 'Swiss Franc', 'CHF', 2),
-    ('AUD', 'Australian Dollar', 'A$', 2),
-    ('CNY', 'Chinese Yuan', '¥', 2);
+-- Currencies are intentionally NOT pre-seeded. A user's currency is created on
+-- demand (with a proper symbol) when they pick it at onboarding, and their
+-- default-preference currency is created lazily on first use if they skip.
 
 -- Monthly Account Balances (cached end-of-month balances for net worth report)
 CREATE TABLE monthly_account_balances (

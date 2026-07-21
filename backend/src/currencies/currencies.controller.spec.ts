@@ -34,6 +34,7 @@ describe("CurrenciesController", () => {
       remove: jest.fn(),
       getUsage: jest.fn(),
       lookupCurrency: jest.fn(),
+      getCatalog: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -78,6 +79,20 @@ describe("CurrenciesController", () => {
         "user-1",
         true,
       );
+    });
+  });
+
+  describe("getCatalog()", () => {
+    it("delegates to currenciesService.getCatalog", () => {
+      const catalog = [
+        { code: "USD", name: "US Dollar", symbol: "$", decimalPlaces: 2 },
+      ];
+      mockCurrenciesService.getCatalog!.mockReturnValue(catalog);
+
+      const result = controller.getCatalog();
+
+      expect(result).toEqual(catalog);
+      expect(mockCurrenciesService.getCatalog).toHaveBeenCalled();
     });
   });
 
