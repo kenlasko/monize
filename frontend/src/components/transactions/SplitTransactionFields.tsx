@@ -33,6 +33,14 @@ interface SplitTransactionFieldsProps {
   onQuickFill?: (transaction: Transaction) => void;
   transaction?: Transaction;
   createdAtSlot?: ReactNode;
+  /** Foreign-currency entry: button placed left of the Total Amount input. */
+  currencyPickerSlot?: ReactNode;
+  /** Foreign-currency entry: panel rendered directly beneath the Total Amount input. */
+  fxPanelSlot?: ReactNode;
+  /** Overrides the Total Amount input's value (the foreign total). */
+  amountValue?: number;
+  /** Overrides the currency whose symbol prefixes the Total Amount input. */
+  amountCurrencyCode?: string;
 }
 
 export function SplitTransactionFields({
@@ -52,6 +60,10 @@ export function SplitTransactionFields({
   onQuickFill,
   transaction,
   createdAtSlot,
+  currencyPickerSlot,
+  fxPanelSlot,
+  amountValue,
+  amountCurrencyCode,
 }: SplitTransactionFieldsProps) {
   const t = useTranslations('transactions');
   const historyButtonRef = useRef<HTMLButtonElement>(null);
@@ -149,13 +161,21 @@ export function SplitTransactionFields({
             />
           )}
         </div>
-        <CurrencyInput
-          label={t('form.fields.totalAmount')}
-          prefix={getCurrencySymbol(watchedCurrencyCode)}
-          value={watchedAmount}
-          onChange={handleAmountChange}
-          error={errors.amount?.message as string | undefined}
-        />
+        <div>
+          <div className="flex items-stretch space-x-2">
+            {currencyPickerSlot}
+            <div className="flex-1 min-w-0">
+              <CurrencyInput
+                label={t('form.fields.totalAmount')}
+                prefix={getCurrencySymbol(amountCurrencyCode || watchedCurrencyCode)}
+                value={amountValue !== undefined ? amountValue : watchedAmount}
+                onChange={handleAmountChange}
+                error={errors.amount?.message as string | undefined}
+              />
+            </div>
+          </div>
+          {fxPanelSlot}
+        </div>
       </div>
 
       {/* Row 3: Reference Number and Description */}
