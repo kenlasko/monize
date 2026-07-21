@@ -414,7 +414,7 @@
       },
       "rateCaption": "1 {from} = {rate} {to} ({date})",
       "feeAutoBadge": "auto",
-      "feeCaption": "Bao gồm phí giao dịch nước ngoài {percent}% ({fee}). Tổng: {total}."
+      "feeCaption": "Bao gồm phí giao dịch nước ngoài {percent}% ({fee})."
     }
   },
   "splitEditor": {

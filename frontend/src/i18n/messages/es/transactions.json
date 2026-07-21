@@ -414,7 +414,7 @@
       },
       "rateCaption": "1 {from} = {rate} {to} ({date})",
       "feeAutoBadge": "auto",
-      "feeCaption": "Incluye una comisión por transacción en el extranjero del {percent}% ({fee}). Total: {total}."
+      "feeCaption": "Incluye una comisión por transacción en el extranjero del {percent}% ({fee})."
     }
   },
   "splitEditor": {

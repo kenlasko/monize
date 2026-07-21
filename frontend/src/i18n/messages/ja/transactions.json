@@ -414,7 +414,7 @@
       },
       "rateCaption": "1 {from} = {rate} {to} ({date})",
       "feeAutoBadge": "auto",
-      "feeCaption": "{percent}% の外貨取引手数料（{fee}）が含まれます。合計: {total}。"
+      "feeCaption": "{percent}% の外貨取引手数料（{fee}）が含まれます。"
     }
   },
   "splitEditor": {

@@ -414,7 +414,7 @@
       },
       "rateCaption": "1 {from} = {rate} {to} ({date})",
       "feeAutoBadge": "auto",
-      "feeCaption": "包含 {percent}% 境外交易手续费（{fee}）。合计：{total}。"
+      "feeCaption": "包含 {percent}% 境外交易手续费（{fee}）。"
     }
   },
   "splitEditor": {

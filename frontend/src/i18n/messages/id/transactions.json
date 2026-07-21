@@ -414,7 +414,7 @@
       },
       "rateCaption": "1 {from} = {rate} {to} ({date})",
       "feeAutoBadge": "auto",
-      "feeCaption": "Termasuk biaya transaksi luar negeri {percent}% ({fee}). Total: {total}."
+      "feeCaption": "Termasuk biaya transaksi luar negeri {percent}% ({fee})."
     }
   },
   "splitEditor": {

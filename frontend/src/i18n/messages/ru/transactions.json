@@ -414,7 +414,7 @@
       },
       "rateCaption": "1 {from} = {rate} {to} ({date})",
       "feeAutoBadge": "auto",
-      "feeCaption": "Включает комиссию за зарубежную операцию {percent}% ({fee}). Итого: {total}."
+      "feeCaption": "Включает комиссию за зарубежную операцию {percent}% ({fee})."
     }
   },
   "splitEditor": {

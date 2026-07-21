@@ -747,10 +747,18 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
     recomputeFx(value, fxRate);
   };
 
-  // User edited the converted account-currency base directly -> derive the rate
-  // (10 dp) so it round-trips, mark the rate overridden, and recompute.
-  const handleConvertedBaseOverride = (base: number | undefined) => {
-    if (base === undefined || !foreignAmount) return;
+  // User edited the converted account-currency total (fee included) directly ->
+  // back the fee out to the pre-fee base, derive the rate (10 dp) so it
+  // round-trips, mark the rate overridden, and recompute.
+  const handleConvertedTotalOverride = (total: number | undefined) => {
+    if (total === undefined || !foreignAmount) return;
+    const feePercent = selectedAccount?.fxFeePercent;
+    let base = total;
+    if (feePercent && feePercent > 0) {
+      // total = base - |base| * p; solve for base by its (matching) sign.
+      const p = feePercent / 100;
+      base = roundToCents(total >= 0 ? total / (1 - p) : total / (1 + p));
+    }
     const newRate = Math.round((base / foreignAmount) * 1e10) / 1e10;
     rateOverriddenRef.current = true;
     setFxRate(newRate);
@@ -1136,49 +1144,49 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
       />
     ) : undefined;
 
-  // While entering a foreign currency, the converted account-currency amount sits
-  // directly beside the Amount input (same width), with the rate/fee captions
-  // rendered on their own line below the pair.
+  // While entering a foreign currency, the converted account-currency amount
+  // (fee included) sits directly beside the Amount input (same width). The rate
+  // and fee text render together on one line below, spanning both columns.
   const convertedAmountSlot = isForeign ? (
     <CurrencyInput
       label={t('form.fx.convertedAmount', { currency: accountCurrency })}
       prefix={getCurrencySymbol(accountCurrency)}
-      value={convertedBase}
-      onChange={handleConvertedBaseOverride}
+      value={fxTotal}
+      onChange={handleConvertedTotalOverride}
       allowSignToggle
     />
   ) : undefined;
 
   const fxCaptionSlot = isForeign ? (
-    <div className="mt-1 space-y-1">
+    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
       {fxRate != null ? (
-        <p className="text-xs text-gray-500 dark:text-gray-400">
+        <span>
           {t('form.fx.rateCaption', {
             from: entryCurrency,
             rate: fxRate.toFixed(4),
             to: accountCurrency,
             date: watchedDate,
           })}
-        </p>
+        </span>
       ) : !fxRateLoading ? (
-        <p className="text-xs text-amber-600 dark:text-amber-400">
+        <span className="text-amber-600 dark:text-amber-400">
           {t('form.fx.noRateWarning', {
             from: entryCurrency,
             to: accountCurrency,
             date: watchedDate,
           })}
-        </p>
+        </span>
       ) : null}
       {fxFeeApplies && fxTotal !== undefined && (
-        <p className="text-xs text-gray-500 dark:text-gray-400">
+        <span>
+          {' '}
           {t('form.fx.feeCaption', {
             percent: fxFeePercent as number,
             fee: formatCurrency(Math.abs(fxFeeAmount), accountCurrency),
-            total: formatCurrency(fxTotal, accountCurrency),
           })}
-        </p>
+        </span>
       )}
-    </div>
+    </p>
   ) : undefined;
 
   return (
