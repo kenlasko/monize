@@ -86,6 +86,21 @@ describe('ChartDownloadButton', () => {
     }
   });
 
+  it('forwards the summary footer to the capture util', async () => {
+    mockCaptureSvgAsImage.mockResolvedValue({ dataUrl: 'data:image/png;base64,XYZ', width: 100, height: 100 });
+    const summary = [
+      { label: 'Total Fees', value: '$4.01' },
+      { label: 'Transactions', value: '1' },
+    ];
+
+    render(<ChartDownloadButton chartRef={makeRef()} filename="Fees Over Time" summary={summary} />);
+    fireEvent.click(screen.getByRole('button'));
+
+    await waitFor(() => {
+      expect(mockCaptureSvgAsImage).toHaveBeenCalledWith(expect.anything(), 3, summary);
+    });
+  });
+
   it('shows an error toast when the chart cannot be captured', async () => {
     mockCaptureSvgAsImage.mockResolvedValue(null);
 

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { transactionsApi } from '@/lib/transactions';
+import { exportForeignTransactionsCsv } from '@/lib/fx-fees-csv';
 import { createLogger } from '@/lib/logger';
 import { Modal } from '@/components/ui/Modal';
 import { MultiSelect, MultiSelectOption } from '@/components/ui/MultiSelect';
@@ -51,6 +52,7 @@ export function ForeignCurrencyFeesSection({ account }: ForeignCurrencyFeesSecti
   const [refreshTick, setRefreshTick] = useState(0);
   const [summaryLoadedForId, setSummaryLoadedForId] = useState<string | null>(null);
   const [listLoaded, setListLoaded] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const isSummaryLoading = summaryLoadedForId !== account.id;
 
   // Reset filter and pagination when navigating to a different account without
@@ -201,6 +203,29 @@ export function ForeignCurrencyFeesSection({ account }: ForeignCurrencyFeesSecti
     refresh();
   }, [close, refresh]);
 
+  // Export every foreign transaction matching the current currency filter (or
+  // all paid currencies on the account when no filter is set) to CSV.
+  const handleExport = useCallback(async () => {
+    setIsExporting(true);
+    try {
+      const codes = selectedCurrencies.length > 0 ? selectedCurrencies : availableCurrencies;
+      const count = await exportForeignTransactionsCsv({
+        accountIds: [account.id],
+        currencyCodes: codes,
+      });
+      if (count === 0) {
+        toast.error(t('list.export.none'));
+      } else {
+        toast.success(t('list.export.success', { count }));
+      }
+    } catch (error) {
+      logger.error('Failed to export foreign-currency transactions:', error);
+      toast.error(t('list.export.failed'));
+    } finally {
+      setIsExporting(false);
+    }
+  }, [account.id, selectedCurrencies, availableCurrencies, t]);
+
   return (
     <section>
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
@@ -238,6 +263,8 @@ export function ForeignCurrencyFeesSection({ account }: ForeignCurrencyFeesSecti
               transactions={transactions}
               onEdit={handleEdit}
               onRefresh={refresh}
+              onExport={handleExport}
+              isExporting={isExporting}
               showFxColumns
               currentPage={pagination?.page}
               totalPages={pagination?.totalPages}

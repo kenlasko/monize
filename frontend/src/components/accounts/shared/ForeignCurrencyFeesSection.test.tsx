@@ -15,6 +15,11 @@ vi.mock('@/lib/transactions', () => ({
   },
 }));
 
+const mockExportCsv = vi.fn();
+vi.mock('@/lib/fx-fees-csv', () => ({
+  exportForeignTransactionsCsv: (...args: unknown[]) => mockExportCsv(...args),
+}));
+
 vi.mock('@/lib/logger', () => ({
   createLogger: () => ({
     error: vi.fn(),
@@ -47,6 +52,9 @@ vi.mock('@/components/transactions/TransactionList', () => ({
           </button>
         ))}
         <button onClick={() => props.onRefresh()}>refresh-list</button>
+        {props.onExport && (
+          <button onClick={() => props.onExport()}>export-list</button>
+        )}
       </div>
     );
   },
@@ -109,6 +117,43 @@ describe('ForeignCurrencyFeesSection', () => {
     listProps.current = null;
     mockGetFxFeeSummary.mockResolvedValue(summaryRows);
     mockGetAll.mockResolvedValue(page1);
+    mockExportCsv.mockResolvedValue(1);
+  });
+
+  it('exports the current filter to CSV via the list toolbar', async () => {
+    await renderSection();
+    await waitFor(() => {
+      expect(screen.getByText('export-list')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('export-list'));
+    });
+
+    // No currency selected -> exports every paid currency on the account.
+    expect(mockExportCsv).toHaveBeenCalledWith({
+      accountIds: ['acc-1'],
+      currencyCodes: ['EUR', 'USD'],
+    });
+  });
+
+  it('exports only the selected currency when the filter is set', async () => {
+    await renderSection();
+    await waitFor(() => {
+      expect(screen.getByText('option-EUR')).toBeInTheDocument();
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('option-EUR'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('export-list'));
+    });
+
+    expect(mockExportCsv).toHaveBeenCalledWith({
+      accountIds: ['acc-1'],
+      currencyCodes: ['EUR'],
+    });
   });
 
   it('renders the section title, chart, and transaction list', async () => {

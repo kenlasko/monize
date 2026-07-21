@@ -28,6 +28,11 @@
   "list": {
     "title": "Foreign Currency Transactions",
     "editTitle": "Edit Transaction",
-    "investmentLinked": "This transaction is linked to an investment. Opening the investment editor."
+    "investmentLinked": "This transaction is linked to an investment. Opening the investment editor.",
+    "export": {
+      "success": "Exported {count, plural, one {# transaction} other {# transactions}}",
+      "none": "No transactions to export",
+      "failed": "Failed to export transactions"
+    }
   }
 }

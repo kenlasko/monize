@@ -10,6 +10,16 @@ export interface CapturedChart {
 }
 
 /**
+ * A summary figure drawn below the chart in the rasterized output (e.g. the
+ * "Total Fees" / "Transactions" cards under the fees chart). Rendered as evenly
+ * spaced centred columns, each a small grey label above a bold value.
+ */
+export interface ChartFooterItem {
+  label: string;
+  value: string;
+}
+
+/**
  * Font applied to chart text in the rasterized output.
  *
  * On screen, Recharts text (axis ticks, labels, in-chart legends) inherits
@@ -169,6 +179,7 @@ function captureSingleSvg(
   svg: SVGSVGElement,
   container: HTMLElement,
   scale: number,
+  footer: ChartFooterItem[] = [],
 ): Promise<CapturedChart | null> {
   const dims = resolveChartDimensions(svg, container);
   if (!dims) return Promise.resolve(null);
@@ -269,7 +280,23 @@ function captureSingleSvg(
       );
       const legendHeight = lineCount > 0 ? lineCount * lineHeight + Math.round(6 * scale) : 0;
 
-      canvas.height = scaledHeight + legendHeight;
+      // Summary footer geometry (mirrors the on-screen summary cards): a top
+      // divider, then a small grey label above a bold value per column.
+      const footerLabelSize = 11 * scale;
+      const footerValueSize = 15 * scale;
+      const footerPadTop = Math.round(16 * scale);
+      const footerLabelGap = Math.round(7 * scale);
+      const footerPadBottom = Math.round(12 * scale);
+      const footerHeight =
+        footer.length > 0
+          ? footerPadTop +
+            footerLabelSize +
+            footerLabelGap +
+            footerValueSize +
+            footerPadBottom
+          : 0;
+
+      canvas.height = scaledHeight + legendHeight + footerHeight;
       ctx.fillStyle = 'white';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       // Draw at 1:1 -- the SVG was already rendered at scaled resolution
@@ -291,10 +318,36 @@ function captureSingleSvg(
         ctx.fillText(item.text, x + 16 * scale + 5 * scale, y);
       }
 
+      if (footer.length > 0) {
+        const footerTop = scaledHeight + legendHeight;
+        ctx.strokeStyle = '#e5e7eb';
+        ctx.lineWidth = Math.max(1, scale);
+        ctx.beginPath();
+        ctx.moveTo(sideMargin, footerTop + Math.round(scale));
+        ctx.lineTo(scaledWidth - sideMargin, footerTop + Math.round(scale));
+        ctx.stroke();
+
+        const colWidth = scaledWidth / footer.length;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+        const labelY = footerTop + footerPadTop + footerLabelSize;
+        const valueY = labelY + footerLabelGap + footerValueSize;
+        footer.forEach((item, i) => {
+          const cx = colWidth * i + colWidth / 2;
+          ctx.font = `${footerLabelSize}px ${CHART_FONT_FAMILY}`;
+          ctx.fillStyle = '#6b7280';
+          ctx.fillText(item.label, cx, labelY);
+          ctx.font = `bold ${footerValueSize}px ${CHART_FONT_FAMILY}`;
+          ctx.fillStyle = '#374151';
+          ctx.fillText(item.value, cx, valueY);
+        });
+        ctx.textAlign = 'start';
+      }
+
       resolve({
         dataUrl: canvas.toDataURL('image/png'),
         width,
-        height: height + legendHeight / scale,
+        height: height + (legendHeight + footerHeight) / scale,
       });
     };
     img.onerror = () => {
@@ -341,6 +394,7 @@ export async function captureAllChartsAsImages(
 export async function captureSvgAsImage(
   container: HTMLElement,
   scale: number = 3,
+  footer: ChartFooterItem[] = [],
 ): Promise<CapturedChart | null> {
   // Target the main chart SVG (a direct child of .recharts-wrapper). Recharts
   // also renders tiny svg.recharts-surface elements for legend icons, and in
@@ -354,7 +408,7 @@ export async function captureSvgAsImage(
   if (!svg) return null;
 
   try {
-    return await captureSingleSvg(svg, container, scale);
+    return await captureSingleSvg(svg, container, scale, footer);
   } catch {
     return null;
   }

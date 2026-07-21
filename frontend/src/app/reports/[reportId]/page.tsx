@@ -46,6 +46,7 @@ const reportComponents: Record<string, React.LazyExoticComponent<React.Component
   'spending-anomalies': lazy(() => import('@/components/reports/SpendingAnomaliesReport').then(m => ({ default: m.SpendingAnomaliesReport }))),
   'weekend-weekday-spending': lazy(() => import('@/components/reports/WeekendVsWeekdayReport').then(m => ({ default: m.WeekendVsWeekdayReport }))),
   'monthly-comparison': lazy(() => import('@/components/reports/MonthlyComparisonReport').then(m => ({ default: m.MonthlyComparisonReport }))),
+  'foreign-currency-fees': lazy(() => import('@/components/reports/ForeignCurrencyFeesReport').then(m => ({ default: m.ForeignCurrencyFeesReport }))),
   // Maintenance & Cleanup
   'uncategorized-transactions': lazy(() => import('@/components/reports/UncategorizedTransactionsReport').then(m => ({ default: m.UncategorizedTransactionsReport }))),
   'duplicate-transactions': lazy(() => import('@/components/reports/DuplicateTransactionReport').then(m => ({ default: m.DuplicateTransactionReport }))),

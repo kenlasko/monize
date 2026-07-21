@@ -65,6 +65,7 @@
       "spending-anomalies": "Spending Anomalies",
       "weekend-weekday-spending": "Weekend vs Weekday Spending",
       "monthly-comparison": "Monthly Comparison",
+      "foreign-currency-fees": "Foreign Currency Transaction Fees",
       "uncategorized-transactions": "Uncategorized Transactions",
       "duplicate-transactions": "Duplicate Transaction Finder",
       "upcoming-bills": "Upcoming Bills Calendar",
@@ -111,6 +112,7 @@
       "spending-anomalies": "Detect unusually large transactions and spending spikes that need attention.",
       "weekend-weekday-spending": "Analyze your spending patterns based on day of week to understand habits.",
       "monthly-comparison": "Compare any month to the previous month across income, expenses, net worth, and investments.",
+      "foreign-currency-fees": "Track the foreign-transaction fees charged across accounts that apply a conversion fee.",
       "uncategorized-transactions": "Find and categorize transactions that are missing categories.",
       "duplicate-transactions": "Identify potential duplicate entries that may need review or deletion.",
       "upcoming-bills": "Visual calendar of scheduled transactions and upcoming bill due dates.",
@@ -1677,5 +1679,8 @@
     "labelSelectAccount": "Select Loan Account",
     "viewTransactions": "View Transactions",
     "empty": "No loan, mortgage, or line of credit accounts found."
+  },
+  "foreignCurrencyFees": {
+    "noEligibleAccounts": "No accounts have a foreign-transaction fee configured. Set a fee percentage on an account to track its foreign currency fees here."
   }
 }

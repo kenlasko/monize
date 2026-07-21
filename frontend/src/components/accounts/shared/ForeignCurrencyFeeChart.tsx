@@ -214,6 +214,22 @@ export function ForeignCurrencyFeeChart({
     return { total, totalCount, periodAvg };
   }, [chartData]);
 
+  // The same figures as the on-screen summary cards, drawn under the chart in
+  // the exported PNG.
+  const exportSummary = summary
+    ? [
+        {
+          label: t(`chart.${AVG_LABEL_KEY[granularity]}`),
+          value: formatFee(summary.periodAvg),
+        },
+        { label: t('chart.total'), value: formatFee(summary.total) },
+        {
+          label: t('chart.transactions'),
+          value: summary.totalCount.toLocaleString(),
+        },
+      ]
+    : [];
+
   if (isLoading) {
     return (
       <div className="min-h-[420px]">
@@ -290,7 +306,11 @@ export function ForeignCurrencyFeeChart({
               );
             })}
           </div>
-          <ChartDownloadButton chartRef={chartRef} filename={downloadFilename} />
+          <ChartDownloadButton
+            chartRef={chartRef}
+            filename={downloadFilename}
+            summary={exportSummary}
+          />
         </div>
       </div>
 
