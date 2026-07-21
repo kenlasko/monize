@@ -181,6 +181,7 @@ export function TransactionFilterPanel({
   )
     .sort()
     .map((code) => ({ value: code, label: code }));
+  const hasCurrencyFilter = CURRENCY_FILTER_OPTIONS.length > 0;
 
   return (
     <>
@@ -492,7 +493,7 @@ export function TransactionFilterPanel({
               </div>
 
               {/* First row: Main filters */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 pt-2">
                 <MultiSelect
                   label={t('filter.fields.accounts')}
                   options={accountFilterOptions}
@@ -523,6 +524,15 @@ export function TransactionFilterPanel({
                   value={filterTagIds}
                   onChange={(values) => handleArrayFilterChange(setFilterTagIds, values)}
                   placeholder={t('filter.placeholders.tags')}
+                />
+
+                <MultiSelect
+                  label={t('filter.fields.status')}
+                  options={STATUS_FILTER_OPTIONS}
+                  value={filterStatuses}
+                  onChange={(values) => handleArrayFilterChange(setFilterStatuses, values as TransactionStatus[])}
+                  placeholder={t('filter.placeholders.statuses')}
+                  showSearch={false}
                 />
               </div>
 
@@ -568,10 +578,17 @@ export function TransactionFilterPanel({
                 </div>
               )}
 
-              {/* Second row: Time period, dates, amount range, reconciliation status, and search.
-                  Uses an explicit fr template so Reconciliation can be a fraction
-                  of the width of the other inputs. */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr_2fr_2fr_1fr_1fr_2fr_3fr] gap-4 mt-4">
+              {/* Second row: Time period, dates, amount range, currency, and
+                  search. Explicit fr template keeps Currency narrow (1fr) and
+                  gives Search the remaining space to its right. The Currency
+                  column is dropped from the template when it isn't shown. */}
+              <div
+                className={`grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 ${
+                  hasCurrencyFilter
+                    ? 'lg:grid-cols-[2fr_2fr_2fr_1fr_1fr_1fr_3fr]'
+                    : 'lg:grid-cols-[2fr_2fr_2fr_1fr_1fr_3fr]'
+                }`}
+              >
                 <Select
                   label={t('filter.fields.timePeriod')}
                   options={TIME_PERIOD_OPTIONS.map((o) => ({ value: o.value, label: t(o.labelKey) }))}
@@ -639,16 +656,7 @@ export function TransactionFilterPanel({
                   placeholder={t('filter.placeholders.amountMax')}
                 />
 
-                <MultiSelect
-                  label={t('filter.fields.status')}
-                  options={STATUS_FILTER_OPTIONS}
-                  value={filterStatuses}
-                  onChange={(values) => handleArrayFilterChange(setFilterStatuses, values as TransactionStatus[])}
-                  placeholder={t('filter.placeholders.statuses')}
-                  showSearch={false}
-                />
-
-                {CURRENCY_FILTER_OPTIONS.length > 0 && (
+                {hasCurrencyFilter && (
                   <MultiSelect
                     label={t('filter.fields.currency')}
                     options={CURRENCY_FILTER_OPTIONS}
