@@ -85,7 +85,7 @@ export class LoanScenario {
 
   @Column({
     type: "varchar",
-    length: 16,
+    length: 64,
     name: "recurring_extra_mode",
     nullable: true,
   })
