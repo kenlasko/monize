@@ -14,7 +14,7 @@ import { SplitTransactionFields } from './SplitTransactionFields';
 import { CurrencyPickerButton } from './CurrencyPickerButton';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { exchangeRatesApi } from '@/lib/exchange-rates';
-import { getCurrencySymbol, roundToCents } from '@/lib/format';
+import { getCurrencySymbol, roundToCents, roundToDecimals } from '@/lib/format';
 import {
   getRememberedTransactionCurrency,
   rememberTransactionCurrency,
@@ -777,7 +777,7 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
       const p = feePercent / 100;
       base = roundToCents(total >= 0 ? total / (1 - p) : total / (1 + p));
     }
-    const newRate = Math.round((base / foreignAmount) * 1e10) / 1e10;
+    const newRate = roundToDecimals(base / foreignAmount, 10);
     rateOverriddenRef.current = true;
     setFxRate(newRate);
     recomputeFx(foreignAmount, newRate, base);
