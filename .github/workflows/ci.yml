@@ -66,6 +66,10 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npx tsc --noEmit
+      # RLS ratchet: injected-repository / QueryRunner call-site counts may only
+      # decrease (task F3). Self-test first, then enforce against the baseline.
+      - run: npm run rls:ratchet:test
+      - run: npm run rls:ratchet
 
   backend-unit-tests:
     name: Backend Unit Tests
