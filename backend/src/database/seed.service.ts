@@ -3,6 +3,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, DataSource } from "typeorm";
 import * as bcrypt from "bcryptjs";
 import { User } from "../users/entities/user.entity";
+import { withSystemContext } from "../common/db/with-context";
 
 @Injectable()
 export class SeedService {
@@ -17,13 +18,20 @@ export class SeedService {
   async seedAll(): Promise<void> {
     this.logger.log("Starting database seeding");
 
+    // RLS (task C3): the seed creates a demo user and all their data before any
+    // request context exists, so the whole flow runs under a system context.
+    // Inert at RLS_MODE=off -- withSystemContext only seeds AsyncLocalStorage.
+    await withSystemContext(() => this.seedAllWithinContext());
+
+    this.logger.log("Database seeding completed successfully");
+  }
+
+  private async seedAllWithinContext(): Promise<void> {
     await this.seedCurrencies();
     const userId = await this.seedDemoUser();
     await this.seedCategories(userId);
     const accountIds = await this.seedAccounts(userId);
     await this.seedTransactions(userId, accountIds);
-
-    this.logger.log("Database seeding completed successfully");
   }
 
   private async seedCurrencies(): Promise<void> {

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { DataSource } from "typeorm";
 
+import { withSystemContext } from "../common/db/with-context";
 import { SeedService } from "./seed.service";
 import { InstitutionLogoService } from "../institutions/institution-logo.service";
 import { demoAccounts } from "./demo-seed-data/accounts";
@@ -30,7 +31,12 @@ export class DemoSeedService {
    */
   async seedAll(): Promise<void> {
     this.logger.log("Starting DEMO database seeding");
+    // RLS (task C3): cross-user demo seed (clears + re-seeds the demo user's
+    // data via raw SQL) -- runs under a system context.
+    return withSystemContext(() => this.seedAllWithinContext());
+  }
 
+  private async seedAllWithinContext(): Promise<void> {
     // Seed currencies via existing service
     await this.seedService.seedAll();
 
@@ -112,6 +118,12 @@ export class DemoSeedService {
    * Used by both initial seed and daily reset.
    */
   async seedDemoData(userId: string): Promise<void> {
+    // RLS (task C3): also called directly by the daily demo reset -- runs under
+    // a system context so its cross-user seeding keeps working.
+    return withSystemContext(() => this.seedDemoDataWithinContext(userId));
+  }
+
+  private async seedDemoDataWithinContext(userId: string): Promise<void> {
     const categoryMap = await this.seedCategories(userId);
     const institutionMap = await this.seedInstitutions(userId);
     const accountMap = await this.seedAccounts(userId, institutionMap);

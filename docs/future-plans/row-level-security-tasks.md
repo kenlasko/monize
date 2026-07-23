@@ -51,7 +51,7 @@ uses four classes:
 | T2 | Catalog-driven `rls-enforcement` integration spec (4 buckets) | T1, M3 | none | not started |
 | C1 | Auth wrapping: `jwt.strategy` under `withUserContext(sub)`; PAT + password-reset + OAuth under `withSystemContext`; public-route audit | F2 | inert | done |
 | C2 | Cron jobs: system fan-out + per-user bodies wrapped | F2 | inert | done |
-| C3 | Seeders + demo reset under `withSystemContext` | F2 | inert | not started |
+| C3 | Seeders + demo reset under `withSystemContext` | F2 | inert | done |
 | C4 | Emergency-access claim + expiry monitor under `withSystemContext`; grantee-side read audit | F2 | inert | not started |
 | C6 | Interceptor restructure: fire-and-forget writes moved inside the ALS scope | F2 | neutral | done |
 | R1 | Refactor: accounts, categories, payees, tags, institutions | F3, C1–C4, C6 | neutral | not started |
@@ -497,7 +497,13 @@ in PR; no handler left unwrapped (grep `@Cron` count == enumerated count).
 
 ### C3. Seeders + demo reset
 
-- [ ] Status: not started
+- [x] Status: done (branch `claude/rls-task-status-column-8qqlbm`). Whole flows wrapped in
+  `withSystemContext` (bodies extracted to `*WithinContext` privates): `SeedService.seedAll`,
+  `DemoSeedService.seedAll` + `seedDemoData` (the latter also called directly by the daily reset), and
+  both `DemoResetService` crons (`resetDemoData`, `generateIntradayTransactions` -- the two `@Cron`
+  handlers deferred from C2). The `if (!isDemo) return` guards and the opening log lines stay outside
+  the wrapper. A wrapper-usage test asserts `resetDemoData`'s raw SQL runs under `{ system: true }`.
+  Seed/demo-seed/demo-reset specs green (56 + the new assertion), build + lint clean.
 
 **Scope:** `database/seed.service.ts`, `demo-seed.service.ts`, daily demo reset entry. Wrapping only,
 before R7 refactors the database module.

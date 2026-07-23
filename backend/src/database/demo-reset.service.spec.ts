@@ -3,6 +3,7 @@ import { DataSource } from "typeorm";
 import { DemoResetService } from "./demo-reset.service";
 import { DemoSeedService } from "./demo-seed.service";
 import { DemoModeService } from "../common/demo-mode.service";
+import { getRequestContext } from "../common/request-context";
 
 jest.mock("bcryptjs", () => ({
   hash: jest.fn().mockResolvedValue("$2a$10$hashedpassword"),
@@ -76,6 +77,22 @@ describe("DemoResetService", () => {
     );
     expect(userQuery).toBeDefined();
     expect(userQuery[0]).toContain("demo@monize.com");
+  });
+
+  // RLS (task C3): the reset's cross-user raw SQL runs under a system context.
+  it("runs the reset under a system context", async () => {
+    let ctx: ReturnType<typeof getRequestContext>;
+    queryRunner.query.mockImplementation((sql: string) => {
+      ctx = getRequestContext();
+      if (sql.includes("SELECT id FROM users")) {
+        return Promise.resolve([{ id: "demo-user-id" }]);
+      }
+      return Promise.resolve([]);
+    });
+
+    await service.resetDemoData();
+
+    expect(ctx).toEqual({ system: true });
   });
 
   it("rolls back and returns early if demo user not found", async () => {
