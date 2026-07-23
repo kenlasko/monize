@@ -29,6 +29,7 @@ import { PasswordBreachService } from "../auth/password-breach.service";
 import { AuthService } from "../auth/auth.service";
 import { AiEncryptionService } from "../ai/ai-encryption.service";
 import { generateCsrfToken, getCsrfCookieOptions } from "../common/csrf.util";
+import { withSystemContext } from "../common/db/with-context";
 import { ClaimCompleteDto, ClaimPreviewDto } from "./dto/claim.dto";
 
 @ApiTags("Emergency Access")
@@ -91,6 +92,14 @@ export class EmergencyAccessClaimController {
     summary: "Validate the magic link and return owner identity + message",
   })
   async preview(@Body() dto: ClaimPreviewDto) {
+    // RLS (task C4): the claimant is the grantee (or a bare token), not the
+    // owner, so every read here (contacts by token hash, the owner's settings
+    // and users row) is owner-keyed but runs with the wrong identity. Run under
+    // a system context. Inert at RLS_MODE=off -- only seeds AsyncLocalStorage.
+    return withSystemContext(() => this.previewWithinContext(dto));
+  }
+
+  private async previewWithinContext(dto: ClaimPreviewDto) {
     const contact = await this.findValidContact(dto.token);
     const settings = await this.settingsRepo.findOne({
       where: { ownerUserId: contact.ownerUserId },
@@ -138,6 +147,14 @@ export class EmergencyAccessClaimController {
       "Consume the magic link, replace the owner's password, and sign in",
   })
   async complete(@Body() dto: ClaimCompleteDto, @Res() res: Response) {
+    // RLS (task C4): the claim rewrites the OWNER's credentials across users,
+    // user_preferences, trusted_devices, the emergency-access tables and
+    // refresh_tokens while the requester is the grantee/bare token -- run the
+    // whole flow under a system context.
+    return withSystemContext(() => this.completeWithinContext(dto, res));
+  }
+
+  private async completeWithinContext(dto: ClaimCompleteDto, res: Response) {
     // Validate the magic link before doing any expensive work. Otherwise an
     // unauthenticated caller could force a breach lookup and a bcrypt hash
     // (cost 12) on every request with a bogus token. The transaction below

@@ -9,6 +9,7 @@ import { AiEncryptionService } from "../ai/ai-encryption.service";
 import { EmailService } from "../notifications/email.service";
 import { User } from "../users/entities/user.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
+import { getRequestContext } from "../common/request-context";
 
 describe("EmergencyAccessMonitorService", () => {
   let service: EmergencyAccessMonitorService;
@@ -93,6 +94,17 @@ describe("EmergencyAccessMonitorService", () => {
     await service.runDailyCheck();
     expect(settingsRepo.find).not.toHaveBeenCalled();
     expect(emailService.sendMail).not.toHaveBeenCalled();
+  });
+
+  // RLS (task C4): the cross-user sweep runs under a system context.
+  it("runs the sweep under a system context", async () => {
+    let ctx: ReturnType<typeof getRequestContext>;
+    settingsRepo.find.mockImplementation(() => {
+      ctx = getRequestContext();
+      return Promise.resolve([]);
+    });
+    await service.runDailyCheck();
+    expect(ctx).toEqual({ system: true });
   });
 
   it("sends a reminder when inactivity exceeds reminderAfterDays but not grantAfterDays", async () => {

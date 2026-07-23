@@ -12,6 +12,7 @@ import { AuthService } from "../auth/auth.service";
 import { PasswordBreachService } from "../auth/password-breach.service";
 import { AiEncryptionService } from "../ai/ai-encryption.service";
 import { hashToken } from "../auth/crypto.util";
+import { getRequestContext } from "../common/request-context";
 
 describe("EmergencyAccessClaimController", () => {
   let controller: EmergencyAccessClaimController;
@@ -139,6 +140,29 @@ describe("EmergencyAccessClaimController", () => {
       expect(res.ownerFirstName).toBe("Owner");
       expect(res.contactFirstName).toBe("Carol");
       expect(res.message).toBe("secret");
+    });
+
+    // RLS (task C4): the claimant is the grantee, not the owner, so the
+    // owner-keyed reads run under a system context.
+    it("runs the owner-keyed reads under a system context", async () => {
+      let ctx: ReturnType<typeof getRequestContext>;
+      contactsRepo.findOne.mockImplementation(() => {
+        ctx = getRequestContext();
+        return Promise.resolve({
+          id: "c1",
+          ownerUserId: ownerId,
+          firstName: "Carol",
+          claimTokenHash: TOKEN_HASH,
+          claimTokenExpiresAt: new Date(Date.now() + 100000),
+          claimTokenUsedAt: null,
+        });
+      });
+      settingsRepo.findOne.mockResolvedValue({ ownerUserId: ownerId });
+      usersRepo.findOne.mockResolvedValue({ id: ownerId, firstName: "Owner" });
+
+      await controller.preview({ token: RAW_TOKEN });
+
+      expect(ctx).toEqual({ system: true });
     });
 
     it("rejects an unknown / used / expired token", async () => {

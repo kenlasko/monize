@@ -52,7 +52,7 @@ uses four classes:
 | C1 | Auth wrapping: `jwt.strategy` under `withUserContext(sub)`; PAT + password-reset + OAuth under `withSystemContext`; public-route audit | F2 | inert | done |
 | C2 | Cron jobs: system fan-out + per-user bodies wrapped | F2 | inert | done |
 | C3 | Seeders + demo reset under `withSystemContext` | F2 | inert | done |
-| C4 | Emergency-access claim + expiry monitor under `withSystemContext`; grantee-side read audit | F2 | inert | not started |
+| C4 | Emergency-access claim + expiry monitor under `withSystemContext`; grantee-side read audit | F2 | inert | done |
 | C6 | Interceptor restructure: fire-and-forget writes moved inside the ALS scope | F2 | neutral | done |
 | R1 | Refactor: accounts, categories, payees, tags, institutions | F3, C1–C4, C6 | neutral | not started |
 | R2 | Refactor: transactions, scheduled-transactions | F3, C1–C4, C6 | neutral | not started |
@@ -515,7 +515,26 @@ bypass).
 
 ### C4. Emergency access
 
-- [ ] Status: not started
+- [x] Status: done (branch `claude/rls-task-status-column-8qqlbm`). Both public claim handlers
+  (`EmergencyAccessClaimController.preview` / `complete`) wrapped in `withSystemContext` (bodies
+  extracted to `*WithinContext` privates) -- the requester is the grantee/bare token, so every
+  owner-keyed read/write (the token-hash contact lookup, the owner's `users`/`user_preferences`/
+  `trusted_devices`/`refresh_tokens` and the emergency-access tables, in a raw `queryRunner`
+  transaction) runs under bypass. The expiry-monitor cron
+  (`EmergencyAccessMonitorService.runDailyCheck` -- the `@Cron` deferred from C2) wraps its whole
+  cross-user sweep in `withSystemContext` (the SMTP guard stays outside). Wrapper-usage tests assert
+  both `preview` and the sweep run under `{ system: true }`; all emergency-access specs green (82).
+
+  **Grantee-side read audit (result):** **no in-session grantee-side reads exist.** The authenticated
+  surface (`emergency-access.controller.ts`, class-guarded by `AuthGuard('jwt') + StepUpGuard`) is
+  entirely owner-keyed -- every `EmergencyAccessService` call passes `req.user.id` as the owner and
+  every query filters `owner_user_id = :userId` (the `email` filters are duplicate-contact checks
+  *within the owner's own* contact list, still owner-scoped). There is no "who named me as an
+  emergency contact" lookup. So under the owner-only special policies
+  (`emergency_access_settings|contacts → owner_user_id = current`) the authenticated reads work with
+  the normal request context, and **no `withSystemContext` wrapping and no email-match policy arm are
+  required** on that surface. The only grantee-facing path is the public claim controller, wrapped
+  above.
 
 **Scope:** `backend/src/emergency-access/emergency-access-claim.controller.ts` + claim service path,
 expiry monitor. Wrapping only, before R7 refactors these services.
