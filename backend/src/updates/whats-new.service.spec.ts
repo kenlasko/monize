@@ -1,9 +1,16 @@
-import { Repository } from "typeorm";
+import { DataSource, EntityManager, Repository } from "typeorm";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { DemoModeService } from "../common/demo-mode.service";
 import { ReleaseNotesService } from "./release-notes.service";
 import { ReleaseNotes } from "./release-notes.parser";
 import { WhatsNewService } from "./whats-new.service";
+import { tenantTx } from "../common/db/tenant-tx";
+
+// Unit-test the service against a mocked tenantTx (its own behaviour -- context
+// requirement, GUCs, re-entrancy -- is covered by tenant-tx.spec.ts). The mock
+// simply runs the callback with a manager whose repository is our mock repo.
+jest.mock("../common/db/tenant-tx");
+const mockedTenantTx = tenantTx as jest.MockedFunction<typeof tenantTx>;
 
 const CURRENT_VERSION = "1.12.1";
 
@@ -29,6 +36,14 @@ describe("WhatsNewService", () => {
     } as unknown as jest.Mocked<
       Pick<Repository<UserPreference>, "findOne" | "save">
     >;
+
+    const manager = {
+      getRepository: jest.fn(() => repo),
+    } as unknown as EntityManager;
+
+    // Run the tenantTx callback immediately with our mock manager.
+    mockedTenantTx.mockImplementation((_dataSource, fn) => fn(manager));
+
     releaseNotes = {
       getForCurrentVersion: jest.fn().mockReturnValue(SAMPLE_NOTES),
       currentVersion: CURRENT_VERSION,
@@ -38,10 +53,14 @@ describe("WhatsNewService", () => {
     demoMode = { isDemo: false };
 
     service = new WhatsNewService(
-      repo as unknown as Repository<UserPreference>,
+      {} as DataSource,
       releaseNotes as unknown as ReleaseNotesService,
       demoMode as DemoModeService,
     );
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   function prefs(overrides: Partial<UserPreference> = {}): UserPreference {
@@ -62,6 +81,7 @@ describe("WhatsNewService", () => {
       expect(status.currentVersion).toBe(CURRENT_VERSION);
       expect(status.notes).toBe(SAMPLE_NOTES);
       expect(status.autoShow).toBe(true);
+      expect(mockedTenantTx).toHaveBeenCalledTimes(1);
     });
 
     it("auto-shows when the user has no preferences row yet", async () => {

@@ -1,10 +1,10 @@
 import { Injectable } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { DataSource } from "typeorm";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { buildDefaultPreferences } from "../users/user-preference.factory";
 import { currentRequestLocale } from "../i18n/request-locale";
 import { DemoModeService } from "../common/demo-mode.service";
+import { tenantTx } from "../common/db/tenant-tx";
 import { ReleaseNotesService } from "./release-notes.service";
 import { ReleaseNotes } from "./release-notes.parser";
 
@@ -25,12 +25,16 @@ export interface WhatsNewStatus {
  * Per-user "What's New" digest logic, built on top of the shared
  * ReleaseNotesService. Decides whether the release-notes popup should open
  * automatically and records when a user acknowledges the current version.
+ *
+ * All user_preferences access goes through `tenantTx` (the RLS-compliant door
+ * to the DB), never a new injected repository -- see the RLS ratchet note in
+ * the root CLAUDE.md. These methods run from authenticated controllers, so the
+ * request context supplies the identity `tenantTx` needs.
  */
 @Injectable()
 export class WhatsNewService {
   constructor(
-    @InjectRepository(UserPreference)
-    private readonly preferencesRepository: Repository<UserPreference>,
+    private readonly dataSource: DataSource,
     private readonly releaseNotesService: ReleaseNotesService,
     private readonly demoModeService: DemoModeService,
   ) {}
@@ -39,9 +43,9 @@ export class WhatsNewService {
     const currentVersion = this.releaseNotesService.currentVersion;
     const notes = this.releaseNotesService.getForCurrentVersion();
 
-    const prefs = await this.preferencesRepository.findOne({
-      where: { userId },
-    });
+    const prefs = await tenantTx(this.dataSource, (manager) =>
+      manager.getRepository(UserPreference).findOne({ where: { userId } }),
+    );
 
     // Default to enabled: a row that predates this column, or no row yet, still
     // gets the popup. Only an explicit `false` disables it.
@@ -63,17 +67,18 @@ export class WhatsNewService {
   async markSeen(userId: string): Promise<{ seen: boolean; version: string }> {
     const currentVersion = this.releaseNotesService.currentVersion;
 
-    const prefs = await this.preferencesRepository.findOne({
-      where: { userId },
+    await tenantTx(this.dataSource, async (manager) => {
+      const repo = manager.getRepository(UserPreference);
+      const prefs = await repo.findOne({ where: { userId } });
+      if (prefs) {
+        prefs.lastSeenVersion = currentVersion;
+        await repo.save(prefs);
+      } else {
+        const created = buildDefaultPreferences(userId, currentRequestLocale());
+        created.lastSeenVersion = currentVersion;
+        await repo.save(created);
+      }
     });
-    if (prefs) {
-      prefs.lastSeenVersion = currentVersion;
-      await this.preferencesRepository.save(prefs);
-    } else {
-      const created = buildDefaultPreferences(userId, currentRequestLocale());
-      created.lastSeenVersion = currentVersion;
-      await this.preferencesRepository.save(created);
-    }
 
     return { seen: true, version: currentVersion };
   }
@@ -88,13 +93,15 @@ export class WhatsNewService {
    * default, so there is nothing to clear and no row is created.
    */
   async remindNextLogin(userId: string): Promise<{ reminded: boolean }> {
-    const prefs = await this.preferencesRepository.findOne({
-      where: { userId },
+    await tenantTx(this.dataSource, async (manager) => {
+      const repo = manager.getRepository(UserPreference);
+      const prefs = await repo.findOne({ where: { userId } });
+      if (prefs && prefs.lastSeenVersion !== null) {
+        prefs.lastSeenVersion = null;
+        await repo.save(prefs);
+      }
     });
-    if (prefs && prefs.lastSeenVersion !== null) {
-      prefs.lastSeenVersion = null;
-      await this.preferencesRepository.save(prefs);
-    }
+
     return { reminded: true };
   }
 }

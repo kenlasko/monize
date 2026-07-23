@@ -365,7 +365,17 @@ jobs:
           # b04cb91b90deb5e16504baa7ab95f678_0 - Unsanitized dynamic input in file path [CWE-22] - review-by: 2026-09-04
           # b04cb91b90deb5e16504baa7ab95f678_1 - Unsanitized dynamic input in file path [CWE-22] - review-by: 2026-09-04
           # 30770548d4592a14c9099ac0103a2564_0 - Observable timing discrepancy [CWE-208] comparing payee-name tokens in longestCommonTokenPrefix (no secret involved) - review-by: 2026-09-11
-          exclude-fingerprint: "b65bd7b1a0585cd1d0a326cdb09ce40d_0,da119900eefffd8b84e7693e0388568a_0,95857358158e4664c01c05441df9f2a9_0,842822dd22cd4403ab5800ac89480c0a_0,b04cb91b90deb5e16504baa7ab95f678_0,b04cb91b90deb5e16504baa7ab95f678_1,30770548d4592a14c9099ac0103a2564_0"
+          # The five below are in backend/src/updates/release-notes.service.ts, which reads the
+          # committed docs/release-notes/<version>.md digest. The version is the trusted
+          # package.json value matched against a strict semver regex that forbids path separators,
+          # and the directory is a fixed candidate allowlist plus the operator-set RELEASE_NOTES_DIR
+          # -- no user input reaches these fs calls, so the CWE-22/CWE-73 findings are false positives.
+          # b6c4552155ecc9b65a9205911f502bf1_0 - Non-literal fs path in release-notes reader [CWE-73] - review-by: 2026-10-23
+          # b6c4552155ecc9b65a9205911f502bf1_1 - Non-literal fs path in release-notes reader [CWE-73] - review-by: 2026-10-23
+          # b6c4552155ecc9b65a9205911f502bf1_2 - Non-literal fs path scanning the release-notes dir allowlist [CWE-73] - review-by: 2026-10-23
+          # b6c4552155ecc9b65a9205911f502bf1_3 - Non-literal fs path scanning the release-notes dir allowlist [CWE-73] - review-by: 2026-10-23
+          # c055716bae113b20589f9ea5c5963e65_0 - path.join of the validated running version [CWE-22] - review-by: 2026-10-23
+          exclude-fingerprint: "b65bd7b1a0585cd1d0a326cdb09ce40d_0,da119900eefffd8b84e7693e0388568a_0,95857358158e4664c01c05441df9f2a9_0,842822dd22cd4403ab5800ac89480c0a_0,b04cb91b90deb5e16504baa7ab95f678_0,b04cb91b90deb5e16504baa7ab95f678_1,30770548d4592a14c9099ac0103a2564_0,b6c4552155ecc9b65a9205911f502bf1_0,b6c4552155ecc9b65a9205911f502bf1_1,b6c4552155ecc9b65a9205911f502bf1_2,b6c4552155ecc9b65a9205911f502bf1_3,c055716bae113b20589f9ea5c5963e65_0"
 
   # Resolve the release version and shared build metadata ONCE, so the parallel
   # backend/frontend build jobs below stamp identical version/date/sha values.
