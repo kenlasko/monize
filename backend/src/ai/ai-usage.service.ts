@@ -6,6 +6,7 @@ import { AiUsageLog } from "./entities/ai-usage-log.entity";
 import { AiProviderConfig } from "./entities/ai-provider-config.entity";
 import { AiUsageSummary, EstimatedCostByCurrency } from "./dto/ai-response.dto";
 import { roundMoney } from "../common/round.util";
+import { withSystemContext } from "../common/db/with-context";
 
 interface CostRate {
   inputCostPer1M: number | null;
@@ -76,9 +77,12 @@ export class AiUsageService {
       const cutoff = new Date();
       cutoff.setDate(cutoff.getDate() - 30);
 
-      const result = await this.usageLogRepository.delete({
-        createdAt: LessThan(cutoff),
-      });
+      // RLS (task C2): cross-user bulk purge -- runs under a system context.
+      const result = await withSystemContext(() =>
+        this.usageLogRepository.delete({
+          createdAt: LessThan(cutoff),
+        }),
+      );
 
       if (result.affected && result.affected > 0) {
         this.logger.log(`Purged ${result.affected} old AI usage logs`);

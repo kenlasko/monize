@@ -27,7 +27,7 @@ describe("MortgageReminderService", () => {
 
   const mockMortgage = {
     id: "mort-1",
-    userId: "user-1",
+    userId: "11111111-1111-1111-1111-111111111111",
     name: "Home Mortgage",
     accountType: AccountType.MORTGAGE,
     isClosed: false,
@@ -35,13 +35,13 @@ describe("MortgageReminderService", () => {
   };
 
   const mockUser: Partial<User> = {
-    id: "user-1",
+    id: "11111111-1111-1111-1111-111111111111",
     email: "user1@example.com",
     firstName: "Alice",
   };
 
   const mockPrefsEmailEnabled: Partial<UserPreference> = {
-    userId: "user-1",
+    userId: "11111111-1111-1111-1111-111111111111",
     notificationEmail: true,
   };
 
@@ -221,7 +221,7 @@ describe("MortgageReminderService", () => {
       const mortgageUser2 = {
         ...mockMortgage,
         id: "mort-2",
-        userId: "user-2",
+        userId: "22222222-2222-2222-2222-222222222222",
         name: "Investment Mortgage",
       };
       accountsRepository.find.mockResolvedValue([
@@ -232,10 +232,11 @@ describe("MortgageReminderService", () => {
       preferencesRepository.findOne.mockResolvedValue(mockPrefsEmailEnabled);
       usersRepository.findOne.mockImplementation((query) => {
         const id = query.where.id;
-        if (id === "user-1") return Promise.resolve(mockUser);
-        if (id === "user-2")
+        if (id === "11111111-1111-1111-1111-111111111111")
+          return Promise.resolve(mockUser);
+        if (id === "22222222-2222-2222-2222-222222222222")
           return Promise.resolve({
-            id: "user-2",
+            id: "22222222-2222-2222-2222-222222222222",
             email: "user2@example.com",
             firstName: "Bob",
           });
@@ -254,7 +255,7 @@ describe("MortgageReminderService", () => {
     it("skips user when notificationEmail preference is disabled", async () => {
       accountsRepository.find.mockResolvedValue([mockMortgage]);
       preferencesRepository.findOne.mockResolvedValue({
-        userId: "user-1",
+        userId: "11111111-1111-1111-1111-111111111111",
         notificationEmail: false,
       });
 
@@ -288,7 +289,7 @@ describe("MortgageReminderService", () => {
       accountsRepository.find.mockResolvedValue([mockMortgage]);
       preferencesRepository.findOne.mockResolvedValue(mockPrefsEmailEnabled);
       usersRepository.findOne.mockResolvedValue({
-        id: "user-1",
+        id: "11111111-1111-1111-1111-111111111111",
         email: null,
         firstName: "Alice",
       });
@@ -302,17 +303,18 @@ describe("MortgageReminderService", () => {
       const mortgageUser2 = {
         ...mockMortgage,
         id: "mort-2",
-        userId: "user-2",
+        userId: "22222222-2222-2222-2222-222222222222",
         name: "Investment Mortgage",
       };
       accountsRepository.find.mockResolvedValue([mockMortgage, mortgageUser2]);
       preferencesRepository.findOne.mockResolvedValue(mockPrefsEmailEnabled);
       usersRepository.findOne.mockImplementation((query) => {
         const id = query.where.id;
-        if (id === "user-1") return Promise.resolve(mockUser);
-        if (id === "user-2")
+        if (id === "11111111-1111-1111-1111-111111111111")
+          return Promise.resolve(mockUser);
+        if (id === "22222222-2222-2222-2222-222222222222")
           return Promise.resolve({
-            id: "user-2",
+            id: "22222222-2222-2222-2222-222222222222",
             email: "user2@example.com",
             firstName: "Bob",
           });

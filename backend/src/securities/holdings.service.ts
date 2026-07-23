@@ -13,6 +13,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { todayInTimezone, formatDateYMDLocal } from "../common/date-utils";
 import { sumMoney } from "../common/round.util";
 import { getUsersByEffectiveTimezone } from "../common/users-by-timezone.util";
+import { withSystemContext, withUserContext } from "../common/db/with-context";
 import {
   Repository,
   In,
@@ -873,6 +874,15 @@ export class HoldingsService {
    */
   @Cron("30 * * * *")
   async applyMaturedInvestmentHoldings(): Promise<void> {
+    // RLS (task C2): the timezone/matured-user fan-out queries span users, so
+    // the body runs under a system context; each per-user rebuild re-enters a
+    // user context below.
+    return withSystemContext(() =>
+      this.applyMaturedInvestmentHoldingsWithinContext(),
+    );
+  }
+
+  private async applyMaturedInvestmentHoldingsWithinContext(): Promise<void> {
     try {
       const userIdsByTz = await getUsersByEffectiveTimezone(this.dataSource);
       if (userIdsByTz.size === 0) return;
@@ -895,7 +905,9 @@ export class HoldingsService {
           // includes the transaction that just matured -- without it the rebuild
           // would re-filter against the server's local date and could exclude a
           // transfer dated today in a timezone ahead of the server.
-          await this.rebuildFromTransactions(user_id, today);
+          await withUserContext(user_id, () =>
+            this.rebuildFromTransactions(user_id, today),
+          );
           rebuilt += 1;
         }
       }

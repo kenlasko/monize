@@ -37,7 +37,7 @@ describe("AutoBackupService", () => {
   let mockUsersRepo: Record<string, jest.Mock>;
   let mockBackupService: Record<string, jest.Mock>;
 
-  const userId = "test-user-id";
+  const userId = "55555555-5555-5555-5555-555555555555";
 
   function createSettings(
     overrides: Partial<AutoBackupSettings> = {},

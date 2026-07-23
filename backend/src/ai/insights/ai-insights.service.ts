@@ -13,6 +13,10 @@ import { AiService } from "../ai.service";
 import { AiUsageService } from "../ai-usage.service";
 import { mapWithConcurrency } from "../../common/concurrency.util";
 import {
+  withSystemContext,
+  withUserContext,
+} from "../../common/db/with-context";
+import {
   InsightsAggregatorService,
   SpendingAggregates,
 } from "./insights-aggregator.service";
@@ -246,20 +250,23 @@ export class AiInsightsService {
     this.logger.log("Starting daily insight generation");
 
     try {
-      await this.cleanupExpiredInsights();
+      // RLS (task C2): cross-user cleanup runs under a system context.
+      await withSystemContext(() => this.cleanupExpiredInsights());
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       this.logger.warn(`Failed to cleanup expired insights: ${message}`);
     }
 
-    const userIds = await this.getActiveUserIds();
+    // RLS (task C2): cross-user fan-out over active users.
+    const userIds = await withSystemContext(() => this.getActiveUserIds());
 
     await mapWithConcurrency(
       userIds,
       INSIGHT_GENERATION_CONCURRENCY,
       async (userId) => {
         try {
-          await this.generateInsights(userId);
+          // RLS: per-user generation keeps the user's RLS net.
+          await withUserContext(userId, () => this.generateInsights(userId));
         } catch (error) {
           const message =
             error instanceof Error ? error.message : "Unknown error";

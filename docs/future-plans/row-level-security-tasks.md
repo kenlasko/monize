@@ -50,7 +50,7 @@ uses four classes:
 | T1 | Integration harness applies real RLS migrations + role/grants + `updated_at` triggers | M2, F1 | none | not started |
 | T2 | Catalog-driven `rls-enforcement` integration spec (4 buckets) | T1, M3 | none | not started |
 | C1 | Auth wrapping: `jwt.strategy` under `withUserContext(sub)`; PAT + password-reset + OAuth under `withSystemContext`; public-route audit | F2 | inert | done |
-| C2 | Cron jobs: system fan-out + per-user bodies wrapped | F2 | inert | not started |
+| C2 | Cron jobs: system fan-out + per-user bodies wrapped | F2 | inert | done |
 | C3 | Seeders + demo reset under `withSystemContext` | F2 | inert | not started |
 | C4 | Emergency-access claim + expiry monitor under `withSystemContext`; grantee-side read audit | F2 | inert | not started |
 | C6 | Interceptor restructure: fire-and-forget writes moved inside the ALS scope | F2 | neutral | done |
@@ -452,7 +452,35 @@ in PR description; grep shows no `withSystemContext` import in `jwt.strategy`.
 
 ### C2. Cron jobs
 
-- [ ] Status: not started
+- [x] Status: done (branch `claude/rls-task-status-column-8qqlbm`). All 20 `@Cron` decorators
+  enumerated; the two demo-reset crons are C3's scope and the emergency-access expiry monitor is C4's,
+  leaving 17 wrapped here. Auto-post wrapper-usage test added
+  (`scheduled-transactions.service.spec.ts`) asserting the fan-out runs under `{ system: true }` and
+  each `post()` under `{ userId }`. Non-UUID user-id fixtures across the touched cron specs moved to
+  UUIDs (the per-user wrap validates the id). Full `npm run test:unit` green (8921), build + lint
+  clean, F3 ratchet unchanged.
+
+  **Per-handler wrapping (17 of 20; demo-reset ×2 → C3, emergency-access-monitor → C4):**
+
+  | Handler | File | Wrapping |
+  |---------|------|----------|
+  | `purgeOldUsageLogs` | `ai/ai-usage.service.ts` | system (bulk delete) |
+  | `handleDailyInsightGeneration` | `ai/insights/ai-insights.service.ts` | system (cleanup + active-user fan-out) + `withUserContext` per `generateInsights` |
+  | `purgeExpiredRefreshTokens` | `auth/token.service.ts` | system (bulk delete) |
+  | `scheduledPriceRefresh` | `securities/security-price.service.ts` | system (symbol-grouped refresh + snapshot recalc, irreducibly cross-user) |
+  | `applyMaturedInvestmentHoldings` | `securities/holdings.service.ts` | system (tz + matured-user fan-out) + `withUserContext` per `rebuildFromTransactions` |
+  | `scheduledRefresh` | `updates/updates.service.ts` | **none** — no DB access (GitHub fetch + in-memory cache) |
+  | `cleanupExpiredHistory` | `action-history/action-history.service.ts` | system (bulk delete) |
+  | `sendBillReminders` | `notifications/bill-reminder.service.ts` | system (manual-bill fan-out) + `withUserContext` per user's prefs/user reads |
+  | `processAutoPostTransactions` | `scheduled-transactions/scheduled-transactions.service.ts` | system (tz/candidate fan-out) + `withUserContext` per `post` |
+  | `closeExpiredPeriods` | `budgets/budget-period-cron.service.ts` | system (active-budget fan-out) + `withUserContext` per budget (open-period read + `closePeriod`) and per user (`sendMonthlySummaryForUser`) |
+  | `checkBudgetAlerts` | `budgets/budget-alert.service.ts` | system (fan-out) + `withUserContext` per `processAlerts` |
+  | `sendWeeklyDigest` | `budgets/budget-alert.service.ts` | system (fan-out) + `withUserContext` per `sendDigestForUser` |
+  | `purgeOldAlerts` | `budgets/budget-alert.service.ts` | system (bulk deletes) |
+  | `handleAutoBackupCron` | `backup/auto-backup.service.ts` | system (due-settings fan-out) + `withUserContext` per `exportToFile` + settings save |
+  | `checkMortgageRenewals` | `accounts/mortgage-reminder.service.ts` | system (renewal fan-out) + `withUserContext` per user's prefs/user reads |
+  | `applyDueTransactionBalances` | `accounts/accounts.service.ts` | system (fully cross-user: tz-bucketed bulk reads + single multi-user UPDATE) |
+  | `scheduledRateRefresh` | `currencies/exchange-rate.service.ts` | system (currency-detection read spans all users' policied tables; writes global `exchange_rates`) |
 
 **Scope:** every `@Cron` handler (~17 files / ~20 decorators; grep `@Cron` across `backend/src`).
 Wrapping only, before any R task refactors these services — wrapping is inert pre-refactor.

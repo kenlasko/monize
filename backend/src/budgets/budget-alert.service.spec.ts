@@ -49,7 +49,7 @@ function makeCategory(overrides: Partial<BudgetCategory> = {}): BudgetCategory {
 function makeBudget(overrides: Partial<Budget> = {}): Budget {
   return {
     id: "budget-1",
-    userId: "user-1",
+    userId: "11111111-1111-1111-1111-111111111111",
     name: "Monthly Budget",
     description: null,
     budgetType: BudgetType.MONTHLY,
@@ -72,7 +72,7 @@ function makeBudget(overrides: Partial<Budget> = {}): Budget {
 function makeAlert(overrides: Partial<BudgetAlert> = {}): BudgetAlert {
   return {
     id: "alert-1",
-    userId: "user-1",
+    userId: "11111111-1111-1111-1111-111111111111",
     budgetId: "budget-1",
     budget: {} as Budget,
     budgetCategoryId: "bc-1",
@@ -141,7 +141,7 @@ describe("BudgetAlertService", () => {
 
     usersRepository = {
       findOne: jest.fn().mockResolvedValue({
-        id: "user-1",
+        id: "11111111-1111-1111-1111-111111111111",
         email: "user@test.com",
         firstName: "Test",
       }),
@@ -149,7 +149,7 @@ describe("BudgetAlertService", () => {
 
     preferencesRepository = {
       findOne: jest.fn().mockResolvedValue({
-        userId: "user-1",
+        userId: "11111111-1111-1111-1111-111111111111",
         notificationEmail: true,
         budgetDigestEnabled: true,
         budgetDigestDay: "MONDAY",
@@ -1007,7 +1007,7 @@ describe("BudgetAlertService", () => {
 
     it("does not send email when user has notifications disabled", async () => {
       preferencesRepository.findOne.mockResolvedValue({
-        userId: "user-1",
+        userId: "11111111-1111-1111-1111-111111111111",
         notificationEmail: false,
       });
 
@@ -1173,7 +1173,7 @@ describe("BudgetAlertService", () => {
       const budget1 = makeBudget({ id: "budget-1", categories: [] });
       const budget2 = makeBudget({
         id: "budget-2",
-        userId: "user-2",
+        userId: "22222222-2222-2222-2222-222222222222",
         categories: [],
       });
 
@@ -1200,7 +1200,7 @@ describe("BudgetAlertService", () => {
       });
       const budget2 = makeBudget({
         id: "budget-2",
-        userId: "user-2",
+        userId: "22222222-2222-2222-2222-222222222222",
         categories: [],
       });
 
@@ -1242,7 +1242,7 @@ describe("BudgetAlertService", () => {
     it("skips users with budget digest disabled", async () => {
       budgetsRepository.find.mockResolvedValue([makeBudget()]);
       preferencesRepository.findOne.mockResolvedValue({
-        userId: "user-1",
+        userId: "11111111-1111-1111-1111-111111111111",
         notificationEmail: true,
         budgetDigestEnabled: false,
       });
@@ -1255,7 +1255,7 @@ describe("BudgetAlertService", () => {
     it("skips users with email notifications disabled", async () => {
       budgetsRepository.find.mockResolvedValue([makeBudget()]);
       preferencesRepository.findOne.mockResolvedValue({
-        userId: "user-1",
+        userId: "11111111-1111-1111-1111-111111111111",
         notificationEmail: false,
         budgetDigestEnabled: true,
       });
@@ -1346,7 +1346,10 @@ describe("BudgetAlertService", () => {
         getRawMany: jest.fn().mockResolvedValue([]),
       });
 
-      const alerts = await service.checkSeasonalSpikes("user-1", budget);
+      const alerts = await service.checkSeasonalSpikes(
+        "11111111-1111-1111-1111-111111111111",
+        budget,
+      );
 
       expect(alerts.length).toBeGreaterThanOrEqual(1);
       const spikeAlert = alerts.find(
@@ -1400,7 +1403,10 @@ describe("BudgetAlertService", () => {
         getRawMany: jest.fn().mockResolvedValue([]),
       });
 
-      const alerts = await service.checkSeasonalSpikes("user-1", budget);
+      const alerts = await service.checkSeasonalSpikes(
+        "11111111-1111-1111-1111-111111111111",
+        budget,
+      );
 
       expect(alerts).toHaveLength(0);
     });
@@ -1421,7 +1427,10 @@ describe("BudgetAlertService", () => {
         ],
       });
 
-      const alerts = await service.checkSeasonalSpikes("user-1", budget);
+      const alerts = await service.checkSeasonalSpikes(
+        "11111111-1111-1111-1111-111111111111",
+        budget,
+      );
 
       expect(alerts).toHaveLength(0);
     });
@@ -1464,7 +1473,10 @@ describe("BudgetAlertService", () => {
         getRawMany: jest.fn().mockResolvedValue([]),
       });
 
-      const alerts = await service.checkSeasonalSpikes("user-1", budget);
+      const alerts = await service.checkSeasonalSpikes(
+        "11111111-1111-1111-1111-111111111111",
+        budget,
+      );
 
       expect(alerts).toHaveLength(0);
     });
@@ -1516,7 +1528,10 @@ describe("BudgetAlertService", () => {
         getRawMany: jest.fn().mockResolvedValue([]),
       });
 
-      const alerts = await service.checkSeasonalSpikes("user-1", budget);
+      const alerts = await service.checkSeasonalSpikes(
+        "11111111-1111-1111-1111-111111111111",
+        budget,
+      );
 
       if (alerts.length > 0) {
         const alert = alerts[0];

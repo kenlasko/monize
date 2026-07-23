@@ -7,6 +7,7 @@ import { resolve } from "path";
 import { AutoBackupSettings } from "./entities/auto-backup-settings.entity";
 import { BackupService } from "./backup.service";
 import { User } from "../users/entities/user.entity";
+import { withSystemContext, withUserContext } from "../common/db/with-context";
 import {
   UpdateAutoBackupSettingsDto,
   AutoBackupFrequency,
@@ -248,12 +249,15 @@ export class AutoBackupService {
   @Cron("0 * * * *")
   async handleAutoBackupCron(): Promise<void> {
     const now = new Date();
-    const dueSettings = await this.settingsRepo.find({
-      where: {
-        enabled: true,
-        nextBackupAt: LessThanOrEqual(now),
-      },
-    });
+    // RLS (task C2): cross-user fan-out over every user's due backup settings.
+    const dueSettings = await withSystemContext(() =>
+      this.settingsRepo.find({
+        where: {
+          enabled: true,
+          nextBackupAt: LessThanOrEqual(now),
+        },
+      }),
+    );
 
     if (dueSettings.length === 0) return;
 
@@ -263,10 +267,10 @@ export class AutoBackupService {
       try {
         await this.assertFolderWritable(settings.folderPath);
         const timezone = settings.timezone || "UTC";
-        const filename = await this.exportToFile(
-          settings.userId,
-          settings.folderPath,
-          timezone,
+        // RLS (task C2): the export reads this user's entire dataset, and the
+        // settings write below is that user's row -- both under a user context.
+        const filename = await withUserContext(settings.userId, () =>
+          this.exportToFile(settings.userId, settings.folderPath, timezone),
         );
         this.copyToWeeklyIfNeeded(settings.folderPath, filename, timezone);
         this.copyToMonthlyIfNeeded(settings.folderPath, filename, timezone);
@@ -281,7 +285,9 @@ export class AutoBackupService {
           settings.timezone,
           now,
         );
-        await this.settingsRepo.save(settings);
+        await withUserContext(settings.userId, () =>
+          this.settingsRepo.save(settings),
+        );
 
         this.logger.log(
           `Auto-backup completed for user ${settings.userId}: ${filename}`,
@@ -299,7 +305,9 @@ export class AutoBackupService {
           settings.timezone,
           now,
         );
-        await this.settingsRepo.save(settings);
+        await withUserContext(settings.userId, () =>
+          this.settingsRepo.save(settings),
+        );
       }
     }
   }

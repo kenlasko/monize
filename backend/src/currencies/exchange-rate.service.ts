@@ -21,6 +21,7 @@ import { UserPreference } from "../users/entities/user-preference.entity";
 import { YahooFinanceService } from "../securities/yahoo-finance.service";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import { roundMoney } from "../common/round.util";
+import { withSystemContext } from "../common/db/with-context";
 
 // Cap concurrent Yahoo FX fetches so the daily refresh does not burst every
 // currency pair at once (this cron also runs alongside the security price
@@ -753,7 +754,10 @@ export class ExchangeRateService implements OnModuleInit {
   async scheduledRateRefresh(): Promise<void> {
     this.logger.log("Running scheduled exchange rate refresh");
     try {
-      await this.refreshAllRates();
+      // RLS (task C2): the currency-detection read spans all users' accounts,
+      // securities, holdings and preferences (writes only the global
+      // exchange_rates table), so the refresh runs under a system context.
+      await withSystemContext(() => this.refreshAllRates());
     } catch (error) {
       this.logger.error(
         `Scheduled exchange rate refresh failed: ${error.message}`,

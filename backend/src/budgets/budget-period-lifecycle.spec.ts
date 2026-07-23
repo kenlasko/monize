@@ -82,7 +82,7 @@ describe("Budget Period Lifecycle Integration", () => {
 
   const mockBudget: Budget = {
     id: "budget-1",
-    userId: "user-1",
+    userId: "11111111-1111-1111-1111-111111111111",
     name: "2026 Monthly Budget",
     description: null,
     budgetType: BudgetType.MONTHLY,
@@ -435,7 +435,10 @@ describe("Budget Period Lifecycle Integration", () => {
         createMockQueryBuilder(),
       );
 
-      const result = await periodService.closePeriod("user-1", "budget-1");
+      const result = await periodService.closePeriod(
+        "11111111-1111-1111-1111-111111111111",
+        "budget-1",
+      );
 
       expect(result.status).toBe(PeriodStatus.CLOSED);
       expect(result.actualExpenses).toBe(2000);
@@ -627,7 +630,10 @@ describe("Budget Period Lifecycle Integration", () => {
 
       await cronService.closeExpiredPeriods();
 
-      expect(budgetsService.findOne).toHaveBeenCalledWith("user-1", "budget-1");
+      expect(budgetsService.findOne).toHaveBeenCalledWith(
+        "11111111-1111-1111-1111-111111111111",
+        "budget-1",
+      );
     });
 
     it("cron does not close periods that are still current", async () => {
@@ -667,7 +673,7 @@ describe("Budget Period Lifecycle Integration", () => {
       const budget2: Budget = {
         ...mockBudget,
         id: "budget-2",
-        userId: "user-2",
+        userId: "22222222-2222-2222-2222-222222222222",
         name: "Second Budget",
         categories: [mockBudgetCategory],
       };
@@ -692,9 +698,12 @@ describe("Budget Period Lifecycle Integration", () => {
 
       await cronService.closeExpiredPeriods();
 
-      expect(budgetsService.findOne).toHaveBeenCalledWith("user-1", "budget-1");
+      expect(budgetsService.findOne).toHaveBeenCalledWith(
+        "11111111-1111-1111-1111-111111111111",
+        "budget-1",
+      );
       expect(budgetsService.findOne).not.toHaveBeenCalledWith(
-        "user-2",
+        "22222222-2222-2222-2222-222222222222",
         "budget-2",
       );
     });
@@ -758,7 +767,10 @@ describe("Budget Period Lifecycle Integration", () => {
         createMockQueryBuilder(),
       );
 
-      const result = await periodService.closePeriod("user-1", "budget-1");
+      const result = await periodService.closePeriod(
+        "11111111-1111-1111-1111-111111111111",
+        "budget-1",
+      );
 
       expect(result.status).toBe(PeriodStatus.CLOSED);
       expect(result.actualExpenses).toBe(0);
@@ -787,7 +799,7 @@ describe("Budget Period Lifecycle Integration", () => {
       periodsRepository.findOne.mockResolvedValue(existingPeriod);
 
       const result = await periodService.getOrCreateCurrentPeriod(
-        "user-1",
+        "11111111-1111-1111-1111-111111111111",
         "budget-1",
       );
 
@@ -803,7 +815,7 @@ describe("Budget Period Lifecycle Integration", () => {
       }));
 
       const result = await periodService.getOrCreateCurrentPeriod(
-        "user-1",
+        "11111111-1111-1111-1111-111111111111",
         "budget-1",
       );
 
@@ -877,7 +889,10 @@ describe("Budget Period Lifecycle Integration", () => {
       transactionsRepository.createQueryBuilder.mockReturnValue(directQb);
       splitsRepository.createQueryBuilder.mockReturnValue(splitQb);
 
-      const result = await periodService.closePeriod("user-1", "budget-1");
+      const result = await periodService.closePeriod(
+        "11111111-1111-1111-1111-111111111111",
+        "budget-1",
+      );
 
       expect(result.actualExpenses).toBe(400);
       expect(openPeriod.periodCategories[0].actualAmount).toBe(400);

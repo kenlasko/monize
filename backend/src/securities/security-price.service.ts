@@ -7,6 +7,7 @@ import { SecurityPrice } from "./entities/security-price.entity";
 import { Security } from "./entities/security.entity";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { UserPreference } from "../users/entities/user-preference.entity";
+import { withSystemContext } from "../common/db/with-context";
 import {
   QuoteProvider,
   QuoteProviderName,
@@ -1019,13 +1020,18 @@ export class SecurityPriceService {
   async scheduledPriceRefresh(): Promise<void> {
     this.logger.log("Running scheduled price refresh");
     try {
-      const result = await this.refreshAllPrices(true);
-      if (result.updated > 0) {
-        this.logger.log(
-          "Recalculating investment snapshots after price refresh",
-        );
-        await this.netWorthService.recalculateAllInvestmentSnapshots();
-      }
+      // RLS (task C2): the price refresh groups securities across users by
+      // symbol (irreducibly cross-user), and the snapshot recalc fans out over
+      // every investment account, so the whole job runs under a system context.
+      await withSystemContext(async () => {
+        const result = await this.refreshAllPrices(true);
+        if (result.updated > 0) {
+          this.logger.log(
+            "Recalculating investment snapshots after price refresh",
+          );
+          await this.netWorthService.recalculateAllInvestmentSnapshots();
+        }
+      });
     } catch (error) {
       this.logger.error(`Scheduled price refresh failed: ${error.message}`);
     }

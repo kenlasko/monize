@@ -12,6 +12,7 @@ import { mortgageReminderTemplate } from "../notifications/email-templates";
 import { formatDateYMD } from "../common/date-utils";
 import { emailTranslator } from "../i18n/email-translator";
 import { DEFAULT_LOCALE } from "../i18n/config";
+import { withSystemContext, withUserContext } from "../common/db/with-context";
 
 /**
  * Service for handling mortgage term renewal reminders
@@ -44,7 +45,10 @@ export class MortgageReminderService {
   async checkMortgageRenewals() {
     this.logger.log("Running mortgage renewal check...");
 
-    const upcomingRenewals = await this.findUpcomingRenewals(60);
+    // RLS (task C2): cross-user fan-out over every user's mortgages.
+    const upcomingRenewals = await withSystemContext(() =>
+      this.findUpcomingRenewals(60),
+    );
 
     if (upcomingRenewals.length === 0) {
       this.logger.log("No upcoming mortgage renewals found");
@@ -87,17 +91,22 @@ export class MortgageReminderService {
 
     for (const [userId, mortgages] of mortgagesByUser) {
       try {
-        const prefs = await this.preferencesRepository.findOne({
-          where: { userId },
-        });
+        // RLS (task C2): per-user reads run under the user's own context.
+        const prefs = await withUserContext(userId, () =>
+          this.preferencesRepository.findOne({
+            where: { userId },
+          }),
+        );
         if (prefs && !prefs.notificationEmail) {
           skipCount++;
           continue;
         }
 
-        const user = await this.usersRepository.findOne({
-          where: { id: userId },
-        });
+        const user = await withUserContext(userId, () =>
+          this.usersRepository.findOne({
+            where: { id: userId },
+          }),
+        );
         if (!user || !user.email) {
           skipCount++;
           continue;

@@ -70,8 +70,8 @@ describe("BillReminderService", () => {
   });
 
   describe("sendBillReminders", () => {
-    const userId1 = "user-uuid-1";
-    const userId2 = "user-uuid-2";
+    const userId1 = "11111111-1111-1111-1111-111111111111";
+    const userId2 = "22222222-2222-2222-2222-222222222222";
 
     const mockUser1: Partial<User> = {
       id: userId1,

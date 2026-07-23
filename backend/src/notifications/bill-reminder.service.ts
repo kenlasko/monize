@@ -11,6 +11,7 @@ import { EmailService } from "./email.service";
 import { billReminderTemplate } from "./email-templates";
 import { emailTranslator } from "../i18n/email-translator";
 import { DEFAULT_LOCALE } from "../i18n/config";
+import { withSystemContext, withUserContext } from "../common/db/with-context";
 
 @Injectable()
 export class BillReminderService {
@@ -37,11 +38,14 @@ export class BillReminderService {
 
     this.logger.log("Running bill reminder check...");
 
-    // Only manual bills (autoPost = false) that are active
-    const manualBills = await this.scheduledTransactionsRepo.find({
-      where: { isActive: true, autoPost: false },
-      relations: ["payee", "overrides"],
-    });
+    // Only manual bills (autoPost = false) that are active.
+    // RLS (task C2): cross-user fan-out over every user's manual bills.
+    const manualBills = await withSystemContext(() =>
+      this.scheduledTransactionsRepo.find({
+        where: { isActive: true, autoPost: false },
+        relations: ["payee", "overrides"],
+      }),
+    );
 
     if (manualBills.length === 0) {
       this.logger.log("No manual bills found");
@@ -90,16 +94,21 @@ export class BillReminderService {
 
     for (const [userId, bills] of billsByUser) {
       try {
-        // Check if user has email notifications enabled
-        const prefs = await this.preferencesRepo.findOne({
-          where: { userId },
-        });
+        // Check if user has email notifications enabled.
+        // RLS (task C2): per-user reads run under the user's own context.
+        const prefs = await withUserContext(userId, () =>
+          this.preferencesRepo.findOne({
+            where: { userId },
+          }),
+        );
         if (prefs && !prefs.notificationEmail) {
           skipCount++;
           continue;
         }
 
-        const user = await this.usersRepo.findOne({ where: { id: userId } });
+        const user = await withUserContext(userId, () =>
+          this.usersRepo.findOne({ where: { id: userId } }),
+        );
         if (!user || !user.email) {
           skipCount++;
           continue;

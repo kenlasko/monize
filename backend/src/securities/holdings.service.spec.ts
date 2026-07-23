@@ -44,7 +44,7 @@ describe("HoldingsService", () => {
 
   const mockSecurity = {
     id: "sec-1",
-    userId: "user-1",
+    userId: "11111111-1111-1111-1111-111111111111",
     symbol: "AAPL",
     name: "Apple Inc.",
     securityType: "STOCK",
@@ -55,7 +55,7 @@ describe("HoldingsService", () => {
 
   const mockSecurity2 = {
     id: "sec-2",
-    userId: "user-1",
+    userId: "11111111-1111-1111-1111-111111111111",
     symbol: "MSFT",
     name: "Microsoft Corp",
     securityType: "STOCK",
@@ -66,7 +66,7 @@ describe("HoldingsService", () => {
 
   const mockAccount = {
     id: "acc-1",
-    userId: "user-1",
+    userId: "11111111-1111-1111-1111-111111111111",
     name: "Brokerage",
     accountType: AccountType.INVESTMENT,
     accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
@@ -74,7 +74,7 @@ describe("HoldingsService", () => {
 
   const mockAccount2 = {
     id: "acc-2",
-    userId: "user-1",
+    userId: "11111111-1111-1111-1111-111111111111",
     name: "Brokerage 2",
     accountType: AccountType.INVESTMENT,
     accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
@@ -209,7 +209,9 @@ describe("HoldingsService", () => {
       const qb = createMockQueryBuilder([mockHolding, mockHolding2]);
       holdingsRepository.createQueryBuilder.mockReturnValue(qb);
 
-      const result = await service.findAll("user-1");
+      const result = await service.findAll(
+        "11111111-1111-1111-1111-111111111111",
+      );
 
       expect(holdingsRepository.createQueryBuilder).toHaveBeenCalledWith(
         "holding",
@@ -223,7 +225,7 @@ describe("HoldingsService", () => {
         "security",
       );
       expect(qb.where).toHaveBeenCalledWith("account.userId = :userId", {
-        userId: "user-1",
+        userId: "11111111-1111-1111-1111-111111111111",
       });
       expect(qb.getMany).toHaveBeenCalled();
       expect(result).toHaveLength(2);
@@ -233,7 +235,10 @@ describe("HoldingsService", () => {
       const qb = createMockQueryBuilder([mockHolding]);
       holdingsRepository.createQueryBuilder.mockReturnValue(qb);
 
-      const result = await service.findAll("user-1", "acc-1");
+      const result = await service.findAll(
+        "11111111-1111-1111-1111-111111111111",
+        "acc-1",
+      );
 
       expect(qb.andWhere).toHaveBeenCalledWith(
         "holding.accountId = :accountId",
@@ -248,7 +253,7 @@ describe("HoldingsService", () => {
       const qb = createMockQueryBuilder([]);
       holdingsRepository.createQueryBuilder.mockReturnValue(qb);
 
-      await service.findAll("user-1");
+      await service.findAll("11111111-1111-1111-1111-111111111111");
 
       expect(qb.andWhere).not.toHaveBeenCalled();
     });
@@ -257,7 +262,9 @@ describe("HoldingsService", () => {
       const qb = createMockQueryBuilder([]);
       holdingsRepository.createQueryBuilder.mockReturnValue(qb);
 
-      const result = await service.findAll("user-1");
+      const result = await service.findAll(
+        "11111111-1111-1111-1111-111111111111",
+      );
 
       expect(result).toHaveLength(0);
     });
@@ -268,7 +275,10 @@ describe("HoldingsService", () => {
       const qb = createMockQueryBuilder(mockHolding);
       holdingsRepository.createQueryBuilder.mockReturnValue(qb);
 
-      const result = await service.findOne("user-1", "hold-1");
+      const result = await service.findOne(
+        "11111111-1111-1111-1111-111111111111",
+        "hold-1",
+      );
 
       expect(holdingsRepository.createQueryBuilder).toHaveBeenCalledWith(
         "holding",
@@ -285,7 +295,7 @@ describe("HoldingsService", () => {
         id: "hold-1",
       });
       expect(qb.andWhere).toHaveBeenCalledWith("account.userId = :userId", {
-        userId: "user-1",
+        userId: "11111111-1111-1111-1111-111111111111",
       });
       expect(result).toEqual(mockHolding);
     });
@@ -294,18 +304,18 @@ describe("HoldingsService", () => {
       const qb = createMockQueryBuilder(null);
       holdingsRepository.createQueryBuilder.mockReturnValue(qb);
 
-      await expect(service.findOne("user-1", "nonexistent")).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.findOne("11111111-1111-1111-1111-111111111111", "nonexistent"),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it("throws NotFoundException with descriptive message", async () => {
       const qb = createMockQueryBuilder(null);
       holdingsRepository.createQueryBuilder.mockReturnValue(qb);
 
-      await expect(service.findOne("user-1", "hold-999")).rejects.toThrow(
-        "Holding with ID hold-999 not found",
-      );
+      await expect(
+        service.findOne("11111111-1111-1111-1111-111111111111", "hold-999"),
+      ).rejects.toThrow("Holding with ID hold-999 not found");
     });
   });
 
@@ -331,7 +341,7 @@ describe("HoldingsService", () => {
       ]);
 
       const result = await service.getHoldingAt(
-        "user-1",
+        "11111111-1111-1111-1111-111111111111",
         "acc-1",
         "sec-1",
         "2025-03-01",
@@ -365,7 +375,7 @@ describe("HoldingsService", () => {
       // Asking for state as-of the split's own date, excluding the split
       // itself: should reflect the BUY only.
       const result = await service.getHoldingAt(
-        "user-1",
+        "11111111-1111-1111-1111-111111111111",
         "acc-1",
         "sec-1",
         "2022-07-01",
@@ -398,7 +408,7 @@ describe("HoldingsService", () => {
 
       // Asking for state as-of a later date, including the split: 1100*0.5
       const result = await service.getHoldingAt(
-        "user-1",
+        "11111111-1111-1111-1111-111111111111",
         "acc-1",
         "sec-1",
         "2022-12-01",
@@ -412,7 +422,7 @@ describe("HoldingsService", () => {
       investmentTransactionsRepository.find.mockResolvedValue([]);
 
       const result = await service.getHoldingAt(
-        "user-1",
+        "11111111-1111-1111-1111-111111111111",
         "acc-1",
         "sec-1",
         "2025-01-01",
@@ -443,7 +453,7 @@ describe("HoldingsService", () => {
       ]);
 
       const result = await service.getHoldingAt(
-        "user-1",
+        "11111111-1111-1111-1111-111111111111",
         "acc-1",
         "sec-1",
         "2025-03-01",
@@ -459,7 +469,12 @@ describe("HoldingsService", () => {
       );
 
       await expect(
-        service.getHoldingAt("user-1", "other-acc", "sec-1", "2025-01-01"),
+        service.getHoldingAt(
+          "11111111-1111-1111-1111-111111111111",
+          "other-acc",
+          "sec-1",
+          "2025-01-01",
+        ),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -502,15 +517,21 @@ describe("HoldingsService", () => {
       });
 
       const result = await service.createOrUpdate(
-        "user-1",
+        "11111111-1111-1111-1111-111111111111",
         "acc-1",
         "sec-1",
         10,
         150,
       );
 
-      expect(accountsService.findOne).toHaveBeenCalledWith("user-1", "acc-1");
-      expect(securitiesService.findOne).toHaveBeenCalledWith("user-1", "sec-1");
+      expect(accountsService.findOne).toHaveBeenCalledWith(
+        "11111111-1111-1111-1111-111111111111",
+        "acc-1",
+      );
+      expect(securitiesService.findOne).toHaveBeenCalledWith(
+        "11111111-1111-1111-1111-111111111111",
+        "sec-1",
+      );
       expect(holdingsRepository.create).toHaveBeenCalledWith({
         accountId: "acc-1",
         securityId: "sec-1",
@@ -535,7 +556,7 @@ describe("HoldingsService", () => {
       );
 
       const result = await service.createOrUpdate(
-        "user-1",
+        "11111111-1111-1111-1111-111111111111",
         "acc-1",
         "sec-1",
         50,
@@ -561,7 +582,7 @@ describe("HoldingsService", () => {
       );
 
       const result = await service.createOrUpdate(
-        "user-1",
+        "11111111-1111-1111-1111-111111111111",
         "acc-1",
         "sec-1",
         -30,
@@ -579,7 +600,13 @@ describe("HoldingsService", () => {
       );
 
       await expect(
-        service.createOrUpdate("user-1", "acc-999", "sec-1", 10, 150),
+        service.createOrUpdate(
+          "11111111-1111-1111-1111-111111111111",
+          "acc-999",
+          "sec-1",
+          10,
+          150,
+        ),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -589,7 +616,13 @@ describe("HoldingsService", () => {
       );
 
       await expect(
-        service.createOrUpdate("user-1", "acc-1", "sec-999", 10, 150),
+        service.createOrUpdate(
+          "11111111-1111-1111-1111-111111111111",
+          "acc-1",
+          "sec-999",
+          10,
+          150,
+        ),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -607,7 +640,7 @@ describe("HoldingsService", () => {
       );
 
       const result = await service.createOrUpdate(
-        "user-1",
+        "11111111-1111-1111-1111-111111111111",
         "acc-1",
         "sec-1",
         50,
@@ -633,7 +666,7 @@ describe("HoldingsService", () => {
       );
 
       const result = await service.createOrUpdate(
-        "user-1",
+        "11111111-1111-1111-1111-111111111111",
         "acc-1",
         "sec-1",
         -100,
@@ -660,7 +693,7 @@ describe("HoldingsService", () => {
       );
 
       const result = await service.createOrUpdate(
-        "user-1",
+        "11111111-1111-1111-1111-111111111111",
         "acc-1",
         "sec-1",
         -100,
@@ -682,7 +715,13 @@ describe("HoldingsService", () => {
       holdingsRepository.findOne.mockResolvedValue(existingHolding);
 
       await expect(
-        service.createOrUpdate("user-1", "acc-1", "sec-1", -100, 150),
+        service.createOrUpdate(
+          "11111111-1111-1111-1111-111111111111",
+          "acc-1",
+          "sec-1",
+          -100,
+          150,
+        ),
       ).rejects.toThrow(/Insufficient shares/);
     });
 
@@ -700,7 +739,7 @@ describe("HoldingsService", () => {
       );
 
       const result = await service.createOrUpdate(
-        "user-1",
+        "11111111-1111-1111-1111-111111111111",
         "acc-1",
         "sec-1",
         -100,
@@ -730,7 +769,7 @@ describe("HoldingsService", () => {
       );
 
       const result = await service.createOrUpdate(
-        "user-1",
+        "11111111-1111-1111-1111-111111111111",
         "acc-1",
         "sec-1",
         150,
@@ -760,15 +799,21 @@ describe("HoldingsService", () => {
       });
 
       const result = await service.updateHolding(
-        "user-1",
+        "11111111-1111-1111-1111-111111111111",
         "acc-1",
         "sec-1",
         10,
         100,
       );
 
-      expect(accountsService.findOne).toHaveBeenCalledWith("user-1", "acc-1");
-      expect(securitiesService.findOne).toHaveBeenCalledWith("user-1", "sec-1");
+      expect(accountsService.findOne).toHaveBeenCalledWith(
+        "11111111-1111-1111-1111-111111111111",
+        "acc-1",
+      );
+      expect(securitiesService.findOne).toHaveBeenCalledWith(
+        "11111111-1111-1111-1111-111111111111",
+        "sec-1",
+      );
       expect(result.id).toBe("new-hold");
     });
   });
@@ -788,10 +833,21 @@ describe("HoldingsService", () => {
         id: "new-hold",
       });
 
-      await service.adjustQuantity("user-1", "acc-1", "sec-1", 25);
+      await service.adjustQuantity(
+        "11111111-1111-1111-1111-111111111111",
+        "acc-1",
+        "sec-1",
+        25,
+      );
 
-      expect(accountsService.findOne).toHaveBeenCalledWith("user-1", "acc-1");
-      expect(securitiesService.findOne).toHaveBeenCalledWith("user-1", "sec-1");
+      expect(accountsService.findOne).toHaveBeenCalledWith(
+        "11111111-1111-1111-1111-111111111111",
+        "acc-1",
+      );
+      expect(securitiesService.findOne).toHaveBeenCalledWith(
+        "11111111-1111-1111-1111-111111111111",
+        "sec-1",
+      );
       expect(holdingsRepository.create).toHaveBeenCalledWith({
         accountId: "acc-1",
         securityId: "sec-1",
@@ -805,11 +861,21 @@ describe("HoldingsService", () => {
       holdingsRepository.findOne.mockResolvedValue(null);
 
       await expect(
-        service.adjustQuantity("user-1", "acc-1", "sec-1", -10),
+        service.adjustQuantity(
+          "11111111-1111-1111-1111-111111111111",
+          "acc-1",
+          "sec-1",
+          -10,
+        ),
       ).rejects.toThrow(NotFoundException);
 
       await expect(
-        service.adjustQuantity("user-1", "acc-1", "sec-1", -10),
+        service.adjustQuantity(
+          "11111111-1111-1111-1111-111111111111",
+          "acc-1",
+          "sec-1",
+          -10,
+        ),
       ).rejects.toThrow("Cannot remove shares from a non-existent holding");
     });
 
@@ -827,7 +893,7 @@ describe("HoldingsService", () => {
       );
 
       const result = await service.adjustQuantity(
-        "user-1",
+        "11111111-1111-1111-1111-111111111111",
         "acc-1",
         "sec-1",
         25,
@@ -851,7 +917,7 @@ describe("HoldingsService", () => {
       );
 
       const result = await service.adjustQuantity(
-        "user-1",
+        "11111111-1111-1111-1111-111111111111",
         "acc-1",
         "sec-1",
         -30,
@@ -867,7 +933,12 @@ describe("HoldingsService", () => {
       );
 
       await expect(
-        service.adjustQuantity("user-1", "acc-999", "sec-1", 10),
+        service.adjustQuantity(
+          "11111111-1111-1111-1111-111111111111",
+          "acc-999",
+          "sec-1",
+          10,
+        ),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -877,7 +948,12 @@ describe("HoldingsService", () => {
       );
 
       await expect(
-        service.adjustQuantity("user-1", "acc-1", "sec-999", 10),
+        service.adjustQuantity(
+          "11111111-1111-1111-1111-111111111111",
+          "acc-1",
+          "sec-999",
+          10,
+        ),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -997,7 +1073,10 @@ describe("HoldingsService", () => {
       const qb = createMockQueryBuilder(holdings);
       holdingsRepository.createQueryBuilder.mockReturnValue(qb);
 
-      const result = await service.getHoldingsSummary("user-1", "acc-1");
+      const result = await service.getHoldingsSummary(
+        "11111111-1111-1111-1111-111111111111",
+        "acc-1",
+      );
 
       expect(result.totalHoldings).toBe(2);
       expect(result.totalQuantity).toBe(150); // 100 + 50
@@ -1025,7 +1104,10 @@ describe("HoldingsService", () => {
       const qb = createMockQueryBuilder([]);
       holdingsRepository.createQueryBuilder.mockReturnValue(qb);
 
-      const result = await service.getHoldingsSummary("user-1", "acc-1");
+      const result = await service.getHoldingsSummary(
+        "11111111-1111-1111-1111-111111111111",
+        "acc-1",
+      );
 
       expect(result.totalHoldings).toBe(0);
       expect(result.totalQuantity).toBe(0);
@@ -1042,7 +1124,10 @@ describe("HoldingsService", () => {
       const qb = createMockQueryBuilder([holdingWithNullCost]);
       holdingsRepository.createQueryBuilder.mockReturnValue(qb);
 
-      const result = await service.getHoldingsSummary("user-1", "acc-1");
+      const result = await service.getHoldingsSummary(
+        "11111111-1111-1111-1111-111111111111",
+        "acc-1",
+      );
 
       expect(result.totalCostBasis).toBe(0);
       expect(result.holdings[0].averageCost).toBe(0);
@@ -1056,7 +1141,7 @@ describe("HoldingsService", () => {
       const qb = createMockQueryBuilder(zeroHolding);
       holdingsRepository.createQueryBuilder.mockReturnValue(qb);
 
-      await service.remove("user-1", "hold-1");
+      await service.remove("11111111-1111-1111-1111-111111111111", "hold-1");
 
       expect(holdingsRepository.remove).toHaveBeenCalledWith(zeroHolding);
     });
@@ -1066,9 +1151,9 @@ describe("HoldingsService", () => {
       const qb = createMockQueryBuilder(nonZeroHolding);
       holdingsRepository.createQueryBuilder.mockReturnValue(qb);
 
-      await expect(service.remove("user-1", "hold-1")).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        service.remove("11111111-1111-1111-1111-111111111111", "hold-1"),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it("throws ForbiddenException with descriptive message for non-zero quantity", async () => {
@@ -1076,18 +1161,18 @@ describe("HoldingsService", () => {
       const qb = createMockQueryBuilder(nonZeroHolding);
       holdingsRepository.createQueryBuilder.mockReturnValue(qb);
 
-      await expect(service.remove("user-1", "hold-1")).rejects.toThrow(
-        "Cannot delete holding with non-zero quantity",
-      );
+      await expect(
+        service.remove("11111111-1111-1111-1111-111111111111", "hold-1"),
+      ).rejects.toThrow("Cannot delete holding with non-zero quantity");
     });
 
     it("throws NotFoundException when holding does not exist", async () => {
       const qb = createMockQueryBuilder(null);
       holdingsRepository.createQueryBuilder.mockReturnValue(qb);
 
-      await expect(service.remove("user-1", "nonexistent")).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.remove("11111111-1111-1111-1111-111111111111", "nonexistent"),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it("handles string quantity '0' correctly (decimal from DB)", async () => {
@@ -1096,7 +1181,7 @@ describe("HoldingsService", () => {
       const qb = createMockQueryBuilder(zeroHolding);
       holdingsRepository.createQueryBuilder.mockReturnValue(qb);
 
-      await service.remove("user-1", "hold-1");
+      await service.remove("11111111-1111-1111-1111-111111111111", "hold-1");
 
       expect(holdingsRepository.remove).toHaveBeenCalledWith(zeroHolding);
     });
@@ -1106,7 +1191,9 @@ describe("HoldingsService", () => {
     it("returns zeros when user has no brokerage accounts", async () => {
       accountsRepository.find.mockResolvedValue([]);
 
-      const result = await service.rebuildFromTransactions("user-1");
+      const result = await service.rebuildFromTransactions(
+        "11111111-1111-1111-1111-111111111111",
+      );
 
       expect(result).toEqual({
         holdingsCreated: 0,
@@ -1142,7 +1229,9 @@ describe("HoldingsService", () => {
       ];
       investmentTransactionsRepository.find.mockResolvedValue(transactions);
 
-      const result = await service.rebuildFromTransactions("user-1");
+      const result = await service.rebuildFromTransactions(
+        "11111111-1111-1111-1111-111111111111",
+      );
 
       expect(mockQueryRunner.manager.remove).toHaveBeenCalledWith(
         existingHoldings,
@@ -1184,7 +1273,9 @@ describe("HoldingsService", () => {
       ];
       investmentTransactionsRepository.find.mockResolvedValue(transactions);
 
-      const result = await service.rebuildFromTransactions("user-1");
+      const result = await service.rebuildFromTransactions(
+        "11111111-1111-1111-1111-111111111111",
+      );
 
       // After buy: qty=100, totalCost=15000
       // After sell 40: avgCost=150, sell cost=40*150=6000, remaining totalCost=9000, qty=60
@@ -1225,7 +1316,9 @@ describe("HoldingsService", () => {
       ];
       investmentTransactionsRepository.find.mockResolvedValue(transactions);
 
-      const result = await service.rebuildFromTransactions("user-1");
+      const result = await service.rebuildFromTransactions(
+        "11111111-1111-1111-1111-111111111111",
+      );
 
       // REINVEST: qty=10, totalCost=500
       // TRANSFER_IN: qty=30, totalCost=500+1200=1700
@@ -1272,7 +1365,9 @@ describe("HoldingsService", () => {
       ];
       investmentTransactionsRepository.find.mockResolvedValue(transactions);
 
-      const result = await service.rebuildFromTransactions("user-1");
+      const result = await service.rebuildFromTransactions(
+        "11111111-1111-1111-1111-111111111111",
+      );
 
       // BUY: qty=100, totalCost=10000
       // TRANSFER_OUT (sell-like): qty=80, avgCost=100, totalCost=8000
@@ -1310,7 +1405,9 @@ describe("HoldingsService", () => {
       ];
       investmentTransactionsRepository.find.mockResolvedValue(transactions);
 
-      await service.rebuildFromTransactions("user-1");
+      await service.rebuildFromTransactions(
+        "11111111-1111-1111-1111-111111111111",
+      );
 
       // BUY: qty=100, totalCost=10000
       // SPLIT 2:1: qty doubles to 200, totalCost stays 10000 -> avg = 50
@@ -1368,7 +1465,9 @@ describe("HoldingsService", () => {
       ];
       investmentTransactionsRepository.find.mockResolvedValue(transactions);
 
-      const result = await service.rebuildFromTransactions("user-1");
+      const result = await service.rebuildFromTransactions(
+        "11111111-1111-1111-1111-111111111111",
+      );
 
       // 1100 shares -> *0.5 = 550 -> *0.5 = 275 -> -275 = 0.
       // No holding should be emitted (zero quantity is filtered out).
@@ -1404,7 +1503,9 @@ describe("HoldingsService", () => {
       ];
       investmentTransactionsRepository.find.mockResolvedValue(transactions);
 
-      const result = await service.rebuildFromTransactions("user-1");
+      const result = await service.rebuildFromTransactions(
+        "11111111-1111-1111-1111-111111111111",
+      );
 
       // BUY: qty=100, totalCost=10000
       // ADD_SHARES (quantity only): qty=105, totalCost=10000
@@ -1434,7 +1535,9 @@ describe("HoldingsService", () => {
       ];
       investmentTransactionsRepository.find.mockResolvedValue(transactions);
 
-      const result = await service.rebuildFromTransactions("user-1");
+      const result = await service.rebuildFromTransactions(
+        "11111111-1111-1111-1111-111111111111",
+      );
 
       expect(mockQrRepo.create).not.toHaveBeenCalled();
       expect(result.holdingsCreated).toBe(0);
@@ -1475,7 +1578,9 @@ describe("HoldingsService", () => {
       ];
       investmentTransactionsRepository.find.mockResolvedValue(transactions);
 
-      const result = await service.rebuildFromTransactions("user-1");
+      const result = await service.rebuildFromTransactions(
+        "11111111-1111-1111-1111-111111111111",
+      );
 
       expect(mockQrRepo.create).not.toHaveBeenCalled();
       expect(result.holdingsCreated).toBe(0);
@@ -1518,7 +1623,9 @@ describe("HoldingsService", () => {
       ];
       investmentTransactionsRepository.find.mockResolvedValue(transactions);
 
-      const result = await service.rebuildFromTransactions("user-1");
+      const result = await service.rebuildFromTransactions(
+        "11111111-1111-1111-1111-111111111111",
+      );
 
       // Near-zero residual should be snapped to zero; no holding created
       expect(mockQrRepo.create).not.toHaveBeenCalled();
@@ -1551,7 +1658,9 @@ describe("HoldingsService", () => {
       ];
       investmentTransactionsRepository.find.mockResolvedValue(transactions);
 
-      const result = await service.rebuildFromTransactions("user-1");
+      const result = await service.rebuildFromTransactions(
+        "11111111-1111-1111-1111-111111111111",
+      );
 
       expect(mockQrRepo.create).not.toHaveBeenCalled();
       expect(result.holdingsCreated).toBe(0);
@@ -1594,7 +1703,9 @@ describe("HoldingsService", () => {
       mockQrRepo.create.mockImplementation((data: any) => data);
       mockQrRepo.save.mockImplementation((data: any) => Promise.resolve(data));
 
-      const result = await service.rebuildFromTransactions("user-1");
+      const result = await service.rebuildFromTransactions(
+        "11111111-1111-1111-1111-111111111111",
+      );
 
       expect(result.holdingsCreated).toBe(3);
       expect(mockQrRepo.create).toHaveBeenCalledTimes(3);
@@ -1603,11 +1714,13 @@ describe("HoldingsService", () => {
     it("queries only investment accounts", async () => {
       accountsRepository.find.mockResolvedValue([]);
 
-      await service.rebuildFromTransactions("user-1");
+      await service.rebuildFromTransactions(
+        "11111111-1111-1111-1111-111111111111",
+      );
 
       expect(accountsRepository.find).toHaveBeenCalledWith({
         where: {
-          userId: "user-1",
+          userId: "11111111-1111-1111-1111-111111111111",
           accountType: AccountType.INVESTMENT,
         },
       });
@@ -1618,7 +1731,9 @@ describe("HoldingsService", () => {
       holdingsRepository.find.mockResolvedValue([]);
       investmentTransactionsRepository.find.mockResolvedValue([]);
 
-      const result = await service.rebuildFromTransactions("user-1");
+      const result = await service.rebuildFromTransactions(
+        "11111111-1111-1111-1111-111111111111",
+      );
 
       expect(mockQueryRunner.manager.remove).not.toHaveBeenCalled();
       expect(result.holdingsDeleted).toBe(0);
@@ -1641,7 +1756,9 @@ describe("HoldingsService", () => {
       ];
       investmentTransactionsRepository.find.mockResolvedValue(transactions);
 
-      const result = await service.rebuildFromTransactions("user-1");
+      const result = await service.rebuildFromTransactions(
+        "11111111-1111-1111-1111-111111111111",
+      );
 
       // quantity=0, price=0 results in near-zero quantity, not created
       expect(mockQrRepo.create).not.toHaveBeenCalled();
@@ -1677,7 +1794,9 @@ describe("HoldingsService", () => {
       mockQrRepo.create.mockImplementation((data: any) => data);
       mockQrRepo.save.mockImplementation((data: any) => Promise.resolve(data));
 
-      const result = await service.rebuildFromTransactions("user-1");
+      const result = await service.rebuildFromTransactions(
+        "11111111-1111-1111-1111-111111111111",
+      );
 
       // BUY 10 at 100: qty=10, totalCost=1000
       // REMOVE_SHARES 20 (qty only): qty=-10, totalCost=1000
@@ -1697,7 +1816,9 @@ describe("HoldingsService", () => {
       accountsRepository.find.mockResolvedValue([]);
 
       await expect(
-        service.validateNoNegativeHoldingsHistory("user-1"),
+        service.validateNoNegativeHoldingsHistory(
+          "11111111-1111-1111-1111-111111111111",
+        ),
       ).resolves.toBeUndefined();
       expect(investmentTransactionsRepository.find).not.toHaveBeenCalled();
     });
@@ -1724,7 +1845,9 @@ describe("HoldingsService", () => {
       ]);
 
       await expect(
-        service.validateNoNegativeHoldingsHistory("user-1"),
+        service.validateNoNegativeHoldingsHistory(
+          "11111111-1111-1111-1111-111111111111",
+        ),
       ).resolves.toBeUndefined();
     });
 
@@ -1750,7 +1873,9 @@ describe("HoldingsService", () => {
       ]);
 
       await expect(
-        service.validateNoNegativeHoldingsHistory("user-1"),
+        service.validateNoNegativeHoldingsHistory(
+          "11111111-1111-1111-1111-111111111111",
+        ),
       ).rejects.toThrow(/negative/i);
     });
 
@@ -1787,7 +1912,9 @@ describe("HoldingsService", () => {
       ]);
 
       await expect(
-        service.validateNoNegativeHoldingsHistory("user-1"),
+        service.validateNoNegativeHoldingsHistory(
+          "11111111-1111-1111-1111-111111111111",
+        ),
       ).rejects.toThrow(/AAPL/);
     });
 
@@ -1813,7 +1940,9 @@ describe("HoldingsService", () => {
       ]);
 
       await expect(
-        service.validateNoNegativeHoldingsHistory("user-1"),
+        service.validateNoNegativeHoldingsHistory(
+          "11111111-1111-1111-1111-111111111111",
+        ),
       ).rejects.toThrow(/MSFT/);
     });
 
@@ -1848,7 +1977,9 @@ describe("HoldingsService", () => {
 
       // After BUY 10 + 4-for-1 SPLIT = 40 shares, SELL 30 leaves 10. Valid.
       await expect(
-        service.validateNoNegativeHoldingsHistory("user-1"),
+        service.validateNoNegativeHoldingsHistory(
+          "11111111-1111-1111-1111-111111111111",
+        ),
       ).resolves.toBeUndefined();
     });
 
@@ -1870,9 +2001,11 @@ describe("HoldingsService", () => {
       ]);
 
       await expect(
-        service.validateNoNegativeHoldingsHistory("user-1", undefined, [
-          "acc-1",
-        ]),
+        service.validateNoNegativeHoldingsHistory(
+          "11111111-1111-1111-1111-111111111111",
+          undefined,
+          ["acc-1"],
+        ),
       ).resolves.toBeUndefined();
 
       // The scoped list must be passed through to the query, not the
@@ -1881,7 +2014,7 @@ describe("HoldingsService", () => {
       expect(investmentTransactionsRepository.find).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            userId: "user-1",
+            userId: "11111111-1111-1111-1111-111111111111",
           }),
         }),
       );
@@ -1917,7 +2050,9 @@ describe("HoldingsService", () => {
       ]);
 
       await expect(
-        service.validateNoNegativeHoldingsHistory("user-1"),
+        service.validateNoNegativeHoldingsHistory(
+          "11111111-1111-1111-1111-111111111111",
+        ),
       ).resolves.toBeUndefined();
     });
   });
@@ -1926,7 +2061,9 @@ describe("HoldingsService", () => {
     it("returns 0 when user has no brokerage accounts", async () => {
       accountsRepository.find.mockResolvedValue([]);
 
-      const result = await service.removeAllForUser("user-1");
+      const result = await service.removeAllForUser(
+        "11111111-1111-1111-1111-111111111111",
+      );
 
       expect(result).toBe(0);
     });
@@ -1936,7 +2073,9 @@ describe("HoldingsService", () => {
       const holdings = [{ id: "h1" }, { id: "h2" }, { id: "h3" }];
       holdingsRepository.find.mockResolvedValue(holdings);
 
-      const result = await service.removeAllForUser("user-1");
+      const result = await service.removeAllForUser(
+        "11111111-1111-1111-1111-111111111111",
+      );
 
       expect(holdingsRepository.remove).toHaveBeenCalledWith(holdings);
       expect(result).toBe(3);
@@ -1946,7 +2085,9 @@ describe("HoldingsService", () => {
       accountsRepository.find.mockResolvedValue([mockAccount]);
       holdingsRepository.find.mockResolvedValue([]);
 
-      const result = await service.removeAllForUser("user-1");
+      const result = await service.removeAllForUser(
+        "11111111-1111-1111-1111-111111111111",
+      );
 
       expect(holdingsRepository.remove).not.toHaveBeenCalled();
       expect(result).toBe(0);
@@ -1955,11 +2096,11 @@ describe("HoldingsService", () => {
     it("queries only brokerage accounts", async () => {
       accountsRepository.find.mockResolvedValue([]);
 
-      await service.removeAllForUser("user-1");
+      await service.removeAllForUser("11111111-1111-1111-1111-111111111111");
 
       expect(accountsRepository.find).toHaveBeenCalledWith({
         where: {
-          userId: "user-1",
+          userId: "11111111-1111-1111-1111-111111111111",
           accountType: AccountType.INVESTMENT,
           accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
         },
@@ -1970,7 +2111,7 @@ describe("HoldingsService", () => {
       accountsRepository.find.mockResolvedValue([mockAccount, mockAccount2]);
       holdingsRepository.find.mockResolvedValue([]);
 
-      await service.removeAllForUser("user-1");
+      await service.removeAllForUser("11111111-1111-1111-1111-111111111111");
 
       // Verify find was called with a where clause containing an In() operator for accountId
       expect(holdingsRepository.find).toHaveBeenCalledTimes(1);
@@ -1988,7 +2129,9 @@ describe("HoldingsService", () => {
       accountsRepository.find.mockResolvedValue([mockAccount]);
       investmentTransactionsRepository.find.mockResolvedValue([]);
 
-      await service.rebuildFromTransactions("user-1");
+      await service.rebuildFromTransactions(
+        "11111111-1111-1111-1111-111111111111",
+      );
 
       expect(mockQueryRunner.connect).toHaveBeenCalled();
       expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
@@ -2005,9 +2148,9 @@ describe("HoldingsService", () => {
         new Error("Delete failed"),
       );
 
-      await expect(service.rebuildFromTransactions("user-1")).rejects.toThrow(
-        "Delete failed",
-      );
+      await expect(
+        service.rebuildFromTransactions("11111111-1111-1111-1111-111111111111"),
+      ).rejects.toThrow("Delete failed");
 
       expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();
@@ -2030,9 +2173,9 @@ describe("HoldingsService", () => {
       investmentTransactionsRepository.find.mockResolvedValue(transactions);
       mockQrRepo.save.mockRejectedValue(new Error("Save failed"));
 
-      await expect(service.rebuildFromTransactions("user-1")).rejects.toThrow(
-        "Save failed",
-      );
+      await expect(
+        service.rebuildFromTransactions("11111111-1111-1111-1111-111111111111"),
+      ).rejects.toThrow("Save failed");
 
       expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();
@@ -2045,10 +2188,20 @@ describe("HoldingsService", () => {
       (service as any).dataSource.query = jest
         .fn()
         .mockResolvedValueOnce([
-          { user_id: "user-1", timezone: "UTC", last_client_timezone: null },
-          { user_id: "user-2", timezone: "UTC", last_client_timezone: null },
+          {
+            user_id: "11111111-1111-1111-1111-111111111111",
+            timezone: "UTC",
+            last_client_timezone: null,
+          },
+          {
+            user_id: "22222222-2222-2222-2222-222222222222",
+            timezone: "UTC",
+            last_client_timezone: null,
+          },
         ])
-        .mockResolvedValueOnce([{ user_id: "user-1" }]);
+        .mockResolvedValueOnce([
+          { user_id: "11111111-1111-1111-1111-111111111111" },
+        ]);
       const rebuildSpy = jest
         .spyOn(service, "rebuildFromTransactions")
         .mockResolvedValue({
@@ -2064,7 +2217,7 @@ describe("HoldingsService", () => {
       // transaction is included.
       expect(rebuildSpy).toHaveBeenCalledTimes(1);
       expect(rebuildSpy).toHaveBeenCalledWith(
-        "user-1",
+        "11111111-1111-1111-1111-111111111111",
         expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
       );
     });

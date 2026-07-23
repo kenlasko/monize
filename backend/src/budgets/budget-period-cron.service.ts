@@ -14,6 +14,7 @@ import { BudgetPeriodService } from "./budget-period.service";
 import { BudgetReportsService } from "./budget-reports.service";
 import { EmailService } from "../notifications/email.service";
 import { budgetMonthlySummaryTemplate } from "../notifications/email-templates";
+import { withSystemContext, withUserContext } from "../common/db/with-context";
 
 interface ClosedPeriodInfo {
   budget: Budget;
@@ -45,14 +46,17 @@ export class BudgetPeriodCronService {
     this.logger.log("Running budget period close check...");
 
     try {
-      const activeBudgets = await this.budgetsRepository.find({
-        where: { isActive: true },
-        relations: [
-          "categories",
-          "categories.category",
-          "categories.transferAccount",
-        ],
-      });
+      // RLS (task C2): cross-user fan-out over all active budgets.
+      const activeBudgets = await withSystemContext(() =>
+        this.budgetsRepository.find({
+          where: { isActive: true },
+          relations: [
+            "categories",
+            "categories.category",
+            "categories.transferAccount",
+          ],
+        }),
+      );
 
       if (activeBudgets.length === 0) {
         this.logger.log("No active budgets found");
@@ -65,9 +69,12 @@ export class BudgetPeriodCronService {
 
       for (const budget of activeBudgets) {
         try {
-          const openPeriod = await this.periodsRepository.findOne({
-            where: { budgetId: budget.id, status: PeriodStatus.OPEN },
-          });
+          // RLS (task C2): per-user reads/writes run under the owner's context.
+          const openPeriod = await withUserContext(budget.userId, () =>
+            this.periodsRepository.findOne({
+              where: { budgetId: budget.id, status: PeriodStatus.OPEN },
+            }),
+          );
 
           if (!openPeriod) {
             continue;
@@ -77,9 +84,8 @@ export class BudgetPeriodCronService {
           const now = new Date();
 
           if (now > periodEnd) {
-            const closedPeriod = await this.budgetPeriodService.closePeriod(
-              budget.userId,
-              budget.id,
+            const closedPeriod = await withUserContext(budget.userId, () =>
+              this.budgetPeriodService.closePeriod(budget.userId, budget.id),
             );
             closedCount++;
             closedPeriods.push({ budget, period: closedPeriod });
@@ -132,7 +138,10 @@ export class BudgetPeriodCronService {
 
     for (const [userId, userPeriods] of periodsByUser) {
       try {
-        const sent = await this.sendMonthlySummaryForUser(userId, userPeriods);
+        // RLS (task C2): per-user body keeps the owner's RLS net.
+        const sent = await withUserContext(userId, () =>
+          this.sendMonthlySummaryForUser(userId, userPeriods),
+        );
         if (sent) sentCount++;
       } catch (error) {
         this.logger.error(

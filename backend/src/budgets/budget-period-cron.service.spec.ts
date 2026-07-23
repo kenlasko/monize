@@ -24,7 +24,7 @@ describe("BudgetPeriodCronService", () => {
 
   const mockBudget: Budget = {
     id: "budget-1",
-    userId: "user-1",
+    userId: "11111111-1111-1111-1111-111111111111",
     name: "Monthly Budget",
     description: null,
     budgetType: BudgetType.MONTHLY,
@@ -135,7 +135,7 @@ describe("BudgetPeriodCronService", () => {
   };
 
   const mockUser: Partial<User> = {
-    id: "user-1",
+    id: "11111111-1111-1111-1111-111111111111",
     email: "alice@example.com",
     firstName: "Alice",
     lastName: "Smith",
@@ -279,7 +279,7 @@ describe("BudgetPeriodCronService", () => {
       await service.closeExpiredPeriods();
 
       expect(budgetPeriodService.closePeriod).toHaveBeenCalledWith(
-        "user-1",
+        "11111111-1111-1111-1111-111111111111",
         "budget-1",
       );
     });
@@ -301,7 +301,7 @@ describe("BudgetPeriodCronService", () => {
       const budget2: Budget = {
         ...mockBudget,
         id: "budget-2",
-        userId: "user-2",
+        userId: "22222222-2222-2222-2222-222222222222",
         name: "Second Budget",
       };
 
@@ -322,7 +322,7 @@ describe("BudgetPeriodCronService", () => {
 
       expect(budgetPeriodService.closePeriod).toHaveBeenCalledTimes(1);
       expect(budgetPeriodService.closePeriod).toHaveBeenCalledWith(
-        "user-1",
+        "11111111-1111-1111-1111-111111111111",
         "budget-1",
       );
     });
@@ -331,7 +331,7 @@ describe("BudgetPeriodCronService", () => {
       const budget2: Budget = {
         ...mockBudget,
         id: "budget-2",
-        userId: "user-2",
+        userId: "22222222-2222-2222-2222-222222222222",
         name: "Second Budget",
       };
 
@@ -356,7 +356,7 @@ describe("BudgetPeriodCronService", () => {
 
       expect(budgetPeriodService.closePeriod).toHaveBeenCalledTimes(2);
       expect(budgetPeriodService.closePeriod).toHaveBeenCalledWith(
-        "user-2",
+        "22222222-2222-2222-2222-222222222222",
         "budget-2",
       );
     });
@@ -373,7 +373,7 @@ describe("BudgetPeriodCronService", () => {
       const budget2: Budget = {
         ...mockBudget,
         id: "budget-2",
-        userId: "user-2",
+        userId: "22222222-2222-2222-2222-222222222222",
         name: "Second Budget",
       };
 
@@ -394,11 +394,11 @@ describe("BudgetPeriodCronService", () => {
 
       expect(budgetPeriodService.closePeriod).toHaveBeenCalledTimes(2);
       expect(budgetPeriodService.closePeriod).toHaveBeenCalledWith(
-        "user-1",
+        "11111111-1111-1111-1111-111111111111",
         "budget-1",
       );
       expect(budgetPeriodService.closePeriod).toHaveBeenCalledWith(
-        "user-2",
+        "22222222-2222-2222-2222-222222222222",
         "budget-2",
       );
     });
@@ -446,7 +446,7 @@ describe("BudgetPeriodCronService", () => {
 
     it("skips users with disabled email notifications", async () => {
       preferencesRepository.findOne.mockResolvedValue({
-        userId: "user-1",
+        userId: "11111111-1111-1111-1111-111111111111",
         notificationEmail: false,
         budgetDigestEnabled: true,
       });
@@ -459,7 +459,7 @@ describe("BudgetPeriodCronService", () => {
 
     it("skips users with disabled budget digest", async () => {
       preferencesRepository.findOne.mockResolvedValue({
-        userId: "user-1",
+        userId: "11111111-1111-1111-1111-111111111111",
         notificationEmail: true,
         budgetDigestEnabled: false,
       });
@@ -567,7 +567,7 @@ describe("BudgetPeriodCronService", () => {
       const otherBudget = {
         ...mockBudget,
         id: "budget-3",
-        userId: "user-2",
+        userId: "22222222-2222-2222-2222-222222222222",
         name: "Other Budget",
       };
       const multiPeriods = [
@@ -582,7 +582,7 @@ describe("BudgetPeriodCronService", () => {
       usersRepository.findOne
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce({
-          id: "user-2",
+          id: "22222222-2222-2222-2222-222222222222",
           email: "bob@example.com",
           firstName: "Bob",
         });

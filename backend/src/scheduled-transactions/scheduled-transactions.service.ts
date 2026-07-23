@@ -45,6 +45,7 @@ import {
 } from "../common/recurrence";
 import { ActionHistoryService } from "../action-history/action-history.service";
 import { getUsersByEffectiveTimezone } from "../common/users-by-timezone.util";
+import { withSystemContext, withUserContext } from "../common/db/with-context";
 import { validateSplitAmountSum } from "../common/split-amount.util";
 import { roundMoney, sumMoney } from "../common/round.util";
 import { tr } from "../i18n/translate";
@@ -157,7 +158,13 @@ export class ScheduledTransactionsService {
   @Cron("5 * * * *")
   async processAutoPostTransactions(): Promise<void> {
     this.logger.log("Starting auto-post processing for scheduled transactions");
+    // RLS (task C2): the timezone/candidate fan-out queries span users, so the
+    // body runs under a system context; each per-user post() re-enters a user
+    // context below so it keeps the owner's RLS net.
+    return withSystemContext(() => this.processAutoPostWithinContext());
+  }
 
+  private async processAutoPostWithinContext(): Promise<void> {
     try {
       const userIdsByTz = await getUsersByEffectiveTimezone(this.dataSource);
       if (userIdsByTz.size === 0) return;
@@ -222,7 +229,9 @@ export class ScheduledTransactionsService {
 
         for (const scheduled of dueTransactions) {
           try {
-            await this.post(scheduled.userId, scheduled.id);
+            await withUserContext(scheduled.userId, () =>
+              this.post(scheduled.userId, scheduled.id),
+            );
             totalSuccess++;
           } catch (error) {
             totalError++;

@@ -7,6 +7,7 @@ import { I18nService } from "nestjs-i18n";
 import { emailTranslator } from "../i18n/email-translator";
 import { DEFAULT_LOCALE } from "../i18n/config";
 import { getMonthEndYMD } from "../common/date-utils";
+import { withSystemContext, withUserContext } from "../common/db/with-context";
 import { Budget } from "./entities/budget.entity";
 import {
   BudgetAlert,
@@ -97,15 +98,18 @@ export class BudgetAlertService {
     this.logger.log("Running daily budget alert check...");
 
     try {
-      const activeBudgets = await this.budgetsRepository.find({
-        where: { isActive: true },
-        relations: [
-          "categories",
-          "categories.category",
-          "categories.category.parent",
-          "categories.transferAccount",
-        ],
-      });
+      // RLS (task C2): cross-user fan-out over all active budgets.
+      const activeBudgets = await withSystemContext(() =>
+        this.budgetsRepository.find({
+          where: { isActive: true },
+          relations: [
+            "categories",
+            "categories.category",
+            "categories.category.parent",
+            "categories.transferAccount",
+          ],
+        }),
+      );
 
       if (activeBudgets.length === 0) {
         this.logger.log("No active budgets found");
@@ -117,7 +121,10 @@ export class BudgetAlertService {
 
       for (const budget of activeBudgets) {
         try {
-          const result = await this.processAlerts(budget);
+          // RLS: per-user body keeps the user's RLS net.
+          const result = await withUserContext(budget.userId, () =>
+            this.processAlerts(budget),
+          );
           alertsCreated += result.alertsCreated;
           emailsSent += result.emailsSent;
         } catch (error) {
@@ -144,15 +151,18 @@ export class BudgetAlertService {
     this.logger.log("Running weekly budget digest...");
 
     try {
-      const activeBudgets = await this.budgetsRepository.find({
-        where: { isActive: true },
-        relations: [
-          "categories",
-          "categories.category",
-          "categories.category.parent",
-          "categories.transferAccount",
-        ],
-      });
+      // RLS (task C2): cross-user fan-out over all active budgets.
+      const activeBudgets = await withSystemContext(() =>
+        this.budgetsRepository.find({
+          where: { isActive: true },
+          relations: [
+            "categories",
+            "categories.category",
+            "categories.category.parent",
+            "categories.transferAccount",
+          ],
+        }),
+      );
 
       if (activeBudgets.length === 0) {
         this.logger.log("No active budgets for weekly digest");
@@ -176,7 +186,10 @@ export class BudgetAlertService {
 
       for (const [userId, userBudgets] of budgetsByUser) {
         try {
-          const sent = await this.sendDigestForUser(userId, userBudgets);
+          // RLS: per-user body keeps the user's RLS net.
+          const sent = await withUserContext(userId, () =>
+            this.sendDigestForUser(userId, userBudgets),
+          );
           if (sent) {
             sentCount++;
           } else {
@@ -1006,17 +1019,21 @@ export class BudgetAlertService {
       const cutoff = new Date();
       cutoff.setDate(cutoff.getDate() - 30);
 
-      const result = await this.alertsRepository.delete({
-        dismissedAt: LessThan(cutoff),
+      // RLS (task C2): cross-user bulk purge -- runs under a system context.
+      const { dismissed, read } = await withSystemContext(async () => {
+        const result = await this.alertsRepository.delete({
+          dismissedAt: LessThan(cutoff),
+        });
+        const readResult = await this.alertsRepository.delete({
+          isRead: true,
+          dismissedAt: IsNull(),
+          createdAt: LessThan(cutoff),
+        });
+        return {
+          dismissed: result.affected || 0,
+          read: readResult.affected || 0,
+        };
       });
-      const dismissed = result.affected || 0;
-
-      const readResult = await this.alertsRepository.delete({
-        isRead: true,
-        dismissedAt: IsNull(),
-        createdAt: LessThan(cutoff),
-      });
-      const read = readResult.affected || 0;
 
       if (dismissed + read > 0) {
         this.logger.log(

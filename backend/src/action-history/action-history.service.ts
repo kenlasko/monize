@@ -20,6 +20,7 @@ import { Security } from "../securities/entities/security.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { Budget } from "../budgets/entities/budget.entity";
 import { CustomReport } from "../reports/entities/custom-report.entity";
+import { withSystemContext } from "../common/db/with-context";
 
 export interface RecordActionParams {
   entityType: string;
@@ -1468,11 +1469,14 @@ export class ActionHistoryService {
       const cutoff = new Date();
       cutoff.setDate(cutoff.getDate() - MAX_HISTORY_AGE_DAYS);
 
-      const result = await this.actionHistoryRepository
-        .createQueryBuilder()
-        .delete()
-        .where("created_at < :cutoff", { cutoff })
-        .execute();
+      // RLS (task C2): cross-user bulk cleanup -- runs under a system context.
+      const result = await withSystemContext(() =>
+        this.actionHistoryRepository
+          .createQueryBuilder()
+          .delete()
+          .where("created_at < :cutoff", { cutoff })
+          .execute(),
+      );
 
       if (result.affected && result.affected > 0) {
         this.logger.log(

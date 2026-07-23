@@ -39,6 +39,7 @@ import { formatDateYMD, todayInTimezone, todayYMD } from "../common/date-utils";
 import { getUsersByEffectiveTimezone } from "../common/users-by-timezone.util";
 import { didYouMean } from "../common/name-suggestions.util";
 import { ActionHistoryService } from "../action-history/action-history.service";
+import { withSystemContext } from "../common/db/with-context";
 
 @Injectable()
 export class AccountsService {
@@ -1628,6 +1629,15 @@ export class AccountsService {
    */
   @Cron("0 * * * *")
   async applyDueTransactionBalances(): Promise<void> {
+    // RLS (task C2): fully cross-user -- timezone-bucketed bulk reads and a
+    // single multi-user UPDATE, with no per-user isolation body. The whole job
+    // runs under a system context.
+    return withSystemContext(() =>
+      this.applyDueTransactionBalancesWithinContext(),
+    );
+  }
+
+  private async applyDueTransactionBalancesWithinContext(): Promise<void> {
     try {
       const userIdsByTz = await getUsersByEffectiveTimezone(this.dataSource);
       if (userIdsByTz.size === 0) return;

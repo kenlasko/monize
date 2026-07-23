@@ -9,6 +9,7 @@ import * as crypto from "crypto";
 import { User } from "../users/entities/user.entity";
 import { RefreshToken } from "./entities/refresh-token.entity";
 import { hashToken } from "./crypto.util";
+import { withSystemContext } from "../common/db/with-context";
 import { tr } from "../i18n/translate";
 
 export interface DelegationTokenContext {
@@ -221,6 +222,13 @@ export class TokenService {
 
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
   async purgeExpiredRefreshTokens(): Promise<void> {
+    // RLS (task C2): cross-user bulk purge -- runs under a system context.
+    return withSystemContext(() =>
+      this.purgeExpiredRefreshTokensWithinContext(),
+    );
+  }
+
+  private async purgeExpiredRefreshTokensWithinContext(): Promise<void> {
     const expiredResult = await this.refreshTokensRepository.delete({
       expiresAt: LessThan(new Date()),
     });

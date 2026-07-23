@@ -14,6 +14,7 @@ import { InvestmentTransactionsService } from "../securities/investment-transact
 import { ScheduledTransactionOverrideService } from "./scheduled-transaction-override.service";
 import { ScheduledTransactionLoanService } from "./scheduled-transaction-loan.service";
 import { ActionHistoryService } from "../action-history/action-history.service";
+import { getRequestContext } from "../common/request-context";
 
 describe("ScheduledTransactionsService", () => {
   let service: ScheduledTransactionsService;
@@ -29,7 +30,7 @@ describe("ScheduledTransactionsService", () => {
   let mockDataSource: Record<string, jest.Mock>;
   let mockActionHistoryService: Record<string, jest.Mock>;
 
-  const userId = "user-1";
+  const userId = "11111111-1111-1111-1111-111111111111";
   const stId = "st-1";
 
   const makeScheduled = (
@@ -190,7 +191,9 @@ describe("ScheduledTransactionsService", () => {
       // refactor and assume a one-user world.
       query: jest
         .fn()
-        .mockResolvedValue([{ user_id: "user-1", timezone: "UTC" }]),
+        .mockResolvedValue([
+          { user_id: "11111111-1111-1111-1111-111111111111", timezone: "UTC" },
+        ]),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -2493,6 +2496,34 @@ describe("ScheduledTransactionsService", () => {
       expect(transactionsService.create).not.toHaveBeenCalled();
     });
 
+    // RLS (task C2): the timezone/candidate fan-out runs under a system
+    // context; each per-user post() re-enters that user's own context.
+    it("runs the fan-out under system context and each post under a user context", async () => {
+      const st1 = makeScheduled({ id: "st-1", autoPost: true });
+      let ctxAtFind: ReturnType<typeof getRequestContext>;
+      scheduledRepo.find.mockImplementation(() => {
+        ctxAtFind = getRequestContext();
+        return Promise.resolve([st1]);
+      });
+      scheduledRepo.findOne.mockResolvedValue(st1);
+      const overrideQb = mockQueryBuilder(null);
+      overrideQb.getOne.mockResolvedValue(null);
+      overridesRepo.createQueryBuilder.mockReturnValue(overrideQb);
+      accountsRepo.findOne.mockResolvedValue(null);
+
+      let ctxAtPost: ReturnType<typeof getRequestContext>;
+      const postSpy = jest.spyOn(service, "post").mockImplementation(() => {
+        ctxAtPost = getRequestContext();
+        return Promise.resolve(undefined as any);
+      });
+
+      await service.processAutoPostTransactions();
+
+      expect(ctxAtFind).toEqual({ system: true });
+      expect(ctxAtPost).toEqual({ userId: st1.userId });
+      postSpy.mockRestore();
+    });
+
     it("should continue processing after individual errors", async () => {
       const st1 = makeScheduled({ id: "st-1", autoPost: true });
       const st2 = makeScheduled({ id: "st-2", autoPost: true });
@@ -2652,7 +2683,7 @@ describe("ScheduledTransactionsService", () => {
       // early once UTC rolls past midnight.
       mockDataSource.query.mockResolvedValueOnce([
         {
-          user_id: "user-tz",
+          user_id: "33333333-3333-3333-3333-333333333333",
           timezone: "browser",
           last_client_timezone: "America/Toronto",
         },
@@ -2673,7 +2704,7 @@ describe("ScheduledTransactionsService", () => {
     it("falls back to UTC when neither explicit timezone nor cached client timezone is set", async () => {
       mockDataSource.query.mockResolvedValueOnce([
         {
-          user_id: "user-utc",
+          user_id: "44444444-4444-4444-4444-444444444444",
           timezone: "browser",
           last_client_timezone: null,
         },
