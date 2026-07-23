@@ -61,7 +61,7 @@ uses four classes:
 | R5 | Refactor: built-in-reports, reports | F3, C1–C4, C6 | neutral | not started |
 | R6 | Refactor: ai, mcp, import, action-history, currencies, updates, notifications | F3, C1–C4, C6 | neutral | not started |
 | R7 | Refactor: auth, users, delegation, admin, emergency-access, backup, database | F3, C1–C4, C6 | neutral | not started |
-| C5 | Backup restore: `preserveTimestamps` flag replaces `DISABLE TRIGGER` DDL | F2, M1, R7 | neutral | not started |
+| C5 | Backup restore: `preserveTimestamps` flag replaces `DISABLE TRIGGER` DDL | F2, M1, R7 | neutral | blocked (needs M1, R7) |
 | L1 | Lint bans: `with-context.ts` import allowlist; `@InjectRepository`/`createQueryRunner` ban | R1–R7 | none | not started |
 | D1 | Docs: CLAUDE.md updates (incl. stale scheduler claim), `.env.example` + helm/k8s finalization, runbook promotion prep | all above | none | not started |
 
@@ -551,7 +551,11 @@ grantee-side audit result in the PR description.
 
 ### C5. Backup restore
 
-- [ ] Status: not started
+- [ ] Status: **blocked** -- not started. Unlike C1-C4/C6 (which only depend on F2), C5 also depends
+  on **M1** (the GUC-aware `update_updated_at_column()` trigger must be in the DB) and **R7** (the
+  restore path must already be on `tenantTx` to carry the `preserveTimestamps` flag). Both are not
+  started, so C5 cannot begin yet without a scope violation ("never start a task whose dependencies
+  are unmerged").
 
 **Scope:** `backend/src/backup/backup.service.ts` (restore path, ~line 1317).
 
