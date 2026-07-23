@@ -11,6 +11,7 @@ import {
 } from "./oauth-provider.service";
 import { renderConsentPage } from "./consent-template";
 import { AuthService } from "../auth/auth.service";
+import { withUserContext } from "../common/db/with-context";
 
 /**
  * Hosts the user-facing OAuth interaction routes (login + consent) for the
@@ -285,7 +286,12 @@ export class OAuthInteractionController {
         type?: string;
       }>(token);
       if (payload.type === "2fa_pending") return null;
-      const user = await this.authService.getUserById(payload.sub);
+      // RLS: the OAuth consent pages authenticate from the auth_token cookie,
+      // not a Nest req.user -- the verified token's `sub` is the user, so read
+      // its own row under a user context (self-policy), no bypass.
+      const user = await withUserContext(payload.sub, () =>
+        this.authService.getUserById(payload.sub),
+      );
       if (!user || !user.isActive || user.mustChangePassword) return null;
       return { id: user.id, email: user.email ?? null };
     } catch {

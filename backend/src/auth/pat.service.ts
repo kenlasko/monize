@@ -11,6 +11,7 @@ import { PersonalAccessToken } from "./entities/personal-access-token.entity";
 import { User } from "../users/entities/user.entity";
 import { CreatePatDto } from "./dto/create-pat.dto";
 import { hashToken } from "./crypto.util";
+import { withSystemContext } from "../common/db/with-context";
 import { tr } from "../i18n/translate";
 
 const MAX_TOKENS_PER_USER = 10;
@@ -81,6 +82,17 @@ export class PatService {
   }
 
   async validateToken(rawToken: string): Promise<ValidatedToken> {
+    // RLS: PAT authentication is pre-identity -- the token-hash lookup scans
+    // personal_access_tokens across all users, before any req.user exists (all
+    // MCP traffic authenticates here). Seed a system context so the lookup and
+    // the lastUsedAt write have ambient identity once these repositories move
+    // to tenantTx (task R7). Inert until then.
+    return withSystemContext(() => this.validateTokenWithinContext(rawToken));
+  }
+
+  private async validateTokenWithinContext(
+    rawToken: string,
+  ): Promise<ValidatedToken> {
     if (!rawToken || !rawToken.startsWith("pat_")) {
       throw new UnauthorizedException(
         tr("errors.auth.invalidTokenFormat", "Invalid token format"),

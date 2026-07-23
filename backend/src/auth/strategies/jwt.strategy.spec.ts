@@ -4,6 +4,16 @@ import { ConfigService } from "@nestjs/config";
 import { JwtStrategy } from "./jwt.strategy";
 import { AuthService } from "../auth.service";
 import { DelegationService } from "../../delegation/delegation.service";
+import { getRequestContext } from "../../common/request-context";
+
+// Real tokens always carry a UUID `sub` (it is the user's id). jwt.strategy now
+// seeds a user context via withUserContext(payload.sub), which validates the id
+// is a UUID, so the fixtures below use well-formed UUIDs.
+const USER_ID = "11111111-1111-1111-1111-111111111111";
+const DELEGATE_ID = "22222222-2222-2222-2222-222222222222";
+const OWNER_ID = "33333333-3333-3333-3333-333333333333";
+const DELEG_ID = "44444444-4444-4444-4444-444444444444";
+const NONEXISTENT_ID = "99999999-9999-9999-9999-999999999999";
 
 describe("JwtStrategy", () => {
   let strategy: JwtStrategy;
@@ -12,7 +22,7 @@ describe("JwtStrategy", () => {
   let delegationService: Record<string, jest.Mock>;
 
   const mockUser = {
-    id: "user-1",
+    id: USER_ID,
     isActive: true,
     mustChangePassword: false,
     role: "user",
@@ -87,7 +97,7 @@ describe("JwtStrategy", () => {
 
   describe("validate", () => {
     it("rejects 2fa_pending tokens", async () => {
-      const payload = { sub: "user-1", type: "2fa_pending" };
+      const payload = { sub: USER_ID, type: "2fa_pending" };
 
       await expect(strategy.validate(payload)).rejects.toThrow(
         UnauthorizedException,
@@ -98,7 +108,7 @@ describe("JwtStrategy", () => {
     });
 
     it("rejects inactive users", async () => {
-      const payload = { sub: "user-1" };
+      const payload = { sub: USER_ID };
       authService.getUserStateById.mockResolvedValue({
         ...mockUser,
         isActive: false,
@@ -113,7 +123,7 @@ describe("JwtStrategy", () => {
     });
 
     it("rejects when user is not found", async () => {
-      const payload = { sub: "nonexistent" };
+      const payload = { sub: NONEXISTENT_ID };
       authService.getUserStateById.mockResolvedValue(null);
 
       await expect(strategy.validate(payload)).rejects.toThrow(
@@ -122,15 +132,15 @@ describe("JwtStrategy", () => {
     });
 
     it("returns enriched self user for a non-delegate payload", async () => {
-      const payload = { sub: "user-1" };
+      const payload = { sub: USER_ID };
       authService.getUserStateById.mockResolvedValue(mockUser);
 
       const result = await strategy.validate(payload);
 
-      expect(authService.getUserStateById).toHaveBeenCalledWith("user-1");
+      expect(authService.getUserStateById).toHaveBeenCalledWith(USER_ID);
       expect(result).toEqual({
         ...mockUser,
-        realUserId: "user-1",
+        realUserId: USER_ID,
         isActing: false,
         delegationId: null,
       });
@@ -139,12 +149,12 @@ describe("JwtStrategy", () => {
 
     it("maps the effective id to the owner when acting as a delegate", async () => {
       const payload = {
-        sub: "delegate-1",
-        actingAsUserId: "owner-1",
-        delegationId: "deleg-1",
+        sub: DELEGATE_ID,
+        actingAsUserId: OWNER_ID,
+        delegationId: DELEG_ID,
       };
       authService.getUserStateById.mockResolvedValue({
-        id: "delegate-1",
+        id: DELEGATE_ID,
         isActive: true,
         mustChangePassword: false,
         role: "user",
@@ -154,15 +164,15 @@ describe("JwtStrategy", () => {
       const result = await strategy.validate(payload);
 
       expect(delegationService.validateActingContext).toHaveBeenCalledWith({
-        delegateUserId: "delegate-1",
-        actingAsUserId: "owner-1",
-        delegationId: "deleg-1",
+        delegateUserId: DELEGATE_ID,
+        actingAsUserId: OWNER_ID,
+        delegationId: DELEG_ID,
       });
       expect(result).toEqual({
-        id: "owner-1",
-        realUserId: "delegate-1",
+        id: OWNER_ID,
+        realUserId: DELEGATE_ID,
         isActing: true,
-        delegationId: "deleg-1",
+        delegationId: DELEG_ID,
         isActive: true,
         mustChangePassword: false,
         role: "user",
@@ -171,11 +181,14 @@ describe("JwtStrategy", () => {
 
     it("fails closed when the delegation is no longer valid", async () => {
       const payload = {
-        sub: "delegate-1",
-        actingAsUserId: "owner-1",
-        delegationId: "deleg-1",
+        sub: DELEGATE_ID,
+        actingAsUserId: OWNER_ID,
+        delegationId: DELEG_ID,
       };
-      authService.getUserStateById.mockResolvedValue(mockUser);
+      authService.getUserStateById.mockResolvedValue({
+        ...mockUser,
+        id: DELEGATE_ID,
+      });
       delegationService.validateActingContext.mockRejectedValue(
         new UnauthorizedException("Delegated access is no longer valid"),
       );
@@ -187,12 +200,13 @@ describe("JwtStrategy", () => {
 
     it("rejects the inactive real user before resolving delegation", async () => {
       const payload = {
-        sub: "delegate-1",
-        actingAsUserId: "owner-1",
-        delegationId: "deleg-1",
+        sub: DELEGATE_ID,
+        actingAsUserId: OWNER_ID,
+        delegationId: DELEG_ID,
       };
       authService.getUserStateById.mockResolvedValue({
         ...mockUser,
+        id: DELEGATE_ID,
         isActive: false,
       });
 
@@ -200,6 +214,45 @@ describe("JwtStrategy", () => {
         "User not found or inactive",
       );
       expect(delegationService.validateActingContext).not.toHaveBeenCalled();
+    });
+
+    // RLS (task C1): both lookups must run inside a *user* context seeded from
+    // the verified token's `sub` -- never a system bypass (this is the
+    // highest-QPS query in the system). We assert the ambient context at the
+    // moment each downstream lookup fires.
+    it("runs both lookups under withUserContext(payload.sub)", async () => {
+      const payload = {
+        sub: DELEGATE_ID,
+        actingAsUserId: OWNER_ID,
+        delegationId: DELEG_ID,
+      };
+      let ctxAtUserLookup: ReturnType<typeof getRequestContext>;
+      let ctxAtDelegationLookup: ReturnType<typeof getRequestContext>;
+      authService.getUserStateById.mockImplementation(() => {
+        ctxAtUserLookup = getRequestContext();
+        return Promise.resolve({ ...mockUser, id: DELEGATE_ID });
+      });
+      delegationService.validateActingContext.mockImplementation(() => {
+        ctxAtDelegationLookup = getRequestContext();
+        return Promise.resolve({});
+      });
+
+      await strategy.validate(payload);
+
+      // Seeded from the delegate's own id (the authenticated principal), never
+      // a system bypass.
+      expect(ctxAtUserLookup).toEqual({ userId: DELEGATE_ID });
+      expect(ctxAtDelegationLookup).toEqual({ userId: DELEGATE_ID });
+      expect(ctxAtUserLookup?.system).toBeUndefined();
+    });
+
+    it("rejects a non-UUID sub before hitting the database", async () => {
+      const payload = { sub: "not-a-uuid" };
+
+      await expect(strategy.validate(payload)).rejects.toThrow(
+        "withUserContext requires a valid UUID",
+      );
+      expect(authService.getUserStateById).not.toHaveBeenCalled();
     });
   });
 

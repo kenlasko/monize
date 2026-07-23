@@ -13,6 +13,7 @@ import { makeAdapterFactory } from "./postgres.adapter";
 import { derivePurposeKey } from "../auth/crypto.util";
 import { AuthService } from "../auth/auth.service";
 import { checkUserAuthState } from "../auth/user-state.util";
+import { withUserContext } from "../common/db/with-context";
 import { OAuthPayload } from "./entities/oauth-payload.entity";
 
 export const MCP_RESOURCE_SCOPES = ["monize:read", "monize:write"] as const;
@@ -201,7 +202,14 @@ export class OAuthProviderService implements OnModuleInit {
         // who have been deactivated, deleted, or flagged for password reset.
         // Without this gate, a disabled user keeps minting fresh access
         // tokens for up to the refresh-token TTL.
-        const user = await this.authService.getUserStateById(sub);
+        //
+        // RLS: this runs outside any HTTP request (node-oidc-provider calls it
+        // during token flows), but the grant's subject IS the user -- read the
+        // auth-state row under that user's own context (self-policy), not a
+        // system bypass.
+        const user = await withUserContext(sub, () =>
+          this.authService.getUserStateById(sub),
+        );
         const denial = checkUserAuthState(user, {
           enforceMustChangePassword: true,
         });
@@ -343,7 +351,10 @@ export class OAuthProviderService implements OnModuleInit {
       // Mirror the PAT and cookie auth paths: an OAuth access token must not
       // outlive the user's account-state gate. Reject tokens whose subject
       // has been deactivated, deleted, or flagged for password reset.
-      const user = await this.authService.getUserStateById(token.accountId);
+      // RLS: the token's accountId IS the user -- read under its own context.
+      const user = await withUserContext(token.accountId, () =>
+        this.authService.getUserStateById(token.accountId),
+      );
       const denial = checkUserAuthState(user, {
         enforceMustChangePassword: true,
       });

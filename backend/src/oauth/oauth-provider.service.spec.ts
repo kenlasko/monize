@@ -3,6 +3,12 @@ import {
   OAuthProviderService,
   MCP_RESOURCE_SCOPES,
 } from "./oauth-provider.service";
+import { getRequestContext } from "../common/request-context";
+
+// A real OAuth subject/accountId is a user UUID. findAccount and
+// validateAccessToken now read the auth-state row under withUserContext(sub),
+// which validates the id is a UUID, so the account fixtures use a real UUID.
+const ACCOUNT_ID = "11111111-1111-1111-1111-111111111111";
 
 // Capture constructor calls so tests can inspect the configuration handed to
 // node-oidc-provider's Provider constructor without instantiating the real
@@ -135,7 +141,7 @@ describe("OAuthProviderService", () => {
         }),
         makeDataSource().dataSource,
         makeAuthService({
-          id: "u1",
+          id: ACCOUNT_ID,
           isActive: true,
           mustChangePassword: false,
         }),
@@ -320,39 +326,63 @@ describe("OAuthProviderService", () => {
 
     it("findAccount returns the account for an active user", async () => {
       const { config } = await init({
-        id: "u1",
+        id: ACCOUNT_ID,
         isActive: true,
         mustChangePassword: false,
       });
-      const account = await config.findAccount({}, "u1");
-      expect(account.accountId).toBe("u1");
-      expect(account.claims()).toEqual({ sub: "u1" });
+      const account = await config.findAccount({}, ACCOUNT_ID);
+      expect(account.accountId).toBe(ACCOUNT_ID);
+      expect(account.claims()).toEqual({ sub: ACCOUNT_ID });
     });
 
     it("findAccount returns undefined for an inactive user", async () => {
       const { config } = await init({
-        id: "u1",
+        id: ACCOUNT_ID,
         isActive: false,
         mustChangePassword: false,
       });
-      const account = await config.findAccount({}, "u1");
+      const account = await config.findAccount({}, ACCOUNT_ID);
       expect(account).toBeUndefined();
     });
 
     it("findAccount returns undefined when user must change password", async () => {
       const { config } = await init({
-        id: "u1",
+        id: ACCOUNT_ID,
         isActive: true,
         mustChangePassword: true,
       });
-      const account = await config.findAccount({}, "u1");
+      const account = await config.findAccount({}, ACCOUNT_ID);
       expect(account).toBeUndefined();
     });
 
     it("findAccount returns undefined when the user is not found", async () => {
       const { config } = await init(null);
-      const account = await config.findAccount({}, "u1");
+      const account = await config.findAccount({}, ACCOUNT_ID);
       expect(account).toBeUndefined();
+    });
+
+    // RLS (task C1): the grant's subject is the user, so the auth-state read
+    // runs under that user's own context -- never a system bypass.
+    it("reads the auth-state row under a user context (no bypass)", async () => {
+      const { config, auth } = await init({
+        id: ACCOUNT_ID,
+        isActive: true,
+        mustChangePassword: false,
+      });
+      let ctx: ReturnType<typeof getRequestContext>;
+      (auth.getUserStateById as jest.Mock).mockImplementation(() => {
+        ctx = getRequestContext();
+        return Promise.resolve({
+          id: ACCOUNT_ID,
+          isActive: true,
+          mustChangePassword: false,
+        });
+      });
+
+      await config.findAccount({}, ACCOUNT_ID);
+
+      expect(ctx).toEqual({ userId: ACCOUNT_ID });
+      expect(ctx?.system).toBeUndefined();
     });
   });
 
@@ -559,67 +589,67 @@ describe("OAuthProviderService", () => {
 
     it("returns the user/scopes when aud is a string match and user is active", async () => {
       const { svc, find } = await setup({
-        id: "u1",
+        id: ACCOUNT_ID,
         isActive: true,
         mustChangePassword: false,
       });
       find.mockResolvedValue({
         isExpired: false,
-        accountId: "u1",
+        accountId: ACCOUNT_ID,
         aud: "https://app.test/api/v1/mcp",
         scope: "monize:read monize:write",
       });
       expect(await svc.validateAccessToken("t")).toEqual({
-        userId: "u1",
+        userId: ACCOUNT_ID,
         scopes: "read,write",
       });
     });
 
     it("accepts aud as an array containing the expected audience", async () => {
       const { svc, find } = await setup({
-        id: "u1",
+        id: ACCOUNT_ID,
         isActive: true,
         mustChangePassword: false,
       });
       find.mockResolvedValue({
         isExpired: false,
-        accountId: "u1",
+        accountId: ACCOUNT_ID,
         aud: ["https://app.test/api/v1/mcp", "extra"],
         scope: "monize:read",
       });
       expect(await svc.validateAccessToken("t")).toEqual({
-        userId: "u1",
+        userId: ACCOUNT_ID,
         scopes: "read",
       });
     });
 
     it("falls back to provider-specific resource property when aud is missing", async () => {
       const { svc, find } = await setup({
-        id: "u1",
+        id: ACCOUNT_ID,
         isActive: true,
         mustChangePassword: false,
       });
       find.mockResolvedValue({
         isExpired: false,
-        accountId: "u1",
+        accountId: ACCOUNT_ID,
         resource: "https://app.test/api/v1/mcp",
         scope: "monize:read",
       });
       expect(await svc.validateAccessToken("t")).toEqual({
-        userId: "u1",
+        userId: ACCOUNT_ID,
         scopes: "read",
       });
     });
 
     it("returns null when the user is denied (inactive)", async () => {
       const { svc, find } = await setup({
-        id: "u1",
+        id: ACCOUNT_ID,
         isActive: false,
         mustChangePassword: false,
       });
       find.mockResolvedValue({
         isExpired: false,
-        accountId: "u1",
+        accountId: ACCOUNT_ID,
         aud: "https://app.test/api/v1/mcp",
         scope: "monize:read",
       });
@@ -628,42 +658,42 @@ describe("OAuthProviderService", () => {
 
     it("treats a non-monize: scope as a bare scope", async () => {
       const { svc, find } = await setup({
-        id: "u1",
+        id: ACCOUNT_ID,
         isActive: true,
         mustChangePassword: false,
       });
       find.mockResolvedValue({
         isExpired: false,
-        accountId: "u1",
+        accountId: ACCOUNT_ID,
         aud: "https://app.test/api/v1/mcp",
         scope: "openid foo",
       });
       expect(await svc.validateAccessToken("t")).toEqual({
-        userId: "u1",
+        userId: ACCOUNT_ID,
         scopes: "openid,foo",
       });
     });
 
     it("uses an empty scope when token.scope is missing", async () => {
       const { svc, find } = await setup({
-        id: "u1",
+        id: ACCOUNT_ID,
         isActive: true,
         mustChangePassword: false,
       });
       find.mockResolvedValue({
         isExpired: false,
-        accountId: "u1",
+        accountId: ACCOUNT_ID,
         aud: "https://app.test/api/v1/mcp",
       });
       expect(await svc.validateAccessToken("t")).toEqual({
-        userId: "u1",
+        userId: ACCOUNT_ID,
         scopes: "",
       });
     });
 
     it("returns null when AccessToken.find throws", async () => {
       const { svc, find } = await setup({
-        id: "u1",
+        id: ACCOUNT_ID,
         isActive: true,
         mustChangePassword: false,
       });
@@ -687,10 +717,10 @@ describe("OAuthProviderService", () => {
           mustChangePassword: false,
         }),
       );
-      await expect(svc.revokeAllForUser("u1")).resolves.toBe(3);
+      await expect(svc.revokeAllForUser(ACCOUNT_ID)).resolves.toBe(3);
       expect(ds.where).toHaveBeenCalledWith(
         "payload ->> 'accountId' = :userId",
-        { userId: "u1" },
+        { userId: ACCOUNT_ID },
       );
     });
 
@@ -709,7 +739,7 @@ describe("OAuthProviderService", () => {
           mustChangePassword: false,
         }),
       );
-      await expect(svc.revokeAllForUser("u1")).resolves.toBe(0);
+      await expect(svc.revokeAllForUser(ACCOUNT_ID)).resolves.toBe(0);
     });
 
     it("treats null/undefined affected as zero", async () => {
@@ -727,7 +757,7 @@ describe("OAuthProviderService", () => {
           mustChangePassword: false,
         }),
       );
-      await expect(svc.revokeAllForUser("u1")).resolves.toBe(0);
+      await expect(svc.revokeAllForUser(ACCOUNT_ID)).resolves.toBe(0);
     });
   });
 });

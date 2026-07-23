@@ -31,6 +31,7 @@ import { TokenService } from "./token.service";
 import { TwoFactorService } from "./two-factor.service";
 import { AuthEmailService } from "./auth-email.service";
 import { DelegationService } from "../delegation/delegation.service";
+import { withSystemContext } from "../common/db/with-context";
 import { tr } from "../i18n/translate";
 import { currentRequestLocale } from "../i18n/request-locale";
 import { I18nService } from "nestjs-i18n";
@@ -75,7 +76,19 @@ export class AuthService {
     return this.csrfKey;
   }
 
+  // RLS: register/login/refresh/verify/OIDC lookups are public, pre-identity
+  // paths -- they run with no req.user and before the RequestContextInterceptor
+  // scope exists, and they must resolve or create users across the whole table
+  // (login by email, OIDC by subject) before any identity is known. Seed a
+  // *system* context so the downstream data access has ambient identity once
+  // the repositories move to tenantTx (task R7). This is inert until then:
+  // withSystemContext only seeds AsyncLocalStorage; the injected repositories
+  // still work unchanged at RLS_MODE=off.
   async register(registerDto: RegisterDto) {
+    return withSystemContext(() => this.registerWithinContext(registerDto));
+  }
+
+  private async registerWithinContext(registerDto: RegisterDto) {
     const { email, password, firstName, lastName, currentPassword } =
       registerDto;
 
@@ -277,6 +290,17 @@ export class AuthService {
     trustedDeviceRef?: string,
     userAgent?: string,
   ) {
+    // RLS: pre-identity path -- see the note on register(). System context.
+    return withSystemContext(() =>
+      this.loginWithinContext(loginDto, trustedDeviceRef, userAgent),
+    );
+  }
+
+  private async loginWithinContext(
+    loginDto: LoginDto,
+    trustedDeviceRef?: string,
+    userAgent?: string,
+  ) {
     const { email: rawEmail, password, rememberMe } = loginDto;
     const email = rawEmail.toLowerCase().trim();
 
@@ -434,6 +458,18 @@ export class AuthService {
   }
 
   async findOrCreateOidcUser(
+    userInfo: Record<string, unknown>,
+    registrationEnabled = true,
+  ): Promise<{ user: User; linkPending?: boolean }> {
+    // RLS: pre-identity path (OIDC callback, before a session exists) that
+    // looks users up by subject/email across the whole table -- see the note on
+    // register(). System context.
+    return withSystemContext(() =>
+      this.findOrCreateOidcUserWithinContext(userInfo, registrationEnabled),
+    );
+  }
+
+  private async findOrCreateOidcUserWithinContext(
     userInfo: Record<string, unknown>,
     registrationEnabled = true,
   ): Promise<{ user: User; linkPending?: boolean }> {
@@ -719,6 +755,12 @@ export class AuthService {
   }
 
   async confirmOidcLink(token: string): Promise<User> {
+    // RLS: public link-confirmation route (email token, no req.user). Looks up
+    // the pending user by hashed link token across the table. System context.
+    return withSystemContext(() => this.confirmOidcLinkWithinContext(token));
+  }
+
+  private async confirmOidcLinkWithinContext(token: string): Promise<User> {
     const hashedToken = hashToken(token);
 
     const user = await this.usersRepository.findOne({
@@ -786,7 +828,10 @@ export class AuthService {
   }
 
   async refreshTokens(rawRefreshToken: string) {
-    return this.tokenService.refreshTokens(rawRefreshToken);
+    // RLS: public token-refresh path (raw refresh token, no req.user yet).
+    return withSystemContext(() =>
+      this.tokenService.refreshTokens(rawRefreshToken),
+    );
   }
 
   async revokeRefreshToken(rawRefreshToken: string) {
@@ -804,12 +849,16 @@ export class AuthService {
     userAgent?: string,
     ipAddress?: string,
   ) {
-    return this.twoFactorService.verify2FA(
-      tempToken,
-      code,
-      rememberDevice,
-      userAgent,
-      ipAddress,
+    // RLS: public 2FA-completion path (temp token identifies the user, but no
+    // req.user exists yet). System context.
+    return withSystemContext(() =>
+      this.twoFactorService.verify2FA(
+        tempToken,
+        code,
+        rememberDevice,
+        userAgent,
+        ipAddress,
+      ),
     );
   }
 
@@ -878,11 +927,17 @@ export class AuthService {
   }
 
   async generateResetToken(email: string) {
-    return this.authEmailService.generateResetToken(email);
+    // RLS: public forgot-password path (email lookup, no req.user).
+    return withSystemContext(() =>
+      this.authEmailService.generateResetToken(email),
+    );
   }
 
   async resetPassword(token: string, newPassword: string) {
-    return this.authEmailService.resetPassword(token, newPassword);
+    // RLS: public reset-password path (reset token, no req.user).
+    return withSystemContext(() =>
+      this.authEmailService.resetPassword(token, newPassword),
+    );
   }
 
   checkForgotPasswordEmailLimit(email: string) {
@@ -890,11 +945,15 @@ export class AuthService {
   }
 
   async generateVerificationToken(email: string) {
-    return this.authEmailService.generateVerificationToken(email);
+    // RLS: public resend-verification path (email lookup, no req.user).
+    return withSystemContext(() =>
+      this.authEmailService.generateVerificationToken(email),
+    );
   }
 
   async verifyEmail(token: string) {
-    return this.authEmailService.verifyEmail(token);
+    // RLS: public verify-email path (verification token, no req.user).
+    return withSystemContext(() => this.authEmailService.verifyEmail(token));
   }
 
   checkVerificationEmailLimit(email: string) {

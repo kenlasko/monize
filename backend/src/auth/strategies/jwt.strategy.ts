@@ -5,6 +5,7 @@ import { ConfigService } from "@nestjs/config";
 import { Request } from "express";
 import { AuthService } from "../auth.service";
 import { DelegationService } from "../../delegation/delegation.service";
+import { withUserContext } from "../../common/db/with-context";
 import { tr } from "../../i18n/translate";
 
 /**
@@ -64,43 +65,57 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // MustChangePasswordGuard handles it, which lets the password-change
     // endpoints themselves remain reachable. The OAuth/PAT bearer paths
     // bypass that guard via @SkipPasswordCheck and enforce it inline instead.
-    const user = await this.authService.getUserStateById(payload.sub);
-    if (!user || !user.isActive) {
-      throw new UnauthorizedException(
-        tr("errors.auth.userNotFoundOrInactive", "User not found or inactive"),
-      );
-    }
+    //
+    // RLS: this runs in the guard phase, before the RequestContextInterceptor's
+    // scope exists — but it is not identity-less. The verified token's `sub` IS
+    // the authenticated user, so seed a *user* context (never a system bypass:
+    // jwt validation is the highest-QPS query in the system). Both lookups stay
+    // visible without bypass — `getUserStateById` reads the delegate's own
+    // `users` row (self-policy), and `validateActingContext` reads
+    // `account_delegates` keyed by the delegate id (delegate-side arm), which
+    // `withUserContext(payload.sub)` scopes via `app.real_user_id`.
+    return withUserContext(payload.sub, async () => {
+      const user = await this.authService.getUserStateById(payload.sub);
+      if (!user || !user.isActive) {
+        throw new UnauthorizedException(
+          tr(
+            "errors.auth.userNotFoundOrInactive",
+            "User not found or inactive",
+          ),
+        );
+      }
 
-    // Acting-as-self / normal user: unchanged shape plus passthrough fields.
-    if (!payload.actingAsUserId || !payload.delegationId) {
+      // Acting-as-self / normal user: unchanged shape plus passthrough fields.
+      if (!payload.actingAsUserId || !payload.delegationId) {
+        return {
+          ...user,
+          realUserId: user.id,
+          isActing: false,
+          delegationId: null,
+        };
+      }
+
+      // Delegate acting as an owner. Re-validate every request (fail closed):
+      // revoked/inactive delegation, inactive owner, or an unmet 2FA
+      // requirement all reject the token here.
+      await this.delegationService.validateActingContext({
+        delegateUserId: payload.sub,
+        actingAsUserId: payload.actingAsUserId,
+        delegationId: payload.delegationId,
+      });
+
+      // SECURITY: `id` becomes the OWNER's id so every existing
+      // `where: { userId }` query is correctly scoped to the owner's data.
+      // `realUserId` keeps the delegate's id for audit/auth decisions.
       return {
-        ...user,
-        realUserId: user.id,
-        isActing: false,
-        delegationId: null,
+        id: payload.actingAsUserId,
+        realUserId: payload.sub,
+        isActing: true,
+        delegationId: payload.delegationId,
+        isActive: true,
+        mustChangePassword: user.mustChangePassword,
+        role: user.role,
       };
-    }
-
-    // Delegate acting as an owner. Re-validate every request (fail closed):
-    // revoked/inactive delegation, inactive owner, or an unmet 2FA
-    // requirement all reject the token here.
-    await this.delegationService.validateActingContext({
-      delegateUserId: payload.sub,
-      actingAsUserId: payload.actingAsUserId,
-      delegationId: payload.delegationId,
     });
-
-    // SECURITY: `id` becomes the OWNER's id so every existing
-    // `where: { userId }` query is correctly scoped to the owner's data.
-    // `realUserId` keeps the delegate's id for audit/auth decisions.
-    return {
-      id: payload.actingAsUserId,
-      realUserId: payload.sub,
-      isActing: true,
-      delegationId: payload.delegationId,
-      isActive: true,
-      mustChangePassword: user.mustChangePassword,
-      role: user.role,
-    };
   }
 }

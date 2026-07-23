@@ -26,6 +26,7 @@ import { RefreshToken } from "./entities/refresh-token.entity";
 import { encrypt, derivePurposeKey } from "./crypto.util";
 import { PasswordBreachService } from "./password-breach.service";
 import { EmailService } from "../notifications/email.service";
+import { getRequestContext } from "../common/request-context";
 
 const TEST_JWT_SECRET = "test-jwt-secret-minimum-32-chars-long";
 const TEST_TOTP_KEY = derivePurposeKey(TEST_JWT_SECRET, "totp-encryption");
@@ -1982,6 +1983,30 @@ describe("AuthService", () => {
       const savedOldToken = manager.save.mock.calls[0][0];
       expect(savedOldToken.isRevoked).toBe(true);
       expect(savedOldToken.replacedByHash).toBeTruthy();
+    });
+
+    // RLS (task C1): refresh is a public, pre-identity path (no req.user), so
+    // AuthService.refreshTokens wraps the delegated token flow in a system
+    // context. Assert the ambient context at the moment the DB is touched.
+    it("runs the token flow under a system context", async () => {
+      let ctx: ReturnType<typeof getRequestContext>;
+      const manager = setupTransactionMock();
+      manager.findOne.mockImplementation(() => {
+        ctx = getRequestContext();
+        return Promise.resolve({
+          id: "rt-1",
+          userId: "user-1",
+          tokenHash: "old-hash",
+          familyId: "family-1",
+          isRevoked: false,
+          expiresAt: new Date(Date.now() + 3600000),
+          replacedByHash: null,
+        });
+      });
+
+      await service.refreshTokens("raw-refresh-token").catch(() => undefined);
+
+      expect(ctx).toEqual({ system: true });
     });
 
     it("detects replay and revokes entire family", async () => {

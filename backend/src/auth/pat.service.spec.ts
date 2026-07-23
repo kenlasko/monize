@@ -9,6 +9,7 @@ import * as crypto from "crypto";
 import { PatService } from "./pat.service";
 import { PersonalAccessToken } from "./entities/personal-access-token.entity";
 import { User } from "../users/entities/user.entity";
+import { getRequestContext } from "../common/request-context";
 
 describe("PatService", () => {
   let service: PatService;
@@ -213,6 +214,27 @@ describe("PatService", () => {
         "token-1",
         expect.objectContaining({ lastUsedAt: expect.any(Date) }),
       );
+    });
+
+    // RLS (task C1): PAT validation is pre-identity (the token-hash lookup
+    // scans across users, before any req.user exists). Assert the lookup runs
+    // under a system context.
+    it("runs the token lookup under a system context", async () => {
+      const rawToken = "pat_" + crypto.randomBytes(32).toString("hex");
+      let ctx: ReturnType<typeof getRequestContext>;
+      repository.findOne.mockImplementation(() => {
+        ctx = getRequestContext();
+        return Promise.resolve({
+          ...mockToken,
+          isRevoked: false,
+          expiresAt: null,
+        });
+      });
+      repository.update.mockResolvedValue(undefined);
+
+      await service.validateToken(rawToken);
+
+      expect(ctx).toEqual({ system: true });
     });
 
     it("should reject invalid format", async () => {

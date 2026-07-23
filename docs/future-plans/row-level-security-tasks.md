@@ -49,7 +49,7 @@ uses four classes:
 | M3 | Migration: `ENABLE ROW LEVEL SECURITY` (authored, **not deployed**) | M2 | **DO NOT DEPLOY** | not started |
 | T1 | Integration harness applies real RLS migrations + role/grants + `updated_at` triggers | M2, F1 | none | not started |
 | T2 | Catalog-driven `rls-enforcement` integration spec (4 buckets) | T1, M3 | none | not started |
-| C1 | Auth wrapping: `jwt.strategy` under `withUserContext(sub)`; PAT + password-reset + OAuth under `withSystemContext`; public-route audit | F2 | inert | not started |
+| C1 | Auth wrapping: `jwt.strategy` under `withUserContext(sub)`; PAT + password-reset + OAuth under `withSystemContext`; public-route audit | F2 | inert | done |
 | C2 | Cron jobs: system fan-out + per-user bodies wrapped | F2 | inert | not started |
 | C3 | Seeders + demo reset under `withSystemContext` | F2 | inert | not started |
 | C4 | Emergency-access claim + expiry monitor under `withSystemContext`; grantee-side read audit | F2 | inert | not started |
@@ -381,7 +381,54 @@ Shared instructions for every R task — the per-task list only names the module
 
 ### C1. Auth wrapping + public-route audit (lands BEFORE the refactors)
 
-- [ ] Status: not started
+- [x] Status: done (branch `claude/rls-task-status-column-8qqlbm`). Wrapping applied:
+  `jwt.strategy.validate` runs both lookups under `withUserContext(payload.sub)`;
+  `AuthService.{register,login,refreshTokens,verify2FA,findOrCreateOidcUser,confirmOidcLink,generateResetToken,resetPassword,generateVerificationToken,verifyEmail}`
+  under `withSystemContext` (the large bodies extracted to `*WithinContext` privates to keep the
+  wrapper a one-liner); `PatService.validateToken` under `withSystemContext`; the two shared methods
+  reachable on public routes wrapped at their call sites (`generateTokenPair` in the OIDC callback,
+  `revokeRefreshToken` in `logout`, both `withSystemContext`); `OAuthProviderService.findAccount` and
+  `validateAccessToken` read `getUserStateById` under `withUserContext(sub)`;
+  `OAuthInteractionController.resolveCookieUser` reads `getUserById` under
+  `withUserContext(payload.sub)`. Context-assertion unit tests added to the jwt.strategy, auth.service,
+  pat.service, oauth-provider, and oauth-interaction specs; existing specs updated to UUID fixtures
+  (jwt/OAuth subs now flow through `withUserContext`'s UUID validation). Full `npm run test:unit` green
+  (8917), build + lint clean, F3 ratchet unchanged.
+
+**Public-route audit (findings):**
+- **Wrapped in C1 (touch user tables, no `req.user`):** every public `auth.controller` route
+  (`register`, `login`, `oidc/callback`, `forgot/reset-password`, `verify/resend-verification`,
+  `2fa/verify`, `refresh`, `oidc/confirm-link`, `logout`) via the `AuthService` / call-site wraps
+  above; PAT auth (`PatService.validateToken`) and OAuth access-token auth
+  (`OAuthProviderService.validateAccessToken`), both entered from `mcp-http.controller`'s
+  `validatePat` (that controller is R6's file scope — wrapping the two services it calls covers the
+  auth phase); the node-oidc-provider Express mount's one user-table touch (`findAccount`); the OAuth
+  consent pages (`oauth-interaction.controller`).
+- **`jwt.strategy` uses `withUserContext`, never `withSystemContext`** (verified by grep + a unit
+  test) — it is the highest-QPS query in the system, so bypass must never be its steady state.
+- **Exempt (no user data — note only):** `health.controller` (`SELECT 1` connectivity probe only);
+  `oauth-metadata.controller` and the OIDC discovery documents (static config); the node-oidc-provider
+  Express mount's `oauth_payloads` reads/writes (that table is deliberately **RLS-exempt**, see M2).
+- **`oauth_payloads` hardening decision:** keep the `monize_app` DML grants and leave the table
+  RLS-exempt (matches M2's exclusion list) — no owner-DataSource split. `oauth_payloads` is a
+  short-lived opaque token/grant store keyed by random id, never queried per end-user, so an owner
+  policy would add no isolation.
+- **Flagged, NOT wrapped (out of C1's file scope):**
+  - `AccountDelegateGuard` (`backend/src/delegation/guards/account-delegate.guard.ts`) runs in the
+    guard phase *before* `AuthGuard('jwt')` and, **for delegate tokens only**, calls
+    `DelegationService` methods that read `account_delegates` / `account_delegate_grants` / `accounts`
+    / `transactions` / `scheduled_transactions`. It knows the identity (it verifies the token itself:
+    `payload.sub` = delegate, `payload.actingAsUserId` = owner), but correct wrapping needs **both**
+    GUCs (`current` = owner, `real` = delegate), which `withUserContext(userId)` alone cannot seed. It
+    lives in the delegation module (outside C1's `auth/**` + `oauth/**` scope), so it is left for the
+    delegation wrapping/refactor — **must land before R2/R7 convert `DelegationService` to
+    `tenantTx`**, or delegate requests throw at `off`.
+  - `emergency-access-claim.controller` public routes → **C4**.
+  - `RequestContextInterceptor`'s `touchLastActivity` / timezone reads run outside its own scope →
+    **C6**.
+- **L1 note:** the `with-context.ts` import allowlist must include `backend/src/oauth/**` (this task
+  added `withUserContext` imports to `oauth-provider.service.ts` and `oauth-interaction.controller.ts`)
+  in addition to the auth module.
 
 **Scope:** `backend/src/auth/**`, `backend/src/oauth/**`, PAT validation path, password-reset +
 email-verification lookups, plus the audit. Wrapping only — no repository-to-`tenantTx` conversion

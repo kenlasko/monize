@@ -1,4 +1,9 @@
 import { OAuthInteractionController } from "./oauth-interaction.controller";
+import { getRequestContext } from "../common/request-context";
+
+// resolveCookieUser reads the user under withUserContext(payload.sub), which
+// validates the id is a UUID (a real auth_token cookie carries a UUID sub).
+const USER_ID = "11111111-1111-1111-1111-111111111111";
 
 describe("OAuthInteractionController", () => {
   function makeController(overrides: {
@@ -61,13 +66,13 @@ describe("OAuthInteractionController", () => {
     const jwtService = {
       verifyAsync:
         overrides.jwtVerify ??
-        jest.fn().mockResolvedValue({ sub: "user-1", type: undefined }),
+        jest.fn().mockResolvedValue({ sub: USER_ID, type: undefined }),
     } as any;
     const authService = {
       getUserById:
         overrides.findUser ??
         jest.fn().mockResolvedValue({
-          id: "user-1",
+          id: USER_ID,
           email: "u@e.com",
           isActive: true,
           mustChangePassword: false,
@@ -140,9 +145,40 @@ describe("OAuthInteractionController", () => {
       expect(interactionFinished).toHaveBeenCalledWith(
         req,
         res,
-        { login: { accountId: "user-1" } },
+        { login: { accountId: USER_ID } },
         { mergeWithLastSubmission: false },
       );
+    });
+
+    // RLS (task C1): the consent pages authenticate from the auth_token cookie,
+    // so the user read runs under withUserContext(sub) -- never a system bypass.
+    it("resolves the cookie user under withUserContext(sub) (no bypass)", async () => {
+      let ctx: ReturnType<typeof getRequestContext>;
+      const findUser = jest.fn().mockImplementation(() => {
+        ctx = getRequestContext();
+        return Promise.resolve({
+          id: USER_ID,
+          email: "u@e.com",
+          isActive: true,
+          mustChangePassword: false,
+        });
+      });
+      const { controller } = makeController({
+        interactionDetails: jest.fn().mockResolvedValue({
+          uid: "u",
+          prompt: { name: "login" },
+          params: {},
+        }),
+        findUser,
+      });
+      const req = { cookies: { auth_token: "valid" } } as any;
+      const res = makeRes();
+
+      await controller.render(req, res);
+
+      expect(findUser).toHaveBeenCalledWith(USER_ID);
+      expect(ctx).toEqual({ userId: USER_ID });
+      expect(ctx?.system).toBeUndefined();
     });
 
     it("renders consent HTML for authenticated user with valid prompt", async () => {
@@ -298,7 +334,7 @@ describe("OAuthInteractionController", () => {
             },
           },
           params: { client_id: "claude-desktop" },
-          session: { accountId: "user-1" },
+          session: { accountId: USER_ID },
         }),
         Grant: GrantMock as any,
       });
@@ -608,7 +644,7 @@ describe("OAuthInteractionController", () => {
           uid: "u1",
           prompt: { name: "consent", details: consentDetails },
           params: { client_id: "claude-desktop" },
-          session: { accountId: "user-1" },
+          session: { accountId: USER_ID },
           grantId: "g1",
         }),
         Grant: GrantMock as any,
@@ -639,7 +675,7 @@ describe("OAuthInteractionController", () => {
           uid: "u1",
           prompt: { name: "consent", details: consentDetails },
           params: { client_id: "claude-desktop" },
-          session: { accountId: "user-1" },
+          session: { accountId: USER_ID },
           grantId: "g1",
         }),
         Grant: GrantMock as any,

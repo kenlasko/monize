@@ -59,6 +59,7 @@ import { DemoRestricted } from "../common/decorators/demo-restricted.decorator";
 import { DemoModeService } from "../common/demo-mode.service";
 import { generateCsrfToken, getCsrfCookieOptions } from "../common/csrf.util";
 import { encrypt, decrypt, derivePurposeKey } from "./crypto.util";
+import { withSystemContext } from "../common/db/with-context";
 import { tr } from "../i18n/translate";
 
 @ApiTags("Authentication")
@@ -488,9 +489,13 @@ export class AuthController {
         return;
       }
 
-      // Generate token pair
-      const { accessToken, refreshToken } =
-        await this.authService.generateTokenPair(result.user);
+      // Generate token pair. RLS: this is still the pre-session OIDC callback
+      // (no req.user), so the refresh-token write needs an ambient system
+      // context -- unlike switch-context, which issues tokens under the
+      // authenticated request scope.
+      const { accessToken, refreshToken } = await withSystemContext(() =>
+        this.authService.generateTokenPair(result.user),
+      );
 
       this.setAuthCookies(res, accessToken, refreshToken, result.user.id);
       res.redirect(`${frontendUrl}/auth/callback?success=true`);
@@ -1040,10 +1045,16 @@ export class AuthController {
   @AllowDelegate()
   @ApiOperation({ summary: "Logout current user" })
   async logout(@Request() req: ExpressRequest, @Res() res: Response) {
-    // Revoke the refresh token family in the database
+    // Revoke the refresh token family in the database. RLS: logout is a public
+    // route (no req.user), and the refresh token in the cookie is the only
+    // identity we have, so revoke under a system context. (switch-context
+    // revokes the same way but from an authenticated request scope, so it keeps
+    // its own user context there.)
     const refreshToken = req.cookies?.["refresh_token"];
     if (refreshToken) {
-      await this.authService.revokeRefreshToken(refreshToken);
+      await withSystemContext(() =>
+        this.authService.revokeRefreshToken(refreshToken),
+      );
     }
 
     this.clearAuthCookies(res);
