@@ -259,9 +259,11 @@ function AccountDetailContent() {
                 exportPdfRef={loanExportRef}
               />
             )}
-            {Number(account.fxFeePercent) > 0 && (
-              <ForeignCurrencyFeesSection account={account} />
-            )}
+            {/* The section decides for itself whether to render: the fee chart
+                only for accounts with a non-zero fee and foreign transactions,
+                and the foreign-transaction register for any account that has
+                foreign transactions. It renders nothing otherwise. */}
+            <ForeignCurrencyFeesSection account={account} />
           </div>
         </AccountDetailShell>
       </main>

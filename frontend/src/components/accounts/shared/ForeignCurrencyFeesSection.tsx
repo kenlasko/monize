@@ -34,11 +34,21 @@ interface ForeignCurrencyFeesSectionProps {
 }
 
 /**
- * Account-detail section shown when the account has a foreign-transaction fee
- * percentage configured: a bar chart of fees incurred on foreign-entered
- * transactions over the life of the account, a paid-currency filter, and the
- * matching transaction register with edit/delete plus per-transaction currency,
- * paid-amount, and fee columns.
+ * Account-detail section for foreign-entered transactions. What it shows keys
+ * off two things: whether a non-zero foreign-transaction fee is configured, and
+ * whether the account actually has any foreign transactions.
+ *
+ *  - Fee configured and foreign transactions exist: the fee bar chart (fees
+ *    incurred over the life of the account) plus the matching transaction
+ *    register, under a "Foreign Currency Transaction Fees" heading.
+ *  - No fee (or none entered) but foreign transactions exist: just the
+ *    transaction register, under a "Foreign Currency Transactions" heading --
+ *    there are no fees to chart.
+ *  - No foreign transactions at all: nothing (the section renders null).
+ *
+ * The register carries edit/delete plus per-transaction currency, paid-amount,
+ * and fee columns, and a paid-currency filter that drives the chart (when
+ * shown) and the list.
  */
 export function ForeignCurrencyFeesSection({ account }: ForeignCurrencyFeesSectionProps) {
   const t = useTranslations('accountDetail-fxFees');
@@ -226,38 +236,65 @@ export function ForeignCurrencyFeesSection({ account }: ForeignCurrencyFeesSecti
     }
   }, [account.id, selectedCurrencies, availableCurrencies, t]);
 
+  // Whether a non-zero foreign-transaction fee is configured, and whether the
+  // account has any foreign-entered transactions at all (a non-empty fee
+  // summary -- the backend returns a row per foreign transaction, fee or not).
+  const hasFee = Number(account.fxFeePercent) > 0;
+  const hasForeignTransactions = availableCurrencies.length > 0;
+
+  // Wait until the summary loads before deciding what (if anything) to render,
+  // so accounts with no foreign transactions never flash an empty section. The
+  // fee chart is reserved for accounts that both charge a fee and have foreign
+  // transactions; every other account with foreign transactions still gets the
+  // register on its own.
+  if (isSummaryLoading || !hasForeignTransactions) {
+    return null;
+  }
+
+  const showFees = hasFee;
+
+  // When the chart is shown, the paid-currency filter rides in its header;
+  // otherwise it moves to the transaction card so the list stays filterable.
+  const currencyFilter = (
+    <div className="w-52 max-w-full">
+      <MultiSelect
+        ariaLabel={t('currencyFilter.label')}
+        options={currencyOptions}
+        value={selectedCurrencies}
+        onChange={handleCurrencyFilterChange}
+        placeholder={t('currencyFilter.placeholder')}
+        disabled={currencyOptions.length === 0}
+      />
+    </div>
+  );
+
   return (
     <section>
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-        {t('title')}
+        {showFees ? t('title') : t('list.title')}
       </h2>
       <div className="space-y-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
-          <ForeignCurrencyFeeChart
-            data={monthlyFees}
-            isLoading={isSummaryLoading}
-            currencyCode={account.currencyCode}
-            accountName={account.name}
-            hideTitle
-            leftControls={
-              <div className="w-52 max-w-full">
-                <MultiSelect
-                  ariaLabel={t('currencyFilter.label')}
-                  options={currencyOptions}
-                  value={selectedCurrencies}
-                  onChange={handleCurrencyFilterChange}
-                  placeholder={t('currencyFilter.placeholder')}
-                  disabled={currencyOptions.length === 0}
-                />
-              </div>
-            }
-          />
-        </div>
+        {showFees && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
+            <ForeignCurrencyFeeChart
+              data={monthlyFees}
+              isLoading={isSummaryLoading}
+              currencyCode={account.currencyCode}
+              accountName={account.name}
+              hideTitle
+              leftControls={currencyFilter}
+            />
+          </div>
+        )}
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 px-4 pt-4 sm:px-6 sm:pt-6 pb-2">
-            {t('list.title')}
-          </h3>
+          {showFees ? (
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 px-4 pt-4 sm:px-6 sm:pt-6 pb-2">
+              {t('list.title')}
+            </h3>
+          ) : (
+            <div className="px-4 pt-4 sm:px-6 sm:pt-6 pb-2">{currencyFilter}</div>
+          )}
           {listLoaded && (
             <TransactionList
               transactions={transactions}

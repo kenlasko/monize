@@ -89,6 +89,12 @@ const account = {
   fxFeePercent: 2.5,
 } as unknown as Account;
 
+// Same account with no foreign-transaction fee configured.
+const noFeeAccount = {
+  ...account,
+  fxFeePercent: 0,
+} as unknown as Account;
+
 const summaryRows = [
   { month: '2025-01', currencyCode: 'EUR', feeTotal: 10, count: 2 },
   { month: '2025-01', currencyCode: 'USD', feeTotal: 5, count: 1 },
@@ -102,10 +108,10 @@ const page1 = {
   pagination: { page: 1, limit: 25, total: 1, totalPages: 1, hasMore: false },
 };
 
-async function renderSection() {
+async function renderSection(acct: Account = account) {
   let result: ReturnType<typeof render>;
   await act(async () => {
-    result = render(<ForeignCurrencyFeesSection account={account} />);
+    result = render(<ForeignCurrencyFeesSection account={acct} />);
   });
   return result!;
 }
@@ -156,15 +162,54 @@ describe('ForeignCurrencyFeesSection', () => {
     });
   });
 
-  it('renders the section title, chart, and transaction list', async () => {
+  it('renders the fees title, chart, and transaction list for a fee account', async () => {
     await renderSection();
 
-    expect(screen.getByText('Foreign Currency Transaction Fees')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Foreign Currency Transaction Fees')).toBeInTheDocument();
+    });
     expect(screen.getByTestId('fee-chart')).toBeInTheDocument();
     await waitFor(() => {
       expect(screen.getByTestId('transaction-list')).toBeInTheDocument();
     });
     expect(mockGetFxFeeSummary).toHaveBeenCalledWith('acc-1');
+  });
+
+  it('shows only the transaction list (no fee chart) when no fee is configured', async () => {
+    await renderSection(noFeeAccount);
+
+    // The transactions register still loads because foreign transactions exist.
+    await waitFor(() => {
+      expect(screen.getByTestId('transaction-list')).toBeInTheDocument();
+    });
+    // Heading is the plain "Foreign Currency Transactions", not the fees title.
+    expect(screen.getByText('Foreign Currency Transactions')).toBeInTheDocument();
+    expect(
+      screen.queryByText('Foreign Currency Transaction Fees'),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('fee-chart')).not.toBeInTheDocument();
+    // The currency filter still rides along so the list stays filterable.
+    expect(screen.getByTestId('currency-filter')).toBeInTheDocument();
+    expect(mockGetAll).toHaveBeenCalledWith({
+      accountId: 'acc-1',
+      originalCurrencyCodes: ['EUR', 'USD'],
+      page: 1,
+      limit: 25,
+    });
+  });
+
+  it('renders nothing when a fee account has no foreign transactions', async () => {
+    mockGetFxFeeSummary.mockResolvedValue([]);
+    const { container } = await renderSection();
+
+    // No foreign transactions -> neither the fee chart nor the list appears.
+    await waitFor(() => {
+      expect(mockGetFxFeeSummary).toHaveBeenCalledWith('acc-1');
+    });
+    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByTestId('fee-chart')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('transaction-list')).not.toBeInTheDocument();
+    expect(mockGetAll).not.toHaveBeenCalled();
   });
 
   it('aggregates per-currency rows into one fee total per month for the chart', async () => {
@@ -219,17 +264,6 @@ describe('ForeignCurrencyFeesSection', () => {
       { month: '2025-01', total: 10, count: 2 },
       { month: '2025-02', total: 2.5, count: 1 },
     ]);
-  });
-
-  it('skips the transaction fetch when the account has no foreign transactions', async () => {
-    mockGetFxFeeSummary.mockResolvedValue([]);
-    await renderSection();
-
-    await waitFor(() => {
-      expect(screen.getByTestId('transaction-list')).toBeInTheDocument();
-    });
-    expect(mockGetAll).not.toHaveBeenCalled();
-    expect(listProps.current.transactions).toEqual([]);
   });
 
   it('opens the edit modal from the list and refreshes on save', async () => {

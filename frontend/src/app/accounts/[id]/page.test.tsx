@@ -63,6 +63,15 @@ vi.mock('@/components/transactions/BalanceHistoryChart', () => ({
   BalanceHistoryChart: () => <div data-testid="balance-history-chart" />,
 }));
 
+// The foreign-currency section is always mounted now and decides for itself
+// whether to render; stub it so this page test stays independent of its
+// data-loading (it has its own tests).
+vi.mock('@/components/accounts/shared/ForeignCurrencyFeesSection', () => ({
+  ForeignCurrencyFeesSection: ({ account }: { account: Account }) => (
+    <div data-testid="fx-fees-section" data-account-id={account.id} />
+  ),
+}));
+
 const mockGetAllTransactions = vi.fn();
 const mockGetSummary = vi.fn();
 const mockGetMonthlyTotals = vi.fn();
@@ -191,6 +200,18 @@ describe('AccountDetailPage', () => {
     expect(screen.getByText('Loan Schedule')).toBeInTheDocument();
     expect(mockGetById).toHaveBeenCalledWith('loan-1');
     expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it('mounts the foreign-currency section regardless of the fee percentage', async () => {
+    // No fee configured -- the section still mounts and decides for itself
+    // whether to render (it shows the register when foreign transactions exist).
+    mockGetById.mockResolvedValue(makeAccount({ fxFeePercent: 0 }));
+
+    await renderPage();
+
+    const section = screen.getByTestId('fx-fees-section');
+    expect(section).toBeInTheDocument();
+    expect(section).toHaveAttribute('data-account-id', 'loan-1');
   });
 
   it('surfaces a scenarios/rate-history load failure instead of a silent empty list (issue: saved scenario "gone" but re-save hits 409)', async () => {
