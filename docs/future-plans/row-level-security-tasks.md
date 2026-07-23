@@ -178,7 +178,14 @@ branch selection; UUID validation in `withUserContext`; filter mapping. LSP diag
 
 ### F3. CI ratchet
 
-- [ ] Status: not started
+- [x] Status: done (branch `claude/rls-foundation-tasks-s8vgu4`). Baselines measured
+  at implementation time: **251** `@InjectRepository(` call sites, **61**
+  `createQueryRunner(` call sites (script counts occurrences, not files). Script:
+  `backend/scripts/rls-ratchet.mjs` (+ `--update`), self-test
+  `rls-ratchet.test.mjs`, committed baseline `rls-ratchet-baseline.json`; wired
+  into the `backend-lint` CI job (`npm run rls:ratchet:test` then
+  `npm run rls:ratchet`). Exact-match ratchet: a count above baseline fails
+  (banned new site), below baseline fails (lower the baseline in the same PR).
 
 **Scope:** a script under `backend/scripts/` (or repo `scripts/`), CI workflow wiring, a committed
 baseline file.
