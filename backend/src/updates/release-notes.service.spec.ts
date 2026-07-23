@@ -4,28 +4,28 @@ import * as path from "path";
 import { ReleaseNotesService } from "./release-notes.service";
 
 describe("ReleaseNotesService", () => {
-  let tmpDir: string;
+  let tmpRoot: string;
+  let notesDir: string;
   let service: ReleaseNotesService;
-  const originalEnv = process.env.RELEASE_NOTES_DIR;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "release-notes-"));
-    process.env.RELEASE_NOTES_DIR = tmpDir;
+    tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "release-notes-"));
+    notesDir = path.join(tmpRoot, "release-notes");
+    fs.mkdirSync(notesDir);
+    // The service resolves the notes directory from process.cwd()/release-notes
+    // (its bundled location in the image); point cwd at our temp root so tests
+    // are isolated from the repo's real docs/release-notes.
+    jest.spyOn(process, "cwd").mockReturnValue(tmpRoot);
     service = new ReleaseNotesService();
   });
 
   afterEach(() => {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-    if (originalEnv === undefined) {
-      delete process.env.RELEASE_NOTES_DIR;
-    } else {
-      process.env.RELEASE_NOTES_DIR = originalEnv;
-    }
     jest.restoreAllMocks();
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
   });
 
   function writeNotes(version: string, body: string): void {
-    fs.writeFileSync(path.join(tmpDir, `${version}.md`), body, "utf-8");
+    fs.writeFileSync(path.join(notesDir, `${version}.md`), body, "utf-8");
   }
 
   it("reads and parses the notes for a version", () => {
@@ -57,10 +57,9 @@ describe("ReleaseNotesService", () => {
   });
 
   it("returns null when no release-notes directory can be found", () => {
-    // Point every candidate at a non-existent location: the env override plus
-    // process.cwd()-derived fallbacks.
-    process.env.RELEASE_NOTES_DIR = path.join(tmpDir, "missing");
-    jest.spyOn(process, "cwd").mockReturnValue(path.join(tmpDir, "nowhere"));
+    // Point cwd somewhere with no release-notes dir; the __dirname candidate
+    // (backend/release-notes) does not exist in the source tree either.
+    jest.spyOn(process, "cwd").mockReturnValue(path.join(tmpRoot, "nowhere"));
 
     expect(service.readNotes("1.2.3")).toBeNull();
   });

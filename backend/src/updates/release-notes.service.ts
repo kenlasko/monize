@@ -83,12 +83,11 @@ export class ReleaseNotesService {
   /**
    * Locate the release-notes directory. Mirrors db-migrate's multi-candidate
    * search so it works both in the Docker image (notes copied to `./release-notes`)
-   * and in local/source runs (repo `docs/release-notes`). `RELEASE_NOTES_DIR`
-   * overrides everything.
+   * and in local/source runs (repo `docs/release-notes`). The notes are bundled
+   * into the image at a known location, so there is no configuration knob.
    */
   private resolveDirectory(): string | null {
     const candidates = [
-      process.env.RELEASE_NOTES_DIR,
       path.resolve(process.cwd(), "release-notes"),
       path.resolve(__dirname, "..", "..", "release-notes"),
       path.resolve(process.cwd(), "..", "docs", "release-notes"),

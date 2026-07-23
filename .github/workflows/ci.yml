@@ -368,7 +368,7 @@ jobs:
           # The five below are in backend/src/updates/release-notes.service.ts, which reads the
           # committed docs/release-notes/<version>.md digest. The version is the trusted
           # package.json value matched against a strict semver regex that forbids path separators,
-          # and the directory is a fixed candidate allowlist plus the operator-set RELEASE_NOTES_DIR
+          # and the directory is a fixed candidate allowlist (the notes are bundled into the image)
           # -- no user input reaches these fs calls, so the CWE-22/CWE-73 findings are false positives.
           # b6c4552155ecc9b65a9205911f502bf1_0 - Non-literal fs path in release-notes reader [CWE-73] - review-by: 2026-10-23
           # b6c4552155ecc9b65a9205911f502bf1_1 - Non-literal fs path in release-notes reader [CWE-73] - review-by: 2026-10-23
