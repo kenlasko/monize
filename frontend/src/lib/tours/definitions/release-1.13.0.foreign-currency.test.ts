@@ -71,6 +71,12 @@ describe('foreign-currency release tour', () => {
 
     const currency = tour.steps.find((s) => s.id === 'entryCurrency')!;
     expect(currency.anchorId).toBe(TOUR_ANCHORS.transactionCurrencyField);
+    // Interactive: advances only once the user actually selects a foreign
+    // currency (the converted-amount field mounts), not on a passive Next.
+    expect(currency.advance).toEqual({
+      type: 'appear',
+      anchorId: TOUR_ANCHORS.transactionConvertedAmount,
+    });
 
     const closeTxn = tour.steps.find((s) => s.id === 'closeTransactionForm')!;
     expect(closeTxn.advance).toEqual({

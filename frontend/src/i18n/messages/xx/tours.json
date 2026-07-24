@@ -132,7 +132,7 @@
           },
           "entryCurrency": {
             "title": "[XX-Choose the currency you paid in-XX]",
-            "body": "[XX-This button sets the currency the amount was charged in. Type the total exactly as it appears on your statement and Monize converts it, showing the rate you can edit to match your bank. Only your own currency in the list? Choose 'Add currency...' at the bottom to add one.-XX]"
+            "body": "[XX-Open this and pick the currency you were charged in. Only your own currency in the list? Choose 'Add currency...' at the bottom to add one -- it's selected for you. Once a foreign currency is set, a converted total and the exchange rate appear beside the amount, both editable to match your bank.-XX]"
           },
           "closeTransactionForm": {
             "title": "[XX-Close the form-XX]",

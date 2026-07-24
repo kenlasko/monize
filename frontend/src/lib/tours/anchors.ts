@@ -37,6 +37,7 @@ export const TOUR_ANCHORS = {
   transactionFields: 'transaction-fields',
   transactionSplit: 'transaction-split',
   transactionCurrencyField: 'transaction-currency-field',
+  transactionConvertedAmount: 'transaction-converted-amount',
 
   // Reports
   reportForeignCurrencyFees: 'report-foreign-currency-fees',

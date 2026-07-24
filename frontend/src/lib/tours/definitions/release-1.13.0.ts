@@ -71,12 +71,16 @@ export const RELEASE_1_13_FOREIGN_CURRENCY_TOUR: TourDefinition = {
       advance: { type: 'appear', anchorId: TOUR_ANCHORS.transactionForm },
     },
     {
-      // In-form: the entry-currency picker. Its popover carries "Add
-      // currency..." for users whose only active currency is their own.
+      // Interactive: spotlight the entry-currency picker and wait until the
+      // user actually chooses a foreign currency -- the converted-amount field
+      // only mounts once one is set. Its popover carries "Add currency..." for
+      // users whose only active currency is their own, and creating one there
+      // auto-selects it, so this single advance covers both paths.
       id: 'entryCurrency',
       route: '/transactions',
       anchorId: TOUR_ANCHORS.transactionCurrencyField,
       placement: 'auto',
+      advance: { type: 'appear', anchorId: TOUR_ANCHORS.transactionConvertedAmount },
     },
     {
       // Centered: close the form; advance when it disappears.

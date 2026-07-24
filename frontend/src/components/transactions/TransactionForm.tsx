@@ -1168,13 +1168,18 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
   // (fee included) sits directly beside the Amount input (same width). The rate
   // and fee text render together on one line below, spanning both columns.
   const convertedAmountSlot = isForeign ? (
-    <CurrencyInput
-      label={t('form.fx.totalInCurrency', { currency: accountCurrency })}
-      prefix={getCurrencySymbol(accountCurrency)}
-      value={fxTotal}
-      onChange={handleConvertedTotalOverride}
-      allowSignToggle
-    />
+    // Mounts only while entering a foreign currency, so a guided tour can watch
+    // this anchor to detect that the user actually picked one (its `appear`
+    // advance) -- covering both an existing currency and the Add-currency flow.
+    <div {...tourAnchor(TOUR_ANCHORS.transactionConvertedAmount)}>
+      <CurrencyInput
+        label={t('form.fx.totalInCurrency', { currency: accountCurrency })}
+        prefix={getCurrencySymbol(accountCurrency)}
+        value={fxTotal}
+        onChange={handleConvertedTotalOverride}
+        allowSignToggle
+      />
+    </div>
   ) : undefined;
 
   const fxCaptionSlot = isForeign ? (
