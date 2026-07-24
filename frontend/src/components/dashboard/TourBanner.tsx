@@ -3,18 +3,21 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useTourStore } from '@/store/tourStore';
+import { useDemoMode } from '@/hooks/useDemoMode';
 import { INTRO_TOUR } from '@/lib/tours/registry';
 
 /**
  * Prominent dashboard banner inviting the user to take the guided introduction
- * tour. Shown on every login (the dismiss is session-only -- reloading, i.e. a
- * fresh login, brings it back), and hidden while a tour is actually running. The
- * button label reflects whether the intro tour has been completed. Reuses the
- * already-localized `tours` copy, so it needs no new strings.
+ * tour. Shown only on demo instances, on every login (the dismiss is
+ * session-only -- reloading, i.e. a fresh login, brings it back), and hidden
+ * while a tour is actually running. The button label reflects whether the intro
+ * tour has been completed. Reuses the already-localized `tours` copy, so it
+ * needs no new strings.
  */
 export function TourBanner() {
   const t = useTranslations('tours');
   const tDash = useTranslations('dashboard');
+  const isDemoMode = useDemoMode();
   const startTour = useTourStore((s) => s.startTour);
   const active = useTourStore((s) => s.active);
   const introCompleted = useTourStore(
@@ -22,7 +25,7 @@ export function TourBanner() {
   );
   const [dismissed, setDismissed] = useState(false);
 
-  if (dismissed || active) return null;
+  if (!isDemoMode || dismissed || active) return null;
 
   return (
     <div className="mb-6 flex items-center gap-3 rounded-lg border border-blue-300 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/30">

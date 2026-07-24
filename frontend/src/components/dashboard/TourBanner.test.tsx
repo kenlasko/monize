@@ -7,9 +7,11 @@ vi.mock('@/lib/tours-api', () => ({
 
 import { TourBanner } from './TourBanner';
 import { useTourStore } from '@/store/tourStore';
+import { useDemoStore } from '@/store/demoStore';
 
 beforeEach(() => {
   useTourStore.setState({ active: null, progress: {}, progressLoaded: true });
+  useDemoStore.setState({ isDemoMode: true });
   window.matchMedia = vi.fn().mockImplementation((q: string) => ({
     matches: q.includes('min-width'),
     media: q,
@@ -24,6 +26,12 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe('TourBanner', () => {
+  it('renders nothing outside demo mode', () => {
+    useDemoStore.setState({ isDemoMode: false });
+    const { container } = render(<TourBanner />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
   it('invites the user to take the tour and starts it on click', () => {
     render(<TourBanner />);
     expect(screen.getByText('Take a quick tour')).toBeInTheDocument();
