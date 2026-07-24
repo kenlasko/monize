@@ -91,7 +91,7 @@ export function WhatsNewModal({
     setExpanded(allExpanded ? new Set() : new Set(allKeys));
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} maxWidth="2xl" pushHistory>
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="4xl" pushHistory>
       <div className="flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-start justify-between gap-4 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
