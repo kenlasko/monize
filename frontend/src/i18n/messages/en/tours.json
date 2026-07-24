@@ -1,0 +1,126 @@
+{
+  "controls": {
+    "next": "Next",
+    "back": "Back",
+    "done": "Done",
+    "endTour": "End tour",
+    "tryIt": "Try it -- the tour continues once you do",
+    "skipStep": "Skip this step",
+    "stepCounter": "{current} of {total}",
+    "skippedTitle": "Tour finished",
+    "skippedBody": "Some steps were skipped because their screen or control wasn't available. You can retake the tour anytime from Settings."
+  },
+  "offer": {
+    "heading": "Take a quick tour",
+    "subheading": "Short walkthroughs of what's new in this release.",
+    "showMe": "Show me",
+    "viewed": "Viewed",
+    "introTitle": "New here? Take the introduction tour",
+    "introSubtitle": "A quick walkthrough of the basics."
+  },
+  "areas": {
+    "intro": "Getting started",
+    "transactions": "Transactions",
+    "accounts": "Accounts",
+    "budgets": "Budgets",
+    "reports": "Reports",
+    "settings": "Settings"
+  },
+  "gettingStarted": {
+    "takeTour": "Take the tour",
+    "retakeTour": "Retake the tour"
+  },
+  "settings": {
+    "title": "Guided tours",
+    "description": "Walk through the app's features step by step.",
+    "startIntro": "Start introduction tour",
+    "reset": "Reset tour progress",
+    "resetSuccess": "Tour progress reset.",
+    "resetError": "Couldn't reset tour progress. Please try again."
+  },
+  "intro": {
+    "basics": {
+      "title": "Introduction to Monize",
+      "steps": {
+        "welcome": {
+          "title": "Welcome to Monize",
+          "body": "This quick tour shows you around the core of the app. You can leave anytime by pressing Escape or End tour."
+        },
+        "dashboard": {
+          "title": "Your dashboard",
+          "body": "Widgets here summarize your balances, spending, and upcoming bills at a glance. You can rearrange them later in Settings."
+        },
+        "navigation": {
+          "title": "Getting around",
+          "body": "Use the navigation to jump between your accounts, transactions, budgets, and reports."
+        },
+        "accounts": {
+          "title": "Add an account",
+          "body": "Start by adding your bank, credit card, loan, or investment accounts. Balances and transactions live under each account."
+        },
+        "createTransaction": {
+          "title": "Record a transaction",
+          "body": "Click New Transaction to add income or spending. Go ahead and open the form."
+        },
+        "currencyField": {
+          "title": "Foreign currencies",
+          "body": "Set a different currency here to record a transaction made abroad -- Monize converts it for you."
+        },
+        "closeForm": {
+          "title": "Close the form to continue",
+          "body": "Close the transaction form (Cancel or the X) and the tour will move on."
+        },
+        "budgets": {
+          "title": "Plan with budgets",
+          "body": "Budgets let you set monthly targets per category and track how you're tracking against them."
+        },
+        "reports": {
+          "title": "Understand your money",
+          "body": "Reports turn your transactions into charts -- spending by category, net worth over time, and more."
+        },
+        "finish": {
+          "title": "You're all set",
+          "body": "That's the tour. Adjust preferences here in Settings, and retake this tour anytime from the Guided tours section."
+        }
+      }
+    }
+  },
+  "release": {
+    "v1_13_0": {
+      "accounts": {
+        "title": "Foreign-currency fees",
+        "steps": {
+          "openAccount": {
+            "title": "Open an account",
+            "body": "Open an account that has foreign-currency transactions to see its currency-fee breakdown."
+          },
+          "fxFees": {
+            "title": "Foreign-currency fees",
+            "body": "This section breaks down the fees you paid on foreign-currency activity, separate from the transaction register."
+          },
+          "outro": {
+            "title": "Foreign-currency fees",
+            "body": "Accounts with foreign-currency activity now show a dedicated fee breakdown on their detail page."
+          }
+        }
+      },
+      "settings": {
+        "title": "What's New digest",
+        "steps": {
+          "whatsNewToggle": {
+            "title": "Release highlights",
+            "body": "This toggle controls whether the What's New summary pops up automatically after an update."
+          },
+          "appVersion": {
+            "title": "Reread the notes",
+            "body": "Click the version label at the bottom of Settings anytime to reopen the release notes."
+          },
+          "done": {
+            "title": "That's it",
+            "body": "You can revisit these highlights whenever you like from here in Settings."
+          }
+        }
+      }
+    }
+  }
+}

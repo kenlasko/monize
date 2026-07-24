@@ -41,6 +41,7 @@ const NAMESPACES = [
   "scheduledTransactions",
   "securities",
   "tags",
+  "tours",
   "transactions",
 ] as const;
 
