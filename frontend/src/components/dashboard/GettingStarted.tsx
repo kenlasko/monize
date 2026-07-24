@@ -5,11 +5,20 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { userSettingsApi } from '@/lib/user-settings';
+import { useDemoStore } from '@/store/demoStore';
+import { useTourStore } from '@/store/tourStore';
+import { INTRO_TOUR } from '@/lib/tours/registry';
 
 export function GettingStarted() {
   const t = useTranslations('dashboard');
+  const tt = useTranslations('tours');
   const preferences = usePreferencesStore((s) => s.preferences);
   const updatePreferences = usePreferencesStore((s) => s.updatePreferences);
+  const isDemoMode = useDemoStore((s) => s.isDemoMode);
+  const startTour = useTourStore((s) => s.startTour);
+  const introCompleted = useTourStore(
+    (s) => s.progress[INTRO_TOUR.id]?.status === 'completed',
+  );
   const [dismissing, setDismissing] = useState(false);
 
   const steps = [
@@ -80,6 +89,17 @@ export function GettingStarted() {
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {t('gettingStarted.subtitle')}
           </p>
+          {!isDemoMode && (
+            <button
+              type="button"
+              onClick={() => startTour(INTRO_TOUR)}
+              className="mt-2 text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+            >
+              {introCompleted
+                ? tt('gettingStarted.retakeTour')
+                : tt('gettingStarted.takeTour')}
+            </button>
+          )}
         </div>
         <button
           onClick={handleDismiss}

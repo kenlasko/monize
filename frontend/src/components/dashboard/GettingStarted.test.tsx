@@ -1,6 +1,8 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@/test/render';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, cleanup } from '@/test/render';
 import { GettingStarted } from './GettingStarted';
+import { useTourStore } from '@/store/tourStore';
+import { useDemoStore } from '@/store/demoStore';
 
 const mockUpdatePreferences = vi.fn();
 
@@ -43,5 +45,33 @@ describe('GettingStarted', () => {
     const dismissBtn = screen.getByTitle('Dismiss');
     fireEvent.click(dismissBtn);
     expect(mockUpdatePreferences).toHaveBeenCalledWith({ gettingStartedDismissed: true });
+  });
+});
+
+describe('GettingStarted tour CTA', () => {
+  beforeEach(() => {
+    useTourStore.setState({ active: null, progress: {}, progressLoaded: true });
+    useDemoStore.setState({ isDemoMode: false });
+  });
+  afterEach(() => cleanup());
+
+  it('starts the introduction tour from the CTA', () => {
+    render(<GettingStarted />);
+    fireEvent.click(screen.getByText('Take the tour'));
+    expect(useTourStore.getState().active?.tour.id).toBe('intro/basics');
+  });
+
+  it('flips to "Retake the tour" once the intro is completed', () => {
+    useTourStore.setState({
+      progress: { 'intro/basics': { status: 'completed', updatedAt: 'now' } },
+    });
+    render(<GettingStarted />);
+    expect(screen.getByText('Retake the tour')).toBeInTheDocument();
+  });
+
+  it('hides the CTA in demo mode', () => {
+    useDemoStore.setState({ isDemoMode: true });
+    render(<GettingStarted />);
+    expect(screen.queryByText('Take the tour')).toBeNull();
   });
 });

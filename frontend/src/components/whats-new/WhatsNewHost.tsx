@@ -26,6 +26,9 @@ export function WhatsNewHost() {
   const close = useWhatsNewStore((s) => s.close);
 
   const [notes, setNotes] = useState<ReleaseNotes | null>(null);
+  const [currentVersion, setCurrentVersion] = useState<string | undefined>(
+    undefined,
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -39,6 +42,9 @@ export function WhatsNewHost() {
       .then((res) => {
         if (cancelled) return;
         setNotes(res.notes);
+        setCurrentVersion(
+          'currentVersion' in res ? res.currentVersion : res.version,
+        );
         if ('autoShow' in res && res.autoShow && res.notes) {
           open();
         }
@@ -76,6 +82,7 @@ export function WhatsNewHost() {
       notes={notes}
       loading={loading}
       authenticated={isAuthenticated}
+      currentVersion={currentVersion}
       onClose={close}
       onShowNextLogin={handleShowNextLogin}
       onDontShowAgain={handleDontShowAgain}

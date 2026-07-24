@@ -21,6 +21,7 @@ import { ThemeSelector } from '@/components/settings/ThemeSelector';
 import { ColorThemeSelector } from '@/components/settings/ColorThemeSelector';
 import { ColorTheme } from '@/lib/color-themes';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
+import { TourSettingsRow } from '@/components/settings/TourSettingsRow';
 
 const NUMBER_FORMAT_OPTIONS = [
   { value: 'browser', labelKey: 'numberFormatOptions.browser' },
@@ -337,6 +338,8 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
           </label>
           <InfoTooltip text={t('showWhatsNewTooltip')} />
         </div>
+
+        <TourSettingsRow />
       </div>
 
       <div className="mt-6 flex justify-end">
