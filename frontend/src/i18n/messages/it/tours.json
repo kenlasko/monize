@@ -1,0 +1,126 @@
+{
+  "controls": {
+    "next": "Avanti",
+    "back": "Indietro",
+    "done": "Fine",
+    "endTour": "Termina tour",
+    "tryIt": "Provalo -- il tour continua quando lo fai",
+    "skipStep": "Salta questo passaggio",
+    "stepCounter": "{current} di {total}",
+    "skippedTitle": "Tour terminato",
+    "skippedBody": "Alcuni passaggi sono stati saltati perché la relativa schermata o il controllo non erano disponibili. Puoi rifare il tour in qualsiasi momento dalle Impostazioni."
+  },
+  "offer": {
+    "heading": "Fai un tour rapido",
+    "subheading": "Brevi percorsi guidati sulle novità di questa versione.",
+    "showMe": "Mostrami",
+    "viewed": "Visto",
+    "introTitle": "Sei nuovo qui? Fai il tour introduttivo",
+    "introSubtitle": "Un rapido percorso guidato tra le funzioni di base."
+  },
+  "areas": {
+    "intro": "Per iniziare",
+    "transactions": "Transazioni",
+    "accounts": "Conti",
+    "budgets": "Budget",
+    "reports": "Report",
+    "settings": "Impostazioni"
+  },
+  "gettingStarted": {
+    "takeTour": "Fai il tour",
+    "retakeTour": "Rifai il tour"
+  },
+  "settings": {
+    "title": "Tour guidati",
+    "description": "Scopri le funzioni dell'app passo dopo passo.",
+    "startIntro": "Avvia il tour introduttivo",
+    "reset": "Azzera i progressi del tour",
+    "resetSuccess": "Progressi del tour azzerati.",
+    "resetError": "Impossibile azzerare i progressi del tour. Riprova."
+  },
+  "intro": {
+    "basics": {
+      "title": "Introduzione a Monize",
+      "steps": {
+        "welcome": {
+          "title": "Benvenuto in Monize",
+          "body": "Questo tour rapido ti mostra il cuore dell'app. Puoi uscire in qualsiasi momento premendo Escape o Termina tour."
+        },
+        "dashboard": {
+          "title": "La tua dashboard",
+          "body": "I widget qui riepilogano a colpo d'occhio i tuoi saldi, le spese e le prossime bollette. Potrai riorganizzarli in seguito nelle Impostazioni."
+        },
+        "navigation": {
+          "title": "Muoversi nell'app",
+          "body": "Usa la navigazione per passare tra conti, transazioni, budget e report."
+        },
+        "accounts": {
+          "title": "Aggiungi un conto",
+          "body": "Inizia aggiungendo i tuoi conti bancari, carte di credito, prestiti o investimenti. Saldi e transazioni si trovano all'interno di ogni conto."
+        },
+        "createTransaction": {
+          "title": "Registra una transazione",
+          "body": "Fai clic su Nuova transazione per aggiungere entrate o uscite. Vai pure ad aprire il modulo."
+        },
+        "currencyField": {
+          "title": "Valute estere",
+          "body": "Imposta qui una valuta diversa per registrare una transazione effettuata all'estero -- Monize la converte automaticamente per te."
+        },
+        "closeForm": {
+          "title": "Chiudi il modulo per continuare",
+          "body": "Chiudi il modulo della transazione (Annulla o la X) e il tour proseguirà."
+        },
+        "budgets": {
+          "title": "Pianifica con i budget",
+          "body": "I budget ti permettono di impostare obiettivi mensili per categoria e di monitorare il tuo andamento rispetto a essi."
+        },
+        "reports": {
+          "title": "Capisci le tue finanze",
+          "body": "I report trasformano le tue transazioni in grafici -- spese per categoria, patrimonio netto nel tempo e altro ancora."
+        },
+        "finish": {
+          "title": "Tutto pronto",
+          "body": "Il tour finisce qui. Regola le preferenze nelle Impostazioni e rifai questo tour in qualsiasi momento dalla sezione Tour guidati."
+        }
+      }
+    }
+  },
+  "release": {
+    "v1_13_0": {
+      "accounts": {
+        "title": "Commissioni in valuta estera",
+        "steps": {
+          "openAccount": {
+            "title": "Apri un conto",
+            "body": "Apri un conto con transazioni in valuta estera per vedere il dettaglio delle relative commissioni."
+          },
+          "fxFees": {
+            "title": "Commissioni in valuta estera",
+            "body": "Questa sezione riepiloga le commissioni pagate sulle operazioni in valuta estera, separatamente dal registro delle transazioni."
+          },
+          "outro": {
+            "title": "Commissioni in valuta estera",
+            "body": "I conti con operazioni in valuta estera mostrano ora un dettaglio dedicato delle commissioni nella loro pagina di dettaglio."
+          }
+        }
+      },
+      "settings": {
+        "title": "Riepilogo Novità",
+        "steps": {
+          "whatsNewToggle": {
+            "title": "Novità della versione",
+            "body": "Questo interruttore controlla se il riepilogo Novità compare automaticamente dopo un aggiornamento."
+          },
+          "appVersion": {
+            "title": "Rileggi le note",
+            "body": "Fai clic sull'etichetta della versione in fondo alle Impostazioni in qualsiasi momento per riaprire le note di rilascio."
+          },
+          "done": {
+            "title": "È tutto",
+            "body": "Puoi rivedere queste novità quando vuoi da qui, nelle Impostazioni."
+          }
+        }
+      }
+    }
+  }
+}

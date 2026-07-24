@@ -1,0 +1,126 @@
+{
+  "controls": {
+    "next": "Tiếp theo",
+    "back": "Quay lại",
+    "done": "Xong",
+    "endTour": "Kết thúc hướng dẫn",
+    "tryIt": "Thử ngay -- phần hướng dẫn sẽ tiếp tục sau khi bạn thực hiện",
+    "skipStep": "Bỏ qua bước này",
+    "stepCounter": "{current} / {total}",
+    "skippedTitle": "Đã hoàn tất hướng dẫn",
+    "skippedBody": "Một số bước đã bị bỏ qua vì màn hình hoặc điều khiển tương ứng không khả dụng. Bạn có thể xem lại hướng dẫn bất cứ lúc nào từ Cài đặt."
+  },
+  "offer": {
+    "heading": "Xem hướng dẫn nhanh",
+    "subheading": "Những hướng dẫn ngắn về các tính năng mới trong bản phát hành này.",
+    "showMe": "Xem ngay",
+    "viewed": "Đã xem",
+    "introTitle": "Mới đến đây? Hãy xem hướng dẫn giới thiệu",
+    "introSubtitle": "Một hướng dẫn nhanh về những điều cơ bản."
+  },
+  "areas": {
+    "intro": "Bắt đầu",
+    "transactions": "Giao dịch",
+    "accounts": "Tài khoản",
+    "budgets": "Ngân sách",
+    "reports": "Báo cáo",
+    "settings": "Cài đặt"
+  },
+  "gettingStarted": {
+    "takeTour": "Xem hướng dẫn",
+    "retakeTour": "Xem lại hướng dẫn"
+  },
+  "settings": {
+    "title": "Hướng dẫn sử dụng",
+    "description": "Tìm hiểu các tính năng của ứng dụng theo từng bước.",
+    "startIntro": "Bắt đầu hướng dẫn giới thiệu",
+    "reset": "Đặt lại tiến trình hướng dẫn",
+    "resetSuccess": "Đã đặt lại tiến trình hướng dẫn.",
+    "resetError": "Không thể đặt lại tiến trình hướng dẫn. Vui lòng thử lại."
+  },
+  "intro": {
+    "basics": {
+      "title": "Giới thiệu về Monize",
+      "steps": {
+        "welcome": {
+          "title": "Chào mừng đến với Monize",
+          "body": "Hướng dẫn nhanh này sẽ giới thiệu cho bạn những phần cốt lõi của ứng dụng. Bạn có thể rời khỏi bất cứ lúc nào bằng cách nhấn Escape hoặc Kết thúc hướng dẫn."
+        },
+        "dashboard": {
+          "title": "Bảng điều khiển của bạn",
+          "body": "Các tiện ích ở đây tóm tắt nhanh số dư, chi tiêu và hóa đơn sắp tới của bạn. Bạn có thể sắp xếp lại chúng sau trong Cài đặt."
+        },
+        "navigation": {
+          "title": "Di chuyển trong ứng dụng",
+          "body": "Dùng thanh điều hướng để chuyển đổi giữa tài khoản, giao dịch, ngân sách và báo cáo của bạn."
+        },
+        "accounts": {
+          "title": "Thêm tài khoản",
+          "body": "Bắt đầu bằng cách thêm tài khoản ngân hàng, thẻ tín dụng, khoản vay hoặc đầu tư của bạn. Số dư và giao dịch nằm trong từng tài khoản."
+        },
+        "createTransaction": {
+          "title": "Ghi lại một giao dịch",
+          "body": "Nhấp vào Giao tác mới để thêm khoản thu hoặc chi. Hãy mở biểu mẫu để thử."
+        },
+        "currencyField": {
+          "title": "Ngoại tệ",
+          "body": "Đặt một loại tiền tệ khác ở đây để ghi lại giao dịch thực hiện ở nước ngoài -- Monize sẽ quy đổi giúp bạn."
+        },
+        "closeForm": {
+          "title": "Đóng biểu mẫu để tiếp tục",
+          "body": "Đóng biểu mẫu giao dịch (Hủy hoặc nút X) và hướng dẫn sẽ tiếp tục."
+        },
+        "budgets": {
+          "title": "Lên kế hoạch với ngân sách",
+          "body": "Ngân sách cho phép bạn đặt mục tiêu hàng tháng theo từng danh mục và theo dõi mức độ bám sát mục tiêu đó."
+        },
+        "reports": {
+          "title": "Hiểu rõ tình hình tài chính",
+          "body": "Báo cáo biến giao dịch của bạn thành biểu đồ -- chi tiêu theo danh mục, giá trị tài sản ròng theo thời gian, và nhiều hơn nữa."
+        },
+        "finish": {
+          "title": "Vậy là bạn đã sẵn sàng",
+          "body": "Đó là toàn bộ hướng dẫn. Điều chỉnh tùy chọn của bạn ngay tại Cài đặt, và xem lại hướng dẫn này bất cứ lúc nào từ mục Hướng dẫn sử dụng."
+        }
+      }
+    }
+  },
+  "release": {
+    "v1_13_0": {
+      "accounts": {
+        "title": "Phí ngoại tệ",
+        "steps": {
+          "openAccount": {
+            "title": "Mở một tài khoản",
+            "body": "Mở một tài khoản có giao dịch ngoại tệ để xem chi tiết phí ngoại tệ của tài khoản đó."
+          },
+          "fxFees": {
+            "title": "Phí ngoại tệ",
+            "body": "Mục này liệt kê chi tiết các khoản phí bạn đã trả cho các hoạt động bằng ngoại tệ, tách biệt với sổ giao dịch."
+          },
+          "outro": {
+            "title": "Phí ngoại tệ",
+            "body": "Các tài khoản có hoạt động ngoại tệ giờ đây hiển thị chi tiết phí riêng trên trang chi tiết của chúng."
+          }
+        }
+      },
+      "settings": {
+        "title": "Bản tin Có gì mới",
+        "steps": {
+          "whatsNewToggle": {
+            "title": "Điểm nổi bật của bản phát hành",
+            "body": "Công tắc này quyết định liệu tóm tắt Có gì mới có tự động hiện lên sau khi cập nhật hay không."
+          },
+          "appVersion": {
+            "title": "Xem lại ghi chú phát hành",
+            "body": "Nhấp vào nhãn phiên bản ở cuối trang Cài đặt bất cứ lúc nào để mở lại ghi chú phát hành."
+          },
+          "done": {
+            "title": "Vậy là xong",
+            "body": "Bạn có thể xem lại những điểm nổi bật này bất cứ khi nào bạn muốn ngay tại đây trong Cài đặt."
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,126 @@
+{
+  "controls": {
+    "next": "Volgende",
+    "back": "Terug",
+    "done": "Klaar",
+    "endTour": "Rondleiding beëindigen",
+    "tryIt": "Probeer het -- de rondleiding gaat verder zodra u dit doet",
+    "skipStep": "Deze stap overslaan",
+    "stepCounter": "{current} van {total}",
+    "skippedTitle": "Rondleiding voltooid",
+    "skippedBody": "Sommige stappen zijn overgeslagen omdat het bijbehorende scherm of element niet beschikbaar was. U kunt de rondleiding altijd opnieuw starten via Instellingen."
+  },
+  "offer": {
+    "heading": "Volg een korte rondleiding",
+    "subheading": "Korte introducties van wat er nieuw is in deze release.",
+    "showMe": "Laat zien",
+    "viewed": "Bekeken",
+    "introTitle": "Nieuw hier? Volg de introductierondleiding",
+    "introSubtitle": "Een korte introductie van de basisfuncties."
+  },
+  "areas": {
+    "intro": "Aan de slag",
+    "transactions": "Transacties",
+    "accounts": "Rekeningen",
+    "budgets": "Budget",
+    "reports": "Rapporten",
+    "settings": "Instellingen"
+  },
+  "gettingStarted": {
+    "takeTour": "Start de rondleiding",
+    "retakeTour": "Rondleiding opnieuw volgen"
+  },
+  "settings": {
+    "title": "Begeleide rondleidingen",
+    "description": "Doorloop de functies van de app stap voor stap.",
+    "startIntro": "Introductierondleiding starten",
+    "reset": "Voortgang van rondleiding resetten",
+    "resetSuccess": "Voortgang van rondleiding gereset.",
+    "resetError": "Kan de voortgang van de rondleiding niet resetten. Probeer het opnieuw."
+  },
+  "intro": {
+    "basics": {
+      "title": "Introductie tot Monize",
+      "steps": {
+        "welcome": {
+          "title": "Welkom bij Monize",
+          "body": "Deze korte rondleiding laat u de kern van de app zien. U kunt op elk moment stoppen door op Escape te drukken of op Rondleiding beëindigen te klikken."
+        },
+        "dashboard": {
+          "title": "Uw dashboard",
+          "body": "Widgets hier geven in één oogopslag een overzicht van uw saldi, uitgaven en aankomende rekeningen. U kunt ze later herschikken in Instellingen."
+        },
+        "navigation": {
+          "title": "De weg vinden",
+          "body": "Gebruik de navigatie om te schakelen tussen uw rekeningen, transacties, budgetten en rapporten."
+        },
+        "accounts": {
+          "title": "Een rekening toevoegen",
+          "body": "Begin met het toevoegen van uw bank-, creditcard-, lening- of beleggingsrekeningen. Saldi en transacties vindt u bij elke rekening."
+        },
+        "createTransaction": {
+          "title": "Een transactie registreren",
+          "body": "Klik op Nieuwe transactie om inkomsten of uitgaven toe te voegen. Open gerust het formulier."
+        },
+        "currencyField": {
+          "title": "Vreemde valuta",
+          "body": "Stel hier een andere valuta in om een transactie vast te leggen die u in het buitenland heeft gedaan -- Monize rekent deze automatisch voor u om."
+        },
+        "closeForm": {
+          "title": "Sluit het formulier om verder te gaan",
+          "body": "Sluit het transactieformulier (Annuleren of de X) en de rondleiding gaat verder."
+        },
+        "budgets": {
+          "title": "Plannen met budgetten",
+          "body": "Met budgetten stelt u maandelijkse doelen per categorie in en houdt u bij hoe u ervoor staat."
+        },
+        "reports": {
+          "title": "Inzicht in uw geld",
+          "body": "Rapporten zetten uw transacties om in grafieken -- uitgaven per categorie, nettovermogen in de tijd, en meer."
+        },
+        "finish": {
+          "title": "U bent helemaal klaar",
+          "body": "Dat was de rondleiding. Pas uw voorkeuren hier in Instellingen aan en volg deze rondleiding op elk moment opnieuw via het gedeelte Begeleide rondleidingen."
+        }
+      }
+    }
+  },
+  "release": {
+    "v1_13_0": {
+      "accounts": {
+        "title": "Kosten voor vreemde valuta",
+        "steps": {
+          "openAccount": {
+            "title": "Open een rekening",
+            "body": "Open een rekening met transacties in vreemde valuta om het overzicht van valutakosten te bekijken."
+          },
+          "fxFees": {
+            "title": "Kosten voor vreemde valuta",
+            "body": "Dit gedeelte geeft een overzicht van de kosten die u heeft betaald voor activiteit in vreemde valuta, los van het transactieoverzicht."
+          },
+          "outro": {
+            "title": "Kosten voor vreemde valuta",
+            "body": "Rekeningen met activiteit in vreemde valuta tonen nu een eigen overzicht van kosten op hun detailpagina."
+          }
+        }
+      },
+      "settings": {
+        "title": "Wat is er nieuw-overzicht",
+        "steps": {
+          "whatsNewToggle": {
+            "title": "Hoogtepunten van de release",
+            "body": "Deze schakelaar bepaalt of het Wat is er nieuw-overzicht automatisch verschijnt na een update."
+          },
+          "appVersion": {
+            "title": "De notities opnieuw lezen",
+            "body": "Klik op het versienummer onderaan Instellingen om de release-opmerkingen opnieuw te openen."
+          },
+          "done": {
+            "title": "Dat is alles",
+            "body": "U kunt deze hoogtepunten altijd opnieuw bekijken vanaf hier in Instellingen."
+          }
+        }
+      }
+    }
+  }
+}

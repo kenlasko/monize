@@ -1,0 +1,126 @@
+{
+  "controls": {
+    "next": "İleri",
+    "back": "Geri",
+    "done": "Bitti",
+    "endTour": "Turu bitir",
+    "tryIt": "Deneyin -- siz deneyince tur devam eder",
+    "skipStep": "Bu adımı atla",
+    "stepCounter": "{current} / {total}",
+    "skippedTitle": "Tur tamamlandı",
+    "skippedBody": "Bazı adımlar, ekranı veya denetimi kullanılamadığı için atlandı. Turu istediğiniz zaman Ayarlar'dan yeniden alabilirsiniz."
+  },
+  "offer": {
+    "heading": "Kısa bir tur yapın",
+    "subheading": "Bu sürümdeki yeniliklerin kısa anlatımları.",
+    "showMe": "Bana göster",
+    "viewed": "Görüntülendi",
+    "introTitle": "Yeni misiniz? Tanıtım turuna başlayın",
+    "introSubtitle": "Temel özelliklerin kısa bir anlatımı."
+  },
+  "areas": {
+    "intro": "Başlarken",
+    "transactions": "İşlemler",
+    "accounts": "Hesaplar",
+    "budgets": "Bütçeler",
+    "reports": "Raporlar",
+    "settings": "Ayarlar"
+  },
+  "gettingStarted": {
+    "takeTour": "Turu başlat",
+    "retakeTour": "Turu yeniden al"
+  },
+  "settings": {
+    "title": "Rehberli turlar",
+    "description": "Uygulamanın özelliklerini adım adım keşfedin.",
+    "startIntro": "Tanıtım turunu başlat",
+    "reset": "Tur ilerlemesini sıfırla",
+    "resetSuccess": "Tur ilerlemesi sıfırlandı.",
+    "resetError": "Tur ilerlemesi sıfırlanamadı. Lütfen tekrar deneyin."
+  },
+  "intro": {
+    "basics": {
+      "title": "Monize'a Giriş",
+      "steps": {
+        "welcome": {
+          "title": "Monize'a hoş geldiniz",
+          "body": "Bu kısa tur, uygulamanın temel bölümlerini tanıtır. İstediğiniz an Escape tuşuna basarak veya Turu bitir seçeneğiyle çıkabilirsiniz."
+        },
+        "dashboard": {
+          "title": "Kontrol paneliniz",
+          "body": "Buradaki widget'lar bakiyelerinizi, harcamalarınızı ve yaklaşan faturalarınızı bir bakışta özetler. Bunları daha sonra Ayarlar'dan yeniden düzenleyebilirsiniz."
+        },
+        "navigation": {
+          "title": "Uygulamada gezinme",
+          "body": "Hesaplarınız, işlemleriniz, bütçeleriniz ve raporlarınız arasında geçiş yapmak için gezinme menüsünü kullanın."
+        },
+        "accounts": {
+          "title": "Bir hesap ekleyin",
+          "body": "Banka, kredi kartı, kredi veya yatırım hesaplarınızı ekleyerek başlayın. Bakiyeler ve işlemler her hesabın altında yer alır."
+        },
+        "createTransaction": {
+          "title": "Bir işlem kaydedin",
+          "body": "Gelir veya harcama eklemek için Yeni İşlem'e tıklayın. Devam edip formu açın."
+        },
+        "currencyField": {
+          "title": "Yabancı para birimleri",
+          "body": "Yurt dışında yapılan bir işlemi kaydetmek için burada farklı bir para birimi belirleyin -- Monize dönüştürmeyi sizin için yapar."
+        },
+        "closeForm": {
+          "title": "Devam etmek için formu kapatın",
+          "body": "İşlem formunu kapatın (İptal veya X) ve tur devam etsin."
+        },
+        "budgets": {
+          "title": "Bütçelerle planlayın",
+          "body": "Bütçeler, her kategori için aylık hedefler belirlemenizi ve bu hedeflere göre ilerlemenizi takip etmenizi sağlar."
+        },
+        "reports": {
+          "title": "Paranızı anlayın",
+          "body": "Raporlar, işlemlerinizi grafiklere dönüştürür -- kategoriye göre harcama, zaman içinde net değer ve daha fazlası."
+        },
+        "finish": {
+          "title": "Hazırsınız",
+          "body": "Tur burada sona eriyor. Tercihlerinizi burada, Ayarlar'dan düzenleyebilir ve bu turu Rehberli turlar bölümünden istediğiniz zaman yeniden alabilirsiniz."
+        }
+      }
+    }
+  },
+  "release": {
+    "v1_13_0": {
+      "accounts": {
+        "title": "Yabancı para birimi ücretleri",
+        "steps": {
+          "openAccount": {
+            "title": "Bir hesap açın",
+            "body": "Para birimi ücreti dökümünü görmek için yabancı para birimi işlemleri bulunan bir hesabı açın."
+          },
+          "fxFees": {
+            "title": "Yabancı para birimi ücretleri",
+            "body": "Bu bölüm, işlem defterinden ayrı olarak, yabancı para birimi işlemleriniz için ödediğiniz ücretleri ayrıntılı olarak gösterir."
+          },
+          "outro": {
+            "title": "Yabancı para birimi ücretleri",
+            "body": "Yabancı para birimi işlemleri bulunan hesaplar artık ayrıntı sayfalarında özel bir ücret dökümü gösteriyor."
+          }
+        }
+      },
+      "settings": {
+        "title": "Yenilikler özeti",
+        "steps": {
+          "whatsNewToggle": {
+            "title": "Sürüm öne çıkanları",
+            "body": "Bu anahtar, bir güncellemeden sonra Yenilikler özetinin otomatik olarak açılıp açılmayacağını kontrol eder."
+          },
+          "appVersion": {
+            "title": "Notları yeniden okuyun",
+            "body": "Sürüm notlarını yeniden açmak için Ayarlar'ın altındaki sürüm etiketine istediğiniz zaman tıklayın."
+          },
+          "done": {
+            "title": "Hepsi bu kadar",
+            "body": "Bu öne çıkanları buradan, Ayarlar üzerinden istediğiniz zaman tekrar inceleyebilirsiniz."
+          }
+        }
+      }
+    }
+  }
+}

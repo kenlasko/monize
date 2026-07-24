@@ -1,0 +1,126 @@
+{
+  "controls": {
+    "next": "Seguinte",
+    "back": "Voltar",
+    "done": "Concluído",
+    "endTour": "Terminar visita guiada",
+    "tryIt": "Experimente -- a visita guiada continua assim que o fizer",
+    "skipStep": "Ignorar este passo",
+    "stepCounter": "{current} de {total}",
+    "skippedTitle": "Visita guiada terminada",
+    "skippedBody": "Alguns passos foram ignorados porque o respetivo ecrã ou controlo não estava disponível. Pode refazer a visita guiada a qualquer momento nas Definições."
+  },
+  "offer": {
+    "heading": "Faça uma visita guiada rápida",
+    "subheading": "Percursos rápidos pelas novidades desta versão.",
+    "showMe": "Mostrar-me",
+    "viewed": "Visto",
+    "introTitle": "Novo por aqui? Faça a visita guiada de introdução",
+    "introSubtitle": "Um percurso rápido pelo essencial."
+  },
+  "areas": {
+    "intro": "Primeiros Passos",
+    "transactions": "Transações",
+    "accounts": "Contas",
+    "budgets": "Orçamentos",
+    "reports": "Relatórios",
+    "settings": "Definições"
+  },
+  "gettingStarted": {
+    "takeTour": "Fazer a visita guiada",
+    "retakeTour": "Refazer a visita guiada"
+  },
+  "settings": {
+    "title": "Visitas guiadas",
+    "description": "Percorra as funcionalidades da aplicação passo a passo.",
+    "startIntro": "Iniciar visita guiada de introdução",
+    "reset": "Repor progresso da visita guiada",
+    "resetSuccess": "Progresso da visita guiada reposto.",
+    "resetError": "Não foi possível repor o progresso da visita guiada. Tente novamente."
+  },
+  "intro": {
+    "basics": {
+      "title": "Introdução ao Monize",
+      "steps": {
+        "welcome": {
+          "title": "Bem-vindo ao Monize",
+          "body": "Esta visita guiada rápida mostra-lhe o essencial da aplicação. Pode sair a qualquer momento premindo Escape ou Terminar visita guiada."
+        },
+        "dashboard": {
+          "title": "O seu painel",
+          "body": "Os widgets aqui resumem, de relance, os seus saldos, despesas e contas a pagar em breve. Pode reorganizá-los mais tarde nas Definições."
+        },
+        "navigation": {
+          "title": "Orientar-se na aplicação",
+          "body": "Utilize a navegação para alternar entre as suas contas, transações, orçamentos e relatórios."
+        },
+        "accounts": {
+          "title": "Adicionar uma conta",
+          "body": "Comece por adicionar as suas contas bancárias, de cartão de crédito, de empréstimo ou de investimento. Os saldos e as transações encontram-se dentro de cada conta."
+        },
+        "createTransaction": {
+          "title": "Registar uma transação",
+          "body": "Clique em Nova Transação para adicionar uma receita ou despesa. Avance e abra o formulário."
+        },
+        "currencyField": {
+          "title": "Moedas estrangeiras",
+          "body": "Defina aqui uma moeda diferente para registar uma transação feita no estrangeiro -- o Monize converte-a por si."
+        },
+        "closeForm": {
+          "title": "Feche o formulário para continuar",
+          "body": "Feche o formulário de transação (Cancelar ou o X) e a visita guiada avançará."
+        },
+        "budgets": {
+          "title": "Planeie com orçamentos",
+          "body": "Os orçamentos permitem-lhe definir metas mensais por categoria e acompanhar o seu progresso em relação a elas."
+        },
+        "reports": {
+          "title": "Compreenda o seu dinheiro",
+          "body": "Os relatórios transformam as suas transações em gráficos -- despesas por categoria, património líquido ao longo do tempo, e muito mais."
+        },
+        "finish": {
+          "title": "Está tudo pronto",
+          "body": "É tudo por agora. Ajuste as preferências aqui em Definições e refaça esta visita guiada a qualquer momento na secção Visitas guiadas."
+        }
+      }
+    }
+  },
+  "release": {
+    "v1_13_0": {
+      "accounts": {
+        "title": "Comissões de moeda estrangeira",
+        "steps": {
+          "openAccount": {
+            "title": "Abra uma conta",
+            "body": "Abra uma conta com transações em moeda estrangeira para ver o detalhe das respetivas comissões cambiais."
+          },
+          "fxFees": {
+            "title": "Comissões de moeda estrangeira",
+            "body": "Esta secção detalha as comissões pagas em atividade de moeda estrangeira, separadamente do registo de transações."
+          },
+          "outro": {
+            "title": "Comissões de moeda estrangeira",
+            "body": "As contas com atividade em moeda estrangeira apresentam agora um detalhe de comissões dedicado na respetiva página de detalhe."
+          }
+        }
+      },
+      "settings": {
+        "title": "Resumo de Novidades",
+        "steps": {
+          "whatsNewToggle": {
+            "title": "Destaques da versão",
+            "body": "Este interruptor controla se o resumo de Novidades aparece automaticamente depois de uma atualização."
+          },
+          "appVersion": {
+            "title": "Reler as notas",
+            "body": "Clique na etiqueta de versão no fundo das Definições sempre que quiser reabrir as notas de versão."
+          },
+          "done": {
+            "title": "É tudo",
+            "body": "Pode voltar a consultar estes destaques quando quiser aqui em Definições."
+          }
+        }
+      }
+    }
+  }
+}

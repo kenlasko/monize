@@ -314,7 +314,7 @@ tasks complete.
   (the `disappear` step advances) -> finish -> reload -> "Retake the tour"
   (persistence round-trip). Run:
   `cd e2e && npx playwright test tests/tours.spec.ts`.
-- [ ] **8. Acceptance localization pass (final commit, at acceptance only)** --
+- [x] **8. Acceptance localization pass (final commit, at acceptance only)** --
   translate `tours.json` (and any touched catalogs) across all remaining locales +
   pseudo regen; parity tests green.
 

@@ -1,0 +1,11 @@
+{
+  "intro": {
+    "basics": {
+      "steps": {
+        "dashboard": {
+          "body": "Widgets here summarise your balances, spending, and upcoming bills at a glance. You can rearrange them later in Settings."
+        }
+      }
+    }
+  }
+}

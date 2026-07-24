@@ -1,0 +1,126 @@
+{
+  "controls": {
+    "next": "Siguiente",
+    "back": "Atrás",
+    "done": "Listo",
+    "endTour": "Finalizar recorrido",
+    "tryIt": "Pruébalo -- el recorrido continúa cuando lo hagas",
+    "skipStep": "Omitir este paso",
+    "stepCounter": "{current} de {total}",
+    "skippedTitle": "Recorrido finalizado",
+    "skippedBody": "Se omitieron algunos pasos porque su pantalla o control no estaba disponible. Puedes repetir el recorrido en cualquier momento desde Ajustes."
+  },
+  "offer": {
+    "heading": "Haz un recorrido rápido",
+    "subheading": "Recorridos breves de las novedades de esta versión.",
+    "showMe": "Mostrarme",
+    "viewed": "Visto",
+    "introTitle": "¿Nuevo aquí? Realiza el recorrido de introducción",
+    "introSubtitle": "Un repaso rápido de lo esencial."
+  },
+  "areas": {
+    "intro": "Primeros pasos",
+    "transactions": "Transacciones",
+    "accounts": "Cuentas",
+    "budgets": "Presupuestos",
+    "reports": "Informes",
+    "settings": "Ajustes"
+  },
+  "gettingStarted": {
+    "takeTour": "Hacer el recorrido",
+    "retakeTour": "Repetir el recorrido"
+  },
+  "settings": {
+    "title": "Recorridos guiados",
+    "description": "Recorre las funciones de la aplicación paso a paso.",
+    "startIntro": "Iniciar recorrido de introducción",
+    "reset": "Restablecer progreso del recorrido",
+    "resetSuccess": "Progreso del recorrido restablecido.",
+    "resetError": "No se pudo restablecer el progreso del recorrido. Inténtalo de nuevo."
+  },
+  "intro": {
+    "basics": {
+      "title": "Introducción a Monize",
+      "steps": {
+        "welcome": {
+          "title": "Bienvenido a Monize",
+          "body": "Este recorrido rápido te muestra lo esencial de la aplicación. Puedes salir en cualquier momento pulsando Escape o Finalizar recorrido."
+        },
+        "dashboard": {
+          "title": "Tu panel principal",
+          "body": "Los widgets de aquí resumen tus saldos, gastos y próximos pagos de un vistazo. Podrás reorganizarlos más tarde en Ajustes."
+        },
+        "navigation": {
+          "title": "Cómo moverte",
+          "body": "Usa la navegación para saltar entre tus cuentas, transacciones, presupuestos e informes."
+        },
+        "accounts": {
+          "title": "Agrega una cuenta",
+          "body": "Empieza agregando tus cuentas bancarias, de tarjeta de crédito, préstamos o inversiones. Los saldos y transacciones se encuentran dentro de cada cuenta."
+        },
+        "createTransaction": {
+          "title": "Registra una transacción",
+          "body": "Haz clic en Nueva transacción para agregar un ingreso o gasto. Adelante, abre el formulario."
+        },
+        "currencyField": {
+          "title": "Monedas extranjeras",
+          "body": "Elige aquí una moneda diferente para registrar una transacción hecha en el extranjero -- Monize la convierte por ti."
+        },
+        "closeForm": {
+          "title": "Cierra el formulario para continuar",
+          "body": "Cierra el formulario de transacción (Cancelar o la X) y el recorrido continuará."
+        },
+        "budgets": {
+          "title": "Planifica con presupuestos",
+          "body": "Los presupuestos te permiten fijar objetivos mensuales por categoría y ver cómo vas respecto a ellos."
+        },
+        "reports": {
+          "title": "Entiende tu dinero",
+          "body": "Los informes convierten tus transacciones en gráficos -- gastos por categoría, patrimonio neto a lo largo del tiempo y más."
+        },
+        "finish": {
+          "title": "Todo listo",
+          "body": "Eso es todo el recorrido. Ajusta tus preferencias aquí en Ajustes y repite este recorrido cuando quieras desde la sección Recorridos guiados."
+        }
+      }
+    }
+  },
+  "release": {
+    "v1_13_0": {
+      "accounts": {
+        "title": "Comisiones por moneda extranjera",
+        "steps": {
+          "openAccount": {
+            "title": "Abre una cuenta",
+            "body": "Abre una cuenta que tenga transacciones en moneda extranjera para ver el desglose de sus comisiones cambiarias."
+          },
+          "fxFees": {
+            "title": "Comisiones por moneda extranjera",
+            "body": "Esta sección desglosa las comisiones que pagaste por actividad en moneda extranjera, por separado del registro de transacciones."
+          },
+          "outro": {
+            "title": "Comisiones por moneda extranjera",
+            "body": "Las cuentas con actividad en moneda extranjera ahora muestran un desglose de comisiones dedicado en su página de detalle."
+          }
+        }
+      },
+      "settings": {
+        "title": "Resumen de Novedades",
+        "steps": {
+          "whatsNewToggle": {
+            "title": "Novedades de la versión",
+            "body": "Este interruptor controla si el resumen de Novedades aparece automáticamente después de una actualización."
+          },
+          "appVersion": {
+            "title": "Vuelve a leer las notas",
+            "body": "Haz clic en la etiqueta de versión al final de Ajustes en cualquier momento para volver a abrir las notas de la versión."
+          },
+          "done": {
+            "title": "Eso es todo",
+            "body": "Puedes volver a consultar estas novedades cuando quieras desde aquí en Ajustes."
+          }
+        }
+      }
+    }
+  }
+}

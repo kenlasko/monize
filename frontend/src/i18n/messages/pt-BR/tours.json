@@ -1,0 +1,126 @@
+{
+  "controls": {
+    "next": "Próximo",
+    "back": "Voltar",
+    "done": "Concluído",
+    "endTour": "Encerrar tour",
+    "tryIt": "Experimente -- o tour continua depois que você fizer isso",
+    "skipStep": "Pular esta etapa",
+    "stepCounter": "{current} de {total}",
+    "skippedTitle": "Tour finalizado",
+    "skippedBody": "Algumas etapas foram puladas porque sua tela ou controle não estava disponível. Você pode refazer o tour a qualquer momento em Configurações."
+  },
+  "offer": {
+    "heading": "Faça um tour rápido",
+    "subheading": "Passos curtos sobre as novidades desta versão.",
+    "showMe": "Mostrar",
+    "viewed": "Visualizado",
+    "introTitle": "Novo por aqui? Faça o tour de introdução",
+    "introSubtitle": "Um passo a passo rápido sobre o básico."
+  },
+  "areas": {
+    "intro": "Primeiros Passos",
+    "transactions": "Transações",
+    "accounts": "Contas",
+    "budgets": "Orçamentos",
+    "reports": "Relatórios",
+    "settings": "Configurações"
+  },
+  "gettingStarted": {
+    "takeTour": "Fazer o tour",
+    "retakeTour": "Refazer o tour"
+  },
+  "settings": {
+    "title": "Tours guiados",
+    "description": "Conheça os recursos do aplicativo passo a passo.",
+    "startIntro": "Iniciar tour de introdução",
+    "reset": "Redefinir progresso do tour",
+    "resetSuccess": "Progresso do tour redefinido.",
+    "resetError": "Não foi possível redefinir o progresso do tour. Tente novamente."
+  },
+  "intro": {
+    "basics": {
+      "title": "Introdução ao Monize",
+      "steps": {
+        "welcome": {
+          "title": "Bem-vindo ao Monize",
+          "body": "Este tour rápido apresenta o essencial do aplicativo. Você pode sair a qualquer momento pressionando Escape ou Encerrar tour."
+        },
+        "dashboard": {
+          "title": "Seu painel",
+          "body": "Os widgets aqui resumem seus saldos, gastos e contas futuras rapidamente. Você pode reorganizá-los depois em Configurações."
+        },
+        "navigation": {
+          "title": "Como navegar",
+          "body": "Use a navegação para alternar entre suas contas, transações, orçamentos e relatórios."
+        },
+        "accounts": {
+          "title": "Adicione uma conta",
+          "body": "Comece adicionando suas contas bancárias, cartões de crédito, empréstimos ou investimentos. Saldos e transações ficam em cada conta."
+        },
+        "createTransaction": {
+          "title": "Registre uma transação",
+          "body": "Clique em Nova Transação para adicionar uma receita ou despesa. Vá em frente e abra o formulário."
+        },
+        "currencyField": {
+          "title": "Moedas estrangeiras",
+          "body": "Defina uma moeda diferente aqui para registrar uma transação feita no exterior -- o Monize faz a conversão para você."
+        },
+        "closeForm": {
+          "title": "Feche o formulário para continuar",
+          "body": "Feche o formulário de transação (Cancelar ou o X) e o tour vai continuar."
+        },
+        "budgets": {
+          "title": "Planeje com orçamentos",
+          "body": "Os orçamentos permitem definir metas mensais por categoria e acompanhar seu desempenho em relação a elas."
+        },
+        "reports": {
+          "title": "Entenda suas finanças",
+          "body": "Os relatórios transformam suas transações em gráficos -- gastos por categoria, patrimônio líquido ao longo do tempo e muito mais."
+        },
+        "finish": {
+          "title": "Tudo pronto",
+          "body": "Esse foi o tour. Ajuste suas preferências aqui em Configurações e refaça este tour quando quiser na seção Tours guiados."
+        }
+      }
+    }
+  },
+  "release": {
+    "v1_13_0": {
+      "accounts": {
+        "title": "Tarifas de moeda estrangeira",
+        "steps": {
+          "openAccount": {
+            "title": "Abra uma conta",
+            "body": "Abra uma conta que tenha transações em moeda estrangeira para ver o detalhamento das tarifas de câmbio."
+          },
+          "fxFees": {
+            "title": "Tarifas de moeda estrangeira",
+            "body": "Esta seção detalha as tarifas pagas em atividades com moeda estrangeira, separadas do extrato de transações."
+          },
+          "outro": {
+            "title": "Tarifas de moeda estrangeira",
+            "body": "Contas com atividade em moeda estrangeira agora mostram um detalhamento dedicado de tarifas na página de detalhes."
+          }
+        }
+      },
+      "settings": {
+        "title": "Resumo de Novidades",
+        "steps": {
+          "whatsNewToggle": {
+            "title": "Destaques da versão",
+            "body": "Esta opção controla se o resumo de Novidades aparece automaticamente após uma atualização."
+          },
+          "appVersion": {
+            "title": "Releia as notas",
+            "body": "Clique no rótulo de versão na parte inferior de Configurações a qualquer momento para reabrir as notas de versão."
+          },
+          "done": {
+            "title": "É isso",
+            "body": "Você pode revisitar esses destaques quando quiser, aqui em Configurações."
+          }
+        }
+      }
+    }
+  }
+}

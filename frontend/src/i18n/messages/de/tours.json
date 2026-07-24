@@ -1,0 +1,126 @@
+{
+  "controls": {
+    "next": "Weiter",
+    "back": "Zurück",
+    "done": "Fertig",
+    "endTour": "Tour beenden",
+    "tryIt": "Probieren Sie es aus -- die Tour geht danach weiter",
+    "skipStep": "Diesen Schritt überspringen",
+    "stepCounter": "{current} von {total}",
+    "skippedTitle": "Tour beendet",
+    "skippedBody": "Einige Schritte wurden übersprungen, weil ihr Bildschirm oder Element nicht verfügbar war. Sie können die Tour jederzeit über die Einstellungen erneut starten."
+  },
+  "offer": {
+    "heading": "Machen Sie eine kurze Tour",
+    "subheading": "Kurze Einführungen zu den Neuerungen dieser Version.",
+    "showMe": "Zeigen",
+    "viewed": "Angesehen",
+    "introTitle": "Neu hier? Starten Sie die Einführungstour",
+    "introSubtitle": "Ein kurzer Rundgang durch die Grundlagen."
+  },
+  "areas": {
+    "intro": "Erste Schritte",
+    "transactions": "Buchungen",
+    "accounts": "Konten",
+    "budgets": "Budgets",
+    "reports": "Berichte",
+    "settings": "Einstellungen"
+  },
+  "gettingStarted": {
+    "takeTour": "Tour starten",
+    "retakeTour": "Tour erneut starten"
+  },
+  "settings": {
+    "title": "Geführte Touren",
+    "description": "Gehen Sie die Funktionen der App Schritt für Schritt durch.",
+    "startIntro": "Einführungstour starten",
+    "reset": "Tour-Fortschritt zurücksetzen",
+    "resetSuccess": "Tour-Fortschritt wurde zurückgesetzt.",
+    "resetError": "Der Tour-Fortschritt konnte nicht zurückgesetzt werden. Bitte versuchen Sie es erneut."
+  },
+  "intro": {
+    "basics": {
+      "title": "Einführung in Monize",
+      "steps": {
+        "welcome": {
+          "title": "Willkommen bei Monize",
+          "body": "Diese kurze Tour zeigt Ihnen die wichtigsten Bereiche der App. Sie können jederzeit über Escape oder Tour beenden aussteigen."
+        },
+        "dashboard": {
+          "title": "Ihr Dashboard",
+          "body": "Die Widgets hier fassen Ihre Salden, Ausgaben und anstehenden Rechnungen auf einen Blick zusammen. Sie können sie später in den Einstellungen neu anordnen."
+        },
+        "navigation": {
+          "title": "Sich zurechtfinden",
+          "body": "Nutzen Sie die Navigation, um zwischen Ihren Konten, Buchungen, Budgets und Berichten zu wechseln."
+        },
+        "accounts": {
+          "title": "Ein Konto hinzufügen",
+          "body": "Fügen Sie zunächst Ihre Bank-, Kreditkarten-, Kredit- oder Anlagekonten hinzu. Salden und Buchungen finden Sie jeweils unter dem entsprechenden Konto."
+        },
+        "createTransaction": {
+          "title": "Eine Buchung erfassen",
+          "body": "Klicken Sie auf Neue Buchung, um Einnahmen oder Ausgaben hinzuzufügen. Öffnen Sie ruhig das Formular."
+        },
+        "currencyField": {
+          "title": "Fremdwährungen",
+          "body": "Legen Sie hier eine andere Währung fest, um eine im Ausland getätigte Buchung zu erfassen -- Monize rechnet sie für Sie um."
+        },
+        "closeForm": {
+          "title": "Schließen Sie das Formular, um fortzufahren",
+          "body": "Schließen Sie das Buchungsformular (Abbrechen oder das X), und die Tour geht weiter."
+        },
+        "budgets": {
+          "title": "Mit Budgets planen",
+          "body": "Mit Budgets legen Sie monatliche Ziele je Kategorie fest und verfolgen, wie gut Sie diese einhalten."
+        },
+        "reports": {
+          "title": "Ihre Finanzen verstehen",
+          "body": "Berichte verwandeln Ihre Buchungen in Diagramme -- Ausgaben nach Kategorie, Vermögensentwicklung über die Zeit und mehr."
+        },
+        "finish": {
+          "title": "Sie sind startklar",
+          "body": "Das war die Tour. Passen Sie Ihre Einstellungen hier an und starten Sie diese Tour jederzeit erneut über den Bereich Geführte Touren."
+        }
+      }
+    }
+  },
+  "release": {
+    "v1_13_0": {
+      "accounts": {
+        "title": "Fremdwährungsgebühren",
+        "steps": {
+          "openAccount": {
+            "title": "Ein Konto öffnen",
+            "body": "Öffnen Sie ein Konto mit Fremdwährungsbuchungen, um die Aufschlüsselung der Währungsgebühren zu sehen."
+          },
+          "fxFees": {
+            "title": "Fremdwährungsgebühren",
+            "body": "Dieser Bereich schlüsselt die Gebühren auf, die Sie für Fremdwährungsaktivitäten gezahlt haben, getrennt vom Buchungsregister."
+          },
+          "outro": {
+            "title": "Fremdwährungsgebühren",
+            "body": "Konten mit Fremdwährungsaktivitäten zeigen jetzt auf ihrer Detailseite eine eigene Gebührenaufschlüsselung."
+          }
+        }
+      },
+      "settings": {
+        "title": "Neuigkeiten-Übersicht",
+        "steps": {
+          "whatsNewToggle": {
+            "title": "Highlights dieser Version",
+            "body": "Dieser Schalter legt fest, ob die Neuigkeiten-Übersicht nach einem Update automatisch angezeigt wird."
+          },
+          "appVersion": {
+            "title": "Hinweise erneut lesen",
+            "body": "Klicken Sie jederzeit auf die Versionsangabe unten in den Einstellungen, um die Versionshinweise erneut zu öffnen."
+          },
+          "done": {
+            "title": "Das war's",
+            "body": "Sie können diese Highlights jederzeit hier in den Einstellungen erneut ansehen."
+          }
+        }
+      }
+    }
+  }
+}

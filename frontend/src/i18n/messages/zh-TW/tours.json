@@ -1,0 +1,126 @@
+{
+  "controls": {
+    "next": "下一步",
+    "back": "上一步",
+    "done": "完成",
+    "endTour": "結束導覽",
+    "tryIt": "動手試試 -- 完成後導覽會繼續進行",
+    "skipStep": "跳過此步驟",
+    "stepCounter": "{current} / {total}",
+    "skippedTitle": "導覽已結束",
+    "skippedBody": "部分步驟因對應畫面或元件無法使用而被跳過。您隨時可以在設定中重新進行導覽。"
+  },
+  "offer": {
+    "heading": "來趟快速導覽",
+    "subheading": "簡短說明本次更新的新功能。",
+    "showMe": "帶我看看",
+    "viewed": "已檢視",
+    "introTitle": "初次使用？進行入門導覽",
+    "introSubtitle": "快速了解基本操作。"
+  },
+  "areas": {
+    "intro": "快速入門",
+    "transactions": "交易",
+    "accounts": "帳戶",
+    "budgets": "預算",
+    "reports": "報表",
+    "settings": "設定"
+  },
+  "gettingStarted": {
+    "takeTour": "開始導覽",
+    "retakeTour": "重新進行導覽"
+  },
+  "settings": {
+    "title": "導覽引導",
+    "description": "逐步了解應用程式的各項功能。",
+    "startIntro": "開始入門導覽",
+    "reset": "重設導覽進度",
+    "resetSuccess": "導覽進度已重設。",
+    "resetError": "無法重設導覽進度，請再試一次。"
+  },
+  "intro": {
+    "basics": {
+      "title": "Monize 入門介紹",
+      "steps": {
+        "welcome": {
+          "title": "歡迎使用 Monize",
+          "body": "這趟快速導覽將帶您認識應用程式的核心功能。您可以隨時按下 Escape 鍵或選擇「結束導覽」離開。"
+        },
+        "dashboard": {
+          "title": "您的儀表板",
+          "body": "這裡的小工具會一目了然地彙整您的餘額、支出與即將到期的帳單。您稍後可以在設定中重新排列它們。"
+        },
+        "navigation": {
+          "title": "認識導覽列",
+          "body": "使用導覽列可在帳戶、交易、預算與報表之間切換。"
+        },
+        "accounts": {
+          "title": "新增帳戶",
+          "body": "先新增您的銀行、信用卡、貸款或投資帳戶。每個帳戶下都會顯示對應的餘額與交易紀錄。"
+        },
+        "createTransaction": {
+          "title": "記錄一筆交易",
+          "body": "點選「新增交易」以記錄收入或支出，請試著開啟這個表單。"
+        },
+        "currencyField": {
+          "title": "外幣",
+          "body": "若在國外消費，可在此設定不同的幣別 -- Monize 會為您自動換算。"
+        },
+        "closeForm": {
+          "title": "關閉表單以繼續",
+          "body": "關閉交易表單（點選「取消」或 X），導覽就會繼續進行。"
+        },
+        "budgets": {
+          "title": "用預算做規劃",
+          "body": "預算功能可讓您為各類別設定每月目標，並追蹤實際支出與目標的差距。"
+        },
+        "reports": {
+          "title": "了解您的財務狀況",
+          "body": "報表會將您的交易轉換成圖表 -- 依類別檢視支出、追蹤淨資產變化等。"
+        },
+        "finish": {
+          "title": "一切就緒",
+          "body": "導覽到此結束。您可以在這裡的設定中調整偏好設定，也能隨時從「導覽引導」區塊重新進行這趟導覽。"
+        }
+      }
+    }
+  },
+  "release": {
+    "v1_13_0": {
+      "accounts": {
+        "title": "外幣手續費",
+        "steps": {
+          "openAccount": {
+            "title": "開啟一個帳戶",
+            "body": "開啟含有外幣交易的帳戶，即可檢視其外幣手續費明細。"
+          },
+          "fxFees": {
+            "title": "外幣手續費",
+            "body": "此區塊會列出您在外幣交易中支付的手續費，與交易明細分開呈現。"
+          },
+          "outro": {
+            "title": "外幣手續費",
+            "body": "含有外幣交易的帳戶，現在會在詳細資料頁面顯示專屬的手續費明細。"
+          }
+        }
+      },
+      "settings": {
+        "title": "「更新內容」摘要",
+        "steps": {
+          "whatsNewToggle": {
+            "title": "版本重點",
+            "body": "此開關可控制更新後是否自動彈出「更新內容」摘要。"
+          },
+          "appVersion": {
+            "title": "重新閱讀說明",
+            "body": "隨時點選設定頁面底部的版本標籤，即可重新開啟版本說明。"
+          },
+          "done": {
+            "title": "就是這樣",
+            "body": "您隨時可以回到這裡的設定重新查看這些重點內容。"
+          }
+        }
+      }
+    }
+  }
+}
