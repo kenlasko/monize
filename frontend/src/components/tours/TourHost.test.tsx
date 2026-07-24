@@ -163,6 +163,39 @@ describe('TourHost', () => {
     );
   });
 
+  it('shows a route-agnostic first step in place without navigating', async () => {
+    // Launched from another page (e.g. the What's New modal on /settings): the
+    // welcome step has no route, so it must render where we are and never push.
+    mockPathname = '/settings';
+    const tour: TourDefinition = {
+      id: 'test/agnostic',
+      area: 'intro',
+      i18nPrefix: 'intro.basics',
+      steps: [
+        { id: 'welcome', anchorId: null },
+        { id: 'dashboard', route: '/dashboard', anchorId: null },
+      ],
+    };
+
+    await mountHost();
+    await start(tour);
+
+    await waitFor(() =>
+      expect(screen.getByText('Welcome to Monize')).toBeInTheDocument(),
+    );
+    // No navigation for the route-agnostic step; the tour is not dismissed.
+    expect(routerPush).not.toHaveBeenCalled();
+    expect(useTourStore.getState().active).not.toBeNull();
+
+    // Next navigates to the routed step.
+    await act(async () => {
+      fireEvent.click(screen.getByText('Next'));
+    });
+    await waitFor(() =>
+      expect(routerPush).toHaveBeenCalledWith('/dashboard'),
+    );
+  });
+
   it('gracefully skips a missing anchor and shows the skipped outro', async () => {
     const tour: TourDefinition = {
       id: 'test/skip',

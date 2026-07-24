@@ -101,6 +101,11 @@ export function TourHost() {
   useEffect(() => {
     if (!active || showingOutro || active.phase !== 'navigating') return;
     const s = active.steps[active.stepIndex];
+    // Route-agnostic step (no route/routeMatch): show it wherever we are.
+    if (!s.route && !s.routeMatch) {
+      setPhase('waiting-anchor');
+      return;
+    }
     const onRoute = s.routeMatch
       ? pathname.startsWith(s.routeMatch)
       : pathname === s.route;
@@ -108,7 +113,7 @@ export function TourHost() {
       setPhase('waiting-anchor');
       return;
     }
-    if (active.expectedRoute !== s.route) {
+    if (s.route && active.expectedRoute !== s.route) {
       setExpectedRoute(s.route);
       router.push(s.route);
     }
@@ -187,6 +192,8 @@ export function TourHost() {
   useEffect(() => {
     if (!active || showingOutro || active.phase === 'navigating') return;
     const s = active.steps[active.stepIndex];
+    // Route-agnostic steps never dismiss on navigation.
+    if (!s.route && !s.routeMatch) return;
     const onStepRoute = s.routeMatch
       ? pathname.startsWith(s.routeMatch)
       : pathname === s.route;

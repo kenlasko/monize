@@ -30,8 +30,14 @@ export type TourPlacement = 'top' | 'bottom' | 'left' | 'right' | 'auto';
 export interface TourStep {
   /** i18n leaf: tours.<i18nPrefix>.steps.<id>.{title,body}. */
   id: string;
-  /** The engine navigates here first if the current route differs. */
-  route: string;
+  /**
+   * The engine navigates here first if the current route differs. Omit for a
+   * route-agnostic step (a centered welcome/outro that shows wherever the user
+   * already is) -- the engine neither navigates nor treats a route change as a
+   * dismissal for it, which also avoids colliding with a closing
+   * `pushHistory` modal's `history.back()` when a tour is launched from one.
+   */
+  route?: string;
   /** Prefix match for dynamic routes (e.g. '/accounts/' matches '/accounts/<id>'). */
   routeMatch?: string;
   /** null = centered welcome/outro card with no anchor. */

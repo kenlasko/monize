@@ -14,8 +14,10 @@ export const INTRO_TOUR: TourDefinition = {
   i18nPrefix: 'intro.basics',
   steps: [
     {
+      // Route-agnostic: shows wherever the user launched the tour (dashboard,
+      // Settings, the What's New modal), so the first step never fights a
+      // closing pushHistory modal's history.back(). The next step navigates.
       id: 'welcome',
-      route: '/dashboard',
       anchorId: null,
     },
     {
