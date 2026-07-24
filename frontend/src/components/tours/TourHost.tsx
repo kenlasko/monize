@@ -19,6 +19,12 @@ const DEFAULT_ANCHOR_TIMEOUT = 5000;
 const POST_NAV_ANCHOR_TIMEOUT = 10000;
 /** Interactive appear-waits should not auto-skip; the user drives them. */
 const INTERACTIVE_TIMEOUT = 600000;
+/**
+ * Pause after a watched element disappears before advancing, so a closing
+ * `pushHistory` Modal's history.back() settles before the tour's next-step
+ * navigation runs (otherwise the two history operations collide).
+ */
+const DISAPPEAR_ADVANCE_DELAY = 350;
 
 function prefersReducedMotion(): boolean {
   return (
@@ -159,23 +165,33 @@ export function TourHost() {
     if (s.advance?.type !== 'disappear') return;
     const target = s.advance.anchorId;
     let seen = false;
+    let advanceTimer: ReturnType<typeof setTimeout> | undefined;
     const check = () => {
-      if (findTourAnchor(target)) seen = true;
-      else if (seen) {
-        cleanup();
-        next();
+      if (findTourAnchor(target)) {
+        seen = true;
+        return;
+      }
+      if (seen && advanceTimer === undefined) {
+        observer.disconnect();
+        clearInterval(interval);
+        cancelAnimationFrame(raf);
+        // The watched element usually lived inside a `pushHistory` Modal (e.g.
+        // the transaction form), whose close fires history.back(). Defer the
+        // next-step navigation so that unwind settles first -- otherwise the
+        // modal's back() pops the tour's router.push and strands/dismisses it.
+        advanceTimer = setTimeout(next, DISAPPEAR_ADVANCE_DELAY);
       }
     };
     const observer = new MutationObserver(check);
     observer.observe(document.body, { childList: true, subtree: true });
     const interval = setInterval(check, 250);
     const raf = requestAnimationFrame(check);
-    function cleanup() {
+    return () => {
       observer.disconnect();
       clearInterval(interval);
       cancelAnimationFrame(raf);
-    }
-    return cleanup;
+      if (advanceTimer !== undefined) clearTimeout(advanceTimer);
+    };
   }, [active, next]);
 
   // Interactive advancement: navigation to a matching route.

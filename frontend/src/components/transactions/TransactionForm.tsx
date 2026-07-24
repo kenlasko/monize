@@ -1155,14 +1155,13 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
   // Currency picker button, placed left of the Amount input (normal/split only).
   const currencyPickerSlot =
     mode !== 'transfer' ? (
-      <span {...tourAnchor(TOUR_ANCHORS.transactionCurrencyField)}>
-        <CurrencyPickerButton
-          value={entryCurrency}
-          accountCurrencyCode={accountCurrency}
-          onChange={handleEntryCurrencyChange}
-          disabled={isLoading}
-        />
-      </span>
+      <CurrencyPickerButton
+        value={entryCurrency}
+        accountCurrencyCode={accountCurrency}
+        onChange={handleEntryCurrencyChange}
+        disabled={isLoading}
+        anchorProps={tourAnchor(TOUR_ANCHORS.transactionCurrencyField)}
+      />
     ) : undefined;
 
   // While entering a foreign currency, the converted account-currency amount

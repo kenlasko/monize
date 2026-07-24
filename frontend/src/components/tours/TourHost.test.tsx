@@ -196,6 +196,46 @@ describe('TourHost', () => {
     );
   });
 
+  it('advances a disappear step after the watched element is removed', async () => {
+    const form = document.createElement('form');
+    form.setAttribute('data-tour-id', TOUR_ANCHORS.transactionForm);
+    document.body.appendChild(form);
+
+    const tour: TourDefinition = {
+      id: 'test/disappear',
+      area: 'intro',
+      i18nPrefix: 'intro.basics',
+      steps: [
+        {
+          id: 'closeForm',
+          route: '/',
+          anchorId: null,
+          advance: { type: 'disappear', anchorId: TOUR_ANCHORS.transactionForm },
+        },
+        { id: 'finish', route: '/', anchorId: null },
+      ],
+    };
+
+    await mountHost();
+    await start(tour);
+    await waitFor(() =>
+      expect(
+        screen.getByText('Close the form to continue'),
+      ).toBeInTheDocument(),
+    );
+
+    // Let the watcher observe the element present first (as it is while the
+    // user reads the step), then remove it; the step advances after the delay.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 300));
+      form.remove();
+    });
+    await waitFor(
+      () => expect(screen.getByText("You're all set")).toBeInTheDocument(),
+      { timeout: 2000 },
+    );
+  });
+
   it('gracefully skips a missing anchor and shows the skipped outro', async () => {
     const tour: TourDefinition = {
       id: 'test/skip',
