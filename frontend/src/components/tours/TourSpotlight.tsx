@@ -34,10 +34,14 @@ export function TourSpotlight({
   const transition = reducedMotion ? '' : 'transition-all duration-200';
 
   if (!rect) {
+    // Interactive centered steps (e.g. "close the form to continue") must let
+    // clicks reach the page beneath, so the dim is visual-only there.
     return createPortal(
       <div
-        className={`fixed inset-0 z-[60] ${DIM}`}
-        onClick={stop}
+        className={`fixed inset-0 z-[60] ${DIM} ${
+          interactive ? 'pointer-events-none' : ''
+        }`}
+        onClick={interactive ? undefined : stop}
         aria-hidden="true"
       />,
       document.body,

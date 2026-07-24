@@ -19,6 +19,15 @@ describe('TourSpotlight', () => {
     expect(dims.length).toBe(1);
   });
 
+  it('lets clicks through the centered dim on interactive steps', () => {
+    render(
+      <TourSpotlight rect={null} interactive={true} reducedMotion={false} />,
+    );
+    const dim = document.body.querySelector('.inset-0')!;
+    // Interactive centered steps (e.g. close-the-form) must not block the page.
+    expect(dim.className).toContain('pointer-events-none');
+  });
+
   it('renders framing panels and a highlight ring around an anchor', () => {
     render(
       <TourSpotlight rect={RECT} interactive={false} reducedMotion={false} />,
