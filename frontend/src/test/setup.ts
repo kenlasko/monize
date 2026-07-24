@@ -96,6 +96,16 @@ window.scrollTo = vi.fn() as any;
 // Mock scrollIntoView (not implemented in jsdom); used by dropdown/combobox lists
 Element.prototype.scrollIntoView = vi.fn() as any;
 
+// Stub ResizeObserver (not implemented in jsdom); used by the tour overlay's
+// live-rect tracking. A no-op observer is enough: tests drive rects directly.
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as any;
+}
+
 // Mock matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
