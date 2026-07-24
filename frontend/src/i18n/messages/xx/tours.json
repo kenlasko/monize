@@ -1,0 +1,126 @@
+{
+  "controls": {
+    "next": "[XX-Next-XX]",
+    "back": "[XX-Back-XX]",
+    "done": "[XX-Done-XX]",
+    "endTour": "[XX-End tour-XX]",
+    "tryIt": "[XX-Try it -- the tour continues once you do-XX]",
+    "skipStep": "[XX-Skip this step-XX]",
+    "stepCounter": "[XX-{current} of {total}-XX]",
+    "skippedTitle": "[XX-Tour finished-XX]",
+    "skippedBody": "[XX-Some steps were skipped because their screen or control wasn't available. You can retake the tour anytime from Settings.-XX]"
+  },
+  "offer": {
+    "heading": "[XX-Take a quick tour-XX]",
+    "subheading": "[XX-Short walkthroughs of what's new in this release.-XX]",
+    "showMe": "[XX-Show me-XX]",
+    "viewed": "[XX-Viewed-XX]",
+    "introTitle": "[XX-New here? Take the introduction tour-XX]",
+    "introSubtitle": "[XX-A quick walkthrough of the basics.-XX]"
+  },
+  "areas": {
+    "intro": "[XX-Getting started-XX]",
+    "transactions": "[XX-Transactions-XX]",
+    "accounts": "[XX-Accounts-XX]",
+    "budgets": "[XX-Budgets-XX]",
+    "reports": "[XX-Reports-XX]",
+    "settings": "[XX-Settings-XX]"
+  },
+  "gettingStarted": {
+    "takeTour": "[XX-Take the tour-XX]",
+    "retakeTour": "[XX-Retake the tour-XX]"
+  },
+  "settings": {
+    "title": "[XX-Guided tours-XX]",
+    "description": "[XX-Walk through the app's features step by step.-XX]",
+    "startIntro": "[XX-Start introduction tour-XX]",
+    "reset": "[XX-Reset tour progress-XX]",
+    "resetSuccess": "[XX-Tour progress reset.-XX]",
+    "resetError": "[XX-Couldn't reset tour progress. Please try again.-XX]"
+  },
+  "intro": {
+    "basics": {
+      "title": "[XX-Introduction to Monize-XX]",
+      "steps": {
+        "welcome": {
+          "title": "[XX-Welcome to Monize-XX]",
+          "body": "[XX-This quick tour shows you around the core of the app. You can leave anytime by pressing Escape or End tour.-XX]"
+        },
+        "dashboard": {
+          "title": "[XX-Your dashboard-XX]",
+          "body": "[XX-Widgets here summarize your balances, spending, and upcoming bills at a glance. You can rearrange them later in Settings.-XX]"
+        },
+        "navigation": {
+          "title": "[XX-Getting around-XX]",
+          "body": "[XX-Use the navigation to jump between your accounts, transactions, budgets, and reports.-XX]"
+        },
+        "accounts": {
+          "title": "[XX-Add an account-XX]",
+          "body": "[XX-Start by adding your bank, credit card, loan, or investment accounts. Balances and transactions live under each account.-XX]"
+        },
+        "createTransaction": {
+          "title": "[XX-Record a transaction-XX]",
+          "body": "[XX-Click New Transaction to add income or spending. Go ahead and open the form.-XX]"
+        },
+        "currencyField": {
+          "title": "[XX-Foreign currencies-XX]",
+          "body": "[XX-Set a different currency here to record a transaction made abroad -- Monize converts it for you.-XX]"
+        },
+        "closeForm": {
+          "title": "[XX-Close the form to continue-XX]",
+          "body": "[XX-Close the transaction form (Cancel or the X) and the tour will move on.-XX]"
+        },
+        "budgets": {
+          "title": "[XX-Plan with budgets-XX]",
+          "body": "[XX-Budgets let you set monthly targets per category and track how you're tracking against them.-XX]"
+        },
+        "reports": {
+          "title": "[XX-Understand your money-XX]",
+          "body": "[XX-Reports turn your transactions into charts -- spending by category, net worth over time, and more.-XX]"
+        },
+        "finish": {
+          "title": "[XX-You're all set-XX]",
+          "body": "[XX-That's the tour. Adjust preferences here in Settings, and retake this tour anytime from the Guided tours section.-XX]"
+        }
+      }
+    }
+  },
+  "release": {
+    "v1_13_0": {
+      "accounts": {
+        "title": "[XX-Foreign-currency fees-XX]",
+        "steps": {
+          "openAccount": {
+            "title": "[XX-Open an account-XX]",
+            "body": "[XX-Open an account that has foreign-currency transactions to see its currency-fee breakdown.-XX]"
+          },
+          "fxFees": {
+            "title": "[XX-Foreign-currency fees-XX]",
+            "body": "[XX-This section breaks down the fees you paid on foreign-currency activity, separate from the transaction register.-XX]"
+          },
+          "outro": {
+            "title": "[XX-Foreign-currency fees-XX]",
+            "body": "[XX-Accounts with foreign-currency activity now show a dedicated fee breakdown on their detail page.-XX]"
+          }
+        }
+      },
+      "settings": {
+        "title": "[XX-What's New digest-XX]",
+        "steps": {
+          "whatsNewToggle": {
+            "title": "[XX-Release highlights-XX]",
+            "body": "[XX-This toggle controls whether the What's New summary pops up automatically after an update.-XX]"
+          },
+          "appVersion": {
+            "title": "[XX-Reread the notes-XX]",
+            "body": "[XX-Click the version label at the bottom of Settings anytime to reopen the release notes.-XX]"
+          },
+          "done": {
+            "title": "[XX-That's it-XX]",
+            "body": "[XX-You can revisit these highlights whenever you like from here in Settings.-XX]"
+          }
+        }
+      }
+    }
+  }
+}
