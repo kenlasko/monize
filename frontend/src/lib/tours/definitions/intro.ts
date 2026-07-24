@@ -3,10 +3,16 @@ import type { TourDefinition } from '../types';
 
 /**
  * Evergreen "New User Introduction" tour. Walks a first-time user from the
- * dashboard through the core areas, including an interactive detour that opens
- * the New Transaction form and highlights the currency field before asking the
- * user to close the form again (the engine never closes a modal it does not
- * own). Offered from the Getting Started card and from Settings.
+ * dashboard through the core areas: customizing the dashboard, the Tools menu,
+ * Accounts, and the transaction register, with an interactive detour that opens
+ * the New Transaction form to explain payees/categories/amounts, splits, and
+ * foreign currencies before asking the user to close the form again. It then
+ * visits Bills & Deposits, Investments, Budgets, and Reports. Offered from the
+ * Getting Started card and from Settings.
+ *
+ * Steps anchored on desktop-only header controls (the Tools dropdown) or the
+ * desktop Split button are `skipOnMobile`; the page steps use centered cards so
+ * they show on every viewport.
  */
 export const INTRO_TOUR: TourDefinition = {
   id: 'intro/basics',
@@ -14,22 +20,23 @@ export const INTRO_TOUR: TourDefinition = {
   i18nPrefix: 'intro.basics',
   steps: [
     {
-      // Route-agnostic: shows wherever the user launched the tour (dashboard,
-      // Settings, the What's New modal), so the first step never fights a
-      // closing pushHistory modal's history.back(). The next step navigates.
+      // Route-agnostic: shows wherever the user launched the tour, so the first
+      // step never fights a closing pushHistory modal's history.back().
       id: 'welcome',
       anchorId: null,
     },
     {
+      // Anchored on the top-right Customize button, which scrolls the page to
+      // the top and points at how widgets are rearranged.
       id: 'dashboard',
       route: '/dashboard',
-      anchorId: TOUR_ANCHORS.dashboardWidgets,
-      placement: 'auto',
+      anchorId: TOUR_ANCHORS.dashboardCustomize,
+      placement: 'bottom',
     },
     {
-      id: 'navigation',
+      id: 'tools',
       route: '/dashboard',
-      anchorId: TOUR_ANCHORS.navAccounts,
+      anchorId: TOUR_ANCHORS.navTools,
       placement: 'bottom',
       skipOnMobile: true,
     },
@@ -40,8 +47,14 @@ export const INTRO_TOUR: TourDefinition = {
       placement: 'bottom',
     },
     {
-      // Interactive: the user clicks New Transaction; the step advances once the
-      // form panel appears, which is more robust than a raw click listener.
+      id: 'transactions',
+      route: '/transactions',
+      anchorId: TOUR_ANCHORS.transactionsNewButton,
+      placement: 'bottom',
+    },
+    {
+      // Interactive: clicking New Transaction opens the form; the step advances
+      // once the form panel appears.
       id: 'createTransaction',
       route: '/transactions',
       anchorId: TOUR_ANCHORS.transactionsNewButton,
@@ -49,8 +62,21 @@ export const INTRO_TOUR: TourDefinition = {
       advance: { type: 'appear', anchorId: TOUR_ANCHORS.transactionForm },
     },
     {
-      // Renders while the form modal is open: focus stays with the form (the
-      // engine leaves anchors inside a role="dialog" alone).
+      // The following steps render while the form modal is open: focus stays
+      // with the form (the engine leaves anchors inside a role="dialog" alone).
+      id: 'fields',
+      route: '/transactions',
+      anchorId: TOUR_ANCHORS.transactionFields,
+      placement: 'auto',
+    },
+    {
+      id: 'splits',
+      route: '/transactions',
+      anchorId: TOUR_ANCHORS.transactionSplit,
+      placement: 'auto',
+      skipOnMobile: true,
+    },
+    {
       id: 'currencyField',
       route: '/transactions',
       anchorId: TOUR_ANCHORS.transactionCurrencyField,
@@ -62,6 +88,16 @@ export const INTRO_TOUR: TourDefinition = {
       route: '/transactions',
       anchorId: null,
       advance: { type: 'disappear', anchorId: TOUR_ANCHORS.transactionForm },
+    },
+    {
+      id: 'bills',
+      route: '/bills',
+      anchorId: null,
+    },
+    {
+      id: 'investments',
+      route: '/investments',
+      anchorId: null,
     },
     {
       id: 'budgets',

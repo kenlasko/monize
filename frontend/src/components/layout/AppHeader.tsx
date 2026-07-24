@@ -339,6 +339,7 @@ export function AppHeader() {
               {/* Tools Dropdown */}
               <div className="relative" ref={toolsRef}>
                 <button
+                  {...tourAnchor(TOUR_ANCHORS.navTools)}
                   onClick={() => setToolsOpen(!toolsOpen)}
                   className={`px-3 py-2 text-sm font-medium rounded-md transition-colors inline-flex items-center gap-1 ${
                     isToolsActive

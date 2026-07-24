@@ -229,6 +229,7 @@ function DashboardContent() {
             actions={
               !isDelegateView ? (
                 <button
+                  {...tourAnchor(TOUR_ANCHORS.dashboardCustomize)}
                   onClick={() => setShowCustomize(true)}
                   aria-label={t('customize.button')}
                   className="inline-flex items-center justify-center gap-2 p-2 sm:px-3 sm:py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"

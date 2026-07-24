@@ -3,7 +3,7 @@
     "basics": {
       "steps": {
         "dashboard": {
-          "body": "Widgets here summarise your balances, spending, and upcoming bills at a glance. You can rearrange them later in Settings."
+          "body": "This is your dashboard. Use the Customise button in the top-right to rearrange or hide widgets so the summaries you care about sit right at the top."
         }
       }
     }

@@ -152,7 +152,7 @@ describe('TourHost', () => {
     await mountHost();
     await start(tour);
     await waitFor(() =>
-      expect(screen.getByText('Add an account')).toBeInTheDocument(),
+      expect(screen.getByText('Your accounts')).toBeInTheDocument(),
     );
 
     await act(async () => {

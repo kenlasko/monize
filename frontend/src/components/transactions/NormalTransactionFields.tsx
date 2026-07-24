@@ -14,6 +14,7 @@ import { Payee } from '@/types/payee';
 import { getCurrencySymbol } from '@/lib/format';
 import { buildAccountDropdownOptions } from '@/lib/account-utils';
 import { RecentTransactionsPopover } from './RecentTransactionsPopover';
+import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 
 interface NormalTransactionFieldsProps {
   register: UseFormRegister<any>;
@@ -122,7 +123,10 @@ export function NormalTransactionFields({
       </div>
 
       {/* Row 2: Payee and Category */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div
+        {...tourAnchor(TOUR_ANCHORS.transactionFields)}
+        className="grid grid-cols-1 md:grid-cols-2 gap-4"
+      >
         <div className="flex items-stretch space-x-2">
           <div className="flex-1 min-w-0">
             <Combobox
@@ -207,6 +211,7 @@ export function NormalTransactionFields({
             </div>
             {/* mt-6 + flex-stretch matches the Combobox input height (see Payee row). */}
             <button
+              {...tourAnchor(TOUR_ANCHORS.transactionSplit)}
               type="button"
               onClick={() => handleModeChange('split')}
               className="hidden sm:flex items-center justify-center flex-shrink-0 mt-6 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 whitespace-nowrap"

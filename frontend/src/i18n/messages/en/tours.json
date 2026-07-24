@@ -48,31 +48,51 @@
         },
         "dashboard": {
           "title": "Your dashboard",
-          "body": "Widgets here summarize your balances, spending, and upcoming bills at a glance. You can rearrange them later in Settings."
+          "body": "This is your dashboard. Use the Customize button in the top-right to rearrange or hide widgets so the summaries you care about sit right at the top."
         },
-        "navigation": {
-          "title": "Getting around",
-          "body": "Use the navigation to jump between your accounts, transactions, budgets, and reports."
+        "tools": {
+          "title": "The Tools menu",
+          "body": "The Tools menu is where you manage the building blocks of your finances -- payees, categories, currencies, tags and more."
         },
         "accounts": {
-          "title": "Add an account",
-          "body": "Start by adding your bank, credit card, loan, or investment accounts. Balances and transactions live under each account."
+          "title": "Your accounts",
+          "body": "Add your bank, credit card, loan, and investment accounts here with Add Account. Every balance and transaction belongs to an account."
+        },
+        "transactions": {
+          "title": "Transactions",
+          "body": "This is your transaction register -- every payment and deposit for your accounts lives here, ready to search and filter."
         },
         "createTransaction": {
           "title": "Record a transaction",
-          "body": "Click New Transaction to add income or spending. Go ahead and open the form."
+          "body": "Add income or spending with New Transaction. Go ahead and open the form."
+        },
+        "fields": {
+          "title": "Payee, category and amount",
+          "body": "For each transaction you pick a payee, assign a category, and enter the amount. Categories are what power your budgets and reports."
+        },
+        "splits": {
+          "title": "Split a transaction",
+          "body": "One purchase covering several categories? Use Split to divide a single transaction across categories -- groceries and household from one shop, say."
         },
         "currencyField": {
           "title": "Foreign currencies",
-          "body": "Set a different currency here to record a transaction made abroad -- Monize converts it for you."
+          "body": "Bought something abroad? Set the currency here and enter the amount as charged -- Monize converts it to the account currency for you."
         },
         "closeForm": {
           "title": "Close the form to continue",
           "body": "Close the transaction form (Cancel or the X) and the tour will move on."
         },
+        "bills": {
+          "title": "Bills & Deposits",
+          "body": "Schedule recurring bills and deposits so upcoming payments are forecast and nothing slips through the cracks."
+        },
+        "investments": {
+          "title": "Investments",
+          "body": "Track your holdings, prices, and returns across your investment accounts."
+        },
         "budgets": {
           "title": "Plan with budgets",
-          "body": "Budgets let you set monthly targets per category and track how you're tracking against them."
+          "body": "Budgets let you set monthly targets per category and track how you're doing against them."
         },
         "reports": {
           "title": "Understand your money",
@@ -80,7 +100,7 @@
         },
         "finish": {
           "title": "You're all set",
-          "body": "That's the tour. Adjust preferences here in Settings, and retake this tour anytime from the Guided tours section."
+          "body": "That's the tour. You can retake it anytime from the Guided tours section in Settings."
         }
       }
     }

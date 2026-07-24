@@ -14,15 +14,17 @@
  * so persisted tours keep working across refactors.
  */
 export const TOUR_ANCHORS = {
-  // Navigation (desktop header + mobile drawer share the same ids)
+  // Navigation (desktop header links + the Tools dropdown trigger)
   navAccounts: 'nav-accounts',
   navTransactions: 'nav-transactions',
   navBudgets: 'nav-budgets',
   navReports: 'nav-reports',
   navSettings: 'nav-settings',
+  navTools: 'nav-tools',
 
   // Dashboard
   dashboardWidgets: 'dashboard-widgets',
+  dashboardCustomize: 'dashboard-customize',
 
   // Accounts
   accountsAddButton: 'accounts-add-button',
@@ -31,6 +33,8 @@ export const TOUR_ANCHORS = {
   // Transactions
   transactionsNewButton: 'transactions-new-button',
   transactionForm: 'transaction-form',
+  transactionFields: 'transaction-fields',
+  transactionSplit: 'transaction-split',
   transactionCurrencyField: 'transaction-currency-field',
 
   // Settings
