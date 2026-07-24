@@ -1,0 +1,146 @@
+{
+  "controls": {
+    "next": "Next",
+    "back": "Back",
+    "done": "Done",
+    "endTour": "End tour",
+    "tryIt": "Try it -- the tour continues once you do",
+    "skipStep": "Skip this step",
+    "stepCounter": "{current} of {total}",
+    "skippedTitle": "Tour finished",
+    "skippedBody": "Some steps were skipped because their screen or control wasn't available. You can retake the tour anytime from Settings."
+  },
+  "offer": {
+    "heading": "Take a quick tour",
+    "subheading": "Short walkthroughs of what's new in this release.",
+    "showMe": "Show me",
+    "viewed": "Viewed",
+    "introTitle": "New here? Take the introduction tour",
+    "introSubtitle": "A quick walkthrough of the basics."
+  },
+  "areas": {
+    "intro": "Getting started",
+    "transactions": "Transactions",
+    "accounts": "Accounts",
+    "budgets": "Budgets",
+    "reports": "Reports",
+    "settings": "Settings"
+  },
+  "gettingStarted": {
+    "takeTour": "Take the tour",
+    "retakeTour": "Retake the tour"
+  },
+  "settings": {
+    "title": "Guided tours",
+    "description": "Walk through the app's features step by step.",
+    "startIntro": "Start introduction tour",
+    "reset": "Reset tour progress",
+    "resetSuccess": "Tour progress reset.",
+    "resetError": "Couldn't reset tour progress. Please try again."
+  },
+  "intro": {
+    "basics": {
+      "title": "Introduction to Monize",
+      "steps": {
+        "welcome": {
+          "title": "Welcome to Monize",
+          "body": "This quick tour shows you around the core of the app. You can leave anytime by pressing Escape or End tour."
+        },
+        "dashboard": {
+          "title": "Your dashboard",
+          "body": "This is your dashboard. Use the Customize button in the top-right to rearrange or hide widgets so the summaries you care about sit right at the top."
+        },
+        "tools": {
+          "title": "The Tools menu",
+          "body": "The Tools menu is where you manage the building blocks of your finances -- payees, categories, currencies, tags and more."
+        },
+        "accounts": {
+          "title": "Your accounts",
+          "body": "Add your bank, credit card, loan, and investment accounts here with Add Account. Every balance and transaction belongs to an account."
+        },
+        "transactions": {
+          "title": "Transactions",
+          "body": "This is your transaction register -- every payment and deposit for your accounts lives here, ready to search and filter."
+        },
+        "createTransaction": {
+          "title": "Record a transaction",
+          "body": "Add income or spending with New Transaction. Go ahead and open the form."
+        },
+        "fields": {
+          "title": "Payee, category and amount",
+          "body": "For each transaction you pick a payee, assign a category, and enter the amount. Categories are what power your budgets and reports."
+        },
+        "splits": {
+          "title": "Split a transaction",
+          "body": "One purchase covering several categories? Use Split to divide a single transaction across categories -- groceries and household from one shop, say."
+        },
+        "currencyField": {
+          "title": "Foreign currencies",
+          "body": "Bought something abroad? Set the currency here and enter the amount as charged -- Monize converts it to the account currency for you."
+        },
+        "closeForm": {
+          "title": "Close the form to continue",
+          "body": "Close the transaction form (Cancel or the X) and the tour will move on."
+        },
+        "bills": {
+          "title": "Bills & Deposits",
+          "body": "Schedule recurring bills and deposits so upcoming payments are forecast and nothing slips through the cracks."
+        },
+        "investments": {
+          "title": "Investments",
+          "body": "Track your holdings, prices, and returns across your investment accounts."
+        },
+        "budgets": {
+          "title": "Plan with budgets",
+          "body": "Budgets let you set monthly targets per category and track how you're doing against them."
+        },
+        "reports": {
+          "title": "Understand your money",
+          "body": "Reports turn your transactions into charts -- spending by category, net worth over time, and more."
+        },
+        "finish": {
+          "title": "You're all set",
+          "body": "That's the tour. You can retake it anytime from the Guided tours section in Settings."
+        }
+      }
+    }
+  },
+  "release": {
+    "v1_13_0": {
+      "accounts": {
+        "title": "Foreign-currency fees",
+        "steps": {
+          "openAccount": {
+            "title": "Open an account",
+            "body": "Open an account that has foreign-currency transactions to see its currency-fee breakdown."
+          },
+          "fxFees": {
+            "title": "Foreign-currency fees",
+            "body": "This section breaks down the fees you paid on foreign-currency activity, separate from the transaction register."
+          },
+          "outro": {
+            "title": "Foreign-currency fees",
+            "body": "Accounts with foreign-currency activity now show a dedicated fee breakdown on their detail page."
+          }
+        }
+      },
+      "settings": {
+        "title": "What's New digest",
+        "steps": {
+          "whatsNewToggle": {
+            "title": "Release highlights",
+            "body": "This toggle controls whether the What's New summary pops up automatically after an update."
+          },
+          "appVersion": {
+            "title": "Reread the notes",
+            "body": "Click the version label at the bottom of Settings anytime to reopen the release notes."
+          },
+          "done": {
+            "title": "That's it",
+            "body": "You can revisit these highlights whenever you like from here in Settings."
+          }
+        }
+      }
+    }
+  }
+}

@@ -7,6 +7,7 @@ import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
+import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 import { TransactionFilterPanel } from '@/components/transactions/TransactionFilterPanel';
 import { TagKeyBreakdownChart } from '@/components/transactions/TagKeyBreakdownChart';
 import { Pagination } from '@/components/ui/Pagination';
@@ -850,7 +851,14 @@ function TransactionsContent() {
           title={t('page.title')}
           subtitle={t('page.subtitle')}
           helpUrl="https://github.com/kenlasko/monize/wiki/Transactions"
-          actions={<Button onClick={handleCreateNew}>{t('page.newButton')}</Button>}
+          actions={
+            <Button
+              {...tourAnchor(TOUR_ANCHORS.transactionsNewButton)}
+              onClick={handleCreateNew}
+            >
+              {t('page.newButton')}
+            </Button>
+          }
         />
         {(() => {
           const chartKind =

@@ -12,6 +12,7 @@ import { SplitEditor, SplitRow, createEmptySplits, toSplitRows, toCreateSplitDat
 import { NormalTransactionFields } from './NormalTransactionFields';
 import { SplitTransactionFields } from './SplitTransactionFields';
 import { CurrencyPickerButton } from './CurrencyPickerButton';
+import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { exchangeRatesApi } from '@/lib/exchange-rates';
 import { getCurrencySymbol, roundToCents, roundToDecimals } from '@/lib/format';
@@ -1159,6 +1160,7 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
         accountCurrencyCode={accountCurrency}
         onChange={handleEntryCurrencyChange}
         disabled={isLoading}
+        anchorProps={tourAnchor(TOUR_ANCHORS.transactionCurrencyField)}
       />
     ) : undefined;
 
@@ -1213,7 +1215,11 @@ export function TransactionForm({ transaction, duplicateFrom, defaultAccountId, 
   ) : undefined;
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form
+      {...tourAnchor(TOUR_ANCHORS.transactionForm)}
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-4"
+    >
       {/* Mode selector - show for new/duplicate transactions, or non-transfer edits */}
       {(!transaction || !transaction.isTransfer) && (
         <div className="flex space-x-2 pb-2 border-b dark:border-gray-700">

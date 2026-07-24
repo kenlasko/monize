@@ -1,0 +1,146 @@
+{
+  "controls": {
+    "next": "Siguiente",
+    "back": "Atrás",
+    "done": "Listo",
+    "endTour": "Finalizar recorrido",
+    "tryIt": "Pruébalo -- el recorrido continúa cuando lo hagas",
+    "skipStep": "Omitir este paso",
+    "stepCounter": "{current} de {total}",
+    "skippedTitle": "Recorrido finalizado",
+    "skippedBody": "Se omitieron algunos pasos porque su pantalla o control no estaba disponible. Puedes repetir el recorrido en cualquier momento desde Ajustes."
+  },
+  "offer": {
+    "heading": "Haz un recorrido rápido",
+    "subheading": "Recorridos breves de las novedades de esta versión.",
+    "showMe": "Mostrarme",
+    "viewed": "Visto",
+    "introTitle": "¿Nuevo aquí? Realiza el recorrido de introducción",
+    "introSubtitle": "Un repaso rápido de lo esencial."
+  },
+  "areas": {
+    "intro": "Primeros pasos",
+    "transactions": "Transacciones",
+    "accounts": "Cuentas",
+    "budgets": "Presupuestos",
+    "reports": "Informes",
+    "settings": "Ajustes"
+  },
+  "gettingStarted": {
+    "takeTour": "Hacer el recorrido",
+    "retakeTour": "Repetir el recorrido"
+  },
+  "settings": {
+    "title": "Recorridos guiados",
+    "description": "Recorre las funciones de la aplicación paso a paso.",
+    "startIntro": "Iniciar recorrido de introducción",
+    "reset": "Restablecer progreso del recorrido",
+    "resetSuccess": "Progreso del recorrido restablecido.",
+    "resetError": "No se pudo restablecer el progreso del recorrido. Inténtalo de nuevo."
+  },
+  "intro": {
+    "basics": {
+      "title": "Introducción a Monize",
+      "steps": {
+        "welcome": {
+          "title": "Bienvenido a Monize",
+          "body": "Este recorrido rápido te muestra lo esencial de la aplicación. Puedes salir en cualquier momento pulsando Escape o Finalizar recorrido."
+        },
+        "dashboard": {
+          "title": "Tu panel",
+          "body": "Este es tu panel. Usa el botón Personalizar en la esquina superior derecha para reorganizar u ocultar widgets, de modo que los resúmenes que te interesan queden arriba."
+        },
+        "tools": {
+          "title": "El menú Herramientas",
+          "body": "El menú Herramientas es donde gestionas los componentes básicos de tus finanzas: beneficiarios, categorías, monedas, etiquetas y más."
+        },
+        "accounts": {
+          "title": "Tus cuentas",
+          "body": "Agrega aquí tus cuentas bancarias, de tarjeta de crédito, préstamos e inversiones con Agregar cuenta. Todo saldo y transacción pertenece a una cuenta."
+        },
+        "transactions": {
+          "title": "Transacciones",
+          "body": "Este es tu registro de transacciones: aquí se encuentran todos los pagos y depósitos de tus cuentas, listos para buscar y filtrar."
+        },
+        "createTransaction": {
+          "title": "Registra una transacción",
+          "body": "Agrega un ingreso o gasto con Nueva transacción. Adelante, abre el formulario."
+        },
+        "fields": {
+          "title": "Beneficiario, categoría e importe",
+          "body": "Para cada transacción eliges un beneficiario, asignas una categoría e ingresas el importe. Las categorías son las que impulsan tus presupuestos e informes."
+        },
+        "splits": {
+          "title": "Desglosar una transacción",
+          "body": "¿Una compra que abarca varias categorías? Usa Desglosar transacción para dividir una sola transacción entre categorías; por ejemplo, comestibles y artículos del hogar de una misma tienda."
+        },
+        "currencyField": {
+          "title": "Monedas extranjeras",
+          "body": "¿Compraste algo en el extranjero? Configura aquí la moneda e ingresa el importe tal como se cobró -- Monize lo convierte a la moneda de la cuenta por ti."
+        },
+        "closeForm": {
+          "title": "Cierra el formulario para continuar",
+          "body": "Cierra el formulario de transacción (Cancelar o la X) y el recorrido continuará."
+        },
+        "bills": {
+          "title": "Facturas y depósitos",
+          "body": "Programa facturas y depósitos recurrentes para que los próximos pagos se pronostiquen y nada se te escape."
+        },
+        "investments": {
+          "title": "Inversiones",
+          "body": "Sigue tus posiciones, precios y rendimientos en tus cuentas de inversión."
+        },
+        "budgets": {
+          "title": "Planifica con presupuestos",
+          "body": "Los presupuestos te permiten fijar objetivos mensuales por categoría y ver cómo vas respecto a ellos."
+        },
+        "reports": {
+          "title": "Entiende tu dinero",
+          "body": "Los informes convierten tus transacciones en gráficos -- gastos por categoría, patrimonio neto a lo largo del tiempo y más."
+        },
+        "finish": {
+          "title": "Todo listo",
+          "body": "Eso es todo el recorrido. Puedes repetirlo cuando quieras desde la sección Recorridos guiados en Ajustes."
+        }
+      }
+    }
+  },
+  "release": {
+    "v1_13_0": {
+      "accounts": {
+        "title": "Comisiones por moneda extranjera",
+        "steps": {
+          "openAccount": {
+            "title": "Abre una cuenta",
+            "body": "Abre una cuenta que tenga transacciones en moneda extranjera para ver el desglose de sus comisiones cambiarias."
+          },
+          "fxFees": {
+            "title": "Comisiones por moneda extranjera",
+            "body": "Esta sección desglosa las comisiones que pagaste por actividad en moneda extranjera, por separado del registro de transacciones."
+          },
+          "outro": {
+            "title": "Comisiones por moneda extranjera",
+            "body": "Las cuentas con actividad en moneda extranjera ahora muestran un desglose de comisiones dedicado en su página de detalle."
+          }
+        }
+      },
+      "settings": {
+        "title": "Resumen de Novedades",
+        "steps": {
+          "whatsNewToggle": {
+            "title": "Novedades de la versión",
+            "body": "Este interruptor controla si el resumen de Novedades aparece automáticamente después de una actualización."
+          },
+          "appVersion": {
+            "title": "Vuelve a leer las notas",
+            "body": "Haz clic en la etiqueta de versión al final de Ajustes en cualquier momento para volver a abrir las notas de la versión."
+          },
+          "done": {
+            "title": "Eso es todo",
+            "body": "Puedes volver a consultar estas novedades cuando quieras desde aquí en Ajustes."
+          }
+        }
+      }
+    }
+  }
+}

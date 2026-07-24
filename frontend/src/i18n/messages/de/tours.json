@@ -1,0 +1,146 @@
+{
+  "controls": {
+    "next": "Weiter",
+    "back": "Zurück",
+    "done": "Fertig",
+    "endTour": "Tour beenden",
+    "tryIt": "Probieren Sie es aus -- die Tour geht danach weiter",
+    "skipStep": "Diesen Schritt überspringen",
+    "stepCounter": "{current} von {total}",
+    "skippedTitle": "Tour beendet",
+    "skippedBody": "Einige Schritte wurden übersprungen, weil ihr Bildschirm oder Element nicht verfügbar war. Sie können die Tour jederzeit über die Einstellungen erneut starten."
+  },
+  "offer": {
+    "heading": "Machen Sie eine kurze Tour",
+    "subheading": "Kurze Einführungen zu den Neuerungen dieser Version.",
+    "showMe": "Zeigen",
+    "viewed": "Angesehen",
+    "introTitle": "Neu hier? Starten Sie die Einführungstour",
+    "introSubtitle": "Ein kurzer Rundgang durch die Grundlagen."
+  },
+  "areas": {
+    "intro": "Erste Schritte",
+    "transactions": "Buchungen",
+    "accounts": "Konten",
+    "budgets": "Budgets",
+    "reports": "Berichte",
+    "settings": "Einstellungen"
+  },
+  "gettingStarted": {
+    "takeTour": "Tour starten",
+    "retakeTour": "Tour erneut starten"
+  },
+  "settings": {
+    "title": "Geführte Touren",
+    "description": "Gehen Sie die Funktionen der App Schritt für Schritt durch.",
+    "startIntro": "Einführungstour starten",
+    "reset": "Tour-Fortschritt zurücksetzen",
+    "resetSuccess": "Tour-Fortschritt wurde zurückgesetzt.",
+    "resetError": "Der Tour-Fortschritt konnte nicht zurückgesetzt werden. Bitte versuchen Sie es erneut."
+  },
+  "intro": {
+    "basics": {
+      "title": "Einführung in Monize",
+      "steps": {
+        "welcome": {
+          "title": "Willkommen bei Monize",
+          "body": "Diese kurze Tour zeigt Ihnen die wichtigsten Bereiche der App. Sie können jederzeit über Escape oder Tour beenden aussteigen."
+        },
+        "dashboard": {
+          "title": "Ihr Dashboard",
+          "body": "Das ist Ihr Dashboard. Nutzen Sie die Schaltfläche Anpassen oben rechts, um Widgets neu anzuordnen oder auszublenden, damit die für Sie wichtigen Übersichten ganz oben stehen."
+        },
+        "tools": {
+          "title": "Das Menü Tools",
+          "body": "Im Menü Tools verwalten Sie die Bausteine Ihrer Finanzen -- Zahlungsempfänger, Kategorien, Währungen, Tags und mehr."
+        },
+        "accounts": {
+          "title": "Ihre Konten",
+          "body": "Fügen Sie hier über Konto hinzufügen Ihre Bank-, Kreditkarten-, Kredit- und Anlagekonten hinzu. Jeder Saldo und jede Buchung gehört zu einem Konto."
+        },
+        "transactions": {
+          "title": "Buchungen",
+          "body": "Das ist Ihr Buchungsregister -- jede Zahlung und Einzahlung Ihrer Konten befindet sich hier und kann durchsucht und gefiltert werden."
+        },
+        "createTransaction": {
+          "title": "Eine Buchung erfassen",
+          "body": "Fügen Sie Einnahmen oder Ausgaben über Neue Buchung hinzu. Öffnen Sie ruhig das Formular."
+        },
+        "fields": {
+          "title": "Zahlungsempfänger, Kategorie und Betrag",
+          "body": "Bei jeder Buchung wählen Sie einen Zahlungsempfänger, weisen eine Kategorie zu und geben den Betrag ein. Kategorien sind die Grundlage für Ihre Budgets und Berichte."
+        },
+        "splits": {
+          "title": "Eine Buchung aufteilen",
+          "body": "Ein Einkauf, der mehrere Kategorien betrifft? Nutzen Sie Buchung aufteilen, um eine einzelne Buchung auf mehrere Kategorien aufzuteilen -- zum Beispiel Lebensmittel und Haushaltswaren aus einem Einkauf."
+        },
+        "currencyField": {
+          "title": "Fremdwährungen",
+          "body": "Etwas im Ausland gekauft? Legen Sie hier die Währung fest und geben Sie den belasteten Betrag ein -- Monize rechnet ihn für Sie in die Kontowährung um."
+        },
+        "closeForm": {
+          "title": "Schließen Sie das Formular, um fortzufahren",
+          "body": "Schließen Sie das Buchungsformular (Abbrechen oder das X), und die Tour geht weiter."
+        },
+        "bills": {
+          "title": "Rechnungen & Einzahlungen",
+          "body": "Planen Sie wiederkehrende Rechnungen und Einzahlungen, damit anstehende Zahlungen vorhergesagt werden und nichts übersehen wird."
+        },
+        "investments": {
+          "title": "Investitionen",
+          "body": "Behalten Sie Bestände, Kurse und Renditen Ihrer Anlagekonten im Blick."
+        },
+        "budgets": {
+          "title": "Mit Budgets planen",
+          "body": "Mit Budgets legen Sie monatliche Ziele je Kategorie fest und verfolgen, wie gut Sie diese einhalten."
+        },
+        "reports": {
+          "title": "Ihre Finanzen verstehen",
+          "body": "Berichte verwandeln Ihre Buchungen in Diagramme -- Ausgaben nach Kategorie, Vermögensentwicklung über die Zeit und mehr."
+        },
+        "finish": {
+          "title": "Sie sind startklar",
+          "body": "Das war die Tour. Sie können sie jederzeit über den Bereich Geführte Touren in den Einstellungen erneut starten."
+        }
+      }
+    }
+  },
+  "release": {
+    "v1_13_0": {
+      "accounts": {
+        "title": "Fremdwährungsgebühren",
+        "steps": {
+          "openAccount": {
+            "title": "Ein Konto öffnen",
+            "body": "Öffnen Sie ein Konto mit Fremdwährungsbuchungen, um die Aufschlüsselung der Währungsgebühren zu sehen."
+          },
+          "fxFees": {
+            "title": "Fremdwährungsgebühren",
+            "body": "Dieser Bereich schlüsselt die Gebühren auf, die Sie für Fremdwährungsaktivitäten gezahlt haben, getrennt vom Buchungsregister."
+          },
+          "outro": {
+            "title": "Fremdwährungsgebühren",
+            "body": "Konten mit Fremdwährungsaktivitäten zeigen jetzt auf ihrer Detailseite eine eigene Gebührenaufschlüsselung."
+          }
+        }
+      },
+      "settings": {
+        "title": "Neuigkeiten-Übersicht",
+        "steps": {
+          "whatsNewToggle": {
+            "title": "Highlights dieser Version",
+            "body": "Dieser Schalter legt fest, ob die Neuigkeiten-Übersicht nach einem Update automatisch angezeigt wird."
+          },
+          "appVersion": {
+            "title": "Hinweise erneut lesen",
+            "body": "Klicken Sie jederzeit auf die Versionsangabe unten in den Einstellungen, um die Versionshinweise erneut zu öffnen."
+          },
+          "done": {
+            "title": "Das war's",
+            "body": "Sie können diese Highlights jederzeit hier in den Einstellungen erneut ansehen."
+          }
+        }
+      }
+    }
+  }
+}

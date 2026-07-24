@@ -119,4 +119,19 @@ describe('WhatsNewModal', () => {
       screen.getByText("Release notes for this version aren't available."),
     ).toBeInTheDocument();
   });
+
+  it('offers guided tours when authenticated and a version is known', () => {
+    renderModal({ currentVersion: '1.13.0' });
+    expect(screen.getByText('Take a quick tour')).toBeInTheDocument();
+  });
+
+  it('omits the tour offer when no version is provided', () => {
+    renderModal();
+    expect(screen.queryByText('Take a quick tour')).toBeNull();
+  });
+
+  it('omits the tour offer for unauthenticated viewers', () => {
+    renderModal({ authenticated: false, currentVersion: '1.13.0' });
+    expect(screen.queryByText('Take a quick tour')).toBeNull();
+  });
 });

@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { BudgetAlertBadge } from '@/components/budgets/BudgetAlertBadge';
 import { ActionHistoryPanel } from '@/components/layout/ActionHistoryPanel';
 import { MobileNavDrawer } from '@/components/layout/MobileNavDrawer';
+import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 import {
   HEADER_SEARCH_EVENT,
   clearTransactionFilterStorage,
@@ -44,6 +45,16 @@ const aiLinks: { href: string; labelKey: string }[] = [
   { href: '/insights', labelKey: 'insights' },
   { href: '/ai', labelKey: 'aiAssistant' },
 ];
+
+// Guided-tour anchors for the desktop nav, keyed by route. Attached in exactly
+// one place (here) so the anchor-uniqueness test stays satisfied; the mobile
+// drawer is left un-anchored since nav tour steps are skipOnMobile.
+const NAV_TOUR_ANCHORS: Record<string, { 'data-tour-id': string }> = {
+  '/transactions': tourAnchor(TOUR_ANCHORS.navTransactions),
+  '/accounts': tourAnchor(TOUR_ANCHORS.navAccounts),
+  '/budgets': tourAnchor(TOUR_ANCHORS.navBudgets),
+  '/reports': tourAnchor(TOUR_ANCHORS.navReports),
+};
 
 export function AppHeader() {
   const t = useTranslations('navigation');
@@ -261,6 +272,7 @@ export function AppHeader() {
               {visibleNavLinks.map((link) => (
                 <button
                   key={link.href}
+                  {...NAV_TOUR_ANCHORS[link.href]}
                   onClick={() => router.push(link.href)}
                   className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                     pathname === link.href
@@ -327,6 +339,7 @@ export function AppHeader() {
               {/* Tools Dropdown */}
               <div className="relative" ref={toolsRef}>
                 <button
+                  {...tourAnchor(TOUR_ANCHORS.navTools)}
                   onClick={() => setToolsOpen(!toolsOpen)}
                   className={`px-3 py-2 text-sm font-medium rounded-md transition-colors inline-flex items-center gap-1 ${
                     isToolsActive
@@ -445,6 +458,7 @@ export function AppHeader() {
             <ActionHistoryPanel />
             <BudgetAlertBadge />
             <button
+              {...tourAnchor(TOUR_ANCHORS.navSettings)}
               onClick={() => router.push('/settings')}
               className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                 pathname === '/settings'

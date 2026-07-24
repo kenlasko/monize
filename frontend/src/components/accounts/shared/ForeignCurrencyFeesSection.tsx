@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { transactionsApi } from '@/lib/transactions';
 import { exportForeignTransactionsCsv } from '@/lib/fx-fees-csv';
+import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 import { createLogger } from '@/lib/logger';
 import { Modal } from '@/components/ui/Modal';
 import { MultiSelect, MultiSelectOption } from '@/components/ui/MultiSelect';
@@ -269,7 +270,7 @@ export function ForeignCurrencyFeesSection({ account }: ForeignCurrencyFeesSecti
   );
 
   return (
-    <section>
+    <section {...tourAnchor(TOUR_ANCHORS.foreignCurrencyFees)}>
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
         {showFees ? t('title') : t('list.title')}
       </h2>

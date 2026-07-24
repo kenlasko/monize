@@ -274,7 +274,7 @@ task; every task must leave its layer's lint + tests green (except the known
 parity-test red for untranslated locales after task 6). Update the checkboxes here as
 tasks complete.
 
-- [ ] **1. Backend persistence** -- migration 107 + `database/schema.sql` +
+- [x] **1. Backend persistence** -- migration 107 + `database/schema.sql` +
   `tourProgress` entity column (`@Exclude()`d from serialization) +
   `ToursService`/`ToursController`/`SaveTourProgressDto`
   + `updates.module.ts` wiring + `tours.service.spec.ts`/`tours.controller.spec.ts`.
@@ -282,13 +282,13 @@ tasks complete.
   merges via the atomic `tour_progress || $1::jsonb` UPDATE (see above), not JS
   read-modify-write. Verify: `cd backend && npm run lint && npm test`; RLS ratchet
   stays green.
-- [ ] **2. Engine core** -- `lib/tours/types.ts`, `anchors.ts`, `registry.ts` (empty
+- [x] **2. Engine core** -- `lib/tours/types.ts`, `anchors.ts`, `registry.ts` (empty
   definitions acceptable), `positioning.ts`, `store/tourStore.ts`,
   `hooks/useTourAnchor.ts`, `hooks/useAnchorRect.ts`, `lib/tours-api.ts` + unit tests
   (`tourStore`, `positioning`, `useTourAnchor`). Add ResizeObserver/scrollIntoView
   stubs to `test/setup.ts` if absent. Verify: `cd frontend && npm run lint && npm run
   type-check && npm test`.
-- [ ] **3. Overlay UI** -- `components/tours/TourSpotlight.tsx`, `TourTooltip.tsx`,
+- [x] **3. Overlay UI** -- `components/tours/TourSpotlight.tsx`, `TourTooltip.tsx`,
   `TourHost.tsx`, mount `<TourHost />` in `app/layout.tsx` beside `<WhatsNewHost />` +
   component tests (advance, interactive click, graceful skip + skipped-steps outro,
   Esc capture-phase precedence over `Modal`, tooltip receives focus on passive step
@@ -296,25 +296,25 @@ tasks complete.
   controls per step type/position). Budget for the frontend coverage thresholds (91%
   lines): the observer/timing branches in `TourHost`/`useTourAnchor` need explicit
   tests, not just the happy path.
-- [ ] **4. Anchors + definitions** -- `data-tour-id` instrumentation (list above),
+- [x] **4. Anchors + definitions** -- `data-tour-id` instrumentation (list above),
   `definitions/intro.ts`, `definitions/release-1.13.0.ts`, registry entries +
   `registry.test.ts` (minor-line version filter, unique ids, every step key exists in
   `en/tours.json`) + an anchor-uniqueness test asserting each `TOUR_ANCHORS` value
   has exactly one `tourAnchor(` usage in `src/` -- anchor drift is the engine's
   biggest long-term failure mode and the test is cheap.
-- [ ] **5. Entry points** -- `TourOfferList` in `WhatsNewModal` (+ `currentVersion`
+- [x] **5. Entry points** -- `TourOfferList` in `WhatsNewModal` (+ `currentVersion`
   prop through `WhatsNewHost`; release rows + conditional intro row), Getting Started
   CTA (demo-suppressed, retake label), Settings guided-tours row + updated tests
   (`WhatsNewModal.test.tsx`, `GettingStarted.test.tsx`, `PreferencesSection.test.tsx`).
-- [ ] **6. i18n (English + pseudo)** -- complete `en/tours.json`, register the
+- [x] **6. i18n (English + pseudo)** -- complete `en/tours.json`, register the
   namespace, run `npm run i18n:pseudo`. `npm run i18n:check` must pass; the locale
   parity test remains red for untranslated locales by design.
-- [ ] **7. E2e happy path** -- `e2e/tests/tours.spec.ts`: Getting Started -> Take the
+- [x] **7. E2e happy path** -- `e2e/tests/tours.spec.ts`: Getting Started -> Take the
   tour -> Next -> interactive New Transaction click auto-advances -> close the form
   (the `disappear` step advances) -> finish -> reload -> "Retake the tour"
   (persistence round-trip). Run:
   `cd e2e && npx playwright test tests/tours.spec.ts`.
-- [ ] **8. Acceptance localization pass (final commit, at acceptance only)** --
+- [x] **8. Acceptance localization pass (final commit, at acceptance only)** --
   translate `tours.json` (and any touched catalogs) across all remaining locales +
   pseudo regen; parity tests green.
 

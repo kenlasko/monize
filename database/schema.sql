@@ -631,6 +631,7 @@ CREATE TABLE user_preferences (
     dismissed_update_version VARCHAR(50),
     last_seen_version VARCHAR(50), -- version whose "What's New" notes the user acknowledged (Don't show this again)
     show_whats_new BOOLEAN DEFAULT true, -- settings kill-switch for the What's New auto-popup
+    tour_progress JSONB NOT NULL DEFAULT '{}', -- guided-tour completion, keyed by opaque tour id: { status, version?, updatedAt }
     default_quote_provider VARCHAR(20) NOT NULL DEFAULT 'yahoo',
     recent_transactions_limit SMALLINT NOT NULL DEFAULT 5,
     ai_bubble_enabled BOOLEAN DEFAULT false, -- opt-in app-wide floating AI chat bubble

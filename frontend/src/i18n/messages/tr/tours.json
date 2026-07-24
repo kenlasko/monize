@@ -1,0 +1,146 @@
+{
+  "controls": {
+    "next": "İleri",
+    "back": "Geri",
+    "done": "Bitti",
+    "endTour": "Turu bitir",
+    "tryIt": "Deneyin -- siz yapınca tur devam eder",
+    "skipStep": "Bu adımı atla",
+    "stepCounter": "{current} / {total}",
+    "skippedTitle": "Tur tamamlandı",
+    "skippedBody": "Ekranı veya denetimi kullanılamadığı için bazı adımlar atlandı. Turu istediğiniz zaman Ayarlar'dan yeniden alabilirsiniz."
+  },
+  "offer": {
+    "heading": "Kısa bir tur yapın",
+    "subheading": "Bu sürümdeki yeniliklerin kısa anlatımları.",
+    "showMe": "Bana göster",
+    "viewed": "Görüntülendi",
+    "introTitle": "Buraya yeni mi geldiniz? Tanıtım turunu yapın",
+    "introSubtitle": "Temel özelliklerin kısa bir anlatımı."
+  },
+  "areas": {
+    "intro": "Başlarken",
+    "transactions": "İşlemler",
+    "accounts": "Hesaplar",
+    "budgets": "Bütçeler",
+    "reports": "Raporlar",
+    "settings": "Ayarlar"
+  },
+  "gettingStarted": {
+    "takeTour": "Turu yap",
+    "retakeTour": "Turu yeniden yap"
+  },
+  "settings": {
+    "title": "Rehberli turlar",
+    "description": "Uygulamanın özelliklerini adım adım keşfedin.",
+    "startIntro": "Tanıtım turunu başlat",
+    "reset": "Tur ilerlemesini sıfırla",
+    "resetSuccess": "Tur ilerlemesi sıfırlandı.",
+    "resetError": "Tur ilerlemesi sıfırlanamadı. Lütfen tekrar deneyin."
+  },
+  "intro": {
+    "basics": {
+      "title": "Monize'a Giriş",
+      "steps": {
+        "welcome": {
+          "title": "Monize'a hoş geldiniz",
+          "body": "Bu kısa tur, uygulamanın temel bölümlerini tanıtır. İstediğiniz zaman Escape tuşuna basarak veya Turu bitir seçeneğiyle çıkabilirsiniz."
+        },
+        "dashboard": {
+          "title": "Panonuz",
+          "body": "Bu sizin panonuz. Önem verdiğiniz özetlerin en üstte yer alması için widget'ları yeniden düzenlemek veya gizlemek üzere sağ üstteki Özelleştir düğmesini kullanın."
+        },
+        "tools": {
+          "title": "Araçlar menüsü",
+          "body": "Araçlar menüsü, finansal yapı taşlarınızı yönettiğiniz yerdir -- alıcılar, kategoriler, para birimleri, etiketler ve daha fazlası."
+        },
+        "accounts": {
+          "title": "Hesaplarınız",
+          "body": "Banka, kredi kartı, kredi ve yatırım hesaplarınızı buraya Hesap Ekle ile ekleyin. Her bakiye ve işlem bir hesaba aittir."
+        },
+        "transactions": {
+          "title": "İşlemler",
+          "body": "Bu, işlem kayıt defterinizdir -- hesaplarınıza ait her ödeme ve yatırma burada bulunur, aramaya ve filtrelemeye hazırdır."
+        },
+        "createTransaction": {
+          "title": "Bir işlem kaydedin",
+          "body": "Yeni İşlem ile gelir veya gider ekleyin. Hadi formu açın."
+        },
+        "fields": {
+          "title": "Alıcı, kategori ve tutar",
+          "body": "Her işlem için bir alıcı seçer, bir kategori atar ve tutarı girersiniz. Kategoriler, bütçelerinizi ve raporlarınızı besleyen unsurlardır."
+        },
+        "splits": {
+          "title": "İşlemi Böl",
+          "body": "Tek bir alışveriş birden fazla kategoriyi mi kapsıyor? Tek bir işlemi kategorilere bölmek için İşlemi Böl seçeneğini kullanın -- örneğin tek bir alışverişten market ve ev eşyası gibi."
+        },
+        "currencyField": {
+          "title": "Yabancı para birimleri",
+          "body": "Yurt dışında bir şey mi aldınız? Para birimini burada ayarlayın ve tutarı ödendiği şekilde girin -- Monize bunu hesap para birimine sizin için çevirir."
+        },
+        "closeForm": {
+          "title": "Devam etmek için formu kapatın",
+          "body": "İşlem formunu kapatın (İptal veya X) ve tur devam edecektir."
+        },
+        "bills": {
+          "title": "Faturalar ve Mevduatlar",
+          "body": "Yaklaşan ödemelerin öngörülebilmesi ve hiçbirinin gözden kaçmaması için tekrarlayan faturaları ve mevduatları planlayın."
+        },
+        "investments": {
+          "title": "Yatırımlar",
+          "body": "Yatırım hesaplarınızdaki varlıklarınızı, fiyatları ve getirileri takip edin."
+        },
+        "budgets": {
+          "title": "Bütçelerle planlayın",
+          "body": "Bütçeler, kategori başına aylık hedefler belirlemenizi ve bunlara göre durumunuzu takip etmenizi sağlar."
+        },
+        "reports": {
+          "title": "Paranızı anlayın",
+          "body": "Raporlar, işlemlerinizi grafiklere dönüştürür -- kategoriye göre harcama, zaman içinde net değer ve daha fazlası."
+        },
+        "finish": {
+          "title": "Her şey hazır",
+          "body": "Tur burada bitiyor. Ayarlar içindeki Rehberli turlar bölümünden istediğiniz zaman yeniden yapabilirsiniz."
+        }
+      }
+    }
+  },
+  "release": {
+    "v1_13_0": {
+      "accounts": {
+        "title": "Yabancı para birimi ücretleri",
+        "steps": {
+          "openAccount": {
+            "title": "Bir hesap açın",
+            "body": "Para birimi ücreti dökümünü görmek için yabancı para birimi işlemleri olan bir hesap açın."
+          },
+          "fxFees": {
+            "title": "Yabancı para birimi ücretleri",
+            "body": "Bu bölüm, işlem kayıt defterinden ayrı olarak yabancı para birimi işlemleri için ödediğiniz ücretlerin dökümünü gösterir."
+          },
+          "outro": {
+            "title": "Yabancı para birimi ücretleri",
+            "body": "Yabancı para birimi işlemleri olan hesaplar artık detay sayfalarında ayrı bir ücret dökümü gösteriyor."
+          }
+        }
+      },
+      "settings": {
+        "title": "Yenilikler özeti",
+        "steps": {
+          "whatsNewToggle": {
+            "title": "Sürüm öne çıkanları",
+            "body": "Bu anahtar, bir güncellemeden sonra Yenilikler özetinin otomatik olarak açılıp açılmayacağını kontrol eder."
+          },
+          "appVersion": {
+            "title": "Notları yeniden okuyun",
+            "body": "Sürüm notlarını yeniden açmak için istediğiniz zaman Ayarlar'ın altındaki sürüm etiketine tıklayın."
+          },
+          "done": {
+            "title": "Hepsi bu",
+            "body": "Bu öne çıkanları istediğiniz zaman buradan, Ayarlar içinden yeniden gözden geçirebilirsiniz."
+          }
+        }
+      }
+    }
+  }
+}

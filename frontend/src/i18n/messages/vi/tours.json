@@ -1,0 +1,146 @@
+{
+  "controls": {
+    "next": "Tiếp theo",
+    "back": "Quay lại",
+    "done": "Xong",
+    "endTour": "Kết thúc hướng dẫn",
+    "tryIt": "Thử ngay -- phần hướng dẫn sẽ tiếp tục sau khi bạn thực hiện",
+    "skipStep": "Bỏ qua bước này",
+    "stepCounter": "{current} / {total}",
+    "skippedTitle": "Đã hoàn tất hướng dẫn",
+    "skippedBody": "Một số bước đã bị bỏ qua vì màn hình hoặc điều khiển tương ứng không khả dụng. Bạn có thể xem lại hướng dẫn bất cứ lúc nào từ Cài đặt."
+  },
+  "offer": {
+    "heading": "Xem hướng dẫn nhanh",
+    "subheading": "Những hướng dẫn ngắn về các tính năng mới trong bản phát hành này.",
+    "showMe": "Xem ngay",
+    "viewed": "Đã xem",
+    "introTitle": "Mới đến đây? Hãy xem hướng dẫn giới thiệu",
+    "introSubtitle": "Một hướng dẫn nhanh về những điều cơ bản."
+  },
+  "areas": {
+    "intro": "Bắt đầu",
+    "transactions": "Giao dịch",
+    "accounts": "Tài khoản",
+    "budgets": "Ngân sách",
+    "reports": "Báo cáo",
+    "settings": "Cài đặt"
+  },
+  "gettingStarted": {
+    "takeTour": "Xem hướng dẫn",
+    "retakeTour": "Xem lại hướng dẫn"
+  },
+  "settings": {
+    "title": "Hướng dẫn sử dụng",
+    "description": "Tìm hiểu các tính năng của ứng dụng theo từng bước.",
+    "startIntro": "Bắt đầu hướng dẫn giới thiệu",
+    "reset": "Đặt lại tiến trình hướng dẫn",
+    "resetSuccess": "Đã đặt lại tiến trình hướng dẫn.",
+    "resetError": "Không thể đặt lại tiến trình hướng dẫn. Vui lòng thử lại."
+  },
+  "intro": {
+    "basics": {
+      "title": "Giới thiệu về Monize",
+      "steps": {
+        "welcome": {
+          "title": "Chào mừng đến với Monize",
+          "body": "Hướng dẫn nhanh này sẽ giới thiệu cho bạn những phần cốt lõi của ứng dụng. Bạn có thể rời khỏi bất cứ lúc nào bằng cách nhấn Escape hoặc Kết thúc hướng dẫn."
+        },
+        "dashboard": {
+          "title": "Bảng điều khiển của bạn",
+          "body": "Đây là bảng điều khiển của bạn. Dùng nút Tùy chỉnh ở góc trên bên phải để sắp xếp lại hoặc ẩn các tiện ích, giúp những tóm tắt bạn quan tâm nằm ngay ở trên cùng."
+        },
+        "tools": {
+          "title": "Menu Công cụ",
+          "body": "Menu Công cụ là nơi bạn quản lý các thành phần cơ bản trong tài chính của mình -- người thụ hưởng, danh mục, loại tiền tệ, thẻ và nhiều hơn nữa."
+        },
+        "accounts": {
+          "title": "Tài khoản của bạn",
+          "body": "Thêm tài khoản ngân hàng, thẻ tín dụng, khoản vay và đầu tư của bạn tại đây bằng Thêm tài khoản. Mọi số dư và giao dịch đều thuộc về một tài khoản."
+        },
+        "transactions": {
+          "title": "Giao dịch",
+          "body": "Đây là sổ giao dịch của bạn -- mọi khoản thanh toán và tiền gửi cho các tài khoản đều nằm ở đây, sẵn sàng để tìm kiếm và lọc."
+        },
+        "createTransaction": {
+          "title": "Ghi lại một giao dịch",
+          "body": "Thêm khoản thu hoặc chi bằng Giao tác mới. Hãy mở biểu mẫu để thử."
+        },
+        "fields": {
+          "title": "Người thụ hưởng, danh mục và số tiền",
+          "body": "Với mỗi giao dịch, bạn chọn một người thụ hưởng, gán một danh mục và nhập số tiền. Danh mục chính là yếu tố vận hành ngân sách và báo cáo của bạn."
+        },
+        "splits": {
+          "title": "Chia giao tác",
+          "body": "Một lần mua hàng bao gồm nhiều danh mục? Dùng Chia giao tác để chia một giao dịch thành nhiều danh mục -- ví dụ như hàng tạp hóa và đồ gia dụng từ cùng một cửa hàng."
+        },
+        "currencyField": {
+          "title": "Ngoại tệ",
+          "body": "Mua hàng ở nước ngoài? Đặt loại tiền tệ tại đây và nhập số tiền theo hóa đơn -- Monize sẽ quy đổi sang loại tiền tệ của tài khoản giúp bạn."
+        },
+        "closeForm": {
+          "title": "Đóng biểu mẫu để tiếp tục",
+          "body": "Đóng biểu mẫu giao dịch (Hủy hoặc nút X) và hướng dẫn sẽ tiếp tục."
+        },
+        "bills": {
+          "title": "Hóa đơn & Tiền gửi",
+          "body": "Lên lịch hóa đơn và tiền gửi định kỳ để các khoản thanh toán sắp tới được dự báo trước và không bỏ sót điều gì."
+        },
+        "investments": {
+          "title": "Đầu tư",
+          "body": "Theo dõi danh mục đầu tư, giá cả và lợi nhuận trên các tài khoản đầu tư của bạn."
+        },
+        "budgets": {
+          "title": "Lập kế hoạch với ngân sách",
+          "body": "Ngân sách cho phép bạn đặt mục tiêu hàng tháng theo từng danh mục và theo dõi mức độ bám sát mục tiêu đó."
+        },
+        "reports": {
+          "title": "Hiểu rõ tình hình tài chính",
+          "body": "Báo cáo biến giao dịch của bạn thành biểu đồ -- chi tiêu theo danh mục, giá trị tài sản ròng theo thời gian, và nhiều hơn nữa."
+        },
+        "finish": {
+          "title": "Vậy là bạn đã sẵn sàng",
+          "body": "Đó là toàn bộ hướng dẫn. Bạn có thể xem lại bất cứ lúc nào từ mục Hướng dẫn sử dụng trong Cài đặt."
+        }
+      }
+    }
+  },
+  "release": {
+    "v1_13_0": {
+      "accounts": {
+        "title": "Phí ngoại tệ",
+        "steps": {
+          "openAccount": {
+            "title": "Mở một tài khoản",
+            "body": "Mở một tài khoản có giao dịch ngoại tệ để xem chi tiết phí ngoại tệ của tài khoản đó."
+          },
+          "fxFees": {
+            "title": "Phí ngoại tệ",
+            "body": "Mục này liệt kê chi tiết các khoản phí bạn đã trả cho các hoạt động bằng ngoại tệ, tách biệt với sổ giao dịch."
+          },
+          "outro": {
+            "title": "Phí ngoại tệ",
+            "body": "Các tài khoản có hoạt động ngoại tệ giờ đây hiển thị chi tiết phí riêng trên trang chi tiết của chúng."
+          }
+        }
+      },
+      "settings": {
+        "title": "Bản tin Có gì mới",
+        "steps": {
+          "whatsNewToggle": {
+            "title": "Điểm nổi bật của bản phát hành",
+            "body": "Công tắc này quyết định liệu tóm tắt Có gì mới có tự động hiện lên sau khi cập nhật hay không."
+          },
+          "appVersion": {
+            "title": "Xem lại ghi chú phát hành",
+            "body": "Nhấp vào nhãn phiên bản ở cuối trang Cài đặt bất cứ lúc nào để mở lại ghi chú phát hành."
+          },
+          "done": {
+            "title": "Vậy là xong",
+            "body": "Bạn có thể xem lại những điểm nổi bật này bất cứ khi nào bạn muốn ngay tại đây trong Cài đặt."
+          }
+        }
+      }
+    }
+  }
+}

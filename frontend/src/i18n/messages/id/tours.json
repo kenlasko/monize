@@ -1,0 +1,146 @@
+{
+  "controls": {
+    "next": "Berikutnya",
+    "back": "Kembali",
+    "done": "Selesai",
+    "endTour": "Akhiri tur",
+    "tryIt": "Coba sendiri -- tur akan berlanjut setelah Anda melakukannya",
+    "skipStep": "Lewati langkah ini",
+    "stepCounter": "{current} dari {total}",
+    "skippedTitle": "Tur selesai",
+    "skippedBody": "Beberapa langkah dilewati karena layar atau kontrolnya tidak tersedia. Anda dapat mengulang tur kapan saja dari Pengaturan."
+  },
+  "offer": {
+    "heading": "Ikuti tur singkat",
+    "subheading": "Panduan singkat tentang fitur terbaru di rilis ini.",
+    "showMe": "Tunjukkan",
+    "viewed": "Sudah dilihat",
+    "introTitle": "Baru di sini? Ikuti tur pengenalan",
+    "introSubtitle": "Panduan singkat tentang dasar-dasarnya."
+  },
+  "areas": {
+    "intro": "Memulai",
+    "transactions": "Transaksi",
+    "accounts": "Akun",
+    "budgets": "Anggaran",
+    "reports": "Laporan",
+    "settings": "Pengaturan"
+  },
+  "gettingStarted": {
+    "takeTour": "Ikuti tur",
+    "retakeTour": "Ulangi tur"
+  },
+  "settings": {
+    "title": "Tur berpandu",
+    "description": "Pelajari fitur-fitur aplikasi langkah demi langkah.",
+    "startIntro": "Mulai tur pengenalan",
+    "reset": "Atur ulang progres tur",
+    "resetSuccess": "Progres tur telah diatur ulang.",
+    "resetError": "Progres tur gagal diatur ulang. Silakan coba lagi."
+  },
+  "intro": {
+    "basics": {
+      "title": "Pengenalan Monize",
+      "steps": {
+        "welcome": {
+          "title": "Selamat datang di Monize",
+          "body": "Tur singkat ini menunjukkan bagian inti aplikasi. Anda bisa keluar kapan saja dengan menekan Escape atau Akhiri tur."
+        },
+        "dashboard": {
+          "title": "Dasbor Anda",
+          "body": "Ini adalah dasbor Anda. Gunakan tombol Sesuaikan di kanan atas untuk mengatur ulang atau menyembunyikan widget agar ringkasan yang penting bagi Anda berada tepat di bagian atas."
+        },
+        "tools": {
+          "title": "Menu Alat",
+          "body": "Menu Alat adalah tempat Anda mengelola elemen dasar keuangan Anda -- penerima pembayaran, kategori, mata uang, tag, dan lainnya."
+        },
+        "accounts": {
+          "title": "Akun Anda",
+          "body": "Tambahkan akun bank, kartu kredit, pinjaman, dan investasi Anda di sini dengan Tambah Akun. Setiap saldo dan transaksi terkait dengan sebuah akun."
+        },
+        "transactions": {
+          "title": "Transaksi",
+          "body": "Ini adalah daftar transaksi Anda -- setiap pembayaran dan setoran untuk akun Anda tercatat di sini, siap untuk dicari dan disaring."
+        },
+        "createTransaction": {
+          "title": "Catat transaksi",
+          "body": "Tambahkan pemasukan atau pengeluaran dengan Transaksi Baru. Silakan buka formulirnya."
+        },
+        "fields": {
+          "title": "Penerima pembayaran, kategori, dan jumlah",
+          "body": "Untuk setiap transaksi, Anda memilih penerima pembayaran, menetapkan kategori, dan memasukkan jumlahnya. Kategori inilah yang menjadi dasar anggaran dan laporan Anda."
+        },
+        "splits": {
+          "title": "Bagi transaksi",
+          "body": "Satu pembelian mencakup beberapa kategori? Gunakan Transaksi Terbagi untuk membagi satu transaksi ke beberapa kategori -- misalnya belanja bahan makanan dan keperluan rumah tangga dari satu toko."
+        },
+        "currencyField": {
+          "title": "Mata uang asing",
+          "body": "Membeli sesuatu di luar negeri? Atur mata uangnya di sini dan masukkan jumlah sesuai yang dibebankan -- Monize akan mengonversinya ke mata uang akun untuk Anda."
+        },
+        "closeForm": {
+          "title": "Tutup formulir untuk melanjutkan",
+          "body": "Tutup formulir transaksi (Batal atau tombol X) dan tur akan berlanjut."
+        },
+        "bills": {
+          "title": "Tagihan & Setoran",
+          "body": "Jadwalkan tagihan dan setoran berulang agar pembayaran mendatang dapat diperkirakan dan tidak ada yang terlewat."
+        },
+        "investments": {
+          "title": "Investasi",
+          "body": "Pantau kepemilikan, harga, dan imbal hasil di seluruh akun investasi Anda."
+        },
+        "budgets": {
+          "title": "Rencanakan dengan anggaran",
+          "body": "Anggaran memungkinkan Anda menetapkan target bulanan per kategori dan memantau perkembangannya."
+        },
+        "reports": {
+          "title": "Pahami keuangan Anda",
+          "body": "Laporan mengubah transaksi Anda menjadi grafik -- pengeluaran per kategori, kekayaan bersih dari waktu ke waktu, dan lainnya."
+        },
+        "finish": {
+          "title": "Semua sudah siap",
+          "body": "Itulah turnya. Anda dapat mengulanginya kapan saja dari bagian Tur berpandu di Pengaturan."
+        }
+      }
+    }
+  },
+  "release": {
+    "v1_13_0": {
+      "accounts": {
+        "title": "Biaya mata uang asing",
+        "steps": {
+          "openAccount": {
+            "title": "Buka akun",
+            "body": "Buka akun yang memiliki transaksi mata uang asing untuk melihat rincian biaya mata uangnya."
+          },
+          "fxFees": {
+            "title": "Biaya mata uang asing",
+            "body": "Bagian ini merinci biaya yang Anda bayarkan untuk aktivitas mata uang asing, terpisah dari daftar transaksi."
+          },
+          "outro": {
+            "title": "Biaya mata uang asing",
+            "body": "Akun dengan aktivitas mata uang asing kini menampilkan rincian biaya khusus di halaman detailnya."
+          }
+        }
+      },
+      "settings": {
+        "title": "Ringkasan Yang Baru",
+        "steps": {
+          "whatsNewToggle": {
+            "title": "Sorotan rilis",
+            "body": "Sakelar ini mengatur apakah ringkasan Yang Baru muncul otomatis setelah pembaruan."
+          },
+          "appVersion": {
+            "title": "Baca ulang catatan rilis",
+            "body": "Klik label versi di bagian bawah Pengaturan kapan saja untuk membuka kembali catatan rilis."
+          },
+          "done": {
+            "title": "Selesai",
+            "body": "Anda dapat meninjau kembali sorotan ini kapan saja dari sini di Pengaturan."
+          }
+        }
+      }
+    }
+  }
+}

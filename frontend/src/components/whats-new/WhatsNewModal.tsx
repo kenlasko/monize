@@ -8,6 +8,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ReleaseNotesMarkdown } from './ReleaseNotesMarkdown';
+import { TourOfferList } from './TourOfferList';
 import type { ReleaseNotes } from '@/lib/whats-new';
 
 interface WhatsNewModalProps {
@@ -16,6 +17,8 @@ interface WhatsNewModalProps {
   loading?: boolean;
   /** Whether the viewer is signed in — gates the "seen" actions. */
   authenticated: boolean;
+  /** Running app version; drives the guided-tour offer list (authenticated only). */
+  currentVersion?: string;
   /** Close without changing state (X, backdrop, Escape). */
   onClose: () => void;
   /**
@@ -52,6 +55,7 @@ export function WhatsNewModal({
   notes,
   loading = false,
   authenticated,
+  currentVersion,
   onClose,
   onShowNextLogin,
   onDontShowAgain,
@@ -117,6 +121,9 @@ export function WhatsNewModal({
 
         {/* Body */}
         <div className="overflow-y-auto px-6 py-4">
+          {authenticated && currentVersion && (
+            <TourOfferList currentVersion={currentVersion} onClose={onClose} />
+          )}
           {notes ? (
             <>
               {notes.intro && (

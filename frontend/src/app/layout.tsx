@@ -10,6 +10,7 @@ import { ServiceWorkerRegistrar } from '@/components/providers/ServiceWorkerRegi
 import { PwaLifecycleHandler } from '@/components/providers/PwaLifecycleHandler';
 import { SwipeShell } from '@/components/layout/SwipeShell';
 import { WhatsNewHost } from '@/components/whats-new/WhatsNewHost';
+import { TourHost } from '@/components/tours/TourHost';
 import { getLocaleDir } from '@/i18n/config';
 import './globals.css';
 
@@ -71,6 +72,7 @@ export default async function RootLayout({
               </SwipeShell>
             </PreferencesLoader>
             <WhatsNewHost />
+            <TourHost />
             <Toaster
               position="top-right"
               toastOptions={{

@@ -1,0 +1,146 @@
+{
+  "controls": {
+    "next": "Dalej",
+    "back": "Wstecz",
+    "done": "Gotowe",
+    "endTour": "Zakończ przewodnik",
+    "tryIt": "Wypróbuj -- przewodnik będzie kontynuowany, gdy to zrobisz",
+    "skipStep": "Pomiń ten krok",
+    "stepCounter": "{current} z {total}",
+    "skippedTitle": "Przewodnik zakończony",
+    "skippedBody": "Niektóre kroki zostały pominięte, ponieważ ich ekran lub element sterujący nie był dostępny. Możesz ponownie przejść przewodnik w dowolnym momencie w Ustawieniach."
+  },
+  "offer": {
+    "heading": "Zobacz krótki przewodnik",
+    "subheading": "Krótkie wprowadzenia do nowości w tym wydaniu.",
+    "showMe": "Pokaż mi",
+    "viewed": "Obejrzano",
+    "introTitle": "Nowy tutaj? Skorzystaj z przewodnika wprowadzającego",
+    "introSubtitle": "Krótkie omówienie podstaw."
+  },
+  "areas": {
+    "intro": "Pierwsze kroki",
+    "transactions": "Transakcje",
+    "accounts": "Konta",
+    "budgets": "Budżety",
+    "reports": "Raporty",
+    "settings": "Ustawienia"
+  },
+  "gettingStarted": {
+    "takeTour": "Zobacz przewodnik",
+    "retakeTour": "Powtórz przewodnik"
+  },
+  "settings": {
+    "title": "Przewodniki po aplikacji",
+    "description": "Poznaj funkcje aplikacji krok po kroku.",
+    "startIntro": "Rozpocznij przewodnik wprowadzający",
+    "reset": "Zresetuj postęp przewodnika",
+    "resetSuccess": "Postęp przewodnika został zresetowany.",
+    "resetError": "Nie udało się zresetować postępu przewodnika. Spróbuj ponownie."
+  },
+  "intro": {
+    "basics": {
+      "title": "Wprowadzenie do Monize",
+      "steps": {
+        "welcome": {
+          "title": "Witamy w Monize",
+          "body": "Ten krótki przewodnik pokaże Ci najważniejsze elementy aplikacji. Możesz go opuścić w dowolnym momencie, naciskając Escape lub wybierając Zakończ przewodnik."
+        },
+        "dashboard": {
+          "title": "Twój pulpit",
+          "body": "To jest Twój pulpit. Użyj przycisku Dostosuj w prawym górnym rogu, aby zmienić układ lub ukryć widżety, tak aby najważniejsze dla Ciebie podsumowania znalazły się na samej górze."
+        },
+        "tools": {
+          "title": "Menu Narzędzia",
+          "body": "W menu Narzędzia zarządzasz podstawowymi elementami swoich finansów -- odbiorcami, kategoriami, walutami, tagami i innymi."
+        },
+        "accounts": {
+          "title": "Twoje konta",
+          "body": "Dodaj tutaj swoje konta bankowe, karty kredytowe, pożyczki i konta inwestycyjne za pomocą przycisku Dodaj konto. Każde saldo i każda transakcja należą do jakiegoś konta."
+        },
+        "transactions": {
+          "title": "Transakcje",
+          "body": "To jest Twój rejestr transakcji -- znajdziesz tu każdą płatność i wpłatę na swoich kontach, gotową do wyszukiwania i filtrowania."
+        },
+        "createTransaction": {
+          "title": "Zapisz transakcję",
+          "body": "Dodaj przychód lub wydatek za pomocą przycisku Nowa transakcja. Otwórz teraz formularz."
+        },
+        "fields": {
+          "title": "Odbiorca, kategoria i kwota",
+          "body": "Dla każdej transakcji wybierasz odbiorcę, przypisujesz kategorię i wprowadzasz kwotę. To kategorie napędzają Twoje budżety i raporty."
+        },
+        "splits": {
+          "title": "Podziel transakcję",
+          "body": "Jeden zakup obejmujący kilka kategorii? Użyj opcji Podziel transakcję, aby rozdzielić pojedynczą transakcję na kilka kategorii -- na przykład zakupy spożywcze i artykuły gospodarstwa domowego z jednego sklepu."
+        },
+        "currencyField": {
+          "title": "Waluty obce",
+          "body": "Kupiłeś coś za granicą? Ustaw tutaj walutę i wprowadź kwotę zgodnie z obciążeniem -- Monize przeliczy ją na walutę konta za Ciebie."
+        },
+        "closeForm": {
+          "title": "Zamknij formularz, aby kontynuować",
+          "body": "Zamknij formularz transakcji (Anuluj lub X), a przewodnik przejdzie dalej."
+        },
+        "bills": {
+          "title": "Rachunki i wpłaty",
+          "body": "Zaplanuj cykliczne rachunki i wpłaty, aby nadchodzące płatności były prognozowane i nic Ci nie umknęło."
+        },
+        "investments": {
+          "title": "Inwestycje",
+          "body": "Śledź swoje aktywa, ceny i stopy zwrotu na kontach inwestycyjnych."
+        },
+        "budgets": {
+          "title": "Planuj z budżetami",
+          "body": "Budżety pozwalają ustalać miesięczne cele dla poszczególnych kategorii i śledzić, jak sobie z nimi radzisz."
+        },
+        "reports": {
+          "title": "Zrozum swoje finanse",
+          "body": "Raporty zamieniają Twoje transakcje w wykresy -- wydatki według kategorii, wartość netto w czasie i wiele więcej."
+        },
+        "finish": {
+          "title": "Wszystko gotowe",
+          "body": "To już koniec przewodnika. Możesz go powtórzyć w dowolnym momencie w sekcji Przewodniki po aplikacji w Ustawieniach."
+        }
+      }
+    }
+  },
+  "release": {
+    "v1_13_0": {
+      "accounts": {
+        "title": "Opłaty za waluty obce",
+        "steps": {
+          "openAccount": {
+            "title": "Otwórz konto",
+            "body": "Otwórz konto zawierające transakcje w walutach obcych, aby zobaczyć zestawienie opłat walutowych."
+          },
+          "fxFees": {
+            "title": "Opłaty za waluty obce",
+            "body": "Ta sekcja przedstawia opłaty poniesione w związku z operacjami w walutach obcych, oddzielnie od rejestru transakcji."
+          },
+          "outro": {
+            "title": "Opłaty za waluty obce",
+            "body": "Konta z operacjami w walutach obcych mają teraz dedykowane zestawienie opłat na stronie szczegółów."
+          }
+        }
+      },
+      "settings": {
+        "title": "Podsumowanie Co nowego",
+        "steps": {
+          "whatsNewToggle": {
+            "title": "Najważniejsze zmiany",
+            "body": "Ten przełącznik decyduje o tym, czy podsumowanie Co nowego pojawia się automatycznie po aktualizacji."
+          },
+          "appVersion": {
+            "title": "Przeczytaj notatki ponownie",
+            "body": "Kliknij oznaczenie wersji na dole Ustawień w dowolnym momencie, aby ponownie otworzyć informacje o wydaniu."
+          },
+          "done": {
+            "title": "To wszystko",
+            "body": "Możesz wrócić do tych najważniejszych zmian, kiedy tylko zechcesz, tutaj, w Ustawieniach."
+          }
+        }
+      }
+    }
+  }
+}

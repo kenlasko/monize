@@ -1,0 +1,146 @@
+{
+  "controls": {
+    "next": "Suivant",
+    "back": "Retour",
+    "done": "Terminé",
+    "endTour": "Terminer la visite",
+    "tryIt": "Essayez -- la visite continue une fois que c'est fait",
+    "skipStep": "Passer cette étape",
+    "stepCounter": "{current} sur {total}",
+    "skippedTitle": "Visite terminée",
+    "skippedBody": "Certaines étapes ont été ignorées car leur écran ou leur contrôle n'était pas disponible. Vous pouvez refaire la visite à tout moment depuis les Paramètres."
+  },
+  "offer": {
+    "heading": "Faire une visite rapide",
+    "subheading": "De courtes visites guidées des nouveautés de cette version.",
+    "showMe": "Me montrer",
+    "viewed": "Consultée",
+    "introTitle": "Nouveau ici ? Suivez la visite d'introduction",
+    "introSubtitle": "Un rapide tour des bases."
+  },
+  "areas": {
+    "intro": "Démarrage",
+    "transactions": "Transactions",
+    "accounts": "Comptes",
+    "budgets": "Budgets",
+    "reports": "Rapports",
+    "settings": "Paramètres"
+  },
+  "gettingStarted": {
+    "takeTour": "Faire la visite",
+    "retakeTour": "Refaire la visite"
+  },
+  "settings": {
+    "title": "Visites guidées",
+    "description": "Découvrez les fonctionnalités de l'application étape par étape.",
+    "startIntro": "Démarrer la visite d'introduction",
+    "reset": "Réinitialiser la progression des visites",
+    "resetSuccess": "Progression des visites réinitialisée.",
+    "resetError": "Impossible de réinitialiser la progression des visites. Veuillez réessayer."
+  },
+  "intro": {
+    "basics": {
+      "title": "Introduction à Monize",
+      "steps": {
+        "welcome": {
+          "title": "Bienvenue dans Monize",
+          "body": "Cette visite rapide vous fait découvrir l'essentiel de l'application. Vous pouvez la quitter à tout moment en appuyant sur Échap (Escape) ou en cliquant sur Terminer la visite."
+        },
+        "dashboard": {
+          "title": "Votre tableau de bord",
+          "body": "Voici votre tableau de bord. Utilisez le bouton Personnaliser en haut à droite pour réorganiser ou masquer les widgets, afin que les résumés qui vous intéressent restent bien en haut."
+        },
+        "tools": {
+          "title": "Le menu Outils",
+          "body": "Le menu Outils est l'endroit où vous gérez les éléments de base de vos finances -- bénéficiaires, catégories, devises, étiquettes et plus encore."
+        },
+        "accounts": {
+          "title": "Vos comptes",
+          "body": "Ajoutez ici vos comptes bancaires, cartes de crédit, prêts et comptes de placement avec Ajouter un compte. Chaque solde et chaque transaction appartiennent à un compte."
+        },
+        "transactions": {
+          "title": "Transactions",
+          "body": "Voici votre registre de transactions -- chaque paiement et dépôt de vos comptes s'y trouve, prêt à être recherché et filtré."
+        },
+        "createTransaction": {
+          "title": "Enregistrer une transaction",
+          "body": "Ajoutez un revenu ou une dépense avec Nouvelle transaction. Allez-y, ouvrez le formulaire."
+        },
+        "fields": {
+          "title": "Bénéficiaire, catégorie et montant",
+          "body": "Pour chaque transaction, vous choisissez un bénéficiaire, attribuez une catégorie et saisissez le montant. Ce sont les catégories qui alimentent vos budgets et vos rapports."
+        },
+        "splits": {
+          "title": "Répartir une transaction",
+          "body": "Un achat couvre plusieurs catégories ? Utilisez Répartir la transaction pour diviser une seule transaction entre plusieurs catégories -- l'épicerie et les articles ménagers d'un même magasin, par exemple."
+        },
+        "currencyField": {
+          "title": "Devises étrangères",
+          "body": "Avez-vous acheté quelque chose à l'étranger ? Définissez la devise ici et saisissez le montant tel que facturé -- Monize le convertit pour vous dans la devise du compte."
+        },
+        "closeForm": {
+          "title": "Fermez le formulaire pour continuer",
+          "body": "Fermez le formulaire de transaction (Annuler ou le X) et la visite se poursuivra."
+        },
+        "bills": {
+          "title": "Factures et dépôts",
+          "body": "Planifiez des factures et des dépôts récurrents afin que les paiements à venir soient prévus et que rien ne vous échappe."
+        },
+        "investments": {
+          "title": "Investissements",
+          "body": "Suivez vos avoirs, leurs cours et leurs rendements dans l'ensemble de vos comptes de placement."
+        },
+        "budgets": {
+          "title": "Planifiez avec les budgets",
+          "body": "Les budgets vous permettent de définir des objectifs mensuels par catégorie et de suivre votre progression par rapport à ceux-ci."
+        },
+        "reports": {
+          "title": "Comprenez vos finances",
+          "body": "Les rapports transforment vos transactions en graphiques -- dépenses par catégorie, évolution de la valeur nette, et bien plus."
+        },
+        "finish": {
+          "title": "Vous êtes prêt",
+          "body": "Voilà, la visite est terminée. Vous pouvez la refaire à tout moment depuis la section Visites guidées dans les Paramètres."
+        }
+      }
+    }
+  },
+  "release": {
+    "v1_13_0": {
+      "accounts": {
+        "title": "Frais de change",
+        "steps": {
+          "openAccount": {
+            "title": "Ouvrir un compte",
+            "body": "Ouvrez un compte comportant des transactions en devises étrangères pour voir le détail de ses frais de change."
+          },
+          "fxFees": {
+            "title": "Frais de change",
+            "body": "Cette section détaille les frais que vous avez payés sur les opérations en devises étrangères, séparément du registre des transactions."
+          },
+          "outro": {
+            "title": "Frais de change",
+            "body": "Les comptes comportant des opérations en devises étrangères affichent désormais un détail des frais dédié sur leur page de détail."
+          }
+        }
+      },
+      "settings": {
+        "title": "Résumé des Nouveautés",
+        "steps": {
+          "whatsNewToggle": {
+            "title": "Points marquants de la version",
+            "body": "Ce commutateur détermine si le résumé des Nouveautés s'affiche automatiquement après une mise à jour."
+          },
+          "appVersion": {
+            "title": "Relire les notes",
+            "body": "Cliquez à tout moment sur le numéro de version en bas des Paramètres pour rouvrir les notes de version."
+          },
+          "done": {
+            "title": "Et voilà",
+            "body": "Vous pouvez revenir sur ces points marquants quand vous le souhaitez, ici dans les Paramètres."
+          }
+        }
+      }
+    }
+  }
+}

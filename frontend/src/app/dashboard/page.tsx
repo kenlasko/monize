@@ -30,6 +30,8 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { usePriceRefresh } from '@/hooks/usePriceRefresh';
 import { createLogger } from '@/lib/logger';
+import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
+import { TourBanner } from '@/components/dashboard/TourBanner';
 
 const logger = createLogger('Dashboard');
 
@@ -219,6 +221,7 @@ function DashboardContent() {
     <PageLayout>
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <div className="sm:px-0">
+          <TourBanner />
           {/* Welcome section */}
           <PageHeader
             title={user?.firstName ? t('page.welcomeWithName', { name: user.firstName }) : `${t('page.welcomePrefix')}!`}
@@ -228,6 +231,7 @@ function DashboardContent() {
             actions={
               !isDelegateView ? (
                 <button
+                  {...tourAnchor(TOUR_ANCHORS.dashboardCustomize)}
                   onClick={() => setShowCustomize(true)}
                   aria-label={t('customize.button')}
                   className="inline-flex items-center justify-center gap-2 p-2 sm:px-3 sm:py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
@@ -245,7 +249,10 @@ function DashboardContent() {
           {!isDelegateView && <GettingStarted />}
 
           {/* Widget grid: consecutive visible widgets pair up into rows */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div
+            {...tourAnchor(TOUR_ANCHORS.dashboardWidgets)}
+            className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+          >
             {visibleWidgets
               .filter((w) => !w.shouldRender || w.shouldRender(widgetContext))
               .map((w) => (

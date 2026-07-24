@@ -7,7 +7,18 @@ import {
   OneToOne,
   JoinColumn,
 } from "typeorm";
+import { Exclude } from "class-transformer";
 import { User } from "./user.entity";
+
+// Persisted state of a single guided tour for a user. `version` is stamped only
+// on release-* tour ids so a future release can offer them again.
+export interface TourProgressEntry {
+  status: "completed" | "dismissed";
+  version?: string;
+  updatedAt: string;
+}
+
+export type TourProgressMap = Record<string, TourProgressEntry>;
 
 @Entity("user_preferences")
 export class UserPreference {
@@ -128,6 +139,15 @@ export class UserPreference {
   // manually.
   @Column({ name: "show_whats_new", default: true })
   showWhatsNew: boolean;
+
+  // Guided-tour completion state, keyed by opaque tour id. Server-managed and
+  // written only via the tenantTx atomic jsonb-merge in ToursService, so it is
+  // excluded from the serialized preferences response (the global
+  // ClassSerializerInterceptor honours @Exclude()) and from the editable DTO --
+  // GET /updates/tours/progress is the single source of truth.
+  @Exclude()
+  @Column({ name: "tour_progress", type: "jsonb", default: {} })
+  tourProgress: TourProgressMap;
 
   @Column({
     name: "default_quote_provider",

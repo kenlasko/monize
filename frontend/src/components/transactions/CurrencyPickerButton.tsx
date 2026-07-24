@@ -32,6 +32,8 @@ interface CurrencyPickerButtonProps {
   /** Called with the chosen code ('' when the account currency row is picked). */
   onChange: (code: string) => void;
   disabled?: boolean;
+  /** Optional attributes (e.g. a guided-tour data-tour-id) spread onto the button. */
+  anchorProps?: { 'data-tour-id'?: string };
 }
 
 /**
@@ -47,6 +49,7 @@ export function CurrencyPickerButton({
   accountCurrencyCode,
   onChange,
   disabled,
+  anchorProps,
 }: CurrencyPickerButtonProps) {
   const t = useTranslations('transactions');
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -61,6 +64,7 @@ export function CurrencyPickerButton({
       <button
         ref={buttonRef}
         type="button"
+        {...anchorProps}
         disabled={disabled}
         onClick={() => setOpen((v) => !v)}
         aria-label={t('form.currencyPicker.ariaLabel')}

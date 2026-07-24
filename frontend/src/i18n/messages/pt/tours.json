@@ -1,0 +1,146 @@
+{
+  "controls": {
+    "next": "Seguinte",
+    "back": "Voltar",
+    "done": "Concluído",
+    "endTour": "Terminar visita guiada",
+    "tryIt": "Experimente -- a visita guiada continua assim que o fizer",
+    "skipStep": "Ignorar este passo",
+    "stepCounter": "{current} de {total}",
+    "skippedTitle": "Visita guiada terminada",
+    "skippedBody": "Alguns passos foram ignorados porque o respetivo ecrã ou controlo não estava disponível. Pode refazer a visita guiada a qualquer momento nas Definições."
+  },
+  "offer": {
+    "heading": "Faça uma visita guiada rápida",
+    "subheading": "Percursos rápidos pelas novidades desta versão.",
+    "showMe": "Mostrar-me",
+    "viewed": "Visto",
+    "introTitle": "Novo por aqui? Faça a visita guiada de introdução",
+    "introSubtitle": "Um percurso rápido pelo essencial."
+  },
+  "areas": {
+    "intro": "Primeiros Passos",
+    "transactions": "Transações",
+    "accounts": "Contas",
+    "budgets": "Orçamentos",
+    "reports": "Relatórios",
+    "settings": "Definições"
+  },
+  "gettingStarted": {
+    "takeTour": "Fazer a visita guiada",
+    "retakeTour": "Refazer a visita guiada"
+  },
+  "settings": {
+    "title": "Visitas guiadas",
+    "description": "Percorra as funcionalidades da aplicação passo a passo.",
+    "startIntro": "Iniciar visita guiada de introdução",
+    "reset": "Repor progresso da visita guiada",
+    "resetSuccess": "Progresso da visita guiada reposto.",
+    "resetError": "Não foi possível repor o progresso da visita guiada. Tente novamente."
+  },
+  "intro": {
+    "basics": {
+      "title": "Introdução ao Monize",
+      "steps": {
+        "welcome": {
+          "title": "Bem-vindo ao Monize",
+          "body": "Esta visita guiada rápida mostra-lhe o essencial da aplicação. Pode sair a qualquer momento premindo Escape ou Terminar visita guiada."
+        },
+        "dashboard": {
+          "title": "O seu painel",
+          "body": "Este é o seu painel. Utilize o botão Personalizar no canto superior direito para reorganizar ou ocultar widgets, de modo a que os resumos mais importantes para si fiquem no topo."
+        },
+        "tools": {
+          "title": "O menu Ferramentas",
+          "body": "O menu Ferramentas é onde gere os elementos base das suas finanças -- beneficiários, categorias, moedas, etiquetas e muito mais."
+        },
+        "accounts": {
+          "title": "As suas contas",
+          "body": "Adicione aqui as suas contas bancárias, de cartão de crédito, de empréstimo e de investimento com Adicionar Conta. Cada saldo e transação pertence a uma conta."
+        },
+        "transactions": {
+          "title": "Transações",
+          "body": "Este é o seu registo de transações -- todos os pagamentos e depósitos das suas contas encontram-se aqui, prontos a pesquisar e filtrar."
+        },
+        "createTransaction": {
+          "title": "Registar uma transação",
+          "body": "Adicione uma receita ou despesa com Nova Transação. Avance e abra o formulário."
+        },
+        "fields": {
+          "title": "Beneficiário, categoria e montante",
+          "body": "Para cada transação escolhe um beneficiário, atribui uma categoria e introduz o montante. As categorias são o motor dos seus orçamentos e relatórios."
+        },
+        "splits": {
+          "title": "Dividir uma transação",
+          "body": "Uma compra que abrange várias categorias? Utilize Dividir Transação em Parcelas para dividir uma única transação por várias categorias -- por exemplo, mercearia e artigos para casa numa só compra."
+        },
+        "currencyField": {
+          "title": "Moedas estrangeiras",
+          "body": "Comprou algo no estrangeiro? Defina aqui a moeda e introduza o montante tal como foi cobrado -- o Monize converte-o para a moeda da conta por si."
+        },
+        "closeForm": {
+          "title": "Feche o formulário para continuar",
+          "body": "Feche o formulário de transação (Cancelar ou o X) e a visita guiada avançará."
+        },
+        "bills": {
+          "title": "Faturas e depósitos",
+          "body": "Agende faturas e depósitos recorrentes para que os próximos pagamentos sejam previstos e nada lhe escape."
+        },
+        "investments": {
+          "title": "Investimentos",
+          "body": "Acompanhe as suas participações, preços e rendibilidades nas suas contas de investimento."
+        },
+        "budgets": {
+          "title": "Planeie com orçamentos",
+          "body": "Os orçamentos permitem-lhe definir metas mensais por categoria e acompanhar o seu progresso em relação a elas."
+        },
+        "reports": {
+          "title": "Compreenda o seu dinheiro",
+          "body": "Os relatórios transformam as suas transações em gráficos -- despesas por categoria, património líquido ao longo do tempo, e muito mais."
+        },
+        "finish": {
+          "title": "Está tudo pronto",
+          "body": "Foi assim a visita guiada. Pode refazê-la a qualquer momento na secção Visitas guiadas, em Definições."
+        }
+      }
+    }
+  },
+  "release": {
+    "v1_13_0": {
+      "accounts": {
+        "title": "Comissões de moeda estrangeira",
+        "steps": {
+          "openAccount": {
+            "title": "Abra uma conta",
+            "body": "Abra uma conta com transações em moeda estrangeira para ver o detalhe das respetivas comissões cambiais."
+          },
+          "fxFees": {
+            "title": "Comissões de moeda estrangeira",
+            "body": "Esta secção detalha as comissões pagas em atividade de moeda estrangeira, separadamente do registo de transações."
+          },
+          "outro": {
+            "title": "Comissões de moeda estrangeira",
+            "body": "As contas com atividade em moeda estrangeira apresentam agora um detalhe de comissões dedicado na respetiva página de detalhe."
+          }
+        }
+      },
+      "settings": {
+        "title": "Resumo de Novidades",
+        "steps": {
+          "whatsNewToggle": {
+            "title": "Destaques da versão",
+            "body": "Este interruptor controla se o resumo de Novidades aparece automaticamente depois de uma atualização."
+          },
+          "appVersion": {
+            "title": "Reler as notas",
+            "body": "Clique na etiqueta de versão no fundo das Definições sempre que quiser reabrir as notas de versão."
+          },
+          "done": {
+            "title": "É tudo",
+            "body": "Pode voltar a consultar estes destaques quando quiser aqui em Definições."
+          }
+        }
+      }
+    }
+  }
+}
