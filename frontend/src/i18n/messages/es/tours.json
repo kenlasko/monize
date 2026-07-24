@@ -107,23 +107,6 @@
   },
   "release": {
     "v1_13_0": {
-      "accounts": {
-        "title": "Comisiones por moneda extranjera",
-        "steps": {
-          "openAccount": {
-            "title": "Abre una cuenta",
-            "body": "Abre una cuenta que tenga transacciones en moneda extranjera para ver el desglose de sus comisiones cambiarias."
-          },
-          "fxFees": {
-            "title": "Comisiones por moneda extranjera",
-            "body": "Esta sección desglosa las comisiones que pagaste por actividad en moneda extranjera, por separado del registro de transacciones."
-          },
-          "outro": {
-            "title": "Comisiones por moneda extranjera",
-            "body": "Las cuentas con actividad en moneda extranjera ahora muestran un desglose de comisiones dedicado en su página de detalle."
-          }
-        }
-      },
       "settings": {
         "title": "Resumen de Novedades",
         "steps": {

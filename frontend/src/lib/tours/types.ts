@@ -56,7 +56,7 @@ export interface TourStep {
 }
 
 export interface TourDefinition {
-  /** Persistence key ('intro/basics', 'release-1.13.0/accounts'). Never rename. */
+  /** Persistence key ('intro/basics', 'release-1.13.0/foreign-currency'). Never rename. */
   id: string;
   area: TourArea;
   /** Minor line for release tours ('1.13'); undefined for evergreen tours. */

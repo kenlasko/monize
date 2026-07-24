@@ -107,20 +107,52 @@
   },
   "release": {
     "v1_13_0": {
-      "accounts": {
-        "title": "Foreign-currency fees",
+      "foreignCurrency": {
+        "title": "Foreign currency transactions",
         "steps": {
-          "openAccount": {
-            "title": "Open an account",
-            "body": "Open an account that has foreign-currency transactions to see its currency-fee breakdown."
+          "welcome": {
+            "title": "Track spending in other currencies",
+            "body": "Bought something abroad? This tour sets up a card's foreign-transaction fee, records a purchase in the currency you were charged, and shows where those costs turn up. Leave anytime with Escape or End tour."
           },
-          "fxFees": {
-            "title": "Foreign-currency fees",
-            "body": "This section breaks down the fees you paid on foreign-currency activity, separate from the transaction register."
+          "openAccountEdit": {
+            "title": "Start on the card",
+            "body": "Foreign-transaction fees belong to the account. Pick a credit card you use abroad and choose Edit from its row actions -- or long-press the row on mobile -- to open its settings."
           },
-          "outro": {
-            "title": "Foreign-currency fees",
-            "body": "Accounts with foreign-currency activity now show a dedicated fee breakdown on their detail page."
+          "fxFeePercent": {
+            "title": "Set the conversion fee",
+            "body": "Enter your card's foreign-transaction fee here as a percentage -- 2.5, say. Monize folds it into the converted amount of every foreign purchase, so the fee is captured for you."
+          },
+          "closeAccountForm": {
+            "title": "Save and close",
+            "body": "Save the account (or close the form) to carry on."
+          },
+          "newTransaction": {
+            "title": "Record a foreign purchase",
+            "body": "Now log a purchase you made on that card in another currency. Open New Transaction and pick that card as the account."
+          },
+          "entryCurrency": {
+            "title": "Choose the currency you paid in",
+            "body": "This button sets the currency the amount was charged in. Type the total exactly as it appears on your statement and Monize converts it, showing the rate you can edit to match your bank. Only your own currency in the list? Choose 'Add currency...' at the bottom to add one."
+          },
+          "closeTransactionForm": {
+            "title": "Close the form",
+            "body": "Save or close the transaction form and the tour continues."
+          },
+          "openAccountDetail": {
+            "title": "Back to the card",
+            "body": "Open that card's Details page -- choose Details from its row actions -- to see how the foreign activity is summarized."
+          },
+          "fxSection": {
+            "title": "Your foreign-currency section",
+            "body": "Accounts with foreign activity gain this section: the fees paid per currency, a chart over time, and the matching transactions, exportable to CSV and PNG. It appears once the account has a foreign purchase."
+          },
+          "report": {
+            "title": "The Foreign-Currency Fees report",
+            "body": "This report gathers foreign purchases across all your accounts and currencies in one place, so you can see what those \"no foreign fee\" cards really cost. Open it anytime from Reports."
+          },
+          "finish": {
+            "title": "That's foreign currency in Monize",
+            "body": "Set a fee once, enter purchases as charged, and the fees track themselves. You can retake this tour anytime from the Guided tours section in Settings."
           }
         }
       },

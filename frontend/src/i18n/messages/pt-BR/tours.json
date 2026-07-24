@@ -107,23 +107,6 @@
   },
   "release": {
     "v1_13_0": {
-      "accounts": {
-        "title": "Taxas de moeda estrangeira",
-        "steps": {
-          "openAccount": {
-            "title": "Abra uma conta",
-            "body": "Abra uma conta com transações em moeda estrangeira para ver o detalhamento das taxas de câmbio."
-          },
-          "fxFees": {
-            "title": "Taxas de moeda estrangeira",
-            "body": "Esta seção detalha as taxas pagas em atividades com moeda estrangeira, separadamente do registro de transações."
-          },
-          "outro": {
-            "title": "Taxas de moeda estrangeira",
-            "body": "Contas com atividade em moeda estrangeira agora exibem um detalhamento de taxas dedicado na página de detalhes."
-          }
-        }
-      },
       "settings": {
         "title": "Resumo de Novidades",
         "steps": {

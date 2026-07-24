@@ -107,23 +107,6 @@
   },
   "release": {
     "v1_13_0": {
-      "accounts": {
-        "title": "Phí ngoại tệ",
-        "steps": {
-          "openAccount": {
-            "title": "Mở một tài khoản",
-            "body": "Mở một tài khoản có giao dịch ngoại tệ để xem chi tiết phí ngoại tệ của tài khoản đó."
-          },
-          "fxFees": {
-            "title": "Phí ngoại tệ",
-            "body": "Mục này liệt kê chi tiết các khoản phí bạn đã trả cho các hoạt động bằng ngoại tệ, tách biệt với sổ giao dịch."
-          },
-          "outro": {
-            "title": "Phí ngoại tệ",
-            "body": "Các tài khoản có hoạt động ngoại tệ giờ đây hiển thị chi tiết phí riêng trên trang chi tiết của chúng."
-          }
-        }
-      },
       "settings": {
         "title": "Bản tin Có gì mới",
         "steps": {

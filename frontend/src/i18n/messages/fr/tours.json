@@ -107,23 +107,6 @@
   },
   "release": {
     "v1_13_0": {
-      "accounts": {
-        "title": "Frais de change",
-        "steps": {
-          "openAccount": {
-            "title": "Ouvrir un compte",
-            "body": "Ouvrez un compte comportant des transactions en devises étrangères pour voir le détail de ses frais de change."
-          },
-          "fxFees": {
-            "title": "Frais de change",
-            "body": "Cette section détaille les frais que vous avez payés sur les opérations en devises étrangères, séparément du registre des transactions."
-          },
-          "outro": {
-            "title": "Frais de change",
-            "body": "Les comptes comportant des opérations en devises étrangères affichent désormais un détail des frais dédié sur leur page de détail."
-          }
-        }
-      },
       "settings": {
         "title": "Résumé des Nouveautés",
         "steps": {

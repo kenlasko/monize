@@ -107,23 +107,6 @@
   },
   "release": {
     "v1_13_0": {
-      "accounts": {
-        "title": "Biaya mata uang asing",
-        "steps": {
-          "openAccount": {
-            "title": "Buka akun",
-            "body": "Buka akun yang memiliki transaksi mata uang asing untuk melihat rincian biaya mata uangnya."
-          },
-          "fxFees": {
-            "title": "Biaya mata uang asing",
-            "body": "Bagian ini merinci biaya yang Anda bayarkan untuk aktivitas mata uang asing, terpisah dari daftar transaksi."
-          },
-          "outro": {
-            "title": "Biaya mata uang asing",
-            "body": "Akun dengan aktivitas mata uang asing kini menampilkan rincian biaya khusus di halaman detailnya."
-          }
-        }
-      },
       "settings": {
         "title": "Ringkasan Yang Baru",
         "steps": {

@@ -28,6 +28,7 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
+import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 import { LoanFields } from './LoanFields';
 import { MortgageFields } from './MortgageFields';
 import { AssetFields } from './AssetFields';
@@ -783,7 +784,7 @@ export function AccountForm({ account, onSubmit, onCancel, onDirtyChange, submit
 
       {/* Foreign Currency Conversion Fee: the bank's FX fee (a percentage),
           folded into the converted amount on foreign-entered transactions. */}
-      <div className="space-y-3">
+      <div className="space-y-3" {...tourAnchor(TOUR_ANCHORS.accountFxFeePercent)}>
         <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
           {t('form.fxFeeTitle')}
         </h3>

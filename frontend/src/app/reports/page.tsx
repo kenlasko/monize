@@ -16,6 +16,7 @@ import { investmentReportsApi } from '@/lib/investment-reports';
 import { InvestmentReport } from '@/types/investment-report';
 import { getIconComponent } from '@/components/ui/IconPicker';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 import { createLogger } from '@/lib/logger';
 import {
   Report,
@@ -273,6 +274,15 @@ function ReportsContent() {
     router.push(`/reports/${reportId}`);
   };
 
+  // Guided-tour anchor for the Foreign-Currency Fees report card (release 1.13).
+  // Kept as a single tourAnchor() call so the anchor-uniqueness test is happy
+  // across the three density layouts -- only the layout actually rendered mounts
+  // it, so the id is attached in exactly one live element.
+  const reportTourAnchor = (report: Report): { 'data-tour-id'?: string } =>
+    report.id === 'foreign-currency-fees'
+      ? tourAnchor(TOUR_ANCHORS.reportForeignCurrencyFees)
+      : {};
+
   return (
     <PageLayout>
 
@@ -346,6 +356,7 @@ function ReportsContent() {
               return (
                 <button
                   key={report.id}
+                  {...reportTourAnchor(report)}
                   onClick={() => handleReportClick(report.id)}
                   className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden hover:shadow-lg dark:hover:shadow-gray-700/70 transition-shadow text-left group flex flex-col h-full"
                 >
@@ -407,6 +418,7 @@ function ReportsContent() {
               return (
                 <button
                   key={report.id}
+                  {...reportTourAnchor(report)}
                   onClick={() => handleReportClick(report.id)}
                   className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 hover:shadow-md dark:hover:shadow-gray-700/70 transition-shadow text-left flex items-center gap-4 group"
                 >
@@ -479,6 +491,7 @@ function ReportsContent() {
                   return (
                     <tr
                       key={report.id}
+                      {...reportTourAnchor(report)}
                       onClick={() => handleReportClick(report.id)}
                       className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
                     >

@@ -51,7 +51,7 @@ describe('tour registry', () => {
   describe('getReleaseTours', () => {
     it('matches release tours on the minor line, not the exact patch', () => {
       expect(getReleaseTours('1.13.0').map((t) => t.id)).toEqual([
-        'release-1.13.0/accounts',
+        'release-1.13.0/foreign-currency',
         'release-1.13.0/settings',
       ]);
       // Any patch on the same minor still matches.

@@ -107,23 +107,6 @@
   },
   "release": {
     "v1_13_0": {
-      "accounts": {
-        "title": "Yabancı para birimi ücretleri",
-        "steps": {
-          "openAccount": {
-            "title": "Bir hesap açın",
-            "body": "Para birimi ücreti dökümünü görmek için yabancı para birimi işlemleri olan bir hesap açın."
-          },
-          "fxFees": {
-            "title": "Yabancı para birimi ücretleri",
-            "body": "Bu bölüm, işlem kayıt defterinden ayrı olarak yabancı para birimi işlemleri için ödediğiniz ücretlerin dökümünü gösterir."
-          },
-          "outro": {
-            "title": "Yabancı para birimi ücretleri",
-            "body": "Yabancı para birimi işlemleri olan hesaplar artık detay sayfalarında ayrı bir ücret dökümü gösteriyor."
-          }
-        }
-      },
       "settings": {
         "title": "Yenilikler özeti",
         "steps": {

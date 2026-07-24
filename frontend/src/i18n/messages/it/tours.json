@@ -107,23 +107,6 @@
   },
   "release": {
     "v1_13_0": {
-      "accounts": {
-        "title": "Commissioni in valuta estera",
-        "steps": {
-          "openAccount": {
-            "title": "Apri un conto",
-            "body": "Apri un conto con transazioni in valuta estera per vedere il dettaglio delle relative commissioni."
-          },
-          "fxFees": {
-            "title": "Commissioni in valuta estera",
-            "body": "Questa sezione riepiloga le commissioni pagate sulle operazioni in valuta estera, separatamente dal registro delle transazioni."
-          },
-          "outro": {
-            "title": "Commissioni in valuta estera",
-            "body": "I conti con operazioni in valuta estera mostrano ora un dettaglio dedicato delle commissioni nella loro pagina di dettaglio."
-          }
-        }
-      },
       "settings": {
         "title": "Riepilogo Novità",
         "steps": {

@@ -107,23 +107,6 @@
   },
   "release": {
     "v1_13_0": {
-      "accounts": {
-        "title": "Fremdwährungsgebühren",
-        "steps": {
-          "openAccount": {
-            "title": "Ein Konto öffnen",
-            "body": "Öffnen Sie ein Konto mit Fremdwährungsbuchungen, um die Aufschlüsselung der Währungsgebühren zu sehen."
-          },
-          "fxFees": {
-            "title": "Fremdwährungsgebühren",
-            "body": "Dieser Bereich schlüsselt die Gebühren auf, die Sie für Fremdwährungsaktivitäten gezahlt haben, getrennt vom Buchungsregister."
-          },
-          "outro": {
-            "title": "Fremdwährungsgebühren",
-            "body": "Konten mit Fremdwährungsaktivitäten zeigen jetzt auf ihrer Detailseite eine eigene Gebührenaufschlüsselung."
-          }
-        }
-      },
       "settings": {
         "title": "Neuigkeiten-Übersicht",
         "steps": {

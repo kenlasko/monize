@@ -107,23 +107,6 @@
   },
   "release": {
     "v1_13_0": {
-      "accounts": {
-        "title": "Kosten voor vreemde valuta",
-        "steps": {
-          "openAccount": {
-            "title": "Open een rekening",
-            "body": "Open een rekening met transacties in vreemde valuta om het overzicht van valutakosten te bekijken."
-          },
-          "fxFees": {
-            "title": "Kosten voor vreemde valuta",
-            "body": "Dit gedeelte geeft een overzicht van de kosten die u heeft betaald voor activiteit in vreemde valuta, los van het transactieoverzicht."
-          },
-          "outro": {
-            "title": "Kosten voor vreemde valuta",
-            "body": "Rekeningen met activiteit in vreemde valuta tonen nu een eigen overzicht van kosten op hun detailpagina."
-          }
-        }
-      },
       "settings": {
         "title": "Wat is er nieuw-overzicht",
         "steps": {

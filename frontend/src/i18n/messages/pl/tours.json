@@ -107,23 +107,6 @@
   },
   "release": {
     "v1_13_0": {
-      "accounts": {
-        "title": "Opłaty za waluty obce",
-        "steps": {
-          "openAccount": {
-            "title": "Otwórz konto",
-            "body": "Otwórz konto zawierające transakcje w walutach obcych, aby zobaczyć zestawienie opłat walutowych."
-          },
-          "fxFees": {
-            "title": "Opłaty za waluty obce",
-            "body": "Ta sekcja przedstawia opłaty poniesione w związku z operacjami w walutach obcych, oddzielnie od rejestru transakcji."
-          },
-          "outro": {
-            "title": "Opłaty za waluty obce",
-            "body": "Konta z operacjami w walutach obcych mają teraz dedykowane zestawienie opłat na stronie szczegółów."
-          }
-        }
-      },
       "settings": {
         "title": "Podsumowanie Co nowego",
         "steps": {
