@@ -47,28 +47,48 @@
           "body": "Este recorrido rápido te muestra lo esencial de la aplicación. Puedes salir en cualquier momento pulsando Escape o Finalizar recorrido."
         },
         "dashboard": {
-          "title": "Tu panel principal",
-          "body": "Los widgets de aquí resumen tus saldos, gastos y próximos pagos de un vistazo. Podrás reorganizarlos más tarde en Ajustes."
+          "title": "Tu panel",
+          "body": "Este es tu panel. Usa el botón Personalizar en la esquina superior derecha para reorganizar u ocultar widgets, de modo que los resúmenes que te interesan queden arriba."
         },
-        "navigation": {
-          "title": "Cómo moverte",
-          "body": "Usa la navegación para saltar entre tus cuentas, transacciones, presupuestos e informes."
+        "tools": {
+          "title": "El menú Herramientas",
+          "body": "El menú Herramientas es donde gestionas los componentes básicos de tus finanzas: beneficiarios, categorías, monedas, etiquetas y más."
         },
         "accounts": {
-          "title": "Agrega una cuenta",
-          "body": "Empieza agregando tus cuentas bancarias, de tarjeta de crédito, préstamos o inversiones. Los saldos y transacciones se encuentran dentro de cada cuenta."
+          "title": "Tus cuentas",
+          "body": "Agrega aquí tus cuentas bancarias, de tarjeta de crédito, préstamos e inversiones con Agregar cuenta. Todo saldo y transacción pertenece a una cuenta."
+        },
+        "transactions": {
+          "title": "Transacciones",
+          "body": "Este es tu registro de transacciones: aquí se encuentran todos los pagos y depósitos de tus cuentas, listos para buscar y filtrar."
         },
         "createTransaction": {
           "title": "Registra una transacción",
-          "body": "Haz clic en Nueva transacción para agregar un ingreso o gasto. Adelante, abre el formulario."
+          "body": "Agrega un ingreso o gasto con Nueva transacción. Adelante, abre el formulario."
+        },
+        "fields": {
+          "title": "Beneficiario, categoría e importe",
+          "body": "Para cada transacción eliges un beneficiario, asignas una categoría e ingresas el importe. Las categorías son las que impulsan tus presupuestos e informes."
+        },
+        "splits": {
+          "title": "Desglosar una transacción",
+          "body": "¿Una compra que abarca varias categorías? Usa Desglosar transacción para dividir una sola transacción entre categorías; por ejemplo, comestibles y artículos del hogar de una misma tienda."
         },
         "currencyField": {
           "title": "Monedas extranjeras",
-          "body": "Elige aquí una moneda diferente para registrar una transacción hecha en el extranjero -- Monize la convierte por ti."
+          "body": "¿Compraste algo en el extranjero? Configura aquí la moneda e ingresa el importe tal como se cobró -- Monize lo convierte a la moneda de la cuenta por ti."
         },
         "closeForm": {
           "title": "Cierra el formulario para continuar",
           "body": "Cierra el formulario de transacción (Cancelar o la X) y el recorrido continuará."
+        },
+        "bills": {
+          "title": "Facturas y depósitos",
+          "body": "Programa facturas y depósitos recurrentes para que los próximos pagos se pronostiquen y nada se te escape."
+        },
+        "investments": {
+          "title": "Inversiones",
+          "body": "Sigue tus posiciones, precios y rendimientos en tus cuentas de inversión."
         },
         "budgets": {
           "title": "Planifica con presupuestos",
@@ -80,7 +100,7 @@
         },
         "finish": {
           "title": "Todo listo",
-          "body": "Eso es todo el recorrido. Ajusta tus preferencias aquí en Ajustes y repite este recorrido cuando quieras desde la sección Recorridos guiados."
+          "body": "Eso es todo el recorrido. Puedes repetirlo cuando quieras desde la sección Recorridos guiados en Ajustes."
         }
       }
     }

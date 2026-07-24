@@ -48,27 +48,47 @@
         },
         "dashboard": {
           "title": "O seu painel",
-          "body": "Os widgets aqui resumem, de relance, os seus saldos, despesas e contas a pagar em breve. Pode reorganizá-los mais tarde nas Definições."
+          "body": "Este é o seu painel. Utilize o botão Personalizar no canto superior direito para reorganizar ou ocultar widgets, de modo a que os resumos mais importantes para si fiquem no topo."
         },
-        "navigation": {
-          "title": "Orientar-se na aplicação",
-          "body": "Utilize a navegação para alternar entre as suas contas, transações, orçamentos e relatórios."
+        "tools": {
+          "title": "O menu Ferramentas",
+          "body": "O menu Ferramentas é onde gere os elementos base das suas finanças -- beneficiários, categorias, moedas, etiquetas e muito mais."
         },
         "accounts": {
-          "title": "Adicionar uma conta",
-          "body": "Comece por adicionar as suas contas bancárias, de cartão de crédito, de empréstimo ou de investimento. Os saldos e as transações encontram-se dentro de cada conta."
+          "title": "As suas contas",
+          "body": "Adicione aqui as suas contas bancárias, de cartão de crédito, de empréstimo e de investimento com Adicionar Conta. Cada saldo e transação pertence a uma conta."
+        },
+        "transactions": {
+          "title": "Transações",
+          "body": "Este é o seu registo de transações -- todos os pagamentos e depósitos das suas contas encontram-se aqui, prontos a pesquisar e filtrar."
         },
         "createTransaction": {
           "title": "Registar uma transação",
-          "body": "Clique em Nova Transação para adicionar uma receita ou despesa. Avance e abra o formulário."
+          "body": "Adicione uma receita ou despesa com Nova Transação. Avance e abra o formulário."
+        },
+        "fields": {
+          "title": "Beneficiário, categoria e montante",
+          "body": "Para cada transação escolhe um beneficiário, atribui uma categoria e introduz o montante. As categorias são o motor dos seus orçamentos e relatórios."
+        },
+        "splits": {
+          "title": "Dividir uma transação",
+          "body": "Uma compra que abrange várias categorias? Utilize Dividir Transação em Parcelas para dividir uma única transação por várias categorias -- por exemplo, mercearia e artigos para casa numa só compra."
         },
         "currencyField": {
           "title": "Moedas estrangeiras",
-          "body": "Defina aqui uma moeda diferente para registar uma transação feita no estrangeiro -- o Monize converte-a por si."
+          "body": "Comprou algo no estrangeiro? Defina aqui a moeda e introduza o montante tal como foi cobrado -- o Monize converte-o para a moeda da conta por si."
         },
         "closeForm": {
           "title": "Feche o formulário para continuar",
           "body": "Feche o formulário de transação (Cancelar ou o X) e a visita guiada avançará."
+        },
+        "bills": {
+          "title": "Faturas e depósitos",
+          "body": "Agende faturas e depósitos recorrentes para que os próximos pagamentos sejam previstos e nada lhe escape."
+        },
+        "investments": {
+          "title": "Investimentos",
+          "body": "Acompanhe as suas participações, preços e rendibilidades nas suas contas de investimento."
         },
         "budgets": {
           "title": "Planeie com orçamentos",
@@ -80,7 +100,7 @@
         },
         "finish": {
           "title": "Está tudo pronto",
-          "body": "É tudo por agora. Ajuste as preferências aqui em Definições e refaça esta visita guiada a qualquer momento na secção Visitas guiadas."
+          "body": "Foi assim a visita guiada. Pode refazê-la a qualquer momento na secção Visitas guiadas, em Definições."
         }
       }
     }

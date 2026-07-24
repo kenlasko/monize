@@ -1,22 +1,22 @@
 {
   "controls": {
-    "next": "Próximo",
+    "next": "Avançar",
     "back": "Voltar",
-    "done": "Concluído",
+    "done": "Concluir",
     "endTour": "Encerrar tour",
-    "tryIt": "Experimente -- o tour continua depois que você fizer isso",
+    "tryIt": "Experimente -- o tour continua quando você fizer isso",
     "skipStep": "Pular esta etapa",
     "stepCounter": "{current} de {total}",
-    "skippedTitle": "Tour finalizado",
-    "skippedBody": "Algumas etapas foram puladas porque sua tela ou controle não estava disponível. Você pode refazer o tour a qualquer momento em Configurações."
+    "skippedTitle": "Tour encerrado",
+    "skippedBody": "Algumas etapas foram puladas porque a tela ou o controle correspondente não estava disponível. Você pode refazer o tour a qualquer momento em Configurações."
   },
   "offer": {
     "heading": "Faça um tour rápido",
-    "subheading": "Passos curtos sobre as novidades desta versão.",
+    "subheading": "Passeios rápidos pelas novidades desta versão.",
     "showMe": "Mostrar",
     "viewed": "Visualizado",
     "introTitle": "Novo por aqui? Faça o tour de introdução",
-    "introSubtitle": "Um passo a passo rápido sobre o básico."
+    "introSubtitle": "Um passeio rápido pelo básico."
   },
   "areas": {
     "intro": "Primeiros Passos",
@@ -32,7 +32,7 @@
   },
   "settings": {
     "title": "Tours guiados",
-    "description": "Conheça os recursos do aplicativo passo a passo.",
+    "description": "Percorra as funcionalidades do aplicativo passo a passo.",
     "startIntro": "Iniciar tour de introdução",
     "reset": "Redefinir progresso do tour",
     "resetSuccess": "Progresso do tour redefinido.",
@@ -48,39 +48,59 @@
         },
         "dashboard": {
           "title": "Seu painel",
-          "body": "Os widgets aqui resumem seus saldos, gastos e contas futuras rapidamente. Você pode reorganizá-los depois em Configurações."
+          "body": "Este é o seu painel. Use o botão Personalizar no canto superior direito para reorganizar ou ocultar os widgets, deixando os resumos que mais importam bem no topo."
         },
-        "navigation": {
-          "title": "Como navegar",
-          "body": "Use a navegação para alternar entre suas contas, transações, orçamentos e relatórios."
+        "tools": {
+          "title": "O menu Ferramentas",
+          "body": "O menu Ferramentas é onde você gerencia os blocos que compõem suas finanças -- beneficiários, categorias, moedas, tags e mais."
         },
         "accounts": {
-          "title": "Adicione uma conta",
-          "body": "Comece adicionando suas contas bancárias, cartões de crédito, empréstimos ou investimentos. Saldos e transações ficam em cada conta."
+          "title": "Suas contas",
+          "body": "Adicione aqui suas contas bancárias, cartões de crédito, empréstimos e investimentos com Adicionar Conta. Todo saldo e transação pertence a uma conta."
+        },
+        "transactions": {
+          "title": "Transações",
+          "body": "Este é o seu registro de transações -- todo pagamento e depósito das suas contas fica aqui, pronto para busca e filtro."
         },
         "createTransaction": {
           "title": "Registre uma transação",
-          "body": "Clique em Nova Transação para adicionar uma receita ou despesa. Vá em frente e abra o formulário."
+          "body": "Adicione receitas ou despesas com Nova Transação. Vá em frente e abra o formulário."
+        },
+        "fields": {
+          "title": "Beneficiário, categoria e valor",
+          "body": "Para cada transação você escolhe um beneficiário, atribui uma categoria e informa o valor. As categorias são o que alimenta seus orçamentos e relatórios."
+        },
+        "splits": {
+          "title": "Dividir uma transação",
+          "body": "Uma compra que abrange várias categorias? Use Dividir Transação para repartir uma única transação entre categorias -- mercado e itens de casa em uma mesma compra, por exemplo."
         },
         "currencyField": {
           "title": "Moedas estrangeiras",
-          "body": "Defina uma moeda diferente aqui para registrar uma transação feita no exterior -- o Monize faz a conversão para você."
+          "body": "Comprou algo no exterior? Defina a moeda aqui e informe o valor cobrado -- o Monize converte para a moeda da conta automaticamente."
         },
         "closeForm": {
           "title": "Feche o formulário para continuar",
           "body": "Feche o formulário de transação (Cancelar ou o X) e o tour vai continuar."
+        },
+        "bills": {
+          "title": "Faturas e depósitos",
+          "body": "Agende faturas e depósitos recorrentes para que os próximos pagamentos sejam previstos e nada passe despercebido."
+        },
+        "investments": {
+          "title": "Investimentos",
+          "body": "Acompanhe seus ativos, preços e retornos em suas contas de investimento."
         },
         "budgets": {
           "title": "Planeje com orçamentos",
           "body": "Os orçamentos permitem definir metas mensais por categoria e acompanhar seu desempenho em relação a elas."
         },
         "reports": {
-          "title": "Entenda suas finanças",
+          "title": "Entenda o seu dinheiro",
           "body": "Os relatórios transformam suas transações em gráficos -- gastos por categoria, patrimônio líquido ao longo do tempo e muito mais."
         },
         "finish": {
           "title": "Tudo pronto",
-          "body": "Esse foi o tour. Ajuste suas preferências aqui em Configurações e refaça este tour quando quiser na seção Tours guiados."
+          "body": "Esse foi o tour. Você pode refazê-lo a qualquer momento na seção Tours guiados em Configurações."
         }
       }
     }
@@ -88,19 +108,19 @@
   "release": {
     "v1_13_0": {
       "accounts": {
-        "title": "Tarifas de moeda estrangeira",
+        "title": "Taxas de moeda estrangeira",
         "steps": {
           "openAccount": {
             "title": "Abra uma conta",
-            "body": "Abra uma conta que tenha transações em moeda estrangeira para ver o detalhamento das tarifas de câmbio."
+            "body": "Abra uma conta com transações em moeda estrangeira para ver o detalhamento das taxas de câmbio."
           },
           "fxFees": {
-            "title": "Tarifas de moeda estrangeira",
-            "body": "Esta seção detalha as tarifas pagas em atividades com moeda estrangeira, separadas do extrato de transações."
+            "title": "Taxas de moeda estrangeira",
+            "body": "Esta seção detalha as taxas pagas em atividades com moeda estrangeira, separadamente do registro de transações."
           },
           "outro": {
-            "title": "Tarifas de moeda estrangeira",
-            "body": "Contas com atividade em moeda estrangeira agora mostram um detalhamento dedicado de tarifas na página de detalhes."
+            "title": "Taxas de moeda estrangeira",
+            "body": "Contas com atividade em moeda estrangeira agora exibem um detalhamento de taxas dedicado na página de detalhes."
           }
         }
       },
@@ -113,11 +133,11 @@
           },
           "appVersion": {
             "title": "Releia as notas",
-            "body": "Clique no rótulo de versão na parte inferior de Configurações a qualquer momento para reabrir as notas de versão."
+            "body": "Clique no rótulo da versão na parte inferior de Configurações a qualquer momento para reabrir as notas da versão."
           },
           "done": {
             "title": "É isso",
-            "body": "Você pode revisitar esses destaques quando quiser, aqui em Configurações."
+            "body": "Você pode revisitar esses destaques quando quiser aqui em Configurações."
           }
         }
       }

@@ -48,27 +48,47 @@
         },
         "dashboard": {
           "title": "La tua dashboard",
-          "body": "I widget qui riepilogano a colpo d'occhio i tuoi saldi, le spese e le prossime bollette. Potrai riorganizzarli in seguito nelle Impostazioni."
+          "body": "Questa è la tua dashboard. Usa il pulsante Personalizza in alto a destra per riorganizzare o nascondere i widget, così i riepiloghi che ti interessano di più restano sempre in cima."
         },
-        "navigation": {
-          "title": "Muoversi nell'app",
-          "body": "Usa la navigazione per passare tra conti, transazioni, budget e report."
+        "tools": {
+          "title": "Il menu Strumenti",
+          "body": "Il menu Strumenti è dove gestisci gli elementi di base delle tue finanze: beneficiari, categorie, valute, tag e altro ancora."
         },
         "accounts": {
-          "title": "Aggiungi un conto",
-          "body": "Inizia aggiungendo i tuoi conti bancari, carte di credito, prestiti o investimenti. Saldi e transazioni si trovano all'interno di ogni conto."
+          "title": "I tuoi conti",
+          "body": "Aggiungi qui i tuoi conti bancari, carte di credito, prestiti e di investimento con Aggiungi conto. Ogni saldo e transazione appartiene a un conto."
+        },
+        "transactions": {
+          "title": "Transazioni",
+          "body": "Questo è il tuo registro delle transazioni: ogni pagamento e versamento dei tuoi conti si trova qui, pronto per essere cercato e filtrato."
         },
         "createTransaction": {
           "title": "Registra una transazione",
-          "body": "Fai clic su Nuova transazione per aggiungere entrate o uscite. Vai pure ad aprire il modulo."
+          "body": "Aggiungi entrate o uscite con Nuova transazione. Vai pure ad aprire il modulo."
+        },
+        "fields": {
+          "title": "Beneficiario, categoria e importo",
+          "body": "Per ogni transazione scegli un beneficiario, assegni una categoria e inserisci l'importo. Le categorie sono ciò che alimenta i tuoi budget e report."
+        },
+        "splits": {
+          "title": "Suddividi transazione",
+          "body": "Un acquisto che copre più categorie? Usa Suddividi transazione per dividere una singola transazione tra più categorie: ad esempio spesa alimentare e casa da un unico negozio."
         },
         "currencyField": {
           "title": "Valute estere",
-          "body": "Imposta qui una valuta diversa per registrare una transazione effettuata all'estero -- Monize la converte automaticamente per te."
+          "body": "Hai acquistato qualcosa all'estero? Imposta qui la valuta e inserisci l'importo addebitato: Monize lo converte automaticamente nella valuta del conto."
         },
         "closeForm": {
           "title": "Chiudi il modulo per continuare",
           "body": "Chiudi il modulo della transazione (Annulla o la X) e il tour proseguirà."
+        },
+        "bills": {
+          "title": "Fatture & Versamenti",
+          "body": "Pianifica fatture e versamenti ricorrenti in modo che i pagamenti futuri siano previsti e nulla ti sfugga."
+        },
+        "investments": {
+          "title": "Investimenti",
+          "body": "Monitora le tue posizioni, i prezzi e i rendimenti nei tuoi conti di investimento."
         },
         "budgets": {
           "title": "Pianifica con i budget",
@@ -80,7 +100,7 @@
         },
         "finish": {
           "title": "Tutto pronto",
-          "body": "Il tour finisce qui. Regola le preferenze nelle Impostazioni e rifai questo tour in qualsiasi momento dalla sezione Tour guidati."
+          "body": "Il tour finisce qui. Puoi rifarlo in qualsiasi momento dalla sezione Tour guidati nelle Impostazioni."
         }
       }
     }

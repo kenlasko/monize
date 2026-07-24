@@ -48,27 +48,47 @@
         },
         "dashboard": {
           "title": "Uw dashboard",
-          "body": "Widgets hier geven in één oogopslag een overzicht van uw saldi, uitgaven en aankomende rekeningen. U kunt ze later herschikken in Instellingen."
+          "body": "Dit is uw dashboard. Gebruik de knop Aanpassen rechtsboven om widgets te herschikken of te verbergen, zodat de overzichten die voor u belangrijk zijn bovenaan staan."
         },
-        "navigation": {
-          "title": "De weg vinden",
-          "body": "Gebruik de navigatie om te schakelen tussen uw rekeningen, transacties, budgetten en rapporten."
+        "tools": {
+          "title": "Het menu Hulpmiddelen",
+          "body": "In het menu Hulpmiddelen beheert u de bouwstenen van uw financiën -- begunstigden, categorieën, valuta, labels en meer."
         },
         "accounts": {
-          "title": "Een rekening toevoegen",
-          "body": "Begin met het toevoegen van uw bank-, creditcard-, lening- of beleggingsrekeningen. Saldi en transacties vindt u bij elke rekening."
+          "title": "Uw rekeningen",
+          "body": "Voeg hier uw bank-, creditcard-, lening- en beleggingsrekeningen toe met Rekening toevoegen. Elk saldo en elke transactie hoort bij een rekening."
+        },
+        "transactions": {
+          "title": "Transacties",
+          "body": "Dit is uw transactieoverzicht -- elke betaling en storting voor uw rekeningen staat hier, klaar om te doorzoeken en te filteren."
         },
         "createTransaction": {
           "title": "Een transactie registreren",
           "body": "Klik op Nieuwe transactie om inkomsten of uitgaven toe te voegen. Open gerust het formulier."
         },
+        "fields": {
+          "title": "Begunstigde, categorie en bedrag",
+          "body": "Voor elke transactie kiest u een begunstigde, wijst u een categorie toe en voert u het bedrag in. Categorieën vormen de basis voor uw budgetten en rapporten."
+        },
+        "splits": {
+          "title": "Een transactie splitsen",
+          "body": "Eén aankoop die meerdere categorieën omvat? Gebruik Splitsen om één transactie over meerdere categorieën te verdelen -- bijvoorbeeld boodschappen en huishoudelijke artikelen van dezelfde winkel."
+        },
         "currencyField": {
           "title": "Vreemde valuta",
-          "body": "Stel hier een andere valuta in om een transactie vast te leggen die u in het buitenland heeft gedaan -- Monize rekent deze automatisch voor u om."
+          "body": "Iets in het buitenland gekocht? Stel hier de valuta in en voer het bedrag in zoals het in rekening is gebracht -- Monize rekent dit automatisch om naar de valuta van de rekening."
         },
         "closeForm": {
           "title": "Sluit het formulier om verder te gaan",
           "body": "Sluit het transactieformulier (Annuleren of de X) en de rondleiding gaat verder."
+        },
+        "bills": {
+          "title": "Facturen & stortingen",
+          "body": "Plan terugkerende facturen en stortingen zodat aankomende betalingen worden voorspeld en niets over het hoofd wordt gezien."
+        },
+        "investments": {
+          "title": "Beleggingen",
+          "body": "Houd uw posities, koersen en rendementen bij op al uw beleggingsrekeningen."
         },
         "budgets": {
           "title": "Plannen met budgetten",
@@ -80,7 +100,7 @@
         },
         "finish": {
           "title": "U bent helemaal klaar",
-          "body": "Dat was de rondleiding. Pas uw voorkeuren hier in Instellingen aan en volg deze rondleiding op elk moment opnieuw via het gedeelte Begeleide rondleidingen."
+          "body": "Dat was de rondleiding. U kunt deze op elk moment opnieuw volgen via het gedeelte Begeleide rondleidingen in Instellingen."
         }
       }
     }

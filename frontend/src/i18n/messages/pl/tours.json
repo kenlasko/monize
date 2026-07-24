@@ -48,27 +48,47 @@
         },
         "dashboard": {
           "title": "Twój pulpit",
-          "body": "Widżety podsumowują tutaj Twoje salda, wydatki i nadchodzące rachunki na pierwszy rzut oka. Możesz je później uporządkować w Ustawieniach."
+          "body": "To jest Twój pulpit. Użyj przycisku Dostosuj w prawym górnym rogu, aby zmienić układ lub ukryć widżety, tak aby najważniejsze dla Ciebie podsumowania znalazły się na samej górze."
         },
-        "navigation": {
-          "title": "Poruszanie się po aplikacji",
-          "body": "Skorzystaj z nawigacji, aby przechodzić między kontami, transakcjami, budżetami i raportami."
+        "tools": {
+          "title": "Menu Narzędzia",
+          "body": "W menu Narzędzia zarządzasz podstawowymi elementami swoich finansów -- odbiorcami, kategoriami, walutami, tagami i innymi."
         },
         "accounts": {
-          "title": "Dodaj konto",
-          "body": "Zacznij od dodania konta bankowego, karty kredytowej, pożyczki lub konta inwestycyjnego. Salda i transakcje znajdują się w ramach każdego konta."
+          "title": "Twoje konta",
+          "body": "Dodaj tutaj swoje konta bankowe, karty kredytowe, pożyczki i konta inwestycyjne za pomocą przycisku Dodaj konto. Każde saldo i każda transakcja należą do jakiegoś konta."
+        },
+        "transactions": {
+          "title": "Transakcje",
+          "body": "To jest Twój rejestr transakcji -- znajdziesz tu każdą płatność i wpłatę na swoich kontach, gotową do wyszukiwania i filtrowania."
         },
         "createTransaction": {
           "title": "Zapisz transakcję",
-          "body": "Kliknij Nowa transakcja, aby dodać przychód lub wydatek. Otwórz teraz formularz."
+          "body": "Dodaj przychód lub wydatek za pomocą przycisku Nowa transakcja. Otwórz teraz formularz."
+        },
+        "fields": {
+          "title": "Odbiorca, kategoria i kwota",
+          "body": "Dla każdej transakcji wybierasz odbiorcę, przypisujesz kategorię i wprowadzasz kwotę. To kategorie napędzają Twoje budżety i raporty."
+        },
+        "splits": {
+          "title": "Podziel transakcję",
+          "body": "Jeden zakup obejmujący kilka kategorii? Użyj opcji Podziel transakcję, aby rozdzielić pojedynczą transakcję na kilka kategorii -- na przykład zakupy spożywcze i artykuły gospodarstwa domowego z jednego sklepu."
         },
         "currencyField": {
           "title": "Waluty obce",
-          "body": "Ustaw tutaj inną walutę, aby zapisać transakcję wykonaną za granicą -- Monize przeliczy ją za Ciebie."
+          "body": "Kupiłeś coś za granicą? Ustaw tutaj walutę i wprowadź kwotę zgodnie z obciążeniem -- Monize przeliczy ją na walutę konta za Ciebie."
         },
         "closeForm": {
           "title": "Zamknij formularz, aby kontynuować",
           "body": "Zamknij formularz transakcji (Anuluj lub X), a przewodnik przejdzie dalej."
+        },
+        "bills": {
+          "title": "Rachunki i wpłaty",
+          "body": "Zaplanuj cykliczne rachunki i wpłaty, aby nadchodzące płatności były prognozowane i nic Ci nie umknęło."
+        },
+        "investments": {
+          "title": "Inwestycje",
+          "body": "Śledź swoje aktywa, ceny i stopy zwrotu na kontach inwestycyjnych."
         },
         "budgets": {
           "title": "Planuj z budżetami",
@@ -80,7 +100,7 @@
         },
         "finish": {
           "title": "Wszystko gotowe",
-          "body": "To już koniec przewodnika. Dostosuj preferencje tutaj, w Ustawieniach, i wróć do tego przewodnika w dowolnym momencie z sekcji Przewodniki po aplikacji."
+          "body": "To już koniec przewodnika. Możesz go powtórzyć w dowolnym momencie w sekcji Przewodniki po aplikacji w Ustawieniach."
         }
       }
     }

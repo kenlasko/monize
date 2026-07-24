@@ -48,30 +48,50 @@
         },
         "dashboard": {
           "title": "Bảng điều khiển của bạn",
-          "body": "Các tiện ích ở đây tóm tắt nhanh số dư, chi tiêu và hóa đơn sắp tới của bạn. Bạn có thể sắp xếp lại chúng sau trong Cài đặt."
+          "body": "Đây là bảng điều khiển của bạn. Dùng nút Tùy chỉnh ở góc trên bên phải để sắp xếp lại hoặc ẩn các tiện ích, giúp những tóm tắt bạn quan tâm nằm ngay ở trên cùng."
         },
-        "navigation": {
-          "title": "Di chuyển trong ứng dụng",
-          "body": "Dùng thanh điều hướng để chuyển đổi giữa tài khoản, giao dịch, ngân sách và báo cáo của bạn."
+        "tools": {
+          "title": "Menu Công cụ",
+          "body": "Menu Công cụ là nơi bạn quản lý các thành phần cơ bản trong tài chính của mình -- người thụ hưởng, danh mục, loại tiền tệ, thẻ và nhiều hơn nữa."
         },
         "accounts": {
-          "title": "Thêm tài khoản",
-          "body": "Bắt đầu bằng cách thêm tài khoản ngân hàng, thẻ tín dụng, khoản vay hoặc đầu tư của bạn. Số dư và giao dịch nằm trong từng tài khoản."
+          "title": "Tài khoản của bạn",
+          "body": "Thêm tài khoản ngân hàng, thẻ tín dụng, khoản vay và đầu tư của bạn tại đây bằng Thêm tài khoản. Mọi số dư và giao dịch đều thuộc về một tài khoản."
+        },
+        "transactions": {
+          "title": "Giao dịch",
+          "body": "Đây là sổ giao dịch của bạn -- mọi khoản thanh toán và tiền gửi cho các tài khoản đều nằm ở đây, sẵn sàng để tìm kiếm và lọc."
         },
         "createTransaction": {
           "title": "Ghi lại một giao dịch",
-          "body": "Nhấp vào Giao tác mới để thêm khoản thu hoặc chi. Hãy mở biểu mẫu để thử."
+          "body": "Thêm khoản thu hoặc chi bằng Giao tác mới. Hãy mở biểu mẫu để thử."
+        },
+        "fields": {
+          "title": "Người thụ hưởng, danh mục và số tiền",
+          "body": "Với mỗi giao dịch, bạn chọn một người thụ hưởng, gán một danh mục và nhập số tiền. Danh mục chính là yếu tố vận hành ngân sách và báo cáo của bạn."
+        },
+        "splits": {
+          "title": "Chia giao tác",
+          "body": "Một lần mua hàng bao gồm nhiều danh mục? Dùng Chia giao tác để chia một giao dịch thành nhiều danh mục -- ví dụ như hàng tạp hóa và đồ gia dụng từ cùng một cửa hàng."
         },
         "currencyField": {
           "title": "Ngoại tệ",
-          "body": "Đặt một loại tiền tệ khác ở đây để ghi lại giao dịch thực hiện ở nước ngoài -- Monize sẽ quy đổi giúp bạn."
+          "body": "Mua hàng ở nước ngoài? Đặt loại tiền tệ tại đây và nhập số tiền theo hóa đơn -- Monize sẽ quy đổi sang loại tiền tệ của tài khoản giúp bạn."
         },
         "closeForm": {
           "title": "Đóng biểu mẫu để tiếp tục",
           "body": "Đóng biểu mẫu giao dịch (Hủy hoặc nút X) và hướng dẫn sẽ tiếp tục."
         },
+        "bills": {
+          "title": "Hóa đơn & Tiền gửi",
+          "body": "Lên lịch hóa đơn và tiền gửi định kỳ để các khoản thanh toán sắp tới được dự báo trước và không bỏ sót điều gì."
+        },
+        "investments": {
+          "title": "Đầu tư",
+          "body": "Theo dõi danh mục đầu tư, giá cả và lợi nhuận trên các tài khoản đầu tư của bạn."
+        },
         "budgets": {
-          "title": "Lên kế hoạch với ngân sách",
+          "title": "Lập kế hoạch với ngân sách",
           "body": "Ngân sách cho phép bạn đặt mục tiêu hàng tháng theo từng danh mục và theo dõi mức độ bám sát mục tiêu đó."
         },
         "reports": {
@@ -80,7 +100,7 @@
         },
         "finish": {
           "title": "Vậy là bạn đã sẵn sàng",
-          "body": "Đó là toàn bộ hướng dẫn. Điều chỉnh tùy chọn của bạn ngay tại Cài đặt, và xem lại hướng dẫn này bất cứ lúc nào từ mục Hướng dẫn sử dụng."
+          "body": "Đó là toàn bộ hướng dẫn. Bạn có thể xem lại bất cứ lúc nào từ mục Hướng dẫn sử dụng trong Cài đặt."
         }
       }
     }

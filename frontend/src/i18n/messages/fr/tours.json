@@ -48,27 +48,47 @@
         },
         "dashboard": {
           "title": "Votre tableau de bord",
-          "body": "Les widgets ici résument en un coup d'œil vos soldes, vos dépenses et vos factures à venir. Vous pourrez les réorganiser plus tard dans les Paramètres."
+          "body": "Voici votre tableau de bord. Utilisez le bouton Personnaliser en haut à droite pour réorganiser ou masquer les widgets, afin que les résumés qui vous intéressent restent bien en haut."
         },
-        "navigation": {
-          "title": "Se déplacer dans l'application",
-          "body": "Utilisez la navigation pour passer d'un écran à l'autre entre vos comptes, transactions, budgets et rapports."
+        "tools": {
+          "title": "Le menu Outils",
+          "body": "Le menu Outils est l'endroit où vous gérez les éléments de base de vos finances -- bénéficiaires, catégories, devises, étiquettes et plus encore."
         },
         "accounts": {
-          "title": "Ajouter un compte",
-          "body": "Commencez par ajouter vos comptes bancaires, cartes de crédit, prêts ou placements. Les soldes et les transactions se trouvent sous chaque compte."
+          "title": "Vos comptes",
+          "body": "Ajoutez ici vos comptes bancaires, cartes de crédit, prêts et comptes de placement avec Ajouter un compte. Chaque solde et chaque transaction appartiennent à un compte."
+        },
+        "transactions": {
+          "title": "Transactions",
+          "body": "Voici votre registre de transactions -- chaque paiement et dépôt de vos comptes s'y trouve, prêt à être recherché et filtré."
         },
         "createTransaction": {
           "title": "Enregistrer une transaction",
-          "body": "Cliquez sur Nouvelle transaction pour ajouter un revenu ou une dépense. Allez-y, ouvrez le formulaire."
+          "body": "Ajoutez un revenu ou une dépense avec Nouvelle transaction. Allez-y, ouvrez le formulaire."
+        },
+        "fields": {
+          "title": "Bénéficiaire, catégorie et montant",
+          "body": "Pour chaque transaction, vous choisissez un bénéficiaire, attribuez une catégorie et saisissez le montant. Ce sont les catégories qui alimentent vos budgets et vos rapports."
+        },
+        "splits": {
+          "title": "Répartir une transaction",
+          "body": "Un achat couvre plusieurs catégories ? Utilisez Répartir la transaction pour diviser une seule transaction entre plusieurs catégories -- l'épicerie et les articles ménagers d'un même magasin, par exemple."
         },
         "currencyField": {
           "title": "Devises étrangères",
-          "body": "Définissez ici une devise différente pour enregistrer une transaction effectuée à l'étranger -- Monize la convertit pour vous."
+          "body": "Avez-vous acheté quelque chose à l'étranger ? Définissez la devise ici et saisissez le montant tel que facturé -- Monize le convertit pour vous dans la devise du compte."
         },
         "closeForm": {
           "title": "Fermez le formulaire pour continuer",
           "body": "Fermez le formulaire de transaction (Annuler ou le X) et la visite se poursuivra."
+        },
+        "bills": {
+          "title": "Factures et dépôts",
+          "body": "Planifiez des factures et des dépôts récurrents afin que les paiements à venir soient prévus et que rien ne vous échappe."
+        },
+        "investments": {
+          "title": "Investissements",
+          "body": "Suivez vos avoirs, leurs cours et leurs rendements dans l'ensemble de vos comptes de placement."
         },
         "budgets": {
           "title": "Planifiez avec les budgets",
@@ -80,7 +100,7 @@
         },
         "finish": {
           "title": "Vous êtes prêt",
-          "body": "Voilà, la visite est terminée. Ajustez vos préférences ici dans les Paramètres, et refaites cette visite à tout moment depuis la section Visites guidées."
+          "body": "Voilà, la visite est terminée. Vous pouvez la refaire à tout moment depuis la section Visites guidées dans les Paramètres."
         }
       }
     }

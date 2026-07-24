@@ -48,27 +48,47 @@
         },
         "dashboard": {
           "title": "Dasbor Anda",
-          "body": "Widget di sini merangkum saldo, pengeluaran, dan tagihan mendatang Anda sekilas. Anda dapat mengaturnya ulang nanti di Pengaturan."
+          "body": "Ini adalah dasbor Anda. Gunakan tombol Sesuaikan di kanan atas untuk mengatur ulang atau menyembunyikan widget agar ringkasan yang penting bagi Anda berada tepat di bagian atas."
         },
-        "navigation": {
-          "title": "Menjelajahi aplikasi",
-          "body": "Gunakan navigasi untuk berpindah antara akun, transaksi, anggaran, dan laporan Anda."
+        "tools": {
+          "title": "Menu Alat",
+          "body": "Menu Alat adalah tempat Anda mengelola elemen dasar keuangan Anda -- penerima pembayaran, kategori, mata uang, tag, dan lainnya."
         },
         "accounts": {
-          "title": "Tambahkan akun",
-          "body": "Mulailah dengan menambahkan akun bank, kartu kredit, pinjaman, atau investasi Anda. Saldo dan transaksi tersimpan di setiap akun."
+          "title": "Akun Anda",
+          "body": "Tambahkan akun bank, kartu kredit, pinjaman, dan investasi Anda di sini dengan Tambah Akun. Setiap saldo dan transaksi terkait dengan sebuah akun."
+        },
+        "transactions": {
+          "title": "Transaksi",
+          "body": "Ini adalah daftar transaksi Anda -- setiap pembayaran dan setoran untuk akun Anda tercatat di sini, siap untuk dicari dan disaring."
         },
         "createTransaction": {
           "title": "Catat transaksi",
-          "body": "Klik Transaksi Baru untuk menambahkan pemasukan atau pengeluaran. Silakan buka formulirnya."
+          "body": "Tambahkan pemasukan atau pengeluaran dengan Transaksi Baru. Silakan buka formulirnya."
+        },
+        "fields": {
+          "title": "Penerima pembayaran, kategori, dan jumlah",
+          "body": "Untuk setiap transaksi, Anda memilih penerima pembayaran, menetapkan kategori, dan memasukkan jumlahnya. Kategori inilah yang menjadi dasar anggaran dan laporan Anda."
+        },
+        "splits": {
+          "title": "Bagi transaksi",
+          "body": "Satu pembelian mencakup beberapa kategori? Gunakan Transaksi Terbagi untuk membagi satu transaksi ke beberapa kategori -- misalnya belanja bahan makanan dan keperluan rumah tangga dari satu toko."
         },
         "currencyField": {
           "title": "Mata uang asing",
-          "body": "Atur mata uang berbeda di sini untuk mencatat transaksi yang dilakukan di luar negeri -- Monize akan mengonversinya untuk Anda."
+          "body": "Membeli sesuatu di luar negeri? Atur mata uangnya di sini dan masukkan jumlah sesuai yang dibebankan -- Monize akan mengonversinya ke mata uang akun untuk Anda."
         },
         "closeForm": {
           "title": "Tutup formulir untuk melanjutkan",
           "body": "Tutup formulir transaksi (Batal atau tombol X) dan tur akan berlanjut."
+        },
+        "bills": {
+          "title": "Tagihan & Setoran",
+          "body": "Jadwalkan tagihan dan setoran berulang agar pembayaran mendatang dapat diperkirakan dan tidak ada yang terlewat."
+        },
+        "investments": {
+          "title": "Investasi",
+          "body": "Pantau kepemilikan, harga, dan imbal hasil di seluruh akun investasi Anda."
         },
         "budgets": {
           "title": "Rencanakan dengan anggaran",
@@ -80,7 +100,7 @@
         },
         "finish": {
           "title": "Semua sudah siap",
-          "body": "Itulah turnya. Sesuaikan preferensi di sini di Pengaturan, dan ulangi tur ini kapan saja dari bagian Tur berpandu."
+          "body": "Itulah turnya. Anda dapat mengulanginya kapan saja dari bagian Tur berpandu di Pengaturan."
         }
       }
     }

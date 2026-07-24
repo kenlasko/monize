@@ -48,27 +48,47 @@
         },
         "dashboard": {
           "title": "Ihr Dashboard",
-          "body": "Die Widgets hier fassen Ihre Salden, Ausgaben und anstehenden Rechnungen auf einen Blick zusammen. Sie können sie später in den Einstellungen neu anordnen."
+          "body": "Das ist Ihr Dashboard. Nutzen Sie die Schaltfläche Anpassen oben rechts, um Widgets neu anzuordnen oder auszublenden, damit die für Sie wichtigen Übersichten ganz oben stehen."
         },
-        "navigation": {
-          "title": "Sich zurechtfinden",
-          "body": "Nutzen Sie die Navigation, um zwischen Ihren Konten, Buchungen, Budgets und Berichten zu wechseln."
+        "tools": {
+          "title": "Das Menü Tools",
+          "body": "Im Menü Tools verwalten Sie die Bausteine Ihrer Finanzen -- Zahlungsempfänger, Kategorien, Währungen, Tags und mehr."
         },
         "accounts": {
-          "title": "Ein Konto hinzufügen",
-          "body": "Fügen Sie zunächst Ihre Bank-, Kreditkarten-, Kredit- oder Anlagekonten hinzu. Salden und Buchungen finden Sie jeweils unter dem entsprechenden Konto."
+          "title": "Ihre Konten",
+          "body": "Fügen Sie hier über Konto hinzufügen Ihre Bank-, Kreditkarten-, Kredit- und Anlagekonten hinzu. Jeder Saldo und jede Buchung gehört zu einem Konto."
+        },
+        "transactions": {
+          "title": "Buchungen",
+          "body": "Das ist Ihr Buchungsregister -- jede Zahlung und Einzahlung Ihrer Konten befindet sich hier und kann durchsucht und gefiltert werden."
         },
         "createTransaction": {
           "title": "Eine Buchung erfassen",
-          "body": "Klicken Sie auf Neue Buchung, um Einnahmen oder Ausgaben hinzuzufügen. Öffnen Sie ruhig das Formular."
+          "body": "Fügen Sie Einnahmen oder Ausgaben über Neue Buchung hinzu. Öffnen Sie ruhig das Formular."
+        },
+        "fields": {
+          "title": "Zahlungsempfänger, Kategorie und Betrag",
+          "body": "Bei jeder Buchung wählen Sie einen Zahlungsempfänger, weisen eine Kategorie zu und geben den Betrag ein. Kategorien sind die Grundlage für Ihre Budgets und Berichte."
+        },
+        "splits": {
+          "title": "Eine Buchung aufteilen",
+          "body": "Ein Einkauf, der mehrere Kategorien betrifft? Nutzen Sie Buchung aufteilen, um eine einzelne Buchung auf mehrere Kategorien aufzuteilen -- zum Beispiel Lebensmittel und Haushaltswaren aus einem Einkauf."
         },
         "currencyField": {
           "title": "Fremdwährungen",
-          "body": "Legen Sie hier eine andere Währung fest, um eine im Ausland getätigte Buchung zu erfassen -- Monize rechnet sie für Sie um."
+          "body": "Etwas im Ausland gekauft? Legen Sie hier die Währung fest und geben Sie den belasteten Betrag ein -- Monize rechnet ihn für Sie in die Kontowährung um."
         },
         "closeForm": {
           "title": "Schließen Sie das Formular, um fortzufahren",
           "body": "Schließen Sie das Buchungsformular (Abbrechen oder das X), und die Tour geht weiter."
+        },
+        "bills": {
+          "title": "Rechnungen & Einzahlungen",
+          "body": "Planen Sie wiederkehrende Rechnungen und Einzahlungen, damit anstehende Zahlungen vorhergesagt werden und nichts übersehen wird."
+        },
+        "investments": {
+          "title": "Investitionen",
+          "body": "Behalten Sie Bestände, Kurse und Renditen Ihrer Anlagekonten im Blick."
         },
         "budgets": {
           "title": "Mit Budgets planen",
@@ -80,7 +100,7 @@
         },
         "finish": {
           "title": "Sie sind startklar",
-          "body": "Das war die Tour. Passen Sie Ihre Einstellungen hier an und starten Sie diese Tour jederzeit erneut über den Bereich Geführte Touren."
+          "body": "Das war die Tour. Sie können sie jederzeit über den Bereich Geführte Touren in den Einstellungen erneut starten."
         }
       }
     }
