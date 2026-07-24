@@ -31,6 +31,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { usePriceRefresh } from '@/hooks/usePriceRefresh';
 import { createLogger } from '@/lib/logger';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
+import { DemoBanner } from '@/components/dashboard/DemoBanner';
 
 const logger = createLogger('Dashboard');
 
@@ -220,6 +221,7 @@ function DashboardContent() {
     <PageLayout>
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <div className="sm:px-0">
+          <DemoBanner />
           {/* Welcome section */}
           <PageHeader
             title={user?.firstName ? t('page.welcomeWithName', { name: user.firstName }) : `${t('page.welcomePrefix')}!`}
