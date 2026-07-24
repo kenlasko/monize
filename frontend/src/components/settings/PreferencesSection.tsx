@@ -20,6 +20,7 @@ import { LanguageSelector } from '@/components/settings/LanguageSelector';
 import { ThemeSelector } from '@/components/settings/ThemeSelector';
 import { ColorThemeSelector } from '@/components/settings/ColorThemeSelector';
 import { ColorTheme } from '@/lib/color-themes';
+import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 
 const NUMBER_FORMAT_OPTIONS = [
   { value: 'browser', labelKey: 'numberFormatOptions.browser' },
@@ -317,7 +318,10 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
           </p>
         </div>
 
-        <div className="flex items-center">
+        <div
+          {...tourAnchor(TOUR_ANCHORS.settingsWhatsNewToggle)}
+          className="flex items-center"
+        >
           <label
             htmlFor="showWhatsNew"
             className="flex items-center gap-2 cursor-pointer"

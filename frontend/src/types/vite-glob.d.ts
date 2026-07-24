@@ -11,4 +11,9 @@ interface ImportMeta {
     pattern: string | string[],
     options: { eager: true },
   ): Record<string, T>;
+  // Raw-string variant used by the tour anchor-uniqueness test to scan source.
+  glob(
+    pattern: string | string[],
+    options: { query: '?raw'; eager: true; import: 'default' },
+  ): Record<string, string>;
 }

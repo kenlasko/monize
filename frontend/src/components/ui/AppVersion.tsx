@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useWhatsNewStore } from '@/store/whatsNewStore';
+import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 
 interface AppVersionProps {
   /** Classes for the wrapping paragraph (margins, text size/colour). */
@@ -25,6 +26,7 @@ export function AppVersion({ className }: AppVersionProps) {
     <p className={className}>
       <button
         type="button"
+        {...tourAnchor(TOUR_ANCHORS.settingsAppVersion)}
         onClick={open}
         title={t('appVersion.releaseNotes', { version })}
         className="hover:text-gray-600 dark:hover:text-gray-300 hover:underline focus:outline-none focus:underline"

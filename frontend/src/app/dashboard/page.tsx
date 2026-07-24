@@ -30,6 +30,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { usePriceRefresh } from '@/hooks/usePriceRefresh';
 import { createLogger } from '@/lib/logger';
+import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 
 const logger = createLogger('Dashboard');
 
@@ -245,7 +246,10 @@ function DashboardContent() {
           {!isDelegateView && <GettingStarted />}
 
           {/* Widget grid: consecutive visible widgets pair up into rows */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div
+            {...tourAnchor(TOUR_ANCHORS.dashboardWidgets)}
+            className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+          >
             {visibleWidgets
               .filter((w) => !w.shouldRender || w.shouldRender(widgetContext))
               .map((w) => (
