@@ -43,6 +43,7 @@ export function buildDefaultPreferences(
   preferences.gettingStartedDismissed = false;
   preferences.favouriteReportIds = [];
   preferences.showWhatsNew = true;
+  preferences.tourProgress = {};
   preferences.lastSeenVersion = backendPkg.version;
   preferences.language = language;
   return preferences;
