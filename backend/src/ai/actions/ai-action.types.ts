@@ -188,7 +188,7 @@ export interface CreateSecurityDescriptor extends BaseDescriptor {
   currencyCode: string;
   isFavourite: boolean;
   /** Per-security quote-source override carried from the lookup; null = user default. */
-  quoteProvider: "yahoo" | "msn" | null;
+  quoteProvider: "yahoo" | "msn" | "mfapi" | null;
   msnInstrumentId: string | null;
 }
 
@@ -472,7 +472,7 @@ export interface BatchCreateSecurityRow {
   exchange: string | null;
   currencyCode: string;
   isFavourite: boolean;
-  quoteProvider: "yahoo" | "msn" | null;
+  quoteProvider: "yahoo" | "msn" | "mfapi" | null;
   msnInstrumentId: string | null;
 }
 

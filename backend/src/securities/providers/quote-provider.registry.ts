@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { MsnFinanceService } from "../msn-finance.service";
 import { YahooFinanceService } from "../yahoo-finance.service";
+import { MfApiService } from "../mfapi.service";
 import { Security } from "../entities/security.entity";
 import { QuoteProvider, QuoteProviderName } from "./quote-provider.interface";
 
@@ -11,14 +12,17 @@ export class QuoteProviderRegistry {
   constructor(
     private readonly yahoo: YahooFinanceService,
     private readonly msn: MsnFinanceService,
+    private readonly mfapi: MfApiService,
   ) {}
 
   getByName(name: QuoteProviderName): QuoteProvider {
-    return name === "msn" ? this.msn : this.yahoo;
+    if (name === "msn") return this.msn;
+    if (name === "mfapi") return this.mfapi;
+    return this.yahoo;
   }
 
   listAll(): QuoteProvider[] {
-    return [this.yahoo, this.msn];
+    return [this.yahoo, this.msn, this.mfapi];
   }
 
   /**

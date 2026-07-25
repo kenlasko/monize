@@ -659,7 +659,7 @@ export class SecurityPriceService {
     userId: string,
     query: string,
     preferredExchanges?: string[],
-    provider?: "yahoo" | "msn" | "auto",
+    provider?: "yahoo" | "msn" | "mfapi" | "auto",
   ): Promise<SecurityLookupResult | null> {
     const all = await this.lookupSecurityCandidates(
       userId,
@@ -678,7 +678,7 @@ export class SecurityPriceService {
     userId: string,
     query: string,
     preferredExchanges?: string[],
-    provider?: "yahoo" | "msn" | "auto",
+    provider?: "yahoo" | "msn" | "mfapi" | "auto",
   ): Promise<SecurityLookupResult[]> {
     const contexts = await this.loadUserContexts([userId]);
     const ctx = contexts.get(userId) || {
@@ -707,7 +707,7 @@ export class SecurityPriceService {
       }
     };
 
-    if (provider === "yahoo" || provider === "msn") {
+    if (provider === "yahoo" || provider === "msn" || provider === "mfapi") {
       return fetchFromProvider(this.providers.getByName(provider));
     }
 

@@ -119,11 +119,11 @@ export class CreateSecurityDto {
     description:
       "Per-security provider override; omit or null to use the user default",
     required: false,
-    enum: ["yahoo", "msn"],
+    enum: ["yahoo", "msn", "mfapi"],
   })
   @IsOptional()
-  @IsIn(["yahoo", "msn"])
-  quoteProvider?: "yahoo" | "msn";
+  @IsIn(["yahoo", "msn", "mfapi"])
+  quoteProvider?: "yahoo" | "msn" | "mfapi";
 
   @ApiProperty({
     example: "a1u3p2",

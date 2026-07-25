@@ -127,7 +127,7 @@ export class Security {
     nullable: true,
     name: "quote_provider",
   })
-  quoteProvider: "yahoo" | "msn" | null;
+  quoteProvider: "yahoo" | "msn" | "mfapi" | null;
 
   @ApiProperty({
     example: "a1u3p2",

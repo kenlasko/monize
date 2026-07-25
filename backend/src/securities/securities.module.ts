@@ -14,6 +14,8 @@ import { SecurityToolPrepService } from "./security-tool-prep.service";
 import { SecurityPriceService } from "./security-price.service";
 import { YahooFinanceService } from "./yahoo-finance.service";
 import { MsnFinanceService } from "./msn-finance.service";
+import { MfApiService } from "./mfapi.service";
+import { InvestmentAnalyticsService } from "./investment-analytics.service";
 import { QuoteProviderRegistry } from "./providers/quote-provider.registry";
 import { HoldingsService } from "./holdings.service";
 import { InvestmentTransactionsService } from "./investment-transactions.service";
@@ -57,6 +59,8 @@ import { DelegationModule } from "../delegation/delegation.module";
     SecurityPriceService,
     YahooFinanceService,
     MsnFinanceService,
+    MfApiService,
+    InvestmentAnalyticsService,
     QuoteProviderRegistry,
     HoldingsService,
     InvestmentTransactionsService,
@@ -76,6 +80,8 @@ import { DelegationModule } from "../delegation/delegation.module";
     SecurityPriceService,
     YahooFinanceService,
     MsnFinanceService,
+    MfApiService,
+    InvestmentAnalyticsService,
     QuoteProviderRegistry,
     HoldingsService,
     InvestmentTransactionsService,

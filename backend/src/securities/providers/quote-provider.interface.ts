@@ -1,4 +1,4 @@
-export type QuoteProviderName = "yahoo" | "msn";
+export type QuoteProviderName = "yahoo" | "msn" | "mfapi";
 
 export interface QuoteResult {
   symbol: string;
