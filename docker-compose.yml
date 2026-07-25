@@ -1,0 +1,109 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: monize-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-monize}
+      POSTGRES_USER: ${POSTGRES_USER:-monize_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-monize_password}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - monize-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-monize_user} -d ${POSTGRES_DB:-monize}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API (NestJS)
+  backend:
+    image: ghcr.io/kenlasko/monize-backend:latest
+    container_name: monize-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: ${BACKEND_PORT:-3000}
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: ${POSTGRES_DB:-monize}
+      DATABASE_USER: ${POSTGRES_USER:-monize_user}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-monize_password}
+      RLS_MODE: ${RLS_MODE:-off}
+      DATABASE_APP_USER: ${DATABASE_APP_USER:-monize_app}
+      DATABASE_APP_PASSWORD: ${DATABASE_APP_PASSWORD:-}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-15m}
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:3001}
+      CORS_ORIGIN: ${CORS_ORIGIN:-${PUBLIC_APP_URL:-http://localhost:3001}}
+      MSN_API_KEY: ${MSN_API_KEY}
+      LOCAL_AUTH_ENABLED: ${LOCAL_AUTH_ENABLED:-true}
+      REGISTRATION_ENABLED: ${REGISTRATION_ENABLED:-true}
+      FORCE_2FA: ${FORCE_2FA:-false}
+      REMEMBER_ME_DAYS: ${REMEMBER_ME_DAYS:-30}
+      DEMO_MODE: ${DEMO_MODE:-false}
+      OIDC_ISSUER_URL: ${OIDC_ISSUER_URL:-}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+      OIDC_CALLBACK_URL: ${OIDC_CALLBACK_URL:-}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      EMAIL_FROM: ${EMAIL_FROM}
+      AI_ENCRYPTION_KEY: ${AI_ENCRYPTION_KEY}
+      AI_DEFAULT_PROVIDER: ${AI_DEFAULT_PROVIDER}
+      AI_DEFAULT_MODEL: ${AI_DEFAULT_MODEL}
+      AI_DEFAULT_API_KEY: ${AI_DEFAULT_API_KEY}
+      AI_DEFAULT_BASE_URL: ${AI_DEFAULT_BASE_URL}
+      DISABLE_HTTPS_HEADERS: ${DISABLE_HTTPS_HEADERS:-true}
+    volumes:
+      - monize_backups:/backups
+    networks:
+      - monize-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:' + (process.env.PORT || 3000) + '/api/v1/health/live').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend (Next.js)
+  frontend:
+    image: ghcr.io/kenlasko/monize-frontend:latest
+    container_name: monize-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: ${FRONTEND_PORT:-3001}
+      INTERNAL_API_URL: http://backend:3000
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:3001}
+      DISABLE_HTTPS_HEADERS: ${DISABLE_HTTPS_HEADERS:-true}
+    ports:
+      - "${FRONTEND_PORT:-3001}:${FRONTEND_PORT:-3001}"
+    networks:
+      - monize-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:' + (process.env.PORT || 3001) + '/api/v1/health/live').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  monize-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  monize_backups:
+    driver: local
