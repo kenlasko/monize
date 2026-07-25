@@ -235,11 +235,11 @@ export class UpdatePreferencesDto {
     description:
       "Default provider for stock quotes. Per-security overrides fall back to this value.",
     example: "yahoo",
-    enum: ["yahoo", "msn"],
+    enum: ["yahoo", "msn", "mfapi"],
   })
   @IsOptional()
-  @IsIn(["yahoo", "msn"])
-  defaultQuoteProvider?: "yahoo" | "msn";
+  @IsIn(["yahoo", "msn", "mfapi"])
+  defaultQuoteProvider?: "yahoo" | "msn" | "mfapi";
 
   @ApiPropertyOptional({
     description:

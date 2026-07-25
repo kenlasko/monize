@@ -609,9 +609,9 @@ CREATE INDEX idx_investment_transactions_linked ON investment_transactions(linke
 -- User Preferences
 CREATE TABLE user_preferences (
     user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-    default_currency VARCHAR(3) REFERENCES currencies(code),
+    default_currency VARCHAR(3) DEFAULT 'INR' REFERENCES currencies(code),
     date_format VARCHAR(20) DEFAULT 'YYYY-MM-DD',
-    number_format VARCHAR(20) DEFAULT 'en-US',
+    number_format VARCHAR(20) DEFAULT 'en-IN',
     theme VARCHAR(20) DEFAULT 'light',
     color_theme VARCHAR(20) NOT NULL DEFAULT 'default',
     timezone VARCHAR(50) DEFAULT 'browser',
@@ -640,7 +640,7 @@ CREATE TABLE user_preferences (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT user_preferences_default_quote_provider_check
-      CHECK (default_quote_provider IN ('yahoo','msn')),
+      CHECK (default_quote_provider IN ('yahoo','msn','mfapi')),
     CONSTRAINT user_preferences_recent_transactions_limit_check
       CHECK (recent_transactions_limit BETWEEN 1 AND 20)
 );
