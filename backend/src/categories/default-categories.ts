@@ -5,8 +5,12 @@ export interface DefaultCategoryDefinition {
 
 export const DEFAULT_INCOME_CATEGORIES: DefaultCategoryDefinition[] = [
   {
+    name: "Salary",
+    subcategories: ["Base Pay", "Bonus", "Allowances", "Reimbursements"],
+  },
+  {
     name: "Investment Income",
-    subcategories: ["Capital Gains", "Interest", "RESP Grant"],
+    subcategories: ["Capital Gains", "Dividends", "Interest", "RESP Grant"],
   },
   {
     name: "Other Income",
@@ -27,7 +31,7 @@ export const DEFAULT_INCOME_CATEGORIES: DefaultCategoryDefinition[] = [
   },
   {
     name: "Retirement Income",
-    subcategories: ["CPP/QPP Benefits"],
+    subcategories: ["CPP/QPP Benefits", "Pension", "EPF / NPS Withdrawal"],
   },
   {
     name: "Wages & Salary",
@@ -44,6 +48,46 @@ export const DEFAULT_INCOME_CATEGORIES: DefaultCategoryDefinition[] = [
 ];
 
 export const DEFAULT_EXPENSE_CATEGORIES: DefaultCategoryDefinition[] = [
+  {
+    name: "SIP & Mutual Funds",
+    subcategories: ["Equity SIP", "ELSS Tax Saver", "Debt Fund", "Index Fund", "Lumpsum Investment"],
+  },
+  {
+    name: "Stocks & Equities",
+    subcategories: ["NSE Equity", "BSE Equity", "US Equities", "IPO Allotment"],
+  },
+  {
+    name: "Gold & Fixed Deposits",
+    subcategories: ["Sovereign Gold Bond (SGB)", "Bank FD", "PPF / EPF", "Digital Gold"],
+  },
+  {
+    name: "Rent",
+    subcategories: ["House Rent", "Society Maintenance", "Security Deposit"],
+  },
+  {
+    name: "Groceries",
+    subcategories: ["Supermarket & DMart", "Blinkit / Zepto / InstaMart", "BigBasket", "Vegetables & Milk"],
+  },
+  {
+    name: "Utilities",
+    subcategories: ["Electricity Bill", "Water Bill", "Broadband Internet", "Mobile Recharge", "LPG Cylinder"],
+  },
+  {
+    name: "Dining Out",
+    subcategories: ["Swiggy & Zomato", "Restaurants & Dining", "Cafes & Coffee", "Office Canteen"],
+  },
+  {
+    name: "Fuel & Transit",
+    subcategories: ["Petrol & Diesel", "Cab (Uber / Ola)", "Metro & Train", "Toll & Fastag"],
+  },
+  {
+    name: "Medical & Health",
+    subcategories: ["Medicines & Pharmacy", "Doctor & Hospital", "Health Insurance Premium", "Lab Tests"],
+  },
+  {
+    name: "Credit Card Payment",
+    subcategories: ["Statement Settlement", "EMI Payment", "Annual Fee"],
+  },
   {
     name: "Automobile",
     subcategories: [
