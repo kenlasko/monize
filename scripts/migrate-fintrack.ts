@@ -2,7 +2,11 @@
  * Migration Script: Imports FinTrack data (PostgreSQL or JSON export) into Monize.
  *
  * Usage:
- *   npx ts-node scripts/migrate-fintrack.ts [connectionStringOrJsonFile]
+ *   npx ts-node scripts/migrate-fintrack.ts [connectionStringOrJsonFile] [userEmail]
+ *   MONIZE_USER_EMAIL=<email> npx ts-node scripts/migrate-fintrack.ts
+ *
+ * userEmail (or MONIZE_USER_EMAIL) is required whenever the target DB has more
+ * than one user -- otherwise the script refuses to guess which account to import into.
  */
 
 import { Client } from 'pg';
@@ -12,6 +16,7 @@ import * as path from 'path';
 async function runMigration() {
   const targetDbUrl = process.env.DATABASE_URL || 'postgres://monize_user:monize_password@localhost:5432/monize';
   const sourceDbUrl = process.argv[2] || 'postgres://fintrack:fintrack@localhost:5433/fintrack';
+  const targetUserEmail = process.env.MONIZE_USER_EMAIL || process.argv[3];
 
   console.log(`Connecting to Monize target DB: ${targetDbUrl}`);
   const targetClient = new Client({ connectionString: targetDbUrl });
@@ -43,52 +48,97 @@ async function runMigration() {
     }
   }
 
-  // 1. Get default Monize user
-  const userRes = await targetClient.query('SELECT id FROM users LIMIT 1');
+  // 1. Get target Monize user (explicit email required whenever the DB has more than one user)
+  const userRes = targetUserEmail
+    ? await targetClient.query('SELECT id FROM users WHERE email = $1', [targetUserEmail])
+    : await targetClient.query('SELECT id FROM users');
   if (userRes.rows.length === 0) {
-    console.error('No users found in Monize target DB. Please register a user first.');
+    console.error(
+      targetUserEmail
+        ? `No user found with email ${targetUserEmail}. Please register the user first.`
+        : 'No users found in Monize target DB. Please register a user first.'
+    );
+    await targetClient.end();
+    return;
+  }
+  if (!targetUserEmail && userRes.rows.length > 1) {
+    console.error(
+      'Multiple users found in Monize target DB. Pass MONIZE_USER_EMAIL=<email> (or a third CLI arg) to select one.'
+    );
     await targetClient.end();
     return;
   }
   const userId = userRes.rows[0].id;
   console.log(`Migrating data for user ID: ${userId}`);
 
-  // 2. Import Categories
+  // 2. Import Categories (explicit existence check -- parent_id is NULL for every
+  // imported category, and Postgres UNIQUE treats NULL as distinct, so ON CONFLICT
+  // would never dedupe re-runs even with the correct 3-column target)
   const categoryMap = new Map<string, string>();
   for (const cat of fintrackData.categories) {
     const isIncome = cat.name === 'Salary';
-    const res = await targetClient.query(
-      `INSERT INTO categories (name, user_id, is_income, icon, color)
-       VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (name, user_id) DO UPDATE SET is_income = EXCLUDED.is_income
-       RETURNING id`,
-      [cat.name, userId, isIncome, isIncome ? '💰' : '💳', isIncome ? '#2ECC71' : '#3498DB']
+    const existing = await targetClient.query(
+      'SELECT id FROM categories WHERE user_id = $1 AND name = $2 AND parent_id IS NULL',
+      [userId, cat.name]
     );
-    categoryMap.set(cat.name, res.rows[0].id);
+
+    let categoryId: string;
+    if (existing.rows.length > 0) {
+      categoryId = existing.rows[0].id;
+      await targetClient.query('UPDATE categories SET is_income = $1 WHERE id = $2', [isIncome, categoryId]);
+    } else {
+      const res = await targetClient.query(
+        `INSERT INTO categories (name, user_id, is_income, icon, color)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id`,
+        [cat.name, userId, isIncome, isIncome ? '💰' : '💳', isIncome ? '#2ECC71' : '#3498DB']
+      );
+      categoryId = res.rows[0].id;
+    }
+    categoryMap.set(cat.name, categoryId);
   }
   console.log(`Migrated ${categoryMap.size} categories.`);
 
-  // 3. Import Accounts
+  // 3. Import Accounts (explicit existence check -- accounts has no unique
+  // constraint on (name, user_id), so ON CONFLICT DO NOTHING never fires and
+  // re-running the script would duplicate every account)
   const accountMap = new Map<string, string>();
   for (const acc of fintrackData.accounts) {
     const accType = acc.type === 'credit' ? 'CREDIT_CARD' : 'SAVINGS';
-    const res = await targetClient.query(
-      `INSERT INTO accounts (name, user_id, type, currency, current_balance, is_active)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       ON CONFLICT DO NOTHING
-       RETURNING id`,
-      [acc.name, userId, accType, 'INR', acc.balance || 0, true]
+    const finalBalanceCents = Math.round(Number(acc.balance || 0) * 10000);
+    // Only attribute a transaction to this account when both sides carry an explicit
+    // accountId -- fallback demo data has neither, so it contributes 0 here and is
+    // assigned to the first account by the step-4 fallback below.
+    const accountTxns = fintrackData.transactions.filter(
+      (tx: any) => tx.accountId !== undefined && acc.id !== undefined && tx.accountId === acc.id
+    );
+    const txnTotalCents = accountTxns.reduce(
+      (sum: number, tx: any) => sum + Math.round(Number(tx.amount || 0) * 10000),
+      0
+    );
+    // opening_balance is derived so that opening_balance + SUM(imported transactions)
+    // reproduces fintrack's final balance -- accounts.service/net-worth.service compute
+    // balance dynamically from opening_balance + transactions, not from current_balance.
+    const openingBalance = (finalBalanceCents - txnTotalCents) / 10000;
+
+    const existing = await targetClient.query(
+      'SELECT id FROM accounts WHERE name = $1 AND user_id = $2',
+      [acc.name, userId]
     );
 
-    if (res.rows.length > 0) {
-      accountMap.set(acc.id || acc.name, res.rows[0].id);
+    let accountId: string;
+    if (existing.rows.length > 0) {
+      accountId = existing.rows[0].id;
     } else {
-      const existing = await targetClient.query(
-        'SELECT id FROM accounts WHERE name = $1 AND user_id = $2',
-        [acc.name, userId]
+      const res = await targetClient.query(
+        `INSERT INTO accounts (name, user_id, type, currency, opening_balance, current_balance, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING id`,
+        [acc.name, userId, accType, 'INR', openingBalance, acc.balance || 0, true]
       );
-      accountMap.set(acc.id || acc.name, existing.rows[0].id);
+      accountId = res.rows[0].id;
     }
+    accountMap.set(acc.id || acc.name, accountId);
   }
   console.log(`Migrated ${accountMap.size} accounts.`);
 
