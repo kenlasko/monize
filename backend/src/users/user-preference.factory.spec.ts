@@ -16,14 +16,14 @@ describe("buildDefaultPreferences", () => {
   it("uses browser/system sentinels for locale-dependent display settings", () => {
     const prefs = buildDefaultPreferences("user-1", "en");
     expect(prefs.dateFormat).toBe("browser");
-    expect(prefs.numberFormat).toBe("browser");
+    expect(prefs.numberFormat).toBe("en-IN");
     expect(prefs.timezone).toBe("browser");
     expect(prefs.theme).toBe("system");
   });
 
   it("applies the standard non-locale defaults", () => {
     const prefs = buildDefaultPreferences("user-1");
-    expect(prefs.defaultCurrency).toBe("USD");
+    expect(prefs.defaultCurrency).toBe("INR");
     expect(prefs.notificationEmail).toBe(true);
     expect(prefs.notificationBrowser).toBe(true);
     expect(prefs.twoFactorEnabled).toBe(false);

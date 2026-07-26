@@ -55,9 +55,9 @@ describe("UsersService", () => {
 
   const mockPreferences = {
     userId: "user-1",
-    defaultCurrency: "USD",
+    defaultCurrency: "INR",
     dateFormat: "browser",
-    numberFormat: "browser",
+    numberFormat: "en-IN",
     theme: "system",
     timezone: "browser",
     notificationEmail: true,
@@ -374,7 +374,7 @@ describe("UsersService", () => {
 
       expect(preferencesRepository.save).toHaveBeenCalled();
       expect(result.userId).toBe("user-1");
-      expect(result.defaultCurrency).toBe("USD");
+      expect(result.defaultCurrency).toBe("INR");
       expect(result.dateFormat).toBe("browser");
       expect(result.theme).toBe("system");
       expect(result.favouriteReportIds).toEqual([]);
@@ -389,7 +389,7 @@ describe("UsersService", () => {
 
       const savedData = preferencesRepository.save.mock.calls[0][0];
       expect(savedData.theme).toBe("dark");
-      expect(savedData.defaultCurrency).toBe("USD"); // unchanged
+      expect(savedData.defaultCurrency).toBe("INR"); // unchanged
     });
 
     it("creates defaults first if preferences do not exist", async () => {
@@ -409,13 +409,15 @@ describe("UsersService", () => {
 
       await service.updatePreferences("user-1", { defaultCurrency: "EUR" });
 
-      expect(currenciesService.ensureSystemCurrency).toHaveBeenCalledWith("EUR");
+      expect(currenciesService.ensureSystemCurrency).toHaveBeenCalledWith(
+        "EUR",
+      );
     });
 
     it("does not ensure a currency when the default is unchanged", async () => {
       preferencesRepository.findOne.mockResolvedValue({ ...mockPreferences });
 
-      await service.updatePreferences("user-1", { defaultCurrency: "USD" });
+      await service.updatePreferences("user-1", { defaultCurrency: "INR" });
 
       expect(currenciesService.ensureSystemCurrency).not.toHaveBeenCalled();
     });
