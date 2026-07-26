@@ -56,7 +56,7 @@ function getNumberFormat(
 export function useNumberFormat() {
   // Subscribe directly to numberFormat and defaultCurrency to ensure reactivity when they change
   const numberFormat = usePreferencesStore((state) => state.preferences?.numberFormat) || 'browser';
-  const defaultCurrency = usePreferencesStore((state) => state.preferences?.defaultCurrency) || 'CAD';
+  const defaultCurrency = usePreferencesStore((state) => state.preferences?.defaultCurrency) || 'INR';
   const language = usePreferencesStore((state) => state.preferences?.language);
 
   const formatCurrency = useCallback(

@@ -1,9 +1,9 @@
 export const demoPreferences = {
-  defaultCurrency: "CAD",
+  defaultCurrency: "INR",
   dateFormat: "YYYY-MM-DD",
-  numberFormat: "en-CA",
+  numberFormat: "en-IN",
   theme: "system",
-  timezone: "America/Toronto",
+  timezone: "Asia/Kolkata",
   notificationEmail: false,
   notificationBrowser: false,
   twoFactorEnabled: false,
