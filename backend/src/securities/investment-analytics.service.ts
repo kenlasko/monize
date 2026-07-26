@@ -12,7 +12,11 @@ export class InvestmentAnalyticsService {
   /**
    * Calculate CAGR (Compound Annual Growth Rate) in percentage.
    */
-  calculateCagr(initialValue: number, finalValue: number, years: number): number {
+  calculateCagr(
+    initialValue: number,
+    finalValue: number,
+    years: number,
+  ): number {
     if (initialValue <= 0 || finalValue <= 0 || years <= 0) return 0;
     const cagr = (Math.pow(finalValue / initialValue, 1 / years) - 1) * 100;
     return Math.round(cagr * 100) / 100;
@@ -25,20 +29,26 @@ export class InvestmentAnalyticsService {
     if (!cashFlows || cashFlows.length < 2) return 0;
 
     // Ensure cash flows are sorted by date
-    const sorted = [...cashFlows].sort((a, b) => a.date.getTime() - b.date.getTime());
+    const sorted = [...cashFlows].sort(
+      (a, b) => a.date.getTime() - b.date.getTime(),
+    );
     const startDate = sorted[0].date;
 
     const xirrFunc = (rate: number): number => {
       return sorted.reduce((sum, cf) => {
-        const days = (cf.date.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+        const days =
+          (cf.date.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
         return sum + cf.amount / Math.pow(1 + rate, days / 365);
       }, 0);
     };
 
     const xirrDeriv = (rate: number): number => {
       return sorted.reduce((sum, cf) => {
-        const days = (cf.date.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-        return sum - (days / 365) * cf.amount * Math.pow(1 + rate, -days / 365 - 1);
+        const days =
+          (cf.date.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+        return (
+          sum - (days / 365) * cf.amount * Math.pow(1 + rate, -days / 365 - 1)
+        );
       }, 0);
     };
 

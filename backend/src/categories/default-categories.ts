@@ -50,7 +50,13 @@ export const DEFAULT_INCOME_CATEGORIES: DefaultCategoryDefinition[] = [
 export const DEFAULT_EXPENSE_CATEGORIES: DefaultCategoryDefinition[] = [
   {
     name: "SIP & Mutual Funds",
-    subcategories: ["Equity SIP", "ELSS Tax Saver", "Debt Fund", "Index Fund", "Lumpsum Investment"],
+    subcategories: [
+      "Equity SIP",
+      "ELSS Tax Saver",
+      "Debt Fund",
+      "Index Fund",
+      "Lumpsum Investment",
+    ],
   },
   {
     name: "Stocks & Equities",
@@ -58,7 +64,12 @@ export const DEFAULT_EXPENSE_CATEGORIES: DefaultCategoryDefinition[] = [
   },
   {
     name: "Gold & Fixed Deposits",
-    subcategories: ["Sovereign Gold Bond (SGB)", "Bank FD", "PPF / EPF", "Digital Gold"],
+    subcategories: [
+      "Sovereign Gold Bond (SGB)",
+      "Bank FD",
+      "PPF / EPF",
+      "Digital Gold",
+    ],
   },
   {
     name: "Rent",
@@ -66,23 +77,49 @@ export const DEFAULT_EXPENSE_CATEGORIES: DefaultCategoryDefinition[] = [
   },
   {
     name: "Groceries",
-    subcategories: ["Supermarket & DMart", "Blinkit / Zepto / InstaMart", "BigBasket", "Vegetables & Milk"],
+    subcategories: [
+      "Supermarket & DMart",
+      "Blinkit / Zepto / InstaMart",
+      "BigBasket",
+      "Vegetables & Milk",
+    ],
   },
   {
     name: "Utilities",
-    subcategories: ["Electricity Bill", "Water Bill", "Broadband Internet", "Mobile Recharge", "LPG Cylinder"],
+    subcategories: [
+      "Electricity Bill",
+      "Water Bill",
+      "Broadband Internet",
+      "Mobile Recharge",
+      "LPG Cylinder",
+    ],
   },
   {
     name: "Dining Out",
-    subcategories: ["Swiggy & Zomato", "Restaurants & Dining", "Cafes & Coffee", "Office Canteen"],
+    subcategories: [
+      "Swiggy & Zomato",
+      "Restaurants & Dining",
+      "Cafes & Coffee",
+      "Office Canteen",
+    ],
   },
   {
     name: "Fuel & Transit",
-    subcategories: ["Petrol & Diesel", "Cab (Uber / Ola)", "Metro & Train", "Toll & Fastag"],
+    subcategories: [
+      "Petrol & Diesel",
+      "Cab (Uber / Ola)",
+      "Metro & Train",
+      "Toll & Fastag",
+    ],
   },
   {
     name: "Medical & Health",
-    subcategories: ["Medicines & Pharmacy", "Doctor & Hospital", "Health Insurance Premium", "Lab Tests"],
+    subcategories: [
+      "Medicines & Pharmacy",
+      "Doctor & Hospital",
+      "Health Insurance Premium",
+      "Lab Tests",
+    ],
   },
   {
     name: "Credit Card Payment",

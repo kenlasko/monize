@@ -1,5 +1,8 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { InvestmentAnalyticsService, CashFlow } from "./investment-analytics.service";
+import {
+  InvestmentAnalyticsService,
+  CashFlow,
+} from "./investment-analytics.service";
 
 describe("InvestmentAnalyticsService", () => {
   let service: InvestmentAnalyticsService;
@@ -9,7 +12,9 @@ describe("InvestmentAnalyticsService", () => {
       providers: [InvestmentAnalyticsService],
     }).compile();
 
-    service = module.get<InvestmentAnalyticsService>(InvestmentAnalyticsService);
+    service = module.get<InvestmentAnalyticsService>(
+      InvestmentAnalyticsService,
+    );
   });
 
   it("should be defined", () => {
@@ -37,7 +42,9 @@ describe("InvestmentAnalyticsService", () => {
   describe("calculateXirr", () => {
     it("should return 0 when cash flows are empty or have fewer than 2 entries", () => {
       expect(service.calculateXirr([])).toBe(0);
-      expect(service.calculateXirr([{ amount: -1000, date: new Date() }])).toBe(0);
+      expect(service.calculateXirr([{ amount: -1000, date: new Date() }])).toBe(
+        0,
+      );
     });
 
     it("should calculate XIRR for a simple 1-year lump sum investment", () => {

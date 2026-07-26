@@ -39,7 +39,10 @@ export class MfApiService implements QuoteProvider {
     return new Promise((resolve, reject) => {
       https
         .get(url, { headers: { Accept: "application/json" } }, (res) => {
-          if (res.statusCode && (res.statusCode < 200 || res.statusCode >= 300)) {
+          if (
+            res.statusCode &&
+            (res.statusCode < 200 || res.statusCode >= 300)
+          ) {
             return reject(new Error(`MF API returned HTTP ${res.statusCode}`));
           }
           let body = "";
@@ -71,7 +74,9 @@ export class MfApiService implements QuoteProvider {
       if (!latest?.nav) return null;
 
       const price = Number(latest.nav);
-      const dateObj = latest.date ? this.parseMfapiDate(latest.date) : new Date();
+      const dateObj = latest.date
+        ? this.parseMfapiDate(latest.date)
+        : new Date();
 
       return {
         symbol: code,
@@ -144,7 +149,9 @@ export class MfApiService implements QuoteProvider {
 
       return results.sort((a, b) => a.date.getTime() - b.date.getTime());
     } catch (err) {
-      this.logger.error(`Failed to fetch historical MF data for ${code}: ${err}`);
+      this.logger.error(
+        `Failed to fetch historical MF data for ${code}: ${err}`,
+      );
       return null;
     }
   }
@@ -169,6 +176,8 @@ export class MfApiService implements QuoteProvider {
     const m = dateStr.match(/^(\d{2})-(\d{2})-(\d{4})$/);
     if (!m) return new Date();
     const [, dd, mm, yyyy] = m;
-    return new Date(Date.UTC(Number(yyyy), Number(mm) - 1, Number(dd), 12, 0, 0));
+    return new Date(
+      Date.UTC(Number(yyyy), Number(mm) - 1, Number(dd), 12, 0, 0),
+    );
   }
 }
