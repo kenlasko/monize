@@ -198,8 +198,8 @@ describe("default-categories", () => {
     });
 
     it("should contain expected number of expense categories", () => {
-      // There are 25 expense categories based on the source file
-      expect(DEFAULT_EXPENSE_CATEGORIES.length).toBe(25);
+      // 35 expense categories: 10 Indian-specific + 25 original
+      expect(DEFAULT_EXPENSE_CATEGORIES.length).toBe(35);
     });
   });
 
@@ -251,8 +251,8 @@ describe("default-categories", () => {
     });
 
     it("should contain expected number of income categories", () => {
-      // There are 4 income categories based on the source file
-      expect(DEFAULT_INCOME_CATEGORIES.length).toBe(4);
+      // 5 income categories: Salary + 4 original
+      expect(DEFAULT_INCOME_CATEGORIES.length).toBe(5);
     });
 
     it("should have subcategories as string arrays (not objects or numbers)", () => {
