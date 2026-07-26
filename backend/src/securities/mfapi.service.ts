@@ -74,6 +74,8 @@ export class MfApiService implements QuoteProvider {
       if (!latest?.nav) return null;
 
       const price = Number(latest.nav);
+      if (!Number.isFinite(price)) return null;
+
       const dateObj = latest.date
         ? this.parseMfapiDate(latest.date)
         : new Date();
@@ -134,8 +136,9 @@ export class MfApiService implements QuoteProvider {
       const results: HistoricalPrice[] = [];
       for (const entry of data.data) {
         if (!entry.date || !entry.nav) continue;
-        const date = this.parseMfapiDate(entry.date);
         const nav = Number(entry.nav);
+        if (!Number.isFinite(nav)) continue;
+        const date = this.parseMfapiDate(entry.date);
         results.push({
           date,
           open: nav,

@@ -8,6 +8,7 @@ import { Security } from "./entities/security.entity";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { YahooFinanceService } from "./yahoo-finance.service";
 import { MsnFinanceService } from "./msn-finance.service";
+import { MfApiService } from "./mfapi.service";
 import { QuoteProviderRegistry } from "./providers/quote-provider.registry";
 import { UserPreference } from "../users/entities/user-preference.entity";
 
@@ -21,6 +22,7 @@ describe("SecurityPriceService", () => {
   let dataSourceMock: Record<string, jest.Mock>;
   let netWorthService: Record<string, jest.Mock>;
   let msnFinanceService: Record<string, jest.Mock>;
+  let mfapiService: Record<string, jest.Mock>;
   let originalFetch: typeof global.fetch;
 
   const mockSecurity: Security = {
@@ -188,6 +190,14 @@ describe("SecurityPriceService", () => {
     // The registry reads provider.name to order/resolve providers.
     (msnFinanceService as Record<string, unknown>).name = "msn";
 
+    // Mock mfapi for mutual fund NAV lookups
+    mfapiService = {
+      fetchQuote: jest.fn().mockResolvedValue(null),
+      fetchHistorical: jest.fn().mockResolvedValue(null),
+      lookupSecurity: jest.fn().mockResolvedValue(null),
+    };
+    (mfapiService as Record<string, unknown>).name = "mfapi";
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SecurityPriceService,
@@ -215,6 +225,10 @@ describe("SecurityPriceService", () => {
         {
           provide: MsnFinanceService,
           useValue: msnFinanceService,
+        },
+        {
+          provide: MfApiService,
+          useValue: mfapiService,
         },
         QuoteProviderRegistry,
       ],

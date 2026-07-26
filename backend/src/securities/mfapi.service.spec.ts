@@ -54,6 +54,19 @@ describe("MfApiService", () => {
       const quote = await service.fetchQuote("999999");
       expect(quote).toBeNull();
     });
+
+    it("should return null when the NAV value is malformed (non-numeric)", async () => {
+      const mockResponse = {
+        meta: { scheme_code: 122639 },
+        data: [{ date: "24-07-2026", nav: "NOT_A_NUMBER" }],
+        status: "SUCCESS",
+      };
+
+      jest.spyOn(service as any, "httpGetJson").mockResolvedValue(mockResponse);
+
+      const quote = await service.fetchQuote("122639");
+      expect(quote).toBeNull();
+    });
   });
 
   describe("lookupSecurityMany / search", () => {
@@ -97,6 +110,22 @@ describe("MfApiService", () => {
       expect(history?.length).toBe(2);
       expect(history?.[0].close).toBe(78.12);
       expect(history?.[1].close).toBe(78.45);
+    });
+
+    it("should skip entries with malformed NAV values", async () => {
+      const mockResponse = {
+        meta: { scheme_code: 122639 },
+        data: [
+          { date: "24-07-2026", nav: "78.45" },
+          { date: "23-07-2026", nav: "NOT_A_NUMBER" },
+        ],
+      };
+
+      jest.spyOn(service as any, "httpGetJson").mockResolvedValue(mockResponse);
+
+      const history = await service.fetchHistorical("122639");
+      expect(history?.length).toBe(1);
+      expect(history?.[0].close).toBe(78.45);
     });
   });
 });
