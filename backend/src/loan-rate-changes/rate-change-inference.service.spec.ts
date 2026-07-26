@@ -54,9 +54,13 @@ function generateHistory(
       const days = prevDate === null ? periodDays : daysBetween(prevDate, date);
       const interest = options.isCanadianFixed
         ? Math.round(
-            balance * (Math.pow(1 + segment.annualRate / 100 / 2, 2 / 12) - 1) * 100,
+            balance *
+              (Math.pow(1 + segment.annualRate / 100 / 2, 2 / 12) - 1) *
+              100,
           ) / 100
-        : Math.round(balance * (segment.annualRate / 100) * (days / 365) * 100) / 100;
+        : Math.round(
+            balance * (segment.annualRate / 100) * (days / 365) * 100,
+          ) / 100;
       const principal =
         Math.round((segment.paymentAmount - interest) * 100) / 100;
 

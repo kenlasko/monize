@@ -89,7 +89,11 @@ describe("StatementCycleService", () => {
     it("scopes the account lookup to the owner", async () => {
       repo.findOne.mockResolvedValue(makeCard());
       dataSource.query.mockResolvedValue([
-        { statement_balance: "0", statement_balance_date: null, amount_paid: "0" },
+        {
+          statement_balance: "0",
+          statement_balance_date: null,
+          amount_paid: "0",
+        },
       ]);
 
       await service.getStatementCycle("user-1", "cc-1");

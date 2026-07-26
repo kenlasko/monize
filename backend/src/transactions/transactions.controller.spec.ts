@@ -1530,10 +1530,7 @@ describe("TransactionsController", () => {
       const result = await controller.getFxFeeSummary(mockReq, uuid1);
 
       expect(result).toEqual(expected);
-      expect(mockService.getFxFeeSummary).toHaveBeenCalledWith(
-        "user-1",
-        uuid1,
-      );
+      expect(mockService.getFxFeeSummary).toHaveBeenCalledWith("user-1", uuid1);
     });
 
     it("returns empty for a delegate without READ access to the account", async () => {

@@ -127,7 +127,11 @@ describe("CurrenciesService", () => {
 
       expect.assertions(3);
       try {
-        await service.create(userId, { code: "CAD", name: "Test", symbol: "$" });
+        await service.create(userId, {
+          code: "CAD",
+          name: "Test",
+          symbol: "$",
+        });
       } catch (err) {
         expect(err).toBeInstanceOf(ConflictException);
         const response = (err as ConflictException).getResponse() as Record<

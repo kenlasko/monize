@@ -1788,11 +1788,31 @@ describe("LoanPaymentDetectorService", () => {
         makePayment("2026-03-05"),
       ];
       transactionRepository.find.mockResolvedValue([
-        { transactionDate: "2026-01-05", amount: -153.63, accountId: "bank-1", categoryId: "cat-int" },
-        { transactionDate: "2026-02-06", amount: -140.7, accountId: "bank-1", categoryId: "cat-int" },
+        {
+          transactionDate: "2026-01-05",
+          amount: -153.63,
+          accountId: "bank-1",
+          categoryId: "cat-int",
+        },
+        {
+          transactionDate: "2026-02-06",
+          amount: -140.7,
+          accountId: "bank-1",
+          categoryId: "cat-int",
+        },
         // Interest split across two rows in the same period is summed.
-        { transactionDate: "2026-03-04", amount: -100, accountId: "bank-1", categoryId: "cat-int" },
-        { transactionDate: "2026-03-05", amount: -27.5, accountId: "bank-1", categoryId: "cat-int" },
+        {
+          transactionDate: "2026-03-04",
+          amount: -100,
+          accountId: "bank-1",
+          categoryId: "cat-int",
+        },
+        {
+          transactionDate: "2026-03-05",
+          amount: -27.5,
+          accountId: "bank-1",
+          categoryId: "cat-int",
+        },
       ]);
 
       const result = await service.pairSeparateInterest(
@@ -1846,8 +1866,18 @@ describe("LoanPaymentDetectorService", () => {
         makePayment("2026-02-05"),
       ];
       transactionRepository.find.mockResolvedValue([
-        { transactionDate: "2026-01-05", amount: -153.63, accountId: "bank-1", categoryId: "cat-int" },
-        { transactionDate: "2026-02-05", amount: -140.7, accountId: "bank-1", categoryId: "cat-int" },
+        {
+          transactionDate: "2026-01-05",
+          amount: -153.63,
+          accountId: "bank-1",
+          categoryId: "cat-int",
+        },
+        {
+          transactionDate: "2026-02-05",
+          amount: -140.7,
+          accountId: "bank-1",
+          categoryId: "cat-int",
+        },
       ]);
 
       const result = await service.pairSeparateInterest(
@@ -1863,9 +1893,19 @@ describe("LoanPaymentDetectorService", () => {
     it("ignores interest transactions that are not near any payment", async () => {
       const payments = [makePayment("2026-01-05"), makePayment("2026-02-05")];
       transactionRepository.find.mockResolvedValue([
-        { transactionDate: "2026-01-05", amount: -153.63, accountId: "bank-1", categoryId: "cat-int" },
+        {
+          transactionDate: "2026-01-05",
+          amount: -153.63,
+          accountId: "bank-1",
+          categoryId: "cat-int",
+        },
         // Far from every payment -> dropped.
-        { transactionDate: "2026-06-01", amount: -999, accountId: "bank-1", categoryId: "cat-int" },
+        {
+          transactionDate: "2026-06-01",
+          amount: -999,
+          accountId: "bank-1",
+          categoryId: "cat-int",
+        },
       ]);
 
       const result = await service.pairSeparateInterest(

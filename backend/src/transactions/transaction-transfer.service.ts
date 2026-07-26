@@ -1079,10 +1079,7 @@ export class TransactionTransferService {
 
       // Rebalance the counterpart's own account for an amount and/or date change.
       if (amountChanged || dateChanged) {
-        if (
-          isTransactionInFuture(oldDate) ||
-          isTransactionInFuture(newDate)
-        ) {
+        if (isTransactionInFuture(oldDate) || isTransactionInFuture(newDate)) {
           await this.accountsService.recalculateCurrentBalance(
             counterpart.accountId,
             queryRunner,
