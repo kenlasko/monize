@@ -2,6 +2,11 @@
 
 Next.js App Router application. All commands run from this directory.
 
+Two cross-layer contracts in `docs/` bind this layer, and both have been violated here before. [`docs/system-invariants.md`](../docs/system-invariants.md) indexes them and records whether the code currently upholds each:
+
+- [`docs/financial-semantics.md`](../docs/financial-semantics.md) -- a figure the server could not compute must not be rendered as a measured one, splits are validated at the storage precision (4dp, not cents), and a stored override price is never replaced by a fresh quote as a side effect of opening a dialog (INV-OCCURRENCE-002).
+- [`docs/verification-contract.md`](../docs/verification-contract.md) -- where a mistake is mechanical, the durable guard is a source scan rather than a test of one component. `src/test/ui-conventions.test.ts` is the pattern; INV-CACHE-001 is owed one, because `invalidateBalanceCaches` drops two cache prefixes and `budgets:` is not among them.
+
 ## Commands
 
 ```bash

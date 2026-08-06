@@ -72,6 +72,22 @@ The point is that the next agent inherits the correction. A fix that lives only 
 
 **A doc that names an identifier is making a claim about the source.** Renaming or deleting a field, flag or helper means grepping `docs/` and every `CLAUDE.md` in the same commit. A document describing a model that no longer exists is worse than none: it gets read, believed, and built on. The same goes for a comment asserting that *every* call site does something -- that is a scanning test, not a comment.
 
+### The contract documents
+
+Cross-layer rules live in `docs/`, not in this file, because they are too long to state twice and too easily violated to state loosely. `docs/system-invariants.md` is the index: it lists every invariant with a stable ID, the mechanism that enforces it, and an honest status of `enforced`, `partial` or `unenforced`. An entry marked `unenforced` describes something the system currently gets wrong, with the violation cited -- that gap is the point, and editing the document does not close it.
+
+| Document | Covers |
+|---|---|
+| `docs/system-invariants.md` | The invariant catalog and its enforcement status. Name the IDs your change touches. |
+| `docs/concurrency-and-idempotency.md` | Which mechanism to use when (atomic delta, unique index, CAS, lock, advisory lock, idempotency key), lock ordering, retry semantics, and the register of values with more than one protocol. |
+| `docs/financial-semantics.md` | Signs, transfer legs, FX rate direction and precision, per-field precision, split sum rules, commission basis, split ratios. |
+| `docs/external-side-effects.md` | Per-provider lifecycle for anything PostgreSQL cannot roll back: attachments, backups, email, providers. |
+| `docs/verification-contract.md` | Which test kind each invariant requires, which CI job owns it, and the known-wrong tests that currently assert defects. |
+| `docs/release-integrity.md` | Zero-discovered-tests is a failure; the tested, imaged and tagged revisions must be one revision. |
+| `docs/adr/` | Why a decision was made, and what was rejected. Supersede, never rewrite. |
+
+Two of these say something about a guarantee's wording that applies everywhere: any use of "atomic", "single-use", "exactly once", "retryable", "cannot", "always", "complete" or "transactional" must name the mechanism that makes it true -- the transaction, the index, the conditional `UPDATE`, the verified checksum. Three comments in this codebase claimed a lock, an atomic increment and a joint commit that the code beside them did not implement, and each was believed for as long as it existed. If the mechanism cannot be named, the wording is wrong, not merely vague.
+
 ### Running the suites locally -- two ways a green branch reads as red
 
 CI runs in UTC with one Playwright worker. A local run does neither, and both differences produce failures that look like regressions and are not.
@@ -92,17 +108,29 @@ Use Grep only when LSP isn't available or for text/pattern searches (comments, s
 
 After writing or editing code, check LSP diagnostics and fix errors before proceeding.
 
-### Per-user files live in a sharded folder, and the folder is what names them
+### Files on disk are sharded by an id, and which id differs
 
-Anything the server writes to disk on a user's behalf goes in
-`<base>/<ab>/<cd>/<id>/`, built from `shardedSegments` in
-`backend/src/common/shard-path.util.ts` -- attachment bytes and each user's
-automatic backups both. Do not hand-roll a second sharding scheme, and do not
-write a per-user file flat into a shared folder: automatic backup filenames
-carry only a tier and a date (`monize-backup-daily-2026-08-03.json.gz`), so a
-flat folder gave every user the same name for the same day, and whoever's cron
-ran last overwrote the rest. Two levels of two hex characters keep any one
-directory small enough for filesystems that scan linearly or over a network.
+Anything the server writes to disk goes through `shardedSegments` in
+`backend/src/common/shard-path.util.ts`, which returns `[ab, cd, id]` -- two
+levels of two hex characters, then the id. That keeps any one directory small
+enough for filesystems that scan linearly or over a network. Do not hand-roll a
+second sharding scheme.
+
+**The scheme is shared; the shard key and the shape are not.** Automatic backups
+shard by *user* id and the last segment is a directory
+(`<base>/<ab>/<cd>/<userId>/monize-backup-daily-2026-08-03.json.gz`), because the
+filename carries only a tier and a date -- a flat folder gave every user the same
+name for the same day, whoever's cron ran last overwrote the rest, and one user's
+retention pass deleted another's files. Local attachments shard by *attachment*
+id and the last segment is the file itself (`<base>/<ab>/<cd>/<attachmentId>`),
+because that id is already globally unique.
+
+So a backup's owner is recoverable from its path and **an attachment's owner is
+not** -- no user id appears in an attachment path. Attachment ownership is
+database-authoritative via its metadata row, and no cleanup, retention or
+migration tool may infer it from the filesystem. Sharding is storage
+distribution, never tenant isolation or authorization. `docs/adr/0003` has the
+reasoning and the rejected alternatives.
 
 A path built from an id must still be validated (`isShardableId`) and asserted
 to resolve inside its base before it reaches the filesystem, even when the id is

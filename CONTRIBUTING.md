@@ -65,6 +65,18 @@ See `frontend/src/i18n/messages/README.md` and `backend/src/i18n/README.md` for 
 - All database access goes through `withScopedDb` (`backend/src/common/db/scoped-db.ts`) -- the single RLS-compliant door to the database. Any operation touching multiple tables or doing read-modify-write runs inside one `withScopedDb` transaction. Never inject a repository with `@InjectRepository`, call `createQueryRunner()`, call `dataSource.transaction()`, or use a bare `dataSource.query(...)` -- ESLint rejects the first three (see `CLAUDE.md`). `dataSource.transaction()` looks equivalent and is not: it opens a transaction outside the active scoped manager, so it has no identity GUCs and commits independently of the caller's rollback.
 - Money values are `decimal(20,4)`; use integer-cents arithmetic to avoid floating-point drift. Financial calculations follow `docs/financial-calculation-contract.md` and `docs/time-series-contract.md` -- in particular, a `total`/`gain`/`tax` field may only carry a value when every component is known; a sum over the non-null subset is a subtotal, not a total.
 
+### Cross-layer contracts
+
+Some rules cannot be satisfied by one file behaving correctly. Those live in `docs/`, indexed by [`docs/system-invariants.md`](docs/system-invariants.md), which lists each invariant with a stable ID, the mechanism enforcing it, and whether the system currently upholds it. Before changing anything that moves money, writes a file, sends an email, runs on a schedule, or touches authorization, find the relevant invariant and name its ID in your PR.
+
+- [`docs/concurrency-and-idempotency.md`](docs/concurrency-and-idempotency.md) -- a transaction is not a concurrency protocol. Which mechanism to use, and what retry means before commit, after commit, and when the result is unknown.
+- [`docs/financial-semantics.md`](docs/financial-semantics.md) -- signs, transfer legs, FX rate direction, per-field precision, split and commission arithmetic.
+- [`docs/external-side-effects.md`](docs/external-side-effects.md) -- anything PostgreSQL cannot roll back.
+- [`docs/verification-contract.md`](docs/verification-contract.md) -- which kind of test your invariant actually requires, and why a mock is often only supporting evidence.
+- [`docs/adr/`](docs/adr/) -- why a decision was made. Add one when your change constrains code that does not exist yet.
+
+`CLAUDE.md` states the wording rule these documents share: a guarantee must name the mechanism that makes it true. It is worth knowing before you write a comment, because several comments here have claimed a lock, an atomic increment and a joint commit that the code beside them did not implement.
+
 See [`SECURITY.md`](SECURITY.md) for how to report vulnerabilities.
 
 ## Before you open a PR

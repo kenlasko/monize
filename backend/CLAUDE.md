@@ -2,6 +2,14 @@
 
 NestJS API server. All commands run from this directory.
 
+Most of this layer's hardest rules are cross-layer and live in `docs/`, indexed by [`docs/system-invariants.md`](../docs/system-invariants.md) -- which also records, per invariant, whether the code currently upholds it. Before changing a balance, a holding, a transfer, a scheduled occurrence, a cron, a token, or anything that writes outside PostgreSQL, read the relevant one and name its ID in the PR:
+
+- [`docs/concurrency-and-idempotency.md`](../docs/concurrency-and-idempotency.md) -- `withScopedDb` gives atomicity and identity, **not** protection against a concurrent writer of the same row. Which mechanism to use, lock ordering, and what a retry means before commit, after commit, and when the result is unknown.
+- [`docs/financial-semantics.md`](../docs/financial-semantics.md) -- signs, transfer legs, FX rate direction and precision, split and commission arithmetic.
+- [`docs/external-side-effects.md`](../docs/external-side-effects.md) -- attachments, backups, email, providers: anything a transaction cannot roll back.
+- [`docs/cron-jobs.md`](../docs/cron-jobs.md) -- every `@Cron` with what stops a second replica repeating its effect. A new cron fills in that column.
+- [`docs/verification-contract.md`](../docs/verification-contract.md) -- a mock proves the call, not the property; which claims need a real two-connection test.
+
 ## Commands
 
 ```bash

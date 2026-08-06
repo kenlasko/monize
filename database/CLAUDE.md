@@ -3,6 +3,8 @@
 ## Overview
 Contains the PostgreSQL schema definition and incremental migration scripts for the monize database.
 
+A constraint here is usually the strongest available form of a system rule, so several entries in [`docs/system-invariants.md`](../docs/system-invariants.md) are enforced -- or unenforced -- by what is in `schema.sql`. `database/migrations/135_import_jobs_single_active.sql` is the model: a partial unique index doing what a read-then-insert in the service could not, with the reasoning in the migration's own header. See [`docs/concurrency-and-idempotency.md`](../docs/concurrency-and-idempotency.md) for when a constraint is the right mechanism, and note that a uniqueness constraint prevents duplicate *rows* and does nothing about a lost update to one.
+
 ## Files
 - `schema.sql` - Full database schema (used for fresh installs). Must be kept in sync with all migrations.
 - `migrations/` - Incremental SQL migration files. Applied automatically on app startup by `db-migrate`.
