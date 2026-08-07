@@ -436,6 +436,8 @@ Never use synchronous `act(() => {...})` for calls that trigger async side-effec
 
 **Custom render** (`test/render.tsx`): Wraps components with `ThemeProvider`. Import `render` from `@/test/render` instead of `@testing-library/react`.
 
+**Intl context** (`test/intl.tsx`): `render` from `@/test/render` already provides it. A hook test, or a case that needs another locale, uses `intlWrapper()` / `TestIntlProvider` from `@/test/intl` -- never a hand-built `NextIntlClientProvider`. Listing the namespaces a subject "needs" is a guess about someone else's code, and it goes stale silently: `useImportWizard` gained a `useTranslations('common')` beside its `'import'` one and its wrapper did not follow, so every run printed 1800 `MISSING_MESSAGE` traces while the suite stayed green. The shared provider carries every English namespace (`TestIntlProvider` takes `locale`, and a `messages` override merged over English) and **throws** on a missing message, so the next gap fails the test that caused it. `test/test-hygiene.test.ts` scans for a directly-mounted provider.
+
 **Global mocks** (`test/setup.ts`): `next/navigation` (useRouter, usePathname, useSearchParams), `react-hot-toast`, `localStorage`, `window.scrollTo`, `window.matchMedia`.
 
 **Test file naming:** named after the component and co-located with it, e.g. `AccountForm.test.tsx` beside `AccountForm.tsx`.

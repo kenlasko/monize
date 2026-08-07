@@ -1,17 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { type ReactNode } from 'react';
-import { NextIntlClientProvider } from 'next-intl';
-import investmentsEn from '@/i18n/messages/en/investments.json';
+import { intlWrapper } from '@/test/intl';
 import { useInvestmentData } from './useInvestmentData';
 
 // useInvestmentData emits its delete-failure toast through next-intl; resolve
-// it against the real English catalog so assertions on visible text stay accurate.
-const wrapper = ({ children }: { children: ReactNode }) => (
-  <NextIntlClientProvider locale="en" messages={{ investments: investmentsEn }}>
-    {children}
-  </NextIntlClientProvider>
-);
+// it against the real English catalogs so assertions on visible text stay accurate.
+const wrapper = intlWrapper();
 
 // --- API mocks ---
 const mockDeleteTransaction = vi.fn();

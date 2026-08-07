@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { ReactNode } from 'react';
-import { NextIntlClientProvider } from 'next-intl';
-import securitiesEn from '@/i18n/messages/en/securities.json';
+import { intlWrapper } from '@/test/intl';
 import {
   isMarketHours,
   getRefreshInProgress,
@@ -11,12 +9,8 @@ import {
 } from './usePriceRefresh';
 
 // usePriceRefresh emits its toasts through next-intl; resolve them against the
-// real English catalog so assertions on visible text stay accurate.
-const wrapper = ({ children }: { children: ReactNode }) => (
-  <NextIntlClientProvider locale="en" messages={{ securities: securitiesEn }}>
-    {children}
-  </NextIntlClientProvider>
-);
+// real English catalogs so assertions on visible text stay accurate.
+const wrapper = intlWrapper();
 
 vi.mock('@/lib/investments', () => ({
   investmentsApi: {

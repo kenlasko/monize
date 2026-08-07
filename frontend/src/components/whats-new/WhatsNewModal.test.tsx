@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { fireEvent, render as rtlRender } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { TestIntlProvider } from '@/test/intl';
 import { render, screen } from '@/test/render';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import commonMessages from '@/i18n/messages/en/common.json';
@@ -44,7 +44,7 @@ function renderModal(props: Partial<React.ComponentProps<typeof WhatsNewModal>> 
  */
 function renderInLocale(locale: string) {
   return rtlRender(
-    <NextIntlClientProvider locale={locale} messages={{ common: commonMessages }}>
+    <TestIntlProvider locale={locale}>
       <ThemeProvider>
         <WhatsNewModal
           isOpen
@@ -53,7 +53,7 @@ function renderInLocale(locale: string) {
           onClose={vi.fn()}
         />
       </ThemeProvider>
-    </NextIntlClientProvider>,
+    </TestIntlProvider>,
   );
 }
 

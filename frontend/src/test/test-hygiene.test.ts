@@ -60,3 +60,27 @@ describe('a shared store is reset only after the tree is unmounted', () => {
     expect(offenders).toEqual([]);
   });
 });
+
+describe('intl context in tests comes from the shared provider', () => {
+  /**
+   * A test that mounts its own `NextIntlClientProvider` has to name the
+   * namespaces its subject reads, and that list is a guess about someone
+   * else's code: `useImportWizard` grew a `useTranslations('common')` beside
+   * its `'import'` one, its wrapper listed only `'import'`, and every run
+   * printed 1800 MISSING_MESSAGE traces that nobody read because the suite was
+   * green throughout.
+   *
+   * `@/test/intl` supplies every English namespace and throws on a missing
+   * message, so the same gap fails the test that caused it. Use `render` from
+   * `@/test/render`, or `intlWrapper()` / `TestIntlProvider` for a hook test or
+   * a non-English locale -- `TestIntlProvider` takes `locale` and a `messages`
+   * override merged over English.
+   */
+  it('has no test mounting NextIntlClientProvider directly', () => {
+    const offenders = Object.entries(sources)
+      .filter(([, content]) => content.includes('NextIntlClientProvider'))
+      .map(([path]) => path);
+
+    expect(offenders).toEqual([]);
+  });
+});

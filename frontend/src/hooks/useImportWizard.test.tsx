@@ -1,16 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { ReactNode } from 'react';
-import { NextIntlClientProvider } from 'next-intl';
-import importEn from '@/i18n/messages/en/import.json';
+import { intlWrapper } from '@/test/intl';
 
 // Hook emits toasts via next-intl; resolve them against the real English
-// catalog so renderHook has an intl context.
-const wrapper = ({ children }: { children: ReactNode }) => (
-  <NextIntlClientProvider locale="en" messages={{ import: importEn }}>
-    {children}
-  </NextIntlClientProvider>
-);
+// catalogs so renderHook has an intl context.
+const wrapper = intlWrapper();
 import { useImportWizard } from './useImportWizard';
 
 // --- Mocks ---

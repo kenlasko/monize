@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render as rtlRender } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
+import { TestIntlProvider } from '@/test/intl';
 import { render, screen, fireEvent } from '@/test/render';
 import esCommon from '@/i18n/messages/es/common.json';
 import ErrorPage from './error';
@@ -56,9 +56,9 @@ describe('ErrorPage', () => {
 
   it('renders translated copy when the active locale is not English', () => {
     rtlRender(
-      <NextIntlClientProvider locale="es" messages={{ common: esCommon }}>
+      <TestIntlProvider locale="es" messages={{ common: esCommon }}>
         <ErrorPage error={new Error('test error')} reset={mockReset} />
-      </NextIntlClientProvider>,
+      </TestIntlProvider>,
     );
     expect(screen.getByText('Algo salió mal')).toBeInTheDocument();
     expect(screen.getByText(/Se produjo un error inesperado/)).toBeInTheDocument();

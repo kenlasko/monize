@@ -48,9 +48,28 @@ export function buildAccountDropdownOptions(
   return options;
 }
 
-/** Format an account type enum to a human-readable label. */
-export const formatAccountType = (type: AccountType, t?: (key: string) => string): string => {
-  if (t) return t(`accountTypes.${type}`);
+/**
+ * A `useTranslations('common')` translator. `has` is next-intl's own key
+ * probe; it is optional here so a plain `(key) => string` stub still fits.
+ */
+interface AccountTypeTranslator {
+  (key: string): string;
+  has?(key: string): boolean;
+}
+
+/**
+ * Format an account type enum to a human-readable label.
+ *
+ * The value is not always one of the ten enum members: the import wizard casts
+ * a parsed file's detected type (`SelectAccountStep`, `MnyVerificationReport`),
+ * so an unrecognised string can reach here. next-intl answers a missing key
+ * with the key *path*, which put the literal `common.accountTypes.Bank` on
+ * screen -- so probe the catalog first and fall back to the same raw-value
+ * behaviour the untranslated branch has always had.
+ */
+export const formatAccountType = (type: AccountType, t?: AccountTypeTranslator): string => {
+  const key = `accountTypes.${type}`;
+  if (t && (!t.has || t.has(key))) return t(key);
   const labels: Record<AccountType, string> = {
     CHEQUING: 'Chequing',
     SAVINGS: 'Savings',

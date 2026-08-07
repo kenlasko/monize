@@ -194,6 +194,28 @@ describe('formatAccountType', () => {
   it('returns the raw type string for unknown types', () => {
     expect(formatAccountType('UNKNOWN' as any)).toBe('UNKNOWN');
   });
+
+  it('translates a known type through the supplied translator', () => {
+    const t = Object.assign((key: string) => `tr:${key}`, {
+      has: (key: string) => key === 'accountTypes.CHEQUING',
+    });
+    expect(formatAccountType('CHEQUING', t)).toBe('tr:accountTypes.CHEQUING');
+  });
+
+  it('falls back to the raw type instead of the key path when the catalog has no entry', () => {
+    // next-intl answers a missing key with its path, so without the `has`
+    // probe the import wizard printed `common.accountTypes.Bank` on screen for
+    // a detected type outside the enum.
+    const t = Object.assign((key: string) => `common.${key}`, {
+      has: () => false,
+    });
+    expect(formatAccountType('Bank' as any, t)).toBe('Bank');
+  });
+
+  it('still translates when the translator has no has() probe', () => {
+    const t = (key: string) => `tr:${key}`;
+    expect(formatAccountType('SAVINGS', t)).toBe('tr:accountTypes.SAVINGS');
+  });
 });
 
 describe('isInvestmentBrokerageAccount', () => {

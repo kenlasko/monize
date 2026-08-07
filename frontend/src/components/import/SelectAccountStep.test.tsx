@@ -77,6 +77,28 @@ describe('SelectAccountStep', () => {
     expect(screen.getByText(/Detected Type:/)).toBeInTheDocument();
   });
 
+  it('translates a detected type the catalog knows', () => {
+    render(
+      <SelectAccountStep
+        {...defaultProps}
+        parsedData={{ ...defaultProps.parsedData, accountType: 'CHEQUING' }}
+      />,
+    );
+    expect(screen.getByText(/Detected Type:/).parentElement).toHaveTextContent(
+      'Detected Type: Chequing',
+    );
+  });
+
+  it('shows a detected type outside the enum raw, never as a message key', () => {
+    // The parsed type is a string cast to AccountType, so it can be a value the
+    // catalog has no entry for. next-intl answers a missing key with its path,
+    // which put `common.accountTypes.Bank` on screen.
+    render(<SelectAccountStep {...defaultProps} />);
+    const line = screen.getByText(/Detected Type:/).parentElement;
+    expect(line).toHaveTextContent('Detected Type: Bank');
+    expect(line?.textContent).not.toContain('accountTypes');
+  });
+
   it('shows Back button', () => {
     render(<SelectAccountStep {...defaultProps} />);
     const backButton = screen.getByRole('button', { name: /Back/i });

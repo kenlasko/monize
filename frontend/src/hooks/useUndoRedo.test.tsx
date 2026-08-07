@@ -1,21 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { ReactNode } from 'react';
-import { NextIntlClientProvider } from 'next-intl';
-import commonEn from '@/i18n/messages/en/common.json';
-import layoutEn from '@/i18n/messages/en/layout.json';
+import { intlWrapper } from '@/test/intl';
 
 // Hook emits toasts via next-intl; resolve them against the real English
-// catalogs so renderHook has an intl context. `layout` carries the action
-// descriptions and undo/redo prefixes; `common` carries the error messages.
-const wrapper = ({ children }: { children: ReactNode }) => (
-  <NextIntlClientProvider
-    locale="en"
-    messages={{ common: commonEn, layout: layoutEn }}
-  >
-    {children}
-  </NextIntlClientProvider>
-);
+// catalogs so renderHook has an intl context.
+const wrapper = intlWrapper();
 import toast from 'react-hot-toast';
 import { useUndoRedo } from './useUndoRedo';
 
