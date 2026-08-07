@@ -1,4 +1,4 @@
-import { DataSource, EntityManager } from "typeorm";
+import { DataSource, EntityManager, Repository } from "typeorm";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { DemoModeService } from "../common/demo-mode.service";
 import { ReleaseNotesService } from "./release-notes.service";
@@ -27,7 +27,7 @@ const SAMPLE_NOTES: ReleaseNotes = {
 
 describe("WhatsNewService", () => {
   let prefsMock: UserPreferenceRepoMock;
-  let repo: Record<string, jest.Mock>;
+  let repo: jest.Mocked<Pick<Repository<UserPreference>, "findOne" | "save">>;
   let releaseNotes: jest.Mocked<
     Pick<ReleaseNotesService, "getForCurrentVersion" | "currentVersion">
   >;
@@ -35,13 +35,13 @@ describe("WhatsNewService", () => {
   let service: WhatsNewService;
 
   beforeEach(() => {
-    // Row-modelling double: markSeen/remindNextLogin write through the
-    // column-scoped writer (insert-if-absent + UPDATE of one column), so the
-    // double has to model the row and record which columns a write touched --
-    // a `save`-recording mock could not tell a scoped patch from a whole-row
-    // save, which is the exact regression finding 3 removes.
+    // Behaves like the row: the writers now insert-if-absent and patch one
+    // column, so a mock that only records `save` could not tell that apart from
+    // the whole-entity overwrite it replaced.
     prefsMock = createUserPreferenceRepoMock(null);
-    repo = prefsMock.repo;
+    repo = prefsMock.repo as unknown as jest.Mocked<
+      Pick<Repository<UserPreference>, "findOne" | "save">
+    >;
 
     const manager = {
       getRepository: jest.fn(() => repo),
@@ -154,59 +154,57 @@ describe("WhatsNewService", () => {
   });
 
   describe("markSeen", () => {
-    it("writes only last_seen_version onto an existing row", async () => {
-      prefsMock.seed({ lastSeenVersion: "1.11.0" });
+    it("stores the current version on an existing preferences row", async () => {
+      prefsMock.seed({
+        ...prefs({ lastSeenVersion: "1.11.0" }),
+        theme: "nord",
+      });
 
       const result = await service.markSeen("user-1");
 
-      // Column-scoped patch, never a whole-entity save: only last_seen_version
-      // is touched, so a concurrent change to another preference survives
-      // (maintainer review PR #1097, finding 3).
-      expect(prefsMock.patches()).toEqual([
-        { lastSeenVersion: CURRENT_VERSION },
-      ]);
-      expect(prefsMock.row()?.lastSeenVersion).toBe(CURRENT_VERSION);
+      expect(prefsMock.row()!.lastSeenVersion).toBe(CURRENT_VERSION);
       expect(result).toEqual({ seen: true, version: CURRENT_VERSION });
+      // Only that column: acknowledging a digest must not carry any other
+      // preference back to whatever this request happened to read.
+      expect(Object.keys(prefsMock.patches()[0])).toEqual(["lastSeenVersion"]);
+      expect(prefsMock.row()!.theme).toBe("nord");
     });
 
-    it("materializes a preferences row when none exists, then stores the version", async () => {
+    it("materializes a preferences row when none exists", async () => {
       prefsMock.seed(null);
 
       const result = await service.markSeen("user-1");
 
-      // Insert-if-absent first so the UPDATE has a row to hit, then the scoped
-      // patch -- no read-modify-write, no whole-row save.
+      // `ON CONFLICT DO NOTHING`, not read-then-insert: the first page load fires
+      // several requests at once, and two of them both finding no row used to
+      // mean one failed on a unique violation.
       expect(prefsMock.insertAttempts()).toHaveLength(1);
-      expect(prefsMock.insertAttempts()[0].userId).toBe("user-1");
-      expect(prefsMock.patches()).toEqual([
-        { lastSeenVersion: CURRENT_VERSION },
-      ]);
-      expect(prefsMock.row()?.lastSeenVersion).toBe(CURRENT_VERSION);
+      expect(prefsMock.row()!.userId).toBe("user-1");
+      expect(prefsMock.row()!.lastSeenVersion).toBe(CURRENT_VERSION);
       expect(result.seen).toBe(true);
     });
   });
 
   describe("remindNextLogin", () => {
-    it("clears last_seen_version on an existing row so the digest shows again", async () => {
-      prefsMock.seed({ lastSeenVersion: CURRENT_VERSION });
+    it("clears an existing acknowledgement so the digest shows again", async () => {
+      prefsMock.seed(prefs({ lastSeenVersion: CURRENT_VERSION }));
 
       const result = await service.remindNextLogin("user-1");
 
-      expect(prefsMock.patches()).toEqual([{ lastSeenVersion: null }]);
-      expect(prefsMock.row()?.lastSeenVersion).toBeNull();
+      expect(prefsMock.row()!.lastSeenVersion).toBeNull();
       expect(result).toEqual({ reminded: true });
     });
 
-    it("writes unconditionally even when it is already clear", async () => {
-      // The old code gated the write on a snapshot saying there was something to
-      // clear, and could skip it entirely. Setting an already-null column to
-      // null is a harmless idempotent write; gating it on a stale read is the
-      // lost-write shape finding 3 removes, so the patch is applied every time.
-      prefsMock.seed({ lastSeenVersion: null });
+    it("clears unconditionally rather than reading first", async () => {
+      // Writing NULL over NULL is a no-op the database settles far more cheaply
+      // than a read-compare-write can -- and the read-compare-write was the thing
+      // that could revert a concurrent change to another column.
+      prefsMock.seed(prefs({ lastSeenVersion: null }));
 
       const result = await service.remindNextLogin("user-1");
 
-      expect(prefsMock.patches()).toEqual([{ lastSeenVersion: null }]);
+      expect(prefsMock.row()!.lastSeenVersion).toBeNull();
+      expect(Object.keys(prefsMock.patches()[0])).toEqual(["lastSeenVersion"]);
       expect(result.reminded).toBe(true);
     });
 
@@ -215,24 +213,22 @@ describe("WhatsNewService", () => {
 
       const result = await service.remindNextLogin("user-1");
 
+      expect(prefsMock.insertAttempts()).toHaveLength(1);
+      const saved = prefsMock.row()!;
+      expect(saved.userId).toBe("user-1");
       // Defaults stamp the running version; the reminder has to clear it, or the
       // digest the user just asked for would be suppressed as a first login.
-      expect(prefsMock.insertAttempts()).toHaveLength(1);
-      expect(prefsMock.patches()).toEqual([{ lastSeenVersion: null }]);
-      expect(prefsMock.row()?.lastSeenVersion).toBeNull();
+      expect(saved.lastSeenVersion).toBeNull();
       expect(result.reminded).toBe(true);
     });
 
     it("re-enables auto-show after an acknowledgement was cleared", async () => {
       // Acknowledged -> would not auto-show...
-      repo.findOne.mockResolvedValue(
-        prefs({ lastSeenVersion: CURRENT_VERSION }),
-      );
+      prefsMock.seed(prefs({ lastSeenVersion: CURRENT_VERSION }));
       expect((await service.getWhatsNew("user-1")).autoShow).toBe(false);
 
       // ...clearing it brings the popup back on the next status check.
-      const cleared = prefs({ lastSeenVersion: null });
-      repo.findOne.mockResolvedValue(cleared);
+      prefsMock.seed(prefs({ lastSeenVersion: null }));
       expect((await service.getWhatsNew("user-1")).autoShow).toBe(true);
     });
   });

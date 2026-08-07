@@ -30,6 +30,57 @@ describe("SecurityPriceService", () => {
   let securitiesRepository: Record<string, jest.Mock>;
   let userPreferenceRepository: Record<string, jest.Mock>;
   let dataSourceMock: Record<string, jest.Mock>;
+  /** The SQL of the last single-price upsert the service issued. */
+  function priceUpsertSql(): string {
+    const call = scopedManagerQuery.mock.calls
+      .filter((c) => String(c[0]).includes("INSERT INTO security_prices"))
+      .pop();
+    return String(call?.[0] ?? "");
+  }
+
+  /** Make the next single-price upsert fail, the way a DB error would. */
+  function failPriceWrite(error: Error): void {
+    priceWriteError = error;
+  }
+
+  /**
+   * Pretend a price row is already stored for a security and date, so the
+   * upsert's `ON CONFLICT DO UPDATE` merges onto it. Replaces the old
+   * `findOne.mockResolvedValue(existing)`, which stubbed a read the write path
+   * no longer performs.
+   */
+  function seedStoredPrice(row: Record<string, unknown>): void {
+    upsertedPrices.push({
+      id: (row.id as number) ?? upsertedPrices.length + 1,
+      securityId: row.securityId as string,
+      priceDate: row.priceDate as string,
+      openPrice: (row.openPrice as number) ?? null,
+      highPrice: (row.highPrice as number) ?? null,
+      lowPrice: (row.lowPrice as number) ?? null,
+      closePrice: row.closePrice as number,
+      volume: (row.volume as number) ?? null,
+      source: (row.source as string) ?? "yahoo_finance",
+      quotedAt: (row.quotedAt as Date) ?? null,
+    });
+  }
+
+  /** The scoped transaction manager's `query`, for asserting on statements. */
+  let scopedManagerQuery: jest.Mock;
+  /** Set to make the next single-price upsert reject. */
+  let priceWriteError: Error | null;
+  /** Rows the single-price upsert wrote, in the shape the statement stores them. */
+  let upsertedPrices: Array<{
+    id: number;
+    securityId: string;
+    priceDate: string;
+    openPrice: number | null;
+    highPrice: number | null;
+    lowPrice: number | null;
+    closePrice: number;
+    volume: number | null;
+    source: string;
+    quotedAt: Date | null;
+  }>;
   let netWorthService: Record<string, jest.Mock>;
   let msnFinanceService: Record<string, jest.Mock>;
   let originalFetch: typeof global.fetch;
@@ -146,7 +197,14 @@ describe("SecurityPriceService", () => {
     originalFetch = global.fetch;
 
     securityPriceRepository = {
-      findOne: jest.fn(),
+      // Default: answer a by-id read (the price upsert's read-back) from the
+      // rows the upsert recorded. Tests that care about a specific stored row
+      // still override this with `mockResolvedValue`.
+      findOne: jest.fn(async ({ where }: { where?: { id?: number } } = {}) =>
+        where?.id === undefined
+          ? null
+          : (upsertedPrices.find((row) => row.id === where.id) ?? null),
+      ),
       find: jest.fn(),
       create: jest.fn().mockImplementation((data) => ({ ...data, id: 1 })),
       save: jest.fn().mockImplementation((data) => data),
@@ -204,8 +262,59 @@ describe("SecurityPriceService", () => {
       [Security, securitiesRepository],
       [UserPreference, userPreferenceRepository],
     ]);
-    manager.query.mockImplementation((sql: string, params?: unknown[]) =>
-      dataSourceMock.query(sql, params),
+    // The single-price write is now one `INSERT ... ON CONFLICT DO UPDATE
+    // RETURNING id`, so the spec records what it wrote and answers the by-id
+    // read-back with the resulting row -- which is what the assertions are about.
+    upsertedPrices = [];
+    priceWriteError = null;
+    scopedManagerQuery = manager.query;
+    manager.query.mockImplementation(
+      async (sql: string, params?: unknown[]) => {
+        if (
+          typeof sql === "string" &&
+          sql.includes("INSERT INTO security_prices") &&
+          sql.includes("RETURNING id")
+        ) {
+          if (priceWriteError) throw priceWriteError;
+          const [
+            securityId,
+            priceDate,
+            openPrice,
+            highPrice,
+            lowPrice,
+            closePrice,
+            volume,
+            source,
+            quotedAt,
+          ] = params as unknown[];
+          const previous = upsertedPrices.find(
+            (row) =>
+              row.securityId === securityId && row.priceDate === priceDate,
+          );
+          // `COALESCE(EXCLUDED.x, security_prices.x)` in the statement: a value
+          // the quote did not supply keeps whatever is stored.
+          const row = {
+            id: (previous?.id ?? upsertedPrices.length + 1) as number,
+            securityId: securityId as string,
+            priceDate: priceDate as string,
+            openPrice: (openPrice ?? previous?.openPrice ?? null) as
+              | number
+              | null,
+            highPrice: (highPrice ?? previous?.highPrice ?? null) as
+              | number
+              | null,
+            lowPrice: (lowPrice ?? previous?.lowPrice ?? null) as number | null,
+            closePrice: closePrice as number,
+            volume: (volume ?? previous?.volume ?? null) as number | null,
+            source: (source ?? "manual") as string,
+            quotedAt: (quotedAt ?? previous?.quotedAt ?? null) as Date | null,
+          };
+          if (previous) Object.assign(previous, row);
+          else upsertedPrices.push(row);
+          return [{ id: row.id }];
+        }
+        return dataSourceMock.query(sql, params);
+      },
     );
 
     const yahooFinanceService = new YahooFinanceService();
@@ -522,7 +631,6 @@ describe("SecurityPriceService", () => {
       global.fetch = jest
         .fn()
         .mockResolvedValue(createMockFetchResponse(yahooData)) as jest.Mock;
-      securityPriceRepository.findOne.mockResolvedValue(null);
 
       const result = await service.refreshAllPrices();
 
@@ -545,10 +653,10 @@ describe("SecurityPriceService", () => {
         .mockResolvedValue(createMockFetchResponse(yahooData)) as jest.Mock;
 
       // savePriceData: findOne returns null (new price), then create and save
-      securityPriceRepository.findOne.mockResolvedValue(null);
 
       const result = await service.refreshAllPrices();
 
+      expect(result.results[0].error).toBeUndefined();
       expect(result.totalSecurities).toBe(1);
       expect(result.updated).toBe(1);
       expect(result.failed).toBe(0);
@@ -568,8 +676,6 @@ describe("SecurityPriceService", () => {
       global.fetch = jest
         .fn()
         .mockResolvedValue(createMockFetchResponse(yahooData)) as jest.Mock;
-
-      securityPriceRepository.findOne.mockResolvedValue(null);
 
       await service.refreshAllPrices();
 
@@ -599,8 +705,6 @@ describe("SecurityPriceService", () => {
         ); // MSFT.CN fails
       global.fetch = fetchMock;
 
-      securityPriceRepository.findOne.mockResolvedValue(null);
-
       const result = await service.refreshAllPrices();
 
       // Should have tried plain symbol + 3 alternates
@@ -619,8 +723,6 @@ describe("SecurityPriceService", () => {
         .mockResolvedValue(
           createMockFetchResponse({ chart: { result: [] } }),
         ) as jest.Mock;
-
-      securityPriceRepository.findOne.mockResolvedValue(null);
 
       const result = await service.refreshAllPrices();
 
@@ -666,18 +768,18 @@ describe("SecurityPriceService", () => {
 
       // savePriceData: findOne returns existing entry
       const existingPrice = { ...mockPriceEntry };
-      securityPriceRepository.findOne.mockResolvedValue(existingPrice);
+      // A row already stored for this security and date: the upsert's
+      // `ON CONFLICT DO UPDATE` merges onto it rather than inserting.
+      seedStoredPrice(existingPrice);
 
       await service.refreshAllPrices();
 
-      // Should update existing, not create new
-      expect(securityPriceRepository.create).not.toHaveBeenCalled();
-      expect(securityPriceRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({
-          closePrice: 193.5,
-          source: "yahoo_finance",
-        }),
-      );
+      // Merged onto the stored row, not inserted alongside it.
+      expect(upsertedPrices).toHaveLength(1);
+      expect(upsertedPrices[0]).toMatchObject({
+        closePrice: 193.5,
+        source: "yahoo_finance",
+      });
     });
 
     it("handles save error for individual security", async () => {
@@ -688,10 +790,7 @@ describe("SecurityPriceService", () => {
         .fn()
         .mockResolvedValue(createMockFetchResponse(yahooData)) as jest.Mock;
 
-      securityPriceRepository.findOne.mockResolvedValue(null);
-      securityPriceRepository.save.mockRejectedValue(
-        new Error("DB write failed"),
-      );
+      failPriceWrite(new Error("DB write failed"));
 
       const result = await service.refreshAllPrices();
 
@@ -722,8 +821,6 @@ describe("SecurityPriceService", () => {
       global.fetch = jest
         .fn()
         .mockResolvedValue(createMockFetchResponse(yahooData)) as jest.Mock;
-
-      securityPriceRepository.findOne.mockResolvedValue(null);
 
       const result = await service.refreshAllPrices();
 
@@ -774,8 +871,6 @@ describe("SecurityPriceService", () => {
         .fn()
         .mockResolvedValue(createMockFetchResponse(yahooData)) as jest.Mock;
 
-      securityPriceRepository.findOne.mockResolvedValue(null);
-
       const result = await service.refreshPricesForSecurities(["sec-1"]);
 
       expect(result.totalSecurities).toBe(1);
@@ -799,8 +894,6 @@ describe("SecurityPriceService", () => {
           createMockFetchResponse({ chart: { result: [] } }),
         );
       global.fetch = fetchMock;
-
-      securityPriceRepository.findOne.mockResolvedValue(null);
 
       const result = await service.refreshPricesForSecurities([
         "sec-1",
@@ -827,8 +920,6 @@ describe("SecurityPriceService", () => {
         ); // MSFT.TO succeeds
       global.fetch = fetchMock;
 
-      securityPriceRepository.findOne.mockResolvedValue(null);
-
       const result = await service.refreshPricesForSecurities(["sec-3"]);
 
       expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -843,10 +934,7 @@ describe("SecurityPriceService", () => {
         .fn()
         .mockResolvedValue(createMockFetchResponse(yahooData)) as jest.Mock;
 
-      securityPriceRepository.findOne.mockResolvedValue(null);
-      securityPriceRepository.save.mockRejectedValue(
-        new Error("Constraint violation"),
-      );
+      failPriceWrite(new Error("Constraint violation"));
 
       const result = await service.refreshPricesForSecurities(["sec-1"]);
 
@@ -1795,7 +1883,6 @@ describe("SecurityPriceService", () => {
         .mockResolvedValue(
           createMockFetchResponse(makeYahooChartResponse()),
         ) as jest.Mock;
-      securityPriceRepository.findOne.mockResolvedValue(null);
 
       await service.refreshAllPrices();
 
@@ -1814,7 +1901,6 @@ describe("SecurityPriceService", () => {
         .mockResolvedValue(
           createMockFetchResponse(makeYahooChartResponse()),
         ) as jest.Mock;
-      securityPriceRepository.findOne.mockResolvedValue(null);
 
       await service.refreshAllPrices();
 
@@ -1833,7 +1919,6 @@ describe("SecurityPriceService", () => {
         .mockResolvedValue(
           createMockFetchResponse(makeYahooChartResponse()),
         ) as jest.Mock;
-      securityPriceRepository.findOne.mockResolvedValue(null);
 
       await service.refreshAllPrices();
 
@@ -1852,7 +1937,6 @@ describe("SecurityPriceService", () => {
         .mockResolvedValue(
           createMockFetchResponse(makeYahooChartResponse()),
         ) as jest.Mock;
-      securityPriceRepository.findOne.mockResolvedValue(null);
 
       await service.refreshAllPrices();
 
@@ -1871,7 +1955,6 @@ describe("SecurityPriceService", () => {
         .mockResolvedValue(
           createMockFetchResponse(makeYahooChartResponse()),
         ) as jest.Mock;
-      securityPriceRepository.findOne.mockResolvedValue(null);
 
       await service.refreshAllPrices();
 
@@ -1890,7 +1973,6 @@ describe("SecurityPriceService", () => {
         .mockResolvedValue(
           createMockFetchResponse(makeYahooChartResponse()),
         ) as jest.Mock;
-      securityPriceRepository.findOne.mockResolvedValue(null);
 
       await service.refreshAllPrices();
 
@@ -1909,7 +1991,6 @@ describe("SecurityPriceService", () => {
         .mockResolvedValue(
           createMockFetchResponse(makeYahooChartResponse()),
         ) as jest.Mock;
-      securityPriceRepository.findOne.mockResolvedValue(null);
 
       await service.refreshAllPrices();
 
@@ -1928,7 +2009,6 @@ describe("SecurityPriceService", () => {
         .mockResolvedValue(
           createMockFetchResponse(makeYahooChartResponse()),
         ) as jest.Mock;
-      securityPriceRepository.findOne.mockResolvedValue(null);
 
       await service.refreshAllPrices();
 
@@ -1947,7 +2027,6 @@ describe("SecurityPriceService", () => {
         .mockResolvedValue(
           createMockFetchResponse(makeYahooChartResponse()),
         ) as jest.Mock;
-      securityPriceRepository.findOne.mockResolvedValue(null);
 
       await service.refreshAllPrices();
 
@@ -1970,8 +2049,6 @@ describe("SecurityPriceService", () => {
         .fn()
         .mockResolvedValue(createMockFetchResponse(yahooData)) as jest.Mock;
 
-      securityPriceRepository.findOne.mockResolvedValue(null);
-
       await service.refreshAllPrices();
 
       // The trading date should be derived from the timestamp (zeroed in UTC)
@@ -1981,11 +2058,9 @@ describe("SecurityPriceService", () => {
         expected.getUTCMonth() + 1,
       ).padStart(2, "0")}-${String(expected.getUTCDate()).padStart(2, "0")}`;
 
-      expect(securityPriceRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          priceDate: expectedDateStr,
-        }),
-      );
+      expect(upsertedPrices[0]).toMatchObject({
+        priceDate: expectedDateStr,
+      });
     });
 
     it("falls back to current date when regularMarketTime is missing", async () => {
@@ -2000,16 +2075,12 @@ describe("SecurityPriceService", () => {
         .fn()
         .mockResolvedValue(createMockFetchResponse(yahooData)) as jest.Mock;
 
-      securityPriceRepository.findOne.mockResolvedValue(null);
-
       await service.refreshAllPrices();
 
       // Should use today (or adjusted for weekend) as a YYYY-MM-DD string
-      expect(securityPriceRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          priceDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
-        }),
-      );
+      expect(upsertedPrices[0]).toMatchObject({
+        priceDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      });
     });
   });
 
@@ -2027,21 +2098,17 @@ describe("SecurityPriceService", () => {
         .fn()
         .mockResolvedValue(createMockFetchResponse(yahooData)) as jest.Mock;
 
-      securityPriceRepository.findOne.mockResolvedValue(null);
-
       await service.refreshAllPrices();
 
-      expect(securityPriceRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          securityId: "sec-1",
-          closePrice: 200.0,
-          highPrice: 205.0,
-          lowPrice: 198.0,
-          volume: 60000000,
-          source: "yahoo_finance",
-        }),
-      );
-      expect(securityPriceRepository.save).toHaveBeenCalled();
+      expect(upsertedPrices).toHaveLength(1);
+      expect(upsertedPrices[0]).toMatchObject({
+        securityId: "sec-1",
+        closePrice: 200.0,
+        highPrice: 205.0,
+        lowPrice: 198.0,
+        volume: 60000000,
+        source: "yahoo_finance",
+      });
     });
 
     it("updates existing price entry when one exists for the date", async () => {
@@ -2065,22 +2132,21 @@ describe("SecurityPriceService", () => {
         closePrice: 189.0,
         volume: 40000000,
       };
-      securityPriceRepository.findOne.mockResolvedValue(existingPrice);
+      // A row already stored for this security and date: the upsert's
+      // `ON CONFLICT DO UPDATE` merges onto it rather than inserting.
+      seedStoredPrice(existingPrice);
 
       await service.refreshAllPrices();
 
-      // Should NOT call create
-      expect(securityPriceRepository.create).not.toHaveBeenCalled();
-      // Should update existing and save
-      expect(securityPriceRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({
-          closePrice: 200.0,
-          highPrice: 205.0,
-          lowPrice: 198.0,
-          volume: 60000000,
-          source: "yahoo_finance",
-        }),
-      );
+      // Merged onto the row that was there, not inserted alongside it.
+      expect(upsertedPrices).toHaveLength(1);
+      expect(upsertedPrices[0]).toMatchObject({
+        closePrice: 200.0,
+        highPrice: 205.0,
+        lowPrice: 198.0,
+        volume: 60000000,
+        source: "yahoo_finance",
+      });
     });
 
     it("preserves existing openPrice when quote has no open", async () => {
@@ -2099,12 +2165,19 @@ describe("SecurityPriceService", () => {
         ...mockPriceEntry,
         openPrice: 188.0,
       };
-      securityPriceRepository.findOne.mockResolvedValue(existingPrice);
+      // A row already stored for this security and date: the upsert's
+      // `ON CONFLICT DO UPDATE` merges onto it rather than inserting.
+      seedStoredPrice(existingPrice);
 
       await service.refreshAllPrices();
 
-      // openPrice should remain 188.0 because quote.regularMarketOpen is undefined
-      expect(securityPriceRepository.save).toHaveBeenCalledWith(
+      // openPrice stays 188.0 because the quote carries no open and the
+      // statement says `COALESCE(EXCLUDED.open_price, security_prices.open_price)`
+      // -- read from the stored row rather than from a copy fetched earlier.
+      expect(priceUpsertSql()).toContain(
+        "COALESCE(EXCLUDED.open_price,  security_prices.open_price)",
+      );
+      expect(upsertedPrices[0]).toMatchObject(
         expect.objectContaining({
           openPrice: 188.0,
         }),
@@ -2168,8 +2241,6 @@ describe("SecurityPriceService", () => {
           ),
         ); // MSFT.TO succeeds
       global.fetch = fetchMock;
-
-      securityPriceRepository.findOne.mockResolvedValue(null);
 
       const result = await service.refreshAllPrices();
 
@@ -2313,40 +2384,110 @@ describe("SecurityPriceService", () => {
     });
   });
 
+  describe("single-price writes are one guarded statement", () => {
+    it("does not read the row before deciding to insert or update", async () => {
+      // The regression: this used to `findOne` and then either save a mutated
+      // copy or insert a fresh row. The 5 PM ET price cron fires on every
+      // replica, so two processes routinely fetch the same quote for the same
+      // security and day, both find no row, and both insert -- the loser hit
+      // `UNIQUE(security_id, price_date)` and that security had no price at all
+      // for the day. There is now nothing to check and nothing to get wrong.
+      securitiesRepository.find.mockResolvedValue([mockSecurity]);
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(
+          createMockFetchResponse(makeYahooChartResponse()),
+        ) as jest.Mock;
+
+      await service.refreshAllPrices();
+
+      const sql = priceUpsertSql();
+      expect(sql).toContain("ON CONFLICT (security_id, price_date) DO UPDATE");
+      // The read-back is by the id the statement returned, so it cannot pick up
+      // a different row.
+      expect(sql).toContain("RETURNING id");
+      const reads = securityPriceRepository.findOne.mock.calls.map(
+        (call) => (call[0] as { where?: Record<string, unknown> })?.where ?? {},
+      );
+      expect(
+        reads.some(
+          (where) =>
+            "securityId" in where && "priceDate" in where && !("id" in where),
+        ),
+      ).toBe(false);
+    });
+
+    it("keeps a stored field the quote does not carry, reading it from the row", async () => {
+      // `?? existing.x` on a copy fetched earlier would write back whatever that
+      // copy held, overwriting a value another writer had since stored. The
+      // COALESCE reads the row as it is at write time.
+      securitiesRepository.find.mockResolvedValue([mockSecurity]);
+      seedStoredPrice({ ...mockPriceEntry, openPrice: 111.0 });
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(
+          createMockFetchResponse(
+            makeYahooChartResponse({ regularMarketPrice: 200 }),
+          ),
+        ) as jest.Mock;
+
+      await service.refreshAllPrices();
+
+      expect(upsertedPrices).toHaveLength(1);
+      // The fixture carries a close and a volume but no open, so only the open
+      // falls back -- and it falls back to what is stored.
+      expect(upsertedPrices[0]).toMatchObject({
+        closePrice: 200,
+        openPrice: 111.0,
+      });
+      for (const column of [
+        "open_price",
+        "high_price",
+        "low_price",
+        "volume",
+      ]) {
+        expect(priceUpsertSql()).toContain(`COALESCE(EXCLUDED.${column},`);
+      }
+    });
+  });
+
   describe("createManualPrice", () => {
     it("should create a new manual price entry", async () => {
-      securityPriceRepository.findOne.mockResolvedValue(null);
-
       await service.createManualPrice("sec-1", {
         priceDate: "2025-06-01",
         closePrice: 150.5,
       });
 
-      expect(securityPriceRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          securityId: "sec-1",
-          closePrice: 150.5,
-          source: "manual",
-        }),
+      expect(upsertedPrices).toHaveLength(1);
+      expect(upsertedPrices[0]).toMatchObject({
+        securityId: "sec-1",
+        priceDate: "2025-06-01",
+        closePrice: 150.5,
+        source: "manual",
+      });
+      expect(priceUpsertSql()).toContain(
+        "ON CONFLICT (security_id, price_date) DO UPDATE",
       );
-      expect(securityPriceRepository.save).toHaveBeenCalled();
     });
 
     it("should overwrite existing price entry", async () => {
       const existing = { ...mockPriceEntry, source: "yahoo_finance" };
-      securityPriceRepository.findOne.mockResolvedValue(existing);
+      // A row already stored for this security and date: the upsert's
+      // `ON CONFLICT DO UPDATE` merges onto it rather than inserting.
+      seedStoredPrice(existing);
 
       await service.createManualPrice("sec-1", {
         priceDate: "2025-06-01",
         closePrice: 200.0,
       });
 
-      expect(securityPriceRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({
-          closePrice: 200.0,
-          source: "manual",
-        }),
-      );
+      // One statement: the manual entry merges onto the provider's row for the
+      // same day instead of racing it to a unique violation.
+      expect(upsertedPrices).toHaveLength(1);
+      expect(upsertedPrices[0]).toMatchObject({
+        closePrice: 200.0,
+        source: "manual",
+      });
     });
   });
 

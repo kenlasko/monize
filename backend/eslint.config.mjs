@@ -35,6 +35,10 @@ const WITH_CONTEXT_ALLOWLIST = [
   "src/budgets/budget-alert.service.ts",
   "src/budgets/budget-period-cron.service.ts",
   "src/common/interceptors/request-context.interceptor.ts",
+  // Cross-replica job coordination: claimOnce/claimLease write to a global
+  // claims table that belongs to no single user, from cron entry points with no
+  // request to inherit an identity from -- system context by construction.
+  "src/common/jobs/job-claim.service.ts",
   "src/currencies/currencies.service.ts",
   "src/currencies/exchange-rate.service.ts",
   "src/database/demo-reset.service.ts",

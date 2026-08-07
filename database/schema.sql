@@ -341,6 +341,62 @@ CREATE TABLE attachment_blobs (
     data BYTEA NOT NULL
 );
 
+-- Attachment objects whose metadata is gone and whose bytes still need deleting
+-- (migration 139).
+--
+-- Only the database provider keeps bytes where PostgreSQL can roll them back. A
+-- local filesystem write and an S3 put cannot join the transaction, so deleting
+-- the object before the metadata delete committed left metadata pointing at bytes
+-- that no longer existed. And deleting a transaction removes its attachment
+-- metadata by ON DELETE CASCADE with no application code running at all, so
+-- those objects were never deleted.
+--
+-- A trigger writes the tombstone, which is why it covers every path the
+-- application does not control. AttachmentOrphanSweeper deletes the object and
+-- drops the row, so a crash between the two costs a retry.
+--
+-- user_id is ON DELETE SET NULL, not CASCADE: deleting a user is exactly when
+-- their bytes most need removing, so the record must outlive them.
+CREATE TABLE attachment_blob_tombstones (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    storage_provider VARCHAR(20) NOT NULL,
+    storage_key VARCHAR(255) NOT NULL,
+    deleted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    last_error TEXT
+);
+
+-- Unique, so a tombstone is idempotent: two records for one object describe the
+-- same pending deletion, and the trigger can therefore be a plain
+-- ON CONFLICT DO NOTHING insert with no bookkeeping of its own.
+CREATE UNIQUE INDEX idx_abt_object
+    ON attachment_blob_tombstones(storage_provider, storage_key);
+CREATE INDEX idx_abt_deleted_at ON attachment_blob_tombstones(deleted_at);
+
+-- SECURITY DEFINER so the tombstone is written as the table owner: under RLS the
+-- trigger would otherwise insert as the invoking role and be refused whenever the
+-- deleted row's owner is not the session's identity, and a refused trigger fails
+-- the DELETE itself. search_path is pinned -- a SECURITY DEFINER function that
+-- resolves its tables through the caller's search_path is an escalation hole.
+CREATE OR REPLACE FUNCTION record_attachment_blob_tombstone() RETURNS TRIGGER
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+    INSERT INTO attachment_blob_tombstones (user_id, storage_provider, storage_key)
+    VALUES (OLD.user_id, OLD.storage_provider, OLD.storage_key)
+    ON CONFLICT (storage_provider, storage_key) DO NOTHING;
+    RETURN OLD;
+END;
+$$;
+
+-- Only for providers whose bytes live outside PostgreSQL. The database provider
+-- keeps them in attachment_blobs, whose own foreign key cascades.
+CREATE TRIGGER trg_attachment_blob_tombstone
+    AFTER DELETE ON transaction_attachments
+    FOR EACH ROW
+    WHEN (OLD.storage_provider <> 'database')
+    EXECUTE FUNCTION record_attachment_blob_tombstone();
+
 -- Tags
 CREATE TABLE tags (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -566,6 +622,23 @@ CREATE TABLE scheduled_transaction_overrides (
 CREATE INDEX idx_sched_txn_overrides_sched_txn_id ON scheduled_transaction_overrides(scheduled_transaction_id);
 CREATE INDEX idx_sched_txn_overrides_date ON scheduled_transaction_overrides(override_date);
 CREATE INDEX idx_sched_txn_overrides_orig ON scheduled_transaction_overrides(scheduled_transaction_id, original_date);
+
+-- Posted occurrences (migration 139). The occurrence -- not the schedule -- is
+-- the thing that must happen once, and this unique key is its name. Manual and
+-- automatic posting both insert it inside the same transaction as the money they
+-- create, so the key arbitrates between two replicas, a manual post racing the
+-- cron, and a retry after a crash. original_due_date is the schedule's own
+-- next_due_date at posting time, not posted_date, which an override moves.
+CREATE TABLE scheduled_transaction_postings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    scheduled_transaction_id UUID NOT NULL REFERENCES scheduled_transactions(id) ON DELETE CASCADE,
+    original_due_date DATE NOT NULL,
+    posted_date DATE NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE UNIQUE INDEX idx_stp_occurrence
+    ON scheduled_transaction_postings(scheduled_transaction_id, original_due_date);
 
 -- Security documents: factsheet, KIID, prospectus, annual report, tax slip,
 -- research. Real columns rather than a JSONB blob so the type, name, date and
@@ -1296,6 +1369,24 @@ CREATE INDEX idx_budget_alerts_user ON budget_alerts(user_id);
 CREATE INDEX idx_budget_alerts_user_unread ON budget_alerts(user_id, is_read) WHERE is_read = false;
 CREATE INDEX idx_budget_alerts_budget_period ON budget_alerts(budget_id, period_start);
 
+-- The app's own de-duplication rule as a database key (migration 139).
+-- deduplicateAlerts() drops a candidate matching an existing (alert_type,
+-- budget_category_id) unless its severity is strictly higher, so severity
+-- belongs in the key and an escalation still inserts. COALESCE because a
+-- budget-wide alert has a NULL category and NULL never equals NULL in a unique
+-- index: without it the budget-wide alerts would be the only unguarded ones.
+--
+-- Duplicates predating the key are collapsed by the migration's preflight before
+-- it is created, keeping whichever row the user acted on.
+CREATE UNIQUE INDEX idx_budget_alerts_fingerprint
+    ON budget_alerts(
+        budget_id,
+        period_start,
+        alert_type,
+        COALESCE(budget_category_id, '00000000-0000-0000-0000-000000000000'::uuid),
+        severity
+    );
+
 -- Triggers for budget tables updated_at
 CREATE TRIGGER update_budgets_updated_at BEFORE UPDATE ON budgets FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_budget_categories_updated_at BEFORE UPDATE ON budget_categories FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -1351,22 +1442,122 @@ CREATE TABLE import_jobs (
     error_key VARCHAR(100),
     error_detail TEXT,
     retryable BOOLEAN NOT NULL DEFAULT false,
+    -- Set inside the import transaction, so it commits with the rows it
+    -- describes (migration 139). Distinguishes "failed before writing anything,
+    -- retry is free" from "the ledger is already written and only the completion
+    -- metadata is missing" -- two states the retryable flag used to fold into
+    -- one and offer as an ordinary retry, which re-imported the file.
+    data_committed BOOLEAN NOT NULL DEFAULT false,
     heartbeat_at TIMESTAMP,
     started_at TIMESTAMP,
     completed_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- Load-bearing for the partial unique index below, not cosmetic: its
+    -- predicate names two statuses, so a status the application never intended
+    -- would sit outside the predicate and let a second active job exist.
+    CONSTRAINT import_jobs_status_check
+        CHECK (status IN ('pending', 'running', 'completed', 'failed'))
 );
 
 CREATE INDEX idx_import_jobs_user ON import_jobs(user_id);
 CREATE INDEX idx_import_jobs_staged_file ON import_jobs(staged_file_id);
 CREATE INDEX idx_import_jobs_running_heartbeat ON import_jobs(heartbeat_at) WHERE status = 'running';
--- One in-flight import per user, enforced here rather than by a read-then-insert
--- in the service: two concurrent starts would otherwise both see no active job
--- and import the same staged file twice.
-CREATE UNIQUE INDEX idx_import_jobs_one_active_per_user ON import_jobs(user_id) WHERE status IN ('pending', 'running');
+-- One active import per user, enforced where it cannot be raced (migration 139).
+-- The key is the user because that is what the product blocks on: hasActiveJob()
+-- asks only whether this user has any pending/running job, and the 409 says "an
+-- import is already running".
+--
+-- A fresh database is trivially in this state; an upgraded one need not be, since
+-- more than one active job is exactly what the pre-136 code could produce. The
+-- migration therefore repairs before it constrains -- see its preflight, and
+-- backend/test/integration/migration-139-preflight.integration.spec.ts.
+CREATE UNIQUE INDEX idx_import_jobs_one_active_per_user
+    ON import_jobs(user_id)
+    WHERE status IN ('pending', 'running');
 
 CREATE TRIGGER update_import_jobs_updated_at BEFORE UPDATE ON import_jobs FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Durable claims on per-user work that must happen at most once (migration 139).
+--
+-- ScheduleModule lives in the API process, so every backend replica fires every
+-- cron (docs/cron-jobs.md). A guard held in process memory is therefore not a
+-- guard -- each replica has its own -- and "query for a row like the one I am
+-- about to write" is a check-then-act both replicas pass. The unique key makes
+-- the claim itself the atomic operation.
+--
+-- expires_at NULL means a permanent claim (one delivery per user per window);
+-- a timestamp means a lease a later worker may retake once it has passed, so a
+-- replica killed mid-run does not lock the user out.
+CREATE TABLE job_claims (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    claim_type VARCHAR(64) NOT NULL,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    claim_key VARCHAR(200) NOT NULL,
+    claimed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    -- The lease: present while a replica is doing the work, gone or past when it
+    -- is not. NULL on a legacy permanent claim.
+    expires_at TIMESTAMP,
+    -- When the side effect this claim coordinates actually happened
+    -- (migration 139). Written *after* the send, and re-read under the lease to
+    -- decide whether the work is still owed: a claim taken before the send says
+    -- only that somebody intended to send, and an intention does not survive the
+    -- process holding it (audit RV4-006). A delivered row is never retaken.
+    delivered_at TIMESTAMP,
+    -- Which attempt owns the current lease (migration 140). The key above
+    -- identifies the *work*; this identifies the holder, so a worker delayed past
+    -- its own expiry cannot release a lease another replica has retaken or record a
+    -- delivery for a send that replica has not finished (audit DR-RRV4-01). NULL for
+    -- a permanent `claimOnce` row, which has no attempt to identify.
+    lease_token UUID
+);
+
+CREATE UNIQUE INDEX idx_job_claims_key ON job_claims(claim_type, user_id, claim_key);
+CREATE INDEX idx_job_claims_claimed_at ON job_claims(claimed_at);
+
+-- Lease-ownership enforcement (migration 141). A session mutating a *live tokenized*
+-- lease must own it, proven by the transaction-local `app.job_claim_lease_token`
+-- GUC the new release/markDelivered set. The previous binary never sets it, so it
+-- cannot delete or mark a lease this deployment has retaken. The WHEN clauses
+-- exclude expired rows (retakes, retention sweep), permanent claimOnce rows
+-- (NULL token) and delivered rows (NULL expiry), so only the tokenized writes and
+-- the old binary's untokenized ones ever reach the guard.
+CREATE OR REPLACE FUNCTION guard_job_claim_lease_ownership() RETURNS TRIGGER
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF COALESCE(current_setting('app.job_claim_lease_token', true), '')
+       IS DISTINCT FROM OLD.lease_token::text THEN
+        RAISE EXCEPTION
+          'job_claims lease % (%/%/%) is held by another attempt; this session does not own it',
+          OLD.lease_token, OLD.claim_type, OLD.user_id, OLD.claim_key
+          USING ERRCODE = 'raise_exception';
+    END IF;
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_job_claims_guard_delete
+    BEFORE DELETE ON job_claims
+    FOR EACH ROW
+    WHEN (
+      OLD.lease_token IS NOT NULL
+      AND OLD.expires_at IS NOT NULL
+      AND OLD.expires_at > CURRENT_TIMESTAMP
+    )
+    EXECUTE FUNCTION guard_job_claim_lease_ownership();
+
+CREATE TRIGGER trg_job_claims_guard_update
+    BEFORE UPDATE ON job_claims
+    FOR EACH ROW
+    WHEN (
+      OLD.lease_token IS NOT NULL
+      AND OLD.expires_at IS NOT NULL
+      AND OLD.expires_at > CURRENT_TIMESTAMP
+    )
+    EXECUTE FUNCTION guard_job_claim_lease_ownership();
 
 -- Trigger for tags updated_at
 CREATE TRIGGER update_tags_updated_at BEFORE UPDATE ON tags FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -1391,7 +1582,6 @@ CREATE TABLE action_history (
 CREATE INDEX idx_action_history_user_created ON action_history(user_id, created_at DESC);
 CREATE INDEX idx_action_history_user_undone ON action_history(user_id, is_undone, created_at DESC);
 
-
 -- OAuth 2.1 Authorization Server payloads (node-oidc-provider adapter)
 CREATE TABLE oauth_payloads (
     id VARCHAR(255) NOT NULL,
@@ -1410,7 +1600,6 @@ CREATE INDEX idx_oauth_payloads_grant ON oauth_payloads(grant_id) WHERE grant_id
 CREATE INDEX idx_oauth_payloads_uid ON oauth_payloads(uid) WHERE uid IS NOT NULL;
 CREATE INDEX idx_oauth_payloads_user_code ON oauth_payloads(user_code) WHERE user_code IS NOT NULL;
 CREATE INDEX idx_oauth_payloads_expires ON oauth_payloads(expires_at) WHERE expires_at IS NOT NULL;
-
 
 -- Monte Carlo retirement-projection scenarios (saved simulation inputs)
 CREATE TABLE monte_carlo_scenarios (
@@ -1627,8 +1816,6 @@ CREATE TABLE gem_strategy_signals (
 CREATE UNIQUE INDEX idx_gem_strategy_signals_period ON gem_strategy_signals(strategy_id, evaluated_on, algorithm_version);
 CREATE INDEX idx_gem_strategy_signals_user ON gem_strategy_signals(user_id);
 
-
-
 -- ===========================================================================
 -- Row-Level Security policies
 --
@@ -1655,6 +1842,7 @@ DECLARE
     t text;
     direct_tables text[] := ARRAY[
         'action_history',
+        'attachment_blob_tombstones',
         'ai_insights',
         'ai_provider_configs',
         'ai_usage_logs',
@@ -1672,6 +1860,7 @@ DECLARE
         'institutions',
         'investment_reports',
         'investment_transactions',
+        'job_claims',
         'loan_rate_changes',
         'loan_scenarios',
         'monte_carlo_scenarios',
@@ -1970,6 +2159,18 @@ CREATE POLICY scheduled_transaction_overrides_isolation ON scheduled_transaction
     WHERE st.id = scheduled_transaction_overrides.scheduled_transaction_id
       AND st.user_id = (SELECT app_current_user_id())));
 
+-- scheduled_transaction_postings -> scheduled_transactions.user_id (migration 139)
+DROP POLICY IF EXISTS scheduled_transaction_postings_isolation ON scheduled_transaction_postings;
+CREATE POLICY scheduled_transaction_postings_isolation ON scheduled_transaction_postings
+  USING ((SELECT app_bypass_rls()) OR EXISTS (
+    SELECT 1 FROM scheduled_transactions st
+    WHERE st.id = scheduled_transaction_postings.scheduled_transaction_id
+      AND st.user_id = (SELECT app_current_user_id())))
+  WITH CHECK ((SELECT app_bypass_rls()) OR EXISTS (
+    SELECT 1 FROM scheduled_transactions st
+    WHERE st.id = scheduled_transaction_postings.scheduled_transaction_id
+      AND st.user_id = (SELECT app_current_user_id())));
+
 -- ---------------------------------------------------------------------------
 -- Securities family
 --
@@ -2218,7 +2419,9 @@ CREATE POLICY emergency_access_contacts_isolation ON emergency_access_contacts
 --           15 indirect (113), 5 special (114),
 --           2 direct for the .mny import's staging + job tables (117),
 --           1 direct for security_documents (118),
---           4 direct for the GEM strategy tables (124, 125).
+--           4 direct for the GEM strategy tables (124, 125),
+--           2 direct for job_claims and attachment_blob_tombstones, and
+--           1 indirect for scheduled_transaction_postings (133).
 
 -- ---------------------------------------------------------------------------
 -- Enable row-level security (migration 123).

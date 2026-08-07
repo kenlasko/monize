@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { LessThan, IsNull, DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
+import { returnedRows } from "../common/db/query-result";
 import { ConfigService } from "@nestjs/config";
 import { I18nService } from "nestjs-i18n";
 import { emailTranslator } from "../i18n/email-translator";
@@ -322,27 +323,52 @@ export class BudgetAlertService {
       return { alertsCreated: 0, emailsSent: 0 };
     }
 
-    // Save new alerts
+    // Save new alerts. What the INSERT returns -- not what the candidate list
+    // hoped to save -- decides which alerts are new.
+    //
+    // The in-memory de-duplication above is a check-then-act, and every backend
+    // replica runs this cron: two processors both read no existing OVER_BUDGET
+    // alert for the period, both inserted one, and both sent the critical email
+    // (audit P4-015). The unique fingerprint from migration 139 arbitrates
+    // instead, and `ON CONFLICT DO NOTHING RETURNING` reports the outcome
+    // honestly: the loser gets no row and therefore sends nothing.
     const savedAlerts: BudgetAlert[] = [];
     for (const candidate of newCandidates) {
-      savedAlerts.push(
-        await withScopedDb(this.dataSource, (m) => {
-          const repo = m.getRepository(BudgetAlert);
-          return repo.save(
-            repo.create({
-              userId: budget.userId,
-              budgetId: candidate.budgetId,
-              budgetCategoryId: candidate.budgetCategoryId,
-              alertType: candidate.alertType,
-              severity: candidate.severity,
-              title: candidate.title,
-              message: candidate.message,
-              data: candidate.data,
-              periodStart,
-            }),
-          );
-        }),
+      const inserted = await withScopedDb(this.dataSource, (m) =>
+        m.query(
+          `INSERT INTO budget_alerts
+             (user_id, budget_id, budget_category_id, alert_type, severity,
+              title, message, data, period_start)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9)
+           ON CONFLICT (budget_id, period_start, alert_type,
+                        COALESCE(budget_category_id, '00000000-0000-0000-0000-000000000000'::uuid),
+                        severity)
+             DO NOTHING
+           RETURNING id`,
+          [
+            budget.userId,
+            candidate.budgetId,
+            candidate.budgetCategoryId,
+            candidate.alertType,
+            candidate.severity,
+            candidate.title,
+            candidate.message,
+            JSON.stringify(candidate.data ?? {}),
+            periodStart,
+          ],
+        ),
       );
+      const rows = returnedRows<{ id: string }>(inserted);
+      if (rows.length === 0) continue;
+
+      const saved = await withScopedDb(this.dataSource, (m) =>
+        m.getRepository(BudgetAlert).findOne({ where: { id: rows[0].id } }),
+      );
+      if (saved) savedAlerts.push(saved);
+    }
+
+    if (savedAlerts.length === 0) {
+      return { alertsCreated: 0, emailsSent: 0 };
     }
 
     // Send immediate emails for critical alerts

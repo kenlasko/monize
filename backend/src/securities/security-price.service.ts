@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { tr } from "../i18n/translate";
 import { In, DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
+import { returnedRows } from "../common/db/query-result";
 import { Cron } from "@nestjs/schedule";
 import { SecurityPrice } from "./entities/security-price.entity";
 import { Security } from "./entities/security.entity";
@@ -717,39 +718,57 @@ export class SecurityPriceService {
       ? new Date(quote.regularMarketTime * 1000)
       : null;
 
-    const existing = await withScopedDb(this.dataSource, (m) =>
-      m.getRepository(SecurityPrice).findOne({
-        where: { securityId, priceDate },
-      }),
-    );
-
-    if (existing) {
-      existing.openPrice = quote.regularMarketOpen ?? existing.openPrice;
-      existing.highPrice = quote.regularMarketDayHigh ?? existing.highPrice;
-      existing.lowPrice = quote.regularMarketDayLow ?? existing.lowPrice;
-      existing.closePrice = quote.regularMarketPrice!;
-      existing.volume = quote.regularMarketVolume ?? existing.volume;
-      existing.source = source;
-      existing.quotedAt = quotedAt ?? existing.quotedAt;
-      return withScopedDb(this.dataSource, (m) =>
-        m.getRepository(SecurityPrice).save(existing),
+    // One statement, arbitrated by `UNIQUE(security_id, price_date)`. This used
+    // to read the row, then in one branch save a mutated copy and in the other
+    // insert a new one -- a check-then-act on a path the 5 PM ET cron runs on
+    // every replica at once, so two processes routinely fetch the same quote for
+    // the same security and day, both find no row, and both insert. The loser
+    // got a unique violation and that security had no price for the day.
+    //
+    // `COALESCE(EXCLUDED.x, security_prices.x)` keeps the previous value where
+    // the quote does not supply one, which is what the `?? existing.x` in the old
+    // update branch meant -- except it now reads the stored value rather than a
+    // copy fetched before another writer touched it.
+    return withScopedDb(this.dataSource, async (m) => {
+      const rows: unknown = await m.query(
+        `INSERT INTO security_prices
+           (security_id, price_date, open_price, high_price, low_price,
+            close_price, volume, source, quoted_at)
+         VALUES ($1, $2::DATE, $3, $4, $5, $6, $7, $8, $9)
+         ON CONFLICT (security_id, price_date) DO UPDATE SET
+           close_price = EXCLUDED.close_price,
+           open_price  = COALESCE(EXCLUDED.open_price,  security_prices.open_price),
+           high_price  = COALESCE(EXCLUDED.high_price,  security_prices.high_price),
+           low_price   = COALESCE(EXCLUDED.low_price,   security_prices.low_price),
+           volume      = COALESCE(EXCLUDED.volume,      security_prices.volume),
+           source      = EXCLUDED.source,
+           quoted_at   = COALESCE(EXCLUDED.quoted_at,   security_prices.quoted_at)
+         RETURNING id`,
+        [
+          securityId,
+          priceDate,
+          quote.regularMarketOpen ?? null,
+          quote.regularMarketDayHigh ?? null,
+          quote.regularMarketDayLow ?? null,
+          quote.regularMarketPrice!,
+          quote.regularMarketVolume ?? null,
+          source,
+          quotedAt,
+        ],
       );
-    }
 
-    return withScopedDb(this.dataSource, (m) => {
-      const repo = m.getRepository(SecurityPrice);
-      const priceEntry = repo.create({
-        securityId,
-        priceDate,
-        openPrice: quote.regularMarketOpen,
-        highPrice: quote.regularMarketDayHigh,
-        lowPrice: quote.regularMarketDayLow,
-        closePrice: quote.regularMarketPrice!,
-        volume: quote.regularMarketVolume,
-        source,
-        quotedAt,
-      });
-      return repo.save(priceEntry);
+      const id = returnedRows<{ id: number }>(rows)[0]?.id;
+      const saved = id
+        ? await m.getRepository(SecurityPrice).findOne({ where: { id } })
+        : null;
+      if (!saved) {
+        // `DO UPDATE` always returns its row, so this cannot happen without a
+        // real fault -- better to say so than to hand back a synthesized entity.
+        throw new Error(
+          `Failed to persist price for security ${securityId} on ${priceDate}`,
+        );
+      }
+      return saved;
     });
   }
 
@@ -1560,37 +1579,45 @@ export class SecurityPriceService {
     securityId: string,
     dto: CreateSecurityPriceDto,
   ): Promise<SecurityPrice> {
-    const existing = await withScopedDb(this.dataSource, (m) =>
-      m.getRepository(SecurityPrice).findOne({
-        where: { securityId, priceDate: dto.priceDate },
-      }),
-    );
-
-    if (existing) {
-      existing.closePrice = dto.closePrice;
-      existing.openPrice = dto.openPrice as number;
-      existing.highPrice = dto.highPrice as number;
-      existing.lowPrice = dto.lowPrice as number;
-      existing.volume = dto.volume as number;
-      existing.source = "manual";
-      return withScopedDb(this.dataSource, (m) =>
-        m.getRepository(SecurityPrice).save(existing),
+    // Same shape as the quote path, and the same reason: read-then-insert on a
+    // uniquely-keyed row turns a second submission -- a double-clicked Save, or a
+    // manual entry landing on the same day the price cron just wrote -- into a
+    // unique violation instead of an update.
+    return withScopedDb(this.dataSource, async (m) => {
+      const rows: unknown = await m.query(
+        `INSERT INTO security_prices
+           (security_id, price_date, open_price, high_price, low_price,
+            close_price, volume, source)
+         VALUES ($1, $2::DATE, $3, $4, $5, $6, $7, 'manual')
+         ON CONFLICT (security_id, price_date) DO UPDATE SET
+           close_price = EXCLUDED.close_price,
+           open_price  = COALESCE(EXCLUDED.open_price,  security_prices.open_price),
+           high_price  = COALESCE(EXCLUDED.high_price,  security_prices.high_price),
+           low_price   = COALESCE(EXCLUDED.low_price,   security_prices.low_price),
+           volume      = COALESCE(EXCLUDED.volume,      security_prices.volume),
+           source      = 'manual'
+         RETURNING id`,
+        [
+          securityId,
+          dto.priceDate,
+          dto.openPrice ?? null,
+          dto.highPrice ?? null,
+          dto.lowPrice ?? null,
+          dto.closePrice,
+          dto.volume ?? null,
+        ],
       );
-    }
 
-    return withScopedDb(this.dataSource, (m) => {
-      const repo = m.getRepository(SecurityPrice);
-      const priceEntry = repo.create({
-        securityId,
-        priceDate: dto.priceDate,
-        closePrice: dto.closePrice,
-        openPrice: dto.openPrice as number,
-        highPrice: dto.highPrice as number,
-        lowPrice: dto.lowPrice as number,
-        volume: dto.volume as number,
-        source: "manual",
-      });
-      return repo.save(priceEntry);
+      const id = returnedRows<{ id: number }>(rows)[0]?.id;
+      const saved = id
+        ? await m.getRepository(SecurityPrice).findOne({ where: { id } })
+        : null;
+      if (!saved) {
+        throw new Error(
+          `Failed to persist manual price for security ${securityId} on ${dto.priceDate}`,
+        );
+      }
+      return saved;
     });
   }
 

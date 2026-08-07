@@ -70,6 +70,7 @@ describe("RLS enforcement (T2, catalog-driven)", () => {
     scheduled_transaction_split_tags:
       "scheduled_transaction_splits -> scheduled_transactions",
     scheduled_transaction_overrides: "scheduled_transactions",
+    scheduled_transaction_postings: "scheduled_transactions",
     security_prices: "securities",
     security_tags: "securities",
     holdings: "accounts",

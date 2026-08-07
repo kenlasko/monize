@@ -4,6 +4,7 @@ import { AiUsageLog } from "./entities/ai-usage-log.entity";
 import { AiInsight } from "./entities/ai-insight.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
+import { createJobClaimMock } from "../test-helpers/job-claim-testing";
 
 /**
  * RLS smoke for the AI module's cron entry points (task R6).
@@ -65,6 +66,7 @@ describe("ai module RLS context smoke (real withScopedDb)", () => {
       {} as never,
       {} as never,
       { get: jest.fn().mockReturnValue(undefined) } as never,
+      createJobClaimMock() as never,
     );
     jest
       .spyOn(service, "generateInsights")

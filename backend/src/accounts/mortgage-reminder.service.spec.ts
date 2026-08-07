@@ -12,8 +12,16 @@ import { Account, AccountType } from "./entities/account.entity";
 import { User } from "../users/entities/user.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { EmailService } from "../notifications/email.service";
+import {
+  createJobClaimMock,
+  TEST_LEASE_TOKEN,
+  JobClaimMock,
+  jobClaimProvider,
+} from "../test-helpers/job-claim-testing";
 
 describe("MortgageReminderService", () => {
+  /** Wins every claim, matching the pre-claim behaviour these specs describe. */
+  const jobClaims: JobClaimMock = createJobClaimMock();
   let service: MortgageReminderService;
   let accountsRepository: Record<string, jest.Mock>;
   let usersRepository: Record<string, jest.Mock>;
@@ -51,6 +59,15 @@ describe("MortgageReminderService", () => {
   };
 
   beforeEach(async () => {
+    // The claim double is shared across tests, so recorded calls and any queued
+    // `...Once` would leak forward -- invisible until a spec asserts a claim was
+    // *not* taken, and then it reads as a product bug.
+    jobClaims.claimOnce.mockReset().mockResolvedValue(true);
+    jobClaims.claimLease.mockReset().mockResolvedValue(TEST_LEASE_TOKEN);
+    jobClaims.releaseLease.mockReset().mockResolvedValue(undefined);
+    jobClaims.markDelivered.mockReset().mockResolvedValue(undefined);
+    jobClaims.wasDelivered.mockReset().mockResolvedValue(false);
+
     accountsRepository = {
       find: jest.fn().mockResolvedValue([]),
     };
@@ -83,6 +100,7 @@ describe("MortgageReminderService", () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MortgageReminderService,
+        jobClaimProvider(jobClaims),
         { provide: DataSource, useValue: dataSource },
         { provide: EmailService, useValue: emailService },
         { provide: ConfigService, useValue: configService },
@@ -151,6 +169,84 @@ describe("MortgageReminderService", () => {
   });
 
   describe("checkMortgageRenewals", () => {
+    /**
+     * Coordination and delivery are two different facts (audit RV4-006). A
+     * permanent claim taken before the send was consumed by a replica killed in
+     * between, and every later run then read it as "already handled" -- the
+     * renewal notice was never sent and nothing could notice.
+     */
+    describe("the claim is a lease, and delivery is recorded separately", () => {
+      beforeEach(() => {
+        accountsRepository.find.mockResolvedValue([mockMortgage]);
+        preferencesRepository.findOne.mockResolvedValue(mockPrefsEmailEnabled);
+        usersRepository.findOne.mockResolvedValue(mockUser);
+      });
+
+      it("takes a bounded lease rather than a permanent claim", async () => {
+        await service.checkMortgageRenewals();
+
+        expect(jobClaims.claimLease).toHaveBeenCalledWith(
+          "mortgage_reminder",
+          mockUser.id,
+          expect.any(String),
+          expect.any(Number),
+        );
+        expect(jobClaims.claimOnce).not.toHaveBeenCalled();
+      });
+
+      it("records the delivery only after the send succeeds", async () => {
+        await service.checkMortgageRenewals();
+
+        expect(jobClaims.markDelivered).toHaveBeenCalledWith(
+          "mortgage_reminder",
+          mockUser.id,
+          expect.any(String),
+          // The token, so the record is written against *this* attempt's lease: a
+          // stalled worker whose lease was retaken must not stamp a delivery for
+          // the new holder's unfinished send (audit DR-RRV4-01).
+          TEST_LEASE_TOKEN,
+        );
+        expect(emailService.sendMail.mock.invocationCallOrder[0]).toBeLessThan(
+          jobClaims.markDelivered.mock.invocationCallOrder[0],
+        );
+      });
+
+      it("does not record a delivery when the send fails", async () => {
+        emailService.sendMail.mockRejectedValue(new Error("smtp down"));
+
+        await service.checkMortgageRenewals();
+
+        expect(jobClaims.markDelivered).not.toHaveBeenCalled();
+        expect(jobClaims.releaseLease).toHaveBeenCalled();
+      });
+
+      it("stands down when the work is already recorded as delivered", async () => {
+        jobClaims.wasDelivered.mockResolvedValue(true);
+
+        await service.checkMortgageRenewals();
+
+        expect(emailService.sendMail).not.toHaveBeenCalled();
+        expect(jobClaims.releaseLease).toHaveBeenCalled();
+      });
+
+      it("sends when another holder's lease expired without delivering", async () => {
+        jobClaims.claimLease.mockResolvedValue(TEST_LEASE_TOKEN);
+        jobClaims.wasDelivered.mockResolvedValue(false);
+
+        await service.checkMortgageRenewals();
+
+        expect(emailService.sendMail).toHaveBeenCalledTimes(1);
+      });
+
+      it("does not send while another replica holds the lease", async () => {
+        jobClaims.claimLease.mockResolvedValue(null);
+
+        await service.checkMortgageRenewals();
+
+        expect(emailService.sendMail).not.toHaveBeenCalled();
+      });
+    });
+
     it("runs without error when no renewals found", async () => {
       accountsRepository.find.mockResolvedValue([]);
 

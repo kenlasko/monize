@@ -61,6 +61,20 @@ import { tr } from "../i18n/translate";
  * The irreducible part is one row: a 10 MiB attachment is 13.6 MiB of base64 no
  * matter what the budget says. Everything else is a constant.
  */
+
+/**
+ * How long an export may sit idle inside its snapshot transaction before the
+ * database aborts it.
+ *
+ * The streaming export writes to the client between table reads, so a client
+ * that stops draining holds the snapshot open -- and a long-lived
+ * `REPEATABLE READ` transaction blocks vacuum from reclaiming dead tuples for
+ * the whole database, not just this user's tables. Bounding the idle time turns
+ * that from an operational problem into a failed download the user can retry
+ * (audit DR-04).
+ */
+const EXPORT_IDLE_TIMEOUT_MS = 60_000;
+
 @Injectable()
 export class BackupExportService {
   private readonly logger = new Logger(BackupExportService.name);
@@ -341,7 +355,20 @@ export class BackupExportService {
   ): Promise<T> {
     return withScopedDb(
       this.dataSource,
-      (manager) => fn(createExportReader(manager, userId)),
+      async (manager) => {
+        // Bound how long this REPEATABLE READ snapshot may sit idle. The
+        // streaming export holds the transaction open for as long as the client
+        // takes to drain, and a long-lived transaction blocks vacuum from
+        // reclaiming dead tuples across the whole database, not just this user's
+        // tables. EXPORT_IDLE_TIMEOUT_MS turns a stalled download into an aborted
+        // transaction the user can retry rather than an operational problem
+        // (audit DR-04). `true` scopes the setting to this transaction.
+        await manager.query(
+          "SELECT set_config('idle_in_transaction_session_timeout', $1, true)",
+          [String(EXPORT_IDLE_TIMEOUT_MS)],
+        );
+        return fn(createExportReader(manager, userId));
+      },
       "REPEATABLE READ",
     );
   }

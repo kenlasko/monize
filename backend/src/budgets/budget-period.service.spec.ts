@@ -132,6 +132,7 @@ describe("BudgetPeriodService", () => {
         id: data.id || "new-period",
       })),
       findOne: jest.fn(),
+      findOneOrFail: jest.fn(),
       find: jest.fn().mockResolvedValue([]),
     };
 
@@ -168,6 +169,17 @@ describe("BudgetPeriodService", () => {
     scopedManager.save.mockImplementation(
       (entity: unknown, data: unknown) => data ?? entity,
     );
+    // The period insert is now `INSERT ... ON CONFLICT DO NOTHING RETURNING id`
+    // so a lost race is a no-op instead of a transaction-aborting 23505. Default
+    // to winning; the loser path is asserted explicitly.
+    scopedManager.query.mockImplementation(async (sql: string) =>
+      typeof sql === "string" && sql.includes("INSERT INTO budget_periods")
+        ? [{ id: "new-period" }]
+        : [],
+    );
+    periodsRepository.findOneOrFail.mockImplementation(async () => ({
+      id: "new-period",
+    }));
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -248,6 +260,62 @@ describe("BudgetPeriodService", () => {
     });
   });
 
+  describe("closePeriod -- serialization", () => {
+    it("locks the period and reads the actuals inside the same transaction", async () => {
+      // The regression: the open period, the ledger the actuals come from, and
+      // the write that freezes them were three separate transactions. A
+      // transaction committing into the period's date range between the second
+      // and the third was left out of the closing figures for good -- a closed
+      // period is never recomputed. And the monthly cron fires on every replica,
+      // so two of them found the same OPEN period.
+      const budgetWithCategories = {
+        ...mockBudget,
+        categories: [{ ...mockBudgetCategory }],
+      };
+      budgetsService.findOne.mockResolvedValue(budgetWithCategories);
+      periodsRepository.findOne.mockResolvedValue({
+        ...mockPeriod,
+        status: PeriodStatus.OPEN,
+        periodCategories: [],
+      });
+
+      await service.closePeriod("user-1", "budget-1");
+
+      // The period row is taken with a write lock, and taken *before* the ledger
+      // the actuals are computed from is read -- that ordering is what makes
+      // "these figures were computed from rows a concurrent close cannot have
+      // moved" true rather than intended.
+      expect(
+        periodsRepository.findOne.mock.invocationCallOrder[0],
+      ).toBeLessThan(
+        transactionsRepository.createQueryBuilder.mock.invocationCallOrder[0],
+      );
+      expect(periodsRepository.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { budgetId: "budget-1", status: PeriodStatus.OPEN },
+          lock: { mode: "pessimistic_write" },
+        }),
+      );
+    });
+
+    it("refuses when another close already took the period", async () => {
+      // The loser of the lock finds no OPEN period and must not write anything;
+      // the cron reports it as a skip.
+      budgetsService.findOne.mockResolvedValue(mockBudget);
+      periodsRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.closePeriod("user-1", "budget-1")).rejects.toThrow(
+        /No open period/,
+      );
+      expect(scopedManager.save).not.toHaveBeenCalled();
+      expect(
+        scopedManager.query.mock.calls.some((call: unknown[]) =>
+          String(call[0]).includes("INSERT INTO budget_periods"),
+        ),
+      ).toBe(false);
+    });
+  });
+
   describe("closePeriod", () => {
     it("closes the open period and creates next period", async () => {
       const budgetWithCategories = {
@@ -324,10 +392,6 @@ describe("BudgetPeriodService", () => {
       };
       budgetsService.findOne.mockResolvedValue(budgetWithCategories);
       periodsRepository.findOne.mockResolvedValue(null);
-      periodsRepository.save.mockImplementation((data) => ({
-        ...data,
-        id: "new-period",
-      }));
 
       const result = await service.getOrCreateCurrentPeriod(
         "user-1",
@@ -335,8 +399,39 @@ describe("BudgetPeriodService", () => {
       );
 
       expect(result.id).toBe("new-period");
-      expect(periodsRepository.create).toHaveBeenCalled();
+      expect(
+        scopedManager.query.mock.calls.some((call: unknown[]) =>
+          String(call[0]).includes("INSERT INTO budget_periods"),
+        ),
+      ).toBe(true);
       expect(periodCategoriesRepository.create).toHaveBeenCalled();
+    });
+
+    it("adopts the period another request created rather than failing", async () => {
+      // Opening the Budgets screen for the first time this month fires several
+      // requests; they all find no open period and they all try to insert.
+      // `UNIQUE(budget_id, period_start)` stops the duplicate row, and inside a
+      // transaction a unique violation aborts everything -- so the loser has to
+      // find out by getting no row back, not by throwing.
+      const budgetWithCategories = {
+        ...mockBudget,
+        categories: [{ ...mockBudgetCategory }],
+      };
+      budgetsService.findOne.mockResolvedValue(budgetWithCategories);
+      const winner = { id: "their-period", periodCategories: [] };
+      periodsRepository.findOne
+        .mockResolvedValueOnce(null) // no open period when we looked
+        .mockResolvedValue(winner); // ...but one exists by the time we insert
+      scopedManager.query.mockImplementation(async () => []); // conflict: no row
+
+      const result = await service.getOrCreateCurrentPeriod(
+        "user-1",
+        "budget-1",
+      );
+
+      expect(result).toBe(winner);
+      // And it must not write category rows on top of the winner's.
+      expect(periodCategoriesRepository.save).not.toHaveBeenCalled();
     });
   });
 
@@ -350,19 +445,19 @@ describe("BudgetPeriodService", () => {
           { ...mockBudgetCategory, id: "bc-3", amount: 3000, isIncome: true },
         ],
       };
-      periodsRepository.save.mockImplementation((data) => ({
-        ...data,
-        id: "new-period",
-      }));
-
       await service.createPeriodForBudget(budgetWithCategories);
 
-      expect(periodsRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          totalBudgeted: 800,
-          status: PeriodStatus.OPEN,
-        }),
+      // The period row is inserted with one guarded statement, so the totals are
+      // checked on its parameters rather than on a `create()` call.
+      const insert = scopedManager.query.mock.calls.find((call: unknown[]) =>
+        String(call[0]).includes("INSERT INTO budget_periods"),
+      )!;
+      expect(String(insert[0])).toContain(
+        "ON CONFLICT (budget_id, period_start) DO NOTHING",
       );
+      // budget_id, period_start, period_end, total_budgeted, status
+      expect((insert[1] as unknown[])[3]).toBe(800);
+      expect((insert[1] as unknown[])[4]).toBe(PeriodStatus.OPEN);
       expect(periodCategoriesRepository.create).toHaveBeenCalledTimes(3);
     });
 

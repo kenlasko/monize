@@ -9,12 +9,20 @@ import { ScheduledTransactionOverride } from "../scheduled-transactions/entities
 import { User } from "../users/entities/user.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
+import {
+  createJobClaimMock,
+  TEST_LEASE_TOKEN,
+  JobClaimMock,
+  jobClaimProvider,
+} from "../test-helpers/job-claim-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
 );
 
 describe("BillReminderService", () => {
+  /** Wins every claim, matching the pre-claim behaviour these specs describe. */
+  const jobClaims: JobClaimMock = createJobClaimMock();
   let service: BillReminderService;
   let scheduledTransactionsRepo: Record<string, jest.Mock>;
   let usersRepo: Record<string, jest.Mock>;
@@ -23,6 +31,15 @@ describe("BillReminderService", () => {
   let configService: Record<string, jest.Mock>;
 
   beforeEach(async () => {
+    // The claim double is shared across tests, so recorded calls and any queued
+    // `...Once` would leak forward -- invisible until a spec asserts a claim was
+    // *not* taken, and then it reads as a product bug.
+    jobClaims.claimOnce.mockReset().mockResolvedValue(true);
+    jobClaims.claimLease.mockReset().mockResolvedValue(TEST_LEASE_TOKEN);
+    jobClaims.releaseLease.mockReset().mockResolvedValue(undefined);
+    jobClaims.markDelivered.mockReset().mockResolvedValue(undefined);
+    jobClaims.wasDelivered.mockReset().mockResolvedValue(false);
+
     scheduledTransactionsRepo = {
       find: jest.fn(),
     };
@@ -53,6 +70,7 @@ describe("BillReminderService", () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BillReminderService,
+        jobClaimProvider(jobClaims),
         { provide: DataSource, useValue: dataSource },
         { provide: EmailService, useValue: emailService },
         { provide: ConfigService, useValue: configService },
@@ -158,6 +176,100 @@ describe("BillReminderService", () => {
         emailService.getStatus.mockReturnValue({ configured: true });
         configService.get.mockReturnValue("https://app.monize.com");
         emailService.sendMail.mockResolvedValue(undefined);
+      });
+
+      /**
+       * Coordination and delivery are two different facts (audit RV4-006).
+       *
+       * `claimOnce` was taken before the send and was the only record that the
+       * send was owed, so a replica killed in between left a permanent row that
+       * every later run read as "already handled" -- the reminder was never sent
+       * and nothing could notice.
+       */
+      describe("the claim is a lease, and delivery is recorded separately", () => {
+        const dueBill = () =>
+          makeBill({
+            userId: userId1,
+            nextDueDate: daysFromNow(0),
+            reminderDaysBefore: 3,
+            name: "Electric Bill",
+          });
+
+        beforeEach(() => {
+          scheduledTransactionsRepo.find.mockResolvedValue([dueBill()]);
+          preferencesRepo.findOne.mockResolvedValue(mockPrefsEmailEnabled);
+          usersRepo.findOne.mockResolvedValue(mockUser1);
+        });
+
+        it("takes a bounded lease rather than a permanent claim", async () => {
+          await service.sendBillReminders();
+
+          expect(jobClaims.claimLease).toHaveBeenCalledWith(
+            "bill_reminder",
+            userId1,
+            expect.any(String),
+            expect.any(Number),
+          );
+          expect(jobClaims.claimOnce).not.toHaveBeenCalled();
+        });
+
+        it("records the delivery only after the send succeeds", async () => {
+          await service.sendBillReminders();
+
+          expect(jobClaims.markDelivered).toHaveBeenCalledWith(
+            "bill_reminder",
+            userId1,
+            expect.any(String),
+            // The token, so the record is written against *this* attempt's lease:
+            // a stalled worker whose lease was retaken must not stamp a delivery
+            // for the new holder's unfinished send (audit DR-RRV4-01).
+            TEST_LEASE_TOKEN,
+          );
+          expect(
+            emailService.sendMail.mock.invocationCallOrder[0],
+          ).toBeLessThan(jobClaims.markDelivered.mock.invocationCallOrder[0]);
+        });
+
+        it("does not record a delivery when the send fails", async () => {
+          emailService.sendMail.mockRejectedValue(new Error("smtp down"));
+
+          await service.sendBillReminders();
+
+          // The notice stays owed, and the lease goes back so the next run can
+          // retry immediately.
+          expect(jobClaims.markDelivered).not.toHaveBeenCalled();
+          expect(jobClaims.releaseLease).toHaveBeenCalled();
+        });
+
+        it("stands down when the work is already recorded as delivered", async () => {
+          // The lease was won -- an earlier holder let it expire -- but the send
+          // had already happened. Only the delivery record can say so.
+          jobClaims.wasDelivered.mockResolvedValue(true);
+
+          await service.sendBillReminders();
+
+          expect(emailService.sendMail).not.toHaveBeenCalled();
+          expect(jobClaims.releaseLease).toHaveBeenCalled();
+        });
+
+        it("sends when another holder's lease expired without delivering", async () => {
+          // The recovery the permanent claim made impossible: the lease is
+          // retakeable and nothing was delivered, so this replica sends.
+          jobClaims.claimLease.mockResolvedValue(TEST_LEASE_TOKEN);
+          jobClaims.wasDelivered.mockResolvedValue(false);
+
+          await service.sendBillReminders();
+
+          expect(emailService.sendMail).toHaveBeenCalledTimes(1);
+        });
+
+        it("does not send while another replica holds the lease", async () => {
+          jobClaims.claimLease.mockResolvedValue(null);
+
+          await service.sendBillReminders();
+
+          expect(emailService.sendMail).not.toHaveBeenCalled();
+        });
       });
 
       it("returns early when no manual bills exist", async () => {

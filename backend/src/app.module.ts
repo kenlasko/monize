@@ -20,6 +20,7 @@ import { CsrfRefreshInterceptor } from "./common/interceptors/csrf-refresh.inter
 import { RequestContextInterceptor } from "./common/interceptors/request-context.interceptor";
 import { parseRlsMode, resolveRlsDatabaseAuth } from "./common/db/rls-config";
 import { DemoModeModule } from "./common/demo-mode.module";
+import { JobClaimModule } from "./common/jobs/job-claim.module";
 
 import { AuthModule } from "./auth/auth.module";
 import { UsersModule } from "./users/users.module";
@@ -122,6 +123,7 @@ import { I18nModule } from "./i18n/i18n.module";
 
     // Demo mode (global — available to all modules)
     DemoModeModule,
+    JobClaimModule,
 
     // i18n (global — exception messages, validation, email content)
     I18nModule,

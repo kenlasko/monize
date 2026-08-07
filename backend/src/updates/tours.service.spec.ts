@@ -18,23 +18,37 @@ const CURRENT_VERSION = "1.13.0";
 
 describe("ToursService", () => {
   let prefsMock: UserPreferenceRepoMock;
-  let repo: Record<string, jest.Mock>;
   let query: jest.Mock;
   let manager: EntityManager;
   let service: ToursService;
 
   beforeEach(() => {
-    // The row-modelling double: the prune path writes through the column-scoped
-    // writer (insert-if-absent + UPDATE of only the named columns), so a mock
-    // that recorded `save` calls could not tell a whole-row save from a scoped
-    // patch -- and the whole point of the change is that it is the latter.
     prefsMock = createUserPreferenceRepoMock(null);
-    repo = prefsMock.repo;
-    // Default: the atomic-merge UPDATE affects a row.
-    query = jest.fn().mockResolvedValue([{ user_id: "user-1" }]);
+
+    // The merge is raw SQL, so the double applies it the way Postgres would --
+    // against whatever row the insert-if-absent left behind. A `query` mock that
+    // just returns a value could not show that the merge landed on a row this
+    // call had to create first.
+    query = jest.fn(async (sql: string, params: unknown[]) => {
+      if (/tour_progress\s*=\s*'\{\}'::jsonb/.test(sql)) {
+        const row = prefsMock.row();
+        if (row) row.tourProgress = {};
+        return [[], row ? 1 : 0];
+      }
+      if (/tour_progress\s*=\s*COALESCE/.test(sql)) {
+        const row = prefsMock.row();
+        if (!row) return [[], 0];
+        row.tourProgress = {
+          ...(row.tourProgress ?? {}),
+          ...(JSON.parse(params[0] as string) as TourProgressMap),
+        };
+        return [[], 1];
+      }
+      return [[], 0];
+    });
 
     manager = {
-      getRepository: jest.fn(() => repo),
+      getRepository: jest.fn(() => prefsMock.repo),
       query,
     } as unknown as EntityManager;
 
@@ -49,22 +63,20 @@ describe("ToursService", () => {
 
   afterEach(() => jest.clearAllMocks());
 
-  function prefs(tourProgress: TourProgressMap = {}): UserPreference {
-    return { userId: "user-1", tourProgress } as UserPreference;
+  function seed(tourProgress: TourProgressMap = {}): void {
+    prefsMock.seed({ userId: "user-1", tourProgress } as UserPreference);
   }
 
   describe("getProgress", () => {
     it("returns the stored map", async () => {
       const map = { "intro/basics": { status: "completed", updatedAt: "x" } };
-      repo.findOne.mockResolvedValue(prefs(map as TourProgressMap));
+      seed(map as TourProgressMap);
 
-      const result = await service.getProgress("user-1");
-
-      expect(result).toEqual(map);
+      expect(await service.getProgress("user-1")).toEqual(map);
     });
 
     it("returns an empty map when no row exists", async () => {
-      repo.findOne.mockResolvedValue(null);
+      prefsMock.seed(null);
 
       expect(await service.getProgress("user-1")).toEqual({});
     });
@@ -72,7 +84,7 @@ describe("ToursService", () => {
 
   describe("saveProgress", () => {
     it("atomically merges a single entry without a version for evergreen tours", async () => {
-      repo.findOne.mockResolvedValue(prefs());
+      seed();
 
       const result = await service.saveProgress(
         "user-1",
@@ -81,19 +93,21 @@ describe("ToursService", () => {
       );
 
       expect(result).toEqual({ saved: true });
-      expect(query).toHaveBeenCalledTimes(1);
-      const [sql, params] = query.mock.calls[0];
-      expect(sql).toContain("tour_progress || $1::jsonb");
-      const patch = JSON.parse(params[0]);
+      const merge = query.mock.calls.find(([sql]) =>
+        String(sql).includes("tour_progress = COALESCE"),
+      )!;
+      expect(merge[0]).toContain("|| $1::jsonb");
+      const patch = JSON.parse(merge[1][0]);
       expect(patch["intro/basics"]).toMatchObject({ status: "completed" });
       expect(patch["intro/basics"].version).toBeUndefined();
-      expect(params[1]).toBe("user-1");
-      // Existing row -> no fallback save.
-      expect(repo.save).not.toHaveBeenCalled();
+      expect(merge[1][1]).toBe("user-1");
+      expect(prefsMock.row()!.tourProgress["intro/basics"]).toMatchObject({
+        status: "completed",
+      });
     });
 
     it("stamps the running version on release-* tours", async () => {
-      repo.findOne.mockResolvedValue(prefs());
+      seed();
 
       await service.saveProgress(
         "user-1",
@@ -101,27 +115,68 @@ describe("ToursService", () => {
         "dismissed",
       );
 
-      const patch = JSON.parse(query.mock.calls[0][1][0]);
-      expect(patch["release-1.13.0/accounts"]).toMatchObject({
-        status: "dismissed",
-        version: CURRENT_VERSION,
-      });
+      expect(
+        prefsMock.row()!.tourProgress["release-1.13.0/accounts"],
+      ).toMatchObject({ status: "dismissed", version: CURRENT_VERSION });
     });
 
-    it("materializes a preferences row when the UPDATE affects no rows", async () => {
-      query.mockResolvedValue([]);
+    it("keeps entries another tab already recorded", async () => {
+      // The merge is `||` in SQL rather than a read-modify-write precisely so two
+      // tabs finishing different tours at the same time do not overwrite each
+      // other.
+      seed({ "already/done": { status: "completed", updatedAt: "x" } });
 
       await service.saveProgress("user-1", "intro/basics", "completed");
 
-      expect(repo.save).toHaveBeenCalledTimes(1);
-      const saved = repo.save.mock.calls[0][0] as UserPreference;
-      expect(saved.userId).toBe("user-1");
-      expect(saved.tourProgress["intro/basics"]).toMatchObject({
+      expect(Object.keys(prefsMock.row()!.tourProgress).sort()).toEqual([
+        "already/done",
+        "intro/basics",
+      ]);
+    });
+
+    it("materializes a preferences row and still records the tour", async () => {
+      // The regression, and the reason it survived: the service used to read an
+      // `UPDATE ... RETURNING` result with `updated.length === 0` to decide
+      // whether to create a missing row. TypeORM answers an UPDATE with the tuple
+      // `[rows, rowCount]`, so that length is 2 whatever happened and the branch
+      // could not run -- the row stayed missing, the progress went nowhere, and
+      // the endpoint answered `{ saved: true }`. The old spec passed only because
+      // its mock returned a bare `[]`, a shape the driver never produces for an
+      // UPDATE.
+      prefsMock.seed(null);
+
+      const result = await service.saveProgress(
+        "user-1",
+        "intro/basics",
+        "completed",
+      );
+
+      expect(result).toEqual({ saved: true });
+      expect(prefsMock.insertAttempts()).toHaveLength(1);
+      expect(prefsMock.row()!.tourProgress["intro/basics"]).toMatchObject({
         status: "completed",
       });
     });
 
-    it("prunes the oldest entries when the map exceeds the cap, writing only tour_progress", async () => {
+    it("does not depend on the driver's result shape at all", async () => {
+      // Whatever the UPDATE reports, the row exists by then, so there is no
+      // "did it match" question left to answer wrongly.
+      prefsMock.seed(null);
+      for (const shape of [[[], 0], [[], 1], [], undefined]) {
+        const merge = query.getMockImplementation()!;
+        query.mockImplementation(async (sql: string, params: unknown[]) => {
+          await merge(sql, params);
+          return shape;
+        });
+
+        await expect(
+          service.saveProgress("user-1", "intro/basics", "completed"),
+        ).resolves.toEqual({ saved: true });
+        expect(prefsMock.row()!.tourProgress["intro/basics"]).toBeDefined();
+      }
+    });
+
+    it("prunes the oldest entries when the map exceeds the cap", async () => {
       const bloated: TourProgressMap = {};
       for (let i = 0; i < 205; i++) {
         bloated[`tour-${i}`] = {
@@ -129,30 +184,42 @@ describe("ToursService", () => {
           updatedAt: new Date(2020, 0, 1, 0, i).toISOString(),
         };
       }
-      repo.findOne.mockResolvedValue(prefs(bloated));
+      seed(bloated);
 
       await service.saveProgress("user-1", "tour-999", "completed");
 
-      // The prune writes through the column-scoped writer, never a whole-entity
-      // save that would revert a concurrent change to another preference
-      // (finding 3). Exactly one column is touched: tour_progress.
-      expect(repo.save).not.toHaveBeenCalled();
-      expect(prefsMock.patches()).toHaveLength(1);
-      const patched = prefsMock.patches()[0].tourProgress as TourProgressMap;
-      expect(Object.keys(patched)).toHaveLength(200);
+      const written = prefsMock.patches();
+      const pruned = written[written.length - 1]
+        .tourProgress as TourProgressMap;
+      expect(Object.keys(pruned)).toHaveLength(200);
       // Oldest (tour-0) pruned, newest kept.
-      expect(patched["tour-0"]).toBeUndefined();
-      expect(patched["tour-204"]).toBeDefined();
+      expect(pruned["tour-0"]).toBeUndefined();
+      expect(pruned["tour-204"]).toBeDefined();
+    });
+
+    it("prunes by writing only tour_progress", async () => {
+      // The prune is the one read-modify-write left here, so it must not carry
+      // any other column back with it.
+      const bloated: TourProgressMap = {};
+      for (let i = 0; i < 205; i++) {
+        bloated[`tour-${i}`] = { status: "completed", updatedAt: `${i}` };
+      }
+      seed(bloated);
+
+      await service.saveProgress("user-1", "tour-999", "completed");
+
+      const written = prefsMock.patches();
+      expect(Object.keys(written[written.length - 1])).toEqual([
+        "tourProgress",
+      ]);
     });
 
     it("does not prune when under the cap", async () => {
-      repo.findOne.mockResolvedValue(
-        prefs({ a: { status: "completed", updatedAt: "x" } }),
-      );
+      seed({ a: { status: "completed", updatedAt: "x" } });
 
       await service.saveProgress("user-1", "intro/basics", "completed");
 
-      expect(repo.save).not.toHaveBeenCalled();
+      expect(prefsMock.patches()).toHaveLength(0);
     });
   });
 

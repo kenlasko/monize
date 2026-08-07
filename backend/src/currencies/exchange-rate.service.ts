@@ -20,6 +20,7 @@ import { YahooFinanceService } from "../securities/yahoo-finance.service";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import { roundFxRate } from "../common/fx-entry.util";
 import { withScopedDb } from "../common/db/scoped-db";
+import { returnedRows } from "../common/db/query-result";
 import { withSystemContext, withUserContext } from "../common/db/with-context";
 
 // Cap concurrent Yahoo FX fetches so the daily refresh does not burst every
@@ -234,29 +235,41 @@ export class ExchangeRateService implements OnModuleInit {
     rate: number,
     date: Date,
   ): Promise<ExchangeRate> {
-    const repo = manager.getRepository(ExchangeRate);
-    const existing = await repo.findOne({
-      where: {
-        fromCurrency: from,
-        toCurrency: to,
-        rateDate: date,
-      },
-    });
+    // One statement, arbitrated by `UNIQUE(from_currency, to_currency,
+    // rate_date)`. This used to be a `findOne` and then either a save of the
+    // found row or an insert -- a check-then-act, and one every replica runs:
+    // the exchange-rate cron fires everywhere at 5:05 PM ET, so two processes
+    // routinely fetch the same pair for the same day, both find no row, and both
+    // insert. The loser got a unique violation, which inside `saveRate`'s
+    // transaction also lost the inverse direction written beside it.
+    //
+    // `persistRateSeries` a few lines below already did it this way; the two are
+    // now consistent, which matters because they write the same rows.
+    const rows: unknown = await manager.query(
+      `INSERT INTO exchange_rates (from_currency, to_currency, rate_date, rate, source)
+       VALUES ($1, $2, $3::DATE, $4, 'yahoo_finance')
+       ON CONFLICT (from_currency, to_currency, rate_date) DO UPDATE SET
+         rate = EXCLUDED.rate,
+         source = EXCLUDED.source
+       RETURNING id`,
+      [from, to, date, rate],
+    );
 
-    if (existing) {
-      existing.rate = rate;
-      existing.source = "yahoo_finance";
-      return repo.save(existing);
+    // `DO UPDATE` always returns the row, so a read-back is only needed to hand
+    // the caller an entity. Scoped by the id just written rather than by the
+    // triple, so it cannot pick up a different row.
+    const id = returnedRows<{ id: number }>(rows)[0]?.id;
+    const saved = id
+      ? await manager.getRepository(ExchangeRate).findOne({ where: { id } })
+      : null;
+    if (!saved) {
+      // Nothing else can make an upsert return no row, so this is a real fault
+      // rather than a state to paper over with a synthesized entity.
+      throw new Error(
+        `Failed to persist exchange rate ${from}/${to} for ${date.toISOString().slice(0, 10)}`,
+      );
     }
-
-    const newRate = repo.create({
-      fromCurrency: from,
-      toCurrency: to,
-      rate,
-      rateDate: date,
-      source: "yahoo_finance",
-    });
-    return repo.save(newRate);
+    return saved;
   }
 
   /**

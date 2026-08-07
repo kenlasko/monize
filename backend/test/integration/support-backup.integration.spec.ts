@@ -22,6 +22,8 @@ import { OidcReauthService } from "@/auth/oidc/oidc-reauth.service";
 import { AiEncryptionService } from "@/ai/ai-encryption.service";
 import { DatabaseStorageProvider } from "@/attachments/storage/database-storage.provider";
 import { ATTACHMENT_STORAGE_PROVIDER } from "@/attachments/storage/attachment-storage.interface";
+import { JobClaimService } from "@/common/jobs/job-claim.service";
+import { UserMaintenanceService } from "@/common/jobs/user-maintenance.service";
 import {
   createTestUserDirect,
   INTEGRATION_TYPEORM_OPTIONS,
@@ -58,6 +60,11 @@ describe("Support backup (integration)", () => {
         BackupRestoreService,
         BackupAttachmentTransferService,
         BackupRestoreDatabaseService,
+        // Real, not doubles: the restore takes a maintenance lease against the
+        // real `job_claims` table, so a broken lease shows up here rather than
+        // only in production.
+        JobClaimService,
+        UserMaintenanceService,
         SupportBackupService,
         // Real, for the reason the sibling suite gives: a mocked step-up would
         // keep this suite green through the removal of the check it gates.

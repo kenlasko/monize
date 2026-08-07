@@ -1,7 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { ConfigService } from "@nestjs/config";
-import { BadRequestException } from "@nestjs/common";
+import { BadRequestException, ConflictException } from "@nestjs/common";
 import {
   promises as fs,
   mkdtempSync,
@@ -23,6 +23,11 @@ import { AutoBackupSettings } from "./entities/auto-backup-settings.entity";
 import { User } from "../users/entities/user.entity";
 import { DemoModeService } from "../common/demo-mode.service";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
+import {
+  createUserMaintenanceMock,
+  userMaintenanceProvider,
+  type UserMaintenanceMock,
+} from "../test-helpers/job-claim-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -69,6 +74,9 @@ describe("AutoBackupService", () => {
   let mockUsersRepo: Record<string, jest.Mock>;
   let mockBackupService: Record<string, jest.Mock>;
   let mockBackupEncryption: Record<string, jest.Mock>;
+  let updateBuilder: Record<string, jest.Mock>;
+  let scoped: ReturnType<typeof createScopedDbMocks>;
+  let maintenance: UserMaintenanceMock;
 
   /** A real directory, standing in for the operator's mounted backup volume. */
   let root: string;
@@ -138,20 +146,29 @@ describe("AutoBackupService", () => {
   async function createService(
     env: Record<string, string> = {},
   ): Promise<AutoBackupService> {
+    scoped = createScopedDbMocks([
+      [AutoBackupSettings, mockSettingsRepo as never],
+      [User, mockUsersRepo as never],
+    ]);
+    // The cron claims each due window with a guarded
+    // `UPDATE ... RETURNING`, which the pg driver answers as
+    // `[rows, rowCount]`. Winning by default preserves the behaviour every test
+    // written before the claim existed expects; the loser path is asserted
+    // explicitly below.
+    scoped.manager.query.mockResolvedValue([[{ id: "settings-1" }], 1]);
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         {
           provide: DataSource,
-          useValue: createScopedDbMocks([
-            [AutoBackupSettings, mockSettingsRepo as never],
-            [User, mockUsersRepo as never],
-          ]).dataSource,
+          useValue: scoped.dataSource,
         },
         AutoBackupService,
         {
           provide: BackupService,
           useValue: mockBackupService,
         },
+        userMaintenanceProvider(maintenance),
         {
           provide: BackupEncryptionService,
           useValue: mockBackupEncryption,
@@ -213,6 +230,14 @@ describe("AutoBackupService", () => {
         return s;
       }),
       save: jest.fn().mockImplementation((entity) => Promise.resolve(entity)),
+      createQueryBuilder: jest.fn(() => updateBuilder),
+    };
+
+    updateBuilder = {
+      update: jest.fn(() => updateBuilder),
+      set: jest.fn(() => updateBuilder),
+      where: jest.fn(() => updateBuilder),
+      execute: jest.fn().mockResolvedValue({ affected: 1 }),
     };
 
     mockUsersRepo = {
@@ -227,6 +252,8 @@ describe("AutoBackupService", () => {
       // default, so the cron tests below exercise only the due-backup path.
       find: jest.fn().mockResolvedValue([]),
     };
+
+    maintenance = createUserMaintenanceMock();
 
     mockBackupService = {
       // The service now returns the buffer alongside a completeness report; the
@@ -1147,6 +1174,23 @@ describe("AutoBackupService", () => {
       expect(await listBackups(root)).toEqual([]);
     });
 
+    it("refuses rather than writing an empty file mid-maintenance", async () => {
+      // The cron defers silently; a manual run has someone watching, so it says
+      // why. Writing the file anyway would produce an empty backup and then
+      // rotate the last good one out to keep the retention count.
+      mockSettingsRepo.findOne.mockResolvedValue(
+        createSettings({ enabled: true, folderPath: root }),
+      );
+      maintenance.isUnderMaintenance.mockResolvedValue(true);
+
+      await expect(service.runManualBackup(userId)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(mockBackupService.exportToBuffer).not.toHaveBeenCalled();
+      // Nothing reached the disk: the user's folder holds no backup file.
+      expect(await listBackups(folderFor())).toEqual([]);
+    });
+
     it("should run backup and update status on success", async () => {
       mockSettingsRepo.findOne.mockResolvedValue(
         createSettings({ enabled: true, folderPath: root }),
@@ -1308,13 +1352,19 @@ describe("AutoBackupService", () => {
 
       await service.handleAutoBackupCron();
 
-      expect(mockSettingsRepo.save).toHaveBeenCalledWith(
+      expect(updateBuilder.set).toHaveBeenCalledWith(
         expect.objectContaining({
           lastBackupStatus: "success",
-          nextBackupAt: expect.any(Date),
+          lastBackupError: null,
         }),
       );
       expect(await listBackups(folderFor())).toHaveLength(1);
+      // The schedule was advanced by the claim, not by re-saving the snapshot.
+      const claim = scoped.manager.query.mock.calls.find((call) =>
+        String(call[0]).includes("UPDATE auto_backup_settings"),
+      );
+      expect(claim).toBeDefined();
+      expect(claim![1]![0]).toBeInstanceOf(Date);
     });
 
     it("should write under BACKUP_CONTAINER_DIR when a due row has no folder path", async () => {
@@ -1393,13 +1443,125 @@ describe("AutoBackupService", () => {
 
       await service.handleAutoBackupCron();
 
-      expect(mockSettingsRepo.save).toHaveBeenCalledWith(
+      expect(updateBuilder.set).toHaveBeenCalledWith(
         expect.objectContaining({
           lastBackupStatus: "failed",
           lastBackupError: expect.any(String),
-          nextBackupAt: expect.any(Date),
         }),
       );
+    });
+
+    describe("multi-replica coordination", () => {
+      function dueSettings() {
+        return createSettings({
+          enabled: true,
+          folderPath: root,
+          nextBackupAt: new Date(Date.now() - 3600000),
+        });
+      }
+
+      it("claims the window by advancing next_backup_at, guarded on it still being due", async () => {
+        mockSettingsRepo.find.mockResolvedValue([dueSettings()]);
+
+        await service.handleAutoBackupCron();
+
+        const [sql, params] = scoped.manager.query.mock.calls.find((call) =>
+          String(call[0]).includes("UPDATE auto_backup_settings"),
+        )!;
+        expect(sql).toContain("next_backup_at <= $3");
+        expect(sql).toContain("enabled = true");
+        expect(sql).toContain("RETURNING id");
+        expect(params).toHaveLength(3);
+      });
+
+      it("exports nothing when another replica claimed the window", async () => {
+        // The regression: every replica fires this cron, so with no claim a
+        // two-replica cluster writes each user's backup twice -- and one
+        // replica's retention sweep can delete the file the other is writing.
+        mockSettingsRepo.find.mockResolvedValue([dueSettings()]);
+        scoped.manager.query.mockResolvedValue([[], 0]);
+
+        await service.handleAutoBackupCron();
+
+        expect(mockBackupService.exportToBuffer).not.toHaveBeenCalled();
+        expect(updateBuilder.execute).not.toHaveBeenCalled();
+      });
+
+      it("does not read a claim result as a win just because the driver returned a tuple", async () => {
+        // `[rows, rowCount]` has length 2 whatever happened, so an open-coded
+        // `result.length > 0` would make every replica a winner.
+        mockSettingsRepo.find.mockResolvedValue([dueSettings()]);
+        scoped.manager.query.mockResolvedValue([[], 0]);
+
+        await service.handleAutoBackupCron();
+
+        expect(mockBackupService.exportToBuffer).not.toHaveBeenCalled();
+      });
+
+      it("defers, without claiming, while the user's data is being replaced", async () => {
+        // A `.mny` import with "start fresh" commits its wipe and then writes
+        // rows for minutes. Backing up in that window saves the empty dataset as
+        // today's file and then enforces retention -- rotating the last good
+        // backup out to make room for one containing nothing (DR-04-02).
+        mockSettingsRepo.find.mockResolvedValue([dueSettings()]);
+        maintenance.isUnderMaintenance.mockResolvedValue(true);
+
+        await service.handleAutoBackupCron();
+
+        expect(mockBackupService.exportToBuffer).not.toHaveBeenCalled();
+        // Not claimed, so next_backup_at stays in the past and the next hour
+        // retries rather than skipping the whole period.
+        const claim = scoped.manager.query.mock.calls.find((call) =>
+          String(call[0]).includes("UPDATE auto_backup_settings"),
+        );
+        expect(claim).toBeUndefined();
+      });
+
+      it("does not enforce retention while deferring", async () => {
+        // Retention runs inside the backup path, so deferring has to skip it
+        // too: pruning to N files without having written a new one loses a
+        // generation for nothing.
+        mockSettingsRepo.find.mockResolvedValue([
+          createSettings({
+            enabled: true,
+            folderPath: root,
+            nextBackupAt: new Date(Date.now() - 3600000),
+            retentionDaily: 1,
+          }),
+        ]);
+        await fs.mkdir(folderFor(), { recursive: true });
+        const existing = [
+          "monize-backup-daily-2026-04-01.json.gz",
+          "monize-backup-daily-2026-04-02.json.gz",
+        ];
+        for (const name of existing) {
+          await fs.writeFile(join(folderFor(), name), "x");
+        }
+        maintenance.isUnderMaintenance.mockResolvedValue(true);
+
+        await service.handleAutoBackupCron();
+
+        // retentionDaily=1 would prune to a single file if the backup path had
+        // run; deferring skips it, so both pre-existing dailies survive.
+        expect((await listBackups(folderFor())).sort()).toEqual(existing);
+      });
+
+      it("writes only the outcome columns, never the whole snapshot", async () => {
+        // `repo.save(settings)` would write back the folder, frequency and
+        // retention this sweep read minutes ago, reverting anything the user
+        // changed in the meantime.
+        mockSettingsRepo.find.mockResolvedValue([dueSettings()]);
+
+        await service.handleAutoBackupCron();
+
+        expect(mockSettingsRepo.save).not.toHaveBeenCalled();
+        const written = Object.keys(updateBuilder.set.mock.calls[0][0]);
+        expect(written.sort()).toEqual([
+          "lastBackupAt",
+          "lastBackupError",
+          "lastBackupStatus",
+        ]);
+      });
     });
   });
 
@@ -1529,7 +1691,9 @@ describe("AutoBackupService", () => {
 
       await service.handleAutoBackupCron();
 
-      expect(mockSettingsRepo.save).toHaveBeenCalledWith(
+      // The cron records the outcome with a targeted UPDATE (recordBackupOutcome),
+      // not a whole-row repo.save, so a concurrent settings edit is never reverted.
+      expect(updateBuilder.set).toHaveBeenCalledWith(
         expect.objectContaining({ lastBackupStatus: "partial" }),
       );
       const remaining = await listBackups(folderFor());

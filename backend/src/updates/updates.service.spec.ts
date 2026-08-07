@@ -43,8 +43,8 @@ describe("version helpers", () => {
 
 describe("UpdatesService", () => {
   let service: UpdatesService;
-  let prefsMock: UserPreferenceRepoMock;
   let preferencesRepo: Record<string, jest.Mock>;
+  let preferencesRow: UserPreferenceRepoMock;
   let configGet: jest.Mock;
   let originalFetch: typeof fetch;
   let fetchMock: jest.Mock;
@@ -74,10 +74,11 @@ describe("UpdatesService", () => {
     }) as unknown as Response;
 
   beforeEach(async () => {
-    // The row-modelling double so `dismiss` can exercise the column-scoped
-    // writer (insert-if-absent + UPDATE of only the named column).
-    prefsMock = createUserPreferenceRepoMock(null);
-    preferencesRepo = prefsMock.repo;
+    // Behaves like the row: the dismiss path now materializes it with
+    // `ON CONFLICT DO NOTHING` and patches one column, so a `save`-recording
+    // mock could not tell that from overwriting the whole row.
+    preferencesRow = createUserPreferenceRepoMock(null);
+    preferencesRepo = preferencesRow.repo;
     configGet = jest.fn().mockReturnValue(undefined);
 
     const { dataSource } = createScopedDbMocks([
@@ -231,46 +232,44 @@ describe("UpdatesService", () => {
   });
 
   describe("dismiss", () => {
-    it("writes only the dismissed-version column when a row exists", async () => {
+    it("saves latestVersion to user preferences when they exist", async () => {
       fetchMock.mockResolvedValueOnce(mockOkResponse(buildRelease()));
       await service.refreshLatestRelease();
-      prefsMock.seed({ userId: "user-1", dismissedUpdateVersion: null });
+
+      preferencesRow.seed({
+        userId: "user-1",
+        theme: "nord",
+        dismissedUpdateVersion: null,
+      });
 
       const result = await service.dismiss("user-1");
-
       expect(result).toEqual({ dismissed: true, version: "99.0.0" });
-      // Column-scoped: only dismissed_update_version is written, never a whole
-      // entity that would revert a concurrent change to another preference
-      // (finding 3).
-      expect(preferencesRepo.save).not.toHaveBeenCalled();
-      expect(prefsMock.patches()).toEqual([
-        { dismissedUpdateVersion: "99.0.0" },
+      expect(preferencesRow.row()!.dismissedUpdateVersion).toBe("99.0.0");
+      // Only that column: dismissing an update banner must not drag any other
+      // preference back to whatever this request happened to read.
+      expect(Object.keys(preferencesRow.patches()[0])).toEqual([
+        "dismissedUpdateVersion",
       ]);
-      expect(prefsMock.row()?.dismissedUpdateVersion).toBe("99.0.0");
+      expect(preferencesRow.row()!.theme).toBe("nord");
     });
 
-    it("materializes the row through the writer when none exists", async () => {
+    it("creates preferences row if none exists", async () => {
       fetchMock.mockResolvedValueOnce(mockOkResponse(buildRelease()));
       await service.refreshLatestRelease();
-      prefsMock.seed(null);
+      preferencesRow.seed(null);
 
       const result = await service.dismiss("user-1");
-
       expect(result).toEqual({ dismissed: true, version: "99.0.0" });
-      // The writer's ON CONFLICT DO NOTHING insert creates the row from the
-      // shared defaults, then the scoped UPDATE sets the dismissed version.
-      expect(prefsMock.insertAttempts().length).toBeGreaterThan(0);
-      expect(prefsMock.row()?.userId).toBe("user-1");
-      expect(prefsMock.row()?.dismissedUpdateVersion).toBe("99.0.0");
+      expect(preferencesRow.insertAttempts()).toHaveLength(1);
+      expect(preferencesRow.row()!.userId).toBe("user-1");
+      expect(preferencesRow.row()!.dismissedUpdateVersion).toBe("99.0.0");
     });
 
     it("is a no-op when no latest release has been fetched", async () => {
       const result = await service.dismiss("user-1");
       expect(result).toEqual({ dismissed: false, version: null });
-      expect(preferencesRepo.save).not.toHaveBeenCalled();
-      // The early return never reaches the writer at all.
-      expect(prefsMock.patches()).toHaveLength(0);
-      expect(prefsMock.insertAttempts()).toHaveLength(0);
+      expect(preferencesRow.patches()).toHaveLength(0);
+      expect(preferencesRow.insertAttempts()).toHaveLength(0);
     });
   });
 

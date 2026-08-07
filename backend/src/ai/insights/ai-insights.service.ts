@@ -3,6 +3,10 @@ import { tr } from "../../i18n/translate";
 import { ConfigService } from "@nestjs/config";
 import { DataSource, LessThan } from "typeorm";
 import { withScopedDb } from "../../common/db/scoped-db";
+import {
+  JobClaimService,
+  JobClaimType,
+} from "../../common/jobs/job-claim.service";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import {
   AiInsight,
@@ -29,6 +33,22 @@ import { AiInsightResponse, InsightsListResponse } from "./dto/ai-insights.dto";
 const INSIGHT_EXPIRY_DAYS = 7;
 const MAX_INSIGHTS_PER_USER = 50;
 const MIN_GENERATION_INTERVAL_HOURS = 12;
+
+/**
+ * The lease key. One per user -- there is only ever one generation in flight for
+ * a user, so the key names the activity rather than a window.
+ */
+const INSIGHT_GENERATION_CLAIM_KEY = "generation";
+
+/**
+ * How long a generation lease survives its holder.
+ *
+ * Long enough to cover aggregate computation plus a slow provider call, short
+ * enough that a killed replica does not block the user until someone intervenes.
+ * The lease is released on the happy path, so this only ever matters after a
+ * crash.
+ */
+const INSIGHT_GENERATION_LEASE_MS = 15 * 60 * 1000;
 // Number of users whose insights are generated concurrently in the daily cron.
 // Each generation makes LLM calls, so keep this modest to respect provider
 // rate limits and cost while still being faster than fully sequential.
@@ -53,6 +73,7 @@ export class AiInsightsService {
     private readonly usageService: AiUsageService,
     private readonly aggregatorService: InsightsAggregatorService,
     private readonly configService: ConfigService,
+    private readonly jobClaims: JobClaimService,
   ) {}
 
   async getInsights(
@@ -159,6 +180,32 @@ export class AiInsightsService {
       return this.getInsights(userId);
     }
 
+    // A durable lease, because `generatingUsers` is per process.
+    //
+    // Every backend replica fires the daily cron, and each has its own Set -- so
+    // both replicas observed no recent insight, both added the user to their own
+    // in-memory guard, both computed aggregates, both called the provider and
+    // both saved. Duplicate insights, double the provider spend and double the
+    // usage accounting (audit P4-013). The in-memory Set stays as a cheap local
+    // short-circuit; the lease is the actual exclusion.
+    //
+    // A lease rather than a permanent claim, so a replica killed mid-generation
+    // does not lock the user out until someone notices. It is released on the way
+    // out, which keeps the real cooldown where it already was: the recent-insight
+    // query above.
+    const leased = await this.jobClaims.claimLease(
+      JobClaimType.AiInsightGeneration,
+      userId,
+      INSIGHT_GENERATION_CLAIM_KEY,
+      INSIGHT_GENERATION_LEASE_MS,
+    );
+    if (!leased) {
+      this.logger.log(
+        `Insights generation already leased elsewhere user=${userId}; returning current list`,
+      );
+      return this.getInsights(userId);
+    }
+
     this.generatingUsers.add(userId);
     const startTime = Date.now();
     this.logger.log(`Insights generation start user=${userId}`);
@@ -257,6 +304,21 @@ export class AiInsightsService {
       return this.getInsights(userId);
     } finally {
       this.generatingUsers.delete(userId);
+      await this.jobClaims
+        .releaseLease(
+          JobClaimType.AiInsightGeneration,
+          userId,
+          INSIGHT_GENERATION_CLAIM_KEY,
+          // By token, so a generation that outran its own lease releases nothing
+          // rather than freeing a lease another replica now holds (DR-RRV4-01).
+          leased,
+        )
+        .catch((error: unknown) =>
+          this.logger.warn(
+            `Failed to release insight generation lease for user ${userId}: ` +
+              `${error instanceof Error ? error.message : String(error)}`,
+          ),
+        );
     }
   }
 

@@ -5,9 +5,10 @@ import {
   TourProgressMap,
   UserPreference,
 } from "../users/entities/user-preference.entity";
-import { buildDefaultPreferences } from "../users/user-preference.factory";
-import { patchUserPreferences } from "../users/user-preference-writer";
-import { currentRequestLocale } from "../i18n/request-locale";
+import {
+  ensureUserPreferencesRow,
+  patchUserPreferences,
+} from "../users/user-preference-writer";
 import { withScopedDb } from "../common/db/scoped-db";
 import { ReleaseNotesService } from "./release-notes.service";
 
@@ -65,28 +66,29 @@ export class ToursService {
     await withScopedDb(this.dataSource, async (manager) => {
       const repo = manager.getRepository(UserPreference);
 
-      // Atomic single-entry merge; RETURNING lets us detect the missing-row case
-      // without a separate read.
-      const updated: unknown[] = await manager.query(
+      // Materialize the row first, then merge. The previous shape was an
+      // `UPDATE ... RETURNING user_id` with a `updated.length === 0` fallback
+      // meant to create a missing row -- and that branch could never run:
+      // TypeORM answers an UPDATE with the tuple `[rows, rowCount]`, whose
+      // length is 2 whatever happened. So a user without a preferences row lost
+      // every tour they completed while the endpoint reported success.
+      //
+      // Insert-if-absent has no such question to get wrong, and no window: the
+      // primary key arbitrates between two first-time writers and the merge
+      // below then always matches a row.
+      await ensureUserPreferencesRow(manager, userId);
+
+      await manager.query(
         `UPDATE user_preferences
-            SET tour_progress = tour_progress || $1::jsonb
-          WHERE user_id = $2
-        RETURNING user_id`,
+            SET tour_progress = COALESCE(tour_progress, '{}'::jsonb) || $1::jsonb
+          WHERE user_id = $2`,
         [JSON.stringify(patch), userId],
       );
 
-      if (updated.length === 0) {
-        const created = buildDefaultPreferences(userId, currentRequestLocale());
-        created.tourProgress = patch;
-        await repo.save(created);
-        return;
-      }
-
       // Best-effort cap: prune the oldest entries when the map grows unbounded.
-      // Rare enough (200+ tours completed) that reading the map to prune it is
-      // fine -- but write back only the tour_progress column via the shared
-      // writer, never `save(prefs)` on the whole entity, so a preference another
-      // request changed between this read and the write is not reverted.
+      // Rare enough (200+ tours completed) that a read-modify-write here is
+      // fine -- but it writes only `tour_progress`, so a concurrent change to
+      // any other preference is not dragged back to what this read saw.
       const prefs = await repo.findOne({ where: { userId } });
       const map = prefs?.tourProgress ?? {};
       const keys = Object.keys(map);

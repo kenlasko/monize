@@ -21,8 +21,16 @@ import { CurrenciesService } from "../currencies/currencies.service";
 import { BackupEncryptionService } from "../backup/backup-encryption.service";
 import { DemoModeService } from "../common/demo-mode.service";
 import { OidcReauthService } from "../auth/oidc/oidc-reauth.service";
+import {
+  createUserMaintenanceMock,
+  userMaintenanceProvider,
+  type UserMaintenanceMock,
+} from "../test-helpers/job-claim-testing";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
-import { createUserPreferenceRepoMock } from "../test-helpers/user-preference-testing";
+import {
+  createUserPreferenceRepoMock,
+  type UserPreferenceRepoMock,
+} from "../test-helpers/user-preference-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -32,12 +40,13 @@ describe("UsersService", () => {
   let service: UsersService;
   let usersRepository: Record<string, jest.Mock>;
   let preferencesRepository: Record<string, jest.Mock>;
-  let prefsMock: ReturnType<typeof createUserPreferenceRepoMock>;
+  let preferencesRow: UserPreferenceRepoMock;
   let refreshTokensRepository: Record<string, jest.Mock>;
   let patRepository: Record<string, jest.Mock>;
   let trustedDevicesRepository: Record<string, jest.Mock>;
   let passwordBreachService: { isBreached: jest.Mock };
   let demoModeService: { isDemo: boolean };
+  let maintenance: UserMaintenanceMock;
   let exchangeRateService: { refreshAllRates: jest.Mock };
   let currenciesService: { ensureSystemCurrency: jest.Mock };
   let backupEncryptionService: { rememberLoginPassword: jest.Mock };
@@ -86,13 +95,11 @@ describe("UsersService", () => {
       count: jest.fn(),
     };
 
-    // Row-modelling double: updatePreferences writes through the column-scoped
-    // writer (insert-if-absent + UPDATE of only the DTO's columns), so the
-    // double models the row and records which columns each write touched. A
-    // save-recording mock could not tell a scoped patch from a whole-row save --
-    // the exact regression finding 3 removes (maintainer review PR #1097).
-    prefsMock = createUserPreferenceRepoMock(null);
-    preferencesRepository = prefsMock.repo;
+    // A double that behaves like the row rather than recording `save` calls: the
+    // writers now insert-if-absent then patch named columns, and a call-recording
+    // mock cannot tell a targeted patch from a whole-entity overwrite.
+    preferencesRow = createUserPreferenceRepoMock(null);
+    preferencesRepository = preferencesRow.repo;
 
     refreshTokensRepository = {
       update: jest.fn(),
@@ -140,6 +147,7 @@ describe("UsersService", () => {
     };
 
     demoModeService = { isDemo: false };
+    maintenance = createUserMaintenanceMock();
 
     mockQueryRunner = {
       connect: jest.fn(),
@@ -178,6 +186,7 @@ describe("UsersService", () => {
         // re-authentication assertion below vacuous -- which is how the
         // sentinel survived (P2-005).
         OidcReauthService,
+        userMaintenanceProvider(maintenance),
       ],
     }).compile();
 
@@ -409,12 +418,14 @@ describe("UsersService", () => {
     });
 
     it("creates default preferences when none exist", async () => {
-      preferencesRepository.findOne.mockResolvedValue(null);
-      preferencesRepository.save.mockImplementation((data) => data);
+      preferencesRow.seed(null);
 
       const result = await service.getPreferences("user-1");
 
-      expect(preferencesRepository.save).toHaveBeenCalled();
+      // Materialized with `INSERT ... ON CONFLICT DO NOTHING`, not a read-then-
+      // save: the first page load fires several requests at once and two of them
+      // both finding no row used to mean one got a unique violation.
+      expect(preferencesRow.insertAttempts()).toHaveLength(1);
       expect(result.userId).toBe("user-1");
       expect(result.defaultCurrency).toBe("USD");
       expect(result.dateFormat).toBe("browser");
@@ -423,30 +434,89 @@ describe("UsersService", () => {
     });
   });
 
-  describe("updatePreferences", () => {
-    it("updates only provided fields", async () => {
-      prefsMock.seed({ ...mockPreferences });
+  describe("updatePreferences -- writes only what was asked for", () => {
+    it("sends exactly the supplied columns to the database", async () => {
+      // The regression: this used to mutate a loaded entity and `repo.save` it,
+      // which writes back every column that differs from what the entity holds.
+      // `tour_progress`, `last_seen_version` and `dismissed_update_version` are
+      // written by other endpoints on the same row, so a Settings save could
+      // quietly undo a tour the user had just dismissed in another tab.
+      preferencesRow.seed(mockPreferences);
+
+      await service.updatePreferences("user-1", {
+        theme: "dark",
+        weekStartsOn: 1,
+      });
+
+      expect(preferencesRow.patches()).toHaveLength(1);
+      expect(Object.keys(preferencesRow.patches()[0]).sort()).toEqual([
+        "theme",
+        "weekStartsOn",
+      ]);
+      expect(preferencesRepository.save).not.toHaveBeenCalled();
+    });
+
+    it("leaves a column another request changed alone", async () => {
+      preferencesRow.seed({
+        ...mockPreferences,
+        tourProgress: { a: 1 } as never,
+      });
 
       await service.updatePreferences("user-1", { theme: "dark" });
 
-      const savedData = prefsMock.row()!;
+      expect(preferencesRow.row()!.tourProgress).toEqual({ a: 1 });
+      expect(preferencesRow.row()!.theme).toBe("dark");
+    });
+
+    it("writes nothing when the request carries no recognised field", async () => {
+      // An empty patch must not become `UPDATE ... SET` with no assignments, and
+      // must not fall back to writing the whole row either.
+      preferencesRow.seed(mockPreferences);
+
+      await service.updatePreferences("user-1", {});
+
+      expect(preferencesRow.patches()).toHaveLength(0);
+      expect(preferencesRepository.save).not.toHaveBeenCalled();
+    });
+
+    it("omits the language in demo mode without dropping the rest", async () => {
+      demoModeService.isDemo = true;
+      preferencesRow.seed({ ...mockPreferences, language: "en" });
+
+      await service.updatePreferences("user-1", {
+        language: "pl",
+        theme: "dark",
+      });
+
+      expect(Object.keys(preferencesRow.patches()[0])).toEqual(["theme"]);
+      expect(preferencesRow.row()!.language).toBe("en");
+    });
+  });
+
+  describe("updatePreferences", () => {
+    it("updates only provided fields", async () => {
+      preferencesRow.seed(mockPreferences);
+
+      await service.updatePreferences("user-1", { theme: "dark" });
+
+      const savedData = preferencesRow.row()!;
       expect(savedData.theme).toBe("dark");
       expect(savedData.defaultCurrency).toBe("USD"); // unchanged
     });
 
     it("persists the language when not in demo mode", async () => {
       demoModeService.isDemo = false;
-      prefsMock.seed({ ...mockPreferences });
+      preferencesRow.seed(mockPreferences);
 
       await service.updatePreferences("user-1", { language: "pl" });
 
-      const savedData = prefsMock.row()!;
+      const savedData = preferencesRow.row()!;
       expect(savedData.language).toBe("pl");
     });
 
     it("does not persist the language in demo mode (shared account)", async () => {
       demoModeService.isDemo = true;
-      prefsMock.seed({
+      preferencesRow.seed({
         ...mockPreferences,
         language: "en",
       });
@@ -456,29 +526,26 @@ describe("UsersService", () => {
         theme: "dark",
       });
 
-      const savedData = prefsMock.row()!;
+      const savedData = preferencesRow.row()!;
       // Language stays as the shared account had it; other fields still apply.
       expect(savedData.language).toBe("en");
       expect(savedData.theme).toBe("dark");
     });
 
     it("creates defaults first if preferences do not exist", async () => {
-      prefsMock.seed(null);
+      preferencesRow.seed(null);
 
-      const result = await service.updatePreferences("user-1", {
+      await service.updatePreferences("user-1", {
         defaultCurrency: "EUR",
       });
 
-      // Insert-if-absent materializes the row from defaults (ON CONFLICT DO
-      // NOTHING, so replaying it is a no-op), then the scoped patch applies --
-      // never a whole-row save that would clobber a concurrent writer.
-      expect(prefsMock.insertAttempts().length).toBeGreaterThanOrEqual(1);
-      expect(prefsMock.patches()).toEqual([{ defaultCurrency: "EUR" }]);
-      expect(result.defaultCurrency).toBe("EUR");
+      // The row is materialized from the shared defaults and then patched.
+      expect(preferencesRow.insertAttempts()).toHaveLength(1);
+      expect(preferencesRow.row()!.defaultCurrency).toBe("EUR");
     });
 
     it("ensures the chosen default currency exists when it changes", async () => {
-      prefsMock.seed({ ...mockPreferences });
+      preferencesRow.seed(mockPreferences);
 
       await service.updatePreferences("user-1", { defaultCurrency: "EUR" });
 
@@ -488,7 +555,7 @@ describe("UsersService", () => {
     });
 
     it("does not ensure a currency when the default is unchanged", async () => {
-      prefsMock.seed({ ...mockPreferences });
+      preferencesRow.seed(mockPreferences);
 
       await service.updatePreferences("user-1", { defaultCurrency: "USD" });
 
@@ -496,7 +563,7 @@ describe("UsersService", () => {
     });
 
     it("updates multiple fields at once", async () => {
-      prefsMock.seed({ ...mockPreferences });
+      preferencesRow.seed(mockPreferences);
 
       await service.updatePreferences("user-1", {
         defaultCurrency: "CAD",
@@ -505,7 +572,7 @@ describe("UsersService", () => {
         gettingStartedDismissed: true,
       });
 
-      const savedData = prefsMock.row()!;
+      const savedData = preferencesRow.row()!;
       expect(savedData.defaultCurrency).toBe("CAD");
       expect(savedData.theme).toBe("dark");
       expect(savedData.notificationEmail).toBe(false);
@@ -513,22 +580,22 @@ describe("UsersService", () => {
     });
 
     it("updates the showWhatsNew preference", async () => {
-      prefsMock.seed({ ...mockPreferences });
+      preferencesRow.seed(mockPreferences);
 
       await service.updatePreferences("user-1", { showWhatsNew: false });
 
-      const savedData = prefsMock.row()!;
+      const savedData = preferencesRow.row()!;
       expect(savedData.showWhatsNew).toBe(false);
     });
 
     it("updates favouriteReportIds", async () => {
-      prefsMock.seed({ ...mockPreferences });
+      preferencesRow.seed(mockPreferences);
 
       await service.updatePreferences("user-1", {
         favouriteReportIds: ["spending-by-category", "net-worth"],
       });
 
-      const savedData = prefsMock.row()!;
+      const savedData = preferencesRow.row()!;
       expect(savedData.favouriteReportIds).toEqual([
         "spending-by-category",
         "net-worth",
@@ -536,13 +603,13 @@ describe("UsersService", () => {
     });
 
     it("updates dashboardWidgets", async () => {
-      prefsMock.seed({ ...mockPreferences });
+      preferencesRow.seed(mockPreferences);
 
       await service.updatePreferences("user-1", {
         dashboardWidgets: ["upcoming-bills", "favourite-accounts"],
       });
 
-      const savedData = prefsMock.row()!;
+      const savedData = preferencesRow.row()!;
       expect(savedData.dashboardWidgets).toEqual([
         "upcoming-bills",
         "favourite-accounts",
@@ -550,7 +617,7 @@ describe("UsersService", () => {
     });
 
     it("updates dashboardWidgetConfig", async () => {
-      prefsMock.seed({ ...mockPreferences });
+      preferencesRow.seed(mockPreferences);
 
       await service.updatePreferences("user-1", {
         dashboardWidgetConfig: {
@@ -558,25 +625,25 @@ describe("UsersService", () => {
         },
       });
 
-      const savedData = prefsMock.row()!;
+      const savedData = preferencesRow.row()!;
       expect(savedData.dashboardWidgetConfig).toEqual({
         "spending-by-payee": { range: "6m" },
       });
     });
 
     it("updates preferredExchanges", async () => {
-      prefsMock.seed({ ...mockPreferences });
+      preferencesRow.seed(mockPreferences);
 
       await service.updatePreferences("user-1", {
         preferredExchanges: ["LSE", "ASX", "TSX"],
       });
 
-      const savedData = prefsMock.row()!;
+      const savedData = preferencesRow.row()!;
       expect(savedData.preferredExchanges).toEqual(["LSE", "ASX", "TSX"]);
     });
 
     it("clears preferredExchanges with empty array", async () => {
-      prefsMock.seed({
+      preferencesRow.seed({
         ...mockPreferences,
         preferredExchanges: ["LSE"],
       });
@@ -585,7 +652,7 @@ describe("UsersService", () => {
         preferredExchanges: [],
       });
 
-      const savedData = prefsMock.row()!;
+      const savedData = preferencesRow.row()!;
       expect(savedData.preferredExchanges).toEqual([]);
     });
 
@@ -606,30 +673,29 @@ describe("UsersService", () => {
     ])(
       "updates the %s field when provided",
       async (field: string, value: any) => {
-        prefsMock.seed({ ...mockPreferences });
+        preferencesRow.seed(mockPreferences);
 
         await service.updatePreferences("user-1", { [field]: value } as any);
 
-        const savedData = prefsMock.row()!;
+        const savedData = preferencesRow.row()!;
         expect(savedData[field]).toEqual(value);
       },
     );
 
     it("leaves colorTheme untouched when not provided", async () => {
-      prefsMock.seed({
+      preferencesRow.seed({
         ...mockPreferences,
         colorTheme: "nord",
       });
 
       await service.updatePreferences("user-1", { theme: "dark" });
 
-      const savedData = prefsMock.row()!;
+      const savedData = preferencesRow.row()!;
       expect(savedData.colorTheme).toBe("nord");
     });
 
     it("seeds language='en' when creating default preferences", async () => {
-      preferencesRepository.findOne.mockResolvedValue(null);
-      preferencesRepository.save.mockImplementation((data) => data);
+      preferencesRow.seed(null);
 
       const result = await service.getPreferences("user-1");
 
@@ -637,8 +703,7 @@ describe("UsersService", () => {
     });
 
     it("seeds language from the request locale when creating default preferences", async () => {
-      preferencesRepository.findOne.mockResolvedValue(null);
-      preferencesRepository.save.mockImplementation((data) => data);
+      preferencesRow.seed(null);
       const spy = jest
         .spyOn(I18nContext, "current")
         .mockReturnValue({ lang: "pl" } as never);
@@ -1077,6 +1142,67 @@ describe("UsersService", () => {
   });
 
   describe("deleteData", () => {
+    it("holds the maintenance lease for a user-initiated wipe", async () => {
+      const hashedPassword = await bcrypt.hash("CorrectPass123!", 10);
+      usersRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        passwordHash: hashedPassword,
+      });
+
+      await service.deleteData("user-1", { password: "CorrectPass123!" });
+
+      expect(maintenance.withMaintenanceLease).toHaveBeenCalledWith(
+        "user-1",
+        expect.any(String),
+        expect.any(Function),
+      );
+    });
+
+    it("deletes nothing when another operation is already replacing the data", async () => {
+      const hashedPassword = await bcrypt.hash("CorrectPass123!", 10);
+      usersRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        passwordHash: hashedPassword,
+      });
+      maintenance.withMaintenanceLease.mockRejectedValue(
+        new ConflictException("busy"),
+      );
+
+      await expect(
+        service.deleteData("user-1", { password: "CorrectPass123!" }),
+      ).rejects.toThrow(ConflictException);
+
+      const deletes = mockQueryRunner.query.mock.calls.filter(
+        (call: string[]) => String(call[0]).includes("DELETE FROM"),
+      );
+      expect(deletes).toHaveLength(0);
+    });
+
+    it("skips the lease for the .mny importer's own wipe", async () => {
+      // The importer already holds the user's single import slot, and that slot
+      // is what excludes a second wipe. Taking the lease here would have
+      // `withMaintenanceLease` refuse on the importer's own in-flight job.
+      const hashedPassword = await bcrypt.hash("CorrectPass123!", 10);
+      usersRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        passwordHash: hashedPassword,
+      });
+
+      await service.deleteData(
+        "user-1",
+        { password: "CorrectPass123!" },
+        "import-wipe",
+        "mny-import",
+      );
+
+      expect(maintenance.withMaintenanceLease).not.toHaveBeenCalled();
+      expect(
+        mockQueryRunner.query.mock.calls.some((call: string[]) =>
+          String(call[0]).includes("DELETE FROM"),
+        ),
+      ).toBe(true);
+    });
+
     it("requires password for local auth users", async () => {
       usersRepository.findOne.mockResolvedValue({ ...mockUser });
 

@@ -278,16 +278,31 @@ describe("currency global liveness", () => {
     );
   });
 
-  it("is the only SECURITY DEFINER function in the schema", () => {
-    // The RLS design relies on invoker functions everywhere else; a second
-    // definer function is a privilege decision that needs its own review, not
-    // something to notice later.
+  it("declares only the known, reviewed SECURITY DEFINER functions", () => {
+    // The RLS design relies on invoker functions everywhere else; a definer
+    // function bypasses the caller's policies, so each one is a privilege
+    // decision that needs its own review -- this list is that review. A new
+    // definer function must be added here deliberately, not noticed later.
     // Counted over function definitions only -- COMMENT ON bodies are string
     // literals that survive comment stripping and mention the attribute in prose.
     const definitions =
       uncommented.match(/CREATE (?:OR REPLACE )?FUNCTION[\s\S]*?\$\$/g) ?? [];
     const definers = definitions.filter((d) => /SECURITY DEFINER/.test(d));
-    expect(definers).toHaveLength(1);
+    const names = definers.map((d) => /FUNCTION\s+(\w+)/.exec(d)?.[1]).sort();
+    expect(names).toEqual([
+      // The global currency-liveness answer, evaluated across every tenant.
+      "currency_code_in_use_globally",
+      // Records an attachment-blob tombstone as the table owner, so the deletion
+      // is captured under RLS whichever tenant's DELETE fired the trigger
+      // (migration 139).
+      "record_attachment_blob_tombstone",
+    ]);
+    // Every definer function pins its search_path: without it, a definer can be
+    // redirected at objects the caller controls -- the escalation this allowlist
+    // exists to keep reviewed.
+    for (const d of definers) {
+      expect(d).toMatch(/SET search_path = /);
+    }
   });
 
   /**

@@ -35,6 +35,8 @@ describe("Budget Period Lifecycle Integration", () => {
   let periodService: BudgetPeriodService;
   let cronService: BudgetPeriodCronService;
   let periodsRepository: Record<string, jest.Mock>;
+  /** Period rows the guarded insert created, in order. */
+  let insertedPeriodRows: BudgetPeriod[];
   let periodCategoriesRepository: Record<string, jest.Mock>;
   let transactionsRepository: Record<string, jest.Mock>;
   let splitsRepository: Record<string, jest.Mock>;
@@ -132,6 +134,7 @@ describe("Budget Period Lifecycle Integration", () => {
   });
   beforeEach(async () => {
     const savedPeriods: BudgetPeriod[] = [];
+    insertedPeriodRows = [];
 
     periodsRepository = {
       create: jest.fn().mockImplementation((data) => ({
@@ -149,6 +152,7 @@ describe("Budget Period Lifecycle Integration", () => {
         return saved;
       }),
       findOne: jest.fn(),
+      findOneOrFail: jest.fn(),
       find: jest.fn().mockResolvedValue([]),
     };
 
@@ -191,6 +195,40 @@ describe("Budget Period Lifecycle Integration", () => {
     // EntityManager directly (it used to be queryRunner.manager.save).
     scopedManager.save.mockImplementation(
       (entity: unknown, data: unknown) => data ?? entity,
+    );
+    // The period insert is one `INSERT ... ON CONFLICT DO NOTHING RETURNING id`
+    // so a lost race is a no-op rather than a transaction-aborting 23505.
+    // Winning by default; the read-back returns the row the insert claimed.
+    let insertedPeriods = 0;
+    let lastInserted: BudgetPeriod | null = null;
+    scopedManager.query.mockImplementation(
+      async (sql: string, params?: unknown[]) => {
+        if (
+          typeof sql === "string" &&
+          sql.includes("INSERT INTO budget_periods")
+        ) {
+          insertedPeriods += 1;
+          const [budgetId, periodStart, periodEnd, totalBudgeted, status] =
+            params as [string, string, string, number, PeriodStatus];
+          // Hand back the row the statement wrote, the way the read-back would.
+          lastInserted = {
+            id: `period-${insertedPeriods}`,
+            budgetId,
+            periodStart,
+            periodEnd,
+            totalBudgeted,
+            status,
+            actualIncome: 0,
+            actualExpenses: 0,
+          } as BudgetPeriod;
+          insertedPeriodRows.push(lastInserted);
+          return [{ id: lastInserted.id }];
+        }
+        return [];
+      },
+    );
+    periodsRepository.findOneOrFail.mockImplementation(
+      async () => lastInserted,
     );
 
     const module: TestingModule = await Test.createTestingModule({
@@ -468,9 +506,9 @@ describe("Budget Period Lifecycle Integration", () => {
       // the closing period's categories + 1 for the period itself...
       expect(scopedDataSource.transaction).toHaveBeenCalled();
       expect(scopedManager.save).toHaveBeenCalledTimes(5);
-      // ...and the next period is created on the same manager: 1 save for the
-      // period + 1 batch save for its categories.
-      expect(periodsRepository.save).toHaveBeenCalledTimes(1);
+      // ...and the next period is created on the same manager: one guarded
+      // insert for the period plus one batch save for its categories.
+      expect(insertedPeriodRows).toHaveLength(1);
       expect(periodCategoriesRepository.save).toHaveBeenCalledTimes(1);
     });
 
@@ -812,18 +850,15 @@ describe("Budget Period Lifecycle Integration", () => {
 
     it("handles getOrCreateCurrentPeriod when no period exists", async () => {
       periodsRepository.findOne.mockResolvedValue(null);
-      periodsRepository.save.mockImplementation((data) => ({
-        ...data,
-        id: "new-period",
-      }));
 
       const result = await periodService.getOrCreateCurrentPeriod(
         "11111111-1111-1111-1111-111111111111",
         "budget-1",
       );
 
-      expect(result.id).toBe("new-period");
-      expect(periodsRepository.create).toHaveBeenCalled();
+      expect(insertedPeriodRows).toHaveLength(1);
+      expect(result.id).toBe(insertedPeriodRows[0].id);
+      expect(result.status).toBe(PeriodStatus.OPEN);
     });
 
     it("income categories do not receive rollover", async () => {

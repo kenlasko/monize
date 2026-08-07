@@ -120,8 +120,16 @@ describe("scheduled-transactions module RLS context smoke (real withScopedDb)", 
       scheduledRepo,
       overridesRepo,
     );
-    // The timezone fan-out now runs through its own withScopedDb.
-    manager.query.mockResolvedValue([{ user_id: OWNER_ID, timezone: "UTC" }]);
+    // The timezone fan-out now runs through its own withScopedDb, and `post`
+    // locks the schedule and claims the occurrence before creating any money
+    // (audit P4-004) -- so the manager answers a locked read and a claim insert
+    // as well as the fan-out.
+    manager.findOne.mockResolvedValue(dueRow);
+    manager.query.mockImplementation(async (sql: string) =>
+      String(sql).includes("scheduled_transaction_postings")
+        ? [[{ id: "posting-1" }], 1]
+        : [{ user_id: OWNER_ID, timezone: "UTC" }],
+    );
     manager.createQueryBuilder.mockImplementation(() => ({
       delete: jest.fn().mockReturnThis(),
       from: jest.fn().mockReturnThis(),

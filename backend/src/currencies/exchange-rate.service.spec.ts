@@ -19,6 +19,13 @@ jest.mock("../common/db/scoped-db", () =>
 describe("ExchangeRateService", () => {
   let service: ExchangeRateService;
   let exchangeRateRepository: Record<string, jest.Mock>;
+  /** Rows the single-rate upsert wrote, in order, as the service supplied them. */
+  let upsertedRates: Array<{
+    fromCurrency: string;
+    toCurrency: string;
+    rate: number;
+    source: string;
+  }>;
   let currencyRepository: Record<string, jest.Mock>;
   let userPreferenceRepository: Record<string, jest.Mock>;
   let dataSource: Record<string, jest.Mock>;
@@ -58,7 +65,58 @@ describe("ExchangeRateService", () => {
     ...overrides,
   });
 
+  /**
+   * Answer `manager.query` by statement instead of with one blanket value.
+   *
+   * The single-rate save is now `INSERT ... ON CONFLICT DO UPDATE RETURNING id`,
+   * so a test that also needs the currency-list query cannot use one
+   * `mockResolvedValue` for both. This records what the upsert wrote -- which is
+   * what the assertions are about -- and answers the currency list from
+   * `codes`.
+   */
+  function routeRateQueries(codes: string[]): void {
+    dataSource.query.mockImplementation(
+      async (sql: string, params?: unknown[]) => {
+        if (
+          typeof sql === "string" &&
+          sql.includes("INSERT INTO exchange_rates") &&
+          sql.includes("RETURNING id")
+        ) {
+          const [fromCurrency, toCurrency, , rate] = params as [
+            string,
+            string,
+            Date,
+            number,
+          ];
+          const id = upsertedRates.length + 1;
+          upsertedRates.push({
+            fromCurrency,
+            toCurrency,
+            rate,
+            source: "yahoo_finance",
+          });
+          return [{ id }];
+        }
+        if (typeof sql === "string" && sql.includes("SELECT DISTINCT code")) {
+          return codes.map((code) => ({ code }));
+        }
+        return [];
+      },
+    );
+    // The service reads the upserted row back by id.
+    exchangeRateRepository.findOne.mockImplementation(
+      async ({ where }: { where: { id?: number } }) =>
+        where?.id === undefined
+          ? null
+          : { id: where.id, ...upsertedRates[where.id - 1] },
+    );
+  }
+
   beforeEach(async () => {
+    // The single-rate save is now one `INSERT ... ON CONFLICT DO UPDATE
+    // RETURNING id` through the manager, so the spec records the statement and
+    // hands back the row it wrote. `findOne` still answers the by-id read-back.
+    upsertedRates = [];
     exchangeRateRepository = {
       findOne: jest.fn(),
       find: jest.fn(),
@@ -226,17 +284,10 @@ describe("ExchangeRateService", () => {
         { code: "EUR" },
       ]);
 
-      // Mock fetchQuote via yahooFinanceService
+      routeRateQueries(["USD", "CAD", "EUR"]);
       yahooFinanceService.fetchQuote.mockResolvedValue({
         regularMarketPrice: 1.365,
       });
-
-      // saveRate: no existing rate found, then save
-      exchangeRateRepository.findOne.mockResolvedValue(null);
-      exchangeRateRepository.save.mockImplementation((data) => ({
-        ...data,
-        id: 1,
-      }));
 
       const result = await service.refreshAllRates();
 
@@ -288,53 +339,69 @@ describe("ExchangeRateService", () => {
       expect(result.updated).toBe(0);
     });
 
-    it("updates existing rate when one already exists for the date", async () => {
-      dataSource.query.mockResolvedValue([{ code: "USD" }, { code: "CAD" }]);
+    it("upserts both directions rather than reading first and then writing", async () => {
+      // The rate cron fires on every replica, so two processes routinely fetch
+      // the same pair for the same day. The old shape read the row and then
+      // either saved it or inserted -- a check-then-act whose loser hit
+      // `UNIQUE(from_currency, to_currency, rate_date)` and, because the two
+      // directions share a transaction, lost the inverse rate with it.
+      routeRateQueries(["USD", "CAD"]);
 
       yahooFinanceService.fetchQuote.mockResolvedValue({
         regularMarketPrice: 1.4,
       });
 
-      // Return a fresh copy for each findOne call so mutations don't bleed
-      exchangeRateRepository.findOne.mockImplementation(() => ({
-        ...mockExchangeRate,
-      }));
-      exchangeRateRepository.save.mockImplementation((data) => data);
-
       const result = await service.refreshAllRates();
 
       expect(result.updated).toBe(1);
-      // Save should be called with both forward and inverse rates
-      expect(exchangeRateRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({ rate: 1.4, source: "yahoo_finance" }),
+      const upserts = dataSource.query.mock.calls.filter(
+        (call: unknown[]) =>
+          typeof call[0] === "string" &&
+          call[0].includes("INSERT INTO exchange_rates") &&
+          call[0].includes("RETURNING id"),
       );
+      expect(upserts).toHaveLength(2);
+      expect(upserts[0][0]).toContain(
+        "ON CONFLICT (from_currency, to_currency, rate_date) DO UPDATE",
+      );
+      // Forward, then the inverse.
+      expect(upsertedRates[0]).toMatchObject({
+        fromCurrency: "USD",
+        toCurrency: "CAD",
+        rate: 1.4,
+      });
       // The inverse is stored at the rate column's ten decimal places, not at
       // money precision: rounding it to four (0.7143) inverts back to 1.39997,
       // which a statement quoting six decimals reconciles against by cents.
-      expect(exchangeRateRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({
-          rate: roundFxRate(1 / 1.4),
-          source: "yahoo_finance",
-        }),
-      );
-      const inverseSave = exchangeRateRepository.save.mock.calls
-        .map((call) => call[0])
-        .find((row) => row.rate !== 1.4);
-      expect(inverseSave.rate).not.toBe(0.7143);
-      expect(roundFxRate(1 / inverseSave.rate)).toBeCloseTo(1.4, 6);
+      expect(upsertedRates[1]).toMatchObject({
+        fromCurrency: "CAD",
+        toCurrency: "USD",
+        rate: roundFxRate(1 / 1.4),
+        source: "yahoo_finance",
+      });
+      expect(upsertedRates[1].rate).not.toBe(0.7143);
+      expect(roundFxRate(1 / upsertedRates[1].rate)).toBeCloseTo(1.4, 6);
     });
 
-    it("handles saveRate failure gracefully", async () => {
-      dataSource.query.mockResolvedValue([{ code: "USD" }, { code: "CAD" }]);
-
+    it("handles a rate write failure gracefully", async () => {
+      routeRateQueries(["USD", "CAD"]);
       yahooFinanceService.fetchQuote.mockResolvedValue({
         regularMarketPrice: 1.365,
       });
-
-      exchangeRateRepository.findOne.mockResolvedValue(null);
-      exchangeRateRepository.save.mockRejectedValue(
-        new Error("DB write failed"),
-      );
+      // The upsert itself fails: one pair is reported failed and the sweep
+      // carries on.
+      dataSource.query.mockImplementation(async (sql: string) => {
+        if (
+          typeof sql === "string" &&
+          sql.includes("INSERT INTO exchange_rates")
+        ) {
+          throw new Error("DB write failed");
+        }
+        if (typeof sql === "string" && sql.includes("SELECT DISTINCT code")) {
+          return [{ code: "USD" }, { code: "CAD" }];
+        }
+        return [];
+      });
 
       const result = await service.refreshAllRates();
 
@@ -345,22 +412,10 @@ describe("ExchangeRateService", () => {
     });
 
     it("builds correct number of pairs from 4 currencies", async () => {
-      dataSource.query.mockResolvedValue([
-        { code: "USD" },
-        { code: "CAD" },
-        { code: "EUR" },
-        { code: "GBP" },
-      ]);
-
+      routeRateQueries(["USD", "CAD", "EUR", "GBP"]);
       yahooFinanceService.fetchQuote.mockResolvedValue({
         regularMarketPrice: 1.0,
       });
-
-      exchangeRateRepository.findOne.mockResolvedValue(null);
-      exchangeRateRepository.save.mockImplementation((data) => ({
-        ...data,
-        id: 1,
-      }));
 
       const result = await service.refreshAllRates();
 

@@ -102,6 +102,8 @@ function makeAlert(overrides: Partial<BudgetAlert> = {}): BudgetAlert {
 
 describe("BudgetAlertService", () => {
   let scopedDataSource: DataSourceMock;
+  /** Rows the conflict-safe INSERT accepted, in order. */
+  let insertedAlerts: Record<string, unknown>[];
   let service: BudgetAlertService;
   let budgetsRepository: Record<string, jest.Mock>;
   let alertsRepository: Record<string, jest.Mock>;
@@ -139,6 +141,8 @@ describe("BudgetAlertService", () => {
           Promise.resolve({ ...data, id: data.id || "new-alert-id" }),
         ),
       delete: jest.fn().mockResolvedValue({ affected: 0 }),
+      // Reads back the row the conflict-safe INSERT accepted.
+      findOne: jest.fn().mockResolvedValue(null),
     };
 
     transactionsRepository = {
@@ -185,15 +189,48 @@ describe("BudgetAlertService", () => {
       }),
     };
 
-    ({ dataSource: scopedDataSource } = createScopedDbMocks([
-      [Budget, budgetsRepository as never],
-      [BudgetAlert, alertsRepository as never],
-      [Transaction, transactionsRepository as never],
-      [TransactionSplit, splitsRepository as never],
-      [User, usersRepository as never],
-      [UserPreference, preferencesRepository as never],
-      [ScheduledTransaction, scheduledTransactionsRepository as never],
-    ]));
+    let scopedManager: Record<string, jest.Mock>;
+    ({ manager: scopedManager, dataSource: scopedDataSource } =
+      createScopedDbMocks([
+        [Budget, budgetsRepository as never],
+        [BudgetAlert, alertsRepository as never],
+        [Transaction, transactionsRepository as never],
+        [TransactionSplit, splitsRepository as never],
+        [User, usersRepository as never],
+        [UserPreference, preferencesRepository as never],
+        [ScheduledTransaction, scheduledTransactionsRepository as never],
+      ]));
+
+    // Alerts are inserted with `ON CONFLICT DO NOTHING RETURNING id`, and what
+    // that statement returns is what decides whether an alert is new -- the
+    // unique fingerprint from migration 139 is the de-duplication rule now, not
+    // the in-memory comparison (audit P4-015). So the double has to behave like
+    // the real insert: record the row, hand back an id, and let the follow-up
+    // read find it.
+    insertedAlerts = [];
+    scopedManager.query.mockImplementation(
+      async (sql: string, params: unknown[]) => {
+        if (!sql.includes("INSERT INTO budget_alerts")) return [];
+        const row = {
+          id: `alert-${insertedAlerts.length + 1}`,
+          userId: params[0],
+          budgetId: params[1],
+          budgetCategoryId: params[2],
+          alertType: params[3],
+          severity: params[4],
+          title: params[5],
+          message: params[6],
+          data: JSON.parse(String(params[7])),
+          periodStart: params[8],
+        };
+        insertedAlerts.push(row);
+        return [[{ id: row.id }], 1];
+      },
+    );
+    alertsRepository.findOne.mockImplementation(
+      async ({ where }: { where: { id: string } }) =>
+        insertedAlerts.find((row) => row.id === where.id) ?? null,
+    );
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -978,10 +1015,8 @@ describe("BudgetAlertService", () => {
       const result = await service.processAlerts(budget);
 
       expect(result.alertsCreated).toBeGreaterThan(0);
-      expect(alertsRepository.save).toHaveBeenCalled();
-
-      const savedAlert = alertsRepository.create.mock.calls[0][0];
-      expect(savedAlert.alertType).toBe(AlertType.OVER_BUDGET);
+      expect(insertedAlerts.length).toBeGreaterThan(0);
+      expect(insertedAlerts[0].alertType).toBe(AlertType.OVER_BUDGET);
     });
 
     it("sends immediate email for critical alerts", async () => {
@@ -1119,11 +1154,11 @@ describe("BudgetAlertService", () => {
       await service.processAlerts(budget);
 
       // The OVER_BUDGET candidate has CRITICAL severity which is higher than the
-      // existing WARNING, so severity escalation allows it through
-      const createdAlerts = alertsRepository.create.mock.calls.map(
-        (call: any[]) => call[0].alertType,
+      // existing WARNING, so severity escalation allows it through -- and the
+      // unique fingerprint includes severity precisely so that it can.
+      expect(insertedAlerts.map((row) => row.alertType)).toContain(
+        AlertType.OVER_BUDGET,
       );
-      expect(createdAlerts).toContain(AlertType.OVER_BUDGET);
     });
 
     it("suppresses alert when existing alert has same or higher severity", async () => {

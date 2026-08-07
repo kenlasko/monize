@@ -30,6 +30,7 @@ One row per `@Cron` handler. The Cron column is the decorator's expression verba
 | `mny-import-job.service` | `0 0-23/1 * * *` | Hourly | Backstop sweep for import jobs whose worker stopped heartbeating; the reap that a waiting user depends on runs on their own next request, not here |
 | `auto-backup.service` | `0 * * * *` | Hourly | Enrol every non-admin user on the default backup policy, then write each user's due automatic backup, promote weekly/monthly copies, enforce retention |
 | `action-history.service` | `0 3 * * *` | Daily 3 AM | Delete undo-log entries past their retention window |
+| `job-claim.service` | `0 04 * * *` | Daily 4 AM | Delete job-claim/lease rows past the retention window (idempotent across replicas) |
 | `holdings.service` | `30 * * * *` | Hourly at :30 | Apply matured fixed-term investment holdings |
 | `emergency-access-monitor.service` | `0 09 * * *` | Daily 9 AM | Advance emergency-access requests past their waiting period and notify |
 | `updates.service` | `0 0-23/12 * * *` | Every 12 hours | Refresh the cached latest-release metadata for the What's New digest |

@@ -6,6 +6,7 @@ import {
   BadRequestException,
   Logger,
   NotFoundException,
+  ConflictException,
 } from "@nestjs/common";
 import { gzipSync, gunzipSync } from "zlib";
 import { PassThrough } from "stream";
@@ -33,6 +34,11 @@ import {
   ATTACHMENT_STORAGE_PROVIDER,
   AttachmentStorageProvider,
 } from "../attachments/storage/attachment-storage.interface";
+import {
+  createUserMaintenanceMock,
+  userMaintenanceProvider,
+  type UserMaintenanceMock,
+} from "../test-helpers/job-claim-testing";
 
 /**
  * A `PassThrough` standing in for an express `Response`, carrying the header
@@ -121,6 +127,7 @@ function insertColumnMap(call: unknown[]): Record<string, unknown> {
 describe("BackupService", () => {
   let service: BackupService;
   let mockUserRepo: Record<string, jest.Mock>;
+  let maintenance: UserMaintenanceMock;
   let mockDataSource: Record<string, jest.Mock>;
   let mockQueryRunner: Record<string, jest.Mock>;
   // Typed rather than Record<string, jest.Mock>: this is one of our own
@@ -569,6 +576,7 @@ describe("BackupService", () => {
     // EntityManager -- `mockQueryRunner.query` and `mockDataSource.query` are
     // the same jest.fn the manager exposes, keeping the assertions below
     // pointed at the same statements.
+    maintenance = createUserMaintenanceMock();
     const scoped = createScopedDbMocks([[User, mockUserRepo as never]]);
     scoped.manager.query.mockImplementation(mockQueryHandler);
     // The export reads large tables through a database cursor, so what reaches
@@ -619,6 +627,7 @@ describe("BackupService", () => {
         // re-authentication assertion vacuous -- which is how the sentinel
         // survived (P2-005).
         OidcReauthService,
+        userMaintenanceProvider(maintenance),
         {
           provide: AiEncryptionService,
           useValue: {
@@ -1371,6 +1380,49 @@ describe("BackupService", () => {
       const result = await resultPromise;
 
       expect(result.investment_reports).toEqual(mockInvestmentReports);
+    });
+
+    it("reads every table inside one REPEATABLE READ transaction", async () => {
+      // The regression: each table used to be read in its own autocommit
+      // transaction, so a concurrent write could land between two reads and the
+      // file could hold a split whose parent transaction is missing. The
+      // restore inserts with ON CONFLICT DO NOTHING, so that orphan is dropped
+      // silently rather than failing -- a backup that is quietly incomplete.
+      mockDataSource.query.mockResolvedValue([]);
+
+      const mockRes = new PassThrough();
+      const resultPromise = collectGzipOutput(mockRes);
+      await service.streamExport(userId, mockRes as any);
+      await resultPromise;
+
+      const isolations = mockDataSource.transaction.mock.calls
+        .map((call) => call[0])
+        .filter((arg) => typeof arg === "string");
+      expect(isolations).toEqual(["REPEATABLE READ"]);
+      // One transaction for the whole export, not one per table.
+      expect(mockDataSource.transaction).toHaveBeenCalledTimes(1);
+    });
+
+    it("bounds how long the snapshot may sit idle waiting on the client", async () => {
+      // The cost of holding one snapshot across a streamed download is that a
+      // client which stops draining keeps a REPEATABLE READ transaction open,
+      // and that blocks vacuum database-wide. The timeout turns that into a
+      // failed download instead.
+      mockDataSource.query.mockResolvedValue([]);
+
+      const mockRes = new PassThrough();
+      const resultPromise = collectGzipOutput(mockRes);
+      await service.streamExport(userId, mockRes as any);
+      await resultPromise;
+
+      const idleGuard = mockDataSource.query.mock.calls.find((call) =>
+        String(call[0]).includes("idle_in_transaction_session_timeout"),
+      );
+      expect(idleGuard).toBeDefined();
+      // Transaction-local (`set_config(..., true)`), so it cannot leak onto the
+      // pooled connection and shorten an unrelated request's allowance.
+      expect(idleGuard![1]).toEqual([expect.any(String)]);
+      expect(String(idleGuard![0])).toContain("true");
     });
 
     it("writes an encrypted envelope when a password is provided", async () => {
@@ -3273,6 +3325,53 @@ describe("BackupService", () => {
 
       expect(mockDataSource.transaction).toHaveBeenCalled();
       expect(mockDataSource.transaction).toHaveBeenCalled();
+    });
+
+    it("runs the restore under the maintenance lease", async () => {
+      mockUserRepo.findOne.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      await service.restoreData(userId, makeInput({ password: "test" }));
+
+      expect(maintenance.withMaintenanceLease).toHaveBeenCalledWith(
+        userId,
+        expect.stringContaining("restore"),
+        expect.any(Function),
+      );
+    });
+
+    it("deletes nothing when another operation is already replacing the data", async () => {
+      // A restore landing mid-`.mny`-import wipes the rows that import's worker
+      // is still writing, and the worker then writes the rest into the restored
+      // dataset. The lease refuses before the delete phase, so the account is
+      // left exactly as the other operation will leave it (DR-04-02).
+      mockUserRepo.findOne.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      maintenance.withMaintenanceLease.mockRejectedValue(
+        new ConflictException("busy"),
+      );
+
+      await expect(
+        service.restoreData(userId, makeInput({ password: "test" })),
+      ).rejects.toThrow(ConflictException);
+
+      const deletes = mockQueryRunner.query.mock.calls.filter(
+        (call: string[]) => String(call[0]).includes("DELETE FROM"),
+      );
+      expect(deletes).toHaveLength(0);
+    });
+
+    it("takes the lease only after authentication succeeds", async () => {
+      // A wrong password must not consume the lease and lock the real restore
+      // out for the length of its TTL.
+      mockUserRepo.findOne.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+
+      await expect(
+        service.restoreData(userId, makeInput({ password: "wrong" })),
+      ).rejects.toThrow();
+
+      expect(maintenance.withMaintenanceLease).not.toHaveBeenCalled();
     });
 
     it("should override user_id in restored data to match current user", async () => {

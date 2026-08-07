@@ -1,5 +1,6 @@
 import {
   Injectable,
+  ConflictException,
   NotFoundException,
   BadRequestException,
   Inject,
@@ -40,6 +41,7 @@ import { ActionHistoryService } from "../action-history/action-history.service";
 import { getUsersByEffectiveTimezone } from "../common/users-by-timezone.util";
 import { withSystemContext, withUserContext } from "../common/db/with-context";
 import { withScopedDb } from "../common/db/scoped-db";
+import { affectedRowCount } from "../common/db/query-result";
 import { validateSplitAmountSum } from "../common/split-amount.util";
 import { roundMoney, sumMoney } from "../common/round.util";
 import {
@@ -165,6 +167,7 @@ export class ScheduledTransactionsService {
 
       let totalSuccess = 0;
       let totalError = 0;
+      let totalSkipped = 0;
 
       for (const [tz, userIds] of userIdsByTz) {
         const today = todayInTimezone(tz);
@@ -240,6 +243,14 @@ export class ScheduledTransactionsService {
             );
             totalSuccess++;
           } catch (error) {
+            if (error instanceof ConflictException) {
+              // Another replica -- or a manual post -- claimed this occurrence
+              // first. Every backend replica fires this cron, so losing the
+              // claim is the normal outcome for all but one of them, not a
+              // failure: the money was posted exactly once, by the winner.
+              totalSkipped++;
+              continue;
+            }
             totalError++;
             this.logger.error(
               `Failed to auto-post "${scheduled.name}" (ID: ${scheduled.id}): ${error.message}`,
@@ -250,7 +261,8 @@ export class ScheduledTransactionsService {
       }
 
       this.logger.log(
-        `Auto-post processing complete: ${totalSuccess} succeeded, ${totalError} failed`,
+        `Auto-post processing complete: ${totalSuccess} succeeded, ` +
+          `${totalSkipped} already claimed elsewhere, ${totalError} failed`,
       );
     } catch (error) {
       this.logger.error("Auto-post processing failed", error.stack);
@@ -1618,66 +1630,126 @@ export class ScheduledTransactionsService {
       transactionPayload.categoryId = finalCategoryId || undefined;
     }
 
-    if (scheduled.isInvestment) {
-      await this.postInvestment(
-        userId,
-        scheduled,
-        postDto,
-        postDate,
-        storedOverride,
-      );
-    } else if (scheduled.isTransfer && scheduled.transferAccountId) {
-      // Carry the schedule's category onto the posted transfer (both legs), so
-      // a categorized scheduled transfer behaves like a one-off one (#743).
-      // Same precedence as the non-transfer branch: inline override > stored
-      // occurrence override > the schedule's own category.
-      const transferCategoryId = hasInlineCategoryId
-        ? postDto.categoryId
-        : storedOverride?.categoryId !== null &&
-            storedOverride?.categoryId !== undefined
-          ? storedOverride.categoryId
-          : scheduled.categoryId || undefined;
-      await this.transactionsService.createTransfer(userId, {
-        fromAccountId: scheduled.accountId,
-        toAccountId: scheduled.transferAccountId,
-        amount: Math.abs(finalAmount),
-        transactionDate: postDate,
-        fromCurrencyCode: scheduled.currencyCode,
-        description: finalDescription || undefined,
-        referenceNumber: postDto?.referenceNumber || undefined,
-        payeeId: scheduled.payeeId || undefined,
-        payeeName: scheduled.payeeName || undefined,
-        categoryId: transferCategoryId || undefined,
-        tagIds:
-          scheduled.tagIds && scheduled.tagIds.length > 0
-            ? scheduled.tagIds
-            : undefined,
-      });
-    } else {
-      await this.transactionsService.create(userId, transactionPayload);
-    }
-
-    // Wrap all bookkeeping in a transaction for atomicity. The posted
-    // transaction/transfer/investment above has already committed in its own
-    // withScopedDb, matching the pre-RLS boundary.
+    // ONE transaction from here down: the occurrence claim, the money it
+    // creates, the override it consumes and the schedule advancement.
+    //
+    // Before this, the financial transaction committed in its own transaction
+    // and `nextDueDate` advanced in a second one. Every way of getting between
+    // the two produced the same bill paid twice -- two replicas firing the same
+    // hourly cron, a manual post racing it, or a crash after the money
+    // committed. Opening balance 100.00 and one due -50.00: the account ends at
+    // 0.00 instead of 50.00 (audit P4-004).
+    //
+    // Nested service calls join this transaction, so a refusal below rolls the
+    // money back with it. Everything that reaches outside PostgreSQL -- the FX
+    // rate lookup in particular -- has already run above.
     const removedAfterOnce = await withScopedDb(this.dataSource, async (m) => {
+      // Lock the schedule and confirm this occurrence is still the due one. A
+      // poster that lost the race finds next_due_date already advanced.
+      const current = await m.findOne(ScheduledTransaction, {
+        where: { id, userId },
+        lock: { mode: "pessimistic_write" },
+      });
+      if (!current) {
+        throw new NotFoundException(
+          tr(
+            "errors.scheduled.notFound",
+            `Scheduled transaction with ID ${id} not found`,
+            { id },
+          ),
+        );
+      }
+      if (ensureYMD(current.nextDueDate) !== nextDueDateStr) {
+        throw new ConflictException(
+          tr(
+            "errors.scheduled.occurrenceAlreadyPosted",
+            "This occurrence has already been posted.",
+          ),
+        );
+      }
+
+      // Claim the occurrence. The unique key on
+      // (scheduled_transaction_id, original_due_date) is what makes the claim
+      // the serialization point rather than the lock alone: it survives a
+      // crash, and manual and automatic posting both go through it.
+      const claim: unknown = await m.query(
+        `INSERT INTO scheduled_transaction_postings
+           (scheduled_transaction_id, original_due_date, posted_date)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (scheduled_transaction_id, original_due_date) DO NOTHING
+         RETURNING id`,
+        [id, nextDueDateStr, postDate],
+      );
+      if (affectedRowCount(claim) === 0) {
+        throw new ConflictException(
+          tr(
+            "errors.scheduled.occurrenceAlreadyPosted",
+            "This occurrence has already been posted.",
+          ),
+        );
+      }
+
+      if (scheduled.isInvestment) {
+        await this.postInvestment(
+          userId,
+          scheduled,
+          postDto,
+          postDate,
+          storedOverride,
+        );
+      } else if (scheduled.isTransfer && scheduled.transferAccountId) {
+        // Carry the schedule's category onto the posted transfer (both legs),
+        // so a categorized scheduled transfer behaves like a one-off one
+        // (#743). Same precedence as the non-transfer branch: inline override >
+        // stored occurrence override > the schedule's own category.
+        const transferCategoryId = hasInlineCategoryId
+          ? postDto.categoryId
+          : storedOverride?.categoryId !== null &&
+              storedOverride?.categoryId !== undefined
+            ? storedOverride.categoryId
+            : scheduled.categoryId || undefined;
+        await this.transactionsService.createTransfer(userId, {
+          fromAccountId: scheduled.accountId,
+          toAccountId: scheduled.transferAccountId,
+          amount: Math.abs(finalAmount),
+          transactionDate: postDate,
+          fromCurrencyCode: scheduled.currencyCode,
+          description: finalDescription || undefined,
+          referenceNumber: postDto?.referenceNumber || undefined,
+          payeeId: scheduled.payeeId || undefined,
+          payeeName: scheduled.payeeName || undefined,
+          categoryId: transferCategoryId || undefined,
+          tagIds:
+            scheduled.tagIds && scheduled.tagIds.length > 0
+              ? scheduled.tagIds
+              : undefined,
+        });
+      } else {
+        await this.transactionsService.create(userId, transactionPayload);
+      }
+
       if (storedOverride) {
         await m.remove(storedOverride);
       }
 
-      if (scheduled.frequency === "ONCE") {
+      if (current.frequency === "ONCE") {
         // One-time bill or deposit: remove the scheduled transaction entirely
         // after posting so it disappears from the Bills & Deposits page.
-        // Splits and overrides are cleaned up via ON DELETE CASCADE.
+        // Splits, overrides and the posting claim are cleaned up via
+        // ON DELETE CASCADE.
         await m.delete(ScheduledTransaction, id);
         return true;
       }
 
       // Recurring frequency: advance nextDueDate, prune stale overrides,
       // decrement occurrencesRemaining, deactivate if past endDate.
+      //
+      // Read from `current`, the locked row, not from the `scheduled` snapshot
+      // taken before the transaction: a concurrent edit to occurrencesRemaining
+      // or endDate would otherwise be reverted by this advancement.
       const newNextDueDateStr = calcNextDueDate(
-        ensureYMD(scheduled.nextDueDate),
-        scheduled.frequency,
+        nextDueDateStr,
+        current.frequency,
       );
 
       await m
@@ -1696,20 +1768,17 @@ export class ScheduledTransactionsService {
       };
 
       if (
-        scheduled.occurrencesRemaining !== null &&
-        scheduled.occurrencesRemaining > 0
+        current.occurrencesRemaining !== null &&
+        current.occurrencesRemaining > 0
       ) {
-        const newRemaining = scheduled.occurrencesRemaining - 1;
+        const newRemaining = current.occurrencesRemaining - 1;
         updateFields.occurrencesRemaining = newRemaining;
         if (newRemaining === 0) {
           updateFields.isActive = false;
         }
       }
 
-      if (
-        scheduled.endDate &&
-        newNextDueDateStr > ensureYMD(scheduled.endDate)
-      ) {
+      if (current.endDate && newNextDueDateStr > ensureYMD(current.endDate)) {
         updateFields.isActive = false;
       }
 

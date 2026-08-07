@@ -13,6 +13,11 @@ import { emailTranslator } from "../i18n/email-translator";
 import { DEFAULT_LOCALE } from "../i18n/config";
 import { withSystemContext, withUserContext } from "../common/db/with-context";
 import { withScopedDb } from "../common/db/scoped-db";
+import {
+  JobClaimService,
+  JobClaimType,
+} from "../common/jobs/job-claim.service";
+import { createHash } from "node:crypto";
 
 /**
  * Service for handling mortgage term renewal reminders
@@ -22,6 +27,21 @@ import { withScopedDb } from "../common/db/scoped-db";
  * notificationEmail preference). Also logs each detected renewal so ops
  * can see what was processed even when SMTP is unavailable.
  */
+/**
+ * How long one replica holds the right to send this user's mortgage renewal notice.
+ *
+ * A lease, so a replica killed between claiming and sending costs a retry window
+ * rather than the delivery. It only has to outlast an SMTP round trip; whether the
+ * work is still owed is decided by the delivery record, not by the lease
+ * (audit RV4-006).
+ *
+ * The resulting contract is at-least-once: a process killed after SMTP accepted
+ * but before the record committed re-sends next run. For a reminder that is the
+ * right trade -- a duplicate nudge is an annoyance, a missed mortgage renewal is
+ * not. See docs/cron-jobs.md.
+ */
+const REMINDER_LEASE_MS = 10 * 60 * 1000;
+
 @Injectable()
 export class MortgageReminderService {
   private readonly logger = new Logger(MortgageReminderService.name);
@@ -31,7 +51,29 @@ export class MortgageReminderService {
     private emailService: EmailService,
     private configService: ConfigService,
     private readonly i18n: I18nService,
+    private readonly jobClaims: JobClaimService,
   ) {}
+
+  /**
+   * Release a lease a send did not use, so the next run can retry.
+   *
+   * Addressed by the lease token, not only by the work: a stalled worker must not
+   * delete a lease another replica has retaken (audit DR-RRV4-01).
+   */
+  private async releaseClaim(
+    userId: string,
+    claimKey: string,
+    leaseToken: string,
+  ): Promise<void> {
+    await this.jobClaims
+      .releaseLease(JobClaimType.MortgageReminder, userId, claimKey, leaseToken)
+      .catch((error: unknown) =>
+        this.logger.warn(
+          `Failed to release mortgage-reminder claim for user ${userId}: ` +
+            `${error instanceof Error ? error.message : String(error)}`,
+        ),
+      );
+  }
 
   /**
    * Run daily at 8:00 AM to check for upcoming mortgage renewals
@@ -85,6 +127,44 @@ export class MortgageReminderService {
     let skipCount = 0;
 
     for (const [userId, mortgages] of mortgagesByUser) {
+      // Claim before sending -- see BillReminderService for the reasoning. Every
+      // replica fires this cron, so without a durable record two healthy pods
+      // both email the same renewal notice (audit P4-018).
+      const claimKey = buildMortgageReminderClaimKey(mortgages);
+      // A **lease**, not a permanent claim, plus a durable delivery record.
+      //
+      // `claimOnce` was taken before the send and was the only record that the
+      // send was owed, so a replica killed in between left a permanent row that
+      // every later run read as "already handled" -- the mortgage reminder was never
+      // sent and nothing could notice, because the row could not tell "I sent
+      // this" from "I intended to" (audit RV4-006). The lease bounds *doing* the
+      // work; `delivered_at`, written after the send and re-read here, is what
+      // says it was done.
+      const claimed = await this.jobClaims.claimLease(
+        JobClaimType.MortgageReminder,
+        userId,
+        claimKey,
+        REMINDER_LEASE_MS,
+      );
+      if (!claimed) {
+        skipCount++;
+        continue;
+      }
+      const leaseToken = claimed;
+      if (
+        await this.jobClaims.wasDelivered(
+          JobClaimType.MortgageReminder,
+          userId,
+          claimKey,
+        )
+      ) {
+        // Already sent, durably. Hand the lease back rather than holding it for
+        // its whole TTL.
+        skipCount++;
+        await this.releaseClaim(userId, claimKey, leaseToken);
+        continue;
+      }
+
       try {
         // RLS (task C2): per-user reads run under the user's own context.
         const prefs = await withUserContext(userId, () =>
@@ -96,6 +176,7 @@ export class MortgageReminderService {
         );
         if (prefs && !prefs.notificationEmail) {
           skipCount++;
+          await this.releaseClaim(userId, claimKey, leaseToken);
           continue;
         }
 
@@ -108,6 +189,7 @@ export class MortgageReminderService {
         );
         if (!user || !user.email) {
           skipCount++;
+          await this.releaseClaim(userId, claimKey, leaseToken);
           continue;
         }
 
@@ -138,8 +220,17 @@ export class MortgageReminderService {
               );
 
         await this.emailService.sendMail(user.email, subject, html);
+        // The delivery record, after the side effect and never before it.
+        await this.jobClaims.markDelivered(
+          JobClaimType.MortgageReminder,
+          userId,
+          claimKey,
+          leaseToken,
+        );
         sentCount++;
       } catch (error) {
+        // A transient SMTP failure returns the day rather than consuming it.
+        await this.releaseClaim(userId, claimKey, leaseToken);
         this.logger.error(
           `Failed to send mortgage reminder to user ${userId}`,
           error instanceof Error ? error.stack : error,
@@ -216,4 +307,28 @@ export class MortgageReminderService {
       })),
     };
   }
+}
+
+/**
+ * The delivery key for one user's mortgage-renewal notice: today's date plus a
+ * digest of which mortgages and which term-end dates it names.
+ *
+ * Same shape as the bill reminder's key, and for the same reason: the date alone
+ * suppresses a legitimate second notice when another mortgage enters the window
+ * today, and the digest alone would let the same notice repeat tomorrow.
+ */
+export function buildMortgageReminderClaimKey(
+  mortgages: readonly Account[],
+): string {
+  const today = new Date();
+  const date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const fingerprint = [...mortgages]
+    .map((m) => `${m.id}:${formatDateYMD(m.termEndDate!)}`)
+    .sort()
+    .join("|");
+  const digest = createHash("sha256")
+    .update(fingerprint)
+    .digest("hex")
+    .slice(0, 32);
+  return `${date}#${digest}`;
 }

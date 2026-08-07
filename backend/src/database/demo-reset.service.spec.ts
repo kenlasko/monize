@@ -5,6 +5,13 @@ import { DemoSeedService } from "./demo-seed.service";
 import { DemoModeService } from "../common/demo-mode.service";
 import { getRequestContext } from "../common/request-context";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
+import {
+  createJobClaimMock,
+  TEST_LEASE_TOKEN,
+  jobClaimProvider,
+  type JobClaimMock,
+} from "../test-helpers/job-claim-testing";
+import { JobClaimType } from "../common/jobs/job-claim.service";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -20,6 +27,7 @@ describe("DemoResetService", () => {
   let demoSeedService: { seedDemoData: jest.Mock };
   let demoModeService: { isDemo: boolean };
   let queryRunner: Record<string, jest.Mock>;
+  let jobClaims: JobClaimMock;
 
   beforeEach(async () => {
     queryRunner = {
@@ -44,6 +52,7 @@ describe("DemoResetService", () => {
     };
 
     demoModeService = { isDemo: true };
+    jobClaims = createJobClaimMock();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -51,6 +60,7 @@ describe("DemoResetService", () => {
         { provide: DataSource, useValue: dataSource },
         { provide: DemoSeedService, useValue: demoSeedService },
         { provide: DemoModeService, useValue: demoModeService },
+        jobClaimProvider(jobClaims),
       ],
     }).compile();
 
@@ -189,8 +199,12 @@ describe("DemoResetService", () => {
       const callOrder: string[] = [];
       const runTransaction = dataSource.transaction.getMockImplementation()!;
       dataSource.transaction.mockImplementation(async (...args: unknown[]) => {
+        const before = queryRunner.query.mock.calls.length;
         const result = await runTransaction(...args);
-        callOrder.push("commit");
+        const wrote = queryRunner.query.mock.calls
+          .slice(before)
+          .some((call: string[]) => call[0].includes("DELETE FROM"));
+        if (wrote) callOrder.push("commit");
         return result;
       });
       demoSeedService.seedDemoData.mockImplementation(() => {
@@ -201,6 +215,74 @@ describe("DemoResetService", () => {
       await service.resetDemoData();
 
       expect(callOrder).toEqual(["commit", "reseed"]);
+    });
+  });
+
+  describe("multi-replica coordination of the reset", () => {
+    beforeEach(() => {
+      queryRunner.query.mockImplementation((sql: string) => {
+        if (sql.includes("SELECT id FROM users")) {
+          return Promise.resolve([{ id: "demo-user-id" }]);
+        }
+        return Promise.resolve([]);
+      });
+    });
+
+    it("takes a lease before wiping anything", async () => {
+      await service.resetDemoData();
+
+      expect(jobClaims.claimLease).toHaveBeenCalledWith(
+        JobClaimType.DemoReset,
+        "demo-user-id",
+        expect.any(String),
+        expect.any(Number),
+      );
+    });
+
+    it("wipes nothing when another replica holds the lease", async () => {
+      // A wipe-and-reseed is the one job a duplicate run cannot repair by
+      // repeating: the second replica's DELETE lands inside the first
+      // replica's seed and both finish with a partial demo.
+      jobClaims.claimLease.mockResolvedValue(null);
+
+      await service.resetDemoData();
+
+      const deletes = queryRunner.query.mock.calls.filter((call: string[]) =>
+        call[0].includes("DELETE FROM"),
+      );
+      expect(deletes).toHaveLength(0);
+      expect(demoSeedService.seedDemoData).not.toHaveBeenCalled();
+    });
+
+    it("hands the lease back even when the reset throws", async () => {
+      queryRunner.query.mockImplementation((sql: string) => {
+        if (sql.includes("SELECT id FROM users")) {
+          return Promise.resolve([{ id: "demo-user-id" }]);
+        }
+        if (sql.includes("DELETE FROM investment_transactions")) {
+          throw new Error("Database error");
+        }
+        return Promise.resolve([]);
+      });
+
+      await service.resetDemoData();
+
+      expect(jobClaims.releaseLease).toHaveBeenCalledWith(
+        JobClaimType.DemoReset,
+        "demo-user-id",
+        expect.any(String),
+        // With the token: a reset that outran its own lease must not release the
+        // one the replica now reseeding holds (audit DR-RRV4-01).
+        TEST_LEASE_TOKEN,
+      );
+    });
+
+    it("does not claim anything when there is no demo user", async () => {
+      queryRunner.query.mockResolvedValue([]);
+
+      await service.resetDemoData();
+
+      expect(jobClaims.claimLease).not.toHaveBeenCalled();
     });
   });
 
@@ -292,20 +374,12 @@ describe("DemoResetService", () => {
         }
       });
 
-      it("skips duplicate transactions", async () => {
-        dataSource.query.mockImplementation((sql: string) => {
-          if (sql.includes("SELECT id FROM users")) {
-            return Promise.resolve([{ id: "demo-user-id" }]);
-          }
-          if (sql.includes("SELECT id FROM accounts")) {
-            return Promise.resolve([{ id: "account-123" }]);
-          }
-          if (sql.includes("SELECT COUNT")) {
-            // Simulate existing transaction
-            return Promise.resolve([{ count: "1" }]);
-          }
-          return Promise.resolve([]);
-        });
+      it("generates nothing when another replica already claimed the window", async () => {
+        // The regression: the generator is seeded by the window, so every
+        // replica computes the SAME transactions. The old guard was a
+        // `SELECT COUNT(*)` for an identical row -- a check-then-act that two
+        // replicas both pass, producing the demo transaction twice.
+        jobClaims.claimOnce.mockResolvedValue(false);
 
         await service.generateIntradayTransactions();
 
@@ -313,6 +387,61 @@ describe("DemoResetService", () => {
           (call: string[]) => call[0].includes("INSERT INTO transactions"),
         );
         expect(insertCalls.length).toBe(0);
+      });
+
+      it("claims the window durably, keyed on the date and the hour", async () => {
+        await service.generateIntradayTransactions();
+
+        expect(jobClaims.claimOnce).toHaveBeenCalledTimes(1);
+        const [type, userId, key] = jobClaims.claimOnce.mock.calls[0];
+        expect(type).toBe(JobClaimType.DemoIntraday);
+        expect(userId).toBe("demo-user-id");
+        expect(key).toMatch(/^\d{4}-\d{2}-\d{2}-\d{2}$/);
+      });
+
+      it("does not count a row-existence check as coordination", async () => {
+        // A `SELECT COUNT(*) ... WHERE the row I am about to insert` is the
+        // shape this fix removed; leaving it in would read as a guard.
+        await service.generateIntradayTransactions();
+
+        const countChecks = dataSource.query.mock.calls.filter(
+          (call: string[]) =>
+            call[0].includes("SELECT COUNT(*) as count FROM transactions"),
+        );
+        expect(countChecks).toHaveLength(0);
+      });
+
+      it("writes the ledger row and its balance in one transaction", async () => {
+        // Split across two transactions, a crash between them leaves a demo
+        // whose account balance disagrees with its own ledger.
+        const perTransaction: string[][] = [];
+        const runTransaction = dataSource.transaction.getMockImplementation()!;
+        dataSource.transaction.mockImplementation(
+          async (...args: unknown[]) => {
+            const before = dataSource.query.mock.calls.length;
+            const result = await runTransaction(...args);
+            perTransaction.push(
+              dataSource.query.mock.calls
+                .slice(before)
+                .map((call: string[]) => call[0]),
+            );
+            return result;
+          },
+        );
+
+        await service.generateIntradayTransactions();
+
+        const writeGroups = perTransaction.filter((sqls) =>
+          sqls.some((sql) => sql.includes("INSERT INTO transactions")),
+        );
+        expect(writeGroups.length).toBeGreaterThanOrEqual(1);
+        for (const group of writeGroups) {
+          expect(
+            group.some((sql) =>
+              sql.includes("UPDATE accounts SET current_balance"),
+            ),
+          ).toBe(true);
+        }
       });
 
       it("skips when account not found", async () => {
@@ -335,37 +464,24 @@ describe("DemoResetService", () => {
       });
 
       it("produces deterministic output for the same time window", async () => {
-        await service.generateIntradayTransactions();
-        const firstRunInserts = dataSource.query.mock.calls
-          .filter((call: string[]) =>
-            call[0].includes("INSERT INTO transactions"),
-          )
-          .map((call: unknown[]) => (call[1] as unknown[])[4]); // payee_name
+        // Determinism is exactly why the claim is needed rather than a
+        // row-existence check: two replicas in the same window pick the same
+        // templates, so the only thing distinguishing them is who claimed.
+        const payeeNames = () =>
+          dataSource.query.mock.calls
+            .filter((call: string[]) =>
+              call[0].includes("INSERT INTO transactions"),
+            )
+            .map((call: unknown[]) => (call[1] as unknown[])[4]);
 
-        // Reset and run again — dedup will skip, but the template selection is the same
-        // Verify by checking the dedup queries use the same payee names
+        await service.generateIntradayTransactions();
+        const firstRun = payeeNames();
+
         dataSource.query.mockClear();
-        dataSource.query.mockImplementation((sql: string) => {
-          if (sql.includes("SELECT id FROM users")) {
-            return Promise.resolve([{ id: "demo-user-id" }]);
-          }
-          if (sql.includes("SELECT id FROM accounts")) {
-            return Promise.resolve([{ id: "account-123" }]);
-          }
-          if (sql.includes("SELECT COUNT")) {
-            return Promise.resolve([{ count: "1" }]); // Already exists
-          }
-          return Promise.resolve([]);
-        });
-
         await service.generateIntradayTransactions();
 
-        const dedupPayees = dataSource.query.mock.calls
-          .filter((call: string[]) => call[0].includes("SELECT COUNT"))
-          .map((call: unknown[]) => (call[1] as unknown[])[2]); // payee_name
-
-        // Same templates should be selected both times
-        expect(dedupPayees).toEqual(firstRunInserts);
+        expect(payeeNames()).toEqual(firstRun);
+        expect(firstRun.length).toBeGreaterThan(0);
       });
     });
 

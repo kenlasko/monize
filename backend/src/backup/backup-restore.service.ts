@@ -12,6 +12,7 @@ import { gunzip } from "zlib";
 import { promisify } from "util";
 import { withScopedDb } from "../common/db/scoped-db";
 import { withPreserveTimestamps } from "../common/db/with-context";
+import { UserMaintenanceService } from "../common/jobs/user-maintenance.service";
 import { AiEncryptionService } from "../ai/ai-encryption.service";
 import { OidcReauthService } from "../auth/oidc/oidc-reauth.service";
 import { User } from "../users/entities/user.entity";
@@ -65,6 +66,7 @@ export class BackupRestoreService {
     private readonly oidcReauth: OidcReauthService,
     private readonly attachments: BackupAttachmentTransferService,
     private readonly db: BackupRestoreDatabaseService,
+    private readonly maintenance: UserMaintenanceService,
   ) {}
 
   /**
@@ -183,47 +185,58 @@ export class BackupRestoreService {
       // timestamps through the Phase-3 deferred-FK UPDATEs -- replacing the old
       // trigger-disabling ALTER TABLE DDL, which the unprivileged runtime role
       // cannot execute under enforcement (task C5).
-      return withPreserveTimestamps(() =>
-        withScopedDb(this.dataSource, async (manager) => {
-          // Phase 1: Delete all existing user data (same order as deleteData in users.service)
-          await this.db.deleteAllUserData(userId, manager);
+      // The delete-and-reinsert runs under this user's maintenance lease, taken
+      // only now -- after authentication, before the first delete. A concurrent
+      // restore, delete-my-data, or `.mny` import already replacing this
+      // account's data makes the lease refuse with a 409, and because the refusal
+      // precedes `fn`, nothing here has run: no row deleted, the account left
+      // exactly as the other operation will leave it (audit DR-04-02). Staged
+      // attachment bytes are discarded by the `.catch` below, since they were
+      // written before the lease and this request no longer owns the restore.
+      return this.maintenance
+        .withMaintenanceLease(userId, "backup restore", () =>
+          withPreserveTimestamps(() =>
+            withScopedDb(this.dataSource, async (manager) => {
+              // Phase 1: Delete all existing user data (same order as deleteData in users.service)
+              await this.db.deleteAllUserData(userId, manager);
 
-          // Phase 2a: ensure every referenced currency code exists before
-          // restoring the tables with FK references to currencies(code).
-          await this.db.ensureCurrenciesExist(manager, data, userId);
+              // Phase 2a: ensure every referenced currency code exists before
+              // restoring the tables with FK references to currencies(code).
+              await this.db.ensureCurrenciesExist(manager, data, userId);
 
-          // Phase 2b: insert every backed-up table in FK-safe order. The order,
-          // the row-count key and whether user_id is forced live in
-          // RESTORE_PLAN, which restore-plan.spec.ts checks against the schema's
-          // foreign keys -- so a new table or a new FK cannot quietly land in the
-          // wrong position.
-          for (const { table, countKey, scopeToUser } of RESTORE_PLAN) {
-            restored[countKey] = await this.db.insertRows(
-              manager,
-              table,
-              backupTables(data)[table],
-              scopeToUser ? userId : null,
-            );
-          }
-
-          // Phase 3: Restore deferred FK columns that were stripped during insert
-          // to avoid circular/forward reference violations.
-          await this.db.restoreDeferredFkColumns(manager, data);
-
-          this.logger.log(`Backup restore completed for user ${userId}`);
-          // `skippedAttachments` is reported beside `restored`, never inside it:
-          // the client sums `restored`'s values to show a row total, and a count
-          // of rows that were deliberately not written does not belong in that
-          // sum.
-          return skippedAttachments > 0
-            ? {
-                message: "Backup restored successfully",
-                restored,
-                skippedAttachments,
+              // Phase 2b: insert every backed-up table in FK-safe order. The order,
+              // the row-count key and whether user_id is forced live in
+              // RESTORE_PLAN, which restore-plan.spec.ts checks against the schema's
+              // foreign keys -- so a new table or a new FK cannot quietly land in the
+              // wrong position.
+              for (const { table, countKey, scopeToUser } of RESTORE_PLAN) {
+                restored[countKey] = await this.db.insertRows(
+                  manager,
+                  table,
+                  backupTables(data)[table],
+                  scopeToUser ? userId : null,
+                );
               }
-            : { message: "Backup restored successfully", restored };
-        }),
-      )
+
+              // Phase 3: Restore deferred FK columns that were stripped during insert
+              // to avoid circular/forward reference violations.
+              await this.db.restoreDeferredFkColumns(manager, data);
+
+              this.logger.log(`Backup restore completed for user ${userId}`);
+              // `skippedAttachments` is reported beside `restored`, never inside it:
+              // the client sums `restored`'s values to show a row total, and a count
+              // of rows that were deliberately not written does not belong in that
+              // sum.
+              return skippedAttachments > 0
+                ? {
+                    message: "Backup restored successfully",
+                    restored,
+                    skippedAttachments,
+                  }
+                : { message: "Backup restored successfully", restored };
+            }),
+          ),
+        )
         .then(async (result) => {
           // After the commit, never before: until it lands, the metadata that
           // references these objects may come back with a rollback.

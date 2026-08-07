@@ -72,6 +72,46 @@ function stripSqlComments(sql: string): string {
   return sql.replace(/\/\*[\s\S]*?\*\//g, "").replace(/--[^\n]*/g, "");
 }
 
+/**
+ * Migrations that install a **behavioural trigger** -- a rule enforced by the
+ * database rather than by the entities.
+ *
+ * `synchronize` builds the schema from entity metadata and creates no triggers at
+ * all, so every such rule is simply absent from a test database unless the harness
+ * puts it there. That is not a cosmetic gap: migration 141's trigger is the only
+ * thing that fences a *previous-version* import worker during a rolling deployment
+ * (audit RRV4-001), and a suite that silently lacks it would report the fence as
+ * working while nothing enforced it.
+ *
+ * Selected by content marker (`RETURNS TRIGGER`) for the same reason the RLS files
+ * are: a new migration that adds a trigger is picked up with no per-file
+ * registration to forget. Overlap with the RLS set is harmless -- every migration
+ * body is required to be re-runnable.
+ */
+export function findTriggerMigrations(): string[] {
+  if (!fs.existsSync(MIGRATIONS_DIR)) {
+    throw new Error(`Migrations directory not found at ${MIGRATIONS_DIR}`);
+  }
+  const files = fs
+    .readdirSync(MIGRATIONS_DIR)
+    .filter((f) => f.endsWith(".sql"))
+    .sort()
+    .filter((f) =>
+      /RETURNS\s+TRIGGER/i.test(
+        stripSqlComments(fs.readFileSync(path.join(MIGRATIONS_DIR, f), "utf8")),
+      ),
+    );
+
+  if (files.length === 0) {
+    throw new Error(
+      `No trigger migrations found in ${MIGRATIONS_DIR}. The harness applies them by ` +
+        "content marker (RETURNS TRIGGER); finding none means either the migrations " +
+        "are missing or the marker changed.",
+    );
+  }
+  return files.map((f) => path.join(MIGRATIONS_DIR, f));
+}
+
 export function findRlsMigrations(includeEnable = false): string[] {
   if (!fs.existsSync(MIGRATIONS_DIR)) {
     throw new Error(`Migrations directory not found at ${MIGRATIONS_DIR}`);
@@ -202,8 +242,9 @@ function updatedAtTriggers(): { trigger: string; table: string }[] {
 
 /**
  * Brings a `synchronize`-built test database up to the shape the real one has:
- * the runtime role and its grants, the RLS helper functions and policies, and
- * the `updated_at` triggers.
+ * the runtime role and its grants, the RLS helper functions and policies, the
+ * behavioural triggers that enforce rules the entities cannot express, and the
+ * `updated_at` triggers.
  *
  * Call after the schema exists (i.e. after `DataSource.initialize()` with
  * `synchronize: true`). Idempotent, and re-applied per suite because
@@ -284,7 +325,21 @@ export async function applyRlsPolicies(
     );
   }
 
-  // 4. The updated_at triggers, which synchronize never creates.
+  // 4. Behavioural triggers, which synchronize never creates either. Applied after
+  //    the policies because one of them (136's tombstone recorder) is SECURITY
+  //    DEFINER and its own migration is already in the set above; re-applying is a
+  //    no-op by the idempotency rule every migration follows.
+  for (const file of findTriggerMigrations()) {
+    try {
+      await dataSource.query(fs.readFileSync(file, "utf8"));
+    } catch (err) {
+      throw new Error(
+        `Failed applying trigger migration ${path.basename(file)}: ${(err as Error).message}`,
+      );
+    }
+  }
+
+  // 5. The updated_at triggers, which synchronize never creates.
   for (const { trigger, table } of updatedAtTriggers()) {
     // Skip a table the entities do not produce -- the harness synchronizes from
     // entity metadata, so schema.sql can legitimately be ahead of it.

@@ -8,6 +8,23 @@ import { DemoModeService } from "../common/demo-mode.service";
 import { DemoSeedService } from "./demo-seed.service";
 import { INTRADAY_TEMPLATES } from "./demo-seed-data/intraday-templates";
 import { withSystemContext } from "../common/db/with-context";
+import {
+  JobClaimService,
+  JobClaimType,
+} from "../common/jobs/job-claim.service";
+
+/**
+ * How long one replica may hold the demo reset before another may retake it.
+ *
+ * A wipe-and-reseed is not idempotent while it is running: a second replica
+ * starting halfway through deletes the rows the first is still seeding and both
+ * finish with a partial demo. The lease expires so a replica killed mid-reset
+ * does not leave the demo un-resettable until someone restarts the cluster.
+ */
+export const DEMO_RESET_LEASE_MS = 30 * 60 * 1000;
+
+/** Lease and claim keys; one demo user, so the key names the window instead. */
+export const DEMO_RESET_CLAIM_KEY = "reset";
 
 @Injectable()
 export class DemoResetService {
@@ -17,6 +34,7 @@ export class DemoResetService {
     private dataSource: DataSource,
     private demoSeedService: DemoSeedService,
     private demoModeService: DemoModeService,
+    private readonly jobClaims: JobClaimService,
   ) {}
 
   @Cron("0 4 * * *") // 4:00 AM daily
@@ -30,27 +48,73 @@ export class DemoResetService {
     return withSystemContext(() => this.resetDemoDataWithinContext());
   }
 
+  /** The demo user's id, or null when the demo user has not been created. */
+  private async findDemoUserId(): Promise<string | null> {
+    const [demoUser] = await withScopedDb(this.dataSource, (manager) =>
+      manager.query("SELECT id FROM users WHERE email = 'demo@monize.com'"),
+    );
+    return demoUser?.id ?? null;
+  }
+
   private async resetDemoDataWithinContext(): Promise<void> {
+    // The cron must not reject: an unhandled rejection from a scheduled handler
+    // takes the process down, and this reset is best-effort.
+    try {
+      const demoUserId = await this.findDemoUserId();
+      if (!demoUserId) {
+        this.logger.warn("Demo user not found, skipping reset");
+        return;
+      }
+
+      // Every replica fires this cron. A wipe-and-reseed is the one shape a
+      // duplicate run cannot repair by repeating: the second replica's DELETE
+      // lands in the middle of the first replica's seed and both finish with a
+      // partial demo. The lease is the exclusion; it expires so a killed replica
+      // does not leave the demo un-resettable.
+      const leased = await this.jobClaims.claimLease(
+        JobClaimType.DemoReset,
+        demoUserId,
+        DEMO_RESET_CLAIM_KEY,
+        DEMO_RESET_LEASE_MS,
+      );
+      if (!leased) {
+        this.logger.log(
+          "Another replica is already resetting the demo data; skipping",
+        );
+        return;
+      }
+
+      try {
+        await this.performDemoReset(demoUserId);
+      } finally {
+        await this.jobClaims
+          // By token: a reset that outran its lease must not free the one the
+          // replica now reseeding holds (DR-RRV4-01).
+          .releaseLease(
+            JobClaimType.DemoReset,
+            demoUserId,
+            DEMO_RESET_CLAIM_KEY,
+            leased,
+          )
+          .catch(() => undefined);
+      }
+    } catch (error) {
+      this.logger.error(
+        "Demo reset failed",
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
+  }
+
+  private async performDemoReset(demoUserId: string): Promise<void> {
     try {
       // The clear runs in one transaction and must COMMIT before the re-seed:
       // seedDemoData opens its own scoped transactions, and the seeded rows
       // have to land on a database the clear has already emptied.
-      const userId = await withScopedDb(this.dataSource, async (manager) => {
-        // 1. Get demo user ID
-        const [demoUser] = await manager.query(
-          "SELECT id FROM users WHERE email = 'demo@monize.com'",
-        );
+      await withScopedDb(this.dataSource, async (manager) => {
+        const userId: string = demoUserId;
 
-        if (!demoUser) {
-          this.logger.warn("Demo user not found, skipping reset");
-          // Nothing written yet, so returning commits an empty transaction --
-          // the same net effect as the old explicit rollback.
-          return null;
-        }
-
-        const userId: string = demoUser.id;
-
-        // 2. Delete all user data in FK-safe order
+        // 1. Delete all user data in FK-safe order
         await manager.query(
           "DELETE FROM investment_transactions WHERE user_id = $1",
           [userId],
@@ -119,7 +183,7 @@ export class DemoResetService {
           userId,
         ]);
 
-        // 3. Reset user record
+        // 2. Reset user record
         const hashedPassword = await bcrypt.hash("Demo123!", 10);
         await manager.query(
           `UPDATE users SET
@@ -134,14 +198,12 @@ export class DemoResetService {
         WHERE id = $2`,
           [hashedPassword, userId],
         );
-
-        return userId;
       });
 
-      if (!userId) return;
+      const userId = demoUserId;
       this.logger.log("Demo data cleared successfully");
 
-      // 4. Re-seed demo data
+      // 3. Re-seed demo data
       // seedDemoData runs outside the transaction because it uses
       // this.dataSource directly. If seeding fails, retry once before
       // giving up so the database is not left empty.
@@ -189,14 +251,31 @@ export class DemoResetService {
 
   private async generateIntradayTransactionsWithinContext(): Promise<void> {
     try {
-      const [demoUser] = await withScopedDb(this.dataSource, (manager) =>
-        manager.query("SELECT id FROM users WHERE email = 'demo@monize.com'"),
-      );
-      if (!demoUser) return;
+      const userId = await this.findDemoUserId();
+      if (!userId) return;
 
-      const userId = demoUser.id;
       const now = new Date();
       const today = now.toISOString().split("T")[0];
+
+      // The generator is seeded by the window, so every replica computes the
+      // SAME transactions -- which means the "does this exact row exist yet"
+      // check below is a check-then-act two replicas both pass, and the demo
+      // gets each transaction twice. The claim is what decides; it is permanent
+      // because a window that has been generated must never be generated again,
+      // and it is not released on failure because a partial window is better
+      // than a doubled one (the next window generates fresh rows anyway).
+      const windowKey = `${today}-${String(now.getUTCHours()).padStart(2, "0")}`;
+      const claimed = await this.jobClaims.claimOnce(
+        JobClaimType.DemoIntraday,
+        userId,
+        windowKey,
+      );
+      if (!claimed) {
+        this.logger.log(
+          `Intra-day demo window ${windowKey} was already generated; skipping`,
+        );
+        return;
+      }
 
       // Deterministic RNG seeded by date + hour (same window = same output)
       const seedStr = `${today}-${now.getUTCHours()}`;
@@ -228,85 +307,69 @@ export class DemoResetService {
               100,
           ) / 100;
 
-        // Look up account
         const accountName = accountNameMap[template.accountKey];
-        const [account] = await withScopedDb(this.dataSource, (manager) =>
-          manager.query(
-            "SELECT id FROM accounts WHERE user_id = $1 AND name = $2",
-            [userId, accountName],
-          ),
-        );
-        if (!account) continue;
 
-        // Deduplicate: skip if this exact transaction already exists
-        const [existing] = await withScopedDb(this.dataSource, (manager) =>
-          manager.query(
-            `SELECT COUNT(*) as count FROM transactions
-           WHERE user_id = $1 AND transaction_date = $2
-             AND payee_name = $3 AND amount = $4`,
-            [userId, today, template.payeeName, amount],
-          ),
-        );
-        if (parseInt(existing.count) > 0) continue;
+        // One transaction for the ledger row and the balance it moves. Split
+        // across two, a crash between them leaves a transaction the account
+        // balance does not account for -- and the demo then shows a balance that
+        // disagrees with its own ledger, which is the exact defect this
+        // codebase's balance rules exist to prevent.
+        const inserted = await withScopedDb(
+          this.dataSource,
+          async (manager) => {
+            const [account] = await manager.query(
+              "SELECT id FROM accounts WHERE user_id = $1 AND name = $2",
+              [userId, accountName],
+            );
+            if (!account) return null;
 
-        // Look up payee
-        const [payee] = await withScopedDb(this.dataSource, (manager) =>
-          manager.query(
-            "SELECT id FROM payees WHERE user_id = $1 AND name = $2",
-            [userId, template.payeeName],
-          ),
-        );
+            const [payee] = await manager.query(
+              "SELECT id FROM payees WHERE user_id = $1 AND name = $2",
+              [userId, template.payeeName],
+            );
 
-        // Look up category (handle "Parent > Child" path)
-        let categoryId: string | null = null;
-        const parts = template.categoryPath.split(" > ");
-        if (parts.length === 2) {
-          const [cat] = await withScopedDb(this.dataSource, (manager) =>
-            manager.query(
-              `SELECT c.id FROM categories c
-             JOIN categories p ON c.parent_id = p.id
-             WHERE c.user_id = $1 AND p.name = $2 AND c.name = $3`,
-              [userId, parts[0], parts[1]],
-            ),
-          );
-          categoryId = cat?.id || null;
-        } else {
-          const [cat] = await withScopedDb(this.dataSource, (manager) =>
-            manager.query(
-              "SELECT id FROM categories WHERE user_id = $1 AND name = $2 AND parent_id IS NULL",
-              [userId, parts[0]],
-            ),
-          );
-          categoryId = cat?.id || null;
-        }
+            // Category may be given as "Parent > Child".
+            const parts = template.categoryPath.split(" > ");
+            const [cat] =
+              parts.length === 2
+                ? await manager.query(
+                    `SELECT c.id FROM categories c
+                       JOIN categories p ON c.parent_id = p.id
+                      WHERE c.user_id = $1 AND p.name = $2 AND c.name = $3`,
+                    [userId, parts[0], parts[1]],
+                  )
+                : await manager.query(
+                    "SELECT id FROM categories WHERE user_id = $1 AND name = $2 AND parent_id IS NULL",
+                    [userId, parts[0]],
+                  );
 
-        // Insert transaction
-        await withScopedDb(this.dataSource, (manager) =>
-          manager.query(
-            `INSERT INTO transactions (
-            user_id, account_id, transaction_date, payee_id, payee_name,
-            category_id, amount, currency_code, description, status
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'CAD', $8, 'UNRECONCILED')`,
-            [
-              userId,
-              account.id,
-              today,
-              payee?.id || null,
-              template.payeeName,
-              categoryId,
-              amount,
-              template.description,
-            ],
-          ),
+            await manager.query(
+              `INSERT INTO transactions (
+                user_id, account_id, transaction_date, payee_id, payee_name,
+                category_id, amount, currency_code, description, status
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'CAD', $8, 'UNRECONCILED')`,
+              [
+                userId,
+                account.id,
+                today,
+                payee?.id || null,
+                template.payeeName,
+                cat?.id || null,
+                amount,
+                template.description,
+              ],
+            );
+
+            await manager.query(
+              "UPDATE accounts SET current_balance = ROUND(CAST(current_balance AS numeric) + $1, 4) WHERE id = $2",
+              [amount, account.id],
+            );
+
+            return account.id as string;
+          },
         );
 
-        // Update account balance
-        await withScopedDb(this.dataSource, (manager) =>
-          manager.query(
-            "UPDATE accounts SET current_balance = current_balance + $1 WHERE id = $2",
-            [amount, account.id],
-          ),
-        );
+        if (!inserted) continue;
 
         this.logger.log(
           `Added intra-day transaction: ${template.payeeName} $${Math.abs(amount).toFixed(2)}`,

@@ -17,16 +17,13 @@ import {
 import { withScopedDb } from "../common/db/scoped-db";
 import * as bcrypt from "bcryptjs";
 import { tr } from "../i18n/translate";
-import { currentRequestLocale } from "../i18n/request-locale";
 import { User } from "./entities/user.entity";
 import { UserPreference } from "./entities/user-preference.entity";
-import { buildDefaultPreferences } from "./user-preference.factory";
+import { lockAdminsForUpdate, wouldRemoveLastAdmin } from "./last-admin.util";
 import {
   ensureUserPreferencesRow,
-  patchUserPreferences,
   type UserPreferencePatch,
 } from "./user-preference-writer";
-import { lockAdminsForUpdate, wouldRemoveLastAdmin } from "./last-admin.util";
 import { TrustedDevice } from "./entities/trusted-device.entity";
 import { RefreshToken } from "../auth/entities/refresh-token.entity";
 import { PersonalAccessToken } from "../auth/entities/personal-access-token.entity";
@@ -45,6 +42,7 @@ import {
   type OidcReauthPurpose,
 } from "../auth/oidc/oidc-reauth.service";
 import { toUserProfile } from "./user-profile";
+import { UserMaintenanceService } from "../common/jobs/user-maintenance.service";
 
 @Injectable()
 export class UsersService {
@@ -56,6 +54,7 @@ export class UsersService {
     private moduleRef: ModuleRef,
     private demoModeService: DemoModeService,
     private oidcReauth: OidcReauthService,
+    private maintenance: UserMaintenanceService,
   ) {}
 
   /**
@@ -151,37 +150,39 @@ export class UsersService {
   }
 
   async getPreferences(userId: string): Promise<UserPreference> {
-    let preferences = await this.scoped(UserPreference, (repo) =>
-      repo.findOne({
-        where: { userId },
-      }),
-    );
-
-    // Create default preferences if they don't exist. Seed `language` from the
-    // request locale (browser-detected on first visit, forwarded by the proxy)
-    // so a row first materialized here still captures the user's UI language
-    // rather than defaulting everyone to English.
-    if (!preferences) {
-      const created = buildDefaultPreferences(userId, currentRequestLocale());
-      preferences = created;
-      await this.scoped(UserPreference, (repo) => repo.save(created));
-    }
-
-    return preferences;
+    // Materialize the row if it does not exist, then read it back. `language` is
+    // seeded from the request locale (browser-detected on first visit, forwarded
+    // by the proxy) so a row first materialized here captures the user's UI
+    // language rather than defaulting everyone to English.
+    //
+    // Insert-if-absent rather than read-then-insert: the first page load fires
+    // several requests at once, and two of them both finding no row used to mean
+    // one got a unique violation on a plain read. Both statements are in one
+    // transaction so the value returned is the value that is there.
+    return withScopedDb(this.dataSource, async (manager) => {
+      await ensureUserPreferencesRow(manager, userId);
+      const preferences = await manager
+        .getRepository(UserPreference)
+        .findOne({ where: { userId } });
+      // The insert above guarantees the row; the non-null assertion records that
+      // rather than inventing a fallback that could mask a real absence.
+      return preferences!;
+    });
   }
 
   async updatePreferences(
     userId: string,
     dto: UpdatePreferencesDto,
   ): Promise<UserPreference> {
-    // Write exactly the columns the DTO carries, and nothing else. The Settings
-    // form is one of many writers of this single-row table (a dismissed tour, a
-    // "What's New" acknowledgement, enabling 2FA), so reading the whole row and
-    // `save`-ing it back would revert a column another request changed in
-    // between -- switch the theme in one tab while a tour is dismissed in
-    // another and the theme reverts, silently. `patchUserPreferences` sets only
-    // the named columns; see user-preference-writer.ts.
+    // Build a patch of exactly the fields the request supplied, and write only
+    // those. The previous shape mutated a loaded entity and `repo.save`d it,
+    // which writes back every column that differs from what the entity holds --
+    // including columns another request changed in between. `tour_progress`,
+    // `last_seen_version` and `dismissed_update_version` are all written by
+    // other endpoints on the same row, so saving a Settings form could quietly
+    // undo a tour the user had just dismissed in another tab.
     const patch: UserPreferencePatch = {};
+
     if (dto.defaultCurrency !== undefined) {
       patch.defaultCurrency = dto.defaultCurrency;
     }
@@ -231,7 +232,11 @@ export class UsersService {
       patch.dashboardWidgets = dto.dashboardWidgets;
     }
     if (dto.dashboardWidgetConfig !== undefined) {
-      patch.dashboardWidgetConfig = dto.dashboardWidgetConfig;
+      // A free-form JSONB map: `QueryDeepPartialEntity` treats a bare
+      // `Record<string, unknown>` as a possible nested-entity patch, so say
+      // plainly that this value is the column's whole contents.
+      patch.dashboardWidgetConfig =
+        dto.dashboardWidgetConfig as UserPreference["dashboardWidgetConfig"];
     }
     if (dto.showCreatedAt !== undefined) {
       patch.showCreatedAt = dto.showCreatedAt;
@@ -256,22 +261,30 @@ export class UsersService {
       patch.language = dto.language;
     }
 
+    // One transaction: materialize the row if absent, capture the currency the
+    // refresh decision below compares against, apply the patch, read the result
+    // back. The old code did each of those in its own autocommit transaction,
+    // so the value it reported was not necessarily the value it wrote.
     const { saved, previousDefaultCurrency } = await withScopedDb(
       this.dataSource,
       async (manager) => {
-        const repo = manager.getRepository(UserPreference);
-        // Materialize the row first (same baseline as getPreferences) so the
-        // currency-change comparison below reads the value this request actually
-        // replaced, rather than undefined for a user whose row did not exist
-        // yet. patchUserPreferences then writes only `patch`'s columns.
         await ensureUserPreferencesRow(manager, userId);
+        const repo = manager.getRepository(UserPreference);
         const before = await repo.findOne({ where: { userId } });
-        await patchUserPreferences(manager, userId, patch);
+        // Copy the value out now, not after the write: reading it from `before`
+        // later would depend on that object not having been touched by the
+        // update in between.
+        const previousDefaultCurrency = before?.defaultCurrency;
+        if (Object.keys(patch).length > 0) {
+          await repo
+            .createQueryBuilder()
+            .update()
+            .set(patch)
+            .where("user_id = :userId", { userId })
+            .execute();
+        }
         const after = await repo.findOne({ where: { userId } });
-        return {
-          saved: after!,
-          previousDefaultCurrency: before?.defaultCurrency,
-        };
+        return { saved: after!, previousDefaultCurrency };
       },
     );
 
@@ -538,11 +551,34 @@ export class UsersService {
    * .mny import's wipe-first mode passes its own, so an artifact obtained for one
    * cannot silently drive the other -- they present different confirmations to
    * the user and one of them is followed by an import.
+   *
+   * @param initiator who asked. `"user-request"` is the self-service flow and
+   *   must not overlap another operation replacing this account's data, so it
+   *   takes the maintenance lease. `"mny-import"` is the importer's "start
+   *   fresh" wipe, which already holds the user's single import slot -- taking
+   *   the lease there would have it refuse itself, and consulting it would
+   *   refuse on the importer's own in-flight job (audit DR-04-02).
    */
   async deleteData(
     userId: string,
     dto: DeleteDataDto,
     reauthPurpose: OidcReauthPurpose = "delete-data",
+    initiator: "user-request" | "mny-import" = "user-request",
+  ): Promise<{ deleted: Record<string, number> }> {
+    if (initiator === "user-request") {
+      return this.maintenance.withMaintenanceLease(
+        userId,
+        "delete my data",
+        () => this.deleteDataWithinLease(userId, dto, reauthPurpose),
+      );
+    }
+    return this.deleteDataWithinLease(userId, dto, reauthPurpose);
+  }
+
+  private async deleteDataWithinLease(
+    userId: string,
+    dto: DeleteDataDto,
+    reauthPurpose: OidcReauthPurpose,
   ): Promise<{ deleted: Record<string, number> }> {
     const user = await this.scoped(User, (repo) =>
       repo.findOne({ where: { id: userId } }),

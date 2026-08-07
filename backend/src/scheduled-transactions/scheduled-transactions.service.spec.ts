@@ -1,5 +1,9 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { NotFoundException, BadRequestException } from "@nestjs/common";
+import {
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { ScheduledTransactionsService } from "./scheduled-transactions.service";
 import { ScheduledTransaction } from "./entities/scheduled-transaction.entity";
@@ -37,6 +41,8 @@ describe("ScheduledTransactionsService", () => {
   // The withScopedDb manager, exposed under the legacy name so the pre-RLS
   // queryRunner.manager assertions keep reading naturally.
   let mockQueryRunner: Record<string, any>;
+  /** Whether the occurrence-claim insert returns a row this run. */
+  let postingClaimWins: boolean;
   let mockDataSource: DataSourceMock;
   let mockActionHistoryService: Record<string, jest.Mock>;
   let mockExchangeRateService: Record<string, jest.Mock>;
@@ -199,12 +205,32 @@ describe("ScheduledTransactionsService", () => {
       execute: jest.fn().mockResolvedValue({ affected: 0 }),
     }));
     mockQueryRunner = { manager: txManager };
+    /**
+     * `post` locks the schedule row and claims the occurrence before it creates
+     * any money.
+     *
+     * The financial transaction used to commit in its own transaction and
+     * `nextDueDate` advance in a second one, so two replicas firing the same
+     * hourly cron -- or a manual post racing it, or a crash between the two
+     * commits -- posted the same bill twice (audit P4-004). The locked read and
+     * the occurrence claim are what the doubles below answer.
+     */
+    postingClaimWins = true;
+    txManager.findOne.mockImplementation((_entity: unknown, options: unknown) =>
+      scheduledRepo.findOne(options as never),
+    );
+
     // Default to a single UTC user so cron logic that buckets by timezone
     // continues to operate against legacy tests that pre-date the cron
     // refactor and assume a one-user world.
-    mockDataSource.query.mockResolvedValue([
-      { user_id: "11111111-1111-1111-1111-111111111111", timezone: "UTC" },
-    ]);
+    mockDataSource.query.mockImplementation(async (sql: string) => {
+      if (String(sql).includes("scheduled_transaction_postings")) {
+        return postingClaimWins ? [[{ id: "posting-1" }], 1] : [[], 0];
+      }
+      return [
+        { user_id: "11111111-1111-1111-1111-111111111111", timezone: "UTC" },
+      ];
+    });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -1474,6 +1500,70 @@ describe("ScheduledTransactionsService", () => {
       );
     });
 
+    it("claims the occurrence before creating any money", async () => {
+      // The regression guard for P4-004. The claim, the money and the schedule
+      // advancement are one transaction keyed on
+      // (scheduled_transaction_id, original_due_date), so two replicas firing the
+      // same hourly cron cannot both post: opening 100.00 with one due -50.00
+      // ended at 0.00 instead of 50.00.
+      const scheduled = makeScheduled({ nextDueDate: "2026-02-01" });
+      stubFindOne(scheduled);
+      const overrideQb = mockQueryBuilder(null);
+      overrideQb.getOne.mockResolvedValue(null);
+      overridesRepo.createQueryBuilder.mockReturnValue(overrideQb);
+
+      await service.post(userId, stId);
+
+      const claim = mockQueryRunner.manager.query.mock.calls.find(
+        (c: unknown[]) =>
+          String(c[0]).includes("scheduled_transaction_postings"),
+      );
+      expect(claim).toBeDefined();
+      expect(String(claim![0])).toContain("ON CONFLICT");
+      // The occurrence's identity is the due date, not the date it was booked on.
+      expect(claim![1]).toEqual([stId, "2026-02-01", "2026-02-01"]);
+      expect(
+        mockQueryRunner.manager.query.mock.invocationCallOrder[
+          mockQueryRunner.manager.query.mock.calls.indexOf(claim!)
+        ],
+      ).toBeLessThan(transactionsService.create.mock.invocationCallOrder[0]);
+    });
+
+    it("posts nothing when another replica claimed the occurrence", async () => {
+      postingClaimWins = false;
+      const scheduled = makeScheduled({ nextDueDate: "2026-02-01" });
+      stubFindOne(scheduled);
+      const overrideQb = mockQueryBuilder(null);
+      overrideQb.getOne.mockResolvedValue(null);
+      overridesRepo.createQueryBuilder.mockReturnValue(overrideQb);
+
+      await expect(service.post(userId, stId)).rejects.toBeInstanceOf(
+        ConflictException,
+      );
+
+      expect(transactionsService.create).not.toHaveBeenCalled();
+      expect(scheduledRepo.update).not.toHaveBeenCalled();
+    });
+
+    it("refuses when the schedule has already been advanced past this occurrence", async () => {
+      // A manual post racing the cron: the caller computed the payload for
+      // 2026-02-01, but the committed row has moved on. Posting anyway would
+      // duplicate the occurrence the winner already booked.
+      const scheduled = makeScheduled({ nextDueDate: "2026-02-01" });
+      scheduledRepo.findOne
+        .mockResolvedValueOnce(scheduled)
+        .mockResolvedValueOnce({ ...scheduled, nextDueDate: "2026-03-01" });
+      const overrideQb = mockQueryBuilder(null);
+      overrideQb.getOne.mockResolvedValue(null);
+      overridesRepo.createQueryBuilder.mockReturnValue(overrideQb);
+
+      await expect(service.post(userId, stId)).rejects.toBeInstanceOf(
+        ConflictException,
+      );
+
+      expect(transactionsService.create).not.toHaveBeenCalled();
+    });
+
     it("should not call findOne after deleting a ONCE (would 404)", async () => {
       const scheduled = makeScheduled({ frequency: "ONCE" });
       stubFindOne(scheduled);
@@ -1485,11 +1575,14 @@ describe("ScheduledTransactionsService", () => {
         .fn()
         .mockResolvedValue({ affected: 1 });
 
-      // findOne is called once at the start of post() to load the entity.
-      // It must NOT be called a second time after the row is deleted.
+      // Twice: once outside the transaction to build the payload, and once
+      // inside it under the row lock -- that second read is what confirms the
+      // occurrence is still the due one before any money is created (P4-004).
+      // What must NOT happen is a read *after* the row is deleted, which would
+      // 404 on a posting that succeeded.
       await service.post(userId, stId);
 
-      expect(scheduledRepo.findOne).toHaveBeenCalledTimes(1);
+      expect(scheduledRepo.findOne).toHaveBeenCalledTimes(2);
     });
 
     it("should advance nextDueDate for recurring frequency", async () => {
