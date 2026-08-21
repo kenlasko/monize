@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@/test/render';
 import { Modal, __resetModalStateForTesting } from './Modal';
 
 // jsdom doesn't implement requestAnimationFrame reliably for focus management
@@ -637,3 +637,100 @@ describe('Modal', () => {
     });
   });
 });
+
+describe('Modal header, footer and body', () => {
+  beforeEach(() => {
+    __resetModalStateForTesting();
+  });
+
+  it('names the dialog by its title, so it is not an unlabelled region', () => {
+    render(
+      <Modal isOpen={true} title="Edit account">
+        <p>body</p>
+      </Modal>,
+    );
+    const dialog = screen.getByRole('dialog');
+    const heading = screen.getByRole('heading', { name: 'Edit account' });
+    expect(dialog).toHaveAttribute('aria-labelledby', heading.id);
+  });
+
+  it('describes the dialog when a description is given', () => {
+    render(
+      <Modal isOpen={true} title="Delete" description="This cannot be undone.">
+        <p>body</p>
+      </Modal>,
+    );
+    const dialog = screen.getByRole('dialog');
+    const described = document.getElementById(dialog.getAttribute('aria-describedby')!);
+    expect(described).toHaveTextContent('This cannot be undone.');
+  });
+
+  it('has no aria-labelledby when no title is given, rather than pointing at nothing', () => {
+    // The 74 call sites that draw their own header must not gain a dangling
+    // reference to an element that was never rendered.
+    render(
+      <Modal isOpen={true}>
+        <p>body</p>
+      </Modal>,
+    );
+    expect(screen.getByRole('dialog')).not.toHaveAttribute('aria-labelledby');
+  });
+
+  it('closes from the header button, through the same path as Escape', () => {
+    const onClose = vi.fn();
+    const onBeforeClose = vi.fn(() => false);
+    render(
+      <Modal isOpen={true} title="Edit" onClose={onClose} onBeforeClose={onBeforeClose}>
+        <p>body</p>
+      </Modal>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+    // onBeforeClose returning false must veto the close here too -- a second
+    // close path that skipped the guard would discard unsaved edits.
+    expect(onBeforeClose).toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('draws no close button when the modal cannot be closed', () => {
+    render(
+      <Modal isOpen={true} title="Working">
+        <p>body</p>
+      </Modal>,
+    );
+    expect(screen.queryByRole('button', { name: 'Close' })).not.toBeInTheDocument();
+  });
+
+  it('renders a footer when given one', () => {
+    render(
+      <Modal isOpen={true} title="Edit" footer={<button>Save</button>}>
+        <p>body</p>
+      </Modal>,
+    );
+    expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
+  });
+
+  it('leaves children unwrapped at the default padding', () => {
+    // Several call sites make the panel their own scroll or flex parent, so an
+    // unconditional body wrapper would change their layout.
+    render(
+      <Modal isOpen={true}>
+        <p data-testid="child">body</p>
+      </Modal>,
+    );
+    expect(screen.getByTestId('child').parentElement).toBe(screen.getByRole('dialog'));
+  });
+
+  it('wraps the body when padding is requested', () => {
+    render(
+      <Modal isOpen={true} padding="md">
+        <p data-testid="child">body</p>
+      </Modal>,
+    );
+    const wrapper = screen.getByTestId('child').parentElement!;
+    expect(wrapper).not.toBe(screen.getByRole('dialog'));
+    expect(wrapper.className).toContain('p-4');
+  });
+});
+

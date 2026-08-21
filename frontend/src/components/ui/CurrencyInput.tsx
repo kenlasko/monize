@@ -6,6 +6,7 @@ import { CalculatorIcon } from '@heroicons/react/24/outline';
 import { cn, inputBaseClasses, inputErrorClasses } from '@/lib/utils';
 import { formatAmountWithCommas, formatAmount, parseAmount, filterCurrencyInput, filterCalculatorInput, hasCalculatorOperators, evaluateExpression } from '@/lib/format';
 import { Modal } from './Modal';
+import { Button } from './Button';
 
 const CALCULATOR_OPERATORS = [
   { label: '+', value: '+', ariaLabel: 'Add plus operator' },
@@ -359,10 +360,25 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
         )}
 
         {/* Calculator modal */}
-        <Modal isOpen={calcOpen} onClose={() => setCalcOpen(false)} maxWidth="sm" pushHistory>
-          <div className="p-4">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{t('currencyInput.calculator')}</h3>
-
+        <Modal
+          isOpen={calcOpen}
+          onClose={() => setCalcOpen(false)}
+          maxWidth="sm"
+          pushHistory
+          title={t('currencyInput.calculator')}
+          padding="md"
+          footer={
+            <>
+              <Button variant="outline" onClick={() => setCalcOpen(false)}>
+                {t('cancel')}
+              </Button>
+              <Button onClick={applyCalculation} disabled={!calcPreview}>
+                {t('currencyInput.apply')}
+              </Button>
+            </>
+          }
+        >
+          <div>
             <input
               ref={calcInputRef}
               type="text"
@@ -394,28 +410,10 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
             </div>
 
             {calcPreview && (
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 = <span className="font-mono">{calcPreview}</span>
               </p>
             )}
-
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setCalcOpen(false)}
-                className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={applyCalculation}
-                disabled={!calcPreview}
-                className="px-4 py-2 text-sm rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Apply
-              </button>
-            </div>
           </div>
         </Modal>
       </div>

@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { createPortal } from 'react-dom';
 import { getIconComponent } from '@/components/ui/IconPicker';
+import { HOVER_ROW_ON_PAGE } from '@/components/ui/Card';
 import { CategoryPill } from '@/components/transactions/CategoryPill';
 import { PayeeLogo } from '@/components/payees/PayeeLogo';
 import { Transaction, TransactionSplit, TransactionStatus } from '@/types/transaction';
@@ -278,7 +279,7 @@ export const TransactionRow = memo(function TransactionRow({
       onTouchMove={onTouchMove}
       onTouchEnd={onLongPressEnd}
       onTouchCancel={onLongPressEnd}
-      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 select-none touch-manipulation ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} ${isVoid ? 'opacity-50' : ''} ${isFuture && !isVoid ? 'opacity-60' : ''} ${onEdit ? 'cursor-pointer' : ''} ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''} ${isHighlighted ? HIGHLIGHT_FLASH : ''}`}
+      className={`group ${HOVER_ROW_ON_PAGE} select-none touch-manipulation ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} ${isVoid ? 'opacity-50' : ''} ${isFuture && !isVoid ? 'opacity-60' : ''} ${onEdit ? 'cursor-pointer' : ''} ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''} ${isHighlighted ? HIGHLIGHT_FLASH : ''}`}
     >
       {selectionMode && (
         <td className={`${cellPadding} whitespace-nowrap w-10`} onClick={e => e.stopPropagation()}>

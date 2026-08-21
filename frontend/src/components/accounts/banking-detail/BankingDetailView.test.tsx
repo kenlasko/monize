@@ -31,6 +31,7 @@ const mockGetSummary = vi.fn();
 const mockGetMonthlyTotals = vi.fn();
 const mockGetGroupedTotals = vi.fn();
 const mockGetAll = vi.fn();
+const mockGetAllPages = vi.fn();
 const mockGetRecurringCharges = vi.fn();
 vi.mock('@/lib/transactions', () => ({
   transactionsApi: {
@@ -38,6 +39,7 @@ vi.mock('@/lib/transactions', () => ({
     getMonthlyTotals: (...a: unknown[]) => mockGetMonthlyTotals(...a),
     getGroupedTotals: (...a: unknown[]) => mockGetGroupedTotals(...a),
     getAll: (...a: unknown[]) => mockGetAll(...a),
+    getAllPages: (...a: unknown[]) => mockGetAllPages(...a),
     getRecurringCharges: (...a: unknown[]) => mockGetRecurringCharges(...a),
   },
 }));
@@ -83,6 +85,7 @@ beforeEach(() => {
     ),
   );
   mockGetAll.mockResolvedValue({ data: [], pagination: {} });
+  mockGetAllPages.mockResolvedValue([]);
   mockGetRecurringCharges.mockResolvedValue([]);
 });
 

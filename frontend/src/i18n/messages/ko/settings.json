@@ -164,6 +164,7 @@
       "dark": "어두운"
     },
     "colorThemeLabel": "색상 테마",
+    "colorThemeHint": "미리 보기는 현재 라이트 또는 다크 모드를 사용합니다.",
     "colorThemeOptions": {
       "default": "기본",
       "latte": "Latte",

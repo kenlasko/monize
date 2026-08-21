@@ -164,6 +164,7 @@
       "dark": "ダーク"
     },
     "colorThemeLabel": "カラーテーマ",
+    "colorThemeHint": "プレビューには現在のライトまたはダークモードが使用されます。",
     "colorThemeOptions": {
       "default": "デフォルト",
       "latte": "Latte",

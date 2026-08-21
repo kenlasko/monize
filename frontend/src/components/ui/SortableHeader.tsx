@@ -32,7 +32,7 @@ export function SortableHeader<F extends string>({
   return (
     <th
       onClick={() => onSort(field)}
-      className={`cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none ${className}`}
+      className={`cursor-pointer transition-colors motion-reduce:transition-none hover:bg-gray-100 dark:hover:bg-gray-700 select-none ${className}`}
     >
       <div className={`flex items-center ${justify}`}>
         {children}

@@ -132,7 +132,8 @@
   "currencyInput": {
     "openCalculator": "कैलकुलेटर खोलें",
     "calculator": "कैलकुलेटर",
-    "toggleSign": "चिह्न बदलें"
+    "toggleSign": "चिह्न बदलें",
+    "apply": "लागू करें"
   },
   "dateInput": {
     "shortcutsTitle": "कीबोर्ड शॉर्टकट",

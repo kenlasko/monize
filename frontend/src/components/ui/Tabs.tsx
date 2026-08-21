@@ -140,7 +140,7 @@ export function Tabs<K extends string>({
               tabIndex={isSelected ? 0 : -1}
               onClick={() => onChange(tab.key)}
               onKeyDown={(event) => handleKeyDown(event, index)}
-              className={`shrink-0 whitespace-nowrap px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
+              className={`shrink-0 whitespace-nowrap px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 rounded-t-sm ${
                 isSelected
                   ? 'border-blue-600 text-blue-600 dark:text-blue-400'
                   : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'

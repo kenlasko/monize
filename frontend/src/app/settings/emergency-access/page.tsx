@@ -617,7 +617,7 @@ function EmergencyAccessSection() {
           onSubmit={settingsForm.handleSubmit(onSettingsSubmit)}
           className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6"
         >
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             {t('settings.heading')}
           </h2>
 
@@ -694,7 +694,7 @@ function EmergencyAccessSection() {
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
           <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {tMsg('heading')}
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 max-w-2xl">
@@ -816,7 +816,7 @@ function EmergencyAccessSection() {
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
           <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {tContacts('heading')}
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 max-w-2xl">
@@ -842,7 +842,7 @@ function EmergencyAccessSection() {
                   className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex flex-wrap items-center justify-between gap-3"
                 >
                   <div className="min-w-0">
-                    <p className="font-medium text-gray-900 dark:text-white">
+                    <p className="font-medium text-gray-900 dark:text-gray-100">
                       {c.firstName}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
@@ -868,7 +868,7 @@ function EmergencyAccessSection() {
         </div>
 
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
             {tStatus('heading')}
           </h2>
           <dl className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
@@ -918,7 +918,7 @@ function EmergencyAccessSection() {
             className="flex flex-col"
           >
             <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {editingContact ? tContacts('contactModal.editTitle') : tContacts('contactModal.addTitle')}
               </h2>
             </div>

@@ -152,6 +152,23 @@ deleting its baseline line, and new code takes the primitive from the start.
 Everything in it stays on the gray ramp so the colour themes re-skin it --
 never add a literal hex or an off-ramp hue to a card.
 
+**A theme with a strong border is a test the rest of the app has to pass.**
+Ten dashboard widgets drew the borderless trio by hand while thirteen went
+through `WidgetCard` -> `Card`, so half the dashboard had an edge and half did
+not. Nobody could see it while the border was `gray-200`; raising
+`highcontrast`'s to `#b0b0b0` turned it into alternating outlined and
+un-outlined panels. All twenty-three now resolve to `CARD_CLASS`.
+
+The tempting fix is the other one -- drop the border so everything matches the
+widgets that had none -- and the numbers say no. Card-versus-page luminance is
+1.045 in `default` light, 1.044 in `midnight` and exactly **1.000** in
+`highcontrast`, whose page and card are both pure white. In those three the
+border is the only thing that defines a card at all, so removing it does not
+make the dashboard consistent, it makes the panels disappear. Every other
+theme clears the guard's 1.15 separation floor and would have survived it,
+which is exactly why this is worth writing down: the change looks safe from
+any theme except the three it breaks.
+
 ### A category's colour and icon are inherited, and drawn by `CategoryGlyph`
 
 A category shows its own colour and icon, or the nearest ancestor's when it
@@ -183,6 +200,65 @@ wrappers that only say which `/:id/logo` route to read, gated on the entity's
 cached, or the fetch failed) lands on `onError` and shows the same badge, so the
 two "no image" states look identical to the reader. Adding the treatment to a
 third entity means a wrapper, not a second component.
+
+### A status pill is `Badge`; table chrome is `Table.tsx`
+
+`components/ui/Badge.tsx` is the small status pill -- a count, a state, a
+label beside a name. The shape was hand-rolled about fifty times in six
+padding combinations with every colour pair spelled out at the call site.
+Pass `variant` and `size`; pass `as="button"` where the pill is also a
+control, rather than nesting a button inside a span. It deliberately does not
+absorb the pills whose colour *means* something -- `CategoryPill`,
+`AccountTypePill` and `SCHEDULED_KIND_CHIP_CLASSES` are each already one
+source of truth for their mapping, and the guard exempts them by name rather
+than baselining them.
+
+`components/ui/Table.tsx` is constants (`TABLE_CLASS`, `TH_CLASS`, `TD_CLASS`)
+plus thin `Th`/`Td` cells, not a `<Table>` wrapper: these tables are hand-laid
+with colspans, sticky cells and per-density padding, so a component owning the
+markup would be fought everywhere. `SortableHeader` deliberately stays off
+`TH_CLASS` -- about twenty-five report tables draw a lighter, non-upper-case
+header inside a `text-sm` table, and folding it in would restyle every report
+under cover of a refactor.
+
+### The card shadow is `--shadow-card`; the bare `shadow` reads no token
+
+A Tailwind v4 trap worth knowing before you try to restyle elevation: the
+bare `shadow` utility is a legacy alias with the stock value compiled into
+it, so redefining `--shadow-sm` in `@theme` does not touch it. It changes
+`shadow-sm`, which in this codebase is worn almost entirely by form fields --
+so that override puffs up every input and leaves every card exactly as flat.
+The mistake is invisible in the source and only shows in the built
+stylesheet, which is why `ui-conventions.test.ts` fails on a `--shadow-sm`
+redefinition. Card elevation goes through `--shadow-card`, worn by
+`CARD_CLASS`.
+
+### A focus ring is `focus-visible:`, and a hover animates
+
+`focus:ring-*` paints on a mouse click as well as a Tab, which is the most
+visible unfinished-looking detail a UI can have. Use `focus-visible:` on
+anything clickable. Text inputs are the one exception, in `inputBaseClasses`
+and the element selectors in `globals.css`: a field showing its focused border
+after a click is telling the user where their typing will go.
+
+Row hover comes from `HOVER_ROW_ON_CARD` / `HOVER_ROW_ON_PAGE` in `Card.tsx`,
+not a hand-picked grey -- there were twelve variants of one decision, and the
+half most call sites forgot was the transition. A hover that snaps reads as a
+redraw. Pair any new transition with `motion-reduce:transition-none`.
+
+Both rules carry shrink-only baselines in `ui-conventions.test.ts`; converting
+a file means deleting its line there in the same commit.
+
+### A dialog is titled through `Modal`, never by a hand-rolled heading
+
+`Modal` takes `title` (and optional `description`, `footer`, `padding`), draws
+the standard header and wires `aria-labelledby`. Before it existed all 74 call
+sites drew their own heading in eight different treatments, and -- the part
+that mattered -- none of them reached the dialog, so every dialog announced
+itself as an unnamed region. `padding` defaults to `none` and leaves children
+unwrapped, because several call sites make the panel their own scroll or flex
+parent. A header that is genuinely bespoke (ConfirmDialog puts an icon beside
+its heading) stays on the baseline deliberately rather than being flattened.
 
 ### An empty list renders `EmptyState`
 
@@ -1350,6 +1426,101 @@ Never use synchronous `act(() => {...})` for calls that trigger async side-effec
 `ThemeContext` provides `theme` (light/dark/system), `resolvedTheme`, and `setTheme()`, plus `colorTheme`/`setColorTheme()` for the colour palette (`src/lib/color-themes.ts`). Both persisted to localStorage; applies `dark` class (Tailwind dark mode strategy) and a `data-theme` attribute (`default` = no attribute) to `<html>`; listens for system preference changes via `matchMedia`. Custom theme variables in `globals.css` `@theme` block; dark variant `@variant dark (&:where(.dark, .dark *))`.
 
 Colour themes are pure CSS variable overrides in `src/app/themes.css` (`html[data-theme="..."]` redefines the gray/blue ramps etc. -- Tailwind v4 utilities compile to `var(--color-*)` so no component changes are needed). Chart colours go through `src/lib/chart-colors.ts`, which exposes `var(--chart-*)` strings for Recharts props; never hardcode hex colours in charts, and never theme user-chosen entity colours (tags, categories, payees).
+
+**A palette needs a dark block, or dark mode renders its light colours.** A
+theme's `html[data-theme]` block has specificity (0,1,1) and the `.dark`
+defaults in `globals.css` have (0,1,0), so a theme that sets `--chart-*` in
+its light block wins in dark mode too -- and those values were picked to sit
+on white paper. That is what "the dark themes look washed out" was: fourteen
+of fifteen palettes drawing light-tuned chart colours on a dark card. Every
+such theme now carries an `html.dark[data-theme='x']` block (0,2,1), and
+`src/test/theme-contrast.test.ts` fails when one is missing or partial.
+
+The same test holds the contrast floors -- body text, muted text, links and
+every chart token against the surface they sit on, per theme and mode, plus a
+minimum page/card/border separation in dark mode. Shortfalls that predate it
+are listed in a shrink-only `KNOWN_CONTRAST_DEBT`; genuine design exceptions
+(midnight is black-on-black by intent, separated by its border) are listed
+separately in `DELIBERATE`, so the two never blur together.
+Values must be literal 6-digit hex: `resolvePdfColor` accepts nothing else and
+silently falls back to grey. `frontend/scripts/derive-dark-palette.mjs` generates a
+starting point for a new palette; the test, not the script, is the authority.
+
+**The gray ramp is the theme, and it is generated.** Cards, pages, borders
+and most text all read from the gray ramp, so it covers nearly every pixel,
+while the accent shows up only on buttons, links and chart series. Themes
+whose ramps were near-neutral therefore looked interchangeable no matter how
+distinct their accents were -- and a first attempt at fixing it by tinting
+`--color-white` a percent or two did not move anything, because at that
+lightness sRGB has almost no chroma to give.
+
+So the ramps come from `frontend/scripts/derive-theme-ramp.mjs`: one lightness
+curve shared by every theme, with each theme setting its own hue and
+intensity. Three consequences worth knowing before editing a palette by hand.
+Contrast is a property of the curve rather than of each value, so it is
+checked once. Chroma is spent as a *share of what the hue can hold* rather
+than as a flat number, because the gamut is wildly asymmetric near white --
+at L 0.95 a green carries about four times the chroma of a blue, so a flat
+target tints the warm themes hard and leaves the cool ones looking untouched.
+And themes that shift hue between their light and dark ends (parchment over
+navy) concentrate the shift in the midtones and damp chroma across it, so the
+ramp does not detour through a colour the theme never chose.
+
+**Intensity is not a tuning knob, it is half the identity.** A version that
+varied only the hue flattened every palette into the same theme at a
+different angle, and a human reported both costs: palettes whose hues sat
+close became indistinguishable (gruvbox and solarized read as one cream,
+newspaper and burgundy as one pink), and MS Money -- whose character is *pale*
+parchment with navy text and a green accent -- became a yellow theme wearing
+MS Money's accent. Cream and parchment is a crowded, legitimate family that
+hue alone cannot separate; its members are told apart by how strongly the
+paper is tinted and by where the ramp's dark end goes.
+
+That is why `theme-swatches.test.ts` measures **perceptual distance** between
+every pair of tinted papers rather than comparing hex strings. Byte-equality
+is far too weak a test for "these look the same": the reported collisions
+differed in every byte, and the closest measured 0.0032 in OKLab. Eleven
+tinted themes on one hue wheel do have a bounded best case, so the floors are
+set below the achievable minimum rather than at some ideal.
+
+Three themes are deliberately ungenerated and near-neutral: `default` (the
+stock identity), `midnight` (a black AMOLED palette by design) and
+`highcontrast`, whose whole point is maximum luminance contrast. That policy
+is asserted, so the exceptions read as decisions.
+
+**An accessibility theme is exempt from what it actually guarantees, and no
+more.** `colorblind` was on that list too, on the reasoning that chroma
+"spends CVD budget". That is true of the CHART palette, which is the promise,
+and false of the chrome: surfaces are not data. Leaving its greys stock made
+it byte-identical to `default` on every screen without a chart -- every grey
+token matched to the byte, and the dark link accent differed by 0.069 -- so a
+user picking it saw no change at all until they opened a report. Its ramp is
+generated now and only its Okabe-Ito charts are hand-picked. `highcontrast`
+stays exempt because *its* promise is about luminance, which chroma really
+would spend.
+
+**Two themes that share a strategy need different jobs, not different hexes.**
+`highcontrast` and `midnight` were both a black page under a near-black card
+(#0a0a0a and #0c0c0c) and read as one theme in dark mode. The fix was not to
+nudge a value but to separate what they optimise for: midnight is for an OLED
+panel, where every black pixel is unlit and borders stay quiet, and
+highcontrast is for visible STRUCTURE, where a panel edge you cannot locate is
+the accessibility failure. Its card now sits well clear of its page with a
+much brighter border -- which is also why it no longer needs the
+`card-vs-page` exemption midnight still carries.
+
+Changing the curve is a change to every theme at once, which is the point --
+but it moves every value sitting on those surfaces too, so expect the guard
+to name chart colours and accents that need re-seating, and re-seat them
+rather than widening the debt register.
+
+**A theme preview is a copy of the stylesheet, and copies rot.** A browser
+only computes the *active* theme's custom properties, so the picker's swatches
+live in `src/lib/theme-swatches.ts`. `theme-swatches.test.ts` parses the CSS
+through the same cascade the contrast guard uses (`src/test/theme-css.ts`) and
+fails when a swatch disagrees with the token it claims to show, or when two
+themes end up with identical swatches -- a preview that cannot tell two
+palettes apart is the problem it was built to solve.
 
 **A hand-rolled CSS bar is a chart.** `chartColors` is not only for Recharts props -- a `<div>` bar, and the amount printed beside it, take the tokens through `style={{ backgroundColor }}` / `style={{ color }}`. Reaching for `bg-green-400 dark:bg-green-500` or `text-red-600 dark:text-red-400` instead looks right on the default palette and then stays Tailwind red/green on every other theme, which is exactly the thing that gets noticed. To emphasise one bar among many (a peak, a selection), vary `opacity` on the same token rather than picking a second shade -- opacity moves toward the card in both light and dark mode, so the emphasis reads the same way in each.
 

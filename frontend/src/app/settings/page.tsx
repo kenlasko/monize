@@ -309,7 +309,7 @@ function OwnerSettingsView() {
                 href="/settings/tours"
                 className="block bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
                   {t('toursCard.title')}
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -346,7 +346,7 @@ function OwnerSettingsView() {
                   href="/settings/shared-access"
                   className="block bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
                     {t('sharedAccessCard.title')}
                   </h2>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -362,7 +362,7 @@ function OwnerSettingsView() {
                   href="/settings/emergency-access"
                   className="block bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
                     {t('emergencyAccessCard.title')}
                   </h2>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -384,7 +384,7 @@ function OwnerSettingsView() {
                   href="/settings/ai"
                   className="block bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
                     {t('aiSettingsCard.title')}
                   </h2>
                   <p className="text-sm text-gray-500 dark:text-gray-400">

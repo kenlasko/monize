@@ -1,6 +1,7 @@
 'use client';
 
 import { forwardRef, useState, InputHTMLAttributes } from 'react';
+import { useTranslations } from 'next-intl';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { cn, inputBaseClasses, inputErrorClasses } from '@/lib/utils';
 
@@ -16,6 +17,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     const isEmptyDate = type === 'date' && value !== undefined && !value;
     const isPassword = type === 'password';
     const [revealed, setRevealed] = useState(false);
+    const t = useTranslations('common.passwordInput');
     const effectiveType =
       isPassword && revealed ? 'text' : type;
 
@@ -54,11 +56,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           {isPassword && (
             <button
               type="button"
-              tabIndex={-1}
               onClick={() => setRevealed((v) => !v)}
-              aria-label={revealed ? 'Hide input' : 'Show input'}
-              title={revealed ? 'Hide input' : 'Show input'}
-              className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 focus:outline-none"
+              aria-label={revealed ? t('hide') : t('show')}
+              title={revealed ? t('hide') : t('show')}
+              className="absolute inset-y-0 right-0 flex items-center rounded-r-md px-3 text-gray-400 transition-colors hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 motion-reduce:transition-none dark:hover:text-gray-200"
             >
               {revealed ? (
                 <EyeSlashIcon className="h-5 w-5" />

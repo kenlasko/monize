@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { Payee } from '@/types/payee';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Badge } from '@/components/ui/Badge';
 import { payeesApi } from '@/lib/payees';
 import toast from 'react-hot-toast';
 import { createLogger } from '@/lib/logger';
@@ -184,12 +185,12 @@ const PayeeRow = memo(function PayeeRow({
             {payee.name}
           </button>
           {(payee.uncategorizedCount ?? 0) > 0 && (
-            <span
-              className="inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
+            <Badge
+              variant="amber"
               title={t('list.uncategorizedTitle', { count: payee.uncategorizedCount ?? 0 })}
             >
               {t('list.uncategorizedBadge', { count: payee.uncategorizedCount ?? 0 })}
-            </span>
+            </Badge>
           )}
         </div>
       </td>
@@ -220,13 +221,9 @@ const PayeeRow = memo(function PayeeRow({
       {showStatusColumn && (
         <td className={`${cellPadding} whitespace-nowrap hidden sm:table-cell`}>
           {payee.isActive ? (
-            <span className="inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-              {t('list.statusBadge.active')}
-            </span>
+            <Badge variant="green">{t('list.statusBadge.active')}</Badge>
           ) : (
-            <span className="inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-              {t('list.statusBadge.inactive')}
-            </span>
+            <Badge>{t('list.statusBadge.inactive')}</Badge>
           )}
         </td>
       )}

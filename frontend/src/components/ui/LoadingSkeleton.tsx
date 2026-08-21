@@ -1,3 +1,6 @@
+import { CARD_CLASS } from './Card';
+import { TABLE_CLASS } from './Table';
+
 interface SkeletonProps {
   className?: string;
 }
@@ -12,7 +15,7 @@ export function Skeleton({ className = '' }: SkeletonProps) {
 
 export function CardSkeleton() {
   return (
-    <div className="bg-white dark:bg-gray-800 overflow-hidden shadow dark:shadow-gray-700/50 rounded-lg p-5">
+    <div className={`${CARD_CLASS} overflow-hidden p-5`}>
       <div className="flex items-center">
         <Skeleton className="h-6 w-6 rounded-full" />
         <div className="ml-5 flex-1">
@@ -38,8 +41,8 @@ export function TableRowSkeleton({ columns = 5 }: { columns?: number }) {
 
 export function TableSkeleton({ rows = 5, columns = 5 }: { rows?: number; columns?: number }) {
   return (
-    <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">
-      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+    <div className={`${CARD_CLASS} overflow-hidden`}>
+      <table className={TABLE_CLASS}>
         <thead className="bg-gray-50 dark:bg-gray-800">
           <tr>
             {Array.from({ length: columns }).map((_, i) => (
@@ -73,7 +76,7 @@ export function PageHeaderSkeleton() {
 
 export function FilterBarSkeleton() {
   return (
-    <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-4 mb-6">
+    <div className={`${CARD_CLASS} p-4 mb-6`}>
       <div className="flex items-center gap-4">
         <Skeleton className="h-10 w-40 rounded-md" />
         <Skeleton className="h-10 w-40 rounded-md" />
@@ -85,7 +88,7 @@ export function FilterBarSkeleton() {
 
 export function ChartSkeleton() {
   return (
-    <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6">
+    <div className={`${CARD_CLASS} p-6`}>
       <Skeleton className="h-6 w-48 mb-4" />
       <Skeleton className="h-64 w-full rounded" />
     </div>

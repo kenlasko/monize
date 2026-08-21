@@ -164,6 +164,7 @@
       "dark": "Oscuro"
     },
     "colorThemeLabel": "Tema de color",
+    "colorThemeHint": "Las vistas previas usan tu modo claro u oscuro actual.",
     "colorThemeOptions": {
       "default": "Predeterminado",
       "latte": "Latte",

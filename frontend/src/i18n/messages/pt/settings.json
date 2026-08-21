@@ -164,6 +164,7 @@
       "dark": "Escuro"
     },
     "colorThemeLabel": "Tema de cor",
+    "colorThemeHint": "As pré-visualizações usam o seu modo claro ou escuro atual.",
     "colorThemeOptions": {
       "default": "Predefinido",
       "latte": "Latte",

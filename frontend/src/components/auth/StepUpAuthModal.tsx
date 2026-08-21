@@ -154,7 +154,7 @@ export function StepUpAuthModal({
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="md" pushHistory>
       <div className="flex flex-col">
         <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             {t('title')}
           </h2>
           {reason && (

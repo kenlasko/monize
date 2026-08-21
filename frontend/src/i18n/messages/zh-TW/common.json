@@ -132,7 +132,8 @@
   "currencyInput": {
     "openCalculator": "開啟計算機",
     "calculator": "計算機",
-    "toggleSign": "變更符號"
+    "toggleSign": "變更符號",
+    "apply": "套用"
   },
   "dateInput": {
     "shortcutsTitle": "鍵盤快速鍵",

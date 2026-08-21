@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { budgetsApi } from '@/lib/budgets';
 import { DashboardBudgetSummary } from '@/types/budget';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { CARD_CLASS } from '@/components/ui/Card';
 import { WidgetHeading } from './widget-meta';
 import {
   budgetPercentColor,
@@ -46,7 +47,7 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
 
   if (isLoading || parentLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[390px]">
+      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[390px]`}>
         <WidgetHeading id="budget-status" onClick={() => router.push('/budgets')} className="mb-4">
           {sectionTitle}
         </WidgetHeading>
@@ -61,7 +62,7 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
 
   if (hasError || !summary) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[390px]">
+      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[390px]`}>
         <WidgetHeading id="budget-status" onClick={() => router.push('/budgets')} className="mb-4">
           {sectionTitle}
         </WidgetHeading>
@@ -79,7 +80,7 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[390px]">
+    <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[390px]`}>
       <div className="flex items-center justify-between mb-3">
         <WidgetHeading id="budget-status" onClick={() => router.push(`/budgets/${summary.budgetId}`)}>
           {sectionTitle}

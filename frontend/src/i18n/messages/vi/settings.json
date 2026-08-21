@@ -164,6 +164,7 @@
       "dark": "Tối"
     },
     "colorThemeLabel": "Giao diện màu sắc",
+    "colorThemeHint": "Bản xem trước sử dụng chế độ sáng hoặc tối hiện tại của bạn.",
     "colorThemeOptions": {
       "default": "Mặc định",
       "latte": "Latte",

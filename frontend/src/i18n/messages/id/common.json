@@ -132,7 +132,8 @@
   "currencyInput": {
     "openCalculator": "Buka kalkulator",
     "calculator": "Kalkulator",
-    "toggleSign": "Ubah tanda"
+    "toggleSign": "Ubah tanda",
+    "apply": "Terapkan"
   },
   "dateInput": {
     "shortcutsTitle": "Pintasan keyboard",

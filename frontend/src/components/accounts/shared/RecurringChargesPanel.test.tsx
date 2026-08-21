@@ -29,7 +29,7 @@ const mockGetAll = vi.fn();
 const mockGetRecurringCharges = vi.fn();
 vi.mock('@/lib/transactions', () => ({
   transactionsApi: {
-    getAll: (...a: unknown[]) => mockGetAll(...a),
+    getAllPages: (...a: unknown[]) => mockGetAll(...a),
     getRecurringCharges: (...a: unknown[]) => mockGetRecurringCharges(...a),
   },
 }));
@@ -74,13 +74,10 @@ function schedule(overrides: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockGetAll.mockResolvedValue({
-    data: [
-      { id: 't1', payeeId: 'pay-netflix', payeeName: 'Netflix' },
-      { id: 't2', payeeId: null, payeeName: null },
-    ],
-    pagination: { hasMore: false },
-  });
+  mockGetAll.mockResolvedValue([
+    { id: 't1', payeeId: 'pay-netflix', payeeName: 'Netflix' },
+    { id: 't2', payeeId: null, payeeName: null },
+  ]);
   mockGetRecurringCharges.mockResolvedValue([charge()]);
   mockGetScheduled.mockResolvedValue([schedule()]);
 });
@@ -131,6 +128,9 @@ describe('RecurringChargesPanel', () => {
     await waitFor(() => expect(screen.getByText('Netflix')).toBeInTheDocument());
     expect(screen.getByText('Possible recurring charges')).toBeInTheDocument();
     expect(screen.getByText('$15.00')).toBeInTheDocument();
+    expect(mockGetAll).toHaveBeenCalledWith(
+      expect.objectContaining({ accountId: 'acc-1' }),
+    );
     expect(mockGetRecurringCharges).toHaveBeenCalledWith(
       expect.objectContaining({ payeeIds: ['pay-netflix'] }),
     );
@@ -166,7 +166,7 @@ describe('RecurringChargesPanel', () => {
   });
 
   it('skips the recurring lookup when there are no payees', async () => {
-    mockGetAll.mockResolvedValue({ data: [], pagination: {} });
+    mockGetAll.mockResolvedValue([]);
     mockGetScheduled.mockResolvedValue([]);
     await renderPanel();
     await waitFor(() =>

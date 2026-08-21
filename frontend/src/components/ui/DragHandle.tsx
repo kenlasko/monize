@@ -116,7 +116,7 @@ export function DragHandle({
       onKeyDown={handleKeyDown}
       aria-label={label}
       title={title ?? label}
-      className={`cursor-move touch-none rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300 ${className}`}
+      className={`cursor-move touch-none rounded p-1 text-gray-400 transition-colors motion-reduce:transition-none hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300 ${className}`}
     >
       {/* Six-dot grip */}
       <svg

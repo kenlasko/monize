@@ -12,7 +12,7 @@ export function cn(...inputs: ClassValue[]) {
 
 /** Shared base classes for text inputs, selects, and comboboxes */
 export const inputBaseClasses = [
-  'block w-full rounded-md border-gray-300 shadow-sm',
+  'block w-full rounded-md border-gray-300 shadow-sm transition-colors motion-reduce:transition-none',
   'focus:border-blue-500 focus:ring-blue-500',
   'disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500',
   'dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400',

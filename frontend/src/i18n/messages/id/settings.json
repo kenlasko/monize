@@ -164,6 +164,7 @@
       "dark": "Gelap"
     },
     "colorThemeLabel": "Tema warna",
+    "colorThemeHint": "Pratinjau menggunakan mode terang atau gelap Anda saat ini.",
     "colorThemeOptions": {
       "default": "Bawaan",
       "latte": "Latte",

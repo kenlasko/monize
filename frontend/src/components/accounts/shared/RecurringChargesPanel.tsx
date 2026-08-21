@@ -115,10 +115,10 @@ export function RecurringChargesPanel({ accountId, currencyCode }: RecurringChar
           return [] as ScheduledTransaction[];
         }),
         transactionsApi
-          .getAll({ accountId, startDate, endDate, limit: 500, page: 1 })
-          .then((page) => {
+          .getAllPages({ accountId, startDate, endDate })
+          .then((transactions) => {
             const payeeIds = Array.from(
-              new Set(page.data.map((tx) => tx.payeeId).filter((id): id is string => !!id)),
+              new Set(transactions.map((tx) => tx.payeeId).filter((id): id is string => !!id)),
             );
             return payeeIds.length
               ? transactionsApi.getRecurringCharges({ payeeIds, startDate, endDate })

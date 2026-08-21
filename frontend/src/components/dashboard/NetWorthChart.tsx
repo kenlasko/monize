@@ -19,6 +19,7 @@ import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { ChartViewToggle } from '@/components/ui/ChartViewToggle';
 import { WidgetHeading } from './widget-meta';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 type YDomain = [number | ((dataMin: number) => number), number | 'auto'];
 
@@ -139,7 +140,7 @@ export function NetWorthChart({ data, isLoading }: NetWorthChartProps) {
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[500px]">
+      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[500px]`}>
         <WidgetHeading id="net-worth" onClick={() => router.push('/reports/net-worth')} className="mb-4">
           {t('netWorth.title')}
         </WidgetHeading>
@@ -153,7 +154,7 @@ export function NetWorthChart({ data, isLoading }: NetWorthChartProps) {
 
   if (chartData.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[500px]">
+      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[500px]`}>
         <WidgetHeading id="net-worth" onClick={() => router.push('/reports/net-worth')} className="mb-4">
           {t('netWorth.title')}
         </WidgetHeading>
@@ -167,7 +168,7 @@ export function NetWorthChart({ data, isLoading }: NetWorthChartProps) {
   const isPositive = summary!.change >= 0;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[500px] flex flex-col h-full">
+    <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[500px] flex flex-col h-full`}>
       <div className="flex items-center justify-between mb-1">
         <WidgetHeading id="net-worth" onClick={() => router.push('/reports/net-worth')}>
           {t('netWorth.title')}

@@ -7,6 +7,7 @@ import { aiApi } from '@/lib/ai';
 import { AiInsight } from '@/types/ai';
 import { stripLinkMarkup } from '@/lib/ai-entity-links';
 import { WidgetHeading } from './widget-meta';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const severityColors: Record<string, string> = {
   alert: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800',
@@ -45,7 +46,7 @@ export function InsightsWidget({ isLoading: parentLoading }: InsightsWidgetProps
 
   if (isLoading || parentLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[390px]">
+      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[390px]`}>
         <WidgetHeading id="insights" onClick={() => router.push('/insights')} className="mb-4">
           {sectionTitle}
         </WidgetHeading>
@@ -60,7 +61,7 @@ export function InsightsWidget({ isLoading: parentLoading }: InsightsWidgetProps
 
   if (insights.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[390px]">
+      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[390px]`}>
         <WidgetHeading id="insights" onClick={() => router.push('/insights')} className="mb-4">
           {sectionTitle}
         </WidgetHeading>
@@ -78,7 +79,7 @@ export function InsightsWidget({ isLoading: parentLoading }: InsightsWidgetProps
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[390px]">
+    <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[390px]`}>
       <div className="flex items-center justify-between mb-4">
         <WidgetHeading id="insights" onClick={() => router.push('/insights')}>
           {sectionTitle}

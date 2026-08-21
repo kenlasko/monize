@@ -164,6 +164,7 @@
       "dark": "Dark"
     },
     "colorThemeLabel": "Colour theme",
+    "colorThemeHint": "Previews use your current light or dark mode.",
     "colorThemeOptions": {
       "default": "Default",
       "latte": "Latte",

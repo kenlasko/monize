@@ -137,7 +137,7 @@ export function EntitySwitcher({
         close();
         onSelect(item.id);
       }}
-      className="flex w-full items-baseline gap-2 px-3 py-1.5 text-left hover:bg-gray-50 dark:hover:bg-gray-700"
+      className="flex w-full items-baseline gap-2 px-3 py-1.5 text-left transition-colors motion-reduce:transition-none hover:bg-gray-50 dark:hover:bg-gray-700"
     >
       <span
         className={`text-sm font-medium text-gray-900 dark:text-gray-100 ${
@@ -172,7 +172,7 @@ export function EntitySwitcher({
         aria-expanded={isOpen}
         aria-label={triggerLabel}
         title={triggerLabel}
-        className={`inline-flex items-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:bg-gray-700 dark:hover:text-gray-200 ${
+        className={`inline-flex items-center rounded text-gray-400 transition-colors motion-reduce:transition-none hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:bg-gray-700 dark:hover:text-gray-200 ${
           triggerText ? 'gap-0.5 px-1.5 py-1 text-sm' : 'p-1'
         }`}
       >

@@ -134,7 +134,7 @@ export function SplitSubmitButton({
               role="menuitemradio"
               aria-checked={option.id === selected.id}
               onClick={() => handleSelect(option.id)}
-              className={`flex w-full items-start gap-2 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 ${
+              className={`flex w-full items-start gap-2 px-3 py-2 text-left transition-colors motion-reduce:transition-none hover:bg-gray-50 dark:hover:bg-gray-700 ${
                 index === 0 ? 'rounded-t-md' : ''
               } ${index === options.length - 1 ? 'rounded-b-md' : ''}`}
             >

@@ -164,6 +164,7 @@
       "dark": "Тёмная"
     },
     "colorThemeLabel": "Цветовая тема",
+    "colorThemeHint": "Предпросмотр использует текущую светлую или тёмную тему.",
     "colorThemeOptions": {
       "default": "По умолчанию",
       "latte": "Latte",

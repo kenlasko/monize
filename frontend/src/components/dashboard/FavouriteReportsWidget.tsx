@@ -14,6 +14,7 @@ import {
 } from '@/components/reports/report-definitions';
 import { createLogger } from '@/lib/logger';
 import { WidgetHeading } from './widget-meta';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('FavouriteReportsWidget');
 
@@ -103,7 +104,7 @@ export function FavouriteReportsWidget({ isLoading: parentLoading }: FavouriteRe
 
   if (parentLoading || isLoadingManaged) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
+      <div className={`${CARD_CLASS} p-3 sm:p-6`}>
         {sectionTitle}
         <div className="animate-pulse space-y-3">
           <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded" />
@@ -115,7 +116,7 @@ export function FavouriteReportsWidget({ isLoading: parentLoading }: FavouriteRe
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
+    <div className={`${CARD_CLASS} p-3 sm:p-6`}>
       {sectionTitle}
       {favourites.length === 0 ? (
         <>

@@ -164,6 +164,7 @@
       "dark": "Donker"
     },
     "colorThemeLabel": "Kleurthema",
+    "colorThemeHint": "Voorbeelden gebruiken je huidige lichte of donkere modus.",
     "colorThemeOptions": {
       "default": "Standaard",
       "latte": "Latte",

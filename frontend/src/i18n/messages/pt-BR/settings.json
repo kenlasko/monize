@@ -164,6 +164,7 @@
       "dark": "Escuro"
     },
     "colorThemeLabel": "Tema de cor",
+    "colorThemeHint": "As prévias usam seu modo claro ou escuro atual.",
     "colorThemeOptions": {
       "default": "Padrão",
       "latte": "Latte",

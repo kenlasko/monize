@@ -132,7 +132,8 @@
   "currencyInput": {
     "openCalculator": "Ouvrir la calculatrice",
     "calculator": "Calculatrice",
-    "toggleSign": "Changer de signe"
+    "toggleSign": "Changer de signe",
+    "apply": "Appliquer"
   },
   "dateInput": {
     "shortcutsTitle": "Raccourcis clavier",

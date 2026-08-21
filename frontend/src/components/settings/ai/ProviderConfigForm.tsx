@@ -273,7 +273,7 @@ export function ProviderConfigForm({ isOpen, onClose, onSubmit, editConfig }: Pr
   return (
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="4xl">
       <form onSubmit={handleSubmit(onFormSubmit)} className="p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {editConfig ? t('editTitle') : t('addTitle')}
         </h2>
 

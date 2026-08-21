@@ -18,6 +18,7 @@ import {
 import { sumConverted } from '@/lib/currency-total';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { WidgetHeading } from './widget-meta';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const LIABILITY_TYPES = new Set(['CREDIT_CARD', 'LOAN', 'MORTGAGE', 'LINE_OF_CREDIT']);
 
@@ -162,7 +163,7 @@ export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxI
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:self-start">
+      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:self-start`}>
         <WidgetHeading id="upcoming-bills" onClick={() => router.push('/bills')} className="mb-4">
           {sectionTitle}
         </WidgetHeading>
@@ -177,7 +178,7 @@ export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxI
 
   if (upcomingItems.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:self-start">
+      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:self-start`}>
         <WidgetHeading id="upcoming-bills" onClick={() => router.push('/bills')} className="mb-4">
           {sectionTitle}
         </WidgetHeading>
@@ -212,7 +213,7 @@ export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxI
   const hiddenCount = upcomingItems.length - visibleItems.length;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:self-start">
+    <div className={`${CARD_CLASS} p-3 sm:p-6 lg:self-start`}>
       <div className="flex items-center justify-between mb-4">
         <WidgetHeading id="upcoming-bills" onClick={() => router.push('/bills')}>
           {sectionTitle}

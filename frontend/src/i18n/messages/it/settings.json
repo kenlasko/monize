@@ -164,6 +164,7 @@
       "dark": "Scuro"
     },
     "colorThemeLabel": "Tema colori",
+    "colorThemeHint": "Le anteprime usano la tua modalità chiara o scura attuale.",
     "colorThemeOptions": {
       "default": "Predefinito",
       "latte": "Latte",

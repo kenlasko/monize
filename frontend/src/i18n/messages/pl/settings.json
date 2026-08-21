@@ -164,6 +164,7 @@
       "dark": "Ciemny"
     },
     "colorThemeLabel": "Motyw kolorystyczny",
+    "colorThemeHint": "Podglądy używają bieżącego trybu jasnego lub ciemnego.",
     "colorThemeOptions": {
       "default": "Domyślny",
       "latte": "Latte",

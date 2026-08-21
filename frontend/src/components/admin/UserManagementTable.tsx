@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { AdminUser } from '@/types/auth';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { usePreferencesStore } from '@/store/preferencesStore';
@@ -111,13 +112,9 @@ export function UserManagementTable({
 
                 {/* Provider */}
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    user.authProvider === 'oidc'
-                      ? 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
-                  }`}>
+                  <Badge variant={user.authProvider === 'oidc' ? 'purple' : 'gray'}>
                     {user.authProvider === 'oidc' ? t('userTable.providerSso') : t('userTable.providerLocal')}
-                  </span>
+                  </Badge>
                 </td>
 
                 {/* Status */}
@@ -179,24 +176,19 @@ export function UserManagementTable({
 
 function RoleBadge({ role, adminLabel, userLabel }: { role: string; adminLabel: string; userLabel: string }) {
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-      role === 'admin'
-        ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
-        : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
-    }`}>
+    <Badge variant={role === 'admin' ? 'blue' : 'gray'}>
       {role === 'admin' ? adminLabel : userLabel}
-    </span>
+    </Badge>
   );
 }
 
 function StatusBadge({ isActive, activeLabel, disabledLabel, clickable }: { isActive: boolean; activeLabel: string; disabledLabel: string; clickable?: boolean }) {
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-      isActive
-        ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-        : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
-    } ${clickable ? 'cursor-pointer hover:opacity-80' : ''}`}>
+    <Badge
+      variant={isActive ? 'green' : 'red'}
+      className={clickable ? 'cursor-pointer hover:opacity-80' : undefined}
+    >
       {isActive ? activeLabel : disabledLabel}
-    </span>
+    </Badge>
   );
 }

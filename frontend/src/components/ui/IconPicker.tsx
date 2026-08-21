@@ -204,7 +204,7 @@ export function IconPicker({ value, onChange, label, onClear, clearLabel }: Icon
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-colors motion-reduce:transition-none hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
         <span className="text-gray-700 dark:text-gray-200">
           {selectedIcon ? (
@@ -240,7 +240,7 @@ export function IconPicker({ value, onChange, label, onClear, clearLabel }: Icon
                   onClear?.();
                   setIsOpen(false);
                 }}
-                className="mb-1 w-full rounded px-2 py-1.5 text-left text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="mb-1 w-full rounded px-2 py-1.5 text-left text-sm text-gray-600 dark:text-gray-300 transition-colors motion-reduce:transition-none hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 {clearLabel}
               </button>
@@ -254,7 +254,7 @@ export function IconPicker({ value, onChange, label, onClear, clearLabel }: Icon
                     onChange(iconName);
                     setIsOpen(false);
                   }}
-                  className={`p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-200 ${
+                  className={`p-2 rounded transition-colors motion-reduce:transition-none hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-200 ${
                     selectedIcon === iconName ? 'bg-blue-100 dark:bg-blue-900' : ''
                   }`}
                   title={iconName.replace(/-/g, ' ')}

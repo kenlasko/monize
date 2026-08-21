@@ -112,7 +112,7 @@ export function ProviderList({ configs, encryptionAvailable, onConfigsChanged, h
   return (
     <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 sm:p-6 mb-6">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('heading')}</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('heading')}</h2>
         <Button size="sm" onClick={() => setShowForm(true)} disabled={disabled}>
           {t('addButton')}
         </Button>
@@ -176,7 +176,7 @@ export function ProviderList({ configs, encryptionAvailable, onConfigsChanged, h
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                       {config.displayName || AI_PROVIDER_LABELS[config.provider as AiProviderType] || config.provider}
                     </h3>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${

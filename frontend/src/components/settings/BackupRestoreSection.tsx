@@ -297,7 +297,7 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">
         {t('heading')}
       </h2>
 
@@ -306,7 +306,7 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
           so there is nothing to set, change or switch off. */}
       {encryption?.manageable && (
         <div className="mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">
             {t('encryption.heading')}
           </h3>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
@@ -344,7 +344,7 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
 
       {/* Export Section */}
       <div className="mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">
           {t('export.heading')}
         </h3>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
@@ -360,7 +360,7 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
 
       {/* Restore Section */}
       <div>
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">
           {t('restore.heading')}
         </h3>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
@@ -497,7 +497,7 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
         maxWidth="sm"
       >
         <div className="p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
             {t('encryption.setupModal.titleOidc')}
           </h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
@@ -538,7 +538,7 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
         maxWidth="sm"
       >
         <div className="p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
             {t('export.exportPasswordModal.title')}
           </h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
@@ -592,7 +592,7 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {t('restoreResult.title')}
               </h2>
             </div>
@@ -610,7 +610,7 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
                       <dt className="text-gray-600 dark:text-gray-400">
                         {RESTORE_LABELS[key] ?? key}
                       </dt>
-                      <dd className="font-medium text-gray-900 dark:text-white">
+                      <dd className="font-medium text-gray-900 dark:text-gray-100">
                         {count.toLocaleString()}
                       </dd>
                     </div>
@@ -619,8 +619,8 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
             </div>
 
             <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 flex justify-between text-sm font-medium">
-              <span className="text-gray-900 dark:text-white">{t('restoreResult.totalRecords')}</span>
-              <span className="text-gray-900 dark:text-white">
+              <span className="text-gray-900 dark:text-gray-100">{t('restoreResult.totalRecords')}</span>
+              <span className="text-gray-900 dark:text-gray-100">
                 {Object.values(restoreResult.restored).reduce((sum, n) => sum + n, 0).toLocaleString()}
               </span>
             </div>

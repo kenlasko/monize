@@ -164,6 +164,7 @@
       "dark": "Koyu"
     },
     "colorThemeLabel": "Renk teması",
+    "colorThemeHint": "Önizlemeler geçerli açık veya koyu modunuzu kullanır.",
     "colorThemeOptions": {
       "default": "Varsayılan",
       "latte": "Latte",

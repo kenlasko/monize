@@ -164,6 +164,7 @@
       "dark": "डार्क"
     },
     "colorThemeLabel": "रंग थीम",
+    "colorThemeHint": "पूर्वावलोकन आपके वर्तमान लाइट या डार्क मोड का उपयोग करते हैं।",
     "colorThemeOptions": {
       "default": "डिफ़ॉल्ट",
       "latte": "Latte",

@@ -19,8 +19,26 @@ import { cn } from '@/lib/utils';
  * inline string shrink-only.
  */
 export const CARD_CLASS =
-  'bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 ' +
+  'bg-white dark:bg-gray-800 rounded-lg shadow-card dark:shadow-gray-700/50 ' +
   'border border-gray-200 dark:border-gray-700';
+
+/**
+ * Row hover, in the two places a row sits.
+ *
+ * There were twelve variants of this in the tree -- same light value, eight
+ * different darks, some at full opacity and some at /20, /30, /40, /50, /60 --
+ * so two lists side by side highlighted differently for no reason anybody
+ * could state. The pair below is the two that actually mean something: a row
+ * on a card lifts *within* the card, a row on the page lifts toward the card.
+ *
+ * Both carry the transition, because that is the half most call sites forgot:
+ * a hover that snaps reads as a redraw rather than as a response.
+ */
+export const HOVER_ROW_ON_CARD =
+  'transition-colors motion-reduce:transition-none hover:bg-gray-50 dark:hover:bg-gray-700/50';
+
+export const HOVER_ROW_ON_PAGE =
+  'transition-colors motion-reduce:transition-none hover:bg-gray-100 dark:hover:bg-gray-800';
 
 const CARD_PADDING = {
   none: '',

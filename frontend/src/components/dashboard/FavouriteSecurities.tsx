@@ -6,6 +6,7 @@ import { FavouriteSecurityQuote } from '@/types/investment';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { WidgetHeading } from './widget-meta';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface FavouriteSecuritiesProps {
   securities: FavouriteSecurityQuote[];
@@ -48,7 +49,7 @@ export function FavouriteSecurities({ securities, isLoading, onRefresh, isRefres
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[500px]">
+      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[500px]`}>
         <div className="flex items-center justify-between mb-4">
           <WidgetHeading id="favourite-securities">
             {t('favouriteSecurities.title')}
@@ -69,7 +70,7 @@ export function FavouriteSecurities({ securities, isLoading, onRefresh, isRefres
 
   if (securities.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[500px]">
+      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[500px]`}>
         <WidgetHeading id="favourite-securities" className="mb-4">
           {t('favouriteSecurities.title')}
         </WidgetHeading>
@@ -90,7 +91,7 @@ export function FavouriteSecurities({ securities, isLoading, onRefresh, isRefres
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[500px]">
+    <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[500px]`}>
       <div className="flex items-center justify-between mb-4">
         <WidgetHeading id="favourite-securities" onClick={() => router.push('/securities')}>
           {t('favouriteSecurities.title')}

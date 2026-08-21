@@ -311,7 +311,7 @@ export function SharedAccessSection() {
               className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex flex-wrap items-center justify-between gap-3"
             >
               <div className="min-w-0">
-                <p className="font-medium text-gray-900 dark:text-white truncate">
+                <p className="font-medium text-gray-900 dark:text-gray-100 truncate">
                   {d.delegate.email}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -367,7 +367,7 @@ export function SharedAccessSection() {
       >
         <form onSubmit={handleCreate} className="flex flex-col">
           <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {t('createModal.title')}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -542,7 +542,7 @@ export function SharedAccessSection() {
         pushHistory
       >
         <div className="p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             {t('tempPasswordModal.title')}
           </h2>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">

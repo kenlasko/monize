@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, it, expect } from "vitest";
 
 /**
@@ -1190,19 +1192,9 @@ describe("a panel card is the shared Card surface", () => {
     "/src/components/budgets/BudgetWizardReview.tsx",
     "/src/components/budgets/BudgetWizardStrategy.tsx",
     "/src/components/budgets/BudgetZeroBasedBar.tsx",
-    "/src/components/dashboard/AssetsVsLiabilities.tsx",
-    "/src/components/dashboard/BudgetStatusWidget.tsx",
-    "/src/components/dashboard/ExpensesPieChart.tsx",
-    "/src/components/dashboard/FavouriteAccounts.tsx",
-    "/src/components/dashboard/FavouriteReportsWidget.tsx",
-    "/src/components/dashboard/FavouriteSecurities.tsx",
-    "/src/components/dashboard/GettingStarted.tsx",
-    "/src/components/dashboard/IncomeExpensesBarChart.tsx",
-    "/src/components/dashboard/InsightsWidget.tsx",
-    "/src/components/dashboard/NetWorthChart.tsx",
-    "/src/components/dashboard/TopMovers.tsx",
-    "/src/components/dashboard/UpcomingBills.tsx",
-    "/src/components/import/CompleteStep.tsx",
+        "/src/components/dashboard/ExpensesPieChart.tsx",
+            "/src/components/dashboard/IncomeExpensesBarChart.tsx",
+            "/src/components/import/CompleteStep.tsx",
     "/src/components/import/CsvColumnMappingStep.tsx",
     "/src/components/import/MapAccountsStep.tsx",
     "/src/components/import/MapCategoriesStep.tsx",
@@ -1220,6 +1212,12 @@ describe("a panel card is the shared Card surface", () => {
     "/src/components/layout/ActionHistoryPanel.tsx",
     "/src/components/payees/detail/PayeeRecurringPanel.tsx",
     "/src/components/reconcile/ReconciliationReminderBadge.tsx",
+    // Both keep an inline surface for their chart TOOLTIP -- a floating panel
+    // with its own stronger shadow, not the widget card. Their widget
+    // surfaces now come from CARD_CLASS; the tooltip shape is hand-rolled in
+    // ~44 files and is a separate drift from this one.
+    "/src/components/dashboard/AssetsVsLiabilities.tsx",
+    "/src/components/dashboard/NetWorthChart.tsx",
     "/src/components/reports/AccountBalancesReport.tsx",
     "/src/components/reports/BillPaymentHistoryReport.tsx",
     "/src/components/reports/BudgetHealthScoreReport.tsx",
@@ -1304,7 +1302,6 @@ describe("a panel card is the shared Card surface", () => {
     "/src/components/transactions/TagKeyBreakdownChart.tsx",
     "/src/components/transactions/TransactionFilterPanel.tsx",
     "/src/components/ui/CalendarPopover.tsx",
-    "/src/components/ui/LoadingSkeleton.tsx",
     "/src/components/ui/Modal.tsx",
     "/src/components/ui/Pagination.tsx",
   ];
@@ -1572,5 +1569,735 @@ describe("an icon name is never rendered as text", () => {
     expect(NAME_ICON_AS_JSX_CHILD.test("<span>{report.icon}</span>")).toBe(
       false,
     );
+  });
+});
+
+describe("a keyboard focus ring is focus-visible, never focus", () => {
+  /**
+   * `focus:ring-2` paints the ring on a mouse click as well as on a Tab, so
+   * every button in the app flashed a 2px offset halo when clicked. That is
+   * the single most visible "unfinished" tell in a UI, and the fix is one
+   * pseudo-class: `focus-visible` fires only when the browser judges the
+   * focus worth showing -- keyboard, not pointer.
+   *
+   * Text inputs are deliberately exempt, both here and in `inputBaseClasses`
+   * and the element selectors in `globals.css`: a field that shows its
+   * focused border after a click is telling the user where their typing will
+   * go, which is the opposite of noise.
+   *
+   * The baseline is **shrink-only**. Converting a file means deleting its
+   * line here; new code uses `focus-visible:` from the start.
+   */
+  const FOCUS_RING = /focus:ring-/;
+
+  /** The shared input styling, where a click-visible focus ring is correct. */
+  const INPUT_EXEMPT = new Set([
+    "/src/lib/utils.ts",
+    "/src/components/ui/Input.tsx",
+  ]);
+
+  const BASELINE: ReadonlyArray<string> = [
+    "/src/app/categories/page.tsx",
+    "/src/app/currencies/page.tsx",
+    "/src/app/error.tsx",
+    "/src/app/institutions/page.tsx",
+    "/src/app/login/page.tsx",
+    "/src/app/not-found.tsx",
+    "/src/app/payees/page.tsx",
+    "/src/app/reports/page.tsx",
+    "/src/app/securities/page.tsx",
+    "/src/app/tags/page.tsx",
+    "/src/components/accounts/AccountForm.tsx",
+    "/src/components/accounts/LoanPaymentSetupDialog.tsx",
+    "/src/components/accounts/MortgageFields.tsx",
+    "/src/components/accounts/credit-card-detail/PaymentSetupDialog.tsx",
+    "/src/components/accounts/loan-detail/OverpaymentSimulator.tsx",
+    "/src/components/admin/UserManagementTable.tsx",
+    "/src/components/ai/ChatInterface.tsx",
+    "/src/components/auth/BackupCodesDisplay.tsx",
+    "/src/components/auth/TwoFactorVerify.tsx",
+    "/src/components/budgets/BudgetForm.tsx",
+    "/src/components/budgets/BudgetWizardCategories.tsx",
+    "/src/components/budgets/BudgetWizardStrategy.tsx",
+    "/src/components/categories/CategoryForm.tsx",
+    "/src/components/categories/DeleteCategoryDialog.tsx",
+    "/src/components/dashboard/TourBanner.tsx",
+    "/src/components/dashboard/UpcomingBills.tsx",
+    "/src/components/dashboard/WidgetCard.tsx",
+    "/src/components/import/CategoryMappingRow.tsx",
+    "/src/components/investments/InvestmentTransactionList.tsx",
+    "/src/components/layout/AppHeader.tsx",
+    "/src/components/layout/DelegationBanner.tsx",
+    "/src/components/payees/AutoMergePayeesDialog.tsx",
+    "/src/components/payees/CategoryAutoAssignDialog.tsx",
+    "/src/components/payees/MergePayeeDialog.tsx",
+    "/src/components/reconcile/ReconcileTable.tsx",
+    "/src/components/reports/CustomReportForm.tsx",
+    "/src/components/reports/FilterBuilder.tsx",
+    "/src/components/reports/MonteCarloReport.tsx",
+    "/src/components/reports/MonteCarloSaveAsDialog.tsx",
+    "/src/components/reports/ReportError.tsx",
+    "/src/components/scheduled-transactions/PostTransactionDialog.tsx",
+    "/src/components/scheduled-transactions/ScheduledTransactionForm.tsx",
+    "/src/components/securities/SecurityForm.tsx",
+    "/src/components/settings/ApiAccessSection.tsx",
+    "/src/components/settings/AutoBackupSection.tsx",
+    "/src/components/settings/DangerZoneSection.tsx",
+    "/src/components/settings/NotificationsSection.tsx",
+    "/src/components/strategies/GemInstrumentSelect.tsx",
+    "/src/components/tags/TagForm.tsx",
+    "/src/components/transactions/AccountInfoWidget.tsx",
+    "/src/components/transactions/BulkUpdateModal.tsx",
+    "/src/components/transactions/CategoryInfoWidget.tsx",
+    "/src/components/transactions/CurrencyPickerButton.tsx",
+    "/src/components/transactions/NormalTransactionFields.tsx",
+    "/src/components/transactions/PayeeInfoWidget.tsx",
+    "/src/components/transactions/SplitTransactionFields.tsx",
+    "/src/components/transactions/TransactionForm.tsx",
+    "/src/components/transactions/TransactionList.tsx",
+    "/src/components/transactions/TransactionRow.tsx",
+    "/src/components/ui/ColorPicker.tsx",
+    "/src/components/ui/ConfirmDialog.tsx",
+    "/src/components/ui/DragHandle.tsx",
+    "/src/components/ui/IconPicker.tsx",
+    "/src/components/ui/MultiSelect.tsx",
+    "/src/components/ui/Pagination.tsx",
+    "/src/components/ui/Select.tsx",
+    "/src/components/ui/ThemeToggle.tsx",
+    "/src/components/ui/UnsavedChangesDialog.tsx",
+  ];
+
+  function filesWithFocusRing(): string[] {
+    return productionSources()
+      .filter(([path]) => !INPUT_EXEMPT.has(path))
+      .filter(([, content]) => FOCUS_RING.test(content))
+      .map(([path]) => path);
+  }
+
+  it("has no focus:ring outside the recorded baseline", () => {
+    const allowed = new Set(BASELINE);
+    const offenders = filesWithFocusRing().filter((path) => !allowed.has(path));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps the baseline shrink-only", () => {
+    const offending = new Set(filesWithFocusRing());
+    expect(BASELINE.filter((file) => !offending.has(file))).toEqual([]);
+  });
+
+  it("the shared primitives are converted, so the rule has real subjects", () => {
+    // Button and Tabs are the two every screen renders; if either regressed to
+    // `focus:`, the baseline above would be hiding it rather than the rule
+    // catching it.
+    for (const path of ["/src/components/ui/Button.tsx", "/src/components/ui/Tabs.tsx"]) {
+      const content = sources[path];
+      expect(content, `${path} not found -- update this test`).toBeTruthy();
+      expect(FOCUS_RING.test(content), `${path} still uses focus:ring-`).toBe(false);
+      expect(content).toContain("focus-visible:ring-");
+    }
+  });
+});
+
+describe("text-md is not a Tailwind size", () => {
+  /**
+   * There is no `text-md` in Tailwind -- the scale runs `text-sm`,
+   * `text-base`, `text-lg`. A heading carrying it silently renders at the
+   * inherited size, so it looks like a heading that forgot to be one. Three
+   * of them sat in the Security settings section.
+   *
+   * No baseline: the class never does anything, so there is nothing to
+   * grandfather.
+   */
+  it("appears nowhere in the source", () => {
+    const offenders = productionSources()
+      .filter(([, content]) => /\btext-md\b/.test(content))
+      .map(([path]) => path);
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe("row hover comes from the shared pair, not a hand-picked grey", () => {
+  /**
+   * The same light hover value appeared with eight different darks -- plain
+   * `gray-700`, `gray-600`, `gray-800`, and `gray-700` at /20, /30, /40, /50
+   * and /60 -- across twelve variants. Two lists side by side highlighted
+   * differently, and nobody could say which was intended.
+   *
+   * `HOVER_ROW_ON_CARD` / `HOVER_ROW_ON_PAGE` in `Card.tsx` are the two that
+   * mean something, and both carry the transition that most call sites
+   * omitted: 180 files had a `hover:bg-*` that snapped, which reads as a
+   * redraw rather than a response.
+   *
+   * The baseline is **shrink-only**. Converting a file to one of the
+   * constants removes the literal, so its line here must go in the same
+   * commit.
+   */
+  const HOVER_OWNER = "/src/components/ui/Card.tsx";
+  const HOVER_FINGERPRINT = /hover:bg-gray-(50|100)[^"'`]*dark:hover:bg-gray-/;
+
+  const BASELINE: ReadonlyArray<string> = [
+    "/src/app/bills/page.tsx",
+    "/src/app/budgets/[id]/edit/page.tsx",
+    "/src/app/categories/page.tsx",
+    "/src/app/currencies/page.tsx",
+    "/src/app/error.tsx",
+    "/src/app/institutions/page.tsx",
+    "/src/app/not-found.tsx",
+    "/src/app/payees/page.tsx",
+    "/src/app/reports/page.tsx",
+    "/src/app/securities/page.tsx",
+    "/src/app/settings/page.tsx",
+    "/src/components/accounts/AccountForm.tsx",
+    "/src/components/accounts/AccountList.tsx",
+    "/src/components/accounts/AccountRow.tsx",
+    "/src/components/accounts/credit-card-detail/SpendingBreakdown.tsx",
+    "/src/components/accounts/loan-detail/SavedScenariosPanel.tsx",
+    "/src/components/accounts/loan-detail/ScheduleTableRow.tsx",
+    "/src/components/accounts/shared/RecurringChargesPanel.tsx",
+    "/src/components/accounts/shared/SummaryCardGrid.tsx",
+    "/src/components/accounts/shared/TopGroupsPanel.tsx",
+    "/src/components/admin/UserManagementTable.tsx",
+    "/src/components/ai/AiChatBubble.tsx",
+    "/src/components/ai/AssistantTable.tsx",
+    "/src/components/ai/ResultChart.tsx",
+    "/src/components/budgets/BudgetAlertBadge.tsx",
+    "/src/components/budgets/BudgetAlertList.tsx",
+    "/src/components/budgets/BudgetCategoryList.tsx",
+    "/src/components/budgets/BudgetCategoryRow.tsx",
+    "/src/components/budgets/BudgetWizardCategories.tsx",
+    "/src/components/budgets/BudgetWizardStrategy.tsx",
+    "/src/components/categories/CategoryList.tsx",
+    "/src/components/categories/detail/CategorySubcategoriesTab.tsx",
+    "/src/components/currencies/CurrencyList.tsx",
+    "/src/components/dashboard/CustomizeDashboardModal.tsx",
+    "/src/components/dashboard/FavouriteAccounts.tsx",
+    "/src/components/dashboard/FavouriteReportsWidget.tsx",
+    "/src/components/dashboard/FavouriteSecurities.tsx",
+    "/src/components/dashboard/GettingStarted.tsx",
+    "/src/components/dashboard/PortfolioValueWidget.tsx",
+    "/src/components/dashboard/TopMovers.tsx",
+    "/src/components/dashboard/UpcomingBills.tsx",
+    "/src/components/dashboard/WidgetCard.tsx",
+    "/src/components/institutions/InstitutionAccountsManager.tsx",
+    "/src/components/institutions/InstitutionList.tsx",
+    "/src/components/investments/CashRegisterFilters.tsx",
+    "/src/components/investments/GroupedHoldingsList.tsx",
+    "/src/components/investments/HoldingsList.tsx",
+    "/src/components/investments/InvestmentTransactionList.tsx",
+    "/src/components/investments/NewTransactionButton.tsx",
+    "/src/components/layout/ActionHistoryPanel.tsx",
+    "/src/components/layout/AppHeader.tsx",
+    "/src/components/layout/MobileNavDrawer.tsx",
+    "/src/components/payees/CategoryAutoAssignDialog.tsx",
+    "/src/components/payees/DeactivateUnusedPayeesDialog.tsx",
+    "/src/components/payees/PayeeList.tsx",
+    "/src/components/payees/detail/PayeeDetailHeader.tsx",
+    "/src/components/payees/detail/PayeeRecurringPanel.tsx",
+    "/src/components/reconcile/ReconcileTable.tsx",
+    "/src/components/reconcile/ReconciliationReminderBadge.tsx",
+    "/src/components/reports/AccountBalancesReport.tsx",
+    "/src/components/reports/BillPaymentHistoryReport.tsx",
+    "/src/components/reports/BudgetSeasonalPatternsReport.tsx",
+    "/src/components/reports/CashFlowReport.tsx",
+    "/src/components/reports/CreditUtilizationReport.tsx",
+    "/src/components/reports/CurrencyExposureReport.tsx",
+    "/src/components/reports/CustomReportViewer.tsx",
+    "/src/components/reports/DividendIncomeReport.tsx",
+    "/src/components/reports/DividendYieldGrowthReport.tsx",
+    "/src/components/reports/GeographicAllocationReport.tsx",
+    "/src/components/reports/IncomeBySourceReport.tsx",
+    "/src/components/reports/IncomeVsExpensesReport.tsx",
+    "/src/components/reports/InvestmentPerformanceReport.tsx",
+    "/src/components/reports/InvestmentReportViewer.tsx",
+    "/src/components/reports/InvestmentTransactionHistoryReport.tsx",
+    "/src/components/reports/LoanAmortizationReport.tsx",
+    "/src/components/reports/MonteCarloReport.tsx",
+    "/src/components/reports/MonthlyCategoryBreakdownReport.tsx",
+    "/src/components/reports/MonthlyComparisonReport.tsx",
+    "/src/components/reports/MonthlySpendingTrendReport.tsx",
+    "/src/components/reports/NetWorthReport.tsx",
+    "/src/components/reports/NewReportButton.tsx",
+    "/src/components/reports/PortfolioValueReport.tsx",
+    "/src/components/reports/RealizedGainsReport.tsx",
+    "/src/components/reports/RecurringExpensesReport.tsx",
+    "/src/components/reports/ReportChart.tsx",
+    "/src/components/reports/SectorWeightingsReport.tsx",
+    "/src/components/reports/SecurityPerformanceReport.tsx",
+    "/src/components/reports/SecurityTypeAllocationReport.tsx",
+    "/src/components/reports/SpendingByCategoryReport.tsx",
+    "/src/components/reports/SpendingByPayeeReport.tsx",
+    "/src/components/reports/UncategorizedTransactionsReport.tsx",
+    "/src/components/reports/UpcomingBillsReport.tsx",
+    "/src/components/reports/YearOverYearReport.tsx",
+    "/src/components/reports/account-balances/AccountBalancesControls.tsx",
+    "/src/components/scheduled-transactions/OccurrenceDatePicker.tsx",
+    "/src/components/scheduled-transactions/PostTransactionDialog.tsx",
+    "/src/components/scheduled-transactions/ScheduledTransactionForm.tsx",
+    "/src/components/scheduled-transactions/ScheduledTransactionList.tsx",
+    "/src/components/securities/SecurityForm.tsx",
+    "/src/components/securities/SecurityList.tsx",
+    "/src/components/securities/SecurityLookupPicker.tsx",
+    "/src/components/securities/SecurityPriceHistory.tsx",
+    "/src/components/securities/SecurityTransactionHistory.tsx",
+    "/src/components/securities/detail/SecurityAccountsTable.tsx",
+    "/src/components/securities/detail/SecurityChartSection.tsx",
+    "/src/components/securities/detail/SecurityDocumentsTab.tsx",
+    "/src/components/securities/detail/SecuritySummaryCards.tsx",
+    "/src/components/settings/AboutSection.tsx",
+    "/src/components/settings/ApiAccessSection.tsx",
+    "/src/components/settings/HelpSection.tsx",
+    "/src/components/settings/SettingsNav.tsx",
+    "/src/components/settings/ai/UsageDashboard.tsx",
+    "/src/components/strategies/GemInstrumentSelect.tsx",
+    "/src/components/strategies/GemSignalHistoryTable.tsx",
+    "/src/components/tags/TagList.tsx",
+    "/src/components/transactions/AccountInfoWidget.tsx",
+    "/src/components/transactions/CategoryInfoWidget.tsx",
+    "/src/components/transactions/CurrencyPickerButton.tsx",
+    "/src/components/transactions/NormalTransactionFields.tsx",
+    "/src/components/transactions/PayeeInfoWidget.tsx",
+    "/src/components/transactions/RecentTransactionsPopover.tsx",
+    "/src/components/transactions/SplitEditor.tsx",
+    "/src/components/transactions/SplitTransactionFields.tsx",
+    "/src/components/transactions/StatusCellButton.tsx",
+    "/src/components/transactions/TransactionActionSheet.tsx",
+    "/src/components/transactions/TransactionFilterPanel.tsx",
+    "/src/components/transactions/TransactionForm.tsx",
+    "/src/components/transactions/TransactionList.tsx",
+    "/src/components/transactions/TransactionRow.tsx",
+    "/src/components/ui/ActionMenu.tsx",
+    "/src/components/ui/Button.tsx",
+    "/src/components/ui/CalendarPopover.tsx",
+    "/src/components/ui/ChartDownloadButton.tsx",
+    "/src/components/ui/ColorPicker.tsx",
+    "/src/components/ui/CurrencyInput.tsx",
+    "/src/components/ui/DensityToggle.tsx",
+    "/src/components/ui/DragHandle.tsx",
+    "/src/components/ui/EntitySwitcher.tsx",
+    "/src/components/ui/ExportDropdown.tsx",
+    "/src/components/ui/ExportIconButton.tsx",
+    "/src/components/ui/IconPicker.tsx",
+    "/src/components/ui/MultiSelect.tsx",
+    "/src/components/ui/Pagination.tsx",
+    "/src/components/ui/SortableHeader.tsx",
+    "/src/components/ui/SplitSubmitButton.tsx",
+    "/src/components/ui/SummaryCard.tsx",
+    "/src/components/ui/ThemeToggle.tsx",
+    "/src/components/ui/row-actions/RowActionSheet.tsx",
+    "/src/components/ui/row-actions/RowActions.tsx",
+    "/src/components/ui/row-actions/RowActionsOverflow.tsx",
+  ];
+
+  function filesWithInlineHover(): string[] {
+    return productionSources()
+      .filter(([path]) => path !== HOVER_OWNER)
+      .filter(([, content]) => HOVER_FINGERPRINT.test(content))
+      .map(([path]) => path);
+  }
+
+  it("has no hand-rolled row hover outside the recorded baseline", () => {
+    const allowed = new Set(BASELINE);
+    const offenders = filesWithInlineHover().filter((path) => !allowed.has(path));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps the baseline shrink-only", () => {
+    const offending = new Set(filesWithInlineHover());
+    expect(BASELINE.filter((file) => !offending.has(file))).toEqual([]);
+  });
+
+  it("still finds both constants, so the rule cannot pass by accident", () => {
+    const owner = sources[HOVER_OWNER];
+    expect(owner, `${HOVER_OWNER} not found -- update HOVER_OWNER here`).toBeTruthy();
+    expect(owner).toContain("HOVER_ROW_ON_CARD");
+    expect(owner).toContain("HOVER_ROW_ON_PAGE");
+    // Both must animate: the missing transition is half the defect.
+    for (const line of owner.split("\n")) {
+      if (line.includes("hover:bg-gray-")) {
+        expect(line).toContain("transition-colors");
+      }
+    }
+  });
+});
+
+describe("a dialog is titled through Modal, not by a hand-rolled heading", () => {
+  /**
+   * `Modal` had no `title`, so all 74 call sites drew their own header. That
+   * produced eight different treatments of one slot -- `text-lg font-semibold`
+   * (32), `text-2xl font-bold` (22), `text-lg font-medium` (17) and more --
+   * and, more seriously, a dialog with no `aria-labelledby`: screen readers
+   * announced an unnamed region and the visible heading was decoration.
+   *
+   * Passing `title` draws the standard header and wires the label. The
+   * baseline is **shrink-only**: converting a call site removes its line.
+   *
+   * A modal whose header is genuinely bespoke -- ConfirmDialog puts an icon
+   * beside the heading -- stays on the baseline deliberately rather than
+   * being flattened into the standard one.
+   */
+  const MODAL = "/src/components/ui/Modal.tsx";
+
+  const BASELINE: ReadonlyArray<string> = [
+    "/src/app/bills/page.tsx",
+    "/src/app/budgets/[id]/edit/page.tsx",
+    "/src/app/categories/[id]/page.tsx",
+    "/src/app/categories/page.tsx",
+    "/src/app/currencies/page.tsx",
+    "/src/app/institutions/page.tsx",
+    "/src/app/investments/page.tsx",
+    "/src/app/payees/[id]/page.tsx",
+    "/src/app/payees/page.tsx",
+    "/src/app/reconcile/page.tsx",
+    "/src/app/reports/custom/[id]/edit/page.tsx",
+    "/src/app/reports/investment/[id]/edit/page.tsx",
+    "/src/app/securities/[id]/page.tsx",
+    "/src/app/securities/page.tsx",
+    "/src/app/settings/emergency-access/page.tsx",
+    "/src/app/tags/page.tsx",
+    "/src/app/transactions/page.tsx",
+    "/src/components/accounts/AccountExportModal.tsx",
+    "/src/components/accounts/AccountForm.tsx",
+    "/src/components/accounts/AccountFormModal.tsx",
+    "/src/components/accounts/LoanPaymentSetupDialog.tsx",
+    "/src/components/accounts/asset-detail/UpdateValueDialog.tsx",
+    "/src/components/accounts/credit-card-detail/PaymentSetupDialog.tsx",
+    "/src/components/accounts/loan-detail/LoanRateControls.tsx",
+    "/src/components/accounts/loan-detail/SavedScenariosPanel.tsx",
+    "/src/components/accounts/shared/ForeignCurrencyFeesSection.tsx",
+    "/src/components/accounts/shared/RecurringChargesPanel.tsx",
+    "/src/components/admin/CreateUserModal.tsx",
+    "/src/components/admin/ResetPasswordModal.tsx",
+    "/src/components/auth/StepUpAuthModal.tsx",
+    "/src/components/categories/DeleteCategoryDialog.tsx",
+    "/src/components/categories/ImportDefaultCategoriesDialog.tsx",
+    "/src/components/categories/detail/CategoryTransactionsTab.tsx",
+    "/src/components/dashboard/CustomizeDashboardModal.tsx",
+    "/src/components/dashboard/WidgetCard.tsx",
+    "/src/components/import/MnyPasswordDialog.tsx",
+    "/src/components/import/MnyWipeConfirmDialog.tsx",
+    "/src/components/institutions/InstitutionAccountsManager.tsx",
+    "/src/components/investments/InvestmentRegisterPanel.tsx",
+    "/src/components/investments/InvestmentTransactionForm.tsx",
+    "/src/components/layout/MobileNavDrawer.tsx",
+    "/src/components/payees/AutoMergePayeesDialog.tsx",
+    "/src/components/payees/CategoryAutoAssignDialog.tsx",
+    "/src/components/payees/DeactivateUnusedPayeesDialog.tsx",
+    "/src/components/payees/MergePayeeDialog.tsx",
+    "/src/components/payees/ReactivatePayeeDialog.tsx",
+    "/src/components/payees/detail/PayeeTransactionsTab.tsx",
+    "/src/components/reports/ForeignCurrencyFeesReport.tsx",
+    "/src/components/reports/MonteCarloSaveAsDialog.tsx",
+    "/src/components/scheduled-transactions/OccurrenceDatePicker.tsx",
+    "/src/components/scheduled-transactions/OverrideEditorDialog.tsx",
+    "/src/components/scheduled-transactions/PostTransactionDialog.tsx",
+    "/src/components/scheduled-transactions/ScheduledTransactionForm.tsx",
+    "/src/components/securities/SecurityForm.tsx",
+    "/src/components/securities/SecurityLookupPicker.tsx",
+    "/src/components/securities/SecurityTransactionHistory.tsx",
+    "/src/components/securities/detail/SecurityDocumentsTab.tsx",
+    "/src/components/settings/ApiAccessSection.tsx",
+    "/src/components/settings/BackupRestoreSection.tsx",
+    "/src/components/settings/SecuritySection.tsx",
+    "/src/components/settings/SharedAccessSection.tsx",
+    "/src/components/settings/SupportBackupModal.tsx",
+    "/src/components/settings/ai/ProviderConfigForm.tsx",
+    "/src/components/strategies/GemScenarioSwitcher.tsx",
+    "/src/components/strategies/GemSettingsForm.tsx",
+    "/src/components/transactions/BulkUpdateModal.tsx",
+    "/src/components/transactions/CurrencyPickerButton.tsx",
+    "/src/components/transactions/TransactionActionSheet.tsx",
+    "/src/components/transactions/TransactionForm.tsx",
+    "/src/components/ui/ConfirmDialog.tsx",
+    "/src/components/ui/UnsavedChangesDialog.tsx",
+    "/src/components/ui/row-actions/RowActionSheet.tsx",
+    "/src/components/whats-new/WhatsNewModal.tsx",
+    "/src/hooks/useFormModal.ts",
+  ];
+
+  /** Opening `<Modal ...>` tags, tolerating `>` inside `{...}` expressions. */
+  function modalTagsIn(content: string): string[] {
+    const tags: string[] = [];
+    for (const match of content.matchAll(/<Modal\b/g)) {
+      let i = match.index + match[0].length;
+      let depth = 0;
+      while (i < content.length) {
+        const ch = content[i];
+        if (ch === "{") depth += 1;
+        else if (ch === "}") depth -= 1;
+        else if (ch === ">" && depth === 0) break;
+        i += 1;
+      }
+      tags.push(content.slice(match.index, i));
+    }
+    return tags;
+  }
+
+  function filesWithUntitledModal(): string[] {
+    return productionSources()
+      .filter(([path]) => path !== MODAL)
+      .filter(([, content]) => modalTagsIn(content).some((tag) => !tag.includes("title=")))
+      .map(([path]) => path);
+  }
+
+  it("has no untitled Modal outside the recorded baseline", () => {
+    const allowed = new Set(BASELINE);
+    const offenders = filesWithUntitledModal().filter((path) => !allowed.has(path));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps the baseline shrink-only", () => {
+    const offending = new Set(filesWithUntitledModal());
+    expect(BASELINE.filter((file) => !offending.has(file))).toEqual([]);
+  });
+
+  it("Modal still wires the label, so the rule cannot pass by accident", () => {
+    const modal = sources[MODAL];
+    expect(modal, `${MODAL} not found -- update MODAL in this test`).toBeTruthy();
+    expect(modal).toContain("aria-labelledby");
+    // Absent title must mean no attribute, never a reference to nothing.
+    expect(modal).toContain("aria-labelledby={title ? titleId : undefined}");
+  });
+});
+
+describe("a status pill is Badge, not a hand-rolled rounded-full", () => {
+  /**
+   * The same pill shape -- `rounded-full` + `text-xs` + `font-medium` -- was
+   * written out about fifty times, in six padding combinations, with each
+   * colour pair spelled out at the call site. Two lists side by side
+   * disagreed on how big a pill was and how strong its tint.
+   *
+   * The exemptions are pills whose colour carries meaning of its own, each
+   * already a single source of truth: `CategoryPill` mixes the category's own
+   * colour, `ACCOUNT_TYPE_META` maps a type to its classes, and
+   * `SCHEDULED_KIND_CHIP_CLASSES` maps the four scheduled kinds. Flattening
+   * any of them into a generic variant would throw that mapping away.
+   *
+   * The baseline is **shrink-only**: converting a file removes its line.
+   */
+  const BADGE = "/src/components/ui/Badge.tsx";
+  const MEANINGFUL_PILLS = new Set([
+    "/src/components/transactions/CategoryPill.tsx",
+    "/src/lib/account-type-meta.tsx",
+    "/src/lib/scheduled-kind.ts",
+  ]);
+  const PILL_FINGERPRINT =
+    /rounded-full[^"'`]*(?:text-xs|text-\[10px\])[^"'`]*font-medium|(?:text-xs|text-\[10px\])[^"'`]*font-medium[^"'`]*rounded-full|rounded-full[^"'`]*font-medium[^"'`]*(?:text-xs|text-\[10px\])/;
+
+  const BASELINE: ReadonlyArray<string> = [
+    "/src/app/budgets/page.tsx",
+    "/src/components/budgets/BudgetCategoryTrend.tsx",
+    "/src/components/budgets/BudgetPeriodDetail.tsx",
+    "/src/components/budgets/BudgetWizard.tsx",
+    "/src/components/categories/detail/CategoryDetailHeader.tsx",
+    "/src/components/insights/InsightsList.tsx",
+    "/src/components/payees/AutoMergePayeesDialog.tsx",
+    "/src/components/payees/CategoryAutoAssignDialog.tsx",
+    "/src/components/payees/detail/PayeeDetailHeader.tsx",
+    "/src/components/reconcile/ReconcileTable.tsx",
+    "/src/components/reports/DuplicateTransactionReport.tsx",
+    "/src/components/reports/FilterBuilder.tsx",
+    "/src/components/reports/RecurringExpensesReport.tsx",
+    "/src/components/reports/SpendingAnomaliesReport.tsx",
+    "/src/components/scheduled-transactions/BillsFilterPanel.tsx",
+    "/src/components/scheduled-transactions/ScheduledTransactionList.tsx",
+    "/src/components/securities/SecurityList.tsx",
+    "/src/components/securities/detail/SecurityDetailHeader.tsx",
+    "/src/components/securities/detail/SecurityPositionInfoCard.tsx",
+    "/src/components/securities/detail/SecurityPositionState.tsx",
+    "/src/components/settings/BackupRestoreSection.tsx",
+    "/src/components/settings/SecuritySection.tsx",
+    "/src/components/transactions/AccountInfoWidget.tsx",
+    "/src/components/transactions/CategoryInfoWidget.tsx",
+    "/src/components/transactions/PayeeInfoWidget.tsx",
+    "/src/components/transactions/TransactionFilterPanel.tsx",
+    "/src/components/transactions/TransactionForm.tsx",
+    "/src/components/transactions/TransactionRow.tsx",
+  ];
+
+  function filesWithInlinePill(): string[] {
+    return productionSources()
+      .filter(([path]) => path !== BADGE && !MEANINGFUL_PILLS.has(path))
+      .filter(([, content]) => PILL_FINGERPRINT.test(content))
+      .map(([path]) => path);
+  }
+
+  it("has no hand-rolled pill outside the recorded baseline", () => {
+    const allowed = new Set(BASELINE);
+    const offenders = filesWithInlinePill().filter((path) => !allowed.has(path));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps the baseline shrink-only", () => {
+    const offending = new Set(filesWithInlinePill());
+    expect(BASELINE.filter((file) => !offending.has(file))).toEqual([]);
+  });
+
+  it("still finds the primitive, so the rule cannot pass by accident", () => {
+    const badge = sources[BADGE];
+    expect(badge, `${BADGE} not found -- update BADGE in this test`).toBeTruthy();
+    expect(badge).toContain("rounded-full");
+    expect(badge).toContain("font-medium");
+  });
+
+  it("every Badge variant stays on the theme ramps", () => {
+    // A literal hex here would look right on the default palette and stay
+    // that colour on the other fourteen.
+    const badge = sources[BADGE];
+    const variants = badge.slice(
+      badge.indexOf("const BADGE_VARIANTS"),
+      badge.indexOf("const BADGE_SIZES"),
+    );
+    expect(variants).not.toMatch(/#[0-9a-f]{3,6}/i);
+  });
+});
+
+describe("table chrome comes from Table.tsx, not a repeated divide string", () => {
+  /**
+   * `divide-y divide-gray-200 dark:divide-gray-700` was written out 147 times
+   * across 81 files, and the header cell existed in at least six paddings.
+   * None of it could be restyled together.
+   *
+   * `Table.tsx` is constants plus two thin cells rather than a `<Table>`
+   * wrapper, because these tables are hand-laid -- colspans, sticky cells,
+   * per-density padding -- and a component owning the markup would be fought
+   * at every call site. What drifted was the chrome, so that is what is
+   * shared.
+   *
+   * The baseline is **shrink-only**: converting a file removes its line.
+   */
+  const TABLE = "/src/components/ui/Table.tsx";
+  const DIVIDE_FINGERPRINT = "divide-y divide-gray-200 dark:divide-gray-700";
+
+  const BASELINE: ReadonlyArray<string> = [
+    "/src/app/reports/page.tsx",
+    "/src/components/accounts/AccountList.tsx",
+    "/src/components/accounts/loan-detail/AmortizationScheduleTable.tsx",
+    "/src/components/accounts/loan-detail/SavedScenariosPanel.tsx",
+    "/src/components/admin/UserManagementTable.tsx",
+    "/src/components/budgets/BudgetPeriodDetail.tsx",
+    "/src/components/categories/CategoryList.tsx",
+    "/src/components/categories/detail/CategorySubcategoriesTab.tsx",
+    "/src/components/currencies/CurrencyList.tsx",
+    "/src/components/institutions/InstitutionAccountsManager.tsx",
+    "/src/components/institutions/InstitutionList.tsx",
+    "/src/components/investments/GroupedHoldingsList.tsx",
+    "/src/components/investments/HoldingsList.tsx",
+    "/src/components/investments/InvestmentTransactionList.tsx",
+    "/src/components/payees/CategoryAutoAssignDialog.tsx",
+    "/src/components/payees/DeactivateUnusedPayeesDialog.tsx",
+    "/src/components/payees/PayeeList.tsx",
+    "/src/components/reconcile/ReconcileTable.tsx",
+    "/src/components/reconcile/ReconciliationReminderBadge.tsx",
+    "/src/components/reports/AccountBalancesReport.tsx",
+    "/src/components/reports/BillPaymentHistoryReport.tsx",
+    "/src/components/reports/CashFlowReport.tsx",
+    "/src/components/reports/CreditUtilizationReport.tsx",
+    "/src/components/reports/CurrencyExposureReport.tsx",
+    "/src/components/reports/DividendIncomeReport.tsx",
+    "/src/components/reports/DividendYieldGrowthReport.tsx",
+    "/src/components/reports/DuplicateTransactionReport.tsx",
+    "/src/components/reports/GeographicAllocationReport.tsx",
+    "/src/components/reports/IncomeBySourceReport.tsx",
+    "/src/components/reports/IncomeVsExpensesReport.tsx",
+    "/src/components/reports/InvestmentPerformanceReport.tsx",
+    "/src/components/reports/InvestmentReportColumnChooser.tsx",
+    "/src/components/reports/InvestmentReportViewer.tsx",
+    "/src/components/reports/InvestmentTransactionHistoryReport.tsx",
+    "/src/components/reports/LoanAmortizationReport.tsx",
+    "/src/components/reports/MonteCarloHoldingStatsTable.tsx",
+    "/src/components/reports/MonteCarloPerformanceSummary.tsx",
+    "/src/components/reports/MonteCarloResultsTable.tsx",
+    "/src/components/reports/MonthlyComparisonReport.tsx",
+    "/src/components/reports/MonthlySpendingTrendReport.tsx",
+    "/src/components/reports/NetWorthReport.tsx",
+    "/src/components/reports/PortfolioValueReport.tsx",
+    "/src/components/reports/RealizedGainsReport.tsx",
+    "/src/components/reports/RecurringExpensesReport.tsx",
+    "/src/components/reports/ReportChart.tsx",
+    "/src/components/reports/SectorWeightingsReport.tsx",
+    "/src/components/reports/SecurityPerformanceReport.tsx",
+    "/src/components/reports/SecurityTypeAllocationReport.tsx",
+    "/src/components/reports/SpendingByCategoryReport.tsx",
+    "/src/components/reports/SpendingByPayeeReport.tsx",
+    "/src/components/reports/TaxSummaryReport.tsx",
+    "/src/components/reports/UncategorizedTransactionsReport.tsx",
+    "/src/components/reports/UpcomingBillsReport.tsx",
+    "/src/components/reports/YearOverYearReport.tsx",
+    "/src/components/reports/monte-carlo/CompareMetricTable.tsx",
+    "/src/components/scheduled-transactions/ScheduledTransactionList.tsx",
+    "/src/components/securities/SecurityList.tsx",
+    "/src/components/securities/SecurityLookupPicker.tsx",
+    "/src/components/securities/SecurityPriceHistory.tsx",
+    "/src/components/securities/SecurityTransactionHistory.tsx",
+    "/src/components/securities/detail/SecurityAccountsTable.tsx",
+    "/src/components/securities/detail/SecurityDocumentsTab.tsx",
+    "/src/components/securities/detail/SecurityNewsTab.tsx",
+    "/src/components/settings/TourCatalog.tsx",
+    "/src/components/tags/TagList.tsx",
+    "/src/components/transactions/SplitEditor.tsx",
+    "/src/components/transactions/TransactionList.tsx",
+    "/src/components/ui/LoadingSkeleton.tsx",
+    "/src/components/whats-new/WhatsNewModal.tsx",
+  ];
+
+  function filesWithInlineDivide(): string[] {
+    return productionSources()
+      .filter(([path]) => path !== TABLE)
+      .filter(([, content]) => content.includes(DIVIDE_FINGERPRINT))
+      .map(([path]) => path);
+  }
+
+  it("has no inline divide string outside the recorded baseline", () => {
+    const allowed = new Set(BASELINE);
+    const offenders = filesWithInlineDivide().filter((path) => !allowed.has(path));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps the baseline shrink-only", () => {
+    const offending = new Set(filesWithInlineDivide());
+    expect(BASELINE.filter((file) => !offending.has(file))).toEqual([]);
+  });
+
+  it("still finds the shared chrome, so the rule cannot pass by accident", () => {
+    const table = sources[TABLE];
+    expect(table, `${TABLE} not found -- update TABLE in this test`).toBeTruthy();
+    expect(table).toContain(DIVIDE_FINGERPRINT);
+  });
+
+  it("the skeletons use the real card, so nothing shifts when data arrives", () => {
+    // Every LoadingSkeleton export hand-rolled the card trio, so a skeleton
+    // was missing the 1px border a real card draws and the layout moved on
+    // load.
+    const skeleton = sources["/src/components/ui/LoadingSkeleton.tsx"];
+    expect(skeleton).toContain("CARD_CLASS");
+    expect(skeleton).not.toContain("bg-white dark:bg-gray-800");
+  });
+});
+
+describe("the card shadow is a named token, not a redefined shadow-sm", () => {
+  /**
+   * A Tailwind v4 trap that cost this branch a wrong commit, verified against
+   * the compiled CSS rather than assumed: the bare `shadow` utility is a
+   * legacy alias with the stock value hardcoded into it. Redefining
+   * `--shadow-sm` in `@theme` does not touch it -- it changes `shadow-sm`,
+   * which here is worn almost entirely by form fields. So that override
+   * puffed up every input and left every card exactly as flat, which is the
+   * opposite of what it was written to do.
+   *
+   * `--shadow-card` is the token that actually reaches the cards, through
+   * `CARD_CLASS`. This test fails if someone reaches for `--shadow-sm` again.
+   */
+  it("defines --shadow-card and leaves --shadow-sm alone", () => {
+    const globals = readFileSync(resolve(process.cwd(), "src/app/globals.css"), "utf8");
+    expect(globals).toContain("--shadow-card:");
+    expect(
+      globals.includes("--shadow-sm:"),
+      "redefining --shadow-sm restyles form fields, not cards -- use --shadow-card",
+    ).toBe(false);
+  });
+
+  it("CARD_CLASS wears it, so the one card surface is the one that changed", () => {
+    const card = sources["/src/components/ui/Card.tsx"];
+    expect(card).toContain("shadow-card");
   });
 });

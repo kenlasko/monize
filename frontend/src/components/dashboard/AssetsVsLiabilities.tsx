@@ -8,6 +8,7 @@ import { chartColors } from '@/lib/chart-colors';
 import { MonthlyNetWorth } from '@/types/net-worth';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { WidgetHeading } from './widget-meta';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface AssetsVsLiabilitiesProps {
   data: MonthlyNetWorth[];
@@ -65,7 +66,7 @@ export function AssetsVsLiabilities({ data, isLoading }: AssetsVsLiabilitiesProp
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[500px]">
+      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[500px]`}>
         <WidgetHeading id="assets-liabilities" className="mb-4">
           {t('assetsVsLiabilities.title')}
         </WidgetHeading>
@@ -78,7 +79,7 @@ export function AssetsVsLiabilities({ data, isLoading }: AssetsVsLiabilitiesProp
 
   if (chartData.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[500px]">
+      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[500px]`}>
         <WidgetHeading id="assets-liabilities" className="mb-4">
           {t('assetsVsLiabilities.title')}
         </WidgetHeading>
@@ -90,7 +91,7 @@ export function AssetsVsLiabilities({ data, isLoading }: AssetsVsLiabilitiesProp
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[500px] flex flex-col h-full">
+    <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[500px] flex flex-col h-full`}>
       <div className="flex items-center justify-between mb-1">
         <WidgetHeading id="assets-liabilities" onClick={() => router.push('/reports/net-worth')}>
           {t('assetsVsLiabilities.title')}

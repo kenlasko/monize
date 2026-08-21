@@ -245,7 +245,7 @@ export function AutoBackupSection() {
   if (isLoading) {
     return (
       <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {t('heading')}
         </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">{t('loadingText')}</p>
@@ -255,7 +255,7 @@ export function AutoBackupSection() {
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
         {t('heading')}
       </h2>
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
@@ -289,7 +289,7 @@ export function AutoBackupSection() {
             }}
             label={t('enableLabel')}
           />
-          <span className="text-sm font-medium text-gray-900 dark:text-white">
+          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
             {t('enableLabel')}
           </span>
         </label>
@@ -439,7 +439,7 @@ export function AutoBackupSection() {
             setBackupTime(e.target.value);
             markDirty();
           }}
-          className="w-40 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+          className="w-40 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
         />
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
           {frequency === 'every6hours' || frequency === 'every12hours'
@@ -450,7 +450,7 @@ export function AutoBackupSection() {
 
       {/* Retention Policy */}
       <div className="mb-6">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
           {t('retention.heading')}
         </h3>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
@@ -505,14 +505,14 @@ export function AutoBackupSection() {
       {/* Status Section */}
       {settings && (settings.lastBackupAt || settings.nextBackupAt) && (
         <div className="mb-6 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
             {t('status.heading')}
           </h3>
           <dl className="space-y-1 text-sm">
             {settings.lastBackupAt && (
               <div className="flex justify-between">
                 <dt className="text-gray-600 dark:text-gray-400">{t('status.lastBackup')}</dt>
-                <dd className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                <dd className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
                   {formatDateTime(
                     settings.lastBackupAt,
                     userTimezone,
@@ -553,7 +553,7 @@ export function AutoBackupSection() {
             {settings.nextBackupAt && (
               <div className="flex justify-between">
                 <dt className="text-gray-600 dark:text-gray-400">{t('status.nextBackup')}</dt>
-                <dd className="font-medium text-gray-900 dark:text-white">
+                <dd className="font-medium text-gray-900 dark:text-gray-100">
                   {formatDateTime(
                     settings.nextBackupAt,
                     userTimezone,

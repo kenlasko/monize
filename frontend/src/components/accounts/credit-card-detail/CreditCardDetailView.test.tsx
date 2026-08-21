@@ -28,11 +28,13 @@ vi.mock('@/lib/accounts', () => ({
 
 const mockGetGroupedTotals = vi.fn();
 const mockGetAll = vi.fn();
+const mockGetAllPages = vi.fn();
 const mockGetRecurringCharges = vi.fn();
 vi.mock('@/lib/transactions', () => ({
   transactionsApi: {
     getGroupedTotals: (...a: unknown[]) => mockGetGroupedTotals(...a),
     getAll: (...a: unknown[]) => mockGetAll(...a),
+    getAllPages: (...a: unknown[]) => mockGetAllPages(...a),
     getRecurringCharges: (...a: unknown[]) => mockGetRecurringCharges(...a),
   },
 }));
@@ -81,6 +83,7 @@ beforeEach(() => {
     data: [{ id: 'tx1', payeeId: 'p1', payeeName: 'Netflix' }],
     pagination: { hasMore: false },
   });
+  mockGetAllPages.mockResolvedValue([{ id: 'tx1', payeeId: 'p1', payeeName: 'Netflix' }]);
   mockGetRecurringCharges.mockResolvedValue([
     {
       payeeName: 'Netflix',
@@ -149,7 +152,7 @@ describe('CreditCardDetailView', () => {
   it('shows recurring charges detected on the card', async () => {
     await renderView();
     await waitFor(() => expect(screen.getByText('Netflix')).toBeInTheDocument());
-    expect(mockGetAll).toHaveBeenCalledWith(
+    expect(mockGetAllPages).toHaveBeenCalledWith(
       expect.objectContaining({ accountId: 'cc-1' }),
     );
     expect(mockGetRecurringCharges).toHaveBeenCalledWith(

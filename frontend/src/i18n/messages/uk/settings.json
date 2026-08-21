@@ -164,6 +164,7 @@
       "dark": "Темна"
     },
     "colorThemeLabel": "Кольорова тема",
+    "colorThemeHint": "Попередній перегляд використовує поточну світлу або темну тему.",
     "colorThemeOptions": {
       "default": "За замовчуванням",
       "latte": "Latte",

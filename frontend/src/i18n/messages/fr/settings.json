@@ -164,6 +164,7 @@
       "dark": "Sombre"
     },
     "colorThemeLabel": "Thème de couleur",
+    "colorThemeHint": "Les aperçus utilisent votre mode clair ou sombre actuel.",
     "colorThemeOptions": {
       "default": "Défaut",
       "latte": "Latte",

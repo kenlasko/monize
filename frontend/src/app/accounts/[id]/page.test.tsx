@@ -93,6 +93,7 @@ vi.mock('@/components/accounts/shared/ForeignCurrencyFeesSection', () => ({
 }));
 
 const mockGetAllTransactions = vi.fn();
+const mockGetAllPages = vi.fn();
 const mockGetSummary = vi.fn();
 const mockGetMonthlyTotals = vi.fn();
 const mockGetGroupedTotals = vi.fn();
@@ -100,6 +101,7 @@ const mockGetRecurringCharges = vi.fn();
 vi.mock('@/lib/transactions', () => ({
   transactionsApi: {
     getAll: (...args: unknown[]) => mockGetAllTransactions(...args),
+    getAllPages: (...args: unknown[]) => mockGetAllPages(...args),
     getSummary: (...args: unknown[]) => mockGetSummary(...args),
     getMonthlyTotals: (...args: unknown[]) => mockGetMonthlyTotals(...args),
     getGroupedTotals: (...args: unknown[]) => mockGetGroupedTotals(...args),
@@ -202,6 +204,7 @@ beforeEach(() => {
     ],
     pagination: { hasMore: false },
   });
+  mockGetAllPages.mockResolvedValue([]);
   mockGetSummary.mockResolvedValue({ totalIncome: 100, totalExpenses: 40, netCashFlow: 60, transactionCount: 3 });
   mockGetBalanceForecast.mockResolvedValue({ accountId: 'loan-1', currencyCode: 'CAD', points: [] });
   mockGetMonthlyTotals.mockResolvedValue([]);

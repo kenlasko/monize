@@ -164,6 +164,7 @@
       "dark": "深色"
     },
     "colorThemeLabel": "色彩主題",
+    "colorThemeHint": "預覽會使用您目前的淺色或深色模式。",
     "colorThemeOptions": {
       "default": "預設",
       "latte": "拿鐵",

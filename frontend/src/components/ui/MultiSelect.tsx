@@ -436,7 +436,7 @@ export function MultiSelect({
                       key={option.value}
                       className={cn(
                         'flex items-center px-3 py-2 cursor-pointer',
-                        'hover:bg-gray-100 dark:hover:bg-gray-700',
+                        'transition-colors motion-reduce:transition-none hover:bg-gray-100 dark:hover:bg-gray-700',
                         option.hasChildren && 'font-medium'
                       )}
                       style={{ paddingLeft: isSearching ? '0.75rem' : `${(option.level * 1.25) + 0.75}rem` }}

@@ -218,7 +218,7 @@ export function SecuritySection({ user, preferences, force2fa, onPreferencesUpda
 
       {/* Two-Factor Authentication */}
       <div className="border-t border-gray-200 dark:border-gray-700 mt-6 pt-6">
-        <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
+        <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 mb-3">
           {t('twoFactor.heading')}
         </h3>
         {user.authProvider === 'oidc' ? (
@@ -365,7 +365,7 @@ export function SecuritySection({ user, preferences, force2fa, onPreferencesUpda
         <div className="border-t border-gray-200 dark:border-gray-700 mt-6 pt-6">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">
+              <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">
                 {t('backupCodes.heading')}
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -399,7 +399,7 @@ export function SecuritySection({ user, preferences, force2fa, onPreferencesUpda
       {twoFactorEnabled && user.authProvider !== 'oidc' && (
         <div className="border-t border-gray-200 dark:border-gray-700 mt-6 pt-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">
+            <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">
               {t('trustedDevices.heading')}
             </h3>
             {trustedDevices.length > 0 && (

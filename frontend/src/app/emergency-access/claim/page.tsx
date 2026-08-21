@@ -154,7 +154,7 @@ function EmergencyClaimForm() {
 
       {preview.message && (
         <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
             {t('messageHeading', { name: preview.ownerFirstName ?? t('ownerFirstNameFallback') })}
           </h3>
           <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono">

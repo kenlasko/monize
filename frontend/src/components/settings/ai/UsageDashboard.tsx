@@ -158,7 +158,7 @@ export function UsageDashboard({ usage, configs, onPeriodChange }: UsageDashboar
   return (
     <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('heading')}</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('heading')}</h2>
         <div className="flex gap-1">
           {PERIOD_OPTIONS.map((opt) => (
             <button
@@ -209,19 +209,19 @@ export function UsageDashboard({ usage, configs, onPeriodChange }: UsageDashboar
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('totalRequests')}</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
+          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {usage.totalRequests.toLocaleString()}
           </p>
         </div>
         <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('inputTokens')}</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
+          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {usage.totalInputTokens.toLocaleString()}
           </p>
         </div>
         <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('outputTokens')}</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
+          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {usage.totalOutputTokens.toLocaleString()}
           </p>
         </div>
@@ -230,7 +230,7 @@ export function UsageDashboard({ usage, configs, onPeriodChange }: UsageDashboar
           title={t('estCostTooltip')}
         >
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('estCost')}</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
+          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {totalHasCost ? renderBucket(usage.totalEstimatedCostByCurrency) : '-'}
           </p>
           {!totalHasCost && (
@@ -259,7 +259,7 @@ export function UsageDashboard({ usage, configs, onPeriodChange }: UsageDashboar
               <tbody>
                 {usage.byProvider.map((row) => (
                   <tr key={row.provider} className="border-b border-gray-100 dark:border-gray-700/50">
-                    <td className="py-2 text-gray-900 dark:text-white">{resolveProviderName(row.provider, configs)}</td>
+                    <td className="py-2 text-gray-900 dark:text-gray-100">{resolveProviderName(row.provider, configs)}</td>
                     <td className="py-2 text-right text-gray-600 dark:text-gray-300">{row.requests.toLocaleString()}</td>
                     <td className="py-2 text-right text-gray-600 dark:text-gray-300">{row.inputTokens.toLocaleString()}</td>
                     <td className="py-2 text-right text-gray-600 dark:text-gray-300">{row.outputTokens.toLocaleString()}</td>
@@ -294,7 +294,7 @@ export function UsageDashboard({ usage, configs, onPeriodChange }: UsageDashboar
                     <td className="py-2 text-gray-600 dark:text-gray-300">
                       {formatDate(new Date(log.createdAt))}
                     </td>
-                    <td className="py-2 text-gray-900 dark:text-white">{resolveLogName(log.provider, log.model, configs)}</td>
+                    <td className="py-2 text-gray-900 dark:text-gray-100">{resolveLogName(log.provider, log.model, configs)}</td>
                     <td className="py-2 text-gray-600 dark:text-gray-300">{log.feature}</td>
                     <td className="py-2 text-right text-gray-600 dark:text-gray-300">
                       {(log.inputTokens + log.outputTokens).toLocaleString()}

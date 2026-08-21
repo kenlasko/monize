@@ -164,6 +164,7 @@
       "dark": "Dunkel"
     },
     "colorThemeLabel": "Farbdesign",
+    "colorThemeHint": "Vorschauen verwenden Ihren aktuellen hellen oder dunklen Modus.",
     "colorThemeOptions": {
       "default": "Standard",
       "latte": "Latte",

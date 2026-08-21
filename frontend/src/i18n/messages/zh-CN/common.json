@@ -132,7 +132,8 @@
   "currencyInput": {
     "openCalculator": "打开计算器",
     "calculator": "计算器",
-    "toggleSign": "更改符号"
+    "toggleSign": "更改符号",
+    "apply": "应用"
   },
   "dateInput": {
     "shortcutsTitle": "键盘快捷键",

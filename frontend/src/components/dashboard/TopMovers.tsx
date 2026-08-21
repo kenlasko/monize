@@ -7,6 +7,7 @@ import { TopMover } from '@/types/investment';
 import { WidgetHeading } from './widget-meta';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { usePreferencesStore } from '@/store/preferencesStore';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 type MoverFilter = 'all' | 'gainers' | 'losers';
 
@@ -105,7 +106,7 @@ export function TopMovers({ movers, isLoading, hasInvestmentAccounts, onRefresh,
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[500px]">
+      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[500px]`}>
         <div className="flex items-center justify-between mb-4">
           <WidgetHeading id="top-movers" onClick={() => router.push('/investments')}>
             {t('topMovers.title')}
@@ -126,7 +127,7 @@ export function TopMovers({ movers, isLoading, hasInvestmentAccounts, onRefresh,
 
   if (movers.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[500px]">
+      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[500px]`}>
         <div className="flex items-center justify-between mb-4">
           <WidgetHeading id="top-movers" onClick={() => router.push('/investments')}>
             {t('topMovers.title')}
@@ -153,7 +154,7 @@ export function TopMovers({ movers, isLoading, hasInvestmentAccounts, onRefresh,
   const topMovers = filteredMovers.slice(0, 5);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[500px]">
+    <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[500px]`}>
       <div className="flex items-center justify-between mb-4">
         <WidgetHeading id="top-movers" onClick={() => router.push('/investments')}>
           {t('topMovers.title')}

@@ -164,6 +164,7 @@
       "dark": "深色"
     },
     "colorThemeLabel": "颜色主题",
+    "colorThemeHint": "预览使用您当前的浅色或深色模式。",
     "colorThemeOptions": {
       "default": "默认",
       "latte": "拿铁",

@@ -394,7 +394,7 @@ describe('PreferencesSection', () => {
     render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />);
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Colour theme'), { target: { value: 'latte' } });
+      fireEvent.click(screen.getByRole('radio', { name: /latte/i }));
     });
 
     await waitFor(() => {

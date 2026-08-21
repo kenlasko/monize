@@ -67,7 +67,7 @@ export function TourCatalog() {
           key={group.area}
           className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6"
         >
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             {t(`areas.${group.area}`)}
           </h2>
           <ul className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -85,7 +85,7 @@ export function TourCatalog() {
       ))}
 
       <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
           {t('settings.resetHeading')}
         </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">

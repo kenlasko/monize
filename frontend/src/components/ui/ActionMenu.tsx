@@ -27,7 +27,7 @@ interface ActionMenuProps {
 // the three menus in the app look the same until those two move onto this
 // component.
 const ITEM_CLASS =
-  'w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed';
+  'w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 transition-colors motion-reduce:transition-none hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed';
 
 /**
  * A single header button that opens a short list of actions, for pages with

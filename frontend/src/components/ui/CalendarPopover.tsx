@@ -183,7 +183,7 @@ export function CalendarPopover({ value, onSelect, onClose, anchorRef }: Calenda
         <button
           type="button"
           onClick={handlePrev}
-          className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
+          className="p-1 rounded transition-colors motion-reduce:transition-none hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -192,7 +192,7 @@ export function CalendarPopover({ value, onSelect, onClose, anchorRef }: Calenda
         <button
           type="button"
           onClick={cycleView}
-          className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded"
+          className="text-sm font-medium text-gray-900 dark:text-gray-100 transition-colors motion-reduce:transition-none hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded"
         >
           {view === 'days'
             ? `${MONTHS[viewMonth]} ${viewYear}`
@@ -203,7 +203,7 @@ export function CalendarPopover({ value, onSelect, onClose, anchorRef }: Calenda
         <button
           type="button"
           onClick={handleNext}
-          className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
+          className="p-1 rounded transition-colors motion-reduce:transition-none hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
@@ -237,7 +237,7 @@ export function CalendarPopover({ value, onSelect, onClose, anchorRef }: Calenda
                   className={cn(
                     'w-9 h-9 text-sm rounded-full flex items-center justify-center',
                     cell.current
-                      ? 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'
+                      ? 'transition-colors motion-reduce:transition-none hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'
                       : 'text-gray-300 dark:text-gray-600 cursor-default',
                     isSelected && 'bg-blue-600 text-white hover:bg-blue-700 dark:hover:bg-blue-500',
                     isToday && !isSelected && 'ring-1 ring-blue-500',
@@ -260,7 +260,7 @@ export function CalendarPopover({ value, onSelect, onClose, anchorRef }: Calenda
                 onClick={() => handleMonthSelect(i)}
                 className={cn(
                   'px-2 py-2 text-sm rounded-md text-center',
-                  'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100',
+                  'transition-colors motion-reduce:transition-none hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100',
                   i === viewMonth && viewYear === initialYear && 'bg-blue-600 text-white hover:bg-blue-700 dark:hover:bg-blue-500',
                 )}
               >
@@ -280,7 +280,7 @@ export function CalendarPopover({ value, onSelect, onClose, anchorRef }: Calenda
                 onClick={() => handleYearSelect(y)}
                 className={cn(
                   'px-2 py-2 text-sm rounded-md text-center',
-                  'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100',
+                  'transition-colors motion-reduce:transition-none hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100',
                   y === initialYear && 'bg-blue-600 text-white hover:bg-blue-700 dark:hover:bg-blue-500',
                 )}
               >

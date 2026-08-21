@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent } from '@/test/render';
 import { Input } from './Input';
 
 describe('Input', () => {
@@ -48,6 +48,17 @@ describe('Input', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Hide input' }));
     expect(field).toHaveAttribute('type', 'password');
+  });
+
+  it('lets the keyboard reach the reveal toggle, and labels it from the catalog', () => {
+    // It carried tabIndex={-1} with `focus:outline-none` and no replacement,
+    // so it was a control keyboard users could not operate and screen-reader
+    // users could not tab to. Its label was hardcoded English beside a
+    // catalog that already had the strings.
+    render(<Input label="Password" type="password" />);
+    const toggle = screen.getByRole('button', { name: 'Show input' });
+    expect(toggle).not.toHaveAttribute('tabindex');
+    expect(toggle.className).toContain('focus-visible:ring-2');
   });
 
   it('does not render the eye toggle for non-password inputs', () => {

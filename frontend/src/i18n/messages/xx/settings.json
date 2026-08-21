@@ -164,6 +164,7 @@
       "dark": "[XX-Dark-XX]"
     },
     "colorThemeLabel": "[XX-Colour theme-XX]",
+    "colorThemeHint": "[XX-Previews use your current light or dark mode.-XX]",
     "colorThemeOptions": {
       "default": "[XX-Default-XX]",
       "latte": "[XX-Latte-XX]",

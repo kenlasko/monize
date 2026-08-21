@@ -1,7 +1,10 @@
 'use client';
 
-import { ReactNode, useEffect, useRef, useCallback } from 'react';
+import { ReactNode, useEffect, useId, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { HOVER_ROW_ON_CARD } from './Card';
+import { useTranslations } from 'next-intl';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 
 // Tracks programmatic history.back() calls from modal cleanup.
 // When a nested modal closes programmatically, it pops its history entry which fires popstate.
@@ -66,6 +69,24 @@ interface ModalProps {
    *  ordinary z-50 backdrop sits *below* the tour overlay so in-form spotlight
    *  cutouts work. */
   elevated?: boolean;
+  /** Heading for the dialog. Supplying it draws the standard header -- title,
+   *  a close button, a rule under both -- and wires `aria-labelledby`, so the
+   *  dialog announces itself by name instead of as an unlabelled region.
+   *
+   *  Every call site used to hand-roll this, which is how eight different
+   *  heading treatments ended up in the tree for the same slot. */
+  title?: ReactNode;
+  /** Optional line under the title, wired to `aria-describedby`. */
+  description?: ReactNode;
+  /** Right-aligned action row along the bottom, above a rule. */
+  footer?: ReactNode;
+  /** Padding for the body.
+   *
+   *  Defaults to `none`, which is not a style choice: the 74 call sites that
+   *  predate `title`/`footer` all pass their own padding through `className`,
+   *  and a default would double it on every one of them. New call sites using
+   *  `title` should pass `md`. */
+  padding?: 'none' | 'md';
 }
 
 const maxWidthClasses = {
@@ -91,7 +112,15 @@ export function Modal({
   allowOverflow = false,
   variant = 'center',
   elevated = false,
+  title,
+  description,
+  footer,
+  padding = 'none',
 }: ModalProps) {
+  const t = useTranslations('common');
+  const generatedId = useId();
+  const titleId = `${generatedId}-title`;
+  const descriptionId = `${generatedId}-description`;
   // Track whether we have a history entry pushed
   const historyPushedRef = useRef(false);
   // Track whether the close was triggered by the browser back button (popstate)
@@ -302,7 +331,7 @@ export function Modal({
 
   // Backdrop alignment: drawer pins its panel to the left edge; the default
   // centers the card with padding.
-  const backdropClassName = `fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm ${
+  const backdropClassName = `fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-200 ease-out opacity-100 starting:opacity-0 motion-reduce:transition-none ${
     elevated ? 'z-[65]' : 'z-50'
   } flex ${
     isDrawer
@@ -314,9 +343,14 @@ export function Modal({
   // off-screen via the CSS @starting-style (`starting:`) variant -- no extra
   // React state needed. The default keeps the centered rounded card.
   const overflowClass = allowOverflow ? 'overflow-visible' : 'overflow-y-auto';
+  // The centered card fades and scales in from the same @starting-style
+  // mechanism, so it arrives rather than appearing between two frames. There
+  // is no exit animation: the panel unmounts on close, and holding it mounted
+  // to animate out would mean tracking closing state through the stacked-modal
+  // and popstate machinery for a few hundred milliseconds of polish.
   const panelClassName = isDrawer
-    ? `bg-white dark:bg-gray-800 shadow-xl dark:shadow-gray-700/50 h-full w-[85%] max-w-sm ${overflowClass} outline-none transition-transform duration-200 ease-out translate-x-0 starting:-translate-x-full ${className}`
-    : `bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700/50 ${maxWidthClasses[maxWidth]} w-full max-h-[90vh] ${overflowClass} outline-none ${className}`;
+    ? `bg-white dark:bg-gray-800 shadow-xl dark:shadow-gray-700/50 h-full w-[85%] max-w-sm ${overflowClass} outline-none transition-transform duration-200 ease-out translate-x-0 starting:-translate-x-full motion-reduce:transition-none ${className}`
+    : `bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700/50 ${maxWidthClasses[maxWidth]} w-full max-h-[90vh] ${overflowClass} outline-none transition duration-200 ease-out opacity-100 scale-100 starting:opacity-0 starting:scale-95 motion-reduce:transition-none ${className}`;
 
   return createPortal(
     <div
@@ -327,12 +361,50 @@ export function Modal({
         ref={modalRef}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={title ? titleId : undefined}
+        aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
         className={panelClassName}
         onClick={(e) => e.stopPropagation()}
         onSubmit={(e) => e.stopPropagation()}
       >
-        {children}
+        {title && (
+          <div className="flex items-start justify-between gap-4 border-b border-gray-200 px-4 py-3 sm:px-6 dark:border-gray-700">
+            <div className="min-w-0">
+              <h2
+                id={titleId}
+                className="text-lg font-semibold text-gray-900 dark:text-gray-100"
+              >
+                {title}
+              </h2>
+              {description && (
+                <p id={descriptionId} className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  {description}
+                </p>
+              )}
+            </div>
+            {onClose && (
+              <button
+                type="button"
+                onClick={() => attemptClose('escape')}
+                aria-label={t('close')}
+                className={`-mr-1 shrink-0 rounded-md p-1 text-gray-400 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:text-gray-200 ${HOVER_ROW_ON_CARD}`}
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            )}
+          </div>
+        )}
+        {/* Bare children when nothing here asks for a body wrapper, so the 74
+            call sites that predate these props render exactly the tree they
+            did before -- several make the panel their own scroll or flex
+            parent, which an unconditional div would break. */}
+        {padding === 'md' ? <div className="p-4 sm:p-6">{children}</div> : children}
+        {footer && (
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-gray-200 px-4 py-3 sm:px-6 dark:border-gray-700">
+            {footer}
+          </div>
+        )}
       </div>
     </div>,
     document.body,

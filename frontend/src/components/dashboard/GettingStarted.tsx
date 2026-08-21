@@ -8,6 +8,7 @@ import { userSettingsApi } from '@/lib/user-settings';
 import { useDemoStore } from '@/store/demoStore';
 import { useTourStore } from '@/store/tourStore';
 import { INTRO_TOUR } from '@/lib/tours/registry';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 export function GettingStarted() {
   const t = useTranslations('dashboard');
@@ -80,7 +81,7 @@ export function GettingStarted() {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 mb-6">
+    <div className={`${CARD_CLASS} p-6 mb-6`}>
       <div className="flex items-start justify-between mb-4">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">

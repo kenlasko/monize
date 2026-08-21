@@ -10,6 +10,22 @@
   --color-income: #10b981;
   --color-expense: #ef4444;
 
+  /* The card shadow.
+     
+     Tailwind v4 trap, verified against the compiled output rather than
+     assumed: the bare `shadow` utility is a legacy alias with the stock value
+     hardcoded into it, so redefining `--shadow-sm` does NOT change it -- it
+     changes `shadow-sm`, which in this codebase is worn almost entirely by
+     form fields. Softening that token therefore puffs up every input and
+     leaves every card exactly as flat as it was, which is the opposite of the
+     intent. A named token is the only way to reach the cards.
+
+     The value spends less total ink than the stock shadow over a slightly
+     wider blur, so a card lifts off the page instead of looking stamped onto
+     it. `CARD_CLASS` is the consumer; surfaces still carrying a bare `shadow`
+     from the inline-card baseline keep the old one until they are converted. */
+  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.04), 0 2px 6px -1px rgb(0 0 0 / 0.07);
+
   /* Table stripe color -- subtle alternating row in dark mode (between gray-900 and gray-800) */
   --color-table-stripe-dark: #161d2b;
 
@@ -142,11 +158,33 @@ body {
   --chart-10: #6366f1;
 }
 
+/* Dark-mode chart defaults. The light `--chart-1..10` above are picked to sit
+   on white paper; on a dark card they read as low-contrast mud, so dark mode
+   lifts the whole series to the Tailwind 400 step and follows the accent at
+   blue-400 rather than blue-500. These defaults reach only the `default` and
+   `midnight` palettes: every other theme sets chart tokens in its
+   `html[data-theme]` block, whose specificity beats `.dark`, so each of those
+   themes carries its own `html.dark[data-theme]` block in themes.css
+   (src/test/theme-contrast.test.ts enforces that pairing). */
 .dark {
+  --chart-primary: var(--color-blue-400);
   --chart-grid: var(--color-gray-700);
   --chart-axis: var(--color-gray-400);
   --chart-surface: var(--color-gray-800);
   --chart-neutral: var(--color-gray-500);
+  --chart-income: #34d399;
+  --chart-expense: #f87171;
+  --chart-warning: #fbbf24;
+  --chart-1: #60a5fa;
+  --chart-2: #34d399;
+  --chart-3: #fbbf24;
+  --chart-4: #f87171;
+  --chart-5: #a78bfa;
+  --chart-6: #f472b6;
+  --chart-7: #22d3ee;
+  --chart-8: #a3e635;
+  --chart-9: #fb923c;
+  --chart-10: #818cf8;
 }
 
 /* Form element styling (replaces @tailwindcss/forms) */
