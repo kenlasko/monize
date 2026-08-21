@@ -48,6 +48,10 @@ const CAPPED_CALLS = [
  * Call sites that are still over the cap, with the change that fixes each one.
  * An entry here is a live defect, not an exemption -- the test below fails once
  * the violation is gone, so a stale entry cannot outlive the fix it names.
+ *
+ * Empty, and worth keeping empty: the register's one entry (the recurring
+ * charges panel, issue #1229) was removed when PR #1230 landed, and the test
+ * below is what reported that it had become stale.
  */
 const KNOWN_VIOLATIONS: {
   path: string;
@@ -55,18 +59,7 @@ const KNOWN_VIOLATIONS: {
   method: string;
   key: string;
   fix: string;
-}[] = [
-  {
-    path: '/src/components/accounts/shared/RecurringChargesPanel.tsx',
-    object: 'transactionsApi',
-    method: 'getAll',
-    key: 'limit',
-    // Issue #1229. The fix -- switching to `getAllPages` -- is in flight in its
-    // own pull request; this entry is deleted when that lands, and the test
-    // below is what says so.
-    fix: 'PR #1230',
-  },
-];
+}[] = [];
 
 /** Source files only: a test legitimately contains the call it asserts on. */
 function productionSources(): [string, string][] {
