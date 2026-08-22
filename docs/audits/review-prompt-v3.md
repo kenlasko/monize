@@ -10,11 +10,12 @@ it is mandatory, so none of it may be deferred, summarised, or loaded on demand.
 
 The protocol has two sources, and they are layered deliberately:
 
-1. **`monize-universal-adversarial-pr-review-project-prompt.md`** — the superordinate layer. The
-   `/audit` command implements this document's requirements directly, section by section, in its
-   original order and wording. It is the authority on the review process: what is read, what is
-   traced, what must be attacked, what may be trusted, what a finding must contain, and when
-   `APPROVE` is permitted.
+1. **`docs/audits/monize-universal-adversarial-pr-review-project-prompt.md`** — the superordinate
+   layer, committed verbatim beside this file so the protocol can be reconciled against its own
+   source rather than against anyone's account of it. The `/audit` command implements this
+   document's requirements directly, section by section, in its original order and wording. It is
+   the authority on the review process: what is read, what is traced, what must be attacked, what
+   may be trusted, what a finding must contain, and when `APPROVE` is permitted.
 2. **The V3 improvements document** — the calibration layer. Its rules 1–10 supplement the
    protocol where the protocol does not already legislate; they never replace it.
 
@@ -95,9 +96,12 @@ These notes add targets. They never grant an exemption from a protocol requireme
 ## Reconciliation
 
 `/audit` was verified against the source document requirement by requirement: 410 requirement
-strings drawn from all 34 sections, checked whitespace-insensitively, 0 missing. Re-run that
-reconciliation after any edit — a paraphrase that drops a list item is the failure mode this file
-exists to prevent.
+strings drawn from all 34 sections, checked whitespace-insensitively, 0 missing.
+
+Re-run that reconciliation after any edit, against
+`docs/audits/monize-universal-adversarial-pr-review-project-prompt.md` — the source is in the
+repository precisely so this check needs no external file. A paraphrase that drops a list item is
+the failure mode this document exists to prevent.
 
 ## Revising this protocol
 
@@ -107,5 +111,18 @@ exists to prevent.
 - Never let a lens become optional, and never let `APPROVE` precede the approval challenge and the
   merge gate.
 - Prefer adding to a `> **Monize.**` note over rewriting a requirement.
-- Note on repository naming: the source document names `kenlasko/monize`; `/audit` says "the
-  `monize` repository" so it is correct for this remote as well.
+
+## Deliberate deviations from the source
+
+A line-by-line reconciliation checks all 766 content lines of the source against `/audit`. Six do
+not appear verbatim, and all six are the same two adaptations — recorded here so they read as
+decisions rather than drift. No substantive requirement is among them.
+
+| Source wording | `/audit` wording | Why |
+|---|---|---|
+| "…in `kenlasko/monize`" | "in the `monize` repository" | Correct for this remote (`WMP/monize`) as well as upstream. |
+| "these project instructions" | "these instructions" | The protocol ships as a slash command, not as Claude Project instructions. |
+| "Once these project instructions are active…" | "Once this protocol is in place…" | Same reason. |
+| The three "Review PR #NNNN. Apply the full project review protocol…" examples | The same three, phrased as `/audit <n>` invocations | The invocation surface is the command; the priority hints are preserved verbatim. |
+
+Anything else that fails the reconciliation is a regression, not a deviation.

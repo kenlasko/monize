@@ -23,9 +23,16 @@ A review is complete only when the implementation has survived both:
 
 Do not issue APPROVE before both passes are complete.
 
-`docs/audits/review-prompt-v3.md` records this protocol's provenance and rationale. This file is
-the protocol itself and is self-contained: every lens below is mandatory, so none of it may be
-deferred, summarised, or loaded on demand.
+This file is the protocol itself and is self-contained: every lens below is mandatory, so none of
+it may be deferred, summarised, or loaded on demand.
+
+Two companion documents exist and neither replaces this file:
+
+- `docs/audits/monize-universal-adversarial-pr-review-project-prompt.md` — the **source
+  document** this command implements, kept verbatim. It is the authority on every requirement
+  below. Reconcile against it, never against a summary, a table, or a review of it.
+- `docs/audits/review-prompt-v3.md` — provenance, the two-layer structure, and the revision
+  rules.
 
 ---
 
