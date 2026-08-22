@@ -15,6 +15,7 @@ describe("ScheduledTransactionLoanService", () => {
   let scheduledTransactionsRepository: Record<string, jest.Mock>;
   let splitsRepository: Record<string, jest.Mock>;
   let accountsRepository: Record<string, jest.Mock>;
+  let manager: Record<string, jest.Mock>;
 
   const loanAccountId = "acc-loan";
   const scheduledTransactionId = "st-1";
@@ -43,6 +44,7 @@ describe("ScheduledTransactionLoanService", () => {
       name: "Loan Payment",
       amount: -500,
       frequency: "MONTHLY",
+      nextDueDate: "2026-06-01",
       isActive: true,
       splits: [
         {
@@ -86,16 +88,23 @@ describe("ScheduledTransactionLoanService", () => {
       findOne: jest.fn().mockResolvedValue(null),
     };
 
-    const { dataSource } = createScopedDbMocks([
+    const scopedDb = createScopedDbMocks([
       [ScheduledTransaction, scheduledTransactionsRepository],
       [ScheduledTransactionSplit, splitsRepository],
       [Account, accountsRepository],
     ]);
+    manager = scopedDb.manager;
+    manager.query.mockImplementation(async () => {
+      const account = await accountsRepository.findOne();
+      return account
+        ? [{ balance: String(Number(account.currentBalance)) }]
+        : [];
+    });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ScheduledTransactionLoanService,
-        { provide: DataSource, useValue: dataSource },
+        { provide: DataSource, useValue: scopedDb.dataSource },
       ],
     }).compile();
 
@@ -814,6 +823,37 @@ describe("ScheduledTransactionLoanService", () => {
         (call: any) => call[0].transferAccountId === loanAccountId,
       );
       expect(principalSave[0].amount).toBe(-402);
+    });
+
+    it("includes future posted principal before the next due date", async () => {
+      const loanAccount = makeLoanAccount({
+        currentBalance: -200000,
+        interestRate: 6,
+        paymentFrequency: "MONTHLY",
+        paymentAmount: 1500,
+      });
+      accountsRepository.findOne.mockResolvedValue(loanAccount);
+      scheduledTransactionsRepository.findOne.mockResolvedValue(
+        makeScheduledTransaction({
+          amount: -1500,
+          nextDueDate: "2026-08-01",
+        }),
+      );
+
+      // The stored balance excludes future rows. The as-of-date ledger includes
+      // a future regular payment and a principal-only payment, leaving 198,500.
+      manager.query.mockResolvedValue([{ balance: "-198500" }]);
+
+      await service.recalculateLoanPaymentSplits(scheduledTransactionId);
+
+      expect(manager.query).toHaveBeenCalledWith(
+        expect.stringContaining("t.transaction_date <= $3"),
+        [loanAccountId, userId, "2026-08-01"],
+      );
+      const interestSave = splitsRepository.save.mock.calls.find(
+        (call: any) => call[0].categoryId === "cat-interest",
+      );
+      expect(interestSave[0].amount).toBe(-992.5);
     });
 
     it("should recalculate a LINE_OF_CREDIT schedule (not only LOAN/MORTGAGE)", async () => {

@@ -76,7 +76,25 @@ export class ScheduledTransactionLoanService {
       }
       const loanAccountId = loanAccount.id;
 
-      const currentBalance = Math.abs(Number(loanAccount.currentBalance));
+      // `current_balance` intentionally excludes future-dated transactions.
+      // Recalculation runs after the schedule advances, so measure the loan at
+      // the next due date to include every payment already posted before then,
+      // including principal-only payments.
+      const balanceRows: Array<{ balance: string }> = await m.query(
+        `SELECT COALESCE(a.opening_balance, 0) + COALESCE(SUM(t.amount), 0) AS balance
+           FROM accounts a
+           LEFT JOIN transactions t ON t.account_id = a.id
+            AND (t.status IS NULL OR t.status != 'VOID')
+            AND t.parent_transaction_id IS NULL
+            AND t.transaction_date <= $3
+          WHERE a.id = $1 AND a.user_id = $2
+          GROUP BY a.id, a.opening_balance`,
+        [loanAccountId, loanAccount.userId, scheduledTransaction.nextDueDate],
+      );
+      const signedBalance = Number(
+        balanceRows[0]?.balance ?? loanAccount.currentBalance,
+      );
+      const currentBalance = Math.max(0, -signedBalance);
 
       if (currentBalance <= 0.01) {
         await m

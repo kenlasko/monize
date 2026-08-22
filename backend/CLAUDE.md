@@ -189,6 +189,10 @@ A check capable of refusing a command belongs inside the transaction that perfor
 
 Give the operation the caller's precondition as a parameter -- the expected owner, scenario or revision -- and let it refuse before writing. Return the refusal distinguishably: "no such row", "not yours" and "done" are three answers, and folding two into `null` makes the caller guess. Tests assert the rejected response **and** the stored state; see `docs/financial-calculation-contract.md` section 7.
 
+## Scheduled loan interest uses a dated ledger balance
+
+`accounts.current_balance` excludes future-dated transactions, so it cannot price an installment after future payments have been posted. Recalculate scheduled loan interest from opening balance plus every non-void, top-level transaction through the schedule's next due date; this includes regular and principal-only payments, while later transactions belong to later installments.
+
 ## A category's leaf name is not its identity
 
 "Cell Phone" under **Bills** and under **Business** is an ordinary chart of accounts, so a bare leaf name identifies nothing. Both halves go through `categories/category-name.util.ts`:
