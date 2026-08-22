@@ -480,17 +480,13 @@ describe("ScheduledTransactionLoanService", () => {
         );
       });
 
-      it("caps the principal to the balance on the recurrence path too", async () => {
-        // The amortization-recurrence branch had no cap at all, so a schedule
-        // with previous split values could pay more principal than the loan
-        // still owed and drive the balance past zero.
+      it("caps the principal to the balance", async () => {
         const loanAccount = makeLoanAccount({
           currentBalance: -100,
           interestRate: 5.5,
         });
         accountsRepository.findOne.mockResolvedValue(loanAccount);
 
-        // Previous principal/interest present, so the recurrence branch runs.
         scheduledTransactionsRepository.findOne.mockResolvedValue(
           makeScheduledTransaction({ amount: -500 }),
         );
@@ -571,8 +567,6 @@ describe("ScheduledTransactionLoanService", () => {
         accountsRepository.findOne.mockResolvedValue(loanAccount);
 
         // Post-spike template: everything went to interest, extra clamped to 0.
-        // prevPrincipal = 0 sends the recalculation down the balance-based
-        // branch.
         scheduledTransactionsRepository.findOne.mockResolvedValue(
           makeScheduledTransaction({
             amount: -1000,
@@ -777,14 +771,12 @@ describe("ScheduledTransactionLoanService", () => {
       });
     });
 
-    it("should calculate correct interest for the current balance", async () => {
-      // Uses amortization recurrence from previous splits:
-      // Previous: principal=400, interest=100 (consistent with $20K at 6% monthly)
-      // periodicRate = 0.06/12 = 0.005
-      // next_interest = 100 - 400 * 0.005 = 98.00
-      // next_principal = 500 - 98 = 402.00
+    it("calculates interest from the authoritative post-payment balance", async () => {
+      // The prior stored split is deliberately a cent away from the balance.
+      // Reusing it through the amortization recurrence would produce 98.0101;
+      // the post-payment balance gives the authoritative 98.0000.
       const loanAccount = makeLoanAccount({
-        currentBalance: -20000,
+        currentBalance: -19600,
         interestRate: 6,
         paymentFrequency: "MONTHLY",
       });
@@ -797,14 +789,14 @@ describe("ScheduledTransactionLoanService", () => {
             id: "split-principal",
             transferAccountId: loanAccountId,
             categoryId: null,
-            amount: -400,
+            amount: -399.99,
             memo: "Principal",
           },
           {
             id: "split-interest",
             transferAccountId: null,
             categoryId: "cat-interest",
-            amount: -100,
+            amount: -100.01,
             memo: "Interest",
           },
         ] as any,
@@ -816,13 +808,11 @@ describe("ScheduledTransactionLoanService", () => {
       const interestSave = splitsRepository.save.mock.calls.find(
         (call: any) => call[0].categoryId === "cat-interest",
       );
-      // next_interest = 100 - 400 * 0.005 = 98.00
       expect(interestSave[0].amount).toBe(-98);
 
       const principalSave = splitsRepository.save.mock.calls.find(
         (call: any) => call[0].transferAccountId === loanAccountId,
       );
-      // next_principal = 500 - 98 = 402
       expect(principalSave[0].amount).toBe(-402);
     });
 
@@ -879,12 +869,11 @@ describe("ScheduledTransactionLoanService", () => {
     it("should use mortgage-specific rate calculation for MORTGAGE accounts", async () => {
       // Canadian fixed-rate mortgage uses semi-annual compounding
       // periodicRate = ((1 + 0.03)^(2/12)) - 1 = ~0.004938...
-      // Previous splits consistent with $200K at this rate:
-      //   interest = 200000 * 0.004938 = ~987.65, principal = 1500 - 987.65 = ~512.35
-      // Recurrence: next_interest = 987.65 - 512.35 * 0.004938 = ~985.12
+      // The prior $512.35 principal payment leaves a $199,487.65 balance.
+      // next_interest = 199487.65 * periodicRate = 985.1941
       const mortgageAccount = makeLoanAccount({
         accountType: "MORTGAGE" as any,
-        currentBalance: -200000,
+        currentBalance: -199487.65,
         interestRate: 6,
         paymentFrequency: "MONTHLY",
         isCanadianMortgage: true,
@@ -922,20 +911,17 @@ describe("ScheduledTransactionLoanService", () => {
       );
       // Canadian semi-annual compounding gives different result than simple monthly
       expect(interestSave[0].amount).not.toBe(-1000);
-      // next_interest = 987.65 - 512.35 * 0.004938 ~= 985.12
-      expect(interestSave[0].amount).toBeCloseTo(-985.12, 0);
+      expect(interestSave[0].amount).toBe(-985.1941);
     });
 
     it("should use standard rate calculation for non-Canadian MORTGAGE accounts", async () => {
       // Non-Canadian mortgage: standard monthly compounding, same as loans
       // periodicRate = 0.06/12 = 0.005
-      // Previous splits consistent with $200K at this rate:
-      //   interest = 200000 * 0.005 = 1000, principal = 1500 - 1000 = 500
-      // Recurrence: next_interest = 1000 - 500 * 0.005 = 997.50
-      //             next_principal = 1500 - 997.50 = 502.50
+      // The prior $500 principal payment leaves a $199,500 balance.
+      // next_interest = 199500 * 0.005 = 997.50
       const mortgageAccount = makeLoanAccount({
         accountType: "MORTGAGE" as any,
-        currentBalance: -200000,
+        currentBalance: -199500,
         interestRate: 6,
         paymentFrequency: "MONTHLY",
         isCanadianMortgage: false,

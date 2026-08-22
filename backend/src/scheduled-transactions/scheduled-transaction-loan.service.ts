@@ -133,77 +133,24 @@ export class ScheduledTransactionLoanService {
         : 0;
       const basePaymentAmount = paymentAmount - extraPrincipalAmount;
 
-      // Get the previous split values (the values that were just posted).
-      // These are still on the scheduled transaction template because posting
-      // is read-only with respect to the template.
-      const prevPrincipal = principalSplit
-        ? Math.abs(Number(principalSplit.amount))
-        : 0;
-      const prevInterest = interestSplit
-        ? Math.abs(Number(interestSplit.amount))
-        : 0;
+      const periodsPerYear =
+        loanAccount.accountType === "MORTGAGE"
+          ? getMortgagePeriodsPerYear(frequency as MortgagePaymentFrequency)
+          : getPeriodsPerYear(frequency);
 
-      let newInterest: number;
-      let newPrincipal: number;
+      const periodicRate =
+        loanAccount.accountType === "MORTGAGE"
+          ? getPeriodicRate(
+              interestRate,
+              periodsPerYear,
+              loanAccount.isCanadianMortgage,
+              loanAccount.isVariableRate,
+            )
+          : interestRate / 100 / periodsPerYear;
 
-      if (prevInterest > 0 && prevPrincipal > 0 && interestRate > 0) {
-        // Use the amortization recurrence relation to derive the next P/I split
-        // from the previous values. This avoids depending on currentBalance,
-        // which may be wrong if the opening balance had the wrong sign.
-        //
-        // In amortization:
-        //   next_interest = prev_interest - (prev_principal + extra) * periodicRate
-        //   next_principal = basePayment - next_interest
-        //
-        // The total principal (regular + extra) reduces the balance, which
-        // causes the interest to drop by that amount times the periodic rate.
-        const periodsPerYear =
-          loanAccount.accountType === "MORTGAGE"
-            ? getMortgagePeriodsPerYear(frequency as MortgagePaymentFrequency)
-            : getPeriodsPerYear(frequency);
-
-        const periodicRate =
-          loanAccount.accountType === "MORTGAGE"
-            ? getPeriodicRate(
-                interestRate,
-                periodsPerYear,
-                loanAccount.isCanadianMortgage,
-                loanAccount.isVariableRate,
-              )
-            : interestRate / 100 / periodsPerYear;
-
-        // The recurrence advances from what was actually posted, so the extra
-        // here is the template's (possibly clamped) figure, not the configured
-        // one.
-        const totalPrevPrincipal = prevPrincipal + templateExtraAmount;
-        newInterest = prevInterest - totalPrevPrincipal * periodicRate;
-        newInterest = Math.max(0, roundMoney(newInterest));
-        newPrincipal = roundMoney(basePaymentAmount - newInterest);
-
-        if (newPrincipal < 0) {
-          newPrincipal = 0;
-        }
-      } else {
-        // No previous split data or no rate -- fall back to balance-based calc
-        const periodsPerYear =
-          loanAccount.accountType === "MORTGAGE"
-            ? getMortgagePeriodsPerYear(frequency as MortgagePaymentFrequency)
-            : getPeriodsPerYear(frequency);
-
-        const periodicRate =
-          loanAccount.accountType === "MORTGAGE"
-            ? getPeriodicRate(
-                interestRate,
-                periodsPerYear,
-                loanAccount.isCanadianMortgage,
-                loanAccount.isVariableRate,
-              )
-            : interestRate / 100 / periodsPerYear;
-
-        newInterest = roundMoney(currentBalance * periodicRate);
-        newPrincipal = roundMoney(basePaymentAmount - newInterest);
-        if (newPrincipal < 0) newPrincipal = 0;
-      }
+      let newInterest = roundMoney(currentBalance * periodicRate);
+      let newPrincipal = roundMoney(basePaymentAmount - newInterest);
+      if (newPrincipal < 0) newPrincipal = 0;
 
       // The clamp sequence -- interest-first across the whole installment
       // (recheck RR2-006, DR3-01), principal bounded by the debt with the
@@ -224,8 +171,8 @@ export class ScheduledTransactionLoanService {
       const requiredParentAmount = allocation.total;
 
       this.logger.log(
-        `Recalculate loan splits: prevPrincipal=${prevPrincipal}, prevInterest=${prevInterest}, ` +
-          `rate=${interestRate}%, freq=${frequency}, basePayment=${basePaymentAmount}, ` +
+        `Recalculate loan splits: balance=${currentBalance}, rate=${interestRate}%, ` +
+          `freq=${frequency}, basePayment=${basePaymentAmount}, ` +
           `extra=${extraPrincipalAmount} (final ${finalExtraPrincipal}), ` +
           `newPrincipal=${newPrincipal}, newInterest=${newInterest}, ` +
           `isMortgage=${loanAccount.accountType === "MORTGAGE"}, ` +
