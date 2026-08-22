@@ -1,0 +1,79 @@
+# App-only stack for the financial regression harness.
+#
+# CRITICAL: there is NO `postgres` service here. This stack connects to an
+# EXTERNAL, pre-existing database that the harness never creates, resets, or
+# owns -- so there is nothing here for a run to accidentally wipe. The database
+# connection points at MONIZE_DB_* from regression.env (use
+# host.docker.internal to reach a database on the host machine).
+#
+# The build context and ports are injected per phase by scripts/lib/docker.mjs
+# via MONIZE_APP_CONTEXT / MONIZE_*_PORT. BEFORE and AFTER run under DIFFERENT
+# compose project names so they never coexist -- the orchestrator still starts
+# them strictly sequentially.
+services:
+  backend:
+    build:
+      context: ${MONIZE_APP_CONTEXT}
+      dockerfile: backend/Dockerfile
+      target: development
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_HOST: ${MONIZE_DB_HOST}
+      DATABASE_PORT: ${MONIZE_DB_PORT}
+      DATABASE_NAME: ${MONIZE_DB_NAME}
+      DATABASE_USER: ${MONIZE_DB_USER}
+      DATABASE_PASSWORD: ${MONIZE_DB_PASSWORD}
+      # RLS off keeps behaviour identical to the app's default; the harness is
+      # a single-user read, not a tenancy test.
+      RLS_MODE: "off"
+      DATABASE_APP_USER: ${MONIZE_DB_USER}
+      DATABASE_APP_PASSWORD: ${MONIZE_DB_PASSWORD}
+      JWT_SECRET: ${MONIZE_JWT_SECRET}
+      JWT_EXPIRATION: 15m
+      PUBLIC_APP_URL: http://localhost:${MONIZE_FRONTEND_PORT}
+      CORS_ORIGIN: http://localhost:${MONIZE_FRONTEND_PORT}
+      LOCAL_AUTH_ENABLED: "true"
+      # No registration: this harness only ever LOGS IN as an existing user.
+      REGISTRATION_ENABLED: "false"
+      FORCE_2FA: "false"
+      DEMO_MODE: "false"
+      AI_ENCRYPTION_KEY: ${MONIZE_AI_ENCRYPTION_KEY}
+      RATE_LIMIT_MAX: "100000"
+    ports:
+      - "127.0.0.1:${MONIZE_BACKEND_PORT}:3000"
+    extra_hosts:
+      # Let the container reach a database running on the host machine.
+      - "host.docker.internal:host-gateway"
+    # Same boot sequence the app always runs. NOTE: this includes db-migrate,
+    # so the AFTER revision may apply a forward schema migration to your copy
+    # database -- which is exactly why BEFORE runs first and why the target
+    # must be a disposable copy. It never seeds or resets data.
+    command: sh -c "npm run build && node dist/db-init.js && node dist/db-migrate.js && node dist/main.js"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:3000/api/v1/health || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 60
+      start_period: 120s
+
+  frontend:
+    build:
+      context: ${MONIZE_APP_CONTEXT}/frontend
+      dockerfile: Dockerfile
+      target: development
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      INTERNAL_API_URL: http://backend:3000
+      PUBLIC_APP_URL: http://localhost:${MONIZE_FRONTEND_PORT}
+    ports:
+      - "127.0.0.1:${MONIZE_FRONTEND_PORT}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:3000/login || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 60
+      start_period: 60s

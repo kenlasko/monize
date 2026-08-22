@@ -1,0 +1,13 @@
+# Local configuration -- may reference a real database. NEVER commit it.
+regression.env
+
+# Captured values and generated reports from local runs.
+artifacts/*.json
+artifacts/*.md
+artifacts/*.html
+
+# Playwright output.
+node_modules/
+test-results/
+playwright-report/
+.worktrees/
