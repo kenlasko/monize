@@ -193,21 +193,18 @@ describe('deriveLoanPaymentHistory', () => {
     expect(result.cumulativeInterest).toBe(0);
   });
 
-  it('derives interest analytically when a payment records no interest split', () => {
-    // A plain transfer with no linked interest split used to read interest = 0
-    // (rata = 100% principal). It now derives interest from the running
-    // balance: 10000 * (6% / 12) = 50.
+  it('treats a payment with no recorded interest as entirely principal', () => {
     const account = makeAccount();
     const result = deriveLoanPaymentHistory(account, [
       makeTransaction({ transactionDate: '2026-01-15', amount: 450 }),
     ]);
     expect(result.events[0].type).toBe('REGULAR');
-    expect(result.events[0].interest).toBeCloseTo(50, 2);
+    expect(result.events[0].interest).toBe(0);
     expect(result.events[0].principal).toBe(450);
     expect(result.events[0].balance).toBe(10000 - 450);
   });
 
-  it('prefers a recorded interest split over the analytic estimate', () => {
+  it('uses a recorded interest split when present', () => {
     const account = makeAccount();
     const tx = withInterestSplit(
       makeTransaction({ transactionDate: '2026-01-15', amount: 450 }),
@@ -534,89 +531,6 @@ describe('fetchLoanInterestTransactions', () => {
   it('returns [] when the loan has no interest category or source account', async () => {
     expect(await fetchLoanInterestTransactions(makeAccount())).toEqual([]);
     expect(transactionsApi.getAllPages).not.toHaveBeenCalled();
-  });
-});
-
-describe('deriveLoanPaymentHistory interest from the rate timeline', () => {
-  it('derives uncapped interest from the effective per-date rate for separately-booked interest', () => {
-    // A principal-only loan-side payment (interest booked as a separate
-    // transaction), so there is no recorded interest split.
-    const account = makeAccount({
-      accountType: 'MORTGAGE',
-      openingBalance: -200000,
-      currentBalance: -199715,
-      interestRate: 5.5,
-    });
-    const transactions = [
-      makeTransaction({ transactionDate: '2022-05-05', amount: 285 }),
-    ];
-    const rateChanges = [{ effectiveDate: '2022-04-05', annualRate: 5.5 }];
-
-    const { events } = deriveLoanPaymentHistory(account, transactions, rateChanges);
-    const monthly = 200000 * (5.5 / 100 / 12);
-
-    // Interest tracks balance x rate/12 (~916), NOT capped at the 285 principal.
-    expect(events[0].interest).toBeCloseTo(monthly, 0);
-    expect(events[0].interest).toBeGreaterThan(events[0].principal);
-  });
-
-  it('reprices each month from the timeline for a variable-rate loan', () => {
-    const account = makeAccount({
-      accountType: 'MORTGAGE',
-      openingBalance: -200000,
-      currentBalance: -199430,
-      interestRate: 5.5,
-    });
-    const transactions = [
-      makeTransaction({ transactionDate: '2021-08-05', amount: 285 }),
-      makeTransaction({ transactionDate: '2022-05-05', amount: 285 }),
-    ];
-    const rateChanges = [
-      { effectiveDate: '2021-07-05', annualRate: 1.95 },
-      { effectiveDate: '2022-04-05', annualRate: 5.5 },
-    ];
-
-    const { events } = deriveLoanPaymentHistory(account, transactions, rateChanges);
-    // First payment at 1.95%, second (later) at 5.5% -> higher interest.
-    expect(events[0].interest).toBeCloseTo(200000 * (1.95 / 100 / 12), 0);
-    expect(events[1].interest).toBeGreaterThan(events[0].interest);
-  });
-});
-
-describe('deriveLoanPaymentHistory reconstructed rate (no rate history)', () => {
-  it('uses semi-annual annualization for a Canadian fixed mortgage', () => {
-    // Canadian fixed mortgage, no recorded rate history: interest is analytic
-    // (balance x the semi-annually-compounded periodic rate). Kenlasko's
-    // periodic annualization inverts that compounding and recovers the nominal
-    // 5.5% exactly, where WMP's day-count (x365/days) would read ~5.44%.
-    const account = makeAccount({
-      accountType: 'MORTGAGE',
-      isCanadianMortgage: true,
-      isVariableRate: false,
-      openingBalance: -200000,
-      currentBalance: -199715,
-      interestRate: 5.5,
-    });
-    const { events } = deriveLoanPaymentHistory(account, [
-      makeTransaction({ transactionDate: '2022-05-05', amount: 285 }),
-    ]);
-    expect(events[0].annualRate).toBeCloseTo(5.5, 1);
-  });
-
-  it('uses day-count annualization for a non-Canadian loan', () => {
-    // Same shape, not Canadian: interest is balance x rate/12, and the
-    // day-count annualization over the nominal first period recovers 6%.
-    const account = makeAccount({
-      accountType: 'MORTGAGE',
-      isCanadianMortgage: false,
-      openingBalance: -200000,
-      currentBalance: -199000,
-      interestRate: 6,
-    });
-    const { events } = deriveLoanPaymentHistory(account, [
-      makeTransaction({ transactionDate: '2024-01-05', amount: 1000 }),
-    ]);
-    expect(events[0].annualRate).toBeCloseTo(6, 1);
   });
 });
 
