@@ -119,19 +119,32 @@ describe("occurrence selection stays in one place", () => {
 
   /**
    * A recurrence walked in a loop is an occurrence expansion, and there is one.
-   * The two allowed sites do different jobs, and only the first one looks at
-   * overrides or a window.
+   * The allowed sites do different jobs, and only the first looks at overrides or
+   * a window; the rest walk a recurrence for a reason that is not occurrence
+   * selection at all.
+   *
+   * Hoisted out of the test so the staleness check below can hold the list
+   * against the tree: an exemption for a file that no longer exists, or that no
+   * longer walks a recurrence, silently pre-authorises the next collision.
    */
-  it("expands a recurrence in exactly one place", () => {
-    const EXPANDERS = [
-      // The one occurrence expander.
-      "common/scheduled-occurrences.ts",
-      // Rolls a single stale due date forward to the present during a Money
-      // import. No window and no overrides: it answers "when is this bill next
-      // due" for a row being created, not "which occurrences fall in a range".
-      "import/mny/map/map-bills.ts",
-    ];
+  const EXPANDERS = [
+    // The one occurrence expander.
+    "common/scheduled-occurrences.ts",
+    // Rolls a single stale due date forward to the present during a Money
+    // import. No window and no overrides: it answers "when is this bill next
+    // due" for a row being created, not "which occurrences fall in a range".
+    "import/mny/map/map-bills.ts",
+    // `advancePaymentDates`: what date is N payments after this one. It is
+    // date arithmetic over a LOAN TERM, not an occurrence expansion -- no
+    // window, no overrides, no per-occurrence amount, and its only callers
+    // (loan-amortization.util, mortgage-amortization.util) ask it for a term
+    // end date. Nothing here can fork the occurrence-selection decision this
+    // guard protects, so routing it through the expander would be nonsense
+    // rather than an improvement.
+    "accounts/payment-frequency.util.ts",
+  ];
 
+  it("expands a recurrence in exactly one place", () => {
     const offenders: string[] = [];
     for (const file of files) {
       if (EXPANDERS.includes(file.path)) continue;
@@ -147,6 +160,42 @@ describe("occurrence selection stays in one place", () => {
     }
 
     expect(offenders).toEqual([]);
+  });
+
+  it("every exemption still has a subject, so the list cannot go stale", () => {
+    // Two ways the list rots, and both re-permit a collision without saying so:
+    // a path that no longer exists, and a path whose code no longer calls a
+    // recurrence helper at all (a dead exemption, which should be deleted rather
+    // than carried).
+    //
+    // Deliberately NOT re-running `insideLoop` here. That heuristic looks 12
+    // lines above the call, and the canonical expander's own `while` sits 23
+    // lines above its `calculateNextDueDate` -- so a staleness check built on it
+    // reports the one file this guard exists to sanction. A check that re-derives
+    // the main scan's verdict inherits the main scan's blind spots; this one asks
+    // the narrower question it can actually answer.
+    const byPath = new Map(files.map((f) => [f.path, f]));
+    const missing: string[] = [];
+    const noRecurrenceCall: string[] = [];
+    for (const path of EXPANDERS) {
+      const file = byPath.get(path);
+      if (!file) {
+        missing.push(path);
+        continue;
+      }
+      const calls = file.lines.some(
+        (line) =>
+          !isComment(line) &&
+          /calculateNextDueDate\s*\(|advanceByFrequency\s*\(/.test(line),
+      );
+      if (!calls) noRecurrenceCall.push(path);
+    }
+    // Collected rather than asserted per entry, so one run reports every stale
+    // exemption instead of stopping at the first.
+    expect({ missing, noRecurrenceCall }).toEqual({
+      missing: [],
+      noRecurrenceCall: [],
+    });
   });
 
   /**

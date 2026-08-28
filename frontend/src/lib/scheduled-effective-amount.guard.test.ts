@@ -99,6 +99,10 @@ const CLIENT_EXPANDERS = new Map([
     '/src/app/bills/page.tsx',
     'the bills calendar, which draws names on dates and prints no amount per occurrence',
   ],
+  [
+    '/src/lib/loan-overpayments.ts',
+    "recurringOccurrencesDue counts how many OVERPAYMENT occurrences a loan schedule row has passed -- INV-LOAN-001's own mechanism, and the one place that cadence is walked. It expands an overpayment calendar, not a scheduled transaction: there is no override to resolve and no per-occurrence amount to price, so the effective-amount contract has nothing to say about it",
+  ],
 ]);
 
 describe('scheduled occurrence expansion guard', () => {

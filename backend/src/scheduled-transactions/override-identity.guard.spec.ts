@@ -70,7 +70,7 @@ describe("the override occurrence-identity constraint", () => {
     // repo-wide; asserted here too because a constraint that fails to attach on
     // replay aborts container start-up and surfaces only as "backend exited (1)".
     const migration = read(
-      "database/migrations/166_override_occurrence_identity.sql",
+      "database/migrations/167_override_occurrence_identity.sql",
     );
     expect(migration).toContain(`DROP CONSTRAINT IF EXISTS ${CONSTRAINT}`);
     expect(migration).toContain(`ADD CONSTRAINT ${CONSTRAINT}`);
@@ -87,7 +87,7 @@ describe("the override occurrence-identity constraint", () => {
     // extra, so the schema must not still declare the old lookup index.
     expect(schema).not.toContain("idx_sched_txn_overrides_orig");
     expect(
-      read("database/migrations/166_override_occurrence_identity.sql"),
+      read("database/migrations/167_override_occurrence_identity.sql"),
     ).toContain("DROP INDEX IF EXISTS idx_sched_txn_overrides_orig");
   });
 });
