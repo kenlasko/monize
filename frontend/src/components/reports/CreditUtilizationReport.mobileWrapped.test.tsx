@@ -207,26 +207,32 @@ describe('CreditUtilizationReport (phone wrapped table)', () => {
     }
   });
 
-  it('wraps each row onto three lines: account and utilization, limit and used, then available', async () => {
+  it('wraps each row onto two lines: account and utilization, then limit, used and available together', async () => {
     const container = await renderReport();
 
-    // Measured, not chosen: a six-figure 2dp amount in an ISO-code currency is
-    // 97px at `text-xs`, so three of them on one line need 315px against the
-    // 256px this table gets at 320px. Two per line fit; Available takes line 3
-    // in the right-hand track so it ends under Used.
+    // The maintainer's call from the phone review: the three amounts on one
+    // line. A six-track grid gives line 1's two cells three tracks each and
+    // line 2's three cells two each, so every cell still states its own
+    // column and line, and nothing reaches a third line.
     for (const row of Array.from(container.querySelectorAll('tbody tr'))) {
       const [account, limit, used, available, utilization] = Array.from(
         row.querySelectorAll('td'),
       );
-      expect(row.className).toContain('grid-cols-2');
+      expect(row.className).toContain('grid-cols-6');
       expect(placement(account)).toBe('c1/r1');
-      expect(placement(utilization)).toBe('c2/r1');
+      expect(placement(utilization)).toBe('c4/r1');
       expect(placement(limit)).toBe('c1/r2');
-      expect(placement(used)).toBe('c2/r2');
-      expect(placement(available)).toBe('c2/r3');
-      // Nothing is placed on a fourth line.
+      expect(placement(used)).toBe('c3/r2');
+      expect(placement(available)).toBe('c5/r2');
+      for (const cell of [account, utilization]) {
+        expect(cell.className).toMatch(/\bcol-span-3\b/);
+      }
+      for (const cell of [limit, used, available]) {
+        expect(cell.className).toMatch(/\bcol-span-2\b/);
+      }
+      // Nothing is placed on a third line.
       for (const cell of [account, limit, used, available, utilization]) {
-        expect(cell.className).not.toMatch(/\brow-start-4\b/);
+        expect(cell.className).not.toMatch(/\brow-start-3\b/);
       }
     }
   });
@@ -235,16 +241,16 @@ describe('CreditUtilizationReport (phone wrapped table)', () => {
     const container = await renderReport();
 
     const footRow = container.querySelector('tfoot tr')!;
-    expect(footRow.className).toContain('grid-cols-2');
+    expect(footRow.className).toContain('grid-cols-6');
     const [total, limit, used, available, utilization] = Array.from(
       footRow.querySelectorAll('td'),
     );
     expect(total.textContent).toBe('Total');
     expect(placement(total)).toBe('c1/r1');
-    expect(placement(utilization)).toBe('c2/r1');
+    expect(placement(utilization)).toBe('c4/r1');
     expect(placement(limit)).toBe('c1/r2');
-    expect(placement(used)).toBe('c2/r2');
-    expect(placement(available)).toBe('c2/r3');
+    expect(placement(used)).toBe('c3/r2');
+    expect(placement(available)).toBe('c5/r2');
     // The totals are the largest figures on the table and carry their captions
     // like any other cell, so a phone reader is not left with four bare numbers.
     for (const cell of [limit, used, available, utilization]) {
@@ -288,7 +294,7 @@ describe('CreditUtilizationReport (phone wrapped table)', () => {
     expect(container.querySelector('tbody')?.className).toContain('sm:table-row-group');
     expect(container.querySelector('tfoot')?.className).toContain('sm:table-footer-group');
     const row = container.querySelector('tbody tr');
-    expect(row?.className).toContain('grid grid-cols-2');
+    expect(row?.className).toContain('grid grid-cols-6');
     expect(row?.className).toContain('sm:table-row');
     // The wrapper still scrolls horizontally, which is what the table needs
     // from `sm` up on a narrow desktop window.

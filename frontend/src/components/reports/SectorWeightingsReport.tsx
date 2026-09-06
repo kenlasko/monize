@@ -85,13 +85,22 @@ const PHONE_HEADER_CLASS =
 // finds the ETF figure in the same corner of every card. Auto-flow would place
 // them by DOM order and silently re-flow the moment a cell became conditional.
 // The placements are inert from `sm` up, where every row is a table row again.
+//
+// The grid is SIX tracks (`ROW_GRID`): line 1 gives the sector and its total
+// three each, line 2 gives the direct value, the ETF value and the share two
+// each -- three figures on one line, as the maintainer asked after the phone
+// review of this branch (`FIGURE_CELL` has the budget that trade is made in).
 const CELL_PLACEMENT: Record<SectorSortField, string> = {
-  sector: 'col-start-1 row-start-1',
-  total: 'col-start-2 row-start-1',
-  direct: 'col-start-1 row-start-2',
-  etf: 'col-start-2 row-start-2',
-  percentage: 'col-start-2 row-start-3',
+  sector: 'col-start-1 col-span-3 row-start-1',
+  total: 'col-start-4 col-span-3 row-start-1',
+  direct: 'col-start-1 col-span-2 row-start-2',
+  etf: 'col-start-3 col-span-2 row-start-2',
+  percentage: 'col-start-5 col-span-2 row-start-2',
 };
+
+// The row's phone grid, shared by all three row shapes so a placement above
+// means the same track in each.
+const ROW_GRID = 'grid grid-cols-6 items-start gap-x-3 gap-y-1.5 px-4 py-3';
 
 // A figure cell inside a wrapped card: no padding of its own below `sm` (the
 // row supplies it and the grid does the spacing), the table cell's own padding
@@ -107,35 +116,35 @@ const CELL_PLACEMENT: Record<SectorSortField, string> = {
 // `FIGURE_CELL` width budget, measured on a hand-written CSS replica in Chromium
 // at the insets this table really gets -- the report page's `px-4` and the
 // row's own `px-4`, the card contributing none -- so 256px of track at 320px
-// and 326px at 390px. Two equal `minmax(0,1fr)` tracks with the row's
-// `gap-x-3` give each figure cell a measured 122px at 320px and 157px at
-// 390px.
+// and 326px at 390px. The six-track row (`ROW_GRID`, placed by
+// `CELL_PLACEMENT`) gives the total on line 1 three tracks -- 122px at 320px
+// and 157px at 390px, the same as an equal pair -- and each of the three
+// figures on line 2 two tracks: 77px at 320px and 101px at 390px.
 //
 // The formatter is the 2dp `formatCurrencyFull`, not the compact one the
-// summary cards use, and that is what decides the line count. The unit is part
-// of the budget and is not always a symbol: `narrowSymbol` falls back to the
-// three-letter ISO code where a currency has none, so the widest unit is
-// `CHF`. The budget is measured against the FOOTER's grand total, which is by
-// construction larger than any row value and wears `font-bold` on top of it:
-// bold at `text-xs`, `123 456,78 CHF` is 107px and `2 913 579,10 CHF` is 119px
-// -- so six AND seven figures fit the 122px track at 320px, and everything up
-// to eleven fits the 157px track at 390px. Eight figures (128px) are the first
-// to pass 122px, so an eight-figure portfolio total reopens the wrapper's
-// sideways scroll at 320px, and only there.
+// summary cards use. The unit is part of the budget and is not always a
+// symbol: `narrowSymbol` falls back to the three-letter ISO code where a
+// currency has none, so the widest unit is `CHF`. The budget is measured
+// against the FOOTER's totals, which are by construction larger than any row
+// value and wear `font-bold` on top of it: bold at `text-xs`, `123 456,78
+// CHF` is 107px and `2 913 579,10 CHF` is 119px. On line 1 that means six and
+// seven figures fit at 320px and eight (128px) is the first to pass. On line
+// 2 a 77px track holds a five-figure symbol amount (`$12,345.00` is about
+// 65px, bold about 72px) and not a six-figure one: three of them need 3 x 97
+// + 2 x 12 = 315px against 256px at 320px, and the bold footer's six-figure
+// ISO-code direct or ETF total overflows its track by about 30px there,
+// reopening the wrapper's sideways scroll; at 390px the 101px track holds a
+// six-figure symbol amount and a bold `123 456,78 CHF` passes it by 6px.
 //
-// Three figure cells on one line was measured and does NOT fit: three equal
-// tracks are 77px at 320px and 105px at 390px, and the same content put 314px
-// of table in a 288px wrapper with 42px of overflow on the footer's bold
-// direct-value total -- at 390px too (361px in a 358px wrapper). So two per
-// line, on three lines (see the row's comment).
-//
-// That leftover eight-figure case is a deliberate choice rather than an
-// oversight, because the alternatives are worse: right alignment is not a
-// containment device (a nowrap figure longer than its track overflows past the
-// END edge whatever `text-align` says), `overflow-hidden` would silently cut a
-// figure, and dropping `whitespace-nowrap` would let a locale that groups
-// thousands with a space break a number in half. A cut or broken figure is
-// worse than a scroll.
+// Three figures on one line is the maintainer's call from the phone review of
+// this branch, made knowing that budget: the common case fits, and a
+// six-figure sleeve in an ISO-code currency scrolls at 320px. The overflow is
+// a deliberate choice rather than an oversight, because the alternatives are
+// worse: right alignment is not a containment device (a nowrap figure longer
+// than its track overflows past the END edge whatever `text-align` says),
+// `overflow-hidden` would silently cut a figure, and dropping
+// `whitespace-nowrap` would let a locale that groups thousands with a space
+// break a number in half. A cut or broken figure is worse than a scroll.
 const FIGURE_CELL =
   'p-0 text-right text-xs whitespace-nowrap sm:table-cell sm:px-4 sm:py-3 sm:text-sm';
 
@@ -457,16 +466,15 @@ export function SectorWeightingsReport() {
       {/* Data Table
 
           Below `sm` the table becomes a block and each row wraps into a
-          two-column grid so all five columns fit a phone without a horizontal
-          scroll, on three lines: the sector and its total -- the figure the
-          row is read for -- share line 1; the direct and ETF values share line
-          2; and the portfolio share sits under the ETF value on line 3. Three
-          lines rather than two is a measurement, not a preference: this table
-          formats money with the 2dp `formatCurrencyFull`, so three equal
-          tracks are 77px at 320px against a `2 222 222,21 CHF` that measures
-          119px in the footer's bold, and the same content laid out that way
-          put 314px of table in a 288px wrapper (and 361px in a 358px one at
-          390px) with 42px of cell overflow. Nothing is dropped -- the card
+          six-track grid so all five columns fit a phone without a horizontal
+          scroll, on two lines: the sector and its total -- the figure the
+          row is read for -- share line 1, three tracks each; the direct
+          value, the ETF value and the portfolio share share line 2, two
+          tracks each. Two lines rather than three is the maintainer's call
+          from the phone review of this branch, made against the measurement
+          `FIGURE_CELL` records: five-figure amounts fit a 77px track at
+          320px, and a six-figure ISO-code sleeve overflows it there (and a
+          bold one by 6px at 390px). Nothing is dropped -- the card
           carries all five columns, the unclassified row included -- and the
           rows stay what they are today: hovering, but NOT clickable. From `sm`
           up it is the ordinary table. The sort controls survive as their own
@@ -548,7 +556,7 @@ export function SectorWeightingsReport() {
                 <tr
                   key={item.sector}
                   role="row"
-                  className="grid grid-cols-2 items-start gap-x-3 gap-y-1.5 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 sm:table-row sm:p-0"
+                  className={`${ROW_GRID} hover:bg-gray-50 dark:hover:bg-gray-700/50 sm:table-row sm:p-0`}
                 >
                   {/* The identity. A sector name is UNBOUNDED -- "Consumer
                       Discretionary" is 22 characters in English and its
@@ -646,12 +654,12 @@ export function SectorWeightingsReport() {
                     <CellLabel className={CAPTION_CLASS}>{columns.total.label}</CellLabel>
                     {formatCurrencyFull(item.totalValue, defaultCurrency)}
                   </td>
-                  {/* The share ends line 3 under the ETF value, in the same
-                      track as the total it is a share OF. Its value is bounded
-                      (`100.0%`) but its CAPTION is not -- `[XX-% of
-                      Portfolio-XX]` is 22 characters -- so it takes a full
-                      `minmax(0,1fr)` track like the figures rather than an
-                      `auto` one sized by that caption. */}
+                  {/* The share ends line 2 beside the ETF value, under the
+                      right edge of the total it is a share OF. Its value is
+                      bounded (`100.0%`) but its CAPTION is not -- `[XX-% of
+                      Portfolio-XX]` is 22 characters -- so it takes the same
+                      two-track width as the figures rather than an `auto`
+                      track sized by that caption; the caption wraps. */}
                   <td role="cell" className={`${CELL_PLACEMENT.percentage} text-gray-600 dark:text-gray-400 ${FIGURE_CELL}`}>
                     <CellLabel className={CAPTION_CLASS}>{columns.percentage.label}</CellLabel>
                     {formatPercent(item.percentage, 1)}
@@ -670,7 +678,7 @@ export function SectorWeightingsReport() {
                    where the column header is gone. */
                 <tr
                   role="row"
-                  className="grid grid-cols-2 items-start gap-x-3 gap-y-1.5 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 bg-gray-50/50 dark:bg-gray-900/20 sm:table-row sm:p-0"
+                  className={`${ROW_GRID} hover:bg-gray-50 dark:hover:bg-gray-700/50 bg-gray-50/50 dark:bg-gray-900/20 sm:table-row sm:p-0`}
                 >
                   <td role="cell" className={`${IDENTITY_CELL} font-medium text-gray-500 dark:text-gray-400 italic`}>
                     <span className="line-clamp-3 break-words sm:line-clamp-none sm:break-normal" title={t('sectorWeightings.unclassified')}>
@@ -703,13 +711,13 @@ export function SectorWeightingsReport() {
             </tbody>
             <tfoot role="rowgroup" className="block bg-gray-50 dark:bg-gray-900/50 sm:table-footer-group">
               {/* The totals are the largest figures on the table, so this row
-                  wraps exactly the way a data row does -- the same two tracks
+                  wraps exactly the way a data row does -- the same six tracks
                   and the same placement, each figure captioned -- with "Total"
                   standing in for the sector in the identity track. Every one
                   of the five columns has a total, so no cell leaves the DOM
                   below `sm` and the footer stays a full five-cell row at every
                   width. */}
-              <tr role="row" className="grid grid-cols-2 items-start gap-x-3 gap-y-1.5 px-4 py-3 sm:table-row sm:p-0">
+              <tr role="row" className={`${ROW_GRID} sm:table-row sm:p-0`}>
                 <td role="cell" className={`${IDENTITY_CELL} font-bold text-gray-900 dark:text-gray-100`}>
                   {/* The same clamped span the other two shapes use, not a bare
                       label: today's footer labels are short in every locale,

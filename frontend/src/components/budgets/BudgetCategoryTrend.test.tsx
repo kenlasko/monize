@@ -58,6 +58,15 @@ describe('BudgetCategoryTrend', () => {
     expect(screen.getByTestId('line-chart')).toBeInTheDocument();
   });
 
+  it('draws no chart legend: the toggle pills are the legend', () => {
+    // A recharts legend repeated every pill's name below the plot, and on a
+    // phone it wrapped taller than the container and was drawn up over the
+    // pills -- each category name twice, one on top of the other.
+    render(<BudgetCategoryTrend data={mockData} formatCurrency={mockFormat} />);
+    expect(screen.queryByTestId('legend')).not.toBeInTheDocument();
+    expect(screen.getByTestId('category-toggle-cat-1')).toHaveTextContent('Groceries');
+  });
+
   it('toggles category visibility when clicking toggle button', () => {
     render(<BudgetCategoryTrend data={mockData} formatCurrency={mockFormat} />);
 

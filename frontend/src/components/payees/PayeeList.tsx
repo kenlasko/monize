@@ -199,10 +199,12 @@ interface PayeeRowProps {
    *   survives in the slim header (see `SORT_FIELD_ORDER`), and the tier table
    *   one density tap away shows the dates.
    *
-   * The three lines are: Name (with logo and marker) and Count; Default
-   * Category, Status and Aliases; Last Used and Notes. Aliases rides on line 2
-   * rather than beside Last Used because line 3's second track is where Notes
-   * has to live, and a line carrying three captions cannot also carry a
+   * The three lines are: Name (with logo and marker), Count and Aliases;
+   * Default Category and Status; Last Used and Notes. The two counts share
+   * line 1 at the maintainer's request (the phone review of this branch), so
+   * the card's figures sit together and line 2 holds the two pills alone.
+   * Aliases is not beside Last Used because line 3's second track is where
+   * Notes has to live, and a line carrying three captions cannot also carry a
    * readable Notes at 320px in a locale whose Last Used caption is "Последнее
    * использование" -- the line-3 comment has the measurement.
    *
@@ -274,7 +276,7 @@ const PayeeRow = memo(function PayeeRow({
                 merely a scrollbar -- mobile Chrome sizes the viewport
                 `position: fixed` attaches to from the widest content on the
                 page. */}
-            <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] gap-x-3 gap-y-1.5 items-start">
+            <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] gap-x-3 gap-y-1.5 items-start">
               {/* The card has the room the tier row does not, so the logo is
                   drawn here at every width -- the tier cell's `max-sm:hidden`
                   is what this replaces. `BrandLogo` sizes itself from `size`,
@@ -297,10 +299,13 @@ const PayeeRow = memo(function PayeeRow({
                 />
                 <PayeeUncategorizedBadge payee={payee} />
               </div>
-              {/* The key figure, on the right of line 1. A bare number with no
-                  column header to name it, so it carries the header's own
-                  label; the caption is its own node above the value's, so a
-                  test still matches the count alone.
+              {/* The two figures, on the right of line 1: the Count and, beside
+                  it, the Aliases -- on one line as the maintainer asked, so
+                  the card's numbers sit together and line 2 is left to the two
+                  pills. Each is a bare number with no column header to name
+                  it, so it carries the header's own label; the caption is its
+                  own node above the value's, so a test still matches the count
+                  alone.
 
                   `whitespace-nowrap` goes on the VALUE, never on the wrapper:
                   this is an `auto` track, and an auto track's minimum is its
@@ -315,6 +320,12 @@ const PayeeRow = memo(function PayeeRow({
                 <CellLabel>{t('list.columns.count')}</CellLabel>
                 <div className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
                   {payee.transactionCount ?? 0}
+                </div>
+              </div>
+              <div className="text-right">
+                <CellLabel>{t('list.columns.aliases')}</CellLabel>
+                <div className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                  {payee.aliasCount ?? 0}
                 </div>
               </div>
               {/* Line 2, and its own grid for the same reason line 1 is: the
@@ -339,10 +350,8 @@ const PayeeRow = memo(function PayeeRow({
                   160px pill in a track squeezed narrower by a long caption does
                   not shrink -- it overflows into the status pill beside it
                   (measured in `ru`, where the caption is "Категория по
-                  умолчанию"). Aliases rides on this line as a captioned number
-                  at the card's right edge, under the Count, because line 3
-                  cannot hold three captions and a readable Notes. */}
-              <div className="col-span-3 grid grid-cols-[minmax(0,1fr)_auto_auto] items-end gap-x-3">
+                  умолчанию"). */}
+              <div className="col-span-4 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-x-3">
                 <div className="min-w-0">
                   <CellLabel>{t('list.columns.defaultCategory')}</CellLabel>
                   <PayeeDefaultCategory
@@ -355,12 +364,6 @@ const PayeeRow = memo(function PayeeRow({
                   />
                 </div>
                 {showStatusColumn && <PayeeStatusBadge payee={payee} />}
-                <div className="text-right">
-                  <CellLabel>{t('list.columns.aliases')}</CellLabel>
-                  <div className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                    {payee.aliasCount ?? 0}
-                  </div>
-                </div>
               </div>
               {/* Line 3: two EQUAL zero-minimum tracks (`grid-cols-2` is
                   `repeat(2, minmax(0,1fr))`), never `auto` beside a `1fr`.
@@ -384,7 +387,7 @@ const PayeeRow = memo(function PayeeRow({
                   thousands with a thin space must not break a figure in two,
                   but a caption forced onto one line is what makes a track wide.
                   Notes truncates; it is the only thing on this line that may. */}
-              <div className="col-span-3 grid grid-cols-2 items-start gap-x-4">
+              <div className="col-span-4 grid grid-cols-2 items-start gap-x-4">
                 <div>
                   <CellLabel>{t('list.columns.lastUsed')}</CellLabel>
                   <div className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">

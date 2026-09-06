@@ -303,7 +303,8 @@ export const TransactionRow = memo(function TransactionRow({
   // branch renders, from the same helper. Edit/Copy/Delete are deliberately
   // absent: on a phone those live in the long-press action sheet the same
   // handlers below open. Description, Ref #, attachments and the three FX
-  // columns are left out to keep the card to two lines.
+  // columns are left out to keep the card to two lines -- three when the row
+  // carries tags, which take a line of their own under the category.
   if (wrapped) {
     return (
       <tr
@@ -495,42 +496,6 @@ export const TransactionRow = memo(function TransactionRow({
                   }
                 />
               ) : null}
-              {transaction.tags && transaction.tags.length > 0 && transaction.tags.map((tag) => onTagClick ? (
-                <button
-                  key={tag.id}
-                  onClick={(e) => { e.stopPropagation(); onTagClick(tag.id); }}
-                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium hover:opacity-80 transition-opacity"
-                  style={{
-                    backgroundColor: tag.color ? `${tag.color}20` : '#9ca3af20',
-                    color: tag.color || '#6b7280',
-                  }}
-                  title={t('list.row.filterByTag', { name: tag.name })}
-                >
-                  {tag.icon && (
-                    <span className="w-3 h-3 flex-shrink-0 [&>svg]:w-3 [&>svg]:h-3">
-                      {getIconComponent(tag.icon)}
-                    </span>
-                  )}
-                  {tag.name}
-                </button>
-              ) : (
-                <span
-                  key={tag.id}
-                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium"
-                  style={{
-                    backgroundColor: tag.color ? `${tag.color}20` : '#9ca3af20',
-                    color: tag.color || '#6b7280',
-                  }}
-                  title={tag.name}
-                >
-                  {tag.icon && (
-                    <span className="w-3 h-3 flex-shrink-0 [&>svg]:w-3 [&>svg]:h-3">
-                      {getIconComponent(tag.icon)}
-                    </span>
-                  )}
-                  {tag.name}
-                </span>
-              ))}
               <span className="ml-auto flex items-center gap-2">
                 {/* StatusCellButton stops the click itself, so it needs no
                     wrapper here -- the tier branch mounts it bare too. */}
@@ -551,6 +516,52 @@ export const TransactionRow = memo(function TransactionRow({
                 )}
               </span>
             </div>
+            {/* Line 3, only when the row carries tags: under the category
+                rather than beside it. Inline after the category, one tag was
+                enough to push the status and balance onto a line of their
+                own, so the card grew a line anyway -- with the pills and the
+                figures interleaved. On their own line the tags wrap among
+                themselves and line 2 keeps its shape. */}
+            {transaction.tags && transaction.tags.length > 0 && (
+              <div className="col-span-3 flex flex-wrap items-center gap-1.5">
+                {transaction.tags.map((tag) => onTagClick ? (
+                  <button
+                    key={tag.id}
+                    onClick={(e) => { e.stopPropagation(); onTagClick(tag.id); }}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium hover:opacity-80 transition-opacity"
+                    style={{
+                      backgroundColor: tag.color ? `${tag.color}20` : '#9ca3af20',
+                      color: tag.color || '#6b7280',
+                    }}
+                    title={t('list.row.filterByTag', { name: tag.name })}
+                  >
+                    {tag.icon && (
+                      <span className="w-3 h-3 flex-shrink-0 [&>svg]:w-3 [&>svg]:h-3">
+                        {getIconComponent(tag.icon)}
+                      </span>
+                    )}
+                    {tag.name}
+                  </button>
+                ) : (
+                  <span
+                    key={tag.id}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium"
+                    style={{
+                      backgroundColor: tag.color ? `${tag.color}20` : '#9ca3af20',
+                      color: tag.color || '#6b7280',
+                    }}
+                    title={tag.name}
+                  >
+                    {tag.icon && (
+                      <span className="w-3 h-3 flex-shrink-0 [&>svg]:w-3 [&>svg]:h-3">
+                        {getIconComponent(tag.icon)}
+                      </span>
+                    )}
+                    {tag.name}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </td>
       </tr>

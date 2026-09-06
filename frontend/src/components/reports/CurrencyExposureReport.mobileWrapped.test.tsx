@@ -199,28 +199,29 @@ describe('CurrencyExposureReport (phone wrapped table)', () => {
     }
   });
 
-  it('wraps each row onto three lines: currency and converted value, native and rate, then share and count', async () => {
+  it('wraps each row onto two lines: currency, native and converted value; then rate, share and count', async () => {
     const container = await renderReport();
 
-    // Measured, not chosen: this table formats with the 2dp `formatCurrency`,
-    // so three equal tracks are 77px at 320px against a `123 456,78 CHF` that
-    // measures 97px -- laid out that way the same content put 314px of table
-    // in a 288px wrapper with 42px of cell overflow. Two tracks are 122px and
-    // hold it, so the six columns take three lines.
+    // The maintainer's call from the phone review: the native and the
+    // converted value on one line, the other three on the next. The identity
+    // is bounded (a dot and a three-letter code), so it takes a fixed 4rem
+    // track and the two money tracks split the rest; the rate sits under the
+    // currency it prices, left-aligned there so it lines up under the code.
     for (const row of Array.from(container.querySelectorAll('tbody tr'))) {
       const [currency, native, rate, converted, pct, count] = Array.from(
         row.querySelectorAll('td'),
       );
-      expect(row.className).toContain('grid-cols-2');
+      expect(row.className).toContain('grid-cols-[4rem_minmax(0,1fr)_minmax(0,1fr)]');
       expect(placement(currency)).toBe('c1/r1');
-      expect(placement(converted)).toBe('c2/r1');
-      expect(placement(native)).toBe('c1/r2');
-      expect(placement(rate)).toBe('c2/r2');
-      expect(placement(pct)).toBe('c1/r3');
-      expect(placement(count)).toBe('c2/r3');
-      // Nothing is placed on a fourth line.
+      expect(placement(native)).toBe('c2/r1');
+      expect(placement(converted)).toBe('c3/r1');
+      expect(placement(rate)).toBe('c1/r2');
+      expect(placement(pct)).toBe('c2/r2');
+      expect(placement(count)).toBe('c3/r2');
+      expect(rate.className).toContain('max-sm:text-left');
+      // Nothing is placed on a third line.
       for (const cell of [currency, native, rate, converted, pct, count]) {
-        expect(cell.className).not.toMatch(/\brow-start-4\b/);
+        expect(cell.className).not.toMatch(/\brow-start-3\b/);
       }
     }
   });
@@ -229,15 +230,15 @@ describe('CurrencyExposureReport (phone wrapped table)', () => {
     const container = await renderReport();
 
     const footRow = container.querySelector('tfoot tr')!;
-    expect(footRow.className).toContain('grid-cols-2');
+    expect(footRow.className).toContain('grid-cols-[4rem_minmax(0,1fr)_minmax(0,1fr)]');
     const [total, blankNative, blankRate, converted, pct, count] = Array.from(
       footRow.querySelectorAll('td'),
     );
     expect(total.textContent).toBe('Total');
     expect(placement(total)).toBe('c1/r1');
-    expect(placement(converted)).toBe('c2/r1');
-    expect(placement(pct)).toBe('c1/r3');
-    expect(placement(count)).toBe('c2/r3');
+    expect(placement(converted)).toBe('c3/r1');
+    expect(placement(pct)).toBe('c2/r2');
+    expect(placement(count)).toBe('c3/r2');
 
     // The native value and the rate have no total. Their cells are `hidden`
     // below `sm` so they occupy no grid track -- placed, they would take a
@@ -319,7 +320,7 @@ describe('CurrencyExposureReport (phone wrapped table)', () => {
     expect(container.querySelector('tbody')?.className).toContain('sm:table-row-group');
     expect(container.querySelector('tfoot')?.className).toContain('sm:table-footer-group');
     const row = container.querySelector('tbody tr');
-    expect(row?.className).toContain('grid grid-cols-2');
+    expect(row?.className).toContain('grid grid-cols-[4rem_minmax(0,1fr)_minmax(0,1fr)]');
     expect(row?.className).toContain('sm:table-row');
     // The wrapper still scrolls horizontally, which is what the table needs
     // from `sm` up on a narrow desktop window.

@@ -33,8 +33,9 @@
  *   a phone (`useIsMobile`, a 639px viewport query) at **Normal** density,
  *   `TransactionList` sets `TransactionRow`'s `wrapped` prop and the row
  *   renders as a two-line card in a single `<td>` instead of the tier cells --
- *   date, payee, amount, balance, category, status, account and tags across
- *   two lines, with description, ref #, attachments and the row actions
+ *   date, payee, amount, balance, category, status and account across two
+ *   lines, and the row's tags on a third line of their own under the category
+ *   when it has any, with description, ref #, attachments and the row actions
  *   omitted (the long-press action sheet already carries the actions). The
  *   full column header is replaced there by a slim control header that keeps
  *   the day/month date toggle and the select-all-on-page box, because the card

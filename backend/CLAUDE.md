@@ -431,6 +431,8 @@ those two; a second locale resolver is how the answers drift.
 Postgres evaluates `LIKE` case-sensitively, so `Like('%amazon%')` matched nothing while `Like('%Amazon%')` matched -- and the tool built on it looked as though it only accepted exact names (its own description had promised a "case-insensitive substring match" for as long as it had been wrong). Where a filter is offered to a person or a model, match case-insensitively: `ILike`, or a comparison the code performs itself. `PayeesService.getLlmPayees` is the worked example, and its spec asserts that a lowercase query and an uppercase one return the same rows.
 
 **And a filtered list says how much it left out.** `getLlmPayees` returns `totalCount` (what matched) beside `payees` (what came back) and a `truncated` flag, because a capped list presented as the whole one is the same defect as a subtotal presented as a total.
+**A match key is not a display value.** Matching case-insensitively means a `LOWER(TRIM(...))` column or a lowercased map key, and that key never reaches a response: the Bill Payment History report put `payee_name_normalized` on screen, so every payee read in lowercase. Select or carry the name as the user wrote it beside the key, and return that. `tax-recurring-reports.service.spec.ts` holds the case with a mixed-case scheduled payee.
+
 ## Rejection happens before the write
 
 A check capable of refusing a command belongs inside the transaction that performs it, and under the same lock where concurrency is in play. A service that mutates, commits, and returns a success-shaped value for a caller to reject afterwards has already done the thing the `409` says it did not do.

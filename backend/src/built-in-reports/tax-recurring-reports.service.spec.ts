@@ -783,6 +783,38 @@ describe("TaxRecurringReportsService", () => {
       expect(result.billPayments[0].averagePayment).toBe(1500);
     });
 
+    it("reports the payee as the user wrote it, never the lowercased match key", async () => {
+      // The transaction query hands back LOWER(TRIM(name)) because that is the
+      // key the match runs on. The report once put that key on screen, so
+      // "Hydro One" read as "hydro one" in every row.
+      scopedManager.query.mockResolvedValueOnce([
+        {
+          id: "st-1",
+          name: "Electricity",
+          amount: "-120.00",
+          payee_name: "Hydro One",
+        },
+      ]);
+      scopedManager.query.mockResolvedValueOnce([
+        {
+          id: "tx-1",
+          transaction_date: new Date("2025-01-15"),
+          currency_code: "USD",
+          amount: "118.00",
+          payee_name_normalized: "hydro one",
+        },
+      ]);
+
+      const result = await service.getBillPaymentHistory(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      expect(result.billPayments).toHaveLength(1);
+      expect(result.billPayments[0].payeeName).toBe("Hydro One");
+    });
+
     it("only matches transactions within 20% tolerance of scheduled amount", async () => {
       scopedManager.query.mockResolvedValueOnce([
         {

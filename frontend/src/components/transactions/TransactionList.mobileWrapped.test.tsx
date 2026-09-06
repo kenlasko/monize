@@ -156,6 +156,47 @@ describe('the register on a phone', () => {
     expect(text).not.toContain('Delete');
   });
 
+  it('puts the tags on a line of their own under the category, and only when there are any', async () => {
+    setPhoneViewport(true);
+    useDensityStore.setState({ densities: { transactions: 'normal' } });
+
+    const tags = [
+      { id: 'tag-1', name: 'Reimbursable', color: '#f59e0b' },
+      { id: 'tag-2', name: 'Vacation', color: '#3b82f6' },
+    ] as Transaction['tags'];
+    const { container } = render(
+      <TransactionList
+        transactions={[
+          createTransaction({ id: 'tx-tagged', tags }),
+          createTransaction({ id: 'tx-plain' }),
+        ]}
+        onEdit={vi.fn()}
+        onRefresh={vi.fn()}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Vacation')).toBeInTheDocument();
+    });
+
+    const [tagged, plain] = bodyRows(container);
+    // Inline after the category, a single tag pushed the status and balance
+    // onto a line of their own; the tags now take that line themselves,
+    // under the category, and the second line keeps its shape.
+    const taggedLines = Array.from(tagged.querySelectorAll('.col-span-3'));
+    expect(taggedLines).toHaveLength(2);
+    const [line2, tagLine] = taggedLines;
+    expect(line2.textContent).toContain('Groceries');
+    expect(line2.textContent).toContain('Pending');
+    expect(line2.textContent).not.toContain('Reimbursable');
+    expect(tagLine.textContent).toContain('Reimbursable');
+    expect(tagLine.textContent).toContain('Vacation');
+    expect(tagLine.textContent).not.toContain('Pending');
+
+    // A row with no tags does not grow an empty third line.
+    expect(plain.querySelectorAll('.col-span-3')).toHaveLength(1);
+  });
+
   it('keeps the tier table at Compact density', async () => {
     setPhoneViewport(true);
     useDensityStore.setState({ densities: { transactions: 'compact' } });

@@ -115,18 +115,22 @@ const PHONE_HEADER_CLASS =
 // Width budget, measured on a hand-written CSS replica in Chromium at the
 // insets this table really gets -- the report page's `px-4` and the row's own
 // `px-4`, the card contributing none -- so 256px of track at 320px and 326px
-// at 390px. Two equal `minmax(0,1fr)` tracks with the row's `gap-x-3` give
-// each figure cell 122px at 320px and 157px at 390px.
+// at 390px. The row is a six-track grid: line 1 gives the account and the
+// utilization three tracks each (122px at 320px, 157px at 390px, the same as
+// an equal pair); line 2 gives the limit, the used and the available amounts
+// two tracks each -- 77px at 320px and 101px at 390px.
 //
 // The formatter here is the 2dp `formatCurrency`, not the compact one the
-// sibling reports use, and that is what decides the line count. The widest
-// realistic value is a six-figure amount in a currency `narrowSymbol` has no
-// symbol for, so the unit is the three-letter ISO code: `123 456,78 CHF`
-// measures 97px at `text-xs`. Three such figures on one line would need
-// 3 x 97 + 2 x 12 = 315px against a 256px budget, and a three-track layout
-// measured 301px of content in a 288px wrapper -- an overflow. Two tracks fit
-// with 25px to spare, so Available drops to line 3 (see the row's comment).
-// A seven-figure `1 234 567,89 CHF` is 110px and still fits both widths.
+// sibling reports use. The maintainer asked for the three amounts on one
+// line after the phone review of this branch, knowing the budget: a credit
+// limit is typically four or five figures, and `$12,345.00` at `text-xs` is
+// about 65px, which fits the 77px track. The widest realistic value, a
+// six-figure amount in a currency `narrowSymbol` has no symbol for
+// (`123 456,78 CHF`, 97px), does NOT fit at 320px -- three of them need
+// 3 x 97 + 2 x 12 = 315px against 256px -- and overflows its track's end
+// edge, reopening the wrapper's sideways scroll there; at 390px the same
+// figure fits a 101px track. That is the accepted trade: the common case on
+// one line, the six-figure ISO-code case scrolling at 320px only.
 //
 // Right alignment is not a containment device: a nowrap figure longer than its
 // track overflows past the END edge whatever `text-align` says, and in the
@@ -549,16 +553,15 @@ export function CreditUtilizationReport() {
       {/* Data Table
 
           Below `sm` the table becomes a block and each row wraps into a
-          two-column grid so all five columns fit a phone without a horizontal
-          scroll, on three lines: the account and its utilization -- the figure
-          the row is read for -- share line 1; the credit limit and the amount
-          used share line 2; and the amount available takes line 3, right of
-          the row so it lines up under Used. Three lines rather than two is a
-          measurement, not a preference: this table formats money with the 2dp
-          `formatCurrency`, so a six-figure amount in an ISO-code currency is
-          97px at `text-xs` and three of them on one line need 315px against a
-          256px budget at 320px (measured: a three-track row put 301px of
-          content in a 288px wrapper). Nothing is dropped -- the card carries
+          six-track grid so all five columns fit a phone without a horizontal
+          scroll, on two lines: the account and its utilization -- the figure
+          the row is read for -- share line 1, three tracks each; the credit
+          limit, the amount used and the amount available share line 2, two
+          tracks each. Two lines rather than three is the maintainer's call
+          from the phone review of this branch, made against the measurement
+          `FIGURE_CELL` records: typical four- and five-figure limits fit a
+          77px track at 320px, and a six-figure ISO-code amount overflows it
+          there (and only there). Nothing is dropped -- the card carries
           all five columns -- and the row stays what it is today: hovering, but
           NOT clickable. From `sm` up it is the ordinary table. The sort
           controls survive as their own phone-only header row, because the
@@ -578,7 +581,7 @@ export function CreditUtilizationReport() {
           not what answers it: they restore the table semantics, and have no
           effect on reading order. The DOM keeps the desktop column order
           (account, limit, used, available, utilization) while the grid shows
-          utilization second and available last, so a screen-reader user hears
+          utilization second, so a screen-reader user hears
           the headline figure fifth -- the WCAG 1.3.2 tension mechanism A
           carries. What limits the cost is the captions: every value names its
           own column, so each one is self-describing in whatever order it is
@@ -625,7 +628,7 @@ export function CreditUtilizationReport() {
                 <tr
                   key={row.id}
                   role="row"
-                  className="grid grid-cols-2 items-start gap-x-3 gap-y-1.5 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 sm:table-row sm:p-0"
+                  className="grid grid-cols-6 items-start gap-x-3 gap-y-1.5 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 sm:table-row sm:p-0"
                 >
                   {/* The identity. An account name is unbounded (40-plus
                       characters is ordinary), so it sits in a `minmax(0,1fr)`
@@ -659,7 +662,7 @@ export function CreditUtilizationReport() {
                       longest, in the pseudo-locale) and is left to wrap on its
                       own, so the `flex flex-col` markup below is exactly
                       today's. */}
-                  <td role="cell" className="col-start-1 row-start-1 min-w-0 p-0 text-sm font-medium text-gray-900 dark:text-gray-100 sm:table-cell sm:px-4 sm:py-3">
+                  <td role="cell" className="col-start-1 col-span-3 row-start-1 min-w-0 p-0 text-sm font-medium text-gray-900 dark:text-gray-100 sm:table-cell sm:px-4 sm:py-3">
                     <div className="flex flex-col">
                       <span className="line-clamp-3 break-words sm:line-clamp-none sm:break-normal" title={row.name}>{row.name}</span>
                       <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -667,25 +670,24 @@ export function CreditUtilizationReport() {
                       </span>
                     </div>
                   </td>
-                  <td role="cell" className={`col-start-1 row-start-2 text-gray-600 dark:text-gray-400 ${FIGURE_CELL}`}>
+                  <td role="cell" className={`col-start-1 col-span-2 row-start-2 text-gray-600 dark:text-gray-400 ${FIGURE_CELL}`}>
                     <CellLabel className={CAPTION_CLASS}>{columns.limit.label}</CellLabel>
                     {fmtOrUnknown(row.limit)}
                   </td>
-                  <td role="cell" className={`col-start-2 row-start-2 text-gray-600 dark:text-gray-400 ${FIGURE_CELL}`}>
+                  <td role="cell" className={`col-start-3 col-span-2 row-start-2 text-gray-600 dark:text-gray-400 ${FIGURE_CELL}`}>
                     <CellLabel className={CAPTION_CLASS}>{columns.used.label}</CellLabel>
                     {fmtOrUnknown(row.used)}
                   </td>
-                  {/* Available takes line 3 in the right-hand track, so it ends
-                      under Used rather than opening a fourth column that would
-                      not fit. */}
-                  <td role="cell" className={`col-start-2 row-start-3 text-gray-600 dark:text-gray-400 ${FIGURE_CELL}`}>
+                  {/* Available ends line 2, beside Used: three amounts on one
+                      line, two tracks each (see `FIGURE_CELL` for what fits). */}
+                  <td role="cell" className={`col-start-5 col-span-2 row-start-2 text-gray-600 dark:text-gray-400 ${FIGURE_CELL}`}>
                     <CellLabel className={CAPTION_CLASS}>{columns.available.label}</CellLabel>
                     {fmtOrUnknown(row.available)}
                   </td>
                   {/* Utilization is the headline: it takes the right of line 1
                       beside the account, because it is what the row is read
                       for. Its threshold colouring is unchanged. */}
-                  <td role="cell" className={`col-start-2 row-start-1 font-medium ${FIGURE_CELL}`} style={{ color: utilizationColour(row.utilizationPercent) }}>
+                  <td role="cell" className={`col-start-4 col-span-3 row-start-1 font-medium ${FIGURE_CELL}`} style={{ color: utilizationColour(row.utilizationPercent) }}>
                     <CellLabel className={CAPTION_CLASS}>{columns.utilization.label}</CellLabel>
                     {formatPercent(row.utilizationPercent, 1)}
                   </td>
@@ -694,26 +696,26 @@ export function CreditUtilizationReport() {
             </tbody>
             <tfoot role="rowgroup" className="block bg-gray-50 dark:bg-gray-900/50 sm:table-footer-group">
               {/* The totals are the largest figures on the table, so this row
-                  wraps exactly the way a data row does -- the same two tracks
+                  wraps exactly the way a data row does -- the same six tracks
                   and the same placement, each figure captioned -- with "Total"
                   standing in for the account in the identity track. */}
-              <tr role="row" className="grid grid-cols-2 items-start gap-x-3 gap-y-1.5 px-4 py-3 sm:table-row sm:p-0">
-                <td role="cell" className="col-start-1 row-start-1 min-w-0 p-0 text-sm font-bold text-gray-900 dark:text-gray-100 sm:table-cell sm:px-4 sm:py-3">
+              <tr role="row" className="grid grid-cols-6 items-start gap-x-3 gap-y-1.5 px-4 py-3 sm:table-row sm:p-0">
+                <td role="cell" className="col-start-1 col-span-3 row-start-1 min-w-0 p-0 text-sm font-bold text-gray-900 dark:text-gray-100 sm:table-cell sm:px-4 sm:py-3">
                   {t('creditUtilization.total')}
                 </td>
-                <td role="cell" className={`col-start-1 row-start-2 font-bold text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
+                <td role="cell" className={`col-start-1 col-span-2 row-start-2 font-bold text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
                   <CellLabel className={CAPTION_CLASS}>{columns.limit.label}</CellLabel>
                   {formatCurrency(totals.limit, displayCurrency)}
                 </td>
-                <td role="cell" className={`col-start-2 row-start-2 font-bold text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
+                <td role="cell" className={`col-start-3 col-span-2 row-start-2 font-bold text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
                   <CellLabel className={CAPTION_CLASS}>{columns.used.label}</CellLabel>
                   {formatCurrency(totals.used, displayCurrency)}
                 </td>
-                <td role="cell" className={`col-start-2 row-start-3 font-bold text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
+                <td role="cell" className={`col-start-5 col-span-2 row-start-2 font-bold text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
                   <CellLabel className={CAPTION_CLASS}>{columns.available.label}</CellLabel>
                   {formatCurrency(totals.available, displayCurrency)}
                 </td>
-                <td role="cell" className={`col-start-2 row-start-1 font-bold text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
+                <td role="cell" className={`col-start-4 col-span-3 row-start-1 font-bold text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
                   <CellLabel className={CAPTION_CLASS}>{columns.utilization.label}</CellLabel>
                   {formatPercent(totals.utilizationPercent, 1)}
                 </td>

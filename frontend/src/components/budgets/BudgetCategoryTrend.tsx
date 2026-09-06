@@ -9,7 +9,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from 'recharts';
 import { chartSeriesColor } from '@/lib/chart-colors';
@@ -211,7 +210,12 @@ export function BudgetCategoryTrend({
                 <CategoryTrendTooltip formatCurrency={formatCurrency} />
               }
             />
-            <Legend />
+            {/* No `<Legend />`: the toggle pills above the chart already name
+                every series in its own colour, and on a phone the recharts
+                legend -- one entry per category, wrapped over several lines
+                inside a 288px-tall container -- grew taller than the plot and
+                was drawn up over those pills, so each name showed twice, one
+                on top of the other. The pills are the legend. */}
             {data.map((series, idx) => {
               if (!selectedCategories.has(series.categoryId)) return null;
               const color = chartSeriesColor(idx);

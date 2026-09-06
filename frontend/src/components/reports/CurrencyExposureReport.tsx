@@ -116,28 +116,31 @@ const PHONE_HEADER_CLASS =
 // FIGURE_CELL width budget, measured on a hand-written CSS replica in Chromium
 // at the insets this table really gets -- the report page's `px-4` and the
 // row's own `px-4`, the card contributing none -- so 256px of track at 320px
-// and 326px at 390px. Two equal `minmax(0,1fr)` tracks with the row's
-// `gap-x-3` give each figure cell a measured 122px at 320px and 157px at
-// 390px.
+// and 326px at 390px. The row is `[4rem minmax(0,1fr) minmax(0,1fr)]`: a
+// fixed 64px first track for the bounded identity (a 12px dot and a
+// three-letter code, about 50px), and two equal money tracks of 96px at 320px
+// and 131px at 390px. Fixed rather than `auto` so the money columns start at
+// the same x in every row -- an `auto` track sized per row by the rate
+// caption in one and by "Total" in the footer would step them sideways.
 //
 // The formatter is the 2dp `formatCurrencyFull`, not the compact one the
-// sibling reports use, and that is what decides the line count. The unit is
-// part of the budget and is not always a symbol: `narrowSymbol` falls back to
-// the three-letter ISO code where a currency has none, so the widest unit is
-// `CHF`. Three figure cells on one line was measured too and does not fit:
-// three equal tracks are 77px at 320px, and the same content put 314px of
-// table in a 288px wrapper with 42px of cell overflow. So two per line, on
-// three lines (see the row's comment).
+// sibling reports use. The unit is part of the budget and is not always a
+// symbol: `narrowSymbol` falls back to the three-letter ISO code where a
+// currency has none, so the widest unit is `CHF`, and `123 456,78 CHF` is
+// 97px at `text-xs` -- one pixel over the 96px track at 320px, and well
+// inside 131px at 390px. The maintainer asked for the native and the
+// converted value on one line after the phone review of this branch; the
+// six-figure ISO-code case at 320px is the accepted edge, and it overflows
+// past the track's end by a pixel rather than being cut.
 //
 // The budget is measured against the FOOTER's grand total, not a row value:
 // the total is by construction larger than any row, and it is `font-bold`,
 // which costs about 11px more than the same digits in a data cell. Bold at
-// `text-xs`: `123 456,78 CHF` 107px, `1 219 326,04 CHF` 119px -- so six AND
-// seven figures fit the 122px track at 320px, against the one-line rule's bar
-// of six at 320px and seven at 390px. Eight figures (128px) are the first to
-// pass 122px, and everything up to eleven (157px) still fits the 157px track
-// at 390px. A portfolio whose total reaches eight figures therefore opens the
-// wrapper's sideways scroll at 320px, and only there.
+// `text-xs`: `123 456,78 CHF` 107px, `1 219 326,04 CHF` 119px -- six figures
+// pass the 96px track at 320px by 11px and seven by 23px; both fit the 131px
+// track at 390px, and eight (128px) is the first to pass it. A portfolio
+// whose total reaches six figures therefore opens the wrapper's sideways
+// scroll at 320px, and eight figures open it at 390px.
 //
 // That is a deliberate choice rather than an oversight, because the
 // alternatives are worse: right alignment is not a containment device (a
@@ -525,16 +528,18 @@ export function CurrencyExposureReport() {
       {/* Data Table
 
           Below `sm` the table becomes a block and each row wraps into a
-          two-column grid so all six columns fit a phone without a horizontal
-          scroll, on three lines: the currency and the value in the reporting
-          currency -- the figure the row is read for -- share line 1; the
-          native value and the rate share line 2; and the portfolio share and
-          the holdings count share line 3. Three lines rather than two is a
-          measurement, not a preference: this table formats money with the 2dp
-          `formatCurrencyFull`, so three equal tracks are 77px at 320px against
-          a `123 456,78 CHF` that measures 97px, and the same content laid out
-          that way put 314px of table in a 288px wrapper with 42px of cell
-          overflow. Nothing is dropped -- the card carries all six columns --
+          three-track grid so all six columns fit a phone without a horizontal
+          scroll, on two lines: the currency, its native value and its value in
+          the reporting currency -- the figure the row is read for -- share
+          line 1; the rate, the portfolio share and the holdings count share
+          line 2, each under the cell it relates to (the rate under the
+          currency it prices, the share under the native value, the count
+          under the converted value). Two lines rather than three is the
+          maintainer's call from the phone review of this branch, made against
+          the measurement `FIGURE_CELL` records: the identity is bounded, so it
+          takes a fixed 64px track and the two money tracks keep 96px at 320px
+          -- one pixel short of a six-figure ISO-code amount there, and enough
+          for every symbol currency. Nothing is dropped -- the card carries all six columns --
           and the row stays what it is today: hovering, but NOT clickable. From
           `sm` up it is the ordinary table. The sort controls survive as their
           own phone-only header row, because the column header row that carries
@@ -565,8 +570,8 @@ export function CurrencyExposureReport() {
           not what answers it: they restore the table semantics, and have no
           effect on reading order. The DOM keeps the desktop column order
           (currency, native value, rate, converted value, share, holdings)
-          while the grid shows the converted value second, so a screen-reader
-          user hears the headline figure fourth -- the WCAG 1.3.2 tension
+          while the grid shows the converted value third and the rate fourth,
+          so a screen-reader user hears the headline figure fourth -- the WCAG 1.3.2 tension
           mechanism A carries. What limits the cost is the captions: every
           value names its own column, so each one is self-describing in
           whatever order it is heard. Both are properties of the mechanism, not
@@ -613,7 +618,7 @@ export function CurrencyExposureReport() {
                 <tr
                   key={item.currency}
                   role="row"
-                  className="grid grid-cols-2 items-start gap-x-3 gap-y-1.5 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 sm:table-row sm:p-0"
+                  className="grid grid-cols-[4rem_minmax(0,1fr)_minmax(0,1fr)] items-start gap-x-3 gap-y-1.5 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 sm:table-row sm:p-0"
                 >
                   {/* The identity, and the one BOUNDED one in the report: a
                       colour dot and a three-letter ISO code, 60px at its
@@ -630,37 +635,43 @@ export function CurrencyExposureReport() {
                       {columns.currency.value(item)}
                     </div>
                   </td>
-                  <td role="cell" className={`col-start-1 row-start-2 text-gray-600 dark:text-gray-400 ${FIGURE_CELL}`}>
+                  <td role="cell" className={`col-start-2 row-start-1 text-gray-600 dark:text-gray-400 ${FIGURE_CELL}`}>
                     <CellLabel className={CAPTION_CLASS}>{columns.nativeValue.label}</CellLabel>
                     {columns.nativeValue.value(item)}
                   </td>
                   {/* The rate is not money: six decimals, never rounded and
                       never clipped, so it keeps `whitespace-nowrap` like the
-                      figures and sits in a full track of its own. `-` is the
-                      marker for a rate that could not be resolved, and stays
-                      exactly that -- an unknown rate is not a measured 1. The
-                      decision is `rateDisplay`, shared with the PDF export. */}
-                  <td role="cell" className={`col-start-2 row-start-2 text-gray-500 dark:text-gray-400 ${FIGURE_CELL}`}>
+                      figures. It sits under the currency it prices, in the
+                      fixed 64px identity track (`1.234567` is about 48px at
+                      `text-xs`), left-aligned there so it lines up under the
+                      code rather than ragged-right against it; from `sm` up
+                      it is the right-aligned column cell it is today. `-` is
+                      the marker for a rate that could not be resolved, and
+                      stays exactly that -- an unknown rate is not a measured
+                      1. The decision is `rateDisplay`, shared with the PDF
+                      export. */}
+                  <td role="cell" className={`col-start-1 row-start-2 max-sm:text-left text-gray-500 dark:text-gray-400 ${FIGURE_CELL}`}>
                     <CellLabel className={CAPTION_CLASS}>{columns.rate.label}</CellLabel>
                     {columns.rate.value(item)}
                   </td>
                   {/* The value in the reporting currency is the headline: it
-                      takes the right of line 1 beside the currency, because it
-                      is what the row is read for. */}
-                  <td role="cell" className={`col-start-2 row-start-1 font-medium text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
+                      takes the right of line 1, beside the native value it
+                      converts, because it is what the row is read for. */}
+                  <td role="cell" className={`col-start-3 row-start-1 font-medium text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
                     <CellLabel className={CAPTION_CLASS}>{columns.convertedValue.label}</CellLabel>
                     {columns.convertedValue.value(item)}
                   </td>
-                  {/* Both values on line 3 are bounded (`100.0%` and a holdings
+                  {/* Both remaining values are bounded (`100.0%` and a holdings
                       count), but their CAPTIONS are not -- `[XX-% of
-                      Portfolio-XX]` is 22 characters -- so the line is two
-                      equal `minmax(0,1fr)` tracks like the others rather than
-                      an `auto` pair sized by its captions. */}
-                  <td role="cell" className={`col-start-1 row-start-3 text-gray-600 dark:text-gray-400 ${FIGURE_CELL}`}>
+                      Portfolio-XX]` is 22 characters -- so they take the two
+                      money tracks on line 2, under the native and converted
+                      values, rather than an `auto` pair sized by its captions.
+                      Captions wrap; values never do. */}
+                  <td role="cell" className={`col-start-2 row-start-2 text-gray-600 dark:text-gray-400 ${FIGURE_CELL}`}>
                     <CellLabel className={CAPTION_CLASS}>{columns.percentage.label}</CellLabel>
                     {columns.percentage.value(item)}
                   </td>
-                  <td role="cell" className={`col-start-2 row-start-3 text-gray-600 dark:text-gray-400 ${FIGURE_CELL}`}>
+                  <td role="cell" className={`col-start-3 row-start-2 text-gray-600 dark:text-gray-400 ${FIGURE_CELL}`}>
                     <CellLabel className={CAPTION_CLASS}>{columns.count.label}</CellLabel>
                     {columns.count.value(item)}
                   </td>
@@ -669,16 +680,15 @@ export function CurrencyExposureReport() {
             </tbody>
             <tfoot role="rowgroup" className="block bg-gray-50 dark:bg-gray-900/50 sm:table-footer-group">
               {/* The totals are the largest figures on the table, so this row
-                  wraps exactly the way a data row does -- the same two tracks
+                  wraps exactly the way a data row does -- the same three tracks
                   and the same placement, each figure captioned -- with "Total"
-                  standing in for the currency in the identity track. Line 2 is
-                  therefore empty here (the native value and the rate have no
-                  total, and their two blank cells are `hidden` below `sm` so
-                  they claim no grid slot); the placement stays the data row's
-                  verbatim anyway, so a reader finds each total in the column
-                  and on the line the rows below put it. The cost is one
-                  6px row gap. From `sm` up the blanks are the same empty table
-                  cells as today.
+                  standing in for the currency in the identity track. The
+                  native value and the rate have no total, so their two blank
+                  cells are `hidden` below `sm` and claim no grid slot; the
+                  placement stays the data row's verbatim anyway, so a reader
+                  finds each total in the column and on the line the rows
+                  above put it. From `sm` up the blanks are the same empty
+                  table cells as today.
 
                   Because those two cells leave the DOM below `sm`, this row
                   exposes four cells where the header exposes six columns, and
@@ -689,21 +699,21 @@ export function CurrencyExposureReport() {
                   present -- taken from the column record's order rather than
                   written down again. It is correct and inert from `sm` up,
                   where all six are present. */}
-              <tr role="row" className="grid grid-cols-2 items-start gap-x-3 gap-y-1.5 px-4 py-3 sm:table-row sm:p-0">
+              <tr role="row" className="grid grid-cols-[4rem_minmax(0,1fr)_minmax(0,1fr)] items-start gap-x-3 gap-y-1.5 px-4 py-3 sm:table-row sm:p-0">
                 <td role="cell" aria-colindex={colIndexOf('currency')} className="col-start-1 row-start-1 p-0 text-sm font-bold text-gray-900 dark:text-gray-100 sm:table-cell sm:px-4 sm:py-3">
                   {t('currencyExposure.total')}
                 </td>
                 <td role="cell" aria-colindex={colIndexOf('nativeValue')} className="hidden sm:table-cell" />
                 <td role="cell" aria-colindex={colIndexOf('rate')} className="hidden sm:table-cell" />
-                <td role="cell" aria-colindex={colIndexOf('convertedValue')} className={`col-start-2 row-start-1 font-bold text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
+                <td role="cell" aria-colindex={colIndexOf('convertedValue')} className={`col-start-3 row-start-1 font-bold text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
                   <CellLabel className={CAPTION_CLASS}>{columns.convertedValue.label}</CellLabel>
                   {formatCurrencyFull(totalPortfolioValue, defaultCurrency)}
                 </td>
-                <td role="cell" aria-colindex={colIndexOf('percentage')} className={`col-start-1 row-start-3 font-bold text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
+                <td role="cell" aria-colindex={colIndexOf('percentage')} className={`col-start-2 row-start-2 font-bold text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
                   <CellLabel className={CAPTION_CLASS}>{columns.percentage.label}</CellLabel>
                   100%
                 </td>
-                <td role="cell" aria-colindex={colIndexOf('count')} className={`col-start-2 row-start-3 font-bold text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
+                <td role="cell" aria-colindex={colIndexOf('count')} className={`col-start-3 row-start-2 font-bold text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
                   <CellLabel className={CAPTION_CLASS}>{columns.count.label}</CellLabel>
                   {allocationData.reduce((sum, a) => sum + a.count, 0)}
                 </td>

@@ -273,6 +273,31 @@ describe('the payees list on a phone', () => {
     expect(within(row).queryByText('Status')).not.toBeInTheDocument();
   });
 
+  it('puts the count and the aliases together on line 1, and the pills alone on line 2', () => {
+    setPhoneViewport(true);
+    useDensityStore.setState({ densities: { payees: 'normal' } });
+
+    const { container } = renderList(
+      [makePayee({ id: 'p1', name: 'Walmart', transactionCount: 41, aliasCount: 7, defaultCategory: GROCERIES })],
+      { showStatusColumn: true },
+    );
+
+    const [row] = bodyRows(container);
+    const [card, line2] = Array.from(row.querySelectorAll<HTMLElement>('.grid'));
+    // Both figures are direct children of the card grid -- line 1 -- with the
+    // name; neither lives in the line-2 grid, which holds the two pills.
+    const directChildren = Array.from(card.children);
+    const countBox = within(row).getByText('41').parentElement!;
+    const aliasesBox = within(row).getByText('7').parentElement!;
+    expect(directChildren).toContain(countBox);
+    expect(directChildren).toContain(aliasesBox);
+    expect(line2.textContent).not.toContain('Aliases');
+    expect(line2.textContent).toContain('Groceries');
+    expect(line2.textContent).toContain('Active');
+    // Four tracks on line 1: logo, name, count, aliases.
+    expect(card.className).toContain('grid-cols-[auto_minmax(0,1fr)_auto_auto]');
+  });
+
   it('shows the "None" category placeholder rather than a blank', () => {
     // A payee with no default category is a known state, not an unknown one,
     // and the card reads the same helper the tier cell does so the two cannot

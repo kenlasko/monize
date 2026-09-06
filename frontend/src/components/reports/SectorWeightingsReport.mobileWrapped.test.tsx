@@ -221,26 +221,31 @@ describe('SectorWeightingsReport (phone wrapped table)', () => {
     }
   });
 
-  it('wraps each row onto three lines: sector and total, direct and ETF, then the share', async () => {
+  it('wraps each row onto two lines: sector and total, then direct, ETF and the share together', async () => {
     const container = await renderReport();
 
-    // Measured, not chosen: this table formats with the 2dp `formatCurrency`,
-    // so three equal tracks are 77px at 320px against a bold
-    // `2 222 222,21 CHF` that measures 119px -- laid out that way the same
-    // content put 314px of table in a 288px wrapper with 42px of cell
-    // overflow. Two tracks are 122px and hold it, so the five columns take
-    // three lines.
+    // The maintainer's call from the phone review: the direct value, the ETF
+    // value and the share on one line. A six-track grid gives line 1's two
+    // cells three tracks each and line 2's three cells two each, so every
+    // cell still states its own column and line, and nothing reaches a third
+    // line.
     for (const row of Array.from(container.querySelectorAll('tbody tr'))) {
       const [sector, direct, etf, total, pct] = cellsOf(row);
-      expect(row.className).toContain('grid-cols-2');
+      expect(row.className).toContain('grid-cols-6');
       expect(placement(sector)).toBe('c1/r1');
-      expect(placement(total)).toBe('c2/r1');
+      expect(placement(total)).toBe('c4/r1');
       expect(placement(direct)).toBe('c1/r2');
-      expect(placement(etf)).toBe('c2/r2');
-      expect(placement(pct)).toBe('c2/r3');
-      // Nothing is placed on a fourth line.
+      expect(placement(etf)).toBe('c3/r2');
+      expect(placement(pct)).toBe('c5/r2');
+      for (const cell of [sector, total]) {
+        expect(cell.className).toMatch(/\bcol-span-3\b/);
+      }
+      for (const cell of [direct, etf, pct]) {
+        expect(cell.className).toMatch(/\bcol-span-2\b/);
+      }
+      // Nothing is placed on a third line.
       for (const cell of cellsOf(row)) {
-        expect(cell.className).not.toMatch(/\brow-start-4\b/);
+        expect(cell.className).not.toMatch(/\brow-start-3\b/);
       }
     }
   });
@@ -255,12 +260,12 @@ describe('SectorWeightingsReport (phone wrapped table)', () => {
     const sectorRow = container.querySelector('tbody tr')!;
     const unclassified = findRow(container, 'Unclassified')!;
     const footRow = container.querySelector('tfoot tr')!;
-    const expected = ['c1/r1', 'c1/r2', 'c2/r2', 'c2/r1', 'c2/r3'];
+    const expected = ['c1/r1', 'c1/r2', 'c3/r2', 'c4/r1', 'c5/r2'];
     expect(placements(sectorRow)).toEqual(expected);
     expect(placements(unclassified)).toEqual(expected);
     expect(placements(footRow)).toEqual(expected);
     for (const row of [sectorRow, unclassified, footRow]) {
-      expect(row.className).toContain('grid grid-cols-2');
+      expect(row.className).toContain('grid grid-cols-6');
       expect(row.className).toContain('sm:table-row');
     }
 
@@ -371,7 +376,7 @@ describe('SectorWeightingsReport (phone wrapped table)', () => {
     expect(container.querySelector('tbody')?.className).toContain('sm:table-row-group');
     expect(container.querySelector('tfoot')?.className).toContain('sm:table-footer-group');
     const row = container.querySelector('tbody tr');
-    expect(row?.className).toContain('grid grid-cols-2');
+    expect(row?.className).toContain('grid grid-cols-6');
     expect(row?.className).toContain('sm:table-row');
     // Every figure cell hands its padding and its type size back from `sm` up,
     // so the desktop cell is the one it is today.
@@ -517,7 +522,7 @@ describe('SectorWeightingsReport (phone wrapped table)', () => {
     // have re-flowed.
     expect(container.querySelectorAll('tbody tr')).toHaveLength(3);
     expect(container.querySelectorAll('table td')).toHaveLength(20);
-    const expected = ['c1/r1', 'c1/r2', 'c2/r2', 'c2/r1', 'c2/r3'];
+    const expected = ['c1/r1', 'c1/r2', 'c3/r2', 'c4/r1', 'c5/r2'];
     expect(placements(container.querySelector('tbody tr')!)).toEqual(expected);
     expect(placements(container.querySelector('tfoot tr')!)).toEqual(expected);
   });

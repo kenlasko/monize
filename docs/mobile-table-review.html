@@ -82,7 +82,7 @@
       <div class="stat ok"><b id="statOk">0</b><span>OK</span></div>
       <div class="stat warn"><b id="statRemarks">0</b><span>with remarks</span></div>
     </div>
-    <p class="hint">Lists with a density toggle (accounts, transactions, tags, institutions, currencies, securities, payees, bills, investments) show the card layout only at <b>Normal</b> density. Compact and Dense keep the table. Reports with a chart/table toggle need the <b>Table</b> view.</p>
+    <p class="hint">Lists with a density toggle (accounts, transactions, institutions, currencies, securities, payees, bills, investments) show the card layout only at <b>Normal</b> density. Compact and Dense keep the table. Reports with a chart/table toggle need the <b>Table</b> view.</p>
   </header>
 
   <section>
@@ -110,23 +110,22 @@
   // `path` is appended to the base URL; `what` says where to look and how.
   const ITEMS = [
     { id: 'loan-schedule', group: 'now', name: 'Loan amortization schedule', path: '/accounts', what: 'Open a loan or mortgage account, Schedule tab. Each row wraps onto lines; balance takes half the width.' },
-    { id: 'transactions', group: 'now', name: 'Transaction register', path: '/transactions', what: 'Normal density. Two-line card; the slim header keeps the day/month date toggle and select-all.' },
+    { id: 'transactions', group: 'now', name: 'Transaction register', path: '/transactions', what: 'Normal density. Two-line card, tags on a third line under the category; the slim header keeps the day/month date toggle and select-all.' },
     { id: 'accounts', group: 'now', name: 'Accounts list', path: '/accounts', what: 'Normal density. Groups, selection and sort chips.' },
-    { id: 'tags', group: 'now', name: 'Tags list', path: '/tags', what: 'Normal density. One-line card.' },
     { id: 'institutions', group: 'now', name: 'Institutions list', path: '/institutions', what: 'Normal density.' },
     { id: 'currencies', group: 'now', name: 'Currencies list', path: '/currencies', what: 'Normal density. Rate and decimals in the second line.' },
     { id: 'securities', group: 'now', name: 'Securities list', path: '/securities', what: 'Normal density. The name clamps to two lines.' },
     { id: 'security-tabs', group: 'now', name: 'Security detail: tab bar', path: '/securities', what: 'Open any security. The Overview / Transactions / Price history / Documents / News strip fades at the edge that hides more tabs and scrolls by touch; the selected tab is always on screen.' },
-    { id: 'payees', group: 'now', name: 'Payees list', path: '/payees', what: 'Normal density. Notes and category in the second line.' },
+    { id: 'payees', group: 'now', name: 'Payees list', path: '/payees', what: 'Normal density. Count and aliases beside the name; category and status on the second line; last used and notes on the third.' },
     { id: 'bills', group: 'now', name: 'Scheduled transactions (bills)', path: '/bills', what: 'Normal density. Three lines: name and amount; due date and account; category and auto-post marker.' },
     { id: 'investments', group: 'now', name: 'Investment transaction register', path: '/investments', what: 'Normal density. The same component renders on a brokerage account page under /accounts.' },
     { id: 'r-income-vs-expenses', group: 'now', name: 'Report: Income vs Expenses', path: '/reports/income-vs-expenses', what: 'Switch to the Table view. Two lines: month, savings, income; savings rate and expenses.' },
     { id: 'r-savings-rate', group: 'now', name: 'Report: Savings Rate', path: '/reports/savings-rate', what: 'Monthly breakdown table at the bottom. Two lines.' },
-    { id: 'r-credit-utilization', group: 'now', name: 'Report: Credit Utilization', path: '/reports/credit-utilization', what: 'Table at the bottom. Three lines: account and utilization; limit and used; available.' },
-    { id: 'r-currency-exposure', group: 'now', name: 'Report: Currency Exposure', path: '/reports/currency-exposure', what: 'Table at the bottom. Three lines; the 6-decimal rate never wraps; empty footer cells are hidden.' },
-    { id: 'r-sector-weightings', group: 'now', name: 'Report: Sector Weightings', path: '/reports/sector-weightings', what: 'Table at the bottom. Three lines, the Unclassified row with dashes, the totals row.' },
+    { id: 'r-credit-utilization', group: 'now', name: 'Report: Credit Utilization', path: '/reports/credit-utilization', what: 'Table at the bottom. Two lines: account and utilization; limit, used and available together.' },
+    { id: 'r-currency-exposure', group: 'now', name: 'Report: Currency Exposure', path: '/reports/currency-exposure', what: 'Table at the bottom. Two lines: currency, native and converted value; rate, share and holdings. The 6-decimal rate never wraps; empty footer cells are hidden.' },
+    { id: 'r-sector-weightings', group: 'now', name: 'Report: Sector Weightings', path: '/reports/sector-weightings', what: 'Table at the bottom. Two lines: sector and total; direct, ETF and share together. The Unclassified row with dashes, the totals row.' },
     { id: 'r-security-type-allocation', group: 'now', name: 'Report: Security Type Allocation', path: '/reports/security-type-allocation', what: 'Table at the bottom. Tap a type row to expand its holdings. Type rows are two lines, holding rows three.' },
-    { id: 'r-budget-vs-actual', group: 'now', name: 'Report: Budget vs Actual', path: '/reports/budget-vs-actual', what: 'Two tables. Overview: the summary table under the chart. Categories: the averages table.' },
+    { id: 'r-budget-vs-actual', group: 'now', name: 'Report: Budget vs Actual', path: '/reports/budget-vs-actual', what: 'Two tables. Overview: the summary table under the chart. Categories: the averages table; the chart has no legend of its own (the toggle pills are the legend).' },
     { id: 'r-budget-health-score', group: 'now', name: 'Report: Budget Health Score', path: '/reports/budget-health-score', what: 'Category impact table at the bottom. Two lines: category and score impact; group pill and % used.' },
     { id: 'r-flex-group-analysis', group: 'now', name: 'Report: Flex Group Analysis', path: '/reports/flex-group-analysis', what: 'A table under each group card. Three lines. Sorting one group sorts all of them, as on desktop. Known separate defect: the group card header with the totals still wraps at 320 px.' },
     { id: 'r-category-performance', group: 'now', name: 'Report: Category Performance', path: '/reports/category-performance', what: 'Eight columns in four lines: category and total variance; avg budget and avg actual; over/total and % used; status pill and trend. The sort strip of eight chips is tall.' },
